@@ -50,8 +50,12 @@ import { BUILD_HASH, guardBuildHash, renderStandings, renderFixtures, makeApi, e
 
 document.getElementById('engine').textContent = 'engine ' + BUILD_HASH.slice(0, 12) + '…';
 
-// Pre-filled at build time if you gave me your (public) Project URL + anon key.
-const DEFAULTS = { url: '', anonKey: '' };
+// Pre-filled with the project's PUBLIC values (publishable key is RLS-protected,
+// safe to ship in the browser — it is not a secret).
+const DEFAULTS = {
+  url: 'https://egaipdksvztqqgouriyc.supabase.co',
+  anonKey: 'sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc',
+};
 if (DEFAULTS.url) document.getElementById('url').value = DEFAULTS.url;
 if (DEFAULTS.anonKey) document.getElementById('anon').value = DEFAULTS.anonKey;
 
