@@ -17,9 +17,22 @@ validated actions.
   squads + locked orders + conds for the resolver), `store_friendly_result`
   (writes the deterministic outcome, winner as `winner_team_id`), and
   `expire_stale_challenges`.
+- `migrations/0004_official.sql` — official league: `write_fixtures` (persist a
+  double round-robin), `fixture_inputs`, `lock_fixture_orders`, `begin_resolve`
+  (team-lock: no team resolves two matches at once), `store_official_result`
+  (writes the league result AND applies per-player consequences), `due_fixtures`.
+- `migrations/0005_scheduler.sql` — `friendlies_to_lock` / `friendlies_to_resolve`
+  for the worker's polling loop.
+- `functions/_shared/schedule.js` — `doubleRoundRobin(teams, opts)`: circle-method
+  fixtures with unique seeds and `resolve_at` at the league match time.
 - `../resolver/resolve.mjs` — headless engine caller: opens the game file, injects
   the harness, verifies the pinned build hash (aborts on mismatch), runs
-  `__resolveMatch`, returns the storable payload.
+  `__resolveMatch`, returns the storable payload (incl. per-player consequences)
+  and a `verifyResult` client recompute-and-flag helper.
+- `../resolver/worker.mjs`, `server.mjs`, `Dockerfile` — the Playwright resolver
+  container: a polling worker (officials daily + friendlies at kickoff) and an
+  HTTP surface (`/genpool`, `/resolve`). UNTESTED-live; the resolve/store path it
+  drives is exercised by the tests.
 - `functions/_shared/identity.ts` — `resolveManagerId(request, leagueId)` /
   `requireFounder(...)`, the Deno/Edge transport wrapper over the DB functions.
 - `functions/_shared/draft.js` — `snakeDeal(players, n)`: size-capped
@@ -41,7 +54,21 @@ npm install                 # @electric-sql/pglite
 npm test                    # 24 + 23 assertions (phases 1-2), pure PGlite
 npm run test:realpool       # optional: real engine pool via headless Chromium
 npm run test:e2e            # Phase 3 end-to-end: PGlite DB + real engine (Chromium)
+npm run test:official       # Phase 4: fixtures, consequences, no-show, team-lock, verify
 ```
+
+## Official league (Phase 4, end-to-end tested)
+`tests/run_phase4.mjs`: double round-robin correctness (N=4/5/6), then a real
+resolve pipeline — `begin_resolve` (team-lock) → `fixture_inputs` → engine →
+`store_official_result`. It proves:
+- **consequences apply to official matches only**: an official match mutates the
+  server-owned squad (players go `tired`, form shifts, using the game's exact
+  saveMatch thresholds); a friendly leaves the squad **byte-for-byte unchanged**.
+- **no-show auto-fill and count**: an official with no submitted orders is
+  auto-filled at lock and still counts in `standings`.
+- **team-locking**: a second concurrent resolve for a shared team is refused.
+- **client verification**: `verifyResult` recomputes from server inputs — an
+  honest result verifies, a tampered `result_text` is flagged.
 
 ## Friendly loop (Phase 3, end-to-end tested)
 `tests/run_phase3.mjs` runs the whole pipeline against a real DB (PGlite) and the

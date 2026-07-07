@@ -86,6 +86,42 @@
     };
   }
 
+  // Per-player match consequences (form + fatigue), computed with the EXACT
+  // formulas the game applies in saveMatch() (lines ~1915-1932): this is derived
+  // post-match state, not engine-core logic. Deterministic from the innings. The
+  // server applies these to the roster for OFFICIAL matches only; friendlies
+  // discard them. captBat/captBowl come from the per-team orders (via mkInns),
+  // so the keeper/captain fatigue thresholds match the real game.
+  var FORMW = ['abysmal','poor','shaky','steady','good','strong','excellent'];
+  function computeConsequences(m){
+    var cons = {};
+    function ensure(p){
+      if(!cons[p.name]) cons[p.name] = { fatigue: p.fatigue, formIx: (p.formIx==null?3:p.formIx) };
+      return cons[p.name];
+    }
+    for(var i=0;i<m.innings.length;i++){
+      var inn = m.innings[i]; if(!inn) continue;
+      var capBat = inn.captBatName, capBowl = inn.captBowlName;
+      inn.bat.forEach(function(b){
+        if(!(b.b>0 || b.out)) return;
+        var c = ensure(b.p);
+        if(b.r>=50) c.formIx = Math.min(6, c.formIx+1);
+        else if(b.r<10 && b.out) c.formIx = Math.max(1, c.formIx-1);
+        var thrB = (b.p.keeper || b.p.name===capBat) ? 75 : 90;
+        c.fatigue = (b.b>=thrB) ? 'tired' : (c.fatigue==='tired' ? 'rested' : c.fatigue);
+      });
+      Object.keys(inn.bowlers).forEach(function(k){
+        var br = inn.bowlers[k], p = br.p, c = ensure(p);
+        if(br.w>=3) c.formIx = Math.min(6, c.formIx+1);
+        else if(br.b>=36 && br.w===0 && br.r/(br.b/6)>6.8) c.formIx = Math.max(1, c.formIx-1);
+        var thrW = (p.keeper || p.name===capBowl) ? 42 : 48;
+        c.fatigue = (br.b>=thrW) ? 'tired' : (c.fatigue==='tired' ? 'rested' : c.fatigue);
+      });
+    }
+    for(var nm in cons) cons[nm].formWord = FORMW[cons[nm].formIx];
+    return cons;
+  }
+
   function buildResult(m){
     return {
       result_text: m.result ? m.result.text : '',
@@ -94,6 +130,7 @@
       scorecard: m.innings.map(inningsCard),
       worm: m.worm,
       log: m.log,
+      consequences: computeConsequences(m),
       seed: m.seed,
       pitch: m.pitch,
       meta: m.meta

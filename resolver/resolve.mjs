@@ -69,9 +69,32 @@ export async function resolveMatch(page, inputs, { pinnedHash } = {}) {
     scorecard: r.scorecard,
     worm: r.worm,
     log: r.log,
+    consequences: r.consequences,        // per-player form/fatigue (official only)
     seed: r.seed,
     pitch: r.pitch,
     home_runs: byTeam[hn]?.runs ?? 0, home_balls: byTeam[hn]?.balls ?? 0,
     away_runs: byTeam[an]?.runs ?? 0, away_balls: byTeam[an]?.balls ?? 0,
   };
+}
+
+/**
+ * Client-side verification: recompute the match from the SAME server inputs and
+ * compare to a stored result. Returns { ok, reason }. This is what a client runs
+ * to flag a tampered/forged result — determinism makes an honest result match
+ * byte-for-byte. Compares the outcome-bearing fields (result_text + scorecard +
+ * worm); key order is normalized so jsonb round-tripping doesn't false-flag.
+ */
+export async function verifyResult(page, inputs, stored, { pinnedHash } = {}) {
+  const fresh = await resolveMatch(page, inputs, { pinnedHash });
+  const sortKeys = (x) => Array.isArray(x) ? x.map(sortKeys)
+    : (x && typeof x === 'object')
+      ? Object.fromEntries(Object.keys(x).sort().map(k => [k, sortKeys(x[k])])) : x;
+  const canon = (x) => JSON.stringify(sortKeys(x));
+  if (stored.result_text !== fresh.result_text)
+    return { ok: false, reason: `result_text mismatch: stored "${stored.result_text}" vs recomputed "${fresh.result_text}"` };
+  if (canon(stored.scorecard) !== canon(fresh.scorecard))
+    return { ok: false, reason: 'scorecard mismatch' };
+  if (canon(stored.worm) !== canon(fresh.worm))
+    return { ok: false, reason: 'worm mismatch' };
+  return { ok: true, reason: 'recomputed result matches stored result' };
 }
