@@ -36,6 +36,7 @@
     <input id="email" placeholder="email" type="email" size="15">
     <input id="pass" placeholder="password" type="password" size="12">
     <button class="primary" onclick="doLogin()">Log in</button>
+    <button onclick="doSignup()">Sign up</button>
   </div>
   <div class="row hidden" id="whobar"><span id="who" class="small"></span><button class="mini" onclick="logout()">log out</button></div>
 </header>
@@ -105,7 +106,23 @@ async function doLogin(){
 }
 function logout(){JWT='';location.reload()}
 
-async function signup(){ /* signups are created by the founder in Supabase, or enable email signups in Auth settings */ }
+async function doSignup(){
+  var email=document.getElementById('email').value.trim(),password=document.getElementById('pass').value;
+  if(!email||!password){alert('Enter an email + a password (min 6 chars)');return}
+  try{
+    var r=await fetch(URL+'/auth/v1/signup',{method:'POST',headers:{apikey:ANON,'content-type':'application/json'},body:JSON.stringify({email:email,password:password})});
+    var d=await r.json();if(!r.ok)throw new Error(d.error_description||d.msg||d.error||('HTTP '+r.status));
+    if(d.access_token){ // email confirmation is OFF -> logged in immediately
+      JWT=d.access_token;
+      document.getElementById('loginbar').classList.add('hidden');
+      document.getElementById('whobar').classList.remove('hidden');
+      document.getElementById('who').textContent=email;
+      alert('Account created — you are logged in. Now join a league with your invite code.');
+    } else {
+      alert('Account created. If it asks you to confirm your email, do that, then Log in.');
+    }
+  }catch(e){err(e)}
+}
 
 // ============ join / load a league ============
 async function joinLeague(){
