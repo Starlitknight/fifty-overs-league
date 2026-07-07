@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fifty Overs — League</title>
+<style>
+  :root { --bg:#f6f7f5; --fg:#1c2620; --panel:#fff; --line:#dfe3dd; --accent:#2c7a2c; --blue:#2d6a8f; --warn:#a33328; }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#12160f; --fg:#e7ebe2; --panel:#1b2016; --line:#333c2e; } }
+  *{box-sizing:border-box} body{margin:0;font:14px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+  header{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  h1{font-size:16px;margin:0} main{padding:16px;max-width:960px;margin:0 auto;display:grid;gap:16px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:8px 12px;border-bottom:1px solid var(--line);background:rgba(0,0,0,.03)}
+  .pad{padding:10px 12px} .tbl{width:100%;border-collapse:collapse} .tbl th,.tbl td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}
+  .tbl .n{text-align:right;font-variant-numeric:tabular-nums} .tbl tr.me{background:rgba(44,122,44,.12)}
+  .small{font-size:12px;opacity:.75} .n{text-align:right}
+  input,button{font:inherit;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--fg)}
+  button{cursor:pointer} button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .badge{font-size:11px;padding:1px 6px;border-radius:10px;border:1px solid var(--line)}
+  .badge.ok{color:var(--accent);border-color:var(--accent)} .badge.fail,.badge.void{color:var(--warn);border-color:var(--warn)}
+  .badge.resolved{color:var(--blue)} .badge.scheduled{opacity:.7}
+  #pinbanner{padding:8px 16px;background:var(--warn);color:#fff;display:none}
+  .cfg{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+<div id="pinbanner"></div>
+<header>
+  <h1>🏏 Fifty Overs — League</h1>
+  <span id="engine" class="small"></span>
+  <span style="flex:1"></span>
+  <div class="cfg">
+    <input id="email" placeholder="email" size="16" type="email">
+    <input id="pass" placeholder="password" size="12" type="password">
+    <input id="league" placeholder="league id" size="18">
+    <button class="primary" onclick="login()">Log in</button>
+  </div>
+</header>
+<main>
+  <div class="panel"><h2>League table</h2><div class="pad" id="standings"><span class="small">Log in to load your league.</span></div></div>
+  <div class="panel"><h2>Fixtures &amp; results</h2><div class="pad" id="fixtures"></div></div>
+  <div class="panel" id="founderpanel" style="display:none"><h2>Founder tools</h2><div class="pad" id="founder"></div></div>
+</main>
+
+<script>
+// ---- self-contained (no imports) so this file works by double-clicking ----
+var BUILD_HASH = 'e558745ede94e2502d5cccaa829feb42818cbcb1e779664c4b784a851b3f00ff';
+// PUBLIC project values (publishable key is RLS-protected, safe in the browser):
+var SUPABASE_URL = 'https://egaipdksvztqqgouriyc.supabase.co';
+var SUPABASE_ANON = 'sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc';
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+function guardBuildHash(leaguePin, clientHash){
+  clientHash = clientHash || BUILD_HASH;
+  if(!leaguePin) return { ok:false, message:'league has no pinned build hash' };
+  if(leaguePin !== clientHash) return { ok:false, message:
+    'Your game build ('+clientHash.slice(0,12)+'…) does not match this league’s pinned engine ('+
+    leaguePin.slice(0,12)+'…). Update your client to play.' };
+  return { ok:true, message:'engine build matches the league pin' };
+}
+
+function renderStandings(rows, myTeamId){
+  var body = rows.map(function(r){ return '<tr class="'+(r.team_id===myTeamId?'me':'')+'">'+
+    '<td>'+r.pos+'</td><td>'+esc(r.team_name)+'</td>'+
+    '<td class="n">'+r.p+'</td><td class="n">'+r.w+'</td><td class="n">'+r.l+'</td>'+
+    '<td class="n">'+r.t+'</td>'+
+    '<td class="n">'+(Number(r.nrr)>=0?'+':'')+Number(r.nrr).toFixed(3)+'</td>'+
+    '<td class="n"><b>'+r.pts+'</b></td></tr>'; }).join('');
+  return '<table class="tbl"><thead><tr><th>#</th><th>Club</th>'+
+    '<th class="n">P</th><th class="n">W</th><th class="n">L</th><th class="n">T</th>'+
+    '<th class="n">NRR</th><th class="n">Pts</th></tr></thead><tbody>'+body+'</tbody></table>';
+}
+
+function renderFixtures(fixtures, teamsById){
+  var nm = function(id){ return esc(teamsById[id]?teamsById[id].name:id); };
+  var badge = function(s){ return '<span class="badge '+s+'">'+s+'</span>'; };
+  if(!fixtures.length) return '<span class="small">No fixtures yet. Generate them once all managers have drafted.</span>';
+  var rows = fixtures.map(function(f){ return '<tr><td class="n">'+f.round+'</td><td>'+nm(f.home_team_id)+'</td>'+
+    '<td>'+nm(f.away_team_id)+'</td>'+
+    '<td class="small">'+esc((f.resolve_at||'').replace('T',' ').slice(0,16))+'</td>'+
+    '<td>'+(f.result_text?esc(f.result_text):badge(f.status))+'</td></tr>'; }).join('');
+  return '<table class="tbl"><thead><tr><th>Rd</th><th>Home</th><th>Away</th>'+
+    '<th>Kickoff</th><th>Result</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+function makeApi(getToken){
+  function headers(){ return {
+    apikey: SUPABASE_ANON,
+    Authorization: 'Bearer ' + (getToken() || SUPABASE_ANON),
+    'content-type': 'application/json',
+    'Accept-Profile': 'app', 'Content-Profile': 'app' }; }
+  return {
+    rpc: async function(fn,args){ var res=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+fn,{
+      method:'POST',headers:headers(),body:JSON.stringify(args||{})});
+      if(!res.ok) throw new Error(fn+': '+res.status+' '+(await res.text())); return res.json(); },
+    select: async function(table,query){ var res=await fetch(SUPABASE_URL+'/rest/v1/'+table+'?'+(query||''),{headers:headers()});
+      if(!res.ok) throw new Error(table+': '+res.status+' '+(await res.text())); return res.json(); }
+  };
+}
+
+document.getElementById('engine').textContent = 'engine ' + BUILD_HASH.slice(0,12) + '…';
+var JWT = '';
+
+async function login(){
+  var email=document.getElementById('email').value.trim();
+  var password=document.getElementById('pass').value;
+  if(!email||!password){ alert('Enter your email and password'); return; }
+  try{
+    var res=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{
+      method:'POST',headers:{apikey:SUPABASE_ANON,'content-type':'application/json'},
+      body:JSON.stringify({email:email,password:password})});
+    var data=await res.json();
+    if(!res.ok) throw new Error(data.error_description||data.msg||('HTTP '+res.status));
+    JWT=data.access_token; await boot();
+  }catch(e){ alert('Login failed: '+e.message); }
+}
+
+async function boot(){
+  var leagueId=document.getElementById('league').value.trim();
+  if(!leagueId){ alert('Paste your league id'); return; }
+  if(!JWT){ alert('Log in first'); return; }
+  var api=makeApi(function(){return JWT;});
+  try{
+    var lgArr=await api.select('leagues','id=eq.'+leagueId+'&select=id,name,build_hash,status');
+    var league=lgArr[0];
+    var guard=guardBuildHash(league&&league.build_hash);
+    var banner=document.getElementById('pinbanner');
+    if(!guard.ok){ banner.style.display='block'; banner.textContent='⚠ '+guard.message; }
+    else banner.style.display='none';
+
+    var table=await api.rpc('league_table',{p_league_id:leagueId});
+    var teams=await api.select('teams','league_id=eq.'+leagueId+'&select=id,name,manager_id');
+    var teamsById={}; teams.forEach(function(t){teamsById[t.id]=t;});
+    var me=await api.select('members','league_id=eq.'+leagueId+'&select=id,role');
+    var myMember=me[0];
+    var myTeam=teams.filter(function(t){return myMember&&t.manager_id===myMember.id;})[0];
+    document.getElementById('standings').innerHTML=renderStandings(table, myTeam&&myTeam.id);
+
+    var fixtures=await api.select('fixtures','league_id=eq.'+leagueId+'&select=id,round,home_team_id,away_team_id,resolve_at,status&order=round');
+    var results=await api.select('results','league_id=eq.'+leagueId+'&select=fixture_id,result_text');
+    var resByFx={}; results.forEach(function(r){ if(r.fixture_id) resByFx[r.fixture_id]=r.result_text; });
+    var merged=fixtures.map(function(f){ f.result_text=resByFx[f.id]; return f; });
+    document.getElementById('fixtures').innerHTML=renderFixtures(merged, teamsById);
+
+    if(myMember&&myMember.role==='founder'&&guard.ok){
+      document.getElementById('founderpanel').style.display='';
+      document.getElementById('founder').innerHTML=
+        '<div class="small">You are the founder of <b>'+esc(league.name)+'</b> (status: '+esc(league.status)+').</div>'+
+        '<p class="small">Next: invite managers, deal the draft, and generate fixtures (via the Edge Functions + resolver we set up next).</p>';
+    }
+  }catch(e){ alert('Load failed: '+e.message); }
+}
+</script>
+</body>
+</html>
