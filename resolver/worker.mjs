@@ -10,38 +10,10 @@
 // path it drives is exercised end-to-end in supabase/tests/run_phase4.mjs; this
 // file is the thin orchestration that calls those same tested SQL functions.
 import { openEngine, resolveMatch, buildHash } from './resolve.mjs';
+import { assertEnv, rpc, leaguePin } from './sbrest.mjs';
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const POLL_SECONDS = Number(process.env.POLL_SECONDS ?? 60);
-
-if (!SUPABASE_URL || !SERVICE_KEY) {
-  console.error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
-  process.exit(1);
-}
-
-// service_role RPC against the `app` schema (bypasses RLS — trusted resolver).
-async function rpc(fn, args = {}) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
-    method: 'POST',
-    headers: {
-      apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`,
-      'content-type': 'application/json',
-      'Content-Profile': 'app', 'Accept-Profile': 'app',
-    },
-    body: JSON.stringify(args),
-  });
-  if (!res.ok) throw new Error(`rpc ${fn} ${res.status}: ${await res.text()}`);
-  return res.json();
-}
-// read a league's pinned build hash
-async function leaguePin(leagueId) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/leagues?id=eq.${leagueId}&select=build_hash`, {
-    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Accept-Profile': 'app' },
-  });
-  const [row] = await res.json();
-  return row?.build_hash;
-}
+assertEnv();
 
 async function runOnce(page) {
   let officials = 0, friendlies = 0, skipped = 0;

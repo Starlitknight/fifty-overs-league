@@ -1,0 +1,34 @@
+name: resolver
+# Runs the real game engine (headless Chromium) to resolve due matches:
+# official fixtures at their kickoff, and friendlies at kickoff (locking at
+# kickoff-5min). Free — no server to host. The service_role key lives ONLY in
+# the repo's encrypted Actions secrets.
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # every 10 minutes
+  workflow_dispatch: {}       # allow manual runs from the Actions tab
+
+concurrency:
+  group: resolver             # never run two passes at once
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install resolver deps
+        working-directory: resolver
+        run: npm install playwright@1.56.1
+      - name: Install Chromium
+        working-directory: resolver
+        run: npx playwright install --with-deps chromium
+      - name: Resolve due matches (one pass)
+        working-directory: resolver
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node worker.mjs --once
