@@ -1,0 +1,11 @@
+# Supabase project config. Expose the `app` schema to PostgREST/Edge Functions so
+# the app.* RPCs (resolve_manager_id, redeem_invite, create_invite, ...) are
+# callable as db.schema('app').rpc(...). GRANT USAGE/EXECUTE to authenticated is
+# handled in the migration; the SECURITY DEFINER functions self-authorize.
+project_id = "fifty-overs-league"
+
+[api]
+enabled = true
+schemas = ["public", "app"]
+extra_search_path = ["public", "app"]
+max_rows = 1000
