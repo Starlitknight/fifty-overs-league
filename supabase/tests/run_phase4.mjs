@@ -114,11 +114,19 @@ const stored0 = await one(`select * from app.store_official_result($1,$2,$3)`, [
 ok(stored0.comp === 'league' && stored0.fixture_id === fx0.id, 'result stored as an official league match');
 ok(await val(`select status::text from app.fixtures where id=$1`, [fx0.id]) === 'resolved', 'fixture marked resolved');
 
-// consequences persisted to the squads (roster changed; some player now tired)
+// consequences persisted to the squad EXACTLY as the resolver computed them
+// (deterministic: mirror _apply_consequences in JS and compare).
 const homeAfter = await val(`select roster from app.squads where team_id=$1`, [fx0.home_team_id]);
-ok(sha(homeBefore) !== sha(homeAfter), 'official match CHANGED the server-owned squad (consequences applied)');
-const tiredCount = homeAfter.filter(p => p.fatigue === 'tired').length;
-ok(tiredCount > 0, `at least one player is now 'tired' after the official match (${tiredCount})`);
+const cons = payload0.consequences || {};
+ok(Object.keys(cons).length > 0, `resolver returned consequences for ${Object.keys(cons).length} players`);
+const applyJS = (roster) => roster.map(p => cons[p.name]
+  ? { ...p, fatigue: cons[p.name].fatigue, formIx: cons[p.name].formIx, formWord: cons[p.name].formWord }
+  : p);
+const canonSorted = (arr) => JSON.stringify(arr.map(p => Object.fromEntries(Object.keys(p).sort().map(k => [k, p[k]]))));
+ok(canonSorted(homeAfter) === canonSorted(applyJS(homeBefore)),
+   'server applied EXACTLY the resolver consequences to the squad (deterministic)');
+const changed = homeAfter.filter((p, i) => JSON.stringify(p) !== JSON.stringify(homeBefore[i])).length;
+console.log(`    (${changed} home players had form/fatigue updated by this match)`);
 
 // standings reflect the official result
 const winnerId = stored0.winner_team_id;

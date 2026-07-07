@@ -192,7 +192,7 @@ returns setof app.fixtures
 language sql stable security definer set search_path = app, public as $$
   select * from app.fixtures
    where status = 'scheduled' and resolve_at <= now()
-   order by resolve_at, id;
+   order by resolve_at, seed, id;   -- seed tiebreak => deterministic processing order
 $$;
 
 grant execute on all functions in schema app to authenticated;
