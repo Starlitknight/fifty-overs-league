@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "node tests/run.mjs && node tests/run_phase2.mjs",
-    "test:realpool": "NODE_PATH=/opt/node22/lib/node_modules node tests/draft_realpool.mjs"
+    "test:realpool": "NODE_PATH=/opt/node22/lib/node_modules node tests/draft_realpool.mjs",
+    "test:e2e": "NODE_PATH=/opt/node22/lib/node_modules node tests/run_phase3.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.4"

@@ -12,6 +12,14 @@ validated actions.
   sign_player, drop_player, confirm_squad, submit_orders, lock_managers,
   write_draft_pool, issue_challenge, accept_challenge, founder_edit`. Every
   function is `SECURITY DEFINER` and self-authorizes via the identity seam.
+- `migrations/0003_friendly.sql` — the friendly loop: `lock_match_orders` (server
+  lock at kickoff−5min, with no-show auto-fill), `friendly_inputs` (assembles
+  squads + locked orders + conds for the resolver), `store_friendly_result`
+  (writes the deterministic outcome, winner as `winner_team_id`), and
+  `expire_stale_challenges`.
+- `../resolver/resolve.mjs` — headless engine caller: opens the game file, injects
+  the harness, verifies the pinned build hash (aborts on mismatch), runs
+  `__resolveMatch`, returns the storable payload.
 - `functions/_shared/identity.ts` — `resolveManagerId(request, leagueId)` /
   `requireFounder(...)`, the Deno/Edge transport wrapper over the DB functions.
 - `functions/_shared/draft.js` — `snakeDeal(players, n)`: size-capped
@@ -30,9 +38,24 @@ validated actions.
 ```bash
 cd supabase
 npm install                 # @electric-sql/pglite
-npm test                    # 24 + 23 assertions across both phases, exit 0 = pass
+npm test                    # 24 + 23 assertions (phases 1-2), pure PGlite
 npm run test:realpool       # optional: real engine pool via headless Chromium
+npm run test:e2e            # Phase 3 end-to-end: PGlite DB + real engine (Chromium)
 ```
+
+## Friendly loop (Phase 3, end-to-end tested)
+`tests/run_phase3.mjs` runs the whole pipeline against a real DB (PGlite) and the
+real engine (Playwright): issue → accept → **edit-until-lock** → **server lock**
+(kickoff−5min, auto-filling a no-show) → **resolver** runs `__resolveMatch` →
+**store** → **deterministic replay**. The replay proof: a client re-resolving from
+the stored server inputs reproduces the result byte-for-byte
+(`payload sha == replay sha`), and the stored jsonb is structurally identical to
+what the resolver computed. The resolver **aborts** if its build hash ≠ the
+league's pinned hash.
+
+The client replay is a local re-resolve from the same server-owned inputs
+(squads + locked orders + conds + seed); determinism guarantees it matches the
+stored result, so no live streaming is needed.
 
 ## Load-bearing validations (server-side, tested)
 - `sign_player` — the player must be in **that manager's** dealt `draft_pool` and
