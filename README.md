@@ -69,10 +69,21 @@ npm run test:official                              # phase 4 official
 NODE_PATH=/opt/node22/lib/node_modules node ../resolver/proof/prove.mjs   # phase 0 determinism
 ```
 
+### Follow-ups (done)
+- **Season rollover**: `resolver/resolve.mjs → ageSquad` runs the engine's exact
+  `seasonEnd` aging (age++, 31+ decline via `jsDerive`, retirement at 35+/32+),
+  and `app.founder_advance_season` persists the aged rosters and bumps the season.
+- **Timezone-correct fixtures**: `resolve_at` is computed server-side in
+  `write_fixtures` from the league's `match_time` in its `tz` (verified: 17:00
+  `America/New_York` → 21:00 UTC).
+
 ## What is NOT yet live-tested
 The Edge Function TS and the resolver container runtime need a running Supabase +
 deployed container to exercise end-to-end; their enforcement cores (the `app.*`
-SQL and the resolve/store path) are fully tested here. Season-boundary
-consequences (aging/experience) and league-local timezone handling for
-`resolve_at` are noted as follow-ups. See `supabase/README.md` and
-`resolver/README.md` for details.
+SQL and the resolve/store path) are fully tested here. See `supabase/README.md`
+and `resolver/README.md` for details.
+
+## Test totals
+138 checks green: 24 identity/RLS · 23 actions/draft · 15 friendly e2e · 31
+official e2e · 13 season/tz e2e · 8 founder/views · 14 client · 6 determinism · 4
+real-pool deal.

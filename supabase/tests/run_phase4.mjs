@@ -1,6 +1,7 @@
 // Phase 4 — official league end-to-end: real DB (PGlite) + real engine (Playwright).
 //   NODE_PATH=/opt/node22/lib/node_modules node tests/run_phase4.mjs
 import { PGlite } from '@electric-sql/pglite';
+import { applyAllMigrations } from './_migrate.mjs';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -51,7 +52,7 @@ for (const N of [4, 5, 6]) {
 // end-to-end official pipeline (4 real-squad teams)
 // ============================================================================
 const db = new PGlite();
-for (const f of ['0001_init.sql','0002_actions.sql','0003_friendly.sql','0004_official.sql']) await db.exec(mig(f));
+await applyAllMigrations(db);
 console.log('\nmigrations applied OK');
 
 const auth = (u) => db.query(`select set_config('request.jwt.claim.sub', $1, false)`, [u ?? '']);
@@ -93,7 +94,7 @@ for (let i = 0; i < 4; i++) {
 console.log('\n— generate fixtures —');
 const schedule = doubleRoundRobin(teamIds, { startDate: '2020-01-01', matchTime: '17:00', seedBase: 5000 });
 await auth(FOUNDER);
-const nFx = await val(`select app.write_fixtures($1,1,$2)`, [lg.id, JSON.stringify(schedule)]);
+const nFx = await val(`select app.write_fixtures($1,1,$2,'2020-01-01')`, [lg.id, JSON.stringify(schedule)]);
 ok(nFx === 12, `wrote ${nFx} fixtures (4 teams double RR)`);
 ok(await val(`select status::text from app.leagues where id=$1`, [lg.id]) === 'active', 'league is now active');
 // all fixtures are in the past (2020) => all due

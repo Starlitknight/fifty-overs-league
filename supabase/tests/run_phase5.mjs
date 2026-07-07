@@ -1,6 +1,7 @@
 // Phase 5 — founder tools + league_table view (PGlite only).
 //   cd supabase && node tests/run_phase5.mjs
 import { PGlite } from '@electric-sql/pglite';
+import { applyAllMigrations } from './_migrate.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -15,9 +16,8 @@ const throws = async (fn, re, m) => {
 };
 
 const db = new PGlite();
-for (const f of ['0001_init.sql','0002_actions.sql','0003_friendly.sql','0004_official.sql','0005_scheduler.sql','0006_founder_views.sql'])
-  await db.exec(mig(f));
-console.log('all 6 migrations applied OK\n');
+await applyAllMigrations(db);
+console.log('migrations applied OK\n');
 
 const auth = (u) => db.query(`select set_config('request.jwt.claim.sub', $1, false)`, [u ?? '']);
 const one  = async (s, a = []) => (await db.query(s, a)).rows[0];

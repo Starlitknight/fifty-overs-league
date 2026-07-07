@@ -175,6 +175,36 @@
     }
   };
 
+  // Season rollover for one squad, mirroring the game's seasonEnd() aging (lines
+  // ~1461-1476): age++, 31+ skill decline (then jsDerive to recompute rating),
+  // retirement at 35+ or (32+ and a 35% roll), and a fresh-season reset of
+  // fatigue/form. Deterministic per (seasonNo, teamKey) and independent of other
+  // teams (there is no canonical GD.teams order across independent leagues).
+  window.__ageSquad = function(players, seasonNo, teamKey){
+    var h = ((seasonNo>>>0) * 524287) >>> 0;
+    var key = String(teamKey||'');
+    for (var i=0;i<key.length;i++){ h = ((h ^ key.charCodeAt(i)) >>> 0); h = ((h*1103515245 + 12345) >>> 0); }
+    var rnd = function(){ h = ((h*1103515245 + 12345) >>> 0); return h/4294967296; };
+    var HEAVY = ['power','stamina','fielding','catching'];
+    var LIGHT = ['vsPace','vsSpin','rotation','wicket','economy','moveTurn'];
+    var out = [], retired = [];
+    (players||[]).forEach(function(src){
+      var p = JSON.parse(JSON.stringify(src));
+      p.age = (p.age||18) + 1;
+      if (p.age >= 31){
+        var dropH = 2 + (p.age-31) + Math.floor(rnd()*2);
+        var dropL = 1 + Math.floor((p.age-31)/2);
+        HEAVY.forEach(function(sk){ if(p.skills && p.skills[sk]!==undefined) p.skills[sk]=Math.max(5,p.skills[sk]-dropH); });
+        LIGHT.forEach(function(sk){ if(p.skills && p.skills[sk]!==undefined && p.skills[sk]>10) p.skills[sk]=Math.max(5,p.skills[sk]-dropL); });
+        if (typeof jsDerive === 'function') jsDerive(p);
+      }
+      p.fatigue = 'rested'; p.formIx = 3; p.formWord = FORMW[3];   // fresh season
+      if (p.age >= 35 || (p.age >= 32 && rnd() < 0.35)) retired.push(p.name);
+      else out.push(p);
+    });
+    return { players: out, retired: retired };
+  };
+
   // Also expose the pinned-build hash slot + a ?resolve= marker for the container.
   window.__FO_RESOLVE_READY = true;
   console.info('Fifty Overs resolve harness ready: window.__resolveMatch available.');

@@ -32,32 +32,23 @@ function singleRoundRobin(teams) {
 
 /**
  * @param teams   array of team ids
- * @param opts    { startDate: 'YYYY-MM-DD', matchTime: 'HH:MM', seedBase, tzSuffix }
- * @returns       [{ round, home_team_id, away_team_id, seed, resolve_at }]
+ * @param opts    { seedBase }
+ * @returns       [{ round, home_team_id, away_team_id, seed }]
+ * resolve_at is NOT set here — it is server-owned and computed by write_fixtures
+ * from the league's match_time and tz on start_date + (round-1) days.
  */
 export function doubleRoundRobin(teams, opts = {}) {
   if (teams.length < 2) throw new Error("need at least 2 teams");
-  const { startDate = "2026-07-04", matchTime = "17:00", seedBase = 5000, tzSuffix = "Z" } = opts;
+  const { seedBase = 5000 } = opts;
   const first = singleRoundRobin(teams);
-  // second leg: same pairings, venue reversed
-  const second = first.map((pairs) => pairs.map(([h, a]) => [a, h]));
+  const second = first.map((pairs) => pairs.map(([h, a]) => [a, h]));  // venue reversed
   const allRounds = [...first, ...second];
 
   const out = [];
   let mi = 0;
-  const base = new Date(`${startDate}T00:00:00Z`);
   for (let r = 0; r < allRounds.length; r++) {
-    const day = new Date(base);
-    day.setUTCDate(base.getUTCDate() + r);
-    const dateStr = day.toISOString().slice(0, 10);
     for (const [home, away] of allRounds[r]) {
-      out.push({
-        round: r + 1,
-        home_team_id: home,
-        away_team_id: away,
-        seed: seedBase + mi,             // unique per fixture
-        resolve_at: `${dateStr}T${matchTime}:00${tzSuffix}`,
-      });
+      out.push({ round: r + 1, home_team_id: home, away_team_id: away, seed: seedBase + mi });
       mi++;
     }
   }

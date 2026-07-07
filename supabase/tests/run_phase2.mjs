@@ -1,6 +1,7 @@
 // Phase 2 tests — constrained-action API + snake-deal.
 //   cd supabase && node tests/run_phase2.mjs        (exit 0 = all pass)
 import { PGlite } from '@electric-sql/pglite';
+import { applyAllMigrations } from './_migrate.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -33,8 +34,7 @@ function legalPool() {
 }
 
 const db = new PGlite();
-await db.exec(sql('0001_init.sql'));
-await db.exec(sql('0002_actions.sql'));
+await applyAllMigrations(db);
 console.log('migrations applied OK\n');
 
 const UID = { f: '11111111-1111-1111-1111-111111111111',

@@ -4,6 +4,7 @@
 //
 //   NODE_PATH=/opt/node22/lib/node_modules node tests/run_phase3.mjs
 import { PGlite } from '@electric-sql/pglite';
+import { applyAllMigrations } from './_migrate.mjs';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -22,7 +23,7 @@ const throws = async (fn, re, m) => {
 };
 
 const db = new PGlite();
-for (const f of ['0001_init.sql', '0002_actions.sql', '0003_friendly.sql']) await db.exec(mig(f));
+await applyAllMigrations(db);
 console.log('migrations applied OK');
 
 const UID = { f: '11111111-1111-1111-1111-111111111111', a: '22222222-2222-2222-2222-222222222222' };

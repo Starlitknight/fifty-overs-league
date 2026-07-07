@@ -4,11 +4,11 @@
 //   cd supabase && node tests/run.mjs        (exit 0 = all pass)
 import { PGlite } from '@electric-sql/pglite';
 import { readFileSync } from 'node:fs';
+import { applyAllMigrations } from './_migrate.mjs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const migration = readFileSync(resolve(__dirname, '../migrations/0001_init.sql'), 'utf8');
 
 let pass = 0, fail = 0;
 const ok = (c, m) => { console.log(`${c ? 'PASS' : 'FAIL'}  ${m}`); c ? pass++ : (fail++, process.exitCode = 1); };
@@ -19,8 +19,8 @@ const throws = async (fn, re, m) => {
 };
 
 const db = new PGlite();
-await db.exec(migration);
-console.log('migration applied OK\n');
+await applyAllMigrations(db);
+console.log('migrations applied OK\n');
 
 // helpers ------------------------------------------------------------------
 const UID = { founder: '11111111-1111-1111-1111-111111111111',

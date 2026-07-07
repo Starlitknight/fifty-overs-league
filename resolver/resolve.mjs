@@ -77,6 +77,14 @@ export async function resolveMatch(page, inputs, { pinnedHash } = {}) {
   };
 }
 
+/** Season rollover for one squad via the engine's aging model (age++, 31+
+ *  decline + jsDerive, retirement, fresh-season reset). Deterministic per
+ *  (seasonNo, teamKey). Returns { players, retired }. */
+export async function ageSquad(page, players, seasonNo, teamKey) {
+  return page.evaluate(({ players, seasonNo, teamKey }) =>
+    window.__ageSquad(players, seasonNo, teamKey), { players, seasonNo, teamKey });
+}
+
 /**
  * Client-side verification: recompute the match from the SAME server inputs and
  * compare to a stored result. Returns { ok, reason }. This is what a client runs
