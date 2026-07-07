@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fifty Overs — Play</title>
+<style>
+  :root{--bg:#f6f7f5;--fg:#1c2620;--panel:#fff;--line:#dfe3dd;--accent:#2c7a2c;--blue:#2d6a8f;--warn:#a33328;--muted:#7a8272}
+  @media (prefers-color-scheme:dark){:root{--bg:#12160f;--fg:#e7ebe2;--panel:#1b2016;--line:#333c2e;--muted:#9aa38f}}
+  *{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+  header{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  h1{font-size:15px;margin:0}main{padding:14px;max-width:900px;margin:0 auto;display:grid;gap:14px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:8px 12px;border-bottom:1px solid var(--line);background:rgba(0,0,0,.03);display:flex;justify-content:space-between}
+  .pad{padding:10px 12px}.small{font-size:12px;color:var(--muted)}
+  table{width:100%;border-collapse:collapse}th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}
+  .n{text-align:right;font-variant-numeric:tabular-nums}
+  input,button,select{font:inherit;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--fg)}
+  button{cursor:pointer}button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.mini{padding:2px 8px;font-size:12px}button:disabled{opacity:.5;cursor:not-allowed}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}.tab{padding:6px 12px;border:1px solid var(--line);border-radius:6px;cursor:pointer}
+  .tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .badge{font-size:11px;padding:1px 6px;border-radius:10px;border:1px solid var(--line)}
+  .badge.ok{color:var(--accent);border-color:var(--accent)}.badge.warn{color:var(--warn);border-color:var(--warn)}
+  #pin{padding:8px 14px;background:var(--warn);color:#fff;display:none}
+  .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div id="pin"></div>
+<header>
+  <h1>🏏 Fifty Overs</h1><span id="eng" class="small"></span>
+  <span style="flex:1"></span>
+  <div class="row" id="loginbar">
+    <input id="email" placeholder="email" type="email" size="15">
+    <input id="pass" placeholder="password" type="password" size="12">
+    <button class="primary" onclick="doLogin()">Log in</button>
+  </div>
+  <div class="row hidden" id="whobar"><span id="who" class="small"></span><button class="mini" onclick="logout()">log out</button></div>
+</header>
+<main>
+  <!-- pick / join a league -->
+  <div class="panel" id="enter">
+    <h2>Your league</h2>
+    <div class="pad">
+      <div class="row" style="margin-bottom:8px">
+        <input id="league" placeholder="league id (from your founder)" size="26">
+        <button onclick="loadLeague()">Open</button>
+      </div>
+      <div class="small">— or join a new league —</div>
+      <div class="row" style="margin-top:6px">
+        <input id="code" placeholder="invite code" size="12">
+        <input id="dname" placeholder="your name" size="12">
+        <input id="tname" placeholder="team name" size="12">
+        <button onclick="joinLeague()">Join with code</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="tabs">
+      <div class="tab on" data-tab="squad" onclick="tab('squad')">Squad</div>
+      <div class="tab" data-tab="play" onclick="tab('play')">Play</div>
+      <div class="tab" data-tab="table" onclick="tab('table')">Table</div>
+      <div class="tab" data-tab="results" onclick="tab('results')">Results</div>
+      <div class="tab hidden" data-tab="founder" id="foundertab" onclick="tab('founder')">Founder</div>
+    </div>
+    <div id="squad" class="tabpage"></div>
+    <div id="play" class="tabpage hidden"></div>
+    <div id="table" class="tabpage hidden"></div>
+    <div id="results" class="tabpage hidden"></div>
+    <div id="founder" class="tabpage hidden"></div>
+  </div>
+</main>
+
+<script>
+// ============ config (public values baked in) ============
+var BUILD_HASH='e558745ede94e2502d5cccaa829feb42818cbcb1e779664c4b784a851b3f00ff';
+var URL='https://egaipdksvztqqgouriyc.supabase.co';
+var ANON='sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc';
+var JWT='', LG=null, TEAMS={}, MYTEAM=null, MYMEMBER=null;
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+document.getElementById('eng').textContent='engine '+BUILD_HASH.slice(0,10)+'…';
+
+function H(){return{apikey:ANON,Authorization:'Bearer '+(JWT||ANON),'content-type':'application/json','Accept-Profile':'app','Content-Profile':'app'}}
+async function rpc(fn,args){var r=await fetch(URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:H(),body:JSON.stringify(args||{})});if(!r.ok)throw new Error((await r.text())||('HTTP '+r.status));var t=await r.text();return t?JSON.parse(t):null}
+async function sel(table,q){var r=await fetch(URL+'/rest/v1/'+table+'?'+(q||''),{headers:H()});if(!r.ok)throw new Error(await r.text());return r.json()}
+function err(e){alert((e&&e.message||e).toString().slice(0,400))}
+
+// ============ auth ============
+async function doLogin(){
+  var email=document.getElementById('email').value.trim(),password=document.getElementById('pass').value;
+  if(!email||!password){alert('Enter email + password');return}
+  try{
+    var r=await fetch(URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:ANON,'content-type':'application/json'},body:JSON.stringify({email:email,password:password})});
+    var d=await r.json();if(!r.ok)throw new Error(d.error_description||d.msg||('HTTP '+r.status));
+    JWT=d.access_token;
+    document.getElementById('loginbar').classList.add('hidden');
+    document.getElementById('whobar').classList.remove('hidden');
+    document.getElementById('who').textContent=email;
+    // if a league id is already filled, open it
+    if(document.getElementById('league').value.trim())loadLeague();
+  }catch(e){err(e)}
+}
+function logout(){JWT='';location.reload()}
+
+async function signup(){ /* signups are created by the founder in Supabase, or enable email signups in Auth settings */ }
+
+// ============ join / load a league ============
+async function joinLeague(){
+  if(!JWT){alert('Log in first');return}
+  var code=document.getElementById('code').value.trim(),dn=document.getElementById('dname').value.trim(),tn=document.getElementById('tname').value.trim();
+  if(!code||!dn){alert('Enter the invite code and your name');return}
+  try{
+    var mid=await rpc('redeem_invite',{p_code:code,p_display_name:dn,p_team_name:tn||dn+' XI'});
+    // find the league this invite belonged to (via our new membership)
+    var mem=await sel('members','id=eq.'+mid+'&select=league_id');
+    document.getElementById('league').value=mem[0].league_id;
+    alert('Joined! Loading your league…');
+    loadLeague();
+  }catch(e){err(e)}
+}
+
+async function loadLeague(){
+  if(!JWT){alert('Log in first');return}
+  var id=document.getElementById('league').value.trim();if(!id){alert('Enter a league id');return}
+  try{
+    var lg=(await sel('leagues','id=eq.'+id+'&select=id,name,status,build_hash,draft_budget,season_no'))[0];
+    if(!lg){alert('League not found (or you are not a member)');return}
+    LG=lg;
+    var pin=document.getElementById('pin');
+    if(lg.build_hash!==BUILD_HASH){pin.style.display='block';pin.textContent='⚠ Your game build differs from this league’s pinned engine. Some actions are blocked until you update.';}
+    else pin.style.display='none';
+    var teams=await sel('teams','league_id=eq.'+id+'&select=id,name,manager_id,ground');
+    TEAMS={};teams.forEach(function(t){TEAMS[t.id]=t});
+    var mem=await sel('members','league_id=eq.'+id+'&select=id,role,display_name');
+    // identify ME via the identity seam (auth uid -> my manager_id)
+    var myMid=await rpc('resolve_manager_id',{p_league_id:id});
+    MYMEMBER=mem.find(function(m){return m.id===myMid})||null;
+    MYTEAM=teams.find(function(t){return t.manager_id===myMid})||null;
+    document.getElementById('enter').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('foundertab').classList.toggle('hidden',!(MYMEMBER&&MYMEMBER.role==='founder'));
+    tab('squad');
+  }catch(e){err(e)}
+}
+
+// ============ tabs ============
+function tab(name){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('on',t.dataset.tab===name)});
+  document.querySelectorAll('.tabpage').forEach(function(p){p.classList.toggle('hidden',p.id!==name)});
+  ({squad:renderSquad,play:renderPlay,table:renderTable,results:renderResults,founder:renderFounder}[name])();
+}
+
+// ============ SQUAD / DRAFT ============
+async function renderSquad(){
+  var el=document.getElementById('squad');el.innerHTML='<div class="panel"><div class="pad small">Loading…</div></div>';
+  if(!MYTEAM){el.innerHTML='<div class="panel"><div class="pad">You have no team in this league yet. Join with an invite code.</div></div>';return}
+  try{
+    var squad=(await sel('squads','team_id=eq.'+MYTEAM.id+'&select=roster,budget_spent,confirmed'))[0]||{roster:[],budget_spent:0,confirmed:false};
+    var pool=(await sel('draft_pools','team_id=eq.'+MYTEAM.id+'&select=players'));
+    // draft_pools has manager_id not team_id; fetch by manager
+    pool=(await sel('draft_pools','manager_id=eq.'+MYTEAM.manager_id+'&select=players'));
+    var poolPlayers=(pool[0]&&pool[0].players)||[];
+    var roster=squad.roster||[];
+    var rosterNames={};roster.forEach(function(p){rosterNames[p.name]=1});
+    var left=(LG.draft_budget||1000000)-(squad.budget_spent||0);
+    var wk=roster.filter(function(p){return p.keeper}).length, bowl=roster.filter(function(p){return p.bowlTypeFull&&p.bowlTypeFull!=='none'}).length;
+    function prow(p,inRoster){
+      return '<tr><td>'+esc(p.name)+(p.keeper?' †':'')+'</td><td class="small">'+esc(p.role||'')+'</td>'+
+        '<td class="small">'+esc((p.bowlTypeFull&&p.bowlTypeFull!=='none')?p.bowlTypeFull:'—')+'</td>'+
+        '<td class="n">'+(p.rating||'')+'</td><td class="n">$'+((p.fee||0)/1000)+'k</td>'+
+        '<td>'+(inRoster
+          ? (squad.confirmed?'':'<button class="mini" onclick="dropP(\''+esc(p.name).replace(/'/g,"\\'")+'\')">drop</button>')
+          : (squad.confirmed?'':'<button class="mini" '+((left-(p.fee||0))<0?'disabled':'')+' onclick="signP(\''+esc(p.name).replace(/'/g,"\\'")+'\')">sign</button>'))+
+        '</td></tr>';
+    }
+    var rosterRows=roster.map(function(p){return prow(p,true)}).join('')||'<tr><td colspan="6" class="small">No players signed yet.</td></tr>';
+    var avail=poolPlayers.filter(function(p){return !rosterNames[p.name]});
+    var poolRows=avail.length?avail.map(function(p){return prow(p,false)}).join(''):'<tr><td colspan="6" class="small">Your draft pool is empty — the founder needs to deal the draft first.</td></tr>';
+    el.innerHTML=
+      '<div class="panel"><h2><span>'+esc(MYTEAM.name)+' — your squad</span>'+
+        '<span>'+(squad.confirmed?'<span class="badge ok">confirmed</span>':'<span class="badge warn">not confirmed</span>')+'</span></h2>'+
+        '<div class="pad"><div class="row" style="justify-content:space-between"><div class="small">Budget left: <b>$'+left.toLocaleString()+'</b></div>'+
+        '<div class="small">'+roster.length+' players · '+wk+' keeper · '+bowl+' bowling options</div></div>'+
+        '<table><thead><tr><th>Player</th><th>Role</th><th>Bowl</th><th class="n">Rtg</th><th class="n">Fee</th><th></th></tr></thead><tbody>'+rosterRows+'</tbody></table>'+
+        (squad.confirmed?'':'<div class="row" style="margin-top:8px"><button class="primary" onclick="confirmSquad()">Confirm squad (≥11, keeper, ≥5 bowlers, in budget)</button></div>')+
+        '</div></div>'+
+      '<div class="panel"><h2>Your draft pool</h2><div class="pad"><table><thead><tr><th>Player</th><th>Role</th><th>Bowl</th><th class="n">Rtg</th><th class="n">Fee</th><th></th></tr></thead><tbody>'+poolRows+'</tbody></table></div></div>';
+  }catch(e){err(e)}
+}
+async function signP(name){try{await rpc('sign_player',{p_league_id:LG.id,p_name:name});renderSquad()}catch(e){err(e)}}
+async function dropP(name){try{await rpc('drop_player',{p_league_id:LG.id,p_name:name});renderSquad()}catch(e){err(e)}}
+async function confirmSquad(){try{await rpc('confirm_squad',{p_league_id:LG.id});alert('Squad confirmed!');renderSquad()}catch(e){err(e)}}
+
+// ============ PLAY (challenges + orders) ============
+async function renderPlay(){
+  var el=document.getElementById('play');el.innerHTML='<div class="panel"><div class="pad small">Loading…</div></div>';
+  try{
+    var ch=await sel('challenges','league_id=eq.'+LG.id+'&select=id,from_team_id,to_team_id,pitch,weather,seed,kickoff_at,status&order=kickoff_at');
+    var others=Object.values(TEAMS).filter(function(t){return !MYTEAM||t.id!==MYTEAM.id});
+    var opts=others.map(function(t){return '<option value="'+t.id+'">'+esc(t.name)+'</option>'}).join('');
+    var pitches=['balanced','green','dry','slow','cracked','twoPaced'].map(function(p){return '<option>'+p+'</option>'}).join('');
+    var wx=['Sunny','Overcast','Chilly','Humid','Misty','Windy'].map(function(w){return '<option>'+w+'</option>'}).join('');
+    function chRow(c){
+      var mine=MYTEAM&&(c.from_team_id===MYTEAM.id||c.to_team_id===MYTEAM.id);
+      var canAccept=MYTEAM&&c.to_team_id===MYTEAM.id&&c.status==='pending';
+      return '<tr><td>'+esc(TEAMS[c.from_team_id]?TEAMS[c.from_team_id].name:'?')+' → '+esc(TEAMS[c.to_team_id]?TEAMS[c.to_team_id].name:'?')+'</td>'+
+        '<td class="small">'+esc(c.pitch)+' · '+esc(c.weather)+'</td>'+
+        '<td class="small">'+esc((c.kickoff_at||'').replace('T',' ').slice(0,16))+'</td>'+
+        '<td><span class="badge">'+c.status+'</span></td>'+
+        '<td>'+(canAccept?'<button class="mini" onclick="accept(\''+c.id+'\')">accept</button>':'')+
+             (mine&&(c.status==='accepted'||c.status==='pending')?' <button class="mini" onclick="orders(\''+c.id+'\')">set line-up</button>':'')+'</td></tr>';
+    }
+    el.innerHTML=
+      '<div class="panel"><h2>Challenge a friend to a friendly</h2><div class="pad"><div class="row">'+
+        'vs <select id="oppSel">'+opts+'</select> pitch <select id="pitchSel">'+pitches+'</select> weather <select id="wxSel">'+wx+'</select>'+
+        ' kickoff <input id="koSel" type="datetime-local"> <button class="primary" onclick="issue()">Challenge</button></div>'+
+        '<div class="small" style="margin-top:4px">Kickoff must be at least 1 hour from now. Both sides set line-ups until 5 min before; the match plays automatically.</div></div></div>'+
+      '<div class="panel"><h2>Matches</h2><div class="pad"><table><thead><tr><th>Fixture</th><th>Conditions</th><th>Kickoff</th><th>Status</th><th></th></tr></thead><tbody>'+
+        (ch.length?ch.map(chRow).join(''):'<tr><td colspan="5" class="small">No challenges yet.</td></tr>')+'</tbody></table></div></div>'+
+      '<div id="ordersbox"></div>';
+  }catch(e){err(e)}
+}
+async function issue(){
+  try{
+    var to=document.getElementById('oppSel').value, pitch=document.getElementById('pitchSel').value, wx=document.getElementById('wxSel').value;
+    var ko=document.getElementById('koSel').value; if(!ko){alert('Pick a kickoff time (≥1h from now)');return}
+    var seed=Math.floor((Date.parse(ko)/60000))%2000000+1;
+    await rpc('issue_challenge',{p_league_id:LG.id,p_to_team_id:to,p_pitch:pitch,p_weather:wx,p_seed:seed,p_kickoff_at:new Date(ko).toISOString()});
+    renderPlay();
+  }catch(e){err(e)}
+}
+async function accept(id){try{await rpc('accept_challenge',{p_league_id:LG.id,p_challenge_id:id});renderPlay()}catch(e){err(e)}}
+
+async function orders(challengeId){
+  var box=document.getElementById('ordersbox');
+  var squad=(await sel('squads','team_id=eq.'+MYTEAM.id+'&select=roster'))[0]||{roster:[]};
+  var roster=squad.roster||[];
+  var nameOpts=roster.map(function(p){return '<option value="'+esc(p.name)+'">'+esc(p.name)+(p.keeper?' †':'')+'</option>'}).join('');
+  box.innerHTML='<div class="panel"><h2>Line-up &amp; tactics</h2><div class="pad">'+
+    '<div class="row">Captain <select id="oCapt">'+nameOpts+'</select> Keeper <select id="oKeep">'+nameOpts+'</select></div>'+
+    '<div class="row" style="margin-top:6px">Intent — powerplay <select id="oPP">'+intOpts(0)+'</select> middle <select id="oMid">'+intOpts(0)+'</select> death <select id="oDeath">'+intOpts(1)+'</select></div>'+
+    '<div class="row" style="margin-top:8px"><button class="primary" onclick="submitOrders(\''+challengeId+'\')">Save line-up</button> <span class="small">The engine auto-picks a legal XI and batting order; captain, keeper and intent are yours.</span></div>'+
+    '</div></div>';
+  box.scrollIntoView({behavior:'smooth'});
+}
+function intOpts(def){var labels={'-1':'defend','0':'normal','1':'attack','2':'all-out'};return [-1,0,1,2].map(function(v){return '<option value="'+v+'" '+(v===def?'selected':'')+'>'+labels[v]+'</option>'}).join('')}
+async function submitOrders(challengeId){
+  try{
+    var o={keeper:document.getElementById('oKeep').value,captain:document.getElementById('oCapt').value,
+      phaseIntent:{pp:+document.getElementById('oPP').value,mid:+document.getElementById('oMid').value,death:+document.getElementById('oDeath').value}};
+    await rpc('submit_orders',{p_league_id:LG.id,p_fixture_id:null,p_challenge_id:challengeId,p_orders:o});
+    alert('Line-up saved.');document.getElementById('ordersbox').innerHTML='';
+  }catch(e){err(e)}
+}
+
+// ============ TABLE ============
+async function renderTable(){
+  var el=document.getElementById('table');
+  try{
+    var rows=await rpc('league_table',{p_league_id:LG.id});
+    el.innerHTML='<div class="panel"><h2>League table</h2><div class="pad"><table><thead><tr><th>#</th><th>Club</th><th class="n">P</th><th class="n">W</th><th class="n">L</th><th class="n">T</th><th class="n">NRR</th><th class="n">Pts</th></tr></thead><tbody>'+
+      rows.map(function(r){return '<tr'+(MYTEAM&&r.team_id===MYTEAM.id?' style="background:rgba(44,122,44,.12)"':'')+'><td>'+r.pos+'</td><td>'+esc(r.team_name)+'</td><td class="n">'+r.p+'</td><td class="n">'+r.w+'</td><td class="n">'+r.l+'</td><td class="n">'+r.t+'</td><td class="n">'+(Number(r.nrr)>=0?'+':'')+Number(r.nrr).toFixed(3)+'</td><td class="n"><b>'+r.pts+'</b></td></tr>'}).join('')+
+      '</tbody></table></div></div>';
+  }catch(e){err(e)}
+}
+
+// ============ RESULTS ============
+async function renderResults(){
+  var el=document.getElementById('results');
+  try{
+    var res=await sel('results','league_id=eq.'+LG.id+'&select=id,comp,home_team_id,away_team_id,result_text,scorecard,resolved_at&order=resolved_at.desc');
+    el.innerHTML='<div class="panel"><h2>Results</h2><div class="pad">'+
+      (res.length?res.map(function(r,i){return '<div style="border-bottom:1px solid var(--line);padding:6px 0">'+
+        '<div class="row" style="justify-content:space-between"><b>'+esc(r.result_text)+'</b><span class="badge">'+r.comp+'</span></div>'+
+        '<div class="small">'+esc(TEAMS[r.home_team_id]?TEAMS[r.home_team_id].name:'?')+' v '+esc(TEAMS[r.away_team_id]?TEAMS[r.away_team_id].name:'?')+' · <a href="#" onclick="showCard('+i+');return false">scorecard</a></div>'+
+        '<div id="card'+i+'" class="hidden"></div></div>'}).join(''):'<span class="small">No matches played yet.</span>')+
+      '</div></div>';
+    window.__res=res;
+  }catch(e){err(e)}
+}
+function showCard(i){
+  var r=window.__res[i], box=document.getElementById('card'+i);
+  if(!box.classList.contains('hidden')){box.classList.add('hidden');return}
+  box.classList.remove('hidden');
+  box.innerHTML=(r.scorecard||[]).filter(Boolean).map(function(inn){
+    return '<div style="margin-top:6px"><b>'+esc(inn.batTeam)+' '+inn.runs+'/'+inn.wkts+'</b> ('+inn.overs+')'+
+      '<table><thead><tr><th>Bat</th><th class="n">R</th><th class="n">B</th><th class="n">4s</th><th class="n">6s</th></tr></thead><tbody>'+
+      (inn.batting||[]).filter(function(b){return b.b>0||b.out!=='not out'}).map(function(b){return '<tr><td>'+esc(b.name)+'</td><td class="n">'+b.r+'</td><td class="n">'+b.b+'</td><td class="n">'+b.f4+'</td><td class="n">'+b.f6+'</td></tr>'}).join('')+
+      '</tbody></table></div>';
+  }).join('');
+}
+
+// ============ FOUNDER ============
+async function renderFounder(){
+  var el=document.getElementById('founder');
+  try{
+    var invites=await sel('invites','league_id=eq.'+LG.id+'&select=code,role,redeemed_uid&order=created_at');
+    el.innerHTML=
+      '<div class="panel"><h2>Invite managers</h2><div class="pad">'+
+        '<div class="row"><input id="newcode" placeholder="code e.g. JOIN-SAM" size="16"><button class="primary" onclick="mkInvite()">Create code</button></div>'+
+        '<table style="margin-top:8px"><thead><tr><th>Code</th><th>Role</th><th>Used?</th></tr></thead><tbody>'+
+        (invites.length?invites.map(function(v){return '<tr><td>'+esc(v.code)+'</td><td>'+v.role+'</td><td>'+(v.redeemed_uid?'yes':'—')+'</td></tr>'}).join(''):'<tr><td colspan=3 class="small">No codes yet.</td></tr>')+
+        '</tbody></table><div class="small" style="margin-top:4px">Share a code with each friend; they enter it under “Join with code”.</div></div></div>'+
+      '<div class="panel"><h2>Season</h2><div class="pad">'+
+        '<div class="small">1) After everyone has joined, deal the draft from the GitHub <b>Actions</b> tab → <b>deal-draft</b> → Run workflow with league id <code>'+esc(LG.id)+'</code>.</div>'+
+        '<div class="row" style="margin-top:8px">Start date <input id="startDate" type="date"> <button class="primary" onclick="genFixtures()">Generate fixtures</button></div>'+
+        '<div class="small">2) Generates the double round-robin. Matches then resolve automatically at your league time.</div>'+
+        '</div></div>';
+  }catch(e){err(e)}
+}
+async function mkInvite(){
+  try{var c=document.getElementById('newcode').value.trim();if(!c){alert('Enter a code');return}
+    await rpc('create_invite',{p_league_id:LG.id,p_code:c,p_role:'manager'});renderFounder()}catch(e){err(e)}
+}
+// double round-robin (circle method) in the client, then write_fixtures computes resolve_at server-side
+function doubleRR(ids){
+  var arr=ids.slice(); if(arr.length%2)arr.push('BYE');
+  var m=arr.length, fixed=arr[0], rot=arr.slice(1), rounds=[];
+  for(var r=0;r<m-1;r++){var row=[fixed].concat(rot),pairs=[];
+    for(var i=0;i<m/2;i++){var a=row[i],b=row[m-1-i];if(a==='BYE'||b==='BYE')continue;pairs.push(r%2===0?[a,b]:[b,a])}
+    rounds.push(pairs);rot=[rot[rot.length-1]].concat(rot.slice(0,rot.length-1))}
+  var second=rounds.map(function(ps){return ps.map(function(p){return [p[1],p[0]]})});
+  var all=rounds.concat(second),out=[],mi=0;
+  for(var rr=0;rr<all.length;rr++)all[rr].forEach(function(p){out.push({round:rr+1,home_team_id:p[0],away_team_id:p[1],seed:5000+mi});mi++});
+  return out;
+}
+async function genFixtures(){
+  try{
+    var ids=Object.keys(TEAMS); if(ids.length<2){alert('Need at least 2 teams');return}
+    var sd=document.getElementById('startDate').value|| new Date(Date.now()+86400000).toISOString().slice(0,10);
+    var fx=doubleRR(ids);
+    var n=await rpc('write_fixtures',{p_league_id:LG.id,p_season_no:LG.season_no||1,p_fixtures:fx,p_start_date:sd});
+    alert('Generated '+n+' fixtures. They will resolve automatically at your league time.');
+    tab('table');
+  }catch(e){err(e)}
+}
+</script>
+</body>
+</html>
