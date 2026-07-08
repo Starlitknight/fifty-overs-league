@@ -3590,111 +3590,111 @@
     var page = document.getElementById("page"); if (!page) return;
     var secs = [
       ["basics", "Welcome to the league", [
-        "<p>Fifty Overs is a private cricket universe: ten clubs, one of them yours, the rest run by your friends (or by patient computers holding a seat until a friend claims it). There are no gacha packs and no pay-to-win — just a squad you drafted, a budget you answer for, and a fixture list that does not care about your feelings.</p>",
-        "<p>The league plays <b>one matchday every day at " + MATCH_TIME + "</b>. Between matchdays, the game is yours: study the next opponent, pick your XI, plan who bowls when, set the week&rsquo;s training, chase a signing. When the clock strikes, every fixture in the round is played at once by the match engine, using exactly what each manager submitted. If you submitted nothing, your assistant coach picks a sensible side — sensible, not inspired.</p>",
-        "<p>Matches are full 50-over contests, ball by ball. Batters get set and cash in, bowlers tire through spells, required rates strangle chases, and a cool head at nine down is worth more than a pretty cover drive. Everything you can see on a player&rsquo;s card — and a few things you can only sense — feeds into every delivery.</p>",
+        "<p>Fifty Overs is a private cricket universe: ten clubs, one of them yours, the rest run by your friends (or by patient computers holding a seat until a friend claims it). There are no gacha packs and no pay-to-win. There is just a squad you drafted, a budget you answer for, and a fixture list that does not care about your feelings.</p>",
+        "<p>The league plays <b>one matchday every day at " + MATCH_TIME + "</b>. Between matchdays, the game is yours: study the next opponent, pick your XI, plan who bowls when, set the week&rsquo;s training, chase a signing. When the clock strikes, every fixture in the round is played at once by the match engine, using exactly what each manager submitted. If you submitted nothing, your assistant coach picks a sensible side. Sensible, not inspired.</p>",
+        "<p>Matches are full 50-over contests, ball by ball. Batters get set and cash in, bowlers tire through spells, required rates strangle chases, and a cool head at nine down is worth more than a pretty cover drive. Everything you can see on a player&rsquo;s card, and a few things you can only sense, feeds into every delivery.</p>",
         "<div class='fo-man-tip'><b>The five-minute day:</b> read the result and your training report, glance at the table, open the next fixture, set your lineup, adjust one or two training programs. That&rsquo;s the whole job. The managers who do it every day win leagues.</div>"
       ].join("")],
       ["club", "Founding your club", [
         "<p>Your story starts with a <b>$1,000,000 founding grant</b> and an empty dressing room. The draft is where most titles are quietly won or lost, so hold three thoughts as you spend:</p>",
-        "<ul><li><b>Eleven jobs, not eleven stars.</b> You need six or seven who can bat, a proper wicketkeeper, and enough bowling to cover fifty overs — five genuine options, because someone will always have an off day. A squad of top-order stylists with nobody to bowl the death is a beautiful way to finish eighth.</li>",
-        "<li><b>Money spent is wages promised.</b> Every dollar of fee brings a wage bill behind it, due every single matchday. A club that blows the whole grant on fees starts the season already leaking. Leave a real reserve — you&rsquo;ll want it when the transfer market opens.</li>",
+        "<ul><li><b>Eleven jobs, not eleven stars.</b> You need six or seven who can bat, a proper wicketkeeper, and enough bowling to cover fifty overs: five genuine options, because someone will always have an off day. A squad of top-order stylists with nobody to bowl the death is a beautiful way to finish eighth.</li>",
+        "<li><b>Money spent is wages promised.</b> Every dollar of fee brings a wage bill behind it, due every single matchday. A club that blows the whole grant on fees starts the season already leaking. Leave a real reserve; you&rsquo;ll want it when the transfer market opens.</li>",
         "<li><b>Draft for your ground.</b> Half your matches are at home, and you choose what your groundsman prepares:</li></ul>",
         "<table><tr><th>Pitch</th><th>What it plays like</th><th>Build around it</th></tr>" +
-        "<tr><td><b>Balanced</b></td><td>An honest surface. Skill decides.</td><td>No bias — pick the best players you can.</td></tr>" +
+        "<tr><td><b>Balanced</b></td><td>An honest surface. Skill decides.</td><td>No bias. Pick the best players you can.</td></tr>" +
         "<tr><td><b>Green</b></td><td>The ball nips around, brutally so with the new ball.</td><td>Stack seamers; pick batters who can survive the first ten.</td></tr>" +
         "<tr><td><b>Dry</b></td><td>Starts fine, turns square as the ball ages.</td><td>Two or three spinners, and batters who play spin well.</td></tr>" +
         "<tr><td><b>Flat</b></td><td>A road. 300 is a par score, not a headline.</td><td>Power hitters, and bowlers who don&rsquo;t crumble when hit.</td></tr>" +
         "<tr><td><b>Slow</b></td><td>Low, gripping, boundaries die in the outfield.</td><td>Patient batters who run hard; cutters and spin.</td></tr>" +
-        "<tr><td><b>Cracked</b></td><td>Demons in it. Wickets for everyone, chaos for all.</td><td>Deep batting — someone at eight who can hold a bat.</td></tr></table>",
-        "<p>The pitch you found on is your identity all season — visiting sides will feel it, but so will your own batters. Choose the war you want to fight.</p>"
+        "<tr><td><b>Cracked</b></td><td>Demons in it. Wickets for everyone, chaos for all.</td><td>Deep batting: someone at eight who can hold a bat.</td></tr></table>",
+        "<p>The pitch you found on is your identity all season. Visiting sides will feel it, but so will your own batters. Choose the war you want to fight.</p>"
       ].join("")],
       ["players", "Reading a player", [
-        "<p>Open any player and you&rsquo;ll find seven core skills for batters — how they play <b>pace</b> and <b>spin</b>, how they <b>rotate strike</b>, their <b>temperament</b>, raw <b>power</b>, <b>endurance</b> and <b>fielding</b> — and for bowlers, the tools of the trade: <b>wicket-taking threat</b>, <b>economy</b>, <b>discipline</b>, <b>movement or turn</b>, <b>variation</b>, <b>stamina</b>. Hover any label in the game for what it does. Bars are coloured honestly: <b style='color:#C84F4A'>red</b> is a liability, <b style='color:#D9A441'>amber</b> does a job, teal is good, and <b style='color:#3E9960'>green</b> wins matches.</p>",
+        "<p>Open any player and you&rsquo;ll find seven core skills for batters (how they play <b>pace</b> and <b>spin</b>, how they <b>rotate strike</b>, their <b>temperament</b>, raw <b>power</b>, <b>endurance</b> and <b>fielding</b>) and, for bowlers, the tools of the trade: <b>wicket-taking threat</b>, <b>economy</b>, <b>discipline</b>, <b>movement or turn</b>, <b>variation</b>, <b>stamina</b>. Hover any label in the game for what it does. Bars are coloured honestly: <b style='color:#C84F4A'>red</b> is a liability, <b style='color:#D9A441'>amber</b> does a job, teal is good, and <b style='color:#3E9960'>green</b> wins matches.</p>",
         "<p>But the card only starts there. Four quieter things decide whether the skills show up on the day:</p>",
-        "<ul><li><b>Form</b> rises and falls with performances. A fifty lifts a batter; three cheap dismissals hollow him out. An in-form 70-rated batter will frequently outscore an out-of-form 85. Check form before every selection — it&rsquo;s the most ignored column in the game.</li>",
+        "<ul><li><b>Form</b> rises and falls with performances. A fifty lifts a batter; three cheap dismissals hollow him out. An in-form 70-rated batter will frequently outscore an out-of-form 85. Check form before every selection; it&rsquo;s the most ignored column in the game.</li>",
         "<li><b>Fatigue</b> is a ladder of words, from <i>rested</i> down through <i>weary</i> and <i>listless</i> to the ominous <i>clinically dead</i>. Tired batters find fielders; tired bowlers serve up half-volleys. Playing a shattered star is usually worse than playing a fresh squad player. Stamina and youth slow the slide; the Rest program reverses it.</li>",
-        "<li><b>Experience</b> is invisible until the game gets tense — a big chase, wickets down, the death overs. That&rsquo;s when experienced players keep their heads and rookies play the shot they&rsquo;ll regret. An old pro batting at five is a stabiliser you&rsquo;ll never see working until you drop him.</li>",
-        "<li><b>Age</b> shapes everything: young players learn fast in training and run all day, but the game&rsquo;s pressure moments expose them. Players past thirty know everything and tire faster — watch an ageing opener&rsquo;s scores fade late in long innings, and an ageing quick&rsquo;s last spell go for runs.</li></ul>",
-        "<p><b>Talents</b> are the spice — permanent quirks that fire in specific situations. A few worth planning around:</p>",
+        "<li><b>Experience</b> is invisible until the game gets tense: a big chase, wickets down, the death overs. That&rsquo;s when experienced players keep their heads and rookies play the shot they&rsquo;ll regret. An old pro batting at five is a stabiliser you&rsquo;ll never see working until you drop him.</li>",
+        "<li><b>Age</b> shapes everything: young players learn fast in training and run all day, but the game&rsquo;s pressure moments expose them. Players past thirty know everything and tire faster. Watch an ageing opener&rsquo;s scores fade late in long innings, and an ageing quick&rsquo;s last spell go for runs.</li></ul>",
+        "<p><b>Talents</b> are the spice: permanent quirks that fire in specific situations. A few worth planning around:</p>",
         "<table><tr><th>Talent</th><th>When it bites</th></tr>" +
         "<tr><td><b>Finisher</b></td><td>Finds boundaries at the death that others can&rsquo;t.</td></tr>" +
         "<tr><td><b>Anchor</b></td><td>Hard to dismiss while an innings is being built.</td></tr>" +
         "<tr><td><b>Six Machine</b></td><td>Clears the rope when given licence to swing.</td></tr>" +
         "<tr><td><b>Fast Starter</b></td><td>Skips the nervous new-batter phase.</td></tr>" +
         "<tr><td><b>Spin Killer / Pace Hunter</b></td><td>Feasts on that bowling type.</td></tr>" +
-        "<tr><td><b>New-ball Specialist</b></td><td>Deadly in the first spell — open with him.</td></tr>" +
+        "<tr><td><b>New-ball Specialist</b></td><td>Deadly in the first spell. Open with him.</td></tr>" +
         "<tr><td><b>Death Specialist</b></td><td>Keeps his nerve (and his yorker) in the last ten.</td></tr>" +
         "<tr><td><b>Partnership Breaker</b></td><td>Strikes when a stand is getting comfortable.</td></tr>" +
         "<tr><td><b>Mystery Ball</b></td><td>A spinner new batters simply can&rsquo;t read.</td></tr>" +
         "<tr><td><b>Miser</b></td><td>Buys dots. Beautiful, boring dots.</td></tr></table>"
       ].join("")],
-      ["orders", "Matchday orders — the craft", [
+      ["orders", "Matchday orders", [
         "<p>Open <b>Matches</b> and hit <b>Set lineup</b> on your next fixture. This is the heart of the game, and there is real craft in it:</p>",
-        "<ul><li><b>The XI.</b> Balance first: a keeper, enough bowling for fifty overs, batting depth for the pitch you&rsquo;re on. Then form and freshness — bench the exhausted, back the in-form.</li>",
-        "<li><b>Batting order.</b> Openers face the hardest overs — send technique and temperament, not just talent. Your best player bats three or four, where he faces enough balls to matter. Save a finisher and some muscle for six and seven. Batting a keeper too high burns him for the fielding innings.</li>",
-        "<li><b>Bowling plan.</b> Seamers are at their most dangerous with the new ball — the first ten overs are theirs. Spinners grip harder as the ball roughens; the middle overs are where they squeeze and strike. The death wants specialists: nerve, yorkers, variation. A fifth bowler has to come from somewhere — plan his overs where the game is calmest, usually 25 to 40.</li>",
-        "<li><b>Intent.</b> Per phase, you choose how hard to push. Aggression buys boundaries and sells wickets; caution does the reverse. Go hard in the powerplay on a flat deck; bat time on a green one and cash in later — set batters score far more freely than new ones, so protecting wickets early is an investment, not cowardice.</li>",
+        "<ul><li><b>The XI.</b> Balance first: a keeper, enough bowling for fifty overs, batting depth for the pitch you&rsquo;re on. Then form and freshness: bench the exhausted, back the in-form.</li>",
+        "<li><b>Batting order.</b> Openers face the hardest overs, so send technique and temperament, not just talent. Your best player bats three or four, where he faces enough balls to matter. Save a finisher and some muscle for six and seven. Batting a keeper too high burns him for the fielding innings.</li>",
+        "<li><b>Bowling plan.</b> Seamers are at their most dangerous with the new ball; the first ten overs are theirs. Spinners grip harder as the ball roughens; the middle overs are where they squeeze and strike. The death wants specialists: nerve, yorkers, variation. A fifth bowler has to come from somewhere, so plan his overs where the game is calmest, usually 25 to 40.</li>",
+        "<li><b>Intent.</b> Per phase, you choose how hard to push. Aggression buys boundaries and sells wickets; caution does the reverse. Go hard in the powerplay on a flat deck; bat time on a green one and cash in later. Set batters score far more freely than new ones, so protecting wickets early is an investment, not cowardice.</li>",
         "<li><b>Captain.</b> Give it to experience and captaincy skill, not to your best batter by default. A good captain&rsquo;s field placings buy dots and create pressure all innings; it&rsquo;s a quiet, compounding edge.</li>",
         "<li><b>Keeper.</b> A real gloveman saves byes you never notice and creates stumpings you&rsquo;ll never forget. A part-timer behind the stumps is a slow leak of runs and chances.</li></ul>",
-        "<div class='fo-man-tip'><b>Chasing?</b> The engine models scoreboard pressure honestly: a chase that stays near the rate feels normal, but let the required rate climb past eight and every ball gets heavier — especially against experienced bowlers, and especially for inexperienced batters. Keep chases current. Cute acceleration plans die in the 40th over.</div>"
+        "<div class='fo-man-tip'><b>Chasing?</b> The engine models scoreboard pressure honestly: a chase that stays near the rate feels normal, but let the required rate climb past eight and every ball gets heavier, especially against experienced bowlers, and especially for inexperienced batters. Keep chases current. Cute acceleration plans die in the 40th over.</div>"
       ].join("")],
       ["pitchwx", "Pitch, weather &amp; the toss", [
         "<p>Before every match you can see the ground, the pitch and the sky. Read them like a real captain would:</p>",
         "<table><tr><th>Sky</th><th>What it means</th></tr>" +
         "<tr><td><b>Sunny / Hot / Scorching</b></td><td>A batting day. The hotter it gets, the truer the ball comes on.</td></tr>" +
-        "<tr><td><b>Overcast / Misty</b></td><td>Seamers&rsquo; weather — the ball hoops around, especially early. Expect 20&ndash;30 fewer runs and jittery top orders.</td></tr>" +
+        "<tr><td><b>Overcast / Misty</b></td><td>Seamers&rsquo; weather. The ball hoops around, especially early; expect 20&ndash;30 fewer runs and jittery top orders.</td></tr>" +
         "<tr><td><b>Humid</b></td><td>The new ball talks for the seamers, then it fades. Survive the burst.</td></tr>" +
         "<tr><td><b>Windy</b></td><td>Sixes die at the rope. Run twos instead of swinging harder.</td></tr>" +
         "<tr><td><b>Drizzle / Chilly</b></td><td>Slow, scrappy cricket. Boundaries are earned.</td></tr>" +
-        "<tr><td><b>Dew later</b></td><td>The chasing side bats with a wet ball in hand for the bowlers — spinners lose their grip and the chase gets easier. If dew is forecast, winning the toss and bowling first is the percentage play. The engine knows this; now you do.</td></tr></table>",
-        "<p>The toss is called by the captains on the day — you don&rsquo;t control it, but your pitch choice tilts the whole fixture, and weather can make a green pitch a nightmare or defang it entirely. The forecast is on the order screen. Use it.</p>"
+        "<tr><td><b>Dew later</b></td><td>The chasing side bats while the bowlers grip a wet ball: spinners lose their bite and the chase gets easier. If dew is forecast, winning the toss and bowling first is the percentage play. The engine knows this; now you do.</td></tr></table>",
+        "<p>The toss is called by the captains on the day. You don&rsquo;t control it, but your pitch choice tilts the whole fixture, and weather can make a green pitch a nightmare or defang it entirely. The forecast is on the order screen. Use it.</p>"
       ].join("")],
-      ["money", "Money — the honest ledger", [
-        "<p>Every matchday your club settles its books, and every line is real. What comes in: your <b>sponsor&rsquo;s payment</b> (see the next section) and, at home games, the <b>gate</b> — your supporters, times ticket money. What goes out: <b>every player&rsquo;s wage</b>, <b>stadium upkeep</b>, and your <b>academy</b>, if you run one.</p>",
-        "<p>The gate is where results turn into money. Win, and the town&rsquo;s mood lifts and the crowd grows; lose, and the stands thin out exactly when you could use the cash. A winning club&rsquo;s home gate can be half again a struggling club&rsquo;s. There&rsquo;s a ceiling — your ground only holds so many — but inside it, form pays.</p>",
+      ["money", "Money: the honest ledger", [
+        "<p>Every matchday your club settles its books, and every line is real. What comes in: your <b>sponsor&rsquo;s payment</b> (see the next section) and, at home games, the <b>gate</b>: your supporters, times ticket money. What goes out: <b>every player&rsquo;s wage</b>, <b>stadium upkeep</b>, and your <b>academy</b>, if you run one.</p>",
+        "<p>The gate is where results turn into money. Win, and the town&rsquo;s mood lifts and the crowd grows; lose, and the stands thin out exactly when you could use the cash. A winning club&rsquo;s home gate can be half again a struggling club&rsquo;s. There&rsquo;s a ceiling (your ground only holds so many), but inside it, form pays.</p>",
         "<p>At season&rsquo;s end the league pays <b>prize money by final position, $200,000 down to $30,000</b>, with real gaps between places. Ninth beating tenth on the last day is a payday, not pride. Never stop competing.</p>",
         "<ul><li><b>Wages are the tide.</b> They&rsquo;re your biggest cost and they never pause. Judge every signing by fee <i>plus</i> a season of wages, not the sticker price.</li>",
-        "<li><b>The academy is a deliberate money pit.</b> It makes your whole squad train faster and it costs a fortune at higher levels. It&rsquo;s how a mid-table club becomes a power in two seasons — or how a contender bleeds itself pale in one. Decide which story you&rsquo;re telling.</li>",
-        "<li><b>Watch the club page.</b> It shows your bank health and, when things get ugly, a runway estimate in matchdays. If you see a runway number at all, act — trim a wage, skip a signing, downgrade an academy.</li></ul>"
+        "<li><b>The academy is a deliberate money pit.</b> It makes your whole squad train faster and it costs a fortune at higher levels. It&rsquo;s how a mid-table club becomes a power in two seasons, or how a contender bleeds itself pale in one. Decide which story you&rsquo;re telling.</li>",
+        "<li><b>Watch the club page.</b> It shows your bank health and, when things get ugly, a runway estimate in matchdays. If you see a runway number at all, act: trim a wage, skip a signing, downgrade an academy.</li></ul>"
       ].join("")],
-      ["sponsors", "Sponsor deals — a bet on yourself", [
+      ["sponsors", "Sponsor deals: a bet on yourself", [
         "<p>At founding you signed one of three deals. Each pays every matchday, all season; they differ in how much of your money rides on results:</p>",
         "<table><tr><th>Deal</th><th>Character</th><th>Best for</th></tr>" +
         "<tr><td><b>Community Trust</b></td><td>The biggest guaranteed payment in the league, and not a cent more, whatever happens.</td><td>Rebuilds, heavy academy spenders, and honest mid-table sides.</td></tr>" +
-        "<tr><td><b>Results Deal</b></td><td>A slightly smaller base, plus a solid bonus for every win. Comes out ahead of the Trust around a winning season — ten or more wins.</td><td>Good sides that expect a winning record but wouldn&rsquo;t bet the house on a trophy.</td></tr>" +
-        "<tr><td><b>Contender Deal</b></td><td>The smallest base, the biggest per-win bonus, and rich milestone cheques for sitting top-three at halfway, finishing top-three, and winning the title. A genuine title season out-earns everything by a distance; a mediocre one costs you six figures.</td><td>Squads built to win now — and managers who mean it.</td></tr></table>",
+        "<tr><td><b>Results Deal</b></td><td>A slightly smaller base, plus a solid bonus for every win. Comes out ahead of the Trust around a winning season: ten or more wins.</td><td>Good sides that expect a winning record but wouldn&rsquo;t bet the house on a trophy.</td></tr>" +
+        "<tr><td><b>Contender Deal</b></td><td>The smallest base, the biggest per-win bonus, and rich milestone cheques for sitting top-three at halfway, finishing top-three, and winning the title. A genuine title season out-earns everything by a distance; a mediocre one costs you six figures.</td><td>Squads built to win now, and managers who mean it.</td></tr></table>",
         "<p>The honest self-assessment is the whole trick. The table doesn&rsquo;t lie for eighteen rounds, and neither does the deal you chose in week one.</p>"
       ].join("")],
-      ["training", "Training — where seasons compound", [
-        "<p>The <b>Training</b> tab assigns every player a weekly program: batting schools (new-ball technique, playing spin, power, finishing), bowling schools (new-ball seam, spin, death-overs control), keeping, fielding, fitness, all-round work — or <b>Rest</b>, which trades a week of progress for recovered legs. Gains land when the matchday resolves, and your report names every improvement.</p>",
+      ["training", "Training: where seasons compound", [
+        "<p>The <b>Training</b> tab assigns every player a weekly program: batting schools (new-ball technique, playing spin, power, finishing), bowling schools (new-ball seam, spin, death-overs control), keeping, fielding, fitness, all-round work, or <b>Rest</b>, which trades a week of progress for recovered legs. Gains land when the matchday resolves, and your report names every improvement.</p>",
         "<ul><li><b>Youth is the multiplier.</b> A 19-year-old drinks coaching; a 32-year-old sips it. The same program, the same week, can move a teenager three times as far.</li>",
         "<li><b>Potential is real.</b> High-potential players (your scout will tell you) simply get more from every session. A high-potential 19-year-old is the most valuable object in the game.</li>",
-        "<li><b>Tired players don&rsquo;t learn.</b> Fatigue quietly strangles progress before it hurts match output. Rotate Rest through your bowlers especially — they carry the heaviest legs.</li>",
+        "<li><b>Tired players don&rsquo;t learn.</b> Fatigue quietly strangles progress before it hurts match output. Rotate Rest through your bowlers especially; they carry the heaviest legs.</li>",
         "<li><b>The last points are the steepest.</b> Lifting a skill from good to great takes far longer than from poor to decent. Sometimes the smart program fixes a weakness instead of polishing a strength.</li>",
         "<li><b>Train with intent.</b> A finisher doesn&rsquo;t need new-ball technique; your death bowler doesn&rsquo;t need a spin school. Match the program to the job the player actually does on Saturdays.</li></ul>",
         "<div class='fo-man-tip'><b>The compound play:</b> academy level + young squad + disciplined rest rotation. None of the three looks dramatic in a week. Over a season, that club&rsquo;s ceiling visibly rises while everyone else&rsquo;s stands still.</div>"
       ].join("")],
-      ["youth", "Youth scouting — cheap tickets on the future", [
-        "<p>Your scout brings <b>three local prospects, aged 18 to 20</b>, to the Training page every matchday — new faces each round. Click a name for the full workup: skills, talents, and the scout&rsquo;s read on potential.</p>",
-        "<ul><li>Youth arrive <b>raw and cheap</b>. You&rsquo;re not buying this season&rsquo;s runs — you&rsquo;re buying training years. Judge them on potential and talents, not today&rsquo;s bars.</li>",
-        "<li>The paperwork limits you to <b>one youth signing every " + FO_SCOUT_COOLDOWN + " matchdays</b>, and the squad caps at 18 — every seat you fill is a seat you can&rsquo;t offer a market star later.</li>",
+      ["youth", "Youth scouting", [
+        "<p>Your scout brings <b>three local prospects, aged 18 to 20</b>, to the Training page every matchday, new faces each round. Click a name for the full workup: skills, talents, and the scout&rsquo;s read on potential.</p>",
+        "<ul><li>Youth arrive <b>raw and cheap</b>. You&rsquo;re not buying this season&rsquo;s runs; you&rsquo;re buying training years. Judge them on potential and talents, not today&rsquo;s bars.</li>",
+        "<li>The paperwork limits you to <b>one youth signing every " + FO_SCOUT_COOLDOWN + " matchdays</b>, and the squad caps at 18, so every seat you fill is a seat you can&rsquo;t offer a market star later.</li>",
         "<li>Signings join when the next matchday resolves. Put them straight on a training program; that&rsquo;s what you bought them for.</li></ul>"
       ].join("")],
-      ["market", "The transfer market — sharpen your elbows", [
-        "<p>The <b>Transfers</b> tab holds the season&rsquo;s pool of <b>18 established free agents</b> — proven players, 21 and up, one of each trade from six cricket nations. Every club sees the same pool, all season, and it <b>never restocks</b>.</p>",
-        "<ul><li><b>First come, first served — league-wide.</b> The instant any club signs a player, he&rsquo;s gone for everyone; the card shows who got him, and the whole league is told. If a player fixes your actual weakness, hesitation is a donation to a rival.</li>",
-        "<li>Fees carry a mid-season premium and wages start the day he arrives. The question is never &ldquo;is he good?&rdquo; — it&rsquo;s &ldquo;is he worth more to me than the reserve he empties?&rdquo;</li>",
+      ["market", "The transfer market", [
+        "<p>The <b>Transfers</b> tab holds the season&rsquo;s pool of <b>18 established free agents</b>: proven players, 21 and up, one of each trade from six cricket nations. Every club sees the same pool, all season, and it <b>never restocks</b>.</p>",
+        "<ul><li><b>First come, first served, league-wide.</b> The instant any club signs a player, he&rsquo;s gone for everyone; the card shows who got him, and the whole league is told. If a player fixes your actual weakness, hesitation is a donation to a rival.</li>",
+        "<li>Fees carry a mid-season premium and wages start the day he arrives. The question is never &ldquo;is he good?&rdquo; It&rsquo;s &ldquo;is he worth more to me than the reserve he empties?&rdquo;</li>",
         "<li>Signings join after the next matchday resolves, squad cap 18.</li></ul>",
         "<div class='fo-man-tip'><b>Timing:</b> the market punishes browsers and rewards planners. Decide in week one which two or three names you&rsquo;d move for, and at what bank balance. Then it&rsquo;s a trigger-pull, not a deliberation.</div>"
       ].join("")],
       ["league", "The table, the run rate, the prizes", [
-        "<p>Ten clubs, a full round robin, one round a day. Two points a win; ties and washouts split one. Level on points, <b>net run rate</b> decides — so a ten-run win chased lazily and a ten-run win chased hard are not the same result. Margins are money.</p>",
+        "<p>Ten clubs, a full round robin, one round a day. Two points a win; ties and washouts split one. Level on points, <b>net run rate</b> decides, so a ten-run win chased lazily and a ten-run win chased hard are not the same result. Margins are money.</p>",
         "<p>Friends can <b>join mid-season</b>: a newcomer takes over a computer club, drafts a fresh squad, and inherits the fixtures. The table doesn&rsquo;t reset, but a well-drafted latecomer can still ruin somebody&rsquo;s title race, which is its own kind of fun.</p>",
-        "<p>Season prizes run <b>$200k, $160k, $130k, $110k, $90k, $75k, $60k, $50k, $40k, $30k</b>, first to tenth. There is no dead rubber in this league — every place you climb is a bigger cheque and a better next season.</p>"
+        "<p>Season prizes run <b>$200k, $160k, $130k, $110k, $90k, $75k, $60k, $50k, $40k, $30k</b>, first to tenth. There is no dead rubber in this league. Every place you climb is a bigger cheque and a better next season.</p>"
       ].join("")],
-      ["practice", "Practice games — your laboratory", [
-        "<p><b>Practice Game</b> in the nav plays a friendly against any club in your league — you choose the opponent, the pitch, and the weather. Nothing carries over: no money, no fatigue, no points, no consequences.</p>",
+      ["practice", "Practice games", [
+        "<p><b>Practice Game</b> in the nav plays a friendly against any club in your league. You choose the opponent, the pitch, and the weather. Nothing carries over: no money, no fatigue, no points, no consequences.</p>",
         "<p>Use it like a professional: rehearse a batting order before a big fixture, audition a young bowler at the death, or play on the exact pitch you&rsquo;ll face away next week. A live practice match can be left and resumed from the <b>&#9679; Live Match</b> link that appears while it&rsquo;s running.</p>"
       ].join("")],
       ["tips", "Ten habits of champion managers", [
@@ -3710,10 +3710,10 @@
         "<li><b>Read your training report and your ledger after every matchday.</b> The game tells you exactly what&rsquo;s working. Most managers never listen.</li></ul>"
       ].join("")]
     ];
-    var toc = secs.map(function (s) { return "<a data-sec='" + s[0] + "'>" + s[1].replace(/&amp;/g, "&").replace(/ — .*$/, "") + "</a>"; }).join("");
+    var toc = secs.map(function (s) { return "<a data-sec='" + s[0] + "'>" + s[1].replace(/&amp;/g, "&").replace(/:.*$/, "") + "</a>"; }).join("");
     page.innerHTML =
       "<div class='fo-man'><div class='crumb'>Manual</div>" +
-      "<div class='page-head'><div><div class='eyebrow'>How to play</div><h1>The Manager&rsquo;s Manual</h1><p>Everything the game does, why it matters, and the habits that win leagues — from your first draft pick to the last cheque of the season.</p></div></div>" +
+      "<div class='page-head'><div><div class='eyebrow'>How to play</div><h1>The Manager&rsquo;s Manual</h1><p>Everything the game does, why it matters, and the habits that win leagues, from your first draft pick to the last cheque of the season.</p></div></div>" +
       "<div class='fo-man-toc'>" + toc + "</div>" +
       secs.map(function (s) { return foManualSec(s[0], s[1], s[2]); }).join("") + "</div>";
     page.querySelectorAll(".fo-man-toc a").forEach(function (a) {
