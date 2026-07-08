@@ -6522,6 +6522,19 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-pool{overflow-x:auto}.fo-pooltabs{flex-wrap:wrap}" +
     // freeze the first column (player/date) so it stays visible while the rest scrolls
     "#page .panel table th:first-child,#page .panel table td:first-child{position:sticky;left:0;background:#fff;z-index:1;box-shadow:1px 0 0 rgba(0,0,0,.12)}" +
+    "}" +
+    // Mobile match view: commentary directly under the scoreboard; match details and
+    // the tab links drop below it. Desktop (>900px) layout is untouched. We flatten
+    // .mc-top and .ftp-match-shell into #page's flex flow and reorder with `order`.
+    "@media(max-width:900px){" +
+    "#page.fo-matchpage{display:flex !important;flex-direction:column}" +
+    "#page.fo-matchpage>.crumb{order:0}" +
+    "#page.fo-matchpage>.mc-top{display:contents !important}" +
+    "#page.fo-matchpage>.ftp-match-shell{display:contents !important}" +
+    "#page.fo-matchpage .mc-score{order:1;width:100%;flex:none}" +
+    "#page.fo-matchpage .ftp-match-body{order:2;width:100%;flex:none}" +
+    "#page.fo-matchpage .mc-details{order:3;width:100%;flex:none}" +
+    "#page.fo-matchpage .ftp-match-links{order:4;width:100%;flex:none;position:static !important}" +
     "}";
   document.body.appendChild(css3);
   // The game injects its own theme stylesheets into <body> at render time, after
@@ -6580,6 +6593,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       document.querySelectorAll("#page .small").forEach(function (el) {
         if (/^Complete AI round only plays/.test((el.textContent || "").trim())) el.style.display = "none";
       });
+      // League mode: "Prepare" only sets orders (matches auto-resolve), so relabel it
+      // and drop the live-return icon that would otherwise point at a match you can't
+      // play interactively.
+      if (SYNC && SYNC.started) {
+        document.querySelectorAll("#page button").forEach(function (b) {
+          if (/startLeagueMatch/.test(b.getAttribute("onclick") || "")) b.textContent = "Set orders";
+        });
+        if (foLeaguePendingOnly()) { var box = document.getElementById("fo-live-icons"); if (box) box.style.display = "none"; }
+      }
       document.querySelectorAll("#page table").forEach(function (tb) {
         var clubIx = -1, ptsIx = -1;
         tb.querySelectorAll("th").forEach(function (th) { var t = th.textContent.trim().toLowerCase(); if (t === "club") clubIx = th.cellIndex; if (t === "pts") ptsIx = th.cellIndex; });
@@ -6612,6 +6634,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       });
     } catch (e) {}
   }
+  // Tag #page while a live match is on screen, so the mobile reorder CSS applies
+  // only there (and never touches the desktop layout).
+  function foTagMatchPage() {
+    try {
+      var pg = document.getElementById("page"); if (!pg) return;
+      pg.classList.toggle("fo-matchpage", location.hash.indexOf("#/match") === 0 && !!document.querySelector(".mc-top"));
+    } catch (e) {}
+  }
   function tickClock() {
     try {
       var c = document.getElementById("fo-clock"); if (!c) return;
@@ -6624,11 +6654,30 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // re-apply fixture match-times after any re-render of the game page
   try {
     var _mt = null, pg0 = document.getElementById("page");
-    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { decorateFixtureTimes(); tidyPage(); }, 40); }).observe(pg0, { childList: true, subtree: true });
+    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { decorateFixtureTimes(); tidyPage(); foTagMatchPage(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); decorateFixtureTimes(); tidyPage(); return r; }; }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); return r; }; }
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
+
+  // League fixtures resolve in the background at 09:00 New York — the manager only
+  // sets orders (which auto-upload as a packet). So the interactive match viewer is
+  // never used for a league game: clicking Matches (or saving orders) must land on
+  // the fixtures list, not the live viewer. #/match stays reachable for Practice
+  // Games and replays (those set no `league` comp / create a live match M).
+  function foLeaguePendingOnly() {
+    try {
+      var liveFriendly = (typeof M !== "undefined" && M && !M.done);
+      return SYNC && SYNC.started && App && App.pending && App.pending.comp === "league" && !liveFriendly;
+    } catch (e) { return false; }
+  }
+  function foGuardMatchRoute() {
+    if (!foLeaguePendingOnly()) return;
+    if (location.hash.indexOf("#/match") !== 0) return;
+    location.hash = "#/matches";
+    if (App.orders && App.orders.saved) say("🏏 Orders saved — your match resolves at 9:00 AM ET.");
+  }
+  window.addEventListener("hashchange", function () { setTimeout(foGuardMatchRoute, 0); });
 
   // Shared "50" logo mark (stumps + paper "5" + seamed cricket-ball "0"), reused
   // by the login logo and the browser-tab favicon so they stay identical.
