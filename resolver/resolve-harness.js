@@ -272,6 +272,155 @@
     return out;
   };
 
+  /* ================================================================
+     FAIR TRAINING + CLUB ORDERS (ADDITIVE): the engine's patched
+     applyTraining() honours training programs only for the snapshot's own
+     club — everyone else's players are RESET to default programs each round.
+     We replace it with the same maths applied even-handedly: every club's
+     saved p.training is honoured (bots fall back to sensible defaults), and
+     each club gets its own training report stored on the club record so
+     every manager sees THEIR gains, not the pusher's.
+     Managers submit training programs and youth signings inside their order
+     packets (fo_training / fo_youth) — conflict-free per-manager channels.
+     ================================================================ */
+  var FT_PROGS = {
+    'Batting': { vsPace: 25, vsSpin: 25, rotation: 20, temperament: 20, stamina: 10 },
+    'New-ball batting': { vsPace: 45, temperament: 25, rotation: 15, stamina: 15 },
+    'Spin batting': { vsSpin: 45, rotation: 20, temperament: 20, power: 15 },
+    'Power hitting': { power: 50, vsPace: 15, vsSpin: 15, temperament: 10, stamina: 10 },
+    'Finishing': { power: 35, temperament: 25, rotation: 20, vsPace: 10, vsSpin: 10 },
+    'Bowling': { wicket: 25, economy: 25, discipline: 20, moveTurn: 15, variation: 10, stamina: 5 },
+    'New-ball seam': { moveTurn: 30, wicket: 25, discipline: 20, economy: 15, stamina: 10 },
+    'Spin bowling': { moveTurn: 30, wicket: 25, variation: 20, economy: 15, discipline: 10 },
+    'Death bowling': { economy: 30, discipline: 30, variation: 20, stamina: 15, wicket: 5 },
+    'Control bowling': { economy: 40, discipline: 30, variation: 15, stamina: 15 },
+    'Keeping': { keeping: 30, catching: 25, stumping: 25, fielding: 15, stamina: 5 },
+    'Fielding': { fielding: 40, catching: 30, stamina: 20, power: 10 },
+    'Fitness': { stamina: 65, power: 25, fielding: 10 },
+    'All-rounder': { vsPace: 15, vsSpin: 15, wicket: 15, economy: 15, fielding: 20, stamina: 20 },
+    'Rest': {}
+  };
+  var FT_INTENSITY = { Light: 0.75, Normal: 1, Intense: 1.20, Rest: 0 };
+  var FT_FATRANK = { 'clinically dead': 0, shattered: 1, exhausted: 2, listless: 3, weary: 4, moderate: 5, satisfactory: 6, passable: 7, energetic: 8, revived: 9, rested: 10 };
+  var FT_FATNAMES = ['clinically dead', 'shattered', 'exhausted', 'listless', 'weary', 'moderate', 'satisfactory', 'passable', 'energetic', 'revived', 'rested'];
+  var FT_FATF = [0.35, 0.45, 0.55, 0.68, 0.78, 0.86, 0.93, 0.97, 1.00, 1.02, 1.04];
+  function ftFatScore(p) { var r = FT_FATRANK[String(p.fatigue || 'rested').toLowerCase()]; return r == null ? 4 : r; }
+  function ftAgeFactor(age) { return age <= 20 ? 1.35 : age <= 24 ? 1.15 : age <= 29 ? 0.90 : age <= 32 ? 0.55 : 0.25; }
+  function ftPotential(p) {
+    if (p.training && p.training.potential) return p.training.potential;
+    var v = ((p.talent === 'gifted' || (p.talents || []).length >= 2) ? 2 : 0) + (p.age <= 20 ? 2 : p.age <= 24 ? 1 : 0) + ((p.rating || 0) > 3600 ? 1 : 0);
+    return v >= 4 ? 'Star' : v >= 3 ? 'High' : v >= 1 ? 'Useful' : 'Limited';
+  }
+  function ftPotFactor(p) { return { Limited: 0.80, Useful: 1, High: 1.15, Star: 1.30 }[ftPotential(p)] || 1; }
+  function ftThreshold(v) { return 80 + (+v || 0) * 1.5; }
+  function ftDefaultProgram(p) {
+    var PACE = ['seamFast', 'seamFastMedium', 'seamMedium', 'partTimeSeam'];
+    if (p.keeper) return 'Keeping';
+    if (p.role === 'allRounder') return 'All-rounder';
+    if (p.bowlTypeFull && PACE.indexOf(p.bowlTypeFull) >= 0) return 'New-ball seam';
+    if (p.bowlTypeFull && p.bowlTypeFull !== 'none') return 'Spin bowling';
+    return p.role === 'middleOrderBat' ? 'Finishing' : 'Batting';
+  }
+  function ftEnsure(p) {
+    if (!p.training) p.training = { program: null, intensity: 'Normal', progressBySkill: {}, potential: null };
+    if (!p.training.program || !FT_PROGS[p.training.program]) p.training.program = ftDefaultProgram(p);
+    if (!FT_INTENSITY.hasOwnProperty(p.training.intensity)) p.training.intensity = 'Normal';
+    if (!p.training.progressBySkill) p.training.progressBySkill = {};
+    if (!p.training.potential) p.training.potential = ftPotential(p);
+    p.trainFocus = p.training.program;
+    return p.training;
+  }
+
+  // Fair replacement for the engine's applyTraining — identical maths, every club equal.
+  window.applyTraining = function () {
+    var round = App.season ? App.season.round : 0;
+    var h = ((round * 77797 + (App.seasonNo || 1) * 13) >>> 0);
+    var rnd = function () { return ((h = (h * 1103515245 + 12345) >>> 0) / 4294967296); };
+    GD.teams.forEach(function (t) {
+      var report = { round: round + 1, gains: [], recovery: [], signings: [] };
+      [[t.players || [], false], [t.youth || [], true]].forEach(function (pair) {
+        var pool = pair[0], isYouth = pair[1];
+        var overLimit = Math.max(0, pool.length - (isYouth ? 18 : 24));
+        var squadEff = Math.max(0.65, 1 - overLimit * 0.03);
+        var acad = 1 + (isYouth ? 0.10 * (t.acadY || 0) : 0.08 * (t.acadS || 0));
+        pool.forEach(function (p) {
+          var tr = ftEnsure(p);
+          if (!t.founded && !t.sponsorDeal) { tr.program = ftDefaultProgram(p); tr.intensity = 'Normal'; }  // bots
+          if (tr.program === 'Rest' || tr.intensity === 'Rest') {
+            var before = p.fatigue || 'rested';
+            p.fatigue = FT_FATNAMES[Math.min(10, ftFatScore(p) + 2)] || 'rested';
+            if (before !== p.fatigue) report.recovery.push(p.name + ': ' + before + ' → ' + p.fatigue);
+            return;
+          }
+          var base = isYouth ? 34 : 24;
+          var pts = base * ftAgeFactor(p.age) * ftPotFactor(p) * acad * FT_FATF[ftFatScore(p)] * (FT_INTENSITY[tr.intensity] || 1) * squadEff;
+          if (tr.program === 'All-rounder') pts *= 0.85;
+          var weights = FT_PROGS[tr.program] || FT_PROGS[ftDefaultProgram(p)];
+          var total = 0; for (var k in weights) total += weights[k]; total = total || 1;
+          for (var sk in weights) {
+            if (p.skills[sk] === undefined) continue;
+            tr.progressBySkill[sk] = (tr.progressBySkill[sk] || 0) + pts * weights[sk] / total;
+            var th = ftThreshold(p.skills[sk]);
+            while (tr.progressBySkill[sk] >= th && p.skills[sk] < 96) {
+              tr.progressBySkill[sk] -= th;
+              p.skills[sk]++;
+              if (typeof jsDerive === 'function') jsDerive(p);
+              report.gains.push(p.name + ': ' + sk + ' +1');
+              th = ftThreshold(p.skills[sk]);
+            }
+          }
+        });
+      });
+      t._trainReport = report;   // snapshot-borne: every manager reads their own club's report
+    });
+  };
+
+  // Apply each manager's packet-borne club orders. Training BEFORE the round
+  // (so this matchday trains on the submitted programs); youth AFTER the fair
+  // money settle (fees deduct from the settled bank).
+  function foApplyPacketTraining(pkts) {
+    (pkts || []).forEach(function (pk) {
+      if (!pk || !pk.club || !pk.fo_training) return;
+      var t = GD.teams.find(function (x) { return x.name === pk.club; }); if (!t) return;
+      for (var nm in pk.fo_training) {
+        var want = pk.fo_training[nm] || {};
+        var p = (t.players || []).find(function (x) { return x.name === nm; }); if (!p) continue;
+        var tr = ftEnsure(p);
+        if (want.program && FT_PROGS[want.program]) { tr.program = want.program; p.trainFocus = want.program; }
+        if (want.intensity && FT_INTENSITY.hasOwnProperty(want.intensity)) tr.intensity = want.intensity;
+      }
+    });
+  }
+  function foApplyPacketYouth(pkts, round) {
+    (pkts || []).forEach(function (pk) {
+      if (!pk || !pk.club || !pk.fo_youth || !pk.fo_youth.length) return;
+      var t = GD.teams.find(function (x) { return x.name === pk.club; }); if (!t) return;
+      var cand = pk.fo_youth[0];   // hard cap: one signing per round
+      if (!cand || !cand.name) return;
+      if ((t.players || []).length >= 18) return;
+      if (t.players.find(function (x) { return x.name === cand.name; })) return;
+      var fee = Math.max(5000, Math.round(+cand.fee || 0));
+      if ((t.bank || 0) < fee) return;
+      var p = JSON.parse(JSON.stringify(cand));
+      delete p.fee;
+      p.fatigue = 'rested'; p.formIx = 3;
+      ftEnsure(p);
+      t.players.push(p);
+      t.bank -= fee;
+      t._trainReport = t._trainReport || { round: round + 1, gains: [], recovery: [], signings: [] };
+      (t._trainReport.signings = t._trainReport.signings || []).push(p.name + ' (age ' + p.age + ') signed for $' + fee.toLocaleString());
+    });
+  }
+
+  var _foCR2 = window.completeRound;
+  window.completeRound = function () {
+    var round = App.season ? App.season.round : 0;
+    try { foApplyPacketTraining(window.__FO_PKTS); } catch (e) { console.log('packet training failed:', e && e.message); }
+    var out = _foCR2.apply(this, arguments);
+    try { foApplyPacketYouth(window.__FO_PKTS, round); } catch (e) { console.log('packet youth failed:', e && e.message); }
+    return out;
+  };
+
   // Also expose the pinned-build hash slot + a ?resolve= marker for the container.
   window.__FO_RESOLVE_READY = true;
   console.info('Fifty Overs resolve harness ready: window.__resolveMatch available.');

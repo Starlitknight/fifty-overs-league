@@ -48,8 +48,10 @@ async function advanceOne(page, st) {
   const newSnap = await page.evaluate(({ snap, pkts }) => {
     window.restoreFrom(snap);
     if (typeof window.mpInit === 'function') window.mpInit();
+    // raw packets also carry fo_training / fo_youth club orders for the harness
+    window.__FO_PKTS = pkts;
     for (const p of pkts) {
-      if (p && typeof p.teamIx === 'number') {
+      if (p && typeof p.teamIx === 'number' && p.orders) {
         App.mp.packets[p.teamIx] = { orders: p.orders, round: p.round, club: p.club, manager: p.manager };
       }
     }

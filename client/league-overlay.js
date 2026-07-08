@@ -691,16 +691,16 @@
     // ===== deep engine-page polish (Matches / Stats / Office / live match) =====
     // page hero: finish the navy band properly — light text, padding, radius
     "#page .page-head{padding:20px 24px;border-radius:14px;box-shadow:0 12px 32px rgba(11,19,34,.18)}" +
-    "#page .page-head h1{color:#12203a !important}" +
-    "#page .page-head p{color:#737a84 !important;margin:3px 0 0}" +
+    "#page .page-head h1{color:#F6F4EE !important}" +
+    "#page .page-head p{color:rgba(246,244,238,.62) !important;margin:3px 0 0}" +
     "#page .page-head .eyebrow{color:#e79274 !important}" +
-    "#page .page-head .action-row button{background:#ece7da;color:#12203a;border:1px solid rgba(11,19,34,.13);border-radius:9px;padding:8px 14px;cursor:pointer}" +
-    "#page .page-head .action-row button:hover{background:#ece7da}" +
+    "#page .page-head .action-row button{background:rgba(246,244,238,.1);color:#F6F4EE;border:1px solid rgba(246,244,238,.25);border-radius:9px;padding:8px 14px;cursor:pointer}" +
+    "#page .page-head .action-row button:hover{background:rgba(246,244,238,.2)}" +
     "#page .page-head .action-row button.primary,#page .page-head .action-row .primary{background:" + TERRA + ";border-color:" + TERRA + ";color:#fff}" +
-    "#page .page-head .action-row label{color:#37424f}" +
+    "#page .page-head .action-row label{color:rgba(246,244,238,.8)}" +
     // panels: soft radius, refined title bar instead of flat black
     "#page .panel{border-radius:12px;overflow:hidden;border-color:#e4dfd2;box-shadow:0 3px 14px rgba(11,19,34,.06)}" +
-    "#page .panel>h4{background:linear-gradient(160deg," + NAVY2 + "," + NAVY + ") !important;color:#12203a;margin:0;padding:10px 14px;font-size:11.5px;text-transform:uppercase;letter-spacing:.09em;font-weight:800}" +
+    "#page .panel>h4{background:linear-gradient(160deg," + NAVY2 + "," + NAVY + ") !important;color:#F6F4EE;margin:0;padding:10px 14px;font-size:11.5px;text-transform:uppercase;letter-spacing:.09em;font-weight:800}" +
     "#page .panel table th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:#9a9484}" +
     // my club's row in any table: terracotta accent, not the engine's mint yellow
     "#page tr.fo-userrow{background:transparent !important}" +
@@ -717,6 +717,36 @@
     // live match: give the scoreboard visual weight
     "#page .mc-score .panel{border-top:3px solid " + TERRA + "}" +
     "#page .ftp-match-body{border-radius:12px}" +
+    // training & youth page
+    ".fo-tr-tbl{width:100%;border-collapse:collapse;font-size:13px}" +
+    ".fo-tr-tbl th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:#9a9484;padding:7px 8px;border-bottom:1px solid rgba(11,19,34,.1)}" +
+    ".fo-tr-tbl td{padding:8px;border-bottom:1px solid rgba(11,19,34,.06);vertical-align:middle}" +
+    ".fo-tr-nm b{color:#12203a}.fo-tr-meta{display:block;font-size:11px;color:#9a9484}" +
+    ".fo-pot{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:2.5px 9px;border-radius:999px}" +
+    ".fo-pot-star{background:rgba(217,164,65,.15);color:#a97b1e;border:1px solid rgba(217,164,65,.45)}" +
+    ".fo-pot-high{background:rgba(62,153,96,.12);color:#2e7d4f;border:1px solid rgba(62,153,96,.4)}" +
+    ".fo-pot-useful{background:rgba(77,166,162,.1);color:#2b6b68;border:1px solid rgba(77,166,162,.35)}" +
+    ".fo-pot-limited{background:rgba(11,19,34,.05);color:#8a8474;border:1px solid rgba(11,19,34,.12)}" +
+    ".fo-fat{font-size:11.5px;font-weight:600}.fo-fat-ok{color:#2e7d4f}.fo-fat-mid{color:#a97b1e}.fo-fat-bad{color:#c0392b}" +
+    "#page .fo-tr-tbl select{font:inherit;font-size:12px;padding:5px 8px;border:1px solid #d8d2c2;border-radius:8px;background:#fff;color:#12203a;max-width:150px}" +
+    ".fo-tr-progress{min-width:150px}.fo-tr-bar{height:6px;border-radius:3px;background:#ece7da;overflow:hidden;margin-bottom:3px}" +
+    ".fo-tr-bar u{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg," + TEAL + ",#3E9960)}" +
+    ".fo-tr-progress span{font-size:10.5px;color:#9a9484}" +
+    ".fo-tr-bulk{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:10px}" +
+    "#page .fo-tr-b{font-size:12px;padding:6px 12px;border:1px solid #d8d2c2;background:#fff;color:#243040;border-radius:8px;cursor:pointer}" +
+    "#page .fo-tr-b:hover{border-color:" + TEAL + ";color:#2b6b68}" +
+    ".fo-tr-rep .fo-tr-g{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;color:#2e7d4f}" +
+    ".fo-tr-rep .fo-tr-rec{color:#2b6b68}.fo-tr-rep .fo-tr-sign{color:#a95f38;font-weight:700}" +
+    ".fo-ycs{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}" +
+    ".fo-yc{background:#faf8f3;border:1px solid #e4dfd2;border-radius:12px;padding:13px 14px}" +
+    ".fo-yc-h{display:flex;align-items:center;gap:7px;font-size:14px}.fo-yc-h b{color:#12203a;flex:1}" +
+    ".fo-yc-meta{font-size:11.5px;color:#8a8474;margin:3px 0 8px}" +
+    ".fo-yc-bars{display:grid;gap:4px;margin-bottom:8px}" +
+    ".fo-yc .fo-sk i{color:#9a9484;width:34px}.fo-yc .fo-sk b{background:#ece7da}.fo-yc .fo-sk em{color:#5d6570}" +
+    ".fo-yc-money{display:flex;justify-content:space-between;font-size:11.5px;color:#8a8474;margin-bottom:9px}.fo-yc-money b{color:#12203a}" +
+    "#page .fo-yc-sign{width:100%;padding:9px;border:none !important;border-radius:9px;background:" + TERRA + " !important;color:#fff !important;font-weight:700;cursor:pointer}" +
+    "#page .fo-yc-sign:hover:not(:disabled){filter:brightness(1.07)}#page .fo-yc-sign:disabled{opacity:.45;cursor:default}" +
+    ".fo-yc-note{font-size:12.5px;color:#5d6570;background:rgba(77,166,162,.07);border:1px solid rgba(77,166,162,.2);border-radius:9px;padding:8px 12px;margin-bottom:11px}" +
     // season progress + momentum chips (club page psychology strip)
     ".fo-season-strip{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:0 0 14px}" +
     ".fo-progress{flex:1 1 260px;min-width:220px;background:#fff;border:1px solid #e4dfd2;border-radius:12px;padding:10px 14px;box-shadow:0 3px 12px rgba(11,19,34,.05)}" +
@@ -764,6 +794,7 @@
         var a = tb.querySelector("a." + cls); if (!a) a = mk(label, cls, fn);
         if (status) tb.insertBefore(a, status); else tb.appendChild(a);
       };
+      addNav("fo-training", "Training", function () { location.hash = "#/training"; if (typeof window.route === "function") window.route(); });
       addNav("fo-friendly", "Practice Game", startFriendly);
       // Admin is founder-only: add it for the founder, and remove it for everyone
       // else (so a player never inherits a stale Admin link).
@@ -1390,7 +1421,7 @@
     var _mt = null, pg0 = document.getElementById("page");
     if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); return r; }; }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); foRenderTraining(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); return r; }; }
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
@@ -1752,6 +1783,7 @@
       // keep my working line-up; if the round advanced, it needs re-saving for the new round
       var newRound = (window.App && App.season && typeof App.season.round === "number") ? App.season.round : prevRound;
       if (myOrders) { App.orders = myOrders; if (newRound !== prevRound) App.orders.saved = false; }
+      foReapplyTraining();
       // The snapshot's App.fin belongs to whoever pushed it. Members must see THEIR
       // club's treasury (t.bank, settled fairly by the resolver), not the pusher's.
       try {
@@ -1986,11 +2018,18 @@
     if (!LG || !SYNC || SYNC.practice) return;   // practice mode is a private local game
     try {
       // While planning a future round, don't auto-push the current round's orders.
-      if (SYNC.planRound == null && SYNC.started && window.App && App.orders && App.orders.saved && App.season && typeof GD !== "undefined" && GD.teams) {
-        var sig = JSON.stringify(App.orders) + "|" + App.season.round;
-        if (sig !== SYNC.lastOrderSig) {
+      if (SYNC.planRound == null && SYNC.started && window.App && App.season && typeof GD !== "undefined" && GD.teams) {
+        var tro = foTrainState();
+        var ordersReady = App.orders && App.orders.saved;
+        var sig = (ordersReady ? JSON.stringify(App.orders) : "-") + "|" + JSON.stringify(tro.training) + "|" + JSON.stringify(tro.youthPending.map(function (y) { return y.name; })) + "|" + App.season.round;
+        if (sig !== SYNC.lastOrderSig && (ordersReady || Object.keys(tro.training).length || tro.youthPending.length)) {
           SYNC.lastOrderSig = sig;
-          var pkt = { fo_packet: 1, teamIx: App.teamIx, club: (GD.teams[App.teamIx] || {}).name, round: App.season.round, manager: (SYNC.me && SYNC.me.display_name) || "manager", orders: App.orders };
+          var pkt = {
+            fo_packet: 1, teamIx: App.teamIx, club: (GD.teams[App.teamIx] || {}).name, round: App.season.round,
+            manager: (SYNC.me && SYNC.me.display_name) || "manager",
+            orders: ordersReady ? App.orders : null,
+            fo_training: tro.training, fo_youth: tro.youthPending
+          };
           rpc("push_packet", { p_league_id: LG.id, p_round: App.season.round, p_packet: pkt }).catch(function () {});
         }
       }
@@ -2938,6 +2977,281 @@
   if (_authRedirect === "ok") { enterApp(); }
   else if (_authRedirect === "error") { renderLogin(); setTimeout(function () { say("That email link expired or was already used. Log in with your email and password below."); }, 60); }
   else restoreSession().then(function () { if (JWT) enterApp(); else renderLogin(); }).catch(function () { renderLogin(); });
+
+  // ===========================================================================
+  //  TRAINING & YOUTH SCOUTING (From-the-Pavilion-style)
+  //  The engine already carries the training MODEL (weighted programs, potential
+  //  tiers, age/fatigue/academy factors, progress thresholds) — this adds the UI
+  //  and the multiplayer plumbing: choices ride the order packet (fo_training /
+  //  fo_youth) and the resolver applies them even-handedly for every club.
+  // ===========================================================================
+  var FO_TR_PROGS = ["Batting", "New-ball batting", "Spin batting", "Power hitting", "Finishing",
+    "Bowling", "New-ball seam", "Spin bowling", "Death bowling", "Control bowling",
+    "Keeping", "Fielding", "Fitness", "All-rounder", "Rest"];
+  var FO_TR_INT = ["Light", "Normal", "Intense", "Rest"];
+  var FO_TR_PROGMAP = {
+    "Batting": { vsPace: 25, vsSpin: 25, rotation: 20, temperament: 20, stamina: 10 },
+    "New-ball batting": { vsPace: 45, temperament: 25, rotation: 15, stamina: 15 },
+    "Spin batting": { vsSpin: 45, rotation: 20, temperament: 20, power: 15 },
+    "Power hitting": { power: 50, vsPace: 15, vsSpin: 15, temperament: 10, stamina: 10 },
+    "Finishing": { power: 35, temperament: 25, rotation: 20, vsPace: 10, vsSpin: 10 },
+    "Bowling": { wicket: 25, economy: 25, discipline: 20, moveTurn: 15, variation: 10, stamina: 5 },
+    "New-ball seam": { moveTurn: 30, wicket: 25, discipline: 20, economy: 15, stamina: 10 },
+    "Spin bowling": { moveTurn: 30, wicket: 25, variation: 20, economy: 15, discipline: 10 },
+    "Death bowling": { economy: 30, discipline: 30, variation: 20, stamina: 15, wicket: 5 },
+    "Control bowling": { economy: 40, discipline: 30, variation: 15, stamina: 15 },
+    "Keeping": { keeping: 30, catching: 25, stumping: 25, fielding: 15, stamina: 5 },
+    "Fielding": { fielding: 40, catching: 30, stamina: 20, power: 10 },
+    "Fitness": { stamina: 65, power: 25, fielding: 10 },
+    "All-rounder": { vsPace: 15, vsSpin: 15, wicket: 15, economy: 15, fielding: 20, stamina: 20 },
+    "Rest": {}
+  };
+  function foTrKey() { return "fol_train_" + (LG ? LG.id : "solo"); }
+  function foTrainState() {
+    var raw = lsGet(foTrKey()), s = null;
+    try { s = JSON.parse(raw || "null"); } catch (e) {}
+    if (!s || typeof s !== "object") s = {};
+    if (!s.training) s.training = {};
+    if (!s.youthPending) s.youthPending = [];
+    if (s.lastSignRound == null) s.lastSignRound = -99;
+    return s;
+  }
+  function foTrainSave(s) { lsSet(foTrKey(), JSON.stringify(s)); }
+  function foMyClub() { try { return GD.teams[App.teamIx]; } catch (e) { return null; } }
+  function foTrDefault(p) {
+    if (p.keeper) return "Keeping";
+    if (p.role === "allRounder") return "All-rounder";
+    if (p.bowlTypeFull && p.bowlTypeFull !== "none") return (typeof isPace === "function" && isPace(p)) ? "New-ball seam" : "Spin bowling";
+    return p.role === "middleOrderBat" ? "Finishing" : "Batting";
+  }
+  function foTrOf(p) {
+    var st = foTrainState(), o = st.training[p.name] || {};
+    return {
+      program: o.program || (p.training && p.training.program) || foTrDefault(p),
+      intensity: o.intensity || (p.training && p.training.intensity) || "Normal"
+    };
+  }
+  function foPotential(p) {
+    if (p.training && p.training.potential) return p.training.potential;
+    var v = ((p.talent === "gifted" || (p.talents || []).length >= 2) ? 2 : 0) + (p.age <= 20 ? 2 : p.age <= 24 ? 1 : 0) + ((p.rating || 0) > 3600 ? 1 : 0);
+    return v >= 4 ? "Star" : v >= 3 ? "High" : v >= 1 ? "Useful" : "Limited";
+  }
+  function foTrProgress(p) {
+    // best progress toward the next +1 across the player's trained skills
+    var tr = p.training || {}, prog = tr.progressBySkill || {}, best = 0, bestSk = "";
+    for (var sk in prog) {
+      var th = 80 + ((p.skills && p.skills[sk]) || 0) * 1.5;
+      var pc = 100 * (prog[sk] || 0) / th;
+      if (pc > best) { best = pc; bestSk = sk; }
+    }
+    if (!bestSk) { var w = FO_TR_PROGMAP[foTrOf(p).program]; bestSk = w ? Object.keys(w)[0] : "stamina"; }
+    return { skill: bestSk, pct: Math.min(99, Math.round(best)) };
+  }
+  function foSetTraining(name, field, value) {
+    var st = foTrainState();
+    st.training[name] = st.training[name] || {};
+    st.training[name][field] = value;
+    foTrainSave(st);
+    // apply locally so the squad/office pages reflect it immediately
+    try {
+      var t = foMyClub(), p = t && t.players.find(function (x) { return x.name === name; });
+      if (p) {
+        if (!p.training) p.training = { program: null, intensity: "Normal", progressBySkill: {} };
+        if (field === "program") { p.training.program = value; p.trainFocus = value; }
+        else p.training.intensity = value;
+        if (typeof window.saveGame === "function") window.saveGame(false);
+      }
+    } catch (e) {}
+  }
+  // Reapply my saved choices whenever a fresh snapshot lands (the snapshot only
+  // carries choices the resolver has already seen).
+  function foReapplyTraining() {
+    try {
+      var st = foTrainState(), t = foMyClub(); if (!t) return;
+      for (var nm in st.training) {
+        var p = t.players.find(function (x) { return x.name === nm; }); if (!p) continue;
+        if (!p.training) p.training = { program: null, intensity: "Normal", progressBySkill: {} };
+        if (st.training[nm].program) { p.training.program = st.training[nm].program; p.trainFocus = st.training[nm].program; }
+        if (st.training[nm].intensity) p.training.intensity = st.training[nm].intensity;
+      }
+      // youth: drop pending signings that made it into the squad
+      var before = st.youthPending.length;
+      st.youthPending = st.youthPending.filter(function (y) { return !t.players.find(function (x) { return x.name === y.name; }); });
+      if (st.youthPending.length !== before) { foTrainSave(st); toast("Your youth signing has joined the squad."); }
+    } catch (e) {}
+  }
+
+  // ---- youth scouting: deterministic shortlist of 18-20 year olds ------------
+  function foScoutSeed() {
+    var r = (App.season && App.season.round) || 0;
+    var t = foMyClub();
+    return (LG ? LG.id : "solo") + "-scout-" + ((t && t.name) || "club") + "-" + r;
+  }
+  function foScoutList() {
+    var t = foMyClub(); if (!t) return [];
+    var country = (SYNC && SYNC.myTeam && SYNC.myTeam.country) || "England";
+    var pool = [];
+    try { pool = buildCountryPool(foScoutSeed(), country); } catch (e) { return []; }
+    var young = pool.filter(function (p) { return (p.age || 99) <= 20 && !t.players.find(function (x) { return x.name === p.name; }); });
+    young.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
+    // a keeper or bowler among the three when possible, for useful variety
+    var picks = [], used = {};
+    var take = function (p) { if (p && !used[p.name] && picks.length < 3) { used[p.name] = 1; picks.push(p); } };
+    take(young.find(function (p) { return p.keeper; }));
+    take(young.find(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && !p.keeper; }));
+    young.forEach(take);
+    return picks.map(function (p) {
+      var q = JSON.parse(JSON.stringify(p));
+      q.fee = Math.max(8000, Math.round(foDraftPrice(p) * 0.75 / 500) * 500);   // raw youth come cheaper
+      return q;
+    });
+  }
+  var FO_SCOUT_COOLDOWN = 3;   // matchdays between signings
+  function foSignYouth(cand) {
+    var st = foTrainState(), t = foMyClub(); if (!t) return;
+    var round = (App.season && App.season.round) || 0;
+    if (st.youthPending.length) { say("You already have a signing awaiting confirmation — it completes after the next matchday."); return; }
+    if (round - st.lastSignRound < FO_SCOUT_COOLDOWN) { say("Your scout needs " + (FO_SCOUT_COOLDOWN - (round - st.lastSignRound)) + " more matchday(s) before the next signing."); return; }
+    if ((t.players || []).length >= 18) { say("Squad is full (18) — release someone first."); return; }
+    var bank = (App.fin && App.fin.bank) || t.bank || 0;
+    if (bank < cand.fee) { say("Not enough in the bank — the signing fee is " + FO$(cand.fee) + "."); return; }
+    foConfirm({
+      title: "Sign " + cand.name + "?",
+      body: "Age " + cand.age + " · " + foRoleShort(cand) + " · " + FO$(cand.fee) + " signing fee, then " + FO$(foDailyWage(cand)) + "/matchday wages. Young players train the fastest in the game.",
+      confirm: "Sign " + cand.name.split(" ")[0], cancel: "Not yet"
+    }).then(function (ok) {
+      if (!ok) return;
+      st.lastSignRound = round;
+      st.youthPending = [cand];
+      foTrainSave(st);
+      if (SYNC && SYNC.started && !SYNC.practice) {
+        toast(cand.name + " agreed terms — the signing completes after the next matchday.");
+      } else {
+        // solo / practice: apply immediately through the engine's own books
+        try {
+          var p = JSON.parse(JSON.stringify(cand)); delete p.fee;
+          p.fatigue = "rested"; p.formIx = 3;
+          t.players.push(p);
+          if (typeof window.ledger === "function" && window.ledger.length >= 3) window.ledger("Transfer", "Youth signing: " + p.name, -cand.fee);
+          else if (typeof window.ledger === "function") window.ledger("Youth signing: " + p.name, -cand.fee);
+          else if (App.fin) App.fin.bank -= cand.fee;
+          st.youthPending = []; foTrainSave(st);
+          if (typeof window.saveGame === "function") window.saveGame(false);
+          toast(cand.name + " joins the squad!");
+        } catch (e) { say(e); }
+      }
+      foTrainingPage();
+    });
+  }
+
+  // ---- the Training page ------------------------------------------------------
+  function foTrainingPage() {
+    var page = document.getElementById("page"); if (!page) return;
+    var t = foMyClub();
+    if (!t || !t.players || !t.players.length) { page.innerHTML = "<div class='crumb'>Training</div><div class='panel'><h4>Training</h4><div class='pad'>No squad yet — finish your draft first.</div></div>"; return; }
+    var st = foTrainState();
+    var round = (App.season && App.season.round) || 0;
+    var rep = t._trainReport || (App.trainingReports && App.trainingReports[0]) || null;
+
+    var progOpts = function (cur) { return FO_TR_PROGS.map(function (k) { return "<option value='" + k + "'" + (cur === k ? " selected" : "") + ">" + k + "</option>"; }).join(""); };
+    var intOpts = function (cur) { return FO_TR_INT.map(function (k) { return "<option value='" + k + "'" + (cur === k ? " selected" : "") + ">" + k + "</option>"; }).join(""); };
+    var potCls = { Star: "star", High: "high", Useful: "useful", Limited: "limited" };
+
+    var rows = t.players.slice().sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); }).map(function (p) {
+      var tr = foTrOf(p), pr = foTrProgress(p), pot = foPotential(p);
+      var flag = ""; try { flag = (typeof foFlag === "function" && p.nat) ? foFlag(p.nat) : ""; } catch (e) {}
+      var fat = String(p.fatigue || "rested");
+      var fatTone = /rested|revived|energetic|passable/.test(fat) ? "ok" : /satisfactory|moderate/.test(fat) ? "mid" : "bad";
+      return "<tr>" +
+        "<td class='fo-tr-nm'>" + flag + " <b>" + E(p.name) + "</b><span class='fo-tr-meta'>" + foRoleShort(p) + " · age " + (p.age || "?") + "</span></td>" +
+        "<td><span class='fo-pot fo-pot-" + (potCls[pot] || "useful") + "'>" + pot + "</span></td>" +
+        "<td><span class='fo-fat fo-fat-" + fatTone + "'>" + E(fat) + "</span></td>" +
+        "<td><select class='fo-tr-prog' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + progOpts(tr.program) + "</select></td>" +
+        "<td><select class='fo-tr-int' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + intOpts(tr.intensity) + "</select></td>" +
+        "<td class='fo-tr-progress'><div class='fo-tr-bar' title='Progress to the next +1 (" + E(pr.skill) + ")'><u style='width:" + pr.pct + "%'></u></div><span>" + E(pr.skill) + " · " + pr.pct + "%</span></td>" +
+        "</tr>";
+    }).join("");
+
+    var repHtml = "";
+    if (rep && (rep.gains || []).length + (rep.recovery || []).length + (rep.signings || []).length) {
+      repHtml = "<div class='panel'><h4>This week in the nets · after matchday " + (rep.round || round) + "</h4><div class='pad fo-tr-rep'>" +
+        (rep.signings || []).map(function (g) { return "<div class='fo-tr-g fo-tr-sign'>" + FO_I("users", 14) + " " + E(g) + "</div>"; }).join("") +
+        (rep.gains || []).map(function (g) { return "<div class='fo-tr-g'>" + FO_I("checkCircle", 14) + " " + E(g) + "</div>"; }).join("") +
+        (rep.recovery || []).map(function (g) { return "<div class='fo-tr-g fo-tr-rec'>" + FO_I("shield", 14) + " " + E(g) + "</div>"; }).join("") +
+        "</div></div>";
+    } else {
+      repHtml = "<div class='panel'><h4>This week in the nets</h4><div class='pad small'>Gains land after each matchday. Younger players and higher-potential players improve fastest; tired players train poorly — use Rest.</div></div>";
+    }
+
+    // youth scout panel
+    var canSignIn = Math.max(0, FO_SCOUT_COOLDOWN - (round - st.lastSignRound));
+    var scouts = foScoutList();
+    var scoutCards = scouts.map(function (p, i) {
+      var flag = ""; try { flag = (typeof foFlag === "function" && p.nat) ? foFlag(p.nat) : ""; } catch (e) {}
+      var pot = foPotential(p);
+      var bars = [["Bat", foAgg(p, "bat")], [(p.keeper ? "Keep" : "Bowl"), p.keeper ? foAgg(p, "keep") : ((p.bowlTypeFull && p.bowlTypeFull !== "none") ? foAgg(p, "bowl") : 0)], ["Field", foAgg(p, "field")]];
+      var barHtml = bars.map(function (b) { return "<span class='fo-sk'><i>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + b[1] + "%'></u></b><em>" + b[1] + "</em></span>"; }).join("");
+      return "<div class='fo-yc'>" +
+        "<div class='fo-yc-h'>" + flag + " <b>" + E(p.name) + "</b><span class='fo-pot fo-pot-" + ({ Star: "star", High: "high", Useful: "useful", Limited: "limited" }[pot] || "useful") + "'>" + pot + "</span></div>" +
+        "<div class='fo-yc-meta'>" + foRoleShort(p) + " · age " + p.age + " · rating " + (p.rating || 0).toLocaleString() + "</div>" +
+        "<div class='fo-yc-bars'>" + barHtml + "</div>" +
+        "<div class='fo-yc-money'><span>Fee <b>" + FO$(p.fee) + "</b></span><span>Wage <b>" + FO$(foDailyWage(p)) + "/day</b></span></div>" +
+        "<button class='fo-yc-sign' data-i='" + i + "'" + ((st.youthPending.length || canSignIn > 0) ? " disabled" : "") + ">Sign</button>" +
+        "</div>";
+    }).join("") || "<div class='small'>No eligible young players found this matchday — the shortlist refreshes after each round.</div>";
+    var scoutNote = st.youthPending.length
+      ? "<b>" + E(st.youthPending[0].name) + "</b> has agreed terms — the signing completes after the next matchday."
+      : (canSignIn > 0 ? "Your scout can bring in the next signing in <b>" + canSignIn + "</b> matchday(s)." : "Your scout is ready — you can sign one player now.");
+
+    page.innerHTML =
+      "<div class='crumb'>" + E(t.name) + " &raquo; Training</div>" +
+      "<div class='page-head'><div><div class='eyebrow'>Development centre</div><h1>Training &amp; Youth</h1><p>Programs update after every matchday. Young legs learn fastest.</p></div></div>" +
+      repHtml +
+      "<div class='panel'><h4>Training programs</h4><div class='pad'>" +
+      "<div class='fo-tr-bulk'><span class='small'>Quick set:</span>" +
+      "<button class='fo-tr-b' data-m='role'>Best fit by role</button>" +
+      "<button class='fo-tr-b' data-m='restTired'>Rest the tired</button>" +
+      "<button class='fo-tr-b' data-m='light'>All light</button>" +
+      "<button class='fo-tr-b' data-m='normal'>All normal</button></div>" +
+      "<table class='fo-tr-tbl'><thead><tr><th>Player</th><th>Potential</th><th>Fatigue</th><th>Program</th><th>Intensity</th><th>Next gain</th></tr></thead><tbody>" + rows + "</tbody></table>" +
+      "<div class='small' style='margin-top:8px'>Skill gains raise wages automatically. Squads over 24 players train slower.</div>" +
+      "</div></div>" +
+      "<div class='panel'><h4>Youth scout &middot; ages 18&#8211;20</h4><div class='pad'>" +
+      "<div class='fo-yc-note'>" + scoutNote + "</div>" +
+      "<div class='fo-ycs'>" + scoutCards + "</div>" +
+      "<div class='small' style='margin-top:8px'>The shortlist refreshes every matchday from your home country. One signing per " + FO_SCOUT_COOLDOWN + " matchdays; squad cap 18.</div>" +
+      "</div></div>";
+
+    page.querySelectorAll(".fo-tr-prog").forEach(function (s) { s.addEventListener("change", function () { foSetTraining(s.getAttribute("data-p"), "program", s.value); }); });
+    page.querySelectorAll(".fo-tr-int").forEach(function (s) { s.addEventListener("change", function () { foSetTraining(s.getAttribute("data-p"), "intensity", s.value); }); });
+    page.querySelectorAll(".fo-tr-b").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var m = b.getAttribute("data-m");
+        t.players.forEach(function (p) {
+          if (m === "role") foSetTraining(p.name, "program", foTrDefault(p));
+          if (m === "restTired" && !/rested|revived|energetic|passable|satisfactory/.test(String(p.fatigue || "rested"))) { foSetTraining(p.name, "program", "Rest"); foSetTraining(p.name, "intensity", "Rest"); }
+          if (m === "light") foSetTraining(p.name, "intensity", "Light");
+          if (m === "normal") foSetTraining(p.name, "intensity", "Normal");
+        });
+        foTrainingPage();
+        toast("Training updated for the squad.");
+      });
+    });
+    page.querySelectorAll(".fo-yc-sign").forEach(function (b) { b.addEventListener("click", function () { foSignYouth(scouts[+b.getAttribute("data-i")]); }); });
+  }
+  // The engine's own hashchange handler calls its INTERNAL route (bypassing the
+  // window.route wrapper) and falls back to the club page for hashes it doesn't
+  // know — so re-assert the training page one tick after every hash change.
+  window.addEventListener("hashchange", function () { setTimeout(foRenderTraining, 15); });
+  function foRenderTraining() {
+    if (!/^#\/training/.test(location.hash || "")) return;
+    try { bumpBrand(); } catch (e) {}
+    try { foTrainingPage(); } catch (e) { console.warn("foTrainingPage", e); }
+    try {
+      var tb = document.getElementById("topbar");
+      tb && tb.querySelectorAll("a").forEach(function (a) { a.classList.toggle("on", a.classList.contains("fo-training")); });
+    } catch (e) {}
+  }
 
   // Lift the boot veil (injected by build.sh) now that the brand CSS and the right
   // screen are in place — the engine's original UI never gets a frame to flash.
