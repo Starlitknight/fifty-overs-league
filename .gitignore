@@ -1,0 +1,11 @@
+# secrets — never commit
+.env
+.env.*
+*.local
+secrets/
+*.secret
+supabase/.env
+supabase/deploy/.env
+# node
+node_modules/
+package-lock.json

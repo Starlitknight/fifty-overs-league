@@ -1,0 +1,16 @@
+{
+  "name": "fifty-overs-supabase",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/run.mjs && node tests/run_phase2.mjs && node tests/run_phase5.mjs",
+    "test:realpool": "NODE_PATH=/opt/node22/lib/node_modules node tests/draft_realpool.mjs",
+    "test:e2e": "NODE_PATH=/opt/node22/lib/node_modules node tests/run_phase3.mjs",
+    "test:official": "NODE_PATH=/opt/node22/lib/node_modules node tests/run_phase4.mjs",
+    "test:client": "node ../client/tests/render.test.mjs",
+    "test:season": "NODE_PATH=/opt/node22/lib/node_modules node tests/run_phase7.mjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.4"
+  }
+}

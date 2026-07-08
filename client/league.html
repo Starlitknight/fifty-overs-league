@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fifty Overs — League</title>
+<style>
+  :root { --bg:#f6f7f5; --fg:#1c2620; --panel:#fff; --line:#dfe3dd; --accent:#2c7a2c; --blue:#2d6a8f; --warn:#a33328; }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#12160f; --fg:#e7ebe2; --panel:#1b2016; --line:#333c2e; } }
+  *{box-sizing:border-box} body{margin:0;font:14px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+  header{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  h1{font-size:16px;margin:0} main{padding:16px;max-width:960px;margin:0 auto;display:grid;gap:16px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .panel h2{font-size:13px;margin:0;padding:8px 12px;border-bottom:1px solid var(--line);background:rgba(0,0,0,.03)}
+  .pad{padding:10px 12px} .tbl{width:100%;border-collapse:collapse} .tbl th,.tbl td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}
+  .tbl .n{text-align:right;font-variant-numeric:tabular-nums} .tbl tr.me{background:rgba(44,122,44,.12)}
+  .small{font-size:12px;opacity:.75} .n{text-align:right}
+  input,button{font:inherit;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--fg)}
+  button{cursor:pointer} button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .badge{font-size:11px;padding:1px 6px;border-radius:10px;border:1px solid var(--line)}
+  .badge.ok{color:var(--accent);border-color:var(--accent)} .badge.fail,.badge.void{color:var(--warn);border-color:var(--warn)}
+  .badge.resolved{color:var(--blue)} .badge.scheduled{opacity:.7}
+  #pinbanner{padding:8px 16px;background:var(--warn);color:#fff;display:none}
+  .cfg{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+<div id="pinbanner"></div>
+<header>
+  <h1>🏏 Fifty Overs — League</h1>
+  <span id="engine" class="small"></span>
+  <span style="flex:1"></span>
+  <div class="cfg">
+    <input id="url" placeholder="Supabase URL" size="22">
+    <input id="anon" placeholder="anon key" size="14">
+    <input id="email" placeholder="email" size="14" type="email">
+    <input id="pass" placeholder="password" size="12" type="password">
+    <input id="league" placeholder="league id" size="14">
+    <button class="primary" onclick="login()">Log in</button>
+  </div>
+</header>
+<main>
+  <div class="panel"><h2>League table</h2><div class="pad" id="standings"><span class="small">Connect to load standings.</span></div></div>
+  <div class="panel"><h2>Fixtures &amp; results</h2><div class="pad" id="fixtures"></div></div>
+  <div class="panel" id="founderpanel" style="display:none"><h2>Founder tools</h2><div class="pad" id="founder"></div></div>
+</main>
+
+<script type="module">
+import { BUILD_HASH, guardBuildHash, renderStandings, renderFixtures, makeApi, esc } from './mp.js';
+
+document.getElementById('engine').textContent = 'engine ' + BUILD_HASH.slice(0, 12) + '…';
+
+// Pre-filled with the project's PUBLIC values (publishable key is RLS-protected,
+// safe to ship in the browser — it is not a secret).
+const DEFAULTS = {
+  url: 'https://egaipdksvztqqgouriyc.supabase.co',
+  anonKey: 'sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc',
+};
+if (DEFAULTS.url) document.getElementById('url').value = DEFAULTS.url;
+if (DEFAULTS.anonKey) document.getElementById('anon').value = DEFAULTS.anonKey;
+
+let JWT = '';   // obtained by logging in
+
+// Log in with email + password → a JWT, then load the dashboard.
+window.login = async function () {
+  const url = document.getElementById('url').value.trim();
+  const anonKey = document.getElementById('anon').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('pass').value;
+  if (!url || !anonKey) { alert('Supabase URL and anon key are required'); return; }
+  if (!email || !password) { alert('Enter your email and password'); return; }
+  try {
+    const res = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { apikey: anonKey, 'content-type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error_description || data.msg || res.status);
+    JWT = data.access_token;
+    await boot();
+  } catch (e) { alert('Login failed: ' + e.message); }
+};
+
+window.boot = async function () {
+  const url = document.getElementById('url').value.trim();
+  const anonKey = document.getElementById('anon').value.trim();
+  const jwt = JWT;
+  const leagueId = document.getElementById('league').value.trim();
+  if (!url || !anonKey || !leagueId) { alert('Supabase URL, anon key and league id are required'); return; }
+  if (!jwt) { alert('Log in first'); return; }
+  const api = makeApi({ url, anonKey, getToken: () => jwt });
+
+  try {
+    // 1) enforce the engine pin BEFORE anything else
+    const [league] = await api.select('leagues', `id=eq.${leagueId}&select=id,name,build_hash,status`);
+    const guard = guardBuildHash(league?.build_hash);
+    const banner = document.getElementById('pinbanner');
+    if (!guard.ok) { banner.style.display = 'block'; banner.textContent = '⚠ ' + guard.message; }
+    else banner.style.display = 'none';
+
+    // 2) standings + teams
+    const [table, teams] = await Promise.all([
+      api.rpc('league_table', { p_league_id: leagueId }),
+      api.select('teams', `league_id=eq.${leagueId}&select=id,name,manager_id`),
+    ]);
+    const teamsById = Object.fromEntries(teams.map((t) => [t.id, t]));
+    const me = await api.select('members', `league_id=eq.${leagueId}&select=id,role`);
+    const myMember = me[0];
+    const myTeam = teams.find((t) => t.manager_id === myMember?.id);
+    document.getElementById('standings').innerHTML = renderStandings(table, myTeam?.id);
+
+    // 3) fixtures + results merged
+    const [fixtures, results] = await Promise.all([
+      api.select('fixtures', `league_id=eq.${leagueId}&select=id,round,home_team_id,away_team_id,resolve_at,status&order=round`),
+      api.select('results', `league_id=eq.${leagueId}&select=fixture_id,result_text`),
+    ]);
+    const resByFx = Object.fromEntries(results.filter(r => r.fixture_id).map((r) => [r.fixture_id, r.result_text]));
+    const merged = fixtures.map((f) => ({ ...f, result_text: resByFx[f.id] }));
+    document.getElementById('fixtures').innerHTML = renderFixtures(merged, teamsById);
+
+    // 4) founder tools
+    if (myMember?.role === 'founder' && guard.ok) {
+      document.getElementById('founderpanel').style.display = '';
+      document.getElementById('founder').innerHTML =
+        `<div class="small">You are the founder of <b>${esc(league.name)}</b> (status: ${esc(league.status)}).</div>
+         <p class="small">Actions (lock managers, deal draft, generate fixtures) are issued through the
+         <code>action</code> / <code>deal_draft</code> Edge Functions with your JWT.</p>`;
+    }
+  } catch (e) {
+    alert('Load failed: ' + e.message);
+  }
+};
+</script>
+</body>
+</html>
