@@ -6541,6 +6541,74 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-modal-act .fo-su-cancel{background:transparent;border:1px solid #cdc7b8;color:#5b6472;padding:11px 16px;border-radius:9px;cursor:pointer}" +
     ".fo-break-card{text-align:center}.fo-break-cond{color:#5b6472;font-size:13px;margin-bottom:6px}" +
     ".fo-break-clock{font-size:46px;font-weight:800;color:#12203a;font-variant-numeric:tabular-nums;margin:6px 0 10px;letter-spacing:1px}" +
+    // ---- global app shell polish ----
+    "html body.ftpskin,body{background:#F1EEE6 !important}" +
+    "html body.ftpskin .wrap,.wrap,#page{background:transparent !important}" +
+    "html body.ftpskin,body,#page,.panel,.card,button,select,input,h1,h2,h3,h4{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}" +
+    // nav: muted inactive, terracotta-underline active (not a full pill)
+    "html body.ftpskin #topbar a,#topbar a{color:rgba(246,244,238,.72)}" +
+    "html body.ftpskin #topbar a:hover,#topbar a:hover{color:#F6F4EE;background:rgba(246,244,238,.06) !important}" +
+    "html body.ftpskin #topbar a.on,#topbar a.on{background:transparent !important;color:#fff !important;box-shadow:inset 0 -3px 0 " + TERRA + " !important}" +
+    // Week / Bank / Next → compact status chips
+    "#fo-top-status{gap:8px !important;padding:0 4px !important}" +
+    "#fo-top-status span{border-left:none !important;background:rgba(246,244,238,.07);border:1px solid rgba(246,244,238,.14);border-radius:9px;padding:6px 11px !important;color:#e9eef2;font-size:11.5px;white-space:nowrap}" +
+    // ---- premium Club dashboard ----
+    ".fo-ch{max-width:1240px;margin:0 auto;padding:2px 2px 24px}" +
+    ".fo-ch-crumb{color:#6b7280;font-size:13px;margin:6px 0 12px}.fo-ch-crumb span{color:#c0bbb0;margin:0 3px}" +
+    ".fo-ch-hero{display:flex;justify-content:space-between;align-items:center;gap:16px;background:linear-gradient(135deg,#0B1322,#1C2433);border-radius:16px;padding:22px 26px;box-shadow:0 8px 24px rgba(11,19,34,.18)}" +
+    ".fo-ch-hero-l{display:flex;gap:18px;align-items:center;min-width:0}" +
+    ".fo-ch-crest{width:74px;height:74px;border-radius:14px;background:" + PAPER + ";display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 4px 12px rgba(0,0,0,.2)}" +
+    ".fo-ch-crest img{width:56px;height:56px;object-fit:contain;border-radius:8px}" +
+    ".fo-ch-eyebrow{color:" + TEAL + ";font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}" +
+    ".fo-ch-name{color:#fff;font-size:34px;font-weight:800;margin:2px 0 10px;letter-spacing:-.5px;line-height:1}" +
+    ".fo-ch-chips{display:flex;gap:8px;flex-wrap:wrap}" +
+    ".fo-ch-chip{background:rgba(246,244,238,.08);border:1px solid rgba(246,244,238,.14);color:#d7dbe2;font-size:12px;padding:5px 11px;border-radius:8px}" +
+    ".fo-hero-pill{background:rgba(246,244,238,.1);border:1px solid rgba(246,244,238,.2);color:#F6F4EE;font-size:12.5px;padding:8px 14px;border-radius:999px;white-space:nowrap}" +
+    ".fo-hero-pill .fo-form{margin-left:6px}" +
+    ".fo-ch-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:16px 0}" +
+    ".fo-stat{position:relative;display:flex;gap:12px;align-items:center;background:#fff;border:1px solid rgba(11,19,34,.08);border-radius:14px;padding:15px 16px;box-shadow:0 8px 24px rgba(11,19,34,.06);overflow:hidden}" +
+    ".fo-stat::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}" +
+    ".fo-acc-terra::before{background:" + TERRA + "}.fo-acc-teal::before{background:" + TEAL + "}" +
+    ".fo-stat-ic{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;background:rgba(200,103,74,.1);flex:none}" +
+    ".fo-acc-teal .fo-stat-ic{background:rgba(77,166,162,.12)}" +
+    ".fo-stat-l{font-size:10.5px;color:#8a8474;text-transform:uppercase;letter-spacing:.04em;font-weight:700}" +
+    ".fo-stat-v{font-size:25px;font-weight:800;color:#12203a;line-height:1.15}" +
+    ".fo-stat-s{font-size:11px;color:#9a9484;margin-top:1px}" +
+    ".fo-ch-grid{display:grid;grid-template-columns:1.42fr 1fr;gap:16px}" +
+    ".fo-ch-col{display:flex;flex-direction:column;gap:16px;min-width:0}" +
+    ".fo-card{background:#fff;border:1px solid rgba(11,19,34,.08);border-radius:14px;box-shadow:0 8px 24px rgba(11,19,34,.06);overflow:hidden}" +
+    ".fo-card-h{background:linear-gradient(135deg,#0B1322,#1C2433);color:#F6F4EE;font-weight:700;font-size:14px;padding:13px 18px}" +
+    ".fo-card-b{padding:4px 8px 8px}" +
+    ".fo-card-h2row{display:flex;justify-content:space-between;align-items:flex-end;padding:15px 18px 4px}" +
+    ".fo-card-h2{font-size:15px;font-weight:700;color:#12203a;position:relative;padding-bottom:7px}" +
+    ".fo-card-h2::after{content:'';position:absolute;left:0;bottom:0;width:26px;height:3px;background:" + TERRA + ";border-radius:2px}" +
+    ".fo-morelink{color:" + TERRA2 + " !important;font-size:12.5px;font-weight:600;white-space:nowrap}" +
+    ".fo-tbl{width:100%;border-collapse:collapse;font-size:13px}" +
+    ".fo-tbl thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#9a9484;font-weight:700;padding:8px 12px;border-bottom:1px solid rgba(11,19,34,.08)}" +
+    ".fo-tbl tbody td{padding:10px 12px;border-bottom:1px solid rgba(11,19,34,.055);color:#243040}" +
+    ".fo-tbl tbody tr:last-child td{border-bottom:none}.fo-tbl .r{text-align:right}" +
+    ".fo-tbl .fo-rk{width:34px;text-align:center;color:#9a9484;font-weight:700}" +
+    ".fo-tbl .fo-form{margin-left:6px;display:inline-flex;gap:2px;vertical-align:middle}" +
+    ".fo-tbl tbody tr:hover td{background:#faf8f3}.fo-rowlink{cursor:pointer}" +
+    ".fo-tbl .fo-scoutname{cursor:pointer;color:#12203a;font-weight:600}.fo-tbl .fo-scoutname:hover{color:" + TERRA + "}" +
+    ".fo-tbl tr.fo-userrow td{background:rgba(200,103,74,.10)}" +
+    ".fo-tbl tr.fo-userrow td:first-child{box-shadow:inset 3px 0 0 " + TERRA + "}" +
+    ".fo-t{font-size:10px;color:" + TERRA + ";font-weight:600;margin-top:1px}" +
+    ".fo-fx-fr td{background:rgba(77,166,162,.06)}" +
+    ".fo-pill{display:inline-block;font-size:10.5px;font-weight:600;padding:2px 9px;border-radius:999px;border:1px solid transparent;vertical-align:middle}" +
+    ".fo-pill-teal{background:rgba(77,166,162,.12);color:#2b6b68;border-color:rgba(77,166,162,.3)}" +
+    ".fo-pill-muted{background:#f0ece2;color:#7a7566;border-color:#e2ddd0}" +
+    ".fo-empty{display:flex;gap:14px;align-items:center;justify-content:center;padding:26px 20px;color:#8a8474}" +
+    ".fo-empty-ic{width:44px;height:44px;border-radius:50%;background:#f2eee4;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}" +
+    ".fo-ch-leaders{display:grid;grid-template-columns:1fr 1fr;gap:16px}" +
+    ".fo-lead{display:flex;gap:14px;align-items:center;padding:16px 18px}" +
+    ".fo-lead-ic{width:44px;height:44px;border-radius:11px;background:rgba(200,103,74,.1);display:flex;align-items:center;justify-content:center;font-size:19px;flex:none}" +
+    ".fo-ch-leaders .fo-lead:nth-child(2) .fo-lead-ic{background:rgba(77,166,162,.12)}" +
+    ".fo-card-h2{margin:0}.fo-lead .fo-card-h2::after{display:none}" +
+    ".fo-lead-v{font-size:24px;font-weight:800;color:#12203a}.fo-lead-v span{font-size:13px;font-weight:600;color:#9a9484}" +
+    ".fo-kv{width:100%;font-size:13px;border-collapse:collapse}.fo-kv td{padding:10px 18px;border-bottom:1px solid rgba(11,19,34,.055);color:#243040}.fo-kv tr:last-child td{border-bottom:none}.fo-kv td:first-child{color:#7a7566}" +
+    ".fo-teal{color:#2b6b68 !important;font-weight:600}" +
+    "@media(max-width:900px){.fo-ch-stats{grid-template-columns:repeat(2,1fr)}.fo-ch-grid{grid-template-columns:1fr}.fo-ch-leaders{grid-template-columns:1fr}.fo-ch-name{font-size:26px}.fo-ch-hero{flex-direction:column;align-items:flex-start}}" +
     // league standings — form pips + leader/user accents
     ".fo-standings td,.fo-standings th{padding:6px 8px}" +
     ".fo-standings tr.fo-lead td{box-shadow:inset 3px 0 0 " + TEAL + "}" +
@@ -6708,6 +6776,118 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     } catch (e) { say(e); foPlayFriendly(fr); }
   }
   function foPlayFriendly(fr) { foChallenge(fr.oppIx, fr.pitch, fr.weather); }
+
+  // ===========================================================================
+  //  Premium Club home. A fully custom, branded dashboard that replaces the
+  //  engine's default pgClub (same data + game hooks, modern presentation).
+  // ===========================================================================
+  var FO_MOODS = ["Furious", "Angry", "Restless", "Steady", "Pleased", "Delighted", "Euphoric"];
+  function foWageBill(t) { return (t && t.players) ? t.players.reduce(function (s, p) { return s + (+p.wage || 0); }, 0) : 0; }
+  function foMoney(n) { return "$" + Math.round(n || 0).toLocaleString(); }
+  function foTeamLeaders(t) {
+    var bat = { name: null, runs: 0 }, bowl = { name: null, wkts: 0 };
+    try {
+      (t.players || []).forEach(function (p) {
+        var h = (App.playerHist && App.playerHist[p.name]) || [], runs = 0, wkts = 0;
+        h.forEach(function (e) { var bm = /(\d+)/.exec(e.bat || ""); if (bm) runs += parseInt(bm[1], 10); var wm = /(\d+)\s*[-\/]/.exec(e.bowl || ""); if (wm) wkts += parseInt(wm[1], 10); });
+        if (runs > bat.runs) bat = { name: p.name, runs: runs };
+        if (wkts > bowl.wkts) bowl = { name: p.name, wkts: wkts };
+      });
+    } catch (e) {}
+    return { bat: bat, bowl: bowl };
+  }
+  function foPitchPill(p) { var c = /green|dry|cracked/.test(p) ? "teal" : "muted"; return "<span class='fo-pill fo-pill-" + c + "'>" + E(foTitle(p)) + "</span>"; }
+  function foPremiumClub() {
+    try {
+      if (typeof userTeam !== "function" || typeof GD === "undefined" || !GD.teams) { return foOrigClub && foOrigClub(); }
+      if (typeof seasonInit === "function") seasonInit();
+      if (typeof econInit === "function") econInit();
+      var t = userTeam(), S = App.season;
+      var rowsL = typeof leagueRows === "function" ? leagueRows() : [];
+      var pi = rowsL.findIndex(function (x) { return x.nm === t.name; }), me = rowsL[pi] || { p: 0, w: 0, l: 0, pts: 0, nrr: 0 };
+      var pos = pi >= 0 ? pi + 1 : "-";
+      var bank = (App.fin && App.fin.bank) || 0, wages = foWageBill(t);
+      var mood = FO_MOODS[Math.max(0, Math.min(6, t.mood == null ? 3 : t.mood))];
+      var cond = (t.mood >= 5) ? "Excellent" : (t.mood >= 3) ? "Good" : (t.mood >= 1) ? "Fair" : "Poor";
+      var form = foFormMap()[t.name] || [];
+      var pips = form.map(function (x) { return "<i class='fo-pip fo-" + x + "' title='" + x + "'></i>"; }).join("");
+      var d = new Date(), dateStr = d.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short" }) + ", " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+      var stat = function (accent, ic, label, value, sub) {
+        return "<div class='fo-stat fo-acc-" + accent + "'><div class='fo-stat-ic'>" + ic + "</div><div class='fo-stat-body'>" +
+          "<div class='fo-stat-l'>" + label + "</div><div class='fo-stat-v'>" + value + "</div>" + (sub ? "<div class='fo-stat-s'>" + sub + "</div>" : "") + "</div></div>";
+      };
+      var stats = "<div class='fo-ch-stats'>" +
+        stat("terra", "🏆", "League position", pos, "/ " + (rowsL.length || 10)) +
+        stat("teal", "⭐", "Points", me.pts || 0, (me.pts || 0) + " Pts") +
+        stat("terra", "🏦", "Bank", foMoney(bank), "Available funds") +
+        stat("teal", "💳", "Weekly wages", foMoney(wages), "Total wage bill") +
+        stat("terra", "👥", "Supporters", mood, "Mood") + "</div>";
+
+      // Recent results
+      var recent = (App.results || []).slice(-4).reverse();
+      var recentBody = recent.length
+        ? "<table class='fo-tbl'><thead><tr><th>Date</th><th>Match</th><th class='r'>Result</th></tr></thead><tbody>" +
+          recent.map(function (r) { return "<tr class='fo-rowlink' data-sc='" + r.ix + "'><td>" + E(r.date || "") + "</td><td>" + E(r.home) + " v " + E(r.away) + "</td><td class='r'>" + E(r.result ? r.result.text : "") + "</td></tr>"; }).join("") + "</tbody></table>"
+        : "<div class='fo-empty'><div class='fo-empty-ic'>🗓</div><div><b>No matches played yet</b><div class='small'>First ball coming up soon.</div></div></div>";
+
+      // Upcoming fixtures (+ friendlies), with a Set-lineup action
+      var frRows = (foFriendlies || []).map(function (fr, i) {
+        return "<tr class='fo-fx-fr'><td>Now</td><td>Friendly</td><td>vs " + E(fr.oppName) + "</td><td>" + foPitchPill(fr.pitch) + "</td><td class='r'><button class='fo-fr-play' data-i='" + i + "'>Play</button></td></tr>";
+      }).join("");
+      var ups = foUserFixtures().slice(0, 5).map(function (x) {
+        return "<tr><td>" + x.date + "<div class='fo-t'>9:00 AM ET</div></td><td>R" + (x.round + 1) + "</td><td>" + (x.isHome ? "vs " : "@ ") + E(x.opp.name) + "</td><td>" + E(x.ground) + " " + foPitchPill(x.pitch) + "</td><td class='r'><button class='fo-setr' data-r='" + x.round + "'>Set lineup</button></td></tr>";
+      }).join("");
+      var upBody = (frRows || ups)
+        ? "<table class='fo-tbl'><thead><tr><th>Date</th><th>Rd</th><th>Match</th><th>Ground</th><th class='r'></th></tr></thead><tbody>" + frRows + ups + "</tbody></table>"
+        : "<div class='fo-empty'><div class='fo-empty-ic'>🏏</div><div><b>Season complete</b></div></div>";
+
+      // Leaders
+      var ld = foTeamLeaders(t);
+      var leaders = "<div class='fo-ch-leaders'>" +
+        "<div class='fo-card fo-lead'><div class='fo-lead-ic'>🏏</div><div><div class='fo-card-h2'>Leading run-scorer</div><div class='fo-lead-v'>" + (ld.bat.runs || 0) + " <span>runs</span></div><div class='small'>" + (ld.bat.name ? E(ld.bat.name) : "—") + "</div></div></div>" +
+        "<div class='fo-card fo-lead'><div class='fo-lead-ic'>🎯</div><div><div class='fo-card-h2'>Leading wicket-taker</div><div class='fo-lead-v'>" + (ld.bowl.wkts || 0) + " <span>wkts</span></div><div class='small'>" + (ld.bowl.name ? E(ld.bowl.name) : "—") + "</div></div></div></div>";
+
+      // Standings (form pips + row highlight rendered here; kept out of tidyPage)
+      var fmap = foFormMap();
+      var standRows = rowsL.map(function (x, i) {
+        var meRow = x.nm === t.name;
+        var fp = (fmap[x.nm] || []).map(function (v) { return "<i class='fo-pip fo-" + v + "'></i>"; }).join("");
+        return "<tr class='" + (meRow ? "fo-userrow" : "") + "'><td class='fo-rk'>" + (i === 0 ? "🏆" : (i + 1)) + "</td><td class='fo-scoutname'>" + E(x.nm) + (fp ? " <span class='fo-form'>" + fp + "</span>" : "") + "</td><td class='r'>" + x.p + "</td><td class='r'>" + x.w + "</td><td class='r'>" + x.l + "</td><td class='r'>" + (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2) + "</td><td class='r'><b>" + x.pts + "</b></td></tr>";
+      }).join("");
+      var standings = "<div class='fo-card'><div class='fo-card-h'>League standings</div><div class='fo-card-b'><table class='fo-tbl fo-chtable'><thead><tr><th class='fo-rk'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th><th class='r'>NRR</th><th class='r'>Pts</th></tr></thead><tbody>" + standRows + "</tbody></table></div></div>";
+
+      // Finances
+      var fin = "<div class='fo-card'><div class='fo-card-h'>Finances</div><div class='fo-card-b'><table class='fo-kv'>" +
+        "<tr><td>Bank</td><td class='r'>" + foMoney(bank) + "</td></tr>" +
+        "<tr><td>Weekly wages</td><td class='r'>" + foMoney(wages) + "</td></tr>" +
+        "<tr><td>Ground</td><td class='r'>" + E(t.ground || "-") + " · " + (t.seats || 10000).toLocaleString() + " seats</td></tr>" +
+        "<tr><td>Stadium condition</td><td class='r fo-teal'>" + cond + "</td></tr></table></div></div>";
+
+      var formPill = pips ? "<span class='fo-hero-pill'>Form <span class='fo-form'>" + pips + "</span></span>" : "<span class='fo-hero-pill'>No matches yet</span>";
+      var hero = "<div class='fo-ch-hero'><div class='fo-ch-hero-l'>" +
+        "<div class='fo-ch-crest'><img src='" + APPICON + "' alt=''></div><div>" +
+        "<div class='fo-ch-eyebrow'>Club home</div><h1 class='fo-ch-name'>" + E(t.name) + "</h1>" +
+        "<div class='fo-ch-chips'><span class='fo-ch-chip'>Season " + (App.seasonNo || 1) + "</span><span class='fo-ch-chip'>Round " + (Math.min((S ? S.round : 0) + 1, (S && S.schedule ? S.schedule.length : 9))) + "</span><span class='fo-ch-chip'>" + dateStr + "</span></div>" +
+        "</div></div><div class='fo-ch-hero-r'>" + formPill + "</div></div>";
+
+      var html = "<div class='fo-ch'>" +
+        "<div class='fo-ch-crumb'>" + E(t.name) + " <span>›</span> Club</div>" + hero + stats +
+        "<div class='fo-ch-grid'><div class='fo-ch-col'>" +
+        "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Recent results</div><a href='#/matches' class='fo-morelink'>View all results ›</a></div><div class='fo-card-b'>" + recentBody + "</div></div>" +
+        "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Upcoming fixtures</div><a href='#/matches' class='fo-morelink'>View full schedule ›</a></div><div class='fo-card-b'>" + upBody + "</div></div>" +
+        leaders +
+        "</div><div class='fo-ch-col'>" + standings + fin + "</div></div></div>";
+
+      var page = document.getElementById("page"); if (!page) return;
+      page.innerHTML = html;
+      // wire interactions
+      page.querySelectorAll(".fo-rowlink[data-sc]").forEach(function (tr) { tr.addEventListener("click", function () { location.hash = "#/scorecard?i=" + tr.getAttribute("data-sc"); }); });
+      page.querySelectorAll(".fo-setr").forEach(function (b) { b.addEventListener("click", function () { foSetOrdersForRound(+b.getAttribute("data-r")); }); });
+      page.querySelectorAll(".fo-fr-play").forEach(function (b) { b.addEventListener("click", function () { var fr = foFriendlies[+b.getAttribute("data-i")]; if (fr) foPlayFriendly(fr); }); });
+      page.querySelectorAll(".fo-scoutname").forEach(function (c) { c.addEventListener("click", function () { scoutClub(c.textContent || ""); }); });
+    } catch (e) { console.warn("foPremiumClub", e); if (foOrigClub) try { foOrigClub(); } catch (e2) {} }
+  }
   // Show the real match time (league rounds resolve at 09:00 New York) next to the
   // date in any fixtures/results table. Safe: only tables that have a "Date" header.
   // Open a rival club's page (in the game, not a dark modal): a hero banner with
@@ -6859,6 +7039,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var clubIx = -1, ptsIx = -1;
         tb.querySelectorAll("th").forEach(function (th) { var t = th.textContent.trim().toLowerCase(); if (t === "club") clubIx = th.cellIndex; if (t === "pts") ptsIx = th.cellIndex; });
         if (clubIx < 0 || ptsIx < 0) return;                    // only the standings table
+        if (tb.closest && tb.closest(".fo-ch")) return;         // premium Club renders its own standings
         tb.classList.add("fo-standings");
         var di = 0;
         tb.querySelectorAll("tr").forEach(function (tr) {
@@ -7073,7 +7254,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foRenderPlanner() {
     try {
       if (!(SYNC && SYNC.started) || SYNC.practice) return;
-      if (App.page !== "matches" && App.page !== "club") return;
+      if (App.page !== "matches") return;                  // the Club home renders its own fixtures
       var page = document.getElementById("page"); if (!page) return;
       if (!SYNC.submittedLoaded) foLoadSubmitted();
       var fx = foUserFixtures(), frs = foFriendlies || [];
@@ -7968,6 +8149,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   if (typeof foOrigSuggest === "function") {
     window.suggestOrders = function () { try { return foSmartBowling(); } catch (e) { return foOrigSuggest(); } };
   }
+  // Swap the engine's Club home for the premium branded dashboard.
+  var foOrigClub = window.pgClub;
+  if (typeof foOrigClub === "function") window.pgClub = foPremiumClub;
 
   // Multiplayer-first: the league login takes over the moment the site loads,
   // and the page behind it is locked so the solo game stays private until you
