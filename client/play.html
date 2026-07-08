@@ -141,7 +141,10 @@ async function joinLeague(){
 
 async function loadLeague(){
   if(!JWT){alert('Log in first');return}
-  var id=document.getElementById('league').value.trim();if(!id){alert('Enter a league id');return}
+  // tolerate stray spaces / trailing punctuation from copy-paste
+  var id=document.getElementById('league').value.trim().replace(/[^0-9a-fA-F-]/g,'');
+  document.getElementById('league').value=id;
+  if(!id){alert('Enter a league id');return}
   try{
     var lg=(await sel('leagues','id=eq.'+id+'&select=id,name,status,build_hash,draft_budget,season_no'))[0];
     if(!lg){alert('League not found (or you are not a member)');return}
