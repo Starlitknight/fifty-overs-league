@@ -205,6 +205,73 @@
     return { players: out, retired: retired };
   };
 
+  /* ================================================================
+     FAIR LEAGUE ECONOMY (ADDITIVE): the engine's weekly tick treats the
+     snapshot's own club richly (gate income, its sponsor, full ledger) and
+     everyone else with a flat "+25k - costs" formula and NO gate. In a
+     multiplayer league every human club deserves the same books. After
+     completeRound() we re-settle EVERY club identically from its own squad:
+       + its sponsor deal (base + win bonus + halfway/season milestones)
+       + home gate (engine attendance() x $9)
+       - wage bill - stadium ($1/seat) - academies
+     and keep mood/supporters moving for every club, not just the pusher's.
+     Season-end prize money stays with the engine (it already pays all clubs).
+     ================================================================ */
+  var FO_DEALS = {
+    community: { base: 45000, win: 0, halfway: 0, seasonTop3: 0, champ: 0 },
+    results:   { base: 38000, win: 10000, halfway: 0, seasonTop3: 0, champ: 0 },
+    contender: { base: 30000, win: 16000, halfway: 60000, seasonTop3: 90000, champ: 120000 }
+  };
+  var FO_ACAD = [0, 4000, 8000, 14000, 22000, 32000];
+  function foWages(t) { return (t && t.players ? t.players.reduce(function (s, p) { return s + (+p.wage || 0); }, 0) : 0); }
+  function foDealOf(t) { return FO_DEALS[(t.sponsorDeal && t.sponsorDeal.id) || t.sponsor] || FO_DEALS.community; }
+
+  var _foCompleteRound = window.completeRound;
+  window.completeRound = function () {
+    var S = App.season, round = S ? S.round : 0;
+    var pre = {}, preAtt = {}, meName = null;
+    try {
+      GD.teams.forEach(function (t) {
+        pre[t.name] = t.bank || 0;
+        // gate is priced at the crowd the club walks in with, BEFORE the round
+        // mutates mood/supporters — deterministic and matches the forecast.
+        try { preAtt[t.name] = Math.min(t.seats || 9000, Math.round((t.supporters || 2600) * (0.55 + 0.13 * (t.mood == null ? 3 : t.mood)))); } catch (e) { preAtt[t.name] = 2400; }
+      });
+      meName = userTeam().name;
+    } catch (e) {}
+    var out = _foCompleteRound.apply(this, arguments);
+    try {
+      var total = (S && S.schedule) ? S.schedule.length : 18;
+      var results = (App.results || []).filter(function (r) { return r.comp === 'league' && r.round === round; });
+      var rows = null;
+      try { rows = leagueRows(); } catch (e) {}
+      var posOf = function (nm) { if (!rows) return 99; var i = rows.findIndex(function (r) { return r.nm === nm; }); return i < 0 ? 99 : i + 1; };
+      GD.teams.forEach(function (t) {
+        var deal = foDealOf(t);
+        var acad = (FO_ACAD[Math.max(0, Math.min(5, t.acadY || 0))] || 0) + (FO_ACAD[Math.max(0, Math.min(5, t.acadS || 0))] || 0);
+        var net = deal.base - foWages(t) - (t.seats || 9000) - acad;
+        var r = results.find(function (x) { return x.home === t.name || x.away === t.name; });
+        if (r && r.home === t.name) net += (preAtt[t.name] || 2400) * 9;
+        if (r && r.result && r.result.winner === t.name) net += deal.win || 0;
+        if (round + 1 === Math.floor(total / 2) && posOf(t.name) <= 3) net += deal.halfway || 0;
+        if (round + 1 === total) {
+          if (posOf(t.name) <= 3) net += deal.seasonTop3 || 0;
+          if (posOf(t.name) === 1) net += deal.champ || 0;
+        }
+        t.bank = (pre[t.name] || 0) + net;
+        // mood/supporters march for every club (engine only moves the pusher's)
+        if (t.name !== meName && r) {
+          var won = r.result && r.result.winner === t.name;
+          t.mood = Math.max(0, Math.min(6, (t.mood == null ? 3 : t.mood) + (won ? 1 : -1)));
+          t.supporters = Math.max(800, Math.round((t.supporters || 2600) * (won ? 1.03 : 0.985)));
+        }
+      });
+      // keep the snapshot's fin aligned with ITS club's fair books
+      var me = userTeam(); if (App.fin && me) App.fin.bank = me.bank;
+    } catch (e) { console.log('fair economy settle failed:', e && e.message); }
+    return out;
+  };
+
   // Also expose the pinned-build hash slot + a ?resolve= marker for the container.
   window.__FO_RESOLVE_READY = true;
   console.info('Fifty Overs resolve harness ready: window.__resolveMatch available.');

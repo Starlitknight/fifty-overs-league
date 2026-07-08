@@ -575,7 +575,10 @@
     ".fo-db{display:flex;align-items:center;gap:7px;font-size:10.5px}" +
     ".fo-db i{font-style:normal;width:60px;color:#9a9484;flex:none}" +
     ".fo-db b{flex:1;height:5px;border-radius:3px;background:#ece7da;overflow:hidden;display:block;min-width:40px}" +
-    ".fo-db u{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg," + TEAL + "," + TERRA + ")}" +
+    ".fo-db u{display:block;height:100%;border-radius:3px;background:" + TEAL + "}" +
+    // bar colour tracks the value: weak red -> ordinary amber -> good teal -> elite green
+    ".fo-sk-low{background:#C84F4A !important}.fo-sk-mid{background:#D9A441 !important}.fo-sk-good{background:" + TEAL + " !important}.fo-sk-elite{background:#3E9960 !important}" +
+    ".fo-dc-flag{font-size:15px;line-height:1}" +
     ".fo-db em{font-style:normal;width:74px;color:#4a5460;flex:none;text-align:right;white-space:nowrap}" +
     "#fo-onb .fo-dr-add{width:auto;min-width:58px;padding:7px 15px;font-size:12.5px;border-radius:9px}" +
     // board report split
@@ -632,7 +635,7 @@
     "#fo-pd .fo-pd-x{background:transparent;border:1px solid rgba(11,19,34,.25);color:#37424f;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px}" +
     "#fo-pd .fo-pd-money{display:flex;gap:8px;margin:14px 0}#fo-pd .fo-pd-money span{flex:1;background:#f7f4ec;border:1px solid rgba(11,19,34,.13);border-radius:10px;padding:8px 10px;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:#9a9484;font-weight:700}#fo-pd .fo-pd-money b{display:block;font-size:14px;color:#12203a;margin-top:2px;letter-spacing:0}" +
     "#fo-pd .fo-pd-sec{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#2b6b68;font-weight:800;margin-bottom:8px}" +
-    "#fo-pd .fo-pd-bar{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:12px}#fo-pd .fo-pd-bar span{width:78px;color:#5d6570}#fo-pd .fo-pd-bar i{flex:1;height:8px;background:#ece7da;border-radius:5px;overflow:hidden}#fo-pd .fo-pd-bar b{display:block;height:100%;background:linear-gradient(90deg," + TEAL + "," + TERRA + ");border-radius:5px}#fo-pd .fo-pd-bar em{width:74px;text-align:right;font-style:normal;color:#737a84;font-size:11px}" +
+    "#fo-pd .fo-pd-bar{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:12px}#fo-pd .fo-pd-bar span{width:78px;color:#5d6570}#fo-pd .fo-pd-bar i{flex:1;height:8px;background:#ece7da;border-radius:5px;overflow:hidden}#fo-pd .fo-pd-bar b{display:block;height:100%;background:" + TEAL + ";border-radius:5px}#fo-pd .fo-pd-bar em{width:74px;text-align:right;font-style:normal;color:#737a84;font-size:11px}" +
     "#fo-pd .fo-pd-tal{margin:12px 0;font-size:12.5px;color:#545d68}#fo-pd .fo-pd-tal b{color:#8a8474;text-transform:uppercase;font-size:10.5px;letter-spacing:.04em}" +
     "#fo-pd button{font-family:inherit;min-height:0;box-shadow:none}" +
     "#fo-pd .fo-pd-act{display:flex}#fo-pd .fo-pd-add{flex:1;background:" + TERRA + " !important;color:#fff !important;border:none;padding:11px;border-radius:10px;font-weight:700;font-size:13.5px;cursor:pointer}#fo-pd .fo-pd-add.on{background:#f7f4ec !important;color:" + TERRA + " !important;border:1px solid " + TERRA + "}" +
@@ -883,18 +886,18 @@
           "<div class='fo-stat-l'>" + label + "</div><div class='fo-stat-v'>" + value + "</div>" + (sub ? "<div class='fo-stat-s'>" + sub + "</div>" : "") + "</div></div>";
       };
       var stats = "<div class='fo-ch-stats'>" +
-        stat("terra", "🏆", "League position", pos, "/ " + (rowsL.length || 10)) +
-        stat("teal", "⭐", "Points", me.pts || 0, (me.pts || 0) + " Pts") +
-        stat("terra", "🏦", "Bank", foMoney(bank), "Available funds") +
-        stat("teal", "💳", "Weekly wages", foMoney(wages), "Total wage bill") +
-        stat("terra", "👥", "Supporters", mood, "Mood") + "</div>";
+        stat("terra", FO_I("trophy", 19), "League position", pos, "/ " + (rowsL.length || 10)) +
+        stat("teal", FO_I("chart", 19), "Points", me.pts || 0, (me.pts || 0) + " Pts") +
+        stat("terra", FO_I("wallet", 19), "Bank", foMoney(bank), "Available funds") +
+        stat("teal", FO_I("coins", 19), "Weekly wages", foMoney(wages), "Total wage bill") +
+        stat("terra", FO_I("users", 19), "Supporters", mood, "Mood") + "</div>";
 
       // Recent results
       var recent = (App.results || []).slice(-4).reverse();
       var recentBody = recent.length
         ? "<table class='fo-tbl'><thead><tr><th>Date</th><th>Match</th><th class='r'>Result</th></tr></thead><tbody>" +
           recent.map(function (r) { return "<tr class='fo-rowlink' data-sc='" + r.ix + "'><td>" + E(r.date || "") + "</td><td>" + E(r.home) + " v " + E(r.away) + "</td><td class='r'>" + E(r.result ? r.result.text : "") + "</td></tr>"; }).join("") + "</tbody></table>"
-        : "<div class='fo-empty'><div class='fo-empty-ic'>🗓</div><div><b>No matches played yet</b><div class='small'>First ball coming up soon.</div></div></div>";
+        : "<div class='fo-empty'><div class='fo-empty-ic'>" + FO_I("calendar", 20) + "</div><div><b>No matches played yet</b><div class='small'>First ball coming up soon.</div></div></div>";
 
       // Upcoming fixtures (+ friendlies), with a Set-lineup action
       var frRows = (foFriendlies || []).map(function (fr, i) {
@@ -905,20 +908,20 @@
       }).join("");
       var upBody = (frRows || ups)
         ? "<table class='fo-tbl'><thead><tr><th>Date</th><th>Rd</th><th>Match</th><th>Ground</th><th class='r'></th></tr></thead><tbody>" + frRows + ups + "</tbody></table>"
-        : "<div class='fo-empty'><div class='fo-empty-ic'>🏏</div><div><b>Season complete</b></div></div>";
+        : "<div class='fo-empty'><div class='fo-empty-ic'>" + FO_I("bat", 20) + "</div><div><b>Season complete</b></div></div>";
 
       // Leaders
       var ld = foTeamLeaders(t);
       var leaders = "<div class='fo-ch-leaders'>" +
-        "<div class='fo-card fo-lead'><div class='fo-lead-ic'>🏏</div><div><div class='fo-card-h2'>Leading run-scorer</div><div class='fo-lead-v'>" + (ld.bat.runs || 0) + " <span>runs</span></div><div class='small'>" + (ld.bat.name ? E(ld.bat.name) : "—") + "</div></div></div>" +
-        "<div class='fo-card fo-lead'><div class='fo-lead-ic'>🎯</div><div><div class='fo-card-h2'>Leading wicket-taker</div><div class='fo-lead-v'>" + (ld.bowl.wkts || 0) + " <span>wkts</span></div><div class='small'>" + (ld.bowl.name ? E(ld.bowl.name) : "—") + "</div></div></div></div>";
+        "<div class='fo-card fo-lead'><div class='fo-lead-ic'>" + FO_I("bat", 19) + "</div><div><div class='fo-card-h2'>Leading run-scorer</div><div class='fo-lead-v'>" + (ld.bat.runs || 0) + " <span>runs</span></div><div class='small'>" + (ld.bat.name ? E(ld.bat.name) : "—") + "</div></div></div>" +
+        "<div class='fo-card fo-lead'><div class='fo-lead-ic'>" + FO_I("target", 19) + "</div><div><div class='fo-card-h2'>Leading wicket-taker</div><div class='fo-lead-v'>" + (ld.bowl.wkts || 0) + " <span>wkts</span></div><div class='small'>" + (ld.bowl.name ? E(ld.bowl.name) : "—") + "</div></div></div></div>";
 
       // Standings (form pips + row highlight rendered here; kept out of tidyPage)
       var fmap = foFormMap();
       var standRows = rowsL.map(function (x, i) {
         var meRow = x.nm === t.name;
         var fp = (fmap[x.nm] || []).map(function (v) { return "<i class='fo-pip fo-" + v + "'></i>"; }).join("");
-        return "<tr class='" + (meRow ? "fo-userrow" : "") + "'><td class='fo-rk'>" + (i === 0 ? "🏆" : (i + 1)) + "</td><td class='fo-scoutname'>" + E(x.nm) + (fp ? " <span class='fo-form'>" + fp + "</span>" : "") + "</td><td class='r'>" + x.p + "</td><td class='r'>" + x.w + "</td><td class='r'>" + x.l + "</td><td class='r'>" + (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2) + "</td><td class='r'><b>" + x.pts + "</b></td></tr>";
+        return "<tr class='" + (meRow ? "fo-userrow" : "") + "'><td class='fo-rk'>" + (i === 0 ? "<span style='color:#D9A441;display:inline-flex;vertical-align:-2px'>" + FO_I("trophy", 14) + "</span>" : (i + 1)) + "</td><td class='fo-scoutname'>" + E(x.nm) + (fp ? " <span class='fo-form'>" + fp + "</span>" : "") + "</td><td class='r'>" + x.p + "</td><td class='r'>" + x.w + "</td><td class='r'>" + x.l + "</td><td class='r'>" + (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2) + "</td><td class='r'><b>" + x.pts + "</b></td></tr>";
       }).join("");
       var standings = "<div class='fo-card'><div class='fo-card-h'>League standings</div><div class='fo-card-b'><table class='fo-tbl fo-chtable'><thead><tr><th class='fo-rk'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th><th class='r'>NRR</th><th class='r'>Pts</th></tr></thead><tbody>" + standRows + "</tbody></table></div></div>";
 
@@ -1037,8 +1040,8 @@
     var hero = "<div class='fo-scout-hero'><div class='fo-scout-hero-main'>" +
       "<div class='fo-scout-eyebrow'>" + (isMe ? "Your club" : "Scout report") + "</div>" +
       "<h1 class='fo-scout-name'>" + E(t.name) + "</h1>" +
-      "<div class='fo-scout-meta'>🏟 " + E(t.ground || "-") + " · Form <span class='fo-form'>" + pips + "</span></div>" +
-      "<div class='fo-scout-actions'>" + (isMe ? "" : "<button class='fo-challenge'>🏏 Challenge to a match</button>") + "<button class='fo-scout-back'>← Back</button></div>" +
+      "<div class='fo-scout-meta'>" + E(t.ground || "-") + " · Form <span class='fo-form'>" + pips + "</span></div>" +
+      "<div class='fo-scout-actions'>" + (isMe ? "" : "<button class='fo-challenge'>Challenge to a match</button>") + "<button class='fo-scout-back'>← Back</button></div>" +
       "</div>" + kpi + "</div>";
     var links = "<div class='fo-scout-links'>" +
       "<a class='fo-stab" + (foScoutTab === "overview" ? " on" : "") + "' data-tab='overview'>Overview</a>" +
@@ -1054,7 +1057,7 @@
       var me = userTeam();
       App.pending = { oppIx: ix, home: me.name, away: GD.teams[ix].name, ground: me.ground, pitch: pitch || me.homePitch || groundPitch(me.ground), weather: weather || "Sunny", seed: 4200 + ix, date: typeof simDate === "function" ? simDate() : "", comp: "friendly", __friendly: true };
       App.orders.saved = false;                             // must set + save a lineup before it plays
-      say("🏏 vs " + GD.teams[ix].name + " — set your lineup, then Save to play.");
+      say("vs " + GD.teams[ix].name + " — set your lineup, then Save to play.");
       location.hash = "#/orders"; if (typeof window.route === "function") window.route();
     } catch (e) { say(e); }
   }
@@ -1417,7 +1420,7 @@
     try {
       // League games have no live viewer: bounce #/match back to the fixtures list.
       if (foHashPath() === "#/match" && foLeaguePendingOnly()) {
-        if (App.orders && App.orders.saved) say("🏏 Orders saved — your match resolves at 9:00 AM ET.");
+        if (App.orders && App.orders.saved) say("Orders saved — your match resolves at 9:00 AM ET.");
         location.hash = "#/matches"; return;
       }
       // Leaving the Orders page while planning a future round → submit that round.
@@ -1460,7 +1463,7 @@
   // The floating bottom-right button is gone; the app icon in the game's top bar
   // opens the league menu instead. Keep the element (hidden) so old refs are safe.
   var btn = document.createElement("button");
-  btn.id = "folBtn"; btn.textContent = "🏆 League"; btn.style.display = "none";
+  btn.id = "folBtn"; btn.textContent = "League"; btn.style.display = "none";
   function openLeagueMenu() { openWrap(true); if (!JWT) renderLogin(); else if (SYNC && LG) showWait(!!SYNC.myTeam); else enterApp(); }
   function doLogout() { JWT = ""; LG = null; SYNC = null; clearSession(); openWrap(true); renderLogin(); }
 
@@ -1749,6 +1752,14 @@
       // keep my working line-up; if the round advanced, it needs re-saving for the new round
       var newRound = (window.App && App.season && typeof App.season.round === "number") ? App.season.round : prevRound;
       if (myOrders) { App.orders = myOrders; if (newRound !== prevRound) App.orders.saved = false; }
+      // The snapshot's App.fin belongs to whoever pushed it. Members must see THEIR
+      // club's treasury (t.bank, settled fairly by the resolver), not the pusher's.
+      try {
+        if (snap && typeof snap.teamIx === "number" && snap.teamIx !== App.teamIx && App.fin) {
+          var myClub = GD.teams[App.teamIx];
+          if (myClub) { App.fin.bank = myClub.bank || 0; App.fin.ledger = []; App.fin.sponsorBase = (myClub.sponsorDeal && myClub.sponsorDeal.base) || App.fin.sponsorBase; }
+        }
+      } catch (e) {}
       try { if (typeof window.store === "function") window.store("fo_welcomed", "1"); } catch (e) {}
       if (typeof window.saveGame === "function") window.saveGame(false);
       openWrap(false);
@@ -1958,7 +1969,7 @@
         if (!snap) { say("Game engine not ready. Reload and try again."); return; }
         rpc("push_league_state", { p_league_id: LG.id, p_snapshot: snap, p_round: 0 }).then(function (ver) {
           SYNC.lastVersion = ver || 1; SYNC.started = true;
-          say("🏏 Season started! Matches resolve automatically as orders come in.");
+          say("Season started! Matches resolve automatically as orders come in.");
           openWrap(false); location.hash = "#/matches"; if (typeof window.route === "function") window.route();
           schedulePoll();
         }).catch(say);
@@ -2106,8 +2117,14 @@
   //  forecast, then hand the drafted squad to the engine's founderConfirm(). All
   //  finance constants come from finance-config.json (embedded below).
   // ===========================================================================
+  // Finance model calibrated to the ENGINE's real weekly economy tick:
+  //   income  = sponsor base (+ win bonus) + home gate (attendance x $9)
+  //   costs   = wage bill + stadium ($1/seat on 9,000 seats) + academies ($16k at lvl 2/2)
+  //   prizes  = engine PRIZES by final position at season end
+  // Crowds follow the engine's attendance() = supporters x (0.55 + 0.13 x mood).
   var FO_FIN = {
-    seasonLength: 18, homeMatches: 9, startingBank: 1000000, ticketPrice: 8, groundCost: 45000,
+    seasonLength: 18, homeMatches: 9, startingBank: 1000000, ticketPrice: 9,
+    stadiumCost: 9000, academyCost: 16000,
     health: [{ label: "Excellent", min: 250000 }, { label: "Safe", min: 100000 }, { label: "Tight", min: 25000 }, { label: "Danger", min: 0 }, { label: "Crisis", min: null }],
     styles: [
       { id: "balanced", name: "Balanced", draftBudget: 800000, reserve: 200000, risk: "Low", rec: true, tone: "teal", tag: "Sustainable growth for new managers." },
@@ -2115,17 +2132,19 @@
       { id: "moneyball", name: "Moneyball", draftBudget: 700000, reserve: 300000, risk: "Medium", rec: false, tone: "violet", tag: "Save cash and hunt value." }
     ],
     sponsors: [
-      { id: "community", name: "Community Sponsor", pos: "Safe money. No bonuses.", base: 3500, win: 0, halfway: 0, seasonTop3: 0, champ: 0, tone: "teal", rec: true, lines: ["+$3,500 per matchday", "No bonuses"] },
-      { id: "results", name: "Results Sponsor", pos: "Win more, earn more.", base: 2000, win: 3500, halfway: 0, seasonTop3: 0, champ: 0, tone: "terra", lines: ["+$2,000 per matchday", "+$3,500 per win"] },
-      { id: "contender", name: "Contender Sponsor", pos: "Back your XI.", base: 0, win: 6000, halfway: 15000, seasonTop3: 20000, champ: 25000, tone: "gold", lines: ["+$6,000 per win", "+$15k top-3 halfway", "+$20k top-3 finish · +$25k champion"] }
+      { id: "community", name: "Community Sponsor", pos: "Steady money, no strings.", base: 45000, win: 0, halfway: 0, seasonTop3: 0, champ: 0, tone: "teal", rec: true, lines: ["No result bonuses", "The best floor if the season goes wrong"] },
+      { id: "results", name: "Results Sponsor", pos: "Win more, earn more.", base: 38000, win: 10000, halfway: 0, seasonTop3: 0, champ: 0, tone: "terra", lines: ["+$10,000 per win", "Beats Community from ~13 wins"] },
+      { id: "contender", name: "Contender Sponsor", pos: "Back your XI.", base: 30000, win: 16000, halfway: 60000, seasonTop3: 90000, champ: 120000, tone: "gold", lines: ["+$16,000 per win", "+$60k top-3 at halfway", "+$90k top-3 finish · +$120k champions"] }
     ],
     scenarios: [
-      { id: "bad", name: "Bad season", wins: 5, crowd: 4000, t3half: false, t3fin: false, champ: false },
-      { id: "average", name: "Average season", wins: 9, crowd: 6000, t3half: false, t3fin: false, champ: false },
-      { id: "good", name: "Top-3 season", wins: 13, crowd: 8000, t3half: true, t3fin: true, champ: false },
-      { id: "champion", name: "Champion season", wins: 15, crowd: 9500, t3half: true, t3fin: true, champ: true }
-    ]
+      { id: "bad", name: "Bad season", wins: 5, crowd: 2100, finish: 8, t3half: false, t3fin: false, champ: false },
+      { id: "average", name: "Average season", wins: 9, crowd: 2450, finish: 5, t3half: false, t3fin: false, champ: false },
+      { id: "good", name: "Top-3 season", wins: 13, crowd: 2900, finish: 3, t3half: true, t3fin: true, champ: false },
+      { id: "champion", name: "Champion season", wins: 15, crowd: 3300, finish: 1, t3half: true, t3fin: true, champ: true }
+    ],
+    prizes: [200000, 160000, 130000, 110000, 90000, 75000, 60000, 50000, 40000, 30000]
   };
+
   function foDraftPrice(p) { return (p && p.fee != null) ? p.fee : Math.max(8000, Math.round((((p && p.rating) || 3000) - 2800) * 40 + 8000)); }
   function foDailyWage(p) { return (p && p.wage != null) ? p.wage : Math.max(700, Math.round(((p && p.fee) || 40000) * 0.028 / 10) * 10); }
   function foSeasonCost(p) { return foDraftPrice(p) + foDailyWage(p) * FO_FIN.seasonLength; }
@@ -2143,8 +2162,10 @@
     var bankAfter = FO_FIN.startingBank - draftSpent, seasonWage = dailyWage * FO_FIN.seasonLength;
     var sc = foScenarioById(scenarioId || "average"), sp = foSponsorById(sponsorId);
     var ticket = foTicket(sc), sponsor = foSponsorPayout(sp, sc);
-    var end = bankAfter + ticket + sponsor - seasonWage - FO_FIN.groundCost;
-    return { draftSpent: draftSpent, bankAfter: bankAfter, dailyWage: dailyWage, seasonWage: seasonWage, ticket: ticket, sponsor: sponsor, ground: FO_FIN.groundCost, end: end, health: foHealth(end) };
+    var fixed = (FO_FIN.stadiumCost + FO_FIN.academyCost) * FO_FIN.seasonLength;
+    var prize = FO_FIN.prizes[(sc.finish || 8) - 1] || 30000;
+    var end = bankAfter + ticket + sponsor + prize - seasonWage - fixed;
+    return { draftSpent: draftSpent, bankAfter: bankAfter, dailyWage: dailyWage, seasonWage: seasonWage, ticket: ticket, sponsor: sponsor, prize: prize, ground: fixed, end: end, health: foHealth(end) };
   }
   var FO$ = function (n) { return "$" + Math.round(n || 0).toLocaleString(); };
   var FO$s = function (n) { return (n < 0 ? "-$" : "$") + Math.abs(Math.round(n || 0)).toLocaleString(); };
@@ -2286,7 +2307,7 @@
       tile("tag", "Recommended draft spend", "$750k&#8211;$850k", "Leaves room to operate", "terra") +
       tile("shieldCheck", "Recommended reserve", "$150k&#8211;$250k", "Cover wages &amp; injuries", "teal") + "</div>" +
       "<div class='fo-ob-chks'>" + chk("Every player has a <b>draft price</b> and a <b>daily wage</b>.") + chk("You pay wages to your squad every matchday.") +
-      chk("Home matches bring in ticket income.") + chk("Wins and sponsors bring in extra money.") + "</div>" +
+      chk("Home matches bring ticket income (about $22k a game).") + chk("Running the club costs about $25k every matchday on top of wages.") + chk("Sponsors, wins and prize money keep you solvent.") + "</div>" +
       "<div class='fo-ob-warn'><i>" + FO_I("warn", 17) + "</i>Spend too much in the draft and you may have to release players later.</div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Continue</button></div></div>";
     var host = foOnbMount(1, body);
@@ -2413,6 +2434,8 @@
   function foAgg(p, nm) { try { return Math.max(0, Math.min(100, Math.round(({ bat: aggBat, bowl: aggBowl, keep: aggKeep, field: aggField, end: aggEnd, tech: aggTech })[nm](p)))); } catch (e) { return 0; } }
   // The engine's skill word ("ordinary", "elite", "world class", …).
   function foWord(v) { try { return (typeof word === "function") ? word(v) : ""; } catch (e) { return ""; } }
+  // Bar tone by value: weak -> red, ordinary -> amber, good -> teal, elite -> green.
+  function foSkTone(v) { return v >= 75 ? "elite" : v >= 50 ? "good" : v >= 30 ? "mid" : "low"; }
   // The game's full 7-skill read-out (Batting/Bowling/Keeping/Endurance/
   // Technique/Power/Fielding), each a bar + the engine's word for it.
   function foSkillBars(p) {
@@ -2422,7 +2445,7 @@
       ["Endurance", foAgg(p, "end")], ["Technique", foAgg(p, "tech")], ["Power", Math.max(0, Math.min(100, Math.round(pw)))],
       ["Fielding", foAgg(p, "field")]];
     return "<div class='fo-dc-bars'>" + bars.map(function (b) {
-      return "<span class='fo-db'><i>" + b[0] + "</i><b><u style='width:" + b[1] + "%'></u></b><em>" + (foWord(b[1]) || b[1]) + "</em></span>";
+      return "<span class='fo-db'><i>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + b[1] + "%'></u></b><em>" + (foWord(b[1]) || b[1]) + "</em></span>";
     }).join("") + "</div>";
   }
   // One draft-room player card — the game's own card, in the brand theme.
@@ -2431,9 +2454,11 @@
     var bt = (typeof foBT === "function") ? foBT(p) : "";
     var meta = (p.hand === "L" ? "Left" : "Right") + " hand batsman" + (bt ? " | " + bt : "") + (p.expWord || p.exp ? " · exp " + E(p.expWord || p.exp) : "");
     var tals = (p.talents || []).map(function (t) { return "<span class='fo-dc-tal'>" + E(foTalentName(t)) + "</span>"; }).join("");
+    var flag = ""; try { flag = (typeof foFlag === "function" && p.nat) ? foFlag(p.nat) : ""; } catch (e) {}
     return "<div class='fo-dc " + (inSquad ? "fo-dc-in" : "") + "'>" +
       "<div class='fo-dc-h'>" +
       "<span class='fo-rl'>" + foRoleShort(p) + "</span>" +
+      (flag ? "<span class='fo-dc-flag'>" + flag + "</span>" : "") +
       "<b class='fo-dc-nm fo-dr-view' data-p='" + nm + "'>" + E(p.name) + (p.keeper ? " &dagger;" : "") + "</b>" +
       "<span class='fo-dc-meta'>" + E(p.nat || "") + " · age " + (p.age || "?") + " · rating <b>" + (p.rating ? p.rating.toLocaleString() : "-") + "</b></span>" +
       "<span class='fo-dc-fee'>" + FO$(foDraftPrice(p)) + "</span>" +
@@ -2454,14 +2479,14 @@
       var pw = 0; try { pw = (typeof S === "function" ? S(p).power : (p.skills && p.skills.power)) || 0; } catch (e) {}
       var bars = [["Batting", agg("bat")], ["Bowling", isBowler ? agg("bowl") : 0], ["Keeping", agg("keep")], ["Fielding", agg("field")], ["Power", pw], ["Technique", agg("tech")], ["Endurance", agg("end")]];
       var word = function (v) { try { return typeof window.word === "function" ? window.word(v) : ""; } catch (e) { return ""; } };
-      var barHtml = bars.map(function (b) { var v = Math.max(0, Math.min(100, Math.round(b[1] || 0))); return "<div class='fo-pd-bar'><span>" + b[0] + "</span><i><b style='width:" + v + "%'></b></i><em>" + (word(v) || v) + "</em></div>"; }).join("");
+      var barHtml = bars.map(function (b) { var v = Math.max(0, Math.min(100, Math.round(b[1] || 0))); return "<div class='fo-pd-bar'><span>" + b[0] + "</span><i><b class='fo-sk-" + foSkTone(v) + "' style='width:" + v + "%'></b></i><em>" + (word(v) || v) + "</em></div>"; }).join("");
       var talents = (p.talents || []).map(foTalentName).filter(Boolean).join(", ") || "None";
       var inSquad = F.picked.indexOf(p) >= 0;
       var host = document.getElementById("fo-onb"); if (!host) return;
       var old = document.getElementById("fo-pd"); if (old) old.remove();
       var d = document.createElement("div"); d.id = "fo-pd";
       d.innerHTML = "<div class='fo-pd-back'><div class='fo-pd-card'>" +
-        "<div class='fo-pd-h'><div><div class='fo-pd-nm'>" + E(p.name) + "</div><div class='fo-pd-meta'><span class='fo-rl'>" + foRoleShort(p) + "</span> " + E(p.nat || "") + " · age " + (p.age || "?") + " · rating " + (p.rating || "-") + "</div></div><button class='fo-pd-x'>✕</button></div>" +
+        "<div class='fo-pd-h'><div><div class='fo-pd-nm'>" + ((typeof foFlag === "function" && p.nat) ? foFlag(p.nat) + " " : "") + E(p.name) + "</div><div class='fo-pd-meta'><span class='fo-rl'>" + foRoleShort(p) + "</span> " + E(p.nat || "") + " · age " + (p.age || "?") + " · rating " + (p.rating || "-") + "</div></div><button class='fo-pd-x'>✕</button></div>" +
         "<div class='fo-pd-money'><span>Draft<b>" + FO$(foDraftPrice(p)) + "</b></span><span>Daily wage<b>" + FO$(foDailyWage(p)) + "</b></span><span>Season cost<b>" + FO$(foSeasonCost(p)) + "</b></span></div>" +
         "<div class='fo-pd-sec'>Skill summary</div><div class='fo-pd-bars'>" + barHtml + "</div>" +
         "<div class='fo-pd-tal'><b>Talents:</b> " + E(talents) + "</div>" +
@@ -2526,7 +2551,8 @@
       fRow("Bank after draft", FO$(fc.bankAfter)) +
       fRow("Daily wage bill", FO$(fc.dailyWage)) + fRow("Season wage cost", "−" + FO$(fc.seasonWage)) +
       fRow("Expected ticket income", "+" + FO$(fc.ticket)) + fRow("Expected sponsor income", "+" + FO$(fc.sponsor)) +
-      fRow("Expected ground costs", "−" + FO$(fc.ground)) +
+      fRow("Projected prize money", "+" + FO$(fc.prize)) +
+      fRow("Stadium &amp; academy costs", "−" + FO$(fc.ground)) +
       "<div class='fo-fc-end fo-tone-" + hTone + "'><span>Projected season-end bank</span><b>" + FO$s(fc.end) + "</b></div>" +
       "<div class='fo-fc-health fo-tone-" + hTone + "'>Financial health · <b>" + fc.health + "</b></div>" +
       "<div class='fo-fc-scens'>" + scen + "</div></div>" +
@@ -2638,7 +2664,9 @@
       try {
         var t = GD.teams[App.teamIx];
         if (t) { t.ground = FO_ONB.ground || t.ground; t.sponsor = FO_ONB.sponsor; t.financialStyle = FO_ONB.style; t.bank = _bank; }
-        if (App.fin) { App.fin.bank = _bank; App.fin.sponsorBase = Math.round(foSponsorPayout(foSponsorById(FO_ONB.sponsor), foScenarioById("average")) / FO_FIN.seasonLength); }
+        var _deal = foSponsorById(FO_ONB.sponsor);
+        t.sponsorDeal = { id: _deal.id, base: _deal.base, win: _deal.win, halfway: _deal.halfway, seasonTop3: _deal.seasonTop3, champ: _deal.champ };
+        if (App.fin) { App.fin.bank = _bank; App.fin.sponsorBase = _deal.base; }
         if (typeof window.saveGame === "function") window.saveGame(false);
       } catch (e) {}
       foOnbClose();
@@ -2654,7 +2682,7 @@
       try {
         if (App.founder && App.founder.__league) {
           var b = document.querySelector("#page .confirmbtn");
-          if (b) b.textContent = "🏏 Confirm my squad";
+          if (b) b.textContent = "Confirm my squad";
         }
       } catch (e) {}
       return out;
