@@ -948,6 +948,135 @@
     };
   }
 
+  // ---- Smarter "Suggest all" bowling attack ---------------------------------
+  // The stock suggestOrders() hands every bowler a flat 5-over spell. Real
+  // captaincy reads the pitch and weather, leans on the bowlers those conditions
+  // suit, and rotates them through varied 2-5 over spells (best bowlers bowl the
+  // most). We build a full 50-over plan honouring the engine's rules (each end is
+  // its own over-set, no bowler two overs running, max 10 each) and derive the
+  // north/south spells from it — exactly the shape the engine expects.
+  function foCapDist(n) {
+    // n bowler caps summing to 50, each 2..10, biased so the top names bowl more.
+    var w = 0, i, caps = [];
+    for (i = 0; i < n; i++) { caps[i] = 0; w += (n - i); }
+    for (i = 0; i < n; i++) caps[i] = Math.max(2, Math.min(10, Math.round(50 * (n - i) / w)));
+    var sum = function () { return caps.reduce(function (a, b) { return a + b; }, 0); };
+    var guard = 0;
+    while (sum() < 50 && guard++ < 500) { // top up the best available bowlers first
+      var up = -1; for (i = 0; i < n; i++) if (caps[i] < 10) { up = i; break; }
+      if (up < 0) break; caps[up]++;
+    }
+    guard = 0;
+    while (sum() > 50 && guard++ < 500) { // trim from the weakest first
+      var dn = -1; for (i = n - 1; i >= 0; i--) if (caps[i] > 2) { dn = i; break; }
+      if (dn < 0) break; caps[dn]--;
+    }
+    return caps;
+  }
+  // Split a bowler's over allocation into varied 2-5 chunks, never stranding a 1.
+  function foChunks(c) {
+    var out = [], pat = [3, 2, 4, 3, 5, 2], pi = 0;
+    while (c > 0) {
+      var L = Math.min(pat[pi++ % pat.length], 5, c);
+      if (c - L === 1) L = (L - 1 >= 2) ? L - 1 : c;
+      L = Math.max(1, L);
+      out.push(L); c -= L;
+    }
+    return out;
+  }
+  // Round-robin the bowlers' chunks into a spell order so no two consecutive
+  // spells share a bowler (keeps them as distinct spells; within one end the overs
+  // are two apart, so this is never a back-to-back match over).
+  function foInterleave(mains, chunks) {
+    var order = [], idx = {}, last = null, guard = 0;
+    mains.forEach(function (m) { idx[m] = 0; });
+    var left = function (m) { return chunks[m].length - idx[m]; };
+    while (guard++ < 400) {
+      var avail = mains.filter(function (m) { return left(m) > 0 && m !== last; });
+      if (!avail.length) avail = mains.filter(function (m) { return left(m) > 0; });
+      if (!avail.length) break;
+      avail.sort(function (x, y) { return left(y) - left(x); });
+      var m = avail[0];
+      order.push({ bowler: m, n: chunks[m][idx[m]++] });
+      last = m;
+    }
+    return order;
+  }
+  function foSmartBowling() {
+    // App/userTeam/isPT are const bindings in the engine realm (not on window);
+    // typeClass/pickXI/pgOrders are function declarations. All resolve bare here.
+    if (typeof App === "undefined" || typeof userTeam !== "function" || typeof pickXI !== "function" || typeof typeClass !== "function") return foOrigSuggest();
+    var t = userTeam(), xi = pickXI(t);
+    var bs = xi.filter(function (p) { return p.bowlType && !isPT(p); });
+    if (bs.length < 5) return foOrigSuggest();      // need 5+ to cover 50 legally
+
+    App.orders.batOrder = xi.map(function (p) { return p.name; });
+    App.orders.captain = xi[0].name;
+    App.orders.keeper = (xi.find(function (p) { return p.keeper; }) || xi[0]).name;
+
+    // Read the fixture's pitch + weather (App.pending is the next match's meta).
+    var pend = App.pending || {}, pitch = pend.pitch || "balanced";
+    var wx = String(pend.weather || "").toLowerCase();
+    var seamPitch = pitch === "green" || pitch === "cracked" || pitch === "twoPaced";
+    var seamWx = /overcast|humid|drizzle|dew|swing/.test(wx);
+    var spinPitch = pitch === "dry" || pitch === "slow" || pitch === "cracked";
+    var isPace = function (p) { return typeClass(p.bowlType) === "pace"; };
+    var isSpin = function (p) { return typeClass(p.bowlType) === "spin"; };
+    var has = function (p, tl) { return (p.talents || []).indexOf(tl) >= 0; };
+    var score = function (p) {
+      var s = 0.55 * (p.threat || 0) + 0.45 * (p.control || 0);
+      if (isPace(p) && (seamPitch || seamWx)) s += 12;
+      if (isSpin(p) && spinPitch) s += 12;
+      if (has(p, "newBallSpecialist")) s += 6;
+      if (has(p, "deathSpecialist")) s += 4;
+      return s;
+    };
+    var ranked = bs.slice().sort(function (a, b) { return score(b) - score(a); });
+    var caps = {}, capArr = foCapDist(ranked.length);
+    ranked.forEach(function (p, i) { caps[p.name] = capArr[i]; });
+
+    // Partition the bowlers into DISJOINT north/south groups (each covering its 25
+    // overs), so no bowler is at both ends and back-to-back overs are impossible.
+    // Exactly one "straddler" may span both ends; we place its two stints far apart
+    // (north death, south new ball) so they can never be adjacent match overs.
+    var nNeed = 25, sNeed = 25, nc = {}, sc = {}, straddler = null;
+    for (var ri = 0; ri < ranked.length; ri++) {
+      var nm = ranked[ri].name, c = caps[nm];
+      if (c <= nNeed) { nc[nm] = c; nNeed -= c; }
+      else if (c <= sNeed) { sc[nm] = c; sNeed -= c; }
+      else { nc[nm] = nNeed; sc[nm] = c - nNeed; sNeed -= (c - nNeed); nNeed = 0; straddler = nm; }
+    }
+    if (nNeed !== 0 || sNeed !== 0) return foOrigSuggest();               // couldn't tile 25/25
+    if (straddler && (nc[straddler] > 5 || sc[straddler] > 5)) return foOrigSuggest(); // rare
+
+    var spells = { north: [], south: [] };
+    [["north", nc, 1], ["south", sc, 2]].forEach(function (E) {
+      var end = E[0], counts = E[1], first = E[2];
+      var overs = []; for (var o = first; o <= 50; o += 2) overs.push(o);
+      var mains = Object.keys(counts).filter(function (n) { return n !== straddler; });
+      var chunks = {}; mains.forEach(function (n) { chunks[n] = foChunks(counts[n]); });
+      var order = foInterleave(mains, chunks);
+      if (straddler && counts[straddler]) {          // north: death end; south: new ball
+        var sp = { bowler: straddler, n: counts[straddler] };
+        if (end === "north") order.push(sp); else order.unshift(sp);
+      }
+      var oi = 0;
+      order.forEach(function (sp) {
+        var f = overs[oi];
+        spells[end].push({ bowler: sp.bowler, first: f, n: sp.n, field: f <= 10 ? "att" : (f >= 41 ? "def" : "bal") });
+        oi += sp.n;
+      });
+    });
+    if (!spells.north.length || !spells.south.length) return foOrigSuggest();
+    App.orders.spells = spells;
+    App.orders.grid = null;                          // let the grid reseed from the new plan
+    try { pgOrders(); } catch (e) {}
+  }
+  var foOrigSuggest = window.suggestOrders;
+  if (typeof foOrigSuggest === "function") {
+    window.suggestOrders = function () { try { return foSmartBowling(); } catch (e) { return foOrigSuggest(); } };
+  }
+
   // Multiplayer-first: the league login takes over the moment the site loads,
   // and the page behind it is locked so the solo game stays private until you
   // are in a league — then your game IS the league. A saved session is restored
