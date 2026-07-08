@@ -398,11 +398,16 @@
         var del = isF ? '<td style="text-align:right"><button class="mini" data-act="delTeam" data-id="' + t.id + '" data-name="' + E(t.name) + '" style="background:#5a2620;border-color:#7a3a30;color:#f0d0c8">✕ delete</button></td>' : "";
         return "<tr><td>" + E(t.name) + "</td><td>" + (ready[t.manager_id] ? '<span class="folbadge ok">drafted</span>' : '<span class="folbadge warn">drafting…</span>') + "</td>" + del + "</tr>";
       }).join("") || ('<tr><td colspan=' + (isF ? 3 : 2) + ' class="folsmall">No clubs yet.</td></tr>');
-      var allReady = teams.length >= 2 && teams.every(function (t) { return ready[t.manager_id]; });
+      var draftedCount = teams.filter(function (t) { return ready[t.manager_id]; }).length;
+      var allReady = draftedCount >= 1 && draftedCount === teams.length;   // every club present has drafted
+      var solo = draftedCount < 2;
+      var startLabel = SYNC.started ? "Restart season (rebuild from clubs) ▸" : (solo ? "Start season (you + bots) ▸" : "Start the league ▸");
       var ctl = isF
         ? '<div style="margin-top:10px">' +
-            (allReady ? '<button class="p" data-act="startLeague">' + (SYNC.started ? "Restart season (rebuild from clubs) ▸" : "Start the league ▸") + '</button>'
-                      : '<div class="folsmall">The season starts once every club has drafted.</div>') +
+            (allReady
+              ? '<button class="p" data-act="startLeague">' + startLabel + '</button>' +
+                (solo ? '<div class="folsmall" style="margin-top:4px">Only your club has drafted, so bot clubs will fill the league. Invite friends first for a full human league.</div>' : "")
+              : '<div class="folsmall">The season starts once every club has drafted.</div>') +
             '<div style="margin-top:8px"><button class="mini" data-act="mkInvite">Create invite code</button> <span id="folInvite" class="folsmall"></span></div>' +
           "</div>"
         : '<div class="folsmall" style="margin-top:10px">Waiting for the commissioner to start the season.</div>';
@@ -429,11 +434,21 @@
   }
 
   // Founder assembles the league from everyone's drafted clubs and kicks off.
+  // With only one human club, the game's own bot teams fill the league so there
+  // is something to play; with two or more, it is a pure human league.
   function startLeague() {
+    var defaults = (typeof GD !== "undefined" && GD.teams) ? GD.teams.slice() : [];
     sel("league_clubs", "league_id=eq." + LG.id + "&select=club,manager_id").then(function (clubs) {
-      if (!clubs || clubs.length < 2) { say("Need at least 2 drafted clubs to start."); return; }
+      if (!clubs || !clubs.length) { say("Draft your squad first, then start the season."); return; }
       try {
-        GD.teams = clubs.map(function (c) { return c.club; });
+        var world = clubs.map(function (c) { return c.club; });
+        if (world.length < 2) {
+          var used = {}; world.forEach(function (t) { used[t.name] = 1; });
+          var bots = defaults.filter(function (t) { return !used[t.name]; }).slice(0, Math.max(0, 4 - world.length));
+          world = world.concat(bots);
+        }
+        GD.teams = world;
+        if (typeof window.econInit === "function") window.econInit();
         var myName = SYNC.myTeam ? SYNC.myTeam.name : null;
         var mine = GD.teams.findIndex(function (t) { return t.name === myName; });
         App.teamIx = mine >= 0 ? mine : 0;
