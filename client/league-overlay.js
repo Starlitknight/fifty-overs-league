@@ -21,6 +21,11 @@
   function headers() { return { apikey: ANON, Authorization: "Bearer " + (JWT || ANON), "content-type": "application/json", "Accept-Profile": "app", "Content-Profile": "app" }; }
   function rpc(fn, args) { return fetch(URL + "/rest/v1/rpc/" + fn, { method: "POST", headers: headers(), body: JSON.stringify(args || {}) }).then(function (r) { return r.text().then(function (t) { if (!r.ok) throw new Error(t || ("HTTP " + r.status)); return t ? JSON.parse(t) : null; }); }); }
   function sel(table, q) { return fetch(URL + "/rest/v1/" + table + "?" + (q || ""), { headers: headers() }).then(function (r) { return r.text().then(function (t) { if (!r.ok) throw new Error(t); return JSON.parse(t); }); }); }
+  // small localStorage wrapper (private mode / disabled storage safe)
+  var PEND = "fol_pending_invite";
+  function lsGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { window.localStorage.setItem(k, v); } catch (e) { } }
+  function lsDel(k) { try { window.localStorage.removeItem(k); } catch (e) { } }
 
   // ---- styles + shell ----
   var css = document.createElement("style");
@@ -32,7 +37,8 @@
     "@media(min-width:820px){#folPanel{inset:20px;border-radius:12px}}" +
     "#folPanel a{color:#4DA6A2 !important}" +
     ".folhd{position:sticky;top:0;background:#1C2433;border-bottom:1px solid rgba(246,244,238,.12);padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}" +
-    ".folhd h3{margin:0;font-size:15px;flex:1}" +
+    ".folhd h3{margin:0;font-size:15px;flex:1;display:flex;align-items:center;gap:8px}" +
+    ".fol-hdicon{width:24px;height:24px;border-radius:7px;display:inline-block;flex:0 0 auto}" +
     ".folbody{padding:12px 14px;display:grid;gap:12px}" +
     ".folcard{background:#1C2433;border:1px solid rgba(246,244,238,.12);border-radius:10px}" +
     ".folcard h4{margin:0;padding:8px 12px;border-bottom:1px solid rgba(246,244,238,.12);font-size:13px;display:flex;justify-content:space-between}" +
@@ -64,7 +70,7 @@
     "#folPanel .fol-form input{width:100%;background:rgba(246,244,238,.06);border:1px solid rgba(246,244,238,.12);border-radius:12px;padding:13px 14px;color:#F6F4EE;font-size:16px;transition:border-color .15s,box-shadow .15s}" +
     "#folPanel .fol-form input::placeholder{color:rgba(246,244,238,.4)}" +
     "#folPanel .fol-form input:focus{outline:none;border-color:#4DA6A2;box-shadow:0 0 0 3px rgba(77,166,162,.16)}" +
-    "#folPanel .fol-cta{margin-top:6px;background:#C8674A !important;color:#F6F4EE !important;border:none !important;border-radius:14px;padding:15px;font-size:16px;font-weight:700;letter-spacing:.4px;cursor:pointer;transition:filter .15s}" +
+    "#folPanel .fol-cta{margin-top:8px;background:#C8674A !important;color:#F6F4EE !important;border:none !important;border-radius:14px;padding:18px;font-size:17.5px;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:filter .15s}" +
     "#folPanel .fol-cta:hover{filter:brightness(1.06)}" +
     ".fol-links{display:flex;flex-direction:column;align-items:center;gap:13px;margin-top:20px}" +
     "#folPanel .fol-links a{color:#F6F4EE !important;text-decoration:none;font-size:14px;font-weight:600;cursor:pointer}" +
@@ -102,6 +108,10 @@
     document.title = "Fifty Overs";
   } catch (e) { /* non-fatal */ }
 
+  // The "50" app icon, inline, for the in-app header (same mark as the favicon/logo).
+  var ICON = "<svg class='fol-hdicon' viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'>" +
+    "<rect width='64' height='64' rx='15' fill='#0B1322'/><g transform='translate(-1.6,3.3) scale(0.29)'>" + MARK + "</g></svg>";
+
   var btn = document.createElement("button");
   btn.id = "folBtn"; btn.textContent = "🏆 League";
   document.body.appendChild(btn);
@@ -110,7 +120,7 @@
   wrap.id = "folWrap";
   wrap.innerHTML =
     '<div id="folPanel">' +
-    '<div class="folhd"><h3>🏏 Fifty Overs</h3><span class="folsmall" id="folWho"></span></div>' +
+    '<div class="folhd"><h3>' + ICON + 'Fifty Overs</h3><span class="folsmall" id="folWho"></span></div>' +
     '<div id="folPin"></div><div id="folMain"></div></div>';
   document.body.appendChild(wrap);
   var main = wrap.querySelector("#folMain");
@@ -225,12 +235,23 @@
   // (admin -> Admin, player -> Squad); several show a quick picker; none shows
   // the join-by-invite form.
   function enterApp() {
-    return sel("leagues", "select=id,name,status,build_hash,draft_budget,season_no")
-      .then(function (ls) {
-        if (!ls || !ls.length) { renderEnter(); return; }
-        if (ls.length === 1) { return openLeagueId(ls[0].id); }
-        renderPicker(ls);
-      }).catch(function () { renderEnter(); });
+    return redeemPending().then(function () {
+      return sel("leagues", "select=id,name,status,build_hash,draft_budget,season_no");
+    }).then(function (ls) {
+      if (!ls || !ls.length) { renderEnter(); return; }
+      if (ls.length === 1) { return openLeagueId(ls[0].id); }
+      renderPicker(ls);
+    }).catch(function () { renderEnter(); });
+  }
+  // If the user signed up with an invite code (and email confirmation was on, so
+  // it could not be redeemed at signup), redeem it now that they are logged in.
+  function redeemPending() {
+    var raw = lsGet(PEND); if (!raw) return Promise.resolve();
+    var p; try { p = JSON.parse(raw); } catch (e) { lsDel(PEND); return Promise.resolve(); }
+    if (!p || !p.code) { lsDel(PEND); return Promise.resolve(); }
+    return rpc("redeem_invite", { p_code: p.code, p_display_name: p.dn, p_team_name: p.tn || (p.dn + " XI") })
+      .then(function () { lsDel(PEND); })
+      .catch(function () { lsDel(PEND); }); // already a member or spent code: drop it and continue
   }
   function renderPicker(ls) {
     setNavy(false);
@@ -247,14 +268,14 @@
     var code = val("folCode"), dn = val("folDn"), tn = val("folTn");
     if (!email || !password) { say("Enter your email and password"); return; }
     if (!code || !dn) { say("Enter your invite code and manager name"); return; }
+    // Remember the invite so we can finish joining after email confirmation + login.
+    lsSet(PEND, JSON.stringify({ code: code, dn: dn, tn: tn }));
     fetch(URL + "/auth/v1/signup", { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ email: email, password: password }) })
       .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error_description || d.msg || d.error || ("HTTP " + r.status)); return d; }); })
       .then(function (d) {
-        if (!d.access_token) { say("Account created. Confirm your email, then log in and join with your code."); renderLogin(); return; }
+        if (!d.access_token) { say("Account created! Check your email, tap the confirmation link, then log in. We'll drop you straight into your league."); renderLogin(); return; }
         JWT = d.access_token; wrap.querySelector("#folWho").textContent = email;
-        return rpc("redeem_invite", { p_code: code, p_display_name: dn, p_team_name: tn || dn + " XI" })
-          .then(function (mid) { return sel("members", "id=eq." + mid + "&select=league_id"); })
-          .then(function (m) { return openLeagueId(m[0].league_id); });
+        return enterApp();
       }).catch(say);
   }
 

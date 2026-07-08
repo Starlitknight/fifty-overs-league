@@ -1,0 +1,41 @@
+<!--
+  Fifty Overs - "Confirm signup" email template.
+
+  HOW TO USE (one-time, ~1 min):
+  1. Supabase Dashboard -> Authentication -> Emails -> Templates -> "Confirm signup".
+  2. Set the Subject line to:
+        Confirm your email to join your Fifty Overs league
+  3. Paste everything BELOW this comment into the message body box, then Save.
+
+  Supabase fills {{ .ConfirmationURL }} in automatically. Email clients are picky,
+  so all styling is inline and it uses a table layout with no external images.
+
+  Tip: the same structure works for the "Reset password" template - just change the
+  heading/copy and keep {{ .ConfirmationURL }} on the button.
+-->
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#0B1322;padding:32px 12px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+  <tr><td align="center">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:480px;background:#1C2433;border:1px solid rgba(246,244,238,0.12);border-radius:20px;overflow:hidden">
+      <tr><td style="padding:34px 34px 8px;text-align:center">
+        <div style="font-size:13px;letter-spacing:4px;font-weight:800;color:#F6F4EE">FIFTY OVERS</div>
+        <div style="font-size:12px;letter-spacing:2px;color:#C8674A;text-transform:uppercase;margin-top:6px">Private cricket leagues</div>
+      </td></tr>
+      <tr><td style="padding:16px 34px 6px">
+        <h1 style="margin:0;font-size:21px;color:#F6F4EE;font-weight:700">You're almost in.</h1>
+      </td></tr>
+      <tr><td style="padding:6px 34px 0;font-size:15px;line-height:1.6;color:rgba(246,244,238,0.82)">
+        <p style="margin:0 0 14px">Someone (hopefully you) signed up for <b style="color:#F6F4EE">Fifty Overs</b>, the invite-only cricket manager where you draft a squad and take on your mates across a full season.</p>
+        <p style="margin:0 0 22px">Tap the button to confirm your email. After that, log in and we'll drop you straight into your league.</p>
+      </td></tr>
+      <tr><td align="center" style="padding:4px 34px 8px">
+        <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#C8674A;color:#F6F4EE;text-decoration:none;font-size:16px;font-weight:700;letter-spacing:.4px;padding:15px 30px;border-radius:12px">Confirm my email</a>
+      </td></tr>
+      <tr><td style="padding:18px 34px 30px;font-size:12px;line-height:1.6;color:rgba(246,244,238,0.5)">
+        <p style="margin:0 0 6px">If the button doesn't work, copy this link into your browser:</p>
+        <p style="margin:0 0 16px;word-break:break-all"><a href="{{ .ConfirmationURL }}" style="color:#4DA6A2">{{ .ConfirmationURL }}</a></p>
+        <p style="margin:0">Didn't sign up? You can safely ignore this email and no account will be created.</p>
+      </td></tr>
+    </table>
+    <div style="max-width:480px;margin:16px auto 0;font-size:11px;color:rgba(246,244,238,0.35);text-align:center">Fifty Overs &middot; Draft squads &middot; Set orders &middot; Watch every ball</div>
+  </td></tr>
+</table>
