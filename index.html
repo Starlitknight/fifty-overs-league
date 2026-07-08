@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fifty Overs - Club Manager v11.6</title><style>:root{--ftp-blue:#2d6a8f;--ftp-blue-dark:#1d4a66;--ftp-border:#cfc8b8;--ftp-bg:#f5f1e6;
+<!DOCTYPE html><html lang="en"><head><style id="fo-boot">html{background:#0B1322}html>body{visibility:hidden;animation:fo-boot-reveal .01s 4s forwards}@keyframes fo-boot-reveal{to{visibility:visible}}</style><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fifty Overs - Club Manager v11.6</title><style>:root{--ftp-blue:#2d6a8f;--ftp-blue-dark:#1d4a66;--ftp-border:#cfc8b8;--ftp-bg:#f5f1e6;
 --ftp-panel:#ffffff;--ftp-link:#1a5276;--ftp-bar:#3f9e3f;--ftp-text:#22302a;--ftp-warn:#a33}
 *{box-sizing:border-box}
 body{margin:0;background:var(--ftp-bg);color:var(--ftp-text);font:12px Verdana,Geneva,Tahoma,sans-serif;line-height:1.45}
@@ -8850,6 +8850,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   if (_authRedirect === "ok") { enterApp(); }
   else if (_authRedirect === "error") { renderLogin(); setTimeout(function () { say("That email link expired or was already used. Log in with your email and password below."); }, 60); }
   else restoreSession().then(function () { if (JWT) enterApp(); else renderLogin(); }).catch(function () { renderLogin(); });
+
+  // Lift the boot veil (injected by build.sh) now that the brand CSS and the right
+  // screen are in place — the engine's original UI never gets a frame to flash.
+  try { var _bv = document.getElementById("fo-boot"); if (_bv) _bv.parentNode.removeChild(_bv); } catch (e) {}
 
   // Debug/test handle for the season planner's engine-facing helpers (no behaviour).
   try { window.__fol = { userFixtures: foUserFixtures, fixtureMeta: foFixtureMeta, plannerHTML: foPlannerHTML, smartBowling: foSmartBowling }; } catch (e) {}

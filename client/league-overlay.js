@@ -2499,6 +2499,10 @@
   else if (_authRedirect === "error") { renderLogin(); setTimeout(function () { say("That email link expired or was already used. Log in with your email and password below."); }, 60); }
   else restoreSession().then(function () { if (JWT) enterApp(); else renderLogin(); }).catch(function () { renderLogin(); });
 
+  // Lift the boot veil (injected by build.sh) now that the brand CSS and the right
+  // screen are in place — the engine's original UI never gets a frame to flash.
+  try { var _bv = document.getElementById("fo-boot"); if (_bv) _bv.parentNode.removeChild(_bv); } catch (e) {}
+
   // Debug/test handle for the season planner's engine-facing helpers (no behaviour).
   try { window.__fol = { userFixtures: foUserFixtures, fixtureMeta: foFixtureMeta, plannerHTML: foPlannerHTML, smartBowling: foSmartBowling }; } catch (e) {}
 
