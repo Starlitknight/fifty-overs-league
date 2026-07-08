@@ -761,6 +761,27 @@
     "#page .fo-yc-sign{width:100%;padding:9px;border:none !important;border-radius:9px;background:" + TERRA + " !important;color:#fff !important;font-weight:700;cursor:pointer}" +
     "#page .fo-yc-sign:hover:not(:disabled){filter:brightness(1.07)}#page .fo-yc-sign:disabled{opacity:.45;cursor:default}" +
     ".fo-mk-gone{font-size:11.5px;font-weight:700;color:#8a8474;background:#ece7da;border-radius:9px;padding:8px;text-align:center}" +
+    // game manual
+    ".fo-man{max-width:880px}" +
+    ".fo-man .fo-man-toc{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 16px}" +
+    ".fo-man .fo-man-toc a{font-size:12px;font-weight:700;color:#1f4e5f;background:#e8efe9;border:1px solid #d5e0d7;border-radius:999px;padding:5px 12px;text-decoration:none;cursor:pointer}" +
+    ".fo-man .fo-man-toc a:hover{background:#dce8de}" +
+    ".fo-man details{background:#fff;border:1px solid #e2ddd0;border-radius:12px;margin:0 0 10px;overflow:hidden}" +
+    ".fo-man summary{cursor:pointer;list-style:none;font-weight:800;font-size:15px;color:#12203a;padding:13px 16px;display:flex;align-items:center;gap:10px}" +
+    ".fo-man summary::-webkit-details-marker{display:none}" +
+    ".fo-man summary:before{content:'+';font-weight:800;color:#C0562F;width:16px;text-align:center;flex:0 0 16px}" +
+    ".fo-man details[open] summary:before{content:'\\2212'}" +
+    ".fo-man details[open] summary{border-bottom:1px solid #efeade}" +
+    ".fo-man .fo-man-b{padding:12px 16px 16px;font-size:13.5px;line-height:1.65;color:#3c4658}" +
+    ".fo-man .fo-man-b p{margin:0 0 10px}" +
+    ".fo-man .fo-man-b ul{margin:0 0 10px;padding-left:20px}" +
+    ".fo-man .fo-man-b li{margin:3px 0}" +
+    ".fo-man .fo-man-b table{width:100%;border-collapse:collapse;margin:4px 0 12px;font-size:12.5px}" +
+    ".fo-man .fo-man-b th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#8a8474;padding:5px 8px;border-bottom:1px solid #e2ddd0}" +
+    ".fo-man .fo-man-b td{padding:6px 8px;border-bottom:1px solid #f0ece1;vertical-align:top}" +
+    ".fo-man .fo-man-b td b{color:#12203a}" +
+    ".fo-man .fo-man-tip{background:#eef4ee;border:1px solid #d5e0d7;border-radius:9px;padding:9px 12px;margin:2px 0 10px;font-size:12.5px}" +
+    ".fo-man .fo-man-tip b{color:#1f4e5f}" +
     ".fo-mk-claimed{opacity:.6}" +
     ".fo-yc-view,.fo-mk-view{cursor:pointer}.fo-yc-view:hover,.fo-mk-view:hover{color:#2b6b68 !important}" +
     ".fo-yc-note{font-size:12.5px;color:#5d6570;background:rgba(77,166,162,.07);border:1px solid rgba(77,166,162,.2);border-radius:9px;padding:8px 12px;margin-bottom:11px}" +
@@ -819,6 +840,7 @@
       if (liveOn) { if (!lv) addNav("fo-live", "\u25CF Live Match", function () { location.hash = "#/match"; if (typeof window.route === "function") window.route(); }); }
       else if (lv) lv.remove();
       addNav("fo-friendly", "Practice Game", startFriendly);
+      addNav("fo-guide", "Manual", function () { location.hash = "#/guide"; if (typeof window.route === "function") window.route(); });
       // Admin is founder-only: add it for the founder, and remove it for everyone
       // else (so a player never inherits a stale Admin link).
       var adm = tb.querySelector("a.fo-league");
@@ -1468,7 +1490,7 @@
     var _mt = null, pg0 = document.getElementById("page");
     if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); foRenderTraining(); foRenderMarket(); foPolishSquad(); foDecorateMatchRows(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); return r; }; }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); foRenderTraining(); foRenderMarket(); foRenderManual(); foPolishSquad(); foDecorateMatchRows(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); return r; }; }
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
@@ -3401,6 +3423,136 @@
       tb && tb.querySelectorAll("a").forEach(function (a) { a.classList.toggle("on", a.classList.contains("fo-transfers")); });
     } catch (e) {}
   }
+
+
+  // ===========================================================================
+  //  GAME MANUAL — how everything works, in one place (#/guide).
+  // ===========================================================================
+  function foManualSec(id, title, body) {
+    return "<details id='man-" + id + "'" + (id === "basics" ? " open" : "") + "><summary>" + title + "</summary><div class='fo-man-b'>" + body + "</div></details>";
+  }
+  function foManualPage() {
+    var page = document.getElementById("page"); if (!page) return;
+    var secs = [
+      ["basics", "The basics", [
+        "<p><b>Fifty Overs</b> is a private cricket manager league for you and your friends. Every club is run by a manager (or a computer until a friend claims it), squads are drafted from a shared budget, and the season is a 50-over round robin.</p>",
+        "<p>The league plays <b>one matchday per day, at " + MATCH_TIME + "</b>. Until then you set your orders — line-up, batting order, bowling plan — and at match time the engine plays every fixture with the orders each club submitted. Miss the deadline and your assistant picks a sensible XI for you.</p>",
+        "<div class='fo-man-tip'><b>Your daily loop:</b> check the result and your training report &rarr; look at the next fixture &rarr; set your line-up &rarr; spend five minutes on training, scouting or the market.</div>"
+      ].join("")],
+      ["club", "Founding a club", [
+        "<p>When you join, your sponsor wires a <b>$1,000,000 founding grant</b>. Roughly half goes on draft-day wages and fees; the rest is your working reserve — wages fall due every matchday, so don&rsquo;t spend it all on stars.</p>",
+        "<p>You also choose your <b>home ground&rsquo;s pitch</b>, and it matters: half your league games are at home.</p>",
+        "<table><tr><th>Pitch</th><th>Character</th></tr>" +
+        "<tr><td><b>Balanced</b></td><td>Fair contest. No one gets favours.</td></tr>" +
+        "<tr><td><b>Green</b></td><td>Seamers move it, especially with the new ball. Suits pace-heavy attacks.</td></tr>" +
+        "<tr><td><b>Dry</b></td><td>Turns square. Spinners thrive.</td></tr>" +
+        "<tr><td><b>Flat</b></td><td>A batter&rsquo;s paradise — boundaries flow, wickets are rare.</td></tr>" +
+        "<tr><td><b>Slow</b></td><td>Low and grippy. Hard to hit boundaries; suits patient sides.</td></tr>" +
+        "<tr><td><b>Cracked</b></td><td>Unpredictable — wickets for everyone.</td></tr></table>"
+      ].join("")],
+      ["players", "Players, skills &amp; form", [
+        "<p>Every player has seven visible skills — batting vs pace and spin, strike rotation, temperament, power, and for bowlers wicket-taking, economy, discipline, movement/turn, variation and stamina — plus keeping and fielding. Hover any skill label for what it does.</p>",
+        "<p>Skill bars are coloured by value: <b style='color:#C84F4A'>red</b> is weak, <b style='color:#D9A441'>amber</b> is serviceable, teal is good, <b style='color:#3E9960'>green</b> is elite.</p>",
+        "<ul><li><b>Form</b> drifts match by match — an out-of-form star can be a worse pick than an in-form journeyman.</li>",
+        "<li><b>Fatigue</b> builds when players play and train hard. Tired bowlers lose pace and accuracy; rest them or put them on the Rest program.</li>",
+        "<li><b>Talents</b> (hover the chips) are permanent quirks — some players are big-match performers, some crumble under pressure.</li>",
+        "<li><b>Age</b> drives development: youngsters improve fastest in training, veterans bring experience to the captaincy.</li></ul>"
+      ].join("")],
+      ["orders", "Matchday orders", [
+        "<p>Open <b>Matches</b> and hit <b>Set lineup</b> on your next fixture. You pick:</p>",
+        "<ul><li><b>Your XI</b> — 11 of your squad, with a designated <b>captain</b> (experience and captaincy skill count) and <b>wicket-keeper</b>.</li>",
+        "<li><b>Batting order</b> — openers face the new ball; finishers want power and cool heads.</li>",
+        "<li><b>Bowling plan</b> — who bowls the powerplay, the middle, the death. Seamers love the new ball; spinners usually grip better once it&rsquo;s older.</li>",
+        "<li><b>Intent</b> — how hard to push with the bat in each phase. Aggression buys runs but costs wickets.</li></ul>",
+        "<p><b>Auto pick</b> fills all of it with your assistant&rsquo;s best guess — it favours in-form, fresh players and a proper captain — and you can adjust from there.</p>",
+        "<div class='fo-man-tip'><b>Deadline:</b> orders lock at " + MATCH_TIME + " when the round is played. Anything you saved by then counts.</div>"
+      ].join("")],
+      ["money", "Money: what comes in, what goes out", [
+        "<p>Your bank moves once per matchday, itemised in the Office ledger:</p>",
+        "<table><tr><th>In / out</th><th>Item</th><th>Roughly</th></tr>" +
+        "<tr><td><b>In</b></td><td>Sponsor payment</td><td>depends on your deal (below)</td></tr>" +
+        "<tr><td><b>In</b></td><td>Home gate</td><td>attendance &times; $9 a ticket. Attendance = your supporters &times; a mood factor, capped by your 9,000 seats — winning lifts both.</td></tr>" +
+        "<tr><td><b>In</b></td><td>Win bonus</td><td>if your sponsor deal pays one</td></tr>" +
+        "<tr><td><b>Out</b></td><td>Wages</td><td>every player, every matchday</td></tr>" +
+        "<tr><td><b>Out</b></td><td>Stadium upkeep</td><td>$1 per seat</td></tr>" +
+        "<tr><td><b>Out</b></td><td>Academy</td><td>per level, if you&rsquo;ve invested</td></tr></table>",
+        "<p>At season&rsquo;s end the prize table pays <b>$200,000</b> for the title down to <b>$30,000</b> for tenth — every place is worth real money.</p>",
+        "<div class='fo-man-tip'><b>Rule of thumb:</b> keep a reserve of a few matchdays&rsquo; wages. A losing streak cuts your gate just when you need it.</div>"
+      ].join("")],
+      ["sponsors", "Sponsor deals", [
+        "<p>You chose one of three deals at founding — it pays every matchday, all season:</p>",
+        "<table><tr><th>Deal</th><th>Base / matchday</th><th>Extras</th></tr>" +
+        "<tr><td><b>Community Trust</b></td><td>$45,000</td><td>nothing — steady money whatever happens</td></tr>" +
+        "<tr><td><b>Results Deal</b></td><td>$38,000</td><td>+$10,000 per win</td></tr>" +
+        "<tr><td><b>Contender Deal</b></td><td>$30,000</td><td>+$16,000 per win, plus season milestone bonuses</td></tr></table>",
+        "<p>The safer the deal, the lower the ceiling. Contender pays best for a side that actually contends.</p>"
+      ].join("")],
+      ["training", "Training", [
+        "<p>The <b>Training</b> tab assigns each player a program — batting schools, bowling schools, keeping, fielding, fitness, all-rounder work, or <b>Rest</b> to recover fatigue. Progress applies when each matchday resolves, and your report lists every gain.</p>",
+        "<ul><li><b>Young players improve fastest</b>; development slows through the late 20s.</li>",
+        "<li><b>Talent matters</b> — high-potential players get more from the same session.</li>",
+        "<li><b>Academy levels</b> speed everyone up (and cost money each matchday).</li>",
+        "<li><b>Fatigue slows learning</b> — exhausted players barely improve. Rotate rest.</li>",
+        "<li>Skills climb in whole points; the higher a skill, the longer the next point takes.</li></ul>"
+      ].join("")],
+      ["youth", "Youth scouting", [
+        "<p>The scout on the Training page offers <b>three prospects aged 18&ndash;20</b> from your home country, refreshed every matchday. Click a name for full skills and talents.</p>",
+        "<ul><li>Youth come <b>cheaper than market players</b> but arrive raw — their value is what training makes of them.</li>",
+        "<li>You can sign <b>one youth every " + FO_SCOUT_COOLDOWN + " matchdays</b>, squad cap 18.</li>",
+        "<li>Signings join your squad when the next matchday resolves.</li></ul>"
+      ].join("")],
+      ["market", "Transfer market", [
+        "<p>The <b>Transfers</b> tab lists a season-long pool of <b>18 computer-generated free agents</b> — established players aged 21+, one of each trade from six cricket nations. Every club in the league sees the same pool.</p>",
+        "<ul><li><b>First come, first served:</b> when any club signs a player he&rsquo;s instantly gone for everyone — the page shows who took him, and the league gets a note: <i>&ldquo;X has signed for Y.&rdquo;</i></li>",
+        "<li>Fees carry a mid-season premium over draft prices, and wages start immediately once he joins.</li>",
+        "<li>Signings join your squad after the next matchday resolves. Squad cap 18.</li></ul>",
+        "<div class='fo-man-tip'><b>Strategy:</b> the pool never restocks mid-season. If a player fixes your weakness, hesitating hands him to a rival.</div>"
+      ].join("")],
+      ["league", "The season, table &amp; prizes", [
+        "<p>Ten clubs, single round robin, one round per day. Two points a win; ties and washouts share one. The table settles on points, then net run rate.</p>",
+        "<p>Friends can <b>join mid-season</b> — a new manager takes over a computer club, drafts a fresh squad and inherits its fixtures.</p>",
+        "<p>Prize money at season&rsquo;s end: $200k / $160k / $130k / $110k / $90k / $75k / $60k / $50k / $40k / $30k from first to tenth.</p>"
+      ].join("")],
+      ["practice", "Practice games", [
+        "<p><b>Practice Game</b> in the nav plays a friendly against any club in your league — you pick the opponent, pitch and weather. Nothing carries over: no money, no fatigue, no table points. Use it to test a batting order, a bowling plan, or a pitch type you&rsquo;ll face away from home.</p>",
+        "<p>A live practice match can be left and resumed from the <b>&#9679; Live Match</b> link that appears while it&rsquo;s in progress.</p>"
+      ].join("")],
+      ["tips", "Ten tips for new managers", [
+        "<ul><li>Draft a <b>balanced XI before stars</b>: 5&ndash;6 batters, a keeper, and a full 50 overs of bowling.</li>",
+        "<li>Match your attack to your <b>home pitch</b> — half your games are there.</li>",
+        "<li>Keep <b>2&ndash;3 matchdays of wages</b> in the bank at all times.</li>",
+        "<li>Set orders <b>every day</b> — the auto XI is decent, yours should be better.</li>",
+        "<li>Watch <b>fatigue</b>: rotate one bowler onto Rest before he burns out, not after.</li>",
+        "<li>Train <b>youngsters with talent</b> — a 19-year-old gains in weeks what a 29-year-old gains in a season.</li>",
+        "<li>Sign the market player who fixes your <b>actual weakness</b>, not the biggest rating.</li>",
+        "<li>Aggressive intent on a <b>flat</b> pitch, patience on a <b>slow</b> one.</li>",
+        "<li>Give the captaincy to <b>experience</b>, not the best batter.</li>",
+        "<li>Check the <b>training report</b> after every matchday — it tells you what&rsquo;s working.</li></ul>"
+      ].join("")]
+    ];
+    var toc = secs.map(function (s) { return "<a data-sec='" + s[0] + "'>" + s[1].replace(/&amp;/g, "&") + "</a>"; }).join("");
+    page.innerHTML =
+      "<div class='fo-man'><div class='crumb'>Manual</div>" +
+      "<div class='page-head'><div><div class='eyebrow'>How to play</div><h1>Game manual</h1><p>Everything the game does and how to use it — from your first draft to winning the league.</p></div></div>" +
+      "<div class='fo-man-toc'>" + toc + "</div>" +
+      secs.map(function (s) { return foManualSec(s[0], s[1], s[2]); }).join("") + "</div>";
+    page.querySelectorAll(".fo-man-toc a").forEach(function (a) {
+      a.addEventListener("click", function () {
+        var d = document.getElementById("man-" + a.getAttribute("data-sec")); if (!d) return;
+        d.open = true; d.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  }
+  function foRenderManual() {
+    if (!/^#\/guide/.test(location.hash || "")) return;
+    try { bumpBrand(); } catch (e) {}
+    try { foManualPage(); } catch (e) { console.warn("foManualPage", e); }
+    try {
+      var tb = document.getElementById("topbar");
+      tb && tb.querySelectorAll("a").forEach(function (a) { a.classList.toggle("on", a.classList.contains("fo-guide")); });
+    } catch (e) {}
+  }
+  window.addEventListener("hashchange", function () { setTimeout(foRenderManual, 15); });
 
   // ---- the Training page ------------------------------------------------------
   function foTrainingPage() {
