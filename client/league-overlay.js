@@ -171,6 +171,24 @@
     ".fo-scout-body{flex:1 1 auto;min-width:0}" +
     ".fo-sortbar{margin-bottom:6px}.fo-sortbar a{cursor:pointer;color:" + TERRA2 + "}.fo-sortbar a.on{font-weight:700;text-decoration:underline}" +
     "@media(max-width:640px){.fo-scout-hero{padding:18px}.fo-scout-name{font-size:26px}.fo-scout-kpis{flex:1 1 100%;grid-template-columns:repeat(2,1fr)}.fo-scout-shell{flex-direction:column}.fo-scout-links{flex:none;width:100%;display:flex}.fo-scout-links a{flex:1;text-align:center;border-bottom:none}}" +
+    ".fo-fx-fr{background:linear-gradient(90deg,rgba(77,166,162,.08),transparent)}" +
+    ".fo-fr-play{font-size:12px;padding:5px 12px;border:1px solid " + TEAL + ";background:" + TEAL + ";color:#fff;border-radius:6px;cursor:pointer;white-space:nowrap}" +
+    ".fo-fr-play:hover{background:#3f8a86}" +
+    ".fo-fr-x{margin-left:6px;font-size:11px;padding:5px 8px;border:1px solid #d8d2c4;background:#fff;color:#8a8474;border-radius:6px;cursor:pointer}" +
+    ".fo-fr-x:hover{background:#f2eee4}" +
+    // practice setup / break modal
+    ".fo-modal{position:fixed;inset:0;z-index:99999;background:rgba(11,19,34,.62);display:flex;align-items:center;justify-content:center;padding:16px}" +
+    ".fo-modal-card{background:" + PAPER + ";color:#1b2433;border-radius:14px;padding:22px 24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.4)}" +
+    ".fo-modal-card h3{margin:2px 0 14px;font-size:21px;color:#12203a}" +
+    ".fo-modal-eyebrow{color:" + TERRA + ";font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}" +
+    ".fo-modal-card label{display:block;font-size:12px;font-weight:600;color:#5b6472;margin:0 0 10px}" +
+    ".fo-modal-card label select{display:block;width:100%;margin-top:4px;padding:9px 10px;border:1px solid #cdc7b8;border-radius:8px;background:#fff;font-size:14px}" +
+    ".fo-modal-act{display:flex;gap:10px;margin-top:8px}" +
+    ".fo-modal-act .primary{flex:1;background:" + TERRA + ";color:#fff;border:none;padding:11px;border-radius:9px;font-weight:700;cursor:pointer;font-size:14px}" +
+    ".fo-modal-act .primary:hover{background:" + TERRA2 + "}" +
+    ".fo-modal-act .fo-su-cancel{background:transparent;border:1px solid #cdc7b8;color:#5b6472;padding:11px 16px;border-radius:9px;cursor:pointer}" +
+    ".fo-break-card{text-align:center}.fo-break-cond{color:#5b6472;font-size:13px;margin-bottom:6px}" +
+    ".fo-break-clock{font-size:46px;font-weight:800;color:#12203a;font-variant-numeric:tabular-nums;margin:6px 0 10px;letter-spacing:1px}" +
     // league standings — form pips + leader/user accents
     ".fo-standings td,.fo-standings th{padding:6px 8px}" +
     ".fo-standings tr.fo-lead td{box-shadow:inset 3px 0 0 " + TEAL + "}" +
@@ -273,16 +291,71 @@
       tb.appendChild(out);
     } catch (e) {}
   }
-  // Practice Game = a quick friendly against a random league club. It takes you to
-  // the lineup (orders) screen; the match only plays once you set and save a lineup.
+  // Practice Game opens a setup screen (opponent + pitch + weather); after a short
+  // breather it drops you on the lineup. Nothing is randomised or auto-started.
+  var foFriendlies = [];
   function startFriendly() {
     try {
       if (typeof GD === "undefined" || !GD.teams || GD.teams.length < 2) { alert("No clubs to play yet — log in to your league first."); if (!(LG && SYNC)) openLeagueMenu(); return; }
-      var others = []; for (var i = 0; i < GD.teams.length; i++) if (i !== App.teamIx) others.push(i);
-      if (!others.length) { alert("No opponent available."); return; }
-      foChallenge(others[Math.floor(Math.random() * others.length)]);
-    } catch (e) { try { alert("Could not start Practice Game: " + ((e && e.message) || e)); } catch (_) {} say(e); }
+      foMatchSetup(null);
+    } catch (e) { try { alert("Could not open Practice Game: " + ((e && e.message) || e)); } catch (_) {} say(e); }
   }
+  var FO_PITCHES = ["balanced", "flat", "green", "dry", "slow", "cracked", "twoPaced"];
+  function foTitle(s) { return (s || "").charAt(0).toUpperCase() + (s || "").slice(1); }
+  function foMatchSetup(preIx) {
+    try {
+      if (typeof GD === "undefined" || !GD.teams || GD.teams.length < 2) { alert("No clubs to play yet."); return; }
+      var ex = document.getElementById("fo-setup"); if (ex) ex.remove();
+      var opts = GD.teams.map(function (t, i) { return i === App.teamIx ? "" : "<option value='" + i + "'" + (i === preIx ? " selected" : "") + ">" + E(t.name) + "</option>"; }).join("");
+      var pitchOpts = FO_PITCHES.map(function (p) { return "<option value='" + p + "'>" + foTitle(p) + "</option>"; }).join("");
+      var wxOpts = (typeof WXLIST !== "undefined" ? WXLIST : ["Sunny"]).map(function (w) { return "<option>" + w + "</option>"; }).join("");
+      var m = document.createElement("div"); m.id = "fo-setup"; m.className = "fo-modal";
+      m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>Practice match</div><h3>Set up a friendly</h3>" +
+        "<label>Opponent<select id='fo-su-opp'>" + opts + "</select></label>" +
+        "<label>Pitch<select id='fo-su-pitch'>" + pitchOpts + "</select></label>" +
+        "<label>Weather<select id='fo-su-wx'>" + wxOpts + "</select></label>" +
+        "<div class='fo-modal-act'><button class='fo-su-go primary'>Schedule friendly ▸</button><button class='fo-su-cancel'>Cancel</button></div></div>";
+      document.body.appendChild(m);
+      m.addEventListener("click", function (e) { if (e.target === m) m.remove(); });
+      m.querySelector(".fo-su-cancel").addEventListener("click", function () { m.remove(); });
+      m.querySelector(".fo-su-go").addEventListener("click", function () {
+        var ix = parseInt(m.querySelector("#fo-su-opp").value, 10);
+        if (isNaN(ix)) { alert("Pick an opponent first."); return; }
+        var pitch = m.querySelector("#fo-su-pitch").value, wx = m.querySelector("#fo-su-wx").value;
+        m.remove();
+        foBreakScreen(foAddFriendly(ix, pitch, wx));
+      });
+    } catch (e) { say(e); }
+  }
+  function foAddFriendly(ix, pitch, wx) {
+    foFriendlies = (foFriendlies || []).filter(function (f) { return f.oppName !== GD.teams[ix].name; });   // one per opponent
+    var fr = { oppIx: ix, oppName: GD.teams[ix].name, pitch: pitch, weather: wx, seed: 4200 + ix * 7 + foFriendlies.length * 13 };
+    foFriendlies.push(fr);
+    if (SYNC) SYNC.__plannerSig = null;                     // let the upcoming list pick it up
+    return fr;
+  }
+  // A short breather before the lineup, so a match never feels rushed.
+  function foBreakScreen(fr) {
+    try {
+      var ex = document.getElementById("fo-break"); if (ex) ex.remove();
+      var m = document.createElement("div"); m.id = "fo-break"; m.className = "fo-modal";
+      m.innerHTML = "<div class='fo-modal-card fo-break-card'><div class='fo-modal-eyebrow'>Get ready</div>" +
+        "<h3>vs " + E(fr.oppName) + "</h3><div class='fo-break-cond'>" + E(foTitle(fr.pitch)) + " pitch · " + E(fr.weather) + "</div>" +
+        "<div class='fo-break-clock' id='fo-break-clock'>2:00</div>" +
+        "<div class='small'>Take a breather — your lineup opens when the timer ends.</div>" +
+        "<div class='fo-modal-act'><button class='fo-su-go primary'>Set lineup now ▸</button></div></div>";
+      document.body.appendChild(m);
+      var secs = 120;
+      var go = function () { if (m.__t) { clearInterval(m.__t); m.__t = null; } if (m.parentNode) m.remove(); foPlayFriendly(fr); };
+      m.querySelector(".fo-su-go").addEventListener("click", go);
+      m.__t = setInterval(function () {
+        secs--; var c = document.getElementById("fo-break-clock");
+        if (c) c.textContent = Math.floor(secs / 60) + ":" + ("0" + (secs % 60)).slice(-2);
+        if (secs <= 0) go();
+      }, 1000);
+    } catch (e) { say(e); foPlayFriendly(fr); }
+  }
+  function foPlayFriendly(fr) { foChallenge(fr.oppIx, fr.pitch, fr.weather); }
   // Show the real match time (league rounds resolve at 09:00 New York) next to the
   // date in any fixtures/results table. Safe: only tables that have a "Date" header.
   // Open a rival club's page (in the game, not a dark modal): a hero banner with
@@ -322,7 +395,8 @@
       var hand = p.hand === "L" ? "LHB" : "RHB";
       var bowl = p.btLabel && p.btLabel !== "Does not bowl" ? p.btLabel : "—";
       var role = typeof prole === "function" ? prole(p.role) : (p.role || "");
-      return "<tr><td class='n'>" + (i + 1) + "</td><td>" + E(p.name) + " <span class='small'>" + E(p.nat || "") + "</span></td><td class='n'>" + (p.age || "?") + "</td><td class='small'>" + E(role) + "</td><td class='small'>" + hand + "</td><td class='small'>" + E(bowl) + "</td><td class='n'>" + (p.rating || 0).toLocaleString() + "</td></tr>";
+      var link = "<a href='#/player?n=" + encodeURIComponent(p.name) + "'>" + E(p.name) + "</a>";
+      return "<tr><td class='n'>" + (i + 1) + "</td><td>" + link + " <span class='small'>" + E(p.nat || "") + "</span></td><td class='n'>" + (p.age || "?") + "</td><td class='small'>" + E(role) + "</td><td class='small'>" + hand + "</td><td class='small'>" + E(bowl) + "</td><td class='n'>" + (p.rating || 0).toLocaleString() + "</td></tr>";
     }).join("");
     var sortBar = "<div class='fo-sortbar small'>Sort by: " +
       "<a class='fo-sortby" + (foScoutSort === "rating" ? " on" : "") + "' data-s='rating'>Rating</a> · " +
@@ -355,14 +429,14 @@
     return "<div class='crumb'><span>" + E(t.name) + "</span></div><div class='fo-scout'>" + hero +
       "<div class='fo-scout-shell'>" + links + "<div class='fo-scout-body'>" + body + "</div></div></div>";
   }
-  function foChallenge(ix) {
+  function foChallenge(ix, pitch, weather) {
     try {
       try { M = null; } catch (_) {}                       // drop any stale match
       App.tossState = null;
       var me = userTeam();
-      App.pending = { oppIx: ix, home: me.name, away: GD.teams[ix].name, ground: me.ground, pitch: me.homePitch || groundPitch(me.ground), weather: "Sunny", seed: 4200 + ix, date: typeof simDate === "function" ? simDate() : "", comp: "friendly" };
+      App.pending = { oppIx: ix, home: me.name, away: GD.teams[ix].name, ground: me.ground, pitch: pitch || me.homePitch || groundPitch(me.ground), weather: weather || "Sunny", seed: 4200 + ix, date: typeof simDate === "function" ? simDate() : "", comp: "friendly", __friendly: true };
       App.orders.saved = false;                             // must set + save a lineup before it plays
-      say("🏏 Challenge set vs " + GD.teams[ix].name + " — set your lineup, then Save to play.");
+      say("🏏 vs " + GD.teams[ix].name + " — set your lineup, then Save to play.");
       location.hash = "#/orders"; if (typeof window.route === "function") window.route();
     } catch (e) { say(e); }
   }
@@ -370,7 +444,7 @@
     page.querySelectorAll(".fo-stab").forEach(function (a) { a.addEventListener("click", function () { foScoutTab = a.getAttribute("data-tab"); page.__scoutSig = null; foRenderScout(); }); });
     page.querySelectorAll(".fo-sortby").forEach(function (a) { a.addEventListener("click", function () { foScoutSort = a.getAttribute("data-s"); page.__scoutSig = null; foRenderScout(); }); });
     var back = page.querySelector(".fo-scout-back"); if (back) back.addEventListener("click", function () { location.hash = "#/matches"; });
-    var ch = page.querySelector(".fo-challenge"); if (ch) ch.addEventListener("click", function () { foChallenge(ix); });
+    var ch = page.querySelector(".fo-challenge"); if (ch) ch.addEventListener("click", function () { foMatchSetup(ix); });
     page.querySelectorAll("tr.rowlink[data-sc]").forEach(function (tr) { tr.style.cursor = "pointer"; tr.addEventListener("click", function () { location.hash = "#/scorecard?i=" + tr.getAttribute("data-sc"); }); });
   }
   function foRenderScout() {
@@ -404,10 +478,14 @@
   // league-table club names clickable to open that club's scout report.
   function tidyPage() {
     try {
+      var isFounder = !!(SYNC && SYNC.isFounder);
       document.querySelectorAll("#page .panel, #page .card").forEach(function (pn) {
         var h = pn.querySelector("h4, .card-title"); if (!h) return;
         var t = h.textContent.trim().toLowerCase();
-        if (t === "academies" || t.indexOf("academy") >= 0 || t.indexOf("training centre") >= 0 || t.indexOf("training center") >= 0) pn.style.display = "none";
+        var hide = t === "academies" || t.indexOf("academy") >= 0 || t.indexOf("training centre") >= 0 || t.indexOf("training center") >= 0 ||
+          t.indexOf("founder league") >= 0 || t.indexOf("commissioner") >= 0 ||   // no longer needed in Office
+          (t.indexOf("danger zone") >= 0 && !isFounder);                          // reset game is admin-only
+        if (hide) pn.style.display = "none";
       });
       // remove the manual "Complete AI round" / "Sim whole round" sim controls
       document.querySelectorAll("#page button").forEach(function (b) {
@@ -510,6 +588,24 @@
   }
   // Tag #page while a live match is on screen, so the mobile reorder CSS applies
   // only there (and never touches the desktop layout).
+  // Opponent player pages: a rival's players are scoutable, but their skill bars
+  // and skills-summary are hidden — only your own players reveal their skills.
+  function foHidePlayerSkills() {
+    try {
+      if (foHashPath() !== "#/player") return;
+      var page = document.getElementById("page"); if (!page) return;
+      var m = /[?&]n=([^&]+)/.exec(location.hash); if (!m) return;
+      var name = decodeURIComponent(m[1]);
+      var mine = false;
+      try { var me = userTeam(); mine = (me.players || []).concat(me.youth || []).some(function (p) { return p.name === name; }); } catch (e) {}
+      if (mine) return;                                     // own player — show everything
+      page.querySelectorAll(".panel").forEach(function (pn) {
+        var h = pn.querySelector("h4"); if (!h) return;
+        var t = h.textContent.trim().toLowerCase();
+        if (t === "skills" || t === "skills summary") pn.style.display = "none";
+      });
+    } catch (e) {}
+  }
   function foHashPath() { return (location.hash || "").split("?")[0]; }   // "#/match" not "#/matches"
   function foTagMatchPage() {
     try {
@@ -595,6 +691,14 @@
   // fixture gets a button on the right that opens that round's orders.
   function foPlannerHTML(fx, limit) {
     var shown = limit ? fx.slice(0, limit) : fx;
+    var frRows = (foFriendlies || []).map(function (fr, i) {
+      return "<div class='fo-fx fo-fx-fr'>" +
+        "<div class='fo-fx-main'><b>Friendly</b> vs " + E(fr.oppName) +
+          "<div class='small fo-fx-sub'>" + E(foTitle(fr.pitch)) + " pitch · " + E(fr.weather) + " · practice</div></div>" +
+        "<div class='fo-fx-act'><button class='fo-fr-play' data-i='" + i + "'>Play</button>" +
+          "<button class='fo-fr-x' data-i='" + i + "' title='Remove'>✕</button></div>" +
+        "</div>";
+    }).join("");
     var rows = shown.map(function (x) {
       var done = SYNC.submitted && SYNC.submitted[x.round];
       return "<div class='fo-fx'>" +
@@ -605,12 +709,14 @@
         "</div>";
     }).join("");
     var more = (limit && fx.length > limit) ? "<div class='small' style='margin-top:6px'><a href='#/matches'>See all " + fx.length + " fixtures →</a></div>" : "";
-    return "<div class='panel fo-planner'><h4>Your upcoming fixtures</h4><div class='pad'>" +
-      "<div class='small' style='margin-bottom:6px'>League matches play automatically at <b>9:00 AM ET</b>. Set a lineup for any fixture ahead of time; blank ones use auto-selection.</div>" +
-      rows + more + "</div></div>";
+    return "<div class='panel fo-planner'><h4>Your upcoming matches</h4><div class='pad'>" +
+      "<div class='small' style='margin-bottom:6px'>League matches play automatically at <b>9:00 AM ET</b>. Set a lineup ahead of time (blank ones auto-select), or play a friendly any time.</div>" +
+      frRows + rows + more + "</div></div>";
   }
   function foWirePlanner(root) {
     root.querySelectorAll(".fo-setr").forEach(function (b) { if (b.__w) return; b.__w = 1; b.addEventListener("click", function () { foSetOrdersForRound(+b.getAttribute("data-r")); }); });
+    root.querySelectorAll(".fo-fr-play").forEach(function (b) { if (b.__w) return; b.__w = 1; b.addEventListener("click", function () { var fr = foFriendlies[+b.getAttribute("data-i")]; if (fr) foPlayFriendly(fr); }); });
+    root.querySelectorAll(".fo-fr-x").forEach(function (b) { if (b.__w) return; b.__w = 1; b.addEventListener("click", function () { foFriendlies.splice(+b.getAttribute("data-i"), 1); if (SYNC) SYNC.__plannerSig = null; foRenderPlanner(); }); });
   }
   function foRenderPlanner() {
     try {
@@ -618,11 +724,11 @@
       if (App.page !== "matches" && App.page !== "club") return;
       var page = document.getElementById("page"); if (!page) return;
       if (!SYNC.submittedLoaded) foLoadSubmitted();
-      var fx = foUserFixtures();
+      var fx = foUserFixtures(), frs = foFriendlies || [];
       var existing = page.querySelector(".fo-planner");
-      if (!fx.length) { if (existing) existing.remove(); return; }
+      if (!fx.length && !frs.length) { if (existing) existing.remove(); return; }
       var limit = App.page === "club" ? 5 : 0;              // compact on the club home; full on Matches
-      var sig = App.page + "|" + fx.map(function (x) { return x.round + (SYNC.submitted && SYNC.submitted[x.round] ? "y" : "n"); }).join(",");
+      var sig = App.page + "|fr" + frs.map(function (f) { return f.oppName; }).join(",") + "|" + fx.map(function (x) { return x.round + (SYNC.submitted && SYNC.submitted[x.round] ? "y" : "n"); }).join(",");
       if (existing && SYNC.__plannerSig === sig) return;    // unchanged — leave the DOM alone (avoids observer loop)
       SYNC.__plannerSig = sig;
       var html = foPlannerHTML(fx, limit);
@@ -660,9 +766,9 @@
   // re-apply fixture match-times after any re-render of the game page
   try {
     var _mt = null, pg0 = document.getElementById("page");
-    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); }, 40); }).observe(pg0, { childList: true, subtree: true });
+    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); return r; }; }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); return r; }; }
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
