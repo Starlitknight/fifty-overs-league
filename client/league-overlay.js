@@ -220,6 +220,14 @@
         var t = h.textContent.trim().toLowerCase();
         if (t === "academies" || t.indexOf("academy") >= 0) pn.style.display = "none";
       });
+      // remove the manual "Complete AI round" / "Sim whole round" sim controls
+      document.querySelectorAll("#page button").forEach(function (b) {
+        var bt = (b.textContent || "").trim();
+        if (bt === "Complete AI round" || bt === "Sim whole round") b.style.display = "none";
+      });
+      document.querySelectorAll("#page .small").forEach(function (el) {
+        if (/^Complete AI round only plays/.test((el.textContent || "").trim())) el.style.display = "none";
+      });
       document.querySelectorAll("#page table").forEach(function (tb) {
         var clubIx = -1, ptsIx = -1;
         tb.querySelectorAll("th").forEach(function (th) { var t = th.textContent.trim().toLowerCase(); if (t === "club") clubIx = th.cellIndex; if (t === "pts") ptsIx = th.cellIndex; });
