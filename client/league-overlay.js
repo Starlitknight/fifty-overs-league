@@ -125,32 +125,67 @@
     "#folWrap{background:#0B1322 !important}" +
     // Login/signup mode is FULL-BLEED: without this the panel is a centered 780px
     // column whose edges vanish against the dark page — leaving its scrollbar
-    // floating weirdly in the middle of the screen.
-    "#folPanel.fol-navy{inset:0 !important;max-width:none;border-radius:0;background:radial-gradient(circle at top,rgba(77,166,162,.14),transparent 38%),linear-gradient(180deg,#0B1322 0%,#08101D 100%);display:flex;flex-direction:column;padding:28px 20px}" +
-    // margin:auto (not align-items:center) so a card taller than the window scrolls instead of clipping its top
-    "#folPanel.fol-navy #folMain{margin:auto;width:100%;max-width:420px}" +
+    // floating weirdly in the middle of the screen. Background: brand gradient +
+    // two very faint boundary-rope arcs (abstract cricket field lines).
+    "#folPanel.fol-navy{inset:0 !important;max-width:none;border-radius:0;display:flex;flex-direction:column;" +
+      "padding:calc(20px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px));" +
+      "background:" +
+      "radial-gradient(ellipse 130% 95% at 50% 128%,transparent 59.6%,rgba(246,244,238,.045) 60%,transparent 60.7%)," +
+      "radial-gradient(ellipse 105% 75% at 50% 132%,transparent 59.5%,rgba(246,244,238,.03) 60%,transparent 60.9%)," +
+      "radial-gradient(circle at 30% 40%,rgba(77,166,162,.18),transparent 32%)," +
+      "radial-gradient(circle at 78% 20%,rgba(200,103,74,.08),transparent 28%)," +
+      "linear-gradient(180deg,#0B1322 0%,#08101D 100%)}" +
+    // margin:auto (not align-items:center) so content taller than the window scrolls instead of clipping its top
+    "#folPanel.fol-navy #folMain{margin:auto;width:100%;max-width:1120px}" +
     // subtle dark scrollbar (the default white one glows against navy)
     "#folPanel{scrollbar-width:thin;scrollbar-color:rgba(246,244,238,.25) transparent}" +
     "#folPanel::-webkit-scrollbar{width:10px}#folPanel::-webkit-scrollbar-track{background:transparent}" +
     "#folPanel::-webkit-scrollbar-thumb{background:rgba(246,244,238,.18);border-radius:6px;border:2px solid #0B1322}#folPanel::-webkit-scrollbar-thumb:hover{background:rgba(246,244,238,.32)}" +
     "#folPanel.fol-navy .folhd{display:none}" +
-    ".fol-card{width:100%;max-width:420px;background:#1C2433;border:1px solid rgba(246,244,238,.12);border-radius:24px;box-shadow:0 24px 60px -20px rgba(0,0,0,.6),0 1px 0 rgba(246,244,238,.03) inset;padding:34px 28px 26px}" +
-    ".fol-logo{display:block;width:96px;height:96px;border-radius:22px;margin:0 auto 20px}" +
-    ".fol-card h1{margin:0;text-align:center;font-size:24px;font-weight:800;letter-spacing:4px;color:#F6F4EE}" +
-    ".fol-card .fol-sub{margin:8px 0 24px;text-align:center;font-size:13.5px;color:rgba(246,244,238,.65);letter-spacing:.3px}" +
-    ".fol-form{display:flex;flex-direction:column;gap:13px}" +
-    ".fol-form label{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:rgba(246,244,238,.6);margin:0 0 6px 2px}" +
-    "#folPanel .fol-form input{width:100%;background:rgba(246,244,238,.06);border:1px solid rgba(246,244,238,.12);border-radius:12px;padding:13px 14px;color:#F6F4EE;font-size:16px;transition:border-color .15s,box-shadow .15s}" +
-    "#folPanel .fol-form input::placeholder{color:rgba(246,244,238,.4)}" +
+    // ---- split auth layout: brand lockup left, card right ----
+    ".fol-auth{display:flex;align-items:center;gap:56px}" +
+    ".fol-brand{flex:1.15;display:flex;flex-direction:column;align-items:center;text-align:center}" +
+    ".fol-mark{width:210px;height:auto;filter:drop-shadow(0 0 34px rgba(77,166,162,.28))}" +
+    ".fol-word{margin:26px 0 0;font-size:clamp(30px,3.2vw,44px);font-weight:700;letter-spacing:.34em;text-indent:.34em;color:#F6F4EE;white-space:nowrap}" +
+    ".fol-word i{font-style:normal;color:#5A7492}" +
+    ".fol-tag{margin-top:16px;font-size:15.5px;letter-spacing:.22em;color:rgba(246,244,238,.85)}" +
+    ".fol-tag b{color:#C8674A;font-weight:400;margin:0 10px}" +
+    ".fol-feats{margin-top:12px;font-size:12.5px;letter-spacing:.14em;color:#4DA6A2}" +
+    ".fol-feats b{color:rgba(246,244,238,.4);font-weight:400;margin:0 8px}" +
+    // clip-path crops a white sliver baked into the icon bitmap's right edge
+    ".fol-minilogo{width:56px;height:56px;border-radius:14px;margin-top:56px;opacity:.9;clip-path:inset(1px 5px 1px 1px round 14px)}" +
+    ".fol-side{flex:1;display:flex;justify-content:center}" +
+    ".fol-card{width:100%;max-width:430px;background:rgba(28,36,51,.82);border:1px solid rgba(246,244,238,.14);border-radius:24px;box-shadow:0 30px 70px -28px rgba(0,0,0,.65),0 1px 0 rgba(246,244,238,.04) inset;padding:36px 32px 26px;backdrop-filter:blur(6px)}" +
+    ".fol-logo{display:none;width:64px;height:64px;border-radius:15px;margin:0 auto 18px;clip-path:inset(1px 6px 1px 1px round 15px)}" +
+    ".fol-card h1{margin:0;text-align:center;font-size:26px;font-weight:700;letter-spacing:.3px;color:#F6F4EE}" +
+    ".fol-card .fol-sub{margin:8px 0 26px;text-align:center;font-size:14px;color:rgba(246,244,238,.65);letter-spacing:.2px}" +
+    ".fol-form{display:flex;flex-direction:column;gap:15px}" +
+    ".fol-form label{display:block;font-size:13px;font-weight:600;color:rgba(246,244,238,.85);margin:0 0 7px 2px}" +
+    ".fol-lrow{display:flex;justify-content:space-between;align-items:baseline}" +
+    "#folPanel .fol-lrow a{font-size:12.5px;color:#4DA6A2 !important;cursor:pointer;text-decoration:none}" +
+    "#folPanel .fol-lrow a:hover{text-decoration:underline}" +
+    "#folPanel .fol-form input{width:100%;min-height:48px;background:rgba(246,244,238,.06);border:1px solid rgba(246,244,238,.12);border-radius:12px;padding:12px 14px;color:#F6F4EE;font-size:16px;transition:border-color .15s,box-shadow .15s}" +
+    "#folPanel .fol-form input::placeholder{color:rgba(246,244,238,.38)}" +
     "#folPanel .fol-form input:focus{outline:none;border-color:#4DA6A2;box-shadow:0 0 0 3px rgba(77,166,162,.16)}" +
-    "#folPanel .fol-cta{margin-top:8px;background:#C8674A !important;color:#F6F4EE !important;border:none !important;border-radius:14px;padding:18px;font-size:17.5px;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:filter .15s}" +
-    "#folPanel .fol-cta:hover{filter:brightness(1.06)}" +
-    ".fol-links{display:flex;flex-direction:column;align-items:center;gap:13px;margin-top:20px}" +
-    "#folPanel .fol-links a{color:#F6F4EE !important;text-decoration:none;font-size:14px;font-weight:600;cursor:pointer}" +
-    "#folPanel .fol-links a.fol-mut{color:rgba(246,244,238,.6) !important;font-weight:500;font-size:13px}" +
-    "#folPanel .fol-links a:hover{color:#4DA6A2 !important}" +
-    ".fol-foot{margin:24px 0 2px;text-align:center;font-size:10px;letter-spacing:1px;color:rgba(246,244,238,.42);text-transform:uppercase}" +
-    ".fol-foot .fol-sep{color:#C8674A;margin:0 5px}";
+    "#folPanel .fol-cta{margin-top:10px;min-height:52px;background:#C8674A !important;color:#F6F4EE !important;border:none !important;border-radius:13px;padding:15px;font-size:16.5px;font-weight:700;letter-spacing:.4px;cursor:pointer;transition:filter .15s}" +
+    "#folPanel .fol-cta:hover{filter:brightness(1.07)}" +
+    ".fol-or{display:flex;align-items:center;gap:14px;margin:20px 0 4px;color:rgba(246,244,238,.45);font-size:12.5px}" +
+    ".fol-or:before,.fol-or:after{content:'';flex:1;height:1px;background:rgba(246,244,238,.12)}" +
+    ".fol-links{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:12px}" +
+    "#folPanel .fol-links a{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 14px;color:#4DA6A2 !important;text-decoration:none;font-size:15px;font-weight:600;cursor:pointer}" +
+    "#folPanel .fol-links a.fol-mut{color:rgba(246,244,238,.6) !important;font-weight:500;font-size:13.5px;min-height:34px}" +
+    "#folPanel .fol-links a:hover{filter:brightness(1.15)}" +
+    ".fol-foot{display:flex;align-items:center;justify-content:center;gap:7px;margin:20px 0 2px;text-align:center;font-size:12px;color:rgba(246,244,238,.45)}" +
+    ".fol-foot svg{flex:0 0 auto;opacity:.55}" +
+    // ---- mobile: single column, compact monogram on the card, no split pane ----
+    "@media(max-width:899px){" +
+      ".fol-auth{flex-direction:column;gap:0}" +
+      ".fol-brand{display:none}" +
+      ".fol-logo{display:block}" +
+      "#folPanel.fol-navy{padding-left:20px;padding-right:20px}" +
+      ".fol-card{max-width:460px;padding:28px 22px 22px}" +
+      ".fol-card h1{font-size:23px}" +
+    "}";
   document.head.appendChild(css2);
 
   // ---- restyle the GAME itself: brand colours (navy/terracotta/teal) on the
@@ -1242,57 +1277,82 @@
   // ---- auth (Fifty Overs brand login) ----
   // The "50" mark: three terracotta stumps, a paper "5", and a seamed cricket ball for the "0".
   var LOGO = '<img class="fol-logo" src="' + APPICON + '" alt="Fifty Overs">';
-  var FOOT = '<div class="fol-foot">Draft squads<span class="fol-sep">&middot;</span>Set orders<span class="fol-sep">&middot;</span>Watch every ball</div>';
+  // The primary "50" mark, redrawn as inline SVG for the dark background:
+  // terracotta stumps, paper "5", seamed-ball "0" (the brand PNGs are navy-on-paper
+  // and megabytes big — vector keeps the single-file build small and crisp).
+  var FOL_MARK =
+    '<svg class="fol-mark" viewBox="0 0 224 170" fill="none" aria-hidden="true">' +
+    '<g fill="#C8674A"><rect x="88" y="6" width="9" height="30" rx="2.5"/><rect x="86" y="2" width="13" height="6" rx="2"/>' +
+    '<rect x="107" y="6" width="9" height="30" rx="2.5"/><rect x="105" y="2" width="13" height="6" rx="2"/>' +
+    '<rect x="126" y="6" width="9" height="30" rx="2.5"/><rect x="124" y="2" width="13" height="6" rx="2"/></g>' +
+    '<path d="M104 50 H62 v34 h21 a27 27 0 1 1 -22 45" stroke="#F6F4EE" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<circle cx="156" cy="113" r="45" stroke="#F6F4EE" stroke-width="11"/>' +
+    '<path d="M149 76 c-7 24 -7 50 2 74" stroke="#F6F4EE" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="8 8" opacity=".9"/>' +
+    '<path d="M164 76 c7 24 7 50 -2 74" stroke="#F6F4EE" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="8 8" opacity=".9"/>' +
+    "</svg>";
+  var ICON_JOIN = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
+  var FOOT =
+    '<div class="fol-foot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>' +
+    "Secure access. Your club, your data.</div>";
+  // Split auth shell: brand lockup on the left, the card on the right; on mobile
+  // the brand pane collapses and the compact monogram tops the card instead.
+  function folAuthShell(card) {
+    return '<div class="fol-auth">' +
+      '<div class="fol-brand">' + FOL_MARK +
+      '<div class="fol-word">FIFTY <i>OVERS</i></div>' +
+      '<div class="fol-tag"><b>&middot;</b>Private cricket leagues.<b>&middot;</b></div>' +
+      '<div class="fol-feats">Draft squads<b>&middot;</b>Set orders<b>&middot;</b>Watch every ball.</div>' +
+      '<img class="fol-minilogo" src="' + APPICON + '" alt="">' +
+      "</div>" +
+      '<div class="fol-side"><div class="fol-card">' + LOGO + card + "</div></div></div>";
+  }
 
   function renderLogin() {
     wrap.querySelector("#folWho").textContent = "";
     setNavy(true);
-    main.innerHTML =
-      '<div class="fol-card">' + LOGO +
-      '<h1>FIFTY OVERS</h1>' +
-      '<div class="fol-sub">Private cricket leagues.</div>' +
+    main.innerHTML = folAuthShell(
+      "<h1>Welcome back</h1>" +
+      '<div class="fol-sub">Sign in to manage your club.</div>' +
       '<div class="fol-form">' +
-      '<div><label>Email</label><input id="folEmail" type="email" autocomplete="email" placeholder="you@club.com"></div>' +
-      '<div><label>Password</label><input id="folPass" type="password" autocomplete="current-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"></div>' +
+      '<div><label for="folEmail">Email address</label><input id="folEmail" type="email" autocomplete="email" placeholder="you@club.com"></div>' +
+      '<div><div class="fol-lrow"><label for="folPass">Password</label><a data-act="showForgot">Forgot password?</a></div>' +
+      '<input id="folPass" type="password" autocomplete="current-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"></div>' +
       '<button class="fol-cta" data-act="login">Log In</button>' +
-      '</div>' +
-      '<div class="fol-links">' +
-      '<a data-act="showJoin">Join with invite code</a>' +
-      '<a class="fol-mut" data-act="showForgot">Forgot password?</a>' +
-      '</div>' + FOOT + '</div>';
+      "</div>" +
+      '<div class="fol-or">or</div>' +
+      '<div class="fol-links"><a data-act="showJoin">' + ICON_JOIN + "Join with invite code</a></div>" +
+      FOOT);
   }
 
   // New manager: create an account and step straight into a league with an invite code.
   function renderJoin() {
     setNavy(true);
-    main.innerHTML =
-      '<div class="fol-card">' + LOGO +
-      '<h1>FIFTY OVERS</h1>' +
-      '<div class="fol-sub">Join your league.</div>' +
+    main.innerHTML = folAuthShell(
+      "<h1>Join your league</h1>" +
+      '<div class="fol-sub">Create your account with the invite code from your commissioner.</div>' +
       '<div class="fol-form">' +
-      '<div><label>Email</label><input id="folEmail" type="email" autocomplete="email" placeholder="you@club.com"></div>' +
-      '<div><label>Password</label><input id="folPass" type="password" autocomplete="new-password" placeholder="choose a password"></div>' +
-      '<div><label>Invite code</label><input id="folCode" placeholder="from your commissioner"></div>' +
-      '<div><label>Manager name</label><input id="folDn" placeholder="your name"></div>' +
-      '<div><label>Team name</label><input id="folTn" placeholder="your club"></div>' +
+      '<div><label for="folEmail">Email address</label><input id="folEmail" type="email" autocomplete="email" placeholder="you@club.com"></div>' +
+      '<div><label for="folPass">Password</label><input id="folPass" type="password" autocomplete="new-password" placeholder="choose a password"></div>' +
+      '<div><label for="folCode">Invite code</label><input id="folCode" placeholder="from your commissioner"></div>' +
+      '<div><label for="folDn">Manager name</label><input id="folDn" placeholder="your name"></div>' +
+      '<div><label for="folTn">Team name</label><input id="folTn" placeholder="your club"></div>' +
       '<button class="fol-cta" data-act="joinNew">Create account and join</button>' +
-      '</div>' +
+      "</div>" +
       '<div class="fol-links"><a class="fol-mut" data-act="showLogin">Back to log in</a></div>' +
-      FOOT + '</div>';
+      FOOT);
   }
 
   function renderForgot() {
     setNavy(true);
-    main.innerHTML =
-      '<div class="fol-card">' + LOGO +
-      '<h1>FIFTY OVERS</h1>' +
-      '<div class="fol-sub">Reset your password.</div>' +
+    main.innerHTML = folAuthShell(
+      "<h1>Reset your password</h1>" +
+      '<div class="fol-sub">We\'ll email you a reset link.</div>' +
       '<div class="fol-form">' +
-      '<div><label>Email</label><input id="folEmail" type="email" autocomplete="email" placeholder="you@club.com"></div>' +
+      '<div><label for="folEmail">Email address</label><input id="folEmail" type="email" autocomplete="email" placeholder="you@club.com"></div>' +
       '<button class="fol-cta" data-act="sendReset">Send reset link</button>' +
-      '</div>' +
+      "</div>" +
       '<div class="fol-links"><a class="fol-mut" data-act="showLogin">Back to log in</a></div>' +
-      FOOT + '</div>';
+      FOOT);
   }
 
   function doLogin() {
