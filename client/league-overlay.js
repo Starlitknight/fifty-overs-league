@@ -286,6 +286,17 @@
     }).catch(say);
   }
 
+  // Detect a "table not created yet" error (0011/0012 SQL not run in Supabase).
+  function isMissingTable(e) { var m = ((e && e.message) || e || "") + ""; return /PGRST205|Could not find the table|schema cache|does not exist/i.test(m); }
+  function setupNeeded() {
+    openWrap(true); setNavy(false);
+    var who = wrap.querySelector("#folWho"); if (who) who.textContent = LG ? LG.name : "";
+    main.innerHTML = '<div class="folbody"><div class="folcard"><h4>Almost ready</h4><div class="folpad">' +
+      '<div class="folsmall" style="margin-bottom:10px;line-height:1.5">This league still needs its sync tables in your database. Open <b>Supabase → SQL Editor</b>, run the setup SQL (the 0011 and 0012 snippets), then reload this page.</div>' +
+      '<button class="mini" data-act="logout">log out</button>' +
+      "</div></div></div>";
+  }
+
   function syncTick(first) {
     if (!LG) return Promise.resolve();
     return sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version,round").then(function (a) {
@@ -297,7 +308,12 @@
       } else {
         return preStart();
       }
-    }).catch(function () { /* transient network: try again on the next tick */ });
+    }).catch(function (e) {
+      if (isMissingTable(e)) { setupNeeded(); return; }
+      console.warn("Fifty Overs syncTick error", e);
+      if (!SYNC.started) return preStart().catch(function (e2) { if (isMissingTable(e2)) setupNeeded(); else say(e2); });
+      schedulePoll();
+    });
   }
 
   // Load the shared league snapshot into the game and point it at MY club.
@@ -330,7 +346,7 @@
       var mt = SYNC.myTeam;
       if (mt && mt.country && mt.draft_seed) { startDraft(mt); return; }
       renderSetup();
-    });
+    }).catch(function (e) { if (isMissingTable(e)) setupNeeded(); else say(e); });
   }
 
   // Minimal onboarding: pick home country + names, then draft in the game.
@@ -385,7 +401,7 @@
         "<table><tr><th>Club</th><th>Status</th>" + (isF ? "<th></th>" : "") + "</tr>" + rows + "</table>" + ctl +
         '<div style="margin-top:10px">' + back + '<button class="mini" data-act="logout">log out</button></div>' +
         "</div></div></div>";
-    }).catch(say);
+    }).catch(function (e) { if (isMissingTable(e)) setupNeeded(); else say(e); });
   }
   function delTeam(id, name) {
     if (!confirm('Permanently delete "' + name + '" — its club, squad and orders? This cannot be undone.')) return;
