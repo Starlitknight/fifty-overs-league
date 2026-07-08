@@ -1,5 +1,5 @@
 /* ============================================================================
-   Fifty Overs — LEAGUE overlay. Additive multiplayer inside the real game.
+   Fifty Overs :: LEAGUE overlay. Additive multiplayer inside the real game.
    Adds a floating "🏆 League" button that opens a full multiplayer panel
    (login/join, draft, line-ups, challenges, table, results). Fully namespaced
    and closure-scoped: it never touches the game's globals or engine, and its
@@ -13,7 +13,7 @@
   var BUILD_HASH = "e558745ede94e2502d5cccaa829feb42818cbcb1e779664c4b784a851b3f00ff";
 
   var JWT = "", LG = null, TEAMS = {}, MYTEAM = null, MYMEMBER = null, curTab = "table", RES = [];
-  // the game's own nationality list — each manager picks one as their home country
+  // the game's own nationality list; each manager picks one as their home country
   var NAT = ["Australia", "India", "Pakistan", "Sri Lanka", "New Zealand", "South Africa", "England", "Netherlands", "West Indies", "Afghanistan", "Ireland", "Zimbabwe"];
 
   function E(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -49,26 +49,28 @@
     "#folPin{background:#a33328;color:#fff;padding:8px 14px;display:none}";
   document.head.appendChild(css);
 
-  // ---- cricket-themed login (From The Pavilion vibe) ----
+  // ---- Fifty Overs identity: deep pitch-green + gold, minimalist ----
   var css2 = document.createElement("style");
   css2.textContent =
-    "#folPanel.fol-navy{background:#14305a}" +
-    "#folPanel.fol-navy .folhd{background:#102546;border-bottom-color:#26406e}" +
-    ".fol-hero{background:#14305a;color:#fff;text-align:center;padding:22px 18px 14px}" +
-    ".fol-logo{width:78px;height:78px;border-radius:50%;background:#b5312a;display:flex;align-items:center;justify-content:center;font-size:42px;margin:0 auto 8px;box-shadow:0 3px 10px rgba(0,0,0,.35)}" +
-    ".fol-hero h1{font-size:30px;letter-spacing:1px;margin:4px 0 0;font-weight:800;line-height:1.05}" +
-    ".fol-hero .fol-tag{color:#cdd8ea;font-size:13.5px;font-weight:600;margin:6px 0 16px}" +
-    ".fol-auth{max-width:330px;margin:0 auto;display:flex;flex-direction:column;gap:12px}" +
-    "#folPanel .fol-auth input{background:transparent;border:none;border-bottom:2px solid #4a6a9a;color:#fff;border-radius:0;padding:9px 2px;font-size:16px}" +
-    "#folPanel .fol-auth input::placeholder{color:#9fb3d0}" +
-    "#folPanel .fol-red{background:#b5312a !important;color:#fff !important;border:none !important;border-radius:8px;padding:12px;font-weight:800;font-size:16px;cursor:pointer}" +
-    "#folPanel .fol-white{background:#fff !important;color:#14305a !important;border:2px solid #7fb3d5 !important;border-radius:8px;padding:11px;font-weight:800;font-size:16px;cursor:pointer}" +
-    ".fol-explain{background:#fff;color:#1a2b40;margin:0 12px 16px;border-radius:12px;padding:16px;box-shadow:0 4px 14px rgba(0,0,0,.25);position:relative;top:-6px}" +
-    ".fol-explain p{margin:0 0 12px;font-size:15px;line-height:1.45}" +
-    ".fol-explain ul{list-style:none;padding:0;margin:0;display:grid;gap:11px}" +
-    ".fol-explain li{display:flex;gap:9px;font-size:14px;line-height:1.4;align-items:flex-start}" +
-    ".fol-ball{flex:0 0 auto;width:17px;height:17px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#e5534b,#b01e17);box-shadow:inset -3px -3px 0 rgba(0,0,0,.18);margin-top:2px;position:relative}" +
-    ".fol-ball:after{content:'';position:absolute;top:3px;bottom:3px;left:50%;width:1px;background:rgba(255,255,255,.5)}";
+    "#folWrap{background:#062018 !important}" +
+    "#folBtn{background:#0d3a2c !important;color:#e6c15a !important;border:1px solid rgba(230,193,90,.45) !important}" +
+    "#folPanel.fol-navy{background:linear-gradient(165deg,#0e4231 0%,#062018 70%)}" +
+    "#folPanel.fol-navy .folhd{display:none}" +
+    ".fol-hero{color:#f4f1e5;text-align:center;padding:30px 20px 16px}" +
+    ".fol-logo{width:60px;height:64px;margin:0 auto 16px;display:block}" +
+    ".fol-hero h1{font-size:33px;letter-spacing:4px;margin:0;font-weight:800;color:#f7f4ea}" +
+    ".fol-hero .fol-tag{color:#e6c15a;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:10px 0 22px}" +
+    ".fol-auth{max-width:310px;margin:0 auto;display:flex;flex-direction:column;gap:14px}" +
+    "#folPanel .fol-auth input{background:transparent;border:none;border-bottom:1.5px solid rgba(230,193,90,.45);color:#f4f1e5;border-radius:0;padding:11px 2px;font-size:16px;letter-spacing:.3px}" +
+    "#folPanel .fol-auth input::placeholder{color:#7f978a}" +
+    "#folPanel .fol-gold{background:#e6c15a !important;color:#0a241b !important;border:none !important;border-radius:11px;padding:14px;font-weight:800;font-size:16px;letter-spacing:.4px;cursor:pointer}" +
+    "#folPanel .fol-ghost{background:transparent !important;color:#f4f1e5 !important;border:1.5px solid rgba(244,241,229,.32) !important;border-radius:11px;padding:12px;font-weight:700;font-size:15px;cursor:pointer}" +
+    ".fol-explain{background:rgba(255,255,255,.035);color:#e2e9e3;margin:6px 16px 20px;border-radius:16px;padding:20px 18px;border:1px solid rgba(230,193,90,.16)}" +
+    ".fol-explain p{margin:0 0 15px;font-size:15px;line-height:1.55;color:#eef1ea}" +
+    ".fol-explain ul{list-style:none;padding:0;margin:0;display:grid;gap:14px}" +
+    ".fol-explain li{display:flex;gap:12px;font-size:14px;line-height:1.5;align-items:flex-start;color:#cdd8cf}" +
+    ".fol-explain li b{color:#f4f1e5}" +
+    ".fol-dot{flex:0 0 auto;width:7px;height:7px;border-radius:50%;background:#e6c15a;margin-top:7px;box-shadow:0 0 0 3px rgba(230,193,90,.15)}";
   document.head.appendChild(css2);
 
   var btn = document.createElement("button");
@@ -79,18 +81,26 @@
   wrap.id = "folWrap";
   wrap.innerHTML =
     '<div id="folPanel">' +
-    '<div class="folhd"><h3>🏏 Fifty Overs — League</h3><span class="folsmall" id="folWho"></span><button data-act="close">✕ close</button></div>' +
+    '<div class="folhd"><h3>🏏 Fifty Overs</h3><span class="folsmall" id="folWho"></span></div>' +
     '<div id="folPin"></div><div id="folMain"></div></div>';
   document.body.appendChild(wrap);
   var main = wrap.querySelector("#folMain");
 
-  btn.addEventListener("click", function () { wrap.classList.add("on"); if (!JWT) renderLogin(); else if (LG) renderTabs(); else renderEnter(); });
+  // Open/close the overlay. While it is on it covers the whole screen, so we lock
+  // the page behind it: the public never touches the solo game underneath.
+  function openWrap(on) {
+    wrap.classList.toggle("on", !!on);
+    document.documentElement.style.overflow = on ? "hidden" : "";
+    document.body.style.overflow = on ? "hidden" : "";
+  }
+
+  btn.addEventListener("click", function () { openWrap(true); if (!JWT) renderLogin(); else if (LG) renderTabs(); else renderEnter(); });
 
   // ---- one delegated handler for everything ----
   wrap.addEventListener("click", function (ev) {
     var t = ev.target.closest("[data-act]"); if (!t) return;
     var a = t.getAttribute("data-act");
-    if (a === "close") { wrap.classList.remove("on"); return; }
+    if (a === "close") { openWrap(false); return; }
     ev.preventDefault();
     var acts = {
       login: doLogin, signup: doSignup, logout: function () { JWT = ""; LG = null; renderLogin(); },
@@ -112,31 +122,37 @@
 
   function setNavy(on) { var pn = wrap.querySelector("#folPanel"); if (pn) pn.classList.toggle("fol-navy", !!on); }
 
-  // ---- auth (cricket-styled login) ----
+  // ---- auth (Fifty Overs styled login) ----
+  var STUMPS = '<svg class="fol-logo" viewBox="0 0 60 62" xmlns="http://www.w3.org/2000/svg">' +
+    '<rect x="10.5" y="12" width="18" height="3" rx="1.5" fill="#e6c15a"/>' +
+    '<rect x="31.5" y="12" width="18" height="3" rx="1.5" fill="#e6c15a"/>' +
+    '<rect x="14.8" y="14" width="4.4" height="34" rx="2.2" fill="#e6c15a"/>' +
+    '<rect x="27.8" y="14" width="4.4" height="34" rx="2.2" fill="#e6c15a"/>' +
+    '<rect x="40.8" y="14" width="4.4" height="34" rx="2.2" fill="#e6c15a"/>' +
+    '<circle cx="30" cy="55" r="3.4" fill="#c0392b"/></svg>';
   function renderLogin() {
     wrap.querySelector("#folWho").textContent = "";
     setNavy(true);
-    var ball = '<span class="fol-ball"></span>';
+    var dot = '<span class="fol-dot"></span>';
     main.innerHTML =
-      '<div class="fol-hero">' +
-      '<div class="fol-logo">🏏</div>' +
+      '<div class="fol-hero">' + STUMPS +
       '<h1>FIFTY OVERS</h1>' +
-      '<div class="fol-tag">Multiplayer Cricket League — play your friends</div>' +
+      '<div class="fol-tag">Build your XI. Beat your mates.</div>' +
       '<div class="fol-auth">' +
       '<input id="folEmail" type="email" placeholder="email">' +
       '<input id="folPass" type="password" placeholder="password">' +
-      '<button class="fol-red" data-act="signup">Create account</button>' +
-      '<button class="fol-white" data-act="login">Log in</button>' +
+      '<button class="fol-gold" data-act="signup">Create Account</button>' +
+      '<button class="fol-ghost" data-act="login">Log In</button>' +
       '</div></div>' +
       '<div class="fol-explain">' +
-      "<p>An <b>invite-only</b> cricket manager you play with your friends. Draft a squad, set your tactics, and let the real match engine decide the games — fair and identical for everyone.</p>" +
+      "<p>The invite only cricket manager you play with your mates. Draft a squad, call every shot, and let the match engine settle it out on the pitch.</p>" +
       '<ul>' +
-      '<li>' + ball + '<span><b>Draft your own squad</b> — pick a home country and draft players from it on a tight $1,000,000 budget, in the real draft screen.</span></li>' +
-      '<li>' + ball + '<span><b>Challenge your friends</b> to matches — the game engine plays every ball, deterministically, so no one can cheat.</span></li>' +
-      '<li>' + ball + '<span><b>Play a full season</b> — a home-and-away league table; matches resolve automatically at your league time.</span></li>' +
-      '<li>' + ball + '<span><b>Invite-only</b> — your commissioner runs the league and starts the season once everyone has drafted.</span></li>' +
+      '<li>' + dot + '<span><b>Draft your dream XI.</b> Pick a home country and sign stars on a tight $1,000,000 budget.</span></li>' +
+      '<li>' + dot + '<span><b>Take on your friends.</b> Every ball is bowled by the real engine, so nobody can fix the result.</span></li>' +
+      '<li>' + dot + '<span><b>Chase the title.</b> A full home and away season with a live league table.</span></li>' +
+      '<li>' + dot + '<span><b>Invite only.</b> Your commissioner runs the show and starts the season when everyone is in.</span></li>' +
       '</ul>' +
-      '<div class="folsmall" style="margin-top:10px">New here? Tap <b>Create account</b>, then join your league with an invite code.</div>' +
+      '<div class="folsmall" style="margin-top:14px;color:#8fa79a">New here? Tap Create Account, then join your league with an invite code.</div>' +
       '</div>';
   }
   function authFetch(kind) {
@@ -159,7 +175,7 @@
     main.innerHTML =
       '<div class="folbody"><div class="folcard"><h4>Your league</h4><div class="folpad">' +
       '<div class="folrow"><input id="folLg" placeholder="league id" size="26"><button class="p" data-act="open">Open</button></div>' +
-      '<div class="folsmall" style="margin:8px 0 4px">— or join a new league —</div>' +
+      '<div class="folsmall" style="margin:8px 0 4px">or join a new league</div>' +
       '<div class="folrow"><input id="folCode" placeholder="invite code"><input id="folDn" placeholder="your name"><input id="folTn" placeholder="team name"><button data-act="join">Join</button></div>' +
       "</div></div></div>";
   }
@@ -224,7 +240,7 @@
       var html = '<div class="folcard"><h4><span>' + E(team.name || "Your team") + "</span>" +
         (hasSquad ? '<span class="folbadge ok">season started</span>' : '<span class="folbadge warn">no squad yet</span>') + "</h4><div class=folpad>";
       if (!team.country || !team.draft_seed) {
-        html += '<div class="folsmall" style="margin-bottom:6px">Pick your home country — you\'ll draft players from it.</div>' +
+        html += '<div class="folsmall" style="margin-bottom:6px">Pick your home country. You\'ll draft players from it.</div>' +
           '<div class="folrow"><input id="folSetTeam" placeholder="team name" value="' + E(team.name || "") + '"><input id="folSetMgr" placeholder="your name" value="' + E((MYMEMBER && MYMEMBER.display_name) || "") + '"></div>' +
           '<div class="folrow" style="margin-top:6px">Home country <select id="folSetCountry">' + NAT.map(function (c) { return "<option>" + c + "</option>"; }).join("") + "</select></div>" +
           '<div class="folrow" style="margin-top:8px"><button class="p" data-act="setup">Save &amp; continue</button></div>';
@@ -239,7 +255,7 @@
         html += '<div class="folcard"><h4>Your squad</h4><div class=folpad>' +
           '<div class="folsmall">' + roster.length + " players · " + wk + " keeper · " + bowl + " bowling · $" + (squad.budget_spent || 0).toLocaleString() + " spent</div>" +
           "<table><thead><tr><th>Player</th><th>Role</th><th>Bowl</th><th class=n>Rtg</th></tr></thead><tbody>" +
-          roster.map(function (p) { return "<tr><td>" + E(p.name) + (p.keeper ? " †" : "") + '</td><td class=folsmall>' + E(p.role || "") + '</td><td class=folsmall>' + E(p.bowlTypeFull && p.bowlTypeFull !== "none" ? p.bowlTypeFull : "—") + '</td><td class=n>' + (p.rating || "") + "</td></tr>"; }).join("") +
+          roster.map(function (p) { return "<tr><td>" + E(p.name) + (p.keeper ? " †" : "") + '</td><td class=folsmall>' + E(p.role || "") + '</td><td class=folsmall>' + E(p.bowlTypeFull && p.bowlTypeFull !== "none" ? p.bowlTypeFull : "-") + '</td><td class=n>' + (p.rating || "") + "</td></tr>"; }).join("") +
           "</tbody></table></div></div>";
       }
       el.innerHTML = html;
@@ -292,7 +308,7 @@
       var o = roster.map(function (p) { return '<option value="' + E(p.name) + '">' + E(p.name) + (p.keeper ? " †" : "") + "</option>"; }).join("");
       wrap.querySelector("#folOrders").innerHTML =
         '<div class="folcard"><h4>Line-up &amp; tactics</h4><div class=folpad><div class="folrow">Captain <select id="folCapt">' + o + '</select> Keeper <select id="folKeep">' + o + "</select></div>" +
-        '<div class="folrow" style="margin-top:6px">Intent — PP ' + intSel("folPP", 0) + " Mid " + intSel("folMid", 0) + " Death " + intSel("folDeath", 1) + "</div>" +
+        '<div class="folrow" style="margin-top:6px">Intent: PP ' + intSel("folPP", 0) + " Mid " + intSel("folMid", 0) + " Death " + intSel("folDeath", 1) + "</div>" +
         '<div class="folrow" style="margin-top:8px"><button class="p" data-act="submitOrders" data-id="' + cid + '">Save line-up</button> <span class="folsmall">Engine auto-picks a legal XI; captain/keeper/intent are yours.</span></div></div></div>';
       wrap.querySelector("#folOrders").scrollIntoView({ behavior: "smooth" });
     }).catch(say);
@@ -347,18 +363,18 @@
       var mById = {}; mem.forEach(function (m) { mById[m.id] = m; });
       var rows = teams.map(function (t) {
         var m = mById[t.manager_id] || {};
-        return "<tr><td>" + E(t.name) + '</td><td class=folsmall>' + E(m.display_name || "") + (m.role === "founder" ? " (admin)" : "") + '</td><td class=folsmall>' + E(t.country || "—") + "</td><td>" + (done[t.id] ? '<span class="folbadge ok">drafted</span>' : '<span class="folbadge warn">not yet</span>') + "</td></tr>";
-      }).join("") || '<tr><td colspan=4 class="folsmall">No teams yet — share an invite code.</td></tr>';
+        return "<tr><td>" + E(t.name) + '</td><td class=folsmall>' + E(m.display_name || "") + (m.role === "founder" ? " (admin)" : "") + '</td><td class=folsmall>' + E(t.country || "-") + "</td><td>" + (done[t.id] ? '<span class="folbadge ok">drafted</span>' : '<span class="folbadge warn">not yet</span>') + "</td></tr>";
+      }).join("") || '<tr><td colspan=4 class="folsmall">No teams yet. Share an invite code.</td></tr>';
       var ready = !!rd.all_ready, waiting = Math.max(0, (rd.teams || 0) - (rd.drafted || 0));
       el.innerHTML =
         '<div class="folcard"><h4>Managers (' + (rd.drafted || 0) + "/" + (rd.teams || 0) + ' drafted)</h4><div class=folpad><table><thead><tr><th>Team</th><th>Manager</th><th>Country</th><th>Status</th></tr></thead><tbody>' + rows + "</tbody></table></div></div>" +
         '<div class="folcard"><h4>Invite managers</h4><div class=folpad><div class="folrow"><input id="folNewCode" placeholder="code e.g. JOIN-SAM"><button class="p" data-act="mkInvite">Create code</button></div>' +
-        "<table style='margin-top:8px'><thead><tr><th>Code</th><th>Used?</th></tr></thead><tbody>" + (inv.length ? inv.map(function (v) { return "<tr><td>" + E(v.code) + "</td><td>" + (v.redeemed_uid ? "yes" : "—") + "</td></tr>"; }).join("") : '<tr><td colspan=2 class="folsmall">No codes yet.</td></tr>') + "</tbody></table>" +
+        "<table style='margin-top:8px'><thead><tr><th>Code</th><th>Used?</th></tr></thead><tbody>" + (inv.length ? inv.map(function (v) { return "<tr><td>" + E(v.code) + "</td><td>" + (v.redeemed_uid ? "yes" : "-") + "</td></tr>"; }).join("") : '<tr><td colspan=2 class="folsmall">No codes yet.</td></tr>') + "</tbody></table>" +
         '<div class="folsmall" style="margin-top:4px">Share a code with each friend; they Sign up and Join with it.</div></div></div>' +
         '<div class="folcard"><h4>Start the season</h4><div class=folpad>' +
         '<div class="folsmall">Unlocks once <b>every</b> team has joined and drafted.</div>' +
         '<div class="folrow" style="margin-top:8px">Start date <input id="folStart" type="date"> <button class="p" data-act="startSeason" ' + (ready ? "" : "disabled") + '>🚀 Start the league</button></div>' +
-        (ready ? '<div class="folsmall" style="margin-top:4px;color:#6fcf6f">Everyone\'s ready — you can start!</div>' : '<div class="folsmall" style="margin-top:4px;color:#e08b7f">Waiting on ' + waiting + ' manager(s) to draft.</div>') +
+        (ready ? '<div class="folsmall" style="margin-top:4px;color:#6fcf6f">Everyone\'s ready. Time to play!</div>' : '<div class="folsmall" style="margin-top:4px;color:#e08b7f">Waiting on ' + waiting + ' manager(s) to draft.</div>') +
         "</div></div>" +
         '<div class="folcard"><h4>Controls</h4><div class=folpad>' +
         '<div class="folrow"><button data-act="resetSchedule">Reset schedule</button> <button data-act="resetLeague">Wipe matches &amp; demo</button>' +
@@ -371,7 +387,7 @@
     var ids = Object.keys(TEAMS); if (ids.length < 2) { say("Need at least 2 teams"); return; }
     var sd = val("folStart") || new Date(Date.now() + 86400000).toISOString().slice(0, 10);
     rpc("founder_start_season", { p_league_id: LG.id, p_fixtures: doubleRR(ids), p_start_date: sd })
-      .then(function (n) { say("🚀 Season started — " + n + " fixtures scheduled! Matches play automatically."); curTab = "table"; renderTabs(); }).catch(say);
+      .then(function (n) { say("🚀 Season started! " + n + " fixtures locked in. Matches play out automatically."); curTab = "table"; renderTabs(); }).catch(say);
   }
   function mkInvite() { var c = val("folNewCode"); if (!c) { say("Enter a code"); return; } act("create_invite", { p_league_id: LG.id, p_code: c, p_role: "manager" }, renderAdmin); }
   function doubleRR(ids) {
@@ -443,14 +459,14 @@
   window.__folBuildPool = buildCountryPool;   // debug/test hook (harmless)
 
   function launchDraft(team) {
-    if (typeof window.genDraftPool !== "function" || typeof window.pgFounder !== "function") { say("Game engine not ready — reload the page."); return; }
+    if (typeof window.genDraftPool !== "function" || typeof window.pgFounder !== "function") { say("Game engine not ready. Reload the page and try again."); return; }
     var pool = buildCountryPool(team.draft_seed, team.country);
     App.founder = {
       name: team.name, budget: 1000000, pool: pool, picked: [], identity: "Balanced XI",
       mgr: (MYMEMBER && MYMEMBER.display_name) || "Manager",
       __league: { league_id: LG.id, team_id: team.id }
     };
-    wrap.classList.remove("on");           // close the overlay to reveal the game draft
+    openWrap(false);                       // close the overlay to reveal the game draft
     try { window.pgFounder(); } catch (e) { say(e); }
   }
 
@@ -479,15 +495,15 @@
       var roster = (App.founder.picked || []).map(function (p) { return JSON.parse(JSON.stringify(p)); });
       rpc("submit_league_squad", { p_league_id: lg.league_id, p_roster: roster }).then(function () {
         App.founder.__league = null;
-        say("🏏 Season squad saved — you're in the league!");
-        wrap.classList.add("on"); curTab = "squad"; openLeagueId(lg.league_id);
+        say("🏏 Squad locked in. You're in the league!");
+        openWrap(true); curTab = "squad"; openLeagueId(lg.league_id);
       }).catch(say);
     };
   }
 
-  // Multiplayer-first: show the league login as soon as the site loads (the
-  // 🏆 League button still reopens it if you close it to see the solo game).
-  wrap.classList.add("on");
+  // Multiplayer-first: the league login takes over the moment the site loads,
+  // and the page behind it is locked so the solo game stays private.
+  openWrap(true);
   if (!JWT) renderLogin(); else if (LG) renderTabs(); else renderEnter();
 
   console.info("Fifty Overs League overlay ready.");
