@@ -6502,6 +6502,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       openId: function () { enterGameById(t.getAttribute("data-id")); }, join: joinLeague,
       setupClub: doSetup, startLeague: startLeague, mkInvite: mkInvite,
       delTeam: function () { delTeam(t.getAttribute("data-id"), t.getAttribute("data-name")); },
+      draftMine: draftMine,
       backToGame: function () { openWrap(false); if (typeof window.route === "function") window.route(); }
     };
     if (acts[a]) acts[a]();
@@ -6694,11 +6695,21 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // Before the season starts: draft in the game, then wait for kick-off.
   function preStart() {
     return sel("league_clubs", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&select=manager_id").then(function (mine) {
-      if (mine && mine.length) { showWait(true); return; }
+      var drafted = !!(mine && mine.length);
+      // the commissioner's home base is the admin lobby (invite / manage / start),
+      // where they can also draft their own club when they want.
+      if (SYNC.isFounder) { showWait(drafted); return; }
+      if (drafted) { showWait(true); return; }
       var mt = SYNC.myTeam;
       if (mt && mt.country && mt.draft_seed) { startDraft(mt); return; }
       renderSetup();
     }).catch(function (e) { if (isMissingTable(e)) setupNeeded(); else say(e); });
+  }
+  // draft (or set up + draft) my own club, from the lobby.
+  function draftMine() {
+    var mt = SYNC && SYNC.myTeam;
+    if (mt && mt.country && mt.draft_seed) { startDraft(mt); return; }
+    renderSetup();
   }
 
   // Minimal onboarding: pick home country + names, then draft in the game.
@@ -6748,8 +6759,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           "</div>"
         : '<div class="folsmall" style="margin-top:10px">Waiting for the commissioner to start the season.</div>';
       var back = SYNC.started ? '<button class="mini" data-act="backToGame">◂ back to the game</button> ' : "";
+      var draftBtn = drafted ? "" : '<button class="p" data-act="draftMine" style="margin-bottom:10px">🏏 Draft my squad ▸</button>';
       main.innerHTML = '<div class="folbody"><div class="folcard"><h4><span>' + E(LG.name) + (isF ? " · commissioner" : "") + "</span>" +
-        (drafted ? '<span class="folbadge ok">you\'re in</span>' : "") + '</h4><div class="folpad">' +
+        (drafted ? '<span class="folbadge ok">you\'re in</span>' : "") + '</h4><div class="folpad">' + draftBtn +
         "<table><tr><th>Club</th><th>Status</th>" + (isF ? "<th></th>" : "") + "</tr>" + rows + "</table>" + ctl +
         '<div style="margin-top:10px">' + back + '<button class="mini" data-act="logout">log out</button></div>' +
         "</div></div></div>";

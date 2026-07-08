@@ -1747,6 +1747,9 @@ begin
   return v_ver;
 end $$;
 
+-- Table-level SELECT for logged-in users (RLS still restricts rows to members).
+-- Writes go only through the SECURITY DEFINER functions above, so no insert/update grant.
+grant select on app.league_state, app.league_packets, app.league_clubs to authenticated;
 grant execute on all functions in schema app to authenticated;
 do $$ begin
   if exists (select 1 from pg_roles where rolname='service_role') then
