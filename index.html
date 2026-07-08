@@ -6514,7 +6514,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-batrow2 .bwk,.fo-batrow2 .bopt{flex:0 0 auto}" +
     ".fo-tacrow{flex-wrap:wrap}.fo-tacrow .small{min-width:0}" +
     ".fo-gridrow{flex-wrap:wrap}.fo-gridside{flex:1 1 100% !important}" +
-    ".fo-gridcells{flex:1 1 100% !important;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}" +
+    ".fo-gridcells{flex:1 1 100% !important;max-width:100%;white-space:normal !important;line-height:1.6}" +
+    ".fo-gcell{margin:0 2px 3px 0 !important}" +
     ".fo-pool{overflow-x:auto}.fo-pooltabs{flex-wrap:wrap}" +
     // freeze the first column (player/date) so it stays visible while the rest scrolls
     "#page .panel table th:first-child,#page .panel table td:first-child{position:sticky;left:0;background:#fff;z-index:1;box-shadow:1px 0 0 rgba(0,0,0,.12)}" +
@@ -6532,20 +6533,24 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var brand = tb.querySelector(".brand");
       if (brand && !brand.querySelector(".fo-brandicon")) {
         brand.innerHTML = '<img class="fo-brandicon" src="' + APPICON + '" alt=""> Fifty Overs';
-        brand.style.cursor = "pointer"; brand.title = "League menu";
-        brand.addEventListener("click", openLeagueMenu);
+        brand.style.cursor = "pointer"; brand.title = "Club home";
+        // the app icon is a Home button
+        brand.addEventListener("click", function (e) { e.preventDefault(); location.hash = "#/club"; if (typeof window.route === "function") window.route(); });
       }
       // date + time, top-right (like FTP)
       if (!tb.querySelector("#fo-clock")) { var ck = document.createElement("span"); ck.id = "fo-clock"; tb.appendChild(ck); tickClock(); }
       if (tb.querySelector("a.fo-clubs")) return;
       var after = tb.querySelector('a[data-nav="matches"]');
-      var a = document.createElement("a"); a.className = "fo-clubs"; a.href = "#"; a.textContent = "Clubs";
-      a.addEventListener("click", function (e) { e.preventDefault(); renderClubs(); });
-      var f = document.createElement("a"); f.className = "fo-friendly"; f.href = "#"; f.textContent = "Friendly";
-      f.addEventListener("click", function (e) { e.preventDefault(); if (LG && SYNC) practice(); else openLeagueMenu(); });
-      if (after && after.nextSibling) { tb.insertBefore(a, after.nextSibling); tb.insertBefore(f, a.nextSibling); }
-      else { tb.appendChild(a); tb.appendChild(f); }
+      var mk = function (label, cls, fn) { var el = document.createElement("a"); el.className = cls; el.href = "#"; el.textContent = label; el.addEventListener("click", function (e) { e.preventDefault(); fn(); }); return el; };
+      var a = mk("Clubs", "fo-clubs", renderClubs);
+      var f = mk("Friendly", "fo-friendly", startFriendly);
+      var lg = mk("League", "fo-league", openLeagueMenu);   // menu: admin / practice / log out
+      if (after && after.nextSibling) { tb.insertBefore(a, after.nextSibling); tb.insertBefore(f, a.nextSibling); tb.insertBefore(lg, f.nextSibling); }
+      else { tb.appendChild(a); tb.appendChild(f); tb.appendChild(lg); }
     } catch (e) {}
+  }
+  function startFriendly() {
+    try { if (LG && SYNC) practice(); else openLeagueMenu(); } catch (e) { say(e); }
   }
   function tickClock() {
     try {
@@ -6593,7 +6598,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // opens the league menu instead. Keep the element (hidden) so old refs are safe.
   var btn = document.createElement("button");
   btn.id = "folBtn"; btn.textContent = "🏆 League"; btn.style.display = "none";
-  function openLeagueMenu() { openWrap(true); if (!JWT) renderLogin(); else if (SYNC && LG && SYNC.isFounder) showWait(!!SYNC.myTeam); else enterApp(); }
+  function openLeagueMenu() { openWrap(true); if (!JWT) renderLogin(); else if (SYNC && LG) showWait(!!SYNC.myTeam); else enterApp(); }
 
   var wrap = document.createElement("div");
   wrap.id = "folWrap";
@@ -6855,6 +6860,32 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     } catch (e) { console.warn("balanceBots", e); }
   }
 
+  // Generate fresh bot clubs from the draft pool (so we never depend on whatever
+  // GD.teams currently holds — a restarted league was capped by that before).
+  var BOT_NAMES = ["Riverside Rovers", "Coastal Comets", "Summit Strikers", "Valley Vanguard", "Harbour Hawks", "Prairie Pioneers", "Delta Dynamos", "Frontier Falcons", "Metro Mavericks", "Highland Hunters", "Canyon Kings", "Orchard Owls"];
+  function byRating(a, b) { return (b.rating || 0) - (a.rating || 0); }
+  function makeBotTeam(i, taken) {
+    var cty = NAT[i % NAT.length];
+    var pool = buildCountryPool(700003 + i * 104729, cty);
+    var keepers = pool.filter(function (p) { return p.keeper; }).sort(byRating);
+    var bowlers = pool.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && !p.keeper; }).sort(byRating);
+    var others = pool.filter(function (p) { return !p.keeper && (!p.bowlTypeFull || p.bowlTypeFull === "none"); }).sort(byRating);
+    var squad = []; if (keepers[0]) squad.push(keepers[0]);
+    squad = squad.concat(bowlers.slice(0, 6)).concat(others.slice(0, 7));
+    var chosen = {}; squad.forEach(function (p) { chosen[p.name] = 1; });
+    var rest = pool.filter(function (p) { return !chosen[p.name]; }).sort(byRating);
+    while (squad.length < 14 && rest.length) squad.push(rest.shift());
+    squad = squad.slice(0, 14).map(function (p) { var q = JSON.parse(JSON.stringify(p)); delete q.fee; q.fatigue = "rested"; q.formIx = 3; return q; });
+    var nm = BOT_NAMES[i % BOT_NAMES.length]; while (taken && taken[nm]) nm = nm + " II";
+    return { name: nm, ground: "Neutral Park", players: squad, youth: [], founded: false, homePitch: "balanced", bank: 300000, seats: 9000, supporters: 2600, mood: 3, acadY: 2, acadS: 2 };
+  }
+  function fillBots(world) {
+    var taken = {}; world.forEach(function (t) { taken[t.name] = 1; });
+    var i = 0;
+    while (world.length < 10 && i < 40) { try { var b = makeBotTeam(i, taken); taken[b.name] = 1; world.push(b); } catch (e) { break; } i++; }
+    return world;
+  }
+
   // draft (or set up + draft) my own club, from the lobby.
   function draftMine() {
     var mt = SYNC && SYNC.myTeam;
@@ -6866,11 +6897,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // in the game, using your drafted club. Not synced to the league.
   function practice() {
     sel("league_clubs", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&select=club").then(function (rows) {
-      var defaults = (typeof GD !== "undefined" && GD.teams) ? GD.teams.slice() : [];
-      var myClub = (rows && rows[0] && rows[0].club) || (defaults[0] ? JSON.parse(JSON.stringify(defaults[0])) : null);
-      if (!myClub) { say("Draft your squad first, then you can practice."); return; }
-      var world = [myClub], used = {}; used[myClub.name] = 1;
-      world = world.concat(defaults.filter(function (t) { return !used[t.name]; }).slice(0, Math.max(0, 10 - world.length)));
+      var myClub = (rows && rows[0] && rows[0].club) || makeBotTeam(0);
+      myClub.founded = true;                        // treat my club as the human club for balancing
+      var world = fillBots([myClub]);
       GD.teams = world;
       if (typeof window.econInit === "function") window.econInit();
       App.teamIx = 0; balanceBots();
@@ -7001,16 +7030,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // With only one human club, the game's own bot teams fill the league so there
   // is something to play; with two or more, it is a pure human league.
   function startLeague() {
-    var defaults = (typeof GD !== "undefined" && GD.teams) ? GD.teams.slice() : [];
     sel("league_clubs", "league_id=eq." + LG.id + "&select=club,manager_id").then(function (clubs) {
       if (!clubs || !clubs.length) { say("Draft your squad first, then start the season."); return; }
       try {
-        var world = clubs.map(function (c) { return c.club; });
-        if (world.length < 10) {   // fill up to a full 10-team league with bot clubs
-          var used = {}; world.forEach(function (t) { used[t.name] = 1; });
-          var bots = defaults.filter(function (t) { return !used[t.name]; }).slice(0, Math.max(0, 10 - world.length));
-          world = world.concat(bots);
-        }
+        var world = fillBots(clubs.map(function (c) { return c.club; }));   // top up to a full 10-team league
         GD.teams = world;
         if (typeof window.econInit === "function") window.econInit();
         var myName = SYNC.myTeam ? SYNC.myTeam.name : null;
