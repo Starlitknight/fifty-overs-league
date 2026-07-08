@@ -6678,9 +6678,39 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     pool.forEach(function (p) {
       p.nat = country;
       var nm = window.natName(country, rnd, used); used.add(nm); p.name = nm;
+      fixTechniquePower(p, rnd);
     });
     return pool;
   }
+
+  // Enforce realistic technique/power relationships on a generated player, using
+  // the game's own aggregate formulas (aggBat/aggBowl/aggTech). A "level" = 6.25.
+  //   technique  = within 2 levels BELOW the headline batting/bowling skill
+  //   power      = equal to, or 1–4 levels below, technique
+  function fixTechniquePower(p, rnd) {
+    var LV = 6.25, s = p.skills || {};
+    var clamp = function (v) { return Math.max(5, Math.min(95, Math.round(v))); };
+    var isBowler = p.bowlTypeFull && p.bowlTypeFull !== "none";
+    var batAgg = 0.25 * s.vsPace + 0.25 * s.vsSpin + 0.2 * s.rotation + 0.15 * s.temperament + 0.15 * s.power;
+    var bowlAgg = isBowler ? (s.wicket + s.economy + s.discipline + s.moveTurn + s.variation + s.stamina) / 6 : 0;
+    var headline = Math.max(batAgg, bowlAgg);
+
+    // technique target: at least ~1 level below headline (ideally lower), and no
+    // more than 2 levels below. The 1-level cap absorbs the aggregate's slight
+    // self-reference so technique lands reliably below the headline.
+    var curTech = (s.vsPace + s.vsSpin + s.temperament) / 3;
+    var techTarget = Math.max(headline - 2 * LV, Math.min(headline - 1.0 * LV, curTech));
+    var dTech = techTarget - curTech;
+    s.vsPace = clamp(s.vsPace + dTech); s.vsSpin = clamp(s.vsSpin + dTech); s.temperament = clamp(s.temperament + dTech);
+
+    // power: equal to or 1–4 levels below the new technique
+    var newTech = (s.vsPace + s.vsSpin + s.temperament) / 3;
+    s.power = clamp(Math.max(newTech - 4 * LV, Math.min(newTech - (rnd() < 0.5 ? 0 : LV * (1 + rnd() * 3)), s.power)));
+
+    if (typeof window.jsDerive === "function") window.jsDerive(p);   // recompute rating
+  }
+
+  window.__folBuildPool = buildCountryPool;   // debug/test hook (harmless)
 
   function launchDraft(team) {
     if (typeof window.genDraftPool !== "function" || typeof window.pgFounder !== "function") { say("Game engine not ready — reload the page."); return; }
