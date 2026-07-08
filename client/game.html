@@ -6434,6 +6434,48 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fol-foot .fol-sep{color:#C8674A;margin:0 5px}";
   document.head.appendChild(css2);
 
+  // ---- restyle the GAME itself: brand colours (navy/terracotta/teal) on the
+  //      light background, and proper mobile layout. Injected after the game's
+  //      own <style>, so it wins without touching the pinned engine file. ----
+  var css3 = document.createElement("style");
+  css3.id = "fo-brand";
+  var NAVY = "#0B1322", NAVY2 = "#1C2433", TERRA = "#C8674A", TERRA2 = "#a94f38", TEAL = "#4DA6A2", PAPER = "#F6F4EE";
+  css3.textContent =
+    // recolour by overriding the engine's own CSS variables (they cascade everywhere)
+    ":root{--blue:" + TERRA + ";--blue-dark:" + TERRA2 + ";--orange:" + TEAL + ";--nav:" + NAVY + ";" +
+    "--ftp-blue:" + TERRA + ";--ftp-blue-dark:" + TERRA2 + ";--ftp-orange:" + TEAL + ";--ftp-link:#b0563b;--green:#2f8f6b}" +
+    // the engine scopes its theme with `body.ftpskin ...`, so we match that scope
+    "html body.ftpskin #topbar,#topbar{background:" + NAVY + " !important;border-bottom:3px solid " + TERRA + " !important}" +
+    "html body.ftpskin #topbar a.on,#topbar a.on{background:" + TERRA + " !important;color:" + PAPER + " !important;box-shadow:inset 0 -3px 0 " + TEAL + " !important}" +
+    "#topbar a:hover{background:#16324a !important}" +
+    "#page a,.panel a{color:#b0563b !important}" +
+    // section headers -> navy
+    "html body.ftpskin .panel>h4,html body.ftpskin .card-title,.panel>h4,.card-title,.panel>header,.card>h4,.sec>h4{background:" + NAVY2 + " !important;background-image:none !important;color:" + PAPER + " !important}" +
+    // heroes / blue banners -> navy gradient
+    "html body.ftpskin [class*=hero],html body.ftpskin [class*=club-home],[class*=hero],[class*=club-home],.page-head,.club-head{background:linear-gradient(160deg," + NAVY2 + "," + NAVY + ") !important;color:" + PAPER + " !important}" +
+    // primary buttons -> terracotta
+    "html body.ftpskin button.primary,html body.ftpskin .confirmbtn,button.primary,.confirmbtn,.btn-primary{background:" + TERRA + " !important;background-image:none !important;border-color:" + TERRA2 + " !important;color:" + PAPER + " !important}" +
+    "button.primary:hover,.confirmbtn:hover{background:#b3573c !important}" +
+    // mobile layout
+    "@media(max-width:640px){" +
+    "body{font-size:14px}" +
+    "#page{padding:8px !important}" +
+    "#topbar{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}" +
+    "#topbar a{padding:11px 12px;font-size:13px}#topbar .brand{font-size:14px}" +
+    ".grid2{display:block}.grid2>.col{min-width:0 !important;width:100%}" +
+    ".page-grid-2,.page-grid-3,.page-grid-draft{grid-template-columns:1fr !important}" +
+    ".panel,.card{overflow-x:auto}" +
+    "#page table{font-size:12px;width:100%}" +
+    "button,select,input{min-height:38px;font-size:14px}" +
+    ".ctlrow{flex-wrap:wrap}" +
+    "}";
+  document.body.appendChild(css3);
+  // The game injects its own theme stylesheets into <body> at render time, after
+  // ours. Keep our brand sheet the LAST stylesheet so it always wins.
+  function bumpBrand() { try { if (css3.parentNode !== document.body || document.body.lastChild !== css3) document.body.appendChild(css3); } catch (e) {} }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); return r; }; }
+  window.addEventListener("hashchange", bumpBrand);
+
   // Shared "50" logo mark (stumps + paper "5" + seamed cricket-ball "0"), reused
   // by the login logo and the browser-tab favicon so they stay identical.
   var MARK =
@@ -6502,7 +6544,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       openId: function () { enterGameById(t.getAttribute("data-id")); }, join: joinLeague,
       setupClub: doSetup, startLeague: startLeague, mkInvite: mkInvite,
       delTeam: function () { delTeam(t.getAttribute("data-id"), t.getAttribute("data-name")); },
-      draftMine: draftMine,
+      draftMine: draftMine, practice: practice,
       backToGame: function () { openWrap(false); if (typeof window.route === "function") window.route(); }
     };
     if (acts[a]) acts[a]();
@@ -6712,6 +6754,28 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     renderSetup();
   }
 
+  // Practice / friendlies vs bots: a private local season you play interactively
+  // in the game, using your drafted club. Not synced to the league.
+  function practice() {
+    sel("league_clubs", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&select=club").then(function (rows) {
+      var defaults = (typeof GD !== "undefined" && GD.teams) ? GD.teams.slice() : [];
+      var myClub = (rows && rows[0] && rows[0].club) || (defaults[0] ? JSON.parse(JSON.stringify(defaults[0])) : null);
+      if (!myClub) { say("Draft your squad first, then you can practice."); return; }
+      var world = [myClub], used = {}; used[myClub.name] = 1;
+      world = world.concat(defaults.filter(function (t) { return !used[t.name]; }).slice(0, 3));
+      GD.teams = world;
+      if (typeof window.econInit === "function") window.econInit();
+      App.teamIx = 0; App.season = null; if (typeof window.seasonInit === "function") window.seasonInit();
+      App.round = 1; App.seasonNo = App.seasonNo || 1; App.results = []; App.cup = { stage: 0, alive: null, results: [], out: false };
+      if (typeof window.mpInit === "function") window.mpInit();
+      SYNC.practice = true;                                   // keep league sync from clobbering it
+      if (SYNC.pollTimer) { clearInterval(SYNC.pollTimer); SYNC.pollTimer = null; }
+      try { if (typeof window.store === "function") window.store("fo_welcomed", "1"); } catch (e) {}
+      if (typeof window.saveGame === "function") window.saveGame(false);
+      openWrap(false); location.hash = "#/matches"; if (typeof window.route === "function") window.route();
+    }).catch(function (e) { if (isMissingTable(e)) setupNeeded(); else say(e); });
+  }
+
   // Minimal onboarding: pick home country + names, then draft in the game.
   function renderSetup() {
     openWrap(true); setNavy(false);
@@ -6765,10 +6829,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         : '<div class="folsmall" style="margin-top:10px">Waiting for the commissioner to start the season.</div>';
       var back = SYNC.started ? '<button class="mini" data-act="backToGame">◂ back to the game</button> ' : "";
       var draftBtn = drafted ? "" : '<button class="p" data-act="draftMine" style="margin-bottom:10px">🏏 Draft my squad ▸</button>';
+      var practiceBtn = '<button class="mini" data-act="practice" style="margin-top:8px">🎮 Practice vs bots (play now)</button>';
       main.innerHTML = '<div class="folbody"><div class="folcard"><h4><span>' + E(LG.name) + (isF ? " · commissioner" : "") + "</span>" +
         (drafted ? '<span class="folbadge ok">you\'re in</span>' : "") + '</h4><div class="folpad">' + draftBtn +
         "<table><tr><th>Club</th><th>Status</th>" + (isF ? "<th></th>" : "") + "</tr>" + rows + "</table>" + ctl +
-        '<div style="margin-top:10px">' + back + '<button class="mini" data-act="logout">log out</button></div>' +
+        '<div style="margin-top:10px">' + back + practiceBtn + ' <button class="mini" data-act="logout">log out</button></div>' +
         "</div></div></div>";
     }).catch(function (e) { if (isMissingTable(e)) setupNeeded(); else say(e); });
   }
@@ -6828,7 +6893,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (SYNC) SYNC.pollTimer = setInterval(pollOnce, 15000);
   }
   function pollOnce() {
-    if (!LG || !SYNC) return;
+    if (!LG || !SYNC || SYNC.practice) return;   // practice mode is a private local game
     try {
       if (SYNC.started && window.App && App.orders && App.orders.saved && App.season && typeof GD !== "undefined" && GD.teams) {
         var sig = JSON.stringify(App.orders) + "|" + App.season.round;
