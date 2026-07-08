@@ -123,7 +123,7 @@
     document.body.style.overflow = on ? "hidden" : "";
   }
 
-  btn.addEventListener("click", function () { openWrap(true); if (!JWT) renderLogin(); else if (LG) renderTabs(); else renderEnter(); });
+  btn.addEventListener("click", function () { openWrap(true); if (!JWT) renderLogin(); else if (LG) renderTabs(); else enterApp(); });
 
   // ---- one delegated handler for everything ----
   wrap.addEventListener("click", function (ev) {
@@ -135,7 +135,7 @@
       login: doLogin, logout: function () { JWT = ""; LG = null; renderLogin(); },
       showLogin: renderLogin, showJoin: renderJoin, showForgot: renderForgot,
       sendReset: sendReset, joinNew: doJoinSignup,
-      open: openLeague, join: joinLeague,
+      open: openLeague, openId: function () { openLeagueId(t.getAttribute("data-id")); }, join: joinLeague,
       tab: function () { curTab = t.getAttribute("data-tab"); renderTabs(); },
       setup: doSetup, draft: doDraft,
       issue: issueChallenge, accept: function () { act("accept_challenge", { p_league_id: LG.id, p_challenge_id: t.getAttribute("data-id") }, renderPlay); },
@@ -215,10 +215,32 @@
     fetch(URL + "/auth/v1/token?grant_type=password", { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ email: email, password: password }) })
       .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error_description || d.msg || d.error || ("HTTP " + r.status)); return d; }); })
       .then(function (d) {
-        if (d.access_token) { JWT = d.access_token; wrap.querySelector("#folWho").textContent = email; renderEnter(); }
+        if (d.access_token) { JWT = d.access_token; wrap.querySelector("#folWho").textContent = email; enterApp(); }
         else say("Check your email to confirm your account, then log in.");
       }).catch(say);
   }
+
+  // After login, go straight into the league: RLS scopes `leagues` to the ones
+  // you belong to, so no league id is ever needed. One league opens directly
+  // (admin -> Admin, player -> Squad); several show a quick picker; none shows
+  // the join-by-invite form.
+  function enterApp() {
+    return sel("leagues", "select=id,name,status,build_hash,draft_budget,season_no")
+      .then(function (ls) {
+        if (!ls || !ls.length) { renderEnter(); return; }
+        if (ls.length === 1) { return openLeagueId(ls[0].id); }
+        renderPicker(ls);
+      }).catch(function () { renderEnter(); });
+  }
+  function renderPicker(ls) {
+    setNavy(false);
+    wrap.querySelector("#folWho").textContent = "";
+    tabsHidden();
+    main.innerHTML = '<div class="folbody"><div class="folcard"><h4>Your leagues</h4><div class="folpad" style="display:grid;gap:8px">' +
+      ls.map(function (l) { return '<button class="p" style="text-align:left" data-act="openId" data-id="' + l.id + '">' + E(l.name) + "</button>"; }).join("") +
+      '</div></div></div>';
+  }
+  function tabsHidden() { /* picker/enter reuse the in-app chrome without tabs */ }
 
   function doJoinSignup() {
     var email = val("folEmail"), password = wrap.querySelector("#folPass").value;
@@ -244,14 +266,16 @@
       .then(function () { say("If that email has an account, a reset link is on its way."); renderLogin(); }).catch(say);
   }
 
-  // ---- enter / join a league ----
+  // ---- join a league (shown only when you are not in one yet) ----
   function renderEnter() {
-    setNavy(true);
+    setNavy(false);
+    wrap.querySelector("#folWho").textContent = "";
+    tabsHidden();
     main.innerHTML =
-      '<div class="folbody"><div class="folcard"><h4>Your league</h4><div class="folpad">' +
-      '<div class="folrow"><input id="folLg" placeholder="league id" size="26"><button class="p" data-act="open">Open</button></div>' +
-      '<div class="folsmall" style="margin:8px 0 4px">or join a new league</div>' +
-      '<div class="folrow"><input id="folCode" placeholder="invite code"><input id="folDn" placeholder="your name"><input id="folTn" placeholder="team name"><button data-act="join">Join</button></div>' +
+      '<div class="folbody"><div class="folcard"><h4>Join a league</h4><div class="folpad">' +
+      '<div class="folsmall" style="margin-bottom:8px">Enter the invite code from your commissioner.</div>' +
+      '<div class="folrow"><input id="folCode" placeholder="invite code"><input id="folDn" placeholder="your name"><input id="folTn" placeholder="team name"><button class="p" data-act="join">Join</button></div>' +
+      '<div style="margin-top:12px"><button class="mini" data-act="logout">log out</button></div>' +
       "</div></div></div>";
   }
   function joinLeague() {
@@ -579,7 +603,7 @@
   // Multiplayer-first: the league login takes over the moment the site loads,
   // and the page behind it is locked so the solo game stays private.
   openWrap(true);
-  if (!JWT) renderLogin(); else if (LG) renderTabs(); else renderEnter();
+  if (!JWT) renderLogin(); else if (LG) renderTabs(); else enterApp();
 
   console.info("Fifty Overs League overlay ready.");
 })();
