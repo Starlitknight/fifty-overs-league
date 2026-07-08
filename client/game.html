@@ -6478,11 +6478,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     "#folPanel table tr,#folPanel table tbody tr{background:transparent !important}" +
     "#folPanel td,#folPanel th{color:#F6F4EE !important;background:transparent !important;border-bottom-color:rgba(246,244,238,.12) !important}" +
     "#topbar .brand::before{display:none !important}" +
-    "#topbar a[data-nav=\"reports\"],#topbar a[data-nav=\"manual\"]{display:none !important}" +
+    "#topbar a[data-nav=\"reports\"],#topbar a[data-nav=\"manual\"],#topbar a[data-nav=\"orders\"]{display:none !important}" +
     ".fo-scoutname{cursor:pointer;text-decoration:underline;text-decoration-color:rgba(200,103,74,.5)}" +
     ".fo-brandicon{width:28px;height:28px;border-radius:7px;vertical-align:-9px;margin-right:7px}" +
-    "#topbar{position:relative}" +
-    "#fo-clock{position:absolute;top:9px;right:12px;color:rgba(246,244,238,.9);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:.3px}" +
+    // clock sits in the topbar flow (not absolute) so it never overlaps the game's status
+    "#fo-clock{color:rgba(246,244,238,.9);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:.3px;align-self:center;padding:0 10px;border-left:1px solid #5b5b5b}" +
+    "#topbar a.fo-logout{margin-left:6px}" +
     ".fo-mtime{font-size:10px;color:#C8674A;font-weight:600;margin-top:1px}" +
     // season planner
     ".fo-planner .fo-plantable{width:100%;border-collapse:collapse}" +
@@ -6570,20 +6571,30 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         // the app icon is a Home button
         brand.addEventListener("click", function (e) { e.preventDefault(); location.hash = "#/club"; if (typeof window.route === "function") window.route(); });
       }
-      // date + time, top-right (like FTP)
-      if (!tb.querySelector("#fo-clock")) { var ck = document.createElement("span"); ck.id = "fo-clock"; tb.appendChild(ck); tickClock(); }
-      if (tb.querySelector("a.fo-logout")) return;
-      var after = tb.querySelector('a[data-nav="matches"]');
       var mk = function (label, cls, fn) { var el = document.createElement("a"); el.className = cls; el.href = "#"; el.textContent = label; el.addEventListener("click", function (e) { e.preventDefault(); fn(); }); return el; };
-      var f = mk("Practice Game", "fo-friendly", startFriendly);
-      var lg = mk("League", "fo-league", openLeagueMenu);   // menu: admin controls
-      var out = mk("Log out", "fo-logout", doLogout);
-      if (after && after.nextSibling) { tb.insertBefore(f, after.nextSibling); tb.insertBefore(lg, f.nextSibling); tb.insertBefore(out, lg.nextSibling); }
-      else { tb.appendChild(f); tb.appendChild(lg); tb.appendChild(out); }
+      var status = tb.querySelector("#fo-top-status");
+      // Practice Game (and, for founders only, an Admin link) live with the main nav,
+      // inserted just before the game's right-hand status block.
+      var addNav = function (cls, label, fn) {
+        var a = tb.querySelector("a." + cls); if (!a) a = mk(label, cls, fn);
+        if (status) tb.insertBefore(a, status); else tb.appendChild(a);
+      };
+      addNav("fo-friendly", "Practice Game", startFriendly);
+      if (SYNC && SYNC.isFounder) addNav("fo-league", "Admin", openLeagueMenu);
+      // date + time (in the topbar flow, to the right of the status)
+      var ck = tb.querySelector("#fo-clock");
+      if (!ck) { ck = document.createElement("span"); ck.id = "fo-clock"; tickClock(); }
+      tb.appendChild(ck);
+      // Log out is always the very last item, so it never feels buried in the nav.
+      var out = tb.querySelector("a.fo-logout"); if (!out) out = mk("Log out", "fo-logout", doLogout);
+      tb.appendChild(out);
     } catch (e) {}
   }
   function startFriendly() {
-    try { if (LG && SYNC) practice(); else openLeagueMenu(); } catch (e) { say(e); }
+    try {
+      if (LG && SYNC) practice();
+      else { alert("Log in to your league first, then Practice Game plays the real clubs."); openLeagueMenu(); }
+    } catch (e) { try { alert("Could not start Practice Game: " + ((e && e.message) || e)); } catch (_) {} say(e); }
   }
   // Show the real match time (league rounds resolve at 09:00 New York) next to the
   // date in any fixtures/results table. Safe: only tables that have a "Date" header.
@@ -6613,7 +6624,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       document.querySelectorAll("#page .panel, #page .card").forEach(function (pn) {
         var h = pn.querySelector("h4, .card-title"); if (!h) return;
         var t = h.textContent.trim().toLowerCase();
-        if (t === "academies" || t.indexOf("academy") >= 0) pn.style.display = "none";
+        if (t === "academies" || t.indexOf("academy") >= 0 || t.indexOf("training centre") >= 0 || t.indexOf("training center") >= 0) pn.style.display = "none";
       });
       // remove the manual "Complete AI round" / "Sim whole round" sim controls
       document.querySelectorAll("#page button").forEach(function (b) {
@@ -6839,15 +6850,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foLeaguePendingOnly() {
     try {
       var liveFriendly = (typeof M !== "undefined" && M && !M.done);
-      return SYNC && SYNC.started && App && App.pending && App.pending.comp === "league" && !liveFriendly;
+      // Practice mode is a private local season — its matches ARE played by hand.
+      return SYNC && SYNC.started && !SYNC.practice && App && App.pending && App.pending.comp === "league" && !liveFriendly;
     } catch (e) { return false; }
   }
-  // Never spin up the interactive match engine for a league fixture — those are
-  // resolved by the background resolver, not played by hand.
+  // Never spin up the interactive match engine for a real league fixture — those
+  // are resolved by the background resolver. (Practice matches play normally.)
   if (typeof window.startPendingIfNeeded === "function") {
     var _spin = window.startPendingIfNeeded;
     window.startPendingIfNeeded = function () {
-      try { if (SYNC && SYNC.started && App && App.pending && App.pending.comp === "league" && !(typeof M !== "undefined" && M && !M.done)) return; } catch (e) {}
+      try { if (SYNC && SYNC.started && !SYNC.practice && App && App.pending && App.pending.comp === "league" && !(typeof M !== "undefined" && M && !M.done)) return; } catch (e) {}
       return _spin.apply(this, arguments);
     };
   }
@@ -7221,7 +7233,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       myClub.founded = true;
       var world = fillBots([myClub]); GD.teams = world; balanceBots();
       go(world, myClub.name);
-    }).catch(function (e) { if (isMissingTable(e)) setupNeeded(); else say(e); });
+    }).catch(function (e) { if (isMissingTable(e)) setupNeeded(); else { try { alert("Could not start Practice Game: " + ((e && e.message) || e)); } catch (_) {} say(e); } });
   }
 
   // Clubs & rosters: browse any club (bot or human) and see FTP-style player info
@@ -7591,6 +7603,19 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     }
     return order;
   }
+  // Swap apart any two neighbouring spells that share a bowler (which would merge
+  // into one over-long spell), preserving each bowler's total.
+  function foDeAdjacent(order) {
+    for (var i = 1; i < order.length; i++) {
+      if (order[i].bowler !== order[i - 1].bowler) continue;
+      for (var j = i + 1; j < order.length; j++) {
+        if (order[j].bowler !== order[i - 1].bowler && (i + 1 >= order.length || order[j].bowler !== order[i + 1].bowler)) {
+          var t = order[i]; order[i] = order[j]; order[j] = t; break;
+        }
+      }
+    }
+    return order;
+  }
   function foSmartBowling() {
     // App/userTeam/isPT are const bindings in the engine realm (not on window);
     // typeClass/pickXI/pgOrders are function declarations. All resolve bare here.
@@ -7621,34 +7646,67 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       return s;
     };
     var ranked = bs.slice().sort(function (a, b) { return score(b) - score(a); });
+    var paceOf = {}; bs.forEach(function (p) { paceOf[p.name] = isPace(p); });
     var caps = {}, capArr = foCapDist(ranked.length);
     ranked.forEach(function (p, i) { caps[p.name] = capArr[i]; });
 
     // Partition the bowlers into DISJOINT north/south groups (each covering its 25
     // overs), so no bowler is at both ends and back-to-back overs are impossible.
-    // Exactly one "straddler" may span both ends; we place its two stints far apart
-    // (north death, south new ball) so they can never be adjacent match overs.
-    var nNeed = 25, sNeed = 25, nc = {}, sc = {}, straddler = null;
-    for (var ri = 0; ri < ranked.length; ri++) {
-      var nm = ranked[ri].name, c = caps[nm];
-      if (c <= nNeed) { nc[nm] = c; nNeed -= c; }
-      else if (c <= sNeed) { sc[nm] = c; sNeed -= c; }
-      else { nc[nm] = nNeed; sc[nm] = c - nNeed; sNeed -= (c - nNeed); nNeed = 0; straddler = nm; }
-    }
-    if (nNeed !== 0 || sNeed !== 0) return foOrigSuggest();               // couldn't tile 25/25
+    // Pace bowlers are placed first and spread across the two ends so each powerplay
+    // can open with seam; the one "straddler" that may span both ends tends to be a
+    // spinner and is kept out of the powerplay (north death + south middle).
+    var nc = {}, sc = {}, nSum = 0, sSum = 0, straddler = null;
+    var ordered = ranked.filter(function (p) { return paceOf[p.name]; }).concat(ranked.filter(function (p) { return !paceOf[p.name]; }));
+    ordered.forEach(function (p) {
+      var nm = p.name, c = caps[nm], take;
+      if (nSum <= sSum) {                                   // fill the emptier end first
+        if (nSum + c <= 25) { nc[nm] = c; nSum += c; }
+        else { take = 25 - nSum; if (take > 0) { nc[nm] = take; nSum = 25; } sc[nm] = c - take; sSum += c - take; straddler = nm; }
+      } else {
+        if (sSum + c <= 25) { sc[nm] = c; sSum += c; }
+        else { take = 25 - sSum; if (take > 0) { sc[nm] = take; sSum = 25; } nc[nm] = c - take; nSum += c - take; straddler = nm; }
+      }
+    });
+    if (nSum !== 25 || sSum !== 25) return foOrigSuggest();               // couldn't tile 25/25
     if (straddler && (nc[straddler] > 5 || sc[straddler] > 5)) return foOrigSuggest(); // rare
 
+    var byName = {}; bs.forEach(function (p) { byName[p.name] = p; });
     var spells = { north: [], south: [] };
     [["north", nc, 1], ["south", sc, 2]].forEach(function (E) {
-      var end = E[0], counts = E[1], first = E[2];
+      var end = E[0], counts = {}, first = E[2], k;
+      for (k in E[1]) counts[k] = E[1][k];                   // clone (we deduct as we lay spells)
       var overs = []; for (var o = first; o <= 50; o += 2) overs.push(o);
-      var mains = Object.keys(counts).filter(function (n) { return n !== straddler; });
-      var chunks = {}; mains.forEach(function (n) { chunks[n] = foChunks(counts[n]); });
-      var order = foInterleave(mains, chunks);
-      if (straddler && counts[straddler]) {          // north: death end; south: new ball
-        var sp = { bowler: straddler, n: counts[straddler] };
-        if (end === "north") order.push(sp); else order.unshift(sp);
+      var strN = straddler && counts[straddler] ? counts[straddler] : 0;
+
+      // Powerplay (this end's first 5 overs = match overs ≤10): cover it with seam.
+      var paceMains = Object.keys(counts).filter(function (n) { return n !== straddler && paceOf[n] && counts[n] > 0; })
+        .sort(function (a, b) { return score(byName[b]) - score(byName[a]); });
+      var order = [], ppCovered = 0, lastPP = null;
+      while (ppCovered < 5) {
+        var cand = paceMains.filter(function (n) { return counts[n] > 0 && n !== lastPP; });
+        if (!cand.length) break;
+        var pk = cand[0], need = 5 - ppCovered, L = Math.min(counts[pk], 5);
+        if (L > need) L = Math.max(need, 2);
+        if (counts[pk] - L === 1) L = Math.max(2, L - 1);
+        order.push({ bowler: pk, n: L }); counts[pk] -= L; ppCovered += L; lastPP = pk;
       }
+
+      // Remaining overs: chunk what's left (spin welcome now) and interleave.
+      var restMains = Object.keys(counts).filter(function (n) { return n !== straddler && counts[n] > 0; });
+      var chunks = {}; restMains.forEach(function (n) { chunks[n] = foChunks(counts[n]); });
+      order = order.concat(foInterleave(restMains, chunks));
+
+      if (strN) {
+        var sp = { bowler: straddler, n: strN };
+        if (end === "north") { order.push(sp); }             // straddler bowls the death at north
+        else {                                               // and the middle at south (never the powerplay)
+          var cum = 0, ins = order.length, m;
+          for (m = 0; m < order.length; m++) { cum += order[m].n; if (cum >= 5) { ins = m + 1; break; } }
+          order.splice(ins, 0, sp);
+        }
+      }
+      order = foDeAdjacent(order);
+
       var oi = 0;
       order.forEach(function (sp) {
         var f = overs[oi];

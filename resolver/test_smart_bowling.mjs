@@ -68,7 +68,11 @@ for (const sc of SCENARIOS) {
     for (const nm in tot) { if (typeOf[nm] === 'pace') paceOvers += tot[nm]; else if (typeOf[nm] === 'spin') spinOvers += tot[nm]; }
     // who takes the new ball (over 1 north / over 2 south)?
     const newBall = [plan[1], plan[2]].map(nm => typeOf[nm] || '?');
-    return { covered, maxOvers, backToBack, lens, minLen: Math.min(...lens), maxLen: Math.max(...lens), uniq: [...new Set(lens)].length, paceOvers, spinOvers, newBall, spellCount: lens.length };
+    // count spinners bowling in the first 10 overs (should be 0 when pace exists)
+    const paceCount = t.players.filter(p => p.bowlType && window.typeClass(p.bowlType) === 'pace').length;
+    let spinPowerplay = 0;
+    for (let o = 1; o <= 10; o++) if (typeOf[plan[o]] === 'spin') spinPowerplay++;
+    return { covered, maxOvers, backToBack, lens, minLen: Math.min(...lens), maxLen: Math.max(...lens), uniq: [...new Set(lens)].length, paceOvers, spinOvers, newBall, spinPowerplay, paceCount, spellCount: lens.length };
   }, sc);
 
   const tag = `[${sc.pitch}/${sc.weather}]`;
@@ -80,6 +84,8 @@ for (const sc of SCENARIOS) {
   // On seaming decks a pace bowler should get the new ball; on turners spin gets a real share.
   if (sc.want === 'pace') ok(r.newBall.includes('pace'), `${tag} pace takes the new ball (${r.newBall.join('/')})`);
   if (sc.want === 'spin') ok(r.spinOvers >= paceFloor(r), `${tag} spin gets a real share (${r.spinOvers} spin vs ${r.paceOvers} pace)`);
+  // No spinner in the powerplay whenever the side has 2+ seamers to cover both ends.
+  if (r.paceCount >= 2) ok(r.spinPowerplay === 0, `${tag} no spin in overs 1-10 (${r.spinPowerplay} spin overs, ${r.paceCount} seamers)`);
 }
 function paceFloor(r) { return Math.min(r.paceOvers, 15); }
 
