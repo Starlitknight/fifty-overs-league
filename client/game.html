@@ -7112,6 +7112,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-yc-money{display:flex;justify-content:space-between;font-size:11.5px;color:#8a8474;margin-bottom:9px}.fo-yc-money b{color:#12203a}" +
     "#page .fo-yc-sign{width:100%;padding:9px;border:none !important;border-radius:9px;background:" + TERRA + " !important;color:#fff !important;font-weight:700;cursor:pointer}" +
     "#page .fo-yc-sign:hover:not(:disabled){filter:brightness(1.07)}#page .fo-yc-sign:disabled{opacity:.45;cursor:default}" +
+    ".fo-mk-gone{font-size:11.5px;font-weight:700;color:#8a8474;background:#ece7da;border-radius:9px;padding:8px;text-align:center}" +
+    ".fo-mk-claimed{opacity:.6}" +
+    ".fo-yc-view,.fo-mk-view{cursor:pointer}.fo-yc-view:hover,.fo-mk-view:hover{color:#2b6b68 !important}" +
     ".fo-yc-note{font-size:12.5px;color:#5d6570;background:rgba(77,166,162,.07);border:1px solid rgba(77,166,162,.2);border-radius:9px;padding:8px 12px;margin-bottom:11px}" +
     // season progress + momentum chips (club page psychology strip)
     ".fo-season-strip{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:0 0 14px}" +
@@ -7161,6 +7164,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         if (status) tb.insertBefore(a, status); else tb.appendChild(a);
       };
       addNav("fo-training", "Training", function () { location.hash = "#/training"; if (typeof window.route === "function") window.route(); });
+      addNav("fo-transfers", "Transfers", function () { location.hash = "#/transfers"; if (typeof window.route === "function") window.route(); });
       // Live Match appears only while a match is actually in progress
       var liveOn = false; try { liveOn = (typeof M !== "undefined") && M && !M.done; } catch (e) {}
       var lv = tb.querySelector("a.fo-live");
@@ -7816,7 +7820,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var _mt = null, pg0 = document.getElementById("page");
     if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); foRenderTraining(); foPolishSquad(); foDecorateMatchRows(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); return r; }; }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); foRenderTraining(); foRenderMarket(); foPolishSquad(); foDecorateMatchRows(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); return r; }; }
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
@@ -8417,19 +8421,30 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if (SYNC.planRound == null && SYNC.started && window.App && App.season && typeof GD !== "undefined" && GD.teams) {
         var tro = foTrainState();
         var ordersReady = App.orders && App.orders.saved;
-        var sig = (ordersReady ? JSON.stringify(App.orders) : "-") + "|" + JSON.stringify(tro.training) + "|" + JSON.stringify(tro.youthPending.map(function (y) { return y.name; })) + "|" + App.season.round;
-        if (sig !== SYNC.lastOrderSig && (ordersReady || Object.keys(tro.training).length || tro.youthPending.length)) {
+        var sig = (ordersReady ? JSON.stringify(App.orders) : "-") + "|" + JSON.stringify(tro.training) + "|" + JSON.stringify(tro.youthPending.map(function (y) { return y.name; })) + "|" + JSON.stringify((tro.marketPending || []).map(function (y) { return y.name; })) + "|" + App.season.round;
+        if (sig !== SYNC.lastOrderSig && (ordersReady || Object.keys(tro.training).length || tro.youthPending.length || (tro.marketPending || []).length)) {
           SYNC.lastOrderSig = sig;
           var pkt = {
             fo_packet: 1, teamIx: App.teamIx, club: (GD.teams[App.teamIx] || {}).name, round: App.season.round,
             manager: (SYNC.me && SYNC.me.display_name) || "manager",
             orders: ordersReady ? App.orders : null,
-            fo_training: tro.training, fo_youth: tro.youthPending
+            fo_training: tro.training, fo_youth: tro.youthPending, fo_market: tro.marketPending || []
           };
           rpc("push_packet", { p_league_id: LG.id, p_round: App.season.round, p_packet: pkt }).catch(function () {});
         }
       }
     } catch (e) {}
+    // transfer news: tell everyone when a club claims a market player
+    if (SYNC.started) {
+      sel("league_market", "league_id=eq." + LG.id + "&select=player_name,club,manager_id&order=created_at.desc&limit=6").then(function (rows) {
+        if (!SYNC.__mkSeen) { SYNC.__mkSeen = {}; (rows || []).forEach(function (r) { SYNC.__mkSeen[r.player_name] = 1; }); return; }
+        (rows || []).forEach(function (r) {
+          if (SYNC.__mkSeen[r.player_name]) return;
+          SYNC.__mkSeen[r.player_name] = 1;
+          if (!(SYNC.myMid && r.manager_id === SYNC.myMid)) toast(r.player_name + " has signed for " + r.club + ".");
+        });
+      }).catch(function () {});
+    }
     sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version,round").then(function (a) {
       var st = a[0]; if (!st || st.version <= SYNC.lastVersion) return;
       if (document.getElementById("fo-onb")) return;               // never yank the draft room away mid-pick
@@ -8501,6 +8516,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // 42 balanced players (same tier structure for everyone), all set to the
   // manager's country with country names, deterministic from their draft_seed.
   function buildCountryPool(seedInt, country) {
+    // string seeds (league ids, "<club>-scout-3", …) hash to a real uint32 —
+    // `str >>> 0` is always 0, which made every string-seeded pool identical
+    if (typeof seedInt === "string") {
+      var h = 2166136261;
+      for (var si = 0; si < seedInt.length; si++) { h ^= seedInt.charCodeAt(si); h = Math.imul(h, 16777619); }
+      seedInt = h >>> 0;
+    }
     var prev = App.founder;
     App.founder = { identity: "Balanced XI" };   // neutral tilt so pools are equally strong
     var pool;
@@ -8834,7 +8856,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foRoleShort(p) {
     if (p.keeper) return "WK";
     if (p.role === "allRounder") return "AR";
-    if (p.bowlTypeFull && p.bowlTypeFull !== "none") return (typeof isPace === "function" && isPace(p)) ? "PACE" : "SPIN";
+    if (p.bowlTypeFull && p.bowlTypeFull !== "none") return foIsPace(p) ? "PACE" : "SPIN";
     return "BAT";
   }
   function foSquadShape(picked) {
@@ -8856,8 +8878,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     else if (fc.bankAfter >= 180000 && s.n >= 8) out.push({ t: "ok", m: "You have kept " + FO$(fc.bankAfter) + " back — room for injuries and mid-season signings." });
     if (fc.draftSpent > 900000) out.push({ t: "warn", m: "Under " + FO$(1000000 - fc.draftSpent) + " left in reserve — one bad month could sink you." });
     var pt = (FO_ONB && FO_ONB.pitch) || "balanced";
-    if ((pt === "green" || pt === "cracked") && s.n >= 6 && picked.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && typeof isPace === "function" && isPace(p); }).length < 3) out.push({ t: "info", m: "Your home pitch is " + pt + " — pace bowlers will love it. Consider drafting more seamers." });
-    if (pt === "dry" && s.n >= 6 && picked.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && !(typeof isPace === "function" && isPace(p)); }).length < 2) out.push({ t: "info", m: "Your home pitch is dry — it will turn. Consider drafting more spinners." });
+    if ((pt === "green" || pt === "cracked") && s.n >= 6 && picked.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && foIsPace(p); }).length < 3) out.push({ t: "info", m: "Your home pitch is " + pt + " — pace bowlers will love it. Consider drafting more seamers." });
+    if (pt === "dry" && s.n >= 6 && picked.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && !foIsPace(p); }).length < 2) out.push({ t: "info", m: "Your home pitch is dry — it will turn. Consider drafting more spinners." });
     var ce = null; for (var i = 0; i < picked.length; i++) { if (foDraftPrice(picked[i]) < 40000 && foDailyWage(picked[i]) >= 3200) { ce = picked[i]; break; } }
     if (ce) out.push({ t: "info", m: E(ce.name) + " is cheap to draft but expensive in wages." });
     if (!out.length && s.n >= 11) out.push({ t: "ok", m: "Squad is financially safe and legally shaped." });
@@ -9446,11 +9468,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     return s;
   }
   function foTrainSave(s) { lsSet(foTrKey(), JSON.stringify(s)); }
+  function foIsPace(p) {
+    if (!p) return false;
+    if (p.bowlTypeFull && p.bowlTypeFull !== "none") return /seam/i.test(p.bowlTypeFull);
+    try { return typeClass(p.bowlType) === "pace"; } catch (e) { return false; }
+  }
   function foMyClub() { try { return GD.teams[App.teamIx]; } catch (e) { return null; } }
   function foTrDefault(p) {
     if (p.keeper) return "Keeping";
     if (p.role === "allRounder") return "All-rounder";
-    if (p.bowlTypeFull && p.bowlTypeFull !== "none") return (typeof isPace === "function" && isPace(p)) ? "New-ball seam" : "Spin bowling";
+    if (p.bowlTypeFull && p.bowlTypeFull !== "none") return foIsPace(p) ? "New-ball seam" : "Spin bowling";
     return p.role === "middleOrderBat" ? "Finishing" : "Batting";
   }
   function foTrOf(p) {
@@ -9503,10 +9530,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         if (st.training[nm].program) { p.training.program = st.training[nm].program; p.trainFocus = st.training[nm].program; }
         if (st.training[nm].intensity) p.training.intensity = st.training[nm].intensity;
       }
-      // youth: drop pending signings that made it into the squad
-      var before = st.youthPending.length;
+      // youth + market: drop pending signings that made it into the squad
+      var before = st.youthPending.length + (st.marketPending || []).length;
       st.youthPending = st.youthPending.filter(function (y) { return !t.players.find(function (x) { return x.name === y.name; }); });
-      if (st.youthPending.length !== before) { foTrainSave(st); toast("Your youth signing has joined the squad."); }
+      st.marketPending = (st.marketPending || []).filter(function (y) { return !t.players.find(function (x) { return x.name === y.name; }); });
+      if (st.youthPending.length + st.marketPending.length !== before) { foTrainSave(st); toast("Your new signing has joined the squad."); }
     } catch (e) {}
   }
 
@@ -9574,7 +9602,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
 
   // Full detail card for a scouted youngster (same layout as the draft popover).
-  function foYouthDetail(p) {
+  function foYouthDetail(p, isMarket) {
     if (!p) return;
     var isBowler = p.bowlTypeFull && p.bowlTypeFull !== "none";
     var pw = 0; try { pw = (typeof S === "function" ? S(p).power : (p.skills && p.skills.power)) || 0; } catch (e) {}
@@ -9589,12 +9617,141 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "<div class='fo-pd-money'><span>Signing fee<b>" + FO$(p.fee) + "</b></span><span>Daily wage<b>" + FO$(foDailyWage(p)) + "</b></span><span>Season wages<b>" + FO$(foDailyWage(p) * FO_FIN.seasonLength) + "</b></span></div>" +
       "<div class='fo-pd-sec'>Skill summary</div><div class='fo-pd-bars'>" + barHtml + "</div>" +
       "<div class='fo-pd-tal'><b>Talents:</b> " + talents + "</div>" +
-      "<div class='fo-pd-act'><button class='fo-pd-add'>Sign " + E(p.name.split(" ")[0]) + " — " + FO$(p.fee) + "</button></div>" +
+      "<div class='fo-pd-act'><button class='fo-pd-add'>Sign " + E(p.name.split(" ")[0]) + " &mdash; " + FO$(p.fee) + "</button></div>" +
       "</div></div>";
     document.body.appendChild(d);
     d.querySelector(".fo-pd-x").addEventListener("click", function () { d.remove(); });
     d.querySelector(".fo-pd-back").addEventListener("click", function (e) { if (e.target.classList.contains("fo-pd-back")) d.remove(); });
-    d.querySelector(".fo-pd-add").addEventListener("click", function () { d.remove(); foSignYouth(p); });
+    d.querySelector(".fo-pd-add").addEventListener("click", function () { d.remove(); if (isMarket) foMarketClaim(p); else foSignYouth(p); });
+  }
+
+  // ===========================================================================
+  //  TRANSFER MARKET — computer-generated free agents, one shared pool per
+  //  league. Claims are first-come-first-served through the database (0014);
+  //  the roster change itself rides the order packet (fo_market) and is
+  //  applied by the resolver after the fair money settle.
+  // ===========================================================================
+  function foMarketPool() {
+    var t = foMyClub(); if (!t) return [];
+    var season = (typeof App !== "undefined" && App.seasonNo) || 1;
+    var seed = (LG ? LG.id : "solo") + "-market-s" + season;
+    var out = [], seen = {};
+    var countries = [(SYNC && SYNC.myTeam && SYNC.myTeam.country) || "England", "Australia", "India", "South Africa", "New Zealand", "West Indies"];
+    for (var c = 0; c < countries.length; c++) {
+      var pool = [];
+      try { pool = buildCountryPool(seed + "-" + countries[c], countries[c]); } catch (e) { continue; }
+      pool.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
+      // one of each trade per country, so the market isn't 18 copies of the
+      // engine's highest-rated archetype (spinners): bat, seam, spin, keep/AR
+      var got = {};
+      for (var i = 0; i < pool.length; i++) {
+        var p = pool[i];
+        if ((p.age || 0) < 21 || seen[p.name]) continue;
+        var cls = p.keeper ? "keep"
+          : (p.bowlTypeFull && p.bowlTypeFull !== "none")
+            ? (foIsPace(p) ? "pace" : "spin")
+            : "bat";
+        if (got[cls]) continue;
+        got[cls] = 1; seen[p.name] = 1;
+        var q = JSON.parse(JSON.stringify(p));
+        q.fee = Math.max(10000, Math.round(foDraftPrice(p) * 1.15 / 500) * 500);   // mid-season premium
+        out.push(q);
+        if (got.bat && got.pace && got.spin && got.keep) break;
+      }
+    }
+    out.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
+    return out.slice(0, 18);
+  }
+  function foMarketPage() {
+    var page = document.getElementById("page"); if (!page) return;
+    var t = foMyClub();
+    if (!t || !t.players || !t.players.length) { page.innerHTML = "<div class='crumb'>Transfers</div><div class='panel'><h4>Transfer market</h4><div class='pad'>No squad yet — finish your draft first.</div></div>"; return; }
+    var pool = foMarketPool();
+    var renderList = function (claims) {
+      var byName = {}; (claims || []).forEach(function (c) { byName[c.player_name] = c; });
+      var st = foTrainState();
+      var pendingNames = {}; (st.marketPending || []).forEach(function (m) { pendingNames[m.name] = 1; });
+      var bank = (App.fin && App.fin.bank) || t.bank || 0;
+      var cards = pool.map(function (p, i) {
+        var claim = byName[p.name];
+        var mine = claim && SYNC && SYNC.myMid && claim.manager_id === SYNC.myMid;
+        var pending = pendingNames[p.name];
+        var flag = ""; try { flag = (typeof foFlag === "function" && p.nat) ? foFlag(p.nat) : ""; } catch (e) {}
+        var bars = [["Bat", foAgg(p, "bat")], [(p.keeper ? "Keep" : "Bowl"), p.keeper ? foAgg(p, "keep") : ((p.bowlTypeFull && p.bowlTypeFull !== "none") ? foAgg(p, "bowl") : 0)], ["Field", foAgg(p, "field")]];
+        var barHtml = bars.map(function (b) { return "<span class='fo-sk'><i>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + b[1] + "%'></u></b><em>" + b[1] + "</em></span>"; }).join("");
+        var act;
+        if (claim) act = "<div class='fo-mk-gone'>" + (mine ? "Joining your club" : "Signed by <b>" + E(claim.club) + "</b>") + "</div>";
+        else if (pending) act = "<div class='fo-mk-gone'>Joining after next matchday</div>";
+        else act = "<button class='fo-yc-sign fo-mk-claim' data-i='" + i + "'" + (bank < p.fee ? " disabled title='Not enough in the bank'" : "") + ">Sign — " + FO$(p.fee) + "</button>";
+        return "<div class='fo-yc" + (claim ? " fo-mk-claimed" : "") + "'>" +
+          "<div class='fo-yc-h'>" + flag + " <b class='fo-mk-view' data-i='" + i + "'>" + E(p.name) + "</b></div>" +
+          "<div class='fo-yc-meta'>" + foRoleShort(p) + " · age " + p.age + " · rating " + (p.rating || 0).toLocaleString() + "</div>" +
+          "<div class='fo-yc-bars'>" + barHtml + "</div>" +
+          "<div class='fo-yc-money'><span>Fee <b>" + FO$(p.fee) + "</b></span><span>Wage <b>" + FO$(foDailyWage(p)) + "/day</b></span></div>" + act + "</div>";
+      }).join("");
+      page.innerHTML =
+        "<div class='crumb'>" + E(t.name) + " &raquo; Transfers</div>" +
+        "<div class='page-head'><div><div class='eyebrow'>Free agents</div><h1>Transfer market</h1><p>One shared pool for the whole league — when a club signs a player, they're gone for everyone. First come, first served.</p></div></div>" +
+        "<div class='panel'><h4>Available this season</h4><div class='pad'>" +
+        "<div class='fo-yc-note'>Bank: <b>" + FO$(bank) + "</b> · Squad: <b>" + t.players.length + "/18</b>. Signings join your squad after the next matchday resolves.</div>" +
+        "<div class='fo-ycs'>" + cards + "</div></div></div>";
+      page.querySelectorAll(".fo-mk-claim").forEach(function (b) { b.addEventListener("click", function () { foMarketClaim(pool[+b.getAttribute("data-i")]); }); });
+      page.querySelectorAll(".fo-mk-view").forEach(function (b) { b.addEventListener("click", function () { foYouthDetail(pool[+b.getAttribute("data-i")], true); }); });
+    };
+    if (SYNC && SYNC.started && !SYNC.practice && LG) {
+      sel("league_market", "league_id=eq." + LG.id + "&select=player_name,club,manager_id").then(renderList).catch(function () { renderList([]); });
+    } else renderList([]);
+  }
+  function foMarketClaim(p) {
+    var t = foMyClub(); if (!t || !p) return;
+    if ((t.players || []).length >= 18) { say("Squad is full (18) — release someone first."); return; }
+    var bank = (App.fin && App.fin.bank) || t.bank || 0;
+    if (bank < p.fee) { say("Not enough in the bank — the fee is " + FO$(p.fee) + "."); return; }
+    foConfirm({
+      title: "Sign " + p.name + "?",
+      body: "Age " + p.age + " · " + foRoleShort(p) + " · " + FO$(p.fee) + " transfer fee, then " + FO$(foDailyWage(p)) + "/matchday wages. First club to sign gets the player.",
+      confirm: "Sign — " + FO$(p.fee), cancel: "Not yet"
+    }).then(function (ok) {
+      if (!ok) return;
+      if (SYNC && SYNC.started && !SYNC.practice && LG) {
+        rpc("market_claim", { p_league_id: LG.id, p_player_name: p.name, p_player: p, p_price: p.fee, p_club: t.name })
+          .then(function () {
+            var st = foTrainState();
+            (st.marketPending = st.marketPending || []).push(p);
+            foTrainSave(st);
+            toast(p.name + " is yours! The signing completes after the next matchday.");
+            foMarketPage();
+          })
+          .catch(function (e) {
+            var msg = ((e && e.message) || e) + "";
+            if (/already claimed/i.test(msg)) { toast("Too slow — another club signed " + p.name + " first.", "error"); foMarketPage(); }
+            else if (/Could not find the function|market_claim/i.test(msg)) say("The transfer market needs the 0014 SQL run in Supabase first (ask your commissioner).");
+            else say(e);
+          });
+      } else {
+        // solo/practice: instant
+        try {
+          var q = JSON.parse(JSON.stringify(p)); delete q.fee;
+          q.fatigue = "rested"; q.formIx = 3;
+          t.players.push(q);
+          if (typeof window.ledger === "function" && window.ledger.length >= 3) window.ledger("Transfer", "Signed " + q.name, -p.fee);
+          else if (App.fin) App.fin.bank -= p.fee;
+          if (typeof window.saveGame === "function") window.saveGame(false);
+          toast(p.name + " joins the squad!");
+          foMarketPage();
+        } catch (e) { say(e); }
+      }
+    });
+  }
+  window.addEventListener("hashchange", function () { setTimeout(foRenderMarket, 15); });
+  function foRenderMarket() {
+    if (!/^#\/transfers/.test(location.hash || "")) return;
+    try { bumpBrand(); } catch (e) {}
+    try { foMarketPage(); } catch (e) { console.warn("foMarketPage", e); }
+    try {
+      var tb = document.getElementById("topbar");
+      tb && tb.querySelectorAll("a").forEach(function (a) { a.classList.toggle("on", a.classList.contains("fo-transfers")); });
+    } catch (e) {}
   }
 
   // ---- the Training page ------------------------------------------------------

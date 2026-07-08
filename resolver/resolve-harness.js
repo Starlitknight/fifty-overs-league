@@ -412,12 +412,40 @@
     });
   }
 
+  // Mid-season transfer market. The database's league_market PK already
+  // arbitrates first-claim-wins; this re-validates when the roster change
+  // actually lands (after the fair settle, like youth signings).
+  function foApplyPacketMarket(pkts, round) {
+    var taken = {};
+    GD.teams.forEach(function (t) { (t.players || []).forEach(function (p) { taken[p.name] = 1; }); });
+    (pkts || []).forEach(function (pk) {
+      if (!pk || !pk.club || !pk.fo_market || !pk.fo_market.length) return;
+      var t = GD.teams.find(function (x) { return x.name === pk.club; }); if (!t) return;
+      pk.fo_market.forEach(function (cand) {
+        if (!cand || !cand.name || taken[cand.name]) return;
+        if ((t.players || []).length >= 18) return;
+        var fee = Math.max(5000, Math.round(+cand.fee || 0));
+        if ((t.bank || 0) < fee) return;
+        var p = JSON.parse(JSON.stringify(cand));
+        delete p.fee;
+        p.fatigue = 'rested'; p.formIx = 3;
+        ftEnsure(p);
+        t.players.push(p);
+        t.bank -= fee;
+        taken[p.name] = 1;
+        t._trainReport = t._trainReport || { round: round + 1, gains: [], recovery: [], signings: [] };
+        (t._trainReport.signings = t._trainReport.signings || []).push(p.name + ' (age ' + p.age + ') signed from the transfer market for $' + fee.toLocaleString());
+      });
+    });
+  }
+
   var _foCR2 = window.completeRound;
   window.completeRound = function () {
     var round = App.season ? App.season.round : 0;
     try { foApplyPacketTraining(window.__FO_PKTS); } catch (e) { console.log('packet training failed:', e && e.message); }
     var out = _foCR2.apply(this, arguments);
     try { foApplyPacketYouth(window.__FO_PKTS, round); } catch (e) { console.log('packet youth failed:', e && e.message); }
+    try { foApplyPacketMarket(window.__FO_PKTS, round); } catch (e) { console.log('packet market failed:', e && e.message); }
     return out;
   };
 
