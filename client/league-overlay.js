@@ -77,7 +77,11 @@
       setup: doSetup, draft: doDraft,
       issue: issueChallenge, accept: function () { act("accept_challenge", { p_league_id: LG.id, p_challenge_id: t.getAttribute("data-id") }, renderPlay); },
       orders: function () { openOrders(t.getAttribute("data-id")); }, submitOrders: function () { submitOrders(t.getAttribute("data-id")); },
-      mkInvite: mkInvite, genFixtures: genFixtures, card: function () { toggleCard(+t.getAttribute("data-i")); }
+      mkInvite: mkInvite, startSeason: startSeason,
+      resetSchedule: function () { if (confirm("Clear all upcoming (unresolved) fixtures?")) act("founder_reset_schedule", { p_league_id: LG.id }, renderAdmin); },
+      resetLeague: function () { if (confirm("Wipe ALL matches, results and the demo team? (squads kept)")) act("founder_reset_league", { p_league_id: LG.id }, renderAdmin); },
+      removeTeam: function () { if (confirm("Remove your own playing team and become admin-only?")) act("founder_remove_own_team", { p_league_id: LG.id }, function () { openLeagueId(LG.id); }); },
+      card: function () { toggleCard(+t.getAttribute("data-i")); }
     };
     if (acts[a]) acts[a]();
   });
@@ -143,18 +147,23 @@
       TEAMS = {}; teams.forEach(function (t) { TEAMS[t.id] = t; });
       MYMEMBER = mem.filter(function (m) { return m.id === myMid; })[0] || null;
       MYTEAM = teams.filter(function (t) { return t.manager_id === myMid; })[0] || null;
-      curTab = "table"; renderTabs();
+      // admins (founders) land on the Admin panel; players on their Squad
+      curTab = (MYMEMBER && MYMEMBER.role === "founder") ? "admin" : "squad";
+      renderTabs();
     }).catch(say);
   }
 
   // ---- tabbed shell ----
   function renderTabs() {
-    var tabs = [["squad", "Squad"], ["play", "Play"], ["table", "Table"], ["results", "Results"]];
-    if (MYMEMBER && MYMEMBER.role === "founder") tabs.push(["founder", "Founder"]);
+    // Admin (founder/commissioner) manages; players play. Distinct experiences.
+    var isAdmin = MYMEMBER && MYMEMBER.role === "founder";
+    var tabs = isAdmin
+      ? [["admin", "Admin"], ["table", "Table"], ["results", "Results"]]
+      : [["squad", "Squad"], ["play", "Play"], ["table", "Table"], ["results", "Results"]];
     wrap.querySelector("#folWho").textContent = LG ? LG.name : "";
     main.innerHTML = '<div class="foltabs">' + tabs.map(function (t) { return '<div class="foltab ' + (curTab === t[0] ? "on" : "") + '" data-act="tab" data-tab="' + t[0] + '">' + t[1] + "</div>"; }).join("") +
       '<span style="flex:1"></span><button class="mini" data-act="logout">log out</button></div><div id="folTab" class="folbody"></div>';
-    ({ squad: renderSquad, play: renderPlay, table: renderTable, results: renderResults, founder: renderFounder }[curTab])();
+    ({ squad: renderSquad, play: renderPlay, table: renderTable, results: renderResults, admin: renderAdmin }[curTab])();
   }
   function tabEl() { return wrap.querySelector("#folTab"); }
 
@@ -280,18 +289,48 @@
     }).join("");
   }
 
-  // ---- FOUNDER ----
-  function renderFounder() {
-    var el = tabEl();
-    sel("invites", "league_id=eq." + LG.id + "&select=code,role,redeemed_uid&order=created_at").then(function (inv) {
+  // ---- ADMIN (commissioner) ----
+  function renderAdmin() {
+    var el = tabEl(); el.innerHTML = '<div class="folcard"><div class="folpad folsmall">Loading…</div></div>';
+    Promise.all([
+      rpc("league_readiness", { p_league_id: LG.id }),
+      sel("teams", "league_id=eq." + LG.id + "&select=id,name,manager_id,country"),
+      sel("squads", "league_id=eq." + LG.id + "&select=team_id,confirmed"),
+      sel("members", "league_id=eq." + LG.id + "&select=id,role,display_name"),
+      sel("invites", "league_id=eq." + LG.id + "&select=code,redeemed_uid&order=created_at")
+    ]).then(function (r) {
+      var rd = r[0] || { teams: 0, drafted: 0, all_ready: false }, teams = r[1], squads = r[2], mem = r[3], inv = r[4];
+      var done = {}; squads.forEach(function (s) { done[s.team_id] = s.confirmed; });
+      var mById = {}; mem.forEach(function (m) { mById[m.id] = m; });
+      var rows = teams.map(function (t) {
+        var m = mById[t.manager_id] || {};
+        return "<tr><td>" + E(t.name) + '</td><td class=folsmall>' + E(m.display_name || "") + (m.role === "founder" ? " (admin)" : "") + '</td><td class=folsmall>' + E(t.country || "—") + "</td><td>" + (done[t.id] ? '<span class="folbadge ok">drafted</span>' : '<span class="folbadge warn">not yet</span>') + "</td></tr>";
+      }).join("") || '<tr><td colspan=4 class="folsmall">No teams yet — share an invite code.</td></tr>';
+      var ready = !!rd.all_ready, waiting = Math.max(0, (rd.teams || 0) - (rd.drafted || 0));
       el.innerHTML =
+        '<div class="folcard"><h4>Managers (' + (rd.drafted || 0) + "/" + (rd.teams || 0) + ' drafted)</h4><div class=folpad><table><thead><tr><th>Team</th><th>Manager</th><th>Country</th><th>Status</th></tr></thead><tbody>' + rows + "</tbody></table></div></div>" +
         '<div class="folcard"><h4>Invite managers</h4><div class=folpad><div class="folrow"><input id="folNewCode" placeholder="code e.g. JOIN-SAM"><button class="p" data-act="mkInvite">Create code</button></div>' +
-        "<table style='margin-top:8px'><thead><tr><th>Code</th><th>Role</th><th>Used?</th></tr></thead><tbody>" + (inv.length ? inv.map(function (v) { return "<tr><td>" + E(v.code) + "</td><td>" + v.role + "</td><td>" + (v.redeemed_uid ? "yes" : "—") + "</td></tr>"; }).join("") : '<tr><td colspan=3 class="folsmall">No codes yet.</td></tr>') + "</tbody></table></div></div>" +
-        '<div class="folcard"><h4>Season</h4><div class=folpad><div class="folsmall">1) Everyone joins and drafts their squad in <b>Squad → Draft</b> (each picks a home country, then <b>Start Season</b>).</div>' +
-        '<div class="folrow" style="margin-top:8px">2) Start date <input id="folStart" type="date"> <button class="p" data-act="genFixtures">Generate fixtures</button></div><div class="folsmall">Matches then resolve automatically at your league time.</div></div></div>';
+        "<table style='margin-top:8px'><thead><tr><th>Code</th><th>Used?</th></tr></thead><tbody>" + (inv.length ? inv.map(function (v) { return "<tr><td>" + E(v.code) + "</td><td>" + (v.redeemed_uid ? "yes" : "—") + "</td></tr>"; }).join("") : '<tr><td colspan=2 class="folsmall">No codes yet.</td></tr>') + "</tbody></table>" +
+        '<div class="folsmall" style="margin-top:4px">Share a code with each friend; they Sign up and Join with it.</div></div></div>' +
+        '<div class="folcard"><h4>Start the season</h4><div class=folpad>' +
+        '<div class="folsmall">Unlocks once <b>every</b> team has joined and drafted.</div>' +
+        '<div class="folrow" style="margin-top:8px">Start date <input id="folStart" type="date"> <button class="p" data-act="startSeason" ' + (ready ? "" : "disabled") + '>🚀 Start the league</button></div>' +
+        (ready ? '<div class="folsmall" style="margin-top:4px;color:#6fcf6f">Everyone\'s ready — you can start!</div>' : '<div class="folsmall" style="margin-top:4px;color:#e08b7f">Waiting on ' + waiting + ' manager(s) to draft.</div>') +
+        "</div></div>" +
+        '<div class="folcard"><h4>Controls</h4><div class=folpad>' +
+        '<div class="folrow"><button data-act="resetSchedule">Reset schedule</button> <button data-act="resetLeague">Wipe matches &amp; demo</button>' +
+        (MYTEAM ? ' <button data-act="removeTeam">Remove my team (admin-only)</button>' : "") + "</div>" +
+        '<div class="folsmall" style="margin-top:4px">Reset schedule clears upcoming fixtures. Wipe clears all matches/results and the demo team. To play yourself, use a <b>separate account</b> and Join with a code.</div>' +
+        "</div></div>";
     }).catch(say);
   }
-  function mkInvite() { var c = val("folNewCode"); if (!c) { say("Enter a code"); return; } act("create_invite", { p_league_id: LG.id, p_code: c, p_role: "manager" }, renderFounder); }
+  function startSeason() {
+    var ids = Object.keys(TEAMS); if (ids.length < 2) { say("Need at least 2 teams"); return; }
+    var sd = val("folStart") || new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    rpc("founder_start_season", { p_league_id: LG.id, p_fixtures: doubleRR(ids), p_start_date: sd })
+      .then(function (n) { say("🚀 Season started — " + n + " fixtures scheduled! Matches play automatically."); curTab = "table"; renderTabs(); }).catch(say);
+  }
+  function mkInvite() { var c = val("folNewCode"); if (!c) { say("Enter a code"); return; } act("create_invite", { p_league_id: LG.id, p_code: c, p_role: "manager" }, renderAdmin); }
   function doubleRR(ids) {
     var arr = ids.slice(); if (arr.length % 2) arr.push("BYE");
     var m = arr.length, fixed = arr[0], rot = arr.slice(1), rounds = [];
