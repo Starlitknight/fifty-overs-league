@@ -6429,7 +6429,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     "#folPanel button{cursor:pointer}#folPanel button.p{background:#C8674A;color:#F6F4EE;border-color:#C8674A}#folPanel button.mini{padding:2px 8px;font-size:12px}" +
     ".folrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.folsmall{font-size:12px;opacity:.7}" +
     ".folbadge{font-size:11px;padding:1px 6px;border-radius:10px;border:1px solid rgba(246,244,238,.12)}.folbadge.ok{color:#4DA6A2;border-color:rgba(77,166,162,.5)}.folbadge.warn{color:#e08b7f;border-color:#8a4a3a}" +
-    "#folPin{background:#a33328;color:#fff;padding:8px 14px;display:none}";
+    "#folPin{background:#a33328;color:#fff;padding:8px 14px;display:none}" +
+    ".fclub-p{padding:9px 2px;border-bottom:1px solid rgba(246,244,238,.1)}.fclub-p:last-child{border-bottom:none}" +
+    ".fclub-nm{font-weight:700;color:#F6F4EE;font-size:14px}.fclub-nat{font-weight:500;color:#4DA6A2;font-size:11px;margin-left:7px;letter-spacing:.5px}" +
+    ".fclub-l1{color:#F6F4EE;font-size:12.5px;margin-top:3px}.fclub-l2,.fclub-l3{color:rgba(246,244,238,.7);font-size:12px;margin-top:2px;line-height:1.4}";
   document.head.appendChild(css);
 
   // ---- Fifty Overs identity: navy + terracotta, teal accents (login) ----
@@ -6476,6 +6479,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     "#folPanel td,#folPanel th{color:#F6F4EE !important;background:transparent !important;border-bottom-color:rgba(246,244,238,.12) !important}" +
     "#topbar .brand::before{display:none !important}" +
     ".fo-brandicon{width:26px;height:26px;border-radius:7px;vertical-align:-8px;margin-right:6px;box-shadow:0 0 0 1px rgba(246,244,238,.18)}" +
+    "#topbar{position:relative}" +
+    "#fo-clock{position:absolute;top:9px;right:12px;color:rgba(246,244,238,.9);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:.3px}" +
     "#page a,.panel a{color:#b0563b !important}" +
     // section headers -> navy
     "html body.ftpskin .panel>h4,html body.ftpskin .card-title,.panel>h4,.card-title,.panel>header,.card>h4,.sec>h4{background:" + NAVY2 + " !important;background-image:none !important;color:" + PAPER + " !important}" +
@@ -6499,6 +6504,20 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     "#page table{font-size:12px}" +
     "button,select,input{min-height:38px;font-size:14px;max-width:100%}" +
     ".ctlrow{flex-wrap:wrap}" +
+    // Orders page: the desktop layout is forced with !important; unwind it for phones
+    ".fo-orders-main{grid-template-columns:1fr !important}" +
+    ".fo-detgrid{grid-template-columns:1fr 1fr !important}" +
+    ".fo-batrow2{display:flex !important;flex-wrap:wrap;align-items:center;gap:8px !important;grid-template-columns:none !important;padding:6px 0}" +
+    ".fo-batrow2 .bno{flex:0 0 auto}" +
+    ".fo-batrow2 select{flex:1 1 55%;min-width:0}" +
+    ".fo-batrow2 .bskill{flex:1 1 100% !important;order:9;overflow:visible !important;white-space:normal !important}" +
+    ".fo-batrow2 .bwk,.fo-batrow2 .bopt{flex:0 0 auto}" +
+    ".fo-tacrow{flex-wrap:wrap}.fo-tacrow .small{min-width:0}" +
+    ".fo-gridrow{flex-wrap:wrap}.fo-gridside{flex:1 1 100% !important}" +
+    ".fo-gridcells{flex:1 1 100% !important;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}" +
+    ".fo-pool{overflow-x:auto}.fo-pooltabs{flex-wrap:wrap}" +
+    // freeze the first column (player/date) so it stays visible while the rest scrolls
+    "#page .panel table th:first-child,#page .panel table td:first-child{position:sticky;left:0;background:#fff;z-index:1;box-shadow:1px 0 0 rgba(0,0,0,.12)}" +
     "}";
   document.body.appendChild(css3);
   // The game injects its own theme stylesheets into <body> at render time, after
@@ -6516,13 +6535,27 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         brand.style.cursor = "pointer"; brand.title = "League menu";
         brand.addEventListener("click", openLeagueMenu);
       }
+      // date + time, top-right (like FTP)
+      if (!tb.querySelector("#fo-clock")) { var ck = document.createElement("span"); ck.id = "fo-clock"; tb.appendChild(ck); tickClock(); }
       if (tb.querySelector("a.fo-clubs")) return;
+      var after = tb.querySelector('a[data-nav="matches"]');
       var a = document.createElement("a"); a.className = "fo-clubs"; a.href = "#"; a.textContent = "Clubs";
       a.addEventListener("click", function (e) { e.preventDefault(); renderClubs(); });
-      var after = tb.querySelector('a[data-nav="matches"]');
-      if (after && after.nextSibling) tb.insertBefore(a, after.nextSibling); else tb.appendChild(a);
+      var f = document.createElement("a"); f.className = "fo-friendly"; f.href = "#"; f.textContent = "Friendly";
+      f.addEventListener("click", function (e) { e.preventDefault(); if (LG && SYNC) practice(); else openLeagueMenu(); });
+      if (after && after.nextSibling) { tb.insertBefore(a, after.nextSibling); tb.insertBefore(f, a.nextSibling); }
+      else { tb.appendChild(a); tb.appendChild(f); }
     } catch (e) {}
   }
+  function tickClock() {
+    try {
+      var c = document.getElementById("fo-clock"); if (!c) return;
+      var d = new Date();
+      c.textContent = d.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short" }) + " " +
+        d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    } catch (e) {}
+  }
+  setInterval(tickClock, 1000);
   if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); return r; }; }
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
@@ -6852,28 +6885,42 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     }).catch(function (e) { if (isMissingTable(e)) setupNeeded(); else say(e); });
   }
 
-  // Clubs & rosters: every club in the league with its players' BASIC info only
-  // (name, role, age, country — no skills). Pull from the live league teams.
+  // Clubs & rosters: browse any club (bot or human) and see FTP-style player info
+  // — age, rating, wage, batting/bowling type, talents, and form/fatigue/experience.
+  // No raw skill numbers.
+  var clubsView = 0;
   function renderClubs() {
     openWrap(true); setNavy(false);
     wrap.querySelector("#folWho").textContent = LG ? LG.name : "";
     var teams = (typeof GD !== "undefined" && GD.teams) ? GD.teams : [];
-    var roleName = function (r) { try { return (typeof window.prole === "function") ? window.prole(r) : (r || ""); } catch (e) { return r || ""; } };
-    var body;
     if (!teams.length) {
-      body = '<div class="folcard"><div class="folpad folsmall">No clubs yet. Start or open a season to see the league\'s clubs.</div></div>';
-    } else {
-      body = teams.map(function (t) {
-        var rows = (t.players || []).map(function (p) {
-          return "<tr><td>" + E(p.name) + "</td><td>" + E(roleName(p.role)) + "</td><td>" + (p.age || "-") + "</td><td>" + E(p.nat || "-") + "</td></tr>";
-        }).join("") || '<tr><td colspan=4 class="folsmall">No players.</td></tr>';
-        return '<div class="folcard"><h4>' + E(t.name) + " <span class='folsmall'>" + (t.players ? t.players.length : 0) + " players</span></h4>" +
-          '<div class="folpad" style="overflow-x:auto"><table><tr><th>Player</th><th>Role</th><th>Age</th><th>Nat</th></tr>' + rows + "</table></div></div>";
-      }).join("");
+      main.innerHTML = '<div class="folbody"><div class="folcard"><div class="folpad folrow"><button class="mini" data-act="backToGame">◂ back to the game</button></div></div>' +
+        '<div class="folcard"><div class="folpad folsmall">No clubs yet. Start or open a season to see the league\'s clubs.</div></div></div>';
+      return;
     }
+    if (clubsView >= teams.length) clubsView = 0;
+    var t = teams[clubsView];
+    var pretty = function (c) { return (c == null ? "" : "" + c).replace(/([A-Z])/g, " $1").replace(/^./, function (x) { return x.toUpperCase(); }).trim(); };
+    var players = (t.players || []).slice().sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
+    var avg = players.length ? Math.round(players.reduce(function (s, p) { return s + (p.rating || 0); }, 0) / players.length) : 0;
+    var list = players.map(function (p) {
+      var hand = (p.hand === "L" ? "Left" : "Right") + " hand bat";
+      var bt = p.btLabel && p.btLabel !== "Does not bowl" ? p.btLabel : "";
+      var talents = (p.talents || []).map(pretty).filter(Boolean).join(", ");
+      var l2 = [hand, bt, talents].filter(Boolean).join(" &middot; ");
+      var l3 = [p.expWord && (p.expWord + " experience"), p.formWord && (p.formWord + " form"), p.fatigue && (p.fatigue + " fatigue"), p.captWord && (p.captWord + " captaincy")].filter(Boolean).join(" &middot; ");
+      return '<div class="fclub-p"><div class="fclub-nm">' + E(p.name) + '<span class="fclub-nat">' + E(p.nat || "") + "</span></div>" +
+        '<div class="fclub-l1">' + (p.age || "?") + " yrs &middot; " + (p.rating || 0).toLocaleString() + " rating &middot; $" + (p.wage || 0).toLocaleString() + " wage</div>" +
+        (l2 ? '<div class="fclub-l2">' + l2 + "</div>" : "") + (l3 ? '<div class="fclub-l3">' + l3 + "</div>" : "") + "</div>";
+    }).join("") || '<div class="folsmall">No players.</div>';
+    var opts = teams.map(function (x, i) { return '<option value="' + i + '"' + (i === clubsView ? " selected" : "") + ">" + E(x.name) + "</option>"; }).join("");
     main.innerHTML = '<div class="folbody">' +
-      '<div class="folcard"><div class="folpad folrow"><button class="mini" data-act="backToGame">◂ back to the game</button><span class="folsmall">Every club\'s roster (basic info)</span></div></div>' +
-      body + "</div>";
+      '<div class="folcard"><div class="folpad folrow" style="justify-content:space-between"><button class="mini" data-act="backToGame">◂ back to the game</button>' +
+      '<select id="folClubSel">' + opts + "</select></div></div>" +
+      '<div class="folcard"><h4><span>' + E(t.name) + "</span><span class='folsmall'>" + players.length + " players &middot; avg " + avg.toLocaleString() + "</span></h4>" +
+      '<div class="folpad"><div class="folsmall" style="margin-bottom:6px">Home ground: ' + E(t.ground || "-") + "</div>" + list + "</div></div></div>";
+    var sel = wrap.querySelector("#folClubSel");
+    if (sel) sel.addEventListener("change", function () { clubsView = +this.value; renderClubs(); });
   }
 
   // Minimal onboarding: pick home country + names, then draft in the game.
