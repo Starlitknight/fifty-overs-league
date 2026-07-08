@@ -22,7 +22,30 @@
   var NAT = ["Australia", "India", "Pakistan", "Sri Lanka", "New Zealand", "South Africa", "England", "Netherlands", "West Indies", "Afghanistan", "Ireland", "Zimbabwe"];
 
   function E(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
-  function say(m) { window.alert((m && m.message || m).toString().slice(0, 400)); }
+  // Branded toast notifications instead of native alert() popups. Errors show
+  // terracotta with a warning icon; everything else neutral navy with a check.
+  var _toastHost = null;
+  function toast(msg, kind) {
+    try {
+      if (!_toastHost || !_toastHost.isConnected) { _toastHost = document.createElement("div"); _toastHost.id = "fo-toasts"; document.body.appendChild(_toastHost); }
+      var t = document.createElement("div");
+      t.className = "fo-toast fo-toast-" + (kind || "info");
+      t.innerHTML = "<span class='fo-toast-ic'>" + FO_I(kind === "error" ? "warn" : "checkCircle", 16) + "</span><span class='fo-toast-tx'>" + E(msg) + "</span>";
+      _toastHost.appendChild(t);
+      t.addEventListener("click", function () { t.remove(); });
+      requestAnimationFrame(function () { t.classList.add("on"); });
+      var ttl = Math.min(9000, 3200 + msg.length * 35);   // longer messages linger
+      setTimeout(function () { t.classList.remove("on"); setTimeout(function () { t.remove(); }, 350); }, ttl);
+      while (_toastHost.children.length > 3) _toastHost.firstChild.remove();
+    } catch (e) { try { window.alert(msg); } catch (e2) {} }
+  }
+  function say(m) {
+    var isErr = !!(m && (m instanceof Error || m.message));
+    toast((m && m.message || m).toString().slice(0, 320), isErr ? "error" : "info");
+  }
+  // Busy state for the auth CTAs while a request is in flight.
+  function busyBtn(act, label) { var b = wrap.querySelector('[data-act="' + act + '"]'); if (b && !b.disabled) { b.setAttribute("data-t", b.textContent); b.textContent = label; b.disabled = true; } }
+  function unbusyBtn(act) { var b = wrap.querySelector('[data-act="' + act + '"]'); if (b) { b.textContent = b.getAttribute("data-t") || b.textContent; b.disabled = false; } }
   function headers() { return { apikey: ANON, Authorization: "Bearer " + (JWT || ANON), "content-type": "application/json", "Accept-Profile": "app", "Content-Profile": "app" }; }
   function rpc(fn, args) { return fetch(URL + "/rest/v1/rpc/" + fn, { method: "POST", headers: headers(), body: JSON.stringify(args || {}) }).then(function (r) { return r.text().then(function (t) { if (!r.ok) throw new Error(t || ("HTTP " + r.status)); return t ? JSON.parse(t) : null; }); }); }
   function sel(table, q) { return fetch(URL + "/rest/v1/" + table + "?" + (q || ""), { headers: headers() }).then(function (r) { return r.text().then(function (t) { if (!r.ok) throw new Error(t); return JSON.parse(t); }); }); }
@@ -206,7 +229,15 @@
     "#folPanel .folbadge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;letter-spacing:.3px}" +
     "#folPanel .folbadge.ok{background:rgba(77,166,162,.14)}" +
     "#folPanel .folbadge.warn{background:rgba(200,103,74,.13)}" +
-    "#folPanel .folsmall{color:rgba(246,244,238,.6);opacity:1;line-height:1.5}";
+    "#folPanel .folsmall{color:rgba(246,244,238,.6);opacity:1;line-height:1.5}" +
+    // ---- toast notifications (replace native alert) ----
+    "#fo-toasts{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:2147483200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;max-width:min(92vw,560px)}" +
+    ".fo-toast{pointer-events:auto;display:flex;gap:10px;align-items:flex-start;background:rgba(28,36,51,.97);color:#F6F4EE;border:1px solid rgba(246,244,238,.16);border-radius:13px;padding:12px 16px;font:13.5px/1.45 -apple-system,'Segoe UI',Roboto,Inter,system-ui,sans-serif;box-shadow:0 14px 40px -10px rgba(0,0,0,.6);opacity:0;transform:translateY(-8px);transition:opacity .25s,transform .25s;cursor:pointer;max-width:100%}" +
+    ".fo-toast.on{opacity:1;transform:none}" +
+    ".fo-toast-ic{flex:none;display:flex;margin-top:1px;color:#4DA6A2}" +
+    ".fo-toast-error{border-color:rgba(200,103,74,.5);background:linear-gradient(160deg,rgba(58,32,26,.97),rgba(40,22,20,.97))}" +
+    ".fo-toast-error .fo-toast-ic{color:#e58b86}" +
+    ".fo-toast-tx{word-break:break-word}";
   document.head.appendChild(css2);
 
   // ---- restyle the GAME itself: brand colours (navy/terracotta/teal) on the
@@ -526,6 +557,28 @@
     ".fo-fin-end{margin-top:8px;padding-top:8px;border-top:1px solid rgba(246,244,238,.08);font-size:11.5px;color:rgba(246,244,238,.6);display:flex;justify-content:space-between}.fo-fin-end b{font-size:13px}" +
     ".fo-ob-report{max-width:900px}" +
     "@media(max-width:860px){.fo-ob-cols{grid-template-columns:1fr}.fo-pks{grid-template-columns:1fr}.fo-br-cols{grid-template-columns:1fr}.fo-dc-bars{grid-auto-flow:row;grid-template-columns:1fr;grid-template-rows:none}.fo-pk-tag{min-height:0}.fo-sp-lines{min-height:0}}" +
+    // squad panel + budget bar (draft sidebar)
+    ".fo-budgetbar{height:6px;border-radius:3px;background:rgba(246,244,238,.09);overflow:hidden;margin:2px 0 6px}" +
+    ".fo-budgetbar u{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg," + TEAL + "," + TERRA + ");transition:width .3s}" +
+    ".fo-sq-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(246,244,238,.05);font-size:12px}" +
+    ".fo-sq-item:last-child{border-bottom:none}" +
+    ".fo-sq-item b{flex:1;font-weight:600;color:#F6F4EE;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fo-sq-item b:hover{color:" + TEAL + "}" +
+    ".fo-sq-item em{font-style:normal;color:rgba(246,244,238,.6);font-variant-numeric:tabular-nums}" +
+    "#fo-onb .fo-sq-x{width:22px;height:22px;border-radius:7px;border:1px solid rgba(246,244,238,.15);background:transparent;color:rgba(246,244,238,.5);font-size:10px;cursor:pointer;padding:0;line-height:1}" +
+    "#fo-onb .fo-sq-x:hover{border-color:#C84F4A;color:#e58b86}" +
+    ".fo-sq-empty{font-size:12px;color:rgba(246,244,238,.45);padding:8px 0}" +
+    // motion + micro-interactions
+    ".fo-ob-card,.fo-ob-draftwrap{animation:foIn .3s ease}" +
+    "@keyframes foIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}" +
+    ".fo-pk{transition:border-color .15s,box-shadow .15s,transform .15s}.fo-pk:hover{transform:translateY(-2px)}" +
+    ".fo-dc{transition:border-color .15s,background .15s}.fo-dc:hover{border-color:rgba(246,244,238,.2)}" +
+    ".fo-ob-crest{transition:border-color .15s,box-shadow .15s}" +
+    "#fo-onb button{transition:filter .15s,transform .06s}#fo-onb button:active:not(:disabled){transform:translateY(1px)}" +
+    "#fo-onb{font-variant-numeric:tabular-nums}" +
+    // dark thin scrollbar inside the draft list
+    ".fo-dr-tblwrap{scrollbar-width:thin;scrollbar-color:rgba(246,244,238,.22) transparent}" +
+    ".fo-dr-tblwrap::-webkit-scrollbar{width:9px}.fo-dr-tblwrap::-webkit-scrollbar-track{background:transparent}" +
+    ".fo-dr-tblwrap::-webkit-scrollbar-thumb{background:rgba(246,244,238,.16);border-radius:5px;border:2px solid #141d2c}.fo-dr-tblwrap::-webkit-scrollbar-thumb:hover{background:rgba(246,244,238,.3)}" +
     // beat the engine's default button/input styling inside the onboarding shell
     "#fo-onb button{font-family:inherit;min-height:0;box-shadow:none}" +
     "#fo-onb .fo-ob-cta{background:" + TERRA + " !important;color:#F6F4EE !important;border:none !important}" +
@@ -1358,6 +1411,12 @@
     };
     if (acts[a]) acts[a]();
   });
+  // Enter in any panel input triggers that screen's primary action.
+  wrap.addEventListener("keydown", function (ev) {
+    if (ev.key !== "Enter" || !ev.target || ev.target.tagName !== "INPUT") return;
+    var primary = ["login", "joinNew", "sendReset", "join"].map(function (a) { return wrap.querySelector('[data-act="' + a + '"]'); }).filter(Boolean)[0];
+    if (primary && !primary.disabled) { ev.preventDefault(); primary.click(); }
+  });
   function val(id) { var e = wrap.querySelector("#" + id); return e ? (e.value || "").trim() : ""; }
 
   function setNavy(on) { var pn = wrap.querySelector("#folPanel"); if (pn) pn.classList.toggle("fol-navy", !!on); }
@@ -1460,12 +1519,13 @@
   function doLogin() {
     var email = val("folEmail"), password = wrap.querySelector("#folPass").value;
     if (!email || !password) { say("Enter your email and password"); return; }
+    busyBtn("login", "Signing in…");
     fetch(URL + "/auth/v1/token?grant_type=password", { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ email: email, password: password }) })
       .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error_description || d.msg || d.error || ("HTTP " + r.status)); return d; }); })
       .then(function (d) {
         if (d.access_token) { JWT = d.access_token; saveSession(d); wrap.querySelector("#folWho").textContent = email; enterApp(); }
-        else say("Check your email to confirm your account, then log in.");
-      }).catch(say);
+        else { unbusyBtn("login"); say("Check your email to confirm your account, then log in."); }
+      }).catch(function (e) { unbusyBtn("login"); say(e); });
   }
 
   // After login, go straight into the league: RLS scopes `leagues` to the ones
@@ -1839,21 +1899,23 @@
     if (!code || !dn) { say("Enter your invite code and manager name"); return; }
     // Remember the invite so we can finish joining after email confirmation + login.
     lsSet(PEND, JSON.stringify({ code: code, dn: dn, tn: tn }));
+    busyBtn("joinNew", "Creating account\u2026");
     fetch(URL + "/auth/v1/signup?redirect_to=" + encodeURIComponent(APP_URL), { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ email: email, password: password, options: { email_redirect_to: APP_URL } }) })
       .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error_description || d.msg || d.error || ("HTTP " + r.status)); return d; }); })
       .then(function (d) {
         if (!d.access_token) { say("Account created! Check your email, tap the confirmation link, then log in. We'll drop you straight into your league."); renderLogin(); return; }
         JWT = d.access_token; saveSession(d); wrap.querySelector("#folWho").textContent = email;
         return enterApp();
-      }).catch(say);
+      }).catch(function (e) { unbusyBtn("joinNew"); say(e); });
   }
 
   function sendReset() {
     var email = val("folEmail");
     if (!email) { say("Enter your email"); return; }
+    busyBtn("sendReset", "Sending\u2026");
     fetch(URL + "/auth/v1/recover?redirect_to=" + encodeURIComponent(APP_URL), { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ email: email }) })
       .then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t || ("HTTP " + r.status)); }); })
-      .then(function () { say("If that email has an account, a reset link is on its way."); renderLogin(); }).catch(say);
+      .then(function () { say("If that email has an account, a reset link is on its way."); renderLogin(); }).catch(function (e) { unbusyBtn("sendReset"); say(e); });
   }
 
   // ---- join a league (shown only when you are not in one yet) ----
@@ -1877,10 +1939,11 @@
   function joinLeague() {
     var code = val("folCode"), dn = val("folDn"), tn = val("folTn");
     if (!code || !dn) { say("Enter the invite code and your name"); return; }
+    busyBtn("join", "Joining\u2026");
     rpc("redeem_invite", { p_code: code, p_display_name: dn, p_team_name: tn || dn + " XI" })
       .then(function (mid) { lsDel(PEND); return sel("members", "id=eq." + mid + "&select=league_id"); })
       .then(function (m) { return enterGameById(m[0].league_id); })
-      .catch(say);
+      .catch(function (e) { unbusyBtn("join"); say(e); });
   }
   // ============================================================================
   // IN-GAME DRAFT: build a balanced, country-flavoured, unique pool from the
@@ -2370,7 +2433,9 @@
       "<div class='fo-dr-tblwrap'>" + (rows || "<div class='fo-dr-none'>No players match.</div>") + "</div></div>" +
       "<div class='fo-dr-side'>" +
       "<div class='fo-fc'><div class='fo-fc-h'>Club finance forecast</div>" +
-      fRow("Draft spent", FO$(fc.draftSpent) + " / $1,000,000") + fRow("Bank after draft", FO$(fc.bankAfter)) +
+      fRow("Draft spent", FO$(fc.draftSpent) + " / $1,000,000") +
+      "<div class='fo-budgetbar'><u style='width:" + Math.min(100, Math.round(fc.draftSpent / 10000)) + "%'></u></div>" +
+      fRow("Bank after draft", FO$(fc.bankAfter)) +
       fRow("Daily wage bill", FO$(fc.dailyWage)) + fRow("Season wage cost", "−" + FO$(fc.seasonWage)) +
       fRow("Expected ticket income", "+" + FO$(fc.ticket)) + fRow("Expected sponsor income", "+" + FO$(fc.sponsor)) +
       fRow("Expected ground costs", "−" + FO$(fc.ground)) +
@@ -2378,9 +2443,14 @@
       "<div class='fo-fc-health fo-tone-" + hTone + "'>Financial health · <b>" + fc.health + "</b></div>" +
       "<div class='fo-fc-scens'>" + scen + "</div></div>" +
       "<div class='fo-dr-shape'><span class='fo-sh'><b>" + shape.bat + "</b> BAT</span><span class='fo-sh'><b>" + shape.bowl + "</b> BOWL</span><span class='fo-sh'><b>" + shape.ar + "</b> AR</span><span class='fo-sh'><b>" + shape.wk + "</b> WK</span></div>" +
+      "<div class='fo-adv-panel'><div class='fo-adv-h'>Your squad · " + shape.n + "/16</div>" +
+      (F.picked.slice().sort(function (a, b) { return foDraftPrice(b) - foDraftPrice(a); }).map(function (p) {
+        var nm = E(p.name).replace(/'/g, "&#39;");
+        return "<div class='fo-sq-item'><span class='fo-rl'>" + foRoleShort(p) + "</span><b class='fo-dr-view' data-p='" + nm + "'>" + E(p.name) + "</b><em>" + FO$(foDraftPrice(p)) + "</em><button class='fo-sq-x' data-p='" + nm + "' title='Remove'>&#10005;</button></div>";
+      }).join("") || "<div class='fo-sq-empty'>Empty. Sign players and they appear here.</div>") + "</div>" +
       "<div class='fo-adv-panel'><div class='fo-adv-h'>Advisor</div>" + (advisor || "<div class='fo-adv fo-adv-info'>Start adding players to see advice.</div>") + "</div>" +
       "</div></div>" +
-      "<div class='fo-ob-act fo-dr-act'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c' " + (ready ? "" : "disabled") + "># Continue → Board report</button></div>" +
+      "<div class='fo-ob-act fo-dr-act'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c' " + (ready ? "" : "disabled") + ">Continue &#8594; Board report</button></div>" +
       (ready ? "" : "<div class='fo-dr-needs'>Need 11+ players, a keeper and 5+ bowling options to continue.</div>") +
       "</div>";
     var host = foOnbMount(4, body);
@@ -2388,6 +2458,7 @@
     host.querySelectorAll(".fo-dr-view").forEach(function (b) { b.addEventListener("click", function () { foDraftDetail(b.getAttribute("data-p")); }); });
     host.querySelectorAll(".fo-dr-chip[data-role]").forEach(function (b) { b.addEventListener("click", function () { FO_ONB.role = b.getAttribute("data-role"); foOnbDraft(); }); });
     host.querySelectorAll(".fo-dr-sort").forEach(function (b) { b.addEventListener("click", function () { FO_ONB.sortKey = b.getAttribute("data-sort"); foOnbDraft(); }); });
+    host.querySelectorAll(".fo-sq-x").forEach(function (b) { b.addEventListener("click", function () { foOnbPick(b.getAttribute("data-p")); }); });
     var sb = host.querySelector("#fo-dr-search"); if (sb) sb.addEventListener("input", function () { FO_ONB.search = sb.value; var sc = document.querySelector(".fo-dr-tblwrap"); foOnbDraft(); var s2 = document.querySelector("#fo-dr-search"); if (s2) { s2.focus(); s2.setSelectionRange(s2.value.length, s2.value.length); } });
     host.querySelector("#fo-ob-b").addEventListener("click", foOnbSponsor);
     var c = host.querySelector("#fo-ob-c"); if (c) c.addEventListener("click", foOnbAfterDraft);
