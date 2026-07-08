@@ -132,6 +132,13 @@
     "#topbar{position:relative}" +
     "#fo-clock{position:absolute;top:9px;right:12px;color:rgba(246,244,238,.9);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:.3px}" +
     ".fo-mtime{font-size:10px;color:#C8674A;font-weight:600;margin-top:1px}" +
+    // season planner
+    ".fo-planner .fo-plantable{width:100%;border-collapse:collapse}" +
+    ".fo-planner .fo-plantable th{text-align:left;font-size:11px;color:#6b7280;border-bottom:2px solid " + NAVY2 + "}" +
+    ".fo-planner .fo-plantable td{padding:5px 8px;border-bottom:1px solid #e7e2d6;vertical-align:top}" +
+    ".fo-plan-ok{color:" + TEAL + ";font-weight:700}.fo-plan-no{color:#b9b3a4}" +
+    ".fo-setr{margin-left:4px;font-size:11px;padding:3px 8px;border:1px solid " + TERRA + ";background:" + PAPER + ";color:" + TERRA2 + ";border-radius:5px;cursor:pointer}" +
+    ".fo-setr:hover{background:" + TERRA + ";color:" + PAPER + "}" +
     "#page a,.panel a{color:#b0563b !important}" +
     // section headers -> navy
     "html body.ftpskin .panel>h4,html body.ftpskin .card-title,.panel>h4,.card-title,.panel>header,.card>h4,.sec>h4{background:" + NAVY2 + " !important;background-image:none !important;color:" + PAPER + " !important}" +
@@ -290,6 +297,129 @@
       pg.classList.toggle("fo-matchpage", location.hash.indexOf("#/match") === 0 && !!document.querySelector(".mc-top"));
     } catch (e) {}
   }
+  // ---- Season planner: pre-set orders for every upcoming fixture ---------------
+  // League packets are keyed by round, so a manager can set orders for any future
+  // round now (or submit their current orders for the whole season at once). The
+  // resolver picks up each round's packet when that round plays.
+  function foUserFixtures() {
+    var out = [];
+    try {
+      var S = App.season; if (!S || !S.schedule) return out;
+      for (var r = S.round; r < S.schedule.length; r++) {
+        var rd = S.schedule[r] || [];
+        for (var i = 0; i < rd.length; i++) {
+          var f = rd[i];
+          if (f[0] !== App.teamIx && f[1] !== App.teamIx) continue;
+          if (S.played[fixtureKey(r, f)] !== undefined) continue;
+          out.push(foFixtureInfo(r, f));
+        }
+      }
+    } catch (e) {}
+    return out;
+  }
+  function foFixtureInfo(r, f) {
+    var home = GD.teams[f[0]], away = GD.teams[f[1]], oppIx = f[0] === App.teamIx ? f[1] : f[0];
+    var isHome = f[0] === App.teamIx;
+    var pitch = home.name === userTeam().name ? (home.homePitch || groundPitch(home.ground)) : groundPitch(home.ground);
+    var weather = WXLIST[(((r * 7 + f[0] * 3) % WXLIST.length) + WXLIST.length) % WXLIST.length];
+    var d = new Date(2026, 6, 4); d.setDate(d.getDate() + 7 * r);
+    return { round: r, f: f, oppIx: oppIx, opp: GD.teams[oppIx], home: home, away: away, ground: home.ground, pitch: pitch, weather: weather, isHome: isHome, seed: 5000 + r * 10 + f[0], date: d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) };
+  }
+  function foFixtureMeta(r) {
+    var S = App.season, rd = (S && S.schedule[r]) || [];
+    for (var i = 0; i < rd.length; i++) { var f = rd[i]; if (f[0] === App.teamIx || f[1] === App.teamIx) { var x = foFixtureInfo(r, f); return { oppIx: x.oppIx, home: x.home.name, away: x.away.name, ground: x.ground, pitch: x.pitch, weather: x.weather, seed: x.seed, date: x.date, comp: "league", round: r }; } }
+    return null;
+  }
+  function foPushRound(r, orders) {
+    if (!(LG && SYNC)) return;
+    var clone = JSON.parse(JSON.stringify(orders)); clone.saved = true;
+    var sig = JSON.stringify(clone);
+    SYNC.pushedSig = SYNC.pushedSig || {};
+    if (SYNC.pushedSig[r] === sig) return;                 // already submitted, unchanged
+    SYNC.pushedSig[r] = sig;
+    SYNC.submitted = SYNC.submitted || {}; SYNC.submitted[r] = true;
+    SYNC.plannedOrders = SYNC.plannedOrders || {}; SYNC.plannedOrders[r] = clone;
+    var pkt = { fo_packet: 1, teamIx: App.teamIx, club: (GD.teams[App.teamIx] || {}).name, round: r, manager: (SYNC.me && SYNC.me.display_name) || "manager", orders: clone };
+    rpc("push_packet", { p_league_id: LG.id, p_round: r, p_packet: pkt }).catch(function () {});
+  }
+  function foFlushPlan() {
+    try {
+      if (!(LG && SYNC && SYNC.started && App.orders && App.orders.saved)) return;
+      if (SYNC.planRound == null) return;
+      foPushRound(SYNC.planRound, App.orders);
+      // Don't let the current-round auto-push (pollOnce) resubmit these future-round
+      // orders for the current round — mark the signature as already handled.
+      try { SYNC.lastOrderSig = JSON.stringify(App.orders) + "|" + (App.season ? App.season.round : 0); } catch (e) {}
+      foRenderPlanner();
+    } catch (e) {}
+  }
+  function foSetOrdersForRound(r) {
+    try {
+      SYNC.planRound = (App.season && r === App.season.round) ? null : r;
+      var meta = foFixtureMeta(r); if (meta) App.pending = meta;
+      if (SYNC.plannedOrders && SYNC.plannedOrders[r]) App.orders = JSON.parse(JSON.stringify(SYNC.plannedOrders[r]));
+      else App.orders.saved = false;                        // start from the current template
+      location.hash = "#/orders"; if (typeof window.route === "function") window.route();
+    } catch (e) { say(e); }
+  }
+  function foSubmitAllRounds() {
+    try {
+      var fx = foUserFixtures(); if (!fx.length) { say("No upcoming fixtures to set."); return; }
+      App.orders.saved = true;
+      fx.forEach(function (x) { foPushRound(x.round, App.orders); });
+      say("🏏 Orders submitted for all " + fx.length + " upcoming round" + (fx.length > 1 ? "s" : "") + ". Tweak any round individually below.");
+      foRenderPlanner();
+    } catch (e) { say(e); }
+  }
+  function foLoadSubmitted() {
+    if (!(LG && SYNC) || SYNC.submittedLoading) return;
+    SYNC.submittedLoading = true;
+    sel("league_packets", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&select=round").then(function (a) {
+      SYNC.submitted = SYNC.submitted || {};
+      (a || []).forEach(function (row) { SYNC.submitted[row.round] = true; });
+      SYNC.submittedLoaded = true; SYNC.__plannerSig = null; foRenderPlanner();
+    }).catch(function () { SYNC.submittedLoaded = true; });
+  }
+  function foPlannerHTML(fx) {
+    var rows = fx.map(function (x) {
+      var done = SYNC.submitted && SYNC.submitted[x.round];
+      return "<tr>" +
+        "<td class='n'>" + (x.round + 1) + "</td>" +
+        "<td>" + x.date + "<div class='fo-mtime'>9:00 AM ET</div></td>" +
+        "<td>" + (x.isHome ? "vs " : "@ ") + E(x.opp.name) + "</td>" +
+        "<td class='small'>" + E(x.ground) + "</td>" +
+        "<td class='small'>" + E(x.pitch) + " · " + E(x.weather) + "</td>" +
+        "<td>" + (done ? "<span class='fo-plan-ok'>✓ set</span>" : "<span class='fo-plan-no'>—</span>") + " <button class='fo-setr' data-r='" + x.round + "'>" + (done ? "Edit" : "Set orders") + "</button></td>" +
+        "</tr>";
+    }).join("");
+    return "<div class='panel fo-planner'><h4>Season planner — set orders for any fixture</h4><div class='pad'>" +
+      "<div class='small' style='margin-bottom:8px'>League matches resolve automatically at <b>9:00 AM ET</b>. Pre-set orders for any upcoming round — or submit your current orders for the whole season in one go. Rounds you leave blank use auto-selection.</div>" +
+      "<button class='primary fo-suball' style='margin-bottom:8px'>Submit current orders for all " + fx.length + " upcoming round" + (fx.length > 1 ? "s" : "") + "</button>" +
+      "<div style='overflow-x:auto'><table class='fo-plantable'><tr><th>Rd</th><th>Date</th><th>Opponent</th><th>Ground</th><th>Conditions</th><th>Orders</th></tr>" + rows + "</table></div>" +
+      "</div></div>";
+  }
+  function foWirePlanner(root) {
+    var all = root.querySelector(".fo-suball"); if (all && !all.__w) { all.__w = 1; all.addEventListener("click", foSubmitAllRounds); }
+    root.querySelectorAll(".fo-setr").forEach(function (b) { if (b.__w) return; b.__w = 1; b.addEventListener("click", function () { foSetOrdersForRound(+b.getAttribute("data-r")); }); });
+  }
+  function foRenderPlanner() {
+    try {
+      if (!(SYNC && SYNC.started) || SYNC.practice) return;
+      if (App.page !== "matches" && App.page !== "club") return;
+      var page = document.getElementById("page"); if (!page) return;
+      if (!SYNC.submittedLoaded) foLoadSubmitted();
+      var fx = foUserFixtures();
+      var existing = page.querySelector(".fo-planner");
+      if (!fx.length) { if (existing) existing.remove(); return; }
+      var sig = App.page + "|" + fx.map(function (x) { return x.round + (SYNC.submitted && SYNC.submitted[x.round] ? "y" : "n"); }).join(",");
+      if (existing && SYNC.__plannerSig === sig) return;    // unchanged — leave the DOM alone (avoids observer loop)
+      SYNC.__plannerSig = sig;
+      var html = foPlannerHTML(fx);
+      if (existing) { existing.outerHTML = html; }
+      else { var d = document.createElement("div"); d.innerHTML = html; page.appendChild(d.firstChild); }
+      foWirePlanner(page);
+    } catch (e) {}
+  }
   function tickClock() {
     try {
       var c = document.getElementById("fo-clock"); if (!c) return;
@@ -302,9 +432,9 @@
   // re-apply fixture match-times after any re-render of the game page
   try {
     var _mt = null, pg0 = document.getElementById("page");
-    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { decorateFixtureTimes(); tidyPage(); foTagMatchPage(); }, 40); }).observe(pg0, { childList: true, subtree: true });
+    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); return r; }; }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); return r; }; }
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
 
@@ -319,13 +449,29 @@
       return SYNC && SYNC.started && App && App.pending && App.pending.comp === "league" && !liveFriendly;
     } catch (e) { return false; }
   }
-  function foGuardMatchRoute() {
-    if (!foLeaguePendingOnly()) return;
-    if (location.hash.indexOf("#/match") !== 0) return;
-    location.hash = "#/matches";
-    if (App.orders && App.orders.saved) say("🏏 Orders saved — your match resolves at 9:00 AM ET.");
+  // Never spin up the interactive match engine for a league fixture — those are
+  // resolved by the background resolver, not played by hand.
+  if (typeof window.startPendingIfNeeded === "function") {
+    var _spin = window.startPendingIfNeeded;
+    window.startPendingIfNeeded = function () {
+      try { if (SYNC && SYNC.started && App && App.pending && App.pending.comp === "league" && !(typeof M !== "undefined" && M && !M.done)) return; } catch (e) {}
+      return _spin.apply(this, arguments);
+    };
   }
-  window.addEventListener("hashchange", function () { setTimeout(foGuardMatchRoute, 0); });
+  function foOnHash() {
+    try {
+      // League games have no live viewer: bounce #/match back to the fixtures list.
+      if (location.hash.indexOf("#/match") === 0 && foLeaguePendingOnly()) {
+        if (App.orders && App.orders.saved) say("🏏 Orders saved — your match resolves at 9:00 AM ET.");
+        location.hash = "#/matches"; return;
+      }
+      // Leaving the Orders page while planning a future round → submit that round.
+      if (location.hash.indexOf("#/orders") !== 0 && SYNC && SYNC.planRound != null) {
+        foFlushPlan(); SYNC.planRound = null;
+      }
+    } catch (e) {}
+  }
+  window.addEventListener("hashchange", function () { setTimeout(foOnHash, 0); });
 
   // Shared "50" logo mark (stumps + paper "5" + seamed cricket-ball "0"), reused
   // by the login logo and the browser-tab favicon so they stay identical.
@@ -837,7 +983,8 @@
   function pollOnce() {
     if (!LG || !SYNC || SYNC.practice) return;   // practice mode is a private local game
     try {
-      if (SYNC.started && window.App && App.orders && App.orders.saved && App.season && typeof GD !== "undefined" && GD.teams) {
+      // While planning a future round, don't auto-push the current round's orders.
+      if (SYNC.planRound == null && SYNC.started && window.App && App.orders && App.orders.saved && App.season && typeof GD !== "undefined" && GD.teams) {
         var sig = JSON.stringify(App.orders) + "|" + App.season.round;
         if (sig !== SYNC.lastOrderSig) {
           SYNC.lastOrderSig = sig;
@@ -1132,6 +1279,9 @@
   // first, so a refresh keeps you logged in.
   openWrap(true);
   restoreSession().then(function () { if (JWT) enterApp(); else renderLogin(); }).catch(function () { renderLogin(); });
+
+  // Debug/test handle for the season planner's engine-facing helpers (no behaviour).
+  try { window.__fol = { userFixtures: foUserFixtures, fixtureMeta: foFixtureMeta, plannerHTML: foPlannerHTML, smartBowling: foSmartBowling }; } catch (e) {}
 
   console.info("Fifty Overs League overlay ready.");
 })();
