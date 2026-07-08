@@ -133,13 +133,27 @@
     "#fo-clock{color:rgba(246,244,238,.9);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:.3px;align-self:center;padding:0 10px;border-left:1px solid #5b5b5b}" +
     "#topbar a.fo-logout{margin-left:6px}" +
     ".fo-mtime{font-size:10px;color:#C8674A;font-weight:600;margin-top:1px}" +
-    // season planner
-    ".fo-planner .fo-plantable{width:100%;border-collapse:collapse}" +
-    ".fo-planner .fo-plantable th{text-align:left;font-size:11px;color:#6b7280;border-bottom:2px solid " + NAVY2 + "}" +
-    ".fo-planner .fo-plantable td{padding:5px 8px;border-bottom:1px solid #e7e2d6;vertical-align:top}" +
-    ".fo-plan-ok{color:" + TEAL + ";font-weight:700}.fo-plan-no{color:#b9b3a4}" +
-    ".fo-setr{margin-left:4px;font-size:11px;padding:3px 8px;border:1px solid " + TERRA + ";background:" + PAPER + ";color:" + TERRA2 + ";border-radius:5px;cursor:pointer}" +
-    ".fo-setr:hover{background:" + TERRA + ";color:" + PAPER + "}" +
+    // upcoming-fixtures list with per-fixture Set lineup buttons
+    ".fo-fx{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 2px;border-bottom:1px solid #e7e2d6}" +
+    ".fo-fx:last-child{border-bottom:none}" +
+    ".fo-fx-main{min-width:0}.fo-fx-sub{color:#7a7566;margin-top:1px}" +
+    ".fo-fx-act{display:flex;align-items:center;gap:8px;flex:none}" +
+    ".fo-plan-ok{color:" + TEAL + ";font-weight:700;font-size:11px}" +
+    ".fo-setr{font-size:12px;padding:5px 12px;border:1px solid " + TERRA + ";background:" + TERRA + ";color:" + PAPER + ";border-radius:6px;cursor:pointer;white-space:nowrap}" +
+    ".fo-setr:hover{background:" + TERRA2 + "}" +
+    // orders page: copy-previous bar
+    ".fo-orders-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 8px}" +
+    ".fo-copyprev{font-size:12px;padding:6px 12px;border:1px solid " + TEAL + ";background:" + PAPER + ";color:#2b6b68;border-radius:6px;cursor:pointer}" +
+    ".fo-copyprev:hover:not(:disabled){background:" + TEAL + ";color:#fff}.fo-copyprev:disabled{opacity:.5;cursor:default}" +
+    // rival club (scout) page: FTP-style vertical link banner + tabs
+    ".fo-scout-shell{display:flex;gap:14px;align-items:flex-start;margin-top:10px}" +
+    ".fo-scout-links{flex:0 0 150px;background:" + NAVY2 + ";border-radius:8px;overflow:hidden}" +
+    ".fo-scout-links a{display:block;padding:10px 14px;color:" + PAPER + " !important;font-size:13px;cursor:pointer;border-bottom:1px solid rgba(246,244,238,.08)}" +
+    ".fo-scout-links a:hover{background:#26304180}" +
+    ".fo-scout-links a.on{background:" + TERRA + ";color:" + PAPER + " !important;font-weight:600}" +
+    ".fo-scout-body{flex:1 1 auto;min-width:0}" +
+    ".fo-sortbar{margin-bottom:6px}.fo-sortbar a{cursor:pointer}.fo-sortbar a.on{font-weight:700;text-decoration:underline}" +
+    "@media(max-width:640px){.fo-scout-shell{flex-direction:column}.fo-scout-links{flex:none;width:100%;display:flex}.fo-scout-links a{flex:1;text-align:center;border-bottom:none}}" +
     // league standings — form pips + leader/user accents
     ".fo-standings td,.fo-standings th{padding:6px 8px}" +
     ".fo-standings tr.fo-lead td{box-shadow:inset 3px 0 0 " + TEAL + "}" +
@@ -246,11 +260,101 @@
   }
   // Show the real match time (league rounds resolve at 09:00 New York) next to the
   // date in any fixtures/results table. Safe: only tables that have a "Date" header.
-  // Open a club's "scout report" (its FTP-style roster) by name from the table.
+  // Open a rival club's page (in the game, not a dark modal): a hero banner with
+  // position + form, recent results, upcoming fixtures, and a sortable Players tab
+  // — with a Challenge button. Reached by clicking a club name in any table.
+  var foScoutIx = null, foScoutTab = "overview", foScoutSort = "rating";
   function scoutClub(cellText) {
     var idx = -1;
     if (typeof GD !== "undefined" && GD.teams) { for (var i = 0; i < GD.teams.length; i++) { if (GD.teams[i] && cellText.indexOf(GD.teams[i].name) >= 0) { idx = i; break; } } }
-    clubsView = idx >= 0 ? idx : 0; renderClubs();
+    if (idx < 0) return;
+    foScoutIx = idx; foScoutTab = "overview"; foScoutSort = "rating";
+    location.hash = "#/scout?t=" + idx;
+  }
+  function foScoutOverview(t, ix) {
+    var res = (App.results || []).filter(function (r) { return r.home === t.name || r.away === t.name; }).slice(-6).reverse();
+    var resRows = res.map(function (r) {
+      return "<tr class='rowlink' data-sc='" + r.ix + "'><td>" + E(r.date || "") + "</td><td>" + E(r.home) + " v " + E(r.away) + "</td><td>" + E(r.result ? r.result.text : "") + "</td></tr>";
+    }).join("") || "<tr><td colspan='3' class='small'>No matches played yet.</td></tr>";
+    var ups = [], S = App.season;
+    if (S && S.schedule) for (var r = S.round; r < S.schedule.length && ups.length < 8; r++) {
+      var rd = S.schedule[r] || [];
+      for (var i = 0; i < rd.length; i++) {
+        var f = rd[i]; if (f[0] !== ix && f[1] !== ix) continue; if (S.played[fixtureKey(r, f)] !== undefined) continue;
+        var home = GD.teams[f[0]], opp = GD.teams[f[0] === ix ? f[1] : f[0]], d = new Date(2026, 6, 4); d.setDate(d.getDate() + 7 * r);
+        ups.push("<tr><td>" + d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) + "</td><td>R" + (r + 1) + "</td><td>" + (f[0] === ix ? "vs " : "@ ") + E(opp.name) + "</td><td class='small'>" + E(home.ground) + " (" + groundPitch(home.ground) + ")</td></tr>");
+      }
+    }
+    var upRows = ups.join("") || "<tr><td colspan='4' class='small'>Season complete.</td></tr>";
+    return "<div class='panel'><h4>Recent results</h4><div class='pad'><table><tr><th>Date</th><th>Match</th><th>Result</th></tr>" + resRows + "</table></div></div>" +
+      "<div class='panel'><h4>Upcoming fixtures</h4><div class='pad'><table><tr><th>Date</th><th>Rd</th><th>Opponent</th><th>Ground</th></tr>" + upRows + "</table></div></div>";
+  }
+  function foScoutPlayers(t) {
+    var players = (t.players || []).slice();
+    if (foScoutSort === "age") players.sort(function (a, b) { return (a.age || 0) - (b.age || 0) || (b.rating || 0) - (a.rating || 0); });
+    else players.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
+    var rows = players.map(function (p, i) {
+      var hand = p.hand === "L" ? "LHB" : "RHB";
+      var bowl = p.btLabel && p.btLabel !== "Does not bowl" ? p.btLabel : "—";
+      var role = typeof prole === "function" ? prole(p.role) : (p.role || "");
+      return "<tr><td class='n'>" + (i + 1) + "</td><td>" + E(p.name) + " <span class='small'>" + E(p.nat || "") + "</span></td><td class='n'>" + (p.age || "?") + "</td><td class='small'>" + E(role) + "</td><td class='small'>" + hand + "</td><td class='small'>" + E(bowl) + "</td><td class='n'>" + (p.rating || 0).toLocaleString() + "</td></tr>";
+    }).join("");
+    var sortBar = "<div class='fo-sortbar small'>Sort by: " +
+      "<a class='fo-sortby" + (foScoutSort === "rating" ? " on" : "") + "' data-s='rating'>Rating</a> · " +
+      "<a class='fo-sortby" + (foScoutSort === "age" ? " on" : "") + "' data-s='age'>Age</a></div>";
+    return "<div class='panel'><h4>Players</h4><div class='pad'>" + sortBar + "<div style='overflow-x:auto'><table><tr><th>#</th><th>Player</th><th>Age</th><th>Role</th><th>Bat</th><th>Bowl</th><th>Rating</th></tr>" + rows + "</table></div></div></div>";
+  }
+  function foScoutHTML(ix) {
+    var t = GD.teams[ix], players = (t.players || []);
+    var avg = players.length ? Math.round(players.reduce(function (s, p) { return s + (p.rating || 0); }, 0) / players.length) : 0;
+    var rows = typeof leagueRows === "function" ? leagueRows() : [];
+    var pi = rows.findIndex(function (x) { return x.nm === t.name; }), pos = pi >= 0 ? pi + 1 : null, rec = rows[pi] || null;
+    var form = foFormMap()[t.name] || [];
+    var pips = form.map(function (x) { return "<i class='fo-pip fo-" + x + "' title='" + x + "'></i>"; }).join("") || "<span class='small'>no matches yet</span>";
+    var kpi = "<div class='kpi-grid hero-kpis'>" +
+      "<div class='kpi-card'><span>Position</span><b>" + (pos || "-") + "</b></div>" +
+      "<div class='kpi-card'><span>W–L–T</span><b>" + (rec ? rec.w + "–" + rec.l + "–" + rec.t : "0–0–0") + "</b></div>" +
+      "<div class='kpi-card'><span>Avg rating</span><b>" + avg.toLocaleString() + "</b></div>" +
+      "<div class='kpi-card'><span>Squad</span><b>" + players.length + "</b></div></div>";
+    var isMe = ix === App.teamIx;
+    var hero = "<div class='welcome-hero'><div><div class='eyebrow'>" + (isMe ? "Your club" : "Scout report") + "</div><h1>" + E(t.name) + "</h1>" +
+      "<p>Home ground: " + E(t.ground || "-") + " · Form: <span class='fo-form'>" + pips + "</span></p>" +
+      "<div class='action-row'>" + (isMe ? "" : "<button class='primary fo-challenge'>🏏 Challenge to a match</button> ") + "<button class='fo-scout-back'>◂ Back</button></div></div>" + kpi + "</div>";
+    var links = "<div class='fo-scout-links'>" +
+      "<a class='fo-stab" + (foScoutTab === "overview" ? " on" : "") + "' data-tab='overview'>Overview</a>" +
+      "<a class='fo-stab" + (foScoutTab === "players" ? " on" : "") + "' data-tab='players'>Players</a></div>";
+    var body = foScoutTab === "players" ? foScoutPlayers(t) : foScoutOverview(t, ix);
+    return "<div class='crumb'><span>" + E(t.name) + "</span></div><div class='fo-scout fo-club-min'>" + hero +
+      "<div class='fo-scout-shell'>" + links + "<div class='fo-scout-body'>" + body + "</div></div></div>";
+  }
+  function foChallenge(ix) {
+    try {
+      var me = userTeam();
+      App.pending = { oppIx: ix, home: me.name, away: GD.teams[ix].name, ground: me.ground, pitch: me.homePitch || groundPitch(me.ground), weather: "Sunny", seed: 4200 + ix, date: typeof simDate === "function" ? simDate() : "", comp: "friendly" };
+      say("🏏 Challenge set vs " + GD.teams[ix].name + " — set your lineup, then play.");
+      location.hash = "#/orders"; if (typeof window.route === "function") window.route();
+    } catch (e) { say(e); }
+  }
+  function foWireScout(page, ix) {
+    page.querySelectorAll(".fo-stab").forEach(function (a) { a.addEventListener("click", function () { foScoutTab = a.getAttribute("data-tab"); page.__scoutSig = null; foRenderScout(); }); });
+    page.querySelectorAll(".fo-sortby").forEach(function (a) { a.addEventListener("click", function () { foScoutSort = a.getAttribute("data-s"); page.__scoutSig = null; foRenderScout(); }); });
+    var back = page.querySelector(".fo-scout-back"); if (back) back.addEventListener("click", function () { location.hash = "#/matches"; });
+    var ch = page.querySelector(".fo-challenge"); if (ch) ch.addEventListener("click", function () { foChallenge(ix); });
+    page.querySelectorAll("tr.rowlink[data-sc]").forEach(function (tr) { tr.style.cursor = "pointer"; tr.addEventListener("click", function () { location.hash = "#/scorecard?i=" + tr.getAttribute("data-sc"); }); });
+  }
+  function foRenderScout() {
+    try {
+      if (location.hash.indexOf("#/scout") !== 0) return;
+      var m = /[?&]t=(\d+)/.exec(location.hash), ix = m ? +m[1] : foScoutIx;
+      if (ix == null || typeof GD === "undefined" || !GD.teams || !GD.teams[ix]) return;
+      foScoutIx = ix;
+      var page = document.getElementById("page"); if (!page) return;
+      var sig = "scout|" + ix + "|" + foScoutTab + "|" + foScoutSort;
+      if (page.__scoutSig === sig && page.querySelector(".fo-scout")) return;   // unchanged
+      page.__scoutSig = sig;
+      page.innerHTML = foScoutHTML(ix);
+      foWireScout(page, ix);
+    } catch (e) {}
   }
   // Recent league form per club (oldest→newest, last 5): W / L / T.
   function foFormMap() {
@@ -341,6 +445,41 @@
       });
     } catch (e) {}
   }
+  // Orders page: a "Copy previous match orders" button so a manager can reuse the
+  // batting order, captain, keeper and bowling plan from their last set lineup.
+  function foPreviousOrders() {
+    try {
+      if (App.defaults && App.defaults.batOrder && App.defaults.batOrder.length) return App.defaults;
+      if (SYNC && SYNC.plannedOrders) {
+        var rounds = Object.keys(SYNC.plannedOrders).map(Number).sort(function (a, b) { return b - a; });
+        for (var i = 0; i < rounds.length; i++) { var o = SYNC.plannedOrders[rounds[i]]; if (o && o.batOrder && o.batOrder.length) return o; }
+      }
+    } catch (e) {}
+    return null;
+  }
+  function foApplyPrevOrders(prev) {
+    try {
+      App.orders.batOrder = (prev.batOrder || []).slice();
+      App.orders.captain = prev.captain; App.orders.keeper = prev.keeper;
+      if (prev.spells) App.orders.spells = JSON.parse(JSON.stringify(prev.spells));
+      App.orders.grid = null; App.orders.saved = false;    // reseed the grid from the copied spells
+      if (typeof pgOrders === "function") pgOrders();
+    } catch (e) { say(e); }
+  }
+  function foOrdersExtras() {
+    try {
+      if (location.hash.indexOf("#/orders") !== 0) return;
+      var page = document.getElementById("page"); if (!page || page.querySelector(".fo-orders-bar")) return;
+      var prev = foPreviousOrders();
+      var bar = document.createElement("div"); bar.className = "fo-orders-bar";
+      bar.innerHTML = "<button class='fo-copyprev'" + (prev ? "" : " disabled title='No previous lineup saved yet'") + ">⧉ Copy previous match orders</button>" +
+        "<span class='small'>Reuse your last batting order, captain, keeper and bowling plan.</span>";
+      var anchor = page.querySelector(".crumb");
+      if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(bar, anchor.nextSibling); else page.insertBefore(bar, page.firstChild);
+      var btn = bar.querySelector(".fo-copyprev");
+      if (btn && prev) btn.addEventListener("click", function () { foApplyPrevOrders(prev); });
+    } catch (e) {}
+  }
   // Tag #page while a live match is on screen, so the mobile reorder CSS applies
   // only there (and never touches the desktop layout).
   function foTagMatchPage() {
@@ -414,15 +553,6 @@
       location.hash = "#/orders"; if (typeof window.route === "function") window.route();
     } catch (e) { say(e); }
   }
-  function foSubmitAllRounds() {
-    try {
-      var fx = foUserFixtures(); if (!fx.length) { say("No upcoming fixtures to set."); return; }
-      App.orders.saved = true;
-      fx.forEach(function (x) { foPushRound(x.round, App.orders); });
-      say("🏏 Orders submitted for all " + fx.length + " upcoming round" + (fx.length > 1 ? "s" : "") + ". Tweak any round individually below.");
-      foRenderPlanner();
-    } catch (e) { say(e); }
-  }
   function foLoadSubmitted() {
     if (!(LG && SYNC) || SYNC.submittedLoading) return;
     SYNC.submittedLoading = true;
@@ -432,26 +562,25 @@
       SYNC.submittedLoaded = true; SYNC.__plannerSig = null; foRenderPlanner();
     }).catch(function () { SYNC.submittedLoaded = true; });
   }
-  function foPlannerHTML(fx) {
-    var rows = fx.map(function (x) {
+  // A lean per-fixture "Set lineup" list (no big season planner): each upcoming
+  // fixture gets a button on the right that opens that round's orders.
+  function foPlannerHTML(fx, limit) {
+    var shown = limit ? fx.slice(0, limit) : fx;
+    var rows = shown.map(function (x) {
       var done = SYNC.submitted && SYNC.submitted[x.round];
-      return "<tr>" +
-        "<td class='n'>" + (x.round + 1) + "</td>" +
-        "<td>" + x.date + "<div class='fo-mtime'>9:00 AM ET</div></td>" +
-        "<td>" + (x.isHome ? "vs " : "@ ") + E(x.opp.name) + "</td>" +
-        "<td class='small'>" + E(x.ground) + "</td>" +
-        "<td class='small'>" + E(x.pitch) + " · " + E(x.weather) + "</td>" +
-        "<td>" + (done ? "<span class='fo-plan-ok'>✓ set</span>" : "<span class='fo-plan-no'>—</span>") + " <button class='fo-setr' data-r='" + x.round + "'>" + (done ? "Edit" : "Set orders") + "</button></td>" +
-        "</tr>";
+      return "<div class='fo-fx'>" +
+        "<div class='fo-fx-main'><b>R" + (x.round + 1) + "</b> " + (x.isHome ? "vs " : "@ ") + E(x.opp.name) +
+          "<div class='small fo-fx-sub'>" + x.date + " · 9:00 AM ET · " + E(x.ground) + " · " + E(x.pitch) + "/" + E(x.weather) + "</div></div>" +
+        "<div class='fo-fx-act'>" + (done ? "<span class='fo-plan-ok'>✓ lineup set</span>" : "") +
+          "<button class='fo-setr' data-r='" + x.round + "'>" + (done ? "Edit lineup" : "Set lineup") + "</button></div>" +
+        "</div>";
     }).join("");
-    return "<div class='panel fo-planner'><h4>Season planner — set orders for any fixture</h4><div class='pad'>" +
-      "<div class='small' style='margin-bottom:8px'>League matches resolve automatically at <b>9:00 AM ET</b>. Pre-set orders for any upcoming round — or submit your current orders for the whole season in one go. Rounds you leave blank use auto-selection.</div>" +
-      "<button class='primary fo-suball' style='margin-bottom:8px'>Submit current orders for all " + fx.length + " upcoming round" + (fx.length > 1 ? "s" : "") + "</button>" +
-      "<div style='overflow-x:auto'><table class='fo-plantable'><tr><th>Rd</th><th>Date</th><th>Opponent</th><th>Ground</th><th>Conditions</th><th>Orders</th></tr>" + rows + "</table></div>" +
-      "</div></div>";
+    var more = (limit && fx.length > limit) ? "<div class='small' style='margin-top:6px'><a href='#/matches'>See all " + fx.length + " fixtures →</a></div>" : "";
+    return "<div class='panel fo-planner'><h4>Your upcoming fixtures</h4><div class='pad'>" +
+      "<div class='small' style='margin-bottom:6px'>League matches play automatically at <b>9:00 AM ET</b>. Set a lineup for any fixture ahead of time; blank ones use auto-selection.</div>" +
+      rows + more + "</div></div>";
   }
   function foWirePlanner(root) {
-    var all = root.querySelector(".fo-suball"); if (all && !all.__w) { all.__w = 1; all.addEventListener("click", foSubmitAllRounds); }
     root.querySelectorAll(".fo-setr").forEach(function (b) { if (b.__w) return; b.__w = 1; b.addEventListener("click", function () { foSetOrdersForRound(+b.getAttribute("data-r")); }); });
   }
   function foRenderPlanner() {
@@ -463,10 +592,11 @@
       var fx = foUserFixtures();
       var existing = page.querySelector(".fo-planner");
       if (!fx.length) { if (existing) existing.remove(); return; }
+      var limit = App.page === "club" ? 5 : 0;              // compact on the club home; full on Matches
       var sig = App.page + "|" + fx.map(function (x) { return x.round + (SYNC.submitted && SYNC.submitted[x.round] ? "y" : "n"); }).join(",");
       if (existing && SYNC.__plannerSig === sig) return;    // unchanged — leave the DOM alone (avoids observer loop)
       SYNC.__plannerSig = sig;
-      var html = foPlannerHTML(fx);
+      var html = foPlannerHTML(fx, limit);
       if (existing) { existing.outerHTML = html; }
       else { var d = document.createElement("div"); d.innerHTML = html; page.appendChild(d.firstChild); }
       foWirePlanner(page);
@@ -484,9 +614,10 @@
   // re-apply fixture match-times after any re-render of the game page
   try {
     var _mt = null, pg0 = document.getElementById("page");
-    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); }, 40); }).observe(pg0, { childList: true, subtree: true });
+    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); return r; }; }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); return r; }; }
+  window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
 
@@ -882,44 +1013,6 @@
       var world = fillBots([myClub]); GD.teams = world; balanceBots();
       go(world, myClub.name);
     }).catch(function (e) { if (isMissingTable(e)) setupNeeded(); else { try { alert("Could not start Practice Game: " + ((e && e.message) || e)); } catch (_) {} say(e); } });
-  }
-
-  // Clubs & rosters: browse any club (bot or human) and see FTP-style player info
-  // — age, rating, wage, batting/bowling type, talents, and form/fatigue/experience.
-  // No raw skill numbers.
-  var clubsView = 0;
-  function renderClubs() {
-    openWrap(true); setNavy(false);
-    wrap.querySelector("#folWho").textContent = LG ? LG.name : "";
-    var teams = (typeof GD !== "undefined" && GD.teams) ? GD.teams : [];
-    if (!teams.length) {
-      main.innerHTML = '<div class="folbody"><div class="folcard"><div class="folpad folrow"><button class="mini" data-act="backToGame">◂ back to the game</button></div></div>' +
-        '<div class="folcard"><div class="folpad folsmall">No clubs yet. Start or open a season to see the league\'s clubs.</div></div></div>';
-      return;
-    }
-    if (clubsView >= teams.length) clubsView = 0;
-    var t = teams[clubsView];
-    var pretty = function (c) { return (c == null ? "" : "" + c).replace(/([A-Z])/g, " $1").replace(/^./, function (x) { return x.toUpperCase(); }).trim(); };
-    var players = (t.players || []).slice().sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
-    var avg = players.length ? Math.round(players.reduce(function (s, p) { return s + (p.rating || 0); }, 0) / players.length) : 0;
-    var list = players.map(function (p) {
-      var hand = (p.hand === "L" ? "Left" : "Right") + " hand bat";
-      var bt = p.btLabel && p.btLabel !== "Does not bowl" ? p.btLabel : "";
-      var talents = (p.talents || []).map(pretty).filter(Boolean).join(", ");
-      var l2 = [hand, bt, talents].filter(Boolean).join(" &middot; ");
-      var l3 = [p.expWord && (p.expWord + " experience"), p.formWord && (p.formWord + " form"), p.fatigue && (p.fatigue + " fatigue"), p.captWord && (p.captWord + " captaincy")].filter(Boolean).join(" &middot; ");
-      return '<div class="fclub-p"><div class="fclub-nm">' + E(p.name) + '<span class="fclub-nat">' + E(p.nat || "") + "</span></div>" +
-        '<div class="fclub-l1">' + (p.age || "?") + " yrs &middot; " + (p.rating || 0).toLocaleString() + " rating &middot; $" + (p.wage || 0).toLocaleString() + " wage</div>" +
-        (l2 ? '<div class="fclub-l2">' + l2 + "</div>" : "") + (l3 ? '<div class="fclub-l3">' + l3 + "</div>" : "") + "</div>";
-    }).join("") || '<div class="folsmall">No players.</div>';
-    var opts = teams.map(function (x, i) { return '<option value="' + i + '"' + (i === clubsView ? " selected" : "") + ">" + E(x.name) + "</option>"; }).join("");
-    main.innerHTML = '<div class="folbody">' +
-      '<div class="folcard"><div class="folpad folrow" style="justify-content:space-between"><button class="mini" data-act="backToGame">◂ back to the game</button>' +
-      '<select id="folClubSel">' + opts + "</select></div></div>" +
-      '<div class="folcard"><h4><span>' + E(t.name) + "</span><span class='folsmall'>" + players.length + " players &middot; avg " + avg.toLocaleString() + "</span></h4>" +
-      '<div class="folpad"><div class="folsmall" style="margin-bottom:6px">Home ground: ' + E(t.ground || "-") + "</div>" + list + "</div></div></div>";
-    var sel = wrap.querySelector("#folClubSel");
-    if (sel) sel.addEventListener("change", function () { clubsView = +this.value; renderClubs(); });
   }
 
   // Minimal onboarding: pick home country + names, then draft in the game.
