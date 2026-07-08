@@ -219,7 +219,7 @@
      ================================================================ */
   var FO_DEALS = {
     community: { base: 45000, win: 0, halfway: 0, seasonTop3: 0, champ: 0 },
-    results:   { base: 38000, win: 10000, halfway: 0, seasonTop3: 0, champ: 0 },
+    results:   { base: 38000, win: 13000, halfway: 0, seasonTop3: 0, champ: 0 },
     contender: { base: 30000, win: 16000, halfway: 60000, seasonTop3: 90000, champ: 120000 }
   };
   var FO_ACAD = [0, 4000, 8000, 14000, 22000, 32000];

@@ -9,7 +9,7 @@ const r = await page.evaluate(() => {
   window.completeRound();
   const round0 = App.results.filter(x => x.comp === 'league' && x.round === 0);
   const AC = [0, 4000, 8000, 14000, 22000, 32000];
-  const DEALS = { community: { base: 45000, win: 0 }, results: { base: 38000, win: 10000 }, contender: { base: 30000, win: 16000 } };
+  const DEALS = { community: { base: 45000, win: 0 }, results: { base: 38000, win: 13000 }, contender: { base: 30000, win: 16000 } };
   const audit = GD.teams.map((t, i) => {
     const p = pre[i];
     const deal = DEALS[(t.sponsorDeal && t.sponsorDeal.id) || 'community'];

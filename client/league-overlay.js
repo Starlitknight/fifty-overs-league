@@ -2376,7 +2376,7 @@
     ],
     sponsors: [
       { id: "community", name: "Community Sponsor", pos: "Steady money, no strings.", base: 45000, win: 0, halfway: 0, seasonTop3: 0, champ: 0, tone: "teal", rec: true, lines: ["No result bonuses", "The best floor if the season goes wrong"] },
-      { id: "results", name: "Results Sponsor", pos: "Win more, earn more.", base: 38000, win: 10000, halfway: 0, seasonTop3: 0, champ: 0, tone: "terra", lines: ["+$10,000 per win", "Beats Community from ~13 wins"] },
+      { id: "results", name: "Results Sponsor", pos: "Win more, earn more.", base: 38000, win: 13000, halfway: 0, seasonTop3: 0, champ: 0, tone: "terra", lines: ["+$13,000 per win", "Beats Community from 10 wins"] },
       { id: "contender", name: "Contender Sponsor", pos: "Back your XI.", base: 30000, win: 16000, halfway: 60000, seasonTop3: 90000, champ: 120000, tone: "gold", lines: ["+$16,000 per win", "+$60k top-3 at halfway", "+$90k top-3 finish · +$120k champions"] }
     ],
     scenarios: [
@@ -3599,7 +3599,7 @@
         "<p>You chose one of three deals at founding — it pays every matchday, all season:</p>",
         "<table><tr><th>Deal</th><th>Base / matchday</th><th>Extras</th></tr>" +
         "<tr><td><b>Community Trust</b></td><td>$45,000</td><td>nothing — steady money whatever happens</td></tr>" +
-        "<tr><td><b>Results Deal</b></td><td>$38,000</td><td>+$10,000 per win</td></tr>" +
+        "<tr><td><b>Results Deal</b></td><td>$38,000</td><td>+$13,000 per win</td></tr>" +
         "<tr><td><b>Contender Deal</b></td><td>$30,000</td><td>+$16,000 per win, plus season milestone bonuses</td></tr></table>",
         "<p>The safer the deal, the lower the ceiling. Contender pays best for a side that actually contends.</p>"
       ].join("")],

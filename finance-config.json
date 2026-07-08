@@ -6,18 +6,65 @@
   "standardTicketPrice": 9,
   "stadiumCostPerMatchday": 9000,
   "academyCostPerMatchday": 16000,
-  "prizeMoneyByFinish": [200000, 160000, 130000, 110000, 90000, 75000, 60000, 50000, 40000, 30000],
+  "prizeMoneyByFinish": [
+    200000,
+    160000,
+    130000,
+    110000,
+    90000,
+    75000,
+    60000,
+    50000,
+    40000,
+    30000
+  ],
   "financialHealthBands": [
-    {"label": "Excellent", "minProjectedEndBank": 250000},
-    {"label": "Safe", "minProjectedEndBank": 100000},
-    {"label": "Tight", "minProjectedEndBank": 25000},
-    {"label": "Danger", "minProjectedEndBank": 0},
-    {"label": "Crisis", "minProjectedEndBank": null}
+    {
+      "label": "Excellent",
+      "minProjectedEndBank": 250000
+    },
+    {
+      "label": "Safe",
+      "minProjectedEndBank": 100000
+    },
+    {
+      "label": "Tight",
+      "minProjectedEndBank": 25000
+    },
+    {
+      "label": "Danger",
+      "minProjectedEndBank": 0
+    },
+    {
+      "label": "Crisis",
+      "minProjectedEndBank": null
+    }
   ],
   "financialStyles": [
-    {"id": "balanced", "name": "Balanced", "draftBudget": 800000, "reserveTarget": 200000, "risk": "Low", "recommended": true},
-    {"id": "win_now", "name": "Win Now", "draftBudget": 925000, "reserveTarget": 75000, "risk": "High", "recommended": false},
-    {"id": "moneyball", "name": "Moneyball", "draftBudget": 700000, "reserveTarget": 300000, "risk": "Medium", "recommended": false}
+    {
+      "id": "balanced",
+      "name": "Balanced",
+      "draftBudget": 800000,
+      "reserveTarget": 200000,
+      "risk": "Low",
+      "recommended": true
+    },
+    {
+      "id": "win_now",
+      "name": "Win Now",
+      "draftBudget": 925000,
+      "reserveTarget": 75000,
+      "risk": "High",
+      "recommended": false
+    },
+    {
+      "id": "moneyball",
+      "name": "Moneyball",
+      "draftBudget": 700000,
+      "reserveTarget": 300000,
+      "risk": "Medium",
+      "recommended": false
+    }
   ],
   "sponsors": [
     {
@@ -36,7 +83,7 @@
       "name": "Results Sponsor",
       "positioning": "Win more, earn more.",
       "matchdayBase": 38000,
-      "winBonus": 10000,
+      "winBonus": 13000,
       "halfwayTop3Bonus": 0,
       "seasonTop3Bonus": 0,
       "championBonus": 0,
@@ -55,9 +102,45 @@
     }
   ],
   "forecastScenarios": [
-    {"id": "bad", "name": "Bad season", "wins": 5, "avgHomeCrowd": 2100, "finish": 8, "top3Halfway": false, "top3Finish": false, "champion": false},
-    {"id": "average", "name": "Average season", "wins": 9, "avgHomeCrowd": 2450, "finish": 5, "top3Halfway": false, "top3Finish": false, "champion": false},
-    {"id": "good", "name": "Top-3 season", "wins": 13, "avgHomeCrowd": 2900, "finish": 3, "top3Halfway": true, "top3Finish": true, "champion": false},
-    {"id": "champion", "name": "Champion season", "wins": 15, "avgHomeCrowd": 3300, "finish": 1, "top3Halfway": true, "top3Finish": true, "champion": true}
+    {
+      "id": "bad",
+      "name": "Bad season",
+      "wins": 5,
+      "avgHomeCrowd": 2100,
+      "finish": 8,
+      "top3Halfway": false,
+      "top3Finish": false,
+      "champion": false
+    },
+    {
+      "id": "average",
+      "name": "Average season",
+      "wins": 9,
+      "avgHomeCrowd": 2450,
+      "finish": 5,
+      "top3Halfway": false,
+      "top3Finish": false,
+      "champion": false
+    },
+    {
+      "id": "good",
+      "name": "Top-3 season",
+      "wins": 13,
+      "avgHomeCrowd": 2900,
+      "finish": 3,
+      "top3Halfway": true,
+      "top3Finish": true,
+      "champion": false
+    },
+    {
+      "id": "champion",
+      "name": "Champion season",
+      "wins": 15,
+      "avgHomeCrowd": 3300,
+      "finish": 1,
+      "top3Halfway": true,
+      "top3Finish": true,
+      "champion": true
+    }
   ]
 }
