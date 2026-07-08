@@ -141,7 +141,10 @@ async function joinLeague(){
 
 async function loadLeague(){
   if(!JWT){alert('Log in first');return}
-  var id=document.getElementById('league').value.trim();if(!id){alert('Enter a league id');return}
+  // tolerate stray spaces / trailing punctuation from copy-paste
+  var id=document.getElementById('league').value.trim().replace(/[^0-9a-fA-F-]/g,'');
+  document.getElementById('league').value=id;
+  if(!id){alert('Enter a league id');return}
   try{
     var lg=(await sel('leagues','id=eq.'+id+'&select=id,name,status,build_hash,draft_budget,season_no'))[0];
     if(!lg){alert('League not found (or you are not a member)');return}
@@ -176,9 +179,8 @@ async function renderSquad(){
   if(!MYTEAM){el.innerHTML='<div class="panel"><div class="pad">You have no team in this league yet. Join with an invite code.</div></div>';return}
   try{
     var squad=(await sel('squads','team_id=eq.'+MYTEAM.id+'&select=roster,budget_spent,confirmed'))[0]||{roster:[],budget_spent:0,confirmed:false};
-    var pool=(await sel('draft_pools','team_id=eq.'+MYTEAM.id+'&select=players'));
-    // draft_pools has manager_id not team_id; fetch by manager
-    pool=(await sel('draft_pools','manager_id=eq.'+MYTEAM.manager_id+'&select=players'));
+    // draft_pools is keyed by manager_id (private per manager)
+    var pool=(await sel('draft_pools','manager_id=eq.'+MYTEAM.manager_id+'&select=players'));
     var poolPlayers=(pool[0]&&pool[0].players)||[];
     var roster=squad.roster||[];
     var rosterNames={};roster.forEach(function(p){rosterNames[p.name]=1});
