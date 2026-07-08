@@ -1,10 +1,12 @@
 /* ============================================================================
-   Fifty Overs :: LEAGUE overlay. Additive multiplayer inside the real game.
-   Adds a floating "🏆 League" button that opens a full multiplayer panel
-   (login/join, draft, line-ups, challenges, table, results). Fully namespaced
-   and closure-scoped: it never touches the game's globals or engine, and its
-   click handling uses delegation (no global onclick names). Your solo game keeps
-   working exactly as before.
+   Fifty Overs :: LEAGUE sync. Your game IS the multiplayer game. This module is
+   a thin login gate + sync layer, not a parallel UI: after you log in it hands
+   the screen to the real game and keeps it in step with the server. The shared
+   league lives as one game snapshot() per league; each manager drafts in the
+   game's own founder screen and pushes their club, sets orders in the game's own
+   Orders screen (pushed as a packet), and the background resolver replays the
+   packets through the engine and publishes the next snapshot. The game's own
+   table, fixtures and match screens do the rest. Deterministic engine untouched.
    ========================================================================== */
 (function () {
   "use strict";
@@ -12,7 +14,7 @@
   var ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
   var BUILD_HASH = "e558745ede94e2502d5cccaa829feb42818cbcb1e779664c4b784a851b3f00ff";
 
-  var JWT = "", LG = null, TEAMS = {}, MYTEAM = null, MYMEMBER = null, curTab = "table", RES = [];
+  var JWT = "", LG = null, SYNC = null;
   // the game's own nationality list; each manager picks one as their home country
   var NAT = ["Australia", "India", "Pakistan", "Sri Lanka", "New Zealand", "South Africa", "England", "Netherlands", "West Indies", "Afghanistan", "Ireland", "Zimbabwe"];
 
@@ -133,7 +135,7 @@
     document.body.style.overflow = on ? "hidden" : "";
   }
 
-  btn.addEventListener("click", function () { openWrap(true); if (!JWT) renderLogin(); else if (LG) renderTabs(); else enterApp(); });
+  btn.addEventListener("click", function () { openWrap(true); if (!JWT) renderLogin(); else enterApp(); });
 
   // ---- one delegated handler for everything ----
   wrap.addEventListener("click", function (ev) {
@@ -142,23 +144,14 @@
     if (a === "close") { openWrap(false); return; }
     ev.preventDefault();
     var acts = {
-      login: doLogin, logout: function () { JWT = ""; LG = null; renderLogin(); },
+      login: doLogin, logout: function () { JWT = ""; LG = null; SYNC = null; renderLogin(); },
       showLogin: renderLogin, showJoin: renderJoin, showForgot: renderForgot,
       sendReset: sendReset, joinNew: doJoinSignup,
-      open: openLeague, openId: function () { openLeagueId(t.getAttribute("data-id")); }, join: joinLeague,
-      tab: function () { curTab = t.getAttribute("data-tab"); renderTabs(); },
-      setup: doSetup, draft: doDraft,
-      issue: issueChallenge, accept: function () { act("accept_challenge", { p_league_id: LG.id, p_challenge_id: t.getAttribute("data-id") }, renderPlay); },
-      orders: function () { openOrders(t.getAttribute("data-id")); }, submitOrders: function () { submitOrders(t.getAttribute("data-id")); },
-      mkInvite: mkInvite, startSeason: startSeason,
-      resetSchedule: function () { if (confirm("Clear all upcoming (unresolved) fixtures?")) act("founder_reset_schedule", { p_league_id: LG.id }, renderAdmin); },
-      resetLeague: function () { if (confirm("Wipe ALL matches, results and the demo team? (squads kept)")) act("founder_reset_league", { p_league_id: LG.id }, renderAdmin); },
-      removeTeam: function () { if (confirm("Remove your own playing team and become admin-only?")) act("founder_remove_own_team", { p_league_id: LG.id }, function () { openLeagueId(LG.id); }); },
-      card: function () { toggleCard(+t.getAttribute("data-i")); }
+      openId: function () { enterGameById(t.getAttribute("data-id")); }, join: joinLeague,
+      setupClub: doSetup, startLeague: startLeague, mkInvite: mkInvite
     };
     if (acts[a]) acts[a]();
   });
-  function act(fn, args, then) { rpc(fn, args).then(then).catch(say); }
   function val(id) { var e = wrap.querySelector("#" + id); return e ? (e.value || "").trim() : ""; }
 
   function setNavy(on) { var pn = wrap.querySelector("#folPanel"); if (pn) pn.classList.toggle("fol-navy", !!on); }
@@ -239,7 +232,7 @@
       return sel("leagues", "select=id,name,status,build_hash,draft_budget,season_no");
     }).then(function (ls) {
       if (!ls || !ls.length) { renderEnter(); return; }
-      if (ls.length === 1) { return openLeagueId(ls[0].id); }
+      if (ls.length === 1) { return enterGame(ls[0]); }
       renderPicker(ls);
     }).catch(function () { renderEnter(); });
   }
@@ -256,12 +249,195 @@
   function renderPicker(ls) {
     setNavy(false);
     wrap.querySelector("#folWho").textContent = "";
-    tabsHidden();
     main.innerHTML = '<div class="folbody"><div class="folcard"><h4>Your leagues</h4><div class="folpad" style="display:grid;gap:8px">' +
       ls.map(function (l) { return '<button class="p" style="text-align:left" data-act="openId" data-id="' + l.id + '">' + E(l.name) + "</button>"; }).join("") +
       '</div></div></div>';
   }
-  function tabsHidden() { /* picker/enter reuse the in-app chrome without tabs */ }
+  function enterGameById(id) {
+    return sel("leagues", "id=eq." + id + "&select=id,name,status,build_hash,draft_budget,season_no")
+      .then(function (a) { if (a[0]) return enterGame(a[0]); });
+  }
+
+  // =================================================================
+  //  In-game sync engine. Your game IS the multiplayer game: we hand
+  //  the screen to the real game and keep it in step with the server —
+  //  pull the shared league snapshot, push your own orders packet, and
+  //  let the game's own table/fixtures/match screens do the rest.
+  // =================================================================
+  function enterGame(league) {
+    LG = league;
+    return Promise.all([
+      sel("teams", "league_id=eq." + LG.id + "&select=id,name,country,draft_seed,manager_id"),
+      sel("members", "league_id=eq." + LG.id + "&select=id,role,display_name"),
+      rpc("resolve_manager_id", { p_league_id: LG.id })
+    ]).then(function (r) {
+      var teams = r[0], mem = r[1], myMid = r[2];
+      SYNC = {
+        myMid: myMid,
+        me: mem.filter(function (m) { return m.id === myMid; })[0] || null,
+        myTeam: teams.filter(function (t) { return t.manager_id === myMid; })[0] || null,
+        lastVersion: 0, started: false, lastOrderSig: null, pollTimer: null
+      };
+      SYNC.isFounder = !!(SYNC.me && SYNC.me.role === "founder");
+      if (LG.build_hash && LG.build_hash !== BUILD_HASH) console.warn("Fifty Overs: your game build differs from this league's pinned engine.");
+      return syncTick(true);
+    }).catch(say);
+  }
+
+  function syncTick(first) {
+    if (!LG) return Promise.resolve();
+    return sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version,round").then(function (a) {
+      var st = a[0];
+      if (st) {
+        if (st.version > SYNC.lastVersion) { SYNC.lastVersion = st.version; applySnapshot(st.snapshot, first); }
+        else openWrap(false);
+        schedulePoll();
+      } else {
+        return preStart();
+      }
+    }).catch(function () { /* transient network: try again on the next tick */ });
+  }
+
+  // Load the shared league snapshot into the game and point it at MY club.
+  function applySnapshot(snap, focus) {
+    try {
+      var prevRound = (window.App && App.season && typeof App.season.round === "number") ? App.season.round : -1;
+      var myOrders = (window.App && App.orders) ? App.orders : null;
+      if (typeof window.restoreFrom === "function") window.restoreFrom(snap);
+      SYNC.started = true;
+      var myName = SYNC.myTeam ? SYNC.myTeam.name : null;
+      if (myName && typeof GD !== "undefined" && GD.teams) {
+        var ix = GD.teams.findIndex(function (t) { return t.name === myName; });
+        if (ix >= 0) App.teamIx = ix;
+      }
+      // keep my working line-up; if the round advanced, it needs re-saving for the new round
+      var newRound = (window.App && App.season && typeof App.season.round === "number") ? App.season.round : prevRound;
+      if (myOrders) { App.orders = myOrders; if (newRound !== prevRound) App.orders.saved = false; }
+      try { if (typeof window.store === "function") window.store("fo_welcomed", "1"); } catch (e) {}
+      if (typeof window.saveGame === "function") window.saveGame(false);
+      openWrap(false);
+      if (focus) location.hash = "#/club";
+      if (typeof window.route === "function") window.route();
+    } catch (e) { console.warn("Fifty Overs applySnapshot failed", e); }
+  }
+
+  // Before the season starts: draft in the game, then wait for kick-off.
+  function preStart() {
+    return sel("league_clubs", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&select=manager_id").then(function (mine) {
+      if (mine && mine.length) { showWait(true); return; }
+      var mt = SYNC.myTeam;
+      if (mt && mt.country && mt.draft_seed) { startDraft(mt); return; }
+      renderSetup();
+    });
+  }
+
+  // Minimal onboarding: pick home country + names, then draft in the game.
+  function renderSetup() {
+    openWrap(true); setNavy(false);
+    wrap.querySelector("#folWho").textContent = LG ? LG.name : "";
+    var opts = NAT.map(function (c) { return '<option value="' + E(c) + '">' + E(c) + "</option>"; }).join("");
+    main.innerHTML = '<div class="folbody"><div class="folcard"><h4>Set up your club</h4><div class="folpad">' +
+      '<div class="folsmall" style="margin-bottom:8px">Pick your home country. You draft players from it in the game.</div>' +
+      '<div style="display:grid;gap:8px">' +
+      '<label class="folsmall">Manager name<br><input id="folDn2" placeholder="your name" style="width:100%"></label>' +
+      '<label class="folsmall">Club name<br><input id="folTn2" placeholder="your club" style="width:100%"></label>' +
+      '<label class="folsmall">Home country<br><select id="folCty" style="width:100%">' + opts + "</select></label>" +
+      '<button class="p" data-act="setupClub">Draft my squad ▸</button>' +
+      '</div><div style="margin-top:10px"><button class="mini" data-act="logout">log out</button></div>' +
+      "</div></div></div>";
+  }
+  function doSetup() {
+    var dn = val("folDn2") || (SYNC.me && SYNC.me.display_name) || "Manager";
+    var tn = val("folTn2") || (SYNC.myTeam && SYNC.myTeam.name) || (dn + " XI");
+    var cty = (wrap.querySelector("#folCty") || {}).value || NAT[0];
+    rpc("create_league_team", { p_league_id: LG.id, p_team_name: tn, p_manager_name: dn, p_country: cty })
+      .then(function (team) { SYNC.myTeam = team; startDraft(team); }).catch(say);
+  }
+
+  // Waiting room (pre-season). The founder gets invite + start controls.
+  function showWait(drafted) {
+    openWrap(true); setNavy(false);
+    wrap.querySelector("#folWho").textContent = LG ? LG.name : "";
+    Promise.all([
+      sel("teams", "league_id=eq." + LG.id + "&select=id,manager_id,name"),
+      sel("league_clubs", "league_id=eq." + LG.id + "&select=manager_id")
+    ]).then(function (r) {
+      var teams = r[0], clubs = r[1], ready = {};
+      clubs.forEach(function (c) { ready[c.manager_id] = 1; });
+      var rows = teams.map(function (t) {
+        return "<tr><td>" + E(t.name) + "</td><td>" + (ready[t.manager_id] ? '<span class="folbadge ok">drafted</span>' : '<span class="folbadge warn">drafting…</span>') + "</td></tr>";
+      }).join("") || '<tr><td colspan=2 class="folsmall">No clubs yet.</td></tr>';
+      var allReady = teams.length >= 2 && teams.every(function (t) { return ready[t.manager_id]; });
+      var ctl = SYNC.isFounder
+        ? '<div style="margin-top:10px">' +
+            (allReady ? '<button class="p" data-act="startLeague">Start the league ▸</button>'
+                      : '<div class="folsmall">The season starts once every club has drafted.</div>') +
+            '<div style="margin-top:8px"><button class="mini" data-act="mkInvite">Create invite code</button> <span id="folInvite" class="folsmall"></span></div>' +
+          "</div>"
+        : '<div class="folsmall" style="margin-top:10px">Waiting for the commissioner to start the season.</div>';
+      main.innerHTML = '<div class="folbody"><div class="folcard"><h4><span>' + E(LG.name) + "</span>" +
+        (drafted ? '<span class="folbadge ok">you\'re in</span>' : "") + '</h4><div class="folpad">' +
+        "<table><tr><th>Club</th><th>Status</th></tr>" + rows + "</table>" + ctl +
+        '<div style="margin-top:10px"><button class="mini" data-act="logout">log out</button></div>' +
+        "</div></div></div>";
+    }).catch(say);
+  }
+
+  function mkInvite() {
+    var code = ("FO" + Math.random().toString(36).slice(2, 7) + Math.random().toString(36).slice(2, 4)).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 7);
+    rpc("create_invite", { p_league_id: LG.id, p_code: code, p_role: "manager" })
+      .then(function () { var el = wrap.querySelector("#folInvite"); if (el) el.textContent = "Share this code: " + code; })
+      .catch(say);
+  }
+
+  // Founder assembles the league from everyone's drafted clubs and kicks off.
+  function startLeague() {
+    sel("league_clubs", "league_id=eq." + LG.id + "&select=club,manager_id").then(function (clubs) {
+      if (!clubs || clubs.length < 2) { say("Need at least 2 drafted clubs to start."); return; }
+      try {
+        GD.teams = clubs.map(function (c) { return c.club; });
+        var myName = SYNC.myTeam ? SYNC.myTeam.name : null;
+        var mine = GD.teams.findIndex(function (t) { return t.name === myName; });
+        App.teamIx = mine >= 0 ? mine : 0;
+        App.season = null; if (typeof window.seasonInit === "function") window.seasonInit();
+        App.round = 1; App.seasonNo = App.seasonNo || 1; App.results = [];
+        App.cup = { stage: 0, alive: null, results: [], out: false };
+        if (typeof window.mpInit === "function") window.mpInit();
+        try { if (typeof window.store === "function") window.store("fo_welcomed", "1"); } catch (e) {}
+        if (typeof window.saveGame === "function") window.saveGame(false);
+        var snap = (typeof window.snapshot === "function") ? window.snapshot(true) : null;
+        if (!snap) { say("Game engine not ready. Reload and try again."); return; }
+        rpc("push_league_state", { p_league_id: LG.id, p_snapshot: snap, p_round: 0 }).then(function (ver) {
+          SYNC.lastVersion = ver || 1; SYNC.started = true;
+          say("🏏 Season started! Matches resolve automatically as orders come in.");
+          openWrap(false); location.hash = "#/matches"; if (typeof window.route === "function") window.route();
+          schedulePoll();
+        }).catch(say);
+      } catch (e) { say(e); }
+    }).catch(say);
+  }
+
+  // Background sync loop: push my saved orders as a packet; pull new snapshots.
+  function schedulePoll() {
+    if (SYNC && SYNC.pollTimer) return;
+    if (SYNC) SYNC.pollTimer = setInterval(pollOnce, 15000);
+  }
+  function pollOnce() {
+    if (!LG || !SYNC) return;
+    try {
+      if (SYNC.started && window.App && App.orders && App.orders.saved && App.season && typeof GD !== "undefined" && GD.teams) {
+        var sig = JSON.stringify(App.orders) + "|" + App.season.round;
+        if (sig !== SYNC.lastOrderSig) {
+          SYNC.lastOrderSig = sig;
+          var pkt = { fo_packet: 1, teamIx: App.teamIx, club: (GD.teams[App.teamIx] || {}).name, round: App.season.round, manager: (SYNC.me && SYNC.me.display_name) || "manager", orders: App.orders };
+          rpc("push_packet", { p_league_id: LG.id, p_round: App.season.round, p_packet: pkt }).catch(function () {});
+        }
+      }
+    } catch (e) {}
+    sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version,round").then(function (a) {
+      var st = a[0]; if (st && st.version > SYNC.lastVersion) { SYNC.lastVersion = st.version; applySnapshot(st.snapshot, false); }
+    }).catch(function () {});
+  }
 
   function doJoinSignup() {
     var email = val("folEmail"), password = wrap.querySelector("#folPass").value;
@@ -304,228 +480,9 @@
     if (!code || !dn) { say("Enter the invite code and your name"); return; }
     rpc("redeem_invite", { p_code: code, p_display_name: dn, p_team_name: tn || dn + " XI" })
       .then(function (mid) { return sel("members", "id=eq." + mid + "&select=league_id"); })
-      .then(function (m) { wrap.querySelector("#folLg") && (wrap.querySelector("#folLg").value = m[0].league_id); return openLeagueId(m[0].league_id); })
+      .then(function (m) { return enterGameById(m[0].league_id); })
       .catch(say);
   }
-  function openLeague() { openLeagueId(val("folLg").replace(/[^0-9a-fA-F-]/g, "")); }
-  function openLeagueId(id) {
-    if (!id) { say("Enter a league id"); return; }
-    var pin = wrap.querySelector("#folPin");
-    return sel("leagues", "id=eq." + id + "&select=id,name,status,build_hash,draft_budget,season_no").then(function (a) {
-      if (!a[0]) { say("League not found (or you are not a member)"); return; }
-      LG = a[0];
-      if (LG.build_hash !== BUILD_HASH) { pin.style.display = "block"; pin.textContent = "⚠ Your game build differs from this league’s pinned engine."; } else pin.style.display = "none";
-      return Promise.all([
-        sel("teams", "league_id=eq." + id + "&select=id,name,manager_id,ground"),
-        sel("members", "league_id=eq." + id + "&select=id,role,display_name"),
-        rpc("resolve_manager_id", { p_league_id: id })
-      ]);
-    }).then(function (r) {
-      if (!r) return; var teams = r[0], mem = r[1], myMid = r[2];
-      TEAMS = {}; teams.forEach(function (t) { TEAMS[t.id] = t; });
-      MYMEMBER = mem.filter(function (m) { return m.id === myMid; })[0] || null;
-      MYTEAM = teams.filter(function (t) { return t.manager_id === myMid; })[0] || null;
-      // admins (founders) land on the Admin panel; players on their Squad
-      curTab = (MYMEMBER && MYMEMBER.role === "founder") ? "admin" : "squad";
-      renderTabs();
-    }).catch(say);
-  }
-
-  // ---- tabbed shell ----
-  function renderTabs() {
-    setNavy(false);
-    // Admin (founder/commissioner) manages; players play. Distinct experiences.
-    var isAdmin = MYMEMBER && MYMEMBER.role === "founder";
-    var tabs = isAdmin
-      ? [["admin", "Admin"], ["table", "Table"], ["results", "Results"]]
-      : [["squad", "Squad"], ["play", "Play"], ["table", "Table"], ["results", "Results"]];
-    wrap.querySelector("#folWho").textContent = LG ? LG.name : "";
-    main.innerHTML = '<div class="foltabs">' + tabs.map(function (t) { return '<div class="foltab ' + (curTab === t[0] ? "on" : "") + '" data-act="tab" data-tab="' + t[0] + '">' + t[1] + "</div>"; }).join("") +
-      '<span style="flex:1"></span><button class="mini" data-act="logout">log out</button></div><div id="folTab" class="folbody"></div>';
-    ({ squad: renderSquad, play: renderPlay, table: renderTable, results: renderResults, admin: renderAdmin }[curTab])();
-  }
-  function tabEl() { return wrap.querySelector("#folTab"); }
-
-  // ---- SQUAD (set up team → draft in the game → Start Season) ----
-  function renderSquad() {
-    var el = tabEl(); el.innerHTML = '<div class="folcard"><div class="folpad folsmall">Loading…</div></div>';
-    if (!MYTEAM) { el.innerHTML = '<div class="folcard"><div class="folpad">You have no team here yet. Join with an invite code.</div></div>'; return; }
-    Promise.all([
-      sel("teams", "id=eq." + MYTEAM.id + "&select=id,name,country,draft_seed,manager_id"),
-      sel("squads", "team_id=eq." + MYTEAM.id + "&select=roster,budget_spent,confirmed")
-    ]).then(function (r) {
-      var team = r[0][0] || MYTEAM; MYTEAM = team;
-      var squad = r[1][0] || { roster: [], budget_spent: 0, confirmed: false };
-      var roster = squad.roster || [], hasSquad = squad.confirmed && roster.length;
-      var html = '<div class="folcard"><h4><span>' + E(team.name || "Your team") + "</span>" +
-        (hasSquad ? '<span class="folbadge ok">season started</span>' : '<span class="folbadge warn">no squad yet</span>') + "</h4><div class=folpad>";
-      if (!team.country || !team.draft_seed) {
-        html += '<div class="folsmall" style="margin-bottom:6px">Pick your home country. You\'ll draft players from it.</div>' +
-          '<div class="folrow"><input id="folSetTeam" placeholder="team name" value="' + E(team.name || "") + '"><input id="folSetMgr" placeholder="your name" value="' + E((MYMEMBER && MYMEMBER.display_name) || "") + '"></div>' +
-          '<div class="folrow" style="margin-top:6px">Home country <select id="folSetCountry">' + NAT.map(function (c) { return "<option>" + c + "</option>"; }).join("") + "</select></div>" +
-          '<div class="folrow" style="margin-top:8px"><button class="p" data-act="setup">Save &amp; continue</button></div>';
-      } else {
-        html += '<div class="folsmall">Country: <b>' + E(team.country) + "</b> · Budget $1,000,000</div>" +
-          '<div class="folrow" style="margin-top:6px"><button class="p" data-act="draft">🏏 ' + (hasSquad ? "Re-draft" : "Draft") + ' your squad</button></div>' +
-          '<div class="folsmall" style="margin-top:4px">Opens the draft in the game. Pick 11+ (a keeper + 5 bowlers) in budget, then hit <b>Start Season</b>.</div>';
-      }
-      html += "</div></div>";
-      if (hasSquad) {
-        var wk = roster.filter(function (p) { return p.keeper; }).length, bowl = roster.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none"; }).length;
-        html += '<div class="folcard"><h4>Your squad</h4><div class=folpad>' +
-          '<div class="folsmall">' + roster.length + " players · " + wk + " keeper · " + bowl + " bowling · $" + (squad.budget_spent || 0).toLocaleString() + " spent</div>" +
-          "<table><thead><tr><th>Player</th><th>Role</th><th>Bowl</th><th class=n>Rtg</th></tr></thead><tbody>" +
-          roster.map(function (p) { return "<tr><td>" + E(p.name) + (p.keeper ? " †" : "") + '</td><td class=folsmall>' + E(p.role || "") + '</td><td class=folsmall>' + E(p.bowlTypeFull && p.bowlTypeFull !== "none" ? p.bowlTypeFull : "-") + '</td><td class=n>' + (p.rating || "") + "</td></tr>"; }).join("") +
-          "</tbody></table></div></div>";
-      }
-      el.innerHTML = html;
-    }).catch(say);
-  }
-  function doSetup() {
-    var tn = val("folSetTeam"), mgr = val("folSetMgr"), country = val("folSetCountry");
-    if (!tn || !mgr) { say("Enter your team name and your name"); return; }
-    rpc("create_league_team", { p_league_id: LG.id, p_team_name: tn, p_manager_name: mgr, p_country: country })
-      .then(function () { return openLeagueId(LG.id); }).then(function () { curTab = "squad"; renderTabs(); }).catch(say);
-  }
-  function doDraft() {
-    sel("teams", "id=eq." + MYTEAM.id + "&select=id,name,country,draft_seed").then(function (a) {
-      var team = a[0];
-      if (!team || !team.country || !team.draft_seed) { say("Set up your team (country) first"); return; }
-      launchDraft(team);
-    }).catch(say);
-  }
-
-  // ---- PLAY ----
-  function renderPlay() {
-    var el = tabEl(); el.innerHTML = '<div class="folcard"><div class="folpad folsmall">Loading…</div></div>';
-    sel("challenges", "league_id=eq." + LG.id + "&select=id,from_team_id,to_team_id,pitch,weather,seed,kickoff_at,status&order=kickoff_at").then(function (ch) {
-      var others = Object.keys(TEAMS).filter(function (id) { return !MYTEAM || id !== MYTEAM.id; });
-      var opts = others.map(function (id) { return '<option value="' + id + '">' + E(TEAMS[id].name) + "</option>"; }).join("");
-      var pitches = ["balanced", "green", "dry", "slow", "cracked", "twoPaced"].map(function (p) { return "<option>" + p + "</option>"; }).join("");
-      var wx = ["Sunny", "Overcast", "Chilly", "Humid", "Misty", "Windy"].map(function (w) { return "<option>" + w + "</option>"; }).join("");
-      function row(c) {
-        var canAccept = MYTEAM && c.to_team_id === MYTEAM.id && c.status === "pending";
-        var mine = MYTEAM && (c.from_team_id === MYTEAM.id || c.to_team_id === MYTEAM.id);
-        return "<tr><td>" + E(TEAMS[c.from_team_id] ? TEAMS[c.from_team_id].name : "?") + " → " + E(TEAMS[c.to_team_id] ? TEAMS[c.to_team_id].name : "?") + '</td><td class="folsmall">' + E(c.pitch) + " · " + E(c.weather) + '</td><td class="folsmall">' + E((c.kickoff_at || "").replace("T", " ").slice(0, 16)) + '</td><td><span class="folbadge">' + c.status + "</span></td><td>" +
-          (canAccept ? '<button class="mini" data-act="accept" data-id="' + c.id + '">accept</button> ' : "") +
-          (mine && (c.status === "accepted" || c.status === "pending") ? '<button class="mini" data-act="orders" data-id="' + c.id + '">line-up</button>' : "") + "</td></tr>";
-      }
-      el.innerHTML =
-        '<div class="folcard"><h4>Challenge a friend (friendly)</h4><div class=folpad><div class="folrow">vs <select id="folOpp">' + opts + '</select> <select id="folPitch">' + pitches + '</select> <select id="folWx">' + wx + '</select> <input id="folKo" type="datetime-local"> <button class="p" data-act="issue">Challenge</button></div><div class="folsmall" style="margin-top:4px">Kickoff ≥ 1 hour out. It plays automatically.</div></div></div>' +
-        '<div class="folcard"><h4>Matches</h4><div class=folpad><table><thead><tr><th>Fixture</th><th>Cond.</th><th>Kickoff</th><th>Status</th><th></th></tr></thead><tbody>' + (ch.length ? ch.map(row).join("") : '<tr><td colspan=5 class="folsmall">No challenges yet.</td></tr>') + "</tbody></table></div></div>" +
-        '<div id="folOrders"></div>';
-    }).catch(say);
-  }
-  function issueChallenge() {
-    var to = val("folOpp"), pitch = val("folPitch"), wxv = val("folWx"), ko = val("folKo");
-    if (!ko) { say("Pick a kickoff time (≥1h out)"); return; }
-    rpc("issue_challenge", { p_league_id: LG.id, p_to_team_id: to, p_pitch: pitch, p_weather: wxv, p_seed: Math.floor(Date.parse(ko) / 60000) % 2000000 + 1, p_kickoff_at: new Date(ko).toISOString() }).then(renderPlay).catch(say);
-  }
-  function intSel(id, def) { var L = { "-1": "defend", "0": "normal", "1": "attack", "2": "all-out" }; return '<select id="' + id + '">' + [-1, 0, 1, 2].map(function (v) { return '<option value="' + v + '" ' + (v === def ? "selected" : "") + ">" + L[v] + "</option>"; }).join("") + "</select>"; }
-  function openOrders(cid) {
-    sel("squads", "team_id=eq." + MYTEAM.id + "&select=roster").then(function (s) {
-      var roster = (s[0] && s[0].roster) || [];
-      var o = roster.map(function (p) { return '<option value="' + E(p.name) + '">' + E(p.name) + (p.keeper ? " †" : "") + "</option>"; }).join("");
-      wrap.querySelector("#folOrders").innerHTML =
-        '<div class="folcard"><h4>Line-up &amp; tactics</h4><div class=folpad><div class="folrow">Captain <select id="folCapt">' + o + '</select> Keeper <select id="folKeep">' + o + "</select></div>" +
-        '<div class="folrow" style="margin-top:6px">Intent: PP ' + intSel("folPP", 0) + " Mid " + intSel("folMid", 0) + " Death " + intSel("folDeath", 1) + "</div>" +
-        '<div class="folrow" style="margin-top:8px"><button class="p" data-act="submitOrders" data-id="' + cid + '">Save line-up</button> <span class="folsmall">Engine auto-picks a legal XI; captain/keeper/intent are yours.</span></div></div></div>';
-      wrap.querySelector("#folOrders").scrollIntoView({ behavior: "smooth" });
-    }).catch(say);
-  }
-  function submitOrders(cid) {
-    rpc("submit_orders", { p_league_id: LG.id, p_fixture_id: null, p_challenge_id: cid, p_orders: { captain: val("folCapt"), keeper: val("folKeep"), phaseIntent: { pp: +val("folPP"), mid: +val("folMid"), death: +val("folDeath") } } })
-      .then(function () { say("Line-up saved."); wrap.querySelector("#folOrders").innerHTML = ""; }).catch(say);
-  }
-
-  // ---- TABLE ----
-  function renderTable() {
-    var el = tabEl();
-    rpc("league_table", { p_league_id: LG.id }).then(function (rows) {
-      el.innerHTML = '<div class="folcard"><h4>League table</h4><div class=folpad><table><thead><tr><th>#</th><th>Club</th><th class=n>P</th><th class=n>W</th><th class=n>L</th><th class=n>T</th><th class=n>NRR</th><th class=n>Pts</th></tr></thead><tbody>' +
-        rows.map(function (r) { return "<tr" + (MYTEAM && r.team_id === MYTEAM.id ? ' style="background:rgba(44,122,44,.15)"' : "") + "><td>" + r.pos + "</td><td>" + E(r.team_name) + '</td><td class=n>' + r.p + "</td><td class=n>" + r.w + "</td><td class=n>" + r.l + "</td><td class=n>" + r.t + "</td><td class=n>" + (Number(r.nrr) >= 0 ? "+" : "") + Number(r.nrr).toFixed(3) + "</td><td class=n><b>" + r.pts + "</b></td></tr>"; }).join("") +
-        "</tbody></table></div></div>";
-    }).catch(say);
-  }
-
-  // ---- RESULTS ----
-  function renderResults() {
-    var el = tabEl();
-    sel("results", "league_id=eq." + LG.id + "&select=id,comp,home_team_id,away_team_id,result_text,scorecard,resolved_at&order=resolved_at.desc").then(function (res) {
-      RES = res;
-      el.innerHTML = '<div class="folcard"><h4>Results</h4><div class=folpad>' + (res.length ? res.map(function (r, i) {
-        return '<div style="border-bottom:1px solid #2a3123;padding:6px 0"><div class="folrow" style="justify-content:space-between"><b>' + E(r.result_text) + '</b><span class="folbadge">' + r.comp + '</span></div><div class="folsmall">' + E(TEAMS[r.home_team_id] ? TEAMS[r.home_team_id].name : "?") + " v " + E(TEAMS[r.away_team_id] ? TEAMS[r.away_team_id].name : "?") + ' · <a href="#" data-act="card" data-i="' + i + '">scorecard</a></div><div id="folCard' + i + '" style="display:none"></div></div>';
-      }).join("") : '<span class="folsmall">No matches played yet.</span>') + "</div></div>";
-    }).catch(say);
-  }
-  function toggleCard(i) {
-    var box = wrap.querySelector("#folCard" + i), r = RES[i];
-    if (box.style.display !== "none") { box.style.display = "none"; return; }
-    box.style.display = "block";
-    box.innerHTML = (r.scorecard || []).filter(Boolean).map(function (inn) {
-      return '<div style="margin-top:6px"><b>' + E(inn.batTeam) + " " + inn.runs + "/" + inn.wkts + "</b> (" + inn.overs + ")<table><thead><tr><th>Bat</th><th class=n>R</th><th class=n>B</th><th class=n>4s</th><th class=n>6s</th></tr></thead><tbody>" +
-        (inn.batting || []).filter(function (b) { return b.b > 0 || b.out !== "not out"; }).map(function (b) { return "<tr><td>" + E(b.name) + "</td><td class=n>" + b.r + "</td><td class=n>" + b.b + "</td><td class=n>" + b.f4 + "</td><td class=n>" + b.f6 + "</td></tr>"; }).join("") + "</tbody></table></div>";
-    }).join("");
-  }
-
-  // ---- ADMIN (commissioner) ----
-  function renderAdmin() {
-    var el = tabEl(); el.innerHTML = '<div class="folcard"><div class="folpad folsmall">Loading…</div></div>';
-    Promise.all([
-      rpc("league_readiness", { p_league_id: LG.id }),
-      sel("teams", "league_id=eq." + LG.id + "&select=id,name,manager_id,country"),
-      sel("squads", "league_id=eq." + LG.id + "&select=team_id,confirmed"),
-      sel("members", "league_id=eq." + LG.id + "&select=id,role,display_name"),
-      sel("invites", "league_id=eq." + LG.id + "&select=code,redeemed_uid&order=created_at")
-    ]).then(function (r) {
-      var rd = r[0] || { teams: 0, drafted: 0, all_ready: false }, teams = r[1], squads = r[2], mem = r[3], inv = r[4];
-      var done = {}; squads.forEach(function (s) { done[s.team_id] = s.confirmed; });
-      var mById = {}; mem.forEach(function (m) { mById[m.id] = m; });
-      var rows = teams.map(function (t) {
-        var m = mById[t.manager_id] || {};
-        return "<tr><td>" + E(t.name) + '</td><td class=folsmall>' + E(m.display_name || "") + (m.role === "founder" ? " (admin)" : "") + '</td><td class=folsmall>' + E(t.country || "-") + "</td><td>" + (done[t.id] ? '<span class="folbadge ok">drafted</span>' : '<span class="folbadge warn">not yet</span>') + "</td></tr>";
-      }).join("") || '<tr><td colspan=4 class="folsmall">No teams yet. Share an invite code.</td></tr>';
-      var ready = !!rd.all_ready, waiting = Math.max(0, (rd.teams || 0) - (rd.drafted || 0));
-      el.innerHTML =
-        '<div class="folcard"><h4>Managers (' + (rd.drafted || 0) + "/" + (rd.teams || 0) + ' drafted)</h4><div class=folpad><table><thead><tr><th>Team</th><th>Manager</th><th>Country</th><th>Status</th></tr></thead><tbody>' + rows + "</tbody></table></div></div>" +
-        '<div class="folcard"><h4>Invite managers</h4><div class=folpad><div class="folrow"><input id="folNewCode" placeholder="code e.g. JOIN-SAM"><button class="p" data-act="mkInvite">Create code</button></div>' +
-        "<table style='margin-top:8px'><thead><tr><th>Code</th><th>Used?</th></tr></thead><tbody>" + (inv.length ? inv.map(function (v) { return "<tr><td>" + E(v.code) + "</td><td>" + (v.redeemed_uid ? "yes" : "-") + "</td></tr>"; }).join("") : '<tr><td colspan=2 class="folsmall">No codes yet.</td></tr>') + "</tbody></table>" +
-        '<div class="folsmall" style="margin-top:4px">Share a code with each friend; they Sign up and Join with it.</div></div></div>' +
-        '<div class="folcard"><h4>Start the season</h4><div class=folpad>' +
-        '<div class="folsmall">Unlocks once <b>every</b> team has joined and drafted.</div>' +
-        '<div class="folrow" style="margin-top:8px">Start date <input id="folStart" type="date"> <button class="p" data-act="startSeason" ' + (ready ? "" : "disabled") + '>🚀 Start the league</button></div>' +
-        (ready ? '<div class="folsmall" style="margin-top:4px;color:#6fcf6f">Everyone\'s ready. Time to play!</div>' : '<div class="folsmall" style="margin-top:4px;color:#e08b7f">Waiting on ' + waiting + ' manager(s) to draft.</div>') +
-        "</div></div>" +
-        '<div class="folcard"><h4>Controls</h4><div class=folpad>' +
-        '<div class="folrow"><button data-act="resetSchedule">Reset schedule</button> <button data-act="resetLeague">Wipe matches &amp; demo</button>' +
-        (MYTEAM ? ' <button data-act="removeTeam">Remove my team (admin-only)</button>' : "") + "</div>" +
-        '<div class="folsmall" style="margin-top:4px">Reset schedule clears upcoming fixtures. Wipe clears all matches/results and the demo team. To play yourself, use a <b>separate account</b> and Join with a code.</div>' +
-        "</div></div>";
-    }).catch(say);
-  }
-  function startSeason() {
-    var ids = Object.keys(TEAMS); if (ids.length < 2) { say("Need at least 2 teams"); return; }
-    var sd = val("folStart") || new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-    rpc("founder_start_season", { p_league_id: LG.id, p_fixtures: doubleRR(ids), p_start_date: sd })
-      .then(function (n) { say("🚀 Season started! " + n + " fixtures locked in. Matches play out automatically."); curTab = "table"; renderTabs(); }).catch(say);
-  }
-  function mkInvite() { var c = val("folNewCode"); if (!c) { say("Enter a code"); return; } act("create_invite", { p_league_id: LG.id, p_code: c, p_role: "manager" }, renderAdmin); }
-  function doubleRR(ids) {
-    var arr = ids.slice(); if (arr.length % 2) arr.push("BYE");
-    var m = arr.length, fixed = arr[0], rot = arr.slice(1), rounds = [];
-    for (var r = 0; r < m - 1; r++) { var rowarr = [fixed].concat(rot), pairs = []; for (var i = 0; i < m / 2; i++) { var a = rowarr[i], b = rowarr[m - 1 - i]; if (a === "BYE" || b === "BYE") continue; pairs.push(r % 2 === 0 ? [a, b] : [b, a]); } rounds.push(pairs); rot = [rot[rot.length - 1]].concat(rot.slice(0, rot.length - 1)); }
-    var second = rounds.map(function (ps) { return ps.map(function (p) { return [p[1], p[0]]; }); });
-    var all = rounds.concat(second), out = [], mi = 0;
-    for (var rr = 0; rr < all.length; rr++) all[rr].forEach(function (p) { out.push({ round: rr + 1, home_team_id: p[0], away_team_id: p[1], seed: 5000 + mi }); mi++; });
-    return out;
-  }
-  function genFixtures() {
-    var ids = Object.keys(TEAMS); if (ids.length < 2) { say("Need at least 2 teams"); return; }
-    var sd = val("folStart") || new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-    rpc("write_fixtures", { p_league_id: LG.id, p_season_no: LG.season_no || 1, p_fixtures: doubleRR(ids), p_start_date: sd })
-      .then(function (n) { say("Generated " + n + " fixtures."); curTab = "table"; renderTabs(); }).catch(say);
-  }
-
   // ============================================================================
   // IN-GAME DRAFT: build a balanced, country-flavoured, unique pool from the
   // manager's server draft_seed, drive the game's real draft screen (pgFounder),
@@ -578,15 +535,17 @@
 
   window.__folBuildPool = buildCountryPool;   // debug/test hook (harmless)
 
-  function launchDraft(team) {
+  // Draft happens in the game's OWN founder screen (pgFounder). We hand it a
+  // balanced, country-flavoured pool derived from the server draft_seed.
+  function startDraft(team) {
     if (typeof window.genDraftPool !== "function" || typeof window.pgFounder !== "function") { say("Game engine not ready. Reload the page and try again."); return; }
     var pool = buildCountryPool(team.draft_seed, team.country);
     App.founder = {
       name: team.name, budget: 1000000, pool: pool, picked: [], identity: "Balanced XI",
-      mgr: (MYMEMBER && MYMEMBER.display_name) || "Manager",
+      mgr: (SYNC && SYNC.me && SYNC.me.display_name) || "Manager",
       __league: { league_id: LG.id, team_id: team.id }
     };
-    openWrap(false);                       // close the overlay to reveal the game draft
+    openWrap(false);                       // hand the screen to the game's draft
     try { window.pgFounder(); } catch (e) { say(e); }
   }
 
@@ -598,33 +557,39 @@
       try {
         if (App.founder && App.founder.__league) {
           var b = document.querySelector("#page .confirmbtn");
-          if (b) b.textContent = "🏏 Start Season";
+          if (b) b.textContent = "🏏 Confirm my squad";
         }
       } catch (e) {}
       return out;
     };
   }
 
-  // on confirm in league mode, save the drafted squad to the server instead of
-  // running the solo-game "found a club" flow.
+  // On confirm in league mode, let the game build the club into GD.teams (so it
+  // is a real, valid club record), then upload it. The season starts when the
+  // commissioner has everyone's clubs.
   if (typeof window.founderConfirm === "function") {
     var _fc = window.founderConfirm;
     window.founderConfirm = function () {
       var lg = App.founder && App.founder.__league;
-      if (!lg) return _fc.apply(this, arguments);
-      var roster = (App.founder.picked || []).map(function (p) { return JSON.parse(JSON.stringify(p)); });
-      rpc("submit_league_squad", { p_league_id: lg.league_id, p_roster: roster }).then(function () {
-        App.founder.__league = null;
-        say("🏏 Squad locked in. You're in the league!");
-        openWrap(true); curTab = "squad"; openLeagueId(lg.league_id);
-      }).catch(say);
+      var out = _fc.apply(this, arguments);   // game writes the drafted squad into GD.teams[teamIx]
+      if (lg) {
+        try {
+          var club = JSON.parse(JSON.stringify(GD.teams[App.teamIx]));
+          rpc("push_club", { p_league_id: lg.league_id, p_club: club, p_team_ix: null }).then(function () {
+            say("🏏 Squad locked in! Waiting for the commissioner to start the season.");
+            showWait(true);
+          }).catch(say);
+        } catch (e) { say(e); }
+      }
+      return out;
     };
   }
 
   // Multiplayer-first: the league login takes over the moment the site loads,
-  // and the page behind it is locked so the solo game stays private.
+  // and the page behind it is locked so the solo game stays private until you
+  // are in a league — then your game IS the league.
   openWrap(true);
-  if (!JWT) renderLogin(); else if (LG) renderTabs(); else enterApp();
+  if (!JWT) renderLogin(); else enterApp();
 
   console.info("Fifty Overs League overlay ready.");
 })();
