@@ -7,7 +7,16 @@
 import { openEngine } from './resolve.mjs';
 import { assertEnv, rpc, rest } from './sbrest.mjs';
 
-const GRACE_MS = 20 * 60 * 60 * 1000; // play a round at least ~daily even if someone is slow
+// League matches play once per day at 09:00 New York time. (Friendlies are played
+// in-game whenever a manager likes — the resolver only advances league rounds.)
+const MATCH_HOUR = 9;
+const MATCH_TZ = 'America/New_York';
+
+function tzDateHour(d) {
+  const f = new Intl.DateTimeFormat('en-CA', { timeZone: MATCH_TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false });
+  const p = Object.fromEntries(f.formatToParts(d).map((x) => [x.type, x.value]));
+  return { date: `${p.year}-${p.month}-${p.day}`, hour: parseInt(p.hour, 10) };
+}
 
 export async function advanceLeagues() {
   assertEnv();
@@ -27,11 +36,14 @@ async function advanceOne(page, st) {
   const sched = snap && snap.season && snap.season.schedule;
   if (!sched || round >= sched.length) { console.log(lid, 'season complete'); return; }
 
-  const teamsN = (snap.teams || []).length;
+  // Gate to one round per day at 09:00 New York time. Managers who have not
+  // submitted orders for the round play with the engine's automatic line-up.
+  const now = tzDateHour(new Date());
+  const last = tzDateHour(new Date(st.updated_at));
+  if (now.hour < MATCH_HOUR) { console.log(lid, `before ${MATCH_HOUR}:00 ${MATCH_TZ}`); return; }
+  if (last.date >= now.date) { console.log(lid, 'already advanced today'); return; }
+
   const packets = await rest(`league_packets?league_id=eq.${lid}&round=eq.${round}&select=packet`);
-  const ageMs = Date.now() - new Date(st.updated_at).getTime();
-  const everyone = packets.length >= teamsN;
-  if (!everyone && ageMs < GRACE_MS) { console.log(lid, `waiting ${packets.length}/${teamsN}`); return; }
 
   const newSnap = await page.evaluate(({ snap, pkts }) => {
     window.restoreFrom(snap);

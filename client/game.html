@@ -6487,7 +6487,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     document.body.style.overflow = on ? "hidden" : "";
   }
 
-  btn.addEventListener("click", function () { openWrap(true); if (!JWT) renderLogin(); else enterApp(); });
+  btn.addEventListener("click", function () { openWrap(true); if (!JWT) renderLogin(); else if (SYNC && LG && SYNC.isFounder) showWait(!!SYNC.myTeam); else enterApp(); });
 
   // ---- one delegated handler for everything ----
   wrap.addEventListener("click", function (ev) {
@@ -6500,7 +6500,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       showLogin: renderLogin, showJoin: renderJoin, showForgot: renderForgot,
       sendReset: sendReset, joinNew: doJoinSignup,
       openId: function () { enterGameById(t.getAttribute("data-id")); }, join: joinLeague,
-      setupClub: doSetup, startLeague: startLeague, mkInvite: mkInvite
+      setupClub: doSetup, startLeague: startLeague, mkInvite: mkInvite,
+      delTeam: function () { delTeam(t.getAttribute("data-id"), t.getAttribute("data-name")); },
+      backToGame: function () { openWrap(false); if (typeof window.route === "function") window.route(); }
     };
     if (acts[a]) acts[a]();
   });
@@ -6716,23 +6718,31 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ]).then(function (r) {
       var teams = r[0], clubs = r[1], ready = {};
       clubs.forEach(function (c) { ready[c.manager_id] = 1; });
+      var isF = SYNC.isFounder;
       var rows = teams.map(function (t) {
-        return "<tr><td>" + E(t.name) + "</td><td>" + (ready[t.manager_id] ? '<span class="folbadge ok">drafted</span>' : '<span class="folbadge warn">drafting…</span>') + "</td></tr>";
-      }).join("") || '<tr><td colspan=2 class="folsmall">No clubs yet.</td></tr>';
+        var del = isF ? '<td style="text-align:right"><button class="mini" data-act="delTeam" data-id="' + t.id + '" data-name="' + E(t.name) + '" style="background:#5a2620;border-color:#7a3a30;color:#f0d0c8">✕ delete</button></td>' : "";
+        return "<tr><td>" + E(t.name) + "</td><td>" + (ready[t.manager_id] ? '<span class="folbadge ok">drafted</span>' : '<span class="folbadge warn">drafting…</span>') + "</td>" + del + "</tr>";
+      }).join("") || ('<tr><td colspan=' + (isF ? 3 : 2) + ' class="folsmall">No clubs yet.</td></tr>');
       var allReady = teams.length >= 2 && teams.every(function (t) { return ready[t.manager_id]; });
-      var ctl = SYNC.isFounder
+      var ctl = isF
         ? '<div style="margin-top:10px">' +
-            (allReady ? '<button class="p" data-act="startLeague">Start the league ▸</button>'
+            (allReady ? '<button class="p" data-act="startLeague">' + (SYNC.started ? "Restart season (rebuild from clubs) ▸" : "Start the league ▸") + '</button>'
                       : '<div class="folsmall">The season starts once every club has drafted.</div>') +
             '<div style="margin-top:8px"><button class="mini" data-act="mkInvite">Create invite code</button> <span id="folInvite" class="folsmall"></span></div>' +
           "</div>"
         : '<div class="folsmall" style="margin-top:10px">Waiting for the commissioner to start the season.</div>';
-      main.innerHTML = '<div class="folbody"><div class="folcard"><h4><span>' + E(LG.name) + "</span>" +
+      var back = SYNC.started ? '<button class="mini" data-act="backToGame">◂ back to the game</button> ' : "";
+      main.innerHTML = '<div class="folbody"><div class="folcard"><h4><span>' + E(LG.name) + (isF ? " · commissioner" : "") + "</span>" +
         (drafted ? '<span class="folbadge ok">you\'re in</span>' : "") + '</h4><div class="folpad">' +
-        "<table><tr><th>Club</th><th>Status</th></tr>" + rows + "</table>" + ctl +
-        '<div style="margin-top:10px"><button class="mini" data-act="logout">log out</button></div>' +
+        "<table><tr><th>Club</th><th>Status</th>" + (isF ? "<th></th>" : "") + "</tr>" + rows + "</table>" + ctl +
+        '<div style="margin-top:10px">' + back + '<button class="mini" data-act="logout">log out</button></div>' +
         "</div></div></div>";
     }).catch(say);
+  }
+  function delTeam(id, name) {
+    if (!confirm('Permanently delete "' + name + '" — its club, squad and orders? This cannot be undone.')) return;
+    rpc("founder_delete_team", { p_league_id: LG.id, p_team_id: id })
+      .then(function () { showWait(!!(SYNC && SYNC.myTeam)); }).catch(say);
   }
 
   function mkInvite() {
