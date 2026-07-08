@@ -46,6 +46,29 @@
   // Busy state for the auth CTAs while a request is in flight.
   function busyBtn(act, label) { var b = wrap.querySelector('[data-act="' + act + '"]'); if (b && !b.disabled) { b.setAttribute("data-t", b.textContent); b.textContent = label; b.disabled = true; } }
   function unbusyBtn(act) { var b = wrap.querySelector('[data-act="' + act + '"]'); if (b) { b.textContent = b.getAttribute("data-t") || b.textContent; b.disabled = false; } }
+  // Branded confirmation modal replacing native confirm(). Destructive actions get
+  // deliberate friction: danger styling, explicit verb on the button, and the SAFE
+  // choice holds focus so Enter/Escape can never destroy anything by accident.
+  function foConfirm(opts) {
+    return new Promise(function (res) {
+      var old = document.getElementById("fo-modal"); if (old) old.remove();
+      var d = document.createElement("div"); d.id = "fo-modal";
+      d.innerHTML = "<div class='fo-mo-back'><div class='fo-mo-card" + (opts.danger ? " fo-mo-dngr" : "") + "'>" +
+        "<div class='fo-mo-ic'>" + FO_I(opts.danger ? "warn" : "info", 22) + "</div>" +
+        "<h3>" + E(opts.title || "Are you sure?") + "</h3>" +
+        (opts.body ? "<p>" + E(opts.body) + "</p>" : "") +
+        "<div class='fo-mo-act'><button class='fo-mo-cancel'>" + E(opts.cancel || "Cancel") + "</button>" +
+        "<button class='fo-mo-ok'>" + E(opts.confirm || "Confirm") + "</button></div></div></div>";
+      document.body.appendChild(d);
+      var done = function (v) { try { document.removeEventListener("keydown", onKey); } catch (e) {} d.classList.remove("on"); setTimeout(function () { d.remove(); }, 180); res(v); };
+      var onKey = function (e) { if (e.key === "Escape") done(false); };
+      document.addEventListener("keydown", onKey);
+      d.querySelector(".fo-mo-cancel").addEventListener("click", function () { done(false); });
+      d.querySelector(".fo-mo-ok").addEventListener("click", function () { done(true); });
+      d.querySelector(".fo-mo-back").addEventListener("click", function (e) { if (e.target.classList.contains("fo-mo-back")) done(false); });
+      requestAnimationFrame(function () { d.classList.add("on"); try { d.querySelector(".fo-mo-cancel").focus(); } catch (e) {} });
+    });
+  }
   function headers() { return { apikey: ANON, Authorization: "Bearer " + (JWT || ANON), "content-type": "application/json", "Accept-Profile": "app", "Content-Profile": "app" }; }
   function rpc(fn, args) { return fetch(URL + "/rest/v1/rpc/" + fn, { method: "POST", headers: headers(), body: JSON.stringify(args || {}) }).then(function (r) { return r.text().then(function (t) { if (!r.ok) throw new Error(t || ("HTTP " + r.status)); return t ? JSON.parse(t) : null; }); }); }
   function sel(table, q) { return fetch(URL + "/rest/v1/" + table + "?" + (q || ""), { headers: headers() }).then(function (r) { return r.text().then(function (t) { if (!r.ok) throw new Error(t); return JSON.parse(t); }); }); }
@@ -237,7 +260,24 @@
     ".fo-toast-ic{flex:none;display:flex;margin-top:1px;color:#4DA6A2}" +
     ".fo-toast-error{border-color:rgba(200,103,74,.5);background:linear-gradient(160deg,rgba(58,32,26,.97),rgba(40,22,20,.97))}" +
     ".fo-toast-error .fo-toast-ic{color:#e58b86}" +
-    ".fo-toast-tx{word-break:break-word}";
+    ".fo-toast-tx{word-break:break-word}" +
+    // ---- confirmation modal ----
+    "#fo-modal{position:fixed;inset:0;z-index:2147483150;opacity:0;transition:opacity .18s}" +
+    "#fo-modal.on{opacity:1}" +
+    ".fo-mo-back{position:absolute;inset:0;background:rgba(8,16,29,.66);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px}" +
+    ".fo-mo-card{width:100%;max-width:400px;background:linear-gradient(160deg,#1C2433,#111B2B);border:1px solid rgba(246,244,238,.14);border-radius:18px;padding:26px 26px 22px;text-align:center;color:#F6F4EE;box-shadow:0 30px 70px -20px rgba(0,0,0,.7);font:14px/1.5 -apple-system,'Segoe UI',Roboto,Inter,system-ui,sans-serif;transform:translateY(8px);transition:transform .18s}" +
+    "#fo-modal.on .fo-mo-card{transform:none}" +
+    ".fo-mo-ic{width:52px;height:52px;border-radius:50%;background:rgba(77,166,162,.14);color:#4DA6A2;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}" +
+    ".fo-mo-dngr .fo-mo-ic{background:rgba(200,79,74,.16);color:#e58b86}" +
+    ".fo-mo-card h3{margin:0 0 6px;font-size:17.5px;font-weight:800}" +
+    ".fo-mo-card p{margin:0 0 4px;font-size:13.5px;color:rgba(246,244,238,.68)}" +
+    ".fo-mo-act{display:flex;gap:10px;margin-top:18px}" +
+    ".fo-mo-act button{flex:1;padding:12px;border-radius:11px;font:600 14px inherit;font-family:inherit;cursor:pointer;min-height:46px}" +
+    ".fo-mo-cancel{background:rgba(246,244,238,.07);color:#F6F4EE;border:1px solid rgba(246,244,238,.22)}" +
+    ".fo-mo-cancel:hover,.fo-mo-cancel:focus{background:rgba(246,244,238,.14);outline:none;border-color:rgba(246,244,238,.4)}" +
+    ".fo-mo-ok{background:#4DA6A2;color:#0B1322;border:none;font-weight:700}" +
+    ".fo-mo-dngr .fo-mo-ok{background:#C84F4A;color:#fff}" +
+    ".fo-mo-ok:hover{filter:brightness(1.08)}";
   document.head.appendChild(css2);
 
   // ---- restyle the GAME itself: brand colours (navy/terracotta/teal) on the
@@ -381,11 +421,11 @@
     ".fo-empty{display:flex;gap:14px;align-items:center;justify-content:center;padding:26px 20px;color:#8a8474}" +
     ".fo-empty-ic{width:44px;height:44px;border-radius:50%;background:#f2eee4;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}" +
     ".fo-ch-leaders{display:grid;grid-template-columns:1fr 1fr;gap:16px}" +
-    ".fo-lead{display:flex;gap:14px;align-items:center;padding:16px 18px}" +
-    ".fo-lead-ic{width:44px;height:44px;border-radius:11px;background:rgba(200,103,74,.1);display:flex;align-items:center;justify-content:center;font-size:19px;flex:none}" +
+    ".fo-ch-leaders .fo-lead{display:flex;gap:14px;align-items:center;padding:16px 18px}" +
+    ".fo-ch-leaders .fo-lead-ic{width:44px;height:44px;border-radius:11px;background:rgba(200,103,74,.1);display:flex;align-items:center;justify-content:center;font-size:19px;flex:none}" +
     ".fo-ch-leaders .fo-lead:nth-child(2) .fo-lead-ic{background:rgba(77,166,162,.12)}" +
-    ".fo-card-h2{margin:0}.fo-lead .fo-card-h2::after{display:none}" +
-    ".fo-lead-v{font-size:24px;font-weight:800;color:#12203a}.fo-lead-v span{font-size:13px;font-weight:600;color:#9a9484}" +
+    ".fo-card-h2{margin:0}.fo-ch-leaders .fo-lead .fo-card-h2::after{display:none}" +
+    ".fo-ch-leaders .fo-lead-v{font-size:24px;font-weight:800;color:#12203a}.fo-lead-v span{font-size:13px;font-weight:600;color:#9a9484}" +
     ".fo-kv{width:100%;font-size:13px;border-collapse:collapse}.fo-kv td{padding:10px 18px;border-bottom:1px solid rgba(11,19,34,.055);color:#243040}.fo-kv tr:last-child td{border-bottom:none}.fo-kv td:first-child{color:#7a7566}" +
     ".fo-teal{color:#2b6b68 !important;font-weight:600}" +
     "@media(max-width:900px){.fo-ch-stats{grid-template-columns:repeat(2,1fr)}.fo-ch-grid{grid-template-columns:1fr}.fo-ch-leaders{grid-template-columns:1fr}.fo-ch-name{font-size:26px}.fo-ch-hero{flex-direction:column;align-items:flex-start}}" +
@@ -653,6 +693,44 @@
     // freeze the first column (player/date) so it stays visible while the rest scrolls
     "#page .panel table th:first-child,#page .panel table td:first-child{position:sticky;left:0;background:#fff;z-index:1;box-shadow:1px 0 0 rgba(0,0,0,.12)}" +
     "}" +
+    // ===== deep engine-page polish (Matches / Stats / Office / live match) =====
+    // page hero: finish the navy band properly — light text, padding, radius
+    "#page .page-head{padding:20px 24px;border-radius:14px;box-shadow:0 12px 32px rgba(11,19,34,.18)}" +
+    "#page .page-head h1{color:#F6F4EE !important}" +
+    "#page .page-head p{color:rgba(246,244,238,.62) !important;margin:3px 0 0}" +
+    "#page .page-head .eyebrow{color:#e79274 !important}" +
+    "#page .page-head .action-row button{background:rgba(246,244,238,.1);color:#F6F4EE;border:1px solid rgba(246,244,238,.25);border-radius:9px;padding:8px 14px;cursor:pointer}" +
+    "#page .page-head .action-row button:hover{background:rgba(246,244,238,.2)}" +
+    "#page .page-head .action-row button.primary,#page .page-head .action-row .primary{background:" + TERRA + ";border-color:" + TERRA + ";color:#fff}" +
+    "#page .page-head .action-row label{color:rgba(246,244,238,.8)}" +
+    // panels: soft radius, refined title bar instead of flat black
+    "#page .panel{border-radius:12px;overflow:hidden;border-color:#e4dfd2;box-shadow:0 3px 14px rgba(11,19,34,.06)}" +
+    "#page .panel>h4{background:linear-gradient(160deg," + NAVY2 + "," + NAVY + ") !important;color:#F6F4EE;margin:0;padding:10px 14px;font-size:11.5px;text-transform:uppercase;letter-spacing:.09em;font-weight:800}" +
+    "#page .panel table th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:#9a9484}" +
+    // my club's row in any table: terracotta accent, not the engine's mint yellow
+    "#page tr.fo-userrow{background:transparent !important}" +
+    "#page tr.fo-userrow>td{background:rgba(200,103,74,.09) !important}" +
+    "#page tr.fo-userrow>td:first-child{box-shadow:inset 3px 0 0 " + TERRA + "}" +
+    // the engine skin paints 'your fixture' rows #feffcc — re-tint to the brand
+    'html body.ftpskin tr[style*="eef4ee"] td,html body.ftpskin tr[style*="eef8fb"] td{background:rgba(200,103,74,.09) !important}' +
+    'html body.ftpskin tr[style*="eef4ee"] td:first-child,html body.ftpskin tr[style*="eef8fb"] td:first-child{box-shadow:inset 3px 0 0 ' + TERRA + "}" +
+    // office KPI tiles
+    "#page .kpi-grid .kpi-card{border-radius:12px;border:1px solid #e4dfd2;box-shadow:0 3px 12px rgba(11,19,34,.05);transition:transform .15s,box-shadow .15s}" +
+    "#page .kpi-grid .kpi-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(11,19,34,.1)}" +
+    "#page .kpi-grid .kpi-card span{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:#9a9484;font-weight:700}" +
+    "#page .kpi-grid .kpi-card b{color:#12203a}" +
+    // live match: give the scoreboard visual weight
+    "#page .mc-score .panel{border-top:3px solid " + TERRA + "}" +
+    "#page .ftp-match-body{border-radius:12px}" +
+    // season progress + momentum chips (club page psychology strip)
+    ".fo-season-strip{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:0 0 14px}" +
+    ".fo-progress{flex:1 1 260px;min-width:220px;background:#fff;border:1px solid #e4dfd2;border-radius:12px;padding:10px 14px;box-shadow:0 3px 12px rgba(11,19,34,.05)}" +
+    ".fo-progress-l{display:flex;justify-content:space-between;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#9a9484;font-weight:700;margin-bottom:6px}.fo-progress-l b{color:#12203a}" +
+    ".fo-progress-bar{height:7px;border-radius:4px;background:#efeadf;overflow:hidden}" +
+    ".fo-progress-bar u{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg," + TEAL + "," + TERRA + ");transition:width .5s ease}" +
+    ".fo-mchip{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid #e4dfd2;border-radius:999px;padding:8px 15px;font-size:12.5px;font-weight:700;color:#12203a;box-shadow:0 3px 12px rgba(11,19,34,.05)}" +
+    ".fo-mchip i{display:flex}.fo-mchip-hot{border-color:rgba(200,103,74,.45);color:" + TERRA2 + "}.fo-mchip-hot i{color:" + TERRA + "}" +
+    ".fo-mchip-goal{border-color:rgba(77,166,162,.45);color:#2b6b68}.fo-mchip-goal i{color:" + TEAL + "}" +
     // Mobile match view: commentary directly under the scoreboard; match details and
     // the tab links drop below it. Desktop (>900px) layout is untouched. We flatten
     // .mc-top and .ftp-match-shell into #page's flex flow and reorder with `order`.
@@ -866,8 +944,29 @@
         "<div class='fo-ch-chips'><span class='fo-ch-chip'>Season " + (App.seasonNo || 1) + "</span><span class='fo-ch-chip'>Round " + (Math.min((S ? S.round : 0) + 1, (S && S.schedule ? S.schedule.length : 9))) + "</span><span class='fo-ch-chip'>" + dateStr + "</span></div>" +
         "</div></div><div class='fo-ch-hero-r'>" + formPill + "</div></div>";
 
+      // ---- season momentum strip: progress bar + streak + goal-gradient nudge ----
+      var totalRounds = (S && S.schedule) ? S.schedule.length : 18;
+      var played = me.p || 0;
+      var strip = "<div class='fo-season-strip'>" +
+        "<div class='fo-progress'><div class='fo-progress-l'><span>Season " + (App.seasonNo || 1) + " progress</span><b>Matchday " + Math.min(played + 1, totalRounds) + " of " + totalRounds + "</b></div>" +
+        "<div class='fo-progress-bar'><u style='width:" + Math.round(100 * played / Math.max(1, totalRounds)) + "%'></u></div></div>";
+      // current unbeaten/win streak from the form pips (most recent last)
+      var streak = 0;
+      for (var si = form.length - 1; si >= 0 && String(form[si]).toUpperCase() === "W"; si--) streak++;
+      if (streak >= 2) strip += "<span class='fo-mchip fo-mchip-hot'><i>" + FO_I("trophy", 15) + "</i>" + streak + "-match win streak — keep it alive</span>";
+      // goal gradient: how close is the next rung of the table?
+      if (pi > 0 && played > 0) {
+        var above = rowsL[pi - 1], gap = (above.pts || 0) - (me.pts || 0);
+        strip += "<span class='fo-mchip fo-mchip-goal'><i>" + FO_I("target", 15) + "</i>" +
+          (gap <= 0 ? "Level on points with " + E(above.nm) : gap + " pt" + (gap === 1 ? "" : "s") + " from " + foOrdinal(pi) + " place") + "</span>";
+      } else if (pi === 0 && played > 0) {
+        var below = rowsL[1], lead = (me.pts || 0) - ((below && below.pts) || 0);
+        strip += "<span class='fo-mchip fo-mchip-goal'><i>" + FO_I("trophy", 15) + "</i>Top of the table" + (lead > 0 ? " — " + lead + " pt" + (lead === 1 ? "" : "s") + " clear" : "") + "</span>";
+      }
+      strip += "</div>";
+
       var html = "<div class='fo-ch'>" +
-        "<div class='fo-ch-crumb'>" + E(t.name) + " <span>›</span> Club</div>" + hero + stats +
+        "<div class='fo-ch-crumb'>" + E(t.name) + " <span>›</span> Club</div>" + hero + strip + stats +
         "<div class='fo-ch-grid'><div class='fo-ch-col'>" +
         "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Recent results</div><a href='#/matches' class='fo-morelink'>View all results ›</a></div><div class='fo-card-b'>" + recentBody + "</div></div>" +
         "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Upcoming fixtures</div><a href='#/matches' class='fo-morelink'>View full schedule ›</a></div><div class='fo-card-b'>" + upBody + "</div></div>" +
@@ -1812,18 +1911,28 @@
     }).catch(function (e) { if (isMissingTable(e)) setupNeeded(); else say(e); });
   }
   function delTeam(id, name) {
-    if (!confirm('Permanently delete "' + name + '" — its club, squad and orders? This cannot be undone.')) return;
-    rpc("founder_delete_team", { p_league_id: LG.id, p_team_id: id })
-      .then(function () {
-        // The started league reads its teams from the published snapshot, so the
-        // club lingers in the game until the world is rebuilt from the clubs that
-        // remain. Offer to do that now (it restarts the season table).
-        if (SYNC && SYNC.started) {
-          if (confirm('"' + name + '" removed. Rebuild the league now so it disappears from the game? (This restarts the season table from the remaining clubs.)')) { startLeague(); return; }
-        }
-        say("Deleted " + name + ".");
-        showWait(!!(SYNC && SYNC.myTeam));
-      }).catch(say);
+    foConfirm({
+      danger: true, title: 'Delete "' + name + '"?',
+      body: "Its club, squad and orders are permanently removed. This cannot be undone.",
+      confirm: "Delete club", cancel: "Keep it"
+    }).then(function (ok) {
+      if (!ok) return;
+      rpc("founder_delete_team", { p_league_id: LG.id, p_team_id: id })
+        .then(function () {
+          // The started league reads its teams from the published snapshot, so the
+          // club lingers in the game until the world is rebuilt from the clubs that
+          // remain. Offer to do that now (it restarts the season table).
+          if (SYNC && SYNC.started) {
+            return foConfirm({
+              title: '"' + name + '" removed',
+              body: "Rebuild the league now so it disappears from the game? This restarts the season table from the remaining clubs.",
+              confirm: "Rebuild now", cancel: "Later"
+            }).then(function (ok2) { if (ok2) { startLeague(); } else { say("Deleted " + name + "."); showWait(!!(SYNC && SYNC.myTeam)); } });
+          }
+          say("Deleted " + name + ".");
+          showWait(!!(SYNC && SYNC.myTeam));
+        }).catch(say);
+    });
   }
 
   function mkInvite() {
@@ -2311,15 +2420,23 @@
     var F = App.founder, p = null; for (var i = 0; i < F.pool.length; i++) if (F.pool[i].name === name) { p = F.pool[i]; break; }
     if (!p) return;
     var ix = F.picked.indexOf(p);
+    var before = foSquadShape(F.picked);
     if (ix >= 0) { F.picked.splice(ix, 1); }
     else {
       var spent = F.picked.reduce(function (s, q) { return s + foDraftPrice(q); }, 0);
-      if (spent + foDraftPrice(p) > FO_FIN.startingBank) { return; }   // can't exceed $1M
-      if (F.picked.length >= 16) return;
+      if (spent + foDraftPrice(p) > FO_FIN.startingBank) { toast("Not enough budget left for " + p.name + " — " + FO$(FO_FIN.startingBank - spent) + " remaining.", "error"); return; }
+      if (F.picked.length >= 16) { toast("Squad is full (16). Drop someone to sign " + p.name + ".", "error"); return; }
       F.picked.push(p);
+      // milestone feedback: celebrate each squad requirement the moment it's met
+      var after = foSquadShape(F.picked);
+      if (before.wk === 0 && after.wk === 1) toast("Keeper secured — " + p.name + " takes the gloves.");
+      else if (before.bowl === 4 && after.bowl === 5) toast("Five bowling options — you can cover all 50 overs.");
+      else if (before.n === 10 && after.n === 11) toast("Eleven players — your XI is complete. Add depth or continue.");
+      else if (after.n === 16) toast("Squad full — 16 players signed.");
     }
     foOnbDraft(true);
   }
+  function foOrdinal(n) { var s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
   function foTalentName(t) { return String(t || "").replace(/([A-Z])/g, " $1").replace(/^./, function (c) { return c.toUpperCase(); }).trim(); }
   // Aggregate skill (0-100) via the engine's own summary functions.
   function foAgg(p, nm) { try { return Math.max(0, Math.min(100, Math.round(({ bat: aggBat, bowl: aggBowl, keep: aggKeep, field: aggField, end: aggEnd, tech: aggTech })[nm](p)))); } catch (e) { return 0; } }
