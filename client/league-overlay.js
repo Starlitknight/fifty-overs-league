@@ -49,6 +49,28 @@
     "#folPin{background:#a33328;color:#fff;padding:8px 14px;display:none}";
   document.head.appendChild(css);
 
+  // ---- cricket-themed login (From The Pavilion vibe) ----
+  var css2 = document.createElement("style");
+  css2.textContent =
+    "#folPanel.fol-navy{background:#14305a}" +
+    "#folPanel.fol-navy .folhd{background:#102546;border-bottom-color:#26406e}" +
+    ".fol-hero{background:#14305a;color:#fff;text-align:center;padding:22px 18px 14px}" +
+    ".fol-logo{width:78px;height:78px;border-radius:50%;background:#b5312a;display:flex;align-items:center;justify-content:center;font-size:42px;margin:0 auto 8px;box-shadow:0 3px 10px rgba(0,0,0,.35)}" +
+    ".fol-hero h1{font-size:30px;letter-spacing:1px;margin:4px 0 0;font-weight:800;line-height:1.05}" +
+    ".fol-hero .fol-tag{color:#cdd8ea;font-size:13.5px;font-weight:600;margin:6px 0 16px}" +
+    ".fol-auth{max-width:330px;margin:0 auto;display:flex;flex-direction:column;gap:12px}" +
+    "#folPanel .fol-auth input{background:transparent;border:none;border-bottom:2px solid #4a6a9a;color:#fff;border-radius:0;padding:9px 2px;font-size:16px}" +
+    "#folPanel .fol-auth input::placeholder{color:#9fb3d0}" +
+    "#folPanel .fol-red{background:#b5312a !important;color:#fff !important;border:none !important;border-radius:8px;padding:12px;font-weight:800;font-size:16px;cursor:pointer}" +
+    "#folPanel .fol-white{background:#fff !important;color:#14305a !important;border:2px solid #7fb3d5 !important;border-radius:8px;padding:11px;font-weight:800;font-size:16px;cursor:pointer}" +
+    ".fol-explain{background:#fff;color:#1a2b40;margin:0 12px 16px;border-radius:12px;padding:16px;box-shadow:0 4px 14px rgba(0,0,0,.25);position:relative;top:-6px}" +
+    ".fol-explain p{margin:0 0 12px;font-size:15px;line-height:1.45}" +
+    ".fol-explain ul{list-style:none;padding:0;margin:0;display:grid;gap:11px}" +
+    ".fol-explain li{display:flex;gap:9px;font-size:14px;line-height:1.4;align-items:flex-start}" +
+    ".fol-ball{flex:0 0 auto;width:17px;height:17px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#e5534b,#b01e17);box-shadow:inset -3px -3px 0 rgba(0,0,0,.18);margin-top:2px;position:relative}" +
+    ".fol-ball:after{content:'';position:absolute;top:3px;bottom:3px;left:50%;width:1px;background:rgba(255,255,255,.5)}";
+  document.head.appendChild(css2);
+
   var btn = document.createElement("button");
   btn.id = "folBtn"; btn.textContent = "🏆 League";
   document.body.appendChild(btn);
@@ -88,15 +110,34 @@
   function act(fn, args, then) { rpc(fn, args).then(then).catch(say); }
   function val(id) { var e = wrap.querySelector("#" + id); return e ? (e.value || "").trim() : ""; }
 
-  // ---- auth ----
+  function setNavy(on) { var pn = wrap.querySelector("#folPanel"); if (pn) pn.classList.toggle("fol-navy", !!on); }
+
+  // ---- auth (cricket-styled login) ----
   function renderLogin() {
     wrap.querySelector("#folWho").textContent = "";
+    setNavy(true);
+    var ball = '<span class="fol-ball"></span>';
     main.innerHTML =
-      '<div class="folbody"><div class="folcard"><h4>Log in to your league</h4><div class="folpad">' +
-      '<div class="folrow"><input id="folEmail" type="email" placeholder="email"><input id="folPass" type="password" placeholder="password"></div>' +
-      '<div class="folrow" style="margin-top:8px"><button class="p" data-act="login">Log in</button><button data-act="signup">Sign up</button></div>' +
-      '<div class="folsmall" style="margin-top:6px">New player? Sign up, then join your league with an invite code.</div>' +
-      "</div></div></div>";
+      '<div class="fol-hero">' +
+      '<div class="fol-logo">🏏</div>' +
+      '<h1>FIFTY OVERS</h1>' +
+      '<div class="fol-tag">Multiplayer Cricket League — play your friends</div>' +
+      '<div class="fol-auth">' +
+      '<input id="folEmail" type="email" placeholder="email">' +
+      '<input id="folPass" type="password" placeholder="password">' +
+      '<button class="fol-red" data-act="signup">Create account</button>' +
+      '<button class="fol-white" data-act="login">Log in</button>' +
+      '</div></div>' +
+      '<div class="fol-explain">' +
+      "<p>An <b>invite-only</b> cricket manager you play with your friends. Draft a squad, set your tactics, and let the real match engine decide the games — fair and identical for everyone.</p>" +
+      '<ul>' +
+      '<li>' + ball + '<span><b>Draft your own squad</b> — pick a home country and draft players from it on a tight $1,000,000 budget, in the real draft screen.</span></li>' +
+      '<li>' + ball + '<span><b>Challenge your friends</b> to matches — the game engine plays every ball, deterministically, so no one can cheat.</span></li>' +
+      '<li>' + ball + '<span><b>Play a full season</b> — a home-and-away league table; matches resolve automatically at your league time.</span></li>' +
+      '<li>' + ball + '<span><b>Invite-only</b> — your commissioner runs the league and starts the season once everyone has drafted.</span></li>' +
+      '</ul>' +
+      '<div class="folsmall" style="margin-top:10px">New here? Tap <b>Create account</b>, then join your league with an invite code.</div>' +
+      '</div>';
   }
   function authFetch(kind) {
     var email = val("folEmail"), password = wrap.querySelector("#folPass").value;
@@ -114,6 +155,7 @@
 
   // ---- enter / join a league ----
   function renderEnter() {
+    setNavy(true);
     main.innerHTML =
       '<div class="folbody"><div class="folcard"><h4>Your league</h4><div class="folpad">' +
       '<div class="folrow"><input id="folLg" placeholder="league id" size="26"><button class="p" data-act="open">Open</button></div>' +
@@ -155,6 +197,7 @@
 
   // ---- tabbed shell ----
   function renderTabs() {
+    setNavy(false);
     // Admin (founder/commissioner) manages; players play. Distinct experiences.
     var isAdmin = MYMEMBER && MYMEMBER.role === "founder";
     var tabs = isAdmin
