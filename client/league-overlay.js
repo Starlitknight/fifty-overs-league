@@ -32,6 +32,26 @@
   function lsSet(k, v) { try { window.localStorage.setItem(k, v); } catch (e) { } }
   function lsDel(k) { try { window.localStorage.removeItem(k); } catch (e) { } }
 
+  // ---- stay logged in across refreshes: persist + restore the Supabase session ----
+  var SESS = "fol_session";
+  function saveSession(d) {
+    if (!d || !d.access_token) return;
+    var exp = d.expires_at ? d.expires_at * 1000 : (Date.now() + ((d.expires_in || 3600) * 1000));
+    lsSet(SESS, JSON.stringify({ access_token: d.access_token, refresh_token: d.refresh_token || "", expires_at: exp }));
+  }
+  function clearSession() { lsDel(SESS); }
+  function restoreSession() {
+    var raw = lsGet(SESS); if (!raw) return Promise.resolve(false);
+    var s; try { s = JSON.parse(raw); } catch (e) { clearSession(); return Promise.resolve(false); }
+    if (!s || !s.access_token) { clearSession(); return Promise.resolve(false); }
+    if (s.expires_at && (s.expires_at - Date.now() > 60000)) { JWT = s.access_token; return Promise.resolve(true); }
+    if (!s.refresh_token) { clearSession(); return Promise.resolve(false); }
+    return fetch(URL + "/auth/v1/token?grant_type=refresh_token", { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ refresh_token: s.refresh_token }) })
+      .then(function (r) { return r.json().then(function (d) { if (!r.ok || !d.access_token) throw new Error("refresh failed"); return d; }); })
+      .then(function (d) { JWT = d.access_token; saveSession(d); return true; })
+      .catch(function () { clearSession(); return false; });
+  }
+
   // ---- styles + shell ----
   var css = document.createElement("style");
   css.textContent =
@@ -200,7 +220,7 @@
     if (a === "close") { openWrap(false); return; }
     ev.preventDefault();
     var acts = {
-      login: doLogin, logout: function () { JWT = ""; LG = null; SYNC = null; renderLogin(); },
+      login: doLogin, logout: function () { JWT = ""; LG = null; SYNC = null; clearSession(); renderLogin(); },
       showLogin: renderLogin, showJoin: renderJoin, showForgot: renderForgot,
       sendReset: sendReset, joinNew: doJoinSignup,
       openId: function () { enterGameById(t.getAttribute("data-id")); }, join: joinLeague,
@@ -277,7 +297,7 @@
     fetch(URL + "/auth/v1/token?grant_type=password", { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ email: email, password: password }) })
       .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error_description || d.msg || d.error || ("HTTP " + r.status)); return d; }); })
       .then(function (d) {
-        if (d.access_token) { JWT = d.access_token; wrap.querySelector("#folWho").textContent = email; enterApp(); }
+        if (d.access_token) { JWT = d.access_token; saveSession(d); wrap.querySelector("#folWho").textContent = email; enterApp(); }
         else say("Check your email to confirm your account, then log in.");
       }).catch(say);
   }
@@ -582,7 +602,7 @@
       .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error_description || d.msg || d.error || ("HTTP " + r.status)); return d; }); })
       .then(function (d) {
         if (!d.access_token) { say("Account created! Check your email, tap the confirmation link, then log in. We'll drop you straight into your league."); renderLogin(); return; }
-        JWT = d.access_token; wrap.querySelector("#folWho").textContent = email;
+        JWT = d.access_token; saveSession(d); wrap.querySelector("#folWho").textContent = email;
         return enterApp();
       }).catch(say);
   }
@@ -719,9 +739,10 @@
 
   // Multiplayer-first: the league login takes over the moment the site loads,
   // and the page behind it is locked so the solo game stays private until you
-  // are in a league — then your game IS the league.
+  // are in a league — then your game IS the league. A saved session is restored
+  // first, so a refresh keeps you logged in.
   openWrap(true);
-  if (!JWT) renderLogin(); else enterApp();
+  restoreSession().then(function () { if (JWT) enterApp(); else renderLogin(); }).catch(function () { renderLogin(); });
 
   console.info("Fifty Overs League overlay ready.");
 })();
