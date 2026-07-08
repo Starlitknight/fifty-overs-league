@@ -6491,6 +6491,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-plan-ok{color:" + TEAL + ";font-weight:700}.fo-plan-no{color:#b9b3a4}" +
     ".fo-setr{margin-left:4px;font-size:11px;padding:3px 8px;border:1px solid " + TERRA + ";background:" + PAPER + ";color:" + TERRA2 + ";border-radius:5px;cursor:pointer}" +
     ".fo-setr:hover{background:" + TERRA + ";color:" + PAPER + "}" +
+    // league standings — form pips + leader/user accents
+    ".fo-standings td,.fo-standings th{padding:6px 8px}" +
+    ".fo-standings tr.fo-lead td{box-shadow:inset 3px 0 0 " + TEAL + "}" +
+    ".fo-standings tr.fo-lead td:nth-child(2){font-weight:700}" +
+    "html body.ftpskin .fo-standings tr.fo-userrow td,.fo-standings tr.fo-userrow td{background:#fbf1ec !important}" +
+    ".fo-standings tr.fo-userrow td:first-child{box-shadow:inset 3px 0 0 " + TERRA + "}" +
+    ".fo-standings tr:hover td{background:#f4f1ea}" +
+    ".fo-form{display:inline-flex;gap:3px;margin-left:7px;vertical-align:middle}" +
+    ".fo-pip{width:8px;height:8px;border-radius:2px;display:inline-block;opacity:.9}" +
+    ".fo-W{background:#2f8f6b}.fo-L{background:" + TERRA + "}.fo-T{background:#c3bdae}" +
     "#page a,.panel a{color:#b0563b !important}" +
     // section headers -> navy
     "html body.ftpskin .panel>h4,html body.ftpskin .card-title,.panel>h4,.card-title,.panel>header,.card>h4,.sec>h4{background:" + NAVY2 + " !important;background-image:none !important;color:" + PAPER + " !important}" +
@@ -6583,6 +6593,19 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (typeof GD !== "undefined" && GD.teams) { for (var i = 0; i < GD.teams.length; i++) { if (GD.teams[i] && cellText.indexOf(GD.teams[i].name) >= 0) { idx = i; break; } } }
     clubsView = idx >= 0 ? idx : 0; renderClubs();
   }
+  // Recent league form per club (oldest→newest, last 5): W / L / T.
+  function foFormMap() {
+    var m = {};
+    try {
+      (App.results || []).forEach(function (r) {
+        if (!r || r.comp !== "league" || !r.result) return;
+        var w = r.result.winner;
+        [r.home, r.away].forEach(function (nm) { (m[nm] = m[nm] || []).push(!w ? "T" : (w === nm ? "W" : "L")); });
+      });
+      for (var k in m) m[k] = m[k].slice(-5);
+    } catch (e) {}
+    return m;
+  }
   // Trim the game page per preferences: hide Office academies, and make the
   // league-table club names clickable to open that club's scout report.
   function tidyPage() {
@@ -6609,15 +6632,33 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         });
         if (foLeaguePendingOnly()) { var box = document.getElementById("fo-live-icons"); if (box) box.style.display = "none"; }
       }
+      var fmap = foFormMap(), myName = "";
+      try { if (typeof userTeam === "function") myName = userTeam().name; } catch (e) {}
       document.querySelectorAll("#page table").forEach(function (tb) {
         var clubIx = -1, ptsIx = -1;
         tb.querySelectorAll("th").forEach(function (th) { var t = th.textContent.trim().toLowerCase(); if (t === "club") clubIx = th.cellIndex; if (t === "pts") ptsIx = th.cellIndex; });
         if (clubIx < 0 || ptsIx < 0) return;                    // only the standings table
+        tb.classList.add("fo-standings");
+        var di = 0;
         tb.querySelectorAll("tr").forEach(function (tr) {
           if (tr.querySelector("th")) return;
-          var cell = tr.children[clubIx]; if (!cell || cell.dataset.foScout) return;
-          cell.dataset.foScout = "1"; cell.classList.add("fo-scoutname");
-          cell.addEventListener("click", function () { scoutClub(cell.textContent || ""); });
+          var cell = tr.children[clubIx]; if (!cell) return;
+          var name = (cell.textContent || "").trim();
+          if (!cell.dataset.foScout) {
+            cell.dataset.foScout = "1"; cell.classList.add("fo-scoutname");
+            cell.addEventListener("click", function () { scoutClub(cell.textContent || ""); });
+          }
+          if (di === 0) tr.classList.add("fo-lead");            // league leader
+          if (myName && name.indexOf(myName) >= 0) tr.classList.add("fo-userrow");
+          if (!cell.querySelector(".fo-form")) {                // recent-form pips
+            var f = null; for (var k in fmap) { if (name.indexOf(k) >= 0) { f = fmap[k]; break; } }
+            if (f && f.length) {
+              var sp = document.createElement("span"); sp.className = "fo-form";
+              sp.innerHTML = f.map(function (x) { return "<i class='fo-pip fo-" + x + "' title='" + x + "'></i>"; }).join("");
+              cell.appendChild(sp);
+            }
+          }
+          di++;
         });
       });
     } catch (e) {}
