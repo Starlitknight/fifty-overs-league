@@ -7559,6 +7559,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       setupClub: doSetup, startLeague: startLeague, mkInvite: mkInvite,
       delTeam: function () { delTeam(t.getAttribute("data-id"), t.getAttribute("data-name")); },
       draftMine: draftMine, practice: practice,
+      reload: function () { location.reload(); },
       backToGame: function () { openWrap(false); if (typeof window.route === "function") window.route(); }
     };
     if (acts[a]) acts[a]();
@@ -7566,6 +7567,20 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function val(id) { var e = wrap.querySelector("#" + id); return e ? (e.value || "").trim() : ""; }
 
   function setNavy(on) { var pn = wrap.querySelector("#folPanel"); if (pn) pn.classList.toggle("fol-navy", !!on); }
+
+  // Never leave the panel blank: show progress while we talk to the server, and a
+  // recoverable error card (instead of silence) when something goes wrong.
+  function foLoading(msg) {
+    setNavy(false);
+    main.innerHTML = '<div class="folbody"><div class="folcard"><div class="folpad" style="text-align:center;padding:28px 12px"><div class="folsmall">' + E(msg || "Loading…") + "</div></div></div></div>";
+  }
+  function foFatal(msg) {
+    openWrap(true); setNavy(false);
+    main.innerHTML = '<div class="folbody"><div class="folcard"><h4>Something went wrong</h4><div class="folpad">' +
+      '<div class="folsmall" style="line-height:1.5;margin-bottom:10px">' + E(msg) + "</div>" +
+      '<button class="mini" data-act="reload">&#8635; Reload</button> <button class="mini" data-act="logout">log out</button>' +
+      "</div></div></div>";
+  }
 
   // ---- auth (Fifty Overs brand login) ----
   // The "50" mark: three terracotta stumps, a paper "5", and a seamed cricket ball for the "0".
@@ -7639,6 +7654,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // (admin -> Admin, player -> Squad); several show a quick picker; none shows
   // the join-by-invite form.
   function enterApp() {
+    foLoading("Signing you in…");
     return redeemPending().then(function () {
       return sel("leagues", "select=id,name,status,build_hash,draft_budget,season_no");
     }).then(function (ls) {
@@ -7677,6 +7693,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // =================================================================
   function enterGame(league) {
     LG = league;
+    foLoading("Loading " + (league.name || "your league") + "…");
     return Promise.all([
       sel("teams", "league_id=eq." + LG.id + "&select=id,name,country,draft_seed,manager_id"),
       sel("members", "league_id=eq." + LG.id + "&select=id,role,display_name"),
@@ -7692,7 +7709,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       SYNC.isFounder = !!(SYNC.me && SYNC.me.role === "founder");
       if (LG.build_hash && LG.build_hash !== BUILD_HASH) console.warn("Fifty Overs: your game build differs from this league's pinned engine.");
       return syncTick(true);
-    }).catch(say);
+    }).catch(function (e) { foFatal("Could not load the league (" + ((e && e.message) || e) + "). Check your connection and reload."); });
   }
 
   // Detect a "table not created yet" error (0011/0012 SQL not run in Supabase).
@@ -7706,11 +7723,28 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "</div></div></div>";
   }
 
+  // Is MY club part of the published season snapshot? A member who joins (or
+  // re-drafts) after kick-off isn't in it yet — never dump them into someone
+  // else's club; send them to the draft / waiting lobby instead.
+  function myClubInSnap(snap) {
+    try {
+      if (!SYNC || !SYNC.myTeam || !SYNC.myTeam.name) return false;
+      return !!(snap && snap.teams && snap.teams.some(function (t) { return t && t.name === SYNC.myTeam.name; }));
+    } catch (e) { return false; }
+  }
   function syncTick(first) {
     if (!LG) return Promise.resolve();
     return sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version,round").then(function (a) {
       var st = a[0];
       if (st) {
+        if (!myClubInSnap(st.snapshot)) {
+          // Season is running but my club isn't in it yet (joined after kick-off,
+          // or my club was removed). Draft / wait for a rebuild — the poll below
+          // pulls us in automatically once a snapshot that includes us is pushed.
+          SYNC.lastVersion = st.version; SYNC.started = true;
+          schedulePoll();
+          return preStart();
+        }
         if (st.version > SYNC.lastVersion) { SYNC.lastVersion = st.version; applySnapshot(st.snapshot, first); }
         else openWrap(false);
         schedulePoll();
@@ -7745,7 +7779,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       openWrap(false);
       if (focus) location.hash = "#/club";
       if (typeof window.route === "function") window.route();
-    } catch (e) { console.warn("Fifty Overs applySnapshot failed", e); }
+    } catch (e) {
+      console.warn("Fifty Overs applySnapshot failed", e);
+      foFatal("Could not load the league season. Reload to try again — if it keeps happening, ask your commissioner to restart the season.");
+    }
   }
 
   // Before the season starts: draft in the game, then wait for kick-off.
@@ -7898,7 +7935,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
               : '<div class="folsmall">The season starts once every club has drafted.</div>') +
             '<div style="margin-top:8px"><button class="mini" data-act="mkInvite">Create invite code</button> <span id="folInvite" class="folsmall"></span></div>' +
           "</div>"
-        : '<div class="folsmall" style="margin-top:10px">Waiting for the commissioner to start the season.</div>';
+        : '<div class="folsmall" style="margin-top:10px">' + (SYNC.started
+            ? "The season is already running — your club joins as soon as the commissioner restarts it (their lobby has the Restart button). You can jump in the moment that happens; this screen updates itself."
+            : "Waiting for the commissioner to start the season.") + "</div>";
       var back = SYNC.started ? '<button class="mini" data-act="backToGame">◂ back to the game</button> ' : "";
       var draftBtn = drafted ? "" : '<button class="p" data-act="draftMine" style="margin-bottom:10px">🏏 Draft my squad ▸</button>';
       var practiceBtn = '<button class="mini" data-act="practice" style="margin-top:8px">🎮 Practice vs bots (play now)</button>';
@@ -7982,7 +8021,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       }
     } catch (e) {}
     sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version,round").then(function (a) {
-      var st = a[0]; if (st && st.version > SYNC.lastVersion) { SYNC.lastVersion = st.version; applySnapshot(st.snapshot, false); }
+      var st = a[0]; if (!st || st.version <= SYNC.lastVersion) return;
+      if (document.getElementById("fo-onb")) return;               // never yank the draft room away mid-pick
+      SYNC.lastVersion = st.version;
+      // auto-enter once a rebuild includes us; if we were parked in the lobby, land on the club page
+      if (myClubInSnap(st.snapshot)) applySnapshot(st.snapshot, wrap.classList.contains("on"));
     }).catch(function () {});
   }
 
@@ -8014,7 +8057,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function renderEnter() {
     setNavy(false);
     wrap.querySelector("#folWho").textContent = "";
-    tabsHidden();
     main.innerHTML =
       '<div class="folbody"><div class="folcard"><h4>Join a league</h4><div class="folpad">' +
       '<div class="folsmall" style="margin-bottom:8px">Enter the invite code from your commissioner.</div>' +
@@ -8723,6 +8765,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // first, so a refresh keeps you logged in.
   var _authRedirect = foConsumeAuthHash();
   openWrap(true);
+  foLoading("Signing you in…");
   if (_authRedirect === "ok") { enterApp(); }
   else if (_authRedirect === "error") { renderLogin(); setTimeout(function () { say("That email link expired or was already used. Log in with your email and password below."); }, 60); }
   else restoreSession().then(function () { if (JWT) enterApp(); else renderLogin(); }).catch(function () { renderLogin(); });
