@@ -6392,6 +6392,42 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     lsSet(SESS, JSON.stringify({ access_token: d.access_token, refresh_token: d.refresh_token || "", expires_at: exp }));
   }
   function clearSession() { lsDel(SESS); }
+  // Where Supabase should send the user after they confirm their email / reset a
+  // password. Must be added to the project's Auth "Redirect URLs" allow-list.
+  var APP_URL = location.origin + location.pathname;
+  // When the user returns from an email confirmation / recovery link, Supabase
+  // appends the session (or an error) to the URL fragment. Consume it so we log in
+  // instead of showing a blank routed page.
+  function foConsumeAuthHash() {
+    try {
+      // The engine's boot rewrites location.hash to #/welcome before this overlay
+      // runs, wiping the Supabase fragment — so also read the ORIGINAL navigation
+      // URL (captured at page load) to recover the token / error.
+      var cands = [];
+      if (location.hash) cands.push(location.hash);
+      try { var nav = performance.getEntriesByType && performance.getEntriesByType("navigation")[0]; if (nav && nav.name) cands.push(nav.name); } catch (e) {}
+      if (document.URL) cands.push(document.URL);
+      var sawError = false;
+      for (var ci = 0; ci < cands.length; ci++) {
+        var u = cands[ci], hi = u.indexOf("#"); if (hi < 0) continue;
+        var raw = u.slice(hi + 1).replace(/^\/?/, "");
+        if (/(^|&)access_token=/.test(raw)) {
+          var q = {}; raw.split("&").forEach(function (kv) { var i = kv.indexOf("="); if (i > 0) q[decodeURIComponent(kv.slice(0, i))] = decodeURIComponent(kv.slice(i + 1)); });
+          if (q.access_token) {
+            JWT = q.access_token;
+            var d = { access_token: q.access_token, refresh_token: q.refresh_token || "" };
+            if (q.expires_at) d.expires_at = +q.expires_at; else d.expires_in = q.expires_in ? +q.expires_in : 3600;
+            saveSession(d);
+            try { history.replaceState(null, "", location.pathname + location.search + "#/club"); } catch (e) {}
+            return "ok";
+          }
+        }
+        if (/(^|&)error/.test(raw)) sawError = true;
+      }
+      if (sawError) { try { history.replaceState(null, "", location.pathname + location.search + "#/club"); } catch (e) {} return "error"; }
+    } catch (e) {}
+    return "";
+  }
   function restoreSession() {
     var raw = lsGet(SESS); if (!raw) return Promise.resolve(false);
     var s; try { s = JSON.parse(raw); } catch (e) { clearSession(); return Promise.resolve(false); }
@@ -6708,6 +6744,19 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     "#fo-onb .fo-dr-tbl tbody tr td{background:transparent !important}" +
     "#fo-onb .fo-dr-tbl tbody tr.fo-dr-in td{background:rgba(200,103,74,.15) !important}" +
     "#fo-onb .fo-dr-tbl tbody tr:hover td{background:rgba(246,244,238,.045) !important}" +
+    "#fo-onb .fo-dr-view{cursor:pointer;border-bottom:1px dotted rgba(246,244,238,.35)}#fo-onb .fo-dr-view:hover{color:" + TEAL + "}" +
+    // player skill-summary popover
+    "#fo-pd .fo-pd-back{position:fixed;inset:0;z-index:100001;background:rgba(8,16,29,.7);display:flex;align-items:center;justify-content:center;padding:16px}" +
+    "#fo-pd .fo-pd-card{background:linear-gradient(160deg,#1C2433,#0e1626);border:1px solid rgba(246,244,238,.12);border-radius:18px;padding:20px 22px;width:100%;max-width:420px;box-shadow:0 24px 60px rgba(0,0,0,.5);color:#F6F4EE}" +
+    "#fo-pd .fo-pd-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}" +
+    "#fo-pd .fo-pd-nm{font-size:19px;font-weight:800}#fo-pd .fo-pd-meta{font-size:12px;color:rgba(246,244,238,.6);margin-top:3px}" +
+    "#fo-pd .fo-pd-x{background:transparent;border:1px solid rgba(246,244,238,.2);color:rgba(246,244,238,.8);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px}" +
+    "#fo-pd .fo-pd-money{display:flex;gap:8px;margin:14px 0}#fo-pd .fo-pd-money span{flex:1;background:rgba(11,19,34,.5);border:1px solid rgba(246,244,238,.08);border-radius:10px;padding:8px 10px;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:rgba(246,244,238,.5);font-weight:700}#fo-pd .fo-pd-money b{display:block;font-size:14px;color:#F6F4EE;margin-top:2px;letter-spacing:0}" +
+    "#fo-pd .fo-pd-sec{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:" + TEAL + ";font-weight:800;margin-bottom:8px}" +
+    "#fo-pd .fo-pd-bar{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:12px}#fo-pd .fo-pd-bar span{width:78px;color:rgba(246,244,238,.7)}#fo-pd .fo-pd-bar i{flex:1;height:8px;background:rgba(246,244,238,.08);border-radius:5px;overflow:hidden}#fo-pd .fo-pd-bar b{display:block;height:100%;background:linear-gradient(90deg," + TEAL + "," + TERRA + ");border-radius:5px}#fo-pd .fo-pd-bar em{width:74px;text-align:right;font-style:normal;color:rgba(246,244,238,.62);font-size:11px}" +
+    "#fo-pd .fo-pd-tal{margin:12px 0;font-size:12.5px;color:rgba(246,244,238,.72)}#fo-pd .fo-pd-tal b{color:rgba(246,244,238,.55);text-transform:uppercase;font-size:10.5px;letter-spacing:.04em}" +
+    "#fo-pd button{font-family:inherit;min-height:0;box-shadow:none}" +
+    "#fo-pd .fo-pd-act{display:flex}#fo-pd .fo-pd-add{flex:1;background:" + TERRA + " !important;color:#fff !important;border:none;padding:11px;border-radius:10px;font-weight:700;font-size:13.5px;cursor:pointer}#fo-pd .fo-pd-add.on{background:rgba(11,19,34,.5) !important;color:" + TERRA + " !important;border:1px solid " + TERRA + "}" +
     // league standings — form pips + leader/user accents
     ".fo-standings td,.fo-standings th{padding:6px 8px}" +
     ".fo-standings tr.fo-lead td{box-shadow:inset 3px 0 0 " + TEAL + "}" +
@@ -7863,7 +7912,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function delTeam(id, name) {
     if (!confirm('Permanently delete "' + name + '" — its club, squad and orders? This cannot be undone.')) return;
     rpc("founder_delete_team", { p_league_id: LG.id, p_team_id: id })
-      .then(function () { showWait(!!(SYNC && SYNC.myTeam)); }).catch(say);
+      .then(function () {
+        // The started league reads its teams from the published snapshot, so the
+        // club lingers in the game until the world is rebuilt from the clubs that
+        // remain. Offer to do that now (it restarts the season table).
+        if (SYNC && SYNC.started) {
+          if (confirm('"' + name + '" removed. Rebuild the league now so it disappears from the game? (This restarts the season table from the remaining clubs.)')) { startLeague(); return; }
+        }
+        say("Deleted " + name + ".");
+        showWait(!!(SYNC && SYNC.myTeam));
+      }).catch(say);
   }
 
   function mkInvite() {
@@ -7935,7 +7993,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (!code || !dn) { say("Enter your invite code and manager name"); return; }
     // Remember the invite so we can finish joining after email confirmation + login.
     lsSet(PEND, JSON.stringify({ code: code, dn: dn, tn: tn }));
-    fetch(URL + "/auth/v1/signup", { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ email: email, password: password }) })
+    fetch(URL + "/auth/v1/signup?redirect_to=" + encodeURIComponent(APP_URL), { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ email: email, password: password, options: { email_redirect_to: APP_URL } }) })
       .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error_description || d.msg || d.error || ("HTTP " + r.status)); return d; }); })
       .then(function (d) {
         if (!d.access_token) { say("Account created! Check your email, tap the confirmation link, then log in. We'll drop you straight into your league."); renderLogin(); return; }
@@ -7947,7 +8005,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function sendReset() {
     var email = val("folEmail");
     if (!email) { say("Enter your email"); return; }
-    fetch(URL + "/auth/v1/recover", { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ email: email }) })
+    fetch(URL + "/auth/v1/recover?redirect_to=" + encodeURIComponent(APP_URL), { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ email: email }) })
       .then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t || ("HTTP " + r.status)); }); })
       .then(function () { say("If that email has an account, a reset link is on its way."); renderLogin(); }).catch(say);
   }
@@ -8110,14 +8168,22 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
 
   function foOnbStart(team) {
     if (typeof window.genDraftPool !== "function" || typeof window.pgFounder !== "function") { say("Game engine not ready. Reload the page and try again."); return; }
-    var pool = buildCountryPool(team.draft_seed, team.country);
-    App.founder = {
-      name: team.name, budget: 1000000, pool: pool, picked: [], identity: "Balanced XI",
-      mgr: (SYNC && SYNC.me && SYNC.me.display_name) || "Manager",
-      __league: { league_id: (LG && LG.id) || null, team_id: team.id }
-    };
-    FO_ONB = { team: team, step: 1, clubName: team.name || "", crest: 0, ground: (team.name ? team.name + " Oval" : "Riverview Oval"), style: "balanced", sponsor: "community", scenario: "average", role: "all", riskAck: false };
-    foOnbCreate();
+    team = team || {};
+    try {
+      var pool = buildCountryPool(team.draft_seed || team.name || "fo-" + Date.now(), team.country || "ENG");
+      App.founder = {
+        name: team.name || "New Club", budget: 1000000, pool: pool, picked: [], identity: "Balanced XI",
+        mgr: (SYNC && SYNC.me && SYNC.me.display_name) || "Manager",
+        __league: { league_id: (LG && LG.id) || null, team_id: team.id }
+      };
+      FO_ONB = { team: team, step: 1, clubName: team.name || "", crest: 0, ground: (team.name ? team.name + " Oval" : "Riverview Oval"), style: "balanced", sponsor: "community", scenario: "average", role: "all", riskAck: false };
+      foOnbCreate();
+    } catch (e) {
+      // never leave a new manager on a blank screen — fall back to the engine's draft
+      console.warn("Fifty Overs onboarding failed, using the standard draft:", e);
+      try { if (!App.founder || !App.founder.pool) App.founder = { name: team.name || "New Club", budget: 1000000, pool: buildCountryPool(team.draft_seed || "fo", team.country || "ENG"), picked: [], identity: "Balanced XI", __league: { league_id: (LG && LG.id) || null, team_id: team.id } }; openWrap(false); window.pgFounder(); }
+      catch (e2) { say(e2); }
+    }
   }
   window.__foOnb = { start: foOnbStart, draft: foOnbDraft, report: foOnbReport, risk: foOnbRisk, forecast: foForecast, state: function () { return FO_ONB; } };
 
@@ -8260,6 +8326,37 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     }
     foOnbDraft(true);
   }
+  function foTalentName(t) { return String(t || "").replace(/([A-Z])/g, " $1").replace(/^./, function (c) { return c.toUpperCase(); }).trim(); }
+  // A player's skill-summary card (bars, not a raw line) — opened by clicking a
+  // name in the draft table.
+  function foDraftDetail(name) {
+    try {
+      var F = App.founder, p = null; for (var i = 0; i < F.pool.length; i++) if (F.pool[i].name === name) { p = F.pool[i]; break; }
+      if (!p) return;
+      var isBowler = p.bowlTypeFull && p.bowlTypeFull !== "none";
+      var agg = function (nm) { try { return Math.round(({ bat: aggBat, bowl: aggBowl, keep: aggKeep, field: aggField, end: aggEnd, tech: aggTech })[nm](p)); } catch (e) { return 0; } };
+      var pw = 0; try { pw = (typeof S === "function" ? S(p).power : (p.skills && p.skills.power)) || 0; } catch (e) {}
+      var bars = [["Batting", agg("bat")], ["Bowling", isBowler ? agg("bowl") : 0], ["Keeping", agg("keep")], ["Fielding", agg("field")], ["Power", pw], ["Technique", agg("tech")], ["Endurance", agg("end")]];
+      var word = function (v) { try { return typeof window.word === "function" ? window.word(v) : ""; } catch (e) { return ""; } };
+      var barHtml = bars.map(function (b) { var v = Math.max(0, Math.min(100, Math.round(b[1] || 0))); return "<div class='fo-pd-bar'><span>" + b[0] + "</span><i><b style='width:" + v + "%'></b></i><em>" + (word(v) || v) + "</em></div>"; }).join("");
+      var talents = (p.talents || []).map(foTalentName).filter(Boolean).join(", ") || "None";
+      var inSquad = F.picked.indexOf(p) >= 0;
+      var host = document.getElementById("fo-onb"); if (!host) return;
+      var old = document.getElementById("fo-pd"); if (old) old.remove();
+      var d = document.createElement("div"); d.id = "fo-pd";
+      d.innerHTML = "<div class='fo-pd-back'><div class='fo-pd-card'>" +
+        "<div class='fo-pd-h'><div><div class='fo-pd-nm'>" + E(p.name) + "</div><div class='fo-pd-meta'><span class='fo-rl'>" + foRoleShort(p) + "</span> " + E(p.nat || "") + " · age " + (p.age || "?") + " · rating " + (p.rating || "-") + "</div></div><button class='fo-pd-x'>✕</button></div>" +
+        "<div class='fo-pd-money'><span>Draft<b>" + FO$(foDraftPrice(p)) + "</b></span><span>Daily wage<b>" + FO$(foDailyWage(p)) + "</b></span><span>Season cost<b>" + FO$(foSeasonCost(p)) + "</b></span></div>" +
+        "<div class='fo-pd-sec'>Skill summary</div><div class='fo-pd-bars'>" + barHtml + "</div>" +
+        "<div class='fo-pd-tal'><b>Talents:</b> " + E(talents) + "</div>" +
+        "<div class='fo-pd-act'><button class='fo-pd-add " + (inSquad ? "on" : "") + "'>" + (inSquad ? "− Remove from squad" : "+ Add to squad") + "</button></div>" +
+        "</div></div>";
+      host.appendChild(d);
+      d.querySelector(".fo-pd-x").addEventListener("click", function () { d.remove(); });
+      d.querySelector(".fo-pd-back").addEventListener("click", function (e) { if (e.target.classList.contains("fo-pd-back")) d.remove(); });
+      d.querySelector(".fo-pd-add").addEventListener("click", function () { foOnbPick(p.name); d.remove(); });
+    } catch (e) {}
+  }
 
   // ---- Screen 5 · Draft room with live finance forecast --------------------
   function foOnbDraft(keepScroll) {
@@ -8279,7 +8376,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var inSquad = F.picked.indexOf(p) >= 0;
       var dp = foDraftPrice(p), dw = foDailyWage(p), scst = foSeasonCost(p);
       return "<tr class='" + (inSquad ? "fo-dr-in" : "") + "'>" +
-        "<td class='fo-dr-nm'>" + E(p.name) + "</td>" +
+        "<td class='fo-dr-nm'><span class='fo-dr-view' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + E(p.name) + "</span></td>" +
         "<td><span class='fo-rl'>" + foRoleShort(p) + "</span></td>" +
         "<td class='fo-dr-nat'>" + E(p.nat || "") + "</td><td class='r'>" + (p.age || "?") + "</td>" +
         "<td class='r'>" + FO$(dp) + "</td><td class='r'>" + FO$(dw) + "</td>" +
@@ -8319,6 +8416,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "</div>";
     var host = foOnbMount(4, body);
     host.querySelectorAll(".fo-dr-add").forEach(function (b) { b.addEventListener("click", function () { foOnbPick(b.getAttribute("data-p")); }); });
+    host.querySelectorAll(".fo-dr-view").forEach(function (b) { b.addEventListener("click", function () { foDraftDetail(b.getAttribute("data-p")); }); });
     host.querySelectorAll(".fo-dr-chip").forEach(function (b) { b.addEventListener("click", function () { FO_ONB.role = b.getAttribute("data-role"); foOnbDraft(); }); });
     var sb = host.querySelector("#fo-dr-search"); if (sb) sb.addEventListener("input", function () { FO_ONB.search = sb.value; var sc = document.querySelector(".fo-dr-tblwrap"); foOnbDraft(); var s2 = document.querySelector("#fo-dr-search"); if (s2) { s2.focus(); s2.setSelectionRange(s2.value.length, s2.value.length); } });
     host.querySelector("#fo-ob-b").addEventListener("click", foOnbSponsor);
@@ -8623,8 +8721,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // and the page behind it is locked so the solo game stays private until you
   // are in a league — then your game IS the league. A saved session is restored
   // first, so a refresh keeps you logged in.
+  var _authRedirect = foConsumeAuthHash();
   openWrap(true);
-  restoreSession().then(function () { if (JWT) enterApp(); else renderLogin(); }).catch(function () { renderLogin(); });
+  if (_authRedirect === "ok") { enterApp(); }
+  else if (_authRedirect === "error") { renderLogin(); setTimeout(function () { say("That email link expired or was already used. Log in with your email and password below."); }, 60); }
+  else restoreSession().then(function () { if (JWT) enterApp(); else renderLogin(); }).catch(function () { renderLogin(); });
 
   // Debug/test handle for the season planner's engine-facing helpers (no behaviour).
   try { window.__fol = { userFixtures: foUserFixtures, fixtureMeta: foFixtureMeta, plannerHTML: foPlannerHTML, smartBowling: foSmartBowling }; } catch (e) {}
