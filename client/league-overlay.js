@@ -129,6 +129,7 @@
     ".fo-brandicon{width:26px;height:26px;border-radius:7px;vertical-align:-8px;margin-right:6px;box-shadow:0 0 0 1px rgba(246,244,238,.18)}" +
     "#topbar{position:relative}" +
     "#fo-clock{position:absolute;top:9px;right:12px;color:rgba(246,244,238,.9);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:.3px}" +
+    ".fo-mtime{font-size:10px;color:#C8674A;font-weight:600;margin-top:1px}" +
     "#page a,.panel a{color:#b0563b !important}" +
     // section headers -> navy
     "html body.ftpskin .panel>h4,html body.ftpskin .card-title,.panel>h4,.card-title,.panel>header,.card>h4,.sec>h4{background:" + NAVY2 + " !important;background-image:none !important;color:" + PAPER + " !important}" +
@@ -200,6 +201,27 @@
   function startFriendly() {
     try { if (LG && SYNC) practice(); else openLeagueMenu(); } catch (e) { say(e); }
   }
+  // Show the real match time (league rounds resolve at 09:00 New York) next to the
+  // date in any fixtures/results table. Safe: only tables that have a "Date" header.
+  var MATCH_TIME = "9:00 AM ET";
+  function decorateFixtureTimes() {
+    try {
+      document.querySelectorAll("#page table").forEach(function (tb) {
+        var dateIx = -1, ths = tb.querySelectorAll("th");
+        ths.forEach(function (th) { if (dateIx < 0 && /^\s*date\s*$/i.test(th.textContent)) dateIx = th.cellIndex; });
+        if (dateIx < 0) return;
+        tb.querySelectorAll("tr").forEach(function (tr) {
+          if (tr.querySelector("th")) return;                 // skip header rows
+          var cell = tr.children[dateIx]; if (!cell) return;
+          if (cell.querySelector(".fo-mtime")) return;        // already decorated
+          var txt = (cell.textContent || "").trim();
+          if (!txt || /\d:\d/.test(txt)) return;              // needs a date, no time yet
+          var s = document.createElement("div"); s.className = "fo-mtime"; s.textContent = MATCH_TIME;
+          cell.appendChild(s);
+        });
+      });
+    } catch (e) {}
+  }
   function tickClock() {
     try {
       var c = document.getElementById("fo-clock"); if (!c) return;
@@ -209,7 +231,12 @@
     } catch (e) {}
   }
   setInterval(tickClock, 1000);
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); return r; }; }
+  // re-apply fixture match-times after any re-render of the game page
+  try {
+    var _mt = null, pg0 = document.getElementById("page");
+    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(decorateFixtureTimes, 40); }).observe(pg0, { childList: true, subtree: true });
+  } catch (e) {}
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); decorateFixtureTimes(); return r; }; }
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
 
