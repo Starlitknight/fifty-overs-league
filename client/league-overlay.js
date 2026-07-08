@@ -123,7 +123,16 @@
   var css2 = document.createElement("style");
   css2.textContent =
     "#folWrap{background:#0B1322 !important}" +
-    "#folPanel.fol-navy{background:radial-gradient(circle at top,rgba(77,166,162,.14),transparent 38%),linear-gradient(180deg,#0B1322 0%,#08101D 100%);display:flex;align-items:center;justify-content:center;padding:28px 20px}" +
+    // Login/signup mode is FULL-BLEED: without this the panel is a centered 780px
+    // column whose edges vanish against the dark page — leaving its scrollbar
+    // floating weirdly in the middle of the screen.
+    "#folPanel.fol-navy{inset:0 !important;max-width:none;border-radius:0;background:radial-gradient(circle at top,rgba(77,166,162,.14),transparent 38%),linear-gradient(180deg,#0B1322 0%,#08101D 100%);display:flex;flex-direction:column;padding:28px 20px}" +
+    // margin:auto (not align-items:center) so a card taller than the window scrolls instead of clipping its top
+    "#folPanel.fol-navy #folMain{margin:auto;width:100%;max-width:420px}" +
+    // subtle dark scrollbar (the default white one glows against navy)
+    "#folPanel{scrollbar-width:thin;scrollbar-color:rgba(246,244,238,.25) transparent}" +
+    "#folPanel::-webkit-scrollbar{width:10px}#folPanel::-webkit-scrollbar-track{background:transparent}" +
+    "#folPanel::-webkit-scrollbar-thumb{background:rgba(246,244,238,.18);border-radius:6px;border:2px solid #0B1322}#folPanel::-webkit-scrollbar-thumb:hover{background:rgba(246,244,238,.32)}" +
     "#folPanel.fol-navy .folhd{display:none}" +
     ".fol-card{width:100%;max-width:420px;background:#1C2433;border:1px solid rgba(246,244,238,.12);border-radius:24px;box-shadow:0 24px 60px -20px rgba(0,0,0,.6),0 1px 0 rgba(246,244,238,.03) inset;padding:34px 28px 26px}" +
     ".fol-logo{display:block;width:96px;height:96px;border-radius:22px;margin:0 auto 20px}" +
