@@ -6471,6 +6471,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     "html body.ftpskin #topbar,#topbar{background:" + NAVY + " !important;border-bottom:3px solid " + TERRA + " !important}" +
     "html body.ftpskin #topbar a.on,#topbar a.on{background:" + TERRA + " !important;color:" + PAPER + " !important;box-shadow:inset 0 -3px 0 " + TEAL + " !important}" +
     "#topbar a:hover{background:#16324a !important}" +
+    // keep the game's zebra striping / colours out of our own overlay tables
+    "#folPanel table tr,#folPanel table tbody tr{background:transparent !important}" +
+    "#folPanel td,#folPanel th{color:#F6F4EE !important;background:transparent !important;border-bottom-color:rgba(246,244,238,.12) !important}" +
+    "#topbar .brand::before{display:none !important}" +
+    ".fo-brandicon{width:26px;height:26px;border-radius:7px;vertical-align:-8px;margin-right:6px;box-shadow:0 0 0 1px rgba(246,244,238,.18)}" +
     "#page a,.panel a{color:#b0563b !important}" +
     // section headers -> navy
     "html body.ftpskin .panel>h4,html body.ftpskin .card-title,.panel>h4,.card-title,.panel>header,.card>h4,.sec>h4{background:" + NAVY2 + " !important;background-image:none !important;color:" + PAPER + " !important}" +
@@ -6503,8 +6508,17 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // human, and see its roster). The game ships the page but never links to it.
   function ensureNav() {
     try {
-      var tb = document.getElementById("topbar"); if (!tb || tb.querySelector('a[data-nav="players"]')) return;
-      var a = document.createElement("a"); a.setAttribute("data-nav", "players"); a.href = "#/players"; a.textContent = "Clubs";
+      var tb = document.getElementById("topbar"); if (!tb) return;
+      // put the app icon in the brand, on every page, and make it open the league menu
+      var brand = tb.querySelector(".brand");
+      if (brand && !brand.querySelector(".fo-brandicon")) {
+        brand.innerHTML = '<img class="fo-brandicon" src="' + APPICON + '" alt=""> Fifty Overs';
+        brand.style.cursor = "pointer"; brand.title = "League menu";
+        brand.addEventListener("click", openLeagueMenu);
+      }
+      if (tb.querySelector("a.fo-clubs")) return;
+      var a = document.createElement("a"); a.className = "fo-clubs"; a.href = "#"; a.textContent = "Clubs";
+      a.addEventListener("click", function (e) { e.preventDefault(); renderClubs(); });
       var after = tb.querySelector('a[data-nav="matches"]');
       if (after && after.nextSibling) tb.insertBefore(a, after.nextSibling); else tb.appendChild(a);
     } catch (e) {}
@@ -6542,9 +6556,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // The real designed app icon, for the in-app header.
   var ICON = '<img class="fol-hdicon" src="' + APPICON + '" alt="">';
 
+  // The floating bottom-right button is gone; the app icon in the game's top bar
+  // opens the league menu instead. Keep the element (hidden) so old refs are safe.
   var btn = document.createElement("button");
-  btn.id = "folBtn"; btn.textContent = "🏆 League";
-  document.body.appendChild(btn);
+  btn.id = "folBtn"; btn.textContent = "🏆 League"; btn.style.display = "none";
+  function openLeagueMenu() { openWrap(true); if (!JWT) renderLogin(); else if (SYNC && LG && SYNC.isFounder) showWait(!!SYNC.myTeam); else enterApp(); }
 
   var wrap = document.createElement("div");
   wrap.id = "folWrap";
@@ -6563,7 +6579,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     document.body.style.overflow = on ? "hidden" : "";
   }
 
-  btn.addEventListener("click", function () { openWrap(true); if (!JWT) renderLogin(); else if (SYNC && LG && SYNC.isFounder) showWait(!!SYNC.myTeam); else enterApp(); });
+  btn.addEventListener("click", openLeagueMenu);
 
   // ---- one delegated handler for everything ----
   wrap.addEventListener("click", function (ev) {
@@ -6781,6 +6797,31 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       renderSetup();
     }).catch(function (e) { if (isMissingTable(e)) setupNeeded(); else say(e); });
   }
+  // Make bot clubs equal in strength to the human clubs: scale each bot's skills
+  // so its average player rating matches the humans' average (with slight variety).
+  function humanAvgRating() {
+    var sum = 0, n = 0;
+    (GD.teams || []).forEach(function (t) { if (t.founded) (t.players || []).forEach(function (p) { sum += (p.rating || 0); n++; }); });
+    return n ? sum / n : 2000;
+  }
+  function balanceBots() {
+    try {
+      var target = humanAvgRating();
+      for (var i = 0; i < GD.teams.length; i++) {
+        var t = GD.teams[i]; if (t.founded) continue;                 // never touch human clubs
+        var tgt = target * (0.93 + ((i * 89) % 140) / 1000);          // within ~7% of the human level
+        for (var pass = 0; pass < 5; pass++) {
+          var avg = t.players.reduce(function (s, p) { return s + (p.rating || 0); }, 0) / Math.max(1, t.players.length);
+          var f = Math.max(0.5, Math.min(1.7, tgt / Math.max(1, avg)));
+          if (Math.abs(f - 1) < 0.02) break;
+          var sf = Math.pow(f, 0.85);
+          t.players.forEach(function (p) { for (var k in p.skills) p.skills[k] = Math.max(4, Math.min(96, Math.round(p.skills[k] * sf))); if (typeof window.jsDerive === "function") window.jsDerive(p); });
+        }
+        t._botCal = 1;
+      }
+    } catch (e) { console.warn("balanceBots", e); }
+  }
+
   // draft (or set up + draft) my own club, from the lobby.
   function draftMine() {
     var mt = SYNC && SYNC.myTeam;
@@ -6796,10 +6837,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var myClub = (rows && rows[0] && rows[0].club) || (defaults[0] ? JSON.parse(JSON.stringify(defaults[0])) : null);
       if (!myClub) { say("Draft your squad first, then you can practice."); return; }
       var world = [myClub], used = {}; used[myClub.name] = 1;
-      world = world.concat(defaults.filter(function (t) { return !used[t.name]; }).slice(0, 3));
+      world = world.concat(defaults.filter(function (t) { return !used[t.name]; }).slice(0, Math.max(0, 10 - world.length)));
       GD.teams = world;
       if (typeof window.econInit === "function") window.econInit();
-      App.teamIx = 0; App.season = null; if (typeof window.seasonInit === "function") window.seasonInit();
+      App.teamIx = 0; balanceBots();
+      App.season = null; if (typeof window.seasonInit === "function") window.seasonInit();
       App.round = 1; App.seasonNo = App.seasonNo || 1; App.results = []; App.cup = { stage: 0, alive: null, results: [], out: false };
       if (typeof window.mpInit === "function") window.mpInit();
       SYNC.practice = true;                                   // keep league sync from clobbering it
@@ -6808,6 +6850,30 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if (typeof window.saveGame === "function") window.saveGame(false);
       openWrap(false); location.hash = "#/matches"; if (typeof window.route === "function") window.route();
     }).catch(function (e) { if (isMissingTable(e)) setupNeeded(); else say(e); });
+  }
+
+  // Clubs & rosters: every club in the league with its players' BASIC info only
+  // (name, role, age, country — no skills). Pull from the live league teams.
+  function renderClubs() {
+    openWrap(true); setNavy(false);
+    wrap.querySelector("#folWho").textContent = LG ? LG.name : "";
+    var teams = (typeof GD !== "undefined" && GD.teams) ? GD.teams : [];
+    var roleName = function (r) { try { return (typeof window.prole === "function") ? window.prole(r) : (r || ""); } catch (e) { return r || ""; } };
+    var body;
+    if (!teams.length) {
+      body = '<div class="folcard"><div class="folpad folsmall">No clubs yet. Start or open a season to see the league\'s clubs.</div></div>';
+    } else {
+      body = teams.map(function (t) {
+        var rows = (t.players || []).map(function (p) {
+          return "<tr><td>" + E(p.name) + "</td><td>" + E(roleName(p.role)) + "</td><td>" + (p.age || "-") + "</td><td>" + E(p.nat || "-") + "</td></tr>";
+        }).join("") || '<tr><td colspan=4 class="folsmall">No players.</td></tr>';
+        return '<div class="folcard"><h4>' + E(t.name) + " <span class='folsmall'>" + (t.players ? t.players.length : 0) + " players</span></h4>" +
+          '<div class="folpad" style="overflow-x:auto"><table><tr><th>Player</th><th>Role</th><th>Age</th><th>Nat</th></tr>' + rows + "</table></div></div>";
+      }).join("");
+    }
+    main.innerHTML = '<div class="folbody">' +
+      '<div class="folcard"><div class="folpad folrow"><button class="mini" data-act="backToGame">◂ back to the game</button><span class="folsmall">Every club\'s roster (basic info)</span></div></div>' +
+      body + "</div>";
   }
 
   // Minimal onboarding: pick home country + names, then draft in the game.
@@ -6850,13 +6916,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       }).join("") || ('<tr><td colspan=' + (isF ? 3 : 2) + ' class="folsmall">No clubs yet.</td></tr>');
       var draftedCount = teams.filter(function (t) { return ready[t.manager_id]; }).length;
       var allReady = draftedCount >= 1 && draftedCount === teams.length;   // every club present has drafted
-      var solo = draftedCount < 2;
-      var startLabel = SYNC.started ? "Restart season (rebuild from clubs) ▸" : (solo ? "Start season (you + bots) ▸" : "Start the league ▸");
+      var solo = draftedCount < 10;
+      var startLabel = SYNC.started ? "Restart season (rebuild from clubs) ▸" : (draftedCount < 2 ? "Start season (you + bots) ▸" : "Start the league ▸");
       var ctl = isF
         ? '<div style="margin-top:10px">' +
             (allReady
               ? '<button class="p" data-act="startLeague">' + startLabel + '</button>' +
-                (solo ? '<div class="folsmall" style="margin-top:4px">Only your club has drafted, so bot clubs will fill the league. Invite friends first for a full human league.</div>' : "")
+                (solo ? '<div class="folsmall" style="margin-top:4px">Empty slots fill with bot clubs to make a full 10-team league. Invite more friends for more human clubs.</div>' : "")
               : '<div class="folsmall">The season starts once every club has drafted.</div>') +
             '<div style="margin-top:8px"><button class="mini" data-act="mkInvite">Create invite code</button> <span id="folInvite" class="folsmall"></span></div>' +
           "</div>"
@@ -6893,9 +6959,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if (!clubs || !clubs.length) { say("Draft your squad first, then start the season."); return; }
       try {
         var world = clubs.map(function (c) { return c.club; });
-        if (world.length < 2) {
+        if (world.length < 10) {   // fill up to a full 10-team league with bot clubs
           var used = {}; world.forEach(function (t) { used[t.name] = 1; });
-          var bots = defaults.filter(function (t) { return !used[t.name]; }).slice(0, Math.max(0, 4 - world.length));
+          var bots = defaults.filter(function (t) { return !used[t.name]; }).slice(0, Math.max(0, 10 - world.length));
           world = world.concat(bots);
         }
         GD.teams = world;
@@ -6903,6 +6969,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var myName = SYNC.myTeam ? SYNC.myTeam.name : null;
         var mine = GD.teams.findIndex(function (t) { return t.name === myName; });
         App.teamIx = mine >= 0 ? mine : 0;
+        balanceBots();
         App.season = null; if (typeof window.seasonInit === "function") window.seasonInit();
         App.round = 1; App.seasonNo = App.seasonNo || 1; App.results = [];
         App.cup = { stage: 0, alive: null, results: [], out: false };
