@@ -7737,10 +7737,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function redeemPending() {
     var raw = lsGet(PEND); if (!raw) return Promise.resolve();
     var p; try { p = JSON.parse(raw); } catch (e) { lsDel(PEND); return Promise.resolve(); }
-    if (!p || !p.code) { lsDel(PEND); return Promise.resolve(); }
+    if (!p || !p.code) return Promise.resolve();   // no code left, but keep names for prefill
     return rpc("redeem_invite", { p_code: p.code, p_display_name: p.dn, p_team_name: p.tn || (p.dn + " XI") })
       .then(function () { lsDel(PEND); })
-      .catch(function () { lsDel(PEND); }); // already a member or spent code: drop it and continue
+      .catch(function (e) {
+        // Network hiccup (TypeError): keep everything so a flaky connection can't eat
+        // a valid invite. Definitive rejection (already a member / spent code): drop
+        // the dead code but keep the names so the join form can prefill them.
+        if (!(e && e.name === "TypeError")) lsSet(PEND, JSON.stringify({ dn: p.dn, tn: p.tn }));
+      });
   }
   function renderPicker(ls) {
     setNavy(false);
@@ -8124,20 +8129,27 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
 
   // ---- join a league (shown only when you are not in one yet) ----
   function renderEnter() {
-    setNavy(false);
+    setNavy(true);
     wrap.querySelector("#folWho").textContent = "";
-    main.innerHTML =
-      '<div class="folbody"><div class="folcard"><h4>Join a league</h4><div class="folpad">' +
-      '<div class="folsmall" style="margin-bottom:8px">Enter the invite code from your commissioner.</div>' +
-      '<div class="folrow"><input id="folCode" placeholder="invite code"><input id="folDn" placeholder="your name"><input id="folTn" placeholder="team name"><button class="p" data-act="join">Join</button></div>' +
-      '<div style="margin-top:12px"><button class="mini" data-act="logout">log out</button></div>' +
-      "</div></div></div>";
+    // pre-fill from the invite remembered at signup, if we still have it
+    var p = null; try { p = JSON.parse(lsGet(PEND) || "null"); } catch (e) {}
+    main.innerHTML = folAuthShell(
+      "<h1>Join your league</h1>" +
+      '<div class="fol-sub">You\'re signed in — enter the invite code from your commissioner.</div>' +
+      '<div class="fol-form">' +
+      '<div><label for="folCode">Invite code</label><input id="folCode" placeholder="from your commissioner" value="' + E((p && p.code) || "") + '"></div>' +
+      '<div><label for="folDn">Manager name</label><input id="folDn" placeholder="your name" value="' + E((p && p.dn) || "") + '"></div>' +
+      '<div><label for="folTn">Team name</label><input id="folTn" placeholder="your club" value="' + E((p && p.tn) || "") + '"></div>' +
+      '<button class="fol-cta" data-act="join">Join</button>' +
+      "</div>" +
+      '<div class="fol-links"><a class="fol-mut" data-act="logout">Log out</a></div>' +
+      FOOT);
   }
   function joinLeague() {
     var code = val("folCode"), dn = val("folDn"), tn = val("folTn");
     if (!code || !dn) { say("Enter the invite code and your name"); return; }
     rpc("redeem_invite", { p_code: code, p_display_name: dn, p_team_name: tn || dn + " XI" })
-      .then(function (mid) { return sel("members", "id=eq." + mid + "&select=league_id"); })
+      .then(function (mid) { lsDel(PEND); return sel("members", "id=eq." + mid + "&select=league_id"); })
       .then(function (m) { return enterGameById(m[0].league_id); })
       .catch(say);
   }
