@@ -257,6 +257,105 @@
     ".fo-kv{width:100%;font-size:13px;border-collapse:collapse}.fo-kv td{padding:10px 18px;border-bottom:1px solid rgba(11,19,34,.055);color:#243040}.fo-kv tr:last-child td{border-bottom:none}.fo-kv td:first-child{color:#7a7566}" +
     ".fo-teal{color:#2b6b68 !important;font-weight:600}" +
     "@media(max-width:900px){.fo-ch-stats{grid-template-columns:repeat(2,1fr)}.fo-ch-grid{grid-template-columns:1fr}.fo-ch-leaders{grid-template-columns:1fr}.fo-ch-name{font-size:26px}.fo-ch-hero{flex-direction:column;align-items:flex-start}}" +
+    // ===== FIRST-LOGIN ONBOARDING =====
+    "#fo-onb{position:fixed;inset:0;z-index:100000;overflow:auto}" +
+    ".fo-ob-shell{min-height:100vh;background:radial-gradient(circle at 20% 0%,rgba(77,166,162,.14),transparent 34%),radial-gradient(circle at 85% 12%,rgba(200,103,74,.12),transparent 30%),linear-gradient(180deg,#0B1322 0%,#08101D 100%);color:#F6F4EE;padding:24px 16px 48px}" +
+    ".fo-ob-inner{max-width:960px;margin:0 auto}" +
+    ".fo-ob-prog{display:flex;align-items:center;justify-content:center;gap:4px;margin:6px 0 20px;flex-wrap:wrap}" +
+    ".fo-ob-step{display:flex;align-items:center;gap:7px;color:rgba(246,244,238,.5);font-size:12px;font-weight:600}" +
+    ".fo-ob-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;border:1px solid rgba(246,244,238,.2);background:rgba(246,244,238,.04)}" +
+    ".fo-ob-step.on{color:#F6F4EE}.fo-ob-step.on .fo-ob-dot{background:" + TERRA + ";border-color:" + TERRA + ";color:#fff}" +
+    ".fo-ob-step.done .fo-ob-dot{background:rgba(77,166,162,.25);border-color:" + TEAL + ";color:" + TEAL + "}.fo-ob-step.done{color:rgba(246,244,238,.7)}" +
+    ".fo-ob-sep{width:16px;height:1px;background:rgba(246,244,238,.14)}" +
+    ".fo-ob-card{background:linear-gradient(160deg,#1C2433,#111B2B);border:1px solid rgba(246,244,238,.09);border-radius:22px;padding:30px 32px;box-shadow:0 18px 50px rgba(11,19,34,.4)}" +
+    ".fo-ob-narrow{max-width:560px;margin:0 auto}" +
+    ".fo-ob-wordmark{display:flex;align-items:center;gap:14px;margin-bottom:16px}.fo-ob-wm1{font-size:22px;font-weight:800;letter-spacing:3px}.fo-ob-wm1 span{color:" + TERRA + "}.fo-ob-wm2{font-size:10px;letter-spacing:3px;color:rgba(246,244,238,.5);text-transform:uppercase;margin-top:2px}" +
+    ".fo-ob-eyebrow{color:" + TEAL + ";font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px}" +
+    ".fo-ob-h1{font-size:26px;font-weight:800;margin:0 0 10px;line-height:1.15;letter-spacing:-.3px}" +
+    ".fo-ob-lead{color:rgba(246,244,238,.72);font-size:14px;line-height:1.55;margin:0 0 18px}" +
+    ".fo-ob-lbl{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:rgba(246,244,238,.5);font-weight:700;margin:12px 0 6px}" +
+    ".fo-ob-input{width:100%;padding:12px 14px;border-radius:11px;border:1px solid rgba(246,244,238,.14);background:rgba(11,19,34,.5);color:#F6F4EE;font-size:15px;font-family:inherit}" +
+    ".fo-ob-input:focus{outline:none;border-color:" + TEAL + ";box-shadow:0 0 0 3px rgba(77,166,162,.2)}" +
+    ".fo-ob-crests{display:flex;gap:10px;flex-wrap:wrap}" +
+    ".fo-ob-crest{width:54px;height:54px;border-radius:13px;border:2px solid rgba(246,244,238,.12);background:rgba(11,19,34,.5);font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:none}" +
+    ".fo-ob-crest.on{border-color:var(--cc);box-shadow:0 0 0 3px color-mix(in srgb,var(--cc) 30%,transparent),inset 0 0 0 2px rgba(11,19,34,.3)}" +
+    ".fo-ob-act{display:flex;gap:12px;justify-content:flex-end;margin-top:22px}" +
+    ".fo-ob-cta{background:" + TERRA + ";color:#F6F4EE;border:none;padding:12px 22px;border-radius:11px;font-weight:700;font-size:14px;cursor:pointer}.fo-ob-cta:hover:not(:disabled){background:" + TERRA2 + "}.fo-ob-cta:disabled{opacity:.4;cursor:default}" +
+    ".fo-cta-danger{background:" + TERRA + "}" +
+    ".fo-ob-ghost{background:transparent;color:rgba(246,244,238,.8);border:1px solid rgba(246,244,238,.2);padding:12px 20px;border-radius:11px;font-weight:600;font-size:14px;cursor:pointer}.fo-ob-ghost:hover{background:rgba(246,244,238,.06)}" +
+    // money screen
+    ".fo-ob-jobs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:8px 0 18px}" +
+    ".fo-ob-job{display:flex;gap:12px;align-items:center;background:rgba(11,19,34,.4);border:1px solid rgba(246,244,238,.08);border-radius:14px;padding:14px}" +
+    ".fo-ob-jic{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none;background:rgba(77,166,162,.14)}" +
+    ".fo-ob-muted{color:rgba(246,244,238,.55);font-size:12px;margin-top:2px}" +
+    ".fo-ob-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0 0 18px}" +
+    ".fo-ob-tile{background:rgba(11,19,34,.45);border:1px solid rgba(246,244,238,.09);border-radius:14px;padding:16px}" +
+    ".fo-ob-tl{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:rgba(246,244,238,.5);font-weight:700}.fo-ob-tv{font-size:23px;font-weight:800;margin:5px 0 2px}.fo-ob-ts{font-size:11.5px;color:rgba(246,244,238,.5)}" +
+    ".fo-ob-list{margin:6px 0 16px;padding-left:18px;color:rgba(246,244,238,.78);font-size:13.5px;line-height:1.8}.fo-ob-list b{color:#F6F4EE}" +
+    ".fo-ob-warn{background:linear-gradient(90deg,rgba(200,103,74,.18),rgba(200,103,74,.06));border:1px solid rgba(200,103,74,.35);border-radius:12px;padding:12px 14px;color:#f0c3b2;font-size:13px;font-weight:600}" +
+    ".fo-ob-note{background:rgba(77,166,162,.08);border:1px solid rgba(77,166,162,.22);border-radius:11px;padding:10px 13px;color:rgba(246,244,238,.7);font-size:12.5px;margin-top:6px}" +
+    // selectable cards (style/sponsor)
+    ".fo-ob-picks{display:flex;flex-direction:column;gap:12px}.fo-ob-picks-3{gap:12px}" +
+    ".fo-ob-pick{text-align:left;background:rgba(11,19,34,.42);border:1.5px solid rgba(246,244,238,.1);border-radius:16px;padding:16px 18px;cursor:pointer;color:#F6F4EE;display:block;width:100%}" +
+    ".fo-ob-pick:hover{border-color:rgba(246,244,238,.24)}" +
+    ".fo-ob-pick.on{border-color:var(--tc);box-shadow:0 0 0 3px color-mix(in srgb,var(--tc) 26%,transparent)}" +
+    ".fo-tone-teal{--tc:" + TEAL + "}.fo-tone-terra{--tc:" + TERRA + "}.fo-tone-gold{--tc:#D9A441}.fo-tone-violet{--tc:#8b6bb1}.fo-tone-danger{--tc:#C84F4A}" +
+    ".fo-ob-pick-h{display:flex;align-items:center;gap:10px;margin-bottom:3px}.fo-ob-pick-name{font-size:16px;font-weight:800;color:var(--tc)}" +
+    ".fo-ob-rec{background:rgba(77,166,162,.16);color:" + TEAL + ";font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid rgba(77,166,162,.3)}" +
+    ".fo-ob-est{margin-left:auto;text-align:right;font-size:10px;color:rgba(246,244,238,.5);text-transform:uppercase;letter-spacing:.04em}.fo-ob-est b{display:block;font-size:16px;color:#F6F4EE;letter-spacing:0}" +
+    ".fo-ob-pick-tag{color:rgba(246,244,238,.62);font-size:12.5px;margin-bottom:10px}" +
+    ".fo-ob-pick-grid{display:flex;gap:22px}.fo-ob-pick-grid>div{display:flex;flex-direction:column}.fo-ob-pick-grid span{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:rgba(246,244,238,.45);font-weight:700}.fo-ob-pick-grid b{font-size:15px;margin-top:2px}.fo-ob-pick-grid .fo-risk{color:var(--tc)}" +
+    ".fo-ob-splines{margin:0 0 8px;padding-left:16px;font-size:12.5px;color:rgba(246,244,238,.78);line-height:1.6}" +
+    ".fo-ob-scen{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.fo-ob-scen span{background:rgba(11,19,34,.4);border-radius:9px;padding:7px 8px;text-align:center;font-size:13px;font-weight:700}.fo-ob-scen i{display:block;font-style:normal;font-size:9.5px;text-transform:uppercase;letter-spacing:.03em;color:rgba(246,244,238,.45);margin-bottom:3px;font-weight:700}" +
+    // draft room
+    ".fo-ob-draftwrap{max-width:1180px;margin:0 auto}" +
+    ".fo-dr-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:14px;flex-wrap:wrap}" +
+    ".fo-dr-hstat{display:flex;gap:8px;flex-wrap:wrap}.fo-dr-hstat span{background:rgba(28,36,51,.7);border:1px solid rgba(246,244,238,.1);border-radius:10px;padding:8px 13px;font-size:12px;color:rgba(246,244,238,.6)}.fo-dr-hstat b{color:#F6F4EE;margin-left:5px}" +
+    ".fo-dr-grid{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}" +
+    ".fo-dr-main{background:linear-gradient(160deg,#1C2433,#111B2B);border:1px solid rgba(246,244,238,.09);border-radius:16px;padding:14px}" +
+    ".fo-dr-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center}" +
+    ".fo-dr-chip{background:rgba(11,19,34,.5);border:1px solid rgba(246,244,238,.12);color:rgba(246,244,238,.72);border-radius:999px;padding:6px 13px;font-size:12px;cursor:pointer;font-weight:600}.fo-dr-chip.on{background:" + TERRA + ";border-color:" + TERRA + ";color:#fff}" +
+    ".fo-dr-searchi{margin-left:auto;background:rgba(11,19,34,.5);border:1px solid rgba(246,244,238,.12);color:#F6F4EE;border-radius:10px;padding:7px 12px;font-size:12.5px;min-width:150px;font-family:inherit}.fo-dr-searchi:focus{outline:none;border-color:" + TEAL + "}" +
+    ".fo-dr-tblwrap{max-height:60vh;overflow:auto;border-radius:10px}" +
+    ".fo-dr-tbl{width:100%;border-collapse:collapse;font-size:13px}" +
+    ".fo-dr-tbl thead th{position:sticky;top:0;background:#141d2c;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:rgba(246,244,238,.5);font-weight:700;padding:8px 10px;border-bottom:1px solid rgba(246,244,238,.1)}" +
+    ".fo-dr-tbl tbody td{padding:9px 10px;border-bottom:1px solid rgba(246,244,238,.06);color:rgba(246,244,238,.86)}.fo-dr-tbl .r{text-align:right}" +
+    ".fo-dr-tbl tbody tr:hover td{background:rgba(246,244,238,.03)}.fo-dr-in td{background:rgba(200,103,74,.1) !important}" +
+    ".fo-dr-nm{font-weight:600;color:#F6F4EE}.fo-dr-nat{color:rgba(246,244,238,.5);font-size:11px}" +
+    ".fo-rl{background:rgba(77,166,162,.14);color:" + TEAL + ";font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px}" +
+    ".fo-dr-add{width:28px;height:28px;border-radius:8px;border:1px solid " + TERRA + ";background:" + TERRA + ";color:#fff;font-size:16px;font-weight:700;cursor:pointer;line-height:1}.fo-dr-add.on{background:rgba(11,19,34,.4);color:" + TERRA + "}" +
+    ".fo-dr-side{display:flex;flex-direction:column;gap:12px;position:sticky;top:12px}" +
+    ".fo-fc{background:linear-gradient(160deg,#1C2433,#0e1626);border:1px solid rgba(246,244,238,.1);border-radius:16px;padding:16px}" +
+    ".fo-fc-h{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:" + TEAL + ";font-weight:800;margin-bottom:10px}" +
+    ".fo-fc-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:12.5px;color:rgba(246,244,238,.62);border-bottom:1px solid rgba(246,244,238,.05)}.fo-fc-row b{color:#F6F4EE;font-weight:700}" +
+    ".fo-fc-end{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:11px 13px;border-radius:11px;background:rgba(11,19,34,.5);border:1px solid var(--tc)}.fo-fc-end span{font-size:12px;color:rgba(246,244,238,.7)}.fo-fc-end b{font-size:19px;color:var(--tc)}" +
+    ".fo-fc-health{margin-top:8px;text-align:center;font-size:12px;color:rgba(246,244,238,.6)}.fo-fc-health b{color:var(--tc);font-weight:800}" +
+    ".fo-fc-scens{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:10px}.fo-fc-scen{background:rgba(11,19,34,.45);border-radius:9px;padding:7px 9px;font-size:12px}.fo-fc-scen span{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.03em;color:rgba(246,244,238,.45);font-weight:700}.fo-fc-scen b{color:var(--tc)}" +
+    ".fo-dr-shape{display:flex;gap:6px;justify-content:space-between}.fo-sh{flex:1;background:rgba(28,36,51,.7);border:1px solid rgba(246,244,238,.08);border-radius:11px;padding:9px 4px;text-align:center;font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:rgba(246,244,238,.5);font-weight:700}.fo-sh b{display:block;font-size:18px;color:#F6F4EE}" +
+    ".fo-adv-panel{background:rgba(28,36,51,.6);border:1px solid rgba(246,244,238,.09);border-radius:16px;padding:14px}.fo-adv-h{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:rgba(246,244,238,.55);font-weight:800;margin-bottom:8px}" +
+    ".fo-adv{font-size:12.5px;line-height:1.5;padding:8px 11px;border-radius:10px;margin-bottom:6px;border-left:3px solid}.fo-adv:last-child{margin-bottom:0}" +
+    ".fo-adv-warn{background:rgba(217,164,65,.1);border-color:#D9A441;color:#e8cf9a}.fo-adv-danger{background:rgba(200,79,74,.12);border-color:#C84F4A;color:#eab3b0}.fo-adv-ok{background:rgba(77,166,109,.1);border-color:#4DA66D;color:#a9d9ba}.fo-adv-info{background:rgba(77,166,162,.08);border-color:" + TEAL + ";color:rgba(246,244,238,.7)}" +
+    ".fo-dr-act{max-width:none;justify-content:space-between;margin-top:16px}.fo-dr-needs{text-align:right;color:rgba(246,244,238,.5);font-size:12px;margin-top:6px}" +
+    // risk + report
+    ".fo-ob-risk{text-align:center;background:linear-gradient(160deg,#2a1a1a,#1a0f14);border-color:rgba(200,79,74,.4)}.fo-risk-ic{width:60px;height:60px;border-radius:50%;background:rgba(200,79,74,.18);border:1px solid rgba(200,79,74,.4);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 14px}.fo-risk-amt{color:#e58b86}.fo-risk-list{display:inline-block;text-align:left}.fo-ob-risk .fo-ob-act{justify-content:center}" +
+    ".fo-ob-check{display:flex;align-items:center;gap:8px;justify-content:center;font-size:13px;color:rgba(246,244,238,.8);margin:8px 0;cursor:pointer}.fo-ob-check input{width:17px;height:17px;accent-color:" + TERRA + "}" +
+    ".fo-ob-report{max-width:640px;margin:0 auto}.fo-br-head{display:flex;align-items:center;gap:14px;margin-bottom:16px}.fo-br-crest{width:52px;height:52px;border-radius:13px;background:rgba(11,19,34,.5);border:1px solid var(--cc);display:flex;align-items:center;justify-content:center;font-size:26px}" +
+    ".fo-br-grid{background:rgba(11,19,34,.4);border:1px solid rgba(246,244,238,.08);border-radius:14px;overflow:hidden}.fo-br-row{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(246,244,238,.06);font-size:13.5px;color:rgba(246,244,238,.7)}.fo-br-row:last-child{border-bottom:none}.fo-br-row b{font-size:15px}" +
+    ".fo-br-advice{margin-top:14px;background:rgba(77,166,162,.07);border:1px solid rgba(77,166,162,.2);border-radius:14px;padding:14px 16px}.fo-br-advh{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:" + TEAL + ";font-weight:800;margin-bottom:5px}.fo-br-advice p{margin:0;font-size:13.5px;line-height:1.55;color:rgba(246,244,238,.82)}" +
+    ".fo-tone-teal{color-scheme:normal}b.fo-tone-teal,.fo-tone-teal>b{color:" + TEAL + "}b.fo-tone-terra{color:" + TERRA + "}b.fo-tone-gold{color:#e0b45c}b.fo-tone-danger{color:#e58b86}" +
+    "@media(max-width:820px){.fo-dr-grid{grid-template-columns:1fr}.fo-dr-side{position:static}.fo-ob-tiles,.fo-ob-jobs{grid-template-columns:1fr}.fo-ob-card{padding:22px 18px}.fo-ob-h1{font-size:22px}}" +
+    // beat the engine's default button/input styling inside the onboarding shell
+    "#fo-onb button{font-family:inherit;min-height:0;box-shadow:none}" +
+    "#fo-onb .fo-ob-cta{background:" + TERRA + " !important;color:#F6F4EE !important;border:none !important}" +
+    "#fo-onb .fo-ob-ghost{background:transparent !important;color:rgba(246,244,238,.82) !important;border:1px solid rgba(246,244,238,.22) !important}" +
+    "#fo-onb .fo-ob-crest{background:rgba(11,19,34,.55) !important;color:#F6F4EE !important}" +
+    "#fo-onb .fo-ob-pick{background:rgba(11,19,34,.42) !important;color:#F6F4EE !important}" +
+    "#fo-onb .fo-dr-add{background:" + TERRA + " !important;color:#fff !important}#fo-onb .fo-dr-add.on{background:rgba(11,19,34,.55) !important;color:" + TERRA + " !important}" +
+    "#fo-onb .fo-dr-chip{background:rgba(11,19,34,.55) !important;color:rgba(246,244,238,.72) !important}#fo-onb .fo-dr-chip.on{background:" + TERRA + " !important;color:#fff !important}" +
+    "#fo-onb .fo-ob-input,#fo-onb .fo-dr-searchi{background:rgba(11,19,34,.5) !important;color:#F6F4EE !important}" +
+    "#fo-onb .fo-dr-tbl tbody tr td{background:transparent !important}" +
+    "#fo-onb .fo-dr-tbl tbody tr.fo-dr-in td{background:rgba(200,103,74,.15) !important}" +
+    "#fo-onb .fo-dr-tbl tbody tr:hover td{background:rgba(246,244,238,.045) !important}" +
     // league standings — form pips + leader/user accents
     ".fo-standings td,.fo-standings th{padding:6px 8px}" +
     ".fo-standings tr.fo-lead td{box-shadow:inset 3px 0 0 " + TEAL + "}" +
@@ -1575,16 +1674,383 @@
 
   // Draft happens in the game's OWN founder screen (pgFounder). We hand it a
   // balanced, country-flavoured pool derived from the server draft_seed.
-  function startDraft(team) {
+  // ===========================================================================
+  //  FIRST-LOGIN ONBOARDING + DRAFT FINANCE FLOW
+  //  8 branded screens that teach the finance model through choices + a live
+  //  forecast, then hand the drafted squad to the engine's founderConfirm(). All
+  //  finance constants come from finance-config.json (embedded below).
+  // ===========================================================================
+  var FO_FIN = {
+    seasonLength: 18, homeMatches: 9, startingBank: 1000000, ticketPrice: 8, groundCost: 45000,
+    health: [{ label: "Excellent", min: 250000 }, { label: "Safe", min: 100000 }, { label: "Tight", min: 25000 }, { label: "Danger", min: 0 }, { label: "Crisis", min: null }],
+    styles: [
+      { id: "balanced", name: "Balanced", draftBudget: 800000, reserve: 200000, risk: "Low", rec: true, tone: "teal", tag: "Sustainable growth for new managers." },
+      { id: "win_now", name: "Win Now", draftBudget: 925000, reserve: 75000, risk: "High", rec: false, tone: "terra", tag: "Spend big on stars." },
+      { id: "moneyball", name: "Moneyball", draftBudget: 700000, reserve: 300000, risk: "Medium", rec: false, tone: "violet", tag: "Save cash and hunt value." }
+    ],
+    sponsors: [
+      { id: "community", name: "Community Sponsor", pos: "Safe money. No bonuses.", base: 3500, win: 0, halfway: 0, seasonTop3: 0, champ: 0, tone: "teal", rec: true, lines: ["+$3,500 per matchday", "No bonuses"] },
+      { id: "results", name: "Results Sponsor", pos: "Win more, earn more.", base: 2000, win: 3500, halfway: 0, seasonTop3: 0, champ: 0, tone: "terra", lines: ["+$2,000 per matchday", "+$3,500 per win"] },
+      { id: "contender", name: "Contender Sponsor", pos: "Back your XI.", base: 0, win: 6000, halfway: 15000, seasonTop3: 20000, champ: 25000, tone: "gold", lines: ["+$6,000 per win", "+$15k top-3 halfway", "+$20k top-3 finish · +$25k champion"] }
+    ],
+    scenarios: [
+      { id: "bad", name: "Bad season", wins: 5, crowd: 4000, t3half: false, t3fin: false, champ: false },
+      { id: "average", name: "Average season", wins: 9, crowd: 6000, t3half: false, t3fin: false, champ: false },
+      { id: "good", name: "Top-3 season", wins: 13, crowd: 8000, t3half: true, t3fin: true, champ: false },
+      { id: "champion", name: "Champion season", wins: 15, crowd: 9500, t3half: true, t3fin: true, champ: true }
+    ]
+  };
+  function foDraftPrice(p) { return (p && p.fee != null) ? p.fee : Math.max(8000, Math.round((((p && p.rating) || 3000) - 2800) * 40 + 8000)); }
+  function foDailyWage(p) { return (p && p.wage != null) ? p.wage : Math.max(700, Math.round(((p && p.fee) || 40000) * 0.028 / 10) * 10); }
+  function foSeasonCost(p) { return foDraftPrice(p) + foDailyWage(p) * FO_FIN.seasonLength; }
+  function foSponsorById(id) { for (var i = 0; i < FO_FIN.sponsors.length; i++) if (FO_FIN.sponsors[i].id === id) return FO_FIN.sponsors[i]; return FO_FIN.sponsors[0]; }
+  function foStyleById(id) { for (var i = 0; i < FO_FIN.styles.length; i++) if (FO_FIN.styles[i].id === id) return FO_FIN.styles[i]; return FO_FIN.styles[0]; }
+  function foScenarioById(id) { for (var i = 0; i < FO_FIN.scenarios.length; i++) if (FO_FIN.scenarios[i].id === id) return FO_FIN.scenarios[i]; return FO_FIN.scenarios[1]; }
+  function foSponsorPayout(sp, sc) { var v = sp.base * FO_FIN.seasonLength + sp.win * sc.wins; if (sc.t3half) v += sp.halfway; if (sc.t3fin) v += sp.seasonTop3; if (sc.champ) v += sp.champ; return v; }
+  function foTicket(sc) { return FO_FIN.homeMatches * sc.crowd * FO_FIN.ticketPrice; }
+  function foHealth(end) { for (var i = 0; i < FO_FIN.health.length; i++) { var h = FO_FIN.health[i]; if (h.min == null || end >= h.min) return h.label; } return "Crisis"; }
+  function foHealthTone(label) { return { Excellent: "teal", Safe: "teal", Tight: "gold", Danger: "terra", Crisis: "danger" }[label] || "gold"; }
+  // The whole forecast for a set of picks + sponsor, under one scenario.
+  function foForecast(picked, sponsorId, scenarioId) {
+    var draftSpent = 0, dailyWage = 0;
+    for (var i = 0; i < picked.length; i++) { draftSpent += foDraftPrice(picked[i]); dailyWage += foDailyWage(picked[i]); }
+    var bankAfter = FO_FIN.startingBank - draftSpent, seasonWage = dailyWage * FO_FIN.seasonLength;
+    var sc = foScenarioById(scenarioId || "average"), sp = foSponsorById(sponsorId);
+    var ticket = foTicket(sc), sponsor = foSponsorPayout(sp, sc);
+    var end = bankAfter + ticket + sponsor - seasonWage - FO_FIN.groundCost;
+    return { draftSpent: draftSpent, bankAfter: bankAfter, dailyWage: dailyWage, seasonWage: seasonWage, ticket: ticket, sponsor: sponsor, ground: FO_FIN.groundCost, end: end, health: foHealth(end) };
+  }
+  var FO$ = function (n) { return "$" + Math.round(n || 0).toLocaleString(); };
+  var FO$s = function (n) { return (n < 0 ? "-$" : "$") + Math.abs(Math.round(n || 0)).toLocaleString(); };
+
+  // ---- onboarding state + shell --------------------------------------------
+  var FO_ONB = null;
+  var FO_ICON =
+    "<svg viewBox='0 0 1024 1024' width='100%' height='100%' xmlns='http://www.w3.org/2000/svg'>" +
+    "<rect x='64' y='64' width='896' height='896' rx='220' fill='#101B2D'/>" +
+    "<g fill='#C8674A'><rect x='418' y='215' width='42' height='138' rx='10'/><rect x='492' y='215' width='42' height='138' rx='10'/><rect x='566' y='215' width='42' height='138' rx='10'/><rect x='410' y='200' width='58' height='18' rx='9'/><rect x='484' y='200' width='58' height='18' rx='9'/><rect x='558' y='200' width='58' height='18' rx='9'/></g>" +
+    "<path d='M280 394H560V455H335L313 556C342 531 381 518 429 518C501 518 560 542 605 589C650 636 672 695 672 766C672 838 647 897 596 944C546 991 482 1015 404 1015C337 1015 282 999 239 966C196 934 170 888 161 830H230C237 869 255 899 285 920C315 941 354 951 401 951C460 951 509 934 548 900C586 866 605 821 605 764C605 709 587 664 551 629C515 594 469 577 413 577C354 577 307 597 272 637H207L280 394Z' fill='#F6F4EE' transform='translate(5 -140) scale(.86)'/>" +
+    "<circle cx='625' cy='615' r='194' stroke='#F6F4EE' stroke-width='58' fill='none'/>" +
+    "<path d='M625 809C579 750 579 480 625 421' stroke='#F6F4EE' stroke-width='38' stroke-linecap='round' fill='none'/>" +
+    "<path d='M690 460C704 555 704 674 690 770' stroke='#F6F4EE' stroke-width='24' stroke-linecap='round' stroke-dasharray='52 42' fill='none'/>" +
+    "<path d='M622 460C636 555 636 674 622 770' stroke='#F6F4EE' stroke-width='24' stroke-linecap='round' stroke-dasharray='52 42' fill='none'/></svg>";
+  var FO_CRESTS = [
+    { id: "shield", ic: "🛡️", c: "#4DA6A2" }, { id: "bull", ic: "🐂", c: "#C8674A" }, { id: "lion", ic: "🦁", c: "#8b6bb1" },
+    { id: "star", ic: "⭐", c: "#4DA66D" }, { id: "flame", ic: "🔥", c: "#D9A441" }, { id: "hawk", ic: "🦅", c: "#5b8fb0" }
+  ];
+  var FO_STEPS = ["Club", "Money", "Style", "Sponsor", "Draft", "Report"];
+  function foOnbShell(stepIx, body) {
+    var prog = FO_STEPS.map(function (s, i) {
+      var cls = i < stepIx ? "done" : (i === stepIx ? "on" : "");
+      return "<div class='fo-ob-step " + cls + "'><span class='fo-ob-dot'>" + (i < stepIx ? "✓" : (i + 1)) + "</span><span class='fo-ob-slbl'>" + s + "</span></div>";
+    }).join("<span class='fo-ob-sep'></span>");
+    return "<div class='fo-ob-shell'><div class='fo-ob-inner'><div class='fo-ob-prog'>" + prog + "</div>" + body + "</div></div>";
+  }
+  function foOnbMount(stepIx, body) {
+    var host = document.getElementById("fo-onb");
+    if (!host) { host = document.createElement("div"); host.id = "fo-onb"; document.body.appendChild(host); }
+    host.innerHTML = foOnbShell(stepIx, body);
+    host.style.display = "block";
+    try { openWrap(false); } catch (e) {}
+    return host;
+  }
+  function foOnbClose() { var h = document.getElementById("fo-onb"); if (h) { h.style.display = "none"; h.innerHTML = ""; } }
+
+  function foOnbStart(team) {
     if (typeof window.genDraftPool !== "function" || typeof window.pgFounder !== "function") { say("Game engine not ready. Reload the page and try again."); return; }
     var pool = buildCountryPool(team.draft_seed, team.country);
     App.founder = {
       name: team.name, budget: 1000000, pool: pool, picked: [], identity: "Balanced XI",
       mgr: (SYNC && SYNC.me && SYNC.me.display_name) || "Manager",
-      __league: { league_id: LG.id, team_id: team.id }
+      __league: { league_id: (LG && LG.id) || null, team_id: team.id }
     };
-    openWrap(false);                       // hand the screen to the game's draft
-    try { window.pgFounder(); } catch (e) { say(e); }
+    FO_ONB = { team: team, step: 1, clubName: team.name || "", crest: 0, ground: (team.name ? team.name + " Oval" : "Riverview Oval"), style: "balanced", sponsor: "community", scenario: "average", role: "all", riskAck: false };
+    foOnbCreate();
+  }
+  window.__foOnb = { start: foOnbStart, draft: foOnbDraft, report: foOnbReport, risk: foOnbRisk, forecast: foForecast, state: function () { return FO_ONB; } };
+
+  // ---- Screen 1 · Create your club -----------------------------------------
+  function foOnbCreate() {
+    FO_ONB.step = 1;
+    var crests = FO_CRESTS.map(function (c, i) {
+      return "<button type='button' class='fo-ob-crest " + (FO_ONB.crest === i ? "on" : "") + "' data-crest='" + i + "' style='--cc:" + c.c + "'>" + c.ic + "</button>";
+    }).join("");
+    var body =
+      "<div class='fo-ob-card fo-ob-narrow'>" +
+      "<div class='fo-ob-wordmark'>" + FO_ICON.replace("width='100%' height='100%'", "width='58' height='58'") + "<div><div class='fo-ob-wm1'>FIFTY <span>OVERS</span></div><div class='fo-ob-wm2'>Strategize · Draft · Outthink</div></div></div>" +
+      "<h1 class='fo-ob-h1'>Welcome to Fifty Overs</h1>" +
+      "<p class='fo-ob-lead'>You are taking over a new club in a 10-team league. Season 1 lasts <b>18 matchdays</b> and you start with <b>$1,000,000</b>.<br>Your job: draft a squad, set your XI, survive the season.</p>" +
+      "<label class='fo-ob-lbl'>Club name</label><input id='fo-ob-name' class='fo-ob-input' maxlength='28' value='" + E(FO_ONB.clubName) + "' placeholder='Riverview Rangers'>" +
+      "<label class='fo-ob-lbl'>Choose a crest</label><div class='fo-ob-crests'>" + crests + "</div>" +
+      "<label class='fo-ob-lbl'>Home ground</label><input id='fo-ob-ground' class='fo-ob-input' maxlength='30' value='" + E(FO_ONB.ground) + "' placeholder='Riverview Oval'>" +
+      "<div class='fo-ob-act'><button class='fo-ob-cta' id='fo-ob-c1'>Continue</button></div></div>";
+    var host = foOnbMount(0, body);
+    host.querySelectorAll(".fo-ob-crest").forEach(function (b) { b.addEventListener("click", function () { FO_ONB.crest = +b.getAttribute("data-crest"); foOnbCreate(); }); });
+    host.querySelector("#fo-ob-c1").addEventListener("click", function () {
+      var nm = (host.querySelector("#fo-ob-name").value || "").trim();
+      if (nm.length < 2) { host.querySelector("#fo-ob-name").focus(); return; }
+      FO_ONB.clubName = nm; FO_ONB.ground = (host.querySelector("#fo-ob-ground").value || "").trim() || (nm + " Oval");
+      App.founder.name = nm;
+      foOnbMoney();
+    });
+  }
+
+  // ---- Screen 2 · How your money works -------------------------------------
+  function foOnbMoney() {
+    FO_ONB.step = 2;
+    var tile = function (l, v, s, tone) { return "<div class='fo-ob-tile fo-tone-" + (tone || "") + "'><div class='fo-ob-tl'>" + l + "</div><div class='fo-ob-tv'>" + v + "</div>" + (s ? "<div class='fo-ob-ts'>" + s + "</div>" : "") + "</div>"; };
+    var body =
+      "<div class='fo-ob-card'>" +
+      "<div class='fo-ob-eyebrow'>How your money works</div>" +
+      "<h1 class='fo-ob-h1'>Your $1,000,000 has two jobs</h1>" +
+      "<div class='fo-ob-jobs'><div class='fo-ob-job'><span class='fo-ob-jic fo-tone-teal'>🏏</span><div><b>1 · Build the squad</b><div class='fo-ob-muted'>Draft prices are paid once.</div></div></div>" +
+      "<div class='fo-ob-job'><span class='fo-ob-jic fo-tone-terra'>🛡️</span><div><b>2 · Keep the club running</b><div class='fo-ob-muted'>Daily wages every matchday.</div></div></div></div>" +
+      "<div class='fo-ob-tiles'>" + tile("Starting bank", "$1,000,000", "Draft + operating money", "teal") +
+      tile("Recommended draft spend", "$750k–$850k", "Leaves room to operate", "") +
+      tile("Recommended reserve", "$150k–$250k", "Cover wages &amp; injuries", "") + "</div>" +
+      "<ul class='fo-ob-list'><li>Every player has a <b>draft price</b> and a <b>daily wage</b>.</li><li>You pay wages every matchday.</li><li>Home matches bring ticket income.</li><li>Wins and sponsors can bring extra money.</li></ul>" +
+      "<div class='fo-ob-warn'>⚠ Spend too much in the draft and you may have to release players later.</div>" +
+      "<div class='fo-ob-act'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Continue</button></div></div>";
+    var host = foOnbMount(1, body);
+    host.querySelector("#fo-ob-b").addEventListener("click", foOnbCreate);
+    host.querySelector("#fo-ob-c").addEventListener("click", foOnbStyle);
+  }
+
+  // ---- Screen 3 · Choose your financial style ------------------------------
+  function foOnbStyle() {
+    FO_ONB.step = 3;
+    var cards = FO_FIN.styles.map(function (s) {
+      return "<button type='button' class='fo-ob-pick fo-tone-" + s.tone + " " + (FO_ONB.style === s.id ? "on" : "") + "' data-style='" + s.id + "'>" +
+        "<div class='fo-ob-pick-h'><span class='fo-ob-pick-name'>" + s.name + "</span>" + (s.rec ? "<span class='fo-ob-rec'>Recommended</span>" : "") + "</div>" +
+        "<div class='fo-ob-pick-tag'>" + s.tag + "</div>" +
+        "<div class='fo-ob-pick-grid'><div><span>Draft budget</span><b>" + FO$(s.draftBudget) + "</b></div><div><span>Reserve target</span><b>" + FO$(s.reserve) + "</b></div><div><span>Risk</span><b class='fo-risk'>" + s.risk + "</b></div></div></button>";
+    }).join("");
+    var body =
+      "<div class='fo-ob-card'>" +
+      "<div class='fo-ob-eyebrow'>Choose your financial style</div>" +
+      "<h1 class='fo-ob-h1'>Pick the approach that matches your ambitions</h1>" +
+      "<div class='fo-ob-picks'>" + cards + "</div>" +
+      "<div class='fo-ob-note'>ⓘ This is a guide, not a lock. You can spend more or less than the suggested budget.</div>" +
+      "<div class='fo-ob-act'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Continue</button></div></div>";
+    var host = foOnbMount(2, body);
+    host.querySelectorAll(".fo-ob-pick").forEach(function (b) { b.addEventListener("click", function () { FO_ONB.style = b.getAttribute("data-style"); foOnbStyle(); }); });
+    host.querySelector("#fo-ob-b").addEventListener("click", foOnbMoney);
+    host.querySelector("#fo-ob-c").addEventListener("click", foOnbSponsor);
+  }
+
+  // ---- Screen 4 · Choose your sponsor --------------------------------------
+  function foOnbSponsor() {
+    FO_ONB.step = 4;
+    var avg = foScenarioById("average");
+    var cards = FO_FIN.sponsors.map(function (s) {
+      var est = foSponsorPayout(s, avg);
+      return "<button type='button' class='fo-ob-pick fo-tone-" + s.tone + " " + (FO_ONB.sponsor === s.id ? "on" : "") + "' data-sp='" + s.id + "'>" +
+        "<div class='fo-ob-pick-h'><span class='fo-ob-pick-name'>" + s.name + "</span>" + (s.rec ? "<span class='fo-ob-rec'>Recommended</span>" : "") + "<span class='fo-ob-est'>Avg season<b>" + FO$(est) + "</b></span></div>" +
+        "<div class='fo-ob-pick-tag'>" + s.pos + "</div>" +
+        "<ul class='fo-ob-splines'>" + s.lines.map(function (l) { return "<li>" + l + "</li>"; }).join("") + "</ul>" +
+        "<div class='fo-ob-scen'>" + ["bad", "average", "good", "champion"].map(function (id) { var sc = foScenarioById(id); return "<span><i>" + sc.name.replace(" season", "") + "</i>" + FO$(foSponsorPayout(s, sc)) + "</span>"; }).join("") + "</div></button>";
+    }).join("");
+    var body =
+      "<div class='fo-ob-card'>" +
+      "<div class='fo-ob-eyebrow'>Choose your sponsor</div>" +
+      "<h1 class='fo-ob-h1'>Sponsors pay every matchday and for results</h1>" +
+      "<div class='fo-ob-picks fo-ob-picks-3'>" + cards + "</div>" +
+      "<div class='fo-ob-note'>ⓘ Community = best floor · Results = best middle · Contender = best ceiling. Estimates assume an average season.</div>" +
+      "<div class='fo-ob-act'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Continue to Draft</button></div></div>";
+    var host = foOnbMount(3, body);
+    host.querySelectorAll(".fo-ob-pick").forEach(function (b) { b.addEventListener("click", function () { FO_ONB.sponsor = b.getAttribute("data-sp"); foOnbSponsor(); }); });
+    host.querySelector("#fo-ob-b").addEventListener("click", foOnbStyle);
+    host.querySelector("#fo-ob-c").addEventListener("click", foOnbDraft);
+  }
+
+  function startDraft(team) { foOnbStart(team); }
+
+  // ---- squad shape + advisor -----------------------------------------------
+  function foRoleShort(p) {
+    if (p.keeper) return "WK";
+    if (p.role === "allRounder") return "AR";
+    if (p.bowlTypeFull && p.bowlTypeFull !== "none") return (typeof isPace === "function" && isPace(p)) ? "PACE" : "SPIN";
+    return "BAT";
+  }
+  function foSquadShape(picked) {
+    var bowl = 0, wk = 0, ar = 0, bat = 0;
+    picked.forEach(function (p) {
+      if (p.bowlTypeFull && p.bowlTypeFull !== "none") bowl++;
+      if (p.keeper) wk++;
+      if (p.role === "allRounder") ar++;
+      else if (!(p.bowlTypeFull && p.bowlTypeFull !== "none") && !p.keeper) bat++;
+    });
+    return { n: picked.length, bowl: bowl, wk: wk, ar: ar, bat: bat };
+  }
+  function foSquadReady(picked) { var s = foSquadShape(picked); return s.n >= 11 && s.wk >= 1 && s.bowl >= 5; }
+  function foAdvisor(picked, fc, styleId) {
+    var s = foSquadShape(picked), out = [], st = foStyleById(styleId);
+    if (s.wk < 1) out.push({ t: "warn", m: "No wicketkeeper yet — you need at least one." });
+    if (s.bowl < 5) out.push({ t: "warn", m: "You have only " + s.bowl + " bowling options. Aim for at least 5 reliable ones." });
+    if (fc.end < 0) out.push({ t: "danger", m: "Your wage bill is high — you are projected to lose money this season." });
+    else if (fc.bankAfter >= 180000 && s.n >= 8) out.push({ t: "ok", m: "You have kept " + FO$(fc.bankAfter) + " back — room for injuries and mid-season signings." });
+    if (fc.draftSpent > st.draftBudget) out.push({ t: "warn", m: "You are over your " + st.name + " draft budget. You can continue, but the club takes on more risk." });
+    var ce = null; for (var i = 0; i < picked.length; i++) { if (foDraftPrice(picked[i]) < 40000 && foDailyWage(picked[i]) >= 3200) { ce = picked[i]; break; } }
+    if (ce) out.push({ t: "info", m: E(ce.name) + " is cheap to draft but expensive in wages." });
+    if (!out.length && s.n >= 11) out.push({ t: "ok", m: "Squad is financially safe and legally shaped." });
+    return out;
+  }
+  function foOnbPick(name) {
+    var F = App.founder, p = null; for (var i = 0; i < F.pool.length; i++) if (F.pool[i].name === name) { p = F.pool[i]; break; }
+    if (!p) return;
+    var ix = F.picked.indexOf(p);
+    if (ix >= 0) { F.picked.splice(ix, 1); }
+    else {
+      var spent = F.picked.reduce(function (s, q) { return s + foDraftPrice(q); }, 0);
+      if (spent + foDraftPrice(p) > FO_FIN.startingBank) { return; }   // can't exceed $1M
+      if (F.picked.length >= 16) return;
+      F.picked.push(p);
+    }
+    foOnbDraft(true);
+  }
+
+  // ---- Screen 5 · Draft room with live finance forecast --------------------
+  function foOnbDraft(keepScroll) {
+    FO_ONB.step = 5;
+    var F = App.founder;
+    var fc = foForecast(F.picked, FO_ONB.sponsor);
+    var shape = foSquadShape(F.picked);
+    var role = FO_ONB.role || "all";
+    var list = F.pool.slice().sort(function (a, b) { return foDraftPrice(b) - foDraftPrice(a); });
+    if (role === "bat") list = list.filter(function (p) { return foRoleShort(p) === "BAT"; });
+    if (role === "bowl") list = list.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && p.role !== "allRounder"; });
+    if (role === "ar") list = list.filter(function (p) { return p.role === "allRounder"; });
+    if (role === "wk") list = list.filter(function (p) { return p.keeper; });
+    var q = (FO_ONB.search || "").toLowerCase(); if (q) list = list.filter(function (p) { return p.name.toLowerCase().indexOf(q) >= 0; });
+
+    var rows = list.map(function (p) {
+      var inSquad = F.picked.indexOf(p) >= 0;
+      var dp = foDraftPrice(p), dw = foDailyWage(p), scst = foSeasonCost(p);
+      return "<tr class='" + (inSquad ? "fo-dr-in" : "") + "'>" +
+        "<td class='fo-dr-nm'>" + E(p.name) + "</td>" +
+        "<td><span class='fo-rl'>" + foRoleShort(p) + "</span></td>" +
+        "<td class='fo-dr-nat'>" + E(p.nat || "") + "</td><td class='r'>" + (p.age || "?") + "</td>" +
+        "<td class='r'>" + FO$(dp) + "</td><td class='r'>" + FO$(dw) + "</td>" +
+        "<td class='r' title='Season cost = draft price + daily wage × 18'>" + FO$(scst) + "</td>" +
+        "<td class='r'><button class='fo-dr-add " + (inSquad ? "on" : "") + "' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + (inSquad ? "−" : "+") + "</button></td></tr>";
+    }).join("");
+
+    var chip = function (id, lbl) { return "<button class='fo-dr-chip " + (role === id ? "on" : "") + "' data-role='" + id + "'>" + lbl + "</button>"; };
+    var hTone = foHealthTone(fc.health);
+    var fRow = function (l, v, cls) { return "<div class='fo-fc-row " + (cls || "") + "'><span>" + l + "</span><b>" + v + "</b></div>"; };
+    var scen = ["bad", "average", "good", "champion"].map(function (id) { var f = foForecast(F.picked, FO_ONB.sponsor, id); return "<div class='fo-fc-scen fo-tone-" + foHealthTone(f.health) + "'><span>" + foScenarioById(id).name.replace(" season", "") + "</span><b>" + FO$s(f.end) + "</b></div>"; }).join("");
+    var advisor = foAdvisor(F.picked, fc, FO_ONB.style).map(function (a) { return "<div class='fo-adv fo-adv-" + a.t + "'>" + a.m + "</div>"; }).join("");
+    var ready = foSquadReady(F.picked);
+
+    var body =
+      "<div class='fo-ob-draftwrap'>" +
+      "<div class='fo-dr-head'><div><div class='fo-ob-eyebrow'>Draft room · " + E(FO_ONB.clubName) + "</div><h1 class='fo-ob-h1'>Build your squad</h1></div>" +
+      "<div class='fo-dr-hstat'><span>Bank <b>" + FO$(fc.bankAfter) + "</b></span><span>Squad <b>" + shape.n + "/16</b></span><span>Health <b class='fo-tone-" + hTone + "'>" + fc.health + "</b></span></div></div>" +
+      "<div class='fo-dr-grid'>" +
+      "<div class='fo-dr-main'><div class='fo-dr-filters'>" + chip("all", "All") + chip("bat", "Batters") + chip("bowl", "Bowlers") + chip("ar", "All-rounders") + chip("wk", "Keepers") +
+      "<input id='fo-dr-search' class='fo-dr-searchi' placeholder='Search players…' value='" + E(FO_ONB.search || "") + "'></div>" +
+      "<div class='fo-dr-tblwrap'><table class='fo-dr-tbl'><thead><tr><th>Player</th><th>Role</th><th>Nat</th><th class='r'>Age</th><th class='r'>Draft price</th><th class='r'>Daily wage</th><th class='r'>Season cost</th><th></th></tr></thead><tbody>" + rows + "</tbody></table></div></div>" +
+      "<div class='fo-dr-side'>" +
+      "<div class='fo-fc'><div class='fo-fc-h'>Club finance forecast</div>" +
+      fRow("Draft spent", FO$(fc.draftSpent) + " / $1,000,000") + fRow("Bank after draft", FO$(fc.bankAfter)) +
+      fRow("Daily wage bill", FO$(fc.dailyWage)) + fRow("Season wage cost", "−" + FO$(fc.seasonWage)) +
+      fRow("Expected ticket income", "+" + FO$(fc.ticket)) + fRow("Expected sponsor income", "+" + FO$(fc.sponsor)) +
+      fRow("Expected ground costs", "−" + FO$(fc.ground)) +
+      "<div class='fo-fc-end fo-tone-" + hTone + "'><span>Projected season-end bank</span><b>" + FO$s(fc.end) + "</b></div>" +
+      "<div class='fo-fc-health fo-tone-" + hTone + "'>Financial health · <b>" + fc.health + "</b></div>" +
+      "<div class='fo-fc-scens'>" + scen + "</div></div>" +
+      "<div class='fo-dr-shape'><span class='fo-sh'><b>" + shape.bat + "</b> BAT</span><span class='fo-sh'><b>" + shape.bowl + "</b> BOWL</span><span class='fo-sh'><b>" + shape.ar + "</b> AR</span><span class='fo-sh'><b>" + shape.wk + "</b> WK</span></div>" +
+      "<div class='fo-adv-panel'><div class='fo-adv-h'>Advisor</div>" + (advisor || "<div class='fo-adv fo-adv-info'>Start adding players to see advice.</div>") + "</div>" +
+      "</div></div>" +
+      "<div class='fo-ob-act fo-dr-act'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c' " + (ready ? "" : "disabled") + "># Continue → Board report</button></div>" +
+      (ready ? "" : "<div class='fo-dr-needs'>Need 11+ players, a keeper and 5+ bowling options to continue.</div>") +
+      "</div>";
+    var host = foOnbMount(4, body);
+    host.querySelectorAll(".fo-dr-add").forEach(function (b) { b.addEventListener("click", function () { foOnbPick(b.getAttribute("data-p")); }); });
+    host.querySelectorAll(".fo-dr-chip").forEach(function (b) { b.addEventListener("click", function () { FO_ONB.role = b.getAttribute("data-role"); foOnbDraft(); }); });
+    var sb = host.querySelector("#fo-dr-search"); if (sb) sb.addEventListener("input", function () { FO_ONB.search = sb.value; var sc = document.querySelector(".fo-dr-tblwrap"); foOnbDraft(); var s2 = document.querySelector("#fo-dr-search"); if (s2) { s2.focus(); s2.setSelectionRange(s2.value.length, s2.value.length); } });
+    host.querySelector("#fo-ob-b").addEventListener("click", foOnbSponsor);
+    var c = host.querySelector("#fo-ob-c"); if (c) c.addEventListener("click", foOnbAfterDraft);
+    c && (c.textContent = "Continue → Board report");
+  }
+
+  function foOnbAfterDraft() {
+    if (!foSquadReady(App.founder.picked)) return;
+    var fc = foForecast(App.founder.picked, FO_ONB.sponsor);
+    var bad = foForecast(App.founder.picked, FO_ONB.sponsor, "bad");
+    if ((fc.end < 0 || bad.end < -60000) && !FO_ONB.riskAck) { foOnbRisk(fc); return; }
+    foOnbReport();
+  }
+
+  // ---- Screen 6 · Risk warning ---------------------------------------------
+  function foOnbRisk(fc) {
+    FO_ONB.step = 5;
+    var body =
+      "<div class='fo-ob-card fo-ob-narrow fo-ob-risk'>" +
+      "<div class='fo-risk-ic'>⚠</div>" +
+      "<h1 class='fo-ob-h1'>This squad is projected to finish the season at <span class='fo-risk-amt'>" + FO$s(fc.end) + "</span>.</h1>" +
+      "<p class='fo-ob-lead'>You can continue, but your club may face:</p>" +
+      "<ul class='fo-ob-list fo-risk-list'><li>Forced player releases</li><li>Blocked signings</li><li>Supporter mood drop</li></ul>" +
+      "<label class='fo-ob-check'><input type='checkbox' id='fo-ob-ack' " + (FO_ONB.riskAck ? "checked" : "") + "> I understand the risk</label>" +
+      "<div class='fo-ob-act'><button class='fo-ob-ghost' id='fo-ob-revise'>Revise squad</button><button class='fo-ob-cta fo-cta-danger' id='fo-ob-cont' disabled>Continue anyway</button></div></div>";
+    var host = foOnbMount(4, body);
+    var ack = host.querySelector("#fo-ob-ack"), cont = host.querySelector("#fo-ob-cont");
+    var sync = function () { FO_ONB.riskAck = ack.checked; cont.disabled = !ack.checked; };
+    ack.addEventListener("change", sync); sync();
+    host.querySelector("#fo-ob-revise").addEventListener("click", function () { foOnbDraft(); });
+    cont.addEventListener("click", function () { FO_ONB.riskAck = true; foOnbReport(); });
+  }
+
+  // ---- Screen 7 · Season 1 Board Report ------------------------------------
+  function foOnbReport() {
+    FO_ONB.step = 6;
+    var F = App.founder, fc = foForecast(F.picked, FO_ONB.sponsor);
+    var matchdayIncome = Math.round((fc.ticket + fc.sponsor) / FO_FIN.seasonLength);
+    var hTone = foHealthTone(fc.health);
+    var advice = fc.end >= 250000 ? "A strong, well-funded squad with plenty of room for mid-season moves. Play with confidence."
+      : fc.end >= 100000 ? "A competitive squad with a healthy reserve. A good sponsor result or home wins will extend your lead."
+        : fc.end >= 25000 ? "A competitive squad, but limited room for mid-season signings. A strong sponsor result or home wins will help."
+          : fc.end >= 0 ? "You are running close to the line. Win at home and avoid injuries to stay solvent."
+            : "The board is concerned. This squad is projected to overspend — expect forced releases unless results are strong.";
+    var kv = function (l, v, tone) { return "<div class='fo-br-row'><span>" + l + "</span><b class='fo-tone-" + (tone || "") + "'>" + v + "</b></div>"; };
+    var body =
+      "<div class='fo-ob-card fo-ob-report'>" +
+      "<div class='fo-br-head'><span class='fo-br-crest' style='--cc:" + FO_CRESTS[FO_ONB.crest].c + "'>" + FO_CRESTS[FO_ONB.crest].ic + "</span><div><div class='fo-ob-eyebrow'>Season 1</div><h1 class='fo-ob-h1'>Board Report</h1></div></div>" +
+      "<div class='fo-br-grid'>" + kv("Bank after draft", FO$(fc.bankAfter), "teal") + kv("Daily wage bill", FO$(fc.dailyWage)) +
+      kv("Projected matchday income", FO$(matchdayIncome), "teal") + kv("Projected season-end bank", FO$s(fc.end), hTone) +
+      kv("Financial status", fc.health, hTone) + "</div>" +
+      "<div class='fo-br-advice'><div class='fo-br-advh'>Board advice</div><p>" + advice + "</p></div>" +
+      "<div class='fo-ob-act'><button class='fo-ob-ghost' id='fo-ob-b'>Back to draft</button><button class='fo-ob-cta' id='fo-ob-done'>Next · Set your XI for Round 1</button></div></div>";
+    var host = foOnbMount(5, body);
+    host.querySelector("#fo-ob-b").addEventListener("click", function () { foOnbDraft(); });
+    host.querySelector("#fo-ob-done").addEventListener("click", foOnbCommit);
+  }
+
+  // ---- Screen 8 · commit + hand off to the real club home ------------------
+  function foOnbCommit() {
+    try {
+      var F = App.founder;
+      F.name = FO_ONB.clubName; App.founder.identity = foStyleById(FO_ONB.style).name;
+      var fc = foForecast(F.picked, FO_ONB.sponsor);
+      // remember the onboarding choices + a flag so we never show this flow again
+      try {
+        window.store("fo_onb_done", "1"); window.store("fo_sponsor", FO_ONB.sponsor);
+        window.store("fo_style", FO_ONB.style); window.store("fo_ground", FO_ONB.ground); window.store("fo_crest", String(FO_ONB.crest));
+      } catch (e) {}
+      var _bank = Math.round(fc.bankAfter);
+      // let the engine build the real club record, then re-point finance at the
+      // brief's model ($1M is draft + operating money) and store the sponsor.
+      var _confirm = window.founderConfirm;
+      window.founderConfirm();                         // builds GD.teams[teamIx] + uploads (existing wrapper)
+      try {
+        var t = GD.teams[App.teamIx];
+        if (t) { t.ground = FO_ONB.ground || t.ground; t.sponsor = FO_ONB.sponsor; t.financialStyle = FO_ONB.style; t.bank = _bank; }
+        if (App.fin) { App.fin.bank = _bank; App.fin.sponsorBase = Math.round(foSponsorPayout(foSponsorById(FO_ONB.sponsor), foScenarioById("average")) / FO_FIN.seasonLength); }
+        if (typeof window.saveGame === "function") window.saveGame(false);
+      } catch (e) {}
+      foOnbClose();
+      // the existing post-confirm flow (showWait / club home) now owns the screen
+    } catch (e) { say(e); foOnbClose(); }
   }
 
   // relabel the confirm button to "Start Season" while in league draft mode
