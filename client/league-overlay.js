@@ -25,53 +25,82 @@
   // ---- styles + shell ----
   var css = document.createElement("style");
   css.textContent =
-    "#folBtn{position:fixed;right:14px;bottom:14px;z-index:2147483000;background:#2c7a2c;color:#fff;border:none;border-radius:22px;padding:10px 16px;font:600 14px system-ui;box-shadow:0 2px 10px rgba(0,0,0,.3);cursor:pointer}" +
-    "#folWrap{position:fixed;inset:0;z-index:2147483001;background:rgba(10,14,10,.6);display:none}" +
+    "#folBtn{position:fixed;right:14px;bottom:14px;z-index:2147483000;background:#C8674A;color:#F6F4EE;border:none;border-radius:22px;padding:10px 16px;font:600 14px system-ui;box-shadow:0 2px 10px rgba(0,0,0,.35);cursor:pointer}" +
+    "#folWrap{position:fixed;inset:0;z-index:2147483001;background:rgba(8,16,29,.72);display:none}" +
     "#folWrap.on{display:block}" +
-    "#folPanel{position:absolute;inset:0;margin:auto;max-width:780px;background:#12160f;color:#e7ebe2;overflow:auto;font:14px/1.45 system-ui;-webkit-overflow-scrolling:touch}" +
+    "#folPanel{position:absolute;inset:0;margin:auto;max-width:780px;background:#0B1322;color:#F6F4EE;overflow:auto;font:14px/1.45 -apple-system,'Segoe UI',Roboto,Inter,system-ui,sans-serif;-webkit-overflow-scrolling:touch}" +
     "@media(min-width:820px){#folPanel{inset:20px;border-radius:12px}}" +
-    "#folPanel a{color:#7fb3d5}" +
-    ".folhd{position:sticky;top:0;background:#171c12;border-bottom:1px solid #333c2e;padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}" +
+    "#folPanel a{color:#4DA6A2 !important}" +
+    ".folhd{position:sticky;top:0;background:#1C2433;border-bottom:1px solid rgba(246,244,238,.12);padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}" +
     ".folhd h3{margin:0;font-size:15px;flex:1}" +
     ".folbody{padding:12px 14px;display:grid;gap:12px}" +
-    ".folcard{background:#1b2016;border:1px solid #333c2e;border-radius:8px}" +
-    ".folcard h4{margin:0;padding:8px 12px;border-bottom:1px solid #333c2e;font-size:13px;display:flex;justify-content:space-between}" +
+    ".folcard{background:#1C2433;border:1px solid rgba(246,244,238,.12);border-radius:10px}" +
+    ".folcard h4{margin:0;padding:8px 12px;border-bottom:1px solid rgba(246,244,238,.12);font-size:13px;display:flex;justify-content:space-between}" +
     ".folpad{padding:10px 12px}" +
     ".foltabs{display:flex;gap:6px;flex-wrap:wrap;padding:8px 14px}" +
-    ".foltab{padding:6px 12px;border:1px solid #333c2e;border-radius:6px;cursor:pointer;font-size:13px}" +
-    ".foltab.on{background:#2c7a2c;color:#fff;border-color:#2c7a2c}" +
-    "#folPanel table{width:100%;border-collapse:collapse}#folPanel th,#folPanel td{padding:5px 8px;border-bottom:1px solid #2a3123;text-align:left}" +
+    ".foltab{padding:6px 12px;border:1px solid rgba(246,244,238,.12);border-radius:8px;cursor:pointer;font-size:13px}" +
+    ".foltab.on{background:#C8674A;color:#F6F4EE;border-color:#C8674A}" +
+    "#folPanel table{width:100%;border-collapse:collapse}#folPanel th,#folPanel td{padding:5px 8px;border-bottom:1px solid rgba(246,244,238,.1);text-align:left}" +
     "#folPanel .n{text-align:right;font-variant-numeric:tabular-nums}" +
-    "#folPanel input,#folPanel select,#folPanel button{font:inherit;padding:6px 9px;border:1px solid #333c2e;border-radius:6px;background:#12160f;color:#e7ebe2}" +
-    "#folPanel button{cursor:pointer}#folPanel button.p{background:#2c7a2c;color:#fff;border-color:#2c7a2c}#folPanel button.mini{padding:2px 8px;font-size:12px}" +
-    ".folrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.folsmall{font-size:12px;opacity:.75}" +
-    ".folbadge{font-size:11px;padding:1px 6px;border-radius:10px;border:1px solid #333c2e}.folbadge.ok{color:#6fcf6f;border-color:#3f7a3f}.folbadge.warn{color:#e08b7f;border-color:#8a4a3a}" +
+    "#folPanel input,#folPanel select,#folPanel button{font:inherit;padding:6px 9px;border:1px solid rgba(246,244,238,.12);border-radius:8px;background:rgba(246,244,238,.06);color:#F6F4EE}" +
+    "#folPanel button{cursor:pointer}#folPanel button.p{background:#C8674A;color:#F6F4EE;border-color:#C8674A}#folPanel button.mini{padding:2px 8px;font-size:12px}" +
+    ".folrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.folsmall{font-size:12px;opacity:.7}" +
+    ".folbadge{font-size:11px;padding:1px 6px;border-radius:10px;border:1px solid rgba(246,244,238,.12)}.folbadge.ok{color:#4DA6A2;border-color:rgba(77,166,162,.5)}.folbadge.warn{color:#e08b7f;border-color:#8a4a3a}" +
     "#folPin{background:#a33328;color:#fff;padding:8px 14px;display:none}";
   document.head.appendChild(css);
 
-  // ---- Fifty Overs identity: deep pitch-green + gold, minimalist ----
+  // ---- Fifty Overs identity: navy + terracotta, teal accents (login) ----
   var css2 = document.createElement("style");
   css2.textContent =
-    "#folWrap{background:#062018 !important}" +
-    "#folBtn{background:#0d3a2c !important;color:#e6c15a !important;border:1px solid rgba(230,193,90,.45) !important}" +
-    "#folPanel.fol-navy{background:linear-gradient(165deg,#0e4231 0%,#062018 70%)}" +
+    "#folWrap{background:#0B1322 !important}" +
+    "#folPanel.fol-navy{background:radial-gradient(circle at top,rgba(77,166,162,.14),transparent 38%),linear-gradient(180deg,#0B1322 0%,#08101D 100%);display:flex;align-items:center;justify-content:center;padding:28px 20px}" +
     "#folPanel.fol-navy .folhd{display:none}" +
-    ".fol-hero{color:#f4f1e5;text-align:center;padding:30px 20px 16px}" +
-    ".fol-logo{width:60px;height:64px;margin:0 auto 16px;display:block}" +
-    ".fol-hero h1{font-size:33px;letter-spacing:4px;margin:0;font-weight:800;color:#f7f4ea}" +
-    ".fol-hero .fol-tag{color:#e6c15a;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:10px 0 22px}" +
-    ".fol-auth{max-width:310px;margin:0 auto;display:flex;flex-direction:column;gap:14px}" +
-    "#folPanel .fol-auth input{background:transparent;border:none;border-bottom:1.5px solid rgba(230,193,90,.45);color:#f4f1e5;border-radius:0;padding:11px 2px;font-size:16px;letter-spacing:.3px}" +
-    "#folPanel .fol-auth input::placeholder{color:#7f978a}" +
-    "#folPanel .fol-gold{background:#e6c15a !important;color:#0a241b !important;border:none !important;border-radius:11px;padding:14px;font-weight:800;font-size:16px;letter-spacing:.4px;cursor:pointer}" +
-    "#folPanel .fol-ghost{background:transparent !important;color:#f4f1e5 !important;border:1.5px solid rgba(244,241,229,.32) !important;border-radius:11px;padding:12px;font-weight:700;font-size:15px;cursor:pointer}" +
-    ".fol-explain{background:rgba(255,255,255,.035);color:#e2e9e3;margin:6px 16px 20px;border-radius:16px;padding:20px 18px;border:1px solid rgba(230,193,90,.16)}" +
-    ".fol-explain p{margin:0 0 15px;font-size:15px;line-height:1.55;color:#eef1ea}" +
-    ".fol-explain ul{list-style:none;padding:0;margin:0;display:grid;gap:14px}" +
-    ".fol-explain li{display:flex;gap:12px;font-size:14px;line-height:1.5;align-items:flex-start;color:#cdd8cf}" +
-    ".fol-explain li b{color:#f4f1e5}" +
-    ".fol-dot{flex:0 0 auto;width:7px;height:7px;border-radius:50%;background:#e6c15a;margin-top:7px;box-shadow:0 0 0 3px rgba(230,193,90,.15)}";
+    ".fol-card{width:100%;max-width:420px;background:#1C2433;border:1px solid rgba(246,244,238,.12);border-radius:24px;box-shadow:0 24px 60px -20px rgba(0,0,0,.6),0 1px 0 rgba(246,244,238,.03) inset;padding:34px 28px 26px}" +
+    ".fol-logo{display:block;width:88px;height:auto;margin:0 auto 20px}" +
+    ".fol-card h1{margin:0;text-align:center;font-size:24px;font-weight:800;letter-spacing:4px;color:#F6F4EE}" +
+    ".fol-card .fol-sub{margin:8px 0 24px;text-align:center;font-size:13.5px;color:rgba(246,244,238,.65);letter-spacing:.3px}" +
+    ".fol-form{display:flex;flex-direction:column;gap:13px}" +
+    ".fol-form label{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:rgba(246,244,238,.6);margin:0 0 6px 2px}" +
+    "#folPanel .fol-form input{width:100%;background:rgba(246,244,238,.06);border:1px solid rgba(246,244,238,.12);border-radius:12px;padding:13px 14px;color:#F6F4EE;font-size:16px;transition:border-color .15s,box-shadow .15s}" +
+    "#folPanel .fol-form input::placeholder{color:rgba(246,244,238,.4)}" +
+    "#folPanel .fol-form input:focus{outline:none;border-color:#4DA6A2;box-shadow:0 0 0 3px rgba(77,166,162,.16)}" +
+    "#folPanel .fol-cta{margin-top:6px;background:#C8674A !important;color:#F6F4EE !important;border:none !important;border-radius:14px;padding:15px;font-size:16px;font-weight:700;letter-spacing:.4px;cursor:pointer;transition:filter .15s}" +
+    "#folPanel .fol-cta:hover{filter:brightness(1.06)}" +
+    ".fol-links{display:flex;flex-direction:column;align-items:center;gap:13px;margin-top:20px}" +
+    "#folPanel .fol-links a{color:#F6F4EE !important;text-decoration:none;font-size:14px;font-weight:600;cursor:pointer}" +
+    "#folPanel .fol-links a.fol-mut{color:rgba(246,244,238,.6) !important;font-weight:500;font-size:13px}" +
+    "#folPanel .fol-links a:hover{color:#4DA6A2 !important}" +
+    ".fol-foot{margin:24px 0 2px;text-align:center;font-size:10px;letter-spacing:1px;color:rgba(246,244,238,.42);text-transform:uppercase}" +
+    ".fol-foot .fol-sep{color:#C8674A;margin:0 5px}";
   document.head.appendChild(css2);
+
+  // Shared "50" logo mark (stumps + paper "5" + seamed cricket-ball "0"), reused
+  // by the login logo and the browser-tab favicon so they stay identical.
+  var MARK =
+    '<g fill="#C8674A">' +
+    '<rect x="94" y="20" width="16" height="5" rx="2.5"/><rect x="114" y="20" width="16" height="5" rx="2.5"/><rect x="134" y="20" width="16" height="5" rx="2.5"/>' +
+    '<rect x="97.5" y="24" width="9" height="40" rx="4.5"/><rect x="117.5" y="24" width="9" height="40" rx="4.5"/><rect x="137.5" y="24" width="9" height="40" rx="4.5"/>' +
+    '</g>' +
+    '<path d="M96 74 H44 V116 H78 a20 20 0 1 1 -20 20 H40" fill="none" stroke="#F6F4EE" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<g transform="translate(150,136)">' +
+    '<circle r="42" fill="none" stroke="#F6F4EE" stroke-width="16"/>' +
+    '<path d="M0 -34 Q10 0 0 34" fill="none" stroke="#F6F4EE" stroke-width="3"/>' +
+    '<g stroke="#F6F4EE" stroke-width="2.4" stroke-linecap="round">' +
+    '<path d="M-6 -24 L2 -22"/><path d="M-7 -12 L2 -11"/><path d="M-7 0 L3 0"/><path d="M-7 12 L2 11"/><path d="M-6 24 L2 22"/>' +
+    '<path d="M8 -22 L14 -19"/><path d="M9 -11 L15 -9"/><path d="M9 0 L15 0"/><path d="M9 11 L15 9"/><path d="M8 22 L14 19"/>' +
+    '</g></g>';
+
+  // Brand the browser tab: "50" app-icon favicon on a navy rounded square + title.
+  try {
+    var favSvg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>" +
+      "<rect width='64' height='64' rx='15' fill='#0B1322'/>" +
+      "<g transform='translate(-1.6,3.3) scale(0.29)'>" + MARK + "</g></svg>";
+    var favLink = document.querySelector("link[rel~='icon']") || document.createElement("link");
+    favLink.rel = "icon"; favLink.type = "image/svg+xml";
+    favLink.href = "data:image/svg+xml," + encodeURIComponent(favSvg);
+    document.head.appendChild(favLink);
+    document.title = "Fifty Overs";
+  } catch (e) { /* non-fatal */ }
 
   var btn = document.createElement("button");
   btn.id = "folBtn"; btn.textContent = "🏆 League";
@@ -103,7 +132,9 @@
     if (a === "close") { openWrap(false); return; }
     ev.preventDefault();
     var acts = {
-      login: doLogin, signup: doSignup, logout: function () { JWT = ""; LG = null; renderLogin(); },
+      login: doLogin, logout: function () { JWT = ""; LG = null; renderLogin(); },
+      showLogin: renderLogin, showJoin: renderJoin, showForgot: renderForgot,
+      sendReset: sendReset, joinNew: doJoinSignup,
       open: openLeague, join: joinLeague,
       tab: function () { curTab = t.getAttribute("data-tab"); renderTabs(); },
       setup: doSetup, draft: doDraft,
@@ -122,52 +153,96 @@
 
   function setNavy(on) { var pn = wrap.querySelector("#folPanel"); if (pn) pn.classList.toggle("fol-navy", !!on); }
 
-  // ---- auth (Fifty Overs styled login) ----
-  var STUMPS = '<svg class="fol-logo" viewBox="0 0 60 62" xmlns="http://www.w3.org/2000/svg">' +
-    '<rect x="10.5" y="12" width="18" height="3" rx="1.5" fill="#e6c15a"/>' +
-    '<rect x="31.5" y="12" width="18" height="3" rx="1.5" fill="#e6c15a"/>' +
-    '<rect x="14.8" y="14" width="4.4" height="34" rx="2.2" fill="#e6c15a"/>' +
-    '<rect x="27.8" y="14" width="4.4" height="34" rx="2.2" fill="#e6c15a"/>' +
-    '<rect x="40.8" y="14" width="4.4" height="34" rx="2.2" fill="#e6c15a"/>' +
-    '<circle cx="30" cy="55" r="3.4" fill="#c0392b"/></svg>';
+  // ---- auth (Fifty Overs brand login) ----
+  // The "50" mark: three terracotta stumps, a paper "5", and a seamed cricket ball for the "0".
+  var LOGO = '<svg class="fol-logo" viewBox="0 0 240 200" xmlns="http://www.w3.org/2000/svg" aria-label="Fifty Overs">' + MARK + '</svg>';
+  var FOOT = '<div class="fol-foot">Draft squads<span class="fol-sep">&middot;</span>Set orders<span class="fol-sep">&middot;</span>Watch every ball</div>';
+
   function renderLogin() {
     wrap.querySelector("#folWho").textContent = "";
     setNavy(true);
-    var dot = '<span class="fol-dot"></span>';
     main.innerHTML =
-      '<div class="fol-hero">' + STUMPS +
+      '<div class="fol-card">' + LOGO +
       '<h1>FIFTY OVERS</h1>' +
-      '<div class="fol-tag">Build your XI. Beat your mates.</div>' +
-      '<div class="fol-auth">' +
-      '<input id="folEmail" type="email" placeholder="email">' +
-      '<input id="folPass" type="password" placeholder="password">' +
-      '<button class="fol-gold" data-act="signup">Create Account</button>' +
-      '<button class="fol-ghost" data-act="login">Log In</button>' +
-      '</div></div>' +
-      '<div class="fol-explain">' +
-      "<p>The invite only cricket manager you play with your mates. Draft a squad, call every shot, and let the match engine settle it out on the pitch.</p>" +
-      '<ul>' +
-      '<li>' + dot + '<span><b>Draft your dream XI.</b> Pick a home country and sign stars on a tight $1,000,000 budget.</span></li>' +
-      '<li>' + dot + '<span><b>Take on your friends.</b> Every ball is bowled by the real engine, so nobody can fix the result.</span></li>' +
-      '<li>' + dot + '<span><b>Chase the title.</b> A full home and away season with a live league table.</span></li>' +
-      '<li>' + dot + '<span><b>Invite only.</b> Your commissioner runs the show and starts the season when everyone is in.</span></li>' +
-      '</ul>' +
-      '<div class="folsmall" style="margin-top:14px;color:#8fa79a">New here? Tap Create Account, then join your league with an invite code.</div>' +
-      '</div>';
+      '<div class="fol-sub">Private cricket leagues.</div>' +
+      '<div class="fol-form">' +
+      '<div><label>Email</label><input id="folEmail" type="email" autocomplete="email" placeholder="you@club.com"></div>' +
+      '<div><label>Password</label><input id="folPass" type="password" autocomplete="current-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"></div>' +
+      '<button class="fol-cta" data-act="login">Log In</button>' +
+      '</div>' +
+      '<div class="fol-links">' +
+      '<a data-act="showJoin">Join with invite code</a>' +
+      '<a class="fol-mut" data-act="showForgot">Forgot password?</a>' +
+      '</div>' + FOOT + '</div>';
   }
-  function authFetch(kind) {
+
+  // New manager: create an account and step straight into a league with an invite code.
+  function renderJoin() {
+    setNavy(true);
+    main.innerHTML =
+      '<div class="fol-card">' + LOGO +
+      '<h1>FIFTY OVERS</h1>' +
+      '<div class="fol-sub">Join your league.</div>' +
+      '<div class="fol-form">' +
+      '<div><label>Email</label><input id="folEmail" type="email" autocomplete="email" placeholder="you@club.com"></div>' +
+      '<div><label>Password</label><input id="folPass" type="password" autocomplete="new-password" placeholder="choose a password"></div>' +
+      '<div><label>Invite code</label><input id="folCode" placeholder="from your commissioner"></div>' +
+      '<div><label>Manager name</label><input id="folDn" placeholder="your name"></div>' +
+      '<div><label>Team name</label><input id="folTn" placeholder="your club"></div>' +
+      '<button class="fol-cta" data-act="joinNew">Create account and join</button>' +
+      '</div>' +
+      '<div class="fol-links"><a class="fol-mut" data-act="showLogin">Back to log in</a></div>' +
+      FOOT + '</div>';
+  }
+
+  function renderForgot() {
+    setNavy(true);
+    main.innerHTML =
+      '<div class="fol-card">' + LOGO +
+      '<h1>FIFTY OVERS</h1>' +
+      '<div class="fol-sub">Reset your password.</div>' +
+      '<div class="fol-form">' +
+      '<div><label>Email</label><input id="folEmail" type="email" autocomplete="email" placeholder="you@club.com"></div>' +
+      '<button class="fol-cta" data-act="sendReset">Send reset link</button>' +
+      '</div>' +
+      '<div class="fol-links"><a class="fol-mut" data-act="showLogin">Back to log in</a></div>' +
+      FOOT + '</div>';
+  }
+
+  function doLogin() {
     var email = val("folEmail"), password = wrap.querySelector("#folPass").value;
-    if (!email || !password) { say("Enter email + password"); return; }
-    var path = kind === "signup" ? "/auth/v1/signup" : "/auth/v1/token?grant_type=password";
-    fetch(URL + path, { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ email: email, password: password }) })
+    if (!email || !password) { say("Enter your email and password"); return; }
+    fetch(URL + "/auth/v1/token?grant_type=password", { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ email: email, password: password }) })
       .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error_description || d.msg || d.error || ("HTTP " + r.status)); return d; }); })
       .then(function (d) {
         if (d.access_token) { JWT = d.access_token; wrap.querySelector("#folWho").textContent = email; renderEnter(); }
-        else say("Account created. If email confirmation is on, confirm then log in.");
+        else say("Check your email to confirm your account, then log in.");
       }).catch(say);
   }
-  function doLogin() { authFetch("login"); }
-  function doSignup() { authFetch("signup"); }
+
+  function doJoinSignup() {
+    var email = val("folEmail"), password = wrap.querySelector("#folPass").value;
+    var code = val("folCode"), dn = val("folDn"), tn = val("folTn");
+    if (!email || !password) { say("Enter your email and password"); return; }
+    if (!code || !dn) { say("Enter your invite code and manager name"); return; }
+    fetch(URL + "/auth/v1/signup", { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ email: email, password: password }) })
+      .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error_description || d.msg || d.error || ("HTTP " + r.status)); return d; }); })
+      .then(function (d) {
+        if (!d.access_token) { say("Account created. Confirm your email, then log in and join with your code."); renderLogin(); return; }
+        JWT = d.access_token; wrap.querySelector("#folWho").textContent = email;
+        return rpc("redeem_invite", { p_code: code, p_display_name: dn, p_team_name: tn || dn + " XI" })
+          .then(function (mid) { return sel("members", "id=eq." + mid + "&select=league_id"); })
+          .then(function (m) { return openLeagueId(m[0].league_id); });
+      }).catch(say);
+  }
+
+  function sendReset() {
+    var email = val("folEmail");
+    if (!email) { say("Enter your email"); return; }
+    fetch(URL + "/auth/v1/recover", { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ email: email }) })
+      .then(function (r) { if (!r.ok) return r.text().then(function (t) { throw new Error(t || ("HTTP " + r.status)); }); })
+      .then(function () { say("If that email has an account, a reset link is on its way."); renderLogin(); }).catch(say);
+  }
 
   // ---- enter / join a league ----
   function renderEnter() {
