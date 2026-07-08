@@ -442,5 +442,10 @@
     };
   }
 
+  // Multiplayer-first: show the league login as soon as the site loads (the
+  // 🏆 League button still reopens it if you close it to see the solo game).
+  wrap.classList.add("on");
+  if (!JWT) renderLogin(); else if (LG) renderTabs(); else renderEnter();
+
   console.info("Fifty Overs League overlay ready.");
 })();
