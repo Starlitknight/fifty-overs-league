@@ -9005,7 +9005,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (step && step !== "create") {
       FO_ONB.clubName = FO_ONB.clubName || "Thunder Empire";
       if (!App.founder || !App.founder.pool) App.founder = { name: FO_ONB.clubName, budget: 1000000, pool: buildCountryPool("fo-preview", FO_ONB.country), picked: [], identity: "Balanced XI" };
-      if (step === "draft" || step === "report" || step === "players") { FO_ONB.sponsor = FO_ONB.sponsor || "community"; if (!App.founder.picked.length) App.founder.picked = App.founder.pool.slice(0, 13); }
+      if (step === "draft" || step === "report" || step === "players") FO_ONB.sponsor = FO_ONB.sponsor || "community";
+      if (step === "report" && !App.founder.picked.length) App.founder.picked = App.founder.pool.slice(0, 13);
     }
     ({ create: foOnbCreate, charter: foOnbCharter, money: foOnbMoney, sponsor: foOnbSponsor, players: foOnbPlayers, draft: foOnbDraft, report: foOnbReport }[step || "create"] || foOnbCreate)();
   } catch (e) { console.warn("onb preview", e); } };   // debug/test hook (harmless)
