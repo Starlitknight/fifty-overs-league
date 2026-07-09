@@ -1871,13 +1871,125 @@
         netsState.batClub = App.teamIx; netsState.bowlClub = App.teamIx;
         if (typeof pgNets === "function") { pgNets(); return; }
       }
-      // hide the club pickers: selects whose onchange writes a *Club key
+      // hide the club pickers only (the player select in the same row moves
+      // into the skill cards below)
       document.querySelectorAll("#page select").forEach(function (s) {
         var oc = s.getAttribute("onchange") || "";
-        if (/netsState\.(bat|bowl)Club/.test(oc)) {
-          var row = s.closest(".ctlrow") || s;
-          if (row === s) s.style.display = "none"; else row.style.display = "none";
+        if (/netsState\.(bat|bowl)Club/.test(oc)) s.style.display = "none";
+      });
+      foNetsCards();
+    } catch (e) {}
+  }
+  // ---- Nets: the whole skill card of both players in the session ------------
+  // The engine's nets page only names the matchup; managers want to SEE who
+  // they put in the nets. Both pickers slide into a full player card - flag,
+  // role, age, hand, bowling type, talents and the complete 7-skill read-out -
+  // and the wall of condition selects becomes one labelled grid.
+  function foNetsCss() {
+    if (document.getElementById("fo-nets-css")) return;
+    var st = document.createElement("style"); st.id = "fo-nets-css";
+    st.textContent =
+      "#fo-nets-cards{display:grid;grid-template-columns:1fr 34px 1fr;gap:12px;align-items:stretch;margin:6px 0 16px}" +
+      ".fo-net-card{background:#fff;border:1px solid rgba(11,19,34,.11);border-radius:14px;padding:13px 15px;box-shadow:0 1px 3px rgba(11,19,34,.05)}" +
+      ".fo-net-bat{border-top:3px solid #2b6b68}.fo-net-bowl{border-top:3px solid #C8674A}" +
+      ".fo-net-role{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-bottom:9px;color:#8a8474}" +
+      ".fo-net-bat .fo-net-role{color:#2b6b68}.fo-net-bowl .fo-net-role{color:#a4552e}" +
+      ".fo-net-slot select{width:100%;max-width:100%;padding:9px 11px;border:1px solid rgba(11,19,34,.16);border-radius:10px;background:#fcfaf5;font-weight:700;font-size:13.5px;margin-bottom:10px}" +
+      ".fo-net-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}" +
+      ".fo-net-flag{font-size:16px;line-height:1}" +
+      ".fo-net-nm{font-weight:800;font-size:16.5px;color:#12203a;text-decoration:none}" +
+      ".fo-net-nm:hover{color:#2b6b68;text-decoration:underline}" +
+      ".fo-net-meta{font-size:11.5px;color:#7a7566;margin:4px 0 8px}" +
+      ".fo-net-tals{display:flex;gap:5px;flex-wrap:wrap;margin:0 0 9px}" +
+      ".fo-net-card .fo-dc-bars{grid-auto-flow:row;grid-template-columns:1fr;grid-template-rows:none;gap:4px}" +
+      ".fo-net-card .fo-db{font-size:10.5px}" +
+      ".fo-net-v{align-self:center;justify-self:center;width:30px;height:30px;border-radius:50%;background:#efece2;color:#8a8474;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}" +
+      "#page.fo-nets .fo-net-ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px 12px;align-items:end}" +
+      ".fo-nc{display:flex;flex-direction:column;gap:4px;min-width:0}" +
+      ".fo-nc label{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#9a9484}" +
+      ".fo-nc select,.fo-nc input{width:100%;padding:8px 10px;border:1px solid rgba(11,19,34,.15);border-radius:9px;background:#fff;font-size:12.5px;box-sizing:border-box}" +
+      "#page.fo-nets .fo-net-ctl button.primary{grid-column:1/-1;padding:12px 16px;border-radius:11px;font-weight:800;font-size:14px}" +
+      "@media(max-width:760px){#fo-nets-cards{grid-template-columns:1fr}.fo-net-v{margin:-4px auto}}";
+    document.head.appendChild(st);
+  }
+  function foNetsCardHtml(p, kind) {
+    var role = kind === "bat" ? "Batter" : "Bowler";
+    var head = "<div class='fo-net-role'>In the nets · " + role + "</div><div class='fo-net-slot' data-kind='" + kind + "'></div>";
+    if (!p) return "<div class='fo-net-card fo-net-" + kind + "'>" + head + "<div class='small'>Pick a player.</div></div>";
+    var flag = ""; try { flag = (typeof foFlag === "function" && p.nat) ? (foFlag(p.nat) || "") : ""; } catch (e) {}
+    var isB = p.bowlTypeFull ? p.bowlTypeFull !== "none" : !!p.bowlType;
+    var bt = p.btLabel || (isB ? String(p.bowlTypeFull || p.bowlType) : "Does not bowl");
+    var hand = (p.hand === "L" ? "Left-hand bat" : "Right-hand bat");
+    var ttip = function (t) { try { return (typeof TALTIPS !== "undefined" && TALTIPS[t]) || ""; } catch (e) { return ""; } };
+    var tals = (p.talents || []).map(function (t) { return "<span class='fo-dc-tal' title='" + E(ttip(t)) + "'>" + E(foTalentName(t)) + "</span>"; }).join("");
+    return "<div class='fo-net-card fo-net-" + kind + "'>" + head +
+      "<div class='fo-net-head'>" + (flag ? "<span class='fo-net-flag'>" + flag + "</span>" : "") +
+      "<a class='fo-net-nm' href='#/player?n=" + encodeURIComponent(p.name) + "'>" + E(p.name) + (p.keeper ? " &dagger;" : "") + "</a>" +
+      "<span class='fo-rl'>" + foRoleShort(p) + "</span></div>" +
+      "<div class='fo-net-meta'>Age " + (p.age || "?") + " · " + hand + " · " + E(bt) + ((p.expWord || p.exp) ? " · exp " + E(String(p.expWord || p.exp)) : "") + "</div>" +
+      (tals ? "<div class='fo-net-tals'>" + tals + "</div>" : "") +
+      foSkillBars(p) + "</div>";
+  }
+  function foNetsCards() {
+    try {
+      if (!/^#\/nets/.test(location.hash || "")) return;
+      if (typeof netsState === "undefined" || typeof findPlayer !== "function") return;
+      var page = document.getElementById("page"); if (!page) return;
+      var firstPanel = page.querySelector(".panel"); if (!firstPanel) return;
+      page.classList.add("fo-nets");
+      foNetsCss();
+      var batP = null, bowlP = null;
+      try { batP = (findPlayer(netsState.bat || "") || {}).p || null; } catch (e) {}
+      try { bowlP = (findPlayer(netsState.bowl || "") || {}).p || null; } catch (e) {}
+      var key = (netsState.bat || "") + "|" + (netsState.bowl || "");
+      var ex = document.getElementById("fo-nets-cards");
+      if (ex && ex.getAttribute("data-key") === key) return;
+      if (ex) ex.remove();
+      var wrap = document.createElement("div");
+      wrap.id = "fo-nets-cards"; wrap.setAttribute("data-key", key);
+      wrap.innerHTML = foNetsCardHtml(batP, "bat") + "<div class='fo-net-v'>v</div>" + foNetsCardHtml(bowlP, "bowl");
+      page.insertBefore(wrap, firstPanel);
+      // the engine's own player pickers slide into the cards, alive and wired
+      page.querySelectorAll(".ctlrow select").forEach(function (s) {
+        var oc = s.getAttribute("onchange") || "";
+        var kind = /netsState\.bat=this\.value/.test(oc) ? "bat" : (/netsState\.bowl=this\.value/.test(oc) ? "bowl" : null);
+        if (!kind) return;
+        var row = s.closest(".ctlrow");
+        var slot = wrap.querySelector(".fo-net-slot[data-kind='" + kind + "']");
+        if (slot) slot.appendChild(s);
+        if (row) row.style.display = "none";
+      });
+      // the conditions row: label every control, show renamed pitches
+      page.querySelectorAll(".ctlrow").forEach(function (r) {
+        if (r.getAttribute("data-fo-ctl") || r.textContent.indexOf("Balls:") < 0) return;
+        r.setAttribute("data-fo-ctl", "1"); r.classList.add("fo-net-ctl");
+        var kids = Array.prototype.slice.call(r.children);
+        for (var i = 0; i < kids.length; i++) {
+          var el = kids[i];
+          if (el.tagName !== "SPAN") continue;
+          var ctrl = kids[i + 1];
+          if (!ctrl || (ctrl.tagName !== "SELECT" && ctrl.tagName !== "INPUT")) continue;
+          var box = document.createElement("div"); box.className = "fo-nc";
+          r.insertBefore(box, el);
+          var lab = document.createElement("label"); lab.textContent = el.textContent.replace(/:\s*$/, "");
+          box.appendChild(lab); box.appendChild(ctrl); el.remove();
         }
+        // the engine's decorateConditions has already title-cased the option
+        // text (and with no value attr, the value: "Dry", "Two-Paced") - map
+        // back to the real ids, then show our pitch names
+        var pit = r.querySelector("select[onchange*='netsState.pitch']");
+        if (pit) {
+          var PMAP = { balanced: "balanced", flat: "flat", green: "green", dry: "dry", slow: "slow", cracked: "cracked", twopaced: "twoPaced" };
+          var pNorm = function (v) { return PMAP[String(v == null ? "" : v).replace(/[^a-z]/gi, "").toLowerCase()] || null; };
+          Array.prototype.forEach.call(pit.options, function (o) {
+            var id = pNorm(o.value || o.textContent); if (!id) return;
+            o.value = id; o.textContent = foPitchName(id);
+          });
+          var curId = pNorm(netsState.pitch);
+          if (curId) { netsState.pitch = curId; pit.value = curId; }
+        }
+        var btn = r.querySelector("button.primary");
+        if (btn) { btn.textContent = "Bowl the session"; r.appendChild(btn); }
       });
     } catch (e) {}
   }
@@ -3315,7 +3427,7 @@
   function foRoleShort(p) {
     if (p.keeper) return "WK";
     if (p.role === "allRounder") return "AR";
-    if (p.bowlTypeFull && p.bowlTypeFull !== "none") return foIsPace(p) ? "PACE" : "SPIN";
+    if (p.bowlTypeFull ? p.bowlTypeFull !== "none" : p.bowlType) return foIsPace(p) ? "PACE" : "SPIN";
     return "BAT";
   }
   function foSquadShape(picked) {
@@ -3375,7 +3487,7 @@
   // The game's full 7-skill read-out (Batting/Bowling/Keeping/Endurance/
   // Technique/Power/Fielding), each a bar + the engine's word for it.
   function foSkillBars(p) {
-    var isBowler = p.bowlTypeFull && p.bowlTypeFull !== "none";
+    var isBowler = p.bowlTypeFull ? p.bowlTypeFull !== "none" : !!p.bowlType;
     var pw = 0; try { pw = (typeof S === "function" ? S(p).power : (p.skills && p.skills.power)) || 0; } catch (e) {}
     var bars = [["Batting", foAgg(p, "bat")], ["Bowling", isBowler ? foAgg(p, "bowl") : 0], ["Keeping", foAgg(p, "keep")],
       ["Endurance", foAgg(p, "end")], ["Technique", foAgg(p, "tech")], ["Power", Math.max(0, Math.min(100, Math.round(pw)))],
