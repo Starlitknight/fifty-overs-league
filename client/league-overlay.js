@@ -528,6 +528,13 @@
     "html body button.fo-setr,html body.ftpskin button.fo-setr{background:#C0562F !important;border-color:#C0562F !important;color:#F6F4EE !important}" +
     "html body button.fo-setr-done,html body.ftpskin button.fo-setr-done,html body.ftpskin button.primary.fo-setr-done{background:#2f6b46 !important;color:#fff !important;border-color:#2f6b46 !important}" +
     "html body button.fo-setr-done:hover,html body.ftpskin button.fo-setr-done:hover,html body.ftpskin button.primary.fo-setr-done:hover{background:#255738 !important;border-color:#255738 !important;color:#fff !important}" +
+    // future rounds are optional planning: ghost until orders are actually in
+    "html body button.fo-setr-later:not(.fo-setr-done),html body.ftpskin button.fo-setr-later:not(.fo-setr-done){background:transparent !important;color:#C0562F !important;border-color:rgba(192,86,47,.5) !important}" +
+    "html body button.fo-setr-later:not(.fo-setr-done):hover,html body.ftpskin button.fo-setr-later:not(.fo-setr-done):hover{background:rgba(192,86,47,.09) !important}" +
+    ".fo-mv-up{color:#2f6b46;font-weight:800}.fo-mv-dn{color:#b3402a;font-weight:800}" +
+    ".fo-gaprow td{text-align:center;color:#9aa3b2;padding:1px 0 !important;font-size:12px;line-height:1}" +
+    ".fo-stand-gap{margin-top:8px;padding-top:8px;border-top:1px dashed rgba(28,36,51,.15);font-size:12.5px;color:#5a6472;font-weight:600}" +
+    ".fo-fin-line{font-size:13.5px;line-height:1.55}.fo-fin-line b{font-weight:800}" +
     "#fo-update-pill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:2147483200;background:#0B1322;color:#F6F4EE;border:1px solid rgba(246,244,238,.25);border-radius:999px;padding:11px 20px;font:600 13.5px Inter,-apple-system,'Segoe UI',sans-serif;box-shadow:0 12px 34px -10px rgba(0,0,0,.55);cursor:pointer;max-width:92vw;text-align:center}" +
     "#fo-update-pill b{color:#E8A87C}" +
     // live match viewer: links rail | BIG commentary | compact score+details rail
@@ -1352,7 +1359,7 @@
     try {
       (t.players || []).forEach(function (p) {
         var h = (App.playerHist && App.playerHist[p.name]) || [], runs = 0, wkts = 0;
-        h.forEach(function (e) { var bm = /(\d+)/.exec(e.bat || ""); if (bm) runs += parseInt(bm[1], 10); var wm = /(\d+)\s*[-\/]/.exec(e.bowl || ""); if (wm) wkts += parseInt(wm[1], 10); });
+        h.forEach(function (e) { runs += (+e.rr || 0); wkts += (+e.w || 0); });
         if (runs > bat.runs) bat = { name: p.name, runs: runs };
         if (wkts > bowl.wkts) bowl = { name: p.name, wkts: wkts };
       });
@@ -1393,6 +1400,22 @@
       return s.n;
     } catch (e) { return 0; }
   }
+  // remember last round's table position so the KPI can show movement
+  function foPosMovement(pos) {
+    try {
+      if (!pos) return "";
+      var k = "fol_pos_" + ((LG && LG.id) || "solo");
+      var st = {}; try { st = JSON.parse(lsGet(k) || "{}"); } catch (e) {}
+      var r = (App.season && App.season.round) || 0;
+      if (st.round !== r) { st = { round: r, pos: pos, prev: (st.round != null && st.round < r) ? st.pos : st.prev }; lsSet(k, JSON.stringify(st)); }
+      else if (st.pos !== pos) { st.pos = pos; lsSet(k, JSON.stringify(st)); }
+      if (st.prev == null) return "";
+      var d = st.prev - pos;
+      if (d > 0) return "<b class='fo-mv-up'>&#9650; " + d + "</b>";
+      if (d < 0) return "<b class='fo-mv-dn'>&#9660; " + (-d) + "</b>";
+      return "";
+    } catch (e) { return ""; }
+  }
   function foPremiumClub() {
     try {
       if (typeof userTeam !== "function" || typeof GD === "undefined" || !GD.teams) { return foOrigClub && foOrigClub(); }
@@ -1409,30 +1432,41 @@
       var pips = form.map(function (x) { return "<i class='fo-pip fo-" + x + "' title='" + x + "'></i>"; }).join("");
       var d = new Date(), dateStr = d.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short" }) + ", " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
+      // one computation of the page's load-bearing facts, used everywhere below
+      var totalRounds = (S && S.schedule) ? S.schedule.length : 18;
+      var played = me.p || 0;
+      var streak = 0;
+      for (var si = form.length - 1; si >= 0 && String(form[si]).toUpperCase() === "W"; si--) streak++;
+      var AC = [0, 4000, 8000, 14000, 22000, 32000];
+      var sponsorBase = foDealResolve(t).d.base;
+      var gateEst = Math.round(Math.min(t.seats || 9000, (t.supporters || 2400) * (0.55 + 0.13 * (t.mood == null ? 3 : t.mood))) * FO_FIN.ticketPrice * 0.5);
+      var netMD = sponsorBase + gateEst - wages - (t.seats || 9000) - (AC[t.acadY || 0] || 0) - (AC[t.acadS || 0] || 0);
+      var runway = netMD < 0 ? Math.floor(bank / -netMD) : null;
+      var nxt = foUserFixtures()[0] || null;
+
       var stat = function (accent, ic, label, value, sub) {
         return "<div class='fo-stat fo-acc-" + accent + "'><div class='fo-stat-ic'>" + ic + "</div><div class='fo-stat-body'>" +
           "<div class='fo-stat-l'>" + label + "</div><div class='fo-stat-v'>" + value + "</div>" + (sub ? "<div class='fo-stat-s'>" + sub + "</div>" : "") + "</div></div>";
       };
+      var mv = foPosMovement(pi >= 0 ? pi + 1 : null);
+      var bankSub = runway != null
+        ? (runway >= totalRounds - played ? "Covers the season at current burn" : "Covers ~" + runway + " matchday" + (runway === 1 ? "" : "s") + " at current burn")
+        : "+" + foMoney(netMD) + " per matchday";
+      var formVal = pips ? "<span class='fo-form'>" + pips + "</span>" : "&mdash;";
+      var formSub = streak >= 2 ? streak + "-match win streak" : (form.length ? "Last " + form.length + " match" + (form.length === 1 ? "" : "es") : "First match coming up");
       var stats = "<div class='fo-ch-stats'>" +
-        stat("terra", FO_I("trophy", 19), "League position", pos, "/ " + (rowsL.length || 10)) +
-
-        stat("terra", FO_I("wallet", 19), "Bank", foMoney(bank), "Available funds") +
-        stat("teal", FO_I("coins", 19), "Weekly wages", foMoney(wages), "Total wage bill") +
+        stat("terra", FO_I("trophy", 19), "League position", pos, "of " + (rowsL.length || 10) + (mv ? " &middot; " + mv + " since last round" : "")) +
+        stat("terra", FO_I("wallet", 19), "Bank", foMoney(bank), bankSub) +
+        stat("teal", FO_I("bat", 19), "Form", formVal, formSub) +
         stat("terra", FO_I("users", 19), "Supporters", "<span class='fo-stat-word'>" + mood + "</span>", "Mood") + "</div>";
-
-      // Recent results
-      var recent = (App.results || []).slice(-4).reverse();
-      var recentBody = recent.length
-        ? "<table class='fo-tbl'><thead><tr><th>Date</th><th>Match</th><th class='r'>Result</th></tr></thead><tbody>" +
-          recent.map(function (r) { return "<tr class='fo-rowlink' data-sc='" + r.ix + "'><td>" + E(r.date || "") + "</td><td>" + E(r.home) + " v " + E(r.away) + "</td><td class='r'>" + E(r.result ? r.result.text : "") + "</td></tr>"; }).join("") + "</tbody></table>"
-        : "<div class='fo-empty'><div class='fo-empty-ic'>" + FO_I("calendar", 20) + "</div><div><b>No matches played yet</b><div class='small'>First ball coming up soon.</div></div></div>";
 
       // Upcoming fixtures (+ friendlies), with a Set-lineup action
       var frRows = (foFriendlies || []).map(function (fr, i) {
         return "<tr class='fo-fx-fr'><td>Now</td><td>Friendly</td><td>vs " + E(fr.oppName) + "</td><td>" + foPitchPill(fr.pitch) + "</td><td class='r'><button class='fo-fr-play' data-i='" + i + "'>Play</button><button class='fo-fr-x' data-i='" + i + "' title='Remove'>&#10005;</button></td></tr>";
       }).join("");
-      var ups = foUserFixtures().slice(0, 5).map(function (x) {
-        return "<tr><td>" + x.date + "<div class='fo-t'>9:00 AM ET</div></td><td>R" + (x.round + 1) + "</td><td>" + (x.isHome ? "vs " : "@ ") + E(x.opp.name) + "</td><td>" + E(x.ground) + " " + foPitchPill(x.pitch) + "</td><td class='r'><button class='fo-setr' data-r='" + x.round + "'>Set lineup</button></td></tr>";
+      var ups = foUserFixtures().slice(0, 3).map(function (x) {
+        var isNext = nxt && x.round === nxt.round;
+        return "<tr><td>" + x.date + "<div class='fo-t'>9:00 AM ET</div></td><td>R" + (x.round + 1) + "</td><td>" + (x.isHome ? "vs " : "@ ") + E(x.opp.name) + "</td><td>" + E(x.ground) + " " + foPitchPill(x.pitch) + "</td><td class='r'><button class='fo-setr" + (isNext ? "" : " fo-setr-later") + "' data-r='" + x.round + "'>" + (isNext ? "Set lineup" : "Plan lineup") + "</button></td></tr>";
       }).join("");
       var upBody = (frRows || ups)
         ? "<table class='fo-tbl'><thead><tr><th>Date</th><th>Rd</th><th>Match</th><th>Ground</th><th class='r'></th></tr></thead><tbody>" + frRows + ups + "</tbody></table>"
@@ -1441,34 +1475,38 @@
       // Leaders
       var ld = foTeamLeaders(t);
       var leaders = "<div class='fo-ch-leaders'>" +
-        "<div class='fo-card fo-lead'><div class='fo-lead-ic'>" + FO_I("bat", 19) + "</div><div><div class='fo-card-h2'>Leading run-scorer</div><div class='fo-lead-v'>" + (ld.bat.runs || 0) + " <span>runs</span></div><div class='small'>" + (ld.bat.name ? E(ld.bat.name) : "—") + "</div></div></div>" +
-        "<div class='fo-card fo-lead'><div class='fo-lead-ic'>" + FO_I("target", 19) + "</div><div><div class='fo-card-h2'>Leading wicket-taker</div><div class='fo-lead-v'>" + (ld.bowl.wkts || 0) + " <span>wkts</span></div><div class='small'>" + (ld.bowl.name ? E(ld.bowl.name) : "—") + "</div></div></div></div>";
+        "<div class='fo-card fo-lead'><div class='fo-lead-ic'>" + FO_I("bat", 19) + "</div><div><div class='fo-card-h2'>Our leading run-scorer</div><div class='fo-lead-v'>" + (ld.bat.runs || 0) + " <span>runs</span></div><div class='small'>" + (ld.bat.name ? E(ld.bat.name) : "—") + "</div></div></div>" +
+        "<div class='fo-card fo-lead'><div class='fo-lead-ic'>" + FO_I("target", 19) + "</div><div><div class='fo-card-h2'>Our leading wicket-taker</div><div class='fo-lead-v'>" + (ld.bowl.wkts || 0) + " <span>wkts</span></div><div class='small'>" + (ld.bowl.name ? E(ld.bowl.name) : "—") + "</div></div></div></div>";
 
-      // Standings (form pips + row highlight rendered here; kept out of tidyPage)
-      var fmap = foFormMap();
-      var standRows = rowsL.map(function (x, i) {
+      // Standings: the full ten-row table lives on Matches; here only the story —
+      // who leads, where you sit, and the one gap worth chasing
+      var standRow = function (x, i) {
         var meRow = x.nm === t.name;
         return "<tr class='" + (meRow ? "fo-userrow" : "") + "'><td class='fo-rk'>" + (i === 0 ? "<span style='color:#D9A441;display:inline-flex;vertical-align:-2px'>" + FO_I("trophy", 14) + "</span>" : (i + 1)) + "</td><td class='fo-scoutname'>" + E(x.nm) + "</td><td class='r'>" + x.p + "</td><td class='r'>" + x.w + "</td><td class='r'>" + x.l + "</td><td class='r'>" + (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2) + "</td><td class='r'><b>" + x.pts + "</b></td></tr>";
-      }).join("");
-      var standings = "<div class='fo-card'><div class='fo-card-h'>League standings</div><div class='fo-card-b'><table class='fo-tbl fo-chtable'><thead><tr><th class='fo-rk'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th><th class='r'>NRR</th><th class='r'>Pts</th></tr></thead><tbody>" + standRows + "</tbody></table></div></div>";
+      };
+      var standRows = rowsL.slice(0, 3).map(standRow).join("");
+      if (pi >= 3) standRows += "<tr class='fo-gaprow'><td colspan='7'>&#8943;</td></tr>" + standRow(rowsL[pi], pi);
+      var gapLine = "";
+      if (played > 0 && pi >= 0) {
+        if (pi === 0) {
+          var below0 = rowsL[1], lead0 = (me.pts || 0) - ((below0 && below0.pts) || 0);
+          gapLine = lead0 > 0 ? lead0 + " pt" + (lead0 === 1 ? "" : "s") + " clear of " + E(below0.nm) : "Level on points with " + E(below0 ? below0.nm : "the chasing pack");
+        } else {
+          var above0 = rowsL[pi - 1], gap0 = (above0.pts || 0) - (me.pts || 0);
+          gapLine = gap0 <= 0 ? "Level on points with " + E(above0.nm) + " above you" : gap0 + " pt" + (gap0 === 1 ? "" : "s") + " behind " + E(above0.nm);
+        }
+      }
+      var standings = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>League standings</div><a href='#/matches' class='fo-morelink'>Full table &rsaquo;</a></div><div class='fo-card-b'><table class='fo-tbl fo-chtable'><thead><tr><th class='fo-rk'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th><th class='r'>NRR</th><th class='r'>Pts</th></tr></thead><tbody>" + standRows + "</tbody></table>" +
+        (gapLine ? "<div class='fo-stand-gap'>" + gapLine + "</div>" : "") + "</div></div>";
 
-      // Finances
-      // net per matchday: sponsor + expected gate share − wages − stadium − academy
-      var AC = [0, 4000, 8000, 14000, 22000, 32000];
-      var sponsorBase = foDealResolve(t).d.base;
-      var gateEst = Math.round(Math.min(t.seats || 9000, (t.supporters || 2400) * (0.55 + 0.13 * (t.mood == null ? 3 : t.mood))) * FO_FIN.ticketPrice * 0.5);
-      var netMD = sponsorBase + gateEst - wages - (t.seats || 9000) - (AC[t.acadY || 0] || 0) - (AC[t.acadS || 0] || 0);
-      var runway = netMD < 0 ? Math.floor(bank / -netMD) : null;
-      var health = foHealth(bank);
-      var fin = "<div class='fo-card'><div class='fo-card-h'>Finances</div><div class='fo-card-b'><table class='fo-kv'>" +
-        "<tr><td>Bank</td><td class='r'>" + foMoney(bank) + " · <b class='" + (health === "Danger" || health === "Crisis" ? "fo-neg" : "fo-teal") + "'>" + health + "</b></td></tr>" +
-        "<tr><td>Wages / matchday</td><td class='r'>" + foMoney(wages) + "</td></tr>" +
-        "<tr><td>Sponsor / matchday</td><td class='r'>" + foMoney(sponsorBase) + "</td></tr>" +
-        "<tr><td>Ground</td><td class='r'>" + E(t.ground || "-") + " · " + (t.seats || 9000).toLocaleString() + " seats</td></tr>" +
-        "<tr><td>Stadium condition</td><td class='r fo-teal'>" + cond + "</td></tr></table>" +
-        "<div class='fo-fin-net'><span>Typical matchday net</span><b class='" + (netMD >= 0 ? "fo-pos" : "fo-neg") + "'>" + (netMD >= 0 ? "+" : "&minus;") + foMoney(Math.abs(netMD)) + "</b></div>" +
-        (runway != null && runway <= 6 ? "<div class='fo-fin-net'><span>Runway at this burn</span><b class='fo-neg'>~" + runway + " matchdays</b></div>" : "") +
-        "</div></div>";
+      // Finances: one line — the net, and where the season lands. Line items live in the Office.
+      var remainingMD = Math.max(0, totalRounds - played);
+      var projEnd = bank + netMD * remainingMD;
+      var finStory = netMD >= 0 ? "building every matchday" : (projEnd >= 0 ? "the bank covers the season" : "the bank runs dry before season&rsquo;s end");
+      var fin = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Finances</div><a href='#/office' class='fo-morelink'>Office &rsaquo;</a></div><div class='fo-card-b'>" +
+        "<div class='fo-fin-line'>Typical matchday net <b class='" + (netMD >= 0 ? "fo-pos" : "fo-neg") + "'>" + (netMD >= 0 ? "+" : "&minus;") + foMoney(Math.abs(netMD)) + "</b>" +
+        (remainingMD > 0 ? " &middot; projected <b class='" + (projEnd >= 0 ? "fo-pos" : "fo-neg") + "'>" + foMoney(projEnd) + "</b> at season&rsquo;s end &mdash; " + finStory + "." : ".") +
+        "</div></div></div>";
 
       var formPill = pips ? "<span class='fo-hero-pill'>Form <span class='fo-form'>" + pips + "</span></span>" : "<span class='fo-hero-pill'>No matches yet</span>";
       var hero = "<div class='fo-ch-hero'><div class='fo-ch-hero-l'>" +
@@ -1478,14 +1516,9 @@
         "</div></div><div class='fo-ch-hero-r'>" + formPill + "</div></div>";
 
       // ---- season momentum strip: progress bar + streak + goal-gradient nudge ----
-      var totalRounds = (S && S.schedule) ? S.schedule.length : 18;
-      var played = me.p || 0;
       var strip = "<div class='fo-season-strip'>" +
         "<div class='fo-progress'><div class='fo-progress-l'><span>Season " + (App.seasonNo || 1) + " progress</span><b>Matchday " + Math.min(played + 1, totalRounds) + " of " + totalRounds + "</b></div>" +
         "<div class='fo-progress-bar'><u style='width:" + Math.round(100 * played / Math.max(1, totalRounds)) + "%'></u></div></div>";
-      // current unbeaten/win streak from the form pips (most recent last)
-      var streak = 0;
-      for (var si = form.length - 1; si >= 0 && String(form[si]).toUpperCase() === "W"; si--) streak++;
       if (streak >= 2) strip += "<span class='fo-mchip fo-mchip-hot'><i>" + FO_I("trophy", 15) + "</i>" + streak + "-match win streak</span>";
       // goal gradient: how close is the next rung of the table?
       if (pi > 0 && played > 0) {
@@ -1507,7 +1540,6 @@
       strip += "</div>";
 
       // ---- next match: anticipation panel with countdown + lineup-state CTA ----
-      var nxt = foUserFixtures()[0] || null;
       var isMP = SYNC && SYNC.started && !SYNC.practice;
       // one truth for "orders in": the server has this round's packet, or the
       // current round's orders are saved locally (upload confirms momentarily)
@@ -1561,8 +1593,7 @@
       var html = "<div class='fo-ch'>" +
         "<div class='fo-ch-crumb'>" + E(t.name) + " <span>›</span> Club</div>" + hero + nextPanel + todoStrip + strip + stats +
         "<div class='fo-ch-grid'><div class='fo-ch-col'>" + newsCard +
-        "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Recent results</div><a href='#/matches' class='fo-morelink'>View all results ›</a></div><div class='fo-card-b'>" + recentBody + "</div></div>" +
-        "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Upcoming fixtures</div><a href='#/matches' class='fo-morelink'>View full schedule ›</a></div><div class='fo-card-b'>" + upBody + "</div></div>" +
+        "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Next three fixtures</div><a href='#/matches' class='fo-morelink'>Full schedule &amp; results ›</a></div><div class='fo-card-b'>" + upBody + "</div></div>" +
         leaders + gainsCard +
         "</div><div class='fo-ch-col'>" + standings + fin + "</div></div></div>";
 
@@ -5777,7 +5808,7 @@
       items.push({ pri: mine ? 0 : 2, h: txt, s: E(r.ground || "") + (star ? " · star: " + E(star.name) + " " + E(star.line) : ""), sc: r.ix });
       foPerfList([r]).forEach(function (p) {
         if (p.kind === "bat" && p.r >= 100) items.push({ pri: 1, h: "CENTURY: " + E(p.name) + " " + E(p.line), s: "for " + E(p.club), sc: r.ix });
-        if (p.kind === "bowl" && p.w >= 5) items.push({ pri: 1, h: "FIVE-FOR: " + E(p.name) + " " + E(p.line), s: "for " + E(p.club), sc: r.ix });
+        if (p.kind === "bowl" && p.w >= 5) items.push({ pri: 1, h: (p.w >= 8 ? "EIGHT-FOR" : p.w === 7 ? "SEVEN-FOR" : p.w === 6 ? "SIX-FOR" : "FIVE-FOR") + ": " + E(p.name) + " " + E(p.line), s: "for " + E(p.club), sc: r.ix });
       });
     });
     try {
@@ -5937,7 +5968,7 @@
       document.querySelectorAll("button.fo-setr[data-r]").forEach(function (b) {
         var done = !!SYNC.submitted[+b.getAttribute("data-r")];
         b.classList.toggle("fo-setr-done", done);
-        var want = done ? "\u2713 Orders ready" : "Set lineup";
+        var want = done ? "\u2713 Orders ready" : (b.classList.contains("fo-setr-later") ? "Plan lineup" : "Set lineup");
         if (b.textContent !== want) b.textContent = want;
         b.title = done ? "Click to edit this round's lineup" : "";
       });
