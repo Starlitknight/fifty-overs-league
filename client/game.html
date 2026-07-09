@@ -6758,7 +6758,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-ch-hero-l{display:flex;gap:18px;align-items:center;min-width:0}" +
     ".fo-ch-crest{width:74px;height:74px;border-radius:14px;background:" + PAPER + ";display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 4px 12px rgba(0,0,0,.2)}" +
     ".fo-ch-crest img{width:56px;height:56px;object-fit:contain;border-radius:8px}" +
-    ".fo-ch-eyebrow{color:" + TEAL + ";font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}" +
+    ".fo-ch-eyebrow{color:#E8845C;font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}" +
     ".fo-ch-name{color:#fff;font-size:34px;font-weight:800;margin:2px 0 10px;letter-spacing:-.5px;line-height:1}" +
     ".fo-ch-chips{display:flex;gap:8px;flex-wrap:wrap}" +
     ".fo-ch-chip{background:rgba(246,244,238,.08);border:1px solid rgba(246,244,238,.14);color:#d7dbe2;font-size:12px;padding:5px 11px;border-radius:8px}" +
@@ -6771,7 +6771,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-stat-ic{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;background:rgba(200,103,74,.1);flex:none}" +
     ".fo-acc-teal .fo-stat-ic{background:rgba(77,166,162,.12)}" +
     ".fo-stat-l{font-size:10.5px;color:#8a8474;text-transform:uppercase;letter-spacing:.04em;font-weight:700}" +
-    ".fo-stat-v{font-size:25px;font-weight:800;color:#12203a;line-height:1.15}" +
+    ".fo-stat-v{font-size:clamp(16px,1.4vw,25px);font-weight:800;color:#12203a;line-height:1.15;white-space:nowrap}" +
+    ".fo-stat>div:last-child{min-width:0}" +
+    ".fo-news li.fo-rowlink{cursor:pointer;border-radius:8px;padding:4px 6px;margin:0 -6px}" +
+    ".fo-news li.fo-rowlink:hover{background:#f6f4ee}.fo-news li.fo-rowlink:hover .fo-news-h{color:#C0562F}" +
     ".fo-stat-s{font-size:11px;color:#9a9484;margin-top:1px}" +
     ".fo-ch-grid{display:grid;grid-template-columns:1.42fr 1fr;gap:16px}" +
     ".fo-ch-col{display:flex;flex-direction:column;gap:16px;min-width:0}" +
@@ -7743,7 +7746,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       };
       var stats = "<div class='fo-ch-stats'>" +
         stat("terra", FO_I("trophy", 19), "League position", pos, "/ " + (rowsL.length || 10)) +
-        stat("teal", FO_I("chart", 19), "Points", me.pts || 0, (me.w || 0) + "W · " + (me.l || 0) + "L") +
+
         stat("terra", FO_I("wallet", 19), "Bank", foMoney(bank), "Available funds") +
         stat("teal", FO_I("coins", 19), "Weekly wages", foMoney(wages), "Total wage bill") +
         stat("terra", FO_I("users", 19), "Supporters", "<span class='fo-stat-word'>" + mood + "</span>", "Mood") + "</div>";
@@ -7902,18 +7905,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       page.querySelectorAll(".fo-fr-play").forEach(function (b) { b.addEventListener("click", function () { var fr = foFriendlies[+b.getAttribute("data-i")]; if (fr) foPlayFriendly(fr); }); });
       page.querySelectorAll(".fo-fr-x").forEach(function (b) { b.addEventListener("click", function () { foRemoveFriendly(+b.getAttribute("data-i")); }); });
       page.querySelectorAll(".fo-scoutname").forEach(function (c) { c.addEventListener("click", function () { scoutClub(c.textContent || ""); }); });
-      // social proof: predictions already in for this round (async, quiet fail)
-      try {
-        if (SYNC && SYNC.started && !SYNC.practice && LG && nxt) {
-          sel("league_predictions", "league_id=eq." + LG.id + "&round=eq." + nxt.round + "&select=manager_id").then(function (rows) {
-            var n = (rows || []).length; if (!n) return;
-            var el = page.querySelector(".fo-next-l"); if (!el || el.querySelector(".fo-social")) return;
-            var d = document.createElement("div"); d.className = "fo-social";
-            d.innerHTML = "<b>" + n + " manager" + (n === 1 ? " has" : "s have") + "</b> already called this round in predictions.";
-            el.appendChild(d);
-          }).catch(function () {});
-        }
-      } catch (e) {}
       var cta = page.querySelector(".fo-next-cta[data-r]");
       if (cta) cta.addEventListener("click", function () { foSetOrdersForRound(+cta.getAttribute("data-r")); });
       page.querySelectorAll(".fo-todo a[data-go]").forEach(function (a) {
@@ -9106,7 +9097,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260709-1758-d8757e";
+  var FO_BUILD = "20260709-1804-a52b65";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -11986,12 +11977,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var txt = (r.result && r.result.text) || "";
       var star = foPerfList([r])[0];
       var mine = r.home === my || r.away === my;
-      items.push({ pri: mine ? 0 : 2, h: txt, s: E(r.ground || "") + (star ? " · star: " + E(star.name) + " " + E(star.line) : "") });
-    });
-    var perfs = foPerfList(results);
-    perfs.forEach(function (p) {
-      if (p.kind === "bat" && p.r >= 100) items.push({ pri: 1, h: "CENTURY: " + E(p.name) + " " + E(p.line), s: "for " + E(p.club) });
-      if (p.kind === "bowl" && p.w >= 5) items.push({ pri: 1, h: "FIVE-FOR: " + E(p.name) + " " + E(p.line), s: "for " + E(p.club) });
+      items.push({ pri: mine ? 0 : 2, h: txt, s: E(r.ground || "") + (star ? " · star: " + E(star.name) + " " + E(star.line) : ""), sc: r.ix });
+      foPerfList([r]).forEach(function (p) {
+        if (p.kind === "bat" && p.r >= 100) items.push({ pri: 1, h: "CENTURY: " + E(p.name) + " " + E(p.line), s: "for " + E(p.club), sc: r.ix });
+        if (p.kind === "bowl" && p.w >= 5) items.push({ pri: 1, h: "FIVE-FOR: " + E(p.name) + " " + E(p.line), s: "for " + E(p.club), sc: r.ix });
+      });
     });
     try {
       GD.teams.forEach(function (t) {
@@ -12001,7 +11991,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       });
     } catch (e) {}
     items.sort(function (a, b) { return a.pri - b.pri; });
-    var lis = items.slice(0, 6).map(function (it) { return "<li><div class='fo-news-h'>" + it.h + "</div>" + (it.s ? "<div class='fo-news-s'>" + it.s + "</div>" : "") + "</li>"; }).join("");
+    var lis = items.slice(0, 6).map(function (it) {
+      var link = it.sc != null ? " class='fo-rowlink' data-sc='" + it.sc + "' title='Open the scorecard'" : "";
+      return "<li" + link + "><div class='fo-news-h'>" + it.h + "</div>" + (it.s ? "<div class='fo-news-s'>" + it.s + "</div>" : "") + "</li>";
+    }).join("");
     return "<div class='fo-card fo-news'><div class='fo-card-h2row'><div class='fo-card-h2'>The Fifty Overs Post · Round " + (rd + 1) + "</div><a class='fo-morelink' href='#/matchday'>Watch the matchday ›</a></div><div class='fo-card-b'><ul style='margin:0;padding-left:4px;list-style:none;font-size:13px'>" + lis + "</ul></div></div>";
   }
 
