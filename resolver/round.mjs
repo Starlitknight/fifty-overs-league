@@ -64,12 +64,19 @@ async function advanceOne(page, st) {
   const lid = st.league_id, round = st.round, snap = st.snapshot;
   const sched = snap && snap.season && snap.season.schedule;
 
-  // Gate to one action per day at 09:00 New York time. Managers who have not
-  // submitted orders for the round play with the engine's automatic line-up.
+  // Gate to one ROUND per day at 09:00 New York time. The snapshot carries the
+  // date of the last resolver advance; updated_at alone is not enough - any
+  // client write (a manager joining, a season restart) also bumps it and would
+  // silently eat the day's round. Snapshots without the stamp (client-pushed)
+  // get a two-hour grace so a freshly started season still has time for orders.
   const now = tzDateHour(new Date());
   const last = tzDateHour(new Date(st.updated_at));
   if (now.hour < MATCH_HOUR) { console.log(lid, `before ${MATCH_HOUR}:00 ${MATCH_TZ}`); return; }
-  if (last.date >= now.date) { console.log(lid, 'already advanced today'); return; }
+  const advDate = snap && snap.__foAdvDate ? String(snap.__foAdvDate) : null;
+  const blocked = advDate
+    ? advDate >= now.date
+    : (last.date >= now.date && Date.now() - Date.parse(st.updated_at) < 2 * 3600 * 1000);
+  if (blocked) { console.log(lid, advDate ? 'already advanced today' : 'fresh client push - waiting out the grace period'); return; }
 
   // Season over: the next 09:00 runs the engine's own rollover — prize money
   // for every club, age decline, retirements (seeded from the season number,
@@ -84,6 +91,7 @@ async function advanceOne(page, st) {
       try { var me = userTeam(); if (App.fin && me && App.fin.bank !== me.bank) me.bank = App.fin.bank; } catch (e) {}
       return window.snapshot(true);
     }, { snap });
+    rolled.__foAdvDate = now.date;
     await rpc('push_league_state', { p_league_id: lid, p_snapshot: rolled, p_round: 0 });
     console.log(lid, `season rolled over -> season ${rolled.seasonNo || '?'} round 0`);
     return;
@@ -105,6 +113,7 @@ async function advanceOne(page, st) {
     return window.snapshot(true);
   }, { snap, pkts: packets.map(r => r.packet) });
 
+  newSnap.__foAdvDate = now.date;
   const newRound = (newSnap.season && typeof newSnap.season.round === 'number') ? newSnap.season.round : round + 1;
   await rpc('push_league_state', { p_league_id: lid, p_snapshot: newSnap, p_round: newRound });
   console.log(lid, `advanced round ${round} -> ${newRound}`);

@@ -4147,8 +4147,12 @@
         var k3 = (typeof S === "function") ? S(p3) : (p3.skills || {});
         return (has(p3, "deathSpecialist") ? 40 : 0) + 0.5 * (k3.economy || 0) + 0.3 * (k3.variation || 0) + 0.2 * (k3.discipline || 0);
       };
-      var bestIx = -1, bestVal = -1;
-      for (var di = 1; di < order.length - 1; di++) {         // keep the PP head intact
+      var bestIx = -1, bestVal = -1, strIx = -1;
+      if (straddler) for (var qi = 0; qi < order.length; qi++) if (order[qi].bowler === straddler) { strIx = qi; break; }
+      // never move a spell from BEFORE the straddler: everything after it would
+      // slide, and the straddler's overs can then overlap its spell at the
+      // other end (same bowler in consecutive overs - illegal)
+      for (var di = Math.max(1, strIx + 1); di < order.length - 1; di++) {    // keep the PP head intact
         var v = deathScore(order[di].bowler);
         if (v > bestVal && order[di].bowler !== order[order.length - 1].bowler) { bestVal = v; bestIx = di; }
       }
