@@ -1310,8 +1310,7 @@
       var fmap = foFormMap();
       var standRows = rowsL.map(function (x, i) {
         var meRow = x.nm === t.name;
-        var fp = (fmap[x.nm] || []).map(function (v) { return "<i class='fo-pip fo-" + v + "'></i>"; }).join("");
-        return "<tr class='" + (meRow ? "fo-userrow" : "") + "'><td class='fo-rk'>" + (i === 0 ? "<span style='color:#D9A441;display:inline-flex;vertical-align:-2px'>" + FO_I("trophy", 14) + "</span>" : (i + 1)) + "</td><td class='fo-scoutname'>" + E(x.nm) + (fp ? " <span class='fo-form'>" + fp + "</span>" : "") + "</td><td class='r'>" + x.p + "</td><td class='r'>" + x.w + "</td><td class='r'>" + x.l + "</td><td class='r'>" + (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2) + "</td><td class='r'><b>" + x.pts + "</b></td></tr>";
+        return "<tr class='" + (meRow ? "fo-userrow" : "") + "'><td class='fo-rk'>" + (i === 0 ? "<span style='color:#D9A441;display:inline-flex;vertical-align:-2px'>" + FO_I("trophy", 14) + "</span>" : (i + 1)) + "</td><td class='fo-scoutname'>" + E(x.nm) + "</td><td class='r'>" + x.p + "</td><td class='r'>" + x.w + "</td><td class='r'>" + x.l + "</td><td class='r'>" + (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2) + "</td><td class='r'><b>" + x.pts + "</b></td></tr>";
       }).join("");
       var standings = "<div class='fo-card'><div class='fo-card-h'>League standings</div><div class='fo-card-b'><table class='fo-tbl fo-chtable'><thead><tr><th class='fo-rk'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th><th class='r'>NRR</th><th class='r'>Pts</th></tr></thead><tbody>" + standRows + "</tbody></table></div></div>";
 
@@ -1682,6 +1681,15 @@
           if (/startLeagueMatch/.test(b.getAttribute("onclick") || "")) b.textContent = "Set lineup";
         });
       }
+      // the engine's placeholder competition name becomes the real league's name
+      var lgName = (LG && LG.name) ? LG.name : "League";
+      document.querySelectorAll("#page h4, #page td").forEach(function (el) {
+        if ((el.textContent || "").indexOf("Chat Division 1") >= 0) {
+          el.innerHTML = el.innerHTML.replace(/League table - Chat Division 1/g, "League table &middot; " + E(lgName))
+                                     .replace(/One Day - Chat Division 1/g, "One Day &middot; " + E(lgName))
+                                     .replace(/Chat Division 1/g, E(lgName));
+        }
+      });
       var fmap = foFormMap(), myName = "";
       try { if (typeof userTeam === "function") myName = userTeam().name; } catch (e) {}
       document.querySelectorAll("#page table").forEach(function (tb) {
@@ -1701,14 +1709,6 @@
           }
           if (di === 0) tr.classList.add("fo-lead");            // league leader
           if (myName && name.indexOf(myName) >= 0) tr.classList.add("fo-userrow");
-          if (!cell.querySelector(".fo-form")) {                // recent-form pips
-            var f = null; for (var k in fmap) { if (name.indexOf(k) >= 0) { f = fmap[k]; break; } }
-            if (f && f.length) {
-              var sp = document.createElement("span"); sp.className = "fo-form";
-              sp.innerHTML = f.map(function (x) { return "<i class='fo-pip fo-" + x + "' title='" + x + "'></i>"; }).join("");
-              cell.appendChild(sp);
-            }
-          }
           di++;
         });
       });
