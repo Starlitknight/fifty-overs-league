@@ -14,7 +14,7 @@ const r = await page.evaluate(() => {
     const p = pre[i];
     const deal = DEALS[(t.sponsorDeal && t.sponsorDeal.id) || 'community'];
     const r = round0.find(x => x.home === t.name || x.away === t.name);
-    let expect = deal.base - p.wages - (p.seats || 9000) - AC[p.aY] - AC[p.aS];
+    let expect = deal.base - p.wages - (p.seats || 9000) - AC[p.aS];   // senior academy only: there is no youth league
     if (r && r.home === t.name) expect += Math.min(t.seats, Math.round(p.sup * (0.55 + 0.13 * (t.name === userTeam().name ? p.mood : p.mood)))) * 9;
     if (r && r.result && r.result.winner === t.name) expect += deal.win;
     return { nm: t.name, deal: (t.sponsorDeal && t.sponsorDeal.id) || 'community', delta: t.bank - p.bank, expect, ok: Math.abs((t.bank - p.bank) - expect) <= 50 };

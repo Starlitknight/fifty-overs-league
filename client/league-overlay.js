@@ -95,7 +95,7 @@
   function foConsumeAuthHash() {
     try {
       // The engine's boot rewrites location.hash to #/welcome before this overlay
-      // runs, wiping the Supabase fragment — so also read the ORIGINAL navigation
+      // runs, wiping the Supabase fragment · so also read the ORIGINAL navigation
       // URL (captured at page load) to recover the token / error.
       var cands = [];
       if (location.hash) cands.push(location.hash);
@@ -170,7 +170,7 @@
   css2.textContent =
     "#folWrap{background:#0B1322 !important}" +
     // Login/signup mode is FULL-BLEED: without this the panel is a centered 780px
-    // column whose edges vanish against the dark page — leaving its scrollbar
+    // column whose edges vanish against the dark page · leaving its scrollbar
     // floating weirdly in the middle of the screen. Background: brand gradient +
     // two very faint boundary-rope arcs (abstract cricket field lines).
     "#folPanel.fol-navy{inset:0 !important;max-width:none;border-radius:0;display:flex;flex-direction:column;" +
@@ -323,7 +323,7 @@
     ".fo-orders-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 8px}" +
     ".fo-copyprev{font-size:12px;padding:6px 12px;border:1px solid " + TEAL + ";background:" + PAPER + ";color:#2b6b68;border-radius:6px;cursor:pointer}" +
     ".fo-copyprev:hover:not(:disabled){background:" + TEAL + ";color:#fff}.fo-copyprev:disabled{opacity:.5;cursor:default}" +
-    // rival club (scout) page — custom hero (high contrast) + FTP-style link banner
+    // rival club (scout) page · custom hero (high contrast) + FTP-style link banner
     ".fo-scout{max-width:1080px;margin:0 auto}" +
     ".fo-scout-hero{position:relative;overflow:hidden;border-radius:14px;padding:24px 26px;margin:6px 0 14px;display:flex;gap:20px;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;background:linear-gradient(135deg,#16294a,#0B1322 62%);box-shadow:0 10px 30px rgba(11,19,34,.25)}" +
     ".fo-scout-hero::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(" + TERRA + "," + TEAL + ")}" +
@@ -824,7 +824,7 @@
     "#fo-pd .fo-pd-tal{margin:12px 0;font-size:12.5px;color:#545d68}#fo-pd .fo-pd-tal b{color:#8a8474;text-transform:uppercase;font-size:10.5px;letter-spacing:.04em}" +
     "#fo-pd button{font-family:inherit;min-height:0;box-shadow:none}" +
     "#fo-pd .fo-pd-act{display:flex}#fo-pd .fo-pd-add{flex:1;background:" + TERRA + " !important;color:#fff !important;border:none;padding:11px;border-radius:10px;font-weight:700;font-size:13.5px;cursor:pointer}#fo-pd .fo-pd-add.on{background:#f7f4ec !important;color:" + TERRA + " !important;border:1px solid " + TERRA + "}" +
-    // league standings — form pips + leader/user accents
+    // league standings · form pips + leader/user accents
     ".fo-standings td,.fo-standings th{padding:6px 8px}" +
     ".fo-standings tr.fo-lead td:nth-child(2){font-weight:700}" +
     "html body.ftpskin .fo-standings tr.fo-userrow td,.fo-standings tr.fo-userrow td{background:#fbf1ec !important}" +
@@ -877,7 +877,7 @@
     "#page .panel table th:first-child,#page .panel table td:first-child{position:sticky;left:0;background:#fff;z-index:1;box-shadow:1px 0 0 rgba(0,0,0,.12)}" +
     "}" +
     // ===== deep engine-page polish (Matches / Stats / Office / live match) =====
-    // page hero: finish the navy band properly — light text, padding, radius
+    // page hero: finish the navy band properly · light text, padding, radius
     "#page .page-head{padding:20px 24px;border-radius:14px;box-shadow:0 12px 32px rgba(11,19,34,.18)}" +
     "#page .page-head h1{color:#F6F4EE !important}" +
     "#page .page-head p{color:rgba(246,244,238,.62) !important;margin:3px 0 0}" +
@@ -894,7 +894,7 @@
     "#page tr.fo-userrow{background:transparent !important}" +
     "#page tr.fo-userrow>td{background:rgba(200,103,74,.09) !important}" +
     "#page tr.fo-userrow>td:first-child{box-shadow:inset 3px 0 0 " + TERRA + "}" +
-    // the engine skin paints 'your fixture' rows #feffcc — re-tint to the brand
+    // the engine skin paints 'your fixture' rows #feffcc · re-tint to the brand
     'html body.ftpskin tr[style*="eef4ee"] td,html body.ftpskin tr[style*="eef8fb"] td{background:rgba(200,103,74,.09) !important}' +
     'html body.ftpskin tr[style*="eef4ee"] td:first-child,html body.ftpskin tr[style*="eef8fb"] td:first-child{box-shadow:inset 3px 0 0 ' + TERRA + "}" +
     // office KPI tiles
@@ -1253,7 +1253,7 @@
   function startFriendly() {
     try {
       if (typeof GD === "undefined" || !GD.teams || GD.teams.length < 2) {
-        // on slow connections the league snapshot may still be loading —
+        // on slow connections the league snapshot may still be loading –
         // wait a beat and retry once before telling the user anything
         toast("Loading your league\u2026");
         setTimeout(function () {
@@ -1266,7 +1266,7 @@
     } catch (e) { toast("Could not open Practice Game: " + ((e && e.message) || e), "error"); }
   }
   var FO_PITCHES = ["balanced", "flat", "green", "dry", "slow", "cracked", "twoPaced"];
-  // display names only — the engine's pitch ids never change
+  // display names only · the engine's pitch ids never change
   var FO_PITCH_NAMES = { balanced: "Balanced", flat: "Flat", green: "Green", dry: "Crumbling", slow: "Slow", cracked: "Sticky", twoPaced: "Two-paced" };
   function foPitchName(id) { var k = String(id == null ? "" : (id.id || id)).trim(); return FO_PITCH_NAMES[k] || foTitle(k); }
   function foTitle(s) { return (s || "").charAt(0).toUpperCase() + (s || "").slice(1); }
@@ -1310,7 +1310,7 @@
       m.innerHTML = "<div class='fo-modal-card fo-break-card'><div class='fo-modal-eyebrow'>Get ready</div>" +
         "<h3>vs " + E(fr.oppName) + "</h3><div class='fo-break-cond'>" + E(foTitle(fr.pitch)) + " pitch · " + E(fr.weather) + "</div>" +
         "<div class='fo-break-clock' id='fo-break-clock'>2:00</div>" +
-        "<div class='small'>Take a breather — your lineup opens when the timer ends.</div>" +
+        "<div class='small'>Take a breather · your lineup opens when the timer ends.</div>" +
         "<div class='fo-modal-act'><button class='fo-su-go primary'>Set lineup now ▸</button></div></div>";
       document.body.appendChild(m);
       var secs = 120;
@@ -1340,7 +1340,7 @@
     var fr = foFriendlies[i]; if (!fr) return;
     try {
       if (typeof M !== "undefined" && M && !M.done && App.pending && App.pending.__friendly && App.pending.away === fr.oppName) {
-        say("That friendly is being played right now — finish or abandon the match first."); return;
+        say("That friendly is being played right now · finish or abandon the match first."); return;
       }
     } catch (e) {}
     foConfirm({ title: "Remove the friendly vs " + fr.oppName + "?", body: "You can schedule another from their club page any time.", confirm: "Remove", cancel: "Keep it" })
@@ -1368,7 +1368,7 @@
     function acadUpkeepAt(level) {
       return isMP() ? (ACAD[Math.max(0, Math.min(5, level || 0))] || 0) : 2500 * (level || 0);
     }
-    function acadUpkeep(t) { t = t || club(); return acadUpkeepAt(t.acadY) + acadUpkeepAt(t.acadS); }
+    function acadUpkeep(t) { t = t || club(); return isMP() ? acadUpkeepAt(t.acadS) : 2500 * ((t.acadY || 0) + (t.acadS || 0)); }
     function gateAttendance(t) {
       t = t || club();
       if (!isMP() && typeof attendance === "function") { try { return attendance(t); } catch (e) {} }
@@ -1543,10 +1543,10 @@
       // Leaders
       var ld = foTeamLeaders(t);
       var leaders = "<div class='fo-ch-leaders'>" +
-        "<div class='fo-card fo-lead'><div class='fo-lead-ic'>" + FO_I("bat", 19) + "</div><div><div class='fo-card-h2'>Our leading run-scorer</div><div class='fo-lead-v'>" + (ld.bat.runs || 0) + " <span>runs</span></div><div class='small'>" + (ld.bat.name ? E(ld.bat.name) : "—") + "</div></div></div>" +
-        "<div class='fo-card fo-lead'><div class='fo-lead-ic'>" + FO_I("target", 19) + "</div><div><div class='fo-card-h2'>Our leading wicket-taker</div><div class='fo-lead-v'>" + (ld.bowl.wkts || 0) + " <span>wkts</span></div><div class='small'>" + (ld.bowl.name ? E(ld.bowl.name) : "—") + "</div></div></div></div>";
+        "<div class='fo-card fo-lead'><div class='fo-lead-ic'>" + FO_I("bat", 19) + "</div><div><div class='fo-card-h2'>Our leading run-scorer</div><div class='fo-lead-v'>" + (ld.bat.runs || 0) + " <span>runs</span></div><div class='small'>" + (ld.bat.name ? E(ld.bat.name) : "–") + "</div></div></div>" +
+        "<div class='fo-card fo-lead'><div class='fo-lead-ic'>" + FO_I("target", 19) + "</div><div><div class='fo-card-h2'>Our leading wicket-taker</div><div class='fo-lead-v'>" + (ld.bowl.wkts || 0) + " <span>wkts</span></div><div class='small'>" + (ld.bowl.name ? E(ld.bowl.name) : "–") + "</div></div></div></div>";
 
-      // Standings: the full ten-row table lives on Matches; here only the story —
+      // Standings: the full ten-row table lives on Matches; here only the story –
       // who leads, where you sit, and the one gap worth chasing
       var standRow = function (x, i) {
         var meRow = x.nm === t.name;
@@ -1566,7 +1566,7 @@
       var standings = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>League standings</div><a href='#/matches' class='fo-morelink'>Results &rsaquo;</a></div><div class='fo-card-b'><table class='fo-tbl fo-chtable'><thead><tr><th class='fo-rk'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th><th class='r'>NRR</th><th class='r'>Pts</th></tr></thead><tbody>" + standRows + "</tbody></table>" +
         (gapLine ? "<div class='fo-stand-gap'>" + gapLine + "</div>" : "") + "</div></div>";
 
-      // Finances: one line — the net, and where the season lands. All figures
+      // Finances: one line · the net, and where the season lands. All figures
       // come from FoFinance so this card can never disagree with the Office.
       var remainingMD = FoFinance.fixtures().length;
       var projEnd = FoFinance.seasonEndProjection();
@@ -1574,7 +1574,7 @@
       var finSign = function (v) { return "<b class='" + (v >= 0 ? "fo-pos" : "fo-neg") + "'>" + (v >= 0 ? "+" : "&minus;") + foMoney(Math.abs(v)) + "</b>"; };
       var fin = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Finances</div><a href='#/office' class='fo-morelink'>Office &rsaquo;</a></div><div class='fo-card-b'>" +
         "<div class='fo-fin-line'>Typical matchday net " + finSign(netMD) +
-        (remainingMD > 0 ? " &middot; projected <b class='" + (projEnd >= 0 ? "fo-pos" : "fo-neg") + "'>" + foMoney(projEnd) + "</b> at season&rsquo;s end &mdash; " + finStory + "." : ".") +
+        (remainingMD > 0 ? " &middot; projected <b class='" + (projEnd >= 0 ? "fo-pos" : "fo-neg") + "'>" + foMoney(projEnd) + "</b> at season&rsquo;s end &middot; " + finStory + "." : ".") +
         "<div class='small' style='margin-top:4px'>home matchdays " + finSign(finSplit.homeNet) + " &middot; away " + finSign(finSplit.awayNet) + "</div>" +
         "</div></div></div>";
 
@@ -1605,7 +1605,7 @@
       if (coldP.length) watchRows += "<tr><td><span class='fo-neg'>&#9660; Struggling</span></td><td class='r'>" + E(coldP.slice(0, 3).join(", ")) + (coldP.length > 3 ? " +" + (coldP.length - 3) : "") + "</td></tr>";
       if (tiredP.length) watchRows += "<tr><td><span class='fo-neg'>&#9679; Needs a rest</span></td><td class='r'>" + E(tiredP.slice(0, 3).join(", ")) + (tiredP.length > 3 ? " +" + (tiredP.length - 3) : "") + "</td></tr>";
       var watchCard = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Squad watch</div><a href='#/squad' class='fo-morelink'>Squad &rsaquo;</a></div><div class='fo-card-b'>" +
-        (watchRows ? "<table class='fo-kv'>" + watchRows + "</table>" : "<div class='small'>Everyone is steady &mdash; form and fatigue updates land after each match.</div>") + "</div></div>";
+        (watchRows ? "<table class='fo-kv'>" + watchRows + "</table>" : "<div class='small'>Everyone is steady &middot; form and fatigue updates land after each match.</div>") + "</div></div>";
 
       var formPill = pips ? "<span class='fo-hero-pill'>Form <span class='fo-form'>" + pips + "</span></span>" : "<span class='fo-hero-pill'>No matches yet</span>";
       var hero = "<div class='fo-ch-hero'><div class='fo-ch-hero-l'>" +
@@ -1626,7 +1626,7 @@
           (gap <= 0 ? "Level on points with " + E(above.nm) : gap + " pt" + (gap === 1 ? "" : "s") + " from " + foOrdinal(pi) + " place") + "</span>";
       } else if (pi === 0 && played > 0) {
         var below = rowsL[1], lead = (me.pts || 0) - ((below && below.pts) || 0);
-        strip += "<span class='fo-mchip fo-mchip-goal'><i>" + FO_I("trophy", 15) + "</i>Top of the table" + (lead > 0 ? " — " + lead + " pt" + (lead === 1 ? "" : "s") + " clear" : "") + "</span>";
+        strip += "<span class='fo-mchip fo-mchip-goal'><i>" + FO_I("trophy", 15) + "</i>Top of the table" + (lead > 0 ? " · " + lead + " pt" + (lead === 1 ? "" : "s") + " clear" : "") + "</span>";
       }
       // check-in streak: reward showing up, every day
       var stk = foStreak();
@@ -1659,7 +1659,7 @@
           (oppForm ? " · form <span class='fo-form'>" + oppForm + "</span>" : "") + "</div>" +
           "</div><div class='fo-next-r'>" + cd +
           "<button class='fo-next-cta" + (ordersIn ? " fo-done" : "") + "' data-r='" + nxt.round + "'>" +
-          (ordersIn ? "&#10003; Orders in — review lineup" : "Set your lineup") + "</button></div></div>";
+          (ordersIn ? "&#10003; Orders in · review lineup" : "Set your lineup") + "</button></div></div>";
       } else if ((me.p || 0) > 0) {
         nextPanel = "<div class='fo-next'><div class='fo-next-l'><div class='fo-next-eyebrow'>Season complete</div>" +
           "<div class='fo-next-opp'>You finished " + foOrdinal(pos === "-" ? 10 : pos) + "</div>" +
@@ -1727,7 +1727,7 @@
   // date in any fixtures/results table. Safe: only tables that have a "Date" header.
   // Open a rival club's page (in the game, not a dark modal): a hero banner with
   // position + form, recent results, upcoming fixtures, and a sortable Players tab
-  // — with a Challenge button. Reached by clicking a club name in any table.
+  // · with a Challenge button. Reached by clicking a club name in any table.
   // One round a day, anchored so the CURRENT round is today.
   function foDailyDate(r, opts) {
     var curR = (typeof App !== "undefined" && App.season) ? App.season.round : 0;
@@ -1936,7 +1936,7 @@
         var hit = (App.season.schedule[fr2] || []).some(function (f2) {
           return (f2[0] === ix && f2[1] === App.teamIx) || (f2[1] === ix && f2[0] === App.teamIx);
         });
-        if (hit) { faceChip = "<div class='fo-face-chip'>&#128197; You face them in R" + (fr2 + 1) + " &mdash; " + foDailyDate(fr2, { weekday: "short", day: "numeric", month: "short" }) + "</div>"; break; }
+        if (hit) { faceChip = "<div class='fo-face-chip'>&#128197; You face them in R" + (fr2 + 1) + " &middot; " + foDailyDate(fr2, { weekday: "short", day: "numeric", month: "short" }) + "</div>"; break; }
       }
     }
     var ordinal = pos ? (pos + (["th", "st", "nd", "rd"][((pos % 100) - 20) % 10] || ["th", "st", "nd", "rd"][pos % 100] || "th")) : null;
@@ -1999,7 +1999,7 @@
       var me = userTeam();
       App.pending = { oppIx: ix, home: me.name, away: GD.teams[ix].name, ground: me.ground, pitch: pitch || me.homePitch || groundPitch(me.ground), weather: weather || "Sunny", seed: 4200 + ix, date: typeof simDate === "function" ? simDate() : "", comp: "friendly", __friendly: true };
       App.orders.saved = false;                             // must set + save a lineup before it plays
-      say("vs " + GD.teams[ix].name + " — set your lineup, then Save to play.");
+      say("vs " + GD.teams[ix].name + " · set your lineup, then Save to play.");
       location.hash = "#/orders"; if (typeof window.route === "function") window.route();
     } catch (e) { say(e); }
   }
@@ -2040,7 +2040,7 @@
   // Trim the game page per preferences: hide Office academies, and make the
   // league-table club names clickable to open that club's scout report.
   // Mobile: any table wider than the screen scrolls in place instead of
-  // being clipped. Idempotent — skips tables already wrapped.
+  // being clipped. Idempotent · skips tables already wrapped.
   function foMobileTables() {
     try {
       var docW = document.documentElement.clientWidth;
@@ -2140,7 +2140,7 @@
   var MATCH_TIME = "9:00 AM ET";
   function decorateFixtureTimes() {
     try {
-      // the engine dates rounds weekly (solo roots); this league is daily —
+      // the engine dates rounds weekly (solo roots); this league is daily –
       // rewrite every printed round date anchored to TODAY's current round
       var curR = (typeof App !== "undefined" && App.season) ? App.season.round : 0;
       var dailyDate = function (roundIx) {
@@ -2424,10 +2424,10 @@
     App.page = prevPage;
     if (M && M.done) {
       M.__foArchived = 1; foSaveFrHist(M); lsSet(foFrKey(), "");
-      toast("Full time in your friendly: " + ((M.result && M.result.text) || "match complete") + " — the scorecard is in Live Match, and it's saved under Friendlies on the Matches page.");
+      toast("Full time in your friendly: " + ((M.result && M.result.text) || "match complete") + " · the scorecard is in Live Match, and it's saved under Friendlies on the Matches page.");
     } else if (M) {
       var ov = Math.floor(((M.innings[1] ? 300 : 0) + ((M.innings[M.innings[1] ? 1 : 0] || {}).legal || 0)) / 6);
-      toast("Your friendly has moved with the clock — over " + ov + " live now. Watch it in Live Match.");
+      toast("Your friendly has moved with the clock · over " + ov + " live now. Watch it in Live Match.");
     }
     // repaint only if the user is already looking at the match page
     if (foHashPath() === "#/match" && typeof window.route === "function") window.route();
@@ -2547,7 +2547,7 @@
   // Tag #page while a live match is on screen, so the mobile reorder CSS applies
   // only there (and never touches the desktop layout).
   // Opponent player pages: a rival's players are scoutable, but their skill bars
-  // and skills-summary are hidden — only your own players reveal their skills.
+  // and skills-summary are hidden · only your own players reveal their skills.
   function foHidePlayerSkills() {
     try {
       if (foHashPath() !== "#/player") return;
@@ -2556,7 +2556,7 @@
       var name = decodeURIComponent(m[1]);
       var mine = false;
       try { var me = userTeam(); mine = (me.players || []).concat(me.youth || []).some(function (p) { return p.name === name; }); } catch (e) {}
-      if (mine) return;                                     // own player — show everything
+      if (mine) return;                                     // own player · show everything
       page.querySelectorAll(".panel").forEach(function (pn) {
         var h = pn.querySelector("h4"); if (!h) return;
         var t = h.textContent.trim().toLowerCase();
@@ -2852,7 +2852,7 @@
       var now = Date.now();
       if (!SYNC.__pushToastAt || now - SYNC.__pushToastAt > 60000) {
         SYNC.__pushToastAt = now;
-        toast("Couldn't upload your round " + (r + 1) + " lineup — I'll keep retrying in the background.");
+        toast("Couldn't upload your round " + (r + 1) + " lineup · I'll keep retrying in the background.");
       }
     });
   }
@@ -2874,7 +2874,7 @@
       if (SYNC.planRound == null) return;
       foPushRound(SYNC.planRound, App.orders);
       // Don't let the current-round auto-push (pollOnce) resubmit these future-round
-      // orders for the current round — mark the signature as already handled.
+      // orders for the current round · mark the signature as already handled.
       try { SYNC.lastOrderSig = JSON.stringify(App.orders) + "|" + (App.season ? App.season.round : 0); } catch (e) {}
       foRenderPlanner();
     } catch (e) {}
@@ -2942,7 +2942,7 @@
       if (!fx.length && !frs.length) { if (existing) existing.remove(); return; }
       var limit = App.page === "club" ? 5 : 0;              // compact on the club home; full on Matches
       var sig = App.page + "|fr" + frs.map(function (f) { return f.oppName; }).join(",") + "|" + fx.map(function (x) { return x.round + (SYNC.submitted && SYNC.submitted[x.round] ? "y" : "n"); }).join(",");
-      if (existing && SYNC.__plannerSig === sig) return;    // unchanged — leave the DOM alone (avoids observer loop)
+      if (existing && SYNC.__plannerSig === sig) return;    // unchanged · leave the DOM alone (avoids observer loop)
       SYNC.__plannerSig = sig;
       var html = foPlannerHTML(fx, limit);
       if (existing) { existing.outerHTML = html; }
@@ -2979,7 +2979,7 @@
         var live = false; try { live = (typeof M !== "undefined") && M && !M.done; } catch (e) {}
         var el = document.createElement("div");
         el.id = "fo-update-pill";
-        el.innerHTML = "A new version is ready &mdash; <b>tap to update</b>" + (live ? " (your live match resumes at the right over)" : "");
+        el.innerHTML = "A new version is ready &middot; <b>tap to update</b>" + (live ? " (your live match resumes at the right over)" : "");
         el.addEventListener("click", function () {
           location.replace(location.pathname + "?v=" + encodeURIComponent(v.build) + location.hash);
         });
@@ -3019,7 +3019,7 @@
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
 
-  // League fixtures resolve in the background at 09:00 New York — the manager only
+  // League fixtures resolve in the background at 09:00 New York · the manager only
   // sets orders (which auto-upload as a packet). So the interactive match viewer is
   // never used for a league game: clicking Matches (or saving orders) must land on
   // the fixtures list, not the live viewer. #/match stays reachable for Practice
@@ -3027,11 +3027,11 @@
   function foLeaguePendingOnly() {
     try {
       var liveFriendly = (typeof M !== "undefined" && M && !M.done);
-      // Practice mode is a private local season — its matches ARE played by hand.
+      // Practice mode is a private local season · its matches ARE played by hand.
       return SYNC && SYNC.started && !SYNC.practice && App && App.pending && App.pending.comp === "league" && !liveFriendly;
     } catch (e) { return false; }
   }
-  // Never spin up the interactive match engine for a real league fixture — those
+  // Never spin up the interactive match engine for a real league fixture · those
   // are resolved by the background resolver. (Practice matches play normally.)
   if (typeof window.startPendingIfNeeded === "function") {
     var _spin = window.startPendingIfNeeded;
@@ -3044,7 +3044,7 @@
     try {
       // League games have no live viewer: bounce #/match back to the fixtures list.
       if (foHashPath() === "#/match" && foLeaguePendingOnly()) {
-        if (App.orders && App.orders.saved) say("Orders saved — your match resolves at 9:00 AM ET.");
+        if (App.orders && App.orders.saved) say("Orders saved · your match resolves at 9:00 AM ET.");
         location.hash = "#/matches"; foOnHash._last = "#/matches"; return;
       }
       // Saving league orders must never dump the manager into a running
@@ -3052,7 +3052,7 @@
       // and the live-friendly exception above would let it through.
       if (foHashPath() === "#/match" && (foOnHash._last || "").indexOf("#/orders") === 0 &&
           SYNC && SYNC.started && !SYNC.practice && App && App.pending && App.pending.comp === "league") {
-        toast("Orders saved — your league match resolves at 9:00 AM ET. Your friendly is under Live Match.");
+        toast("Orders saved · your league match resolves at 9:00 AM ET. Your friendly is under Live Match.");
         location.hash = "#/matches"; foOnHash._last = "#/matches"; return;
       }
       foOnHash._last = location.hash || "";
@@ -3167,7 +3167,7 @@
   var LOGO = '<img class="fol-logo" src="' + APPICON + '" alt="Fifty Overs">';
   // The primary "50" mark, redrawn as inline SVG for the dark background:
   // terracotta stumps, paper "5", seamed-ball "0" (the brand PNGs are navy-on-paper
-  // and megabytes big — vector keeps the single-file build small and crisp).
+  // and megabytes big · vector keeps the single-file build small and crisp).
   var FOL_MARK =
     '<svg class="fol-mark" viewBox="0 0 224 170" fill="none" aria-hidden="true">' +
     '<g fill="#C8674A"><rect x="88" y="6" width="9" height="30" rx="2.5"/><rect x="86" y="2" width="13" height="6" rx="2"/>' +
@@ -3298,7 +3298,7 @@
 
   // =================================================================
   //  In-game sync engine. Your game IS the multiplayer game: we hand
-  //  the screen to the real game and keep it in step with the server —
+  //  the screen to the real game and keep it in step with the server –
   //  pull the shared league snapshot, push your own orders packet, and
   //  let the game's own table/fixtures/match screens do the rest.
   // =================================================================
@@ -3335,7 +3335,7 @@
   }
 
   // Is MY club part of the published season snapshot? A member who joins (or
-  // re-drafts) after kick-off isn't in it yet — never dump them into someone
+  // re-drafts) after kick-off isn't in it yet · never dump them into someone
   // else's club; send them to the draft / waiting lobby instead.
   function myClubInSnap(snap) {
     try {
@@ -3350,7 +3350,7 @@
       if (st) {
         if (!myClubInSnap(st.snapshot)) {
           // Season is running but my club isn't in it yet (joined after kick-off,
-          // or my club was removed). Draft / wait for a rebuild — the poll below
+          // or my club was removed). Draft / wait for a rebuild · the poll below
           // pulls us in automatically once a snapshot that includes us is pushed.
           SYNC.lastVersion = st.version; SYNC.started = true;
           schedulePoll();
@@ -3404,7 +3404,7 @@
       if (typeof window.route === "function") window.route();
     } catch (e) {
       console.warn("Fifty Overs applySnapshot failed", e);
-      foFatal("Could not load the league season. Reload to try again — if it keeps happening, ask your commissioner to restart the season.");
+      foFatal("Could not load the league season. Reload to try again · if it keeps happening, ask your commissioner to restart the season.");
     }
   }
 
@@ -3416,7 +3416,7 @@
       // where they can also draft their own club when they want.
       if (SYNC.isFounder) { showWait(drafted); return; }
       if (drafted) { showWait(true); return; }
-      // straight into the onboarding — it collects club name / crest / country
+      // straight into the onboarding · it collects club name / crest / country
       // itself when the team row is missing or incomplete (no separate setup page)
       startDraft(SYNC.myTeam || {});
     }).catch(function (e) { if (isMissingTable(e)) setupNeeded(); else say(e); });
@@ -3447,7 +3447,7 @@
   }
 
   // Generate fresh bot clubs from the draft pool (so we never depend on whatever
-  // GD.teams currently holds — a restarted league was capped by that before).
+  // GD.teams currently holds · a restarted league was capped by that before).
   var BOT_NAMES = ["Riverside Rovers", "Coastal Comets", "Summit Strikers", "Valley Vanguard", "Harbour Hawks", "Prairie Pioneers", "Delta Dynamos", "Frontier Falcons", "Metro Mavericks", "Highland Hunters", "Canyon Kings", "Orchard Owls"];
   function byRating(a, b) { return (b.rating || 0) - (a.rating || 0); }
   function makeBotTeam(i, taken) {
@@ -3524,7 +3524,7 @@
       var draftedCount = teams.filter(function (t) { return ready[t.manager_id]; }).length;
       var allReady = draftedCount >= 1 && draftedCount === teams.length;   // every club present has drafted
       var solo = draftedCount < 10;
-      // The founder can ALWAYS start/restart once at least one club is drafted —
+      // The founder can ALWAYS start/restart once at least one club is drafted –
       // clubs still drafting join automatically later (they replace a bot).
       var canStart = SYNC.started || draftedCount >= 1;
       var startLabel = SYNC.started ? "Restart season (rebuild from clubs) ▸" : (draftedCount < 2 ? "Start season (you + bots) ▸" : "Start the league ▸");
@@ -3533,13 +3533,13 @@
             (canStart
               ? '<button class="p" data-act="startLeague">' + startLabel + '</button>' +
                 '<div class="folsmall" style="margin-top:4px">' +
-                (allReady ? "" : "Clubs still drafting join automatically when they finish — they take over a bot club. ") +
+                (allReady ? "" : "Clubs still drafting join automatically when they finish · they take over a bot club. ") +
                 (solo ? "Empty slots fill with bot clubs to make a full 10-team league." : "") + "</div>"
               : '<div class="folsmall">The season starts once at least one club has drafted.</div>') +
             '<div style="margin-top:8px"><button class="mini" data-act="mkInvite">Create invite code</button> <span id="folInvite" class="folsmall"></span></div>' +
           "</div>"
         : '<div class="folsmall" style="margin-top:10px">' + (SYNC.started
-            ? "The season is already running — your club joins as soon as the commissioner restarts it (their lobby has the Restart button). You can jump in the moment that happens; this screen updates itself."
+            ? "The season is already running · your club joins as soon as the commissioner restarts it (their lobby has the Restart button). You can jump in the moment that happens; this screen updates itself."
             : "Waiting for the commissioner to start the season.") + "</div>";
       var back = SYNC.started ? '<button class="mini" data-act="backToGame">◂ back to the game</button> ' : "";
       var draftBtn = drafted ? "" : '<button class="p" data-act="draftMine" style="margin-bottom:10px">Draft my squad ▸</button>';
@@ -3577,17 +3577,17 @@
   }
 
   function mkInvite() {
-    // one standing code for the whole league — share it with every friend
+    // one standing code for the whole league · share it with every friend
     rpc("league_code", { p_league_id: LG.id })
       .then(function (code) {
         var el = wrap.querySelector("#folInvite");
-        if (el) el.innerHTML = "League code: <b style='font-size:16px;letter-spacing:.08em'>" + E((code || "") + "") + "</b> — share the same code with all your friends. It never expires.";
+        if (el) el.innerHTML = "League code: <b style='font-size:16px;letter-spacing:.08em'>" + E((code || "") + "") + "</b> · share the same code with all your friends. It never expires.";
         try { navigator.clipboard && navigator.clipboard.writeText(code + ""); toast("League code copied: " + code); } catch (e) {}
       })
       .catch(function (e) {
         var m = ((e && e.message) || e) + "";
         if (/Could not find the function/i.test(m)) {
-          // 0016 not run yet — fall back to classic one-time invites
+          // 0016 not run yet · fall back to classic one-time invites
           var code = ("FO" + Math.random().toString(36).slice(2, 7) + Math.random().toString(36).slice(2, 4)).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 7);
           rpc("create_invite", { p_league_id: LG.id, p_code: code, p_role: "manager" })
             .then(function () { var el = wrap.querySelector("#folInvite"); if (el) el.textContent = "Share this code (single use): " + code; })
@@ -3720,7 +3720,7 @@
     var p = null; try { p = JSON.parse(lsGet(PEND) || "null"); } catch (e) {}
     main.innerHTML = folAuthShell(
       "<h1>Join your league</h1>" +
-      '<div class="fol-sub">You\'re signed in — enter the invite code from your commissioner.</div>' +
+      '<div class="fol-sub">You\'re signed in · enter the invite code from your commissioner.</div>' +
       '<div class="fol-form">' +
       '<div><label for="folCode">Invite code</label><input id="folCode" placeholder="from your commissioner" value="' + E((p && p.code) || "") + '"></div>' +
       '<div><label for="folDn">Manager name</label><input id="folDn" placeholder="your name" value="' + E((p && p.dn) || "") + '"></div>' +
@@ -3748,7 +3748,7 @@
   // 42 balanced players (same tier structure for everyone), all set to the
   // manager's country with country names, deterministic from their draft_seed.
   function buildCountryPool(seedInt, country) {
-    // string seeds (league ids, "<club>-scout-3", …) hash to a real uint32 —
+    // string seeds (league ids, "<club>-scout-3", …) hash to a real uint32 –
     // `str >>> 0` is always 0, which made every string-seeded pool identical
     if (typeof seedInt === "string") {
       var h = 2166136261;
@@ -3960,7 +3960,7 @@
     "<path d='M625 809C579 750 579 480 625 421' stroke='#F6F4EE' stroke-width='38' stroke-linecap='round' fill='none'/>" +
     "<path d='M690 460C704 555 704 674 690 770' stroke='#F6F4EE' stroke-width='24' stroke-linecap='round' stroke-dasharray='52 42' fill='none'/>" +
     "<path d='M622 460C636 555 636 674 622 770' stroke='#F6F4EE' stroke-width='24' stroke-linecap='round' stroke-dasharray='52 42' fill='none'/></svg>";
-  // Monoline icon set (feather-style, stroke = currentColor) — replaces emoji.
+  // Monoline icon set (feather-style, stroke = currentColor) · replaces emoji.
   var FO_ICONS = {
     bat: "<path d='M5 19l-1 1m2-2L17 7a2.4 2.4 0 0 1 3.4 3.4L9.5 21.5a2 2 0 0 1-2.8 0L6 20.8a2 2 0 0 1 0-2.8Z'/><circle cx='5.5' cy='5.5' r='2'/>",
     shield: "<path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/>",
@@ -4004,7 +4004,7 @@
     if (typeof window.genDraftPool !== "function" || typeof window.pgFounder !== "function") { say("Game engine not ready. Reload the page and try again."); return; }
     team = team || {};
     try {
-      // A brand-new manager may not have a team row (or country) yet — the create
+      // A brand-new manager may not have a team row (or country) yet · the create
       // screen collects club name + country and saves them; the pool is built then.
       var needsSetup = !(team.country && team.draft_seed);
       var pool = needsSetup ? [] : buildCountryPool(team.draft_seed || team.name || "fo-" + Date.now(), team.country || "ENG");
@@ -4016,7 +4016,7 @@
       FO_ONB = { team: team, step: 1, needsSetup: needsSetup, country: team.country || NAT[0], clubName: team.name || "", ground: (team.name ? team.name + " Oval" : "Riverview Oval"), pitch: "balanced", style: "balanced", sponsor: null, scenario: "average", role: "all", riskAck: false };
       foOnbCreate();
     } catch (e) {
-      // never leave a new manager on a blank screen — fall back to the engine's draft
+      // never leave a new manager on a blank screen · fall back to the engine's draft
       console.warn("Fifty Overs onboarding failed, using the standard draft:", e);
       try { if (!App.founder || !App.founder.pool) App.founder = { name: team.name || "New Club", budget: 1000000, pool: buildCountryPool(team.draft_seed || "fo", team.country || "ENG"), picked: [], identity: "Balanced XI", __league: { league_id: (LG && LG.id) || null, team_id: team.id } }; openWrap(false); window.pgFounder(); }
       catch (e2) { say(e2); }
@@ -4106,7 +4106,7 @@
       App.founder.name = nm;
       if (!FO_ONB.needsSetup) { foOnbCharter(); return; }
       // First visit: save the club (name + country) to the league and build the
-      // draft pool from the server-issued seed. Manager name comes from signup —
+      // draft pool from the server-issued seed. Manager name comes from signup –
       // never asked twice.
       var cty = FO_ONB.country || NAT[0];
       var btn = host.querySelector("#fo-ob-c1"); btn.disabled = true; btn.textContent = "Saving…";
@@ -4227,14 +4227,14 @@
   function foSquadReady(picked) { var s = foSquadShape(picked); return s.n >= 11 && s.wk >= 1 && s.bowl >= 5; }
   function foAdvisor(picked, fc, styleId) {
     var s = foSquadShape(picked), out = [];
-    if (s.wk < 1) out.push({ t: "warn", m: "No wicketkeeper yet — you need at least one." });
+    if (s.wk < 1) out.push({ t: "warn", m: "No wicketkeeper yet · you need at least one." });
     if (s.bowl < 5) out.push({ t: "warn", m: "You have only " + s.bowl + " bowling options. Aim for at least 5 reliable ones." });
-    if (fc.end < 0) out.push({ t: "danger", m: "Your wage bill is high — you are projected to lose money this season." });
-    else if (fc.bankAfter >= 180000 && s.n >= 8) out.push({ t: "ok", m: "You have kept " + FO$(fc.bankAfter) + " back — room for injuries and mid-season signings." });
-    if (fc.draftSpent > 900000) out.push({ t: "warn", m: "Under " + FO$(1000000 - fc.draftSpent) + " left in reserve — one bad month could sink you." });
+    if (fc.end < 0) out.push({ t: "danger", m: "Your wage bill is high · you are projected to lose money this season." });
+    else if (fc.bankAfter >= 180000 && s.n >= 8) out.push({ t: "ok", m: "You have kept " + FO$(fc.bankAfter) + " back · room for injuries and mid-season signings." });
+    if (fc.draftSpent > 900000) out.push({ t: "warn", m: "Under " + FO$(1000000 - fc.draftSpent) + " left in reserve · one bad month could sink you." });
     var pt = (FO_ONB && FO_ONB.pitch) || "balanced";
-    if ((pt === "green" || pt === "cracked") && s.n >= 6 && picked.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && foIsPace(p); }).length < 3) out.push({ t: "info", m: "Your home pitch is " + foPitchName(pt).toLowerCase() + " — pace bowlers will love it. Consider drafting more seamers." });
-    if (pt === "dry" && s.n >= 6 && picked.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && !foIsPace(p); }).length < 2) out.push({ t: "info", m: "Your home pitch is crumbling — it will turn. Consider drafting more spinners." });
+    if ((pt === "green" || pt === "cracked") && s.n >= 6 && picked.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && foIsPace(p); }).length < 3) out.push({ t: "info", m: "Your home pitch is " + foPitchName(pt).toLowerCase() + " · pace bowlers will love it. Consider drafting more seamers." });
+    if (pt === "dry" && s.n >= 6 && picked.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && !foIsPace(p); }).length < 2) out.push({ t: "info", m: "Your home pitch is crumbling · it will turn. Consider drafting more spinners." });
     var ce = null; for (var i = 0; i < picked.length; i++) { if (foDraftPrice(picked[i]) < 40000 && foDailyWage(picked[i]) >= 3200) { ce = picked[i]; break; } }
     if (ce) out.push({ t: "info", m: E(ce.name) + " is cheap to draft but expensive in wages." });
     if (!out.length && s.n >= 11) out.push({ t: "ok", m: "Squad is financially safe and legally shaped." });
@@ -4248,15 +4248,15 @@
     if (ix >= 0) { F.picked.splice(ix, 1); }
     else {
       var spent = F.picked.reduce(function (s, q) { return s + foDraftPrice(q); }, 0);
-      if (spent + foDraftPrice(p) > FO_FIN.startingBank) { toast("Not enough budget left for " + p.name + " — " + FO$(FO_FIN.startingBank - spent) + " remaining.", "error"); return; }
+      if (spent + foDraftPrice(p) > FO_FIN.startingBank) { toast("Not enough budget left for " + p.name + " · " + FO$(FO_FIN.startingBank - spent) + " remaining.", "error"); return; }
       if (F.picked.length >= 16) { toast("Squad is full (16). Drop someone to sign " + p.name + ".", "error"); return; }
       F.picked.push(p);
       // milestone feedback: celebrate each squad requirement the moment it's met
       var after = foSquadShape(F.picked);
-      if (before.wk === 0 && after.wk === 1) toast("Keeper secured — " + p.name + " takes the gloves.");
-      else if (before.bowl === 4 && after.bowl === 5) toast("Five bowling options — you can cover all 50 overs.");
-      else if (before.n === 10 && after.n === 11) toast("Eleven players — your XI is complete. Add depth or continue.");
-      else if (after.n === 16) toast("Squad full — 16 players signed.");
+      if (before.wk === 0 && after.wk === 1) toast("Keeper secured · " + p.name + " takes the gloves.");
+      else if (before.bowl === 4 && after.bowl === 5) toast("Five bowling options · you can cover all 50 overs.");
+      else if (before.n === 10 && after.n === 11) toast("Eleven players · your XI is complete. Add depth or continue.");
+      else if (after.n === 16) toast("Squad full · 16 players signed.");
     }
     if (!foDraftPatch(name)) foOnbDraft(true);
   }
@@ -4291,7 +4291,7 @@
       return "<span class='fo-db'><i title='" + E(tip(b[0])) + "'>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + b[1] + "%'></u></b><em>" + (foWord(b[1]) || b[1]) + "</em></span>";
     }).join("") + "</div>";
   }
-  // One draft-room player card — the game's own card, in the brand theme.
+  // One draft-room player card · the game's own card, in the brand theme.
   function foDraftCard(p, inSquad) {
     var nm = E(p.name).replace(/'/g, "&#39;");
     var bt = (typeof foBT === "function") ? foBT(p) : "";
@@ -4312,7 +4312,7 @@
       "<span class='fo-dc-wage'>wage " + FO$(foDailyWage(p)) + "/matchday · season " + FO$(foSeasonCost(p)) + "</span></div>" +
       foSkillBars(p) + "</div>";
   }
-  // A player's skill-summary card (bars, not a raw line) — opened by clicking a
+  // A player's skill-summary card (bars, not a raw line) · opened by clicking a
   // name in the draft table.
   function foDraftDetail(name) {
     try {
@@ -4658,7 +4658,7 @@
         try {
           var club = JSON.parse(JSON.stringify(GD.teams[App.teamIx]));
           rpc("push_club", { p_league_id: lg.league_id, p_club: club, p_team_ix: null }).then(function () {
-            // Season already running? No waiting room — take over a bot club and play.
+            // Season already running? No waiting room · take over a bot club and play.
             if (SYNC && SYNC.started && !(SYNC.isFounder)) { foJoinRunningSeason(club); return; }
             showWait(true);
           }).catch(say);
@@ -4681,7 +4681,7 @@
       var target = already ? club.name : null;
       if (!target) {
         var bots = snap.teams.filter(function (t) { return t && !t.founded; });
-        if (!bots.length) { say("The league is already full of human clubs — ask your commissioner to restart the season to fit you in."); showWait(true); return; }
+        if (!bots.length) { say("The league is already full of human clubs · ask your commissioner to restart the season to fit you in."); showWait(true); return; }
         // take over the bottom-most bot (least disruption to the title race)
         var bot = bots[bots.length - 1];
         target = bot.name;
@@ -4713,7 +4713,7 @@
   // suit, and rotates them through varied 2-5 over spells (best bowlers bowl the
   // most). We build a full 50-over plan honouring the engine's rules (each end is
   // its own over-set, no bowler two overs running, max 10 each) and derive the
-  // north/south spells from it — exactly the shape the engine expects.
+  // north/south spells from it · exactly the shape the engine expects.
   function foCapDist(n) {
     // n bowler caps summing to 50, each 2..10, biased so the top names bowl more.
     var w = 0, i, caps = [];
@@ -4829,7 +4829,7 @@
     pool2.sort(function (a, b) { return (b.bat || 0) - (a.bat || 0); });
     pool2.forEach(function (p2) { orderNames.push(p2.name); });
     App.orders.batOrder = orderNames;
-    // captain: the XI's best leader — captaincy skill first, experience as tiebreak
+    // captain: the XI's best leader · captaincy skill first, experience as tiebreak
     var cap = xi.slice().sort(function (a, b) {
       return ((b.capt || 0) + (b.exp || 0) * 0.25) - ((a.capt || 0) + (a.exp || 0) * 0.25);
     })[0] || xi[0];
@@ -4982,7 +4982,7 @@
 
   // Multiplayer-first: the league login takes over the moment the site loads,
   // and the page behind it is locked so the solo game stays private until you
-  // are in a league — then your game IS the league. A saved session is restored
+  // are in a league · then your game IS the league. A saved session is restored
   // first, so a refresh keeps you logged in.
   var _authRedirect = foConsumeAuthHash();
   openWrap(true);
@@ -4994,7 +4994,7 @@
   // ===========================================================================
   //  TRAINING & YOUTH SCOUTING (From-the-Pavilion-style)
   //  The engine already carries the training MODEL (weighted programs, potential
-  //  tiers, age/fatigue/academy factors, progress thresholds) — this adds the UI
+  //  tiers, age/fatigue/academy factors, progress thresholds) · this adds the UI
   //  and the multiplayer plumbing: choices ride the order packet (fo_training /
   //  fo_youth) and the resolver applies them even-handedly for every club.
   // ===========================================================================
@@ -5146,19 +5146,32 @@
     var t = foMyClub();
     return (LG ? LG.id : "solo") + "-scout-" + ((t && t.name) || "club") + "-" + r;
   }
+  var FO_SCOUT_REVEAL_GAP = 3;   // matchdays between shortlist reveals
+  function foScoutDefaultNat() { return (SYNC && SYNC.myTeam && SYNC.myTeam.country) || "Netherlands"; }
+  function foScoutNats() {
+    try { return Object.keys(NATNAMES).filter(function (k) { return k !== "NED"; }); } catch (e) { return ["Netherlands", "England", "Australia", "India"]; }
+  }
+  // the shortlist only exists once revealed; it is deterministic from the
+  // reveal round + chosen country, so it stays stable until the next reveal
   function foScoutList() {
     var t = foMyClub(); if (!t) return [];
-    var country = (SYNC && SYNC.myTeam && SYNC.myTeam.country) || "England";
-    var pool = [];
-    try { pool = buildCountryPool(foScoutSeed(), country); } catch (e) { return []; }
-    var young = pool.filter(function (p) { return (p.age || 99) <= 20 && !t.players.find(function (x) { return x.name === p.name; }); });
-    young.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
-    // a keeper or bowler among the three when possible, for useful variety
+    var st = foTrainState();
+    if (!st.scoutReveal) return [];
+    var nat = st.scoutReveal.nat || foScoutDefaultNat();
+    var seedBase = (LG ? LG.id : "solo") + "-scout-" + ((t && t.name) || "club") + "-" + st.scoutReveal.round + "-" + nat;
     var picks = [], used = {};
-    var take = function (p) { if (p && !used[p.name] && picks.length < 3) { used[p.name] = 1; picks.push(p); } };
-    take(young.find(function (p) { return p.keeper; }));
-    take(young.find(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && !p.keeper; }));
-    young.forEach(take);
+    var take = function (p) { if (p && !used[p.name] && picks.length < 3 && !t.players.find(function (x) { return x.name === p.name; })) { used[p.name] = 1; picks.push(p); } };
+    for (var k = 0; k < 6 && picks.length < 3; k++) {
+      var pool = [];
+      try { pool = buildCountryPool(seedBase + "-" + k, nat); } catch (e) { break; }
+      var young = pool.filter(function (p) { return (p.age || 99) <= 20; });
+      young.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
+      if (k === 0) {
+        take(young.find(function (p) { return p.keeper; }));
+        take(young.find(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && !p.keeper; }));
+      }
+      young.forEach(take);
+    }
     return picks.map(function (p) {
       var q = JSON.parse(JSON.stringify(p));
       q.fee = Math.max(8000, Math.round(foDraftPrice(p) * 0.75 / 500) * 500);   // raw youth come cheaper
@@ -5169,11 +5182,11 @@
   function foSignYouth(cand) {
     var st = foTrainState(), t = foMyClub(); if (!t) return;
     var round = (App.season && App.season.round) || 0;
-    if (st.youthPending.length) { say("You already have a signing awaiting confirmation — it completes after the next matchday."); return; }
+    if (st.youthPending.length) { say("You already have a signing awaiting confirmation · it completes after the next matchday."); return; }
     if (round - st.lastSignRound < FO_SCOUT_COOLDOWN) { say("Your scout needs " + (FO_SCOUT_COOLDOWN - (round - st.lastSignRound)) + " more matchday(s) before the next signing."); return; }
-    if ((t.players || []).length >= 18) { say("Squad is full (18) — release someone first."); return; }
+    if ((t.players || []).length >= 18) { say("Squad is full (18) · release someone first."); return; }
     var bank = (App.fin && App.fin.bank) || t.bank || 0;
-    if (bank < cand.fee) { say("Not enough in the bank — the signing fee is " + FO$(cand.fee) + "."); return; }
+    if (bank < cand.fee) { say("Not enough in the bank · the signing fee is " + FO$(cand.fee) + "."); return; }
     foConfirm({
       title: "Sign " + cand.name + "?",
       body: "Age " + cand.age + " · " + foRoleShort(cand) + " · " + FO$(cand.fee) + " signing fee, then " + FO$(foDailyWage(cand)) + "/matchday wages. Young players train the fastest in the game.",
@@ -5184,7 +5197,7 @@
       st.youthPending = [cand];
       foTrainSave(st);
       if (SYNC && SYNC.started && !SYNC.practice) {
-        toast(cand.name + " agreed terms — the signing completes after the next matchday.");
+        toast(cand.name + " agreed terms · the signing completes after the next matchday.");
       } else {
         // solo / practice: apply immediately through the engine's own books
         try {
@@ -5219,7 +5232,7 @@
       "<div class='fo-pd-money'><span>Signing fee<b>" + FO$(p.fee) + "</b></span><span>Wage / matchday<b>" + FO$(foDailyWage(p)) + "</b></span><span>Season wages<b>" + FO$(foDailyWage(p) * FO_FIN.seasonLength) + "</b></span></div>" +
       "<div class='fo-pd-sec'>Skill summary</div><div class='fo-pd-bars'>" + barHtml + "</div>" +
       "<div class='fo-pd-tal'><b>Talents:</b> " + talents + "</div>" +
-      "<div class='fo-pd-act'><button class='fo-pd-add'>Sign " + E(p.name.split(" ")[0]) + " &mdash; " + FO$(p.fee) + "</button></div>" +
+      "<div class='fo-pd-act'><button class='fo-pd-add'>Sign " + E(p.name.split(" ")[0]) + " &middot; " + FO$(p.fee) + "</button></div>" +
       "</div></div>";
     document.body.appendChild(d);
     d.querySelector(".fo-pd-x").addEventListener("click", function () { d.remove(); });
@@ -5228,7 +5241,7 @@
   }
 
   // ===========================================================================
-  //  TRANSFER MARKET — computer-generated free agents, one shared pool per
+  //  TRANSFER MARKET · computer-generated free agents, one shared pool per
   //  league. Claims are first-come-first-served through the database (0014);
   //  the roster change itself rides the order packet (fo_market) and is
   //  applied by the resolver after the fair money settle.
@@ -5267,7 +5280,7 @@
   function foMarketPage() {
     var page = document.getElementById("page"); if (!page) return;
     var t = foMyClub();
-    if (!t || !t.players || !t.players.length) { page.innerHTML = "<div class='crumb'>Transfers</div><div class='panel'><h4>Transfer market</h4><div class='pad'>No squad yet — finish your draft first.</div></div>"; return; }
+    if (!t || !t.players || !t.players.length) { page.innerHTML = "<div class='crumb'>Transfers</div><div class='panel'><h4>Transfer market</h4><div class='pad'>No squad yet · finish your draft first.</div></div>"; return; }
     var pool = foMarketPool();
     var renderList = function (claims) {
       var byName = {}; (claims || []).forEach(function (c) { byName[c.player_name] = c; });
@@ -5284,16 +5297,16 @@
         var act;
         if (claim) act = "<div class='fo-mk-gone'>" + (mine ? "Joining your club" : "Signed by <b>" + E(claim.club) + "</b>") + "</div>";
         else if (pending) act = "<div class='fo-mk-gone'>Joining after next matchday</div>";
-        else act = "<button class='fo-yc-sign fo-mk-claim' data-i='" + i + "'" + (bank < p.fee ? " disabled title='Not enough in the bank'" : "") + ">Sign — " + FO$(p.fee) + "</button>";
+        else act = "<button class='fo-yc-sign fo-mk-claim' data-i='" + i + "'" + (bank < p.fee ? " disabled title='Not enough in the bank'" : "") + ">Sign · " + FO$(p.fee) + "</button>";
         return "<div class='fo-yc" + (claim ? " fo-mk-claimed" : "") + "'>" +
           "<div class='fo-yc-h'>" + flag + " <b class='fo-mk-view' data-i='" + i + "'>" + E(p.name) + "</b></div>" +
-          "<div class='fo-yc-meta'>" + foRoleShort(p) + " · age " + p.age + " · rating " + (p.rating || 0).toLocaleString() + "</div>" +
+          "<div class='fo-yc-meta'>" + foRoleShort(p) + " · age " + p.age + " · OVR " + ((p.rating || 0) / 1000).toFixed(1) + "</div>" +
           "<div class='fo-yc-bars'>" + barHtml + "</div>" +
           "<div class='fo-yc-money'><span>Fee <b>" + FO$(p.fee) + "</b></span><span>Wage <b>" + FO$(foDailyWage(p)) + "/matchday</b></span></div>" + act + "</div>";
       }).join("");
       page.innerHTML =
         "<div class='crumb'>" + E(t.name) + " &raquo; Transfers</div>" +
-        "<div class='page-head'><div><div class='eyebrow'>Free agents</div><h1>Transfer market</h1><p>One shared pool for the whole league — when a club signs a player, they're gone for everyone. First come, first served.</p></div></div>" +
+        "<div class='page-head'><div><div class='eyebrow'>Free agents</div><h1>Transfer market</h1><p>One shared pool for the whole league · when a club signs a player, they're gone for everyone. First come, first served.</p></div></div>" +
         "<div class='panel'><h4>Available this season</h4><div class='pad'>" +
         "<div class='fo-yc-note'>Bank: <b>" + FO$(bank) + "</b> · Squad: <b>" + t.players.length + "/18</b>. Signings join your squad after the next matchday resolves.</div>" +
         "<div class='fo-ycs'>" + cards + "</div></div></div>";
@@ -5306,13 +5319,13 @@
   }
   function foMarketClaim(p) {
     var t = foMyClub(); if (!t || !p) return;
-    if ((t.players || []).length >= 18) { say("Squad is full (18) — release someone first."); return; }
+    if ((t.players || []).length >= 18) { say("Squad is full (18) · release someone first."); return; }
     var bank = (App.fin && App.fin.bank) || t.bank || 0;
-    if (bank < p.fee) { say("Not enough in the bank — the fee is " + FO$(p.fee) + "."); return; }
+    if (bank < p.fee) { say("Not enough in the bank · the fee is " + FO$(p.fee) + "."); return; }
     foConfirm({
       title: "Sign " + p.name + "?",
       body: "Age " + p.age + " · " + foRoleShort(p) + " · " + FO$(p.fee) + " transfer fee, then " + FO$(foDailyWage(p)) + "/matchday wages. First club to sign gets the player.",
-      confirm: "Sign — " + FO$(p.fee), cancel: "Not yet"
+      confirm: "Sign · " + FO$(p.fee), cancel: "Not yet"
     }).then(function (ok) {
       if (!ok) return;
       if (SYNC && SYNC.started && !SYNC.practice && LG) {
@@ -5326,7 +5339,7 @@
           })
           .catch(function (e) {
             var msg = ((e && e.message) || e) + "";
-            if (/already claimed/i.test(msg)) { toast("Too slow — another club signed " + p.name + " first.", "error"); foMarketPage(); }
+            if (/already claimed/i.test(msg)) { toast("Too slow · another club signed " + p.name + " first.", "error"); foMarketPage(); }
             else if (/Could not find the function|market_claim/i.test(msg)) say("The transfer market needs the 0014 SQL run in Supabase first (ask your commissioner).");
             else say(e);
           });
@@ -5358,7 +5371,7 @@
 
 
   // ===========================================================================
-  //  GAME MANUAL — how everything works, in one place (#/guide).
+  //  GAME MANUAL · how everything works, in one place (#/guide).
   // ===========================================================================
   function foManualSec(id, title, body) {
     return "<details id='man-" + id + "'" + (id === "basics" ? " open" : "") + "><summary>" + title + "</summary><div class='fo-man-b'>" + body + "</div></details>";
@@ -5515,7 +5528,7 @@
 
 
   // ===========================================================================
-  //  MATCHDAY CENTRE — replay the latest round like a live blog, from the
+  //  MATCHDAY CENTRE · replay the latest round like a live blog, from the
   //  worm data every result already carries. Plus the round's best performer.
   // ===========================================================================
   function foLeagueRounds() {
@@ -5705,7 +5718,7 @@
         card.querySelectorAll(".fo-ch-acc,.fo-ch-dec").forEach(function (b) {
           b.addEventListener("click", function () {
             rpc("challenge_respond", { p_id: b.getAttribute("data-id"), p_accept: b.classList.contains("fo-ch-acc") })
-              .then(function () { toast(b.classList.contains("fo-ch-acc") ? "Challenge accepted — attach your lineup any time before the match." : "Challenge declined."); card.remove(); foChallengesCard(); })
+              .then(function () { toast(b.classList.contains("fo-ch-acc") ? "Challenge accepted · attach your lineup any time before the match." : "Challenge declined."); card.remove(); foChallengesCard(); })
               .catch(say);
           });
         });
@@ -5774,7 +5787,7 @@
   function foTrainingPage() {
     var page = document.getElementById("page"); if (!page) return;
     var t = foMyClub();
-    if (!t || !t.players || !t.players.length) { page.innerHTML = "<div class='crumb'>Training</div><div class='panel'><h4>Training</h4><div class='pad'>No squad yet — finish your draft first.</div></div>"; return; }
+    if (!t || !t.players || !t.players.length) { page.innerHTML = "<div class='crumb'>Training</div><div class='panel'><h4>Training</h4><div class='pad'>No squad yet · finish your draft first.</div></div>"; return; }
     var st = foTrainState();
     var round = (App.season && App.season.round) || 0;
     var rep = t._trainReport || (App.trainingReports && App.trainingReports[0]) || null;
@@ -5786,19 +5799,22 @@
     var intOpts = function (cur) { return FO_TR_INT.map(function (k) { return "<option value='" + k + "'" + (cur === k ? " selected" : "") + ">" + k + "</option>"; }).join(""); };
     var potCls = { Star: "star", High: "high", Useful: "useful", Limited: "limited" };
 
-    // potential renders from the tier vocabulary only — unknown values show as
-    // an em-dash rather than leaking a category label
-    var POTW = { Star: "Star", High: "High", Useful: "Useful", Limited: "Limited" };
     var rows = t.players.slice().sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); }).map(function (p) {
-      var tr = foTrOf(p), pr = foTrProgress(p), pot = foPotential(p);
-      var potTxt = POTW[pot] || "&mdash;";
+      var tr = foTrOf(p), pr = foTrProgress(p);
       var flag = ""; try { flag = (typeof foFlag === "function" && p.nat) ? foFlag(p.nat) : ""; } catch (e) {}
       var fat = String(p.fatigue || "rested");
       var fatTone = /rested|revived|energetic|passable/.test(fat) ? "ok" : /satisfactory|moderate/.test(fat) ? "mid" : "bad";
-      var gainLbl = foSkillLabel(pr.skill) + (pr.pct > 0 ? " · " + pr.pct + "%" : " · first session tonight");
+      // "next gain" is the skill CLOSEST to its next +1; before any sessions
+      // have run, show what the program targets instead
+      var gainLbl;
+      if (pr.pct > 0) gainLbl = foSkillLabel(pr.skill) + " · " + pr.pct + "%";
+      else {
+        var w0 = FO_TR_PROGMAP[tr.program] || {};
+        var tops = Object.keys(w0).sort(function (a, b) { return (w0[b] || 0) - (w0[a] || 0); }).slice(0, 2).map(foSkillLabel);
+        gainLbl = tops.length ? "targets " + tops.join(", ") : "resting";
+      }
       return "<tr>" +
         "<td class='fo-tr-nm'>" + flag + " <a class='fo-tr-link' href='#/player?n=" + encodeURIComponent(p.name) + "'><b>" + E(p.name) + "</b></a><span class='fo-tr-meta'>" + foRoleShort(p) + " · age " + (p.age || "?") + "</span></td>" +
-        "<td><span class='fo-pot fo-pot-" + String(pot).toLowerCase() + "'>" + potTxt + "</span></td>" +
         "<td><span class='fo-fat fo-fat-" + fatTone + "'>" + E(fat) + "</span></td>" +
         "<td><select class='fo-tr-prog' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + progOpts(tr.program) + "</select></td>" +
         "<td><select class='fo-tr-int' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + intOpts(tr.intensity) + "</select></td>" +
@@ -5814,11 +5830,16 @@
         (rep.recovery || []).map(function (g) { return "<div class='fo-tr-g fo-tr-rec'>" + FO_I("shield", 14) + " " + E(g) + "</div>"; }).join("") +
         "</div></div>";
     } else {
-      repHtml = "<div class='panel'><h4>This week in the nets</h4><div class='pad small'>Gains land after each matchday. Younger players and higher-potential players improve fastest; tired players train poorly — use Rest.</div></div>";
+      repHtml = "<div class='panel'><h4>This week in the nets</h4><div class='pad small'>Gains land after each matchday. Younger players and higher-potential players improve fastest; tired players train poorly · use Rest.</div></div>";
     }
 
-    // youth scout panel
+    // youth scout panel: pick a country, reveal a shortlist of three, sign one
     var canSignIn = Math.max(0, FO_SCOUT_COOLDOWN - (round - st.lastSignRound));
+    var revealIn = st.scoutReveal ? Math.max(0, FO_SCOUT_REVEAL_GAP - (round - st.scoutReveal.round)) : 0;
+    var natSel = "<select id='fo-yc-nat'>" + foScoutNats().map(function (n) {
+      var cur = (st.scoutReveal && st.scoutReveal.nat) || st.scoutNat || foScoutDefaultNat();
+      return "<option" + (cur === n ? " selected" : "") + ">" + n + "</option>";
+    }).join("") + "</select>";
     var scouts = foScoutList();
     var scoutCards = scouts.map(function (p, i) {
       var flag = ""; try { flag = (typeof foFlag === "function" && p.nat) ? foFlag(p.nat) : ""; } catch (e) {}
@@ -5827,31 +5848,49 @@
       var barHtml = bars.map(function (b) { return "<span class='fo-sk'><i>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + b[1] + "%'></u></b><em>" + b[1] + "</em></span>"; }).join("");
       return "<div class='fo-yc'>" +
         "<div class='fo-yc-h'>" + flag + " <b class='fo-yc-view' data-i='" + i + "'>" + E(p.name) + "</b></div>" +
-        "<div class='fo-yc-meta'>" + foRoleShort(p) + " · age " + p.age + " · rating " + (p.rating || 0).toLocaleString() + "</div>" +
+        "<div class='fo-yc-meta'>" + foRoleShort(p) + " · age " + p.age + " · OVR " + ((p.rating || 0) / 1000).toFixed(1) + "</div>" +
         "<div class='fo-yc-bars'>" + barHtml + "</div>" +
         "<div class='fo-yc-money'><span>Fee <b>" + FO$(p.fee) + "</b></span><span>Wage <b>" + FO$(foDailyWage(p)) + "/matchday</b></span></div>" +
         "<button class='fo-yc-sign' data-i='" + i + "'" + ((st.youthPending.length || canSignIn > 0) ? " disabled" : "") + ">Sign</button>" +
         "</div>";
-    }).join("") || "<div class='small'>No eligible young players found this matchday — the shortlist refreshes after each round.</div>";
+    }).join("") || "<div class='small'>The scout came back empty-handed; reveal again next window.</div>";
     var scoutNote = st.youthPending.length
-      ? "<b>" + E(st.youthPending[0].name) + "</b> has agreed terms — the signing completes after the next matchday."
-      : (canSignIn > 0 ? "Your scout can bring in the next signing in <b>" + canSignIn + "</b> matchday(s)." : "Your scout is ready — you can sign one player now.");
+      ? "<b>" + E(st.youthPending[0].name) + "</b> has agreed terms · the signing completes after the next matchday."
+      : (canSignIn > 0 ? "Your scout can bring in the next signing in <b>" + canSignIn + "</b> matchday(s)." : "Your scout is ready · you can sign one player now.");
+    var scoutBody;
+    if (!st.scoutReveal) {
+      scoutBody = "<div class='fo-yc-note'>Send the scout out and see who he finds. Pick a country, then reveal his shortlist of three.</div>" +
+        "<div class='ctlrow' style='margin:8px 0'><span class='small'>Scout in:</span>" + natSel +
+        "<button class='fo-yc-sign' id='fo-yc-reveal'>&#128269; Reveal youth scout</button></div>";
+    } else if (revealIn === 0) {
+      scoutBody = "<div class='fo-yc-note'>" + scoutNote + " The scout is ready to travel again.</div>" +
+        "<div class='ctlrow' style='margin:8px 0'><span class='small'>Next trip:</span>" + natSel +
+        "<button class='fo-yc-sign' id='fo-yc-reveal'>&#128269; Reveal a new shortlist</button></div>" +
+        "<div class='fo-ycs'>" + scoutCards + "</div>";
+    } else {
+      scoutBody = "<div class='fo-yc-note'>" + scoutNote + " Scouted in <b>" + E((st.scoutReveal.nat || foScoutDefaultNat())) + "</b>; a new shortlist can be revealed in <b>" + revealIn + "</b> matchday(s).</div>" +
+        "<div class='fo-ycs'>" + scoutCards + "</div>";
+    }
 
     page.innerHTML =
       "<div class='crumb'>" + E(t.name) + " &raquo; Training</div>" +
       "<div class='page-head'><div><div class='eyebrow'>Development centre</div><h1>Training &amp; Youth</h1><p>Programs update after every matchday. Young legs learn fastest.</p></div></div>" +
       repHtml +
+      "<div class='panel fo-keep'><h4>How training works</h4><div class='pad small' style='line-height:1.65'>" +
+      "Every matchday, each player banks progress toward the skills in his program (the dropdown). When a skill's progress bar fills, the skill goes up one point and his wage rises with it. " +
+      "<b>Speed</b> depends on age (young players learn fastest, veterans barely move), fatigue (tired players train poorly), intensity (Intense is ~20% faster but tires him; Rest recovers instead of training) and your academy level. " +
+      "The <b>Next gain</b> column shows the skill closest to its next point; before the first session it shows what the program targets, weighted by the program's own emphasis." +
+      "</div></div>" +
       "<div class='panel'><h4>Training programs</h4><div class='pad'>" +
       "<div class='fo-tr-bulk'><span class='small'>Quick set:</span>" +
       "<button class='fo-tr-b' data-m='role'>Best fit by role</button>" +
       "<button class='fo-tr-b' data-m='restTired'>Rest the tired</button></div>" +
-      "<table class='fo-tr-tbl'><thead><tr><th>Player</th><th>Potential</th><th>Fatigue</th><th>Program</th><th>Intensity</th><th>Next gain</th></tr></thead><tbody>" + rows + "</tbody></table>" +
+      "<table class='fo-tr-tbl'><thead><tr><th>Player</th><th>Fatigue</th><th>Program</th><th>Intensity</th><th>Next gain</th></tr></thead><tbody>" + rows + "</tbody></table>" +
       "<div class='small' style='margin-top:8px'>Skill gains raise wages automatically. Intense trains ~20% faster but tires players; Rest recovers. Squads over 24 players train slower.</div>" +
       "</div></div>" +
       "<div class='panel'><h4>Youth scout &middot; ages 18&#8211;20</h4><div class='pad'>" +
-      "<div class='fo-yc-note'>" + scoutNote + "</div>" +
-      "<div class='fo-ycs'>" + scoutCards + "</div>" +
-      "<div class='small' style='margin-top:8px'>The shortlist refreshes every matchday from your home country. One signing per " + FO_SCOUT_COOLDOWN + " matchdays; squad cap 18.</div>" +
+      scoutBody +
+      "<div class='small' style='margin-top:8px'>One shortlist reveal per " + FO_SCOUT_REVEAL_GAP + " matchdays; one signing per " + FO_SCOUT_COOLDOWN + " matchdays; squad cap 18.</div>" +
       "</div></div>";
 
     page.querySelectorAll(".fo-tr-prog").forEach(function (s) { s.addEventListener("change", function () { foSetTraining(s.getAttribute("data-p"), "program", s.value); }); });
@@ -5867,12 +5906,24 @@
         toast("Training updated for the squad.");
       });
     });
-    page.querySelectorAll(".fo-yc-sign").forEach(function (b) { b.addEventListener("click", function () { foSignYouth(scouts[+b.getAttribute("data-i")]); }); });
+    page.querySelectorAll(".fo-yc-sign[data-i]").forEach(function (b) { b.addEventListener("click", function () { foSignYouth(scouts[+b.getAttribute("data-i")]); }); });
+    var natS = page.querySelector("#fo-yc-nat");
+    if (natS) natS.addEventListener("change", function () { var st2 = foTrainState(); st2.scoutNat = natS.value; foTrainSave(st2); });
+    var revealB = page.querySelector("#fo-yc-reveal");
+    if (revealB) revealB.addEventListener("click", function () {
+      var st2 = foTrainState();
+      var nat2 = (page.querySelector("#fo-yc-nat") || {}).value || st2.scoutNat || foScoutDefaultNat();
+      st2.scoutReveal = { round: round, nat: nat2 };
+      st2.scoutNat = nat2;
+      foTrainSave(st2);
+      toast("The scout is back from " + nat2 + " with three names.");
+      foTrainingPage();
+    });
     page.querySelectorAll(".fo-yc-view").forEach(function (b) { b.addEventListener("click", function () { foYouthDetail(scouts[+b.getAttribute("data-i")]); }); });
   }
   // The engine's own hashchange handler calls its INTERNAL route (bypassing the
   // window.route wrapper) and falls back to the club page for hashes it doesn't
-  // know — so re-assert the training page one tick after every hash change.
+  // know · so re-assert the training page one tick after every hash change.
   window.addEventListener("hashchange", function () { setTimeout(foRenderTraining, 15); });
   // (a) Squad polish: value-coloured skill bars + sortable Capt column.
   try { if (typeof GRIDKEYS !== "undefined") GRIDKEYS.Capt = function (p) { return (p && p.capt) || 0; }; } catch (e) {}
@@ -5950,7 +6001,7 @@
         var v = parseFloat(i.style.width) || 0;
         i.style.background = v >= 75 ? "#3E9960" : v >= 50 ? "#4DA6A2" : v >= 30 ? "#D9A441" : "#C84F4A";
       });
-      // the grid's Capt header is hard-coded unsortable — wire it up
+      // the grid's Capt header is hard-coded unsortable · wire it up
       page.querySelectorAll("th").forEach(function (th) {
         if (th.textContent.replace(/[^A-Za-z]/g, "") !== "Capt" || th.__foWired) return;
         th.__foWired = 1; th.style.cursor = "pointer"; th.title = "Captaincy - click to sort";
@@ -5970,7 +6021,7 @@
   }
 
   // Lift the boot veil (injected by build.sh) now that the brand CSS and the right
-  // screen are in place — the engine's original UI never gets a frame to flash.
+  // screen are in place · the engine's original UI never gets a frame to flash.
   try { var _bv = document.getElementById("fo-boot"); if (_bv) _bv.parentNode.removeChild(_bv); } catch (e) {}
 
   // Debug/test handle for the season planner's engine-facing helpers (no behaviour).
@@ -5980,7 +6031,7 @@
   // Squad page rebuild + name hygiene (reviewer pass).
   // The squad page becomes a decision surface: summary strip, structural
   // warnings, dense sortable rows with numbers beside the skill words, and a
-  // click-to-expand detail. Training is a read-only badge here — the Training
+  // click-to-expand detail. Training is a read-only badge here · the Training
   // page is the one canonical home for assignments.
   // =========================================================================
   try {
@@ -6155,9 +6206,9 @@
     v = Math.round(v);
     var col = v >= 75 ? "#3E9960" : v >= 50 ? "#4DA6A2" : v >= 30 ? "#D9A441" : "#C84F4A";
     if (muted || v < 12) {
-      return "<div class='fo-sq-skill fo-sq-nil'><div class='fo-sq-skbar'><i style='width:" + Math.max(2, Math.min(100, v)) + "%'></i></div><div class='fo-sq-sknum'>" + v + " · —</div></div>";
+      return "<div class='fo-sq-skill fo-sq-nil'><div class='fo-sq-skbar'><i style='width:" + Math.max(2, Math.min(100, v)) + "%'></i></div><div class='fo-sq-sknum'>" + v + " · –</div></div>";
     }
-    return "<div class='fo-sq-skill' title='" + label + ": " + word(v) + " — rank " + (wIx(v) + 1) + " of 16'><div class='fo-sq-skbar'><i style='width:" + Math.min(100, v) + "%;background:" + col + "'></i></div><div class='fo-sq-sknum'><b>" + v + "</b> · " + word(v) + "</div></div>";
+    return "<div class='fo-sq-skill' title='" + label + ": " + word(v) + " · rank " + (wIx(v) + 1) + " of 16'><div class='fo-sq-skbar'><i style='width:" + Math.min(100, v) + "%;background:" + col + "'></i></div><div class='fo-sq-sknum'><b>" + v + "</b> · " + word(v) + "</div></div>";
   }
   function foSqDetail(p, isYouth) {
     var dbar = function (v, lbl) {
@@ -6210,14 +6261,14 @@
       // --- structural warnings ---
       var warns = [], hlName = null;
       var glovemen = seniors.filter(function (p) { return p.keeper || aggKeep(p) >= 35; });
-      if (!glovemen.length) warns.push("No wicketkeeper in the squad — an untrained fielder will take the gloves.");
+      if (!glovemen.length) warns.push("No wicketkeeper in the squad · an untrained fielder will take the gloves.");
       else if (glovemen.length === 1) {
         var g = glovemen[0]; hlName = g.name;
-        warns.push("No backup wicketkeeper — " + E(g.name) + " is your only gloveman" + ((g.formIx != null && g.formIx <= 2) ? ", and his form is " + FORMW_UI[g.formIx] : "") + ".");
+        warns.push("No backup wicketkeeper · " + E(g.name) + " is your only gloveman" + ((g.formIx != null && g.formIx <= 2) ? ", and his form is " + FORMW_UI[g.formIx] : "") + ".");
       }
       var frontline = seniors.filter(function (p) { return p.bowlType && !isPT(p); });
-      if (frontline.length < 5) warns.push("Only " + frontline.length + " frontline bowlers — five are needed to cover 50 overs.");
-      if (seniors.length < 11) warns.push("Only " + seniors.length + " senior players — eleven are needed for a match.");
+      if (frontline.length < 5) warns.push("Only " + frontline.length + " frontline bowlers · five are needed to cover 50 overs.");
+      if (seniors.length < 11) warns.push("Only " + seniors.length + " senior players · eleven are needed for a match.");
       var warnHtml = warns.map(function (w) {
         return "<div class='fo-sq-warn'><span>&#9888;</span><span>" + w + "</span><button class='fo-sq-fix' data-go='#/transfers'>Fix this &#8599;</button></div>";
       }).join("");
@@ -6250,7 +6301,7 @@
       var rows = shown.map(function (p) {
         var fi = p.formIx == null ? 3 : p.formIx;
         var fb = fi <= 1 ? "fo-fb-lo" : fi === 2 ? "fo-fb-sh" : fi === 3 ? "fo-fb-md" : "fo-fb-hi";
-        var traj = (p.age || 25) <= 24 ? "<i class='up' title='improving with age'>&#8599;</i>" : (p.age || 25) <= 29 ? "<i title='peak years'>&mdash;</i>" : "<i class='dn' title='past peak'>&#8600;</i>";
+        var traj = (p.age || 25) <= 24 ? "<i class='up' title='improving with age'>&#8599;</i>" : (p.age || 25) <= 29 ? "<i title='peak years'>&ndash;</i>" : "<i class='dn' title='past peak'>&#8600;</i>";
         var tchips = (p.talents || []).slice(0, 2).map(function (t2) { return "<span class='fo-sq-talent' title='" + E(TALTIPS[t2] || "") + "'>" + E(ptal(t2)) + "</span>"; }).join("");
         if ((p.talents || []).length > 2) tchips += "<span class='fo-sq-talent'>+" + (p.talents.length - 2) + "</span>";
         var onlyK = hlName && p.name === hlName;
@@ -6258,7 +6309,7 @@
         var sub = prole(p.role) + " · " + (p.hand === "L" ? "LHB" : "RHB") + (p.btLabel && !/does not/i.test(p.btLabel) ? " / " + E(p.btLabel) : "");
         var open = !!squadView.open[p.name];
         return "<div class='fo-sqr-row" + (onlyK ? " fo-sq-warnrow" : "") + "' data-n='" + E(p.name) + "'>" +
-          "<div class='fo-sq-nm'>" + flag(p.nat) + " " + playerLink(p) + (p.keeper ? " <span title='wicketkeeper'>&dagger;</span>" : "") + (p.__y ? "<span class='fo-sq-talent'>U20</span>" : "") + (p.fatigue === "tired" ? "<span class='fo-sq-tired' title='tired — recovers next match or with Rest'>TIRED</span>" : "") + tchips +
+          "<div class='fo-sq-nm'>" + flag(p.nat) + " " + playerLink(p) + (p.keeper ? " <span title='wicketkeeper'>&dagger;</span>" : "") + (p.__y ? "<span class='fo-sq-talent'>U20</span>" : "") + (p.fatigue === "tired" ? "<span class='fo-sq-tired' title='tired · recovers next match or with Rest'>TIRED</span>" : "") + tchips +
           "<div class='fo-sq-sub'>" + sub + "</div></div>" +
           "<div class='fo-sq-age'>" + (p.age | 0) + " " + traj + "</div>" +
           "<div class='fo-sq-form'><span class='fo-fb " + fb + "' title='" + FORMTIP + "'>" + FORMW_UI[fi] + "</span></div>" +
@@ -6274,7 +6325,7 @@
       var page = document.getElementById("page"); if (!page) return;
       page.innerHTML = (typeof crumb === "function" ? crumb(t.name, "Squad") : "") + strip + warnHtml + tools + head + rows + foot;
 
-      // wiring (listeners, not inline handlers — names stay quote-safe)
+      // wiring (listeners, not inline handlers · names stay quote-safe)
       page.querySelectorAll(".fo-sq-pill").forEach(function (b) { b.addEventListener("click", function () { squadView.roleF = b.getAttribute("data-f"); pgSquad(); }); });
       var so = page.querySelector("#fo-sq-sort");
       if (so) so.addEventListener("change", function () { squadView.sortK = so.value; pgSquad(); });
@@ -6351,7 +6402,7 @@
   function foLabPhase(over) { return over < 10 ? "pp" : over >= 40 ? "death" : "mid"; }
   function foLabPhaseName(over) { return over < 10 ? "powerplay" : over >= 40 ? "death overs" : "middle overs"; }
   function foLabPools() {
-    // nets are for YOUR squad only — an opponent in the nets would lay their
+    // nets are for YOUR squad only · an opponent in the nets would lay their
     // hidden skill card on the table
     netsState.batClub = App.teamIx; netsState.bowlClub = App.teamIx;
     var bt = userTeam(), wt = userTeam();
@@ -6371,7 +6422,7 @@
     R.dotPct = 100 * (R.counts.dot || 0) / Math.max(1, R.legal);
     return R;
   }
-  // hedged template prose over the four columns — thresholds, not cleverness
+  // hedged template prose over the four columns · thresholds, not cleverness
   function foLabVerdict(sw) {
     var by = {}; sw.forEach(function (s) { by[s.name] = s; });
     var d = by.Defend, n = by.Normal, a = by.Attack, l = by.Launch;
@@ -6379,15 +6430,15 @@
     var bnm = bowler ? bowler.name.split(" ").slice(-1)[0] : "The bowler";
     var ph = foLabPhaseName(netsState.over);
     var parts = [];
-    if (d.rpo < n.rpo - 0.8) parts.push(bnm + " strangles passive play — defending earns just " + d.rpo.toFixed(1) + " an over");
+    if (d.rpo < n.rpo - 0.8) parts.push(bnm + " strangles passive play · defending earns just " + d.rpo.toFixed(1) + " an over");
     else parts.push("Defending still ticks along at " + d.rpo.toFixed(1) + " an over here, the lowest-risk floor");
     var dR = a.rpo - n.rpo;
     if (dR >= 0.8 && (a.outEvery == null || a.outEvery >= 8)) parts.push("attack is the sweet spot in the " + ph + ": +" + dR.toFixed(1) + " rpo over normal for acceptable added risk");
-    else if (dR >= 0.8) parts.push("attack buys +" + dR.toFixed(1) + " rpo but costs a dismissal every " + Math.round(a.outEvery * 6) + " balls — spend wickets knowingly");
-    else parts.push("attack adds little (+" + dR.toFixed(1) + " rpo over normal) — normal intent already gets most of the value");
-    if (l.outEvery != null && l.outEvery < 6) parts.push("launch only when fewer than " + Math.max(2, Math.round(l.outEvery)) + " overs remain — a dismissal every " + Math.round(l.outEvery * 6) + " balls is a coin flip");
-    else if (l.outEvery != null) parts.push("launch runs at " + l.rpo.toFixed(1) + " an over with a dismissal every " + Math.round(l.outEvery * 6) + " balls — viable for a final push");
-    else parts.push("launch went undismissed in this sample — treat that as luck, not license");
+    else if (dR >= 0.8) parts.push("attack buys +" + dR.toFixed(1) + " rpo but costs a dismissal every " + Math.round(a.outEvery * 6) + " balls · spend wickets knowingly");
+    else parts.push("attack adds little (+" + dR.toFixed(1) + " rpo over normal) · normal intent already gets most of the value");
+    if (l.outEvery != null && l.outEvery < 6) parts.push("launch only when fewer than " + Math.max(2, Math.round(l.outEvery)) + " overs remain · a dismissal every " + Math.round(l.outEvery * 6) + " balls is a coin flip");
+    else if (l.outEvery != null) parts.push("launch runs at " + l.rpo.toFixed(1) + " an over with a dismissal every " + Math.round(l.outEvery * 6) + " balls · viable for a final push");
+    else parts.push("launch went undismissed in this sample · treat that as luck, not license");
     return parts.map(function (t) { return t.charAt(0).toUpperCase() + t.slice(1); }).join(". ") + ".";
   }
   function foLabOutEvery(R) {
@@ -6435,7 +6486,7 @@
           sel("fo-la-field", "Field", [["bal", "Balanced"], ["att", "Attacking"], ["def", "Defensive"]], netsState.field) +
           sel("fo-la-n", "Balls (one session)", [[100, "100"], [1000, "1,000"]], netsState.n) +
           "<div class='fo-nc'><label title='Same seed replays the identical session'>Seed</label><input id='fo-la-seed' type='number' value='" + (+netsState.seed || 7) + "'></div>" +
-          "</div><div class='fo-lab-advnote'>Same seed replays the identical session — change it to see a different draw of the same odds.</div>";
+          "</div><div class='fo-lab-advnote'>Same seed replays the identical session · change it to see a different draw of the same odds.</div>";
       }
 
       var actions = "<div class='fo-lab-actions'>" +
@@ -6459,7 +6510,7 @@
           "<button class='fo-lab-btn' id='fo-lab-apply'" + (netsState.pick == null ? " disabled" : "") + ">" +
           (netsState.pick == null ? "Select a column to apply to orders" : "Apply " + FO_INTENTS.filter(function (x) { return x[0] === netsState.pick; })[0][1] + " to " + foLabPhaseName(netsState.over) + " orders &#8599;") +
           "</button></div></div>" +
-          "<div class='fo-lab-hon'>&#9432; Dismissal rates from " + minW + "&ndash;" + maxW + " wickets per column — stable at 1,000 balls. A 100-ball run would carry a wide margin on these numbers.</div>";
+          "<div class='fo-lab-hon'>&#9432; Dismissal rates from " + minW + "&ndash;" + maxW + " wickets per column · stable at 1,000 balls. A 100-ball run would carry a wide margin on these numbers.</div>";
       }
 
       // ---- single-session result ----
@@ -6477,7 +6528,7 @@
         var disTxt = Object.keys(dis).sort(function (a, b) { return dis[b] - dis[a]; }).map(function (k2) { return DFULL[k2] + " " + dis[k2]; }).join(", ") || "none";
         var outcome = ["dot", "1", "2", "3", "4", "6", "wicket", "extras"].filter(function (k2) { return agg[k2]; })
           .map(function (k2) { return "<tr><td><span class='fo-lab-sw' style='background:" + FO_LAB_COL[k2] + "'></span>" + (k2 === "dot" || k2 === "wicket" || k2 === "extras" ? k2 : k2 + " runs") + "</td><td class='r'>" + agg[k2] + "</td><td class='r'>" + (100 * agg[k2] / R.n).toFixed(1) + "%</td></tr>"; }).join("");
-        // outcome pie — every delivery of the session in one glance
+        // outcome pie · every delivery of the session in one glance
         var pie = (function () {
           var a0 = -Math.PI / 2, paths = "";
           ["dot", "1", "2", "3", "4", "6", "wicket", "extras"].forEach(function (k2) {
@@ -6502,7 +6553,7 @@
           "<tr><td>Dot balls</td><td class='r'>" + (100 * (agg.dot || 0) / Math.max(1, R.legal)).toFixed(0) + "%</td></tr>" +
           "<tr><td>Boundary runs</td><td class='r'>" + (4 * (agg["4"] || 0) + 6 * (agg["6"] || 0)) + " of " + R.runs + "</td></tr>" +
           "</table></div>" +
-          (R.n < 1000 && R.wkts <= 2 ? "<div class='fo-lab-nudge'>&#9888; Only " + R.wkts + " dismissal" + (R.wkts === 1 ? "" : "s") + " in this sample — the risk numbers are noise. Run 1,000 balls (or sweep) for a stable read.</div>" : "") +
+          (R.n < 1000 && R.wkts <= 2 ? "<div class='fo-lab-nudge'>&#9888; Only " + R.wkts + " dismissal" + (R.wkts === 1 ? "" : "s") + " in this sample · the risk numbers are noise. Run 1,000 balls (or sweep) for a stable read.</div>" : "") +
           "</div>";
       }
 
@@ -6556,7 +6607,7 @@
         App.orders.phaseIntent[ph] = netsState.pick;
         App.orders.saved = false;   // the change must go through the save-and-upload flow
         var nm = FO_INTENTS.filter(function (x) { return x[0] === netsState.pick; })[0][1];
-        try { toast(nm + " set for the " + foLabPhaseName(netsState.over) + " — review and save your orders."); } catch (e) {}
+        try { toast(nm + " set for the " + foLabPhaseName(netsState.over) + " · review and save your orders."); } catch (e) {}
         location.hash = "#/orders";
       });
     } catch (e) { console.warn("pgNets lab", e); }
@@ -6580,6 +6631,9 @@
       ".fo-of-kpi b{font-size:21px;color:#1C2433}.fo-of-kpi b.fo-pos{color:#2f6b46}.fo-of-kpi b.fo-neg{color:#b3402a}" +
       ".fo-of-kpi i{display:block;font-style:normal;font-size:12px;color:#5a6472;margin-top:3px}" +
       ".fo-of-warn div{display:flex;gap:8px;align-items:baseline;font-size:12.5px;margin:5px 0;color:#3a4353}" +
+      ".fo-keep .pad{font-size:12.5px}.fo-keep .pad .small{font-size:12px}.fo-keep table.kv td{font-size:12.5px;padding:4px 6px}" +
+      ".fo-of-acadrow{display:flex;align-items:center;gap:10px;font-size:12.5px;color:#3a4353}" +
+      ".fo-tr-tbl td,.fo-tr-tbl th{font-size:12.5px}.fo-tr-tbl select{font-size:12.5px}" +
       ".fo-of-fill{height:9px;border-radius:5px;background:#E8EAEE;overflow:hidden;margin:7px 0 4px}.fo-of-fill i{display:block;height:100%;border-radius:5px;background:#4DA6A2}" +
       ".fo-of-pills{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px}" +
       ".fo-of-pill{border:1px solid rgba(28,36,51,.18);background:#fff;color:#1C2433;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer}" +
@@ -6681,13 +6735,13 @@
       var waterfall = "<div class='panel fo-keep'><h4>" + projTitle + "</h4><div class='pad'><table class='kv'>" +
         "<tr><td>Starting bank</td><td>" + foOfMoney(bank) + "</td></tr>" +
         (F.paysSponsor() ? "<tr><td>+ Sponsor</td><td>" + foOfMoney(base) + "</td></tr>" : "") +
-        (isHome ? "<tr><td>+ Expected gate</td><td>" + foOfMoney(gateN) + "</td></tr>" : "<tr><td>+ Gate (away &mdash; no gate)</td><td>$0</td></tr>") +
+        (isHome ? "<tr><td>+ Expected gate</td><td>" + foOfMoney(gateN) + "</td></tr>" : "<tr><td>+ Gate (away &middot; no gate)</td><td>$0</td></tr>") +
         (F.chargesWages() ? "<tr><td>&minus; Wages</td><td>" + foOfMoney(wages) + "</td></tr>" : "") +
         "<tr><td>&minus; Ground maintenance</td><td>" + foOfMoney(seats) + "</td></tr>" +
         "<tr><td>&minus; Academy upkeep</td><td>" + foOfMoney(acadUp) + "</td></tr>" +
         (tc > 0 ? "<tr><td>&minus; Training intensity</td><td>" + foOfMoney(tc) + "</td></tr>" : "") +
         "<tr><td><b>= Projected bank</b></td><td><b class='" + (projBank >= 0 ? "fo-pos" : "fo-neg") + "'>" + foOfMoney(projBank) + "</b></td></tr></table>" +
-        "<div class='small' style='margin-top:5px'>Win bonuses land on top when you win &mdash; they are never counted in advance.</div></div></div>";
+        "<div class='small' style='margin-top:5px'>Win bonuses land on top when you win &middot; they are never counted in advance.</div></div></div>";
 
       // ---- computed finance warnings ----
       var avgIncome = fx.length ? fx.reduce(function (s2, f) { return s2 + F.roundIncome(f.round); }, 0) / fx.length : base + gateN / 2;
@@ -6698,26 +6752,43 @@
       var warn = function (bad, txt) { return "<div><span>" + (bad ? "&#9888;" : "&#10003;") + "</span><span>" + txt + "</span></div>"; };
       var warnings = "<div class='panel fo-keep'><h4>Finance warnings</h4><div class='pad fo-of-warn'>" +
         (F.chargesWages()
-          ? warn(wagePct > 60, "Wages are <b>" + wagePct + "%</b> of a typical round's income" + (wagePct > 60 ? " — over the 60% comfort line." : "."))
-          : warn(false, "Wages (" + foOfMoney(wages) + "/matchday) are informational here — practice books don't charge them.")) +
+          ? warn(wagePct > 60, "Wages are <b>" + wagePct + "%</b> of a typical round's income" + (wagePct > 60 ? " · over the 60% comfort line." : "."))
+          : warn(false, "Wages (" + foOfMoney(wages) + "/matchday) are informational here · practice books don't charge them.")) +
         (dip ? warn(true, "The books go negative around <b>R" + dip + "</b> at the current run rate.")
           : proj < 0 ? warn(true, "Season ends <b>" + foOfMoney(proj) + " in the red</b> at the current run rate.")
           : warn(false, "Solvent to season's end (<b>+" + foOfMoney(proj) + "</b> projected).")) +
-        warn(fill < 60, "Filling <b>" + fill + "%</b> of the ground on matchdays" + (fill < 60 ? " — expansion won't pay back." : ".")) +
+        warn(fill < 60, "Filling <b>" + fill + "%</b> of the ground on matchdays" + (fill < 60 ? " · expansion won't pay back." : ".")) +
         (F.paysSponsor()
           ? warn(false, E(deal.d.name) + ": " + foOfMoney(base) + "/matchday base" + (deal.d.win ? " + " + foOfMoney(deal.d.win) + " per win" : ", no result bonuses") + ".")
           : warn(false, "Sponsor deals pay out in league play.")) +
         "</div></div>";
 
       // ---- ledger, oldest first, running balance AFTER each entry ----
-      var entries = ((App.fin && App.fin.ledger) || []).slice().reverse();
+      // League play: the shared App.fin ledger only knows one club, so each
+      // club renders from its own settlement history (sponsor money included).
+      var entries;
+      if (F.isMP() && (t._finHist || t._finRow)) {
+        var hist = t._finHist || (t._finRow ? [t._finRow] : []);
+        entries = [];
+        hist.forEach(function (frh) {
+          var wk2 = "S" + (App.seasonNo || 1) + " R" + frh.round;
+          entries.push({ wk: wk2, item: "Sponsor base", amt: frh.base || 0 });
+          if (frh.win) entries.push({ wk: wk2, item: "Win bonus", amt: frh.win });
+          if (frh.gate) entries.push({ wk: wk2, item: "Gate receipts", amt: frh.gate });
+          entries.push({ wk: wk2, item: "Wages", amt: -(frh.wages || 0) });
+          entries.push({ wk: wk2, item: "Ground maintenance", amt: -(frh.seats || 0) });
+          if (frh.acad) entries.push({ wk: wk2, item: "Academy upkeep", amt: -frh.acad });
+        });
+      } else {
+        entries = ((App.fin && App.fin.ledger) || []).slice().reverse();
+      }
       if (entries.length && /founder operating bank/i.test(String(entries[0].item || entries[0].label || "")) && !+entries[0].amt) entries.shift();
       var LIMIT = 30, shown = entries.slice(-LIMIT);
       var opening = bank; entries.forEach(function (e2) { opening -= (+e2.amt || 0); });
       var bf = opening; entries.slice(0, entries.length - shown.length).forEach(function (e2) { bf += (+e2.amt || 0); });
       var run = bf;
       var ledRows = "<tr><td>" + E((shown[0] && shown[0].wk) || "S" + (App.seasonNo || 1) + " R1") + "</td><td>" +
-        (entries.length > shown.length ? "Balance brought forward" : "Opening balance") + "</td><td class='n'>&mdash;</td><td class='n'><b>" + foOfMoney(bf) + "</b></td></tr>" +
+        (entries.length > shown.length ? "Balance brought forward" : "Opening balance") + "</td><td class='n'>&ndash;</td><td class='n'><b>" + foOfMoney(bf) + "</b></td></tr>" +
         shown.map(function (l) {
           run += (+l.amt || 0);
           return "<tr><td>" + E(l.wk || "") + "</td><td>" + E(l.item || l.label || "") + "</td><td class='n' style='color:" + (l.amt < 0 ? "#a33328" : "#1c5537") + "'>" + (l.amt < 0 ? "&minus;" : "+") + foOfMoney(l.amt) + "</td><td class='n'>" + foOfMoney(run) + "</td></tr>";
@@ -6734,51 +6805,39 @@
       var seatCost = FO_SEAT_STEP * FO_SEAT_RATE;
       var atCap = seats >= FO_SEAT_CAP;
       var lowFill = fill < 60;
-      var expWarn = lowFill ? "<div class='fo-of-expwarn'>At " + fill + "% fill the new seats sit empty &mdash; payback never. Worth revisiting above 85% fill.</div>" : "";
+      var expWarn = lowFill ? "<div class='fo-of-expwarn'>At " + fill + "% fill the new seats sit empty &middot; payback never. Worth revisiting above 85% fill.</div>" : "";
       var expBtn = atCap ? "<div class='fo-mk-gone'>The council won't approve anything bigger.</div>"
-        : pendingSeats ? "<div class='fo-mk-gone'>Builders on site &mdash; new stand opens after the next matchday.</div>"
-        : "<button class='fo-yc-sign' id='fo-seat-buy'>" + (lowFill ? "Expand anyway" : "Extend the stand") + " &mdash; +" + FO_SEAT_STEP.toLocaleString() + " seats for " + FO$(seatCost) + "</button>";
+        : pendingSeats ? "<div class='fo-mk-gone'>Builders on site &middot; new stand opens after the next matchday.</div>"
+        : "<button class='fo-yc-sign' id='fo-seat-buy'>" + (lowFill ? "Expand anyway" : "Extend the stand") + " &middot; +" + FO_SEAT_STEP.toLocaleString() + " seats for " + FO$(seatCost) + "</button>";
       // pitch pills + one context line from the real squad and schedule
       var frontline = (t.players || []).filter(function (p) { return p.bowlType && !isPT(p); });
       var nPace = frontline.filter(function (p) { return foIsPace(p); }).length, nSpin = frontline.length - nPace;
       var recTrack = nPace > nSpin ? "green" : nSpin > nPace ? "dry" : "balanced";
       var nextHome = fx.filter(function (f) { return f.isHome; })[0] || null;
-      var pitchLine = "Your attack: <b>" + nPace + " pace &middot; " + nSpin + " spin</b> &mdash; a " + foPitchName(recTrack).toLowerCase() + " track plays to it." +
+      var pitchLine = "Your attack: <b>" + nPace + " pace &middot; " + nSpin + " spin</b> &middot; a " + foPitchName(recTrack).toLowerCase() + " track plays to it." +
         (nextHome ? " Next home match: R" + (nextHome.round + 1) + " vs " + E(nextHome.opp.name) + "." : " No home fixtures left this season.");
       var pitchPills = "<div class='fo-of-pills'>" + ["balanced", "flat", "green", "dry", "slow", "cracked", "twoPaced"].map(function (p2) {
         return "<button class='fo-of-pill" + ((t.homePitch || "balanced") === p2 ? " on" : "") + "' data-p='" + p2 + "'>" + foPitchName(p2) + "</button>";
       }).join("") + "</div>";
-      var stadium = "<div class='panel fo-keep' id='fo-stadium'><h4>Home ground &mdash; " + E(t.ground || "-") + " &middot; upkeep " + FO$(seats) + "/matchday</h4><div class='pad'>" +
+      var stadium = "<div class='panel fo-keep' id='fo-stadium'><h4>Home ground &middot; " + E(t.ground || "-") + " &middot; upkeep " + FO$(seats) + "/matchday</h4><div class='pad'>" +
         "<div class='small'><b>" + att.toLocaleString() + " / " + seats.toLocaleString() + "</b> filled at $" + ((FO_FIN && FO_FIN.ticketPrice) || 9) + " &middot; " + fill + "%</div>" +
         "<div class='fo-of-fill'><i style='width:" + Math.min(100, fill) + "%" + (lowFill ? ";background:#D9A441" : "") + "'></i></div>" +
-        "<div class='small' style='margin:6px 0 10px'>Bigger stands mean bigger gates when the town is behind you &mdash; and a bigger upkeep bill when it isn't. Expansion completes after the next matchday.</div>" +
+        "<div class='small' style='margin:6px 0 10px'>Bigger stands mean bigger gates when the town is behind you &middot; and a bigger upkeep bill when it isn't. Expansion completes after the next matchday.</div>" +
         expWarn + expBtn +
         "<div style='margin-top:14px'><b style='font-size:12.5px'>Pitch preparation</b>" + pitchPills +
         "<div class='small'>" + pitchLine + " Applies from your next home fixture; away grounds keep their own identities.</div></div>" +
         "</div></div>";
 
-      // ---- academy cards (upgrade prices: the engine's acadUpCost table) ----
+      // ---- the academy (senior; there is no youth league, so no youth academy) ----
       var foAcadUp = (typeof acadUpCost === "function") ? acadUpCost
         : function (l) { return [50000, 90000, 150000, 240000, 360000][Math.max(0, Math.min(4, +(l || 0)))] || 0; };
-      var upY = foAcadUp(t.acadY), upS = foAcadUp(t.acadS);
-      var acadCard = function (kind, lvl, upCost, effect, nextFx) {
-        var max = lvl >= 5;
-        return "<div class='panel fo-keep'><h4>" + kind + " academy</h4><div class='pad'>" +
-          "<div><span class='fo-of-lvl'>Level " + (lvl || 0) + "</span><span class='small'>" + effect + "</span></div>" +
-          "<div class='small' style='margin:7px 0'>" + (max ? "Fully developed &mdash; the council is jealous." : "Next: " + nextFx) + "</div>" +
-          (max ? "<span class='small'>MAX</span>" : "<button class='fo-yc-sign fo-acad-up' data-k='" + kind + "'>Upgrade &mdash; " + FO$(upCost) + "</button>") +
-          "</div></div>";
-      };
-      var acadRow = "<div class='grid2'><div class='col'>" +
-        acadCard("Youth", t.acadY || 0, upY,
-          "Sets the calibre of end-of-season intake and speeds youth training (+10% per level).",
-          "L" + ((t.acadY || 0) + 1) + " &middot; +10% youth training &middot; better intake &middot; upkeep " + FO$(F.acadUpkeepAt((t.acadY || 0) + 1)) + "/matchday") +
-        "</div><div class='col'>" +
-        acadCard("Senior", t.acadS || 0, upS,
-          "Multiplies senior training gains (+8% per level).",
-          "L" + ((t.acadS || 0) + 1) + " &middot; +8% senior training &middot; upkeep " + FO$(F.acadUpkeepAt((t.acadS || 0) + 1)) + "/matchday") +
-        "</div></div>" +
-        "<div class='fo-of-foot'>Combined upkeep " + FO$(acadUp) + "/matchday &middot; manage training on the <a href='#/training'>Training page</a></div>";
+      var aLvl = t.acadS || 0, aMax = aLvl >= 5, upS = foAcadUp(aLvl);
+      var acadRow = "<div class='panel fo-keep'><h4>Academy</h4><div class='pad'>" +
+        "<div class='fo-of-acadrow'><span class='fo-of-lvl'>Level " + aLvl + "</span><span>Every level adds <b>+8%</b> to all training gains. This is applied by the resolver each matchday, not cosmetic.</span></div>" +
+        "<div class='small' style='margin:8px 0'>" + (aMax ? "Fully developed; the council is jealous." : "Next: L" + (aLvl + 1) + " &middot; +8% training speed &middot; upkeep " + FO$(F.acadUpkeepAt(aLvl + 1)) + "/matchday") + "</div>" +
+        (aMax ? "<span class='small'>MAX</span>" : "<button class='fo-yc-sign fo-acad-up' data-k='Senior'>Upgrade for " + FO$(upS) + "</button>") +
+        "<div class='fo-of-foot' style='margin-top:10px'>Upkeep " + FO$(acadUp) + "/matchday &middot; manage training on the <a href='#/training'>Training page</a></div>" +
+        "</div></div>";
 
       // ---- season history ----
       var hist = "<div class='panel fo-keep'><h4>Season history</h4><div class='pad'>" +
@@ -6797,18 +6856,18 @@
       // stadium expansion (same purchase flow as before: packet in MP, direct in solo)
       var buy = page.querySelector("#fo-seat-buy");
       if (buy) buy.addEventListener("click", function () {
-        if (bank < seatCost) { say("Not enough in the bank — the builders want " + FO$(seatCost) + " up front."); return; }
+        if (bank < seatCost) { say("Not enough in the bank · the builders want " + FO$(seatCost) + " up front."); return; }
         foConfirm({
           title: "Extend the stand?",
-          body: "+" + FO_SEAT_STEP.toLocaleString() + " seats for " + FO$(seatCost) + ". Upkeep rises " + FO$(FO_SEAT_STEP) + " per matchday, and the extra gate only pays if the crowds come." + (lowFill ? " Right now you fill " + fill + "% — the new seats start empty." : ""),
-          confirm: "Build it — " + FO$(seatCost), cancel: "Not yet"
+          body: "+" + FO_SEAT_STEP.toLocaleString() + " seats for " + FO$(seatCost) + ". Upkeep rises " + FO$(FO_SEAT_STEP) + " per matchday, and the extra gate only pays if the crowds come." + (lowFill ? " Right now you fill " + fill + "% · the new seats start empty." : ""),
+          confirm: "Build it · " + FO$(seatCost), cancel: "Not yet"
         }).then(function (ok) {
           if (!ok) return;
           if (F.isMP() && typeof LG !== "undefined" && LG) {
             var st2 = foTrainState();
             st2.seatsPending = { add: FO_SEAT_STEP, cost: seatCost, target: seats + FO_SEAT_STEP };
             foTrainSave(st2);
-            toast("Builders booked — the new stand opens after the next matchday.");
+            toast("Builders booked · the new stand opens after the next matchday.");
           } else {
             t.seats = seats + FO_SEAT_STEP;
             if (typeof window.ledger === "function" && window.ledger.length >= 3) window.ledger("Stadium", "Stand extension", -seatCost);
@@ -6835,11 +6894,11 @@
           var lvl = isY ? (t.acadY || 0) : (t.acadS || 0);
           var cost2 = [50000, 90000, 150000, 240000, 360000][Math.max(0, Math.min(4, lvl))] || 0;
           try { if (typeof acadUpCost === "function") cost2 = acadUpCost(lvl); } catch (e) {}
-          if (bank < cost2) { say("Not enough in the bank — the upgrade costs " + FO$(cost2) + "."); return; }
+          if (bank < cost2) { say("Not enough in the bank · the upgrade costs " + FO$(cost2) + "."); return; }
           foConfirm({
             title: "Upgrade the " + (isY ? "youth" : "senior") + " academy?",
             body: "Level " + lvl + " → " + (lvl + 1) + " for " + FO$(cost2) + ". Upkeep rises to " + FO$(F.acadUpkeepAt(lvl + 1)) + "/matchday.",
-            confirm: "Upgrade — " + FO$(cost2), cancel: "Not yet"
+            confirm: "Upgrade · " + FO$(cost2), cancel: "Not yet"
           }).then(function (ok) {
             if (!ok) return;
             if (isY) t.acadY = lvl + 1; else t.acadS = lvl + 1;
@@ -6856,19 +6915,16 @@
   };
 
   // =========================================================================
-  // Phase 5: #/settings — saves, commissioner tools, sync diagnostics and the
+  // Phase 5: #/settings · saves, commissioner tools, sync diagnostics and the
   // danger zone, off the money page. Reset requires typing the club name.
   // =========================================================================
   function foSettingsHTML() {
     var t = foMyClub() || userTeam();
     var isMP = !!(typeof SYNC !== "undefined" && SYNC && SYNC.started && !SYNC.practice);
     var admin = foIsFounderish();
-    var save = "<div class='panel fo-keep'><h4>Save game</h4><div class='pad'>" +
-      (isMP ? "<div class='small' style='margin-bottom:6px'>The cloud league is the save — every round is stored on the server. Exports are optional backups of your local view.</div>" : "") +
-      "<button class='primary' id='fo-set-save'>Save now</button> " +
-      "<button id='fo-set-export'>Export file</button> " +
-      "<label style='display:inline-block'><input type='file' accept='.json' style='display:none' id='fo-set-import'><button id='fo-set-importbtn'>Import file</button></label>" +
-      "<div class='small' style='margin-top:4px'>Autosaves each completed round. Autosave keeps ball-by-ball logs for the last 5 matches only; exports keep everything.</div>" +
+    var save = "<div class='panel fo-keep'><h4>Saves</h4><div class='pad small'>" +
+      (isMP ? "The cloud league is the save: every round is stored on the server and the game autosaves locally as you play. Nothing to manage here."
+        : "The game autosaves to this browser after every completed round. Nothing to manage here.") +
       "</div></div>";
     var sync = "";
     if (isMP) {
@@ -6903,7 +6959,7 @@
     var danger = "";
     if (admin) {
       danger = "<div class='fo-set-danger fo-keep'><h4 style='margin:0 0 6px;color:#8a2f1d'>Danger zone</h4>" +
-        "<div class='small' style='margin-bottom:8px'>Reset wipes the save, your club and all results from this browser. Exported files are unaffected. Type your club name (<b>" + E(t.name) + "</b>) to arm the button.</div>" +
+        "<div class='small' style='margin-bottom:8px'>Reset wipes the save, your club and all results from this browser. Type your club name (<b>" + E(t.name) + "</b>) to arm the button.</div>" +
         "<div style='display:flex;gap:8px;flex-wrap:wrap;align-items:center'>" +
         "<input id='fo-set-confirm' placeholder='Type your club name' autocomplete='off'>" +
         "<button class='warn' id='fo-set-reset' disabled>Reset game (wipe save &amp; start over)</button></div></div>";
@@ -6916,16 +6972,11 @@
     try {
       if (!/^#\/settings/.test(location.hash || "")) return;
       var page = document.getElementById("page"); if (!page) return;
-      if (page.querySelector("#fo-set-save") && page.__foSetSig === (location.hash + "|" + ((SYNC && SYNC.__pushInfo) || ""))) return;
+      if (page.querySelector(".fo-set-danger, #fo-set-resend") && page.__foSetSig === (location.hash + "|" + ((SYNC && SYNC.__pushInfo) || ""))) return;
       page.__foSetSig = location.hash + "|" + ((SYNC && SYNC.__pushInfo) || "");
       page.innerHTML = foSettingsHTML();
       var t = foMyClub() || userTeam();
       var on = function (id, fn) { var el = page.querySelector("#" + id); if (el) el.addEventListener("click", fn); };
-      on("fo-set-save", function () { try { saveGame(true); toast("Saved."); } catch (e) { say(e); } });
-      on("fo-set-export", function () { try { exportGame(); } catch (e) { say(e); } });
-      on("fo-set-importbtn", function () { page.querySelector("#fo-set-import").click(); });
-      var imp = page.querySelector("#fo-set-import");
-      if (imp) imp.addEventListener("change", function () { try { importGame(imp.files[0]); } catch (e) { say(e); } });
       on("fo-set-founderbtn", function () { page.querySelector("#fo-set-founder").click(); });
       var fimp = page.querySelector("#fo-set-founder");
       if (fimp) fimp.addEventListener("change", function () { try { importFounderClub(fimp.files[0]); fimp.value = ""; foRenderSettings(); } catch (e) { say(e); } });
@@ -6941,7 +6992,7 @@
           if (App.orders && App.orders.saved && App.season) { foPushRound(App.season.round, App.orders); sent++; }
           var po = SYNC.plannedOrders || {};
           for (var k in po) { if (App.season && +k !== App.season.round) { foPushRound(+k, po[k]); sent++; } }
-          toast(sent ? "Re-sending " + sent + " lineup(s) — watch Last upload above." : "No saved lineups to send. Save one on the Orders page first.");
+          toast(sent ? "Re-sending " + sent + " lineup(s) · watch Last upload above." : "No saved lineups to send. Save one on the Orders page first.");
           setTimeout(function () { page.__foSetSig = null; foRenderSettings(); }, 2500);
         } catch (e) { say(e); }
       });
@@ -6958,6 +7009,26 @@
     } catch (e) { console.warn("foRenderSettings", e); }
   }
   window.addEventListener("hashchange", function () { setTimeout(foRenderSettings, 20); });
+
+  // Hover tooltips must not leak opponent skill words or ratings: full read
+  // for your own players, a business card for everyone else.
+  try {
+    if (typeof window.playerTip === "function" && !window.playerTip.__fo) {
+      var _foTip = window.playerTip;
+      window.playerTip = function (p) {
+        try {
+          if (!p) return "";
+          var me = userTeam();
+          var mine = !!(me && (me.players || []).concat(me.youth || []).some(function (x) { return x.name === p.name; }));
+          if (mine) return _foTip(p);
+          var hit = (typeof findPlayer === "function") ? findPlayer(p.name) : null;
+          var team = hit && hit.team ? hit.team.name : (p.team || "-");
+          return p.name + "\nTeam: " + team + "\n" + (p.hand === "L" ? "Left" : "Right") + " hand bat · " + (p.btLabel || "does not bowl") + "\nAge: " + (p.age || "?") + " · Nat: " + (p.nat || "-") + "\nScout the club for the full report.";
+        } catch (e) { return (p && p.name) || ""; }
+      };
+      window.playerTip.__fo = 1;
+    }
+  } catch (e) {}
 
   console.info("Fifty Overs League overlay ready.");
 })();

@@ -249,7 +249,7 @@
       var posOf = function (nm) { if (!rows) return 99; var i = rows.findIndex(function (r) { return r.nm === nm; }); return i < 0 ? 99 : i + 1; };
       GD.teams.forEach(function (t) {
         var deal = foDealOf(t);
-        var acad = (FO_ACAD[Math.max(0, Math.min(5, t.acadY || 0))] || 0) + (FO_ACAD[Math.max(0, Math.min(5, t.acadS || 0))] || 0);
+        var acad = (FO_ACAD[Math.max(0, Math.min(5, t.acadS || 0))] || 0);   // senior only: there is no youth league
         var wages = foWages(t), seats = t.seats || 9000;
         var r = results.find(function (x) { return x.home === t.name || x.away === t.name; });
         var gate = (r && r.home === t.name) ? (preAtt[t.name] || 2400) * 9 : 0;
@@ -264,6 +264,7 @@
         // every club keeps a copy of its own settlement so the Office can show
         // where the money went (the shared App.fin ledger only knows one club)
         t._finRow = { round: round + 1, base: deal.base, win: winB, gate: gate, wages: wages, seats: seats, acad: acad, net: net, bank: t.bank };
+        t._finHist = ((t._finHist || []).concat([t._finRow])).slice(-40);
         // mood/supporters march for every club (engine only moves the pusher's)
         if (t.name !== meName && r) {
           var won = r.result && r.result.winner === t.name;
