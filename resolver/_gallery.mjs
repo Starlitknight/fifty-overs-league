@@ -36,11 +36,11 @@ async function shoot(viewport, tag, mobile, dsf) {
   ];
   for (const [nm, fn] of shots) {
     await fn(); await page.waitForTimeout(650);
-    await page.screenshot({ path: `${OUT}/${nm}-${tag}.jpg`, type: 'jpeg', quality: 52 });
+    await page.screenshot({ path: `${OUT}/${nm}-${tag}.jpg`, type: 'jpeg', quality: mobile ? 45 : 52, fullPage: mobile });
     console.log(nm, tag, 'ok');
   }
   await page.close();
 }
 await shoot({ width: 1366, height: 980 }, 'desktop', false, 2);
-await shoot({ width: 390, height: 844 }, 'phone', true);
+await shoot({ width: 390, height: 844 }, 'phone', true, 1.5);
 await browser.close();
