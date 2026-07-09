@@ -9316,7 +9316,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260709-2104-0549fa";
+  var FO_BUILD = "20260709-2112-10e397";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10309,18 +10309,30 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     prizes: [200000, 160000, 130000, 110000, 90000, 75000, 60000, 50000, 40000, 30000]
   };
 
-  // Draft price computed from the player as he actually is, never from a fee
-  // baked at generation time (skills get repaired after baking, which is how
-  // a 48-OVR seamer used to cost more than a 57-OVR all-rounder). Same shape
-  // as the market's valuation, scaled to the draft economy: skills via wage +
-  // a convex OVR term, an age curve, +10% per talent, and role rarity.
+  // The value core shared by draft and market pricing. Anchoring on rating
+  // overpaid all-rounders (rating SUMS bat and bowl, so a 64/72 dual threat
+  // outscored a 90-headline star). Price follows the HEADLINE skill instead:
+  // convex in the primary suit, with the second suit worth 30 cents on the
+  // dollar. A 90 specialist out-prices a 64/72 all-rounder by ~33%; only an
+  // 80/80-or-better all-rounder overtakes him.
+  function foSkillValue(p) {
+    var bat = 0, bowl = 0, keep = 0;
+    try { bat = aggBat(p) || 0; } catch (e) {}
+    try { bowl = p.bowlType ? (aggBowl(p) || 0) : 0; } catch (e) {}
+    try { keep = p.keeper ? (aggKeep(p) || 0) : 0; } catch (e) {}
+    var suits = [bat, bowl, keep].sort(function (a, b) { return b - a; });
+    return Math.pow(Math.max(0, suits[0]), 2.2) + 0.30 * Math.pow(Math.max(0, suits[1]), 2.2);
+  }
+  // smooth age curve: ~7% off per year past 22, capped both ends, no cliffs
+  function foAgeFactor(age) {
+    return Math.max(0.55, Math.min(1.45, 1.4 - 0.069 * ((age || 26) - 22)));
+  }
   function foDraftPrice(p) {
     if (!p) return 8000;
-    var ovr = (p.rating || 0) / 1000;
-    var base = ((p.wage != null) ? p.wage : 1500) * 14 + Math.pow(Math.max(0, ovr - 30), 1.5) * 380;
-    var ageF = (p.age || 26) <= 22 ? 1.4 : p.age <= 25 ? 1.2 : p.age <= 28 ? 1.0 : p.age <= 31 ? 0.78 : 0.55;
+    var base = foSkillValue(p) * 3.8;
+    var ageF = foAgeFactor(p.age);
     var talF = 1 + 0.10 * ((p.talents || []).length);
-    var roleF = (p.keeper || p.role === "wicketkeeper") ? 1.15 : (p.role === "allRounder" ? 1.08 : 1);
+    var roleF = (p.keeper || p.role === "wicketkeeper") ? 1.15 : 1;
     var styleF = { seamFast: 1.30, wristSpin: 1.20, seamFastMedium: 1.08 }[p.bowlTypeFull] || 1;
     return Math.max(8000, Math.round(base * ageF * talF * roleF * styleF / 500) * 500);
   }
@@ -11645,15 +11657,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   //  the roster change itself rides the order packet (fo_market) and is
   //  applied by the resolver after the fair money settle.
   // ===========================================================================
-  // A transfer fee that answers to the player, not to a baked pool number:
-  // skills (wage already tracks them, plus a convex OVR term), age curve
-  // (youth premium, veteran discount), talents (+10% each) and role rarity.
+  // Transfer fee: the same skill-value core as the draft at roughly double
+  // the money (mid-season premium), plus age, talents and style rarity.
   function foMarketFee(p) {
-    var ovr = (p.rating || 0) / 1000;
-    var base = foDailyWage(p) * 34 + Math.pow(Math.max(0, ovr - 38), 1.5) * 520;
-    var ageF = (p.age || 26) <= 22 ? 1.4 : p.age <= 25 ? 1.2 : p.age <= 28 ? 1.0 : p.age <= 31 ? 0.78 : 0.55;
+    var base = foSkillValue(p) * 10;
+    var ageF = foAgeFactor(p.age);
     var talF = 1 + 0.10 * ((p.talents || []).length);
-    var roleF = p.keeper ? 1.15 : (p.role === "allRounder" ? 1.08 : 1);
+    var roleF = p.keeper ? 1.15 : 1;
     var styleF = { seamFast: 1.30, wristSpin: 1.20, seamFastMedium: 1.08 }[p.bowlTypeFull] || 1;
     return Math.max(12000, Math.round(base * ageF * talF * roleF * styleF / 500) * 500);
   }
