@@ -7178,6 +7178,22 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-pitch b{color:#12203a;font-size:13.5px}" +
     ".fo-ob-cta{padding:15px 40px !important;font-size:15.5px !important;font-weight:800 !important;border-radius:11px !important;box-shadow:0 5px 16px rgba(192,86,47,.38);letter-spacing:.01em}" +
     ".fo-ob-cta:hover{transform:translateY(-1px);box-shadow:0 7px 20px rgba(192,86,47,.5)}" +
+    ".fo-ob-sep{flex:1 1 26px;min-width:18px;border-top:2px dotted #c9c2b2;margin:0 6px;align-self:center}" +
+    ".fo-ob-prog{display:flex;align-items:center}" +
+    ".fo-ob-step.done + .fo-ob-sep, .fo-ob-sep:has(+ .fo-ob-step.done)" + "{border-top-color:#C0562F}" +
+    ".fo-pitch{border-left-width:6px !important;position:relative;overflow:hidden}" +
+    ".fo-pitch[data-pitch=balanced]{background:linear-gradient(90deg,rgba(77,166,162,.10),#fff 55%)}" +
+    ".fo-pitch[data-pitch=green]{background:linear-gradient(90deg,rgba(62,153,96,.10),#fff 55%)}" +
+    ".fo-pitch[data-pitch=dry]{background:linear-gradient(90deg,rgba(192,138,47,.12),#fff 55%)}" +
+    ".fo-pitch[data-pitch=flat]{background:linear-gradient(90deg,rgba(74,127,200,.10),#fff 55%)}" +
+    ".fo-pitch[data-pitch=slow]{background:linear-gradient(90deg,rgba(138,132,116,.12),#fff 55%)}" +
+    ".fo-pitch[data-pitch=cracked]{background:linear-gradient(90deg,rgba(200,79,74,.10),#fff 55%)}" +
+    ".fo-pitch[data-pitch=twoPaced]{background:linear-gradient(90deg,rgba(139,107,181,.10),#fff 55%)}" +
+    ".fo-pitch[data-pitch=balanced] b{color:#2d7a76}.fo-pitch[data-pitch=green] b{color:#2f7a4c}.fo-pitch[data-pitch=dry] b{color:#96690f}" +
+    ".fo-pitch[data-pitch=flat] b{color:#35619e}.fo-pitch[data-pitch=slow] b{color:#6b6552}.fo-pitch[data-pitch=cracked] b{color:#a23c37}.fo-pitch[data-pitch=twoPaced] b{color:#6b4f95}" +
+    ".fo-pitch.on{box-shadow:0 0 0 2px rgba(192,86,47,.35);border-color:#C0562F}" +
+    ".fo-ob-act{display:block}" +
+    ".fo-ob-cta{display:block !important;width:100% !important;padding:17px 20px !important;font-size:16px !important;text-align:center}" +
     ".fo-ctygrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:2px 0 14px}" +
     ".fo-cty{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e2ddd0;border-radius:10px;padding:9px 11px;cursor:pointer;font-size:13px;font-weight:600;color:#3c4658;text-align:left;transition:border-color .12s ease,box-shadow .12s ease}" +
     ".fo-cty i{font-style:normal;font-size:17px;line-height:1}" +
@@ -8930,7 +8946,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
 
   window.__folBuildPool = buildCountryPool;   // debug/test hook (harmless)
-  window.__folOnbPreview = function () { try { if (!FO_ONB) FO_ONB = { team: {}, step: 1, needsSetup: true, country: NAT[0], clubName: "", ground: "Riverview Oval", pitch: "balanced", style: "balanced", sponsor: null, scenario: "average", role: "all", riskAck: false }; FO_ONB.needsSetup = true; foOnbCreate(); } catch (e) { console.warn("onb preview", e); } };   // debug/test hook (harmless)
+  window.__folOnbPreview = function (step) { try {
+    if (!FO_ONB) FO_ONB = { team: {}, step: 1, needsSetup: true, country: NAT[0], clubName: "Thunder Empire", ground: "Riverview Oval", pitch: "balanced", style: "balanced", sponsor: null, scenario: "average", role: "all", riskAck: false };
+    FO_ONB.needsSetup = true;
+    if (step && step !== "create") {
+      FO_ONB.clubName = FO_ONB.clubName || "Thunder Empire";
+      if (!App.founder || !App.founder.pool) App.founder = { name: FO_ONB.clubName, budget: 1000000, pool: buildCountryPool("fo-preview", FO_ONB.country), picked: [], identity: "Balanced XI" };
+      if (step === "draft" || step === "report") { FO_ONB.sponsor = FO_ONB.sponsor || "community"; if (!App.founder.picked.length) App.founder.picked = App.founder.pool.slice(0, 13); }
+    }
+    ({ create: foOnbCreate, charter: foOnbCharter, money: foOnbMoney, sponsor: foOnbSponsor, draft: foOnbDraft, report: foOnbReport }[step || "create"] || foOnbCreate)();
+  } catch (e) { console.warn("onb preview", e); } };   // debug/test hook (harmless)
 
   // Draft happens in the game's OWN founder screen (pgFounder). We hand it a
   // balanced, country-flavoured pool derived from the server draft_seed.
@@ -9031,7 +9056,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var prog = FO_STEPS.map(function (s, i) {
       var cls = i < stepIx ? "done" : (i === stepIx ? "on" : "");
       return "<div class='fo-ob-step " + cls + "'><span class='fo-ob-dot'>" + (i < stepIx ? "✓" : (i + 1)) + "</span><span class='fo-ob-slbl'>" + s + "</span></div>";
-    }).join("<span class='fo-ob-sep'></span>");
+    }).join("<span class='fo-ob-sep' aria-hidden='true'></span>");
     return "<div class='fo-ob-shell'><div class='fo-ob-inner'><div class='fo-ob-prog'>" + prog + "</div>" + body + "</div></div>";
   }
   function foOnbMount(stepIx, body) {
@@ -9073,9 +9098,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     { id: "balanced", nm: "Balanced", d: "Fair contest. No one gets favours." },
     { id: "green", nm: "Green", d: "Seamers move it, especially with the new ball. Draft pace." },
     { id: "dry", nm: "Crumbling", d: "Turns square as it wears. Spinners thrive; draft slow bowlers." },
-    { id: "flat", nm: "Flat", d: "A batter's paradise — boundaries flow, wickets are rare." },
+    { id: "flat", nm: "Flat", d: "A batter's paradise: boundaries flow, wickets are rare." },
     { id: "slow", nm: "Slow", d: "Low and grippy. Hard to hit boundaries; suits patient sides." },
-    { id: "cracked", nm: "Sticky", d: "Unpredictable bounce — wickets for everyone." },
+    { id: "cracked", nm: "Sticky", d: "Unpredictable bounce. Wickets for everyone." },
     { id: "twoPaced", nm: "Two-paced", d: "Some balls hurry, some hold. Timing is never safe." }
   ];
   // ---- Screen 1 · Create your club -----------------------------------------
@@ -9083,7 +9108,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     FO_ONB.step = 1;
     if (!FO_ONB.country) FO_ONB.country = NAT[0];
     var flagOf = function (c) { try { return (typeof foFlag === "function" && foFlag(c)) || ""; } catch (e) { return ""; } };
-    var ctyField = "<label class='fo-ob-lbl'>Home country <span class='fo-ob-hint'>&mdash; you draft players from here</span></label>" +
+    var ctyField = "<label class='fo-ob-lbl'>Home country <span class='fo-ob-hint'>: you draft players from here</span></label>" +
       (FO_ONB.needsSetup
         ? "<div class='fo-ctygrid'>" + NAT.map(function (c) {
             return "<button type='button' class='fo-cty" + (FO_ONB.country === c ? " on" : "") + "' data-cty='" + E(c) + "'><i>" + flagOf(c) + "</i><span>" + E(c) + "</span></button>";
@@ -9095,12 +9120,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "<div class='fo-ob-colmain'>" +
       "<div class='fo-ob-eyebrow'>Welcome to Fifty Overs</div>" +
       "<h1 class='fo-ob-h1'>Found your club</h1>" +
-      "<p class='fo-ob-lead'>A private league between you and your friends: draft real players, set a line-up each matchday, and one match plays out every day. Start with your club's identity &mdash; everything here is yours for the whole season.</p>" +
+      "<p class='fo-ob-lead'>A private league between you and your friends: draft real players, set a line-up each matchday, and one match plays out every day. Start with your club's identity. Everything here is yours for the whole season.</p>" +
       "<label class='fo-ob-lbl'>Manager name</label><input class='fo-ob-input' value='" + E((SYNC && SYNC.me && SYNC.me.display_name) || "Manager") + "' disabled>" +
       "<label class='fo-ob-lbl'>Club name</label><input id='fo-ob-name' class='fo-ob-input' maxlength='28' value='" + E(FO_ONB.clubName) + "' placeholder='Harbor City CC'>" +
       ctyField +
       "<label class='fo-ob-lbl'>Home ground name</label><input id='fo-ob-ground' class='fo-ob-input' maxlength='30' value='" + E(FO_ONB.ground) + "' placeholder='Harbor Oval'>" +
-      "<label class='fo-ob-lbl'>Home pitch <span class='fo-ob-hint'>&mdash; you play 9 of your 18 matches on it, so draft a squad to match</span></label>" +
+      "<label class='fo-ob-lbl'>Home pitch <span class='fo-ob-hint'>: you play 9 of your 18 matches on it, so draft a squad to match</span></label>" +
       "<div class='fo-pitchgrid'>" + FO_PITCHES.map(function (pt) {
         return "<button type='button' class='fo-pitch " + (FO_ONB.pitch === pt.id ? "on" : "") + "' data-pitch='" + pt.id + "'><b>" + pt.nm + "</b><span>" + pt.d + "</span></button>";
       }).join("") + "</div>" +
