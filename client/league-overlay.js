@@ -1749,6 +1749,22 @@
   var MATCH_TIME = "9:00 AM ET";
   function decorateFixtureTimes() {
     try {
+      // the engine dates rounds weekly (solo roots); this league is daily —
+      // rewrite every printed round date anchored to TODAY's current round
+      var curR = (typeof App !== "undefined" && App.season) ? App.season.round : 0;
+      var dailyDate = function (roundIx) {
+        var d = new Date(); d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() + (roundIx - curR));
+        return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+      };
+      document.querySelectorAll("#page td[colspan]").forEach(function (td) {
+        var m = (td.textContent || "").match(/Round\s+(\d+)\s+·/);
+        if (m) td.innerHTML = td.innerHTML.replace(/·\s*[^(<]*\d{4}/, "· " + dailyDate(+m[1] - 1) + " ");
+      });
+      document.querySelectorAll("#page h4").forEach(function (h) {
+        var m = (h.textContent || "").match(/Round\s+(\d+)\s+of\s+\d+/);
+        if (m) h.innerHTML = h.innerHTML.replace(/-\s*[^<]*\d{4}/, "- " + dailyDate(+m[1] - 1));
+      });
       document.querySelectorAll("#page table").forEach(function (tb) {
         var dateIx = -1, ths = tb.querySelectorAll("th");
         ths.forEach(function (th) { if (dateIx < 0 && /^\s*date\s*$/i.test(th.textContent)) dateIx = th.cellIndex; });
@@ -4029,6 +4045,23 @@
     App.orders.grid = null;                          // let the grid reseed from the new plan
     try { pgOrders(); } catch (e) {}
   }
+  // The engine dates rounds a week apart (its solo roots). This league plays
+  // one round per day at 9:00 AM ET: round dates anchor to TODAY's round.
+  try {
+    if (typeof fo55RoundDate === "function") {
+      var _foRD = fo55RoundDate;
+      fo55RoundDate = function (roundNo) {
+        try {
+          var cur = (typeof App !== "undefined" && App.season) ? App.season.round : 0;
+          var d = new Date(); d.setHours(0, 0, 0, 0);
+          d.setDate(d.getDate() + (roundNo - cur));
+          return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+        } catch (e) { return _foRD(roundNo); }
+      };
+      window.fo55RoundDate = fo55RoundDate;
+    }
+  } catch (e) {}
+
   var foOrigSuggest = window.suggestOrders;
   if (typeof foOrigSuggest === "function") {
     window.suggestOrders = function () { try { return foSmartBowling(); } catch (e) { return foOrigSuggest(); } };
