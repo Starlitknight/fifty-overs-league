@@ -2077,12 +2077,56 @@
       lsSet(foFrHistKey(), JSON.stringify(h.slice(0, 20)));
     } catch (e) {}
   }
+  // Rebuild the stored friendly deterministically to where the wall clock says
+  // it should be. Same seed, same orders, same toss -> the identical match.
+  // NEVER navigates (the Live Match tab is always in the nav while it runs) and
+  // NEVER wipes the stored state on a transient error.
+  function foFrResume(st) {
+    var target = Math.floor((Date.now() - st.startAt) / FO_BALL_MS);
+    if (target < 1) target = 1;
+    App.orders = st.orders; App.orders.saved = true;
+    App.orders.tossCall = (st.toss && st.toss.call) || "H";
+    App.orders.tossDecision = (st.toss && st.toss.decision) || "bat";
+    App.pending = st.pending;
+    var prevPage = App.page; App.page = "__resolve__";
+    try { M = null; } catch (e) {}
+    if (typeof startPendingIfNeeded === "function") startPendingIfNeeded();
+    if (App.tossState && App.tossState.stage !== "done" && typeof resolveToss === "function") resolveToss(App.orders.tossCall || "H");
+    var guard = 0;
+    while (M && !M.done && (M.log || []).length < target && guard++ < 3000) {
+      if (typeof autoPick === "function") autoPick();      // handles innings breaks
+      if (typeof stepBall === "function") stepBall(); else break;
+    }
+    App.page = prevPage;
+    if (M && M.done) {
+      M.__foArchived = 1; foSaveFrHist(M); lsSet(foFrKey(), "");
+      toast("Full time in your friendly: " + ((M.result && M.result.text) || "match complete") + " — the scorecard is in Live Match, and it's saved under Friendlies on the Matches page.");
+    } else if (M) {
+      var ov = Math.floor(((M.innings[1] ? 300 : 0) + ((M.innings[M.innings[1] ? 1 : 0] || {}).legal || 0)) / 6);
+      toast("Your friendly has moved with the clock — over " + ov + " live now. Watch it in Live Match.");
+    }
+    // repaint only if the user is already looking at the match page
+    if (foHashPath() === "#/match" && typeof window.route === "function") window.route();
+  }
+  window.__foFrTest = { resume: function (st) { return foFrResume(st); } };   // headless test hook
   function foFriendlyKeeper() {
     try {
+      if (!LG && !(SYNC && SYNC.practice)) return;   // identity not resolved: leave keys alone
       var live = (typeof M !== "undefined") && M && !M.done && M.meta && M.meta.__friendly;
       if (live) {
         var now = Date.now();
         var raw0 = lsGet(foFrKey()), st0 = null; try { st0 = JSON.parse(raw0 || "null"); } catch (e) {}
+        // The wall clock is the truth. If this live match is far behind it -
+        // e.g. a page reload made the engine restart the fixture from over 0 -
+        // rebuild it deterministically from the stored state instead.
+        if (st0 && st0.startAt && st0.pending && M.meta && st0.pending.seed === M.meta.seed) {
+          var tgt0 = Math.floor((now - st0.startAt) / FO_BALL_MS);
+          if ((M.log || []).length < tgt0 - 12 && (!foFriendlyKeeper._rz || now - foFriendlyKeeper._rz > 30000)) {
+            foFriendlyKeeper._rz = now;
+            try { foFrResume(st0); } catch (e) {}
+            return;
+          }
+        }
         var startAt = (st0 && st0.startAt) || (now - (M.log || []).length * FO_BALL_MS);
         if (!foFriendlyKeeper._t || now - foFriendlyKeeper._t > 4000) {
           foFriendlyKeeper._t = now;
@@ -2107,30 +2151,7 @@
         if (!st || !st.pending || !st.orders || !st.startAt) { return; }
         SYNC.__frSynced = 1;
         if (typeof GD === "undefined" || !GD.teams || !GD.teams.length) return;
-        var target = Math.floor((Date.now() - st.startAt) / FO_BALL_MS);
-        try {
-          App.orders = st.orders; App.orders.saved = true;
-          App.orders.tossCall = (st.toss && st.toss.call) || "H";
-          App.orders.tossDecision = (st.toss && st.toss.decision) || "bat";
-          App.pending = st.pending;
-          var prevPage = App.page; App.page = "__resolve__";
-          try { M = null; } catch (e) {}
-          if (typeof startPendingIfNeeded === "function") startPendingIfNeeded();
-          if (App.tossState && App.tossState.stage !== "done" && typeof resolveToss === "function") resolveToss(App.orders.tossCall || "H");
-          var guard = 0;
-          while (M && !M.done && (M.log || []).length < target && guard++ < 800) {
-            if (typeof stepBall === "function") stepBall(); else break;
-          }
-          App.page = prevPage;
-          if (M && M.done) {
-            M.__foArchived = 1; foSaveFrHist(M); lsSet(foFrKey(), "");
-            toast("Full time in your friendly: " + ((M.result && M.result.text) || "match complete") + " — scorecard in Live Match.");
-            location.hash = "#/match"; if (typeof window.route === "function") window.route();
-          } else if (M) {
-            toast("Your friendly has moved on with the clock — over " + Math.floor(((M.innings[1] ? 300 : 0) + (M.innings[M.innings[1] ? 1 : 0] || {}).legal || 0) / 6) + " now. Rejoining live.");
-            location.hash = "#/match"; if (typeof window.route === "function") window.route();
-          }
-        } catch (e) { lsSet(foFrKey(), ""); }
+        try { foFrResume(st); } catch (e) { try { console.warn("friendly resume failed:", e && e.message); } catch (e2) {} }
       }
     } catch (e) {}
   }
