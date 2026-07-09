@@ -1834,7 +1834,7 @@
   // re-apply fixture match-times after any re-render of the game page
   try {
     var _mt = null, pg0 = document.getElementById("page");
-    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); decorateFixtureTimes(); tidyPage(); foMobileTables(); foOfficeExtras(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); }, 40); }).observe(pg0, { childList: true, subtree: true });
+    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); decorateFixtureTimes(); tidyPage(); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
   if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); return r; }; }
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
@@ -3537,6 +3537,40 @@
     if (p.bowlTypeFull && p.bowlTypeFull !== "none") return /seam/i.test(p.bowlTypeFull);
     try { return typeClass(p.bowlType) === "pace"; } catch (e) { return false; }
   }
+  // West Indies has no national emoji/flag: use the canonical cricket look,
+  // a palm tree on an island against maroon, wherever the WI flag appears.
+  var FO_WI_FLAG = "data:image/svg+xml," + encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 40'>" +
+    "<rect width='60' height='40' rx='3' fill='#7B1F3A'/>" +
+    "<circle cx='20' cy='15' r='8' fill='#F4A61D'/>" +
+    "<path d='M12 35c9-3 27-3 36 0v5H12z' fill='#E8D9A0'/>" +
+    "<path d='M37 34c1-6 0-11-2-15l4-1c2 5 2 11 1 16z' fill='#6B4A2B'/>" +
+    "<path d='M38 18c-7-4-13-3-17 1 7 0 12 1 17 2z' fill='#2F7A3D'/>" +
+    "<path d='M38 18c7-4 13-3 17 1-7 0-12 1-17 2z' fill='#2F7A3D'/>" +
+    "<path d='M38 18c-5-6-10-8-15-6 5 2 10 4 15 8z' fill='#3E9960'/>" +
+    "<path d='M38 18c5-6 10-8 15-6-5 2-10 4-15 8z' fill='#3E9960'/>" +
+    "<path d='M38 18c0-7-2-11-7-13 2 4 4 9 7 13z' fill='#2F7A3D'/>" +
+    "</svg>");
+  function foWIFlagImg() { return '<img class="foflag" src="' + FO_WI_FLAG + '" alt="West Indies" title="West Indies">'; }
+  // overlay render sites go through this wrapper; engine-rendered pages are
+  // swept by foFixWIFlags() on every route
+  try {
+    var _foFlagOrig = (typeof foFlag === "function") ? foFlag : null;
+    window.foFlag = function (nat) {
+      if (/west indies/i.test((nat || "") + "")) return foWIFlagImg();
+      return _foFlagOrig ? _foFlagOrig.apply(this, arguments) : "";
+    };
+    foFlag = window.foFlag;
+  } catch (e) {}
+  function foFixWIFlags() {
+    try {
+      document.querySelectorAll('img.foflag[title="West Indies"]').forEach(function (i) {
+        if (i.getAttribute("src") !== FO_WI_FLAG) i.src = FO_WI_FLAG;
+      });
+    } catch (e) {}
+  }
+  window.addEventListener("hashchange", function () { setTimeout(foFixWIFlags, 80); });
+
   function foMyClub() { try { return GD.teams[App.teamIx]; } catch (e) { return null; } }
   function foTrDefault(p) {
     if (p.keeper) return "Keeping";
