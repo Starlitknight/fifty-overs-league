@@ -26,13 +26,13 @@ async function shoot(viewport, tag, mobile, dsf) {
     ['transfers', async () => { await page.evaluate(() => { location.hash = '#/transfers'; window.route(); }); }],
     ['office', async () => { await page.evaluate(() => { location.hash = '#/office'; window.route(); }); }],
     ['guide', async () => { await page.evaluate(() => { location.hash = '#/guide'; window.route(); }); }],
-    ['onboarding', async () => { await page.evaluate(() => { window.__folOnbPreview('create'); }); }],
-    ['onb-charter', async () => { await page.evaluate(() => { window.__folOnbPreview('charter'); }); }],
-    ['onb-money', async () => { await page.evaluate(() => { window.__folOnbPreview('money'); }); }],
-    ['onb-sponsor', async () => { await page.evaluate(() => { window.__folOnbPreview('sponsor'); }); }],
-    ['onb-players', async () => { await page.evaluate(() => { window.__folOnbPreview('players'); }); }],
-    ['onb-draft', async () => { await page.evaluate(() => { window.__folOnbPreview('draft'); }); }],
-    ['onb-report', async () => { await page.evaluate(() => { window.__folOnbPreview('report'); }); }],
+    ['onboarding', async () => { await page.evaluate(() => { const pg = document.getElementById('page'); if (pg) pg.innerHTML = ''; window.__folOnbPreview('create'); }); }],
+    ['onb-charter', async () => { await page.evaluate(() => { const pg = document.getElementById('page'); if (pg) pg.innerHTML = ''; window.__folOnbPreview('charter'); }); }],
+    ['onb-money', async () => { await page.evaluate(() => { const pg = document.getElementById('page'); if (pg) pg.innerHTML = ''; window.__folOnbPreview('money'); }); }],
+    ['onb-sponsor', async () => { await page.evaluate(() => { const pg = document.getElementById('page'); if (pg) pg.innerHTML = ''; window.__folOnbPreview('sponsor'); }); }],
+    ['onb-players', async () => { await page.evaluate(() => { const pg = document.getElementById('page'); if (pg) pg.innerHTML = ''; window.__folOnbPreview('players'); }); }],
+    ['onb-draft', async () => { await page.evaluate(() => { const pg = document.getElementById('page'); if (pg) pg.innerHTML = ''; window.__folOnbPreview('draft'); }); }],
+    ['onb-report', async () => { await page.evaluate(() => { const pg = document.getElementById('page'); if (pg) pg.innerHTML = ''; window.__folOnbPreview('report'); }); }],
   ];
   for (const [nm, fn] of shots) {
     await fn(); await page.waitForTimeout(650);
