@@ -3924,7 +3924,20 @@
     prizes: [200000, 160000, 130000, 110000, 90000, 75000, 60000, 50000, 40000, 30000]
   };
 
-  function foDraftPrice(p) { return (p && p.fee != null) ? p.fee : Math.max(8000, Math.round((((p && p.rating) || 3000) - 2800) * 40 + 8000)); }
+  // Draft price computed from the player as he actually is, never from a fee
+  // baked at generation time (skills get repaired after baking, which is how
+  // a 48-OVR seamer used to cost more than a 57-OVR all-rounder). Same shape
+  // as the market's valuation, scaled to the draft economy: skills via wage +
+  // a convex OVR term, an age curve, +10% per talent, and role rarity.
+  function foDraftPrice(p) {
+    if (!p) return 8000;
+    var ovr = (p.rating || 0) / 1000;
+    var base = ((p.wage != null) ? p.wage : 1500) * 14 + Math.pow(Math.max(0, ovr - 30), 1.5) * 380;
+    var ageF = (p.age || 26) <= 22 ? 1.4 : p.age <= 25 ? 1.2 : p.age <= 28 ? 1.0 : p.age <= 31 ? 0.78 : 0.55;
+    var talF = 1 + 0.10 * ((p.talents || []).length);
+    var roleF = (p.keeper || p.role === "wicketkeeper") ? 1.15 : (p.role === "allRounder" ? 1.08 : 1);
+    return Math.max(8000, Math.round(base * ageF * talF * roleF / 500) * 500);
+  }
   function foDailyWage(p) { return (p && p.wage != null) ? p.wage : Math.max(700, Math.round(((p && p.fee) || 40000) * 0.028 / 10) * 10); }
   function foSeasonCost(p) { return foDraftPrice(p) + foDailyWage(p) * FO_FIN.seasonLength; }
   function foSponsorById(id) { for (var i = 0; i < FO_FIN.sponsors.length; i++) if (FO_FIN.sponsors[i].id === id) return FO_FIN.sponsors[i]; return FO_FIN.sponsors[0]; }
