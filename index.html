@@ -6689,15 +6689,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-kpi b{color:#fff;font-size:22px;font-weight:800}" +
     ".fo-scout-shell{display:flex;gap:14px;align-items:flex-start}" +
     ".fo-scout-links{flex:0 0 148px;background:" + NAVY2 + ";border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(11,19,34,.12)}" +
-    ".fo-scout-links a{display:block;padding:11px 15px;color:#d7dbe2 !important;font-size:13px;cursor:pointer;border-bottom:1px solid rgba(246,244,238,.07)}" +
+    "#page .fo-scout-links a,.fo-scout-links a{display:block;padding:11px 15px;color:#d7dbe2 !important;font-size:13px;cursor:pointer;border-bottom:1px solid rgba(246,244,238,.07)}" +
     ".fo-scout-links a:hover{background:rgba(255,255,255,.05)}" +
-    "html body .fo-scout-links a.on,html body.ftpskin .fo-scout-links a.on{background:" + TERRA + ";color:#fff !important;font-weight:700}" +
+    "#page .fo-scout-links a.on,.fo-scout-links a.on{background:" + TERRA + ";color:#fff !important;font-weight:700}" +
     // scout: FTP-style player rows + overview extras
     ".fo-sp{padding:11px 2px;border-bottom:1px solid #f0ece1}.fo-sp:last-child{border-bottom:none}" +
     ".fo-sp-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}" +
     ".fo-sp-flag{font-size:15px;line-height:1}" +
-    "html body a.fo-sp-nm,html body.ftpskin a.fo-sp-nm{font-weight:800;font-size:14.5px;color:#12203a !important;text-decoration:none}" +
-    "html body a.fo-sp-nm:hover,html body.ftpskin a.fo-sp-nm:hover{color:#C0562F !important}" +
+    "#page a.fo-sp-nm{font-weight:800;font-size:14.5px;color:#12203a !important;text-decoration:none}" +
+    "#page a.fo-sp-nm:hover{color:#C0562F !important}" +
     ".fo-sp-rt{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums;color:#12203a}" +
     ".fo-sp-rt i{font-style:normal;font-weight:600;font-size:10px;color:#9a9484;margin-left:4px;text-transform:uppercase;letter-spacing:.06em}" +
     ".fo-sp-meta{font-size:12px;color:#6b7280;margin-top:3px}" +
@@ -9075,7 +9075,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260709-1733-956a6d";
+  var FO_BUILD = "20260709-1733-fdd308";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
