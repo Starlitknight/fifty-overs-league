@@ -7269,6 +7269,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-mchip{font-weight:600}" +
     ".fo-next-opp{font-weight:800;letter-spacing:-.4px}" +
     ".fo-stat-word{font-size:clamp(14px,4vw,19px);font-weight:700;letter-spacing:-.2px}" +
+    ".fo-cty.on{border-color:#C0562F !important;background:#fdf3e2 !important;box-shadow:0 0 0 2px rgba(192,86,47,.28) !important;color:#12203a !important;font-weight:800 !important}" +
+    ".fo-cty.on::after{content:'\\2713';margin-left:auto;color:#C0562F;font-weight:800}" +
+    ".fo-pitch.on{border-color:#C0562F !important;box-shadow:0 0 0 2px rgba(192,86,47,.28) !important;background:#fdf9ef !important}" +
+    ".fo-pitch.on b::after{content:' \\2713';color:#C0562F}" +
     ".fo-br-closure{margin-top:18px;font-size:14px;line-height:1.7;color:#3c4658}" +
     ".fo-br-closure p{margin:0 0 10px}" +
     ".fo-br-luck{font-weight:800;color:#12203a}" +
@@ -9269,10 +9273,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "<div class='fo-snap-row'><i>" + FO_I("bat") + "</i><div><b>11&#8211;16 player</b><span>squad draft</span></div></div>" +
       "</aside></div></div>";
     var host = foOnbMount(0, body);
-    host.querySelectorAll(".fo-pitch").forEach(function (b) { b.addEventListener("click", function () { FO_ONB.pitch = b.getAttribute("data-pitch"); foOnbCreate(); }); });
-    host.querySelectorAll(".fo-cty[data-cty]").forEach(function (b) {
-      b.addEventListener("click", function () { FO_ONB.country = b.getAttribute("data-cty"); foOnbCreate(); });
-    });
     // live identity preview: watching "your" club take shape as you type
     var updPrev = function () {
       var nm = ((host.querySelector("#fo-ob-name") || {}).value || "").trim() || "Your Club";
@@ -9284,6 +9284,21 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if (ps) ps.innerHTML = flagOf(FO_ONB.country) + " " + E(FO_ONB.country) + " &middot; " + E(gr) + " &middot; " + E(foPitchName(FO_ONB.pitch || "balanced")) + " pitch";
     };
     ["fo-ob-name", "fo-ob-ground"].forEach(function (id) { var el = host.querySelector("#" + id); if (el) el.addEventListener("input", updPrev); });
+    // selections flip in place: no re-render, nothing typed is lost, no scroll jump
+    host.querySelectorAll(".fo-cty[data-cty]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        FO_ONB.country = b.getAttribute("data-cty");
+        host.querySelectorAll(".fo-cty").forEach(function (x) { x.classList.toggle("on", x === b); });
+        updPrev();
+      });
+    });
+    host.querySelectorAll(".fo-pitch").forEach(function (b) {
+      b.addEventListener("click", function () {
+        FO_ONB.pitch = b.getAttribute("data-pitch");
+        host.querySelectorAll(".fo-pitch").forEach(function (x) { x.classList.toggle("on", x === b); });
+        updPrev();
+      });
+    });
     updPrev();
     host.querySelector("#fo-ob-c1").addEventListener("click", function () {
       var nm = (host.querySelector("#fo-ob-name").value || "").trim();
