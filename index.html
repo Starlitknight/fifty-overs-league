@@ -6827,6 +6827,22 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-news .fo-news-s{color:#6b7280;font-size:12px}" +
     ".fo-pick{cursor:pointer}" +
     ".fo-pick-on{background:#1f4e5f !important;color:#fff !important;border-color:#1f4e5f !important}" +
+    // polish pack: consistent motion, hover lift, numeric alignment
+    "#page .fo-card,#page .panel,.fo-md-card,.fo-yc{transition:box-shadow .18s ease,transform .18s ease}" +
+    "#page .fo-card:hover,.fo-md-card:hover,.fo-yc:hover{box-shadow:0 6px 18px rgba(18,32,58,.08);transform:translateY(-1px)}" +
+    "#page button,.fo-yc-sign,.fo-next-cta,.fo-setr{transition:transform .12s ease,box-shadow .12s ease,background .12s ease}" +
+    "#page button:active{transform:scale(.97)}" +
+    "#page td.r,#page .fo-stat-v,.fo-cd-v,.fo-md-inn b{font-variant-numeric:tabular-nums}" +
+    "#page tbody tr{transition:background .12s ease}" +
+    "#page tbody tr:hover{background:rgba(77,166,162,.05)}" +
+    ".fo-ch-stats{margin:14px 0}" +
+    ".fo-ch-grid{gap:14px}.fo-ch-col{gap:14px}" +
+    "#page{animation:foPageIn .22s ease}" +
+    "@keyframes foPageIn{from{opacity:.55;transform:translateY(3px)}to{opacity:1;transform:none}}" +
+    "@media(prefers-reduced-motion:reduce){#page{animation:none}#page .fo-card,#page button{transition:none}}" +
+    ".fo-streak{display:inline-flex;align-items:center;gap:6px;background:#fdf3e2;border:1px solid #eeddba;color:#7a4a12;font-size:12px;font-weight:800;border-radius:999px;padding:5px 12px}" +
+    ".fo-social{font-size:12px;color:#6b7280;margin-top:8px}" +
+    ".fo-social b{color:#1f4e5f}" +
     "@media(max-width:760px){" +
       "#topbar{padding:8px 10px !important;gap:4px 12px !important}" +
       "#topbar a{font-size:13px !important;padding:5px 2px !important}" +
@@ -7399,6 +7415,20 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     return h + ":" + pad(m) + ":" + pad(ss);
   }
   var foCdTimer = null;
+  // daily check-in streak: the cheapest honest habit loop there is
+  function foStreak() {
+    try {
+      var k = "fol_streak_" + ((LG && LG.id) || "solo");
+      var s = {}; try { s = JSON.parse(lsGet(k) || "{}"); } catch (e) {}
+      var today = new Date().toISOString().slice(0, 10);
+      if (s.last === today) return s.n || 1;
+      var y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      s.n = (s.last === y) ? (s.n || 0) + 1 : 1;
+      s.last = today;
+      lsSet(k, JSON.stringify(s));
+      return s.n;
+    } catch (e) { return 0; }
+  }
   function foPremiumClub() {
     try {
       if (typeof userTeam !== "function" || typeof GD === "undefined" || !GD.teams) { return foOrigClub && foOrigClub(); }
@@ -7503,6 +7533,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var below = rowsL[1], lead = (me.pts || 0) - ((below && below.pts) || 0);
         strip += "<span class='fo-mchip fo-mchip-goal'><i>" + FO_I("trophy", 15) + "</i>Top of the table" + (lead > 0 ? " — " + lead + " pt" + (lead === 1 ? "" : "s") + " clear" : "") + "</span>";
       }
+      // check-in streak: reward showing up, every day
+      var stk = foStreak();
+      if (stk >= 2) strip += "<span class='fo-streak'>&#128293; " + stk + "-day check-in streak</span>";
+      // goal gradient in money: what one more place is worth
+      if (pi > 0 && (me.p || 0) > 0) {
+        var prizeUp = (FO_FIN.prizes[pi - 1] || 0) - (FO_FIN.prizes[pi] || 0);
+        if (prizeUp > 0) strip += "<span class='fo-mchip fo-mchip-goal'><i>" + FO_I("coins", 15) + "</i>One place up is worth +" + foMoney(prizeUp) + " at season&rsquo;s end</span>";
+      }
       strip += "</div>";
 
       // ---- next match: anticipation panel with countdown + lineup-state CTA ----
@@ -7570,6 +7608,18 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       page.querySelectorAll(".fo-fr-play").forEach(function (b) { b.addEventListener("click", function () { var fr = foFriendlies[+b.getAttribute("data-i")]; if (fr) foPlayFriendly(fr); }); });
       page.querySelectorAll(".fo-fr-x").forEach(function (b) { b.addEventListener("click", function () { foRemoveFriendly(+b.getAttribute("data-i")); }); });
       page.querySelectorAll(".fo-scoutname").forEach(function (c) { c.addEventListener("click", function () { scoutClub(c.textContent || ""); }); });
+      // social proof: predictions already in for this round (async, quiet fail)
+      try {
+        if (SYNC && SYNC.started && !SYNC.practice && LG && nxt) {
+          sel("league_predictions", "league_id=eq." + LG.id + "&round=eq." + nxt.round + "&select=manager_id").then(function (rows) {
+            var n = (rows || []).length; if (!n) return;
+            var el = page.querySelector(".fo-next-l"); if (!el || el.querySelector(".fo-social")) return;
+            var d = document.createElement("div"); d.className = "fo-social";
+            d.innerHTML = "<b>" + n + " manager" + (n === 1 ? " has" : "s have") + "</b> already called this round in predictions.";
+            el.appendChild(d);
+          }).catch(function () {});
+        }
+      } catch (e) {}
       var cta = page.querySelector(".fo-next-cta[data-r]");
       if (cta) cta.addEventListener("click", function () { foSetOrdersForRound(+cta.getAttribute("data-r")); });
       page.querySelectorAll(".fo-todo a[data-go]").forEach(function (a) {
@@ -10215,7 +10265,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if (potr && (T > 100)) {
         if (!potr.innerHTML) {
           var best = foPerfList(results)[0];
-          if (best) potr.innerHTML = "<div class='fo-potr'><span class='fo-potr-medal'>🏅</span><div><div class='small' style='color:#9aa3b2;text-transform:uppercase;letter-spacing:.12em;font-size:10.5px'>Player of the round</div><b>" + E(best.name) + "</b> · " + E(best.club) + " · " + E(best.line) + "</div></div>";
+          if (best) potr.innerHTML = "<div class='fo-potr'><span class='fo-potr-medal'>🏅</span><div><div class='small' style='color:#9aa3b2;text-transform:uppercase;letter-spacing:.12em;font-size:10.5px'>Player of the round</div><b>" + E(best.name) + "</b> · " + E(best.club) + " · " + E(best.line) + "</div><div style='margin-left:auto' class='small'>Think you saw it coming? Call the next round below.</div></div>";
           lsSet(seenKey, "1");
         }
       } else if (potr && T <= 100) potr.innerHTML = "";
