@@ -3,8 +3,8 @@ import { chromium } from 'playwright';
 const OUT = process.argv[2];
 const browser = await chromium.launch();
 
-async function shoot(viewport, tag, mobile) {
-  const page = await browser.newPage({ viewport, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: mobile ? 2 : 1 });
+async function shoot(viewport, tag, mobile, dsf) {
+  const page = await browser.newPage({ viewport, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: dsf || (mobile ? 2 : 1) });
   await page.goto('file:///home/user/fifty-overs-league/index.html', { waitUntil: 'load' });
   await page.waitForTimeout(700);
   await page.evaluate(async () => {
@@ -35,11 +35,11 @@ async function shoot(viewport, tag, mobile) {
   ];
   for (const [nm, fn] of shots) {
     await fn(); await page.waitForTimeout(650);
-    await page.screenshot({ path: `${OUT}/${nm}-${tag}.jpg`, type: 'jpeg', quality: 45 });
+    await page.screenshot({ path: `${OUT}/${nm}-${tag}.jpg`, type: 'jpeg', quality: 52 });
     console.log(nm, tag, 'ok');
   }
   await page.close();
 }
-await shoot({ width: 1366, height: 980 }, 'desktop', false);
+await shoot({ width: 1366, height: 980 }, 'desktop', false, 2);
 await shoot({ width: 390, height: 844 }, 'phone', true);
 await browser.close();

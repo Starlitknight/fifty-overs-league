@@ -7194,6 +7194,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-pitch.on{box-shadow:0 0 0 2px rgba(192,86,47,.35);border-color:#C0562F}" +
     ".fo-ob-act{display:block}" +
     ".fo-ob-cta{display:block !important;width:100% !important;padding:17px 20px !important;font-size:16px !important;text-align:center}" +
+    ".fo-charter-big{max-width:880px !important;margin:0 auto;padding:64px 72px !important;min-height:62vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}" +
+    ".fo-charter-h1{font-size:40px !important;letter-spacing:-.8px;margin:10px 0 2px !important}" +
+    ".fo-charter-date{font-size:13px;font-weight:700;color:#8a8474;letter-spacing:.1em;text-transform:uppercase;margin:2px 0 14px}" +
+    ".fo-charter-lead{font-size:16.5px !important;max-width:56ch}" +
+    ".fo-charter-big .fo-charter-grant{margin:26px auto;padding:26px 60px}" +
+    ".fo-charter-big .fo-charter-grant b{font-size:44px}" +
+    ".fo-charter-big .fo-ob-act-c{width:100%;max-width:460px}" +
+    "@media(max-width:700px){.fo-charter-big{padding:36px 22px !important;min-height:0}.fo-charter-h1{font-size:28px !important}.fo-charter-big .fo-charter-grant b{font-size:32px}}" +
     ".fo-ctygrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:2px 0 14px}" +
     ".fo-cty{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e2ddd0;border-radius:10px;padding:9px 11px;cursor:pointer;font-size:13px;font-weight:600;color:#3c4658;text-align:left;transition:border-color .12s ease,box-shadow .12s ease}" +
     ".fo-cty i{font-style:normal;font-size:17px;line-height:1}" +
@@ -9184,21 +9192,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     FO_ONB.step = 2;
     var pt = FO_PITCHES.find(function (x) { return x.id === FO_ONB.pitch; }) || FO_PITCHES[0];
     var body =
-      "<div class='fo-ob-card fo-ob-narrow fo-ob-charter'>" +
-      "<div class='fo-charter-ic'>" + FO_I("trophy", 30) + "</div>" +
+      "<div class='fo-ob-card fo-ob-charter fo-charter-big'>" +
+      "<div class='fo-charter-ic'>" + FO_I("trophy", 40) + "</div>" +
       "<div class='fo-ob-eyebrow'>The charter is signed</div>" +
-      "<h1 class='fo-ob-h1'>" + E(FO_ONB.clubName) + " is founded</h1>" +
-      "<p class='fo-ob-lead'>The board is seated, the groundsman has the keys to <b>" + E(FO_ONB.ground) + "</b>" +
-      (pt.id !== "balanced" ? " — a <b>" + pt.nm.toLowerCase() + "</b> deck" : "") +
-      ", and your founding sponsor has wired <b>$1,000,000</b> to get the club off the ground.</p>" +
-      "<div class='fo-charter-grant'><span>Founding grant</span><b>$1,000,000</b><span>draft budget + operating money</span></div>" +
-      "<p class='fo-ob-lead'>Here's the road to your first season:</p>" +
-      "<div class='fo-ob-chks' style='text-align:left'>" +
-      "<div class='fo-ob-chk'><i>" + FO_I("coins", 17) + "</i><span>Learn how the money works — it decides everything.</span></div>" +
-      "<div class='fo-ob-chk'><i>" + FO_I("users", 17) + "</i><span>Choose a matchday sponsor — your main income all season.</span></div>" +
-      "<div class='fo-ob-chk'><i>" + FO_I("bat", 17) + "</i><span>Draft 14&#8211;16 players suited to your " + pt.nm.toLowerCase() + " pitch.</span></div>" +
-      "<div class='fo-ob-chk'><i>" + FO_I("calendar", 17) + "</i><span>Play 18 matchdays — one match resolves every day at 9:00 AM ET.</span></div>" +
-      "</div>" +
+      "<h1 class='fo-ob-h1 fo-charter-h1'>" + E(FO_ONB.clubName) + " is founded</h1>" +
+      "<div class='fo-charter-date'>Founded " + new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) + "</div>" +
+      "<p class='fo-ob-lead fo-charter-lead'>The board is seated, the groundsman has the keys to <b>" + E(FO_ONB.ground) + "</b>" +
+      (pt.id !== "balanced" ? ", a <b>" + pt.nm.toLowerCase() + "</b> deck," : "") +
+      " and your founding sponsor has wired the grant to get the club off the ground.</p>" +
+      "<div class='fo-charter-grant'><span>Founding grant</span><b>$1,000,000</b></div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Show me the money</button></div></div>";
     var host = foOnbMount(1, body);
     host.querySelector("#fo-ob-b").addEventListener("click", foOnbCreate);
