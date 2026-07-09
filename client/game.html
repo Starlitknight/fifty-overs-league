@@ -7233,6 +7233,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-dr-counts{display:flex;gap:7px}" +
     ".fo-dr-main{min-width:0}" +
     ".fo-rail{max-width:100%}" +
+    ".fo-str-row{display:grid;grid-template-columns:88px 1fr 30px;gap:9px;align-items:center;margin:8px 0;font-size:12.5px}" +
+    ".fo-str-row span{color:#5d6779;font-weight:700}" +
+    ".fo-str-bar{display:block;height:8px;border-radius:99px;background:#efeade;overflow:hidden}" +
+    ".fo-str-bar u{display:block;height:100%;border-radius:99px}" +
+    ".fo-str-row em{font-style:normal;font-weight:800;color:#12203a;text-align:right}" +
+    ".fo-fin-row2{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#5d6779;padding:7px 0;border-bottom:1px solid #f0ece1}" +
+    ".fo-fin-row2 b{font-size:13.5px}" +
+    ".fo-fin-bank{border-bottom:none;margin-top:2px}" +
+    ".fo-fin-bank b{font-size:16px;color:#12203a}" +
     ".fo-rail-sec{margin:0 0 22px}" +
     ".fo-rail-h{display:flex;align-items:baseline;gap:10px;margin:0 0 9px}" +
     ".fo-rail-h b{font-size:16px;color:#12203a}" +
@@ -9583,36 +9592,36 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foOnbReport() {
     FO_ONB.step = 6;
     var F = App.founder, fc = foForecast(F.picked, FO_ONB.sponsor);
-    var matchdayIncome = Math.round((fc.ticket + fc.sponsor) / FO_FIN.seasonLength);
-    var hTone = foHealthTone(fc.health);
-    var advice = fc.end >= 250000 ? "A strong, well-funded squad with plenty of room for mid-season moves. Play with confidence."
-      : fc.end >= 100000 ? "A competitive squad with a healthy reserve. A good sponsor result or home wins will extend your lead."
-        : fc.end >= 25000 ? "A competitive squad, but limited room for mid-season signings. A strong sponsor result or home wins will help."
-          : fc.end >= 0 ? "You are running close to the line. Win at home and avoid injuries to stay solvent."
-            : "The board is concerned. This squad is projected to overspend — expect forced releases unless results are strong.";
+    var sp = foSponsorById(FO_ONB.sponsor);
     var kv = function (ic, l, v, tone) { return "<div class='fo-br-row'><span><i>" + FO_I(ic, 15) + "</i>" + l + "</span><b class='fo-tone-" + (tone || "") + "'>" + v + "</b></div>"; };
     var shape = foSquadShape(F.picked);
-    var dots = function (n, of) { var s = ""; for (var i = 0; i < of; i++) s += "<i class='fo-sqdot" + (i < n ? " on" : "") + "'></i>"; return s; };
-    var sqRow = function (l, n, of) { return "<div class='fo-sq-row'><span>" + l + "</span><span class='fo-sqdots'>" + dots(n, of) + "</span><b>" + n + "</b></div>"; };
-    var income = fc.ticket + fc.sponsor, costs = fc.ground, wages = fc.seasonWage;
-    var mx = Math.max(income, costs, wages, 1);
-    var fin = function (l, v, tone) { return "<div class='fo-fin-row'><span>" + l + "</span><b class='fo-finbar'><u class='fo-fin-" + tone + "' style='width:" + Math.round(100 * v / mx) + "%'></u></b><em>" + FO$(v) + "</em></div>"; };
+    // squad strength: average of each department's best contributors
+    var avg = function (arr) { return arr.length ? Math.round(arr.reduce(function (s, v) { return s + v; }, 0) / arr.length) : 0; };
+    var topN = function (vals, n) { return vals.sort(function (a, b) { return b - a; }).slice(0, n); };
+    var batStr = avg(topN(F.picked.map(function (p) { return foAgg(p, "bat"); }), 7));
+    var bowlStr = avg(topN(F.picked.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none"; }).map(function (p) { return foAgg(p, "bowl"); }), 6));
+    var fieldStr = avg(F.picked.map(function (p) { return foAgg(p, "field"); }));
+    var keepStr = avg(topN(F.picked.filter(function (p) { return p.keeper; }).map(function (p) { return foAgg(p, "keep"); }), 1));
+    var strRow = function (l, v) { return "<div class='fo-str-row'><span>" + l + "</span><b class='fo-str-bar'><u class='fo-sk-" + foSkTone(v) + "' style='width:" + v + "%'></u></b><em>" + v + "</em></div>"; };
+    // finances, plainly: wages out, sponsor in, what is left in the bank
+    var wagesMD = fc.dailyWage, sponsorMD = sp.base;
     var body =
       "<div class='fo-ob-card fo-ob-report'>" +
       "<div class='fo-br-cols'><div class='fo-br-main'>" +
       "<div class='fo-br-head'><span class='fo-br-crest'><img src='" + APPICON + "' alt=''></span><div><div class='fo-ob-eyebrow'>Season 1</div><h1 class='fo-ob-h1'>Board Report</h1></div></div>" +
-      "<div class='fo-br-grid'>" + kv("wallet", "Bank after draft", FO$(fc.bankAfter), "teal") + kv("coins", "Daily wage bill", FO$(fc.dailyWage)) +
-      kv("chart", "Projected matchday income", FO$(matchdayIncome), "teal") + kv("target", "Projected season-end bank", FO$s(fc.end), hTone) +
-      kv("shieldCheck", "Financial status", fc.health, hTone) + "</div>" +
-      "<div class='fo-br-advice'><div class='fo-br-advh'>" + FO_I("users", 14) + " Board advice</div><p>" + advice + "</p></div>" +
+      "<div class='fo-br-grid'>" +
+      kv("users", "Squad", shape.n + " players &middot; " + shape.bat + " BAT / " + shape.bowl + " BOWL / " + shape.ar + " AR / " + shape.wk + " WK") +
+      kv("wallet", "Sponsor", E(sp.name) + " &middot; " + FO$(sp.base) + "/matchday" + (sp.win ? " + " + FO$(sp.win) + "/win" : "")) +
+      kv("calendar", "First matchday", "9:00 AM ET &middot; 18 rounds") + "</div>" +
       "</div><aside class='fo-br-side'>" +
-      "<div class='fo-br-panel'><div class='fo-br-ph'>Squad overview <b>" + shape.n + "/16</b></div>" +
-      sqRow("Batters", shape.bat, 7) + sqRow("Bowlers", shape.bowl, 7) + sqRow("All-rounders", shape.ar, 5) + sqRow("Wicketkeepers", shape.wk, 3) + "</div>" +
+      "<div class='fo-br-panel'><div class='fo-br-ph'>Squad strength</div>" +
+      strRow("Batting", batStr) + strRow("Bowling", bowlStr) + strRow("Fielding", fieldStr) + strRow("Keeping", keepStr) + "</div>" +
       "<div class='fo-br-panel'><div class='fo-br-ph'>Your finances</div>" +
-      fin("Income", income, "teal") + fin("Costs", costs, "terra") + fin("Wages", wages, "terra") +
-      "<div class='fo-fin-end'>Projected end bank <b class='fo-tone-" + hTone + "'>" + FO$s(fc.end) + "</b></div></div>" +
+      "<div class='fo-fin-row2'><span>Wages (all players)</span><b class='fo-neg'>&minus;" + FO$(wagesMD) + "/matchday</b></div>" +
+      "<div class='fo-fin-row2'><span>" + E(sp.name) + "</span><b class='fo-pos'>+" + FO$(sponsorMD) + "/matchday</b></div>" +
+      "<div class='fo-fin-row2 fo-fin-bank'><span>Left in the bank</span><b>" + FO$(fc.bankAfter) + "</b></div></div>" +
       "</aside></div>" +
-      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back to draft</button><button class='fo-ob-cta' id='fo-ob-done'>Next: Set your XI for Round 1</button></div></div>";
+      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back to draft</button><button class='fo-ob-cta' id='fo-ob-done'>Enter the League</button></div></div>";
     var host = foOnbMount(6, body);
     host.querySelector("#fo-ob-b").addEventListener("click", function () { foOnbDraft(); });
     host.querySelector("#fo-ob-done").addEventListener("click", foOnbCommit);
