@@ -8813,18 +8813,55 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     for (var i = 0; i < rd.length; i++) { var f = rd[i]; if (f[0] === App.teamIx || f[1] === App.teamIx) { var x = foFixtureInfo(r, f); return { oppIx: x.oppIx, home: x.home.name, away: x.away.name, ground: x.ground, pitch: x.pitch, weather: x.weather, seed: x.seed, date: x.date, comp: "league", round: r }; } }
     return null;
   }
+  function foPlannedKey() { return "fol_planned_" + ((LG && LG.id) || "solo"); }
+  function foSavePlanned() {
+    try { lsSet(foPlannedKey(), JSON.stringify(SYNC.plannedOrders || {})); } catch (e) {}
+  }
+  function foLoadPlanned() {
+    try {
+      var raw = lsGet(foPlannedKey()); if (!raw) return;
+      var obj = JSON.parse(raw) || {};
+      SYNC.plannedOrders = SYNC.plannedOrders || {};
+      for (var k in obj) if (!SYNC.plannedOrders[k]) SYNC.plannedOrders[k] = obj[k];
+    } catch (e) {}
+  }
+  // A lineup upload is only "in" when the server CONFIRMS it. Failures are
+  // recorded, surfaced once, and retried by the sync poll until they land -
+  // a phone losing signal for a moment must never silently cost a lineup.
   function foPushRound(r, orders) {
     if (!(LG && SYNC)) return;
     var clone = JSON.parse(JSON.stringify(orders)); clone.saved = true;
     var sig = JSON.stringify(clone);
     SYNC.pushedSig = SYNC.pushedSig || {};
-    if (SYNC.pushedSig[r] === sig) return;                 // already submitted, unchanged
-    SYNC.pushedSig[r] = sig;
-    SYNC.submitted = SYNC.submitted || {}; SYNC.submitted[r] = true;
-    try { foRefreshLineupButtons(); } catch (e) {}
+    if (SYNC.pushedSig[r] === sig) return;                 // confirmed on the server, unchanged
     SYNC.plannedOrders = SYNC.plannedOrders || {}; SYNC.plannedOrders[r] = clone;
+    foSavePlanned();
     var pkt = { fo_packet: 1, teamIx: App.teamIx, club: (GD.teams[App.teamIx] || {}).name, round: r, manager: (SYNC.me && SYNC.me.display_name) || "manager", orders: clone };
-    rpc("push_packet", { p_league_id: LG.id, p_round: r, p_packet: pkt }).catch(function () {});
+    rpc("push_packet", { p_league_id: LG.id, p_round: r, p_packet: pkt }).then(function () {
+      SYNC.pushedSig[r] = sig;                             // mark ONLY on success
+      SYNC.submitted = SYNC.submitted || {}; SYNC.submitted[r] = true;
+      SYNC.__pushInfo = "R" + (r + 1) + " confirmed " + new Date().toLocaleTimeString();
+      try { foRefreshLineupButtons(); } catch (e) {}
+    }).catch(function (e) {
+      SYNC.__pushInfo = "R" + (r + 1) + " FAILED: " + String((e && e.message) || e).slice(0, 140);
+      var now = Date.now();
+      if (!SYNC.__pushToastAt || now - SYNC.__pushToastAt > 60000) {
+        SYNC.__pushToastAt = now;
+        toast("Couldn't upload your round " + (r + 1) + " lineup — I'll keep retrying in the background.");
+      }
+    });
+  }
+  // any planned round the server hasn't confirmed gets re-sent by the poll
+  function foRetryPlanned() {
+    try {
+      if (!(LG && SYNC && SYNC.started)) return;
+      var po = SYNC.plannedOrders || {};
+      for (var k in po) {
+        var r = +k;
+        if (App.season && r < App.season.round) { delete po[k]; foSavePlanned(); continue; }
+        if (!(SYNC.pushedSig && SYNC.pushedSig[r])) foPushRound(r, po[k]);
+      }
+    } catch (e) {}
   }
   function foFlushPlan() {
     try {
@@ -8922,7 +8959,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260709-1639-9f69ab";
+  var FO_BUILD = "20260709-1703-01d4c1";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -9003,8 +9040,17 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // League games have no live viewer: bounce #/match back to the fixtures list.
       if (foHashPath() === "#/match" && foLeaguePendingOnly()) {
         if (App.orders && App.orders.saved) say("Orders saved — your match resolves at 9:00 AM ET.");
-        location.hash = "#/matches"; return;
+        location.hash = "#/matches"; foOnHash._last = "#/matches"; return;
       }
+      // Saving league orders must never dump the manager into a running
+      // friendly: the engine's "Save orders -> match" jump lands on #/match,
+      // and the live-friendly exception above would let it through.
+      if (foHashPath() === "#/match" && (foOnHash._last || "").indexOf("#/orders") === 0 &&
+          SYNC && SYNC.started && !SYNC.practice && App && App.pending && App.pending.comp === "league") {
+        toast("Orders saved — your league match resolves at 9:00 AM ET. Your friendly is under Live Match.");
+        location.hash = "#/matches"; foOnHash._last = "#/matches"; return;
+      }
+      foOnHash._last = location.hash || "";
       // Leaving the Orders page while planning a future round → submit that round.
       if (location.hash.indexOf("#/orders") !== 0 && SYNC && SYNC.planRound != null) {
         foFlushPlan(); SYNC.planRound = null;
@@ -9584,6 +9630,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function pollOnce() {
     if (!LG || !SYNC || SYNC.practice) return;   // practice mode is a private local game
     if (SYNC.started && !SYNC.submittedLoaded) { try { foLoadSubmitted(); } catch (e) {} }
+    if (SYNC.started && !SYNC.__plannedLoaded) { SYNC.__plannedLoaded = 1; try { foLoadPlanned(); } catch (e) {} }
+    try { foRetryPlanned(); } catch (e) {}
     try {
       // While planning a future round, don't auto-push the current round's orders.
       if (SYNC.planRound == null && SYNC.started && window.App && App.season && typeof GD !== "undefined" && GD.teams) {
@@ -9602,9 +9650,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           rpc("push_packet", { p_league_id: LG.id, p_round: pushRound, p_packet: pkt }).then(function () {
             if (pkt.orders) {
               SYNC.submitted = SYNC.submitted || {}; SYNC.submitted[pushRound] = true;
+              SYNC.__pushInfo = "R" + (pushRound + 1) + " confirmed " + new Date().toLocaleTimeString();
               foRefreshLineupButtons();
             }
-          }).catch(function () {});
+          }).catch(function (e) {
+            SYNC.lastOrderSig = null;                      // retry on the next poll
+            SYNC.__pushInfo = "R" + (pushRound + 1) + " FAILED: " + String((e && e.message) || e).slice(0, 140);
+          });
         }
       }
     } catch (e) {}
@@ -11711,8 +11763,23 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           "<tr><td>Manager id</td><td>" + E(String(SYNC.myMid || "not resolved")) + "</td></tr>" +
           "<tr><td>Orders on server</td><td>" + E(rounds) + "</td></tr>" +
           "<tr><td>Orders load</td><td>" + E(SYNC.__pktInfo || (SYNC.submittedLoaded ? "ok" : "pending…")) + "</td></tr>" +
-          "</table></div>";
+          "<tr><td>Last upload</td><td>" + E(SYNC.__pushInfo || "nothing uploaded this session") + "</td></tr>" +
+          "</table>" +
+          "<button class='fo-yc-sign' id='fo-resend' style='margin-top:8px'>Send my orders again</button>" +
+          "</div>";
         page.appendChild(sy);
+        var rs = sy.querySelector("#fo-resend");
+        if (rs) rs.addEventListener("click", function () {
+          try {
+            SYNC.pushedSig = {};                            // force a full re-send
+            var sent = 0;
+            if (App.orders && App.orders.saved && App.season) { foPushRound(App.season.round, App.orders); sent++; }
+            var po = SYNC.plannedOrders || {};
+            for (var k in po) { if (App.season && +k !== App.season.round) { foPushRound(+k, po[k]); sent++; } }
+            toast(sent ? "Re-sending " + sent + " lineup(s) — watch Last upload above." : "No saved lineups to send. Save one on the Orders page first.");
+            setTimeout(function () { var el = document.getElementById("fo-sync"); if (el) { el.remove(); foOfficeExtras(); } }, 2500);
+          } catch (e) { say(e); }
+        });
       }
       if (page.querySelector("#fo-stadium")) return;
       var st = foTrainState();
