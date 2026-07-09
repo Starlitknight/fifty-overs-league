@@ -2228,6 +2228,34 @@
     } catch (e) {}
   }
   function foHashPath() { return (location.hash || "").split("?")[0]; }   // "#/match" not "#/matches"
+  // The engine's renderMatch() writes straight into #page with no page guard,
+  // and its autoplay guard tests indexOf('#/match') - which also matches
+  // #/matches and #/matchday - so a running match repainted itself over other
+  // pages on every tick. Guard the renderer and fix the autoplay path test.
+  try {
+    if (typeof window.renderMatch === "function" && !window.renderMatch.__foGuard) {
+      var _foRM = window.renderMatch;
+      window.renderMatch = function () {
+        try { if (App && App.page !== "match") return; } catch (e) {}
+        return _foRM.apply(this, arguments);
+      };
+      window.renderMatch.__foGuard = 1;
+    }
+    if (typeof window.foEnsureAutoplay === "function") {
+      window.foEnsureAutoplay = function () {
+        if (window.__ap || typeof M === "undefined" || !M || M.done) return;
+        window.__ap = setInterval(function () {
+          var onMatch = (location.hash || "").split("?")[0] === "#/match";
+          if (typeof M === "undefined" || !M || M.done || !onMatch) {
+            clearInterval(window.__ap); window.__ap = null;
+            if (typeof M !== "undefined" && M && M.done && onMatch && typeof window.renderMatch === "function") window.renderMatch();
+            return;
+          }
+          if (typeof doBall === "function") doBall();
+        }, UI.apMs || 1600);
+      };
+    }
+  } catch (e) {}
   // Some log lines already carry the "Bowler to Striker :" prefix that the
   // renderer prepends again - strip the duplicate before any feed renders.
   try {
@@ -2473,8 +2501,9 @@
     sel("league_packets", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&select=round").then(function (a) {
       SYNC.submitted = SYNC.submitted || {};
       (a || []).forEach(function (row) { SYNC.submitted[row.round] = true; });
-      SYNC.submittedLoaded = true; SYNC.__plannerSig = null; foRefreshLineupButtons();
-    }).catch(function () { SYNC.submittedLoading = false; });   // transient - try again
+      SYNC.submittedLoaded = true; SYNC.__pktInfo = "loaded " + (a || []).length + " round(s)";
+      SYNC.__plannerSig = null; foRefreshLineupButtons();
+    }).catch(function (e) { SYNC.submittedLoading = false; SYNC.__pktInfo = "error: " + String((e && e.message) || e).slice(0, 160); });
   }
   // A lean per-fixture "Set lineup" list (no big season planner): each upcoming
   // fixture gets a button on the right that opens that round's orders.
@@ -5318,6 +5347,20 @@
           "<div class='small'>" + FO$(deal.base || 45000) + " per matchday" + (deal.win ? " plus " + FO$(deal.win) + " for every win" : "") + ", paid when the round resolves.</div>" + frHtml + "</div>";
         var fp0 = page.querySelector(".panel");
         if (fp0 && fp0.parentNode) fp0.parentNode.insertBefore(spc, fp0); else page.appendChild(spc);
+      }
+      // sync status: which build, who am I, what the server said about my orders
+      if (!page.querySelector("#fo-sync") && SYNC && SYNC.started && !SYNC.practice) {
+        var rounds = Object.keys(SYNC.submitted || {}).map(function (k) { return "R" + (+k + 1); }).join(", ") || "none yet";
+        var sy = document.createElement("div");
+        sy.className = "panel"; sy.id = "fo-sync";
+        sy.innerHTML = "<h4>Sync status</h4><div class='pad small'>" +
+          "<table class='kv'>" +
+          "<tr><td>Build</td><td>" + E(FO_BUILD) + "</td></tr>" +
+          "<tr><td>Manager id</td><td>" + E(String(SYNC.myMid || "not resolved")) + "</td></tr>" +
+          "<tr><td>Orders on server</td><td>" + E(rounds) + "</td></tr>" +
+          "<tr><td>Orders load</td><td>" + E(SYNC.__pktInfo || (SYNC.submittedLoaded ? "ok" : "pending…")) + "</td></tr>" +
+          "</table></div>";
+        page.appendChild(sy);
       }
       if (page.querySelector("#fo-stadium")) return;
       var st = foTrainState();
