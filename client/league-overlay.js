@@ -1842,6 +1842,7 @@
     } catch (e) {}
   }, true);
   setInterval(function () { try { foFriendlyKeeper(); } catch (e) {} }, 5000);
+  setTimeout(function () { foFriendlyKeeper.__ready = 1; try { foFriendlyKeeper(); } catch (e) {} }, 2500);
   var _foMobT;
   window.addEventListener("resize", function () { clearTimeout(_foMobT); _foMobT = setTimeout(foMobileTables, 150); });
   window.addEventListener("hashchange", function () { setTimeout(foMobileTables, 60); });
@@ -2168,7 +2169,7 @@
   // persist {seed, orders, toss, startAt}; on return we replay silently to
   // where the clock says the match should be. Come back after ~100 minutes
   // and it has finished: the result is in your friendly history.
-  function foFrKey() { return "fol_livefr_" + (LG ? LG.id : "solo"); }
+  function foFrKey() { return "fol_livefr_v2"; }   // one live friendly per device
   function foFrHistKey() { return "fol_frhist_" + (LG ? LG.id : "solo"); }
   var FO_BALL_MS = 6000;   // 6s a ball: ~30 min an innings, an hour a match
   function foFrHist() { try { return JSON.parse(lsGet(foFrHistKey()) || "[]"); } catch (e) { return []; } }
@@ -2215,10 +2216,24 @@
     // repaint only if the user is already looking at the match page
     if (foHashPath() === "#/match" && typeof window.route === "function") window.route();
   }
-  window.__foFrTest = { resume: function (st) { return foFrResume(st); } };   // headless test hook
+  try {
+    if (typeof window.applyToss === "function" && !window.applyToss.__fo) {
+      var _foAT = window.applyToss;
+      window.applyToss = function () {
+        try {
+          if (typeof M !== "undefined" && M && M.innings && M.innings[0] &&
+              ((M.innings[0].legal || 0) > 0 || (M.log || []).length > 2) && M.batFirstTeam) {
+            return;   // the toss is history: never reset a started innings
+          }
+        } catch (e) {}
+        return _foAT.apply(this, arguments);
+      };
+      window.applyToss.__fo = 1;
+    }
+  } catch (e) {}
+  window.__foFrTest = { resume: function (st) { return foFrResume(st); }, keeper: function () { return foFriendlyKeeper(); } };
   function foFriendlyKeeper() {
     try {
-      if (!LG && !(SYNC && SYNC.practice)) return;   // identity not resolved: leave keys alone
       var live = (typeof M !== "undefined") && M && !M.done && M.meta && M.meta.__friendly;
       if (live) {
         var now = Date.now();
@@ -2252,12 +2267,15 @@
         return;
       }
       // nothing live: if a friendly is stored, move it to where the clock says
-      if (SYNC && !SYNC.__frSynced) {
+      // (but let the engine finish booting first - its late autosave restore
+      // used to fight the rebuilt match)
+      if (!foFriendlyKeeper.__ready) return;
+      if (!foFriendlyKeeper.__synced) {
         var raw = lsGet(foFrKey()); if (!raw) return;
         var st = null; try { st = JSON.parse(raw); } catch (e) {}
         if (!st || !st.pending || !st.orders || !st.startAt) { return; }
-        SYNC.__frSynced = 1;
         if (typeof GD === "undefined" || !GD.teams || !GD.teams.length) return;
+        foFriendlyKeeper.__synced = 1;
         try { foFrResume(st); } catch (e) { try { console.warn("friendly resume failed:", e && e.message); } catch (e2) {} }
       }
     } catch (e) {}
