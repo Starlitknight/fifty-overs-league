@@ -5330,16 +5330,32 @@
         byCls[foMarketCls(p)].push(p);
       }
     }
-    // a market with a shape: specialists first, all-rounders as the garnish
+    // a market with a shape: specialists first, all-rounders as the garnish.
+    // Rare styles stay rare on the shelf too: at most ONE genuine quick and
+    // ONE wrist spinner may be listed, and only in some seasons at all (the
+    // seeded coin below), so an express-pace listing is an event.
     var QUOTA = { bat: 5, pace: 4, spin: 3, keep: 2, ar: 4 };
+    var seedH = foHash32(seed);
+    var styleCap = {
+      seamFast: (seedH % 100) < 40 ? 1 : 0,
+      wristSpin: (Math.floor(seedH / 100) % 100) < 40 ? 1 : 0
+    };
     var out = [];
     Object.keys(QUOTA).forEach(function (cls) {
       byCls[cls].sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
-      byCls[cls].slice(0, QUOTA[cls]).forEach(function (p) {
+      var taken = 0;
+      for (var bi = 0; bi < byCls[cls].length && taken < QUOTA[cls]; bi++) {
+        var p = byCls[cls][bi];
+        var st = p.bowlTypeFull;
+        if (styleCap[st] != null) {
+          if (styleCap[st] <= 0) continue;
+          styleCap[st]--;
+        }
         var q = JSON.parse(JSON.stringify(p));
         q.fee = foMarketFee(p);
         out.push(q);
-      });
+        taken++;
+      }
     });
     out.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
     return out.slice(0, 18);
@@ -6092,7 +6108,7 @@
   try { var _bv = document.getElementById("fo-boot"); if (_bv) _bv.parentNode.removeChild(_bv); } catch (e) {}
 
   // Debug/test handle for the season planner's engine-facing helpers (no behaviour).
-  try { window.__fol = { userFixtures: foUserFixtures, fixtureMeta: foFixtureMeta, plannerHTML: foPlannerHTML, smartBowling: foSmartBowling, countryPool: buildCountryPool }; } catch (e) {}
+  try { window.__fol = { userFixtures: foUserFixtures, fixtureMeta: foFixtureMeta, plannerHTML: foPlannerHTML, smartBowling: foSmartBowling, countryPool: buildCountryPool, marketPool: foMarketPool }; } catch (e) {}
 
   // =========================================================================
   // Squad page rebuild + name hygiene (reviewer pass).
