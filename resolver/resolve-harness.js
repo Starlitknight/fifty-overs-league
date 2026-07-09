@@ -250,16 +250,20 @@
       GD.teams.forEach(function (t) {
         var deal = foDealOf(t);
         var acad = (FO_ACAD[Math.max(0, Math.min(5, t.acadY || 0))] || 0) + (FO_ACAD[Math.max(0, Math.min(5, t.acadS || 0))] || 0);
-        var net = deal.base - foWages(t) - (t.seats || 9000) - acad;
+        var wages = foWages(t), seats = t.seats || 9000;
         var r = results.find(function (x) { return x.home === t.name || x.away === t.name; });
-        if (r && r.home === t.name) net += (preAtt[t.name] || 2400) * 9;
-        if (r && r.result && r.result.winner === t.name) net += deal.win || 0;
+        var gate = (r && r.home === t.name) ? (preAtt[t.name] || 2400) * 9 : 0;
+        var winB = (r && r.result && r.result.winner === t.name) ? (deal.win || 0) : 0;
+        var net = deal.base - wages - seats - acad + gate + winB;
         if (round + 1 === Math.floor(total / 2) && posOf(t.name) <= 3) net += deal.halfway || 0;
         if (round + 1 === total) {
           if (posOf(t.name) <= 3) net += deal.seasonTop3 || 0;
           if (posOf(t.name) === 1) net += deal.champ || 0;
         }
         t.bank = (pre[t.name] || 0) + net;
+        // every club keeps a copy of its own settlement so the Office can show
+        // where the money went (the shared App.fin ledger only knows one club)
+        t._finRow = { round: round + 1, base: deal.base, win: winB, gate: gate, wages: wages, seats: seats, acad: acad, net: net, bank: t.bank };
         // mood/supporters march for every club (engine only moves the pusher's)
         if (t.name !== meName && r) {
           var won = r.result && r.result.winner === t.name;
