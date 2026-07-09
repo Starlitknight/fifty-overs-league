@@ -7962,7 +7962,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var msRows = [];
       try { msRows = foMilestoneWatch(t); } catch (e) {}
       var msCard = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Milestone watch</div><a href='#/museum' class='fo-morelink'>Club museum &rsaquo;</a></div><div class='fo-card-b'>" +
-        (msRows.length ? msRows.map(function (r2) { return "<div class='fo-ms-row'><b>" + E(r2.nm) + "</b><span>" + r2.txt + "</span></div>"; }).join("")
+        (msRows.length ? msRows.map(foRaceBar).join("")
           : "<div class='small'>No one is knocking on a landmark yet. The museum keeps everything they have already done.</div>") + "</div></div>";
 
       var formPill = pips ? "<span class='fo-hero-pill'>Form <span class='fo-form'>" + pips + "</span></span>" : "<span class='fo-hero-pill'>No matches yet</span>";
@@ -9324,7 +9324,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260709-2147-3a61c6";
+  var FO_BUILD = "20260709-2156-3b4125";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -12268,6 +12268,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         if (t._chronFarewell && t._chronFarewell.s === (App.seasonNo || 1) - 1) t._chronFarewell.names.forEach(function (nm) {
           items.push({ pri: 0, h: "FAREWELL: " + E(nm) + " retires", s: "a " + E(t.name) + " career remembered in the museum" });
         });
+        if (t._chronAwards && t._chronAwards.s === (App.seasonNo || 1)) (t._chronAwards.list || []).slice(0, 3).forEach(function (aw) {
+          items.push({ pri: 0, h: "AWARD: " + E(aw.name) + " · " + E(aw.kind), s: "for " + E(t.name) });
+        });
       });
     } catch (e) {}
     // the dressing-room line keeps a reserved seat at the end of the page
@@ -13609,7 +13612,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-ms-row b{color:#1C2433}.fo-ms-row i{font-style:normal;margin-left:auto;color:#C0562F;font-weight:800;white-space:nowrap}" +
       ".fo-duel{display:flex;gap:8px;align-items:baseline;font-size:12.5px;margin:5px 0;color:#3a4353}" +
       ".fo-duel b{color:#1C2433}.fo-duel em{font-style:normal;margin-left:auto;font-weight:800;color:#8a2f1d;white-space:nowrap}" +
-      ".fo-news-voice{color:#5b4a91;font-style:italic}";
+      ".fo-news-voice{color:#5b4a91;font-style:italic}" +
+      ".fo-race{display:grid;grid-template-columns:minmax(120px,1.1fr) minmax(90px,1.6fr) auto;gap:10px;align-items:center;margin:7px 0}" +
+      ".fo-race-l b{display:block;font-size:12.5px;color:#1C2433;line-height:1.25}.fo-race-l span{font-size:11px;color:#8a93a3}" +
+      ".fo-race-bar{height:10px;border-radius:5px;background:#E8EAEE;overflow:hidden}.fo-race-bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#4DA6A2,#2b6b68);transition:width .6s ease}" +
+      ".fo-race-n{font-size:11.5px;font-weight:800;color:#1C2433;white-space:nowrap;font-variant-numeric:tabular-nums}";
     document.head.appendChild(foChCss);
   } catch (e) {}
 
@@ -13632,9 +13639,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     try {
       GD.teams.forEach(function (t) {
         (t.players || []).forEach(function (p) {
-          var h = (App.playerHist && App.playerHist[p.name]) || [], runs = 0, w = 0;
-          h.forEach(function (e) { runs += +e.rr || 0; w += +e.w || 0; });
-          pre.players[p.name] = { n: h.length, runs: runs, wkts: w };
+          var h = (App.playerHist && App.playerHist[p.name]) || [], runs = 0, w = 0, hs = 0, bw = 0, bwr = 1e9;
+          h.forEach(function (e) {
+            runs += +e.rr || 0; w += +e.w || 0;
+            if ((+e.rr || 0) > hs) hs = +e.rr;
+            if ((+e.w || 0) > bw || ((+e.w || 0) === bw && (+e.w || 0) > 0 && (+e.cr || 0) < bwr)) { if (+e.w) { bw = +e.w; bwr = +e.cr || 0; } }
+          });
+          pre.players[p.name] = { n: h.length, runs: runs, wkts: w, hs: hs, bw: bw, bwr: bwr };
         });
       });
     } catch (e) {}
@@ -13686,6 +13697,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
               var m5 = !(p._career || []).some(function (c) { return c.ev === "fivefor"; });
               foCareerPush(p, { s: sN, r: rN, ev: "fivefor", txt: (m5 ? "Maiden five-for" : "Five-for") + " · " + w + "/" + (e.cr || 0) });
             }
+            // personal bests, only once there is a past to beat
+            if (was.n > 0 && rr > was.hs && rr >= 30 && rr < 50) foCareerPush(p, { s: sN, r: rN, ev: "hs", txt: "New highest score · " + (e.bat || rr) });
+            if (was.n > 0 && rr > was.hs && rr >= 50) foCareerPush(p, { s: sN, r: rN, ev: "hs", txt: "New highest score · " + (e.bat || rr) });
+            if (was.n > 0 && w >= 3 && (w > was.bw || (w === was.bw && (+e.cr || 0) < was.bwr))) foCareerPush(p, { s: sN, r: rN, ev: "bb", txt: "New best figures · " + w + "/" + (e.cr || 0) });
+            if (rr > was.hs) was.hs = rr;
+            if (w > was.bw || (w === was.bw && (+e.cr || 0) < was.bwr)) { if (w) { was.bw = w; was.bwr = +e.cr || 0; } }
             var r2 = runsCum + rr;
             if (r2 >= 500 && Math.floor(r2 / 500) > Math.floor(runsCum / 500)) {
               var mr = Math.floor(r2 / 500) * 500;
@@ -13720,27 +13737,69 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         if (feed.length) t._chron = { r: rN, s: sN, items: feed.slice(0, 6) };
         else if (t._chron && t._chron.r !== rN) delete t._chron;
       });
-      // 3. season awards on the final round, into the museum + the career
+      // 3. awards night on the final matchday: club awards plus a full slate of
+      // league-wide categories, every winner into his club's museum and career
       var total = (App.season && App.season.schedule && App.season.schedule.length) || 18;
       if (rN >= total) {
+        var agg = [];
+        GD.teams.forEach(function (t) {
+          (t.players || []).forEach(function (p) {
+            var h = (App.playerHist && App.playerHist[p.name]) || [];
+            var a = { p: p, t: t, rr: 0, w: 0, balls: 0, outs: 0, cr: 0, cb: 0, inns: 0 };
+            h.forEach(function (e) {
+              if (e.s !== sN) return;
+              a.rr += +e.rr || 0; a.w += +e.w || 0; a.balls += +e.bb || 0;
+              if (+e.bb > 0) a.inns++;
+              if (e.o) a.outs++;
+              a.cr += +e.cr || 0; a.cb += +e.cb || 0;
+            });
+            var fs = (App.fieldStats && App.fieldStats[p.name]) || { ct: 0, st: 0 };
+            var base = (t._fsBase && t._fsBase[p.name]) || { ct: 0, st: 0 };
+            a.ct = Math.max(0, (fs.ct || 0) - (base.ct || 0));
+            a.st = Math.max(0, (fs.st || 0) - (base.st || 0));
+            agg.push(a);
+          });
+        });
+        var give = function (winner, kind, line) {
+          if (!winner) return;
+          var mus = (winner.t._museum = winner.t._museum || { trophies: [], awards: [], legends: [] });
+          mus.awards.push({ s: sN, kind: kind, name: winner.p.name, line: line });
+          foCareerPush(winner.p, { s: sN, r: rN, ev: "award", txt: kind + ", S" + sN });
+          (winner.t._chronAwards = winner.t._chronAwards || { s: sN, list: [] }).list.push({ kind: kind, name: winner.p.name });
+        };
+        var top = function (score, filter) {
+          var best = null, bv = null;
+          agg.forEach(function (a) { if (filter && !filter(a)) return; var v = score(a); if (v == null) return; if (bv == null || v > bv) { bv = v; best = a; } });
+          return best ? { a: best, v: bv } : null;
+        };
+        GD.teams.forEach(function (t) { delete t._chronAwards; });
+        var r1 = top(function (a) { return a.rr > 0 ? a.rr : null; });
+        if (r1) give(r1.a, "Most runs (league)", r1.v + " runs");
+        var w1 = top(function (a) { return a.w > 0 ? a.w : null; });
+        if (w1) give(w1.a, "Most wickets (league)", w1.v + " wickets");
+        var ba = top(function (a) { return a.rr / a.outs; }, function (a) { return a.inns >= 6 && a.outs > 0; });
+        if (ba) give(ba.a, "Best batting average (league)", ba.v.toFixed(1) + " over " + ba.a.inns + " innings");
+        var sr = top(function (a) { return 100 * a.rr / a.balls; }, function (a) { return a.balls >= 120; });
+        if (sr) give(sr.a, "Best strike rate (league)", sr.v.toFixed(0) + " SR");
+        var bavg = top(function (a) { return -(a.cr / a.w); }, function (a) { return a.w >= 8; });
+        if (bavg) give(bavg.a, "Best bowling average (league)", (-bavg.v).toFixed(1) + " per wicket");
+        var ec = top(function (a) { return -(a.cr / (a.cb / 6)); }, function (a) { return a.cb >= 144; });
+        if (ec) give(ec.a, "Best economy (league)", (-ec.v).toFixed(2) + " an over");
+        var ct = top(function (a) { return !a.p.keeper && a.ct > 0 ? a.ct : null; });
+        if (ct) give(ct.a, "Most catches (league)", ct.v + " catches");
+        var kd = top(function (a) { return a.p.keeper && (a.ct + a.st) > 0 ? a.ct + a.st : null; });
+        if (kd) give(kd.a, "Keeper dismissals (league)", (kd.v) + " dismissals");
+        // club awards: your best, your kid
         GD.teams.forEach(function (t) {
           var best = null, bestV = 0, yBest = null, yBestV = 0;
-          (t.players || []).forEach(function (p) {
-            var h = (App.playerHist && App.playerHist[p.name]) || [], rr = 0, w = 0;
-            h.forEach(function (e) { if (e.s === sN) { rr += +e.rr || 0; w += +e.w || 0; } });
-            var v = rr + 20 * w;
-            if (v > bestV) { bestV = v; best = { p: p, rr: rr, w: w }; }
-            if ((p.age || 30) <= 23 && v > yBestV) { yBestV = v; yBest = { p: p, rr: rr, w: w }; }
+          agg.forEach(function (a) {
+            if (a.t !== t) return;
+            var v = a.rr + 20 * a.w;
+            if (v > bestV) { bestV = v; best = a; }
+            if ((a.p.age || 30) <= 23 && v > yBestV) { yBestV = v; yBest = a; }
           });
-          var mus = (t._museum = t._museum || { trophies: [], awards: [], legends: [] });
-          if (best) {
-            mus.awards.push({ s: sN, kind: "Player of the Season", name: best.p.name, line: best.rr + " runs · " + best.w + " wkts" });
-            foCareerPush(best.p, { s: sN, r: rN, ev: "award", txt: "Player of the Season, S" + sN });
-          }
-          if (yBest && (!best || yBest.p !== best.p)) {
-            mus.awards.push({ s: sN, kind: "Young Player of the Season", name: yBest.p.name, line: yBest.rr + " runs · " + yBest.w + " wkts" });
-            foCareerPush(yBest.p, { s: sN, r: rN, ev: "award", txt: "Young Player of the Season, S" + sN });
-          }
+          if (best) give({ p: best.p, t: t }, "Player of the Season", best.rr + " runs · " + best.w + " wkts");
+          if (yBest && (!best || yBest.p !== best.p)) give({ p: yBest.p, t: t }, "Young Player of the Season", yBest.rr + " runs · " + yBest.w + " wkts");
         });
       }
     } catch (e) {}
@@ -13791,7 +13850,20 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
               var mc = (champ._museum = champ._museum || { trophies: [], awards: [], legends: [] });
               mc.trophies.push({ s: sN, kind: "League champions" });
             }
+            var second = rows0[1] && GD.teams.find(function (t) { return t.name === rows0[1].nm; });
+            if (second) {
+              var m2 = (second._museum = second._museum || { trophies: [], awards: [], legends: [] });
+              m2.trophies.push({ s: sN, kind: "League runners-up" });
+            }
           }
+          // new season baseline for fielding stats, so next year's awards are honest
+          GD.teams.forEach(function (t) {
+            t._fsBase = {};
+            (t.players || []).forEach(function (p) {
+              var fs = (App.fieldStats && App.fieldStats[p.name]) || {};
+              t._fsBase[p.name] = { ct: fs.ct || 0, st: fs.st || 0 };
+            });
+          });
         } catch (e) {}
         return out;
       };
@@ -13826,22 +13898,75 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     } catch (e) { return null; }
   }
 
-  // ---- milestone watch: who is N short of a number that matters ----
-  function foMilestoneWatch(t) {
+  // ---- milestone races: progress bars managers can WATCH fill ----
+  function foMilestoneWatch(t, max) {
     var rows = [];
     (t.players || []).forEach(function (p) {
       var tot = foClubTotals(p.name);
       if (!tot.matches) return;
-      var nextR = (Math.floor(tot.runs / 500) + 1) * 500, gapR = nextR - tot.runs;
-      if (gapR <= 40) rows.push({ nm: p.name, txt: "needs <b>" + gapR + "</b> runs for " + nextR.toLocaleString() + " club runs", w: gapR / 40 });
-      var nextW = (Math.floor(tot.wkts / 25) + 1) * 25, gapW = nextW - tot.wkts;
-      if (tot.wkts > 0 && gapW <= 4) rows.push({ nm: p.name, txt: "needs <b>" + gapW + "</b> wicket" + (gapW === 1 ? "" : "s") + " for " + nextW + " for the club", w: gapW / 4 });
-      if (tot.hs >= 75 && tot.hs < 100) rows.push({ nm: p.name, txt: "best of <b>" + tot.hs + "</b> · a maiden century is close", w: (100 - tot.hs) / 25 });
-      else if (tot.hs >= 35 && tot.hs < 50) rows.push({ nm: p.name, txt: "best of <b>" + tot.hs + "</b> · chasing a maiden fifty", w: (50 - tot.hs) / 15 });
+      var nextR = (Math.floor(tot.runs / 500) + 1) * 500;
+      if (tot.runs >= nextR - 150 && tot.runs > 0) rows.push({ nm: p.name, label: nextR.toLocaleString() + " club runs", cur: tot.runs, target: nextR, pct: Math.round(100 * tot.runs / nextR) });
+      var nextW = (Math.floor(tot.wkts / 25) + 1) * 25;
+      if (tot.wkts >= nextW - 8 && tot.wkts > 0) rows.push({ nm: p.name, label: nextW + " club wickets", cur: tot.wkts, target: nextW, pct: Math.round(100 * tot.wkts / nextW) });
+      if (tot.hs >= 60 && tot.hs < 100) rows.push({ nm: p.name, label: "maiden century (best " + tot.hs + ")", cur: tot.hs, target: 100, pct: Math.round(100 * tot.hs / 100) });
+      else if (tot.hs >= 30 && tot.hs < 50) rows.push({ nm: p.name, label: "maiden fifty (best " + tot.hs + ")", cur: tot.hs, target: 50, pct: Math.round(100 * tot.hs / 50) });
     });
-    rows.sort(function (a, b) { return a.w - b.w; });
-    return rows.slice(0, 3);
+    rows.sort(function (a, b) { return b.pct - a.pct; });
+    return rows.slice(0, max || 3);
   }
+  function foRaceBar(r) {
+    var hot = r.pct >= 90;
+    return "<div class='fo-race'><div class='fo-race-l'><b>" + E(r.nm) + "</b><span>" + r.label + "</span></div>" +
+      "<div class='fo-race-bar'><i style='width:" + Math.min(100, r.pct) + "%" + (hot ? ";background:linear-gradient(90deg,#D9A441,#c08a2b)" : "") + "'></i></div>" +
+      "<div class='fo-race-n'>" + r.cur.toLocaleString() + " / " + r.target.toLocaleString() + "</div></div>";
+  }
+  // league-wide season races for the Stats page: watch the leaders pull away
+  function foSeasonRaces() {
+    var sN = App.seasonNo || 1, list = [];
+    GD.teams.forEach(function (t) {
+      (t.players || []).forEach(function (p) {
+        var h = (App.playerHist && App.playerHist[p.name]) || [], rr = 0, w = 0;
+        h.forEach(function (e) { if (e.s === sN) { rr += +e.rr || 0; w += +e.w || 0; } });
+        if (rr || w) list.push({ nm: p.name, club: t.name, rr: rr, w: w });
+      });
+    });
+    var runs = list.slice().sort(function (a, b) { return b.rr - a.rr; }).slice(0, 5);
+    var wkts = list.slice().sort(function (a, b) { return b.w - a.w; }).slice(0, 5);
+    var mkRows = function (arr, key, unit) {
+      if (!arr.length || !arr[0][key]) return "<div class='small'>The race starts with the first ball.</div>";
+      var lead = arr[0][key];
+      return arr.map(function (x) {
+        return "<div class='fo-race'><div class='fo-race-l'><b>" + E(x.nm) + "</b><span>" + E(x.club) + "</span></div>" +
+          "<div class='fo-race-bar'><i style='width:" + Math.max(3, Math.round(100 * x[key] / lead)) + "%'></i></div>" +
+          "<div class='fo-race-n'>" + x[key].toLocaleString() + " " + unit + "</div></div>";
+      }).join("");
+    };
+    return "<div class='grid2'><div class='col'><div class='panel fo-keep'><h4>The run race &middot; season " + sN + "</h4><div class='pad'>" + mkRows(runs, "rr", "runs") + "</div></div></div>" +
+      "<div class='col'><div class='panel fo-keep'><h4>The wicket race &middot; season " + sN + "</h4><div class='pad'>" + mkRows(wkts, "w", "wkts") + "</div></div></div></div>";
+  }
+  // the Stats page carries the races and the club's milestone board
+  try {
+    if (typeof window.pgStats === "function" && !window.pgStats.__foChron) {
+      var _foPgStats = window.pgStats;
+      window.pgStats = function () {
+        var out = _foPgStats.apply(this, arguments);
+        try {
+          var page = document.getElementById("page");
+          var t = foMyClub();
+          if (page && t) {
+            var ms = foMilestoneWatch(t, 8);
+            var msHtml = ms.length ? ms.map(foRaceBar).join("") : "<div class='small'>No one is in touching distance of a landmark yet.</div>";
+            page.insertAdjacentHTML("afterbegin",
+              foSeasonRaces() +
+              "<div class='panel fo-keep'><h4>Milestone races &middot; " + E(t.name) + "</h4><div class='pad'>" + msHtml +
+              "<div class='small' style='margin-top:6px'>Club-career landmarks. Gold bars are nearly there; the museum remembers every one reached.</div></div></div>");
+          }
+        } catch (e) {}
+        return out;
+      };
+      window.pgStats.__foChron = 1;
+    }
+  } catch (e) {}
 
   // ---- career panel on your own players' pages ----
   function foCareerPanel() {
@@ -13902,8 +14027,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var cups = (mus.trophies || []).map(function (tr) { return "<span class='fo-mu-cup'>&#127942; " + E(tr.kind) + " &middot; S" + tr.s + "</span>"; }).join("") ||
       "<span class='small'>The cabinet waits for its first trophy.</span>";
     var awards = (mus.awards || []).slice().reverse().map(function (a) {
-      return "<tr><td>S" + a.s + "</td><td>" + E(a.kind) + "</td><td><b>" + E(a.name) + "</b></td><td class='small'>" + E(a.line || "") + "</td></tr>";
-    }).join("") || "<tr><td colspan='4' class='small'>Season awards are handed out on the final matchday.</td></tr>";
+      var medal = /league/.test(a.kind) ? "&#129351;" : "&#127941;";
+      return "<tr><td>S" + a.s + "</td><td>" + medal + " " + E(a.kind) + "</td><td><b>" + E(a.name) + "</b></td><td class='small'>" + E(a.line || "") + "</td></tr>";
+    }).join("") || "<tr><td colspan='4' class='small'>Season awards are handed out on the final matchday: league-wide categories for runs, wickets, averages, strike rate, economy and glovework, plus your club's own Player and Young Player of the Season.</td></tr>";
     var legends = (mus.legends || []).slice().reverse().map(function (l) {
       return "<div class='fo-mu-leg'><b>" + E(l.nick ? l.name.split(" ")[0] + " “" + l.nick + "” " + l.name.split(" ").slice(1).join(" ") : l.name) + "</b> <span class='small'>retired S" + l.s + ", age " + l.age + "</span>" +
         "<div class='small'>" + l.matches + " matches &middot; " + (l.runs || 0).toLocaleString() + " runs (HS " + E(String(l.hs || "–")) + ") &middot; " + (l.wkts || 0) + " wickets" + (l.bb ? " (best " + E(l.bb) + ")" : "") + "</div></div>";
