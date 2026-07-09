@@ -894,12 +894,18 @@
     ".fo-fact{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:9px 0;border-bottom:1px solid #f0ece1}" +
     ".fo-fact span{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#8a8474}" +
     ".fo-fact b{font-size:14px;color:#12203a;font-weight:700;text-align:right}" +
-    ".fo-segs{display:inline-flex;gap:4px;align-items:center}" +
-    ".fo-seg{width:24px;height:6px;border-radius:99px;background:#e8e3d5;transition:background .15s ease}" +
-    ".fo-seg.on{background:#12203a}" +
-    ".fo-str-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f0ece1;font-size:12.5px}" +
+    ".fo-segs{display:inline-flex;gap:5px;align-items:center}" +
+    ".fo-seg{width:26px;height:8px;border-radius:99px;transition:background .15s ease}" +
+    ".fo-segt-low{background:rgba(200,79,74,.14)}.fo-segt-low.on{background:#C84F4A}" +
+    ".fo-segt-mid{background:rgba(217,164,65,.16)}.fo-segt-mid.on{background:#D9A441}" +
+    ".fo-segt-good{background:rgba(77,166,162,.15)}.fo-segt-good.on{background:#4DA6A2}" +
+    ".fo-segt-elite{background:rgba(62,153,96,.15)}.fo-segt-elite.on{background:#3E9960}" +
+    ".fo-str-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f0ece1}" +
     ".fo-str-row:last-child{border-bottom:none}" +
-    ".fo-str-row span:first-child{color:#5d6779;font-weight:700}" +
+    ".fo-str-row span:first-child{color:#12203a;font-weight:600;font-size:13.5px;letter-spacing:-.1px}" +
+    ".fo-fact span{font-size:10.5px}" +
+    ".fo-fact b{font-size:13.5px;font-weight:600}" +
+    ".fo-br-ph{font-size:11px;letter-spacing:.12em;color:#a09a8a}" +
     ".fo-br-closure{margin-top:18px;font-size:14px;line-height:1.7;color:#3c4658}" +
     ".fo-br-closure p{margin:0 0 10px}" +
     ".fo-br-luck{font-weight:800;color:#12203a}" +
@@ -3270,8 +3276,8 @@
     var keepStr = avg(topN(F.picked.filter(function (p) { return p.keeper; }).map(function (p) { return foAgg(p, "keep"); }), 1));
     var starsOf = function (v) { return v >= 78 ? 5 : v >= 66 ? 4 : v >= 54 ? 3 : v >= 40 ? 2 : 1; };
     var starRow = function (l, v) {
-      var n = starsOf(v), s = "";
-      for (var i = 0; i < 5; i++) s += "<i class='fo-seg" + (i < n ? " on" : "") + "'></i>";
+      var n = starsOf(v), tone = foSkTone(v), s = "";
+      for (var i = 0; i < 5; i++) s += "<i class='fo-seg fo-segt-" + tone + (i < n ? " on" : "") + "'></i>";
       return "<div class='fo-str-row'><span>" + l + "</span><span class='fo-segs'>" + s + "</span></div>";
     };
     var fact = function (l, v) { return "<div class='fo-fact'><span>" + l + "</span><b>" + v + "</b></div>"; };
