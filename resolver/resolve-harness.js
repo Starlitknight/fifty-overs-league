@@ -138,6 +138,7 @@
   }
 
   window.__resolveMatch = function(homeSquad, awaySquad, homeOrders, awayOrders, conds){
+    try { foRepairBowlerBatting(); } catch (e) {}
     conds = conds || {};
     var home = cloneTeam(homeSquad), away = cloneTeam(awaySquad);
     markKeeper(home, homeOrders); markKeeper(away, awayOrders);
@@ -505,9 +506,58 @@
     });
   }
 
+  // ---- pure bowlers bat like bowlers (mirror of the client rule) ------------
+  // Name-derived, lower-only and idempotent, so the resolver and every client
+  // agree; squads drafted before the rule are repaired on the next pass.
+  function foPureBowler(p) {
+    if (!p || p.keeper) return false;
+    if (p.role === 'allRounder' || p.role === 'wicketkeeper') return false;
+    return /^(seamFast|seamFastMedium|seamMedium|wristSpin|fingerSpin)$/.test(p.bowlTypeFull || '');
+  }
+  function foBowlerBatTarget(name) {
+    var x = foStrHash(String(name || '')) || 1;
+    var rr = function () { x = (x * 1103515245 + 12345) >>> 0; return x / 4294967296; };
+    var u = rr(), lvl;
+    if (u < 0.28) lvl = 2 + rr() * 6;         // atrocious
+    else if (u < 0.58) lvl = 6 + rr() * 6;    // dreadful
+    else if (u < 0.82) lvl = 11 + rr() * 6;   // poor
+    else if (u < 0.95) lvl = 17 + rr() * 6;   // ordinary
+    else lvl = 24 + rr() * 6;                 // average - as good as a specialist gets
+    return { lvl: lvl, j1: (rr() - 0.5) * 6, j2: (rr() - 0.5) * 6, j3: (rr() - 0.5) * 6, j4: (rr() - 0.5) * 8 };
+  }
+  function foApplyBowlerBat(p, keepWage) {
+    var s = p.skills || (p.skills = {});
+    var t = foBowlerBatTarget(p.name);
+    var cl = function (v) { return Math.max(4, Math.min(95, Math.round(v))); };
+    s.vsPace = cl(t.lvl + t.j1); s.vsSpin = cl(t.lvl + t.j2);
+    s.rotation = cl(t.lvl - 2 + t.j3); s.temperament = cl(t.lvl + 6 + t.j4);
+    s.power = cl(Math.min(s.power == null ? 16 : s.power, t.lvl + 4));
+    var w = p.wage;
+    if (typeof window.jsDerive === 'function') window.jsDerive(p);
+    if (keepWage && w != null) p.wage = w;    // a signed contract does not shrink
+  }
+  function foRepairBowlerBatting() {
+    try {
+      if (typeof GD === 'undefined' || !GD.teams) return 0;
+      var n = 0;
+      GD.teams.forEach(function (t) {
+        (t.players || []).concat(t.injured || [], t.youth || []).forEach(function (p) {
+          if (!foPureBowler(p)) return;
+          var s = p.skills || {};
+          var agg = 0.25 * (s.vsPace || 0) + 0.25 * (s.vsSpin || 0) + 0.2 * (s.rotation || 0) + 0.15 * (s.temperament || 0) + 0.15 * (s.power || 0);
+          if (agg > 32) { foApplyBowlerBat(p, true); n++; }   // anomalies only
+        });
+      });
+      if (n) console.log('bowler batting repaired for', n, 'players');
+      return n;
+    } catch (e) { return 0; }
+  }
+  window.__foRepairBowlerBatting = foRepairBowlerBatting;
+
   var _foCR2 = window.completeRound;
   window.completeRound = function () {
     var round = App.season ? App.season.round : 0;
+    try { foRepairBowlerBatting(); } catch (e) {}
     try { foRecoverInjuries(round); } catch (e) { console.log('injury recovery failed:', e && e.message); }
     try { foApplyPacketTraining(window.__FO_PKTS); } catch (e) { console.log('packet training failed:', e && e.message); }
     var out = _foCR2.apply(this, arguments);

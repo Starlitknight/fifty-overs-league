@@ -9037,6 +9037,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var prevRound = (window.App && App.season && typeof App.season.round === "number") ? App.season.round : -1;
       var myOrders = (window.App && App.orders) ? App.orders : null;
       if (typeof window.restoreFrom === "function") window.restoreFrom(snap);
+      foRepairBowlerBatting();
       SYNC.started = true;
       var myName = SYNC.myTeam ? SYNC.myTeam.name : null;
       if (myName && typeof GD !== "undefined" && GD.teams) {
@@ -9414,11 +9415,73 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     return pool;
   }
 
+  // ---- pure bowlers bat like bowlers ---------------------------------------
+  // A specialist bowler's batting comes from a bottom-heavy curve: mostly
+  // dreadful or atrocious, often poor, sometimes ordinary, average at the very
+  // best (and rare). Everything derives from the player's NAME, so every
+  // client and the resolver agree exactly and re-applying changes nothing.
+  function foPureBowler(p) {
+    if (!p || p.keeper) return false;
+    if (p.role === "allRounder" || p.role === "wicketkeeper") return false;
+    return /^(seamFast|seamFastMedium|seamMedium|wristSpin|fingerSpin)$/.test(p.bowlTypeFull || "");
+  }
+  function foBowlerBatTarget(name) {
+    var h = 2166136261, i;
+    name = String(name || "");
+    for (i = 0; i < name.length; i++) { h ^= name.charCodeAt(i); h = Math.imul(h, 16777619); }
+    var x = (h >>> 0) || 1;
+    var rr = function () { x = (x * 1103515245 + 12345) >>> 0; return x / 4294967296; };
+    var u = rr(), lvl;
+    if (u < 0.28) lvl = 2 + rr() * 6;         // atrocious
+    else if (u < 0.58) lvl = 6 + rr() * 6;    // dreadful
+    else if (u < 0.82) lvl = 11 + rr() * 6;   // poor
+    else if (u < 0.95) lvl = 17 + rr() * 6;   // ordinary
+    else lvl = 24 + rr() * 6;                 // average - as good as a specialist gets
+    return { lvl: lvl, j1: (rr() - 0.5) * 6, j2: (rr() - 0.5) * 6, j3: (rr() - 0.5) * 6, j4: (rr() - 0.5) * 8 };
+  }
+  function foApplyBowlerBat(p, keepWage) {
+    var s = p.skills || (p.skills = {});
+    var t = foBowlerBatTarget(p.name);
+    var cl = function (v) { return Math.max(4, Math.min(95, Math.round(v))); };
+    s.vsPace = cl(t.lvl + t.j1);
+    s.vsSpin = cl(t.lvl + t.j2);
+    s.rotation = cl(t.lvl - 2 + t.j3);
+    s.temperament = cl(t.lvl + 6 + t.j4);     // grit outlasts talent
+    s.power = cl(Math.min(s.power == null ? 16 : s.power, t.lvl + 4));
+    var w = p.wage;
+    if (typeof window.jsDerive === "function") window.jsDerive(p);
+    if (keepWage && w != null) p.wage = w;    // a signed contract does not shrink
+  }
+  // Lower-only, idempotent sweep for squads that already exist (drafted before
+  // this rule): any specialist bowler batting well above his name-derived
+  // ceiling is brought back down. Applying twice is a no-op.
+  function foRepairBowlerBatting() {
+    try {
+      if (typeof GD === "undefined" || !GD.teams) return 0;
+      var n = 0;
+      GD.teams.forEach(function (t) {
+        (t.players || []).concat(t.injured || [], t.youth || []).forEach(function (p) {
+          if (!foPureBowler(p)) return;
+          var s = p.skills || {};
+          var agg = 0.25 * (s.vsPace || 0) + 0.25 * (s.vsSpin || 0) + 0.2 * (s.rotation || 0) + 0.15 * (s.temperament || 0) + 0.15 * (s.power || 0);
+          // only true anomalies (above the "average" band): sane specialists stay
+          if (agg > 32) { foApplyBowlerBat(p, true); n++; }
+        });
+      });
+      return n;
+    } catch (e) { return 0; }
+  }
+  setTimeout(function () { try { foRepairBowlerBatting(); } catch (e) {} }, 1500);
+
   // Enforce realistic technique/power relationships on a generated player, using
   // the game's own aggregate formulas (aggBat/aggBowl/aggTech). A "level" = 6.25.
   //   technique  = within 2 levels BELOW the headline batting/bowling skill
   //   power      = equal to, or 1–4 levels below, technique
+  // Pure bowlers skip this path entirely: pulling their technique (vsPace/
+  // vsSpin/temperament) toward the BOWLING headline is what quietly made every
+  // drafted bowler a capable batter.
   function fixTechniquePower(p, rnd) {
+    if (foPureBowler(p)) { foApplyBowlerBat(p); return; }
     var LV = 6.25, s = p.skills || {};
     var clamp = function (v) { return Math.max(5, Math.min(95, Math.round(v))); };
     var isBowler = p.bowlTypeFull && p.bowlTypeFull !== "none";
@@ -9442,6 +9505,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
 
   window.__folBuildPool = buildCountryPool;   // debug/test hook (harmless)
+  window.__folRepairBowlerBat = foRepairBowlerBatting;
   window.__folOnbPreview = function (step) { try {
     if (!FO_ONB) FO_ONB = { team: {}, step: 1, needsSetup: true, country: NAT[0], clubName: "Thunder Empire", ground: "Riverview Oval", pitch: "balanced", style: "balanced", sponsor: null, scenario: "average", role: "all", riskAck: false };
     FO_ONB.needsSetup = true;
@@ -9845,7 +9909,17 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foOrdinal(n) { var s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
   function foTalentName(t) { return String(t || "").replace(/([A-Z])/g, " $1").replace(/^./, function (c) { return c.toUpperCase(); }).trim(); }
   // Aggregate skill (0-100) via the engine's own summary functions.
-  function foAgg(p, nm) { try { return Math.max(0, Math.min(100, Math.round(({ bat: aggBat, bowl: aggBowl, keep: aggKeep, field: aggField, end: aggEnd, tech: aggTech })[nm](p)))); } catch (e) { return 0; } }
+  function foAgg(p, nm) {
+    try {
+      // a specialist bowler's Technique is his craft - accuracy, discipline,
+      // movement - not his batting feel (which is deliberately poor)
+      if (nm === "tech" && foPureBowler(p)) {
+        var s0 = p.skills || {};
+        return Math.max(0, Math.min(100, Math.round(((s0.economy || 0) + (s0.discipline || 0) + (s0.moveTurn || 0)) / 3)));
+      }
+      return Math.max(0, Math.min(100, Math.round(({ bat: aggBat, bowl: aggBowl, keep: aggKeep, field: aggField, end: aggEnd, tech: aggTech })[nm](p))));
+    } catch (e) { return 0; }
+  }
   // The engine's skill word ("ordinary", "elite", "world class", …).
   function foWord(v) { try { return (typeof word === "function") ? word(v) : ""; } catch (e) { return ""; } }
   // Bar tone by value: weak -> red, ordinary -> amber, good -> teal, elite -> green.
