@@ -890,6 +890,16 @@
     ".fo-fin-row2 b{font-size:13.5px}" +
     ".fo-fin-bank{border-bottom:none;margin-top:2px}" +
     ".fo-fin-bank b{font-size:16px;color:#12203a}" +
+    ".fo-facts{margin:6px 0 4px}" +
+    ".fo-fact{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:9px 0;border-bottom:1px solid #f0ece1}" +
+    ".fo-fact span{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#8a8474}" +
+    ".fo-fact b{font-size:14px;color:#12203a;font-weight:700;text-align:right}" +
+    ".fo-stars{letter-spacing:2px}" +
+    ".fo-star{font-style:normal;font-size:17px;color:#e2ddd0}" +
+    ".fo-star.on{color:#D9A441}" +
+    ".fo-br-closure{margin-top:18px;font-size:14px;line-height:1.7;color:#3c4658}" +
+    ".fo-br-closure p{margin:0 0 10px}" +
+    ".fo-br-luck{font-weight:800;color:#12203a}" +
     ".fo-rail-sec{margin:0 0 22px}" +
     ".fo-rail-h{display:flex;align-items:baseline;gap:10px;margin:0 0 9px}" +
     ".fo-rail-h b{font-size:16px;color:#12203a}" +
@@ -2663,7 +2673,14 @@
       FO_ONB.clubName = FO_ONB.clubName || "Thunder Empire";
       if (!App.founder || !App.founder.pool) App.founder = { name: FO_ONB.clubName, budget: 1000000, pool: buildCountryPool("fo-preview", FO_ONB.country), picked: [], identity: "Balanced XI" };
       if (step === "draft" || step === "report" || step === "players") FO_ONB.sponsor = FO_ONB.sponsor || "community";
-      if (step === "report" && !App.founder.picked.length) App.founder.picked = App.founder.pool.slice(0, 13);
+      if (step === "report" && !App.founder.picked.length) {
+        var _pool = App.founder.pool.slice(), _byR = function (a, b) { return (b.rating || 0) - (a.rating || 0); };
+        var _wk = _pool.filter(function (p) { return p.keeper; }).sort(_byR).slice(0, 1);
+        var _bw = _pool.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && !p.keeper; }).sort(_byR).slice(0, 6);
+        var _used = {}; _wk.concat(_bw).forEach(function (p) { _used[p.name] = 1; });
+        var _bat = _pool.filter(function (p) { return !_used[p.name]; }).sort(_byR).slice(0, 6);
+        App.founder.picked = _wk.concat(_bw, _bat);
+      }
     }
     ({ create: foOnbCreate, charter: foOnbCharter, money: foOnbMoney, sponsor: foOnbSponsor, players: foOnbPlayers, draft: foOnbDraft, report: foOnbReport }[step || "create"] || foOnbCreate)();
   } catch (e) { console.warn("onb preview", e); } };   // debug/test hook (harmless)
@@ -3241,33 +3258,36 @@
     FO_ONB.step = 6;
     var F = App.founder, fc = foForecast(F.picked, FO_ONB.sponsor);
     var sp = foSponsorById(FO_ONB.sponsor);
-    var kv = function (ic, l, v, tone) { return "<div class='fo-br-row'><span><i>" + FO_I(ic, 15) + "</i>" + l + "</span><b class='fo-tone-" + (tone || "") + "'>" + v + "</b></div>"; };
     var shape = foSquadShape(F.picked);
-    // squad strength: average of each department's best contributors
     var avg = function (arr) { return arr.length ? Math.round(arr.reduce(function (s, v) { return s + v; }, 0) / arr.length) : 0; };
     var topN = function (vals, n) { return vals.sort(function (a, b) { return b - a; }).slice(0, n); };
     var batStr = avg(topN(F.picked.map(function (p) { return foAgg(p, "bat"); }), 7));
     var bowlStr = avg(topN(F.picked.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none"; }).map(function (p) { return foAgg(p, "bowl"); }), 6));
     var fieldStr = avg(F.picked.map(function (p) { return foAgg(p, "field"); }));
     var keepStr = avg(topN(F.picked.filter(function (p) { return p.keeper; }).map(function (p) { return foAgg(p, "keep"); }), 1));
-    var strRow = function (l, v) { return "<div class='fo-str-row'><span>" + l + "</span><b class='fo-str-bar'><u class='fo-sk-" + foSkTone(v) + "' style='width:" + v + "%'></u></b><em>" + v + "</em></div>"; };
-    // finances, plainly: wages out, sponsor in, what is left in the bank
-    var wagesMD = fc.dailyWage, sponsorMD = sp.base;
+    var starsOf = function (v) { return v >= 78 ? 5 : v >= 66 ? 4 : v >= 54 ? 3 : v >= 40 ? 2 : 1; };
+    var starRow = function (l, v) {
+      var n = starsOf(v), s = "";
+      for (var i = 0; i < 5; i++) s += "<i class='fo-star" + (i < n ? " on" : "") + "'>&#9733;</i>";
+      return "<div class='fo-str-row'><span>" + l + "</span><span class='fo-stars'>" + s + "</span></div>";
+    };
+    var fact = function (l, v) { return "<div class='fo-fact'><span>" + l + "</span><b>" + v + "</b></div>"; };
     var body =
       "<div class='fo-ob-card fo-ob-report'>" +
       "<div class='fo-br-cols'><div class='fo-br-main'>" +
       "<div class='fo-br-head'><span class='fo-br-crest'><img src='" + APPICON + "' alt=''></span><div><div class='fo-ob-eyebrow'>Season 1</div><h1 class='fo-ob-h1'>Board Report</h1></div></div>" +
-      "<div class='fo-br-grid'>" +
-      kv("users", "Squad", shape.n + " players &middot; " + shape.bat + " BAT / " + shape.bowl + " BOWL / " + shape.ar + " AR / " + shape.wk + " WK") +
-      kv("wallet", "Sponsor", E(sp.name) + " &middot; " + FO$(sp.base) + "/matchday" + (sp.win ? " + " + FO$(sp.win) + "/win" : "")) +
-      kv("calendar", "First matchday", "9:00 AM ET &middot; 18 rounds") + "</div>" +
+      "<div class='fo-facts'>" +
+      fact("Squad", shape.n + " players") +
+      fact("Balance", shape.bat + " BAT &middot; " + shape.bowl + " BOWL &middot; " + shape.ar + " AR &middot; " + shape.wk + " WK") +
+      fact("Sponsor", E(sp.name)) +
+      fact("Bank", FO$(fc.bankAfter)) +
+      fact("First matchday", "9:00 AM ET") + "</div>" +
+      "<div class='fo-br-closure'><p>The paperwork is done. Your name is on the office door, " + E(sp.name) + "&rsquo;s name is on the shirts, and out past the pavilion the groundsman is rolling your " + E(foPitchName(FO_ONB.pitch || "balanced").toLowerCase()) + " pitch flat for the first morning.</p>" +
+      "<p>From here it is cricket: one match every day, eighteen rounds, nine other managers who want what you want. Pick your eleven, trust your judgement, and enjoy every ball.</p>" +
+      "<p class='fo-br-luck'>Good luck, " + E((SYNC && SYNC.me && SYNC.me.display_name) || "manager") + ". The season starts now.</p></div>" +
       "</div><aside class='fo-br-side'>" +
       "<div class='fo-br-panel'><div class='fo-br-ph'>Squad strength</div>" +
-      strRow("Batting", batStr) + strRow("Bowling", bowlStr) + strRow("Fielding", fieldStr) + strRow("Keeping", keepStr) + "</div>" +
-      "<div class='fo-br-panel'><div class='fo-br-ph'>Your finances</div>" +
-      "<div class='fo-fin-row2'><span>Wages (all players)</span><b class='fo-neg'>&minus;" + FO$(wagesMD) + "/matchday</b></div>" +
-      "<div class='fo-fin-row2'><span>" + E(sp.name) + "</span><b class='fo-pos'>+" + FO$(sponsorMD) + "/matchday</b></div>" +
-      "<div class='fo-fin-row2 fo-fin-bank'><span>Left in the bank</span><b>" + FO$(fc.bankAfter) + "</b></div></div>" +
+      starRow("Batting", batStr) + starRow("Bowling", bowlStr) + starRow("Fielding", fieldStr) + starRow("Keeping", keepStr) + "</div>" +
       "</aside></div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back to draft</button><button class='fo-ob-cta' id='fo-ob-done'>Enter the League</button></div></div>";
     var host = foOnbMount(6, body);
