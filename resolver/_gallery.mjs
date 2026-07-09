@@ -30,6 +30,7 @@ async function shoot(viewport, tag, mobile, dsf) {
     ['onb-charter', async () => { await page.evaluate(() => { window.__folOnbPreview('charter'); }); }],
     ['onb-money', async () => { await page.evaluate(() => { window.__folOnbPreview('money'); }); }],
     ['onb-sponsor', async () => { await page.evaluate(() => { window.__folOnbPreview('sponsor'); }); }],
+    ['onb-players', async () => { await page.evaluate(() => { window.__folOnbPreview('players'); }); }],
     ['onb-draft', async () => { await page.evaluate(() => { window.__folOnbPreview('draft'); }); }],
     ['onb-report', async () => { await page.evaluate(() => { window.__folOnbPreview('report'); }); }],
   ];

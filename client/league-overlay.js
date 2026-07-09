@@ -859,6 +859,21 @@
     ".fo-brand-pru{background:#ED1B2E;color:#fff;font-weight:800;font-size:15px;letter-spacing:.12em;font-family:Arial,Helvetica,sans-serif}" +
     ".fo-brand-nike{background:#111;color:#fff;font-weight:900;font-size:22px;letter-spacing:.06em;font-style:italic;transform:skewX(-6deg);font-family:'Futura','Arial Black',Arial,sans-serif}" +
     ".fo-brand-emirates{background:#fff;border:1px solid #eee;color:#D71920;font-weight:600;font-size:24px;font-family:Georgia,'Times New Roman',serif;letter-spacing:.01em}" +
+    ".fo-exp-cols{display:grid;grid-template-columns:1fr 1.2fr;gap:20px;align-items:start;margin:6px 0 4px}" +
+    ".fo-exp-card{background:#fff;border:1px solid #e2ddd0;border-radius:13px;padding:16px;box-shadow:0 4px 14px rgba(18,32,58,.06)}" +
+    ".fo-exp-h{font-size:16px;color:#12203a}.fo-exp-meta{font-size:12px;color:#8a8474;margin:2px 0 10px}" +
+    ".fo-exp-bars .fo-sk{display:grid;grid-template-columns:76px 1fr 26px;gap:8px;align-items:center;margin:5px 0;font-size:12px}" +
+    ".fo-exp-bars .fo-sk i{font-style:normal;color:#5d6779;font-weight:700}" +
+    ".fo-exp-bars .fo-sk b{display:block;height:7px;border-radius:99px;background:#efeade;overflow:hidden}" +
+    ".fo-exp-bars .fo-sk u{display:block;height:100%;border-radius:99px}" +
+    ".fo-exp-bars .fo-sk em{font-style:normal;font-weight:800;color:#12203a;text-align:right}" +
+    ".fo-exp-tals{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}" +
+    ".fo-exp-tal{background:#e8effa;border:1px solid #cfdcf2;color:#35619e;font-size:11.5px;font-weight:700;border-radius:999px;padding:4px 11px}" +
+    ".fo-exp-note{margin-top:12px;font-size:11px;color:#a09a8a;border-top:1px dashed #e2ddd0;padding-top:8px;text-align:center}" +
+    ".fo-exp-def{padding:8px 0;border-bottom:1px solid #efeade;font-size:13px}" +
+    ".fo-exp-def b{display:inline-block;min-width:96px;color:#12203a}.fo-exp-def span{color:#5d6779}" +
+    ".fo-exp-talbox{background:#eef4ee;border:1px solid #d5e0d7;border-radius:11px;padding:13px 16px;font-size:13.5px;line-height:1.6;margin-top:16px}" +
+    "@media(max-width:760px){.fo-exp-cols{grid-template-columns:1fr}}" +
     ".fo-ctygrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:2px 0 14px}" +
     ".fo-cty{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e2ddd0;border-radius:10px;padding:9px 11px;cursor:pointer;font-size:13px;font-weight:600;color:#3c4658;text-align:left;transition:border-color .12s ease,box-shadow .12s ease}" +
     ".fo-cty i{font-style:normal;font-size:17px;line-height:1}" +
@@ -2617,9 +2632,9 @@
     if (step && step !== "create") {
       FO_ONB.clubName = FO_ONB.clubName || "Thunder Empire";
       if (!App.founder || !App.founder.pool) App.founder = { name: FO_ONB.clubName, budget: 1000000, pool: buildCountryPool("fo-preview", FO_ONB.country), picked: [], identity: "Balanced XI" };
-      if (step === "draft" || step === "report") { FO_ONB.sponsor = FO_ONB.sponsor || "community"; if (!App.founder.picked.length) App.founder.picked = App.founder.pool.slice(0, 13); }
+      if (step === "draft" || step === "report" || step === "players") { FO_ONB.sponsor = FO_ONB.sponsor || "community"; if (!App.founder.picked.length) App.founder.picked = App.founder.pool.slice(0, 13); }
     }
-    ({ create: foOnbCreate, charter: foOnbCharter, money: foOnbMoney, sponsor: foOnbSponsor, draft: foOnbDraft, report: foOnbReport }[step || "create"] || foOnbCreate)();
+    ({ create: foOnbCreate, charter: foOnbCharter, money: foOnbMoney, sponsor: foOnbSponsor, players: foOnbPlayers, draft: foOnbDraft, report: foOnbReport }[step || "create"] || foOnbCreate)();
   } catch (e) { console.warn("onb preview", e); } };   // debug/test hook (harmless)
 
   // Draft happens in the game's OWN founder screen (pgFounder). We hand it a
@@ -2716,7 +2731,7 @@
   function FO_I(name, size) {
     return "<svg class='fo-i' width='" + (size || 18) + "' height='" + (size || 18) + "' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'>" + (FO_ICONS[name] || "") + "</svg>";
   }
-  var FO_STEPS = ["Club", "Charter", "Money", "Sponsor", "Draft", "Report"];
+  var FO_STEPS = ["Club", "Charter", "Money", "Sponsor", "Players", "Draft", "Report"];
   function foOnbShell(stepIx, body) {
     var prog = FO_STEPS.map(function (s, i) {
       var cls = i < stepIx ? "done" : (i === stepIx ? "on" : "");
@@ -2803,7 +2818,7 @@
       "<div class='fo-snap-row'><i>" + FO_I("users") + "</i><div><b>10-team league</b></div></div>" +
       "<div class='fo-snap-row'><i>" + FO_I("calendar") + "</i><div><b>18 matchdays</b></div></div>" +
       "<div class='fo-snap-row'><i>" + FO_I("coins") + "</i><div><b>$1,000,000</b><span>starting bank</span></div></div>" +
-      "<div class='fo-snap-row'><i>" + FO_I("bat") + "</i><div><b>14&#8211;16 player</b><span>squad draft</span></div></div>" +
+      "<div class='fo-snap-row'><i>" + FO_I("bat") + "</i><div><b>11&#8211;16 player</b><span>squad draft</span></div></div>" +
       "</aside></div></div>";
     var host = foOnbMount(0, body);
     host.querySelectorAll(".fo-pitch").forEach(function (b) { b.addEventListener("click", function () { FO_ONB.pitch = b.getAttribute("data-pitch"); foOnbCreate(); }); });
@@ -2917,7 +2932,7 @@
     host.querySelector("#fo-ob-b").addEventListener("click", foOnbMoney);
     host.querySelector("#fo-ob-c").addEventListener("click", function () {
       if (!FO_ONB.sponsor) { say("Pick a sponsor first. This deal pays you every matchday all season."); return; }
-      foOnbDraft();
+      foOnbPlayers();
     });
   }
 
@@ -3050,6 +3065,46 @@
   }
 
   // ---- Screen 5 · Draft room with live finance forecast --------------------
+  // ---- Screen 5 · Reading a player (tutorial before the draft) --------------
+  function foOnbPlayers() {
+    FO_ONB.step = 5;
+    var pool = (App.founder && App.founder.pool) || [];
+    var ex = pool.filter(function (p) { return (p.talents || []).length; }).sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); })[0] || pool[0];
+    var card = "";
+    if (ex) {
+      var flag = ""; try { flag = foFlag(ex.nat || FO_ONB.country) || ""; } catch (e) {}
+      var bars = [["Batting", foAgg(ex, "bat")], ["Bowling", (ex.bowlTypeFull && ex.bowlTypeFull !== "none") ? foAgg(ex, "bowl") : 0], ["Keeping", foAgg(ex, "keep")], ["Technique", foAgg(ex, "tech")], ["Power", foAgg(ex, "power")], ["Endurance", foAgg(ex, "end")], ["Fielding", foAgg(ex, "field")]];
+      var barHtml = bars.map(function (b) { return "<span class='fo-sk'><i>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + b[1] + "%'></u></b><em>" + b[1] + "</em></span>"; }).join("");
+      var tal = (ex.talents || []).map(function (t) { return "<span class='fo-exp-tal'>" + E(String(t).replace(/([A-Z])/g, " $1").replace(/^./, function (c) { return c.toUpperCase(); })) + "</span>"; }).join("");
+      card = "<div class='fo-exp-card'><div class='fo-exp-h'>" + flag + " <b>" + E(ex.name) + "</b></div>" +
+        "<div class='fo-exp-meta'>" + foRoleShort(ex) + " · age " + ex.age + " · fee " + FO$(foDraftPrice(ex)) + "</div>" +
+        "<div class='fo-exp-bars'>" + barHtml + "</div>" +
+        (tal ? "<div class='fo-exp-tals'>" + tal + "</div>" : "") +
+        "<div class='fo-exp-note'>A real player from your draft pool</div></div>";
+    }
+    var defs = [
+      ["Batting", "Run-scoring ability against all bowling."],
+      ["Bowling", "Wicket threat and control with the ball."],
+      ["Keeping", "Glovework: byes saved, catches, stumpings."],
+      ["Technique", "How sound he is against pace and spin; hard to dismiss."],
+      ["Power", "Boundary and six hitting."],
+      ["Endurance", "How long he lasts before fatigue dulls everything."],
+      ["Fielding", "Catches, run-outs, runs saved in the field."]
+    ].map(function (d) { return "<div class='fo-exp-def'><b>" + d[0] + "</b><span>" + d[1] + "</span></div>"; }).join("");
+    var body =
+      "<div class='fo-ob-card fo-ob-mid'>" +
+      "<div class='fo-ob-eyebrow'>Know what you are buying</div>" +
+      "<h1 class='fo-ob-h1'>How to read a player</h1>" +
+      "<p class='fo-ob-lead'>Every player card shows seven skills. Bars are coloured honestly: <b style='color:#C84F4A'>red</b> is a liability, <b style='color:#D9A441'>amber</b> does a job, <b style='color:#2d7a76'>teal</b> is good, <b style='color:#3E9960'>green</b> wins matches.</p>" +
+      "<div class='fo-exp-cols'><div>" + card + "</div><div class='fo-exp-defs'>" + defs + "</div></div>" +
+      "<div class='fo-exp-talbox'><b>Talents</b> are permanent traits that fire in specific situations: a <i>Finisher</i> finds boundaries at the death, a <i>New-ball Specialist</i> is deadly in his first spell, a <i>Spin Killer</i> feasts on slow bowling. Tap any talent chip in the game to see what it does.</div>" +
+      "<p class='fo-ob-lead' style='margin-top:14px'>Next: the draft room. Sign <b>11 to 16 players</b> with your <b>$1,000,000</b>. Every fee brings a wage bill behind it, so leave a reserve.</p>" +
+      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Enter the draft room</button></div></div>";
+    var host = foOnbMount(4, body);
+    host.querySelector("#fo-ob-b").addEventListener("click", foOnbSponsor);
+    host.querySelector("#fo-ob-c").addEventListener("click", function () { foOnbDraft(); });
+  }
+
   function foOnbDraft(keepScroll) {
     FO_ONB.step = 5;
     var _scroll = 0;
@@ -3119,7 +3174,7 @@
       "<div class='fo-ob-act fo-dr-act'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c' " + (ready ? "" : "disabled") + ">Continue &#8594; Board report</button></div>" +
       (ready ? "" : "<div class='fo-dr-needs'>Need 11+ players, a keeper and 5+ bowling options to continue.</div>") +
       "</div>";
-    var host = foOnbMount(4, body);
+    var host = foOnbMount(5, body);
     try { if (_scroll) { var w1 = host.querySelector(".fo-dr-tblwrap"); if (w1) w1.scrollTop = _scroll; } } catch (e) {}
     host.querySelectorAll(".fo-dr-add").forEach(function (b) { b.addEventListener("click", function () { foOnbPick(b.getAttribute("data-p")); }); });
     host.querySelectorAll(".fo-dr-view").forEach(function (b) { b.addEventListener("click", function () { foDraftDetail(b.getAttribute("data-p")); }); });
@@ -3151,7 +3206,7 @@
       "<ul class='fo-ob-list fo-risk-list'><li>Forced player releases</li><li>Blocked signings</li><li>Supporter mood drop</li></ul>" +
       "<label class='fo-ob-check'><input type='checkbox' id='fo-ob-ack' " + (FO_ONB.riskAck ? "checked" : "") + "> I understand the risk</label>" +
       "<div class='fo-ob-act'><button class='fo-ob-ghost' id='fo-ob-revise'>Revise squad</button><button class='fo-ob-cta fo-cta-danger' id='fo-ob-cont' disabled>Continue anyway</button></div></div>";
-    var host = foOnbMount(4, body);
+    var host = foOnbMount(5, body);
     var ack = host.querySelector("#fo-ob-ack"), cont = host.querySelector("#fo-ob-cont");
     var sync = function () { FO_ONB.riskAck = ack.checked; cont.disabled = !ack.checked; };
     ack.addEventListener("change", sync); sync();
@@ -3193,7 +3248,7 @@
       "<div class='fo-fin-end'>Projected end bank <b class='fo-tone-" + hTone + "'>" + FO$s(fc.end) + "</b></div></div>" +
       "</aside></div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back to draft</button><button class='fo-ob-cta' id='fo-ob-done'>Next: Set your XI for Round 1</button></div></div>";
-    var host = foOnbMount(5, body);
+    var host = foOnbMount(6, body);
     host.querySelector("#fo-ob-b").addEventListener("click", function () { foOnbDraft(); });
     host.querySelector("#fo-ob-done").addEventListener("click", foOnbCommit);
   }
