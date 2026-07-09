@@ -7280,6 +7280,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-ready{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}" +
     ".fo-rdy{font-size:11.5px;font-weight:700;border-radius:999px;padding:4px 11px;background:#f3efe4;border:1px solid #e2ddd0;color:#8a8474}" +
     ".fo-rdy.ok{background:#eef4ee;border-color:#d5e0d7;color:#2f6b46}" +
+    ".fo-fit{display:inline-block;min-width:28px;text-align:center;font-weight:800;font-size:11.5px;border-radius:7px;padding:2px 6px;color:#fff}" +
+    ".fo-fit-elite{background:#3E9960}.fo-fit-good{background:#4DA6A2}.fo-fit-mid{background:#D9A441}.fo-fit-low{background:#C84F4A}" +
     ".fo-br-closure{margin-top:18px;font-size:14px;line-height:1.7;color:#3c4658}" +
     ".fo-br-closure p{margin:0 0 10px}" +
     ".fo-br-luck{font-weight:800;color:#12203a}" +
@@ -8113,6 +8115,66 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if (typeof pgOrders === "function") pgOrders();
     } catch (e) { say(e); }
   }
+  // One number a manager can act on: how suited each player is to TODAY's
+  // pitch and weather (form and fatigue included). Replaces raw stat-reading.
+  function foTodayFit(p) {
+    var pend = App.pending || {}, pitch = pend.pitch || "balanced", wx = String(pend.weather || "").toLowerCase();
+    var k; try { k = (typeof S === "function") ? S(p) : (p.skills || {}); } catch (e) { k = p.skills || {}; }
+    var bowler = p.bowlTypeFull && p.bowlTypeFull !== "none";
+    var v;
+    if (bowler) {
+      v = 0.55 * (p.threat || 0) + 0.45 * (p.control || 0);
+      var pace = foIsPace(p);
+      if (pace && (pitch === "green" || pitch === "cracked" || /overcast|humid|misty/.test(wx))) v += 10;
+      if (!pace && (pitch === "dry" || pitch === "slow")) v += 10;
+      if (!pace && /dew/.test(wx)) v -= 6;
+    } else {
+      var spinW = (pitch === "dry" || pitch === "slow") ? 0.42 : 0.28;
+      v = (0.70 - spinW) * (k.vsPace || 0) + spinW * (k.vsSpin || 0) + 0.15 * (k.temperament || 0) + 0.15 * (k.power || 0);
+      if ((pitch === "green" || /overcast|humid/.test(wx)) && (k.vsPace || 0) > 60) v += 5;
+    }
+    v *= 0.90 + 0.033 * (p.formIx == null ? 3 : p.formIx);
+    var fr = { "clinically dead": 0.70, shattered: 0.74, exhausted: 0.78, listless: 0.84, weary: 0.90, moderate: 0.95, satisfactory: 0.98 }[String(p.fatigue || "rested").toLowerCase()];
+    if (fr) v *= fr;
+    return Math.max(1, Math.min(99, Math.round(v)));
+  }
+  function foPoolToday() {
+    try {
+      if (location.hash.indexOf("#/orders") !== 0) return;
+      var pool = null;
+      document.querySelectorAll("#page .panel").forEach(function (pn) {
+        var h = pn.querySelector("h4");
+        if (h && /available players/i.test(h.textContent || "")) pool = pn.querySelector("table");
+      });
+      if (!pool) pool = document.querySelector("#page .pool-mini table");
+      if (!pool) return;
+      var t = userTeam(); if (!t) return;
+      var head = pool.querySelector("tr");
+      if (head && !head.querySelector(".fo-today-th")) {
+        var th = document.createElement("th"); th.className = "n fo-today-th"; th.textContent = "Today";
+        th.title = "Fit for this pitch, weather, form and freshness"; head.appendChild(th);
+      }
+      var rows = [].slice.call(pool.querySelectorAll("tr")).filter(function (r) { return !r.querySelector("th"); });
+      rows.forEach(function (r) {
+        var nm = (r.cells[0] && r.cells[0].textContent || "").trim();
+        var p = (t.players || []).find(function (x) { return nm.indexOf(x.name) >= 0; });
+        var v = p ? foTodayFit(p) : 0;
+        var cell = r.querySelector(".fo-today-td");
+        if (!cell) { cell = document.createElement("td"); cell.className = "n fo-today-td"; r.appendChild(cell); }
+        cell.innerHTML = "<span class='fo-fit fo-fit-" + foSkTone(v) + "'>" + v + "</span>";
+        r.dataset.foFit = v;
+        var tired = p && /exhausted|shattered|clinically|listless/.test(String(p.fatigue || "").toLowerCase());
+        r.style.opacity = tired ? ".55" : "";
+      });
+      rows.sort(function (a, b) { return (+b.dataset.foFit || 0) - (+a.dataset.foFit || 0); })
+        .forEach(function (r) { r.parentNode.appendChild(r); });
+      // tabs re-render the rows: decorate again after a click
+      document.querySelectorAll("#page .player-pool-tabs button").forEach(function (b) {
+        if (b.dataset.foT) return; b.dataset.foT = "1";
+        b.addEventListener("click", function () { setTimeout(foPoolToday, 60); });
+      });
+    } catch (e) {}
+  }
   function foOrdersExtras() {
     try {
       if (location.hash.indexOf("#/orders") !== 0) { if (window.__foOrdT) { clearInterval(window.__foOrdT); window.__foOrdT = null; } return; }
@@ -8135,6 +8197,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           if (typeof window.pgOrders === "function") window.pgOrders();
           toast("XI, captain, keeper and bowling plan filled. Adjust anything, then save.");
           setTimeout(foOrdersExtras, 60);   // page repainted: re-attach the bar
+          setTimeout(foPoolToday, 120);
         } catch (e) { say(e); }
       });
       // live readiness: the page tells you what is still missing
@@ -8152,6 +8215,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           chip(!!o.saved, o.saved ? "Saved" : "Not saved yet");
       };
       paint();
+      foPoolToday();
       if (window.__foOrdT) clearInterval(window.__foOrdT);
       window.__foOrdT = setInterval(function () {
         if (location.hash.indexOf("#/orders") !== 0 || !document.getElementById("fo-ready")) { clearInterval(window.__foOrdT); window.__foOrdT = null; return; }
@@ -10012,7 +10076,53 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var bs = xi.filter(function (p) { return p.bowlType && !isPT(p); });
     if (bs.length < 5) return foOrigSuggest();      // need 5+ to cover 50 legally
 
-    App.orders.batOrder = xi.map(function (p) { return p.name; });
+    // ---- batting order built for the CONDITIONS, not the roster sheet ----
+    var pend0 = App.pending || {}, pitch0 = pend0.pitch || "balanced";
+    var wx0 = String(pend0.weather || "").toLowerCase();
+    var newBallBites = pitch0 === "green" || pitch0 === "cracked" || /overcast|humid|misty|drizzle/.test(wx0);
+    var turnLater = pitch0 === "dry" || pitch0 === "slow" || pitch0 === "twoPaced";
+    var SK = function (p) { try { return (typeof S === "function") ? S(p) : (p.skills || {}); } catch (e) { return p.skills || {}; } };
+    var tHas = function (p, tl) { return (p.talents || []).indexOf(tl) >= 0; };
+    var shade = function (p, s) {
+      s *= 0.90 + 0.033 * (p.formIx == null ? 3 : p.formIx);
+      var fr = { "clinically dead": 0.72, shattered: 0.76, exhausted: 0.80, listless: 0.85, weary: 0.90, moderate: 0.94, satisfactory: 0.97 }[String(p.fatigue || "rested").toLowerCase()];
+      return fr ? s * fr : s;
+    };
+    var openScore = function (p) {   // survive the new ball
+      var k = SK(p);
+      var s = (newBallBites ? 0.55 : 0.45) * (k.vsPace || 0) + 0.25 * (k.temperament || 0) + 0.15 * (k.rotation || 0) + 0.05 * (k.vsSpin || 0);
+      if (tHas(p, "fastStarter")) s += 7;
+      if (tHas(p, "anchor")) s += 5;
+      if (tHas(p, "newBallSpecialist")) s -= 4;    // save frontline bowlers' legs
+      return shade(p, s);
+    };
+    var midScore = function (p) {    // own the middle overs
+      var k = SK(p);
+      var spinW = turnLater ? 0.42 : 0.30;
+      var s = (0.72 - spinW) * (k.vsPace || 0) + spinW * (k.vsSpin || 0) + 0.18 * (k.rotation || 0) + 0.10 * (k.temperament || 0);
+      if (tHas(p, "anchor")) s += 4;
+      if (tHas(p, "spinKiller") && turnLater) s += 7;
+      return shade(p, s);
+    };
+    var finScore = function (p) {    // hit at the death
+      var k = SK(p);
+      var s = 0.50 * (k.power || 0) + 0.22 * (k.temperament || 0) + 0.18 * (k.rotation || 0) + 0.10 * (k.vsPace || 0);
+      if (tHas(p, "finisher")) s += 9;
+      if (tHas(p, "sixMachine")) s += 6;
+      return shade(p, s);
+    };
+    var pool2 = xi.slice(), orderNames = [];
+    var takeBest = function (fn) {
+      pool2.sort(function (a, b) { return fn(b) - fn(a); });
+      var p2 = pool2.shift(); if (p2) orderNames.push(p2.name); return p2;
+    };
+    takeBest(openScore); takeBest(openScore);                 // openers
+    takeBest(midScore); takeBest(midScore); takeBest(midScore); // 3-5
+    takeBest(finScore); takeBest(finScore);                   // 6-7 finishers
+    // tail: remaining by plain batting, best first
+    pool2.sort(function (a, b) { return (b.bat || 0) - (a.bat || 0); });
+    pool2.forEach(function (p2) { orderNames.push(p2.name); });
+    App.orders.batOrder = orderNames;
     // captain: the XI's best leader — captaincy skill first, experience as tiebreak
     var cap = xi.slice().sort(function (a, b) {
       return ((b.capt || 0) + (b.exp || 0) * 0.25) - ((a.capt || 0) + (a.exp || 0) * 0.25);
@@ -10076,7 +10186,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
 
       // Powerplay (this end's first 5 overs = match overs ≤10): cover it with seam.
       var paceMains = Object.keys(counts).filter(function (n) { return n !== straddler && paceOf[n] && counts[n] > 0; })
-        .sort(function (a, b) { return score(byName[b]) - score(byName[a]); });
+        .sort(function (a, b) {
+          var nb = (has(byName[b], "newBallSpecialist") ? 1 : 0) - (has(byName[a], "newBallSpecialist") ? 1 : 0);
+          return nb || (score(byName[b]) - score(byName[a]));
+        });
       var order = [], ppCovered = 0, lastPP = null;
       while (ppCovered < 5) {
         var cand = paceMains.filter(function (n) { return counts[n] > 0 && n !== lastPP; });
@@ -10102,6 +10215,23 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         }
       }
       order = foDeAdjacent(order);
+      // death overs (each end's final spell): hand them to the best death bowler
+      var deathScore = function (n) {
+        var p3 = byName[n]; if (!p3) return -1;
+        var k3 = (typeof S === "function") ? S(p3) : (p3.skills || {});
+        return (has(p3, "deathSpecialist") ? 40 : 0) + 0.5 * (k3.economy || 0) + 0.3 * (k3.variation || 0) + 0.2 * (k3.discipline || 0);
+      };
+      var bestIx = -1, bestVal = -1;
+      for (var di = 1; di < order.length - 1; di++) {         // keep the PP head intact
+        var v = deathScore(order[di].bowler);
+        if (v > bestVal && order[di].bowler !== order[order.length - 1].bowler) { bestVal = v; bestIx = di; }
+      }
+      if (bestIx > 0 && order.length > 2 && bestVal > deathScore(order[order.length - 1].bowler)) {
+        var sp2 = order.splice(bestIx, 1)[0];
+        if (order[order.length - 1].bowler !== sp2.bowler) order.push(sp2);
+        else order.splice(order.length - 1, 0, sp2);
+        order = foDeAdjacent(order);
+      }
 
       var oi = 0;
       order.forEach(function (sp) {
