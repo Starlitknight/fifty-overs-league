@@ -102,10 +102,22 @@ async function advanceOne(page, st) {
   const newSnap = await page.evaluate(({ snap, pkts }) => {
     window.restoreFrom(snap);
     if (typeof window.mpInit === 'function') window.mpInit();
+    // dedupe near-duplicate player names (deterministic; clients run the same
+    // pass), then translate any order packet still using a pre-rename name
+    if (typeof window.foUniqueNames === 'function') window.foUniqueNames();
+    const RN = window.__FO_RENAMES || {};
+    const foRemapOrders = (o) => {
+      if (!o) return;
+      if (Array.isArray(o.batOrder)) o.batOrder = o.batOrder.map((n) => RN[n] || n);
+      if (RN[o.captain]) o.captain = RN[o.captain];
+      if (RN[o.keeper]) o.keeper = RN[o.keeper];
+      if (o.spells) for (const e of ['north', 'south']) (o.spells[e] || []).forEach((sp) => { if (sp && RN[sp.bowler]) sp.bowler = RN[sp.bowler]; });
+    };
     // raw packets also carry fo_training / fo_youth club orders for the harness
     window.__FO_PKTS = pkts;
     for (const p of pkts) {
       if (p && typeof p.teamIx === 'number' && p.orders) {
+        foRemapOrders(p.orders);
         App.mp.packets[p.teamIx] = { orders: p.orders, round: p.round, club: p.club, manager: p.manager };
       }
     }
