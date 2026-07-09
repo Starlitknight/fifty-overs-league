@@ -426,7 +426,7 @@
     ".fo-ch-chip{background:rgba(246,244,238,.08);border:1px solid rgba(246,244,238,.14);color:#d7dbe2;font-size:12px;padding:5px 11px;border-radius:8px}" +
     ".fo-hero-pill{background:rgba(246,244,238,.1);border:1px solid rgba(246,244,238,.2);color:#F6F4EE;font-size:12.5px;padding:8px 14px;border-radius:999px;white-space:nowrap}" +
     ".fo-hero-pill .fo-form{margin-left:6px}" +
-    ".fo-ch-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:16px 0}" +
+    ".fo-ch-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0}" +
     ".fo-stat{position:relative;display:flex;gap:12px;align-items:center;background:#fff;border:1px solid rgba(11,19,34,.08);border-radius:14px;padding:15px 16px;box-shadow:0 8px 24px rgba(11,19,34,.06);overflow:hidden}" +
     ".fo-stat::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}" +
     ".fo-acc-terra::before{background:" + TERRA + "}.fo-acc-teal::before{background:" + TEAL + "}" +
@@ -1452,12 +1452,13 @@
       var bankSub = runway != null
         ? (runway >= totalRounds - played ? "Covers the season at current burn" : "Covers ~" + runway + " matchday" + (runway === 1 ? "" : "s") + " at current burn")
         : "+" + foMoney(netMD) + " per matchday";
-      var formVal = pips ? "<span class='fo-form'>" + pips + "</span>" : "&mdash;";
-      var formSub = streak >= 2 ? streak + "-match win streak" : (form.length ? "Last " + form.length + " match" + (form.length === 1 ? "" : "es") : "First match coming up");
+      var sqAvg = function (tt) { return (tt.players || []).length ? Math.round(tt.players.reduce(function (a, q) { return a + (q.rating || 0); }, 0) / tt.players.length) : 0; };
+      var mySq = sqAvg(t);
+      var sqRank = 1 + (GD.teams || []).filter(function (tt) { return tt !== t && sqAvg(tt) > mySq; }).length;
       var stats = "<div class='fo-ch-stats'>" +
         stat("terra", FO_I("trophy", 19), "League position", pos, "of " + (rowsL.length || 10) + (mv ? " &middot; " + mv + " since last round" : "")) +
         stat("terra", FO_I("wallet", 19), "Bank", foMoney(bank), bankSub) +
-        stat("teal", FO_I("bat", 19), "Form", formVal, formSub) +
+        stat("teal", FO_I("bat", 19), "Squad strength", mySq.toLocaleString(), foOrdinal(sqRank) + " strongest in the league") +
         stat("terra", FO_I("users", 19), "Supporters", "<span class='fo-stat-word'>" + mood + "</span>", "Mood") + "</div>";
 
       // Upcoming fixtures (+ friendlies), with a Set-lineup action
@@ -1484,8 +1485,7 @@
         var meRow = x.nm === t.name;
         return "<tr class='" + (meRow ? "fo-userrow" : "") + "'><td class='fo-rk'>" + (i === 0 ? "<span style='color:#D9A441;display:inline-flex;vertical-align:-2px'>" + FO_I("trophy", 14) + "</span>" : (i + 1)) + "</td><td class='fo-scoutname'>" + E(x.nm) + "</td><td class='r'>" + x.p + "</td><td class='r'>" + x.w + "</td><td class='r'>" + x.l + "</td><td class='r'>" + (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2) + "</td><td class='r'><b>" + x.pts + "</b></td></tr>";
       };
-      var standRows = rowsL.slice(0, 3).map(standRow).join("");
-      if (pi >= 3) standRows += "<tr class='fo-gaprow'><td colspan='7'>&#8943;</td></tr>" + standRow(rowsL[pi], pi);
+      var standRows = rowsL.map(standRow).join("");
       var gapLine = "";
       if (played > 0 && pi >= 0) {
         if (pi === 0) {
@@ -1496,7 +1496,7 @@
           gapLine = gap0 <= 0 ? "Level on points with " + E(above0.nm) + " above you" : gap0 + " pt" + (gap0 === 1 ? "" : "s") + " behind " + E(above0.nm);
         }
       }
-      var standings = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>League standings</div><a href='#/matches' class='fo-morelink'>Full table &rsaquo;</a></div><div class='fo-card-b'><table class='fo-tbl fo-chtable'><thead><tr><th class='fo-rk'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th><th class='r'>NRR</th><th class='r'>Pts</th></tr></thead><tbody>" + standRows + "</tbody></table>" +
+      var standings = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>League standings</div><a href='#/matches' class='fo-morelink'>Results &rsaquo;</a></div><div class='fo-card-b'><table class='fo-tbl fo-chtable'><thead><tr><th class='fo-rk'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th><th class='r'>NRR</th><th class='r'>Pts</th></tr></thead><tbody>" + standRows + "</tbody></table>" +
         (gapLine ? "<div class='fo-stand-gap'>" + gapLine + "</div>" : "") + "</div></div>";
 
       // Finances: one line — the net, and where the season lands. Line items live in the Office.
@@ -1507,6 +1507,35 @@
         "<div class='fo-fin-line'>Typical matchday net <b class='" + (netMD >= 0 ? "fo-pos" : "fo-neg") + "'>" + (netMD >= 0 ? "+" : "&minus;") + foMoney(Math.abs(netMD)) + "</b>" +
         (remainingMD > 0 ? " &middot; projected <b class='" + (projEnd >= 0 ? "fo-pos" : "fo-neg") + "'>" + foMoney(projEnd) + "</b> at season&rsquo;s end &mdash; " + finStory + "." : ".") +
         "</div></div></div>";
+
+      // season bests: the two performances worth bragging about
+      var bb = null, bbw = null;
+      (t.players || []).forEach(function (pl) {
+        ((App.playerHist && App.playerHist[pl.name]) || []).forEach(function (e) {
+          if ((+e.rr || 0) > 0 && (!bb || e.rr > bb.rr)) bb = { rr: e.rr, txt: e.bat, name: pl.name, vs: e.teams };
+          if ((+e.w || 0) > 0 && (!bbw || e.w > bbw.w || (e.w === bbw.w && (+e.cr || 0) < bbw.cr))) bbw = { w: e.w, cr: (+e.cr || 0), txt: e.bowl, name: pl.name, vs: e.teams };
+        });
+      });
+      var bestsCard = "";
+      if (bb || bbw) {
+        bestsCard = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Season bests</div><a href='#/stats' class='fo-morelink'>All stats &rsaquo;</a></div><div class='fo-card-b'><table class='fo-kv'>" +
+          (bb ? "<tr><td>Best batting</td><td class='r'><b>" + E(bb.txt) + "</b> &middot; " + E(bb.name) + "</td></tr>" : "") +
+          (bbw ? "<tr><td>Best bowling</td><td class='r'><b>" + E(String(bbw.txt).replace(/^\d+\.\d+-/, "").split("-").reverse().join("/")) + "</b> &middot; " + E(bbw.name) + "</td></tr>" : "") +
+          "</table></div></div>";
+      }
+      // squad watch: who is hot, who is struggling, who needs a rest
+      var hotP = [], coldP = [], tiredP = [];
+      (t.players || []).forEach(function (pl) {
+        var fi = pl.formIx == null ? 3 : pl.formIx;
+        if (fi >= 5) hotP.push(pl.name); else if (fi <= 1) coldP.push(pl.name);
+        if (pl.fatigue === "tired") tiredP.push(pl.name);
+      });
+      var watchRows = "";
+      if (hotP.length) watchRows += "<tr><td><span class='fo-pos'>&#9650; In form</span></td><td class='r'>" + E(hotP.slice(0, 3).join(", ")) + (hotP.length > 3 ? " +" + (hotP.length - 3) : "") + "</td></tr>";
+      if (coldP.length) watchRows += "<tr><td><span class='fo-neg'>&#9660; Struggling</span></td><td class='r'>" + E(coldP.slice(0, 3).join(", ")) + (coldP.length > 3 ? " +" + (coldP.length - 3) : "") + "</td></tr>";
+      if (tiredP.length) watchRows += "<tr><td><span class='fo-neg'>&#9679; Needs a rest</span></td><td class='r'>" + E(tiredP.slice(0, 3).join(", ")) + (tiredP.length > 3 ? " +" + (tiredP.length - 3) : "") + "</td></tr>";
+      var watchCard = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Squad watch</div><a href='#/squad' class='fo-morelink'>Squad &rsaquo;</a></div><div class='fo-card-b'>" +
+        (watchRows ? "<table class='fo-kv'>" + watchRows + "</table>" : "<div class='small'>Everyone is steady &mdash; form and fatigue updates land after each match.</div>") + "</div></div>";
 
       var formPill = pips ? "<span class='fo-hero-pill'>Form <span class='fo-form'>" + pips + "</span></span>" : "<span class='fo-hero-pill'>No matches yet</span>";
       var hero = "<div class='fo-ch-hero'><div class='fo-ch-hero-l'>" +
@@ -1595,7 +1624,7 @@
         "<div class='fo-ch-grid'><div class='fo-ch-col'>" + newsCard +
         "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Next three fixtures</div><a href='#/matches' class='fo-morelink'>Full schedule &amp; results ›</a></div><div class='fo-card-b'>" + upBody + "</div></div>" +
         leaders + gainsCard +
-        "</div><div class='fo-ch-col'>" + standings + fin + "</div></div></div>";
+        "</div><div class='fo-ch-col'>" + standings + fin + bestsCard + watchCard + "</div></div></div>";
 
       var page = document.getElementById("page"); if (!page) return;
       page.innerHTML = html;
