@@ -476,7 +476,9 @@
     ".fo-comm-full{max-height:72vh;overflow-y:auto;font-size:13.5px;line-height:1.5}" +
     "#page tr.fo-rnd-head>td{background:#12203a !important;color:#F6F4EE !important;font-weight:800;font-size:12.5px;padding:9px 12px;border-top:16px solid transparent;background-clip:padding-box}" +
     "#page tr.fo-rnd-head b,#page tr.fo-rnd-head span{color:#F6F4EE !important}" +
-    ".fo-setr-done{background:#2f6b46 !important;color:#fff !important;border-color:#2f6b46 !important}" +
+    "html body button.fo-setr,html body.ftpskin button.fo-setr{background:#C0562F !important;border-color:#C0562F !important;color:#F6F4EE !important}" +
+    "html body button.fo-setr-done,html body.ftpskin button.fo-setr-done,html body.ftpskin button.primary.fo-setr-done{background:#2f6b46 !important;color:#fff !important;border-color:#2f6b46 !important}" +
+    "html body button.fo-setr-done:hover,html body.ftpskin button.fo-setr-done:hover,html body.ftpskin button.primary.fo-setr-done:hover{background:#255738 !important;border-color:#255738 !important;color:#fff !important}" +
     "#fo-update-pill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:2147483200;background:#0B1322;color:#F6F4EE;border:1px solid rgba(246,244,238,.25);border-radius:999px;padding:11px 20px;font:600 13.5px Inter,-apple-system,'Segoe UI',sans-serif;box-shadow:0 12px 34px -10px rgba(0,0,0,.55);cursor:pointer;max-width:92vw;text-align:center}" +
     "#fo-update-pill b{color:#E8A87C}" +
     // live match viewer: links rail | BIG commentary | compact score+details rail
