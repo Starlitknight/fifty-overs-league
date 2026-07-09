@@ -6691,7 +6691,28 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-scout-links{flex:0 0 148px;background:" + NAVY2 + ";border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(11,19,34,.12)}" +
     ".fo-scout-links a{display:block;padding:11px 15px;color:#d7dbe2 !important;font-size:13px;cursor:pointer;border-bottom:1px solid rgba(246,244,238,.07)}" +
     ".fo-scout-links a:hover{background:rgba(255,255,255,.05)}" +
-    ".fo-scout-links a.on{background:" + TERRA + ";color:#fff !important;font-weight:700}" +
+    "html body .fo-scout-links a.on,html body.ftpskin .fo-scout-links a.on{background:" + TERRA + ";color:#fff !important;font-weight:700}" +
+    // scout: FTP-style player rows + overview extras
+    ".fo-sp{padding:11px 2px;border-bottom:1px solid #f0ece1}.fo-sp:last-child{border-bottom:none}" +
+    ".fo-sp-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}" +
+    ".fo-sp-flag{font-size:15px;line-height:1}" +
+    "html body a.fo-sp-nm,html body.ftpskin a.fo-sp-nm{font-weight:800;font-size:14.5px;color:#12203a !important;text-decoration:none}" +
+    "html body a.fo-sp-nm:hover,html body.ftpskin a.fo-sp-nm:hover{color:#C0562F !important}" +
+    ".fo-sp-rt{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums;color:#12203a}" +
+    ".fo-sp-rt i{font-style:normal;font-weight:600;font-size:10px;color:#9a9484;margin-left:4px;text-transform:uppercase;letter-spacing:.06em}" +
+    ".fo-sp-meta{font-size:12px;color:#6b7280;margin-top:3px}" +
+    ".fo-sp-tals{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}" +
+    ".fo-sp-words{font-size:11.5px;color:#8a8474;margin-top:5px}" +
+    ".fo-sp-word b{font-weight:700}.fo-sp-dot{font-style:normal;margin:0 6px;color:#c9c3b4}" +
+    ".fo-q-hi{color:#2f6b46}.fo-q-mid{color:#7a5a14}.fo-q-lo{color:#a33328}" +
+    ".fo-sc2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}" +
+    "@media(max-width:700px){.fo-sc2{grid-template-columns:1fr}}" +
+    ".fo-h2h{display:flex;align-items:center;gap:12px;font-size:13px;margin-bottom:8px}" +
+    ".fo-h2h b{font-size:20px;font-weight:800;margin-right:5px}.fo-h2h i{font-style:normal;color:#9a9484}" +
+    ".fo-sc-leaders{display:grid;grid-template-columns:1fr 1fr;gap:10px}" +
+    ".fo-sc-leaders ul{margin:0;padding-left:2px;list-style:none}.fo-sc-leaders li{padding:3px 0;font-size:12.5px}" +
+    ".fo-sc-leaders li b{margin-left:4px}" +
+    ".fo-sc-lh{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#8a8474;margin-bottom:4px}" +
     ".fo-scout-body{flex:1 1 auto;min-width:0}" +
     ".fo-sortbar{margin-bottom:6px}.fo-sortbar a{cursor:pointer;color:" + TERRA2 + "}.fo-sortbar a.on{font-weight:700;text-decoration:underline}" +
     "@media(max-width:640px){.fo-scout-hero{padding:18px}.fo-scout-name{font-size:26px}.fo-scout-kpis{flex:1 1 100%;grid-template-columns:repeat(2,1fr)}.fo-scout-shell{flex-direction:column}.fo-scout-links{flex:none;width:100%;display:flex}.fo-scout-links a{flex:1;text-align:center;border-bottom:none}}" +
@@ -7339,8 +7360,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-scout-hero .fo-scout-name{color:#fff !important}" +
     ".fo-scout-hero .small,.fo-scout-hero span{color:#9aa3b2}" +
     ".fo-scout-kpis b{color:#fff !important}" +
-    ".fo-scout-links a{color:#3c4658 !important;font-weight:600}" +
-    ".fo-scout-links a.on{color:#12203a !important;border-color:#C0562F !important;font-weight:800}" +
+
     // the Live Match link is the loudest thing in the nav while a match runs
     "#topbar a.fo-live{background:#C0562F !important;color:#fff !important;border-radius:9px;padding:6px 13px !important;font-weight:800;animation:foPulse 2.2s ease-in-out infinite}" +
     ".fo-setr-done{background:#2f6b46 !important;color:#fff !important;border-color:#2f6b46 !important}" +
@@ -7909,6 +7929,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // Open a rival club's page (in the game, not a dark modal): a hero banner with
   // position + form, recent results, upcoming fixtures, and a sortable Players tab
   // — with a Challenge button. Reached by clicking a club name in any table.
+  // One round a day, anchored so the CURRENT round is today.
+  function foDailyDate(r, opts) {
+    var curR = (typeof App !== "undefined" && App.season) ? App.season.round : 0;
+    var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + (r - curR));
+    return d.toLocaleDateString("en-GB", opts || { day: "2-digit", month: "short" });
+  }
   var foScoutIx = null, foScoutTab = "overview", foScoutSort = "rating";
   function scoutClub(cellText) {
     var idx = -1;
@@ -7927,29 +7953,101 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var rd = S.schedule[r] || [];
       for (var i = 0; i < rd.length; i++) {
         var f = rd[i]; if (f[0] !== ix && f[1] !== ix) continue; if (S.played[fixtureKey(r, f)] !== undefined) continue;
-        var home = GD.teams[f[0]], opp = GD.teams[f[0] === ix ? f[1] : f[0]], d = new Date(2026, 6, 4); d.setDate(d.getDate() + 7 * r);
-        ups.push("<tr><td>" + d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) + "</td><td>R" + (r + 1) + "</td><td>" + (f[0] === ix ? "vs " : "@ ") + E(opp.name) + "</td><td class='small'>" + E(home.ground) + " (" + groundPitch(home.ground) + ")</td></tr>");
+        var home = GD.teams[f[0]], opp = GD.teams[f[0] === ix ? f[1] : f[0]];
+        ups.push("<tr><td>" + foDailyDate(r) + "</td><td>R" + (r + 1) + "</td><td>" + (f[0] === ix ? "vs " : "@ ") + E(opp.name) + "</td><td class='small'>" + E(home.ground) + " (" + foPitchName(groundPitch(home.ground)) + ")</td></tr>");
       }
     }
     var upRows = ups.join("") || "<tr><td colspan='4' class='small'>Season complete.</td></tr>";
-    return "<div class='panel'><h4>Recent results</h4><div class='pad'><table><tr><th>Date</th><th>Match</th><th>Result</th></tr>" + resRows + "</table></div></div>" +
+    // head-to-head vs MY club, like a rivalry page
+    var h2h = "";
+    try {
+      var mine = userTeam().name;
+      if (t.name !== mine) {
+        var meets = (App.results || []).filter(function (r) { return (r.home === t.name && r.away === mine) || (r.home === mine && r.away === t.name); });
+        var myW = 0, thW = 0;
+        meets.forEach(function (r) { if (r.result && r.result.winner === mine) myW++; else if (r.result && r.result.winner === t.name) thW++; });
+        var meetRows = meets.slice(-4).reverse().map(function (r) {
+          return "<tr class='rowlink' data-sc='" + r.ix + "'><td>" + E(r.date || "") + "</td><td>" + E(r.result ? r.result.text : "") + "</td></tr>";
+        }).join("") || "<tr><td colspan='2' class='small'>You have not met yet. First blood awaits.</td></tr>";
+        h2h = "<div class='panel'><h4>Head to head</h4><div class='pad'>" +
+          "<div class='fo-h2h'><span><b>" + myW + "</b> " + E(mine) + "</span><i>v</i><span><b>" + thW + "</b> " + E(t.name) + "</span></div>" +
+          "<table><tr><th>Date</th><th>Result</th></tr>" + meetRows + "</table></div></div>";
+      }
+    } catch (e) {}
+    // season leaders for THIS club, from the game's own player history
+    var leaders = "";
+    try {
+      var agg = (t.players || []).map(function (p) {
+        var h = (App.playerHist && App.playerHist[p.name]) || [];
+        var runs = 0, wkts = 0;
+        h.forEach(function (e2) { runs += e2.rr || 0; wkts += e2.w || 0; });
+        return { p: p, runs: runs, wkts: wkts };
+      });
+      var topBat = agg.filter(function (x) { return x.runs > 0; }).sort(function (a, b) { return b.runs - a.runs; }).slice(0, 3);
+      var topBowl = agg.filter(function (x) { return x.wkts > 0; }).sort(function (a, b) { return b.wkts - a.wkts; }).slice(0, 3);
+      var li = function (x, v, u) { return "<li><a href='#/player?n=" + encodeURIComponent(x.p.name) + "'>" + E(x.p.name) + "</a> <b>" + v + "</b> <span class='small'>" + u + "</span></li>"; };
+      if (topBat.length || topBowl.length) leaders = "<div class='panel'><h4>Season leaders</h4><div class='pad fo-sc-leaders'>" +
+        "<div><div class='fo-sc-lh'>Most runs</div><ul>" + (topBat.map(function (x) { return li(x, x.runs, "runs"); }).join("") || "<li class='small'>-</li>") + "</ul></div>" +
+        "<div><div class='fo-sc-lh'>Most wickets</div><ul>" + (topBowl.map(function (x) { return li(x, x.wkts, "wkts"); }).join("") || "<li class='small'>-</li>") + "</ul></div>" +
+        "</div></div>";
+    } catch (e) {}
+    return "<div class='fo-sc2'>" + h2h + leaders + "</div>" +
+      "<div class='panel'><h4>Recent results</h4><div class='pad'><table><tr><th>Date</th><th>Match</th><th>Result</th></tr>" + resRows + "</table></div></div>" +
       "<div class='panel'><h4>Upcoming fixtures</h4><div class='pad'><table><tr><th>Date</th><th>Rd</th><th>Opponent</th><th>Ground</th></tr>" + upRows + "</table></div></div>";
+  }
+  // Tone a scouting word: skill words rank via the engine's WORDS ladder,
+  // fatigue words via their own ladder. Green reads strong, red reads weak.
+  function foWordTone(w) {
+    try {
+      w = String(w || "").toLowerCase();
+      var FAT = ["clinically dead", "shattered", "exhausted", "listless", "weary", "moderate", "satisfactory", "passable", "energetic", "revived", "rested"];
+      var fi = FAT.indexOf(w);
+      if (fi >= 0) return fi >= 8 ? "hi" : fi >= 5 ? "mid" : "lo";
+      if (typeof WORDS !== "undefined") {
+        var wi = WORDS.indexOf(w);
+        if (wi >= 0) return wi >= 9 ? "hi" : wi >= 5 ? "mid" : "lo";
+      }
+    } catch (e) {}
+    return "mid";
   }
   function foScoutPlayers(t) {
     var players = (t.players || []).slice();
     if (foScoutSort === "age") players.sort(function (a, b) { return (a.age || 0) - (b.age || 0) || (b.rating || 0) - (a.rating || 0); });
+    else if (foScoutSort === "wage") players.sort(function (a, b) { return (b.wage || 0) - (a.wage || 0); });
     else players.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
-    var rows = players.map(function (p, i) {
-      var hand = p.hand === "L" ? "LHB" : "RHB";
-      var bowl = p.btLabel && p.btLabel !== "Does not bowl" ? p.btLabel : "—";
-      var role = typeof prole === "function" ? prole(p.role) : (p.role || "");
-      var link = "<a href='#/player?n=" + encodeURIComponent(p.name) + "'>" + E(p.name) + "</a>";
-      return "<tr><td class='n'>" + (i + 1) + "</td><td>" + link + " <span class='small'>" + E(p.nat || "") + "</span></td><td class='n'>" + (p.age || "?") + "</td><td class='small'>" + E(role) + "</td><td class='small'>" + hand + "</td><td class='small'>" + E(bowl) + "</td><td class='n'>" + (p.rating || 0).toLocaleString() + "</td></tr>";
+    var ttip = function (tl) { try { return (typeof TALTIPS !== "undefined" && TALTIPS[tl]) || ""; } catch (e) { return ""; } };
+    var wordOf = function (v) { try { return (typeof word === "function") ? word(v) : ""; } catch (e) { return ""; } };
+    var wSpan = function (w, lbl) {
+      if (!w) return "";
+      return "<span class='fo-sp-word'><b class='fo-q-" + foWordTone(w) + "'>" + E(String(w)) + "</b> " + lbl + "</span>";
+    };
+    var rows = players.map(function (p) {
+      var flag = ""; try { flag = (typeof foFlag === "function" && p.nat) ? (foFlag(p.nat) || "") : ""; } catch (e) {}
+      var hand = p.hand === "L" ? "Left hand batsman" : "Right hand batsman";
+      var bowl = (p.btLabel && p.btLabel !== "Does not bowl") ? p.btLabel : "Does not bowl";
+      var tals = (p.talents || []).map(function (tl) { return "<span class='fo-dc-tal' title='" + E(ttip(tl)) + "'>" + E(foTalentName(tl)) + "</span>"; }).join("");
+      var words = [
+        wSpan(p.expWord || wordOf(p.exp), "experience"),
+        wSpan(p.formWord, "form"),
+        wSpan(p.fatigue || "rested", "fatigue"),
+        wSpan(p.captWord || wordOf(p.capt), "captaincy")
+      ].filter(Boolean).join("<i class='fo-sp-dot'>·</i>");
+      return "<div class='fo-sp'>" +
+        "<div class='fo-sp-h'>" + (flag ? "<span class='fo-sp-flag'>" + flag + "</span>" : "") +
+        "<a class='fo-sp-nm' href='#/player?n=" + encodeURIComponent(p.name) + "'>" + E(p.name) + "</a>" +
+        (p.keeper ? "<span class='small'>(wk)</span>" : "") +
+        "<span class='fo-rl'>" + foRoleShort(p) + "</span>" +
+        "<span class='fo-sp-rt'>" + (p.rating || 0).toLocaleString() + "<i>rating</i></span></div>" +
+        "<div class='fo-sp-meta'>" + (p.age || "?") + " years old · " + FO$(p.wage || 0) + " wage · " + hand + " · " + E(bowl) + "</div>" +
+        (tals ? "<div class='fo-sp-tals'>" + tals + "</div>" : "") +
+        (words ? "<div class='fo-sp-words'>" + words + "</div>" : "") +
+        "</div>";
     }).join("");
     var sortBar = "<div class='fo-sortbar small'>Sort by: " +
       "<a class='fo-sortby" + (foScoutSort === "rating" ? " on" : "") + "' data-s='rating'>Rating</a> · " +
-      "<a class='fo-sortby" + (foScoutSort === "age" ? " on" : "") + "' data-s='age'>Age</a></div>";
-    return "<div class='panel'><h4>Players</h4><div class='pad'>" + sortBar + "<div style='overflow-x:auto'><table><tr><th>#</th><th>Player</th><th>Age</th><th>Role</th><th>Bat</th><th>Bowl</th><th>Rating</th></tr>" + rows + "</table></div></div></div>";
+      "<a class='fo-sortby" + (foScoutSort === "age" ? " on" : "") + "' data-s='age'>Age</a> · " +
+      "<a class='fo-sortby" + (foScoutSort === "wage" ? " on" : "") + "' data-s='wage'>Wage</a></div>";
+    return "<div class='panel'><h4>Players · " + players.length + "</h4><div class='pad'>" + sortBar + rows + "</div></div>";
   }
   function foScoutHTML(ix) {
     var t = GD.teams[ix], players = (t.players || []);
@@ -8824,8 +8922,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var isHome = f[0] === App.teamIx;
     var pitch = home.name === userTeam().name ? (home.homePitch || groundPitch(home.ground)) : groundPitch(home.ground);
     var weather = WXLIST[(((r * 7 + f[0] * 3) % WXLIST.length) + WXLIST.length) % WXLIST.length];
-    var d = new Date(2026, 6, 4); d.setDate(d.getDate() + 7 * r);
-    return { round: r, f: f, oppIx: oppIx, opp: GD.teams[oppIx], home: home, away: away, ground: home.ground, pitch: pitch, weather: weather, isHome: isHome, seed: 5000 + r * 10 + f[0], date: d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) };
+    return { round: r, f: f, oppIx: oppIx, opp: GD.teams[oppIx], home: home, away: away, ground: home.ground, pitch: pitch, weather: weather, isHome: isHome, seed: 5000 + r * 10 + f[0], date: foDailyDate(r) };
   }
   function foFixtureMeta(r) {
     var S = App.season, rd = (S && S.schedule[r]) || [];
@@ -8978,7 +9075,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260709-1725-d099f9";
+  var FO_BUILD = "20260709-1733-956a6d";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
