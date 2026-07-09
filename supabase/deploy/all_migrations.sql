@@ -1912,7 +1912,7 @@ declare
   v_code text;
 begin
   if v_uid is null then raise exception 'not authenticated' using errcode = '28000'; end if;
-  if not exists (select 1 from app.members where league_id = p_league_id and auth_uid = v_uid and role in ('founder','owner','admin')) then
+  if not exists (select 1 from app.members where league_id = p_league_id and auth_uid = v_uid and role = 'founder') then
     raise exception 'only the founder can issue the league code' using errcode = '42501';
   end if;
   select code into v_code from app.invites where league_id = p_league_id and max_uses is null limit 1;
