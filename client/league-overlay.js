@@ -6321,6 +6321,9 @@
         Wage: function (p) { return -(p.wage || 0); }, Form: function (p) { return -(p.formIx == null ? 3 : p.formIx); }
       }[squadView.sortK] || function (p) { return -(p.rating || 0); };
       shown = shown.slice().sort(function (a, b) { var x = sf(a), y = sf(b); return x < y ? -1 : x > y ? 1 : 0; });
+      // teach the affordance: the first visit lands with the top player's row
+      // expanded, so it's obvious the rows open and close
+      if (!squadView.__seeded && shown.length) { squadView.__seeded = 1; squadView.open[shown[0].name] = true; }
 
       var head = "<div class='fo-sq-head'><span>Player</span><span>Age</span><span class='fo-sq-form'>Form</span><span>Bat</span><span>Bowl</span><span style='text-align:right'>OVR</span><span class='fo-sq-hwage' style='text-align:right'>Wage</span><span class='fo-sq-caret'></span></div>";
       var rows = shown.map(function (p) {

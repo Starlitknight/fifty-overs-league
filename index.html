@@ -9258,7 +9258,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260709-1914-23aa4d";
+  var FO_BUILD = "20260709-1923-0366ff";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -12673,6 +12673,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         Wage: function (p) { return -(p.wage || 0); }, Form: function (p) { return -(p.formIx == null ? 3 : p.formIx); }
       }[squadView.sortK] || function (p) { return -(p.rating || 0); };
       shown = shown.slice().sort(function (a, b) { var x = sf(a), y = sf(b); return x < y ? -1 : x > y ? 1 : 0; });
+      // teach the affordance: the first visit lands with the top player's row
+      // expanded, so it's obvious the rows open and close
+      if (!squadView.__seeded && shown.length) { squadView.__seeded = 1; squadView.open[shown[0].name] = true; }
 
       var head = "<div class='fo-sq-head'><span>Player</span><span>Age</span><span class='fo-sq-form'>Form</span><span>Bat</span><span>Bowl</span><span style='text-align:right'>OVR</span><span class='fo-sq-hwage' style='text-align:right'>Wage</span><span class='fo-sq-caret'></span></div>";
       var rows = shown.map(function (p) {
