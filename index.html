@@ -6844,6 +6844,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-social{font-size:12px;color:#6b7280;margin-top:8px}" +
     ".fo-social b{color:#1f4e5f}" +
     "@media(max-width:760px){" +
+      ".fo-stat{min-width:0}.fo-stat-body{min-width:0;overflow:hidden}" +
+      ".fo-stat-v{font-size:clamp(16px,5.4vw,22px) !important;overflow-wrap:anywhere}" +
+      ".fo-stat-l{font-size:10px !important;letter-spacing:.08em}" +
+      ".fo-ch-stats{grid-template-columns:repeat(2,1fr) !important;gap:10px !important}" +
+      "#page,#page td,#page p,#page li{font-size:13.5px}" +
+      "#page .small,.fo-yc-meta,.fo-news-s{font-size:12px}" +
+      "#page h4,.fo-card-h2{font-size:14px}" +
+      ".fo-cd-v{font-size:20px}" +
       "#topbar{padding:8px 10px !important;gap:4px 12px !important}" +
       "#topbar a{font-size:13px !important;padding:5px 2px !important}" +
       "#topbar .brand{font-size:15px !important}" +
@@ -7271,8 +7279,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if (liveOn) { if (!lv) addNav("fo-live", "\u25CF Live Match", function () { location.hash = "#/match"; if (typeof window.route === "function") window.route(); }); }
       else if (lv) lv.remove();
       addNav("fo-friendly", "Practice Game", startFriendly);
-      var anyRounds = false; try { anyRounds = (App.results || []).some(function (r) { return r.comp === "league"; }); } catch (e) {}
-      if (anyRounds) addNav("fo-matchday", "Matchday", function () { location.hash = "#/matchday"; if (typeof window.route === "function") window.route(); });
+      var showMd = false; try { showMd = (SYNC && SYNC.started) || (App.results || []).some(function (r) { return r.comp === "league"; }); } catch (e) {}
+      if (showMd) addNav("fo-matchday", "Matchday", function () { location.hash = "#/matchday"; if (typeof window.route === "function") window.route(); });
       addNav("fo-guide", "Manual", function () { location.hash = "#/guide"; if (typeof window.route === "function") window.route(); });
       // Admin is founder-only: add it for the founder, and remove it for everyone
       // else (so a player never inherits a stale Admin link).
@@ -7776,6 +7784,18 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       });
     } catch (e) {}
   }
+  // Touch devices have no hover: tapping anything with a title tooltip
+  // (skill labels, talent chips) shows it as a toast instead.
+  document.addEventListener("click", function (ev) {
+    try {
+      if (!window.matchMedia || !matchMedia("(hover: none)").matches) return;
+      var el = ev.target.closest("[title]");
+      if (!el || !el.title) return;
+      var tag = el.tagName;
+      if (tag === "BUTTON" || tag === "A" || tag === "SELECT" || tag === "INPUT" || tag === "OPTION") return;
+      toast(el.title.slice(0, 300));
+    } catch (e) {}
+  }, true);
   var _foMobT;
   window.addEventListener("resize", function () { clearTimeout(_foMobT); _foMobT = setTimeout(foMobileTables, 150); });
   window.addEventListener("hashchange", function () { setTimeout(foMobileTables, 60); });
@@ -10208,7 +10228,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foMatchdayPage() {
     var page = document.getElementById("page"); if (!page) return;
     var rd = foLastRoundIx();
-    if (rd < 0) { page.innerHTML = "<div class='crumb'>Matchday</div><div class='panel'><h4>Matchday centre</h4><div class='pad'>No league rounds played yet. Come back after the first matchday.</div></div>"; return; }
+    if (rd < 0) {
+      page.innerHTML = "<div class='crumb'>Matchday</div>" +
+        "<div class='page-head'><div><div class='eyebrow'>Matchday centre</div><h1>The season starts here</h1><p>Every round replays here ball by ball once it's played — at " + MATCH_TIME + ". Until then, get your predictions in.</p></div></div>" +
+        "<div id='fo-md-predict'></div>";
+      foRenderPredictions();
+      return;
+    }
     var results = foLeagueRounds()[rd] || [];
     var seenKey = "fol_md_" + ((LG && LG.id) || "solo") + "_" + rd;
     var seen = !!lsGet(seenKey);
