@@ -452,6 +452,29 @@
     // mobile: swipeable tables + compact topbar
     ".fo-scrollx{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;scrollbar-width:thin;border-radius:8px;background:linear-gradient(90deg,rgba(0,0,0,.06),transparent 12px) left/16px 100% no-repeat local,linear-gradient(270deg,rgba(0,0,0,.06),transparent 12px) right/16px 100% no-repeat local}" +
     ".fo-scrollx>table{min-width:530px}" +
+    // matchday centre + newspaper
+    ".fo-md-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:14px}" +
+    ".fo-md-card{background:#fff;border:1px solid #e2ddd0;border-radius:13px;padding:14px 16px}" +
+    ".fo-md-teams{font-weight:800;color:#12203a;font-size:14.5px;margin-bottom:8px}" +
+    ".fo-md-inn{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#3c4658}" +
+    ".fo-md-inn b{font-variant-numeric:tabular-nums;font-size:15px;color:#12203a}" +
+    ".fo-md-inn.on b{color:#C0562F}" +
+    ".fo-md-status{font-size:12px;color:#6b7280;margin-top:7px;min-height:16px}" +
+    ".fo-md-done .fo-md-status{color:#2f6b46;font-weight:700}" +
+    ".fo-md-bar{display:flex;align-items:center;gap:10px;background:#0B1322;border-radius:12px;padding:12px 16px;margin-top:14px;flex-wrap:wrap}" +
+    ".fo-md-bar button{background:#C0562F !important;color:#fff !important;border:0;border-radius:8px;padding:8px 16px;font-weight:800;cursor:pointer}" +
+    ".fo-md-bar button.fo-ghost{background:rgba(246,244,238,.12) !important}" +
+    ".fo-md-over{color:#fff;font-weight:800;font-variant-numeric:tabular-nums;min-width:120px}" +
+    ".fo-md-track{flex:1;height:6px;border-radius:99px;background:rgba(246,244,238,.15);min-width:120px}" +
+    ".fo-md-track u{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#4DA6A2,#C0562F);text-decoration:none;width:0}" +
+    ".fo-potr{display:flex;gap:14px;align-items:center;background:linear-gradient(135deg,#0B1322,#1C2433);border-radius:13px;padding:16px 18px;margin-top:14px;color:#d7dbe2}" +
+    ".fo-potr-medal{font-size:26px}" +
+    ".fo-potr b{color:#fff;font-size:16px}" +
+    ".fo-news li{margin:0 0 9px;padding-left:2px;line-height:1.5}" +
+    ".fo-news .fo-news-h{font-weight:800;color:#12203a}" +
+    ".fo-news .fo-news-s{color:#6b7280;font-size:12px}" +
+    ".fo-pick{cursor:pointer}" +
+    ".fo-pick-on{background:#1f4e5f !important;color:#fff !important;border-color:#1f4e5f !important}" +
     "@media(max-width:760px){" +
       "#topbar{padding:8px 10px !important;gap:4px 12px !important}" +
       "#topbar a{font-size:13px !important;padding:5px 2px !important}" +
@@ -880,6 +903,8 @@
       if (liveOn) { if (!lv) addNav("fo-live", "\u25CF Live Match", function () { location.hash = "#/match"; if (typeof window.route === "function") window.route(); }); }
       else if (lv) lv.remove();
       addNav("fo-friendly", "Practice Game", startFriendly);
+      var anyRounds = false; try { anyRounds = (App.results || []).some(function (r) { return r.comp === "league"; }); } catch (e) {}
+      if (anyRounds) addNav("fo-matchday", "Matchday", function () { location.hash = "#/matchday"; if (typeof window.route === "function") window.route(); });
       addNav("fo-guide", "Manual", function () { location.hash = "#/guide"; if (typeof window.route === "function") window.route(); });
       // Admin is founder-only: add it for the founder, and remove it for everyone
       // else (so a player never inherits a stale Admin link).
@@ -1175,9 +1200,11 @@
         var sg = (rep0.signings || []).map(function (g) { return "<li>&#9733; " + E(g) + "</li>"; }).join("");
         gainsCard = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Latest training gains</div><a class='fo-morelink' href='#/training'>Training centre ›</a></div><div class='fo-card-b'><ul class='fo-gains' style='margin:0;padding-left:6px;list-style:none;font-size:13px'>" + sg + gl + more + "</ul></div></div>";
       }
+      var newsCard = "";
+      try { newsCard = foNewsDigest(); } catch (e) {}
       var html = "<div class='fo-ch'>" +
         "<div class='fo-ch-crumb'>" + E(t.name) + " <span>›</span> Club</div>" + hero + nextPanel + todoStrip + strip + stats +
-        "<div class='fo-ch-grid'><div class='fo-ch-col'>" +
+        "<div class='fo-ch-grid'><div class='fo-ch-col'>" + newsCard +
         "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Recent results</div><a href='#/matches' class='fo-morelink'>View all results ›</a></div><div class='fo-card-b'>" + recentBody + "</div></div>" +
         "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Upcoming fixtures</div><a href='#/matches' class='fo-morelink'>View full schedule ›</a></div><div class='fo-card-b'>" + upBody + "</div></div>" +
         leaders + gainsCard +
@@ -1643,9 +1670,9 @@
   // re-apply fixture match-times after any re-render of the game page
   try {
     var _mt = null, pg0 = document.getElementById("page");
-    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); decorateFixtureTimes(); tidyPage(); foMobileTables(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); }, 40); }).observe(pg0, { childList: true, subtree: true });
+    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); decorateFixtureTimes(); tidyPage(); foMobileTables(); foOfficeExtras(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); foRenderTraining(); foRenderMarket(); foRenderManual(); foPolishSquad(); foDecorateMatchRows(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); return r; }; }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); return r; }; }
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
@@ -2246,14 +2273,14 @@
       if (SYNC.planRound == null && SYNC.started && window.App && App.season && typeof GD !== "undefined" && GD.teams) {
         var tro = foTrainState();
         var ordersReady = App.orders && App.orders.saved;
-        var sig = (ordersReady ? JSON.stringify(App.orders) : "-") + "|" + JSON.stringify(tro.training) + "|" + JSON.stringify(tro.youthPending.map(function (y) { return y.name; })) + "|" + JSON.stringify((tro.marketPending || []).map(function (y) { return y.name; })) + "|" + App.season.round;
-        if (sig !== SYNC.lastOrderSig && (ordersReady || Object.keys(tro.training).length || tro.youthPending.length || (tro.marketPending || []).length)) {
+        var sig = (ordersReady ? JSON.stringify(App.orders) : "-") + "|" + JSON.stringify(tro.training) + "|" + JSON.stringify(tro.youthPending.map(function (y) { return y.name; })) + "|" + JSON.stringify((tro.marketPending || []).map(function (y) { return y.name; })) + "|" + JSON.stringify(tro.seatsPending || null) + "|" + App.season.round;
+        if (sig !== SYNC.lastOrderSig && (ordersReady || Object.keys(tro.training).length || tro.youthPending.length || (tro.marketPending || []).length || tro.seatsPending)) {
           SYNC.lastOrderSig = sig;
           var pkt = {
             fo_packet: 1, teamIx: App.teamIx, club: (GD.teams[App.teamIx] || {}).name, round: App.season.round,
             manager: (SYNC.me && SYNC.me.display_name) || "manager",
             orders: ordersReady ? App.orders : null,
-            fo_training: tro.training, fo_youth: tro.youthPending, fo_market: tro.marketPending || []
+            fo_training: tro.training, fo_youth: tro.youthPending, fo_market: tro.marketPending || [], fo_seats: tro.seatsPending || null
           };
           rpc("push_packet", { p_league_id: LG.id, p_round: App.season.round, p_packet: pkt }).catch(function () {});
         }
@@ -3735,6 +3762,282 @@
   }
   window.addEventListener("hashchange", function () { setTimeout(foRenderManual, 15); });
 
+
+  // ===========================================================================
+  //  MATCHDAY CENTRE — replay the latest round like a live blog, from the
+  //  worm data every result already carries. Plus the round's best performer.
+  // ===========================================================================
+  function foLeagueRounds() {
+    var out = {};
+    try { (App.results || []).forEach(function (r) { if (r.comp === "league" && r.round != null) (out[r.round] = out[r.round] || []).push(r); }); } catch (e) {}
+    return out;
+  }
+  function foLastRoundIx() {
+    var ks = Object.keys(foLeagueRounds()).map(Number);
+    return ks.length ? Math.max.apply(null, ks) : -1;
+  }
+  function foPerfList(results) {
+    var out = [];
+    (results || []).forEach(function (r) {
+      (r.innings || []).forEach(function (inn) {
+        if (!inn) return;
+        (inn.bat || []).forEach(function (b) {
+          if (!b || !b.p || !(b.b > 0)) return;
+          var sc = b.r + (b.f6 || 0) * 2 + (b.f4 || 0) + (b.r >= 50 ? 12 : 0) + (b.r >= 100 ? 25 : 0);
+          out.push({ name: b.p.name, club: inn.batTeam, line: b.r + (b.out ? "" : "*") + " (" + b.b + ")", sc: sc, kind: "bat", r: b.r, b: b.b });
+        });
+        for (var k in (inn.bowlers || {})) {
+          var br = inn.bowlers[k]; if (!br || !br.p) continue;
+          var ov = br.b / 6, econ = ov ? br.r / ov : 0;
+          var sc2 = br.w * 21 - econ * 1.5 + (br.w >= 4 ? 14 : 0);
+          out.push({ name: k, club: inn.bowlTeam, line: br.w + "/" + br.r + " (" + Math.floor(br.b / 6) + (br.b % 6 ? "." + br.b % 6 : "") + ")", sc: sc2, kind: "bowl", w: br.w });
+        }
+      });
+    });
+    out.sort(function (a, b) { return b.sc - a.sc; });
+    return out;
+  }
+  function foWormAt(w, ov) {
+    var best = [0, 0, 0];
+    for (var i = 0; i < (w || []).length; i++) { if (w[i][0] <= ov + 1e-6) best = w[i]; else break; }
+    return best;
+  }
+  var FO_MD = { t: 0, speed: 2, timer: null, round: -1 };
+  function foMatchdayPage() {
+    var page = document.getElementById("page"); if (!page) return;
+    var rd = foLastRoundIx();
+    if (rd < 0) { page.innerHTML = "<div class='crumb'>Matchday</div><div class='panel'><h4>Matchday centre</h4><div class='pad'>No league rounds played yet. Come back after the first matchday.</div></div>"; return; }
+    var results = foLeagueRounds()[rd] || [];
+    var seenKey = "fol_md_" + ((LG && LG.id) || "solo") + "_" + rd;
+    var seen = !!lsGet(seenKey);
+    if (FO_MD.round !== rd) { FO_MD.round = rd; FO_MD.t = seen ? 101 : 0; }
+    var my = ""; try { my = userTeam().name; } catch (e) {}
+    var cards = results.map(function (r, i) {
+      var mine = (r.home === my || r.away === my) ? " style='border-color:#C0562F'" : "";
+      return "<div class='fo-md-card' data-i='" + i + "'" + mine + "><div class='fo-md-teams'>" + E(r.home) + " v " + E(r.away) + "</div>" +
+        "<div class='fo-md-inn' data-inn='0'><span></span><b></b></div>" +
+        "<div class='fo-md-inn' data-inn='1'><span></span><b></b></div>" +
+        "<div class='fo-md-status'></div>" +
+        "<div style='margin-top:8px'><a class='fo-morelink' href='#/scorecard?i=" + r.ix + "'>Full scorecard ›</a></div></div>";
+    }).join("");
+    page.innerHTML =
+      "<div class='crumb'>Matchday</div>" +
+      "<div class='page-head'><div><div class='eyebrow'>Round " + (rd + 1) + "</div><h1>Matchday centre</h1><p>Every game of the round, ball by ball. Press play and watch it unfold.</p></div></div>" +
+      "<div class='fo-md-bar'><button id='fo-md-play'>" + (FO_MD.t > 100 ? "Replay" : "Play") + "</button>" +
+      "<button class='fo-ghost' id='fo-md-speed'>" + FO_MD.speed + "×</button>" +
+      "<button class='fo-ghost' id='fo-md-skip'>Skip to result</button>" +
+      "<span class='fo-md-over' id='fo-md-over'></span><span class='fo-md-track'><u id='fo-md-prog'></u></span></div>" +
+      "<div class='fo-md-grid'>" + cards + "</div>" +
+      "<div id='fo-md-potr'></div>" +
+      "<div id='fo-md-predict'></div>";
+    var paint = function () {
+      var T = FO_MD.t;
+      results.forEach(function (r, i) {
+        var card = page.querySelector(".fo-md-card[data-i='" + i + "']"); if (!card) return;
+        var i1 = r.innings && r.innings[0], i2 = r.innings && r.innings[1];
+        var w1 = (r.worm && r.worm[0]) || [], w2 = (r.worm && r.worm[1]) || [];
+        var end1 = w1.length ? w1[w1.length - 1][0] : 50;
+        var rows = card.querySelectorAll(".fo-md-inn");
+        var s1 = foWormAt(w1, Math.min(T, end1));
+        rows[0].querySelector("span").textContent = i1 ? i1.batTeam : "";
+        rows[0].querySelector("b").textContent = (T <= 0) ? "" : (s1[1] + "/" + s1[2] + " (" + Math.min(T, end1).toFixed(0) + " ov)");
+        rows[0].classList.toggle("on", T > 0 && T < end1);
+        var t2 = T - end1;
+        var s2 = foWormAt(w2, Math.max(0, t2));
+        var end2 = w2.length ? w2[w2.length - 1][0] : 50;
+        rows[1].querySelector("span").textContent = i2 ? i2.batTeam : "";
+        rows[1].querySelector("b").textContent = (t2 <= 0 || !i2) ? "" : (s2[1] + "/" + s2[2] + " (" + Math.min(t2, end2).toFixed(0) + " ov)");
+        rows[1].classList.toggle("on", i2 && t2 > 0 && t2 < end2);
+        var st = card.querySelector(".fo-md-status");
+        if (t2 >= end2 || T > 100) { st.textContent = (r.result && r.result.text) || ""; card.classList.add("fo-md-done"); }
+        else if (i2 && t2 > 0) {
+          var target = (i1 ? i1.runs : 0) + 1, need = target - s2[1], balls = Math.round((end2 - t2) * 6);
+          st.textContent = need > 0 ? (i2.batTeam + " need " + need + " off " + Math.max(0, balls) + " balls") : "";
+          card.classList.remove("fo-md-done");
+        } else { st.textContent = T > 0 ? "First innings in progress" : "Starts at the top of the hour…"; card.classList.remove("fo-md-done"); }
+      });
+      var ov = document.getElementById("fo-md-over"), pr = document.getElementById("fo-md-prog");
+      if (ov) ov.textContent = T <= 0 ? "Ready" : (T > 100 ? "Full time" : (T <= 50 ? "1st innings · over " + Math.min(50, T).toFixed(0) : "2nd innings · over " + Math.min(50, T - 50).toFixed(0)));
+      if (pr) pr.style.width = Math.min(100, T) + "%";
+      var potr = document.getElementById("fo-md-potr");
+      if (potr && (T > 100)) {
+        if (!potr.innerHTML) {
+          var best = foPerfList(results)[0];
+          if (best) potr.innerHTML = "<div class='fo-potr'><span class='fo-potr-medal'>🏅</span><div><div class='small' style='color:#9aa3b2;text-transform:uppercase;letter-spacing:.12em;font-size:10.5px'>Player of the round</div><b>" + E(best.name) + "</b> · " + E(best.club) + " · " + E(best.line) + "</div></div>";
+          lsSet(seenKey, "1");
+        }
+      } else if (potr && T <= 100) potr.innerHTML = "";
+    };
+    var stop = function () { if (FO_MD.timer) { clearInterval(FO_MD.timer); FO_MD.timer = null; } };
+    var run = function () {
+      stop();
+      if (FO_MD.t > 100) FO_MD.t = 0;
+      FO_MD.timer = setInterval(function () {
+        if (!document.getElementById("fo-md-prog")) { stop(); return; }
+        FO_MD.t += 0.5 * FO_MD.speed;
+        if (FO_MD.t > 101) { FO_MD.t = 101; stop(); var b = document.getElementById("fo-md-play"); if (b) b.textContent = "Replay"; }
+        paint();
+      }, 110);
+      var b = document.getElementById("fo-md-play"); if (b) b.textContent = "Pause";
+    };
+    page.querySelector("#fo-md-play").addEventListener("click", function () {
+      if (FO_MD.timer) { stop(); this.textContent = "Play"; } else run();
+    });
+    page.querySelector("#fo-md-speed").addEventListener("click", function () {
+      FO_MD.speed = FO_MD.speed >= 8 ? 1 : FO_MD.speed * 2; this.textContent = FO_MD.speed + "×";
+    });
+    page.querySelector("#fo-md-skip").addEventListener("click", function () { stop(); FO_MD.t = 101; paint(); var b = document.getElementById("fo-md-play"); if (b) b.textContent = "Replay"; });
+    paint();
+    foRenderPredictions();
+  }
+  function foRenderMatchday() {
+    if (!/^#\/matchday/.test(location.hash || "")) { if (FO_MD.timer) { clearInterval(FO_MD.timer); FO_MD.timer = null; } return; }
+    try { bumpBrand(); } catch (e) {}
+    try { foMatchdayPage(); } catch (e) { console.warn("foMatchdayPage", e); }
+    try {
+      var tb = document.getElementById("topbar");
+      tb && tb.querySelectorAll("a").forEach(function (a) { a.classList.toggle("on", a.classList.contains("fo-matchday")); });
+    } catch (e) {}
+  }
+  window.addEventListener("hashchange", function () { setTimeout(foRenderMatchday, 15); });
+
+  // ---- predictions league: one tap per fixture, bragging rights forever ------
+  function foPredKey(rd) { return "fol_pred_" + ((LG && LG.id) || "solo") + "_" + rd; }
+  function foRenderPredictions() {
+    var host = document.getElementById("fo-md-predict"); if (!host) return;
+    if (!(SYNC && SYNC.started && !SYNC.practice && LG)) { host.innerHTML = ""; return; }
+    var S = App.season; if (!S || !S.schedule || S.round >= S.schedule.length) { host.innerHTML = ""; return; }
+    var rd = S.round, fixtures = S.schedule[rd] || [];
+    var mine = {}; try { mine = JSON.parse(lsGet(foPredKey(rd)) || "{}"); } catch (e) {}
+    var rows = fixtures.map(function (f, i) {
+      var h = GD.teams[f[0]].name, a = GD.teams[f[1]].name, k = h + "|" + a;
+      var pick = mine[k];
+      return "<div style='display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:7px 0;border-bottom:1px solid #f0ece1'>" +
+        "<button class='mini fo-pick" + (pick === h ? " fo-pick-on" : "") + "' data-k='" + E(k) + "' data-v='" + E(h) + "'>" + E(h) + "</button>" +
+        "<span class='small'>v</span>" +
+        "<button class='mini fo-pick" + (pick === a ? " fo-pick-on" : "") + "' data-k='" + E(k) + "' data-v='" + E(a) + "'>" + E(a) + "</button></div>";
+    }).join("");
+    host.innerHTML = "<div class='fo-card' style='margin-top:14px'><div class='fo-card-h2row'><div class='fo-card-h2'>Predictions · round " + (rd + 1) + "</div><span class='small'>1 point per correct call</span></div><div class='fo-card-b'>" + rows +
+      "<div id='fo-pred-board' class='small' style='margin-top:10px'>Loading leaderboard…</div></div></div>";
+    host.querySelectorAll(".fo-pick").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var k = b.getAttribute("data-k"), v = b.getAttribute("data-v");
+        mine[k] = v; lsSet(foPredKey(rd), JSON.stringify(mine));
+        rpc("predictions_submit", { p_league_id: LG.id, p_round: rd, p_picks: mine })
+          .then(function () { toast("Prediction locked: " + v); foRenderPredictions(); })
+          .catch(function (e) {
+            var m = ((e && e.message) || e) + "";
+            if (/Could not find the function/i.test(m)) say("Predictions need the 0015 SQL run in Supabase (ask your commissioner).");
+            else say(e);
+          });
+      });
+    });
+    // leaderboard: everyone's picks vs everyone's results
+    Promise.all([
+      sel("league_predictions", "league_id=eq." + LG.id + "&select=manager_id,round,picks"),
+      sel("teams", "league_id=eq." + LG.id + "&select=manager_id,name")
+    ]).then(function (r) {
+      var names = {}; (r[1] || []).forEach(function (t) { names[t.manager_id] = t.name; });
+      var byRound = foLeagueRounds();
+      var pts = {};
+      (r[0] || []).forEach(function (row) {
+        var res = byRound[row.round]; if (!res) return;
+        var winners = {}; res.forEach(function (m) { winners[m.home + "|" + m.away] = m.result && m.result.winner; });
+        var p = row.picks || {};
+        for (var k in p) if (winners[k] && winners[k] === p[k]) pts[row.manager_id] = (pts[row.manager_id] || 0) + 1;
+        if (!(row.manager_id in pts)) pts[row.manager_id] = pts[row.manager_id] || 0;
+      });
+      var board = Object.keys(pts).map(function (m) { return { nm: names[m] || "Manager", p: pts[m] }; }).sort(function (a, b) { return b.p - a.p; });
+      var el = document.getElementById("fo-pred-board"); if (!el) return;
+      el.innerHTML = board.length
+        ? "<b>Leaderboard:</b> " + board.map(function (x, i) { return (i + 1) + ". " + E(x.nm) + " (" + x.p + ")"; }).join(" · ")
+        : "No predictions yet this season — be first.";
+    }).catch(function () { var el = document.getElementById("fo-pred-board"); if (el) el.textContent = ""; });
+  }
+
+  // ---- stadium expansion: a long-term money sink to rival the academy --------
+  var FO_SEAT_STEP = 1500, FO_SEAT_RATE = 80, FO_SEAT_CAP = 15000;
+  function foOfficeExtras() {
+    try {
+      if (!/^#\/office/.test(location.hash || "")) return;
+      var page = document.getElementById("page"); if (!page || page.querySelector("#fo-stadium")) return;
+      var t = foMyClub(); if (!t) return;
+      var st = foTrainState();
+      var seats = t.seats || 9000;
+      var pending = st.seatsPending && st.seatsPending.target > seats;
+      if (st.seatsPending && st.seatsPending.target <= seats) { delete st.seatsPending; foTrainSave(st); pending = false; }
+      var cost = FO_SEAT_STEP * FO_SEAT_RATE;
+      var atCap = seats >= FO_SEAT_CAP;
+      var card = document.createElement("div");
+      card.className = "panel"; card.id = "fo-stadium";
+      card.innerHTML = "<h4>Stadium</h4><div class='pad'>" +
+        "<div style='display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px'><span>Capacity <b>" + seats.toLocaleString() + "</b> seats · upkeep <b>" + FO$(seats) + "</b>/matchday</span></div>" +
+        "<div class='small' style='margin:6px 0 10px'>Bigger stands mean bigger gates when the town is behind you — and a bigger upkeep bill when it isn't. Expansion completes after the next matchday.</div>" +
+        (atCap ? "<div class='fo-mk-gone'>The council won't approve anything bigger.</div>"
+          : pending ? "<div class='fo-mk-gone'>Builders on site — new stand opens after the next matchday.</div>"
+          : "<button class='fo-yc-sign' id='fo-seat-buy'>Extend the stand — +" + FO_SEAT_STEP.toLocaleString() + " seats for " + FO$(cost) + "</button>") +
+        "</div>";
+      var firstPanel = page.querySelector(".panel");
+      if (firstPanel && firstPanel.parentNode) firstPanel.parentNode.insertBefore(card, firstPanel); else page.appendChild(card);
+      var btn = card.querySelector("#fo-seat-buy");
+      if (btn) btn.addEventListener("click", function () {
+        var bank = (App.fin && App.fin.bank) || t.bank || 0;
+        if (bank < cost) { say("Not enough in the bank — the builders want " + FO$(cost) + " up front."); return; }
+        foConfirm({
+          title: "Extend the stand?",
+          body: "+" + FO_SEAT_STEP.toLocaleString() + " seats for " + FO$(cost) + ". Upkeep rises " + FO$(FO_SEAT_STEP) + " per matchday, and the extra gate only pays if the crowds come.",
+          confirm: "Build it — " + FO$(cost), cancel: "Not yet"
+        }).then(function (ok) {
+          if (!ok) return;
+          if (SYNC && SYNC.started && !SYNC.practice && LG) {
+            var st2 = foTrainState();
+            st2.seatsPending = { add: FO_SEAT_STEP, cost: cost, target: seats + FO_SEAT_STEP };
+            foTrainSave(st2);
+            toast("Builders booked — the new stand opens after the next matchday.");
+            var el = document.getElementById("fo-stadium"); if (el) { el.remove(); foOfficeExtras(); }
+          } else {
+            t.seats = seats + FO_SEAT_STEP;
+            if (typeof window.ledger === "function" && window.ledger.length >= 3) window.ledger("Stadium", "Stand extension", -cost);
+            else if (App.fin) App.fin.bank -= cost;
+            if (typeof window.saveGame === "function") window.saveGame(false);
+            toast("New stand open: " + t.seats.toLocaleString() + " seats.");
+            var el2 = document.getElementById("fo-stadium"); if (el2) { el2.remove(); foOfficeExtras(); }
+          }
+        });
+      });
+    } catch (e) {}
+  }
+  window.addEventListener("hashchange", function () { setTimeout(foOfficeExtras, 30); });
+
+  // ---- the newspaper: a digest of the latest round for the club home ---------
+  function foNewsDigest() {
+    var rd = foLastRoundIx(); if (rd < 0) return "";
+    var results = foLeagueRounds()[rd] || []; if (!results.length) return "";
+    var my = ""; try { my = userTeam().name; } catch (e) {}
+    var items = [];
+    results.forEach(function (r) {
+      var txt = (r.result && r.result.text) || "";
+      var star = foPerfList([r])[0];
+      var mine = r.home === my || r.away === my;
+      items.push({ pri: mine ? 0 : 2, h: txt, s: E(r.ground || "") + (star ? " · star: " + E(star.name) + " " + E(star.line) : "") });
+    });
+    var perfs = foPerfList(results);
+    perfs.forEach(function (p) {
+      if (p.kind === "bat" && p.r >= 100) items.push({ pri: 1, h: "CENTURY: " + E(p.name) + " " + E(p.line), s: "for " + E(p.club) });
+      if (p.kind === "bowl" && p.w >= 5) items.push({ pri: 1, h: "FIVE-FOR: " + E(p.name) + " " + E(p.line), s: "for " + E(p.club) });
+    });
+    try {
+      GD.teams.forEach(function (t) {
+        var rep = t._trainReport || {};
+        (rep.signings || []).forEach(function (s) { items.push({ pri: 3, h: E(t.name) + ": " + E(s), s: "" }); });
+        (rep.injuries || []).forEach(function (s) { items.push({ pri: 1, h: "INJURY: " + E(s), s: E(t.name) }); });
+      });
+    } catch (e) {}
+    items.sort(function (a, b) { return a.pri - b.pri; });
+    var lis = items.slice(0, 6).map(function (it) { return "<li><div class='fo-news-h'>" + it.h + "</div>" + (it.s ? "<div class='fo-news-s'>" + it.s + "</div>" : "") + "</li>"; }).join("");
+    return "<div class='fo-card fo-news'><div class='fo-card-h2row'><div class='fo-card-h2'>The Fifty Overs Post · Round " + (rd + 1) + "</div><a class='fo-morelink' href='#/matchday'>Watch the matchday ›</a></div><div class='fo-card-b'><ul style='margin:0;padding-left:4px;list-style:none;font-size:13px'>" + lis + "</ul></div></div>";
+  }
+
   // ---- the Training page ------------------------------------------------------
   function foTrainingPage() {
     var page = document.getElementById("page"); if (!page) return;
@@ -3743,6 +4046,9 @@
     var st = foTrainState();
     var round = (App.season && App.season.round) || 0;
     var rep = t._trainReport || (App.trainingReports && App.trainingReports[0]) || null;
+    var ward = (t.injured && t.injured.length)
+      ? "<div class='fo-yc-note' style='border-color:#e8c9c2;background:#fbeeea'><b>Injury ward:</b> " + t.injured.map(function (p) { return E(p.name) + " (" + (p._inj || 1) + " matchday" + ((p._inj || 1) === 1 ? "" : "s") + ")"; }).join(" · ") + "</div>"
+      : "";
 
     var progOpts = function (cur) { return FO_TR_PROGS.map(function (k) { return "<option value='" + k + "'" + (cur === k ? " selected" : "") + ">" + k + "</option>"; }).join(""); };
     var intOpts = function (cur) { return FO_TR_INT.map(function (k) { return "<option value='" + k + "'" + (cur === k ? " selected" : "") + ">" + k + "</option>"; }).join(""); };
@@ -3764,7 +4070,7 @@
 
     var repHtml = "";
     if (rep && (rep.gains || []).length + (rep.recovery || []).length + (rep.signings || []).length) {
-      repHtml = "<div class='panel'><h4>This week in the nets · after matchday " + (rep.round || round) + "</h4><div class='pad fo-tr-rep'>" +
+      repHtml = ward + "<div class='panel'><h4>This week in the nets · after matchday " + (rep.round || round) + "</h4><div class='pad fo-tr-rep'>" +
         (rep.signings || []).map(function (g) { return "<div class='fo-tr-g fo-tr-sign'>" + FO_I("users", 14) + " " + E(g) + "</div>"; }).join("") +
         (rep.gains || []).map(function (g) { return "<div class='fo-tr-g'>" + FO_I("checkCircle", 14) + " " + E(g) + "</div>"; }).join("") +
         (rep.recovery || []).map(function (g) { return "<div class='fo-tr-g fo-tr-rec'>" + FO_I("shield", 14) + " " + E(g) + "</div>"; }).join("") +

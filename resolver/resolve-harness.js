@@ -223,7 +223,7 @@
     contender: { base: 30000, win: 16000, halfway: 60000, seasonTop3: 90000, champ: 120000 }
   };
   var FO_ACAD = [0, 4000, 8000, 14000, 22000, 32000];
-  function foWages(t) { return (t && t.players ? t.players.reduce(function (s, p) { return s + (+p.wage || 0); }, 0) : 0); }
+  function foWages(t) { var all = (t && t.players ? t.players : []).concat((t && t.injured) || []); return all.reduce(function (s, p) { return s + (+p.wage || 0); }, 0); }
   function foDealOf(t) { return FO_DEALS[(t.sponsorDeal && t.sponsorDeal.id) || t.sponsor] || FO_DEALS.community; }
 
   var _foCompleteRound = window.completeRound;
@@ -439,13 +439,83 @@
     });
   }
 
+  // Stadium expansion: validated when the round resolves, like signings.
+  function foApplyPacketSeats(pkts, round) {
+    (pkts || []).forEach(function (pk) {
+      if (!pk || !pk.club || !pk.fo_seats || !pk.fo_seats.add) return;
+      var t = GD.teams.find(function (x) { return x.name === pk.club; }); if (!t) return;
+      var add = Math.max(0, Math.min(1500, Math.round(+pk.fo_seats.add || 0)));
+      var cost = add * 80;
+      if (!add || (t.seats || 9000) + add > 15000) return;
+      if ((t.bank || 0) < cost) return;
+      t.seats = (t.seats || 9000) + add;
+      t.bank -= cost;
+      t._trainReport = t._trainReport || { round: round + 1, gains: [], recovery: [], signings: [] };
+      (t._trainReport.signings = t._trainReport.signings || []).push('New stand opened: capacity now ' + t.seats.toLocaleString() + ' (cost $' + cost.toLocaleString() + ')');
+    });
+  }
+
+  // Injuries: heavy legs get hurt. Deterministic (engine rng seeded from the
+  // round + player), applied AFTER the round so this matchday is unaffected;
+  // the player sits out 1-3 matchdays, wages still due. Never drops a squad
+  // below 12 available players.
+  function foStrHash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function foRecoverInjuries(round) {
+    GD.teams.forEach(function (t) {
+      if (!t.injured || !t.injured.length) return;
+      var back = [];
+      t.injured.forEach(function (p) { p._inj = (p._inj || 1) - 1; if (p._inj <= 0) back.push(p); });
+      back.forEach(function (p) {
+        t.injured.splice(t.injured.indexOf(p), 1);
+        delete p._inj; p.fatigue = 'passable';
+        t.players.push(p);
+        // the fair training pass rebuilds _trainReport during the round, so
+        // stash the message and merge it in afterwards (see wrapper below)
+        (t.__backMsgs = t.__backMsgs || []).push(p.name + ' is fit again and back in the squad');
+      });
+    });
+  }
+  function foMergeInjuryNews(round) {
+    GD.teams.forEach(function (t) {
+      if (!t.__backMsgs || !t.__backMsgs.length) return;
+      t._trainReport = t._trainReport || { round: round + 1, gains: [], recovery: [], signings: [] };
+      t._trainReport.recovery = (t._trainReport.recovery || []).concat(t.__backMsgs);
+      delete t.__backMsgs;
+    });
+  }
+  function foRollInjuries(round) {
+    GD.teams.forEach(function (t) {
+      if ((t.players || []).length <= 12) return;
+      var hurt = null;
+      t.players.forEach(function (p) {
+        if (hurt) return;
+        var f = ftFatScore(p);                              // 0 = clinically dead … 10 = rested
+        if (f > 4) return;                                  // only the weary and worse
+        var r = window.rng(foStrHash(round + '|' + t.name + '|' + p.name))();
+        var chance = f <= 2 ? 0.07 : 0.03;                  // exhausted+ 7%, weary 3%
+        if (r < chance) hurt = p;
+      });
+      if (!hurt) return;
+      var out = 1 + Math.floor(window.rng(foStrHash('len|' + round + '|' + hurt.name))() * 3);   // 1-3 matchdays
+      hurt._inj = out;
+      t.players.splice(t.players.indexOf(hurt), 1);
+      (t.injured = t.injured || []).push(hurt);
+      t._trainReport = t._trainReport || { round: round + 1, gains: [], recovery: [], signings: [] };
+      (t._trainReport.injuries = t._trainReport.injuries || []).push(hurt.name + ' picked up a knock and misses ' + out + ' matchday' + (out === 1 ? '' : 's'));
+    });
+  }
+
   var _foCR2 = window.completeRound;
   window.completeRound = function () {
     var round = App.season ? App.season.round : 0;
+    try { foRecoverInjuries(round); } catch (e) { console.log('injury recovery failed:', e && e.message); }
     try { foApplyPacketTraining(window.__FO_PKTS); } catch (e) { console.log('packet training failed:', e && e.message); }
     var out = _foCR2.apply(this, arguments);
     try { foApplyPacketYouth(window.__FO_PKTS, round); } catch (e) { console.log('packet youth failed:', e && e.message); }
     try { foApplyPacketMarket(window.__FO_PKTS, round); } catch (e) { console.log('packet market failed:', e && e.message); }
+    try { foApplyPacketSeats(window.__FO_PKTS, round); } catch (e) { console.log('packet seats failed:', e && e.message); }
+    try { foRollInjuries(round); } catch (e) { console.log('injury roll failed:', e && e.message); }
+    try { foMergeInjuryNews(round); } catch (e) {}
     return out;
   };
 

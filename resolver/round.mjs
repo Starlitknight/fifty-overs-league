@@ -34,14 +34,31 @@ export async function advanceLeagues() {
 async function advanceOne(page, st) {
   const lid = st.league_id, round = st.round, snap = st.snapshot;
   const sched = snap && snap.season && snap.season.schedule;
-  if (!sched || round >= sched.length) { console.log(lid, 'season complete'); return; }
 
-  // Gate to one round per day at 09:00 New York time. Managers who have not
+  // Gate to one action per day at 09:00 New York time. Managers who have not
   // submitted orders for the round play with the engine's automatic line-up.
   const now = tzDateHour(new Date());
   const last = tzDateHour(new Date(st.updated_at));
   if (now.hour < MATCH_HOUR) { console.log(lid, `before ${MATCH_HOUR}:00 ${MATCH_TZ}`); return; }
   if (last.date >= now.date) { console.log(lid, 'already advanced today'); return; }
+
+  // Season over: the next 09:00 runs the engine's own rollover — prize money
+  // for every club, age decline, retirements (seeded from the season number,
+  // so it is deterministic), then a fresh schedule starting at round 0.
+  if (!sched || round >= sched.length) {
+    const rolled = await page.evaluate(({ snap }) => {
+      window.restoreFrom(snap);
+      if (typeof window.mpInit === 'function') window.mpInit();
+      window.seasonEnd();
+      // the engine pays the snapshot club's prize through its ledger (App.fin);
+      // mirror it onto the club record so every manager's fair books agree
+      try { var me = userTeam(); if (App.fin && me && App.fin.bank !== me.bank) me.bank = App.fin.bank; } catch (e) {}
+      return window.snapshot(true);
+    }, { snap });
+    await rpc('push_league_state', { p_league_id: lid, p_snapshot: rolled, p_round: 0 });
+    console.log(lid, `season rolled over -> season ${rolled.seasonNo || '?'} round 0`);
+    return;
+  }
 
   const packets = await rest(`league_packets?league_id=eq.${lid}&round=eq.${round}&select=packet`);
 
