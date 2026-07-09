@@ -870,6 +870,8 @@
     ".fo-exp-tals{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}" +
     ".fo-exp-tal{background:#e8effa;border:1px solid #cfdcf2;color:#35619e;font-size:11.5px;font-weight:700;border-radius:999px;padding:4px 11px}" +
     ".fo-exp-note{margin-top:12px;font-size:11px;color:#a09a8a;border-top:1px dashed #e2ddd0;padding-top:8px;text-align:center}" +
+    ".fo-exp-cards{display:flex;flex-direction:column;gap:14px}" +
+    ".fo-exp-tag{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#C0562F;margin-bottom:4px}" +
     ".fo-exp-def{padding:8px 0;border-bottom:1px solid #efeade;font-size:13px}" +
     ".fo-exp-def b{display:inline-block;min-width:96px;color:#12203a}.fo-exp-def span{color:#5d6779}" +
     ".fo-exp-talbox{background:#eef4ee;border:1px solid #d5e0d7;border-radius:11px;padding:13px 16px;font-size:13.5px;line-height:1.6;margin-top:16px}" +
@@ -3069,34 +3071,41 @@
   function foOnbPlayers() {
     FO_ONB.step = 5;
     var pool = (App.founder && App.founder.pool) || [];
-    var ex = pool.filter(function (p) { return (p.talents || []).length; }).sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); })[0] || pool[0];
-    var card = "";
-    if (ex) {
+    var byRat = function (a, b) { return (b.rating || 0) - (a.rating || 0); };
+    var batter = pool.filter(function (p) { return (!p.bowlTypeFull || p.bowlTypeFull === "none") && !p.keeper; }).sort(byRat)[0];
+    var bowler = pool.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none"; }).sort(byRat)[0];
+    var mkCard = function (ex, tagLbl) {
+      if (!ex) return "";
       var flag = ""; try { flag = foFlag(ex.nat || FO_ONB.country) || ""; } catch (e) {}
-      var bars = [["Batting", foAgg(ex, "bat")], ["Bowling", (ex.bowlTypeFull && ex.bowlTypeFull !== "none") ? foAgg(ex, "bowl") : 0], ["Keeping", foAgg(ex, "keep")], ["Technique", foAgg(ex, "tech")], ["Power", foAgg(ex, "power")], ["Endurance", foAgg(ex, "end")], ["Fielding", foAgg(ex, "field")]];
+      var hand = (ex.hand === "L" ? "LHB" : "RHB");
+      var bt = ex.btLabel || ((ex.bowlTypeFull && ex.bowlTypeFull !== "none") ? ex.bowlTypeFull : "Does not bowl");
+      var bars = [["Batting", foAgg(ex, "bat")], ["Bowling", (ex.bowlTypeFull && ex.bowlTypeFull !== "none") ? foAgg(ex, "bowl") : 0], ["Keeping", foAgg(ex, "keep")], ["Technique", foAgg(ex, "tech")], ["Power", foAgg(ex, "power") || Math.round((ex.skills && ex.skills.power) || 0)], ["Endurance", foAgg(ex, "end")], ["Fielding", foAgg(ex, "field")]];
       var barHtml = bars.map(function (b) { return "<span class='fo-sk'><i>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + b[1] + "%'></u></b><em>" + b[1] + "</em></span>"; }).join("");
       var tal = (ex.talents || []).map(function (t) { return "<span class='fo-exp-tal'>" + E(String(t).replace(/([A-Z])/g, " $1").replace(/^./, function (c) { return c.toUpperCase(); })) + "</span>"; }).join("");
-      card = "<div class='fo-exp-card'><div class='fo-exp-h'>" + flag + " <b>" + E(ex.name) + "</b></div>" +
-        "<div class='fo-exp-meta'>" + foRoleShort(ex) + " · age " + ex.age + " · fee " + FO$(foDraftPrice(ex)) + "</div>" +
+      return "<div class='fo-exp-card'><div class='fo-exp-tag'>" + tagLbl + "</div><div class='fo-exp-h'>" + flag + " <b>" + E(ex.name) + "</b></div>" +
+        "<div class='fo-exp-meta'>" + hand + " &middot; " + E(bt) + "</div>" +
+        "<div class='fo-exp-meta'>Age " + ex.age + " &middot; fee " + FO$(foDraftPrice(ex)) + " &middot; wage " + FO$(foDailyWage(ex)) + "/matchday</div>" +
         "<div class='fo-exp-bars'>" + barHtml + "</div>" +
-        (tal ? "<div class='fo-exp-tals'>" + tal + "</div>" : "") +
-        "<div class='fo-exp-note'>A real player from your draft pool</div></div>";
-    }
+        (tal ? "<div class='fo-exp-tals'>" + tal + "</div>" : "") + "</div>";
+    };
     var defs = [
       ["Batting", "Run-scoring ability against all bowling."],
-      ["Bowling", "Wicket threat and control with the ball."],
+      ["Bowling", "Wicket threat and control with the ball. Zero means he does not bowl."],
       ["Keeping", "Glovework: byes saved, catches, stumpings."],
-      ["Technique", "How sound he is against pace and spin; hard to dismiss."],
+      ["Technique", "Batting soundness against pace and spin, plus temperament. On a bowler's card this describes his batting; his bowling craft is inside the Bowling bar."],
       ["Power", "Boundary and six hitting."],
       ["Endurance", "How long he lasts before fatigue dulls everything."],
-      ["Fielding", "Catches, run-outs, runs saved in the field."]
+      ["Fielding", "Catches, run-outs, runs saved in the field."],
+      ["Hand &amp; style", "RHB/LHB and the bowling arm and type (fast, fast medium, medium, finger spin, wrist spin). Batters have separate skills against pace and spin, so matchups are real."],
+      ["Age", "Young players improve fastest in training and recover quickly. Players past 30 fade late in innings and long spells, and decline between seasons."],
+      ["Fee &amp; wage", "The fee is paid once, at the draft. The wage is paid every matchday, all season. Better players cost more of both, so a full squad of stars will drain the bank."]
     ].map(function (d) { return "<div class='fo-exp-def'><b>" + d[0] + "</b><span>" + d[1] + "</span></div>"; }).join("");
     var body =
       "<div class='fo-ob-card fo-ob-mid'>" +
       "<div class='fo-ob-eyebrow'>Know what you are buying</div>" +
       "<h1 class='fo-ob-h1'>How to read a player</h1>" +
-      "<p class='fo-ob-lead'>Every player card shows seven skills. Bars are coloured honestly: <b style='color:#C84F4A'>red</b> is a liability, <b style='color:#D9A441'>amber</b> does a job, <b style='color:#2d7a76'>teal</b> is good, <b style='color:#3E9960'>green</b> wins matches.</p>" +
-      "<div class='fo-exp-cols'><div>" + card + "</div><div class='fo-exp-defs'>" + defs + "</div></div>" +
+      "<p class='fo-ob-lead'>Two real players from your draft pool, a batter and a bowler. Bars are coloured honestly: <b style='color:#C84F4A'>red</b> is a liability, <b style='color:#D9A441'>amber</b> does a job, <b style='color:#2d7a76'>teal</b> is good, <b style='color:#3E9960'>green</b> wins matches.</p>" +
+      "<div class='fo-exp-cols'><div class='fo-exp-cards'>" + mkCard(batter, "The batter") + mkCard(bowler, "The bowler") + "</div><div class='fo-exp-defs'>" + defs + "</div></div>" +
       "<div class='fo-exp-talbox'><b>Talents</b> are permanent traits that fire in specific situations: a <i>Finisher</i> finds boundaries at the death, a <i>New-ball Specialist</i> is deadly in his first spell, a <i>Spin Killer</i> feasts on slow bowling. Tap any talent chip in the game to see what it does.</div>" +
       "<p class='fo-ob-lead' style='margin-top:14px'>Next: the draft room. Sign <b>11 to 16 players</b> with your <b>$1,000,000</b>. Every fee brings a wage bill behind it, so leave a reserve.</p>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Enter the draft room</button></div></div>";
