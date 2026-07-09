@@ -2641,9 +2641,9 @@
       { id: "moneyball", name: "Moneyball", draftBudget: 700000, reserve: 300000, risk: "Medium", rec: false, tone: "violet", tag: "Save cash and hunt value." }
     ],
     sponsors: [
-      { id: "community", name: "Oakfield & Sons", ind: "Grocers, est. 1954", pos: "Steady money, no strings.", base: 45000, win: 0, halfway: 0, seasonTop3: 0, champ: 0, tone: "teal", rec: false, lines: ["$45,000 every matchday", "No result bonuses"] },
-      { id: "results", name: "Vantage Athletic", ind: "Performance sportswear", pos: "Paid to win.", base: 38000, win: 13000, halfway: 0, seasonTop3: 0, champ: 0, tone: "terra", lines: ["$38,000 every matchday", "+$13,000 per win"] },
-      { id: "contender", name: "Meridian Air", ind: "The champions' airline", pos: "Back your XI.", base: 30000, win: 16000, halfway: 60000, seasonTop3: 90000, champ: 120000, tone: "gold", lines: ["$30,000 every matchday", "+$16,000 per win", "+$60k top-3 at halfway", "+$90k top-3 finish", "+$120k champions"] }
+      { id: "community", name: "Prudential", ind: "Insurance \u00b7 London, est. 1848", pos: "Steady money, no strings.", base: 45000, win: 0, halfway: 0, seasonTop3: 0, champ: 0, tone: "teal", rec: false, lines: ["$45,000 every matchday", "No result bonuses"] },
+      { id: "results", name: "Nike", ind: "Sportswear \u00b7 Beaverton, Oregon", pos: "Paid to win.", base: 38000, win: 13000, halfway: 0, seasonTop3: 0, champ: 0, tone: "terra", lines: ["$38,000 every matchday", "+$13,000 per win"] },
+      { id: "contender", name: "Emirates", ind: "Airline \u00b7 Dubai", pos: "Back your XI.", base: 30000, win: 16000, halfway: 60000, seasonTop3: 90000, champ: 120000, tone: "gold", lines: ["$30,000 every matchday", "+$16,000 per win", "+$60k top-3 at halfway", "+$90k top-3 finish", "+$120k champions"] }
     ],
     scenarios: [
       { id: "bad", name: "Bad season", wins: 5, crowd: 2100, finish: 8, t3half: false, t3fin: false, champ: false },
@@ -2886,7 +2886,7 @@
   // ---- Screen 4 · Choose your sponsor --------------------------------------
   function foOnbSponsor() {
     FO_ONB.step = 4;
-    var mono = { community: "O", results: "V", contender: "M" };
+    var mono = { community: "P", results: "N", contender: "E" };
     var cards = FO_FIN.sponsors.map(function (s) {
       var terms = s.lines.map(function (l) { return "<span>" + l + "</span>"; }).join("");
       return "<button type='button' class='fo-pk fo-pk-sp fo-tone-" + s.tone + " " + (FO_ONB.sponsor === s.id ? "on" : "") + "' data-sp='" + s.id + "'>" +
@@ -3934,9 +3934,9 @@
       ["sponsors", "Sponsor deals: a bet on yourself", [
         "<p>At founding you signed one of three deals. Each pays every matchday, all season; they differ in how much of your money rides on results:</p>",
         "<table><tr><th>Deal</th><th>Character</th><th>Best for</th></tr>" +
-        "<tr><td><b>Oakfield &amp; Sons</b></td><td>The biggest guaranteed payment in the league, and not a cent more, whatever happens.</td><td>Rebuilds, heavy academy spenders, and honest mid-table sides.</td></tr>" +
-        "<tr><td><b>Vantage Athletic</b></td><td>A slightly smaller base, plus a solid bonus for every win. Comes out ahead of Oakfield around a winning season: ten or more wins.</td><td>Good sides that expect a winning record but wouldn&rsquo;t bet the house on a trophy.</td></tr>" +
-        "<tr><td><b>Meridian Air</b></td><td>The smallest base, the biggest per-win bonus, and rich milestone cheques for sitting top-three at halfway, finishing top-three, and winning the title. A genuine title season out-earns everything by a distance; a mediocre one costs you six figures.</td><td>Squads built to win now, and managers who mean it.</td></tr></table>",
+        "<tr><td><b>Prudential</b></td><td>The biggest guaranteed payment in the league, and not a cent more, whatever happens.</td><td>Rebuilds, heavy academy spenders, and honest mid-table sides.</td></tr>" +
+        "<tr><td><b>Nike</b></td><td>A slightly smaller base, plus a solid bonus for every win. Comes out ahead of Prudential around a winning season: ten or more wins.</td><td>Good sides that expect a winning record but wouldn&rsquo;t bet the house on a trophy.</td></tr>" +
+        "<tr><td><b>Emirates</b></td><td>The smallest base, the biggest per-win bonus, and rich milestone cheques for sitting top-three at halfway, finishing top-three, and winning the title. A genuine title season out-earns everything by a distance; a mediocre one costs you six figures.</td><td>Squads built to win now, and managers who mean it.</td></tr></table>",
         "<p>Choose based on a realistic estimate of your squad&rsquo;s strength: each deal is the best option within a specific band of expected wins.</p>"
       ].join("")],
       ["training", "Training: where seasons compound", [
