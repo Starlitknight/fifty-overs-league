@@ -1365,9 +1365,13 @@
     function club() { try { return foMyClub() || userTeam(); } catch (e) { return userTeam(); } }
     function isMP() { return !!(typeof SYNC !== "undefined" && SYNC && SYNC.started && !SYNC.practice); }
     function wages(t) { t = t || club(); return (t.players || []).concat(t.injured || []).reduce(function (s2, p) { return s2 + (+p.wage || 0); }, 0); }
-    function acadUpkeep(t) { t = t || club(); return (ACAD[Math.max(0, Math.min(5, t.acadY || 0))] || 0) + (ACAD[Math.max(0, Math.min(5, t.acadS || 0))] || 0); }
+    function acadUpkeepAt(level) {
+      return isMP() ? (ACAD[Math.max(0, Math.min(5, level || 0))] || 0) : 2500 * (level || 0);
+    }
+    function acadUpkeep(t) { t = t || club(); return acadUpkeepAt(t.acadY) + acadUpkeepAt(t.acadS); }
     function gateAttendance(t) {
       t = t || club();
+      if (!isMP() && typeof attendance === "function") { try { return attendance(t); } catch (e) {} }
       return Math.min(t.seats || 9000, Math.round((t.supporters || 2600) * (0.55 + 0.13 * (t.mood == null ? 3 : t.mood))));
     }
     function gate(t) { return gateAttendance(t) * ((FO_FIN && FO_FIN.ticketPrice) || 9); }
@@ -1376,14 +1380,16 @@
       if (isMP()) return 0;   // the resolver never charges intensity
       try { return typeof trainingCost === "function" ? trainingCost(t || club()) : 0; } catch (e) { return 0; }
     }
+    function paysSponsor() { return isMP(); }
+    function chargesWages() { return isMP(); }
     function fixtures() { try { return foUserFixtures() || []; } catch (e) { return []; } }
     function fixtureAt(round) { var fx = fixtures(); for (var i = 0; i < fx.length; i++) if (fx[i].round === round) return fx[i]; return null; }
     function bank() { var t = club(); return (App.fin && App.fin.bank != null) ? App.fin.bank : (t.bank || 0); }
     function roundIncome(round) {
       var t = club(), fx = round == null ? fixtures()[0] : fixtureAt(round);
-      return sponsorBase(t) + ((fx && fx.isHome) ? gate(t) : 0);
+      return (paysSponsor() ? sponsorBase(t) : 0) + ((fx && fx.isHome) ? gate(t) : 0);
     }
-    function roundOutgo() { var t = club(); return wages(t) + (t.seats || 9000) + acadUpkeep(t) + trainIntensityCost(t); }
+    function roundOutgo() { var t = club(); return (chargesWages() ? wages(t) : 0) + (t.seats || 9000) + acadUpkeep(t) + trainIntensityCost(t); }
     function roundNet(round) { return roundIncome(round) - roundOutgo(); }
     function homeAwaySplit() {
       var t = club(), out = roundOutgo(), base = sponsorBase(t);
@@ -1406,10 +1412,11 @@
       return null;
     }
     return {
-      club: club, isMP: isMP, wages: wages, acadUpkeep: acadUpkeep, gateAttendance: gateAttendance,
+      club: club, isMP: isMP, wages: wages, acadUpkeep: acadUpkeep, acadUpkeepAt: acadUpkeepAt, gateAttendance: gateAttendance,
       gate: gate, sponsorBase: sponsorBase, trainIntensityCost: trainIntensityCost, fixtures: fixtures,
       bank: bank, roundIncome: roundIncome, roundOutgo: roundOutgo, roundNet: roundNet,
       homeAwaySplit: homeAwaySplit, avgNet: avgNet, seasonEndProjection: seasonEndProjection,
+      paysSponsor: paysSponsor, chargesWages: chargesWages,
       firstNegativeRound: firstNegativeRound, ACAD: ACAD
     };
   })();
@@ -2071,6 +2078,7 @@
     try {
       var isFounder = !!(SYNC && SYNC.isFounder);
       document.querySelectorAll("#page .panel, #page .card").forEach(function (pn) {
+        if (pn.classList && pn.classList.contains("fo-keep")) return;
         var h = pn.querySelector("h4, .card-title"); if (!h) return;
         var t = h.textContent.trim().toLowerCase();
         var hide = t === "academies" || t.indexOf("academy") >= 0 || t.indexOf("training centre") >= 0 || t.indexOf("training center") >= 0 ||
@@ -3006,7 +3014,7 @@
     var _mt = null, pg0 = document.getElementById("page");
     if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); decorateFixtureTimes(); tidyPage(); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); return r; }; }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} return r; }; }
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
@@ -4301,7 +4309,7 @@
       "<button class='fo-dr-add " + (inSquad ? "on" : "") + "' data-p='" + nm + "'>" + (inSquad ? "Drop" : "Sign") + "</button>" +
       "</div>" +
       "<div class='fo-dc-sub'><span>" + meta + "</span>" + tals +
-      "<span class='fo-dc-wage'>wage " + FO$(foDailyWage(p)) + "/day · season " + FO$(foSeasonCost(p)) + "</span></div>" +
+      "<span class='fo-dc-wage'>wage " + FO$(foDailyWage(p)) + "/matchday · season " + FO$(foSeasonCost(p)) + "</span></div>" +
       foSkillBars(p) + "</div>";
   }
   // A player's skill-summary card (bars, not a raw line) — opened by clicking a
@@ -4323,7 +4331,7 @@
       var d = document.createElement("div"); d.id = "fo-pd";
       d.innerHTML = "<div class='fo-pd-back'><div class='fo-pd-card'>" +
         "<div class='fo-pd-h'><div><div class='fo-pd-nm'>" + ((typeof foFlag === "function" && p.nat) ? foFlag(p.nat) + " " : "") + E(p.name) + "</div><div class='fo-pd-meta'><span class='fo-rl'>" + foRoleShort(p) + "</span> " + E(p.nat || "") + " · age " + (p.age || "?") + " · OVR " + (p.rating ? (p.rating / 1000).toFixed(1) : "-") + "</div></div><button class='fo-pd-x'>✕</button></div>" +
-        "<div class='fo-pd-money'><span>Draft<b>" + FO$(foDraftPrice(p)) + "</b></span><span>Daily wage<b>" + FO$(foDailyWage(p)) + "</b></span><span>Season cost<b>" + FO$(foSeasonCost(p)) + "</b></span></div>" +
+        "<div class='fo-pd-money'><span>Draft<b>" + FO$(foDraftPrice(p)) + "</b></span><span>Wage / matchday<b>" + FO$(foDailyWage(p)) + "</b></span><span>Season cost<b>" + FO$(foSeasonCost(p)) + "</b></span></div>" +
         "<div class='fo-pd-sec'>Skill summary</div><div class='fo-pd-bars'>" + barHtml + "</div>" +
         "<div class='fo-pd-tal'><b>Talents:</b> " + talents + "</div>" +
         "<div class='fo-pd-act'><button class='fo-pd-add " + (inSquad ? "on" : "") + "'>" + (inSquad ? "− Remove from squad" : "+ Add to squad") + "</button></div>" +
@@ -5208,7 +5216,7 @@
     var d = document.createElement("div"); d.id = "fo-pd";
     d.innerHTML = "<div class='fo-pd-back'><div class='fo-pd-card'>" +
       "<div class='fo-pd-h'><div><div class='fo-pd-nm'>" + ((typeof foFlag === "function" && p.nat) ? foFlag(p.nat) + " " : "") + E(p.name) + "</div><div class='fo-pd-meta'><span class='fo-rl'>" + foRoleShort(p) + "</span> " + E(p.nat || "") + " · age " + (p.age || "?") + (bt ? " · " + E(bt) : "") + " · exp " + E(p.expWord || p.exp || "-") + "</div></div><button class='fo-pd-x'>&#10005;</button></div>" +
-      "<div class='fo-pd-money'><span>Signing fee<b>" + FO$(p.fee) + "</b></span><span>Daily wage<b>" + FO$(foDailyWage(p)) + "</b></span><span>Season wages<b>" + FO$(foDailyWage(p) * FO_FIN.seasonLength) + "</b></span></div>" +
+      "<div class='fo-pd-money'><span>Signing fee<b>" + FO$(p.fee) + "</b></span><span>Wage / matchday<b>" + FO$(foDailyWage(p)) + "</b></span><span>Season wages<b>" + FO$(foDailyWage(p) * FO_FIN.seasonLength) + "</b></span></div>" +
       "<div class='fo-pd-sec'>Skill summary</div><div class='fo-pd-bars'>" + barHtml + "</div>" +
       "<div class='fo-pd-tal'><b>Talents:</b> " + talents + "</div>" +
       "<div class='fo-pd-act'><button class='fo-pd-add'>Sign " + E(p.name.split(" ")[0]) + " &mdash; " + FO$(p.fee) + "</button></div>" +
@@ -5281,7 +5289,7 @@
           "<div class='fo-yc-h'>" + flag + " <b class='fo-mk-view' data-i='" + i + "'>" + E(p.name) + "</b></div>" +
           "<div class='fo-yc-meta'>" + foRoleShort(p) + " · age " + p.age + " · rating " + (p.rating || 0).toLocaleString() + "</div>" +
           "<div class='fo-yc-bars'>" + barHtml + "</div>" +
-          "<div class='fo-yc-money'><span>Fee <b>" + FO$(p.fee) + "</b></span><span>Wage <b>" + FO$(foDailyWage(p)) + "/day</b></span></div>" + act + "</div>";
+          "<div class='fo-yc-money'><span>Fee <b>" + FO$(p.fee) + "</b></span><span>Wage <b>" + FO$(foDailyWage(p)) + "/matchday</b></span></div>" + act + "</div>";
       }).join("");
       page.innerHTML =
         "<div class='crumb'>" + E(t.name) + " &raquo; Transfers</div>" +
@@ -5725,153 +5733,9 @@
     return FO_DEAL_INFO[id] ? { id: id, d: FO_DEAL_INFO[id], known: true } : { id: "community", d: FO_DEAL_INFO.community, known: false };
   }
   function foOfficeExtras() {
-    try {
-      if (!/^#\/office/.test(location.hash || "")) return;
-      var page = document.getElementById("page"); if (!page) return;
-      var t = foMyClub(); if (!t) return;
-      // the engine's finance dashboard prices the sponsor from App.fin.sponsorBase
-      // (default 25k) - keep it honest with the club's actual deal
-      try {
-        var realBase = foDealResolve(t).d.base;
-        if (App.fin && App.fin.sponsorBase !== realBase) {
-          App.fin.sponsorBase = realBase;
-          if (typeof window.route === "function") { window.route(); return; }
-        }
-      } catch (e) {}
-      // the cloud league IS the save: the manual save/export/import panel goes
-      page.querySelectorAll(".panel h4").forEach(function (h) {
-        if (/^Save game$/i.test((h.textContent || "").trim())) { var pn = h.closest(".panel"); if (pn) pn.style.display = "none"; }
-      });
-      // who pays the bills - the sponsor, by name, and the last settlement
-      if (!page.querySelector("#fo-sponsor")) {
-        var res0 = foDealResolve(t);
-        var spName = res0.known ? res0.d.name : "No sponsor on record";
-        var fr = t._finRow;
-        var frHtml = "";
-        if (fr && fr.round != null) {
-          var money = function (v) { return (v < 0 ? "-" : "+") + FO$(Math.abs(v)); };
-          frHtml = "<div class='small' style='color:#8a8474;text-transform:uppercase;letter-spacing:.08em;font-size:10px;margin:8px 0 4px'>Matchday " + fr.round + " settlement</div>" +
-            "<table class='kv'>" +
-            "<tr><td>Sponsor base</td><td>" + money(fr.base || 0) + "</td></tr>" +
-            (fr.win ? "<tr><td>Win bonus</td><td>" + money(fr.win) + "</td></tr>" : "") +
-            (fr.gate ? "<tr><td>Home gate</td><td>" + money(fr.gate) + "</td></tr>" : "") +
-            "<tr><td>Wages</td><td>" + money(-(fr.wages || 0)) + "</td></tr>" +
-            "<tr><td>Stadium upkeep</td><td>" + money(-(fr.seats || 0)) + "</td></tr>" +
-            (fr.acad ? "<tr><td>Academies</td><td>" + money(-fr.acad) + "</td></tr>" : "") +
-            "<tr><td><b>Net</b></td><td><b>" + money(fr.net || 0) + "</b></td></tr></table>";
-        } else frHtml = "<div class='small'>Your first settlement lands when the next round resolves.</div>";
-        var stSp = foTrainState();
-        var pickerHtml = "";
-        if (!res0.known) {
-          if (stSp.sponsorPending) {
-            pickerHtml = "<div class='fo-yc-note'>You chose <b>" + E((FO_DEAL_INFO[stSp.sponsorPending] || {}).name || stSp.sponsorPending) + "</b> - the deal is signed when the next round resolves. Until then the books run on Prudential terms.</div>";
-          } else {
-            pickerHtml = "<div class='fo-yc-note'>Your club was founded before sponsor deals were recorded, so the books have been running on Prudential's terms. Pick your sponsor once - it takes effect when the next round resolves.</div>" +
-              "<div class='fo-sp-pick'>" + Object.keys(FO_DEAL_INFO).map(function (k) {
-                var d2 = FO_DEAL_INFO[k];
-                return "<button class='fo-sp-choose' data-sp='" + k + "'><b>" + d2.name + "</b><span>" + d2.line + "</span></button>";
-              }).join("") + "</div>";
-          }
-        }
-        var spc = document.createElement("div");
-        spc.className = "panel"; spc.id = "fo-sponsor";
-        spc.innerHTML = "<h4>Sponsor" + (res0.known ? " - " + spName : "") + "</h4><div class='pad'>" +
-          (res0.known ? "<div class='small'><b>" + res0.d.name + "</b>: " + res0.d.line + " Paid when the round resolves.</div>" : "") +
-          pickerHtml + frHtml + "</div>";
-        var fp0 = page.querySelector(".panel");
-        if (fp0 && fp0.parentNode) fp0.parentNode.insertBefore(spc, fp0); else page.appendChild(spc);
-        spc.querySelectorAll(".fo-sp-choose").forEach(function (b) {
-          b.addEventListener("click", function () {
-            var id2 = b.getAttribute("data-sp"), d3 = FO_DEAL_INFO[id2];
-            foConfirm({
-              title: "Sign with " + d3.name + "?",
-              body: d3.line + " This is a one-time choice for the season.",
-              confirm: "Sign the deal", cancel: "Not yet"
-            }).then(function (ok) {
-              if (!ok) return;
-              var st3 = foTrainState(); st3.sponsorPending = id2; foTrainSave(st3);
-              try { SYNC.lastOrderSig = null; } catch (e) {}
-              toast(d3.name + " it is - the deal is signed when the next round resolves.");
-              spc.remove(); foOfficeExtras();
-            });
-          });
-        });
-      }
-      // sync status: which build, who am I, what the server said about my orders
-      if (!page.querySelector("#fo-sync") && SYNC && SYNC.started && !SYNC.practice) {
-        var rounds = Object.keys(SYNC.submitted || {}).map(function (k) { return "R" + (+k + 1); }).join(", ") || "none yet";
-        var sy = document.createElement("div");
-        sy.className = "panel"; sy.id = "fo-sync";
-        sy.innerHTML = "<h4>Sync status</h4><div class='pad small'>" +
-          "<table class='kv'>" +
-          "<tr><td>Build</td><td>" + E(FO_BUILD) + "</td></tr>" +
-          "<tr><td>Manager id</td><td>" + E(String(SYNC.myMid || "not resolved")) + "</td></tr>" +
-          "<tr><td>Orders on server</td><td>" + E(rounds) + "</td></tr>" +
-          "<tr><td>Orders load</td><td>" + E(SYNC.__pktInfo || (SYNC.submittedLoaded ? "ok" : "pending…")) + "</td></tr>" +
-          "<tr><td>Last upload</td><td>" + E(SYNC.__pushInfo || "nothing uploaded this session") + "</td></tr>" +
-          "</table>" +
-          "<button class='fo-yc-sign' id='fo-resend' style='margin-top:8px'>Send my orders again</button>" +
-          "</div>";
-        page.appendChild(sy);
-        var rs = sy.querySelector("#fo-resend");
-        if (rs) rs.addEventListener("click", function () {
-          try {
-            SYNC.pushedSig = {};                            // force a full re-send
-            var sent = 0;
-            if (App.orders && App.orders.saved && App.season) { foPushRound(App.season.round, App.orders); sent++; }
-            var po = SYNC.plannedOrders || {};
-            for (var k in po) { if (App.season && +k !== App.season.round) { foPushRound(+k, po[k]); sent++; } }
-            toast(sent ? "Re-sending " + sent + " lineup(s) — watch Last upload above." : "No saved lineups to send. Save one on the Orders page first.");
-            setTimeout(function () { var el = document.getElementById("fo-sync"); if (el) { el.remove(); foOfficeExtras(); } }, 2500);
-          } catch (e) { say(e); }
-        });
-      }
-      if (page.querySelector("#fo-stadium")) return;
-      var st = foTrainState();
-      if (st.sponsorPending && t.sponsorDeal && t.sponsorDeal.id) { delete st.sponsorPending; foTrainSave(st); }
-      var seats = t.seats || 9000;
-      var pending = st.seatsPending && st.seatsPending.target > seats;
-      if (st.seatsPending && st.seatsPending.target <= seats) { delete st.seatsPending; foTrainSave(st); pending = false; }
-      var cost = FO_SEAT_STEP * FO_SEAT_RATE;
-      var atCap = seats >= FO_SEAT_CAP;
-      var card = document.createElement("div");
-      card.className = "panel"; card.id = "fo-stadium";
-      card.innerHTML = "<h4>Stadium</h4><div class='pad'>" +
-        "<div style='display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px'><span>Capacity <b>" + seats.toLocaleString() + "</b> seats · upkeep <b>" + FO$(seats) + "</b>/matchday</span></div>" +
-        "<div class='small' style='margin:6px 0 10px'>Bigger stands mean bigger gates when the town is behind you — and a bigger upkeep bill when it isn't. Expansion completes after the next matchday.</div>" +
-        (atCap ? "<div class='fo-mk-gone'>The council won't approve anything bigger.</div>"
-          : pending ? "<div class='fo-mk-gone'>Builders on site — new stand opens after the next matchday.</div>"
-          : "<button class='fo-yc-sign' id='fo-seat-buy'>Extend the stand — +" + FO_SEAT_STEP.toLocaleString() + " seats for " + FO$(cost) + "</button>") +
-        "</div>";
-      var firstPanel = page.querySelector(".panel");
-      if (firstPanel && firstPanel.parentNode) firstPanel.parentNode.insertBefore(card, firstPanel); else page.appendChild(card);
-      var btn = card.querySelector("#fo-seat-buy");
-      if (btn) btn.addEventListener("click", function () {
-        var bank = (App.fin && App.fin.bank) || t.bank || 0;
-        if (bank < cost) { say("Not enough in the bank — the builders want " + FO$(cost) + " up front."); return; }
-        foConfirm({
-          title: "Extend the stand?",
-          body: "+" + FO_SEAT_STEP.toLocaleString() + " seats for " + FO$(cost) + ". Upkeep rises " + FO$(FO_SEAT_STEP) + " per matchday, and the extra gate only pays if the crowds come.",
-          confirm: "Build it — " + FO$(cost), cancel: "Not yet"
-        }).then(function (ok) {
-          if (!ok) return;
-          if (SYNC && SYNC.started && !SYNC.practice && LG) {
-            var st2 = foTrainState();
-            st2.seatsPending = { add: FO_SEAT_STEP, cost: cost, target: seats + FO_SEAT_STEP };
-            foTrainSave(st2);
-            toast("Builders booked — the new stand opens after the next matchday.");
-            var el = document.getElementById("fo-stadium"); if (el) { el.remove(); foOfficeExtras(); }
-          } else {
-            t.seats = seats + FO_SEAT_STEP;
-            if (typeof window.ledger === "function" && window.ledger.length >= 3) window.ledger("Stadium", "Stand extension", -cost);
-            else if (App.fin) App.fin.bank -= cost;
-            if (typeof window.saveGame === "function") window.saveGame(false);
-            toast("New stand open: " + t.seats.toLocaleString() + " seats.");
-            var el2 = document.getElementById("fo-stadium"); if (el2) { el2.remove(); foOfficeExtras(); }
-          }
-        });
-      });
-    } catch (e) {}
+    // Retired: the Office page is fully rendered by the pgOffice override
+    // (see the office module at the end of this file); sync diagnostics and
+    // saves live on #/settings.
   }
   window.addEventListener("hashchange", function () { setTimeout(foOfficeExtras, 30); });
 
@@ -5922,16 +5786,22 @@
     var intOpts = function (cur) { return FO_TR_INT.map(function (k) { return "<option value='" + k + "'" + (cur === k ? " selected" : "") + ">" + k + "</option>"; }).join(""); };
     var potCls = { Star: "star", High: "high", Useful: "useful", Limited: "limited" };
 
+    // potential renders from the tier vocabulary only — unknown values show as
+    // an em-dash rather than leaking a category label
+    var POTW = { Star: "Star", High: "High", Useful: "Useful", Limited: "Limited" };
     var rows = t.players.slice().sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); }).map(function (p) {
       var tr = foTrOf(p), pr = foTrProgress(p), pot = foPotential(p);
+      var potTxt = POTW[pot] || "&mdash;";
       var flag = ""; try { flag = (typeof foFlag === "function" && p.nat) ? foFlag(p.nat) : ""; } catch (e) {}
       var fat = String(p.fatigue || "rested");
       var fatTone = /rested|revived|energetic|passable/.test(fat) ? "ok" : /satisfactory|moderate/.test(fat) ? "mid" : "bad";
       var gainLbl = foSkillLabel(pr.skill) + (pr.pct > 0 ? " · " + pr.pct + "%" : " · first session tonight");
       return "<tr>" +
         "<td class='fo-tr-nm'>" + flag + " <a class='fo-tr-link' href='#/player?n=" + encodeURIComponent(p.name) + "'><b>" + E(p.name) + "</b></a><span class='fo-tr-meta'>" + foRoleShort(p) + " · age " + (p.age || "?") + "</span></td>" +
+        "<td><span class='fo-pot fo-pot-" + String(pot).toLowerCase() + "'>" + potTxt + "</span></td>" +
         "<td><span class='fo-fat fo-fat-" + fatTone + "'>" + E(fat) + "</span></td>" +
         "<td><select class='fo-tr-prog' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + progOpts(tr.program) + "</select></td>" +
+        "<td><select class='fo-tr-int' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + intOpts(tr.intensity) + "</select></td>" +
         "<td class='fo-tr-progress'><div class='fo-tr-bar' title='Progress to the next +1'><u style='width:" + pr.pct + "%'></u></div><span>" + gainLbl + "</span></td>" +
         "</tr>";
     }).join("");
@@ -5959,7 +5829,7 @@
         "<div class='fo-yc-h'>" + flag + " <b class='fo-yc-view' data-i='" + i + "'>" + E(p.name) + "</b></div>" +
         "<div class='fo-yc-meta'>" + foRoleShort(p) + " · age " + p.age + " · rating " + (p.rating || 0).toLocaleString() + "</div>" +
         "<div class='fo-yc-bars'>" + barHtml + "</div>" +
-        "<div class='fo-yc-money'><span>Fee <b>" + FO$(p.fee) + "</b></span><span>Wage <b>" + FO$(foDailyWage(p)) + "/day</b></span></div>" +
+        "<div class='fo-yc-money'><span>Fee <b>" + FO$(p.fee) + "</b></span><span>Wage <b>" + FO$(foDailyWage(p)) + "/matchday</b></span></div>" +
         "<button class='fo-yc-sign' data-i='" + i + "'" + ((st.youthPending.length || canSignIn > 0) ? " disabled" : "") + ">Sign</button>" +
         "</div>";
     }).join("") || "<div class='small'>No eligible young players found this matchday — the shortlist refreshes after each round.</div>";
@@ -5975,8 +5845,8 @@
       "<div class='fo-tr-bulk'><span class='small'>Quick set:</span>" +
       "<button class='fo-tr-b' data-m='role'>Best fit by role</button>" +
       "<button class='fo-tr-b' data-m='restTired'>Rest the tired</button></div>" +
-      "<table class='fo-tr-tbl'><thead><tr><th>Player</th><th>Fatigue</th><th>Program</th><th>Next gain</th></tr></thead><tbody>" + rows + "</tbody></table>" +
-      "<div class='small' style='margin-top:8px'>Skill gains raise wages automatically. Squads over 24 players train slower.</div>" +
+      "<table class='fo-tr-tbl'><thead><tr><th>Player</th><th>Potential</th><th>Fatigue</th><th>Program</th><th>Intensity</th><th>Next gain</th></tr></thead><tbody>" + rows + "</tbody></table>" +
+      "<div class='small' style='margin-top:8px'>Skill gains raise wages automatically. Intense trains ~20% faster but tires players; Rest recovers. Squads over 24 players train slower.</div>" +
       "</div></div>" +
       "<div class='panel'><h4>Youth scout &middot; ages 18&#8211;20</h4><div class='pad'>" +
       "<div class='fo-yc-note'>" + scoutNote + "</div>" +
@@ -5985,6 +5855,7 @@
       "</div></div>";
 
     page.querySelectorAll(".fo-tr-prog").forEach(function (s) { s.addEventListener("change", function () { foSetTraining(s.getAttribute("data-p"), "program", s.value); }); });
+    page.querySelectorAll(".fo-tr-int").forEach(function (s) { s.addEventListener("change", function () { foSetTraining(s.getAttribute("data-p"), "intensity", s.value); }); });
     page.querySelectorAll(".fo-tr-b").forEach(function (b) {
       b.addEventListener("click", function () {
         var m = b.getAttribute("data-m");
@@ -6680,6 +6551,403 @@
       });
     } catch (e) { console.warn("pgNets lab", e); }
   };
+
+  // =========================================================================
+  // Office rebuild (phases 2-3) + admin split (phase 5). The Office is now a
+  // finances-and-infrastructure page whose every number comes from FoFinance;
+  // save/commissioner/sync/reset live on #/settings behind a typed confirm.
+  // =========================================================================
+  try {
+    var foOfCss = document.createElement("style");
+    foOfCss.textContent =
+      ".fo-of-head{display:flex;align-items:center;gap:10px;margin:8px 0 12px;flex-wrap:wrap}" +
+      ".fo-of-head h2{margin:0;font-size:22px;color:#1C2433}" +
+      ".fo-of-head .small{color:#8a93a3}" +
+      ".fo-of-head a.fo-of-admin{margin-left:auto;font-size:12.5px;font-weight:700}" +
+      ".fo-of-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:10px 0}" +
+      ".fo-of-kpi{background:#fff;border:1px solid rgba(28,36,51,.08);border-radius:12px;padding:12px 16px;box-shadow:0 2px 10px rgba(11,19,34,.05)}" +
+      ".fo-of-kpi span{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#8a93a3;font-weight:700;margin-bottom:4px}" +
+      ".fo-of-kpi b{font-size:21px;color:#1C2433}.fo-of-kpi b.fo-pos{color:#2f6b46}.fo-of-kpi b.fo-neg{color:#b3402a}" +
+      ".fo-of-kpi i{display:block;font-style:normal;font-size:12px;color:#5a6472;margin-top:3px}" +
+      ".fo-of-warn div{display:flex;gap:8px;align-items:baseline;font-size:12.5px;margin:5px 0;color:#3a4353}" +
+      ".fo-of-fill{height:9px;border-radius:5px;background:#E8EAEE;overflow:hidden;margin:7px 0 4px}.fo-of-fill i{display:block;height:100%;border-radius:5px;background:#4DA6A2}" +
+      ".fo-of-pills{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px}" +
+      ".fo-of-pill{border:1px solid rgba(28,36,51,.18);background:#fff;color:#1C2433;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer}" +
+      ".fo-of-pill.on{background:#1C2433;color:#fff;border-color:#1C2433}" +
+      "html body.ftpskin button.fo-of-pill{background:#fff !important;color:#1C2433 !important;border-color:rgba(28,36,51,.18) !important}" +
+      "html body.ftpskin button.fo-of-pill.on{background:#1C2433 !important;color:#fff !important;border-color:#1C2433 !important}" +
+      ".fo-of-expwarn{background:#F6E3B4;border:1px solid #e8cf8c;border-radius:9px;padding:9px 12px;font-size:12.5px;color:#5a4310;font-weight:600;margin:8px 0}" +
+      ".fo-of-lvl{display:inline-block;background:#1C2433;color:#F6F4EE;border-radius:7px;padding:2px 9px;font-size:11px;font-weight:800;margin-right:7px}" +
+      ".fo-of-ledger td,.fo-of-ledger th{font-size:12px}" +
+      ".fo-of-foot{font-size:11.5px;color:#8a93a3;margin:6px 2px}" +
+      ".fo-pot{display:inline-block;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:700}" +
+      ".fo-pot-star{background:#EEE8FA;color:#5b4a91}.fo-pot-high{background:#D8EADF;color:#1c5537}.fo-pot-useful{background:#E8EAEE;color:#5a6472}.fo-pot-limited{background:#F3EBE0;color:#8a6b3a}" +
+      ".fo-set-danger{border:1px solid rgba(179,64,42,.4);border-radius:12px;background:#FBF0EE;padding:14px 16px;margin:12px 0}" +
+      ".fo-set-danger input{padding:8px 10px;border:1px solid rgba(28,36,51,.2);border-radius:8px;font-size:13px;min-width:220px}" +
+      ".fo-set-danger button[disabled]{opacity:.45;cursor:not-allowed}" +
+      "@media(max-width:820px){.fo-of-kpis{grid-template-columns:1fr}}";
+    document.head.appendChild(foOfCss);
+  } catch (e) {}
+
+  function foOfMoney(n) { return "$" + Math.round(Math.abs(+n || 0)).toLocaleString(); }
+  function foOfSigned(n) { return "<b class='" + (n >= 0 ? "fo-pos" : "fo-neg") + "'>" + (n >= 0 ? "+" : "&minus;") + foOfMoney(n) + "</b>"; }
+  function foIsFounderish() { return (typeof SYNC !== "undefined" && SYNC && SYNC.started && !SYNC.practice) ? !!SYNC.isFounder : true; }
+
+  // ---- sponsor card (moved from the old foOfficeExtras injection) ----
+  function foSponsorCardHtml(t) {
+    var res0 = foDealResolve(t);
+    var fr = t._finRow, frHtml = "";
+    if (fr && fr.round != null) {
+      var m2 = function (v) { return (v < 0 ? "&minus;" : "+") + foOfMoney(v); };
+      frHtml = "<div class='small' style='color:#8a8474;text-transform:uppercase;letter-spacing:.08em;font-size:10px;margin:8px 0 4px'>Matchday " + fr.round + " settlement</div>" +
+        "<table class='kv'>" +
+        "<tr><td>Sponsor base</td><td>" + m2(fr.base || 0) + "</td></tr>" +
+        (fr.win ? "<tr><td>Win bonus</td><td>" + m2(fr.win) + "</td></tr>" : "") +
+        (fr.gate ? "<tr><td>Home gate</td><td>" + m2(fr.gate) + "</td></tr>" : "") +
+        "<tr><td>Wages</td><td>" + m2(-(fr.wages || 0)) + "</td></tr>" +
+        "<tr><td>Stadium upkeep</td><td>" + m2(-(fr.seats || 0)) + "</td></tr>" +
+        (fr.acad ? "<tr><td>Academies</td><td>" + m2(-fr.acad) + "</td></tr>" : "") +
+        "<tr><td><b>Net</b></td><td><b>" + m2(fr.net || 0) + "</b></td></tr></table>";
+    } else frHtml = "<div class='small'>Your first settlement lands when the next round resolves.</div>";
+    var pickerHtml = "";
+    if (!res0.known) {
+      var stSp = foTrainState();
+      if (stSp.sponsorPending) {
+        pickerHtml = "<div class='fo-yc-note'>You chose <b>" + E((FO_DEAL_INFO[stSp.sponsorPending] || {}).name || stSp.sponsorPending) + "</b> - the deal is signed when the next round resolves. Until then the books run on Prudential terms.</div>";
+      } else {
+        pickerHtml = "<div class='fo-yc-note'>Your club was founded before sponsor deals were recorded, so the books have been running on Prudential's terms. Pick your sponsor once - it takes effect when the next round resolves.</div>" +
+          "<div class='fo-sp-pick'>" + Object.keys(FO_DEAL_INFO).map(function (k) {
+            var d2 = FO_DEAL_INFO[k];
+            return "<button class='fo-sp-choose' data-sp='" + k + "'><b>" + d2.name + "</b><span>" + d2.line + "</span></button>";
+          }).join("") + "</div>";
+      }
+    }
+    return "<div class='panel fo-keep' id='fo-sponsor'><h4>Sponsor" + (res0.known ? " - " + res0.d.name : "") + "</h4><div class='pad'>" +
+      (res0.known ? "<div class='small'><b>" + res0.d.name + "</b>: " + res0.d.line + " Paid when the round resolves.</div>" : "") +
+      pickerHtml + frHtml + "</div></div>";
+  }
+  function foWireSponsor(page) {
+    page.querySelectorAll(".fo-sp-choose").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var id2 = b.getAttribute("data-sp"), d3 = FO_DEAL_INFO[id2];
+        foConfirm({
+          title: "Sign with " + d3.name + "?",
+          body: d3.line + " This is a one-time choice for the season.",
+          confirm: "Sign the deal", cancel: "Not yet"
+        }).then(function (ok) {
+          if (!ok) return;
+          var st3 = foTrainState(); st3.sponsorPending = id2; foTrainSave(st3);
+          try { SYNC.lastOrderSig = null; } catch (e) {}
+          toast(d3.name + " it is - the deal is signed when the next round resolves.");
+          pgOffice();
+        });
+      });
+    });
+  }
+
+  window.pgOffice = function () {
+    try {
+      if (typeof econInit === "function") econInit();
+      var t = foMyClub() || userTeam();
+      var F = window.FoFinance;
+      // keep the engine's dashboard base honest with the club's actual deal
+      try { if (App.fin && App.fin.sponsorBase !== F.sponsorBase(t)) App.fin.sponsorBase = F.sponsorBase(t); } catch (e) {}
+      var fx = F.fixtures(), nxt = fx[0] || null;
+      var split = F.homeAwaySplit(), avg = F.avgNet(), proj = F.seasonEndProjection();
+      var wages = F.wages(t), seats = t.seats || 9000, acadUp = F.acadUpkeep(t);
+      var base = F.sponsorBase(t), gateN = F.gate(t), att = F.gateAttendance(t), tc = F.trainIntensityCost(t);
+      var bank = F.bank();
+
+      // ---- KPI row (3 cards) ----
+      var kpis = "<div class='fo-of-kpis'>" +
+        "<div class='fo-of-kpi'><span>Bank</span><b>" + foOfMoney(bank) + "</b><i>" + foHealth(bank) + "</i></div>" +
+        "<div class='fo-of-kpi'><span>Net per round</span>" + foOfSigned(avg) + "<i>home " + (split.homeNet >= 0 ? "+" : "&minus;") + foOfMoney(split.homeNet) + " &middot; away " + (split.awayNet >= 0 ? "+" : "&minus;") + foOfMoney(split.awayNet) + "</i></div>" +
+        "<div class='fo-of-kpi'><span>Season-end projection</span><b class='" + (proj >= 0 ? "fo-pos" : "fo-neg") + "'>" + foOfMoney(proj) + "</b><i>" + fx.length + " round" + (fx.length === 1 ? "" : "s") + " remaining</i></div></div>";
+
+      // ---- next-round projection waterfall ----
+      var isHome = !!(nxt && nxt.isHome);
+      var projTitle = nxt ? "Next round &middot; R" + (nxt.round + 1) + " " + (isHome ? "vs " : "at ") + E(nxt.opp.name) + " (" + (isHome ? "home" : "away") + ")" : "Next round";
+      var projBank = nxt ? bank + F.roundNet(nxt.round) : bank;
+      var waterfall = "<div class='panel fo-keep'><h4>" + projTitle + "</h4><div class='pad'><table class='kv'>" +
+        "<tr><td>Starting bank</td><td>" + foOfMoney(bank) + "</td></tr>" +
+        (F.paysSponsor() ? "<tr><td>+ Sponsor</td><td>" + foOfMoney(base) + "</td></tr>" : "") +
+        (isHome ? "<tr><td>+ Expected gate</td><td>" + foOfMoney(gateN) + "</td></tr>" : "<tr><td>+ Gate (away &mdash; no gate)</td><td>$0</td></tr>") +
+        (F.chargesWages() ? "<tr><td>&minus; Wages</td><td>" + foOfMoney(wages) + "</td></tr>" : "") +
+        "<tr><td>&minus; Ground maintenance</td><td>" + foOfMoney(seats) + "</td></tr>" +
+        "<tr><td>&minus; Academy upkeep</td><td>" + foOfMoney(acadUp) + "</td></tr>" +
+        (tc > 0 ? "<tr><td>&minus; Training intensity</td><td>" + foOfMoney(tc) + "</td></tr>" : "") +
+        "<tr><td><b>= Projected bank</b></td><td><b class='" + (projBank >= 0 ? "fo-pos" : "fo-neg") + "'>" + foOfMoney(projBank) + "</b></td></tr></table>" +
+        "<div class='small' style='margin-top:5px'>Win bonuses land on top when you win &mdash; they are never counted in advance.</div></div></div>";
+
+      // ---- computed finance warnings ----
+      var avgIncome = fx.length ? fx.reduce(function (s2, f) { return s2 + F.roundIncome(f.round); }, 0) / fx.length : base + gateN / 2;
+      var wagePct = Math.round(100 * wages / Math.max(1, avgIncome));
+      var dip = F.firstNegativeRound();
+      var fill = Math.round(100 * att / Math.max(1, seats));
+      var deal = foDealResolve(t);
+      var warn = function (bad, txt) { return "<div><span>" + (bad ? "&#9888;" : "&#10003;") + "</span><span>" + txt + "</span></div>"; };
+      var warnings = "<div class='panel fo-keep'><h4>Finance warnings</h4><div class='pad fo-of-warn'>" +
+        (F.chargesWages()
+          ? warn(wagePct > 60, "Wages are <b>" + wagePct + "%</b> of a typical round's income" + (wagePct > 60 ? " — over the 60% comfort line." : "."))
+          : warn(false, "Wages (" + foOfMoney(wages) + "/matchday) are informational here — practice books don't charge them.")) +
+        (dip ? warn(true, "The books go negative around <b>R" + dip + "</b> at the current run rate.")
+          : proj < 0 ? warn(true, "Season ends <b>" + foOfMoney(proj) + " in the red</b> at the current run rate.")
+          : warn(false, "Solvent to season's end (<b>+" + foOfMoney(proj) + "</b> projected).")) +
+        warn(fill < 60, "Filling <b>" + fill + "%</b> of the ground on matchdays" + (fill < 60 ? " — expansion won't pay back." : ".")) +
+        (F.paysSponsor()
+          ? warn(false, E(deal.d.name) + ": " + foOfMoney(base) + "/matchday base" + (deal.d.win ? " + " + foOfMoney(deal.d.win) + " per win" : ", no result bonuses") + ".")
+          : warn(false, "Sponsor deals pay out in league play.")) +
+        "</div></div>";
+
+      // ---- ledger, oldest first, running balance AFTER each entry ----
+      var entries = ((App.fin && App.fin.ledger) || []).slice().reverse();
+      if (entries.length && /founder operating bank/i.test(String(entries[0].item || entries[0].label || "")) && !+entries[0].amt) entries.shift();
+      var LIMIT = 30, shown = entries.slice(-LIMIT);
+      var opening = bank; entries.forEach(function (e2) { opening -= (+e2.amt || 0); });
+      var bf = opening; entries.slice(0, entries.length - shown.length).forEach(function (e2) { bf += (+e2.amt || 0); });
+      var run = bf;
+      var ledRows = "<tr><td>" + E((shown[0] && shown[0].wk) || "S" + (App.seasonNo || 1) + " R1") + "</td><td>" +
+        (entries.length > shown.length ? "Balance brought forward" : "Opening balance") + "</td><td class='n'>&mdash;</td><td class='n'><b>" + foOfMoney(bf) + "</b></td></tr>" +
+        shown.map(function (l) {
+          run += (+l.amt || 0);
+          return "<tr><td>" + E(l.wk || "") + "</td><td>" + E(l.item || l.label || "") + "</td><td class='n' style='color:" + (l.amt < 0 ? "#a33328" : "#1c5537") + "'>" + (l.amt < 0 ? "&minus;" : "+") + foOfMoney(l.amt) + "</td><td class='n'>" + foOfMoney(run) + "</td></tr>";
+        }).join("");
+      var ledgerCard = "<div class='panel fo-keep'><h4>Ledger</h4><div class='pad'>" +
+        "<table class='fo-of-ledger'><tr><th>Round</th><th>Item</th><th class='n'>Amount</th><th class='n'>Balance</th></tr>" + ledRows + "</table>" +
+        "<div class='fo-of-foot'>Oldest first &middot; balance shown after each entry</div></div></div>";
+
+      // ---- merged stadium card ----
+      var st = foTrainState();
+      if (st.sponsorPending && t.sponsorDeal && t.sponsorDeal.id) { delete st.sponsorPending; foTrainSave(st); }
+      var pendingSeats = st.seatsPending && st.seatsPending.target > seats;
+      if (st.seatsPending && st.seatsPending.target <= seats) { delete st.seatsPending; foTrainSave(st); pendingSeats = false; }
+      var seatCost = FO_SEAT_STEP * FO_SEAT_RATE;
+      var atCap = seats >= FO_SEAT_CAP;
+      var lowFill = fill < 60;
+      var expWarn = lowFill ? "<div class='fo-of-expwarn'>At " + fill + "% fill the new seats sit empty &mdash; payback never. Worth revisiting above 85% fill.</div>" : "";
+      var expBtn = atCap ? "<div class='fo-mk-gone'>The council won't approve anything bigger.</div>"
+        : pendingSeats ? "<div class='fo-mk-gone'>Builders on site &mdash; new stand opens after the next matchday.</div>"
+        : "<button class='fo-yc-sign' id='fo-seat-buy'>" + (lowFill ? "Expand anyway" : "Extend the stand") + " &mdash; +" + FO_SEAT_STEP.toLocaleString() + " seats for " + FO$(seatCost) + "</button>";
+      // pitch pills + one context line from the real squad and schedule
+      var frontline = (t.players || []).filter(function (p) { return p.bowlType && !isPT(p); });
+      var nPace = frontline.filter(function (p) { return foIsPace(p); }).length, nSpin = frontline.length - nPace;
+      var recTrack = nPace > nSpin ? "green" : nSpin > nPace ? "dry" : "balanced";
+      var nextHome = fx.filter(function (f) { return f.isHome; })[0] || null;
+      var pitchLine = "Your attack: <b>" + nPace + " pace &middot; " + nSpin + " spin</b> &mdash; a " + foPitchName(recTrack).toLowerCase() + " track plays to it." +
+        (nextHome ? " Next home match: R" + (nextHome.round + 1) + " vs " + E(nextHome.opp.name) + "." : " No home fixtures left this season.");
+      var pitchPills = "<div class='fo-of-pills'>" + ["balanced", "flat", "green", "dry", "slow", "cracked", "twoPaced"].map(function (p2) {
+        return "<button class='fo-of-pill" + ((t.homePitch || "balanced") === p2 ? " on" : "") + "' data-p='" + p2 + "'>" + foPitchName(p2) + "</button>";
+      }).join("") + "</div>";
+      var stadium = "<div class='panel fo-keep' id='fo-stadium'><h4>Home ground &mdash; " + E(t.ground || "-") + " &middot; upkeep " + FO$(seats) + "/matchday</h4><div class='pad'>" +
+        "<div class='small'><b>" + att.toLocaleString() + " / " + seats.toLocaleString() + "</b> filled at $" + ((FO_FIN && FO_FIN.ticketPrice) || 9) + " &middot; " + fill + "%</div>" +
+        "<div class='fo-of-fill'><i style='width:" + Math.min(100, fill) + "%" + (lowFill ? ";background:#D9A441" : "") + "'></i></div>" +
+        "<div class='small' style='margin:6px 0 10px'>Bigger stands mean bigger gates when the town is behind you &mdash; and a bigger upkeep bill when it isn't. Expansion completes after the next matchday.</div>" +
+        expWarn + expBtn +
+        "<div style='margin-top:14px'><b style='font-size:12.5px'>Pitch preparation</b>" + pitchPills +
+        "<div class='small'>" + pitchLine + " Applies from your next home fixture; away grounds keep their own identities.</div></div>" +
+        "</div></div>";
+
+      // ---- academy cards (upgrade prices: the engine's acadUpCost table) ----
+      var foAcadUp = (typeof acadUpCost === "function") ? acadUpCost
+        : function (l) { return [50000, 90000, 150000, 240000, 360000][Math.max(0, Math.min(4, +(l || 0)))] || 0; };
+      var upY = foAcadUp(t.acadY), upS = foAcadUp(t.acadS);
+      var acadCard = function (kind, lvl, upCost, effect, nextFx) {
+        var max = lvl >= 5;
+        return "<div class='panel fo-keep'><h4>" + kind + " academy</h4><div class='pad'>" +
+          "<div><span class='fo-of-lvl'>Level " + (lvl || 0) + "</span><span class='small'>" + effect + "</span></div>" +
+          "<div class='small' style='margin:7px 0'>" + (max ? "Fully developed &mdash; the council is jealous." : "Next: " + nextFx) + "</div>" +
+          (max ? "<span class='small'>MAX</span>" : "<button class='fo-yc-sign fo-acad-up' data-k='" + kind + "'>Upgrade &mdash; " + FO$(upCost) + "</button>") +
+          "</div></div>";
+      };
+      var acadRow = "<div class='grid2'><div class='col'>" +
+        acadCard("Youth", t.acadY || 0, upY,
+          "Sets the calibre of end-of-season intake and speeds youth training (+10% per level).",
+          "L" + ((t.acadY || 0) + 1) + " &middot; +10% youth training &middot; better intake &middot; upkeep " + FO$(F.acadUpkeepAt((t.acadY || 0) + 1)) + "/matchday") +
+        "</div><div class='col'>" +
+        acadCard("Senior", t.acadS || 0, upS,
+          "Multiplies senior training gains (+8% per level).",
+          "L" + ((t.acadS || 0) + 1) + " &middot; +8% senior training &middot; upkeep " + FO$(F.acadUpkeepAt((t.acadS || 0) + 1)) + "/matchday") +
+        "</div></div>" +
+        "<div class='fo-of-foot'>Combined upkeep " + FO$(acadUp) + "/matchday &middot; manage training on the <a href='#/training'>Training page</a></div>";
+
+      // ---- season history ----
+      var hist = "<div class='panel fo-keep'><h4>Season history</h4><div class='pad'>" +
+        ((App.history || []).map(function (h) { return "<div class='bl'>S" + h.season + ": <b>" + E(h.champion) + "</b> champions &middot; you: " + h.pos + (["st", "nd", "rd"][h.pos - 1] || "th") + " (" + FO$(h.prize || 0) + ")</div>"; }).join("") || "<span class='small'>First season in progress.</span>") +
+        "</div></div>";
+
+      var page = document.getElementById("page"); if (!page) return;
+      page.innerHTML = (typeof crumb === "function" ? crumb(t.name, "Office") : "") +
+        "<div class='fo-of-head'><h2>Office</h2><span class='small'>&middot; the business end</span>" +
+        "<a href='#/settings' class='fo-of-admin fo-morelink'>Admin &amp; settings &rsaquo;</a></div>" +
+        kpis +
+        "<div class='grid2'><div class='col'>" + waterfall + "</div><div class='col'>" + warnings + "</div></div>" +
+        foSponsorCardHtml(t) + ledgerCard + stadium + acadRow + hist;
+
+      foWireSponsor(page);
+      // stadium expansion (same purchase flow as before: packet in MP, direct in solo)
+      var buy = page.querySelector("#fo-seat-buy");
+      if (buy) buy.addEventListener("click", function () {
+        if (bank < seatCost) { say("Not enough in the bank — the builders want " + FO$(seatCost) + " up front."); return; }
+        foConfirm({
+          title: "Extend the stand?",
+          body: "+" + FO_SEAT_STEP.toLocaleString() + " seats for " + FO$(seatCost) + ". Upkeep rises " + FO$(FO_SEAT_STEP) + " per matchday, and the extra gate only pays if the crowds come." + (lowFill ? " Right now you fill " + fill + "% — the new seats start empty." : ""),
+          confirm: "Build it — " + FO$(seatCost), cancel: "Not yet"
+        }).then(function (ok) {
+          if (!ok) return;
+          if (F.isMP() && typeof LG !== "undefined" && LG) {
+            var st2 = foTrainState();
+            st2.seatsPending = { add: FO_SEAT_STEP, cost: seatCost, target: seats + FO_SEAT_STEP };
+            foTrainSave(st2);
+            toast("Builders booked — the new stand opens after the next matchday.");
+          } else {
+            t.seats = seats + FO_SEAT_STEP;
+            if (typeof window.ledger === "function" && window.ledger.length >= 3) window.ledger("Stadium", "Stand extension", -seatCost);
+            else if (App.fin) App.fin.bank -= seatCost;
+            if (typeof window.saveGame === "function") window.saveGame(false);
+            toast("New stand open: " + t.seats.toLocaleString() + " seats.");
+          }
+          pgOffice();
+        });
+      });
+      // pitch preparation pills
+      page.querySelectorAll(".fo-of-pill").forEach(function (b) {
+        b.addEventListener("click", function () {
+          t.homePitch = b.getAttribute("data-p");
+          if (typeof window.saveGame === "function") window.saveGame(false);
+          toast("Groundsman briefed: " + foPitchName(t.homePitch) + " surfaces at home.");
+          pgOffice();
+        });
+      });
+      // academy upgrades (engine values: acadUpCost by level, upkeep from the table)
+      page.querySelectorAll(".fo-acad-up").forEach(function (b) {
+        b.addEventListener("click", function () {
+          var isY = b.getAttribute("data-k") === "Youth";
+          var lvl = isY ? (t.acadY || 0) : (t.acadS || 0);
+          var cost2 = [50000, 90000, 150000, 240000, 360000][Math.max(0, Math.min(4, lvl))] || 0;
+          try { if (typeof acadUpCost === "function") cost2 = acadUpCost(lvl); } catch (e) {}
+          if (bank < cost2) { say("Not enough in the bank — the upgrade costs " + FO$(cost2) + "."); return; }
+          foConfirm({
+            title: "Upgrade the " + (isY ? "youth" : "senior") + " academy?",
+            body: "Level " + lvl + " → " + (lvl + 1) + " for " + FO$(cost2) + ". Upkeep rises to " + FO$(F.acadUpkeepAt(lvl + 1)) + "/matchday.",
+            confirm: "Upgrade — " + FO$(cost2), cancel: "Not yet"
+          }).then(function (ok) {
+            if (!ok) return;
+            if (isY) t.acadY = lvl + 1; else t.acadS = lvl + 1;
+            if (typeof window.ledger === "function" && window.ledger.length >= 3) window.ledger("Academy", (isY ? "Youth" : "Senior") + " academy upgrade", -cost2);
+            else if (App.fin) App.fin.bank -= cost2;
+            if (typeof window.saveGame === "function") window.saveGame(false);
+            toast((isY ? "Youth" : "Senior") + " academy at level " + (lvl + 1) + ".");
+            pgOffice();
+          });
+        });
+      });
+      if (typeof updateTopbarStatus === "function") try { updateTopbarStatus(); } catch (e) {}
+    } catch (e) { console.warn("pgOffice overlay", e); }
+  };
+
+  // =========================================================================
+  // Phase 5: #/settings — saves, commissioner tools, sync diagnostics and the
+  // danger zone, off the money page. Reset requires typing the club name.
+  // =========================================================================
+  function foSettingsHTML() {
+    var t = foMyClub() || userTeam();
+    var isMP = !!(typeof SYNC !== "undefined" && SYNC && SYNC.started && !SYNC.practice);
+    var admin = foIsFounderish();
+    var save = "<div class='panel fo-keep'><h4>Save game</h4><div class='pad'>" +
+      (isMP ? "<div class='small' style='margin-bottom:6px'>The cloud league is the save — every round is stored on the server. Exports are optional backups of your local view.</div>" : "") +
+      "<button class='primary' id='fo-set-save'>Save now</button> " +
+      "<button id='fo-set-export'>Export file</button> " +
+      "<label style='display:inline-block'><input type='file' accept='.json' style='display:none' id='fo-set-import'><button id='fo-set-importbtn'>Import file</button></label>" +
+      "<div class='small' style='margin-top:4px'>Autosaves each completed round. Autosave keeps ball-by-ball logs for the last 5 matches only; exports keep everything.</div>" +
+      "</div></div>";
+    var sync = "";
+    if (isMP) {
+      var rounds = Object.keys(SYNC.submitted || {}).map(function (k) { return "R" + (+k + 1); }).join(", ") || "none yet";
+      sync = "<div class='panel fo-keep'><h4>Sync status</h4><div class='pad small'>" +
+        "<table class='kv'>" +
+        "<tr><td>Build</td><td>" + E(FO_BUILD) + "</td></tr>" +
+        "<tr><td>Manager id</td><td>" + E(String(SYNC.myMid || "not resolved")) + "</td></tr>" +
+        "<tr><td>Orders on server</td><td>" + E(rounds) + "</td></tr>" +
+        "<tr><td>Orders load</td><td>" + E(SYNC.__pktInfo || (SYNC.submittedLoaded ? "ok" : "pending…")) + "</td></tr>" +
+        "<tr><td>Last upload</td><td>" + E(SYNC.__pushInfo || "nothing uploaded this session") + "</td></tr>" +
+        "</table>" +
+        "<button class='fo-yc-sign' id='fo-set-resend' style='margin-top:8px'>Send my orders again</button>" +
+        "</div></div>";
+    }
+    var comm = "";
+    if (admin && !isMP) {
+      var q = App.mergeQueue || [];
+      comm = "<div class='panel fo-keep'><h4>Founder league (commissioner)</h4><div class='pad'>" +
+        "<div class='small' style='margin-bottom:5px'>Collect each founder's exported club file, import them here, then start the season. Your own club (<b>" + E(t.name) + "</b>) is included automatically; empty slots fill with bots.</div>" +
+        "<div style='margin-bottom:4px'><b>In the league:</b> <span class='phasechip' style='background:#e2f0e2'>" + E(t.name) + " (you)</span> " +
+        (q.map(function (c) { return "<span class='phasechip'>" + E(c.name) + "</span>"; }).join(" ") || "<span class='small'>no founder clubs imported yet</span>") + "</div>" +
+        "<div class='ctlrow'>" +
+        "<label style='display:inline-block'><input type='file' accept='.json' style='display:none' id='fo-set-founder'><button class='primary' id='fo-set-founderbtn'>Import a founder club file</button></label>" +
+        "<button id='fo-set-start' " + (q.length ? "" : "disabled") + ">Start the season &#9656;</button>" +
+        "<button id='fo-set-exppkt'>Export my orders packet</button>" +
+        "<label style='display:inline-block'><input type='file' accept='.json' style='display:none' id='fo-set-imppkt'><button id='fo-set-imppktbtn'>Import orders packet</button></label>" +
+        "</div>" +
+        "<div class='small'>" + (q.length + 1) + " founder club" + (q.length ? "s" : "") + " ready &middot; " + Math.max(0, 10 - (q.length + 1)) + " bot slots.</div>" +
+        "</div></div>";
+    }
+    var danger = "";
+    if (admin) {
+      danger = "<div class='fo-set-danger fo-keep'><h4 style='margin:0 0 6px;color:#8a2f1d'>Danger zone</h4>" +
+        "<div class='small' style='margin-bottom:8px'>Reset wipes the save, your club and all results from this browser. Exported files are unaffected. Type your club name (<b>" + E(t.name) + "</b>) to arm the button.</div>" +
+        "<div style='display:flex;gap:8px;flex-wrap:wrap;align-items:center'>" +
+        "<input id='fo-set-confirm' placeholder='Type your club name' autocomplete='off'>" +
+        "<button class='warn' id='fo-set-reset' disabled>Reset game (wipe save &amp; start over)</button></div></div>";
+    }
+    return "<div class='fo-of-head'><h2>Admin &amp; settings</h2><span class='small'>&middot; saves, sync and commissioner tools</span>" +
+      "<a href='#/office' class='fo-of-admin fo-morelink'>&lsaquo; Back to the Office</a></div>" +
+      save + sync + comm + danger;
+  }
+  function foRenderSettings() {
+    try {
+      if (!/^#\/settings/.test(location.hash || "")) return;
+      var page = document.getElementById("page"); if (!page) return;
+      if (page.querySelector("#fo-set-save") && page.__foSetSig === (location.hash + "|" + ((SYNC && SYNC.__pushInfo) || ""))) return;
+      page.__foSetSig = location.hash + "|" + ((SYNC && SYNC.__pushInfo) || "");
+      page.innerHTML = foSettingsHTML();
+      var t = foMyClub() || userTeam();
+      var on = function (id, fn) { var el = page.querySelector("#" + id); if (el) el.addEventListener("click", fn); };
+      on("fo-set-save", function () { try { saveGame(true); toast("Saved."); } catch (e) { say(e); } });
+      on("fo-set-export", function () { try { exportGame(); } catch (e) { say(e); } });
+      on("fo-set-importbtn", function () { page.querySelector("#fo-set-import").click(); });
+      var imp = page.querySelector("#fo-set-import");
+      if (imp) imp.addEventListener("change", function () { try { importGame(imp.files[0]); } catch (e) { say(e); } });
+      on("fo-set-founderbtn", function () { page.querySelector("#fo-set-founder").click(); });
+      var fimp = page.querySelector("#fo-set-founder");
+      if (fimp) fimp.addEventListener("change", function () { try { importFounderClub(fimp.files[0]); fimp.value = ""; foRenderSettings(); } catch (e) { say(e); } });
+      on("fo-set-start", function () { if (confirm("Start the season with " + ((App.mergeQueue || []).length + 1) + " founder clubs? This resets the current standings.")) try { startLeagueFromMerge(); } catch (e) { say(e); } });
+      on("fo-set-exppkt", function () { try { exportOrdersPacket(); } catch (e) { say(e); } });
+      on("fo-set-imppktbtn", function () { page.querySelector("#fo-set-imppkt").click(); });
+      var pimp = page.querySelector("#fo-set-imppkt");
+      if (pimp) pimp.addEventListener("change", function () { try { importOrdersPacket(pimp.files[0]); pimp.value = ""; } catch (e) { say(e); } });
+      on("fo-set-resend", function () {
+        try {
+          SYNC.pushedSig = {};
+          var sent = 0;
+          if (App.orders && App.orders.saved && App.season) { foPushRound(App.season.round, App.orders); sent++; }
+          var po = SYNC.plannedOrders || {};
+          for (var k in po) { if (App.season && +k !== App.season.round) { foPushRound(+k, po[k]); sent++; } }
+          toast(sent ? "Re-sending " + sent + " lineup(s) — watch Last upload above." : "No saved lineups to send. Save one on the Orders page first.");
+          setTimeout(function () { page.__foSetSig = null; foRenderSettings(); }, 2500);
+        } catch (e) { say(e); }
+      });
+      var conf = page.querySelector("#fo-set-confirm"), rbtn = page.querySelector("#fo-set-reset");
+      if (conf && rbtn) {
+        conf.addEventListener("input", function () { rbtn.disabled = conf.value.trim() !== t.name; });
+        rbtn.addEventListener("click", function () {
+          if (conf.value.trim() !== t.name) return;
+          try { if (typeof foResetGame === "function") { foResetGame(); return; } } catch (e) {}
+          try { localStorage.clear(); } catch (e) {}
+          location.hash = ""; location.reload();
+        });
+      }
+    } catch (e) { console.warn("foRenderSettings", e); }
+  }
+  window.addEventListener("hashchange", function () { setTimeout(foRenderSettings, 20); });
 
   console.info("Fifty Overs League overlay ready.");
 })();
