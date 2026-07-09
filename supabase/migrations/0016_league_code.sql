@@ -13,16 +13,20 @@ create or replace function app.league_code(p_league_id uuid)
 returns text language plpgsql security definer set search_path = app, public as $$
 declare
   v_uid uuid := app.current_auth_uid();
+  v_mid uuid;
   v_code text;
 begin
   if v_uid is null then raise exception 'not authenticated' using errcode = '28000'; end if;
-  if not exists (select 1 from app.members where league_id = p_league_id and auth_uid = v_uid and role = 'founder') then
+  select id into v_mid from app.members
+   where league_id = p_league_id and auth_uid = v_uid and role = 'founder';
+  if v_mid is null then
     raise exception 'only the founder can issue the league code' using errcode = '42501';
   end if;
   select code into v_code from app.invites where league_id = p_league_id and max_uses is null limit 1;
   if v_code is not null then return v_code; end if;
   v_code := upper(substr(md5(p_league_id::text || clock_timestamp()::text), 1, 8));
-  insert into app.invites(league_id, code, role, max_uses) values (p_league_id, v_code, 'manager', null);
+  insert into app.invites(league_id, code, role, max_uses, created_by)
+    values (p_league_id, v_code, 'manager', null, v_mid);
   return v_code;
 end $$;
 grant execute on function app.league_code(uuid) to authenticated;
