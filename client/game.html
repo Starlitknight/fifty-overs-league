@@ -7958,6 +7958,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if (tiredP.length) watchRows += "<tr><td><span class='fo-neg'>&#9679; Needs a rest</span></td><td class='r'>" + E(tiredP.slice(0, 3).join(", ")) + (tiredP.length > 3 ? " +" + (tiredP.length - 3) : "") + "</td></tr>";
       var watchCard = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Squad watch</div><a href='#/squad' class='fo-morelink'>Squad &rsaquo;</a></div><div class='fo-card-b'>" +
         (watchRows ? "<table class='fo-kv'>" + watchRows + "</table>" : "<div class='small'>Everyone is steady &middot; form and fatigue updates land after each match.</div>") + "</div></div>";
+      // milestone watch: unfinished business is what brings a manager back
+      var msRows = [];
+      try { msRows = foMilestoneWatch(t); } catch (e) {}
+      var msCard = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Milestone watch</div><a href='#/museum' class='fo-morelink'>Club museum &rsaquo;</a></div><div class='fo-card-b'>" +
+        (msRows.length ? msRows.map(function (r2) { return "<div class='fo-ms-row'><b>" + E(r2.nm) + "</b><span>" + r2.txt + "</span></div>"; }).join("")
+          : "<div class='small'>No one is knocking on a landmark yet. The museum keeps everything they have already done.</div>") + "</div></div>";
 
       var formPill = pips ? "<span class='fo-hero-pill'>Form <span class='fo-form'>" + pips + "</span></span>" : "<span class='fo-hero-pill'>No matches yet</span>";
       var hero = "<div class='fo-ch-hero'><div class='fo-ch-hero-l'>" +
@@ -8046,7 +8052,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<div class='fo-ch-grid'><div class='fo-ch-col'>" + newsCard +
         "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Next three fixtures</div><a href='#/matches' class='fo-morelink'>Full schedule &amp; results ›</a></div><div class='fo-card-b'>" + upBody + "</div></div>" +
         leaders + gainsCard +
-        "</div><div class='fo-ch-col'>" + standings + fin + bestsCard + watchCard + "</div></div></div>";
+        "</div><div class='fo-ch-col'>" + standings + fin + msCard + bestsCard + watchCard + "</div></div></div>";
 
       var page = document.getElementById("page"); if (!page) return;
       page.innerHTML = html;
@@ -8207,8 +8213,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         return "<div class='fo-threat'><div><a class='fo-sp-nm' href='#/player?n=" + encodeURIComponent(th.nm) + "'>" + E(th.nm) + "</a>" +
           "<div class='small'>" + E(th.sub) + "</div></div><span class='fo-tag fo-tag-" + th.tone + "'>" + E(th.tag) + "</span></div>";
       }).join("") + "</div></div>";
+    var battles = "";
+    try { battles = foBattlesCard(t); } catch (e) {}
     return notes +
-      "<div class='fo-sc2'>" + threats + h2h + "</div>" +
+      "<div class='fo-sc2'>" + threats + h2h + "</div>" + battles +
       "<div class='panel'><h4>Recent results</h4><div class='pad'><table><tr><th>Date</th><th>Match</th><th>Result</th></tr>" + resRows + "</table></div></div>" +
       "<div class='panel'><h4>Upcoming fixtures</h4><div class='pad'>" + upNote + "<table><tr><th>Date</th><th>Rd</th><th>Opponent</th>" + (oneGround ? "" : "<th>Ground</th>") + "</tr>" + upRows + "</table></div></div>";
   }
@@ -9316,7 +9324,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260709-2120-aa7ab0";
+  var FO_BUILD = "20260709-2142-873467";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -9364,9 +9372,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // re-apply fixture match-times after any re-render of the game page
   try {
     var _mt = null, pg0 = document.getElementById("page");
-    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); decorateFixtureTimes(); tidyPage(); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); }, 40); }).observe(pg0, { childList: true, subtree: true });
+    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); decorateFixtureTimes(); tidyPage(); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} return r; }; }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} return r; }; }
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
@@ -10261,7 +10269,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             if (n <= 0 || _used[p.name]) return;
             var fee = foDraftPrice(p);
             if (_spent + fee > 940000) return;
-            _used[p.name] = 1; _picked.push(p); _spent += fee; n--;
+            _used[p.name] = 1; p._prov = p._prov || { how: "draft", s: (App.seasonNo || 1) }; _picked.push(p); _spent += fee; n--;
           });
         };
         _take(_pool.filter(function (p) { return p.keeper; }), 1);
@@ -11032,6 +11040,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       try {
         var t = GD.teams[App.teamIx];
         if (t) { t.ground = FO_ONB.ground || t.ground; t.sponsor = FO_ONB.sponsor; t.homePitch = FO_ONB.pitch || "balanced"; t.bank = _bank; }
+        if (t) (t.players || []).forEach(function (dp) { dp._prov = dp._prov || { how: "draft", s: App.seasonNo || 1 }; });
         var _deal = foSponsorById(FO_ONB.sponsor);
         t.sponsorDeal = { id: _deal.id, base: _deal.base, win: _deal.win, halfway: _deal.halfway, seasonTop3: _deal.seasonTop3, champ: _deal.champ };
         if (App.fin) { App.fin.bank = _bank; App.fin.sponsorBase = _deal.base; }
@@ -11605,6 +11614,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     }).then(function (ok) {
       if (!ok) return;
       st.lastSignRound = round;
+      cand._prov = { how: "youth", s: App.seasonNo || 1, r: round + 1, nat: (st.scoutReveal && st.scoutReveal.nat) || null };
       st.youthPending = [cand];
       foTrainSave(st);
       if (SYNC && SYNC.started && !SYNC.practice) {
@@ -11801,6 +11811,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       confirm: "Sign · " + FO$(p.fee), cancel: "Not yet"
     }).then(function (ok) {
       if (!ok) return;
+      p._prov = { how: "market", s: App.seasonNo || 1, r: ((App.season && App.season.round) || 0) + 1, fee: p.fee };
       if (SYNC && SYNC.started && !SYNC.practice && LG) {
         rpc("market_claim", { p_league_id: LG.id, p_player_name: p.name, p_player: p, p_price: p.fee, p_club: t.name })
           .then(function () {
@@ -12247,13 +12258,30 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var rep = t._trainReport || {};
         (rep.signings || []).forEach(function (s) { items.push({ pri: 3, h: E(t.name) + ": " + E(s), s: "" }); });
         (rep.injuries || []).forEach(function (s) { items.push({ pri: 1, h: "INJURY: " + E(s), s: E(t.name) }); });
+        // the chronicle: debuts, milestones and nicknames from this round
+        if (t._chron && t._chron.r === rd + 1) (t._chron.items || []).forEach(function (c) {
+          if (c.ev === "debut") items.push({ pri: 1, h: "DEBUT: " + E(c.name) + " takes the field for the first time", s: "for " + E(t.name) });
+          if (c.ev === "runs") items.push({ pri: 1, h: "MILESTONE: " + E(c.name) + " reaches " + (+c.n).toLocaleString() + " club runs", s: "for " + E(t.name) });
+          if (c.ev === "wkts") items.push({ pri: 1, h: "MILESTONE: " + E(c.name) + " takes his " + c.n + "th wicket for the club", s: "for " + E(t.name) });
+          if (c.ev === "nick") items.push({ pri: 1, h: "NICKNAME: " + E(c.name) + " will be known as “" + E(c.nick) + "” after that performance", s: "so say the fans of " + E(t.name) });
+        });
+        if (t._chronFarewell && t._chronFarewell.s === (App.seasonNo || 1) - 1) t._chronFarewell.names.forEach(function (nm) {
+          items.push({ pri: 0, h: "FAREWELL: " + E(nm) + " retires", s: "a " + E(t.name) + " career remembered in the museum" });
+        });
       });
+    } catch (e) {}
+    // the dressing-room line keeps a reserved seat at the end of the page
+    var voiceLi = "";
+    try {
+      var vt = foMyClub();
+      var vi = vt && foVoiceItem(vt, rd + 1);
+      if (vi) voiceLi = "<li><div class='fo-news-h'>" + vi.h + "</div></li>";
     } catch (e) {}
     items.sort(function (a, b) { return a.pri - b.pri; });
     var lis = items.slice(0, 6).map(function (it) {
       var link = it.sc != null ? " class='fo-rowlink' data-sc='" + it.sc + "' title='Open the scorecard'" : "";
       return "<li" + link + "><div class='fo-news-h'>" + it.h + "</div>" + (it.s ? "<div class='fo-news-s'>" + it.s + "</div>" : "") + "</li>";
-    }).join("");
+    }).join("") + voiceLi;
     return "<div class='fo-card fo-news'><div class='fo-card-h2row'><div class='fo-card-h2'>The Fifty Overs Post · Round " + (rd + 1) + "</div><a class='fo-morelink' href='#/matchday'>Watch the matchday ›</a></div><div class='fo-card-b'><ul style='margin:0;padding-left:4px;list-style:none;font-size:13px'>" + lis + "</ul></div></div>";
   }
 
@@ -12837,7 +12865,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var sub = prole(p.role) + " · " + (p.hand === "L" ? "LHB" : "RHB") + (p.btLabel && !/does not/i.test(p.btLabel) ? " / " + E(p.btLabel) : "");
         var open = !!squadView.open[p.name];
         return "<div class='fo-sqr-row" + (onlyK ? " fo-sq-warnrow" : "") + "' data-n='" + E(p.name) + "'>" +
-          "<div class='fo-sq-nm'>" + flag(p.nat) + " " + playerLink(p) + (p.keeper ? " <span title='wicketkeeper'>&dagger;</span>" : "") + (p.__y ? "<span class='fo-sq-talent'>U20</span>" : "") + (p.fatigue === "tired" ? "<span class='fo-sq-tired' title='tired · recovers next match or with Rest'>TIRED</span>" : "") + tchips +
+          "<div class='fo-sq-nm'>" + flag(p.nat) + " " + playerLink(p) + (p._nick ? "<span class='fo-sq-nickchip'>“" + E(p._nick) + "”</span>" : "") + (p.keeper ? " <span title='wicketkeeper'>&dagger;</span>" : "") + (p.__y ? "<span class='fo-sq-talent'>U20</span>" : "") + (p.fatigue === "tired" ? "<span class='fo-sq-tired' title='tired · recovers next match or with Rest'>TIRED</span>" : "") + tchips +
           "<div class='fo-sq-sub'>" + sub + "</div></div>" +
           "<div class='fo-sq-age'>" + (p.age | 0) + " " + traj + "</div>" +
           "<div class='fo-sq-form'><span class='fo-fb " + fb + "' title='" + FORMTIP + "'>" + FORMW_UI[fi] + "</span></div>" +
@@ -13557,6 +13585,388 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       window.playerTip.__fo = 1;
     }
   } catch (e) {}
+
+  // =========================================================================
+  // THE CLUB CHRONICLE. Nothing notable evaporates: every acquisition carries
+  // its story, every innings is tagged to its season, milestones and earned
+  // nicknames are written into a permanent career, batter-bowler duels
+  // accumulate into nemesis records, seasons end in awards, and retired
+  // players move into the club museum. One code path: the completeRound and
+  // seasonEnd wrappers below run in solo play AND on the resolver's page.
+  // =========================================================================
+  try {
+    var foChCss = document.createElement("style");
+    foChCss.textContent =
+      ".fo-sq-nickchip{display:inline-block;background:#F6E3B4;color:#7a5c13;border-radius:7px;padding:1px 7px;font-size:10.5px;font-weight:800;margin-left:6px;vertical-align:1px}" +
+      ".fo-cp-prov{background:#F0F4F8;border:1px solid rgba(31,78,107,.16);border-radius:10px;padding:10px 13px;font-size:12.5px;color:#243244;margin-bottom:10px}" +
+      ".fo-cp-ev{display:flex;gap:9px;align-items:baseline;font-size:12.5px;margin:4px 0;color:#3a4353}" +
+      ".fo-cp-ev i{font-style:normal;flex:0 0 52px;color:#8a93a3;font-size:11px;font-weight:700}" +
+      ".fo-mu-troph{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 10px}" +
+      ".fo-mu-cup{background:linear-gradient(135deg,#D9A441,#c08a2b);color:#fff;border-radius:10px;padding:8px 14px;font-weight:800;font-size:12.5px;box-shadow:0 3px 10px rgba(160,110,20,.3)}" +
+      ".fo-mu-leg{background:#fff;border:1px solid rgba(28,36,51,.1);border-radius:11px;padding:11px 14px;margin:7px 0}" +
+      ".fo-mu-leg b{font-size:14px;color:#1C2433}.fo-mu-leg .small{margin-top:2px}" +
+      ".fo-ms-row{display:flex;gap:9px;align-items:baseline;font-size:12.5px;margin:5px 0;color:#3a4353}" +
+      ".fo-ms-row b{color:#1C2433}.fo-ms-row i{font-style:normal;margin-left:auto;color:#C0562F;font-weight:800;white-space:nowrap}" +
+      ".fo-duel{display:flex;gap:8px;align-items:baseline;font-size:12.5px;margin:5px 0;color:#3a4353}" +
+      ".fo-duel b{color:#1C2433}.fo-duel em{font-style:normal;margin-left:auto;font-weight:800;color:#8a2f1d;white-space:nowrap}" +
+      ".fo-news-voice{color:#5b4a91;font-style:italic}";
+    document.head.appendChild(foChCss);
+  } catch (e) {}
+
+  // ---- career + totals helpers ----
+  function foClubTotals(name) {
+    var h = (App.playerHist && App.playerHist[name]) || [], runs = 0, wkts = 0, hs = 0, hsTxt = null, bw = 0, bwr = 1e9, bbTxt = null;
+    h.forEach(function (e) {
+      runs += +e.rr || 0; wkts += +e.w || 0;
+      if ((+e.rr || 0) > hs) { hs = +e.rr; hsTxt = e.bat; }
+      if ((+e.w || 0) > bw || ((+e.w || 0) === bw && (+e.w || 0) > 0 && (+e.cr || 0) < bwr)) { if ((+e.w || 0) > 0) { bw = +e.w; bwr = +e.cr || 0; bbTxt = bw + "/" + (e.cr || 0); } }
+    });
+    return { runs: runs, wkts: wkts, matches: h.length, hs: hs, hsTxt: hsTxt, bb: bbTxt };
+  }
+  function foCareerPush(p, ev) { (p._career = p._career || []).push(ev); if (p._career.length > 48) p._career.shift(); }
+  function foDisplayName(p) { return p._nick ? p.name.split(" ")[0] + ' "' + p._nick + '" ' + p.name.split(" ").slice(1).join(" ") : p.name; }
+
+  // ---- the chronicle pass around every completed round ----
+  function foChroniclePre() {
+    var pre = { round: (App.season && App.season.round) || 0, results: (App.results || []).length, seasonNo: App.seasonNo || 1, players: {} };
+    try {
+      GD.teams.forEach(function (t) {
+        (t.players || []).forEach(function (p) {
+          var h = (App.playerHist && App.playerHist[p.name]) || [], runs = 0, w = 0;
+          h.forEach(function (e) { runs += +e.rr || 0; w += +e.w || 0; });
+          pre.players[p.name] = { n: h.length, runs: runs, wkts: w };
+        });
+      });
+    } catch (e) {}
+    return pre;
+  }
+  function foChroniclePost(pre) {
+    try {
+      var sN = pre.seasonNo, rN = pre.round + 1;
+      // 1. duels: every dismissal credits bowler > batter on the bowling club
+      (App.results || []).slice(pre.results).forEach(function (r) {
+        (r.innings || []).forEach(function (inn) {
+          if (!inn || !inn.bat) return;
+          var bt = GD.teams.find(function (t2) { return t2.name === inn.bowlTeam; });
+          if (!bt) return;
+          inn.bat.forEach(function (b) {
+            if (!b || !b.out || !b.p) return;
+            var s2 = String(b.out), bowler = null;
+            var ix = s2.lastIndexOf(" b ");
+            if (ix > 0) bowler = s2.slice(ix + 3).trim();
+            else if (s2.indexOf("b ") === 0) bowler = s2.slice(2).trim();
+            if (!bowler) return;
+            var d = (bt._duels = bt._duels || {});
+            var k = bowler + "|" + b.p.name;
+            d[k] = (d[k] || 0) + 1;
+          });
+        });
+      });
+      GD.teams.forEach(function (t) { var d = t._duels; if (d) { var ks = Object.keys(d); if (ks.length > 300) { ks.sort(function (a, b2) { return d[a] - d[b2]; }).slice(0, ks.length - 300).forEach(function (k) { delete d[k]; }); } } });
+      // 2. per player: tag new entries with season+round, write career events
+      GD.teams.forEach(function (t) {
+        var feed = [];
+        (t.players || []).forEach(function (p) {
+          var h = (App.playerHist && App.playerHist[p.name]) || [];
+          var was = pre.players[p.name] || { n: 0, runs: 0, wkts: 0 };
+          var newE = h.slice(was.n);
+          if (!newE.length) return;
+          newE.forEach(function (e) { e.s = sN; e.r = rN; });
+          if (!was.n) { foCareerPush(p, { s: sN, r: rN, ev: "debut", txt: "Debut for " + t.name }); feed.push({ ev: "debut", name: p.name }); }
+          var runsCum = was.runs, wktsCum = was.wkts;
+          newE.forEach(function (e) {
+            var rr = +e.rr || 0, w = +e.w || 0;
+            if (rr >= 100) {
+              var maiden = !(p._career || []).some(function (c) { return c.ev === "century"; });
+              foCareerPush(p, { s: sN, r: rN, ev: "century", txt: (maiden ? "Maiden century" : "Century") + " · " + (e.bat || rr) });
+            } else if (rr >= 50 && !(p._career || []).some(function (c) { return c.ev === "fifty" || c.ev === "century"; })) {
+              foCareerPush(p, { s: sN, r: rN, ev: "fifty", txt: "Maiden fifty · " + (e.bat || rr) });
+            }
+            if (w >= 5) {
+              var m5 = !(p._career || []).some(function (c) { return c.ev === "fivefor"; });
+              foCareerPush(p, { s: sN, r: rN, ev: "fivefor", txt: (m5 ? "Maiden five-for" : "Five-for") + " · " + w + "/" + (e.cr || 0) });
+            }
+            var r2 = runsCum + rr;
+            if (r2 >= 500 && Math.floor(r2 / 500) > Math.floor(runsCum / 500)) {
+              var mr = Math.floor(r2 / 500) * 500;
+              foCareerPush(p, { s: sN, r: rN, ev: "runs", txt: mr.toLocaleString() + " club runs" });
+              feed.push({ ev: "runs", name: p.name, n: mr });
+            }
+            runsCum = r2;
+            var w2 = wktsCum + w;
+            if (w2 >= 25 && Math.floor(w2 / 25) > Math.floor(wktsCum / 25)) {
+              var mw = Math.floor(w2 / 25) * 25;
+              foCareerPush(p, { s: sN, r: rN, ev: "wkts", txt: mw + " club wickets" });
+              feed.push({ ev: "wkts", name: p.name, n: mw });
+            }
+            wktsCum = w2;
+            // earned nicknames: first deed wins, for life
+            if (!p._nick) {
+              var econ = (+e.cb || 0) >= 54 ? (+e.cr || 0) / ((+e.cb) / 6) : null;
+              // nicknames are rare honours: the deed has to be extraordinary
+              var nick = rr >= 150 ? "Colossus"
+                : (rr >= 110 && (+e.bb || 0) > 0 && rr / e.bb >= 1.4) ? "Cyclone"
+                : ((+e.bb || 0) >= 95 && rr < 55) ? "The Wall"
+                : (w >= 7) ? "Demolition"
+                : (econ != null && econ < 2.6) ? "Padlock" : null;
+              if (nick) {
+                p._nick = nick;
+                foCareerPush(p, { s: sN, r: rN, ev: "nick", txt: "Earned the nickname “" + nick + "”" });
+                feed.push({ ev: "nick", name: p.name, nick: nick });
+              }
+            }
+          });
+        });
+        if (feed.length) t._chron = { r: rN, s: sN, items: feed.slice(0, 6) };
+        else if (t._chron && t._chron.r !== rN) delete t._chron;
+      });
+      // 3. season awards on the final round, into the museum + the career
+      var total = (App.season && App.season.schedule && App.season.schedule.length) || 18;
+      if (rN >= total) {
+        GD.teams.forEach(function (t) {
+          var best = null, bestV = 0, yBest = null, yBestV = 0;
+          (t.players || []).forEach(function (p) {
+            var h = (App.playerHist && App.playerHist[p.name]) || [], rr = 0, w = 0;
+            h.forEach(function (e) { if (e.s === sN) { rr += +e.rr || 0; w += +e.w || 0; } });
+            var v = rr + 20 * w;
+            if (v > bestV) { bestV = v; best = { p: p, rr: rr, w: w }; }
+            if ((p.age || 30) <= 23 && v > yBestV) { yBestV = v; yBest = { p: p, rr: rr, w: w }; }
+          });
+          var mus = (t._museum = t._museum || { trophies: [], awards: [], legends: [] });
+          if (best) {
+            mus.awards.push({ s: sN, kind: "Player of the Season", name: best.p.name, line: best.rr + " runs · " + best.w + " wkts" });
+            foCareerPush(best.p, { s: sN, r: rN, ev: "award", txt: "Player of the Season, S" + sN });
+          }
+          if (yBest && (!best || yBest.p !== best.p)) {
+            mus.awards.push({ s: sN, kind: "Young Player of the Season", name: yBest.p.name, line: yBest.rr + " runs · " + yBest.w + " wkts" });
+            foCareerPush(yBest.p, { s: sN, r: rN, ev: "award", txt: "Young Player of the Season, S" + sN });
+          }
+        });
+      }
+    } catch (e) {}
+  }
+  try {
+    if (typeof window.completeRound === "function" && !window.completeRound.__foChron) {
+      var _foCr = window.completeRound;
+      window.completeRound = function () {
+        var pre = null;
+        try { pre = foChroniclePre(); } catch (e) {}
+        var out = _foCr.apply(this, arguments);
+        try { if (pre) foChroniclePost(pre); } catch (e) {}
+        try { if (typeof window.saveGame === "function") window.saveGame(false); } catch (e) {}
+        return out;
+      };
+      window.completeRound.__foChron = 1;
+    }
+  } catch (e) {}
+
+  // ---- season's end: retirees become legends, the champion banks a trophy ----
+  try {
+    if (typeof window.seasonEnd === "function" && !window.seasonEnd.__foChron) {
+      var _foSe = window.seasonEnd;
+      window.seasonEnd = function () {
+        var preR = null, rows0 = null, sN = App.seasonNo || 1;
+        try {
+          rows0 = (typeof leagueRows === "function") ? leagueRows() : [];
+          preR = GD.teams.map(function (t) { return { t: t, roster: (t.players || []).map(function (p) { return { name: p.name, age: p.age, nick: p._nick || null }; }) }; });
+        } catch (e) {}
+        var out = _foSe.apply(this, arguments);
+        try {
+          if (preR) preR.forEach(function (pr) {
+            var t = pr.t, now = {};
+            (t.players || []).forEach(function (p) { now[p.name] = 1; });
+            var gone = pr.roster.filter(function (x) { return !now[x.name]; });
+            if (!gone.length) { delete t._chronFarewell; return; }
+            var mus = (t._museum = t._museum || { trophies: [], awards: [], legends: [] });
+            gone.forEach(function (x) {
+              var tot = foClubTotals(x.name);
+              mus.legends.push({ name: x.name, nick: x.nick, age: x.age, s: sN, runs: tot.runs, wkts: tot.wkts, matches: tot.matches, hs: tot.hsTxt || tot.hs, bb: tot.bb });
+            });
+            if (mus.legends.length > 40) mus.legends = mus.legends.slice(-40);
+            t._chronFarewell = { s: sN, names: gone.map(function (x) { return x.nick ? x.name + " “" + x.nick + "”" : x.name; }) };
+          });
+          if (rows0 && rows0.length) {
+            var champ = GD.teams.find(function (t) { return t.name === rows0[0].nm; });
+            if (champ) {
+              var mc = (champ._museum = champ._museum || { trophies: [], awards: [], legends: [] });
+              mc.trophies.push({ s: sN, kind: "League champions" });
+            }
+          }
+        } catch (e) {}
+        return out;
+      };
+      window.seasonEnd.__foChron = 1;
+    }
+  } catch (e) {}
+
+  // ---- the dressing room speaks: one situational line per round, seeded ----
+  var FO_VOICE = {
+    hot: ["“Everything looks like a beach ball right now.”", "“I want the strike. Simple as that.”", "“Best I have felt in years, skipper.”", "“Don't change a thing about my role.”"],
+    cold: ["was seen at the nets alone after dark.", "asked the coaches for extra throwdowns.", "has stopped reading The Post, teammates say.", "stayed behind long after training ended."],
+    ducks: ["can't buy a run right now, and knows it.", "sat padded up for an hour after the collapse.", "asked the analyst for every ball of his dismissals."],
+    settle: ["“Good dressing room, this. I want to repay the fee.”", "“The gaffer sold me the project. Time to deliver.”", "“New badge, same job: win matches.”"]
+  };
+  function foVoiceItem(t, rdHuman) {
+    try {
+      var sN = App.seasonNo || 1, cands = [];
+      (t.players || []).forEach(function (p) {
+        var h = (App.playerHist && App.playerHist[p.name]) || [];
+        var recent = h.filter(function (e) { return e.s === sN; }).slice(-2);
+        if (p._prov && p._prov.s === sN && p._prov.r === rdHuman) cands.push({ p: p, kind: "settle" });
+        else if (recent.length >= 2 && recent.every(function (e) { return (+e.rr || 0) === 0 && e.o && (+e.bb || 0) > 0; })) cands.push({ p: p, kind: "ducks" });
+        else if ((p.formIx || 3) >= 6) cands.push({ p: p, kind: "hot" });
+        else if ((p.formIx || 3) <= 1) cands.push({ p: p, kind: "cold" });
+      });
+      if (!cands.length) return null;
+      var pick = cands[foHash32("voice" + sN + "-" + rdHuman + "-" + t.name) % cands.length];
+      var lines = FO_VOICE[pick.kind];
+      var line = lines[foHash32(pick.p.name + rdHuman) % lines.length];
+      var isQuote = line.charAt(0) === "“";
+      return { pri: 3, h: "<span class='fo-news-voice'>DRESSING ROOM: " + E(foDisplayName(pick.p)) + (isQuote ? " · " + E(line) : " " + E(line)) + "</span>", s: "" };
+    } catch (e) { return null; }
+  }
+
+  // ---- milestone watch: who is N short of a number that matters ----
+  function foMilestoneWatch(t) {
+    var rows = [];
+    (t.players || []).forEach(function (p) {
+      var tot = foClubTotals(p.name);
+      if (!tot.matches) return;
+      var nextR = (Math.floor(tot.runs / 500) + 1) * 500, gapR = nextR - tot.runs;
+      if (gapR <= 40) rows.push({ nm: p.name, txt: "needs <b>" + gapR + "</b> runs for " + nextR.toLocaleString() + " club runs", w: gapR / 40 });
+      var nextW = (Math.floor(tot.wkts / 25) + 1) * 25, gapW = nextW - tot.wkts;
+      if (tot.wkts > 0 && gapW <= 4) rows.push({ nm: p.name, txt: "needs <b>" + gapW + "</b> wicket" + (gapW === 1 ? "" : "s") + " for " + nextW + " for the club", w: gapW / 4 });
+      if (tot.hs >= 75 && tot.hs < 100) rows.push({ nm: p.name, txt: "best of <b>" + tot.hs + "</b> · a maiden century is close", w: (100 - tot.hs) / 25 });
+      else if (tot.hs >= 35 && tot.hs < 50) rows.push({ nm: p.name, txt: "best of <b>" + tot.hs + "</b> · chasing a maiden fifty", w: (50 - tot.hs) / 15 });
+    });
+    rows.sort(function (a, b) { return a.w - b.w; });
+    return rows.slice(0, 3);
+  }
+
+  // ---- career panel on your own players' pages ----
+  function foCareerPanel() {
+    try {
+      if (!/^#\/player\?/.test(location.hash || "")) return;
+      var m = /[?&]n=([^&]+)/.exec(location.hash); if (!m) return;
+      var name = decodeURIComponent(m[1]);
+      var page = document.getElementById("page"); if (!page) return;
+      var ex = document.getElementById("fo-career");
+      if (ex && ex.getAttribute("data-n") === name) return;
+      if (ex) ex.remove();
+      var t = foMyClub(); if (!t) return;
+      var p = (t.players || []).concat(t.youth || []).find(function (x) { return x.name === name; });
+      if (!p) return;   // careers are for your own players; the rest stay scouted
+      var prov = p._prov;
+      var provTxt = !prov ? "Founding squad · with the club from day one"
+        : prov.how === "market" ? "Signed from the transfer market, S" + prov.s + " R" + prov.r + (prov.fee ? " · " + FO$(prov.fee) + " fee, beaten to by no one" : "")
+        : prov.how === "youth" ? "Found by your scout" + (prov.nat ? " in " + prov.nat : "") + ", S" + prov.s + " R" + prov.r + " · your signing, your project"
+        : "Your draft pick, day one";
+      var h = (App.playerHist && App.playerHist[name]) || [];
+      var bySeason = {};
+      h.forEach(function (e) {
+        var k = e.s || "early";
+        var b = (bySeason[k] = bySeason[k] || { inns: 0, runs: 0, hs: 0, wkts: 0, bw: 0, br: 1e9 });
+        b.inns++; b.runs += +e.rr || 0; b.wkts += +e.w || 0;
+        if ((+e.rr || 0) > b.hs) b.hs = +e.rr;
+        if ((+e.w || 0) > b.bw || ((+e.w || 0) === b.bw && (+e.w || 0) > 0 && (+e.cr || 0) < b.br)) { if (+e.w) { b.bw = +e.w; b.br = +e.cr || 0; } }
+      });
+      var keys = Object.keys(bySeason).sort(function (a, b2) { return (a === "early" ? 0 : +a) - (b2 === "early" ? 0 : +b2); });
+      var srows = keys.map(function (k) {
+        var b = bySeason[k];
+        return "<tr><td>" + (k === "early" ? "Early days" : "Season " + k) + "</td><td class='n'>" + b.inns + "</td><td class='n'>" + b.runs + "</td><td class='n'>" + (b.hs || "–") + "</td><td class='n'>" + b.wkts + "</td><td class='n'>" + (b.bw ? b.bw + "/" + b.br : "–") + "</td></tr>";
+      }).join("");
+      var evs = (p._career || []).slice().reverse().slice(0, 14).map(function (c) {
+        return "<div class='fo-cp-ev'><i>S" + c.s + " R" + c.r + "</i><span>" + E(c.txt) + "</span></div>";
+      }).join("") || "<div class='small'>The story starts with the next matchday.</div>";
+      var card = document.createElement("div");
+      card.className = "panel fo-keep"; card.id = "fo-career"; card.setAttribute("data-n", name);
+      card.innerHTML = "<h4>Career &middot; " + E(foDisplayName(p)) + "</h4><div class='pad'>" +
+        "<div class='fo-cp-prov'>" + E(provTxt) + "</div>" +
+        (srows ? "<table><tr><th></th><th class='n'>Inns</th><th class='n'>Runs</th><th class='n'>HS</th><th class='n'>Wkts</th><th class='n'>Best</th></tr>" + srows + "</table>" : "") +
+        "<div class='small' style='margin:9px 0 4px;text-transform:uppercase;letter-spacing:.07em;font-size:10px;color:#8a93a3'>Moments</div>" + evs +
+        "</div></div>";
+      var first = page.querySelector(".panel");
+      if (first && first.parentNode) first.parentNode.insertBefore(card, first); else page.appendChild(card);
+    } catch (e) {}
+  }
+
+  // ---- the club museum (#/museum) ----
+  function foMuseumHTML(t) {
+    var mus = t._museum || { trophies: [], awards: [], legends: [] };
+    var cups = (mus.trophies || []).map(function (tr) { return "<span class='fo-mu-cup'>&#127942; " + E(tr.kind) + " &middot; S" + tr.s + "</span>"; }).join("") ||
+      "<span class='small'>The cabinet waits for its first trophy.</span>";
+    var awards = (mus.awards || []).slice().reverse().map(function (a) {
+      return "<tr><td>S" + a.s + "</td><td>" + E(a.kind) + "</td><td><b>" + E(a.name) + "</b></td><td class='small'>" + E(a.line || "") + "</td></tr>";
+    }).join("") || "<tr><td colspan='4' class='small'>Season awards are handed out on the final matchday.</td></tr>";
+    var legends = (mus.legends || []).slice().reverse().map(function (l) {
+      return "<div class='fo-mu-leg'><b>" + E(l.nick ? l.name.split(" ")[0] + " “" + l.nick + "” " + l.name.split(" ").slice(1).join(" ") : l.name) + "</b> <span class='small'>retired S" + l.s + ", age " + l.age + "</span>" +
+        "<div class='small'>" + l.matches + " matches &middot; " + (l.runs || 0).toLocaleString() + " runs (HS " + E(String(l.hs || "–")) + ") &middot; " + (l.wkts || 0) + " wickets" + (l.bb ? " (best " + E(l.bb) + ")" : "") + "</div></div>";
+    }).join("") || "<div class='small'>No one has hung up the whites yet. When they do, they are remembered here.</div>";
+    // records from everyone who ever wore the shirt (current squad + legends)
+    var names = (t.players || []).map(function (p) { return p.name; });
+    (mus.legends || []).forEach(function (l) { if (names.indexOf(l.name) < 0) names.push(l.name); });
+    var rHS = null, rBB = null, rRuns = null, rWkts = null;
+    names.forEach(function (nm) {
+      var tot = foClubTotals(nm);
+      if (!tot.matches) return;
+      if (!rHS || tot.hs > rHS.v) rHS = { nm: nm, v: tot.hs, txt: tot.hsTxt || tot.hs };
+      if (tot.bb && (!rBB || +tot.bb.split("/")[0] > +rBB.txt.split("/")[0])) rBB = { nm: nm, txt: tot.bb };
+      if (!rRuns || tot.runs > rRuns.v) rRuns = { nm: nm, v: tot.runs };
+      if (!rWkts || tot.wkts > rWkts.v) rWkts = { nm: nm, v: tot.wkts };
+    });
+    var rec = "<table class='kv'>" +
+      (rHS ? "<tr><td>Highest score</td><td><b>" + E(String(rHS.txt)) + "</b> &middot; " + E(rHS.nm) + "</td></tr>" : "") +
+      (rBB ? "<tr><td>Best figures</td><td><b>" + E(rBB.txt) + "</b> &middot; " + E(rBB.nm) + "</td></tr>" : "") +
+      (rRuns && rRuns.v ? "<tr><td>Most club runs</td><td><b>" + rRuns.v.toLocaleString() + "</b> &middot; " + E(rRuns.nm) + "</td></tr>" : "") +
+      (rWkts && rWkts.v ? "<tr><td>Most club wickets</td><td><b>" + rWkts.v + "</b> &middot; " + E(rWkts.nm) + "</td></tr>" : "") +
+      "</table>";
+    var nicks = (t.players || []).filter(function (p) { return p._nick; }).map(function (p) {
+      return "<span class='fo-sq-nickchip'>" + E(p.name.split(" ")[0]) + " “" + E(p._nick) + "”</span>";
+    }).join(" ") || "<span class='small'>Nicknames are earned in the middle, never assigned.</span>";
+    return "<div class='fo-of-head'><h2>Club museum</h2><span class='small'>&middot; " + E(t.name) + ", since season one</span>" +
+      "<a href='#/club' class='fo-of-admin fo-morelink'>&lsaquo; Club home</a></div>" +
+      "<div class='panel fo-keep'><h4>Trophy cabinet</h4><div class='pad'><div class='fo-mu-troph'>" + cups + "</div></div></div>" +
+      "<div class='panel fo-keep'><h4>Honours board</h4><div class='pad'><table><tr><th>Season</th><th>Award</th><th>Winner</th><th></th></tr>" + awards + "</table></div></div>" +
+      "<div class='panel fo-keep'><h4>Club records</h4><div class='pad'>" + rec + "</div></div>" +
+      "<div class='panel fo-keep'><h4>Nicknames in the dressing room</h4><div class='pad'>" + nicks + "</div></div>" +
+      "<div class='panel fo-keep'><h4>Legends &middot; retired</h4><div class='pad'>" + legends + "</div></div>";
+  }
+  function foRenderMuseum() {
+    try {
+      if (!/^#\/museum/.test(location.hash || "")) return;
+      var page = document.getElementById("page"); if (!page) return;
+      var t = foMyClub(); if (!t) return;
+      if (page.__foMusSig === t.name + "|" + ((t._museum && (t._museum.awards || []).length) || 0) + "|" + ((t._museum && (t._museum.legends || []).length) || 0) && page.querySelector(".fo-mu-troph")) return;
+      page.__foMusSig = t.name + "|" + ((t._museum && (t._museum.awards || []).length) || 0) + "|" + ((t._museum && (t._museum.legends || []).length) || 0);
+      page.innerHTML = foMuseumHTML(t);
+    } catch (e) {}
+  }
+  window.addEventListener("hashchange", function () { setTimeout(foRenderMuseum, 20); setTimeout(foCareerPanel, 60); });
+
+  // ---- nemesis records for the scout page ----
+  function foBattlesCard(opp) {
+    try {
+      var mine = foMyClub(); if (!mine || !opp || mine === opp) return "";
+      var oppNames = {}, myNames = {};
+      (opp.players || []).forEach(function (p) { oppNames[p.name] = 1; });
+      (mine.players || []).forEach(function (p) { myNames[p.name] = 1; });
+      var rows = [];
+      var scan = function (duels, bowlOwn) {
+        for (var k in (duels || {})) {
+          var parts = k.split("|"), bowler = parts[0], batter = parts[1], n = duels[k];
+          if (bowlOwn && myNames[bowler] && oppNames[batter]) rows.push({ n: n, txt: "<b>" + E(bowler) + "</b> has removed " + E(batter) + " <em>" + n + "&times;</em>" });
+          if (!bowlOwn && oppNames[bowler] && myNames[batter]) rows.push({ n: n, txt: "<b>" + E(bowler) + "</b> has your " + E(batter) + " <em>" + n + "&times;</em>" });
+        }
+      };
+      scan(mine._duels, true);
+      scan(opp._duels, false);
+      rows.sort(function (a, b) { return b.n - a.n; });
+      if (!rows.length) return "";
+      return "<div class='panel'><h4>The battles</h4><div class='pad'>" +
+        rows.slice(0, 5).map(function (r) { return "<div class='fo-duel'>" + r.txt + "</div>"; }).join("") +
+        "<div class='small' style='margin-top:6px'>Dismissals between these clubs, all-time. Old scores get settled.</div></div></div>";
+    } catch (e) { return ""; }
+  }
 
   console.info("Fifty Overs League overlay ready.");
 })();
