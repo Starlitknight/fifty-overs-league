@@ -9316,7 +9316,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260709-2057-3631f9";
+  var FO_BUILD = "20260709-2100-19c7b6";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -11709,11 +11709,20 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         taken++;
       }
     });
-    out.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
+    var rareRank = function (p) { return p.bowlTypeFull === "seamFast" ? 2 : p.bowlTypeFull === "wristSpin" ? 1 : 0; };
+    out.sort(function (a, b) { return rareRank(b) - rareRank(a) || (b.rating || 0) - (a.rating || 0); });
     return out.slice(0, 18);
   }
   function foMarketPage() {
     var page = document.getElementById("page"); if (!page) return;
+    if (!document.getElementById("fo-mk-css")) {
+      var mkCss = document.createElement("style"); mkCss.id = "fo-mk-css";
+      mkCss.textContent =
+        ".fo-mk-rare{position:relative;border-color:#D9A441 !important;box-shadow:0 0 0 2px rgba(217,164,65,.28),0 4px 16px rgba(217,164,65,.18) !important;background:linear-gradient(180deg,#FFFDF6,#fff)}" +
+        ".fo-mk-rareband{position:absolute;top:-9px;right:10px;background:linear-gradient(135deg,#D9A441,#c08a2b);color:#fff;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:3px 10px;box-shadow:0 2px 6px rgba(160,110,20,.35)}" +
+        ".fo-mk-rare .fo-yc-h b{color:#8a5a10}";
+      document.head.appendChild(mkCss);
+    }
     var t = foMyClub();
     if (!t || !t.players || !t.players.length) { page.innerHTML = "<div class='crumb'>Transfers</div><div class='panel'><h4>Transfer market</h4><div class='pad'>No squad yet · finish your draft first.</div></div>"; return; }
     var pool = foMarketPool();
@@ -11726,6 +11735,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var claim = byName[p.name];
         var mine = claim && SYNC && SYNC.myMid && claim.manager_id === SYNC.myMid;
         var pending = pendingNames[p.name];
+        var rare = p.bowlTypeFull === "seamFast" ? "Genuine pace" : p.bowlTypeFull === "wristSpin" ? "Wrist spin" : null;
         var flag = ""; try { flag = (typeof foFlag === "function" && p.nat) ? foFlag(p.nat) : ""; } catch (e) {}
         var bars = [["Bat", foAgg(p, "bat")], [(p.keeper ? "Keep" : "Bowl"), p.keeper ? foAgg(p, "keep") : ((p.bowlTypeFull && p.bowlTypeFull !== "none") ? foAgg(p, "bowl") : 0)], ["Field", foAgg(p, "field")]];
         var barHtml = bars.map(function (b) { return "<span class='fo-sk'><i>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + b[1] + "%'></u></b><em>" + b[1] + "</em></span>"; }).join("");
@@ -11733,7 +11743,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         if (claim) act = "<div class='fo-mk-gone'>" + (mine ? "Joining your club" : "Signed by <b>" + E(claim.club) + "</b>") + "</div>";
         else if (pending) act = "<div class='fo-mk-gone'>Joining after next matchday</div>";
         else act = "<button class='fo-yc-sign fo-mk-claim' data-i='" + i + "'" + (bank < p.fee ? " disabled title='Not enough in the bank'" : "") + ">Sign · " + FO$(p.fee) + "</button>";
-        return "<div class='fo-yc" + (claim ? " fo-mk-claimed" : "") + "'>" +
+        return "<div class='fo-yc" + (claim ? " fo-mk-claimed" : "") + (rare && !claim ? " fo-mk-rare" : "") + "'>" +
+          (rare && !claim ? "<div class='fo-mk-rareband'>&#9733; Rare &middot; " + rare + "</div>" : "") +
           "<div class='fo-yc-h'>" + flag + " <b class='fo-mk-view' data-i='" + i + "'>" + E(p.name) + "</b></div>" +
           "<div class='fo-yc-meta'>" + foRoleShort(p) + " · age " + p.age + " · OVR " + ((p.rating || 0) / 1000).toFixed(1) + "</div>" +
           "<div class='fo-yc-bars'>" + barHtml + "</div>" +
