@@ -874,6 +874,23 @@
     ".fo-exp-tag{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#C0562F;margin-bottom:4px}" +
     ".fo-exp-money{display:flex;justify-content:space-between;gap:10px;background:#f6f4ee;border-radius:8px;padding:8px 12px;margin:8px 0 10px;font-size:12.5px;color:#5d6779}" +
     ".fo-exp-money b{color:#12203a;font-size:13.5px}" +
+    ".fo-dr-sticky{position:sticky;top:0;z-index:40;background:rgba(245,241,230,.96);backdrop-filter:blur(4px);border-bottom:1px solid #e2ddd0;padding:10px 2px;margin-bottom:14px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}" +
+    ".fo-dr-spent{flex:1;min-width:240px}" +
+    ".fo-dr-spentl{display:flex;justify-content:space-between;font-size:12.5px;color:#5d6779;margin-bottom:5px}" +
+    ".fo-dr-spentl b{color:#12203a}" +
+    ".fo-dr-counts{display:flex;gap:7px}" +
+    ".fo-dr-main{min-width:0}" +
+    ".fo-rail{max-width:100%}" +
+    ".fo-rail-sec{margin:0 0 22px}" +
+    ".fo-rail-h{display:flex;align-items:baseline;gap:10px;margin:0 0 9px}" +
+    ".fo-rail-h b{font-size:16px;color:#12203a}" +
+    ".fo-rail-h span{font-size:12px;color:#8a8474}" +
+    ".fo-rail-have{margin-left:auto;font-style:normal;font-size:11.5px;font-weight:800;color:#2f6b46;background:#eef4ee;border:1px solid #d5e0d7;border-radius:999px;padding:3px 10px}" +
+    ".fo-rail{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x proximity;padding:2px 2px 12px;scrollbar-width:thin}" +
+    ".fo-rail>*{flex:0 0 258px;scroll-snap-align:start}" +
+    ".fo-rail::-webkit-scrollbar{height:8px}" +
+    ".fo-rail::-webkit-scrollbar-thumb{background:#d8d2c2;border-radius:99px}" +
+    "@media(max-width:760px){.fo-rail>*{flex-basis:238px}.fo-dr-sticky{top:0;gap:10px}}" +
     ".fo-exp-def{padding:8px 0;border-bottom:1px solid #efeade;font-size:13px}" +
     ".fo-exp-def b{display:inline-block;min-width:96px;color:#12203a}.fo-exp-def span{color:#5d6779}" +
     ".fo-exp-talbox{background:#eef4ee;border:1px solid #d5e0d7;border-radius:11px;padding:13px 16px;font-size:13.5px;line-height:1.6;margin-top:16px}" +
@@ -3117,85 +3134,69 @@
   }
 
   function foOnbDraft(keepScroll) {
-    FO_ONB.step = 5;
-    var _scroll = 0;
-    try { if (keepScroll) { var w0 = document.querySelector(".fo-dr-tblwrap"); if (w0) _scroll = w0.scrollTop; } } catch (e) {}
+    FO_ONB.step = 6;
+    // preserve every rail's swipe position and the page scroll across re-renders
+    var _rails = {}, _pageY = 0;
+    try {
+      _pageY = (document.getElementById("fo-onb") || {}).scrollTop || 0;
+      document.querySelectorAll(".fo-rail").forEach(function (r) { _rails[r.getAttribute("data-rail")] = r.scrollLeft; });
+    } catch (e) {}
     var F = App.founder;
     var fc = foForecast(F.picked, FO_ONB.sponsor);
     var shape = foSquadShape(F.picked);
-    var role = FO_ONB.role || "all";
-    var sk = FO_ONB.sortKey || "fee";
-    var sortVal = function (p) {
-      if (sk === "rating") return p.rating || 0;
-      if (sk === "bat") return foAgg(p, "bat");
-      if (sk === "bowl") return (p.bowlTypeFull && p.bowlTypeFull !== "none") ? foAgg(p, "bowl") : 0;
-      if (sk === "power") { try { return (typeof S === "function" ? S(p).power : (p.skills && p.skills.power)) || 0; } catch (e) { return 0; } }
-      if (sk === "field") return foAgg(p, "field");
-      if (sk === "keep") return foAgg(p, "keep");
-      if (sk === "age") return -(p.age || 99);      // youngest first
-      return foDraftPrice(p);
-    };
-    var list = F.pool.slice().sort(function (a, b) { return sortVal(b) - sortVal(a); });
-    if (role === "bat") list = list.filter(function (p) { return foRoleShort(p) === "BAT"; });
-    if (role === "bowl") list = list.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && p.role !== "allRounder"; });
-    if (role === "ar") list = list.filter(function (p) { return p.role === "allRounder"; });
-    if (role === "wk") list = list.filter(function (p) { return p.keeper; });
-    var q = (FO_ONB.search || "").toLowerCase(); if (q) list = list.filter(function (p) { return p.name.toLowerCase().indexOf(q) >= 0; });
-
-    var rows = list.map(function (p) { return foDraftCard(p, F.picked.indexOf(p) >= 0); }).join("");
-
-    var chip = function (id, lbl) { return "<button class='fo-dr-chip " + (role === id ? "on" : "") + "' data-role='" + id + "'>" + lbl + "</button>"; };
-    var sChip = function (id, lbl) { return "<button class='fo-dr-chip fo-dr-sort " + (sk === id ? "on" : "") + "' data-sort='" + id + "'>" + lbl + "</button>"; };
-    var sortRow = "<span class='fo-dr-sortlbl'>Sort</span>" + sChip("fee", "Price") + sChip("rating", "Rating") + sChip("bat", "Bat") + sChip("bowl", "Bowl") + sChip("power", "Power") + sChip("field", "Field") + sChip("keep", "Keep") + sChip("age", "Age");
-    var hTone = foHealthTone(fc.health);
-    var fRow = function (l, v, cls) { return "<div class='fo-fc-row " + (cls || "") + "'><span>" + l + "</span><b>" + v + "</b></div>"; };
-    var scen = ["bad", "average", "good", "champion"].map(function (id) { var f = foForecast(F.picked, FO_ONB.sponsor, id); return "<div class='fo-fc-scen fo-tone-" + foHealthTone(f.health) + "'><span>" + foScenarioById(id).name.replace(" season", "") + "</span><b>" + FO$s(f.end) + "</b></div>"; }).join("");
-    var advisor = foAdvisor(F.picked, fc, FO_ONB.style).map(function (a) { return "<div class='fo-adv fo-adv-" + a.t + "'>" + a.m + "</div>"; }).join("");
+    var byRat = function (a, b) { return (b.rating || 0) - (a.rating || 0); };
+    var RAILS = [
+      ["wk", "Wicketkeepers", "Every XI needs one behind the stumps"],
+      ["bat", "Batters", "Your top order lives here"],
+      ["ar", "All-rounders", "Bat and ball; the glue of a squad"],
+      ["pace", "Pace bowlers", "New-ball and death overs"],
+      ["spin", "Spinners", "Grip and squeeze through the middle"]
+    ];
+    var bucket = function (p) { var r = foRoleShort(p); return r === "WK" ? "wk" : r === "BAT" ? "bat" : r === "AR" ? "ar" : r === "PACE" ? "pace" : "spin"; };
+    var railsHtml = RAILS.map(function (rl) {
+      var players = F.pool.filter(function (p) { return bucket(p) === rl[0]; }).sort(byRat);
+      if (!players.length) return "";
+      var cards = players.map(function (p) { return foDraftCard(p, F.picked.indexOf(p) >= 0); }).join("");
+      var have = F.picked.filter(function (p) { return bucket(p) === rl[0]; }).length;
+      return "<div class='fo-rail-sec'><div class='fo-rail-h'><b>" + rl[1] + "</b><span>" + rl[2] + "</span>" +
+        (have ? "<em class='fo-rail-have'>" + have + " signed</em>" : "") + "</div>" +
+        "<div class='fo-rail' data-rail='" + rl[0] + "'>" + cards + "</div></div>";
+    }).join("");
+    var spentPct = Math.min(100, Math.round(fc.draftSpent / 10000));
     var ready = foSquadReady(F.picked);
+    var advisor = foAdvisor(F.picked, fc, FO_ONB.style).map(function (a) { return "<div class='fo-adv fo-adv-" + a.t + "'>" + a.m + "</div>"; }).join("");
 
     var body =
       "<div class='fo-ob-draftwrap'>" +
-      "<div class='fo-dr-head'><div><div class='fo-ob-eyebrow'>Draft room · " + E(FO_ONB.clubName) + "</div><h1 class='fo-ob-h1'>Build your squad</h1></div>" +
-      "<div class='fo-dr-hstat'><span>Bank <b>" + FO$(fc.bankAfter) + "</b></span><span>Squad <b>" + shape.n + "/16</b></span><span>Health <b class='fo-tone-" + hTone + "'>" + fc.health + "</b></span></div></div>" +
+      "<div class='fo-dr-head'><div><div class='fo-ob-eyebrow'>Draft room &middot; " + E(FO_ONB.clubName) + "</div><h1 class='fo-ob-h1'>Build your squad</h1></div></div>" +
+      "<div class='fo-dr-sticky'><div class='fo-dr-spent'><div class='fo-dr-spentl'><span>Spent <b>" + FO$(fc.draftSpent) + "</b> of $1,000,000</span><span><b>" + FO$(fc.bankAfter) + "</b> left</span></div>" +
+      "<div class='fo-budgetbar'><u style='width:" + spentPct + "%'></u></div></div>" +
+      "<div class='fo-dr-counts'><span class='fo-sh'><b>" + shape.n + "</b>/16</span><span class='fo-sh'><b>" + shape.bat + "</b> BAT</span><span class='fo-sh'><b>" + shape.bowl + "</b> BOWL</span><span class='fo-sh'><b>" + shape.ar + "</b> AR</span><span class='fo-sh'><b>" + shape.wk + "</b> WK</span></div></div>" +
       "<div class='fo-dr-grid'>" +
-      "<div class='fo-dr-main'><div class='fo-dr-filters'>" + chip("all", "All") + chip("bat", "Batters") + chip("bowl", "Bowlers") + chip("ar", "All-rounders") + chip("wk", "Keepers") +
-      "<input id='fo-dr-search' class='fo-dr-searchi' placeholder='Search players…' value='" + E(FO_ONB.search || "") + "'></div>" +
-      "<div class='fo-dr-filters fo-dr-sorts'>" + sortRow + "</div>" +
-      "<div class='fo-dr-tblwrap'>" + (rows || "<div class='fo-dr-none'>No players match.</div>") + "</div></div>" +
+      "<div class='fo-dr-main'>" + railsHtml + "</div>" +
       "<div class='fo-dr-side'>" +
-      "<div class='fo-fc'><div class='fo-fc-h'>Club finance forecast</div>" +
-      fRow("Draft spent", FO$(fc.draftSpent) + " / $1,000,000") +
-      "<div class='fo-budgetbar'><u style='width:" + Math.min(100, Math.round(fc.draftSpent / 10000)) + "%'></u></div>" +
-      fRow("Bank after draft", FO$(fc.bankAfter)) +
-      fRow("Daily wage bill", FO$(fc.dailyWage)) + fRow("Season wage cost", "−" + FO$(fc.seasonWage)) +
-      fRow("Expected ticket income", "+" + FO$(fc.ticket)) + fRow("Expected sponsor income", "+" + FO$(fc.sponsor)) +
-      fRow("Projected prize money", "+" + FO$(fc.prize)) +
-      fRow("Stadium &amp; academy costs", "−" + FO$(fc.ground)) +
-      "<div class='fo-fc-end fo-tone-" + hTone + "'><span>Projected season-end bank</span><b>" + FO$s(fc.end) + "</b></div>" +
-      "<div class='fo-fc-health fo-tone-" + hTone + "'>Financial health · <b>" + fc.health + "</b></div>" +
-      "<div class='fo-fc-scens'>" + scen + "</div></div>" +
-      "<div class='fo-dr-shape'><span class='fo-sh'><b>" + shape.bat + "</b> BAT</span><span class='fo-sh'><b>" + shape.bowl + "</b> BOWL</span><span class='fo-sh'><b>" + shape.ar + "</b> AR</span><span class='fo-sh'><b>" + shape.wk + "</b> WK</span></div>" +
-      "<div class='fo-adv-panel'><div class='fo-adv-h'>Your squad · " + shape.n + "/16</div>" +
+      "<div class='fo-adv-panel'><div class='fo-adv-h'>Your squad &middot; " + shape.n + "/16</div>" +
       (F.picked.slice().sort(function (a, b) { return foDraftPrice(b) - foDraftPrice(a); }).map(function (p) {
         var nm = E(p.name).replace(/'/g, "&#39;");
         return "<div class='fo-sq-item'><span class='fo-rl'>" + foRoleShort(p) + "</span><b class='fo-dr-view' data-p='" + nm + "'>" + E(p.name) + "</b><em>" + FO$(foDraftPrice(p)) + "</em><button class='fo-sq-x' data-p='" + nm + "' title='Remove'>&#10005;</button></div>";
-      }).join("") || "<div class='fo-sq-empty'>Empty. Sign players and they appear here.</div>") + "</div>" +
+      }).join("") || "<div class='fo-sq-empty'>Empty. Swipe through the rails and sign players; they appear here.</div>") + "</div>" +
       "<div class='fo-adv-panel'><div class='fo-adv-h'>Advisor</div>" + (advisor || "<div class='fo-adv fo-adv-info'>Start adding players to see advice.</div>") + "</div>" +
       "</div></div>" +
       "<div class='fo-ob-act fo-dr-act'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c' " + (ready ? "" : "disabled") + ">Continue &#8594; Board report</button></div>" +
       (ready ? "" : "<div class='fo-dr-needs'>Need 11+ players, a keeper and 5+ bowling options to continue.</div>") +
       "</div>";
     var host = foOnbMount(5, body);
-    try { if (_scroll) { var w1 = host.querySelector(".fo-dr-tblwrap"); if (w1) w1.scrollTop = _scroll; } } catch (e) {}
+    if (keepScroll) requestAnimationFrame(function () {
+      try {
+        host.scrollTop = _pageY;
+        host.querySelectorAll(".fo-rail").forEach(function (r) { var k = r.getAttribute("data-rail"); if (_rails[k]) r.scrollLeft = _rails[k]; });
+      } catch (e) {}
+    });
     host.querySelectorAll(".fo-dr-add").forEach(function (b) { b.addEventListener("click", function () { foOnbPick(b.getAttribute("data-p")); }); });
     host.querySelectorAll(".fo-dr-view").forEach(function (b) { b.addEventListener("click", function () { foDraftDetail(b.getAttribute("data-p")); }); });
-    host.querySelectorAll(".fo-dr-chip[data-role]").forEach(function (b) { b.addEventListener("click", function () { FO_ONB.role = b.getAttribute("data-role"); foOnbDraft(); }); });
-    host.querySelectorAll(".fo-dr-sort").forEach(function (b) { b.addEventListener("click", function () { FO_ONB.sortKey = b.getAttribute("data-sort"); foOnbDraft(); }); });
     host.querySelectorAll(".fo-sq-x").forEach(function (b) { b.addEventListener("click", function () { foOnbPick(b.getAttribute("data-p")); }); });
-    var sb = host.querySelector("#fo-dr-search"); if (sb) sb.addEventListener("input", function () { FO_ONB.search = sb.value; var sc = document.querySelector(".fo-dr-tblwrap"); foOnbDraft(); var s2 = document.querySelector("#fo-dr-search"); if (s2) { s2.focus(); s2.setSelectionRange(s2.value.length, s2.value.length); } });
-    host.querySelector("#fo-ob-b").addEventListener("click", foOnbSponsor);
+    host.querySelector("#fo-ob-b").addEventListener("click", foOnbPlayers);
     var c = host.querySelector("#fo-ob-c"); if (c) c.addEventListener("click", foOnbAfterDraft);
-    c && (c.textContent = "Continue → Board report");
   }
 
   function foOnbAfterDraft() {
