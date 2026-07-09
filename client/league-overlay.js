@@ -423,6 +423,11 @@
     ".fo-stat>div:last-child{min-width:0}" +
     ".fo-news li.fo-rowlink{cursor:pointer;border-radius:8px;padding:4px 6px;margin:0 -6px}" +
     ".fo-news li.fo-rowlink:hover{background:#f6f4ee}.fo-news li.fo-rowlink:hover .fo-news-h{color:#C0562F}" +
+    ".fo-sp-pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin-top:9px}" +
+    ".fo-sp-choose{text-align:left;background:#fff;border:1px solid rgba(11,19,34,.15);border-radius:11px;padding:10px 12px;cursor:pointer}" +
+    ".fo-sp-choose:hover{border-color:#C0562F}" +
+    ".fo-sp-choose b{display:block;font-size:14px;color:#12203a}" +
+    ".fo-sp-choose span{display:block;font-size:11.5px;color:#6b7280;margin-top:3px}" +
     ".fo-stat-s{font-size:11px;color:#9a9484;margin-top:1px}" +
     ".fo-ch-grid{display:grid;grid-template-columns:1.42fr 1fr;gap:16px}" +
     ".fo-ch-col{display:flex;flex-direction:column;gap:16px;min-width:0}" +
@@ -1434,7 +1439,7 @@
       // Finances
       // net per matchday: sponsor + expected gate share − wages − stadium − academy
       var AC = [0, 4000, 8000, 14000, 22000, 32000];
-      var sponsorBase = (t.sponsorDeal && t.sponsorDeal.base) || (App.fin && App.fin.sponsorBase) || 25000;
+      var sponsorBase = foDealResolve(t).d.base;
       var gateEst = Math.round(Math.min(t.seats || 9000, (t.supporters || 2400) * (0.55 + 0.13 * (t.mood == null ? 3 : t.mood))) * FO_FIN.ticketPrice * 0.5);
       var netMD = sponsorBase + gateEst - wages - (t.seats || 9000) - (AC[t.acadY || 0] || 0) - (AC[t.acadS || 0] || 0);
       var runway = netMD < 0 ? Math.floor(bank / -netMD) : null;
@@ -3174,7 +3179,7 @@
       try {
         if (snap && typeof snap.teamIx === "number" && snap.teamIx !== App.teamIx && App.fin) {
           var myClub = GD.teams[App.teamIx];
-          if (myClub) { App.fin.bank = myClub.bank || 0; App.fin.ledger = []; App.fin.sponsorBase = (myClub.sponsorDeal && myClub.sponsorDeal.base) || App.fin.sponsorBase; }
+          if (myClub) { App.fin.bank = myClub.bank || 0; App.fin.ledger = []; App.fin.sponsorBase = foDealResolve(myClub).d.base; }
         }
       } catch (e) {}
       try { if (typeof window.store === "function") window.store("fo_welcomed", "1"); } catch (e) {}
@@ -3423,14 +3428,14 @@
       if (SYNC.planRound == null && SYNC.started && window.App && App.season && typeof GD !== "undefined" && GD.teams) {
         var tro = foTrainState();
         var ordersReady = App.orders && App.orders.saved;
-        var sig = (ordersReady ? JSON.stringify(App.orders) : "-") + "|" + JSON.stringify(tro.training) + "|" + JSON.stringify(tro.youthPending.map(function (y) { return y.name; })) + "|" + JSON.stringify((tro.marketPending || []).map(function (y) { return y.name; })) + "|" + JSON.stringify(tro.seatsPending || null) + "|" + App.season.round;
-        if (sig !== SYNC.lastOrderSig && (ordersReady || Object.keys(tro.training).length || tro.youthPending.length || (tro.marketPending || []).length || tro.seatsPending)) {
+        var sig = (ordersReady ? JSON.stringify(App.orders) : "-") + "|" + JSON.stringify(tro.training) + "|" + JSON.stringify(tro.youthPending.map(function (y) { return y.name; })) + "|" + JSON.stringify((tro.marketPending || []).map(function (y) { return y.name; })) + "|" + JSON.stringify(tro.seatsPending || null) + "|" + (tro.sponsorPending || "") + "|" + App.season.round;
+        if (sig !== SYNC.lastOrderSig && (ordersReady || Object.keys(tro.training).length || tro.youthPending.length || (tro.marketPending || []).length || tro.seatsPending || tro.sponsorPending)) {
           SYNC.lastOrderSig = sig;
           var pkt = {
             fo_packet: 1, teamIx: App.teamIx, club: (GD.teams[App.teamIx] || {}).name, round: App.season.round,
             manager: (SYNC.me && SYNC.me.display_name) || "manager",
             orders: ordersReady ? App.orders : null,
-            fo_training: tro.training, fo_youth: tro.youthPending, fo_market: tro.marketPending || [], fo_seats: tro.seatsPending || null
+            fo_training: tro.training, fo_youth: tro.youthPending, fo_market: tro.marketPending || [], fo_seats: tro.seatsPending || null, fo_sponsor: tro.sponsorPending || null
           };
           var pushRound = App.season.round;
           rpc("push_packet", { p_league_id: LG.id, p_round: pushRound, p_packet: pkt }).then(function () {
@@ -5503,20 +5508,37 @@
 
   // ---- stadium expansion: a long-term money sink to rival the academy --------
   var FO_SEAT_STEP = 1500, FO_SEAT_RATE = 80, FO_SEAT_CAP = 15000;
+  var FO_DEAL_INFO = {
+    community: { name: "Prudential", base: 45000, win: 0, line: "$45,000 every matchday, win or lose. No win bonus." },
+    results:   { name: "Nike",       base: 38000, win: 13000, line: "$38,000 every matchday, plus $13,000 for every win." },
+    contender: { name: "Emirates",   base: 15000, win: 45000, line: "$15,000 every matchday, plus $45,000 for every win." }
+  };
+  function foDealResolve(t) {
+    var id = (t && t.sponsorDeal && t.sponsorDeal.id) || (t && t.sponsor) || null;
+    return FO_DEAL_INFO[id] ? { id: id, d: FO_DEAL_INFO[id], known: true } : { id: "community", d: FO_DEAL_INFO.community, known: false };
+  }
   function foOfficeExtras() {
     try {
       if (!/^#\/office/.test(location.hash || "")) return;
       var page = document.getElementById("page"); if (!page) return;
       var t = foMyClub(); if (!t) return;
+      // the engine's finance dashboard prices the sponsor from App.fin.sponsorBase
+      // (default 25k) - keep it honest with the club's actual deal
+      try {
+        var realBase = foDealResolve(t).d.base;
+        if (App.fin && App.fin.sponsorBase !== realBase) {
+          App.fin.sponsorBase = realBase;
+          if (typeof window.route === "function") { window.route(); return; }
+        }
+      } catch (e) {}
       // the cloud league IS the save: the manual save/export/import panel goes
       page.querySelectorAll(".panel h4").forEach(function (h) {
         if (/^Save game$/i.test((h.textContent || "").trim())) { var pn = h.closest(".panel"); if (pn) pn.style.display = "none"; }
       });
       // who pays the bills - the sponsor, by name, and the last settlement
       if (!page.querySelector("#fo-sponsor")) {
-        var SPN = { community: "Prudential", results: "Nike", contender: "Emirates" };
-        var deal = t.sponsorDeal || {};
-        var spName = SPN[deal.id] || "Club sponsor";
+        var res0 = foDealResolve(t);
+        var spName = res0.known ? res0.d.name : "No sponsor on record";
         var fr = t._finRow;
         var frHtml = "";
         if (fr && fr.round != null) {
@@ -5531,12 +5553,42 @@
             (fr.acad ? "<tr><td>Academies</td><td>" + money(-fr.acad) + "</td></tr>" : "") +
             "<tr><td><b>Net</b></td><td><b>" + money(fr.net || 0) + "</b></td></tr></table>";
         } else frHtml = "<div class='small'>Your first settlement lands when the next round resolves.</div>";
+        var stSp = foTrainState();
+        var pickerHtml = "";
+        if (!res0.known) {
+          if (stSp.sponsorPending) {
+            pickerHtml = "<div class='fo-yc-note'>You chose <b>" + E((FO_DEAL_INFO[stSp.sponsorPending] || {}).name || stSp.sponsorPending) + "</b> - the deal is signed when the next round resolves. Until then the books run on Prudential terms.</div>";
+          } else {
+            pickerHtml = "<div class='fo-yc-note'>Your club was founded before sponsor deals were recorded, so the books have been running on Prudential's terms. Pick your sponsor once - it takes effect when the next round resolves.</div>" +
+              "<div class='fo-sp-pick'>" + Object.keys(FO_DEAL_INFO).map(function (k) {
+                var d2 = FO_DEAL_INFO[k];
+                return "<button class='fo-sp-choose' data-sp='" + k + "'><b>" + d2.name + "</b><span>" + d2.line + "</span></button>";
+              }).join("") + "</div>";
+          }
+        }
         var spc = document.createElement("div");
         spc.className = "panel"; spc.id = "fo-sponsor";
-        spc.innerHTML = "<h4>Sponsor - " + spName + "</h4><div class='pad'>" +
-          "<div class='small'>" + FO$(deal.base || 45000) + " per matchday" + (deal.win ? " plus " + FO$(deal.win) + " for every win" : "") + ", paid when the round resolves.</div>" + frHtml + "</div>";
+        spc.innerHTML = "<h4>Sponsor" + (res0.known ? " - " + spName : "") + "</h4><div class='pad'>" +
+          (res0.known ? "<div class='small'><b>" + res0.d.name + "</b>: " + res0.d.line + " Paid when the round resolves.</div>" : "") +
+          pickerHtml + frHtml + "</div>";
         var fp0 = page.querySelector(".panel");
         if (fp0 && fp0.parentNode) fp0.parentNode.insertBefore(spc, fp0); else page.appendChild(spc);
+        spc.querySelectorAll(".fo-sp-choose").forEach(function (b) {
+          b.addEventListener("click", function () {
+            var id2 = b.getAttribute("data-sp"), d3 = FO_DEAL_INFO[id2];
+            foConfirm({
+              title: "Sign with " + d3.name + "?",
+              body: d3.line + " This is a one-time choice for the season.",
+              confirm: "Sign the deal", cancel: "Not yet"
+            }).then(function (ok) {
+              if (!ok) return;
+              var st3 = foTrainState(); st3.sponsorPending = id2; foTrainSave(st3);
+              try { SYNC.lastOrderSig = null; } catch (e) {}
+              toast(d3.name + " it is - the deal is signed when the next round resolves.");
+              spc.remove(); foOfficeExtras();
+            });
+          });
+        });
       }
       // sync status: which build, who am I, what the server said about my orders
       if (!page.querySelector("#fo-sync") && SYNC && SYNC.started && !SYNC.practice) {
@@ -5569,6 +5621,7 @@
       }
       if (page.querySelector("#fo-stadium")) return;
       var st = foTrainState();
+      if (st.sponsorPending && t.sponsorDeal && t.sponsorDeal.id) { delete st.sponsorPending; foTrainSave(st); }
       var seats = t.seats || 9000;
       var pending = st.seatsPending && st.seatsPending.target > seats;
       if (st.seatsPending && st.seatsPending.target <= seats) { delete st.seatsPending; foTrainSave(st); pending = false; }

@@ -444,6 +444,25 @@
     });
   }
 
+  // Legacy clubs founded before sponsor deals were recorded may pick once;
+  // the pick rides the order packet and lands here. Clubs that already have
+  // a recorded deal cannot switch (no mid-season deal-hopping).
+  var FO_DEAL_TERMS = {
+    community: { id: 'community', base: 45000, win: 0, halfway: 0, seasonTop3: 0, champ: 0 },
+    results:   { id: 'results',   base: 38000, win: 13000, halfway: 0, seasonTop3: 0, champ: 0 },
+    contender: { id: 'contender', base: 15000, win: 45000, halfway: 0, seasonTop3: 0, champ: 0 }
+  };
+  function foApplyPacketSponsor(pkts) {
+    (pkts || []).forEach(function (pk) {
+      if (!pk || !pk.club || !pk.fo_sponsor || !FO_DEAL_TERMS[pk.fo_sponsor]) return;
+      var t = GD.teams.find(function (x) { return x.name === pk.club; }); if (!t) return;
+      if (t.sponsorDeal && t.sponsorDeal.id) return;         // already signed - no switching
+      t.sponsorDeal = Object.assign({}, FO_DEAL_TERMS[pk.fo_sponsor]);
+      t._trainReport = t._trainReport || { round: 0, gains: [], recovery: [], signings: [] };
+      (t._trainReport.signings = t._trainReport.signings || []).push('Sponsorship signed: ' + pk.fo_sponsor + ' deal now backs the club.');
+    });
+  }
+
   // Stadium expansion: validated when the round resolves, like signings.
   function foApplyPacketSeats(pkts, round) {
     (pkts || []).forEach(function (pk) {
@@ -563,6 +582,7 @@
     var round = App.season ? App.season.round : 0;
     try { foRepairBowlerBatting(); } catch (e) {}
     try { foRecoverInjuries(round); } catch (e) { console.log('injury recovery failed:', e && e.message); }
+    try { foApplyPacketSponsor(window.__FO_PKTS); } catch (e) { console.log('packet sponsor failed:', e && e.message); }
     try { foApplyPacketTraining(window.__FO_PKTS); } catch (e) { console.log('packet training failed:', e && e.message); }
     var out = _foCR2.apply(this, arguments);
     try { foApplyPacketYouth(window.__FO_PKTS, round); } catch (e) { console.log('packet youth failed:', e && e.message); }
