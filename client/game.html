@@ -7258,6 +7258,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-fact span{font-size:10.5px}" +
     ".fo-fact b{font-size:13.5px;font-weight:600}" +
     ".fo-br-ph{font-size:11px;letter-spacing:.12em;color:#a09a8a}" +
+    ".fo-br-cols{align-items:stretch}" +
+    ".fo-br-side{display:flex;flex-direction:column;gap:14px}" +
     ".fo-br-closure{margin-top:18px;font-size:14px;line-height:1.7;color:#3c4658}" +
     ".fo-br-closure p{margin:0 0 10px}" +
     ".fo-br-luck{font-weight:800;color:#12203a}" +
@@ -9035,12 +9037,21 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if (!App.founder || !App.founder.pool) App.founder = { name: FO_ONB.clubName, budget: 1000000, pool: buildCountryPool("fo-preview", FO_ONB.country), picked: [], identity: "Balanced XI" };
       if (step === "draft" || step === "report" || step === "players") FO_ONB.sponsor = FO_ONB.sponsor || "community";
       if (step === "report" && !App.founder.picked.length) {
+        // draft a legal squad WITHIN the $1M budget, best value first
         var _pool = App.founder.pool.slice(), _byR = function (a, b) { return (b.rating || 0) - (a.rating || 0); };
-        var _wk = _pool.filter(function (p) { return p.keeper; }).sort(_byR).slice(0, 1);
-        var _bw = _pool.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && !p.keeper; }).sort(_byR).slice(0, 6);
-        var _used = {}; _wk.concat(_bw).forEach(function (p) { _used[p.name] = 1; });
-        var _bat = _pool.filter(function (p) { return !_used[p.name]; }).sort(_byR).slice(0, 6);
-        App.founder.picked = _wk.concat(_bw, _bat);
+        var _spent = 0, _picked = [], _used = {};
+        var _take = function (list, n) {
+          list.sort(_byR).forEach(function (p) {
+            if (n <= 0 || _used[p.name]) return;
+            var fee = foDraftPrice(p);
+            if (_spent + fee > 940000) return;
+            _used[p.name] = 1; _picked.push(p); _spent += fee; n--;
+          });
+        };
+        _take(_pool.filter(function (p) { return p.keeper; }), 1);
+        _take(_pool.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && !p.keeper; }), 6);
+        _take(_pool.filter(function (p) { return !p.keeper && (!p.bowlTypeFull || p.bowlTypeFull === "none"); }), 6);
+        App.founder.picked = _picked;
       }
     }
     ({ create: foOnbCreate, charter: foOnbCharter, money: foOnbMoney, sponsor: foOnbSponsor, players: foOnbPlayers, draft: foOnbDraft, report: foOnbReport }[step || "create"] || foOnbCreate)();
@@ -9647,7 +9658,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "<p>From here it is cricket: one match every day, eighteen rounds, nine other managers who want what you want. Pick your eleven, trust your judgement, and enjoy every ball.</p>" +
       "<p class='fo-br-luck'>Good luck, " + E((SYNC && SYNC.me && SYNC.me.display_name) || "manager") + ". The season starts now.</p></div>" +
       "</div><aside class='fo-br-side'>" +
-      "<div class='fo-br-panel'><div class='fo-br-ph'>Squad strength</div>" +
+      "<div class='fo-clubprev' style='margin-bottom:0'><div class='fo-clubprev-crest'>" + E(FO_ONB.clubName.split(/\s+/).map(function (w) { return w[0] || ""; }).join("").slice(0, 3).toUpperCase()) + "</div>" +
+      "<div class='fo-clubprev-nm'>" + E(FO_ONB.clubName) + "</div>" +
+      "<div class='fo-clubprev-sub'>" + (function () { try { return foFlag(FO_ONB.country) || ""; } catch (e) { return ""; } })() + " " + E(FO_ONB.country || "") + " &middot; " + E(FO_ONB.ground) + "</div>" +
+      "<div class='fo-clubprev-sub'>Founded " + new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) + "</div></div>" +
+      "<div class='fo-br-panel' style='flex:1'><div class='fo-br-ph'>Squad strength</div>" +
       starRow("Batting", batStr) + starRow("Bowling", bowlStr) + starRow("Fielding", fieldStr) + starRow("Keeping", keepStr) + "</div>" +
       "</aside></div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back to draft</button><button class='fo-ob-cta' id='fo-ob-done'>Enter the League</button></div></div>";
