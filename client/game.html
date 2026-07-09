@@ -6846,7 +6846,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     "@media(max-width:760px){" +
       ".fo-modal-card{max-height:86vh;overflow-y:auto;width:min(94vw,420px)}" +
       ".fo-stat{min-width:0}.fo-stat-body{min-width:0;overflow:hidden}" +
-      ".fo-stat-v{font-size:clamp(16px,5.4vw,22px) !important;overflow-wrap:anywhere}" +
+      ".fo-stat-v{font-size:clamp(15px,5vw,22px) !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".fo-stat-l{font-size:10px !important;letter-spacing:.08em}" +
       ".fo-ch-stats{grid-template-columns:repeat(2,1fr) !important;gap:10px !important}" +
       "#page,#page td,#page p,#page li{font-size:13.5px}" +
@@ -7260,6 +7260,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-br-ph{font-size:11px;letter-spacing:.12em;color:#a09a8a}" +
     ".fo-br-cols{align-items:stretch}" +
     ".fo-br-side{display:flex;flex-direction:column;gap:14px}" +
+    "body,#page,#topbar,#fo-onb,button,input,select,textarea{font-family:'Inter',ui-sans-serif,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif !important}" +
+    "body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}" +
+    ".fo-ch-name{font-weight:800;letter-spacing:-.8px}" +
+    ".fo-stat-v{font-weight:700 !important}" +
+    ".fo-stat-l{font-weight:600 !important;letter-spacing:.1em !important;color:#9a9484 !important}" +
+    ".fo-card-h2,.fo-card-h{font-weight:700;letter-spacing:-.1px}" +
+    ".fo-mchip{font-weight:600}" +
+    ".fo-next-opp{font-weight:800;letter-spacing:-.4px}" +
+    ".fo-stat-word{font-size:clamp(14px,4vw,19px);font-weight:700;letter-spacing:-.2px}" +
     ".fo-br-closure{margin-top:18px;font-size:14px;line-height:1.7;color:#3c4658}" +
     ".fo-br-closure p{margin:0 0 10px}" +
     ".fo-br-luck{font-weight:800;color:#12203a}" +
@@ -7374,9 +7383,28 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   document.body.appendChild(css3);
   // The game injects its own theme stylesheets into <body> at render time, after
   // ours. Keep our brand sheet the LAST stylesheet so it always wins.
+  // Modern type: Inter (with the platform's own UI face as fallback) across
+  // the whole app. Loaded once; GitHub Pages allows the font CDN.
+  try {
+    if (!document.getElementById("fo-font")) {
+      var fl = document.createElement("link");
+      fl.id = "fo-font"; fl.rel = "stylesheet";
+      fl.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap";
+      document.head.appendChild(fl);
+    }
+  } catch (e) {}
   function bumpBrand() { try { if (css3.parentNode !== document.body || document.body.lastChild !== css3) document.body.appendChild(css3); } catch (e) {} }
   // Add a "Clubs" nav link -> the game's players browser (pick any club, bot or
   // human, and see its roster). The game ships the page but never links to it.
+  // The game runs in days, not weeks: the engine's "Week N" chip goes.
+  function foHideWeekChip() {
+    try {
+      document.querySelectorAll("#fo-top-status span").forEach(function (s) {
+        if (/^\s*Week\s+\d+/.test(s.textContent || "")) s.style.display = "none";
+      });
+    } catch (e) {}
+  }
+  window.addEventListener("hashchange", function () { setTimeout(foHideWeekChip, 80); setTimeout(foHideWeekChip, 400); });
   function ensureNav() {
     try {
       var tb = document.getElementById("topbar"); if (!tb) return;
@@ -7390,6 +7418,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       }
       var mk = function (label, cls, fn) { var el = document.createElement("a"); el.className = cls; el.href = "#"; el.textContent = label; el.addEventListener("click", function (e) { e.preventDefault(); fn(); }); return el; };
       var status = tb.querySelector("#fo-top-status");
+      foHideWeekChip();
       // Practice Game (and, for founders only, an Admin link) live with the main nav,
       // inserted just before the game's right-hand status block.
       var addNav = function (cls, label, fn) {
@@ -7599,7 +7628,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         stat("teal", FO_I("chart", 19), "Points", me.pts || 0, (me.w || 0) + "W · " + (me.l || 0) + "L") +
         stat("terra", FO_I("wallet", 19), "Bank", foMoney(bank), "Available funds") +
         stat("teal", FO_I("coins", 19), "Weekly wages", foMoney(wages), "Total wage bill") +
-        stat("terra", FO_I("users", 19), "Supporters", mood, "Mood") + "</div>";
+        stat("terra", FO_I("users", 19), "Supporters", "<span class='fo-stat-word'>" + mood + "</span>", "Mood") + "</div>";
 
       // Recent results
       var recent = (App.results || []).slice(-4).reverse();
@@ -7668,7 +7697,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // current unbeaten/win streak from the form pips (most recent last)
       var streak = 0;
       for (var si = form.length - 1; si >= 0 && String(form[si]).toUpperCase() === "W"; si--) streak++;
-      if (streak >= 2) strip += "<span class='fo-mchip fo-mchip-hot'><i>" + FO_I("trophy", 15) + "</i>" + streak + "-match win streak — keep it alive</span>";
+      if (streak >= 2) strip += "<span class='fo-mchip fo-mchip-hot'><i>" + FO_I("trophy", 15) + "</i>" + streak + "-match win streak</span>";
       // goal gradient: how close is the next rung of the table?
       if (pi > 0 && played > 0) {
         var above = rowsL[pi - 1], gap = (above.pts || 0) - (me.pts || 0);
@@ -7680,7 +7709,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       }
       // check-in streak: reward showing up, every day
       var stk = foStreak();
-      if (stk >= 2) strip += "<span class='fo-streak'>&#128293; " + stk + "-day check-in streak</span>";
+      if (stk >= 2) strip += "<span class='fo-mchip'>&#128293; " + stk + "-day check-in streak</span>";
       // goal gradient in money: what one more place is worth
       if (pi > 0 && (me.p || 0) > 0) {
         var prizeUp = (FO_FIN.prizes[pi - 1] || 0) - (FO_FIN.prizes[pi] || 0);
@@ -7698,7 +7727,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var oppForm = (foFormMap()[nxt.opp.name] || []).map(function (x) { return "<i class='fo-pip fo-" + x + "'></i>"; }).join("");
         var cd = isMP
           ? "<div class='fo-cd'><div class='fo-cd-v' id='fo-cd'>" + foCdText(foNextMatchdayMs()) + "</div><div class='fo-cd-l'>Until match time · " + MATCH_TIME + "</div></div>"
-          : "<div class='fo-cd'><div class='fo-cd-l'>Practice league — plays on demand</div></div>";
+          : "";
         nextPanel = "<div class='fo-next'><div class='fo-next-l'>" +
           "<div class='fo-next-eyebrow'>Next match · Round " + (nxt.round + 1) + "</div>" +
           "<div class='fo-next-opp'>" + (nxt.isHome ? "vs " : "at ") + E(nxt.opp.name) + "</div>" +
@@ -7724,8 +7753,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         if (rNow - (stT.lastSignRound == null ? -99 : stT.lastSignRound) >= FO_SCOUT_COOLDOWN && (t.players || []).length < 18) todo.push("<a data-go='training'>&#9733; Your scout has 3 new prospects</a>");
       } catch (e) {}
       if ((t.players || []).length < 18) todo.push("<a data-go='transfers'>&#8644; Browse the transfer market</a>");
-      var todoStrip = todo.length ? "<div class='fo-todo'>" + todo.join("") + "</div>"
-        : (nxt ? "<div class='fo-todo'><a class='fo-todo-ok'>&#10003; All caught up — see you at " + MATCH_TIME + "</a></div>" : "");
+      var todoStrip = "";
 
       // ---- latest training gains: visible progress feeds the habit loop ----
       var gainsCard = "";
