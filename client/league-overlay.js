@@ -1258,6 +1258,7 @@
       }
       var newsCard = "";
       try { newsCard = foNewsDigest(); } catch (e) {}
+      setTimeout(foChallengesCard, 30);   // async card injected under the news
       var html = "<div class='fo-ch'>" +
         "<div class='fo-ch-crumb'>" + E(t.name) + " <span>›</span> Club</div>" + hero + nextPanel + todoStrip + strip + stats +
         "<div class='fo-ch-grid'><div class='fo-ch-col'>" + newsCard +
@@ -1378,6 +1379,45 @@
     return "<div class='crumb'><span>" + E(t.name) + "</span></div><div class='fo-scout'>" + hero +
       "<div class='fo-scout-shell'>" + links + "<div class='fo-scout-body'>" + body + "</div></div></div>";
   }
+  // Human-vs-human challenge: pick pitch, weather and a time; the opponent
+  // must accept before the resolver plays it. Bots fall back to practice.
+  function foChallengeSmart(ix) {
+    if (!(SYNC && SYNC.started && !SYNC.practice && LG)) { foChallenge(ix); return; }
+    sel("league_clubs", "league_id=eq." + LG.id + "&select=club,manager_id").then(function (rows) {
+      var opp = GD.teams[ix];
+      var human = (rows || []).some(function (r) { return r.club && r.club.name === opp.name && r.manager_id !== SYNC.myMid; });
+      if (!human) { foChallenge(ix); return; }
+      var ex = document.getElementById("fo-chal"); if (ex) ex.remove();
+      var pitches = FO_PITCHES.map(function (p) { return "<option>" + foTitle(p) + "</option>"; }).join("");
+      var wx = (typeof WXLIST !== "undefined" ? WXLIST : ["Sunny"]).map(function (w) { return "<option>" + w + "</option>"; }).join("");
+      var dflt = new Date(Date.now() + 3 * 3600e3); dflt.setMinutes(0, 0, 0);
+      var pad = function (n) { return (n < 10 ? "0" : "") + n; };
+      var dv = dflt.getFullYear() + "-" + pad(dflt.getMonth() + 1) + "-" + pad(dflt.getDate()) + "T" + pad(dflt.getHours()) + ":00";
+      var m = document.createElement("div"); m.id = "fo-chal"; m.className = "fo-modal";
+      m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>Challenge</div><h3>Challenge " + E(opp.name) + "</h3>" +
+        "<div class='small' style='margin:4px 0 10px'>They must accept before the match is played. Both sides can attach a lineup up to match time; the game is played at your chosen time and does not affect the league.</div>" +
+        "<div class='ctlrow'><span>Pitch</span><select id='fo-chal-p'>" + pitches + "</select></div>" +
+        "<div class='ctlrow'><span>Weather</span><select id='fo-chal-w'>" + wx + "</select></div>" +
+        "<div class='ctlrow'><span>Play at</span><input id='fo-chal-t' type='datetime-local' value='" + dv + "'></div>" +
+        "<div style='display:flex;gap:8px;margin-top:12px'><button class='fo-yc-sign' id='fo-chal-go'>Send challenge</button><button class='mini' id='fo-chal-x'>Cancel</button></div></div>";
+      document.body.appendChild(m);
+      m.querySelector("#fo-chal-x").addEventListener("click", function () { m.remove(); });
+      m.querySelector("#fo-chal-go").addEventListener("click", function () {
+        var t = new Date(m.querySelector("#fo-chal-t").value);
+        if (!(t > new Date())) { say("Pick a time in the future."); return; }
+        rpc("challenge_create", {
+          p_league_id: LG.id, p_club: userTeam().name, p_opponent: opp.name,
+          p_pitch: (m.querySelector("#fo-chal-p").value || "balanced").toLowerCase(),
+          p_weather: m.querySelector("#fo-chal-w").value || "Sunny", p_play_at: t.toISOString()
+        }).then(function () { m.remove(); toast("Challenge sent to " + opp.name + ". You'll see their answer on your club page."); })
+          .catch(function (e) {
+            var s = ((e && e.message) || e) + "";
+            if (/Could not find the function/i.test(s)) say("Challenges need the 0017 SQL run in Supabase (ask your commissioner).");
+            else say(e);
+          });
+      });
+    }).catch(function () { foChallenge(ix); });
+  }
   function foChallenge(ix, pitch, weather) {
     try {
       try { M = null; } catch (_) {}                       // drop any stale match
@@ -1393,7 +1433,7 @@
     page.querySelectorAll(".fo-stab").forEach(function (a) { a.addEventListener("click", function () { foScoutTab = a.getAttribute("data-tab"); page.__scoutSig = null; foRenderScout(); }); });
     page.querySelectorAll(".fo-sortby").forEach(function (a) { a.addEventListener("click", function () { foScoutSort = a.getAttribute("data-s"); page.__scoutSig = null; foRenderScout(); }); });
     var back = page.querySelector(".fo-scout-back"); if (back) back.addEventListener("click", function () { location.hash = "#/matches"; });
-    var ch = page.querySelector(".fo-challenge"); if (ch) ch.addEventListener("click", function () { foMatchSetup(ix); });
+    var ch = page.querySelector(".fo-challenge"); if (ch) ch.addEventListener("click", function () { foChallengeSmart(ix); });
     page.querySelectorAll("tr.rowlink[data-sc]").forEach(function (tr) { tr.style.cursor = "pointer"; tr.addEventListener("click", function () { location.hash = "#/scorecard?i=" + tr.getAttribute("data-sc"); }); });
   }
   function foRenderScout() {
@@ -3999,6 +4039,60 @@
     } catch (e) {}
   }
   window.addEventListener("hashchange", function () { setTimeout(foRenderMatchday, 15); });
+
+  // ---- challenge friendlies: inbox/outbox card on the club home --------------
+  function foChallengesCard() {
+    try {
+      if (!(SYNC && SYNC.started && !SYNC.practice && LG)) return;
+      if (!/^#\/club|^$/.test(location.hash || "")) return;
+      var page = document.getElementById("page");
+      if (!page || page.querySelector("#fo-chal-card")) return;
+      var col = page.querySelector(".fo-ch-col"); if (!col) return;
+      var me = userTeam().name;
+      sel("league_challenges", "league_id=eq." + LG.id + "&select=*&order=created_at.desc&limit=12").then(function (rows) {
+        rows = (rows || []).filter(function (c) { return c.challenger_club === me || c.opponent_club === me; });
+        if (!rows.length) return;
+        var seenK = "fol_chseen_" + LG.id, seen = {};
+        try { seen = JSON.parse(lsGet(seenK) || "{}"); } catch (e) {}
+        var items = rows.slice(0, 5).map(function (c) {
+          var mineSent = c.challenger_club === me;
+          var vs = mineSent ? c.opponent_club : c.challenger_club;
+          var when = new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+          var line = "<b>" + (mineSent ? "vs " : "from ") + E(vs) + "</b> · " + foTitle(c.pitch) + ", " + E(c.weather) + " · " + when;
+          var act = "";
+          if (c.status === "pending" && !mineSent) act = "<button class='mini fo-ch-acc' data-id='" + c.id + "'>Accept</button> <button class='mini fo-ch-dec' data-id='" + c.id + "'>Decline</button>";
+          else if (c.status === "pending") act = "<span class='small'>awaiting reply</span>";
+          else if (c.status === "accepted") act = "<span class='small'>on! </span><button class='mini fo-ch-ord' data-id='" + c.id + "' title='Attach your currently saved lineup'>Use my lineup</button>";
+          else if (c.status === "declined") act = "<span class='small'>declined</span>";
+          else if (c.status === "played" && c.result) {
+            act = "<b class='small'>" + E(c.result.result_text || "") + "</b>";
+            if (!seen[c.id]) { toast("Challenge result: " + (c.result.result_text || "played")); seen[c.id] = 1; }
+          }
+          return "<li style='margin:0 0 8px'>" + line + "<div style='margin-top:3px'>" + act + "</div></li>";
+        }).join("");
+        lsSet(seenK, JSON.stringify(seen));
+        var card = document.createElement("div");
+        card.className = "fo-card"; card.id = "fo-chal-card";
+        card.innerHTML = "<div class='fo-card-h2row'><div class='fo-card-h2'>Challenge matches</div></div><div class='fo-card-b'><ul style='margin:0;padding-left:4px;list-style:none;font-size:13px'>" + items + "</ul></div>";
+        col.insertBefore(card, col.firstChild);
+        card.querySelectorAll(".fo-ch-acc,.fo-ch-dec").forEach(function (b) {
+          b.addEventListener("click", function () {
+            rpc("challenge_respond", { p_id: b.getAttribute("data-id"), p_accept: b.classList.contains("fo-ch-acc") })
+              .then(function () { toast(b.classList.contains("fo-ch-acc") ? "Challenge accepted — attach your lineup any time before the match." : "Challenge declined."); card.remove(); foChallengesCard(); })
+              .catch(say);
+          });
+        });
+        card.querySelectorAll(".fo-ch-ord").forEach(function (b) {
+          b.addEventListener("click", function () {
+            if (!(App.orders && App.orders.saved)) { say("Save a lineup on the Orders screen first, then attach it here."); return; }
+            rpc("challenge_set_orders", { p_id: b.getAttribute("data-id"), p_club: me, p_orders: App.orders })
+              .then(function () { toast("Lineup attached to the challenge."); })
+              .catch(say);
+          });
+        });
+      }).catch(function () {});
+    } catch (e) {}
+  }
 
   // ---- predictions league: one tap per fixture, bragging rights forever ------
   function foPredKey(rd) { return "fol_pred_" + ((LG && LG.id) || "solo") + "_" + rd; }

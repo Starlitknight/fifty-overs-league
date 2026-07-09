@@ -18,6 +18,34 @@ function tzDateHour(d) {
   return { date: `${p.year}-${p.month}-${p.day}`, hour: parseInt(p.hour, 10) };
 }
 
+// Play accepted human-vs-human challenge friendlies that have come due.
+// Squads come from the league snapshot; each side's attached lineup is used
+// when present. Friendlies: the result is recorded on the challenge row only.
+async function playChallenges(page) {
+  let due = [];
+  try {
+    due = await rest(`league_challenges?status=eq.accepted&result=is.null&play_at=lte.${encodeURIComponent(new Date().toISOString())}&select=*`);
+  } catch (e) { return; }   // table absent until 0017 is run
+  for (const ch of due) {
+    try {
+      const st = (await rest(`league_state?league_id=eq.${ch.league_id}&select=snapshot`))[0];
+      if (!st) continue;
+      const result = await page.evaluate(({ snap, ch }) => {
+        window.restoreFrom(snap);
+        const home = GD.teams.find(t => t.name === ch.challenger_club);
+        const away = GD.teams.find(t => t.name === ch.opponent_club);
+        if (!home || !away) return { error: 'club missing' };
+        const o = ch.orders || {};
+        const r = window.__resolveMatch(home, away, o[home.name] || null, o[away.name] || null,
+          { pitch: ch.pitch || 'balanced', weather: ch.weather || 'Sunny', ground: home.ground, friendly: true, seed: (Date.parse(ch.play_at) % 2147483647) });
+        return { result_text: r.result_text, winner: r.winner_team, mom: r.mom, scorecard: r.scorecard, worm: r.worm, pitch: r.pitch };
+      }, { snap: st.snapshot, ch });
+      await rpc('challenge_record_result', { p_id: ch.id, p_result: result });
+      console.log('challenge', ch.id, 'played:', result.result_text || result.error);
+    } catch (e) { console.log('challenge', ch.id, 'error:', e.message); }
+  }
+}
+
 export async function advanceLeagues() {
   assertEnv();
   const states = await rest('league_state?select=league_id,snapshot,version,round,updated_at');
@@ -28,6 +56,7 @@ export async function advanceLeagues() {
       try { await advanceOne(page, st); }
       catch (e) { console.log('league', st.league_id, 'error:', e.message); }
     }
+    await playChallenges(page);
   } finally { await close(); }
 }
 
