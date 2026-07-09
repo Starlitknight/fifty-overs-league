@@ -11168,13 +11168,37 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
 
   // ---- predictions league: one tap per fixture, bragging rights forever ------
+  // Picks live in memory first (FO_PRED), then localStorage, then the server.
+  // The matchday page re-renders often (route hooks, live ticker, hashchange),
+  // so the in-memory copy is the single source of truth for highlights: it
+  // survives every rebuild even where localStorage is unavailable (iOS private
+  // browsing), and every submit sends the FULL merged pick set so a fast tap
+  // can never wipe earlier picks off the server.
   function foPredKey(rd) { return "fol_pred_" + ((LG && LG.id) || "solo") + "_" + rd; }
+  var FO_PRED = { key: "", picks: {}, fetched: false };
+  function foPredPicks(rd) {
+    var key = foPredKey(rd);
+    if (FO_PRED.key !== key) {
+      var p = {}; try { p = JSON.parse(lsGet(key) || "{}"); } catch (e) {}
+      FO_PRED = { key: key, picks: p, fetched: false };
+    }
+    return FO_PRED.picks;
+  }
+  function foPredApply(host) {
+    host.querySelectorAll(".fo-pick").forEach(function (b) {
+      b.classList.toggle("fo-pick-on", FO_PRED.picks[b.getAttribute("data-k")] === b.getAttribute("data-v"));
+    });
+  }
   function foRenderPredictions() {
     var host = document.getElementById("fo-md-predict"); if (!host) return;
     if (!(SYNC && SYNC.started && !SYNC.practice && LG)) { host.innerHTML = ""; return; }
     var S = App.season; if (!S || !S.schedule || S.round >= S.schedule.length) { host.innerHTML = ""; return; }
     var rd = S.round, fixtures = S.schedule[rd] || [];
-    var mine = {}; try { mine = JSON.parse(lsGet(foPredKey(rd)) || "{}"); } catch (e) {}
+    var mine = foPredPicks(rd);
+    // idempotent: the card is already up for this round — refresh highlights
+    // in place instead of tearing down buttons mid-interaction
+    if (host.getAttribute("data-rd") === FO_PRED.key && host.querySelector(".fo-pick")) { foPredApply(host); return; }
+    host.setAttribute("data-rd", FO_PRED.key);
     var rows = fixtures.map(function (f, i) {
       var h = GD.teams[f[0]].name, a = GD.teams[f[1]].name, k = h + "|" + a;
       var pick = mine[k];
@@ -11185,26 +11209,27 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     }).join("");
     host.innerHTML = "<div class='fo-card' style='margin-top:14px'><div class='fo-card-h2row'><div class='fo-card-h2'>Predictions · round " + (rd + 1) + "</div><span class='small'>1 point per correct call</span></div><div class='fo-card-b'>" + rows +
       "<div id='fo-pred-board' class='small' style='margin-top:10px'>Loading leaderboard…</div></div></div>";
-    // the server is the truth for MY picks too: restore highlights from it, so
-    // they survive reloads, other devices, and anything localStorage forgot
-    sel("league_predictions", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&round=eq." + rd + "&select=picks").then(function (rows2) {
-      var srv = (rows2 && rows2[0] && rows2[0].picks) || null; if (!srv) return;
-      var merged = false;
-      for (var k2 in srv) { if (mine[k2] !== srv[k2]) { mine[k2] = srv[k2]; merged = true; } }
-      if (merged) lsSet(foPredKey(rd), JSON.stringify(mine));
-      host.querySelectorAll(".fo-pick").forEach(function (b2) {
-        var on = mine[b2.getAttribute("data-k")] === b2.getAttribute("data-v");
-        b2.classList.toggle("fo-pick-on", on);
-      });
-    }).catch(function () {});
+    // restore from the server once per round, filling only the gaps: a pick
+    // made on this device right now always beats a stale server row
+    if (!FO_PRED.fetched) {
+      FO_PRED.fetched = true;
+      sel("league_predictions", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&round=eq." + rd + "&select=picks").then(function (rows2) {
+        var srv = (rows2 && rows2[0] && rows2[0].picks) || null; if (!srv) return;
+        var merged = false;
+        for (var k2 in srv) { if (!(k2 in FO_PRED.picks)) { FO_PRED.picks[k2] = srv[k2]; merged = true; } }
+        if (merged) lsSet(FO_PRED.key, JSON.stringify(FO_PRED.picks));
+        var h2 = document.getElementById("fo-md-predict");
+        if (h2) foPredApply(h2);
+      }).catch(function () { FO_PRED.fetched = false; });
+    }
     host.querySelectorAll(".fo-pick").forEach(function (b) {
       b.addEventListener("click", function () {
         var k = b.getAttribute("data-k"), v = b.getAttribute("data-v");
-        mine[k] = v; lsSet(foPredKey(rd), JSON.stringify(mine));
+        FO_PRED.picks[k] = v; lsSet(FO_PRED.key, JSON.stringify(FO_PRED.picks));
         // highlight immediately, in place
         var row = b.parentNode;
         row.querySelectorAll(".fo-pick").forEach(function (x) { x.classList.toggle("fo-pick-on", x === b); });
-        rpc("predictions_submit", { p_league_id: LG.id, p_round: rd, p_picks: mine })
+        rpc("predictions_submit", { p_league_id: LG.id, p_round: rd, p_picks: FO_PRED.picks })
           .then(function () { toast("Prediction locked: " + v); })
           .catch(function (e) {
             var m = ((e && e.message) || e) + "";
@@ -11230,9 +11255,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       });
       var board = Object.keys(pts).map(function (m) { return { nm: names[m] || "Manager", p: pts[m] }; }).sort(function (a, b) { return b.p - a.p; });
       var el = document.getElementById("fo-pred-board"); if (!el) return;
+      var myN = 0; try { myN = Object.keys(FO_PRED.picks || {}).length; } catch (e) {}
       el.innerHTML = board.length
         ? "<b>Leaderboard:</b> " + board.map(function (x, i) { return (i + 1) + ". " + E(x.nm) + " (" + x.p + ")"; }).join(" · ")
-        : "No predictions yet this season — be first.";
+        : (myN ? "Your " + myN + " pick" + (myN > 1 ? "s are" : " is") + " locked in. Points land when the round is played." : "No predictions yet this season — be first.");
     }).catch(function () { var el = document.getElementById("fo-pred-board"); if (el) el.textContent = ""; });
   }
 
