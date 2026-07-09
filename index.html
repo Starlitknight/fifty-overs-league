@@ -11059,6 +11059,18 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     }).join("");
     host.innerHTML = "<div class='fo-card' style='margin-top:14px'><div class='fo-card-h2row'><div class='fo-card-h2'>Predictions · round " + (rd + 1) + "</div><span class='small'>1 point per correct call</span></div><div class='fo-card-b'>" + rows +
       "<div id='fo-pred-board' class='small' style='margin-top:10px'>Loading leaderboard…</div></div></div>";
+    // the server is the truth for MY picks too: restore highlights from it, so
+    // they survive reloads, other devices, and anything localStorage forgot
+    sel("league_predictions", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&round=eq." + rd + "&select=picks").then(function (rows2) {
+      var srv = (rows2 && rows2[0] && rows2[0].picks) || null; if (!srv) return;
+      var merged = false;
+      for (var k2 in srv) { if (mine[k2] !== srv[k2]) { mine[k2] = srv[k2]; merged = true; } }
+      if (merged) lsSet(foPredKey(rd), JSON.stringify(mine));
+      host.querySelectorAll(".fo-pick").forEach(function (b2) {
+        var on = mine[b2.getAttribute("data-k")] === b2.getAttribute("data-v");
+        b2.classList.toggle("fo-pick-on", on);
+      });
+    }).catch(function () {});
     host.querySelectorAll(".fo-pick").forEach(function (b) {
       b.addEventListener("click", function () {
         var k = b.getAttribute("data-k"), v = b.getAttribute("data-v");
