@@ -7224,6 +7224,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-exp-note{margin-top:12px;font-size:11px;color:#a09a8a;border-top:1px dashed #e2ddd0;padding-top:8px;text-align:center}" +
     ".fo-exp-cards{display:flex;flex-direction:column;gap:14px}" +
     ".fo-exp-tag{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#C0562F;margin-bottom:4px}" +
+    ".fo-exp-money{display:flex;justify-content:space-between;gap:10px;background:#f6f4ee;border-radius:8px;padding:8px 12px;margin:8px 0 10px;font-size:12.5px;color:#5d6779}" +
+    ".fo-exp-money b{color:#12203a;font-size:13.5px}" +
     ".fo-exp-def{padding:8px 0;border-bottom:1px solid #efeade;font-size:13px}" +
     ".fo-exp-def b{display:inline-block;min-width:96px;color:#12203a}.fo-exp-def span{color:#5d6779}" +
     ".fo-exp-talbox{background:#eef4ee;border:1px solid #d5e0d7;border-radius:11px;padding:13px 16px;font-size:13.5px;line-height:1.6;margin-top:16px}" +
@@ -9435,8 +9437,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var barHtml = bars.map(function (b) { return "<span class='fo-sk'><i>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + b[1] + "%'></u></b><em>" + b[1] + "</em></span>"; }).join("");
       var tal = (ex.talents || []).map(function (t) { return "<span class='fo-exp-tal'>" + E(String(t).replace(/([A-Z])/g, " $1").replace(/^./, function (c) { return c.toUpperCase(); })) + "</span>"; }).join("");
       return "<div class='fo-exp-card'><div class='fo-exp-tag'>" + tagLbl + "</div><div class='fo-exp-h'>" + flag + " <b>" + E(ex.name) + "</b></div>" +
-        "<div class='fo-exp-meta'>" + hand + " &middot; " + E(bt) + "</div>" +
-        "<div class='fo-exp-meta'>Age " + ex.age + " &middot; fee " + FO$(foDraftPrice(ex)) + " &middot; wage " + FO$(foDailyWage(ex)) + "/matchday</div>" +
+        "<div class='fo-exp-meta'>" + hand + " &middot; " + E(bt) + " &middot; age " + ex.age + "</div>" +
+        "<div class='fo-exp-money'><span>Fee <b>" + FO$(foDraftPrice(ex)) + "</b></span><span>Wage <b>" + FO$(foDailyWage(ex)) + "</b>/matchday</span></div>" +
         "<div class='fo-exp-bars'>" + barHtml + "</div>" +
         (tal ? "<div class='fo-exp-tals'>" + tal + "</div>" : "") + "</div>";
     };
@@ -9444,7 +9446,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ["Batting", "Run-scoring ability against all bowling."],
       ["Bowling", "Wicket threat and control with the ball. Zero means he does not bowl."],
       ["Keeping", "Glovework: byes saved, catches, stumpings."],
-      ["Technique", "Batting soundness against pace and spin, plus temperament. On a bowler's card this describes his batting; his bowling craft is inside the Bowling bar."],
+      ["Technique", "Overall polish. It correlates with everything but tracks his headline skill most: for a bowler, the accuracy and repeatability of his craft; for a batter, soundness against pace and spin. Temperament under pressure counts for everyone."],
       ["Power", "Boundary and six hitting."],
       ["Endurance", "How long he lasts before fatigue dulls everything."],
       ["Fielding", "Catches, run-outs, runs saved in the field."],
