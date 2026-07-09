@@ -5246,34 +5246,53 @@
   //  the roster change itself rides the order packet (fo_market) and is
   //  applied by the resolver after the fair money settle.
   // ===========================================================================
+  // A transfer fee that answers to the player, not to a baked pool number:
+  // skills (wage already tracks them, plus a convex OVR term), age curve
+  // (youth premium, veteran discount), talents (+10% each) and role rarity.
+  function foMarketFee(p) {
+    var ovr = (p.rating || 0) / 1000;
+    var base = foDailyWage(p) * 34 + Math.pow(Math.max(0, ovr - 38), 1.5) * 520;
+    var ageF = (p.age || 26) <= 22 ? 1.4 : p.age <= 25 ? 1.2 : p.age <= 28 ? 1.0 : p.age <= 31 ? 0.78 : 0.55;
+    var talF = 1 + 0.10 * ((p.talents || []).length);
+    var roleF = p.keeper ? 1.15 : (p.role === "allRounder" ? 1.08 : 1);
+    return Math.max(12000, Math.round(base * ageF * talF * roleF / 500) * 500);
+  }
+  function foMarketCls(p) {
+    if (p.keeper || p.role === "wicketkeeper") return "keep";
+    if (p.role === "allRounder") return "ar";
+    if (p.bowlTypeFull && p.bowlTypeFull !== "none") return foIsPace(p) ? "pace" : "spin";
+    return "bat";
+  }
+  function foOnAnyRoster(name) {
+    try { return GD.teams.some(function (t2) { return (t2.players || []).concat(t2.youth || []).some(function (x) { return x.name === name; }); }); } catch (e) { return false; }
+  }
   function foMarketPool() {
     var t = foMyClub(); if (!t) return [];
     var season = (typeof App !== "undefined" && App.seasonNo) || 1;
     var seed = (LG ? LG.id : "solo") + "-market-s" + season;
-    var out = [], seen = {};
+    var seen = {}, byCls = { bat: [], pace: [], spin: [], keep: [], ar: [] };
     var countries = [(SYNC && SYNC.myTeam && SYNC.myTeam.country) || "England", "Australia", "India", "South Africa", "New Zealand", "West Indies"];
     for (var c = 0; c < countries.length; c++) {
       var pool = [];
       try { pool = buildCountryPool(seed + "-" + countries[c], countries[c]); } catch (e) { continue; }
-      pool.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
-      // one of each trade per country, so the market isn't 18 copies of the
-      // engine's highest-rated archetype (spinners): bat, seam, spin, keep/AR
-      var got = {};
       for (var i = 0; i < pool.length; i++) {
         var p = pool[i];
-        if ((p.age || 0) < 21 || seen[p.name]) continue;
-        var cls = p.keeper ? "keep"
-          : (p.bowlTypeFull && p.bowlTypeFull !== "none")
-            ? (foIsPace(p) ? "pace" : "spin")
-            : "bat";
-        if (got[cls]) continue;
-        got[cls] = 1; seen[p.name] = 1;
-        var q = JSON.parse(JSON.stringify(p));
-        q.fee = Math.max(10000, Math.round(foDraftPrice(p) * 1.15 / 500) * 500);   // mid-season premium
-        out.push(q);
-        if (got.bat && got.pace && got.spin && got.keep) break;
+        if ((p.age || 0) < 21 || seen[p.name] || foOnAnyRoster(p.name)) continue;
+        seen[p.name] = 1;
+        byCls[foMarketCls(p)].push(p);
       }
     }
+    // a market with a shape: specialists first, all-rounders as the garnish
+    var QUOTA = { bat: 5, pace: 4, spin: 3, keep: 2, ar: 4 };
+    var out = [];
+    Object.keys(QUOTA).forEach(function (cls) {
+      byCls[cls].sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
+      byCls[cls].slice(0, QUOTA[cls]).forEach(function (p) {
+        var q = JSON.parse(JSON.stringify(p));
+        q.fee = foMarketFee(p);
+        out.push(q);
+      });
+    });
     out.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
     return out.slice(0, 18);
   }
