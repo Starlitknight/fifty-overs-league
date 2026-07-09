@@ -812,6 +812,18 @@
     "#fo-onb .fo-pitch span{font-size:11px;color:#8a8474;line-height:1.35;display:block}" +
     "#fo-onb .fo-pitch.on{border-color:#3d8a86;box-shadow:0 0 0 3px rgba(77,166,162,.22)}" +
     "@media(max-width:700px){.fo-pitchgrid{grid-template-columns:1fr 1fr}}" +
+    ".fo-ob-eyebrow{color:#C0562F;font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px}" +
+    ".fo-ctygrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:2px 0 14px}" +
+    ".fo-cty{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e2ddd0;border-radius:10px;padding:9px 11px;cursor:pointer;font-size:13px;font-weight:600;color:#3c4658;text-align:left;transition:border-color .12s ease,box-shadow .12s ease}" +
+    ".fo-cty i{font-style:normal;font-size:17px;line-height:1}" +
+    ".fo-cty:hover{border-color:#c9c2b2}" +
+    ".fo-cty.on{border-color:#C0562F;box-shadow:0 0 0 2px rgba(192,86,47,.18);color:#12203a;font-weight:800}" +
+    ".fo-clubprev{background:linear-gradient(135deg,#0B1322,#1C2433);border-radius:12px;padding:16px;margin-bottom:14px;text-align:center}" +
+    ".fo-clubprev-crest{width:52px;height:52px;border-radius:50%;background:#C0562F;color:#fff;font-weight:800;font-size:17px;letter-spacing:.04em;display:flex;align-items:center;justify-content:center;margin:0 auto 8px}" +
+    ".fo-clubprev-nm{color:#fff;font-weight:800;font-size:16px;letter-spacing:-.2px}" +
+    ".fo-clubprev-sub{color:#9aa3b2;font-size:11.5px;margin-top:3px}" +
+    "@media(max-width:860px){.fo-ctygrid{grid-template-columns:repeat(3,1fr)}}" +
+    "@media(max-width:560px){.fo-ctygrid{grid-template-columns:repeat(2,1fr)}}" +
     // charter (club founded) screen
     ".fo-ob-charter{text-align:center}" +
     ".fo-charter-ic{width:64px;height:64px;border-radius:50%;background:rgba(200,103,74,.12);color:#a95f38;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}" +
@@ -2550,6 +2562,7 @@
   }
 
   window.__folBuildPool = buildCountryPool;   // debug/test hook (harmless)
+  window.__folOnbPreview = function () { try { if (!FO_ONB) FO_ONB = { team: {}, step: 1, needsSetup: true, country: NAT[0], clubName: "", ground: "Riverview Oval", pitch: "balanced", style: "balanced", sponsor: null, scenario: "average", role: "all", riskAck: false }; FO_ONB.needsSetup = true; foOnbCreate(); } catch (e) { console.warn("onb preview", e); } };   // debug/test hook (harmless)
 
   // Draft happens in the game's OWN founder screen (pgFounder). We hand it a
   // balanced, country-flavoured pool derived from the server draft_seed.
@@ -2699,15 +2712,21 @@
   // ---- Screen 1 · Create your club -----------------------------------------
   function foOnbCreate() {
     FO_ONB.step = 1;
-    var ctyOpts = NAT.map(function (c) { return "<option value='" + E(c) + "'" + (FO_ONB.country === c ? " selected" : "") + ">" + E(c) + "</option>"; }).join("");
-    var ctyField = "<label class='fo-ob-lbl'>Home country <span class='fo-ob-hint'>— you draft players from here</span></label>" +
-      "<select id='fo-ob-cty' class='fo-ob-input'" + (FO_ONB.needsSetup ? "" : " disabled") + ">" + ctyOpts + "</select>";
+    if (!FO_ONB.country) FO_ONB.country = NAT[0];
+    var flagOf = function (c) { try { return (typeof foFlag === "function" && foFlag(c)) || ""; } catch (e) { return ""; } };
+    var ctyField = "<label class='fo-ob-lbl'>Home country <span class='fo-ob-hint'>&mdash; you draft players from here</span></label>" +
+      (FO_ONB.needsSetup
+        ? "<div class='fo-ctygrid'>" + NAT.map(function (c) {
+            return "<button type='button' class='fo-cty" + (FO_ONB.country === c ? " on" : "") + "' data-cty='" + E(c) + "'><i>" + flagOf(c) + "</i><span>" + E(c) + "</span></button>";
+          }).join("") + "</div>"
+        : "<div class='fo-ctygrid'><button type='button' class='fo-cty on' disabled><i>" + flagOf(FO_ONB.country) + "</i><span>" + E(FO_ONB.country) + "</span></button></div>");
     var body =
       "<div class='fo-ob-card fo-ob-mid'>" +
       "<div class='fo-ob-cols'>" +
       "<div class='fo-ob-colmain'>" +
+      "<div class='fo-ob-eyebrow'>Welcome to Fifty Overs</div>" +
       "<h1 class='fo-ob-h1'>Found your club</h1>" +
-      "<p class='fo-ob-lead'>Fifty Overs is a private cricket league between you and your friends: you found a club, draft real players, set your line-up each matchday and one match plays out every day. Start by creating your club's identity.</p>" +
+      "<p class='fo-ob-lead'>A private league between you and your friends: draft real players, set a line-up each matchday, and one match plays out every day. Start with your club's identity &mdash; everything here is yours for the whole season.</p>" +
       "<label class='fo-ob-lbl'>Manager name</label><input class='fo-ob-input' value='" + E((SYNC && SYNC.me && SYNC.me.display_name) || "Manager") + "' disabled>" +
       "<label class='fo-ob-lbl'>Club name</label><input id='fo-ob-name' class='fo-ob-input' maxlength='28' value='" + E(FO_ONB.clubName) + "' placeholder='Harbor City CC'>" +
       ctyField +
@@ -2718,7 +2737,10 @@
       }).join("") + "</div>" +
       "<div class='fo-ob-act'><button class='fo-ob-cta' id='fo-ob-c1'>Continue</button></div>" +
       "</div>" +
-      "<aside class='fo-ob-snap'><div class='fo-ob-snaph'>Season 1 snapshot</div>" +
+      "<aside class='fo-ob-snap'>" +
+      "<div class='fo-clubprev' id='fo-prev'><div class='fo-clubprev-crest' id='fo-prev-cr'></div>" +
+      "<div class='fo-clubprev-nm' id='fo-prev-nm'></div><div class='fo-clubprev-sub' id='fo-prev-sub'></div></div>" +
+      "<div class='fo-ob-snaph'>Season 1 snapshot</div>" +
       "<div class='fo-snap-row'><i>" + FO_I("users") + "</i><div><b>10-team league</b></div></div>" +
       "<div class='fo-snap-row'><i>" + FO_I("calendar") + "</i><div><b>18 matchdays</b></div></div>" +
       "<div class='fo-snap-row'><i>" + FO_I("coins") + "</i><div><b>$1,000,000</b><span>starting bank</span></div></div>" +
@@ -2726,6 +2748,21 @@
       "</aside></div></div>";
     var host = foOnbMount(0, body);
     host.querySelectorAll(".fo-pitch").forEach(function (b) { b.addEventListener("click", function () { FO_ONB.pitch = b.getAttribute("data-pitch"); foOnbCreate(); }); });
+    host.querySelectorAll(".fo-cty[data-cty]").forEach(function (b) {
+      b.addEventListener("click", function () { FO_ONB.country = b.getAttribute("data-cty"); foOnbCreate(); });
+    });
+    // live identity preview: watching "your" club take shape as you type
+    var updPrev = function () {
+      var nm = ((host.querySelector("#fo-ob-name") || {}).value || "").trim() || "Your Club";
+      var gr = ((host.querySelector("#fo-ob-ground") || {}).value || "").trim() || (nm.split(" ")[0] + " Oval");
+      var ini = nm.split(/\s+/).map(function (w) { return w[0] || ""; }).join("").slice(0, 3).toUpperCase();
+      var cr = host.querySelector("#fo-prev-cr"), pn = host.querySelector("#fo-prev-nm"), ps = host.querySelector("#fo-prev-sub");
+      if (cr) cr.textContent = ini || "FC";
+      if (pn) pn.textContent = nm;
+      if (ps) ps.innerHTML = flagOf(FO_ONB.country) + " " + E(FO_ONB.country) + " &middot; " + E(gr) + " &middot; " + E(foTitle(FO_ONB.pitch || "balanced")) + " pitch";
+    };
+    ["fo-ob-name", "fo-ob-ground"].forEach(function (id) { var el = host.querySelector("#" + id); if (el) el.addEventListener("input", updPrev); });
+    updPrev();
     host.querySelector("#fo-ob-c1").addEventListener("click", function () {
       var nm = (host.querySelector("#fo-ob-name").value || "").trim();
       if (nm.length < 2) { host.querySelector("#fo-ob-name").focus(); return; }
@@ -2735,7 +2772,7 @@
       // First visit: save the club (name + country) to the league and build the
       // draft pool from the server-issued seed. Manager name comes from signup —
       // never asked twice.
-      var cty = (host.querySelector("#fo-ob-cty") || {}).value || FO_ONB.country || NAT[0];
+      var cty = FO_ONB.country || NAT[0];
       var btn = host.querySelector("#fo-ob-c1"); btn.disabled = true; btn.textContent = "Saving…";
       rpc("create_league_team", { p_league_id: LG.id, p_team_name: nm, p_manager_name: (SYNC && SYNC.me && SYNC.me.display_name) || "Manager", p_country: cty })
         .then(function (team) {
