@@ -367,8 +367,8 @@
     ".fo-sc-leaders ul{margin:0;padding-left:2px;list-style:none}.fo-sc-leaders li{padding:3px 0;font-size:12.5px}" +
     ".fo-sc-leaders li b{margin-left:4px}" +
     ".fo-sc-lh{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#8a8474;margin-bottom:4px}" +
-    ".fo-scout-hero-r{display:flex;flex-direction:column;align-items:flex-end;gap:10px;min-width:0}" +
-    ".fo-scout-hero-r .fo-scout-kpis{display:grid !important;grid-template-columns:repeat(3,minmax(148px,1fr));gap:10px;width:100%}" +
+    ".fo-scout-hero-r{display:flex;flex-direction:column;align-items:flex-end;gap:10px;min-width:0;flex:1 1 400px;max-width:620px}" +
+    ".fo-scout-hero-r .fo-scout-kpis{display:grid !important;grid-template-columns:repeat(3,minmax(148px,1fr));gap:10px;width:100%;flex:0 0 auto}" +
     "@media(max-width:900px){.fo-scout-hero-r{align-items:stretch;width:100%}.fo-scout-hero-r .fo-scout-kpis{grid-template-columns:1fr 1fr}.fo-face-chip{text-align:center}}" +
     ".fo-face-chip{background:#F6E3B4;color:#5a4310;border:1px solid #e8cf8c;border-radius:10px;padding:8px 14px;font-size:12.5px;font-weight:800}" +
     ".fo-kpi i{display:block;font-style:normal;font-size:10.5px;color:#aab3c0;margin-top:2px}" +
@@ -831,6 +831,8 @@
     "html body.ftpskin .panel>h4,html body.ftpskin .card-title,.panel>h4,.card-title,.panel>header,.card>h4,.sec>h4{background:" + NAVY2 + " !important;background-image:none !important;color:" + PAPER + " !important}" +
     // heroes / blue banners -> navy gradient
     "html body.ftpskin [class*=hero],html body.ftpskin [class*=club-home],[class*=hero],[class*=club-home],.page-head,.club-head{background:linear-gradient(160deg," + NAVY2 + "," + NAVY + ") !important;color:" + PAPER + " !important}" +
+    // the broad [class*=hero] paint must not double-panel the scout hero's inner columns
+    "html body.ftpskin .fo-scout-hero .fo-scout-hero-main,html body.ftpskin .fo-scout-hero .fo-scout-hero-r,html body .fo-scout-hero .fo-scout-hero-main,html body .fo-scout-hero .fo-scout-hero-r{background:none !important}" +
     // primary buttons -> terracotta
     "html body.ftpskin button.primary,html body.ftpskin .confirmbtn,button.primary,.confirmbtn,.btn-primary{background:" + TERRA + " !important;background-image:none !important;border-color:" + TERRA2 + " !important;color:" + PAPER + " !important}" +
     "button.primary:hover,.confirmbtn:hover{background:#b3573c !important}" +
