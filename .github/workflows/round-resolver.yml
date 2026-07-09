@@ -5,7 +5,9 @@ name: round-resolver
 # open. Free (GitHub Actions); the service_role key lives ONLY in encrypted secrets.
 on:
   schedule:
-    - cron: '*/15 * * * *'   # every 15 minutes
+    # GitHub heavily delays or drops schedules that fire on the popular
+    # quarter-hour marks; off-peak minutes fire far more reliably.
+    - cron: '4,19,34,49 * * * *'
   workflow_dispatch: {}       # allow manual runs from the Actions tab
 
 concurrency:
@@ -15,6 +17,7 @@ concurrency:
 jobs:
   advance:
     runs-on: ubuntu-latest
+    timeout-minutes: 12       # a wedged browser must not block later passes
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,9 +26,20 @@ jobs:
       - name: Install resolver deps
         working-directory: resolver
         run: npm install playwright@1.56.1
+      - name: Cache Chromium
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-1.56.1-${{ runner.os }}
       - name: Install Chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
         working-directory: resolver
         run: npx playwright install --with-deps chromium
+      - name: Install Chromium system deps (cached browser)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        working-directory: resolver
+        run: npx playwright install-deps chromium
       - name: Advance league rounds (one pass)
         working-directory: resolver
         env:

@@ -7440,9 +7440,23 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     } catch (e) {}
   }
   window.addEventListener("hashchange", function () { setTimeout(foHideWeekChip, 80); setTimeout(foHideWeekChip, 400); });
+  // The engine rewrites #fo-top-status (Week/Bank/Next chips) on its own
+  // schedule, resurrecting the chips we hide. Wrap its renderer and watch the
+  // topbar so the hide always lands last.
+  try {
+    if (typeof window.updateTopbarStatus === "function" && !window.updateTopbarStatus.__fo) {
+      var _foUts = window.updateTopbarStatus;
+      window.updateTopbarStatus = function () { var r = _foUts.apply(this, arguments); foHideWeekChip(); return r; };
+      window.updateTopbarStatus.__fo = 1;
+    }
+  } catch (e) {}
   function ensureNav() {
     try {
       var tb = document.getElementById("topbar"); if (!tb) return;
+      if (!tb.__foChipObs && window.MutationObserver) {
+        tb.__foChipObs = 1;
+        new MutationObserver(function () { foHideWeekChip(); }).observe(tb, { childList: true, subtree: true });
+      }
       // put the app icon in the brand, on every page, and make it open the league menu
       var brand = tb.querySelector(".brand");
       if (brand && !brand.querySelector(".fo-brandicon")) {
@@ -11307,6 +11321,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var S = App.season; if (!S || !S.schedule || S.round >= S.schedule.length) { host.innerHTML = ""; return; }
     var rd = S.round, fixtures = S.schedule[rd] || [];
     var mine = foPredPicks(rd);
+    // house rules: one side per fixture (a pick REPLACES the other side, the
+    // key is the fixture), at most five picks a round, and nothing stale -
+    // picks for fixtures not in this round are pruned
+    var valid = {};
+    fixtures.forEach(function (f) { try { valid[GD.teams[f[0]].name + "|" + GD.teams[f[1]].name] = 1; } catch (e) {} });
+    var nPicks = 0, pruned = false;
+    Object.keys(mine).forEach(function (kk) {
+      if (!valid[kk] || ++nPicks > 5) { delete mine[kk]; pruned = true; }
+    });
+    if (pruned) lsSet(FO_PRED.key, JSON.stringify(mine));
     // idempotent: the card is already up for this round — refresh highlights
     // in place instead of tearing down buttons mid-interaction
     if (host.getAttribute("data-rd") === FO_PRED.key && host.querySelector(".fo-pick")) { foPredApply(host); return; }
@@ -11328,7 +11352,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       sel("league_predictions", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&round=eq." + rd + "&select=picks").then(function (rows2) {
         var srv = (rows2 && rows2[0] && rows2[0].picks) || null; if (!srv) return;
         var merged = false;
-        for (var k2 in srv) { if (!(k2 in FO_PRED.picks)) { FO_PRED.picks[k2] = srv[k2]; merged = true; } }
+        for (var k2 in srv) {
+          if (k2 in FO_PRED.picks || !valid[k2]) continue;
+          if (Object.keys(FO_PRED.picks).length >= 5) break;
+          FO_PRED.picks[k2] = srv[k2]; merged = true;
+        }
         if (merged) lsSet(FO_PRED.key, JSON.stringify(FO_PRED.picks));
         var h2 = document.getElementById("fo-md-predict");
         if (h2) foPredApply(h2);
@@ -11337,6 +11365,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     host.querySelectorAll(".fo-pick").forEach(function (b) {
       b.addEventListener("click", function () {
         var k = b.getAttribute("data-k"), v = b.getAttribute("data-v");
+        if (!(k in FO_PRED.picks) && Object.keys(FO_PRED.picks).length >= 5) {
+          say("Five predictions a round is the cap. Change one of your existing picks instead."); return;
+        }
         FO_PRED.picks[k] = v; lsSet(FO_PRED.key, JSON.stringify(FO_PRED.picks));
         // highlight immediately, in place
         var row = b.parentNode;
