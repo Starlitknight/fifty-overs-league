@@ -1761,8 +1761,12 @@
       // League mode: "Prepare" only sets orders (matches auto-resolve), so relabel it.
       if (SYNC && SYNC.started) {
         document.querySelectorAll("#page button").forEach(function (b) {
-          if (/startLeagueMatch/.test(b.getAttribute("onclick") || "")) b.textContent = "Set lineup";
+          if (!/startLeagueMatch/.test(b.getAttribute("onclick") || "")) return;
+          b.classList.add("fo-setr");
+          if (!b.getAttribute("data-r") && App.season) b.setAttribute("data-r", App.season.round);
+          if (!b.classList.contains("fo-setr-done")) b.textContent = "Set lineup";
         });
+        foRefreshLineupButtons();
       }
       // the engine's placeholder competition name becomes the real league's name
       var lgName = (LG && LG.name) ? LG.name : "League";
@@ -2243,7 +2247,7 @@
           }
           if (typeof UI !== "undefined" && UI.matchTab === "Scorecard" && M && M.innings) {
             var mb = document.querySelector(".ftp-match-body");
-            if (mb) foBowlOrderFix(mb, M.innings.filter(Boolean));
+            if (mb) foBowlOrderFix(mb, M.innings.filter(Boolean), M.log);
           }
           document.querySelectorAll("#page select[title='commentary speed']").forEach(function (s) {
             var row = s.previousElementSibling;
@@ -2256,7 +2260,19 @@
   }
   // ---- match centre polish: conditions chips, chronological commentary, ------
   // ---- worm axes, bowlers in the order they actually bowled -------------------
-  function foBowlOrderFix(root, innsArr) {
+  // The order bowlers came on, from the ball-by-ball log (array order survives
+  // the jsonb round-trip through Supabase; OBJECT key order does not, which is
+  // why league scorecards showed bowlers shuffled). Falls back to key order.
+  function foBowlingOrder(inn, log, innIx) {
+    var seen = {}, order = [];
+    (log || []).slice().reverse().forEach(function (L) {
+      if (!L || (L.inn || 0) !== innIx || !L.bowlerNm) return;
+      if (!seen[L.bowlerNm]) { seen[L.bowlerNm] = 1; order.push(L.bowlerNm); }
+    });
+    if (order.length) return order;
+    return inn && inn.bowlers ? Object.keys(inn.bowlers) : [];
+  }
+  function foBowlOrderFix(root, innsArr, log) {
     try {
       var tables = [];
       root.querySelectorAll("table").forEach(function (tb) {
@@ -2265,7 +2281,7 @@
       });
       tables.forEach(function (tb, i) {
         var inn = innsArr[i]; if (!inn || !inn.bowlers) return;
-        var order = Object.keys(inn.bowlers);        // insertion order = the order they came on
+        var order = foBowlingOrder(inn, log, i);
         // the card abbreviates names ("D. van Dijk RF"), so match both forms
         var keys = order.map(function (nm) {
           var parts = String(nm).split(" ");
@@ -2336,7 +2352,7 @@
       }
       var tab = App._scTab || "card";
       // (5) bowlers in the order they bowled, not by wickets
-      if (tab === "card") foBowlOrderFix(page, innings);
+      if (tab === "card") foBowlOrderFix(page, innings, rObj.log);
       // (3) the whole match, first ball first, in a roomy feed
       if (tab === "comm") {
         var box = page.querySelector("#ftpcomm");
@@ -2426,13 +2442,14 @@
     } catch (e) { say(e); }
   }
   function foLoadSubmitted() {
-    if (!(LG && SYNC) || SYNC.submittedLoading) return;
+    if (!(LG && SYNC) || SYNC.submittedLoading || SYNC.submittedLoaded) return;
+    if (!SYNC.myMid) return;                     // identity not resolved yet - retry later
     SYNC.submittedLoading = true;
     sel("league_packets", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&select=round").then(function (a) {
       SYNC.submitted = SYNC.submitted || {};
       (a || []).forEach(function (row) { SYNC.submitted[row.round] = true; });
       SYNC.submittedLoaded = true; SYNC.__plannerSig = null; foRefreshLineupButtons();
-    }).catch(function () { SYNC.submittedLoaded = true; });
+    }).catch(function () { SYNC.submittedLoading = false; });   // transient - try again
   }
   // A lean per-fixture "Set lineup" list (no big season planner): each upcoming
   // fixture gets a button on the right that opens that round's orders.
@@ -3127,6 +3144,7 @@
   }
   function pollOnce() {
     if (!LG || !SYNC || SYNC.practice) return;   // practice mode is a private local game
+    if (SYNC.started && !SYNC.submittedLoaded) { try { foLoadSubmitted(); } catch (e) {} }
     try {
       // While planning a future round, don't auto-push the current round's orders.
       if (SYNC.planRound == null && SYNC.started && window.App && App.season && typeof GD !== "undefined" && GD.teams) {
@@ -3141,7 +3159,13 @@
             orders: ordersReady ? App.orders : null,
             fo_training: tro.training, fo_youth: tro.youthPending, fo_market: tro.marketPending || [], fo_seats: tro.seatsPending || null
           };
-          rpc("push_packet", { p_league_id: LG.id, p_round: App.season.round, p_packet: pkt }).catch(function () {});
+          var pushRound = App.season.round;
+          rpc("push_packet", { p_league_id: LG.id, p_round: pushRound, p_packet: pkt }).then(function () {
+            if (pkt.orders) {
+              SYNC.submitted = SYNC.submitted || {}; SYNC.submitted[pushRound] = true;
+              foRefreshLineupButtons();
+            }
+          }).catch(function () {});
         }
       }
     } catch (e) {}
