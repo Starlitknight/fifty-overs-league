@@ -9324,7 +9324,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260709-2156-3b4125";
+  var FO_BUILD = "20260709-2245-eeb419";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -12263,6 +12263,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           if (c.ev === "debut") items.push({ pri: 1, h: "DEBUT: " + E(c.name) + " takes the field for the first time", s: "for " + E(t.name) });
           if (c.ev === "runs") items.push({ pri: 1, h: "MILESTONE: " + E(c.name) + " reaches " + (+c.n).toLocaleString() + " club runs", s: "for " + E(t.name) });
           if (c.ev === "wkts") items.push({ pri: 1, h: "MILESTONE: " + E(c.name) + " takes his " + c.n + "th wicket for the club", s: "for " + E(t.name) });
+          if (c.ev === "glove") items.push({ pri: 1, h: "MILESTONE: " + E(c.name) + " claims his " + c.n + "th dismissal behind the stumps", s: "for " + E(t.name) });
           if (c.ev === "nick") items.push({ pri: 1, h: "NICKNAME: " + E(c.name) + " will be known as “" + E(c.nick) + "” after that performance", s: "so say the fans of " + E(t.name) });
         });
         if (t._chronFarewell && t._chronFarewell.s === (App.seasonNo || 1) - 1) t._chronFarewell.names.forEach(function (nm) {
@@ -12589,7 +12590,17 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-sq-train{background:#E4EEF6;color:#1f4e6b;border-radius:8px;padding:3px 10px;font-weight:700}" +
       ".fo-sq-foot{font-size:11.5px;color:#8a93a3;margin:8px 2px}" +
       ".fo-sq-tired{display:inline-block;background:#F3D8D3;color:#8a2f1d;border-radius:7px;padding:1px 7px;font-size:10px;font-weight:800;margin-left:6px;vertical-align:1px}" +
-      "@media(max-width:820px){.fo-sq-strip{grid-template-columns:1fr}.fo-sqr-row,.fo-sq-head{grid-template-columns:minmax(150px,1.6fr) 44px minmax(100px,1fr) minmax(100px,1fr) 40px}.fo-sq-form,.fo-sq-wage,.fo-sq-hwage,.fo-sq-caret{display:none}.fo-sq-dcols{grid-template-columns:1fr}}";
+      "@media(max-width:820px){" +
+      ".fo-sq-strip{grid-template-columns:1fr;gap:8px;margin:8px 0 4px}" +
+      ".fo-sq-stat{display:flex;align-items:baseline;gap:10px;padding:9px 14px}" +
+      ".fo-sq-stat span{margin:0;flex:0 0 auto}.fo-sq-stat b{font-size:16px}.fo-sq-stat i{margin-left:auto;text-align:right;font-size:11px}" +
+      ".fo-sq-warn{padding:8px 11px;font-size:12px;gap:8px}.fo-sq-warn .fo-sq-fix{padding:6px 10px;font-size:11px}" +
+      ".fo-sqr-row,.fo-sq-head{grid-template-columns:minmax(92px,1.4fr) 30px minmax(58px,1fr) minmax(58px,1fr) 30px;gap:6px;padding:8px 10px}" +
+      ".fo-sq-form,.fo-sq-wage,.fo-sq-hwage,.fo-sq-caret,.fo-sq-talent,.fo-sq-nickchip,.fo-sq-tired{display:none}" +
+      ".fo-sq-nm b,.fo-sq-nm a{font-size:12.5px}.fo-sq-sub{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".fo-sq-age{font-size:12px}.fo-sq-ovr{font-size:14px}" +
+      ".fo-sq-skw{display:none}.fo-sq-sknum{font-size:10.5px}" +
+      ".fo-sq-dcols{grid-template-columns:1fr}}";
     document.head.appendChild(foSqCss);
   } catch (e) {}
 
@@ -12767,7 +12778,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (muted || v < 12) {
       return "<div class='fo-sq-skill fo-sq-nil'><div class='fo-sq-skbar'><i style='width:" + Math.max(2, Math.min(100, v)) + "%'></i></div><div class='fo-sq-sknum'>" + v + " · –</div></div>";
     }
-    return "<div class='fo-sq-skill' title='" + label + ": " + word(v) + " · rank " + (wIx(v) + 1) + " of 16'><div class='fo-sq-skbar'><i style='width:" + Math.min(100, v) + "%;background:" + col + "'></i></div><div class='fo-sq-sknum'><b>" + v + "</b> · " + word(v) + "</div></div>";
+    return "<div class='fo-sq-skill' title='" + label + ": " + word(v) + " · rank " + (wIx(v) + 1) + " of 16'><div class='fo-sq-skbar'><i style='width:" + Math.min(100, v) + "%;background:" + col + "'></i></div><div class='fo-sq-sknum'><b>" + v + "</b><span class='fo-sq-skw'> · " + word(v) + "</span></div></div>";
   }
   function foSqDetail(p, isYouth) {
     var dbar = function (v, lbl) {
@@ -13613,6 +13624,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-duel{display:flex;gap:8px;align-items:baseline;font-size:12.5px;margin:5px 0;color:#3a4353}" +
       ".fo-duel b{color:#1C2433}.fo-duel em{font-style:normal;margin-left:auto;font-weight:800;color:#8a2f1d;white-space:nowrap}" +
       ".fo-news-voice{color:#5b4a91;font-style:italic}" +
+      "@media(max-width:640px){" +
+      ".fo-ch-hero{padding:14px 16px}" +
+      ".fo-ch-crest{width:54px;height:54px;min-width:54px}.fo-ch-crest img{width:54px;height:54px;border-radius:12px}" +
+      ".fo-ch-name{font-size:23px;line-height:1.1}" +
+      ".fo-ch-eyebrow{font-size:10px;margin-bottom:3px}" +
+      ".fo-ch-chip{font-size:10.5px;padding:3px 8px}" +
+      ".fo-ch-hero-r{margin-top:8px}.fo-hero-pill{font-size:11px;padding:5px 10px}" +
+      ".fo-race{grid-template-columns:minmax(90px,1fr) minmax(70px,1.2fr) auto;gap:7px}" +
+      ".fo-race-l b{font-size:11.5px}.fo-race-l span{font-size:10px}.fo-race-n{font-size:10.5px}}" +
       ".fo-race{display:grid;grid-template-columns:minmax(120px,1.1fr) minmax(90px,1.6fr) auto;gap:10px;align-items:center;margin:7px 0}" +
       ".fo-race-l b{display:block;font-size:12.5px;color:#1C2433;line-height:1.25}.fo-race-l span{font-size:11px;color:#8a93a3}" +
       ".fo-race-bar{height:10px;border-radius:5px;background:#E8EAEE;overflow:hidden}.fo-race-bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#4DA6A2,#2b6b68);transition:width .6s ease}" +
@@ -13620,9 +13640,33 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     document.head.appendChild(foChCss);
   } catch (e) {}
 
+  // ---- friendlies are for fun, not for the record books: every playerHist
+  // entry a non-league match writes gets flagged and excluded everywhere ----
+  try {
+    if (typeof window.saveMatch === "function" && !window.saveMatch.__foChron) {
+      var _foSm = window.saveMatch;
+      window.saveMatch = function (m) {
+        var league = !!(m && m.meta && m.meta.comp === "league");
+        var pre = {};
+        if (!league) { try { for (var k in (App.playerHist || {})) pre[k] = App.playerHist[k].length; } catch (e) {} }
+        var out = _foSm.apply(this, arguments);
+        if (!league) {
+          try {
+            for (var k2 in (App.playerHist || {})) {
+              var h = App.playerHist[k2];
+              for (var i = (pre[k2] || 0); i < h.length; i++) h[i].fr = 1;
+            }
+          } catch (e) {}
+        }
+        return out;
+      };
+      window.saveMatch.__foChron = 1;
+    }
+  } catch (e) {}
+
   // ---- career + totals helpers ----
   function foClubTotals(name) {
-    var h = (App.playerHist && App.playerHist[name]) || [], runs = 0, wkts = 0, hs = 0, hsTxt = null, bw = 0, bwr = 1e9, bbTxt = null;
+    var h = ((App.playerHist && App.playerHist[name]) || []).filter(function (e) { return !e.fr; }), runs = 0, wkts = 0, hs = 0, hsTxt = null, bw = 0, bwr = 1e9, bbTxt = null;
     h.forEach(function (e) {
       runs += +e.rr || 0; wkts += +e.w || 0;
       if ((+e.rr || 0) > hs) { hs = +e.rr; hsTxt = e.bat; }
@@ -13634,18 +13678,27 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foDisplayName(p) { return p._nick ? p.name.split(" ")[0] + ' "' + p._nick + '" ' + p.name.split(" ").slice(1).join(" ") : p.name; }
 
   // ---- the chronicle pass around every completed round ----
+  // one-time repair: entries recorded before the chronicle shipped carry no
+  // season tag; in season one they can only belong to season one
+  function foChronBackfill() {
+    try {
+      if ((App.seasonNo || 1) !== 1) return;
+      for (var k in (App.playerHist || {})) App.playerHist[k].forEach(function (e) { if (!e.s && !e.fr) e.s = 1; });
+    } catch (e) {}
+  }
   function foChroniclePre() {
     var pre = { round: (App.season && App.season.round) || 0, results: (App.results || []).length, seasonNo: App.seasonNo || 1, players: {} };
     try {
       GD.teams.forEach(function (t) {
         (t.players || []).forEach(function (p) {
-          var h = (App.playerHist && App.playerHist[p.name]) || [], runs = 0, w = 0, hs = 0, bw = 0, bwr = 1e9;
+          var h = ((App.playerHist && App.playerHist[p.name]) || []).filter(function (e) { return !e.fr; }), runs = 0, w = 0, hs = 0, bw = 0, bwr = 1e9;
           h.forEach(function (e) {
             runs += +e.rr || 0; w += +e.w || 0;
             if ((+e.rr || 0) > hs) hs = +e.rr;
             if ((+e.w || 0) > bw || ((+e.w || 0) === bw && (+e.w || 0) > 0 && (+e.cr || 0) < bwr)) { if (+e.w) { bw = +e.w; bwr = +e.cr || 0; } }
           });
-          pre.players[p.name] = { n: h.length, runs: runs, wkts: w, hs: hs, bw: bw, bwr: bwr };
+          var fs = (App.fieldStats && App.fieldStats[p.name]) || {};
+          pre.players[p.name] = { n: ((App.playerHist && App.playerHist[p.name]) || []).length, nl: h.length, runs: runs, wkts: w, hs: hs, bw: bw, bwr: bwr, dis: (fs.ct || 0) + (fs.st || 0) };
         });
       });
     } catch (e) {}
@@ -13656,6 +13709,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var sN = pre.seasonNo, rN = pre.round + 1;
       // 1. duels: every dismissal credits bowler > batter on the bowling club
       (App.results || []).slice(pre.results).forEach(function (r) {
+        if (r.comp && r.comp !== "league") return;   // friendlies settle nothing
         (r.innings || []).forEach(function (inn) {
           if (!inn || !inn.bat) return;
           var bt = GD.teams.find(function (t2) { return t2.name === inn.bowlTeam; });
@@ -13679,11 +13733,21 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var feed = [];
         (t.players || []).forEach(function (p) {
           var h = (App.playerHist && App.playerHist[p.name]) || [];
-          var was = pre.players[p.name] || { n: 0, runs: 0, wkts: 0 };
-          var newE = h.slice(was.n);
+          var was = pre.players[p.name] || { n: 0, nl: 0, runs: 0, wkts: 0, hs: 0, bw: 0, bwr: 1e9, dis: 0 };
+          var newE = h.slice(was.n).filter(function (e) { return !e.fr; });
           if (!newE.length) return;
           newE.forEach(function (e) { e.s = sN; e.r = rN; });
-          if (!was.n) { foCareerPush(p, { s: sN, r: rN, ev: "debut", txt: "Debut for " + t.name }); feed.push({ ev: "debut", name: p.name }); }
+          if (!was.nl) { foCareerPush(p, { s: sN, r: rN, ev: "debut", txt: "Debut for " + t.name }); feed.push({ ev: "debut", name: p.name }); }
+          // glovework milestones: every ten dismissals behind the stumps
+          if (p.keeper) {
+            var fsNow = (App.fieldStats && App.fieldStats[p.name]) || {};
+            var disNow = (fsNow.ct || 0) + (fsNow.st || 0);
+            if (disNow >= 10 && Math.floor(disNow / 10) > Math.floor((was.dis || 0) / 10)) {
+              var dMile = Math.floor(disNow / 10) * 10;
+              foCareerPush(p, { s: sN, r: rN, ev: "glove", txt: dMile + " dismissals behind the stumps" });
+              feed.push({ ev: "glove", name: p.name, n: dMile });
+            }
+          }
           var runsCum = was.runs, wktsCum = was.wkts;
           newE.forEach(function (e) {
             var rr = +e.rr || 0, w = +e.w || 0;
@@ -13747,7 +13811,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             var h = (App.playerHist && App.playerHist[p.name]) || [];
             var a = { p: p, t: t, rr: 0, w: 0, balls: 0, outs: 0, cr: 0, cb: 0, inns: 0 };
             h.forEach(function (e) {
-              if (e.s !== sN) return;
+              if (e.s !== sN || e.fr) return;
               a.rr += +e.rr || 0; a.w += +e.w || 0; a.balls += +e.bb || 0;
               if (+e.bb > 0) a.inns++;
               if (e.o) a.outs++;
@@ -13809,7 +13873,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var _foCr = window.completeRound;
       window.completeRound = function () {
         var pre = null;
-        try { pre = foChroniclePre(); } catch (e) {}
+        try { foChronBackfill(); pre = foChroniclePre(); } catch (e) {}
         var out = _foCr.apply(this, arguments);
         try { if (pre) foChroniclePost(pre); } catch (e) {}
         try { if (typeof window.saveGame === "function") window.saveGame(false); } catch (e) {}
@@ -13883,7 +13947,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var sN = App.seasonNo || 1, cands = [];
       (t.players || []).forEach(function (p) {
         var h = (App.playerHist && App.playerHist[p.name]) || [];
-        var recent = h.filter(function (e) { return e.s === sN; }).slice(-2);
+        var recent = h.filter(function (e) { return e.s === sN && !e.fr; }).slice(-2);
         if (p._prov && p._prov.s === sN && p._prov.r === rdHuman) cands.push({ p: p, kind: "settle" });
         else if (recent.length >= 2 && recent.every(function (e) { return (+e.rr || 0) === 0 && e.o && (+e.bb || 0) > 0; })) cands.push({ p: p, kind: "ducks" });
         else if ((p.formIx || 3) >= 6) cands.push({ p: p, kind: "hot" });
@@ -13904,15 +13968,31 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     (t.players || []).forEach(function (p) {
       var tot = foClubTotals(p.name);
       if (!tot.matches) return;
-      var nextR = (Math.floor(tot.runs / 500) + 1) * 500;
-      if (tot.runs >= nextR - 150 && tot.runs > 0) rows.push({ nm: p.name, label: nextR.toLocaleString() + " club runs", cur: tot.runs, target: nextR, pct: Math.round(100 * tot.runs / nextR) });
-      var nextW = (Math.floor(tot.wkts / 25) + 1) * 25;
-      if (tot.wkts >= nextW - 8 && tot.wkts > 0) rows.push({ nm: p.name, label: nextW + " club wickets", cur: tot.wkts, target: nextW, pct: Math.round(100 * tot.wkts / nextW) });
+      // every bar shows from ball one: watching it fill is the point
+      if (tot.runs > 0) {
+        var nextR = (Math.floor(tot.runs / 500) + 1) * 500;
+        rows.push({ nm: p.name, label: nextR.toLocaleString() + " club runs", cur: tot.runs, target: nextR, pct: Math.round(100 * (tot.runs - (nextR - 500)) / 500) });
+      }
+      if (tot.wkts > 0) {
+        var nextW = (Math.floor(tot.wkts / 25) + 1) * 25;
+        rows.push({ nm: p.name, label: nextW + " club wickets", cur: tot.wkts, target: nextW, pct: Math.round(100 * (tot.wkts - (nextW - 25)) / 25) });
+      }
+      if (p.keeper) {
+        var fs = (App.fieldStats && App.fieldStats[p.name]) || {};
+        var dis = (fs.ct || 0) + (fs.st || 0);
+        if (dis > 0) {
+          var nextD = (Math.floor(dis / 10) + 1) * 10;
+          rows.push({ nm: p.name, label: nextD + " dismissals behind the stumps", cur: dis, target: nextD, pct: Math.round(100 * (dis - (nextD - 10)) / 10) });
+        }
+      }
       if (tot.hs >= 60 && tot.hs < 100) rows.push({ nm: p.name, label: "maiden century (best " + tot.hs + ")", cur: tot.hs, target: 100, pct: Math.round(100 * tot.hs / 100) });
-      else if (tot.hs >= 30 && tot.hs < 50) rows.push({ nm: p.name, label: "maiden fifty (best " + tot.hs + ")", cur: tot.hs, target: 50, pct: Math.round(100 * tot.hs / 50) });
+      else if (tot.hs >= 20 && tot.hs < 50) rows.push({ nm: p.name, label: "maiden fifty (best " + tot.hs + ")", cur: tot.hs, target: 50, pct: Math.round(100 * tot.hs / 50) });
     });
     rows.sort(function (a, b) { return b.pct - a.pct; });
-    return rows.slice(0, max || 3);
+    // one bar per player: his closest chase
+    var seen = {}, outR = [];
+    rows.forEach(function (r) { if (!seen[r.nm]) { seen[r.nm] = 1; outR.push(r); } });
+    return outR.slice(0, max || 3);
   }
   function foRaceBar(r) {
     var hot = r.pct >= 90;
@@ -13926,7 +14006,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     GD.teams.forEach(function (t) {
       (t.players || []).forEach(function (p) {
         var h = (App.playerHist && App.playerHist[p.name]) || [], rr = 0, w = 0;
-        h.forEach(function (e) { if (e.s === sN) { rr += +e.rr || 0; w += +e.w || 0; } });
+        h.forEach(function (e) { if (e.s === sN && !e.fr) { rr += +e.rr || 0; w += +e.w || 0; } });
         if (rr || w) list.push({ nm: p.name, club: t.name, rr: rr, w: w });
       });
     });
@@ -13986,7 +14066,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         : prov.how === "market" ? "Signed from the transfer market, S" + prov.s + " R" + prov.r + (prov.fee ? " · " + FO$(prov.fee) + " fee, beaten to by no one" : "")
         : prov.how === "youth" ? "Found by your scout" + (prov.nat ? " in " + prov.nat : "") + ", S" + prov.s + " R" + prov.r + " · your signing, your project"
         : "Your draft pick, day one";
-      var h = (App.playerHist && App.playerHist[name]) || [];
+      var h = ((App.playerHist && App.playerHist[name]) || []).filter(function (e) { return !e.fr; });
       var bySeason = {};
       h.forEach(function (e) {
         var k = e.s || "early";
@@ -14074,6 +14154,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     } catch (e) {}
   }
   window.addEventListener("hashchange", function () { setTimeout(foRenderMuseum, 20); setTimeout(foCareerPanel, 60); });
+  setTimeout(foChronBackfill, 1200);
 
   // ---- nemesis records for the scout page ----
   function foBattlesCard(opp) {
