@@ -492,6 +492,7 @@
     ".fo-social{font-size:12px;color:#6b7280;margin-top:8px}" +
     ".fo-social b{color:#1f4e5f}" +
     "@media(max-width:760px){" +
+      ".fo-modal-card{max-height:86vh;overflow-y:auto;width:min(94vw,420px)}" +
       ".fo-stat{min-width:0}.fo-stat-body{min-width:0;overflow:hidden}" +
       ".fo-stat-v{font-size:clamp(16px,5.4vw,22px) !important;overflow-wrap:anywhere}" +
       ".fo-stat-l{font-size:10px !important;letter-spacing:.08em}" +
@@ -949,9 +950,18 @@
   var foFriendlies = [];
   function startFriendly() {
     try {
-      if (typeof GD === "undefined" || !GD.teams || GD.teams.length < 2) { alert("No clubs to play yet — log in to your league first."); if (!(LG && SYNC)) openLeagueMenu(); return; }
+      if (typeof GD === "undefined" || !GD.teams || GD.teams.length < 2) {
+        // on slow connections the league snapshot may still be loading —
+        // wait a beat and retry once before telling the user anything
+        toast("Loading your league\u2026");
+        setTimeout(function () {
+          if (typeof GD !== "undefined" && GD.teams && GD.teams.length >= 2) foMatchSetup(null);
+          else { toast("No clubs to play yet \u2014 log in to your league first.", "error"); if (!(LG && SYNC)) openLeagueMenu(); }
+        }, 900);
+        return;
+      }
       foMatchSetup(null);
-    } catch (e) { try { alert("Could not open Practice Game: " + ((e && e.message) || e)); } catch (_) {} say(e); }
+    } catch (e) { toast("Could not open Practice Game: " + ((e && e.message) || e), "error"); }
   }
   var FO_PITCHES = ["balanced", "flat", "green", "dry", "slow", "cracked", "twoPaced"];
   function foTitle(s) { return (s || "").charAt(0).toUpperCase() + (s || "").slice(1); }
@@ -2149,7 +2159,7 @@
       var target = humanAvgRating();
       for (var i = 0; i < GD.teams.length; i++) {
         var t = GD.teams[i]; if (t.founded) continue;                 // never touch human clubs
-        var tgt = target * (0.93 + ((i * 89) % 140) / 1000);          // within ~7% of the human level
+        var tgt = target * (0.97 + ((i * 89) % 70) / 1000);           // 97-104% of the human level: true peers
         for (var pass = 0; pass < 5; pass++) {
           var avg = t.players.reduce(function (s, p) { return s + (p.rating || 0); }, 0) / Math.max(1, t.players.length);
           var f = Math.max(0.5, Math.min(1.7, tgt / Math.max(1, avg)));
