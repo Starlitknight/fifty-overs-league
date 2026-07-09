@@ -7206,7 +7206,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-mono-teal{background:#2d7a76}.fo-mono-terra{background:#C0562F}.fo-mono-gold{background:#A8842C}" +
     ".fo-sp-ind{display:block;font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a8474;margin:2px 0 10px}" +
     ".fo-sp-fine{display:block;font-size:10.5px;color:#a09a8a;border-top:1px dashed #e2ddd0;padding-top:9px;margin-top:12px}" +
-    ".fo-pk-sp .fo-pk-name{font-size:17px;font-weight:800}" +
+    ".fo-pk-sp .fo-pk-name{display:none}" +
+    ".fo-brandmark{display:flex;align-items:center;justify-content:center;height:56px;border-radius:10px;margin:0 auto 12px;width:100%;max-width:200px}" +
+    ".fo-brand-pru{background:#ED1B2E;color:#fff;font-weight:800;font-size:15px;letter-spacing:.12em;font-family:Arial,Helvetica,sans-serif}" +
+    ".fo-brand-nike{background:#111;color:#fff;font-weight:900;font-size:22px;letter-spacing:.06em;font-style:italic;transform:skewX(-6deg);font-family:'Futura','Arial Black',Arial,sans-serif}" +
+    ".fo-brand-emirates{background:#fff;border:1px solid #eee;color:#D71920;font-weight:600;font-size:24px;font-family:Georgia,'Times New Roman',serif;letter-spacing:.01em}" +
     ".fo-ctygrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:2px 0 14px}" +
     ".fo-cty{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e2ddd0;border-radius:10px;padding:9px 11px;cursor:pointer;font-size:13px;font-weight:600;color:#3c4658;text-align:left;transition:border-color .12s ease,box-shadow .12s ease}" +
     ".fo-cty i{font-style:normal;font-size:17px;line-height:1}" +
@@ -8993,9 +8997,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       { id: "moneyball", name: "Moneyball", draftBudget: 700000, reserve: 300000, risk: "Medium", rec: false, tone: "violet", tag: "Save cash and hunt value." }
     ],
     sponsors: [
-      { id: "community", name: "Prudential", ind: "Insurance \u00b7 London, est. 1848", pos: "Steady money, no strings.", base: 45000, win: 0, halfway: 0, seasonTop3: 0, champ: 0, tone: "teal", rec: false, lines: ["$45,000 every matchday", "No result bonuses"] },
-      { id: "results", name: "Nike", ind: "Sportswear \u00b7 Beaverton, Oregon", pos: "Paid to win.", base: 38000, win: 13000, halfway: 0, seasonTop3: 0, champ: 0, tone: "terra", lines: ["$38,000 every matchday", "+$13,000 per win"] },
-      { id: "contender", name: "Emirates", ind: "Airline \u00b7 Dubai", pos: "Fly with the winners.", base: 15000, win: 45000, halfway: 0, seasonTop3: 0, champ: 0, tone: "gold", lines: ["$15,000 every matchday", "+$45,000 per win"] }
+      { id: "community", name: "Prudential", ind: "Insurance \u00b7 London, est. 1848", pos: "Steady money, no strings.", base: 45000, win: 0, halfway: 0, seasonTop3: 0, champ: 0, tone: "teal", rec: false, lines: ["No result bonuses", "Guaranteed all season"] },
+      { id: "results", name: "Nike", ind: "Sportswear \u00b7 Beaverton, Oregon", pos: "Paid to win.", base: 38000, win: 13000, halfway: 0, seasonTop3: 0, champ: 0, tone: "terra", lines: ["+$13,000 per win", "Paid on results"] },
+      { id: "contender", name: "Emirates", ind: "Airline \u00b7 Dubai", pos: "Fly with the winners.", base: 15000, win: 45000, halfway: 0, seasonTop3: 0, champ: 0, tone: "gold", lines: ["+$45,000 per win", "The league's biggest win bonus"] }
     ],
     scenarios: [
       { id: "bad", name: "Bad season", wins: 5, crowd: 2100, finish: 8, t3half: false, t3fin: false, champ: false },
@@ -9238,11 +9242,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // ---- Screen 4 · Choose your sponsor --------------------------------------
   function foOnbSponsor() {
     FO_ONB.step = 4;
-    var mono = { community: "P", results: "N", contender: "E" };
+    var marks = {
+      community: "<span class='fo-brandmark fo-brand-pru'>PRUDENTIAL</span>",
+      results: "<span class='fo-brandmark fo-brand-nike'>NIKE</span>",
+      contender: "<span class='fo-brandmark fo-brand-emirates'>Emirates</span>"
+    };
     var cards = FO_FIN.sponsors.map(function (s) {
       var terms = s.lines.map(function (l) { return "<span>" + l + "</span>"; }).join("");
       return "<button type='button' class='fo-pk fo-pk-sp fo-tone-" + s.tone + " " + (FO_ONB.sponsor === s.id ? "on" : "") + "' data-sp='" + s.id + "'>" +
-        "<span class='fo-sp-mono fo-mono-" + s.tone + "'>" + mono[s.id] + "</span>" +
+        marks[s.id] +
         "<span class='fo-pk-name'>" + s.name + "</span>" +
         "<span class='fo-sp-ind'>" + s.ind + "</span>" +
         "<span class='fo-sp-big'>" + FO$(s.base) + "<i>per matchday</i></span>" +
