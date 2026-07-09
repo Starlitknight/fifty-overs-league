@@ -1682,6 +1682,7 @@
       toast(el.title.slice(0, 300));
     } catch (e) {}
   }, true);
+  setInterval(function () { try { foFriendlyKeeper(); } catch (e) {} }, 5000);
   var _foMobT;
   window.addEventListener("resize", function () { clearTimeout(_foMobT); _foMobT = setTimeout(foMobileTables, 150); });
   window.addEventListener("hashchange", function () { setTimeout(foMobileTables, 60); });
@@ -1861,6 +1862,64 @@
           if (row === s) s.style.display = "none"; else row.style.display = "none";
         }
       });
+    } catch (e) {}
+  }
+  // ---- live friendly survives closing the app ------------------------------
+  // The engine is deterministic per seed, so we persist {pending, orders,
+  // deliveries} while a friendly is live and resume by replaying silently to
+  // the same delivery count when the manager comes back.
+  function foFrKey() { return "fol_livefr_" + (LG ? LG.id : "solo"); }
+  function foFriendlyKeeper() {
+    try {
+      var live = (typeof M !== "undefined") && M && !M.done && M.meta && M.meta.__friendly;
+      if (live) {
+        var now = Date.now();
+        if (!foFriendlyKeeper._t || now - foFriendlyKeeper._t > 4000) {
+          foFriendlyKeeper._t = now;
+          var tossCall = (App.tossState && App.tossState.call) || App.orders.tossCall || "H";
+          var userBatFirst = M.batFirstTeam === (M.user && M.user.name);
+          lsSet(foFrKey(), JSON.stringify({
+            pending: M.meta, orders: App.orders,
+            toss: { call: tossCall, decision: App.orders.tossDecision || (userBatFirst ? "bat" : "bowl") },
+            logLen: (M.log || []).length, at: now
+          }));
+        }
+        return;
+      }
+      if (typeof M !== "undefined" && M && M.done && M.meta && M.meta.__friendly) { lsSet(foFrKey(), ""); return; }
+      // nothing live: offer to resume a stored one, once per session
+      if (SYNC && !SYNC.__frAsked) {
+        var raw = lsGet(foFrKey()); if (!raw) return;
+        var st = null; try { st = JSON.parse(raw); } catch (e) {}
+        if (!st || !st.pending || !st.orders) { return; }
+        SYNC.__frAsked = 1;
+        if (typeof GD === "undefined" || !GD.teams || !GD.teams.length) return;
+        foConfirm({
+          title: "Resume your friendly?",
+          body: "You have a live practice match vs <b>" + E(st.pending.away || "the opposition") + "</b> from earlier. Pick it up where you left off?",
+          confirm: "Resume match", cancel: "Abandon it"
+        }).then(function (ok) {
+          if (!ok) { lsSet(foFrKey(), ""); return; }
+          try {
+            App.orders = st.orders; App.orders.saved = true;
+            App.orders.tossCall = (st.toss && st.toss.call) || "H";
+            App.orders.tossDecision = (st.toss && st.toss.decision) || "bat";
+            App.pending = st.pending;
+            var prevPage = App.page; App.page = "__resolve__";   // render no-ops
+            try { M = null; } catch (e) {}
+            if (typeof startPendingIfNeeded === "function") startPendingIfNeeded();
+            // the coin-flip animation is async; resolve the toss synchronously
+            if (App.tossState && App.tossState.stage !== "done" && typeof resolveToss === "function") resolveToss(App.orders.tossCall || "H");
+            var guard = 0;
+            while (M && !M.done && (M.log || []).length < st.logLen && guard++ < 800) {
+              if (typeof stepBall === "function") stepBall(); else break;
+            }
+            App.page = prevPage;
+            location.hash = "#/match"; if (typeof window.route === "function") window.route();
+            toast("Back at the ground: resuming vs " + (st.pending.away || "") + ".");
+          } catch (e) { say(e); lsSet(foFrKey(), ""); }
+        });
+      }
     } catch (e) {}
   }
   function foOrdersExtras() {
@@ -2108,7 +2167,7 @@
   // re-apply fixture match-times after any re-render of the game page
   try {
     var _mt = null, pg0 = document.getElementById("page");
-    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); decorateFixtureTimes(); tidyPage(); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); }, 40); }).observe(pg0, { childList: true, subtree: true });
+    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); decorateFixtureTimes(); tidyPage(); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
   if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foRenderScout(); decorateFixtureTimes(); tidyPage(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); return r; }; }
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
