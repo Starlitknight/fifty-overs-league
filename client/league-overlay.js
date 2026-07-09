@@ -894,9 +894,12 @@
     ".fo-fact{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:9px 0;border-bottom:1px solid #f0ece1}" +
     ".fo-fact span{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#8a8474}" +
     ".fo-fact b{font-size:14px;color:#12203a;font-weight:700;text-align:right}" +
-    ".fo-stars{letter-spacing:2px}" +
-    ".fo-star{font-style:normal;font-size:17px;color:#e2ddd0}" +
-    ".fo-star.on{color:#D9A441}" +
+    ".fo-segs{display:inline-flex;gap:4px;align-items:center}" +
+    ".fo-seg{width:24px;height:6px;border-radius:99px;background:#e8e3d5;transition:background .15s ease}" +
+    ".fo-seg.on{background:#12203a}" +
+    ".fo-str-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f0ece1;font-size:12.5px}" +
+    ".fo-str-row:last-child{border-bottom:none}" +
+    ".fo-str-row span:first-child{color:#5d6779;font-weight:700}" +
     ".fo-br-closure{margin-top:18px;font-size:14px;line-height:1.7;color:#3c4658}" +
     ".fo-br-closure p{margin:0 0 10px}" +
     ".fo-br-luck{font-weight:800;color:#12203a}" +
@@ -3268,8 +3271,8 @@
     var starsOf = function (v) { return v >= 78 ? 5 : v >= 66 ? 4 : v >= 54 ? 3 : v >= 40 ? 2 : 1; };
     var starRow = function (l, v) {
       var n = starsOf(v), s = "";
-      for (var i = 0; i < 5; i++) s += "<i class='fo-star" + (i < n ? " on" : "") + "'>&#9733;</i>";
-      return "<div class='fo-str-row'><span>" + l + "</span><span class='fo-stars'>" + s + "</span></div>";
+      for (var i = 0; i < 5; i++) s += "<i class='fo-seg" + (i < n ? " on" : "") + "'></i>";
+      return "<div class='fo-str-row'><span>" + l + "</span><span class='fo-segs'>" + s + "</span></div>";
     };
     var fact = function (l, v) { return "<div class='fo-fact'><span>" + l + "</span><b>" + v + "</b></div>"; };
     var body =
