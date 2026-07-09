@@ -292,6 +292,12 @@
     "--ftp-blue:" + TERRA + ";--ftp-blue-dark:" + TERRA2 + ";--ftp-orange:" + TEAL + ";--ftp-link:#b0563b;--green:#2f8f6b}" +
     // the engine scopes its theme with `body.ftpskin ...`, so we match that scope
     "html body.ftpskin #topbar,#topbar{background:" + NAVY + " !important;border-bottom:3px solid " + TERRA + " !important}" +
+    // the topbar must never show a scrollbar on ANY viewport (the engine sets
+    // overflow-x:auto; at browser zoom the nav can overflow and Windows paints
+    // a full-width scroll strip under the header)
+    "#topbar{scrollbar-width:none !important}" +
+    "#topbar::-webkit-scrollbar{display:none !important;height:0 !important}" +
+    "html,body{overflow-x:clip}" +
     "html body.ftpskin #topbar a.on,#topbar a.on{background:" + TERRA + " !important;color:" + PAPER + " !important;box-shadow:inset 0 -3px 0 " + TEAL + " !important}" +
     "#topbar a:hover{background:#16324a !important}" +
     // keep the game's zebra striping / colours out of our own overlay tables
@@ -2484,7 +2490,11 @@
           for (var k = 0; k < keys.length; k++) if (nm.indexOf(keys[k][0]) === 0 || nm.indexOf(keys[k][1]) === 0) return k;
           return 99;
         };
-        rows.slice().sort(function (a, b) { return pos(a) - pos(b); }).forEach(function (r) { r.parentNode.appendChild(r); });
+        // only touch the DOM when actually out of order - re-appending rows on
+        // every pass moved the player links out from under clicks and taps
+        var sorted = rows.slice().sort(function (a, b) { return pos(a) - pos(b); });
+        var inOrder = rows.every(function (r, i) { return r === sorted[i]; });
+        if (!inOrder) sorted.forEach(function (r) { r.parentNode.appendChild(r); });
       });
     } catch (e) {}
   }
