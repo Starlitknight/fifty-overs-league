@@ -729,7 +729,6 @@
     "#fo-pd .fo-pd-act{display:flex}#fo-pd .fo-pd-add{flex:1;background:" + TERRA + " !important;color:#fff !important;border:none;padding:11px;border-radius:10px;font-weight:700;font-size:13.5px;cursor:pointer}#fo-pd .fo-pd-add.on{background:#f7f4ec !important;color:" + TERRA + " !important;border:1px solid " + TERRA + "}" +
     // league standings — form pips + leader/user accents
     ".fo-standings td,.fo-standings th{padding:6px 8px}" +
-    ".fo-standings tr.fo-lead td{box-shadow:inset 3px 0 0 " + TEAL + "}" +
     ".fo-standings tr.fo-lead td:nth-child(2){font-weight:700}" +
     "html body.ftpskin .fo-standings tr.fo-userrow td,.fo-standings tr.fo-userrow td{background:#fbf1ec !important}" +
     ".fo-standings tr.fo-userrow td:first-child{box-shadow:inset 3px 0 0 " + TERRA + "}" +
@@ -921,6 +920,7 @@
     ".fo-cty.on::after{content:'\\2713';margin-left:auto;color:#C0562F;font-weight:800}" +
     ".fo-pitch.on{border-color:#C0562F !important;box-shadow:0 0 0 2px rgba(192,86,47,.28) !important;background:#fdf9ef !important}" +
     ".fo-pitch.on b::after{content:' \\2713';color:#C0562F}" +
+    ".fo-pk.on{border-color:#C0562F !important;box-shadow:0 0 0 2px rgba(192,86,47,.28) !important;background:#fdf9ef !important}" +
     ".fo-br-closure{margin-top:18px;font-size:14px;line-height:1.7;color:#3c4658}" +
     ".fo-br-closure p{margin:0 0 10px}" +
     ".fo-br-luck{font-weight:800;color:#12203a}" +
@@ -3039,7 +3039,14 @@
       "<div class='fo-pks'>" + cards + "</div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'" + (FO_ONB.sponsor ? "" : " disabled") + ">Sign with " + (FO_ONB.sponsor ? foSponsorById(FO_ONB.sponsor).name : "&hellip;") + "</button></div></div>";
     var host = foOnbMount(3, body);
-    host.querySelectorAll(".fo-pk").forEach(function (b) { b.addEventListener("click", function () { FO_ONB.sponsor = b.getAttribute("data-sp"); foOnbSponsor(); }); });
+    host.querySelectorAll(".fo-pk").forEach(function (b) {
+      b.addEventListener("click", function () {
+        FO_ONB.sponsor = b.getAttribute("data-sp");
+        host.querySelectorAll(".fo-pk").forEach(function (x) { x.classList.toggle("on", x === b); });
+        var c2 = host.querySelector("#fo-ob-c");
+        if (c2) { c2.disabled = false; c2.innerHTML = "Sign with " + E(foSponsorById(FO_ONB.sponsor).name); }
+      });
+    });
     host.querySelector("#fo-ob-b").addEventListener("click", foOnbMoney);
     host.querySelector("#fo-ob-c").addEventListener("click", function () {
       if (!FO_ONB.sponsor) { say("Pick a sponsor first. This deal pays you every matchday all season."); return; }
@@ -3100,7 +3107,7 @@
       else if (before.n === 10 && after.n === 11) toast("Eleven players — your XI is complete. Add depth or continue.");
       else if (after.n === 16) toast("Squad full — 16 players signed.");
     }
-    foOnbDraft(true);
+    if (!foDraftPatch(name)) foOnbDraft(true);
   }
   function foOrdinal(n) { var s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
   function foTalentName(t) { return String(t || "").replace(/([A-Z])/g, " $1").replace(/^./, function (c) { return c.toUpperCase(); }).trim(); }
@@ -3223,6 +3230,78 @@
     host.querySelector("#fo-ob-c").addEventListener("click", function () { foOnbDraft(); });
   }
 
+  // Re-render only what a signing changes: the player's own card, the sticky
+  // budget strip, the side panels, the rail pills and the footer. Rails and
+  // page scroll are untouched, so nothing jumps.
+  function foDraftBucket(p) { var r = foRoleShort(p); return r === "WK" ? "wk" : r === "BAT" ? "bat" : r === "AR" ? "ar" : r === "PACE" ? "pace" : "spin"; }
+  function foDraftWireCard(el) {
+    el.querySelectorAll(".fo-dr-add").forEach(function (b) { b.addEventListener("click", function () { foOnbPick(b.getAttribute("data-p")); }); });
+    el.querySelectorAll(".fo-dr-view").forEach(function (b) { b.addEventListener("click", function () { foDraftDetail(b.getAttribute("data-p")); }); });
+  }
+  function foDraftStickyHtml(fc, shape) {
+    var spentPct = Math.min(100, Math.round(fc.draftSpent / 10000));
+    return "<div class='fo-dr-spent'><div class='fo-dr-spentl'><span>Spent <b>" + FO$(fc.draftSpent) + "</b> of $1,000,000</span><span><b>" + FO$(fc.bankAfter) + "</b> left</span></div>" +
+      "<div class='fo-budgetbar'><u style='width:" + spentPct + "%'></u></div></div>" +
+      "<div class='fo-dr-counts'><span class='fo-sh'><b>" + shape.n + "</b>/16</span><span class='fo-sh'><b>" + shape.bat + "</b> BAT</span><span class='fo-sh'><b>" + shape.bowl + "</b> BOWL</span><span class='fo-sh'><b>" + shape.ar + "</b> AR</span><span class='fo-sh'><b>" + shape.wk + "</b> WK</span></div>";
+  }
+  function foDraftSideHtml(F, shape, fc) {
+    var advisor = foAdvisor(F.picked, fc, FO_ONB.style).map(function (a) { return "<div class='fo-adv fo-adv-" + a.t + "'>" + a.m + "</div>"; }).join("");
+    return "<div class='fo-adv-panel'><div class='fo-adv-h'>Your squad &middot; " + shape.n + "/16</div>" +
+      (F.picked.slice().sort(function (a, b) { return foDraftPrice(b) - foDraftPrice(a); }).map(function (p) {
+        var nm = E(p.name).replace(/'/g, "&#39;");
+        return "<div class='fo-sq-item'><span class='fo-rl'>" + foRoleShort(p) + "</span><b class='fo-dr-view' data-p='" + nm + "'>" + E(p.name) + "</b><em>" + FO$(foDraftPrice(p)) + "</em><button class='fo-sq-x' data-p='" + nm + "' title='Remove'>&#10005;</button></div>";
+      }).join("") || "<div class='fo-sq-empty'>Empty. Swipe through the rails and sign players; they appear here.</div>") + "</div>" +
+      "<div class='fo-adv-panel'><div class='fo-adv-h'>Advisor</div>" + (advisor || "<div class='fo-adv fo-adv-info'>Start adding players to see advice.</div>") + "</div>";
+  }
+  function foDraftPatch(playerName) {
+    var host = document.getElementById("fo-onb"); if (!host || !host.querySelector(".fo-dr-sticky")) return false;
+    var F = App.founder;
+    var fc = foForecast(F.picked, FO_ONB.sponsor), shape = foSquadShape(F.picked);
+    // 1. the toggled player's card, swapped in place
+    if (playerName) {
+      var p = null; for (var i = 0; i < F.pool.length; i++) if (F.pool[i].name === playerName) { p = F.pool[i]; break; }
+      if (p) {
+        var esc2 = E(playerName).replace(/'/g, "&#39;");
+        var btn = host.querySelector(".fo-rail .fo-dr-add[data-p='" + esc2 + "']");
+        var card = btn && btn.closest(".fo-dc");
+        if (card) {
+          var tmp = document.createElement("div");
+          tmp.innerHTML = foDraftCard(p, F.picked.indexOf(p) >= 0);
+          var fresh = tmp.firstChild;
+          card.parentNode.replaceChild(fresh, card);
+          foDraftWireCard(fresh);
+        }
+      }
+    }
+    // 2. sticky strip
+    var st = host.querySelector(".fo-dr-sticky"); if (st) st.innerHTML = foDraftStickyHtml(fc, shape);
+    // 3. side panels (+ rebind)
+    var side = host.querySelector(".fo-dr-side");
+    if (side) {
+      side.innerHTML = foDraftSideHtml(F, shape, fc);
+      side.querySelectorAll(".fo-dr-view").forEach(function (b) { b.addEventListener("click", function () { foDraftDetail(b.getAttribute("data-p")); }); });
+      side.querySelectorAll(".fo-sq-x").forEach(function (b) { b.addEventListener("click", function () { foOnbPick(b.getAttribute("data-p")); }); });
+    }
+    // 4. rail pills
+    host.querySelectorAll(".fo-rail-sec").forEach(function (sec) {
+      var rail = sec.querySelector(".fo-rail"); if (!rail) return;
+      var k = rail.getAttribute("data-rail");
+      var have = F.picked.filter(function (q) { return foDraftBucket(q) === k; }).length;
+      var pill = sec.querySelector(".fo-rail-have");
+      if (have && !pill) { pill = document.createElement("em"); pill.className = "fo-rail-have"; sec.querySelector(".fo-rail-h").appendChild(pill); }
+      if (pill) { if (have) pill.textContent = have + " signed"; else pill.remove(); }
+    });
+    // 5. footer: continue button + requirements note
+    var ready = foSquadReady(F.picked);
+    var c = host.querySelector("#fo-ob-c"); if (c) c.disabled = !ready;
+    var needs = host.querySelector(".fo-dr-needs");
+    if (!ready && !needs) {
+      needs = document.createElement("div"); needs.className = "fo-dr-needs";
+      needs.textContent = "Need 11+ players, a keeper and 5+ bowling options to continue.";
+      var wrapEl = host.querySelector(".fo-ob-draftwrap"); if (wrapEl) wrapEl.appendChild(needs);
+    } else if (ready && needs) needs.remove();
+    return true;
+  }
   function foOnbDraft(keepScroll) {
     FO_ONB.step = 6;
     // preserve every rail's swipe position and the page scroll across re-renders
