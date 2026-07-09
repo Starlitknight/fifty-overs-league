@@ -3747,6 +3747,38 @@
 
   // 42 balanced players (same tier structure for everyone), all set to the
   // manager's country with country names, deterministic from their draft_seed.
+  // Bowling styles have a pecking order: genuine quicks are the rarest thing
+  // in the game, wrist spinners close behind (the engine backs this up with a
+  // real wicket-threat edge for both). Pools get hard caps; the weakest
+  // surplus is demoted to the nearest common style, deterministically.
+  var FO_STYLE = {
+    seamFast: { bt: "fast", label: "fast" },
+    seamFastMedium: { bt: "fastMedium", label: "fast medium" },
+    seamMedium: { bt: "medium", label: "medium" },
+    wristSpin: { bt: "wristSpin", label: "wrist spin" },
+    fingerSpin: { bt: "fingerSpin", label: "finger spin" }
+  };
+  function foSetBowlStyle(p, style) {
+    var oldSt = FO_STYLE[p.bowlTypeFull], newSt = FO_STYLE[style];
+    if (!oldSt || !newSt) return;
+    if (p.btLabel) p.btLabel = p.btLabel.replace(oldSt.label, newSt.label);
+    if (p.role === p.bowlTypeFull) p.role = style;
+    p.bowlTypeFull = style;
+    p.bowlType = newSt.bt;
+  }
+  function foEnforceStyleRarity(pool) {
+    var caps = { seamFast: 0.05, wristSpin: 0.08, fingerSpin: 0.30 };
+    var demoteTo = { seamFast: "seamFastMedium", wristSpin: "fingerSpin", fingerSpin: "seamMedium" };
+    ["seamFast", "wristSpin", "fingerSpin"].forEach(function (style) {
+      var frontline = pool.filter(function (p) { return FO_STYLE[p.bowlTypeFull]; });
+      var have = frontline.filter(function (p) { return p.bowlTypeFull === style; });
+      var max = Math.max(1, Math.floor(frontline.length * caps[style]));
+      if (have.length <= max) return;
+      have.sort(function (a, b) { return (a.rating || 0) - (b.rating || 0); });
+      have.slice(0, have.length - max).forEach(function (p) { foSetBowlStyle(p, demoteTo[style]); });
+    });
+    return pool;
+  }
   function buildCountryPool(seedInt, country) {
     // string seeds (league ids, "<club>-scout-3", …) hash to a real uint32 –
     // `str >>> 0` is always 0, which made every string-seeded pool identical
@@ -3766,6 +3798,7 @@
       var nm = window.natName(country, rnd, used); used.add(nm); p.name = nm;
       fixTechniquePower(p, rnd);
     });
+    foEnforceStyleRarity(pool);
     return pool;
   }
 
@@ -3936,7 +3969,8 @@
     var ageF = (p.age || 26) <= 22 ? 1.4 : p.age <= 25 ? 1.2 : p.age <= 28 ? 1.0 : p.age <= 31 ? 0.78 : 0.55;
     var talF = 1 + 0.10 * ((p.talents || []).length);
     var roleF = (p.keeper || p.role === "wicketkeeper") ? 1.15 : (p.role === "allRounder" ? 1.08 : 1);
-    return Math.max(8000, Math.round(base * ageF * talF * roleF / 500) * 500);
+    var styleF = { seamFast: 1.30, wristSpin: 1.20, seamFastMedium: 1.08 }[p.bowlTypeFull] || 1;
+    return Math.max(8000, Math.round(base * ageF * talF * roleF * styleF / 500) * 500);
   }
   function foDailyWage(p) { return (p && p.wage != null) ? p.wage : Math.max(700, Math.round(((p && p.fee) || 40000) * 0.028 / 10) * 10); }
   function foSeasonCost(p) { return foDraftPrice(p) + foDailyWage(p) * FO_FIN.seasonLength; }
@@ -5268,7 +5302,8 @@
     var ageF = (p.age || 26) <= 22 ? 1.4 : p.age <= 25 ? 1.2 : p.age <= 28 ? 1.0 : p.age <= 31 ? 0.78 : 0.55;
     var talF = 1 + 0.10 * ((p.talents || []).length);
     var roleF = p.keeper ? 1.15 : (p.role === "allRounder" ? 1.08 : 1);
-    return Math.max(12000, Math.round(base * ageF * talF * roleF / 500) * 500);
+    var styleF = { seamFast: 1.30, wristSpin: 1.20, seamFastMedium: 1.08 }[p.bowlTypeFull] || 1;
+    return Math.max(12000, Math.round(base * ageF * talF * roleF * styleF / 500) * 500);
   }
   function foMarketCls(p) {
     if (p.keeper || p.role === "wicketkeeper") return "keep";
@@ -6057,7 +6092,7 @@
   try { var _bv = document.getElementById("fo-boot"); if (_bv) _bv.parentNode.removeChild(_bv); } catch (e) {}
 
   // Debug/test handle for the season planner's engine-facing helpers (no behaviour).
-  try { window.__fol = { userFixtures: foUserFixtures, fixtureMeta: foFixtureMeta, plannerHTML: foPlannerHTML, smartBowling: foSmartBowling }; } catch (e) {}
+  try { window.__fol = { userFixtures: foUserFixtures, fixtureMeta: foFixtureMeta, plannerHTML: foPlannerHTML, smartBowling: foSmartBowling, countryPool: buildCountryPool }; } catch (e) {}
 
   // =========================================================================
   // Squad page rebuild + name hygiene (reviewer pass).
