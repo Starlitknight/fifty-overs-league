@@ -2256,6 +2256,23 @@
       };
     }
   } catch (e) {}
+  // Match ratings: the engine scores Fielding/Keeping unconditionally (a flat
+  // baseline plus events), so a team that has only BATTED showed a fielding
+  // rating. No fielding until you have actually fielded.
+  try {
+    if (typeof window.teamRatings === "function" && !window.teamRatings.__fo) {
+      var _foTR = window.teamRatings;
+      window.teamRatings = function (r, teamName) {
+        var out = _foTR.apply(this, arguments);
+        try {
+          var fielded = (r.innings || []).some(function (inn) { return inn && inn.bowlTeam === teamName && (inn.legal || 0) > 0; });
+          if (!fielded && out && out["Fielding/Keeping"]) out["Fielding/Keeping"] = [null, null];
+        } catch (e) {}
+        return out;
+      };
+      window.teamRatings.__fo = 1;
+    }
+  } catch (e) {}
   // Some log lines already carry the "Bowler to Striker :" prefix that the
   // renderer prepends again - strip the duplicate before any feed renders.
   try {
