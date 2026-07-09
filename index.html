@@ -8897,7 +8897,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           var dPct = Math.round((drain - 1) * 100);
           var note = document.createElement("div"); note.className = "fo-heat-note fo-keep";
           note.innerHTML = "<b>" + E(String(wxRaw)) + " forecast: players tire " + dPct + "% faster today.</b> Bowlers fade late in spells and heavy workloads carry into the next fixture" +
-            (dPct >= 30 ? ". Keep spells short: a sixth bowling option earns his keep, and batting depth pays." : ". Keep an eye on your frontline bowlers' overs.");
+            (dPct >= 30 ? ". Keep spells short: a sixth bowling option earns his keep, and batting depth pays." : ". Keep an eye on your frontline bowlers' overs.") +
+            " High-stamina players cope best; genuine pace leans on fitness hardest.";
           bar.parentNode.insertBefore(note, bar.nextSibling);
         }
       } catch (e) {}
@@ -9355,7 +9356,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260709-2322-1685f5";
+  var FO_BUILD = "20260709-2347-df8801";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10904,7 +10905,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       sec(1, "Bowling styles", "rarity is value", bowlers).replace("fo-cnd-grid", "fo-cnd-grid fo-cnd-grid5") +
       sec(2, "Pitch types", "half your matches are on your home pitch, so draft for it", pitches) +
       sec(3, "Weather", "the forecast is shown before every lineup", weathers) +
-      "<div class='fo-exp-talbox'><b>Heat is a squad question.</b> In Humid, Hot and Scorching weather every player&rsquo;s fatigue clock runs faster: bowlers lose threat and control late in spells, set batters lose their edge sooner, and heavy workloads leave players tired for the next matchday at lower ball counts. On the hottest days a sixth bowling option, even a modest one, keeps every spell short and every bowler dangerous.</div>" +
+      "<div class='fo-exp-talbox'><b>Heat is a squad question.</b> In Humid, Hot and Scorching weather every player&rsquo;s fatigue clock runs faster: bowlers lose threat and control late in spells, set batters lose their edge sooner, and heavy workloads leave players tired for the next matchday at lower ball counts. On the hottest days a sixth bowling option, even a modest one, keeps every spell short and every bowler dangerous. Fitness decides who copes: stamina matters most for genuine quicks, then fast-medium, then the rest of the attack, then keepers, and least for pure batters. The captain carries a little extra for running the side.</div>" +
       "<p class='fo-ob-lead' style='margin-top:14px'>Next: the draft room. Sign <b>11 to 16 players</b> with your <b>$1,000,000</b>. Every fee brings a wage bill behind it, so leave a reserve.</p>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Enter the draft room</button></div></div>";
     var host = foOnbMount(5, body);
@@ -12027,7 +12028,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<tr><td><b>Windy</b></td><td>Sixes die at the rope. Run twos instead of swinging harder.</td></tr>" +
         "<tr><td><b>Drizzle / Chilly</b></td><td>Slow, scrappy cricket. Boundaries are earned.</td></tr>" +
         "<tr><td><b>Dew later</b></td><td>In the second innings the ball is harder to grip: spinners are less effective and chasing becomes easier. If dew is forecast, bowling first is statistically favourable.</td></tr></table>",
-        "<p><b>Heat is a selection question.</b> In humid, hot and scorching weather every player&rsquo;s fatigue clock runs faster. Tired bowlers lose threat and control late in spells, set batters lose their edge sooner, and heavy workloads leave players tired for the next matchday at lower ball counts: on a scorching day a bowler is feeling the next morning after roughly six overs instead of eight. Six bowling options beat five on draining days; shorter spells keep everyone dangerous, and the order screen warns you whenever the forecast drains.</p>",
+        "<p><b>Heat is a selection question.</b> In humid, hot and scorching weather the fatigue clock runs faster: about 20%, 35% and 60% for a frontline bowler of average fitness, with the tax distributed by how physical the job is and how fit the player is. Tired bowlers lose threat and control late in spells, set batters lose their edge sooner, and heavy workloads leave players tired for the next matchday at lower ball counts: on a scorching day a bowler is feeling the next morning after roughly six overs instead of eight. Six bowling options beat five on draining days; shorter spells keep everyone dangerous, and the order screen warns you whenever the forecast drains. Fitness decides who copes: stamina matters most for genuine fast bowlers, then fast-medium, then the rest of the attack, then keepers, and least for pure batters. A fit bowler shrugs off a spell that leaves an unfit one feeling it the next morning, and the captain carries a small extra load for running the side.</p>",
         "<p>The toss is decided automatically. You do not control it, but pitch choice and weather both shift the balance of the fixture, and the forecast is shown on the order screen before you commit a lineup.</p>"
       ].join("")],
       ["money", "Money: the honest ledger", [
@@ -13745,59 +13746,102 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     document.head.appendChild(foChCss);
   } catch (e) {}
 
-  // ---- weather that drains: hot conditions tire players faster (real, in-engine) ----
+  // ---- weather that drains + who fatigue really bites (real, in-engine) ----
   // The per-ball fatigue increment multiplies by p._ageTire, a per-player
   // override the engine reads on every delivery but never sets. ballDist sees
-  // each ball's batter, bowler and weather, so it is the one honest seam: in
-  // draining weather both players' tire rate is raised before the engine rolls
-  // the ball; in kind weather the override is cleared. Because raw fatigue
-  // itself accrues faster, the engine's own tired warnings, fatigue bars and
-  // performance penalties all stay in agreement with the mechanic.
+  // each ball's batter, bowler and weather, so it is the one honest seam: we
+  // recompute both players' tire rate before the engine rolls each ball.
+  // Because raw fatigue itself accrues faster, the engine's own tired
+  // warnings, fatigue bars and performance penalties stay in agreement.
+  //
+  // Where the numbers come from, so none of them are arbitrary:
+  // - FO_WX_DRAIN (1.2 / 1.35 / 1.6): the published headline. It is exact for
+  //   the reference player: a frontline bowler of league-average stamina.
+  // - FO_JOB_R distributes that drain by the physical cost of the job.
+  //   Time-motion studies of one-day cricket put a genuine quick's high-
+  //   intensity load per delivery at roughly double a spinner's, with keeping
+  //   sustained but light and batting the cheapest per ball faced. Stamina
+  //   then scales the load around the league-average anchor (55), so fitness
+  //   matters most for the players whose job costs the most, in the order
+  //   fast > fast-medium > other bowlers > keepers > batters.
+  // - On kind days the multiplier is exactly 1: vanilla engine behaviour,
+  //   vanilla AI bowling rotation, vanilla calibration. The engine already
+  //   prices stamina and role every ball ((1.85-st/100) x fast 1.08 / fm 1.04)
+  //   in all weather; the overlay only decides who the WEATHER tax lands on.
+  // - The captain's 1.06 in-match tax is interpolated from the engine's own
+  //   role taxes (keeper 1.04, genuine fast 1.08): he sets the field, talks
+  //   and carries the pressure on every ball. The engine already agrees
+  //   captaincy is heavier work; it gives captains the keeper's stricter
+  //   recovery thresholds (75/42 instead of 90/48).
   var FO_WX_DRAIN = { scorching: 1.6, hot: 1.35, humid: 1.2 };
+  var FO_JOB_R = { fast: 1.25, fastMedium: 1.12, bowler: 1.0, keeper: 0.85, bat: 0.7 };
   window.FO_WX_DRAIN = FO_WX_DRAIN;
+  function foStam(p) { return (p && p.skills && p.skills.stamina) || (p && p.stamina) || 50; }
+  function foJobLoad(p, asBowler) {
+    var R = asBowler
+      ? (p.bowlType === "fast" ? FO_JOB_R.fast : p.bowlType === "fastMedium" ? FO_JOB_R.fastMedium : FO_JOB_R.bowler)
+      : (p.keeper ? FO_JOB_R.keeper : FO_JOB_R.bat);
+    return Math.max(0.35, R * (1 + (55 - foStam(p)) / 80));
+  }
+  function foTireMult(p, asBowler, wxF) {
+    var m = 1 + ((wxF || 1) - 1) * foJobLoad(p, asBowler);
+    try {
+      var inn = (typeof M !== "undefined") && M && M.innings && M.innings[M.inns];
+      if (inn && (asBowler ? inn.captBowlName : inn.captBatName) === p.name) m *= 1.06;
+    } catch (e) {}
+    return ((typeof foAgeTireFactor === "function") ? foAgeTireFactor(p) : 1) * m;
+  }
   try {
     if (typeof window.ballDist === "function" && !window.ballDist.__foWx) {
       var _foBD = window.ballDist;
       window.ballDist = function (bat, bowl, ph, faced, intent, rrDef, pitch, field, over, ctx) {
         try {
-          var f = ctx && FO_WX_DRAIN[String(ctx.weather || "").toLowerCase()];
-          if (f) {
-            var base = (typeof foAgeTireFactor === "function") ? foAgeTireFactor : function () { return 1; };
-            bat._ageTire = base(bat) * f; bowl._ageTire = base(bowl) * f;
-          } else {
-            if (bat._ageTire) delete bat._ageTire;
-            if (bowl._ageTire) delete bowl._ageTire;
-          }
+          var f = (ctx && FO_WX_DRAIN[String(ctx.weather || "").toLowerCase()]) || 1;
+          bat._ageTire = foTireMult(bat, false, f);
+          bowl._ageTire = foTireMult(bowl, true, f);
         } catch (e) {}
         return _foBD.apply(this, arguments);
       };
       window.ballDist.__foWx = true;
     }
-    // heavy workloads in draining weather also carry into the NEXT matchday:
-    // the engine's post-match tired thresholds shrink by sqrt(drain), a gentler
-    // scale than the in-match effect so it singles out the flogged workhorses
-    // (a 9-over spell in the heat) instead of blanket-tiring both squads.
-    // Runs after the engine's own pass and only ever ADDS tiredness.
+    // Heavy workloads in draining weather also carry into the NEXT matchday.
+    // The engine's flat thresholds (90 balls batted / 48 bowled; 75/42 for
+    // keepers and the captain) become EQUAL-FATIGUE thresholds:
+    //   threshold = base x staminaScale / sqrt(playerDrain)
+    // where staminaScale is the engine's own per-ball fatigue curve inverted
+    // (1.35/(1.85-st/100) bowling, 1.25/(1.75-st/100) batting; exactly 1.0 at
+    // stamina 50, clamped to [0.85, 1.35]) and playerDrain is the same
+    // job-weighted drain the player actually experienced in the match.
+    // Only runs in draining weather and only ever ADDS tiredness: it pulls
+    // the flag forward for the unfit and the flogged, never erases the
+    // engine's own verdict, and kind days stay 100% vanilla.
     if (typeof window.saveMatch === "function" && !window.saveMatch.__foWx) {
       var _foSmWx = window.saveMatch;
+      var foThrM = function (p, asBowler) {
+        var st = foStam(p);
+        var v = asBowler ? 1.35 / (1.85 - st / 100) : 1.25 / (1.75 - st / 100);
+        return Math.max(0.85, Math.min(1.35, v));
+      };
       window.saveMatch = function (m) {
         var out = _foSmWx.apply(this, arguments);
         try {
-          var f = m && m.meta && FO_WX_DRAIN[String(m.meta.weather || "").toLowerCase()];
-          if (f && typeof findPlayer === "function") {
-            var g = Math.sqrt(f);
+          var f = (m && m.meta && FO_WX_DRAIN[String(m.meta.weather || "").toLowerCase()]) || 1;
+          if (f > 1 && typeof findPlayer === "function") {
             var capt = (typeof App !== "undefined" && App.orders && App.orders.captain) || null;
+            var thr = function (p, asBowler, base) {
+              return base * foThrM(p, asBowler) / Math.sqrt(1 + (f - 1) * foJobLoad(p, asBowler));
+            };
             for (var ii = 0; ii < (m.innings || []).length; ii++) {
               var inn = m.innings[ii]; if (!inn) continue;
               (inn.bat || []).forEach(function (b) {
                 if (!b || !b.p) return;
                 var pl = findPlayer(b.p.name); if (!pl || !pl.p) return;
-                if (b.b >= ((pl.p.keeper || b.p.name === capt) ? 75 : 90) / g) pl.p.fatigue = "tired";
+                if (b.b >= thr(pl.p, false, (pl.p.keeper || b.p.name === capt) ? 75 : 90)) pl.p.fatigue = "tired";
               });
               for (var k in (inn.bowlers || {})) {
                 var br = inn.bowlers[k]; if (!br) continue;
                 var pl2 = findPlayer(k); if (!pl2 || !pl2.p) continue;
-                if (br.b >= ((pl2.p.keeper || k === capt) ? 42 : 48) / g) pl2.p.fatigue = "tired";
+                if (br.b >= thr(pl2.p, true, (pl2.p.keeper || k === capt) ? 42 : 48)) pl2.p.fatigue = "tired";
               }
             }
           }
