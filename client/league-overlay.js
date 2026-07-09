@@ -1479,7 +1479,10 @@
       // ---- next match: anticipation panel with countdown + lineup-state CTA ----
       var nxt = foUserFixtures()[0] || null;
       var isMP = SYNC && SYNC.started && !SYNC.practice;
-      var ordersIn = !!(App.orders && App.orders.saved && nxt && App.season && nxt.round === App.season.round);
+      // one truth for "orders in": the server has this round's packet, or the
+      // current round's orders are saved locally (upload confirms momentarily)
+      var ordersIn = !!(nxt && ((SYNC && SYNC.submitted && SYNC.submitted[nxt.round]) ||
+        (App.orders && App.orders.saved && App.season && nxt.round === App.season.round)));
       var nextPanel = "";
       if (nxt) {
         var oppRow = rowsL.findIndex(function (x) { return x.nm === nxt.opp.name; });
@@ -5767,6 +5770,15 @@
         var want = done ? "\u2713 Orders ready" : "Set lineup";
         if (b.textContent !== want) b.textContent = want;
         b.title = done ? "Click to edit this round's lineup" : "";
+      });
+      // the club-home hero CTA answers to the same truth
+      document.querySelectorAll("button.fo-next-cta[data-r]").forEach(function (b) {
+        var r = +b.getAttribute("data-r");
+        var done = !!SYNC.submitted[r] ||
+          !!(App.orders && App.orders.saved && App.season && r === App.season.round);
+        b.classList.toggle("fo-done", done);
+        var want = done ? "\u2713 Orders in \u2014 review lineup" : "Set your lineup";
+        if (b.textContent !== want) b.textContent = want;
       });
     } catch (e) {}
   }
