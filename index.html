@@ -7421,6 +7421,25 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-exp-def b{display:inline-block;min-width:96px;color:#12203a}.fo-exp-def span{color:#5d6779}" +
     ".fo-exp-talbox{background:#eef4ee;border:1px solid #d5e0d7;border-radius:11px;padding:13px 16px;font-size:13.5px;line-height:1.6;margin-top:16px}" +
     "@media(max-width:760px){.fo-exp-cols{grid-template-columns:1fr}}" +
+    ".fo-cnd-sec{margin:22px 0 6px}" +
+    ".fo-cnd-h{display:flex;align-items:baseline;gap:10px;margin:0 0 9px;flex-wrap:wrap}" +
+    ".fo-cnd-h b{font-size:15px;color:#12203a}" +
+    ".fo-cnd-h span{font-size:12px;color:#8a8474}" +
+    ".fo-cnd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(214px,1fr));gap:10px}" +
+    ".fo-cnd-grid5{grid-template-columns:repeat(auto-fit,minmax(166px,1fr))}" +
+    ".fo-cnd{background:#fff;border:1px solid #e2ddd0;border-radius:11px;padding:11px 13px 12px;box-shadow:0 2px 8px rgba(18,32,58,.04);display:flex;flex-direction:column}" +
+    ".fo-cnd-t{display:flex;align-items:center;gap:8px;flex-wrap:wrap}" +
+    ".fo-cnd-t b{font-size:13.5px;color:#12203a;letter-spacing:-.1px}" +
+    ".fo-cnd p{margin:6px 0 0;font-size:12.5px;line-height:1.5;color:#5d6779}" +
+    ".fo-cnd-ex{font-style:italic;color:#8a8474 !important;font-size:11.5px !important;border-top:1px dashed #efeade;padding-top:6px;margin-top:auto !important}" +
+    ".fo-cnd .fo-cnd-ex{margin-top:8px !important}" +
+    ".fo-cnd-chip{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:2px 9px;white-space:nowrap}" +
+    ".fo-cnd-rare{background:linear-gradient(135deg,#D9A441,#c08a2b);color:#fff;box-shadow:0 1px 4px rgba(160,110,20,.3)}" +
+    ".fo-cnd-com{background:#f3efe4;border:1px solid #e2ddd0;color:#8a8474}" +
+    ".fo-cnd-drain{background:#fbeae2;border:1px solid #edcbb8;color:#8a2f1d}" +
+    "@media(max-width:640px){.fo-cnd-grid{grid-template-columns:1fr 1fr}.fo-cnd-ex{display:none}}" +
+    ".fo-heat-note{background:#fdf3e2;border:1px solid #ecd9ae;border-left:4px solid #C0562F;border-radius:10px;padding:10px 14px;margin:0 0 12px;font-size:13px;color:#5d4a2f;line-height:1.55}" +
+    ".fo-heat-note b{color:#8a2f1d}" +
     ".fo-ctygrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:2px 0 14px}" +
     ".fo-cty{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e2ddd0;border-radius:10px;padding:9px 11px;cursor:pointer;font-size:13px;font-weight:600;color:#3c4658;text-align:left;transition:border-color .12s ease,box-shadow .12s ease}" +
     ".fo-cty i{font-style:normal;font-size:17px;line-height:1}" +
@@ -8870,6 +8889,18 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<div class='fo-ready' id='fo-ready'></div>";
       var anchor = page.querySelector(".crumb");
       if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(bar, anchor.nextSibling); else page.insertBefore(bar, page.firstChild);
+      // heat advisory: in draining weather a sixth bowling option is worth real overs
+      try {
+        var wxRaw = (App.pending && App.pending.weather) || "";
+        var drain = (window.FO_WX_DRAIN || {})[String(wxRaw).toLowerCase()];
+        if (drain && !page.querySelector(".fo-heat-note")) {
+          var dPct = Math.round((drain - 1) * 100);
+          var note = document.createElement("div"); note.className = "fo-heat-note fo-keep";
+          note.innerHTML = "<b>" + E(String(wxRaw)) + " forecast: players tire " + dPct + "% faster today.</b> Bowlers fade late in spells and heavy workloads carry into the next fixture" +
+            (dPct >= 30 ? ". Keep spells short: a sixth bowling option earns his keep, and batting depth pays." : ". Keep an eye on your frontline bowlers' overs.");
+          bar.parentNode.insertBefore(note, bar.nextSibling);
+        }
+      } catch (e) {}
       var btn = bar.querySelector(".fo-copyprev");
       if (btn && prev) btn.addEventListener("click", function () { foApplyPrevOrders(prev); });
       bar.querySelector(".fo-autopick").addEventListener("click", function () {
@@ -9324,7 +9355,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260709-2245-eeb419";
+  var FO_BUILD = "20260709-2322-1685f5";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10259,7 +10290,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (step && step !== "create") {
       FO_ONB.clubName = FO_ONB.clubName || "Thunder Empire";
       if (!App.founder || !App.founder.pool) App.founder = { name: FO_ONB.clubName, budget: 1000000, pool: buildCountryPool("fo-preview", FO_ONB.country), picked: [], identity: "Balanced XI" };
-      if (step === "draft" || step === "report" || step === "players") FO_ONB.sponsor = FO_ONB.sponsor || "community";
+      if (step === "draft" || step === "report" || step === "players" || step === "conditions") FO_ONB.sponsor = FO_ONB.sponsor || "community";
       if (step === "report" && !App.founder.picked.length) {
         // draft a legal squad WITHIN the $1M budget, best value first
         var _pool = App.founder.pool.slice(), _byR = function (a, b) { return (b.rating || 0) - (a.rating || 0); };
@@ -10278,7 +10309,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         App.founder.picked = _picked;
       }
     }
-    ({ create: foOnbCreate, charter: foOnbCharter, money: foOnbMoney, sponsor: foOnbSponsor, players: foOnbPlayers, draft: foOnbDraft, report: foOnbReport }[step || "create"] || foOnbCreate)();
+    ({ create: foOnbCreate, charter: foOnbCharter, money: foOnbMoney, sponsor: foOnbSponsor, players: foOnbPlayers, conditions: foOnbConditions, draft: foOnbDraft, report: foOnbReport }[step || "create"] || foOnbCreate)();
   } catch (e) { console.warn("onb preview", e); } };   // debug/test hook (harmless)
 
   // Draft happens in the game's OWN founder screen (pgFounder). We hand it a
@@ -10401,7 +10432,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function FO_I(name, size) {
     return "<svg class='fo-i' width='" + (size || 18) + "' height='" + (size || 18) + "' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'>" + (FO_ICONS[name] || "") + "</svg>";
   }
-  var FO_STEPS = ["Club", "Charter", "Money", "Sponsor", "Players", "Draft", "Report"];
+  var FO_STEPS = ["Club", "Charter", "Money", "Sponsor", "Players", "Conditions", "Draft", "Report"];
   function foOnbShell(stepIx, body) {
     var prog = FO_STEPS.map(function (s, i) {
       var cls = i < stepIx ? "done" : (i === stepIx ? "on" : "");
@@ -10803,10 +10834,81 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "<p class='fo-ob-lead'>Two real players from your draft pool, a batter and a bowler. Bars are coloured honestly: <b style='color:#C84F4A'>red</b> is a liability, <b style='color:#D9A441'>amber</b> does a job, <b style='color:#2d7a76'>teal</b> is good, <b style='color:#3E9960'>green</b> wins matches.</p>" +
       "<div class='fo-exp-cols'><div class='fo-exp-cards'>" + mkCard(batter, "The batter") + mkCard(bowler, "The bowler") + "</div><div class='fo-exp-defs'>" + defs + "</div></div>" +
       "<div class='fo-exp-talbox'><b>Talents</b> are permanent traits that fire in specific situations: a <i>Finisher</i> finds boundaries at the death, a <i>New-ball Specialist</i> is deadly in his first spell, a <i>Spin Killer</i> feasts on slow bowling. Tap any talent chip in the game to see what it does.</div>" +
-      "<p class='fo-ob-lead' style='margin-top:14px'>Next: the draft room. Sign <b>11 to 16 players</b> with your <b>$1,000,000</b>. Every fee brings a wage bill behind it, so leave a reserve.</p>" +
-      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Enter the draft room</button></div></div>";
+      "<p class='fo-ob-lead' style='margin-top:14px'>Next: reading conditions. Bowling styles and their rarity, pitch types, and what the sky does to a match: the context that decides which of these numbers matter on the day.</p>" +
+      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Read the conditions</button></div></div>";
     var host = foOnbMount(4, body);
     host.querySelector("#fo-ob-b").addEventListener("click", foOnbSponsor);
+    host.querySelector("#fo-ob-c").addEventListener("click", function () { foOnbConditions(); });
+  }
+
+  // ---- Screen 6 : Reading conditions -----------------------------------
+  // Bowling styles + rarity, pitch types, weather types: every effect below is
+  // real in the match engine. Sits between the player primer and the draft so
+  // a new manager drafts with the full picture.
+  function foOnbConditions() {
+    FO_ONB.step = 6;
+    var chip = function (cls, txt) { return "<span class='fo-cnd-chip " + cls + "'>" + txt + "</span>"; };
+    var card = function (nm, chips, d, ex) {
+      return "<div class='fo-cnd'><div class='fo-cnd-t'><b>" + nm + "</b>" + chips + "</div><p>" + d + "</p>" + (ex ? "<p class='fo-cnd-ex'>" + ex + "</p>" : "") + "</div>";
+    };
+    var sec = function (no, title, sub, cards) {
+      return "<div class='fo-cnd-sec'><div class='fo-cnd-h'><b>" + no + " &middot; " + title + "</b><span>" + sub + "</span></div><div class='fo-cnd-grid'>" + cards + "</div></div>";
+    };
+    var rare = function (t) { return chip("fo-cnd-rare", "&#9670; " + t); };
+    var com = function (t) { return chip("fo-cnd-com", t); };
+    var drain = function (t) { return chip("fo-cnd-drain", t); };
+    // five styles fit one row on desktop; the generic grid would orphan the fifth
+    var bowlers = [
+      card("Genuine fast", rare("Rarest &middot; ~1 in 20"),
+        "The apex predator: the biggest wicket threat of any style, at any stage of the innings. Burns energy fastest and commands the game&rsquo;s steepest fees.",
+        "A genuine quick under overcast skies is the most dangerous thing in this game."),
+      card("Wrist spin", rare("Very rare &middot; ~1 in 12"),
+        "Attacking spin: googlies and rip that buy wickets through the middle overs, priced at a premium to match.",
+        "On a crumbling pitch a wrist spinner turns the middle overs into a minefield."),
+      card("Fast medium", com("Uncommon"),
+        "New-ball seam with honest pace: real threat while the ball is hard, respectable control after.",
+        "The bread-and-butter opening bowler on any green or overcast day."),
+      card("Medium", com("Common"),
+        "The workhorse. Modest threat, but he keeps an end tight and his overs come cheap.",
+        "A reliable fifth or sixth option through the quiet middle overs."),
+      card("Finger spin", com("Common"),
+        "Control first: dots and squeezed middle overs, with real menace once a pitch turns dry.",
+        "On flat days he saves runs; on crumbling ones he wins matches.")
+    ].join("");
+    var pitches = [
+      ["Balanced", "A fair contest. Nobody gets favours.", "Pick your best XI on merit."],
+      ["Green", "Seam and swing; the new-ball spell is brutal.", "Stack pace, open the batting with technique."],
+      ["Crumbling", "Turns square as it wears on.", "Spinners own the middle overs; chasing is hardest."],
+      ["Flat", "A batter&rsquo;s road: boundaries flow, totals balloon.", "Wickets must be bought with attacking bowling."],
+      ["Slow", "Low and grippy; the ball dies in the surface.", "Sixes are dear. Rotate strike and be patient."],
+      ["Sticky", "Unpredictable bounce, wickets for everyone.", "Batting depth is your insurance."],
+      ["Two-paced", "Some balls hurry, some hold.", "Timing is never safe; big intent costs more here."]
+    ].map(function (x) { return card(x[0], "", x[1], x[2]); }).join("");
+    var weathers = [
+      card("Sunny", "", "True skies, fair fight.", "Nothing to adjust: cricket as designed."),
+      card("Overcast", "", "The ball hoops for the seamers, especially while it is new.", "Pace up, and expect a lower-scoring day."),
+      card("Misty", "", "Seam movement plus slippery hands: more catches go down.", "Seamers threaten; pick your safest catchers."),
+      card("Humid", drain("Drains &middot; tire ~20% faster"), "Heavy air: big new-ball help for the seamers, and it saps the legs all day.", "Survive the burst with the bat; watch bowler workloads."),
+      card("Hot", drain("Drains &middot; tire ~35% faster"), "The ball comes on true: a batting day. But the heat wears everyone down.", "Long spells fade, and tired legs carry into the next fixture."),
+      card("Scorching", drain("Drains &middot; tire ~60% faster"), "Boundaries flow and bowlers wilt fast.", "Short spells, deep batting: the sixth bowling option earns his keep today."),
+      card("Drizzle", "", "Scrappy, slow cricket; the bat loses its edge.", "Boundaries are earned, not given."),
+      card("Windy", "", "Sixes die at the rope.", "Run hard twos instead of swinging harder."),
+      card("Chilly", "", "Cold hands: boundaries down, dropped catches up.", "A day for percentages, not fireworks."),
+      card("Dew later", "", "A wet ball in the second innings: spinners lose their grip in the chase.", "If dew is forecast, bowling first is the percentage call.")
+    ].join("");
+    var body =
+      "<div class='fo-ob-card fo-ob-mid'>" +
+      "<div class='fo-ob-eyebrow'>The game around the game</div>" +
+      "<h1 class='fo-ob-h1'>Conditions decide what matters</h1>" +
+      "<p class='fo-ob-lead'>Skills tell you how good a player is. Conditions decide which skills matter <i>today</i>. Three things set the stage for every fixture: who bowls what, the pitch under their feet, and the sky above it. Every effect on this page is real in the match engine; none of it is flavour text.</p>" +
+      sec(1, "Bowling styles", "rarity is value", bowlers).replace("fo-cnd-grid", "fo-cnd-grid fo-cnd-grid5") +
+      sec(2, "Pitch types", "half your matches are on your home pitch, so draft for it", pitches) +
+      sec(3, "Weather", "the forecast is shown before every lineup", weathers) +
+      "<div class='fo-exp-talbox'><b>Heat is a squad question.</b> In Humid, Hot and Scorching weather every player&rsquo;s fatigue clock runs faster: bowlers lose threat and control late in spells, set batters lose their edge sooner, and heavy workloads leave players tired for the next matchday at lower ball counts. On the hottest days a sixth bowling option, even a modest one, keeps every spell short and every bowler dangerous.</div>" +
+      "<p class='fo-ob-lead' style='margin-top:14px'>Next: the draft room. Sign <b>11 to 16 players</b> with your <b>$1,000,000</b>. Every fee brings a wage bill behind it, so leave a reserve.</p>" +
+      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Enter the draft room</button></div></div>";
+    var host = foOnbMount(5, body);
+    host.querySelector("#fo-ob-b").addEventListener("click", foOnbPlayers);
     host.querySelector("#fo-ob-c").addEventListener("click", function () { foOnbDraft(); });
   }
 
@@ -10883,7 +10985,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     return true;
   }
   function foOnbDraft(keepScroll) {
-    FO_ONB.step = 6;
+    FO_ONB.step = 7;
     // preserve every rail's swipe position and the page scroll across re-renders
     var _rails = {}, _pageY = 0;
     try {
@@ -10934,7 +11036,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "<div class='fo-ob-act fo-dr-act'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c' " + (ready ? "" : "disabled") + ">Continue &#8594; Board report</button></div>" +
       (ready ? "" : "<div class='fo-dr-needs'>Need 11+ players, a keeper and 5+ bowling options to continue.</div>") +
       "</div>";
-    var host = foOnbMount(5, body);
+    var host = foOnbMount(6, body);
     if (keepScroll) requestAnimationFrame(function () {
       try {
         host.scrollTop = _pageY;
@@ -10944,7 +11046,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     host.querySelectorAll(".fo-dr-add").forEach(function (b) { b.addEventListener("click", function () { foOnbPick(b.getAttribute("data-p")); }); });
     host.querySelectorAll(".fo-dr-view").forEach(function (b) { b.addEventListener("click", function () { foDraftDetail(b.getAttribute("data-p")); }); });
     host.querySelectorAll(".fo-sq-x").forEach(function (b) { b.addEventListener("click", function () { foOnbPick(b.getAttribute("data-p")); }); });
-    host.querySelector("#fo-ob-b").addEventListener("click", foOnbPlayers);
+    host.querySelector("#fo-ob-b").addEventListener("click", foOnbConditions);
     var c = host.querySelector("#fo-ob-c"); if (c) c.addEventListener("click", foOnbAfterDraft);
   }
 
@@ -10958,7 +11060,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
 
   // ---- Screen 6 · Risk warning ---------------------------------------------
   function foOnbRisk(fc) {
-    FO_ONB.step = 5;
+    FO_ONB.step = 7;
     var body =
       "<div class='fo-ob-card fo-ob-narrow fo-ob-risk'>" +
       "<div class='fo-risk-ic'>" + FO_I("warn", 26) + "</div>" +
@@ -10967,7 +11069,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "<ul class='fo-ob-list fo-risk-list'><li>Forced player releases</li><li>Blocked signings</li><li>Supporter mood drop</li></ul>" +
       "<label class='fo-ob-check'><input type='checkbox' id='fo-ob-ack' " + (FO_ONB.riskAck ? "checked" : "") + "> I understand the risk</label>" +
       "<div class='fo-ob-act'><button class='fo-ob-ghost' id='fo-ob-revise'>Revise squad</button><button class='fo-ob-cta fo-cta-danger' id='fo-ob-cont' disabled>Continue anyway</button></div></div>";
-    var host = foOnbMount(5, body);
+    var host = foOnbMount(6, body);
     var ack = host.querySelector("#fo-ob-ack"), cont = host.querySelector("#fo-ob-cont");
     var sync = function () { FO_ONB.riskAck = ack.checked; cont.disabled = !ack.checked; };
     ack.addEventListener("change", sync); sync();
@@ -10977,7 +11079,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
 
   // ---- Screen 7 · Season 1 Board Report ------------------------------------
   function foOnbReport() {
-    FO_ONB.step = 6;
+    FO_ONB.step = 8;
     var F = App.founder, fc = foForecast(F.picked, FO_ONB.sponsor);
     var sp = foSponsorById(FO_ONB.sponsor);
     var shape = foSquadShape(F.picked);
@@ -11016,7 +11118,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       starRow("Batting", batStr) + starRow("Bowling", bowlStr) + starRow("Fielding", fieldStr) + starRow("Keeping", keepStr) + "</div>" +
       "</aside></div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back to draft</button><button class='fo-ob-cta' id='fo-ob-done'>Enter the League</button></div></div>";
-    var host = foOnbMount(6, body);
+    var host = foOnbMount(7, body);
     host.querySelector("#fo-ob-b").addEventListener("click", function () { foOnbDraft(); });
     host.querySelector("#fo-ob-done").addEventListener("click", foOnbCommit);
   }
@@ -11917,12 +12019,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ["pitchwx", "Pitch, weather &amp; the toss", [
         "<p>Before every match you can see the ground, the pitch and the sky. Read them like a real captain would:</p>",
         "<table><tr><th>Sky</th><th>What it means</th></tr>" +
-        "<tr><td><b>Sunny / Hot / Scorching</b></td><td>A batting day. The hotter it gets, the truer the ball comes on.</td></tr>" +
+        "<tr><td><b>Sunny</b></td><td>True skies, fair fight. Cricket as designed.</td></tr>" +
+        "<tr><td><b>Hot</b></td><td>A batting day; the ball comes on true. But the heat drains: players tire about <b>35% faster</b>, long spells fade, and tired legs carry into the next fixture.</td></tr>" +
+        "<tr><td><b>Scorching</b></td><td>Boundaries flow and bowlers wilt: fatigue accrues roughly <b>60% faster</b>. Keep spells short; this is the day a sixth bowling option earns his keep.</td></tr>" +
         "<tr><td><b>Overcast / Misty</b></td><td>Seamers&rsquo; weather. The ball hoops around, especially early; expect 20&ndash;30 fewer runs and jittery top orders.</td></tr>" +
-        "<tr><td><b>Humid</b></td><td>The new ball talks for the seamers, then it fades. Survive the burst.</td></tr>" +
+        "<tr><td><b>Humid</b></td><td>The new ball talks for the seamers, then it fades. Survive the burst. The heavy air also saps: players tire about <b>20% faster</b>.</td></tr>" +
         "<tr><td><b>Windy</b></td><td>Sixes die at the rope. Run twos instead of swinging harder.</td></tr>" +
         "<tr><td><b>Drizzle / Chilly</b></td><td>Slow, scrappy cricket. Boundaries are earned.</td></tr>" +
         "<tr><td><b>Dew later</b></td><td>In the second innings the ball is harder to grip: spinners are less effective and chasing becomes easier. If dew is forecast, bowling first is statistically favourable.</td></tr></table>",
+        "<p><b>Heat is a selection question.</b> In humid, hot and scorching weather every player&rsquo;s fatigue clock runs faster. Tired bowlers lose threat and control late in spells, set batters lose their edge sooner, and heavy workloads leave players tired for the next matchday at lower ball counts: on a scorching day a bowler is feeling the next morning after roughly six overs instead of eight. Six bowling options beat five on draining days; shorter spells keep everyone dangerous, and the order screen warns you whenever the forecast drains.</p>",
         "<p>The toss is decided automatically. You do not control it, but pitch choice and weather both shift the balance of the fixture, and the forecast is shown on the order screen before you commit a lineup.</p>"
       ].join("")],
       ["money", "Money: the honest ledger", [
@@ -13638,6 +13743,69 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-race-bar{height:10px;border-radius:5px;background:#E8EAEE;overflow:hidden}.fo-race-bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#4DA6A2,#2b6b68);transition:width .6s ease}" +
       ".fo-race-n{font-size:11.5px;font-weight:800;color:#1C2433;white-space:nowrap;font-variant-numeric:tabular-nums}";
     document.head.appendChild(foChCss);
+  } catch (e) {}
+
+  // ---- weather that drains: hot conditions tire players faster (real, in-engine) ----
+  // The per-ball fatigue increment multiplies by p._ageTire, a per-player
+  // override the engine reads on every delivery but never sets. ballDist sees
+  // each ball's batter, bowler and weather, so it is the one honest seam: in
+  // draining weather both players' tire rate is raised before the engine rolls
+  // the ball; in kind weather the override is cleared. Because raw fatigue
+  // itself accrues faster, the engine's own tired warnings, fatigue bars and
+  // performance penalties all stay in agreement with the mechanic.
+  var FO_WX_DRAIN = { scorching: 1.6, hot: 1.35, humid: 1.2 };
+  window.FO_WX_DRAIN = FO_WX_DRAIN;
+  try {
+    if (typeof window.ballDist === "function" && !window.ballDist.__foWx) {
+      var _foBD = window.ballDist;
+      window.ballDist = function (bat, bowl, ph, faced, intent, rrDef, pitch, field, over, ctx) {
+        try {
+          var f = ctx && FO_WX_DRAIN[String(ctx.weather || "").toLowerCase()];
+          if (f) {
+            var base = (typeof foAgeTireFactor === "function") ? foAgeTireFactor : function () { return 1; };
+            bat._ageTire = base(bat) * f; bowl._ageTire = base(bowl) * f;
+          } else {
+            if (bat._ageTire) delete bat._ageTire;
+            if (bowl._ageTire) delete bowl._ageTire;
+          }
+        } catch (e) {}
+        return _foBD.apply(this, arguments);
+      };
+      window.ballDist.__foWx = true;
+    }
+    // heavy workloads in draining weather also carry into the NEXT matchday:
+    // the engine's post-match tired thresholds shrink by sqrt(drain), a gentler
+    // scale than the in-match effect so it singles out the flogged workhorses
+    // (a 9-over spell in the heat) instead of blanket-tiring both squads.
+    // Runs after the engine's own pass and only ever ADDS tiredness.
+    if (typeof window.saveMatch === "function" && !window.saveMatch.__foWx) {
+      var _foSmWx = window.saveMatch;
+      window.saveMatch = function (m) {
+        var out = _foSmWx.apply(this, arguments);
+        try {
+          var f = m && m.meta && FO_WX_DRAIN[String(m.meta.weather || "").toLowerCase()];
+          if (f && typeof findPlayer === "function") {
+            var g = Math.sqrt(f);
+            var capt = (typeof App !== "undefined" && App.orders && App.orders.captain) || null;
+            for (var ii = 0; ii < (m.innings || []).length; ii++) {
+              var inn = m.innings[ii]; if (!inn) continue;
+              (inn.bat || []).forEach(function (b) {
+                if (!b || !b.p) return;
+                var pl = findPlayer(b.p.name); if (!pl || !pl.p) return;
+                if (b.b >= ((pl.p.keeper || b.p.name === capt) ? 75 : 90) / g) pl.p.fatigue = "tired";
+              });
+              for (var k in (inn.bowlers || {})) {
+                var br = inn.bowlers[k]; if (!br) continue;
+                var pl2 = findPlayer(k); if (!pl2 || !pl2.p) continue;
+                if (br.b >= ((pl2.p.keeper || k === capt) ? 42 : 48) / g) pl2.p.fatigue = "tired";
+              }
+            }
+          }
+        } catch (e) {}
+        return out;
+      };
+      window.saveMatch.__foWx = 1;
+    }
   } catch (e) {}
 
   // ---- friendlies are for fun, not for the record books: every playerHist
