@@ -7202,6 +7202,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-charter-big .fo-charter-grant b{font-size:44px}" +
     ".fo-charter-big .fo-ob-act-c{width:100%;max-width:460px}" +
     "@media(max-width:700px){.fo-charter-big{padding:36px 22px !important;min-height:0}.fo-charter-h1{font-size:28px !important}.fo-charter-big .fo-charter-grant b{font-size:32px}}" +
+    ".fo-sp-mono{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:21px;color:#fff;margin:0 auto 10px;font-family:Georgia,serif}" +
+    ".fo-mono-teal{background:#2d7a76}.fo-mono-terra{background:#C0562F}.fo-mono-gold{background:#A8842C}" +
+    ".fo-sp-ind{display:block;font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#8a8474;margin:2px 0 10px}" +
+    ".fo-sp-fine{display:block;font-size:10.5px;color:#a09a8a;border-top:1px dashed #e2ddd0;padding-top:9px;margin-top:12px}" +
+    ".fo-pk-sp .fo-pk-name{font-size:17px;font-weight:800}" +
     ".fo-ctygrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:2px 0 14px}" +
     ".fo-cty{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e2ddd0;border-radius:10px;padding:9px 11px;cursor:pointer;font-size:13px;font-weight:600;color:#3c4658;text-align:left;transition:border-color .12s ease,box-shadow .12s ease}" +
     ".fo-cty i{font-style:normal;font-size:17px;line-height:1}" +
@@ -8988,9 +8993,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       { id: "moneyball", name: "Moneyball", draftBudget: 700000, reserve: 300000, risk: "Medium", rec: false, tone: "violet", tag: "Save cash and hunt value." }
     ],
     sponsors: [
-      { id: "community", name: "Community Sponsor", pos: "Steady money, no strings.", base: 45000, win: 0, halfway: 0, seasonTop3: 0, champ: 0, tone: "teal", rec: true, lines: ["No result bonuses", "The best floor if the season goes wrong"] },
-      { id: "results", name: "Results Sponsor", pos: "Win more, earn more.", base: 38000, win: 13000, halfway: 0, seasonTop3: 0, champ: 0, tone: "terra", lines: ["+$13,000 per win", "Beats Community from 10 wins"] },
-      { id: "contender", name: "Contender Sponsor", pos: "Back your XI.", base: 30000, win: 16000, halfway: 60000, seasonTop3: 90000, champ: 120000, tone: "gold", lines: ["+$16,000 per win", "+$60k top-3 at halfway", "+$90k top-3 finish · +$120k champions"] }
+      { id: "community", name: "Oakfield & Sons", ind: "Grocers, est. 1954", pos: "Steady money, no strings.", base: 45000, win: 0, halfway: 0, seasonTop3: 0, champ: 0, tone: "teal", rec: false, lines: ["$45,000 every matchday", "No result bonuses"] },
+      { id: "results", name: "Vantage Athletic", ind: "Performance sportswear", pos: "Paid to win.", base: 38000, win: 13000, halfway: 0, seasonTop3: 0, champ: 0, tone: "terra", lines: ["$38,000 every matchday", "+$13,000 per win"] },
+      { id: "contender", name: "Meridian Air", ind: "The champions' airline", pos: "Back your XI.", base: 30000, win: 16000, halfway: 60000, seasonTop3: 90000, champ: 120000, tone: "gold", lines: ["$30,000 every matchday", "+$16,000 per win", "+$60k top-3 at halfway", "+$90k top-3 finish", "+$120k champions"] }
     ],
     scenarios: [
       { id: "bad", name: "Bad season", wins: 5, crowd: 2100, finish: 8, t3half: false, t3fin: false, champ: false },
@@ -9233,37 +9238,29 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // ---- Screen 4 · Choose your sponsor --------------------------------------
   function foOnbSponsor() {
     FO_ONB.step = 4;
-    var icons = { community: "users", results: "target", contender: "trophy" };
+    var mono = { community: "O", results: "V", contender: "M" };
     var cards = FO_FIN.sponsors.map(function (s) {
-      // headline: the guaranteed matchday money; bonuses listed under it
-      var head = s.base > 0 ? FO$(s.base) : "$0";
-      var headSub = s.base > 0 ? "per matchday" : "guaranteed";
-      var scen = ["bad", "average", "good", "champion"].map(function (id) {
-        var sc = foScenarioById(id);
-        return "<div class='fo-sp-srow'><span>" + sc.name + " (" + sc.wins + " wins)</span><b>" + FO$(foSponsorPayout(s, sc)) + "</b></div>";
-      }).join("");
+      var terms = s.lines.map(function (l) { return "<span>" + l + "</span>"; }).join("");
       return "<button type='button' class='fo-pk fo-pk-sp fo-tone-" + s.tone + " " + (FO_ONB.sponsor === s.id ? "on" : "") + "' data-sp='" + s.id + "'>" +
-        (s.rec ? "<span class='fo-ob-rec'>Recommended for most clubs</span>" : "<span class='fo-ob-rec fo-rec-ghost'>&nbsp;</span>") +
-        "<span class='fo-pk-ic'>" + FO_I(icons[s.id] || "users", 26) + "</span>" +
+        "<span class='fo-sp-mono fo-mono-" + s.tone + "'>" + mono[s.id] + "</span>" +
         "<span class='fo-pk-name'>" + s.name + "</span>" +
-        "<span class='fo-pk-tag'>" + s.pos + "</span>" +
-        "<span class='fo-sp-big'>" + head + "<i>" + headSub + "</i></span>" +
-        "<span class='fo-sp-lines'>" + s.lines.filter(function (l) { return !(s.base > 0 && /per matchday/.test(l)); }).map(function (l) { return "<span>" + l + "</span>"; }).join("") + "</span>" +
-        "<span class='fo-sp-scen'><span class='fo-sp-sh'><span>Season scenario</span><b>Income</b></span>" + scen + "</span></button>";
+        "<span class='fo-sp-ind'>" + s.ind + "</span>" +
+        "<span class='fo-sp-big'>" + FO$(s.base) + "<i>per matchday</i></span>" +
+        "<span class='fo-sp-lines'>" + terms + "</span>" +
+        "<span class='fo-sp-fine'>Term: 18 matchdays &middot; season 1</span></button>";
     }).join("");
     var body =
       "<div class='fo-ob-card fo-ob-mid'>" +
       "<div class='fo-ob-eyebrow'>Your first big decision</div>" +
-      "<h1 class='fo-ob-h1'>Choose your sponsor &mdash; they pay you every matchday</h1>" +
-      "<p class='fo-ob-lead'>This is your club's main income for the whole season, paid after every match. Safe money, results money, or back yourself for the big bonuses — the choice locks in for Season 1.</p>" +
+      "<h1 class='fo-ob-h1'>Three sponsors want your shirt</h1>" +
+      "<p class='fo-ob-lead'>Each offer pays after every match, all season. The terms differ in how much of your money rides on results. The deal locks in for Season 1 and cannot be renegotiated.</p>" +
       "<div class='fo-pks'>" + cards + "</div>" +
-      "<div class='fo-ob-note'><i>" + FO_I("info", 15) + "</i>Community = best floor &middot; Results = best middle &middot; Contender = best ceiling. Estimates are based on an average season.</div>" +
-      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'" + (FO_ONB.sponsor ? "" : " disabled") + ">Continue to draft</button></div></div>";
+      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'" + (FO_ONB.sponsor ? "" : " disabled") + ">Sign with " + (FO_ONB.sponsor ? foSponsorById(FO_ONB.sponsor).name : "&hellip;") + "</button></div></div>";
     var host = foOnbMount(3, body);
     host.querySelectorAll(".fo-pk").forEach(function (b) { b.addEventListener("click", function () { FO_ONB.sponsor = b.getAttribute("data-sp"); foOnbSponsor(); }); });
     host.querySelector("#fo-ob-b").addEventListener("click", foOnbMoney);
     host.querySelector("#fo-ob-c").addEventListener("click", function () {
-      if (!FO_ONB.sponsor) { say("Pick a sponsor first — this deal pays you every matchday all season."); return; }
+      if (!FO_ONB.sponsor) { say("Pick a sponsor first. This deal pays you every matchday all season."); return; }
       foOnbDraft();
     });
   }
@@ -10289,9 +10286,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ["sponsors", "Sponsor deals: a bet on yourself", [
         "<p>At founding you signed one of three deals. Each pays every matchday, all season; they differ in how much of your money rides on results:</p>",
         "<table><tr><th>Deal</th><th>Character</th><th>Best for</th></tr>" +
-        "<tr><td><b>Community Trust</b></td><td>The biggest guaranteed payment in the league, and not a cent more, whatever happens.</td><td>Rebuilds, heavy academy spenders, and honest mid-table sides.</td></tr>" +
-        "<tr><td><b>Results Deal</b></td><td>A slightly smaller base, plus a solid bonus for every win. Comes out ahead of the Trust around a winning season: ten or more wins.</td><td>Good sides that expect a winning record but wouldn&rsquo;t bet the house on a trophy.</td></tr>" +
-        "<tr><td><b>Contender Deal</b></td><td>The smallest base, the biggest per-win bonus, and rich milestone cheques for sitting top-three at halfway, finishing top-three, and winning the title. A genuine title season out-earns everything by a distance; a mediocre one costs you six figures.</td><td>Squads built to win now, and managers who mean it.</td></tr></table>",
+        "<tr><td><b>Oakfield &amp; Sons</b></td><td>The biggest guaranteed payment in the league, and not a cent more, whatever happens.</td><td>Rebuilds, heavy academy spenders, and honest mid-table sides.</td></tr>" +
+        "<tr><td><b>Vantage Athletic</b></td><td>A slightly smaller base, plus a solid bonus for every win. Comes out ahead of Oakfield around a winning season: ten or more wins.</td><td>Good sides that expect a winning record but wouldn&rsquo;t bet the house on a trophy.</td></tr>" +
+        "<tr><td><b>Meridian Air</b></td><td>The smallest base, the biggest per-win bonus, and rich milestone cheques for sitting top-three at halfway, finishing top-three, and winning the title. A genuine title season out-earns everything by a distance; a mediocre one costs you six figures.</td><td>Squads built to win now, and managers who mean it.</td></tr></table>",
         "<p>Choose based on a realistic estimate of your squad&rsquo;s strength: each deal is the best option within a specific band of expected wins.</p>"
       ].join("")],
       ["training", "Training: where seasons compound", [
