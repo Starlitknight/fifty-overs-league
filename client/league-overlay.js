@@ -1618,7 +1618,7 @@
         "<div class='fo-ch-crest'><img src='" + APPICON + "' alt=''></div><div>" +
         "<div class='fo-ch-eyebrow'>Club home</div><h1 class='fo-ch-name'>" + E(t.name) + "</h1>" +
         "<div class='fo-ch-chips'><span class='fo-ch-chip'>Season " + (App.seasonNo || 1) + "</span><span class='fo-ch-chip'>Round " + (Math.min((S ? S.round : 0) + 1, (S && S.schedule ? S.schedule.length : 9))) + "</span><span class='fo-ch-chip'>" + dateStr + "</span></div>" +
-        "</div></div><div class='fo-ch-hero-r'>" + formPill + "</div></div>";
+        "</div></div><div class='fo-ch-hero-r'>" + formPill + " <a class='fo-hero-pill' href='#/museum' style='text-decoration:none;cursor:pointer'>&#127963; Museum</a></div></div>";
 
       // ---- season momentum strip: progress bar + streak + goal-gradient nudge ----
       var strip = "<div class='fo-season-strip'>" +
@@ -7533,8 +7533,14 @@
         (srows ? "<table><tr><th></th><th class='n'>Inns</th><th class='n'>Runs</th><th class='n'>HS</th><th class='n'>Wkts</th><th class='n'>Best</th></tr>" + srows + "</table>" : "") +
         "<div class='small' style='margin:9px 0 4px;text-transform:uppercase;letter-spacing:.07em;font-size:10px;color:#8a93a3'>Moments</div>" + evs +
         "</div></div>";
-      var first = page.querySelector(".panel");
-      if (first && first.parentNode) first.parentNode.insertBefore(card, first); else page.appendChild(card);
+      // below the Skills panel: the present first, then the story
+      var panels = Array.prototype.slice.call(page.querySelectorAll(".panel"));
+      var skills = panels.filter(function (pn) {
+        var h = pn.querySelector("h4");
+        return h && /^Skills$/i.test((h.textContent || "").trim());
+      })[0] || panels[panels.length - 1];
+      if (skills && skills.parentNode) skills.parentNode.insertBefore(card, skills.nextSibling);
+      else page.appendChild(card);
     } catch (e) {}
   }
 
