@@ -921,6 +921,13 @@
     ".fo-pitch.on{border-color:#C0562F !important;box-shadow:0 0 0 2px rgba(192,86,47,.28) !important;background:#fdf9ef !important}" +
     ".fo-pitch.on b::after{content:' \\2713';color:#C0562F}" +
     ".fo-pk.on{border-color:#C0562F !important;box-shadow:0 0 0 2px rgba(192,86,47,.28) !important;background:#fdf9ef !important}" +
+    ".fo-orders-bar{position:sticky;top:0;z-index:30;background:rgba(245,241,230,.97);backdrop-filter:blur(4px);border-bottom:1px solid #e2ddd0;padding:10px 2px;margin-bottom:12px}" +
+    ".fo-coach-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}" +
+    ".fo-autopick{background:#C0562F !important;color:#fff !important;border:0;border-radius:9px;padding:10px 18px;font-weight:800;font-size:13.5px;cursor:pointer;box-shadow:0 3px 10px rgba(192,86,47,.3)}" +
+    ".fo-coach-hint{font-size:12px;color:#8a8474}" +
+    ".fo-ready{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}" +
+    ".fo-rdy{font-size:11.5px;font-weight:700;border-radius:999px;padding:4px 11px;background:#f3efe4;border:1px solid #e2ddd0;color:#8a8474}" +
+    ".fo-rdy.ok{background:#eef4ee;border-color:#d5e0d7;color:#2f6b46}" +
     ".fo-br-closure{margin-top:18px;font-size:14px;line-height:1.7;color:#3c4658}" +
     ".fo-br-closure p{margin:0 0 10px}" +
     ".fo-br-luck{font-weight:800;color:#12203a}" +
@@ -1756,16 +1763,48 @@
   }
   function foOrdersExtras() {
     try {
-      if (location.hash.indexOf("#/orders") !== 0) return;
+      if (location.hash.indexOf("#/orders") !== 0) { if (window.__foOrdT) { clearInterval(window.__foOrdT); window.__foOrdT = null; } return; }
       var page = document.getElementById("page"); if (!page || page.querySelector(".fo-orders-bar")) return;
       var prev = foPreviousOrders();
       var bar = document.createElement("div"); bar.className = "fo-orders-bar";
-      bar.innerHTML = "<button class='fo-copyprev'" + (prev ? "" : " disabled title='No previous lineup saved yet'") + ">⧉ Copy previous match orders</button>" +
-        "<span class='small'>Reuse your last batting order, captain, keeper and bowling plan.</span>";
+      bar.innerHTML =
+        "<div class='fo-coach-row'>" +
+        "<button class='fo-autopick'>&#9889; Auto-pick everything</button>" +
+        "<button class='fo-copyprev'" + (prev ? "" : " disabled title='No previous lineup saved yet'") + ">&#10697; Copy previous</button>" +
+        "<span class='fo-coach-hint'>Fill it in one tap, then adjust anything below.</span></div>" +
+        "<div class='fo-ready' id='fo-ready'></div>";
       var anchor = page.querySelector(".crumb");
       if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(bar, anchor.nextSibling); else page.insertBefore(bar, page.firstChild);
       var btn = bar.querySelector(".fo-copyprev");
       if (btn && prev) btn.addEventListener("click", function () { foApplyPrevOrders(prev); });
+      bar.querySelector(".fo-autopick").addEventListener("click", function () {
+        try {
+          if (typeof suggestOrders === "function") suggestOrders();
+          if (typeof window.pgOrders === "function") window.pgOrders();
+          toast("XI, captain, keeper and bowling plan filled. Adjust anything, then save.");
+          setTimeout(foOrdersExtras, 60);   // page repainted: re-attach the bar
+        } catch (e) { say(e); }
+      });
+      // live readiness: the page tells you what is still missing
+      var paint = function () {
+        var el = document.getElementById("fo-ready"); if (!el) return;
+        var o = (typeof App !== "undefined" && App.orders) || {};
+        var chip = function (ok, lbl) { return "<span class='fo-rdy" + (ok ? " ok" : "") + "'>" + (ok ? "&#10003; " : "&#9675; ") + lbl + "</span>"; };
+        var xi = (o.batOrder || []).filter(Boolean).length;
+        var overs = 0; try { overs = (o.compiled || []).filter(Boolean).length; } catch (e) {}
+        el.innerHTML =
+          chip(xi >= 11, "Batting order (" + Math.min(xi, 11) + "/11)") +
+          chip(!!o.captain, "Captain") +
+          chip(!!o.keeper, "Keeper") +
+          chip(overs >= 50, "Bowling plan (" + Math.min(overs, 50) + "/50 overs)") +
+          chip(!!o.saved, o.saved ? "Saved" : "Not saved yet");
+      };
+      paint();
+      if (window.__foOrdT) clearInterval(window.__foOrdT);
+      window.__foOrdT = setInterval(function () {
+        if (location.hash.indexOf("#/orders") !== 0 || !document.getElementById("fo-ready")) { clearInterval(window.__foOrdT); window.__foOrdT = null; return; }
+        paint();
+      }, 900);
     } catch (e) {}
   }
   // Tag #page while a live match is on screen, so the mobile reorder CSS applies
