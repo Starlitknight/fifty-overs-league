@@ -5314,10 +5314,13 @@
   function foOnAnyRoster(name) {
     try { return GD.teams.some(function (t2) { return (t2.players || []).concat(t2.youth || []).some(function (x) { return x.name === name; }); }); } catch (e) { return false; }
   }
+  var FO_MARKET_REFRESH = 3;   // matchdays between full restocks
+  function foMarketWindow() { return Math.floor((((App.season && App.season.round) || 0)) / FO_MARKET_REFRESH); }
+  function foMarketRefreshIn() { return FO_MARKET_REFRESH - ((((App.season && App.season.round) || 0)) % FO_MARKET_REFRESH); }
   function foMarketPool() {
     var t = foMyClub(); if (!t) return [];
     var season = (typeof App !== "undefined" && App.seasonNo) || 1;
-    var seed = (LG ? LG.id : "solo") + "-market-s" + season;
+    var seed = (LG ? LG.id : "solo") + "-market-s" + season + "-w" + foMarketWindow();
     var seen = {}, byCls = { bat: [], pace: [], spin: [], keep: [], ar: [] };
     var countries = [(SYNC && SYNC.myTeam && SYNC.myTeam.country) || "England", "Australia", "India", "South Africa", "New Zealand", "West Indies"];
     for (var c = 0; c < countries.length; c++) {
@@ -5357,8 +5360,7 @@
         taken++;
       }
     });
-    var rareRank = function (p) { return p.bowlTypeFull === "seamFast" ? 2 : p.bowlTypeFull === "wristSpin" ? 1 : 0; };
-    out.sort(function (a, b) { return rareRank(b) - rareRank(a) || (b.rating || 0) - (a.rating || 0); });
+    out.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
     return out.slice(0, 18);
   }
   function foMarketPage() {
@@ -5392,7 +5394,7 @@
         else if (pending) act = "<div class='fo-mk-gone'>Joining after next matchday</div>";
         else act = "<button class='fo-yc-sign fo-mk-claim' data-i='" + i + "'" + (bank < p.fee ? " disabled title='Not enough in the bank'" : "") + ">Sign · " + FO$(p.fee) + "</button>";
         return "<div class='fo-yc" + (claim ? " fo-mk-claimed" : "") + (rare && !claim ? " fo-mk-rare" : "") + "'>" +
-          (rare && !claim ? "<div class='fo-mk-rareband'>&#9733; Rare &middot; " + rare + "</div>" : "") +
+          (rare && !claim ? "<div class='fo-mk-rareband'>&#9670; Rare &middot; " + rare + "</div>" : "") +
           "<div class='fo-yc-h'>" + flag + " <b class='fo-mk-view' data-i='" + i + "'>" + E(p.name) + "</b></div>" +
           "<div class='fo-yc-meta'>" + foRoleShort(p) + " · age " + p.age + " · OVR " + ((p.rating || 0) / 1000).toFixed(1) + "</div>" +
           "<div class='fo-yc-bars'>" + barHtml + "</div>" +
@@ -5400,9 +5402,9 @@
       }).join("");
       page.innerHTML =
         "<div class='crumb'>" + E(t.name) + " &raquo; Transfers</div>" +
-        "<div class='page-head'><div><div class='eyebrow'>Free agents</div><h1>Transfer market</h1><p>One shared pool for the whole league · when a club signs a player, they're gone for everyone. First come, first served.</p></div></div>" +
-        "<div class='panel'><h4>Available this season</h4><div class='pad'>" +
-        "<div class='fo-yc-note'>Bank: <b>" + FO$(bank) + "</b> · Squad: <b>" + t.players.length + "/18</b>. Signings join your squad after the next matchday resolves.</div>" +
+        "<div class='page-head'><div><div class='eyebrow'>Free agents</div><h1>Transfer market</h1><p>One shared pool for the whole league · when a club signs a player, they're gone for everyone. First come, first served. Fresh names every " + FO_MARKET_REFRESH + " matchdays.</p></div></div>" +
+        "<div class='panel'><h4>On the market &middot; restocks in " + foMarketRefreshIn() + " matchday" + (foMarketRefreshIn() === 1 ? "" : "s") + "</h4><div class='pad'>" +
+        "<div class='fo-yc-note'>Bank: <b>" + FO$(bank) + "</b> · Squad: <b>" + t.players.length + "/18</b>. Signings join your squad after the next matchday resolves. The whole shelf is replaced every " + FO_MARKET_REFRESH + " matchdays &middot; unsigned players move on.</div>" +
         "<div class='fo-ycs'>" + cards + "</div></div></div>";
       page.querySelectorAll(".fo-mk-claim").forEach(function (b) { b.addEventListener("click", function () { foMarketClaim(pool[+b.getAttribute("data-i")]); }); });
       page.querySelectorAll(".fo-mk-view").forEach(function (b) { b.addEventListener("click", function () { foYouthDetail(pool[+b.getAttribute("data-i")], true); }); });
@@ -5567,11 +5569,12 @@
         "<li>Signings join when the next matchday resolves. Put them straight on a training program; that&rsquo;s what you bought them for.</li></ul>"
       ].join("")],
       ["market", "The transfer market", [
-        "<p>The <b>Transfers</b> tab holds the season&rsquo;s pool of <b>18 established free agents</b>: proven players, 21 and up, one of each trade from six cricket nations. Every club sees the same pool, all season, and it <b>never restocks</b>.</p>",
-        "<ul><li><b>First come, first served, league-wide.</b> When any club signs a player he is removed for everyone, the card shows who signed him, and the league is notified. If a player fixes a real weakness in your squad, delaying gives rivals the chance to sign him first.</li>",
+        "<p>The <b>Transfers</b> tab holds a shelf of <b>18 established free agents</b>: proven players, 21 and up, a spread of trades from six cricket nations. Every club sees the same shelf, and it is <b>completely restocked every 3 matchdays</b>: unsigned players move on and 18 new names arrive, so there is always something to look forward to.</p>",
+        "<ul><li><b>First come, first served, league-wide.</b> When any club signs a player he is removed for everyone, the card shows who signed him, and the league is notified. If a player fixes a real weakness in your squad, waiting for the next shelf gives rivals the chance to sign him first &ndash; and he may not be there after the restock.</li>",
+        "<li>Fees answer to the player: skills, age (young costs more), talents, and <b>bowling-style rarity</b>. Genuine fast bowlers and wrist spinners are the rarest things in the game; when one is listed the card wears a gold <b>&#9670; Rare</b> ribbon, and the fee carries the premium to match.</li>",
         "<li>Fees carry a mid-season premium and wages start the day he arrives. The question is never &ldquo;is he good?&rdquo; It&rsquo;s &ldquo;is he worth more to me than the reserve he empties?&rdquo;</li>",
         "<li>Signings join after the next matchday resolves, squad cap 18.</li></ul>",
-        "<div class='fo-man-tip'><b>Suggestion:</b> decide early which two or three players you would sign and at what bank balance, so the decision is already made when the moment comes.</div>"
+        "<div class='fo-man-tip'><b>Suggestion:</b> check the market after every restock. Decide early which weaknesses you would pay to fix and at what bank balance, so the decision is already made when the right name appears.</div>"
       ].join("")],
       ["league", "The table, the run rate, the prizes", [
         "<p>Ten clubs, a full round robin, one round a day. Two points a win; ties and washouts split one. Level on points, <b>net run rate</b> decides, so a ten-run win chased lazily and a ten-run win chased hard are not the same result. Margins are money.</p>",
