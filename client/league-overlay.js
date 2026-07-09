@@ -951,6 +951,7 @@
     ".fo-setr-done{background:#2f6b46 !important;color:#fff !important;border-color:#2f6b46 !important}" +
     ".fo-setr-done:hover{background:#275a3b !important}" +
     ".fo-next-cta.fo-done{background:#2f6b46 !important;color:#fff !important;border:none;box-shadow:0 3px 10px rgba(47,107,70,.3)}" +
+    ".fo-md-live{color:#ff6b5e;font-weight:800;letter-spacing:.08em;animation:foPulse 1.6s ease-in-out infinite;background:rgba(255,107,94,.12);border-radius:8px;padding:6px 12px}" +
     ".fo-br-closure{margin-top:18px;font-size:14px;line-height:1.7;color:#3c4658}" +
     ".fo-br-closure p{margin:0 0 10px}" +
     ".fo-br-luck{font-weight:800;color:#12203a}" +
@@ -1864,61 +1865,81 @@
       });
     } catch (e) {}
   }
-  // ---- live friendly survives closing the app ------------------------------
-  // The engine is deterministic per seed, so we persist {pending, orders,
-  // deliveries} while a friendly is live and resume by replaying silently to
-  // the same delivery count when the manager comes back.
+  // ---- live friendlies run on the WALL CLOCK -------------------------------
+  // A friendly plays at 10s a delivery whether the app is open or not. We
+  // persist {seed, orders, toss, startAt}; on return we replay silently to
+  // where the clock says the match should be. Come back after ~100 minutes
+  // and it has finished: the result is in your friendly history.
   function foFrKey() { return "fol_livefr_" + (LG ? LG.id : "solo"); }
+  function foFrHistKey() { return "fol_frhist_" + (LG ? LG.id : "solo"); }
+  var FO_BALL_MS = 10000;
+  function foFrHist() { try { return JSON.parse(lsGet(foFrHistKey()) || "[]"); } catch (e) { return []; } }
+  function foSaveFrHist(m) {
+    try {
+      var i1 = m.innings[0], i2 = m.innings[1];
+      var h = foFrHist();
+      h.unshift({
+        at: Date.now(), opp: (m.meta && m.meta.away) || "", ground: (m.meta && m.meta.ground) || "",
+        txt: (m.result && m.result.text) || "", mom: (m.result && m.result.mom) || "",
+        s1: i1 ? i1.batTeam + " " + i1.runs + "/" + i1.wkts : "", s2: i2 ? i2.batTeam + " " + i2.runs + "/" + i2.wkts : ""
+      });
+      lsSet(foFrHistKey(), JSON.stringify(h.slice(0, 20)));
+    } catch (e) {}
+  }
   function foFriendlyKeeper() {
     try {
       var live = (typeof M !== "undefined") && M && !M.done && M.meta && M.meta.__friendly;
       if (live) {
         var now = Date.now();
+        var raw0 = lsGet(foFrKey()), st0 = null; try { st0 = JSON.parse(raw0 || "null"); } catch (e) {}
+        var startAt = (st0 && st0.startAt) || (now - (M.log || []).length * FO_BALL_MS);
         if (!foFriendlyKeeper._t || now - foFriendlyKeeper._t > 4000) {
           foFriendlyKeeper._t = now;
           var tossCall = (App.tossState && App.tossState.call) || App.orders.tossCall || "H";
           var userBatFirst = M.batFirstTeam === (M.user && M.user.name);
           lsSet(foFrKey(), JSON.stringify({
-            pending: M.meta, orders: App.orders,
-            toss: { call: tossCall, decision: App.orders.tossDecision || (userBatFirst ? "bat" : "bowl") },
-            logLen: (M.log || []).length, at: now
+            pending: M.meta, orders: App.orders, startAt: startAt,
+            toss: { call: tossCall, decision: App.orders.tossDecision || (userBatFirst ? "bat" : "bowl") }
           }));
         }
         return;
       }
-      if (typeof M !== "undefined" && M && M.done && M.meta && M.meta.__friendly) { lsSet(foFrKey(), ""); return; }
-      // nothing live: offer to resume a stored one, once per session
-      if (SYNC && !SYNC.__frAsked) {
+      if (typeof M !== "undefined" && M && M.done && M.meta && M.meta.__friendly) {
+        if (!M.__foArchived) { M.__foArchived = 1; foSaveFrHist(M); }
+        lsSet(foFrKey(), "");
+        return;
+      }
+      // nothing live: if a friendly is stored, move it to where the clock says
+      if (SYNC && !SYNC.__frSynced) {
         var raw = lsGet(foFrKey()); if (!raw) return;
         var st = null; try { st = JSON.parse(raw); } catch (e) {}
-        if (!st || !st.pending || !st.orders) { return; }
-        SYNC.__frAsked = 1;
+        if (!st || !st.pending || !st.orders || !st.startAt) { return; }
+        SYNC.__frSynced = 1;
         if (typeof GD === "undefined" || !GD.teams || !GD.teams.length) return;
-        foConfirm({
-          title: "Resume your friendly?",
-          body: "You have a live practice match vs <b>" + E(st.pending.away || "the opposition") + "</b> from earlier. Pick it up where you left off?",
-          confirm: "Resume match", cancel: "Abandon it"
-        }).then(function (ok) {
-          if (!ok) { lsSet(foFrKey(), ""); return; }
-          try {
-            App.orders = st.orders; App.orders.saved = true;
-            App.orders.tossCall = (st.toss && st.toss.call) || "H";
-            App.orders.tossDecision = (st.toss && st.toss.decision) || "bat";
-            App.pending = st.pending;
-            var prevPage = App.page; App.page = "__resolve__";   // render no-ops
-            try { M = null; } catch (e) {}
-            if (typeof startPendingIfNeeded === "function") startPendingIfNeeded();
-            // the coin-flip animation is async; resolve the toss synchronously
-            if (App.tossState && App.tossState.stage !== "done" && typeof resolveToss === "function") resolveToss(App.orders.tossCall || "H");
-            var guard = 0;
-            while (M && !M.done && (M.log || []).length < st.logLen && guard++ < 800) {
-              if (typeof stepBall === "function") stepBall(); else break;
-            }
-            App.page = prevPage;
+        var target = Math.floor((Date.now() - st.startAt) / FO_BALL_MS);
+        try {
+          App.orders = st.orders; App.orders.saved = true;
+          App.orders.tossCall = (st.toss && st.toss.call) || "H";
+          App.orders.tossDecision = (st.toss && st.toss.decision) || "bat";
+          App.pending = st.pending;
+          var prevPage = App.page; App.page = "__resolve__";
+          try { M = null; } catch (e) {}
+          if (typeof startPendingIfNeeded === "function") startPendingIfNeeded();
+          if (App.tossState && App.tossState.stage !== "done" && typeof resolveToss === "function") resolveToss(App.orders.tossCall || "H");
+          var guard = 0;
+          while (M && !M.done && (M.log || []).length < target && guard++ < 800) {
+            if (typeof stepBall === "function") stepBall(); else break;
+          }
+          App.page = prevPage;
+          if (M && M.done) {
+            M.__foArchived = 1; foSaveFrHist(M); lsSet(foFrKey(), "");
+            toast("Full time in your friendly: " + ((M.result && M.result.text) || "match complete") + " — scorecard in Live Match.");
             location.hash = "#/match"; if (typeof window.route === "function") window.route();
-            toast("Back at the ground: resuming vs " + (st.pending.away || "") + ".");
-          } catch (e) { say(e); lsSet(foFrKey(), ""); }
-        });
+          } else if (M) {
+            toast("Your friendly has moved on with the clock — over " + Math.floor(((M.innings[1] ? 300 : 0) + (M.innings[M.innings[1] ? 1 : 0] || {}).legal || 0) / 6) + " now. Rejoining live.");
+            location.hash = "#/match"; if (typeof window.route === "function") window.route();
+          }
+        } catch (e) { lsSet(foFrKey(), ""); }
       }
     } catch (e) {}
   }
@@ -4603,7 +4624,18 @@
     var results = foLeagueRounds()[rd] || [];
     var seenKey = "fol_md_" + ((LG && LG.id) || "solo") + "_" + rd;
     var seen = !!lsGet(seenKey);
-    if (FO_MD.round !== rd) { FO_MD.round = rd; FO_MD.t = seen ? 101 : 0; }
+    // LIVE window: the round resolves at 9:00 AM ET and "broadcasts" at one
+    // over a minute. Visit inside the window and the replay is already at the
+    // right over; everyone in the league sees the same moment.
+    var liveT = null;
+    try {
+      var f = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour12: false, hour: "2-digit", minute: "2-digit" });
+      var p = {}; f.formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; });
+      var mins = (+p.hour) * 60 + (+p.minute) - 9 * 60;
+      if (mins >= 0 && mins <= 100 && SYNC && SYNC.started && !SYNC.practice) liveT = Math.max(0.5, Math.min(100, mins));
+    } catch (e) {}
+    if (FO_MD.round !== rd) { FO_MD.round = rd; FO_MD.t = liveT != null ? liveT : (seen ? 101 : 0); }
+    else if (liveT != null && !FO_MD.timer && FO_MD.t < liveT) FO_MD.t = liveT;
     var my = ""; try { my = userTeam().name; } catch (e) {}
     var cards = results.map(function (r, i) {
       var mine = (r.home === my || r.away === my) ? " style='border-color:#C0562F'" : "";
@@ -4616,7 +4648,8 @@
     page.innerHTML =
       "<div class='crumb'>Matchday</div>" +
       "<div class='page-head'><div><div class='eyebrow'>Round " + (rd + 1) + "</div><h1>Matchday centre</h1><p>Every game of the round, ball by ball. Press play and watch it unfold.</p></div></div>" +
-      "<div class='fo-md-bar'><button id='fo-md-play'>" + (FO_MD.t > 100 ? "Replay" : "Play") + "</button>" +
+      "<div class='fo-md-bar'>" + (liveT != null ? "<span class='fo-md-live'>&#9679; LIVE</span>" : "") +
+      "<button id='fo-md-play'>" + (FO_MD.t > 100 ? "Replay" : "Play") + "</button>" +
       "<button class='fo-ghost' id='fo-md-speed'>" + FO_MD.speed + "×</button>" +
       "<button class='fo-ghost' id='fo-md-skip'>Skip to result</button>" +
       "<span class='fo-md-over' id='fo-md-over'></span><span class='fo-md-track'><u id='fo-md-prog'></u></span></div>" +
@@ -4681,6 +4714,7 @@
     });
     page.querySelector("#fo-md-skip").addEventListener("click", function () { stop(); FO_MD.t = 101; paint(); var b = document.getElementById("fo-md-play"); if (b) b.textContent = "Replay"; });
     paint();
+    if (liveT != null && FO_MD.t <= 100) run();       // live window: rolling by itself
     foRenderPredictions();
   }
   function foRenderMatchday() {
@@ -5004,6 +5038,20 @@
     try {
       if (App.page !== "matches" || !(SYNC && SYNC.started) || SYNC.practice) return;
       var page = document.getElementById("page"); if (!page) return;
+      // friendlies live in their own history, separate from the league record
+      if (!page.querySelector("#fo-frhist")) {
+        var fh = foFrHist();
+        if (fh.length) {
+          var rows2 = fh.map(function (e) {
+            var d = new Date(e.at).toLocaleDateString([], { month: "short", day: "numeric" });
+            return "<tr><td>" + d + "</td><td>vs " + E(e.opp) + "</td><td>" + E(e.s1) + (e.s2 ? " · " + E(e.s2) : "") + "</td><td><b>" + E(e.txt) + "</b></td></tr>";
+          }).join("");
+          var pnl = document.createElement("div");
+          pnl.className = "panel"; pnl.id = "fo-frhist";
+          pnl.innerHTML = "<h4>Friendlies</h4><div class='pad'><table><tr><th>Date</th><th>Opponent</th><th>Scores</th><th>Result</th></tr>" + rows2 + "</table></div>";
+          page.appendChild(pnl);
+        }
+      }
       page.querySelectorAll('tr[style*="eef4ee"], tr[style*="eef8fb"]').forEach(function (tr) {
         if (tr.__foSetr) return;
         var cells = tr.querySelectorAll("td"); if (cells.length < 5) return;
