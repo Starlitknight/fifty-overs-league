@@ -477,6 +477,8 @@
     "#page tr.fo-rnd-head>td{background:#12203a !important;color:#F6F4EE !important;font-weight:800;font-size:12.5px;padding:9px 12px;border-top:16px solid transparent;background-clip:padding-box}" +
     "#page tr.fo-rnd-head b,#page tr.fo-rnd-head span{color:#F6F4EE !important}" +
     ".fo-setr-done{background:#2f6b46 !important;color:#fff !important;border-color:#2f6b46 !important}" +
+    "#fo-update-pill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:2147483200;background:#0B1322;color:#F6F4EE;border:1px solid rgba(246,244,238,.25);border-radius:999px;padding:11px 20px;font:600 13.5px Inter,-apple-system,'Segoe UI',sans-serif;box-shadow:0 12px 34px -10px rgba(0,0,0,.55);cursor:pointer;max-width:92vw;text-align:center}" +
+    "#fo-update-pill b{color:#E8A87C}" +
     // live match viewer: links rail | BIG commentary | compact score+details rail
     ".wrap.fo-matchwide,body.ftpskin .wrap.fo-matchwide{max-width:min(1460px,96vw) !important}" +
     "#page.fo-matchpage{display:grid;grid-template-columns:170px minmax(0,1fr) 300px;gap:0 16px;align-items:start;grid-template-areas:'mcrumb mcrumb mcrumb' 'mlinks mbody mside';max-width:1460px !important}" +
@@ -2533,12 +2535,45 @@
       foWirePlanner(page);
     } catch (e) {}
   }
+  // ---- build identity + self-update ----------------------------------------
+  // GitHub Pages caches each URL for ~10 minutes per CDN node and the browser
+  // caches on top, so different loads can serve DIFFERENT builds. Every build
+  // is stamped (build.sh replaces the placeholder) and version.json says what
+  // is actually deployed; when they disagree, one tap reloads with a
+  // cache-busting query that forces the CDN to hand over the new build.
+  var FO_BUILD = "__FO_BUILD__";
+  try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
+  function foBase() {
+    return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
+  }
+  function foCheckUpdate() {
+    try {
+      if (/^file:/.test(location.protocol) || FO_BUILD.indexOf("__") === 0) return;
+      fetch(foBase() + "version.json?t=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (v) {
+        if (!v || !v.build || v.build === FO_BUILD) return;
+        if (foCheckUpdate._seen === v.build) return;
+        foCheckUpdate._seen = v.build;
+        var live = false; try { live = (typeof M !== "undefined") && M && !M.done; } catch (e) {}
+        var el = document.createElement("div");
+        el.id = "fo-update-pill";
+        el.innerHTML = "A new version is ready &mdash; <b>tap to update</b>" + (live ? " (your live match resumes at the right over)" : "");
+        el.addEventListener("click", function () {
+          location.replace(location.pathname + "?v=" + encodeURIComponent(v.build) + location.hash);
+        });
+        var old = document.getElementById("fo-update-pill"); if (old) old.remove();
+        document.body.appendChild(el);
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  setTimeout(foCheckUpdate, 8000);
+  setInterval(foCheckUpdate, 240000);
   function tickClock() {
     try {
       var c = document.getElementById("fo-clock"); if (!c) return;
       var d = new Date();
       c.textContent = d.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short" }) + " " +
         d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      if (!c.title) c.title = "Build " + FO_BUILD;
     } catch (e) {}
   }
   setInterval(tickClock, 1000);

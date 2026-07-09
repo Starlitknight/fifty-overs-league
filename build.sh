@@ -17,12 +17,19 @@ OVERLAY="client/league-overlay.js"
 # CSS failsafe reveals the page regardless, so a script failure can't blank the site.
 BOOT='<style id="fo-boot">html{background:#0B1322}html>body{visibility:hidden;animation:fo-boot-reveal .01s 4s forwards}@keyframes fo-boot-reveal{to{visibility:visible}}</style>'
 
+# Every build gets a unique stamp (UTC time + overlay content hash). The overlay
+# shows it (console + clock tooltip) and polls version.json to offer one-tap
+# updates when the deployed build is newer than the one the CDN handed out.
+BUILD_ID="$(date -u +%Y%m%d-%H%M)-$(sha256sum "$OVERLAY" | cut -c1-6)"
+
 build() {
-  { sed "s|<head>|<head>$BOOT|" "$ENGINE"; printf '\n<script id="fo-league-overlay">\n'; cat "$OVERLAY"; printf '\n</script>\n'; } > "$1"
+  { sed "s|<head>|<head>$BOOT|" "$ENGINE"; printf '\n<script id="fo-league-overlay">\n'; sed "s|__FO_BUILD__|$BUILD_ID|g" "$OVERLAY"; printf '\n</script>\n'; } > "$1"
   echo "built $1 ($(wc -c < "$1") bytes)"
 }
 
 build index.html
 build client/game.html
+printf '{"build":"%s"}\n' "$BUILD_ID" > version.json
 
+echo "build id: $BUILD_ID"
 echo "engine sha256: $(sha256sum "$ENGINE" | cut -d' ' -f1)"
