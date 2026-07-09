@@ -6829,6 +6829,32 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     "#page tr.fo-rnd-head>td{background:#12203a !important;color:#F6F4EE !important;font-weight:800;font-size:12.5px;padding:9px 12px;border-top:16px solid transparent;background-clip:padding-box}" +
     "#page tr.fo-rnd-head b,#page tr.fo-rnd-head span{color:#F6F4EE !important}" +
     ".fo-setr-done{background:#2f6b46 !important;color:#fff !important;border-color:#2f6b46 !important}" +
+    // live match viewer: links rail | BIG commentary | compact score+details rail
+    ".wrap.fo-matchwide,body.ftpskin .wrap.fo-matchwide{max-width:min(1460px,96vw) !important}" +
+    "#page.fo-matchpage{display:grid;grid-template-columns:170px minmax(0,1fr) 300px;gap:0 16px;align-items:start;grid-template-areas:'mcrumb mcrumb mcrumb' 'mlinks mbody mside';max-width:1460px !important}" +
+    "#page.fo-matchpage>.crumb{grid-area:mcrumb}" +
+    "#page.fo-matchpage .ftp-match-shell{display:contents}" +
+    "#page.fo-matchpage .ftp-match-links{grid-area:mlinks;margin-top:0}" +
+    "#page.fo-matchpage .ftp-match-body{grid-area:mbody;min-width:0;margin-top:0}" +
+    "#page.fo-matchpage .mc-top{grid-area:mside;display:flex !important;flex-direction:column !important;gap:12px;margin:0;grid-template-columns:none !important}" +
+    "#page.fo-matchpage .mc-top .panel{margin:0;width:auto}" +
+    "#page.fo-matchpage .mc-score .scorebig{font-size:26px}" +
+    "#page.fo-matchpage .mc-score .pad,#page.fo-matchpage .mc-details .pad{padding:10px 12px;font-size:12.5px}" +
+    "#page.fo-matchpage .mc-details table.kv{font-size:12px}" +
+    "#page.fo-matchpage .mc-details .fo-detart{display:none}" +
+    "#page.fo-matchpage .ftp-match-body .commfeed,#page.fo-matchpage .ftp-match-body #ftpcomm{max-height:calc(100vh - 240px) !important;min-height:58vh;overflow-y:auto}" +
+    "#page.fo-matchpage .ftp-match-body .line,#page.fo-matchpage .ftp-match-body .four,#page.fo-matchpage .ftp-match-body .six{font-size:13.5px;line-height:1.55}" +
+    "@media(max-width:980px){" +
+      "#page.fo-matchpage{display:flex;flex-direction:column;gap:12px}" +
+      "#page.fo-matchpage .mc-top{display:contents}" +
+      "#page.fo-matchpage>.crumb{order:0}" +
+      "#page.fo-matchpage .mc-score{order:1}" +
+      "#page.fo-matchpage .ftp-match-links{order:2;display:flex;flex-direction:row;overflow-x:auto;gap:6px;padding:6px}" +
+      "#page.fo-matchpage .ftp-match-links a{white-space:nowrap}" +
+      "#page.fo-matchpage .ftp-match-links h4{display:none}" +
+      "#page.fo-matchpage .ftp-match-body{order:3}" +
+      "#page.fo-matchpage .mc-details{order:4}" +
+    "}" +
     ".fo-md-track{flex:1;height:6px;border-radius:99px;background:rgba(246,244,238,.15);min-width:120px}" +
     ".fo-md-track u{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#4DA6A2,#C0562F);text-decoration:none;width:0}" +
     ".fo-potr{display:flex;gap:14px;align-items:center;background:linear-gradient(135deg,#0B1322,#1C2433);border-radius:13px;padding:16px 18px;margin-top:14px;color:#d7dbe2}" +
@@ -8525,11 +8551,36 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     } catch (e) {}
   }
   function foHashPath() { return (location.hash || "").split("?")[0]; }   // "#/match" not "#/matches"
+  // Some log lines already carry the "Bowler to Striker :" prefix that the
+  // renderer prepends again - strip the duplicate before any feed renders.
+  try {
+    if (typeof window.ftpCommHTML === "function" && !window.ftpCommHTML.__fo) {
+      var _ftpC = window.ftpCommHTML;
+      window.ftpCommHTML = function (log, filter, limit) {
+        var clean = (log || []).map(function (L) {
+          try {
+            if (L && L.bowlerNm && L.strikerNm && L.txt) {
+              var pre = String(L.bowlerNm).split(" ").slice(-1)[0] + " to " + String(L.strikerNm).split(" ").slice(-1)[0] + " : ";
+              if (L.txt.indexOf(pre) === 0) {
+                var c = {}; for (var k in L) c[k] = L[k];
+                c.txt = L.txt.slice(pre.length);
+                return c;
+              }
+            }
+          } catch (e) {}
+          return L;
+        });
+        return _ftpC.call(this, clean, filter, limit);
+      };
+      window.ftpCommHTML.__fo = 1;
+    }
+  } catch (e) {}
   function foTagMatchPage() {
     try {
       var pg = document.getElementById("page"); if (!pg) return;
       var on = foHashPath() === "#/match" && !!document.querySelector(".mc-top");
       pg.classList.toggle("fo-matchpage", on);
+      if (pg.parentElement) pg.parentElement.classList.toggle("fo-matchwide", on);
       if (on) {
         // broadcast pace: a LIVE match runs 6s a ball (about 30 min an innings,
         // an hour a match); replaying an already-played match runs twice as
