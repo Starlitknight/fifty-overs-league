@@ -9316,7 +9316,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260709-1953-1150cb";
+  var FO_BUILD = "20260709-2000-5a3835";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -12664,27 +12664,33 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "html body.ftpskin button.fo-lab-btn{background:#fff !important;color:#1C2433 !important;border-color:rgba(28,36,51,.2) !important}" +
       "html body.ftpskin button.fo-lab-btn.on{background:#1C2433 !important;color:#fff !important}" +
       ".fo-lab-chips{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}" +
-      ".fo-lab-chip{border:1px solid rgba(28,36,51,.16);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;color:#3a4353;background:#fff;cursor:pointer}" +
+      ".fo-lab-chip{border:1px solid rgba(28,36,51,.14);border-radius:999px;padding:6px 13px;font-size:12px;font-weight:700;color:#3a4353;background:#fff;cursor:pointer;box-shadow:0 1px 3px rgba(11,19,34,.05);transition:border-color .12s ease,color .12s ease}" +
       ".fo-lab-chip:hover{border-color:#C0562F;color:#C0562F}" +
-      ".fo-lab-adv{background:#fff;border:1px solid rgba(28,36,51,.1);border-radius:12px;padding:12px 14px;margin:10px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px 12px}" +
-      ".fo-lab-actions{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}" +
+      ".fo-lab-adv{background:#fff;border:1px solid rgba(28,36,51,.1);border-radius:12px;padding:14px 16px 12px;margin:10px 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px 14px;align-items:end;box-shadow:0 2px 10px rgba(11,19,34,.04)}" +
+      ".fo-lab-adv .fo-nc label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".fo-lab-adv select,.fo-lab-adv input{height:36px;box-sizing:border-box}" +
+      ".fo-lab-advnote{font-size:11.5px;color:#8a93a3;margin:6px 2px 10px}" +
+      ".fo-lab-actions{display:flex;gap:10px;margin:14px 0;flex-wrap:wrap}" +
       ".fo-lab-actions .fo-lab-go{border:1px solid rgba(28,36,51,.2);background:#fff;color:#1C2433;border-radius:10px;padding:11px 18px;font-size:13.5px;font-weight:800;cursor:pointer}" +
       ".fo-lab-actions .fo-lab-go.primary{background:#C0562F;border-color:#C0562F;color:#F6F4EE}" +
       "html body.ftpskin button.fo-lab-go{background:#fff !important;color:#1C2433 !important;border-color:rgba(28,36,51,.2) !important}" +
       "html body.ftpskin button.fo-lab-go.primary{background:#C0562F !important;border-color:#C0562F !important;color:#F6F4EE !important}" +
       ".fo-lab-sweeph{font-size:13px;font-weight:800;color:#1C2433;margin:14px 0 8px}" +
-      ".fo-lab-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}" +
-      ".fo-lab-card{background:#fff;border:1px solid rgba(28,36,51,.1);border-radius:12px;padding:13px 15px;cursor:pointer;transition:box-shadow .12s ease,border-color .12s ease}" +
+      ".fo-lab-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}" +
+      ".fo-lab-card{background:#fff;border:1px solid rgba(28,36,51,.1);border-radius:12px;padding:15px 17px;cursor:pointer;transition:box-shadow .12s ease,border-color .12s ease;box-shadow:0 2px 10px rgba(11,19,34,.04)}" +
       ".fo-lab-card:hover{box-shadow:0 3px 14px rgba(11,19,34,.1)}" +
       ".fo-lab-card.on{border-color:#C0562F;box-shadow:0 0 0 2px rgba(192,86,47,.25)}" +
       ".fo-lab-card h5{margin:0 0 6px;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:#8a93a3}" +
-      ".fo-lab-rpo{font-size:24px;font-weight:800;color:#1C2433}.fo-lab-rpo i{font-style:normal;font-size:12px;color:#8a93a3;font-weight:600;margin-left:3px}" +
+      ".fo-lab-rpo{font-size:27px;font-weight:800;color:#1C2433;letter-spacing:-.01em}.fo-lab-rpo i{font-style:normal;font-size:12px;color:#8a93a3;font-weight:600;margin-left:4px}" +
       ".fo-lab-sub{font-size:12px;color:#5a6472;margin-top:5px;line-height:1.5}" +
       ".fo-lab-read{background:#F0F4F8;border:1px solid rgba(31,78,107,.18);border-radius:12px;padding:14px 16px;margin:12px 0;font-size:13.5px;line-height:1.6;color:#243244}" +
       ".fo-lab-read b{color:#1C2433}" +
       ".fo-lab-read .fo-lab-apply{margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}" +
       ".fo-lab-hon{font-size:11.5px;color:#8a93a3;margin:6px 2px 14px}" +
-      ".fo-lab-res{background:#fff;border:1px solid rgba(28,36,51,.1);border-radius:12px;padding:14px 16px;margin:12px 0}" +
+      ".fo-lab-res{background:#fff;border:1px solid rgba(28,36,51,.1);border-radius:12px;padding:16px 18px;margin:12px 0;box-shadow:0 2px 10px rgba(11,19,34,.04)}" +
+      ".fo-lab-res3{display:grid;grid-template-columns:190px 1fr 1fr;gap:18px;align-items:center}" +
+      ".fo-lab-sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px;vertical-align:-1px}" +
+      "@media(max-width:760px){.fo-lab-res3{grid-template-columns:1fr}}" +
       ".fo-lab-res table{font-size:12.5px}" +
       ".fo-lab-nudge{background:#F6E3B4;border:1px solid #e8cf8c;border-radius:9px;padding:8px 12px;font-size:12.5px;color:#5a4310;font-weight:600;margin-top:10px}" +
       "@media(max-width:900px){.fo-lab-grid{grid-template-columns:1fr 1fr}}" +
@@ -12692,11 +12698,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     document.head.appendChild(foLabCss);
   } catch (e) {}
 
+  var FO_LAB_COL = { dot: "#9aa3b2", "1": "#7cb87c", "2": "#5aa05a", "3": "#3f8f3f", "4": "#2d6a8f", "6": "#1c5537", wicket: "#a33328", extras: "#c8a13a" };
   var FO_INTENTS = [[-1, "Defend"], [0, "Normal"], [1, "Attack"], [2, "Launch"]];
   function foLabPhase(over) { return over < 10 ? "pp" : over >= 40 ? "death" : "mid"; }
   function foLabPhaseName(over) { return over < 10 ? "powerplay" : over >= 40 ? "death overs" : "middle overs"; }
   function foLabPools() {
-    var bt = GD.teams[netsState.batClub] || userTeam(), wt = GD.teams[netsState.bowlClub] || userTeam();
+    // nets are for YOUR squad only — an opponent in the nets would lay their
+    // hidden skill card on the table
+    netsState.batClub = App.teamIx; netsState.bowlClub = App.teamIx;
+    var bt = userTeam(), wt = userTeam();
     var batPool = (bt.players || []).slice().sort(function (a, b) { return aggBat(b) - aggBat(a); });
     var bowlPool = (wt.players || []).filter(function (p) { return p.bowlType; }).sort(function (a, b) { return aggBowl(b) - aggBowl(a); });
     if (!batPool.some(function (p) { return p.name === netsState.bat; })) netsState.bat = batPool.length ? batPool[0].name : null;
@@ -12725,16 +12735,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     else parts.push("Defending still ticks along at " + d.rpo.toFixed(1) + " an over here, the lowest-risk floor");
     var dR = a.rpo - n.rpo;
     if (dR >= 0.8 && (a.outEvery == null || a.outEvery >= 8)) parts.push("attack is the sweet spot in the " + ph + ": +" + dR.toFixed(1) + " rpo over normal for acceptable added risk");
-    else if (dR >= 0.8) parts.push("attack buys +" + dR.toFixed(1) + " rpo but costs a dismissal every " + Math.round(a.outEvery) + " overs — spend wickets knowingly");
+    else if (dR >= 0.8) parts.push("attack buys +" + dR.toFixed(1) + " rpo but costs a dismissal every " + Math.round(a.outEvery * 6) + " balls — spend wickets knowingly");
     else parts.push("attack adds little (+" + dR.toFixed(1) + " rpo over normal) — normal intent already gets most of the value");
-    if (l.outEvery != null && l.outEvery < 6) parts.push("launch only when fewer than " + Math.max(2, Math.round(l.outEvery)) + " overs remain — a dismissal every " + Math.round(l.outEvery) + " overs is a coin flip");
-    else if (l.outEvery != null) parts.push("launch runs at " + l.rpo.toFixed(1) + " an over with a dismissal every " + Math.round(l.outEvery) + " — viable for a final push");
+    if (l.outEvery != null && l.outEvery < 6) parts.push("launch only when fewer than " + Math.max(2, Math.round(l.outEvery)) + " overs remain — a dismissal every " + Math.round(l.outEvery * 6) + " balls is a coin flip");
+    else if (l.outEvery != null) parts.push("launch runs at " + l.rpo.toFixed(1) + " an over with a dismissal every " + Math.round(l.outEvery * 6) + " balls — viable for a final push");
     else parts.push("launch went undismissed in this sample — treat that as luck, not license");
     return parts.map(function (t) { return t.charAt(0).toUpperCase() + t.slice(1); }).join(". ") + ".";
   }
   function foLabOutEvery(R) {
-    if (R.outEvery == null) return "No dismissal in " + Math.round(R.legal / 6) + " ov";
-    return "Out every " + Math.round(R.outEvery) + " ov";
+    if (R.outEvery == null) return "No dismissal in " + R.legal.toLocaleString() + " balls";
+    return "Out every " + Math.round(R.outEvery * 6) + " balls";
   }
   window.pgNets = function () {
     try {
@@ -12751,8 +12761,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       foNetsCss();
 
       var head = "<div class='fo-lab-head'><h2>Match lab</h2><span class='fo-lab-note'>· simulation only, no effect on players or fatigue</span>" +
-        "<span class='fo-lab-acts'><button class='fo-lab-btn' id='fo-lab-next'>&#128197; Load next match</button>" +
-        "<button class='fo-lab-btn" + (netsState.adv ? " on" : "") + "' id='fo-lab-adv'>Advanced</button></span></div>";
+        "<span class='fo-lab-acts'><button class='fo-lab-btn" + (netsState.adv ? " on" : "") + "' id='fo-lab-adv'>Advanced</button></span></div>";
 
       var cards = "<div id='fo-nets-cards'>" + foNetsCardHtml(batP, "bat") + "<div class='fo-net-v'>v</div>" + foNetsCardHtml(bowlP, "bowl") + "</div>";
 
@@ -12777,10 +12786,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           sel("fo-la-wx", "Weather", (typeof WXLIST !== "undefined" ? WXLIST : ["Sunny"]).map(function (w) { return [w, w]; }), netsState.weather) +
           sel("fo-la-field", "Field", [["bal", "Balanced"], ["att", "Attacking"], ["def", "Defensive"]], netsState.field) +
           sel("fo-la-n", "Balls (one session)", [[100, "100"], [1000, "1,000"]], netsState.n) +
-          sel("fo-la-batclub", "Batter's club", GD.teams.map(function (x, i) { return [i, x.name]; }), netsState.batClub) +
-          sel("fo-la-bowlclub", "Bowler's club", GD.teams.map(function (x, i) { return [i, x.name]; }), netsState.bowlClub) +
-          "<div class='fo-nc'><label>Seed · same seed replays the identical session</label><input id='fo-la-seed' type='number' value='" + (+netsState.seed || 7) + "'></div>" +
-          "</div>";
+          "<div class='fo-nc'><label title='Same seed replays the identical session'>Seed</label><input id='fo-la-seed' type='number' value='" + (+netsState.seed || 7) + "'></div>" +
+          "</div><div class='fo-lab-advnote'>Same seed replays the identical session — change it to see a different draw of the same odds.</div>";
       }
 
       var actions = "<div class='fo-lab-actions'>" +
@@ -12821,13 +12828,28 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var rpo1 = R.runs / overs1;
         var disTxt = Object.keys(dis).sort(function (a, b) { return dis[b] - dis[a]; }).map(function (k2) { return DFULL[k2] + " " + dis[k2]; }).join(", ") || "none";
         var outcome = ["dot", "1", "2", "3", "4", "6", "wicket", "extras"].filter(function (k2) { return agg[k2]; })
-          .map(function (k2) { return "<tr><td>" + (k2 === "dot" || k2 === "wicket" || k2 === "extras" ? k2 : k2 + " runs") + "</td><td class='r'>" + agg[k2] + "</td><td class='r'>" + (100 * agg[k2] / R.n).toFixed(1) + "%</td></tr>"; }).join("");
+          .map(function (k2) { return "<tr><td><span class='fo-lab-sw' style='background:" + FO_LAB_COL[k2] + "'></span>" + (k2 === "dot" || k2 === "wicket" || k2 === "extras" ? k2 : k2 + " runs") + "</td><td class='r'>" + agg[k2] + "</td><td class='r'>" + (100 * agg[k2] / R.n).toFixed(1) + "%</td></tr>"; }).join("");
+        // outcome pie — every delivery of the session in one glance
+        var pie = (function () {
+          var a0 = -Math.PI / 2, paths = "";
+          ["dot", "1", "2", "3", "4", "6", "wicket", "extras"].forEach(function (k2) {
+            var v = agg[k2]; if (!v) return;
+            var a1 = a0 + 2 * Math.PI * v / R.n;
+            var large = (a1 - a0) > Math.PI ? 1 : 0;
+            var x0 = 90 + 80 * Math.cos(a0), y0 = 90 + 80 * Math.sin(a0), x1 = 90 + 80 * Math.cos(a1), y1 = 90 + 80 * Math.sin(a1);
+            paths += (v === R.n) ? "<circle cx='90' cy='90' r='80' fill='" + FO_LAB_COL[k2] + "'/>"
+              : "<path d='M90,90 L" + x0.toFixed(1) + "," + y0.toFixed(1) + " A80,80 0 " + large + " 1 " + x1.toFixed(1) + "," + y1.toFixed(1) + " Z' fill='" + FO_LAB_COL[k2] + "' stroke='#fff' stroke-width='1.5'/>";
+            a0 = a1;
+          });
+          return "<svg viewBox='0 0 180 180' width='170' height='170' style='display:block;margin:auto'>" + paths + "</svg>";
+        })();
         resHtml = "<div class='fo-lab-res'><div class='fo-lab-sweeph' style='margin-top:0'>One session · " + R.n.toLocaleString() + " balls · " + FO_INTENTS.filter(function (x) { return x[0] === netsState.intent; })[0][1] + " intent</div>" +
-          "<div style='display:grid;grid-template-columns:1fr 1fr;gap:16px'>" +
+          "<div class='fo-lab-res3'>" +
+          "<div>" + pie + "</div>" +
           "<table class='fo-tbl'><thead><tr><th>Outcome</th><th class='r'>Balls</th><th class='r'>%</th></tr></thead><tbody>" + outcome + "</tbody></table>" +
           "<table class='fo-kv'>" +
           "<tr><td>Run rate</td><td class='r'><b>" + rpo1.toFixed(1) + "</b> rpo (SR " + (R.legal ? (100 * R.runs / R.legal).toFixed(0) : "-") + ")</td></tr>" +
-          "<tr><td>Dismissals</td><td class='r'><b>" + R.wkts + "</b> · " + (R.wkts ? "out every " + Math.round(overs1 / R.wkts) + " ov" : "none") + "</td></tr>" +
+          "<tr><td>Dismissals</td><td class='r'><b>" + R.wkts + "</b> · " + (R.wkts ? "out every " + Math.round(R.legal / R.wkts) + " balls" : "none") + "</td></tr>" +
           "<tr><td>How out</td><td class='r'>" + E(disTxt) + "</td></tr>" +
           "<tr><td>Dot balls</td><td class='r'>" + (100 * (agg.dot || 0) / Math.max(1, R.legal)).toFixed(0) + "%</td></tr>" +
           "<tr><td>Boundary runs</td><td class='r'>" + (4 * (agg["4"] || 0) + 6 * (agg["6"] || 0)) + " of " + R.runs + "</td></tr>" +
@@ -12853,23 +12875,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var on = function (id, ev, fn) { var el = page.querySelector("#" + id); if (el) el.addEventListener(ev, fn); };
       on("fo-lab-adv", "click", function () { netsState.adv = !netsState.adv; pgNets(); });
       page.querySelectorAll(".fo-lab-chip").forEach(function (c) { c.addEventListener("click", function () { netsState.adv = true; pgNets(); }); });
-      on("fo-lab-next", "click", function () {
-        var nx = (foUserFixtures() || [])[0];
-        if (!nx) { say("No upcoming fixture to load."); return; }
-        netsState.pitch = nx.pitch; netsState.weather = nx.weather;
-        netsState.bowlClub = nx.oppIx; netsState.bowl = null;
-        netsState.batClub = App.teamIx;
-        netsState.res = null; netsState.sweep = null; netsState.pick = null;
-        try { toast("Loaded R" + (nx.round + 1) + ": " + (nx.isHome ? "vs " : "at ") + nx.opp.name + " — " + foPitchName(nx.pitch) + " pitch, " + nx.weather + ". Their best bowler is up."); } catch (e) {}
-        pgNets();
-      });
-      var advWire = [["fo-la-over", "over", true], ["fo-la-faced", "faced", true], ["fo-la-pitch", "pitch", false], ["fo-la-wx", "weather", false], ["fo-la-field", "field", false], ["fo-la-n", "n", true], ["fo-la-batclub", "batClub", true], ["fo-la-bowlclub", "bowlClub", true]];
+      var advWire = [["fo-la-over", "over", true], ["fo-la-faced", "faced", true], ["fo-la-pitch", "pitch", false], ["fo-la-wx", "weather", false], ["fo-la-field", "field", false], ["fo-la-n", "n", true]];
       advWire.forEach(function (w2) {
         on(w2[0], "change", function () {
           var el = page.querySelector("#" + w2[0]);
           netsState[w2[1]] = w2[2] ? +el.value : el.value;
-          if (w2[1] === "batClub") netsState.bat = null;
-          if (w2[1] === "bowlClub") netsState.bowl = null;
           netsState.res = null; netsState.sweep = null; netsState.pick = null;
           pgNets();
         });
