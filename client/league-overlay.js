@@ -1352,6 +1352,68 @@
   //  engine's default pgClub (same data + game hooks, modern presentation).
   // ===========================================================================
   var FO_MOODS = ["Furious", "Angry", "Restless", "Steady", "Pleased", "Delighted", "Euphoric"];
+  // =========================================================================
+  // Finance: the ONE place per-round money math lives. Every page that shows
+  // burn, net, runway or projections reads from here. The model mirrors what
+  // the resolver actually settles each round (resolve-harness fair-settle):
+  //   income = sponsor base (+ gate at the resolver's crowd model, home only)
+  //   outgo  = wages (incl. injured) + $1/seat upkeep + academy upkeep table
+  // Win bonuses are result-dependent and deliberately excluded from forecasts.
+  // =========================================================================
+  window.FoFinance = (function () {
+    var ACAD = [0, 4000, 8000, 14000, 22000, 32000];
+    function club() { try { return foMyClub() || userTeam(); } catch (e) { return userTeam(); } }
+    function isMP() { return !!(typeof SYNC !== "undefined" && SYNC && SYNC.started && !SYNC.practice); }
+    function wages(t) { t = t || club(); return (t.players || []).concat(t.injured || []).reduce(function (s2, p) { return s2 + (+p.wage || 0); }, 0); }
+    function acadUpkeep(t) { t = t || club(); return (ACAD[Math.max(0, Math.min(5, t.acadY || 0))] || 0) + (ACAD[Math.max(0, Math.min(5, t.acadS || 0))] || 0); }
+    function gateAttendance(t) {
+      t = t || club();
+      return Math.min(t.seats || 9000, Math.round((t.supporters || 2600) * (0.55 + 0.13 * (t.mood == null ? 3 : t.mood))));
+    }
+    function gate(t) { return gateAttendance(t) * ((FO_FIN && FO_FIN.ticketPrice) || 9); }
+    function sponsorBase(t) { try { return foDealResolve(t || club()).d.base; } catch (e) { return 45000; } }
+    function trainIntensityCost(t) {
+      if (isMP()) return 0;   // the resolver never charges intensity
+      try { return typeof trainingCost === "function" ? trainingCost(t || club()) : 0; } catch (e) { return 0; }
+    }
+    function fixtures() { try { return foUserFixtures() || []; } catch (e) { return []; } }
+    function fixtureAt(round) { var fx = fixtures(); for (var i = 0; i < fx.length; i++) if (fx[i].round === round) return fx[i]; return null; }
+    function bank() { var t = club(); return (App.fin && App.fin.bank != null) ? App.fin.bank : (t.bank || 0); }
+    function roundIncome(round) {
+      var t = club(), fx = round == null ? fixtures()[0] : fixtureAt(round);
+      return sponsorBase(t) + ((fx && fx.isHome) ? gate(t) : 0);
+    }
+    function roundOutgo() { var t = club(); return wages(t) + (t.seats || 9000) + acadUpkeep(t) + trainIntensityCost(t); }
+    function roundNet(round) { return roundIncome(round) - roundOutgo(); }
+    function homeAwaySplit() {
+      var t = club(), out = roundOutgo(), base = sponsorBase(t);
+      return { homeNet: base + gate(t) - out, awayNet: base - out };
+    }
+    function avgNet() {
+      var fx = fixtures();
+      if (!fx.length) { var sp = homeAwaySplit(); return (sp.homeNet + sp.awayNet) / 2; }
+      var s2 = 0; fx.forEach(function (f) { s2 += roundNet(f.round); });
+      return s2 / fx.length;
+    }
+    function seasonEndProjection() {
+      var s2 = bank(); fixtures().forEach(function (f) { s2 += roundNet(f.round); });
+      return s2;
+    }
+    // first remaining round whose CUMULATIVE balance dips below zero (or null)
+    function firstNegativeRound() {
+      var s2 = bank(), fx = fixtures();
+      for (var i = 0; i < fx.length; i++) { s2 += roundNet(fx[i].round); if (s2 < 0) return fx[i].round + 1; }
+      return null;
+    }
+    return {
+      club: club, isMP: isMP, wages: wages, acadUpkeep: acadUpkeep, gateAttendance: gateAttendance,
+      gate: gate, sponsorBase: sponsorBase, trainIntensityCost: trainIntensityCost, fixtures: fixtures,
+      bank: bank, roundIncome: roundIncome, roundOutgo: roundOutgo, roundNet: roundNet,
+      homeAwaySplit: homeAwaySplit, avgNet: avgNet, seasonEndProjection: seasonEndProjection,
+      firstNegativeRound: firstNegativeRound, ACAD: ACAD
+    };
+  })();
+
   function foWageBill(t) { return (t && t.players) ? t.players.reduce(function (s, p) { return s + (+p.wage || 0); }, 0) : 0; }
   function foMoney(n) { return "$" + Math.round(n || 0).toLocaleString(); }
   function foTeamLeaders(t) {
@@ -1437,10 +1499,8 @@
       var played = me.p || 0;
       var streak = 0;
       for (var si = form.length - 1; si >= 0 && String(form[si]).toUpperCase() === "W"; si--) streak++;
-      var AC = [0, 4000, 8000, 14000, 22000, 32000];
-      var sponsorBase = foDealResolve(t).d.base;
-      var gateEst = Math.round(Math.min(t.seats || 9000, (t.supporters || 2400) * (0.55 + 0.13 * (t.mood == null ? 3 : t.mood))) * FO_FIN.ticketPrice * 0.5);
-      var netMD = sponsorBase + gateEst - wages - (t.seats || 9000) - (AC[t.acadY || 0] || 0) - (AC[t.acadS || 0] || 0);
+      var finSplit = FoFinance.homeAwaySplit();
+      var netMD = FoFinance.avgNet();
       var runway = netMD < 0 ? Math.floor(bank / -netMD) : null;
       var nxt = foUserFixtures()[0] || null;
 
@@ -1499,13 +1559,16 @@
       var standings = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>League standings</div><a href='#/matches' class='fo-morelink'>Results &rsaquo;</a></div><div class='fo-card-b'><table class='fo-tbl fo-chtable'><thead><tr><th class='fo-rk'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th><th class='r'>NRR</th><th class='r'>Pts</th></tr></thead><tbody>" + standRows + "</tbody></table>" +
         (gapLine ? "<div class='fo-stand-gap'>" + gapLine + "</div>" : "") + "</div></div>";
 
-      // Finances: one line — the net, and where the season lands. Line items live in the Office.
-      var remainingMD = Math.max(0, totalRounds - played);
-      var projEnd = bank + netMD * remainingMD;
+      // Finances: one line — the net, and where the season lands. All figures
+      // come from FoFinance so this card can never disagree with the Office.
+      var remainingMD = FoFinance.fixtures().length;
+      var projEnd = FoFinance.seasonEndProjection();
       var finStory = netMD >= 0 ? "building every matchday" : (projEnd >= 0 ? "the bank covers the season" : "the bank runs dry before season&rsquo;s end");
+      var finSign = function (v) { return "<b class='" + (v >= 0 ? "fo-pos" : "fo-neg") + "'>" + (v >= 0 ? "+" : "&minus;") + foMoney(Math.abs(v)) + "</b>"; };
       var fin = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Finances</div><a href='#/office' class='fo-morelink'>Office &rsaquo;</a></div><div class='fo-card-b'>" +
-        "<div class='fo-fin-line'>Typical matchday net <b class='" + (netMD >= 0 ? "fo-pos" : "fo-neg") + "'>" + (netMD >= 0 ? "+" : "&minus;") + foMoney(Math.abs(netMD)) + "</b>" +
+        "<div class='fo-fin-line'>Typical matchday net " + finSign(netMD) +
         (remainingMD > 0 ? " &middot; projected <b class='" + (projEnd >= 0 ? "fo-pos" : "fo-neg") + "'>" + foMoney(projEnd) + "</b> at season&rsquo;s end &mdash; " + finStory + "." : ".") +
+        "<div class='small' style='margin-top:4px'>home matchdays " + finSign(finSplit.homeNet) + " &middot; away " + finSign(finSplit.awayNet) + "</div>" +
         "</div></div></div>";
 
       // season bests: the two performances worth bragging about
