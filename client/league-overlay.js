@@ -3977,7 +3977,7 @@
   }
   function foDraftPrice(p) {
     if (!p) return 8000;
-    var base = foSkillValue(p) * 3.8;
+    var base = foSkillValue(p) * 6.0;
     var ageF = foAgeFactor(p.age);
     var talF = 1 + 0.10 * ((p.talents || []).length);
     var roleF = (p.keeper || p.role === "wicketkeeper") ? 1.15 : 1;
@@ -5370,7 +5370,7 @@
         taken++;
       }
     });
-    out.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
+    out.sort(function (a, b) { return (b.fee || 0) - (a.fee || 0); });
     return out.slice(0, 18);
   }
   function foMarketPage() {
@@ -5413,9 +5413,24 @@
       page.innerHTML =
         "<div class='crumb'>" + E(t.name) + " &raquo; Transfers</div>" +
         "<div class='page-head'><div><div class='eyebrow'>Free agents</div><h1>Transfer market</h1><p>One shared pool for the whole league · when a club signs a player, they're gone for everyone. First come, first served. Fresh names every " + FO_MARKET_REFRESH + " matchdays.</p></div></div>" +
-        "<div class='panel'><h4>On the market &middot; restocks in " + foMarketRefreshIn() + " matchday" + (foMarketRefreshIn() === 1 ? "" : "s") + "</h4><div class='pad'>" +
+        "<div class='panel'><h4>On the market &middot; restocks in " + foMarketRefreshIn() + " matchday" + (foMarketRefreshIn() === 1 ? "" : "s") + (SYNC && SYNC.started && !SYNC.practice ? " &middot; <span id='fo-mk-cd'></span>" : "") + "</h4><div class='pad'>" +
         "<div class='fo-yc-note'>Bank: <b>" + FO$(bank) + "</b> · Squad: <b>" + t.players.length + "/18</b>. Signings join your squad after the next matchday resolves. The whole shelf is replaced every " + FO_MARKET_REFRESH + " matchdays &middot; unsigned players move on.</div>" +
         "<div class='fo-ycs'>" + cards + "</div></div></div>";
+      // tick a real clock down to the restock: N-1 full days plus the time to
+      // the next 9:00 AM ET resolution
+      var cdEl = page.querySelector("#fo-mk-cd");
+      if (cdEl) {
+        var mkTick = function () {
+          if (!document.getElementById("fo-mk-cd")) { clearInterval(window.__foMkCd); window.__foMkCd = null; return; }
+          var ms = (foNextMatchdayMs() || 0) + (foMarketRefreshIn() - 1) * 86400000;
+          var s2 = Math.max(0, Math.floor(ms / 1000));
+          var d = Math.floor(s2 / 86400), h = Math.floor((s2 % 86400) / 3600), m = Math.floor((s2 % 3600) / 60), ss = s2 % 60;
+          var pad2 = function (n) { return (n < 10 ? "0" : "") + n; };
+          document.getElementById("fo-mk-cd").textContent = (d ? d + "d " : "") + h + ":" + pad2(m) + ":" + pad2(ss);
+        };
+        if (window.__foMkCd) clearInterval(window.__foMkCd);
+        window.__foMkCd = setInterval(mkTick, 1000); mkTick();
+      }
       page.querySelectorAll(".fo-mk-claim").forEach(function (b) { b.addEventListener("click", function () { foMarketClaim(pool[+b.getAttribute("data-i")]); }); });
       page.querySelectorAll(".fo-mk-view").forEach(function (b) { b.addEventListener("click", function () { foYouthDetail(pool[+b.getAttribute("data-i")], true); }); });
     };
@@ -6132,7 +6147,7 @@
   try { var _bv = document.getElementById("fo-boot"); if (_bv) _bv.parentNode.removeChild(_bv); } catch (e) {}
 
   // Debug/test handle for the season planner's engine-facing helpers (no behaviour).
-  try { window.__fol = { userFixtures: foUserFixtures, fixtureMeta: foFixtureMeta, plannerHTML: foPlannerHTML, smartBowling: foSmartBowling, countryPool: buildCountryPool, marketPool: foMarketPool }; } catch (e) {}
+  try { window.__fol = { userFixtures: foUserFixtures, fixtureMeta: foFixtureMeta, plannerHTML: foPlannerHTML, smartBowling: foSmartBowling, countryPool: buildCountryPool, marketPool: foMarketPool, draftPrice: foDraftPrice }; } catch (e) {}
 
   // =========================================================================
   // Squad page rebuild + name hygiene (reviewer pass).
