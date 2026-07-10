@@ -6307,7 +6307,7 @@
       ["scouting", "Scouting the opposition", [
         "<p>Tap any club name - on the table, a fixture or a result - to open its <b>scout report</b>: squad strength, batting depth, the shape of the attack (pace against spin), your next meeting and the club&rsquo;s founding date. The <b>Players</b> tab lists their full squad.</p>",
         "<p>Rival players are public people: stats, career tables and dated Moments are all open. Only their <b>skills</b> are private - you judge a rival the way real scouts do, from output. Your players&rsquo; skills are hidden from rivals the same way.</p>",
-        "<p>From a rival&rsquo;s report you can <b>challenge them to a friendly</b>: a no-stakes match between your clubs. Nothing carries over - no money, no fatigue, no points - but pride, obviously, carries forever. Pending challenges, upcoming friendlies and their results all live in the <b>Friendlies</b> panel on the Matches page, and both managers see the same rows.</p>"
+        "<p>From a rival&rsquo;s report you can <b>challenge them to a friendly</b>: a no-stakes match between your clubs. Nothing carries over - no money, no fatigue, no points - but pride, obviously, carries forever. Pending challenges, upcoming friendlies and their results all live in the <b>Friendlies</b> panel on the Matches page, and both managers see the same rows. Friendlies are played <b>in the background</b> by the league&rsquo;s resolver, not live on your screen: once the scheduled time passes the row reads IN PLAY, and the result usually lands within the hour, in the panel and in the notification bell.</p>"
       ].join("")],
       ["league", "The table, the run rate, the prizes", [
         "<p>Ten clubs, a full round robin, one round a day. Two points a win; ties and washouts split one. Level on points, <b>net run rate</b> decides, so a ten-run win chased lazily and a ten-run win chased hard are not the same result. Margins are money.</p>",
@@ -6557,6 +6557,7 @@
       var vs = mineSent ? c.opponent_club : c.challenger_club;
       var when = c.play_at ? new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
       if (c.status === "pending" && !mineSent) ev.push({ k: c.id + ":pending", t: "\u2694 " + vs + " challenge you to a friendly" + (when ? " \u00b7 " + when : ""), ch: c });
+      else if (c.status === "accepted" && c.play_at && new Date(c.play_at) <= new Date()) ev.push({ k: c.id + ":inplay", t: "Friendly vs " + vs + " is being played \u00b7 result soon", ch: c });
       else if (c.status === "accepted") ev.push({ k: c.id + ":accepted", t: (mineSent ? vs + " accepted your challenge" : "Friendly vs " + vs + " is on") + (when ? " \u00b7 " + when : ""), ch: c });
       else if (c.status === "declined" && mineSent) ev.push({ k: c.id + ":declined", t: vs + " declined your challenge", ch: c });
       else if (c.status === "played" && c.result) ev.push({ k: c.id + ":played", t: "Full time in the friendly: " + (c.result.result_text || "played"), ch: c });
@@ -6669,8 +6670,11 @@
           var when = c.play_at ? new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
           var line = "<b>" + (mineSent ? "vs " : "from ") + E(vs) + "</b> <span class='small'>" + foPitchName(c.pitch) + ", " + E(c.weather || "") + (when ? " &middot; " + when : "") + "</span>";
           var act = "";
-          if (c.status === "pending" && !mineSent) act = "<button class='mini fo-ch-acc' data-id='" + c.id + "'>Accept</button> <button class='mini fo-ch-dec' data-id='" + c.id + "'>Decline</button>";
+          var due = c.play_at && new Date(c.play_at) <= new Date();
+          if (c.status === "pending" && due) act = "<span class='small'>not accepted before the scheduled time</span>";
+          else if (c.status === "pending" && !mineSent) act = "<button class='mini fo-ch-acc' data-id='" + c.id + "'>Accept</button> <button class='mini fo-ch-dec' data-id='" + c.id + "'>Decline</button>";
           else if (c.status === "pending") act = "<span class='small'>awaiting their reply</span>";
+          else if (c.status === "accepted" && due) act = "<span class='fo-frs-on'>IN PLAY</span> <span class='small'>played in the background &middot; the result lands here and in the bell, usually within the hour</span>";
           else if (c.status === "accepted") act = "<span class='fo-frs-on'>ON</span> <button class='mini fo-ch-ord' data-id='" + c.id + "'>Prepare lineup</button>";
           else if (c.status === "declined") act = "<span class='small'>declined</span>";
           else if (c.status === "expired") act = "<span class='small'>expired</span>";
