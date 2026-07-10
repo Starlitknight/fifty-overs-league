@@ -1689,7 +1689,7 @@
       var hero = "<div class='fo-ch-hero'><div class='fo-ch-hero-l'>" +
         "<div class='fo-ch-crest'><img src='" + APPICON + "' alt=''></div><div>" +
         "<div class='fo-ch-eyebrow'>Club home</div><h1 class='fo-ch-name'>" + E(t.name) + "</h1>" +
-        "<div class='fo-ch-chips'><span class='fo-ch-chip'>Season " + (App.seasonNo || 1) + "</span><span class='fo-ch-chip'>Round " + (Math.min((S ? S.round : 0) + 1, (S && S.schedule ? S.schedule.length : 9))) + "</span><span class='fo-ch-chip'>" + dateStr + "</span></div>" +
+        "<div class='fo-ch-chips'><span class='fo-ch-chip'>Est. " + (typeof foClubEst === "function" ? foClubEst(t) : "") + "</span><span class='fo-ch-chip'>Season " + (App.seasonNo || 1) + "</span><span class='fo-ch-chip'>Round " + (Math.min((S ? S.round : 0) + 1, (S && S.schedule ? S.schedule.length : 9))) + "</span><span class='fo-ch-chip'>" + dateStr + "</span></div>" +
         "</div></div><div class='fo-ch-hero-r'>" + formPill + " <a class='fo-hero-pill' href='#/museum' style='text-decoration:none;cursor:pointer'>&#127963; Museum</a></div></div>";
 
       // ---- season momentum strip: progress bar + streak + goal-gradient nudge ----
@@ -8066,10 +8066,12 @@
       var own = !!(t && (t.players || []).concat(t.youth || []).some(function (x) { return x.name === name; }));
       var prov = p._prov;
       var homeTxt = ""; try { homeTxt = " · born in " + foHometown(p); } catch (eH) {}
-      var provTxt = !prov ? "Founding squad · with the club from day one"
-        : prov.how === "market" ? "Signed from the transfer market, S" + prov.s + " R" + prov.r + (own && prov.fee ? " · " + FO$(prov.fee) + " fee, beaten to by no one" : "")
-        : prov.how === "youth" ? (own ? "Found by your scout" + (prov.nat ? " in " + prov.nat : "") + ", S" + prov.s + " R" + prov.r + " · your signing, your project" : "A youth-academy find" + (prov.nat ? " from " + prov.nat : "") + ", S" + prov.s)
-        : (own ? "Your draft pick, day one" : "A draft-day original");
+      var estD = ""; try { estD = foClubEst(pl0.team); } catch (eE) {}
+      var signD = ""; try { signD = prov && prov.r ? foRoundDate(prov.s, prov.r) : estD; } catch (eS) {}
+      var provTxt = !prov ? "Founding squad · signed " + estD
+        : prov.how === "market" ? "Signed from the transfer market · " + signD + (own && prov.fee ? " · " + FO$(prov.fee) + " fee, beaten to by no one" : "")
+        : prov.how === "youth" ? (own ? "Found by your scout" + (prov.nat ? " in " + prov.nat : "") + " · signed " + signD + " · your signing, your project" : "A youth-academy find" + (prov.nat ? " from " + prov.nat : "") + " · signed " + signD)
+        : "Draft-day original · signed " + estD;
       provTxt += homeTxt;
       var h = ((App.playerHist && App.playerHist[name]) || []).filter(function (e) { return !e.fr; });
       var bySeason = {};
@@ -8116,7 +8118,7 @@
       // so those panels only duplicate it
       panels.forEach(function (pn) {
         var h2 = pn.querySelector("h4");
-        if (h2 && /^(Batting & fielding|Batting &amp; fielding|Bowling)$/i.test((h2.textContent || "").trim())) pn.style.display = "none";
+        if (h2 && /^(Batting & fielding|Batting &amp; fielding|Bowling|Skills summary)$/i.test((h2.textContent || "").trim())) pn.style.display = "none";
       });
     } catch (e) {}
   }
@@ -8935,6 +8937,29 @@
       var a = h % FO_UMP.length, b = (a + 1 + ((h >>> 4) % (FO_UMP.length - 1))) % FO_UMP.length;
       return [FO_UMP[a], FO_UMP[b]];
     }
+    window.foFmtDate = function (d) {
+      try { var dt = new Date(d); if (!isNaN(dt)) return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch (e) {}
+      return String(d || "");
+    };
+    // a club's establishment date: stamped once, backfilled from the earliest
+    // saved result (i.e. founding day) for clubs created before this shipped
+    window.foClubEst = function (t) {
+      if (!t) return "";
+      if (!t._est) {
+        var earliest = null;
+        (App.results || []).forEach(function (r) { if (r.date && (!earliest || new Date(r.date) < new Date(earliest))) earliest = r.date; });
+        try { t._est = earliest || (typeof simDate === "function" ? simDate() : new Date().toDateString()); } catch (e) { t._est = earliest || new Date().toDateString(); }
+      }
+      return foFmtDate(t._est);
+    };
+    // the date a given season/round was played, recovered from tagged history
+    window.foRoundDate = function (sn, rn) {
+      for (var nm in (App.playerHist || {})) {
+        var hh = App.playerHist[nm];
+        for (var i = 0; i < hh.length; i++) if (hh[i].s === sn && hh[i].r === rn && hh[i].date) return foFmtDate(hh[i].date);
+      }
+      return "S" + sn + " R" + rn;
+    };
     window.foBeatWriter = function () {
       var t = null; try { t = userTeam(); } catch (e) {}
       var pool = ["Margot Ellison", "D. K. Ramachandran", "Frank Otten", "Beatrice Kolisi", "Sunil Menon", "Harriet Vane", "Joris Kamp", "Colin McArdle"];
