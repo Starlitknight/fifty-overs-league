@@ -7421,6 +7421,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-exp-def b{display:inline-block;min-width:96px;color:#12203a}.fo-exp-def span{color:#5d6779}" +
     ".fo-exp-talbox{background:#eef4ee;border:1px solid #d5e0d7;border-radius:11px;padding:13px 16px;font-size:13.5px;line-height:1.6;margin-top:16px}" +
     "@media(max-width:760px){.fo-exp-cols{grid-template-columns:1fr}}" +
+    ".fo-exp-card .fo-sq-detail{padding:0;background:transparent;border:none;margin-top:4px}" +
+    ".fo-exp-card .fo-sq-dcols{display:block}" +
+    ".fo-exp-card .fo-sq-train,.fo-exp-card .fo-sq-dfoot a,.fo-exp-card .fo-sq-promote{display:none !important}" +
     ".fo-cnd-sec{margin:24px 0 6px}" +
     ".fo-cnd-h{display:flex;align-items:center;gap:9px;margin:0 0 10px;flex-wrap:wrap}" +
     ".fo-cnd-no{width:22px;height:22px;border-radius:50%;background:#C0562F;color:#fff;font-weight:800;font-size:11.5px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 22px}" +
@@ -9429,7 +9432,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-1318-885a0a";
+  var FO_BUILD = "20260710-1325-0b70ca";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10880,24 +10883,20 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var flag = ""; try { flag = foFlag(ex.nat || FO_ONB.country) || ""; } catch (e) {}
       var hand = (ex.hand === "L" ? "LHB" : "RHB");
       var bt = ex.btLabel || ((ex.bowlTypeFull && ex.bowlTypeFull !== "none") ? ex.bowlTypeFull : "Does not bowl");
-      var bars = [["Batting", foAgg(ex, "bat")], ["Bowling", (ex.bowlTypeFull && ex.bowlTypeFull !== "none") ? foAgg(ex, "bowl") : 0], ["Keeping", foAgg(ex, "keep")], ["Technique", foAgg(ex, "tech")], ["Power", foAgg(ex, "power") || Math.round((ex.skills && ex.skills.power) || 0)], ["Endurance", foAgg(ex, "end")], ["Fielding", foAgg(ex, "field")]];
-      var barHtml = bars.map(function (b) { return "<span class='fo-sk'><i>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + b[1] + "%'></u></b><em>" + b[1] + "</em></span>"; }).join("");
-      var tal = (ex.talents || []).map(function (t) { return "<span class='fo-exp-tal'>" + E(String(t).replace(/([A-Z])/g, " $1").replace(/^./, function (c) { return c.toUpperCase(); })) + "</span>"; }).join("");
+      var detail = "";
+      try { detail = (typeof foSqDetail === "function") ? foSqDetail(ex, false) : ""; } catch (eD) {}
       return "<div class='fo-exp-card'><div class='fo-exp-tag'>" + tagLbl + "</div><div class='fo-exp-h'>" + flag + " <b>" + E(ex.name) + "</b></div>" +
         "<div class='fo-exp-meta'>" + hand + " &middot; " + E(bt) + " &middot; age " + ex.age + "</div>" +
         "<div class='fo-exp-money'><span>Fee <b>" + FO$(foDraftPrice(ex)) + "</b></span><span>Wage <b>" + FO$(foDailyWage(ex)) + "</b>/matchday</span></div>" +
-        "<div class='fo-exp-bars'>" + barHtml + "</div>" +
-        (tal ? "<div class='fo-exp-tals'>" + tal + "</div>" : "") + "</div>";
+        detail + "</div>";
     };
     var defs = [
-      ["Batting", "Run-scoring ability against all bowling."],
-      ["Bowling", "Wicket threat and control with the ball. Zero means he does not bowl."],
-      ["Keeping", "Glovework: byes saved, catches, stumpings."],
-      ["Technique", "Overall polish. It correlates with everything but tracks his headline skill most: for a bowler, the accuracy and repeatability of his craft; for a batter, soundness against pace and spin. Temperament under pressure counts for everyone."],
-      ["Power", "Boundary and six hitting."],
-      ["Endurance", "How long he lasts before fatigue dulls everything."],
-      ["Fielding", "Catches, run-outs, runs saved in the field."],
-      ["Hand &amp; style", "RHB/LHB and the bowling arm and type (fast, fast medium, medium, finger spin, wrist spin). Batters have separate skills against pace and spin, so matchups are real."],
+      ["Batting", "The group that decides runs. <b>Overall</b> is the headline; <b>vs pace</b> and <b>vs spin</b> are real matchups (a spin-weak opener WILL be found out); <b>Rotation</b> turns dots into singles; <b>Power</b> clears the rope; <b>Temperament</b> holds it together under pressure."],
+      ["Bowling", "Only bowlers carry it. <b>Wicket threat</b> buys wickets, <b>Economy</b> buys dots, <b>Discipline</b> avoids wides and no-balls, <b>Move / turn</b> is seam or spin bite, <b>Stamina</b> keeps spells honest (and matters double in hot weather)."],
+      ["In the field", "<b>Fielding</b> saves runs and effects run-outs; <b>Catching</b> sets the drop chance when your bowler earns an edge. Keepers add <b>Keeping</b> and <b>Stumping</b>."],
+      ["The footer", "<b>Experience</b> steadies big moments, <b>Captaincy</b> lifts the whole XI in the field, <b>Fatigue</b> is his freshness ladder today."],
+      ["Words &amp; colours", "Every number wears an honest word (from atrocious to world class) and a colour: red is a liability, amber does a job, teal is good, green wins matches."],
+      ["Hand &amp; style", "RHB/LHB and the bowling type (genuine fast, fast medium, medium, finger spin, wrist spin). The rarity and value of each is on the next page."],
       ["Age", "Young players improve fastest in training and recover quickly. Players past 30 fade late in innings and long spells, and decline between seasons."],
       ["Fee &amp; wage", "The fee is paid once, at the draft. The wage is paid every matchday, all season. Better players cost more of both, so a full squad of stars will drain the bank."]
     ].map(function (d) { return "<div class='fo-exp-def'><b>" + d[0] + "</b><span>" + d[1] + "</span></div>"; }).join("");
@@ -10905,7 +10904,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "<div class='fo-ob-card fo-ob-mid'>" +
       "<div class='fo-ob-eyebrow'>Know what you are buying</div>" +
       "<h1 class='fo-ob-h1'>How to read a player</h1>" +
-      "<p class='fo-ob-lead'>Two real players from your draft pool, a batter and a bowler. Bars are coloured honestly: <b style='color:#C84F4A'>red</b> is a liability, <b style='color:#D9A441'>amber</b> does a job, <b style='color:#2d7a76'>teal</b> is good, <b style='color:#3E9960'>green</b> wins matches.</p>" +
+      "<p class='fo-ob-lead'>Two real players from your draft pool, exactly as every player page shows them: skills grouped into <b>Batting</b>, <b>Bowling</b> and <b>In the field</b>, each with a number, a bar and an honest word. <b style='color:#C84F4A'>Red</b> is a liability, <b style='color:#D9A441'>amber</b> does a job, <b style='color:#2d7a76'>teal</b> is good, <b style='color:#3E9960'>green</b> wins matches.</p>" +
       "<div class='fo-exp-cols'><div class='fo-exp-cards'>" + mkCard(batter, "The batter") + mkCard(bowler, "The bowler") + "</div><div class='fo-exp-defs'>" + defs + "</div></div>" +
       "<div class='fo-exp-talbox'><b>Talents</b> are permanent traits that fire in specific situations: a <i>Finisher</i> finds boundaries at the death, a <i>New-ball Specialist</i> is deadly in his first spell, a <i>Spin Killer</i> feasts on slow bowling. Tap any talent chip in the game to see what it does.</div>" +
       "<p class='fo-ob-lead' style='margin-top:14px'>Next: reading conditions. Bowling styles and their rarity, pitch types, and what the sky does to a match: the context that decides which of these numbers matter on the day.</p>" +
@@ -15719,10 +15718,18 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     function foBcastT0(rd) {
       // solo (and any locally-resolved round): the moment it resolved
       try { var st = JSON.parse(lsGet(foBcastKey()) || "null"); if (st && st.round === rd && st.t0) return st.t0; } catch (e) {}
-      // multiplayer: the scheduled 9:00 AM ET of that round, same for everyone
+      // multiplayer: the scheduled 9:00 AM ET of that round, same for everyone.
+      // Anchor on the round's own saved result date (always a full date) -
+      // foDailyDate can return a yearless string that Date.parse rejects,
+      // which silently killed the embargo and let the old fast replay run.
       try {
-        var ds = foDailyDate(rd); var t = Date.parse(ds + " 09:00:00 GMT-0400");
-        if (!isNaN(t)) return t;
+        var rows0 = foLeagueRounds()[rd] || [];
+        var cand = [(rows0[0] && rows0[0].date) || "", foDailyDate(rd), foDailyDate(rd) + " " + new Date().getFullYear()];
+        for (var ci = 0; ci < cand.length; ci++) {
+          if (!cand[ci]) continue;
+          var t = Date.parse(cand[ci] + " 09:00:00 GMT-0400");
+          if (!isNaN(t) && Math.abs(t - Date.now()) < 200 * 86400000) return t;
+        }
       } catch (e2) {}
       return 0;
     }
