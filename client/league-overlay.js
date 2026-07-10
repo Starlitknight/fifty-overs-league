@@ -499,6 +499,30 @@
     ".fo-mh-pt{font-size:12.5px;color:#93a0b4}" +
     ".fo-mh-pf{font-size:13px;color:#c7cfda;font-weight:600}" +
     "@media(max-width:820px){.fo-mhead{flex-direction:column;gap:10px;padding:16px 16px}.fo-mh-r{flex:0 0 auto;border-left:0;border-top:1px solid rgba(246,244,238,.14);padding:12px 0 0}.fo-mh-team{font-size:14.5px}.fo-mh-sc{font-size:16px}.fo-mh-res{font-size:12.5px;margin-top:7px}.fo-mh-eyebrow{font-size:8.5px}.fo-mh-toss{font-size:10.5px}html body #page .fo-mh-pn a,html body .fo-mh-pn a{font-size:13.5px}.fo-mh-pf{font-size:12px}}" +
+    "/* ---- training: energy, cards on phones ---- */" +
+    ".fo-en{display:flex;align-items:center;gap:7px;min-width:96px}" +
+    ".fo-en-bar{flex:1;height:7px;background:#EBE6DA;border-radius:99px;overflow:hidden;min-width:44px}" +
+    ".fo-en-bar u{display:block;height:100%;border-radius:99px;text-decoration:none}" +
+    ".fo-en-fresh{background:#16A34A}.fo-en-rested{background:#84B34A}.fo-en-tired{background:#F59E0B}" +
+    ".fo-en-w{font-size:11px;font-weight:700;text-transform:capitalize}" +
+    ".fo-en-w-fresh{color:#15803D}.fo-en-w-rested{color:#6B8F3A}.fo-en-w-tired{color:#B45309}" +
+    ".fo-tr-pace{font-style:normal;color:#667085}" +
+    ".fo-tr-rep .fo-tr-g.fo-tr-warn,.fo-tr-warn{color:#B45309 !important}" +
+    ".fo-tr-rep .fo-tr-g.fo-tr-warn svg{color:#B45309}" +
+    ".fo-tr-how{background:transparent;border:1px solid #DDD8CF;border-radius:999px;padding:8px 15px;font-weight:700;font-size:12.5px;color:#3c4658;cursor:pointer}" +
+    ".fo-tr-how:hover{border-color:#C95532;color:#B04A2C}" +
+    ".fo-trc-list{display:none}" +
+    ".fo-trc{background:#FFFEFC;border:1px solid #E4DFD2;border-radius:13px;padding:13px 14px;margin-bottom:10px}" +
+    ".fo-trc-h{display:flex;align-items:baseline;gap:8px;margin-bottom:7px}" +
+    ".fo-trc-h a{font-size:14.5px;color:#111827 !important;text-decoration:none}" +
+    ".fo-trc-warn{margin:7px 0 2px;font-size:11.5px;color:#B45309;background:#FDF3E2;border-radius:8px;padding:6px 9px}" +
+    ".fo-trc-row{display:grid;grid-template-columns:1.5fr 1fr;gap:9px;margin:9px 0 7px}" +
+    ".fo-trc-row label{display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#667085}" +
+    ".fo-trc-row select{width:100%;padding:9px 8px;border:1px solid #cdc7b8;border-radius:9px;background:#FFFEFC;font-size:13.5px}" +
+    ".fo-trc-ws{display:flex;flex-wrap:wrap;gap:6px 12px;margin:2px 0 8px}" +
+    ".fo-trc-w{font-size:11px;color:#3c4658;display:inline-flex;align-items:center;gap:5px}" +
+    ".fo-trc-w u{width:9px;height:9px;border-radius:3px;display:inline-block}" +
+    "@media(max-width:600px){.fo-tr-tbl{display:none}.fo-trc-list{display:block}}" +
     "/* ---- club home, remade ---- */" +
     "html body .fo-ch-hero.fo-ch-hero,html body.ftpskin .fo-ch-hero.fo-ch-hero{display:block;position:relative;overflow:hidden;background:radial-gradient(130% 170% at 88% -30%,#1B3A5F 0%,rgba(27,58,95,0) 55%),linear-gradient(135deg,#0E233F,#07162E 70%) !important;border-radius:18px;padding:24px 24px 16px;box-shadow:0 12px 32px rgba(7,22,46,.22)}" +
     "html body .fo-ch-hero-l.fo-ch-hero-l,html body.ftpskin .fo-ch-hero-l.fo-ch-hero-l,html body .fo-ch-hero-top.fo-ch-hero-top,html body.ftpskin .fo-ch-hero-top.fo-ch-hero-top,html body .fo-hero-pos.fo-hero-pos,html body.ftpskin .fo-hero-pos.fo-hero-pos,html body .fo-hero-prog.fo-hero-prog,html body.ftpskin .fo-hero-prog.fo-hero-prog,html body .fo-hero-hot.fo-hero-hot,html body.ftpskin .fo-hero-hot.fo-hero-hot{background:none !important}" +
@@ -5977,6 +6001,27 @@
       return "<div class='fo-trx-gh'>" + g[0] + "</div><div class='fo-trx-grid'>" + g[1].map(card).join("") + "</div>";
     }).join("");
   }
+  // energy flips the fatigue framing: high = good, like every game they know.
+  // The engine's own vocabulary survives in the tooltip.
+  var FO_FAT_LADDER = ["rested", "revived", "energetic", "passable", "satisfactory", "moderate", "weary", "listless", "exhausted", "shattered", "clinically dead"];
+  function foEnergyOf(p) {
+    var w = String(p.fatigue || "rested").toLowerCase();
+    var ix = FO_FAT_LADDER.indexOf(w); if (ix < 0) ix = 0;
+    return { pct: Math.max(6, 100 - ix * 10), word: ix <= 2 ? "fresh" : ix <= 5 ? "rested" : "tired", raw: w, tired: ix >= 6 };
+  }
+  // the safe choice, marked where the choice happens: tired players are
+  // suggested Rest before any skill program
+  function foTrSuggest(p) { return foEnergyOf(p).tired ? "Rest" : foTrDefault(p); }
+  // honest pace band - the per-matchday rate is shaped by age, energy and
+  // intensity, so we band it rather than fake a precise matchday count
+  function foTrPace(p, tr) {
+    if (tr.program === "Rest" || tr.intensity === "Rest") return "recovering";
+    var en = foEnergyOf(p);
+    var v = (p.age <= 21 ? 3 : p.age <= 25 ? 2.2 : p.age <= 29 ? 1.4 : 0.7);
+    v *= en.tired ? 0.45 : (en.word === "rested" ? 0.85 : 1);
+    v *= tr.intensity === "Intense" ? 1.2 : (tr.intensity === "Light" ? 0.8 : 1);
+    return v >= 2.4 ? "training fast" : v >= 1.3 ? "training steadily" : v >= 0.7 ? "training slowly" : "barely moving";
+  }
   function foTrKey() { return "fol_train_" + (LG ? LG.id : "solo"); }
   function foTrainState() {
     var raw = lsGet(foTrKey()), s = null;
@@ -7645,42 +7690,68 @@
       ? "<div class='fo-yc-note' style='border-color:#e8c9c2;background:#fbeeea'><b>Injury ward:</b> " + t.injured.map(function (p) { return E(p.name) + " (" + (p._inj || 1) + " matchday" + ((p._inj || 1) === 1 ? "" : "s") + ")"; }).join(" · ") + "</div>"
       : "";
 
-    var progOpts = function (cur) { return FO_TR_PROGS.map(function (k) { return "<option value='" + k + "'" + (cur === k ? " selected" : "") + ">" + k + "</option>"; }).join(""); };
+    var progOpts = function (cur, sug) {
+      return FO_TR_PROGS.map(function (k) {
+        return "<option value='" + k + "'" + (cur === k ? " selected" : "") + ">" + (k === sug ? "\u2b50 " : "") + k + (k === sug ? " \u00b7 suggested" : "") + "</option>";
+      }).join("");
+    };
     var intOpts = function (cur) { return FO_TR_INT.map(function (k) { return "<option value='" + k + "'" + (cur === k ? " selected" : "") + ">" + k + "</option>"; }).join(""); };
     var potCls = { Star: "star", High: "high", Useful: "useful", Limited: "limited" };
 
-    var rows = t.players.slice().sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); }).map(function (p) {
-      var tr = foTrOf(p), pr = foTrProgress(p);
+    var sorted = t.players.slice().sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
+    var enBar = function (en) {
+      return "<div class='fo-en' title='" + E(en.raw) + "'><div class='fo-en-bar'><u class='fo-en-" + en.word + "' style='width:" + en.pct + "%'></u></div><span class='fo-en-w fo-en-w-" + en.word + "'>" + en.word + "</span></div>";
+    };
+    var gainOf = function (p, tr, pr) {
+      if (pr.pct > 0) return foSkillLabel(pr.skill) + " &middot; " + pr.pct + "%";
+      var w0 = FO_TR_PROGMAP[tr.program] || {};
+      var tops = Object.keys(w0).sort(function (a, b) { return (w0[b] || 0) - (w0[a] || 0); }).slice(0, 2).map(foSkillLabel);
+      return tops.length ? "targets " + tops.join(", ") : "resting";
+    };
+    var rows = sorted.map(function (p) {
+      var tr = foTrOf(p), pr = foTrProgress(p), sug = foTrSuggest(p), en = foEnergyOf(p);
       var flag = ""; try { flag = (typeof foFlag === "function" && p.nat) ? foFlag(p.nat) : ""; } catch (e) {}
-      var fat = String(p.fatigue || "rested");
-      var fatTone = /rested|revived|energetic|passable/.test(fat) ? "ok" : /satisfactory|moderate/.test(fat) ? "mid" : "bad";
-      // "next gain" is the skill CLOSEST to its next +1; before any sessions
-      // have run, show what the program targets instead
-      var gainLbl;
-      if (pr.pct > 0) gainLbl = foSkillLabel(pr.skill) + " · " + pr.pct + "%";
-      else {
-        var w0 = FO_TR_PROGMAP[tr.program] || {};
-        var tops = Object.keys(w0).sort(function (a, b) { return (w0[b] || 0) - (w0[a] || 0); }).slice(0, 2).map(foSkillLabel);
-        gainLbl = tops.length ? "targets " + tops.join(", ") : "resting";
-      }
       return "<tr>" +
         "<td class='fo-tr-nm'>" + flag + " <a class='fo-tr-link' href='#/player?n=" + encodeURIComponent(p.name) + "'><b>" + E(p.name) + "</b></a><span class='fo-tr-meta'>" + foRoleShort(p) + " · age " + (p.age || "?") + "</span></td>" +
-        "<td><span class='fo-fat fo-fat-" + fatTone + "'>" + E(fat) + "</span></td>" +
-        "<td><select class='fo-tr-prog' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + progOpts(tr.program) + "</select></td>" +
+        "<td>" + enBar(en) + "</td>" +
+        "<td><select class='fo-tr-prog' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + progOpts(tr.program, sug) + "</select></td>" +
         "<td><select class='fo-tr-int' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + intOpts(tr.intensity) + "</select></td>" +
-        "<td class='fo-tr-progress'><div class='fo-tr-bar' title='Progress to the next +1'><u style='width:" + pr.pct + "%'></u></div><span>" + gainLbl + "</span></td>" +
+        "<td class='fo-tr-progress'><div class='fo-tr-bar' title='Progress to the next +1'><u style='width:" + pr.pct + "%'></u></div><span>" + gainOf(p, tr, pr) + " &middot; <i class='fo-tr-pace'>" + foTrPace(p, tr) + "</i></span></td>" +
         "</tr>";
     }).join("");
+    // phone: per-player decision cards instead of a five-column scroll
+    var cards = sorted.map(function (p) {
+      var tr = foTrOf(p), pr = foTrProgress(p), sug = foTrSuggest(p), en = foEnergyOf(p);
+      var w0 = FO_TR_PROGMAP[tr.program] || {};
+      var chips = Object.keys(w0).sort(function (a, b) { return (w0[b] || 0) - (w0[a] || 0); }).slice(0, 3).map(function (k) {
+        return "<span class='fo-trc-w'><u style='background:" + (FO_SK_COLOR[k] || "#667085") + "'></u>" + E(foSkillLabel(k)) + " <b>" + w0[k] + "%</b></span>";
+      }).join("");
+      var warn = (en.tired && tr.program !== "Rest" && tr.intensity !== "Rest")
+        ? "<div class='fo-trc-warn'>&#9888; Tired players train slowly &middot; consider <b>Rest</b>.</div>" : "";
+      return "<div class='fo-trc'>" +
+        "<div class='fo-trc-h'><a href='#/player?n=" + encodeURIComponent(p.name) + "'><b>" + E(p.name) + "</b></a><span class='fo-tr-meta'>" + foRoleShort(p) + " · age " + (p.age || "?") + "</span></div>" +
+        enBar(en) + warn +
+        "<div class='fo-trc-row'><label>Program<select class='fo-tr-prog' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + progOpts(tr.program, sug) + "</select></label>" +
+        "<label>Intensity<select class='fo-tr-int' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + intOpts(tr.intensity) + "</select></label></div>" +
+        (chips ? "<div class='fo-trc-ws'>" + chips + "</div>" : "<div class='fo-trc-ws small'>Recovery week &middot; energy climbs instead of skills.</div>") +
+        "<div class='fo-tr-progress'><div class='fo-tr-bar' title='Progress to the next +1'><u style='width:" + pr.pct + "%'></u></div><span>" + gainOf(p, tr, pr) + " &middot; <i class='fo-tr-pace'>" + foTrPace(p, tr) + "</i></span></div>" +
+        "</div>";
+    }).join("");
 
+    var tiredNow = t.players.filter(function (p) { return foEnergyOf(p).tired && foTrOf(p).program !== "Rest" && foTrOf(p).intensity !== "Rest"; });
+    var tiredHtml = tiredNow.slice(0, 4).map(function (p) {
+      return "<div class='fo-tr-g fo-tr-warn'>" + FO_I("warn", 14) + " " + E(p.name) + " is tired and will train poorly until he rests.</div>";
+    }).join("") + (tiredNow.length > 4 ? "<div class='fo-tr-g fo-tr-warn small'>+" + (tiredNow.length - 4) + " more tired players below</div>" : "");
     var repHtml = "";
     if (rep && (rep.gains || []).length + (rep.recovery || []).length + (rep.signings || []).length) {
       repHtml = ward + "<div class='panel'><h4>This week in the nets · after matchday " + (rep.round || round) + "</h4><div class='pad fo-tr-rep'>" +
         (rep.signings || []).map(function (g) { return "<div class='fo-tr-g fo-tr-sign'>" + FO_I("users", 14) + " " + E(g) + "</div>"; }).join("") +
         (rep.gains || []).map(function (g) { return "<div class='fo-tr-g'>" + FO_I("checkCircle", 14) + " " + E(g) + "</div>"; }).join("") +
         (rep.recovery || []).map(function (g) { return "<div class='fo-tr-g fo-tr-rec'>" + FO_I("shield", 14) + " " + E(g) + "</div>"; }).join("") +
+        tiredHtml +
         "</div></div>";
     } else {
-      repHtml = "<div class='panel'><h4>This week in the nets</h4><div class='pad small'>Gains land after each matchday. Younger players and higher-potential players improve fastest; tired players train poorly · use Rest.</div></div>";
+      repHtml = ward + "<div class='panel'><h4>This week in the nets</h4><div class='pad fo-tr-rep'><div class='small'>Gains land after each matchday. Young players improve fastest; tired players train poorly &middot; use Rest.</div>" + tiredHtml + "</div></div>";
     }
 
     // youth scout panel: pick a country, reveal a shortlist of three, sign one
@@ -7726,39 +7797,48 @@
 
     page.innerHTML =
       "<div class='crumb'>" + E(t.name) + " &raquo; Training</div>" +
-      "<div class='page-head'><div><div class='eyebrow'>Development centre</div><h1>Training &amp; Youth</h1><p>Programs update after every matchday. Young legs learn fastest.</p></div></div>" +
+      "<div class='page-head'><div><div class='eyebrow'>Development centre</div><h1>Training &amp; Youth</h1><p>Programs update after every matchday. Young legs learn fastest.</p></div>" +
+      "<div><button class='fo-tr-how' id='fo-tr-how'>How training works</button></div></div>" +
       repHtml +
-      "<div class='panel fo-keep'><h4>How training works</h4><div class='pad small' style='line-height:1.65'>" +
-      "Every matchday, each player banks progress toward the skills in his program (the dropdown). When a skill's progress bar fills, the skill goes up one point and his wage rises with it. " +
-      "<b>Speed</b> depends on age (young players learn fastest, veterans barely move), fatigue (tired players train poorly), intensity (Intense is ~20% faster but tires him; Rest recovers instead of training) and your academy level. " +
-      "The <b>Next gain</b> column shows the skill closest to its next point; before the first session it shows what the program targets, weighted by the program's own emphasis." +
-      "</div></div>" +
-      "<div class='panel fo-keep'><h4>What each program trains</h4><div class='pad'>" +
-      "<div class='small' style='margin-bottom:4px;color:#667085'>Every session splits its progress across these skills, in these proportions. The heaviest skill is highlighted.</div>" +
-      foProgExplainHTML() +
-      "</div></div>" +
       "<div class='panel'><h4>Training programs</h4><div class='pad'>" +
       "<div class='fo-tr-bulk'><span class='small'>Quick set:</span>" +
-      "<button class='fo-tr-b' data-m='role'>Best fit by role</button>" +
+      "<button class='fo-tr-b' data-m='suggest'>&#11088; Suggested for all</button>" +
       "<button class='fo-tr-b' data-m='restTired'>Rest the tired</button></div>" +
-      "<table class='fo-tr-tbl'><thead><tr><th>Player</th><th>Fatigue</th><th>Program</th><th>Intensity</th><th>Next gain</th></tr></thead><tbody>" + rows + "</tbody></table>" +
-      "<div class='small' style='margin-top:8px'>Skill gains raise wages automatically. Intense trains ~20% faster but tires players; Rest recovers. Squads over 24 players train slower.</div>" +
+      "<table class='fo-tr-tbl'><thead><tr><th>Player</th><th>Energy</th><th>Program</th><th>Intensity</th><th>Next gain</th></tr></thead><tbody>" + rows + "</tbody></table>" +
+      "<div class='fo-trc-list'>" + cards + "</div>" +
+      "<div class='small' style='margin-top:8px'>Skill gains raise wages automatically. Intense trains ~20% faster but drains energy; Rest recovers. Squads over 24 players train slower.</div>" +
       "</div></div>" +
       "<div class='panel'><h4>Youth scout &middot; ages 18&#8211;20</h4><div class='pad'>" +
       scoutBody +
       "<div class='small' style='margin-top:8px'>Signings are <b>free</b> - quality is the lottery. Most finds are raw, <b>&#9733; Gifted</b> is rare, and once in a generation the scout unearths a jewel. One reveal per " + FO_SCOUT_REVEAL_GAP + " matchdays; one signing per " + FO_SCOUT_COOLDOWN + " matchdays; squad cap 18.</div>" +
       "</div></div>";
 
-    page.querySelectorAll(".fo-tr-prog").forEach(function (s) { s.addEventListener("change", function () { foSetTraining(s.getAttribute("data-p"), "program", s.value); }); });
-    page.querySelectorAll(".fo-tr-int").forEach(function (s) { s.addEventListener("change", function () { foSetTraining(s.getAttribute("data-p"), "intensity", s.value); }); });
+    var trRedraw = function () { var y = window.scrollY; foTrainingPage(); window.scrollTo(0, y); };
+    page.querySelectorAll(".fo-tr-prog").forEach(function (s) { s.addEventListener("change", function () { foSetTraining(s.getAttribute("data-p"), "program", s.value); trRedraw(); }); });
+    page.querySelectorAll(".fo-tr-int").forEach(function (s) { s.addEventListener("change", function () { foSetTraining(s.getAttribute("data-p"), "intensity", s.value); trRedraw(); }); });
+    var howB = page.querySelector("#fo-tr-how");
+    if (howB) howB.addEventListener("click", function () {
+      var ex = document.getElementById("fo-tr-howm"); if (ex) { ex.remove(); return; }
+      var m = document.createElement("div"); m.id = "fo-tr-howm"; m.className = "fo-modal";
+      m.innerHTML = "<div class='fo-modal-card' style='max-width:720px;max-height:84vh;overflow:auto'><div class='fo-modal-eyebrow'>Development centre</div><h3>How training works</h3>" +
+        "<div class='small' style='line-height:1.65;margin:6px 0 14px'>Every matchday, each player banks progress toward the skills in his program. When a skill's progress bar fills, the skill goes up one point and his wage rises with it. " +
+        "<b>Speed</b> depends on age (young players learn fastest, veterans barely move), energy (tired players train poorly), intensity (Intense is ~20% faster but drains energy; Rest recovers instead of training) and your academy level.</div>" +
+        "<h3 style='font-size:15px'>What each program trains</h3>" +
+        "<div class='small' style='margin:2px 0 8px;color:#667085'>Every session splits its progress across these skills, in these proportions.</div>" +
+        foProgExplainHTML() +
+        "<div class='fo-modal-act' style='margin-top:12px'><button class='fo-su-cancel' id='fo-tr-howx'>Close</button></div></div>";
+      document.body.appendChild(m);
+      m.addEventListener("click", function (e2) { if (e2.target === m) m.remove(); });
+      m.querySelector("#fo-tr-howx").addEventListener("click", function () { m.remove(); });
+    });
     page.querySelectorAll(".fo-tr-b").forEach(function (b) {
       b.addEventListener("click", function () {
         var m = b.getAttribute("data-m");
         t.players.forEach(function (p) {
-          if (m === "role") foSetTraining(p.name, "program", foTrDefault(p));
-          if (m === "restTired" && !/rested|revived|energetic|passable|satisfactory/.test(String(p.fatigue || "rested"))) foSetTraining(p.name, "program", "Rest");
+          if (m === "suggest") foSetTraining(p.name, "program", foTrSuggest(p));
+          if (m === "restTired" && foEnergyOf(p).tired) foSetTraining(p.name, "program", "Rest");
         });
-        foTrainingPage();
+        trRedraw();
         toast("Training updated for the squad.");
       });
     });
