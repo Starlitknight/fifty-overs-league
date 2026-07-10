@@ -474,8 +474,8 @@
     ".fo-bell-h{background:#07162E;color:#FFFEFC;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;padding:10px 14px}" +
     ".fo-bell-row{padding:11px 14px;border-bottom:1px solid #f0ece1;font-size:13px;color:#3c4658;cursor:pointer}" +
     ".fo-bell-act{margin-top:7px;display:flex;gap:8px}" +
-    "html body button.fo-watch-live{display:inline-flex;align-items:center;gap:10px;border:0;border-radius:999px;padding:13px 26px 13px 15px;font-weight:800;font-size:14.5px;letter-spacing:.01em;cursor:pointer;background:#FF0000 !important;color:#fff !important;box-shadow:0 6px 20px rgba(255,0,0,.38);animation:foPulseRed 2.2s ease-in-out infinite}" +
-    "html body button.fo-watch-live:hover{background:#D90000 !important;transform:translateY(-1px)}" +
+    "html body button.fo-watch-live{display:inline-flex;align-items:center;gap:10px;border:0;border-radius:999px;padding:13px 26px 13px 15px;font-weight:800;font-size:14.5px;letter-spacing:.01em;cursor:pointer;background:#B3362C !important;color:#fff !important;box-shadow:0 3px 10px rgba(179,54,44,.25)}" +
+    "html body button.fo-watch-live:hover{background:#9E2F26 !important;transform:translateY(-1px)}" +
     ".fo-watch-live .fo-play{width:28px;height:28px;border-radius:99px;background:rgba(255,255,255,.25);display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}" +
     ".fo-watch-live .fo-play svg{margin-left:2px}" +
     "@keyframes foPulseRed{0%,100%{box-shadow:0 6px 20px rgba(255,0,0,.38)}50%{box-shadow:0 6px 30px rgba(255,0,0,.62)}}" +
