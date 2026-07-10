@@ -7418,7 +7418,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-rail::-webkit-scrollbar-thumb{background:#d8d2c2;border-radius:99px}" +
     "@media(max-width:760px){.fo-rail>*{flex-basis:238px}.fo-dr-sticky{top:0;gap:10px}}" +
     ".fo-exp-def{padding:8px 0;border-bottom:1px solid #efeade;font-size:13px}" +
-    ".fo-exp-def b{display:inline-block;min-width:96px;color:#12203a}.fo-exp-def span{color:#5d6779}" +
+    ".fo-exp-def .fo-exp-gt{display:inline-block;margin-right:8px;color:#12203a;font-weight:800}.fo-exp-def span{color:#5d6779}" +
+    ".fo-exp-gnote{font-size:11px;color:#a09a8a;font-style:italic}" +
+    ".fo-exp-dh{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#C0562F;margin:4px 0 0}" +
+    ".fo-exp-tr{display:flex;gap:9px;margin:5px 0;font-size:12.5px;line-height:1.5}" +
+    ".fo-exp-tr i{font-style:normal;flex:0 0 92px;font-weight:700;color:#12203a}" +
+    ".fo-exp-tr span{color:#5d6779;flex:1;min-width:0}" +
+    ".fo-exp-ovr{display:flex;gap:8px;margin:8px 0 0}" +
+    ".fo-exp-ovr span{flex:1;background:#f6f4ee;border:1px solid #e8e3d5;border-radius:9px;padding:7px 10px;display:flex;flex-direction:column;gap:1px}" +
+    ".fo-exp-ovr i{font-style:normal;font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#8a8474}" +
+    ".fo-exp-ovr b{font-size:17px;color:#12203a;line-height:1.1}" +
     ".fo-exp-talbox{background:#eef4ee;border:1px solid #d5e0d7;border-radius:11px;padding:13px 16px;font-size:13.5px;line-height:1.6;margin-top:16px}" +
     "@media(max-width:760px){.fo-exp-cols{grid-template-columns:1fr}}" +
     ".fo-exp-card .fo-sq-detail{padding:0;background:transparent;border:none;margin-top:4px}" +
@@ -9432,7 +9441,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-1330-97c95f";
+  var FO_BUILD = "20260710-1354-8be2e0";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10885,26 +10894,70 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var bt = ex.btLabel || ((ex.bowlTypeFull && ex.bowlTypeFull !== "none") ? ex.bowlTypeFull : "Does not bowl");
       var detail = "";
       try { detail = (typeof foSqDetail === "function") ? foSqDetail(ex, false) : ""; } catch (eD) {}
+      var ovr = "";
+      try {
+        var isB = ex.bowlTypeFull && ex.bowlTypeFull !== "none";
+        var oc = function (lbl, v) { return "<span><i>" + lbl + "</i><b>" + Math.round(v) + "</b></span>"; };
+        ovr = "<div class='fo-exp-ovr'>" +
+          (isB ? oc("Bowling", aggBowl(ex)) : "") +
+          oc("Batting", aggBat(ex)) +
+          (ex.keeper ? oc("Keeping", aggKeep(ex)) : oc("Fielding", aggField(ex))) +
+          "</div>";
+      } catch (eO) {}
       return "<div class='fo-exp-card'><div class='fo-exp-tag'>" + tagLbl + "</div><div class='fo-exp-h'>" + flag + " <b>" + E(ex.name) + "</b></div>" +
-        "<div class='fo-exp-meta'>" + hand + " &middot; " + E(bt) + " &middot; age " + ex.age + "</div>" +
+        "<div class='fo-exp-meta'>" + hand + " &middot; " + E(bt) + " &middot; age " + ex.age + "</div>" + ovr +
         "<div class='fo-exp-money'><span>Fee <b>" + FO$(foDraftPrice(ex)) + "</b></span><span>Wage <b>" + FO$(foDailyWage(ex)) + "</b>/matchday</span></div>" +
         detail + "</div>";
     };
-    var defs = [
-      ["Batting", "The group that decides runs. <b>Overall</b> is the headline; <b>vs pace</b> and <b>vs spin</b> are real matchups (a spin-weak opener WILL be found out); <b>Rotation</b> turns dots into singles; <b>Power</b> clears the rope; <b>Temperament</b> holds it together under pressure."],
-      ["Bowling", "Only bowlers carry it. <b>Wicket threat</b> buys wickets, <b>Economy</b> buys dots, <b>Discipline</b> avoids wides and no-balls, <b>Move / turn</b> is seam or spin bite, <b>Stamina</b> keeps spells honest (and matters double in hot weather)."],
-      ["In the field", "<b>Fielding</b> saves runs and effects run-outs; <b>Catching</b> sets the drop chance when your bowler earns an edge. Keepers add <b>Keeping</b> and <b>Stumping</b>."],
-      ["The footer", "<b>Experience</b> steadies big moments, <b>Captaincy</b> lifts the whole XI in the field, <b>Fatigue</b> is his freshness ladder today."],
-      ["Words &amp; colours", "Every number wears an honest word (from atrocious to world class) and a colour: red is a liability, amber does a job, teal is good, green wins matches."],
-      ["Hand &amp; style", "RHB/LHB and the bowling type (genuine fast, fast medium, medium, finger spin, wrist spin). The rarity and value of each is on the next page."],
-      ["Age", "Young players improve fastest in training and recover quickly. Players past 30 fade late in innings and long spells, and decline between seasons."],
-      ["Fee &amp; wage", "The fee is paid once, at the draft. The wage is paid every matchday, all season. Better players cost more of both, so a full squad of stars will drain the bank."]
-    ].map(function (d) { return "<div class='fo-exp-def'><b>" + d[0] + "</b><span>" + d[1] + "</span></div>"; }).join("");
+    var gsec = function (title, note, rows) {
+      return "<div class='fo-exp-def'><b class='fo-exp-gt'>" + title + "</b>" + (note ? "<span class='fo-exp-gnote'>" + note + "</span>" : "") +
+        rows.map(function (r) { return "<div class='fo-exp-tr'><i>" + r[0] + "</i><span>" + r[1] + "</span></div>"; }).join("") + "</div>";
+    };
+    var defs =
+      "<div class='fo-exp-dh'>What every number actually does</div>" +
+      gsec("Batting", "every player has these", [
+        ["Overall", "The headline batting number: a weighted blend of the five skills below."],
+        ["vs pace", "Scoring and survival against fast bowling. A low number gets found out by quicks, worst of all on a green pitch."],
+        ["vs spin", "The same against finger and wrist spin. Spin-weak batters get strangled through the middle overs on turning pitches."],
+        ["Rotation", "Turns dot balls into singles and twos. Keeps the score moving without risk: the difference between 40 off 70 and 40 off 55."],
+        ["Power", "Boundary muscle. Decides how often a good connection clears the rope, and what he is worth at the death."],
+        ["Temperament", "Composure under pressure: fewer soft dismissals in tight chases and when wickets are falling around him."]
+      ]) +
+      gsec("Bowling", "bowlers only", [
+        ["Overall", "The headline bowling number, at the top of the group just like the batting one: a blend of all six bowling skills."],
+        ["Wicket threat", "Raw ability to create chances: edges, bowled, lbw. The single biggest driver of wickets."],
+        ["Economy", "Run-choking control: more dot balls, fewer easy boundaries."],
+        ["Discipline", "Fewer wides and no-balls, so fewer free runs and extra deliveries."],
+        ["Move / turn", "Seam movement for pacers, bite for spinners. Green pitches multiply seam; crumbling ones multiply turn."],
+        ["Stamina", "How long a spell stays honest. Low stamina fades late in long spells, and hot or humid days drain it far faster."]
+      ]) +
+      gsec("Reserves", "batters who do not bowl", [
+        ["Technique", "A pure batter&rsquo;s craft: his vs pace, vs spin and temperament rolled into one number."],
+        ["Endurance", "How fresh he stays deep into a long innings; tired legs bring soft dismissals late."]
+      ]) +
+      gsec("In the field", "", [
+        ["Fielding", "Ground fielding: stops runs, saves boundaries and creates run-outs."],
+        ["Catching", "When a bowler earns the edge, this decides whether the chance sticks or is DROPPED."],
+        ["Keeping", "Keepers only: glovework behind the stumps, byes saved and edges taken."],
+        ["Stumping", "Keepers only: how fast the bails come off when a batter overbalances."]
+      ]) +
+      gsec("The footer", "", [
+        ["Experience", "Steadies the big moments; an experienced head plays closer to his numbers under pressure."],
+        ["Captaincy", "Your captain&rsquo;s number lifts the whole XI in the field, but the armband costs him extra energy on draining days."],
+        ["Fatigue", "His freshness today. Tired players bat, bowl and field below their numbers until they rest."],
+        ["Nationality", "Home country. The two best performers per country earn international call-ups during the season."]
+      ]) +
+      gsec("Reading the page", "", [
+        ["Words &amp; colours", "Every number wears an honest word (atrocious at the bottom, legendary at the top) and a colour: <b style='color:#C84F4A'>red</b> is a liability, <b style='color:#D9A441'>amber</b> does a job, <b style='color:#2d7a76'>teal</b> is good, <b style='color:#3E9960'>green</b> wins matches."],
+        ["Hand &amp; style", "RHB or LHB, plus the bowling type: genuine fast, fast medium, medium, finger spin or wrist spin. Rarity and value are on the next page."],
+        ["Age", "Young players train faster and recover quicker. Past 30 they fade late in innings and decline between seasons."],
+        ["Fee &amp; wage", "The fee is paid once, at the draft. The wage is paid every matchday, all season, so a full squad of stars will drain the bank twice over."]
+      ]);
     var body =
       "<div class='fo-ob-card fo-ob-mid'>" +
       "<div class='fo-ob-eyebrow'>Know what you are buying</div>" +
       "<h1 class='fo-ob-h1'>How to read a player</h1>" +
-      "<p class='fo-ob-lead'>Two real players from your draft pool, exactly as every player page shows them: skills grouped into <b>Batting</b>, <b>Bowling</b> and <b>In the field</b>, each with a number, a bar and an honest word. <b style='color:#C84F4A'>Red</b> is a liability, <b style='color:#D9A441'>amber</b> does a job, <b style='color:#2d7a76'>teal</b> is good, <b style='color:#3E9960'>green</b> wins matches.</p>" +
+      "<p class='fo-ob-lead'>Two real players from your draft pool, exactly as every player page shows them: skills grouped into <b>Batting</b>, <b>Bowling</b> and <b>In the field</b>, each with a number, a bar and an honest word. Batters carry a headline batting overall; bowlers carry a headline bowling overall as well. And every trait is spelled out beside the cards: what it does on the pitch and when it decides a match.</p>" +
       "<div class='fo-exp-cols'><div class='fo-exp-cards'>" + mkCard(batter, "The batter") + mkCard(bowler, "The bowler") + "</div><div class='fo-exp-defs'>" + defs + "</div></div>" +
       "<div class='fo-exp-talbox'><b>Talents</b> are permanent traits that fire in specific situations: a <i>Finisher</i> finds boundaries at the death, a <i>New-ball Specialist</i> is deadly in his first spell, a <i>Spin Killer</i> feasts on slow bowling. Tap any talent chip in the game to see what it does.</div>" +
       "<p class='fo-ob-lead' style='margin-top:14px'>Next: reading conditions. Bowling styles and their rarity, pitch types, and what the sky does to a match: the context that decides which of these numbers matter on the day.</p>" +
@@ -13928,7 +13981,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-sq-nickchip{display:inline-block;background:#F6E3B4;color:#7a5c13;border-radius:7px;padding:1px 7px;font-size:10.5px;font-weight:800;margin-left:6px;vertical-align:1px}" +
       ".fo-cp-prov{background:#F0F4F8;border:1px solid rgba(31,78,107,.16);border-radius:10px;padding:10px 13px;font-size:12.5px;color:#243244;margin-bottom:10px}" +
       ".fo-cp-ev{display:flex;gap:9px;align-items:baseline;font-size:12.5px;margin:4px 0;color:#3a4353}" +
-      ".fo-cp-ev i{font-style:normal;flex:0 0 52px;color:#8a93a3;font-size:11px;font-weight:700}" +
+      ".fo-cp-ev i{font-style:normal;flex:0 0 82px;color:#8a93a3;font-size:11px;font-weight:700;white-space:nowrap}" +
       ".fo-mu-troph{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 10px}" +
       ".fo-mu-cup{background:linear-gradient(135deg,#D9A441,#c08a2b);color:#fff;border-radius:10px;padding:8px 14px;font-weight:800;font-size:12.5px;box-shadow:0 3px 10px rgba(160,110,20,.3)}" +
       ".fo-mu-leg{background:#fff;border:1px solid rgba(28,36,51,.1);border-radius:11px;padding:11px 14px;margin:7px 0}" +
@@ -14534,7 +14587,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         }
       } catch (eR) {}
       var evs = (p._career || []).slice().reverse().slice(0, 14).map(function (c) {
-        return "<div class='fo-cp-ev'><i>S" + c.s + " R" + c.r + "</i><span>" + E(c.txt) + "</span></div>";
+        var when = "S" + c.s + " R" + c.r;
+        try { if (typeof foRoundDate === "function") when = foRoundDate(c.s, c.r); } catch (eW) {}
+        return "<div class='fo-cp-ev'><i>" + E(when) + "</i><span>" + E(c.txt) + "</span></div>";
       }).join("") || "<div class='small'>The story starts with the next matchday.</div>";
       var card = document.createElement("div");
       card.className = "panel fo-keep"; card.id = "fo-career"; card.setAttribute("data-n", name);
@@ -14926,11 +14981,30 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         if (o === "dot" || !o) return ".";
         return String(o);
       };
-      var _pass = null, _tal = null;
-      try { _pass = ftpPass; _tal = talentize; } catch (e) {}
+      // the engine's ftpPass/talentize live inside a private IIFE, so both
+      // are reimplemented here in full (a bare reference throws and the
+      // filters silently fall open)
+      var foPassC = function (L, f) {
+        f = f || "all"; var t = L.txt || "";
+        if (f === "all") return true;
+        if (f === "wickets") return _wk(L.out) || /WICKET|out for/i.test(t);
+        if (f === "boundaries") return L.out === "4" || L.out === "6";
+        if (f === "overs") return !!L.mile || /End of over|DRINKS|Innings break/i.test(t);
+        if (f === "highlights") return !!L.mile || _wk(L.out) || L.out === "4" || L.out === "6" || /DROPPED|FIFTY|HUNDRED/i.test(t);
+        if (f === "talents") return /machine|breaker|specialist|golden arm|mystery|bouncer|finisher|lightning|rocket arm|safe hands|miser|killer|hunter|starter|anchor/i.test(t);
+        return true;
+      };
+      var FO_TALHIT = ["SIX MACHINE", "PARTNERSHIP BREAKER", "New Ball Specialist", "Golden Arm", "Mystery Ball", "Bouncer", "Finisher", "Lightning Hands", "Rocket Arm", "Safe Hands", "Miser", "Spin Killer", "Pace Hunter", "Fast Starter", "Anchor", "death specialist"];
       window.ftpCommHTML = function (log, filter, limit) {
-        var pass = _pass || function () { return true; };
-        var tal = _tal || function (t) { return E(t || ""); };
+        var pass = foPassC;
+        var tal = function (t) {
+          var h = E(t || "");
+          for (var ti = 0; ti < FO_TALHIT.length; ti++) {
+            var tn = FO_TALHIT[ti].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            h = h.replace(new RegExp("(" + tn + ")", "ig"), '<span class="talent-hit">$1</span>');
+          }
+          return h;
+        };
         var fieldTest = function (L) {
           if (L.out === "wRO") return true;
           return /DROPPED|Misfield|fumbles|Brilliant stop|diving stop|phenomenal stop|attacks the ball|Stumping chance missed|Rocket Arm|Lightning Hands|run out/i.test(L.txt || "");
@@ -15497,9 +15571,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     };
     // the date a given season/round was played, recovered from tagged history
     window.foRoundDate = function (sn, rn) {
+      var c = (window.foRoundDate.__c = window.foRoundDate.__c || {}), k = sn + "-" + rn;
+      if (c[k]) return c[k];
       for (var nm in (App.playerHist || {})) {
         var hh = App.playerHist[nm];
-        for (var i = 0; i < hh.length; i++) if (hh[i].s === sn && hh[i].r === rn && hh[i].date) return foFmtDate(hh[i].date);
+        for (var i = 0; i < hh.length; i++) if (hh[i].s === sn && hh[i].r === rn && hh[i].date) return (c[k] = foFmtDate(hh[i].date));
       }
       return "S" + sn + " R" + rn;
     };
