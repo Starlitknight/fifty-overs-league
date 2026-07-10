@@ -474,6 +474,12 @@
     ".fo-bell-h{background:#07162E;color:#FFFEFC;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;padding:10px 14px}" +
     ".fo-bell-row{padding:11px 14px;border-bottom:1px solid #f0ece1;font-size:13px;color:#3c4658;cursor:pointer}" +
     ".fo-bell-act{margin-top:7px;display:flex;gap:8px}" +
+    "html body button.fo-watch-live{display:inline-flex;align-items:center;gap:10px;border:0;border-radius:999px;padding:13px 26px 13px 15px;font-weight:800;font-size:14.5px;letter-spacing:.01em;cursor:pointer;background:linear-gradient(135deg,#FF1A1A,#D40000) !important;color:#fff !important;box-shadow:0 6px 20px rgba(255,0,0,.38);animation:foPulseRed 2.2s ease-in-out infinite}" +
+    "html body button.fo-watch-live:hover{background:linear-gradient(135deg,#FF3333,#E60000) !important;transform:translateY(-1px)}" +
+    ".fo-watch-live .fo-play{width:28px;height:28px;border-radius:99px;background:rgba(255,255,255,.25);display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}" +
+    ".fo-watch-live .fo-play svg{margin-left:2px}" +
+    "@keyframes foPulseRed{0%,100%{box-shadow:0 6px 20px rgba(255,0,0,.38)}50%{box-shadow:0 6px 30px rgba(255,0,0,.62)}}" +
+    "@media(max-width:820px){html body button.fo-watch-live{width:100%;justify-content:center}}" +
     ".fo-lv-cards{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px}" +
     ".fo-lv-pc{flex:1 1 150px;min-width:150px;background:#FFFEFC;border:1px solid #DDD8CF;border-left:3px solid #C95532;border-radius:10px;padding:9px 13px;display:flex;flex-direction:column;gap:2px}" +
     ".fo-lv-pc a{font-weight:800;color:#111827;text-decoration:none;font-size:14px}" +
@@ -1761,7 +1767,7 @@
             "<div class='fo-next-eyebrow'><span class='live-dot'></span> Friendly &middot; LIVE now</div>" +
             "<div class='fo-next-opp'>vs " + E(vs) + "</div>" +
             "<div class='fo-next-sub'>" + foFrLiveLine(ch, fst.p) + "</div></div>" +
-            "<div class='fo-next-r'><button class='fo-next-cta' id='fo-fr-watch'>&#9679; Watch live</button></div>";
+            "<div class='fo-next-r'><button class='fo-watch-live' id='fo-fr-watch'><span class='fo-play'><svg viewBox='0 0 24 24' width='13' height='13' fill='currentColor'><path d='M8 5v14l11-7z'/></svg></span>Watch live</button></div>";
           var bw = document.getElementById("fo-fr-watch");
           if (bw) bw.addEventListener("click", function () { location.hash = "#/friendly?id=" + ch.id; if (typeof window.route === "function") window.route(); });
           return;
