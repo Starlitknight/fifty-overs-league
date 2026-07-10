@@ -6696,6 +6696,7 @@
     }).join("") + "</div>";
     var notRec = function (what) { return "<div class='panel'><div class='pad small'>" + what + " were not recorded for this match &middot; friendlies played from now on carry them.</div></div>"; };
     var body = "";
+    var cf = window.__foFrCF || "all";
     if (tab === "ratings") {
       body = r.ratings_html ? "<div class='panel'><h4>Match ratings</h4><div class='pad'>" + r.ratings_html + "</div></div>" : notRec("Match ratings");
     } else if (tab === "fantasy") {
@@ -6716,9 +6717,12 @@
       }).join("");
       body = osec || notRec("Orders");
     } else if (tab === "comm") {
-      body = log.length ? "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'><div id='ftpcomm' class='ftpskin'>" +
-        (typeof ftpCommHTML === "function" ? ftpCommHTML(log, "all", 5000) : "") +
-        "<div class='fo-c-mile'><div class='text'>FULL TIME - " + E(r.result_text || "match complete") + ".</div><div class='clear'></div></div></div></div></div>" : "<div class='panel'><div class='pad small'>No commentary was recorded for this match.</div></div>";
+      var cfBar = "<div class='fo-cfilters'>" + [["all", "All"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["fielding", "Fielding"], ["talents", "Talents"], ["highlights", "Highlights"]].map(function (ff) {
+        return "<button class='fo-sctab fo-frcf" + (cf === ff[0] ? " on" : "") + "' data-f='" + ff[0] + "'>" + ff[1] + "</button>";
+      }).join("") + "</div>";
+      body = log.length ? "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'>" + cfBar + "<div id='ftpcomm' class='ftpskin'>" +
+        (typeof ftpCommHTML === "function" ? ftpCommHTML(log, cf, 5000) : "") +
+        (cf === "all" ? "<div class='fo-c-mile'><div class='text'>FULL TIME - " + E(r.result_text || "match complete") + ".</div><div class='clear'></div></div>" : "") + "</div></div></div>" : "<div class='panel'><div class='pad small'>No commentary was recorded for this match.</div></div>";
     } else if (tab === "charts") {
       try { if (r.worm && r.worm[0] && typeof foMatchCharts === "function") body = "<div class='panel'><h4>Charts</h4><div class='pad'>" + foMatchCharts(r.scorecard || [], r.worm) + "</div></div>"; } catch (eCh) {}
       if (!body) body = "<div class='panel'><div class='pad small'>No chart data was recorded for this match.</div></div>";
@@ -6728,12 +6732,13 @@
     page.innerHTML = "<div id='fo-fr-live'>" + head + hero + bar + body + "</div>";
     window.__foFrCache = { id: id, row: c, html: page.innerHTML, done: true };
   }
-  // tab clicks are delegated, so they keep working after a cache restore
+  // tab + filter clicks are delegated, so they keep working after a cache restore
   document.addEventListener("click", function (ev) {
-    var b = ev.target && ev.target.closest ? ev.target.closest(".fo-frtab") : null;
+    var b = ev.target && ev.target.closest ? ev.target.closest(".fo-frtab,.fo-frcf") : null;
     if (!b) return;
     ev.preventDefault();
-    window.__foFrTab = b.getAttribute("data-t");
+    if (b.classList.contains("fo-frcf")) window.__foFrCF = b.getAttribute("data-f");
+    else window.__foFrTab = b.getAttribute("data-t");
     var cc = window.__foFrCache;
     if (cc && cc.row) foFrDoneRender(cc.row, cc.id);
   });
@@ -6830,9 +6835,18 @@
       pnl.querySelectorAll(".fo-fr-play").forEach(function (b2) { b2.addEventListener("click", function () { var fr = foFriendlies[+b2.getAttribute("data-i")]; if (fr) foPlayFriendly(fr); }); });
       pnl.querySelectorAll(".fo-fr-x").forEach(function (b2) { b2.addEventListener("click", function () { foRemoveFriendly(+b2.getAttribute("data-i")); }); });
       if (!(SYNC && SYNC.started && !SYNC.practice && LG)) return;
+      // cached rows paint instantly (repaint-proof); the fetch refreshes them
+      if (window.__foFrRows) { try { foFrsRenderCh(window.__foFrRows, me); } catch (eR) {} }
       sel("league_challenges", "league_id=eq." + LG.id + "&select=*&order=created_at.desc&limit=24").then(function (rows) {
         rows = (rows || []).filter(function (c) { return c.challenger_club === me || c.opponent_club === me; });
-        var box = pnl.querySelector("#fo-frs-ch"); if (!box || !rows.length) return;
+        window.__foFrRows = rows;
+        foFrsRenderCh(rows, me);
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  function foFrsRenderCh(rows, me) {
+    try {
+      var box = document.querySelector("#fo-frs #fo-frs-ch"); if (!box || !rows.length) return;
         var seenK = "fol_chseen_" + LG.id, seen = {};
         try { seen = JSON.parse(lsGet(seenK) || "{}"); } catch (e) {}
         rows = rows.slice().sort(function (a2, b2) { return new Date(a2.play_at || a2.created_at || 0) - new Date(b2.play_at || b2.created_at || 0); });
@@ -6863,7 +6877,7 @@
         box.querySelectorAll(".fo-ch-acc,.fo-ch-dec").forEach(function (b2) {
           b2.addEventListener("click", function () {
             rpc("challenge_respond", { p_id: b2.getAttribute("data-id"), p_accept: b2.classList.contains("fo-ch-acc") })
-              .then(function () { toast(b2.classList.contains("fo-ch-acc") ? "Challenge accepted \u00b7 attach your lineup any time before the match." : "Challenge declined."); foFriendliesPanel(); })
+              .then(function () { toast(b2.classList.contains("fo-ch-acc") ? "Challenge accepted \u00b7 attach your lineup any time before the match." : "Challenge declined."); window.__foFrRows = null; foFriendliesPanel(); })
               .catch(say);
           });
         });
@@ -6873,8 +6887,6 @@
             if (c2) foChalPrep(c2);
           });
         });
-        // friendlies live in their own panel, never in the league table
-      }).catch(function () {});
     } catch (e) {}
   }
   // home: a one-line nudge when a challenge needs the manager's attention
