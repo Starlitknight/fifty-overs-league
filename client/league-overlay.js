@@ -2732,8 +2732,11 @@
     try {
       var i1 = m.innings[0], i2 = m.innings[1];
       var h = foFrHist();
+      var savedIx = null;
+      try { (App.results || []).forEach(function (r0) { if (r0.comp === "friendly" && r0.result && r0.result.text === ((m.result && m.result.text) || "")) savedIx = r0.ix; }); } catch (eSx) {}
       h.unshift({
         at: Date.now(), opp: (m.meta && m.meta.away) || "", ground: (m.meta && m.meta.ground) || "",
+        pitch: (m.meta && m.meta.pitch) || "", wx: (m.meta && m.meta.weather) || "", ix: savedIx,
         txt: (m.result && m.result.text) || "", mom: (m.result && m.result.mom) || "",
         s1: i1 ? i1.batTeam + " " + i1.runs + "/" + i1.wkts : "", s2: i2 ? i2.batTeam + " " + i2.runs + "/" + i2.wkts : ""
       });
@@ -6792,10 +6795,21 @@
         }
         // done: full time - a proper little match centre with sub-tabs
         foFrDoneRender(c, mh[1]);
-      }).catch(function () {});
+      }).catch(function () {
+        var pg2 = document.getElementById("page");
+        if (pg2 && /Tuning in/.test(pg2.textContent || "")) pg2.innerHTML = "<div class='crumb'>Friendly</div><div class='panel'><div class='pad small'>Could not load this friendly &middot; check your connection and try again.</div></div>";
+      });
     } catch (e) {}
   }
   window.addEventListener("hashchange", function () { setTimeout(foRenderFriendlyLive, 20); });
+  document.addEventListener("click", function (ev) {
+    var a0 = ev.target && ev.target.closest ? ev.target.closest("a[href^='#/friendly?id=']") : null;
+    if (!a0) return;
+    ev.preventDefault();
+    location.hash = a0.getAttribute("href");
+    if (typeof window.route === "function") try { window.route(); } catch (e) {}
+    setTimeout(foRenderFriendlyLive, 10); setTimeout(foRenderFriendlyLive, 400);
+  });
   if (typeof window.route === "function" && !window.route.__foFrLive) {
     var _rtFr = window.route;
     window.route = function () { var r2 = _rtFr.apply(this, arguments); try { foRenderFriendlyLive(); } catch (e) {} return r2; };
@@ -6820,10 +6834,11 @@
       try {
         (foFrHist() || []).forEach(function (e2) {
           var ts = +new Date(e2.at) || 0;
-          var ix = null;
-          try { (App.results || []).forEach(function (r0) { if (r0.comp === "friendly" && r0.result && r0.result.text === e2.txt && (r0.away === e2.opp || r0.home === e2.opp)) ix = r0.ix; }); } catch (eIx) {}
-          var res = ix != null ? "<a href='#/scorecard?i=" + ix + "'>" + E(e2.txt) + "</a>" : "<b>" + E(e2.txt) + "</b>";
-          entries.push({ ts: ts, html: "<tr><td>" + new Date(e2.at).toLocaleDateString([], { month: "short", day: "numeric" }) + "</td><td>Practice</td><td>vs " + E(e2.opp) + "</td><td>" + res + "</td></tr>" });
+          var ix = e2.ix;
+          if (ix == null) try { (App.results || []).forEach(function (r0) { if (r0.comp === "friendly" && r0.result && r0.result.text === e2.txt && (r0.away === e2.opp || r0.home === e2.opp)) ix = r0.ix; }); } catch (eIx) {}
+          var res = ix != null ? "<a href='#/scorecard?i=" + ix + "'>" + E(e2.txt) + "</a>" : E(e2.txt);
+          var cond = (e2.pitch || e2.wx) ? " <span class='small'>" + foPitchName(e2.pitch || "") + (e2.wx ? ", " + E(e2.wx) : "") + "</span>" : (e2.ground ? " <span class='small'>" + E(e2.ground) + "</span>" : "");
+          entries.push({ ts: ts, html: "<tr><td>" + new Date(e2.at).toLocaleDateString([], { month: "short", day: "numeric" }) + "</td><td>Practice</td><td>vs " + E(e2.opp) + cond + "</td><td>" + res + "</td></tr>" });
         });
       } catch (eH) {}
       if (mp && window.__foFrRows) {
@@ -6846,7 +6861,7 @@
           else if (c.status === "declined") act = "<span class='small'>declined</span>";
           else if (c.status === "expired") act = "<span class='small'>expired</span>";
           else if (c.status === "played" && c.result && fst.phase !== "live") {
-            act = "<a href='#/friendly?id=" + c.id + "'>" + E(c.result.result_text || "played") + "</a>" + (c.result.mom ? " <span class='small'>&middot; " + E(c.result.mom) + "</span>" : "");
+            act = "<a href='#/friendly?id=" + c.id + "'>" + E(c.result.result_text || "played") + "</a>";
             if (!seen[c.id]) { toast("Friendly result: " + (c.result.result_text || "played")); seen[c.id] = 1; }
           }
           entries.push({ ts: ts, html: "<tr><td>" + when + "</td><td>Friendly</td><td>" + (mineSent ? "vs " : "from ") + E(vs) + " <span class='small'>" + foPitchName(c.pitch) + ", " + E(c.weather || "") + "</span></td><td>" + act + "</td></tr>" });
@@ -7164,7 +7179,10 @@
       frTbl.__foClean = 1;
       var hr = frTbl.rows[0];
       while (hr && hr.cells.length > 6) hr.deleteCell(-1);
+      if (hr && hr.cells[1] && /class/i.test(hr.cells[1].textContent)) hr.cells[1].textContent = "Type";
       var bandDate = null;
+      var openMap = (window.__foFxOpen = window.__foFxOpen || {});
+      var curBand = null, groups = [];
       var timeShort = String(MATCH_TIME || "9:00 AM ET").replace(/\s*ET\s*$/, "");
       Array.prototype.slice.call(frTbl.rows, 1).forEach(function (tr) {
         var c0 = tr.cells[0];
@@ -7172,14 +7190,18 @@
           if (c0.colSpan > 6) c0.colSpan = 6;
           var mB = (c0.textContent || "").match(/\u00b7\s*([^(]+?)\s*\(/);
           if (mB) bandDate = mB[1].trim();
+          curBand = { tr: tr, label: (c0.textContent || "").trim(), rows: [] };
+          groups.push(curBand);
           return;
         }
         if (tr.cells.length < 9) return;
+        if (curBand) curBand.rows.push(tr);
         // "Jul 8, 9:00 AM" instead of a bare round number
         if (bandDate) {
           var mD = bandDate.match(/(\d{1,2})\s+([A-Za-z]{3})/);
           tr.cells[0].innerHTML = (mD ? mD[2] + " " + mD[1] : bandDate) + ", " + timeShort;
         }
+        if (tr.cells[1] && /^\s*Lg\s*$/.test(tr.cells[1].textContent)) tr.cells[1].textContent = "League";
         var resTd = tr.cells[5];
         var scA = tr.cells[6] && tr.cells[6].querySelector("a[href*='scorecard']");
         if (scA) {
@@ -7189,6 +7211,25 @@
           resTd.textContent = ""; resTd.appendChild(a2);
         }
         tr.deleteCell(8); tr.deleteCell(7); tr.deleteCell(6);
+      });
+      // collapsible rounds: the current round and the latest played round
+      // start open; every band header toggles its rows
+      var lastPlayed = null;
+      groups.forEach(function (g) { if (/\(played\)/i.test(g.label)) lastPlayed = g; });
+      groups.forEach(function (g) {
+        var key = g.label.replace(/\s*\((played|current|upcoming)\)\s*$/i, "");
+        var dflt = /\(current\)/i.test(g.label) || g === lastPlayed;
+        var open = openMap[key] != null ? openMap[key] : dflt;
+        var apply = function () {
+          g.rows.forEach(function (row) { row.style.display = open ? "" : "none"; });
+          var c1 = g.tr.cells[0];
+          var chev = c1.querySelector(".fo-fx-chev");
+          if (!chev) { chev = document.createElement("span"); chev.className = "fo-fx-chev"; c1.insertBefore(chev, c1.firstChild); }
+          chev.innerHTML = open ? "&#9662; " : "&#9656; ";
+        };
+        apply();
+        g.tr.style.cursor = "pointer";
+        g.tr.addEventListener("click", function () { open = !open; openMap[key] = open; apply(); });
       });
     } catch (e) {}
   }
