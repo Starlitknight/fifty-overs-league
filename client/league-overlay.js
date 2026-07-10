@@ -461,8 +461,8 @@
     ".fo-ch-quick a:hover{color:#111827;border-color:#cfc9ba}" +
     ".fo-chal-chip{display:inline-flex;gap:6px;align-items:baseline;margin:12px 0 0;background:#fdf3e2;border:1px solid #ecd28f;color:#6a4800;border-radius:999px;padding:7px 14px;font-size:12.5px;text-decoration:none;font-weight:600}" +
     ".fo-intro-now{padding:10px 12px;background:#faf6ea;border-left:3px solid #F59E0B;font-size:12.5px;line-height:1.6;color:#3c4658}" +
-    ".fo-lk{cursor:pointer;text-decoration:underline dotted rgba(120,110,90,.55);text-underline-offset:3px}" +
-    ".fo-lk:hover{color:#1f4e5f;text-decoration-color:#1f4e5f}" +
+    ".fo-lk{cursor:pointer}" +
+    ".fo-lk:hover{color:#B04A2C;text-decoration:underline;text-underline-offset:3px}" +
     ".fo-dot{display:inline-block;width:8px;height:8px;border-radius:99px;vertical-align:0}" +
     ".fo-dot-on{background:#16A34A;box-shadow:0 0 0 2px rgba(62,153,96,.25)}.fo-dot-off{background:#8a93a3}" +
     ".fo-bot-chip{font-size:10px;font-weight:800;letter-spacing:.07em;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:2px 8px;color:#c7cfda;vertical-align:1px}" +
