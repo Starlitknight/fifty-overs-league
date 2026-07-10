@@ -201,8 +201,27 @@
       App.tossState = { stage:'x' };
       // deterministic toss, identical to simBackground(): home ("user" slot) bats if true
       applyToss(aiTossDecision());
-      var g = 0; while (!M.done && g++ < 3000){ autoPick(); stepBall(); }
-      return buildResult(M);
+      // per-ball tracker for the live broadcast: who is at the crease, the
+      // bowler's figures and the score after every delivery. L = log length
+      // at that moment, so the client can align it with the revealed feed.
+      var track = [];
+      var g = 0; while (!M.done && g++ < 3000){
+        autoPick(); stepBall();
+        try {
+          var li = (M.log && M.log[0]) ? M.log[0].inn : M.inns;
+          var inn2 = M.innings[li] || M.innings[M.inns];
+          if (inn2) {
+            var rc = function (x){ return (x && x.p) ? { n:x.p.name, r:x.r||0, b:x.b||0, f4:x.f4||0, f6:x.f6||0 } : null; };
+            var bwr = inn2.bowlers && inn2.bowlers[inn2.curBowlerName];
+            track.push({ L: M.log.length, i: li,
+              s: rc(inn2.bat[inn2.striker]), ns: rc(inn2.bat[inn2.nonstriker]),
+              bw: bwr ? { n: inn2.curBowlerName, r: bwr.r||0, w: bwr.w||0, b: bwr.b||0 } : null,
+              sc: [inn2.runs||0, inn2.wkts||0, inn2.legal||0] });
+          }
+        } catch (eT) {}
+      }
+      var out = buildResult(M); out.track = track;
+      return out;
     } finally {
       M = _M; App.tossState = _toss; App.orders = _orders; App.page = _page;
       window.onMatchEnd = _ome; window.__RESOLVE_ACTIVE = _res; UI.usePlan = _up;

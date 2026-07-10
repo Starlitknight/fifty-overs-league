@@ -474,6 +474,12 @@
     ".fo-bell-h{background:#07162E;color:#FFFEFC;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;padding:10px 14px}" +
     ".fo-bell-row{padding:11px 14px;border-bottom:1px solid #f0ece1;font-size:13px;color:#3c4658;cursor:pointer}" +
     ".fo-bell-act{margin-top:7px;display:flex;gap:8px}" +
+    ".fo-lv-cards{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px}" +
+    ".fo-lv-pc{flex:1 1 150px;min-width:150px;background:#FFFEFC;border:1px solid #DDD8CF;border-left:3px solid #C95532;border-radius:10px;padding:9px 13px;display:flex;flex-direction:column;gap:2px}" +
+    ".fo-lv-pc a{font-weight:800;color:#111827;text-decoration:none;font-size:14px}" +
+    ".fo-lv-pc a:hover{color:#B04A2C}" +
+    ".fo-lv-tag{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#667085;font-weight:700}" +
+    ".fo-lv-fig{font-size:12.5px;color:#3c4658}" +
     ".fo-bell-act .fo-bell-acc{background:#15803D;border-color:#15803D;color:#fff}" +
     ".fo-bell-act .fo-bell-dec{background:transparent;border:1px solid #DDD8CF;color:#667085}" +
     ".fo-bell-row:hover{background:#EEEAE1}.fo-bell-row:last-child{border-bottom:none}" +
@@ -6805,6 +6811,122 @@
       }).join("");
     } catch (e) { return ""; }
   }
+  // who is at the crease right now, from the banked per-ball tracker
+  function foFrTrackAt(r, upto) {
+    var tk = null;
+    try { (r.track || []).forEach(function (t2) { if (t2 && t2.L <= upto && (!tk || t2.L > tk.L)) tk = t2; }); } catch (e) {}
+    return tk;
+  }
+  function foFrCrease(tk) {
+    if (!tk) return "";
+    var pc = function (x, tag, fig) {
+      if (!x) return "";
+      return "<div class='fo-lv-pc'><span class='fo-lv-tag'>" + tag + "</span><a href='#/player?n=" + encodeURIComponent(x.n) + "'>" + E(x.n) + "</a><span class='fo-lv-fig'>" + fig + "</span></div>";
+    };
+    var bat = function (x, tag) { return !x ? "" : pc(x, tag, "<b>" + (x.r || 0) + "</b> (" + (x.b || 0) + ")" + ((x.f4 || x.f6) ? " &middot; " + (x.f4 || 0) + "x4 " + (x.f6 || 0) + "x6" : "")); };
+    return "<div class='fo-lv-cards'>" +
+      bat(tk.s, "Striker &#9733;") + bat(tk.ns, "Non-striker") +
+      (tk.bw ? pc(tk.bw, "Bowler", "<b>" + (tk.bw.w || 0) + "/" + (tk.bw.r || 0) + "</b> (" + Math.floor((tk.bw.b || 0) / 6) + "." + ((tk.bw.b || 0) % 6) + " ov)") : "") + "</div>";
+  }
+  // a live scorecard built ONLY from what the broadcast has revealed: batters
+  // and bowlers carry their figures as of the last shown ball - no spoilers
+  function foFrLiveScore(r, tk, upto) {
+    try {
+      if (!tk) return "";
+      var html = "";
+      for (var ii = 0; ii < tk.i; ii++) {
+        var doneInn = (r.scorecard || [])[ii];
+        if (doneInn) html += foFrScoreTables({ scorecard: [doneInn] });
+      }
+      var seenBat = {}, orderBat = [], seenBowl = {}, orderBowl = [];
+      (r.track || []).forEach(function (t2) {
+        if (!t2 || t2.i !== tk.i || t2.L > upto) return;
+        [t2.s, t2.ns].forEach(function (x) { if (!x) return; if (!seenBat[x.n]) orderBat.push(x.n); seenBat[x.n] = x; });
+        if (t2.bw) { if (!seenBowl[t2.bw.n]) orderBowl.push(t2.bw.n); seenBowl[t2.bw.n] = t2.bw; }
+      });
+      var fin = (r.scorecard || [])[tk.i] || {};
+      var outTxt = {}; (fin.batting || []).forEach(function (b2) { outTxt[b2.name] = b2.out; });
+      var atCrease = {}; if (tk.s) atCrease[tk.s.n] = 1; if (tk.ns) atCrease[tk.ns.n] = 1;
+      var bat = orderBat.map(function (n) {
+        var x = seenBat[n];
+        var st2 = atCrease[n] ? "<span style='color:#15803D;font-weight:700'>batting</span>" : E(outTxt[n] && outTxt[n] !== "not out" ? outTxt[n] : "");
+        return "<tr><td><b>" + E(n) + "</b><div class='small'>" + st2 + "</div></td><td class='n'><b>" + (x.r || 0) + "</b></td><td class='n'>" + (x.b || 0) + "</td><td class='n'>" + (x.f4 || 0) + "</td><td class='n'>" + (x.f6 || 0) + "</td><td class='n'>" + (x.b ? (100 * x.r / x.b).toFixed(1) : 0) + "</td></tr>";
+      }).join("");
+      var bowl = orderBowl.map(function (n) {
+        var x = seenBowl[n];
+        return "<tr><td><b>" + E(n) + "</b></td><td class='n'>" + Math.floor((x.b || 0) / 6) + "." + ((x.b || 0) % 6) + "</td><td class='n'>" + (x.r || 0) + "</td><td class='n'>" + (x.w || 0) + "</td><td class='n'>" + (x.b ? (x.r / (x.b / 6)).toFixed(2) : 0) + "</td></tr>";
+      }).join("");
+      html += "<div class='panel fo-sci'><div class='fo-sci-head'><b>" + E(fin.batTeam || "") + "</b><span>" + tk.sc[0] + "/" + tk.sc[1] + " <em>(" + Math.floor(tk.sc[2] / 6) + "." + (tk.sc[2] % 6) + " ov)</em></span></div><div class='pad'>" +
+        "<table class='fo-sct'><thead><tr><th>Batting</th><th class='n'>R</th><th class='n'>B</th><th class='n'>4s</th><th class='n'>6s</th><th class='n'>SR</th></tr></thead><tbody>" + bat + "</tbody></table>" +
+        "<table class='fo-sct' style='margin-top:12px'><thead><tr><th>Bowling</th><th class='n'>O</th><th class='n'>R</th><th class='n'>W</th><th class='n'>Econ</th></tr></thead><tbody>" + bowl + "</tbody></table>" +
+        "</div></div>";
+      return html;
+    } catch (e) { return ""; }
+  }
+  function foFrLiveCharts(r, tk) {
+    try {
+      if (!tk || typeof foMatchCharts !== "function") return "";
+      var lim = tk.sc[2] / 6 + 0.001;
+      var worms = (r.worm || []).map(function (arr, i) {
+        if (!arr || i > tk.i) return [];
+        return i < tk.i ? arr : arr.filter(function (pt) { return pt && pt[0] <= lim; });
+      }).slice(0, tk.i + 1);
+      var all = (r.scorecard || []).slice(0, tk.i + 1).map(function (inn) { return { batTeam: (inn && inn.batTeam) || "" }; });
+      if (!worms[0] || !worms[0].length) return "";
+      return foMatchCharts(all, worms);
+    } catch (e) { return ""; }
+  }
+  function foFrLiveDraw(c, id) {
+    var page = document.getElementById("page"); if (!page) return;
+    var st = foFrBcastState(c);
+    if (st.phase !== "live") { foRenderFriendlyLive(); return; }
+    var r = c.result || {};
+    var log = (r.log || []).slice().reverse();   // chronological
+    var upto = Math.max(2, Math.floor(st.p * log.length));
+    var vis = log.slice(0, upto).reverse();      // newest ball first
+    var mins = Math.max(1, Math.round((st.endsAt - Date.now()) / 60000));
+    var head = "<div class='crumb'>" + E(c.challenger_club) + " v " + E(c.opponent_club) + " &raquo; Friendly</div>";
+    var tk = foFrTrackAt(r, upto);
+    var tab = window.__foFrLTab || "feed";
+    var cf = window.__foFrLCF || "all";
+    var bar = "<div class='fo-sctabs'>" + [["feed", "Live feed"], ["score", "Scorecard"], ["charts", "Charts"], ["ratings", "Match ratings"]].map(function (t2) {
+      return "<button class='fo-sctab fo-frltab" + (tab === t2[0] ? " on" : "") + "' data-t='" + t2[0] + "'>" + t2[1] + "</button>";
+    }).join("") + "</div>";
+    var body = "";
+    if (tab === "score") {
+      body = foFrLiveScore(r, tk, upto) || "<div class='panel'><div class='pad small'>The live scorecard was not tracked for this match &middot; friendlies from now on carry it. The full card lands at stumps.</div></div>";
+    } else if (tab === "charts") {
+      var ch2 = foFrLiveCharts(r, tk);
+      body = ch2 ? "<div class='panel'><h4>Charts &middot; so far</h4><div class='pad'>" + ch2 + "</div></div>" : "<div class='panel'><div class='pad small'>Charts build as play unfolds &middot; the full set lands at stumps.</div></div>";
+    } else if (tab === "ratings") {
+      body = "<div class='panel'><div class='pad small'>Match ratings are compiled at stumps &middot; they land with the final scorecard.</div></div>";
+    } else {
+      var cfBar = "<div class='fo-cfilters'>" + [["all", "All"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["fielding", "Fielding"], ["talents", "Talents"], ["highlights", "Highlights"]].map(function (ff) {
+        return "<button class='fo-sctab fo-frlcf" + (cf === ff[0] ? " on" : "") + "' data-f='" + ff[0] + "'>" + ff[1] + "</button>";
+      }).join("") + "</div>";
+      var over0 = upto >= log.length ? "<div class='fo-c-mile'><div class='text'>That is the last ball - the umpires check the paperwork. The official result lands at stumps.</div><div class='clear'></div></div>" : "";
+      body = "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'>" + cfBar + "<div id='ftpcomm' class='ftpskin'>" +
+        over0 + (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, cf, 5000) : "") + "</div></div></div>";
+    }
+    page.innerHTML = "<div id='fo-fr-live'>" + head +
+      "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE &middot; stumps in ~" + mins + " min</div>" +
+      "<div class='fo-live-score'>" + foFrLiveLine(c, st.p) + "</div>" +
+      "<div class='fo-live-sub'>Friendly &middot; " + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + " &middot; the result arrives at stumps</div></div>" +
+      foFrCrease(tk) + bar + body + "</div>";
+    window.__foFrLiveRow = { id: id, c: c };
+    window.__foFrCache = { id: id, html: page.innerHTML, done: false };
+  }
+  window.__foFrLiveTest = function (c, id) { foFrLiveDraw(c, id); };   // debug/test hook (harmless)
+  // live tab + filter clicks redraw instantly from the last fetched row
+  document.addEventListener("click", function (ev) {
+    var b = ev.target && ev.target.closest ? ev.target.closest(".fo-frltab,.fo-frlcf") : null;
+    if (!b) return;
+    ev.preventDefault();
+    if (b.classList.contains("fo-frlcf")) window.__foFrLCF = b.getAttribute("data-f");
+    else window.__foFrLTab = b.getAttribute("data-t");
+    var lr = window.__foFrLiveRow;
+    if (lr && (location.hash || "").indexOf(lr.id) >= 0) foFrLiveDraw(lr.c, lr.id);
+  });
   function foFrDoneRender(c, id) {
     var page = document.getElementById("page"); if (!page) return;
     var r = c.result || {};
@@ -6913,20 +7035,7 @@
         }
         var r = c.result || {};
         var log = (r.log || []).slice().reverse();   // stored newest-first -> chronological
-        if (st.phase === "live") {
-          var upto = Math.max(2, Math.floor(st.p * log.length));
-          var vis = log.slice(0, upto).reverse();    // newest ball first - the latest delivery greets you at the top
-          var mins = Math.max(1, Math.round((st.endsAt - Date.now()) / 60000));
-          var over0 = upto >= log.length ? "<div class='fo-c-mile'><div class='text'>That is the last ball - the umpires check the paperwork. The official result lands at stumps.</div><div class='clear'></div></div>" : "";
-          page.innerHTML = "<div id='fo-fr-live'>" + head +
-            "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE &middot; stumps in ~" + mins + " min</div>" +
-            "<div class='fo-live-score'>" + foFrLiveLine(c, st.p) + "</div>" +
-            "<div class='fo-live-sub'>Friendly &middot; " + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + " &middot; the result arrives at stumps</div></div>" +
-            "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'><div id='ftpcomm' class='ftpskin'>" +
-            over0 + (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, "all", 5000) : "") + "</div></div></div></div>";
-          window.__foFrCache = { id: mh[1], html: page.innerHTML, done: false };
-          return;
-        }
+        if (st.phase === "live") { foFrLiveDraw(c, mh[1]); return; }
         // done: full time - a proper little match centre with sub-tabs
         foFrDoneRender(c, mh[1]);
       }).catch(function () {
