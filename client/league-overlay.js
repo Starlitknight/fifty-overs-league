@@ -6154,7 +6154,7 @@
           if (c.ev === "cap") items.push({ pri: 0, h: "CALL-UP: " + E(c.name) + " selected for " + E(c.nat), s: "the " + (c.n > 1 ? c.n + (c.n === 2 ? "nd" : c.n === 3 ? "rd" : "th") + " cap for" : "first cap for") + " the " + E(t.name) + " man" });
         });
         if (t._chronFarewell && t._chronFarewell.s === (App.seasonNo || 1) - 1) t._chronFarewell.names.forEach(function (nm) {
-          items.push({ pri: 0, h: "FAREWELL: " + E(nm) + " retires", s: "a " + E(t.name) + " career remembered in the museum" });
+          items.push({ pri: 0, h: "FAREWELL: " + E(nm) + " retires", s: "a " + E(t.name) + " career remembered in the museum · he " + foDestiny(nm) });
         });
         if (t._chronAwards && t._chronAwards.s === (App.seasonNo || 1)) (t._chronAwards.list || []).slice(0, 3).forEach(function (aw) {
           items.push({ pri: 0, h: "AWARD: " + E(aw.name) + " · " + E(aw.kind), s: "for " + E(t.name) });
@@ -8062,10 +8062,12 @@
       var p = (t.players || []).concat(t.youth || []).find(function (x) { return x.name === name; });
       if (!p) return;   // careers are for your own players; the rest stay scouted
       var prov = p._prov;
+      var homeTxt = ""; try { homeTxt = " · born in " + foHometown(p); } catch (eH) {}
       var provTxt = !prov ? "Founding squad · with the club from day one"
         : prov.how === "market" ? "Signed from the transfer market, S" + prov.s + " R" + prov.r + (prov.fee ? " · " + FO$(prov.fee) + " fee, beaten to by no one" : "")
         : prov.how === "youth" ? "Found by your scout" + (prov.nat ? " in " + prov.nat : "") + ", S" + prov.s + " R" + prov.r + " · your signing, your project"
         : "Your draft pick, day one";
+      provTxt += homeTxt;
       var h = ((App.playerHist && App.playerHist[name]) || []).filter(function (e) { return !e.fr; });
       var bySeason = {};
       h.forEach(function (e) {
@@ -9018,6 +9020,88 @@
     var wcs = document.createElement("style");
     wcs.textContent = ".fo-news-by{margin-top:9px;padding-top:7px;border-top:1px dashed #e8e3d6;font-size:11px;color:#a09a8a;font-style:italic}";
     document.head.appendChild(wcs);
+    window.foDestiny = function (nm) {
+      var d = ["moves into the commentary box", "takes a coaching badge back home", "signs one last deal in the Northern Premier", "joins the umpiring panel", "opens a batting academy", "will run the family farm and watch from the hill"];
+      return d[foHash32("dest-" + nm) % d.length];
+    };
+    var FO_CITIES = { NED: ["Rotterdam", "Utrecht", "Haarlem", "Deventer"], ENG: ["Leeds", "Taunton", "Canterbury", "Chester-le-Street"], AUS: ["Ballarat", "Newcastle", "Geelong", "Townsville"], IND: ["Pune", "Rajkot", "Indore", "Mysore"], PAK: ["Multan", "Sialkot", "Hyderabad", "Peshawar"], SAF: ["Paarl", "Bloemfontein", "Kimberley", "George"], NZL: ["Napier", "Dunedin", "Nelson", "Whangarei"], SRI: ["Galle", "Kandy", "Matara", "Kurunegala"], WIN: ["Arima", "Spanish Town", "Bridgetown", "Basseterre"], BAN: ["Khulna", "Rajshahi", "Sylhet", "Bogra"], AFG: ["Jalalabad", "Khost", "Kandahar", "Kunduz"], IRE: ["Cork", "Galway", "Lisburn", "Drogheda"] };
+    window.foHometown = function (pl) {
+      var cities = FO_CITIES[pl.nat] || ["a small town"];
+      return cities[foHash32("home-" + pl.name) % cities.length];
+    };
+    // ---- the league almanac (#/almanac): the whole world's record book ----
+    window.foAlmanacHTML = function () {
+      var champs = [];
+      (GD.teams || []).forEach(function (t) {
+        (((t._museum || {}).trophies) || []).forEach(function (tr) {
+          if (/champion|title|league/i.test(tr.kind || "")) champs.push({ s: tr.s, t: t.name, k: tr.kind });
+        });
+      });
+      champs.sort(function (a, b) { return (a.s || 0) - (b.s || 0); });
+      var runsAll = [], wktsAll = [], capsAll = [];
+      for (var nm in (App.playerHist || {})) {
+        var r = 0, w = 0;
+        (App.playerHist[nm] || []).forEach(function (e) { if (!e.fr) { r += +e.rr || 0; w += +e.w || 0; } });
+        if (r) runsAll.push({ n: nm, v: r });
+        if (w) wktsAll.push({ n: nm, v: w });
+      }
+      (GD.teams || []).forEach(function (t) { (t.players || []).forEach(function (pp) { if (pp._caps) capsAll.push({ n: pp.name, v: pp._caps, nat: pp.nat }); }); });
+      runsAll.sort(function (a, b) { return b.v - a.v; }); wktsAll.sort(function (a, b) { return b.v - a.v; }); capsAll.sort(function (a, b) { return b.v - a.v; });
+      var hi = null, bb = null, big = null;
+      (App.results || []).forEach(function (rr2) {
+        if (rr2.comp !== "league" || !rr2.innings) return;
+        rr2.innings.filter(Boolean).forEach(function (inn) {
+          if (!hi || inn.runs > hi.r) hi = { r: inn.runs, w: inn.wkts, t: inn.batTeam, g: rr2.ground };
+          (inn.bat || []).forEach(function (b2) { if (b2 && (!big || b2.r > big.r)) big = { r: b2.r, b: b2.b, n: b2.p.name }; });
+          for (var k in (inn.bowlers || {})) { var br2 = inn.bowlers[k]; if (!bb || br2.w > bb.w || (br2.w === bb.w && br2.r < bb.r)) bb = { w: br2.w, r: br2.r, n: k }; }
+        });
+      });
+      var list = function (arr, unit) {
+        return arr.slice(0, 8).map(function (x, i) { return "<div class='fo-ms-row'><span>" + (i + 1) + ".</span><b>" + E(x.n) + "</b>" + (x.nat ? " <span class='small'>" + E(x.nat) + "</span>" : "") + "<i>" + x.v.toLocaleString() + " " + unit + "</i></div>"; }).join("") || "<div class='small'>Nothing yet - the history is still being written.</div>";
+      };
+      var pn = function (t2, b2) { return "<div class='panel'><h4>" + t2 + "</h4><div class='pad'>" + b2 + "</div></div>"; };
+      return "<div class='crumb'>League &raquo; Almanac</div>" +
+        "<div class='page-head'><div><div class='eyebrow'>The record book</div><h1>The Fifty Overs Almanac</h1><p>Everything that has ever happened in this league, kept for good.</p></div></div>" +
+        pn("Roll of honour", champs.map(function (c) { return "<div class='fo-ms-row'><span>Season " + c.s + "</span><b>" + E(c.t) + "</b><i>" + E(c.k) + "</i></div>"; }).join("") || "<div class='small'>No champions yet. Someone will be first.</div>") +
+        pn("All-time run scorers", list(runsAll, "runs")) +
+        pn("All-time wicket takers", list(wktsAll, "wkts")) +
+        pn("Most international caps", list(capsAll, "caps")) +
+        pn("Record book", (hi ? "<div class='fo-ms-row'><span>Highest total</span><b>" + hi.r + "/" + hi.w + " " + E(hi.t) + "</b><i>" + E(hi.g || "") + "</i></div>" : "") +
+          (big ? "<div class='fo-ms-row'><span>Best innings</span><b>" + big.r + " (" + big.b + ") " + E(big.n) + "</b><i></i></div>" : "") +
+          (bb && bb.w ? "<div class='fo-ms-row'><span>Best bowling</span><b>" + bb.w + "/" + bb.r + " " + E(bb.n) + "</b><i></i></div>" : "") || "<div class='small'>No league matches yet.</div>") +
+        (typeof foVenueRecords === "function" ? foVenueRecords() : "");
+    };
+    function foRenderAlmanac() {
+      try {
+        if (!/^#\/almanac/.test(location.hash || "")) return;
+        var page = document.getElementById("page"); if (!page) return;
+        if (page.querySelector(".fo-alm-flag")) return;
+        page.innerHTML = "<div class='fo-alm-flag'></div>" + foAlmanacHTML();
+      } catch (e) {}
+    }
+    window.addEventListener("hashchange", function () { setTimeout(foRenderAlmanac, 25); });
+    if (typeof window.route === "function" && !window.route.__foAlm) {
+      var _rt2 = window.route;
+      window.route = function () { var r = _rt2.apply(this, arguments); try { foRenderAlmanac(); } catch (e) {} return r; };
+      window.route.__foAlm = 1;
+    }
+    // stats page links to the almanac
+    if (typeof window.pgStats === "function" && !window.pgStats.__foAlm) {
+      var _ps2 = window.pgStats;
+      window.pgStats = function () {
+        var out = _ps2.apply(this, arguments);
+        try {
+          var pg3 = document.getElementById("page");
+          if (pg3 && !pg3.querySelector(".fo-alm-link")) {
+            var d2 = document.createElement("div"); d2.className = "fo-alm-link";
+            d2.innerHTML = "<div class='panel'><div class='pad' style='text-align:center'><a href='#/almanac' style='font-weight:800'>&#128214; Open the Fifty Overs Almanac - the league's all-time record book &rsaquo;</a></div></div>";
+            pg3.appendChild(d2);
+          }
+        } catch (e) {}
+        return out;
+      };
+      window.pgStats.__foAlm = 1;
+    }
     window.__foWorld = { umpires: foUmpiresOf, intlPick: foIntlPick };
   })(); } catch (e) { console.warn("broader world", e); }
 
