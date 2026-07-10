@@ -10885,11 +10885,11 @@
       ".fo-live-sub{font-size:12px;color:#93a0b4}" +
       ".fo-live-row{display:flex;gap:10px;align-items:baseline;padding:9px 0;border-bottom:1px solid #f0ece1;font-size:13px}" +
       ".fo-live-row b{flex:1;color:#111827}.fo-live-row span{color:#DC2626;font-weight:700}" +
-      "html body #topbar a.fo-bcast{display:inline-flex;align-items:center;gap:7px;background:rgba(220,38,38,.14) !important;border:1px solid rgba(248,113,113,.42) !important;color:#FECACA !important;border-radius:999px !important;padding:5px 13px !important;margin:0 12px 0 2px !important;align-self:center;font-weight:700;font-size:12.5px;letter-spacing:.02em;animation:none;box-shadow:none !important;text-decoration:none !important}" +
-      "html body #topbar a.fo-bcast:hover{background:rgba(220,38,38,.24) !important;color:#fff !important}" +
-      ".fo-bcast-dot{width:7px;height:7px;border-radius:99px;background:#F87171;flex:0 0 auto;animation:foBcastBlink 1.6s ease-in-out infinite}" +
+      "html body #topbar a.fo-bcast{display:inline-flex;align-items:center;gap:7px;background:#FF0000 !important;border:1px solid #FF0000 !important;color:#fff !important;border-radius:999px !important;padding:5px 13px !important;margin:0 12px 0 2px !important;align-self:center;font-weight:700;font-size:12.5px;letter-spacing:.02em;animation:none;box-shadow:none !important;text-decoration:none !important}" +
+      "html body #topbar a.fo-bcast:hover{background:#D90000 !important;border-color:#D90000 !important;color:#fff !important}" +
+      ".fo-bcast-dot{width:7px;height:7px;border-radius:99px;background:#fff;flex:0 0 auto;animation:foBcastBlink 1.6s ease-in-out infinite}" +
       "@keyframes foBcastBlink{0%,100%{opacity:1}50%{opacity:.35}}" +
-      "@media(max-width:820px){html body #topbar a.fo-bcast{position:sticky;left:0;z-index:6;background:#3A161E !important}}" +
+      "@media(max-width:820px){html body #topbar a.fo-bcast{position:sticky;left:0;z-index:6}}" +
       ".fo-live-row a{font-weight:700;padding:4px 0 4px 8px;white-space:nowrap}" +
       "@media(max-width:640px){.fo-live-row{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:1px 10px}.fo-live-row b{grid-column:1/-1}}";
     document.head.appendChild(bcs);
