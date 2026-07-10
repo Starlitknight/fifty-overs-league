@@ -9847,7 +9847,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-2200-878730";
+  var FO_BUILD = "20260710-2208-23c7d9";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -13406,7 +13406,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<div class='fo-mh-eyebrow'>" + eye.join(" &middot; ") + foMhIcons(meta.pitch, meta.weather) + "</div>" +
         line(sc0, false) + line(sc1, true) +
         "<div class='fo-mh-res'>" + E(resultText || "Played") + "</div>" +
-        (meta.toss ? "<div class='fo-mh-toss'>" + E(meta.toss) + "</div>" : "") +
+        ((meta.ground || meta.toss) ? "<div class='fo-mh-toss'>" + [meta.ground ? E(meta.ground) : null, meta.toss ? E(meta.toss) : null].filter(Boolean).join(" &middot; ") + "</div>" : "") +
         "</div>" + pomHtml + "</div>";
     } catch (e) { return ""; }
   }
@@ -13556,7 +13556,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var dateF = "";
       try { if (c.play_at) dateF = new Date(c.play_at).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" }); } catch (eD) {}
       hero = foMheadHTML(r.scorecard, r.result_text,
-        { kind: c.__practice ? "PRACTICE" : "FRIENDLY", dateStr: dateF, pitch: c.pitch, weather: c.weather, toss: r.toss || foTossFromLog(r.log) },
+        { kind: c.__practice ? "PRACTICE" : "FRIENDLY", dateStr: dateF, pitch: c.pitch, weather: c.weather, ground: (r.meta && r.meta.ground) || "", toss: r.toss || foTossFromLog(r.log) },
         topF ? { n: topF.n, team: topF.team, sub: (topF.pts || 0) + " fantasy pts" } : (r.mom ? { n: r.mom } : null));
     } catch (eMh) {}
     if (!hero) hero = "<div class='fo-live-hero'><div class='fo-live-tag'>FULL TIME &middot; " + (c.__practice ? "PRACTICE" : "FRIENDLY") + "</div>" +
@@ -16809,10 +16809,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
                 var hH = foMheadHTML(cardsH, recH.result.text,
                   { kind: compH, seasonNo: recH.comp === "league" ? (App.seasonNo || 1) : null,
                     roundNo: recH.comp === "league" && recH.round != null ? recH.round + 1 : null,
-                    dateStr: dateL, pitch: recH.pitch, weather: recH.weather, toss: foTossFromLog(recH.log) },
+                    dateStr: dateL, pitch: recH.pitch, weather: recH.weather, ground: recH.ground, toss: foTossFromLog(recH.log) },
                   fpH[0] ? { n: fpH[0].n, team: fpH[0].team, sub: (fpH[0].pts || 0) + " fantasy pts" } : null);
                 if (hH) { var dvH = document.createElement("div"); dvH.innerHTML = hH; bar.parentNode.insertBefore(dvH.firstChild, bar); }
               }
+            }
+            // the header says it all: the engine's result/conditions/toss line
+            // above it would repeat every word (with the wrong date, no less)
+            if (document.querySelector("#page .fo-mhead")) {
+              var nsH = document.querySelector("#page .navsub"); if (nsH) nsH.style.display = "none";
             }
           } catch (eMh2) {}
           // the match date belongs on the card
