@@ -4529,34 +4529,36 @@
 
   // ---- Screen 5 · Draft room with live finance forecast --------------------
   // ---- Screen 5 · Reading a player (tutorial before the draft) --------------
-  function foOnbPlayers() {
-    FO_ONB.step = 5;
-    var pool = (App.founder && App.founder.pool) || [];
-    var byRat = function (a, b) { return (b.rating || 0) - (a.rating || 0); };
-    var batter = pool.filter(function (p) { return (!p.bowlTypeFull || p.bowlTypeFull === "none") && !p.keeper; }).sort(byRat)[0];
-    var bowler = pool.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none"; }).sort(byRat)[0];
-    var mkCard = function (ex, tagLbl) {
-      if (!ex) return "";
-      var flag = ""; try { flag = foFlag(ex.nat || FO_ONB.country) || ""; } catch (e) {}
-      var hand = (ex.hand === "L" ? "LHB" : "RHB");
-      var bt = ex.btLabel || ((ex.bowlTypeFull && ex.bowlTypeFull !== "none") ? ex.bowlTypeFull : "Does not bowl");
-      var detail = "";
-      try { detail = (typeof foSqDetail === "function") ? foSqDetail(ex, false) : ""; } catch (eD) {}
-      var ovr = "";
-      try {
-        var isB = ex.bowlTypeFull && ex.bowlTypeFull !== "none";
-        var oc = function (lbl, v) { return "<span><i>" + lbl + "</i><b>" + Math.round(v) + "</b></span>"; };
-        ovr = "<div class='fo-exp-ovr'>" +
-          (isB ? oc("Bowling", aggBowl(ex)) : "") +
-          oc("Batting", aggBat(ex)) +
-          (ex.keeper ? oc("Keeping", aggKeep(ex)) : oc("Fielding", aggField(ex))) +
-          "</div>";
-      } catch (eO) {}
-      return "<div class='fo-exp-card'><div class='fo-exp-tag'>" + tagLbl + "</div><div class='fo-exp-h'>" + flag + " <b>" + E(ex.name) + "</b></div>" +
-        "<div class='fo-exp-meta'>" + hand + " &middot; " + E(bt) + " &middot; age " + ex.age + "</div>" + ovr +
-        "<div class='fo-exp-money'><span>Fee <b>" + FO$(foDraftPrice(ex)) + "</b></span><span>Wage <b>" + FO$(foDailyWage(ex)) + "</b>/matchday</span></div>" +
-        detail + "</div>";
-    };
+  // ---- shared "how to read a player" pieces: the onboarding primer and the
+  // game manual render the SAME example cards and trait glossary, so the two
+  // explanations can never drift apart ----
+  function foExpCard(ex, tagLbl, money) {
+    if (!ex) return "";
+    var flag = ""; try { flag = foFlag(ex.nat || (FO_ONB && FO_ONB.country)) || ""; } catch (e) {}
+    var hand = (ex.hand === "L" ? "LHB" : "RHB");
+    var bt = ex.btLabel || ((ex.bowlTypeFull && ex.bowlTypeFull !== "none") ? ex.bowlTypeFull : "Does not bowl");
+    var detail = "";
+    try { detail = (typeof foSqDetail === "function") ? foSqDetail(ex, false) : ""; } catch (eD) {}
+    var ovr = "";
+    try {
+      var isB = ex.bowlTypeFull ? ex.bowlTypeFull !== "none" : !!ex.bowlType;
+      var oc = function (lbl, v) { return "<span><i>" + lbl + "</i><b>" + Math.round(v) + "</b></span>"; };
+      ovr = "<div class='fo-exp-ovr'>" +
+        (isB ? oc("Bowling", aggBowl(ex)) : "") +
+        oc("Batting", aggBat(ex)) +
+        (ex.keeper ? oc("Keeping", aggKeep(ex)) : oc("Fielding", aggField(ex))) +
+        "</div>";
+    } catch (eO) {}
+    var moneyRow = "";
+    try {
+      if (money === "draft") moneyRow = "<div class='fo-exp-money'><span>Fee <b>" + FO$(foDraftPrice(ex)) + "</b></span><span>Wage <b>" + FO$(foDailyWage(ex)) + "</b>/matchday</span></div>";
+      else if (money === "wage") moneyRow = "<div class='fo-exp-money'><span>Wage <b>" + FO$(ex.wage || 0) + "</b>/matchday</span><span>Age <b>" + (ex.age || "?") + "</b></span></div>";
+    } catch (eM) {}
+    return "<div class='fo-exp-card'><div class='fo-exp-tag'>" + tagLbl + "</div><div class='fo-exp-h'>" + flag + " <b>" + E(ex.name) + "</b></div>" +
+      "<div class='fo-exp-meta'>" + hand + " &middot; " + E(bt) + " &middot; age " + ex.age + "</div>" + ovr + moneyRow +
+      detail + "</div>";
+  }
+  function foTraitGlossary() {
     var gsec = function (title, note, rows) {
       return "<div class='fo-exp-def'><b class='fo-exp-gt'>" + title + "</b>" + (note ? "<span class='fo-exp-gnote'>" + note + "</span>" : "") +
         rows.map(function (r) { return "<div class='fo-exp-tr'><i>" + r[0] + "</i><span>" + r[1] + "</span></div>"; }).join("") + "</div>";
@@ -4601,12 +4603,20 @@
         ["Age", "Young players train faster and recover quicker. Past 30 they fade late in innings and decline between seasons."],
         ["Fee &amp; wage", "The fee is paid once, at the draft. The wage is paid every matchday, all season, so a full squad of stars will drain the bank twice over."]
       ]);
+    return defs;
+  }
+  function foOnbPlayers() {
+    FO_ONB.step = 5;
+    var pool = (App.founder && App.founder.pool) || [];
+    var byRat = function (a, b) { return (b.rating || 0) - (a.rating || 0); };
+    var batter = pool.filter(function (p) { return (!p.bowlTypeFull || p.bowlTypeFull === "none") && !p.keeper; }).sort(byRat)[0];
+    var bowler = pool.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none"; }).sort(byRat)[0];
     var body =
       "<div class='fo-ob-card fo-ob-mid'>" +
       "<div class='fo-ob-eyebrow'>Know what you are buying</div>" +
       "<h1 class='fo-ob-h1'>How to read a player</h1>" +
       "<p class='fo-ob-lead'>Two real players from your draft pool, exactly as every player page shows them: skills grouped into <b>Batting</b>, <b>Bowling</b> and <b>In the field</b>, each with a number, a bar and an honest word. Batters carry a headline batting overall; bowlers carry a headline bowling overall as well. And every trait is spelled out beside the cards: what it does on the pitch and when it decides a match.</p>" +
-      "<div class='fo-exp-cols'><div class='fo-exp-cards'>" + mkCard(batter, "The batter") + mkCard(bowler, "The bowler") + "</div><div class='fo-exp-defs'>" + defs + "</div></div>" +
+      "<div class='fo-exp-cols'><div class='fo-exp-cards'>" + foExpCard(batter, "The batter", "draft") + foExpCard(bowler, "The bowler", "draft") + "</div><div class='fo-exp-defs'>" + foTraitGlossary() + "</div></div>" +
       "<div class='fo-exp-talbox'><b>Talents</b> are permanent traits that fire in specific situations: a <i>Finisher</i> finds boundaries at the death, a <i>New-ball Specialist</i> is deadly in his first spell, a <i>Spin Killer</i> feasts on slow bowling. Tap any talent chip in the game to see what it does.</div>" +
       "<p class='fo-ob-lead' style='margin-top:14px'>Next: reading conditions. Bowling styles and their rarity, pitch types, and what the sky does to a match: the context that decides which of these numbers matter on the day.</p>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Read the conditions</button></div></div>";
@@ -4619,8 +4629,9 @@
   // Bowling styles + rarity, pitch types, weather types: every effect below is
   // real in the match engine. Sits between the player primer and the draft so
   // a new manager drafts with the full picture.
-  function foOnbConditions() {
-    FO_ONB.step = 6;
+  // conditions field-guide cards, shared verbatim by the onboarding screen
+  // and the game manual
+  function foCondCards() {
     // every card carries its own tint + a small monoline glyph, in the same
     // stroke style as FO_ICONS, so the wall of white boxes reads as a field
     // guide instead of a spreadsheet
@@ -4697,15 +4708,21 @@
       card("ice", G.flake, "Chilly", "", "Cold hands: boundaries down, dropped catches up.", "A day for percentages, not fireworks."),
       card("dusk", G.dew, "Dew later", "", "A wet ball in the second innings: spinners lose their grip in the chase.", "If dew is forecast, bowling first is the percentage call.")
     ].join("");
+    return { sec: sec, bowlers: bowlers, pitches: pitches, weathers: weathers,
+      heat: "<div class='fo-exp-talbox'><b>Heat is a squad question.</b> In Humid, Hot and Scorching weather every player&rsquo;s fatigue clock runs faster: bowlers lose threat and control late in spells, set batters lose their edge sooner, and heavy workloads leave players tired for the next matchday at lower ball counts. On the hottest days a sixth bowling option, even a modest one, keeps every spell short and every bowler dangerous. Fitness decides who copes: stamina matters most for genuine quicks, then fast-medium, then the rest of the attack, then keepers, and least for pure batters. The captain carries a little extra for running the side. Quoted drain rates are for a frontline bowler of average fitness; the order screen shows the true range for your own squad on the day.</div>" };
+  }
+  function foOnbConditions() {
+    FO_ONB.step = 6;
+    var C = foCondCards();
     var body =
       "<div class='fo-ob-card fo-ob-mid'>" +
       "<div class='fo-ob-eyebrow'>The game around the game</div>" +
       "<h1 class='fo-ob-h1'>Conditions decide what matters</h1>" +
       "<p class='fo-ob-lead'>Skills tell you how good a player is. Conditions decide which skills matter <i>today</i>. Three things set the stage for every fixture: who bowls what, the pitch under their feet, and the sky above it. Every effect on this page is real in the match engine; none of it is flavour text.</p>" +
-      sec(1, "Bowling styles", "rarity is value", bowlers).replace("fo-cnd-grid", "fo-cnd-grid fo-cnd-grid5") +
-      sec(2, "Pitch types", "half your matches are on your home pitch, so draft for it", pitches) +
-      sec(3, "Weather", "the forecast is shown before every lineup", weathers) +
-      "<div class='fo-exp-talbox'><b>Heat is a squad question.</b> In Humid, Hot and Scorching weather every player&rsquo;s fatigue clock runs faster: bowlers lose threat and control late in spells, set batters lose their edge sooner, and heavy workloads leave players tired for the next matchday at lower ball counts. On the hottest days a sixth bowling option, even a modest one, keeps every spell short and every bowler dangerous. Fitness decides who copes: stamina matters most for genuine quicks, then fast-medium, then the rest of the attack, then keepers, and least for pure batters. The captain carries a little extra for running the side. Quoted drain rates are for a frontline bowler of average fitness; the order screen shows the true range for your own squad on the day.</div>" +
+      C.sec(1, "Bowling styles", "rarity is value", C.bowlers).replace("fo-cnd-grid", "fo-cnd-grid fo-cnd-grid5") +
+      C.sec(2, "Pitch types", "half your matches are on your home pitch, so draft for it", C.pitches) +
+      C.sec(3, "Weather", "the forecast is shown before every lineup", C.weathers) +
+      C.heat +
       "<p class='fo-ob-lead' style='margin-top:14px'>Next: the draft room. Sign <b>11 to 16 players</b> with your <b>$1,000,000</b>. Every fee brings a wage bill behind it, so leave a reserve.</p>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Enter the draft room</button></div></div>";
     var host = foOnbMount(5, body);
@@ -5827,30 +5844,42 @@
   }
   function foManualPage() {
     var page = document.getElementById("page"); if (!page) return;
+    // live example players for "Reading a player": your own best batter and
+    // bowler, rendered by the same card the primer and the squad page use
+    var exBat = null, exBowl = null;
+    try {
+      var mt = null; try { mt = userTeam(); } catch (e0) {}
+      if (!mt || !(mt.players || []).length) mt = (GD.teams || [])[0];
+      var ps = ((mt && mt.players) || []).slice();
+      var byR = function (x, y) { return (y.rating || 0) - (x.rating || 0); };
+      exBat = ps.filter(function (p) { return (p.bowlTypeFull ? p.bowlTypeFull === "none" : !p.bowlType) && !p.keeper; }).sort(byR)[0] || null;
+      exBowl = ps.filter(function (p) { return p.bowlTypeFull ? p.bowlTypeFull !== "none" : !!p.bowlType; }).sort(byR)[0] || null;
+    } catch (eEx) {}
+    var glossary = ""; try { glossary = foTraitGlossary(); } catch (eG) {}
+    var cardsHtml = (exBat || exBowl)
+      ? "<div class='fo-exp-cols'><div class='fo-exp-cards'>" + foExpCard(exBat, "The batter &middot; your squad", "wage") + foExpCard(exBowl, "The bowler &middot; your squad", "wage") + "</div><div class='fo-exp-defs'>" + glossary + "</div></div>"
+      : "<div class='fo-exp-defs'>" + glossary + "</div>";
+    var C = null; try { C = foCondCards(); } catch (eC) {}
+    var progCards = ""; try { progCards = foProgExplainHTML(); } catch (eP) {}
     var secs = [
       ["basics", "Welcome to the league", [
         "<p>Fifty Overs is a private cricket management league for ten clubs. You run one; friends run the others, and the computer manages any club that has not been claimed yet. There are no purchases or boosts. Results come from three inputs: the squad you draft, the budget you manage, and the orders you submit each matchday.</p>",
-        "<p>The league plays <b>one matchday every day at " + MATCH_TIME + "</b>. Between matchdays, the game is yours: study the next opponent, pick your XI, plan who bowls when, set the week&rsquo;s training, chase a signing. When the clock strikes, every fixture in the round is played at once by the match engine, using exactly what each manager submitted. If you submit nothing, an automatic lineup is used. It is reasonable, but it does not know your plans.</p>",
+        "<p>The league plays <b>one matchday every day at " + MATCH_TIME + "</b>. Between matchdays, the game is yours: study the next opponent, pick your XI, plan who bowls when, set the week&rsquo;s training, chase a signing. When the clock strikes, every fixture in the round is played by the match engine using exactly what each manager submitted, and the round goes out as a <b>one-hour live broadcast</b> (the next section walks through the day). If you submit nothing, an automatic lineup is used. It is reasonable, but it does not know your plans.</p>",
         "<p>Matches are full 50-over contests simulated ball by ball. Batters score more freely once set, bowlers lose effectiveness through long spells, and a rising required rate increases the chance of wickets in a chase. Every attribute on a player&rsquo;s card affects the simulation, along with form, fatigue, experience and age.</p>",
         "<div class='fo-man-tip'><b>The five-minute day:</b> read the result and your training report, glance at the table, open the next fixture, set your lineup, adjust one or two training programs. That is the whole routine. Doing it daily is the single biggest factor in finishing higher.</div>"
       ].join("")],
-      ["club", "Founding your club", [
-        "<p>Your story starts with a <b>$1,000,000 founding grant</b> and an empty dressing room. The draft is where most titles are quietly won or lost, so hold three thoughts as you spend:</p>",
-        "<ul><li><b>Eleven jobs, not eleven stars.</b> A functional XI needs six or seven capable batters, a genuine wicketkeeper, and at least five bowling options to cover fifty overs. Squads short on bowling lose matches they would otherwise win.</li>",
-        "<li><b>Money spent is wages promised.</b> Every dollar of fee brings a wage bill behind it, due every single matchday. Spending the entire grant on fees leaves nothing for the wage bill or the transfer market. Keep a reserve.</li>",
-        "<li><b>Draft for your ground.</b> Half your matches are at home, and you choose what your groundsman prepares:</li></ul>",
-        "<table><tr><th>Pitch</th><th>What it plays like</th><th>Build around it</th></tr>" +
-        "<tr><td><b>Balanced</b></td><td>An honest surface. Skill decides.</td><td>No bias. Pick the best players you can.</td></tr>" +
-        "<tr><td><b>Green</b></td><td>The ball nips around, brutally so with the new ball.</td><td>Stack seamers; pick batters who can survive the first ten.</td></tr>" +
-        "<tr><td><b>Crumbling</b></td><td>Starts fine, turns square as the ball ages.</td><td>Two or three spinners, and batters who play spin well.</td></tr>" +
-        "<tr><td><b>Flat</b></td><td>Heavily favours batting. Par is around 300.</td><td>Power hitters, and bowlers who don&rsquo;t crumble when hit.</td></tr>" +
-        "<tr><td><b>Slow</b></td><td>Low, gripping, boundaries die in the outfield.</td><td>Patient batters who run hard; cutters and spin.</td></tr>" +
-        "<tr><td><b>Sticky</b></td><td>Unpredictable bounce. High wicket rates for all bowler types.</td><td>Batting depth; a capable batter at eight.</td></tr>" +
-        "<tr><td><b>Two-paced</b></td><td>Uneven pace off the surface; timing is difficult.</td><td>Patient batters; cutters and change-ups.</td></tr></table>",
-        "<p>The pitch applies to both sides in every home game, so build a squad that benefits from it more than visitors do.</p>"
+      ["day", "A matchday, hour by hour", [
+        "<p>One round plays every day. Here is its full rhythm:</p>",
+        "<table><tr><th>When</th><th>What happens</th></tr>" +
+        "<tr><td><b>Before " + MATCH_TIME + "</b></td><td>Orders are open. Set your XI, batting order, bowling plan and per-phase intent on the next fixture; adjust training programs; browse the market. The fixture page shows the pitch and the forecast before you commit.</td></tr>" +
+        "<tr><td><b>" + MATCH_TIME + "</b></td><td>Every fixture in the round is played at once, ball by ball, using exactly what each manager submitted.</td></tr>" +
+        "<tr><td><b>The broadcast hour</b></td><td>For the next <b>60 minutes</b> the round is on air. A red <b>&#9679; Live</b> pill appears in the nav, the Matchday page becomes a live board, and each match&rsquo;s commentary plays out slowly in real time. Results, final scorecards and the league table stay under embargo until stumps, so nobody - including you - knows a result before the innings actually reach it.</td></tr>" +
+        "<tr><td><b>Full time</b></td><td>Everything unlocks at once: final scorecards with charts and fantasy points, the player of the match, the updated table, your training report with every improvement named, the day&rsquo;s ledger, and the beat writer&rsquo;s morning digest.</td></tr></table>",
+        "<div class='fo-man-tip'><b>Missed the hour?</b> Nothing is lost. Every match can be replayed from its card afterwards, and the scorecard, commentary and charts are permanent record.</div>"
       ].join("")],
       ["players", "Reading a player", [
-        "<p>Open any player and you&rsquo;ll find seven core skills for batters (how they play <b>pace</b> and <b>spin</b>, how they <b>rotate strike</b>, their <b>temperament</b>, raw <b>power</b>, <b>endurance</b> and <b>fielding</b>) and, for bowlers, the tools of the trade: <b>wicket-taking threat</b>, <b>economy</b>, <b>discipline</b>, <b>movement or turn</b>, <b>variation</b>, <b>stamina</b>. Hover any label in the game for what it does. Bars are coloured honestly: <b style='color:#C84F4A'>red</b> is a liability, <b style='color:#D9A441'>amber</b> does a job, teal is good, and <b style='color:#3E9960'>green</b> wins matches.</p>",
+        "<p>Every player in the game is read the same way. The two cards below are <b>live</b>: your own best-rated batter and bowler, rendered exactly as the Squad page and every player page show them. Skills are grouped into <b>Batting</b>, <b>Bowling</b> (pure batters show <b>Reserves</b> instead) and <b>In the field</b>, each with a number, a bar and an honest word. Batters carry a headline batting overall; bowlers carry a headline bowling overall as well. Every trait is spelled out beside the cards: what it does on the pitch and when it decides a match.</p>",
+        cardsHtml,
         "<p>But the card only starts there. Four quieter things decide whether the skills show up on the day:</p>",
         "<ul><li><b>Form</b> rises and falls with performances. A fifty lifts a batter; three cheap dismissals hollow him out. An in-form 70-rated batter will frequently outscore an out-of-form 85. Check form before every selection; it&rsquo;s the most ignored column in the game.</li>",
         "<li><b>Fatigue</b> is a ladder of words, from <i>rested</i> down through <i>weary</i> and <i>listless</i> to the ominous <i>clinically dead</i>. Tired batters find fielders; tired bowlers serve up half-volleys. Playing a shattered star is usually worse than playing a fresh squad player. Stamina and youth slow the slide; the Rest program reverses it.</li>",
@@ -5869,6 +5898,14 @@
         "<tr><td><b>Mystery Ball</b></td><td>A spinner new batters simply can&rsquo;t read.</td></tr>" +
         "<tr><td><b>Miser</b></td><td>Bowls a higher share of dot balls.</td></tr></table>"
       ].join("")],
+      ["conditions", "Bowling styles, pitches &amp; weather", [
+        "<p>Skills tell you how good a player is. Conditions decide which skills matter <i>today</i>. Three things set the stage for every fixture: who bowls what, the pitch under their feet, and the sky above it. Every effect on the cards below is real in the match engine; none of it is flavour text.</p>",
+        C ? C.sec(1, "Bowling styles", "rarity is value", C.bowlers) : "",
+        C ? C.sec(2, "Pitch types", "half your matches are on your home pitch, so draft for it", C.pitches) : "",
+        C ? C.sec(3, "Weather", "the forecast is shown before every lineup", C.weathers) : "",
+        C ? C.heat : "",
+        "<p style='margin-top:12px'>The toss is decided automatically. You do not control it, but pitch choice and weather both shift the balance of the fixture, and both are shown on the order screen before you commit a lineup. If <b>dew</b> is forecast, remember it arrives in the second innings: a wet ball punishes the side defending a total, especially its spinners.</p>"
+      ].join("")],
       ["orders", "Matchday orders", [
         "<p>Open <b>Matches</b> and hit <b>Set lineup</b> on your next fixture. This is the heart of the game, and there is real craft in it:</p>",
         "<ul><li><b>The XI.</b> Balance first: a keeper, enough bowling for fifty overs, batting depth for the pitch you&rsquo;re on. Then form and freshness: bench the exhausted, back the in-form.</li>",
@@ -5879,19 +5916,44 @@
         "<li><b>Keeper.</b> Keeping skill reduces byes and increases catches and stumpings. A weak keeper costs several runs and chances per match.</li></ul>",
         "<div class='fo-man-tip'><b>Chasing?</b> The engine models scoreboard pressure honestly: a chase that stays near the rate feels normal, but let the required rate climb past eight and every ball gets heavier, especially against experienced bowlers, and especially for inexperienced batters. Keep chases close to the required rate throughout; plans that rely on late acceleration fail more often than they succeed.</div>"
       ].join("")],
-      ["pitchwx", "Pitch, weather &amp; the toss", [
-        "<p>Before every match you can see the ground, the pitch and the sky. Read them like a real captain would:</p>",
-        "<table><tr><th>Sky</th><th>What it means</th></tr>" +
-        "<tr><td><b>Sunny</b></td><td>True skies, fair fight. Cricket as designed.</td></tr>" +
-        "<tr><td><b>Hot</b></td><td>A batting day; the ball comes on true. But the heat drains: players tire about <b>35% faster</b>, long spells fade, and tired legs carry into the next fixture.</td></tr>" +
-        "<tr><td><b>Scorching</b></td><td>Boundaries flow and bowlers wilt: fatigue accrues roughly <b>60% faster</b>. Keep spells short; this is the day a sixth bowling option earns his keep.</td></tr>" +
-        "<tr><td><b>Overcast / Misty</b></td><td>Seamers&rsquo; weather. The ball hoops around, especially early; expect 20&ndash;30 fewer runs and jittery top orders.</td></tr>" +
-        "<tr><td><b>Humid</b></td><td>The new ball talks for the seamers, then it fades. Survive the burst. The heavy air also saps: players tire about <b>20% faster</b>.</td></tr>" +
-        "<tr><td><b>Windy</b></td><td>Sixes die at the rope. Run twos instead of swinging harder.</td></tr>" +
-        "<tr><td><b>Drizzle / Chilly</b></td><td>Slow, scrappy cricket. Boundaries are earned.</td></tr>" +
-        "<tr><td><b>Dew later</b></td><td>In the second innings the ball is harder to grip: spinners are less effective and chasing becomes easier. If dew is forecast, bowling first is statistically favourable.</td></tr></table>",
-        "<p><b>Heat is a selection question.</b> In humid, hot and scorching weather the fatigue clock runs faster: about 20%, 35% and 60% for a frontline bowler of average fitness, with the tax distributed by how physical the job is and how fit the player is. The order screen quotes the actual range for your squad whenever the forecast drains. Tired bowlers lose threat and control late in spells, set batters lose their edge sooner, and heavy workloads leave players tired for the next matchday at lower ball counts: on a scorching day a bowler is feeling the next morning after roughly six overs instead of eight. Six bowling options beat five on draining days; shorter spells keep everyone dangerous, and the order screen warns you whenever the forecast drains. Fitness decides who copes: stamina matters most for genuine fast bowlers, then fast-medium, then the rest of the attack, then keepers, and least for pure batters. A fit bowler shrugs off a spell that leaves an unfit one feeling it the next morning, and the captain carries a small extra load for running the side.</p>",
-        "<p>The toss is decided automatically. You do not control it, but pitch choice and weather both shift the balance of the fixture, and the forecast is shown on the order screen before you commit a lineup.</p>"
+      ["training", "Training: where seasons compound", [
+        "<p>Every player carries a weekly assignment: a <b>program</b> (what he works on) and an <b>intensity</b> (how hard he works). You set both on the <b>Training</b> tab, and nothing else in the game grows a squad. Gains land when the matchday resolves, and the training report names every player who improved.</p>",
+        "<p><b>How a session becomes a skill point.</b> Each program splits its work across fixed skills in fixed proportions. The cards below are rendered from the live game data, so they are always exact; the amber chip is each program&rsquo;s main focus. Progress builds invisibly between the visible +1s: a young player might bank a point in two or three sessions, a veteran might need ten.</p>",
+        progCards,
+        "<p style='margin-top:12px'><b>What multiplies the gains:</b></p>",
+        "<ul><li><b>Age.</b> The development curve is steep: the same program moves a 19-year-old roughly three times as far as a player in his thirties. A young squad becomes worth more every single week.</li>",
+        "<li><b>Potential.</b> Every player is graded <i>Limited, Useful, High</i> or <i>Star</i>. Higher potential means more from every session; a young, high-potential player is the best long-term asset in the game.</li>",
+        "<li><b>Intensity.</b> <i>Light</i> trains at 75% speed and goes easy on the legs. <i>Normal</i> is the default. <i>Intense</i> trains about 20% faster but tires players faster: fine in a cool week, reckless through a heatwave. <i>Rest</i> does no skill work at all and recovers fatigue instead.</li>",
+        "<li><b>Freshness.</b> Tired players don&rsquo;t learn. Fatigue quietly strangles progress before it ever hurts match output, so rotate Rest through your frontline bowlers especially.</li>",
+        "<li><b>Squad size.</b> Beyond 24 players the coaching staff is stretched and everyone trains slower.</li>",
+        "<li><b>The last points are the steepest.</b> Lifting a skill from good to great takes far longer than from poor to decent. Sometimes the smart program fixes a weakness instead of polishing a strength.</li></ul>",
+        "<p><b>Matching programs to jobs</b> - a reliable default for each role:</p>",
+        "<table><tr><th>Who</th><th>Program</th><th>Why</th></tr>" +
+        "<tr><td>Opener</td><td><b>New-ball batting</b></td><td>vs pace and temperament: the skills the first ten overs interrogate.</td></tr>" +
+        "<tr><td>Middle order</td><td><b>Spin batting</b> or <b>Finishing</b></td><td>The middle overs are spin country; the death wants power with a cool head.</td></tr>" +
+        "<tr><td>New-ball seamer</td><td><b>New-ball seam</b></td><td>Movement and wicket threat while the ball is hard.</td></tr>" +
+        "<tr><td>Spinner</td><td><b>Spin bowling</b></td><td>Turn, threat and the variations that win the middle overs.</td></tr>" +
+        "<tr><td>Death bowler</td><td><b>Death bowling</b></td><td>Economy and discipline under fire; the yorker is a trained skill.</td></tr>" +
+        "<tr><td>Fifth bowler</td><td><b>Control bowling</b></td><td>Cheap, disciplined overs are his entire job.</td></tr>" +
+        "<tr><td>Keeper</td><td><b>Keeping</b></td><td>Glovework, stumpings and catching in one session.</td></tr>" +
+        "<tr><td>Young all-rounder</td><td><b>All-rounder</b></td><td>Slower per skill, but it builds the whole cricketer.</td></tr>" +
+        "<tr><td>Anyone shattered</td><td><b>Rest</b></td><td>A week of progress traded for legs that work on matchday.</td></tr></table>",
+        "<div class='fo-man-tip'><b>Two honest warnings:</b> skill gains raise wages automatically, so improvement is never free. And academy level, squad age and rest discipline compound: none shows much in a single week; over a season the difference is significant.</div>"
+      ].join("")],
+      ["youth", "Youth scouting", [
+        "<p>Your scout brings <b>three local prospects, aged 18 to 20</b>, to the Training page every matchday, new faces each round. Click a name for the full workup: skills, talents, and the scout&rsquo;s read on potential.</p>",
+        "<ul><li>Youth signings are <b>free</b>: the lottery is quality. Most finds are raw local kids; a <b>Promising</b> one appears most trips, a <b>&#9733; Gifted</b> one is genuinely rare, and a <b>&#9670; Once in a generation</b> talent might bless your club once every few seasons. The tier is stamped on the card when the scout reports back.</li>",
+        "<li>Their value is future training gains, so judge them on potential and talents as much as current ratings - and sign the jewel even if the seat is tight.</li>",
+        "<li>The paperwork limits you to <b>one youth signing every " + FO_SCOUT_COOLDOWN + " matchdays</b>, and the squad caps at 18, so every seat you fill is a seat you can&rsquo;t offer a market star later.</li>",
+        "<li>Signings join when the next matchday resolves. Put them straight on a training program; that&rsquo;s what you bought them for.</li></ul>"
+      ].join("")],
+      ["market", "The transfer market", [
+        "<p>The <b>Transfers</b> tab holds a shelf of <b>18 established free agents</b>: proven players, 21 and up, a spread of trades from six cricket nations. Every club sees the same shelf, and it is <b>completely restocked every 3 matchdays</b>: unsigned players move on and 18 new names arrive, so there is always something to look forward to.</p>",
+        "<ul><li><b>First come, first served, league-wide.</b> When any club signs a player he is removed for everyone, the card shows who signed him, and the league is notified. If a player fixes a real weakness in your squad, waiting for the next shelf gives rivals the chance to sign him first &ndash; and he may not be there after the restock.</li>",
+        "<li>Fees answer to the player: skills, age (young costs more), talents, and <b>bowling-style rarity</b>. Genuine fast bowlers and wrist spinners are the rarest things in the game; when one is listed the card wears a gold <b>&#9670; Rare</b> ribbon, and the fee carries the premium to match.</li>",
+        "<li>Fees carry a mid-season premium and wages start the day he arrives. The question is never &ldquo;is he good?&rdquo; It&rsquo;s &ldquo;is he worth more to me than the reserve he empties?&rdquo;</li>",
+        "<li>Signings join after the next matchday resolves, squad cap 18.</li></ul>",
+        "<div class='fo-man-tip'><b>Suggestion:</b> check the market after every restock. Decide early which weaknesses you would pay to fix and at what bank balance, so the decision is already made when the right name appears.</div>"
       ].join("")],
       ["money", "Money: the honest ledger", [
         "<p>Every matchday your club settles its books, and every line is real. What comes in: your <b>sponsor&rsquo;s payment</b> (see the next section) and, at home games, the <b>gate</b>: your supporters, times ticket money. What goes out: <b>every player&rsquo;s wage</b>, <b>stadium upkeep</b>, and your <b>academy</b>, if you run one.</p>",
@@ -5909,34 +5971,33 @@
         "<tr><td><b>Emirates</b></td><td>A small retainer and an enormous bonus for every win. Out-earns everyone across a title-class season; a poor season costs six figures.</td><td>Squads built to win now, and managers who mean it.</td></tr></table>",
         "<p>Choose based on a realistic estimate of your squad&rsquo;s strength: each deal is the best option within a specific band of expected wins.</p>"
       ].join("")],
-      ["training", "Training: where seasons compound", [
-        "<p>The <b>Training</b> tab assigns every player a weekly program: batting schools (new-ball technique, playing spin, power, finishing), bowling schools (new-ball seam, spin, death-overs control), keeping, fielding, fitness, all-round work, or <b>Rest</b>, which trades a week of progress for recovered legs. Gains land when the matchday resolves, and your report names every improvement.</p>",
-        "<p><b>What each program trains</b> - every session splits its progress across fixed skills in fixed proportions (the Training page lists them beside your squad):</p>",
-        "<table><tr><th>Program</th><th>Skills trained</th></tr>" + FO_TR_PROGS.filter(function (pg) { return pg !== "Rest"; }).map(function (pg) {
-          var w = FO_TR_PROGMAP[pg] || {};
-          return "<tr><td><b>" + pg + "</b></td><td>" + Object.keys(w).sort(function (a, b) { return w[b] - w[a]; }).map(function (k) { return foSkillLabel(k) + " " + w[k] + "%"; }).join(", ") + "</td></tr>";
-        }).join("") + "<tr><td><b>Rest</b></td><td>No skill work - recovery only. Fatigue falls instead of rising.</td></tr></table>",
-        "<ul><li><b>Age drives training speed.</b> The same program moves a 19-year-old roughly three times as far as a player in his thirties.</li>",
-        "<li><b>Potential matters.</b> High-potential players gain more from every session. A young, high-potential player is the best long-term asset available.</li>",
-        "<li><b>Tired players don&rsquo;t learn.</b> Fatigue quietly strangles progress before it hurts match output. Rotate Rest through your bowlers especially; they carry the heaviest legs.</li>",
-        "<li><b>The last points are the steepest.</b> Lifting a skill from good to great takes far longer than from poor to decent. Sometimes the smart program fixes a weakness instead of polishing a strength.</li>",
-        "<li><b>Train with intent.</b> A finisher doesn&rsquo;t need new-ball technique; your death bowler doesn&rsquo;t need a spin school. Match the program to the job the player actually does on Saturdays.</li></ul>",
-        "<div class='fo-man-tip'><b>Note:</b> academy level, squad age and rest discipline compound. None shows much in a single week; over a season the difference is significant.</div>"
+      ["matchcentre", "Reading a finished match", [
+        "<p>Open any completed fixture (or a live one during the broadcast hour) and the match centre offers a full press box:</p>",
+        "<ul><li><b>Scorecard.</b> A broadsheet card per innings: every batter with his dismissal, runs, balls, fours, sixes and strike rate; fall of wickets; did-not-bat; the complete bowling analysis. The hero carries the result, the date and the <b>player of the match</b>.</li>",
+        "<li><b>Commentary.</b> The full ball-by-ball broadcast: pitch-aware, weather-aware, umpires named, fielding moments tagged (<i>great fielding, dropped catch, direct hit, misfield</i>) and talents celebrated when they fire. Filter pills re-cut the feed to just the <b>Wickets</b>, <b>Boundaries</b>, <b>Fielding</b>, <b>Talents</b>, or a <b>Highlights</b> reel of the whole match.</li>",
+        "<li><b>Charts.</b> Broadcast-grade analytics: the <b>Manhattan</b> (runs per over with both innings paired, wickets ringed, powerplay and death shaded, and a phase-by-phase table), <b>run rate and worm</b> lines, and the <b>partnerships</b> ladder.</li>",
+        "<li><b>Match ratings.</b> Every player&rsquo;s performance marked, both XIs side by side. The result tells you whether you won; the ratings tell you what needs fixing.</li>",
+        "<li><b>Fantasy.</b> Every player&rsquo;s match distilled into points; the top score is named player of the match.</li></ul>",
+        "<p><b>How fantasy points are scored:</b></p>",
+        "<table><tr><th>Batting</th><td>1 per run, +1 per four, +2 per six. +4 for a fifty, +12 for a hundred, &minus;3 for a duck. From 20 balls faced, a strike-rate adjustment from +6 (SR 120+) down to &minus;6 (SR under 40).</td></tr>" +
+        "<tr><th>Bowling</th><td>25 per wicket, +8 more when it is bowled or lbw. +6 for a four-for, +12 for a five-for. From 5 overs bowled, an economy adjustment from +6 (under 3.0 an over) down to &minus;6 (over 8.0).</td></tr>" +
+        "<tr><th>Fielding</th><td>+8 per catch (+4 extra for a three-catch match), +12 per stumping, +8 per run-out.</td></tr></table>"
       ].join("")],
-      ["youth", "Youth scouting", [
-        "<p>Your scout brings <b>three local prospects, aged 18 to 20</b>, to the Training page every matchday, new faces each round. Click a name for the full workup: skills, talents, and the scout&rsquo;s read on potential.</p>",
-        "<ul><li>Youth signings are <b>free</b>: the lottery is quality. Most finds are raw local kids; a <b>Promising</b> one appears most trips, a <b>&#9733; Gifted</b> one is genuinely rare, and a <b>&#9670; Once in a generation</b> talent might bless your club once every few seasons. The tier is stamped on the card when the scout reports back.</li>",
-        "<li>Their value is future training gains, so judge them on potential and talents as much as current ratings - and sign the jewel even if the seat is tight.</li>",
-        "<li>The paperwork limits you to <b>one youth signing every " + FO_SCOUT_COOLDOWN + " matchdays</b>, and the squad caps at 18, so every seat you fill is a seat you can&rsquo;t offer a market star later.</li>",
-        "<li>Signings join when the next matchday resolves. Put them straight on a training program; that&rsquo;s what you bought them for.</li></ul>"
+      ["world", "A living league", [
+        "<p>The league remembers everything, and the world keeps moving around the cricket:</p>",
+        "<ul><li><b>Careers and Moments.</b> Every player page keeps a season-by-season career table (runs, average, strike rate, wickets, best) and a dated Moments feed: debut, maiden fifty, first century, five-fors, call-ups, the day he signed. Rival players&rsquo; careers are just as public as yours.</li>",
+        "<li><b>Roots.</b> Every player comes from a real town in his home country, shown on his page, and every club wears its founding date (Est.).</li>",
+        "<li><b>International call-ups.</b> After rounds 6, 12 and 18 each cricketing nation names its <b>two standout performers</b> from the league. A cap is a permanent career milestone, recorded on the player&rsquo;s page and in the almanac.</li>",
+        "<li><b>Umpires.</b> A named panel stands the league&rsquo;s fixtures; you will hear them in commentary, mostly turning down appeals.</li>",
+        "<li><b>The press.</b> A named beat writer files the morning digest after every round: results, milestones, call-ups and farewells - and drops a transfer <b>rumour</b> the day before the market restocks.</li>",
+        "<li><b>Venue records.</b> Every ground keeps its book: highest total, best figures, biggest win. Listed on the Stats page.</li>",
+        "<li><b>The Almanac.</b> The league&rsquo;s book of record, linked from the Stats page: the roll of honour, all-time run and wicket charts, international caps, the record book and every venue&rsquo;s records.</li>",
+        "<li><b>Farewells.</b> Players retire eventually. The paper marks each with a career retrospective, and tells you what he went on to do.</li></ul>"
       ].join("")],
-      ["market", "The transfer market", [
-        "<p>The <b>Transfers</b> tab holds a shelf of <b>18 established free agents</b>: proven players, 21 and up, a spread of trades from six cricket nations. Every club sees the same shelf, and it is <b>completely restocked every 3 matchdays</b>: unsigned players move on and 18 new names arrive, so there is always something to look forward to.</p>",
-        "<ul><li><b>First come, first served, league-wide.</b> When any club signs a player he is removed for everyone, the card shows who signed him, and the league is notified. If a player fixes a real weakness in your squad, waiting for the next shelf gives rivals the chance to sign him first &ndash; and he may not be there after the restock.</li>",
-        "<li>Fees answer to the player: skills, age (young costs more), talents, and <b>bowling-style rarity</b>. Genuine fast bowlers and wrist spinners are the rarest things in the game; when one is listed the card wears a gold <b>&#9670; Rare</b> ribbon, and the fee carries the premium to match.</li>",
-        "<li>Fees carry a mid-season premium and wages start the day he arrives. The question is never &ldquo;is he good?&rdquo; It&rsquo;s &ldquo;is he worth more to me than the reserve he empties?&rdquo;</li>",
-        "<li>Signings join after the next matchday resolves, squad cap 18.</li></ul>",
-        "<div class='fo-man-tip'><b>Suggestion:</b> check the market after every restock. Decide early which weaknesses you would pay to fix and at what bank balance, so the decision is already made when the right name appears.</div>"
+      ["scouting", "Scouting the opposition", [
+        "<p>Tap any club name - on the table, a fixture or a result - to open its <b>scout report</b>: squad strength, batting depth, the shape of the attack (pace against spin), your next meeting and the club&rsquo;s founding date. The <b>Players</b> tab lists their full squad.</p>",
+        "<p>Rival players are public people: stats, career tables and dated Moments are all open. Only their <b>skills</b> are private - you judge a rival the way real scouts do, from output. Your players&rsquo; skills are hidden from rivals the same way.</p>",
+        "<p>From a rival&rsquo;s report you can <b>challenge them to a friendly</b>: a no-stakes match between your clubs. Nothing carries over - no money, no fatigue, no points - but pride, obviously, carries forever.</p>"
       ].join("")],
       ["league", "The table, the run rate, the prizes", [
         "<p>Ten clubs, a full round robin, one round a day. Two points a win; ties and washouts split one. Level on points, <b>net run rate</b> decides, so a ten-run win chased lazily and a ten-run win chased hard are not the same result. Margins are money.</p>",
