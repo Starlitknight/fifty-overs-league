@@ -6820,7 +6820,10 @@
       try {
         (foFrHist() || []).forEach(function (e2) {
           var ts = +new Date(e2.at) || 0;
-          entries.push({ ts: ts, html: "<tr><td>" + new Date(e2.at).toLocaleDateString([], { month: "short", day: "numeric" }) + "</td><td>Practice</td><td>vs " + E(e2.opp) + "</td><td><b>" + E(e2.txt) + "</b></td></tr>" });
+          var ix = null;
+          try { (App.results || []).forEach(function (r0) { if (r0.comp === "friendly" && r0.result && r0.result.text === e2.txt && (r0.away === e2.opp || r0.home === e2.opp)) ix = r0.ix; }); } catch (eIx) {}
+          var res = ix != null ? "<a href='#/scorecard?i=" + ix + "'>" + E(e2.txt) + "</a>" : "<b>" + E(e2.txt) + "</b>";
+          entries.push({ ts: ts, html: "<tr><td>" + new Date(e2.at).toLocaleDateString([], { month: "short", day: "numeric" }) + "</td><td>Practice</td><td>vs " + E(e2.opp) + "</td><td>" + res + "</td></tr>" });
         });
       } catch (eH) {}
       if (mp && window.__foFrRows) {
@@ -6837,16 +6840,16 @@
           else if (c.status === "pending" && !mineSent) act = "<button class='mini fo-ch-acc' data-id='" + c.id + "'>Accept</button> <button class='mini fo-ch-dec' data-id='" + c.id + "'>Decline</button>";
           else if (c.status === "pending") act = "<span class='small'>awaiting their reply</span>";
           else if ((c.status === "accepted" || c.status === "played") && fst.phase === "live")
-            act = "<span class='fo-frs-live'><span class='live-dot'></span> LIVE &middot; " + foFrLiveLine(c, fst.p) + "</span> <a class='fo-frs-watch' href='#/friendly?id=" + c.id + "'>Watch &rsaquo;</a>";
+            act = "<a class='fo-frs-live' href='#/friendly?id=" + c.id + "'><span class='live-dot'></span> LIVE &middot; " + foFrLiveLine(c, fst.p) + " &middot; watch &rsaquo;</a>";
           else if (c.status === "accepted" && fst.phase === "done") act = "<span class='small'>delayed &middot; waiting on the league engine</span>";
           else if (c.status === "accepted") act = "<span class='fo-frs-on'>ON</span> <button class='mini fo-ch-ord' data-id='" + c.id + "'>Prepare lineup</button>";
           else if (c.status === "declined") act = "<span class='small'>declined</span>";
           else if (c.status === "expired") act = "<span class='small'>expired</span>";
           else if (c.status === "played" && c.result && fst.phase !== "live") {
-            act = "<b class='small'>" + E(c.result.result_text || "played") + (c.result.mom ? " &middot; " + E(c.result.mom) : "") + "</b> <a class='fo-frs-watch' href='#/friendly?id=" + c.id + "'>Replay &rsaquo;</a>";
+            act = "<a href='#/friendly?id=" + c.id + "'>" + E(c.result.result_text || "played") + "</a>" + (c.result.mom ? " <span class='small'>&middot; " + E(c.result.mom) + "</span>" : "");
             if (!seen[c.id]) { toast("Friendly result: " + (c.result.result_text || "played")); seen[c.id] = 1; }
           }
-          entries.push({ ts: ts, html: "<tr><td>" + when + "</td><td>Challenge</td><td>" + (mineSent ? "vs " : "from ") + E(vs) + " <span class='small'>" + foPitchName(c.pitch) + ", " + E(c.weather || "") + "</span></td><td>" + act + "</td></tr>" });
+          entries.push({ ts: ts, html: "<tr><td>" + when + "</td><td>Friendly</td><td>" + (mineSent ? "vs " : "from ") + E(vs) + " <span class='small'>" + foPitchName(c.pitch) + ", " + E(c.weather || "") + "</span></td><td>" + act + "</td></tr>" });
         });
         lsSet(seenK, JSON.stringify(seen));
       }
@@ -7146,16 +7149,37 @@
     try {
       if (App.page !== "matches") return;
       var page = document.getElementById("page"); if (!page) return;
+      // stray "sc" links (the cup panel and friends): the result text before
+      // them becomes the link, everywhere
+      page.querySelectorAll("a[href*='scorecard']").forEach(function (a0) {
+        if ((a0.textContent || "").trim() !== "sc" || a0.__foSc) return;
+        a0.__foSc = 1;
+        var pv = a0.previousSibling;
+        if (pv && pv.nodeType === 3 && pv.textContent.trim()) { a0.textContent = pv.textContent.trim(); pv.textContent = " "; }
+        else a0.textContent = "open \u203a";
+      });
       var frTbl = null;
       page.querySelectorAll(".panel").forEach(function (pn0) { var h0 = pn0.querySelector("h4"); if (h0 && /Fixtures & results/i.test(h0.textContent || "")) frTbl = pn0.querySelector("table"); });
       if (!frTbl || frTbl.__foClean) return;
       frTbl.__foClean = 1;
       var hr = frTbl.rows[0];
       while (hr && hr.cells.length > 6) hr.deleteCell(-1);
+      var bandDate = null;
+      var timeShort = String(MATCH_TIME || "9:00 AM ET").replace(/\s*ET\s*$/, "");
       Array.prototype.slice.call(frTbl.rows, 1).forEach(function (tr) {
         var c0 = tr.cells[0];
-        if (tr.cells.length === 1 && c0 && c0.colSpan > 6) { c0.colSpan = 6; return; }
+        if (tr.cells.length === 1 && c0 && c0.colSpan) {
+          if (c0.colSpan > 6) c0.colSpan = 6;
+          var mB = (c0.textContent || "").match(/\u00b7\s*([^(]+?)\s*\(/);
+          if (mB) bandDate = mB[1].trim();
+          return;
+        }
         if (tr.cells.length < 9) return;
+        // "Jul 8, 9:00 AM" instead of a bare round number
+        if (bandDate) {
+          var mD = bandDate.match(/(\d{1,2})\s+([A-Za-z]{3})/);
+          tr.cells[0].innerHTML = (mD ? mD[2] + " " + mD[1] : bandDate) + ", " + timeShort;
+        }
         var resTd = tr.cells[5];
         var scA = tr.cells[6] && tr.cells[6].querySelector("a[href*='scorecard']");
         if (scA) {
@@ -7168,6 +7192,7 @@
       });
     } catch (e) {}
   }
+  setInterval(function () { try { foFxResultLinks(); } catch (e) {} }, 1500);
   function foDecorateMatchRows() {
     try {
       if (App.page !== "matches") return;
