@@ -9429,7 +9429,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-1311-b6e98a";
+  var FO_BUILD = "20260710-1318-885a0a";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -12430,12 +12430,25 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
   function foRenderMatchday() {
     try {
-      if (/^#\/matchday/.test(location.hash || "") && typeof foLiveBoardHTML === "function") {
-        var lb = foLiveBoardHTML();
+      if (/^#\/matchday/.test(location.hash || "")) {
         var pgM = document.getElementById("page");
-        if (lb && pgM && !pgM.querySelector(".fo-live-row")) {
-          setTimeout(function () { if (!pgM.querySelector(".fo-live-row")) pgM.insertAdjacentHTML("afterbegin", lb); }, 80);
+        var em2 = (typeof foEmbargo === "function") ? foEmbargo() : { active: false };
+        if (em2.active && pgM && typeof foLiveBoardHTML === "function") {
+          // during the broadcast hour the centre IS the live board: no replay
+          // clock, no fast-forward, no results until stumps
+          if (!pgM.querySelector(".fo-live-row")) {
+            pgM.innerHTML = "<div class='crumb'>Matchday &raquo; Live</div>" +
+              "<div class='page-head'><div><div class='eyebrow'>Round " + (em2.round + 1) + "</div><h1>Matchday live</h1><p>Five grounds, one hour of cricket. Scores tick in as play unfolds; the full story lands at stumps.</p></div></div>" +
+              foLiveBoardHTML();
+          }
+          return;
         }
+        // after the hour: the replay centre, minus the spoiler pedals
+        if (pgM) setTimeout(function () {
+          Array.prototype.slice.call(pgM.querySelectorAll("button")).forEach(function (b0) {
+            if (/^2\s*[x\u00d7]$/i.test((b0.textContent || "").trim()) || /skip to result/i.test(b0.textContent || "")) b0.remove();
+          });
+        }, 120);
       }
     } catch (eL) {}
     if (!/^#\/matchday/.test(location.hash || "")) { if (FO_MD.timer) { clearInterval(FO_MD.timer); FO_MD.timer = null; } return; }
@@ -14503,6 +14516,24 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         keys.forEach(function (k) { var b = bySeason[k]; tot.inns += b.inns; tot.runs += b.runs; tot.wkts += b.wkts; tot.outs += b.outs; tot.balls += b.balls; if (b.hs > tot.hs) tot.hs = b.hs; if (b.bw > tot.bw || (b.bw === tot.bw && b.br < tot.br)) { tot.bw = b.bw; tot.br = b.br; } });
         srows += cellRow("Career", tot, true);
       }
+      // matches resolved away from this device may predate the chronicle
+      // stamps: rebuild the guaranteed moments straight from the history
+      try {
+        var lg = h.filter(function (e) { return e.s != null; });
+        if (lg.length) {
+          p._career = p._career || [];
+          var has = function (ev) { return p._career.some(function (c0) { return c0.ev === ev; }); };
+          var f0 = lg[0];
+          if (!has("debut") && !p._career.some(function (c0) { return /first time|debut/i.test(c0.txt || ""); }))
+            p._career.unshift({ s: f0.s, r: f0.r || 1, ev: "debut", txt: "First appearance for the club" });
+          var seen50 = false, seen100 = false, seen5w = false;
+          lg.forEach(function (e) {
+            if (!seen100 && (+e.rr || 0) >= 100) { seen100 = true; if (!has("hundred") && !p._career.some(function (c0) { return /century/i.test(c0.txt || ""); })) p._career.push({ s: e.s, r: e.r || 1, ev: "hundred", txt: "Maiden century: " + e.bat }); }
+            else if (!seen50 && (+e.rr || 0) >= 50) { seen50 = true; if (!has("fifty") && !p._career.some(function (c0) { return /maiden fifty|first fifty/i.test(c0.txt || ""); })) p._career.push({ s: e.s, r: e.r || 1, ev: "fifty", txt: "Maiden fifty: " + e.bat }); }
+            if (!seen5w && (+e.w || 0) >= 5) { seen5w = true; if (!has("fivefor") && !p._career.some(function (c0) { return /five[- ]for/i.test(c0.txt || ""); })) p._career.push({ s: e.s, r: e.r || 1, ev: "fivefor", txt: "Maiden five-for: " + e.bowl }); }
+          });
+        }
+      } catch (eR) {}
       var evs = (p._career || []).slice().reverse().slice(0, 14).map(function (c) {
         return "<div class='fo-cp-ev'><i>S" + c.s + " R" + c.r + "</i><span>" + E(c.txt) + "</span></div>";
       }).join("") || "<div class='small'>The story starts with the next matchday.</div>";
