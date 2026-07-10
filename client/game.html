@@ -9419,7 +9419,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-0448-efb80a";
+  var FO_BUILD = "20260710-1221-9acf79";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -15376,10 +15376,33 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var d = ["moves into the commentary box", "takes a coaching badge back home", "signs one last deal in the Northern Premier", "joins the umpiring panel", "opens a batting academy", "will run the family farm and watch from the hill"];
       return d[foHash32("dest-" + nm) % d.length];
     };
-    var FO_CITIES = { NED: ["Rotterdam", "Utrecht", "Haarlem", "Deventer"], ENG: ["Leeds", "Taunton", "Canterbury", "Chester-le-Street"], AUS: ["Ballarat", "Newcastle", "Geelong", "Townsville"], IND: ["Pune", "Rajkot", "Indore", "Mysore"], PAK: ["Multan", "Sialkot", "Hyderabad", "Peshawar"], SAF: ["Paarl", "Bloemfontein", "Kimberley", "George"], NZL: ["Napier", "Dunedin", "Nelson", "Whangarei"], SRI: ["Galle", "Kandy", "Matara", "Kurunegala"], WIN: ["Arima", "Spanish Town", "Bridgetown", "Basseterre"], BAN: ["Khulna", "Rajshahi", "Sylhet", "Bogra"], AFG: ["Jalalabad", "Khost", "Kandahar", "Kunduz"], IRE: ["Cork", "Galway", "Lisburn", "Drogheda"] };
+    // real towns, ~22 per cricket nation, alias-normalized (p.nat carries a
+    // mix of codes and full names depending on how the player was generated)
+    var FO_TOWNS = {
+      Netherlands: ["Rotterdam", "Utrecht", "Haarlem", "Deventer", "Amstelveen", "Nijmegen", "Groningen", "Leiden", "Zwolle", "Arnhem", "Breda", "Delft", "Alkmaar", "Gouda", "Hilversum", "Enschede", "Maastricht", "Apeldoorn", "Amersfoort", "Dordrecht", "Voorburg", "The Hague", "Schiedam", "Eindhoven"],
+      England: ["Leeds", "Taunton", "Canterbury", "Chester-le-Street", "Scarborough", "Worcester", "Hove", "Bristol", "Northampton", "Derby", "Leicester", "Chelmsford", "Guildford", "Cheltenham", "Blackpool", "Kidderminster", "Ormskirk", "Pudsey", "Wakefield", "Barnsley", "Nottingham", "Durham", "Bath", "Ashington"],
+      Australia: ["Ballarat", "Newcastle", "Geelong", "Townsville", "Wagga Wagga", "Bendigo", "Launceston", "Toowoomba", "Cairns", "Bunbury", "Dubbo", "Albury", "Mackay", "Rockhampton", "Penrith", "Wollongong", "Mount Gambier", "Shepparton", "Bathurst", "Port Macquarie", "Alice Springs", "Devonport", "Fremantle", "Orange"],
+      India: ["Pune", "Rajkot", "Indore", "Mysuru", "Nagpur", "Kanpur", "Ranchi", "Meerut", "Vadodara", "Guwahati", "Amritsar", "Jodhpur", "Nashik", "Coimbatore", "Vijayawada", "Patna", "Bhopal", "Raipur", "Dehradun", "Aligarh", "Kochi", "Ludhiana", "Surat", "Varanasi"],
+      Pakistan: ["Multan", "Sialkot", "Hyderabad", "Peshawar", "Gujranwala", "Faisalabad", "Quetta", "Rawalpindi", "Sargodha", "Bahawalpur", "Sheikhupura", "Abbottabad", "Larkana", "Sahiwal", "Mardan", "Sukkur", "Okara", "Jhelum", "Mianwali", "Gujrat", "Kasur", "Attock"],
+      "South Africa": ["Paarl", "Bloemfontein", "Kimberley", "George", "Stellenbosch", "Pietermaritzburg", "Benoni", "Potchefstroom", "East London", "Gqeberha", "Rustenburg", "Krugersdorp", "Uitenhage", "Makhanda", "Welkom", "Springs", "Vereeniging", "Oudtshoorn", "Middelburg", "Nelspruit", "Polokwane", "Vryheid"],
+      "New Zealand": ["Napier", "Dunedin", "Nelson", "Whangarei", "Tauranga", "Palmerston North", "Invercargill", "Rotorua", "New Plymouth", "Hastings", "Timaru", "Gisborne", "Blenheim", "Masterton", "Ashburton", "Whanganui", "Levin", "Oamaru", "Cambridge", "Rangiora", "Taupo", "Greymouth"],
+      "Sri Lanka": ["Galle", "Kandy", "Matara", "Kurunegala", "Moratuwa", "Negombo", "Jaffna", "Ratnapura", "Badulla", "Anuradhapura", "Batticaloa", "Trincomalee", "Panadura", "Kalutara", "Gampaha", "Ambalangoda", "Nuwara Eliya", "Hambantota", "Chilaw", "Kegalle", "Dambulla", "Matale"],
+      "West Indies": ["Arima", "Spanish Town", "Bridgetown", "Basseterre", "San Fernando", "Chaguanas", "Montego Bay", "Kingstown", "Castries", "Georgetown", "Roseau", "St John's", "Gros Islet", "Speightstown", "May Pen", "Portmore", "Point Fortin", "New Amsterdam", "Linden", "Holetown", "Falmouth", "Couva"],
+      Afghanistan: ["Jalalabad", "Khost", "Kandahar", "Kunduz", "Herat", "Mazar-i-Sharif", "Ghazni", "Lashkar Gah", "Asadabad", "Gardez", "Charikar", "Pul-e-Khumri", "Taloqan", "Sheberghan", "Baghlan", "Faizabad", "Mehtar Lam", "Farah", "Zaranj", "Aybak"],
+      Ireland: ["Cork", "Galway", "Lisburn", "Drogheda", "Waterford", "Kilkenny", "Sligo", "Tralee", "Athlone", "Navan", "Carlow", "Ennis", "Dundalk", "Bray", "Mullingar", "Wexford", "Letterkenny", "Portlaoise", "Clonmel", "Bangor", "Coleraine", "Armagh"],
+      Zimbabwe: ["Bulawayo", "Mutare", "Gweru", "Kwekwe", "Masvingo", "Chinhoyi", "Marondera", "Kadoma", "Chegutu", "Bindura", "Zvishavane", "Victoria Falls", "Hwange", "Rusape", "Chiredzi", "Kariba", "Gwanda", "Shurugwi", "Norton", "Beitbridge"],
+      Bangladesh: ["Khulna", "Rajshahi", "Sylhet", "Bogura", "Chattogram", "Narayanganj", "Cumilla", "Mymensingh", "Jashore", "Barisal", "Rangpur", "Dinajpur", "Tangail", "Narsingdi", "Kushtia", "Brahmanbaria", "Feni", "Pabna", "Gazipur", "Magura", "Cox's Bazar", "Savar"]
+    };
+    var FO_NATAL = { AUS: "Australia", IND: "India", PAK: "Pakistan", SRI: "Sri Lanka", SL: "Sri Lanka", NZL: "New Zealand", NZ: "New Zealand", SAF: "South Africa", RSA: "South Africa", ENG: "England", NED: "Netherlands", HOL: "Netherlands", WIN: "West Indies", WI: "West Indies", AFG: "Afghanistan", IRE: "Ireland", ZIM: "Zimbabwe", BAN: "Bangladesh" };
     window.foHometown = function (pl) {
-      var cities = FO_CITIES[pl.nat] || ["a small town"];
-      return cities[foHash32("home-" + pl.name) % cities.length];
+      var nat = String((pl && pl.nat) || "");
+      var key = FO_TOWNS[nat] ? nat : FO_NATAL[nat.toUpperCase()] || null;
+      var towns = key ? FO_TOWNS[key] : null;
+      if (!towns) { // unknown nation: still a real place, hash-picked globally
+        var allT = []; for (var k2 in FO_TOWNS) allT = allT.concat(FO_TOWNS[k2]);
+        towns = allT;
+      }
+      return towns[foHash32("home-" + (pl && pl.name)) % towns.length];
     };
     // ---- the league almanac (#/almanac): the whole world's record book ----
     window.foAlmanacHTML = function () {
