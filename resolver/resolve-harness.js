@@ -122,7 +122,38 @@
     return cons;
   }
 
+  // Dream11-style fantasy points, identical to the client's foFantasyPoints,
+  // computed here so friendlies carry them in the stored payload
+  function frFantasy(innings){
+    var P = {};
+    var get = function (n, team) { return P[n] || (P[n] = { n: n, team: team, bat: 0, bowl: 0, field: 0 }); };
+    (innings || []).filter(Boolean).forEach(function (inn) {
+      (inn.bat || []).forEach(function (b) {
+        if (!b || (!b.b && !b.out)) return;
+        var e = get(b.p.name, inn.batTeam);
+        e.bat += (b.r || 0) + (b.f4 || 0) + 2 * (b.f6 || 0);
+        if (b.r >= 100) e.bat += 12; else if (b.r >= 50) e.bat += 4;
+        if (b.out && !b.r) e.bat -= 3;
+        if (b.b >= 20) { var sr = 100 * b.r / b.b; e.bat += sr >= 120 ? 6 : sr >= 100 ? 4 : sr >= 80 ? 2 : sr < 40 ? -6 : sr < 50 ? -4 : sr < 60 ? -2 : 0; }
+        var o = String(b.out || ''), mB = o.match(/^(?:lbw )?b ([^,]+)$/);
+        if (mB) get(mB[1].trim(), inn.bowlTeam).bowl += 8;
+      });
+      for (var k in (inn.bowlers || {})) { var r = inn.bowlers[k], e2 = get(k, inn.bowlTeam);
+        e2.bowl += 25 * (r.w || 0);
+        if (r.w >= 5) e2.bowl += 12; else if (r.w >= 4) e2.bowl += 6;
+        if (r.b >= 30) { var ec = r.r / (r.b / 6); e2.bowl += ec <= 3 ? 6 : ec <= 4 ? 4 : ec <= 5 ? 2 : ec > 8 ? -6 : ec > 7 ? -4 : ec > 6 ? -2 : 0; } }
+      for (var f in (inn.fielding || {})) { var fd = inn.fielding[f], e3 = get(f, inn.bowlTeam);
+        e3.field += 8 * (fd.ct || 0) + 12 * (fd.st || 0) + 8 * (fd.ro || 0);
+        if ((fd.ct || 0) >= 3) e3.field += 4; }
+    });
+    var arr = []; for (var n in P) { var x = P[n]; x.pts = x.bat + x.bowl + x.field; arr.push(x); }
+    arr.sort(function (a, b) { return b.pts - a.pts; });
+    return arr;
+  }
   function buildResult(m){
+    var ratings = null, fantasy = null;
+    try { if (typeof ratingsTable === 'function') ratings = ratingsTable({ home: m.meta.home, away: m.meta.away, innings: m.innings, result: m.result }); } catch (e) {}
+    try { fantasy = frFantasy(m.innings); } catch (e) {}
     return {
       result_text: m.result ? m.result.text : '',
       winner_team: m.result ? m.result.winner : null,
@@ -130,6 +161,8 @@
       scorecard: m.innings.map(inningsCard),
       worm: m.worm,
       log: m.log,
+      ratings_html: ratings,
+      fantasy: fantasy,
       consequences: computeConsequences(m),
       seed: m.seed,
       pitch: m.pitch,

@@ -6691,11 +6691,31 @@
       "<div class='fo-live-score'>" + E(r.result_text || "Played") + "</div>" +
       "<div class='fo-live-sub'>" + (r.mom ? "Star of the match: " + E(r.mom) + " &middot; " : "") + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + "</div></div>";
     var tab = window.__foFrTab || "score";
-    var bar = "<div class='fo-sctabs'>" + [["score", "Scorecard"], ["comm", "Commentary"], ["charts", "Charts"]].map(function (t2) {
+    var bar = "<div class='fo-sctabs'>" + [["score", "Scorecard"], ["comm", "Commentary"], ["charts", "Charts"], ["ratings", "Match ratings"], ["orders", "Orders"], ["fantasy", "Fantasy points"]].map(function (t2) {
       return "<button class='fo-sctab fo-frtab" + (tab === t2[0] ? " on" : "") + "' data-t='" + t2[0] + "'>" + t2[1] + "</button>";
     }).join("") + "</div>";
+    var notRec = function (what) { return "<div class='panel'><div class='pad small'>" + what + " were not recorded for this match &middot; friendlies played from now on carry them.</div></div>"; };
     var body = "";
-    if (tab === "comm") {
+    if (tab === "ratings") {
+      body = r.ratings_html ? "<div class='panel'><h4>Match ratings</h4><div class='pad'>" + r.ratings_html + "</div></div>" : notRec("Match ratings");
+    } else if (tab === "fantasy") {
+      if (r.fantasy && r.fantasy.length) {
+        var frows = r.fantasy.slice(0, 22).map(function (x, i) {
+          return "<tr" + (i === 0 ? " style='background:#fdf3e2'" : "") + "><td class='n'>" + (i + 1) + "</td><td><b>" + E(x.n) + "</b>" + (i === 0 ? " &#9733;" : "") + "<div class='small'>" + E(x.team || "") + "</div></td><td class='n'>" + (x.bat || 0) + "</td><td class='n'>" + (x.bowl || 0) + "</td><td class='n'>" + (x.field || 0) + "</td><td class='n'><b>" + (x.pts || 0) + "</b></td></tr>";
+        }).join("");
+        body = "<div class='panel'><h4>Fantasy points</h4><div class='pad'><table class='fo-sct'><thead><tr><th class='n'>#</th><th>Player</th><th class='n'>Bat</th><th class='n'>Bowl</th><th class='n'>Field</th><th class='n'>Pts</th></tr></thead><tbody>" + frows + "</tbody></table></div></div>";
+      } else body = notRec("Fantasy points");
+    } else if (tab === "orders") {
+      var osec = (r.scorecard || []).map(function (inn) {
+        if (!inn) return "";
+        var xi = (inn.batting || []).map(function (b2, i2) {
+          return "<tr><td class='n'>" + (i2 + 1) + "</td><td><b>" + E(b2.name) + "</b>" + (inn.captBatName === b2.name ? " <span class='fo-rl'>C</span>" : "") + "</td></tr>";
+        }).join("");
+        return "<div class='panel'><h4>" + E(inn.batTeam) + " &middot; batting order</h4><div class='pad'><table class='fo-sct'><tbody>" + xi + "</tbody></table>" +
+          (inn.captBowlName ? "<div class='small' style='margin-top:6px'>" + E(inn.bowlTeam || "") + " captain in the field: <b>" + E(inn.captBowlName) + "</b></div>" : "") + "</div></div>";
+      }).join("");
+      body = osec || notRec("Orders");
+    } else if (tab === "comm") {
       body = log.length ? "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'><div id='ftpcomm' class='ftpskin'>" +
         (typeof ftpCommHTML === "function" ? ftpCommHTML(log, "all", 5000) : "") +
         "<div class='fo-c-mile'><div class='text'>FULL TIME - " + E(r.result_text || "match complete") + ".</div><div class='clear'></div></div></div></div></div>" : "<div class='panel'><div class='pad small'>No commentary was recorded for this match.</div></div>";
@@ -6815,7 +6835,8 @@
         var box = pnl.querySelector("#fo-frs-ch"); if (!box || !rows.length) return;
         var seenK = "fol_chseen_" + LG.id, seen = {};
         try { seen = JSON.parse(lsGet(seenK) || "{}"); } catch (e) {}
-        var items = rows.slice(0, 10).map(function (c) {
+        rows = rows.slice().sort(function (a2, b2) { return new Date(a2.play_at || a2.created_at || 0) - new Date(b2.play_at || b2.created_at || 0); });
+        var items = rows.slice(0, 14).map(function (c) {
           var mineSent = c.challenger_club === me;
           var vs = mineSent ? c.opponent_club : c.challenger_club;
           var when = c.play_at ? new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
@@ -6852,25 +6873,7 @@
             if (c2) foChalPrep(c2);
           });
         });
-        // 11: upcoming friendlies appear inside Fixtures & results too
-        try {
-          var ft = null;
-          page.querySelectorAll(".panel").forEach(function (pn2) { var h2 = pn2.querySelector("h4"); if (h2 && /Fixtures & results/i.test(h2.textContent || "")) ft = pn2.querySelector("table"); });
-          if (ft && ft.rows.length && !ft.__foFr) {
-            ft.__foFr = 1;
-            var thN = ft.rows[0].cells.length;
-            rows.filter(function (c2) { return c2.status === "accepted" || (c2.status === "played" && c2.result); }).slice(0, 5).forEach(function (c2) {
-              var tr = ft.insertRow(1); tr.className = "fo-fx-fr";
-              var when2 = c2.play_at ? new Date(c2.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
-              var fst2 = foFrBcastState(c2);
-              var tail;
-              if (c2.status === "played" && fst2.phase === "done") tail = "<a href='#/friendly?id=" + c2.id + "'>" + E((c2.result && c2.result.result_text) || "friendly played") + "</a>";
-              else if (fst2.phase === "live") tail = "<a href='#/friendly?id=" + c2.id + "' class='fo-frs-live'><span class='live-dot'></span> LIVE &middot; watch</a>";
-              else tail = "friendly &middot; to be played";
-              tr.innerHTML = "<td>" + when2 + "</td><td>Fr</td><td>" + E(c2.challenger_club) + "</td><td>" + E(c2.opponent_club) + "</td><td class='small'>" + foPitchName(c2.pitch) + ", " + E(c2.weather || "") + "</td><td colspan='" + Math.max(1, thN - 5) + "'>" + tail + "</td>";
-            });
-          }
-        } catch (eFx) {}
+        // friendlies live in their own panel, never in the league table
       }).catch(function () {});
     } catch (e) {}
   }
@@ -7125,10 +7128,43 @@
   // (a) Squad polish: value-coloured skill bars + sortable Capt column.
   try { if (typeof GRIDKEYS !== "undefined") GRIDKEYS.Capt = function (p) { return (p && p.capt) || 0; }; } catch (e) {}
   // (14) Set lineup buttons directly on my rows in the Fixtures & results table.
+  // the engine's Fixtures & results rows end in sc / rpt / replay cells;
+  // fold them into ONE link: the result text opens the scorecard
+  function foFxResultLinks() {
+    try {
+      if (App.page !== "matches") return;
+      var page = document.getElementById("page"); if (!page) return;
+      var frTbl = null;
+      page.querySelectorAll(".panel").forEach(function (pn0) { var h0 = pn0.querySelector("h4"); if (h0 && /Fixtures & results/i.test(h0.textContent || "")) frTbl = pn0.querySelector("table"); });
+      if (!frTbl || frTbl.__foClean) return;
+      frTbl.__foClean = 1;
+      var hr = frTbl.rows[0];
+      while (hr && hr.cells.length > 6) hr.deleteCell(-1);
+      Array.prototype.slice.call(frTbl.rows, 1).forEach(function (tr) {
+        var c0 = tr.cells[0];
+        if (tr.cells.length === 1 && c0 && c0.colSpan > 6) { c0.colSpan = 6; return; }
+        if (tr.cells.length < 9) return;
+        var resTd = tr.cells[5];
+        var scA = tr.cells[6] && tr.cells[6].querySelector("a[href*='scorecard']");
+        if (scA) {
+          var a2 = document.createElement("a");
+          a2.href = scA.getAttribute("href");
+          a2.textContent = resTd.textContent.trim();
+          resTd.textContent = ""; resTd.appendChild(a2);
+        }
+        tr.deleteCell(8); tr.deleteCell(7); tr.deleteCell(6);
+      });
+    } catch (e) {}
+  }
   function foDecorateMatchRows() {
     try {
-      if (App.page !== "matches" || !(SYNC && SYNC.started) || SYNC.practice) return;
+      if (App.page !== "matches") return;
       var page = document.getElementById("page"); if (!page) return;
+      // the engine repaints this page once after routing, so the cleaner
+      // sweeps a few times; the __foClean marker keeps it idempotent
+      foFxResultLinks();
+      [350, 900, 2000].forEach(function (ms) { setTimeout(foFxResultLinks, ms); });
+      if (!(SYNC && SYNC.started) || SYNC.practice) return;
       page.querySelectorAll('tr[style*="eef4ee"], tr[style*="eef8fb"]').forEach(function (tr) {
         if (tr.__foSetr) return;
         var cells = tr.querySelectorAll("td"); if (cells.length < 5) return;
