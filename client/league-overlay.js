@@ -9892,11 +9892,28 @@
           if (L.out === "wRO") return true;
           return /DROPPED|Misfield|fumbles|Brilliant stop|diving stop|phenomenal stop|attacks the ball|Stumping chance missed|Rocket Arm|Lightning Hands|run out/i.test(L.txt || "");
         };
+        // the chase equation rides every second-innings over summary:
+        // "Need 41 from 12 overs" / "Need 3 from 8 balls"
+        var target = 0;
+        try {
+          for (var iT = 0; iT < (log || []).length; iT++) {
+            var LT = log[iT];
+            if (LT && LT.mile && LT.txt) { var mT = /Target (\d+)\./.exec(LT.txt); if (mT) { target = +mT[1]; break; } }
+          }
+        } catch (eTg) {}
         var rows = (log || []).filter(function (L) { return filter === "fielding" ? fieldTest(L) : pass(L, filter); }).slice(0, limit || 140).map(function (L) {
           if (L.intro) return '<div class="fo-comm-intro">' + tal(L.txt) + "</div>";
           if (L.mile || /^End of over/i.test(L.txt || "")) {
+            var txtM = L.txt || "";
+            if (target && L.inn === 1) {
+              var mO = /^End of over (\d+) .*- .*? (\d+)\/(\d+)\./.exec(txtM);
+              if (mO) {
+                var needR = target - (+mO[2]), left = 300 - (+mO[1]) * 6;
+                if (needR > 0 && left > 0) txtM += " Need " + needR + " from " + (left > 36 ? (left / 6) + " overs." : left + " balls.");
+              }
+            }
             var cls = L.out === "★" ? "fo-c-mile" : L.out === "✕" ? "fo-c-fow" : L.out === "⚑" ? "fo-c-flag" : "oversummary-bottom";
-            return '<div class="' + cls + '"><div class="text">' + tal(L.txt) + '</div><div class="clear"></div></div>';
+            return '<div class="' + cls + '"><div class="text">' + tal(txtM) + '</div><div class="clear"></div></div>';
           }
           var rowcls = L.out === "4" ? "four" : L.out === "6" ? "six" : _wk(L.out) ? "line wkt" : "line";
           var tag = foCommTag(L);
