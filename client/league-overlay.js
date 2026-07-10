@@ -1069,22 +1069,48 @@
     ".fo-exp-def b{display:inline-block;min-width:96px;color:#12203a}.fo-exp-def span{color:#5d6779}" +
     ".fo-exp-talbox{background:#eef4ee;border:1px solid #d5e0d7;border-radius:11px;padding:13px 16px;font-size:13.5px;line-height:1.6;margin-top:16px}" +
     "@media(max-width:760px){.fo-exp-cols{grid-template-columns:1fr}}" +
-    ".fo-cnd-sec{margin:22px 0 6px}" +
-    ".fo-cnd-h{display:flex;align-items:baseline;gap:10px;margin:0 0 9px;flex-wrap:wrap}" +
+    ".fo-cnd-sec{margin:24px 0 6px}" +
+    ".fo-cnd-h{display:flex;align-items:center;gap:9px;margin:0 0 10px;flex-wrap:wrap}" +
+    ".fo-cnd-no{width:22px;height:22px;border-radius:50%;background:#C0562F;color:#fff;font-weight:800;font-size:11.5px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 22px}" +
     ".fo-cnd-h b{font-size:15px;color:#12203a}" +
     ".fo-cnd-h span{font-size:12px;color:#8a8474}" +
     ".fo-cnd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(214px,1fr));gap:10px}" +
     ".fo-cnd-grid5{grid-template-columns:repeat(auto-fit,minmax(166px,1fr))}" +
-    ".fo-cnd{background:#fff;border:1px solid #e2ddd0;border-radius:11px;padding:11px 13px 12px;box-shadow:0 2px 8px rgba(18,32,58,.04);display:flex;flex-direction:column}" +
-    ".fo-cnd-t{display:flex;align-items:center;gap:8px;flex-wrap:wrap}" +
-    ".fo-cnd-t b{font-size:13.5px;color:#12203a;letter-spacing:-.1px}" +
-    ".fo-cnd p{margin:6px 0 0;font-size:12.5px;line-height:1.5;color:#5d6779}" +
-    ".fo-cnd-ex{font-style:italic;color:#8a8474 !important;font-size:11.5px !important;border-top:1px dashed #efeade;padding-top:6px;margin-top:auto !important}" +
-    ".fo-cnd .fo-cnd-ex{margin-top:8px !important}" +
+    ".fo-cnd{background:var(--cbg,#fff);border:1px solid var(--cbd,#e2ddd0);border-radius:11px;padding:11px 13px 12px;box-shadow:0 2px 8px rgba(18,32,58,.05);display:flex;flex-direction:column}" +
+    ".fo-cnd-t{display:flex;align-items:center;gap:7px;flex-wrap:wrap}" +
+    ".fo-cnd-t b{font-size:13.5px;color:var(--cink,#12203a);letter-spacing:-.1px}" +
+    ".fo-cnd-ic{width:24px;height:24px;border-radius:8px;background:rgba(255,255,255,.85);border:1px solid var(--cbd,#e2ddd0);color:var(--cink,#12203a);display:inline-flex;align-items:center;justify-content:center;flex:0 0 24px}" +
+    ".fo-cnd p{margin:6px 0 0;font-size:12.5px;line-height:1.5;color:#4d5666}" +
+    ".fo-cnd-ex{font-style:italic;color:var(--cink,#8a8474) !important;opacity:.75;font-size:11.5px !important;border-top:1px dashed var(--cbd,#efeade);padding-top:7px;margin-top:auto !important}" +
+    ".fo-cnd p+.fo-cnd-ex{margin-top:8px !important}" +
     ".fo-cnd-chip{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:2px 9px;white-space:nowrap}" +
     ".fo-cnd-rare{background:linear-gradient(135deg,#D9A441,#c08a2b);color:#fff;box-shadow:0 1px 4px rgba(160,110,20,.3)}" +
-    ".fo-cnd-com{background:#f3efe4;border:1px solid #e2ddd0;color:#8a8474}" +
-    ".fo-cnd-drain{background:#fbeae2;border:1px solid #edcbb8;color:#8a2f1d}" +
+    ".fo-cnd-com{background:rgba(255,255,255,.8);border:1px solid var(--cbd,#e2ddd0);color:#8a8474}" +
+    ".fo-cnd-drain{background:#fff;border:1px solid #e8b4a0;color:#a33a1d}" +
+    // one tint per card: bowling styles
+    ".fo-cnd--ember{--cbg:#FBEDE5;--cbd:#EFCDB8;--cink:#A33A1D}" +
+    ".fo-cnd--plum{--cbg:#F5F0F7;--cbd:#DCCCE4;--cink:#6B4A91}" +
+    ".fo-cnd--slate{--cbg:#EFF3F8;--cbd:#CBD8E8;--cink:#35619E}" +
+    ".fo-cnd--stone{--cbg:#F7F5F0;--cbd:#E2DDD0;--cink:#5D6779}" +
+    ".fo-cnd--sage{--cbg:#EFF5EC;--cbd:#CFE0CB;--cink:#2F6B46}" +
+    // pitches
+    ".fo-cnd--grass{--cbg:#EBF4EA;--cbd:#C7DEC6;--cink:#2F6B46}" +
+    ".fo-cnd--clay{--cbg:#F8EFE3;--cbd:#E7D3B4;--cink:#8A5A1D}" +
+    ".fo-cnd--cream{--cbg:#FCF8EC;--cbd:#EADFB8;--cink:#94742A}" +
+    ".fo-cnd--olive{--cbg:#F3F4E8;--cbd:#DBDDBE;--cink:#6B6D2F}" +
+    ".fo-cnd--rust{--cbg:#FAEDEA;--cbd:#EBC9C0;--cink:#96402E}" +
+    ".fo-cnd--iris{--cbg:#F0F1FA;--cbd:#D2D5EE;--cink:#4A4F9E}" +
+    // weather
+    ".fo-cnd--sun{--cbg:#FEF8E0;--cbd:#F2DE9E;--cink:#A07711}" +
+    ".fo-cnd--greyc{--cbg:#F1F2F4;--cbd:#D6DAE0;--cink:#5B6472}" +
+    ".fo-cnd--mist{--cbg:#F0F4F6;--cbd:#D3DEE4;--cink:#557286}" +
+    ".fo-cnd--humid{--cbg:#EDF5F1;--cbd:#C8E0D5;--cink:#2D7A68}" +
+    ".fo-cnd--hotc{--cbg:#FCF0E4;--cbd:#F0CFA8;--cink:#B35C15}" +
+    ".fo-cnd--scorch{--cbg:#FBE9E2;--cbd:#EFC0AC;--cink:#A33A1D}" +
+    ".fo-cnd--rain{--cbg:#ECF2F9;--cbd:#C9DAEE;--cink:#3C6394}" +
+    ".fo-cnd--windc{--cbg:#EDF6F8;--cbd:#C6E2E8;--cink:#2B7683}" +
+    ".fo-cnd--ice{--cbg:#F0F6FB;--cbd:#CFE2F0;--cink:#3E6E99}" +
+    ".fo-cnd--dusk{--cbg:#F2EFF8;--cbd:#D8CFEA;--cink:#5B4A91}" +
     "@media(max-width:640px){.fo-cnd-grid{grid-template-columns:1fr 1fr}.fo-cnd-ex{display:none}}" +
     ".fo-heat-note{background:#fdf3e2;border:1px solid #ecd9ae;border-left:4px solid #C0562F;border-radius:10px;padding:10px 14px;margin:0 0 12px;font-size:13px;color:#5d4a2f;line-height:1.55}" +
     ".fo-heat-note b{color:#8a2f1d}" +
@@ -4496,54 +4522,81 @@
   // a new manager drafts with the full picture.
   function foOnbConditions() {
     FO_ONB.step = 6;
+    // every card carries its own tint + a small monoline glyph, in the same
+    // stroke style as FO_ICONS, so the wall of white boxes reads as a field
+    // guide instead of a spreadsheet
+    var ic = function (path) { return "<span class='fo-cnd-ic'><svg viewBox='0 0 24 24' width='14' height='14' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'>" + path + "</svg></span>"; };
+    var G = {
+      bolt: "<path d='M13 2 6 13h5l-1.5 9L18 10h-5l1.5-8z'/>",
+      chevs: "<path d='M6 6l6 6-6 6M13 6l6 6-6 6'/>",
+      chev: "<path d='M9.5 6l6 6-6 6'/>",
+      rotate: "<path d='M20 12a8 8 0 1 1-2.5-5.9M20 3v4h-4'/>",
+      seam: "<circle cx='12' cy='12' r='8'/><path d='M9.6 5.6c2.4 4 2.4 8.8 0 12.8M14.4 5.6c-2.4 4-2.4 8.8 0 12.8'/>",
+      scales: "<path d='M12 4v16m-5 0h10M7 5.5h10'/><path d='M7 5.5 4 12a3.4 3.4 0 0 0 6 0L7 5.5Zm10 0L14 12a3.4 3.4 0 0 0 6 0l-3-6.5Z'/>",
+      grass: "<path d='M6 20c.5-5-.5-8-2-10M12 20c0-7-.6-10-1.5-13M18 20c-.5-5 .5-8 2-10M12 20c1.5-4 3.5-6 5.5-7'/>",
+      crack: "<path d='M4 19 9 12l3 3 4-7 4 6'/>",
+      road: "<path d='M3 15h18M6 9h12'/>",
+      wave: "<path d='M3 14c2-3 4-3 6 0s4 3 6 0 4-3 6 0'/>",
+      bounce: "<path d='M4 18 9 10l3 4 5-8'/><path d='M14 6h3v3'/>",
+      twoArrows: "<path d='M4 9h11M12 6l3 3-3 3M4 16h6M8 14l2 2-2 2'/>",
+      sun: "<circle cx='12' cy='12' r='4'/><path d='M12 2.5V5M12 19v2.5M2.5 12H5M19 12h2.5M5 5l1.8 1.8M17.2 17.2 19 19M19 5l-1.8 1.8M6.8 17.2 5 19'/>",
+      cloud: "<path d='M7 18h9.5a4 4 0 1 0-.8-7.9A6 6 0 0 0 4.2 12 3.5 3.5 0 0 0 7 18z'/>",
+      mist: "<path d='M4 9h16M6 13h13M8 17h8'/>",
+      drop: "<path d='M12 4c3 4 5 6.3 5 8.8a5 5 0 0 1-10 0C7 10.3 9 8 12 4z'/>",
+      thermo: "<path d='M10 4a2 2 0 0 1 4 0v8.6a4 4 0 1 1-4 0V4z'/><path d='M12 9v7'/>",
+      flame: "<path d='M12 3c1 3.5 5 5.2 5 9.5a5 5 0 0 1-10 0c0-3 2.2-4.6 3.2-7 .6 1.4 1.8 2 1.8 2Z'/>",
+      drizzle: "<path d='M7 14h9.5a4 4 0 1 0-.8-7.9A6 6 0 0 0 4.2 8 3.5 3.5 0 0 0 7 14z'/><path d='m9 17-1 2.5M13 17l-1 2.5M17 17l-1 2.5'/>",
+      wind: "<path d='M9.6 4.6A2 2 0 1 1 11 8H3M12.6 19.4A2 2 0 1 0 14 16H3M17.7 7.7A2.5 2.5 0 1 1 19.5 12H3'/>",
+      flake: "<path d='M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9'/>",
+      dew: "<path d='M4 20h16'/><path d='M12 4.5c2.2 3 3.7 4.8 3.7 6.7a3.7 3.7 0 0 1-7.4 0c0-1.9 1.5-3.7 3.7-6.7z'/>"
+    };
     var chip = function (cls, txt) { return "<span class='fo-cnd-chip " + cls + "'>" + txt + "</span>"; };
-    var card = function (nm, chips, d, ex) {
-      return "<div class='fo-cnd'><div class='fo-cnd-t'><b>" + nm + "</b>" + chips + "</div><p>" + d + "</p>" + (ex ? "<p class='fo-cnd-ex'>" + ex + "</p>" : "") + "</div>";
+    var card = function (theme, glyph, nm, chips, d, ex) {
+      return "<div class='fo-cnd fo-cnd--" + theme + "'><div class='fo-cnd-t'>" + ic(glyph) + "<b>" + nm + "</b>" + chips + "</div><p>" + d + "</p>" + (ex ? "<p class='fo-cnd-ex'>" + ex + "</p>" : "") + "</div>";
     };
     var sec = function (no, title, sub, cards) {
-      return "<div class='fo-cnd-sec'><div class='fo-cnd-h'><b>" + no + " &middot; " + title + "</b><span>" + sub + "</span></div><div class='fo-cnd-grid'>" + cards + "</div></div>";
+      return "<div class='fo-cnd-sec'><div class='fo-cnd-h'><span class='fo-cnd-no'>" + no + "</span><b>" + title + "</b><span>" + sub + "</span></div><div class='fo-cnd-grid'>" + cards + "</div></div>";
     };
     var rare = function (t) { return chip("fo-cnd-rare", "&#9670; " + t); };
     var com = function (t) { return chip("fo-cnd-com", t); };
     var drain = function (t) { return chip("fo-cnd-drain", t); };
-    // five styles fit one row on desktop; the generic grid would orphan the fifth
     var bowlers = [
-      card("Genuine fast", rare("Rarest &middot; ~1 in 20"),
+      card("ember", G.bolt, "Genuine fast", rare("Rarest &middot; ~1 in 20"),
         "The apex predator: the biggest wicket threat of any style, at any stage of the innings. Burns energy fastest and commands the game&rsquo;s steepest fees.",
         "A genuine quick under overcast skies is the most dangerous thing in this game."),
-      card("Wrist spin", rare("Very rare &middot; ~1 in 12"),
+      card("plum", G.rotate, "Wrist spin", rare("Very rare &middot; ~1 in 12"),
         "Attacking spin: googlies and rip that buy wickets through the middle overs, priced at a premium to match.",
         "On a crumbling pitch a wrist spinner turns the middle overs into a minefield."),
-      card("Fast medium", com("Uncommon"),
+      card("slate", G.chevs, "Fast medium", com("Uncommon"),
         "New-ball seam with honest pace: real threat while the ball is hard, respectable control after.",
         "The bread-and-butter opening bowler on any green or overcast day."),
-      card("Medium", com("Common"),
+      card("stone", G.chev, "Medium", com("Common"),
         "The workhorse. Modest threat, but he keeps an end tight and his overs come cheap.",
         "A reliable fifth or sixth option through the quiet middle overs."),
-      card("Finger spin", com("Common"),
+      card("sage", G.seam, "Finger spin", com("Common"),
         "Control first: dots and squeezed middle overs, with real menace once a pitch turns dry.",
         "On flat days he saves runs; on crumbling ones he wins matches.")
     ].join("");
     var pitches = [
-      ["Balanced", "A fair contest. Nobody gets favours.", "Pick your best XI on merit."],
-      ["Green", "Seam and swing; the new-ball spell is brutal.", "Stack pace, open the batting with technique."],
-      ["Crumbling", "Turns square as it wears on.", "Spinners own the middle overs; chasing is hardest."],
-      ["Flat", "A batter&rsquo;s road: boundaries flow, totals balloon.", "Wickets must be bought with attacking bowling."],
-      ["Slow", "Low and grippy; the ball dies in the surface.", "Sixes are dear. Rotate strike and be patient."],
-      ["Sticky", "Unpredictable bounce, wickets for everyone.", "Batting depth is your insurance."],
-      ["Two-paced", "Some balls hurry, some hold.", "Timing is never safe; big intent costs more here."]
-    ].map(function (x) { return card(x[0], "", x[1], x[2]); }).join("");
+      ["stone", G.scales, "Balanced", "A fair contest. Nobody gets favours.", "Pick your best XI on merit."],
+      ["grass", G.grass, "Green", "Seam and swing; the new-ball spell is brutal.", "Stack pace, open the batting with technique."],
+      ["clay", G.crack, "Crumbling", "Turns square as it wears on.", "Spinners own the middle overs; chasing is hardest."],
+      ["cream", G.road, "Flat", "A batter&rsquo;s road: boundaries flow, totals balloon.", "Wickets must be bought with attacking bowling."],
+      ["olive", G.wave, "Slow", "Low and grippy; the ball dies in the surface.", "Sixes are dear. Rotate strike and be patient."],
+      ["rust", G.bounce, "Sticky", "Unpredictable bounce, wickets for everyone.", "Batting depth is your insurance."],
+      ["iris", G.twoArrows, "Two-paced", "Some balls hurry, some hold.", "Timing is never safe; big intent costs more here."]
+    ].map(function (x) { return card(x[0], x[1], x[2], "", x[3], x[4]); }).join("");
     var weathers = [
-      card("Sunny", "", "True skies, fair fight.", "Nothing to adjust: cricket as designed."),
-      card("Overcast", "", "The ball hoops for the seamers, especially while it is new.", "Pace up, and expect a lower-scoring day."),
-      card("Misty", "", "Seam movement plus slippery hands: more catches go down.", "Seamers threaten; pick your safest catchers."),
-      card("Humid", drain("Drains &middot; tire ~20% faster"), "Heavy air: big new-ball help for the seamers, and it saps the legs all day.", "Survive the burst with the bat; watch bowler workloads."),
-      card("Hot", drain("Drains &middot; tire ~35% faster"), "The ball comes on true: a batting day. But the heat wears everyone down.", "Long spells fade, and tired legs carry into the next fixture."),
-      card("Scorching", drain("Drains &middot; tire ~60% faster"), "Boundaries flow and bowlers wilt fast.", "Short spells, deep batting: the sixth bowling option earns his keep today."),
-      card("Drizzle", "", "Scrappy, slow cricket; the bat loses its edge.", "Boundaries are earned, not given."),
-      card("Windy", "", "Sixes die at the rope.", "Run hard twos instead of swinging harder."),
-      card("Chilly", "", "Cold hands: boundaries down, dropped catches up.", "A day for percentages, not fireworks."),
-      card("Dew later", "", "A wet ball in the second innings: spinners lose their grip in the chase.", "If dew is forecast, bowling first is the percentage call.")
+      card("sun", G.sun, "Sunny", "", "True skies, fair fight.", "Nothing to adjust: cricket as designed."),
+      card("greyc", G.cloud, "Overcast", "", "The ball hoops for the seamers, especially while it is new.", "Pace up, and expect a lower-scoring day."),
+      card("mist", G.mist, "Misty", "", "Seam movement plus slippery hands: more catches go down.", "Seamers threaten; pick your safest catchers."),
+      card("humid", G.drop, "Humid", drain("Drains &middot; tire ~20% faster"), "Heavy air: big new-ball help for the seamers, and it saps the legs all day.", "Survive the burst with the bat; watch bowler workloads."),
+      card("hotc", G.thermo, "Hot", drain("Drains &middot; tire ~35% faster"), "The ball comes on true: a batting day. But the heat wears everyone down.", "Long spells fade, and tired legs carry into the next fixture."),
+      card("scorch", G.flame, "Scorching", drain("Drains &middot; tire ~60% faster"), "Boundaries flow and bowlers wilt fast.", "Short spells, deep batting: the sixth bowling option earns his keep today."),
+      card("rain", G.drizzle, "Drizzle", "", "Scrappy, slow cricket; the bat loses its edge.", "Boundaries are earned, not given."),
+      card("windc", G.wind, "Windy", "", "Sixes die at the rope.", "Run hard twos instead of swinging harder."),
+      card("ice", G.flake, "Chilly", "", "Cold hands: boundaries down, dropped catches up.", "A day for percentages, not fireworks."),
+      card("dusk", G.dew, "Dew later", "", "A wet ball in the second innings: spinners lose their grip in the chase.", "If dew is forecast, bowling first is the percentage call.")
     ].join("");
     var body =
       "<div class='fo-ob-card fo-ob-mid'>" +
@@ -4560,7 +4613,6 @@
     host.querySelector("#fo-ob-b").addEventListener("click", foOnbPlayers);
     host.querySelector("#fo-ob-c").addEventListener("click", function () { foOnbDraft(); });
   }
-
   // Re-render only what a signing changes: the player's own card, the sticky
   // budget strip, the side panels, the rail pills and the footer. Rails and
   // page scroll are untouched, so nothing jumps.
