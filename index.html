@@ -9441,7 +9441,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-1426-be97cf";
+  var FO_BUILD = "20260710-1514-59d5df";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -15960,6 +15960,21 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   try { (function () {
     var FO_BCAST_MIN = 60;
     function foBcastKey() { return "fol_bcast_" + (LG ? LG.id : "solo"); }
+    function foParse9am(s) {
+      // iOS Safari rejects "Sat, 4 Jul 2026 09:00:00 GMT-0400"; rebuild the
+      // date as strict ISO-8601 (spec-guaranteed everywhere) before falling
+      // back to the loose form for anything the regex misses
+      try {
+        var m = String(s || "").match(/(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{4})/i);
+        if (m) {
+          var MM = { jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06", jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12" }[m[2].slice(0, 3).toLowerCase()];
+          var t = Date.parse(m[3] + "-" + MM + "-" + ("0" + m[1]).slice(-2) + "T09:00:00-04:00");
+          if (!isNaN(t)) return t;
+        }
+      } catch (e) {}
+      var t2 = Date.parse(String(s || "") + " 09:00:00 GMT-0400");
+      return isNaN(t2) ? NaN : t2;
+    }
     function foBcastT0(rd) {
       // solo (and any locally-resolved round): the moment it resolved
       try { var st = JSON.parse(lsGet(foBcastKey()) || "null"); if (st && st.round === rd && st.t0) return st.t0; } catch (e) {}
@@ -15972,7 +15987,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var cand = [(rows0[0] && rows0[0].date) || "", foDailyDate(rd), foDailyDate(rd) + " " + new Date().getFullYear()];
         for (var ci = 0; ci < cand.length; ci++) {
           if (!cand[ci]) continue;
-          var t = Date.parse(cand[ci] + " 09:00:00 GMT-0400");
+          var t = foParse9am(cand[ci]);
           if (!isNaN(t) && Math.abs(t - Date.now()) < 200 * 86400000) return t;
         }
       } catch (e2) {}
@@ -16105,18 +16120,24 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       };
       window.completeRound.__foBcast = 1;
     }
-    // live pill in the nav + a slow tick that keeps live surfaces fresh
+    // live pill in the nav: pinned first, added the moment a broadcast is on
+    function foBcastPill() {
+      var em = foEmbargo();
+      var tb = document.getElementById("topbar");
+      var wrap = tb && tb.querySelector(".fo-nav-scroll");
+      var pill = wrap && wrap.querySelector("a.fo-bcast");
+      if (em.active && wrap && !pill) {
+        var a = document.createElement("a"); a.className = "fo-bcast"; a.innerHTML = "&#128308; Live";
+        a.href = "#"; a.addEventListener("click", function (ev) { ev.preventDefault(); location.hash = "#/matchday"; if (typeof window.route === "function") window.route(); });
+        wrap.insertBefore(a, wrap.firstChild);
+      } else if (!em.active && pill) pill.remove();
+      return em;
+    }
+    setTimeout(function () { try { foBcastPill(); } catch (e) {} }, 700);
+    // a slow tick keeps live surfaces fresh
     setInterval(function () {
       try {
-        var em = foEmbargo();
-        var tb = document.getElementById("topbar");
-        var wrap = tb && tb.querySelector(".fo-nav-scroll");
-        var pill = wrap && wrap.querySelector("a.fo-bcast");
-        if (em.active && wrap && !pill) {
-          var a = document.createElement("a"); a.className = "fo-bcast"; a.innerHTML = "&#128308; Live";
-          a.href = "#"; a.addEventListener("click", function (ev) { ev.preventDefault(); location.hash = "#/matchday"; if (typeof window.route === "function") window.route(); });
-          wrap.insertBefore(a, wrap.firstChild);
-        } else if (!em.active && pill) pill.remove();
+        var em = foBcastPill();
         if (em.active) {
           foMaskSpoilers();
           var h = location.hash || "";
@@ -16130,8 +16151,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var _rtB = window.route;
       window.route = function () {
         var r2 = _rtB.apply(this, arguments);
-        try { foMaskSpoilers(); } catch (e) {}
-        setTimeout(foMaskSpoilers, 220); setTimeout(foMaskSpoilers, 900);   // pages paint async
+        try { foMaskSpoilers(); foBcastPill(); } catch (e) {}
+        setTimeout(function () { foMaskSpoilers(); try { foBcastPill(); } catch (e) {} }, 220); setTimeout(foMaskSpoilers, 900);   // pages paint async
         return r2;
       };
       window.route.__foBcast = 1;
@@ -16148,7 +16169,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-live-sub{font-size:12px;color:#93a0b4}" +
       ".fo-live-row{display:flex;gap:10px;align-items:baseline;padding:9px 0;border-bottom:1px solid #f0ece1;font-size:13px}" +
       ".fo-live-row b{flex:1;color:#12203a}.fo-live-row span{color:#a33328;font-weight:700}" +
-      "#topbar .fo-nav-scroll a.fo-bcast{background:#a33328 !important;border-color:#a33328 !important;color:#fff !important;font-weight:800;animation:foPulse 2s ease-in-out infinite}";
+      "#topbar .fo-nav-scroll a.fo-bcast{background:#a33328 !important;border-color:#a33328 !important;color:#fff !important;font-weight:800;animation:foPulse 2s ease-in-out infinite}" +
+      "@media(max-width:820px){#topbar .fo-nav-scroll a.fo-bcast{position:sticky;left:0;z-index:6;box-shadow:0 0 0 4px #0B1322}}" +
+      ".fo-live-row a{font-weight:700;padding:4px 0 4px 8px;white-space:nowrap}" +
+      "@media(max-width:640px){.fo-live-row{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:1px 10px}.fo-live-row b{grid-column:1/-1}}";
     document.head.appendChild(bcs);
     window.__foBcastTest = function (minsAgo) { lsSet(foBcastKey(), JSON.stringify({ round: foLastRoundIx(), t0: Date.now() - minsAgo * 60000 })); };
   })(); } catch (e) { console.warn("matchday theatre", e); }
