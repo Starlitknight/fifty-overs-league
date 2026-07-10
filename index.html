@@ -9419,7 +9419,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-1227-0f0e2a";
+  var FO_BUILD = "20260710-1235-c24d1b";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14410,30 +14410,41 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var ex = document.getElementById("fo-career");
       if (ex && ex.getAttribute("data-n") === name) return;
       if (ex) ex.remove();
-      var t = foMyClub(); if (!t) return;
-      var p = (t.players || []).concat(t.youth || []).find(function (x) { return x.name === name; });
-      if (!p) return;   // careers are for your own players; the rest stay scouted
+      // careers are public record: every player in the league has one
+      var pl0 = null; try { pl0 = findPlayer(name); } catch (eF) {}
+      if (!pl0 || !pl0.p) return;
+      var p = pl0.p;
+      var t = foMyClub();
+      var own = !!(t && (t.players || []).concat(t.youth || []).some(function (x) { return x.name === name; }));
       var prov = p._prov;
       var homeTxt = ""; try { homeTxt = " · born in " + foHometown(p); } catch (eH) {}
       var provTxt = !prov ? "Founding squad · with the club from day one"
-        : prov.how === "market" ? "Signed from the transfer market, S" + prov.s + " R" + prov.r + (prov.fee ? " · " + FO$(prov.fee) + " fee, beaten to by no one" : "")
-        : prov.how === "youth" ? "Found by your scout" + (prov.nat ? " in " + prov.nat : "") + ", S" + prov.s + " R" + prov.r + " · your signing, your project"
-        : "Your draft pick, day one";
+        : prov.how === "market" ? "Signed from the transfer market, S" + prov.s + " R" + prov.r + (own && prov.fee ? " · " + FO$(prov.fee) + " fee, beaten to by no one" : "")
+        : prov.how === "youth" ? (own ? "Found by your scout" + (prov.nat ? " in " + prov.nat : "") + ", S" + prov.s + " R" + prov.r + " · your signing, your project" : "A youth-academy find" + (prov.nat ? " from " + prov.nat : "") + ", S" + prov.s)
+        : (own ? "Your draft pick, day one" : "A draft-day original");
       provTxt += homeTxt;
       var h = ((App.playerHist && App.playerHist[name]) || []).filter(function (e) { return !e.fr; });
       var bySeason = {};
       h.forEach(function (e) {
         var k = e.s || "early";
-        var b = (bySeason[k] = bySeason[k] || { inns: 0, runs: 0, hs: 0, wkts: 0, bw: 0, br: 1e9 });
+        var b = (bySeason[k] = bySeason[k] || { inns: 0, runs: 0, hs: 0, wkts: 0, bw: 0, br: 1e9, outs: 0, balls: 0 });
         b.inns++; b.runs += +e.rr || 0; b.wkts += +e.w || 0;
+        b.outs += e.o ? 1 : 0; b.balls += +e.bb || 0;
         if ((+e.rr || 0) > b.hs) b.hs = +e.rr;
         if ((+e.w || 0) > b.bw || ((+e.w || 0) === b.bw && (+e.w || 0) > 0 && (+e.cr || 0) < b.br)) { if (+e.w) { b.bw = +e.w; b.br = +e.cr || 0; } }
       });
       var keys = Object.keys(bySeason).sort(function (a, b2) { return (a === "early" ? 0 : +a) - (b2 === "early" ? 0 : +b2); });
-      var srows = keys.map(function (k) {
-        var b = bySeason[k];
-        return "<tr><td>" + (k === "early" ? "Early days" : "Season " + k) + "</td><td class='n'>" + b.inns + "</td><td class='n'>" + b.runs + "</td><td class='n'>" + (b.hs || "–") + "</td><td class='n'>" + b.wkts + "</td><td class='n'>" + (b.bw ? b.bw + "/" + b.br : "–") + "</td></tr>";
-      }).join("");
+      var cellRow = function (lbl, b, bold) {
+        var ave = b.outs ? (b.runs / b.outs).toFixed(1) : "–";
+        var sr = b.balls ? (100 * b.runs / b.balls).toFixed(0) : "–";
+        return "<tr" + (bold ? " class='fo-cp-tot'" : "") + "><td>" + lbl + "</td><td class='n'>" + b.inns + "</td><td class='n'>" + b.runs + "</td><td class='n'>" + (b.hs || "–") + "</td><td class='n'>" + ave + "</td><td class='n'>" + sr + "</td><td class='n'>" + b.wkts + "</td><td class='n'>" + (b.bw ? b.bw + "/" + b.br : "–") + "</td></tr>";
+      };
+      var srows = keys.map(function (k) { return cellRow(k === "early" ? "Early days" : "Season " + k, bySeason[k], false); }).join("");
+      if (keys.length > 1) {
+        var tot = { inns: 0, runs: 0, hs: 0, wkts: 0, bw: 0, br: 1e9, outs: 0, balls: 0 };
+        keys.forEach(function (k) { var b = bySeason[k]; tot.inns += b.inns; tot.runs += b.runs; tot.wkts += b.wkts; tot.outs += b.outs; tot.balls += b.balls; if (b.hs > tot.hs) tot.hs = b.hs; if (b.bw > tot.bw || (b.bw === tot.bw && b.br < tot.br)) { tot.bw = b.bw; tot.br = b.br; } });
+        srows += cellRow("Career", tot, true);
+      }
       var evs = (p._career || []).slice().reverse().slice(0, 14).map(function (c) {
         return "<div class='fo-cp-ev'><i>S" + c.s + " R" + c.r + "</i><span>" + E(c.txt) + "</span></div>";
       }).join("") || "<div class='small'>The story starts with the next matchday.</div>";
@@ -14441,7 +14452,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       card.className = "panel fo-keep"; card.id = "fo-career"; card.setAttribute("data-n", name);
       card.innerHTML = "<h4>Career &middot; " + E(foDisplayName(p)) + "</h4><div class='pad'>" +
         "<div class='fo-cp-prov'>" + E(provTxt) + "</div>" +
-        (srows ? "<table><tr><th></th><th class='n'>Inns</th><th class='n'>Runs</th><th class='n'>HS</th><th class='n'>Wkts</th><th class='n'>Best</th></tr>" + srows + "</table>" : "") +
+        (srows ? "<table><tr><th></th><th class='n'>Inns</th><th class='n'>Runs</th><th class='n'>HS</th><th class='n'>Ave</th><th class='n'>SR</th><th class='n'>Wkts</th><th class='n'>Best</th></tr>" + srows + "</table>" : "") +
         "<div class='small' style='margin:9px 0 4px;text-transform:uppercase;letter-spacing:.07em;font-size:10px;color:#8a93a3'>Moments</div>" + evs +
         "</div></div>";
       // below the Skills panel: the present first, then the story
@@ -14452,6 +14463,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       })[0] || panels[panels.length - 1];
       if (skills && skills.parentNode) skills.parentNode.insertBefore(card, skills.nextSibling);
       else page.appendChild(card);
+      // one format means the engine's Batting & fielding / Bowling panels are
+      // single-row aggregates - the career table now carries Ave/SR + totals,
+      // so those panels only duplicate it
+      panels.forEach(function (pn) {
+        var h2 = pn.querySelector("h4");
+        if (h2 && /^(Batting & fielding|Batting &amp; fielding|Bowling)$/i.test((h2.textContent || "").trim())) pn.style.display = "none";
+      });
     } catch (e) {}
   }
 
@@ -15205,7 +15223,18 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-an-cap{font-size:12px;color:#8a8474;margin:2px 0 10px;font-style:italic}" +
       ".fo-ph{margin-top:10px}.fo-ph .small{color:#8a8474}" +
       ".fo-an-leg span{background:#f6f4ee;border:1px solid #e8e3d6;border-radius:999px;padding:4px 12px;font-weight:600}" +
-      "@media(max-width:640px){.fo-sct td,.fo-sct th{padding:6px 6px}.fo-sci-dis{font-size:10.5px}.fo-psh-row{font-size:11px}}" +
+      "@media(max-width:640px){.fo-sct td,.fo-sct th{padding:6px 6px}.fo-sci-dis{font-size:10.5px}.fo-psh-row{font-size:11px}" +
+      // fantasy points: the NAME stays put while the numbers scroll
+      ".fo-fp th:first-child,.fo-fp td:first-child{display:none}" +
+      ".fo-fp th:nth-child(2),.fo-fp td:nth-child(2){position:sticky;left:0;background:#fff;z-index:2;box-shadow:2px 0 4px rgba(18,32,58,.06);min-width:110px}" +
+      ".fo-fp thead th:nth-child(2){background:#faf8f3}" +
+      ".fo-fp .fo-fp-top td:nth-child(2){background:#fdf6e5}" +
+      // match ratings: player column pinned so both teams' numbers compare
+      ".fo-ratingswrap{overflow-x:auto;-webkit-overflow-scrolling:touch}" +
+      ".fo-ratingswrap table{min-width:520px}" +
+      ".fo-ratingswrap th:first-child,.fo-ratingswrap td:first-child{position:sticky;left:0;background:#fff;z-index:2;box-shadow:2px 0 4px rgba(18,32,58,.06);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+      ".fo-ratingswrap thead th:first-child,.fo-ratingswrap tr:first-child th:first-child{background:#faf8f3}" +
+      "}" +
       // scorecard sub-tabs: one scrolling row of pills, matching the app nav
       "html body .fo-sctabs{display:flex;flex-wrap:nowrap;gap:7px;margin:12px 0 12px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}" +
       "html body .fo-sctabs::-webkit-scrollbar{display:none}" +
