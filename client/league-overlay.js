@@ -2569,10 +2569,20 @@
         var drain = (window.FO_WX_DRAIN || {})[String(wxRaw).toLowerCase()];
         if (drain && !page.querySelector(".fo-heat-note")) {
           var dPct = Math.round((drain - 1) * 100);
+          // fatigue is job- and fitness-weighted, so quote the squad's REAL
+          // range from the same model the engine will use tonight
+          var who = "";
+          try {
+            var t0 = userTeam();
+            var pc = function (p, asB) { return Math.round((drain - 1) * foJobLoad(p, asB) * 100); };
+            var bs = (t0.players || []).filter(function (p) { return p.bowlType; }).map(function (p) { return pc(p, true); });
+            var xs = (t0.players || []).map(function (p) { return pc(p, false); });
+            var rng = function (a) { var lo = Math.min.apply(null, a), hi = Math.max.apply(null, a); return lo === hi ? lo + "%" : lo + "&ndash;" + hi + "%"; };
+            if (bs.length && xs.length) who = " Your bowlers tire <b>" + rng(bs) + "</b> faster (genuine pace and low stamina feel it most), your batters <b>" + rng(xs) + "</b>.";
+          } catch (e) {}
           var note = document.createElement("div"); note.className = "fo-heat-note fo-keep";
-          note.innerHTML = "<b>" + E(String(wxRaw)) + " forecast: players tire " + dPct + "% faster today.</b> Bowlers fade late in spells and heavy workloads carry into the next fixture" +
-            (dPct >= 30 ? ". Keep spells short: a sixth bowling option earns his keep, and batting depth pays." : ". Keep an eye on your frontline bowlers' overs.") +
-            " High-stamina players cope best; genuine pace leans on fitness hardest.";
+          note.innerHTML = "<b>" + E(String(wxRaw)) + " forecast: fatigue runs faster today.</b>" + who + " Bowlers fade late in spells and heavy workloads carry into the next fixture" +
+            (dPct >= 30 ? ". Keep spells short: a sixth bowling option earns his keep, and batting depth pays." : ". Keep an eye on your frontline bowlers' overs.");
           bar.parentNode.insertBefore(note, bar.nextSibling);
         }
       } catch (e) {}
@@ -4590,9 +4600,9 @@
       card("sun", G.sun, "Sunny", "", "True skies, fair fight.", "Nothing to adjust: cricket as designed."),
       card("greyc", G.cloud, "Overcast", "", "The ball hoops for the seamers, especially while it is new.", "Pace up, and expect a lower-scoring day."),
       card("mist", G.mist, "Misty", "", "Seam movement plus slippery hands: more catches go down.", "Seamers threaten; pick your safest catchers."),
-      card("humid", G.drop, "Humid", drain("Drains &middot; tire ~20% faster"), "Heavy air: big new-ball help for the seamers, and it saps the legs all day.", "Survive the burst with the bat; watch bowler workloads."),
-      card("hotc", G.thermo, "Hot", drain("Drains &middot; tire ~35% faster"), "The ball comes on true: a batting day. But the heat wears everyone down.", "Long spells fade, and tired legs carry into the next fixture."),
-      card("scorch", G.flame, "Scorching", drain("Drains &middot; tire ~60% faster"), "Boundaries flow and bowlers wilt fast.", "Short spells, deep batting: the sixth bowling option earns his keep today."),
+      card("humid", G.drop, "Humid", drain("Drains &middot; bowlers ~20% faster"), "Heavy air: big new-ball help for the seamers, and it saps the legs all day.", "Survive the burst with the bat; watch bowler workloads."),
+      card("hotc", G.thermo, "Hot", drain("Drains &middot; bowlers ~35% faster"), "The ball comes on true: a batting day. But the heat wears everyone down.", "Long spells fade, and tired legs carry into the next fixture."),
+      card("scorch", G.flame, "Scorching", drain("Drains &middot; bowlers ~60% faster"), "Boundaries flow and bowlers wilt fast.", "Short spells, deep batting: the sixth bowling option earns his keep today."),
       card("rain", G.drizzle, "Drizzle", "", "Scrappy, slow cricket; the bat loses its edge.", "Boundaries are earned, not given."),
       card("windc", G.wind, "Windy", "", "Sixes die at the rope.", "Run hard twos instead of swinging harder."),
       card("ice", G.flake, "Chilly", "", "Cold hands: boundaries down, dropped catches up.", "A day for percentages, not fireworks."),
@@ -4606,7 +4616,7 @@
       sec(1, "Bowling styles", "rarity is value", bowlers).replace("fo-cnd-grid", "fo-cnd-grid fo-cnd-grid5") +
       sec(2, "Pitch types", "half your matches are on your home pitch, so draft for it", pitches) +
       sec(3, "Weather", "the forecast is shown before every lineup", weathers) +
-      "<div class='fo-exp-talbox'><b>Heat is a squad question.</b> In Humid, Hot and Scorching weather every player&rsquo;s fatigue clock runs faster: bowlers lose threat and control late in spells, set batters lose their edge sooner, and heavy workloads leave players tired for the next matchday at lower ball counts. On the hottest days a sixth bowling option, even a modest one, keeps every spell short and every bowler dangerous. Fitness decides who copes: stamina matters most for genuine quicks, then fast-medium, then the rest of the attack, then keepers, and least for pure batters. The captain carries a little extra for running the side.</div>" +
+      "<div class='fo-exp-talbox'><b>Heat is a squad question.</b> In Humid, Hot and Scorching weather every player&rsquo;s fatigue clock runs faster: bowlers lose threat and control late in spells, set batters lose their edge sooner, and heavy workloads leave players tired for the next matchday at lower ball counts. On the hottest days a sixth bowling option, even a modest one, keeps every spell short and every bowler dangerous. Fitness decides who copes: stamina matters most for genuine quicks, then fast-medium, then the rest of the attack, then keepers, and least for pure batters. The captain carries a little extra for running the side. Quoted drain rates are for a frontline bowler of average fitness; the order screen shows the true range for your own squad on the day.</div>" +
       "<p class='fo-ob-lead' style='margin-top:14px'>Next: the draft room. Sign <b>11 to 16 players</b> with your <b>$1,000,000</b>. Every fee brings a wage bill behind it, so leave a reserve.</p>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Enter the draft room</button></div></div>";
     var host = foOnbMount(5, body);
@@ -5728,7 +5738,7 @@
         "<tr><td><b>Windy</b></td><td>Sixes die at the rope. Run twos instead of swinging harder.</td></tr>" +
         "<tr><td><b>Drizzle / Chilly</b></td><td>Slow, scrappy cricket. Boundaries are earned.</td></tr>" +
         "<tr><td><b>Dew later</b></td><td>In the second innings the ball is harder to grip: spinners are less effective and chasing becomes easier. If dew is forecast, bowling first is statistically favourable.</td></tr></table>",
-        "<p><b>Heat is a selection question.</b> In humid, hot and scorching weather the fatigue clock runs faster: about 20%, 35% and 60% for a frontline bowler of average fitness, with the tax distributed by how physical the job is and how fit the player is. Tired bowlers lose threat and control late in spells, set batters lose their edge sooner, and heavy workloads leave players tired for the next matchday at lower ball counts: on a scorching day a bowler is feeling the next morning after roughly six overs instead of eight. Six bowling options beat five on draining days; shorter spells keep everyone dangerous, and the order screen warns you whenever the forecast drains. Fitness decides who copes: stamina matters most for genuine fast bowlers, then fast-medium, then the rest of the attack, then keepers, and least for pure batters. A fit bowler shrugs off a spell that leaves an unfit one feeling it the next morning, and the captain carries a small extra load for running the side.</p>",
+        "<p><b>Heat is a selection question.</b> In humid, hot and scorching weather the fatigue clock runs faster: about 20%, 35% and 60% for a frontline bowler of average fitness, with the tax distributed by how physical the job is and how fit the player is. The order screen quotes the actual range for your squad whenever the forecast drains. Tired bowlers lose threat and control late in spells, set batters lose their edge sooner, and heavy workloads leave players tired for the next matchday at lower ball counts: on a scorching day a bowler is feeling the next morning after roughly six overs instead of eight. Six bowling options beat five on draining days; shorter spells keep everyone dangerous, and the order screen warns you whenever the forecast drains. Fitness decides who copes: stamina matters most for genuine fast bowlers, then fast-medium, then the rest of the attack, then keepers, and least for pure batters. A fit bowler shrugs off a spell that leaves an unfit one feeling it the next morning, and the captain carries a small extra load for running the side.</p>",
         "<p>The toss is decided automatically. You do not control it, but pitch choice and weather both shift the balance of the fixture, and the forecast is shown on the order screen before you commit a lineup.</p>"
       ].join("")],
       ["money", "Money: the honest ledger", [
