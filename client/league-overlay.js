@@ -8417,7 +8417,14 @@
       "#ftpcomm .fo-c-mile{background:#f7f2fb;border-bottom:1px solid #e6daf2;padding:4px 8px;color:#6b3fa0;font-style:italic;font-weight:600}" +
       "#ftpcomm .fo-c-fow{background:#fbf0ee;border-bottom:1px solid #efd6cf;padding:4px 8px;color:#8f231b;font-weight:600}" +
       "#ftpcomm .fo-c-flag{background:#fdf7e8;border-bottom:1px solid #efe2bd;padding:4px 8px;color:#7b5a0a}" +
-      "#ftpcomm .fo-c-mile .text,#ftpcomm .fo-c-fow .text,#ftpcomm .fo-c-flag .text{float:none;width:auto;padding:0;color:inherit}";
+      "#ftpcomm .fo-c-mile .text,#ftpcomm .fo-c-fow .text,#ftpcomm .fo-c-flag .text{float:none;width:auto;padding:0;color:inherit}" +
+      // phones: wide stats tables scroll inside their panel instead of being
+      // crushed into ellipsis dots (engine's fo-stattbl is table-layout:fixed)
+      "@media(max-width:820px){" +
+      "#page .panel .pad{overflow-x:auto;-webkit-overflow-scrolling:touch}" +
+      "table.fo-stattbl{table-layout:auto !important;min-width:540px}" +
+      "table.fo-stattbl th,table.fo-stattbl td{overflow:visible !important;text-overflow:clip !important;white-space:nowrap}" +
+      "}";
     document.head.appendChild(foCommCss);
   } catch (e) { console.warn("living commentary", e); }
 
