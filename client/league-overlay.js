@@ -480,6 +480,8 @@
     ".fo-frs-row{display:flex;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid #f0ece1;font-size:13px;flex-wrap:wrap}" +
     ".fo-frs-row .fo-frs-act{margin-left:auto}" +
     ".fo-frs-on{font-size:10.5px;font-weight:800;letter-spacing:.06em;background:#eef4ee;border:1px solid #d5e0d7;color:#15803D;border-radius:999px;padding:2px 8px}" +
+    ".fo-frs-live{color:#DC2626;font-weight:800;font-size:12px;display:inline-flex;align-items:center;gap:6px}" +
+    ".fo-frs-watch{font-weight:800;color:#B04A2C;text-decoration:none;white-space:nowrap}" +
     ".fo-card{background:#FFFEFC;border:1px solid rgba(7,22,46,.08);border-radius:14px;box-shadow:0 8px 24px rgba(7,22,46,.06);overflow:hidden}" +
     ".fo-card-h{background:linear-gradient(135deg,#07162E,#0E233F);color:#FFFEFC;font-weight:700;font-size:14px;padding:13px 18px}" +
     ".fo-card-b{padding:4px 8px 8px}" +
@@ -1729,16 +1731,31 @@
       if (!(SYNC && SYNC.started && !SYNC.practice && LG)) return;
       var host = document.querySelector("#page .fo-next"); if (!host || host.__foFr) return;
       var me = userTeam().name;
-      sel("league_challenges", "league_id=eq." + LG.id + "&select=*&status=eq.accepted&order=play_at.asc&limit=6").then(function (rows) {
-        rows = (rows || []).filter(function (c) { return (c.challenger_club === me || c.opponent_club === me) && c.play_at && new Date(c.play_at) > new Date(); });
+      sel("league_challenges", "league_id=eq." + LG.id + "&or=(status.eq.accepted,status.eq.played)&select=*&order=play_at.asc&limit=8").then(function (rows) {
+        rows = (rows || []).filter(function (c) {
+          if (!(c.challenger_club === me || c.opponent_club === me) || !c.play_at) return false;
+          var ph = foFrBcastState(c).phase;
+          return ph === "pre" || ph === "live";
+        });
         var ch = rows[0]; if (!ch) return;
         var host2 = document.querySelector("#page .fo-next"); if (!host2 || host2.__foFr) return;
+        var fst = foFrBcastState(ch);
         var untilFr = new Date(ch.play_at).getTime() - Date.now();
         var untilLg = Infinity; try { untilLg = foNextMatchdayMs(); } catch (e2) {}
-        if (!(untilFr > 0 && untilFr < untilLg)) return;
+        if (fst.phase === "pre" && !(untilFr > 0 && untilFr < untilLg)) return;
         var vs = ch.challenger_club === me ? ch.opponent_club : ch.challenger_club;
         var when = new Date(ch.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
         host2.__foFr = 1;
+        if (fst.phase === "live") {
+          host2.innerHTML = "<div class='fo-next-l'>" +
+            "<div class='fo-next-eyebrow'><span class='live-dot'></span> Friendly &middot; LIVE now</div>" +
+            "<div class='fo-next-opp'>vs " + E(vs) + "</div>" +
+            "<div class='fo-next-sub'>" + foFrLiveLine(ch, fst.p) + "</div></div>" +
+            "<div class='fo-next-r'><button class='fo-next-cta' id='fo-fr-watch'>&#9679; Watch live</button></div>";
+          var bw = document.getElementById("fo-fr-watch");
+          if (bw) bw.addEventListener("click", function () { location.hash = "#/friendly?id=" + ch.id; if (typeof window.route === "function") window.route(); });
+          return;
+        }
         host2.innerHTML = "<div class='fo-next-l'>" +
           "<div class='fo-next-eyebrow'>Next match &middot; Friendly</div>" +
           "<div class='fo-next-opp'>vs " + E(vs) + "</div>" +
@@ -1748,7 +1765,9 @@
         var tick = function () {
           var el = document.getElementById("fo-cd-fr");
           if (!el) { clearInterval(iv); return; }
-          el.textContent = (typeof foCdText === "function") ? foCdText(new Date(ch.play_at).getTime() - Date.now()) : when;
+          var left = new Date(ch.play_at).getTime() - Date.now();
+          if (left <= 0) { clearInterval(iv); host2.__foFr = 0; foNextFriendly(); return; }
+          el.textContent = (typeof foCdText === "function") ? foCdText(left) : when;
         };
         var iv = setInterval(tick, 1000); tick();
         var b = document.getElementById("fo-fr-prep"); if (b) b.addEventListener("click", function () { foChalPrep(ch); });
@@ -6307,7 +6326,7 @@
       ["scouting", "Scouting the opposition", [
         "<p>Tap any club name - on the table, a fixture or a result - to open its <b>scout report</b>: squad strength, batting depth, the shape of the attack (pace against spin), your next meeting and the club&rsquo;s founding date. The <b>Players</b> tab lists their full squad.</p>",
         "<p>Rival players are public people: stats, career tables and dated Moments are all open. Only their <b>skills</b> are private - you judge a rival the way real scouts do, from output. Your players&rsquo; skills are hidden from rivals the same way.</p>",
-        "<p>From a rival&rsquo;s report you can <b>challenge them to a friendly</b>: a no-stakes match between your clubs. Nothing carries over - no money, no fatigue, no points - but pride, obviously, carries forever. Pending challenges, upcoming friendlies and their results all live in the <b>Friendlies</b> panel on the Matches page, and both managers see the same rows. Friendlies are played <b>in the background</b> by the league&rsquo;s resolver, not live on your screen: once the scheduled time passes the row reads IN PLAY, and the result usually lands within the hour, in the panel and in the notification bell.</p>"
+        "<p>From a rival&rsquo;s report you can <b>challenge them to a friendly</b>: a no-stakes match between your clubs. Nothing carries over - no money, no fatigue, no points - but pride, obviously, carries forever. Pending challenges, upcoming friendlies and their results all live in the <b>Friendlies</b> panel on the Matches page, and both managers see the same rows. A friendly <b>kicks off at its scheduled time and plays out ball by ball for an hour</b>, live for both managers: the row turns LIVE with a Watch link, the notification bell links straight to the broadcast, and the result stays under embargo until stumps. Attach your lineup at least an hour before the start - the engine prepares the match early. (If the league engine is running late the broadcast reads &ldquo;delayed at the toss&rdquo; and catches up by itself.)</p>"
       ].join("")],
       ["league", "The table, the run rate, the prizes", [
         "<p>Ten clubs, a full round robin, one round a day. Two points a win; ties and washouts split one. Level on points, <b>net run rate</b> decides, so a ten-run win chased lazily and a ten-run win chased hard are not the same result. Margins are money.</p>",
@@ -6534,7 +6553,7 @@
       var m = document.createElement("div"); m.id = "fo-chprep"; m.className = "fo-modal";
       m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>Friendly</div><h3>vs " + E(vs) + "</h3>" +
         "<div class='small' style='margin:4px 0 10px'>" + foPitchName(ch.pitch) + " pitch &middot; " + E(ch.weather || "") + (when ? " &middot; " + when : "") + "</div>" +
-        "<div class='small' style='margin:0 0 12px'>The match is played automatically at the scheduled time, using the lineup you attach. <b>1.</b> Set and save a lineup on the Orders screen. <b>2.</b> Come back and attach it. If you attach nothing, your latest saved lineup (or an automatic XI) plays.</div>" +
+        "<div class='small' style='margin:0 0 12px'>The match kicks off on schedule and plays out ball by ball for an hour, live for both managers. <b>1.</b> Set and save a lineup on the Orders screen. <b>2.</b> Come back and attach it - <b>at least an hour before the start</b>, because the engine prepares the match early. If you attach nothing, an automatic XI plays.</div>" +
         "<div class='fo-modal-act'><button class='primary' id='fo-chprep-ord'>Open Orders</button><button id='fo-chprep-att'>Attach my saved lineup</button><button class='fo-su-cancel' id='fo-chprep-x'>Close</button></div></div>";
       document.body.appendChild(m);
       m.addEventListener("click", function (e2) { if (e2.target === m) m.remove(); });
@@ -6557,10 +6576,10 @@
       var vs = mineSent ? c.opponent_club : c.challenger_club;
       var when = c.play_at ? new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
       if (c.status === "pending" && !mineSent) ev.push({ k: c.id + ":pending", t: "\u2694 " + vs + " challenge you to a friendly" + (when ? " \u00b7 " + when : ""), ch: c });
-      else if (c.status === "accepted" && c.play_at && new Date(c.play_at) <= new Date()) ev.push({ k: c.id + ":inplay", t: "Friendly vs " + vs + " is being played \u00b7 result soon", ch: c });
+      else if ((c.status === "accepted" || c.status === "played") && foFrBcastState(c).phase === "live") ev.push({ k: c.id + ":live", t: "\ud83d\udd34 LIVE: friendly vs " + vs + " \u00b7 watch ball by ball", go: "#/friendly?id=" + c.id, ch: c });
       else if (c.status === "accepted") ev.push({ k: c.id + ":accepted", t: (mineSent ? vs + " accepted your challenge" : "Friendly vs " + vs + " is on") + (when ? " \u00b7 " + when : ""), ch: c });
       else if (c.status === "declined" && mineSent) ev.push({ k: c.id + ":declined", t: vs + " declined your challenge", ch: c });
-      else if (c.status === "played" && c.result) ev.push({ k: c.id + ":played", t: "Full time in the friendly: " + (c.result.result_text || "played"), ch: c });
+      else if (c.status === "played" && c.result && foFrBcastState(c).phase === "done") ev.push({ k: c.id + ":played", t: "Full time in the friendly: " + (c.result.result_text || "played"), go: "#/friendly?id=" + c.id, ch: c });
     });
     return ev.slice(0, 10);
   }
@@ -6610,6 +6629,7 @@
         d.addEventListener("click", function () {
           pn.remove();
           var e2 = FO_BELL.events[+d.getAttribute("data-i")];
+          if (e2 && e2.go) { location.hash = e2.go; if (typeof window.route === "function") window.route(); return; }
           if (e2 && e2.ch && e2.ch.status === "accepted") { foChalPrep(e2.ch); return; }
           location.hash = "#/matches"; if (typeof window.route === "function") window.route();
         });
@@ -6626,6 +6646,79 @@
     var b = ev.target && ev.target.closest ? ev.target.closest("#fo-frs-new") : null;
     if (b) { ev.preventDefault(); startFriendly(); }
   });
+  // ---- friendly broadcasts: the match is banked early by the resolver and
+  // REVEALED ball by ball from play_at, exactly like a league matchday ----
+  var FO_FR_MIN = 60;
+  function foFrBcastState(c) {
+    var t0 = c && c.play_at ? Date.parse(c.play_at) : NaN;
+    if (isNaN(t0)) return { phase: "none" };
+    var end = t0 + FO_FR_MIN * 60000, now = Date.now();
+    if (now < t0) return { phase: "pre", t0: t0, endsAt: end };
+    if (now < end) return { phase: "live", t0: t0, endsAt: end, p: (now - t0) / (FO_FR_MIN * 60000) };
+    return { phase: "done", t0: t0, endsAt: end };
+  }
+  function foFrLiveLine(c, p) {
+    try {
+      var r = c.result; if (!r || !r.worm || !window.__foLive) return "under way";
+      var st = window.__foLive.state({ worm: r.worm, innings: (r.scorecard || []) }, p);
+      return st ? st.line + (st.chase ? " &middot; " + st.chase : "") : "under way";
+    } catch (e) { return "under way"; }
+  }
+  function foRenderFriendlyLive() {
+    try {
+      var mh = (location.hash || "").match(/^#\/friendly\?id=([\w-]+)/); if (!mh) return;
+      var page = document.getElementById("page"); if (!page) return;
+      page.innerHTML = "<div class='crumb'>Friendly &raquo; Live</div><div class='panel'><div class='pad small'>Tuning in&hellip;</div></div>";
+      sel("league_challenges", "id=eq." + mh[1] + "&select=*").then(function (rows) {
+        var c = rows && rows[0]; if (!c) { page.innerHTML = "<div class='panel'><div class='pad small'>That friendly is gone.</div></div>"; return; }
+        if ((location.hash || "").indexOf(mh[1]) < 0) return;   // navigated away
+        var st = foFrBcastState(c);
+        var title = E(c.challenger_club) + " v " + E(c.opponent_club);
+        var when = c.play_at ? new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+        var head = "<div class='crumb'>" + title + " &raquo; Friendly</div>";
+        if (st.phase === "pre") {
+          page.innerHTML = head + "<div class='fo-live-hero'><div class='fo-live-tag'>FRIENDLY &middot; " + when + "</div>" +
+            "<div class='fo-live-score'>" + title + "</div>" +
+            "<div class='fo-live-sub'>" + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + " &middot; play begins on the hour, ball by ball</div></div>";
+          return;
+        }
+        if (st.phase === "live" && !c.result) {
+          page.innerHTML = head + "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> DELAYED AT THE TOSS</div>" +
+            "<div class='fo-live-score'>" + title + "</div>" +
+            "<div class='fo-live-sub'>The league engine is warming up &middot; play catches up the moment it arrives. Keep this page open.</div></div>";
+          return;
+        }
+        var r = c.result || {};
+        var log = (r.log || []).slice().reverse();   // stored newest-first -> chronological
+        if (st.phase === "live") {
+          var upto = Math.max(2, Math.floor(st.p * log.length));
+          var vis = log.slice(0, upto).reverse();
+          var mins = Math.max(1, Math.round((st.endsAt - Date.now()) / 60000));
+          page.innerHTML = head +
+            "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE &middot; stumps in ~" + mins + " min</div>" +
+            "<div class='fo-live-score'>" + foFrLiveLine(c, st.p) + "</div>" +
+            "<div class='fo-live-sub'>Friendly &middot; " + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + " &middot; the result arrives at stumps</div></div>" +
+            "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'><div id='ftpcomm' class='ftpskin'>" +
+            (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, "all", 200) : "") + "</div></div></div>";
+          return;
+        }
+        // done: full time
+        page.innerHTML = head +
+          "<div class='fo-live-hero'><div class='fo-live-tag'>FULL TIME &middot; FRIENDLY</div>" +
+          "<div class='fo-live-score'>" + E(r.result_text || "Played") + "</div>" +
+          "<div class='fo-live-sub'>" + (r.mom ? "Star of the match: " + E(r.mom) + " &middot; " : "") + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + "</div></div>" +
+          (log.length ? "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'><div id='ftpcomm' class='ftpskin'>" +
+            (typeof ftpCommHTML === "function" ? ftpCommHTML(log.slice().reverse(), "all", 5000) : "") + "</div></div></div>" : "");
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  window.addEventListener("hashchange", function () { setTimeout(foRenderFriendlyLive, 20); });
+  if (typeof window.route === "function" && !window.route.__foFrLive) {
+    var _rtFr = window.route;
+    window.route = function () { var r2 = _rtFr.apply(this, arguments); try { foRenderFriendlyLive(); } catch (e) {} return r2; };
+    window.route.__foFrLive = 1;
+  }
+  setInterval(function () { try { if (/^#\/friendly\?/.test(location.hash || "")) foRenderFriendlyLive(); } catch (e) {} }, 6000);
   // ---- friendlies: one panel on the Matches page for the whole lifecycle -
   // practice games, incoming/sent challenges, upcoming friendlies, results ----
   function foFriendliesPanel() {
@@ -6670,16 +6763,18 @@
           var when = c.play_at ? new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
           var line = "<b>" + (mineSent ? "vs " : "from ") + E(vs) + "</b> <span class='small'>" + foPitchName(c.pitch) + ", " + E(c.weather || "") + (when ? " &middot; " + when : "") + "</span>";
           var act = "";
-          var due = c.play_at && new Date(c.play_at) <= new Date();
-          if (c.status === "pending" && due) act = "<span class='small'>not accepted before the scheduled time</span>";
+          var fst = foFrBcastState(c);
+          if (c.status === "pending" && fst.phase !== "pre") act = "<span class='small'>not accepted before the scheduled time</span>";
           else if (c.status === "pending" && !mineSent) act = "<button class='mini fo-ch-acc' data-id='" + c.id + "'>Accept</button> <button class='mini fo-ch-dec' data-id='" + c.id + "'>Decline</button>";
           else if (c.status === "pending") act = "<span class='small'>awaiting their reply</span>";
-          else if (c.status === "accepted" && due) act = "<span class='fo-frs-on'>IN PLAY</span> <span class='small'>played in the background &middot; the result lands here and in the bell, usually within the hour</span>";
-          else if (c.status === "accepted") act = "<span class='fo-frs-on'>ON</span> <button class='mini fo-ch-ord' data-id='" + c.id + "'>Prepare lineup</button>";
+          else if ((c.status === "accepted" || c.status === "played") && fst.phase === "live")
+            act = "<span class='fo-frs-live'><span class='live-dot'></span> LIVE &middot; " + foFrLiveLine(c, fst.p) + "</span> <a class='fo-frs-watch' href='#/friendly?id=" + c.id + "'>Watch &rsaquo;</a>";
+          else if (c.status === "accepted" && fst.phase === "done") act = "<span class='small'>delayed &middot; waiting on the league engine</span>";
+          else if (c.status === "accepted") act = "<span class='fo-frs-on'>ON</span> <button class='mini fo-ch-ord' data-id='" + c.id + "'>Prepare lineup</button> <a class='fo-frs-watch' href='#/friendly?id=" + c.id + "'>Match page &rsaquo;</a>";
           else if (c.status === "declined") act = "<span class='small'>declined</span>";
           else if (c.status === "expired") act = "<span class='small'>expired</span>";
-          else if (c.status === "played" && c.result) {
-            act = "<b class='small'>" + E(c.result.result_text || "played") + (c.result.mom ? " &middot; " + E(c.result.mom) : "") + "</b>";
+          else if (c.status === "played" && c.result && fst.phase !== "live") {
+            act = "<b class='small'>" + E(c.result.result_text || "played") + (c.result.mom ? " &middot; " + E(c.result.mom) : "") + "</b> <a class='fo-frs-watch' href='#/friendly?id=" + c.id + "'>Replay &rsaquo;</a>";
             if (!seen[c.id]) { toast("Friendly result: " + (c.result.result_text || "played")); seen[c.id] = 1; }
           }
           return "<div class='fo-frs-row'>" + line + "<span class='fo-frs-act'>" + act + "</span></div>";

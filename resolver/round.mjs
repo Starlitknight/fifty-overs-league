@@ -18,13 +18,15 @@ function tzDateHour(d) {
   return { date: `${p.year}-${p.month}-${p.day}`, hour: parseInt(p.hour, 10) };
 }
 
-// Play accepted human-vs-human challenge friendlies that have come due.
-// Squads come from the league snapshot; each side's attached lineup is used
-// when present. Friendlies: the result is recorded on the challenge row only.
+// Play accepted human-vs-human challenge friendlies. Matches are resolved up
+// to ~70 minutes EARLY (deterministic seed from play_at) so the result is
+// banked before kickoff; the client then broadcasts it ball by ball from
+// play_at, exactly like a league matchday. Lineups attached later than the
+// early resolve are missed, so managers are told to attach an hour ahead.
 async function playChallenges(page) {
   let due = [];
   try {
-    due = await rest(`league_challenges?status=eq.accepted&result=is.null&play_at=lte.${encodeURIComponent(new Date().toISOString())}&select=*`);
+    due = await rest(`league_challenges?status=eq.accepted&result=is.null&play_at=lte.${encodeURIComponent(new Date(Date.now() + 70 * 60000).toISOString())}&select=*`);
   } catch (e) { return; }   // table absent until 0017 is run
   for (const ch of due) {
     try {
@@ -38,7 +40,7 @@ async function playChallenges(page) {
         const o = ch.orders || {};
         const r = window.__resolveMatch(home, away, o[home.name] || null, o[away.name] || null,
           { pitch: ch.pitch || 'balanced', weather: ch.weather || 'Sunny', ground: home.ground, friendly: true, seed: (Date.parse(ch.play_at) % 2147483647) });
-        return { result_text: r.result_text, winner: r.winner_team, mom: r.mom, scorecard: r.scorecard, worm: r.worm, pitch: r.pitch };
+        return { result_text: r.result_text, winner: r.winner_team, mom: r.mom, scorecard: r.scorecard, worm: r.worm, log: r.log, pitch: r.pitch, meta: r.meta };
       }, { snap: st.snapshot, ch });
       await rpc('challenge_record_result', { p_id: ch.id, p_result: result });
       console.log('challenge', ch.id, 'played:', result.result_text || result.error);
