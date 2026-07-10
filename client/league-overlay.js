@@ -2005,27 +2005,31 @@
     var brief = foScoutBrief(t, ix);
     var relTxt = "";
     if (brief.rel != null) relTxt = "<i class='" + (brief.rel > 0 ? "fo-rel-up" : "fo-rel-dn") + "'>" + (brief.rel > 0 ? "+" : "") + brief.rel + "% vs you</i>";
-    var kpi = "<div class='fo-scout-kpis'>" +
-      "<div class='fo-kpi'><span>Squad strength</span><b>" + (avg / 1000).toFixed(1) + "</b>" + relTxt + "</div>" +
-      "<div class='fo-kpi'><span>Batting depth</span><b>" + brief.depth + "</b><i>" + brief.depthSub + "</i></div>" +
-      "<div class='fo-kpi'><span>Attack mix</span><b>" + brief.attack + "</b><i>" + brief.attackSub + "</i></div></div>";
-    // the fixture that matters: when do I face them?
-    var faceChip = "";
+    // fourth tile: the fixture that matters (or your own supporter base)
+    var meet = null;
     if (!isMe && App.season && App.season.schedule) {
       for (var fr2 = App.season.round; fr2 < App.season.schedule.length; fr2++) {
         var hit = (App.season.schedule[fr2] || []).some(function (f2) {
           return (f2[0] === ix && f2[1] === App.teamIx) || (f2[1] === ix && f2[0] === App.teamIx);
         });
-        if (hit) { faceChip = "<div class='fo-face-chip'>&#128197; You face them in R" + (fr2 + 1) + " &middot; " + foDailyDate(fr2, { weekday: "short", day: "numeric", month: "short" }) + "</div>"; break; }
+        if (hit) { meet = { r: fr2 + 1, d: foDailyDate(fr2, { day: "numeric", month: "short" }) }; break; }
       }
     }
+    var kpi4 = isMe
+      ? "<div class='fo-kpi'><span>Supporters</span><b>" + ((t.supporters || 0) / 1000).toFixed(1) + "k</b><i>the faithful</i></div>"
+      : (meet ? "<div class='fo-kpi'><span>Next meeting</span><b>R" + meet.r + "</b><i>" + E(meet.d) + "</i></div>"
+        : "<div class='fo-kpi'><span>Next meeting</span><b>–</b><i>not this season</i></div>");
+    var kpi = "<div class='fo-scout-kpis'>" +
+      "<div class='fo-kpi'><span>Squad strength</span><b>" + (avg / 1000).toFixed(1) + "</b>" + relTxt + "</div>" +
+      "<div class='fo-kpi'><span>Batting depth</span><b>" + brief.depth + "</b><i>" + brief.depthSub + "</i></div>" +
+      "<div class='fo-kpi'><span>Attack mix</span><b>" + brief.attack + "</b><i>" + brief.attackSub + "</i></div>" + kpi4 + "</div>";
     var ordinal = pos ? (pos + (["th", "st", "nd", "rd"][((pos % 100) - 20) % 10] || ["th", "st", "nd", "rd"][pos % 100] || "th")) : null;
     var hero = "<div class='fo-scout-hero'><div class='fo-scout-hero-main'>" +
       "<div class='fo-scout-eyebrow'>" + (isMe ? "Your club" : "Scout report") + "</div>" +
       "<h1 class='fo-scout-name'>" + E(t.name) + "</h1>" +
       "<div class='fo-scout-meta'>" + (ordinal ? ordinal + " place · " : "") + (rec ? rec.w + "–" + rec.l + "–" + rec.t : "0–0–0") + " · " + E(t.ground || "-") + (typeof foClubEst === "function" ? " · Est. " + E(foClubEst(t)) : "") + " · Form <span class='fo-form'>" + pips + "</span></div>" +
       "<div class='fo-scout-actions'>" + (isMe ? "" : "<button class='fo-challenge'>Challenge to a match</button>") + "<button class='fo-scout-back'>← Back</button></div>" +
-      "</div><div class='fo-scout-hero-r'>" + faceChip + kpi + "</div></div>";
+      "</div><div class='fo-scout-hero-r'>" + kpi + "</div></div>";
     var links = "<div class='fo-scout-links'>" +
       "<a class='fo-stab" + (foScoutTab === "overview" ? " on" : "") + "' data-tab='overview'>Overview</a>" +
       "<a class='fo-stab" + (foScoutTab === "players" ? " on" : "") + "' data-tab='players'>Players</a></div>";
@@ -8850,7 +8854,6 @@
           "<table class='fo-sct fo-sct-bowl'><thead><tr><th>Bowling</th><th class='n'>O</th><th class='n'>M</th><th class='n'>R</th><th class='n'>W</th><th class='n'>Econ</th><th class='n'>Wd</th><th class='n'>Nb</th></tr></thead><tbody>" + bowl + "</tbody></table>" +
           "</div></div>";
       }).join("");
-      try { out += foMatchCharts(all, rec ? rec.worm : (typeof M !== "undefined" && M && M.innings === innings ? M.worm : null)); } catch (e) {}
       return out;
     };
     window.foFantasyPanel = function (innings) {
@@ -8872,23 +8875,63 @@
         _psc.apply(this, arguments);
         try {
           var bar = document.querySelector("#page .fo-sctabs"); if (!bar) return;
-          var fb = bar.querySelector(".fo-sctab-fp");
-          if (!fb) {
-            fb = document.createElement("button");
-            fb.className = "fo-sctab fo-sctab-fp"; fb.textContent = "Fantasy points";
-            fb.addEventListener("click", function () { App._scTab = "fantasy"; window.pgScorecard(q || {}); });
-            bar.appendChild(fb);
-          }
-          fb.classList.toggle("on", App._scTab === "fantasy");
-          if (App._scTab === "fantasy") {
+          // Worm lives with the rest of the charts now
+          Array.prototype.slice.call(bar.querySelectorAll(".fo-sctab")).forEach(function (b0) {
+            if (/^Worm$/i.test((b0.textContent || "").trim())) b0.remove();
+          });
+          var mkTab = function (cls, label, key, after) {
+            var b2 = bar.querySelector("." + cls);
+            if (!b2) {
+              b2 = document.createElement("button");
+              b2.className = "fo-sctab " + cls; b2.textContent = label;
+              b2.addEventListener("click", function () { App._scTab = key; window.pgScorecard(q || {}); });
+              var ref = after ? Array.prototype.slice.call(bar.children).filter(function (x) { return new RegExp("^" + after + "$", "i").test((x.textContent || "").trim()); })[0] : null;
+              if (ref && ref.nextSibling) bar.insertBefore(b2, ref.nextSibling); else bar.appendChild(b2);
+            }
+            b2.classList.toggle("on", App._scTab === key);
+            return b2;
+          };
+          mkTab("fo-sctab-ch", "Charts", "charts", "Commentary");
+          mkTab("fo-sctab-fp", "Fantasy points", "fantasy");
+          if (App._scTab === "fantasy" || App._scTab === "charts") {
             var host = document.querySelector("#page .ftpskin");
-            var innings = (q && q.i !== undefined && App.results[+q.i]) ? App.results[+q.i].innings :
-              ((typeof M !== "undefined" && M) ? M.innings : null);
-            if (host && innings) host.innerHTML = foFantasyPanel(innings);
+            var rec0 = (q && q.i !== undefined && App.results[+q.i]) ? App.results[+q.i] : ((typeof M !== "undefined" && M) ? { innings: M.innings, worm: M.worm } : null);
+            if (host && rec0 && rec0.innings) {
+              host.innerHTML = App._scTab === "fantasy" ? foFantasyPanel(rec0.innings)
+                : foMatchCharts(rec0.innings.filter(Boolean), rec0.worm);
+            }
           }
         } catch (e) {}
       };
       window.pgScorecard.__foFp = 1;
+    }
+    // live match viewer: a Charts tab beside Commentary/Scorecard
+    if (typeof window.renderMatch === "function" && !window.renderMatch.__foCharts) {
+      var _rmC = window.renderMatch;
+      window.renderMatch = function () {
+        _rmC.apply(this, arguments);
+        try {
+          if (typeof M === "undefined" || !M || !M.innings) return;
+          var links = document.querySelector(".ftp-match-links");
+          if (links) {
+            Array.prototype.slice.call(links.querySelectorAll("a")).forEach(function (a0) {
+              if (/^Worm( chart)?$/i.test((a0.textContent || "").trim())) a0.remove();
+            });
+            if (!links.querySelector("[data-fo-charts]")) {
+              var a1 = document.createElement("a"); a1.textContent = "Charts"; a1.dataset.foCharts = "1";
+              a1.onclick = function () { UI.matchTab = "Charts"; renderMatch(); };
+              var sc = Array.prototype.slice.call(links.querySelectorAll("a")).filter(function (x) { return /^Scorecard$/i.test(x.textContent.trim()); })[0];
+              if (sc && sc.nextSibling) links.insertBefore(a1, sc.nextSibling); else links.appendChild(a1);
+            }
+            links.querySelectorAll("a").forEach(function (x) { x.classList.toggle("on", x.textContent.trim() === ((typeof UI !== "undefined" && UI.matchTab) || "Commentary")); });
+          }
+          if (typeof UI !== "undefined" && UI.matchTab === "Charts") {
+            var body = document.querySelector(".ftp-match-body");
+            if (body) body.innerHTML = "<div class='match-subpanel'>" + foMatchCharts(M.innings.filter(Boolean), M.worm) + "</div>";
+          }
+        } catch (e) {}
+      };
+      window.renderMatch.__foCharts = 1;
     }
     var cs = document.createElement("style");
     cs.textContent =
@@ -8932,11 +8975,13 @@
       ".fo-fp th:nth-child(2),.fo-fp td:nth-child(2){position:sticky;left:0;background:#fff;z-index:2;box-shadow:2px 0 4px rgba(18,32,58,.06);min-width:110px}" +
       ".fo-fp thead th:nth-child(2){background:#faf8f3}" +
       ".fo-fp .fo-fp-top td:nth-child(2){background:#fdf6e5}" +
-      // match ratings: player column pinned so both teams' numbers compare
-      ".fo-ratingswrap{overflow-x:auto;-webkit-overflow-scrolling:touch}" +
-      ".fo-ratingswrap table{min-width:520px}" +
-      ".fo-ratingswrap th:first-child,.fo-ratingswrap td:first-child{position:sticky;left:0;background:#fff;z-index:2;box-shadow:2px 0 4px rgba(18,32,58,.06);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
-      ".fo-ratingswrap thead th:first-child,.fo-ratingswrap tr:first-child th:first-child{background:#faf8f3}" +
+      // match ratings: three columns (category, team A, team B) fill the width
+      ".fo-ratingswrap{overflow:visible}" +
+      ".fo-ratingswrap table{width:100% !important;min-width:0 !important;table-layout:fixed}" +
+      ".fo-ratingswrap th,.fo-ratingswrap td{padding:9px 6px !important;font-size:13px !important;overflow:hidden;text-overflow:ellipsis}" +
+      ".fo-ratingswrap th:first-child,.fo-ratingswrap td:first-child{width:38%;white-space:nowrap}" +
+      ".fo-ratingswrap td.n{font-variant-numeric:tabular-nums}" +
+      ".fo-ratingswrap .small{font-size:10px !important}" +
       "}" +
       // scorecard sub-tabs: one scrolling row of pills, matching the app nav
       "html body .fo-sctabs{display:flex;flex-wrap:nowrap;gap:7px;margin:12px 0 12px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}" +
