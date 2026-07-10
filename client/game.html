@@ -9804,7 +9804,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-2109-8ebabd";
+  var FO_BUILD = "20260710-2114-fa605c";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -13370,7 +13370,19 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var head = "<div class='crumb'>" + E(c.challenger_club) + " v " + E(c.opponent_club) + " &raquo; " + (c.__practice ? "Practice" : "Friendly") + "</div>";
     var hero = "<div class='fo-live-hero'><div class='fo-live-tag'>FULL TIME &middot; " + (c.__practice ? "PRACTICE" : "FRIENDLY") + "</div>" +
       "<div class='fo-live-score'>" + E(r.result_text || "Played") + "</div>" +
-      "<div class='fo-live-sub'>" + (r.mom ? "Star of the match: " + E(r.mom) + " &middot; " : "") + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + "</div></div>";
+      "<div class='fo-live-sub'>" + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + "</div></div>";
+    // player of the match = top fantasy points, the same banner league
+    // scorecards carry
+    var pom = "";
+    try {
+      var topF = r.fantasy && r.fantasy[0];
+      if (topF) {
+        pom = "<div class='fo-pom'><div class='fo-pom-k'>Player of the match</div><div class='fo-pom-n'>" + E(topF.n) + "</div>" +
+          "<div class='fo-pom-s'>" + E(topF.team || "") + " &middot; <b>" + (topF.pts || 0) + " fantasy pts</b> (bat " + (topF.bat || 0) + " &middot; bowl " + (topF.bowl || 0) + " &middot; field " + (topF.field || 0) + ")</div></div>";
+      } else if (r.mom) {
+        pom = "<div class='fo-pom'><div class='fo-pom-k'>Player of the match</div><div class='fo-pom-n'>" + E(r.mom) + "</div></div>";
+      }
+    } catch (ePom) {}
     var tab = window.__foFrTab || "score";
     var bar = "<div class='fo-sctabs'>" + [["score", "Scorecard"], ["comm", "Commentary"], ["charts", "Charts"], ["ratings", "Match ratings"], ["orders", "Orders"], ["fantasy", "Fantasy points"]].map(function (t2) {
       return "<button class='fo-sctab fo-frtab" + (tab === t2[0] ? " on" : "") + "' data-t='" + t2[0] + "'>" + t2[1] + "</button>";
@@ -13410,7 +13422,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     } else {
       body = foFrScoreTables(r) || "<div class='panel'><div class='pad small'>No scorecard was recorded for this match.</div></div>";
     }
-    page.innerHTML = "<div id='fo-fr-live'>" + head + hero + bar + body + "</div>";
+    page.innerHTML = "<div id='fo-fr-live'>" + head + hero + bar + pom + body + "</div>";
     window.__foFrCache = { id: id, row: c, html: page.innerHTML, done: true };
   }
   // tab + filter clicks are delegated, so they keep working after a cache restore
