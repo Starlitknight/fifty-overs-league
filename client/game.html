@@ -6832,6 +6832,22 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-watch-live .fo-play svg{margin-left:2px}" +
     "@keyframes foPulseRed{0%,100%{box-shadow:0 6px 20px rgba(255,0,0,.38)}50%{box-shadow:0 6px 30px rgba(255,0,0,.62)}}" +
     "@media(max-width:820px){html body button.fo-watch-live{width:100%;justify-content:center}}" +
+    ".fo-mhead{display:flex;gap:22px;align-items:stretch;padding:16px 18px !important;margin-bottom:12px}" +
+    ".fo-mh-l{flex:1 1 auto;min-width:0}" +
+    ".fo-mh-eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:#C95532;text-transform:uppercase;margin-bottom:8px}" +
+    ".fo-mh-team{display:flex;align-items:baseline;gap:8px;padding:3px 0;color:#98A2B3;font-size:17px}" +
+    ".fo-mh-team .fo-mh-nm{font-weight:800}" +
+    ".fo-mh-team.win{color:#111827}" +
+    ".fo-mh-ov{font-size:12px;color:#98A2B3}" +
+    ".fo-mh-sc{margin-left:auto;font-weight:800;font-size:19px;font-variant-numeric:tabular-nums}" +
+    ".fo-mh-res{margin-top:9px;font-weight:800;color:#B04A2C;font-size:14.5px}" +
+    ".fo-mh-r{flex:0 0 230px;border-left:1px solid #EAE5DA;padding-left:20px;display:flex;flex-direction:column;justify-content:center;gap:3px}" +
+    ".fo-mh-k{font-size:10px;font-weight:800;letter-spacing:.08em;color:#667085;text-transform:uppercase}" +
+    ".fo-mh-pn a{font-weight:800;font-size:15px;color:#111827;text-decoration:none}" +
+    ".fo-mh-pn a:hover{color:#B04A2C}" +
+    ".fo-mh-pt{font-size:12.5px;color:#667085}" +
+    ".fo-mh-pf{font-size:13px;color:#3c4658;font-weight:600}" +
+    "@media(max-width:820px){.fo-mhead{flex-direction:column;gap:12px}.fo-mh-r{border-left:0;border-top:1px solid #EAE5DA;padding:12px 0 0}}" +
     ".fo-lv-cards{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px}" +
     ".fo-lv-pc{flex:1 1 150px;min-width:150px;background:#FFFEFC;border:1px solid #DDD8CF;border-left:3px solid #C95532;border-radius:10px;padding:9px 13px;display:flex;flex-direction:column;gap:2px}" +
     ".fo-lv-pc a{font-weight:800;color:#111827;text-decoration:none;font-size:14px}" +
@@ -9804,7 +9820,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-2114-fa605c";
+  var FO_BUILD = "20260710-2117-38e33b";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -13368,21 +13384,49 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var r = c.result || {};
     var log = (r.log || []).slice().reverse();   // chronological
     var head = "<div class='crumb'>" + E(c.challenger_club) + " v " + E(c.opponent_club) + " &raquo; " + (c.__practice ? "Practice" : "Friendly") + "</div>";
-    var hero = "<div class='fo-live-hero'><div class='fo-live-tag'>FULL TIME &middot; " + (c.__practice ? "PRACTICE" : "FRIENDLY") + "</div>" +
+    // broadsheet result header: both totals, the chase context, the result
+    // line, and the player of the match with his real match figures
+    var hero = "";
+    try {
+      var sc0 = (r.scorecard || [])[0], sc1 = (r.scorecard || [])[1];
+      var mhLine = function (inn, chase) {
+        if (!inn) return "";
+        var win = r.result_text && inn.batTeam && r.result_text.indexOf(inn.batTeam) === 0;
+        var tot = inn.runs + (inn.wkts >= 10 ? "" : "/" + inn.wkts);
+        var ov = chase
+          ? "<span class='fo-mh-ov'>(" + E(String(inn.overs || "")) + "/50 ov, T:" + (sc0 ? sc0.runs + 1 : "") + ")</span>"
+          : "<span class='fo-mh-ov'>(" + E(String(inn.overs || "")) + " ov)</span>";
+        return "<div class='fo-mh-team" + (win ? " win" : "") + "'><span class='fo-mh-nm'>" + E(inn.batTeam || "") + "</span>" + ov + "<span class='fo-mh-sc'>" + tot + "</span></div>";
+      };
+      var mhFigs = function (name) {
+        var parts = [];
+        (r.scorecard || []).forEach(function (inn) {
+          if (!inn) return;
+          (inn.batting || []).forEach(function (x) { if (x.name === name && (x.b || (x.out && x.out !== "not out"))) parts.push((x.r || 0) + (x.out === "not out" ? "*" : "") + " (" + (x.b || 0) + ")"); });
+          (inn.bowling || []).forEach(function (x) { if (x.name === name) parts.push((x.w || 0) + "/" + (x.r || 0)); });
+        });
+        return parts.join(" &amp; ");
+      };
+      var topF = r.fantasy && r.fantasy[0];
+      var pomN = topF ? topF.n : (r.mom || "");
+      var pomTeam = topF ? topF.team : "";
+      var pomFigs = pomN ? mhFigs(pomN) : "";
+      var pomHtml = pomN
+        ? "<div class='fo-mh-r'><div class='fo-mh-k'>Player of the match</div>" +
+          "<div class='fo-mh-pn'><a href='#/player?n=" + encodeURIComponent(pomN) + "'>" + E(pomN) + "</a>" + (pomTeam ? "<span class='fo-mh-pt'> &middot; " + E(pomTeam) + "</span>" : "") + "</div>" +
+          (pomFigs ? "<div class='fo-mh-pf'>" + pomFigs + "</div>" : (topF ? "<div class='fo-mh-pf'>" + (topF.pts || 0) + " fantasy pts</div>" : "")) + "</div>"
+        : "";
+      if (sc0) {
+        hero = "<div class='panel fo-mhead'><div class='fo-mh-l'>" +
+          "<div class='fo-mh-eyebrow'>FULL TIME &middot; " + (c.__practice ? "PRACTICE" : "FRIENDLY") + " &middot; " + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + "</div>" +
+          mhLine(sc0, false) + mhLine(sc1, true) +
+          "<div class='fo-mh-res'>" + E(r.result_text || "Played") + "</div></div>" + pomHtml + "</div>";
+      }
+    } catch (eMh) {}
+    if (!hero) hero = "<div class='fo-live-hero'><div class='fo-live-tag'>FULL TIME &middot; " + (c.__practice ? "PRACTICE" : "FRIENDLY") + "</div>" +
       "<div class='fo-live-score'>" + E(r.result_text || "Played") + "</div>" +
       "<div class='fo-live-sub'>" + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + "</div></div>";
-    // player of the match = top fantasy points, the same banner league
-    // scorecards carry
     var pom = "";
-    try {
-      var topF = r.fantasy && r.fantasy[0];
-      if (topF) {
-        pom = "<div class='fo-pom'><div class='fo-pom-k'>Player of the match</div><div class='fo-pom-n'>" + E(topF.n) + "</div>" +
-          "<div class='fo-pom-s'>" + E(topF.team || "") + " &middot; <b>" + (topF.pts || 0) + " fantasy pts</b> (bat " + (topF.bat || 0) + " &middot; bowl " + (topF.bowl || 0) + " &middot; field " + (topF.field || 0) + ")</div></div>";
-      } else if (r.mom) {
-        pom = "<div class='fo-pom'><div class='fo-pom-k'>Player of the match</div><div class='fo-pom-n'>" + E(r.mom) + "</div></div>";
-      }
-    } catch (ePom) {}
     var tab = window.__foFrTab || "score";
     var bar = "<div class='fo-sctabs'>" + [["score", "Scorecard"], ["comm", "Commentary"], ["charts", "Charts"], ["ratings", "Match ratings"], ["orders", "Orders"], ["fantasy", "Fantasy points"]].map(function (t2) {
       return "<button class='fo-sctab fo-frtab" + (tab === t2[0] ? " on" : "") + "' data-t='" + t2[0] + "'>" + t2[1] + "</button>";
