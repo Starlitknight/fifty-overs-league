@@ -10782,7 +10782,7 @@
         for (var ci = 0; ci < cand.length; ci++) {
           if (!cand[ci]) continue;
           var t = foParse9am(cand[ci]);
-          if (!isNaN(t) && Math.abs(t - Date.now()) < 200 * 86400000) return t;
+          if (!isNaN(t) && Math.abs(t - Date.now()) < 26 * 3600000) return t;
         }
       } catch (e2) {}
       // last resort: the hour starts when this device first sees the round -
@@ -10800,8 +10800,12 @@
         var t0 = foBcastT0(rd); if (!t0) return { active: false };
         var p = (Date.now() - t0) / (FO_BCAST_MIN * 60000);
         if (p >= 1) return { active: false, round: rd };
-        // banked early by the resolver: hold every spoiler until 9:00 AM
-        if (p < 0) return { active: true, round: rd, p: 0, endsAt: t0 + FO_BCAST_MIN * 60000, pre: true };
+        // banked early by the resolver: hold every spoiler until 9:00 AM -
+        // but only in the genuine pre-hour, never off a far-future anchor
+        if (p < 0) {
+          if (t0 - Date.now() > 90 * 60000) return { active: false, round: rd };
+          return { active: true, round: rd, p: 0, endsAt: t0 + FO_BCAST_MIN * 60000, pre: true };
+        }
         return { active: true, round: rd, p: p, endsAt: t0 + FO_BCAST_MIN * 60000 };
       } catch (e) { return { active: false }; }
     };
@@ -10936,17 +10940,32 @@
         });
         if (!frLive) { var pc2 = foPracBc(); if (pc2 && foFrBcastState(pc2).phase === "live") frLive = pc2; }
       } catch (eF) {}
-      var go = em.active ? "#/matchday" : (frLive ? "#/friendly?id=" + frLive.id : null);
+      var go = null;
+      if (em.active) {
+        // deep-link MY game in the live round; the board is never the target
+        go = "#/matchday";
+        try {
+          var meP = userTeam().name;
+          var rowsP = foLeagueRounds()[em.round] || [];
+          var mineP = null;
+          rowsP.forEach(function (r0) { if (!mineP && r0 && (r0.home === meP || r0.away === meP)) mineP = r0; });
+          if (!mineP) mineP = rowsP[0];
+          if (mineP && mineP.ix != null) go = "#/scorecard?i=" + mineP.ix;
+        } catch (eMe) {}
+      } else if (frLive) go = "#/friendly?id=" + frLive.id;
       // remember the broadcast window: end times are fixed, so on the next
       // page load the pill can paint instantly instead of waiting for the
-      // first data fetch
+      // first data fetch. Sanity-capped: a cache entry can never outlive a
+      // real broadcast, and a stale matchday target is discarded.
       try {
         if (go) {
           var until = em.active ? em.endsAt : foFrBcastState(frLive).endsAt;
+          if (until > Date.now() + 2 * 3600000) until = Date.now() + 2 * 3600000;
           lsSet("fol_livepill", JSON.stringify({ go: go, until: until }));
         } else {
           var cch = JSON.parse(lsGet("fol_livepill") || "null");
-          if (cch && cch.until > Date.now()) go = cch.go;       // trust the cache until stumps
+          var okC = cch && cch.until > Date.now() && cch.until - Date.now() < 2 * 3600000 && cch.go && cch.go !== "#/matchday";
+          if (okC) go = cch.go;
           else if (cch) lsSet("fol_livepill", "null");
         }
       } catch (eC) {}
