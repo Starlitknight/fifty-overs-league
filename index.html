@@ -9739,7 +9739,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-2036-99249c";
+  var FO_BUILD = "20260710-2040-a2a906";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -17188,6 +17188,19 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         });
       } catch (eF) {}
       var go = em.active ? "#/matchday" : (frLive ? "#/friendly?id=" + frLive.id : null);
+      // remember the broadcast window: end times are fixed, so on the next
+      // page load the pill can paint instantly instead of waiting for the
+      // first data fetch
+      try {
+        if (go) {
+          var until = em.active ? em.endsAt : foFrBcastState(frLive).endsAt;
+          lsSet("fol_livepill", JSON.stringify({ go: go, until: until }));
+        } else {
+          var cch = JSON.parse(lsGet("fol_livepill") || "null");
+          if (cch && cch.until > Date.now()) go = cch.go;       // trust the cache until stumps
+          else if (cch) lsSet("fol_livepill", "null");
+        }
+      } catch (eC) {}
       var tb = document.getElementById("topbar");
       var wrap = tb && tb.querySelector(".fo-nav-scroll");
       var pill = wrap && wrap.querySelector("a.fo-bcast");
@@ -17201,7 +17214,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if (pill && go) pill.setAttribute("data-go", go);
       return em;
     }
-    setTimeout(function () { try { foBcastPill(); } catch (e) {} }, 700);
+    [120, 400, 700, 1500].forEach(function (ms) { setTimeout(function () { try { foBcastPill(); } catch (e) {} }, ms); });
     // a slow tick keeps live surfaces fresh
     setInterval(function () {
       try {

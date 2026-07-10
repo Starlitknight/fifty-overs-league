@@ -10836,6 +10836,19 @@
         });
       } catch (eF) {}
       var go = em.active ? "#/matchday" : (frLive ? "#/friendly?id=" + frLive.id : null);
+      // remember the broadcast window: end times are fixed, so on the next
+      // page load the pill can paint instantly instead of waiting for the
+      // first data fetch
+      try {
+        if (go) {
+          var until = em.active ? em.endsAt : foFrBcastState(frLive).endsAt;
+          lsSet("fol_livepill", JSON.stringify({ go: go, until: until }));
+        } else {
+          var cch = JSON.parse(lsGet("fol_livepill") || "null");
+          if (cch && cch.until > Date.now()) go = cch.go;       // trust the cache until stumps
+          else if (cch) lsSet("fol_livepill", "null");
+        }
+      } catch (eC) {}
       var tb = document.getElementById("topbar");
       var wrap = tb && tb.querySelector(".fo-nav-scroll");
       var pill = wrap && wrap.querySelector("a.fo-bcast");
@@ -10849,7 +10862,7 @@
       if (pill && go) pill.setAttribute("data-go", go);
       return em;
     }
-    setTimeout(function () { try { foBcastPill(); } catch (e) {} }, 700);
+    [120, 400, 700, 1500].forEach(function (ms) { setTimeout(function () { try { foBcastPill(); } catch (e) {} }, ms); });
     // a slow tick keeps live surfaces fresh
     setInterval(function () {
       try {
