@@ -49,7 +49,7 @@ async function playChallenges(page) {
         const o = ch.orders || {};
         const r = window.__resolveMatch(home, away, o[home.name] || null, o[away.name] || null,
           { pitch: ch.pitch || 'balanced', weather: ch.weather || 'Sunny', ground: home.ground, friendly: true, seed: (Date.parse(ch.play_at) % 2147483647) });
-        return { result_text: r.result_text, winner: r.winner_team, mom: r.mom, scorecard: r.scorecard, worm: r.worm, log: r.log, track: r.track, ratings_html: r.ratings_html, fantasy: r.fantasy, pitch: r.pitch, meta: r.meta };
+        return { result_text: r.result_text, winner: r.winner_team, mom: r.mom, scorecard: r.scorecard, worm: r.worm, log: r.log, track: r.track, toss: r.toss, ratings_html: r.ratings_html, fantasy: r.fantasy, pitch: r.pitch, meta: r.meta };
       }, { snap: st.snapshot, ch });
       await rpc('challenge_record_result', { p_id: ch.id, p_result: result });
       console.log('challenge', ch.id, 'played:', result.result_text || result.error);

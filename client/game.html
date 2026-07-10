@@ -6832,22 +6832,29 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-watch-live .fo-play svg{margin-left:2px}" +
     "@keyframes foPulseRed{0%,100%{box-shadow:0 6px 20px rgba(255,0,0,.38)}50%{box-shadow:0 6px 30px rgba(255,0,0,.62)}}" +
     "@media(max-width:820px){html body button.fo-watch-live{width:100%;justify-content:center}}" +
-    ".fo-mhead{display:flex;gap:22px;align-items:stretch;padding:16px 18px !important;margin-bottom:12px}" +
+    ".fo-mhead{display:flex;gap:22px;align-items:stretch;background:linear-gradient(135deg,#0E233F,#07162E 62%);border-radius:16px;padding:20px 22px;margin:8px 0 14px;color:#c7cfda}" +
     ".fo-mh-l{flex:1 1 auto;min-width:0}" +
-    ".fo-mh-eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:#C95532;text-transform:uppercase;margin-bottom:8px}" +
-    ".fo-mh-team{display:flex;align-items:baseline;gap:8px;padding:3px 0;color:#98A2B3;font-size:17px}" +
+    ".fo-mh-eyebrow{font-size:11px;font-weight:800;letter-spacing:.1em;color:#ff8a7a;text-transform:uppercase;margin-bottom:9px}" +
+    ".fo-mh-team{display:flex;align-items:baseline;gap:8px;padding:3px 0;color:#93a0b4;font-size:17px}" +
     ".fo-mh-team .fo-mh-nm{font-weight:800}" +
-    ".fo-mh-team.win{color:#111827}" +
-    ".fo-mh-ov{font-size:12px;color:#98A2B3}" +
+    ".fo-mh-team.win{color:#fff}" +
+    ".fo-mh-ov{font-size:12px;color:#93a0b4}" +
     ".fo-mh-sc{margin-left:auto;font-weight:800;font-size:19px;font-variant-numeric:tabular-nums}" +
-    ".fo-mh-res{margin-top:9px;font-weight:800;color:#B04A2C;font-size:14.5px}" +
-    ".fo-mh-r{flex:0 0 230px;border-left:1px solid #EAE5DA;padding-left:20px;display:flex;flex-direction:column;justify-content:center;gap:3px}" +
-    ".fo-mh-k{font-size:10px;font-weight:800;letter-spacing:.08em;color:#667085;text-transform:uppercase}" +
-    ".fo-mh-pn a{font-weight:800;font-size:15px;color:#111827;text-decoration:none}" +
-    ".fo-mh-pn a:hover{color:#B04A2C}" +
-    ".fo-mh-pt{font-size:12.5px;color:#667085}" +
-    ".fo-mh-pf{font-size:13px;color:#3c4658;font-weight:600}" +
-    "@media(max-width:820px){.fo-mhead{flex-direction:column;gap:12px}.fo-mh-r{border-left:0;border-top:1px solid #EAE5DA;padding:12px 0 0}}" +
+    ".fo-mh-res{margin-top:9px;font-weight:800;color:#E8A87C;font-size:14.5px}" +
+    ".fo-mh-r{flex:0 0 230px;border-left:1px solid rgba(246,244,238,.14);padding-left:20px;display:flex;flex-direction:column;justify-content:center;gap:3px}" +
+    ".fo-mh-k{font-size:10px;font-weight:800;letter-spacing:.08em;color:#93a0b4;text-transform:uppercase}" +
+    ".fo-mh-pn a{font-weight:800;font-size:15px;color:#fff;text-decoration:none}" +
+    ".fo-mh-pn a:hover{color:#E8A87C}" +
+    ".fo-mh-pt{font-size:12.5px;color:#93a0b4}" +
+    ".fo-mh-pf{font-size:13px;color:#c7cfda;font-weight:600}" +
+    "@media(max-width:820px){.fo-mhead{flex-direction:column;gap:12px}.fo-mh-r{border-left:0;border-top:1px solid rgba(246,244,238,.14);padding:12px 0 0}}" +
+    ".fo-l6{display:flex;align-items:center;gap:6px;margin:0 0 10px;flex-wrap:wrap}" +
+    ".fo-l6-k{font-size:10px;font-weight:800;letter-spacing:.08em;color:#667085;text-transform:uppercase;margin-right:4px}" +
+    ".fo-l6 i{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;border-radius:99px;font-style:normal;font-weight:800;font-size:12px;background:#F6F2E8;border:1px solid #DDD8CF;color:#3c4658}" +
+    ".fo-l6 i.f{background:#4DA6A2;border-color:#4DA6A2;color:#fff}" +
+    ".fo-l6 i.s{background:#C95532;border-color:#C95532;color:#fff}" +
+    ".fo-l6 i.w{background:#DC2626;border-color:#DC2626;color:#fff}" +
+    ".fo-l6 i.e{background:#FFFEFC;border-color:#F59E0B;color:#B45309;font-size:10px}" +
     ".fo-lv-cards{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px}" +
     ".fo-lv-pc{flex:1 1 150px;min-width:150px;background:#FFFEFC;border:1px solid #DDD8CF;border-left:3px solid #C95532;border-radius:10px;padding:9px 13px;display:flex;flex-direction:column;gap:2px}" +
     ".fo-lv-pc a{font-weight:800;color:#111827;text-decoration:none;font-size:14px}" +
@@ -7929,6 +7936,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var ratings = ""; try { ratings = ratingsTable({ home: M.meta.home, away: M.meta.away, innings: M.innings, result: M.result }); } catch (eR) {}
         var fant = []; try { fant = window.foFantasyPoints ? foFantasyPoints(M.innings) : []; } catch (eF) {}
         var mom = (M.result && M.result.mom) || (fant[0] ? fant[0].n + " (" + fant[0].pts + " pts)" : "");
+        var tossTxt = ""; try { tossTxt = (App.tossState && App.tossState.txt) || ""; } catch (eTs) {}
         var at = Date.now();
         var c = {
           id: "prac-" + at, challenger_club: M.meta.home, opponent_club: M.meta.away,
@@ -7936,7 +7944,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           play_at: new Date(at).toISOString(), status: "played", __practice: true,
           result: { result_text: (M.result && M.result.text) || "Played", mom: mom,
                     scorecard: (M.innings || []).map(foInnCard), worm: M.worm || null,
-                    log: M.log || [], track: track, ratings_html: ratings, fantasy: fant }
+                    log: M.log || [], track: track, ratings_html: ratings, fantasy: fant, toss: tossTxt }
         };
         try { lsSet(foPracBcKey(), JSON.stringify(c)); }
         catch (eS) { try { c.result.log = []; c.result.track = []; lsSet(foPracBcKey(), JSON.stringify(c)); } catch (eS2) {} }
@@ -9820,7 +9828,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-2117-38e33b";
+  var FO_BUILD = "20260710-2124-65238d";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -13269,6 +13277,28 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     try { (r.track || []).forEach(function (t2) { if (t2 && t2.L <= upto && (!tk || t2.L > tk.L)) tk = t2; }); } catch (e) {}
     return tk;
   }
+  function foLast6HTML(chron, upto) {
+    try {
+      var balls = [];
+      for (var i = Math.min(upto, chron.length) - 1; i >= 0 && balls.length < 6; i--) {
+        var L = chron[i];
+        if (!L || L.mile || !L.no || !L.out) continue;
+        balls.push(L.out);
+      }
+      if (!balls.length) return "";
+      balls.reverse();   // oldest of the six on the left, like a TV strip
+      var chip = function (o) {
+        if (o === "dot") return "<i>&bull;</i>";
+        if (o === "wide") return "<i class='e'>wd</i>";
+        if (o === "noball") return "<i class='e'>nb</i>";
+        if (o && o.charAt(0) === "w") return "<i class='w'>W</i>";
+        if (o === "4") return "<i class='f'>4</i>";
+        if (o === "6") return "<i class='s'>6</i>";
+        return "<i>" + E(String(o)) + "</i>";
+      };
+      return "<div class='fo-l6'><span class='fo-l6-k'>Last 6 balls</span>" + balls.map(chip).join("") + "</div>";
+    } catch (e) { return ""; }
+  }
   function foFrCrease(tk) {
     if (!tk) return "";
     var pc = function (x, tag, fig) {
@@ -13357,13 +13387,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         return "<button class='fo-sctab fo-frlcf" + (cf === ff[0] ? " on" : "") + "' data-f='" + ff[0] + "'>" + ff[1] + "</button>";
       }).join("") + "</div>";
       var over0 = upto >= log.length ? "<div class='fo-c-mile'><div class='text'>That is the last ball - the umpires check the paperwork. The official result lands at stumps.</div><div class='clear'></div></div>" : "";
-      body = "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'>" + cfBar + "<div id='ftpcomm' class='ftpskin'>" +
+      body = "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'>" + foLast6HTML(log, upto) + cfBar + "<div id='ftpcomm' class='ftpskin'>" +
         over0 + (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, cf, 5000) : "") + "</div></div></div>";
     }
     page.innerHTML = "<div id='fo-fr-live'>" + head +
       "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE</div>" +
       "<div class='fo-live-score'>" + foFrLiveLine(c, st.p) + "</div>" +
-      "<div class='fo-live-sub'>" + kind + " &middot; " + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + "</div></div>" +
+      "<div class='fo-live-sub'>" + kind + " &middot; " + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + (r.toss ? " &middot; " + E(r.toss) : "") + "</div></div>" +
       foFrCrease(tk) + bar + body + "</div>";
     window.__foFrLiveRow = { id: id, c: c };
     window.__foFrCache = { id: id, html: page.innerHTML, done: false };
@@ -13417,7 +13447,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           (pomFigs ? "<div class='fo-mh-pf'>" + pomFigs + "</div>" : (topF ? "<div class='fo-mh-pf'>" + (topF.pts || 0) + " fantasy pts</div>" : "")) + "</div>"
         : "";
       if (sc0) {
-        hero = "<div class='panel fo-mhead'><div class='fo-mh-l'>" +
+        hero = "<div class='fo-mhead'><div class='fo-mh-l'>" +
           "<div class='fo-mh-eyebrow'>FULL TIME &middot; " + (c.__practice ? "PRACTICE" : "FRIENDLY") + " &middot; " + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + "</div>" +
           mhLine(sc0, false) + mhLine(sc1, true) +
           "<div class='fo-mh-res'>" + E(r.result_text || "Played") + "</div></div>" + pomHtml + "</div>";
@@ -17315,13 +17345,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             var log = (r.log || []).slice().reverse();   // chronological
             var upto = Math.max(2, Math.floor(em.p * log.length));
             var vis = log.slice(0, upto).reverse();      // newest first again
+            var l6 = ""; try { l6 = foLast6HTML(log, upto); } catch (eL6) {}
             var mins = Math.max(1, Math.round((em.endsAt - Date.now()) / 60000));
             document.getElementById("page").innerHTML =
               "<div class='crumb'>" + E(r.home) + " v " + E(r.away) + " &raquo; Live</div>" +
               "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE</div>" +
               "<div class='fo-live-score'>" + (st ? st.line : "") + (st && st.chase ? " <span class='fo-live-chase'>" + st.chase + "</span>" : "") + "</div>" +
               "<div class='fo-live-sub'>" + E(r.ground || "") + " &middot; scores update as play unfolds &middot; the full card, charts and ratings arrive at stumps</div></div>" +
-              "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'><div id='ftpcomm' class='ftpskin'>" +
+              "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'>" + l6 + "<div id='ftpcomm' class='ftpskin'>" +
               (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, "all", 160) : "") + "</div></div></div>";
             return;
           }

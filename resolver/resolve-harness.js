@@ -221,6 +221,7 @@
         } catch (eT) {}
       }
       var out = buildResult(M); out.track = track;
+      try { out.toss = (App.tossState && App.tossState.txt) || ''; } catch (eTs) {}
       return out;
     } finally {
       M = _M; App.tossState = _toss; App.orders = _orders; App.page = _page;
