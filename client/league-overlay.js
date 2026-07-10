@@ -1523,6 +1523,65 @@
     } catch (e) {}
     foChallenge(fr.oppIx, fr.pitch, fr.weather);
   }
+  function foPracBcKey() { return "fol_pracbc_" + (LG ? LG.id : "solo"); }
+  function foPracBc() { try { return JSON.parse(lsGet(foPracBcKey()) || "null"); } catch (e) { return null; } }
+  // Play the pending practice match to completion in the engine (silently,
+  // with the same per-ball tracker the resolver banks for friendlies) and
+  // store the broadcast locally. Returns the pseudo-challenge row, or false
+  // so the caller can fall back to the old interactive viewer.
+  function foPracBroadcast() {
+    try {
+      if (typeof stepBall !== "function" || typeof startPendingIfNeeded !== "function") return false;
+      var pend = App.pending; if (!pend) return false;
+      var prevPage = App.page, prevOME = window.onMatchEnd;
+      try {
+        window.__foPracRun = 1;
+        window.onMatchEnd = function () {};          // practice: no fatigue, no form, no App.results
+        App.page = "__resolve__";
+        try { M = null; } catch (e0) {}
+        startPendingIfNeeded();
+        if (App.tossState && App.tossState.stage !== "done" && typeof resolveToss === "function") resolveToss(App.orders.tossCall || "H");
+        var track = [], g = 0;
+        while (typeof M !== "undefined" && M && !M.done && g++ < 3000) {
+          if (typeof autoPick === "function") autoPick();
+          stepBall();
+          try {
+            var li = (M.log && M.log[0]) ? M.log[0].inn : M.inns;
+            var inn2 = M.innings[li] || M.innings[M.inns];
+            if (inn2) {
+              var rc = function (x) { return (x && x.p) ? { n: x.p.name, r: x.r || 0, b: x.b || 0, f4: x.f4 || 0, f6: x.f6 || 0 } : null; };
+              var bwr = inn2.bowlers && inn2.bowlers[inn2.curBowlerName];
+              track.push({ L: M.log.length, i: li, s: rc(inn2.bat[inn2.striker]), ns: rc(inn2.bat[inn2.nonstriker]),
+                bw: bwr ? { n: inn2.curBowlerName, r: bwr.r || 0, w: bwr.w || 0, b: bwr.b || 0 } : null,
+                sc: [inn2.runs || 0, inn2.wkts || 0, inn2.legal || 0] });
+            }
+          } catch (eT) {}
+        }
+        if (typeof M === "undefined" || !M || !M.done || !M.result) return false;
+        var ratings = ""; try { ratings = ratingsTable({ home: M.meta.home, away: M.meta.away, innings: M.innings, result: M.result }); } catch (eR) {}
+        var fant = []; try { fant = window.foFantasyPoints ? foFantasyPoints(M.innings) : []; } catch (eF) {}
+        var mom = (M.result && M.result.mom) || (fant[0] ? fant[0].n + " (" + fant[0].pts + " pts)" : "");
+        var at = Date.now();
+        var c = {
+          id: "prac-" + at, challenger_club: M.meta.home, opponent_club: M.meta.away,
+          pitch: M.meta.pitch || pend.pitch || "balanced", weather: M.meta.weather || pend.weather || "Sunny",
+          play_at: new Date(at).toISOString(), status: "played", __practice: true,
+          result: { result_text: (M.result && M.result.text) || "Played", mom: mom,
+                    scorecard: (M.innings || []).map(foInnCard), worm: M.worm || null,
+                    log: M.log || [], track: track, ratings_html: ratings, fantasy: fant }
+        };
+        try { lsSet(foPracBcKey(), JSON.stringify(c)); }
+        catch (eS) { try { c.result.log = []; c.result.track = []; lsSet(foPracBcKey(), JSON.stringify(c)); } catch (eS2) {} }
+        try { foSaveFrHist({ innings: M.innings, meta: M.meta, worm: M.worm, result: M.result, __at: at }); } catch (eH) {}
+        return c;
+      } finally {
+        App.page = prevPage; window.onMatchEnd = prevOME; window.__foPracRun = 0;
+        try { M = null; } catch (e1) {}
+        App.pending = null;
+        try { App.tossState = null; } catch (e2) {}
+      }
+    } catch (e) { return false; }
+  }
   function foRemoveFriendly(i) {
     var fr = foFriendlies[i]; if (!fr) return;
     try {
@@ -2797,7 +2856,7 @@
       var card = null;
       try { card = { scorecard: (m.innings || []).map(foInnCard), worm: m.worm || null }; } catch (eC) {}
       h.unshift({
-        at: Date.now(), opp: (m.meta && m.meta.away) || "", ground: (m.meta && m.meta.ground) || "",
+        at: m.__at || Date.now(), opp: (m.meta && m.meta.away) || "", ground: (m.meta && m.meta.ground) || "",
         pitch: (m.meta && m.meta.pitch) || "", wx: (m.meta && m.meta.weather) || "", ix: savedIx,
         txt: (m.result && m.result.text) || "", mom: (m.result && m.result.mom) || "",
         card: card,
@@ -3466,6 +3525,20 @@
     var _spin = window.startPendingIfNeeded;
     window.startPendingIfNeeded = function () {
       try { if (App && App.pending && App.pending.__chal) return; } catch (e) {}   // challenge friendlies play on the server, never locally
+      // practice vs bots: bank the match and broadcast it ball by ball, the
+      // same experience as friendlies and league matchdays
+      try {
+        if (!window.__foPracRun && App && App.pending && App.pending.__friendly && App.orders && App.orders.saved && !(typeof M !== "undefined" && M && !M.done)) {
+          var cP = foPracBroadcast();
+          if (cP && cP.id) {
+            toast("The umpires are out - your practice match is LIVE.");
+            location.hash = "#/friendly?id=" + cP.id;
+            if (typeof window.route === "function") try { window.route(); } catch (eRt) {}
+            setTimeout(foRenderFriendlyLive, 30);
+            return;
+          }
+        }
+      } catch (e2) {}
       try { if (SYNC && SYNC.started && !SYNC.practice && App && App.pending && App.pending.comp === "league" && !(typeof M !== "undefined" && M && !M.done)) return; } catch (e) {}
       return _spin.apply(this, arguments);
     };
@@ -6895,8 +6968,8 @@
     var log = (r.log || []).slice().reverse();   // chronological
     var upto = Math.max(2, Math.floor(st.p * log.length));
     var vis = log.slice(0, upto).reverse();      // newest ball first
-    var mins = Math.max(1, Math.round((st.endsAt - Date.now()) / 60000));
-    var head = "<div class='crumb'>" + E(c.challenger_club) + " v " + E(c.opponent_club) + " &raquo; Friendly</div>";
+    var kind = c.__practice ? "Practice" : "Friendly";
+    var head = "<div class='crumb'>" + E(c.challenger_club) + " v " + E(c.opponent_club) + " &raquo; " + kind + "</div>";
     var tk = foFrTrackAt(r, upto);
     var tab = window.__foFrLTab || "feed";
     var cf = window.__foFrLCF || "all";
@@ -6920,9 +6993,9 @@
         over0 + (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, cf, 5000) : "") + "</div></div></div>";
     }
     page.innerHTML = "<div id='fo-fr-live'>" + head +
-      "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE &middot; stumps in ~" + mins + " min</div>" +
+      "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE</div>" +
       "<div class='fo-live-score'>" + foFrLiveLine(c, st.p) + "</div>" +
-      "<div class='fo-live-sub'>Friendly &middot; " + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + " &middot; the result arrives at stumps</div></div>" +
+      "<div class='fo-live-sub'>" + kind + " &middot; " + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + "</div></div>" +
       foFrCrease(tk) + bar + body + "</div>";
     window.__foFrLiveRow = { id: id, c: c };
     window.__foFrCache = { id: id, html: page.innerHTML, done: false };
@@ -6942,8 +7015,8 @@
     var page = document.getElementById("page"); if (!page) return;
     var r = c.result || {};
     var log = (r.log || []).slice().reverse();   // chronological
-    var head = "<div class='crumb'>" + E(c.challenger_club) + " v " + E(c.opponent_club) + " &raquo; Friendly</div>";
-    var hero = "<div class='fo-live-hero'><div class='fo-live-tag'>FULL TIME &middot; FRIENDLY</div>" +
+    var head = "<div class='crumb'>" + E(c.challenger_club) + " v " + E(c.opponent_club) + " &raquo; " + (c.__practice ? "Practice" : "Friendly") + "</div>";
+    var hero = "<div class='fo-live-hero'><div class='fo-live-tag'>FULL TIME &middot; " + (c.__practice ? "PRACTICE" : "FRIENDLY") + "</div>" +
       "<div class='fo-live-score'>" + E(r.result_text || "Played") + "</div>" +
       "<div class='fo-live-sub'>" + (r.mom ? "Star of the match: " + E(r.mom) + " &middot; " : "") + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + "</div></div>";
     var tab = window.__foFrTab || "score";
@@ -7009,6 +7082,16 @@
       if (cache && cache.id === mh[1]) {
         if (!page.querySelector("#fo-fr-live")) page.innerHTML = cache.html;
         if (cache.done) return;
+      }
+      // prac-<ts>: a locally banked practice broadcast (vs bots)
+      if (mh[1].indexOf("prac-") === 0) {
+        var pc = foPracBc();
+        if (pc && pc.id === mh[1]) {
+          var stP = foFrBcastState(pc);
+          if (stP.phase === "live") { foFrLiveDraw(pc, mh[1]); return; }
+          foFrDoneRender(pc, mh[1]); return;
+        }
+        mh = [mh[0], "hist-" + mh[1].slice(5)];   // broadcast gone: fall back to the stored card
       }
       // hist-<ts>: a locally saved practice game - no server round trip
       if (mh[1].indexOf("hist-") === 0) {
@@ -7088,7 +7171,13 @@
         (foFrHist() || []).forEach(function (e2) {
           var ts = +new Date(e2.at) || 0;
           var res;
-          if (e2.card && e2.card.scorecard) {
+          var bcP = foPracBc();
+          if (bcP && bcP.id === "prac-" + e2.at) {
+            var fstP = foFrBcastState(bcP);
+            res = fstP.phase === "live"
+              ? "<a class='fo-frs-live' href='#/friendly?id=prac-" + e2.at + "'><span class='live-dot'></span> LIVE &middot; " + foFrLiveLine(bcP, fstP.p) + " &middot; watch &rsaquo;</a>"
+              : "<a href='#/friendly?id=prac-" + e2.at + "'>" + E(e2.txt) + "</a>";
+          } else if (e2.card && e2.card.scorecard) {
             // the stored card outlives App.results (league snapshots replace it)
             res = "<a href='#/friendly?id=hist-" + e2.at + "'>" + E(e2.txt) + "</a>";
           } else {
@@ -10800,7 +10889,7 @@
             var mins = Math.max(1, Math.round((em.endsAt - Date.now()) / 60000));
             document.getElementById("page").innerHTML =
               "<div class='crumb'>" + E(r.home) + " v " + E(r.away) + " &raquo; Live</div>" +
-              "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE &middot; stumps in ~" + mins + " min</div>" +
+              "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE</div>" +
               "<div class='fo-live-score'>" + (st ? st.line : "") + (st && st.chase ? " <span class='fo-live-chase'>" + st.chase + "</span>" : "") + "</div>" +
               "<div class='fo-live-sub'>" + E(r.ground || "") + " &middot; scores update as play unfolds &middot; the full card, charts and ratings arrive at stumps</div></div>" +
               "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'><div id='ftpcomm' class='ftpskin'>" +
@@ -10845,6 +10934,7 @@
           if (frLive || !c) return;
           if ((c.status === "accepted" || c.status === "played") && typeof foFrBcastState === "function" && foFrBcastState(c).phase === "live") frLive = c;
         });
+        if (!frLive) { var pc2 = foPracBc(); if (pc2 && foFrBcastState(pc2).phase === "live") frLive = pc2; }
       } catch (eF) {}
       var go = em.active ? "#/matchday" : (frLive ? "#/friendly?id=" + frLive.id : null);
       // remember the broadcast window: end times are fixed, so on the next
