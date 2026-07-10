@@ -9419,7 +9419,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-0410-dc48bc";
+  var FO_BUILD = "20260710-0417-72f546";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -15207,6 +15207,37 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "html body .fo-sctabs + .ftpskin{border-top:none;padding-top:0}";
     document.head.appendChild(cs);
   })(); } catch (e) { console.warn("scorecard+fantasy", e); }
+
+  // ---- modern skin layer: one visual system for every engine page ----
+  try {
+    var foSkin = document.createElement("style");
+    foSkin.textContent =
+      // panels: one radius, one shadow, one border everywhere
+      "html body #page .panel{border:1px solid #e7e2d5 !important;border-radius:14px !important;overflow:hidden;box-shadow:0 3px 14px rgba(18,32,58,.05) !important;background:#fff}" +
+      "html body #page .panel h4{background:#0B1322 !important;color:#F6F4EE !important;font-size:12.5px !important;letter-spacing:.06em;text-transform:none;padding:11px 15px !important;border:0 !important;margin:0 !important}" +
+      // tables: editorial headers, quiet rules, hover rows
+      "html body #page table th{font-size:10.5px !important;letter-spacing:.07em;text-transform:uppercase;color:#8a8474 !important;background:#faf8f3 !important;border-bottom:1px solid #eae5d8 !important;padding:8px 10px !important}" +
+      "html body #page table td{border-bottom:1px solid #f2eee3 !important;padding:8px 10px !important}" +
+      "html body #page table tr:hover td{background:#fbf9f4}" +
+      // controls: soft rounded, calm focus ring
+      "html body #page select,html body #page input[type=text],html body #page input[type=number],html body #page input:not([type]){border:1px solid #ddd7c8 !important;border-radius:10px !important;background:#fff !important;padding:8px 11px !important;color:#1C2433}" +
+      "html body #page select:focus,html body #page input:focus,html body #page button:focus-visible{outline:none !important;border-color:#C0562F !important;box-shadow:0 0 0 3px rgba(192,86,47,.18) !important}" +
+      "html body #page button{border-radius:10px;border:1px solid #ddd7c8;background:#fff;color:#1C2433;padding:8px 14px;font-weight:600;cursor:pointer;transition:border-color .12s ease,transform .06s ease}" +
+      "html body #page button:hover{border-color:#c9c2b2}" +
+      // chips stay pills; primary CTAs keep their own classes untouched
+      "html body #page .chip{border-radius:999px !important}" +
+      // links: house terracotta, underline only on hover
+      "html body #page a{color:#B24E2B;text-decoration:none}html body #page a:hover{text-decoration:underline}" +
+      // quiet the old hard rules
+      "html body #page hr{border:none;border-top:1px solid #eae5d8;margin:14px 0}" +
+      // thin, tinted scrollbars
+      "*{scrollbar-width:thin;scrollbar-color:#d8d2c2 transparent}" +
+      "::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#d8d2c2;border-radius:99px;border:2px solid #F6F4EE}::-webkit-scrollbar-track{background:transparent}" +
+      // selection + smoothing niceties
+      "::selection{background:rgba(192,86,47,.22)}" +
+      "html body #page .small{color:#7d8695}";
+    document.head.appendChild(foSkin);
+  } catch (e) {}
 
   console.info("Fifty Overs League overlay ready.");
 })();
