@@ -497,7 +497,9 @@
     ".fo-mh-pf{font-size:13px;color:#c7cfda;font-weight:600}" +
     "@media(max-width:820px){.fo-mhead{flex-direction:column;gap:12px}.fo-mh-r{border-left:0;border-top:1px solid rgba(246,244,238,.14);padding:12px 0 0}}" +
     ".fo-l6{display:flex;align-items:center;gap:6px;margin:0 0 10px;flex-wrap:wrap}" +
+    ".fo-live-hero .fo-l6{margin:12px 0 2px}" +
     ".fo-l6-k{font-size:10px;font-weight:800;letter-spacing:.08em;color:#667085;text-transform:uppercase;margin-right:4px}" +
+    ".fo-live-hero .fo-l6-k{color:#93a0b4}" +
     ".fo-l6 i{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;border-radius:99px;font-style:normal;font-weight:800;font-size:12px;background:#F6F2E8;border:1px solid #DDD8CF;color:#3c4658}" +
     ".fo-l6 i.f{background:#4DA6A2;border-color:#4DA6A2;color:#fff}" +
     ".fo-l6 i.s{background:#C95532;border-color:#C95532;color:#fff}" +
@@ -7035,13 +7037,14 @@
         return "<button class='fo-sctab fo-frlcf" + (cf === ff[0] ? " on" : "") + "' data-f='" + ff[0] + "'>" + ff[1] + "</button>";
       }).join("") + "</div>";
       var over0 = upto >= log.length ? "<div class='fo-c-mile'><div class='text'>That is the last ball - the umpires check the paperwork. The official result lands at stumps.</div><div class='clear'></div></div>" : "";
-      body = "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'>" + foLast6HTML(log, upto) + cfBar + "<div id='ftpcomm' class='ftpskin'>" +
+      body = "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'>" + cfBar + "<div id='ftpcomm' class='ftpskin'>" +
         over0 + (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, cf, 5000) : "") + "</div></div></div>";
     }
     page.innerHTML = "<div id='fo-fr-live'>" + head +
       "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE</div>" +
       "<div class='fo-live-score'>" + foFrLiveLine(c, st.p) + "</div>" +
-      "<div class='fo-live-sub'>" + kind + " &middot; " + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + (r.toss ? " &middot; " + E(r.toss) : "") + "</div></div>" +
+      "<div class='fo-live-sub'>" + kind + " &middot; " + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + (r.toss ? " &middot; " + E(r.toss) : "") + "</div>" +
+      foLast6HTML(log, upto) + "</div>" +
       foFrCrease(tk) + bar + body + "</div>";
     window.__foFrLiveRow = { id: id, c: c };
     window.__foFrCache = { id: id, html: page.innerHTML, done: false };
@@ -10999,8 +11002,8 @@
               "<div class='crumb'>" + E(r.home) + " v " + E(r.away) + " &raquo; Live</div>" +
               "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE</div>" +
               "<div class='fo-live-score'>" + (st ? st.line : "") + (st && st.chase ? " <span class='fo-live-chase'>" + st.chase + "</span>" : "") + "</div>" +
-              "<div class='fo-live-sub'>" + E(r.ground || "") + " &middot; scores update as play unfolds &middot; the full card, charts and ratings arrive at stumps</div></div>" +
-              "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'>" + l6 + "<div id='ftpcomm' class='ftpskin'>" +
+              "<div class='fo-live-sub'>" + E(r.ground || "") + " &middot; scores update as play unfolds &middot; the full card, charts and ratings arrive at stumps</div>" + l6 + "</div>" +
+              "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'><div id='ftpcomm' class='ftpskin'>" +
               (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, "all", 160) : "") + "</div></div></div>";
             return;
           }
