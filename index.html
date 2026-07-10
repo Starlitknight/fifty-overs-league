@@ -7862,10 +7862,24 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       });
     } catch (e) { say(e); }
   }
+  // scheduled practice games survive a refresh (stored per league, on-device;
+  // a bot game starts the moment you press Play, so this is a reminder list)
+  function foFrSchedKey() { return "fol_frsched_" + (LG ? LG.id : "solo"); }
+  function foFrSchedSave() { try { lsSet(foFrSchedKey(), JSON.stringify(foFriendlies || [])); } catch (e) {} }
+  function foFrSchedLoad() {
+    var k = foFrSchedKey();
+    if (foFrSchedLoad.__k === k) return;
+    foFrSchedLoad.__k = k;
+    try {
+      var a = JSON.parse(lsGet(k) || "[]");
+      if (a.length && !(foFriendlies || []).length) foFriendlies = a;
+    } catch (e) {}
+  }
   function foAddFriendly(ix, pitch, wx) {
     foFriendlies = (foFriendlies || []).filter(function (f) { return f.oppName !== GD.teams[ix].name; });   // one per opponent
     var fr = { oppIx: ix, oppName: GD.teams[ix].name, pitch: pitch, weather: wx, seed: 4200 + ix * 7 + foFriendlies.length * 13 };
     foFriendlies.push(fr);
+    foFrSchedSave();
     if (SYNC) SYNC.__plannerSig = null;                     // let the upcoming list pick it up
     return fr;
   }
@@ -7971,7 +7985,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       }
     } catch (e) {}
     foConfirm({ title: "Remove the friendly vs " + fr.oppName + "?", body: "You can schedule another from their club page any time.", confirm: "Remove", cancel: "Keep it" })
-      .then(function (ok) { if (!ok) return; foFriendlies.splice(i, 1); if (typeof window.route === "function") window.route(); });
+      .then(function (ok) { if (!ok) return; foFriendlies.splice(i, 1); foFrSchedSave(); if (typeof window.route === "function") window.route(); });
   }
 
   // ===========================================================================
@@ -9797,7 +9811,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foWirePlanner(root) {
     root.querySelectorAll(".fo-setr").forEach(function (b) { if (b.__w) return; b.__w = 1; b.addEventListener("click", function () { foSetOrdersForRound(+b.getAttribute("data-r")); }); });
     root.querySelectorAll(".fo-fr-play").forEach(function (b) { if (b.__w) return; b.__w = 1; b.addEventListener("click", function () { var fr = foFriendlies[+b.getAttribute("data-i")]; if (fr) foPlayFriendly(fr); }); });
-    root.querySelectorAll(".fo-fr-x").forEach(function (b) { if (b.__w) return; b.__w = 1; b.addEventListener("click", function () { foFriendlies.splice(+b.getAttribute("data-i"), 1); if (SYNC) SYNC.__plannerSig = null; foRenderPlanner(); }); });
+    root.querySelectorAll(".fo-fr-x").forEach(function (b) { if (b.__w) return; b.__w = 1; b.addEventListener("click", function () { foFriendlies.splice(+b.getAttribute("data-i"), 1); foFrSchedSave(); if (SYNC) SYNC.__plannerSig = null; foRenderPlanner(); }); });
   }
   function foRenderPlanner() {
     try {
@@ -9833,7 +9847,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-2146-3c2b74";
+  var FO_BUILD = "20260710-2200-878730";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -9912,6 +9926,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         if (!window.__foPracRun && App && App.pending && App.pending.__friendly && App.orders && App.orders.saved && !(typeof M !== "undefined" && M && !M.done)) {
           var cP = foPracBroadcast();
           if (cP && cP.id) {
+            try { foFriendlies = (foFriendlies || []).filter(function (f) { return f.oppName !== cP.opponent_club; }); foFrSchedSave(); } catch (eSch) {}
             var goPrac = function (pid) {
               toast("The umpires are out - your practice match is LIVE.");
               location.hash = "#/friendly?id=" + pid;
@@ -9933,7 +9948,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
                 window.__foFrSig = null; window.__foFrFetchAt = 0;
                 setTimeout(foBellPoll, 400);
                 goPrac(nid);
-              }).catch(function () { goPrac(cP.id); });               // 0020 not run yet: this device only
+              }).catch(function (eRpc) {
+                var sR = ((eRpc && eRpc.message) || eRpc) + "";
+                if (/Could not find the function/i.test(sR)) setTimeout(function () { toast("Heads up: run migration 0020 in Supabase so practice broadcasts show on every device."); }, 2500);
+                goPrac(cP.id);                                          // this device only for now
+              });
             } else goPrac(cP.id);
             return;
           }
@@ -13686,6 +13705,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if (App.page !== "matches") return;
       var page = document.getElementById("page"); if (!page) return;
       var legacy = page.querySelector("#fo-frhist"); if (legacy) legacy.remove();
+      foFrSchedLoad();
       var t = userTeam(); var me = t.name;
       var mp = !!(SYNC && SYNC.started && !SYNC.practice && LG);
       // ---- one chronological list: practice + challenges, oldest first ----
