@@ -9429,7 +9429,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-1302-94482e";
+  var FO_BUILD = "20260710-1311-b6e98a";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -12429,6 +12429,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (liveT != null && FO_MD.t <= 100) run();       // live window: rolling by itself
   }
   function foRenderMatchday() {
+    try {
+      if (/^#\/matchday/.test(location.hash || "") && typeof foLiveBoardHTML === "function") {
+        var lb = foLiveBoardHTML();
+        var pgM = document.getElementById("page");
+        if (lb && pgM && !pgM.querySelector(".fo-live-row")) {
+          setTimeout(function () { if (!pgM.querySelector(".fo-live-row")) pgM.insertAdjacentHTML("afterbegin", lb); }, 80);
+        }
+      }
+    } catch (eL) {}
     if (!/^#\/matchday/.test(location.hash || "")) { if (FO_MD.timer) { clearInterval(FO_MD.timer); FO_MD.timer = null; } return; }
     try { bumpBrand(); } catch (e) {}
     try { foMatchdayPage(); } catch (e) { console.warn("foMatchdayPage", e); }
@@ -12514,6 +12523,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // ---- the newspaper: a digest of the latest round for the club home ---------
   function foNewsDigest() {
     var rd = foLastRoundIx(); if (rd < 0) return "";
+    try {
+      var em0 = (typeof foEmbargo === "function") ? foEmbargo() : { active: false };
+      if (em0.active && em0.round === rd) {
+        return "<div class='fo-card fo-news'><div class='fo-card-h2row'><div class='fo-card-h2'>The Fifty Overs Post &middot; Round " + (rd + 1) + "</div><a class='fo-morelink' href='#/matchday'>Watch live &rsaquo;</a></div>" +
+          "<div class='fo-card-b'><div style='font-size:13px;line-height:1.65'>&#128308; <b>Play is underway at every ground.</b> Scores are coming in over the hour; the Post goes to print at stumps.</div></div></div>";
+      }
+    } catch (e0) {}
     var results = foLeagueRounds()[rd] || []; if (!results.length) return "";
     var my = ""; try { my = userTeam().name; } catch (e) {}
     var items = [];
@@ -15659,6 +15675,192 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "html body #page .fo-scout-links a.on,html body .fo-scout-links a.on{background:#C0562F !important;border-color:#C0562F !important;color:#fff !important}";
     document.head.appendChild(foLate);
   } catch (e) {}
+
+  // ===========================================================================
+  //  MATCHDAY THEATRE - results are computed at 9:00 AM, but the BROADCAST
+  //  takes an hour. Everything below is presentation: a wall-clock replay of
+  //  the already-saved matches, identical on every device, with every result
+  //  surface embargoed until stumps.
+  // ===========================================================================
+  try { (function () {
+    var FO_BCAST_MIN = 60;
+    function foBcastKey() { return "fol_bcast_" + (LG ? LG.id : "solo"); }
+    function foBcastT0(rd) {
+      // solo (and any locally-resolved round): the moment it resolved
+      try { var st = JSON.parse(lsGet(foBcastKey()) || "null"); if (st && st.round === rd && st.t0) return st.t0; } catch (e) {}
+      // multiplayer: the scheduled 9:00 AM ET of that round, same for everyone
+      try {
+        var ds = foDailyDate(rd); var t = Date.parse(ds + " 09:00:00 GMT-0400");
+        if (!isNaN(t)) return t;
+      } catch (e2) {}
+      return 0;
+    }
+    window.foEmbargo = function () {
+      try {
+        var rd = foLastRoundIx(); if (rd < 0) return { active: false };
+        var t0 = foBcastT0(rd); if (!t0) return { active: false };
+        var p = (Date.now() - t0) / (FO_BCAST_MIN * 60000);
+        if (p < 0 || p >= 1) return { active: false, round: rd };
+        return { active: true, round: rd, p: p, endsAt: t0 + FO_BCAST_MIN * 60000 };
+      } catch (e) { return { active: false }; }
+    };
+    // live position inside one saved match at broadcast fraction p
+    function foLiveState(r, p) {
+      var w0 = (r.worm && r.worm[0]) || [], w1 = (r.worm && r.worm[1]) || [];
+      var tot = w0.length + w1.length; if (!tot) return null;
+      var k = Math.max(1, Math.floor(p * tot));
+      var innIx = k <= w0.length ? 0 : 1;
+      var w = innIx ? w1 : w0;
+      var j = Math.min(w.length - 1, (innIx ? k - w0.length : k) - 1);
+      var pt = w[Math.max(0, j)] || [0, 0, 0];
+      var inn = (r.innings || [])[innIx] || {};
+      var overs = Math.floor(pt[0]) + "." + Math.round((pt[0] % 1) * 6);
+      var first = (r.innings || [])[0] || {};
+      return {
+        innIx: innIx, ballK: k, totalBalls: tot,
+        line: E(inn.batTeam || "") + " " + pt[1] + "/" + (pt[2] || 0) + " (" + overs + " ov)",
+        chase: innIx === 1 ? "target " + (first.runs + 1) : null
+      };
+    }
+    window.__foLive = { state: foLiveState, mask: function () { foMaskSpoilers(); } };
+    // masked text for a result while its broadcast runs
+    function foMaskLine(r, p) {
+      var st = foLiveState(r, p);
+      return st ? "LIVE &middot; " + st.line + (st.chase ? " &middot; " + st.chase : "") : "LIVE";
+    }
+    // hide every spoiler on the page: result strings swap for live scores,
+    // standings close until stumps
+    function foMaskSpoilers() {
+      try {
+        var em = foEmbargo(); if (!em.active) return;
+        var page = document.getElementById("page"); if (!page) return;
+        var rows = foLeagueRounds()[em.round] || [];
+        var swap = function (needle, maskHtml) {
+          if (!needle) return;
+          // deepest elements that contain the text; children allowed (links etc.)
+          var cands = Array.prototype.slice.call(page.querySelectorAll("td, span, b, div, li")).filter(function (el) {
+            if ((el.textContent || "").indexOf(needle) < 0) return false;
+            return !Array.prototype.some.call(el.children, function (c) { return (c.textContent || "").indexOf(needle) >= 0; });
+          });
+          cands.forEach(function (el) {
+            if (el.__foMasked === needle) return;
+            el.innerHTML = el.innerHTML.split(E(needle)).join(maskHtml).split(needle).join(maskHtml);
+            el.__foMasked = needle;
+          });
+        };
+        rows.forEach(function (r) {
+          swap((r.result && r.result.text) || "", "<span class='fo-live-mask'>" + foMaskLine(r, em.p) + "</span>");
+          swap((r.result && r.result.mom) || "", "to be named at stumps");
+        });
+        // standings sleep until the broadcast ends
+        page.querySelectorAll(".panel, .fo-card").forEach(function (pn) {
+          var h = pn.querySelector("h4, .fo-card-h2"); if (!h) return;
+          if (!/league table|league standings/i.test(h.textContent || "")) return;
+          var body = pn.querySelector(".pad, .fo-card-b, table"); if (!body || body.__foSlept) return;
+          body.__foSlept = 1;
+          var note = "<div class='fo-live-sleep'>&#128308; Play is underway. The table updates at stumps &middot; " +
+            new Date(em.endsAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + ".</div>";
+          if (body.tagName === "TABLE") { var d2 = document.createElement("div"); d2.innerHTML = note; d2.__foSlept = 1; body.parentNode.replaceChild(d2, body); }
+          else body.innerHTML = note;
+        });
+      } catch (e) {}
+    }
+    // scorecard of an embargoed match becomes the live broadcast view
+    if (typeof window.pgScorecard === "function" && !window.pgScorecard.__foBcast) {
+      var _pscB = window.pgScorecard;
+      window.pgScorecard = function (q) {
+        try {
+          var em = foEmbargo();
+          if (em.active && q && q.i !== undefined && App.results[+q.i] && App.results[+q.i].comp === "league" && App.results[+q.i].round === em.round) {
+            var r = App.results[+q.i];
+            var st = foLiveState(r, em.p);
+            var log = (r.log || []).slice().reverse();   // chronological
+            var upto = Math.max(2, Math.floor(em.p * log.length));
+            var vis = log.slice(0, upto).reverse();      // newest first again
+            var mins = Math.max(1, Math.round((em.endsAt - Date.now()) / 60000));
+            document.getElementById("page").innerHTML =
+              "<div class='crumb'>" + E(r.home) + " v " + E(r.away) + " &raquo; Live</div>" +
+              "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE &middot; stumps in ~" + mins + " min</div>" +
+              "<div class='fo-live-score'>" + (st ? st.line : "") + (st && st.chase ? " <span class='fo-live-chase'>" + st.chase + "</span>" : "") + "</div>" +
+              "<div class='fo-live-sub'>" + E(r.ground || "") + " &middot; scores update as play unfolds &middot; the full card, charts and ratings arrive at stumps</div></div>" +
+              "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'><div id='ftpcomm' class='ftpskin'>" +
+              (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, "all", 160) : "") + "</div></div></div>";
+            return;
+          }
+        } catch (e) {}
+        return _pscB.apply(this, arguments);
+      };
+      window.pgScorecard.__foBcast = 1;
+    }
+    // the matchday page leads with the live scoreboard during the hour
+    window.foLiveBoardHTML = function () {
+      var em = foEmbargo(); if (!em.active) return "";
+      var rows = foLeagueRounds()[em.round] || [];
+      var mins = Math.max(1, Math.round((em.endsAt - Date.now()) / 60000));
+      return "<div class='panel fo-keep'><h4><span class='live-dot'></span> Matchday live &middot; stumps in ~" + mins + " min</h4><div class='pad'>" +
+        rows.map(function (r) {
+          return "<div class='fo-live-row'><b>" + E(r.home) + " v " + E(r.away) + "</b>" +
+            "<span>" + foMaskLine(r, em.p) + "</span>" +
+            "<a href='#/scorecard?i=" + r.ix + "'>Watch &rsaquo;</a></div>";
+        }).join("") +
+        "<div class='small' style='margin-top:8px;color:#8a8474'>Every ground plays at once. Results, tables and awards land at stumps.</div></div></div>";
+    };
+    // stamp broadcast start when a round resolves locally (solo path)
+    if (typeof window.completeRound === "function" && !window.completeRound.__foBcast) {
+      var _crB = window.completeRound;
+      window.completeRound = function () {
+        var out = _crB.apply(this, arguments);
+        try { lsSet(foBcastKey(), JSON.stringify({ round: foLastRoundIx(), t0: Date.now() })); } catch (e) {}
+        return out;
+      };
+      window.completeRound.__foBcast = 1;
+    }
+    // live pill in the nav + a slow tick that keeps live surfaces fresh
+    setInterval(function () {
+      try {
+        var em = foEmbargo();
+        var tb = document.getElementById("topbar");
+        var wrap = tb && tb.querySelector(".fo-nav-scroll");
+        var pill = wrap && wrap.querySelector("a.fo-bcast");
+        if (em.active && wrap && !pill) {
+          var a = document.createElement("a"); a.className = "fo-bcast"; a.innerHTML = "&#128308; Live";
+          a.href = "#"; a.addEventListener("click", function (ev) { ev.preventDefault(); location.hash = "#/matchday"; if (typeof window.route === "function") window.route(); });
+          wrap.insertBefore(a, wrap.firstChild);
+        } else if (!em.active && pill) pill.remove();
+        if (em.active) {
+          foMaskSpoilers();
+          var h = location.hash || "";
+          if (/^#\/(scorecard|matchday)/.test(h) && typeof window.route === "function") {
+            if (!window.__foBcastLast || Date.now() - window.__foBcastLast > 20000) { window.__foBcastLast = Date.now(); window.route(); }
+          }
+        }
+      } catch (e) {}
+    }, 6000);
+    if (typeof window.route === "function" && !window.route.__foBcast) {
+      var _rtB = window.route;
+      window.route = function () {
+        var r2 = _rtB.apply(this, arguments);
+        try { foMaskSpoilers(); } catch (e) {}
+        setTimeout(foMaskSpoilers, 220); setTimeout(foMaskSpoilers, 900);   // pages paint async
+        return r2;
+      };
+      window.route.__foBcast = 1;
+    }
+    var bcs = document.createElement("style");
+    bcs.textContent =
+      ".fo-live-mask{color:#a33328;font-weight:800}" +
+      ".fo-live-sleep{padding:14px 4px;font-size:13px;color:#5d6779}" +
+      ".fo-live-hero{background:linear-gradient(135deg,#16294a,#0B1322 62%);border-radius:16px;padding:20px 22px;margin:8px 0 14px;color:#c7cfda}" +
+      ".fo-live-tag{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#ff8a7a;display:flex;align-items:center;gap:7px}" +
+      ".fo-live-score{font-size:26px;font-weight:800;color:#fff;margin:8px 0 4px;letter-spacing:-.3px}" +
+      ".fo-live-chase{font-size:14px;color:#E8C77A;font-weight:700}" +
+      ".fo-live-sub{font-size:12px;color:#93a0b4}" +
+      ".fo-live-row{display:flex;gap:10px;align-items:baseline;padding:9px 0;border-bottom:1px solid #f0ece1;font-size:13px}" +
+      ".fo-live-row b{flex:1;color:#12203a}.fo-live-row span{color:#a33328;font-weight:700}" +
+      "#topbar .fo-nav-scroll a.fo-bcast{background:#a33328 !important;border-color:#a33328 !important;color:#fff !important;font-weight:800;animation:foPulse 2s ease-in-out infinite}";
+    document.head.appendChild(bcs);
+    window.__foBcastTest = function (minsAgo) { lsSet(foBcastKey(), JSON.stringify({ round: foLastRoundIx(), t0: Date.now() - minsAgo * 60000 })); };
+  })(); } catch (e) { console.warn("matchday theatre", e); }
 
   console.info("Fifty Overs League overlay ready.");
 })();
