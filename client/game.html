@@ -9678,7 +9678,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-1800-a6d374";
+  var FO_BUILD = "20260710-1831-a62d5e";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -13163,22 +13163,51 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var old = page.querySelector("#fo-frs"); if (old) old.remove();
       var legacy = page.querySelector("#fo-frhist"); if (legacy) legacy.remove();
       var t = userTeam(); var me = t.name;
-      var sched = (foFriendlies || []).map(function (fr, i) {
-        return "<tr class='fo-fx-fr'><td>Now</td><td>Practice</td><td>vs " + E(fr.oppName) + "</td><td>" + foPitchPill(fr.pitch) + "</td><td class='r'><button class='fo-fr-play' data-i='" + i + "'>Play</button> <button class='fo-fr-x' data-i='" + i + "' title='Remove'>&#10005;</button></td></tr>";
-      }).join("");
-      var hist = "";
+      var mp = !!(SYNC && SYNC.started && !SYNC.practice && LG);
+      // ---- one chronological list: practice + challenges, oldest first ----
+      var entries = [];
+      (foFriendlies || []).forEach(function (fr, i) {
+        entries.push({ ts: Date.now(), html: "<tr class='fo-fx-fr'><td>Now</td><td>Practice</td><td>vs " + E(fr.oppName) + " <span class='small'>" + foPitchName(fr.pitch) + ", " + E(fr.weather || "") + "</span></td><td class='r'><button class='fo-fr-play' data-i='" + i + "'>Play</button> <button class='fo-fr-x' data-i='" + i + "' title='Remove'>&#10005;</button></td></tr>" });
+      });
       try {
-        hist = (foFrHist() || []).slice(0, 8).map(function (e2) {
-          var d = new Date(e2.at).toLocaleDateString([], { month: "short", day: "numeric" });
-          return "<tr><td>" + d + "</td><td>Practice</td><td>vs " + E(e2.opp) + "</td><td colspan='2'><b>" + E(e2.txt) + "</b></td></tr>";
-        }).join("");
+        (foFrHist() || []).forEach(function (e2) {
+          var ts = +new Date(e2.at) || 0;
+          entries.push({ ts: ts, html: "<tr><td>" + new Date(e2.at).toLocaleDateString([], { month: "short", day: "numeric" }) + "</td><td>Practice</td><td>vs " + E(e2.opp) + "</td><td><b>" + E(e2.txt) + "</b></td></tr>" });
+        });
       } catch (eH) {}
+      if (mp && window.__foFrRows) {
+        var seenK = "fol_chseen_" + LG.id, seen = {};
+        try { seen = JSON.parse(lsGet(seenK) || "{}"); } catch (e) {}
+        window.__foFrRows.forEach(function (c) {
+          var mineSent = c.challenger_club === me;
+          var vs = mineSent ? c.opponent_club : c.challenger_club;
+          var ts = c.play_at ? +new Date(c.play_at) : (+new Date(c.created_at) || 0);
+          var when = c.play_at ? new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+          var fst = foFrBcastState(c);
+          var act = "";
+          if (c.status === "pending" && fst.phase !== "pre") act = "<span class='small'>not accepted before the scheduled time</span>";
+          else if (c.status === "pending" && !mineSent) act = "<button class='mini fo-ch-acc' data-id='" + c.id + "'>Accept</button> <button class='mini fo-ch-dec' data-id='" + c.id + "'>Decline</button>";
+          else if (c.status === "pending") act = "<span class='small'>awaiting their reply</span>";
+          else if ((c.status === "accepted" || c.status === "played") && fst.phase === "live")
+            act = "<span class='fo-frs-live'><span class='live-dot'></span> LIVE &middot; " + foFrLiveLine(c, fst.p) + "</span> <a class='fo-frs-watch' href='#/friendly?id=" + c.id + "'>Watch &rsaquo;</a>";
+          else if (c.status === "accepted" && fst.phase === "done") act = "<span class='small'>delayed &middot; waiting on the league engine</span>";
+          else if (c.status === "accepted") act = "<span class='fo-frs-on'>ON</span> <button class='mini fo-ch-ord' data-id='" + c.id + "'>Prepare lineup</button>";
+          else if (c.status === "declined") act = "<span class='small'>declined</span>";
+          else if (c.status === "expired") act = "<span class='small'>expired</span>";
+          else if (c.status === "played" && c.result && fst.phase !== "live") {
+            act = "<b class='small'>" + E(c.result.result_text || "played") + (c.result.mom ? " &middot; " + E(c.result.mom) : "") + "</b> <a class='fo-frs-watch' href='#/friendly?id=" + c.id + "'>Replay &rsaquo;</a>";
+            if (!seen[c.id]) { toast("Friendly result: " + (c.result.result_text || "played")); seen[c.id] = 1; }
+          }
+          entries.push({ ts: ts, html: "<tr><td>" + when + "</td><td>Challenge</td><td>" + (mineSent ? "vs " : "from ") + E(vs) + " <span class='small'>" + foPitchName(c.pitch) + ", " + E(c.weather || "") + "</span></td><td>" + act + "</td></tr>" });
+        });
+        lsSet(seenK, JSON.stringify(seen));
+      }
+      entries.sort(function (a2, b2) { return a2.ts - b2.ts; });
       var pnl = document.createElement("div");
       pnl.className = "panel fo-keep"; pnl.id = "fo-frs";
       pnl.innerHTML = "<h4>Friendlies <span class='small' style='font-weight:400'>&middot; no points, no fatigue, all pride</span></h4><div class='pad'>" +
         "<div class='fo-frs-bar'><button class='primary' id='fo-frs-new'>New practice game</button><span class='small'>Challenge a friend&rsquo;s club from their scout report; challenges and results appear below for both managers.</span></div>" +
-        "<div id='fo-frs-ch'></div>" +
-        ((sched || hist) ? "<table><tr><th>Date</th><th>Type</th><th>Match</th><th colspan='2'></th></tr>" + sched + hist + "</table>" : "<div class='small' style='margin-top:8px'>No friendlies yet. Set one up above, or challenge a rival from their club page.</div>") +
+        (entries.length ? "<table><tr><th>Date</th><th>Type</th><th>Match</th><th></th></tr>" + entries.map(function (e3) { return e3.html; }).join("") + "</table>" : "<div class='small' style='margin-top:8px'>No friendlies yet. Set one up above, or challenge a rival from their club page.</div>") +
         "</div>";
       var anchor = null;
       page.querySelectorAll(".panel h4").forEach(function (h) { if (/Fixtures & results/i.test(h.textContent || "")) anchor = h.parentNode; });
@@ -13186,59 +13215,30 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       else page.appendChild(pnl);
       pnl.querySelectorAll(".fo-fr-play").forEach(function (b2) { b2.addEventListener("click", function () { var fr = foFriendlies[+b2.getAttribute("data-i")]; if (fr) foPlayFriendly(fr); }); });
       pnl.querySelectorAll(".fo-fr-x").forEach(function (b2) { b2.addEventListener("click", function () { foRemoveFriendly(+b2.getAttribute("data-i")); }); });
-      if (!(SYNC && SYNC.started && !SYNC.practice && LG)) return;
-      // cached rows paint instantly (repaint-proof); the fetch refreshes them
-      if (window.__foFrRows) { try { foFrsRenderCh(window.__foFrRows, me); } catch (eR) {} }
-      sel("league_challenges", "league_id=eq." + LG.id + "&select=*&order=created_at.desc&limit=24").then(function (rows) {
-        rows = (rows || []).filter(function (c) { return c.challenger_club === me || c.opponent_club === me; });
-        window.__foFrRows = rows;
-        foFrsRenderCh(rows, me);
-      }).catch(function () {});
-    } catch (e) {}
-  }
-  function foFrsRenderCh(rows, me) {
-    try {
-      var box = document.querySelector("#fo-frs #fo-frs-ch"); if (!box || !rows.length) return;
-        var seenK = "fol_chseen_" + LG.id, seen = {};
-        try { seen = JSON.parse(lsGet(seenK) || "{}"); } catch (e) {}
-        rows = rows.slice().sort(function (a2, b2) { return new Date(a2.play_at || a2.created_at || 0) - new Date(b2.play_at || b2.created_at || 0); });
-        var items = rows.slice(0, 14).map(function (c) {
-          var mineSent = c.challenger_club === me;
-          var vs = mineSent ? c.opponent_club : c.challenger_club;
-          var when = c.play_at ? new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
-          var line = "<b>" + (mineSent ? "vs " : "from ") + E(vs) + "</b> <span class='small'>" + foPitchName(c.pitch) + ", " + E(c.weather || "") + (when ? " &middot; " + when : "") + "</span>";
-          var act = "";
-          var fst = foFrBcastState(c);
-          if (c.status === "pending" && fst.phase !== "pre") act = "<span class='small'>not accepted before the scheduled time</span>";
-          else if (c.status === "pending" && !mineSent) act = "<button class='mini fo-ch-acc' data-id='" + c.id + "'>Accept</button> <button class='mini fo-ch-dec' data-id='" + c.id + "'>Decline</button>";
-          else if (c.status === "pending") act = "<span class='small'>awaiting their reply</span>";
-          else if ((c.status === "accepted" || c.status === "played") && fst.phase === "live")
-            act = "<span class='fo-frs-live'><span class='live-dot'></span> LIVE &middot; " + foFrLiveLine(c, fst.p) + "</span> <a class='fo-frs-watch' href='#/friendly?id=" + c.id + "'>Watch &rsaquo;</a>";
-          else if (c.status === "accepted" && fst.phase === "done") act = "<span class='small'>delayed &middot; waiting on the league engine</span>";
-          else if (c.status === "accepted") act = "<span class='fo-frs-on'>ON</span> <button class='mini fo-ch-ord' data-id='" + c.id + "'>Prepare lineup</button> <a class='fo-frs-watch' href='#/friendly?id=" + c.id + "'>Match page &rsaquo;</a>";
-          else if (c.status === "declined") act = "<span class='small'>declined</span>";
-          else if (c.status === "expired") act = "<span class='small'>expired</span>";
-          else if (c.status === "played" && c.result && fst.phase !== "live") {
-            act = "<b class='small'>" + E(c.result.result_text || "played") + (c.result.mom ? " &middot; " + E(c.result.mom) : "") + "</b> <a class='fo-frs-watch' href='#/friendly?id=" + c.id + "'>Replay &rsaquo;</a>";
-            if (!seen[c.id]) { toast("Friendly result: " + (c.result.result_text || "played")); seen[c.id] = 1; }
-          }
-          return "<div class='fo-frs-row'>" + line + "<span class='fo-frs-act'>" + act + "</span></div>";
-        }).join("");
-        lsSet(seenK, JSON.stringify(seen));
-        box.innerHTML = "<div class='fo-frs-h'>Challenge matches</div>" + items;
-        box.querySelectorAll(".fo-ch-acc,.fo-ch-dec").forEach(function (b2) {
-          b2.addEventListener("click", function () {
-            rpc("challenge_respond", { p_id: b2.getAttribute("data-id"), p_accept: b2.classList.contains("fo-ch-acc") })
-              .then(function () { toast(b2.classList.contains("fo-ch-acc") ? "Challenge accepted \u00b7 attach your lineup any time before the match." : "Challenge declined."); window.__foFrRows = null; foFriendliesPanel(); })
-              .catch(say);
-          });
+      pnl.querySelectorAll(".fo-ch-acc,.fo-ch-dec").forEach(function (b2) {
+        b2.addEventListener("click", function () {
+          rpc("challenge_respond", { p_id: b2.getAttribute("data-id"), p_accept: b2.classList.contains("fo-ch-acc") })
+            .then(function () { toast(b2.classList.contains("fo-ch-acc") ? "Challenge accepted \u00b7 attach your lineup any time before the match." : "Challenge declined."); window.__foFrRows = null; window.__foFrSig = null; foFriendliesPanel(); })
+            .catch(say);
         });
-        box.querySelectorAll(".fo-ch-ord").forEach(function (b2) {
-          b2.addEventListener("click", function () {
-            var c2 = rows.filter(function (x) { return String(x.id) === b2.getAttribute("data-id"); })[0];
-            if (c2) foChalPrep(c2);
-          });
+      });
+      pnl.querySelectorAll(".fo-ch-ord").forEach(function (b2) {
+        b2.addEventListener("click", function () {
+          var c2 = (window.__foFrRows || []).filter(function (x) { return String(x.id) === b2.getAttribute("data-id"); })[0];
+          if (c2) foChalPrep(c2);
         });
+      });
+      // refresh the challenge data; re-render only when it actually changed
+      if (mp) {
+        sel("league_challenges", "league_id=eq." + LG.id + "&select=*&order=created_at.desc&limit=24").then(function (rows) {
+          rows = (rows || []).filter(function (c) { return c.challenger_club === me || c.opponent_club === me; });
+          var sig = JSON.stringify(rows.map(function (c) { return c.id + ":" + c.status + ":" + !!c.result; }));
+          if (sig !== window.__foFrSig) {
+            window.__foFrSig = sig; window.__foFrRows = rows;
+            foFriendliesPanel();
+          } else window.__foFrRows = rows;
+        }).catch(function () {});
+      }
     } catch (e) {}
   }
   // home: a one-line nudge when a challenge needs the manager's attention
