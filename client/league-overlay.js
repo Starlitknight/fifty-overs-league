@@ -473,6 +473,9 @@
     "#fo-bell-panel{position:fixed;top:52px;right:12px;z-index:200000;background:#FFFEFC;border:1px solid #DDD8CF;border-radius:14px;box-shadow:0 18px 44px rgba(18,32,58,.22);width:min(340px,92vw);overflow:hidden}" +
     ".fo-bell-h{background:#07162E;color:#FFFEFC;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;padding:10px 14px}" +
     ".fo-bell-row{padding:11px 14px;border-bottom:1px solid #f0ece1;font-size:13px;color:#3c4658;cursor:pointer}" +
+    ".fo-bell-act{margin-top:7px;display:flex;gap:8px}" +
+    ".fo-bell-act .fo-bell-acc{background:#15803D;border-color:#15803D;color:#fff}" +
+    ".fo-bell-act .fo-bell-dec{background:transparent;border:1px solid #DDD8CF;color:#667085}" +
     ".fo-bell-row:hover{background:#EEEAE1}.fo-bell-row:last-child{border-bottom:none}" +
     "@media(max-width:820px){#fo-bell{order:2;margin-left:6px}#fo-bell-panel{top:96px}}" +
     ".fo-frs-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 10px}" +
@@ -2306,27 +2309,46 @@
       var ex = document.getElementById("fo-chal"); if (ex) ex.remove();
       var pitches = FO_PITCHES.map(function (p) { return "<option value='" + p + "'>" + foPitchName(p) + "</option>"; }).join("");
       var wx = (typeof WXLIST !== "undefined" ? WXLIST : ["Sunny"]).map(function (w) { return "<option>" + w + "</option>"; }).join("");
-      var dflt = new Date(Date.now() + 3 * 3600e3); dflt.setMinutes(0, 0, 0);
       var pad = function (n) { return (n < 10 ? "0" : "") + n; };
-      var dv = dflt.getFullYear() + "-" + pad(dflt.getMonth() + 1) + "-" + pad(dflt.getDate()) + "T" + pad(dflt.getHours()) + ":00";
+      // no free typing, no Enter: day / hour / minute dropdowns in the same
+      // 24-hour clock the header shows, confirmed by the Send button
+      var dflt = new Date(Date.now() + 2 * 3600e3); dflt.setMinutes(0, 0, 0);
+      var today0 = new Date(); today0.setHours(0, 0, 0, 0);
+      var dfltDayIx = Math.round((new Date(dflt.getFullYear(), dflt.getMonth(), dflt.getDate()) - today0) / 86400000);
+      var dayOpts = [];
+      for (var di = 0; di < 7; di++) {
+        var dd = new Date(today0); dd.setDate(dd.getDate() + di);
+        var lbl = (di === 0 ? "Today" : di === 1 ? "Tomorrow" : dd.toLocaleDateString("en-GB", { weekday: "short" })) + " " + dd.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+        dayOpts.push("<option value='" + di + "'" + (di === dfltDayIx ? " selected" : "") + ">" + lbl + "</option>");
+      }
+      var hrOpts = []; for (var hi = 0; hi < 24; hi++) hrOpts.push("<option value='" + hi + "'" + (hi === dflt.getHours() ? " selected" : "") + ">" + pad(hi) + "</option>");
+      var mnOpts = [0, 15, 30, 45].map(function (mi) { return "<option value='" + mi + "'" + (mi === 0 ? " selected" : "") + ">" + pad(mi) + "</option>"; }).join("");
       var m = document.createElement("div"); m.id = "fo-chal"; m.className = "fo-modal";
       m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>Challenge</div><h3>Challenge " + E(opp.name) + "</h3>" +
-        "<div class='small' style='margin:4px 0 10px'>They must accept before the match is played. Both sides can attach a lineup up to match time; the game is played at your chosen time and does not affect the league.</div>" +
+        "<div class='small' style='margin:4px 0 10px'>They must accept before the match is played. Schedule it at least <b>75 minutes ahead</b> - the engine prepares the match early so it kicks off on the dot. Times are on the 24-hour clock, like the one in the header.</div>" +
         "<div class='ctlrow'><span>Pitch</span><select id='fo-chal-p'>" + pitches + "</select></div>" +
         "<div class='ctlrow'><span>Weather</span><select id='fo-chal-w'>" + wx + "</select></div>" +
-        "<div class='ctlrow'><span>Play at</span><input id='fo-chal-t' type='datetime-local' value='" + dv + "'></div>" +
+        "<div class='ctlrow'><span>Play on</span><select id='fo-chal-d'>" + dayOpts.join("") + "</select>" +
+        "<span>at</span><select id='fo-chal-h'>" + hrOpts.join("") + "</select><b>:</b><select id='fo-chal-m'>" + mnOpts + "</select></div>" +
         "<div style='display:flex;gap:8px;margin-top:12px'><button class='fo-yc-sign' id='fo-chal-go'>Send challenge</button><button class='mini' id='fo-chal-x'>Cancel</button></div></div>";
       document.body.appendChild(m);
       m.querySelector("#fo-chal-x").addEventListener("click", function () { m.remove(); });
       m.querySelector("#fo-chal-go").addEventListener("click", function () {
-        var t = new Date(m.querySelector("#fo-chal-t").value);
-        if (!(t > new Date())) { say("Pick a time in the future."); return; }
+        var t = new Date(today0);
+        t.setDate(t.getDate() + (+m.querySelector("#fo-chal-d").value || 0));
+        t.setHours(+m.querySelector("#fo-chal-h").value || 0, +m.querySelector("#fo-chal-m").value || 0, 0, 0);
+        if (t - Date.now() < 75 * 60000) { say("Pick a time at least 75 minutes ahead - the engine banks the match early so it starts exactly on schedule."); return; }
         rpc("challenge_create", {
           p_league_id: LG.id, p_club: userTeam().name, p_opponent: opp.name,
           p_pitch: m.querySelector("#fo-chal-p").value || "balanced",
           p_weather: m.querySelector("#fo-chal-w").value || "Sunny", p_play_at: t.toISOString()
-        }).then(function () { m.remove(); toast("Challenge sent to " + opp.name + ". You'll see their answer on your club page."); })
-          .catch(function (e) {
+        }).then(function (newId) {
+          m.remove();
+          toast("Challenge sent to " + opp.name + " for " + t.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " " + pad(t.getHours()) + ":" + pad(t.getMinutes()) + ". You'll hear their answer in the bell.");
+          // best effort: attach my current saved lineup right away, so the
+          // match has a real XI even if I never come back to it
+          try { if (App.orders && App.orders.saved && newId) rpc("challenge_set_orders", { p_id: newId, p_club: userTeam().name, p_orders: App.orders }).catch(function () {}); } catch (eAt) {}
+        }).catch(function (e) {
             var s = ((e && e.message) || e) + "";
             if (/Could not find the function/i.test(s)) say("Challenges need the 0017 SQL run in Supabase (ask your commissioner).");
             else say(e);
@@ -3267,6 +3289,7 @@
       if (!(LG && SYNC && SYNC.started && App.orders && App.orders.saved)) return;
       if (SYNC.planRound == null) return;
       foPushRound(SYNC.planRound, App.orders);
+      toast("\u2713 Orders are in for Round " + (SYNC.planRound + 1) + " \u00b7 it plays " + foDailyDate(SYNC.planRound, { weekday: "short", day: "numeric", month: "short" }) + " at 9:00 AM ET.");
       // Don't let the current-round auto-push (pollOnce) resubmit these future-round
       // orders for the current round · mark the signature as already handled.
       try { SYNC.lastOrderSig = JSON.stringify(App.orders) + "|" + (App.season ? App.season.round : 0); } catch (e) {}
@@ -3430,15 +3453,26 @@
   if (typeof window.startPendingIfNeeded === "function") {
     var _spin = window.startPendingIfNeeded;
     window.startPendingIfNeeded = function () {
+      try { if (App && App.pending && App.pending.__chal) return; } catch (e) {}   // challenge friendlies play on the server, never locally
       try { if (SYNC && SYNC.started && !SYNC.practice && App && App.pending && App.pending.comp === "league" && !(typeof M !== "undefined" && M && !M.done)) return; } catch (e) {}
       return _spin.apply(this, arguments);
     };
   }
   function foOnHash() {
     try {
+      // Saving orders for a challenge friendly: attach the lineup to the
+      // challenge and land back on Matches with a spelled-out confirmation.
+      if (foHashPath() === "#/match" && App && App.pending && App.pending.__chal) {
+        var chP = App.pending.__chal;
+        App.pending = null;
+        if (App.orders && App.orders.saved) foChalAttach(chP);
+        location.hash = "#/matches"; foOnHash._last = "#/matches"; return;
+      }
+      // abandoned the challenge lineup: drop the fake fixture again
+      if (foHashPath() !== "#/orders" && foHashPath() !== "#/match" && App && App.pending && App.pending.__chal) App.pending = null;
       // League games have no live viewer: bounce #/match back to the fixtures list.
       if (foHashPath() === "#/match" && foLeaguePendingOnly()) {
-        if (App.orders && App.orders.saved) say("Orders saved · your match plays at 9:00 AM ET. Lineups lock an hour before the start.");
+        if (App.orders && App.orders.saved) say("Orders are in · your match plays " + (typeof foDailyDate === "function" && App.season ? foDailyDate(App.season.round, { weekday: "short", day: "numeric", month: "short" }) : "") + " at 9:00 AM ET. Lineups lock an hour before the start.");
         location.hash = "#/matches"; foOnHash._last = "#/matches"; return;
       }
       // Saving league orders must never dump the manager into a running
@@ -3446,7 +3480,7 @@
       // and the live-friendly exception above would let it through.
       if (foHashPath() === "#/match" && (foOnHash._last || "").indexOf("#/orders") === 0 &&
           SYNC && SYNC.started && !SYNC.practice && App && App.pending && App.pending.comp === "league") {
-        toast("Orders saved · your league match plays at 9:00 AM ET (lineups lock an hour before). Your friendly is under Live Match.");
+        toast("Orders are in · your league match plays " + (App.season ? foDailyDate(App.season.round, { weekday: "short", day: "numeric", month: "short" }) + " " : "") + "at 9:00 AM ET (lineups lock an hour before). Your friendly is under Live Match.");
         location.hash = "#/matches"; foOnHash._last = "#/matches"; return;
       }
       foOnHash._last = location.hash || "";
@@ -6577,25 +6611,57 @@
   window.addEventListener("hashchange", function () { setTimeout(foRenderMatchday, 15); });
 
   // ---- prepare a lineup for an accepted challenge: one clear path ----
+  function foChalWhen(ch) {
+    if (!ch || !ch.play_at) return "";
+    var t = new Date(ch.play_at), pad = function (n) { return (n < 10 ? "0" : "") + n; };
+    return t.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " " + pad(t.getHours()) + ":" + pad(t.getMinutes());
+  }
+  function foChalAttach(ch, done) {
+    rpc("challenge_set_orders", { p_id: ch.id, p_club: userTeam().name, p_orders: App.orders })
+      .then(function () {
+        toast("✓ Lineup attached · friendly vs " + (ch.challenger_club === userTeam().name ? ch.opponent_club : ch.challenger_club) + " begins " + foChalWhen(ch) + ".");
+        if (done) done(true);
+      }).catch(function (e) {
+        var s = ((e && e.message) || e) + "";
+        if (/already played/i.test(s)) say("The engine has already prepared this match, so the lineup can no longer change. It kicks off " + foChalWhen(ch) + ".");
+        else say(e);
+        if (done) done(false);
+      });
+  }
   function foChalPrep(ch) {
     try {
       var me = userTeam().name;
       var vs = ch.challenger_club === me ? ch.opponent_club : ch.challenger_club;
-      var when = ch.play_at ? new Date(ch.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+      var when = foChalWhen(ch);
       var ex = document.getElementById("fo-chprep"); if (ex) ex.remove();
       var m = document.createElement("div"); m.id = "fo-chprep"; m.className = "fo-modal";
       m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>Friendly</div><h3>vs " + E(vs) + "</h3>" +
-        "<div class='small' style='margin:4px 0 10px'>" + foPitchName(ch.pitch) + " pitch &middot; " + E(ch.weather || "") + (when ? " &middot; " + when : "") + "</div>" +
-        "<div class='small' style='margin:0 0 12px'>The match kicks off on schedule and plays out ball by ball for an hour, live for both managers. <b>1.</b> Set and save a lineup on the Orders screen. <b>2.</b> Come back and attach it - <b>at least an hour before the start</b>, because the engine prepares the match early. If you attach nothing, an automatic XI plays.</div>" +
-        "<div class='fo-modal-act'><button class='primary' id='fo-chprep-ord'>Open Orders</button><button id='fo-chprep-att'>Attach my saved lineup</button><button class='fo-su-cancel' id='fo-chprep-x'>Close</button></div></div>";
+        "<div class='small' style='margin:4px 0 10px'>" + foPitchName(ch.pitch) + " pitch &middot; " + E(ch.weather || "") + (when ? " &middot; kicks off " + when : "") + "</div>" +
+        "<div class='small' style='margin:0 0 12px'>The match kicks off on schedule and plays out ball by ball for an hour, live for both managers. Open Orders, set your XI and hit <b>Save orders</b> - it attaches to this friendly automatically. Attach early: the engine prepares the match ahead of the start, and a lineup that arrives after that is missed (an automatic XI plays instead).</div>" +
+        "<div class='fo-modal-act'><button class='primary' id='fo-chprep-ord'>Set lineup in Orders</button><button id='fo-chprep-att'>Attach my saved lineup</button><button class='fo-su-cancel' id='fo-chprep-x'>Close</button></div></div>";
       document.body.appendChild(m);
       m.addEventListener("click", function (e2) { if (e2.target === m) m.remove(); });
       m.querySelector("#fo-chprep-x").addEventListener("click", function () { m.remove(); });
-      m.querySelector("#fo-chprep-ord").addEventListener("click", function () { m.remove(); location.hash = "#/orders"; if (typeof window.route === "function") window.route(); });
+      m.querySelector("#fo-chprep-ord").addEventListener("click", function () {
+        m.remove();
+        // give the Orders page the real fixture (crumb, ground, pitch,
+        // weather) and let the save intercept attach the lineup
+        try {
+          var home = ch.challenger_club, homeT = null;
+          (GD.teams || []).forEach(function (t2) { if (t2.name === home) homeT = t2; });
+          App.pending = {
+            home: home, away: ch.opponent_club,
+            ground: (homeT && homeT.ground) || userTeam().ground,
+            pitch: ch.pitch || "balanced", weather: ch.weather || "Sunny",
+            seed: "-", date: foChalWhen(ch), comp: "friendly", __chal: ch
+          };
+          App.orders.saved = false;
+        } catch (eP) {}
+        location.hash = "#/orders"; if (typeof window.route === "function") window.route();
+      });
       m.querySelector("#fo-chprep-att").addEventListener("click", function () {
         if (!(App.orders && App.orders.saved)) { say("Save a lineup on the Orders screen first, then attach it here."); return; }
-        rpc("challenge_set_orders", { p_id: ch.id, p_club: userTeam().name, p_orders: App.orders })
-          .then(function () { m.remove(); toast("Lineup attached to the friendly."); }).catch(say);
+        foChalAttach(ch, function (ok) { if (ok) m.remove(); });
       });
     } catch (e) {}
   }
@@ -6650,9 +6716,28 @@
       pn = document.createElement("div"); pn.id = "fo-bell-panel";
       pn.innerHTML = "<div class='fo-bell-h'>Notifications</div>" +
         (FO_BELL.events.length ? FO_BELL.events.map(function (e2, i) {
-          return "<div class='fo-bell-row' data-i='" + i + "'>" + E(e2.t) + "</div>";
+          var act = (e2.ch && e2.ch.status === "pending" && /:pending$/.test(e2.k))
+            ? "<div class='fo-bell-act'><button class='mini fo-bell-acc' data-i='" + i + "'>Accept</button><button class='mini fo-bell-dec' data-i='" + i + "'>Decline</button></div>" : "";
+          return "<div class='fo-bell-row' data-i='" + i + "'>" + E(e2.t) + act + "</div>";
         }).join("") : "<div class='fo-bell-row small'>Nothing yet. Friendly challenges and their results land here.</div>");
       document.body.appendChild(pn);
+      // answer a challenge straight from the notification
+      pn.querySelectorAll(".fo-bell-acc,.fo-bell-dec").forEach(function (b2) {
+        b2.addEventListener("click", function (evB) {
+          evB.stopPropagation();
+          var e2 = FO_BELL.events[+b2.getAttribute("data-i")]; if (!e2 || !e2.ch) return;
+          var acc = b2.classList.contains("fo-bell-acc");
+          rpc("challenge_respond", { p_id: e2.ch.id, p_accept: acc }).then(function () {
+            pn.remove();
+            if (acc) {
+              toast("Challenge accepted \u00b7 kicks off " + foChalWhen(e2.ch) + ". Set your lineup from the Matches page.");
+              try { if (App.orders && App.orders.saved) rpc("challenge_set_orders", { p_id: e2.ch.id, p_club: userTeam().name, p_orders: App.orders }).catch(function () {}); } catch (eAt) {}
+            } else toast("Challenge declined.");
+            window.__foFrSig = null; window.__foFrFetchAt = 0;
+            setTimeout(foBellPoll, 400);
+          }).catch(say);
+        });
+      });
       // opening marks everything read
       var seen = {}; try { seen = JSON.parse(lsGet(foBellSeenKey()) || "{}"); } catch (e) {}
       FO_BELL.events.forEach(function (e2) { seen[e2.k] = 1; });
@@ -6906,7 +6991,10 @@
           else if ((c.status === "accepted" || c.status === "played") && fst.phase === "live")
             act = "<a class='fo-frs-live' href='#/friendly?id=" + c.id + "'><span class='live-dot'></span> LIVE &middot; " + foFrLiveLine(c, fst.p) + " &middot; watch &rsaquo;</a>";
           else if (c.status === "accepted" && fst.phase === "done") act = "<span class='small'>delayed &middot; waiting on the league engine</span>";
-          else if (c.status === "accepted") act = "<span class='fo-frs-on'>ON</span> <button class='mini fo-ch-ord' data-id='" + c.id + "'>Prepare lineup</button>";
+          else if (c.status === "accepted") {
+            var hasOrd = false; try { hasOrd = !!(c.orders && c.orders[me]); } catch (eO) {}
+            act = "<span class='fo-frs-on'>ON</span> <button class='mini fo-ch-ord' data-id='" + c.id + "'>" + (hasOrd ? "Edit lineup" : "Prepare lineup") + "</button>" + (hasOrd ? " <span class='small' style='color:#15803D'>&#10003; lineup attached</span>" : "");
+          }
           else if (c.status === "declined") act = "<span class='small'>declined</span>";
           else if (c.status === "expired") act = "<span class='small'>expired</span>";
           else if (c.status === "played" && c.result && fst.phase !== "live") {
@@ -6944,7 +7032,14 @@
       pnl.querySelectorAll(".fo-ch-acc,.fo-ch-dec").forEach(function (b2) {
         b2.addEventListener("click", function () {
           rpc("challenge_respond", { p_id: b2.getAttribute("data-id"), p_accept: b2.classList.contains("fo-ch-acc") })
-            .then(function () { toast(b2.classList.contains("fo-ch-acc") ? "Challenge accepted \u00b7 attach your lineup any time before the match." : "Challenge declined."); window.__foFrSig = null; window.__foFrFetchAt = 0; foFriendliesPanel(); })
+            .then(function () {
+              if (b2.classList.contains("fo-ch-acc")) {
+                var cA = (window.__foFrRows || []).filter(function (x) { return String(x.id) === b2.getAttribute("data-id"); })[0];
+                toast("Challenge accepted" + (cA ? " \u00b7 kicks off " + foChalWhen(cA) : "") + ".");
+                try { if (App.orders && App.orders.saved && cA) rpc("challenge_set_orders", { p_id: cA.id, p_club: userTeam().name, p_orders: App.orders }).catch(function () {}); } catch (eAt) {}
+              } else toast("Challenge declined.");
+              window.__foFrSig = null; window.__foFrFetchAt = 0; foFriendliesPanel();
+            })
             .catch(say);
         });
       });
@@ -10605,14 +10700,26 @@
     // live pill in the nav: pinned first, added the moment a broadcast is on
     function foBcastPill() {
       var em = foEmbargo();
+      // a live challenge friendly lights the pill too
+      var frLive = null;
+      try {
+        (((typeof FO_BELL !== "undefined" && FO_BELL.rows && FO_BELL.rows.length) ? FO_BELL.rows : window.__foFrRows) || []).forEach(function (c) {
+          if (frLive || !c) return;
+          if ((c.status === "accepted" || c.status === "played") && typeof foFrBcastState === "function" && foFrBcastState(c).phase === "live") frLive = c;
+        });
+      } catch (eF) {}
+      var go = em.active ? "#/matchday" : (frLive ? "#/friendly?id=" + frLive.id : null);
       var tb = document.getElementById("topbar");
       var wrap = tb && tb.querySelector(".fo-nav-scroll");
       var pill = wrap && wrap.querySelector("a.fo-bcast");
-      if (em.active && wrap && !pill) {
+      if (go && wrap && !pill) {
         var a = document.createElement("a"); a.className = "fo-bcast"; a.innerHTML = "&#128308; Live";
-        a.href = "#"; a.addEventListener("click", function (ev) { ev.preventDefault(); location.hash = "#/matchday"; if (typeof window.route === "function") window.route(); });
+        a.href = "#";
+        a.addEventListener("click", function (ev) { ev.preventDefault(); location.hash = a.getAttribute("data-go") || "#/matchday"; if (typeof window.route === "function") window.route(); });
         wrap.insertBefore(a, wrap.firstChild);
-      } else if (!em.active && pill) pill.remove();
+        pill = a;
+      } else if (!go && pill) pill.remove();
+      if (pill && go) pill.setAttribute("data-go", go);
       return em;
     }
     setTimeout(function () { try { foBcastPill(); } catch (e) {} }, 700);

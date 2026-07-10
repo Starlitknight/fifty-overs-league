@@ -24,15 +24,22 @@ function tzDateHour(d) {
   return { date: `${p.year}-${p.month}-${p.day}`, hour: parseInt(p.hour, 10), minute: parseInt(p.minute, 10) };
 }
 
-// Play accepted human-vs-human challenge friendlies. Matches are resolved up
-// to ~70 minutes EARLY (deterministic seed from play_at) so the result is
-// banked before kickoff; the client then broadcasts it ball by ball from
-// play_at, exactly like a league matchday. Lineups attached later than the
-// early resolve are missed, so managers are told to attach an hour ahead.
+// Play accepted human-vs-human challenge friendlies. Matches are resolved
+// EARLY (deterministic seed from play_at) so the result is banked before
+// kickoff; the client then broadcasts it ball by ball from play_at, exactly
+// like a league matchday. The bank window is wide (4h) because the cron
+// schedule lands unevenly - and any challenge already banked whose kickoff
+// is still 15+ minutes away is re-resolved each pass, so a lineup attached
+// after the first bank still makes the match (needs migration 0019).
+const CH_BANK_MIN = 240, CH_REBANK_CUTOFF_MIN = 15;
 async function playChallenges(page) {
   let due = [];
   try {
-    due = await rest(`league_challenges?status=eq.accepted&result=is.null&play_at=lte.${encodeURIComponent(new Date(Date.now() + 70 * 60000).toISOString())}&select=*`);
+    const horizon = encodeURIComponent(new Date(Date.now() + CH_BANK_MIN * 60000).toISOString());
+    due = await rest(`league_challenges?status=eq.accepted&result=is.null&play_at=lte.${horizon}&select=*`);
+    const cutoff = encodeURIComponent(new Date(Date.now() + CH_REBANK_CUTOFF_MIN * 60000).toISOString());
+    const rebank = await rest(`league_challenges?status=eq.played&play_at=gt.${cutoff}&select=*`);
+    due = due.concat(rebank || []);
   } catch (e) { return; }   // table absent until 0017 is run
   for (const ch of due) {
     try {
