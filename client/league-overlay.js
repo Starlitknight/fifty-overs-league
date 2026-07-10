@@ -6694,11 +6694,12 @@
           var upto = Math.max(2, Math.floor(st.p * log.length));
           var vis = log.slice(0, upto).reverse();
           var mins = Math.max(1, Math.round((st.endsAt - Date.now()) / 60000));
+          var over0 = upto >= log.length ? "<div class='fo-c-mile'><div class='text'>That is the last ball - the umpires check the paperwork. The official result lands at stumps.</div><div class='clear'></div></div>" : "";
           page.innerHTML = head +
             "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE &middot; stumps in ~" + mins + " min</div>" +
             "<div class='fo-live-score'>" + foFrLiveLine(c, st.p) + "</div>" +
             "<div class='fo-live-sub'>Friendly &middot; " + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + " &middot; the result arrives at stumps</div></div>" +
-            "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'><div id='ftpcomm' class='ftpskin'>" +
+            "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'><div id='ftpcomm' class='ftpskin'>" + over0 +
             (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, "all", 200) : "") + "</div></div></div>";
           return;
         }
@@ -6708,6 +6709,7 @@
           "<div class='fo-live-score'>" + E(r.result_text || "Played") + "</div>" +
           "<div class='fo-live-sub'>" + (r.mom ? "Star of the match: " + E(r.mom) + " &middot; " : "") + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + "</div></div>" +
           (log.length ? "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'><div id='ftpcomm' class='ftpskin'>" +
+            "<div class='fo-c-mile'><div class='text'>FULL TIME - " + E(r.result_text || "match complete") + ". That is the final ball of the match.</div><div class='clear'></div></div>" +
             (typeof ftpCommHTML === "function" ? ftpCommHTML(log.slice().reverse(), "all", 5000) : "") + "</div></div></div>" : "");
       }).catch(function () {});
     } catch (e) {}
