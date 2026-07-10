@@ -9419,7 +9419,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-0405-9a594b";
+  var FO_BUILD = "20260710-0410-dc48bc";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -15197,7 +15197,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-an-cap{font-size:12px;color:#8a8474;margin:2px 0 10px;font-style:italic}" +
       ".fo-ph{margin-top:10px}.fo-ph .small{color:#8a8474}" +
       ".fo-an-leg span{background:#f6f4ee;border:1px solid #e8e3d6;border-radius:999px;padding:4px 12px;font-weight:600}" +
-      "@media(max-width:640px){.fo-sct td,.fo-sct th{padding:6px 6px}.fo-sci-dis{font-size:10.5px}.fo-psh-row{font-size:11px}}";
+      "@media(max-width:640px){.fo-sct td,.fo-sct th{padding:6px 6px}.fo-sci-dis{font-size:10.5px}.fo-psh-row{font-size:11px}}" +
+      // scorecard sub-tabs: one scrolling row of pills, matching the app nav
+      "html body .fo-sctabs{display:flex;flex-wrap:nowrap;gap:7px;margin:12px 0 12px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}" +
+      "html body .fo-sctabs::-webkit-scrollbar{display:none}" +
+      "html body #page .fo-sctab{flex:0 0 auto;font-size:13px !important;font-weight:600;padding:9px 16px !important;border:1px solid #e2ddd0 !important;background:#fff !important;color:#3c4658 !important;border-radius:999px !important;cursor:pointer;white-space:nowrap;line-height:1.1;transition:border-color .12s ease;box-shadow:none !important}" +
+      "html body #page .fo-sctab:hover{border-color:#c9c2b2 !important}" +
+      "html body #page .fo-sctab.on{background:#C0562F !important;border-color:#C0562F !important;color:#fff !important;font-weight:800;box-shadow:0 3px 10px rgba(192,86,47,.28) !important}" +
+      "html body .fo-sctabs + .ftpskin{border-top:none;padding-top:0}";
     document.head.appendChild(cs);
   })(); } catch (e) { console.warn("scorecard+fantasy", e); }
 
