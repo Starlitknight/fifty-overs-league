@@ -12,10 +12,16 @@ import { assertEnv, rpc, rest } from './sbrest.mjs';
 const MATCH_HOUR = 9;
 const MATCH_TZ = 'America/New_York';
 
+// Rounds BANK up to an hour early (like challenge friendlies) so the 9:00
+// broadcast starts on time even when the cron schedule lands unevenly; the
+// client embargoes every spoiler until 9:00 AM. Orders therefore lock at
+// ~8:00 New York, not 9:00.
+const BANK_EARLY_MIN = 60;
+
 function tzDateHour(d) {
-  const f = new Intl.DateTimeFormat('en-CA', { timeZone: MATCH_TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false });
+  const f = new Intl.DateTimeFormat('en-CA', { timeZone: MATCH_TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
   const p = Object.fromEntries(f.formatToParts(d).map((x) => [x.type, x.value]));
-  return { date: `${p.year}-${p.month}-${p.day}`, hour: parseInt(p.hour, 10) };
+  return { date: `${p.year}-${p.month}-${p.day}`, hour: parseInt(p.hour, 10), minute: parseInt(p.minute, 10) };
 }
 
 // Play accepted human-vs-human challenge friendlies. Matches are resolved up
@@ -73,7 +79,7 @@ async function advanceOne(page, st) {
   // get a two-hour grace so a freshly started season still has time for orders.
   const now = tzDateHour(new Date());
   const last = tzDateHour(new Date(st.updated_at));
-  if (now.hour < MATCH_HOUR) { console.log(lid, `before ${MATCH_HOUR}:00 ${MATCH_TZ}`); return; }
+  if (now.hour * 60 + now.minute < MATCH_HOUR * 60 - BANK_EARLY_MIN) { console.log(lid, `before ${MATCH_HOUR - 1}:00 ${MATCH_TZ} (rounds bank from an hour ahead of the ${MATCH_HOUR}:00 start)`); return; }
   const advDate = snap && snap.__foAdvDate ? String(snap.__foAdvDate) : null;
   const blocked = advDate
     ? advDate >= now.date

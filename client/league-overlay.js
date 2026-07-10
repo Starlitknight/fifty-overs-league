@@ -2027,10 +2027,19 @@
   // Open a rival club's page (in the game, not a dark modal): a hero banner with
   // position + form, recent results, upcoming fixtures, and a sortable Players tab
   // · with a Challenge button. Reached by clicking a club name in any table.
-  // One round a day, anchored so the CURRENT round is today.
+  // One round a day at 9:00 AM New York. Once the resolver has advanced
+  // today's round (snapshot stamp), the CURRENT round plays TOMORROW - so a
+  // round played this morning keeps today's date instead of yesterday's.
+  function foCurAdvanced() {
+    try {
+      var adv = window.__foAdvDate; if (!adv) return false;
+      var f = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
+      return String(adv) >= f.format(new Date());
+    } catch (e) { return false; }
+  }
   function foDailyDate(r, opts) {
     var curR = (typeof App !== "undefined" && App.season) ? App.season.round : 0;
-    var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + (r - curR));
+    var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + (r - curR) + (foCurAdvanced() ? 1 : 0));
     return d.toLocaleDateString("en-GB", opts || { day: "2-digit", month: "short" });
   }
   var foScoutIx = null, foScoutTab = "overview", foScoutSort = "rating";
@@ -2481,11 +2490,8 @@
     try {
       // the engine dates rounds weekly (solo roots); this league is daily –
       // rewrite every printed round date anchored to TODAY's current round
-      var curR = (typeof App !== "undefined" && App.season) ? App.season.round : 0;
       var dailyDate = function (roundIx) {
-        var d = new Date(); d.setHours(0, 0, 0, 0);
-        d.setDate(d.getDate() + (roundIx - curR));
-        return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+        return foDailyDate(roundIx, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
       };
       document.querySelectorAll("#page td[colspan]").forEach(function (td) {
         var m = (td.textContent || "").match(/Round\s+(\d+)\s+·/);
@@ -2728,16 +2734,39 @@
   function foFrHistKey() { return "fol_frhist_" + (LG ? LG.id : "solo"); }
   var FO_BALL_MS = 6000;   // 6s a ball: ~30 min an innings, an hour a match
   function foFrHist() { try { return JSON.parse(lsGet(foFrHistKey()) || "[]"); } catch (e) { return []; } }
+  // compact scorecard (the same shape the resolver banks for challenge
+  // friendlies) so a practice result stays viewable after league snapshots
+  // replace App.results
+  function foInnCard(inn) {
+    if (!inn) return null;
+    return {
+      batTeam: inn.batTeam, bowlTeam: inn.bowlTeam,
+      runs: inn.runs, wkts: inn.wkts, legal: inn.legal,
+      overs: Math.floor(inn.legal / 6) + "." + (inn.legal % 6),
+      extras: inn.extras,
+      captBatName: inn.captBatName, captBowlName: inn.captBowlName,
+      batting: (inn.bat || []).map(function (b) {
+        return { name: b.p.name, r: b.r, b: b.b, f4: b.f4, f6: b.f6, out: b.out || "not out", sr: (b.b ? +(100 * b.r / b.b).toFixed(2) : 0) };
+      }),
+      bowling: Object.keys(inn.bowlers || {}).map(function (k) {
+        var r = inn.bowlers[k];
+        return { name: r.p.name, overs: Math.floor(r.b / 6) + "." + (r.b % 6), balls: r.b, r: r.r, w: r.w, econ: (r.b ? +(r.r / (r.b / 6)).toFixed(2) : 0) };
+      })
+    };
+  }
   function foSaveFrHist(m) {
     try {
       var i1 = m.innings[0], i2 = m.innings[1];
       var h = foFrHist();
       var savedIx = null;
       try { (App.results || []).forEach(function (r0) { if (r0.comp === "friendly" && r0.result && r0.result.text === ((m.result && m.result.text) || "")) savedIx = r0.ix; }); } catch (eSx) {}
+      var card = null;
+      try { card = { scorecard: (m.innings || []).map(foInnCard), worm: m.worm || null }; } catch (eC) {}
       h.unshift({
         at: Date.now(), opp: (m.meta && m.meta.away) || "", ground: (m.meta && m.meta.ground) || "",
         pitch: (m.meta && m.meta.pitch) || "", wx: (m.meta && m.meta.weather) || "", ix: savedIx,
         txt: (m.result && m.result.text) || "", mom: (m.result && m.result.mom) || "",
+        card: card,
         s1: i1 ? i1.batTeam + " " + i1.runs + "/" + i1.wkts : "", s2: i2 ? i2.batTeam + " " + i2.runs + "/" + i2.wkts : ""
       });
       lsSet(foFrHistKey(), JSON.stringify(h.slice(0, 20)));
@@ -3287,7 +3316,7 @@
     }).join("");
     var more = (limit && fx.length > limit) ? "<div class='small' style='margin-top:6px'><a href='#/matches'>See all " + fx.length + " fixtures →</a></div>" : "";
     return "<div class='panel fo-planner'><h4>Your upcoming matches</h4><div class='pad'>" +
-      "<div class='small' style='margin-bottom:6px'>League matches play automatically at <b>9:00 AM ET</b>. Set a lineup ahead of time (blank ones auto-select), or play a friendly any time.</div>" +
+      "<div class='small' style='margin-bottom:6px'>League matches play automatically at <b>9:00 AM ET</b> and lineups lock an hour before the start. Set a lineup ahead of time (blank ones auto-select), or play a friendly any time.</div>" +
       frRows + rows + more + "</div></div>";
   }
   function foWirePlanner(root) {
@@ -3409,7 +3438,7 @@
     try {
       // League games have no live viewer: bounce #/match back to the fixtures list.
       if (foHashPath() === "#/match" && foLeaguePendingOnly()) {
-        if (App.orders && App.orders.saved) say("Orders saved · your match resolves at 9:00 AM ET.");
+        if (App.orders && App.orders.saved) say("Orders saved · your match plays at 9:00 AM ET. Lineups lock an hour before the start.");
         location.hash = "#/matches"; foOnHash._last = "#/matches"; return;
       }
       // Saving league orders must never dump the manager into a running
@@ -3417,7 +3446,7 @@
       // and the live-friendly exception above would let it through.
       if (foHashPath() === "#/match" && (foOnHash._last || "").indexOf("#/orders") === 0 &&
           SYNC && SYNC.started && !SYNC.practice && App && App.pending && App.pending.comp === "league") {
-        toast("Orders saved · your league match resolves at 9:00 AM ET. Your friendly is under Live Match.");
+        toast("Orders saved · your league match plays at 9:00 AM ET (lineups lock an hour before). Your friendly is under Live Match.");
         location.hash = "#/matches"; foOnHash._last = "#/matches"; return;
       }
       foOnHash._last = location.hash || "";
@@ -3740,6 +3769,9 @@
     try {
       var prevRound = (window.App && App.season && typeof App.season.round === "number") ? App.season.round : -1;
       var myOrders = (window.App && App.orders) ? App.orders : null;
+      // the resolver stamps each advance with its New York date - the client
+      // uses it to date rounds truthfully and to anchor the 9 AM broadcast
+      try { if (snap && snap.__foAdvDate) window.__foAdvDate = String(snap.__foAdvDate); } catch (eAdv) {}
       if (typeof window.restoreFrom === "function") window.restoreFrom(snap);
       foRepairBowlerBatting();
       foUniqueNames();
@@ -5620,10 +5652,7 @@
       var _foRD = fo55RoundDate;
       fo55RoundDate = function (roundNo) {
         try {
-          var cur = (typeof App !== "undefined" && App.season) ? App.season.round : 0;
-          var d = new Date(); d.setHours(0, 0, 0, 0);
-          d.setDate(d.getDate() + (roundNo - cur));
-          return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+          return foDailyDate(roundNo, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
         } catch (e) { return _foRD(roundNo); }
       };
       window.fo55RoundDate = fo55RoundDate;
@@ -6204,7 +6233,7 @@
       ["day", "A matchday, hour by hour", [
         "<p>One round plays every day. Here is its full rhythm:</p>",
         "<table><tr><th>When</th><th>What happens</th></tr>" +
-        "<tr><td><b>Before " + MATCH_TIME + "</b></td><td>Orders are open. Set your XI, batting order, bowling plan and per-phase intent on the next fixture; adjust training programs; browse the market. The fixture page shows the pitch and the forecast before you commit.</td></tr>" +
+        "<tr><td><b>Before " + MATCH_TIME + "</b></td><td>Orders are open. Set your XI, batting order, bowling plan and per-phase intent on the next fixture; adjust training programs; browse the market. The fixture page shows the pitch and the forecast before you commit. <b>Lineups lock about an hour before the start</b>, while the engine warms up the round.</td></tr>" +
         "<tr><td><b>" + MATCH_TIME + "</b></td><td>Every fixture in the round is played at once, ball by ball, using exactly what each manager submitted.</td></tr>" +
         "<tr><td><b>The broadcast hour</b></td><td>For the next <b>60 minutes</b> the round is on air. A red <b>&#9679; Live</b> pill appears in the nav, the Matchday page becomes a live board, and each match&rsquo;s commentary plays out slowly in real time. Results, final scorecards and the league table stay under embargo until stumps, so nobody - including you - knows a result before the innings actually reach it.</td></tr>" +
         "<tr><td><b>Full time</b></td><td>Everything unlocks at once: final scorecards with charts and fantasy points, the player of the match, the updated table, your training report with every improvement named, the day&rsquo;s ledger, and the beat writer&rsquo;s morning digest.</td></tr></table>",
@@ -6757,6 +6786,20 @@
         if (!page.querySelector("#fo-fr-live")) page.innerHTML = cache.html;
         if (cache.done) return;
       }
+      // hist-<ts>: a locally saved practice game - no server round trip
+      if (mh[1].indexOf("hist-") === 0) {
+        var hk = mh[1].slice(5), he = null;
+        (foFrHist() || []).forEach(function (e2) { if (String(e2.at) === hk) he = e2; });
+        if (!he) { page.innerHTML = "<div class='crumb'>Practice game</div><div class='panel'><div class='pad small'>That practice game is no longer stored on this device.</div></div>"; return; }
+        var meN = ""; try { meN = userTeam().name; } catch (eN) {}
+        foFrDoneRender({
+          challenger_club: meN, opponent_club: he.opp,
+          pitch: he.pitch || "", weather: he.wx || he.ground || "",
+          play_at: new Date(he.at).toISOString(),
+          result: { result_text: he.txt, mom: he.mom, scorecard: (he.card && he.card.scorecard) || [], worm: he.card && he.card.worm }
+        }, mh[1]);
+        return;
+      }
       if (!page.querySelector("#fo-fr-live")) page.innerHTML = "<div id='fo-fr-live'><div class='crumb'>Friendly &raquo; Live</div><div class='panel'><div class='pad small'>Tuning in&hellip;</div></div></div>";
       sel("league_challenges", "id=eq." + mh[1] + "&select=*").then(function (rows) {
         var c = rows && rows[0]; if (!c) { page.innerHTML = "<div class='panel'><div class='pad small'>That friendly is gone.</div></div>"; return; }
@@ -6822,7 +6865,6 @@
     try {
       if (App.page !== "matches") return;
       var page = document.getElementById("page"); if (!page) return;
-      var old = page.querySelector("#fo-frs"); if (old) old.remove();
       var legacy = page.querySelector("#fo-frhist"); if (legacy) legacy.remove();
       var t = userTeam(); var me = t.name;
       var mp = !!(SYNC && SYNC.started && !SYNC.practice && LG);
@@ -6834,9 +6876,16 @@
       try {
         (foFrHist() || []).forEach(function (e2) {
           var ts = +new Date(e2.at) || 0;
-          var ix = e2.ix;
-          if (ix == null) try { (App.results || []).forEach(function (r0) { if (r0.comp === "friendly" && r0.result && r0.result.text === e2.txt && (r0.away === e2.opp || r0.home === e2.opp)) ix = r0.ix; }); } catch (eIx) {}
-          var res = ix != null ? "<a href='#/scorecard?i=" + ix + "'>" + E(e2.txt) + "</a>" : E(e2.txt);
+          var res;
+          if (e2.card && e2.card.scorecard) {
+            // the stored card outlives App.results (league snapshots replace it)
+            res = "<a href='#/friendly?id=hist-" + e2.at + "'>" + E(e2.txt) + "</a>";
+          } else {
+            // older entries: link only while the engine still holds the result
+            var ix = null;
+            try { (App.results || []).forEach(function (r0, i0) { if (r0.comp === "friendly" && r0.result && r0.result.text === e2.txt && (r0.away === e2.opp || r0.home === e2.opp)) ix = (r0.ix != null ? r0.ix : i0); }); } catch (eIx) {}
+            res = ix != null ? "<a href='#/scorecard?i=" + ix + "'>" + E(e2.txt) + "</a>" : E(e2.txt);
+          }
           var cond = (e2.pitch || e2.wx) ? " <span class='small'>" + foPitchName(e2.pitch || "") + (e2.wx ? ", " + E(e2.wx) : "") + "</span>" : (e2.ground ? " <span class='small'>" + E(e2.ground) + "</span>" : "");
           entries.push({ ts: ts, html: "<tr><td>" + new Date(e2.at).toLocaleDateString([], { month: "short", day: "numeric" }) + "</td><td>Practice</td><td>vs " + E(e2.opp) + cond + "</td><td>" + res + "</td></tr>" });
         });
@@ -6869,22 +6918,33 @@
         lsSet(seenK, JSON.stringify(seen));
       }
       entries.sort(function (a2, b2) { return a2.ts - b2.ts; });
-      var pnl = document.createElement("div");
-      pnl.className = "panel fo-keep"; pnl.id = "fo-frs";
-      pnl.innerHTML = "<h4>Friendlies <span class='small' style='font-weight:400'>&middot; no points, no fatigue, all pride</span></h4><div class='pad'>" +
+      // IDEMPOTENT render: this runs from the page MutationObserver, so a
+      // remove+recreate here re-triggers the observer forever and the panel
+      // churns ~20x/sec - real clicks then land on a node that no longer
+      // exists by mouseup and simply die. Only touch the DOM when the
+      // rendered HTML actually changed.
+      var inner = "<h4>Friendlies <span class='small' style='font-weight:400'>&middot; no points, no fatigue, all pride</span></h4><div class='pad'>" +
         "<div class='fo-frs-bar'><button class='primary' id='fo-frs-new'>New practice game</button><span class='small'>Challenge a friend&rsquo;s club from their scout report; challenges and results appear below for both managers.</span></div>" +
         (entries.length ? "<table><tr><th>Date</th><th>Type</th><th>Match</th><th></th></tr>" + entries.map(function (e3) { return e3.html; }).join("") + "</table>" : "<div class='small' style='margin-top:8px'>No friendlies yet. Set one up above, or challenge a rival from their club page.</div>") +
         "</div>";
-      var anchor = null;
-      page.querySelectorAll(".panel h4").forEach(function (h) { if (/Fixtures & results/i.test(h.textContent || "")) anchor = h.parentNode; });
-      if (anchor) anchor.parentNode.insertBefore(pnl, anchor);
-      else page.appendChild(pnl);
+      var pnl = page.querySelector("#fo-frs");
+      if (pnl && pnl.__foInner === inner) { foFrsRefetch(me); return; }
+      if (!pnl) {
+        pnl = document.createElement("div");
+        pnl.className = "panel fo-keep"; pnl.id = "fo-frs";
+        var anchor = null;
+        page.querySelectorAll(".panel h4").forEach(function (h) { if (/Fixtures & results/i.test(h.textContent || "")) anchor = h.parentNode; });
+        if (anchor) anchor.parentNode.insertBefore(pnl, anchor);
+        else page.appendChild(pnl);
+      }
+      pnl.innerHTML = inner;
+      pnl.__foInner = inner;
       pnl.querySelectorAll(".fo-fr-play").forEach(function (b2) { b2.addEventListener("click", function () { var fr = foFriendlies[+b2.getAttribute("data-i")]; if (fr) foPlayFriendly(fr); }); });
       pnl.querySelectorAll(".fo-fr-x").forEach(function (b2) { b2.addEventListener("click", function () { foRemoveFriendly(+b2.getAttribute("data-i")); }); });
       pnl.querySelectorAll(".fo-ch-acc,.fo-ch-dec").forEach(function (b2) {
         b2.addEventListener("click", function () {
           rpc("challenge_respond", { p_id: b2.getAttribute("data-id"), p_accept: b2.classList.contains("fo-ch-acc") })
-            .then(function () { toast(b2.classList.contains("fo-ch-acc") ? "Challenge accepted \u00b7 attach your lineup any time before the match." : "Challenge declined."); window.__foFrRows = null; window.__foFrSig = null; foFriendliesPanel(); })
+            .then(function () { toast(b2.classList.contains("fo-ch-acc") ? "Challenge accepted \u00b7 attach your lineup any time before the match." : "Challenge declined."); window.__foFrSig = null; window.__foFrFetchAt = 0; foFriendliesPanel(); })
             .catch(say);
         });
       });
@@ -6894,19 +6954,28 @@
           if (c2) foChalPrep(c2);
         });
       });
-      // refresh the challenge data; re-render only when it actually changed
-      if (mp) {
-        sel("league_challenges", "league_id=eq." + LG.id + "&select=*&order=created_at.desc&limit=24").then(function (rows) {
-          rows = (rows || []).filter(function (c) { return c.challenger_club === me || c.opponent_club === me; });
-          var sig = JSON.stringify(rows.map(function (c) { return c.id + ":" + c.status + ":" + !!c.result; }));
-          if (sig !== window.__foFrSig) {
-            window.__foFrSig = sig; window.__foFrRows = rows;
-            foFriendliesPanel();
-          } else window.__foFrRows = rows;
-        }).catch(function () {});
-      }
+      foFrsRefetch(me);
     } catch (e) {}
   }
+  // refresh the challenge data (throttled - the panel renderer runs on every
+  // page mutation); re-render only when the data actually changed
+  function foFrsRefetch(me) {
+    try {
+      if (!(SYNC && SYNC.started && !SYNC.practice && LG)) return;
+      if (window.__foFrFetchAt && Date.now() - window.__foFrFetchAt < 10000) return;
+      window.__foFrFetchAt = Date.now();
+      sel("league_challenges", "league_id=eq." + LG.id + "&select=*&order=created_at.desc&limit=24").then(function (rows) {
+        rows = (rows || []).filter(function (c) { return c.challenger_club === me || c.opponent_club === me; });
+        var sig = JSON.stringify(rows.map(function (c) { return c.id + ":" + c.status + ":" + !!c.result; }));
+        if (sig !== window.__foFrSig) {
+          window.__foFrSig = sig; window.__foFrRows = rows;
+          foFriendliesPanel();
+        } else window.__foFrRows = rows;
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  // live rows tick over even when nothing else repaints the page
+  setInterval(function () { try { if (App.page === "matches") foFriendliesPanel(); } catch (e) {} }, 6000);
   // home: a one-line nudge when a challenge needs the manager's attention
   function foChalAlert() {
     try {
@@ -7188,8 +7257,17 @@
         var c0 = tr.cells[0];
         if (tr.cells.length === 1 && c0 && c0.colSpan) {
           if (c0.colSpan > 6) c0.colSpan = 6;
-          var mB = (c0.textContent || "").match(/\u00b7\s*([^(]+?)\s*\(/);
-          if (mB) bandDate = mB[1].trim();
+          // date the band from the round number itself (the printed text may
+          // still carry the engine's weekly fiction at this point, and the
+          // row dates must never depend on which decorator ran first)
+          var mN = (c0.textContent || "").match(/Round\s+(\d+)/);
+          if (mN) {
+            bandDate = foDailyDate(+mN[1] - 1, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+            c0.innerHTML = c0.innerHTML.replace(/\u00b7\s*[^(<]*\d{4}\s*/, "\u00b7 " + bandDate + " ");
+          } else {
+            var mB = (c0.textContent || "").match(/\u00b7\s*([^(]+?)\s*\(/);
+            if (mB) bandDate = mB[1].trim();
+          }
           curBand = { tr: tr, label: (c0.textContent || "").trim(), rows: [] };
           groups.push(curBand);
           return;
@@ -7211,6 +7289,25 @@
           resTd.textContent = ""; resTd.appendChild(a2);
         }
         tr.deleteCell(8); tr.deleteCell(7); tr.deleteCell(6);
+        // my own unplayed games carry a lineup button right in the row
+        try {
+          if (SYNC && SYNC.started && !SYNC.practice && curBand && /not played/i.test(resTd.textContent)) {
+            var mR = curBand.label.match(/Round\s+(\d+)/);
+            var rIx = mR ? +mR[1] - 1 : -1;
+            var curR2 = (App.season && typeof App.season.round === "number") ? App.season.round : 0;
+            var meN2 = ""; try { meN2 = userTeam().name; } catch (eU) {}
+            var mine = meN2 && (tr.cells[2].textContent.trim() === meN2 || tr.cells[3].textContent.trim() === meN2);
+            if (mine && rIx >= curR2) {
+              var bL = document.createElement("button");
+              bL.className = "fo-setr" + (rIx > curR2 ? " fo-setr-later" : "");
+              bL.setAttribute("data-r", rIx);
+              bL.textContent = rIx > curR2 ? "Plan lineup" : "Set lineup";
+              bL.style.marginLeft = "8px";
+              bL.addEventListener("click", function (ev) { ev.stopPropagation(); foSetOrdersForRound(+bL.getAttribute("data-r")); });
+              resTd.appendChild(bL);
+            }
+          }
+        } catch (eSl) {}
       });
       // collapsible rounds: the current round and the latest played round
       // start open; every band header toggles its rows
@@ -7242,20 +7339,6 @@
       // sweeps a few times; the __foClean marker keeps it idempotent
       foFxResultLinks();
       [350, 900, 2000].forEach(function (ms) { setTimeout(foFxResultLinks, ms); });
-      if (!(SYNC && SYNC.started) || SYNC.practice) return;
-      page.querySelectorAll('tr[style*="eef4ee"], tr[style*="eef8fb"]').forEach(function (tr) {
-        if (tr.__foSetr) return;
-        var cells = tr.querySelectorAll("td"); if (cells.length < 5) return;
-        var last = cells[cells.length - 1];
-        if (!/not played/i.test(last.textContent)) return;
-        var rd = parseInt((cells[0].textContent.match(/\d+/) || [])[0], 10); if (!rd) return;
-        tr.__foSetr = 1;
-        var b = document.createElement("button");
-        b.className = "fo-setr"; b.setAttribute("data-r", rd - 1);
-        b.textContent = "Set lineup"; b.style.marginLeft = "8px";
-        b.addEventListener("click", function () { foSetOrdersForRound(rd - 1); });
-        last.appendChild(b);
-      });
       foRefreshLineupButtons();
     } catch (e) {}
   }
@@ -10358,6 +10441,15 @@
     function foBcastT0(rd) {
       // solo (and any locally-resolved round): the moment it resolved
       try { var st = JSON.parse(lsGet(foBcastKey()) || "null"); if (st && st.round === rd && st.t0) return st.t0; } catch (e) {}
+      // multiplayer, best case: the resolver's own advance stamp says which
+      // day this round belongs to - 9:00 AM ET that day, same for everyone
+      try {
+        var adv = window.__foAdvDate;
+        if (adv && rd === foLastRoundIx()) {
+          var tA = Date.parse(String(adv) + "T09:00:00-04:00");
+          if (!isNaN(tA) && Math.abs(tA - Date.now()) < 2 * 86400000) return tA;
+        }
+      } catch (eA) {}
       // multiplayer: the scheduled 9:00 AM ET of that round, same for everyone.
       // Anchor on the round's own saved result date (always a full date) -
       // foDailyDate can return a yearless string that Date.parse rejects,
@@ -10385,7 +10477,9 @@
         var rd = foLastRoundIx(); if (rd < 0) return { active: false };
         var t0 = foBcastT0(rd); if (!t0) return { active: false };
         var p = (Date.now() - t0) / (FO_BCAST_MIN * 60000);
-        if (p < 0 || p >= 1) return { active: false, round: rd };
+        if (p >= 1) return { active: false, round: rd };
+        // banked early by the resolver: hold every spoiler until 9:00 AM
+        if (p < 0) return { active: true, round: rd, p: 0, endsAt: t0 + FO_BCAST_MIN * 60000, pre: true };
         return { active: true, round: rd, p: p, endsAt: t0 + FO_BCAST_MIN * 60000 };
       } catch (e) { return { active: false }; }
     };
@@ -10434,7 +10528,7 @@
           });
         };
         rows.forEach(function (r) {
-          swap((r.result && r.result.text) || "", "<span class='fo-live-mask'>" + foMaskLine(r, em.p) + "</span>");
+          swap((r.result && r.result.text) || "", "<span class='fo-live-mask'>" + (em.pre ? "Play begins 9:00 AM ET" : foMaskLine(r, em.p)) + "</span>");
           swap((r.result && r.result.mom) || "", "to be named at stumps");
         });
         // standings sleep until the broadcast ends
@@ -10458,6 +10552,14 @@
           var em = foEmbargo();
           if (em.active && q && q.i !== undefined && App.results[+q.i] && App.results[+q.i].comp === "league" && App.results[+q.i].round === em.round) {
             var r = App.results[+q.i];
+            if (em.pre) {
+              document.getElementById("page").innerHTML =
+                "<div class='crumb'>" + E(r.home) + " v " + E(r.away) + " &raquo; Matchday</div>" +
+                "<div class='fo-live-hero'><div class='fo-live-tag'>MATCHDAY &middot; 9:00 AM ET</div>" +
+                "<div class='fo-live-score'>" + E(r.home) + " v " + E(r.away) + "</div>" +
+                "<div class='fo-live-sub'>" + E(r.ground || "") + " &middot; play begins on the hour, ball by ball</div></div>";
+              return;
+            }
             var st = foLiveState(r, em.p);
             var log = (r.log || []).slice().reverse();   // chronological
             var upto = Math.max(2, Math.floor(em.p * log.length));
@@ -10482,10 +10584,10 @@
       var em = foEmbargo(); if (!em.active) return "";
       var rows = foLeagueRounds()[em.round] || [];
       var mins = Math.max(1, Math.round((em.endsAt - Date.now()) / 60000));
-      return "<div class='panel fo-keep'><h4><span class='live-dot'></span> Matchday live &middot; stumps in ~" + mins + " min</h4><div class='pad'>" +
+      return "<div class='panel fo-keep'><h4><span class='live-dot'></span> " + (em.pre ? "Matchday &middot; play begins 9:00 AM ET" : "Matchday live &middot; stumps in ~" + mins + " min") + "</h4><div class='pad'>" +
         rows.map(function (r) {
           return "<div class='fo-live-row'><b>" + E(r.home) + " v " + E(r.away) + "</b>" +
-            "<span>" + foMaskLine(r, em.p) + "</span>" +
+            "<span>" + (em.pre ? "at the toss" : foMaskLine(r, em.p)) + "</span>" +
             "<a href='#/scorecard?i=" + r.ix + "'>Watch &rsaquo;</a></div>";
         }).join("") +
         "<div class='small' style='margin-top:8px;color:#667085'>Every ground plays at once. Results, tables and awards land at stumps.</div></div></div>";
