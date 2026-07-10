@@ -8875,7 +8875,7 @@
       // chips stay pills; primary CTAs keep their own classes untouched
       "html body #page .chip{border-radius:999px !important}" +
       // links: house terracotta, underline only on hover
-      "html body #page a{color:#B24E2B;text-decoration:none}html body #page a:hover{text-decoration:underline}" +
+      "html body #page a,html body #page table a,html body.ftpskin #page a{color:#B24E2B;text-decoration:none !important}html body #page a:hover{text-decoration:underline !important}" +
       // quiet the old hard rules
       "html body #page hr{border:none;border-top:1px solid #eae5d8;margin:14px 0}" +
       // thin, tinted scrollbars
