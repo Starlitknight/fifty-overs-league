@@ -1261,11 +1261,20 @@
       var mk = function (label, cls, fn) { var el = document.createElement("a"); el.className = cls; el.href = "#"; el.textContent = label; el.addEventListener("click", function (e) { e.preventDefault(); fn(); }); return el; };
       var status = tb.querySelector("#fo-top-status");
       foHideWeekChip();
-      // Practice Game (and, for founders only, an Admin link) live with the main nav,
-      // inserted just before the game's right-hand status block.
+      // Group every nav link in one container: display:contents on desktop
+      // (layout untouched), a horizontally scrolling pill bar on phones.
+      var wrap = tb.querySelector(".fo-nav-scroll");
+      if (!wrap) {
+        wrap = document.createElement("div"); wrap.className = "fo-nav-scroll";
+        var bA = tb.querySelector(".brand");
+        tb.insertBefore(wrap, bA ? bA.nextSibling : tb.firstChild);
+      }
+      [].slice.call(tb.children).forEach(function (el) {
+        if (el.tagName === "A" && !/\bbrand\b/.test(el.className || "")) wrap.appendChild(el);
+      });
       var addNav = function (cls, label, fn) {
         var a = tb.querySelector("a." + cls); if (!a) a = mk(label, cls, fn);
-        if (status) tb.insertBefore(a, status); else tb.appendChild(a);
+        if (a.parentNode !== wrap) { if (cls === "fo-live") wrap.insertBefore(a, wrap.firstChild); else wrap.appendChild(a); }
       };
       addNav("fo-training", "Training", function () { location.hash = "#/training"; if (typeof window.route === "function") window.route(); });
       addNav("fo-transfers", "Transfers", function () { location.hash = "#/transfers"; if (typeof window.route === "function") window.route(); });
@@ -1289,7 +1298,19 @@
       tb.appendChild(ck);
       // Log out is always the very last item, so it never feels buried in the nav.
       var out = tb.querySelector("a.fo-logout"); if (!out) out = mk("Log out", "fo-logout", doLogout);
-      tb.appendChild(out);
+      if (out.parentNode !== wrap) wrap.appendChild(out);
+      // active-pill marking for overlay-added links (engine handles its own via data-nav)
+      try {
+        var route0 = (location.hash || "#/club").split("?")[0];
+        var navMap = { "fo-training": "#/training", "fo-transfers": "#/transfers", "fo-guide": "#/guide", "fo-matchday": "#/matchday", "fo-live": "#/match" };
+        wrap.querySelectorAll("a").forEach(function (a) {
+          for (var c in navMap) if (a.classList.contains(c)) a.classList.toggle("on", route0 === navMap[c]);
+        });
+        if (window.innerWidth <= 820) {
+          var onA = wrap.querySelector("a.on");
+          if (onA && onA.scrollIntoView) onA.scrollIntoView({ inline: "center", block: "nearest" });
+        }
+      } catch (e) {}
     } catch (e) {}
   }
   // Practice Game opens a setup screen (opponent + pitch + weather); after a short
@@ -8427,6 +8448,45 @@
       "}";
     document.head.appendChild(foCommCss);
   } catch (e) { console.warn("living commentary", e); }
+
+  // ---- mobile premium layer: slim sticky header, pill nav, touch polish ----
+  try {
+    var foMobCss = document.createElement("style");
+    foMobCss.textContent =
+      ".fo-nav-scroll{display:contents}" +
+      "a,button{-webkit-tap-highlight-color:transparent}" +
+      "@media(max-width:820px){" +
+      // header: brand row + one scrolling pill row, always at hand
+      "#topbar{position:sticky;top:0;z-index:120;flex-wrap:wrap;align-items:center;padding:9px 12px 0 !important;box-shadow:0 3px 14px rgba(6,12,24,.35)}" +
+      "html body #topbar .brand,html body.ftpskin #topbar .brand{order:1;font-size:0 !important;line-height:0;width:auto !important;padding:0 !important;border:0 !important}" +
+      "#topbar .brand::after,#topbar .brand::before{display:none !important}" +
+      "html body #topbar .brand .fo-brandicon{width:34px;height:34px;vertical-align:middle;margin-right:0}" +
+      "html body #topbar #fo-top-status{order:2;width:auto !important;margin-left:auto !important;padding:0 !important}" +
+      "#fo-top-status span{font-size:10.5px !important;padding:4px 9px !important}" +
+      "#fo-live-icons{order:2;width:auto !important;margin-left:8px !important}" +
+      "#fo-clock{display:none !important}" +
+      ".fo-nav-scroll{display:flex;order:3;width:100%;overflow-x:auto;gap:7px;padding:9px 2px 11px;scrollbar-width:none;-webkit-overflow-scrolling:touch}" +
+      ".fo-nav-scroll::-webkit-scrollbar{display:none}" +
+      "#topbar .fo-nav-scroll a{flex:0 0 auto;background:rgba(246,244,238,.08);border:1px solid rgba(246,244,238,.16);border-radius:999px;padding:8px 14px !important;font-size:13px;line-height:1.1;white-space:nowrap;color:#dfe5ec;font-weight:600;margin:0 !important;border-bottom-width:1px !important;text-decoration:none}" +
+      "html body #topbar .fo-nav-scroll a.on,html body.ftpskin #topbar .fo-nav-scroll a.on{background:#C0562F !important;border-color:#C0562F !important;color:#fff !important;font-weight:800;box-shadow:none !important}" +
+      "#topbar .fo-nav-scroll a.fo-logout{opacity:.7}" +
+      "#topbar .fo-nav-scroll a.fo-live{border-radius:999px}" +
+      // breadcrumbs: quiet, one line
+      "#page .crumb{font-size:12.5px;opacity:.75;margin:2px 0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      // typography rhythm
+      "#page h1{font-size:24px !important;letter-spacing:-.4px}" +
+      "#page .page-head{margin-bottom:10px}" +
+      "#page .panel h4{font-size:12.5px !important;letter-spacing:.05em}" +
+      // inputs at 16px so iOS stops zooming the page on focus
+      "#page select,#page input[type=text],#page input[type=number],#page input:not([type]){font-size:16px !important}" +
+      // stat values never truncate into dots
+      ".fo-stat-v{font-size:clamp(13px,4.2vw,19px) !important;text-overflow:clip !important}" +
+      // gentle press feedback
+      "#page button{transition:transform .06s ease}" +
+      "#page button:active{transform:scale(.98)}" +
+      "}";
+    document.head.appendChild(foMobCss);
+  } catch (e) {}
 
   console.info("Fifty Overs League overlay ready.");
 })();
