@@ -2325,7 +2325,7 @@
       var mnOpts = [0, 15, 30, 45].map(function (mi) { return "<option value='" + mi + "'" + (mi === 0 ? " selected" : "") + ">" + pad(mi) + "</option>"; }).join("");
       var m = document.createElement("div"); m.id = "fo-chal"; m.className = "fo-modal";
       m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>Challenge</div><h3>Challenge " + E(opp.name) + "</h3>" +
-        "<div class='small' style='margin:4px 0 10px'>They must accept before the match is played. Schedule it at least <b>75 minutes ahead</b> - the engine prepares the match early so it kicks off on the dot. Times are on the 24-hour clock, like the one in the header.</div>" +
+        "<div class='small' style='margin:4px 0 10px'>They must accept before the match is played. Schedule it at least <b>75 minutes ahead</b>; lineups lock exactly <b>one hour before kickoff</b>. Times are on the 24-hour clock, like the one in the header.</div>" +
         "<div class='ctlrow'><span>Pitch</span><select id='fo-chal-p'>" + pitches + "</select></div>" +
         "<div class='ctlrow'><span>Weather</span><select id='fo-chal-w'>" + wx + "</select></div>" +
         "<div class='ctlrow'><span>Play on</span><select id='fo-chal-d'>" + dayOpts.join("") + "</select>" +
@@ -2337,7 +2337,7 @@
         var t = new Date(today0);
         t.setDate(t.getDate() + (+m.querySelector("#fo-chal-d").value || 0));
         t.setHours(+m.querySelector("#fo-chal-h").value || 0, +m.querySelector("#fo-chal-m").value || 0, 0, 0);
-        if (t - Date.now() < 75 * 60000) { say("Pick a time at least 75 minutes ahead - the engine banks the match early so it starts exactly on schedule."); return; }
+        if (t - Date.now() < 75 * 60000) { say("Pick a time at least 75 minutes ahead - lineups lock an hour before kickoff, so both managers need a window to attach one."); return; }
         rpc("challenge_create", {
           p_league_id: LG.id, p_club: userTeam().name, p_opponent: opp.name,
           p_pitch: m.querySelector("#fo-chal-p").value || "balanced",
@@ -6623,7 +6623,7 @@
         if (done) done(true);
       }).catch(function (e) {
         var s = ((e && e.message) || e) + "";
-        if (/already played/i.test(s)) say("The engine has already prepared this match, so the lineup can no longer change. It kicks off " + foChalWhen(ch) + ".");
+        if (/lock/i.test(s) || /already played/i.test(s)) say("Lineups are locked - they close exactly one hour before kickoff. The XI attached before the lock plays. Kickoff: " + foChalWhen(ch) + ".");
         else say(e);
         if (done) done(false);
       });
@@ -6634,14 +6634,20 @@
       var vs = ch.challenger_club === me ? ch.opponent_club : ch.challenger_club;
       var when = foChalWhen(ch);
       var ex = document.getElementById("fo-chprep"); if (ex) ex.remove();
+      var locked = ch.play_at && (new Date(ch.play_at) - Date.now() <= 60 * 60000);
       var m = document.createElement("div"); m.id = "fo-chprep"; m.className = "fo-modal";
       m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>Friendly</div><h3>vs " + E(vs) + "</h3>" +
         "<div class='small' style='margin:4px 0 10px'>" + foPitchName(ch.pitch) + " pitch &middot; " + E(ch.weather || "") + (when ? " &middot; kicks off " + when : "") + "</div>" +
-        "<div class='small' style='margin:0 0 12px'>The match kicks off on schedule and plays out ball by ball for an hour, live for both managers. Open Orders, set your XI and hit <b>Save orders</b> - it attaches to this friendly automatically. Attach early: the engine prepares the match ahead of the start, and a lineup that arrives after that is missed (an automatic XI plays instead).</div>" +
-        "<div class='fo-modal-act'><button class='primary' id='fo-chprep-ord'>Set lineup in Orders</button><button id='fo-chprep-att'>Attach my saved lineup</button><button class='fo-su-cancel' id='fo-chprep-x'>Close</button></div></div>";
+        (locked
+          ? "<div class='small' style='margin:0 0 12px'><b>&#128274; Lineups are locked.</b> They close exactly one hour before kickoff so the engine can prepare the match. Whatever was attached before the lock plays - if nothing was, a sensible automatic XI takes the field.</div>" +
+            "<div class='fo-modal-act'><button class='fo-su-cancel' id='fo-chprep-x'>Close</button></div>"
+          : "<div class='small' style='margin:0 0 12px'>The match kicks off on schedule and plays out ball by ball for an hour, live for both managers. Open Orders, set your XI and hit <b>Save orders</b> - it attaches to this friendly automatically. <b>Lineups lock exactly one hour before kickoff</b>; until then you can re-attach as often as you like.</div>" +
+            "<div class='fo-modal-act'><button class='primary' id='fo-chprep-ord'>Set lineup in Orders</button><button id='fo-chprep-att'>Attach my saved lineup</button><button class='fo-su-cancel' id='fo-chprep-x'>Close</button></div>") +
+        "</div>";
       document.body.appendChild(m);
       m.addEventListener("click", function (e2) { if (e2.target === m) m.remove(); });
       m.querySelector("#fo-chprep-x").addEventListener("click", function () { m.remove(); });
+      if (locked) return;
       m.querySelector("#fo-chprep-ord").addEventListener("click", function () {
         m.remove();
         // give the Orders page the real fixture (crumb, ground, pitch,
@@ -6730,7 +6736,7 @@
           rpc("challenge_respond", { p_id: e2.ch.id, p_accept: acc }).then(function () {
             pn.remove();
             if (acc) {
-              toast("Challenge accepted \u00b7 kicks off " + foChalWhen(e2.ch) + ". Set your lineup from the Matches page.");
+              toast("Challenge accepted \u00b7 kicks off " + foChalWhen(e2.ch) + ". Set your lineup from the Matches page - lineups lock an hour before the start.");
               try { if (App.orders && App.orders.saved) rpc("challenge_set_orders", { p_id: e2.ch.id, p_club: userTeam().name, p_orders: App.orders }).catch(function () {}); } catch (eAt) {}
             } else toast("Challenge declined.");
             window.__foFrSig = null; window.__foFrFetchAt = 0;
@@ -6909,7 +6915,7 @@
         var log = (r.log || []).slice().reverse();   // stored newest-first -> chronological
         if (st.phase === "live") {
           var upto = Math.max(2, Math.floor(st.p * log.length));
-          var vis = log.slice(0, upto);              // oldest first, new balls appear at the bottom
+          var vis = log.slice(0, upto).reverse();    // newest ball first - the latest delivery greets you at the top
           var mins = Math.max(1, Math.round((st.endsAt - Date.now()) / 60000));
           var over0 = upto >= log.length ? "<div class='fo-c-mile'><div class='text'>That is the last ball - the umpires check the paperwork. The official result lands at stumps.</div><div class='clear'></div></div>" : "";
           page.innerHTML = "<div id='fo-fr-live'>" + head +
@@ -6917,7 +6923,7 @@
             "<div class='fo-live-score'>" + foFrLiveLine(c, st.p) + "</div>" +
             "<div class='fo-live-sub'>Friendly &middot; " + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + " &middot; the result arrives at stumps</div></div>" +
             "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'><div id='ftpcomm' class='ftpskin'>" +
-            (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, "all", 5000) : "") + over0 + "</div></div></div></div>";
+            over0 + (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, "all", 5000) : "") + "</div></div></div></div>";
           window.__foFrCache = { id: mh[1], html: page.innerHTML, done: false };
           return;
         }
@@ -6993,7 +6999,10 @@
           else if (c.status === "accepted" && fst.phase === "done") act = "<span class='small'>delayed &middot; waiting on the league engine</span>";
           else if (c.status === "accepted") {
             var hasOrd = false; try { hasOrd = !!(c.orders && c.orders[me]); } catch (eO) {}
-            act = "<span class='fo-frs-on'>ON</span> <button class='mini fo-ch-ord' data-id='" + c.id + "'>" + (hasOrd ? "Edit lineup" : "Prepare lineup") + "</button>" + (hasOrd ? " <span class='small' style='color:#15803D'>&#10003; lineup attached</span>" : "");
+            var lkd = c.play_at && (new Date(c.play_at) - Date.now() <= 60 * 60000);
+            act = "<span class='fo-frs-on'>ON</span> " + (lkd
+              ? "<span class='small'>&#128274; lineups locked" + (hasOrd ? " \u00b7 <span style='color:#15803D'>&#10003; yours is in</span>" : " \u00b7 auto XI plays") + "</span>"
+              : "<button class='mini fo-ch-ord' data-id='" + c.id + "'>" + (hasOrd ? "Edit lineup" : "Prepare lineup") + "</button>" + (hasOrd ? " <span class='small' style='color:#15803D'>&#10003; lineup attached</span>" : ""));
           }
           else if (c.status === "declined") act = "<span class='small'>declined</span>";
           else if (c.status === "expired") act = "<span class='small'>expired</span>";
@@ -10040,6 +10049,15 @@
               var feedC = document.querySelector("#page #ftpcomm");
               if (feedC && !document.querySelector("#page .fo-cfilters")) {
                 var recC = (q && q.i !== undefined && App.results[+q.i]) || null;
+                // finished match: the story reads top to bottom (first ball
+                // first), ending on the FULL TIME banner
+                var chron = function (flt) {
+                  if (!(recC && recC.log)) return null;
+                  var h2 = ftpCommHTML(recC.log.slice().reverse(), flt, 100000);
+                  if (flt === "all" && recC.result && recC.result.text) h2 += "<div class='fo-c-mile'><div class='text'>FULL TIME - " + E(recC.result.text) + ".</div><div class='clear'></div></div>";
+                  return h2;
+                };
+                var h0 = chron(App._scCommF || "all"); if (h0 != null) feedC.innerHTML = h0;
                 var fb2 = document.createElement("div"); fb2.className = "fo-cfilters";
                 [["all", "All"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["fielding", "Fielding"], ["talents", "Talents"], ["highlights", "Highlights"]].forEach(function (ff) {
                   var b3 = document.createElement("button");
@@ -10047,13 +10065,13 @@
                   b3.textContent = ff[1];
                   b3.addEventListener("click", function () {
                     App._scCommF = ff[0];
-                    if (recC && recC.log) feedC.innerHTML = ftpCommHTML(recC.log, ff[0], 400);
+                    var hF = chron(ff[0]); if (hF != null) feedC.innerHTML = hF;
                     document.querySelectorAll("#page .fo-cf").forEach(function (x) { x.classList.toggle("on", x === b3); });
                   });
                   fb2.appendChild(b3);
                 });
                 feedC.parentNode.insertBefore(fb2, feedC);
-                if ((App._scCommF || "all") !== "all" && recC && recC.log) feedC.innerHTML = ftpCommHTML(recC.log, App._scCommF, 400);
+
               }
             }
           } catch (eF) {}
@@ -10713,7 +10731,7 @@
       var wrap = tb && tb.querySelector(".fo-nav-scroll");
       var pill = wrap && wrap.querySelector("a.fo-bcast");
       if (go && wrap && !pill) {
-        var a = document.createElement("a"); a.className = "fo-bcast"; a.innerHTML = "&#128308; Live";
+        var a = document.createElement("a"); a.className = "fo-bcast"; a.innerHTML = "<span class='fo-bcast-dot'></span>Live";
         a.href = "#";
         a.addEventListener("click", function (ev) { ev.preventDefault(); location.hash = a.getAttribute("data-go") || "#/matchday"; if (typeof window.route === "function") window.route(); });
         wrap.insertBefore(a, wrap.firstChild);
@@ -10758,8 +10776,11 @@
       ".fo-live-sub{font-size:12px;color:#93a0b4}" +
       ".fo-live-row{display:flex;gap:10px;align-items:baseline;padding:9px 0;border-bottom:1px solid #f0ece1;font-size:13px}" +
       ".fo-live-row b{flex:1;color:#111827}.fo-live-row span{color:#DC2626;font-weight:700}" +
-      "#topbar .fo-nav-scroll a.fo-bcast{background:#DC2626 !important;border-color:#DC2626 !important;color:#fff !important;font-weight:800;animation:foPulse 2s ease-in-out infinite}" +
-      "@media(max-width:820px){#topbar .fo-nav-scroll a.fo-bcast{position:sticky;left:0;z-index:6;box-shadow:0 0 0 4px #07162E}}" +
+      "html body #topbar a.fo-bcast{display:inline-flex;align-items:center;gap:7px;background:rgba(220,38,38,.14) !important;border:1px solid rgba(248,113,113,.42) !important;color:#FECACA !important;border-radius:999px !important;padding:5px 13px !important;margin:0 12px 0 2px !important;align-self:center;font-weight:700;font-size:12.5px;letter-spacing:.02em;animation:none;box-shadow:none !important;text-decoration:none !important}" +
+      "html body #topbar a.fo-bcast:hover{background:rgba(220,38,38,.24) !important;color:#fff !important}" +
+      ".fo-bcast-dot{width:7px;height:7px;border-radius:99px;background:#F87171;flex:0 0 auto;animation:foBcastBlink 1.6s ease-in-out infinite}" +
+      "@keyframes foBcastBlink{0%,100%{opacity:1}50%{opacity:.35}}" +
+      "@media(max-width:820px){html body #topbar a.fo-bcast{position:sticky;left:0;z-index:6;background:#3A161E !important}}" +
       ".fo-live-row a{font-weight:700;padding:4px 0 4px 8px;white-space:nowrap}" +
       "@media(max-width:640px){.fo-live-row{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:1px 10px}.fo-live-row b{grid-column:1/-1}}";
     document.head.appendChild(bcs);
