@@ -9745,7 +9745,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-2047-80b4c6";
+  var FO_BUILD = "20260710-2049-691a1b";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10195,7 +10195,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       try { if (typeof window.store === "function") window.store("fo_welcomed", "1"); } catch (e) {}
       if (typeof window.saveGame === "function") window.saveGame(false);
       openWrap(false);
-      if (focus) location.hash = "#/club";
+      // land on the club home only when there is nowhere better to be - a
+      // refresh keeps the page the manager was already on
+      if (focus) {
+        var h0 = (location.hash || "").split("?")[0];
+        if (!h0 || h0 === "#" || h0 === "#/" || h0 === "#/welcome" || h0 === "#/login") location.hash = "#/club";
+      }
       if (typeof window.route === "function") window.route();
     } catch (e) {
       console.warn("Fifty Overs applySnapshot failed", e);

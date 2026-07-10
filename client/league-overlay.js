@@ -3843,7 +3843,12 @@
       try { if (typeof window.store === "function") window.store("fo_welcomed", "1"); } catch (e) {}
       if (typeof window.saveGame === "function") window.saveGame(false);
       openWrap(false);
-      if (focus) location.hash = "#/club";
+      // land on the club home only when there is nowhere better to be - a
+      // refresh keeps the page the manager was already on
+      if (focus) {
+        var h0 = (location.hash || "").split("?")[0];
+        if (!h0 || h0 === "#" || h0 === "#/" || h0 === "#/welcome" || h0 === "#/login") location.hash = "#/club";
+      }
       if (typeof window.route === "function") window.route();
     } catch (e) {
       console.warn("Fifty Overs applySnapshot failed", e);
