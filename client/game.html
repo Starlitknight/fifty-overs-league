@@ -7506,6 +7506,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-tr-rep .fo-tr-rec{color:#2b6b68}.fo-tr-rep .fo-tr-sign{color:#a95f38;font-weight:700}" +
     ".fo-ycs{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}" +
     ".fo-yc{background:#faf8f3;border:1px solid #e4dfd2;border-radius:12px;padding:13px 14px}" +
+    ".fo-yc-genc{border-color:#D9A441;box-shadow:0 0 0 2px rgba(217,164,65,.3),0 4px 16px rgba(217,164,65,.2);background:linear-gradient(180deg,#FFFDF6,#faf8f3)}" +
+    ".fo-yt{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:2px 9px;margin:5px 0 2px}" +
+    ".fo-yt-raw{background:#f3efe4;border:1px solid #e2ddd0;color:#8a8474}" +
+    ".fo-yt-prom{background:#e8f2f1;border:1px solid #c6dedd;color:#2b6b68}" +
+    ".fo-yt-gift{background:#fdf3dc;border:1px solid #ecd28f;color:#8a6512}" +
+    ".fo-yt-gen{background:linear-gradient(135deg,#D9A441,#c08a2b);color:#fff;box-shadow:0 1px 5px rgba(160,110,20,.35)}" +
     ".fo-yc-h{display:flex;align-items:center;gap:7px;font-size:14px}.fo-yc-h b{color:#12203a;flex:1}" +
     ".fo-yc-meta{font-size:11.5px;color:#8a8474;margin:3px 0 8px}" +
     ".fo-yc-bars{display:grid;gap:4px;margin-bottom:8px}" +
@@ -9413,7 +9419,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-0326-5c2e6e";
+  var FO_BUILD = "20260710-0337-478613";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -11780,10 +11786,57 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     }
     return picks.map(function (p) {
       var q = JSON.parse(JSON.stringify(p));
-      q.fee = Math.max(8000, Math.round(foDraftPrice(p) * 0.75 / 500) * 500);   // raw youth come cheaper
+      // the scout's lottery: every signing is FREE - quality is the gamble.
+      // Tiers roll deterministically from the reveal seed: mostly raw kids,
+      // the good ones rare, and once in a generation a genuine jewel.
+      var roll = foHash32(seedBase + "-tier-" + p.name) % 1000;
+      var tier = roll < 12 ? "gen" : roll < 95 ? "gift" : roll < 345 ? "prom" : "raw";
+      foYouthBless(q, tier, seedBase);
+      q.fee = 0;
       return q;
     });
   }
+  // tier config: skill lift + talents granted. Talents also raise Potential,
+  // so blessed youth train into their billing rather than just starting hot.
+  var FO_YT = {
+    gen: { lbl: "&#9670; Once in a generation", add: 16, tal: 2 },
+    gift: { lbl: "&#9733; Gifted", add: 9, tal: 1 },
+    prom: { lbl: "Promising", add: 4, tal: 0 },
+    raw: { lbl: "Raw", add: 0, tal: 0 }
+  };
+  function foYouthBless(q, tier, seedBase) {
+    q._ytier = tier;
+    var c = FO_YT[tier] || FO_YT.raw;
+    if (!c.add && !c.tal) return q;
+    for (var k in (q.skills || {})) {
+      if (typeof q.skills[k] === "number" && q.skills[k] > 8)
+        q.skills[k] = Math.min(76, q.skills[k] + c.add + (foHash32(seedBase + q.name + k) % 4));
+    }
+    var want = c.tal;
+    if (want) {
+      var isB = q.bowlTypeFull && q.bowlTypeFull !== "none";
+      var bank = q.keeper ? ["lightningHands", "safeHands", "fastStarter", "busyRunner"]
+        : isB ? ["newBallSpecialist", "goldenArm", "miser", "deathSpecialist", "mysteryBall", "partnershipBreaker"]
+        : ["fastStarter", "anchor", "finisher", "sixMachine", "spinKiller", "paceHunter", "busyRunner"];
+      q.talents = (q.talents || []).slice();
+      var h = foHash32(seedBase + "-tal-" + q.name);
+      for (var a = 0; a < bank.length && want > 0; a++) {
+        var t2 = bank[(h + a * 7) % bank.length];
+        if (q.talents.indexOf(t2) < 0) { q.talents.push(t2); want--; }
+      }
+    }
+    try { if (typeof window.jsDerive === "function") window.jsDerive(q); } catch (e) {}
+    return q;
+  }
+  window.__folScoutPreview = function (round, nat) {
+    try {
+      var st = foTrainState(), prev = st.scoutReveal;
+      st.scoutReveal = { round: round, nat: nat || "England" }; foTrainSave(st);
+      var out = foScoutList();
+      var st2 = foTrainState(); st2.scoutReveal = prev; foTrainSave(st2);
+      return out;
+    } catch (e) { return { err: String(e && e.message || e) }; }
+  };   // debug/test hook (harmless)
   var FO_SCOUT_COOLDOWN = 3;   // matchdays between signings
   function foSignYouth(cand) {
     var st = foTrainState(), t = foMyClub(); if (!t) return;
@@ -11791,11 +11844,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (st.youthPending.length) { say("You already have a signing awaiting confirmation · it completes after the next matchday."); return; }
     if (round - st.lastSignRound < FO_SCOUT_COOLDOWN) { say("Your scout needs " + (FO_SCOUT_COOLDOWN - (round - st.lastSignRound)) + " more matchday(s) before the next signing."); return; }
     if ((t.players || []).length >= 18) { say("Squad is full (18) · release someone first."); return; }
-    var bank = (App.fin && App.fin.bank) || t.bank || 0;
-    if (bank < cand.fee) { say("Not enough in the bank · the signing fee is " + FO$(cand.fee) + "."); return; }
     foConfirm({
       title: "Sign " + cand.name + "?",
-      body: "Age " + cand.age + " · " + foRoleShort(cand) + " · " + FO$(cand.fee) + " signing fee, then " + FO$(foDailyWage(cand)) + "/matchday wages. Young players train the fastest in the game.",
+      body: "Age " + cand.age + " · " + foRoleShort(cand) + " · free signing, then " + FO$(foDailyWage(cand)) + "/matchday wages. Young players train the fastest in the game.",
       confirm: "Sign " + cand.name.split(" ")[0], cancel: "Not yet"
     }).then(function (ok) {
       if (!ok) return;
@@ -11811,9 +11862,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           var p = JSON.parse(JSON.stringify(cand)); delete p.fee;
           p.fatigue = "rested"; p.formIx = 3;
           t.players.push(p);
-          if (typeof window.ledger === "function" && window.ledger.length >= 3) window.ledger("Transfer", "Youth signing: " + p.name, -cand.fee);
-          else if (typeof window.ledger === "function") window.ledger("Youth signing: " + p.name, -cand.fee);
-          else if (App.fin) App.fin.bank -= cand.fee;
           st.youthPending = []; foTrainSave(st);
           if (typeof window.saveGame === "function") window.saveGame(false);
           toast(cand.name + " joins the squad!");
@@ -12141,7 +12189,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ].join("")],
       ["youth", "Youth scouting", [
         "<p>Your scout brings <b>three local prospects, aged 18 to 20</b>, to the Training page every matchday, new faces each round. Click a name for the full workup: skills, talents, and the scout&rsquo;s read on potential.</p>",
-        "<ul><li>Youth arrive with low current skills and low fees. Their value is future training gains, so judge them on potential and talents rather than current ratings.</li>",
+        "<ul><li>Youth signings are <b>free</b>: the lottery is quality. Most finds are raw local kids; a <b>Promising</b> one appears most trips, a <b>&#9733; Gifted</b> one is genuinely rare, and a <b>&#9670; Once in a generation</b> talent might bless your club once every few seasons. The tier is stamped on the card when the scout reports back.</li>",
+        "<li>Their value is future training gains, so judge them on potential and talents as much as current ratings - and sign the jewel even if the seat is tight.</li>",
         "<li>The paperwork limits you to <b>one youth signing every " + FO_SCOUT_COOLDOWN + " matchdays</b>, and the squad caps at 18, so every seat you fill is a seat you can&rsquo;t offer a market star later.</li>",
         "<li>Signings join when the next matchday resolves. Put them straight on a training program; that&rsquo;s what you bought them for.</li></ul>"
       ].join("")],
@@ -12541,11 +12590,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var pot = foPotential(p);
       var bars = [["Bat", foAgg(p, "bat")], [(p.keeper ? "Keep" : "Bowl"), p.keeper ? foAgg(p, "keep") : ((p.bowlTypeFull && p.bowlTypeFull !== "none") ? foAgg(p, "bowl") : 0)], ["Field", foAgg(p, "field")]];
       var barHtml = bars.map(function (b) { return "<span class='fo-sk'><i>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + b[1] + "%'></u></b><em>" + b[1] + "</em></span>"; }).join("");
-      return "<div class='fo-yc'>" +
+      var yt = FO_YT[p._ytier || "raw"] || FO_YT.raw;
+      return "<div class='fo-yc" + (p._ytier === "gen" ? " fo-yc-genc" : "") + "'>" +
         "<div class='fo-yc-h'>" + flag + " <b class='fo-yc-view' data-i='" + i + "'>" + E(p.name) + "</b></div>" +
         "<div class='fo-yc-meta'>" + foRoleShort(p) + " · age " + p.age + " · OVR " + ((p.rating || 0) / 1000).toFixed(1) + "</div>" +
+        "<div><span class='fo-yt fo-yt-" + (p._ytier || "raw") + "'>" + yt.lbl + "</span></div>" +
         "<div class='fo-yc-bars'>" + barHtml + "</div>" +
-        "<div class='fo-yc-money'><span>Fee <b>" + FO$(p.fee) + "</b></span><span>Wage <b>" + FO$(foDailyWage(p)) + "/matchday</b></span></div>" +
+        "<div class='fo-yc-money'><span>Fee <b>Free</b></span><span>Wage <b>" + FO$(foDailyWage(p)) + "/matchday</b></span></div>" +
         "<button class='fo-yc-sign' data-i='" + i + "'" + ((st.youthPending.length || canSignIn > 0) ? " disabled" : "") + ">Sign</button>" +
         "</div>";
     }).join("") || "<div class='small'>The scout came back empty-handed; reveal again next window.</div>";
@@ -12585,7 +12636,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "</div></div>" +
       "<div class='panel'><h4>Youth scout &middot; ages 18&#8211;20</h4><div class='pad'>" +
       scoutBody +
-      "<div class='small' style='margin-top:8px'>One shortlist reveal per " + FO_SCOUT_REVEAL_GAP + " matchdays; one signing per " + FO_SCOUT_COOLDOWN + " matchdays; squad cap 18.</div>" +
+      "<div class='small' style='margin-top:8px'>Signings are <b>free</b> - quality is the lottery. Most finds are raw, <b>&#9733; Gifted</b> is rare, and once in a generation the scout unearths a jewel. One reveal per " + FO_SCOUT_REVEAL_GAP + " matchdays; one signing per " + FO_SCOUT_COOLDOWN + " matchdays; squad cap 18.</div>" +
       "</div></div>";
 
     page.querySelectorAll(".fo-tr-prog").forEach(function (s) { s.addEventListener("change", function () { foSetTraining(s.getAttribute("data-p"), "program", s.value); }); });

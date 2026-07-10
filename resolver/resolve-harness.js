@@ -405,16 +405,15 @@
       if (!cand || !cand.name) return;
       if ((t.players || []).length >= 18) return;
       if (t.players.find(function (x) { return x.name === cand.name; })) return;
-      var fee = Math.max(5000, Math.round(+cand.fee || 0));
-      if ((t.bank || 0) < fee) return;
+      // youth signings are free: the scout lottery decides quality and the
+      // wage bill is the only ongoing cost
       var p = JSON.parse(JSON.stringify(cand));
       delete p.fee;
       p.fatigue = 'rested'; p.formIx = 3;
       ftEnsure(p);
       t.players.push(p);
-      t.bank -= fee;
       t._trainReport = t._trainReport || { round: round + 1, gains: [], recovery: [], signings: [] };
-      (t._trainReport.signings = t._trainReport.signings || []).push(p.name + ' (age ' + p.age + ') signed for $' + fee.toLocaleString());
+      (t._trainReport.signings = t._trainReport.signings || []).push(p.name + ' (age ' + p.age + ') joins from the youth intake (free)');
     });
   }
 
