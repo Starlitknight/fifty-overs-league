@@ -499,6 +499,37 @@
     ".fo-mh-pt{font-size:12.5px;color:#93a0b4}" +
     ".fo-mh-pf{font-size:13px;color:#c7cfda;font-weight:600}" +
     "@media(max-width:820px){.fo-mhead{flex-direction:column;gap:10px;padding:16px 16px}.fo-mh-r{flex:0 0 auto;border-left:0;border-top:1px solid rgba(246,244,238,.14);padding:12px 0 0}.fo-mh-team{font-size:14.5px}.fo-mh-sc{font-size:16px}.fo-mh-res{font-size:12.5px;margin-top:7px}.fo-mh-eyebrow{font-size:8.5px}.fo-mh-toss{font-size:10.5px}html body #page .fo-mh-pn a,html body .fo-mh-pn a{font-size:13.5px}.fo-mh-pf{font-size:12px}}" +
+    "/* ---- club home, remade ---- */" +
+    "html body .fo-ch-hero.fo-ch-hero,html body.ftpskin .fo-ch-hero.fo-ch-hero{display:block;position:relative;overflow:hidden;background:radial-gradient(130% 170% at 88% -30%,#1B3A5F 0%,rgba(27,58,95,0) 55%),linear-gradient(135deg,#0E233F,#07162E 70%) !important;border-radius:18px;padding:24px 24px 16px;box-shadow:0 12px 32px rgba(7,22,46,.22)}" +
+    "html body .fo-ch-hero-l.fo-ch-hero-l,html body.ftpskin .fo-ch-hero-l.fo-ch-hero-l,html body .fo-ch-hero-top.fo-ch-hero-top,html body.ftpskin .fo-ch-hero-top.fo-ch-hero-top,html body .fo-hero-pos.fo-hero-pos,html body.ftpskin .fo-hero-pos.fo-hero-pos,html body .fo-hero-prog.fo-hero-prog,html body.ftpskin .fo-hero-prog.fo-hero-prog,html body .fo-hero-hot.fo-hero-hot,html body.ftpskin .fo-hero-hot.fo-hero-hot{background:none !important}" +
+    "html body .fo-ch-hero::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(246,244,238,.024) 0 2px,transparent 2px 16px);pointer-events:none;border-radius:18px}" +
+    ".fo-ch-hero-top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;position:relative;z-index:1}" +
+    "html body .fo-ch-crest{box-shadow:0 6px 18px rgba(0,0,0,.35),0 0 0 3px rgba(246,244,238,.1)}" +
+    "html body .fo-ch-name{letter-spacing:-.6px}" +
+    ".fo-hero-pos{color:#F59E0B;font-weight:800;font-size:12px;letter-spacing:.07em;text-transform:uppercase;margin:3px 0 9px}" +
+    ".fo-hero-hot{color:#7CC5C1;font-weight:700}" +
+    "html body .fo-ch-chip{background:rgba(246,244,238,.07);border:1px solid rgba(246,244,238,.14);border-radius:999px}" +
+    "@media(max-width:820px){html body .fo-ch-hero-top{flex-direction:column;align-items:flex-start;gap:12px}.fo-ch-hero-r{display:flex;gap:8px;flex-wrap:wrap}}" +
+    ".fo-hero-prog{display:flex;align-items:center;gap:12px;margin-top:18px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#93a0b4;position:relative;z-index:1}" +
+    ".fo-hero-prog .fo-progress-bar{flex:1;height:6px;background:rgba(246,244,238,.12);border-radius:99px;overflow:hidden}" +
+    ".fo-hero-prog u{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#C95532,#F59E0B);text-decoration:none}" +
+    "html body .fo-next{position:relative;overflow:hidden}" +
+    "html body .fo-next::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#C95532,#F59E0B)}" +
+    "html body .fo-stat{transition:transform .14s ease,box-shadow .14s ease}" +
+    "html body .fo-stat:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(7,22,46,.1)}" +
+    ".fo-ch-cols{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:14px;align-items:start;margin-top:2px}" +
+    ".fo-ch-mainc>.fo-card,.fo-ch-sidec>.fo-card,.fo-ch-sidec .fo-ch-leaders{margin-top:0}" +
+    ".fo-ch-mainc{display:flex;flex-direction:column;gap:14px}" +
+    ".fo-ch-sidec{display:flex;flex-direction:column;gap:14px}" +
+    "@media(max-width:900px){.fo-ch-cols{grid-template-columns:1fr}}" +
+    "html body .fo-news{border-top:3px double #C9C2B2}" +
+    "html body .fo-news .fo-card-h2{font-family:Georgia,'Times New Roman',serif;font-size:19px;letter-spacing:.2px;color:#111827}" +
+    "html body .fo-ch-sidec .fo-ch-leaders{display:grid;grid-template-columns:1fr;gap:14px}" +
+    "html body .fo-ch-quick2{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}" +
+    "@media(max-width:700px){html body .fo-ch-quick2{grid-template-columns:repeat(2,minmax(0,1fr))}}" +
+    "html body .fo-ch-quick2 a{display:flex;align-items:center;gap:10px;background:#FFFEFC;border:1px solid #DDD8CF;border-radius:13px;padding:13px 15px;font-weight:700;font-size:13px;color:#111827 !important;text-decoration:none;transition:transform .14s ease,box-shadow .14s ease}" +
+    "html body .fo-ch-quick2 a:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(7,22,46,.09)}" +
+    "html body .fo-ch-quick2 a i{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:rgba(201,85,50,.1);color:#C95532;flex:0 0 auto}" +
     ".fo-l6{display:flex;align-items:center;gap:6px;margin:0 0 10px;flex-wrap:wrap}" +
     ".fo-live-hero .fo-l6{margin:12px 0 2px}" +
     ".fo-l6-k{font-size:10px;font-weight:800;letter-spacing:.08em;color:#667085;text-transform:uppercase;margin-right:4px}" +
@@ -2023,11 +2054,20 @@
           : "<div class='small'>No one is knocking on a landmark yet. The museum keeps everything they have already done.</div>") + "</div></div>";
 
       var formPill = pips ? "<span class='fo-hero-pill'>Form <span class='fo-form'>" + pips + "</span></span>" : "<span class='fo-hero-pill'>No matches yet</span>";
-      var hero = "<div class='fo-ch-hero'><div class='fo-ch-hero-l'>" +
+      var posLine = "";
+      if (pi >= 0 && played > 0) {
+        posLine = "<div class='fo-hero-pos'>" + foOrdinal(pos) + " of " + (rowsL.length || 10) +
+          (streak >= 2 ? " <span class='fo-hero-hot'>&middot; " + streak + "-match win streak</span>" : "") +
+          (pi === 0 ? " <span class='fo-hero-hot'>&middot; top of the table</span>" : "") + "</div>";
+      }
+      var heroProg = "<div class='fo-hero-prog'><span>Matchday " + Math.min(played + 1, totalRounds) + " of " + totalRounds + "</span>" +
+        "<div class='fo-progress-bar'><u style='width:" + Math.round(100 * played / Math.max(1, totalRounds)) + "%'></u></div>" +
+        "<span>Season " + (App.seasonNo || 1) + "</span></div>";
+      var hero = "<div class='fo-ch-hero'><div class='fo-ch-hero-top'><div class='fo-ch-hero-l'>" +
         "<div class='fo-ch-crest'><img src='" + APPICON + "' alt=''></div><div>" +
-        "<div class='fo-ch-eyebrow'>Club home</div><h1 class='fo-ch-name'>" + E(t.name) + "</h1>" +
-        "<div class='fo-ch-chips'>" + ((SYNC && SYNC.started && !SYNC.practice && SYNC.me && SYNC.me.display_name) ? "<span class='fo-ch-chip'>Manager " + E(SYNC.me.display_name) + " <i class='fo-dot fo-dot-on'></i></span>" : "") + "<span class='fo-ch-chip'>Est. " + (typeof foClubEst === "function" ? foClubEst(t) : "") + "</span><span class='fo-ch-chip'>Season " + (App.seasonNo || 1) + "</span><span class='fo-ch-chip'>Round " + (Math.min((S ? S.round : 0) + 1, (S && S.schedule ? S.schedule.length : 9))) + "</span></div>" +
-        "</div></div><div class='fo-ch-hero-r'>" + formPill + " <a class='fo-hero-pill' href='#/museum' style='text-decoration:none;cursor:pointer'>&#127963; Museum</a></div></div>";
+        "<div class='fo-ch-eyebrow'>Club home</div><h1 class='fo-ch-name'>" + E(t.name) + "</h1>" + posLine +
+        "<div class='fo-ch-chips'>" + ((SYNC && SYNC.started && !SYNC.practice && SYNC.me && SYNC.me.display_name) ? "<span class='fo-ch-chip'>Manager " + E(SYNC.me.display_name) + " <i class='fo-dot fo-dot-on'></i></span>" : "") + "<span class='fo-ch-chip'>Est. " + (typeof foClubEst === "function" ? foClubEst(t) : "") + "</span><span class='fo-ch-chip'>Round " + (Math.min((S ? S.round : 0) + 1, (S && S.schedule ? S.schedule.length : 9))) + "</span></div>" +
+        "</div></div><div class='fo-ch-hero-r'>" + formPill + " <a class='fo-hero-pill' href='#/museum' style='text-decoration:none;cursor:pointer'>&#127963; Museum</a></div></div>" + heroProg + "</div>";
 
       // ---- season momentum strip: progress bar + streak + goal-gradient nudge ----
       var strip = "<div class='fo-season-strip'>" +
@@ -2107,8 +2147,13 @@
       // minimal home: hero, search, the next match, four numbers, the paper.
       // Everything else lives on its own page (Matches, Squad, Stats, Office).
       var search = "<div class='fo-search'><input id='fo-search-in' type='search' placeholder='Search players, clubs, or how anything works\u2026' autocomplete='off' spellcheck='false'><div class='fo-search-drop' id='fo-search-drop'></div></div>";
-      var quick = "<div class='fo-ch-quick'><a href='#/matches'>Fixtures &amp; results</a><a href='#/matchday'>Matchday centre</a><a href='#/nets'>Match Lab</a><a href='#/guide'>Manual</a></div>";
-      var html = "<div class='fo-ch fo-ch-min'>" + search + hero + nextPanel + "<div id='fo-chal-alert'></div>" + stats + newsCard + standings + quick + "</div>";
+      var qk = function (href, ic, lbl) { return "<a href='" + href + "'><i>" + FO_I(ic, 18) + "</i><span>" + lbl + "</span></a>"; };
+      var quick = "<div class='fo-ch-quick fo-ch-quick2'>" +
+        qk("#/matches", "calendar", "Fixtures &amp; results") + qk("#/matchday", "target", "Matchday centre") +
+        qk("#/nets", "bat", "Match Lab") + qk("#/guide", "info", "Manual") + "</div>";
+      var html = "<div class='fo-ch fo-ch-min'>" + search + hero + nextPanel + "<div id='fo-chal-alert'></div>" + stats +
+        "<div class='fo-ch-cols'><div class='fo-ch-mainc'>" + newsCard + standings + "</div>" +
+        "<div class='fo-ch-sidec'>" + watchCard + leaders + msCard + "</div></div>" + quick + "</div>";
       setTimeout(foNextFriendly, 80);
 
       var page = document.getElementById("page"); if (!page) return;
