@@ -6682,6 +6682,41 @@
       }).join("");
     } catch (e) { return ""; }
   }
+  function foFrDoneRender(c, id) {
+    var page = document.getElementById("page"); if (!page) return;
+    var r = c.result || {};
+    var log = (r.log || []).slice().reverse();   // chronological
+    var head = "<div class='crumb'>" + E(c.challenger_club) + " v " + E(c.opponent_club) + " &raquo; Friendly</div>";
+    var hero = "<div class='fo-live-hero'><div class='fo-live-tag'>FULL TIME &middot; FRIENDLY</div>" +
+      "<div class='fo-live-score'>" + E(r.result_text || "Played") + "</div>" +
+      "<div class='fo-live-sub'>" + (r.mom ? "Star of the match: " + E(r.mom) + " &middot; " : "") + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + "</div></div>";
+    var tab = window.__foFrTab || "score";
+    var bar = "<div class='fo-sctabs'>" + [["score", "Scorecard"], ["comm", "Commentary"], ["charts", "Charts"]].map(function (t2) {
+      return "<button class='fo-sctab fo-frtab" + (tab === t2[0] ? " on" : "") + "' data-t='" + t2[0] + "'>" + t2[1] + "</button>";
+    }).join("") + "</div>";
+    var body = "";
+    if (tab === "comm") {
+      body = log.length ? "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'><div id='ftpcomm' class='ftpskin'>" +
+        (typeof ftpCommHTML === "function" ? ftpCommHTML(log, "all", 5000) : "") +
+        "<div class='fo-c-mile'><div class='text'>FULL TIME - " + E(r.result_text || "match complete") + ".</div><div class='clear'></div></div></div></div></div>" : "<div class='panel'><div class='pad small'>No commentary was recorded for this match.</div></div>";
+    } else if (tab === "charts") {
+      try { if (r.worm && r.worm[0] && typeof foMatchCharts === "function") body = "<div class='panel'><h4>Charts</h4><div class='pad'>" + foMatchCharts(r.scorecard || [], r.worm) + "</div></div>"; } catch (eCh) {}
+      if (!body) body = "<div class='panel'><div class='pad small'>No chart data was recorded for this match.</div></div>";
+    } else {
+      body = foFrScoreTables(r) || "<div class='panel'><div class='pad small'>No scorecard was recorded for this match.</div></div>";
+    }
+    page.innerHTML = "<div id='fo-fr-live'>" + head + hero + bar + body + "</div>";
+    window.__foFrCache = { id: id, row: c, html: page.innerHTML, done: true };
+  }
+  // tab clicks are delegated, so they keep working after a cache restore
+  document.addEventListener("click", function (ev) {
+    var b = ev.target && ev.target.closest ? ev.target.closest(".fo-frtab") : null;
+    if (!b) return;
+    ev.preventDefault();
+    window.__foFrTab = b.getAttribute("data-t");
+    var cc = window.__foFrCache;
+    if (cc && cc.row) foFrDoneRender(cc.row, cc.id);
+  });
   function foRenderFriendlyLive() {
     try {
       var mh = (location.hash || "").match(/^#\/friendly\?id=([\w-]+)/); if (!mh) return;
@@ -6730,18 +6765,8 @@
           window.__foFrCache = { id: mh[1], html: page.innerHTML, done: false };
           return;
         }
-        // done: full time - scorecard, charts, then the whole broadcast. Final.
-        var charts = "";
-        try { if (r.worm && r.worm[0] && typeof foMatchCharts === "function") charts = "<div class='panel'><h4>Charts</h4><div class='pad'>" + foMatchCharts(r.scorecard || [], r.worm) + "</div></div>"; } catch (eCh) { charts = ""; }
-        page.innerHTML = "<div id='fo-fr-live'>" + head +
-          "<div class='fo-live-hero'><div class='fo-live-tag'>FULL TIME &middot; FRIENDLY</div>" +
-          "<div class='fo-live-score'>" + E(r.result_text || "Played") + "</div>" +
-          "<div class='fo-live-sub'>" + (r.mom ? "Star of the match: " + E(r.mom) + " &middot; " : "") + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + "</div></div>" +
-          foFrScoreTables(r) + charts +
-          (log.length ? "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'><div id='ftpcomm' class='ftpskin'>" +
-            (typeof ftpCommHTML === "function" ? ftpCommHTML(log, "all", 5000) : "") +
-            "<div class='fo-c-mile'><div class='text'>FULL TIME - " + E(r.result_text || "match complete") + ".</div><div class='clear'></div></div>" + "</div></div></div>" : "");
-        window.__foFrCache = { id: mh[1], html: page.innerHTML, done: true };
+        // done: full time - a proper little match centre with sub-tabs
+        foFrDoneRender(c, mh[1]);
       }).catch(function () {});
     } catch (e) {}
   }
