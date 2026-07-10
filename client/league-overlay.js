@@ -482,7 +482,10 @@
     "@media(max-width:820px){html body button.fo-watch-live{width:100%;justify-content:center}}" +
     ".fo-mhead{display:flex;gap:22px;align-items:stretch;background:linear-gradient(135deg,#0E233F,#07162E 62%);border-radius:16px;padding:20px 22px;margin:8px 0 14px;color:#c7cfda}" +
     ".fo-mh-l{flex:1 1 auto;min-width:0}" +
-    ".fo-mh-eyebrow{font-size:11px;font-weight:800;letter-spacing:.1em;color:#ff8a7a;text-transform:uppercase;margin-bottom:9px}" +
+    ".fo-mh-eyebrow{font-size:9.5px;font-weight:800;letter-spacing:.09em;color:#ff8a7a;text-transform:uppercase;margin-bottom:9px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}" +
+    ".fo-mh-cnd{display:inline-flex;gap:5px;margin-left:2px}" +
+    ".fo-mh-ic{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:8px;background:rgba(246,244,238,.08);border:1px solid rgba(246,244,238,.14);color:#c7cfda}" +
+    ".fo-mh-toss{margin-top:5px;font-size:11.5px;color:#93a0b4}" +
     ".fo-mh-team{display:flex;align-items:baseline;gap:8px;padding:3px 0;color:#93a0b4;font-size:17px}" +
     ".fo-mh-team .fo-mh-nm{font-weight:800}" +
     ".fo-mh-team.win{color:#fff}" +
@@ -491,11 +494,11 @@
     ".fo-mh-res{margin-top:9px;font-weight:800;color:#E8A87C;font-size:14.5px}" +
     ".fo-mh-r{flex:0 0 230px;border-left:1px solid rgba(246,244,238,.14);padding-left:20px;display:flex;flex-direction:column;justify-content:center;gap:3px}" +
     ".fo-mh-k{font-size:10px;font-weight:800;letter-spacing:.08em;color:#93a0b4;text-transform:uppercase}" +
-    ".fo-mh-pn a{font-weight:800;font-size:15px;color:#fff;text-decoration:none}" +
-    ".fo-mh-pn a:hover{color:#E8A87C}" +
+    "html body #page .fo-mh-pn a,html body .fo-mh-pn a{font-weight:800;font-size:15px;color:#F59E0B !important;text-decoration:none}" +
+    "html body #page .fo-mh-pn a:hover,html body .fo-mh-pn a:hover{color:#FBBF24 !important}" +
     ".fo-mh-pt{font-size:12.5px;color:#93a0b4}" +
     ".fo-mh-pf{font-size:13px;color:#c7cfda;font-weight:600}" +
-    "@media(max-width:820px){.fo-mhead{flex-direction:column;gap:12px}.fo-mh-r{border-left:0;border-top:1px solid rgba(246,244,238,.14);padding:12px 0 0}}" +
+    "@media(max-width:820px){.fo-mhead{flex-direction:column;gap:10px;padding:16px 16px}.fo-mh-r{flex:0 0 auto;border-left:0;border-top:1px solid rgba(246,244,238,.14);padding:12px 0 0}.fo-mh-team{font-size:14.5px}.fo-mh-sc{font-size:16px}.fo-mh-res{font-size:12.5px;margin-top:7px}.fo-mh-eyebrow{font-size:8.5px}.fo-mh-toss{font-size:10.5px}html body #page .fo-mh-pn a,html body .fo-mh-pn a{font-size:13.5px}.fo-mh-pf{font-size:12px}}" +
     ".fo-l6{display:flex;align-items:center;gap:6px;margin:0 0 10px;flex-wrap:wrap}" +
     ".fo-live-hero .fo-l6{margin:12px 0 2px}" +
     ".fo-l6-k{font-size:10px;font-weight:800;letter-spacing:.08em;color:#667085;text-transform:uppercase;margin-right:4px}" +
@@ -3557,10 +3560,29 @@
         if (!window.__foPracRun && App && App.pending && App.pending.__friendly && App.orders && App.orders.saved && !(typeof M !== "undefined" && M && !M.done)) {
           var cP = foPracBroadcast();
           if (cP && cP.id) {
-            toast("The umpires are out - your practice match is LIVE.");
-            location.hash = "#/friendly?id=" + cP.id;
-            if (typeof window.route === "function") try { window.route(); } catch (eRt) {}
-            setTimeout(foRenderFriendlyLive, 30);
+            var goPrac = function (pid) {
+              toast("The umpires are out - your practice match is LIVE.");
+              location.hash = "#/friendly?id=" + pid;
+              if (typeof window.route === "function") try { window.route(); } catch (eRt) {}
+              setTimeout(foRenderFriendlyLive, 30);
+            };
+            if (SYNC && SYNC.started && !SYNC.practice && LG) {
+              // record it like a friendly, so every device sees the broadcast
+              rpc("practice_record", {
+                p_league_id: LG.id, p_club: cP.challenger_club, p_opponent: cP.opponent_club,
+                p_pitch: cP.pitch, p_weather: cP.weather, p_result: cP.result
+              }).then(function (nid) {
+                try {
+                  lsSet(foPracBcKey(), "null");                       // the server copy wins
+                  var at0 = +String(cP.id).slice(5);
+                  var h2 = foFrHist().filter(function (e2) { return e2.at !== at0; });
+                  lsSet(foFrHistKey(), JSON.stringify(h2));           // no duplicate row
+                } catch (eDd) {}
+                window.__foFrSig = null; window.__foFrFetchAt = 0;
+                setTimeout(foBellPoll, 400);
+                goPrac(nid);
+              }).catch(function () { goPrac(cP.id); });               // 0020 not run yet: this device only
+            } else goPrac(cP.id);
             return;
           }
         }
@@ -6909,7 +6931,7 @@
       return (r.scorecard || []).map(function (inn) {
         if (!inn) return "";
         var bat = (inn.batting || []).filter(function (b2) { return b2.b || b2.r || (b2.out && b2.out !== "not out"); }).map(function (b2) {
-          return "<tr><td><b>" + E(b2.name) + "</b><div class='small'>" + E(b2.out || "") + "</div></td><td class='n'><b>" + (b2.r || 0) + "</b></td><td class='n'>" + (b2.b || 0) + "</td><td class='n'>" + (b2.f4 || 0) + "</td><td class='n'>" + (b2.f6 || 0) + "</td><td class='n'>" + (b2.sr || 0) + "</td></tr>";
+          return "<tr><td><b>" + E(b2.name) + "</b><div class='small'>" + E(b2.out || "") + "</div></td><td class='n'><b>" + (b2.r || 0) + (b2.out === "not out" ? "*" : "") + "</b></td><td class='n'>" + (b2.b || 0) + "</td><td class='n'>" + (b2.f4 || 0) + "</td><td class='n'>" + (b2.f6 || 0) + "</td><td class='n'>" + (b2.sr || 0) + "</td></tr>";
         }).join("");
         var bowl = (inn.bowling || []).map(function (bw) {
           return "<tr><td><b>" + E(bw.name) + "</b></td><td class='n'>" + bw.overs + "</td><td class='n'>" + bw.r + "</td><td class='n'>" + bw.w + "</td><td class='n'>" + bw.econ + "</td></tr>";
@@ -6926,6 +6948,96 @@
     var tk = null;
     try { (r.track || []).forEach(function (t2) { if (t2 && t2.L <= upto && (!tk || t2.L > tk.L)) tk = t2; }); } catch (e) {}
     return tk;
+  }
+  // pull "X won the toss and chose to bat/bowl" out of a banked commentary
+  // log (the crowd-intro line carries it for every competition)
+  function foTossFromLog(log) {
+    try {
+      for (var i = 0; i < (log || []).length; i++) {
+        var L = log[i];
+        if (!L || !L.txt) continue;
+        var mt = /([A-Za-z0-9' -]+ won the toss and chose to (?:bat|bowl))/.exec(L.txt);
+        if (mt) return mt[1].trim() + ".";
+      }
+    } catch (e) {}
+    return "";
+  }
+  // condition glyphs in the onboarding monoline style
+  function foMhIcons(pitch, weather) {
+    var IC = function (path, title) { return "<span class='fo-mh-ic' title='" + E(title) + "'><svg viewBox='0 0 24 24' width='15' height='15' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'>" + path + "</svg></span>"; };
+    var PG = {
+      balanced: "<circle cx='12' cy='12' r='8'/><path d='M9.6 5.6c2.4 4 2.4 8.8 0 12.8M14.4 5.6c-2.4 4-2.4 8.8 0 12.8'/>",
+      flat: "<path d='M4 15h16M6 10h12'/>",
+      green: "<path d='M12 21c-5 0-8-3-8-8 5 0 8 3 8 8zM12 21c0-7 2-12 8-16-1 7-3 12-8 16z'/>",
+      dry: "<path d='M12 3v5M8 8l-3 4M16 8l3 4M12 12v9M7 16l-3 4M17 16l3 4'/>",
+      slow: "<circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 3'/>",
+      cracked: "<path d='M5 20l4-8-2-3 4-6M13 20l2-6 4-2-1-6'/>",
+      twoPaced: "<path d='M6 6l6 6-6 6M13 6l6 6-6 6'/>"
+    };
+    var WG = {
+      sunny: "<circle cx='12' cy='12' r='4'/><path d='M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1'/>",
+      overcast: "<path d='M17 18H7a4 4 0 1 1 .6-7.96A5.5 5.5 0 0 1 18 8.5 4.5 4.5 0 0 1 17 18z'/>",
+      humid: "<path d='M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z'/>",
+      hot: "<circle cx='12' cy='12' r='4'/><path d='M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.5 1.5M16.9 16.9l1.5 1.5M18.4 5.6l-1.5 1.5M7.1 16.9l-1.5 1.5'/>",
+      scorching: "<circle cx='12' cy='12' r='5'/><path d='M12 1v4M12 19v4M1 12h4M19 12h4M4 4l3 3M17 17l3 3M20 4l-3 3M7 17l-3 3'/>",
+      drizzle: "<path d='M17 13H7a4 4 0 1 1 .6-7.96A5.5 5.5 0 0 1 18 3.5 4.5 4.5 0 0 1 17 13z'/><path d='M8 17l-1 3M12 17l-1 3M16 17l-1 3'/>",
+      windy: "<path d='M3 8h10a3 3 0 1 0-3-3M3 13h14a3 3 0 1 1-3 3M3 18h7'/>",
+      chilly: "<path d='M12 2v20M4 6l16 12M20 6L4 18'/>",
+      misty: "<path d='M4 9h16M2 13h20M5 17h14'/>",
+      "dew later": "<path d='M17 12H7a4 4 0 1 1 .6-7.96A5.5 5.5 0 0 1 18 2.5 4.5 4.5 0 0 1 17 12z'/><path d='M12 15c1.5 2 3 3.5 3 5.2a3 3 0 0 1-6 0c0-1.7 1.5-3.2 3-5.2z'/>"
+    };
+    var pk = String(pitch || "").trim(), wk = String(weather || "").trim().toLowerCase();
+    var out = "";
+    if (PG[pk]) out += IC(PG[pk], foPitchName(pk) + " pitch");
+    if (WG[wk]) out += IC(WG[wk], weather);
+    else if (wk) out += IC(WG.overcast, weather);
+    return out ? "<span class='fo-mh-cnd'>" + out + "</span>" : "";
+  }
+  // the navy broadsheet result header, shared by league, friendly and
+  // practice full-time pages. cards = innings in the banked card shape.
+  // meta: { kind, seasonNo, roundNo, dateStr, pitch, weather, toss }
+  function foMheadHTML(cards, resultText, meta, potm) {
+    try {
+      meta = meta || {};
+      var sc0 = (cards || [])[0], sc1 = (cards || [])[1];
+      if (!sc0) return "";
+      var line = function (inn, chase) {
+        if (!inn) return "";
+        var win = resultText && inn.batTeam && resultText.indexOf(inn.batTeam) === 0;
+        var tot = inn.runs + (inn.wkts >= 10 ? "" : "/" + inn.wkts);
+        var ov = chase
+          ? "<span class='fo-mh-ov'>(" + E(String(inn.overs || "")) + "/50 ov, T:" + (sc0.runs + 1) + ")</span>"
+          : "<span class='fo-mh-ov'>(" + E(String(inn.overs || "")) + " ov)</span>";
+        return "<div class='fo-mh-team" + (win ? " win" : "") + "'><span class='fo-mh-nm'>" + E(inn.batTeam || "") + "</span>" + ov + "<span class='fo-mh-sc'>" + tot + "</span></div>";
+      };
+      var figs = function (name) {
+        var parts = [];
+        (cards || []).forEach(function (inn) {
+          if (!inn) return;
+          (inn.batting || []).forEach(function (x) { if (x.name === name && (x.b || (x.out && x.out !== "not out"))) parts.push((x.r || 0) + (x.out === "not out" ? "*" : "") + " (" + (x.b || 0) + ")"); });
+          (inn.bowling || []).forEach(function (x) { if (x.name === name) parts.push((x.w || 0) + "/" + (x.r || 0)); });
+        });
+        return parts.join(" &amp; ");
+      };
+      var pomHtml = "";
+      if (potm && potm.n) {
+        var pf = figs(potm.n);
+        pomHtml = "<div class='fo-mh-r'><div class='fo-mh-k'>Player of the match</div>" +
+          "<div class='fo-mh-pn'><a href='#/player?n=" + encodeURIComponent(potm.n) + "'>" + E(potm.n) + "</a>" + (potm.team ? "<span class='fo-mh-pt'> &middot; " + E(potm.team) + "</span>" : "") + "</div>" +
+          (pf ? "<div class='fo-mh-pf'>" + pf + "</div>" : (potm.sub ? "<div class='fo-mh-pf'>" + potm.sub + "</div>" : "")) + "</div>";
+      }
+      var eye = ["FULL TIME"];
+      if (meta.kind) eye.push(meta.kind);
+      if (meta.seasonNo) eye.push("SEASON " + meta.seasonNo);
+      if (meta.roundNo) eye.push("ROUND " + meta.roundNo);
+      if (meta.dateStr) eye.push(E(meta.dateStr));
+      return "<div class='fo-mhead'><div class='fo-mh-l'>" +
+        "<div class='fo-mh-eyebrow'>" + eye.join(" &middot; ") + foMhIcons(meta.pitch, meta.weather) + "</div>" +
+        line(sc0, false) + line(sc1, true) +
+        "<div class='fo-mh-res'>" + E(resultText || "Played") + "</div>" +
+        (meta.toss ? "<div class='fo-mh-toss'>" + E(meta.toss) + "</div>" : "") +
+        "</div>" + pomHtml + "</div>";
+    } catch (e) { return ""; }
   }
   function foLast6HTML(chron, upto) {
     try {
@@ -6955,7 +7067,7 @@
       if (!x) return "";
       return "<div class='fo-lv-pc'><span class='fo-lv-tag'>" + tag + "</span><a href='#/player?n=" + encodeURIComponent(x.n) + "'>" + E(x.n) + "</a><span class='fo-lv-fig'>" + fig + "</span></div>";
     };
-    var bat = function (x, tag) { return !x ? "" : pc(x, tag, "<b>" + (x.r || 0) + "</b> (" + (x.b || 0) + ")" + ((x.f4 || x.f6) ? " &middot; " + (x.f4 || 0) + "x4 " + (x.f6 || 0) + "x6" : "")); };
+    var bat = function (x, tag) { return !x ? "" : pc(x, tag, "<b>" + (x.r || 0) + "*</b> (" + (x.b || 0) + ")" + ((x.f4 || x.f6) ? " &middot; " + (x.f4 || 0) + "x4 " + (x.f6 || 0) + "x6" : "")); };
     return "<div class='fo-lv-cards'>" +
       bat(tk.s, "Striker &#9733;") + bat(tk.ns, "Non-striker") +
       (tk.bw ? pc(tk.bw, "Bowler", "<b>" + (tk.bw.w || 0) + "/" + (tk.bw.r || 0) + "</b> (" + Math.floor((tk.bw.b || 0) / 6) + "." + ((tk.bw.b || 0) % 6) + " ov)") : "") + "</div>";
@@ -6982,7 +7094,8 @@
       var bat = orderBat.map(function (n) {
         var x = seenBat[n];
         var st2 = atCrease[n] ? "<span style='color:#15803D;font-weight:700'>batting</span>" : E(outTxt[n] && outTxt[n] !== "not out" ? outTxt[n] : "");
-        return "<tr><td><b>" + E(n) + "</b><div class='small'>" + st2 + "</div></td><td class='n'><b>" + (x.r || 0) + "</b></td><td class='n'>" + (x.b || 0) + "</td><td class='n'>" + (x.f4 || 0) + "</td><td class='n'>" + (x.f6 || 0) + "</td><td class='n'>" + (x.b ? (100 * x.r / x.b).toFixed(1) : 0) + "</td></tr>";
+        var star2 = (atCrease[n] || !outTxt[n] || outTxt[n] === "not out") ? "*" : "";
+        return "<tr><td><b>" + E(n) + "</b><div class='small'>" + st2 + "</div></td><td class='n'><b>" + (x.r || 0) + star2 + "</b></td><td class='n'>" + (x.b || 0) + "</td><td class='n'>" + (x.f4 || 0) + "</td><td class='n'>" + (x.f6 || 0) + "</td><td class='n'>" + (x.b ? (100 * x.r / x.b).toFixed(1) : 0) + "</td></tr>";
       }).join("");
       var bowl = orderBowl.map(function (n) {
         var x = seenBowl[n];
@@ -7065,44 +7178,15 @@
     var r = c.result || {};
     var log = (r.log || []).slice().reverse();   // chronological
     var head = "<div class='crumb'>" + E(c.challenger_club) + " v " + E(c.opponent_club) + " &raquo; " + (c.__practice ? "Practice" : "Friendly") + "</div>";
-    // broadsheet result header: both totals, the chase context, the result
-    // line, and the player of the match with his real match figures
+    // broadsheet result header, shared with league scorecards
     var hero = "";
     try {
-      var sc0 = (r.scorecard || [])[0], sc1 = (r.scorecard || [])[1];
-      var mhLine = function (inn, chase) {
-        if (!inn) return "";
-        var win = r.result_text && inn.batTeam && r.result_text.indexOf(inn.batTeam) === 0;
-        var tot = inn.runs + (inn.wkts >= 10 ? "" : "/" + inn.wkts);
-        var ov = chase
-          ? "<span class='fo-mh-ov'>(" + E(String(inn.overs || "")) + "/50 ov, T:" + (sc0 ? sc0.runs + 1 : "") + ")</span>"
-          : "<span class='fo-mh-ov'>(" + E(String(inn.overs || "")) + " ov)</span>";
-        return "<div class='fo-mh-team" + (win ? " win" : "") + "'><span class='fo-mh-nm'>" + E(inn.batTeam || "") + "</span>" + ov + "<span class='fo-mh-sc'>" + tot + "</span></div>";
-      };
-      var mhFigs = function (name) {
-        var parts = [];
-        (r.scorecard || []).forEach(function (inn) {
-          if (!inn) return;
-          (inn.batting || []).forEach(function (x) { if (x.name === name && (x.b || (x.out && x.out !== "not out"))) parts.push((x.r || 0) + (x.out === "not out" ? "*" : "") + " (" + (x.b || 0) + ")"); });
-          (inn.bowling || []).forEach(function (x) { if (x.name === name) parts.push((x.w || 0) + "/" + (x.r || 0)); });
-        });
-        return parts.join(" &amp; ");
-      };
       var topF = r.fantasy && r.fantasy[0];
-      var pomN = topF ? topF.n : (r.mom || "");
-      var pomTeam = topF ? topF.team : "";
-      var pomFigs = pomN ? mhFigs(pomN) : "";
-      var pomHtml = pomN
-        ? "<div class='fo-mh-r'><div class='fo-mh-k'>Player of the match</div>" +
-          "<div class='fo-mh-pn'><a href='#/player?n=" + encodeURIComponent(pomN) + "'>" + E(pomN) + "</a>" + (pomTeam ? "<span class='fo-mh-pt'> &middot; " + E(pomTeam) + "</span>" : "") + "</div>" +
-          (pomFigs ? "<div class='fo-mh-pf'>" + pomFigs + "</div>" : (topF ? "<div class='fo-mh-pf'>" + (topF.pts || 0) + " fantasy pts</div>" : "")) + "</div>"
-        : "";
-      if (sc0) {
-        hero = "<div class='fo-mhead'><div class='fo-mh-l'>" +
-          "<div class='fo-mh-eyebrow'>FULL TIME &middot; " + (c.__practice ? "PRACTICE" : "FRIENDLY") + " &middot; " + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + "</div>" +
-          mhLine(sc0, false) + mhLine(sc1, true) +
-          "<div class='fo-mh-res'>" + E(r.result_text || "Played") + "</div></div>" + pomHtml + "</div>";
-      }
+      var dateF = "";
+      try { if (c.play_at) dateF = new Date(c.play_at).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" }); } catch (eD) {}
+      hero = foMheadHTML(r.scorecard, r.result_text,
+        { kind: c.__practice ? "PRACTICE" : "FRIENDLY", dateStr: dateF, pitch: c.pitch, weather: c.weather, toss: r.toss || foTossFromLog(r.log) },
+        topF ? { n: topF.n, team: topF.team, sub: (topF.pts || 0) + " fantasy pts" } : (r.mom ? { n: r.mom } : null));
     } catch (eMh) {}
     if (!hero) hero = "<div class='fo-live-hero'><div class='fo-live-tag'>FULL TIME &middot; " + (c.__practice ? "PRACTICE" : "FRIENDLY") + "</div>" +
       "<div class='fo-live-score'>" + E(r.result_text || "Played") + "</div>" +
@@ -7199,6 +7283,7 @@
       if (!page.querySelector("#fo-fr-live")) page.innerHTML = "<div id='fo-fr-live'><div class='crumb'>Friendly &raquo; Live</div><div class='panel'><div class='pad small'>Tuning in&hellip;</div></div></div>";
       sel("league_challenges", "id=eq." + mh[1] + "&select=*").then(function (rows) {
         var c = rows && rows[0]; if (!c) { page.innerHTML = "<div class='panel'><div class='pad small'>That friendly is gone.</div></div>"; return; }
+        try { var othP = c.challenger_club === userTeam().name ? c.opponent_club : c.challenger_club; if (!foClubHuman(othP)) c.__practice = true; } catch (ePr) {}
         if ((location.hash || "").indexOf(mh[1]) < 0) return;   // navigated away
         var st = foFrBcastState(c);
         var title = E(c.challenger_club) + " v " + E(c.opponent_club);
@@ -7308,7 +7393,8 @@
             act = "<a href='#/friendly?id=" + c.id + "'>" + E(c.result.result_text || "played") + "</a>";
             if (!seen[c.id]) { toast("Friendly result: " + (c.result.result_text || "played")); seen[c.id] = 1; }
           }
-          entries.push({ ts: ts, html: "<tr><td>" + when + "</td><td>Friendly</td><td>" + (mineSent ? "vs " : "from ") + E(vs) + " <span class='small'>" + foPitchName(c.pitch) + ", " + E(c.weather || "") + "</span></td><td>" + act + "</td></tr>" });
+          var typLbl = "Friendly"; try { if (!foClubHuman(vs)) typLbl = "Practice"; } catch (eTL) {}
+          entries.push({ ts: ts, html: "<tr><td>" + when + "</td><td>" + typLbl + "</td><td>" + (mineSent ? "vs " : "from ") + E(vs) + " <span class='small'>" + foPitchName(c.pitch) + ", " + E(c.weather || "") + "</span></td><td>" + act + "</td></tr>" });
         });
         lsSet(seenK, JSON.stringify(seen));
       }
@@ -10278,19 +10364,7 @@
     window.foScorecardCards = function (innings) {
       var all = (innings || []).filter(Boolean);
       if (!all.length) return "";
-      var rec = null;
-      try {
-        rec = (App.results || []).find(function (r) { return r.innings === innings || r.innings === all; }) ||
-          (((typeof M !== "undefined") && M && (M.innings === innings || M.innings === all)) ? { worm: M.worm, result: M.done ? M.result : null } : null);
-      } catch (e) {}
-      var fp = [];
-      try { fp = foFantasyPoints(all); } catch (e) {}
       var out = "";
-      if (rec && rec.result && rec.result.mom && fp.length) {
-        var top = fp[0];
-        out += "<div class='fo-pom'><div class='fo-pom-k'>Player of the match</div><div class='fo-pom-n'>" + E(top.n) + "</div>" +
-          "<div class='fo-pom-s'>" + E(top.team || "") + " &middot; <b>" + top.pts + " fantasy pts</b> (bat " + top.bat + " &middot; bowl " + top.bowl + " &middot; field " + top.field + ")</div></div>";
-      }
       out += all.map(function (inn, idx) {
         var other = all.length === 2 ? all[1 - idx] : null;
         var keeperNm = other ? (foKeeperFromDis(other) || (((other.bxi || []).find(function (p) { return p.keeper; }) || {}).name)) :
@@ -10308,7 +10382,7 @@
           var sr = b.b ? (100 * b.r / b.b).toFixed(1) : "-";
           return "<tr class='" + (b.out ? "" : "fo-sci-no") + "'><td class='fo-sci-nm'>" + playerLink(b.p) + mark(b.p) +
             "<span class='fo-sci-dis'>" + E(b.out || "not out") + "</span></td>" +
-            "<td class='n'><b>" + b.r + "</b></td><td class='n'>" + b.b + "</td><td class='n'>" + (b.f4 || 0) + "</td><td class='n'>" + (b.f6 || 0) + "</td><td class='n'>" + sr + "</td></tr>";
+            "<td class='n'><b>" + b.r + (b.out ? "" : "*") + "</b></td><td class='n'>" + b.b + "</td><td class='n'>" + (b.f4 || 0) + "</td><td class='n'>" + (b.f6 || 0) + "</td><td class='n'>" + sr + "</td></tr>";
         }).join("");
         var ex = inn.extras || { wd: 0, nb: 0, b: 0, lb: 0 };
         var exN = ex.wd + ex.nb + ex.b + ex.lb;
@@ -10347,6 +10421,28 @@
         _psc.apply(this, arguments);
         try {
           var bar = document.querySelector("#page .fo-sctabs"); if (!bar) return;
+          // the same broadsheet result header friendlies carry, above the tabs
+          try {
+            if (!document.querySelector("#page .fo-mhead")) {
+              var recH = (q && q.i !== undefined && App.results[+q.i]) || null;
+              if (recH && recH.result && recH.result.text) {
+                var cardsH = (recH.innings || []).filter(Boolean).map(foInnCard);
+                var fpH = []; try { fpH = foFantasyPoints((recH.innings || []).filter(Boolean)); } catch (eFp) {}
+                var compH = recH.comp === "league" ? "LEAGUE" : recH.comp === "cup" ? "CUP" : recH.comp === "friendly" ? "PRACTICE" : E(String(recH.comp || "").toUpperCase());
+                var dateL = "";
+                try {
+                  if (recH.comp === "league" && recH.round != null) dateL = foDailyDate(recH.round, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+                  else if (recH.date) dateL = String(recH.date);
+                } catch (eDl) {}
+                var hH = foMheadHTML(cardsH, recH.result.text,
+                  { kind: compH, seasonNo: recH.comp === "league" ? (App.seasonNo || 1) : null,
+                    roundNo: recH.comp === "league" && recH.round != null ? recH.round + 1 : null,
+                    dateStr: dateL, pitch: recH.pitch, weather: recH.weather, toss: foTossFromLog(recH.log) },
+                  fpH[0] ? { n: fpH[0].n, team: fpH[0].team, sub: (fpH[0].pts || 0) + " fantasy pts" } : null);
+                if (hH) { var dvH = document.createElement("div"); dvH.innerHTML = hH; bar.parentNode.insertBefore(dvH.firstChild, bar); }
+              }
+            }
+          } catch (eMh2) {}
           // the match date belongs on the card
           try {
             var recD = (q && q.i !== undefined && App.results[+q.i]) || null;
