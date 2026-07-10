@@ -4558,71 +4558,129 @@
       "<div class='fo-exp-meta'>" + hand + " &middot; " + E(bt) + " &middot; age " + ex.age + "</div>" + ovr + moneyRow +
       detail + "</div>";
   }
-  function foTraitGlossary() {
+  function foTraitGlossary(keys) {
     var gsec = function (title, note, rows) {
       return "<div class='fo-exp-def'><b class='fo-exp-gt'>" + title + "</b>" + (note ? "<span class='fo-exp-gnote'>" + note + "</span>" : "") +
         rows.map(function (r) { return "<div class='fo-exp-tr'><i>" + r[0] + "</i><span>" + r[1] + "</span></div>"; }).join("") + "</div>";
     };
-    var defs =
-      "<div class='fo-exp-dh'>What every number actually does</div>" +
-      gsec("Batting", "every player has these", [
-        ["Overall", "The headline batting number: a weighted blend of the five skills below."],
-        ["vs pace", "Scoring and survival against fast bowling. A low number gets found out by quicks, worst of all on a green pitch."],
-        ["vs spin", "The same against finger and wrist spin. Spin-weak batters get strangled through the middle overs on turning pitches."],
-        ["Rotation", "Turns dot balls into singles and twos. Keeps the score moving without risk: the difference between 40 off 70 and 40 off 55."],
-        ["Power", "Boundary muscle. Decides how often a good connection clears the rope, and what he is worth at the death."],
-        ["Temperament", "Composure under pressure: fewer soft dismissals in tight chases and when wickets are falling around him."]
-      ]) +
-      gsec("Bowling", "bowlers only", [
-        ["Overall", "The headline bowling number, at the top of the group just like the batting one: a blend of all six bowling skills."],
-        ["Wicket threat", "Raw ability to create chances: edges, bowled, lbw. The single biggest driver of wickets."],
-        ["Economy", "Run-choking control: more dot balls, fewer easy boundaries."],
-        ["Discipline", "Fewer wides and no-balls, so fewer free runs and extra deliveries."],
-        ["Move / turn", "Seam movement for pacers, bite for spinners. Green pitches multiply seam; crumbling ones multiply turn."],
-        ["Stamina", "How long a spell stays honest. Low stamina fades late in long spells, and hot or humid days drain it far faster."]
-      ]) +
-      gsec("Reserves", "batters who do not bowl", [
-        ["Technique", "A pure batter&rsquo;s craft: his vs pace, vs spin and temperament rolled into one number."],
-        ["Endurance", "How fresh he stays deep into a long innings; tired legs bring soft dismissals late."]
-      ]) +
-      gsec("In the field", "", [
-        ["Fielding", "Ground fielding: stops runs, saves boundaries and creates run-outs."],
-        ["Catching", "When a bowler earns the edge, this decides whether the chance sticks or is DROPPED."],
-        ["Keeping", "Keepers only: glovework behind the stumps, byes saved and edges taken."],
-        ["Stumping", "Keepers only: how fast the bails come off when a batter overbalances."]
-      ]) +
-      gsec("The footer", "", [
-        ["Experience", "Steadies the big moments; an experienced head plays closer to his numbers under pressure."],
-        ["Captaincy", "Your captain&rsquo;s number lifts the whole XI in the field, but the armband costs him extra energy on draining days."],
-        ["Fatigue", "His freshness today. Tired players bat, bowl and field below their numbers until they rest."],
+    // every line below is checked against the live match engine: what a skill
+    // actually touches, per ball, is exactly what it is said to touch
+    var G = {
+      batting: gsec("Batting", "every player has these", [
+        ["Overall", "The headline batting number: a weighted blend of the five skills below. Every player owns one, bowlers included: it is what he brings when he walks out to bat."],
+        ["vs pace", "Scoring and survival against fast bowling. It feeds the overall, and it acts directly on every ball a seamer bowls at him: a low number gets found out by quicks, worst of all on a green pitch."],
+        ["vs spin", "The same against finger and wrist spin, live on every ball of spin he faces. Spin-weak batters get strangled through the middle overs on turning pitches."],
+        ["Rotation", "Turns dot balls into singles and twos on every quiet delivery, on top of feeding the overall. The difference between 40 off 70 and 40 off 55."],
+        ["Power", "Sixes. Every good connection carries further, and in the last ten overs power also pumps the boundary rate directly: the death is where it pays double."],
+        ["Temperament", "The quiet fifth of the overall: general tightness of technique that is always on, whoever is bowling. It has no special pressure trigger of its own - big-moment composure is <b>Experience</b>, in the footer."]
+      ]),
+      bowling: gsec("Bowling", "bowlers only", [
+        ["Overall", "The headline bowling number, at the top of the group just like the batting one: the average of his six bowling skills, the scout&rsquo;s one-figure price of the craft."],
+        ["Wicket threat", "Raw ability to create chances - edges, bowled, lbw - checked on every single ball he bowls. The biggest driver of wickets in the game."],
+        ["Economy", "Control, checked on every ball: more dot balls, and fewer wides sprayed under pressure. The engine&rsquo;s word for a bowler who is simply hard to score off."],
+        ["Discipline", "Craft that shows in his overall and his fee rather than ball by ball - on the day, control is expressed through Economy. Train it to lift his overall and his value."],
+        ["Move / turn", "Also priced into the overall; the movement you actually watch comes from his <b>type</b> meeting the conditions: green pitches multiply seam, dry ones multiply turn, the new ball swings, the old one grips."],
+        ["Stamina", "How long a spell stays honest, and how fresh he starts the next matchday. Bowling burns energy roughly twice as fast as batting - genuine quicks fastest of all - and hot or humid days drain everyone faster."]
+      ]),
+      reserves: gsec("Reserves", "batters who do not bowl", [
+        ["Technique", "A summary, not a separate skill: his vs pace, vs spin and temperament averaged into one number, so you can price a batter&rsquo;s craft at a glance."],
+        ["Stamina", "Not just for bowlers: stamina sets how fast <i>any</i> player tires, every ball he bats (keepers work hardest of the fielding side). Tired batters find fielders, and a long hot innings leaves the legs heavy for the next matchday."]
+      ]),
+      field: gsec("In the field", "", [
+        ["Fielding", "Checked on almost every ball in the field: high numbers cut fours into twos and twos into singles; low ones leak misfields and fumbles. The XI&rsquo;s <i>average</i> fielding also tightens the whole innings: more dots, fewer boundaries."],
+        ["Catching", "When the edge comes, the catcher&rsquo;s hands set the drop chance: about one in six for ordinary hands, closer to one in a hundred for the very best. Cold and misty days make everyone butterier."],
+        ["Keeping", "The heart of the glove rating (stumping and catching mix in): a good keeper concedes fewer byes and turns more edges into wickets."],
+        ["Stumping", "Quickness of the hands: more stumping chances taken, fewer fluffed, everything sharper standing up to spin."]
+      ]),
+      footer: gsec("The footer", "", [
+        ["Experience", "The real pressure skill. As required rates climb, wickets fall and the death arrives, experienced batters panic less and experienced bowlers hold their nerve - both live effects that grow with the tension."],
+        ["Captaincy", "Works at both ends: a sharp captain squeezes extra dot balls out of his fielding XI and quietly steadies the side&rsquo;s batting. The armband also costs him extra energy on draining days."],
+        ["Fatigue", "His freshness today. Tired players bat, bowl and field below their numbers until they rest, and deep fatigue carries into the next matchday."],
         ["Nationality", "Home country. The two best performers per country earn international call-ups during the season."]
-      ]) +
-      gsec("Reading the page", "", [
+      ]),
+      reading: gsec("Reading the page", "", [
         ["Words &amp; colours", "Every number wears an honest word (atrocious at the bottom, legendary at the top) and a colour: <b style='color:#C84F4A'>red</b> is a liability, <b style='color:#D9A441'>amber</b> does a job, <b style='color:#2d7a76'>teal</b> is good, <b style='color:#3E9960'>green</b> wins matches."],
-        ["Hand &amp; style", "RHB or LHB, plus the bowling type: genuine fast, fast medium, medium, finger spin or wrist spin. Rarity and value are on the next page."],
+        ["Hand &amp; style", "RHB or LHB, plus the bowling type: genuine fast, fast medium, medium, finger spin or wrist spin. The types and their rarity are explained on the bowler&rsquo;s page."],
         ["Age", "Young players train faster and recover quicker. Past 30 they fade late in innings and decline between seasons."],
         ["Fee &amp; wage", "The fee is paid once, at the draft. The wage is paid every matchday, all season, so a full squad of stars will drain the bank twice over."]
-      ]);
-    return defs;
+      ])
+    };
+    var order = (keys && keys.length) ? keys : ["batting", "bowling", "reserves", "field", "footer", "reading"];
+    return order.map(function (k) { return G[k] || ""; }).join("");
   }
-  function foOnbPlayers() {
-    FO_ONB.step = 5;
-    var pool = (App.founder && App.founder.pool) || [];
+  // ---- Screen 5 : How to read a player, one archetype per page ------------
+  // batsman -> bowler (with bowling styles) -> wicketkeeper -> all-rounder.
+  // Each page shows ONE live example card from the manager's own draft pool
+  // beside only the glossary groups that player type actually raises.
+  function foOnbPool() { return (App.founder && App.founder.pool) || []; }
+  function foOnbExamples() {
+    var pool = foOnbPool();
     var byRat = function (a, b) { return (b.rating || 0) - (a.rating || 0); };
-    var batter = pool.filter(function (p) { return (!p.bowlTypeFull || p.bowlTypeFull === "none") && !p.keeper; }).sort(byRat)[0];
-    var bowler = pool.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none"; }).sort(byRat)[0];
+    var isBowl = function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none"; };
+    return {
+      bat: pool.filter(function (p) { return !isBowl(p) && !p.keeper && p.role !== "allRounder"; }).sort(byRat)[0] || null,
+      bowl: pool.filter(function (p) { return isBowl(p) && p.role !== "allRounder" && !p.keeper; }).sort(byRat)[0] || null,
+      wk: pool.filter(function (p) { return p.keeper; }).sort(byRat)[0] || null,
+      ar: pool.filter(function (p) { return p.role === "allRounder"; }).sort(byRat)[0] || null
+    };
+  }
+  function foOnbPlayerPage(opts) {
+    FO_ONB.step = 5;
     var body =
       "<div class='fo-ob-card fo-ob-mid'>" +
-      "<div class='fo-ob-eyebrow'>Know what you are buying</div>" +
-      "<h1 class='fo-ob-h1'>How to read a player</h1>" +
-      "<p class='fo-ob-lead'>Two real players from your draft pool, exactly as every player page shows them: skills grouped into <b>Batting</b>, <b>Bowling</b> and <b>In the field</b>, each with a number, a bar and an honest word. Batters carry a headline batting overall; bowlers carry a headline bowling overall as well. And every trait is spelled out beside the cards: what it does on the pitch and when it decides a match.</p>" +
-      "<div class='fo-exp-cols'><div class='fo-exp-cards'>" + foExpCard(batter, "The batter", "draft") + foExpCard(bowler, "The bowler", "draft") + "</div><div class='fo-exp-defs'>" + foTraitGlossary() + "</div></div>" +
-      "<div class='fo-exp-talbox'><b>Talents</b> are permanent traits that fire in specific situations: a <i>Finisher</i> finds boundaries at the death, a <i>New-ball Specialist</i> is deadly in his first spell, a <i>Spin Killer</i> feasts on slow bowling. Tap any talent chip in the game to see what it does.</div>" +
-      "<p class='fo-ob-lead' style='margin-top:14px'>Next: reading conditions. Bowling styles and their rarity, pitch types, and what the sky does to a match: the context that decides which of these numbers matter on the day.</p>" +
-      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Read the conditions</button></div></div>";
+      "<div class='fo-ob-eyebrow'>" + opts.eyebrow + "</div>" +
+      "<h1 class='fo-ob-h1'>" + opts.h1 + "</h1>" +
+      "<p class='fo-ob-lead'>" + opts.lead + "</p>" +
+      "<div class='fo-exp-cols'><div class='fo-exp-cards'>" + foExpCard(opts.ex, opts.tag, "draft") + "</div>" +
+      "<div class='fo-exp-defs'><div class='fo-exp-dh'>What every number actually does</div>" + foTraitGlossary(opts.gloss) + "</div></div>" +
+      (opts.extra || "") +
+      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>" + opts.next + "</button></div></div>";
     var host = foOnbMount(4, body);
-    host.querySelector("#fo-ob-b").addEventListener("click", foOnbSponsor);
-    host.querySelector("#fo-ob-c").addEventListener("click", function () { foOnbConditions(); });
+    host.querySelector("#fo-ob-b").addEventListener("click", opts.onBack);
+    host.querySelector("#fo-ob-c").addEventListener("click", opts.onNext);
+  }
+  function foOnbPlayers() {
+    var ex = foOnbExamples();
+    foOnbPlayerPage({
+      eyebrow: "Know what you are buying &middot; 1 of 4", h1: "How to read a batsman",
+      lead: "A real batter from your draft pool, exactly as every player page shows him. Skills come in groups, each with a number, a bar and an honest word, and the headline <b>Overall</b> sits at the top of the Batting group. Every trait beside the card says exactly what it does in the match engine - nothing here is flavour text.",
+      ex: ex.bat, tag: "The batsman",
+      gloss: ["batting", "reserves", "reading"],
+      onBack: foOnbSponsor, next: "Next: the bowler", onNext: foOnbBowler
+    });
+  }
+  function foOnbBowler() {
+    var ex = foOnbExamples();
+    var C = null; try { C = foCondCards(); } catch (e) {}
+    foOnbPlayerPage({
+      eyebrow: "Know what you are buying &middot; 2 of 4", h1: "How to read a bowler",
+      lead: "Bowlers carry everything a batter does <i>plus</i> the Bowling group, with its own headline <b>Overall</b> at the top. Two of these numbers are checked on every single ball he bowls: <b>Wicket threat</b> and <b>Economy</b>. His bowling <b>type</b>, below, decides how the pitch and sky treat him.",
+      ex: ex.bowl, tag: "The bowler",
+      gloss: ["bowling"],
+      extra: (C ? C.sec(1, "The five bowling styles", "rarity is value: the rare styles cost more and win more", C.bowlers).replace("fo-cnd-grid", "fo-cnd-grid fo-cnd-grid5") : ""),
+      onBack: foOnbPlayers, next: "Next: the wicketkeeper", onNext: foOnbKeeper
+    });
+  }
+  function foOnbKeeper() {
+    var ex = foOnbExamples();
+    foOnbPlayerPage({
+      eyebrow: "Know what you are buying &middot; 3 of 4", h1: "How to read a wicketkeeper",
+      lead: "Keepers add two glove skills to the In-the-field group: <b>Keeping</b> and <b>Stumping</b>. Behind the scenes the engine blends keeping (half), stumping and catching into one glove rating that answers for byes, edges taken and stumpings on every ball. A weak gloveman quietly leaks runs and chances all innings - every squad needs a real one.",
+      ex: ex.wk, tag: "The wicketkeeper",
+      gloss: ["field"],
+      onBack: foOnbBowler, next: "Next: the all-rounder", onNext: foOnbAllRounder
+    });
+  }
+  function foOnbAllRounder() {
+    var ex = foOnbExamples();
+    foOnbPlayerPage({
+      eyebrow: "Know what you are buying &middot; 4 of 4", h1: "How to read an all-rounder",
+      lead: "The all-rounder carries every group at once - batting, bowling and the field - which is why a good one is the most expensive shape of cricketer. This page also covers the card&rsquo;s footer: the quiet lines that decide whether the skills above actually show up on the day.",
+      ex: ex.ar, tag: "The all-rounder",
+      gloss: ["footer"],
+      extra: "<div class='fo-exp-talbox'><b>Talents</b> are permanent traits that fire in specific situations: a <i>Finisher</i> finds boundaries at the death, a <i>New-ball Specialist</i> is deadly in his first spell, a <i>Spin Killer</i> feasts on slow bowling. Tap any talent chip in the game to see what it does.</div>",
+      onBack: foOnbKeeper, next: "Read the conditions", onNext: foOnbConditions
+    });
   }
 
   // ---- Screen 6 : Reading conditions -----------------------------------
@@ -4718,15 +4776,14 @@
       "<div class='fo-ob-card fo-ob-mid'>" +
       "<div class='fo-ob-eyebrow'>The game around the game</div>" +
       "<h1 class='fo-ob-h1'>Conditions decide what matters</h1>" +
-      "<p class='fo-ob-lead'>Skills tell you how good a player is. Conditions decide which skills matter <i>today</i>. Three things set the stage for every fixture: who bowls what, the pitch under their feet, and the sky above it. Every effect on this page is real in the match engine; none of it is flavour text.</p>" +
-      C.sec(1, "Bowling styles", "rarity is value", C.bowlers).replace("fo-cnd-grid", "fo-cnd-grid fo-cnd-grid5") +
-      C.sec(2, "Pitch types", "half your matches are on your home pitch, so draft for it", C.pitches) +
-      C.sec(3, "Weather", "the forecast is shown before every lineup", C.weathers) +
+      "<p class='fo-ob-lead'>Skills tell you how good a player is. Conditions decide which skills matter <i>today</i>. With the bowling styles covered, two things remain: the pitch under their feet and the sky above it. Every effect on this page is real in the match engine; none of it is flavour text.</p>" +
+      C.sec(1, "Pitch types", "half your matches are on your home pitch, so draft for it", C.pitches) +
+      C.sec(2, "Weather", "the forecast is shown before every lineup", C.weathers) +
       C.heat +
       "<p class='fo-ob-lead' style='margin-top:14px'>Next: the draft room. Sign <b>11 to 16 players</b> with your <b>$1,000,000</b>. Every fee brings a wage bill behind it, so leave a reserve.</p>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Enter the draft room</button></div></div>";
     var host = foOnbMount(5, body);
-    host.querySelector("#fo-ob-b").addEventListener("click", foOnbPlayers);
+    host.querySelector("#fo-ob-b").addEventListener("click", foOnbAllRounder);
     host.querySelector("#fo-ob-c").addEventListener("click", function () { foOnbDraft(); });
   }
   // Re-render only what a signing changes: the player's own card, the sticky
@@ -5846,18 +5903,22 @@
     var page = document.getElementById("page"); if (!page) return;
     // live example players for "Reading a player": your own best batter and
     // bowler, rendered by the same card the primer and the squad page use
-    var exBat = null, exBowl = null;
+    var exs = [];
     try {
       var mt = null; try { mt = userTeam(); } catch (e0) {}
       if (!mt || !(mt.players || []).length) mt = (GD.teams || [])[0];
       var ps = ((mt && mt.players) || []).slice();
       var byR = function (x, y) { return (y.rating || 0) - (x.rating || 0); };
-      exBat = ps.filter(function (p) { return (p.bowlTypeFull ? p.bowlTypeFull === "none" : !p.bowlType) && !p.keeper; }).sort(byR)[0] || null;
-      exBowl = ps.filter(function (p) { return p.bowlTypeFull ? p.bowlTypeFull !== "none" : !!p.bowlType; }).sort(byR)[0] || null;
+      var isBw = function (p) { return p.bowlTypeFull ? p.bowlTypeFull !== "none" : !!p.bowlType; };
+      var pick = function (f, tag) { var p0 = ps.filter(f).sort(byR)[0]; if (p0) exs.push([p0, tag]); };
+      pick(function (p) { return !isBw(p) && !p.keeper && p.role !== "allRounder"; }, "The batsman &middot; your squad");
+      pick(function (p) { return isBw(p) && p.role !== "allRounder" && !p.keeper; }, "The bowler &middot; your squad");
+      pick(function (p) { return p.keeper; }, "The wicketkeeper &middot; your squad");
+      pick(function (p) { return p.role === "allRounder"; }, "The all-rounder &middot; your squad");
     } catch (eEx) {}
-    var glossary = ""; try { glossary = foTraitGlossary(); } catch (eG) {}
-    var cardsHtml = (exBat || exBowl)
-      ? "<div class='fo-exp-cols'><div class='fo-exp-cards'>" + foExpCard(exBat, "The batter &middot; your squad", "wage") + foExpCard(exBowl, "The bowler &middot; your squad", "wage") + "</div><div class='fo-exp-defs'>" + glossary + "</div></div>"
+    var glossary = ""; try { glossary = "<div class='fo-exp-dh'>What every number actually does</div>" + foTraitGlossary(); } catch (eG) {}
+    var cardsHtml = exs.length
+      ? "<div class='fo-exp-cols'><div class='fo-exp-cards'>" + exs.map(function (x) { return foExpCard(x[0], x[1], "wage"); }).join("") + "</div><div class='fo-exp-defs'>" + glossary + "</div></div>"
       : "<div class='fo-exp-defs'>" + glossary + "</div>";
     var C = null; try { C = foCondCards(); } catch (eC) {}
     var progCards = ""; try { progCards = foProgExplainHTML(); } catch (eP) {}
@@ -5878,7 +5939,7 @@
         "<div class='fo-man-tip'><b>Missed the hour?</b> Nothing is lost. Every match can be replayed from its card afterwards, and the scorecard, commentary and charts are permanent record.</div>"
       ].join("")],
       ["players", "Reading a player", [
-        "<p>Every player in the game is read the same way. The two cards below are <b>live</b>: your own best-rated batter and bowler, rendered exactly as the Squad page and every player page show them. Skills are grouped into <b>Batting</b>, <b>Bowling</b> (pure batters show <b>Reserves</b> instead) and <b>In the field</b>, each with a number, a bar and an honest word. Batters carry a headline batting overall; bowlers carry a headline bowling overall as well. Every trait is spelled out beside the cards: what it does on the pitch and when it decides a match.</p>",
+        "<p>Every player in the game is read the same way. The cards below are <b>live</b>: your own best batsman, bowler, wicketkeeper and all-rounder, rendered exactly as the Squad page and every player page show them. Skills are grouped into <b>Batting</b>, <b>Bowling</b> (pure batters show <b>Reserves</b> instead) and <b>In the field</b>, each with a number, a bar and an honest word. Batters carry a headline batting overall; bowlers carry a headline bowling overall as well. Every trait is spelled out beside the cards, and every line is checked against the match engine: what a skill is said to do is exactly what it does.</p>",
         cardsHtml,
         "<p>But the card only starts there. Four quieter things decide whether the skills show up on the day:</p>",
         "<ul><li><b>Form</b> rises and falls with performances. A fifty lifts a batter; three cheap dismissals hollow him out. An in-form 70-rated batter will frequently outscore an out-of-form 85. Check form before every selection; it&rsquo;s the most ignored column in the game.</li>",
@@ -5910,7 +5971,7 @@
         "<p>Open <b>Matches</b> and hit <b>Set lineup</b> on your next fixture. This is the heart of the game, and there is real craft in it:</p>",
         "<ul><li><b>The XI.</b> Balance first: a keeper, enough bowling for fifty overs, batting depth for the pitch you&rsquo;re on. Then form and freshness: bench the exhausted, back the in-form.</li>",
         "<li><b>Batting order.</b> Openers face the hardest overs, so send technique and temperament, not just talent. Your best player bats three or four, where he faces enough balls to matter. Save a finisher and some muscle for six and seven. Batting a keeper too high burns him for the fielding innings.</li>",
-        "<li><b>Bowling plan.</b> Seamers are at their most dangerous with the new ball; the first ten overs are theirs. Spinners grip harder as the ball roughens; the middle overs are where they squeeze and strike. Death overs favour bowlers with the Death Specialist talent, good economy and variation. Schedule your fifth bowler&rsquo;s overs in the quietest phase, usually overs 25 to 40.</li>",
+        "<li><b>Bowling plan.</b> Seamers are at their most dangerous with the new ball; the first ten overs are theirs. Spinners grip harder as the ball roughens; the middle overs are where they squeeze and strike. Death overs favour bowlers with the Death Specialist talent, good economy and the stamina to finish a spell. Schedule your fifth bowler&rsquo;s overs in the quietest phase, usually overs 25 to 40.</li>",
         "<li><b>Intent.</b> Per phase, you choose how hard to push. Aggression buys boundaries and sells wickets; caution does the reverse. Higher aggression suits flat pitches; caution early suits green ones. Because set batters score much faster than new ones, keeping wickets in hand early usually raises the final total.</li>",
         "<li><b>Captain.</b> Give it to experience and captaincy skill, not to your best batter by default. Captaincy skill improves fielding pressure across the whole innings on both sides of the ball.</li>",
         "<li><b>Keeper.</b> Keeping skill reduces byes and increases catches and stumpings. A weak keeper costs several runs and chances per match.</li></ul>",
@@ -6866,7 +6927,7 @@
     var c1 = "<div><div class='fo-sq-dh'>Batting</div>" + dbar(aggBat(p), "Overall") + dbar(sk.vsPace || 0, "vs pace") + dbar(sk.vsSpin || 0, "vs spin") + dbar(sk.rotation || 0, "Rotation") + dbar(sk.power || 0, "Power") + dbar(sk.temperament || 0, "Temperament") + "</div>";
     var c2 = p.bowlType
       ? "<div><div class='fo-sq-dh'>Bowling</div>" + dbar(aggBowl(p), "Overall") + dbar(sk.wicket || 0, "Wicket threat") + dbar(sk.economy || 0, "Economy") + dbar(sk.discipline || 0, "Discipline") + dbar(sk.moveTurn || 0, "Move / turn") + dbar(sk.stamina || 0, "Stamina") + "</div>"
-      : "<div><div class='fo-sq-dh'>Reserves</div>" + dbar(aggTech(p), "Technique") + dbar(aggEnd(p), "Endurance") + "</div>";
+      : "<div><div class='fo-sq-dh'>Reserves</div>" + dbar(aggTech(p), "Technique") + dbar(sk.stamina || 0, "Stamina") + "</div>";
     var glove = (p.keeper || aggKeep(p) >= 20) ? dbar(sk.keeping || 0, "Keeping") + dbar(sk.stumping || 0, "Stumping") : "";
     var c3 = "<div><div class='fo-sq-dh'>In the field</div>" + dbar(sk.fielding || 0, "Fielding") + dbar(sk.catching || 0, "Catching") + glove + "</div>";
     var tals = (p.talents || []).map(function (t2) { return "<span class='fo-sq-talent' title='" + E(TALTIPS[t2] || "") + "'>" + E(ptal(t2)) + "</span>"; }).join(" ");
