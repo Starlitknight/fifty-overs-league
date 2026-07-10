@@ -2023,7 +2023,7 @@
     var hero = "<div class='fo-scout-hero'><div class='fo-scout-hero-main'>" +
       "<div class='fo-scout-eyebrow'>" + (isMe ? "Your club" : "Scout report") + "</div>" +
       "<h1 class='fo-scout-name'>" + E(t.name) + "</h1>" +
-      "<div class='fo-scout-meta'>" + (ordinal ? ordinal + " place · " : "") + (rec ? rec.w + "–" + rec.l + "–" + rec.t : "0–0–0") + " · " + E(t.ground || "-") + " · Form <span class='fo-form'>" + pips + "</span></div>" +
+      "<div class='fo-scout-meta'>" + (ordinal ? ordinal + " place · " : "") + (rec ? rec.w + "–" + rec.l + "–" + rec.t : "0–0–0") + " · " + E(t.ground || "-") + (typeof foClubEst === "function" ? " · Est. " + E(foClubEst(t)) : "") + " · Form <span class='fo-form'>" + pips + "</span></div>" +
       "<div class='fo-scout-actions'>" + (isMe ? "" : "<button class='fo-challenge'>Challenge to a match</button>") + "<button class='fo-scout-back'>← Back</button></div>" +
       "</div><div class='fo-scout-hero-r'>" + faceChip + kpi + "</div></div>";
     var links = "<div class='fo-scout-links'>" +
@@ -5285,6 +5285,27 @@
     "All-rounder": { vsPace: 15, vsSpin: 15, wicket: 15, economy: 15, fielding: 20, stamina: 20 },
     "Rest": {}
   };
+  // what each program actually trains, rendered straight from the weight map
+  // so the explanation can never drift from the mechanics
+  function foProgExplainHTML() {
+    var groups = [
+      ["Batting schools", ["Batting", "New-ball batting", "Spin batting", "Power hitting", "Finishing"]],
+      ["Bowling schools", ["Bowling", "New-ball seam", "Spin bowling", "Death bowling", "Control bowling"]],
+      ["Glove, field & body", ["Keeping", "Fielding", "Fitness"]],
+      ["Everything else", ["All-rounder", "Rest"]]
+    ];
+    var card = function (prog) {
+      var w = FO_TR_PROGMAP[prog] || {};
+      var chips = Object.keys(w).sort(function (a, b) { return w[b] - w[a]; }).map(function (k, i) {
+        return "<span class='fo-trx-chip" + (i === 0 ? " fo-trx-main" : "") + "'>" + E(foSkillLabel(k)) + " <b>" + w[k] + "%</b></span>";
+      }).join("");
+      if (prog === "Rest") chips = "<span class='fo-trx-rest'>No skill work: the week goes to recovery. Fatigue falls instead of rising.</span>";
+      return "<div class='fo-trx'><b>" + E(prog) + "</b><div class='fo-trx-chips'>" + chips + "</div></div>";
+    };
+    return groups.map(function (g) {
+      return "<div class='fo-trx-gh'>" + g[0] + "</div><div class='fo-trx-grid'>" + g[1].map(card).join("") + "</div>";
+    }).join("");
+  }
   function foTrKey() { return "fol_train_" + (LG ? LG.id : "solo"); }
   function foTrainState() {
     var raw = lsGet(foTrKey()), s = null;
@@ -5834,6 +5855,11 @@
       ].join("")],
       ["training", "Training: where seasons compound", [
         "<p>The <b>Training</b> tab assigns every player a weekly program: batting schools (new-ball technique, playing spin, power, finishing), bowling schools (new-ball seam, spin, death-overs control), keeping, fielding, fitness, all-round work, or <b>Rest</b>, which trades a week of progress for recovered legs. Gains land when the matchday resolves, and your report names every improvement.</p>",
+        "<p><b>What each program trains</b> - every session splits its progress across fixed skills in fixed proportions (the Training page lists them beside your squad):</p>",
+        "<table><tr><th>Program</th><th>Skills trained</th></tr>" + FO_TR_PROGS.filter(function (pg) { return pg !== "Rest"; }).map(function (pg) {
+          var w = FO_TR_PROGMAP[pg] || {};
+          return "<tr><td><b>" + pg + "</b></td><td>" + Object.keys(w).sort(function (a, b) { return w[b] - w[a]; }).map(function (k) { return foSkillLabel(k) + " " + w[k] + "%"; }).join(", ") + "</td></tr>";
+        }).join("") + "<tr><td><b>Rest</b></td><td>No skill work - recovery only. Fatigue falls instead of rising.</td></tr></table>",
         "<ul><li><b>Age drives training speed.</b> The same program moves a 19-year-old roughly three times as far as a player in his thirties.</li>",
         "<li><b>Potential matters.</b> High-potential players gain more from every session. A young, high-potential player is the best long-term asset available.</li>",
         "<li><b>Tired players don&rsquo;t learn.</b> Fatigue quietly strangles progress before it hurts match output. Rotate Rest through your bowlers especially; they carry the heaviest legs.</li>",
@@ -6286,6 +6312,10 @@
       "Every matchday, each player banks progress toward the skills in his program (the dropdown). When a skill's progress bar fills, the skill goes up one point and his wage rises with it. " +
       "<b>Speed</b> depends on age (young players learn fastest, veterans barely move), fatigue (tired players train poorly), intensity (Intense is ~20% faster but tires him; Rest recovers instead of training) and your academy level. " +
       "The <b>Next gain</b> column shows the skill closest to its next point; before the first session it shows what the program targets, weighted by the program's own emphasis." +
+      "</div></div>" +
+      "<div class='panel fo-keep'><h4>What each program trains</h4><div class='pad'>" +
+      "<div class='small' style='margin-bottom:4px;color:#8a8474'>Every session splits its progress across these skills, in these proportions. The heaviest skill is highlighted.</div>" +
+      foProgExplainHTML() +
       "</div></div>" +
       "<div class='panel'><h4>Training programs</h4><div class='pad'>" +
       "<div class='fo-tr-bulk'><span class='small'>Quick set:</span>" +
@@ -8532,6 +8562,15 @@
       "#ftpcomm .fo-c-fow{background:#fbf0ee;border-bottom:1px solid #efd6cf;padding:4px 8px;color:#8f231b;font-weight:600}" +
       "#ftpcomm .fo-c-flag{background:#fdf7e8;border-bottom:1px solid #efe2bd;padding:4px 8px;color:#7b5a0a}" +
       "#ftpcomm .fo-c-mile .text,#ftpcomm .fo-c-fow .text,#ftpcomm .fo-c-flag .text{float:none;width:auto;padding:0;color:inherit}" +
+      ".fo-trx-gh{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#8a8474;margin:12px 0 7px}" +
+      ".fo-trx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:9px}" +
+      ".fo-trx{background:#faf8f3;border:1px solid #e8e3d6;border-radius:11px;padding:10px 12px}" +
+      ".fo-trx>b{font-size:13px;color:#12203a}" +
+      ".fo-trx-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}" +
+      ".fo-trx-chip{font-size:11px;background:#fff;border:1px solid #e2ddd0;border-radius:999px;padding:3px 9px;color:#5d6779}" +
+      ".fo-trx-chip b{color:#12203a}" +
+      ".fo-trx-main{background:#fdf3e2;border-color:#ecd9ae;color:#8a5a1d}.fo-trx-main b{color:#8a5a1d}" +
+      ".fo-trx-rest{font-size:12px;color:#5d6779;font-style:italic}" +
       // phones: wide stats tables scroll inside their panel instead of being
       // crushed into ellipsis dots (engine's fo-stattbl is table-layout:fixed)
       "@media(max-width:820px){" +
