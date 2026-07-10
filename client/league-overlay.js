@@ -2145,7 +2145,13 @@
       if (!el || !el.title) return;
       var tag = el.tagName;
       if (tag === "BUTTON" || tag === "A" || tag === "SELECT" || tag === "INPUT" || tag === "OPTION") return;
-      toast(el.title.slice(0, 300));
+      // one tip at a time, pinned to the bottom so it never covers the nav
+      var tip = document.getElementById("fo-taptip");
+      if (!tip) { tip = document.createElement("div"); tip.id = "fo-taptip"; document.body.appendChild(tip); }
+      tip.textContent = el.title.slice(0, 300);
+      tip.classList.add("on");
+      clearTimeout(tip.__t);
+      tip.__t = setTimeout(function () { tip.classList.remove("on"); }, 2600);
     } catch (e) {}
   }, true);
   setInterval(function () { try { foFriendlyKeeper(); } catch (e) {} }, 5000);
@@ -8120,6 +8126,14 @@
         var h2 = pn.querySelector("h4");
         if (h2 && /^(Batting & fielding|Batting &amp; fielding|Bowling|Skills summary)$/i.test((h2.textContent || "").trim())) pn.style.display = "none";
       });
+      // the Skills panel reads exactly like the squad page's expanded row:
+      // Batting / Bowling-or-Reserves / In the field, with words and colours
+      try {
+        if (own && skills && typeof foSqDetail === "function") {
+          var sp = skills.querySelector(".pad");
+          if (sp && !sp.querySelector(".fo-sq-detail")) sp.innerHTML = foSqDetail(p, false);
+        }
+      } catch (eSk) {}
     } catch (e) {}
   }
 
@@ -9182,6 +9196,29 @@
     }
     window.__foWorld = { umpires: foUmpiresOf, intlPick: foIntlPick };
   })(); } catch (e) { console.warn("broader world", e); }
+
+  // ---- late polish: light scout report, bottom tap-tips, phone toasts ----
+  try {
+    var foLate = document.createElement("style");
+    foLate.textContent =
+      "#fo-taptip{position:fixed;left:12px;right:12px;bottom:14px;z-index:200;background:#1C2433;color:#F6F4EE;border-radius:11px;padding:10px 14px;font-size:12.5px;line-height:1.5;box-shadow:0 8px 24px rgba(6,12,24,.35);opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .18s ease,transform .18s ease}" +
+      "#fo-taptip.on{opacity:1;transform:none}" +
+      "@media(max-width:820px){#fo-toasts{top:auto !important;bottom:64px !important}}" +
+      // the scout report joins the light editorial system
+      "html body #page .fo-scout-hero,html body.ftpskin #page .fo-scout-hero{background:#fff !important;border:1px solid #e7e2d5 !important;box-shadow:0 3px 14px rgba(18,32,58,.06) !important;color:#3c4658 !important}" +
+      "html body .fo-scout-hero::before,html body .fo-scout-hero::after{display:none !important}" +
+      "html body .fo-scout-hero .fo-scout-name{color:#12203a !important}" +
+      "html body .fo-scout-hero .fo-scout-eyebrow{color:#C0562F !important}" +
+      "html body .fo-scout-hero .small,html body .fo-scout-hero span{color:#5d6779}" +
+      "html body .fo-scout-hero .fo-scout-meta{color:#5d6779 !important}" +
+      "html body .fo-scout-kpis>*{background:#faf8f3 !important;border:1px solid #e8e3d6 !important;border-radius:12px}" +
+      "html body .fo-scout-kpis b{color:#12203a !important}" +
+      "html body .fo-scout-kpis span{color:#8a8474}" +
+      "html body .fo-scout-links{background:transparent !important}" +
+      "html body .fo-scout-links a{background:#fff !important;border:1px solid #e2ddd0 !important;color:#3c4658 !important;border-radius:999px;margin:0 3px}" +
+      "html body #page .fo-scout-links a.on,html body .fo-scout-links a.on{background:#C0562F !important;border-color:#C0562F !important;color:#fff !important}";
+    document.head.appendChild(foLate);
+  } catch (e) {}
 
   console.info("Fifty Overs League overlay ready.");
 })();
