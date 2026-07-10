@@ -9392,7 +9392,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-0144-10bddc";
+  var FO_BUILD = "20260710-0245-c58991";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14454,6 +14454,226 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<div class='small' style='margin-top:6px'>Dismissals between these clubs, all-time. Old scores get settled.</div></div></div>";
     } catch (e) { return ""; }
   }
+
+  // ===========================================================================
+  //  LIVING COMMENTARY - a rich, deterministic ball-by-ball voice
+  //  window.comm is the engine's top-level text generator, called AFTER the
+  //  outcome of each ball is decided, so replacing it changes words only:
+  //  no M.rand() is consumed (variants are hash-picked from the ball state),
+  //  so every match still plays out identically for a given seed.
+  // ===========================================================================
+  try {
+    if (typeof window.comm === "function" && !window.comm.__foRich) {
+      var FO_REGIONS = ["midwicket", "cover", "mid-off", "long-on", "deep square leg", "point", "extra cover", "mid-on", "long-off", "backward point"];
+      window.comm = function (inn, out, rb, sb, bowler, intent, field) {
+        try {
+          var ln = function (n) { return String(n || "").split(" ").slice(-1)[0]; };
+          var bat = ln(sb.p.name), bwl = ln(bowler.name);
+          var faced = (inn.faced && inn.faced[sb.p.name]) || 0;
+          var over = Math.floor(inn.legal / 6);
+          var pace = bowler.bowlType === "fast" || bowler.bowlType === "fastMedium" || bowler.bowlType === "medium";
+          var quick = bowler.bowlType === "fast";
+          var death = over >= 40, pp = over < 10;
+          var keeperP = (inn.bxi || []).filter(function (q) { return q.keeper; })[0];
+          var kp = keeperP ? ln(keeperP.name) : "the keeper";
+          var chase = (typeof M !== "undefined" && M && M.inns === 1 && M.target) ? { need: M.target - inn.runs, balls: 300 - inn.legal } : null;
+          var H = function (salt) {
+            var x = (inn.legal * 2654435761 + inn.runs * 40503 + (sb.b || 0) * 9973 + (sb.r || 0) * 271 + rb * 131 + salt * 7919) >>> 0;
+            x = (x ^ (x >>> 13)) >>> 0; return x % 9973;
+          };
+          var pick = function (arr, salt) { return arr[H(salt) % arr.length]; };
+          var reg = pick(FO_REGIONS, 3);
+          var F = (typeof M !== "undefined" && M && M._fielder) ? ln(M._fielder.name) : null;
+
+          if (typeof isWkt === "function" && isWkt(out)) {
+            var core;
+            if (out === "wB") core = pick([
+              "Cleaned him up! " + bat + " plays all around a straight one and the stumps are wrecked",
+              "Bowled him! " + bwl + " sneaks it through the gate and " + bat + " hears the death rattle",
+              "Timber! The " + (quick ? "yorker is too quick" : "arm ball goes on with the angle") + " and " + bat + " is bowled",
+              bat + " charges, misses, and " + bwl + " hits the top of off. Emphatic",
+              "The slower ball does him - " + bat + " is through the shot early and it clatters into middle"
+            ], 11);
+            else if (out === "wC") core = pick([
+              bat + " goes hard at it and picks out " + (F || "the man") + " at " + reg + ". Straight down the throat",
+              "Edged and taken! " + bwl + " draws the outside edge and " + (F || kp) + " does the rest",
+              "Skied a mile - " + (F || "the fielder") + " circles under it at " + reg + " and settles the nerves. Gone",
+              "Miscued! The leading edge loops to " + (F || "the man") + " and " + bat + " walks",
+              "Big shot, bad choice: " + bat + " finds " + (F || "the sweeper") + " on the rope at " + reg,
+              "Soft hands, hard luck - " + bat + " chips it straight to " + (F || "the man") + " at " + reg
+            ], 12);
+            else if (out === "wLBW") core = pick([
+              "Rapped on the pads and up goes the finger! " + bat + " is plumb in front",
+              "Big appeal... GIVEN! " + bwl + " " + (pace ? "nips one back" : "slides one on") + " and " + bat + " is trapped lbw",
+              bat + " misses the sweep and that is stone dead. The umpire barely hesitates",
+              "Full, straight, and " + bat + " plays down the wrong line. LBW - " + bwl + " roars"
+            ], 13);
+            else if (out === "wST") core = pick([
+              "Stumped! " + bat + " dances down, beaten in the flight, and " + kp + " whips off the bails",
+              "Gone in a flash - " + bat + " overbalances and " + kp + " does the rest. Lightning work",
+              bat + " goes walkabout, the ball turns past the edge, and " + kp + " makes him pay"
+            ], 14);
+            else core = pick([
+              "RUN OUT! Direct hit" + (F ? " from " + F : "") + " and " + bat + " is well short. Brilliant fielding",
+              "Terrible call! " + bat + " is sent back, slips, and" + (F ? " " + F + " throws down the stumps" : " the throw beats him home"),
+              "Two fielders converge, one clean pick-up" + (F ? " by " + F : "") + ", and " + bat + " is run out by a yard"
+            ], 15);
+            var tail = "";
+            if (sb.r >= 50) tail = " A huge wicket - he was set and dangerous on " + sb.r + ".";
+            else if (faced < 6) tail = " Gone before he got set.";
+            else if (intent >= 2) tail = " Launch mode finally costs him.";
+            else if (chase && chase.need > 0 && chase.need / Math.max(1, chase.balls / 6) > 7.5) tail = " The chase is creaking now.";
+            else tail = pick([" A genuine breakthrough.", " " + bwl + " has earned that.", " The pressure told."], 16);
+            return "WICKET - " + core + "." + tail;
+          }
+          if (out === "6") return pick([
+            "SIX! " + bat + " picks the length early and deposits " + bwl + " over " + reg,
+            "SIX - that is enormous! Clean off the middle and into the " + (death ? "second tier" : "stands"),
+            "SIX! " + (pace ? "Pace on, pace used - flat and brutal over " + reg : bat + " skips down and lifts the spinner into the sightscreen"),
+            "SIX more! " + bwl + " drops short and " + bat + " swivels and buries it over the rope",
+            "Huge from " + bat + "! The fielder at " + reg + " does not even move"
+          ], 21) + (chase && chase.need <= 30 && chase.need > 0 ? " The target is suddenly very close." : (intent >= 2 ? " Launch mode pays." : "."));
+          if (out === "4") return pick([
+            "FOUR - " + bat + " leans into a cover drive and it races away. Pure timing",
+            "FOUR! Short and wide from " + bwl + ", and " + bat + " cuts it savagely behind point",
+            "FOUR - whipped off the pads through " + reg + ", no one moved",
+            "Streaky! " + bat + " gets an inside edge past " + (pace ? kp : "the stumps") + " and it runs away for FOUR",
+            "FOUR - " + bat + " opens the face and steers it past " + (field === "def" ? "a packed off side" : "backward point"),
+            "Poor from " + bwl + ", straying onto the pads, and " + bat + " helps it to the " + reg + " fence. FOUR",
+            "FOUR! Danced down and driven back past the bowler - " + bwl + " can only watch",
+            "Top edge on the pull... it lands SAFE and skips to the rope. FOUR, and " + bat + " smiles"
+          ], 22) + ".";
+          if (out === "wide") return pick([
+            "Wide - " + bwl + " sprays it down the leg side. " + kp + " does well to save more",
+            "Called wide outside off. " + bwl + " is hunting the edge but that is too far across",
+            "Wide again - the radar is off and the umpire signals another gift"
+          ], 23) + ".";
+          if (out === "noball") return pick([
+            "NO-BALL! " + bwl + " oversteps - a free run and he has to bowl it again",
+            "No-ball called - the front foot is well over. Sloppy from " + bwl
+          ], 24) + ".";
+          if (out === "bye") return "The ball beats everyone - " + kp + " cannot gather and they scamper a bye.";
+          if (out === "legbye") return "Off the pad and squirting to " + reg + " - they cross for a leg bye.";
+          if (out === "dot") {
+            var dots = pace ? [
+              "Beaten! " + bwl + " angles it across and " + bat + " flashes at fresh air",
+              bat + " shoulders arms and lets it through to " + kp + ". Good leave",
+              "Defended off the back foot, dead bat, no run",
+              "Loud appeal for caught behind! The umpire is unmoved, and " + bwl + " cannot believe it",
+              "Sharp bouncer - " + bat + " sways out of the way at the last instant",
+              "Yorker dug out at the very last moment. " + bat + " survives",
+              bwl + " hits the seam and it wobbles past the edge. A groan from the slips",
+              "Firm push to " + reg + " but the fielder is on it in a flash. No run",
+              "Driven hard, straight to the man at " + reg + ". Good cricket all round",
+              "Back of a length, tucked into the hip - " + bat + " cannot get it away"
+            ] : [
+              "Tossed up, smothered - " + bat + " comes forward with bat and pad together",
+              "Rips past the outside edge! " + bwl + " is turning it square here",
+              "Big appeal for lbw as " + bat + " misses the sweep... not out, says the umpire",
+              bat + " reads the googly late and jams it out. Nervous moment",
+              "Flighted, driven, but " + reg + " cuts it off. Dot ball",
+              "Quicker one, skidding through - " + bat + " is rushed and can only block",
+              "Down the track... beaten in the flight and lucky the keeper fumbles the take",
+              "Pushed to " + reg + ", the single is on but they decline. Dot",
+              bwl + " gives it air and " + bat + " treats it with respect"
+            ];
+            var d = pick(dots, 25);
+            if (field === "def" && H(26) % 4 === 0) d += ". The ring holds the single";
+            if (chase && chase.need > 0 && H(27) % 6 === 0) d = d + ". " + chase.need + " needed off " + chase.balls;
+            return d + ".";
+          }
+          // 1s, 2s, 3s
+          var runs = rb === 3 ? pick([
+            "Three! Driven wide of " + reg + " and they run hard all the way",
+            "Excellent running - " + bat + " places it in the gap and they steal three"
+          ], 28) : rb === 2 ? pick([
+            "Two more - " + bat + " works it into the gap at " + reg + " and comes back quickly",
+            "Dropped into the deep and they push for two. Smart cricket from " + bat,
+            bat + " lofts it over " + reg + " and the sweeper cuts it off - two runs"
+          ], 29) : pick([
+            "Worked off the hip for a single. " + bat + " keeps the board moving",
+            "Pushed to " + reg + " for one. Good, busy cricket",
+            "Soft hands into the off side and a comfortable single",
+            bat + " tucks it away and " + (sb.r >= 40 ? "moves to " + (sb.r + 1) : "rotates the strike"),
+            "A thick edge squirts to " + reg + " - just the single"
+          ], 30);
+          if ((typeof M !== "undefined") && M && M.meta && H(31) % 22 === 0) {
+            var wx = String(M.meta.weather || "").toLowerCase();
+            if (wx === "scorching" || wx === "hot") runs += ". The heat is punishing out there";
+            else if (wx === "humid") runs += ". Heavy, sapping air at " + (M.meta.ground ? M.meta.ground.split(" ")[0] : "the ground");
+          }
+          return runs + ".";
+        } catch (e) { return (rb ? rb + " run" + (rb > 1 ? "s" : "") : "Dot ball") + "."; }
+      };
+      window.comm.__foRich = 1;
+    }
+
+    // FTP-style feed: bracket fielding tags, purple milestone interjections,
+    // tinted fall-of-wicket rows - and wickets in RED, not orange.
+    if (typeof window.ftpCommHTML === "function" && !window.ftpCommHTML.__foRich) {
+      var foCommTag = function (L) {
+        var t = L.txt || "";
+        if (L.out === "wRO") return "direct hit";
+        if (/DROPPED/i.test(t)) return "dropped catch";
+        if (/Stumping chance missed/i.test(t)) return "chance missed";
+        if (/Brilliant stop|diving stop|phenomenal stop|attacks the ball and keeps|saves two/i.test(t)) return "great fielding";
+        if (/Misfield|Fumble|fumbles/i.test(t)) return "misfield";
+        if (/Rocket Arm/i.test(t)) return "rocket arm";
+        if (/Lightning Hands/i.test(t)) return "lightning hands";
+        if (/appeal/i.test(t) && !/WICKET/i.test(t)) return "appeal";
+        return null;
+      };
+      var _wk = function (o) { return o && o.charAt(0) === "w" && o !== "wide"; };
+      var _rslt = function (o) {
+        if (o === "4") return '<span class="four">4</span>';
+        if (o === "6") return '<span class="six">6</span>';
+        if (_wk(o)) return '<span class="wicket">W</span>';
+        if (o === "wide") return '<span class="exb">wd</span>';
+        if (o === "noball") return '<span class="exb">nb</span>';
+        if (o === "bye" || o === "legbye") return '<span class="exb">b</span>';
+        if (o === "dot" || !o) return ".";
+        return String(o);
+      };
+      var _pass = null, _tal = null;
+      try { _pass = ftpPass; _tal = talentize; } catch (e) {}
+      window.ftpCommHTML = function (log, filter, limit) {
+        var pass = _pass || function () { return true; };
+        var tal = _tal || function (t) { return E(t || ""); };
+        var rows = (log || []).filter(function (L) { return pass(L, filter); }).slice(0, limit || 140).map(function (L) {
+          if (L.intro) return '<div class="fo-comm-intro">' + tal(L.txt) + "</div>";
+          if (L.mile || /^End of over/i.test(L.txt || "")) {
+            var cls = L.out === "★" ? "fo-c-mile" : L.out === "✕" ? "fo-c-fow" : L.out === "⚑" ? "fo-c-flag" : "oversummary-bottom";
+            return '<div class="' + cls + '"><div class="text">' + tal(L.txt) + '</div><div class="clear"></div></div>';
+          }
+          var rowcls = L.out === "4" ? "four" : L.out === "6" ? "six" : _wk(L.out) ? "line wkt" : "line";
+          var tag = foCommTag(L);
+          var txt = L.txt || "";
+          // the engine appends "Taken safely by <name>." after catches; drop it
+          // when the commentary line already names the catcher
+          if (L.out === "wC") {
+            var mnm = txt.match(/ Taken safely by ([^.]+)\.\s*$/);
+            if (mnm && txt.indexOf(mnm[1].split(" ").slice(-1)[0]) < txt.length - mnm[0].length) txt = txt.slice(0, -mnm[0].length);
+          }
+          return '<div class="' + rowcls + '"><div class="del">' + E(L.no || "") + '</div><div class="rslt">' + _rslt(L.out) +
+            '</div><div class="text">' + (tag ? '<b class="fo-ctag">[' + tag + ']</b> ' : "") + tal(txt) + '</div><div class="clear"></div></div>';
+        }).join("");
+        return rows || '<div class="line"><div class="text" style="padding-left:8px">No commentary matches this filter.</div><div class="clear"></div></div>';
+      };
+      window.ftpCommHTML.__foRich = 1;
+    }
+
+    var foCommCss = document.createElement("style");
+    foCommCss.textContent =
+      "body.ftpskin #ftpcomm .rslt .wicket{background:#B3261E !important}" +
+      "body.ftpskin #ftpcomm .line.wkt .text{color:#8f231b !important}" +
+      "body.ftpskin #ftpcomm .rslt .four{background:#2d6a8f !important}" +
+      "#ftpcomm .fo-ctag{font-weight:800;color:#1C2433;font-style:normal}" +
+      "#ftpcomm .fo-c-mile{background:#f7f2fb;border-bottom:1px solid #e6daf2;padding:4px 8px;color:#6b3fa0;font-style:italic;font-weight:600}" +
+      "#ftpcomm .fo-c-fow{background:#fbf0ee;border-bottom:1px solid #efd6cf;padding:4px 8px;color:#8f231b;font-weight:600}" +
+      "#ftpcomm .fo-c-flag{background:#fdf7e8;border-bottom:1px solid #efe2bd;padding:4px 8px;color:#7b5a0a}" +
+      "#ftpcomm .fo-c-mile .text,#ftpcomm .fo-c-fow .text,#ftpcomm .fo-c-flag .text{float:none;width:auto;padding:0;color:inherit}";
+    document.head.appendChild(foCommCss);
+  } catch (e) { console.warn("living commentary", e); }
 
   console.info("Fifty Overs League overlay ready.");
 })();
