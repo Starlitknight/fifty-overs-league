@@ -9419,7 +9419,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-0421-7b2dec";
+  var FO_BUILD = "20260710-0447-92178f";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -12503,6 +12503,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           if (c.ev === "wkts") items.push({ pri: 1, h: "MILESTONE: " + E(c.name) + " takes his " + c.n + "th wicket for the club", s: "for " + E(t.name) });
           if (c.ev === "glove") items.push({ pri: 1, h: "MILESTONE: " + E(c.name) + " claims his " + c.n + "th dismissal behind the stumps", s: "for " + E(t.name) });
           if (c.ev === "nick") items.push({ pri: 1, h: "NICKNAME: " + E(c.name) + " will be known as “" + E(c.nick) + "” after that performance", s: "so say the fans of " + E(t.name) });
+          if (c.ev === "cap") items.push({ pri: 0, h: "CALL-UP: " + E(c.name) + " selected for " + E(c.nat), s: "the " + (c.n > 1 ? c.n + (c.n === 2 ? "nd" : c.n === 3 ? "rd" : "th") + " cap for" : "first cap for") + " the " + E(t.name) + " man" });
         });
         if (t._chronFarewell && t._chronFarewell.s === (App.seasonNo || 1) - 1) t._chronFarewell.names.forEach(function (nm) {
           items.push({ pri: 0, h: "FAREWELL: " + E(nm) + " retires", s: "a " + E(t.name) + " career remembered in the museum" });
@@ -12519,12 +12520,17 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var vi = vt && foVoiceItem(vt, rd + 1);
       if (vi) voiceLi = "<li><div class='fo-news-h'>" + vi.h + "</div></li>";
     } catch (e) {}
+    try {
+      if (typeof foMarketRefreshIn === "function" && foMarketRefreshIn() === 1) items.push({ pri: 4, h: "RUMOUR: fresh names reach the market after the next matchday", s: "the scouts are already whispering about who arrives" });
+    } catch (e) {}
     items.sort(function (a, b) { return a.pri - b.pri; });
     var lis = items.slice(0, 6).map(function (it) {
       var link = it.sc != null ? " class='fo-rowlink' data-sc='" + it.sc + "' title='Open the scorecard'" : "";
       return "<li" + link + "><div class='fo-news-h'>" + it.h + "</div>" + (it.s ? "<div class='fo-news-s'>" + it.s + "</div>" : "") + "</li>";
     }).join("") + voiceLi;
-    return "<div class='fo-card fo-news'><div class='fo-card-h2row'><div class='fo-card-h2'>The Fifty Overs Post · Round " + (rd + 1) + "</div><a class='fo-morelink' href='#/matchday'>Watch the matchday ›</a></div><div class='fo-card-b'><ul style='margin:0;padding-left:4px;list-style:none;font-size:13px'>" + lis + "</ul></div></div>";
+    var byline = "";
+    try { byline = "<div class='fo-news-by'>Reporting: " + E(foBeatWriter()) + "</div>"; } catch (e) {}
+    return "<div class='fo-card fo-news'><div class='fo-card-h2row'><div class='fo-card-h2'>The Fifty Overs Post · Round " + (rd + 1) + "</div><a class='fo-morelink' href='#/matchday'>Watch the matchday ›</a></div><div class='fo-card-b'><ul style='margin:0;padding-left:4px;list-style:none;font-size:13px'>" + lis + "</ul>" + byline + "</div></div>";
   }
 
   // ---- the Training page ------------------------------------------------------
@@ -15238,6 +15244,134 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "html body #page .small{color:#7d8695}";
     document.head.appendChild(foSkin);
   } catch (e) {}
+
+  // ===========================================================================
+  //  THE BROADER WORLD - international caps, named umpires, venue records,
+  //  a press corps. All derived from data the game already keeps.
+  // ===========================================================================
+  try { (function () {
+    var FO_UMP = ["Gerrit Vermeulen", "Howard Blackwood", "S. Ranatunga", "Clive Mortimer", "Ahmed Baig", "Piet van Rooyen", "Doug Prentice", "R. Subramaniam", "Neville Hart", "Marcus Delaney", "Imran Chaudhry", "Trevor Lyle", "K. Wickramasinghe", "Bram de Groot", "Owen Fitzgerald", "Harold Njoku"];
+    function foUmpiresOf(seed) {
+      var h = foHash32("ump-" + (seed || 0));
+      var a = h % FO_UMP.length, b = (a + 1 + ((h >>> 4) % (FO_UMP.length - 1))) % FO_UMP.length;
+      return [FO_UMP[a], FO_UMP[b]];
+    }
+    window.foBeatWriter = function () {
+      var t = null; try { t = userTeam(); } catch (e) {}
+      var pool = ["Margot Ellison", "D. K. Ramachandran", "Frank Otten", "Beatrice Kolisi", "Sunil Menon", "Harriet Vane", "Joris Kamp", "Colin McArdle"];
+      return pool[foHash32("press-" + ((t && t.name) || "") + "-" + (App.seasonNo || 1)) % pool.length] + ", cricket correspondent";
+    };
+    // named umpires surface inside the living commentary
+    if (typeof window.comm === "function" && !window.comm.__foWorld) {
+      var _cm = window.comm;
+      window.comm = function (inn, out, rb, sb, bowler, intent, field) {
+        var txt = _cm.apply(this, arguments);
+        try {
+          if (/the umpire/i.test(txt) && typeof M !== "undefined" && M && (inn.legal + (sb.b || 0)) % 2 === 0) {
+            var u = foUmpiresOf(M.seed)[inn.legal % 2];
+            txt = txt.replace(/[Tt]he umpire/, "Umpire " + u.split(" ").slice(-1)[0]);
+          }
+        } catch (e) {}
+        return txt;
+      };
+      window.comm.__foWorld = 1;
+    }
+    // ---- international call-ups: after rounds 6, 12 and 18, the national
+    // selectors pick the two best in-form players of each nationality ----
+    var FO_INTL_R = [6, 12, 18];
+    function foIntlPick(w) {
+      var byNat = {};
+      for (var nm in (App.playerHist || {})) {
+        var runs = 0, wk = 0, seen = 0;
+        (App.playerHist[nm] || []).forEach(function (e) {
+          if (e.fr || e.s !== (App.seasonNo || 1)) return;
+          if (e.r == null || e.r <= w - 6 || e.r > w) return;
+          runs += +e.rr || 0; wk += +e.w || 0; seen++;
+        });
+        if (!seen) continue;
+        var pl = null; try { pl = findPlayer(nm); } catch (e2) {}
+        if (!pl || !pl.p || !pl.p.nat) continue;
+        (byNat[pl.p.nat] = byNat[pl.p.nat] || []).push({ n: nm, sc: runs + 22 * wk, t: pl.team, p: pl.p });
+      }
+      var picks = [];
+      for (var nat in byNat) {
+        byNat[nat].sort(function (a, b) { return b.sc - a.sc; });
+        byNat[nat].slice(0, 2).forEach(function (x) { if (x.sc >= 60) picks.push({ nat: nat, n: x.n, t: x.t, p: x.p }); });
+      }
+      return picks;
+    }
+    if (typeof window.completeRound === "function" && !window.completeRound.__foWorld) {
+      var _cr = window.completeRound;
+      window.completeRound = function () {
+        var out = _cr.apply(this, arguments);
+        try {
+          var rd = (App.season && App.season.round) || 0;   // round already advanced
+          if (FO_INTL_R.indexOf(rd) >= 0) {
+            var mark = "S" + (App.seasonNo || 1) + "R" + rd;
+            foIntlPick(rd).forEach(function (pk) {
+              if (pk.p._capsR === mark) return;
+              pk.p._capsR = mark;
+              pk.p._caps = (pk.p._caps || 0) + 1;
+              var natN = pk.nat;
+              try { if (typeof natName === "function" && natName(pk.nat)) natN = natName(pk.nat); } catch (e4) {}
+              try { foCareerPush(pk.p, { s: App.seasonNo || 1, r: rd, ev: "cap", txt: "Called up by " + natN + " (cap " + pk.p._caps + ")" }); } catch (e2) {}
+              var tm = (typeof pk.t === "string") ? (GD.teams || []).find(function (x) { return x.name === pk.t; }) : pk.t;
+              if (tm) {
+                tm._chron = tm._chron || { r: rd, items: [] };
+                (tm._chron.items = tm._chron.items || []).push({ ev: "cap", name: pk.n, nat: natN, n: pk.p._caps });
+              }
+            });
+            try { if (typeof window.saveGame === "function") window.saveGame(false); } catch (e3) {}
+          }
+        } catch (e) {}
+        return out;
+      };
+      window.completeRound.__foWorld = 1;
+    }
+    // ---- venue records: every ground keeps its own book ----
+    window.foVenueRecords = function () {
+      var G = {};
+      (App.results || []).forEach(function (r) {
+        if (r.comp !== "league" || !r.ground || !r.innings) return;
+        var g = G[r.ground] = G[r.ground] || { n: 0, hi: null, bat: null, bowl: null };
+        g.n++;
+        r.innings.filter(Boolean).forEach(function (inn) {
+          if (!g.hi || inn.runs > g.hi.r) g.hi = { r: inn.runs, w: inn.wkts, t: inn.batTeam };
+          (inn.bat || []).forEach(function (b) { if (b && (!g.bat || b.r > g.bat.r)) g.bat = { r: b.r, b: b.b, n: b.p.name }; });
+          for (var k in (inn.bowlers || {})) { var br = inn.bowlers[k]; if (!g.bowl || br.w > g.bowl.w || (br.w === g.bowl.w && br.r < g.bowl.r)) g.bowl = { w: br.w, r: br.r, n: k }; }
+        });
+      });
+      var rows = Object.keys(G).sort().map(function (gr) {
+        var g = G[gr]; if (!g.hi) return "";
+        return "<tr><td><b>" + E(gr) + "</b><span class='small' style='display:block'>" + g.n + " league match" + (g.n === 1 ? "" : "es") + "</span></td>" +
+          "<td>" + g.hi.r + "/" + g.hi.w + " <span class='small'>" + E(g.hi.t) + "</span></td>" +
+          "<td>" + (g.bat ? g.bat.r + " <span class='small'>" + E(g.bat.n) + "</span>" : "-") + "</td>" +
+          "<td>" + (g.bowl && g.bowl.w ? g.bowl.w + "/" + g.bowl.r + " <span class='small'>" + E(g.bowl.n) + "</span>" : "-") + "</td></tr>";
+      }).join("");
+      if (!rows) return "";
+      return "<div class='panel'><h4>Ground records</h4><div class='pad'><table><thead><tr><th>Ground</th><th>Highest total</th><th>Best innings</th><th>Best bowling</th></tr></thead><tbody>" + rows + "</tbody></table>" +
+        "<div class='small' style='margin-top:7px;color:#8a8474'>Every venue keeps its own book. League matches only.</div></div></div>";
+    };
+    if (typeof window.pgStats === "function" && !window.pgStats.__foWorld) {
+      var _ps = window.pgStats;
+      window.pgStats = function () {
+        var out = _ps.apply(this, arguments);
+        try {
+          var pg2 = document.getElementById("page");
+          if (pg2 && !pg2.querySelector(".fo-venuerec")) {
+            var vh = foVenueRecords();
+            if (vh) { var d = document.createElement("div"); d.className = "fo-venuerec"; d.innerHTML = vh; pg2.appendChild(d); }
+          }
+        } catch (e) {}
+        return out;
+      };
+      window.pgStats.__foWorld = 1;
+    }
+    var wcs = document.createElement("style");
+    wcs.textContent = ".fo-news-by{margin-top:9px;padding-top:7px;border-top:1px dashed #e8e3d6;font-size:11px;color:#a09a8a;font-style:italic}";
+    document.head.appendChild(wcs);
+    window.__foWorld = { umpires: foUmpiresOf, intlPick: foIntlPick };
+  })(); } catch (e) { console.warn("broader world", e); }
 
   console.info("Fifty Overs League overlay ready.");
 })();
