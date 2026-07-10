@@ -635,7 +635,11 @@
     ".fo-cond-wx{background:rgba(217,164,65,.18);color:#7a5a14;border:1px solid rgba(217,164,65,.5)}" +
     ".fo-cond-gnd{background:rgba(7,22,46,.06);color:#3c4658;border:1px solid rgba(7,22,46,.14)}" +
     ".fo-comm-full{max-height:72vh;overflow-y:auto;font-size:13.5px;line-height:1.5}" +
-    "#page tr.fo-rnd-head>td{background:#111827 !important;color:#FFFEFC !important;font-weight:800;font-size:12.5px;padding:9px 12px;border-top:16px solid transparent;background-clip:padding-box}" +
+    "html,body{-webkit-text-size-adjust:100%;text-size-adjust:100%}" +
+    "#page table,#page td,#page th{-webkit-text-size-adjust:100%;text-size-adjust:100%}" +
+    "#page tr.fo-rnd-head>td{background:#111827 !important;color:#FFFEFC !important;font-weight:800;font-size:12.5px !important;padding:9px 12px;border-top:16px solid transparent;background-clip:padding-box}" +
+    "#page tr.fo-rnd-head>td .small,#page tr.fo-rnd-head>td span{font-size:11.5px !important}" +
+    "#page tr.fo-rnd-head>td .fo-fx-chev{font-size:12.5px !important}" +
     "#page tr.fo-rnd-head b,#page tr.fo-rnd-head span{color:#FFFEFC !important}" +
     "html body button.fo-setr,html body.ftpskin button.fo-setr{background:#C95532 !important;border-color:#C95532 !important;color:#FFFEFC !important}" +
     "html body button.fo-setr-done,html body.ftpskin button.fo-setr-done,html body.ftpskin button.primary.fo-setr-done{background:#15803D !important;color:#fff !important;border-color:#15803D !important}" +
@@ -7821,6 +7825,7 @@
             var mB = (c0.textContent || "").match(/\u00b7\s*([^(]+?)\s*\(/);
             if (mB) bandDate = mB[1].trim();
           }
+          tr.classList.add("fo-rnd-head");
           curBand = { tr: tr, label: (c0.textContent || "").trim(), rows: [] };
           groups.push(curBand);
           return;
@@ -7973,7 +7978,7 @@
     try {
       if (App.page !== "matches") return;
       document.querySelectorAll("#page tr>td:first-child").forEach(function (td) {
-        if (/^\s*Round \d+\b/.test(td.textContent || "") && !td.parentNode.classList.contains("fo-rnd-head")) td.parentNode.classList.add("fo-rnd-head");
+        if (/Round \d+ /.test(td.textContent || "") && td.colSpan > 1 && !td.parentNode.classList.contains("fo-rnd-head")) td.parentNode.classList.add("fo-rnd-head");
       });
     } catch (e) {}
   }
