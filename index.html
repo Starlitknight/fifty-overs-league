@@ -9419,7 +9419,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-0356-d64695";
+  var FO_BUILD = "20260710-0405-9a594b";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14950,14 +14950,38 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       }
       return out;
     }
-    function foChartFrame(maxY, yStep, maxX, yl) {
-      var W = 560, H = 232, L = 36, B = 24, T = 10, R = 10;
+    function foChartFrame(maxY, yStep, maxX, ytitle, xtitle) {
+      var W = 640, H = 300, L = 46, B = 36, T = 20, R = 16;
       var gx = function (x) { return L + (W - L - R) * x / Math.max(1, maxX); };
       var gy = function (y) { return H - B - (H - B - T) * y / Math.max(1, maxY); };
-      var grid = "";
-      for (var y = 0; y <= maxY; y += yStep) grid += "<line x1='" + L + "' y1='" + gy(y) + "' x2='" + (W - R) + "' y2='" + gy(y) + "' stroke='#e3ded2' stroke-dasharray='4 4'/><text x='" + (L - 6) + "' y='" + (gy(y) + 3.5) + "' text-anchor='end' font-size='10' fill='#8a8474'>" + y + "</text>";
-      for (var x = 0; x <= maxX; x += 10) grid += "<text x='" + gx(x) + "' y='" + (H - 8) + "' text-anchor='middle' font-size='10' fill='#8a8474'>" + x + "</text>";
-      return { W: W, H: H, gx: gx, gy: gy, open: "<svg viewBox='0 0 " + W + " " + H + "' style='width:100%;height:auto'>" + grid, yl: yl };
+      var g = "";
+      for (var y = 0; y <= maxY; y += yStep) g += "<line x1='" + L + "' y1='" + gy(y) + "' x2='" + (W - R) + "' y2='" + gy(y) + "' stroke='#e8e3d4' stroke-dasharray='3 5'/><text x='" + (L - 8) + "' y='" + (gy(y) + 3.5) + "' text-anchor='end' font-size='10.5' fill='#a09a8a' font-family='Inter,sans-serif'>" + y + "</text>";
+      for (var x = 0; x <= maxX; x += (maxX > 25 ? 10 : 5)) g += "<text x='" + gx(x) + "' y='" + (H - 14) + "' text-anchor='middle' font-size='10.5' fill='#a09a8a' font-family='Inter,sans-serif'>" + x + "</text>";
+      g += "<text x='" + L + "' y='11' font-size='9.5' fill='#8a8474' font-family='Inter,sans-serif' font-weight='800' letter-spacing='1.5' style='text-transform:uppercase'>" + ytitle + "</text>";
+      g += "<text x='" + ((L + W - R) / 2) + "' y='" + (H - 2) + "' text-anchor='middle' font-size='9.5' fill='#8a8474' font-family='Inter,sans-serif' font-weight='800' letter-spacing='1.5'>" + (xtitle || "OVERS") + "</text>";
+      g += "<line x1='" + L + "' y1='" + gy(0) + "' x2='" + (W - R) + "' y2='" + gy(0) + "' stroke='#c9c2b2'/>";
+      var bands = "";
+      if (maxX >= 30) {
+        bands = "<rect x='" + gx(0) + "' y='" + T + "' width='" + (gx(10) - gx(0)) + "' height='" + (gy(0) - T) + "' fill='#2d6a8f' opacity='.05'/>" +
+          "<rect x='" + gx(40) + "' y='" + T + "' width='" + (gx(Math.min(50, maxX)) - gx(40)) + "' height='" + (gy(0) - T) + "' fill='#a33328' opacity='.05'/>" +
+          "<text x='" + gx(5) + "' y='" + (T + 11) + "' text-anchor='middle' font-size='8.5' fill='#7f95a5' font-family='Inter,sans-serif' font-weight='800' letter-spacing='1.2'>POWERPLAY</text>" +
+          "<text x='" + ((gx(40) + gx(Math.min(50, maxX))) / 2) + "' y='" + (T + 11) + "' text-anchor='middle' font-size='8.5' fill='#b08a85' font-family='Inter,sans-serif' font-weight='800' letter-spacing='1.2'>DEATH</text>";
+      }
+      return { W: W, H: H, L: L, R: R, gx: gx, gy: gy,
+        open: "<svg viewBox='0 0 " + W + " " + H + "' style='width:100%;height:auto'><defs>" +
+          "<linearGradient id='foga' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='" + C1 + "' stop-opacity='.20'/><stop offset='1' stop-color='" + C1 + "' stop-opacity='0'/></linearGradient>" +
+          "<linearGradient id='fogb' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='" + C2 + "' stop-opacity='.22'/><stop offset='1' stop-color='" + C2 + "' stop-opacity='0'/></linearGradient>" +
+          "</defs>" + bands + g };
+    }
+    function foSmooth(pts) {
+      if (pts.length < 3) return pts.map(function (q, i) { return (i ? "L" : "M") + q[0] + " " + q[1]; }).join("");
+      var d = "M" + pts[0][0] + " " + pts[0][1];
+      for (var i = 0; i < pts.length - 1; i++) {
+        var p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+        d += "C" + (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1) + " " + (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1) + "," +
+          (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1) + " " + (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1) + "," + p2[0].toFixed(1) + " " + p2[1].toFixed(1);
+      }
+      return d;
     }
     function foLegend(all) {
       return "<div class='fo-an-leg'>" + all.map(function (inn, i) { return "<span><i style='background:" + (i ? C2 : C1) + "'></i>" + E(inn.batTeam) + "</span>"; }).join("") + "</div>";
@@ -14966,57 +14990,75 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if (!worms || !worms[0] || !worms[0].length) return "";
       var series = all.map(function (inn, i) { return foOverSeries(worms[i] || []); });
       var maxO = Math.max.apply(null, series.map(function (sr) { return sr.length; }).concat([1]));
-      // Manhattan
+      // ---- Manhattan ----
       var maxR = 1; series.forEach(function (sr) { sr.forEach(function (pt, i) { maxR = Math.max(maxR, pt.runs - (i ? sr[i - 1].runs : 0)); }); });
-      var mY = Math.ceil((maxR + 2) / 5) * 5;
-      var f1 = foChartFrame(mY, 5, maxO + 1, "runs / over");
-      var bw = Math.max(2.4, (f1.W - 46) / (maxO + 1) / 2.6);
+      var f1 = foChartFrame(Math.ceil((maxR + 3) / 5) * 5, 5, maxO + 1, "RUNS PER OVER");
+      var bw = Math.max(2.6, (f1.W - f1.L - f1.R) / (maxO + 1) / 2.5);
       var man = f1.open;
       series.forEach(function (sr, si) {
         sr.forEach(function (pt, i) {
           var rv = pt.runs - (i ? sr[i - 1].runs : 0), wv = pt.wkts - (i ? sr[i - 1].wkts : 0);
-          var x = f1.gx(pt.o) + (si ? 1 : -1 - bw);
-          man += "<rect x='" + x + "' y='" + f1.gy(rv) + "' width='" + bw + "' height='" + (f1.gy(0) - f1.gy(rv)) + "' rx='1' fill='" + (si ? C2 : C1) + "'/>";
-          if (wv > 0) man += "<circle cx='" + (x + bw / 2) + "' cy='" + (f1.gy(rv) - 5) + "' r='2.6' fill='none' stroke='#a33328' stroke-width='1.6'/>";
+          var x = f1.gx(pt.o) + (si ? 0.6 : -0.6 - bw);
+          man += "<rect x='" + x.toFixed(1) + "' y='" + f1.gy(rv).toFixed(1) + "' width='" + bw.toFixed(1) + "' height='" + Math.max(0, f1.gy(0) - f1.gy(rv)).toFixed(1) + "' rx='" + Math.min(2, bw / 2) + "' fill='" + (si ? C2 : C1) + "'><title>" + E(all[si].batTeam) + " over " + pt.o + ": " + rv + " run" + (rv === 1 ? "" : "s") + (wv ? ", " + wv + " wkt" : "") + "</title></rect>";
+          for (var wI = 0; wI < wv; wI++) man += "<circle cx='" + (x + bw / 2).toFixed(1) + "' cy='" + (f1.gy(rv) - 6 - wI * 8).toFixed(1) + "' r='2.8' fill='#fff' stroke='#a33328' stroke-width='1.8'/>";
         });
       });
       man += "</svg>";
-      // Run rate + Worm lines
-      var line = function (fr, sr, val, col) {
-        var d = "M" + fr.gx(0) + " " + fr.gy(0);
-        sr.forEach(function (pt) { d += " L" + fr.gx(pt.o) + " " + fr.gy(val(pt)); });
-        return "<path d='" + d + "' fill='none' stroke='" + col + "' stroke-width='2.2' stroke-linejoin='round'/>";
+      // phase split table (powerplay / middle / death) when the data exists
+      var phase = "";
+      if (all[0] && all[0].ph_r) {
+        phase = "<table class='fo-sct fo-ph'><thead><tr><th>Phase</th>" + all.map(function (inn) { return "<th class='n'>" + E(inn.batTeam) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+          [["pp", "Powerplay (1&ndash;10)"], ["mid", "Middle (11&ndash;40)"], ["death", "Death (41&ndash;50)"]].map(function (ph) {
+            return "<tr><td>" + ph[1] + "</td>" + all.map(function (inn) {
+              var r = (inn.ph_r || {})[ph[0]] || 0, b = (inn.ph_b || {})[ph[0]] || 0;
+              return "<td class='n'><b>" + r + "</b> <span class='small'>(" + (b ? (6 * r / b).toFixed(1) : "-") + " rpo)</span></td>";
+            }).join("") + "</tr>";
+          }).join("") + "</tbody></table>";
+      }
+      // ---- Run rate + Worm ----
+      var lineArea = function (fr, sr, val, si, endLbl) {
+        var pts = [[fr.gx(0), fr.gy(0)]];
+        sr.forEach(function (pt) { pts.push([fr.gx(pt.o), fr.gy(val(pt))]); });
+        var d = foSmooth(pts);
+        var last = pts[pts.length - 1];
+        return "<path d='" + d + " L" + last[0].toFixed(1) + " " + fr.gy(0) + " L" + fr.gx(0) + " " + fr.gy(0) + " Z' fill='url(#" + (si ? "fogb" : "foga") + ")' stroke='none'/>" +
+          "<path d='" + d + "' fill='none' stroke='" + (si ? C2 : C1) + "' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round'/>" +
+          "<circle cx='" + last[0].toFixed(1) + "' cy='" + last[1].toFixed(1) + "' r='3.4' fill='" + (si ? C2 : C1) + "' stroke='#fff' stroke-width='1.6'/>" +
+          (endLbl ? "<text x='" + Math.min(last[0] + 6, fr.W - 44) + "' y='" + (last[1] - 7 + si * 15) + "' font-size='10.5' font-weight='800' fill='" + (si ? C2 : C1) + "' font-family='Inter,sans-serif'>" + endLbl + "</text>" : "");
       };
       var maxRR = 1; series.forEach(function (sr) { sr.forEach(function (pt) { maxRR = Math.max(maxRR, pt.runs / pt.o); }); });
-      var f2 = foChartFrame(Math.ceil(maxRR + 1), 2, maxO + 1, "run rate");
+      var f2 = foChartFrame(Math.ceil(maxRR + 1), 2, maxO + 1, "RUN RATE");
       var rr = f2.open;
-      series.forEach(function (sr, si) { rr += line(f2, sr, function (pt) { return pt.runs / pt.o; }, si ? C2 : C1); });
+      series.forEach(function (sr, si) { if (sr.length) rr += lineArea(f2, sr, function (pt) { return pt.runs / pt.o; }, si, (sr[sr.length - 1].runs / sr[sr.length - 1].o).toFixed(2)); });
       rr += "</svg>";
       var maxRuns = Math.max.apply(null, series.map(function (sr) { return sr.length ? sr[sr.length - 1].runs : 0; }).concat([10]));
-      var f3 = foChartFrame(Math.ceil((maxRuns + 15) / 20) * 20, 40, maxO + 1, "runs");
+      var f3 = foChartFrame(Math.ceil((maxRuns + 20) / 40) * 40, 40, maxO + 1, "RUNS");
       var wm = f3.open;
       series.forEach(function (sr, si) {
-        wm += line(f3, sr, function (pt) { return pt.runs; }, si ? C2 : C1);
-        sr.forEach(function (pt, i) { if (pt.wkts > (i ? sr[i - 1].wkts : 0)) wm += "<circle cx='" + f3.gx(pt.o) + "' cy='" + f3.gy(pt.runs) + "' r='2.8' fill='#a33328'/>"; });
+        if (!sr.length) return;
+        wm += lineArea(f3, sr, function (pt) { return pt.runs; }, si, sr[sr.length - 1].runs + "/" + sr[sr.length - 1].wkts);
+        sr.forEach(function (pt, i) { if (pt.wkts > (i ? sr[i - 1].wkts : 0)) wm += "<circle cx='" + f3.gx(pt.o).toFixed(1) + "' cy='" + f3.gy(pt.runs).toFixed(1) + "' r='3' fill='#a33328' stroke='#fff' stroke-width='1.4'><title>Wicket, over " + pt.o + " (" + pt.runs + "/" + pt.wkts + ")</title></circle>"; });
       });
       wm += "</svg>";
-      // Partnerships
+      // ---- Partnerships ----
+      var ORD = function (w) { return w === 1 ? "1st" : w === 2 ? "2nd" : w === 3 ? "3rd" : w + "th"; };
       var pships = all.map(function (inn) {
         var ps = (inn.pships || []).slice();
         if (inn.pshipB > 0) ps.push({ w: "unbroken", runs: inn.pshipR, balls: inn.pshipB, pair: (inn.bat[inn.striker] ? inn.bat[inn.striker].p.name : "") + " / " + (inn.bat[inn.nonstriker] ? inn.bat[inn.nonstriker].p.name : "") });
+        if (!ps.length) return "";
         var mx = Math.max.apply(null, ps.map(function (q) { return q.runs; }).concat([1]));
-        return "<div class='fo-an-psh'><div class='fo-an-psht'>" + E(inn.batTeam) + "</div>" + ps.map(function (q) {
+        return "<div class='fo-an-psh'><div class='fo-an-psht'>" + E(inn.batTeam) + " &middot; " + inn.runs + "/" + inn.wkts + "</div>" + ps.map(function (q) {
           var pr = (q.pair || " / ").split(" / ");
           return "<div class='fo-psh-row'><span class='fo-psh-l'>" + E(pr[0] || "") + "</span>" +
-            "<span class='fo-psh-m'><b>" + q.runs + " (" + q.balls + ")</b><i style='width:" + Math.max(3, Math.round(100 * q.runs / mx)) + "%'></i></span>" +
+            "<span class='fo-psh-m'><b>" + q.runs + " <em>(" + q.balls + ")</em></b><i style='width:" + Math.max(3, Math.round(100 * q.runs / mx)) + "%'></i><u>" + (q.w === "unbroken" ? "unbroken" : ORD(q.w) + " wicket") + "</u></span>" +
             "<span class='fo-psh-r'>" + E(pr[1] || "") + "</span></div>";
         }).join("") + "</div>";
       }).join("");
-      var sec = function (t, b) { return "<div class='panel'><h4>" + t + "</h4><div class='pad'>" + b + "</div></div>"; };
-      return sec("Partnerships", pships) +
-        sec("Manhattan", foLegend(all) + man) +
-        sec("Run rate", foLegend(all) + rr) +
-        sec("Worm", foLegend(all) + wm);
+      var sec = function (t, cap, b) { return "<div class='panel'><h4>" + t + "</h4><div class='pad'>" + (cap ? "<div class='fo-an-cap'>" + cap + "</div>" : "") + b + "</div></div>"; };
+      return sec("Partnerships", "Every stand, in order &middot; the bar is the size of the partnership", pships) +
+        sec("Manhattan", "Runs scored in each over &middot; rings mark wickets", foLegend(all) + man + phase) +
+        sec("Run rate", "How the scoring rate travelled through the innings", foLegend(all) + rr) +
+        sec("Worm", "The chase in one picture &middot; dots mark wickets", foLegend(all) + wm);
     };
     // ---- the scorecard ----
     function foKeeperFromDis(inn) {
@@ -15148,7 +15190,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-psh-row{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:8px;align-items:center;margin:7px 0;font-size:12.5px}" +
       ".fo-psh-l{color:#12203a;font-weight:600}.fo-psh-r{text-align:right;color:#12203a;font-weight:600}" +
       ".fo-psh-m{text-align:center}.fo-psh-m b{display:block;font-size:12px;color:#12203a}" +
-      ".fo-psh-m i{display:block;height:7px;border-radius:99px;background:linear-gradient(90deg,#2d6a8f,#4DA6A2);margin:3px auto 0}" +
+      ".fo-psh-m i{display:block;height:8px;border-radius:99px;background:linear-gradient(90deg,#2d6a8f,#4DA6A2);margin:3px auto 2px;box-shadow:0 1px 3px rgba(45,106,143,.25)}" +
+      ".fo-psh-m em{font-style:normal;color:#8a8474;font-weight:600;font-size:11px}" +
+      ".fo-psh-m u{display:block;text-decoration:none;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#a09a8a;font-weight:700}" +
+      ".fo-psh-row:nth-child(odd){background:#fbfaf6}" +
+      ".fo-an-cap{font-size:12px;color:#8a8474;margin:2px 0 10px;font-style:italic}" +
+      ".fo-ph{margin-top:10px}.fo-ph .small{color:#8a8474}" +
+      ".fo-an-leg span{background:#f6f4ee;border:1px solid #e8e3d6;border-radius:999px;padding:4px 12px;font-weight:600}" +
       "@media(max-width:640px){.fo-sct td,.fo-sct th{padding:6px 6px}.fo-sci-dis{font-size:10.5px}.fo-psh-row{font-size:11px}}";
     document.head.appendChild(cs);
   })(); } catch (e) { console.warn("scorecard+fantasy", e); }
