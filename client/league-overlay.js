@@ -8579,7 +8579,11 @@
       window.ftpCommHTML = function (log, filter, limit) {
         var pass = _pass || function () { return true; };
         var tal = _tal || function (t) { return E(t || ""); };
-        var rows = (log || []).filter(function (L) { return pass(L, filter); }).slice(0, limit || 140).map(function (L) {
+        var fieldTest = function (L) {
+          if (L.out === "wRO") return true;
+          return /DROPPED|Misfield|fumbles|Brilliant stop|diving stop|phenomenal stop|attacks the ball|Stumping chance missed|Rocket Arm|Lightning Hands|run out/i.test(L.txt || "");
+        };
+        var rows = (log || []).filter(function (L) { return filter === "fielding" ? fieldTest(L) : pass(L, filter); }).slice(0, limit || 140).map(function (L) {
           if (L.intro) return '<div class="fo-comm-intro">' + tal(L.txt) + "</div>";
           if (L.mile || /^End of over/i.test(L.txt || "")) {
             var cls = L.out === "★" ? "fo-c-mile" : L.out === "✕" ? "fo-c-fow" : L.out === "⚑" ? "fo-c-flag" : "oversummary-bottom";
@@ -8921,6 +8925,40 @@
         _psc.apply(this, arguments);
         try {
           var bar = document.querySelector("#page .fo-sctabs"); if (!bar) return;
+          // the match date belongs on the card
+          try {
+            var recD = (q && q.i !== undefined && App.results[+q.i]) || null;
+            var nav = document.querySelector("#page .navsub");
+            var stampDate = function () {
+              var nav2 = document.querySelector("#page .navsub");
+              if (recD && recD.date && nav2 && nav2.textContent.indexOf(recD.date) < 0)
+                nav2.insertAdjacentHTML("beforeend", " &middot; <span class='small'>" + E(recD.date) + "</span>");
+            };
+            stampDate(); setTimeout(stampDate, 260); setTimeout(stampDate, 900);
+          } catch (eD) {}
+          // commentary filters: what kind of cricket do you want to re-live?
+          try {
+            if (App._scTab === "comm") {
+              var feedC = document.querySelector("#page #ftpcomm");
+              if (feedC && !document.querySelector("#page .fo-cfilters")) {
+                var recC = (q && q.i !== undefined && App.results[+q.i]) || null;
+                var fb2 = document.createElement("div"); fb2.className = "fo-cfilters";
+                [["all", "All"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["fielding", "Fielding"], ["talents", "Talents"], ["highlights", "Highlights"]].forEach(function (ff) {
+                  var b3 = document.createElement("button");
+                  b3.className = "fo-sctab fo-cf" + ((App._scCommF || "all") === ff[0] ? " on" : "");
+                  b3.textContent = ff[1];
+                  b3.addEventListener("click", function () {
+                    App._scCommF = ff[0];
+                    if (recC && recC.log) feedC.innerHTML = ftpCommHTML(recC.log, ff[0], 400);
+                    document.querySelectorAll("#page .fo-cf").forEach(function (x) { x.classList.toggle("on", x === b3); });
+                  });
+                  fb2.appendChild(b3);
+                });
+                feedC.parentNode.insertBefore(fb2, feedC);
+                if ((App._scCommF || "all") !== "all" && recC && recC.log) feedC.innerHTML = ftpCommHTML(recC.log, App._scCommF, 400);
+              }
+            }
+          } catch (eF) {}
           // Worm lives with the rest of the charts now
           Array.prototype.slice.call(bar.querySelectorAll(".fo-sctab")).forEach(function (b0) {
             if (/^Worm$/i.test((b0.textContent || "").trim())) b0.remove();
@@ -8971,6 +9009,15 @@
             }
             links.querySelectorAll("a").forEach(function (x) { x.classList.toggle("on", x.textContent.trim() === ((typeof UI !== "undefined" && UI.matchTab) || "Commentary")); });
           }
+          try {
+            document.querySelectorAll("#page select").forEach(function (sel2) {
+              var opts = Array.prototype.map.call(sel2.options || [], function (o2) { return o2.value; });
+              if (opts.indexOf("wickets") >= 0 && opts.indexOf("fielding") < 0) {
+                var o3 = document.createElement("option"); o3.value = "fielding"; o3.textContent = "fielding";
+                sel2.appendChild(o3);
+              }
+            });
+          } catch (eS) {}
           if (typeof UI !== "undefined" && UI.matchTab === "Charts") {
             var body = document.querySelector(".ftp-match-body");
             if (body) body.innerHTML = "<div class='match-subpanel'>" + foMatchCharts(M.innings.filter(Boolean), M.worm) + "</div>";
@@ -9379,6 +9426,13 @@
           if (!isNaN(t) && Math.abs(t - Date.now()) < 200 * 86400000) return t;
         }
       } catch (e2) {}
+      // last resort: the hour starts when this device first sees the round -
+      // slightly unsynced between friends, but the broadcast always holds
+      try {
+        var fs = { round: rd, t0: Date.now() };
+        lsSet(foBcastKey(), JSON.stringify(fs));
+        return fs.t0;
+      } catch (e3) {}
       return 0;
     }
     window.foEmbargo = function () {
@@ -9535,6 +9589,7 @@
     var bcs = document.createElement("style");
     bcs.textContent =
       ".fo-live-mask{color:#a33328;font-weight:800}" +
+      ".fo-cfilters{display:flex;gap:6px;overflow-x:auto;margin:0 0 10px;padding-bottom:4px;scrollbar-width:none}.fo-cfilters::-webkit-scrollbar{display:none}" +
       ".fo-live-sleep{padding:14px 4px;font-size:13px;color:#5d6779}" +
       ".fo-live-hero{background:linear-gradient(135deg,#16294a,#0B1322 62%);border-radius:16px;padding:20px 22px;margin:8px 0 14px;color:#c7cfda}" +
       ".fo-live-tag{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#ff8a7a;display:flex;align-items:center;gap:7px}" +
