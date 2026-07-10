@@ -8728,17 +8728,45 @@
           "</div></div>";
       }).join("");
       try { out += foMatchCharts(all, rec ? rec.worm : (typeof M !== "undefined" && M && M.innings === innings ? M.worm : null)); } catch (e) {}
-      if (fp.length) {
-        out += "<div class='panel'><h4>Fantasy points</h4><div class='pad'>" +
-          "<table class='fo-sct fo-fp'><thead><tr><th class='n'>#</th><th>Player</th><th>Club</th><th class='n'>Bat</th><th class='n'>Bowl</th><th class='n'>Field</th><th class='n'>Pts</th></tr></thead><tbody>" +
-          fp.map(function (x, i) {
-            return "<tr" + (i === 0 ? " class='fo-fp-top'" : "") + "><td class='n'>" + (i + 1) + "</td><td>" + E(x.n) + "</td><td class='small'>" + E(x.team || "") + "</td><td class='n'>" + x.bat + "</td><td class='n'>" + x.bowl + "</td><td class='n'>" + x.field + "</td><td class='n'><b>" + x.pts + "</b></td></tr>";
-          }).join("") + "</tbody></table>" +
-          "<div class='small' style='margin-top:7px;color:#8a8474'>Runs, boundary bonuses and strike rate with the bat &middot; 25 a wicket, bowled/lbw bonus, hauls and economy with the ball &middot; catches, stumpings and run-outs in the field. The top score is named player of the match.</div>" +
-          "</div></div>";
-      }
       return out;
     };
+    window.foFantasyPanel = function (innings) {
+      var fp = [];
+      try { fp = foFantasyPoints((innings || []).filter(Boolean)); } catch (e) {}
+      if (!fp.length) return "<div class='panel'><div class='pad small'>No fantasy data for this match.</div></div>";
+      return "<div class='panel'><h4>Fantasy points</h4><div class='pad'>" +
+        "<table class='fo-sct fo-fp'><thead><tr><th class='n'>#</th><th>Player</th><th>Club</th><th class='n'>Bat</th><th class='n'>Bowl</th><th class='n'>Field</th><th class='n'>Pts</th></tr></thead><tbody>" +
+        fp.map(function (x, i) {
+          return "<tr" + (i === 0 ? " class='fo-fp-top'" : "") + "><td class='n'>" + (i + 1) + "</td><td>" + E(x.n) + "</td><td class='small'>" + E(x.team || "") + "</td><td class='n'>" + x.bat + "</td><td class='n'>" + x.bowl + "</td><td class='n'>" + x.field + "</td><td class='n'><b>" + x.pts + "</b></td></tr>";
+        }).join("") + "</tbody></table>" +
+        "<div class='small' style='margin-top:7px;color:#8a8474'>Runs, boundary bonuses and strike rate with the bat &middot; 25 a wicket, bowled/lbw bonus, hauls and economy with the ball &middot; catches, stumpings and run-outs in the field. The top score is named player of the match.</div>" +
+        "</div></div>";
+    };
+    // Fantasy points live in their own sub-tab on the scorecard page
+    if (typeof window.pgScorecard === "function" && !window.pgScorecard.__foFp) {
+      var _psc = window.pgScorecard;
+      window.pgScorecard = function (q) {
+        _psc.apply(this, arguments);
+        try {
+          var bar = document.querySelector("#page .fo-sctabs"); if (!bar) return;
+          var fb = bar.querySelector(".fo-sctab-fp");
+          if (!fb) {
+            fb = document.createElement("button");
+            fb.className = "fo-sctab fo-sctab-fp"; fb.textContent = "Fantasy points";
+            fb.addEventListener("click", function () { App._scTab = "fantasy"; window.pgScorecard(q || {}); });
+            bar.appendChild(fb);
+          }
+          fb.classList.toggle("on", App._scTab === "fantasy");
+          if (App._scTab === "fantasy") {
+            var host = document.querySelector("#page .ftpskin");
+            var innings = (q && q.i !== undefined && App.results[+q.i]) ? App.results[+q.i].innings :
+              ((typeof M !== "undefined" && M) ? M.innings : null);
+            if (host && innings) host.innerHTML = foFantasyPanel(innings);
+          }
+        } catch (e) {}
+      };
+      window.pgScorecard.__foFp = 1;
+    }
     var cs = document.createElement("style");
     cs.textContent =
       "html body .fo-sci-head{display:flex;justify-content:space-between;align-items:baseline;background:#0B1322 !important;color:#F6F4EE !important;padding:11px 14px;font-size:14.5px}" +
