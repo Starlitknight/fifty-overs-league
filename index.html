@@ -9951,7 +9951,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260711-0043-bd99c1";
+  var FO_BUILD = "20260711-0045-3d79f1";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14172,7 +14172,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ? "<b>" + E(st.youthPending[0].name) + "</b> has agreed terms · the signing completes after the next matchday."
       : (canSignIn > 0 ? "Your scout can bring in the next signing in <b>" + canSignIn + "</b> matchday(s)." : "Your scout is ready · you can sign one player now.");
     var scoutBody;
-    if (!st.scoutReveal) {
+    if (signBlock) {
+      // no shortlist to stare at while signing is impossible - just the clock
+      var waitTxt = st.youthPending.length
+        ? "<b>" + E(st.youthPending[0].name) + "</b> has agreed terms · the signing completes after the next matchday. The scout travels again once he is in."
+        : (canSignIn > 0
+          ? "The scout rests between signings · the next reveal unlocks in <b>" + canSignIn + "</b> matchday" + (canSignIn === 1 ? "" : "s") + "."
+          : "The squad is full (18) · free a spot before the scout travels again.");
+      scoutBody = "<div class='fo-yc-note'>&#9203; " + waitTxt + "</div>";
+    } else if (!st.scoutReveal) {
       scoutBody = "<div class='fo-yc-note'>Send the scout out and see who he finds. Pick a country, then reveal his shortlist of three.</div>" +
         "<div class='ctlrow' style='margin:8px 0'><span class='small'>Scout in:</span>" + natSel +
         "<button class='fo-yc-sign' id='fo-yc-reveal'>&#128269; Reveal youth scout</button></div>";
