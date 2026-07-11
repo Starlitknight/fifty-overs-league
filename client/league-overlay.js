@@ -2090,9 +2090,13 @@
       }
       // squad watch: who is hot, who is struggling, who needs a rest
       var hotP = [], coldP = [], tiredP = [];
+      var hasPlayed = function (nm) { var h = App.playerHist && App.playerHist[nm]; return !!(h && h.length); };
       (t.players || []).forEach(function (pl) {
         var fi = pl.formIx == null ? 3 : pl.formIx;
-        if (fi >= 5) hotP.push(pl.name); else if (fi <= 1) coldP.push(pl.name);
+        // drafted form is a starting roll - no verdicts before a first match
+        if (hasPlayed(pl.name)) {
+          if (fi >= 5) hotP.push(pl.name); else if (fi <= 1) coldP.push(pl.name);
+        }
         if (pl.fatigue === "tired") tiredP.push(pl.name);
       });
       var watchRows = "";
@@ -8017,6 +8021,22 @@
   }
   // Every Set-lineup button carries data-r; this keeps them all honest - green
   // "Orders ready" the moment a round's packet exists, wherever the button lives.
+  function foStatsOwnRows() {
+    try {
+      if ((location.hash || "").indexOf("#/stats") !== 0) return;
+      var page = document.getElementById("page"); if (!page) return;
+      var mine = {}; try { (userTeam().players || []).forEach(function (p2) { mine[p2.name] = 1; }); } catch (e0) { return; }
+      page.querySelectorAll("table tr").forEach(function (tr) {
+        if (tr.__foOwn || !tr.cells || tr.cells.length < 2 || tr.querySelector("th")) return;
+        tr.__foOwn = 1;
+        var a = tr.querySelector("a[href*='player']");
+        var txt = (a ? a.textContent : tr.cells[0].textContent + " " + tr.cells[1].textContent) || "";
+        for (var nm in mine) { if (txt.indexOf(nm) >= 0) { tr.classList.add("fo-userrow"); break; } }
+      });
+    } catch (e) {}
+  }
+  window.addEventListener("hashchange", function () { [120, 500, 1200].forEach(function (ms) { setTimeout(foStatsOwnRows, ms); }); });
+  setInterval(function () { try { foStatsOwnRows(); } catch (e) {} }, 2500);
   function foRefreshLineupButtons() {
     try {
       if (!(SYNC && SYNC.submitted)) return;
