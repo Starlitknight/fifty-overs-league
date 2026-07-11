@@ -9536,72 +9536,29 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foOrdersExtras() {
     try {
       if (location.hash.indexOf("#/orders") !== 0) { if (window.__foOrdT) { clearInterval(window.__foOrdT); window.__foOrdT = null; } return; }
-      var page = document.getElementById("page"); if (!page || page.querySelector(".fo-orders-bar")) return;
-      var prev = foPreviousOrders();
-      var bar = document.createElement("div"); bar.className = "fo-orders-bar";
-      bar.innerHTML =
-        "<div class='fo-coach-row'>" +
-        "<button class='fo-autopick'>&#9889; Auto-pick everything</button>" +
-        "<button class='fo-copyprev'" + (prev ? "" : " disabled title='No previous lineup saved yet'") + ">&#10697; Copy previous</button>" +
-        "<span class='fo-coach-hint'>Fill it in one tap, then adjust anything below.</span></div>" +
-        "<div class='fo-ready' id='fo-ready'></div>";
-      var anchor = page.querySelector(".crumb");
-      if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(bar, anchor.nextSibling); else page.insertBefore(bar, page.firstChild);
-      // heat advisory: in draining weather a sixth bowling option is worth real overs
+      var page = document.getElementById("page"); if (!page) return;
+      // heat advisory: in draining weather a sixth bowling option is worth
+      // real overs (the old auto-pick/status bar is gone - the rebuilt page
+      // carries its own actions, and Save states show on the buttons)
+      var wxRaw = (App.pending && App.pending.weather) || "";
+      var drain = (window.FO_WX_DRAIN || {})[String(wxRaw).toLowerCase()];
+      if (!drain || page.querySelector(".fo-heat-note")) return;
+      var dPct = Math.round((drain - 1) * 100);
+      var who = "";
       try {
-        var wxRaw = (App.pending && App.pending.weather) || "";
-        var drain = (window.FO_WX_DRAIN || {})[String(wxRaw).toLowerCase()];
-        if (drain && !page.querySelector(".fo-heat-note")) {
-          var dPct = Math.round((drain - 1) * 100);
-          // fatigue is job- and fitness-weighted, so quote the squad's REAL
-          // range from the same model the engine will use tonight
-          var who = "";
-          try {
-            var t0 = userTeam();
-            var pc = function (p, asB) { return Math.round((drain - 1) * foJobLoad(p, asB) * 100); };
-            var bs = (t0.players || []).filter(function (p) { return p.bowlType; }).map(function (p) { return pc(p, true); });
-            var xs = (t0.players || []).map(function (p) { return pc(p, false); });
-            var rng = function (a) { var lo = Math.min.apply(null, a), hi = Math.max.apply(null, a); return lo === hi ? lo + "%" : lo + "&ndash;" + hi + "%"; };
-            if (bs.length && xs.length) who = " Your bowlers tire <b>" + rng(bs) + "</b> faster (genuine pace and low stamina feel it most), your batters <b>" + rng(xs) + "</b>.";
-          } catch (e) {}
-          var note = document.createElement("div"); note.className = "fo-heat-note fo-keep";
-          note.innerHTML = "<b>" + E(String(wxRaw)) + " forecast: fatigue runs faster today.</b>" + who + " Bowlers fade late in spells and heavy workloads carry into the next fixture" +
-            (dPct >= 30 ? ". Keep spells short: a sixth bowling option earns his keep, and batting depth pays." : ". Keep an eye on your frontline bowlers' overs.");
-          bar.parentNode.insertBefore(note, bar.nextSibling);
-        }
+        var t0 = userTeam();
+        var pc = function (p, asB) { return Math.round((drain - 1) * foJobLoad(p, asB) * 100); };
+        var bs = (t0.players || []).filter(function (p) { return p.bowlType; }).map(function (p) { return pc(p, true); });
+        var xs = (t0.players || []).map(function (p) { return pc(p, false); });
+        var rng = function (a) { var lo = Math.min.apply(null, a), hi = Math.max.apply(null, a); return lo === hi ? lo + "%" : lo + "&ndash;" + hi + "%"; };
+        if (bs.length && xs.length) who = " Your bowlers tire <b>" + rng(bs) + "</b> faster (genuine pace and low stamina feel it most), your batters <b>" + rng(xs) + "</b>.";
       } catch (e) {}
-      var btn = bar.querySelector(".fo-copyprev");
-      if (btn && prev) btn.addEventListener("click", function () { foApplyPrevOrders(prev); });
-      bar.querySelector(".fo-autopick").addEventListener("click", function () {
-        try {
-          if (typeof suggestOrders === "function") suggestOrders();
-          if (typeof window.pgOrders === "function") window.pgOrders();
-          toast("XI, captain, keeper and bowling plan filled. Adjust anything, then save.");
-          setTimeout(foOrdersExtras, 60);   // page repainted: re-attach the bar
-          setTimeout(foPoolToday, 120);
-        } catch (e) { say(e); }
-      });
-      // live readiness: the page tells you what is still missing
-      var paint = function () {
-        var el = document.getElementById("fo-ready"); if (!el) return;
-        var o = (typeof App !== "undefined" && App.orders) || {};
-        var chip = function (ok, lbl) { return "<span class='fo-rdy" + (ok ? " ok" : "") + "'>" + (ok ? "&#10003; " : "&#9675; ") + lbl + "</span>"; };
-        var xi = (o.batOrder || []).filter(Boolean).length;
-        var overs = 0; try { overs = (o.compiled || []).filter(Boolean).length; } catch (e) {}
-        el.innerHTML =
-          chip(xi >= 11, "Batting order (" + Math.min(xi, 11) + "/11)") +
-          chip(!!o.captain, "Captain") +
-          chip(!!o.keeper, "Keeper") +
-          chip(overs >= 50, "Bowling plan (" + Math.min(overs, 50) + "/50 overs)") +
-          chip(!!o.saved, o.saved ? "Saved" : "Not saved yet");
-      };
-      paint();
-      foPoolToday();
-      if (window.__foOrdT) clearInterval(window.__foOrdT);
-      window.__foOrdT = setInterval(function () {
-        if (location.hash.indexOf("#/orders") !== 0 || !document.getElementById("fo-ready")) { clearInterval(window.__foOrdT); window.__foOrdT = null; return; }
-        paint();
-      }, 900);
+      var note = document.createElement("div"); note.className = "fo-heat-note fo-keep";
+      note.innerHTML = "<b>" + E(String(wxRaw)) + " forecast: fatigue runs faster today.</b>" + who + " Bowlers fade late in spells and heavy workloads carry into the next fixture" +
+        (dPct >= 30 ? ". Keep spells short: a sixth bowling option earns his keep, and batting depth pays." : ". Keep an eye on your frontline bowlers' overs.");
+      var anchor = page.querySelector(".fo-ord-cond") || page.querySelector(".crumb");
+      if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(note, anchor.nextSibling);
+      else page.insertBefore(note, page.firstChild);
     } catch (e) {}
   }
   // Tag #page while a live match is on screen, so the mobile reorder CSS applies
@@ -10027,7 +9984,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260711-0424-d0563a";
+  var FO_BUILD = "20260711-0429-8b2a4a";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14840,10 +14797,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-os-cov{margin-left:auto;color:#8a93a3}" +
       ".fo-os-warn{margin-top:7px;background:#F6E3B4;border:1px solid #e8cf8c;border-radius:8px;padding:6px 10px;font-size:11.5px;color:#5a4310;font-weight:600}" +
       ".fo-ord-tac{margin-top:12px;border-top:1px dashed rgba(28,36,51,.14);padding-top:8px}" +
-      ".fo-ord-tach{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:#8a93a3;font-weight:800;margin:7px 0 3px}" +
+      ".fo-ord-tach{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:#41577a;font-weight:800;margin:9px 0 4px}" +
       ".fo-ord-tr3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:2px}" +
       ".fo-ord-cell{display:flex;flex-direction:column;gap:3px;min-width:0}" +
-      ".fo-ord-cell span{font-size:10px;color:#8a93a3;font-weight:700}" +
+      ".fo-ord-cell span{font-size:10.5px;color:#5a6472;font-weight:700}" +
       ".fo-ord-cell select{width:100%;font-size:12px;padding:4px 6px;border-radius:8px;box-sizing:border-box}" +
       ".fo-ord-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}" +
       "#fo-osheet{position:fixed;inset:0;background:rgba(10,18,32,.45);z-index:2600;display:flex;align-items:flex-end;justify-content:center}" +
