@@ -10025,7 +10025,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260711-0225-1be771";
+  var FO_BUILD = "20260711-0228-740811";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -13907,6 +13907,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       foFrSchedLoad();
       var t = userTeam(); var me = t.name;
       var mp = !!(SYNC && SYNC.started && !SYNC.practice && LG);
+      var frWhen = function (ts) {
+        var d = new Date(ts); if (isNaN(d)) return "";
+        var pd = function (n) { return (n < 10 ? "0" : "") + n; };
+        return d.toLocaleDateString([], { month: "short", day: "numeric" }) + ", " + pd(d.getHours()) + ":" + pd(d.getMinutes());
+      };
       // ---- one chronological list: practice + challenges, oldest first ----
       var entries = [];
       (foFriendlies || []).forEach(function (fr, i) {
@@ -13932,7 +13937,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             res = ix != null ? "<a href='#/scorecard?i=" + ix + "'>" + E(e2.txt) + "</a>" : E(e2.txt);
           }
           var cond = (e2.pitch || e2.wx) ? " <span class='small'>" + foPitchName(e2.pitch || "") + (e2.wx ? ", " + E(e2.wx) : "") + "</span>" : (e2.ground ? " <span class='small'>" + E(e2.ground) + "</span>" : "");
-          entries.push({ ts: ts, html: "<tr><td>" + new Date(e2.at).toLocaleDateString([], { month: "short", day: "numeric" }) + "</td><td>Practice</td><td>vs " + E(e2.opp) + cond + "</td><td>" + res + "</td></tr>" });
+          entries.push({ ts: ts, html: "<tr><td>" + frWhen(e2.at) + "</td><td>Practice</td><td>vs " + E(e2.opp) + cond + "</td><td>" + res + "</td></tr>" });
         });
       } catch (eH) {}
       if (mp && window.__foFrRows) {
@@ -13942,7 +13947,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           var mineSent = c.challenger_club === me;
           var vs = mineSent ? c.opponent_club : c.challenger_club;
           var ts = c.play_at ? +new Date(c.play_at) : (+new Date(c.created_at) || 0);
-          var when = c.play_at ? new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+          var when = c.play_at ? frWhen(c.play_at) : "";
           var fst = foFrBcastState(c);
           var act = "";
           if (c.status === "pending" && fst.phase !== "pre") act = "<span class='small'>not accepted before the scheduled time</span>";

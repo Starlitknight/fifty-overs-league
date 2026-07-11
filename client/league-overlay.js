@@ -7555,6 +7555,11 @@
       foFrSchedLoad();
       var t = userTeam(); var me = t.name;
       var mp = !!(SYNC && SYNC.started && !SYNC.practice && LG);
+      var frWhen = function (ts) {
+        var d = new Date(ts); if (isNaN(d)) return "";
+        var pd = function (n) { return (n < 10 ? "0" : "") + n; };
+        return d.toLocaleDateString([], { month: "short", day: "numeric" }) + ", " + pd(d.getHours()) + ":" + pd(d.getMinutes());
+      };
       // ---- one chronological list: practice + challenges, oldest first ----
       var entries = [];
       (foFriendlies || []).forEach(function (fr, i) {
@@ -7580,7 +7585,7 @@
             res = ix != null ? "<a href='#/scorecard?i=" + ix + "'>" + E(e2.txt) + "</a>" : E(e2.txt);
           }
           var cond = (e2.pitch || e2.wx) ? " <span class='small'>" + foPitchName(e2.pitch || "") + (e2.wx ? ", " + E(e2.wx) : "") + "</span>" : (e2.ground ? " <span class='small'>" + E(e2.ground) + "</span>" : "");
-          entries.push({ ts: ts, html: "<tr><td>" + new Date(e2.at).toLocaleDateString([], { month: "short", day: "numeric" }) + "</td><td>Practice</td><td>vs " + E(e2.opp) + cond + "</td><td>" + res + "</td></tr>" });
+          entries.push({ ts: ts, html: "<tr><td>" + frWhen(e2.at) + "</td><td>Practice</td><td>vs " + E(e2.opp) + cond + "</td><td>" + res + "</td></tr>" });
         });
       } catch (eH) {}
       if (mp && window.__foFrRows) {
@@ -7590,7 +7595,7 @@
           var mineSent = c.challenger_club === me;
           var vs = mineSent ? c.opponent_club : c.challenger_club;
           var ts = c.play_at ? +new Date(c.play_at) : (+new Date(c.created_at) || 0);
-          var when = c.play_at ? new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+          var when = c.play_at ? frWhen(c.play_at) : "";
           var fst = foFrBcastState(c);
           var act = "";
           if (c.status === "pending" && fst.phase !== "pre") act = "<span class='small'>not accepted before the scheduled time</span>";
