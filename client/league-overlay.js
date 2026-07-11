@@ -9253,6 +9253,8 @@
       ".fo-cp-prov{background:#F0F4F8;border:1px solid rgba(31,78,107,.16);border-radius:10px;padding:10px 13px;font-size:12.5px;color:#243244;margin-bottom:10px}" +
       ".fo-cp-ev{display:flex;gap:9px;align-items:baseline;font-size:12.5px;margin:4px 0;color:#3a4353}" +
       ".fo-cp-ev i{font-style:normal;flex:0 0 82px;color:#8a93a3;font-size:11px;font-weight:700;white-space:nowrap}" +
+      ".fo-cp-fr td{color:#8a93a3}.fo-cp-fr td:first-child{font-style:italic}" +
+      ".fo-cp-fld{font-size:12.5px;color:#3a4353}" +
       ".fo-mu-troph{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 10px}" +
       ".fo-mu-cup{background:linear-gradient(135deg,#F59E0B,#c08a2b);color:#fff;border-radius:10px;padding:8px 14px;font-weight:800;font-size:12.5px;box-shadow:0 3px 10px rgba(160,110,20,.3)}" +
       ".fo-mu-leg{background:#FFFEFC;border:1px solid rgba(28,36,51,.1);border-radius:11px;padding:11px 14px;margin:7px 0}" +
@@ -9422,12 +9424,13 @@
   function foDisplayName(p) { return p._nick ? p.name.split(" ")[0] + ' "' + p._nick + '" ' + p.name.split(" ").slice(1).join(" ") : p.name; }
 
   // ---- the chronicle pass around every completed round ----
-  // one-time repair: entries recorded before the chronicle shipped carry no
-  // season tag; in season one they can only belong to season one
+  // repair: every league entry is stamped (season, round) at round time, so
+  // an entry with neither stamp nor friendly flag can only be a friendly or
+  // practice knock written by an older build - class it as one instead of
+  // folding it into the league record
   function foChronBackfill() {
     try {
-      if ((App.seasonNo || 1) !== 1) return;
-      for (var k in (App.playerHist || {})) App.playerHist[k].forEach(function (e) { if (!e.s && !e.fr) e.s = 1; });
+      for (var k in (App.playerHist || {})) App.playerHist[k].forEach(function (e) { if (!e.s && !e.fr) e.fr = 1; });
     } catch (e) {}
   }
   function foChroniclePre() {
@@ -9817,27 +9820,39 @@
         : prov.how === "youth" ? (own ? "Found by your scout" + (prov.nat ? " in " + prov.nat : "") + " · signed " + signD + " · your signing, your project" : "A youth-academy find" + (prov.nat ? " from " + prov.nat : "") + " · signed " + signD)
         : "Draft-day original · signed " + estD;
       provTxt += homeTxt;
-      var h = ((App.playerHist && App.playerHist[name]) || []).filter(function (e) { return !e.fr; });
-      var bySeason = {};
-      h.forEach(function (e) {
-        var k = e.s || "early";
-        var b = (bySeason[k] = bySeason[k] || { inns: 0, runs: 0, hs: 0, wkts: 0, bw: 0, br: 1e9, outs: 0, balls: 0 });
+      // league innings carry a season stamp; everything else (challenge
+      // friendlies, practice games, pre-chronicle knocks) is the friendly
+      // record and stays out of the league rows
+      var hAll = ((App.playerHist && App.playerHist[name]) || []);
+      var h = hAll.filter(function (e) { return !e.fr && e.s != null; });
+      var frE = hAll.filter(function (e) { return e.fr || e.s == null; });
+      var mkAgg = function () { return { inns: 0, runs: 0, hs: 0, wkts: 0, bw: 0, br: 1e9, outs: 0, balls: 0, cr: 0, cb: 0 }; };
+      var feed1 = function (b, e) {
         b.inns++; b.runs += +e.rr || 0; b.wkts += +e.w || 0;
         b.outs += e.o ? 1 : 0; b.balls += +e.bb || 0;
+        b.cr += +e.cr || 0; b.cb += +e.cb || 0;
         if ((+e.rr || 0) > b.hs) b.hs = +e.rr;
         if ((+e.w || 0) > b.bw || ((+e.w || 0) === b.bw && (+e.w || 0) > 0 && (+e.cr || 0) < b.br)) { if (+e.w) { b.bw = +e.w; b.br = +e.cr || 0; } }
-      });
-      var keys = Object.keys(bySeason).sort(function (a, b2) { return (a === "early" ? 0 : +a) - (b2 === "early" ? 0 : +b2); });
-      var cellRow = function (lbl, b, bold) {
+      };
+      var bySeason = {};
+      h.forEach(function (e) { feed1(bySeason[e.s] = bySeason[e.s] || mkAgg(), e); });
+      var keys = Object.keys(bySeason).sort(function (a, b2) { return +a - +b2; });
+      var cellRow = function (lbl, b, cls) {
         var ave = b.outs ? (b.runs / b.outs).toFixed(1) : "–";
         var sr = b.balls ? (100 * b.runs / b.balls).toFixed(0) : "–";
-        return "<tr" + (bold ? " class='fo-cp-tot'" : "") + "><td>" + lbl + "</td><td class='n'>" + b.inns + "</td><td class='n'>" + b.runs + "</td><td class='n'>" + (b.hs || "–") + "</td><td class='n'>" + ave + "</td><td class='n'>" + sr + "</td><td class='n'>" + b.wkts + "</td><td class='n'>" + (b.bw ? b.bw + "/" + b.br : "–") + "</td></tr>";
+        var econ = b.cb ? (b.cr / (b.cb / 6)).toFixed(2) : "–";
+        return "<tr" + (cls ? " class='" + cls + "'" : "") + "><td>" + lbl + "</td><td class='n'>" + b.inns + "</td><td class='n'>" + b.runs + "</td><td class='n'>" + (b.hs || "–") + "</td><td class='n'>" + ave + "</td><td class='n'>" + sr + "</td><td class='n'>" + b.wkts + "</td><td class='n'>" + (b.bw ? b.bw + "/" + b.br : "–") + "</td><td class='n'>" + econ + "</td></tr>";
       };
-      var srows = keys.map(function (k) { return cellRow(k === "early" ? "Early days" : "Season " + k, bySeason[k], false); }).join("");
+      var srows = keys.map(function (k) { return cellRow("Season " + k, bySeason[k], ""); }).join("");
       if (keys.length > 1) {
-        var tot = { inns: 0, runs: 0, hs: 0, wkts: 0, bw: 0, br: 1e9, outs: 0, balls: 0 };
-        keys.forEach(function (k) { var b = bySeason[k]; tot.inns += b.inns; tot.runs += b.runs; tot.wkts += b.wkts; tot.outs += b.outs; tot.balls += b.balls; if (b.hs > tot.hs) tot.hs = b.hs; if (b.bw > tot.bw || (b.bw === tot.bw && b.br < tot.br)) { tot.bw = b.bw; tot.br = b.br; } });
-        srows += cellRow("Career", tot, true);
+        var tot = mkAgg();
+        h.forEach(function (e) { feed1(tot, e); });
+        srows += cellRow("League career", tot, "fo-cp-tot");
+      }
+      if (frE.length) {
+        var frT = mkAgg();
+        frE.forEach(function (e) { feed1(frT, e); });
+        srows += cellRow("Friendlies", frT, "fo-cp-fr");
       }
       // matches resolved away from this device may predate the chronicle
       // stamps: rebuild the guaranteed moments straight from the history
@@ -9858,16 +9873,26 @@
         }
       } catch (eR) {}
       var evs = (p._career || []).slice().reverse().slice(0, 14).map(function (c) {
-        var when = "S" + c.s + " R" + c.r;
-        try { if (typeof foRoundDate === "function") when = foRoundDate(c.s, c.r); } catch (eW) {}
+        var when = "Season " + c.s;
+        try {
+          var wd = (typeof foRoundDate === "function") ? foRoundDate(c.s, c.r) : null;
+          if (wd && !/^S\d+ R\d+$/.test(wd)) when = wd;
+        } catch (eW) {}
         return "<div class='fo-cp-ev'><i>" + E(when) + "</i><span>" + E(c.txt) + "</span></div>";
       }).join("") || "<div class='small'>The story starts with the next matchday.</div>";
       var card = document.createElement("div");
       card.className = "panel fo-keep"; card.id = "fo-career"; card.setAttribute("data-n", name);
+      var mh = function (s0) { return "<div class='small' style='margin:9px 0 4px;text-transform:uppercase;letter-spacing:.07em;font-size:10px;color:#8a93a3'>" + s0 + "</div>"; };
+      var fsF = (App.fieldStats && App.fieldStats[name]) || { ct: 0, st: 0, ro: 0 };
+      var fldBits = [(fsF.ct || 0) + (fsF.ct === 1 ? " catch" : " catches")];
+      if (p.keeper || fsF.st) fldBits.push((fsF.st || 0) + (fsF.st === 1 ? " stumping" : " stumpings"));
+      fldBits.push((fsF.ro || 0) + (fsF.ro === 1 ? " run-out" : " run-outs"));
+      var fldHtml = hAll.length ? mh("Fielding") + "<div class='fo-cp-fld'>" + fldBits.join(" &middot; ") + " <span style='color:#8a93a3'>&middot; all matches</span></div>" : "";
       card.innerHTML = "<h4>Career &middot; " + E(foDisplayName(p)) + "</h4><div class='pad'>" +
         "<div class='fo-cp-prov'>" + E(provTxt) + "</div>" +
-        (srows ? "<table><tr><th></th><th class='n'>Inns</th><th class='n'>Runs</th><th class='n'>HS</th><th class='n'>Ave</th><th class='n'>SR</th><th class='n'>Wkts</th><th class='n'>Best</th></tr>" + srows + "</table>" : "") +
-        "<div class='small' style='margin:9px 0 4px;text-transform:uppercase;letter-spacing:.07em;font-size:10px;color:#8a93a3'>Moments</div>" + evs +
+        (srows ? "<table><tr><th></th><th class='n'>Inns</th><th class='n'>Runs</th><th class='n'>HS</th><th class='n'>Ave</th><th class='n'>SR</th><th class='n'>Wkts</th><th class='n'>Best</th><th class='n'>Econ</th></tr>" + srows + "</table>" : "") +
+        fldHtml +
+        mh("Moments") + evs +
         "</div></div>";
       // the engine leaves the second column empty once its summary panels are
       // hidden - the career belongs there, right beside Player info
@@ -9896,6 +9921,19 @@
         var h2 = pn.querySelector("h4");
         if (h2 && /^(Batting & fielding|Batting &amp; fielding|Bowling|Skills summary)$/i.test((h2.textContent || "").trim())) pn.style.display = "none";
       });
+      // the Recent matches class column says when a knock was only a friendly
+      try {
+        var rmP = panels.filter(function (pn) { var h0 = pn.querySelector("h4"); return h0 && /^Recent matches/i.test((h0.textContent || "").trim()); })[0];
+        if (rmP) {
+          var histE = hAll.slice(-8).reverse();
+          var trs = Array.prototype.slice.call(rmP.querySelectorAll("tr")).filter(function (tr) { return tr.children.length >= 5 && tr.children[0].tagName === "TD"; });
+          trs.forEach(function (tr, i) {
+            var e = histE[i]; if (!e) return;
+            var cell = tr.children[1];
+            if (cell && /OD|One Day/i.test(cell.textContent) && (e.fr || e.s == null)) cell.innerHTML += "<div class='small' style='color:#8a93a3'>Friendly</div>";
+          });
+        }
+      } catch (eRm) {}
       // the Skills panel reads exactly like the squad page's expanded row:
       // Batting / Bowling-or-Reserves / In the field, with words and colours
       try {
@@ -10908,10 +10946,21 @@
       }
       return foFmtDate(t._est);
     };
-    // the date a given season/round was played, recovered from tagged history
+    // the date a given season/round was played. League rounds run one per
+    // real day, so current-season rounds map straight to the calendar (the
+    // same arithmetic the fixture list uses); older seasons fall back to the
+    // dates carried by tagged history entries.
     window.foRoundDate = function (sn, rn) {
       var c = (window.foRoundDate.__c = window.foRoundDate.__c || {}), k = sn + "-" + rn;
       if (c[k]) return c[k];
+      try {
+        if (App.season && sn === (App.seasonNo || 1) && rn >= 1) {
+          var curR = App.season.round || 0;
+          var d = new Date(); d.setHours(0, 0, 0, 0);
+          d.setDate(d.getDate() + ((rn - 1) - curR) + (foCurAdvanced() ? 1 : 0));
+          if (d <= new Date()) return (c[k] = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }));
+        }
+      } catch (e2) {}
       for (var nm in (App.playerHist || {})) {
         var hh = App.playerHist[nm];
         for (var i = 0; i < hh.length; i++) if (hh[i].s === sn && hh[i].r === rn && hh[i].date) return (c[k] = foFmtDate(hh[i].date));
