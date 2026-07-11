@@ -505,6 +505,7 @@
     ".fo-en-bar u{display:block;height:100%;border-radius:99px;text-decoration:none}" +
     ".fo-en-fresh{background:#16A34A}.fo-en-rested{background:#84B34A}.fo-en-tired{background:#F59E0B}" +
     ".fo-en-w{font-size:11px;font-weight:700;text-transform:capitalize}" +
+    ".fo-en-k{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#667085;flex:0 0 auto}" +
     ".fo-en-w-fresh{color:#15803D}.fo-en-w-rested{color:#6B8F3A}.fo-en-w-tired{color:#B45309}" +
     ".fo-tr-pace{font-style:normal;color:#667085}" +
     ".fo-seen{font-size:11px;color:#93a0b4}" +
@@ -7735,8 +7736,8 @@
     var potCls = { Star: "star", High: "high", Useful: "useful", Limited: "limited" };
 
     var sorted = t.players.slice().sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
-    var enBar = function (en) {
-      return "<div class='fo-en' title='" + E(en.raw) + "'><div class='fo-en-bar'><u class='fo-en-" + en.word + "' style='width:" + en.pct + "%'></u></div><span class='fo-en-w fo-en-w-" + en.word + "'>" + en.word + "</span></div>";
+    var enBar = function (en, lbl) {
+      return "<div class='fo-en' title='" + E(en.raw) + "'>" + (lbl ? "<span class='fo-en-k'>Energy</span>" : "") + "<div class='fo-en-bar'><u class='fo-en-" + en.word + "' style='width:" + en.pct + "%'></u></div><span class='fo-en-w fo-en-w-" + en.word + "'>" + en.word + "</span></div>";
     };
     var gainOf = function (p, tr, pr) {
       if (pr.pct > 0) return foSkillLabel(pr.skill) + " &middot; " + pr.pct + "%";
@@ -7765,7 +7766,7 @@
         ? "<div class='fo-trc-warn'>&#9888; Tired players train slowly &middot; consider <b>Rest</b>.</div>" : "";
       return "<div class='fo-trc'>" +
         "<div class='fo-trc-h'><a href='#/player?n=" + encodeURIComponent(p.name) + "'><b>" + E(p.name) + "</b></a><span class='fo-tr-meta'>" + foRoleShort(p) + " · age " + (p.age || "?") + "</span></div>" +
-        enBar(en) + warn +
+        enBar(en, true) + warn +
         "<div class='fo-trc-row fo-trc-one'><label>Program<select class='fo-tr-prog' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + progOpts(tr.program) + "</select></label></div>" +
         (chips ? "<div class='fo-trc-ws'>" + chips + "</div>" : "<div class='fo-trc-ws small'>Recovery week &middot; energy climbs instead of skills.</div>") +
         "<div class='fo-tr-progress'><div class='fo-tr-bar' title='Progress to the next +1'><u style='width:" + pr.pct + "%'></u></div><span>" + gainOf(p, tr, pr) + " &middot; <i class='fo-tr-pace'>" + foTrPace(p, tr) + "</i></span></div>" +
