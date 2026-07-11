@@ -2698,7 +2698,15 @@
           }
           joins.sort(function (a, b2) { return b2.d - a.d; });
           joinRows = joins.slice(0, 2).map(function (j) {
-            return "<div class='fo-nr-row'><span><b>" + E(j.club) + "</b> joins the league" + (j.mgr ? " <u>manager " + E(j.mgr) + "</u>" : "") + "</span><i>" + j.d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) + "</i></div>";
+            // clickable once the club is actually in the season; before that
+            // (still drafting / join still landing) say so instead
+            var inWorld = false;
+            try { inWorld = (GD.teams || []).some(function (t9) { return t9 && t9.name === j.club; }); } catch (eIw) {}
+            var mgrBits = [];
+            if (j.mgr) mgrBits.push("manager " + E(j.mgr));
+            if (!inWorld) mgrBits.push("still drafting their squad");
+            return "<div class='fo-nr-row'><span><b" + (inWorld ? " class='fo-scoutname' style='cursor:pointer;text-decoration:underline;text-decoration-color:rgba(28,36,51,.25);text-underline-offset:2px'" : "") + ">" + E(j.club) + "</b> joins the league" +
+              (mgrBits.length ? " <u>" + mgrBits.join(" &middot; ") + "</u>" : "") + "</span><i>" + j.d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) + "</i></div>";
           });
         } catch (eJn) {}
         var nrRows = joinRows.concat(evsN.slice(0, 4).map(function (e3) {
