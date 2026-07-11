@@ -6918,10 +6918,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-ch-min .fo-chtable td{font-size:13px;padding:6px 4px;font-variant-numeric:tabular-nums}.fo-ch-min .fo-chtable th{font-size:10.5px;padding:6px 4px}" +
     ".fo-ch-min .fo-chtable td:nth-child(2),.fo-ch-min .fo-chtable th:nth-child(2){width:auto;white-space:normal;overflow-wrap:anywhere;line-height:1.25}" +
     ".fo-ch-min .fo-chtable td:first-child,.fo-ch-min .fo-chtable th:first-child{width:24px}" +
-    ".fo-ch-min .fo-chtable td:nth-child(3),.fo-ch-min .fo-chtable th:nth-child(3),.fo-ch-min .fo-chtable td:nth-child(4),.fo-ch-min .fo-chtable th:nth-child(4),.fo-ch-min .fo-chtable td:nth-child(5),.fo-ch-min .fo-chtable th:nth-child(5){width:22px;text-align:right}" +
-    ".fo-ch-min .fo-chtable td:nth-child(6),.fo-ch-min .fo-chtable th:nth-child(6){width:52px;text-align:right}" +
+    ".fo-ch-min .fo-chtable td:nth-child(3),.fo-ch-min .fo-chtable th:nth-child(3),.fo-ch-min .fo-chtable td:nth-child(4),.fo-ch-min .fo-chtable th:nth-child(4),.fo-ch-min .fo-chtable td:nth-child(5),.fo-ch-min .fo-chtable th:nth-child(5){width:19px;text-align:right}" +
+    ".fo-ch-min .fo-chtable td:nth-child(6),.fo-ch-min .fo-chtable th:nth-child(6){width:46px;text-align:right}" +
     ".fo-ch-min .fo-chtable td:nth-child(7),.fo-ch-min .fo-chtable th:nth-child(7){width:34px;text-align:right}" +
     ".fo-nr-row b{color:#0a2342;font-weight:700}" +
+    ".fo-flg{margin-right:5px;font-style:normal;display:inline-block}" +
+    "html body .fo-flg img{width:16px !important;height:11px !important;vertical-align:-1px;border-radius:2px;box-shadow:0 0 0 1px rgba(20,36,58,.12)}" +
     ".fo-c2-hero{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.55fr) minmax(0,1.25fr);gap:24px;align-items:center;background:linear-gradient(135deg,#0a2342,#06182f 70%);border-radius:14px;padding:24px 26px;margin:8px 0 16px;color:#c7cfda}" +
     "@media(max-width:1100px){.fo-c2-hero{grid-template-columns:1fr 1fr}.fo-c2-id{grid-column:1/-1}}" +
     ".fo-c2-id{display:flex;gap:14px;align-items:flex-start;min-width:0}" +
@@ -8985,6 +8987,46 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     return d.toLocaleDateString("en-GB", opts || { day: "2-digit", month: "short" });
   }
   var foScoutIx = null, foScoutTab = "overview", foScoutSort = "rating";
+  // a club's flag emoji, from its country (or its dressing room's majority)
+  function foClubFlagEmo(nm) {
+    try {
+      var ts = (typeof GD !== "undefined" && GD.teams) || [], t = null;
+      for (var i = 0; i < ts.length; i++) if (ts[i] && ts[i].name === nm) { t = ts[i]; break; }
+      if (!t) return "";
+      var mine = App.teamIx != null && ts[App.teamIx] === t;
+      var c = (mine && SYNC && SYNC.myTeam && SYNC.myTeam.country) || t.country || (((t.players || [])[0] || {}).nat) || "";
+      return (c && typeof foFlag === "function") ? (foFlag(c) || "") : "";
+    } catch (e) { return ""; }
+  }
+  // stamp country flags onto club names in any league table / standings panel
+  function foFlagStandings() {
+    try {
+      if (!(typeof GD !== "undefined" && GD.teams)) return;
+      var names = GD.teams.map(function (t) { return t && t.name; }).filter(Boolean);
+      document.querySelectorAll("#page .panel, #page .fo-card").forEach(function (pn) {
+        var h = pn.querySelector("h4, .fo-card-h2"); if (!h) return;
+        if (!/league table|league standings/i.test(h.textContent || "")) return;
+        pn.querySelectorAll("tbody tr").forEach(function (tr) {
+          var tds = tr.querySelectorAll("td");
+          for (var i = 0; i < tds.length; i++) {
+            var td = tds[i], txt = (td.textContent || "").trim();
+            var nm = null;
+            for (var j = 0; j < names.length; j++) if (txt === names[j] || txt.indexOf(names[j]) === 0) { nm = names[j]; break; }
+            if (!nm) continue;
+            if (!td.querySelector(".fo-flg")) {
+              var fl = foClubFlagEmo(nm);
+              // foFlag returns markup (an <img> flag), not an emoji character
+              if (fl) {
+                var sp = document.createElement("span"); sp.className = "fo-flg"; sp.innerHTML = fl;
+                td.insertBefore(sp, td.firstChild);
+              }
+            }
+            break;
+          }
+        });
+      });
+    } catch (e) {}
+  }
   function scoutClub(cellText) {
     var idx = -1;
     if (typeof GD !== "undefined" && GD.teams) { for (var i = 0; i < GD.teams.length; i++) { if (GD.teams[i] && cellText.indexOf(GD.teams[i].name) >= 0) { idx = i; break; } } }
@@ -10359,7 +10401,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260711-0713-f57b04";
+  var FO_BUILD = "20260711-0722-38df4f";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10407,9 +10449,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // re-apply fixture match-times after any re-render of the game page
   try {
     var _mt = null, pg0 = document.getElementById("page");
-    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); }, 40); }).observe(pg0, { childList: true, subtree: true });
+    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); foFlagStandings(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} return r; }; }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} return r; }; }
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
