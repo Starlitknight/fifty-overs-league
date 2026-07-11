@@ -10027,7 +10027,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260711-0415-aeb056";
+  var FO_BUILD = "20260711-0424-d0563a";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14515,6 +14515,38 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // in place - no page rebuilds.
   // =========================================================================
   var FO_ORD_COLS = ["#2d6a8f", "#a33328", "#1c5537", "#c08a2b", "#6a4a8f", "#0E6E6A", "#8f5a2d"];
+  try {
+    if (typeof window.pickXI === "function" && !window.pickXI.__foXi) {
+      var _foPickXI = window.pickXI;
+      window.pickXI = function (team) {
+        try {
+          var O = null;
+          if (typeof M !== "undefined" && M && M.ordersMap && M.ordersMap[team.name]) O = M.ordersMap[team.name];
+          else { try { if (typeof App !== "undefined" && App.orders && userTeam() === team) O = App.orders; } catch (eU) {} }
+          var xiN = O && O.xi;
+          if (xiN && xiN.length === 11) {
+            var by = {}; (team.players || []).forEach(function (p) { by[p.name] = p; });
+            var picked = [], seen = {};
+            xiN.forEach(function (nm) { if (by[nm] && !seen[nm]) { seen[nm] = 1; picked.push(by[nm]); } });
+            if (picked.length === 11 && picked.filter(function (p) { return p.bowlType; }).length >= 5) return picked;
+          }
+        } catch (e) {}
+        return _foPickXI.apply(this, arguments);
+      };
+      window.pickXI.__foXi = 1;
+    }
+  } catch (e) {}
+  // the chosen XI as player objects; heals itself if names went stale
+  function foOrdXI() {
+    var t = userTeam();
+    var by = {}; (t.players || []).forEach(function (p) { by[p.name] = p; });
+    var names = (App.orders.xi || []).filter(function (nm) { return by[nm]; });
+    if (names.length !== 11 || names.filter(function (nm) { return by[nm].bowlType; }).length < 5) {
+      names = pickXI(t).map(function (p) { return p.name; });
+      App.orders.xi = names;
+    } else App.orders.xi = names;
+    return names.map(function (nm) { return by[nm]; });
+  }
   function foOrdTotals() {
     var g = App.orders.grid || [], tot = {};
     for (var o = 1; o <= 50; o++) if (g[o]) tot[g[o]] = (tot[g[o]] || 0) + 1;
@@ -14522,7 +14554,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
   function foOrdSurname(nm) { var b = String(nm || "").split(" "); return b.length > 1 ? b.slice(1).join(" ") : nm; }
   function foOrdPool(withPT) {
-    var t = userTeam(), xi = pickXI(t);
+    var xi = foOrdXI();
     var pool = xi.filter(function (p) { return p.bowlType; })
       .sort(function (a, b) { return (isPT(a) - isPT(b)) || (aggBowl(b) - aggBowl(a)); });
     return withPT ? pool : pool.filter(function (p) { return !isPT(p); });
@@ -14533,7 +14565,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     return map;
   }
   function foOrdBatRows() {
-    var t = userTeam(), xi = pickXI(t);
+    var t = userTeam(), xi = foOrdXI();
     var byName = {}; xi.forEach(function (p) { byName[p.name] = p; });
     // batting order = a permutation of the XI, always: drop strangers, add missing
     App.orders.batOrder = (App.orders.batOrder || []).filter(function (n) { return byName[n]; });
@@ -14549,7 +14581,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<div class='fo-ob-who'><b>" + E(nm) + (p.keeper ? " <s title='wicketkeeper'>&dagger;</s>" : "") + tals + "</b><span class='small'>" + E(prole(p.role || "")) + " · bat <b style='color:" + bc + "'>" + bv + "</b>" + (p.bowlType ? " · " + E(shortBT(p)) : "") + "</span></div>" +
         "<button class='fo-ob-chip" + (isC ? " on" : "") + "' data-fo-capt='" + E(nm) + "' title='captain'>C</button>" +
         "<button class='fo-ob-chip" + (isW ? " on" : "") + "' data-fo-wk='" + E(nm) + "' title='wicketkeeper'>WK</button>" +
-        "<span class='fo-ob-mv'><button data-fo-up='" + i + "' " + (i === 0 ? "disabled" : "") + ">&#9650;</button><button data-fo-dn='" + i + "' " + (i === 10 ? "disabled" : "") + ">&#9660;</button></span>" +
+        "<span class='fo-ob-mv'><button data-fo-up='" + i + "' " + (i === 0 ? "disabled" : "") + ">&#9650;</button><button data-fo-dn='" + i + "' " + (i === 10 ? "disabled" : "") + ">&#9660;</button><button class='fo-ob-swap' data-fo-swap='" + E(nm) + "' title='swap with a bench player'>&#8644;</button></span>" +
         "</div>";
     }).join("");
   }
@@ -14572,13 +14604,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<u>" + (tot[p.name] || 0) + "</u></button>";
     }).join("") +
       "<button class='fo-og-b fo-og-clear' data-fo-clearall title='wipe the whole plan'>&#8709; Clear all</button>";
-    // why isn't X here? say it, so nobody hunts for a hidden add button
-    var xiN = pickXI(userTeam());
-    var cant = xiN.filter(function (p) { return !p.bowlType; }).map(function (p) { return foOrdSurname(p.name); });
-    var bench = (userTeam().players || []).filter(function (p) { return p.bowlType && !xiN.some(function (x) { return x.name === p.name; }); }).map(function (p) { return foOrdSurname(p.name); });
-    var palNote = "<div class='fo-og-note'>Every bowler in your XI is here." +
-      (cant.length ? " " + E(cant.join(", ")) + " can't bowl (no bowling style)." : "") +
-      (bench.length ? " Not in the XI: " + E(bench.join(", ")) + "." : "") + "</div>";
+
     var g = App.orders.grid || [], rows = "";
     for (var r0 = 0; r0 < 5; r0++) {
       var cells2 = "";
@@ -14595,9 +14621,50 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     }).join("");
     var covered = v.covered || 0;
     var bad = (v.warns || []).filter(function (w) { return /double-booked|consecutive|max 10|not a/.test(w); });
-    return "<div class='fo-og-pal'>" + chips + "</div>" + palNote + rows +
+    return "<div class='fo-og-pal'>" + chips + "</div>" + rows +
       "<div class='fo-os-tot'>" + tchips + "<span class='fo-os-cov'>" + covered + "/50 overs planned" + (covered < 50 ? " · the AI captain covers the rest" : "") + "</span></div>" +
       (bad.length ? "<div class='fo-os-warn'>&#9888; " + bad.map(E).join(" · ") + "</div>" : "");
+  }
+  function foOrdBenchSheet(outNm) {
+    var old = document.getElementById("fo-osheet"); if (old) old.remove();
+    var t = userTeam(), xi = foOrdXI();
+    var by = {}; xi.forEach(function (p) { by[p.name] = p; });
+    var out = by[outNm]; if (!out) return;
+    var bowlersLeft = xi.filter(function (p) { return p.bowlType && p.name !== outNm; }).length;
+    var bench = (t.players || []).filter(function (p) { return !by[p.name]; });
+    var rows = bench.map(function (p) {
+      var ok = (bowlersLeft + (p.bowlType ? 1 : 0)) >= 5;
+      var bits = [E(prole(p.role || "")), "bat " + Math.round(aggBat(p) || 0)];
+      if (p.bowlType) bits.push(E(shortBT(p)) + " " + Math.round(aggBowl(p) || 0));
+      if (p.keeper) bits.push("keeper");
+      var tals = (p.talents || []).map(function (t2) { return (typeof ptal === "function" ? ptal(t2) : t2); }).join(", ");
+      return "<button class='fo-osh-row' data-fo-bench='" + E(p.name) + "' " + (ok ? "" : "disabled") + ">" +
+        "<div><b>" + E(p.name) + "</b><span class='small'>" + bits.join(" · ") + (tals ? " · " + E(tals) : "") + "</span></div>" +
+        (ok ? "" : "<span class='fo-osh-note bad'>would leave fewer than five bowlers</span>") + "</button>";
+    }).join("") || "<div class='small' style='padding:8px 2px'>No one on the bench - the whole squad is in the XI.</div>";
+    var m = document.createElement("div"); m.id = "fo-osheet";
+    m.innerHTML = "<div class='fo-osh-card'><div class='fo-osh-h'><b>Replace " + E(outNm) + "</b><span class='small'>pick from the bench</span><button id='fo-osh-x'>&#10005;</button></div>" + rows + "</div>";
+    document.body.appendChild(m);
+    m.addEventListener("click", function (ev) {
+      var x = ev.target.closest ? ev.target.closest("#fo-osh-x") : null;
+      if (x || ev.target === m) { m.remove(); return; }
+      var b = ev.target.closest ? ev.target.closest("[data-fo-bench]") : null;
+      if (!b || b.disabled) return;
+      var inNm = b.getAttribute("data-fo-bench");
+      var ix = App.orders.xi.indexOf(outNm);
+      if (ix >= 0) App.orders.xi[ix] = inNm;
+      var bix = App.orders.batOrder.indexOf(outNm);
+      if (bix >= 0) App.orders.batOrder[bix] = inNm;
+      // the departing man leaves the bowling plan and any C/WK armband
+      gridState();
+      for (var o = 1; o <= 50; o++) if (App.orders.grid[o] === outNm) App.orders.grid[o] = null;
+      gridToSpells();
+      var xi2 = foOrdXI();
+      if (App.orders.captain === outNm) App.orders.captain = xi2.slice().sort(function (a, b2) { return (b2.capt || 0) - (a.capt || 0); })[0].name;
+      if (App.orders.keeper === outNm) App.orders.keeper = (xi2.filter(function (p) { return p.keeper; })[0] || xi2[0]).name;
+      m.remove();
+      foOrdRepaint();
+    });
   }
   function foOrdRepaint(which) {
     var b1 = document.getElementById("fo-bat-rows"), b2 = document.getElementById("fo-bowl-body");
@@ -14639,8 +14706,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
   function foOrdersUI() {
     var page = document.getElementById("page"); if (!page) return;
-    var t = userTeam(), xi = pickXI(t);
+    var t = userTeam(), xi = foOrdXI();
     if (!App.orders.batOrder || !App.orders.batOrder.length) App.orders.batOrder = xi.map(function (p) { return p.name; });
+    if (!App.orders.tossCall) App.orders.tossCall = "H";
     if (!App.orders.captain) App.orders.captain = xi.slice().sort(function (a, b) { return (b.capt || 0) - (a.capt || 0); })[0].name;
     if (!App.orders.keeper || !xi.some(function (p) { return p.name === App.orders.keeper; }))
       App.orders.keeper = (xi.filter(function (p) { return p.keeper; })[0] || xi[0]).name;
@@ -14654,13 +14722,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     };
     var INT = [[-1, "Defend"], [0, "Normal"], [1, "Attack"], [2, "Launch"]];
     var FLD = [["bal", "Balanced"], ["att", "Attacking"], ["def", "Defensive"]];
+    var cell2 = function (lbl, inner) { return "<label class='fo-ord-cell'><span>" + lbl + "</span>" + inner + "</label>"; };
     var tac = "<div class='fo-ord-tac'>" +
       "<div class='fo-ord-tach'>Batting intent</div>" +
-      "<div class='fo-ord-tr'><span>Powerplay</span>" + sel2("pi:pp", INT, App.orders.phaseIntent.pp) + "<span>Middle</span>" + sel2("pi:mid", INT, App.orders.phaseIntent.mid) + "<span>Death</span>" + sel2("pi:death", INT, App.orders.phaseIntent.death) + "</div>" +
+      "<div class='fo-ord-tr3'>" + cell2("Powerplay", sel2("pi:pp", INT, App.orders.phaseIntent.pp)) + cell2("Middle", sel2("pi:mid", INT, App.orders.phaseIntent.mid)) + cell2("Death", sel2("pi:death", INT, App.orders.phaseIntent.death)) + "</div>" +
       "<div class='fo-ord-tach'>Field when bowling</div>" +
-      "<div class='fo-ord-tr'><span>Powerplay</span>" + sel2("fp:pp", FLD, App.orders.fieldPlan.pp) + "<span>Middle</span>" + sel2("fp:mid", FLD, App.orders.fieldPlan.mid) + "<span>Death</span>" + sel2("fp:death", FLD, App.orders.fieldPlan.death) + "</div>" +
+      "<div class='fo-ord-tr3'>" + cell2("Powerplay", sel2("fp:pp", FLD, App.orders.fieldPlan.pp)) + cell2("Middle", sel2("fp:mid", FLD, App.orders.fieldPlan.mid)) + cell2("Death", sel2("fp:death", FLD, App.orders.fieldPlan.death)) + "</div>" +
       "<div class='fo-ord-tach'>Toss</div>" +
-      "<div class='fo-ord-tr'><span>Call</span>" + sel2("toss:call", [["", "Ask me"], ["H", "Heads"], ["T", "Tails"]], App.orders.tossCall || "") + "<span>If won</span>" + sel2("toss:dec", [["bat", "Bat"], ["bowl", "Bowl"]], App.orders.tossDecision || "bat") + "</div></div>";
+      "<div class='fo-ord-tr3'>" + cell2("Call", sel2("toss:call", [["H", "Heads"], ["T", "Tails"]], App.orders.tossCall || "H")) + cell2("If won", sel2("toss:dec", [["bat", "Bat"], ["bowl", "Bowl"]], App.orders.tossDecision || "bat")) + "<span></span></div></div>";
     var prev = null; try { prev = (typeof foPreviousOrders === "function") ? foPreviousOrders() : null; } catch (e) {}
     page.innerHTML = "<div class='crumb'>" + E(opp.home) + " v " + E(opp.away) + " &raquo; Orders</div>" + cond +
       "<div class='fo-ord-cols'>" +
@@ -14685,6 +14754,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           var el;
           if ((el = q("[data-fo-up]"))) { var i1 = +el.getAttribute("data-fo-up"); var a1 = App.orders.batOrder; var tmp1 = a1[i1 - 1]; a1[i1 - 1] = a1[i1]; a1[i1] = tmp1; foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-dn]"))) { var i2 = +el.getAttribute("data-fo-dn"); var a2 = App.orders.batOrder; var tmp2 = a2[i2 + 1]; a2[i2 + 1] = a2[i2]; a2[i2] = tmp2; foOrdRepaint("bat"); return; }
+          if ((el = q("[data-fo-swap]"))) { foOrdBenchSheet(el.getAttribute("data-fo-swap")); return; }
           if ((el = q("[data-fo-capt]"))) { App.orders.captain = el.getAttribute("data-fo-capt"); foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-wk]"))) { App.orders.keeper = el.getAttribute("data-fo-wk"); foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-clearall]"))) {
@@ -14751,6 +14821,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-ob-mv{display:flex;gap:3px}" +
       "html body.ftpskin #page .fo-ob-mv button,html body #page .fo-ob-mv button{border:1px solid rgba(28,36,51,.14) !important;background:#FBFAF7 !important;color:#5a6472 !important;border-radius:6px;font-size:9px;line-height:1;padding:6px 8px;cursor:pointer}" +
       "html body #page .fo-ob-mv button:disabled{opacity:.25;cursor:default}" +
+      "html body.ftpskin #page button.fo-ob-swap,html body #page button.fo-ob-swap{color:#B04A2C !important;font-size:11px !important}" +
       ".fo-os-ph{display:flex;gap:10px;align-items:center;margin:7px 0;padding:8px 10px;background:#FBFAF7;border:1px solid rgba(28,36,51,.08);border-radius:10px}" +
       ".fo-os-phl{flex:0 0 86px}.fo-os-phl b{display:block;font-size:12.5px;color:#0E233F}.fo-os-phl span{font-size:10.5px;color:#8a93a3}" +
       ".fo-os-slots{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px}" +
@@ -14770,8 +14841,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-os-warn{margin-top:7px;background:#F6E3B4;border:1px solid #e8cf8c;border-radius:8px;padding:6px 10px;font-size:11.5px;color:#5a4310;font-weight:600}" +
       ".fo-ord-tac{margin-top:12px;border-top:1px dashed rgba(28,36,51,.14);padding-top:8px}" +
       ".fo-ord-tach{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:#8a93a3;font-weight:800;margin:7px 0 3px}" +
-      ".fo-ord-tr{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;color:#5a6472}" +
-      ".fo-ord-tr select{font-size:12px;padding:3px 5px;border-radius:7px}" +
+      ".fo-ord-tr3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:2px}" +
+      ".fo-ord-cell{display:flex;flex-direction:column;gap:3px;min-width:0}" +
+      ".fo-ord-cell span{font-size:10px;color:#8a93a3;font-weight:700}" +
+      ".fo-ord-cell select{width:100%;font-size:12px;padding:4px 6px;border-radius:8px;box-sizing:border-box}" +
       ".fo-ord-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}" +
       "#fo-osheet{position:fixed;inset:0;background:rgba(10,18,32,.45);z-index:2600;display:flex;align-items:flex-end;justify-content:center}" +
       "@media(min-width:700px){#fo-osheet{align-items:center}}" +
