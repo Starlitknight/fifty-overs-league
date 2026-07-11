@@ -594,7 +594,7 @@
     ".fo-o-ms .fo-race-bar i{background:linear-gradient(90deg,#4DA6A2,#2b6b68) !important}" +
     ".fo-o-ms .fo-race:first-of-type .fo-race-bar i{background:linear-gradient(90deg,#e85a2a,#c94c22) !important}" +
     ".fo-o-ms .fo-race-n{text-align:right;min-width:0;font-size:11px}" +
-    "@media(max-width:760px){.fo-o-ms .fo-race{grid-template-columns:minmax(0,1fr) minmax(64px,1.2fr) auto;gap:7px}.fo-o-ms .fo-race-n{min-width:0;font-size:11px}}" +
+    "@media(max-width:760px){.fo-o-ms .fo-race{grid-template-columns:minmax(0,1.5fr) minmax(52px,1fr) auto;gap:7px}.fo-o-ms .fo-race-n{min-width:0;font-size:11px}}" +
     // desktop/phone content swaps: long copy on wide screens, short on phones
     ".fo-sw-m{display:none}" +
     ".fo-wgrp-m{display:none}" +
@@ -673,6 +673,13 @@
     "html body #page .fo-c2-next .fo-next-cta{height:44px;width:100%}" +
     ".fo-c2-wmore{min-height:44px;font-size:13px}" +
     ".fo-c2-fx{min-height:44px}.fo-c2-wr{min-height:44px}" +
+    ".fo-o-news .fo-nr-row{display:block;position:relative;padding:9px 48px 9px 0}" +
+    ".fo-o-news .fo-nr-row u{display:block;margin-top:2px;font-size:11.5px}" +
+    ".fo-o-news .fo-nr-row i{position:absolute;right:0;top:10px}" +
+    ".fo-o-ms .fo-race{margin:8px 0}" +
+    ".fo-o-ms .fo-race-l b{font-size:13px}" +
+    ".fo-o-leadm .fo-c2-k{margin-bottom:2px}" +
+    ".fo-ch-min .fo-card-h2row{align-items:center}" +
     "}" +
     ".fo-nr-feat{padding:2px 0 10px;border-bottom:1px solid #eee9dd;margin-bottom:4px}" +
     ".fo-nr-feat b{display:block;font-size:16.5px;font-weight:800;color:#0a2342;line-height:1.3}" +
@@ -681,6 +688,8 @@
     ".fo-nr-row{display:flex;gap:10px;align-items:baseline;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0ece1;font-size:13px;color:#14243a}" +
     ".fo-nr-row:last-child{border-bottom:none}" +
     ".fo-nr-row span{min-width:0}.fo-nr-row u{text-decoration:none;color:#8a93a3;font-size:11px}" +
+    ".fo-nr-row u::before{content:'\\b7  '}" +
+    "@media(max-width:760px){.fo-nr-row u::before{content:''}}" +
     ".fo-nr-row i{font-style:normal;flex:0 0 auto;font-size:11px;color:#5a6472;font-weight:700}" +
     ".fo-c2-ldn{font-size:16px;font-weight:800;color:#0a2342}" +
     ".fo-c2-ldr{font-size:11px;color:#667085;margin:1px 0 8px}" +
@@ -2607,11 +2616,11 @@
           }
           joins.sort(function (a, b2) { return b2.d - a.d; });
           joinRows = joins.slice(0, 2).map(function (j) {
-            return "<div class='fo-nr-row'><span><b>" + E(j.club) + "</b> joins the league" + (j.mgr ? " <u>&middot; manager " + E(j.mgr) + "</u>" : "") + "</span><i>" + j.d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) + "</i></div>";
+            return "<div class='fo-nr-row'><span><b>" + E(j.club) + "</b> joins the league" + (j.mgr ? " <u>manager " + E(j.mgr) + "</u>" : "") + "</span><i>" + j.d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) + "</i></div>";
           });
         } catch (eJn) {}
         var nrRows = joinRows.concat(evsN.slice(0, 4).map(function (e3) {
-          return "<div class='fo-nr-row'><span>" + nrPhrase(e3) + " <u>&middot; " + E(e3.club) + "</u></span><i>" + nrDate(e3.s, e3.r) + "</i></div>";
+          return "<div class='fo-nr-row'><span>" + nrPhrase(e3) + " <u>" + E(e3.club) + "</u></span><i>" + nrDate(e3.s, e3.r) + "</i></div>";
         })).slice(0, 4).join("");
         newsCard = "<div class='fo-card fo-o-news'><div class='fo-card-h2row'><div class='fo-card-h2'>Club newsroom</div><a href='#/matchday' class='fo-morelink'>View all &rsaquo;</a></div><div class='fo-card-b'>" +
           (feat || nrRows ? feat + nrRows : "<div class='small'>The story starts with the first matchday.</div>") +
@@ -7330,7 +7339,7 @@
     }
 
     page.innerHTML = "<div class='fo-mn2'>" +
-      "<div class='fo-mn2-mbar'><a href='#/guide'>&lsaquo; Manual</a><b>" + (artId ? byId[artId][1] : "Game manual") + "</b>" +
+      "<div class='fo-mn2-mbar'>" + (artId ? "<a href='#/guide'>&lsaquo; Manual</a>" : "<b>Game manual</b>") +
       "<button id='fo-mn2-contents' aria-label='Contents'>Contents</button></div>" +
       side + "<main class='fo-mn2-main'>" + main + "</main></div>";
 
@@ -9140,6 +9149,7 @@
       ".fo-ord-cell span{font-size:10.5px;color:#5a6472;font-weight:700}" +
       ".fo-ord-cell select{width:100%;font-size:12px;padding:4px 6px;border-radius:8px;box-sizing:border-box}" +
       ".fo-ord-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}" +
+      "@media(max-width:760px){.fo-ord-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}.fo-ord-acts button{width:100%;min-height:44px;box-sizing:border-box;margin:0 !important}.fo-ord-acts .small{grid-column:1/-1;text-align:center}}" +
       "#fo-osheet{position:fixed;inset:0;background:rgba(10,18,32,.45);z-index:2600;display:flex;align-items:flex-end;justify-content:center}" +
       "@media(min-width:700px){#fo-osheet{align-items:center}}" +
       ".fo-osh-card{background:#FFFEFC;border-radius:16px 16px 0 0;max-width:520px;width:100%;max-height:72vh;overflow-y:auto;padding:12px 14px 16px;box-shadow:0 -8px 40px rgba(7,22,46,.3)}" +
@@ -10139,10 +10149,10 @@
       "@media(max-width:768px){" +
       ".fo-mn2{grid-template-columns:1fr;gap:12px}" +
       ".fo-mn2-side{display:none}" +
-      ".fo-mn2-mbar{display:flex;align-items:center;gap:10px;position:sticky;top:56px;z-index:40;background:#f4f1e9;padding:8px 2px;margin:0 0 2px}" +
-      ".fo-mn2-mbar a{flex:0 0 auto;font-size:13px;font-weight:700;color:#c94726 !important;text-decoration:none;min-height:44px;display:inline-flex;align-items:center}" +
-      ".fo-mn2-mbar b{flex:1;min-width:0;text-align:center;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
-      "html body .fo-mn2-mbar button,html body.ftpskin #page .fo-mn2-mbar button{flex:0 0 auto;min-height:44px;min-width:44px;background:#fff !important;border:1px solid rgba(15,35,60,.18) !important;border-radius:10px;padding:0 14px !important;font:700 13px Inter,ui-sans-serif,sans-serif !important;color:#13233a !important;cursor:pointer}" +
+      ".fo-mn2-mbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 4px}" +
+      ".fo-mn2-mbar a{flex:0 0 auto;font-size:13.5px;font-weight:700;color:#c94726 !important;text-decoration:none;min-height:44px;display:inline-flex;align-items:center}" +
+      ".fo-mn2-mbar b{flex:0 0 auto;font-size:16px;color:#13233a}" +
+      "html body .fo-mn2-mbar button,html body.ftpskin #page .fo-mn2-mbar button{flex:0 0 auto;min-height:38px;min-width:44px;background:#fff !important;border:1px solid rgba(15,35,60,.16) !important;border-radius:9px;padding:0 14px !important;font:700 12.5px Inter,ui-sans-serif,sans-serif !important;color:#13233a !important;cursor:pointer;box-shadow:0 2px 6px rgba(15,35,60,.06)}" +
       ".fo-mn2-art{padding:16px 14px}" +
       ".fo-mn2 .fo-man-b{font-size:14px}" +
       ".fo-mn2 .fo-man-b table{display:block;overflow-x:auto}" +
@@ -11946,7 +11956,7 @@
       "#topbar .brand::after,#topbar .brand::before{display:none !important}" +
       "html body #topbar .brand .fo-brandicon{width:28px;height:28px;vertical-align:middle;margin-right:0}" +
       "html body #topbar #fo-top-status{display:none !important}" +
-      "html body #topbar #fo-mlive.on{display:inline-flex !important;order:2;margin-left:auto;align-items:center;gap:7px;background:#e02020 !important;color:#fff !important;border-radius:999px;padding:7px 15px;font-size:13px;font-weight:800;letter-spacing:.02em;text-decoration:none !important;min-height:34px;box-sizing:border-box}" +
+      "html body #topbar #fo-mlive.on{display:inline-flex !important;order:2;margin-left:auto;align-items:center;gap:6px;background:#e02020 !important;color:#fff !important;border-radius:999px;padding:0 13px;font-size:12.5px;font-weight:800;letter-spacing:.02em;text-decoration:none !important;height:30px;align-self:center;box-sizing:border-box;line-height:1}" +
       "#fo-mlive .live-dot{background:#fff !important}" +
       "#fo-top-status span{font-size:11.5px !important;padding:7px 11px !important}" +
       "#fo-live-icons{order:2;width:auto !important;margin-left:8px !important}" +
