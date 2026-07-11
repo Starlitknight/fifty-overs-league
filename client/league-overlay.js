@@ -629,7 +629,8 @@
     // !important because the engine restyle paints [class*=hero] !important.
     "@media(max-width:700px){" +
     "html body #page .fo-c2-hero{grid-template-columns:1fr;padding:0;gap:12px;background:none !important;box-shadow:none;margin:8px 0 14px}" +
-    "html body #page .fo-c2-id{background:linear-gradient(160deg,#14324a,#0E233F) !important;border-radius:14px;padding:26px 20px 24px;box-shadow:0 10px 28px rgba(7,22,46,.28)}" +
+    "html body #page .fo-c2-id{position:relative;overflow:hidden;background:linear-gradient(135deg,#0E233F,#07162E 62%) !important;border-radius:14px;padding:26px 20px 24px;box-shadow:0 10px 30px rgba(7,22,46,.25)}" +
+    "html body #page .fo-c2-id::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(#C95532,#4DA6A2)}" +
     "html body #page .fo-c2-id .fo-c2-mgr{font-size:13px}" +
     "html body #page .fo-c2-id .fo-c2-meta{font-size:14px}" +
     "html body #page .fo-c2-id .fo-c2-mood{font-size:16px}" +
@@ -679,7 +680,8 @@
     ".fo-o-ms .fo-race{margin:8px 0}" +
     ".fo-o-ms .fo-race-l b{font-size:13px}" +
     ".fo-o-leadm .fo-c2-k{margin-bottom:2px}" +
-    ".fo-ch-min .fo-card-h2row{align-items:center}" +
+    ".fo-ch-min .fo-card-h2row{align-items:center;padding:14px 16px 4px}" +
+    ".fo-ch-min .fo-card-b{padding:4px 16px 12px}" +
     "}" +
     ".fo-nr-feat{padding:2px 0 10px;border-bottom:1px solid #eee9dd;margin-bottom:4px}" +
     ".fo-nr-feat b{display:block;font-size:16.5px;font-weight:800;color:#0a2342;line-height:1.3}" +
