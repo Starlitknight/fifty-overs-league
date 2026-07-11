@@ -4367,9 +4367,9 @@
   // re-apply fixture match-times after any re-render of the game page
   try {
     var _mt = null, pg0 = document.getElementById("page");
-    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); foFlagStandings(); foCondSymbols(); foBowlTypeTags(); foStatsClubTags(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); }, 40); }).observe(pg0, { childList: true, subtree: true });
+    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foStatsClubTags(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlTypeTags(); foStatsClubTags(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} return r; }; }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foStatsClubTags(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} return r; }; }
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
@@ -7887,6 +7887,47 @@
     var h = p.hand === "L" ? "l" : "r";
     return { seamFast: h + "f", seamFastMedium: h + "fm", seamMedium: h + "m",
       fingerSpin: "fs", wristSpin: "ws", partTimeSeam: "pt seam", partTimeSpin: "pt spin" }[p.bowlTypeFull] || "";
+  }
+  // real scorecards list bowlers in the order they came on, not by best
+  // figures. The commentary log knows who bowled when - reorder the engine's
+  // wickets-first bowling tables to match the innings as it happened.
+  function foBowlOrderSort() {
+    try {
+      var mSc = /^#\/scorecard\?i=(\d+)/.exec(location.hash || ""); if (!mSc) return;
+      var r = (typeof App !== "undefined" && App.results || [])[+mSc[1]]; if (!r || !r.log || !r.log.length) return;
+      var page = document.getElementById("page"); if (!page) return;
+      var chron = r.log.slice().reverse();
+      var inns = [[]], prevNo = -1;
+      chron.forEach(function (L) {
+        if (!L || L.mile || !L.no) return;
+        var mN = /^(\d+)\.(\d+)$/.exec(L.no); if (!mN) return;
+        var noV = (+mN[1]) * 10 + (+mN[2]);
+        if (noV < prevNo) inns.push([]);          // over.ball rewound: new innings
+        prevNo = noV;
+        var mB = /^([A-Za-z'\u00C0-\u024F .-]+?) to /.exec(L.txt || ""); if (!mB) return;
+        var tok = mB[1].trim().split(/\s+/).pop().toLowerCase();
+        var arr = inns[inns.length - 1];
+        if (arr.indexOf(tok) < 0) arr.push(tok);
+      });
+      var bIx = 0;
+      page.querySelectorAll("table").forEach(function (tb) {
+        var ths = Array.prototype.slice.call(tb.querySelectorAll("th")).map(function (x) { return (x.textContent || "").trim().toLowerCase(); });
+        if (!ths.length || !(ths[0].indexOf("bowler") === 0 || ths[0].indexOf("bowling") === 0) || ths.indexOf("econ") < 0) return;
+        var ord = inns[bIx++] || [];
+        if (!ord.length || tb.__foBowlOrd) return;
+        tb.__foBowlOrd = 1;
+        var body = tb.tBodies[0] || tb;
+        var trs = Array.prototype.slice.call(body.querySelectorAll("tr")).filter(function (tr) { return tr.querySelector("td"); });
+        trs.map(function (tr, i2) {
+          var td = tr.querySelector("td"), clone = td.cloneNode(true);
+          var tag = clone.querySelector(".fo-bt-tag"); if (tag) tag.remove();
+          var nm = (clone.textContent || "").replace(/\s*\(.*\)$/, "").trim();
+          var k2 = ord.indexOf(nm.split(/\s+/).pop().toLowerCase());
+          return { tr: tr, k: k2 < 0 ? 99 : k2, i: i2 };
+        }).sort(function (a3, b3) { return (a3.k - b3.k) || (a3.i - b3.i); })
+          .forEach(function (x3) { body.appendChild(x3.tr); });
+      });
+    } catch (e) {}
   }
   // every bowling card names the bowler's type - any table with an Econ column
   function foBowlTypeTags() {
