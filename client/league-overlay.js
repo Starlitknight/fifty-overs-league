@@ -551,17 +551,29 @@
     ".fo-ch-mainc{display:flex;flex-direction:column;gap:14px}" +
     ".fo-ch-sidec{display:flex;flex-direction:column;gap:14px}" +
     "@media(max-width:900px){.fo-ch-cols{grid-template-columns:1fr}}" +
-    "html body .wrap:has(.fo-ch-min){max-width:1400px !important}" +
-    "html body #page:has(.fo-ch-min){max-width:1400px !important}" +
-    "html body .fo-ch.fo-ch-min{max-width:1360px !important}" +
-    ".fo-c2-hero{display:grid;grid-template-columns:minmax(0,1.35fr) 220px minmax(0,1.05fr);gap:16px;align-items:stretch;background:linear-gradient(135deg,#0E233F,#07162E 70%);border-radius:18px;padding:18px 20px;margin:10px 0 14px;color:#c7cfda}" +
+    "html body .wrap:has(.fo-ch-min){max-width:1520px !important;width:calc(100% - 40px)}" +
+    "html body #page:has(.fo-ch-min){max-width:1520px !important;padding:4px 0 28px}" +
+    "html body .fo-ch.fo-ch-min{max-width:1480px !important;width:100%;margin:0 auto;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}" +
+    "html body #topbar a{padding:15px 13px !important;font-size:13.5px !important}" +
+    ".fo-ch-min .fo-card{border-radius:12px;border:1px solid rgba(20,36,58,.10);box-shadow:0 4px 14px rgba(20,36,58,.06)}" +
+    ".fo-ch-min .fo-card-h2{font-size:15.5px;font-weight:700}" +
+    ".fo-ch-min .fo-chtable{width:100%;table-layout:fixed}" +
+    ".fo-ch-min .fo-chtable td{font-size:13px;padding:6px 4px;font-variant-numeric:tabular-nums}.fo-ch-min .fo-chtable th{font-size:10.5px;padding:6px 4px}" +
+    ".fo-ch-min .fo-chtable td:nth-child(2),.fo-ch-min .fo-chtable th:nth-child(2){width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+    ".fo-ch-min .fo-chtable td:first-child,.fo-ch-min .fo-chtable th:first-child{width:24px}" +
+    ".fo-ch-min .fo-chtable td:nth-child(3),.fo-ch-min .fo-chtable th:nth-child(3),.fo-ch-min .fo-chtable td:nth-child(4),.fo-ch-min .fo-chtable th:nth-child(4),.fo-ch-min .fo-chtable td:nth-child(5),.fo-ch-min .fo-chtable th:nth-child(5){width:22px;text-align:right}" +
+    ".fo-ch-min .fo-chtable td:nth-child(6),.fo-ch-min .fo-chtable th:nth-child(6){width:52px;text-align:right}" +
+    ".fo-ch-min .fo-chtable td:nth-child(7),.fo-ch-min .fo-chtable th:nth-child(7){width:34px;text-align:right}" +
+    ".fo-nr-row b{color:#0a2342;font-weight:700}" +
+    ".fo-c2-hero{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.55fr) minmax(0,1.25fr);gap:24px;align-items:center;background:linear-gradient(135deg,#0a2342,#06182f 70%);border-radius:14px;padding:24px 26px;margin:8px 0 16px;color:#c7cfda}" +
     "@media(max-width:1100px){.fo-c2-hero{grid-template-columns:1fr 1fr}.fo-c2-id{grid-column:1/-1}}" +
-    "@media(max-width:700px){.fo-c2-hero{grid-template-columns:1fr;padding:15px 15px}}" +
+    "@media(max-width:700px){.fo-c2-hero{grid-template-columns:1fr;padding:16px 16px;gap:14px}.fo-c2-prog{order:3}.fo-c2-next{order:2}}" +
     ".fo-c2-id{display:flex;gap:14px;align-items:flex-start;min-width:0}" +
     ".fo-c2-crest{flex:0 0 74px;width:74px;height:74px;border-radius:16px;background:#FFFEFC;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.3)}" +
     ".fo-c2-crest img{width:62px;height:62px;border-radius:12px}" +
     ".fo-c2-idt{min-width:0}" +
-    "html body #page .fo-c2-name{margin:0;font-size:30px;line-height:1.05;color:#FFFEFC;letter-spacing:-.4px;text-transform:uppercase;font-weight:900}" +
+    "html body #page .fo-c2-name{margin:0;font-size:38px;line-height:1.02;color:#FFFEFC;letter-spacing:-.5px;text-transform:uppercase;font-weight:800}" +
+    ".fo-c2-meta{font-size:13px;color:#c7cfda;margin-top:9px}.fo-c2-meta u{text-decoration:none;color:#5a6b83;margin:0 2px}.fo-c2-meta .fo-c2-gold,.fo-c2-gold{color:#F5C36B;font-weight:800}" +
     "@media(max-width:700px){html body #page .fo-c2-name{font-size:23px}}" +
     ".fo-c2-mgr{font-size:12px;color:#9aa3b2;margin-top:3px}.fo-c2-mgr b{color:#FFFEFC}" +
     ".fo-c2-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}" +
@@ -578,22 +590,45 @@
     ".fo-c2-pv{font-size:15px;font-weight:800;color:#FFFEFC;margin:1px 0 8px}" +
     ".fo-c2-prog .fo-progress-bar{margin:0 0 6px}" +
     ".fo-c2-ppct{font-size:11px;color:#9aa3b2;text-align:right}" +
-    ".fo-c2-next{background:#FFFEFC;border-radius:14px;padding:14px 16px;display:flex;gap:14px;align-items:center;justify-content:space-between;box-shadow:0 6px 24px rgba(0,0,0,.25)}" +
+    ".fo-c2-next{background:#FFFEFC;border-radius:12px;padding:18px 20px;display:flex;gap:16px;align-items:center;justify-content:space-between;box-shadow:0 8px 28px rgba(0,0,0,.3)}" +
     "@media(max-width:700px){.fo-c2-next{flex-direction:column;align-items:stretch}}" +
     ".fo-c2-nl{min-width:0}" +
     ".fo-c2-nk{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#B04A2C;font-weight:800;margin-bottom:3px}" +
-    ".fo-c2-nopp{font-size:19px;font-weight:900;color:#0E233F;letter-spacing:-.2px}" +
+    ".fo-c2-nopp{font-size:24px;font-weight:800;color:#0a2342;letter-spacing:-.3px}" +
     ".fo-c2-nsub{font-size:11.5px;color:#5a6472;margin-top:2px}" +
     ".fo-c2-nchips{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}" +
     ".fo-c2-nchip{background:#F3F1EA;border-radius:999px;padding:2px 9px;font-size:10.5px;font-weight:700;color:#41577a}" +
     ".fo-c2-nr{flex:0 0 auto;text-align:right;display:flex;flex-direction:column;gap:3px;align-items:flex-end}" +
     "@media(max-width:700px){.fo-c2-nr{align-items:stretch;text-align:left}}" +
-    ".fo-c2-cd{font-size:24px;font-weight:900;color:#0E233F;font-variant-numeric:tabular-nums;letter-spacing:.5px}" +
+    ".fo-c2-cd{font-size:28px;font-weight:800;color:#0a2342;font-variant-numeric:tabular-nums;letter-spacing:.5px}" +
+    "html body #page .fo-c2-next .fo-next-cta{font-size:14px;padding:11px 18px}" +
     "html body #page .fo-c2-next .fo-next-cta{margin-top:7px}" +
-    ".fo-c2-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:start;margin-top:14px}" +
-    "@media(max-width:1250px){.fo-c2-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}" +
-    "@media(max-width:760px){.fo-c2-grid{grid-template-columns:1fr}}" +
-    ".fo-c2-bottom{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;align-items:start;margin-top:14px}" +
+    ".fo-c2-grid{display:grid;grid-template-columns:1.15fr 1fr 1fr 1fr;gap:18px;align-items:start;margin-top:16px}" +
+    ".fo-c2-bottom{display:grid;grid-template-columns:1.15fr 1fr 1fr 1fr;gap:18px;align-items:stretch;margin-top:18px}" +
+    "@media(max-width:1250px){.fo-c2-grid,.fo-c2-bottom{grid-template-columns:repeat(2,minmax(0,1fr))}}" +
+    "@media(max-width:760px){.fo-c2-grid,.fo-c2-bottom{grid-template-columns:1fr}" +
+    ".fo-o-watch{order:1}.fo-o-stand{order:2}.fo-o-fx{order:3}.fo-o-news{order:4}}" +
+    ".fo-nr-feat{padding:2px 0 10px;border-bottom:1px solid #eee9dd;margin-bottom:4px}" +
+    ".fo-nr-feat b{display:block;font-size:15px;color:#0a2342;line-height:1.3}" +
+    ".fo-nr-feat span{display:block;font-size:11.5px;color:#667085;margin-top:3px}" +
+    ".fo-nr-row{display:flex;gap:10px;align-items:baseline;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0ece1;font-size:13px;color:#14243a}" +
+    ".fo-nr-row:last-child{border-bottom:none}" +
+    ".fo-nr-row span{min-width:0}.fo-nr-row u{text-decoration:none;color:#8a93a3;font-size:11px}" +
+    ".fo-nr-row i{font-style:normal;flex:0 0 auto;font-size:11px;color:#8a93a3;font-weight:600}" +
+    ".fo-c2-ldn{font-size:16px;font-weight:800;color:#0a2342}" +
+    ".fo-c2-ldr{font-size:11px;color:#667085;margin:1px 0 8px}" +
+    ".fo-c2-ldv{font-size:28px;font-weight:800;color:#0a2342}.fo-c2-ldv span{font-size:13px;color:#667085;font-weight:600}" +
+    ".fo-c2-ldk{display:flex;gap:16px;margin-top:8px;font-size:12.5px;color:#667085}.fo-c2-ldk b{color:#0a2342}" +
+    ".fo-c2-fbal{font-size:26px;font-weight:800;color:#0a2342;margin-bottom:8px}" +
+    ".fo-c2-fkv{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #f0ece1;font-size:12.5px;color:#667085}" +
+    ".fo-c2-fkv b{font-variant-numeric:tabular-nums}" +
+    ".fo-c2-ftr{margin-top:8px;font-size:11.5px;font-weight:700}.fo-c2-ftr.up{color:#15803D}.fo-c2-ftr.dn{color:#b3402a}" +
+    ".fo-c2-whead{display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#a7aeba;font-weight:800;margin:2px 0 2px}" +
+    ".fo-ch-min .fo-ch-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:0 0 2px}" +
+    "@media(max-width:760px){.fo-ch-min .fo-ch-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}" +
+    ".fo-ch-min .fo-stat{padding:16px 18px;min-height:104px;box-sizing:border-box}" +
+    "@media(max-width:760px){.fo-ch-min .fo-stat{padding:12px 12px;min-height:0}.fo-ch-min .fo-stat-ic{display:none}" +
+    ".fo-ch-min .fo-stat-v{font-size:20px}.fo-ch-min .fo-stat-l{font-size:9.5px;white-space:normal}.fo-ch-min .fo-stat-s{font-size:10px}}" +
     ".fo-c2-bottom .fo-lead{display:flex;gap:12px;align-items:center}" +
     ".fo-c2-bottom .fo-lead .fo-lead-ic{flex:0 0 40px;width:40px;height:40px;border-radius:11px;background:#F3F1EA;display:flex;align-items:center;justify-content:center;color:#B04A2C}" +
     ".fo-c2-fx{display:flex;gap:10px;align-items:center;padding:8px 9px;border:1px solid rgba(28,36,51,.08);border-radius:10px;margin:6px 0;background:#FFFEFC}" +
@@ -2095,8 +2130,25 @@
 
       // Leaders
       var ld = foTeamLeaders(t);
-      var leadBat = "<div class='fo-card fo-lead'><div class='fo-lead-ic'>" + FO_I("bat", 19) + "</div><div><div class='fo-card-h2'>Leading run-scorer</div><div class='fo-lead-v'>" + (ld.bat.runs || 0) + " <span>runs</span></div><div class='small'>" + (ld.bat.name ? E(ld.bat.name) : "–") + "</div></div></div>";
-      var leadBowl = "<div class='fo-card fo-lead'><div class='fo-lead-ic'>" + FO_I("target", 19) + "</div><div><div class='fo-card-h2'>Leading wicket-taker</div><div class='fo-lead-v'>" + (ld.bowl.wkts || 0) + " <span>wkts</span></div><div class='small'>" + (ld.bowl.name ? E(ld.bowl.name) : "–") + "</div></div></div>";
+      var lgStat = function (nm) {
+        var h2 = ((App.playerHist || {})[nm] || []).filter(function (e2) { return !e2.fr && e2.s != null; });
+        var o2 = { runs: 0, outs: 0, bf: 0, w: 0, cr: 0, cb: 0 };
+        h2.forEach(function (e2) { o2.runs += +e2.rr || 0; o2.outs += e2.o ? 1 : 0; o2.bf += +e2.bb || 0; o2.w += +e2.w || 0; o2.cr += +e2.cr || 0; o2.cb += +e2.cb || 0; });
+        return o2;
+      };
+      var roleOf = function (nm) { var p2 = (t.players || []).filter(function (x) { return x.name === nm; })[0]; return p2 ? prole(p2.role || "") : ""; };
+      var lb1 = ld.bat.name ? lgStat(ld.bat.name) : null;
+      var lb2 = ld.bowl.name ? lgStat(ld.bowl.name) : null;
+      var leadBat = "<div class='fo-card fo-o-lead'><div class='fo-card-h2row'><div class='fo-card-h2'>Leading run-scorer</div></div><div class='fo-card-b'>" +
+        (ld.bat.name ? "<div class='fo-c2-ldn'>" + E(ld.bat.name) + "</div><div class='fo-c2-ldr'>" + E(roleOf(ld.bat.name)) + "</div>" +
+          "<div class='fo-c2-ldv'>" + (ld.bat.runs || 0) + " <span>runs</span></div>" +
+          "<div class='fo-c2-ldk'><span>Ave <b>" + (lb1 && lb1.outs ? (lb1.runs / lb1.outs).toFixed(1) : "&ndash;") + "</b></span><span>SR <b>" + (lb1 && lb1.bf ? (100 * lb1.runs / lb1.bf).toFixed(1) : "&ndash;") + "</b></span></div>"
+          : "<div class='small'>No runs on the board yet.</div>") + "</div></div>";
+      var leadBowl = "<div class='fo-card fo-o-lead'><div class='fo-card-h2row'><div class='fo-card-h2'>Leading wicket-taker</div></div><div class='fo-card-b'>" +
+        (ld.bowl.name ? "<div class='fo-c2-ldn'>" + E(ld.bowl.name) + "</div><div class='fo-c2-ldr'>" + E(roleOf(ld.bowl.name)) + "</div>" +
+          "<div class='fo-c2-ldv'>" + (ld.bowl.wkts || 0) + " <span>wkts</span></div>" +
+          "<div class='fo-c2-ldk'><span>Ave <b>" + (lb2 && lb2.w ? (lb2.cr / lb2.w).toFixed(1) : "&ndash;") + "</b></span><span>Econ <b>" + (lb2 && lb2.cb ? (lb2.cr / (lb2.cb / 6)).toFixed(2) : "&ndash;") + "</b></span></div>"
+          : "<div class='small'>No wickets yet.</div>") + "</div></div>";
 
       // Standings: the full ten-row table lives on Matches; here only the story –
       // who leads, where you sit, and the one gap worth chasing
@@ -2117,7 +2169,7 @@
           gapLine = gap0 <= 0 ? "Level on points with " + E(above0.nm) + " above you" : gap0 + " pt" + (gap0 === 1 ? "" : "s") + " behind " + E(above0.nm);
         }
       }
-      var standings = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>League standings</div><a href='#/matches' class='fo-morelink'>Results &rsaquo;</a></div><div class='fo-card-b'><table class='fo-tbl fo-chtable'><thead><tr><th class='fo-rk'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th><th class='r'>NRR</th><th class='r'>Pts</th></tr></thead><tbody>" + standRows + "</tbody></table>" +
+      var standings = "<div class='fo-card fo-o-stand'><div class='fo-card-h2row'><div class='fo-card-h2'>League standings</div><a href='#/matches' class='fo-morelink'>Results &rsaquo;</a></div><div class='fo-card-b'><table class='fo-tbl fo-chtable'><thead><tr><th class='fo-rk'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th><th class='r'>NRR</th><th class='r'>Pts</th></tr></thead><tbody>" + standRows + "</tbody></table>" +
         (gapLine ? "<div class='fo-stand-gap'>" + gapLine + "</div>" : "") + "</div></div>";
 
       // Finances: one line · the net, and where the season lands. All figures
@@ -2126,11 +2178,14 @@
       var projEnd = FoFinance.seasonEndProjection();
       var finStory = netMD >= 0 ? "building every matchday" : (projEnd >= 0 ? "the bank covers the season" : "the bank runs dry before season&rsquo;s end");
       var finSign = function (v) { return "<b class='" + (v >= 0 ? "fo-pos" : "fo-neg") + "'>" + (v >= 0 ? "+" : "&minus;") + foMoney(Math.abs(v)) + "</b>"; };
-      var fin = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Finances</div><a href='#/office' class='fo-morelink'>Office &rsaquo;</a></div><div class='fo-card-b'>" +
-        "<div class='fo-fin-line'>Typical matchday net " + finSign(netMD) +
-        (remainingMD > 0 ? " &middot; projected <b class='" + (projEnd >= 0 ? "fo-pos" : "fo-neg") + "'>" + foMoney(projEnd) + "</b> at season&rsquo;s end &middot; " + finStory + "." : ".") +
-        "<div class='small' style='margin-top:4px'>home matchdays " + finSign(finSplit.homeNet) + " &middot; away " + finSign(finSplit.awayNet) + "</div>" +
-        "</div></div></div>";
+      var trendUp = projEnd >= bank;
+      var fin = "<div class='fo-card fo-o-fin'><div class='fo-card-h2row'><div class='fo-card-h2'>Finance overview</div><a href='#/office' class='fo-morelink'>View details &rsaquo;</a></div><div class='fo-card-b'>" +
+        "<div class='fo-c2-fbal'>" + foMoney(bank) + "</div>" +
+        "<div class='fo-c2-fkv'><span>Matchday net</span>" + finSign(netMD) + "</div>" +
+        "<div class='fo-c2-fkv'><span>Wage bill / matchday</span><b class='fo-neg'>&minus;" + foMoney(wages) + "</b></div>" +
+        (remainingMD > 0 ? "<div class='fo-c2-fkv'><span>Projected (season end)</span><b class='" + (projEnd >= 0 ? "fo-pos" : "fo-neg") + "'>" + foMoney(projEnd) + "</b></div>" : "") +
+        "<div class='fo-c2-ftr " + (trendUp ? "up" : "dn") + "'>" + (trendUp ? "&#9650; trending up" : "&#9660; trending down") + " &middot; " + finStory + "</div>" +
+        "</div></div>";
 
       // season bests: the two performances worth bragging about
       var bb = null, bbw = null;
@@ -2169,15 +2224,15 @@
           "<span class='fo-c2-wtag' style='color:" + col + "'>" + (en.tired ? "TIRED" : en.word === "rested" ? "RESTED" : "FIT") + "</span>" +
           "<div class='fo-c2-wbar'><i style='width:" + en.pct + "%;background:" + col + "'></i></div><span class='fo-c2-wpct'>" + en.pct + "%</span></div>";
       }).join("");
-      var watchCard = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Squad watch</div><a href='#/squad' class='fo-morelink'>Manage squad &rsaquo;</a></div><div class='fo-card-b'>" +
+      var watchCard = "<div class='fo-card fo-o-watch'><div class='fo-card-h2row'><div class='fo-card-h2'>Squad watch</div><a href='#/squad' class='fo-morelink'>Manage squad &rsaquo;</a></div><div class='fo-card-b'>" +
         "<div class='fo-c2-wsum'><span class='fo-c2-wk g'><b>" + fitN + "</b> fit</span><span class='fo-c2-wk a'><b>" + tiredN + "</b> tired</span>" +
         (hotP.length ? "<span class='fo-c2-wk g'><b>" + hotP.length + "</b> in form</span>" : "") +
         (coldP.length ? "<span class='fo-c2-wk r'><b>" + coldP.length + "</b> struggling</span>" : "") + "</div>" +
-        wRows + "</div></div>";
+        "<div class='fo-c2-whead'><span>Player</span><span>Energy</span></div>" + wRows + "</div></div>";
       // milestone watch: unfinished business is what brings a manager back
       var msRows = [];
       try { msRows = foMilestoneWatch(t); } catch (e) {}
-      var msCard = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Milestone watch</div><a href='#/museum' class='fo-morelink'>Club museum &rsaquo;</a></div><div class='fo-card-b'>" +
+      var msCard = "<div class='fo-card fo-o-ms'><div class='fo-card-h2row'><div class='fo-card-h2'>Club milestones</div><a href='#/museum' class='fo-morelink'>Club museum &rsaquo;</a></div><div class='fo-card-b'>" +
         (msRows.length ? msRows.map(foRaceBar).join("")
           : "<div class='small'>No one is knocking on a landmark yet. The museum keeps everything they have already done.</div>") + "</div></div>";
 
@@ -2208,17 +2263,24 @@
           "<div class='fo-c2-nopp'>You finished " + foOrdinal(pos === "-" ? 10 : pos) + "</div>" +
           "<div class='fo-c2-nsub'>Prize money: " + foMoney((FO_FIN.prizes[(pos === "-" ? 10 : pos) - 1]) || 0) + "</div></div></div>";
       }
+      var ctry = (SYNC && SYNC.myTeam && SYNC.myTeam.country) || t.country || (((t.players || [])[0] || {}).nat) || "";
+      var ctryFlag = ""; try { ctryFlag = (typeof foFlag === "function" && ctry) ? (foFlag(ctry) || "") : ""; } catch (eFl) {}
+      var lgName = (LG && LG.name) ? LG.name : "One Day League";
+      var metaBits = ["Season " + (App.seasonNo || 1)];
+      if (ctry) metaBits.push((ctryFlag ? ctryFlag + " " : "") + E(ctry));
+      metaBits.push(E(lgName));
+      if (posLineTop) metaBits.push("<b class='fo-c2-gold'>" + posLineTop + "</b>");
       var hero = "<div class='fo-c2-hero'>" +
-        "<div class='fo-c2-id'><div class='fo-ch-crest fo-c2-crest'><img src='" + APPICON + "' alt=''></div><div class='fo-c2-idt'>" +
+        "<div class='fo-c2-id'><div class='fo-c2-idt'>" +
         "<h1 class='fo-c2-name'>" + E(t.name) + "</h1>" +
         "<div class='fo-c2-mgr'>Manager: <b>" + E((SYNC && SYNC.me && SYNC.me.display_name) || "you") + "</b> <i class='fo-dot fo-dot-on'></i></div>" +
-        "<div class='fo-c2-chips'><span class='fo-c2-chip'>Season " + (App.seasonNo || 1) + "</span><span class='fo-c2-chip'>Est. " + (typeof foClubEst === "function" ? E(foClubEst(t)) : "") + "</span>" + (posLineTop ? "<span class='fo-c2-chip gold'>" + posLineTop + "</span>" : "") + "</div>" +
+        "<div class='fo-c2-meta'>" + metaBits.join(" <u>&middot;</u> ") + "</div>" +
         "<div class='fo-c2-frow'><div><div class='fo-c2-k'>Form (last 5)</div><div class='fo-c2-fs'>" + fchips + "</div></div>" +
         "<div><div class='fo-c2-k'>Supporters mood</div><div class='fo-c2-mood'>" + moodEmo + " <b>" + E(String(mood).toUpperCase()) + "</b>" + (t.supporters ? " <span>" + (+t.supporters).toLocaleString() + "</span>" : "") + "</div></div></div>" +
         "</div></div>" +
-        "<div class='fo-c2-prog'><div class='fo-c2-k'>" + "<span style='display:inline-flex;vertical-align:-3px;margin-right:5px'>" + FO_I("trophy", 14) + "</span>Season progress</div>" +
+        "<div class='fo-c2-prog'><div class='fo-c2-k'>Season progress</div>" +
         "<div class='fo-c2-pv'>Round " + Math.min(played + 1, totalRounds) + " of " + totalRounds + "</div>" +
-        "<div class='fo-progress-bar'><u style='width:" + pct + "%'></u></div><div class='fo-c2-ppct'>" + pct + "%</div></div>" +
+        "<div class='fo-progress-bar'><u style='width:" + pct + "%'></u></div><div class='fo-c2-ppct'>" + pct + "% complete</div></div>" +
         nextCard + "</div>";
       // ---- today's to-do: unfinished business pulls you back tomorrow ----
       var todo = [];
@@ -2241,7 +2303,40 @@
         gainsCard = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Latest training gains</div><a class='fo-morelink' href='#/training'>Training centre ›</a></div><div class='fo-card-b'><ul class='fo-gains' style='margin:0;padding-left:6px;list-style:none;font-size:13px'>" + sg + gl + more + "</ul></div></div>";
       }
       var newsCard = "";
-      try { newsCard = foNewsDigest(); } catch (e) {}
+      try {
+        var lastRes = null;
+        (App.results || []).slice().reverse().some(function (r0) {
+          if (r0 && r0.comp === "league" && r0.result && (r0.home === t.name || r0.away === t.name)) { lastRes = r0; return true; }
+          return false;
+        });
+        if (!lastRes) (App.results || []).slice().reverse().some(function (r0) { if (r0 && r0.comp === "league" && r0.result) { lastRes = r0; return true; } return false; });
+        var evsN = [];
+        GD.teams.forEach(function (tt) {
+          (tt.players || []).forEach(function (p2) {
+            (p2._career || []).forEach(function (c3) {
+              if (c3.ev === "debut") return;
+              evsN.push({ s: c3.s || 0, r: c3.r || 0, txt: c3.txt || "", club: tt.name, who: p2.name });
+            });
+          });
+        });
+        evsN.sort(function (a, b2) { return (b2.s - a.s) || (b2.r - a.r); });
+        var nrDate = function (s2, r2) {
+          try {
+            var wd = foRoundDate(s2, r2);
+            var dd = new Date(wd);
+            if (!isNaN(dd)) return dd.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+          } catch (e2) {}
+          return "";
+        };
+        var feat = lastRes ? "<div class='fo-nr-feat'><b>" + E(lastRes.result.text) + "</b>" +
+          "<span>" + E(lastRes.home) + " v " + E(lastRes.away) + (lastRes.result.mom ? " &middot; star: " + E(lastRes.result.mom) : "") + "</span></div>" : "";
+        var nrRows = evsN.slice(0, 6).map(function (e3) {
+          return "<div class='fo-nr-row'><span><b>" + E(foOrdSurname(e3.who)) + "</b> &middot; " + E(e3.txt) + " <u>&middot; " + E(e3.club) + "</u></span><i>" + nrDate(e3.s, e3.r) + "</i></div>";
+        }).join("");
+        newsCard = "<div class='fo-card fo-o-news'><div class='fo-card-h2row'><div class='fo-card-h2'>Club newsroom</div><a href='#/matchday' class='fo-morelink'>View all &rsaquo;</a></div><div class='fo-card-b'>" +
+          (feat || nrRows ? feat + nrRows : "<div class='small'>The story starts with the first matchday.</div>") +
+          "</div></div>";
+      } catch (e) {}
       setTimeout(foChalAlert, 30);   // async one-line challenge nudge
       // minimal home: hero, search, the next match, four numbers, the paper.
       // Everything else lives on its own page (Matches, Squad, Stats, Office).
@@ -2269,7 +2364,7 @@
             "<span class='fo-c2-fxn fr'>FR</span></div>" });
         });
       } catch (eFx) {}
-      var fxCard = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Upcoming fixtures</div><a href='#/matches' class='fo-morelink'>View all &rsaquo;</a></div><div class='fo-card-b'>" +
+      var fxCard = "<div class='fo-card fo-o-fx'><div class='fo-card-h2row'><div class='fo-card-h2'>Upcoming fixtures</div><a href='#/matches' class='fo-morelink'>View all &rsaquo;</a></div><div class='fo-card-b'>" +
         (fxItems.length ? fxItems.slice(0, 5).map(function (x) { return x.html; }).join("") : "<div class='small'>Season complete.</div>") +
         "<div class='small' style='margin-top:8px'><a href='#/matches'>View full fixture list &rsaquo;</a></div></div></div>";
       var trainCard = "";
@@ -2280,7 +2375,7 @@
       }
       var html = "<div class='fo-ch fo-ch-min'>" + search + hero + "<div id='fo-chal-alert'></div>" + stats +
         "<div class='fo-c2-grid'>" + newsCard + standings + fxCard + watchCard + "</div>" +
-        "<div class='fo-c2-bottom'>" + leadBat + leadBowl + msCard + fin + trainCard + "</div></div>";
+        "<div class='fo-c2-bottom'>" + leadBat + leadBowl + msCard + fin + "</div></div>";
       setTimeout(foNextFriendly, 80);
 
       var page = document.getElementById("page"); if (!page) return;
