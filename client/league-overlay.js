@@ -9357,7 +9357,8 @@
       ".fo-cp-tabs{display:flex;gap:6px;margin:10px 0 2px}" +
       "html body #page a.fo-cp-tab{display:inline-block;border:1px solid rgba(28,36,51,.18);background:#FFFEFC;color:#0E233F !important;border-radius:999px;padding:4px 14px;font-size:12px;font-weight:800;cursor:pointer;text-decoration:none}" +
       "html body #page a.fo-cp-tab.on{background:#0E233F;color:#FFFEFC !important;border-color:#0E233F}" +
-      ".fo-cp-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}.fo-cp-scroll table{min-width:520px}" +
+      ".fo-cp-scroll table{width:100%;font-size:11.5px}.fo-cp-scroll th,.fo-cp-scroll td{padding:6px 4px;white-space:nowrap}" +
+      "@media(max-width:1000px){#page .fo-cp-x{display:none}}" +
       ".fo-mu-troph{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 10px}" +
       ".fo-mu-cup{background:linear-gradient(135deg,#F59E0B,#c08a2b);color:#fff;border-radius:10px;padding:8px 14px;font-weight:800;font-size:12.5px;box-shadow:0 3px 10px rgba(160,110,20,.3)}" +
       ".fo-mu-leg{background:#FFFEFC;border:1px solid rgba(28,36,51,.1);border-radius:11px;padding:11px 14px;margin:7px 0}" +
@@ -9990,16 +9991,16 @@
       var batRow = function (lbl, b, cls) {
         var ave = b.outs ? (b.runs / b.outs).toFixed(1) : "–";
         var sr = b.bf ? (100 * b.runs / b.bf).toFixed(1) : "–";
-        return "<tr" + (cls ? " class='" + cls + "'" : "") + "><td>" + lbl + "</td><td class='n'>" + b.mat + "</td><td class='n'>" + b.inns + "</td><td class='n'>" + (b.inns - b.outs) + "</td><td class='n'>" + b.runs + "</td><td class='n'>" + (b.hs || "–") + "</td><td class='n'>" + ave + "</td><td class='n'>" + b.bf + "</td><td class='n'>" + sr + "</td><td class='n'>" + b.s100 + "</td><td class='n'>" + b.s50 + "</td><td class='n'>" + b.f4 + "</td><td class='n'>" + b.f6 + "</td></tr>";
+        return "<tr" + (cls ? " class='" + cls + "'" : "") + "><td>" + lbl + "</td><td class='n'>" + b.inns + "</td><td class='n'>" + b.runs + "</td><td class='n'>" + (b.hs || "–") + "</td><td class='n'>" + ave + "</td><td class='n'>" + sr + "</td><td class='n fo-cp-x'>" + b.s100 + "</td><td class='n fo-cp-x'>" + b.s50 + "</td><td class='n fo-cp-x'>" + b.f4 + "</td><td class='n fo-cp-x'>" + b.f6 + "</td></tr>";
       };
       var bowlRow = function (lbl, b, cls) {
         var ave = b.wkts ? (b.cr / b.wkts).toFixed(1) : "–";
         var er = b.cb ? (b.cr / (b.cb / 6)).toFixed(2) : "–";
         var srB = b.wkts ? (b.cb / b.wkts).toFixed(1) : "–";
-        return "<tr" + (cls ? " class='" + cls + "'" : "") + "><td>" + lbl + "</td><td class='n'>" + b.mat + "</td><td class='n'>" + b.cb + "</td><td class='n'>" + b.cr + "</td><td class='n'>" + b.wkts + "</td><td class='n'>" + (b.bw ? b.bw + "/" + b.br : "–") + "</td><td class='n'>" + ave + "</td><td class='n'>" + er + "</td><td class='n'>" + srB + "</td><td class='n'>" + b.w3 + "</td><td class='n'>" + b.w5 + "</td></tr>";
+        return "<tr" + (cls ? " class='" + cls + "'" : "") + "><td>" + lbl + "</td><td class='n'>" + b.wkts + "</td><td class='n'>" + (b.bw ? b.bw + "/" + b.br : "–") + "</td><td class='n'>" + ave + "</td><td class='n'>" + er + "</td><td class='n fo-cp-x'>" + srB + "</td><td class='n fo-cp-x'>" + b.w3 + "</td><td class='n fo-cp-x'>" + b.w5 + "</td></tr>";
       };
-      var BAT_HEAD = "<tr><th></th><th class='n'>Mat</th><th class='n'>Inns</th><th class='n'>NO</th><th class='n'>Runs</th><th class='n'>HS</th><th class='n'>Ave</th><th class='n'>BF</th><th class='n'>SR</th><th class='n'>100</th><th class='n'>50</th><th class='n'>4s</th><th class='n'>6s</th></tr>";
-      var BOWL_HEAD = "<tr><th></th><th class='n'>Mat</th><th class='n'>Balls</th><th class='n'>Runs</th><th class='n'>Wkts</th><th class='n'>Best</th><th class='n'>Ave</th><th class='n'>ER</th><th class='n'>SR</th><th class='n'>3WI</th><th class='n'>5WI</th></tr>";
+      var BAT_HEAD = "<tr><th></th><th class='n'>Inns</th><th class='n'>Runs</th><th class='n'>HS</th><th class='n'>Ave</th><th class='n'>SR</th><th class='n fo-cp-x'>100</th><th class='n fo-cp-x'>50</th><th class='n fo-cp-x'>4s</th><th class='n fo-cp-x'>6s</th></tr>";
+      var BOWL_HEAD = "<tr><th></th><th class='n'>Wkts</th><th class='n'>Best</th><th class='n'>Ave</th><th class='n'>ER</th><th class='n fo-cp-x'>SR</th><th class='n fo-cp-x'>3WI</th><th class='n fo-cp-x'>5WI</th></tr>";
       // matches resolved away from this device may predate the chronicle
       // stamps: rebuild the guaranteed moments straight from the history
       try {
