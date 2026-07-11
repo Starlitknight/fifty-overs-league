@@ -9920,7 +9920,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260710-2306-541433";
+  var FO_BUILD = "20260711-0006-bc3141";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14042,10 +14042,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ? "<div class='fo-yc-note' style='border-color:#e8c9c2;background:#fbeeea'><b>Injury ward:</b> " + t.injured.map(function (p) { return E(p.name) + " (" + (p._inj || 1) + " matchday" + ((p._inj || 1) === 1 ? "" : "s") + ")"; }).join(" · ") + "</div>"
       : "";
 
-    var progOpts = function (cur, sug) {
-      return FO_TR_PROGS.map(function (k) {
-        return "<option value='" + k + "'" + (cur === k ? " selected" : "") + ">" + (k === sug ? "\u2b50 " : "") + k + (k === sug ? " \u00b7 suggested" : "") + "</option>";
-      }).join("");
+    var progOpts = function (cur) {
+      return FO_TR_PROGS.map(function (k) { return "<option value='" + k + "'" + (cur === k ? " selected" : "") + ">" + k + "</option>"; }).join("");
     };
     var intOpts = function (cur) { return FO_TR_INT.map(function (k) { return "<option value='" + k + "'" + (cur === k ? " selected" : "") + ">" + k + "</option>"; }).join(""); };
     var potCls = { Star: "star", High: "high", Useful: "useful", Limited: "limited" };
@@ -14061,19 +14059,19 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       return tops.length ? "targets " + tops.join(", ") : "resting";
     };
     var rows = sorted.map(function (p) {
-      var tr = foTrOf(p), pr = foTrProgress(p), sug = foTrSuggest(p), en = foEnergyOf(p);
+      var tr = foTrOf(p), pr = foTrProgress(p), en = foEnergyOf(p);
       var flag = ""; try { flag = (typeof foFlag === "function" && p.nat) ? foFlag(p.nat) : ""; } catch (e) {}
       return "<tr>" +
         "<td class='fo-tr-nm'>" + flag + " <a class='fo-tr-link' href='#/player?n=" + encodeURIComponent(p.name) + "'><b>" + E(p.name) + "</b></a><span class='fo-tr-meta'>" + foRoleShort(p) + " · age " + (p.age || "?") + "</span></td>" +
         "<td>" + enBar(en) + "</td>" +
-        "<td><select class='fo-tr-prog' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + progOpts(tr.program, sug) + "</select></td>" +
+        "<td><select class='fo-tr-prog' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + progOpts(tr.program) + "</select></td>" +
         "<td><select class='fo-tr-int' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + intOpts(tr.intensity) + "</select></td>" +
         "<td class='fo-tr-progress'><div class='fo-tr-bar' title='Progress to the next +1'><u style='width:" + pr.pct + "%'></u></div><span>" + gainOf(p, tr, pr) + " &middot; <i class='fo-tr-pace'>" + foTrPace(p, tr) + "</i></span></td>" +
         "</tr>";
     }).join("");
     // phone: per-player decision cards instead of a five-column scroll
     var cards = sorted.map(function (p) {
-      var tr = foTrOf(p), pr = foTrProgress(p), sug = foTrSuggest(p), en = foEnergyOf(p);
+      var tr = foTrOf(p), pr = foTrProgress(p), en = foEnergyOf(p);
       var w0 = FO_TR_PROGMAP[tr.program] || {};
       var chips = Object.keys(w0).sort(function (a, b) { return (w0[b] || 0) - (w0[a] || 0); }).slice(0, 3).map(function (k) {
         return "<span class='fo-trc-w'><u style='background:" + (FO_SK_COLOR[k] || "#667085") + "'></u>" + E(foSkillLabel(k)) + " <b>" + w0[k] + "%</b></span>";
@@ -14083,7 +14081,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       return "<div class='fo-trc'>" +
         "<div class='fo-trc-h'><a href='#/player?n=" + encodeURIComponent(p.name) + "'><b>" + E(p.name) + "</b></a><span class='fo-tr-meta'>" + foRoleShort(p) + " · age " + (p.age || "?") + "</span></div>" +
         enBar(en) + warn +
-        "<div class='fo-trc-row'><label>Program<select class='fo-tr-prog' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + progOpts(tr.program, sug) + "</select></label>" +
+        "<div class='fo-trc-row'><label>Program<select class='fo-tr-prog' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + progOpts(tr.program) + "</select></label>" +
         "<label>Intensity<select class='fo-tr-int' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + intOpts(tr.intensity) + "</select></label></div>" +
         (chips ? "<div class='fo-trc-ws'>" + chips + "</div>" : "<div class='fo-trc-ws small'>Recovery week &middot; energy climbs instead of skills.</div>") +
         "<div class='fo-tr-progress'><div class='fo-tr-bar' title='Progress to the next +1'><u style='width:" + pr.pct + "%'></u></div><span>" + gainOf(p, tr, pr) + " &middot; <i class='fo-tr-pace'>" + foTrPace(p, tr) + "</i></span></div>" +
@@ -14153,9 +14151,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "<div><button class='fo-tr-how' id='fo-tr-how'>How training works</button></div></div>" +
       repHtml +
       "<div class='panel'><h4>Training programs</h4><div class='pad'>" +
-      "<div class='fo-tr-bulk'><span class='small'>Quick set:</span>" +
-      "<button class='fo-tr-b' data-m='suggest'>&#11088; Suggested for all</button>" +
-      "<button class='fo-tr-b' data-m='restTired'>Rest the tired</button></div>" +
+
       "<table class='fo-tr-tbl'><thead><tr><th>Player</th><th>Energy</th><th>Program</th><th>Intensity</th><th>Next gain</th></tr></thead><tbody>" + rows + "</tbody></table>" +
       "<div class='fo-trc-list'>" + cards + "</div>" +
       "<div class='small' style='margin-top:8px'>Skill gains raise wages automatically. Intense trains ~20% faster but drains energy; Rest recovers. Squads over 24 players train slower.</div>" +
@@ -14183,17 +14179,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       m.addEventListener("click", function (e2) { if (e2.target === m) m.remove(); });
       m.querySelector("#fo-tr-howx").addEventListener("click", function () { m.remove(); });
     });
-    page.querySelectorAll(".fo-tr-b").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var m = b.getAttribute("data-m");
-        t.players.forEach(function (p) {
-          if (m === "suggest") foSetTraining(p.name, "program", foTrSuggest(p));
-          if (m === "restTired" && foEnergyOf(p).tired) foSetTraining(p.name, "program", "Rest");
-        });
-        trRedraw();
-        toast("Training updated for the squad.");
-      });
-    });
+
     page.querySelectorAll(".fo-yc-sign[data-i]").forEach(function (b) { b.addEventListener("click", function () { foSignYouth(scouts[+b.getAttribute("data-i")]); }); });
     var natS = page.querySelector("#fo-yc-nat");
     if (natS) natS.addEventListener("change", function () { var st2 = foTrainState(); st2.scoutNat = natS.value; foTrainSave(st2); });
