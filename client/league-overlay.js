@@ -1906,6 +1906,9 @@
       m.querySelector(".fo-su-go").addEventListener("click", function () {
         var ix = parseInt(m.querySelector("#fo-su-opp").value, 10);
         if (isNaN(ix)) { alert("Pick an opponent first."); return; }
+        var slotProb = null;
+        try { slotProb = foFrSlotProblem(new Date(Date.now() + 2 * 60000), [userTeam().name]); } catch (eSl) {}
+        if (slotProb) { say(slotProb); return; }
         var pitch = m.querySelector("#fo-su-pitch").value, wx = m.querySelector("#fo-su-wx").value;
         m.remove();
         foBreakScreen(foAddFriendly(ix, pitch, wx));
@@ -1965,6 +1968,10 @@
         return;
       }
     } catch (e) {}
+    try {
+      var slotProb2 = foFrSlotProblem(new Date(Date.now() + 2 * 60000), [userTeam().name]);
+      if (slotProb2) { say(slotProb2); return; }
+    } catch (eSl2) {}
     foChallenge(fr.oppIx, fr.pitch, fr.weather);
   }
   function foPracBcKey() { return "fol_pracbc_" + (LG ? LG.id : "solo"); }
@@ -2164,6 +2171,7 @@
   function foPosMovement(pos) {
     try {
       if (!pos) return "";
+      try { var emP = (typeof foEmbargo === "function") ? foEmbargo() : null; if (emP && emP.active) return ""; } catch (eP) {}
       var k = "fol_pos_" + ((LG && LG.id) || "solo");
       var st = {}; try { st = JSON.parse(lsGet(k) || "{}"); } catch (e) {}
       var r = (App.season && App.season.round) || 0;
@@ -2340,8 +2348,12 @@
       var sqRank = 1 + (GD.teams || []).filter(function (tt) { return tt !== t && sqAvg(tt) > mySq; }).length;
       var posV = (pos !== "-" && isFinite(+pos))
         ? "<span class='fo-sw-d'>" + pos + "</span><span class='fo-sw-m'>" + foOrdinal(+pos) + "</span>" : pos;
+      var emKpi = false;
+      try { var emK = (typeof foEmbargo === "function") ? foEmbargo() : null; emKpi = !!(emK && emK.active); } catch (eK) {}
       var stats = "<div class='fo-ch-stats'>" +
-        stat("terra", FO_I("trophy", 19), "League position", posV, "of " + (rowsL.length || 10) + (mv ? " &middot; " + mv + " since last round" : ""), "League", "of " + (rowsL.length || 10)) +
+        (emKpi
+          ? stat("terra", FO_I("trophy", 19), "League position", "&ndash;", "updates at stumps", "League", "at stumps")
+          : stat("terra", FO_I("trophy", 19), "League position", posV, "of " + (rowsL.length || 10) + (mv ? " &middot; " + mv + " since last round" : ""), "League", "of " + (rowsL.length || 10))) +
         stat("terra", FO_I("wallet", 19), "Bank", foMoney(bank), bankSub, "Bank", bankSubM) +
         stat("teal", FO_I("bat", 19), "Squad strength", (mySq / 1000).toFixed(1), foOrdinal(sqRank) + " strongest in the league", "Squad", "Ranked " + foOrdinal(sqRank)) +
         stat("terra", FO_I("users", 19), "Supporters", "<span class='fo-stat-word'>" + mood + "</span>", "Mood", "Supporters", (t.supporters ? (+t.supporters).toLocaleString() : "Mood")) + "</div>";
@@ -2499,7 +2511,10 @@
         (msRows.length ? msRows.map(foRaceBar).join("")
           : "<div class='small'>No one is knocking on a landmark yet. The museum keeps everything they have already done.</div>") + "</div></div>";
 
-      var posLineTop = (pi >= 0 && played > 0) ? foOrdinal(pos) + " of " + (rowsL.length || 10) + (streak >= 2 ? " · " + streak + "-win streak" : "") : null;
+      var emClub = false, emEnds = 0;
+      try { var emC = (typeof foEmbargo === "function") ? foEmbargo() : null; if (emC && emC.active) { emClub = true; emEnds = emC.endsAt || 0; } } catch (eEm) {}
+      var posLineTop = emClub ? null
+        : (pi >= 0 && played > 0) ? foOrdinal(pos) + " of " + (rowsL.length || 10) + (streak >= 2 ? " · " + streak + "-win streak" : "") : null;
       // ---- hero: crest + identity | season progress | next-match countdown ----
       var isMP = SYNC && SYNC.started && !SYNC.practice;
       var ordersIn = !!(nxt && ((SYNC && SYNC.submitted && SYNC.submitted[nxt.round]) ||
@@ -2519,7 +2534,7 @@
         lsSet(mk, JSON.stringify(stM));
         if (stM.p != null) moodTr = moodIx - stM.p;
       } catch (eMt) {}
-      var moodArrow = moodTr > 0 ? "<i class='fo-mood-up'>&#9650;</i> " : moodTr < 0 ? "<i class='fo-mood-dn'>&#9660;</i> " : "";
+      var moodArrow = emClub ? "" : moodTr > 0 ? "<i class='fo-mood-up'>&#9650;</i> " : moodTr < 0 ? "<i class='fo-mood-dn'>&#9660;</i> " : "";
       var pct = Math.round(100 * played / Math.max(1, totalRounds));
       var nextCard = "";
       if (nxt) {
@@ -2532,7 +2547,7 @@
           "<div class='fo-c2-nchips'>" + (oppRow >= 0 ? "<span class='fo-c2-nchip'>" + foOrdinal(oppRow + 1) + "</span>" : "") + (oppForm ? "<span class='fo-c2-nchip'>Form <span class='fo-form'>" + oppForm + "</span></span>" : "") + "</div></div>" +
           "<div class='fo-c2-nr'>" + (isMP ? "<div class='fo-c2-nk'>Match starts in</div><div class='fo-c2-cd' id='fo-cd'>" + foCdText(foNextMatchdayMs()) + "</div>" : "") +
           "<div class='fo-c2-nsub'><b>" + MATCH_TIME + "</b> &middot; " + E(nxt.date || "") + "</div>" +
-          "<div class='fo-c2-ndl'>Lineups lock at " + MATCH_TIME + "</div>" +
+          "<div class='fo-c2-ndl'>Lineups lock at 8:00 AM ET</div>" +
           "<button class='fo-next-cta" + (ordersIn ? " fo-done" : "") + "' data-r='" + nxt.round + "'>" + (ordersIn ? "Review lineup &rsaquo;" : "Set lineup &rsaquo;") + "</button></div></div>";
       } else if ((me.p || 0) > 0) {
         nextCard = "<div class='fo-c2-next'><div class='fo-c2-nl'><div class='fo-c2-nk'>Season complete</div>" +
@@ -2581,17 +2596,21 @@
       }
       var newsCard = "";
       try {
+        var hideRdN = null;
+        try { var emN = (typeof foEmbargo === "function") ? foEmbargo() : null; if (emN && emN.active) hideRdN = emN.round; } catch (eN0) {}
         var lastRes = null;
         (App.results || []).slice().reverse().some(function (r0) {
+          if (hideRdN != null && r0 && r0.round === hideRdN) return false;
           if (r0 && r0.comp === "league" && r0.result && (r0.home === t.name || r0.away === t.name)) { lastRes = r0; return true; }
           return false;
         });
-        if (!lastRes) (App.results || []).slice().reverse().some(function (r0) { if (r0 && r0.comp === "league" && r0.result) { lastRes = r0; return true; } return false; });
+        if (!lastRes) (App.results || []).slice().reverse().some(function (r0) { if (hideRdN != null && r0 && r0.round === hideRdN) return false; if (r0 && r0.comp === "league" && r0.result) { lastRes = r0; return true; } return false; });
         var evsN = [];
         GD.teams.forEach(function (tt) {
           (tt.players || []).forEach(function (p2) {
             (p2._career || []).forEach(function (c3) {
               if (c3.ev === "debut") return;
+              if (hideRdN != null && (c3.s || 0) === (App.seasonNo || 1) && (c3.r || 0) === hideRdN + 1) return;
               evsN.push({ s: c3.s || 0, r: c3.r || 0, ev: c3.ev || "", txt: c3.txt || "", club: tt.name, who: p2.name });
             });
           });
@@ -3149,6 +3168,8 @@
         t.setDate(t.getDate() + (+m.querySelector("#fo-chal-d").value || 0));
         t.setHours(+m.querySelector("#fo-chal-h").value || 0, +m.querySelector("#fo-chal-m").value || 0, 0, 0);
         if (t - Date.now() < 75 * 60000) { say("Pick a time at least 75 minutes ahead - lineups lock an hour before kickoff, so both managers need a window to attach one."); return; }
+        var slotProb = foFrSlotProblem(t, [userTeam().name, opp.name]);
+        if (slotProb) { say(slotProb); return; }
         rpc("challenge_create", {
           p_league_id: LG.id, p_club: userTeam().name, p_opponent: opp.name,
           p_pitch: m.querySelector("#fo-chal-p").value || "balanced",
@@ -3205,8 +3226,13 @@
   function foFormMap() {
     var m = {};
     try {
+      // the just-banked round stays under embargo until stumps: form must not
+      // reveal a result before the broadcast reaches it
+      var hideRd = null;
+      try { var emF = (typeof foEmbargo === "function") ? foEmbargo() : null; if (emF && emF.active) hideRd = emF.round; } catch (e0) {}
       (App.results || []).forEach(function (r) {
         if (!r || r.comp !== "league" || !r.result) return;
+        if (hideRd != null && r.round === hideRd) return;
         var w = r.result.winner;
         [r.home, r.away].forEach(function (nm) { (m[nm] = m[nm] || []).push(!w ? "T" : (w === nm ? "W" : "L")); });
       });
@@ -7784,6 +7810,51 @@
     var b = ev.target && ev.target.closest ? ev.target.closest("#fo-frs-new") : null;
     if (b) { ev.preventDefault(); startFriendly(); }
   });
+  // ---- one match at a time, and the league's protected morning window ----
+  function foETHour(dt) {
+    try {
+      var s2 = dt.toLocaleString("en-US", { timeZone: "America/New_York", hour12: false, hour: "2-digit", minute: "2-digit" });
+      var m2 = /(\d+):(\d+)/.exec(s2); return m2 ? ((+m2[1]) % 24) + (+m2[2]) / 60 : null;
+    } catch (e) { return null; }
+  }
+  // how long a club is on air right now: own live match, the league broadcast
+  // hour, or a live friendly / practice broadcast
+  function foClubBusyUntil(nm) {
+    var until = 0;
+    try { if (typeof M !== "undefined" && M && !M.done) until = Math.max(until, Date.now() + 30 * 60000); } catch (e0) {}
+    try { var em = (typeof foEmbargo === "function") ? foEmbargo() : null; if (em && em.active) until = Math.max(until, em.endsAt || 0); } catch (e1) {}
+    try {
+      ((window.__foFrAll) || []).forEach(function (c) {
+        if (!c || (c.status !== "accepted" && c.status !== "played")) return;
+        if (c.challenger_club !== nm && c.opponent_club !== nm) return;
+        var st = foFrBcastState(c);
+        if (st.phase === "live") until = Math.max(until, st.endsAt);
+      });
+    } catch (e2) {}
+    return until;
+  }
+  // can a friendly/practice start at `when` for these clubs? null = fine,
+  // else the reason it can't
+  function foFrSlotProblem(when, clubs) {
+    var h = foETHour(when);
+    if (h != null && h >= 8 && h < 10) return "League matches play at 9:00 AM ET, so friendlies can't start between 8:00 and 10:00 AM ET. Pick a time outside that window.";
+    for (var i = 0; i < clubs.length; i++) {
+      var busy = foClubBusyUntil(clubs[i]);
+      if (when.getTime() < busy) return E(clubs[i]) + " is on air until " + new Date(busy).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + " \u00b7 one match at a time. Schedule it after that.";
+    }
+    var clash = null;
+    try {
+      ((window.__foFrAll) || []).forEach(function (c) {
+        if (clash || !c || (c.status !== "pending" && c.status !== "accepted")) return;
+        var involved = clubs.some(function (nm) { return c.challenger_club === nm || c.opponent_club === nm; });
+        if (!involved) return;
+        var t0 = Date.parse(c.play_at); if (isNaN(t0)) return;
+        if (Math.abs(t0 - when.getTime()) < FO_FR_MIN * 60000) clash = c;
+      });
+    } catch (e3) {}
+    if (clash) return "That overlaps a friendly already booked for " + new Date(Date.parse(clash.play_at)).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + " \u00b7 one match at a time.";
+    return null;
+  }
   // ---- friendly broadcasts: the match is banked early by the resolver and
   // REVEALED ball by ball from play_at, exactly like a league matchday ----
   var FO_FR_MIN = 60;
@@ -9101,6 +9172,16 @@
             return;
           }
           if ((el = q(".fo-ord-save"))) {
+            // today's league round locks at 8:00 AM ET while the engine warms up
+            try {
+              if (SYNC && SYNC.started && !SYNC.practice && LG && !App.pending && !SYNC.planRound) {
+                var hET = foETHour(new Date());
+                if (hET != null && hET >= 8 && hET < 10) {
+                  say("Lineups for today's round locked at 8:00 AM ET \u00b7 the round plays at 9:00 and everything unlocks at stumps. You can still plan future rounds from the Matches page.");
+                  return;
+                }
+              }
+            } catch (eLk) {}
             App.orders.saved = true;
             App.defaults = JSON.parse(JSON.stringify(App.orders));
             if (App.pending) { location.hash = "#/match"; if (typeof window.route === "function") window.route(); }
