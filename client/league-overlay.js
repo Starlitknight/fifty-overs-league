@@ -334,6 +334,7 @@
     ".fo-estd::after{background:linear-gradient(90deg,rgba(217,183,90,.8),transparent)}" +
     ".fo-c2-est,.fo-scout-est{margin-top:8px}" +
     ".fo-bt-tag{display:inline-block;margin-left:6px;font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#5a6472;background:#EFECE3;border-radius:5px;padding:1px 5px;vertical-align:1px;white-space:nowrap}" +
+    ".fo-tal-tag{display:inline-block;margin-left:5px;font-size:9.5px;font-weight:700;color:#5b4a91;background:#EEE8FA;border-radius:5px;padding:1px 6px;vertical-align:1px;white-space:nowrap}" +
     ".fo-scout-hero::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(" + TERRA + "," + TEAL + ")}" +
     ".fo-scout-hero-main{flex:1 1 320px;min-width:230px}" +
     ".fo-scout-eyebrow{color:#e79274;font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;margin-bottom:7px}" +
@@ -7944,11 +7945,14 @@
       page.querySelectorAll("table").forEach(function (tb) {
         if (tb.__foBtTags) return;
         var ths = Array.prototype.slice.call(tb.querySelectorAll("th")).map(function (x) { return (x.textContent || "").trim().toLowerCase(); });
-        if (ths.indexOf("econ") < 0) return;
+        var isBowl9 = ths.indexOf("econ") >= 0;
+        var isBat9 = !isBowl9 && ths.length && (ths[0].indexOf("batter") === 0 || ths[0].indexOf("batting") === 0) && ths.indexOf("sr") >= 0;
+        if (!isBowl9 && !isBat9) return;
         tb.__foBtTags = 1;
         Array.prototype.slice.call(tb.querySelectorAll("tr")).forEach(function (tr) {
-          var td = tr.querySelector("td"); if (!td || td.querySelector(".fo-bt-tag")) return;
-          var nm = (td.textContent || "").replace(/[\u2020*]/g, "").trim(); if (!nm) return;
+          var td = tr.querySelector("td"); if (!td || td.querySelector(".fo-bt-tag") || td.querySelector(".fo-tal-tag")) return;
+          var nameEl9 = td.querySelector("a, b") || td;
+          var nm = (nameEl9.textContent || "").replace(/[\u2020*]/g, "").replace(/\s*\(c\)\s*$/i, "").trim(); if (!nm) return;
           var nmC = nm.replace(/\s*\(.*\)$/, "").trim();
           var hit = findPlayer(nm) || findPlayer(nmC);
           if (!hit) {
@@ -7980,11 +7984,19 @@
             });
             if (cand9 && !dupe9) hit = { p: cand9 };
           }
-          var code = hit && foBowlCode(hit.p);
-          if (code) {
-            var host = td.querySelector("b") || td;
-            host.insertAdjacentHTML("beforeend", " <span class='fo-bt-tag' title='" + E((hit.p && hit.p.btLabel) || "") + "'>" + code + "</span>");
+          if (!hit || !hit.p) return;
+          var host = nameEl9 === td ? (td.querySelector("b") || td) : nameEl9;
+          var add9 = "";
+          if (isBowl9) {
+            var code = foBowlCode(hit.p);
+            if (code) add9 += " <span class='fo-bt-tag' title='" + E(hit.p.btLabel || "") + "'>" + code + "</span>";
           }
+          // talents ride along on every scorecard row, with their explanation
+          (hit.p.talents || []).slice(0, 2).forEach(function (tl9) {
+            var tip9 = ""; try { tip9 = (typeof TALTIPS !== "undefined" && TALTIPS[tl9]) || ""; } catch (eT9) {}
+            add9 += " <span class='fo-tal-tag' title='" + E(tip9) + "'>" + E(foTalentName(tl9)) + "</span>";
+          });
+          if (add9) host.insertAdjacentHTML("beforeend", add9);
         });
       });
     } catch (e) {}
