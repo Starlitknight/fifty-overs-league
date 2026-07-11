@@ -7821,6 +7821,54 @@
     var ab = foTzAbbr();
     return t.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " " + pad(t.getHours()) + ":" + pad(t.getMinutes()) + (ab ? " " + ab : "");
   }
+  // a club name that goes somewhere: the club's scout page
+  function foClubLink(nm) {
+    try {
+      var ix9 = (GD.teams || []).findIndex(function (t9) { return t9 && t9.name === nm; });
+      if (ix9 >= 0) return "<a class='fo-crumb-club' href='#/scout?t=" + ix9 + "'>" + E(nm) + "</a>";
+    } catch (e9) {}
+    return E(nm);
+  }
+  // ---- live audience: who is watching this broadcast ----------------------
+  // any member on a live view pings watch_match (25s heartbeat); the hero
+  // shows how many are on it now and who has dropped by. Requires the 0021
+  // SQL - absent, the whole thing quietly stays blank.
+  function foWatchPing(key) {
+    try {
+      if (!key || !(SYNC && SYNC.started && !SYNC.practice && LG)) return;
+      var st = window.__foWatch || (window.__foWatch = {});
+      var now = Date.now();
+      if (st.k !== key) { st.k = key; st.ping = 0; st.get = 0; st.rows = null; }
+      if (!st.dead && now - st.ping > 25000) {
+        st.ping = now;
+        rpc("watch_match", { p_league_id: LG.id, p_key: key, p_club: userTeam().name }).catch(function (e2) {
+          if (/Could not find the function/i.test(((e2 && e2.message) || e2) + "")) st.dead = 1;
+        });
+      }
+      if (!st.dead && now - st.get > 12000) {
+        st.get = now;
+        sel("league_watchers", "league_id=eq." + LG.id + "&match_key=eq." + encodeURIComponent(key) + "&select=club,last_seen&order=last_seen.desc&limit=40")
+          .then(function (rows) { st.rows = rows || []; foWatchPaint(st); }).catch(function () {});
+      }
+      foWatchPaint(st);
+    } catch (e) {}
+  }
+  function foWatchPaint(st) {
+    try {
+      var el = document.getElementById("fo-watchers"); if (!el || !st || !st.rows) return;
+      var me = userTeam().name, now = Date.now();
+      var live = [], past = [];
+      st.rows.forEach(function (r) {
+        if (!r || !r.club) return;
+        (now - Date.parse(r.last_seen) < 90000 ? live : past).push(r.club === me ? "you" : r.club);
+      });
+      if (!live.length && !past.length) { el.innerHTML = ""; return; }
+      var eye = "<svg viewBox='0 0 24 24' width='13' height='13' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' style='flex:0 0 auto'><path d='M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z'/><circle cx='12' cy='12' r='3'/></svg>";
+      el.innerHTML = eye + "<b>" + live.length + "</b> watching now" +
+        (live.length ? " &middot; " + live.slice(0, 6).map(function (x) { return E(x); }).join(", ") + (live.length > 6 ? " +" + (live.length - 6) + " more" : "") : "") +
+        (past.length ? " <span class='fo-watch-past'>&middot; dropped by " + past.slice(0, 5).map(function (x) { return E(x); }).join(", ") + (past.length > 5 ? " +" + (past.length - 5) : "") + "</span>" : "");
+    } catch (e) {}
+  }
   function foChalAttach(ch, done) {
     rpc("challenge_set_orders", { p_id: ch.id, p_club: userTeam().name, p_orders: App.orders })
       .then(function () {
@@ -8307,7 +8355,7 @@
     var upto = Math.max(2, Math.floor(st.p * log.length));
     var vis = log.slice(0, upto).reverse();      // newest ball first
     var kind = c.__practice ? "Practice" : "Friendly";
-    var head = "<div class='crumb'>" + E(c.challenger_club) + " v " + E(c.opponent_club) + " &raquo; " + kind + "</div>";
+    var head = "<div class='crumb'>" + foClubLink(c.challenger_club) + " v " + foClubLink(c.opponent_club) + " &raquo; " + kind + "</div>";
     var tk = foFrTrackAt(r, upto);
     var tab = window.__foFrLTab || "feed";
     var cf = window.__foFrLCF || "all";
@@ -8331,11 +8379,13 @@
         over0 + (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, cf, 5000) : "") + "</div></div></div>";
     }
     page.innerHTML = "<div id='fo-fr-live'>" + head +
-      "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE</div>" +
+      "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE &middot; " + kind.toUpperCase() + "</div>" +
       "<div class='fo-live-score'>" + foFrLiveLine(c, st.p) + "</div>" +
       "<div class='fo-live-sub'>" + kind + " &middot; " + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + (r.toss ? " &middot; " + E(r.toss) : "") + "</div>" +
-      foLast6HTML(log, upto) + "</div>" +
+      foLast6HTML(log, upto) +
+      "<div class='fo-live-watch' id='fo-watchers'></div></div>" +
       foFrCrease(tk) + bar + body + "</div>";
+    try { foWatchPing("fr-" + id); } catch (eWp2) {}
     window.__foFrLiveRow = { id: id, c: c };
     window.__foFrCache = { id: id, html: page.innerHTML, done: false };
   }
@@ -8354,7 +8404,7 @@
     var page = document.getElementById("page"); if (!page) return;
     var r = c.result || {};
     var log = (r.log || []).slice().reverse();   // chronological
-    var head = "<div class='crumb'>" + E(c.challenger_club) + " v " + E(c.opponent_club) + " &raquo; " + (c.__practice ? "Practice" : "Friendly") + "</div>";
+    var head = "<div class='crumb'>" + foClubLink(c.challenger_club) + " v " + foClubLink(c.opponent_club) + " &raquo; " + (c.__practice ? "Practice" : "Friendly") + "</div>";
     // broadsheet result header, shared with league scorecards
     var hero = "";
     try {
@@ -13234,12 +13284,17 @@
           if (!isNaN(t) && Math.abs(t - Date.now()) < 26 * 3600000) return t;
         }
       } catch (e2) {}
-      // last resort: the hour starts when this device first sees the round -
-      // slightly unsynced between friends, but the broadcast always holds
+      // last resort - but ONLY inside the genuine 8-10 AM ET matchday window.
+      // The old "hour starts when this device first sees the round" replayed a
+      // phantom broadcast (and slept the league table) on every fresh device
+      // at any hour of the day. Outside the window, no anchor means no embargo.
       try {
-        var fs = { round: rd, t0: Date.now() };
-        lsSet(foBcastKey(), JSON.stringify(fs));
-        return fs.t0;
+        var hE = foETHour(new Date());
+        if (hE != null && hE >= 8 && hE < 10) {
+          var isoD = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+          var tE = Date.parse(isoD + "T09:00:00-04:00");
+          if (!isNaN(tE)) { lsSet(foBcastKey(), JSON.stringify({ round: rd, t0: tE })); return tE; }
+        }
       } catch (e3) {}
       return 0;
     }
@@ -13441,16 +13496,59 @@
             }
           });
         } catch (eMk) {}
-        // standings sleep until the broadcast ends
+        // the table stays READABLE during the hour: rewind it to how it stood
+        // before the round on air (the banked round's points come off, NRR
+        // waits for stumps), instead of hiding the whole thing
+        var adj = {};
+        rows.forEach(function (r0) {
+          if (!r0 || !r0.result || !r0.result.text) return;
+          var tx0 = r0.result.text;
+          var mk = function (nm, w2, l2, t2, pts2) { adj[nm] = { p: 1, w: w2, l: l2, t: t2, pts: pts2 }; };
+          if (tx0.indexOf(r0.home) === 0) { mk(r0.home, 1, 0, 0, 2); mk(r0.away, 0, 1, 0, 0); }
+          else if (tx0.indexOf(r0.away) === 0) { mk(r0.away, 1, 0, 0, 2); mk(r0.home, 0, 1, 0, 0); }
+          else { mk(r0.home, 0, 0, 1, 1); mk(r0.away, 0, 0, 1, 1); }
+        });
+        var namesT = (typeof GD !== "undefined" && GD.teams ? GD.teams : []).map(function (t2) { return t2 && t2.name; }).filter(Boolean);
         page.querySelectorAll(".panel, .fo-card").forEach(function (pn) {
           var h = pn.querySelector("h4, .fo-card-h2"); if (!h) return;
           if (!/league table|league standings/i.test(h.textContent || "")) return;
-          var body = pn.querySelector(".pad, .fo-card-b, table"); if (!body || body.__foSlept) return;
-          body.__foSlept = 1;
-          var note = "<div class='fo-live-sleep'>&#128308; Play is underway. The table updates at stumps &middot; " +
-            new Date(em.endsAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + ".</div>";
-          if (body.tagName === "TABLE") { var d2 = document.createElement("div"); d2.innerHTML = note; d2.__foSlept = 1; body.parentNode.replaceChild(d2, body); }
-          else body.innerHTML = note;
+          var tbl = pn.querySelector("table"); if (!tbl || tbl.__foRewind) return;
+          var ths = Array.prototype.slice.call(tbl.querySelectorAll("th")).map(function (x) { return (x.textContent || "").trim().toUpperCase(); });
+          var ci = { P: ths.indexOf("P"), W: ths.indexOf("W"), L: ths.indexOf("L"), T: ths.indexOf("T"), NRR: ths.indexOf("NRR"), PTS: ths.indexOf("PTS") };
+          if (ci.P < 0 || ci.PTS < 0) return;   // unknown shape: leave it alone
+          tbl.__foRewind = 1;
+          var tbody = tbl.tBodies[0] || tbl;
+          var trs = Array.prototype.slice.call(tbody.querySelectorAll("tr")).filter(function (tr) { return tr.querySelector("td"); });
+          trs.forEach(function (tr) {
+            var tds = tr.querySelectorAll("td");
+            var rowTx = tr.textContent || "", nm = null;
+            for (var j = 0; j < namesT.length; j++) if (rowTx.indexOf(namesT[j]) >= 0 && (!nm || namesT[j].length > nm.length)) nm = namesT[j];
+            var a2 = nm && adj[nm]; if (!a2) return;
+            var dec = function (ix2, d2) {
+              if (ix2 < 0 || !tds[ix2] || !d2) return;
+              var v = parseInt(tds[ix2].textContent, 10);
+              if (!isNaN(v)) tds[ix2].textContent = String(Math.max(0, v - d2));
+            };
+            dec(ci.P, a2.p); dec(ci.W, a2.w); dec(ci.L, a2.l); dec(ci.T, a2.t); dec(ci.PTS, a2.pts);
+            if (ci.NRR >= 0 && tds[ci.NRR]) tds[ci.NRR].innerHTML = "<span style='color:#98a2b3'>&ndash;</span>";
+          });
+          // order by the rewound points (stable), then renumber plain position cells
+          trs.map(function (tr, i2) {
+            var v = parseInt(((tr.querySelectorAll("td")[ci.PTS]) || {}).textContent, 10);
+            return { tr: tr, pts: isNaN(v) ? -1 : v, i: i2 };
+          }).sort(function (a3, b3) { return (b3.pts - a3.pts) || (a3.i - b3.i); })
+            .forEach(function (x2, k2) {
+              tbody.appendChild(x2.tr);
+              var c0 = x2.tr.querySelector("td");
+              if (c0 && /^\d*$/.test((c0.textContent || "").trim())) c0.textContent = String(k2 + 1);
+            });
+          if (!pn.querySelector(".fo-live-sleep")) {
+            var note2 = document.createElement("div");
+            note2.className = "fo-live-sleep";
+            note2.innerHTML = "&#128308; Round on air &middot; the table shows the standings before today's round. Final positions and NRR land at stumps &middot; " +
+              new Date(em.endsAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + ".";
+            tbl.parentNode.insertBefore(note2, tbl);
+          }
         });
       } catch (e) {}
     }
@@ -13465,8 +13563,8 @@
             if (em.pre) {
               var pv = ""; try { pv = foMatchPreviewHTML(r, em.round); } catch (ePv) {}
               document.getElementById("page").innerHTML =
-                "<div class='crumb'>" + E(r.home) + " v " + E(r.away) + " &raquo; Matchday</div>" +
-                "<div class='fo-live-hero'><div class='fo-live-tag'>MATCHDAY &middot; 9:00 AM ET</div>" +
+                "<div class='crumb'>" + foClubLink(r.home) + " v " + foClubLink(r.away) + " &raquo; Matchday</div>" +
+                "<div class='fo-live-hero'><div class='fo-live-tag'>MATCHDAY &middot; LEAGUE &middot; ROUND " + (em.round + 1) + " &middot; 9:00 AM ET</div>" +
                 "<div class='fo-live-score'>" + E(r.home) + " v " + E(r.away) + "</div>" +
                 "<div class='fo-live-sub'>" + E(r.ground || "") + (r.pitch ? " &middot; " + foPitchName(r.pitch) + " pitch" : "") + (r.weather ? " &middot; " + E(r.weather) : "") + " &middot; play begins on the hour, ball by ball</div></div>" + pv;
               return;
@@ -13501,11 +13599,13 @@
                 (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, cfL, 5000) : "") + "</div></div></div>";
             }
             document.getElementById("page").innerHTML =
-              "<div class='crumb'>" + E(r.home) + " v " + E(r.away) + " &raquo; Live</div>" +
-              "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE</div>" +
+              "<div class='crumb'>" + foClubLink(r.home) + " v " + foClubLink(r.away) + " &raquo; Live</div>" +
+              "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE &middot; LEAGUE &middot; ROUND " + (em.round + 1) + "</div>" +
               "<div class='fo-live-score'>" + (st ? st.line : "") + (st && st.chase ? " <span class='fo-live-chase'>" + st.chase + "</span>" : "") + "</div>" +
-              "<div class='fo-live-sub'>" + E(r.ground || "") + " &middot; scores update as play unfolds &middot; the full card, charts and ratings arrive at stumps</div>" + l6 + "</div>" +
+              "<div class='fo-live-sub'>" + E(r.ground || "") + (r.pitch ? " &middot; " + foPitchName(r.pitch) + " pitch" : "") + (r.weather ? " &middot; " + E(r.weather) : "") + " &middot; full card and ratings at stumps</div>" + l6 +
+              "<div class='fo-live-watch' id='fo-watchers'></div></div>" +
               creaseL + barL + bodyL;
+            try { foWatchPing("lg-s" + (App.seasonNo || 1) + "-r" + em.round + "-" + q.i); } catch (eWp) {}
             return;
           }
         } catch (e) {}
@@ -13633,6 +13733,11 @@
       ".fo-live-score{font-size:26px;font-weight:800;color:#fff;margin:8px 0 4px;letter-spacing:-.3px}" +
       ".fo-live-chase{font-size:14px;color:#E8C77A;font-weight:700}" +
       ".fo-live-sub{font-size:12px;color:#93a0b4}" +
+      ".fo-live-watch{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:12px;color:#93a0b4;flex-wrap:wrap}" +
+      ".fo-live-watch:empty{display:none}.fo-live-watch b{color:#fff}" +
+      ".fo-watch-past{color:#69758a}" +
+      "#page .crumb a.fo-crumb-club{color:inherit;text-decoration:underline;text-decoration-color:rgba(28,36,51,.25);text-underline-offset:3px}" +
+      "#page .crumb a.fo-crumb-club:hover{color:#C95532}" +
       ".fo-live-row{display:flex;gap:10px;align-items:baseline;padding:9px 0;border-bottom:1px solid #f0ece1;font-size:13px}" +
       ".fo-live-row b{flex:1;color:#111827}.fo-live-row span{color:#DC2626;font-weight:700}" +
       "html body #topbar a.fo-bcast{display:inline-flex;align-items:center;gap:7px;background:#FF0000 !important;border:1px solid #FF0000 !important;color:#fff !important;border-radius:999px !important;padding:5px 13px !important;margin:0 12px 0 2px !important;align-self:center;font-weight:700;font-size:12.5px;letter-spacing:.02em;animation:none;box-shadow:none !important;text-decoration:none !important}" +
