@@ -8155,49 +8155,29 @@
   window.addEventListener("hashchange", function () { [120, 500, 1200].forEach(function (ms) { setTimeout(foStatsOwnRows, ms); }); });
   setInterval(function () { try { foStatsOwnRows(); } catch (e) {} }, 2500);
   // =========================================================================
-  // ORDERS, REBUILT. Managers think in five decisions, not fifty: who bats
-  // where, who opens the bowling, who bowls the middle, who closes. The page
-  // is now a batting list (arrows + C/WK chips - duplicates impossible) and a
-  // phase planner (Powerplay / Middle x2 / Death, two ends per phase, tap a
-  // slot -> pick a bowler). Ends, the 10-over cap and no-consecutive-overs
-  // hold by construction; everything compiles into the engine's own
-  // grid/spells model, so the resolver and the AI captain see exactly what
-  // they always saw. Sub-panels re-render in place - no page rebuilds.
+  // ORDERS, REBUILT. A batting list (arrows + C/WK chips - duplicates are
+  // impossible) and a paint-the-overs bowling board: pick a bowler as the
+  // brush, tap overs to paint his spells - any shape, any length. Everything
+  // compiles into the engine's own grid/spells model, so the resolver and
+  // the AI captain see exactly what they always saw. Sub-panels re-render
+  // in place - no page rebuilds.
   // =========================================================================
-  var FO_ORD_PH = [
-    { lbl: "Powerplay", sub: "overs 1-10", a: 1, b: 10 },
-    { lbl: "Middle", sub: "overs 11-25", a: 11, b: 25 },
-    { lbl: "Middle", sub: "overs 26-40", a: 26, b: 40 },
-    { lbl: "Death", sub: "overs 41-50", a: 41, b: 50 }
-  ];
   var FO_ORD_COLS = ["#2d6a8f", "#a33328", "#1c5537", "#c08a2b", "#6a4a8f", "#0E6E6A", "#8f5a2d"];
-  function foOrdSlotOvers(ph, par) { var out = []; for (var o = ph.a; o <= ph.b; o++) if (o % 2 === par) out.push(o); return out; }
-  function foOrdSlotOwner(ph, par) {
-    var g = App.orders.grid || [], cnt = {}, best = null, tot = 0;
-    foOrdSlotOvers(ph, par).forEach(function (o) { tot++; var nm = g[o]; if (nm) { cnt[nm] = (cnt[nm] || 0) + 1; if (!best || cnt[nm] > cnt[best]) best = nm; } });
-    if (!best) return null;
-    return { nm: best, n: cnt[best], tot: tot, mixed: Object.keys(cnt).length > 1 };
-  }
   function foOrdTotals() {
     var g = App.orders.grid || [], tot = {};
     for (var o = 1; o <= 50; o++) if (g[o]) tot[g[o]] = (tot[g[o]] || 0) + 1;
     return tot;
   }
-  function foOrdSetSlot(phIx, par, nm) {
-    gridState();
-    foOrdSlotOvers(FO_ORD_PH[phIx], par).forEach(function (o) { App.orders.grid[o] = nm || null; });
-    if (nm && (App.orders.gridBowlers || []).indexOf(nm) < 0) App.orders.gridBowlers.push(nm);
-    gridToSpells();
-  }
   function foOrdSurname(nm) { var b = String(nm || "").split(" "); return b.length > 1 ? b.slice(1).join(" ") : nm; }
-  function foOrdPool() {
-    var t = userTeam();
-    return (t.players || []).filter(function (p) { return p.bowlType; })
+  function foOrdPool(withPT) {
+    var t = userTeam(), xi = pickXI(t);
+    var pool = xi.filter(function (p) { return p.bowlType; })
       .sort(function (a, b) { return (isPT(a) - isPT(b)) || (aggBowl(b) - aggBowl(a)); });
+    return withPT ? pool : pool.filter(function (p) { return !isPT(p); });
   }
   function foOrdColors() {
     var map = {};
-    foOrdPool().forEach(function (p, i) { map[p.name] = FO_ORD_COLS[i % FO_ORD_COLS.length]; });
+    foOrdPool(true).forEach(function (p, i) { map[p.name] = FO_ORD_COLS[i % FO_ORD_COLS.length]; });
     return map;
   }
   function foOrdBatRows() {
@@ -8221,47 +8201,17 @@
   function foOrdBowlBody() {
     var v = compilePlan();
     var tot = foOrdTotals(), colors = foOrdColors();
-    var blocks = FO_ORD_PH.map(function (ph, ix) {
-      var slots = [1, 0].map(function (par) {
-        var own = foOrdSlotOwner(ph, par);
-        var lblEnd = par === 1 ? "End A" : "End B";
-        var inner = own
-          ? "<b><em style='background:" + (colors[own.nm] || "#0E233F") + "'></em>" + E(foOrdSurname(own.nm)) + "</b><span>" + own.n + " ov" + (own.mixed || own.n < own.tot ? " · partial" : "") + "</span>"
-          : "<b class='fo-os-ai'>AI decides</b><span>tap to pick</span>";
-        return "<button class='fo-os-slot" + (own ? " set" : "") + "' data-fo-slot='" + ix + ":" + par + "' style='" + (own ? "border-left:3px solid " + (colors[own.nm] || "#0E233F") : "") + "'><i>" + lblEnd + "</i>" + inner + "</button>";
-      }).join("");
-      return "<div class='fo-os-ph'><div class='fo-os-phl'><b>" + ph.lbl + "</b><span>" + ph.sub + "</span></div><div class='fo-os-slots'>" + slots + "</div></div>";
-    }).join("");
-    // timeline: fifty cells, coloured by bowler, phase gaps
-    var g = App.orders.grid || [], cells = "";
-    for (var o = 1; o <= 50; o++) {
-      var nm = g[o];
-      cells += "<i title='over " + o + (nm ? " · " + E(nm) : " · AI decides") + "' style='background:" + (nm ? (colors[nm] || "#888") : "#E8E4D8") + "'></i>";
-      if (o === 10 || o === 25 || o === 40) cells += "<u></u>";
-    }
-    var chips = Object.keys(tot).map(function (nm) {
-      var over = tot[nm] > 10;
-      return "<span class='fo-os-tchip" + (over ? " bad" : "") + "'><i style='background:" + (colors[nm] || "#888") + "'></i>" + E(foOrdSurname(nm)) + " " + tot[nm] + "/10</span>";
-    }).join("");
-    var covered = v.covered || 0;
-    var bad = (v.warns || []).filter(function (w) { return /double-booked|consecutive|max 10|not a/.test(w); });
-    return blocks +
-      "<div class='fo-os-tl'>" + cells + "</div>" +
-      "<div class='fo-os-tot'>" + chips + "<span class='fo-os-cov'>" + covered + "/50 overs planned" + (covered < 50 ? " · the AI captain covers the rest" : "") + "</span></div>" +
-      (bad.length ? "<div class='fo-os-warn'>&#9888; " + bad.map(E).join(" · ") + "</div>" : "") +
-      "<div style='margin-top:10px'><button class='fo-og-tgl' data-fo-ft>" + (window.__foOrdFT ? "Hide the over-by-over grid" : "Fine-tune every over &rsaquo;") + "</button></div>" +
-      (window.__foOrdFT ? foOrdGrid() : "");
-  }
-  // over-by-over painting for spells the phase slots can't express:
-  // pick a bowler as the brush, tap overs to paint, tap again to clear
-  function foOrdGrid() {
-    var pool = foOrdPool(), colors = foOrdColors();
-    if (window.__foOrdBrush === undefined) window.__foOrdBrush = pool[0] ? pool[0].name : "";
-    var tot = foOrdTotals();
+    var main = foOrdPool(false), all = foOrdPool(true);
+    var pts = all.filter(function (p) { return main.indexOf(p) < 0; });
+    var pool = window.__foOrdPT ? all : main;
+    if (window.__foOrdBrush === undefined || (window.__foOrdBrush && !all.some(function (p) { return p.name === window.__foOrdBrush; })))
+      window.__foOrdBrush = main[0] ? main[0].name : "";
     var chips = pool.map(function (p) {
       var on = window.__foOrdBrush === p.name;
-      return "<button class='fo-og-b" + (on ? " on" : "") + "' data-fo-brush='" + E(p.name) + "'><em style='background:" + (colors[p.name] || "#888") + "'></em>" + E(foOrdSurname(p.name)) + " <u>" + (tot[p.name] || 0) + "</u></button>";
-    }).join("") + "<button class='fo-og-b" + (window.__foOrdBrush === "" ? " on" : "") + "' data-fo-brush=''>&#8709; clear</button>";
+      return "<button class='fo-og-b" + (on ? " on" : "") + "' data-fo-brush='" + E(p.name) + "' title='" + E(p.name) + " · " + E(shortBT(p)) + " · bowl " + Math.round(aggBowl(p) || 0) + "'><em style='background:" + (colors[p.name] || "#888") + "'></em>" + E(foOrdSurname(p.name)) + (isPT(p) ? " <s>pt</s>" : "") + " <u>" + (tot[p.name] || 0) + "</u></button>";
+    }).join("") +
+      "<button class='fo-og-b" + (window.__foOrdBrush === "" ? " on" : "") + "' data-fo-brush=''>&#8709; clear</button>" +
+      (pts.length && !window.__foOrdPT ? "<button class='fo-og-b fo-og-more' data-fo-pt>+ part-timers (" + pts.length + ")</button>" : "");
     var g = App.orders.grid || [], rows = "";
     for (var r0 = 0; r0 < 5; r0++) {
       var cells2 = "";
@@ -8269,10 +8219,18 @@
         var o = r0 * 10 + c0, nm = g[o];
         cells2 += "<button class='fo-og-c' data-fo-cell='" + o + "' title='over " + o + (nm ? " · " + E(nm) : " · AI decides") + "' style='" + (nm ? "background:" + (colors[nm] || "#888") + " !important;color:#FFFEFC !important;border-color:transparent !important" : "") + "'>" + o + "</button>";
       }
-      rows += "<div class='fo-og-row'><span class='fo-og-l'>" + (r0 * 10 + 1) + "&ndash;" + (r0 * 10 + 10) + "</span>" + cells2 + "</div>";
+      var hint = r0 === 0 ? "powerplay" : r0 === 4 ? "death" : "";
+      rows += "<div class='fo-og-row'><span class='fo-og-l'>" + (r0 * 10 + 1) + "&ndash;" + (r0 * 10 + 10) + (hint ? "<i>" + hint + "</i>" : "") + "</span>" + cells2 + "</div>";
     }
-    return "<div class='fo-og'><div class='small' style='margin:8px 0 6px'>Pick a bowler, then tap overs to paint them - any spell length you like. Tap a painted over to clear it.</div>" +
-      "<div class='fo-og-pal'>" + chips + "</div>" + rows + "</div>";
+    var tchips = Object.keys(tot).map(function (nm) {
+      var over = tot[nm] > 10;
+      return "<span class='fo-os-tchip" + (over ? " bad" : "") + "'><i style='background:" + (colors[nm] || "#888") + "'></i>" + E(foOrdSurname(nm)) + " " + tot[nm] + "/10</span>";
+    }).join("");
+    var covered = v.covered || 0;
+    var bad = (v.warns || []).filter(function (w) { return /double-booked|consecutive|max 10|not a/.test(w); });
+    return "<div class='fo-og-pal'>" + chips + "</div>" + rows +
+      "<div class='fo-os-tot'>" + tchips + "<span class='fo-os-cov'>" + covered + "/50 overs planned" + (covered < 50 ? " · the AI captain covers the rest" : "") + "</span></div>" +
+      (bad.length ? "<div class='fo-os-warn'>&#9888; " + bad.map(E).join(" · ") + "</div>" : "");
   }
   function foOrdRepaint(which) {
     var b1 = document.getElementById("fo-bat-rows"), b2 = document.getElementById("fo-bowl-body");
@@ -8341,7 +8299,7 @@
       "<div class='small' style='margin-bottom:6px'>Arrows move a batter · tap <b>C</b> for captain, <b>WK</b> for the gloves.</div>" +
       "<div id='fo-bat-rows'>" + foOrdBatRows() + "</div>" + tac + "</div></div>" +
       "<div class='panel fo-keep'><h4>Bowling plan</h4><div class='pad'>" +
-      "<div class='small' style='margin-bottom:8px'>Tap a slot to pick who bowls that end of each phase. Ends alternate, ten overs a bowler, never back-to-back - the plan below stays legal by itself.</div>" +
+      "<div class='small' style='margin-bottom:8px'>Pick a bowler, then tap overs to paint his spells - any shape, any length; tap a painted over to clear it. Ten overs a bowler, and never two in a row.</div>" +
       "<div id='fo-bowl-body'>" + foOrdBowlBody() + "</div></div></div></div>" +
       "<div class='fo-ord-acts'>" +
       "<button class='primary fo-ord-save'>Save orders" + (App.pending ? "" : "") + "</button>" +
@@ -8360,7 +8318,7 @@
           if ((el = q("[data-fo-dn]"))) { var i2 = +el.getAttribute("data-fo-dn"); var a2 = App.orders.batOrder; var tmp2 = a2[i2 + 1]; a2[i2 + 1] = a2[i2]; a2[i2] = tmp2; foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-capt]"))) { App.orders.captain = el.getAttribute("data-fo-capt"); foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-wk]"))) { App.orders.keeper = el.getAttribute("data-fo-wk"); foOrdRepaint("bat"); return; }
-          if ((el = q("[data-fo-ft]"))) { window.__foOrdFT = !window.__foOrdFT; foOrdRepaint("bowl"); return; }
+          if ((el = q("[data-fo-pt]"))) { window.__foOrdPT = 1; foOrdRepaint("bowl"); return; }
           if ((el = q("[data-fo-brush]"))) { window.__foOrdBrush = el.getAttribute("data-fo-brush") || ""; foOrdRepaint("bowl"); return; }
           if ((el = q("[data-fo-cell]"))) {
             gridState();
@@ -8372,7 +8330,6 @@
             foOrdRepaint("bowl");
             return;
           }
-          if ((el = q("[data-fo-slot]"))) { var pr = el.getAttribute("data-fo-slot").split(":"); foOrdSheet(+pr[0], +pr[1]); return; }
           if ((el = q(".fo-ord-save"))) {
             App.orders.saved = true;
             App.defaults = JSON.parse(JSON.stringify(App.orders));
@@ -8453,13 +8410,16 @@
       ".fo-osh-ai b{color:#5a6472}" +
       "html body.ftpskin #page button.fo-og-tgl,html body #page button.fo-og-tgl{border:none !important;background:none !important;color:#B04A2C !important;font-weight:800;font-size:12px;cursor:pointer;padding:0}" +
       ".fo-og-pal{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}" +
-      "html body.ftpskin #page button.fo-og-b,html body #page button.fo-og-b{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(28,36,51,.16) !important;background:#FFFEFC !important;color:#0E233F !important;border-radius:999px;padding:4px 11px;font-size:11.5px;font-weight:700;cursor:pointer}" +
+      "html body.ftpskin #page button.fo-og-b,html body #page button.fo-og-b{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(28,36,51,.16) !important;background:#FFFEFC !important;color:#0E233F !important;border-radius:999px;padding:6px 13px;font-size:12.5px;font-weight:700;cursor:pointer}" +
       "html body.ftpskin #page button.fo-og-b.on,html body #page button.fo-og-b.on{background:#0E233F !important;color:#FFFEFC !important;border-color:#0E233F !important}" +
       ".fo-og-b em{width:9px;height:9px;border-radius:2px;display:inline-block}" +
       ".fo-og-b u{text-decoration:none;color:#8a93a3;font-weight:600}.fo-og-b.on u{color:#c7cfda}" +
       ".fo-og-row{display:flex;gap:3px;align-items:center;margin:3px 0}" +
-      ".fo-og-l{flex:0 0 40px;font-size:9.5px;color:#a7aeba;font-weight:700;text-align:right;padding-right:2px}" +
-      "html body.ftpskin #page button.fo-og-c,html body #page button.fo-og-c{flex:1;min-width:0;height:26px;border:1px solid rgba(28,36,51,.14);background:#FBFAF7;color:#8a93a3;border-radius:6px;font-size:9.5px;cursor:pointer;padding:0}";
+      ".fo-og-l{flex:0 0 46px;font-size:10px;color:#a7aeba;font-weight:700;text-align:right;padding-right:3px;line-height:1.25}" +
+      "html body.ftpskin #page button.fo-og-c,html body #page button.fo-og-c{flex:1;min-width:0;height:36px;border:1px solid rgba(28,36,51,.14);background:#FBFAF7;color:#8a93a3;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;padding:0}" +
+      ".fo-og-b s{text-decoration:none;background:#EEE8FA;color:#5b4a91;border-radius:5px;padding:0 4px;font-size:9px;font-weight:700}" +
+      "html body.ftpskin #page button.fo-og-more,html body #page button.fo-og-more{border-style:dashed !important;color:#8a93a3 !important}" +
+      ".fo-og-l i{display:block;font-style:normal;font-size:8px;color:#c0b9a8;text-transform:uppercase;letter-spacing:.05em;font-weight:800}";
     document.head.appendChild(foOrdCss);
   } catch (e) {}
   try {
