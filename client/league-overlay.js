@@ -2979,9 +2979,9 @@
     var resList = res.map(function (r) {
       var atR = (Date.parse(r.date || "") || 0) + 9 * 3600000, dTxtR = E(r.date || "");
       try {
-        if (r.comp === "league" && r.round != null && typeof foDailyDate === "function") {
-          dTxtR = E(foDailyDate(r.round, { weekday: "short", day: "numeric", month: "short", year: "numeric" })) + " <span class='fo-t'>9:00 AM ET</span>";
+        if (r.comp === "league" && r.round != null) {
           atR = lgAt(r.round);
+          dTxtR = E(foWhenTxt(atR));
         }
       } catch (eDr) {}
       return { at: atR, html: "<tr class='rowlink' data-sc='" + r.ix + "'><td>" + dTxtR + "</td><td>" + E(r.home) + " v " + E(r.away) + "</td><td>" + E(r.result ? r.result.text : "") + "</td></tr>" };
@@ -3037,9 +3037,9 @@
           if (r.result && r.result.winner === mine) myW++; else if (r.result && r.result.winner === t.name) thW++;
           var dTx9 = E(r.date || ""), at9 = Date.parse(r.date || "") || 0;
           try {
-            if (r.comp === "league" && r.round != null && typeof foDailyDate === "function") {
-              dTx9 = E(foDailyDate(r.round, { weekday: "short", day: "numeric", month: "short", year: "numeric" })) + " <span class='fo-t'>9:00 AM ET</span>";
+            if (r.comp === "league" && r.round != null) {
               var dA = new Date(); dA.setHours(9, 0, 0, 0); dA.setDate(dA.getDate() + (r.round - App.season.round) + (foCurAdvanced() ? 1 : 0)); at9 = +dA;
+              dTx9 = E(foWhenTxt(at9));
             }
           } catch (eD9) {}
           meetAll.push({ at: at9, html: "<tr class='rowlink' data-sc='" + r.ix + "'><td>" + dTx9 + "</td><td>" + E(r.result ? r.result.text : "") + "</td></tr>" });
@@ -7959,6 +7959,19 @@
               if (cand && !dupe) hit = { p: cand };
             }
           }
+          if (!hit) {
+            var rn9 = (window.__FO_RENAMES || {})[nmC];
+            if (rn9) hit = findPlayer(rn9);
+          }
+          if (!hit) {
+            var lc9 = nmC.toLowerCase(), cand9 = null, dupe9 = false;
+            (GD.teams || []).forEach(function (t8) {
+              (t8.players || []).forEach(function (p8) {
+                if (p8 && String(p8.name || "").toLowerCase() === lc9) { if (cand9 && cand9 !== p8) dupe9 = true; cand9 = p8; }
+              });
+            });
+            if (cand9 && !dupe9) hit = { p: cand9 };
+          }
           var code = hit && foBowlCode(hit.p);
           if (code) {
             var host = td.querySelector("b") || td;
@@ -7967,6 +7980,13 @@
         });
       });
     } catch (e) {}
+  }
+  // ONE format for every match date-time, in the viewer's own clock:
+  // "11 Jul, 15:00 EDT" - league 9 AMs included, no special red pills
+  function foWhenTxt(ts) {
+    var d = new Date(ts); if (isNaN(d)) return "";
+    var pd = function (n) { return (n < 10 ? "0" : "") + n; };
+    return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + ", " + pd(d.getHours()) + ":" + pd(d.getMinutes()) + (foTzAbbr() ? " " + foTzAbbr() : "");
   }
   // the founding date as a crest inscription for the navy hero banners
   function foEstBadge(t) {
@@ -8765,11 +8785,7 @@
       foFrSchedLoad();
       var t = userTeam(); var me = t.name;
       var mp = !!(SYNC && SYNC.started && !SYNC.practice && LG);
-      var frWhen = function (ts) {
-        var d = new Date(ts); if (isNaN(d)) return "";
-        var pd = function (n) { return (n < 10 ? "0" : "") + n; };
-        return d.toLocaleDateString([], { month: "short", day: "numeric" }) + ", " + pd(d.getHours()) + ":" + pd(d.getMinutes()) + (foTzAbbr() ? " " + foTzAbbr() : "");
-      };
+      var frWhen = function (ts) { return foWhenTxt(ts); };
       // ---- one chronological list: practice + challenges, oldest first ----
       var entries = [];
       (foFriendlies || []).forEach(function (fr, i) {
@@ -8855,12 +8871,12 @@
           var res9 = onAir9
             ? "<a class='fo-frs-live' href='#/scorecard?i=" + r9.ix + "'>" + (emL.pre ? "plays 9:00 AM ET &middot; preview &rsaquo;" : "<span class='live-dot'></span> LIVE &middot; watch &rsaquo;") + "</a>"
             : "<a href='#/scorecard?i=" + r9.ix + "'>" + E((r9.result && r9.result.text) || "played") + "</a>";
-          entries.push({ ts: lgAt9(rIx9), up: onAir9, html: "<tr><td>" + E(foDailyDate(rIx9, { day: "numeric", month: "short" })) + ", 9:00 ET</td><td>League <span class='small'>R" + (rIx9 + 1) + "</span></td><td>" + E(r9.home) + " v " + E(r9.away) + "</td><td>" + res9 + "</td></tr>" });
+          entries.push({ ts: lgAt9(rIx9), up: onAir9, html: "<tr><td>" + E(foWhenTxt(lgAt9(rIx9))) + "</td><td>League <span class='small'>R" + (rIx9 + 1) + "</span></td><td>" + E(r9.home) + " v " + E(r9.away) + "</td><td>" + res9 + "</td></tr>" });
         });
         (typeof foUserFixtures === "function" ? foUserFixtures() : []).slice(0, 5).forEach(function (x9) {
           var isN9 = App.season && x9.round === App.season.round;
           var subIn9 = !!((SYNC && SYNC.submitted && SYNC.submitted[x9.round]) || (App.orders && App.orders.saved && App.season && x9.round === App.season.round));
-          entries.push({ ts: lgAt9(x9.round), up: true, html: "<tr" + (isN9 ? " class='fo-fx-fr'" : "") + "><td>" + E(foDailyDate(x9.round, { day: "numeric", month: "short" })) + ", 9:00 ET</td><td>League <span class='small'>R" + (x9.round + 1) + "</span></td><td>" + (x9.isHome ? "vs " : "@ ") + E(x9.opp.name) + " <span class='small'>" + E(foPitchName(x9.pitch) || "") + (x9.weather ? ", " + E(x9.weather) : "") + "</span></td><td class='r'><button class='mini fo-setr' data-r='" + x9.round + "'>" + (subIn9 ? "Edit lineup" : (isN9 ? "Set lineup" : "Plan lineup")) + "</button>" + (subIn9 ? " <span class='small' style='color:#15803D'>&#10003;</span>" : "") + "</td></tr>" });
+          entries.push({ ts: lgAt9(x9.round), up: true, html: "<tr" + (isN9 ? " class='fo-fx-fr'" : "") + "><td>" + E(foWhenTxt(lgAt9(x9.round))) + "</td><td>League <span class='small'>R" + (x9.round + 1) + "</span></td><td>" + (x9.isHome ? "vs " : "@ ") + E(x9.opp.name) + " <span class='small'>" + E(foPitchName(x9.pitch) || "") + (x9.weather ? ", " + E(x9.weather) : "") + "</span></td><td class='r'><button class='mini fo-setr' data-r='" + x9.round + "'>" + (subIn9 ? "Edit lineup" : (isN9 ? "Set lineup" : "Plan lineup")) + "</button>" + (subIn9 ? " <span class='small' style='color:#15803D'>&#10003;</span>" : "") + "</td></tr>" });
         });
       } catch (eLgRows) {}
       // upcoming (live, on, awaiting reply, ready to play) first - soonest at
@@ -12183,11 +12199,11 @@
                 var rIx9 = (e.r || 0) - 1;
                 var res9 = (App.results || []).filter(function (r9) { return r9 && r9.comp === "league" && r9.round === rIx9 && (r9.home + " v " + r9.away) === it.teams; })[0];
                 if (res9 && res9.ix != null) it.sc = res9.ix;
-                if (typeof foDailyDate === "function" && rIx9 >= 0) {
-                  it.dateTxt = E(foDailyDate(rIx9, { weekday: "short", day: "numeric", month: "short", year: "numeric" })) + " <span class='fo-t'>9:00 AM ET</span>";
+                if (rIx9 >= 0) {
                   var dL9 = new Date(); dL9.setHours(9, 0, 0, 0);
                   dL9.setDate(dL9.getDate() + (rIx9 - App.season.round) + (foCurAdvanced() ? 1 : 0));
                   it.at = +dL9;
+                  it.dateTxt = E(foWhenTxt(it.at));
                 }
               }
             } catch (e9) {}
@@ -12217,7 +12233,7 @@
             if (seenK[key2]) return;   // a practice game played on this device is already in local history
             seenK[key2] = 1;
             var at2 = Date.parse(c.play_at || "") || 0, d2 = new Date(at2);
-            items.push({ at: at2, fr: true, id: c.id, teams: teams2, bat: bat2, bowl: bowl2, dateTxt: E(d2.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })) + " " + pad0(d2.getHours()) + ":" + pad0(d2.getMinutes()) });
+            items.push({ at: at2, fr: true, id: c.id, teams: teams2, bat: bat2, bowl: bowl2, dateTxt: E(foWhenTxt(at2)) });
           });
           items.sort(function (a, b) { return b.at - a.at; });
           var head0 = rmTb.querySelector("tr");
