@@ -7244,10 +7244,12 @@
         if (o === "dot") return "<i>&bull;</i>";
         if (o === "wide") return "<i class='e'>wd</i>";
         if (o === "noball") return "<i class='e'>nb</i>";
+        if (o === "bye") return "<i class='e'>b</i>";
+        if (o === "legbye") return "<i class='e'>lb</i>";
         if (o && o.charAt(0) === "w") return "<i class='w'>W</i>";
         if (o === "4") return "<i class='f'>4</i>";
         if (o === "6") return "<i class='s'>6</i>";
-        return "<i>" + E(String(o)) + "</i>";
+        return "<i>" + E(String(o).slice(0, 2)) + "</i>";
       };
       return "<div class='fo-l6'><span class='fo-l6-k'>Last 6 balls</span>" + balls.map(chip).join("") + "</div>";
     } catch (e) { return ""; }
@@ -11424,7 +11426,8 @@
     cs.textContent =
       "html body .fo-sci-head{display:flex;justify-content:space-between;align-items:baseline;background:#07162E !important;color:#FFFEFC !important;padding:11px 14px;font-size:14.5px}" +
       "html body .fo-sci-head b{font-size:14.5px;color:#fff !important;text-transform:uppercase;letter-spacing:.04em}html body .fo-sci-head em{font-style:normal;color:#9aa3b2;font-size:12px}html body .fo-sci-head span{color:#FFFEFC !important}html body .fo-sci-head n{font-size:17px;font-weight:800}" +
-      ".fo-sci-tgt{background:#0E233F;color:#c7cfda;padding:0 14px 10px;font-size:12px;font-weight:600}" +
+      "html body .fo-sci-tgt{background:#0E233F !important;color:#FFFEFC !important;padding:0 14px 10px;font-size:12.5px;font-weight:700}" +
+      "html body .fo-sci-tgt::first-letter{color:#FFFEFC}" +
       "html body .fo-sci-head{cursor:pointer;user-select:none}" +
       ".fo-sci-tgl{font-style:normal;text-decoration:none;margin-left:9px;color:#9aa3b2;display:inline-block;transition:transform .15s}" +
       ".fo-sci-closed .fo-sci-tgl{transform:rotate(-90deg)}" +
@@ -11488,11 +11491,11 @@
       ".fo-ratingswrap .small{font-size:10px !important}" +
       "}" +
       // scorecard sub-tabs: one scrolling row of pills, matching the app nav
-      "html body .fo-sctabs{display:flex;flex-wrap:nowrap;gap:7px;margin:12px 0 12px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}" +
+      "html body .fo-sctabs{display:flex;flex-wrap:nowrap;gap:2px;margin:12px 0 12px;overflow-x:auto;padding:0;border-bottom:2px solid #DDD8CF;scrollbar-width:none;-webkit-overflow-scrolling:touch}" +
       "html body .fo-sctabs::-webkit-scrollbar{display:none}" +
-      "html body #page .fo-sctab{flex:0 0 auto;font-size:13px !important;font-weight:600;padding:9px 16px !important;border:1px solid #DDD8CF !important;background:#FFFEFC !important;color:#3c4658 !important;border-radius:999px !important;cursor:pointer;white-space:nowrap;line-height:1.1;transition:border-color .12s ease;box-shadow:none !important}" +
-      "html body #page .fo-sctab:hover{border-color:#c9c2b2 !important}" +
-      "html body #page .fo-sctab.on{background:#C95532 !important;border-color:#C95532 !important;color:#fff !important;font-weight:800;box-shadow:0 3px 10px rgba(201,85,50,.28) !important}" +
+      "html body #page .fo-sctab{flex:0 0 auto;font-size:13px !important;font-weight:700;padding:9px 15px !important;border:none !important;border-bottom:3px solid transparent !important;background:transparent !important;color:#5a6472 !important;border-radius:0 !important;cursor:pointer;white-space:nowrap;line-height:1.1;margin-bottom:-2px;transition:color .12s ease;box-shadow:none !important}" +
+      "html body #page .fo-sctab:hover{color:#0E233F !important}" +
+      "html body #page .fo-sctab.on{background:transparent !important;border-bottom-color:#C95532 !important;color:#0E233F !important;font-weight:800;box-shadow:none !important}" +
       "html body .fo-sctabs + .ftpskin{border-top:none;padding-top:0}";
     document.head.appendChild(cs);
   })(); } catch (e) { console.warn("scorecard+fantasy", e); }
