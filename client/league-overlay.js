@@ -704,6 +704,7 @@
     ".fo-c2-fx{min-height:44px}.fo-c2-wr{min-height:44px}" +
     ".fo-live-hero .fo-live-score{white-space:nowrap;font-size:clamp(17px,5.6vw,26px) !important;letter-spacing:-.3px}" +
     ".fo-live-hero .fo-live-score .fo-live-chase{display:block;white-space:normal;font-size:14px;margin-top:5px;letter-spacing:0}" +
+      ".fo-live-hero .fo-live-score.fo-live-vs{white-space:normal;line-height:1.25}" +
     ".fo-o-news .fo-nr-row{display:block;position:relative;padding:9px 48px 9px 0}" +
     ".fo-o-news .fo-nr-row u{display:block;margin-top:2px;font-size:11.5px}" +
     ".fo-o-news .fo-nr-row i{position:absolute;right:0;top:10px}" +
@@ -8543,7 +8544,7 @@
           } catch (ePv9) {}
           var preHtml = "<div id='fo-fr-live'>" + head +
             "<div class='fo-live-hero'><div class='fo-live-tag'>" + kindP.toUpperCase() + " &middot; " + when + (foTzAbbr() ? " " + foTzAbbr() : "") + "</div>" +
-            "<div class='fo-live-score'>" + title + "</div>" +
+            "<div class='fo-live-score fo-live-vs'>" + title + "</div>" +
             "<div class='fo-live-sub'>" + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + (lockedP ? " &middot; lineups are locked" : "") + " &middot; play begins on the hour, ball by ball</div>" +
             "<div class='fo-pv-cdw'><span class='fo-pv-cdk'>First ball in</span><b class='fo-pv-cd' id='fo-fr-cd'>" + foCdText(Date.parse(c.play_at) - Date.now()) + "</b></div>" +
             "<div class='fo-live-watch' id='fo-watchers'></div></div>" + pv9 + "</div>";
@@ -8567,7 +8568,7 @@
         }
         if (st.phase === "live" && !c.result) {
           page.innerHTML = head + "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> DELAYED AT THE TOSS</div>" +
-            "<div class='fo-live-score'>" + title + "</div>" +
+            "<div class='fo-live-score fo-live-vs'>" + title + "</div>" +
             "<div class='fo-live-sub'>The league engine is warming up &middot; play catches up the moment it arrives. Keep this page open.</div></div>";
           return;
         }
@@ -13644,7 +13645,7 @@
               document.getElementById("page").innerHTML =
                 "<div class='crumb'>" + foClubLink(r.home) + " v " + foClubLink(r.away) + " &raquo; Matchday</div>" +
                 "<div class='fo-live-hero'><div class='fo-live-tag'>MATCHDAY &middot; LEAGUE &middot; ROUND " + (em.round + 1) + " &middot; 9:00 AM ET</div>" +
-                "<div class='fo-live-score'>" + E(r.home) + " v " + E(r.away) + "</div>" +
+                "<div class='fo-live-score fo-live-vs'>" + E(r.home) + " v " + E(r.away) + "</div>" +
                 "<div class='fo-live-sub'>" + E(r.ground || "") + (r.pitch ? " &middot; " + foPitchName(r.pitch) + " pitch" : "") + (r.weather ? " &middot; " + E(r.weather) : "") + " &middot; play begins on the hour, ball by ball</div></div>" + pv;
               return;
             }
