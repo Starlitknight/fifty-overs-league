@@ -1494,6 +1494,9 @@
           map[nm] = { human: true, manager: mem.display_name || "manager", mid: r.manager_id, est: r.updated_at || null, lastSeen: mem.last_seen || null };
         });
         window.__foClubMeta = map;
+        try { lsSet("fol_clubmeta_" + LG.id, JSON.stringify(map)); } catch (eC) {}
+        // pages painted before the fetch landed guessed "bot" - repaint
+        try { var pg0 = document.getElementById("page"); if (pg0) pg0.__scoutSig = null; foRenderScout(); } catch (eR) {}
       };
       sel("league_clubs", "league_id=eq." + LG.id + "&select=club,manager_id,updated_at").then(function (clubs) {
         sel("members", "league_id=eq." + LG.id + "&select=id,display_name,last_seen").then(function (mem) { done(clubs, mem); })
@@ -1503,10 +1506,20 @@
       }).catch(function () {});
     } catch (e) {}
   }
-  function foClubHuman(nm) { var m = window.__foClubMeta; return !!(m && m[nm]); }
-  function foClubManager(nm) { var m = window.__foClubMeta; return (m && m[nm] && m[nm].manager) || null; }
+  // the last fetched roster survives a refresh, so human clubs never flash
+  // as bots while the live fetch is in flight
+  function foClubMetaNow() {
+    if (window.__foClubMeta) return window.__foClubMeta;
+    try {
+      var c = JSON.parse(lsGet("fol_clubmeta_" + (LG ? LG.id : "solo")) || "null");
+      if (c) window.__foClubMeta = c;
+    } catch (e) {}
+    return window.__foClubMeta;
+  }
+  function foClubHuman(nm) { var m = foClubMetaNow(); return !!(m && m[nm]); }
+  function foClubManager(nm) { var m = foClubMetaNow(); return (m && m[nm] && m[nm].manager) || null; }
   function foClubOnline(nm) {
-    var m = window.__foClubMeta, e = m && m[nm];
+    var m = foClubMetaNow(), e = m && m[nm];
     if (!e || !e.lastSeen) return null;
     return (Date.now() - new Date(e.lastSeen).getTime()) < 5 * 60000;
   }
@@ -2473,6 +2486,7 @@
             var on = foClubOnline(t.name);
             return " · Manager <b>" + E(foClubManager(t.name) || "") + "</b>" + (on === null ? "" : " <i class='fo-dot " + (on ? "fo-dot-on" : "fo-dot-off") + "' title='" + (on ? "online" : "offline") + "'></i>");
           }
+          if (!foClubMetaNow()) return "";   // roster still loading: say nothing rather than guess
           return " · <span class='fo-bot-chip'>BOT · computer managed</span>";
         } catch (e) { return ""; }
       })() + "</div>" +
