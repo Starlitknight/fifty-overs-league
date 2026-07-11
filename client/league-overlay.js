@@ -579,6 +579,7 @@
     ".fo-c2-crest{flex:0 0 74px;width:74px;height:74px;border-radius:16px;background:#FFFEFC;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.3)}" +
     ".fo-c2-crest img{width:62px;height:62px;border-radius:12px}" +
     ".fo-c2-idt{min-width:0}" +
+    ".fo-c2-eyebrow{display:none}" +
     "html body #page .fo-c2-name{margin:0;font-size:40px;line-height:1;color:#FFFEFC;letter-spacing:-.5px;text-transform:uppercase;font-weight:800}" +
     ".fo-c2-meta{font-size:13px;color:#c7cfda;margin-top:7px}.fo-c2-meta u{text-decoration:none;color:#5a6b83;margin:0 2px}.fo-c2-meta .fo-c2-gold,.fo-c2-gold{color:#F5C36B;font-weight:800}" +
     "@media(max-width:700px){html body #page .fo-c2-name{font-size:31px !important}}" +
@@ -629,8 +630,14 @@
     // !important because the engine restyle paints [class*=hero] !important.
     "@media(max-width:700px){" +
     "html body #page .fo-c2-hero{grid-template-columns:1fr;padding:0;gap:12px;background:none !important;box-shadow:none;margin:8px 0 14px}" +
-    "html body #page .fo-c2-id{position:relative;overflow:hidden;background:linear-gradient(135deg,#0E233F,#07162E 62%) !important;border-radius:14px;padding:26px 20px 24px;box-shadow:0 10px 30px rgba(7,22,46,.25)}" +
+    "html body #page .fo-c2-id{position:relative;overflow:hidden;background:linear-gradient(135deg,#0E233F,#07162E 62%) !important;border-radius:14px;padding:22px 20px 22px 24px;box-shadow:0 10px 30px rgba(7,22,46,.25)}" +
     "html body #page .fo-c2-id::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(#C95532,#4DA6A2)}" +
+    ".fo-c2-id .fo-c2-eyebrow{display:block;font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#C95532;margin-bottom:7px}" +
+    "html body #page .fo-c2-id .fo-c2-name{text-transform:none !important;letter-spacing:-.4px;line-height:1.08;font-weight:800}" +
+    ".fo-c2-id .fo-c2-mgr{margin-top:6px;font-size:12.5px;color:#93a0b4}" +
+    ".fo-c2-id .fo-c2-meta{margin-top:8px;color:#aeb9c9;line-height:1.55}" +
+    ".fo-c2-id .fo-c2-frow{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 26px;align-items:start;margin-top:16px}" +
+    ".fo-c2-id .fo-c2-mood{font-size:14px;white-space:nowrap}" +
     "html body #page .fo-c2-id .fo-c2-mgr{font-size:13px}" +
     "html body #page .fo-c2-id .fo-c2-meta{font-size:14px}" +
     "html body #page .fo-c2-id .fo-c2-mood{font-size:16px}" +
@@ -674,6 +681,7 @@
     "html body #page .fo-c2-next .fo-next-cta{height:44px;width:100%}" +
     ".fo-c2-wmore{min-height:44px;font-size:13px}" +
     ".fo-c2-fx{min-height:44px}.fo-c2-wr{min-height:44px}" +
+    ".fo-live-hero .fo-live-score{white-space:nowrap;font-size:clamp(17px,5.6vw,26px) !important;letter-spacing:-.3px}" +
     ".fo-o-news .fo-nr-row{display:block;position:relative;padding:9px 48px 9px 0}" +
     ".fo-o-news .fo-nr-row u{display:block;margin-top:2px;font-size:11.5px}" +
     ".fo-o-news .fo-nr-row i{position:absolute;right:0;top:10px}" +
@@ -1641,6 +1649,17 @@
       var go = null;
       try { if (typeof M !== "undefined" && M && !M.done) go = "#/match"; } catch (e0) {}
       if (!go) { try { var em = (typeof foEmbargo === "function") ? foEmbargo() : null; if (em && em.active && !em.pre) go = "#/matchday"; } catch (e1) {} }
+      if (!go) {
+        // a friendly or practice broadcast of MY club counts as on air too
+        try {
+          var myNm = null; try { myNm = (foMyClub() || userTeam()).name; } catch (eN) {}
+          ((window.__foFrAll) || []).forEach(function (c2) {
+            if (go || !c2 || (c2.status !== "accepted" && c2.status !== "played")) return;
+            if (myNm && c2.challenger_club !== myNm && c2.opponent_club !== myNm) return;
+            try { if (foFrBcastState(c2).phase === "live") go = "#/friendly?id=" + c2.id; } catch (eS) {}
+          });
+        } catch (e2) {}
+      }
       if (go) { ml.setAttribute("data-go", go); ml.classList.add("on"); } else ml.classList.remove("on");
     } catch (e) {}
   }
@@ -2529,6 +2548,7 @@
       if (posLineTop) metaBits.push("<b class='fo-c2-gold'>" + posLineTop + "</b>");
       var hero = "<div class='fo-c2-hero'>" +
         "<div class='fo-c2-id'><div class='fo-c2-idt'>" +
+        "<div class='fo-c2-eyebrow'>Your club</div>" +
         "<h1 class='fo-c2-name'>" + E(t.name) + "</h1>" +
         "<div class='fo-c2-mgr'>Manager: <b>" + E((SYNC && SYNC.me && SYNC.me.display_name) || "you") + "</b> <i class='fo-dot fo-dot-on'></i></div>" +
         "<div class='fo-c2-meta'>" + metaBits.join(" <u>&middot;</u> ") + "</div>" +
