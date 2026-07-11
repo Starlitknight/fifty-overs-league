@@ -1567,18 +1567,28 @@
   } catch (e) {}
   // the mobile drawer: rebuilt from the live nav on every open, so it always
   // mirrors exactly what the pill row would have shown (state, Live pill, Admin)
+  function foMnavClose() {
+    try {
+      var d = document.getElementById("fo-mdrawer");
+      if (d) d.classList.remove("open");
+      document.body.classList.remove("fo-mnav-lock");
+    } catch (e) {}
+  }
   function foMnavToggle() {
     try {
       var d = document.getElementById("fo-mdrawer");
-      if (d && d.classList.contains("open")) { d.classList.remove("open"); return; }
+      if (d && d.classList.contains("open")) { foMnavClose(); return; }
       if (!d) {
         d = document.createElement("div"); d.id = "fo-mdrawer";
         document.body.appendChild(d);
-        window.addEventListener("hashchange", function () { d.classList.remove("open"); });
+        window.addEventListener("hashchange", foMnavClose);
+        window.addEventListener("keydown", function (ev) { if (ev.key === "Escape") foMnavClose(); });
       }
-      d.innerHTML = "<div class='fo-mdk'></div><div class='fo-mdp'><div class='fo-mdh'><img src='" + APPICON + "' alt=''> Fifty Overs</div><nav class='fo-mdn'></nav></div>";
-      d.querySelector(".fo-mdk").addEventListener("click", function () { d.classList.remove("open"); });
-      var nav = d.querySelector(".fo-mdn");
+      d.innerHTML = "<div class='fo-mdk'></div><div class='fo-mdp'><div class='fo-mdh'><img src='" + APPICON + "' alt=''> Fifty Overs" +
+        "<button class='fo-mdx' aria-label='Close menu'>&#10005;</button></div><nav class='fo-mdn'></nav><div class='fo-mdf'></div></div>";
+      d.querySelector(".fo-mdk").addEventListener("click", foMnavClose);
+      d.querySelector(".fo-mdx").addEventListener("click", foMnavClose);
+      var nav = d.querySelector(".fo-mdn"), foot = d.querySelector(".fo-mdf");
       var tb = document.getElementById("topbar");
       [].slice.call(tb ? tb.querySelectorAll(".fo-nav-scroll a") : []).forEach(function (a) {
         // skip links the topbar itself hides (engine's retired pages)
@@ -1590,10 +1600,12 @@
         row.className = "fo-mdl" + (a.classList.contains("on") ? " on" : "");
         row.href = a.getAttribute("href") || "#";
         row.textContent = (a.textContent || "").trim();
-        row.addEventListener("click", function (ev) { ev.preventDefault(); d.classList.remove("open"); a.click(); });
-        nav.appendChild(row);
+        row.addEventListener("click", function (ev) { ev.preventDefault(); foMnavClose(); a.click(); });
+        // Log out anchors to the bottom, past a divider, away from the nav
+        (a.classList.contains("fo-logout") ? foot : nav).appendChild(row);
       });
       d.classList.add("open");
+      document.body.classList.add("fo-mnav-lock");
     } catch (e) {}
   }
   function ensureNav() {
@@ -11373,13 +11385,17 @@
       "html body #fo-mnav-btn,html body.ftpskin #fo-mnav-btn{display:none;align-items:center;justify-content:center;width:44px;height:44px;background:transparent !important;border:0 !important;color:#FFFEFC !important;padding:0 !important;margin:0 4px 0 -6px;border-radius:10px;cursor:pointer;box-shadow:none !important}" +
       "#fo-mdrawer{position:fixed;inset:0;z-index:400;display:none}" +
       "#fo-mdrawer.open{display:block}" +
-      "#fo-mdrawer .fo-mdk{position:absolute;inset:0;background:rgba(6,12,24,.55)}" +
-      "#fo-mdrawer .fo-mdp{position:absolute;top:0;left:0;bottom:0;width:min(78vw,300px);background:#0E233F;box-shadow:8px 0 30px rgba(0,0,0,.35);padding:12px 12px 20px;overflow-y:auto;display:flex;flex-direction:column}" +
-      "#fo-mdrawer .fo-mdh{display:flex;align-items:center;gap:9px;color:#FFFEFC;font-weight:800;font-size:16px;padding:8px 8px 14px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:8px}" +
-      "#fo-mdrawer .fo-mdh img{width:28px;height:28px;border-radius:7px}" +
-      "#fo-mdrawer a.fo-mdl{display:flex;align-items:center;min-height:48px;padding:0 14px;border-radius:10px;color:#dfe5ec !important;font-size:15px;font-weight:600;text-decoration:none !important}" +
-      "#fo-mdrawer a.fo-mdl.on{background:#C95532;color:#fff !important;font-weight:800}" +
+      "#fo-mdrawer .fo-mdk{position:absolute;inset:0;background:rgba(5,18,35,.55);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}" +
+      "#fo-mdrawer .fo-mdp{position:absolute;top:0;left:0;width:min(82vw,320px);height:100dvh;background:#0E233F;box-shadow:8px 0 30px rgba(0,0,0,.35);padding:0 12px 14px;display:flex;flex-direction:column}" +
+      "#fo-mdrawer .fo-mdh{flex:0 0 auto;display:flex;align-items:center;gap:9px;height:72px;color:#FFFEFC;font-weight:800;font-size:16px;padding:0 0 0 8px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:8px}" +
+      "#fo-mdrawer .fo-mdh img{width:26px;height:26px;border-radius:6px}" +
+      "html body #fo-mdrawer .fo-mdx,html body.ftpskin #fo-mdrawer .fo-mdx{margin-left:auto;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:transparent !important;border:0 !important;color:#c7cfda !important;font:400 20px/1 inherit !important;border-radius:10px;cursor:pointer;padding:0 !important;box-shadow:none !important}" +
+      "#fo-mdrawer .fo-mdn{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px}" +
+      "#fo-mdrawer a.fo-mdl{flex:0 0 auto;display:flex;align-items:center;min-height:52px;padding:0 16px;border-radius:10px;color:#dfe5ec !important;font-size:17px;font-weight:600;text-decoration:none !important}" +
+      "#fo-mdrawer a.fo-mdl.on{background:rgba(232,90,42,.16);color:#fff !important;box-shadow:inset 3px 0 0 #e85a2a}" +
       "#fo-mdrawer a.fo-mdl:active{background:rgba(255,255,255,.08)}" +
+      "#fo-mdrawer .fo-mdf{flex:0 0 auto;margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,.14)}" +
+      "body.fo-mnav-lock{overflow:hidden !important}" +
       "@media(max-width:820px){" +
       // header: hamburger | Fifty Overs | next-match chip + bell. The nav
       // pills are gone - every link lives in the drawer, at thumb size.
