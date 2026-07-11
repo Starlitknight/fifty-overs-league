@@ -551,6 +551,9 @@
     ".fo-ch-mainc{display:flex;flex-direction:column;gap:14px}" +
     ".fo-ch-sidec{display:flex;flex-direction:column;gap:14px}" +
     "@media(max-width:900px){.fo-ch-cols{grid-template-columns:1fr}}" +
+    ".fo-ch-below{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start;margin-top:14px}" +
+    ".fo-ch-below .fo-ch-leaders{display:grid;grid-template-columns:1fr;gap:14px;margin:0}" +
+    "@media(max-width:900px){.fo-ch-below{grid-template-columns:1fr}}" +
     "html body .fo-news{border-top:3px double #C9C2B2}" +
     "html body .fo-news .fo-card-h2{font-family:Georgia,'Times New Roman',serif;font-size:19px;letter-spacing:.2px;color:#111827}" +
     "html body .fo-ch-sidec .fo-ch-leaders{display:grid;grid-template-columns:1fr;gap:14px}" +
@@ -2210,9 +2213,10 @@
       var quick = "<div class='fo-ch-quick fo-ch-quick2'>" +
         qk("#/matches", "calendar", "Fixtures &amp; results") + qk("#/matchday", "target", "Matchday centre") +
         qk("#/nets", "bat", "Match Lab") + qk("#/guide", "info", "Manual") + "</div>";
-      var html = "<div class='fo-ch fo-ch-min'>" + search + hero + nextPanel + "<div id='fo-chal-alert'></div>" + stats +
-        "<div class='fo-ch-cols'><div class='fo-ch-mainc'>" + newsCard + standings + "</div>" +
-        "<div class='fo-ch-sidec'>" + watchCard + leaders + msCard + "</div></div>" + quick + "</div>";
+      var html = "<div class='fo-ch fo-ch-min'>" + search + hero + nextPanel + "<div id='fo-chal-alert'></div>" +
+        "<div class='fo-ch-cols'><div class='fo-ch-mainc'>" + newsCard + "</div>" +
+        "<div class='fo-ch-sidec'>" + standings + "</div></div>" +
+        "<div class='fo-ch-below'>" + watchCard + leaders + msCard + "</div>" + quick + "</div>";
       setTimeout(foNextFriendly, 80);
 
       var page = document.getElementById("page"); if (!page) return;
