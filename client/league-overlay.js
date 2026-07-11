@@ -12981,7 +12981,7 @@
   try {
     var foLate = document.createElement("style");
     foLate.textContent =
-      "#fo-taptip{position:fixed;left:12px;right:12px;bottom:14px;z-index:200;background:#0E233F;color:#FFFEFC;border-radius:11px;padding:10px 14px;font-size:12.5px;line-height:1.5;box-shadow:0 8px 24px rgba(6,12,24,.35);opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .18s ease,transform .18s ease}" +
+      "#fo-taptip{position:fixed;left:12px;right:12px;bottom:14px;z-index:100002;background:#0E233F;color:#FFFEFC;border-radius:11px;padding:10px 14px;font-size:12.5px;line-height:1.5;box-shadow:0 8px 24px rgba(6,12,24,.35);opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .18s ease,transform .18s ease}" +
       "#fo-taptip.on{opacity:1;transform:none}" +
       "@media(max-width:820px){#fo-toasts{top:auto !important;bottom:64px !important}}" +
       // the scout report stays DARK - refined, with everything inside it
