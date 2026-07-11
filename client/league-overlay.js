@@ -3023,11 +3023,33 @@
       var mine = userTeam().name;
       if (t.name !== mine) {
         var meets = (App.results || []).filter(function (r) { return (r.home === t.name && r.away === mine) || (r.home === mine && r.away === t.name); });
-        var myW = 0, thW = 0;
-        meets.forEach(function (r) { if (r.result && r.result.winner === mine) myW++; else if (r.result && r.result.winner === t.name) thW++; });
-        var meetRows = meets.slice(-4).reverse().map(function (r) {
-          return "<tr class='rowlink' data-sc='" + r.ix + "'><td>" + E(r.date || "") + "</td><td>" + E(r.result ? r.result.text : "") + "</td></tr>";
-        }).join("") || "<tr><td colspan='2' class='small'>You have not met yet. First blood awaits.</td></tr>";
+        var myW = 0, thW = 0, meetAll = [];
+        meets.forEach(function (r) {
+          if (r.result && r.result.winner === mine) myW++; else if (r.result && r.result.winner === t.name) thW++;
+          var dTx9 = E(r.date || ""), at9 = Date.parse(r.date || "") || 0;
+          try {
+            if (r.comp === "league" && r.round != null && typeof foDailyDate === "function") {
+              dTx9 = E(foDailyDate(r.round, { weekday: "short", day: "numeric", month: "short", year: "numeric" })) + " <span class='fo-t'>9:00 AM ET</span>";
+              var dA = new Date(); dA.setHours(9, 0, 0, 0); dA.setDate(dA.getDate() + (r.round - App.season.round) + (foCurAdvanced() ? 1 : 0)); at9 = +dA;
+            }
+          } catch (eD9) {}
+          meetAll.push({ at: at9, html: "<tr class='rowlink' data-sc='" + r.ix + "'><td>" + dTx9 + "</td><td>" + E(r.result ? r.result.text : "") + "</td></tr>" });
+        });
+        // challenge friendlies count too - a rivalry is a rivalry
+        try {
+          (window.__foFrAll || []).forEach(function (cF) {
+            if (!cF || cF.status !== "played" || !cF.result || !cF.result.result_text) return;
+            var pairF = [cF.challenger_club, cF.opponent_club];
+            if (!(pairF.indexOf(t.name) >= 0 && pairF.indexOf(mine) >= 0)) return;
+            if (typeof foFrBcastState === "function" && foFrBcastState(cF).phase !== "done") return;   // still on air: no spoilers
+            var rtF = cF.result.result_text;
+            if (rtF.indexOf(mine) === 0) myW++; else if (rtF.indexOf(t.name) === 0) thW++;
+            var dF9 = new Date(cF.play_at);
+            meetAll.push({ at: +dF9 || 0, html: "<tr class='rowlink' data-fr='" + cF.id + "'><td>" + dF9.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + ", " + ("0" + dF9.getHours()).slice(-2) + ":" + ("0" + dF9.getMinutes()).slice(-2) + " <span class='fo-fr-tag'>Friendly</span></td><td>" + E(rtF) + "</td></tr>" });
+          });
+        } catch (eFh) {}
+        meetAll.sort(function (a9, b9) { return b9.at - a9.at; });
+        var meetRows = meetAll.slice(0, 5).map(function (x9) { return x9.html; }).join("") || "<tr><td colspan='2' class='small'>You have not met yet. First blood awaits.</td></tr>";
         h2h = "<div class='panel'><h4>Head to head</h4><div class='pad'>" +
           "<div class='fo-h2h'><span><b>" + myW + "</b> " + E(mine) + "</span><i>v</i><span><b>" + thW + "</b> " + E(t.name) + "</span></div>" +
           "<table><tr><th>Date</th><th>Result</th></tr>" + meetRows + "</table></div></div>";
@@ -3869,7 +3891,13 @@
       var m = /[?&]n=([^&]+)/.exec(location.hash); if (!m) return;
       var name = decodeURIComponent(m[1]);
       var mine = false;
-      try { var me = userTeam(); mine = (me.players || []).concat(me.youth || []).some(function (p) { return p.name === name; }); } catch (e) {}
+      try {
+        var me = userTeam();
+        var chk = function (nm) { return !!nm && (me.players || []).concat(me.youth || []).some(function (p) { return p.name === nm; }); };
+        // the page may have resolved a link with baggage ("Name 4w", "Name †")
+        // to the real player - judge ownership by the resolved name too
+        mine = chk(name) || chk(window.__foPlayerN);
+      } catch (e) {}
       if (mine) return;                                     // own player · show everything
       page.querySelectorAll(".panel").forEach(function (pn) {
         var h = pn.querySelector("h4"); if (!h) return;
@@ -4764,6 +4792,7 @@
       foRepairBowlerBatting();
       foUniqueNames();
       foHistRepair();
+      foPurgeGhosts();
       if (!SYNC.submittedLoaded) foLoadSubmitted();
       SYNC.started = true;
       var myName = SYNC.myTeam ? SYNC.myTeam.name : null;
@@ -6369,6 +6398,7 @@
           }
           if (fixed) { var q2 = {}; for (var k in q) q2[k] = q[k]; q2.n = fixed; q = q2; }
         }
+        window.__foPlayerN = q && q.n;   // the RESOLVED name, for the privacy check
       } catch (e) {}
       return _pgPlF.call(this, q);
     };
@@ -9757,9 +9787,18 @@
         if (pair.indexOf(r.home) >= 0 && pair.indexOf(r.away) >= 0) meets.push(r0);
       });
     });
-    var h2h = meets.length
-      ? meets.map(function (m2) { return "<div class='fo-pv-h2h'>" + E(m2.result.text) + " <span>R" + ((+m2.round || 0) + 1) + "</span></div>"; }).join("")
-      : "<div class='small'>First meeting of the season.</div>";
+    var h2hRows = meets.map(function (m2) { return "<div class='fo-pv-h2h'>" + E(m2.result.text) + " <span>R" + ((+m2.round || 0) + 1) + "</span></div>"; });
+    // friendlies belong in the rivalry too
+    try {
+      (window.__foFrAll || []).forEach(function (cF) {
+        if (!cF || cF.status !== "played" || !cF.result || !cF.result.result_text) return;
+        var pairF = [cF.challenger_club, cF.opponent_club];
+        if (!(pairF.indexOf(r.home) >= 0 && pairF.indexOf(r.away) >= 0)) return;
+        if (typeof foFrBcastState === "function" && foFrBcastState(cF).phase !== "done") return;
+        h2hRows.push("<div class='fo-pv-h2h'>" + E(cF.result.result_text) + " <span>FR</span></div>");
+      });
+    } catch (eFp) {}
+    var h2h = h2hRows.length ? h2hRows.slice(-5).join("") : "<div class='small'>First meeting of the season.</div>";
     var hs = side(r.home), as2 = side(r.away);
     // the contests inside the contest: each side's big gun against the
     // other's most dangerous bowler
@@ -11386,6 +11425,40 @@
   // result IS a league innings (round recovered from the result); anything
   // else unstamped is a friendly. Also rescues league entries a previous
   // pass wrongly flagged as friendlies.
+  // A snapshot can only contain results for rounds that have been played.
+  // Clobber races during mid-season joins produced "results" for rounds the
+  // season has not reached - dated a week in the future and poisoning
+  // head-to-heads, recent results and player stats. Drop them on every
+  // snapshot apply: a league result at or beyond the current round, or a
+  // roundless league result dated in the future, is impossible.
+  function foPurgeGhosts() {
+    try {
+      if (typeof App === "undefined" || !App || !App.season || !Array.isArray(App.results)) return;
+      var cur = App.season.round;
+      if (typeof cur !== "number" || cur < 0) return;
+      var dropped = 0;
+      App.results = App.results.filter(function (r) {
+        if (!r || r.comp !== "league") return true;
+        if (typeof r.round === "number" && r.round >= cur) { dropped++; return false; }
+        if (r.round == null) {
+          var tG = Date.parse(r.date || "");
+          if (!isNaN(tG) && tG > Date.now() + 26 * 3600000) { dropped++; return false; }
+        }
+        return true;
+      });
+      if (dropped) {
+        var sn = App.seasonNo || 1;
+        Object.keys(App.playerHist || {}).forEach(function (nm) {
+          App.playerHist[nm] = (App.playerHist[nm] || []).filter(function (e2) {
+            return !(e2 && !e2.fr && e2.s === sn && (e2.r || 0) > cur);
+          });
+        });
+        console.warn("Fifty Overs: dropped " + dropped + " impossible future-round result(s)");
+      }
+    } catch (e) {}
+  }
+  window.__foPurgeGhosts = foPurgeGhosts;                       // test hook
+  setTimeout(function () { try { foPurgeGhosts(); } catch (e) {} }, 2500);   // the world loaded before the first sync
   function foHistRepair() {
     try {
       var byKey = {};
