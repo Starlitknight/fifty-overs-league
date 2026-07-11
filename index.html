@@ -9934,9 +9934,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if (SYNC.planRound == null) return;
       foPushRound(SYNC.planRound, App.orders);
       toast("\u2713 Orders are in for Round " + (SYNC.planRound + 1) + " \u00b7 it plays " + foDailyDate(SYNC.planRound, { weekday: "short", day: "numeric", month: "short" }) + " at 9:00 AM ET.");
-      // Don't let the current-round auto-push (pollOnce) resubmit these future-round
-      // orders for the current round · mark the signature as already handled.
-      try { SYNC.lastOrderSig = JSON.stringify(App.orders) + "|" + (App.season ? App.season.round : 0); } catch (e) {}
+      // These orders belong to a FUTURE round. Un-save the working copy so the
+      // current-round auto-push can't resubmit them for today's match - and so
+      // a genuine current-round save later still pushes (the old signature
+      // trick blocked identical lineups from ever uploading).
+      try { App.orders.saved = false; } catch (e) {}
       foRenderPlanner();
     } catch (e) {}
   }
@@ -10025,7 +10027,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260711-0315-b335df";
+  var FO_BUILD = "20260711-0322-559c9e";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10752,39 +10754,61 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (SYNC && SYNC.pollTimer) return;
     if (SYNC) SYNC.pollTimer = setInterval(pollOnce, 15000);
   }
+  // Push the current round's packet (orders + club orders). Runs from the
+  // 15s poll AND the moment Save orders is clicked, so the green states
+  // confirm within a second of saving instead of a poll tick later.
+  function foPushCurrentPacket(force) {
+    if (!LG || !SYNC || SYNC.practice) return;
+    // While planning a future round, don't auto-push the current round's orders.
+    if (!(SYNC.planRound == null && SYNC.started && window.App && App.season && typeof GD !== "undefined" && GD.teams)) return;
+    var tro = foTrainState();
+    var ordersReady = App.orders && App.orders.saved;
+    var sig = (ordersReady ? JSON.stringify(App.orders) : "-") + "|" + JSON.stringify(tro.training) + "|" + JSON.stringify(tro.youthPending.map(function (y) { return y.name; })) + "|" + JSON.stringify((tro.marketPending || []).map(function (y) { return y.name; })) + "|" + JSON.stringify(tro.seatsPending || null) + "|" + (tro.sponsorPending || "") + "|" + App.season.round;
+    if (!force && sig === SYNC.lastOrderSig) return;
+    if (!(ordersReady || Object.keys(tro.training).length || tro.youthPending.length || (tro.marketPending || []).length || tro.seatsPending || tro.sponsorPending)) return;
+    SYNC.lastOrderSig = sig;
+    var pkt = {
+      fo_packet: 1, teamIx: App.teamIx, club: (GD.teams[App.teamIx] || {}).name, round: App.season.round,
+      manager: (SYNC.me && SYNC.me.display_name) || "manager",
+      orders: ordersReady ? App.orders : null,
+      fo_training: tro.training, fo_youth: tro.youthPending, fo_market: tro.marketPending || [], fo_seats: tro.seatsPending || null, fo_sponsor: tro.sponsorPending || null
+    };
+    var pushRound = App.season.round;
+    rpc("push_packet", { p_league_id: LG.id, p_round: pushRound, p_packet: pkt }).then(function () {
+      if (pkt.orders) {
+        SYNC.submitted = SYNC.submitted || {}; SYNC.submitted[pushRound] = true;
+        SYNC.__pushInfo = "R" + (pushRound + 1) + " confirmed " + new Date().toLocaleTimeString();
+        foRefreshLineupButtons();
+      }
+    }).catch(function (e) {
+      SYNC.lastOrderSig = null;                      // retry on the next poll
+      SYNC.__pushInfo = "R" + (pushRound + 1) + " FAILED: " + String((e && e.message) || e).slice(0, 140);
+    });
+  }
+  // the engine's Save orders button is an inline onclick - catch the click as
+  // it bubbles and upload right away (planned rounds too), so every green
+  // state confirms immediately rather than on the next poll
+  document.addEventListener("click", function (ev) {
+    try {
+      var b = ev.target && ev.target.closest ? ev.target.closest("button.primary") : null;
+      if (!b || !/save orders/i.test((b.textContent || "").trim())) return;
+      setTimeout(function () {
+        try {
+          if (!(SYNC && SYNC.started && !SYNC.practice && LG)) return;
+          if (!(App.orders && App.orders.saved)) return;
+          if (SYNC.planRound != null) foPushRound(SYNC.planRound, App.orders);
+          else foPushCurrentPacket(true);
+          foRefreshLineupButtons();
+        } catch (e2) {}
+      }, 40);
+    } catch (e) {}
+  });
   function pollOnce() {
     if (!LG || !SYNC || SYNC.practice) return;   // practice mode is a private local game
     if (SYNC.started && !SYNC.submittedLoaded) { try { foLoadSubmitted(); } catch (e) {} }
     if (SYNC.started && !SYNC.__plannedLoaded) { SYNC.__plannedLoaded = 1; try { foLoadPlanned(); } catch (e) {} }
     try { foRetryPlanned(); } catch (e) {}
-    try {
-      // While planning a future round, don't auto-push the current round's orders.
-      if (SYNC.planRound == null && SYNC.started && window.App && App.season && typeof GD !== "undefined" && GD.teams) {
-        var tro = foTrainState();
-        var ordersReady = App.orders && App.orders.saved;
-        var sig = (ordersReady ? JSON.stringify(App.orders) : "-") + "|" + JSON.stringify(tro.training) + "|" + JSON.stringify(tro.youthPending.map(function (y) { return y.name; })) + "|" + JSON.stringify((tro.marketPending || []).map(function (y) { return y.name; })) + "|" + JSON.stringify(tro.seatsPending || null) + "|" + (tro.sponsorPending || "") + "|" + App.season.round;
-        if (sig !== SYNC.lastOrderSig && (ordersReady || Object.keys(tro.training).length || tro.youthPending.length || (tro.marketPending || []).length || tro.seatsPending || tro.sponsorPending)) {
-          SYNC.lastOrderSig = sig;
-          var pkt = {
-            fo_packet: 1, teamIx: App.teamIx, club: (GD.teams[App.teamIx] || {}).name, round: App.season.round,
-            manager: (SYNC.me && SYNC.me.display_name) || "manager",
-            orders: ordersReady ? App.orders : null,
-            fo_training: tro.training, fo_youth: tro.youthPending, fo_market: tro.marketPending || [], fo_seats: tro.seatsPending || null, fo_sponsor: tro.sponsorPending || null
-          };
-          var pushRound = App.season.round;
-          rpc("push_packet", { p_league_id: LG.id, p_round: pushRound, p_packet: pkt }).then(function () {
-            if (pkt.orders) {
-              SYNC.submitted = SYNC.submitted || {}; SYNC.submitted[pushRound] = true;
-              SYNC.__pushInfo = "R" + (pushRound + 1) + " confirmed " + new Date().toLocaleTimeString();
-              foRefreshLineupButtons();
-            }
-          }).catch(function (e) {
-            SYNC.lastOrderSig = null;                      // retry on the next poll
-            SYNC.__pushInfo = "R" + (pushRound + 1) + " FAILED: " + String((e && e.message) || e).slice(0, 140);
-          });
-        }
-      }
-    } catch (e) {}
+    try { foPushCurrentPacket(false); } catch (e) {}
     // transfer news: tell everyone when a club claims a market player
     if (SYNC.started) {
       sel("league_market", "league_id=eq." + LG.id + "&select=player_name,club,manager_id&order=created_at.desc&limit=6").then(function (rows) {
