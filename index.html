@@ -6923,6 +6923,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-ch-min .fo-chtable td:nth-child(7),.fo-ch-min .fo-chtable th:nth-child(7){width:34px;text-align:right}" +
     ".fo-nr-row b{color:#0a2342;font-weight:700}" +
     ".fo-flg{margin-right:5px;font-style:normal;display:inline-block}" +
+    ".fo-cond-sym{display:inline-flex;vertical-align:-2px;margin:0 1px}" +
     "html body .fo-flg img{width:16px !important;height:11px !important;vertical-align:-1px;border-radius:2px;box-shadow:0 0 0 1px rgba(20,36,58,.12)}" +
     ".fo-c2-hero{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.55fr) minmax(0,1.25fr);gap:24px;align-items:center;background:linear-gradient(135deg,#0a2342,#06182f 70%);border-radius:14px;padding:24px 26px;margin:8px 0 16px;color:#c7cfda}" +
     "@media(max-width:1100px){.fo-c2-hero{grid-template-columns:1fr 1fr}.fo-c2-id{grid-column:1/-1}}" +
@@ -8159,9 +8160,32 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // display names only · the engine's pitch ids never change
   var FO_PITCH_NAMES = { balanced: "Balanced", flat: "Flat", green: "Green", dry: "Crumbling", slow: "Slow", cracked: "Sticky", twoPaced: "Two-paced" };
   function foPitchName(id) { var k = String(id == null ? "" : (id.id || id)).trim(); return FO_PITCH_NAMES[k] || foTitle(k); }
-  // condition symbols for scorecard heroes: the word lives on in the tooltip
-  var FO_PITCH_SYM = { Balanced: "⚖️", Flat: "🛣️", Green: "🌱", Crumbling: "🏜️", Slow: "🐢", Sticky: "🍯", "Two-paced": "🎲" };
-  var FO_WX_SYM = { Sunny: "☀️", Overcast: "☁️", Humid: "💦", Hot: "🌡️", Scorching: "🔥", Drizzle: "🌦️", Windy: "💨", Chilly: "❄️", Misty: "🌫️", "Dew later": "💧" };
+  // condition symbols for scorecard heroes: the same monoline glyphs the
+  // conditions field guide uses (foCondCards), with the word in the tooltip
+  var FO_PITCH_SYM = {
+    Balanced: "<path d='M12 4v16m-5 0h10M7 5.5h10'/><path d='M7 5.5 4 12a3.4 3.4 0 0 0 6 0L7 5.5Zm10 0L14 12a3.4 3.4 0 0 0 6 0l-3-6.5Z'/>",
+    Green: "<path d='M6 20c.5-5-.5-8-2-10M12 20c0-7-.6-10-1.5-13M18 20c-.5-5 .5-8 2-10M12 20c1.5-4 3.5-6 5.5-7'/>",
+    Crumbling: "<path d='M4 19 9 12l3 3 4-7 4 6'/>",
+    Flat: "<path d='M3 15h18M6 9h12'/>",
+    Slow: "<path d='M3 14c2-3 4-3 6 0s4 3 6 0 4-3 6 0'/>",
+    Sticky: "<path d='M4 18 9 10l3 4 5-8'/><path d='M14 6h3v3'/>",
+    "Two-paced": "<path d='M4 9h11M12 6l3 3-3 3M4 16h6M8 14l2 2-2 2'/>"
+  };
+  var FO_WX_SYM = {
+    Sunny: "<circle cx='12' cy='12' r='4'/><path d='M12 2.5V5M12 19v2.5M2.5 12H5M19 12h2.5M5 5l1.8 1.8M17.2 17.2 19 19M19 5l-1.8 1.8M6.8 17.2 5 19'/>",
+    Overcast: "<path d='M7 18h9.5a4 4 0 1 0-.8-7.9A6 6 0 0 0 4.2 12 3.5 3.5 0 0 0 7 18z'/>",
+    Misty: "<path d='M4 9h16M6 13h13M8 17h8'/>",
+    Humid: "<path d='M12 4c3 4 5 6.3 5 8.8a5 5 0 0 1-10 0C7 10.3 9 8 12 4z'/>",
+    Hot: "<path d='M10 4a2 2 0 0 1 4 0v8.6a4 4 0 1 1-4 0V4z'/><path d='M12 9v7'/>",
+    Scorching: "<path d='M12 3c1 3.5 5 5.2 5 9.5a5 5 0 0 1-10 0c0-3 2.2-4.6 3.2-7 .6 1.4 1.8 2 1.8 2Z'/>",
+    Drizzle: "<path d='M7 14h9.5a4 4 0 1 0-.8-7.9A6 6 0 0 0 4.2 8 3.5 3.5 0 0 0 7 14z'/><path d='m9 17-1 2.5M13 17l-1 2.5M17 17l-1 2.5'/>",
+    Windy: "<path d='M9.6 4.6A2 2 0 1 1 11 8H3M12.6 19.4A2 2 0 1 0 14 16H3M17.7 7.7A2.5 2.5 0 1 1 19.5 12H3'/>",
+    Chilly: "<path d='M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9'/>",
+    "Dew later": "<path d='M4 20h16'/><path d='M12 4.5c2.2 3 3.7 4.8 3.7 6.7a3.7 3.7 0 0 1-7.4 0c0-1.9 1.5-3.7 3.7-6.7z'/>"
+  };
+  function foCondSvg(nm, path) {
+    return "<span class='fo-cond-sym' title='" + nm + "'><svg viewBox='0 0 24 24' width='15' height='15' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'>" + path + "</svg></span>";
+  }
   function foCondSymbols() {
     try {
       document.querySelectorAll(".fo-live-sub, .fo-cond-pill").forEach(function (el) {
@@ -8169,10 +8193,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         el.__foSym = 1;
         var h = el.innerHTML, o = h;
         Object.keys(FO_PITCH_SYM).forEach(function (nm) {
-          h = h.replace(new RegExp("\\b" + nm + " pitch\\b", "g"), "<span class='fo-cond-sym' title='" + nm + " pitch'>" + FO_PITCH_SYM[nm] + "</span>");
+          h = h.replace(new RegExp("\\b" + nm + " pitch\\b", "g"), foCondSvg(nm + " pitch", FO_PITCH_SYM[nm]));
         });
         Object.keys(FO_WX_SYM).forEach(function (nm) {
-          h = h.replace(new RegExp("\\b" + nm + "\\b", "g"), "<span class='fo-cond-sym' title='" + nm + "'>" + FO_WX_SYM[nm] + "</span>");
+          h = h.replace(new RegExp("\\b" + nm + "\\b", "g"), foCondSvg(nm, FO_WX_SYM[nm]));
         });
         if (h !== o) el.innerHTML = h;
       });
@@ -10451,7 +10475,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260711-0800-8d63e6";
+  var FO_BUILD = "20260711-0806-230ec5";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
