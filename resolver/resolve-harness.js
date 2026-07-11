@@ -80,7 +80,7 @@
       }),
       bowling: Object.keys(inn.bowlers).map(function(k){ var r=inn.bowlers[k];
         return { name:r.p.name, overs:Math.floor(r.b/6)+'.'+(r.b%6), balls:r.b,
-                 r:r.r, w:r.w, econ:(r.b?+(r.r/(r.b/6)).toFixed(2):0) };
+                 r:r.r, w:r.w, mdn:r.mdn||0, econ:(r.b?+(r.r/(r.b/6)).toFixed(2):0) };
       }),
       fow: inn.fow, pships: inn.pships
     };

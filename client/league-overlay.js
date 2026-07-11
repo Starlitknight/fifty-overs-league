@@ -3064,8 +3064,9 @@
       }),
       bowling: Object.keys(inn.bowlers || {}).map(function (k) {
         var r = inn.bowlers[k];
-        return { name: r.p.name, overs: Math.floor(r.b / 6) + "." + (r.b % 6), balls: r.b, r: r.r, w: r.w, econ: (r.b ? +(r.r / (r.b / 6)).toFixed(2) : 0) };
-      })
+        return { name: r.p.name, overs: Math.floor(r.b / 6) + "." + (r.b % 6), balls: r.b, r: r.r, w: r.w, mdn: r.mdn || 0, econ: (r.b ? +(r.r / (r.b / 6)).toFixed(2) : 0) };
+      }),
+      fow: inn.fow || null, pships: inn.pships || null
     };
   }
   function foSaveFrHist(m) {
@@ -7128,21 +7129,11 @@
   }
   function foFrScoreTables(r) {
     try {
-      return (r.scorecard || []).map(function (inn) {
-        if (!inn) return "";
-        var bat = (inn.batting || []).filter(function (b2) { return b2.b || b2.r || (b2.out && b2.out !== "not out"); }).map(function (b2) {
-          return "<tr><td><b>" + E(b2.name) + "</b><div class='small'>" + E(b2.out || "") + "</div></td><td class='n'><b>" + (b2.r || 0) + (b2.out === "not out" ? "*" : "") + "</b></td><td class='n'>" + (b2.b || 0) + "</td><td class='n'>" + (b2.f4 || 0) + "</td><td class='n'>" + (b2.f6 || 0) + "</td><td class='n'>" + (b2.sr || 0) + "</td></tr>";
-        }).join("");
-        var bowl = (inn.bowling || []).map(function (bw) {
-          return "<tr><td><b>" + E(bw.name) + "</b></td><td class='n'>" + bw.overs + "</td><td class='n'>" + bw.r + "</td><td class='n'>" + bw.w + "</td><td class='n'>" + bw.econ + "</td></tr>";
-        }).join("");
-        return "<div class='panel fo-sci'><div class='fo-sci-head' onclick=\"this.parentNode.classList.toggle('fo-sci-closed')\" title='Tap to collapse'><b>" + E(inn.batTeam) + "</b><span>" + inn.runs + "/" + inn.wkts + " <em>(" + E(String(inn.overs || "")) + " ov)</em><u class='fo-sci-tgl'>&#9662;</u></span></div><div class='pad'>" +
-          "<table class='fo-sct'><thead><tr><th>Batting</th><th class='n'>R</th><th class='n'>B</th><th class='n'>4s</th><th class='n'>6s</th><th class='n'>SR</th></tr></thead><tbody>" + bat + "</tbody></table>" +
-          "<table class='fo-sct' style='margin-top:12px'><thead><tr><th>Bowling</th><th class='n'>O</th><th class='n'>R</th><th class='n'>W</th><th class='n'>Econ</th></tr></thead><tbody>" + bowl + "</tbody></table>" +
-          "</div></div>";
-      }).join("");
-    } catch (e) { return ""; }
+      if (typeof window.foScorecardCards === "function") return window.foScorecardCards(r.scorecard || []);
+    } catch (e) {}
+    return "";
   }
+
   // who is at the crease right now, from the banked per-ball tracker
   function foFrTrackAt(r, upto) {
     var tk = null;
@@ -11213,7 +11204,22 @@
       return best;
     }
     window.foScorecardCards = function (innings) {
-      var all = (innings || []).filter(Boolean);
+      var norm = function (inn) {
+        if (!inn || !inn.batting) return inn;   // engine innings pass through
+        var bl = {};
+        (inn.bowling || []).forEach(function (bw) {
+          bl[bw.name] = { p: { name: bw.name }, r: bw.r || 0, w: bw.w || 0, b: bw.balls != null ? bw.balls : Math.round(parseFloat(bw.overs || 0) * 6), mdn: bw.mdn };
+        });
+        return {
+          batTeam: inn.batTeam, bowlTeam: inn.bowlTeam, runs: inn.runs, wkts: inn.wkts,
+          legal: inn.legal != null ? inn.legal : Math.round(parseFloat(inn.overs || 0) * 6),
+          extras: inn.extras, captBatName: inn.captBatName, fow: inn.fow || null,
+          xi: (inn.batting || []).map(function (b) { return { name: b.name }; }),
+          bat: (inn.batting || []).map(function (b) { return { p: { name: b.name }, r: b.r || 0, b: b.b || 0, f4: b.f4 || 0, f6: b.f6 || 0, out: (b.out && b.out !== "not out") ? b.out : null }; }),
+          bowlers: bl
+        };
+      };
+      var all = (innings || []).filter(Boolean).map(norm);
       if (!all.length) return "";
       var out = "";
       out += all.map(function (inn, idx) {
@@ -11231,24 +11237,29 @@
         var rows = (inn.bat || []).filter(function (b) { return b.b > 0 || b.out; }).map(function (b) {
           played[b.p.name] = 1;
           var sr = b.b ? (100 * b.r / b.b).toFixed(1) : "-";
+          var dis = E(b.out || "not out");
           return "<tr class='" + (b.out ? "" : "fo-sci-no") + "'><td class='fo-sci-nm'>" + playerLink(b.p) + mark(b.p) +
-            "<span class='fo-sci-dis'>" + E(b.out || "not out") + "</span></td>" +
+            "<span class='fo-sci-dis'>" + dis + "</span></td>" +
+            "<td class='fo-sci-disc'>" + dis + "</td>" +
             "<td class='n'><b>" + b.r + (b.out ? "" : "*") + "</b></td><td class='n'>" + b.b + "</td><td class='n'>" + (b.f4 || 0) + "</td><td class='n'>" + (b.f6 || 0) + "</td><td class='n'>" + sr + "</td></tr>";
         }).join("");
         var ex = inn.extras || { wd: 0, nb: 0, b: 0, lb: 0 };
         var exN = ex.wd + ex.nb + ex.b + ex.lb;
         var dnb = (inn.xi || []).filter(function (p) { return !played[p.name]; }).map(function (p) { return playerLink(p); }).join(", ");
-        var fow = (inn.fow || []).map(function (f2) { return "<b>" + f2.w + "-" + f2.sc + "</b> (" + E(f2.who) + ", " + (f2.ov != null ? f2.ov.toFixed(1) : "-") + " ov)"; }).join(", ");
+        var fow = (inn.fow || []).map(function (f2) { return "<b>" + f2.w + "-" + f2.sc + "</b> (" + E(f2.who) + ", " + (f2.ov != null ? (+f2.ov).toFixed(1) : "-") + " ov)"; }).join(" &nbsp; ");
         var bowl = Object.values(inn.bowlers || {}).sort(function (a, b) { return b.w - a.w || a.r - b.r; }).map(function (rr2) {
-          return "<tr><td class='fo-sci-nm'>" + playerLink(rr2.p) + "</td><td class='n'>" + Math.floor(rr2.b / 6) + (rr2.b % 6 ? "." + rr2.b % 6 : "") + "</td><td class='n'>" + (rr2.mdn || 0) + "</td><td class='n'>" + rr2.r + "</td><td class='n'><b>" + rr2.w + "</b></td><td class='n'>" + (rr2.b ? (rr2.r / (rr2.b / 6)).toFixed(2) : "-") + "</td><td class='n'>" + (rr2.wd || 0) + "</td><td class='n'>" + (rr2.nb || 0) + "</td></tr>";
+          return "<tr><td class='fo-sci-nm'>" + playerLink(rr2.p) + "</td><td class='n'>" + Math.floor(rr2.b / 6) + (rr2.b % 6 ? "." + rr2.b % 6 : "") + "</td><td class='n'>" + (rr2.mdn != null ? rr2.mdn : "&ndash;") + "</td><td class='n'>" + rr2.r + "</td><td class='n'><b>" + rr2.w + "</b></td><td class='n'>" + (rr2.b ? (rr2.r / (rr2.b / 6)).toFixed(2) : "-") + "</td></tr>";
         }).join("");
-        return "<div class='panel fo-sci'><div class='fo-sci-head' onclick=\"this.parentNode.classList.toggle('fo-sci-closed')\" title='Tap to collapse'><b>" + E(inn.batTeam) + "</b><span>" + inn.runs + "/" + inn.wkts + " <em>(" + Math.floor(inn.legal / 6) + (inn.legal % 6 ? "." + inn.legal % 6 : "") + " ov)</em><u class='fo-sci-tgl'>&#9662;</u></span></div><div class='pad'>" +
-          "<table class='fo-sct'><thead><tr><th>Batting</th><th class='n'>R</th><th class='n'>B</th><th class='n'>4s</th><th class='n'>6s</th><th class='n'>SR</th></tr></thead><tbody>" + rows +
-          "<tr class='fo-sci-ex'><td>Extras <span>(b " + ex.b + ", lb " + ex.lb + ", w " + ex.wd + ", nb " + ex.nb + ")</span></td><td class='n'><b>" + exN + "</b></td><td colspan='4'></td></tr>" +
-          "<tr class='fo-sci-tot'><td>Total</td><td class='n'><b>" + inn.runs + "/" + inn.wkts + "</b></td><td colspan='4' class='fo-sci-rr'>" + (inn.legal / 6).toFixed(1) + " Ov &middot; RR " + (inn.legal ? (inn.runs / (inn.legal / 6)).toFixed(2) : "0") + "</td></tr></tbody></table>" +
-          (dnb ? "<div class='fo-sci-sec'><b>Did not bat</b> " + dnb + "</div>" : "") +
-          (fow ? "<div class='fo-sci-sec'><b>Fall of wickets</b> " + fow + "</div>" : "") +
-          "<table class='fo-sct fo-sct-bowl'><thead><tr><th>Bowling</th><th class='n'>O</th><th class='n'>M</th><th class='n'>R</th><th class='n'>W</th><th class='n'>Econ</th><th class='n'>Wd</th><th class='n'>Nb</th></tr></thead><tbody>" + bowl + "</tbody></table>" +
+        var ovTxt = Math.floor(inn.legal / 6) + (inn.legal % 6 ? "." + inn.legal % 6 : "");
+        var tgt = (idx === 1 && all[0]) ? "<div class='fo-sci-tgt'>Target: " + (all[0].runs + 1) + "</div>" : "";
+        return "<div class='panel fo-sci'><div class='fo-sci-head' onclick=\"this.parentNode.classList.toggle('fo-sci-closed')\" title='Tap to collapse'><b>" + E(inn.batTeam) + " innings</b><span><n>" + inn.runs + "/" + inn.wkts + "</n> <em>(" + ovTxt + " ov)</em><u class='fo-sci-tgl'>&#9662;</u></span></div>" + tgt + "<div class='pad'>" +
+          "<table class='fo-sct'><thead><tr><th>Batter</th><th class='fo-sci-disc'>Dismissal</th><th class='n'>R</th><th class='n'>B</th><th class='n'>4s</th><th class='n'>6s</th><th class='n'>SR</th></tr></thead><tbody>" + rows +
+          "<tr class='fo-sci-ex'><td>Extras <span>(b " + ex.b + ", lb " + ex.lb + ", w " + ex.wd + ", nb " + ex.nb + ")</span></td><td class='fo-sci-disc'></td><td class='n'><b>" + exN + "</b></td><td colspan='4'></td></tr>" +
+          "<tr class='fo-sci-tot'><td>Total <span class='fo-sci-totsub'>(" + inn.wkts + " wicket" + (inn.wkts === 1 ? "" : "s") + ", " + ovTxt + " overs)</span></td><td class='fo-sci-disc'></td><td class='n'><b>" + inn.runs + "</b></td><td colspan='4' class='fo-sci-rr'>RR " + (inn.legal ? (inn.runs / (inn.legal / 6)).toFixed(2) : "0") + "</td></tr></tbody></table>" +
+          ((dnb || fow) ? "<div class='fo-sci-two'>" +
+            (dnb ? "<div class='fo-sci-box'><b>Did not bat</b><span>" + dnb + "</span></div>" : "") +
+            (fow ? "<div class='fo-sci-box'><b>Fall of wickets</b><span>" + fow + "</span></div>" : "") + "</div>" : "") +
+          "<table class='fo-sct fo-sct-bowl'><thead><tr><th>Bowling (" + E(inn.bowlTeam || "") + ")</th><th class='n'>O</th><th class='n'>M</th><th class='n'>R</th><th class='n'>W</th><th class='n'>Econ</th></tr></thead><tbody>" + bowl + "</tbody></table>" +
           "</div></div>";
       }).join("");
       return out;
@@ -11412,7 +11423,8 @@
     var cs = document.createElement("style");
     cs.textContent =
       "html body .fo-sci-head{display:flex;justify-content:space-between;align-items:baseline;background:#07162E !important;color:#FFFEFC !important;padding:11px 14px;font-size:14.5px}" +
-      "html body .fo-sci-head b{font-size:15.5px;color:#fff !important}html body .fo-sci-head em{font-style:normal;color:#9aa3b2;font-size:12.5px}html body .fo-sci-head span{color:#FFFEFC !important}" +
+      "html body .fo-sci-head b{font-size:14.5px;color:#fff !important;text-transform:uppercase;letter-spacing:.04em}html body .fo-sci-head em{font-style:normal;color:#9aa3b2;font-size:12px}html body .fo-sci-head span{color:#FFFEFC !important}html body .fo-sci-head n{font-size:17px;font-weight:800}" +
+      ".fo-sci-tgt{background:#0E233F;color:#c7cfda;padding:0 14px 10px;font-size:12px;font-weight:600}" +
       "html body .fo-sci-head{cursor:pointer;user-select:none}" +
       ".fo-sci-tgl{font-style:normal;text-decoration:none;margin-left:9px;color:#9aa3b2;display:inline-block;transition:transform .15s}" +
       ".fo-sci-closed .fo-sci-tgl{transform:rotate(-90deg)}" +
@@ -11424,7 +11436,19 @@
       ".fo-sct td{padding:7px 10px;border-bottom:1px solid #f0ece1;vertical-align:top}" +
       ".fo-sci-nm a{font-weight:700;text-decoration:none}" +
       ".fo-sci-dis{display:block;font-size:11.5px;color:#667085;margin-top:1px}" +
-      ".fo-sci-no .fo-sci-dis{color:#2b6b68;font-weight:600}" +
+      "html body #page .fo-sct .fo-sci-nm a{color:#0E233F !important}" +
+      ".fo-sci-no td{background:#FCF4E7}" +
+      "html body #page .fo-sci-no .fo-sci-nm a{color:#B04A2C !important}" +
+      ".fo-sci-no .fo-sci-dis,.fo-sci-no .fo-sci-disc{color:#B04A2C;font-weight:600}" +
+      "td.fo-sci-disc,th.fo-sci-disc{display:none}" +
+      "@media(min-width:680px){td.fo-sci-disc,th.fo-sci-disc{display:table-cell;font-size:12px;color:#5a6472}.fo-sci-nm .fo-sci-dis{display:none}}" +
+      ".fo-sci-totsub{font-weight:400;color:#667085;font-size:12px}" +
+      ".fo-sci-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);gap:8px;padding:9px 10px;border-bottom:1px solid #f0ece1}" +
+      "@media(max-width:640px){.fo-sci-two{grid-template-columns:1fr}}" +
+      ".fo-sci-two>.fo-sci-box:only-child{grid-column:1/-1}" +
+      ".fo-sci-box{background:#FBFAF7;border:1px solid rgba(28,36,51,.08);border-radius:9px;padding:8px 11px;font-size:12px;color:#3a4353;line-height:1.65}" +
+      ".fo-sci-box>b{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#41577a;margin-bottom:2px}" +
+      ".fo-sci-box span b{color:#0E233F}" +
       ".fo-sci-cap{color:#667085;font-size:11px}" +
       ".fo-sci-ex td{color:#667085}.fo-sci-ex span{color:#667085;font-size:11.5px}" +
       ".fo-sci-tot td{background:#EEEAE1;font-size:13.5px;padding:8px 10px}.fo-sci-rr{color:#667085;font-size:12px !important}" +
@@ -11571,6 +11595,13 @@
             txt = txt.replace(/[Tt]he umpire/, "Umpire " + u.split(" ").slice(-1)[0]);
           }
         } catch (e) {}
+        // every delivery names the matchup, broadcast style
+        try {
+          if (bowler && bowler.name && sb && sb.p && sb.p.name) {
+            var sn = function (n) { return String(n).split(" ").slice(-1)[0]; };
+            txt = sn(bowler.name) + " to " + sn(sb.p.name) + ": " + txt;
+          }
+        } catch (e2) {}
         return txt;
       };
       window.comm.__foWorld = 1;
