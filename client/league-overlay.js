@@ -2336,6 +2336,7 @@
         }
         var attached = false;
         try { attached = !!(ch.orders && ch.orders[me]); } catch (eAo) {}
+        var lockedN = untilFr <= 60 * 60000;   // past the lock: preview time, not lineup time
         host2.innerHTML = "<div class='fo-c2-nl'>" +
           "<div class='fo-c2-nk'>Next match &middot; Friendly</div>" +
           "<div class='fo-c2-nopp'>" + (ch.challenger_club === me ? "vs " : "at ") + E(vs) + "</div>" +
@@ -2343,8 +2344,10 @@
           "<div class='fo-c2-nchips'>" + lgChip + "</div></div>" +
           "<div class='fo-c2-nr'><div class='fo-c2-nk'>Match starts in</div><div class='fo-c2-cd' id='fo-cd-fr'></div>" +
           "<div class='fo-c2-nsub'><b>" + when + "</b></div>" +
-          "<div class='fo-c2-ndl'>Lineups lock an hour before kickoff</div>" +
-          "<button class='fo-next-cta" + (attached ? " fo-done" : "") + "' id='fo-fr-prep'>" + (attached ? "Lineup attached &middot; review &rsaquo;" : "Set lineup &rsaquo;") + "</button></div>";
+          "<div class='fo-c2-ndl'>" + (lockedN ? "Lineups are locked" + (attached ? " &middot; &#10003; yours is in" : " &middot; auto XI plays") : "Lineups lock an hour before kickoff") + "</div>" +
+          (lockedN
+            ? "<button class='fo-next-cta' id='fo-fr-prev'>Match preview &rsaquo;</button>"
+            : "<button class='fo-next-cta" + (attached ? " fo-done" : "") + "' id='fo-fr-prep'>" + (attached ? "Lineup attached &middot; review &rsaquo;" : "Set lineup &rsaquo;") + "</button>") + "</div>";
         var tick = function () {
           var el = document.getElementById("fo-cd-fr");
           if (!el) { clearInterval(iv); return; }
@@ -2354,6 +2357,7 @@
         };
         var iv = setInterval(tick, 1000); tick();
         var b = document.getElementById("fo-fr-prep"); if (b) b.addEventListener("click", function () { foChalPrep(ch); });
+        var bPv = document.getElementById("fo-fr-prev"); if (bPv) bPv.addEventListener("click", function () { location.hash = "#/friendly?id=" + ch.id; if (typeof window.route === "function") window.route(); });
       }).catch(function () {});
     } catch (e) {}
   }
