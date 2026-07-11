@@ -46,6 +46,10 @@ async function playChallenges(page) {
         const home = GD.teams.find(t => t.name === ch.challenger_club);
         const away = GD.teams.find(t => t.name === ch.opponent_club);
         if (!home || !away) return { error: 'club missing' };
+        // friendlies play at full freshness: fatigue is a league concern and
+        // must not decide an exhibition. The restored world is thrown away
+        // after the match, so resting here never leaks into the snapshot.
+        [home, away].forEach(t => (t.players || []).forEach(p => { if (p) p.fatigue = 'rested'; }));
         const o = ch.orders || {};
         const r = window.__resolveMatch(home, away, o[home.name] || null, o[away.name] || null,
           { pitch: ch.pitch || 'balanced', weather: ch.weather || 'Sunny', ground: home.ground, friendly: true, seed: (Date.parse(ch.play_at) % 2147483647) });

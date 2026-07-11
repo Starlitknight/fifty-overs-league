@@ -54,6 +54,11 @@ export async function resolveMatch(page, inputs, { pinnedHash } = {}) {
   if (pinnedHash && pinnedHash !== buildHash()) {
     throw new Error(`ENGINE HASH MISMATCH: resolver build ${buildHash()} != pinned ${pinnedHash}`);
   }
+  // friendlies play at full freshness - fatigue only matters in league play
+  if (inputs && inputs.conds && inputs.conds.friendly) {
+    const rested = (club) => ({ ...club, players: (club.players || []).map(p => (p ? { ...p, fatigue: 'rested' } : p)) });
+    inputs = { ...inputs, home: rested(inputs.home), away: rested(inputs.away) };
+  }
   const r = await page.evaluate(({ home, away, homeOrders, awayOrders, conds }) =>
     window.__resolveMatch(home, away, homeOrders, awayOrders, conds),
     inputs);

@@ -2004,6 +2004,15 @@
       if (typeof stepBall !== "function" || typeof startPendingIfNeeded !== "function") return false;
       var pend = App.pending; if (!pend) return false;
       var prevPage = App.page, prevOME = window.onMatchEnd;
+      // practice plays at full freshness: fatigue only matters in league play.
+      // Stash the real ladder and restore it after - the sim mutates players.
+      var fatStash = [];
+      try {
+        [pend.home, pend.away].forEach(function (nm2) {
+          var t9 = (GD.teams || []).filter(function (t8) { return t8 && t8.name === nm2; })[0];
+          ((t9 && t9.players) || []).forEach(function (p9) { if (p9) { fatStash.push([p9, p9.fatigue]); p9.fatigue = "rested"; } });
+        });
+      } catch (eFs) {}
       try {
         window.__foPracRun = 1;
         window.onMatchEnd = function () {};          // practice: no fatigue, no form, no App.results
@@ -2047,6 +2056,7 @@
         return c;
       } finally {
         App.page = prevPage; window.onMatchEnd = prevOME; window.__foPracRun = 0;
+        try { fatStash.forEach(function (x9) { x9[0].fatigue = x9[1]; }); } catch (eFr) {}
         try { M = null; } catch (e1) {}
         App.pending = null;
         try { App.tossState = null; } catch (e2) {}
@@ -2923,8 +2933,24 @@
       return "Friendly";
     };
     var res = (App.results || []).filter(function (r) { return r.home === t.name || r.away === t.name; });
+    // league results are dated by their round on the real ET calendar - the
+    // engine's own r.date runs on a fictional schedule and reads days ahead
+    var lgAt = function (rn) {
+      try {
+        var d9 = new Date(); d9.setHours(9, 0, 0, 0);
+        d9.setDate(d9.getDate() + (rn - App.season.round) + (foCurAdvanced() ? 1 : 0));
+        return +d9;
+      } catch (e9) { return 0; }
+    };
     var resList = res.map(function (r) {
-      return { at: (Date.parse(r.date || "") || 0) + 9 * 3600000, html: "<tr class='rowlink' data-sc='" + r.ix + "'><td>" + E(r.date || "") + "</td><td>" + E(r.home) + " v " + E(r.away) + "</td><td>" + E(r.result ? r.result.text : "") + "</td></tr>" };
+      var atR = (Date.parse(r.date || "") || 0) + 9 * 3600000, dTxtR = E(r.date || "");
+      try {
+        if (r.comp === "league" && r.round != null && typeof foDailyDate === "function") {
+          dTxtR = E(foDailyDate(r.round, { weekday: "short", day: "numeric", month: "short", year: "numeric" })) + " <span class='fo-t'>9:00 AM ET</span>";
+          atR = lgAt(r.round);
+        }
+      } catch (eDr) {}
+      return { at: atR, html: "<tr class='rowlink' data-sc='" + r.ix + "'><td>" + dTxtR + "</td><td>" + E(r.home) + " v " + E(r.away) + "</td><td>" + E(r.result ? r.result.text : "") + "</td></tr>" };
     });
     frMine.forEach(function (c) {
       if (c.status !== "played" || !c.result || foFrBcastState(c).phase !== "done") return;
@@ -7352,7 +7378,7 @@
       ["scouting", "Scouting the opposition", [
         "<p>Tap any club name - on the table, a fixture or a result - to open its <b>scout report</b>: squad strength, batting depth, the shape of the attack (pace against spin), your next meeting and the club&rsquo;s founding date. The <b>Players</b> tab lists their full squad.</p>",
         "<p>Rival players are public people: stats, career tables and dated Moments are all open. Only their <b>skills</b> are private - you judge a rival the way real scouts do, from output. Your players&rsquo; skills are hidden from rivals the same way.</p>",
-        "<p>From a rival&rsquo;s report you can <b>challenge them to a friendly</b>: a no-stakes match between your clubs. Nothing carries over - no money, no fatigue, no points - but pride, obviously, carries forever. Pending challenges, upcoming friendlies and their results all live in the <b>Friendlies</b> panel on the Matches page, and both managers see the same rows. A friendly <b>kicks off at its scheduled time and plays out ball by ball for an hour</b>, live for both managers: the row turns LIVE with a Watch link, the notification bell links straight to the broadcast, and the result stays under embargo until stumps. Attach your lineup at least an hour before the start - the engine prepares the match early. (If the league engine is running late the broadcast reads &ldquo;delayed at the toss&rdquo; and catches up by itself.)</p>"
+        "<p>From a rival&rsquo;s report you can <b>challenge them to a friendly</b>: a no-stakes match between your clubs. Nothing carries over - no money, no fatigue, no points - but pride, obviously, carries forever. Both sides take the field at full freshness: fatigue neither affects a friendly nor carries out of one. Pending challenges, upcoming friendlies and their results all live in the <b>Friendlies</b> panel on the Matches page, and both managers see the same rows. A friendly <b>kicks off at its scheduled time and plays out ball by ball for an hour</b>, live for both managers: the row turns LIVE with a Watch link, the notification bell links straight to the broadcast, and the result stays under embargo until stumps. Attach your lineup at least an hour before the start - the engine prepares the match early. (If the league engine is running late the broadcast reads &ldquo;delayed at the toss&rdquo; and catches up by itself.)</p>"
       ].join("")],
       ["league", "The table, the run rate, the prizes", [
         "<p>Ten clubs, a full round robin, one round a day. Two points a win; ties and washouts split one. Level on points, <b>net run rate</b> decides, so a ten-run win chased lazily and a ten-run win chased hard are not the same result. Margins are money.</p>",
@@ -7360,7 +7386,7 @@
         "<p>Season prizes run <b>$200k, $160k, $130k, $110k, $90k, $75k, $60k, $50k, $40k, $30k</b>, first to tenth. Every place in the final table pays differently, so no fixture is meaningless.</p>"
       ].join("")],
       ["practice", "Practice games", [
-        "<p><b>New practice game</b>, in the Friendlies panel on the Matches page, plays a friendly against any club in your league. You choose the opponent, the pitch, and the weather. Nothing carries over: no money, no fatigue, no points, no consequences.</p>",
+        "<p><b>New practice game</b>, in the Friendlies panel on the Matches page, plays a friendly against any club in your league. You choose the opponent, the pitch, and the weather. Nothing carries over: no money, no fatigue, no points, no consequences - and everyone plays fully rested.</p>",
         "<p>Use it like a professional: rehearse a batting order before a big fixture, audition a young bowler at the death, or play on the exact pitch you&rsquo;ll face away next week. A live practice match can be left and resumed from the <b>&#9679; Live Match</b> link that appears while it&rsquo;s running.</p>"
       ].join("")],
       ["tips", "Ten reliable habits", [
@@ -8088,6 +8114,22 @@
       };
       var pomHtml = "";
       if (potm && potm.n) {
+        // the engine's mom string can arrive as "Jayant Dixit 4w" - figures
+        // glued to the name. Match the longest real player name from the
+        // card and let the figures line below carry the numbers.
+        try {
+          var nRaw = String(potm.n).trim(), best = null;
+          (cards || []).forEach(function (inn9) {
+            if (!inn9) return;
+            ["batting", "bowling"].forEach(function (k9) {
+              (inn9[k9] || []).forEach(function (x9) {
+                if (x9 && x9.name && nRaw.indexOf(x9.name) === 0 && (!best || x9.name.length > best.length)) best = x9.name;
+              });
+            });
+          });
+          if (best) potm = { n: best, team: potm.team, sub: potm.sub };
+          else potm = { n: nRaw.replace(/\s+\d[\w*\/.]*$/, ""), team: potm.team, sub: potm.sub };
+        } catch (eNm) {}
         var pf = figs(potm.n);
         pomHtml = "<div class='fo-mh-r'><div class='fo-mh-k'>Player of the match</div>" +
           "<div class='fo-mh-pn'><a href='#/player?n=" + encodeURIComponent(potm.n) + "'>" + E(potm.n) + "</a>" + (potm.team ? "<span class='fo-mh-pt'> &middot; " + E(potm.team) + "</span>" : "") + "</div>" +
@@ -8414,15 +8456,16 @@
       // ---- one chronological list: practice + challenges, oldest first ----
       var entries = [];
       (foFriendlies || []).forEach(function (fr, i) {
-        entries.push({ ts: Date.now(), html: "<tr class='fo-fx-fr'><td>Now</td><td>Practice</td><td>vs " + E(fr.oppName) + " <span class='small'>" + foPitchName(fr.pitch) + ", " + E(fr.weather || "") + "</span></td><td class='r'><button class='fo-fr-play' data-i='" + i + "'>Play</button> <button class='fo-fr-x' data-i='" + i + "' title='Remove'>&#10005;</button></td></tr>" });
+        entries.push({ ts: Date.now(), up: true, html: "<tr class='fo-fx-fr'><td>Now</td><td>Practice</td><td>vs " + E(fr.oppName) + " <span class='small'>" + foPitchName(fr.pitch) + ", " + E(fr.weather || "") + "</span></td><td class='r'><button class='fo-fr-play' data-i='" + i + "'>Play</button> <button class='fo-fr-x' data-i='" + i + "' title='Remove'>&#10005;</button></td></tr>" });
       });
       try {
         (foFrHist() || []).forEach(function (e2) {
           var ts = +new Date(e2.at) || 0;
-          var res;
+          var res, upP = false;
           var bcP = foPracBc();
           if (bcP && bcP.id === "prac-" + e2.at) {
             var fstP = foFrBcastState(bcP);
+            upP = fstP.phase === "live";
             res = fstP.phase === "live"
               ? "<a class='fo-frs-live' href='#/friendly?id=prac-" + e2.at + "'><span class='live-dot'></span> LIVE &middot; " + foFrLiveLine(bcP, fstP.p) + " &middot; watch &rsaquo;</a>"
               : "<a href='#/friendly?id=prac-" + e2.at + "'>" + E(e2.txt) + "</a>";
@@ -8436,7 +8479,7 @@
             res = ix != null ? "<a href='#/scorecard?i=" + ix + "'>" + E(e2.txt) + "</a>" : E(e2.txt);
           }
           var cond = (e2.pitch || e2.wx) ? " <span class='small'>" + foPitchName(e2.pitch || "") + (e2.wx ? ", " + E(e2.wx) : "") + "</span>" : (e2.ground ? " <span class='small'>" + E(e2.ground) + "</span>" : "");
-          entries.push({ ts: ts, html: "<tr><td>" + frWhen(e2.at) + "</td><td>Practice</td><td>vs " + E(e2.opp) + cond + "</td><td>" + res + "</td></tr>" });
+          entries.push({ ts: ts, up: upP, html: "<tr><td>" + frWhen(e2.at) + "</td><td>Practice</td><td>vs " + E(e2.opp) + cond + "</td><td>" + res + "</td></tr>" });
         });
       } catch (eH) {}
       if (mp && window.__foFrRows) {
@@ -8469,11 +8512,17 @@
             if (!seen[c.id]) { toast("Friendly result: " + (c.result.result_text || "played")); seen[c.id] = 1; }
           }
           var typLbl = "Friendly"; try { if (!foClubHuman(vs)) typLbl = "Practice"; } catch (eTL) {}
-          entries.push({ ts: ts, html: "<tr><td>" + when + "</td><td>" + typLbl + "</td><td>" + (mineSent ? "vs " : "from ") + E(vs) + " <span class='small'>" + foPitchName(c.pitch) + ", " + E(c.weather || "") + "</span></td><td>" + act + "</td></tr>" });
+          var upC = c.status === "pending" || c.status === "accepted" || (c.status === "played" && fst.phase === "live");
+          entries.push({ ts: ts, up: upC, html: "<tr><td>" + when + "</td><td>" + typLbl + "</td><td>" + (mineSent ? "vs " : "from ") + E(vs) + " <span class='small'>" + foPitchName(c.pitch) + ", " + E(c.weather || "") + "</span></td><td>" + act + "</td></tr>" });
         });
         lsSet(seenK, JSON.stringify(seen));
       }
-      entries.sort(function (a2, b2) { return a2.ts - b2.ts; });
+      // upcoming (live, on, awaiting reply, ready to play) first - soonest at
+      // the top; finished business below it, most recent result first
+      entries.sort(function (a2, b2) {
+        if ((a2.up ? 1 : 0) !== (b2.up ? 1 : 0)) return a2.up ? -1 : 1;
+        return a2.up ? (a2.ts - b2.ts) : (b2.ts - a2.ts);
+      });
       // IDEMPOTENT render: this runs from the page MutationObserver, so a
       // remove+recreate here re-triggers the observer forever and the panel
       // churns ~20x/sec - real clicks then land on a node that no longer
