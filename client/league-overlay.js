@@ -9348,6 +9348,10 @@
       ".fo-cp-fr td{color:#8a93a3}.fo-cp-fr td:first-child{font-style:italic}" +
       ".fo-cp-fld{font-size:12.5px;color:#3a4353}" +
       ".fo-fr-tag{display:inline-block;background:#E8EAEE;color:#5a6472;border-radius:6px;padding:0 6px;font-size:10px;font-weight:700;vertical-align:1px;white-space:nowrap}" +
+      ".fo-cp-tabs{display:flex;gap:6px;margin:10px 0 2px}" +
+      "html body #page a.fo-cp-tab{display:inline-block;border:1px solid rgba(28,36,51,.18);background:#FFFEFC;color:#0E233F !important;border-radius:999px;padding:4px 14px;font-size:12px;font-weight:800;cursor:pointer;text-decoration:none}" +
+      "html body #page a.fo-cp-tab.on{background:#0E233F;color:#FFFEFC !important;border-color:#0E233F}" +
+      ".fo-cp-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}.fo-cp-scroll table{min-width:520px}" +
       ".fo-mu-troph{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 10px}" +
       ".fo-mu-cup{background:linear-gradient(135deg,#F59E0B,#c08a2b);color:#fff;border-radius:10px;padding:8px 14px;font-weight:800;font-size:12.5px;box-shadow:0 3px 10px rgba(160,110,20,.3)}" +
       ".fo-mu-leg{background:#FFFEFC;border:1px solid rgba(28,36,51,.1);border-radius:11px;padding:11px 14px;margin:7px 0}" +
@@ -9919,34 +9923,60 @@
       var hAll = ((App.playerHist && App.playerHist[name]) || []);
       var h = hAll.filter(function (e) { return !e.fr && e.s != null; });
       var frE = hAll.filter(function (e) { return e.fr || e.s == null; });
-      var mkAgg = function () { return { inns: 0, runs: 0, hs: 0, wkts: 0, bw: 0, br: 1e9, outs: 0, balls: 0, cr: 0, cb: 0 }; };
+      // resolver-played friendlies never reach local history: synthesize
+      // innings from the league's stored scorecards so the Friendly record
+      // matches on every device (local practice games dedupe by teams+line)
+      try {
+        var clubN0 = pl0.team && pl0.team.name;
+        var seenFk = {}; frE.forEach(function (e0) { seenFk[(e0.teams || "") + "|" + (e0.bat || "-")] = 1; });
+        (foFrAllNow(null) || []).forEach(function (c) {
+          if (!c || c.status !== "played" || !c.result || foFrBcastState(c).phase !== "done") return;
+          if (c.challenger_club !== clubN0 && c.opponent_club !== clubN0) return;
+          var batX = null, bowlX = null;
+          (c.result.scorecard || []).forEach(function (inn) {
+            if (!inn) return;
+            (inn.batting || []).forEach(function (b2) { if (b2 && b2.name === name && (b2.b || b2.r || b2.out)) batX = b2; });
+            (inn.bowling || []).forEach(function (b2) { if (b2 && b2.name === name && (b2.balls || b2.r || b2.w)) bowlX = b2; });
+          });
+          if (!batX && !bowlX) return;
+          var teams3 = c.challenger_club + " v " + c.opponent_club;
+          var bat3 = batX ? (batX.r || 0) + " (" + (batX.b || 0) + ")" : "-";
+          if (seenFk[teams3 + "|" + bat3]) return;
+          seenFk[teams3 + "|" + bat3] = 1;
+          frE.push({ teams: teams3, bat: bat3, rr: batX ? +batX.r || 0 : 0, bb: batX ? +batX.b || 0 : 0,
+            o: !!(batX && batX.out && batX.out !== "not out"), w: bowlX ? +bowlX.w || 0 : 0,
+            cr: bowlX ? +bowlX.r || 0 : 0, cb: bowlX ? +bowlX.balls || 0 : 0,
+            s4: batX ? +batX.f4 || 0 : 0, s6: batX ? +batX.f6 || 0 : 0, fr: 1 });
+        });
+      } catch (eFrX) {}
+      var mkAgg = function () { return { mat: 0, inns: 0, runs: 0, hs: 0, bf: 0, s100: 0, s50: 0, f4: 0, f6: 0, outs: 0, wkts: 0, cr: 0, cb: 0, bw: 0, br: 1e9, w3: 0, w5: 0 }; };
       var feed1 = function (b, e) {
-        b.inns++; b.runs += +e.rr || 0; b.wkts += +e.w || 0;
-        b.outs += e.o ? 1 : 0; b.balls += +e.bb || 0;
-        b.cr += +e.cr || 0; b.cb += +e.cb || 0;
-        if ((+e.rr || 0) > b.hs) b.hs = +e.rr;
-        if ((+e.w || 0) > b.bw || ((+e.w || 0) === b.bw && (+e.w || 0) > 0 && (+e.cr || 0) < b.br)) { if (+e.w) { b.bw = +e.w; b.br = +e.cr || 0; } }
+        var rr = +e.rr || 0, w = +e.w || 0, bb = +e.bb || 0, cr = +e.cr || 0, cb = +e.cb || 0;
+        b.mat++;
+        if (bb > 0 || rr > 0 || e.o) {
+          b.inns++; b.outs += e.o ? 1 : 0; b.runs += rr; b.bf += bb;
+          if (rr > b.hs) b.hs = rr;
+          if (rr >= 100) b.s100++; else if (rr >= 50) b.s50++;
+          b.f4 += +e.s4 || 0; b.f6 += +e.s6 || 0;
+        }
+        b.wkts += w; b.cr += cr; b.cb += cb;
+        if (w >= 3) b.w3++;
+        if (w >= 5) b.w5++;
+        if (w > b.bw || (w === b.bw && w > 0 && cr < b.br)) { if (w) { b.bw = w; b.br = cr; } }
       };
-      var bySeason = {};
-      h.forEach(function (e) { feed1(bySeason[e.s] = bySeason[e.s] || mkAgg(), e); });
-      var keys = Object.keys(bySeason).sort(function (a, b2) { return +a - +b2; });
-      var cellRow = function (lbl, b, cls) {
+      var batRow = function (lbl, b, cls) {
         var ave = b.outs ? (b.runs / b.outs).toFixed(1) : "–";
-        var sr = b.balls ? (100 * b.runs / b.balls).toFixed(0) : "–";
-        var econ = b.cb ? (b.cr / (b.cb / 6)).toFixed(2) : "–";
-        return "<tr" + (cls ? " class='" + cls + "'" : "") + "><td>" + lbl + "</td><td class='n'>" + b.inns + "</td><td class='n'>" + b.runs + "</td><td class='n'>" + (b.hs || "–") + "</td><td class='n'>" + ave + "</td><td class='n'>" + sr + "</td><td class='n'>" + b.wkts + "</td><td class='n'>" + (b.bw ? b.bw + "/" + b.br : "–") + "</td><td class='n'>" + econ + "</td></tr>";
+        var sr = b.bf ? (100 * b.runs / b.bf).toFixed(1) : "–";
+        return "<tr" + (cls ? " class='" + cls + "'" : "") + "><td>" + lbl + "</td><td class='n'>" + b.mat + "</td><td class='n'>" + b.inns + "</td><td class='n'>" + (b.inns - b.outs) + "</td><td class='n'>" + b.runs + "</td><td class='n'>" + (b.hs || "–") + "</td><td class='n'>" + ave + "</td><td class='n'>" + b.bf + "</td><td class='n'>" + sr + "</td><td class='n'>" + b.s100 + "</td><td class='n'>" + b.s50 + "</td><td class='n'>" + b.f4 + "</td><td class='n'>" + b.f6 + "</td></tr>";
       };
-      var srows = keys.map(function (k) { return cellRow("Season " + k, bySeason[k], ""); }).join("");
-      if (keys.length > 1) {
-        var tot = mkAgg();
-        h.forEach(function (e) { feed1(tot, e); });
-        srows += cellRow("League career", tot, "fo-cp-tot");
-      }
-      if (frE.length) {
-        var frT = mkAgg();
-        frE.forEach(function (e) { feed1(frT, e); });
-        srows += cellRow("Friendlies", frT, "fo-cp-fr");
-      }
+      var bowlRow = function (lbl, b, cls) {
+        var ave = b.wkts ? (b.cr / b.wkts).toFixed(1) : "–";
+        var er = b.cb ? (b.cr / (b.cb / 6)).toFixed(2) : "–";
+        var srB = b.wkts ? (b.cb / b.wkts).toFixed(1) : "–";
+        return "<tr" + (cls ? " class='" + cls + "'" : "") + "><td>" + lbl + "</td><td class='n'>" + b.mat + "</td><td class='n'>" + b.cb + "</td><td class='n'>" + b.cr + "</td><td class='n'>" + b.wkts + "</td><td class='n'>" + (b.bw ? b.bw + "/" + b.br : "–") + "</td><td class='n'>" + ave + "</td><td class='n'>" + er + "</td><td class='n'>" + srB + "</td><td class='n'>" + b.w3 + "</td><td class='n'>" + b.w5 + "</td></tr>";
+      };
+      var BAT_HEAD = "<tr><th></th><th class='n'>Mat</th><th class='n'>Inns</th><th class='n'>NO</th><th class='n'>Runs</th><th class='n'>HS</th><th class='n'>Ave</th><th class='n'>BF</th><th class='n'>SR</th><th class='n'>100</th><th class='n'>50</th><th class='n'>4s</th><th class='n'>6s</th></tr>";
+      var BOWL_HEAD = "<tr><th></th><th class='n'>Mat</th><th class='n'>Balls</th><th class='n'>Runs</th><th class='n'>Wkts</th><th class='n'>Best</th><th class='n'>Ave</th><th class='n'>ER</th><th class='n'>SR</th><th class='n'>3WI</th><th class='n'>5WI</th></tr>";
       // matches resolved away from this device may predate the chronicle
       // stamps: rebuild the guaranteed moments straight from the history
       try {
@@ -9980,13 +10010,40 @@
       var fldBits = [(fsF.ct || 0) + (fsF.ct === 1 ? " catch" : " catches")];
       if (p.keeper || fsF.st) fldBits.push((fsF.st || 0) + (fsF.st === 1 ? " stumping" : " stumpings"));
       fldBits.push((fsF.ro || 0) + (fsF.ro === 1 ? " run-out" : " run-outs"));
-      var fldHtml = hAll.length ? mh("Fielding") + "<div class='fo-cp-fld'>" + fldBits.join(" &middot; ") + " <span style='color:#8a93a3'>&middot; all matches</span></div>" : "";
+      var fldLine = "<div class='fo-cp-fld'>" + fldBits.join(" &middot; ") + " <span style='color:#8a93a3'>&middot; all matches</span></div>";
+      // one tab per record, FTP-style: a Batting card and a Bowling/Fielding card
+      var tabBody = function (entries, perSeason, emptyTxt) {
+        var rows = [];
+        if (perSeason) {
+          var bySeason = {};
+          entries.forEach(function (e) { feed1(bySeason[e.s] = bySeason[e.s] || mkAgg(), e); });
+          var keys = Object.keys(bySeason).sort(function (a, b2) { return +a - +b2; });
+          keys.forEach(function (k) { rows.push({ lbl: "Season " + k, b: bySeason[k], cls: "" }); });
+          if (keys.length > 1) { var tot = mkAgg(); entries.forEach(function (e) { feed1(tot, e); }); rows.push({ lbl: "Career", b: tot, cls: "fo-cp-tot" }); }
+        } else if (entries.length) {
+          var one = mkAgg(); entries.forEach(function (e) { feed1(one, e); });
+          rows.push({ lbl: "All friendlies", b: one, cls: "" });
+        }
+        if (!rows.length) return "<div class='small' style='margin:8px 0 2px'>" + emptyTxt + "</div>";
+        return mh("Batting") + "<div class='fo-cp-scroll'><table>" + BAT_HEAD + rows.map(function (x) { return batRow(x.lbl, x.b, x.cls); }).join("") + "</table></div>" +
+          mh("Bowling / fielding") + "<div class='fo-cp-scroll'><table>" + BOWL_HEAD + rows.map(function (x) { return bowlRow(x.lbl, x.b, x.cls); }).join("") + "</table></div>" +
+          fldLine;
+      };
+      var lgHtml = tabBody(h, true, "No league innings yet - the record starts on the next matchday.");
+      var frHtml = tabBody(frE, false, "No friendlies or practice games yet.");
       card.innerHTML = "<h4>Career &middot; " + E(foDisplayName(p)) + "</h4><div class='pad'>" +
         "<div class='fo-cp-prov'>" + E(provTxt) + "</div>" +
-        (srows ? "<table><tr><th></th><th class='n'>Inns</th><th class='n'>Runs</th><th class='n'>HS</th><th class='n'>Ave</th><th class='n'>SR</th><th class='n'>Wkts</th><th class='n'>Best</th><th class='n'>Econ</th></tr>" + srows + "</table>" : "") +
-        fldHtml +
+        "<div class='fo-cp-tabs'><a class='fo-cp-tab' data-t='league'>League</a><a class='fo-cp-tab' data-t='fr'>Friendly</a></div>" +
+        "<div class='fo-cp-body'></div>" +
         mh("Moments") + evs +
         "</div></div>";
+      var cpBody = card.querySelector(".fo-cp-body");
+      var setCpTab = function (tb) {
+        card.querySelectorAll(".fo-cp-tab").forEach(function (a) { a.classList.toggle("on", a.getAttribute("data-t") === tb); });
+        cpBody.innerHTML = tb === "fr" ? frHtml : lgHtml;
+      };
+      card.querySelectorAll(".fo-cp-tab").forEach(function (a) { a.addEventListener("click", function () { setCpTab(a.getAttribute("data-t")); }); });
+      setCpTab(h.length || !frE.length ? "league" : "fr");
       // the engine leaves the second column empty once its summary panels are
       // hidden - the career belongs there, right beside Player info
       var panels = Array.prototype.slice.call(page.querySelectorAll(".panel"));
