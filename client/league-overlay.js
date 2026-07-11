@@ -1405,8 +1405,9 @@
     ".fo-dr-coach b{font-size:13.5px;color:#111827}" +
     ".fo-dr-coach-x{position:absolute;top:8px;right:8px;background:transparent;border:none;color:#667085;font-size:14px;cursor:pointer;padding:4px 6px}" +
     ".fo-dr-steps{display:flex;flex-direction:column;gap:6px;margin-top:8px}" +
-    ".fo-dr-steps span{display:flex;gap:9px;font-size:12.5px;color:#3c4658;line-height:1.5}" +
-    ".fo-dr-steps span i{flex:0 0 18px;height:18px;border-radius:99px;background:#15803D;color:#fff;font-style:normal;font-weight:800;font-size:11px;display:inline-flex;align-items:center;justify-content:center;margin-top:1px}" +
+    ".fo-dr-steps span{display:block;position:relative;padding-left:27px;font-size:12.5px;color:#3c4658;line-height:1.5}" +
+    ".fo-dr-steps span b{font-size:inherit}" +
+    ".fo-dr-steps span i{position:absolute;left:0;top:1px;width:18px;height:18px;border-radius:99px;background:#15803D;color:#fff;font-style:normal;font-weight:800;font-size:11px;display:inline-flex;align-items:center;justify-content:center}" +
     ".fo-rail-h{display:flex;align-items:baseline;gap:10px;margin:0 0 9px}" +
     ".fo-rail-h b{font-size:16px;color:#111827}" +
     ".fo-rail-h span{font-size:12px;color:#667085}" +
