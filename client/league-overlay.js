@@ -6041,7 +6041,7 @@
   var FO_FAT_LADDER = ["rested", "revived", "energetic", "passable", "satisfactory", "moderate", "weary", "listless", "exhausted", "shattered", "clinically dead"];
   function foEnergyOf(p) {
     var w = String(p.fatigue || "rested").toLowerCase();
-    var ix = FO_FAT_LADDER.indexOf(w); if (ix < 0) ix = 0;
+    var ix = FO_FAT_LADDER.indexOf(w); if (ix < 0) ix = (w === "tired" ? 7 : 0);
     return { pct: Math.max(6, 100 - ix * 10), word: ix <= 2 ? "fresh" : ix <= 5 ? "rested" : "tired", raw: w, tired: ix >= 6 };
   }
   // the safe choice, marked where the choice happens: tired players are
@@ -8179,7 +8179,7 @@
       ".fo-sq-head{display:grid;gap:10px;align-items:center;padding:4px 14px;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:#8a93a3;font-weight:700}" +
       ".fo-sqr-row{display:grid;gap:10px;align-items:center;padding:9px 14px;background:#FFFEFC;border:1px solid rgba(28,36,51,.07);border-radius:10px;margin:6px 0;cursor:pointer;transition:box-shadow .12s ease}" +
       ".fo-sqr-row:hover{box-shadow:0 3px 14px rgba(7,22,46,.10)}" +
-      ".fo-sqr-row,.fo-sq-head{grid-template-columns:minmax(200px,1.5fr) 58px 84px minmax(140px,1fr) minmax(140px,1fr) 46px 92px 16px}" +
+      ".fo-sqr-row,.fo-sq-head{grid-template-columns:minmax(200px,1.5fr) 58px 100px minmax(140px,1fr) minmax(140px,1fr) 46px 92px 16px}" +
       ".fo-sq-warnrow{background:#FBF0D8;border-color:#e8cf8c}" +
       ".fo-sq-nm b{font-size:14px;color:#0E233F}.fo-sq-nm a{color:#0E233F !important;text-decoration:none;font-weight:800}" +
       "#page .fo-sq-nm a{color:#0E233F !important}" +
@@ -8208,6 +8208,11 @@
       ".fo-sq-train{background:#E4EEF6;color:#1f4e6b;border-radius:8px;padding:3px 10px;font-weight:700}" +
       ".fo-sq-foot{font-size:11.5px;color:#8a93a3;margin:8px 2px}" +
       ".fo-sq-tired{display:inline-block;background:#F3D8D3;color:#8a2f1d;border-radius:7px;padding:1px 7px;font-size:10px;font-weight:800;margin-left:6px;vertical-align:1px}" +
+      ".fo-sq-enb{display:block;width:54px;height:4px;border-radius:2px;background:#E8EAEE;overflow:hidden;margin-top:5px}" +
+      ".fo-sq-enb i{display:block;height:100%;border-radius:2px}" +
+      ".fo-sq-mfx{display:none}" +
+      ".fo-sq-mfx b{font-size:inherit;font-weight:800}" +
+      ".fo-mfx-lo{color:#b3402a}.fo-mfx-sh{color:#b07f13}.fo-mfx-md{color:#5a6472}.fo-mfx-hi{color:#15803D}" +
       "@media(max-width:820px){" +
       ".fo-sq-strip{grid-template-columns:1fr;gap:8px;margin:8px 0 4px}" +
       ".fo-sq-stat{display:flex;align-items:baseline;gap:10px;padding:9px 14px}" +
@@ -8218,6 +8223,8 @@
       ".fo-sq-nm b,.fo-sq-nm a{font-size:12.5px}.fo-sq-sub{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".fo-sq-age{font-size:12px}.fo-sq-ovr{font-size:14px}" +
       ".fo-sq-skw{display:none}.fo-sq-sknum{font-size:10.5px}" +
+      ".fo-sq-mfx{grid-column:1/-1;display:flex;gap:16px;margin-top:2px;padding-top:5px;border-top:1px dashed rgba(28,36,51,.10);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:800}" +
+      ".fo-sq-mfx i{font-style:normal;color:#a7aeba}" +
       ".fo-sq-dcols{grid-template-columns:1fr}}";
     document.head.appendChild(foSqCss);
   } catch (e) {}
@@ -8415,7 +8422,7 @@
     var foot = "<div class='fo-sq-dfoot'>" +
       "<span>Experience <b>" + E(p.expWord || p.exp || "-") + "</b></span>" +
       "<span>Captaincy <b>" + word(p.capt || 30) + "</b></span>" +
-      "<span>Fatigue <b>" + E(p.fatigue || "-") + "</b></span>" +
+      "<span>Energy <b>" + E((typeof foEnergyOf === "function" ? foEnergyOf(p).word : p.fatigue) || "-") + "</b></span>" +
       "<span>Nationality <b>" + E(p.nat || "-") + "</b></span>" +
       (tals ? "<span>" + tals + "</span>" : "") +
       "<span class='fo-sq-train'>Training: " + E(p.trainFocus || "none") + "</span><a href='#/training' class='fo-morelink'>Training centre ›</a>" +
@@ -8485,10 +8492,14 @@
       // expanded, so it's obvious the rows open and close
       if (!squadView.__seeded && shown.length) { squadView.__seeded = 1; squadView.open[shown[0].name] = true; }
 
-      var head = "<div class='fo-sq-head'><span>Player</span><span>Age</span><span class='fo-sq-form'>Form</span><span>Bat</span><span>Bowl</span><span style='text-align:right'>OVR</span><span class='fo-sq-hwage' style='text-align:right'>Wage</span><span class='fo-sq-caret'></span></div>";
+      var head = "<div class='fo-sq-head'><span>Player</span><span>Age</span><span class='fo-sq-form'>Form / energy</span><span>Bat</span><span>Bowl</span><span style='text-align:right'>OVR</span><span class='fo-sq-hwage' style='text-align:right'>Wage</span><span class='fo-sq-caret'></span></div>";
       var rows = shown.map(function (p) {
         var fi = p.formIx == null ? 3 : p.formIx;
         var fb = fi <= 1 ? "fo-fb-lo" : fi === 2 ? "fo-fb-sh" : fi === 3 ? "fo-fb-md" : "fo-fb-hi";
+        var en = foEnergyOf(p);
+        var enCol = en.tired ? "#DC2626" : en.word === "rested" ? "#4DA6A2" : "#16A34A";
+        var enCls = en.tired ? "fo-mfx-lo" : en.word === "rested" ? "fo-mfx-md" : "fo-mfx-hi";
+        var fCls = fi <= 1 ? "fo-mfx-lo" : fi === 2 ? "fo-mfx-sh" : fi === 3 ? "fo-mfx-md" : "fo-mfx-hi";
         var traj = (p.age || 25) <= 24 ? "<i class='up' title='improving with age'>&#8599;</i>" : (p.age || 25) <= 29 ? "<i title='peak years'>&ndash;</i>" : "<i class='dn' title='past peak'>&#8600;</i>";
         var tchips = (p.talents || []).slice(0, 2).map(function (t2) { return "<span class='fo-sq-talent' title='" + E(TALTIPS[t2] || "") + "'>" + E(ptal(t2)) + "</span>"; }).join("");
         if ((p.talents || []).length > 2) tchips += "<span class='fo-sq-talent'>+" + (p.talents.length - 2) + "</span>";
@@ -8500,12 +8511,14 @@
           "<div class='fo-sq-nm'>" + flag(p.nat) + " " + playerLink(p) + (p._nick ? "<span class='fo-sq-nickchip'>“" + E(p._nick) + "”</span>" : "") + (p.keeper ? " <span title='wicketkeeper'>&dagger;</span>" : "") + (p.__y ? "<span class='fo-sq-talent'>U20</span>" : "") + (p.fatigue === "tired" ? "<span class='fo-sq-tired' title='tired · recovers next match or with Rest'>TIRED</span>" : "") + tchips +
           "<div class='fo-sq-sub'>" + sub + "</div></div>" +
           "<div class='fo-sq-age'>" + (p.age | 0) + " " + traj + "</div>" +
-          "<div class='fo-sq-form'><span class='fo-fb " + fb + "' title='" + FORMTIP + "'>" + FORMW_UI[fi] + "</span></div>" +
+          "<div class='fo-sq-form'><span class='fo-fb " + fb + "' title='" + FORMTIP + "'>" + FORMW_UI[fi] + "</span>" +
+          "<span class='fo-sq-enb' title='Energy: " + en.word + (en.tired ? " - recovers with the Rest program" : "") + "'><i style='width:" + en.pct + "%;background:" + enCol + "'></i></span></div>" +
           foSqSkillCell(aggBat(p), false, "Batting") +
           foSqSkillCell(p.bowlType ? aggBowl(p) : aggBowl(p), !p.bowlType, "Bowling") +
           "<div class='fo-sq-ovr' title='Overall rating (rating / 1,000)'>" + Math.round((p.rating || 0) / 1000) + "</div>" +
           "<div class='fo-sq-wage'>$" + (p.wage || 0).toLocaleString() + "<i>per matchday</i></div>" +
-          "<div class='fo-sq-caret'>" + (open ? "&#9662;" : "&#9656;") + "</div></div>" +
+          "<div class='fo-sq-caret'>" + (open ? "&#9662;" : "&#9656;") + "</div>" +
+          "<div class='fo-sq-mfx'><span><i>Form</i> <b class='" + fCls + "'>" + FORMW_UI[fi] + "</b></span><span><i>Energy</i> <b class='" + enCls + "'>" + en.word + "</b></span></div></div>" +
           (open ? foSqDetail(p, !!p.__y) : "");
       }).join("");
       var foot = "<div class='fo-sq-foot'>Rows expand on click for full attributes and talents · training assignments live on the <a href='#/training'>Training page</a></div>";
