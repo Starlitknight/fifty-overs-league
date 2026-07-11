@@ -569,14 +569,13 @@
     ".fo-nr-row b{color:#0a2342;font-weight:700}" +
     ".fo-c2-hero{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.55fr) minmax(0,1.25fr);gap:24px;align-items:center;background:linear-gradient(135deg,#0a2342,#06182f 70%);border-radius:14px;padding:24px 26px;margin:8px 0 16px;color:#c7cfda}" +
     "@media(max-width:1100px){.fo-c2-hero{grid-template-columns:1fr 1fr}.fo-c2-id{grid-column:1/-1}}" +
-    "@media(max-width:700px){.fo-c2-hero{grid-template-columns:1fr;padding:16px 16px;gap:14px}.fo-c2-prog{order:3}.fo-c2-next{order:2}}" +
     ".fo-c2-id{display:flex;gap:14px;align-items:flex-start;min-width:0}" +
     ".fo-c2-crest{flex:0 0 74px;width:74px;height:74px;border-radius:16px;background:#FFFEFC;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.3)}" +
     ".fo-c2-crest img{width:62px;height:62px;border-radius:12px}" +
     ".fo-c2-idt{min-width:0}" +
     "html body #page .fo-c2-name{margin:0;font-size:40px;line-height:1;color:#FFFEFC;letter-spacing:-.5px;text-transform:uppercase;font-weight:800}" +
     ".fo-c2-meta{font-size:13px;color:#c7cfda;margin-top:7px}.fo-c2-meta u{text-decoration:none;color:#5a6b83;margin:0 2px}.fo-c2-meta .fo-c2-gold,.fo-c2-gold{color:#F5C36B;font-weight:800}" +
-    "@media(max-width:700px){html body #page .fo-c2-name{font-size:23px}}" +
+    "@media(max-width:700px){html body #page .fo-c2-name{font-size:26px}}" +
     ".fo-c2-mgr{font-size:12px;color:#9aa3b2;margin-top:3px}.fo-c2-mgr b{color:#FFFEFC}" +
     ".fo-c2-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}" +
     ".fo-c2-chip{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:3px 11px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#dfe5ec}" +
@@ -588,6 +587,12 @@
     ".fo-o-ms .fo-race:first-of-type .fo-race-bar i{background:linear-gradient(90deg,#e85a2a,#c94c22) !important}" +
     ".fo-o-ms .fo-race-n{text-align:right;min-width:74px}" +
     "@media(max-width:760px){.fo-o-ms .fo-race{grid-template-columns:minmax(0,1fr) minmax(64px,1.2fr) auto;gap:7px}.fo-o-ms .fo-race-n{min-width:0;font-size:11px}}" +
+    // desktop/phone content swaps: long copy on wide screens, short on phones
+    ".fo-sw-m{display:none}" +
+    ".fo-wgrp-m{display:none}" +
+    ".fo-ch-min .fo-o-leadm{display:none}" +
+    ".fo-c2-ndl{font-size:11px;color:#8a93a3;margin-top:2px}" +
+    ".fo-c2-wmore{display:inline-flex;align-items:center;min-height:36px;margin-top:4px;font-size:12.5px;font-weight:700;color:#B04A2C !important;text-decoration:none}" +
     ".fo-c2-k{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#8a93a3;font-weight:800;margin-bottom:4px}" +
     ".fo-c2-fs{display:flex;gap:4px}" +
     ".fo-c2-f{display:inline-flex;width:20px;height:20px;border-radius:5px;align-items:center;justify-content:center;font-style:normal;font-size:10.5px;font-weight:800;color:#fff}" +
@@ -610,6 +615,17 @@
     ".fo-c2-nr{flex:0 0 auto;text-align:right;display:flex;flex-direction:column;gap:3px;align-items:flex-end}" +
     "@media(max-width:700px){.fo-c2-nr{align-items:stretch;text-align:left}}" +
     ".fo-c2-cd{font-size:28px;font-weight:800;color:#0a2342;font-variant-numeric:tabular-nums;letter-spacing:.5px}" +
+    // phones: the hero dissolves into three separate cards - identity (dark),
+    // next match (white), season progress (white) - instead of one dark slab.
+    // !important because the engine restyle paints [class*=hero] !important.
+    "@media(max-width:700px){" +
+    "html body #page .fo-c2-hero{grid-template-columns:1fr;padding:0;gap:12px;background:none !important;box-shadow:none;margin:8px 0 14px}" +
+    "html body #page .fo-c2-id{background:linear-gradient(160deg,#14324a,#0E233F) !important;border-radius:12px;padding:18px 16px}" +
+    "html body #page .fo-c2-next{order:2;border-radius:12px;border:1px solid rgba(20,36,58,.10);box-shadow:0 4px 14px rgba(20,36,58,.06)}" +
+    "html body #page .fo-c2-prog{order:3;background:#fff !important;border:1px solid rgba(20,36,58,.10);border-radius:12px;padding:14px 16px;align-self:stretch}" +
+    "html body #page .fo-c2-prog .fo-c2-k{color:#8a93a3}html body #page .fo-c2-prog .fo-c2-pv{color:#0a2342}" +
+    "html body #page .fo-c2-prog .fo-progress-bar{background:#ece7db}html body #page .fo-c2-ppct{color:#667085}" +
+    "}" +
     "html body #page .fo-c2-next .fo-next-cta{font-size:14px;padding:0 20px;min-width:150px;height:42px;box-sizing:border-box;margin-top:7px;display:inline-flex;align-items:center;justify-content:center;gap:6px}" +
     // the engine skin paints every button grey with !important; out-specify it
     "html body button.fo-next-cta,html body.ftpskin #page button.fo-next-cta{background:#e85a2a !important;border:0 !important;color:#fff !important;font:800 14px/1 Inter,ui-sans-serif,system-ui,-apple-system,sans-serif !important}" +
@@ -618,8 +634,32 @@
     ".fo-c2-grid{display:grid;grid-template-columns:1.15fr 1fr 1fr 1fr;gap:18px;align-items:stretch;margin-top:16px}" +
     ".fo-c2-bottom{display:grid;grid-template-columns:1.15fr 1fr 1fr 1fr;gap:18px;align-items:stretch;margin-top:18px}" +
     "@media(max-width:1250px){.fo-c2-grid,.fo-c2-bottom{grid-template-columns:repeat(2,minmax(0,1fr))}}" +
-    "@media(max-width:760px){.fo-c2-grid,.fo-c2-bottom{grid-template-columns:1fr}" +
-    ".fo-o-watch{order:1}.fo-o-stand{order:2}.fo-o-fx{order:3}.fo-o-news{order:4}}" +
+    "@media(max-width:760px){.fo-c2-grid,.fo-c2-bottom{grid-template-columns:1fr;gap:14px}" +
+    ".fo-o-watch{order:1}.fo-o-stand{order:2}.fo-o-fx{order:3}.fo-o-news{order:4}" +
+    // phone content swaps: short labels, attention-only squad watch, combined
+    // leaders card, three fixtures, one featured + three headlines
+    ".fo-sw-d{display:none}.fo-sw-m{display:inline}" +
+    ".fo-wgrp-d{display:none}.fo-wgrp-m{display:block}" +
+    ".fo-ch-min .fo-o-lead{display:none}.fo-ch-min .fo-o-leadm{display:flex}" +
+    ".fo-fx-more{display:none}" +
+    ".fo-o-news .fo-nr-row:last-child{display:none}" +
+    // standings shed P/W/L on phones; the full table lives on Matches
+    ".fo-ch-min .fo-chtable td:nth-child(3),.fo-ch-min .fo-chtable th:nth-child(3),.fo-ch-min .fo-chtable td:nth-child(4),.fo-ch-min .fo-chtable th:nth-child(4),.fo-ch-min .fo-chtable td:nth-child(5),.fo-ch-min .fo-chtable th:nth-child(5){display:none}" +
+    ".fo-ch-min .fo-chtable td:nth-child(6),.fo-ch-min .fo-chtable th:nth-child(6){width:58px}" +
+    ".fo-ch-min .fo-chtable td:nth-child(7),.fo-ch-min .fo-chtable th:nth-child(7){width:40px}" +
+    ".fo-ch-min .fo-chtable td{font-size:13px;padding:8px 4px}" +
+    ".fo-ch-min .fo-chtable tr.fo-st-x{display:none}" +
+    // phone type floor: nothing under 11px, body copy at 13px, 44px tap targets
+    ".fo-c2-k,.fo-c2-nk,.fo-c2-whead,.fo-c2-wtag,.fo-c2-ppct,.fo-c2-ndl{font-size:11px}" +
+    ".fo-c2-meta,.fo-c2-nsub,.fo-nr-row{font-size:13px}" +
+    ".fo-c2-fxd b,.fo-c2-fxm b,.fo-c2-wrn b{font-size:13px}" +
+    ".fo-c2-fxd span,.fo-c2-fxm span,.fo-c2-wrn span,.fo-nr-feat span,.fo-c2-wpct,.fo-nr-row u,.fo-nr-row i,.fo-nr-feat i{font-size:11px}" +
+    ".fo-c2-fxn{font-size:10px}.fo-c2-nchip{font-size:11px}.fo-c2-wk{font-size:12px}" +
+    ".fo-c2-ldk{font-size:13px}.fo-c2-ldr{font-size:12px}" +
+    "html body #page .fo-c2-next .fo-next-cta{height:44px;width:100%}" +
+    ".fo-c2-wmore{min-height:44px;font-size:13px}" +
+    ".fo-c2-fx{min-height:44px}.fo-c2-wr{min-height:44px}" +
+    "}" +
     ".fo-nr-feat{padding:2px 0 10px;border-bottom:1px solid #eee9dd;margin-bottom:4px}" +
     ".fo-nr-feat b{display:block;font-size:16.5px;font-weight:800;color:#0a2342;line-height:1.3}" +
     ".fo-nr-feat span{display:block;font-size:12px;color:#667085;margin-top:4px;line-height:1.45}" +
@@ -645,7 +685,7 @@
     ".fo-ch-min .fo-stat{padding:16px 18px;min-height:92px;box-sizing:border-box}" +
     ".fo-ch-min .fo-stat-ic{width:36px;height:36px;font-size:16px;border-radius:9px}" +
     "@media(max-width:760px){.fo-ch-min .fo-stat{padding:12px 12px;min-height:0}.fo-ch-min .fo-stat-ic{display:none}" +
-    ".fo-ch-min .fo-stat-v{font-size:20px}.fo-ch-min .fo-stat-l{font-size:9.5px;white-space:normal}.fo-ch-min .fo-stat-s{font-size:10px}}" +
+    ".fo-ch-min .fo-stat-v{font-size:21px}.fo-ch-min .fo-stat-l{font-size:11px;white-space:normal}.fo-ch-min .fo-stat-s{font-size:11px}}" +
     ".fo-c2-bottom .fo-lead{display:flex;gap:12px;align-items:center}" +
     ".fo-c2-bottom .fo-lead .fo-lead-ic{flex:0 0 40px;width:40px;height:40px;border-radius:11px;background:#F3F1EA;display:flex;align-items:center;justify-content:center;color:#B04A2C}" +
     ".fo-c2-fx{display:flex;gap:10px;align-items:center;padding:8px 9px;border:1px solid rgba(28,36,51,.08);border-radius:10px;margin:6px 0;background:#FFFEFC}" +
@@ -1525,6 +1565,37 @@
       window.updateTopbarStatus.__fo = 1;
     }
   } catch (e) {}
+  // the mobile drawer: rebuilt from the live nav on every open, so it always
+  // mirrors exactly what the pill row would have shown (state, Live pill, Admin)
+  function foMnavToggle() {
+    try {
+      var d = document.getElementById("fo-mdrawer");
+      if (d && d.classList.contains("open")) { d.classList.remove("open"); return; }
+      if (!d) {
+        d = document.createElement("div"); d.id = "fo-mdrawer";
+        document.body.appendChild(d);
+        window.addEventListener("hashchange", function () { d.classList.remove("open"); });
+      }
+      d.innerHTML = "<div class='fo-mdk'></div><div class='fo-mdp'><div class='fo-mdh'><img src='" + APPICON + "' alt=''> Fifty Overs</div><nav class='fo-mdn'></nav></div>";
+      d.querySelector(".fo-mdk").addEventListener("click", function () { d.classList.remove("open"); });
+      var nav = d.querySelector(".fo-mdn");
+      var tb = document.getElementById("topbar");
+      [].slice.call(tb ? tb.querySelectorAll(".fo-nav-scroll a") : []).forEach(function (a) {
+        // skip links the topbar itself hides (engine's retired pages)
+        var nv = a.getAttribute("data-nav");
+        if (nv === "reports" || nv === "manual" || nv === "orders") return;
+        if (a.style && a.style.display === "none") return;
+        if (!/\S/.test(a.textContent || "")) return;
+        var row = document.createElement("a");
+        row.className = "fo-mdl" + (a.classList.contains("on") ? " on" : "");
+        row.href = a.getAttribute("href") || "#";
+        row.textContent = (a.textContent || "").trim();
+        row.addEventListener("click", function (ev) { ev.preventDefault(); d.classList.remove("open"); a.click(); });
+        nav.appendChild(row);
+      });
+      d.classList.add("open");
+    } catch (e) {}
+  }
   function ensureNav() {
     try {
       var tb = document.getElementById("topbar"); if (!tb) return;
@@ -1554,6 +1625,15 @@
       [].slice.call(tb.children).forEach(function (el) {
         if (el.tagName === "A" && !/\bbrand\b/.test(el.className || "")) wrap.appendChild(el);
       });
+      // phones: the pill row is hidden and a hamburger opens a drawer that
+      // proxies every nav link (originals keep their handlers and state)
+      var mbtn = tb.querySelector("#fo-mnav-btn");
+      if (!mbtn) {
+        mbtn = document.createElement("button"); mbtn.id = "fo-mnav-btn"; mbtn.setAttribute("aria-label", "Menu");
+        mbtn.innerHTML = "<svg width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round'><path d='M4 7h16M4 12h16M4 17h16'/></svg>";
+        tb.insertBefore(mbtn, tb.firstChild);
+        mbtn.addEventListener("click", foMnavToggle);
+      }
       var addNav = function (cls, label, fn) {
         var a = tb.querySelector("a." + cls); if (!a) a = mk(label, cls, fn);
         if (a.parentNode !== wrap) { if (cls === "fo-live") wrap.insertBefore(a, wrap.firstChild); else wrap.appendChild(a); }
@@ -2116,22 +2196,31 @@
       var runway = netMD < 0 ? Math.floor(bank / -netMD) : null;
       var nxt = foUserFixtures()[0] || null;
 
-      var stat = function (accent, ic, label, value, sub) {
+      // each tile carries a long (desktop) and a short (phone) label + subtitle;
+      // CSS shows one or the other, so nothing is shrunk to fit
+      var stat = function (accent, ic, label, value, sub, mLabel, mSub) {
         return "<div class='fo-stat fo-acc-" + accent + "'><div class='fo-stat-ic'>" + ic + "</div><div class='fo-stat-body'>" +
-          "<div class='fo-stat-l'>" + label + "</div><div class='fo-stat-v'>" + value + "</div>" + (sub ? "<div class='fo-stat-s'>" + sub + "</div>" : "") + "</div></div>";
+          "<div class='fo-stat-l'><span class='fo-sw-d'>" + label + "</span><span class='fo-sw-m'>" + (mLabel || label) + "</span></div>" +
+          "<div class='fo-stat-v'>" + value + "</div>" +
+          (sub ? "<div class='fo-stat-s'><span class='fo-sw-d'>" + sub + "</span><span class='fo-sw-m'>" + (mSub || sub) + "</span></div>" : "") + "</div></div>";
       };
       var mv = foPosMovement(pi >= 0 ? pi + 1 : null);
       var bankSub = runway != null
         ? (runway >= totalRounds - played ? "Covers the season at current burn" : "Covers ~" + runway + " matchday" + (runway === 1 ? "" : "s") + " at current burn")
         : "+" + foMoney(netMD) + " per matchday";
+      var bankSubM = runway != null
+        ? (runway >= totalRounds - played ? "Season covered" : "~" + runway + " matchday" + (runway === 1 ? "" : "s"))
+        : "+" + foMoney(netMD) + " / matchday";
       var sqAvg = function (tt) { return (tt.players || []).length ? Math.round(tt.players.reduce(function (a, q) { return a + (q.rating || 0); }, 0) / tt.players.length) : 0; };
       var mySq = sqAvg(t);
       var sqRank = 1 + (GD.teams || []).filter(function (tt) { return tt !== t && sqAvg(tt) > mySq; }).length;
+      var posV = (pos !== "-" && isFinite(+pos))
+        ? "<span class='fo-sw-d'>" + pos + "</span><span class='fo-sw-m'>" + foOrdinal(+pos) + "</span>" : pos;
       var stats = "<div class='fo-ch-stats'>" +
-        stat("terra", FO_I("trophy", 19), "League position", pos, "of " + (rowsL.length || 10) + (mv ? " &middot; " + mv + " since last round" : "")) +
-        stat("terra", FO_I("wallet", 19), "Bank", foMoney(bank), bankSub) +
-        stat("teal", FO_I("bat", 19), "Squad strength", (mySq / 1000).toFixed(1), foOrdinal(sqRank) + " strongest in the league") +
-        stat("terra", FO_I("users", 19), "Supporters", "<span class='fo-stat-word'>" + mood + "</span>", "Mood") + "</div>";
+        stat("terra", FO_I("trophy", 19), "League position", posV, "of " + (rowsL.length || 10) + (mv ? " &middot; " + mv + " since last round" : ""), "League", "of " + (rowsL.length || 10)) +
+        stat("terra", FO_I("wallet", 19), "Bank", foMoney(bank), bankSub, "Bank", bankSubM) +
+        stat("teal", FO_I("bat", 19), "Squad strength", (mySq / 1000).toFixed(1), foOrdinal(sqRank) + " strongest in the league", "Squad", "Ranked " + foOrdinal(sqRank)) +
+        stat("terra", FO_I("users", 19), "Supporters", "<span class='fo-stat-word'>" + mood + "</span>", "Mood", "Supporters", (t.supporters ? (+t.supporters).toLocaleString() : "Mood")) + "</div>";
 
       // Upcoming fixtures (+ friendlies), with a Set-lineup action
       var frRows = (foFriendlies || []).map(function (fr, i) {
@@ -2177,6 +2266,20 @@
           "<div class='fo-c2-ldk'><span>Econ <b>" + (lb2 && lb2.cb ? (lb2.cr / (lb2.cb / 6)).toFixed(2) : "&ndash;") + "</b> &middot; Best <b>" + (lb2 && lb2.bw ? lb2.bw + "/" + lb2.br : "&ndash;") + "</b></span></div>" +
           (lb2 && lb2.recw.length ? "<div class='fo-c2-ldk'><span>Recent wkts: <b>" + lb2.recw.slice(-3).join(", ") + "</b></span></div>" : "")
           : "<div class='small'>No wickets yet.</div>") + "</div></div>";
+      // phones get both leaders in one card; the two desktop cards hide there
+      var leadCombo = "<div class='fo-card fo-o-leadm'><div class='fo-card-h2row'><div class='fo-card-h2'>Season leaders</div><a href='#/stats' class='fo-morelink'>All stats &rsaquo;</a></div><div class='fo-card-b'>" +
+        (ld.bat.name
+          ? "<div class='fo-c2-k'>Runs</div><div class='fo-c2-ldn'>" + E(ld.bat.name) + "</div>" +
+            "<div class='fo-c2-ldk'><span><b>" + (ld.bat.runs || 0) + "</b>" +
+            (lb1 && lb1.outs ? " &middot; Avg <b>" + (lb1.runs / lb1.outs).toFixed(1) + "</b>" : "") +
+            (lb1 && lb1.bf ? " &middot; SR <b>" + (100 * lb1.runs / lb1.bf).toFixed(1) + "</b>" : "") + "</span></div>"
+          : "<div class='small'>No runs on the board yet.</div>") +
+        (ld.bowl.name
+          ? "<div class='fo-c2-k' style='margin-top:13px'>Wickets</div><div class='fo-c2-ldn'>" + E(ld.bowl.name) + "</div>" +
+            "<div class='fo-c2-ldk'><span><b>" + (ld.bowl.wkts || 0) + "</b>" +
+            (lb2 && lb2.w ? " &middot; Avg <b>" + (lb2.cr / lb2.w).toFixed(1) + "</b>" : "") +
+            (lb2 && lb2.cb ? " &middot; Econ <b>" + (lb2.cr / (lb2.cb / 6)).toFixed(2) + "</b>" : "") + "</span></div>"
+          : "") + "</div></div>";
 
       // Standings: the full ten-row table lives on Matches; here only the story –
       // who leads, where you sit, and the one gap worth chasing
@@ -2184,7 +2287,9 @@
         var meRow = x.nm === t.name;
         var botTag = "";
         try { if (SYNC && SYNC.started && !SYNC.practice && LG && window.__foClubMeta && !foClubHuman(x.nm)) botTag = " <span class='fo-bot-mini'>BOT</span>"; } catch (eBt) {}
-        return "<tr class='" + (meRow ? "fo-userrow" : "") + "'><td class='fo-rk'>" + (i === 0 ? "<span style='color:#F59E0B;display:inline-flex;vertical-align:-2px'>" + FO_I("trophy", 14) + "</span>" : (i + 1)) + "</td><td class='fo-scoutname'>" + E(x.nm) + botTag + "</td><td class='r'>" + x.p + "</td><td class='r'>" + x.w + "</td><td class='r'>" + x.l + "</td><td class='r'>" + (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2) + "</td><td class='r'><b>" + x.pts + "</b></td></tr>";
+        // phones keep the top five plus your own row; the rest fold away
+        var foldM = i >= 5 && !meRow ? " fo-st-x" : "";
+        return "<tr class='" + (meRow ? "fo-userrow" : "") + foldM + "'><td class='fo-rk'>" + (i === 0 ? "<span style='color:#F59E0B;display:inline-flex;vertical-align:-2px'>" + FO_I("trophy", 14) + "</span>" : (i + 1)) + "</td><td class='fo-scoutname'>" + E(x.nm) + botTag + "</td><td class='r'>" + x.p + "</td><td class='r'>" + x.w + "</td><td class='r'>" + x.l + "</td><td class='r'>" + (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2) + "</td><td class='r'><b>" + x.pts + "</b></td></tr>";
       };
       var standRows = rowsL.map(standRow).join("");
       var gapLine = "";
@@ -2245,18 +2350,24 @@
       var wPool = (t.players || []).slice().sort(function (a, b2) { return enOf(a).pct - enOf(b2).pct; });
       var fitN = wPool.filter(function (p2) { return !enOf(p2).tired; }).length;
       var tiredN = wPool.length - fitN;
-      var wRows = wPool.slice(0, 6).map(function (p2) {
+      var wRow = function (p2) {
         var en = enOf(p2);
         var col = en.tired ? "#DC2626" : en.word === "rested" ? "#c08a2b" : "#16A34A";
         return "<div class='fo-c2-wr'><div class='fo-c2-wrn'><b>" + E(p2.name) + "</b><span>" + E(prole(p2.role || "")) + "</span></div>" +
           "<span class='fo-c2-wtag' style='color:" + col + "'>" + (en.tired ? "TIRED" : en.word === "rested" ? "RESTED" : "FIT") + "</span>" +
           "<div class='fo-c2-wbar'><i style='width:" + en.pct + "%;background:" + col + "'></i></div><span class='fo-c2-wpct'>" + en.pct + "%</span></div>";
-      }).join("");
+      };
+      // phones show only players needing attention (tired, rested, low energy);
+      // when everyone is fresh, the three lowest tanks stand in
+      var wAttn = wPool.filter(function (p2) { var en = enOf(p2); return en.tired || en.word === "rested" || en.pct < 90; }).slice(0, 3);
+      var wRowsM = (wAttn.length ? wAttn : wPool.slice(0, 3)).map(wRow).join("");
       var watchCard = "<div class='fo-card fo-o-watch'><div class='fo-card-h2row'><div class='fo-card-h2'>Squad watch</div><a href='#/squad' class='fo-morelink'>Manage squad &rsaquo;</a></div><div class='fo-card-b'>" +
         "<div class='fo-c2-wsum'><span class='fo-c2-wk g'><b>" + fitN + "</b> fit</span><span class='fo-c2-wk a'><b>" + tiredN + "</b> tired</span>" +
         (hotP.length ? "<span class='fo-c2-wk g'><b>" + hotP.length + "</b> in form</span>" : "") +
         (coldP.length ? "<span class='fo-c2-wk r'><b>" + coldP.length + "</b> struggling</span>" : "") + "</div>" +
-        "<div class='fo-c2-whead'><span>Player</span><span>Status</span><span>Energy</span></div>" + wRows + "</div></div>";
+        "<div class='fo-c2-whead'><span>Player</span><span>Status</span><span>Energy</span></div>" +
+        "<div class='fo-wgrp-d'>" + wPool.slice(0, 6).map(wRow).join("") + "</div>" +
+        "<div class='fo-wgrp-m'>" + wRowsM + "<a class='fo-c2-wmore' href='#/squad'>View full squad &rsaquo;</a></div></div></div>";
       // milestone watch: unfinished business is what brings a manager back
       var msRows = [];
       try { msRows = foMilestoneWatch(t); } catch (e) {}
@@ -2286,6 +2397,7 @@
           "<div class='fo-c2-nchips'>" + (oppRow >= 0 ? "<span class='fo-c2-nchip'>" + foOrdinal(oppRow + 1) + "</span>" : "") + (oppForm ? "<span class='fo-c2-nchip'>Form <span class='fo-form'>" + oppForm + "</span></span>" : "") + "</div></div>" +
           "<div class='fo-c2-nr'>" + (isMP ? "<div class='fo-c2-nk'>Match starts in</div><div class='fo-c2-cd' id='fo-cd'>" + foCdText(foNextMatchdayMs()) + "</div>" : "") +
           "<div class='fo-c2-nsub'><b>" + MATCH_TIME + "</b> &middot; " + E(nxt.date || "") + "</div>" +
+          "<div class='fo-c2-ndl'>Lineups lock at " + MATCH_TIME + "</div>" +
           "<button class='fo-next-cta" + (ordersIn ? " fo-done" : "") + "' data-r='" + nxt.round + "'>" + (ordersIn ? "Review lineup &rsaquo;" : "Set lineup &rsaquo;") + "</button></div></div>";
       } else if ((me.p || 0) > 0) {
         nextCard = "<div class='fo-c2-next'><div class='fo-c2-nl'><div class='fo-c2-nk'>Season complete</div>" +
@@ -2298,12 +2410,12 @@
       var metaBits = ["Season " + (App.seasonNo || 1)];
       if (ctry) metaBits.push((ctryFlag ? ctryFlag + " " : "") + E(ctry));
       metaBits.push(E(lgName));
+      if (posLineTop) metaBits.push("<b class='fo-c2-gold'>" + posLineTop + "</b>");
       var hero = "<div class='fo-c2-hero'>" +
         "<div class='fo-c2-id'><div class='fo-c2-idt'>" +
         "<h1 class='fo-c2-name'>" + E(t.name) + "</h1>" +
         "<div class='fo-c2-mgr'>Manager: <b>" + E((SYNC && SYNC.me && SYNC.me.display_name) || "you") + "</b> <i class='fo-dot fo-dot-on'></i></div>" +
         "<div class='fo-c2-meta'>" + metaBits.join(" <u>&middot;</u> ") + "</div>" +
-        (posLineTop ? "<div class='fo-c2-meta'>League position: <b class='fo-c2-gold'>" + posLineTop + "</b></div>" : "") +
         "<div class='fo-c2-frow'><div><div class='fo-c2-k'>Form (last 5)</div><div class='fo-c2-fs'>" + fchips + "</div></div>" +
         "<div><div class='fo-c2-k'>Supporters</div><div class='fo-c2-mood'>" + moodEmo + " <b>" + E(String(mood).toUpperCase()) + "</b>" + (t.supporters ? " <span>&middot; " + (+t.supporters).toLocaleString() + "</span>" : "") + "</div></div></div>" +
         "</div></div>" +
@@ -2377,7 +2489,7 @@
             default: return who + " &middot; " + e3.txt;
           }
         };
-        var nrRows = evsN.slice(0, 6).map(function (e3) {
+        var nrRows = evsN.slice(0, 4).map(function (e3) {
           return "<div class='fo-nr-row'><span>" + nrPhrase(e3) + " <u>&middot; " + E(e3.club) + "</u></span><i>" + nrDate(e3.s, e3.r) + "</i></div>";
         }).join("");
         newsCard = "<div class='fo-card fo-o-news'><div class='fo-card-h2row'><div class='fo-card-h2'>Club newsroom</div><a href='#/matchday' class='fo-morelink'>View all &rsaquo;</a></div><div class='fo-card-b'>" +
@@ -2412,9 +2524,10 @@
             "<span class='fo-c2-fxn fr'>FR</span></div>" });
         });
       } catch (eFx) {}
+      var fxH = fxItems.slice(0, 6).map(function (x) { return x.html; });
       var fxCard = "<div class='fo-card fo-o-fx'><div class='fo-card-h2row'><div class='fo-card-h2'>Upcoming fixtures</div><a href='#/matches' class='fo-morelink'>View all &rsaquo;</a></div><div class='fo-card-b'>" +
-        (fxItems.length ? fxItems.slice(0, 6).map(function (x) { return x.html; }).join("") : "<div class='small'>Season complete.</div>") +
-        "<div class='small' style='margin-top:8px'><a href='#/matches'>View full fixture list &rsaquo;</a></div></div></div>";
+        (fxH.length ? fxH.slice(0, 3).join("") + (fxH.length > 3 ? "<div class='fo-fx-more'>" + fxH.slice(3).join("") + "</div>" : "") : "<div class='small'>Season complete.</div>") +
+        "<a class='fo-c2-wmore' href='#/matches'>View full fixture list &rsaquo;</a></div></div>";
       var trainCard = "";
       if (rep0 && (rep0.gains || []).length) {
         trainCard = "<div class='fo-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Training insight</div><a href='#/training' class='fo-morelink'>Go to Training &rsaquo;</a></div><div class='fo-card-b'>" +
@@ -2423,7 +2536,7 @@
       }
       var html = "<div class='fo-ch fo-ch-min'>" + search + hero + "<div id='fo-chal-alert'></div>" + stats +
         "<div class='fo-c2-grid'>" + newsCard + standings + fxCard + watchCard + "</div>" +
-        "<div class='fo-c2-bottom'>" + leadBat + leadBowl + msCard + fin + "</div></div>";
+        "<div class='fo-c2-bottom'>" + leadBat + leadBowl + leadCombo + msCard + fin + "</div></div>";
       setTimeout(foNextFriendly, 80);
 
       var page = document.getElementById("page"); if (!page) return;
@@ -11256,22 +11369,30 @@
     foMobCss.textContent =
       ".fo-nav-scroll{display:contents}" +
       "a,button{-webkit-tap-highlight-color:transparent}" +
+      // hamburger + drawer: built for phones, dormant on desktop
+      "html body #fo-mnav-btn,html body.ftpskin #fo-mnav-btn{display:none;align-items:center;justify-content:center;width:44px;height:44px;background:transparent !important;border:0 !important;color:#FFFEFC !important;padding:0 !important;margin:0 4px 0 -6px;border-radius:10px;cursor:pointer;box-shadow:none !important}" +
+      "#fo-mdrawer{position:fixed;inset:0;z-index:400;display:none}" +
+      "#fo-mdrawer.open{display:block}" +
+      "#fo-mdrawer .fo-mdk{position:absolute;inset:0;background:rgba(6,12,24,.55)}" +
+      "#fo-mdrawer .fo-mdp{position:absolute;top:0;left:0;bottom:0;width:min(78vw,300px);background:#0E233F;box-shadow:8px 0 30px rgba(0,0,0,.35);padding:12px 12px 20px;overflow-y:auto;display:flex;flex-direction:column}" +
+      "#fo-mdrawer .fo-mdh{display:flex;align-items:center;gap:9px;color:#FFFEFC;font-weight:800;font-size:16px;padding:8px 8px 14px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:8px}" +
+      "#fo-mdrawer .fo-mdh img{width:28px;height:28px;border-radius:7px}" +
+      "#fo-mdrawer a.fo-mdl{display:flex;align-items:center;min-height:48px;padding:0 14px;border-radius:10px;color:#dfe5ec !important;font-size:15px;font-weight:600;text-decoration:none !important}" +
+      "#fo-mdrawer a.fo-mdl.on{background:#C95532;color:#fff !important;font-weight:800}" +
+      "#fo-mdrawer a.fo-mdl:active{background:rgba(255,255,255,.08)}" +
       "@media(max-width:820px){" +
-      // header: brand row + one scrolling pill row, always at hand
-      "#topbar{position:sticky;top:0;z-index:120;flex-wrap:wrap;align-items:center;padding:9px 12px 0 !important;box-shadow:0 3px 14px rgba(6,12,24,.35)}" +
-      "html body #topbar .brand,html body.ftpskin #topbar .brand{order:1;font-size:0 !important;line-height:0;width:auto !important;padding:0 !important;border:0 !important}" +
+      // header: hamburger | Fifty Overs | next-match chip + bell. The nav
+      // pills are gone - every link lives in the drawer, at thumb size.
+      "#topbar{position:sticky;top:0;z-index:120;flex-wrap:nowrap;align-items:center;padding:6px 12px !important;box-shadow:0 3px 14px rgba(6,12,24,.35)}" +
+      "html body #fo-mnav-btn,html body.ftpskin #fo-mnav-btn{display:inline-flex;order:0;flex:0 0 auto}" +
+      "html body #topbar .brand,html body.ftpskin #topbar .brand{order:1;font-size:16px !important;font-weight:800;letter-spacing:-.2px;line-height:1;display:inline-flex;align-items:center;gap:8px;width:auto !important;padding:0 !important;border:0 !important;color:#FFFEFC !important;white-space:nowrap}" +
       "#topbar .brand::after,#topbar .brand::before{display:none !important}" +
-      "html body #topbar .brand .fo-brandicon{width:34px;height:34px;vertical-align:middle;margin-right:0}" +
+      "html body #topbar .brand .fo-brandicon{width:28px;height:28px;vertical-align:middle;margin-right:0}" +
       "html body #topbar #fo-top-status{order:2;width:auto !important;margin-left:auto !important;padding:0 !important}" +
-      "#fo-top-status span{font-size:10.5px !important;padding:4px 9px !important}" +
+      "#fo-top-status span{font-size:11.5px !important;padding:7px 11px !important}" +
       "#fo-live-icons{order:2;width:auto !important;margin-left:8px !important}" +
       "#fo-clock{display:none !important}" +
-      ".fo-nav-scroll{display:flex;order:3;width:100%;overflow-x:auto;gap:7px;padding:9px 2px 11px;scrollbar-width:none;-webkit-overflow-scrolling:touch}" +
-      ".fo-nav-scroll::-webkit-scrollbar{display:none}" +
-      "#topbar .fo-nav-scroll a{flex:0 0 auto;background:rgba(246,244,238,.08);border:1px solid rgba(246,244,238,.16);border-radius:999px;padding:8px 14px !important;font-size:13px;line-height:1.1;white-space:nowrap;color:#dfe5ec;font-weight:600;margin:0 !important;border-bottom-width:1px !important;text-decoration:none}" +
-      "html body #topbar .fo-nav-scroll a.on,html body.ftpskin #topbar .fo-nav-scroll a.on{background:#C95532 !important;border-color:#C95532 !important;color:#fff !important;font-weight:800;box-shadow:none !important}" +
-      "#topbar .fo-nav-scroll a.fo-logout{opacity:.7}" +
-      "#topbar .fo-nav-scroll a.fo-live{border-radius:999px}" +
+      "html body #topbar .fo-nav-scroll{display:none !important}" +
       // breadcrumbs: quiet, one line
       "#page .crumb{font-size:12.5px;opacity:.75;margin:2px 0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       // typography rhythm
