@@ -574,6 +574,9 @@
     ".fo-nr-row b{color:#0a2342;font-weight:700}" +
     ".fo-flg{margin-right:5px;font-style:normal;display:inline-block}" +
     ".fo-cond-sym{display:inline-flex;vertical-align:-2px;margin:0 1px}" +
+    // talent call-outs in commentary: a quiet inline highlight that flows
+    // with the sentence, never a boxed pill that breaks the line
+    "html body .talent-hit,html body.ftpskin .talent-hit{display:inline !important;font:inherit !important;font-weight:700 !important;background:rgba(245,158,11,.18) !important;border:0 !important;border-bottom:1px solid #d9b75a !important;border-radius:2px !important;padding:0 3px !important;margin:0 !important;box-shadow:none !important;color:inherit !important;white-space:normal !important;line-height:inherit !important}" +
     ".fo-tclub{display:block;font-size:10.5px;color:#8a93a3;margin-top:1px;line-height:1.2}" +
     ".fo-emb-cell{font-size:12px;font-weight:700;color:#B04A2C}" +
     ".fo-pv-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}" +

@@ -6926,6 +6926,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-nr-row b{color:#0a2342;font-weight:700}" +
     ".fo-flg{margin-right:5px;font-style:normal;display:inline-block}" +
     ".fo-cond-sym{display:inline-flex;vertical-align:-2px;margin:0 1px}" +
+    // talent call-outs in commentary: a quiet inline highlight that flows
+    // with the sentence, never a boxed pill that breaks the line
+    "html body .talent-hit,html body.ftpskin .talent-hit{display:inline !important;font:inherit !important;font-weight:700 !important;background:rgba(245,158,11,.18) !important;border:0 !important;border-bottom:1px solid #d9b75a !important;border-radius:2px !important;padding:0 3px !important;margin:0 !important;box-shadow:none !important;color:inherit !important;white-space:normal !important;line-height:inherit !important}" +
     ".fo-tclub{display:block;font-size:10.5px;color:#8a93a3;margin-top:1px;line-height:1.2}" +
     ".fo-emb-cell{font-size:12px;font-weight:700;color:#B04A2C}" +
     ".fo-pv-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}" +
@@ -10547,7 +10550,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260711-1246-098979";
+  var FO_BUILD = "20260711-1311-f1ef4a";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
