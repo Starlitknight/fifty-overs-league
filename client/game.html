@@ -10027,7 +10027,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260711-0322-559c9e";
+  var FO_BUILD = "20260711-0329-18e437";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14506,6 +14506,23 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
   window.addEventListener("hashchange", function () { [120, 500, 1200].forEach(function (ms) { setTimeout(foStatsOwnRows, ms); }); });
   setInterval(function () { try { foStatsOwnRows(); } catch (e) {} }, 2500);
+  // The engine repaints the whole Orders page on every control change (each
+  // over-cell click in the bowling grid). Keep the manager's scroll position
+  // when the page is merely re-rendering, so it stops jumping to the top.
+  try {
+    if (typeof window.pgOrders === "function" && !window.pgOrders.__foScroll) {
+      var _foPgOrd = window.pgOrders;
+      window.pgOrders = function () {
+        var pgEl = document.getElementById("page");
+        var wasOrders = !!(pgEl && /Batting order/.test(pgEl.textContent || ""));
+        var y = window.scrollY || document.documentElement.scrollTop || 0;
+        var out = _foPgOrd.apply(this, arguments);
+        if (wasOrders) { try { window.scrollTo(0, y); } catch (e) {} }
+        return out;
+      };
+      window.pgOrders.__foScroll = 1;
+    }
+  } catch (e) {}
   function foRefreshLineupButtons() {
     try {
       if (!(SYNC && SYNC.submitted)) return;

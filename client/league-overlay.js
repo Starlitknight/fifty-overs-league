@@ -8154,6 +8154,23 @@
   }
   window.addEventListener("hashchange", function () { [120, 500, 1200].forEach(function (ms) { setTimeout(foStatsOwnRows, ms); }); });
   setInterval(function () { try { foStatsOwnRows(); } catch (e) {} }, 2500);
+  // The engine repaints the whole Orders page on every control change (each
+  // over-cell click in the bowling grid). Keep the manager's scroll position
+  // when the page is merely re-rendering, so it stops jumping to the top.
+  try {
+    if (typeof window.pgOrders === "function" && !window.pgOrders.__foScroll) {
+      var _foPgOrd = window.pgOrders;
+      window.pgOrders = function () {
+        var pgEl = document.getElementById("page");
+        var wasOrders = !!(pgEl && /Batting order/.test(pgEl.textContent || ""));
+        var y = window.scrollY || document.documentElement.scrollTop || 0;
+        var out = _foPgOrd.apply(this, arguments);
+        if (wasOrders) { try { window.scrollTo(0, y); } catch (e) {} }
+        return out;
+      };
+      window.pgOrders.__foScroll = 1;
+    }
+  } catch (e) {}
   function foRefreshLineupButtons() {
     try {
       if (!(SYNC && SYNC.submitted)) return;
