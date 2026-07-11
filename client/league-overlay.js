@@ -13126,6 +13126,123 @@
       var st = foLiveState(r, p);
       return st ? "LIVE &middot; " + st.line + (st.chase ? " &middot; " + st.chase : "") : "LIVE";
     }
+    // ---- league live "so far" tabs: everything below is rebuilt ONLY from ----
+    // what the broadcast has already shown - end-of-over summaries, the fall-
+    // of-wicket stamps up to the current ball, and the worm to the same point.
+    function foLgAbbr(full) {
+      var ps = String(full || "").trim().split(/\s+/);
+      return ps.length < 2 ? (full || "") : ps[0].charAt(0) + ". " + ps[ps.length - 1];
+    }
+    // oversum entries visible so far: [{inn, over, txt, pairs:[[name,fig]..]}]
+    function foLgSums(chron, upto) {
+      var out = [];
+      for (var i = 0; i < Math.min(upto, chron.length); i++) {
+        var L = chron[i];
+        if (!L || !L.mile || !L.oversumTop) continue;
+        var ovm = /End of over (\d+)/.exec(L.txt || "");
+        var pairs = [], re = /<strong>([^<]+)<\/strong>\s*([^,<]+)/g, m2;
+        while ((m2 = re.exec(L.oversumTop))) pairs.push([m2[1].trim(), m2[2].trim()]);
+        out.push({ inn: L.inn || 0, over: ovm ? +ovm[1] : 0, txt: L.txt || "", pairs: pairs });
+      }
+      return out;
+    }
+    // over.ball of the last delivery the feed has shown (current innings)
+    function foLgCurNo(chron, upto) {
+      for (var i = Math.min(upto, chron.length) - 1; i >= 0; i--) {
+        var L = chron[i];
+        if (L && !L.mile && L.no) { var m2 = /^(\d+)\.(\d+)$/.exec(L.no); if (m2) return +m2[1] + (+m2[2]) / 10; }
+      }
+      return 0;
+    }
+    function foLgFowShown(r, innIx, curInnIx, curNo) {
+      var fow = ((r.innings || [])[innIx] || {}).fow || [];
+      if (innIx < curInnIx) return fow;                       // innings is done - all public
+      return fow.filter(function (f) { return f && f.ov <= curNo + 0.001; });
+    }
+    // batters at the crease + bowler, from the latest end-of-over summary
+    function foLgCrease(r, chron, upto, innIx, curNo) {
+      try {
+        var sums = foLgSums(chron, upto).filter(function (s) { return s.inn === innIx; });
+        var last = sums[sums.length - 1]; if (!last) return "";
+        var outNms = {};
+        foLgFowShown(r, innIx, innIx, curNo).forEach(function (f) { if (f.ov > last.over) outNms[foLgAbbr(f.who)] = 1; });
+        var cards = "";
+        last.pairs.forEach(function (pr) {
+          var bw = /^(\d+)-(\d+)-(\d+)$/.exec(pr[1]);
+          if (bw) {
+            cards += "<div class='fo-lv-pc'><span class='fo-lv-tag'>Bowling</span><b>" + E(pr[0].replace(/\s*\([^)]*\)\s*$/, "")) + "</b><span class='fo-lv-fig'><b>" + bw[3] + "/" + bw[2] + "</b> (" + bw[1] + " ov)</span></div>";
+          } else {
+            var bt = /^(\d+)\*?\s*\((\d+)b\)/.exec(pr[1]); if (!bt || outNms[pr[0]]) return;
+            cards += "<div class='fo-lv-pc'><span class='fo-lv-tag'>At the crease</span><b>" + E(pr[0]) + "</b><span class='fo-lv-fig'><b>" + bt[1] + "*</b> (" + bt[2] + "b)</span></div>";
+          }
+        });
+        return cards ? "<div class='fo-lv-cards'>" + cards + "</div>" : "";
+      } catch (e) { return ""; }
+    }
+    // live scorecard: last-known figures per batter and bowler, innings by innings
+    function foLgLiveScore(r, chron, upto, curInnIx, curNo) {
+      try {
+        var sums = foLgSums(chron, upto); if (!sums.length) return "";
+        var html = "";
+        for (var ii = 0; ii <= curInnIx; ii++) {
+          var mine = sums.filter(function (s) { return s.inn === ii; });
+          if (!mine.length) continue;
+          var bat = {}, batOrd = [], bowl = {}, bowlOrd = [];
+          mine.forEach(function (s) {
+            s.pairs.forEach(function (pr) {
+              var bw = /^(\d+)-(\d+)-(\d+)$/.exec(pr[1]);
+              if (bw) { var bn = pr[0].replace(/\s*\([^)]*\)\s*$/, ""); if (!bowl[bn]) bowlOrd.push(bn); bowl[bn] = { o: bw[1], r: bw[2], w: bw[3] }; return; }
+              var bt = /^(\d+)\*?\s*\((\d+)b\)/.exec(pr[1]);
+              if (bt) { if (!bat[pr[0]]) batOrd.push(pr[0]); bat[pr[0]] = { r: bt[1], b: bt[2] }; }
+            });
+          });
+          var inn = (r.innings || [])[ii] || {};
+          var fowShown = foLgFowShown(r, ii, curInnIx, curNo);
+          var outNms = {}; fowShown.forEach(function (f) { outNms[foLgAbbr(f.who)] = 1; });
+          var atCrease = {};
+          if (ii === curInnIx) {
+            var lastS = mine[mine.length - 1];
+            lastS.pairs.forEach(function (pr) { if (!/^\d+-\d+-\d+$/.test(pr[1]) && !outNms[pr[0]]) atCrease[pr[0]] = 1; });
+          }
+          var batRows = batOrd.map(function (n) {
+            var x = bat[n];
+            var st3 = atCrease[n] ? "<span style='color:#15803D;font-weight:700'>batting</span>" : (outNms[n] ? "out" : (ii < curInnIx ? "" : "out"));
+            return "<tr><td><b>" + E(n) + "</b><div class='small'>" + st3 + "</div></td><td class='n'><b>" + x.r + (atCrease[n] ? "*" : "") + "</b></td><td class='n'>" + x.b + "</td><td class='n'>" + (x.b > 0 ? (100 * x.r / x.b).toFixed(1) : 0) + "</td></tr>";
+          }).join("");
+          var bowlRows = bowlOrd.map(function (n) {
+            var x = bowl[n];
+            return "<tr><td><b>" + E(n) + "</b></td><td class='n'>" + x.o + "</td><td class='n'>" + x.r + "</td><td class='n'>" + x.w + "</td><td class='n'>" + (x.o > 0 ? (x.r / x.o).toFixed(2) : 0) + "</td></tr>";
+          }).join("");
+          var fowLine = fowShown.length ? "<div class='small' style='margin-top:8px;color:#667085'>Fall of wickets: " + fowShown.map(function (f, k) {
+            return (k + 1) + "-" + f.sc + " (" + E(f.who) + ", " + f.ov + ")";
+          }).join(", ") + "</div>" : "";
+          var head = ii < curInnIx
+            ? (inn.runs != null ? inn.runs + (inn.wkts >= 10 ? " all out" : "/" + (inn.wkts || 0)) : "") + " <em>(innings closed)</em>"
+            : "<em>after " + mine[mine.length - 1].over + " ov</em>";
+          html += "<div class='panel fo-sci'><div class='fo-sci-head'><b>" + E(inn.batTeam || "") + "</b><span>" + head + "</span></div><div class='pad'>" +
+            "<table class='fo-sct'><thead><tr><th>Batting</th><th class='n'>R</th><th class='n'>B</th><th class='n'>SR</th></tr></thead><tbody>" + batRows + "</tbody></table>" +
+            "<table class='fo-sct' style='margin-top:12px'><thead><tr><th>Bowling</th><th class='n'>O</th><th class='n'>R</th><th class='n'>W</th><th class='n'>Econ</th></tr></thead><tbody>" + bowlRows + "</tbody></table>" +
+            fowLine + "</div></div>";
+        }
+        return html ? html + "<div class='small' style='color:#667085;margin:2px 2px 10px'>Figures refresh at the end of each over &middot; the full card lands at stumps.</div>" : "";
+      } catch (e) { return ""; }
+    }
+    // worm + manhattan clipped to the ball the broadcast has reached
+    function foLgLiveCharts(r, st) {
+      try {
+        if (!st || typeof foMatchCharts !== "function") return "";
+        var w = r.worm || [];
+        var worms = w.map(function (arr, i) {
+          if (!arr || i > st.innIx) return [];
+          if (i < st.innIx) return arr;
+          var k = st.ballK - (st.innIx ? (w[0] || []).length : 0);
+          return arr.slice(0, Math.max(1, k));
+        }).slice(0, st.innIx + 1);
+        if (!worms[0] || !worms[0].length) return "";
+        var all = (r.innings || []).slice(0, st.innIx + 1).map(function (inn) { return { batTeam: (inn && inn.batTeam) || "" }; });
+        return foMatchCharts(all, worms);
+      } catch (e) { return ""; }
+    }
     // hide every spoiler on the page: result strings swap for live scores,
     // standings close until stumps
     function foMaskSpoilers() {
@@ -13203,14 +13320,36 @@
             var upto = Math.max(2, Math.floor(em.p * log.length));
             var vis = log.slice(0, upto).reverse();      // newest first again
             var l6 = ""; try { l6 = foLast6HTML(log, upto); } catch (eL6) {}
-            var mins = Math.max(1, Math.round((em.endsAt - Date.now()) / 60000));
+            var innIxL = st ? st.innIx : 0;
+            var curNoL = 0; try { curNoL = foLgCurNo(log, upto); } catch (eNo) {}
+            var creaseL = ""; try { creaseL = foLgCrease(r, log, upto, innIxL, curNoL); } catch (eCr) {}
+            var tabL = window.__foLgLTab || "feed";
+            var cfL = window.__foLgLCF || "all";
+            var barL = "<div class='fo-sctabs'>" + [["feed", "Live feed"], ["score", "Scorecard"], ["charts", "Charts"], ["ratings", "Match ratings"]].map(function (t2) {
+              return "<button class='fo-sctab fo-lgltab" + (tabL === t2[0] ? " on" : "") + "' data-t='" + t2[0] + "'>" + t2[1] + "</button>";
+            }).join("") + "</div>";
+            var bodyL = "";
+            if (tabL === "score") {
+              try { bodyL = foLgLiveScore(r, log, upto, innIxL, curNoL); } catch (eSc) {}
+              if (!bodyL) bodyL = "<div class='panel'><div class='pad small'>The live scorecard builds as play unfolds &middot; the full card lands at stumps.</div></div>";
+            } else if (tabL === "charts") {
+              var chL = ""; try { chL = foLgLiveCharts(r, st); } catch (eCh) {}
+              bodyL = chL ? "<div class='panel'><h4>Charts &middot; so far</h4><div class='pad'>" + chL + "</div></div>" : "<div class='panel'><div class='pad small'>Charts build as play unfolds &middot; the full set lands at stumps.</div></div>";
+            } else if (tabL === "ratings") {
+              bodyL = "<div class='panel'><div class='pad small'>Match ratings are compiled at stumps &middot; they land with the final scorecard.</div></div>";
+            } else {
+              var cfBarL = "<div class='fo-cfilters'>" + [["all", "All"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["fielding", "Fielding"], ["talents", "Talents"], ["highlights", "Highlights"]].map(function (ff) {
+                return "<button class='fo-sctab fo-lglcf" + (cfL === ff[0] ? " on" : "") + "' data-f='" + ff[0] + "'>" + ff[1] + "</button>";
+              }).join("") + "</div>";
+              bodyL = "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'>" + cfBarL + "<div id='ftpcomm' class='ftpskin'>" +
+                (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, cfL, 5000) : "") + "</div></div></div>";
+            }
             document.getElementById("page").innerHTML =
               "<div class='crumb'>" + E(r.home) + " v " + E(r.away) + " &raquo; Live</div>" +
               "<div class='fo-live-hero'><div class='fo-live-tag'><span class='live-dot'></span> LIVE</div>" +
               "<div class='fo-live-score'>" + (st ? st.line : "") + (st && st.chase ? " <span class='fo-live-chase'>" + st.chase + "</span>" : "") + "</div>" +
               "<div class='fo-live-sub'>" + E(r.ground || "") + " &middot; scores update as play unfolds &middot; the full card, charts and ratings arrive at stumps</div>" + l6 + "</div>" +
-              "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'><div id='ftpcomm' class='ftpskin'>" +
-              (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, "all", 160) : "") + "</div></div></div>";
+              creaseL + barL + bodyL;
             return;
           }
         } catch (e) {}
@@ -13218,6 +13357,15 @@
       };
       window.pgScorecard.__foBcast = 1;
     }
+    // league live tabs + commentary filters redraw the broadcast in place
+    document.addEventListener("click", function (ev) {
+      var b = ev.target && ev.target.closest ? ev.target.closest(".fo-lgltab,.fo-lglcf") : null;
+      if (!b) return;
+      ev.preventDefault();
+      if (b.classList.contains("fo-lglcf")) window.__foLgLCF = b.getAttribute("data-f");
+      else window.__foLgLTab = b.getAttribute("data-t");
+      if (/^#\/scorecard/.test(location.hash || "") && typeof window.route === "function") window.route();
+    });
     // the matchday page leads with the live scoreboard during the hour
     window.foLiveBoardHTML = function () {
       var em = foEmbargo(); if (!em.active) return "";
