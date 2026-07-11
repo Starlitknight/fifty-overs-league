@@ -7836,7 +7836,7 @@
 
     page.innerHTML =
       "<div class='crumb'>" + E(t.name) + " &raquo; Training</div>" +
-      "<div class='page-head'><div><div class='eyebrow'>Development centre</div><h1>Training &amp; Youth</h1><p>Programs update after every matchday. Young legs learn fastest.</p></div>" +
+      "<div class='page-head'><div><div class='eyebrow'>Development centre</div><h1>Training &amp; Youth</h1><p>Programs update after every matchday.</p></div>" +
       "<div><button class='fo-tr-how' id='fo-tr-how'>How training works</button></div></div>" +
       repHtml +
       "<div class='panel'><h4>Training programs</h4><div class='pad'>" +

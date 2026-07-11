@@ -9951,7 +9951,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260711-0042-f6d486";
+  var FO_BUILD = "20260711-0043-bd99c1";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14188,7 +14188,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
 
     page.innerHTML =
       "<div class='crumb'>" + E(t.name) + " &raquo; Training</div>" +
-      "<div class='page-head'><div><div class='eyebrow'>Development centre</div><h1>Training &amp; Youth</h1><p>Programs update after every matchday. Young legs learn fastest.</p></div>" +
+      "<div class='page-head'><div><div class='eyebrow'>Development centre</div><h1>Training &amp; Youth</h1><p>Programs update after every matchday.</p></div>" +
       "<div><button class='fo-tr-how' id='fo-tr-how'>How training works</button></div></div>" +
       repHtml +
       "<div class='panel'><h4>Training programs</h4><div class='pad'>" +
