@@ -4143,6 +4143,7 @@
       if (typeof window.restoreFrom === "function") window.restoreFrom(snap);
       foRepairBowlerBatting();
       foUniqueNames();
+      foHistRepair();
       if (!SYNC.submittedLoaded) foLoadSubmitted();
       SYNC.started = true;
       var myName = SYNC.myTeam ? SYNC.myTeam.name : null;
@@ -8261,9 +8262,10 @@
       ".fo-sq-stat{display:flex;align-items:center;gap:12px;background:#FFFEFC;border:1px solid rgba(28,36,51,.08);border-radius:12px;padding:12px 16px;box-shadow:0 2px 10px rgba(7,22,46,.05)}" +
       ".fo-sqs-ic{flex:0 0 40px;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center}" +
       ".fo-sqs-tx{min-width:0}" +
-      ".fo-sqs-c1{background:#F3F6FA;border-color:rgba(14,35,63,.14)}.fo-sqs-c1 .fo-sqs-ic{background:#DFE8F3;color:#0E233F}.fo-sqs-c1 span{color:#4a5e7d}" +
-      ".fo-sqs-c2{background:#FCF6E9;border-color:rgba(160,106,31,.18)}.fo-sqs-c2 .fo-sqs-ic{background:#F4E4C2;color:#8a5c13}.fo-sqs-c2 span{color:#8a5c13}" +
-      ".fo-sqs-c3{background:#F1F8F3;border-color:rgba(21,128,61,.16)}.fo-sqs-c3 .fo-sqs-ic{background:#DCEEE2;color:#15803D}.fo-sqs-c3 span{color:#2e6b46}" +
+      ".fo-sqs-ic{background:#F3F1EA}" +
+      ".fo-sqs-c1 .fo-sqs-ic{color:#0E233F}.fo-sqs-c1 span{color:#4a5e7d}" +
+      ".fo-sqs-c2 .fo-sqs-ic{color:#8a5c13}.fo-sqs-c2 span{color:#8a5c13}" +
+      ".fo-sqs-c3 .fo-sqs-ic{color:#15803D}.fo-sqs-c3 span{color:#2e6b46}" +
       ".fo-sq-stat span{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#8a93a3;font-weight:700;margin-bottom:4px}" +
       ".fo-sq-stat b{font-size:21px;color:#0E233F}" +
       ".fo-sq-stat i{font-style:normal;font-size:12px;color:#5a6472;margin-left:7px}" +
@@ -9525,15 +9527,29 @@
   function foDisplayName(p) { return p._nick ? p.name.split(" ")[0] + ' "' + p._nick + '" ' + p.name.split(" ").slice(1).join(" ") : p.name; }
 
   // ---- the chronicle pass around every completed round ----
-  // repair: every league entry is stamped (season, round) at round time, so
-  // an entry with neither stamp nor friendly flag can only be a friendly or
-  // practice knock written by an older build - class it as one instead of
-  // folding it into the league record
-  function foChronBackfill() {
+  // repair: entries are supposed to be stamped (season, round) at round
+  // time, but a failure mid-pass leaves league innings unstamped. The saved
+  // results are the ground truth: an entry whose teams + date match a league
+  // result IS a league innings (round recovered from the result); anything
+  // else unstamped is a friendly. Also rescues league entries a previous
+  // pass wrongly flagged as friendlies.
+  function foHistRepair() {
     try {
-      for (var k in (App.playerHist || {})) App.playerHist[k].forEach(function (e) { if (!e.s && !e.fr) e.fr = 1; });
+      var byKey = {};
+      (App.results || []).forEach(function (r) {
+        if (!r || r.comp !== "league") return;
+        byKey[r.home + " v " + r.away + "|" + (r.date || "")] = r;
+      });
+      var sN = App.seasonNo || 1;
+      for (var k in (App.playerHist || {})) App.playerHist[k].forEach(function (e) {
+        if (e.s != null) return;
+        var r0 = byKey[(e.teams || "") + "|" + (e.date || "")];
+        if (r0) { e.s = sN; e.r = (typeof r0.round === "number" ? r0.round + 1 : 1); delete e.fr; }
+        else if (!e.fr) e.fr = 1;
+      });
     } catch (e) {}
   }
+  var foChronBackfill = foHistRepair;
   function foChroniclePre() {
     var pre = { round: (App.season && App.season.round) || 0, results: (App.results || []).length, seasonNo: App.seasonNo || 1, players: {} };
     try {
@@ -9556,6 +9572,7 @@
     try {
       var sN = pre.seasonNo, rN = pre.round + 1;
       // 1. duels: every dismissal credits bowler > batter on the bowling club
+      try {
       (App.results || []).slice(pre.results).forEach(function (r) {
         if (r.comp && r.comp !== "league") return;   // friendlies settle nothing
         (r.innings || []).forEach(function (inn) {
@@ -9576,8 +9593,9 @@
         });
       });
       GD.teams.forEach(function (t) { var d = t._duels; if (d) { var ks = Object.keys(d); if (ks.length > 300) { ks.sort(function (a, b2) { return d[a] - d[b2]; }).slice(0, ks.length - 300).forEach(function (k) { delete d[k]; }); } } });
+      } catch (eDu) {}
       // 2. per player: tag new entries with season+round, write career events
-      GD.teams.forEach(function (t) {
+      GD.teams.forEach(function (t) { try {
         var feed = [];
         (t.players || []).forEach(function (p) {
           var h = (App.playerHist && App.playerHist[p.name]) || [];
@@ -9648,7 +9666,7 @@
         });
         if (feed.length) t._chron = { r: rN, s: sN, items: feed.slice(0, 6) };
         else if (t._chron && t._chron.r !== rN) delete t._chron;
-      });
+      } catch (eTm) {} });
       // 3. awards night on the final matchday: club awards plus a full slate of
       // league-wide categories, every winner into his club's museum and career
       var total = (App.season && App.season.schedule && App.season.schedule.length) || 18;
@@ -9924,6 +9942,7 @@
       // league innings carry a season stamp; everything else (challenge
       // friendlies, practice games, pre-chronicle knocks) is the friendly
       // record and stays out of the league rows
+      try { foHistRepair(); } catch (eHr) {}
       var hAll = ((App.playerHist && App.playerHist[name]) || []);
       var h = hAll.filter(function (e) { return !e.fr && e.s != null; });
       var frE = hAll.filter(function (e) { return e.fr || e.s == null; });
