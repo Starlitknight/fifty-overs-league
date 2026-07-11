@@ -8691,11 +8691,38 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     return out;
   }
   function foScoutOverview(t, ix) {
-    var res = (App.results || []).filter(function (r) { return r.home === t.name || r.away === t.name; }).slice(-5).reverse();
-    var resRows = res.map(function (r) {
-      return "<tr class='rowlink' data-sc='" + r.ix + "'><td>" + E(r.date || "") + "</td><td>" + E(r.home) + " v " + E(r.away) + "</td><td>" + E(r.result ? r.result.text : "") + "</td></tr>";
-    }).join("") || "<tr><td colspan='3' class='small'>No matches played yet.</td></tr>";
+    var pad0 = function (n) { return (n < 10 ? "0" : "") + n; };
+    var frAll = [];
+    try {
+      frAll = foFrAllNow(function () {
+        var pg0 = document.getElementById("page");
+        if (pg0 && location.hash.indexOf("#/scout") === 0) { pg0.__scoutSig = null; foRenderScout(); }
+      }) || [];
+    } catch (eFa) {}
+    var frMine = frAll.filter(function (c) { return c && (c.challenger_club === t.name || c.opponent_club === t.name); });
+    var frTag = function (c) {
+      // practice = a bot on either side; without roster data, say Friendly
+      try { if (foClubMetaNow() && (!foClubHuman(c.challenger_club) || !foClubHuman(c.opponent_club))) return "Practice"; } catch (e0) {}
+      return "Friendly";
+    };
+    var res = (App.results || []).filter(function (r) { return r.home === t.name || r.away === t.name; });
+    var resList = res.map(function (r) {
+      return { at: (Date.parse(r.date || "") || 0) + 9 * 3600000, html: "<tr class='rowlink' data-sc='" + r.ix + "'><td>" + E(r.date || "") + "</td><td>" + E(r.home) + " v " + E(r.away) + "</td><td>" + E(r.result ? r.result.text : "") + "</td></tr>" };
+    });
+    frMine.forEach(function (c) {
+      if (c.status !== "played" || !c.result || foFrBcastState(c).phase !== "done") return;
+      var rt = c.result.result_text || "played";
+      // a practice game played on this device is already in App.results
+      var dup = res.some(function (r) { return r.result && r.result.text === rt && ((r.home === c.challenger_club && r.away === c.opponent_club) || (r.home === c.opponent_club && r.away === c.challenger_club)); });
+      if (dup) return;
+      var at = Date.parse(c.play_at || "") || 0, d = new Date(at);
+      var dTxt = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" }) + " " + pad0(d.getHours()) + ":" + pad0(d.getMinutes());
+      resList.push({ at: at, html: "<tr class='rowlink' data-fr='" + c.id + "'><td>" + dTxt + "</td><td>" + E(c.challenger_club) + " v " + E(c.opponent_club) + " <span class='fo-fr-tag'>" + frTag(c) + "</span></td><td>" + E(rt) + "</td></tr>" });
+    });
+    resList.sort(function (a, b) { return b.at - a.at; });
+    var resRows = resList.slice(0, 6).map(function (x) { return x.html; }).join("") || "<tr><td colspan='3' class='small'>No matches played yet.</td></tr>";
     var ups = [], grounds = {}, S = App.season, myIx = App.teamIx;
+    var roundTs = function (r0) { var d = new Date(); d.setHours(9, 0, 0, 0); d.setDate(d.getDate() + (r0 - S.round) + (foCurAdvanced() ? 1 : 0)); return +d; };
     if (S && S.schedule) for (var r = S.round; r < S.schedule.length && ups.length < 5; r++) {
       var rd = S.schedule[r] || [];
       for (var i = 0; i < rd.length; i++) {
@@ -8704,11 +8731,23 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var gtxt = E(home.ground) + " (" + foPitchName(groundPitch(home.ground)) + ")";
         grounds[gtxt] = 1;
         var isMe = (f[0] === myIx || f[1] === myIx) && ix !== myIx;
-        ups.push({ me: isMe, html: "<tr" + (isMe ? " class='fo-sc-merow'" : "") + "><td>" + foDailyDate(r) + "</td><td>R" + (r + 1) + "</td><td>" + (f[0] === ix ? "vs " : "@ ") + E(opp.name) + (isMe ? " <span class='fo-sc-you'>your match</span>" : "") + "</td>", g: "<td class='small'>" + gtxt + "</td></tr>" });
+        ups.push({ at: roundTs(r), me: isMe, html: "<tr" + (isMe ? " class='fo-sc-merow'" : "") + "><td>" + foDailyDate(r) + "</td><td>R" + (r + 1) + "</td><td>" + (f[0] === ix ? "vs " : "@ ") + E(opp.name) + (isMe ? " <span class='fo-sc-you'>your match</span>" : "") + "</td>", g: "<td class='small'>" + gtxt + "</td></tr>" });
       }
     }
+    // scheduled friendlies sit among the league fixtures, time and all
+    frMine.forEach(function (c) {
+      if (c.status !== "accepted" || foFrBcastState(c).phase !== "pre") return;
+      var at = Date.parse(c.play_at || "") || 0, d = new Date(at);
+      var homeT = null; try { homeT = GD.teams.filter(function (x) { return x.name === c.challenger_club; })[0]; } catch (eH) {}
+      var gtxt2 = (homeT ? E(homeT.ground) + " " : "") + "(" + foPitchName(c.pitch || "balanced") + ")";
+      grounds[gtxt2] = 1;
+      var isHome = c.challenger_club === t.name;
+      var dTxt = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + " " + pad0(d.getHours()) + ":" + pad0(d.getMinutes());
+      ups.push({ at: at, me: false, html: "<tr><td>" + dTxt + "</td><td><span class='fo-fr-tag'>" + frTag(c) + "</span></td><td>" + (isHome ? "vs " : "@ ") + E(isHome ? c.opponent_club : c.challenger_club) + "</td>", g: "<td class='small'>" + gtxt2 + "</td></tr>" });
+    });
+    ups.sort(function (a, b) { return (a.at || 0) - (b.at || 0); });
     var oneGround = Object.keys(grounds).length === 1 ? Object.keys(grounds)[0] : null;
-    var upRows = ups.map(function (u) { return u.html + (oneGround ? "</tr>" : u.g); }).join("") || "<tr><td colspan='4' class='small'>Season complete.</td></tr>";
+    var upRows = ups.slice(0, 6).map(function (u) { return u.html + (oneGround ? "</tr>" : u.g); }).join("") || "<tr><td colspan='4' class='small'>Season complete.</td></tr>";
     var upNote = oneGround ? "<div class='small' style='margin-bottom:6px'>All matches at " + oneGround + ", " + MATCH_TIME + ".</div>" : "";
     // head-to-head vs MY club, like a rivalry page
     var h2h = "";
@@ -8750,25 +8789,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             lv.push({ on: !em2.pre, txt: E(r0.home) + " v " + E(r0.away), sub: em2.pre ? "League matchday &middot; play begins 9:00 AM ET" : "League matchday", go: "#/scorecard?i=" + r0.ix });
         });
       }
-      if (SYNC && SYNC.started && !SYNC.practice && LG) {
-        // first visit before any poll has run: fetch once, repaint on arrival
-        if (window.__foFrAll === undefined && !window.__foFrAllReq) {
-          window.__foFrAllReq = 1;
-          sel("league_challenges", "league_id=eq." + LG.id + "&select=*&order=created_at.desc&limit=24").then(function (rows) {
-            window.__foFrAll = rows || [];
-            var pg0 = document.getElementById("page");
-            if (pg0 && location.hash.indexOf("#/scout") === 0) { pg0.__scoutSig = null; foRenderScout(); }
-          }).catch(function () {});
-        }
-        (window.__foFrAll || []).forEach(function (c) {
-          if (!c || (c.challenger_club !== t.name && c.opponent_club !== t.name)) return;
-          if (c.status !== "accepted" && c.status !== "played") return;
-          var stF = foFrBcastState(c);
-          var ttl = E(c.challenger_club) + " v " + E(c.opponent_club);
-          if (stF.phase === "live") lv.push({ on: true, txt: ttl, sub: "Friendly", go: "#/friendly?id=" + c.id });
-          else if (stF.phase === "pre") lv.push({ on: false, txt: ttl, sub: "Friendly &middot; " + new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }), go: "#/friendly?id=" + c.id });
-        });
-      }
+      frMine.forEach(function (c) {
+        if (c.status !== "accepted" && c.status !== "played") return;
+        var stF = foFrBcastState(c);
+        var ttl = E(c.challenger_club) + " v " + E(c.opponent_club);
+        if (stF.phase === "live") lv.push({ on: true, txt: ttl, sub: frTag(c), go: "#/friendly?id=" + c.id });
+        else if (stF.phase === "pre") lv.push({ on: false, txt: ttl, sub: frTag(c) + " &middot; " + new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }), go: "#/friendly?id=" + c.id });
+      });
       if (lv.length) {
         lv.sort(function (a, b) { return (b.on ? 1 : 0) - (a.on ? 1 : 0); });
         var anyOn = lv.some(function (l) { return l.on; });
@@ -8988,6 +9015,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var back = page.querySelector(".fo-scout-back"); if (back) back.addEventListener("click", function () { location.hash = "#/matches"; });
     var ch = page.querySelector(".fo-challenge"); if (ch) ch.addEventListener("click", function () { foChallengeSmart(ix); });
     page.querySelectorAll("tr.rowlink[data-sc]").forEach(function (tr) { tr.style.cursor = "pointer"; tr.addEventListener("click", function () { location.hash = "#/scorecard?i=" + tr.getAttribute("data-sc"); }); });
+    page.querySelectorAll("tr.rowlink[data-fr]").forEach(function (tr) { tr.style.cursor = "pointer"; tr.addEventListener("click", function () { location.hash = "#/friendly?id=" + tr.getAttribute("data-fr"); }); });
   }
   function foRenderScout() {
     try {
@@ -9997,7 +10025,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260711-0215-1bdc0e";
+  var FO_BUILD = "20260711-0225-1be771";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14006,6 +14034,21 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       }).catch(function () {});
     } catch (e) {}
   }
+  // the league's full challenge list (every manager's matches) - kept fresh
+  // by the bell poll; the first caller on a cold page fetches it once and cb
+  // fires when it lands so the page can repaint
+  function foFrAllNow(cb) {
+    if (window.__foFrAll !== undefined) return window.__foFrAll;
+    if (!(SYNC && SYNC.started && !SYNC.practice && LG)) return [];   // pre-login: do not cache
+    if (!window.__foFrAllReq) {
+      window.__foFrAllReq = 1;
+      sel("league_challenges", "league_id=eq." + LG.id + "&select=*&order=created_at.desc&limit=24").then(function (rows) {
+        window.__foFrAll = rows || [];
+        if (cb) cb();
+      }).catch(function () {});
+    }
+    return null;
+  }
   // live rows tick over even when nothing else repaints the page
   setInterval(function () { try { if (App.page === "matches") foFriendliesPanel(); } catch (e) {} }, 6000);
   // home: a one-line nudge when a challenge needs the manager's attention
@@ -15651,6 +15694,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-cp-ev i{font-style:normal;flex:0 0 82px;color:#8a93a3;font-size:11px;font-weight:700;white-space:nowrap}" +
       ".fo-cp-fr td{color:#8a93a3}.fo-cp-fr td:first-child{font-style:italic}" +
       ".fo-cp-fld{font-size:12.5px;color:#3a4353}" +
+      ".fo-fr-tag{display:inline-block;background:#E8EAEE;color:#5a6472;border-radius:6px;padding:0 6px;font-size:10px;font-weight:700;vertical-align:1px;white-space:nowrap}" +
       ".fo-mu-troph{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 10px}" +
       ".fo-mu-cup{background:linear-gradient(135deg,#F59E0B,#c08a2b);color:#fff;border-radius:10px;padding:8px 14px;font-weight:800;font-size:12.5px;box-shadow:0 3px 10px rgba(160,110,20,.3)}" +
       ".fo-mu-leg{background:#FFFEFC;border:1px solid rgba(28,36,51,.1);border-radius:11px;padding:11px 14px;margin:7px 0}" +
@@ -16317,17 +16361,52 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var h2 = pn.querySelector("h4");
         if (h2 && /^(Batting & fielding|Batting &amp; fielding|Bowling|Skills summary)$/i.test((h2.textContent || "").trim())) pn.style.display = "none";
       });
-      // the Recent matches class column says when a knock was only a friendly
+      // Recent matches: the engine table only knows innings recorded on this
+      // device. Rebuild it from local history PLUS the league's challenge
+      // list, so resolver-played friendlies and other managers' practice
+      // games appear for every player, on every device.
       try {
         var rmP = panels.filter(function (pn) { var h0 = pn.querySelector("h4"); return h0 && /^Recent matches/i.test((h0.textContent || "").trim()); })[0];
-        if (rmP) {
-          var histE = hAll.slice(-8).reverse();
-          var trs = Array.prototype.slice.call(rmP.querySelectorAll("tr")).filter(function (tr) { return tr.children.length >= 5 && tr.children[0].tagName === "TD"; });
-          trs.forEach(function (tr, i) {
-            var e = histE[i]; if (!e) return;
-            var cell = tr.children[1];
-            if (cell && /OD|One Day/i.test(cell.textContent) && (e.fr || e.s == null)) cell.innerHTML += "<div class='small' style='color:#8a93a3'>Friendly</div>";
+        var rmTb = rmP && rmP.querySelector("table");
+        if (rmTb) {
+          var pad0 = function (n) { return (n < 10 ? "0" : "") + n; };
+          var items = hAll.map(function (e) {
+            return { at: (Date.parse(e.date || "") || 0) + 9 * 3600000, fr: !!(e.fr || e.s == null), teams: e.teams || "", bat: e.bat || "-", bowl: e.bowl || "-", dateTxt: E(e.date || ""), key: (e.teams || "") + "|" + (e.bat || "-") };
           });
+          var seenK = {}; items.forEach(function (x) { seenK[x.key] = 1; });
+          var clubNm = pl0.team && pl0.team.name;
+          var frAll2 = foFrAllNow(function () {
+            var ex2 = document.getElementById("fo-career");
+            if (ex2) ex2.removeAttribute("data-n");
+            foCareerPanel();
+          }) || [];
+          frAll2.forEach(function (c) {
+            if (!c || c.status !== "played" || !c.result || foFrBcastState(c).phase !== "done") return;
+            if (c.challenger_club !== clubNm && c.opponent_club !== clubNm) return;
+            var batE = null, bowlE = null;
+            (c.result.scorecard || []).forEach(function (inn) {
+              if (!inn) return;
+              (inn.batting || []).forEach(function (b2) { if (b2 && b2.name === name && (b2.b || b2.r || b2.out)) batE = b2; });
+              (inn.bowling || []).forEach(function (b2) { if (b2 && b2.name === name && (b2.balls || b2.r || b2.w)) bowlE = b2; });
+            });
+            if (!batE && !bowlE) return;
+            var teams2 = c.challenger_club + " v " + c.opponent_club;
+            var bat2 = batE ? (batE.r || 0) + " (" + (batE.b || 0) + ")" : "-";
+            var bowl2 = bowlE ? (bowlE.overs != null ? bowlE.overs : Math.floor((bowlE.balls || 0) / 6) + "." + ((bowlE.balls || 0) % 6)) + "-" + (bowlE.r || 0) + "-" + (bowlE.w || 0) : "-";
+            var key2 = teams2 + "|" + bat2;
+            if (seenK[key2]) return;   // a practice game played on this device is already in local history
+            seenK[key2] = 1;
+            var at2 = Date.parse(c.play_at || "") || 0, d2 = new Date(at2);
+            items.push({ at: at2, fr: true, id: c.id, teams: teams2, bat: bat2, bowl: bowl2, dateTxt: E(d2.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })) + " " + pad0(d2.getHours()) + ":" + pad0(d2.getMinutes()) });
+          });
+          items.sort(function (a, b) { return b.at - a.at; });
+          var head0 = rmTb.querySelector("tr");
+          var rows2 = items.slice(0, 8).map(function (x) {
+            var cls = x.fr ? "One Day<div class='small' style='color:#8a93a3'>Friendly</div>" : "One Day";
+            var tCell = x.id ? "<a href='#/friendly?id=" + x.id + "'>" + E(x.teams) + "</a>" : E(x.teams);
+            return "<tr><td>" + x.dateTxt + "</td><td>" + cls + "</td><td>" + tCell + "</td><td>" + E(x.bat) + "</td><td>" + E(x.bowl) + "</td><td>-</td></tr>";
+          }).join("");
+          if (rows2) rmTb.innerHTML = (head0 ? head0.outerHTML : "") + rows2;
         }
       } catch (eRm) {}
       // the Skills panel reads exactly like the squad page's expanded row:
