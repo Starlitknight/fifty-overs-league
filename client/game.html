@@ -10671,7 +10671,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260711-2046-f16e7f";
+  var FO_BUILD = "20260711-2049-f832a9";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -15231,20 +15231,18 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           entries.push({ ts: lgAt9(x9.round), up: true, html: "<tr" + (isN9 ? " class='fo-fx-fr'" : "") + "><td>" + E(foWhenTxt(lgAt9(x9.round))) + "</td><td>League <span class='small'>R" + (x9.round + 1) + "</span></td><td>" + (x9.isHome ? "vs " : "@ ") + E(x9.opp.name) + " <span class='small'>" + E(foPitchName(x9.pitch) || "") + (x9.weather ? ", " + E(x9.weather) : "") + "</span></td><td class='r'><button class='mini fo-setr' data-r='" + x9.round + "'>" + (subIn9 ? "Edit lineup" : (isN9 ? "Set lineup" : "Plan lineup")) + "</button>" + (subIn9 ? " <span class='small' style='color:#15803D'>&#10003;</span>" : "") + "</td></tr>" });
         });
       } catch (eLgRows) {}
-      // upcoming (live, on, awaiting reply, ready to play) first - soonest at
-      // the top; finished business below it, most recent result first
-      entries.sort(function (a2, b2) {
-        if ((a2.up ? 1 : 0) !== (b2.up ? 1 : 0)) return a2.up ? -1 : 1;
-        return a2.up ? (a2.ts - b2.ts) : (b2.ts - a2.ts);
-      });
-      var doneN9 = 0;
-      entries = entries.filter(function (e4) { return e4.up ? true : ++doneN9 <= 14; });
+      // one straight chronology, oldest match first; only the deep history
+      // tail is trimmed (the newest 14 results always stay)
+      entries.sort(function (a2, b2) { return (a2.ts || 0) - (b2.ts || 0); });
+      var doneTotal = entries.filter(function (e4) { return !e4.up; }).length;
+      var dropOld = Math.max(0, doneTotal - 14), dropped9 = 0;
+      entries = entries.filter(function (e4) { return e4.up ? true : ++dropped9 > dropOld; });
       // IDEMPOTENT render: this runs from the page MutationObserver, so a
       // remove+recreate here re-triggers the observer forever and the panel
       // churns ~20x/sec - real clicks then land on a node that no longer
       // exists by mouseup and simply die. Only touch the DOM when the
       // rendered HTML actually changed.
-      var inner = "<h4>All matches <span class='small' style='font-weight:400'>&middot; league, friendlies &amp; practice &middot; upcoming first</span></h4><div class='pad'>" +
+      var inner = "<h4>All matches <span class='small' style='font-weight:400'>&middot; league, friendlies &amp; practice &middot; oldest first</span></h4><div class='pad'>" +
         "<div class='fo-frs-bar'><button class='primary' id='fo-frs-new'>New practice game</button><span class='small'>Challenge a friend&rsquo;s club from their scout report &middot; friendlies carry no points and no fatigue.</span></div>" +
         (entries.length ? "<table><tr><th>Date</th><th>Type</th><th>Match</th><th>Result</th></tr>" + entries.map(function (e3) { return e3.html; }).join("") + "</table>" : "<div class='small' style='margin-top:8px'>No matches yet. Set up a practice game above, or challenge a rival from their club page.</div>") +
         "</div>";
