@@ -2726,9 +2726,16 @@
         qk("#/nets", "bat", "Match Lab") + qk("#/guide", "info", "Manual") + "</div>";
       // upcoming fixtures card: league rounds + accepted friendlies in time order
       var fxItems = [];
+      var fxAt = function (rn) {
+        try {
+          var d9 = new Date(); d9.setHours(9, 0, 0, 0);
+          d9.setDate(d9.getDate() + (rn - App.season.round) + (foCurAdvanced() ? 1 : 0));
+          return +d9;
+        } catch (e9) { return 0; }
+      };
       foUserFixtures().slice(0, 5).forEach(function (x) {
         var isN = nxt && x.round === nxt.round;
-        fxItems.push({ at: 0, html: "<div class='fo-c2-fx" + (isN ? " next" : "") + "'>" +
+        fxItems.push({ at: fxAt(x.round), html: "<div class='fo-c2-fx" + (isN ? " next" : "") + "'>" +
           "<div class='fo-c2-fxd'><b>" + E(x.date) + "</b><span>9:00 AM</span></div>" +
           "<div class='fo-c2-fxm'><b>" + (x.isHome ? "vs " : "@ ") + E(x.opp.name) + "</b><span>Round " + (x.round + 1) + " &middot; " + (x.isHome ? "Home" : "Away") + (isN ? " &middot; " + E(foPitchName(x.pitch)) + " pitch" : "") + (x.weather ? " &middot; " + E(x.weather) : "") + "</span></div>" +
           (isN ? "<span class='fo-c2-fxn'>NEXT</span>" : "") + "</div>" });
@@ -2739,11 +2746,12 @@
           if (c2f.status !== "accepted" || foFrBcastState(c2f).phase !== "pre") return;
           var dF = new Date(c2f.play_at);
           var pd2 = function (n) { return (n < 10 ? "0" : "") + n; };
-          fxItems.splice(1, 0, { html: "<div class='fo-c2-fx'><div class='fo-c2-fxd'><b>" + dF.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + "</b><span>" + pd2(dF.getHours()) + ":" + pd2(dF.getMinutes()) + "</span></div>" +
+          fxItems.push({ at: +dF || 0, html: "<div class='fo-c2-fx'><div class='fo-c2-fxd'><b>" + dF.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + "</b><span>" + pd2(dF.getHours()) + ":" + pd2(dF.getMinutes()) + "</span></div>" +
             "<div class='fo-c2-fxm'><b>" + (c2f.challenger_club === t.name ? "vs " + E(c2f.opponent_club) : "@ " + E(c2f.challenger_club)) + "</b><span>Friendly &middot; " + foPitchName(c2f.pitch || "balanced") + "</span></div>" +
             "<span class='fo-c2-fxn fr'>FR</span></div>" });
         });
       } catch (eFx) {}
+      fxItems.sort(function (a9, b9) { return (a9.at || 0) - (b9.at || 0); });   // soonest first, friendlies in their true slot
       var fxH = fxItems.slice(0, 6).map(function (x) { return x.html; });
       var fxCard = "<div class='fo-card fo-o-fx'><div class='fo-card-h2row'><div class='fo-card-h2'>Upcoming fixtures</div><a href='#/matches' class='fo-morelink'>View all &rsaquo;</a></div><div class='fo-card-b'>" +
         (fxH.length ? fxH.slice(0, 3).join("") + (fxH.length > 3 ? "<div class='fo-fx-more'>" + fxH.slice(3).join("") + "</div>" : "") : "<div class='small'>Season complete.</div>") +
