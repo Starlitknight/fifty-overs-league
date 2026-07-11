@@ -6296,6 +6296,44 @@
     } catch (e) { say(e); foOnbClose(); }
   }
 
+  // Player links built from stored text can carry baggage the engine's exact
+  // name lookup chokes on - "Jayant Dixit 4w" from a mom string, "(123 pts)"
+  // from fantasy lines, a rename from foUniqueNames. Resolve the real player
+  // before the engine page runs, so those links land instead of 404ing.
+  if (typeof window.pgPlayer === "function" && !window.pgPlayer.__foFuzzy) {
+    var _pgPlF = window.pgPlayer;
+    window.pgPlayer = function (q) {
+      try {
+        q = q || {};
+        var nm = String(q.n || "");
+        var find = (typeof findPlayer === "function") ? findPlayer : null;
+        if (nm && find && !find(nm)) {
+          var cands = [
+            nm.trim(),
+            (window.__FO_RENAMES || {})[nm.trim()] || "",
+            nm.replace(/\s*\([^)]*\)\s*$/, "").trim(),        // "Name (123 pts)"
+            nm.replace(/\s+\d[\w*\/.]*$/, "").trim()          // "Name 4w" / "Name 75*" / "Name 3/21"
+          ];
+          var fixed = null;
+          for (var i = 0; i < cands.length && !fixed; i++) if (cands[i] && find(cands[i])) fixed = cands[i];
+          if (!fixed) {
+            // unique prefix / case-insensitive match as a last resort
+            var lc = nm.trim().toLowerCase(), hits = [];
+            ((typeof GD !== "undefined" && GD.teams) || []).forEach(function (t2) {
+              ((t2 && t2.players) || []).forEach(function (p2) {
+                if (p2 && p2.name && (p2.name.toLowerCase() === lc || lc.indexOf(p2.name.toLowerCase()) === 0)) hits.push(p2.name);
+              });
+            });
+            if (hits.length === 1) fixed = hits[0];
+          }
+          if (fixed) { var q2 = {}; for (var k in q) q2[k] = q[k]; q2.n = fixed; q = q2; }
+        }
+      } catch (e) {}
+      return _pgPlF.call(this, q);
+    };
+    window.pgPlayer.__foFuzzy = 1;
+  }
+
   // relabel the confirm button to "Start Season" while in league draft mode
   if (typeof window.pgFounder === "function") {
     var _pg = window.pgFounder;
