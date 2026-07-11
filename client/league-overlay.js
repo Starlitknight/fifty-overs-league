@@ -508,6 +508,8 @@
     ".fo-en-w-fresh{color:#15803D}.fo-en-w-rested{color:#6B8F3A}.fo-en-w-tired{color:#B45309}" +
     ".fo-tr-pace{font-style:normal;color:#667085}" +
     ".fo-seen{font-size:11px;color:#93a0b4}" +
+    "html body #page .fo-scout-links a.fo-stab,#page .fo-scout-links a.fo-stab{color:#3c4658 !important;font-weight:700}" +
+    "html body #page .fo-scout-links a.fo-stab.on,#page .fo-scout-links a.fo-stab.on{color:#FFFEFC !important}" +
     ".fo-tr-rep .fo-tr-g.fo-tr-warn,.fo-tr-warn{color:#B45309 !important}" +
     ".fo-tr-rep .fo-tr-g.fo-tr-warn svg{color:#B45309}" +
     ".fo-tr-how{background:transparent;border:1px solid #DDD8CF;border-radius:999px;padding:8px 15px;font-weight:700;font-size:12.5px;color:#3c4658;cursor:pointer}" +
@@ -518,6 +520,7 @@
     ".fo-trc-h a{font-size:14.5px;color:#111827 !important;text-decoration:none}" +
     ".fo-trc-warn{margin:7px 0 2px;font-size:11.5px;color:#B45309;background:#FDF3E2;border-radius:8px;padding:6px 9px}" +
     ".fo-trc-row{display:grid;grid-template-columns:1.5fr 1fr;gap:9px;margin:9px 0 7px}" +
+    ".fo-trc-row.fo-trc-one{grid-template-columns:1fr}" +
     ".fo-trc-row label{display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#667085}" +
     "html body .fo-trc-row select,html body.ftpskin .fo-trc-row select{width:125%;padding:7px 8px;border:1px solid #cdc7b8;border-radius:11px;background:#FFFEFC;transform:scale(.8);transform-origin:left top;margin-bottom:-9px}" +
     ".fo-trc-ws{display:flex;flex-wrap:wrap;gap:6px 12px;margin:2px 0 8px}" +
@@ -6042,11 +6045,10 @@
   // honest pace band - the per-matchday rate is shaped by age, energy and
   // intensity, so we band it rather than fake a precise matchday count
   function foTrPace(p, tr) {
-    if (tr.program === "Rest" || tr.intensity === "Rest") return "recovering";
+    if (tr.program === "Rest") return "recovering";
     var en = foEnergyOf(p);
     var v = (p.age <= 21 ? 3 : p.age <= 25 ? 2.2 : p.age <= 29 ? 1.4 : 0.7);
     v *= en.tired ? 0.45 : (en.word === "rested" ? 0.85 : 1);
-    v *= tr.intensity === "Intense" ? 1.2 : (tr.intensity === "Light" ? 0.8 : 1);
     return v >= 2.4 ? "training fast" : v >= 1.3 ? "training steadily" : v >= 0.7 ? "training slowly" : "barely moving";
   }
   function foTrKey() { return "fol_train_" + (LG ? LG.id : "solo"); }
@@ -6108,10 +6110,10 @@
   }
   function foTrOf(p) {
     var st = foTrainState(), o = st.training[p.name] || {};
-    return {
-      program: o.program || (p.training && p.training.program) || foTrDefault(p),
-      intensity: o.intensity || (p.training && p.training.intensity) || "Normal"
-    };
+    var prog = o.program || (p.training && p.training.program) || foTrDefault(p);
+    // intensity is retired as a concept: Rest is a program, everything else
+    // trains at the one honest speed
+    return { program: prog, intensity: prog === "Rest" ? "Rest" : "Normal" };
   }
   function foPotential(p) {
     if (p.training && p.training.potential) return p.training.potential;
@@ -7711,6 +7713,15 @@
     var t = foMyClub();
     if (!t || !t.players || !t.players.length) { page.innerHTML = "<div class='crumb'>Training</div><div class='panel'><h4>Training</h4><div class='pad'>No squad yet · finish your draft first.</div></div>"; return; }
     var st = foTrainState();
+    try {
+      var dirty = false;
+      for (var nmT in st.training) {
+        var oT = st.training[nmT] || {};
+        var wantI = oT.program === "Rest" ? "Rest" : "Normal";
+        if (oT.intensity !== wantI) { oT.intensity = wantI; dirty = true; }
+      }
+      if (dirty) foTrainSave(st);
+    } catch (eSc) {}
     var round = (App.season && App.season.round) || 0;
     var rep = t._trainReport || (App.trainingReports && App.trainingReports[0]) || null;
     var ward = (t.injured && t.injured.length)
@@ -7720,7 +7731,7 @@
     var progOpts = function (cur) {
       return FO_TR_PROGS.map(function (k) { return "<option value='" + k + "'" + (cur === k ? " selected" : "") + ">" + k + "</option>"; }).join("");
     };
-    var intOpts = function (cur) { return FO_TR_INT.map(function (k) { return "<option value='" + k + "'" + (cur === k ? " selected" : "") + ">" + k + "</option>"; }).join(""); };
+
     var potCls = { Star: "star", High: "high", Useful: "useful", Limited: "limited" };
 
     var sorted = t.players.slice().sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
@@ -7740,7 +7751,6 @@
         "<td class='fo-tr-nm'>" + flag + " <a class='fo-tr-link' href='#/player?n=" + encodeURIComponent(p.name) + "'><b>" + E(p.name) + "</b></a><span class='fo-tr-meta'>" + foRoleShort(p) + " · age " + (p.age || "?") + "</span></td>" +
         "<td>" + enBar(en) + "</td>" +
         "<td><select class='fo-tr-prog' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + progOpts(tr.program) + "</select></td>" +
-        "<td><select class='fo-tr-int' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + intOpts(tr.intensity) + "</select></td>" +
         "<td class='fo-tr-progress'><div class='fo-tr-bar' title='Progress to the next +1'><u style='width:" + pr.pct + "%'></u></div><span>" + gainOf(p, tr, pr) + " &middot; <i class='fo-tr-pace'>" + foTrPace(p, tr) + "</i></span></td>" +
         "</tr>";
     }).join("");
@@ -7756,8 +7766,7 @@
       return "<div class='fo-trc'>" +
         "<div class='fo-trc-h'><a href='#/player?n=" + encodeURIComponent(p.name) + "'><b>" + E(p.name) + "</b></a><span class='fo-tr-meta'>" + foRoleShort(p) + " · age " + (p.age || "?") + "</span></div>" +
         enBar(en) + warn +
-        "<div class='fo-trc-row'><label>Program<select class='fo-tr-prog' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + progOpts(tr.program) + "</select></label>" +
-        "<label>Intensity<select class='fo-tr-int' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + intOpts(tr.intensity) + "</select></label></div>" +
+        "<div class='fo-trc-row fo-trc-one'><label>Program<select class='fo-tr-prog' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + progOpts(tr.program) + "</select></label></div>" +
         (chips ? "<div class='fo-trc-ws'>" + chips + "</div>" : "<div class='fo-trc-ws small'>Recovery week &middot; energy climbs instead of skills.</div>") +
         "<div class='fo-tr-progress'><div class='fo-tr-bar' title='Progress to the next +1'><u style='width:" + pr.pct + "%'></u></div><span>" + gainOf(p, tr, pr) + " &middot; <i class='fo-tr-pace'>" + foTrPace(p, tr) + "</i></span></div>" +
         "</div>";
@@ -7781,6 +7790,10 @@
 
     // youth scout panel: pick a country, reveal a shortlist of three, sign one
     var canSignIn = Math.max(0, FO_SCOUT_COOLDOWN - (round - st.lastSignRound));
+    var squadFull = (t.players || []).length >= 18;
+    var signBlock = st.youthPending.length ? "Signing pending" :
+      (canSignIn > 0 ? "Sign in " + canSignIn + " matchday" + (canSignIn === 1 ? "" : "s") :
+      (squadFull ? "Squad full (18)" : null));
     var revealIn = st.scoutReveal ? Math.max(0, FO_SCOUT_REVEAL_GAP - (round - st.scoutReveal.round)) : 0;
     var natSel = "<select id='fo-yc-nat'>" + foScoutNats().map(function (n) {
       var cur = (st.scoutReveal && st.scoutReveal.nat) || st.scoutNat || foScoutDefaultNat();
@@ -7799,7 +7812,7 @@
         "<div><span class='fo-yt fo-yt-" + (p._ytier || "raw") + "'>" + yt.lbl + "</span></div>" +
         "<div class='fo-yc-bars'>" + barHtml + "</div>" +
         "<div class='fo-yc-money'><span>Fee <b>Free</b></span><span>Wage <b>" + FO$(foDailyWage(p)) + "/matchday</b></span></div>" +
-        "<button class='fo-yc-sign' data-i='" + i + "'" + ((st.youthPending.length || canSignIn > 0) ? " disabled" : "") + ">Sign</button>" +
+        "<button class='fo-yc-sign' data-i='" + i + "'" + (signBlock ? " disabled title='" + E(signBlock) + "'" : "") + ">" + (signBlock || "Sign") + "</button>" +
         "</div>";
     }).join("") || "<div class='small'>The scout came back empty-handed; reveal again next window.</div>";
     var scoutNote = st.youthPending.length
@@ -7827,9 +7840,9 @@
       repHtml +
       "<div class='panel'><h4>Training programs</h4><div class='pad'>" +
 
-      "<table class='fo-tr-tbl'><thead><tr><th>Player</th><th>Energy</th><th>Program</th><th>Intensity</th><th>Next gain</th></tr></thead><tbody>" + rows + "</tbody></table>" +
+      "<table class='fo-tr-tbl'><thead><tr><th>Player</th><th>Energy</th><th>Program</th><th>Next gain</th></tr></thead><tbody>" + rows + "</tbody></table>" +
       "<div class='fo-trc-list'>" + cards + "</div>" +
-      "<div class='small' style='margin-top:8px'>Skill gains raise wages automatically. Intense trains ~20% faster but drains energy; Rest recovers. Squads over 24 players train slower.</div>" +
+      "<div class='small' style='margin-top:8px'>Skill gains raise wages automatically. The Rest program recovers energy instead of training. Squads over 24 players train slower.</div>" +
       "</div></div>" +
       "<div class='panel'><h4>Youth scout &middot; ages 18&#8211;20</h4><div class='pad'>" +
       scoutBody +
@@ -7838,14 +7851,14 @@
 
     var trRedraw = function () { var y = window.scrollY; foTrainingPage(); window.scrollTo(0, y); };
     page.querySelectorAll(".fo-tr-prog").forEach(function (s) { s.addEventListener("change", function () { foSetTraining(s.getAttribute("data-p"), "program", s.value); trRedraw(); }); });
-    page.querySelectorAll(".fo-tr-int").forEach(function (s) { s.addEventListener("change", function () { foSetTraining(s.getAttribute("data-p"), "intensity", s.value); trRedraw(); }); });
+
     var howB = page.querySelector("#fo-tr-how");
     if (howB) howB.addEventListener("click", function () {
       var ex = document.getElementById("fo-tr-howm"); if (ex) { ex.remove(); return; }
       var m = document.createElement("div"); m.id = "fo-tr-howm"; m.className = "fo-modal";
       m.innerHTML = "<div class='fo-modal-card' style='max-width:720px;max-height:84vh;overflow:auto'><div class='fo-modal-eyebrow'>Development centre</div><h3>How training works</h3>" +
         "<div class='small' style='line-height:1.65;margin:6px 0 14px'>Every matchday, each player banks progress toward the skills in his program. When a skill's progress bar fills, the skill goes up one point and his wage rises with it. " +
-        "<b>Speed</b> depends on age (young players learn fastest, veterans barely move), energy (tired players train poorly), intensity (Intense is ~20% faster but drains energy; Rest recovers instead of training) and your academy level.</div>" +
+        "<b>Speed</b> depends on age (young players learn fastest, veterans barely move), energy (tired players train poorly) and your academy level. The <b>Rest</b> program recovers energy instead of training.</div>" +
         "<h3 style='font-size:15px'>What each program trains</h3>" +
         "<div class='small' style='margin:2px 0 8px;color:#667085'>Every session splits its progress across these skills, in these proportions.</div>" +
         foProgExplainHTML() +
