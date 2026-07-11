@@ -551,10 +551,13 @@
     ".fo-ch-mainc{display:flex;flex-direction:column;gap:14px}" +
     ".fo-ch-sidec{display:flex;flex-direction:column;gap:14px}" +
     "@media(max-width:900px){.fo-ch-cols{grid-template-columns:1fr}}" +
-    "html body .wrap:has(.fo-ch-min){max-width:1520px !important;width:calc(100% - 40px)}" +
-    "html body #page:has(.fo-ch-min){max-width:1520px !important;padding:4px 0 28px}" +
-    "html body .fo-ch.fo-ch-min{max-width:1480px !important;width:100%;margin:0 auto;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}" +
+    // cap the dashboard with slack to spare: laptops at 125% OS scaling see a
+    // ~1530px CSS viewport, and a 1520px cap left the right edge shaved off
+    "html body .wrap:has(.fo-ch-min){max-width:1400px !important;width:calc(100% - 48px)}" +
+    "html body #page:has(.fo-ch-min){max-width:1400px !important;padding:4px 0 28px}" +
+    "html body .fo-ch.fo-ch-min{max-width:1360px !important;width:100%;margin:0 auto;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}" +
     "html body #topbar a{padding:15px 13px !important;font-size:13.5px !important}" +
+    "@media(max-width:1700px){html body #topbar a{padding:15px 10px !important;font-size:13px !important}#fo-clock{display:none !important}}" +
     "html body:has(.fo-ch-min){background:#f4f1ea !important}" +
     ".fo-ch-min .fo-card{background:#fff;border-radius:12px;border:1px solid rgba(20,36,58,.10);box-shadow:0 4px 14px rgba(20,36,58,.06);display:flex;flex-direction:column}" +
     ".fo-ch-min .fo-card>.fo-card-b{flex:1}" +
