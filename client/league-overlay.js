@@ -588,6 +588,9 @@
     ".fo-pv-p{font-size:13px;color:#0E233F;font-weight:700}.fo-pv-p span{font-weight:600;color:#5a6472}" +
     ".fo-pv-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}" +
     "@media(max-width:700px){.fo-pv-cols{grid-template-columns:1fr}}" +
+    ".fo-pv-cdw{margin-top:12px;display:flex;align-items:baseline;gap:10px}" +
+    ".fo-pv-cdk{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#93a0b4}" +
+    ".fo-pv-cd{font-size:22px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums}" +
     ".fo-pv-h2h{font-size:13px;color:#0E233F;padding:5px 0;border-bottom:1px solid #f0ece1}.fo-pv-h2h:last-child{border-bottom:none}.fo-pv-h2h span{color:#8a93a3;font-size:11px}" +
     ".fo-pv-fact{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:4px 0}.fo-pv-fact span{color:#5a6472}.fo-pv-fact b{color:#0E233F;text-align:right}" +
     "html body .fo-flg img{width:16px !important;height:11px !important;vertical-align:-1px;border-radius:2px;box-shadow:0 0 0 1px rgba(20,36,58,.12)}" +
@@ -6392,27 +6395,19 @@
   // (fixtures, table, results), then its record is replaced with my squad.
   function foJoinRunningSeason(club, attempt) {
     attempt = attempt || 0;
-    openWrap(true); foLoading("Joining the season…");
-    // the 8-10 AM ET window belongs to the resolver: a join spliced into the
-    // snapshot mid-broadcast can be overwritten by the round being banked.
-    // Wait it out and join automatically at stumps.
-    try {
-      var hJ = foETHour(new Date());
-      if (hJ != null && hJ >= 8 && hJ < 10) {
-        foLoading("Today's 9:00 AM round is being played &middot; your club joins the league at stumps (10:00 AM ET). Keep this open - it finishes automatically.");
-        setTimeout(function () { foJoinRunningSeason(club, attempt); }, 60000);
-        return;
-      }
-    } catch (eW) {}
+    if (attempt > 12) return;                       // the watchdog gave it every chance
+    // first join shows its progress; watchdog re-splices are silent so they
+    // never interrupt a manager already playing
+    if (!attempt) { openWrap(true); foLoading("Joining the season…"); }
     sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version,round").then(function (a) {
       var st = a[0];
-      if (!st || !st.snapshot || !st.snapshot.teams) { showWait(true); return; }
+      if (!st || !st.snapshot || !st.snapshot.teams) { if (!attempt) showWait(true); return; }
       var snap = st.snapshot;
       var already = snap.teams.some(function (t) { return t && t.name === club.name; });
       var target = already ? club.name : null;
       if (!target) {
         var bots = snap.teams.filter(function (t) { return t && !t.founded; });
-        if (!bots.length) { say("The league is already full of human clubs · ask your commissioner to restart the season to fit you in."); showWait(true); return; }
+        if (!bots.length) { if (!attempt) { say("The league is already full of human clubs · ask your commissioner to restart the season to fit you in."); showWait(true); } return; }
         // take over the bottom-most bot (least disruption to the title race)
         var bot = bots[bots.length - 1];
         target = bot.name;
@@ -6421,27 +6416,30 @@
       if (target !== club.name) raw = raw.split(JSON.stringify(target).slice(1, -1)).join(JSON.stringify(club.name).slice(1, -1));
       var s2 = JSON.parse(raw);
       var ix = s2.teams.findIndex(function (t) { return t && t.name === club.name; });
-      if (ix < 0) { showWait(true); return; }
+      if (ix < 0) { if (!attempt) showWait(true); return; }
       club.founded = true;
       s2.teams[ix] = club;
       return rpc("member_push_state", { p_league_id: LG.id, p_snapshot: s2, p_round: st.round || 0 }).then(function (ver) {
         SYNC.lastVersion = typeof ver === "number" ? ver : (st.version + 1);
         SYNC.started = true;
-        applySnapshot(s2, true);
-        // two friends joining together race on the same base snapshot and the
-        // last write wins - verify my club survived, and re-splice if not
-        setTimeout(function () {
-          sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version").then(function (a2) {
-            var cur = a2 && a2[0];
-            var inSnap = !!(cur && cur.snapshot && (cur.snapshot.teams || []).some(function (t2) { return t2 && t2.name === club.name; }));
-            if (!inSnap && attempt < 4) {
-              foLoading("Another club joined at the same moment &middot; re-taking your place&hellip;");
-              setTimeout(function () { foJoinRunningSeason(club, attempt + 1); }, 1500 + Math.random() * 3500);
-            }
-          }).catch(function () {});
-        }, 4000);
+        applySnapshot(s2, !attempt);
+        // joins are allowed even while the 9:00 round is being played: the
+        // resolver banking the round (or another joiner) can clobber this
+        // splice minutes from now, so a watchdog keeps checking for up to
+        // 90 minutes and quietly re-takes the place until it sticks
+        try { (window.__foJoinTimers || []).forEach(clearTimeout); } catch (eT) {}
+        window.__foJoinTimers = [5, 60, 180, 480, 900, 1800, 3600, 5400].map(function (sec) {
+          return setTimeout(function () {
+            sel("league_state", "league_id=eq." + LG.id + "&select=snapshot").then(function (a2) {
+              var cur = a2 && a2[0];
+              var inSnap = !!(cur && cur.snapshot && (cur.snapshot.teams || []).some(function (t2) { return t2 && t2.name === club.name; }));
+              if (!inSnap) foJoinRunningSeason(club, attempt + 1);
+            }).catch(function () {});
+          }, sec * 1000 + Math.random() * 2000);
+        });
       });
     }).catch(function (e) {
+      if (attempt) return;                          // a later watchdog pass retries
       var msg = ((e && e.message) || e) + "";
       if (/Could not find the function|member_push_state/i.test(msg)) {
         say("Squad locked in! Ask your commissioner to hit 'Restart season' to bring your club in (or run the 0013 SQL to enable instant joining).");
@@ -8517,27 +8515,54 @@
         var when = c.play_at ? new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
         var head = "<div class='crumb'>" + foClubLink(c.challenger_club) + " v " + foClubLink(c.opponent_club) + " &raquo; " + (c.__practice ? "Practice" : "Friendly") + "</div>";
         if (st.phase === "pre") {
-          // the wait is a proper pre-match show: form, leaders, head-to-head
-          // and match facts, live from lineup lock until the first ball
+          // the wait is a proper pre-match show: countdown, form, leaders,
+          // key battles, a conditions read, head-to-head and match facts.
+          // Rendered ONCE and cached - the engine's page ticks restore it
+          // instead of refetch-flashing every few seconds.
           var kindP = (c.__practice ? "Practice" : "Friendly");
           var lockT = new Date(Date.parse(c.play_at) - 3600000);
           var lockedP = Date.now() >= +lockT;
-          var preKey = mh[1] + ":" + (lockedP ? 1 : 0);
-          if (page.__foFrPre === preKey && page.querySelector(".fo-pv")) return;   // steady: no 6s repaint scroll-jumps
+          var ordN = 0; try { ordN = Object.keys(c.orders || {}).length; } catch (eOn) {}
+          var preKey = mh[1] + ":" + (lockedP ? 1 : 0) + ":" + ordN;
+          if (page.__foFrPre === preKey && page.querySelector(".fo-pv")) { try { foWatchPing("fr-" + mh[1]); } catch (eW1) {} return; }
           page.__foFrPre = preKey;
           var fmtT9 = function (d9) { return d9.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + (foTzAbbr() ? " " + foTzAbbr() : ""); };
           var homeT9 = null; (GD.teams || []).forEach(function (t9) { if (t9 && t9.name === c.challenger_club) homeT9 = t9; });
+          var xiRow9 = function (nm9) {
+            var inOrd = false; try { inOrd = !!(c.orders && c.orders[nm9]); } catch (eXi) {}
+            return "<div class='fo-pv-fact'><span>" + E(nm9) + " XI</span><b>" + (inOrd ? "&#10003; attached" : (lockedP ? "auto XI plays" : "auto XI unless attached")) + "</b></div>";
+          };
           var pv9 = "";
           try {
             var em9 = (typeof foEmbargo === "function") ? foEmbargo() : { active: false };
             pv9 = foMatchPreviewHTML(
               { home: c.challenger_club, away: c.opponent_club, ground: (homeT9 && homeT9.ground) || "", pitch: c.pitch, weather: c.weather },
               em9.active ? em9.round : null,
-              { firstBall: fmtT9(new Date(c.play_at)), lock: (lockedP ? "Locked at " : "Lock at ") + fmtT9(lockT) });
+              { firstBall: fmtT9(new Date(c.play_at)), lock: (lockedP ? "Locked at " : "Lock at ") + fmtT9(lockT),
+                extraFacts: xiRow9(c.challenger_club) + xiRow9(c.opponent_club) });
           } catch (ePv9) {}
-          page.innerHTML = head + "<div class='fo-live-hero'><div class='fo-live-tag'>" + kindP.toUpperCase() + " &middot; " + when + (foTzAbbr() ? " " + foTzAbbr() : "") + "</div>" +
+          var preHtml = "<div id='fo-fr-live'>" + head +
+            "<div class='fo-live-hero'><div class='fo-live-tag'>" + kindP.toUpperCase() + " &middot; " + when + (foTzAbbr() ? " " + foTzAbbr() : "") + "</div>" +
             "<div class='fo-live-score'>" + title + "</div>" +
-            "<div class='fo-live-sub'>" + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + (lockedP ? " &middot; lineups are locked" : "") + " &middot; play begins on the hour, ball by ball</div></div>" + pv9;
+            "<div class='fo-live-sub'>" + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + (lockedP ? " &middot; lineups are locked" : "") + " &middot; play begins on the hour, ball by ball</div>" +
+            "<div class='fo-pv-cdw'><span class='fo-pv-cdk'>First ball in</span><b class='fo-pv-cd' id='fo-fr-cd'>" + foCdText(Date.parse(c.play_at) - Date.now()) + "</b></div>" +
+            "<div class='fo-live-watch' id='fo-watchers'></div></div>" + pv9 + "</div>";
+          page.innerHTML = preHtml;
+          window.__foFrCache = { id: mh[1], html: preHtml, done: false };
+          try { foWatchPing("fr-" + mh[1]); } catch (eW2) {}
+          if (window.__foFrCdIv) clearInterval(window.__foFrCdIv);
+          window.__foFrCdIv = setInterval(function () {
+            var el9 = document.getElementById("fo-fr-cd");
+            if (!el9 || (location.hash || "").indexOf(mh[1]) < 0) { clearInterval(window.__foFrCdIv); window.__foFrCdIv = null; return; }
+            var left9 = Date.parse(c.play_at) - Date.now();
+            if (left9 <= 0) {
+              clearInterval(window.__foFrCdIv); window.__foFrCdIv = null;
+              window.__foFrCache = null; page.__foFrPre = null;
+              foRenderFriendlyLive(); return;                 // the toss: over to the live view
+            }
+            el9.textContent = foCdText(left9);
+            try { var ch9 = window.__foFrCache; if (ch9 && ch9.id === mh[1] && !ch9.done) ch9.html = page.innerHTML; } catch (eCh9) {}
+          }, 1000);
           return;
         }
         if (st.phase === "live" && !c.result) {
@@ -9693,12 +9718,12 @@
         if (runs > 0 && (!bat || runs > bat.v)) bat = { n: p2.name, v: runs };
         if (wk > 0 && (!bowl || wk > bowl.v)) bowl = { n: p2.name, v: wk };
       });
-      return "<div class='fo-pv-team'><b>" + E(nm) + "</b>" +
+      return { bat: bat, bowl: bowl, html: "<div class='fo-pv-team'><b>" + E(nm) + "</b>" +
         "<div class='fo-pv-pos'>" + (pos > 0 && pl[nm] ? foOrdinal(pos) + " &middot; " + (pts[nm] || 0) + " pts &middot; " + (w[nm] || 0) + "&ndash;" + (l[nm] || 0) : "First match of the season") + "</div>" +
         "<div class='fo-pv-k'>Form</div><div class='fo-form'>" + pips + "</div>" +
         (bat ? "<div class='fo-pv-k'>Leading run-scorer</div><div class='fo-pv-p'>" + E(bat.n) + " <span>" + bat.v + " runs</span></div>" : "") +
         (bowl ? "<div class='fo-pv-k'>Leading wicket-taker</div><div class='fo-pv-p'>" + E(bowl.n) + " <span>" + bowl.v + " wkts</span></div>" : "") +
-        "</div>";
+        "</div>" };
     };
     // head to head: settled meetings this season
     var meets = [];
@@ -9713,8 +9738,21 @@
     var h2h = meets.length
       ? meets.map(function (m2) { return "<div class='fo-pv-h2h'>" + E(m2.result.text) + " <span>R" + ((+m2.round || 0) + 1) + "</span></div>"; }).join("")
       : "<div class='small'>First meeting of the season.</div>";
+    var hs = side(r.home), as2 = side(r.away);
+    // the contests inside the contest: each side's big gun against the
+    // other's most dangerous bowler
+    var battles = [];
+    if (hs.bat && as2.bowl) battles.push("<div class='fo-pv-h2h'><b>" + E(hs.bat.n) + "</b> (" + hs.bat.v + " runs) faces <b>" + E(as2.bowl.n) + "</b> (" + as2.bowl.v + " wkts)</div>");
+    if (as2.bat && hs.bowl) battles.push("<div class='fo-pv-h2h'><b>" + E(as2.bat.n) + "</b> (" + as2.bat.v + " runs) faces <b>" + E(hs.bowl.n) + "</b> (" + hs.bowl.v + " wkts)</div>");
+    var battleCard = battles.length ? "<div class='panel fo-keep'><h4>Key battles</h4><div class='pad'>" + battles.join("") + "</div></div>" : "";
+    // what these conditions actually mean, in one breath
+    var pr9 = FO_PITCH_READ[r.pitch], wr9 = FO_WX_READ[String(r.weather || "").trim().toLowerCase()];
+    var condCard = (pr9 || wr9)
+      ? "<div class='panel fo-keep'><h4>Reading the conditions</h4><div class='pad' style='font-size:13px;line-height:1.6;color:#3a4353'>" +
+        [pr9, wr9 ? wr9.charAt(0).toUpperCase() + wr9.slice(1) + "." : null].filter(Boolean).join(" ") + "</div></div>"
+      : "";
     return "<div class='fo-pv'>" +
-      "<div class='panel fo-keep'><h4>Match preview</h4><div class='pad'><div class='fo-pv-grid'>" + side(r.home) + side(r.away) + "</div></div></div>" +
+      "<div class='panel fo-keep'><h4>Match preview</h4><div class='pad'><div class='fo-pv-grid'>" + hs.html + as2.html + "</div></div></div>" +
       "<div class='fo-pv-cols'><div class='panel fo-keep'><h4>Head to head</h4><div class='pad'>" + h2h + "</div></div>" +
       "<div class='panel fo-keep'><h4>Match facts</h4><div class='pad'>" +
       "<div class='fo-pv-fact'><span>Ground</span><b>" + E(r.ground || "&ndash;") + "</b></div>" +
@@ -9722,9 +9760,32 @@
       (r.weather ? "<div class='fo-pv-fact'><span>Weather</span><b>" + E(r.weather) + "</b></div>" : "") +
       "<div class='fo-pv-fact'><span>First ball</span><b>" + ((facts && facts.firstBall) || "9:00 AM ET") + "</b></div>" +
       "<div class='fo-pv-fact'><span>Lineups</span><b>" + ((facts && facts.lock) || "Locked at 8:00 AM ET") + "</b></div>" +
+      ((facts && facts.extraFacts) || "") +
       "<div class='small' style='margin-top:8px'>Scores tick in ball by ball from " + ((facts && facts.firstBall) || "9:00") + "; the full card, charts and ratings arrive at stumps.</div>" +
-      "</div></div></div></div>";
+      "</div></div>" + battleCard + condCard + "</div></div>";
   }
+  // one-line cricket reads for every pitch and sky the league can serve up
+  var FO_PITCH_READ = {
+    balanced: "A fair surface: runs for batters who apply themselves, help for bowlers who hit their lengths.",
+    flat: "A road. Par is high, bowlers need patience and changes of pace, and totals under 250 rarely survive.",
+    green: "Grass on it: the new ball will move around, and the first ten overs could decide the whole match.",
+    dry: "Dry and crumbling: spin grips harder as the innings wears on - runs on the board look twice as big.",
+    slow: "The ball sits in this surface. Timing is hard, cutters and spinners hold it up, big totals are rare.",
+    cracked: "A sticky, cracked top: uneven bounce rewards bowlers who attack the stumps and punishes lazy feet.",
+    twoPaced: "Two-paced: some balls skid, some stop. Set batters cash in; fresh ones get strangled."
+  };
+  var FO_WX_READ = {
+    sunny: "Fine batting weather - the ball goes soft and the outfield is quick",
+    overcast: "cloud cover keeps the ball swinging all day - a gift for the seamers",
+    humid: "heavy, humid air: swing early on, and every player's fatigue clock runs faster",
+    hot: "energy-sapping heat - deep batting and short, sharp spells pay off",
+    scorching: "brutal heat: fatigue is the hidden opponent, and a sixth bowling option is gold",
+    drizzle: "drizzle about - just enough nibble to keep the seamers interested",
+    windy: "gusty: hard work for flighted spin, and high catches become adventures",
+    chilly: "cold hands and zip for the quicks early - watch the first spell",
+    misty: "murky and slow to clear - the new ball will talk",
+    "dew later": "dew arrives later: the ball gets slippery and chasing gets easier under it"
+  };
   // stats-page tables list bare player names: stamp each with his club
   function foStatsClubTags() {
     try {
