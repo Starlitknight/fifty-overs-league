@@ -507,6 +507,7 @@
     ".fo-en-w{font-size:11px;font-weight:700;text-transform:capitalize}" +
     ".fo-en-w-fresh{color:#15803D}.fo-en-w-rested{color:#6B8F3A}.fo-en-w-tired{color:#B45309}" +
     ".fo-tr-pace{font-style:normal;color:#667085}" +
+    ".fo-seen{font-size:11px;color:#93a0b4}" +
     ".fo-tr-rep .fo-tr-g.fo-tr-warn,.fo-tr-warn{color:#B45309 !important}" +
     ".fo-tr-rep .fo-tr-g.fo-tr-warn svg{color:#B45309}" +
     ".fo-tr-how{background:transparent;border:1px solid #DDD8CF;border-radius:999px;padding:8px 15px;font-weight:700;font-size:12.5px;color:#3c4658;cursor:pointer}" +
@@ -1518,6 +1519,15 @@
   }
   function foClubHuman(nm) { var m = foClubMetaNow(); return !!(m && m[nm]); }
   function foClubManager(nm) { var m = foClubMetaNow(); return (m && m[nm] && m[nm].manager) || null; }
+  function foLastSeenTxt(nm) {
+    var m = foClubMetaNow(), e = m && m[nm];
+    if (!e || !e.lastSeen) return null;
+    var mins = Math.floor((Date.now() - new Date(e.lastSeen).getTime()) / 60000);
+    if (mins < 5) return "online";
+    if (mins < 60) return "last online " + mins + " min ago";
+    if (mins < 36 * 60) { var h = Math.round(mins / 60); return "last online " + h + " hour" + (h === 1 ? "" : "s") + " ago"; }
+    var d0 = Math.round(mins / 1440); return "last online " + d0 + " day" + (d0 === 1 ? "" : "s") + " ago";
+  }
   function foClubOnline(nm) {
     var m = foClubMetaNow(), e = m && m[nm];
     if (!e || !e.lastSeen) return null;
@@ -2484,7 +2494,10 @@
           if (isMe) return " · Manager <b>" + E((SYNC.me && SYNC.me.display_name) || "you") + "</b> <i class='fo-dot fo-dot-on' title='online'></i>";
           if (foClubHuman(t.name)) {
             var on = foClubOnline(t.name);
-            return " · Manager <b>" + E(foClubManager(t.name) || "") + "</b>" + (on === null ? "" : " <i class='fo-dot " + (on ? "fo-dot-on" : "fo-dot-off") + "' title='" + (on ? "online" : "offline") + "'></i>");
+            var seen = foLastSeenTxt(t.name);
+            return " · Manager <b>" + E(foClubManager(t.name) || "") + "</b>" +
+              (on === null ? "" : " <i class='fo-dot " + (on ? "fo-dot-on" : "fo-dot-off") + "'></i>") +
+              (seen ? " <span class='fo-seen'>" + E(seen) + "</span>" : "");
           }
           if (!foClubMetaNow()) return "";   // roster still loading: say nothing rather than guess
           return " · <span class='fo-bot-chip'>BOT · computer managed</span>";
