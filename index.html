@@ -10027,7 +10027,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260711-0339-4fc9cb";
+  var FO_BUILD = "20260711-0348-815241";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14542,10 +14542,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     gridToSpells();
   }
   function foOrdSurname(nm) { var b = String(nm || "").split(" "); return b.length > 1 ? b.slice(1).join(" ") : nm; }
+  function foOrdPool() {
+    var t = userTeam();
+    return (t.players || []).filter(function (p) { return p.bowlType; })
+      .sort(function (a, b) { return (isPT(a) - isPT(b)) || (aggBowl(b) - aggBowl(a)); });
+  }
   function foOrdColors() {
-    var names = [], g = App.orders.grid || [];
-    for (var o = 1; o <= 50; o++) if (g[o] && names.indexOf(g[o]) < 0) names.push(g[o]);
-    var map = {}; names.forEach(function (nm, i) { map[nm] = FO_ORD_COLS[i % FO_ORD_COLS.length]; });
+    var map = {};
+    foOrdPool().forEach(function (p, i) { map[p.name] = FO_ORD_COLS[i % FO_ORD_COLS.length]; });
     return map;
   }
   function foOrdBatRows() {
@@ -14574,9 +14578,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var own = foOrdSlotOwner(ph, par);
         var lblEnd = par === 1 ? "End A" : "End B";
         var inner = own
-          ? "<b style='color:" + (colors[own.nm] || "#0E233F") + "'>" + E(foOrdSurname(own.nm)) + "</b><span>" + own.n + " ov" + (own.mixed || own.n < own.tot ? " · partial" : "") + "</span>"
+          ? "<b><em style='background:" + (colors[own.nm] || "#0E233F") + "'></em>" + E(foOrdSurname(own.nm)) + "</b><span>" + own.n + " ov" + (own.mixed || own.n < own.tot ? " · partial" : "") + "</span>"
           : "<b class='fo-os-ai'>AI decides</b><span>tap to pick</span>";
-        return "<button class='fo-os-slot" + (own ? " set" : "") + "' data-fo-slot='" + ix + ":" + par + "'><i>" + lblEnd + "</i>" + inner + "</button>";
+        return "<button class='fo-os-slot" + (own ? " set" : "") + "' data-fo-slot='" + ix + ":" + par + "' style='" + (own ? "border-left:3px solid " + (colors[own.nm] || "#0E233F") : "") + "'><i>" + lblEnd + "</i>" + inner + "</button>";
       }).join("");
       return "<div class='fo-os-ph'><div class='fo-os-phl'><b>" + ph.lbl + "</b><span>" + ph.sub + "</span></div><div class='fo-os-slots'>" + slots + "</div></div>";
     }).join("");
@@ -14596,7 +14600,31 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     return blocks +
       "<div class='fo-os-tl'>" + cells + "</div>" +
       "<div class='fo-os-tot'>" + chips + "<span class='fo-os-cov'>" + covered + "/50 overs planned" + (covered < 50 ? " · the AI captain covers the rest" : "") + "</span></div>" +
-      (bad.length ? "<div class='fo-os-warn'>&#9888; " + bad.map(E).join(" · ") + "</div>" : "");
+      (bad.length ? "<div class='fo-os-warn'>&#9888; " + bad.map(E).join(" · ") + "</div>" : "") +
+      "<div style='margin-top:10px'><button class='fo-og-tgl' data-fo-ft>" + (window.__foOrdFT ? "Hide the over-by-over grid" : "Fine-tune every over &rsaquo;") + "</button></div>" +
+      (window.__foOrdFT ? foOrdGrid() : "");
+  }
+  // over-by-over painting for spells the phase slots can't express:
+  // pick a bowler as the brush, tap overs to paint, tap again to clear
+  function foOrdGrid() {
+    var pool = foOrdPool(), colors = foOrdColors();
+    if (window.__foOrdBrush === undefined) window.__foOrdBrush = pool[0] ? pool[0].name : "";
+    var tot = foOrdTotals();
+    var chips = pool.map(function (p) {
+      var on = window.__foOrdBrush === p.name;
+      return "<button class='fo-og-b" + (on ? " on" : "") + "' data-fo-brush='" + E(p.name) + "'><em style='background:" + (colors[p.name] || "#888") + "'></em>" + E(foOrdSurname(p.name)) + " <u>" + (tot[p.name] || 0) + "</u></button>";
+    }).join("") + "<button class='fo-og-b" + (window.__foOrdBrush === "" ? " on" : "") + "' data-fo-brush=''>&#8709; clear</button>";
+    var g = App.orders.grid || [], rows = "";
+    for (var r0 = 0; r0 < 5; r0++) {
+      var cells2 = "";
+      for (var c0 = 1; c0 <= 10; c0++) {
+        var o = r0 * 10 + c0, nm = g[o];
+        cells2 += "<button class='fo-og-c' data-fo-cell='" + o + "' title='over " + o + (nm ? " · " + E(nm) : " · AI decides") + "' style='" + (nm ? "background:" + (colors[nm] || "#888") + " !important;color:#FFFEFC !important;border-color:transparent !important" : "") + "'>" + o + "</button>";
+      }
+      rows += "<div class='fo-og-row'><span class='fo-og-l'>" + (r0 * 10 + 1) + "&ndash;" + (r0 * 10 + 10) + "</span>" + cells2 + "</div>";
+    }
+    return "<div class='fo-og'><div class='small' style='margin:8px 0 6px'>Pick a bowler, then tap overs to paint them - any spell length you like. Tap a painted over to clear it.</div>" +
+      "<div class='fo-og-pal'>" + chips + "</div>" + rows + "</div>";
   }
   function foOrdRepaint(which) {
     var b1 = document.getElementById("fo-bat-rows"), b2 = document.getElementById("fo-bowl-body");
@@ -14684,6 +14712,18 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           if ((el = q("[data-fo-dn]"))) { var i2 = +el.getAttribute("data-fo-dn"); var a2 = App.orders.batOrder; var tmp2 = a2[i2 + 1]; a2[i2 + 1] = a2[i2]; a2[i2] = tmp2; foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-capt]"))) { App.orders.captain = el.getAttribute("data-fo-capt"); foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-wk]"))) { App.orders.keeper = el.getAttribute("data-fo-wk"); foOrdRepaint("bat"); return; }
+          if ((el = q("[data-fo-ft]"))) { window.__foOrdFT = !window.__foOrdFT; foOrdRepaint("bowl"); return; }
+          if ((el = q("[data-fo-brush]"))) { window.__foOrdBrush = el.getAttribute("data-fo-brush") || ""; foOrdRepaint("bowl"); return; }
+          if ((el = q("[data-fo-cell]"))) {
+            gridState();
+            var o5 = +el.getAttribute("data-fo-cell");
+            var br5 = window.__foOrdBrush || "";
+            App.orders.grid[o5] = (!br5 || App.orders.grid[o5] === br5) ? null : br5;
+            if (br5 && App.orders.gridBowlers.indexOf(br5) < 0) App.orders.gridBowlers.push(br5);
+            gridToSpells();
+            foOrdRepaint("bowl");
+            return;
+          }
           if ((el = q("[data-fo-slot]"))) { var pr = el.getAttribute("data-fo-slot").split(":"); foOrdSheet(+pr[0], +pr[1]); return; }
           if ((el = q(".fo-ord-save"))) {
             App.orders.saved = true;
@@ -14724,18 +14764,18 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-ob-row{display:flex;align-items:center;gap:8px;padding:6px 8px;background:#FFFEFC;border:1px solid rgba(28,36,51,.08);border-radius:9px;margin:4px 0}" +
       ".fo-ob-n{flex:0 0 18px;text-align:right;color:#8a93a3;font-size:11.5px;font-weight:700}" +
       ".fo-ob-who{flex:1;min-width:0}.fo-ob-who b{display:block;font-size:13px;color:#0E233F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fo-ob-who .small{font-size:10.5px}" +
-      "html body #page button.fo-ob-chip{flex:0 0 auto;border:1px solid rgba(28,36,51,.2);background:#FFFEFC;color:#5a6472;border-radius:7px;padding:3px 7px;font-size:10.5px;font-weight:800;cursor:pointer}" +
-      "html body #page button.fo-ob-chip.on{background:#0E233F;color:#FFFEFC;border-color:#0E233F}" +
-      ".fo-ob-mv{display:flex;flex-direction:column;gap:1px}" +
-      "html body #page .fo-ob-mv button{border:1px solid rgba(28,36,51,.14);background:#FBFAF7;color:#5a6472;border-radius:5px;font-size:8px;line-height:1;padding:3px 6px;cursor:pointer}" +
-      "html body #page .fo-ob-mv button:disabled{opacity:.3;cursor:default}" +
+      "html body.ftpskin #page button.fo-ob-chip,html body #page button.fo-ob-chip{flex:0 0 auto;border:1px solid rgba(28,36,51,.2) !important;background:#FFFEFC !important;color:#8a93a3 !important;border-radius:6px;padding:2px 7px;font-size:10px;font-weight:800;cursor:pointer}" +
+      "html body.ftpskin #page button.fo-ob-chip.on,html body #page button.fo-ob-chip.on{background:#0E233F !important;color:#FFFEFC !important;border-color:#0E233F !important}" +
+      ".fo-ob-mv{display:flex;gap:3px}" +
+      "html body.ftpskin #page .fo-ob-mv button,html body #page .fo-ob-mv button{border:1px solid rgba(28,36,51,.14) !important;background:#FBFAF7 !important;color:#5a6472 !important;border-radius:6px;font-size:9px;line-height:1;padding:6px 8px;cursor:pointer}" +
+      "html body #page .fo-ob-mv button:disabled{opacity:.25;cursor:default}" +
       ".fo-os-ph{display:flex;gap:10px;align-items:center;margin:7px 0;padding:8px 10px;background:#FBFAF7;border:1px solid rgba(28,36,51,.08);border-radius:10px}" +
       ".fo-os-phl{flex:0 0 86px}.fo-os-phl b{display:block;font-size:12.5px;color:#0E233F}.fo-os-phl span{font-size:10.5px;color:#8a93a3}" +
       ".fo-os-slots{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px}" +
-      "html body #page button.fo-os-slot{display:block;text-align:left;border:1px dashed rgba(28,36,51,.25);background:#FFFEFC;border-radius:9px;padding:6px 9px;cursor:pointer;min-width:0}" +
-      "html body #page button.fo-os-slot.set{border-style:solid}" +
-      ".fo-os-slot i{display:block;font-style:normal;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#a7aeba;font-weight:800}" +
-      ".fo-os-slot b{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      "html body.ftpskin #page button.fo-os-slot,html body #page button.fo-os-slot{display:block;text-align:left;border:1px solid rgba(28,36,51,.14) !important;background:#FFFEFC !important;border-radius:9px;padding:6px 10px;cursor:pointer;min-width:0}" +
+      ".fo-os-slot i{display:block;font-style:normal;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:#b6bcc7;font-weight:800}" +
+      ".fo-os-slot b{display:block;font-size:13px;color:#0E233F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".fo-os-slot b em{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}" +
       ".fo-os-slot span{display:block;font-size:10.5px;color:#8a93a3}" +
       ".fo-os-ai{color:#8a93a3;font-weight:600}" +
       ".fo-os-tl{display:flex;align-items:center;margin:10px 0 6px}" +
@@ -14762,7 +14802,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-osh-row b{font-size:13px;color:#0E233F}.fo-osh-row .small{display:block}" +
       ".fo-osh-note{margin-left:auto;font-size:10.5px;color:#8a93a3;text-align:right}.fo-osh-note.bad{color:#b3402a}" +
       ".fo-osh-pt{display:inline-block;background:#EEE8FA;color:#5b4a91;border-radius:6px;padding:0 6px;font-size:9.5px;font-weight:700;margin-left:5px}" +
-      ".fo-osh-ai b{color:#5a6472}";
+      ".fo-osh-ai b{color:#5a6472}" +
+      "html body.ftpskin #page button.fo-og-tgl,html body #page button.fo-og-tgl{border:none !important;background:none !important;color:#B04A2C !important;font-weight:800;font-size:12px;cursor:pointer;padding:0}" +
+      ".fo-og-pal{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}" +
+      "html body.ftpskin #page button.fo-og-b,html body #page button.fo-og-b{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(28,36,51,.16) !important;background:#FFFEFC !important;color:#0E233F !important;border-radius:999px;padding:4px 11px;font-size:11.5px;font-weight:700;cursor:pointer}" +
+      "html body.ftpskin #page button.fo-og-b.on,html body #page button.fo-og-b.on{background:#0E233F !important;color:#FFFEFC !important;border-color:#0E233F !important}" +
+      ".fo-og-b em{width:9px;height:9px;border-radius:2px;display:inline-block}" +
+      ".fo-og-b u{text-decoration:none;color:#8a93a3;font-weight:600}.fo-og-b.on u{color:#c7cfda}" +
+      ".fo-og-row{display:flex;gap:3px;align-items:center;margin:3px 0}" +
+      ".fo-og-l{flex:0 0 40px;font-size:9.5px;color:#a7aeba;font-weight:700;text-align:right;padding-right:2px}" +
+      "html body.ftpskin #page button.fo-og-c,html body #page button.fo-og-c{flex:1;min-width:0;height:26px;border:1px solid rgba(28,36,51,.14);background:#FBFAF7;color:#8a93a3;border-radius:6px;font-size:9.5px;cursor:pointer;padding:0}";
     document.head.appendChild(foOrdCss);
   } catch (e) {}
   try {
