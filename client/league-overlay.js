@@ -8881,7 +8881,7 @@
             : "<a href='#/scorecard?i=" + r9.ix + "'>" + E((r9.result && r9.result.text) || "played") + "</a>";
           entries.push({ ts: lgAt9(rIx9), up: onAir9, html: "<tr><td>" + E(foWhenTxt(lgAt9(rIx9))) + "</td><td>League <span class='small'>R" + (rIx9 + 1) + "</span></td><td>" + E(r9.home) + " v " + E(r9.away) + "</td><td>" + res9 + "</td></tr>" });
         });
-        (typeof foUserFixtures === "function" ? foUserFixtures() : []).slice(0, 5).forEach(function (x9) {
+        (typeof foUserFixtures === "function" ? foUserFixtures() : []).forEach(function (x9) {
           var isN9 = App.season && x9.round === App.season.round;
           var subIn9 = !!((SYNC && SYNC.submitted && SYNC.submitted[x9.round]) || (App.orders && App.orders.saved && App.season && x9.round === App.season.round));
           entries.push({ ts: lgAt9(x9.round), up: true, html: "<tr" + (isN9 ? " class='fo-fx-fr'" : "") + "><td>" + E(foWhenTxt(lgAt9(x9.round))) + "</td><td>League <span class='small'>R" + (x9.round + 1) + "</span></td><td>" + (x9.isHome ? "vs " : "@ ") + E(x9.opp.name) + " <span class='small'>" + E(foPitchName(x9.pitch) || "") + (x9.weather ? ", " + E(x9.weather) : "") + "</span></td><td class='r'><button class='mini fo-setr' data-r='" + x9.round + "'>" + (subIn9 ? "Edit lineup" : (isN9 ? "Set lineup" : "Plan lineup")) + "</button>" + (subIn9 ? " <span class='small' style='color:#15803D'>&#10003;</span>" : "") + "</td></tr>" });
