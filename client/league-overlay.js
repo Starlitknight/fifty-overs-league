@@ -700,6 +700,7 @@
     ".fo-c2-wmore{min-height:44px;font-size:13px}" +
     ".fo-c2-fx{min-height:44px}.fo-c2-wr{min-height:44px}" +
     ".fo-live-hero .fo-live-score{white-space:nowrap;font-size:clamp(17px,5.6vw,26px) !important;letter-spacing:-.3px}" +
+    ".fo-live-hero .fo-live-score .fo-live-chase{display:block;white-space:normal;font-size:14px;margin-top:5px;letter-spacing:0}" +
     ".fo-o-news .fo-nr-row{display:block;position:relative;padding:9px 48px 9px 0}" +
     ".fo-o-news .fo-nr-row u{display:block;margin-top:2px;font-size:11.5px}" +
     ".fo-o-news .fo-nr-row i{position:absolute;right:0;top:10px}" +
