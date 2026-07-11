@@ -555,11 +555,13 @@
     "html body #page:has(.fo-ch-min){max-width:1520px !important;padding:4px 0 28px}" +
     "html body .fo-ch.fo-ch-min{max-width:1480px !important;width:100%;margin:0 auto;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}" +
     "html body #topbar a{padding:15px 13px !important;font-size:13.5px !important}" +
-    ".fo-ch-min .fo-card{border-radius:12px;border:1px solid rgba(20,36,58,.10);box-shadow:0 4px 14px rgba(20,36,58,.06)}" +
+    "html body:has(.fo-ch-min){background:#f4f1ea !important}" +
+    ".fo-ch-min .fo-card{background:#fff;border-radius:12px;border:1px solid rgba(20,36,58,.10);box-shadow:0 4px 14px rgba(20,36,58,.06);display:flex;flex-direction:column}" +
+    ".fo-ch-min .fo-card>.fo-card-b{flex:1}" +
     ".fo-ch-min .fo-card-h2{font-size:15.5px;font-weight:700}" +
     ".fo-ch-min .fo-chtable{width:100%;table-layout:fixed}" +
     ".fo-ch-min .fo-chtable td{font-size:13px;padding:6px 4px;font-variant-numeric:tabular-nums}.fo-ch-min .fo-chtable th{font-size:10.5px;padding:6px 4px}" +
-    ".fo-ch-min .fo-chtable td:nth-child(2),.fo-ch-min .fo-chtable th:nth-child(2){width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+    ".fo-ch-min .fo-chtable td:nth-child(2),.fo-ch-min .fo-chtable th:nth-child(2){width:auto;white-space:normal;overflow-wrap:anywhere;line-height:1.25}" +
     ".fo-ch-min .fo-chtable td:first-child,.fo-ch-min .fo-chtable th:first-child{width:24px}" +
     ".fo-ch-min .fo-chtable td:nth-child(3),.fo-ch-min .fo-chtable th:nth-child(3),.fo-ch-min .fo-chtable td:nth-child(4),.fo-ch-min .fo-chtable th:nth-child(4),.fo-ch-min .fo-chtable td:nth-child(5),.fo-ch-min .fo-chtable th:nth-child(5){width:22px;text-align:right}" +
     ".fo-ch-min .fo-chtable td:nth-child(6),.fo-ch-min .fo-chtable th:nth-child(6){width:52px;text-align:right}" +
@@ -572,14 +574,20 @@
     ".fo-c2-crest{flex:0 0 74px;width:74px;height:74px;border-radius:16px;background:#FFFEFC;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.3)}" +
     ".fo-c2-crest img{width:62px;height:62px;border-radius:12px}" +
     ".fo-c2-idt{min-width:0}" +
-    "html body #page .fo-c2-name{margin:0;font-size:38px;line-height:1.02;color:#FFFEFC;letter-spacing:-.5px;text-transform:uppercase;font-weight:800}" +
-    ".fo-c2-meta{font-size:13px;color:#c7cfda;margin-top:9px}.fo-c2-meta u{text-decoration:none;color:#5a6b83;margin:0 2px}.fo-c2-meta .fo-c2-gold,.fo-c2-gold{color:#F5C36B;font-weight:800}" +
+    "html body #page .fo-c2-name{margin:0;font-size:40px;line-height:1;color:#FFFEFC;letter-spacing:-.5px;text-transform:uppercase;font-weight:800}" +
+    ".fo-c2-meta{font-size:13px;color:#c7cfda;margin-top:7px}.fo-c2-meta u{text-decoration:none;color:#5a6b83;margin:0 2px}.fo-c2-meta .fo-c2-gold,.fo-c2-gold{color:#F5C36B;font-weight:800}" +
     "@media(max-width:700px){html body #page .fo-c2-name{font-size:23px}}" +
     ".fo-c2-mgr{font-size:12px;color:#9aa3b2;margin-top:3px}.fo-c2-mgr b{color:#FFFEFC}" +
     ".fo-c2-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}" +
     ".fo-c2-chip{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:3px 11px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#dfe5ec}" +
     ".fo-c2-chip.gold{background:rgba(245,158,11,.16);border-color:rgba(245,158,11,.4);color:#F5C36B}" +
-    ".fo-c2-frow{display:flex;gap:26px;margin-top:12px;flex-wrap:wrap}" +
+    ".fo-c2-frow{display:flex;gap:26px;margin-top:11px;flex-wrap:wrap}" +
+    ".fo-o-ms .fo-race{margin:6px 0}" +
+    ".fo-o-ms .fo-race-bar{height:8px;border-radius:4px}" +
+    ".fo-o-ms .fo-race-bar i{background:linear-gradient(90deg,#4DA6A2,#2b6b68) !important}" +
+    ".fo-o-ms .fo-race:first-of-type .fo-race-bar i{background:linear-gradient(90deg,#e85a2a,#c94c22) !important}" +
+    ".fo-o-ms .fo-race-n{text-align:right;min-width:74px}" +
+    "@media(max-width:760px){.fo-o-ms .fo-race{grid-template-columns:minmax(0,1fr) minmax(64px,1.2fr) auto;gap:7px}.fo-o-ms .fo-race-n{min-width:0;font-size:11px}}" +
     ".fo-c2-k{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#8a93a3;font-weight:800;margin-bottom:4px}" +
     ".fo-c2-fs{display:flex;gap:4px}" +
     ".fo-c2-f{display:inline-flex;width:20px;height:20px;border-radius:5px;align-items:center;justify-content:center;font-style:normal;font-size:10.5px;font-weight:800;color:#fff}" +
@@ -588,7 +596,8 @@
     ".fo-c2-dim{color:#8a93a3;font-size:12px}" +
     ".fo-c2-prog{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:13px 15px;align-self:center}" +
     ".fo-c2-pv{font-size:15px;font-weight:800;color:#FFFEFC;margin:1px 0 8px}" +
-    ".fo-c2-prog .fo-progress-bar{margin:0 0 6px}" +
+    ".fo-c2-prog .fo-progress-bar{margin:0 0 7px;height:10px;border-radius:99px;background:rgba(255,255,255,.14)}" +
+    ".fo-c2-prog .fo-progress-bar u{display:block;height:100%;border-radius:99px;background:#e85a2a;transition:width .5s ease}" +
     ".fo-c2-ppct{font-size:11px;color:#9aa3b2;text-align:right}" +
     ".fo-c2-next{background:#FFFEFC;border-radius:12px;padding:18px 20px;display:flex;gap:16px;align-items:center;justify-content:space-between;box-shadow:0 8px 28px rgba(0,0,0,.3)}" +
     "@media(max-width:700px){.fo-c2-next{flex-direction:column;align-items:stretch}}" +
@@ -601,16 +610,20 @@
     ".fo-c2-nr{flex:0 0 auto;text-align:right;display:flex;flex-direction:column;gap:3px;align-items:flex-end}" +
     "@media(max-width:700px){.fo-c2-nr{align-items:stretch;text-align:left}}" +
     ".fo-c2-cd{font-size:28px;font-weight:800;color:#0a2342;font-variant-numeric:tabular-nums;letter-spacing:.5px}" +
-    "html body #page .fo-c2-next .fo-next-cta{font-size:14px;padding:11px 18px}" +
-    "html body #page .fo-c2-next .fo-next-cta{margin-top:7px}" +
-    ".fo-c2-grid{display:grid;grid-template-columns:1.15fr 1fr 1fr 1fr;gap:18px;align-items:start;margin-top:16px}" +
+    "html body #page .fo-c2-next .fo-next-cta{font-size:14px;padding:0 20px;min-width:150px;height:42px;box-sizing:border-box;margin-top:7px;display:inline-flex;align-items:center;justify-content:center;gap:6px}" +
+    // the engine skin paints every button grey with !important; out-specify it
+    "html body button.fo-next-cta,html body.ftpskin #page button.fo-next-cta{background:#e85a2a !important;border:0 !important;color:#fff !important;font:800 14px/1 Inter,ui-sans-serif,system-ui,-apple-system,sans-serif !important}" +
+    "html body button.fo-next-cta:hover,html body.ftpskin #page button.fo-next-cta:hover{background:#c94c22 !important}" +
+    "html body button.fo-next-cta.fo-done,html body.ftpskin #page button.fo-next-cta.fo-done{background:#15803D !important;color:#fff !important}" +
+    ".fo-c2-grid{display:grid;grid-template-columns:1.15fr 1fr 1fr 1fr;gap:18px;align-items:stretch;margin-top:16px}" +
     ".fo-c2-bottom{display:grid;grid-template-columns:1.15fr 1fr 1fr 1fr;gap:18px;align-items:stretch;margin-top:18px}" +
     "@media(max-width:1250px){.fo-c2-grid,.fo-c2-bottom{grid-template-columns:repeat(2,minmax(0,1fr))}}" +
     "@media(max-width:760px){.fo-c2-grid,.fo-c2-bottom{grid-template-columns:1fr}" +
     ".fo-o-watch{order:1}.fo-o-stand{order:2}.fo-o-fx{order:3}.fo-o-news{order:4}}" +
     ".fo-nr-feat{padding:2px 0 10px;border-bottom:1px solid #eee9dd;margin-bottom:4px}" +
-    ".fo-nr-feat b{display:block;font-size:15px;color:#0a2342;line-height:1.3}" +
-    ".fo-nr-feat span{display:block;font-size:11.5px;color:#667085;margin-top:3px}" +
+    ".fo-nr-feat b{display:block;font-size:16.5px;font-weight:800;color:#0a2342;line-height:1.3}" +
+    ".fo-nr-feat span{display:block;font-size:12px;color:#667085;margin-top:4px;line-height:1.45}" +
+    ".fo-nr-feat i{font-style:normal;display:block;font-size:10px;color:#a7aeba;font-weight:800;letter-spacing:.07em;text-transform:uppercase;margin-top:5px}" +
     ".fo-nr-row{display:flex;gap:10px;align-items:baseline;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0ece1;font-size:13px;color:#14243a}" +
     ".fo-nr-row:last-child{border-bottom:none}" +
     ".fo-nr-row span{min-width:0}.fo-nr-row u{text-decoration:none;color:#8a93a3;font-size:11px}" +
@@ -619,14 +632,18 @@
     ".fo-c2-ldr{font-size:11px;color:#667085;margin:1px 0 8px}" +
     ".fo-c2-ldv{font-size:28px;font-weight:800;color:#0a2342}.fo-c2-ldv span{font-size:13px;color:#667085;font-weight:600}" +
     ".fo-c2-ldk{display:flex;gap:16px;margin-top:8px;font-size:12.5px;color:#667085}.fo-c2-ldk b{color:#0a2342}" +
-    ".fo-c2-fbal{font-size:26px;font-weight:800;color:#0a2342;margin-bottom:8px}" +
+    ".fo-c2-fbal{font-size:28px;font-weight:800;color:#0a2342;margin-bottom:10px;line-height:1.05}" +
+    ".fo-c2-fbal span{display:block;font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#a7aeba;margin-top:4px}" +
     ".fo-c2-fkv{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #f0ece1;font-size:12.5px;color:#667085}" +
     ".fo-c2-fkv b{font-variant-numeric:tabular-nums}" +
-    ".fo-c2-ftr{margin-top:8px;font-size:11.5px;font-weight:700}.fo-c2-ftr.up{color:#15803D}.fo-c2-ftr.dn{color:#b3402a}" +
-    ".fo-c2-whead{display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#a7aeba;font-weight:800;margin:2px 0 2px}" +
+    ".fo-c2-ftr{margin-top:9px;font-size:11.5px;font-weight:600;color:#667085}" +
+    ".fo-c2-ftr i{font-style:normal;font-weight:800}.fo-c2-ftr i.up{color:#15803D}.fo-c2-ftr i.dn{color:#b3402a}" +
+    ".fo-c2-whead{display:grid;grid-template-columns:minmax(0,1fr) 58px 106px;column-gap:8px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#a7aeba;font-weight:800;margin:2px 0 3px;padding-bottom:5px;border-bottom:1px solid #f0ece1}" +
+    ".fo-c2-whead span:last-child{text-align:right}" +
     ".fo-ch-min .fo-ch-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:0 0 2px}" +
     "@media(max-width:760px){.fo-ch-min .fo-ch-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}" +
-    ".fo-ch-min .fo-stat{padding:16px 18px;min-height:104px;box-sizing:border-box}" +
+    ".fo-ch-min .fo-stat{padding:16px 18px;min-height:92px;box-sizing:border-box}" +
+    ".fo-ch-min .fo-stat-ic{width:36px;height:36px;font-size:16px;border-radius:9px}" +
     "@media(max-width:760px){.fo-ch-min .fo-stat{padding:12px 12px;min-height:0}.fo-ch-min .fo-stat-ic{display:none}" +
     ".fo-ch-min .fo-stat-v{font-size:20px}.fo-ch-min .fo-stat-l{font-size:9.5px;white-space:normal}.fo-ch-min .fo-stat-s{font-size:10px}}" +
     ".fo-c2-bottom .fo-lead{display:flex;gap:12px;align-items:center}" +
@@ -640,12 +657,12 @@
     ".fo-c2-wsum{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:9px}" +
     ".fo-c2-wk{border-radius:8px;padding:3px 9px;font-size:11px;font-weight:600;background:#F3F1EA;color:#5a6472}.fo-c2-wk b{font-weight:800}" +
     ".fo-c2-wk.g{background:#E3F0E7;color:#1c5537}.fo-c2-wk.a{background:#F6E3B4;color:#7a5c13}.fo-c2-wk.r{background:#F3D8D3;color:#8a2f1d}" +
-    ".fo-c2-wr{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0ece1}" +
+    ".fo-c2-wr{display:grid;grid-template-columns:minmax(0,1fr) 58px 64px 34px;column-gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid #f0ece1}" +
     ".fo-c2-wr:last-child{border-bottom:none}" +
     ".fo-c2-wrn{flex:1;min-width:0}.fo-c2-wrn b{display:block;font-size:12.5px;color:#0E233F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fo-c2-wrn span{font-size:10.5px;color:#8a93a3}" +
     ".fo-c2-wtag{flex:0 0 auto;font-size:9.5px;font-weight:800;letter-spacing:.05em}" +
-    ".fo-c2-wbar{flex:0 0 64px;height:6px;border-radius:3px;background:#E8EAEE;overflow:hidden}.fo-c2-wbar i{display:block;height:100%;border-radius:3px}" +
-    ".fo-c2-wpct{flex:0 0 34px;text-align:right;font-size:11px;font-weight:700;color:#3a4353}" +
+    ".fo-c2-wbar{width:64px;height:6px;border-radius:3px;background:#E8EAEE;overflow:hidden}.fo-c2-wbar i{display:block;height:100%;border-radius:3px}" +
+    ".fo-c2-wpct{text-align:right;font-size:11px;font-weight:700;color:#3a4353;font-variant-numeric:tabular-nums}" +
     "html body .fo-news{border-top:3px double #C9C2B2}" +
     "html body .fo-news .fo-card-h2{font-family:Georgia,'Times New Roman',serif;font-size:19px;letter-spacing:.2px;color:#111827}" +
     "html body .fo-ch-sidec .fo-ch-leaders{display:grid;grid-template-columns:1fr;gap:14px}" +
@@ -2132,8 +2149,15 @@
       var ld = foTeamLeaders(t);
       var lgStat = function (nm) {
         var h2 = ((App.playerHist || {})[nm] || []).filter(function (e2) { return !e2.fr && e2.s != null; });
-        var o2 = { runs: 0, outs: 0, bf: 0, w: 0, cr: 0, cb: 0 };
-        h2.forEach(function (e2) { o2.runs += +e2.rr || 0; o2.outs += e2.o ? 1 : 0; o2.bf += +e2.bb || 0; o2.w += +e2.w || 0; o2.cr += +e2.cr || 0; o2.cb += +e2.cb || 0; });
+        var o2 = { runs: 0, outs: 0, bf: 0, w: 0, cr: 0, cb: 0, inns: 0, hs: 0, bw: 0, br: 1e9, rec: [], recw: [] };
+        h2.forEach(function (e2) {
+          var rr2 = +e2.rr || 0, w2 = +e2.w || 0, cb2 = +e2.cb || 0;
+          if ((+e2.bb || 0) > 0 || rr2 > 0 || e2.o) { o2.inns++; o2.rec.push(rr2); if (rr2 > o2.hs) o2.hs = rr2; }
+          o2.runs += rr2; o2.outs += e2.o ? 1 : 0; o2.bf += +e2.bb || 0;
+          o2.w += w2; o2.cr += +e2.cr || 0; o2.cb += cb2;
+          if (cb2 > 0) o2.recw.push(w2);
+          if (w2 > o2.bw || (w2 === o2.bw && w2 > 0 && (+e2.cr || 0) < o2.br)) { if (w2) { o2.bw = w2; o2.br = +e2.cr || 0; } }
+        });
         return o2;
       };
       var roleOf = function (nm) { var p2 = (t.players || []).filter(function (x) { return x.name === nm; })[0]; return p2 ? prole(p2.role || "") : ""; };
@@ -2142,12 +2166,16 @@
       var leadBat = "<div class='fo-card fo-o-lead'><div class='fo-card-h2row'><div class='fo-card-h2'>Leading run-scorer</div></div><div class='fo-card-b'>" +
         (ld.bat.name ? "<div class='fo-c2-ldn'>" + E(ld.bat.name) + "</div><div class='fo-c2-ldr'>" + E(roleOf(ld.bat.name)) + "</div>" +
           "<div class='fo-c2-ldv'>" + (ld.bat.runs || 0) + " <span>runs</span></div>" +
-          "<div class='fo-c2-ldk'><span>Ave <b>" + (lb1 && lb1.outs ? (lb1.runs / lb1.outs).toFixed(1) : "&ndash;") + "</b></span><span>SR <b>" + (lb1 && lb1.bf ? (100 * lb1.runs / lb1.bf).toFixed(1) : "&ndash;") + "</b></span></div>"
+          "<div class='fo-c2-ldk'><span>" + (lb1 ? lb1.inns : 0) + " inns &middot; Avg <b>" + (lb1 && lb1.outs ? (lb1.runs / lb1.outs).toFixed(1) : "&ndash;") + "</b></span></div>" +
+          "<div class='fo-c2-ldk'><span>SR <b>" + (lb1 && lb1.bf ? (100 * lb1.runs / lb1.bf).toFixed(1) : "&ndash;") + "</b> &middot; HS <b>" + (lb1 ? lb1.hs : 0) + "</b></span></div>" +
+          (lb1 && lb1.rec.length ? "<div class='fo-c2-ldk'><span>Form: <b>" + lb1.rec.slice(-3).join(", ") + "</b></span></div>" : "")
           : "<div class='small'>No runs on the board yet.</div>") + "</div></div>";
       var leadBowl = "<div class='fo-card fo-o-lead'><div class='fo-card-h2row'><div class='fo-card-h2'>Leading wicket-taker</div></div><div class='fo-card-b'>" +
         (ld.bowl.name ? "<div class='fo-c2-ldn'>" + E(ld.bowl.name) + "</div><div class='fo-c2-ldr'>" + E(roleOf(ld.bowl.name)) + "</div>" +
           "<div class='fo-c2-ldv'>" + (ld.bowl.wkts || 0) + " <span>wkts</span></div>" +
-          "<div class='fo-c2-ldk'><span>Ave <b>" + (lb2 && lb2.w ? (lb2.cr / lb2.w).toFixed(1) : "&ndash;") + "</b></span><span>Econ <b>" + (lb2 && lb2.cb ? (lb2.cr / (lb2.cb / 6)).toFixed(2) : "&ndash;") + "</b></span></div>"
+          "<div class='fo-c2-ldk'><span>" + (lb2 ? Math.floor(lb2.cb / 6) + (lb2.cb % 6 ? "." + lb2.cb % 6 : "") : 0) + " overs &middot; Avg <b>" + (lb2 && lb2.w ? (lb2.cr / lb2.w).toFixed(1) : "&ndash;") + "</b></span></div>" +
+          "<div class='fo-c2-ldk'><span>Econ <b>" + (lb2 && lb2.cb ? (lb2.cr / (lb2.cb / 6)).toFixed(2) : "&ndash;") + "</b> &middot; Best <b>" + (lb2 && lb2.bw ? lb2.bw + "/" + lb2.br : "&ndash;") + "</b></span></div>" +
+          (lb2 && lb2.recw.length ? "<div class='fo-c2-ldk'><span>Recent wkts: <b>" + lb2.recw.slice(-3).join(", ") + "</b></span></div>" : "")
           : "<div class='small'>No wickets yet.</div>") + "</div></div>";
 
       // Standings: the full ten-row table lives on Matches; here only the story –
@@ -2180,11 +2208,11 @@
       var finSign = function (v) { return "<b class='" + (v >= 0 ? "fo-pos" : "fo-neg") + "'>" + (v >= 0 ? "+" : "&minus;") + foMoney(Math.abs(v)) + "</b>"; };
       var trendUp = projEnd >= bank;
       var fin = "<div class='fo-card fo-o-fin'><div class='fo-card-h2row'><div class='fo-card-h2'>Finance overview</div><a href='#/office' class='fo-morelink'>View details &rsaquo;</a></div><div class='fo-card-b'>" +
-        "<div class='fo-c2-fbal'>" + foMoney(bank) + "</div>" +
+        "<div class='fo-c2-fbal'>" + foMoney(bank) + "<span>Current balance</span></div>" +
         "<div class='fo-c2-fkv'><span>Matchday net</span>" + finSign(netMD) + "</div>" +
         "<div class='fo-c2-fkv'><span>Wage bill / matchday</span><b class='fo-neg'>&minus;" + foMoney(wages) + "</b></div>" +
         (remainingMD > 0 ? "<div class='fo-c2-fkv'><span>Projected (season end)</span><b class='" + (projEnd >= 0 ? "fo-pos" : "fo-neg") + "'>" + foMoney(projEnd) + "</b></div>" : "") +
-        "<div class='fo-c2-ftr " + (trendUp ? "up" : "dn") + "'>" + (trendUp ? "&#9650; trending up" : "&#9660; trending down") + " &middot; " + finStory + "</div>" +
+        "<div class='fo-c2-ftr'><i class='" + (trendUp ? "up" : "dn") + "'>" + (trendUp ? "&#9650;" : "&#9660;") + "</i> " + (trendUp ? "Trending up" : "Trending down") + " &middot; " + finStory + "</div>" +
         "</div></div>";
 
       // season bests: the two performances worth bragging about
@@ -2217,7 +2245,7 @@
       var wPool = (t.players || []).slice().sort(function (a, b2) { return enOf(a).pct - enOf(b2).pct; });
       var fitN = wPool.filter(function (p2) { return !enOf(p2).tired; }).length;
       var tiredN = wPool.length - fitN;
-      var wRows = wPool.slice(0, 4).map(function (p2) {
+      var wRows = wPool.slice(0, 6).map(function (p2) {
         var en = enOf(p2);
         var col = en.tired ? "#DC2626" : en.word === "rested" ? "#c08a2b" : "#16A34A";
         return "<div class='fo-c2-wr'><div class='fo-c2-wrn'><b>" + E(p2.name) + "</b><span>" + E(prole(p2.role || "")) + "</span></div>" +
@@ -2228,7 +2256,7 @@
         "<div class='fo-c2-wsum'><span class='fo-c2-wk g'><b>" + fitN + "</b> fit</span><span class='fo-c2-wk a'><b>" + tiredN + "</b> tired</span>" +
         (hotP.length ? "<span class='fo-c2-wk g'><b>" + hotP.length + "</b> in form</span>" : "") +
         (coldP.length ? "<span class='fo-c2-wk r'><b>" + coldP.length + "</b> struggling</span>" : "") + "</div>" +
-        "<div class='fo-c2-whead'><span>Player</span><span>Energy</span></div>" + wRows + "</div></div>";
+        "<div class='fo-c2-whead'><span>Player</span><span>Status</span><span>Energy</span></div>" + wRows + "</div></div>";
       // milestone watch: unfinished business is what brings a manager back
       var msRows = [];
       try { msRows = foMilestoneWatch(t); } catch (e) {}
@@ -2256,8 +2284,9 @@
           "<div class='fo-c2-nopp'>" + (nxt.isHome ? "vs " : "at ") + E(nxt.opp.name) + "</div>" +
           "<div class='fo-c2-nsub'>" + E(nxt.ground) + " &middot; " + foPitchName(nxt.pitch) + " pitch" + (nxt.weather ? " &middot; " + E(nxt.weather) : "") + "</div>" +
           "<div class='fo-c2-nchips'>" + (oppRow >= 0 ? "<span class='fo-c2-nchip'>" + foOrdinal(oppRow + 1) + "</span>" : "") + (oppForm ? "<span class='fo-c2-nchip'>Form <span class='fo-form'>" + oppForm + "</span></span>" : "") + "</div></div>" +
-          "<div class='fo-c2-nr'>" + (isMP ? "<div class='fo-c2-nk'>Match starts in</div><div class='fo-c2-cd' id='fo-cd'>" + foCdText(foNextMatchdayMs()) + "</div><div class='fo-c2-nsub'>" + MATCH_TIME + " &middot; " + E(nxt.date || "") + "</div>" : "") +
-          "<button class='fo-next-cta" + (ordersIn ? " fo-done" : "") + "' data-r='" + nxt.round + "'>" + (ordersIn ? "&#10003; Orders in &middot; review lineup" : "Set your lineup &rsaquo;") + "</button></div></div>";
+          "<div class='fo-c2-nr'>" + (isMP ? "<div class='fo-c2-nk'>Match starts in</div><div class='fo-c2-cd' id='fo-cd'>" + foCdText(foNextMatchdayMs()) + "</div>" : "") +
+          "<div class='fo-c2-nsub'><b>" + MATCH_TIME + "</b> &middot; " + E(nxt.date || "") + "</div>" +
+          "<button class='fo-next-cta" + (ordersIn ? " fo-done" : "") + "' data-r='" + nxt.round + "'>" + (ordersIn ? "Review lineup &rsaquo;" : "Set lineup &rsaquo;") + "</button></div></div>";
       } else if ((me.p || 0) > 0) {
         nextCard = "<div class='fo-c2-next'><div class='fo-c2-nl'><div class='fo-c2-nk'>Season complete</div>" +
           "<div class='fo-c2-nopp'>You finished " + foOrdinal(pos === "-" ? 10 : pos) + "</div>" +
@@ -2269,14 +2298,14 @@
       var metaBits = ["Season " + (App.seasonNo || 1)];
       if (ctry) metaBits.push((ctryFlag ? ctryFlag + " " : "") + E(ctry));
       metaBits.push(E(lgName));
-      if (posLineTop) metaBits.push("<b class='fo-c2-gold'>" + posLineTop + "</b>");
       var hero = "<div class='fo-c2-hero'>" +
         "<div class='fo-c2-id'><div class='fo-c2-idt'>" +
         "<h1 class='fo-c2-name'>" + E(t.name) + "</h1>" +
         "<div class='fo-c2-mgr'>Manager: <b>" + E((SYNC && SYNC.me && SYNC.me.display_name) || "you") + "</b> <i class='fo-dot fo-dot-on'></i></div>" +
         "<div class='fo-c2-meta'>" + metaBits.join(" <u>&middot;</u> ") + "</div>" +
+        (posLineTop ? "<div class='fo-c2-meta'>League position: <b class='fo-c2-gold'>" + posLineTop + "</b></div>" : "") +
         "<div class='fo-c2-frow'><div><div class='fo-c2-k'>Form (last 5)</div><div class='fo-c2-fs'>" + fchips + "</div></div>" +
-        "<div><div class='fo-c2-k'>Supporters mood</div><div class='fo-c2-mood'>" + moodEmo + " <b>" + E(String(mood).toUpperCase()) + "</b>" + (t.supporters ? " <span>" + (+t.supporters).toLocaleString() + "</span>" : "") + "</div></div></div>" +
+        "<div><div class='fo-c2-k'>Supporters</div><div class='fo-c2-mood'>" + moodEmo + " <b>" + E(String(mood).toUpperCase()) + "</b>" + (t.supporters ? " <span>&middot; " + (+t.supporters).toLocaleString() + "</span>" : "") + "</div></div></div>" +
         "</div></div>" +
         "<div class='fo-c2-prog'><div class='fo-c2-k'>Season progress</div>" +
         "<div class='fo-c2-pv'>Round " + Math.min(played + 1, totalRounds) + " of " + totalRounds + "</div>" +
@@ -2315,7 +2344,7 @@
           (tt.players || []).forEach(function (p2) {
             (p2._career || []).forEach(function (c3) {
               if (c3.ev === "debut") return;
-              evsN.push({ s: c3.s || 0, r: c3.r || 0, txt: c3.txt || "", club: tt.name, who: p2.name });
+              evsN.push({ s: c3.s || 0, r: c3.r || 0, ev: c3.ev || "", txt: c3.txt || "", club: tt.name, who: p2.name });
             });
           });
         });
@@ -2328,10 +2357,28 @@
           } catch (e2) {}
           return "";
         };
+        var featDate = lastRes && typeof lastRes.round === "number" ? nrDate(App.seasonNo || 1, lastRes.round + 1) : "";
         var feat = lastRes ? "<div class='fo-nr-feat'><b>" + E(lastRes.result.text) + "</b>" +
-          "<span>" + E(lastRes.home) + " v " + E(lastRes.away) + (lastRes.result.mom ? " &middot; star: " + E(lastRes.result.mom) : "") + "</span></div>" : "";
+          "<span>" + E(lastRes.home) + " v " + E(lastRes.away) + (lastRes.result.mom ? " &middot; star: " + E(lastRes.result.mom) : "") + "</span>" +
+          (featDate ? "<i>" + featDate + "</i>" : "") + "</div>" : "";
+        var nrPhrase = function (e3) {
+          var who = foOrdSurname(e3.who);
+          var tail = (e3.txt.split("\u00b7")[1] || "").trim();
+          switch (e3.ev) {
+            case "fifty": return who + " scores a maiden fifty" + (tail ? " &mdash; " + tail : "");
+            case "century": return who + " scores " + (/maiden/i.test(e3.txt) ? "a maiden century" : "a century") + (tail ? " &mdash; " + tail : "");
+            case "fivefor": return who + " takes " + (/maiden/i.test(e3.txt) ? "a maiden five-for" : "a five-for") + (tail ? " &mdash; " + tail : "");
+            case "hs": return who + " posts a new highest score" + (tail ? " &mdash; " + tail : "");
+            case "bb": return who + " records career-best figures" + (tail ? " &mdash; " + tail : "");
+            case "runs": case "wkts": return who + " reaches " + e3.txt.toLowerCase();
+            case "glove": return who + ": " + e3.txt.toLowerCase();
+            case "nick": return who + " " + e3.txt.replace(/^Earned/, "earns");
+            case "award": return who + " wins " + e3.txt;
+            default: return who + " &middot; " + e3.txt;
+          }
+        };
         var nrRows = evsN.slice(0, 6).map(function (e3) {
-          return "<div class='fo-nr-row'><span><b>" + E(foOrdSurname(e3.who)) + "</b> &middot; " + E(e3.txt) + " <u>&middot; " + E(e3.club) + "</u></span><i>" + nrDate(e3.s, e3.r) + "</i></div>";
+          return "<div class='fo-nr-row'><span>" + nrPhrase(e3) + " <u>&middot; " + E(e3.club) + "</u></span><i>" + nrDate(e3.s, e3.r) + "</i></div>";
         }).join("");
         newsCard = "<div class='fo-card fo-o-news'><div class='fo-card-h2row'><div class='fo-card-h2'>Club newsroom</div><a href='#/matchday' class='fo-morelink'>View all &rsaquo;</a></div><div class='fo-card-b'>" +
           (feat || nrRows ? feat + nrRows : "<div class='small'>The story starts with the first matchday.</div>") +
@@ -2347,11 +2394,12 @@
         qk("#/nets", "bat", "Match Lab") + qk("#/guide", "info", "Manual") + "</div>";
       // upcoming fixtures card: league rounds + accepted friendlies in time order
       var fxItems = [];
-      foUserFixtures().slice(0, 4).forEach(function (x) {
-        fxItems.push({ at: 0, html: "<div class='fo-c2-fx" + (nxt && x.round === nxt.round ? " next" : "") + "'>" +
+      foUserFixtures().slice(0, 5).forEach(function (x) {
+        var isN = nxt && x.round === nxt.round;
+        fxItems.push({ at: 0, html: "<div class='fo-c2-fx" + (isN ? " next" : "") + "'>" +
           "<div class='fo-c2-fxd'><b>" + E(x.date) + "</b><span>9:00 AM</span></div>" +
-          "<div class='fo-c2-fxm'><b>" + (x.isHome ? "vs " : "@ ") + E(x.opp.name) + "</b><span>Round " + (x.round + 1) + " &middot; " + (x.isHome ? "Home" : "Away") + (x.weather ? " &middot; " + E(x.weather) : "") + "</span></div>" +
-          (nxt && x.round === nxt.round ? "<span class='fo-c2-fxn'>NEXT</span>" : "") + "</div>" });
+          "<div class='fo-c2-fxm'><b>" + (x.isHome ? "vs " : "@ ") + E(x.opp.name) + "</b><span>Round " + (x.round + 1) + " &middot; " + (x.isHome ? "Home" : "Away") + (isN ? " &middot; " + E(foPitchName(x.pitch)) + " pitch" : "") + (x.weather ? " &middot; " + E(x.weather) : "") + "</span></div>" +
+          (isN ? "<span class='fo-c2-fxn'>NEXT</span>" : "") + "</div>" });
       });
       try {
         (window.__foFrAll || []).forEach(function (c2f) {
@@ -2365,7 +2413,7 @@
         });
       } catch (eFx) {}
       var fxCard = "<div class='fo-card fo-o-fx'><div class='fo-card-h2row'><div class='fo-card-h2'>Upcoming fixtures</div><a href='#/matches' class='fo-morelink'>View all &rsaquo;</a></div><div class='fo-card-b'>" +
-        (fxItems.length ? fxItems.slice(0, 5).map(function (x) { return x.html; }).join("") : "<div class='small'>Season complete.</div>") +
+        (fxItems.length ? fxItems.slice(0, 6).map(function (x) { return x.html; }).join("") : "<div class='small'>Season complete.</div>") +
         "<div class='small' style='margin-top:8px'><a href='#/matches'>View full fixture list &rsaquo;</a></div></div></div>";
       var trainCard = "";
       if (rep0 && (rep0.gains || []).length) {
@@ -8737,7 +8785,7 @@
         var done = !!SYNC.submitted[r] ||
           !!(App.orders && App.orders.saved && App.season && r === App.season.round);
         b.classList.toggle("fo-done", done);
-        var want = done ? "\u2713 Orders in \u2014 review lineup" : "Set your lineup";
+        var want = done ? "Review lineup \u203a" : "Set lineup \u203a";
         if (b.textContent !== want) b.textContent = want;
       });
     } catch (e) {}
