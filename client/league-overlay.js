@@ -2292,7 +2292,12 @@
       if (!(SYNC && SYNC.started && !SYNC.practice && LG)) return;
       var host = document.querySelector("#page .fo-c2-next"); if (!host || host.__foFr) return;
       var me = userTeam().name;
-      sel("league_challenges", "league_id=eq." + LG.id + "&or=(status.eq.accepted,status.eq.played)&select=*&order=play_at.asc&limit=8").then(function (rows) {
+      // only rows that can still matter: kickoff within the last broadcast hour
+      // or in the future. Without this horizon, ascending order + the limit
+      // filled the page with long-finished friendlies and the real next one
+      // never made the cut - the card silently stayed on the league round.
+      var horizon = encodeURIComponent(new Date(Date.now() - 65 * 60000).toISOString());
+      sel("league_challenges", "league_id=eq." + LG.id + "&or=(status.eq.accepted,status.eq.played)&play_at=gte." + horizon + "&select=*&order=play_at.asc&limit=8").then(function (rows) {
         rows = (rows || []).filter(function (c) {
           if (!(c.challenger_club === me || c.opponent_club === me) || !c.play_at) return false;
           var ph = foFrBcastState(c).phase;
