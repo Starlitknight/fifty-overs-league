@@ -2301,7 +2301,7 @@
         var untilLg = Infinity; try { untilLg = foNextMatchdayMs(); } catch (e2) {}
         if (fst.phase === "pre" && !(untilFr > 0 && untilFr < untilLg)) return;
         var vs = ch.challenger_club === me ? ch.opponent_club : ch.challenger_club;
-        var when = new Date(ch.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+        var when = new Date(ch.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + (foTzAbbr() ? " " + foTzAbbr() : "");
         var lgChip = "";
         try { if (App.season && typeof App.season.round === "number") lgChip = "<span class='fo-c2-nchip'>League Round " + (App.season.round + 1) + " follows &middot; 9:00 AM ET</span>"; } catch (eLc) {}
         host2.__foFr = 1;
@@ -3215,18 +3215,34 @@
       var mnOpts = [0, 15, 30, 45].map(function (mi) { return "<option value='" + mi + "'" + (mi === 0 ? " selected" : "") + ">" + pad(mi) + "</option>"; }).join("");
       var m = document.createElement("div"); m.id = "fo-chal"; m.className = "fo-modal";
       m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>Challenge</div><h3>Challenge " + E(opp.name) + "</h3>" +
-        "<div class='small' style='margin:4px 0 10px'>They must accept before the match is played. Schedule it at least <b>75 minutes ahead</b>; lineups lock exactly <b>one hour before kickoff</b>. Times are on the 24-hour clock, like the one in the header.</div>" +
+        "<div class='small' style='margin:4px 0 10px'>They must accept before the match is played. Schedule it at least <b>75 minutes ahead</b>; lineups lock exactly <b>one hour before kickoff</b>. Times are on the 24-hour clock <b>in your timezone (" + E(foTzAbbr() || "local") + ")</b>.</div>" +
         "<div class='ctlrow'><span>Pitch</span><select id='fo-chal-p'>" + pitches + "</select></div>" +
         "<div class='ctlrow'><span>Weather</span><select id='fo-chal-w'>" + wx + "</select></div>" +
         "<div class='ctlrow'><span>Play on</span><select id='fo-chal-d'>" + dayOpts.join("") + "</select>" +
         "<span>at</span><select id='fo-chal-h'>" + hrOpts.join("") + "</select><b>:</b><select id='fo-chal-m'>" + mnOpts + "</select></div>" +
+        "<div class='small' id='fo-chal-prev' style='margin:8px 0 0;color:#1f4e5f;font-weight:600'></div>" +
         "<div style='display:flex;gap:8px;margin-top:12px'><button class='fo-yc-sign' id='fo-chal-go'>Send challenge</button><button class='mini' id='fo-chal-x'>Cancel</button></div></div>";
       document.body.appendChild(m);
+      // spell the pick out in both clocks, so nobody schedules 3 hours adrift
+      var chalPickT = function () {
+        var t9 = new Date(today0);
+        t9.setDate(t9.getDate() + (+m.querySelector("#fo-chal-d").value || 0));
+        t9.setHours(+m.querySelector("#fo-chal-h").value || 0, +m.querySelector("#fo-chal-m").value || 0, 0, 0);
+        return t9;
+      };
+      var chalPrev = function () {
+        try {
+          var t9 = chalPickT(), el9 = m.querySelector("#fo-chal-prev");
+          var loc = t9.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " " + pad(t9.getHours()) + ":" + pad(t9.getMinutes()) + " " + (foTzAbbr() || "your time");
+          var et = t9.toLocaleString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }) + " ET";
+          el9.innerHTML = "Kicks off " + E(loc) + (loc.indexOf(" ET") < 0 ? " <span style='color:#8a93a3;font-weight:400'>(" + E(et) + " &middot; league clock)</span>" : "");
+        } catch (e9) {}
+      };
+      ["fo-chal-d", "fo-chal-h", "fo-chal-m"].forEach(function (id9) { m.querySelector("#" + id9).addEventListener("change", chalPrev); });
+      chalPrev();
       m.querySelector("#fo-chal-x").addEventListener("click", function () { m.remove(); });
       m.querySelector("#fo-chal-go").addEventListener("click", function () {
-        var t = new Date(today0);
-        t.setDate(t.getDate() + (+m.querySelector("#fo-chal-d").value || 0));
-        t.setHours(+m.querySelector("#fo-chal-h").value || 0, +m.querySelector("#fo-chal-m").value || 0, 0, 0);
+        var t = chalPickT();
         if (t - Date.now() < 75 * 60000) { say("Pick a time at least 75 minutes ahead - lineups lock an hour before kickoff, so both managers need a window to attach one."); return; }
         var slotProb = foFrSlotProblem(t, [userTeam().name, opp.name]);
         if (slotProb) { say(slotProb); return; }
@@ -3236,7 +3252,7 @@
           p_weather: m.querySelector("#fo-chal-w").value || "Sunny", p_play_at: t.toISOString()
         }).then(function (newId) {
           m.remove();
-          toast("Challenge sent to " + opp.name + " for " + t.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " " + pad(t.getHours()) + ":" + pad(t.getMinutes()) + ". You'll hear their answer in the bell.");
+          toast("Challenge sent to " + opp.name + " for " + t.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " " + pad(t.getHours()) + ":" + pad(t.getMinutes()) + (foTzAbbr() ? " " + foTzAbbr() : "") + ". You'll hear their answer in the bell.");
           // best effort: attach my current saved lineup right away, so the
           // match has a real XI even if I never come back to it
           try { if (App.orders && App.orders.saved && newId) rpc("challenge_set_orders", { p_id: newId, p_club: userTeam().name, p_orders: App.orders }).catch(function () {}); } catch (eAt) {}
@@ -7788,10 +7804,22 @@
   window.addEventListener("hashchange", function () { setTimeout(foRenderMatchday, 15); });
 
   // ---- prepare a lineup for an accepted challenge: one clear path ----
+  // short name of the device's timezone ("EDT", "PDT", "IST") - friendly
+  // times are stored absolutely but READ in each manager's local clock, so
+  // every rendered time says which clock it is on
+  function foTzAbbr() {
+    try {
+      if (window.__foTzAb) return window.__foTzAb;
+      var parts = new Date().toLocaleTimeString("en-US", { timeZoneName: "short" }).split(" ");
+      window.__foTzAb = parts[parts.length - 1] || "";
+      return window.__foTzAb;
+    } catch (e) { return ""; }
+  }
   function foChalWhen(ch) {
     if (!ch || !ch.play_at) return "";
     var t = new Date(ch.play_at), pad = function (n) { return (n < 10 ? "0" : "") + n; };
-    return t.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " " + pad(t.getHours()) + ":" + pad(t.getMinutes());
+    var ab = foTzAbbr();
+    return t.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " " + pad(t.getHours()) + ":" + pad(t.getMinutes()) + (ab ? " " + ab : "");
   }
   function foChalAttach(ch, done) {
     rpc("challenge_set_orders", { p_id: ch.id, p_club: userTeam().name, p_orders: App.orders })
@@ -7856,7 +7884,7 @@
     (rows || []).forEach(function (c) {
       var mineSent = c.challenger_club === me;
       var vs = mineSent ? c.opponent_club : c.challenger_club;
-      var when = c.play_at ? new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+      var when = c.play_at ? new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + (foTzAbbr() ? " " + foTzAbbr() : "") : "";
       if (c.status === "pending" && !mineSent && !foFrDead(c)) ev.push({ k: c.id + ":pending", t: "\u2694 " + vs + " challenge you to a friendly" + (when ? " \u00b7 " + when : ""), ch: c });
       else if ((c.status === "accepted" || c.status === "played") && foFrBcastState(c).phase === "live") ev.push({ k: c.id + ":live", t: "\ud83d\udd34 LIVE: friendly vs " + vs + " \u00b7 watch ball by ball", go: "#/friendly?id=" + c.id, ch: c });
       else if (c.status === "accepted") ev.push({ k: c.id + ":accepted", t: (mineSent ? vs + " accepted your challenge" : "Friendly vs " + vs + " is on") + (when ? " \u00b7 " + when : ""), ch: c });
@@ -8489,7 +8517,7 @@
       var frWhen = function (ts) {
         var d = new Date(ts); if (isNaN(d)) return "";
         var pd = function (n) { return (n < 10 ? "0" : "") + n; };
-        return d.toLocaleDateString([], { month: "short", day: "numeric" }) + ", " + pd(d.getHours()) + ":" + pd(d.getMinutes());
+        return d.toLocaleDateString([], { month: "short", day: "numeric" }) + ", " + pd(d.getHours()) + ":" + pd(d.getMinutes()) + (foTzAbbr() ? " " + foTzAbbr() : "");
       };
       // ---- one chronological list: practice + challenges, oldest first ----
       var entries = [];
@@ -8545,9 +8573,14 @@
           }
           else if (c.status === "declined") act = "<span class='small'>declined</span>";
           else if (c.status === "expired") act = "<span class='small'>expired</span>";
-          else if (c.status === "played" && c.result && fst.phase !== "live") {
+          else if (c.status === "played" && c.result && fst.phase === "done") {
             act = "<a href='#/friendly?id=" + c.id + "'>" + E(c.result.result_text || "played") + "</a>";
             if (!seen[c.id]) { toast("Friendly result: " + (c.result.result_text || "played")); seen[c.id] = 1; }
+          }
+          else if (c.status === "played" && fst.phase === "pre") {
+            // banked early by the resolver: the broadcast has not started yet -
+            // say when it kicks off, never the result
+            act = "<span class='fo-frs-on'>ON</span> <span class='small'>kicks off " + when + "</span>";
           }
           var typLbl = "Friendly"; try { if (!foClubHuman(vs)) typLbl = "Practice"; } catch (eTL) {}
           var upC = c.status === "pending" || c.status === "accepted" || (c.status === "played" && fst.phase === "live");
