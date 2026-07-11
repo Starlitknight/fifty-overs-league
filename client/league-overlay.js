@@ -2386,6 +2386,47 @@
       }).join("") + "</div></div>";
     var battles = "";
     try { battles = foBattlesCard(t); } catch (e) {}
+    // broadcasts involving this club - every match in the league is public,
+    // so any manager can tune in to any other manager's game live
+    var liveStrip = "";
+    try {
+      var lv = [];
+      var em2 = (typeof foEmbargo === "function") ? foEmbargo() : { active: false };
+      if (em2 && em2.active) {
+        (foLeagueRounds()[em2.round] || []).forEach(function (r0) {
+          if (r0 && (r0.home === t.name || r0.away === t.name) && r0.ix != null)
+            lv.push({ on: !em2.pre, txt: E(r0.home) + " v " + E(r0.away), sub: em2.pre ? "League matchday &middot; play begins 9:00 AM ET" : "League matchday", go: "#/scorecard?i=" + r0.ix });
+        });
+      }
+      if (SYNC && SYNC.started && !SYNC.practice && LG) {
+        // first visit before any poll has run: fetch once, repaint on arrival
+        if (window.__foFrAll === undefined && !window.__foFrAllReq) {
+          window.__foFrAllReq = 1;
+          sel("league_challenges", "league_id=eq." + LG.id + "&select=*&order=created_at.desc&limit=24").then(function (rows) {
+            window.__foFrAll = rows || [];
+            var pg0 = document.getElementById("page");
+            if (pg0 && location.hash.indexOf("#/scout") === 0) { pg0.__scoutSig = null; foRenderScout(); }
+          }).catch(function () {});
+        }
+        (window.__foFrAll || []).forEach(function (c) {
+          if (!c || (c.challenger_club !== t.name && c.opponent_club !== t.name)) return;
+          if (c.status !== "accepted" && c.status !== "played") return;
+          var stF = foFrBcastState(c);
+          var ttl = E(c.challenger_club) + " v " + E(c.opponent_club);
+          if (stF.phase === "live") lv.push({ on: true, txt: ttl, sub: "Friendly", go: "#/friendly?id=" + c.id });
+          else if (stF.phase === "pre") lv.push({ on: false, txt: ttl, sub: "Friendly &middot; " + new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }), go: "#/friendly?id=" + c.id });
+        });
+      }
+      if (lv.length) {
+        lv.sort(function (a, b) { return (b.on ? 1 : 0) - (a.on ? 1 : 0); });
+        var anyOn = lv.some(function (l) { return l.on; });
+        liveStrip = "<div class='panel fo-keep'><h4>" + (anyOn ? "<span class='live-dot'></span> On air" : "&#128250; On air soon") + "</h4><div class='pad'>" +
+          lv.map(function (l) {
+            return "<div class='fo-live-row'><b>" + l.txt + "</b><span>" + l.sub + "</span><a href='" + l.go + "'>" + (l.on ? "Watch live" : "Tune in") + " &rsaquo;</a></div>";
+          }).join("") +
+          "<div class='small' style='margin-top:8px;color:#667085'>Every broadcast in the league is public - tune in to any manager's match, ball by ball.</div></div></div>";
+      }
+    } catch (eLv) {}
     // recent events: milestones, call-ups, nicknames, farewells - the club's
     // recent life beyond bare results, straight from its players' careers
     var events = "";
@@ -2405,7 +2446,7 @@
         }).join("") + "</table></div></div>";
     } catch (eEv) {}
     return notes +
-      "<div class='fo-sc2'>" + threats + h2h + "</div>" + battles +
+      "<div class='fo-sc2'>" + threats + h2h + "</div>" + battles + liveStrip +
       "<div class='panel'><h4>Recent results <span class='small' style='font-weight:400'>&middot; last 5</span></h4><div class='pad'><table><tr><th>Date</th><th>Match</th><th>Result</th></tr>" + resRows + "</table></div></div>" +
       "<div class='panel'><h4>Upcoming fixtures <span class='small' style='font-weight:400'>&middot; next 5</span></h4><div class='pad'>" + upNote + "<table><tr><th>Date</th><th>Rd</th><th>Opponent</th>" + (oneGround ? "" : "<th>Ground</th>") + "</tr>" + upRows + "</table></div></div>" + events;
   }
@@ -2608,6 +2649,7 @@
       page.__scoutSig = sig;
       page.innerHTML = foScoutHTML(ix);
       foWireScout(page, ix);
+      try { if (window.__foLive) window.__foLive.mask(); } catch (eM) {}
     } catch (e) {}
   }
   // Recent league form per club (oldest→newest, last 5): W / L / T.
@@ -6983,6 +7025,7 @@
       if (!(SYNC && SYNC.started && !SYNC.practice && LG)) return;
       var me = userTeam().name;
       sel("league_challenges", "league_id=eq." + LG.id + "&select=*&order=created_at.desc&limit=24").then(function (rows) {
+        window.__foFrAll = rows || [];
         rows = (rows || []).filter(function (c) { return c.challenger_club === me || c.opponent_club === me; });
         FO_BELL.rows = rows;
         FO_BELL.events = foBellEvents(rows, me);
@@ -7601,6 +7644,7 @@
       if (window.__foFrFetchAt && Date.now() - window.__foFrFetchAt < 10000) return;
       window.__foFrFetchAt = Date.now();
       sel("league_challenges", "league_id=eq." + LG.id + "&select=*&order=created_at.desc&limit=24").then(function (rows) {
+        window.__foFrAll = rows || [];
         rows = (rows || []).filter(function (c) { return c.challenger_club === me || c.opponent_club === me; });
         var sig = JSON.stringify(rows.map(function (c) { return c.id + ":" + c.status + ":" + !!c.result; }));
         if (sig !== window.__foFrSig) {
