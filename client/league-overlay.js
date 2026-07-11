@@ -2112,7 +2112,7 @@
       if (r.k === "club") location.hash = "#/scout?t=" + r.ti;
       else if (r.k === "page") location.hash = r.go;
       else if (r.k === "guide") {
-        location.hash = "#/guide";
+        location.hash = "#/guide?a=" + r.sec;
         setTimeout(function () {
           var d = document.getElementById("man-" + r.sec);
           if (d) { d.open = true; d.scrollIntoView({ behavior: "smooth", block: "start" }); }
@@ -7171,10 +7171,164 @@
         "<li><b>Read the training report and ledger after every matchday.</b> They state exactly what is and is not working.</li></ul>"
       ].join("")]
     ];
-    page.innerHTML =
-      "<div class='fo-man'><div class='crumb'>Manual</div>" +
-      "<div class='page-head'><div><div class='eyebrow'>How to play</div><h1>The Manager&rsquo;s Manual</h1><p>How every system in the game works, and what to consider when using it. The search bar on your club home also jumps straight to any topic here.</p></div></div>" +
-      secs.map(function (s) { return foManualSec(s[0], s[1], s[2]); }).join("") + "</div>";
+    // ---- reference articles built from the game's own data ----
+    try {
+      var talRows = "";
+      if (typeof TALTIPS !== "undefined") {
+        talRows = Object.keys(TALTIPS).map(function (k) {
+          var nm2 = k; try { if (typeof foTalentName === "function") nm2 = foTalentName(k) || k; } catch (eT) {}
+          return "<tr><td><b>" + E(nm2) + "</b></td><td>" + E(TALTIPS[k]) + "</td></tr>";
+        }).join("");
+      }
+      secs.push(["attributes", "Attribute glossary", "<p>Every number on a player card, with exactly what it does in the match engine. These definitions are rendered from the same source the Squad page uses, so they cannot drift from the game.</p>" + glossary]);
+      secs.push(["talents", "Talent glossary", "<p>Talents are permanent traits that apply in specific situations. They are named on a player&rsquo;s card, and match commentary calls a talent out when it fires. A talent shapes the situations it names and nothing else &ndash; it never replaces the underlying skills.</p>" +
+        (talRows ? "<table><tr><th>Talent</th><th>What it does, and when it matters</th></tr>" + talRows + "</table>" : "") +
+        "<div class='fo-man-tip'><b>Reading a talent:</b> ask three questions - what does it affect, when can it trigger, and what does it not touch? A Death Specialist changes nothing before over 40.</div>"]);
+      secs.push(["faq", "Frequently asked questions", [
+        "<table><tr><th>Question</th><th>Answer</th></tr>",
+        "<tr><td>When do matches play?</td><td>One round every day at " + MATCH_TIME + ", followed by a one-hour live broadcast. Results unlock at stumps.</td></tr>",
+        "<tr><td>What if I don&rsquo;t submit orders?</td><td>An automatic lineup is used. It is reasonable, but it does not know your plans.</td></tr>",
+        "<tr><td>When do lineups lock?</td><td>About an hour before the start, while the engine warms the round up.</td></tr>",
+        "<tr><td>Why can&rsquo;t I see rival players&rsquo; skills?</td><td>Skills are private to each manager. You judge rivals from output: stats, careers and match ratings are all public.</td></tr>",
+        "<tr><td>What decides a tie on points?</td><td>Net run rate. Margins matter, so finish wins strongly and keep chases brisk.</td></tr>",
+        "<tr><td>When does the transfer market restock?</td><td>Every 3 matchdays, completely. Signed players are removed for everyone at once.</td></tr>",
+        "<tr><td>How big can my squad be?</td><td>18 players. Every seat you fill is a seat you can&rsquo;t offer someone better later.</td></tr>",
+        "<tr><td>Do friendlies cost anything?</td><td>No - no money, no fatigue, no points. Pride only.</td></tr>",
+        "</table>"].join("")]);
+    } catch (eRef) {}
+
+    // ---- the shell: categories, landing, article view, search ----
+    var byId = {}; secs.forEach(function (s) { byId[s[0]] = s; });
+    var cats = [
+      ["Getting started", "The league, the daily rhythm, and habits that win.", ["basics", "day", "tips"]],
+      ["Players & squad", "Reading player cards: skills, form, fatigue, talents, age.", ["players"]],
+      ["Matches & tactics", "Orders, conditions, the match centre and the table.", ["orders", "conditions", "matchcentre", "scouting", "practice", "league"]],
+      ["Development", "Training programs and the youth pipeline.", ["training", "youth"]],
+      ["Club operations", "Money, sponsors and the transfer market.", ["money", "sponsors", "market"]],
+      ["Reference", "Glossaries, the living league, and quick answers.", ["attributes", "talents", "world", "faq"]]
+    ].map(function (c) { return { name: c[0], desc: c[1], arts: c[2].filter(function (id) { return byId[id]; }) }; });
+    var flat = []; cats.forEach(function (c) { c.arts.forEach(function (id) { flat.push(id); }); });
+    var catOf = function (id) { for (var i = 0; i < cats.length; i++) if (cats[i].arts.indexOf(id) >= 0) return cats[i]; return null; };
+    var mQ = (location.hash.split("?")[1] || "").match(/(?:^|&)a=([\w-]+)/);
+    var artId = mQ && byId[mQ[1]] ? mQ[1] : null;
+    window.__foMnOpen = window.__foMnOpen || {};
+    if (artId) { var cA = catOf(artId); if (cA) window.__foMnOpen[cA.name] = true; }
+
+    // search index: plain text of every article, built once per session
+    if (!window.__foMnIx) window.__foMnIx = null;
+    window.__foMnIx = secs.map(function (s) {
+      return { id: s[0], title: s[1], cat: (catOf(s[0]) || {}).name || "", text: String(s[2]).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").toLowerCase() };
+    });
+
+    var searchBox = "<form id='fo-mn2-form' role='search'><input id='fo-mn2-q' type='search' placeholder='Search the manual&hellip;' aria-label='Search the manual' autocomplete='off'></form>";
+    var sideNav = cats.map(function (c) {
+      var open = !!window.__foMnOpen[c.name];
+      return "<div class='fo-mn2-cat'><button class='fo-mn2-cbtn' aria-expanded='" + open + "' data-cat='" + E(c.name) + "'>" + E(c.name) + "<i>" + (open ? "&minus;" : "+") + "</i></button>" +
+        "<div class='fo-mn2-arts'" + (open ? "" : " hidden") + ">" + c.arts.map(function (id) {
+          return "<a href='#/guide?a=" + id + "'" + (id === artId ? " class='on' aria-current='page'" : "") + ">" + byId[id][1] + "</a>";
+        }).join("") + "</div></div>";
+    }).join("");
+    var side = "<aside class='fo-mn2-side'><div class='fo-mn2-sh'><a href='#/guide'>Game manual</a><span>Complete guide to managing a winning cricket club</span></div>" +
+      searchBox + "<nav id='fo-mn2-nav'>" + sideNav + "</nav>" +
+      "<div class='fo-man-tip' style='margin-top:14px'><b>Manager tip</b><br>Every great team is built on smart decisions off the field.</div></aside>";
+
+    var main;
+    if (!artId) {
+      main = "<div class='fo-mn2-land'><div class='fo-mn2-intro'><h1>Game manual</h1>" +
+        "<p>Learn how to build, manage, and compete with your cricket club. Every explanation here is checked against the match engine.</p></div>" +
+        "<div id='fo-mn2-res'></div>" +
+        "<div class='fo-mn2-cards'>" + cats.map(function (c) {
+          return "<a class='fo-mn2-cc' href='#/guide?a=" + c.arts[0] + "'><b>" + E(c.name) + "</b><p>" + E(c.desc) + "</p><span>" + c.arts.length + " article" + (c.arts.length === 1 ? "" : "s") + " &rsaquo;</span></a>";
+        }).join("") + "</div></div>";
+    } else {
+      var art = byId[artId], cat2 = catOf(artId);
+      var fi = flat.indexOf(artId);
+      var prevA = fi > 0 ? byId[flat[fi - 1]] : null, nextA = fi < flat.length - 1 ? byId[flat[fi + 1]] : null;
+      main = "<article class='fo-mn2-art' id='man-" + artId + "'>" +
+        "<div class='fo-mn2-crumb'><a href='#/guide'>Manual</a> &rsaquo; <span>" + E(cat2 ? cat2.name : "") + "</span> &rsaquo; <b>" + art[1] + "</b></div>" +
+        "<h1>" + art[1] + "</h1>" +
+        "<div id='fo-mn2-res'></div>" +
+        "<div class='fo-man-b'>" + art[2] + "</div>" +
+        "<div class='fo-mn2-pn'>" +
+        (prevA ? "<a class='fo-mn2-prev' href='#/guide?a=" + prevA[0] + "'><span>&lsaquo; Previous</span><b>" + prevA[1] + "</b></a>" : "<span></span>") +
+        (nextA ? "<a class='fo-mn2-next' href='#/guide?a=" + nextA[0] + "'><span>Next &rsaquo;</span><b>" + nextA[1] + "</b></a>" : "<span></span>") +
+        "</div></article>";
+    }
+
+    page.innerHTML = "<div class='fo-mn2'>" +
+      "<div class='fo-mn2-mbar'><a href='#/guide'>&lsaquo; Manual</a><b>" + (artId ? byId[artId][1] : "Game manual") + "</b>" +
+      "<button id='fo-mn2-contents' aria-label='Contents'>Contents</button></div>" +
+      side + "<main class='fo-mn2-main'>" + main + "</main></div>";
+
+    // category expand/collapse (state survives navigation within the session)
+    page.querySelectorAll(".fo-mn2-cbtn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var nm3 = b.getAttribute("data-cat");
+        window.__foMnOpen[nm3] = !window.__foMnOpen[nm3];
+        var artsEl = b.parentNode.querySelector(".fo-mn2-arts");
+        var open2 = !!window.__foMnOpen[nm3];
+        b.setAttribute("aria-expanded", open2);
+        b.querySelector("i").innerHTML = open2 ? "&minus;" : "+";
+        if (open2) artsEl.removeAttribute("hidden"); else artsEl.setAttribute("hidden", "");
+      });
+    });
+    // search: live results over titles, bodies and glossaries; Enter opens the
+    // best hit, Escape clears. Works entirely offline.
+    var qIn = page.querySelector("#fo-mn2-q"), resEl = page.querySelector("#fo-mn2-res");
+    var doSearch = function () {
+      var q = (qIn.value || "").trim().toLowerCase();
+      if (!resEl) return;
+      if (q.length < 2) { resEl.innerHTML = ""; return; }
+      var hits = window.__foMnIx.map(function (x) {
+        var tHit = x.title.toLowerCase().indexOf(q) >= 0, bAt = x.text.indexOf(q);
+        if (!tHit && bAt < 0) return null;
+        var snip = "";
+        if (bAt >= 0) {
+          var s0 = Math.max(0, bAt - 55), s1 = Math.min(x.text.length, bAt + q.length + 55);
+          snip = (s0 > 0 ? "&hellip;" : "") + E(x.text.slice(s0, s1)).replace(new RegExp("(" + q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig"), "<mark>$1</mark>") + (s1 < x.text.length ? "&hellip;" : "");
+        }
+        var freq = 0, at2 = bAt;
+        while (at2 >= 0 && freq < 6) { freq++; at2 = x.text.indexOf(q, at2 + q.length); }
+        return { x: x, score: (tHit ? 10 : 0) + freq, snip: snip };
+      }).filter(Boolean).sort(function (a, b2) { return b2.score - a.score; }).slice(0, 8);
+      resEl.innerHTML = hits.length
+        ? "<div class='fo-mn2-hits'>" + hits.map(function (h) {
+            return "<a href='#/guide?a=" + h.x.id + "'><b>" + h.x.title + "</b><span>" + E(h.x.cat) + "</span>" + (h.snip ? "<i>" + h.snip + "</i>" : "") + "</a>";
+          }).join("") + "</div>"
+        : "<div class='fo-mn2-hits'><div class='fo-mn2-none'>No articles match &ldquo;" + E(q) + "&rdquo;.</div></div>";
+    };
+    if (qIn) {
+      qIn.addEventListener("input", doSearch);
+      qIn.addEventListener("keydown", function (ev) {
+        if (ev.key === "Escape") { qIn.value = ""; doSearch(); qIn.blur(); }
+      });
+      var form = page.querySelector("#fo-mn2-form");
+      if (form) form.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var first = resEl && resEl.querySelector("a");
+        if (first) { location.hash = first.getAttribute("href").slice(1); }
+      });
+    }
+    // mobile Contents: the manual nav in the refined drawer style
+    var cBtn = page.querySelector("#fo-mn2-contents");
+    if (cBtn) cBtn.addEventListener("click", function () {
+      var d = document.getElementById("fo-mandrawer");
+      if (d) { d.remove(); return; }
+      d = document.createElement("div"); d.id = "fo-mandrawer";
+      d.innerHTML = "<div class='fo-mdk'></div><div class='fo-mdp'><div class='fo-mdh'>Game manual<button class='fo-mdx' aria-label='Close contents'>&#10005;</button></div><nav class='fo-mdn'>" +
+        cats.map(function (c) {
+          return "<div class='fo-mn2-dcat'>" + E(c.name) + "</div>" + c.arts.map(function (id) {
+            return "<a class='fo-mdl" + (id === artId ? " on" : "") + "' href='#/guide?a=" + id + "'>" + byId[id][1] + "</a>";
+          }).join("");
+        }).join("") + "</nav></div>";
+      document.body.appendChild(d);
+      d.classList.add("open"); document.body.classList.add("fo-mnav-lock");
+      var close = function () { d.remove(); document.body.classList.remove("fo-mnav-lock"); };
+      d.querySelector(".fo-mdk").addEventListener("click", close);
+      d.querySelector(".fo-mdx").addEventListener("click", close);
+      d.querySelectorAll("a.fo-mdl").forEach(function (a) { a.addEventListener("click", close); });
+    });
+    try { window.scrollTo(0, 0); } catch (eSc) {}
     foMobileTables();
   }
   function foRenderManual() {
@@ -9795,7 +9949,132 @@
       ".fo-set-danger{border:1px solid rgba(179,64,42,.4);border-radius:12px;background:#FBF0EE;padding:14px 16px;margin:12px 0}" +
       ".fo-set-danger input{padding:8px 10px;border:1px solid rgba(28,36,51,.2);border-radius:8px;font-size:13px;min-width:220px}" +
       ".fo-set-danger button[disabled]{opacity:.45;cursor:not-allowed}" +
-      "@media(max-width:820px){.fo-of-kpis{grid-template-columns:1fr}}";
+      "@media(max-width:820px){.fo-of-kpis{grid-template-columns:1fr}}" +
+      // ---- Office v2: financial command centre ----
+      "html body:has(.fo-of2){background:#f4f1e9 !important}" +
+      ".fo-of2{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#13233a}" +
+      ".fo-of2 .fo-t-green{color:#178347}.fo-of2 .fo-t-amber{color:#bd7a14}.fo-of2 .fo-t-red{color:#c73932}.fo-of2 .fo-t-mut{color:#687386;font-weight:600}" +
+      ".fo-of2-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:6px 0 14px;flex-wrap:wrap}" +
+      ".fo-of2-head h1{margin:0;font-size:26px;letter-spacing:-.3px;color:#13233a}" +
+      ".fo-of2-head span{font-size:13px;color:#687386}" +
+      ".fo-of2-headl{display:flex;gap:16px;align-items:center}" +
+      ".fo-of2-dl{font-size:12.5px;font-weight:700;color:#c94726 !important;text-decoration:none;white-space:nowrap}" +
+      ".fo-of2-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:0 0 14px}" +
+      ".fo-of2-kpi{background:#fff;border:1px solid rgba(15,35,60,.11);border-radius:12px;padding:14px 16px;box-shadow:0 5px 14px rgba(15,35,60,.055)}" +
+      ".fo-of2-l{display:block;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#687386}" +
+      ".fo-of2-kpi b{display:block;font-size:23px;color:#13233a;margin:3px 0 1px;font-variant-numeric:tabular-nums;white-space:nowrap}" +
+      ".fo-of2-kpi i{display:block;font-style:normal;font-size:12px;color:#687386}" +
+      ".fo-of2-health{background:#fff;border:1px solid rgba(15,35,60,.11);border-radius:12px;box-shadow:0 5px 14px rgba(15,35,60,.055);padding:12px 16px;margin:0 0 16px;display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}" +
+      ".fo-of2-hbadge{flex:0 0 auto;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:6px 12px;border-radius:8px;background:#faf8f3;border:1px solid rgba(15,35,60,.11)}" +
+      ".fo-of2-hbadge b{letter-spacing:.09em}" +
+      ".fo-of2-hrows{flex:1;min-width:260px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 22px}" +
+      "@media(max-width:900px){.fo-of2-hrows{grid-template-columns:1fr}}" +
+      ".fo-of2-hrow{display:flex;gap:8px;align-items:baseline;font-size:12.5px;color:#13233a}" +
+      ".fo-of2-hrow span:last-child{color:#13233a}.fo-of2-hrow span:first-child{font-weight:800}" +
+      ".fo-of2-card{background:#fff;border:1px solid rgba(15,35,60,.11);border-radius:12px;box-shadow:0 5px 14px rgba(15,35,60,.055);margin:0 0 16px;overflow:hidden}" +
+      "html body .fo-of2-ch{display:flex;align-items:center;gap:10px;background:#071c37 !important;color:#fff;padding:11px 16px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}" +
+      ".fo-of2-cb{padding:14px 16px}" +
+      ".fo-of2-badge{margin-left:auto;background:rgba(23,131,71,.25);border:1px solid rgba(120,220,160,.5);color:#9fe0b8;border-radius:999px;padding:2px 10px;font-size:10px;letter-spacing:.08em}" +
+      "html body .fo-of2-hbtn,html body.ftpskin #page .fo-of2-hbtn{margin-left:auto;background:transparent !important;border:1px solid rgba(255,255,255,.35) !important;color:#fff !important;border-radius:8px;padding:4px 10px !important;font:700 11px Inter,ui-sans-serif,sans-serif !important;cursor:pointer;text-transform:none;letter-spacing:0}" +
+      ".fo-of2-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;align-items:start}" +
+      ".fo-of2-grid2{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,.65fr);gap:18px;align-items:start}" +
+      "@media(max-width:1000px){.fo-of2-grid,.fo-of2-grid2{grid-template-columns:1fr}}" +
+      "@media(max-width:900px){.fo-of2-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}" +
+      "@media(max-width:520px){.fo-of2-kpis{grid-template-columns:1fr}}" +
+      ".fo-of2-frow{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:13px;color:#13233a;border-bottom:1px dashed rgba(15,35,60,.08)}" +
+      ".fo-of2-frow:last-child{border-bottom:none}" +
+      ".fo-of2-frow b{font-variant-numeric:tabular-nums}" +
+      ".fo-of2-fstart{border-bottom:1px solid rgba(15,35,60,.14);font-weight:600}" +
+      ".fo-of2-fgrp{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#687386;margin:10px 0 2px}" +
+      ".fo-of2-ftotal{display:flex;justify-content:space-between;gap:12px;margin-top:10px;padding:10px 12px;background:#faf8f3;border:1px solid rgba(15,35,60,.11);border-radius:10px;font-weight:700}" +
+      ".fo-of2-ftotal b{font-size:19px;font-variant-numeric:tabular-nums}" +
+      ".fo-of2-note{font-size:11.5px;color:#687386;margin-top:8px;line-height:1.5}" +
+      ".fo-of2-dlist .fo-of2-d{padding:10px 0;border-bottom:1px solid rgba(15,35,60,.08)}" +
+      ".fo-of2-dlist .fo-of2-d:first-child{padding-top:2px}.fo-of2-dlist .fo-of2-d:last-child{border-bottom:none;padding-bottom:2px}" +
+      ".fo-of2-d b{font-size:13.5px;color:#13233a}" +
+      ".fo-of2-d p{margin:3px 0 6px;font-size:12.5px;color:#42506a;line-height:1.5}" +
+      ".fo-of2-drow{display:flex;align-items:center;justify-content:space-between;gap:10px}" +
+      ".fo-of2-dst{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}" +
+      ".fo-of2-spgrid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(240px,.9fr);gap:22px}" +
+      "@media(max-width:820px){.fo-of2-spgrid{grid-template-columns:1fr}}" +
+      ".fo-of2-spd .fo-of2-dl{display:inline-block;margin-top:8px}" +
+      ".fo-of2-scen{margin:12px 0 2px}" +
+      ".fo-of2-scenbar{position:relative;height:8px;border-radius:4px;background:linear-gradient(90deg,#e9c9a4,#cfe4d3);}" +
+      ".fo-of2-scenbar i{position:absolute;top:-3px;width:14px;height:14px;border-radius:50%;background:#071c37;border:3px solid #fff;box-shadow:0 1px 4px rgba(15,35,60,.4);transform:translateX(-50%)}" +
+      ".fo-of2-scenlbl{display:flex;justify-content:space-between;font-size:10.5px;color:#687386;margin-top:6px;font-variant-numeric:tabular-nums;text-align:center}" +
+      ".fo-of2-scenlbl span:first-child{text-align:left}.fo-of2-scenlbl span:last-child{text-align:right}" +
+      ".fo-of2-gstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:2px 0 10px}" +
+      "@media(max-width:700px){.fo-of2-gstats{grid-template-columns:repeat(2,minmax(0,1fr))}}" +
+      ".fo-of2-gstat span{display:block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#687386}" +
+      ".fo-of2-gstat b{font-size:16px;color:#13233a;font-variant-numeric:tabular-nums}" +
+      ".fo-of2-exp{margin-top:14px;padding:12px 14px;background:#faf8f3;border:1px solid rgba(15,35,60,.11);border-radius:10px;max-width:560px}" +
+      "html body .fo-of2-expwarnbtn,html body.ftpskin #page .fo-of2-expwarnbtn{display:inline-block;margin-top:10px;background:#fff !important;border:1px solid #bd7a14 !important;color:#8a5a0e !important;border-radius:9px;padding:9px 16px !important;font:700 12.5px Inter,ui-sans-serif,sans-serif !important;cursor:pointer}" +
+      "html body .fo-of2-expwarnbtn:hover{background:#faf3e4 !important}" +
+      ".fo-of2-pitch{margin-top:16px;padding-top:14px;border-top:1px solid rgba(15,35,60,.11)}" +
+      ".fo-of2 .fo-of-ledger{width:100%}.fo-of2 .fo-of-ledger td.n,.fo-of2 .fo-of-ledger th.n{text-align:right;font-variant-numeric:tabular-nums}" +
+      ".fo-of2 .fo-of-ledger td,.fo-of2 .fo-of-ledger th{padding:5px 6px}" +
+      ".fo-of2 button:focus-visible,.fo-of2 a:focus-visible{outline:2px solid #e8562f;outline-offset:2px}" +
+      "@media(prefers-reduced-motion:reduce){.fo-of2 *{transition:none !important;animation:none !important}}" +
+      // ---- Manual v2: searchable knowledge base ----
+      "html body:has(.fo-mn2){background:#f4f1e9 !important}" +
+      ".fo-mn2{display:grid;grid-template-columns:260px minmax(0,1fr);gap:22px;align-items:start;max-width:1180px;margin:0 auto;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#13233a}" +
+      ".fo-mn2-side{position:sticky;top:64px;background:#fff;border:1px solid rgba(15,35,60,.11);border-radius:12px;box-shadow:0 5px 14px rgba(15,35,60,.055);padding:14px;max-height:calc(100vh - 84px);overflow-y:auto}" +
+      ".fo-mn2-sh a{font-weight:800;font-size:15px;color:#13233a !important;text-decoration:none}" +
+      ".fo-mn2-sh span{display:block;font-size:11.5px;color:#687386;margin:3px 0 10px;line-height:1.4}" +
+      "html body #page #fo-mn2-q{width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid rgba(15,35,60,.18);border-radius:9px;font-size:13px;margin-bottom:10px;background:#faf8f3}" +
+      "html body .fo-mn2-cbtn,html body.ftpskin #page .fo-mn2-cbtn{display:flex;width:100%;align-items:center;justify-content:space-between;background:none !important;border:0 !important;padding:9px 4px !important;font:700 11px/1 Inter,ui-sans-serif,sans-serif !important;letter-spacing:.07em;text-transform:uppercase;color:#687386 !important;cursor:pointer;box-shadow:none !important}" +
+      ".fo-mn2-cbtn i{font-style:normal;font-size:13px}" +
+      ".fo-mn2-arts a{display:flex;align-items:center;min-height:34px;padding:2px 10px;border-radius:8px;color:#13233a !important;font-size:13px;font-weight:600;text-decoration:none;line-height:1.3}" +
+      ".fo-mn2-arts a:hover{background:#faf8f3}" +
+      ".fo-mn2-arts a.on{background:rgba(232,86,47,.12);color:#c94726 !important;box-shadow:inset 3px 0 0 #e8562f}" +
+      ".fo-mn2-main{min-width:0}" +
+      ".fo-mn2-intro h1{margin:4px 0 8px;font-size:28px;letter-spacing:-.4px}" +
+      ".fo-mn2-intro p{margin:0 0 16px;font-size:14px;color:#42506a;max-width:560px;line-height:1.6}" +
+      ".fo-mn2-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}" +
+      "@media(max-width:640px){.fo-mn2-cards{grid-template-columns:1fr}}" +
+      ".fo-mn2-cc{display:block;background:#fff;border:1px solid rgba(15,35,60,.11);border-radius:12px;box-shadow:0 5px 14px rgba(15,35,60,.055);padding:16px 18px;text-decoration:none !important;color:#13233a !important;transition:transform .12s ease,box-shadow .12s ease}" +
+      ".fo-mn2-cc:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(15,35,60,.1)}" +
+      ".fo-mn2-cc b{font-size:15.5px}" +
+      ".fo-mn2-cc p{margin:4px 0 8px;font-size:12.5px;color:#687386;line-height:1.5}" +
+      ".fo-mn2-cc span{font-size:12px;font-weight:700;color:#c94726}" +
+      ".fo-mn2-art{background:#fff;border:1px solid rgba(15,35,60,.11);border-radius:12px;box-shadow:0 5px 14px rgba(15,35,60,.055);padding:20px 26px}" +
+      ".fo-mn2-crumb{font-size:12px;color:#687386;margin:0 0 6px}.fo-mn2-crumb a{color:#687386 !important;text-decoration:none}.fo-mn2-crumb b{color:#13233a}" +
+      ".fo-mn2-art h1{margin:0 0 12px;font-size:24px;letter-spacing:-.3px}" +
+      ".fo-mn2 .fo-man-b{font-size:13.5px;line-height:1.65;color:#3c4658}" +
+      ".fo-mn2 .fo-man-b p{margin:0 0 10px}" +
+      ".fo-mn2 .fo-man-b ul{margin:0 0 10px;padding-left:20px}.fo-mn2 .fo-man-b li{margin:4px 0}" +
+      ".fo-mn2 .fo-man-b table{width:100%;border-collapse:collapse;margin:6px 0 14px;font-size:12.5px}" +
+      ".fo-mn2 .fo-man-b th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#687386;padding:6px 8px;border-bottom:1px solid rgba(15,35,60,.14)}" +
+      ".fo-mn2 .fo-man-b td{padding:6px 8px;border-bottom:1px solid rgba(15,35,60,.07);vertical-align:top}" +
+      ".fo-mn2-pn{display:flex;justify-content:space-between;gap:12px;margin-top:20px}" +
+      ".fo-mn2-pn a{flex:1;max-width:48%;display:block;background:#faf8f3;border:1px solid rgba(15,35,60,.11);border-radius:10px;padding:10px 14px;text-decoration:none !important;color:#13233a !important;min-height:44px;box-sizing:border-box}" +
+      ".fo-mn2-pn a span{display:block;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#687386}" +
+      ".fo-mn2-pn a b{font-size:13px}" +
+      ".fo-mn2-pn .fo-mn2-next{text-align:right;margin-left:auto}" +
+      ".fo-mn2-hits{background:#fff;border:1px solid rgba(15,35,60,.14);border-radius:12px;box-shadow:0 10px 26px rgba(15,35,60,.12);padding:6px;margin:0 0 16px}" +
+      ".fo-mn2-hits a{display:block;padding:9px 12px;border-radius:9px;text-decoration:none !important;color:#13233a !important}" +
+      ".fo-mn2-hits a:hover,.fo-mn2-hits a:focus{background:#faf8f3}" +
+      ".fo-mn2-hits a b{font-size:13.5px}" +
+      ".fo-mn2-hits a span{margin-left:8px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#687386}" +
+      ".fo-mn2-hits a i{display:block;font-style:normal;font-size:12px;color:#5a6472;margin-top:2px;line-height:1.5}" +
+      ".fo-mn2-hits mark{background:rgba(232,86,47,.22);color:inherit;border-radius:2px}" +
+      ".fo-mn2-none{padding:10px 12px;font-size:13px;color:#687386}" +
+      ".fo-mn2-mbar{display:none}" +
+      ".fo-mn2-dcat{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#8a93a3;margin:12px 4px 4px}" +
+      ".fo-mn2 a:focus-visible,.fo-mn2 button:focus-visible,.fo-mn2 input:focus-visible{outline:2px solid #e8562f;outline-offset:2px}" +
+      "@media(max-width:768px){" +
+      ".fo-mn2{grid-template-columns:1fr;gap:12px}" +
+      ".fo-mn2-side{display:none}" +
+      ".fo-mn2-mbar{display:flex;align-items:center;gap:10px;position:sticky;top:56px;z-index:40;background:#f4f1e9;padding:8px 2px;margin:0 0 2px}" +
+      ".fo-mn2-mbar a{flex:0 0 auto;font-size:13px;font-weight:700;color:#c94726 !important;text-decoration:none;min-height:44px;display:inline-flex;align-items:center}" +
+      ".fo-mn2-mbar b{flex:1;min-width:0;text-align:center;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      "html body .fo-mn2-mbar button,html body.ftpskin #page .fo-mn2-mbar button{flex:0 0 auto;min-height:44px;min-width:44px;background:#fff !important;border:1px solid rgba(15,35,60,.18) !important;border-radius:10px;padding:0 14px !important;font:700 13px Inter,ui-sans-serif,sans-serif !important;color:#13233a !important;cursor:pointer}" +
+      ".fo-mn2-art{padding:16px 14px}" +
+      ".fo-mn2 .fo-man-b{font-size:14px}" +
+      ".fo-mn2 .fo-man-b table{display:block;overflow-x:auto}" +
+      ".fo-mn2-pn{flex-direction:column}.fo-mn2-pn a{max-width:none}" +
+      "}" +
+      "@media(min-width:769px){.fo-mn2-mbar{display:none !important}}";
     document.head.appendChild(foOfCss);
   } catch (e) {}
 
@@ -9832,9 +10111,21 @@
           }).join("") + "</div>";
       }
     }
-    return "<div class='panel fo-keep' id='fo-sponsor'><h4>Sponsor" + (res0.known ? " - " + res0.d.name : "") + "</h4><div class='pad'>" +
-      (res0.known ? "<div class='small'><b>" + res0.d.name + "</b>: " + res0.d.line + " Paid when the round resolves.</div>" : "") +
-      pickerHtml + frHtml + "</div></div>";
+    var base0 = 0; try { base0 = window.FoFinance.sponsorBase(t); } catch (eB0) {}
+    var details = res0.known
+      ? "<div class='fo-of2-spd'><div class='fo-of2-l'>Contract details</div>" +
+        "<div class='fo-of2-frow'><span>Sponsor</span><b>" + E(res0.d.name) + "</b></div>" +
+        "<div class='fo-of2-frow'><span>Type</span><b>Main sponsor</b></div>" +
+        "<div class='fo-of2-frow'><span>Base payment</span><b>" + foOfMoney(base0) + " / round</b></div>" +
+        "<div class='fo-of2-frow'><span>Win bonus</span><b>" + (res0.d.win ? foOfMoney(res0.d.win) + " / win" : "None") + "</b></div>" +
+        "<div class='fo-of2-frow'><span>Paid</span><b>When the round resolves</b></div>" +
+        "<div class='fo-of2-note'>" + res0.d.line + "</div>" +
+        "<a class='fo-of2-dl' href='#/guide?a=sponsors'>How sponsor deals work &rsaquo;</a></div>"
+      : "";
+    return "<div class='fo-of2-card' id='fo-sponsor'><div class='fo-of2-ch'>" +
+      (res0.known ? "Main sponsor &middot; " + E(res0.d.name) + "<span class='fo-of2-badge'>Active</span>" : "Sponsor") +
+      "</div><div class='fo-of2-cb'>" + pickerHtml +
+      "<div class='fo-of2-spgrid'><div>" + frHtml + "</div>" + details + "</div></div></div>";
   }
   function foWireSponsor(page) {
     page.querySelectorAll(".fo-sp-choose").forEach(function (b) {
@@ -9868,45 +10159,93 @@
       var base = F.sponsorBase(t), gateN = F.gate(t), att = F.gateAttendance(t), tc = F.trainIntensityCost(t);
       var bank = F.bank();
 
-      // ---- KPI row (3 cards) ----
-      var kpis = "<div class='fo-of-kpis'>" +
-        "<div class='fo-of-kpi'><span>Bank</span><b>" + foOfMoney(bank) + "</b><i>" + foHealth(bank) + "</i></div>" +
-        "<div class='fo-of-kpi'><span>Net per round</span>" + foOfSigned(avg) + "<i>home " + (split.homeNet >= 0 ? "+" : "&minus;") + foOfMoney(split.homeNet) + " &middot; away " + (split.awayNet >= 0 ? "+" : "&minus;") + foOfMoney(split.awayNet) + "</i></div>" +
-        "<div class='fo-of-kpi'><span>Season-end projection</span><b class='" + (proj >= 0 ? "fo-pos" : "fo-neg") + "'>" + foOfMoney(proj) + "</b><i>" + fx.length + " round" + (fx.length === 1 ? "" : "s") + " remaining</i></div></div>";
-
-      // ---- next-round projection waterfall ----
+      // ---- shared facts the cards below reason from ----
       var isHome = !!(nxt && nxt.isHome);
-      var projTitle = nxt ? "Next round &middot; R" + (nxt.round + 1) + " " + (isHome ? "vs " : "at ") + E(nxt.opp.name) + " (" + (isHome ? "home" : "away") + ")" : "Next round";
       var projBank = nxt ? bank + F.roundNet(nxt.round) : bank;
-      var waterfall = "<div class='panel fo-keep'><h4>" + projTitle + "</h4><div class='pad'><table class='kv'>" +
-        "<tr><td>Starting bank</td><td>" + foOfMoney(bank) + "</td></tr>" +
-        (F.paysSponsor() ? "<tr><td>+ Sponsor</td><td>" + foOfMoney(base) + "</td></tr>" : "") +
-        (isHome ? "<tr><td>+ Expected gate</td><td>" + foOfMoney(gateN) + "</td></tr>" : "<tr><td>+ Gate (away &middot; no gate)</td><td>$0</td></tr>") +
-        (F.chargesWages() ? "<tr><td>&minus; Wages</td><td>" + foOfMoney(wages) + "</td></tr>" : "") +
-        "<tr><td>&minus; Ground maintenance</td><td>" + foOfMoney(seats) + "</td></tr>" +
-        "<tr><td>&minus; Academy upkeep</td><td>" + foOfMoney(acadUp) + "</td></tr>" +
-        (tc > 0 ? "<tr><td>&minus; Training intensity</td><td>" + foOfMoney(tc) + "</td></tr>" : "") +
-        "<tr><td><b>= Projected bank</b></td><td><b class='" + (projBank >= 0 ? "fo-pos" : "fo-neg") + "'>" + foOfMoney(projBank) + "</b></td></tr></table>" +
-        "<div class='small' style='margin-top:5px'>Win bonuses land on top when you win &middot; they are never counted in advance.</div></div></div>";
-
-      // ---- computed finance warnings ----
       var avgIncome = fx.length ? fx.reduce(function (s2, f) { return s2 + F.roundIncome(f.round); }, 0) / fx.length : base + gateN / 2;
       var wagePct = Math.round(100 * wages / Math.max(1, avgIncome));
       var dip = F.firstNegativeRound();
       var fill = Math.round(100 * att / Math.max(1, seats));
       var deal = foDealResolve(t);
-      var warn = function (bad, txt) { return "<div><span>" + (bad ? "&#9888;" : "&#10003;") + "</span><span>" + txt + "</span></div>"; };
-      var warnings = "<div class='panel fo-keep'><h4>Finance warnings</h4><div class='pad fo-of-warn'>" +
+      var insolvent = !!dip || proj < 0;
+      var overallHealth = insolvent ? ["URGENT", "red"] : (F.chargesWages() && wagePct > 60 ? ["CAUTION", "amber"] : ["SAFE", "green"]);
+
+      // ---- KPI row (4 cards) ----
+      var kpi = function (label, big, sub, tone) {
+        return "<div class='fo-of2-kpi'><span class='fo-of2-l'>" + label + "</span><b" + (tone ? " class='fo-t-" + tone + "'" : "") + ">" + big + "</b><i>" + sub + "</i></div>";
+      };
+      var kpis = "<div class='fo-of2-kpis'>" +
+        kpi("Current bank", foOfMoney(bank), foHealth(bank), bank >= 0 ? "" : "red") +
+        kpi("Next round", foOfMoney(projBank),
+          (projBank - bank >= 0 ? "+" : "&minus;") + foOfMoney(Math.abs(projBank - bank)) + " projected", projBank >= 0 ? "" : "red") +
+        kpi("Net per round", (avg >= 0 ? "+" : "&minus;") + foOfMoney(Math.abs(avg)),
+          "home " + (split.homeNet >= 0 ? "+" : "&minus;") + foOfMoney(Math.abs(split.homeNet)) + " &middot; away " + (split.awayNet >= 0 ? "+" : "&minus;") + foOfMoney(Math.abs(split.awayNet)), avg >= 0 ? "green" : "red") +
+        kpi("Season end", foOfMoney(proj), fx.length + " round" + (fx.length === 1 ? "" : "s") + " remaining", proj >= 0 ? "green" : "red") +
+        "</div>";
+
+      // ---- financial health strip: honest statuses, no green for a 33% gate ----
+      var hRow = function (tone, txt) {
+        var mark = tone === "green" ? "&#10003;" : tone === "amber" ? "&#9651;" : "&#10007;";
+        return "<div class='fo-of2-hrow fo-t-" + tone + "'><span>" + mark + "</span><span>" + txt + "</span></div>";
+      };
+      var health = "<div class='fo-of2-health'>" +
+        "<div class='fo-of2-hbadge fo-t-" + overallHealth[1] + "'>Financial health: <b>" + overallHealth[0] + "</b></div>" +
+        "<div class='fo-of2-hrows'>" +
+        (insolvent
+          ? hRow("red", dip ? "The books go negative around <b>R" + dip + "</b> at the current run rate." : "Season ends <b>" + foOfMoney(proj) + " in the red</b> at the current run rate.")
+          : hRow("green", "The club is solvent through the end of the season (<b>+" + foOfMoney(proj) + "</b> projected).")) +
         (F.chargesWages()
-          ? warn(wagePct > 60, "Wages are <b>" + wagePct + "%</b> of a typical round's income" + (wagePct > 60 ? " · over the 60% comfort line." : "."))
-          : warn(false, "Wages (" + foOfMoney(wages) + "/matchday) are informational here · practice books don't charge them.")) +
-        (dip ? warn(true, "The books go negative around <b>R" + dip + "</b> at the current run rate.")
-          : proj < 0 ? warn(true, "Season ends <b>" + foOfMoney(proj) + " in the red</b> at the current run rate.")
-          : warn(false, "Solvent to season's end (<b>+" + foOfMoney(proj) + "</b> projected).")) +
-        warn(fill < 60, "Filling <b>" + fill + "%</b> of the ground on matchdays" + (fill < 60 ? " · expansion won't pay back." : ".")) +
+          ? hRow(wagePct > 60 ? "amber" : "green", "Wages consume <b>" + wagePct + "%</b> of typical round income" + (wagePct > 60 ? " &middot; over the 60% comfort line." : "."))
+          : hRow("green", "Wages (" + foOfMoney(wages) + "/matchday) are informational here &middot; practice books don't charge them.")) +
+        hRow(fill < 60 ? "amber" : "green", "The ground is <b>" + fill + "%</b> full on matchdays" + (fill < 60 ? " &middot; expansion currently has poor payback." : " &middot; expansion is worth a look.")) +
         (F.paysSponsor()
-          ? warn(false, E(deal.d.name) + ": " + foOfMoney(base) + "/matchday base" + (deal.d.win ? " + " + foOfMoney(deal.d.win) + " per win" : ", no result bonuses") + ".")
-          : warn(false, "Sponsor deals pay out in league play.")) +
+          ? hRow("green", E(deal.d.name) + " pays <b>" + foOfMoney(base) + "</b> every matchday" + (deal.d.win ? " plus " + foOfMoney(deal.d.win) + " per win" : ", win or lose") + ".")
+          : hRow("green", "Sponsor deals pay out in league play.")) +
+        "</div></div>";
+
+      // ---- next-round forecast: income and expenses grouped, balance dominant ----
+      var projTitle = nxt ? "Next round &middot; R" + (nxt.round + 1) + " " + (isHome ? "vs " : "at ") + E(nxt.opp.name) + " &middot; " + (isHome ? "Home" : "Away") : "Next round";
+      var fRow = function (label, val, neg) {
+        return "<div class='fo-of2-frow'><span>" + label + "</span><b class='" + (neg ? "fo-t-red" : "fo-t-green") + "'>" + (neg ? "&minus;" : "+") + foOfMoney(Math.abs(val)) + "</b></div>";
+      };
+      var waterfall = "<div class='fo-of2-card'><div class='fo-of2-ch'>" + projTitle + "</div><div class='fo-of2-cb'>" +
+        "<div class='fo-of2-frow fo-of2-fstart'><span>Starting bank</span><b>" + foOfMoney(bank) + "</b></div>" +
+        "<div class='fo-of2-fgrp'>Income</div>" +
+        (F.paysSponsor() ? fRow("Sponsor", base) : "") +
+        (isHome ? fRow("Expected gate", gateN) : "<div class='fo-of2-frow'><span>Gate (away &middot; no gate)</span><b class='fo-t-mut'>$0</b></div>") +
+        "<div class='fo-of2-frow'><span>Possible win bonus</span><b class='fo-t-mut'>Not included</b></div>" +
+        "<div class='fo-of2-fgrp'>Expenses</div>" +
+        (F.chargesWages() ? fRow("Wages", wages, true) : "") +
+        fRow("Ground maintenance", seats, true) +
+        fRow("Academy upkeep", acadUp, true) +
+        (tc > 0 ? fRow("Training intensity", tc, true) : "") +
+        "<div class='fo-of2-ftotal'><span>Projected balance</span><b class='" + (projBank >= 0 ? "fo-t-green" : "fo-t-red") + "'>" + foOfMoney(projBank) + "</b></div>" +
+        "<div class='fo-of2-note'>Win bonuses are added after results and are not included in advance projections.</div>" +
+        "</div></div>";
+
+      // ---- decision centre: only things a manager can act on ----
+      var dItem = function (title, body, status, tone, link) {
+        return "<div class='fo-of2-d'><b>" + title + "</b><p>" + body + "</p>" +
+          "<div class='fo-of2-drow'><span class='fo-of2-dst fo-t-" + tone + "'>" + status + "</span>" + (link || "") + "</div></div>";
+      };
+      var lowFillD = fill < 60;
+      var decisions = "<div class='fo-of2-card'><div class='fo-of2-ch'>Decision centre</div><div class='fo-of2-cb fo-of2-dlist'>" +
+        dItem("Ground expansion",
+          "Current fill is <b>" + fill + "%</b>. " + (lowFillD ? "Expansion is unlikely to repay its cost. Recommendation: wait until average fill exceeds 85%." : (fill >= 85 ? "The ground sells close to out &middot; extra seats would earn from day one." : "Expansion is a judgement call at this fill rate.")),
+          lowFillD ? "Wait" : (fill >= 85 ? "Expand" : "Consider"), lowFillD ? "amber" : (fill >= 85 ? "green" : "amber"),
+          "<a href='#fo-stadium' class='fo-of2-dl' data-scroll='fo-stadium'>Review ground &rsaquo;</a>") +
+        dItem("Wage pressure",
+          F.chargesWages() ? "Wages are <b>" + wagePct + "%</b> of typical round income." : "Practice books don't charge wages; the bill is informational.",
+          F.chargesWages() ? (wagePct > 60 ? "Over the comfort line" : "Sustainable") : "Informational",
+          F.chargesWages() && wagePct > 60 ? "amber" : "green",
+          "<a href='#/squad' class='fo-of2-dl'>Review squad wages &rsaquo;</a>") +
+        dItem("Sponsor",
+          F.paysSponsor() ? E(deal.d.name) + " pays <b>" + foOfMoney(base) + "</b> every round" + (deal.d.win ? " plus " + foOfMoney(deal.d.win) + " per win" : " regardless of result") + "." : "Sponsor deals pay out in league play.",
+          "Secure", "green",
+          "<a href='#fo-sponsor' class='fo-of2-dl' data-scroll='fo-sponsor'>View sponsor &rsaquo;</a>") +
+        (insolvent ? dItem("Cash runway",
+          dip ? "At the current run rate the bank goes negative around <b>R" + dip + "</b>." : "The season projects to end in the red.",
+          "Act now", "red", "<a href='#/transfers' class='fo-of2-dl'>Review spending &rsaquo;</a>") : "") +
         "</div></div>";
 
       // ---- ledger, oldest first, running balance AFTER each entry ----
@@ -9929,7 +10268,8 @@
         entries = ((App.fin && App.fin.ledger) || []).slice().reverse();
       }
       if (entries.length && /founder operating bank/i.test(String(entries[0].item || entries[0].label || "")) && !+entries[0].amt) entries.shift();
-      var LIMIT = 30, shown = entries.slice(-LIMIT);
+      var ledFull = !!window.__foLedFull;
+      var LIMIT = ledFull ? 500 : 5, shown = entries.slice(-LIMIT);
       var opening = bank; entries.forEach(function (e2) { opening -= (+e2.amt || 0); });
       var bf = opening; entries.slice(0, entries.length - shown.length).forEach(function (e2) { bf += (+e2.amt || 0); });
       var run = bf;
@@ -9937,11 +10277,28 @@
         (entries.length > shown.length ? "Balance brought forward" : "Opening balance") + "</td><td class='n'>&ndash;</td><td class='n'><b>" + foOfMoney(bf) + "</b></td></tr>" +
         shown.map(function (l) {
           run += (+l.amt || 0);
-          return "<tr><td>" + E(l.wk || "") + "</td><td>" + E(l.item || l.label || "") + "</td><td class='n' style='color:" + (l.amt < 0 ? "#DC2626" : "#1c5537") + "'>" + (l.amt < 0 ? "&minus;" : "+") + foOfMoney(l.amt) + "</td><td class='n'>" + foOfMoney(run) + "</td></tr>";
+          return "<tr><td>" + E(l.wk || "") + "</td><td>" + E(l.item || l.label || "") + "</td><td class='n' style='color:" + (l.amt < 0 ? "#c73932" : "#178347") + "'>" + (l.amt < 0 ? "&minus;" : "+") + foOfMoney(l.amt) + "</td><td class='n'>" + foOfMoney(run) + "</td></tr>";
         }).join("");
-      var ledgerCard = "<div class='panel fo-keep'><h4>Ledger</h4><div class='pad'>" +
+      var ledgerCard = "<div class='fo-of2-card'><div class='fo-of2-ch'>Ledger" +
+        (entries.length > 5 ? "<button class='fo-of2-hbtn' id='fo-led-full'>" + (ledFull ? "Recent entries" : "View full ledger &rsaquo;") + "</button>" : "") + "</div><div class='fo-of2-cb'>" +
         "<table class='fo-of-ledger'><tr><th>Round</th><th>Item</th><th class='n'>Amount</th><th class='n'>Balance</th></tr>" + ledRows + "</table>" +
-        "<div class='fo-of-foot'>Oldest first &middot; balance shown after each entry</div></div></div>";
+        "<div class='fo-of2-note'>Oldest first &middot; balance shown after each entry.</div></div></div>";
+
+      // ---- season forecast: expected, plus honest best / worst gate scenarios ----
+      var homeLeft = fx.filter(function (f) { return f.isHome; }).length;
+      var ticket = (FO_FIN && FO_FIN.ticketPrice) || 9;
+      var bestC = proj + homeLeft * Math.max(0, seats * ticket - gateN);
+      var worstC = proj - homeLeft * Math.round(gateN * 0.6);
+      var mkPos = bestC > worstC ? Math.round(100 * (proj - worstC) / (bestC - worstC)) : 50;
+      var seasonCard = "<div class='fo-of2-card'><div class='fo-of2-ch'>Season forecast</div><div class='fo-of2-cb'>" +
+        "<div class='fo-of2-frow'><span>Projected season-end</span><b class='" + (proj >= 0 ? "fo-t-green" : "fo-t-red") + "'>" + foOfMoney(proj) + "</b></div>" +
+        "<div class='fo-of2-frow'><span>Rounds remaining</span><b>" + fx.length + "</b></div>" +
+        "<div class='fo-of2-frow'><span>Best case (sell-out gates)</span><b class='fo-t-green'>" + foOfMoney(bestC) + "</b></div>" +
+        "<div class='fo-of2-frow'><span>Worst case (low gates)</span><b class='" + (worstC >= 0 ? "" : "fo-t-red") + "'>" + foOfMoney(worstC) + "</b></div>" +
+        "<div class='fo-of2-scen'><div class='fo-of2-scenbar'><i style='left:" + Math.max(2, Math.min(98, mkPos)) + "%'></i></div>" +
+        "<div class='fo-of2-scenlbl'><span>Worst<br>" + foOfMoney(worstC) + "</span><span>Expected</span><span>Best<br>" + foOfMoney(bestC) + "</span></div></div>" +
+        "<div class='fo-of2-note'>Scenarios vary home-gate income only; wages, upkeep and sponsor terms are contracted. Projections are estimates, not guarantees.</div>" +
+        "</div></div>";
 
       // ---- merged stadium card ----
       var st = foTrainState();
@@ -9951,10 +10308,9 @@
       var seatCost = FO_SEAT_STEP * FO_SEAT_RATE;
       var atCap = seats >= FO_SEAT_CAP;
       var lowFill = fill < 60;
-      var expWarn = lowFill ? "<div class='fo-of-expwarn'>At " + fill + "% fill the new seats sit empty &middot; payback never. Worth revisiting above 85% fill.</div>" : "";
       var expBtn = atCap ? "<div class='fo-mk-gone'>The council won't approve anything bigger.</div>"
         : pendingSeats ? "<div class='fo-mk-gone'>Builders on site &middot; new stand opens after the next matchday.</div>"
-        : "<button class='fo-yc-sign' id='fo-seat-buy'>" + (lowFill ? "Expand anyway" : "Extend the stand") + " &middot; +" + FO_SEAT_STEP.toLocaleString() + " seats for " + FO$(seatCost) + "</button>";
+        : "<button class='" + (lowFill ? "fo-of2-expwarnbtn" : "fo-yc-sign") + "' id='fo-seat-buy'>" + (lowFill ? "Expand anyway" : "Extend the stand") + " &middot; +" + FO_SEAT_STEP.toLocaleString() + " seats for " + FO$(seatCost) + "</button>";
       // pitch pills + one context line from the real squad and schedule
       var frontline = (t.players || []).filter(function (p) { return p.bowlType && !isPT(p); });
       var nPace = frontline.filter(function (p) { return foIsPace(p); }).length, nSpin = frontline.length - nPace;
@@ -9963,50 +10319,79 @@
       var pitchLine = "Your attack: <b>" + nPace + " pace &middot; " + nSpin + " spin</b> &middot; a " + foPitchName(recTrack).toLowerCase() + " track plays to it." +
         (nextHome ? " Next home match: R" + (nextHome.round + 1) + " vs " + E(nextHome.opp.name) + "." : " No home fixtures left this season.");
       var pitchPills = "<div class='fo-of-pills'>" + ["balanced", "flat", "green", "dry", "slow", "cracked", "twoPaced"].map(function (p2) {
-        return "<button class='fo-of-pill" + ((t.homePitch || "balanced") === p2 ? " on" : "") + "' data-p='" + p2 + "'>" + foPitchName(p2) + "</button>";
+        return "<button class='fo-of-pill" + ((t.homePitch || "balanced") === p2 ? " on" : "") + "' data-p='" + p2 + "' aria-pressed='" + ((t.homePitch || "balanced") === p2) + "'>" + foPitchName(p2) + "</button>";
       }).join("") + "</div>";
-      var stadium = "<div class='panel fo-keep' id='fo-stadium'><h4>Home ground &middot; " + E(t.ground || "-") + " &middot; upkeep " + FO$(seats) + "/matchday</h4><div class='pad'>" +
-        "<div class='small'><b>" + att.toLocaleString() + " / " + seats.toLocaleString() + "</b> filled at $" + ((FO_FIN && FO_FIN.ticketPrice) || 9) + " &middot; " + fill + "%</div>" +
-        "<div class='fo-of-fill'><i style='width:" + Math.min(100, fill) + "%" + (lowFill ? ";background:#F59E0B" : "") + "'></i></div>" +
-        "<div class='small' style='margin:6px 0 10px'>Bigger stands mean bigger gates when the town is behind you &middot; and a bigger upkeep bill when it isn't. Expansion completes after the next matchday.</div>" +
-        expWarn + expBtn +
-        "<div style='margin-top:14px'><b style='font-size:12.5px'>Pitch preparation</b>" + pitchPills +
-        "<div class='small'>" + pitchLine + " Applies from your next home fixture; away grounds keep their own identities.</div></div>" +
+      var gStat = function (l2, v2) { return "<div class='fo-of2-gstat'><span>" + l2 + "</span><b>" + v2 + "</b></div>"; };
+      var stadium = "<div class='fo-of2-card' id='fo-stadium'><div class='fo-of2-ch'>Home ground &middot; " + E(t.ground || "-") + "</div><div class='fo-of2-cb'>" +
+        "<div class='fo-of2-gstats'>" +
+        gStat("Current attendance", att.toLocaleString()) + gStat("Capacity", seats.toLocaleString()) +
+        gStat("Fill rate", fill + "%") + gStat("Upkeep", FO$(seats) + " / matchday") + "</div>" +
+        "<div class='fo-of-fill'><i style='width:" + Math.min(100, fill) + "%" + (lowFill ? ";background:#bd7a14" : ";background:#178347") + "'></i></div>" +
+        "<div class='fo-of2-note'>Gate income is attendance &times; $" + ticket + " at home matches. Bigger stands mean bigger gates when the town is behind you &middot; and a bigger upkeep bill when it isn't.</div>" +
+        "<div class='fo-of2-exp'><div class='fo-of2-l'>Expansion analysis</div>" +
+        "<div class='fo-of2-frow'><span>Expansion size</span><b>+" + FO_SEAT_STEP.toLocaleString() + " seats</b></div>" +
+        "<div class='fo-of2-frow'><span>Expansion cost</span><b>" + FO$(seatCost) + "</b></div>" +
+        "<div class='fo-of2-frow'><span>Completion</span><b>After next matchday</b></div>" +
+        "<div class='fo-of2-frow'><span>Recommendation</span><b class='" + (lowFill ? "fo-t-amber" : "fo-t-green") + "'>" + (atCap ? "AT CAPACITY" : lowFill ? "WAIT" : fill >= 85 ? "EXPAND" : "CONSIDER") + "</b></div>" +
+        (lowFill && !atCap && !pendingSeats ? "<div class='fo-of2-note'>At " + fill + "% fill, additional seats are unlikely to generate additional gate income. Reconsider when typical attendance approaches 85% of capacity.</div>" : "") +
+        expBtn + "</div>" +
+        "<div class='fo-of2-pitch'><div class='fo-of2-l'>Pitch preparation</div>" +
+        "<div class='fo-of2-note' style='margin:4px 0 2px'>Selected: <b>" + foPitchName(t.homePitch || "balanced") + "</b> &middot; free to change &middot; applies from your next home fixture. Away grounds keep their own identities.</div>" +
+        pitchPills +
+        "<div class='fo-of2-note'>" + pitchLine + "</div>" +
+        "<a class='fo-of2-dl' href='#/guide?a=conditions'>How pitches and weather work &rsaquo;</a></div>" +
         "</div></div>";
 
       // ---- the academy (senior; there is no youth league, so no youth academy) ----
       var foAcadUp = (typeof acadUpCost === "function") ? acadUpCost
         : function (l) { return [50000, 90000, 150000, 240000, 360000][Math.max(0, Math.min(4, +(l || 0)))] || 0; };
       var aLvl = t.acadS || 0, aMax = aLvl >= 5, upS = foAcadUp(aLvl);
-      var acadRow = "<div class='panel fo-keep'><h4>Academy</h4><div class='pad'>" +
+      var acadRow = "<div class='fo-of2-card'><div class='fo-of2-ch'>Academy</div><div class='fo-of2-cb'>" +
         "<div class='fo-of-acadrow'><span class='fo-of-lvl'>Level " + aLvl + "</span><span>Every level adds <b>+8%</b> to all training gains. This is applied by the resolver each matchday, not cosmetic.</span></div>" +
-        "<div class='small' style='margin:8px 0'>" + (aMax ? "Fully developed; the council is jealous." : "Next: L" + (aLvl + 1) + " &middot; +8% training speed &middot; upkeep " + FO$(F.acadUpkeepAt(aLvl + 1)) + "/matchday") + "</div>" +
+        "<div class='fo-of2-note' style='margin:8px 0'>" + (aMax ? "Fully developed; the council is jealous." : "Next: L" + (aLvl + 1) + " &middot; +8% training speed &middot; upkeep " + FO$(F.acadUpkeepAt(aLvl + 1)) + "/matchday") + "</div>" +
         (aMax ? "<span class='small'>MAX</span>" : "<button class='fo-yc-sign fo-acad-up' data-k='Senior'>Upgrade for " + FO$(upS) + "</button>") +
-        "<div class='fo-of-foot' style='margin-top:10px'>Upkeep " + FO$(acadUp) + "/matchday &middot; manage training on the <a href='#/training'>Training page</a></div>" +
+        "<div class='fo-of2-note' style='margin-top:10px'>Upkeep " + FO$(acadUp) + "/matchday &middot; manage training on the <a href='#/training'>Training page</a></div>" +
         "</div></div>";
 
       // ---- season history ----
-      var hist = "<div class='panel fo-keep'><h4>Season history</h4><div class='pad'>" +
+      var hist = "<div class='fo-of2-card'><div class='fo-of2-ch'>Season history</div><div class='fo-of2-cb'>" +
         ((App.history || []).map(function (h) { return "<div class='bl'>S" + h.season + ": <b>" + E(h.champion) + "</b> champions &middot; you: " + h.pos + (["st", "nd", "rd"][h.pos - 1] || "th") + " (" + FO$(h.prize || 0) + ")</div>"; }).join("") || "<span class='small'>First season in progress.</span>") +
         "</div></div>";
 
       var page = document.getElementById("page"); if (!page) return;
-      page.innerHTML = (typeof crumb === "function" ? crumb(t.name, "Office") : "") +
-        "<div class='fo-of-head'><h2>Office</h2><span class='small'>&middot; the business end</span>" +
-        "<a href='#/settings' class='fo-of-admin fo-morelink'>Admin &amp; settings &rsaquo;</a></div>" +
-        kpis +
-        "<div class='grid2'><div class='col'>" + waterfall + "</div><div class='col'>" + warnings + "</div></div>" +
-        foSponsorCardHtml(t) + ledgerCard + stadium + acadRow + hist;
+      page.innerHTML = "<div class='fo-of2'>" +
+        (typeof crumb === "function" ? crumb(t.name, "Office") : "") +
+        "<div class='fo-of2-head'><div><h1>Office</h1><span>The business end of your club</span></div>" +
+        "<span class='fo-of2-headl'><a href='#/guide?a=money' class='fo-of2-dl'>How finances work &rsaquo;</a>" +
+        "<a href='#/settings' class='fo-of2-dl'>Admin &amp; settings &rsaquo;</a></span></div>" +
+        kpis + health +
+        "<div class='fo-of2-grid'>" + waterfall + decisions + "</div>" +
+        foSponsorCardHtml(t) +
+        "<div class='fo-of2-grid2'>" + ledgerCard + seasonCard + "</div>" +
+        stadium + acadRow + hist + "</div>";
 
       foWireSponsor(page);
+      // ledger expand/collapse re-renders with the flag flipped
+      var ledBtn = page.querySelector("#fo-led-full");
+      if (ledBtn) ledBtn.addEventListener("click", function () { window.__foLedFull = !window.__foLedFull; pgOffice(); });
+      // decision-centre in-page links scroll to their card
+      page.querySelectorAll("[data-scroll]").forEach(function (a) {
+        a.addEventListener("click", function (ev) {
+          ev.preventDefault();
+          var el = page.querySelector("#" + a.getAttribute("data-scroll"));
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
       // stadium expansion (same purchase flow as before: packet in MP, direct in solo)
       var buy = page.querySelector("#fo-seat-buy");
       if (buy) buy.addEventListener("click", function () {
         if (bank < seatCost) { say("Not enough in the bank · the builders want " + FO$(seatCost) + " up front."); return; }
         foConfirm({
           title: "Extend the stand?",
-          body: "+" + FO_SEAT_STEP.toLocaleString() + " seats for " + FO$(seatCost) + ". Upkeep rises " + FO$(FO_SEAT_STEP) + " per matchday, and the extra gate only pays if the crowds come." + (lowFill ? " Right now you fill " + fill + "% · the new seats start empty." : ""),
-          confirm: "Build it · " + FO$(seatCost), cancel: "Not yet"
+          body: "Current bank " + FO$(bank) + " · expansion cost " + FO$(seatCost) + " · remaining after build " + FO$(bank - seatCost) + ". " +
+            "+" + FO_SEAT_STEP.toLocaleString() + " seats; upkeep rises " + FO$(FO_SEAT_STEP) + " per matchday. Current fill: " + fill + "%." +
+            (lowFill ? " Warning: at this fill rate the expected payback is poor - the new seats start empty." : ""),
+          confirm: "Confirm expansion · " + FO$(seatCost), cancel: "Cancel"
         }).then(function (ok) {
           if (!ok) return;
           if (F.isMP() && typeof LG !== "undefined" && LG) {
@@ -11464,18 +11849,18 @@
       "a,button{-webkit-tap-highlight-color:transparent}" +
       // hamburger + drawer: built for phones, dormant on desktop
       "html body #fo-mnav-btn,html body.ftpskin #fo-mnav-btn{display:none;align-items:center;justify-content:center;width:44px;height:44px;background:transparent !important;border:0 !important;color:#FFFEFC !important;padding:0 !important;margin:0 4px 0 -6px;border-radius:10px;cursor:pointer;box-shadow:none !important}" +
-      "#fo-mdrawer{position:fixed;inset:0;z-index:400;display:none}" +
-      "#fo-mdrawer.open{display:block}" +
-      "#fo-mdrawer .fo-mdk{position:absolute;inset:0;background:rgba(5,18,35,.55);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}" +
-      "#fo-mdrawer .fo-mdp{position:absolute;top:0;left:0;width:min(82vw,320px);height:100dvh;background:#0E233F;box-shadow:8px 0 30px rgba(0,0,0,.35);padding:0 12px 14px;display:flex;flex-direction:column}" +
-      "#fo-mdrawer .fo-mdh{flex:0 0 auto;display:flex;align-items:center;gap:9px;height:72px;color:#FFFEFC;font-weight:800;font-size:16px;padding:0 0 0 8px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:8px}" +
-      "#fo-mdrawer .fo-mdh img{width:26px;height:26px;border-radius:6px}" +
-      "html body #fo-mdrawer .fo-mdx,html body.ftpskin #fo-mdrawer .fo-mdx{margin-left:auto;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:transparent !important;border:0 !important;color:#c7cfda !important;font:400 20px/1 inherit !important;border-radius:10px;cursor:pointer;padding:0 !important;box-shadow:none !important}" +
-      "#fo-mdrawer .fo-mdn{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px}" +
-      "#fo-mdrawer a.fo-mdl{flex:0 0 auto;display:flex;align-items:center;min-height:52px;padding:0 16px;border-radius:10px;color:#dfe5ec !important;font-size:17px;font-weight:600;text-decoration:none !important}" +
-      "#fo-mdrawer a.fo-mdl.on{background:rgba(232,90,42,.16);color:#fff !important;box-shadow:inset 3px 0 0 #e85a2a}" +
-      "#fo-mdrawer a.fo-mdl:active{background:rgba(255,255,255,.08)}" +
-      "#fo-mdrawer .fo-mdf{flex:0 0 auto;margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,.14)}" +
+      "#fo-mdrawer,#fo-mandrawer{position:fixed;inset:0;z-index:400;display:none}" +
+      "#fo-mdrawer.open,#fo-mandrawer.open{display:block}" +
+      "#fo-mdrawer .fo-mdk,#fo-mandrawer .fo-mdk{position:absolute;inset:0;background:rgba(5,18,35,.55);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}" +
+      "#fo-mdrawer .fo-mdp,#fo-mandrawer .fo-mdp{position:absolute;top:0;left:0;width:min(82vw,320px);height:100dvh;background:#0E233F;box-shadow:8px 0 30px rgba(0,0,0,.35);padding:0 12px 14px;display:flex;flex-direction:column}" +
+      "#fo-mdrawer .fo-mdh,#fo-mandrawer .fo-mdh{flex:0 0 auto;display:flex;align-items:center;gap:9px;height:72px;color:#FFFEFC;font-weight:800;font-size:16px;padding:0 0 0 8px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:8px}" +
+      "#fo-mdrawer .fo-mdh img,#fo-mandrawer .fo-mdh img{width:26px;height:26px;border-radius:6px}" +
+      "html body #fo-mdrawer .fo-mdx,html body.ftpskin #fo-mdrawer .fo-mdx,html body #fo-mandrawer .fo-mdx,html body.ftpskin #fo-mandrawer .fo-mdx{margin-left:auto;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:transparent !important;border:0 !important;color:#c7cfda !important;font:400 20px/1 inherit !important;border-radius:10px;cursor:pointer;padding:0 !important;box-shadow:none !important}" +
+      "#fo-mdrawer .fo-mdn,#fo-mandrawer .fo-mdn{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px}" +
+      "#fo-mdrawer a.fo-mdl,#fo-mandrawer a.fo-mdl{flex:0 0 auto;display:flex;align-items:center;min-height:52px;padding:0 16px;border-radius:10px;color:#dfe5ec !important;font-size:17px;font-weight:600;text-decoration:none !important}" +
+      "#fo-mdrawer a.fo-mdl.on,#fo-mandrawer a.fo-mdl.on{background:rgba(232,90,42,.16);color:#fff !important;box-shadow:inset 3px 0 0 #e85a2a}" +
+      "#fo-mdrawer a.fo-mdl:active,#fo-mandrawer a.fo-mdl:active{background:rgba(255,255,255,.08)}" +
+      "#fo-mdrawer .fo-mdf,#fo-mandrawer .fo-mdf{flex:0 0 auto;margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,.14)}" +
       "body.fo-mnav-lock{overflow:hidden !important}" +
       "@media(max-width:820px){" +
       // header: hamburger | Fifty Overs | next-match chip + bell. The nav
