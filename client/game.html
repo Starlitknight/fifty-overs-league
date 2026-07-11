@@ -10676,7 +10676,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260711-2210-7f000d";
+  var FO_BUILD = "20260711-2228-6d11b3";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -12267,7 +12267,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         ["Stamina", "How long a spell stays honest, and how fresh he starts the next matchday. Bowling burns energy roughly twice as fast as batting - genuine quicks fastest of all - and hot or humid days drain everyone faster."]
       ]),
       reserves: gsec("Reserves", "batters who do not bowl", [
-        ["Technique", "A summary, not a separate skill: his vs pace, vs spin and temperament averaged into one number, so you can price a batter&rsquo;s craft at a glance."],
+        ["Technique", "A summary, not a separate skill - the engine never reads it directly. For a batter it averages vs pace, vs spin and temperament: his per-ball craft. For a pure bowler the card repurposes it as control (economy, discipline, move/turn). Read it against the headline overall: a big gap above means scoring muscle without craft; a big gap below means craft without punch. The full story lives in Reading a player."],
         ["Stamina", "Not just for bowlers: stamina sets how fast <i>any</i> player tires, every ball he bats (keepers work hardest of the fielding side). Tired batters find fielders, and a long hot innings leaves the legs heavy for the next matchday."]
       ]),
       field: gsec("In the field", "", [
@@ -13737,6 +13737,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<li><b>Fatigue</b> is a ladder of words, from <i>rested</i> down through <i>weary</i> and <i>listless</i> to the ominous <i>clinically dead</i>. Tired batters find fielders; tired bowlers serve up half-volleys. Playing a shattered star is usually worse than playing a fresh squad player. Stamina and youth slow the slide; the Rest program reverses it.</li>",
         "<li><b>Experience</b> is invisible until the game gets tense: a big chase, wickets down, the death overs. That&rsquo;s when experienced players keep their heads and rookies play the shot they&rsquo;ll regret. An experienced middle-order batter measurably reduces collapse risk in tight games.</li>",
         "<li><b>Age</b> shapes everything: young players learn fast in training and run all day, but the game&rsquo;s pressure moments expose them. Players past thirty tire faster: older batters decline late in long innings, and older bowlers lose effectiveness late in long spells.</li></ul>",
+        "<h3>Technique, explained</h3>",
+        "<p><b>Technique is a summary, not a separate skill.</b> The match engine never reads it; it reads the skills underneath. For a <b>batter</b>, Technique is his vs&nbsp;pace, vs&nbsp;spin and temperament averaged - his per-ball <i>craft</i>. The Batting overall counts that same craft <i>plus</i> his scoring muscles, rotation and power. So when the two bars disagree, the gap is always rotation and power:</p>",
+        "<ul><li><b>High batting, low technique - the hitter.</b> His number is carried by power and rotation while his craft is ordinary. He gets out more often - worst of all early, before he is set, and against high-control attacks - but when he connects, power turns swings into sixes. Bat him 5-7, give him the death overs and flat pitches; do not ask him to face the new ball.</li>",
+        "<li><b>Low batting, high technique - the anchor.</b> Hard to dismiss against everything, but with little power or rotation the runs come slowly and dot pressure builds around him. He opens: green pitches, misty mornings and steep new-ball spells are where his survival <i>is</i> the scoring. Do not send him to finish a chase.</li>",
+        "<li><b>Pair them.</b> An anchor holding one end lets a hitter swing freely. A lone anchor stalls; a lone hitter collapses.</li></ul>",
+        "<p>For a <b>pure bowler</b>, the card repurposes Technique as his bowling craft: economy, discipline and move/turn averaged - his <i>control</i>. The Bowling overall adds wicket threat and stamina on top, so again the gap between the bars tells you the profile:</p>",
+        "<ul><li><b>High bowling, low technique - the strike bowler.</b> Raw wicket threat with loose control: he takes wickets and leaks runs, wides included. Use him in short attacking bursts - the powerplay, a partnership that needs breaking - and keep him away from the death.</li>",
+        "<li><b>Low bowling, high technique - the miser.</b> Little threat of his own, but his control piles up dot balls, and mounting dot pressure makes batters take risks - the wickets fall, often at the other end. Middle-overs squeeze, safe at the death, and on gripping pitches (green for seam, dry or cracked for spin) his move/turn gives that control real teeth.</li>",
+        "<li><b>Pair them too.</b> Threat at one end, strangle at the other - it is how the suggested bowling plan shapes spells.</li></ul>",
         "<p><b>Talents</b> are permanent traits that apply in specific situations:</p>",
         "<table><tr><th>Talent</th><th>When it bites</th></tr>" +
         "<tr><td><b>Finisher</b></td><td>Finds boundaries at the death that others can&rsquo;t.</td></tr>" +
