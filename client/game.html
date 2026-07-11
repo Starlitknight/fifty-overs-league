@@ -8628,7 +8628,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foNextFriendly() {
     try {
       if (!(SYNC && SYNC.started && !SYNC.practice && LG)) return;
-      var host = document.querySelector("#page .fo-next"); if (!host || host.__foFr) return;
+      var host = document.querySelector("#page .fo-c2-next"); if (!host || host.__foFr) return;
       var me = userTeam().name;
       sel("league_challenges", "league_id=eq." + LG.id + "&or=(status.eq.accepted,status.eq.played)&select=*&order=play_at.asc&limit=8").then(function (rows) {
         rows = (rows || []).filter(function (c) {
@@ -8637,30 +8637,38 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           return ph === "pre" || ph === "live";
         });
         var ch = rows[0]; if (!ch) return;
-        var host2 = document.querySelector("#page .fo-next"); if (!host2 || host2.__foFr) return;
+        var host2 = document.querySelector("#page .fo-c2-next"); if (!host2 || host2.__foFr) return;
         var fst = foFrBcastState(ch);
         var untilFr = new Date(ch.play_at).getTime() - Date.now();
         var untilLg = Infinity; try { untilLg = foNextMatchdayMs(); } catch (e2) {}
         if (fst.phase === "pre" && !(untilFr > 0 && untilFr < untilLg)) return;
         var vs = ch.challenger_club === me ? ch.opponent_club : ch.challenger_club;
         var when = new Date(ch.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+        var lgChip = "";
+        try { if (App.season && typeof App.season.round === "number") lgChip = "<span class='fo-c2-nchip'>League Round " + (App.season.round + 1) + " follows &middot; 9:00 AM ET</span>"; } catch (eLc) {}
         host2.__foFr = 1;
         if (fst.phase === "live") {
-          host2.innerHTML = "<div class='fo-next-l'>" +
-            "<div class='fo-next-eyebrow'><span class='live-dot'></span> Friendly &middot; LIVE now</div>" +
-            "<div class='fo-next-opp'>vs " + E(vs) + "</div>" +
-            "<div class='fo-next-sub'>" + foFrLiveLine(ch, fst.p) + "</div></div>" +
-            "<div class='fo-next-r'><button class='fo-watch-live' id='fo-fr-watch'><span class='fo-play'><svg viewBox='0 0 24 24' width='13' height='13' fill='currentColor'><path d='M8 5v14l11-7z'/></svg></span>Watch live</button></div>";
+          host2.innerHTML = "<div class='fo-c2-nl'>" +
+            "<div class='fo-c2-nk'><span class='live-dot'></span> Friendly &middot; LIVE now</div>" +
+            "<div class='fo-c2-nopp'>vs " + E(vs) + "</div>" +
+            "<div class='fo-c2-nsub'>" + foFrLiveLine(ch, fst.p) + "</div>" +
+            "<div class='fo-c2-nchips'>" + lgChip + "</div></div>" +
+            "<div class='fo-c2-nr'><button class='fo-next-cta' id='fo-fr-watch'><span class='fo-play'><svg viewBox='0 0 24 24' width='13' height='13' fill='currentColor'><path d='M8 5v14l11-7z'/></svg></span> Watch live</button></div>";
           var bw = document.getElementById("fo-fr-watch");
           if (bw) bw.addEventListener("click", function () { location.hash = "#/friendly?id=" + ch.id; if (typeof window.route === "function") window.route(); });
           return;
         }
-        host2.innerHTML = "<div class='fo-next-l'>" +
-          "<div class='fo-next-eyebrow'>Next match &middot; Friendly</div>" +
-          "<div class='fo-next-opp'>vs " + E(vs) + "</div>" +
-          "<div class='fo-next-sub'>" + foPitchName(ch.pitch) + " pitch &middot; " + E(ch.weather || "") + " &middot; " + when + "</div></div>" +
-          "<div class='fo-next-r'><div class='fo-cd'><div class='fo-cd-v' id='fo-cd-fr'></div><div class='fo-cd-l'>Until the friendly</div></div>" +
-          "<button class='fo-next-cta' id='fo-fr-prep'>Prepare lineup</button></div>";
+        var attached = false;
+        try { attached = !!(ch.orders && ch.orders[me]); } catch (eAo) {}
+        host2.innerHTML = "<div class='fo-c2-nl'>" +
+          "<div class='fo-c2-nk'>Next match &middot; Friendly</div>" +
+          "<div class='fo-c2-nopp'>" + (ch.challenger_club === me ? "vs " : "at ") + E(vs) + "</div>" +
+          "<div class='fo-c2-nsub'>" + foPitchName(ch.pitch) + " pitch" + (ch.weather ? " &middot; " + E(ch.weather) : "") + "</div>" +
+          "<div class='fo-c2-nchips'>" + lgChip + "</div></div>" +
+          "<div class='fo-c2-nr'><div class='fo-c2-nk'>Match starts in</div><div class='fo-c2-cd' id='fo-cd-fr'></div>" +
+          "<div class='fo-c2-nsub'><b>" + when + "</b></div>" +
+          "<div class='fo-c2-ndl'>Lineups lock an hour before kickoff</div>" +
+          "<button class='fo-next-cta" + (attached ? " fo-done" : "") + "' id='fo-fr-prep'>" + (attached ? "Lineup attached &middot; review &rsaquo;" : "Set lineup &rsaquo;") + "</button></div>";
         var tick = function () {
           var el = document.getElementById("fo-cd-fr");
           if (!el) { clearInterval(iv); return; }
@@ -9164,6 +9172,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
                 td.insertBefore(sp, td.firstChild);
               }
             }
+            // bots wear a quiet tag so human rivals stand out at a glance
+            try {
+              if (!td.querySelector(".fo-bot-mini") && SYNC && SYNC.started && !SYNC.practice && LG && window.__foClubMeta && !foClubHuman(nm)) {
+                var bt = document.createElement("span"); bt.className = "fo-bot-mini"; bt.textContent = "BOT";
+                td.appendChild(bt);
+              }
+            } catch (eB) {}
             break;
           }
         });
@@ -10551,7 +10566,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260711-1414-e4be25";
+  var FO_BUILD = "20260711-1602-dfde2c";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -15699,7 +15714,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "html body.ftpskin #page button.fo-og-c,html body #page button.fo-og-c{flex:1;min-width:0;height:36px;border:1px solid rgba(28,36,51,.14);background:#FBFAF7;color:#8a93a3;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;padding:0}" +
       ".fo-og-b s{text-decoration:none;background:#EEE8FA;color:#5b4a91;border-radius:5px;padding:0 4px;font-size:9px;font-weight:700}" +
       "html body.ftpskin #page button.fo-og-more,html body #page button.fo-og-more{border-style:dashed !important;color:#8a93a3 !important}" +
-      ".fo-og-l i{display:block;font-style:normal;font-size:7.5px;color:#c0b9a8;text-transform:uppercase;letter-spacing:.03em;font-weight:800;white-space:nowrap}";
+      ".fo-og-l i{display:block;font-style:normal;font-size:7.5px;color:#c0b9a8;text-transform:uppercase;letter-spacing:.03em;font-weight:800;white-space:nowrap}" +
+      // phone: over cells are true squares - width drives height
+      "@media(max-width:760px){" +
+        "html body.ftpskin #page button.fo-og-c,html body #page button.fo-og-c{height:auto;min-height:0;padding:0;aspect-ratio:1/1;border-radius:6px;font-size:11px;line-height:1}" +
+        ".fo-og-row{gap:3px}" +
+      "}";
     document.head.appendChild(foOrdCss);
   } catch (e) {}
   try {
