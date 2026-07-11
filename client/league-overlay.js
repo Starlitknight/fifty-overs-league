@@ -8515,11 +8515,29 @@
         var st = foFrBcastState(c);
         var title = E(c.challenger_club) + " v " + E(c.opponent_club);
         var when = c.play_at ? new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
-        var head = "<div class='crumb'>" + title + " &raquo; Friendly</div>";
+        var head = "<div class='crumb'>" + foClubLink(c.challenger_club) + " v " + foClubLink(c.opponent_club) + " &raquo; " + (c.__practice ? "Practice" : "Friendly") + "</div>";
         if (st.phase === "pre") {
-          page.innerHTML = head + "<div class='fo-live-hero'><div class='fo-live-tag'>FRIENDLY &middot; " + when + "</div>" +
+          // the wait is a proper pre-match show: form, leaders, head-to-head
+          // and match facts, live from lineup lock until the first ball
+          var kindP = (c.__practice ? "Practice" : "Friendly");
+          var lockT = new Date(Date.parse(c.play_at) - 3600000);
+          var lockedP = Date.now() >= +lockT;
+          var preKey = mh[1] + ":" + (lockedP ? 1 : 0);
+          if (page.__foFrPre === preKey && page.querySelector(".fo-pv")) return;   // steady: no 6s repaint scroll-jumps
+          page.__foFrPre = preKey;
+          var fmtT9 = function (d9) { return d9.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + (foTzAbbr() ? " " + foTzAbbr() : ""); };
+          var homeT9 = null; (GD.teams || []).forEach(function (t9) { if (t9 && t9.name === c.challenger_club) homeT9 = t9; });
+          var pv9 = "";
+          try {
+            var em9 = (typeof foEmbargo === "function") ? foEmbargo() : { active: false };
+            pv9 = foMatchPreviewHTML(
+              { home: c.challenger_club, away: c.opponent_club, ground: (homeT9 && homeT9.ground) || "", pitch: c.pitch, weather: c.weather },
+              em9.active ? em9.round : null,
+              { firstBall: fmtT9(new Date(c.play_at)), lock: (lockedP ? "Locked at " : "Lock at ") + fmtT9(lockT) });
+          } catch (ePv9) {}
+          page.innerHTML = head + "<div class='fo-live-hero'><div class='fo-live-tag'>" + kindP.toUpperCase() + " &middot; " + when + (foTzAbbr() ? " " + foTzAbbr() : "") + "</div>" +
             "<div class='fo-live-score'>" + title + "</div>" +
-            "<div class='fo-live-sub'>" + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + " &middot; play begins on the hour, ball by ball</div></div>";
+            "<div class='fo-live-sub'>" + foPitchName(c.pitch) + " pitch &middot; " + E(c.weather || "") + (lockedP ? " &middot; lineups are locked" : "") + " &middot; play begins on the hour, ball by ball</div></div>" + pv9;
           return;
         }
         if (st.phase === "live" && !c.result) {
@@ -8618,7 +8636,7 @@
             var hasOrd = false; try { hasOrd = !!(c.orders && c.orders[me]); } catch (eO) {}
             var lkd = c.play_at && (new Date(c.play_at) - Date.now() <= 60 * 60000);
             act = "<span class='fo-frs-on'>ON</span> " + (lkd
-              ? "<span class='small'>&#128274; lineups locked" + (hasOrd ? " \u00b7 <span style='color:#15803D'>&#10003; yours is in</span>" : " \u00b7 auto XI plays") + "</span>"
+              ? "<span class='small'>&#128274; lineups locked" + (hasOrd ? " \u00b7 <span style='color:#15803D'>&#10003; yours is in</span>" : " \u00b7 auto XI plays") + "</span> <a href='#/friendly?id=" + c.id + "'>Preview &rsaquo;</a>"
               : "<button class='mini fo-ch-ord' data-id='" + c.id + "'>" + (hasOrd ? "Edit lineup" : "Prepare lineup") + "</button>" + (hasOrd ? " <span class='small' style='color:#15803D'>&#10003; lineup attached</span>" : ""));
           }
           else if (c.status === "declined") act = "<span class='small'>declined</span>";
@@ -8630,7 +8648,7 @@
           else if (c.status === "played" && fst.phase === "pre") {
             // banked early by the resolver: the broadcast has not started yet -
             // say when it kicks off, never the result
-            act = "<span class='fo-frs-on'>ON</span> <span class='small'>kicks off " + when + "</span>";
+            act = "<span class='fo-frs-on'>ON</span> <span class='small'>kicks off " + when + "</span> <a href='#/friendly?id=" + c.id + "'>Preview &rsaquo;</a>";
           }
           var typLbl = "Friendly"; try { if (!foClubHuman(vs)) typLbl = "Practice"; } catch (eTL) {}
           var upC = c.status === "pending" || c.status === "accepted" || (c.status === "played" && fst.phase === "live");
@@ -9642,7 +9660,7 @@
   setInterval(foMatchIntroTick, 600);
   // ---- ESPN-style pre-match preview: spoiler-safe, built from settled
   // rounds only (the round on air is excluded from every number here) ----
-  function foMatchPreviewHTML(r, hideRd) {
+  function foMatchPreviewHTML(r, hideRd, facts) {
     var sn = App.seasonNo || 1;
     // settled-rounds table: points, wins, losses, position
     var pts = {}, w = {}, l = {}, pl = {};
@@ -9702,9 +9720,9 @@
       "<div class='fo-pv-fact'><span>Ground</span><b>" + E(r.ground || "&ndash;") + "</b></div>" +
       (r.pitch ? "<div class='fo-pv-fact'><span>Pitch</span><b>" + foPitchName(r.pitch) + "</b></div>" : "") +
       (r.weather ? "<div class='fo-pv-fact'><span>Weather</span><b>" + E(r.weather) + "</b></div>" : "") +
-      "<div class='fo-pv-fact'><span>First ball</span><b>9:00 AM ET</b></div>" +
-      "<div class='fo-pv-fact'><span>Lineups</span><b>Locked at 8:00 AM ET</b></div>" +
-      "<div class='small' style='margin-top:8px'>Scores tick in ball by ball from 9:00; the full card, charts and ratings arrive at stumps.</div>" +
+      "<div class='fo-pv-fact'><span>First ball</span><b>" + ((facts && facts.firstBall) || "9:00 AM ET") + "</b></div>" +
+      "<div class='fo-pv-fact'><span>Lineups</span><b>" + ((facts && facts.lock) || "Locked at 8:00 AM ET") + "</b></div>" +
+      "<div class='small' style='margin-top:8px'>Scores tick in ball by ball from " + ((facts && facts.firstBall) || "9:00") + "; the full card, charts and ratings arrive at stumps.</div>" +
       "</div></div></div></div>";
   }
   // stats-page tables list bare player names: stamp each with his club
