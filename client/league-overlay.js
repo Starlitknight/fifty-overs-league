@@ -7893,8 +7893,16 @@
   // wickets-first bowling tables to match the innings as it happened.
   function foBowlOrderSort() {
     try {
-      var mSc = /^#\/scorecard\?i=(\d+)/.exec(location.hash || ""); if (!mSc) return;
-      var r = (typeof App !== "undefined" && App.results || [])[+mSc[1]]; if (!r || !r.log || !r.log.length) return;
+      var r = null, hash0 = location.hash || "";
+      var mSc = /^#\/scorecard\?i=(\d+)/.exec(hash0);
+      if (mSc) r = ((typeof App !== "undefined" && App.results) || [])[+mSc[1]];
+      else {
+        // friendly and practice full-time pages carry their result in the cache
+        var mFr = /^#\/friendly\?id=([\w-]+)/.exec(hash0);
+        var ch0 = mFr && window.__foFrCache;
+        if (ch0 && ch0.id === mFr[1] && ch0.row && ch0.row.result) r = ch0.row.result;
+      }
+      if (!r || !r.log || !r.log.length) return;
       var page = document.getElementById("page"); if (!page) return;
       var chron = r.log.slice().reverse();
       var inns = [[]], prevNo = -1;
