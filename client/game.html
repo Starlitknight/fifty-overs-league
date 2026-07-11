@@ -6914,6 +6914,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-ch-min .fo-card{background:#fff;border-radius:12px;border:1px solid rgba(20,36,58,.10);box-shadow:0 4px 14px rgba(20,36,58,.06);display:flex;flex-direction:column}" +
     ".fo-ch-min .fo-card>.fo-card-b{flex:1}" +
     ".fo-ch-min .fo-card-h2{font-size:15.5px;font-weight:700}" +
+    ".fo-ch-min .fo-card-h2row{align-items:center;padding:14px 16px 4px}" +
+    ".fo-ch-min .fo-card>.fo-card-b{padding:4px 16px 14px}" +
     ".fo-ch-min .fo-chtable{width:100%;table-layout:fixed}" +
     ".fo-ch-min .fo-chtable td{font-size:13px;padding:6px 4px;font-variant-numeric:tabular-nums}.fo-ch-min .fo-chtable th{font-size:10.5px;padding:6px 4px}" +
     ".fo-ch-min .fo-chtable td:nth-child(2),.fo-ch-min .fo-chtable th:nth-child(2){width:auto;white-space:normal;overflow-wrap:anywhere;line-height:1.25}" +
@@ -6924,6 +6926,19 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-nr-row b{color:#0a2342;font-weight:700}" +
     ".fo-flg{margin-right:5px;font-style:normal;display:inline-block}" +
     ".fo-cond-sym{display:inline-flex;vertical-align:-2px;margin:0 1px}" +
+    ".fo-tclub{display:block;font-size:10.5px;color:#8a93a3;margin-top:1px;line-height:1.2}" +
+    ".fo-emb-cell{font-size:12px;font-weight:700;color:#B04A2C}" +
+    ".fo-pv-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}" +
+    "@media(max-width:700px){.fo-pv-grid{grid-template-columns:1fr}}" +
+    ".fo-pv-team{background:#FFFEFC;border:1px solid rgba(20,36,58,.1);border-radius:12px;padding:13px 15px}" +
+    ".fo-pv-team>b{font-size:16px;color:#0E233F}" +
+    ".fo-pv-pos{font-size:12.5px;color:#5a6472;margin:2px 0 4px;font-weight:600}" +
+    ".fo-pv-k{font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#8a93a3;margin:9px 0 2px}" +
+    ".fo-pv-p{font-size:13px;color:#0E233F;font-weight:700}.fo-pv-p span{font-weight:600;color:#5a6472}" +
+    ".fo-pv-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}" +
+    "@media(max-width:700px){.fo-pv-cols{grid-template-columns:1fr}}" +
+    ".fo-pv-h2h{font-size:13px;color:#0E233F;padding:5px 0;border-bottom:1px solid #f0ece1}.fo-pv-h2h:last-child{border-bottom:none}.fo-pv-h2h span{color:#8a93a3;font-size:11px}" +
+    ".fo-pv-fact{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:4px 0}.fo-pv-fact span{color:#5a6472}.fo-pv-fact b{color:#0E233F;text-align:right}" +
     "html body .fo-flg img{width:16px !important;height:11px !important;vertical-align:-1px;border-radius:2px;box-shadow:0 0 0 1px rgba(20,36,58,.12)}" +
     ".fo-c2-hero{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.55fr) minmax(0,1.25fr);gap:24px;align-items:center;background:linear-gradient(135deg,#0a2342,#06182f 70%);border-radius:14px;padding:24px 26px;margin:8px 0 16px;color:#c7cfda}" +
     "@media(max-width:1100px){.fo-c2-hero{grid-template-columns:1fr 1fr}.fo-c2-id{grid-column:1/-1}}" +
@@ -7040,8 +7055,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-o-ms .fo-race{margin:8px 0}" +
     ".fo-o-ms .fo-race-l b{font-size:13px}" +
     ".fo-o-leadm .fo-c2-k{margin-bottom:2px}" +
-    ".fo-ch-min .fo-card-h2row{align-items:center;padding:14px 16px 4px}" +
-    ".fo-ch-min .fo-card-b{padding:4px 16px 12px}" +
+    
     "}" +
     ".fo-nr-feat{padding:2px 0 10px;border-bottom:1px solid #eee9dd;margin-bottom:4px}" +
     ".fo-nr-feat b{display:block;font-size:16.5px;font-weight:800;color:#0a2342;line-height:1.3}" +
@@ -10532,7 +10546,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260711-1221-11c8d4";
+  var FO_BUILD = "20260711-1235-0c6330";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10580,9 +10594,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // re-apply fixture match-times after any re-render of the game page
   try {
     var _mt = null, pg0 = document.getElementById("page");
-    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); foFlagStandings(); foCondSymbols(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); }, 40); }).observe(pg0, { childList: true, subtree: true });
+    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); foFlagStandings(); foCondSymbols(); foStatsClubTags(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} return r; }; }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foStatsClubTags(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} return r; }; }
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
@@ -14071,7 +14085,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var mineSent = c.challenger_club === me;
       var vs = mineSent ? c.opponent_club : c.challenger_club;
       var when = c.play_at ? new Date(c.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
-      if (c.status === "pending" && !mineSent) ev.push({ k: c.id + ":pending", t: "\u2694 " + vs + " challenge you to a friendly" + (when ? " \u00b7 " + when : ""), ch: c });
+      if (c.status === "pending" && !mineSent && !foFrDead(c)) ev.push({ k: c.id + ":pending", t: "\u2694 " + vs + " challenge you to a friendly" + (when ? " \u00b7 " + when : ""), ch: c });
       else if ((c.status === "accepted" || c.status === "played") && foFrBcastState(c).phase === "live") ev.push({ k: c.id + ":live", t: "\ud83d\udd34 LIVE: friendly vs " + vs + " \u00b7 watch ball by ball", go: "#/friendly?id=" + c.id, ch: c });
       else if (c.status === "accepted") ev.push({ k: c.id + ":accepted", t: (mineSent ? vs + " accepted your challenge" : "Friendly vs " + vs + " is on") + (when ? " \u00b7 " + when : ""), ch: c });
       else if (c.status === "declined" && mineSent) ev.push({ k: c.id + ":declined", t: vs + " declined your challenge", ch: c });
@@ -14210,6 +14224,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // ---- friendly broadcasts: the match is banked early by the resolver and
   // REVEALED ball by ball from play_at, exactly like a league matchday ----
   var FO_FR_MIN = 60;
+  // a challenge nobody accepted before its scheduled time is dead weight
+  function foFrDead(c) {
+    try { return !!(c && c.status === "pending" && foFrBcastState(c).phase !== "pre"); } catch (e) { return false; }
+  }
   function foFrBcastState(c) {
     var t0 = c && c.play_at ? Date.parse(c.play_at) : NaN;
     if (isNaN(t0)) return { phase: "none" };
@@ -14722,9 +14740,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           var ts = c.play_at ? +new Date(c.play_at) : (+new Date(c.created_at) || 0);
           var when = c.play_at ? frWhen(c.play_at) : "";
           var fst = foFrBcastState(c);
+          if (foFrDead(c)) return;   // expired unanswered challenge: gone
           var act = "";
-          if (c.status === "pending" && fst.phase !== "pre") act = "<span class='small'>not accepted before the scheduled time</span>";
-          else if (c.status === "pending" && !mineSent) act = "<button class='mini fo-ch-acc' data-id='" + c.id + "'>Accept</button> <button class='mini fo-ch-dec' data-id='" + c.id + "'>Decline</button>";
+          if (c.status === "pending" && !mineSent) act = "<button class='mini fo-ch-acc' data-id='" + c.id + "'>Accept</button> <button class='mini fo-ch-dec' data-id='" + c.id + "'>Decline</button>";
           else if (c.status === "pending") act = "<span class='small'>awaiting their reply</span>";
           else if ((c.status === "accepted" || c.status === "played") && fst.phase === "live")
             act = "<a class='fo-frs-live' href='#/friendly?id=" + c.id + "'><span class='live-dot'></span> LIVE &middot; " + foFrLiveLine(c, fst.p) + " &middot; watch &rsaquo;</a>";
@@ -14838,7 +14856,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       sel("league_challenges", "league_id=eq." + LG.id + "&select=*&order=created_at.desc&limit=12").then(function (rows) {
         rows = (rows || []).filter(function (c) { return c.challenger_club === me || c.opponent_club === me; });
         var host2 = document.getElementById("fo-chal-alert"); if (!host2) return;
-        var inc = rows.filter(function (c) { return c.status === "pending" && c.opponent_club === me; })[0];
+        var inc = rows.filter(function (c) { return c.status === "pending" && c.opponent_club === me && !foFrDead(c); })[0];
         var up = rows.filter(function (c) { return c.status === "accepted"; })[0];
         if (inc) host2.innerHTML = "<a class='fo-chal-chip' href='#/matches'>&#9876; " + E(inc.challenger_club) + " challenge you to a friendly &middot; <b>respond &rsaquo;</b></a>";
         else if (up) host2.innerHTML = "<a class='fo-chal-chip' href='#/matches'>&#9876; Friendly " + (up.challenger_club === me ? "vs " + E(up.opponent_club) : "vs " + E(up.challenger_club)) + " &middot; " + new Date(up.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + " &middot; <b>Matches &rsaquo;</b></a>";
@@ -15739,6 +15757,92 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     } catch (e) {}
   }
   setInterval(foMatchIntroTick, 600);
+  // ---- ESPN-style pre-match preview: spoiler-safe, built from settled
+  // rounds only (the round on air is excluded from every number here) ----
+  function foMatchPreviewHTML(r, hideRd) {
+    var sn = App.seasonNo || 1;
+    // settled-rounds table: points, wins, losses, position
+    var pts = {}, w = {}, l = {}, pl = {};
+    var rounds = foLeagueRounds();
+    Object.keys(rounds).forEach(function (rd) {
+      if (hideRd != null && +rd === hideRd) return;
+      (rounds[rd] || []).forEach(function (r0) {
+        if (!r0 || !r0.result) return;
+        [r0.home, r0.away].forEach(function (nm) { pl[nm] = (pl[nm] || 0) + 1; });
+        var wn = r0.result.winner;
+        if (!wn) { pts[r0.home] = (pts[r0.home] || 0) + 1; pts[r0.away] = (pts[r0.away] || 0) + 1; }
+        else { pts[wn] = (pts[wn] || 0) + 2; w[wn] = (w[wn] || 0) + 1; var ls = wn === r0.home ? r0.away : r0.home; l[ls] = (l[ls] || 0) + 1; }
+      });
+    });
+    var order = (GD.teams || []).map(function (t) { return t.name; }).sort(function (a, b) { return (pts[b] || 0) - (pts[a] || 0) || (w[b] || 0) - (w[a] || 0); });
+    var fm = foFormMap();
+    var side = function (nm) {
+      var t = null; (GD.teams || []).some(function (t0) { if (t0.name === nm) { t = t0; return true; } return false; });
+      var pos = order.indexOf(nm) + 1;
+      var pips = (fm[nm] || []).map(function (x) { return "<i class='fo-pip fo-" + x + "'></i>"; }).join("") || "<span class='small'>no matches yet</span>";
+      // leaders from settled league innings only
+      var bat = null, bowl = null;
+      ((t && t.players) || []).forEach(function (p2) {
+        var runs = 0, wk = 0;
+        (((App.playerHist || {})[p2.name]) || []).forEach(function (e2) {
+          if (e2.fr || e2.s !== sn) return;
+          if (hideRd != null && (e2.r || 0) === hideRd + 1) return;
+          runs += +e2.rr || 0; wk += +e2.w || 0;
+        });
+        if (runs > 0 && (!bat || runs > bat.v)) bat = { n: p2.name, v: runs };
+        if (wk > 0 && (!bowl || wk > bowl.v)) bowl = { n: p2.name, v: wk };
+      });
+      return "<div class='fo-pv-team'><b>" + E(nm) + "</b>" +
+        "<div class='fo-pv-pos'>" + (pos > 0 && pl[nm] ? foOrdinal(pos) + " &middot; " + (pts[nm] || 0) + " pts &middot; " + (w[nm] || 0) + "&ndash;" + (l[nm] || 0) : "First match of the season") + "</div>" +
+        "<div class='fo-pv-k'>Form</div><div class='fo-form'>" + pips + "</div>" +
+        (bat ? "<div class='fo-pv-k'>Leading run-scorer</div><div class='fo-pv-p'>" + E(bat.n) + " <span>" + bat.v + " runs</span></div>" : "") +
+        (bowl ? "<div class='fo-pv-k'>Leading wicket-taker</div><div class='fo-pv-p'>" + E(bowl.n) + " <span>" + bowl.v + " wkts</span></div>" : "") +
+        "</div>";
+    };
+    // head to head: settled meetings this season
+    var meets = [];
+    Object.keys(rounds).forEach(function (rd) {
+      if (hideRd != null && +rd === hideRd) return;
+      (rounds[rd] || []).forEach(function (r0) {
+        if (!r0 || !r0.result) return;
+        var pair = [r0.home, r0.away];
+        if (pair.indexOf(r.home) >= 0 && pair.indexOf(r.away) >= 0) meets.push(r0);
+      });
+    });
+    var h2h = meets.length
+      ? meets.map(function (m2) { return "<div class='fo-pv-h2h'>" + E(m2.result.text) + " <span>R" + ((+m2.round || 0) + 1) + "</span></div>"; }).join("")
+      : "<div class='small'>First meeting of the season.</div>";
+    return "<div class='fo-pv'>" +
+      "<div class='panel fo-keep'><h4>Match preview</h4><div class='pad'><div class='fo-pv-grid'>" + side(r.home) + side(r.away) + "</div></div></div>" +
+      "<div class='fo-pv-cols'><div class='panel fo-keep'><h4>Head to head</h4><div class='pad'>" + h2h + "</div></div>" +
+      "<div class='panel fo-keep'><h4>Match facts</h4><div class='pad'>" +
+      "<div class='fo-pv-fact'><span>Ground</span><b>" + E(r.ground || "&ndash;") + "</b></div>" +
+      (r.pitch ? "<div class='fo-pv-fact'><span>Pitch</span><b>" + foPitchName(r.pitch) + "</b></div>" : "") +
+      (r.weather ? "<div class='fo-pv-fact'><span>Weather</span><b>" + E(r.weather) + "</b></div>" : "") +
+      "<div class='fo-pv-fact'><span>First ball</span><b>9:00 AM ET</b></div>" +
+      "<div class='fo-pv-fact'><span>Lineups</span><b>Locked at 8:00 AM ET</b></div>" +
+      "<div class='small' style='margin-top:8px'>Scores tick in ball by ball from 9:00; the full card, charts and ratings arrive at stumps.</div>" +
+      "</div></div></div></div>";
+  }
+  // stats-page tables list bare player names: stamp each with his club
+  function foStatsClubTags() {
+    try {
+      if (!/^#\/stats/.test(location.hash || "")) return;
+      var page = document.getElementById("page"); if (!page) return;
+      var clubOf = {};
+      (GD.teams || []).forEach(function (t) { (t.players || []).forEach(function (p2) { clubOf[p2.name] = t.name; }); });
+      page.querySelectorAll("table td:first-child").forEach(function (td) {
+        if (td.__foClubTag) return;
+        var nm = (td.textContent || "").trim();
+        if (!clubOf[nm]) return;
+        td.__foClubTag = 1;
+        var sp = document.createElement("span");
+        sp.className = "fo-tclub";
+        sp.textContent = clubOf[nm];
+        td.appendChild(sp);
+      });
+    } catch (e) {}
+  }
   function foRoundBands() {
     try {
       if (App.page !== "matches") return;
@@ -19355,7 +19459,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var swap = function (needle, maskHtml) {
           if (!needle) return;
           // deepest elements that contain the text; children allowed (links etc.)
-          var cands = Array.prototype.slice.call(page.querySelectorAll("td, span, b, div, li")).filter(function (el) {
+          var cands = Array.prototype.slice.call(page.querySelectorAll("td, span, b, div, li, a")).filter(function (el) {
             if ((el.textContent || "").indexOf(needle) < 0) return false;
             return !Array.prototype.some.call(el.children, function (c) { return (c.textContent || "").indexOf(needle) >= 0; });
           });
@@ -19369,6 +19473,24 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           swap((r.result && r.result.text) || "", "<span class='fo-live-mask'>" + (em.pre ? "Play begins 9:00 AM ET" : foMaskLine(r, em.p)) + "</span>");
           swap((r.result && r.result.mom) || "", "to be named at stumps");
         });
+        // fixtures & results: the round on air keeps its secret until stumps
+        try {
+          var embTexts = [];
+          (App.results || []).forEach(function (r0) {
+            if (r0 && r0.comp === "league" && r0.round === em.round && r0.result && r0.result.text) embTexts.push(r0.result.text);
+          });
+          if (embTexts.length) page.querySelectorAll("td").forEach(function (td) {
+            if (td.__foEmbMask) return;
+            var tx = (td.textContent || "").trim(); if (!tx) return;
+            for (var i2 = 0; i2 < embTexts.length; i2++) {
+              if (tx.indexOf(embTexts[i2]) >= 0 && tx.length <= embTexts[i2].length + 40) {
+                td.__foEmbMask = 1;
+                td.innerHTML = "<span class='fo-emb-cell'>&#128308; " + (em.pre ? "plays at 9:00 AM ET" : "in play &middot; live now") + "</span>";
+                break;
+              }
+            }
+          });
+        } catch (eMk) {}
         // standings sleep until the broadcast ends
         page.querySelectorAll(".panel, .fo-card").forEach(function (pn) {
           var h = pn.querySelector("h4, .fo-card-h2"); if (!h) return;
@@ -19391,11 +19513,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           if (em.active && q && q.i !== undefined && App.results[+q.i] && App.results[+q.i].comp === "league" && App.results[+q.i].round === em.round) {
             var r = App.results[+q.i];
             if (em.pre) {
+              var pv = ""; try { pv = foMatchPreviewHTML(r, em.round); } catch (ePv) {}
               document.getElementById("page").innerHTML =
                 "<div class='crumb'>" + E(r.home) + " v " + E(r.away) + " &raquo; Matchday</div>" +
                 "<div class='fo-live-hero'><div class='fo-live-tag'>MATCHDAY &middot; 9:00 AM ET</div>" +
                 "<div class='fo-live-score'>" + E(r.home) + " v " + E(r.away) + "</div>" +
-                "<div class='fo-live-sub'>" + E(r.ground || "") + " &middot; play begins on the hour, ball by ball</div></div>";
+                "<div class='fo-live-sub'>" + E(r.ground || "") + (r.pitch ? " &middot; " + foPitchName(r.pitch) + " pitch" : "") + (r.weather ? " &middot; " + E(r.weather) : "") + " &middot; play begins on the hour, ball by ball</div></div>" + pv;
               return;
             }
             var st = foLiveState(r, em.p);
