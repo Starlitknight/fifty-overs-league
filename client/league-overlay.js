@@ -584,11 +584,11 @@
     ".fo-c2-chip{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:3px 11px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#dfe5ec}" +
     ".fo-c2-chip.gold{background:rgba(245,158,11,.16);border-color:rgba(245,158,11,.4);color:#F5C36B}" +
     ".fo-c2-frow{display:flex;gap:26px;margin-top:11px;flex-wrap:wrap}" +
-    ".fo-o-ms .fo-race{margin:6px 0}" +
+    ".fo-o-ms .fo-race{margin:6px 0;grid-template-columns:minmax(0,1fr) minmax(56px,1.2fr) auto;gap:8px}" +
     ".fo-o-ms .fo-race-bar{height:8px;border-radius:4px}" +
     ".fo-o-ms .fo-race-bar i{background:linear-gradient(90deg,#4DA6A2,#2b6b68) !important}" +
     ".fo-o-ms .fo-race:first-of-type .fo-race-bar i{background:linear-gradient(90deg,#e85a2a,#c94c22) !important}" +
-    ".fo-o-ms .fo-race-n{text-align:right;min-width:74px}" +
+    ".fo-o-ms .fo-race-n{text-align:right;min-width:0;font-size:11px}" +
     "@media(max-width:760px){.fo-o-ms .fo-race{grid-template-columns:minmax(0,1fr) minmax(64px,1.2fr) auto;gap:7px}.fo-o-ms .fo-race-n{min-width:0;font-size:11px}}" +
     // desktop/phone content swaps: long copy on wide screens, short on phones
     ".fo-sw-m{display:none}" +
@@ -601,6 +601,7 @@
     ".fo-c2-f{display:inline-flex;width:20px;height:20px;border-radius:5px;align-items:center;justify-content:center;font-style:normal;font-size:10.5px;font-weight:800;color:#fff}" +
     ".fo-c2-f.w{background:#16A34A}.fo-c2-f.l{background:#C0392B}.fo-c2-f.t{background:#5a6472}" +
     ".fo-c2-mood{font-size:14px;color:#FFFEFC}.fo-c2-mood b{color:#F5C36B;letter-spacing:.04em}.fo-c2-mood span{color:#9aa3b2;font-size:12px}" +
+    ".fo-mood-up,.fo-mood-dn{font-style:normal;font-size:11px}.fo-mood-up{color:#22C55E}.fo-mood-dn{color:#EF4444}" +
     ".fo-c2-dim{color:#8a93a3;font-size:12px}" +
     ".fo-c2-prog{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:13px 15px;align-self:center}" +
     ".fo-c2-pv{font-size:15px;font-weight:800;color:#FFFEFC;margin:1px 0 8px}" +
@@ -666,11 +667,11 @@
     ".fo-nr-feat{padding:2px 0 10px;border-bottom:1px solid #eee9dd;margin-bottom:4px}" +
     ".fo-nr-feat b{display:block;font-size:16.5px;font-weight:800;color:#0a2342;line-height:1.3}" +
     ".fo-nr-feat span{display:block;font-size:12px;color:#667085;margin-top:4px;line-height:1.45}" +
-    ".fo-nr-feat i{font-style:normal;display:block;font-size:10px;color:#a7aeba;font-weight:800;letter-spacing:.07em;text-transform:uppercase;margin-top:5px}" +
+    ".fo-nr-feat i{font-style:normal;display:block;font-size:10px;color:#5a6472;font-weight:800;letter-spacing:.07em;text-transform:uppercase;margin-top:5px}" +
     ".fo-nr-row{display:flex;gap:10px;align-items:baseline;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0ece1;font-size:13px;color:#14243a}" +
     ".fo-nr-row:last-child{border-bottom:none}" +
     ".fo-nr-row span{min-width:0}.fo-nr-row u{text-decoration:none;color:#8a93a3;font-size:11px}" +
-    ".fo-nr-row i{font-style:normal;flex:0 0 auto;font-size:11px;color:#8a93a3;font-weight:600}" +
+    ".fo-nr-row i{font-style:normal;flex:0 0 auto;font-size:11px;color:#5a6472;font-weight:700}" +
     ".fo-c2-ldn{font-size:16px;font-weight:800;color:#0a2342}" +
     ".fo-c2-ldr{font-size:11px;color:#667085;margin:1px 0 8px}" +
     ".fo-c2-ldv{font-size:28px;font-weight:800;color:#0a2342}.fo-c2-ldv span{font-size:13px;color:#667085;font-weight:600}" +
@@ -2399,7 +2400,18 @@
         ? form.map(function (x) { var u = String(x).toUpperCase(); return "<i class='fo-c2-f " + (u === "W" ? "w" : u === "L" ? "l" : "t") + "'>" + u + "</i>"; }).join("")
         : "<span class='fo-c2-dim'>no matches yet</span>";
       var moodIx = Math.max(0, Math.min(6, t.mood == null ? 3 : t.mood));
-      var moodEmo = moodIx >= 6 ? "\ud83e\udd29" : moodIx >= 4 ? "\ud83d\ude0a" : moodIx >= 3 ? "\ud83d\ude42" : moodIx >= 2 ? "\ud83d\ude10" : "\ud83d\ude1e";
+      // mood trend vs the previous round, remembered locally per club
+      var moodTr = 0;
+      try {
+        var mk = "fol_mood_" + t.name, crM = (App.season && App.season.round) || 0;
+        var stM = JSON.parse(lsGet(mk) || "null");
+        if (!stM || typeof stM.m !== "number") stM = { r: crM, m: moodIx, p: null };
+        else if (crM > stM.r) stM = { r: crM, m: moodIx, p: stM.m };
+        else stM.m = moodIx;
+        lsSet(mk, JSON.stringify(stM));
+        if (stM.p != null) moodTr = moodIx - stM.p;
+      } catch (eMt) {}
+      var moodArrow = moodTr > 0 ? "<i class='fo-mood-up'>&#9650;</i> " : moodTr < 0 ? "<i class='fo-mood-dn'>&#9660;</i> " : "";
       var pct = Math.round(100 * played / Math.max(1, totalRounds));
       var nextCard = "";
       if (nxt) {
@@ -2432,7 +2444,7 @@
         "<div class='fo-c2-mgr'>Manager: <b>" + E((SYNC && SYNC.me && SYNC.me.display_name) || "you") + "</b> <i class='fo-dot fo-dot-on'></i></div>" +
         "<div class='fo-c2-meta'>" + metaBits.join(" <u>&middot;</u> ") + "</div>" +
         "<div class='fo-c2-frow'><div><div class='fo-c2-k'>Form (last 5)</div><div class='fo-c2-fs'>" + fchips + "</div></div>" +
-        "<div><div class='fo-c2-k'>Supporters</div><div class='fo-c2-mood'>" + moodEmo + " <b>" + E(String(mood).toUpperCase()) + "</b>" + (t.supporters ? " <span>&middot; " + (+t.supporters).toLocaleString() + "</span>" : "") + "</div></div></div>" +
+        "<div><div class='fo-c2-k'>Supporters</div><div class='fo-c2-mood'>" + moodArrow + "<b>" + E(String(mood).toUpperCase()) + "</b>" + (t.supporters ? " <span>&middot; " + (+t.supporters).toLocaleString() + "</span>" : "") + "</div></div></div>" +
         "</div></div>" +
         "<div class='fo-c2-prog'><div class='fo-c2-k'>Season progress</div>" +
         "<div class='fo-c2-pv'>Round " + Math.min(played + 1, totalRounds) + " of " + totalRounds + "</div>" +
@@ -2504,9 +2516,25 @@
             default: return who + " &middot; " + e3.txt;
           }
         };
-        var nrRows = evsN.slice(0, 4).map(function (e3) {
+        // a new manager joining the league leads the page
+        var joinRows = [];
+        try {
+          var metaJ = foClubMetaNow() || {};
+          var joins = [];
+          for (var jn in metaJ) {
+            var jm = metaJ[jn]; if (!jm || !jm.est) continue;
+            var jd = new Date(jm.est); if (isNaN(jd)) continue;
+            if (Date.now() - jd.getTime() > 10 * 86400000) continue;
+            joins.push({ club: jn, mgr: jm.manager || "", d: jd });
+          }
+          joins.sort(function (a, b2) { return b2.d - a.d; });
+          joinRows = joins.slice(0, 2).map(function (j) {
+            return "<div class='fo-nr-row'><span><b>" + E(j.club) + "</b> joins the league" + (j.mgr ? " <u>&middot; manager " + E(j.mgr) + "</u>" : "") + "</span><i>" + j.d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) + "</i></div>";
+          });
+        } catch (eJn) {}
+        var nrRows = joinRows.concat(evsN.slice(0, 4).map(function (e3) {
           return "<div class='fo-nr-row'><span>" + nrPhrase(e3) + " <u>&middot; " + E(e3.club) + "</u></span><i>" + nrDate(e3.s, e3.r) + "</i></div>";
-        }).join("");
+        })).slice(0, 4).join("");
         newsCard = "<div class='fo-card fo-o-news'><div class='fo-card-h2row'><div class='fo-card-h2'>Club newsroom</div><a href='#/matchday' class='fo-morelink'>View all &rsaquo;</a></div><div class='fo-card-b'>" +
           (feat || nrRows ? feat + nrRows : "<div class='small'>The story starts with the first matchday.</div>") +
           "</div></div>";
@@ -2900,10 +2928,15 @@
       "<div class='fo-kpi'><span>Batting depth</span><b>" + brief.depth + "</b><i>" + brief.depthSub + "</i></div>" +
       "<div class='fo-kpi'><span>Attack mix</span><b>" + brief.attack + "</b><i>" + brief.attackSub + "</i></div>" + kpi4 + "</div>";
     var ordinal = pos ? (pos + (["th", "st", "nd", "rd"][((pos % 100) - 20) % 10] || ["th", "st", "nd", "rd"][pos % 100] || "th")) : null;
+    var scFlag = "";
+    try {
+      var scC = (isMe && SYNC && SYNC.myTeam && SYNC.myTeam.country) || t.country || (((t.players || [])[0] || {}).nat) || "";
+      if (scC && typeof foFlag === "function") scFlag = ((foFlag(scC) || "") + " " + E(scC) + " · ").replace(/^ /, "");
+    } catch (eFl) {}
     var hero = "<div class='fo-scout-hero'><div class='fo-scout-hero-main'>" +
       "<div class='fo-scout-eyebrow'>" + (isMe ? "Your club" : "Scout report") + "</div>" +
       "<h1 class='fo-scout-name'>" + E(t.name) + "</h1>" +
-      "<div class='fo-scout-meta'>" + (ordinal ? ordinal + " place · " : "") + (rec ? rec.w + "–" + rec.l + "–" + rec.t : "0–0–0") + " · " + E(t.ground || "-") + (typeof foClubEst === "function" ? " · Est. " + E(foClubEst(t)) : "") + " · Form <span class='fo-form'>" + pips + "</span>" + (function () {
+      "<div class='fo-scout-meta'>" + scFlag + (ordinal ? ordinal + " place · " : "") + (rec ? rec.w + "–" + rec.l + "–" + rec.t : "0–0–0") + " · " + E(t.ground || "-") + (typeof foClubEst === "function" ? " · Est. " + E(foClubEst(t)) : "") + " · Form <span class='fo-form'>" + pips + "</span>" + (function () {
         try {
           if (!(SYNC && SYNC.started && !SYNC.practice && LG)) return "";
           if (isMe) return " · Manager <b>" + E((SYNC.me && SYNC.me.display_name) || "you") + "</b> <i class='fo-dot fo-dot-on' title='online'></i>";
@@ -11656,7 +11689,7 @@
           return "<tr><td class='fo-sci-nm'>" + playerLink(rr2.p) + "</td><td class='n'>" + Math.floor(rr2.b / 6) + (rr2.b % 6 ? "." + rr2.b % 6 : "") + "</td><td class='n'>" + (rr2.mdn != null ? rr2.mdn : "&ndash;") + "</td><td class='n'>" + rr2.r + "</td><td class='n'><b>" + rr2.w + "</b></td><td class='n'>" + (rr2.b ? (rr2.r / (rr2.b / 6)).toFixed(2) : "-") + "</td></tr>";
         }).join("");
         var ovTxt = Math.floor(inn.legal / 6) + (inn.legal % 6 ? "." + inn.legal % 6 : "");
-        var tgt = (idx === 1 && all[0]) ? "<div class='fo-sci-tgt'>Target: " + (all[0].runs + 1) + "</div>" : "";
+        var tgt = "";
         return "<div class='panel fo-sci'><div class='fo-sci-head' onclick=\"this.parentNode.classList.toggle('fo-sci-closed')\" title='Tap to collapse'><b>" + E(inn.batTeam) + " innings</b><span><n>" + inn.runs + "/" + inn.wkts + "</n> <em>(" + ovTxt + " ov)</em><u class='fo-sci-tgl'>&#9662;</u></span></div>" + tgt + "<div class='pad'>" +
           "<table class='fo-sct'><thead><tr><th>Batter</th><th class='fo-sci-disc'>Dismissal</th><th class='n'>R</th><th class='n'>B</th><th class='n'>4s</th><th class='n'>6s</th><th class='n'>SR</th></tr></thead><tbody>" + rows +
           "<tr class='fo-sci-ex'><td>Extras <span>(b " + ex.b + ", lb " + ex.lb + ", w " + ex.wd + ", nb " + ex.nb + ")</span></td><td class='fo-sci-disc'></td><td class='n'><b>" + exN + "</b></td><td colspan='4'></td></tr>" +
