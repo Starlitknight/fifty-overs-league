@@ -8162,7 +8162,12 @@
     var foSqCss = document.createElement("style");
     foSqCss.textContent =
       ".fo-sq-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:10px 0 4px}" +
-      ".fo-sq-stat{background:#FFFEFC;border:1px solid rgba(28,36,51,.08);border-radius:12px;padding:12px 16px;box-shadow:0 2px 10px rgba(7,22,46,.05)}" +
+      ".fo-sq-stat{display:flex;align-items:center;gap:12px;background:#FFFEFC;border:1px solid rgba(28,36,51,.08);border-radius:12px;padding:12px 16px;box-shadow:0 2px 10px rgba(7,22,46,.05)}" +
+      ".fo-sqs-ic{flex:0 0 40px;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center}" +
+      ".fo-sqs-tx{min-width:0}" +
+      ".fo-sqs-c1{background:#F3F6FA;border-color:rgba(14,35,63,.14)}.fo-sqs-c1 .fo-sqs-ic{background:#DFE8F3;color:#0E233F}.fo-sqs-c1 span{color:#4a5e7d}" +
+      ".fo-sqs-c2{background:#FCF6E9;border-color:rgba(160,106,31,.18)}.fo-sqs-c2 .fo-sqs-ic{background:#F4E4C2;color:#8a5c13}.fo-sqs-c2 span{color:#8a5c13}" +
+      ".fo-sqs-c3{background:#F1F8F3;border-color:rgba(21,128,61,.16)}.fo-sqs-c3 .fo-sqs-ic{background:#DCEEE2;color:#15803D}.fo-sqs-c3 span{color:#2e6b46}" +
       ".fo-sq-stat span{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#8a93a3;font-weight:700;margin-bottom:4px}" +
       ".fo-sq-stat b{font-size:21px;color:#0E233F}" +
       ".fo-sq-stat i{font-style:normal;font-size:12px;color:#5a6472;margin-left:7px}" +
@@ -8215,7 +8220,9 @@
       ".fo-mfx-lo{color:#b3402a}.fo-mfx-sh{color:#b07f13}.fo-mfx-md{color:#5a6472}.fo-mfx-hi{color:#15803D}" +
       "@media(max-width:820px){" +
       ".fo-sq-strip{grid-template-columns:1fr;gap:8px;margin:8px 0 4px}" +
-      ".fo-sq-stat{display:flex;align-items:baseline;gap:10px;padding:9px 14px}" +
+      ".fo-sq-stat{display:flex;align-items:center;gap:10px;padding:8px 12px}" +
+      ".fo-sqs-ic{flex:0 0 30px;width:30px;height:30px;border-radius:9px}.fo-sqs-ic svg{width:16px;height:16px}" +
+      ".fo-sqs-tx{display:flex;align-items:baseline;gap:10px;flex:1;min-width:0}" +
       ".fo-sq-stat span{margin:0;flex:0 0 auto}.fo-sq-stat b{font-size:16px}.fo-sq-stat i{margin-left:auto;text-align:right;font-size:11px}" +
       ".fo-sq-warn{padding:8px 11px;font-size:12px;gap:8px}.fo-sq-warn .fo-sq-fix{padding:6px 10px;font-size:11px}" +
       ".fo-sqr-row,.fo-sq-head{grid-template-columns:minmax(92px,1.4fr) 30px minmax(58px,1fr) minmax(58px,1fr) 30px;gap:6px;padding:8px 10px}" +
@@ -8449,9 +8456,9 @@
       var ageWord = ageAvg < 25 ? "<i class='fo-pos'>young core</i>" : ageAvg <= 28 ? "<i>prime years</i>" : "<i class='fo-warm'>aging core</i>";
       var wageSum = seniors.reduce(function (s, p) { return s + (p.wage || 0); }, 0);
       var strip = "<div class='fo-sq-strip'>" +
-        "<div class='fo-sq-stat'><span>Squad</span><b>" + seniors.length + "</b><i>" + mix.bat + " bat · " + mix.bowl + " bowl · " + mix.ar + " AR · " + mix.wk + " wk" + (youths.length ? " · " + youths.length + " U20" : "") + "</i></div>" +
-        "<div class='fo-sq-stat'><span>Average age</span><b>" + ageAvg.toFixed(1) + "</b>" + ageWord + "</div>" +
-        "<div class='fo-sq-stat'><span>Wage bill</span><b>$" + wageSum.toLocaleString() + "</b><i>/ matchday</i></div></div>";
+        "<div class='fo-sq-stat fo-sqs-c1'><div class='fo-sqs-ic'>" + FO_I("users", 20) + "</div><div class='fo-sqs-tx'><span>Squad</span><b>" + seniors.length + "</b><i>" + mix.bat + " bat · " + mix.bowl + " bowl · " + mix.ar + " AR · " + mix.wk + " wk" + (youths.length ? " · " + youths.length + " U20" : "") + "</i></div></div>" +
+        "<div class='fo-sq-stat fo-sqs-c2'><div class='fo-sqs-ic'>" + FO_I("calendar", 20) + "</div><div class='fo-sqs-tx'><span>Average age</span><b>" + ageAvg.toFixed(1) + "</b>" + ageWord + "</div></div>" +
+        "<div class='fo-sq-stat fo-sqs-c3'><div class='fo-sqs-ic'>" + FO_I("coins", 20) + "</div><div class='fo-sqs-tx'><span>Wage bill</span><b>$" + wageSum.toLocaleString() + "</b><i>/ matchday</i></div></div></div>";
 
       // --- structural warnings ---
       var warns = [], hlName = null;
