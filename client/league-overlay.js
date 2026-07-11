@@ -584,7 +584,9 @@
     ".fo-c2-chip{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:3px 11px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#dfe5ec}" +
     ".fo-c2-chip.gold{background:rgba(245,158,11,.16);border-color:rgba(245,158,11,.4);color:#F5C36B}" +
     ".fo-c2-frow{display:flex;gap:26px;margin-top:11px;flex-wrap:wrap}" +
-    ".fo-o-ms .fo-race{margin:6px 0;grid-template-columns:minmax(0,1fr) minmax(56px,1.2fr) auto;gap:8px}" +
+    ".fo-o-ms .fo-race{margin:8px 0;grid-template-columns:minmax(0,1.15fr) minmax(52px,1fr) 58px;gap:8px;align-items:center}" +
+    ".fo-o-ms .fo-race-l{min-width:0}" +
+    ".fo-o-ms .fo-race-l b,.fo-o-ms .fo-race-l span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}" +
     ".fo-o-ms .fo-race-bar{height:8px;border-radius:4px}" +
     ".fo-o-ms .fo-race-bar i{background:linear-gradient(90deg,#4DA6A2,#2b6b68) !important}" +
     ".fo-o-ms .fo-race:first-of-type .fo-race-bar i{background:linear-gradient(90deg,#e85a2a,#c94c22) !important}" +
@@ -10645,11 +10647,12 @@
         var dis = (fs.ct || 0) + (fs.st || 0);
         if (dis > 0) {
           var nextD = (Math.floor(dis / 10) + 1) * 10;
-          rows.push({ nm: p.name, label: nextD + " dismissals behind the stumps", cur: dis, target: nextD, pct: Math.round(100 * (dis - (nextD - 10)) / 10) });
+          rows.push({ nm: p.name, label: nextD + " keeper dismissals", cur: dis, target: nextD, pct: Math.round(100 * (dis - (nextD - 10)) / 10) });
         }
       }
-      if (tot.hs >= 60 && tot.hs < 100) rows.push({ nm: p.name, label: "maiden century (best " + tot.hs + ")", cur: tot.hs, target: 100, pct: Math.round(100 * tot.hs / 100) });
-      else if (tot.hs >= 20 && tot.hs < 50) rows.push({ nm: p.name, label: "maiden fifty (best " + tot.hs + ")", cur: tot.hs, target: 50, pct: Math.round(100 * tot.hs / 50) });
+      // the "N / target" column already carries the number - keep labels short
+      if (tot.hs >= 60 && tot.hs < 100) rows.push({ nm: p.name, label: "maiden century", cur: tot.hs, target: 100, pct: Math.round(100 * tot.hs / 100) });
+      else if (tot.hs >= 20 && tot.hs < 50) rows.push({ nm: p.name, label: "maiden fifty", cur: tot.hs, target: 50, pct: Math.round(100 * tot.hs / 50) });
     });
     rows.sort(function (a, b) { return b.pct - a.pct; });
     // one bar per player: his closest chase
