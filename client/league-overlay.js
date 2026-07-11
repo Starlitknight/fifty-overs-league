@@ -4638,6 +4638,22 @@
           // pulls us in automatically once a snapshot that includes us is pushed.
           SYNC.lastVersion = st.version; SYNC.started = true;
           schedulePoll();
+          // a club that was drafted and confirmed but fell out of the snapshot
+          // (its join was clobbered by the 9 AM banking or lost a joiner race)
+          // re-splices itself instead of stranding the manager in the lobby.
+          // a commissioner-deleted club has no league_clubs row, so it won't.
+          if (!SYNC.isFounder && !window.__foRejoin) {
+            window.__foRejoin = "busy";
+            return sel("league_clubs", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&select=club").then(function (rows) {
+              var club = rows && rows[0] && rows[0].club;
+              if (club && club.name && club.players && club.players.length) { foJoinRunningSeason(JSON.parse(JSON.stringify(club))); return; }
+              window.__foRejoin = "lobby";
+              return preStart();
+            }).catch(function () { window.__foRejoin = "lobby"; return preStart(); });
+          }
+          // while a rejoin is in flight its status screen owns the wrap;
+          // otherwise behave as before and show the lobby / draft
+          if (window.__foRejoin === "busy") return;
           return preStart();
         }
         if (st.version > SYNC.lastVersion) { SYNC.lastVersion = st.version; applySnapshot(st.snapshot, first); }
