@@ -10153,7 +10153,8 @@
       ".fo-sq-train{background:#E4EEF6;color:#1f4e6b;border-radius:8px;padding:3px 10px;font-weight:700}" +
       ".fo-sq-foot{font-size:11.5px;color:#8a93a3;margin:8px 2px}" +
       ".fo-sq-tired{display:inline-block;background:#F3D8D3;color:#8a2f1d;border-radius:7px;padding:1px 7px;font-size:10px;font-weight:800;margin-left:6px;vertical-align:1px}" +
-      ".fo-sq-enb{display:block;width:54px;height:4px;border-radius:2px;background:#E8EAEE;overflow:hidden;margin-top:5px}" +
+      ".fo-sq-enb-m{display:inline-block;width:62px;margin-left:8px;vertical-align:2px}" +
+    ".fo-sq-enb{display:block;width:54px;height:4px;border-radius:2px;background:#E8EAEE;overflow:hidden;margin-top:5px}" +
       ".fo-sq-enb i{display:block;height:100%;border-radius:2px}" +
       ".fo-sq-mfx{display:none}" +
       ".fo-sq-mfx b{font-size:inherit;font-weight:800}" +
@@ -10465,7 +10466,7 @@
           "<div class='fo-sq-ovr' title='Overall rating (rating / 1,000)'>" + Math.round((p.rating || 0) / 1000) + "</div>" +
           "<div class='fo-sq-wage'>$" + (p.wage || 0).toLocaleString() + "<i>per matchday</i></div>" +
           "<div class='fo-sq-caret'>" + (open ? "&#9662;" : "&#9656;") + "</div>" +
-          "<div class='fo-sq-mfx'><span><i>Form</i> <b class='" + fCls + "'>" + FORMW_UI[fi] + "</b></span><span><i>Energy</i> <b class='" + enCls + "'>" + en.word + "</b></span></div></div>" +
+          "<div class='fo-sq-mfx'><span><i>Form</i> <b class='" + fCls + "'>" + FORMW_UI[fi] + "</b></span><span><i>Energy</i> <b class='" + enCls + "'>" + en.word + "</b><span class='fo-sq-enb fo-sq-enb-m' title='" + en.pct + "%'><i style='width:" + en.pct + "%;background:" + enCol + "'></i></span></span></div></div>" +
           (open ? foSqDetail(p, !!p.__y) : "");
       }).join("");
       var foot = "<div class='fo-sq-foot'>Rows expand on click for full attributes and talents · training assignments live on the <a href='#/training'>Training page</a></div>";
