@@ -6278,8 +6278,20 @@
   // Splice my freshly-drafted club into the RUNNING season by taking over a bot
   // club: the bot's identity is renamed to my club everywhere in the snapshot
   // (fixtures, table, results), then its record is replaced with my squad.
-  function foJoinRunningSeason(club) {
+  function foJoinRunningSeason(club, attempt) {
+    attempt = attempt || 0;
     openWrap(true); foLoading("Joining the season…");
+    // the 8-10 AM ET window belongs to the resolver: a join spliced into the
+    // snapshot mid-broadcast can be overwritten by the round being banked.
+    // Wait it out and join automatically at stumps.
+    try {
+      var hJ = foETHour(new Date());
+      if (hJ != null && hJ >= 8 && hJ < 10) {
+        foLoading("Today's 9:00 AM round is being played &middot; your club joins the league at stumps (10:00 AM ET). Keep this open - it finishes automatically.");
+        setTimeout(function () { foJoinRunningSeason(club, attempt); }, 60000);
+        return;
+      }
+    } catch (eW) {}
     sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version,round").then(function (a) {
       var st = a[0];
       if (!st || !st.snapshot || !st.snapshot.teams) { showWait(true); return; }
@@ -6304,6 +6316,18 @@
         SYNC.lastVersion = typeof ver === "number" ? ver : (st.version + 1);
         SYNC.started = true;
         applySnapshot(s2, true);
+        // two friends joining together race on the same base snapshot and the
+        // last write wins - verify my club survived, and re-splice if not
+        setTimeout(function () {
+          sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version").then(function (a2) {
+            var cur = a2 && a2[0];
+            var inSnap = !!(cur && cur.snapshot && (cur.snapshot.teams || []).some(function (t2) { return t2 && t2.name === club.name; }));
+            if (!inSnap && attempt < 4) {
+              foLoading("Another club joined at the same moment &middot; re-taking your place&hellip;");
+              setTimeout(function () { foJoinRunningSeason(club, attempt + 1); }, 1500 + Math.random() * 3500);
+            }
+          }).catch(function () {});
+        }, 4000);
       });
     }).catch(function (e) {
       var msg = ((e && e.message) || e) + "";
