@@ -326,6 +326,14 @@
     // rival club (scout) page · custom hero (high contrast) + FTP-style link banner
     ".fo-scout{max-width:1080px;margin:0 auto}" +
     ".fo-scout-hero{position:relative;overflow:hidden;border-radius:14px;padding:24px 26px;margin:6px 0 14px;display:flex;gap:20px;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;background:linear-gradient(135deg,#0E233F,#07162E 62%);box-shadow:0 10px 30px rgba(7,22,46,.25)}" +
+    // the founding date, worn like a crest inscription: serif small caps in
+    // heritage gold, flanked by fading hairlines
+    ".fo-estd{display:inline-flex;align-items:center;gap:9px;font-family:Georgia,'Iowan Old Style','Times New Roman',serif;font-size:10.5px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:#D9B75A;white-space:nowrap}" +
+    ".fo-estd::before,.fo-estd::after{content:'';height:1px;width:26px;flex:0 0 auto}" +
+    ".fo-estd::before{background:linear-gradient(90deg,transparent,rgba(217,183,90,.8))}" +
+    ".fo-estd::after{background:linear-gradient(90deg,rgba(217,183,90,.8),transparent)}" +
+    ".fo-c2-est,.fo-scout-est{margin-top:8px}" +
+    ".fo-bt-tag{display:inline-block;margin-left:6px;font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#5a6472;background:#EFECE3;border-radius:5px;padding:1px 5px;vertical-align:1px;white-space:nowrap}" +
     ".fo-scout-hero::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(" + TERRA + "," + TEAL + ")}" +
     ".fo-scout-hero-main{flex:1 1 320px;min-width:230px}" +
     ".fo-scout-eyebrow{color:#e79274;font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;margin-bottom:7px}" +
@@ -2613,6 +2621,7 @@
         "<h1 class='fo-c2-name'>" + E(t.name) + "</h1>" +
         "<div class='fo-c2-mgr'>Manager: <b>" + E((SYNC && SYNC.me && SYNC.me.display_name) || "you") + "</b> <i class='fo-dot fo-dot-on'></i></div>" +
         "<div class='fo-c2-meta'>" + metaBits.join(" <u>&middot;</u> ") + "</div>" +
+        (function () { try { var eb9 = foEstBadge(t); return eb9 ? "<div class='fo-c2-est'>" + eb9 + "</div>" : ""; } catch (e9) { return ""; } })() +
         "<div class='fo-c2-frow'><div><div class='fo-c2-k'>Form (last 5)</div><div class='fo-c2-fs'>" + fchips + "</div></div>" +
         "<div><div class='fo-c2-k'>Supporters</div><div class='fo-c2-mood'>" + moodArrow + "<b>" + E(String(mood).toUpperCase()) + "</b>" + (t.supporters ? " <span>&middot; " + (+t.supporters).toLocaleString() + "</span>" : "") + "</div></div></div>" +
         "</div></div>" +
@@ -3211,7 +3220,7 @@
     var hero = "<div class='fo-scout-hero'><div class='fo-scout-hero-main'>" +
       "<div class='fo-scout-eyebrow'>" + (isMe ? "Your club" : "Scout report") + "</div>" +
       "<h1 class='fo-scout-name'>" + E(t.name) + "</h1>" +
-      "<div class='fo-scout-meta'>" + scFlag + (ordinal ? ordinal + " place · " : "") + (rec ? rec.w + "–" + rec.l + "–" + rec.t : "0–0–0") + " · " + E(t.ground || "-") + (typeof foClubEst === "function" ? " · Est. " + E(foClubEst(t)) : "") + " · Form <span class='fo-form'>" + pips + "</span>" + (function () {
+      "<div class='fo-scout-meta'>" + scFlag + (ordinal ? ordinal + " place · " : "") + (rec ? rec.w + "–" + rec.l + "–" + rec.t : "0–0–0") + " · " + E(t.ground || "-") + "" + " · Form <span class='fo-form'>" + pips + "</span>" + (function () {
         try {
           if (!(SYNC && SYNC.started && !SYNC.practice && LG)) return "";
           if (isMe) return " · Manager <b>" + E((SYNC.me && SYNC.me.display_name) || "you") + "</b> <i class='fo-dot fo-dot-on' title='online'></i>";
@@ -3226,6 +3235,7 @@
           return " · <span class='fo-bot-chip'>BOT · computer managed</span>";
         } catch (e) { return ""; }
       })() + "</div>" +
+      (function () { try { var eb8 = foEstBadge(t); return eb8 ? "<div class='fo-scout-est'>" + eb8 + "</div>" : ""; } catch (e8) { return ""; } })() +
       "<div class='fo-scout-actions'>" + (isMe ? "" : "<button class='fo-challenge'>Challenge to a match</button>") + "<button class='fo-scout-back'>← Back</button></div>" +
       "</div><div class='fo-scout-hero-r'>" + kpi + "</div></div>";
     var links = "<div class='fo-scout-links'>" +
@@ -4357,9 +4367,9 @@
   // re-apply fixture match-times after any re-render of the game page
   try {
     var _mt = null, pg0 = document.getElementById("page");
-    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); foFlagStandings(); foCondSymbols(); foStatsClubTags(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); }, 40); }).observe(pg0, { childList: true, subtree: true });
+    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); foFlagStandings(); foCondSymbols(); foBowlTypeTags(); foStatsClubTags(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foStatsClubTags(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} return r; }; }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlTypeTags(); foStatsClubTags(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} return r; }; }
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
@@ -7871,6 +7881,61 @@
     var ab = foTzAbbr();
     return t.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " " + pad(t.getHours()) + ":" + pad(t.getMinutes()) + (ab ? " " + ab : "");
   }
+  // bowler style in the engine's own commentary shorthand: rfm, fs, ws...
+  function foBowlCode(p) {
+    if (!p || !p.bowlTypeFull || p.bowlTypeFull === "none") return "";
+    var h = p.hand === "L" ? "l" : "r";
+    return { seamFast: h + "f", seamFastMedium: h + "fm", seamMedium: h + "m",
+      fingerSpin: "fs", wristSpin: "ws", partTimeSeam: "pt seam", partTimeSpin: "pt spin" }[p.bowlTypeFull] || "";
+  }
+  // every bowling card names the bowler's type - any table with an Econ column
+  function foBowlTypeTags() {
+    try {
+      var page = document.getElementById("page"); if (!page || typeof findPlayer !== "function") return;
+      page.querySelectorAll("table").forEach(function (tb) {
+        if (tb.__foBtTags) return;
+        var ths = Array.prototype.slice.call(tb.querySelectorAll("th")).map(function (x) { return (x.textContent || "").trim().toLowerCase(); });
+        if (ths.indexOf("econ") < 0) return;
+        tb.__foBtTags = 1;
+        Array.prototype.slice.call(tb.querySelectorAll("tr")).forEach(function (tr) {
+          var td = tr.querySelector("td"); if (!td || td.querySelector(".fo-bt-tag")) return;
+          var nm = (td.textContent || "").replace(/[\u2020*]/g, "").trim(); if (!nm) return;
+          var nmC = nm.replace(/\s*\(.*\)$/, "").trim();
+          var hit = findPlayer(nm) || findPlayer(nmC);
+          if (!hit) {
+            // scorecards abbreviate to "S. Akram" - match initial + surname(s)
+            var mAb = /^([A-Za-z])\.\s+(.+)$/.exec(nmC);
+            if (mAb) {
+              var cand = null, dupe = false;
+              (GD.teams || []).forEach(function (t9) {
+                (t9.players || []).forEach(function (p9) {
+                  var ps = String(p9.name || "").split(/\s+/); if (ps.length < 2) return;
+                  if (ps[0].charAt(0).toLowerCase() === mAb[1].toLowerCase() && ps.slice(1).join(" ").toLowerCase() === mAb[2].toLowerCase()) {
+                    if (cand && cand !== p9) dupe = true; cand = p9;
+                  }
+                });
+              });
+              if (cand && !dupe) hit = { p: cand };
+            }
+          }
+          var code = hit && foBowlCode(hit.p);
+          if (code) {
+            var host = td.querySelector("b") || td;
+            host.insertAdjacentHTML("beforeend", " <span class='fo-bt-tag' title='" + E((hit.p && hit.p.btLabel) || "") + "'>" + code + "</span>");
+          }
+        });
+      });
+    } catch (e) {}
+  }
+  // the founding date as a crest inscription for the navy hero banners
+  function foEstBadge(t) {
+    try {
+      if (!t || typeof foClubEst !== "function") return "";
+      var d = new Date(foClubEst(t)); if (isNaN(d)) return "";
+      var txt = d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+      return "<span class='fo-estd' title='Founded " + E(txt) + "'>Estd " + E(txt) + "</span>";
+    } catch (e) { return ""; }
+  }
   // a club name that goes somewhere: the club's scout page
   function foClubLink(nm) {
     try {
@@ -8733,20 +8798,46 @@
         });
         lsSet(seenK, JSON.stringify(seen));
       }
+      // my league fixtures and results join the same list - one page, one
+      // chronology, FTP style: date, type, match, result or action
+      try {
+        var lgAt9 = function (rn) {
+          var d9 = new Date(); d9.setHours(9, 0, 0, 0);
+          d9.setDate(d9.getDate() + (rn - App.season.round) + (foCurAdvanced() ? 1 : 0));
+          return +d9;
+        };
+        var emL = (typeof foEmbargo === "function") ? foEmbargo() : { active: false };
+        (App.results || []).forEach(function (r9) {
+          if (!r9 || r9.comp !== "league" || (r9.home !== me && r9.away !== me)) return;
+          var rIx9 = typeof r9.round === "number" ? r9.round : 0;
+          var onAir9 = emL.active && emL.round === rIx9;
+          var res9 = onAir9
+            ? "<a class='fo-frs-live' href='#/scorecard?i=" + r9.ix + "'>" + (emL.pre ? "plays 9:00 AM ET &middot; preview &rsaquo;" : "<span class='live-dot'></span> LIVE &middot; watch &rsaquo;") + "</a>"
+            : "<a href='#/scorecard?i=" + r9.ix + "'>" + E((r9.result && r9.result.text) || "played") + "</a>";
+          entries.push({ ts: lgAt9(rIx9), up: onAir9, html: "<tr><td>" + E(foDailyDate(rIx9, { day: "numeric", month: "short" })) + ", 9:00 ET</td><td>League <span class='small'>R" + (rIx9 + 1) + "</span></td><td>" + E(r9.home) + " v " + E(r9.away) + "</td><td>" + res9 + "</td></tr>" });
+        });
+        (typeof foUserFixtures === "function" ? foUserFixtures() : []).slice(0, 5).forEach(function (x9) {
+          var isN9 = App.season && x9.round === App.season.round;
+          var subIn9 = !!((SYNC && SYNC.submitted && SYNC.submitted[x9.round]) || (App.orders && App.orders.saved && App.season && x9.round === App.season.round));
+          entries.push({ ts: lgAt9(x9.round), up: true, html: "<tr" + (isN9 ? " class='fo-fx-fr'" : "") + "><td>" + E(foDailyDate(x9.round, { day: "numeric", month: "short" })) + ", 9:00 ET</td><td>League <span class='small'>R" + (x9.round + 1) + "</span></td><td>" + (x9.isHome ? "vs " : "@ ") + E(x9.opp.name) + " <span class='small'>" + E(foPitchName(x9.pitch) || "") + (x9.weather ? ", " + E(x9.weather) : "") + "</span></td><td class='r'><button class='mini fo-setr' data-r='" + x9.round + "'>" + (subIn9 ? "Edit lineup" : (isN9 ? "Set lineup" : "Plan lineup")) + "</button>" + (subIn9 ? " <span class='small' style='color:#15803D'>&#10003;</span>" : "") + "</td></tr>" });
+        });
+      } catch (eLgRows) {}
       // upcoming (live, on, awaiting reply, ready to play) first - soonest at
       // the top; finished business below it, most recent result first
       entries.sort(function (a2, b2) {
         if ((a2.up ? 1 : 0) !== (b2.up ? 1 : 0)) return a2.up ? -1 : 1;
         return a2.up ? (a2.ts - b2.ts) : (b2.ts - a2.ts);
       });
+      var doneN9 = 0;
+      entries = entries.filter(function (e4) { return e4.up ? true : ++doneN9 <= 14; });
       // IDEMPOTENT render: this runs from the page MutationObserver, so a
       // remove+recreate here re-triggers the observer forever and the panel
       // churns ~20x/sec - real clicks then land on a node that no longer
       // exists by mouseup and simply die. Only touch the DOM when the
       // rendered HTML actually changed.
-      var inner = "<h4>Friendlies <span class='small' style='font-weight:400'>&middot; no points, no fatigue, all pride</span></h4><div class='pad'>" +
-        "<div class='fo-frs-bar'><button class='primary' id='fo-frs-new'>New practice game</button><span class='small'>Challenge a friend&rsquo;s club from their scout report; challenges and results appear below for both managers.</span></div>" +
-        (entries.length ? "<table><tr><th>Date</th><th>Type</th><th>Match</th><th></th></tr>" + entries.map(function (e3) { return e3.html; }).join("") + "</table>" : "<div class='small' style='margin-top:8px'>No friendlies yet. Set one up above, or challenge a rival from their club page.</div>") +
+      var inner = "<h4>All matches <span class='small' style='font-weight:400'>&middot; league, friendlies &amp; practice &middot; upcoming first</span></h4><div class='pad'>" +
+        "<div class='fo-frs-bar'><button class='primary' id='fo-frs-new'>New practice game</button><span class='small'>Challenge a friend&rsquo;s club from their scout report &middot; friendlies carry no points and no fatigue.</span></div>" +
+        (entries.length ? "<table><tr><th>Date</th><th>Type</th><th>Match</th><th>Result</th></tr>" + entries.map(function (e3) { return e3.html; }).join("") + "</table>" : "<div class='small' style='margin-top:8px'>No matches yet. Set up a practice game above, or challenge a rival from their club page.</div>") +
         "</div>";
       var pnl = page.querySelector("#fo-frs");
       if (pnl && pnl.__foInner === inner) { foFrsRefetch(me); return; }
@@ -8782,6 +8873,18 @@
           if (c2) foChalPrep(c2);
         });
       });
+      pnl.querySelectorAll(".fo-setr").forEach(function (b2) {
+        b2.addEventListener("click", function () { foSetOrdersForRound(+b2.getAttribute("data-r")); });
+      });
+      // the unified list replaces the separate fixtures cards - one list, no maze
+      try {
+        page.querySelectorAll(".panel").forEach(function (pn9) {
+          if (pn9 === pnl) return;
+          var h9 = pn9.querySelector("h4"); if (!h9) return;
+          var tx9 = (h9.textContent || "").trim();
+          if (/^Fixtures & results/i.test(tx9) || /^Round \d+ of \d+/i.test(tx9)) pn9.style.display = "none";
+        });
+      } catch (eHd) {}
       foFrsRefetch(me);
     } catch (e) {}
   }
@@ -12031,7 +12134,23 @@
         if (rmTb) {
           var pad0 = function (n) { return (n < 10 ? "0" : "") + n; };
           var items = hAll.map(function (e) {
-            return { at: (Date.parse(e.date || "") || 0) + 9 * 3600000, fr: !!(e.fr || e.s == null), teams: e.teams || "", bat: e.bat || "-", bowl: e.bowl || "-", dateTxt: E(e.date || ""), key: (e.teams || "") + "|" + (e.bat || "-") };
+            var it = { at: (Date.parse(e.date || "") || 0) + 9 * 3600000, fr: !!(e.fr || e.s == null), teams: e.teams || "", bat: e.bat || "-", bowl: e.bowl || "-", dateTxt: E(e.date || ""), key: (e.teams || "") + "|" + (e.bat || "-") };
+            // league innings this season: link to the scorecard and date the
+            // row by its round on the real ET calendar, not the engine's fiction
+            try {
+              if (!it.fr && e.r != null && e.s === (App.seasonNo || 1)) {
+                var rIx9 = (e.r || 0) - 1;
+                var res9 = (App.results || []).filter(function (r9) { return r9 && r9.comp === "league" && r9.round === rIx9 && (r9.home + " v " + r9.away) === it.teams; })[0];
+                if (res9 && res9.ix != null) it.sc = res9.ix;
+                if (typeof foDailyDate === "function" && rIx9 >= 0) {
+                  it.dateTxt = E(foDailyDate(rIx9, { weekday: "short", day: "numeric", month: "short", year: "numeric" })) + " <span class='fo-t'>9:00 AM ET</span>";
+                  var dL9 = new Date(); dL9.setHours(9, 0, 0, 0);
+                  dL9.setDate(dL9.getDate() + (rIx9 - App.season.round) + (foCurAdvanced() ? 1 : 0));
+                  it.at = +dL9;
+                }
+              }
+            } catch (e9) {}
+            return it;
           });
           var seenK = {}; items.forEach(function (x) { seenK[x.key] = 1; });
           var clubNm = pl0.team && pl0.team.name;
@@ -12063,7 +12182,8 @@
           var head0 = rmTb.querySelector("tr");
           var rows2 = items.slice(0, 8).map(function (x) {
             var cls = x.fr ? "One Day<div class='small' style='color:#8a93a3'>Friendly</div>" : "One Day";
-            var tCell = x.id ? "<a href='#/friendly?id=" + x.id + "'>" + E(x.teams) + "</a>" : E(x.teams);
+            var tCell = x.id ? "<a href='#/friendly?id=" + x.id + "'>" + E(x.teams) + "</a>"
+              : (x.sc != null ? "<a href='#/scorecard?i=" + x.sc + "'>" + E(x.teams) + "</a>" : E(x.teams));
             return "<tr><td>" + x.dateTxt + "</td><td>" + cls + "</td><td>" + tCell + "</td><td>" + E(x.bat) + "</td><td>" + E(x.bowl) + "</td><td>-</td></tr>";
           }).join("");
           if (rows2) rmTb.innerHTML = (head0 ? head0.outerHTML : "") + rows2;
