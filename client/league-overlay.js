@@ -7955,6 +7955,19 @@
   function foBowlTypeTags() {
     try {
       var page = document.getElementById("page"); if (!page || typeof findPlayer !== "function") return;
+      // the page knows which two clubs are playing - use that to break ties
+      var mClubs = [];
+      try {
+        var h9 = location.hash || "", rM = null;
+        var mS9 = /^#\/scorecard\?i=(\d+)/.exec(h9);
+        if (mS9) rM = ((typeof App !== "undefined" && App.results) || [])[+mS9[1]];
+        if (rM) mClubs = [rM.home, rM.away].filter(Boolean);
+        else {
+          var mF9 = /^#\/friendly\?id=([\w-]+)/.exec(h9);
+          var chF9 = mF9 && window.__foFrCache;
+          if (chF9 && chF9.id === mF9[1] && chF9.row) mClubs = [chF9.row.challenger_club, chF9.row.opponent_club].filter(Boolean);
+        }
+      } catch (eMc9) {}
       page.querySelectorAll("table").forEach(function (tb) {
         if (tb.__foBtTags) return;
         var ths = Array.prototype.slice.call(tb.querySelectorAll("th")).map(function (x) { return (x.textContent || "").trim().toLowerCase(); });
@@ -7962,6 +7975,26 @@
         var isBat9 = !isBowl9 && ths.length && (ths[0].indexOf("batter") === 0 || ths[0].indexOf("batting") === 0) && ths.indexOf("sr") >= 0;
         if (!isBowl9 && !isBat9) return;
         tb.__foBtTags = 1;
+        var sideClub = null;
+        try {
+          var thRaw0 = ((tb.querySelector("th") || {}).textContent || "").trim();
+          var mPar9 = /\(([^)]+)\)/.exec(thRaw0);
+          if (mPar9 && mClubs.indexOf(mPar9[1]) >= 0) sideClub = mPar9[1];   // "Bowling (Wellington)"
+          if (!sideClub && mClubs.length === 2) {
+            var elW9 = tb, hops9 = 0, inn9 = null;
+            while (elW9 && hops9++ < 4 && !inn9) {
+              var sib9 = elW9.previousElementSibling;
+              while (sib9 && !inn9) {
+                var tx9 = sib9.textContent || "";
+                var hasA9 = tx9.indexOf(mClubs[0]) >= 0, hasB9 = tx9.indexOf(mClubs[1]) >= 0;
+                if (hasA9 !== hasB9) inn9 = hasA9 ? mClubs[0] : mClubs[1];   // an innings header names ONE side
+                sib9 = sib9.previousElementSibling;
+              }
+              elW9 = elW9.parentElement;
+            }
+            if (inn9) sideClub = isBat9 ? inn9 : (inn9 === mClubs[0] ? mClubs[1] : mClubs[0]);
+          }
+        } catch (eSc9) {}
         Array.prototype.slice.call(tb.querySelectorAll("tr")).forEach(function (tr) {
           var td = tr.querySelector("td"); if (!td || td.querySelector(".fo-bt-tag") || td.querySelector(".fo-tal-tag")) return;
           var nameEl9 = td.querySelector("a, b") || td;
@@ -7969,22 +8002,25 @@
           var nmC = nm.replace(/\s*\(.*\)$/, "").trim();
           var hit = findPlayer(nm) || findPlayer(nmC);
           if (!hit) {
-            // scorecards abbreviate to "S. Akram" - match initial + surname(s)
+            // scorecards abbreviate to "S. Akram" - gather every match, then
+            // narrow by what the page knows: the two clubs playing, which side
+            // this table belongs to, and (for bowling) who actually bowls
             var mAb = /^([A-Za-z])\.\s+(.+)$/.exec(nmC);
             if (mAb) {
-              var cand = null, dupe = false;
+              var cands9 = [], tgt9 = mAb[2].toLowerCase();
               (GD.teams || []).forEach(function (t9) {
                 (t9.players || []).forEach(function (p9) {
                   var ps = String(p9.name || "").split(/\s+/); if (ps.length < 2) return;
-                  var tgt9 = mAb[2].toLowerCase();
                   // commentary abbreviations drop name particles: "de Kock" -> "T. Kock"
                   if (ps[0].charAt(0).toLowerCase() === mAb[1].toLowerCase() &&
-                      (ps.slice(1).join(" ").toLowerCase() === tgt9 || ps[ps.length - 1].toLowerCase() === tgt9)) {
-                    if (cand && cand !== p9) dupe = true; cand = p9;
-                  }
+                      (ps.slice(1).join(" ").toLowerCase() === tgt9 || ps[ps.length - 1].toLowerCase() === tgt9)) cands9.push({ p: p9, club: t9.name });
                 });
               });
-              if (cand && !dupe) hit = { p: cand };
+              var narrow9 = function (arr9, f9) { var a9 = arr9.filter(f9); return a9.length ? a9 : arr9; };
+              if (cands9.length > 1 && mClubs.length) cands9 = narrow9(cands9, function (c9) { return mClubs.indexOf(c9.club) >= 0; });
+              if (cands9.length > 1 && sideClub) cands9 = narrow9(cands9, function (c9) { return c9.club === sideClub; });
+              if (cands9.length > 1 && isBowl9) cands9 = narrow9(cands9, function (c9) { return c9.p.bowlTypeFull && c9.p.bowlTypeFull !== "none"; });
+              if (cands9.length) hit = { p: cands9[0].p };
             }
           }
           if (!hit) {
