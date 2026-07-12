@@ -1019,6 +1019,9 @@
     ".fo-qs-star-nm{font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:800;color:#FFFEFC;margin:3px 0 1px}" +
     ".fo-qs-star-meta{font-size:12.5px;color:#b8c2d1}" +
     ".fo-qs-star-tal{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}" +
+    ".fo-qs-shape{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}" +
+    ".fo-qs-shape span{font-size:11px;padding:4px 9px;border-radius:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#cfd8e3}" +
+    ".fo-qs-shape span b{color:#FFFEFC}" +
     ".fo-qs-star-tal i{font-style:normal;font-size:10.5px;padding:3px 8px;border-radius:99px;background:rgba(217,183,90,.16);border:1px solid rgba(217,183,90,.4);color:#EAD9A8}" +
     ".fo-qs-fix{margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25);color:#14532d;font-size:13.5px;line-height:1.4}" +
     // golden first-session strip on the club home
@@ -5458,8 +5461,8 @@
   //               BEFORE the equal-budget pass, so weaknesses survive it
   //   syn       - pitch synergy hints (never blocking)
   var FO_ARCHETYPES = [
-    { id: "express", nm: "The Express", role: "Fast bowler", ic: "bolt",
-      line: "First name on the team sheet. Last thing a batter wants to see.",
+    { id: "express", nm: "The Pace Battery", role: "Pace-heavy squad", starRole: "fast bowler", ic: "bolt",
+      line: "Four quicks, one plan: knock the top order over before the shine goes.",
       chips: ["Pace-heavy attack", "Lethal on green tops"], weak: "Thin spin options",
       syn: { good: ["green"], bad: ["dry", "cracked"] },
       counts: { opener: 2, top: 2, mid: 2, wk: 2, ar: 2, pace: 3, spin: 1 },
@@ -5467,8 +5470,8 @@
       bias: [["bowlers", { wicket: 1.08, moveTurn: 1.08 }], ["batters", { vsSpin: 0.94 }]],
       talents: ["bouncer", "newBallSpecialist", "partnershipBreaker"],
       starter: { role: "seamFast", age: 26, talents: ["bouncer", "newBallSpecialist"] } },
-    { id: "wizard", nm: "The Wizard", role: "Mystery spinner", ic: "spin",
-      line: "Nobody reads him off the hand. Nobody.",
+    { id: "wizard", nm: "The Spin Circus", role: "Spin-heavy squad", starRole: "mystery wrist-spinner", ic: "spin",
+      line: "Four spinners, endless riddles. The middle overs belong to you.",
       chips: ["Spin-heavy attack", "Owns dry, turning decks"], weak: "Blunted on green tops",
       syn: { good: ["dry", "cracked"], bad: ["green"] },
       counts: { opener: 2, top: 2, mid: 2, wk: 2, ar: 2, pace: 1, spin: 3 },
@@ -5477,8 +5480,8 @@
       bias: [["bowlers", { moveTurn: 1.08, variation: 1.12 }], ["batters", { vsPace: 0.96 }]],
       talents: ["mysteryBall", "goldenArm", "partnershipBreaker"],
       starter: { role: "wristSpin", age: 27, talents: ["mysteryBall", "goldenArm"] } },
-    { id: "rock", nm: "The Rock", role: "Anchor opener", ic: "shield",
-      line: "Sees off the new ball. Then sees off the old one too.",
+    { id: "rock", nm: "The Stonewall", role: "Technique-first batting", starRole: "anchor opener", ic: "shield",
+      line: "Nobody bowls this side out. Totals are ground out, never gifted.",
       chips: ["Deep batting technique", "Hardest side to bowl out"], weak: "Slow to accelerate",
       syn: { good: ["green", "slow", "twoPaced"], bad: ["flat"] },
       counts: { opener: 2, top: 2, mid: 1, wk: 2, ar: 2, pace: 3, spin: 2 },
@@ -5487,8 +5490,8 @@
       bias: [["batters", { vsPace: 1.10, vsSpin: 1.10, temperament: 1.14, power: 0.70 }]],
       talents: ["anchor", "busyRunner", "safeHands"],
       starter: { role: "opener", age: 28, talents: ["anchor", "safeHands"] } },
-    { id: "finisher", nm: "The Finisher", role: "Death-overs hitter", ic: "rocket",
-      line: "Forty needed off twenty? He calls that a home game.",
+    { id: "finisher", nm: "The Finishers", role: "Power-hitting order", starRole: "death-overs hitter", ic: "rocket",
+      line: "Forty needed off twenty? This dressing room starts smiling.",
       chips: ["Brutal power late", "Wins tight chases"], weak: "Top order can cave",
       syn: { good: ["flat"], bad: ["cracked", "twoPaced"] },
       counts: { opener: 2, top: 2, mid: 1, wk: 2, ar: 2, pace: 3, spin: 2 },
@@ -5497,8 +5500,8 @@
       bias: [["batters", { power: 1.24, rotation: 1.05, vsPace: 0.93, vsSpin: 0.93, temperament: 0.88 }]],
       talents: ["finisher", "sixMachine", "deathSpecialist"],
       starter: { role: "middleOrderBat", age: 27, talents: ["finisher", "sixMachine"] } },
-    { id: "gloveman", nm: "The Gloveman", role: "Keeper-batter", ic: "gloves",
-      line: "Nothing gets past him. Ask the edges.",
+    { id: "gloveman", nm: "The Safe Hands", role: "Elite fielding unit", starRole: "keeper-batter", ic: "gloves",
+      line: "Edges stick, run-outs happen, byes simply don't. Nothing gets past.",
       chips: ["Elite glovework", "Catches change games"], weak: "Modest bowling threat",
       syn: { good: ["cracked"], bad: [] },
       counts: { opener: 2, top: 2, mid: 2, wk: 1, ar: 2, pace: 3, spin: 2 },
@@ -5507,8 +5510,8 @@
       bias: [["all", { fielding: 1.16, catching: 1.18 }], ["keepers", { keeping: 1.10, stumping: 1.10 }], ["bowlers", { wicket: 0.90 }]],
       talents: ["lightningHands", "safeHands", "rocketArm", "busyRunner"],
       starter: { role: "wicketkeeper", age: 27, talents: ["lightningHands", "safeHands"] } },
-    { id: "prodigy", nm: "The Prodigy", role: "Teenage prodigy", ic: "spark",
-      line: "Eighteen years old and already the story of the season.",
+    { id: "prodigy", nm: "The Academy", role: "Youngest squad in the league", starRole: "teenage prodigy", ic: "spark",
+      line: "Kids today, champions tomorrow - and tomorrow comes fast here.",
       chips: ["Fastest training gains", "Highest ceiling in the league"], weak: "Starts raw and green",
       syn: { good: [], bad: [] },
       counts: { opener: 2, top: 2, mid: 1, wk: 2, ar: 2, pace: 3, spin: 2 },
@@ -5517,8 +5520,8 @@
       bias: [],
       talents: ["busyRunner", "paceHunter", "spinKiller"],
       starter: { role: "opener", age: 18, talents: ["fastStarter", "busyRunner"] } },
-    { id: "greybeard", nm: "The Greybeard", role: "Veteran captain", ic: "star",
-      line: "Won everything twice. Remembers how, every time.",
+    { id: "greybeard", nm: "The Old Guard", role: "Veteran core", starRole: "veteran captain", ic: "star",
+      line: "Seen everything, twice. Pressure is just Tuesday to this lot.",
       chips: ["Ice-cold under pressure", "Master captaincy"], weak: "Tires fast, little headroom",
       syn: { good: ["slow", "twoPaced"], bad: [] },
       counts: { opener: 2, top: 2, mid: 1, wk: 2, ar: 2, pace: 3, spin: 2 },
@@ -5528,8 +5531,8 @@
       bias: [["all", { stamina: 0.78 }], ["batters", { temperament: 1.10 }]],
       talents: ["anchor", "partnershipBreaker", "miser"],
       starter: { role: "topOrderBat", age: 32, talents: ["anchor", "partnershipBreaker"] } },
-    { id: "miser", nm: "The Miser", role: "Economy bowler", ic: "lock",
-      line: "Gives you nothing, and enjoys watching you try.",
+    { id: "miser", nm: "The Stranglers", role: "Economy-first attack", starRole: "economy bowler", ic: "lock",
+      line: "Runs off this attack are earned in singles, never given in fours.",
       chips: ["Suffocating economy", "Wins low-scoring grinds"], weak: "Fewer wicket-takers",
       syn: { good: ["slow", "dry"], bad: ["flat"] },
       counts: { opener: 2, top: 2, mid: 1, wk: 2, ar: 2, pace: 3, spin: 2 },
@@ -5538,8 +5541,8 @@
       bias: [["bowlers", { economy: 1.18, discipline: 1.15, variation: 1.05, wicket: 0.80 }]],
       talents: ["miser", "deathSpecialist", "newBallSpecialist"],
       starter: { role: "seamFastMedium", age: 28, talents: ["miser", "deathSpecialist"] } },
-    { id: "blade", nm: "The Blade", role: "Strokeplayer", ic: "bat",
-      line: "If it's there to hit, it's gone. If it isn't - also gone.",
+    { id: "blade", nm: "The Cavaliers", role: "Attacking strokeplay", starRole: "dashing strokeplayer", ic: "bat",
+      line: "Every ball is there to be hit. Sometimes gloriously, sometimes not.",
       chips: ["Scorching strike rates", "Sets huge totals"], weak: "Nervy when it tightens",
       syn: { good: ["flat"], bad: ["slow"] },
       counts: { opener: 2, top: 2, mid: 1, wk: 2, ar: 2, pace: 3, spin: 2 },
@@ -5549,8 +5552,8 @@
       bias: [["batters", { power: 1.14, rotation: 1.10, vsPace: 1.04, temperament: 0.80 }]],
       talents: ["fastStarter", "sixMachine", "paceHunter"],
       starter: { role: "opener", age: 25, talents: ["fastStarter", "sixMachine"] } },
-    { id: "engine", nm: "The Engine", role: "All-rounder", ic: "gear",
-      line: "Bats, bowls, fields, and never stops running in.",
+    { id: "engine", nm: "The Engine Room", role: "All-rounder depth", starRole: "tireless all-rounder", ic: "gear",
+      line: "Eleven players, twenty-two jobs. Everyone bats, everyone bowls.",
       chips: ["Deep batting, deep bowling", "Everyone chips in"], weak: "No elite specialist",
       syn: { good: ["twoPaced", "cracked"], bad: [] },
       counts: { opener: 2, top: 1, mid: 1, wk: 2, ar: 4, pace: 2, spin: 2 },
@@ -5775,10 +5778,10 @@
       starter.capt = 30;
       var eldest = players.slice(1).sort(function (a, b) { return (b.age - a.age) || ((b.capt || 0) - (a.capt || 0)); })[0];
       if (eldest) eldest.capt = Math.max(eldest.capt || 0, 88);
-      starter.origin_tag = "Franchise player - chosen at founding · future captain";
+      starter.origin_tag = "Franchise player - future captain of the founding squad";
     } else {
       starter.capt = 92;
-      starter.origin_tag = "Franchise player - chosen at founding";
+      starter.origin_tag = "Franchise player - face of the founding squad";
     }
     starter.archetype = A.id;
     starter._prov = { how: "draft", s: seasonNow, founding: 1 };
@@ -6325,8 +6328,8 @@
     var body =
       "<div class='fo-ob-card'>" +
       "<div class='fo-ob-eyebrow'>" + E(FO_QS.clubName) + " &middot; step 3 of 3</div>" +
-      "<h1 class='fo-ob-h1'>Choose your franchise player</h1>" +
-      "<p class='fo-ob-lead'>One player to build a club around. He arrives as your best player, and the squad signed around him takes after him - his strengths, and one honest weakness.</p>" +
+      "<h1 class='fo-ob-h1'>What kind of team do you want?</h1>" +
+      "<p class='fo-ob-lead'>Pick your squad's identity. Fifteen players arrive signed and ready - real strengths, one honest weakness, and a franchise player leading the way.</p>" +
       "<div class='fo-qs-grid'>" + cards + "</div></div>";
     var host = foQsShell(3, body, foQsCtaBar("Found my club", "fo-qs-go", !FO_QS.arch, "fo-qs-b3"));
     host.querySelectorAll(".fo-qs-arch").forEach(function (b) {
@@ -6394,6 +6397,13 @@
     var pt = FO_PITCH_CARDS.find(function (x) { return x.id === FO_QS.pitch; }) || FO_PITCH_CARDS[0];
     var bt = starter.btLabel || "";
     var tals = (starter.talents || []).map(function (t) { return "<i>" + E(foTalentName(t)) + "</i>"; }).join("");
+    // the squad's actual shape, from the players just generated
+    var ps9 = gen.players || [];
+    var isFront9 = function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && !/^partTime/.test(p.bowlTypeFull) && p.role !== "allRounder"; };
+    var paceN9 = ps9.filter(function (p) { return isFront9(p) && /^seam/.test(p.bowlTypeFull); }).length;
+    var spinN9 = ps9.filter(function (p) { return isFront9(p) && /Spin$/.test(p.bowlTypeFull); }).length;
+    var arN9 = ps9.filter(function (p) { return p.role === "allRounder"; }).length;
+    var wkN9 = ps9.filter(function (p) { return p.keeper; }).length;
     var body =
       "<div class='fo-ob-card'>" +
       "<div class='fo-ob-eyebrow'>The charter is signed</div>" +
@@ -6402,17 +6412,18 @@
       "<span><b>" + E(FO_QS.abbr) + "</b> &middot; short name</span>" +
       "<span><b>" + pt.nm + "</b> home pitch</span>" +
       "<span>" + foQsFlag(FO_QS.country) + " " + E(FO_QS.country) + "</span>" +
-      "<span><b>15</b> players signed</span>" +
       "</div>" +
       "<div class='fo-qs-star'>" +
-      "<div class='fo-qs-star-tag'>" + foQsIcon(A.ic, 13) + " Franchise player &middot; " + A.nm + "</div>" +
+      "<div class='fo-qs-star-tag'>" + foQsIcon(A.ic, 13) + " " + A.nm + " &middot; your founding squad</div>" +
+      "<div class='fo-qs-star-meta' style='margin-top:4px'>" + E(A.line) + "</div>" +
+      "<div class='fo-qs-shape'><span><b>15</b> signed</span><span><b>" + paceN9 + "</b> quick" + (paceN9 === 1 ? "" : "s") + "</span><span><b>" + spinN9 + "</b> spinner" + (spinN9 === 1 ? "" : "s") + "</span><span><b>" + arN9 + "</b> all-rounders</span><span><b>" + wkN9 + "</b> keepers</span></div>" +
+      "<div class='fo-qs-star-tag' style='margin-top:12px'>Led by your franchise player</div>" +
       "<div class='fo-qs-star-nm'>" + E(starter.name || "") + "</div>" +
-      "<div class='fo-qs-star-meta'>" + E(A.role) + " &middot; age " + (starter.age || "?") + (bt ? " &middot; " + E(bt) : "") + (starter.hand === "L" ? " &middot; left-hand bat" : "") + "</div>" +
-      "<div class='fo-qs-star-meta' style='margin-top:6px'>" + E(A.line) + "</div>" +
+      "<div class='fo-qs-star-meta'>" + E(A.starRole || A.role) + " &middot; age " + (starter.age || "?") + (bt ? " &middot; " + E(bt) : "") + (starter.hand === "L" ? " &middot; left-hand bat" : "") + "</div>" +
       (tals ? "<div class='fo-qs-star-tal'>" + tals + "</div>" : "") +
       "</div>" +
       "<div class='fo-qs-fix' id='fo-qs-fix'>Checking the fixture list&hellip;</div>" +
-      "<p class='fo-ob-lead' style='margin-top:12px'>The rest of the squad is signed and paid for, your XI is ready to confirm, and the groundsman is already rolling the " + pt.nm.toLowerCase() + " deck at " + E(FO_QS.clubName) + " Oval.</p>" +
+      "<p class='fo-ob-lead' style='margin-top:12px'>The squad is signed and paid for, your XI is ready to confirm, and the groundsman is already rolling the " + pt.nm.toLowerCase() + " deck at " + E(FO_QS.clubName) + " Oval.</p>" +
       "</div>";
     var host = foQsShell(3, body, foQsCtaBar("Take me to my club", "fo-qs-enter"));
     foQsFixtureLine(function (line) { var el = document.getElementById("fo-qs-fix"); if (el) el.innerHTML = line; });
@@ -6602,7 +6613,7 @@
       return "<button type='button' class='fo-qs-arch" + (FO_TK.pick === id ? " on" : "") + "' data-a='" + id + "'>" +
         "<span class='fo-qs-aic'>" + foQsIcon(a.ic) + "</span>" +
         "<b class='fo-qs-anm'>" + a.nm + "</b>" +
-        "<span class='fo-qs-arole'>" + a.role + "</span>" +
+        "<span class='fo-qs-arole'>" + (a.starRole || a.role) + "</span>" +
         "<span class='fo-qs-aline'>" + a.line + "</span>" +
         "<span class='fo-qs-chips'>" + a.chips.map(function (s) { return "<i class='fo-qs-chip g'>" + s + "</i>"; }).join("") + "</span></button>";
     }).join("");
