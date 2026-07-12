@@ -10751,7 +10751,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260712-1900-8df616";
+  var FO_BUILD = "20260712-1919-21defa";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -11538,6 +11538,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         return;
       }
       window.__foRejoin = "gate";
+      window.__foRelaunchEpoch = ep;
+      // never finished founding a club (mid-draft when the relaunch hit, or a
+      // brand-new joiner)? nothing was retired - straight into the onboarding
+      if (!club) { foQsStart((SYNC && SYNC.myTeam) || {}); return; }
       foRelaunchGate(ep);
     }).catch(function () { window.__foRejoin = null; });
     return true;
@@ -13885,6 +13889,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var st = a[0];
       if (!st || !st.snapshot || !st.snapshot.teams) { if (!attempt) showWait(true); return; }
       var snap = st.snapshot;
+      try {
+        var era9 = foRelaunchEpochOf(snap);
+        if (era9 && +club.__foEpoch !== era9) {
+          club.__foEpoch = era9;
+          rpc("push_club", { p_league_id: LG.id, p_club: club, p_team_ix: null }).catch(function () {});
+        }
+      } catch (eE9) {}
       var already = snap.teams.some(function (t) { return t && t.name === club.name; });
       var target = already ? club.name : null;
       if (!target) {

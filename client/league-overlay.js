@@ -5186,6 +5186,10 @@
         return;
       }
       window.__foRejoin = "gate";
+      window.__foRelaunchEpoch = ep;
+      // never finished founding a club (mid-draft when the relaunch hit, or a
+      // brand-new joiner)? nothing was retired - straight into the onboarding
+      if (!club) { foQsStart((SYNC && SYNC.myTeam) || {}); return; }
       foRelaunchGate(ep);
     }).catch(function () { window.__foRejoin = null; });
     return true;
@@ -7533,6 +7537,13 @@
       var st = a[0];
       if (!st || !st.snapshot || !st.snapshot.teams) { if (!attempt) showWait(true); return; }
       var snap = st.snapshot;
+      try {
+        var era9 = foRelaunchEpochOf(snap);
+        if (era9 && +club.__foEpoch !== era9) {
+          club.__foEpoch = era9;
+          rpc("push_club", { p_league_id: LG.id, p_club: club, p_team_ix: null }).catch(function () {});
+        }
+      } catch (eE9) {}
       var already = snap.teams.some(function (t) { return t && t.name === club.name; });
       var target = already ? club.name : null;
       if (!target) {
