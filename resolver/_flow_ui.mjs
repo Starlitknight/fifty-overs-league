@@ -21,8 +21,7 @@ await page.screenshot({ path: out + '/ob04b-sponsor-picked.png' });
 await page.click('#fo-ob-c'); await shot('05-players');            // sponsor -> player primer 1
 for (let i = 0; i < 3; i++) { await page.click('#fo-ob-c'); await page.waitForTimeout(250); }
 await shot('05d-allrounder');
-await page.click('#fo-ob-c'); await shot('06-conditions');         // -> conditions
-await page.click('#fo-ob-c'); await shot('07-team');               // -> squad builder 1/3
+await page.click('#fo-ob-c'); await shot('07-team');               // -> squad builder 1/3 (no conditions dump)
 await page.click('.fo-qs-arch[data-a="express"]'); await page.waitForTimeout(200);
 await page.click('#fo-ob-c'); await shot('08-captains');           // -> captains 2/3
 await page.click('.fo-qs-capt[data-c="ironman"]'); await page.waitForTimeout(200);
@@ -68,9 +67,15 @@ console.log('TUT', JSON.stringify(await page.evaluate(() => ({
   open: !!document.getElementById('fo-tut'), plans: document.querySelectorAll('.fo-tut-plan').length
 }))));
 await page.screenshot({ path: out + '/ob11-tutorial.png' });
-await page.click('.fo-tut-plan[data-p="attack"]'); await page.waitForTimeout(1500);
-await page.evaluate(() => { try { let g = 0; while (typeof M !== 'undefined' && M && !M.done && g++ < 3000) { autoPick(); stepBall(); } } catch (e) {} });
-await page.waitForTimeout(5500);
+await page.click('.fo-tut-plan[data-p="attack"]'); await page.waitForTimeout(2000);
+console.log('SIMCTL', JSON.stringify(await page.evaluate(() => ({
+  btn: !!document.getElementById('fo-simres'),
+  turbo: !!document.querySelector("select[title='commentary speed'] option[value='200']"),
+  live: typeof M !== 'undefined' && M && !M.done
+}))));
+await page.screenshot({ path: out + '/ob11b-simbtn.png' });
+await page.click('#fo-simres');
+await page.waitForTimeout(10000);   // sim + tut watcher (2s poll) + 2.2s delay
 console.log('FULLTIME', JSON.stringify(await page.evaluate(() => ({
   modal: !!document.getElementById('fo-tut2'), txt: (document.querySelector('#fo-tut2 h3') || {}).textContent
 }))));

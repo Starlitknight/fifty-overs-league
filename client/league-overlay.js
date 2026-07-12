@@ -1060,6 +1060,8 @@
     ".fo-tut-plan b{font-size:14px;color:#0a2342}" +
     ".fo-tut-plan span{font-size:12px;color:#5b6472;line-height:1.35}" +
     ".fo-tut-plan:hover{border-color:#C95532;box-shadow:0 0 0 2px rgba(201,85,50,.15)}" +
+    "html body button#fo-simres,html body.ftpskin button#fo-simres{margin-left:auto;background:#C95532 !important;color:#FFFEFC !important;border:none !important;border-radius:8px;padding:6px 14px;font-weight:700;font-size:12.5px;cursor:pointer}" +
+    "html body button#fo-simres:disabled{opacity:.6;cursor:default}" +
     ".fo-qs-origin{font-size:11.5px;color:#8a6d1f;margin-top:3px;font-style:italic}" +
     // the engine skin's generic button rules (.ftpskin button, button.on) outrank
     // single-class selectors - pin the quick-start controls the house way
@@ -4489,9 +4491,9 @@
   // re-apply fixture match-times after any re-render of the game page
   try {
     var _mt = null, pg0 = document.getElementById("page");
-    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); }, 40); }).observe(pg0, { childList: true, subtree: true });
+    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} return r; }; }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} return r; }; }
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
@@ -6052,7 +6054,7 @@
     if (step && step !== "create") {
       FO_ONB.clubName = FO_ONB.clubName || "Thunder Empire";
       if (!App.founder || !App.founder.pool) App.founder = { name: FO_ONB.clubName, budget: 1000000, pool: buildCountryPool("fo-preview", FO_ONB.country), picked: [], identity: "Balanced XI" };
-      if (step === "draft" || step === "report" || step === "players" || step === "conditions") FO_ONB.sponsor = FO_ONB.sponsor || "community";
+      if (step === "draft" || step === "report" || step === "players") FO_ONB.sponsor = FO_ONB.sponsor || "community";
       if (step === "report" && !App.founder.picked.length) {
         // draft a legal squad WITHIN the $1M budget, best value first
         var _pool = App.founder.pool.slice(), _byR = function (a, b) { return (b.rating || 0) - (a.rating || 0); };
@@ -6071,7 +6073,7 @@
         App.founder.picked = _picked;
       }
     }
-    ({ create: foOnbCreate, charter: foOnbCharter, money: foOnbMoney, sponsor: foOnbSponsor, players: foOnbPlayers, conditions: foOnbConditions, draft: foOnbDraft, report: foOnbReport }[step || "create"] || foOnbCreate)();
+    ({ create: foOnbCreate, charter: foOnbCharter, money: foOnbMoney, sponsor: foOnbSponsor, players: foOnbPlayers, team: foObTeam, draft: foOnbDraft, report: foOnbReport }[step || "create"] || foOnbCreate)();
   } catch (e) { console.warn("onb preview", e); } };   // debug/test hook (harmless)
 
   // Draft happens in the game's OWN founder screen (pgFounder). We hand it a
@@ -6195,7 +6197,7 @@
   function FO_I(name, size) {
     return "<svg class='fo-i' width='" + (size || 18) + "' height='" + (size || 18) + "' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'>" + (FO_ICONS[name] || "") + "</svg>";
   }
-  var FO_STEPS = ["Club", "Charter", "Money", "Sponsor", "Players", "Conditions", "Squad", "Report"];
+  var FO_STEPS = ["Club", "Charter", "Money", "Sponsor", "Players", "Squad", "Report"];
   function foOnbShell(stepIx, body) {
     var prog = FO_STEPS.map(function (s, i) {
       var cls = i < stepIx ? "done" : (i === stepIx ? "on" : "");
@@ -6488,7 +6490,7 @@
       "<p class='fo-ob-lead'>Pick the squad's identity: real strengths, one honest weakness, a franchise captain to lead it. This is the club's DNA - it does not change.</p>" +
       "<div class='fo-qs-grid'>" + cards + "</div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'" + (FO_ONB.arch ? "" : " disabled") + ">Continue</button></div></div>";
-    var host = foOnbMount(6, body);
+    var host = foOnbMount(5, body);
     host.querySelectorAll(".fo-qs-arch").forEach(function (b) {
       b.addEventListener("click", function () {
         var prev = FO_ONB.arch;
@@ -6498,7 +6500,7 @@
         var c = host.querySelector("#fo-ob-c"); if (c) c.disabled = false;
       });
     });
-    host.querySelector("#fo-ob-b").addEventListener("click", foOnbConditions);
+    host.querySelector("#fo-ob-b").addEventListener("click", foOnbAllRounder);
     host.querySelector("#fo-ob-c").addEventListener("click", function () { if (FO_ONB.arch) foObCaptain(); });
   }
   // ---- 2 of 3 · the captain (full draft-card stat read-out) -----------------
@@ -6535,7 +6537,7 @@
       "<p class='fo-ob-lead'>Six leaders want the " + E(FO_ONB.clubName) + " armband. Each is the finished article in your squad's mould - every number below is real, and the rest of the squad is signed around whoever you pick.</p>" +
       "<div class='fo-qs-grid fo-qs-cgrid'>" + cards + "</div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'" + (FO_ONB.capt ? "" : " disabled") + ">Continue</button></div></div>";
-    var host = foOnbMount(6, body);
+    var host = foOnbMount(5, body);
     host.querySelectorAll(".fo-qs-capt").forEach(function (b) {
       b.addEventListener("click", function () {
         FO_ONB.capt = b.getAttribute("data-c");
@@ -6579,7 +6581,7 @@
       "<div class='fo-comp-note' id='fo-comp-note'></div>" +
       "<div class='fo-comp-money' id='fo-comp-money'></div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Sign the squad &#9654;</button></div></div>";
-    var host = foOnbMount(6, body);
+    var host = foOnbMount(5, body);
     var recalcT = null;
     var money = function () {
       try {
@@ -6637,6 +6639,47 @@
         return !!html;
       } catch (e) { return "ERR " + e.message; }
     } };
+
+  // ---- friendlies can be simmed to the result --------------------------------
+  // The engine's match centre plays every ball (800ms+ each - a quarter hour
+  // per match). For friendlies and the tutorial warm-up, add a turbo speed
+  // and a "Sim to the result" control so the manager decides how much
+  // cricket to watch.
+  function foMatchSimControls() {
+    try {
+      if (typeof App === "undefined" || !App || App.page !== "match") return;
+      if (!(typeof M !== "undefined" && M && !M.done)) return;
+      var isFr = (M.meta && M.meta.comp === "friendly") || (App.pending && App.pending.__friendly);
+      if (!isFr) return;
+      var page = document.getElementById("page"); if (!page) return;
+      var sel2 = page.querySelector("select[title='commentary speed']");
+      if (sel2 && !sel2.querySelector("option[value='200']")) {
+        var op = document.createElement("option"); op.value = "200"; op.textContent = "turbo";
+        sel2.insertBefore(op, sel2.firstChild);
+        if ((UI.apMs || 1600) === 200) { op.selected = true; }
+      }
+      if (!page.querySelector("#fo-simres")) {
+        var b = document.createElement("button");
+        b.id = "fo-simres"; b.type = "button"; b.textContent = "Sim to the result \u25B8";
+        var row = sel2 && sel2.closest(".ctlrow");
+        if (row) row.appendChild(b);
+        else page.insertBefore(b, page.firstChild);
+      }
+    } catch (e) {}
+  }
+  // one document-level handler survives the per-ball re-renders
+  document.addEventListener("click", function (ev) {
+    var b = ev.target && ev.target.closest ? ev.target.closest("#fo-simres") : null;
+    if (!b || b.disabled) return;
+    b.disabled = true; b.textContent = "Playing out the overs\u2026";
+    setTimeout(function () {
+      try {
+        var g = 0;
+        while (typeof M !== "undefined" && M && !M.done && g++ < 3000) { autoPick(); stepBall(); }
+        if (typeof window.route === "function") window.route();
+      } catch (e) {}
+    }, 30);
+  });
 
   // ---- the tutorial warm-up: one match, ONE strategic call ------------------
   // Launched from the club home right after founding. The captain's first
@@ -7211,7 +7254,7 @@
       ex: ex.ar, tag: "The all-rounder",
       gloss: ["footer"],
       extra: "<div class='fo-exp-talbox'><b>Talents</b> are permanent traits that fire in specific situations: a <i>Finisher</i> finds boundaries at the death, a <i>New-ball Specialist</i> is deadly in his first spell, a <i>Spin Killer</i> feasts on slow bowling. Tap any talent chip in the game to see what it does.</div>",
-      onBack: foOnbKeeper, next: "Read the conditions", onNext: foOnbConditions
+      onBack: foOnbKeeper, next: "Build your squad", onNext: function () { if (LG && LG.full_draft) foOnbDraft(); else foObTeam(); }
     });
   }
 
@@ -7300,23 +7343,6 @@
     ].join("");
     return { sec: sec, bowlers: bowlers, pitches: pitches, weathers: weathers,
       heat: "<div class='fo-exp-talbox'><b>Heat is a squad question.</b> In Humid, Hot and Scorching weather every player&rsquo;s fatigue clock runs faster: bowlers lose threat and control late in spells, set batters lose their edge sooner, and heavy workloads leave players tired for the next matchday at lower ball counts. On the hottest days a sixth bowling option, even a modest one, keeps every spell short and every bowler dangerous. Fitness decides who copes: stamina matters most for genuine quicks, then fast-medium, then the rest of the attack, then keepers, and least for pure batters. The captain carries a little extra for running the side. Quoted drain rates are for a frontline bowler of average fitness; the order screen shows the true range for your own squad on the day.</div>" };
-  }
-  function foOnbConditions() {
-    FO_ONB.step = 6;
-    var C = foCondCards();
-    var body =
-      "<div class='fo-ob-card fo-ob-mid'>" +
-      "<div class='fo-ob-eyebrow'>The game around the game</div>" +
-      "<h1 class='fo-ob-h1'>Conditions decide what matters</h1>" +
-      "<p class='fo-ob-lead'>Skills tell you how good a player is. Conditions decide which skills matter <i>today</i>. With the bowling styles covered, two things remain: the pitch under their feet and the sky above it. Every effect on this page is real in the match engine; none of it is flavour text.</p>" +
-      C.sec(1, "Pitch types", "half your matches are on your home pitch, so draft for it", C.pitches) +
-      C.sec(2, "Weather", "the forecast is shown before every lineup", C.weathers) +
-      C.heat +
-      "<p class='fo-ob-lead' style='margin-top:14px'>Next: build your squad. Pick its identity, its captain, and how many players to sign - <b>11 to 18</b>. Every signing takes a fee from your <b>$1,000,000</b> and draws a wage every matchday.</p>" +
-      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Build your squad &#9654;</button></div></div>";
-    var host = foOnbMount(5, body);
-    host.querySelector("#fo-ob-b").addEventListener("click", foOnbAllRounder);
-    host.querySelector("#fo-ob-c").addEventListener("click", function () { if (LG && LG.full_draft) foOnbDraft(); else foObTeam(); });
   }
   // Re-render only what a signing changes: the player's own card, the sticky
   // budget strip, the side panels, the rail pills and the footer. Rails and
@@ -7453,7 +7479,7 @@
       "<div class='fo-ob-act fo-dr-act'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c' " + (ready ? "" : "disabled") + ">Continue &#8594; Board report</button></div>" +
       (ready ? "" : "<div class='fo-dr-needs'>Need 11+ players, a keeper and 5+ bowling options to continue.</div>") +
       "</div>";
-    var host = foOnbMount(6, body);
+    var host = foOnbMount(5, body);
     if (keepScroll) requestAnimationFrame(function () {
       try {
         host.scrollTop = _pageY;
@@ -7474,7 +7500,7 @@
     host.querySelectorAll(".fo-dr-add").forEach(function (b) { b.addEventListener("click", function () { foOnbPick(b.getAttribute("data-p")); }); });
     host.querySelectorAll(".fo-dr-view").forEach(function (b) { b.addEventListener("click", function () { foDraftDetail(b.getAttribute("data-p")); }); });
     host.querySelectorAll(".fo-sq-x").forEach(function (b) { b.addEventListener("click", function () { foOnbPick(b.getAttribute("data-p")); }); });
-    host.querySelector("#fo-ob-b").addEventListener("click", foOnbConditions);
+    host.querySelector("#fo-ob-b").addEventListener("click", foOnbAllRounder);
     var c = host.querySelector("#fo-ob-c"); if (c) c.addEventListener("click", foOnbAfterDraft);
   }
 
@@ -7497,7 +7523,7 @@
       "<ul class='fo-ob-list fo-risk-list'><li>Forced player releases</li><li>Blocked signings</li><li>Supporter mood drop</li></ul>" +
       "<label class='fo-ob-check'><input type='checkbox' id='fo-ob-ack' " + (FO_ONB.riskAck ? "checked" : "") + "> I understand the risk</label>" +
       "<div class='fo-ob-act'><button class='fo-ob-ghost' id='fo-ob-revise'>Revise squad</button><button class='fo-ob-cta fo-cta-danger' id='fo-ob-cont' disabled>Continue anyway</button></div></div>";
-    var host = foOnbMount(6, body);
+    var host = foOnbMount(5, body);
     var ack = host.querySelector("#fo-ob-ack"), cont = host.querySelector("#fo-ob-cont");
     var sync = function () { FO_ONB.riskAck = ack.checked; cont.disabled = !ack.checked; };
     ack.addEventListener("change", sync); sync();
@@ -7546,7 +7572,7 @@
       starRow("Batting", batStr) + starRow("Bowling", bowlStr) + starRow("Fielding", fieldStr) + starRow("Keeping", keepStr) + "</div>" +
       "</aside></div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back to the squad</button><button class='fo-ob-cta' id='fo-ob-done'>Enter the League</button></div></div>";
-    var host = foOnbMount(7, body);
+    var host = foOnbMount(6, body);
     host.querySelector("#fo-ob-b").addEventListener("click", function () { if (LG && LG.full_draft) foOnbDraft(); else foObComp(); });
     host.querySelector("#fo-ob-done").addEventListener("click", foOnbCommit);
   }
