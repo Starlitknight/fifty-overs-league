@@ -1040,7 +1040,6 @@
     "tr.fo-capt-glow>td:first-child{border-left:3px solid #D9B75A}" +
     ".fo-dc.fo-capt-glow,.fo-sq-item.fo-capt-glow,.fo-c2-wr.fo-capt-glow,.fo-sq-mfx.fo-capt-glow,.fo-sqr-row.fo-capt-glow{background:linear-gradient(120deg,rgba(217,183,90,.16),rgba(217,183,90,.04)) !important;border-left:3px solid #D9B75A !important;border-radius:8px}" +
     ".fo-qs-origin-c{color:#8a6d1f;font-weight:600}" +
-    ".fo-qs-story{font-size:11.5px;color:#6b5d33;font-style:italic;margin-top:3px;line-height:1.45}" +
     // step 4: captain candidate cards - a full draft-card stat read-out under
     // a navy-and-gold captaincy band, unmistakably different
     ".fo-qs-cgrid{grid-template-columns:1fr 1fr}" +
@@ -1056,7 +1055,6 @@
     ".fo-qs-cnm{font-size:16.5px;font-weight:800;color:#0a2342;font-family:Georgia,'Times New Roman',serif}" +
     ".fo-qs-covr{margin-left:auto;font-size:10.5px;color:#5b6472}.fo-qs-covr b{font-size:13px;color:#0a2342}" +
     ".fo-qs-cmeta{font-size:11px;color:#5b6472}" +
-    ".fo-qs-cstory{font-size:11.5px;color:#4a5568;font-style:italic;line-height:1.42}" +
     ".fo-qs-capt .fo-dc-bars{grid-auto-flow:row;grid-template-columns:1fr;grid-template-rows:none;gap:3px;margin-top:6px;padding-top:7px;border-top:1px dashed rgba(10,35,66,.14)}" +
     ".fo-qs-capt .fo-db em{width:78px}" +
     // tutorial: the captain's first call
@@ -5734,23 +5732,17 @@
   // stamina vs experience, growth ahead vs wisdom now.
   var FO_CAPT_FLAVOURS = [
     { id: "general", nm: "The General", age: 29, capt: 96, q: 0.93, expAdj: 8,
-      chips: ["Lifts the whole XI in the field", "Never loses the plot"], trade: "Modest personal numbers",
-      story: "Turned down richer offers to build something of his own. Fielders swear the dots come easier when he is at mid-off, quietly moving people two steps at a time." },
+      chips: ["Lifts the whole XI in the field", "Never loses the plot"], trade: "Modest personal numbers" },
     { id: "talisman", nm: "The Talisman", age: 26, capt: 85, q: 1.00,
-      chips: ["The squad's outright best player", "Wins matches on his own"], trade: "Leads by deeds, not words",
-      story: "The most gifted cricketer this club will ever sign. Speeches are not his thing; the first over of a big chase usually is." },
+      chips: ["The squad's outright best player", "Wins matches on his own"], trade: "Leads by deeds, not words" },
     { id: "ironman", nm: "The Iron Man", age: 27, capt: 88, q: 0.95, stamMult: 1.3,
-      chips: ["Never tires, never rests", "Fresh for every matchday"], trade: "A shade below the very elite",
-      story: "Has not missed a game in six years, anywhere, for anyone. Trains before training. The physio's job is mostly watching him in disbelief." },
+      chips: ["Never tires, never rests", "Fresh for every matchday"], trade: "A shade below the very elite" },
     { id: "clutch", nm: "The Big Occasion", age: 28, capt: 90, q: 0.94, tempMult: 1.12, expAdj: 12,
-      chips: ["Pressure-proof temperament", "Made for the tight finishes"], trade: "Coasts through the quiet days",
-      story: "Career average: ordinary. Career average when it actually matters: ask the bowlers who had to defend seven off the last over against him." },
+      chips: ["Pressure-proof temperament", "Made for the tight finishes"], trade: "Coasts through the quiet days" },
     { id: "younggun", nm: "The Young Marshal", age: 24, capt: 87, q: 0.96, expAdj: -8, talentExtra: 1,
-      chips: ["Years of growth still ahead", "Trains faster than anyone"], trade: "Still earning his stripes",
-      story: "Captained every age-group side he ever played in. The old pros grumbled about taking orders from a kid - for about two matches." },
+      chips: ["Years of growth still ahead", "Trains faster than anyone"], trade: "Still earning his stripes" },
     { id: "master", nm: "The Old Master", age: 31, capt: 94, q: 0.95, expAdj: 16, stamMult: 0.8,
-      chips: ["Seen everything, twice", "Reads a game overs ahead"], trade: "The legs are going",
-      story: "Three titles, two comebacks and one famous last-ball single. Joins for one final project: yours." }
+      chips: ["Seen everything, twice", "Reads a game overs ahead"], trade: "The legs are going" }
   ];
   function foCaptFlavourById(id) { for (var i = 0; i < FO_CAPT_FLAVOURS.length; i++) if (FO_CAPT_FLAVOURS[i].id === id) return FO_CAPT_FLAVOURS[i]; return FO_CAPT_FLAVOURS[0]; }
   // Six deterministic candidates in the archetype's franchise mould. The
@@ -5772,7 +5764,6 @@
       want.concat(poolT).forEach(function (t) { if (p.talents.length >= nT || p.talents.indexOf(t) >= 0) return; if (foQsElig(p, t)) p.talents.push(t); });
       jsDerive(p);
       p.captFlavour = F.id;
-      p.backstory = F.story;
       return p;
     });
     // The Talisman's whole pitch is "the squad's outright best player" -
@@ -6011,7 +6002,6 @@
     starter.origin_tag = "Franchise captain - " + CF.nm + " of the founding squad";
     starter.archetype = A.id;
     starter.captFlavour = CF.id;
-    starter.backstory = CF.story;
     starter._prov = { how: "draft", s: seasonNow, founding: 1 };
     return { players: players, starter: starter.name, captFlavour: CF.id, arch: A.id };
   }
@@ -6612,7 +6602,6 @@
         "<span class='fo-qs-cmeta'>" + E(A.starRole || A.role) + " &middot; age " + pl.age + " &middot; " +
           (bt && !/does not bowl/i.test(bt) ? E(bt) : (pl.hand === "L" ? "left" : "right") + "-hand bat") +
           " &middot; exp " + E(pl.expWord || "") + "</span>" +
-        "<span class='fo-qs-cstory'>" + E(F.story) + "</span>" +
         "<span class='fo-qs-chips'>" + F.chips.map(function (s) { return "<i class='fo-qs-chip g'>" + s + "</i>"; }).join("") +
         "<i class='fo-qs-chip w'>" + F.trade + "</i>" + tals + "</span>" +
         bars +
@@ -6706,7 +6695,6 @@
       "<div class='fo-qs-star-tag' style='margin-top:12px'>Your captain &middot; " + E((foCaptFlavourById(FO_QS.capt) || {}).nm || "") + "</div>" +
       "<div class='fo-qs-star-nm'>" + E(starter.name || "") + " <i class='fo-capt-chip'>C</i></div>" +
       "<div class='fo-qs-star-meta'>" + E(A.starRole || A.role) + " &middot; age " + (starter.age || "?") + (bt ? " &middot; " + E(bt) : "") + (starter.hand === "L" ? " &middot; left-hand bat" : "") + "</div>" +
-      (starter.backstory ? "<div class='fo-qs-star-meta' style='margin-top:6px;font-style:italic'>" + E(starter.backstory) + "</div>" : "") +
       (tals ? "<div class='fo-qs-star-tal'>" + tals + "</div>" : "") +
       "</div>" +
       "<div class='fo-qs-fix' id='fo-qs-fix'>Checking the fixture list&hellip;</div>" +
@@ -6917,13 +6905,12 @@
     try {
       if (typeof App === "undefined" || !App || ["squad", "club", "player", "scout"].indexOf(App.page) < 0) return;
       var page = document.getElementById("page"); if (!page) return;
-      var tags = {}, capts = {}, stories = {};
+      var tags = {}, capts = {};
       ((typeof GD !== "undefined" && GD.teams) || []).forEach(function (t) {
         (t.players || []).forEach(function (p) {
           if (!p || !p.origin_tag) return;
           tags[p.name] = p.origin_tag;
           if (/Franchise captain/.test(p.origin_tag)) capts[p.name] = 1;
-          if (p.backstory) stories[p.name] = p.backstory;
         });
       });
       for (var k in tags) { k = null; break; }
@@ -6961,8 +6948,7 @@
               if (info && !page.querySelector(".fo-qs-origin")) {
                 var ln = document.createElement("div");
                 ln.className = "fo-qs-origin" + (capts[ndT] ? " fo-qs-origin-c" : "");
-                ln.innerHTML = (capts[ndT] ? "<i class='fo-capt-chip'>C</i> " : "\u2605 ") + E(tags[ndT]) +
-                  (stories[ndT] ? "<div class='fo-qs-story'>" + E(stories[ndT]) + "</div>" : "");
+                ln.innerHTML = (capts[ndT] ? "<i class='fo-capt-chip'>C</i> " : "\u2605 ") + E(tags[ndT]);
                 info.parentNode.insertBefore(ln, info.nextSibling);
               }
               break;
