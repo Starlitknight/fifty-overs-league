@@ -7393,19 +7393,24 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-dc.fo-capt-glow,.fo-sq-item.fo-capt-glow,.fo-c2-wr.fo-capt-glow,.fo-sq-mfx.fo-capt-glow,.fo-sqr-row.fo-capt-glow{background:linear-gradient(120deg,rgba(217,183,90,.16),rgba(217,183,90,.04)) !important;border-left:3px solid #D9B75A !important;border-radius:8px}" +
     ".fo-qs-origin-c{color:#8a6d1f;font-weight:600}" +
     ".fo-qs-story{font-size:11.5px;color:#6b5d33;font-style:italic;margin-top:3px;line-height:1.45}" +
-    // step 4: captain candidate cards - navy & gold, unmistakably different
+    // step 4: captain candidate cards - a full draft-card stat read-out under
+    // a navy-and-gold captaincy band, unmistakably different
     ".fo-qs-cgrid{grid-template-columns:1fr 1fr}" +
-    "html body button.fo-qs-capt,html body.ftpskin button.fo-qs-capt{position:relative;display:flex;flex-direction:column;gap:5px;text-align:left;padding:13px 12px 11px;border:1.5px solid rgba(217,183,90,.45) !important;border-radius:14px;background:linear-gradient(165deg,#0a2342,#132f52) !important;cursor:pointer;font:inherit;overflow:hidden;color:#dfe6ef !important}" +
-    ".fo-qs-capt:before{content:'';position:absolute;inset:0;background:radial-gradient(120% 80% at 85% -10%,rgba(217,183,90,.18),transparent 60%)}" +
-    ".fo-qs-capt>*{position:relative}" +
-    "html body button.fo-qs-capt.on,html body.ftpskin button.fo-qs-capt.on{border-color:#D9B75A !important;box-shadow:0 0 0 2px rgba(217,183,90,.4),0 12px 26px rgba(10,35,66,.35) !important}" +
-    ".fo-qs-capt.on:after{content:'\\2713';position:absolute;top:8px;right:10px;width:20px;height:20px;border-radius:50%;background:#D9B75A;color:#0a2342;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}" +
-    ".fo-qs-cflav{font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:#D9B75A;font-weight:800}" +
-    ".fo-qs-cnm{font-size:16px;font-weight:800;color:#FFFEFC;font-family:Georgia,'Times New Roman',serif}" +
-    ".fo-qs-cmeta{font-size:11px;color:#9fb0c4}.fo-qs-cmeta u{text-decoration:none;color:#EAD9A8;font-weight:700}" +
-    ".fo-qs-cstory{font-size:11.5px;color:#b8c2d1;font-style:italic;line-height:1.4;min-height:44px}" +
-    ".fo-qs-chip.cg{background:rgba(34,197,94,.16);color:#a7e3bd;border:1px solid rgba(34,197,94,.35)}" +
-    ".fo-qs-chip.cw{background:rgba(217,119,6,.18);color:#ecc190;border:1px solid rgba(217,119,6,.4)}" +
+    "html body button.fo-qs-capt,html body.ftpskin button.fo-qs-capt{position:relative;display:flex;flex-direction:column;text-align:left;padding:0 !important;border:1.5px solid rgba(184,147,58,.55) !important;border-radius:14px;background:#FFFEFC !important;cursor:pointer;font:inherit;overflow:hidden;color:#0a2342 !important}" +
+    "html body button.fo-qs-capt.on,html body.ftpskin button.fo-qs-capt.on{border-color:#D9B75A !important;box-shadow:0 0 0 2.5px rgba(217,183,90,.55),0 12px 26px rgba(10,35,66,.18) !important}" +
+    ".fo-qs-capt.on:after{content:'\\2713';position:absolute;top:7px;right:9px;width:20px;height:20px;border-radius:50%;background:#D9B75A;color:#0a2342;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}" +
+    ".fo-qs-cband{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;background:linear-gradient(120deg,#0a2342,#17365c);width:100%;box-sizing:border-box}" +
+    ".fo-qs-cflav{font-size:10.5px;letter-spacing:1.1px;text-transform:uppercase;color:#D9B75A;font-weight:800}" +
+    ".fo-qs-ccapt{font-size:10px;color:#9fb0c4;padding-right:16px}.fo-qs-ccapt u{text-decoration:none;color:#EAD9A8;font-weight:800}" +
+    ".fo-qs-cbody{display:flex;flex-direction:column;gap:5px;padding:10px 12px 11px;width:100%;box-sizing:border-box}" +
+    ".fo-qs-chead{display:flex;align-items:baseline;gap:7px}" +
+    ".fo-qs-cflag{font-size:13px}" +
+    ".fo-qs-cnm{font-size:16.5px;font-weight:800;color:#0a2342;font-family:Georgia,'Times New Roman',serif}" +
+    ".fo-qs-covr{margin-left:auto;font-size:10.5px;color:#5b6472}.fo-qs-covr b{font-size:13px;color:#0a2342}" +
+    ".fo-qs-cmeta{font-size:11px;color:#5b6472}" +
+    ".fo-qs-cstory{font-size:11.5px;color:#4a5568;font-style:italic;line-height:1.42}" +
+    ".fo-qs-capt .fo-dc-bars{grid-auto-flow:row;grid-template-columns:1fr;grid-template-rows:none;gap:3px;margin-top:6px;padding-top:7px;border-top:1px dashed rgba(10,35,66,.14)}" +
+    ".fo-qs-capt .fo-db em{width:78px}" +
     // tutorial: the captain's first call
     ".fo-tut-plan{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;margin-top:8px;padding:12px 13px;border:1.5px solid rgba(10,35,66,.14);border-radius:12px;background:#FFFEFC;cursor:pointer;font:inherit}" +
     ".fo-tut-plan b{font-size:14px;color:#0a2342}" +
@@ -7425,7 +7430,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     "html body button.fo-qs-arch{background:linear-gradient(170deg,#FFFEFC,#F7F3E9) !important;border:1.5px solid rgba(10,35,66,.14) !important}" +
     "html body button.fo-qs-arch.on,html body.ftpskin button.fo-qs-arch.on{background:linear-gradient(170deg,#FFFDF8,#FDEEE6) !important;border-color:#C95532 !important;box-shadow:0 0 0 2px rgba(201,85,50,.25),0 10px 22px rgba(10,35,66,.10) !important}" +
     "@media(max-width:700px){.fo-qs-pitches{grid-template-columns:1fr}.fo-qs-grid{grid-template-columns:1fr 1fr;gap:8px}.fo-qs-gold{flex-direction:column;align-items:stretch}.fo-qs-gold-r{min-width:0}}" +
-    "@media(max-width:420px){.fo-qs-cgrid{grid-template-columns:1fr}}" +
+    "@media(max-width:760px){.fo-qs-cgrid{grid-template-columns:1fr}}" +
     "@media(max-width:370px){.fo-qs-grid{grid-template-columns:1fr}}" +
     ".fo-ob-shell{min-height:100vh;background:radial-gradient(circle at 20% 0%,rgba(77,166,162,.08),transparent 34%),radial-gradient(circle at 85% 12%,rgba(200,103,74,.06),transparent 30%),linear-gradient(180deg,#EEEAE1 0%,#EDE8DB 100%);color:#111827;padding:24px 16px 48px}" +
     ".fo-ob-inner{max-width:960px;margin:0 auto}" +
@@ -10780,7 +10785,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260712-2235-b48df8";
+  var FO_BUILD = "20260712-2248-9eab24";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -12106,7 +12111,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foGenCaptainPool(seed, country, archId) {
     var A = foArchById(archId), st = A.starter || {};
     var firsts = {}, lasts = {};
-    return FO_CAPT_FLAVOURS.map(function (F) {
+    var out = FO_CAPT_FLAVOURS.map(function (F) {
       var rnd = window.rng(foQsHash(String(seed) + "|cap|" + archId + "|" + F.id));
       var p = foQsPlayer({ role: st.role || "topOrderBat", age: F.age, q: Math.min(0.99, 0.97 * (F.q || 1)) }, country, rnd, firsts, lasts);
       p.capt = F.capt;
@@ -12122,6 +12127,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       p.backstory = F.story;
       return p;
     });
+    // The Talisman's whole pitch is "the squad's outright best player" -
+    // per-candidate sampling noise must never contradict the card
+    var tal = null, best = 0;
+    out.forEach(function (p) { if (p.captFlavour === "talisman") tal = p; else best = Math.max(best, p.rating || 0); });
+    for (var g = 0; tal && g < 8 && (tal.rating || 0) <= best * 1.03; g++) {
+      for (var k in tal.skills) tal.skills[k] = Math.max(4, Math.min(96, Math.round(tal.skills[k] * 1.04)));
+      jsDerive(tal);
+    }
+    return out;
   }
   window.__foGenCaptainPool = foGenCaptainPool;
   window.__foCaptFlavours = FO_CAPT_FLAVOURS;
@@ -12931,17 +12945,30 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     FO_QS.step = 4;
     var A = foArchById(FO_QS.arch);
     if (!FO_QS.pool) FO_QS.pool = foGenCaptainPool(foQsSeed(), FO_QS.country, FO_QS.arch);
+    var flagOf = function (c) { try { return (typeof foFlag === "function" && foFlag(c)) || ""; } catch (e) { return ""; } };
     var cards = FO_QS.pool.map(function (pl, i) {
       var F = FO_CAPT_FLAVOURS[i];
       var cw = foWord(pl.capt) || "elite";
+      var bt = "";
+      try { bt = (typeof foBT === "function" && foBT(pl)) || pl.btLabel || ""; } catch (e) { bt = pl.btLabel || ""; }
+      var ttip = function (t) { try { return (typeof TALTIPS !== "undefined" && TALTIPS[t]) ? TALTIPS[t] : ""; } catch (e) { return ""; } };
+      var tals = (pl.talents || []).map(function (t) { return "<span class='fo-dc-tal' title='" + E(ttip(t)) + "'>" + E(foTalentName(t)) + "</span>"; }).join("");
+      var bars = "";
+      try { bars = foSkillBars(pl); } catch (e) {}
       return "<button type='button' class='fo-qs-capt" + (FO_QS.capt === F.id ? " on" : "") + "' data-c='" + F.id + "'>" +
-        "<span class='fo-qs-cflav'>" + E(F.nm) + "</span>" +
+        "<span class='fo-qs-cband'><span class='fo-qs-cflav'>" + E(F.nm) + "</span><span class='fo-qs-ccapt'><u>" + E(cw) + "</u> captaincy</span></span>" +
+        "<span class='fo-qs-cbody'>" +
+        "<span class='fo-qs-chead'>" + (flagOf(pl.nat) ? "<span class='fo-qs-cflag'>" + flagOf(pl.nat) + "</span>" : "") +
         "<b class='fo-qs-cnm'>" + E(pl.name) + "</b>" +
-        "<span class='fo-qs-cmeta'>" + E(A.starRole || A.role) + " &middot; age " + pl.age + " &middot; <u>" + E(cw) + "</u> captaincy</span>" +
+        "<span class='fo-qs-covr'>OVR <b>" + (pl.rating ? (pl.rating / 1000).toFixed(1) : "-") + "</b></span></span>" +
+        "<span class='fo-qs-cmeta'>" + E(A.starRole || A.role) + " &middot; age " + pl.age + " &middot; " +
+          (bt && !/does not bowl/i.test(bt) ? E(bt) : (pl.hand === "L" ? "left" : "right") + "-hand bat") +
+          " &middot; exp " + E(pl.expWord || "") + "</span>" +
         "<span class='fo-qs-cstory'>" + E(F.story) + "</span>" +
-        "<span class='fo-qs-chips'>" + F.chips.map(function (s) { return "<i class='fo-qs-chip cg'>" + s + "</i>"; }).join("") +
-        "<i class='fo-qs-chip cw'>" + F.trade + "</i></span>" +
-        "</button>";
+        "<span class='fo-qs-chips'>" + F.chips.map(function (s) { return "<i class='fo-qs-chip g'>" + s + "</i>"; }).join("") +
+        "<i class='fo-qs-chip w'>" + F.trade + "</i>" + tals + "</span>" +
+        bars +
+        "</span></button>";
     }).join("");
     var body =
       "<div class='fo-ob-card'>" +
