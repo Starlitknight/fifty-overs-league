@@ -7976,7 +7976,10 @@
               (GD.teams || []).forEach(function (t9) {
                 (t9.players || []).forEach(function (p9) {
                   var ps = String(p9.name || "").split(/\s+/); if (ps.length < 2) return;
-                  if (ps[0].charAt(0).toLowerCase() === mAb[1].toLowerCase() && ps.slice(1).join(" ").toLowerCase() === mAb[2].toLowerCase()) {
+                  var tgt9 = mAb[2].toLowerCase();
+                  // commentary abbreviations drop name particles: "de Kock" -> "T. Kock"
+                  if (ps[0].charAt(0).toLowerCase() === mAb[1].toLowerCase() &&
+                      (ps.slice(1).join(" ").toLowerCase() === tgt9 || ps[ps.length - 1].toLowerCase() === tgt9)) {
                     if (cand && cand !== p9) dupe = true; cand = p9;
                   }
                 });
@@ -7998,6 +8001,10 @@
             if (cand9 && !dupe9) hit = { p: cand9 };
           }
           if (!hit || !hit.p) return;
+          // a name we resolved is a name you can visit
+          if (!td.querySelector("a") && hit.p.name) {
+            try { nameEl9.innerHTML = "<a href='#/player?n=" + encodeURIComponent(hit.p.name) + "'>" + nameEl9.innerHTML + "</a>"; } catch (eLk9) {}
+          }
           var host = nameEl9 === td ? (td.querySelector("b") || td) : nameEl9;
           var add9 = "";
           if (isBowl9) {
