@@ -10751,7 +10751,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260712-1604-88a561";
+  var FO_BUILD = "20260712-1900-8df616";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10974,6 +10974,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       sendReset: sendReset, joinNew: doJoinSignup,
       openId: function () { enterGameById(t.getAttribute("data-id")); }, join: joinLeague,
       startLeague: startLeague, mkInvite: mkInvite,
+      relaunch: relaunchLeague, refound: foRefound,
       delTeam: function () { delTeam(t.getAttribute("data-id"), t.getAttribute("data-name")); },
       draftMine: draftMine, practice: practice,
       reload: function () { location.reload(); },
@@ -11197,6 +11198,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           // pulls us in automatically once a snapshot that includes us is pushed.
           SYNC.lastVersion = st.version; SYNC.started = true;
           schedulePoll();
+          // a relaunched league greets old-era clubs with the relaunch note
+          if (foRelaunchCheck(st.snapshot)) return;
           // a club that was drafted and confirmed but fell out of the snapshot
           // (its join was clobbered by the 9 AM banking or lost a joiner race)
           // re-splices itself instead of stranding the manager in the lobby.
@@ -11403,7 +11406,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
               ? '<button class="p" data-act="startLeague">' + startLabel + '</button>' +
                 '<div class="folsmall" style="margin-top:4px">' +
                 (allReady ? "" : "Clubs still drafting join automatically when they finish · they take over a bot club. ") +
-                (solo ? "Empty slots fill with bot clubs to make a full 10-team league." : "") + "</div>"
+                (solo ? "Empty slots fill with bot clubs to make a full 10-team league." : "") + "</div>" +
+                (SYNC.started ? '<button class="mini" data-act="relaunch" style="margin-top:8px;background:#5a2620;border-color:#7a3a30;color:#f0d0c8">Relaunch league · new format, everyone re-founds ▸</button>' : "")
               : '<div class="folsmall">The season starts once at least one club has drafted.</div>') +
             '<div style="margin-top:8px"><button class="mini" data-act="mkInvite">Create invite code</button> <span id="folInvite" class="folsmall"></span></div>' +
           "</div>"
@@ -11469,10 +11473,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // With only one human club, the game's own bot teams fill the league so there
   // is something to play; with two or more, it is a pure human league.
   function startLeague() {
-    sel("league_clubs", "league_id=eq." + LG.id + "&select=club,manager_id").then(function (clubs) {
-      if (!clubs || !clubs.length) { say("Draft your squad first, then start the season."); return; }
+    // after a relaunch, only clubs founded in the current era may be rebuilt -
+    // retired squads from the old era must never ride back in
+    sel("league_state", "league_id=eq." + LG.id + "&select=snapshot").then(function (aSt) {
+      var era = foRelaunchEpochOf(aSt && aSt[0] && aSt[0].snapshot);
+      return sel("league_clubs", "league_id=eq." + LG.id + "&select=club,manager_id").then(function (clubs) {
+      if (era) clubs = (clubs || []).filter(function (c) { return c && c.club && +c.club.__foEpoch === era; });
+      if (!clubs || !clubs.length) { say(era ? "No club from the relaunched era yet - found yours first, then start." : "Draft your squad first, then start the season."); return; }
       try {
         var world = fillBots(clubs.map(function (c) { return c.club; }));   // top up to a full 10-team league
+        if (era) world.forEach(function (t) { t.__foEpoch = era; });        // the era rides on every team, bots included
         GD.teams = world;
         if (typeof window.econInit === "function") window.econInit();
         var myName = SYNC.myTeam ? SYNC.myTeam.name : null;
@@ -11494,8 +11504,119 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           schedulePoll();
         }).catch(say);
       } catch (e) { say(e); }
+      });
     }).catch(say);
   }
+
+  // ===========================================================================
+  //  LEAGUE RELAUNCH · new format, everyone re-founds
+  //  The commissioner resets the world to fresh bot clubs stamped with a new
+  //  era ("epoch"). Every club record carries its era: a manager whose club
+  //  belongs to an older era is met with a short note about the relaunch and
+  //  walked through the quick-start; their new club replaces a bot via the
+  //  battle-tested running-season join. No schema changes - the epoch rides
+  //  inside the club JSON and the snapshot's team records.
+  // ===========================================================================
+  function foRelaunchEpochOf(snap) {
+    var ep = 0;
+    try { ((snap && snap.teams) || []).forEach(function (t) { if (t && +t.__foEpoch > ep) ep = +t.__foEpoch; }); } catch (e) {}
+    return ep;
+  }
+  // Shared by the sync loop and the poll: when the snapshot belongs to a newer
+  // era than my club record, show the relaunch note instead of auto-rejoining.
+  // Returns true when the relaunch flow has taken over.
+  function foRelaunchCheck(snap) {
+    var ep = foRelaunchEpochOf(snap);
+    if (!ep || myClubInSnap(snap)) return false;
+    if (window.__foRejoin === "busy" || window.__foRejoin === "gate") return true;
+    window.__foRejoin = "busy";
+    sel("league_clubs", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&select=club").then(function (rows) {
+      var club = rows && rows[0] && rows[0].club;
+      // same era? then this is just a clobbered join - re-splice as before
+      if (club && +club.__foEpoch === ep && club.name && club.players && club.players.length) {
+        foJoinRunningSeason(JSON.parse(JSON.stringify(club)));
+        return;
+      }
+      window.__foRejoin = "gate";
+      foRelaunchGate(ep);
+    }).catch(function () { window.__foRejoin = null; });
+    return true;
+  }
+  // The message existing managers see, and the door into the new onboarding.
+  function foRelaunchGate(epoch) {
+    try {
+      window.__foRelaunchEpoch = epoch;
+      openWrap(true); setNavy(true);
+      var who = wrap.querySelector("#folWho"); if (who) who.textContent = LG ? LG.name : "";
+      main.innerHTML = folAuthShell(
+        "<h1>A new season is starting</h1>" +
+        '<div class="fol-sub">Your commissioner has relaunched the league with a new format. Old clubs are retired with honour - everyone founds a fresh one and the table starts from zero.</div>' +
+        '<div class="fol-form">' +
+        '<div class="folsmall" style="line-height:1.6;margin-bottom:4px">Founding a club now takes about two minutes: pick a <b>name</b>, a <b>home pitch</b> and the <b>kind of team</b> you want. The squad, the money and a suggested first XI are all handled - your first match plays at <b>9:00 AM ET</b>.</div>' +
+        '<button class="fol-cta" data-act="refound">Found my new club ▸</button>' +
+        "</div>" +
+        '<div class="fol-links"><a class="fol-mut" data-act="logout">Log out</a></div>' + FOOT);
+    } catch (e) { say(e); }
+  }
+  function foRefound() {
+    try {
+      // retire this device's old-club state so nothing bleeds into the new era
+      try {
+        window.store("fo_onb_done", ""); lsDel("fo_qs_new");
+        if (SYNC) {
+          SYNC.submitted = {}; SYNC.submittedLoaded = false; SYNC.pushedSig = {};
+          SYNC.plannedOrders = {}; foSavePlanned();
+          SYNC.lastOrderSig = null;
+        }
+      } catch (e) {}
+      foQsStart((SYNC && SYNC.myTeam) || {});
+    } catch (e) { say(e); }
+  }
+  // Commissioner action: reset the world to fresh bots (pitched at the
+  // quick-start strength budget), stamp the new era, push round 0, and walk
+  // straight into the new onboarding yourself.
+  function relaunchLeague() {
+    var sure = confirm("Relaunch the league with the new format?\n\nEvery current club is retired, the table and results reset, and every manager - including you - founds a fresh club through the new three-step onboarding. Managers see a note explaining the relaunch the next time they open the game.\n\nThis cannot be undone.");
+    if (!sure) return;
+    try {
+      var epoch = Date.now();
+      var world = fillBots([]);
+      // bots pitched at the quick-start budget, not at whatever the old squads were
+      try {
+        var ref = foGenArchetypeSquad("relaunch-" + ((LG && LG.id) || "x"), NAT[0], "rock").players;
+        var refAvg = ref.reduce(function (s, p) { return s + (p.rating || 0); }, 0) / Math.max(1, ref.length);
+        world.forEach(function (t, i) {
+          var tgt = refAvg * (0.97 + ((i * 89) % 70) / 1000);
+          for (var pass = 0; pass < 5; pass++) {
+            var avg = t.players.reduce(function (s, p) { return s + (p.rating || 0); }, 0) / Math.max(1, t.players.length);
+            var f = Math.max(0.5, Math.min(1.7, tgt / Math.max(1, avg)));
+            if (Math.abs(f - 1) < 0.02) break;
+            var sf = Math.pow(f, 0.85);
+            t.players.forEach(function (p) { for (var k in p.skills) p.skills[k] = Math.max(4, Math.min(96, Math.round(p.skills[k] * sf))); if (typeof window.jsDerive === "function") window.jsDerive(p); });
+          }
+        });
+      } catch (eCal) {}
+      world.forEach(function (t) { t.__foEpoch = epoch; });
+      GD.teams = world;
+      if (typeof window.econInit === "function") window.econInit();
+      App.teamIx = 0;
+      App.season = null; if (typeof window.seasonInit === "function") window.seasonInit();
+      App.round = 1; App.seasonNo = 1; App.results = []; App.playerHist = {};
+      App.cup = { stage: 0, alive: null, results: [], out: false };
+      if (typeof window.mpInit === "function") window.mpInit();
+      var snap = (typeof window.snapshot === "function") ? window.snapshot(true) : null;
+      if (!snap) { say("Game engine not ready. Reload and try again."); return; }
+      rpc("push_league_state", { p_league_id: LG.id, p_snapshot: snap, p_round: 0 }).then(function (ver) {
+        SYNC.lastVersion = typeof ver === "number" ? ver : ((SYNC.lastVersion || 0) + 1);
+        SYNC.started = true;
+        window.__foRelaunchEpoch = epoch;
+        window.__foRejoin = null;
+        toast("League relaunched · now found your own new club.");
+        foRefound();
+      }).catch(say);
+    } catch (e) { say(e); }
+  }
+  window.__foRelaunch = { epochOf: foRelaunchEpochOf, gate: foRelaunchGate, go: relaunchLeague, check: foRelaunchCheck };
 
   // Background sync loop: push my saved orders as a packet; pull new snapshots.
   function schedulePoll() {
@@ -11573,7 +11694,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if (document.getElementById("fo-onb")) return;               // never yank the draft room away mid-pick
       SYNC.lastVersion = st.version;
       // auto-enter once a rebuild includes us; if we were parked in the lobby, land on the club page
-      if (myClubInSnap(st.snapshot)) applySnapshot(st.snapshot, wrap.classList.contains("on"));
+      if (myClubInSnap(st.snapshot)) { applySnapshot(st.snapshot, wrap.classList.contains("on")); return; }
+      // mid-session relaunch: stop play and show the note right away
+      foRelaunchCheck(st.snapshot);
     }).catch(function () {});
   }
 
@@ -12792,7 +12915,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         __league: (LG && LG.id) ? { league_id: LG.id, team_id: team.id } : null
       };
       try {
-        window.store("fo_onb_done", "1"); window.store("fo_sponsor", "community");
+        window.store("fo_onb_done", "1");
         window.store("fo_ground", FO_QS.clubName + " Oval"); window.store("fo_pitch", FO_QS.pitch);
         lsSet("fo_qs_new", "1");
       } catch (e) {}
@@ -12802,19 +12925,26 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var t0 = GD.teams[App.teamIx || 0];
         if (t0) {
           t0.ground = FO_QS.clubName + " Oval"; t0.homePitch = FO_QS.pitch;
-          t0.sponsor = "community"; t0.abbr = FO_QS.abbr || foQsAbbrOf(FO_QS.clubName);
+          t0.abbr = FO_QS.abbr || foQsAbbrOf(FO_QS.clubName);
           t0.archetype = FO_QS.arch; t0.bank = 200000;
-          var deal0 = foSponsorById("community");
-          t0.sponsorDeal = { id: deal0.id, base: deal0.base, win: deal0.win, halfway: deal0.halfway, seasonTop3: deal0.seasonTop3, champ: deal0.champ };
+          // NO sponsor deal at founding: the books run on safe community terms
+          // ($45k/matchday) until the manager signs their one real deal at the
+          // Office - the game's one money gamble, taken when they understand it
+          delete t0.sponsor; delete t0.sponsorDeal;
+          // a relaunch stamps its era on every club so stale records never
+          // sneak back in through the auto-rejoin
+          var ep0 = window.__foRelaunchEpoch || foRelaunchEpochOf({ teams: (typeof GD !== "undefined" && GD.teams) || [] });
+          if (ep0) t0.__foEpoch = ep0;
         }
       } catch (e) {}
+      window.__foRejoin = null;  // a gated/parked rejoin must not block the post-commit splice
       window.founderConfirm();   // engine builds GD.teams[ix]; league wrapper uploads + joins/lobbies
       try {
         var t = GD.teams[App.teamIx];
         if (t) (t.players || []).forEach(function (dp) { dp._prov = dp._prov || { how: "draft", s: App.seasonNo || 1 }; });
         // the whole grant story: ~$800k went on signings, $200k stays as the
         // operating reserve - the same for every quick-start club
-        if (App.fin) { App.fin.bank = 200000; App.fin.sponsorBase = foSponsorById("community").base; }
+        if (App.fin) { App.fin.bank = 200000; }
         if (t) t.bank = 200000;
         if (typeof window.saveGame === "function") window.saveGame(false);
       } catch (e) {}
@@ -13731,8 +13861,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         try {
           var club = JSON.parse(JSON.stringify(GD.teams[App.teamIx]));
           rpc("push_club", { p_league_id: lg.league_id, p_club: club, p_team_ix: null }).then(function () {
-            // Season already running? No waiting room · take over a bot club and play.
-            if (SYNC && SYNC.started && !(SYNC.isFounder)) { foJoinRunningSeason(club); return; }
+            // Season already running? No waiting room · take over a bot club and
+            // play. During a relaunch that includes the commissioner.
+            if (SYNC && SYNC.started && (!SYNC.isFounder || window.__foRelaunchEpoch)) { foJoinRunningSeason(club); return; }
             showWait(true);
           }).catch(say);
         } catch (e) { say(e); }
