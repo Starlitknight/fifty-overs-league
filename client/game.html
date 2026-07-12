@@ -7329,6 +7329,74 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     "@media(max-width:900px){.fo-ch-stats{grid-template-columns:repeat(2,1fr)}.fo-ch-grid{grid-template-columns:1fr}.fo-ch-leaders{grid-template-columns:1fr}.fo-ch-name{font-size:26px}.fo-ch-hero{flex-direction:column;align-items:flex-start}}" +
     // ===== FIRST-LOGIN ONBOARDING =====
     "#fo-onb{position:fixed;inset:0;z-index:100000;overflow:auto}" +
+    // ---- quick-start onboarding (name → pitch → starter → confirm) ----
+    ".fo-qs-wrap{max-width:720px;margin:0 auto;padding:18px 16px 120px}" +
+    ".fo-qs-top{display:flex;align-items:center;justify-content:space-between;margin:2px 2px 14px}" +
+    ".fo-qs-brand{font-weight:800;letter-spacing:1.2px;color:#0a2342;font-size:12px;text-transform:uppercase}" +
+    ".fo-qs-dots{display:flex;gap:7px;align-items:center}" +
+    ".fo-qs-dot{width:8px;height:8px;border-radius:50%;background:rgba(10,35,66,.18);transition:all .2s}" +
+    ".fo-qs-dot.on{background:#C95532;transform:scale(1.3)}" +
+    ".fo-qs-dot.done{background:#0a2342}" +
+    ".fo-qs-cty{margin-top:14px;font-size:12.5px;color:#4a5568}" +
+    ".fo-qs-cty a{color:#C95532;cursor:pointer;margin-left:8px;text-decoration:underline dotted}" +
+    ".fo-qs-abbr{width:110px !important;text-transform:uppercase;letter-spacing:2px;font-weight:700}" +
+    ".fo-qs-pitches{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}" +
+    ".fo-qs-pitch{display:flex;flex-direction:column;gap:3px;text-align:left;padding:12px 13px;border:1.5px solid rgba(10,35,66,.14);border-radius:12px;background:#FFFEFC;cursor:pointer;font:inherit}" +
+    ".fo-qs-pitch b{font-size:14px;color:#0a2342}" +
+    ".fo-qs-pitch span{font-size:12px;color:#5b6472;line-height:1.35}" +
+    ".fo-qs-pitch.on{border-color:#C95532;box-shadow:0 0 0 2px rgba(201,85,50,.22);background:#FFF6F2}" +
+    ".fo-qs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}" +
+    ".fo-qs-arch{position:relative;display:flex;flex-direction:column;gap:5px;text-align:left;padding:13px 12px 11px;border:1.5px solid rgba(10,35,66,.14);border-radius:14px;background:linear-gradient(170deg,#FFFEFC,#F7F3E9);cursor:pointer;font:inherit;overflow:hidden}" +
+    ".fo-qs-arch.on{border-color:#C95532;box-shadow:0 0 0 2px rgba(201,85,50,.25),0 10px 22px rgba(10,35,66,.10);background:linear-gradient(170deg,#FFFDF8,#FDEEE6)}" +
+    ".fo-qs-arch.on:after{content:'\\2713';position:absolute;top:8px;right:10px;width:20px;height:20px;border-radius:50%;background:#C95532;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center}" +
+    ".fo-qs-aic{width:34px;height:34px;border-radius:10px;background:#0a2342;color:#F5EFDC;display:flex;align-items:center;justify-content:center}" +
+    ".fo-qs-anm{font-size:15.5px;font-weight:800;color:#0a2342;font-family:Georgia,'Times New Roman',serif}" +
+    ".fo-qs-arole{font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;color:#C95532;font-weight:700;margin-top:-3px}" +
+    ".fo-qs-aline{font-size:12px;color:#4a5568;line-height:1.35;font-style:italic;min-height:32px}" +
+    ".fo-qs-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}" +
+    ".fo-qs-chip{font-style:normal;font-size:10.5px;font-weight:600;padding:3px 7px;border-radius:99px;line-height:1.15}" +
+    ".fo-qs-chip.g{background:rgba(22,163,74,.12);color:#166534;border:1px solid rgba(22,163,74,.25)}" +
+    ".fo-qs-chip.w{background:rgba(217,119,6,.12);color:#92400e;border:1px solid rgba(217,119,6,.28)}" +
+    ".fo-qs-syn{font-size:11px;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(10,35,66,.14);color:#166534;line-height:1.3}" +
+    ".fo-qs-syn.bad{color:#92400e}" +
+    ".fo-qs-ctabar{position:fixed;left:0;right:0;bottom:0;z-index:6;padding:10px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,#F5EFDC 62%,rgba(245,239,220,0));display:flex;gap:10px;justify-content:center;align-items:stretch}" +
+    ".fo-qs-cta{flex:1;max-width:420px;height:50px;border:none;border-radius:13px;background:#C95532;color:#FFFEFC;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 10px 24px rgba(201,85,50,.35)}" +
+    ".fo-qs-cta:disabled{opacity:.45;cursor:default;box-shadow:none}" +
+    ".fo-qs-sum{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 2px}" +
+    ".fo-qs-sum span{font-size:12px;background:#FFFEFC;border:1px solid rgba(10,35,66,.12);padding:6px 10px;border-radius:9px;color:#0a2342}" +
+    ".fo-qs-star{background:linear-gradient(160deg,#0a2342,#12355c);border-radius:16px;padding:18px;color:#e8e4d5;position:relative;overflow:hidden;margin:12px 0;border:1px solid rgba(217,183,90,.5)}" +
+    ".fo-qs-star:before{content:'';position:absolute;inset:0;background:radial-gradient(120% 90% at 85% -10%,rgba(217,183,90,.22),transparent 60%)}" +
+    ".fo-qs-star>*{position:relative}" +
+    ".fo-qs-star-tag{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:#D9B75A;font-weight:700;display:flex;align-items:center;gap:6px}" +
+    ".fo-qs-star-nm{font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:800;color:#FFFEFC;margin:3px 0 1px}" +
+    ".fo-qs-star-meta{font-size:12.5px;color:#b8c2d1}" +
+    ".fo-qs-star-tal{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}" +
+    ".fo-qs-star-tal i{font-style:normal;font-size:10.5px;padding:3px 8px;border-radius:99px;background:rgba(217,183,90,.16);border:1px solid rgba(217,183,90,.4);color:#EAD9A8}" +
+    ".fo-qs-fix{margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25);color:#14532d;font-size:13.5px;line-height:1.4}" +
+    // golden first-session strip on the club home
+    ".fo-qs-gold{display:flex;gap:14px;align-items:center;justify-content:space-between;border:1.5px solid rgba(201,85,50,.45);background:linear-gradient(150deg,#FFF9EF,#FDEEE0);border-radius:14px;padding:14px 16px;margin:0 0 14px}" +
+    ".fo-qs-gk{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:#C95532;font-weight:800}" +
+    ".fo-qs-gt{font-weight:800;color:#0a2342;font-size:15.5px;margin:2px 0}" +
+    ".fo-qs-gs{font-size:12.5px;color:#5b6472;line-height:1.4}" +
+    ".fo-qs-gold-r{display:flex;flex-direction:column;align-items:stretch;min-width:170px}" +
+    ".fo-qs-gtweak{font-size:12px;color:#C95532;cursor:pointer;margin-top:7px;text-align:center;text-decoration:underline dotted}" +
+    ".fo-qs-gold-ok{font-size:14px;color:#166534;font-weight:600;line-height:1.5}" +
+    ".fo-qs-gold-ok a{color:#C95532;cursor:pointer}" +
+    ".fo-qs-fp{font-style:normal;color:#D9B75A;margin-left:4px;cursor:help;font-size:.85em;vertical-align:1px}" +
+    ".fo-qs-origin{font-size:11.5px;color:#8a6d1f;margin-top:3px;font-style:italic}" +
+    // the engine skin's generic button rules (.ftpskin button, button.on) outrank
+    // single-class selectors - pin the quick-start controls the house way
+    "html body button.fo-qs-cta,html body.ftpskin button.fo-qs-cta{background:#C95532 !important;color:#FFFEFC !important;border:none !important;font-size:16px !important;font-weight:800 !important}" +
+    "html body button.fo-qs-cta:hover{background:#B54A2B !important}" +
+    "html body button.fo-qs-cta:disabled,html body.ftpskin button.fo-qs-cta:disabled{background:rgba(10,35,66,.10) !important;color:rgba(10,35,66,.45) !important;box-shadow:none !important}" +
+    "html body button.fo-qs-pitch,html body.ftpskin button.fo-qs-pitch,html body button.fo-qs-arch,html body.ftpskin button.fo-qs-arch{color:#0a2342 !important}" +
+    "html body button.fo-qs-pitch{background:#FFFEFC !important;border:1.5px solid rgba(10,35,66,.14) !important}" +
+    "html body button.fo-qs-pitch.on,html body.ftpskin button.fo-qs-pitch.on{background:#FFF6F2 !important;border-color:#C95532 !important;box-shadow:0 0 0 2px rgba(201,85,50,.22) !important}" +
+    "html body button.fo-qs-pitch b{color:#0a2342 !important}html body button.fo-qs-pitch span{color:#5b6472 !important}" +
+    "html body button.fo-qs-arch{background:linear-gradient(170deg,#FFFEFC,#F7F3E9) !important;border:1.5px solid rgba(10,35,66,.14) !important}" +
+    "html body button.fo-qs-arch.on,html body.ftpskin button.fo-qs-arch.on{background:linear-gradient(170deg,#FFFDF8,#FDEEE6) !important;border-color:#C95532 !important;box-shadow:0 0 0 2px rgba(201,85,50,.25),0 10px 22px rgba(10,35,66,.10) !important}" +
+    "@media(max-width:700px){.fo-qs-pitches{grid-template-columns:1fr}.fo-qs-grid{grid-template-columns:1fr 1fr;gap:8px}.fo-qs-gold{flex-direction:column;align-items:stretch}.fo-qs-gold-r{min-width:0}}" +
+    "@media(max-width:370px){.fo-qs-grid{grid-template-columns:1fr}}" +
     ".fo-ob-shell{min-height:100vh;background:radial-gradient(circle at 20% 0%,rgba(77,166,162,.08),transparent 34%),radial-gradient(circle at 85% 12%,rgba(200,103,74,.06),transparent 30%),linear-gradient(180deg,#EEEAE1 0%,#EDE8DB 100%);color:#111827;padding:24px 16px 48px}" +
     ".fo-ob-inner{max-width:960px;margin:0 auto}" +
     ".fo-ob-prog{display:flex;align-items:center;justify-content:center;gap:4px;margin:6px 0 20px;flex-wrap:wrap}" +
@@ -9133,7 +9201,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           "<div class='fo-fin-line'><b>" + rep0.gains.length + "</b> training gain" + (rep0.gains.length === 1 ? "" : "s") + " after the last matchday." +
           "<div class='small' style='margin-top:4px'>" + E(rep0.gains[0] || "") + (rep0.gains.length > 1 ? " &middot; +" + (rep0.gains.length - 1) + " more" : "") + "</div></div></div></div>";
       }
-      var html = "<div class='fo-ch fo-ch-min'>" + search + hero + "<div id='fo-chal-alert'></div>" + stats +
+      // first-session golden path: exactly ONE "needs you today" item
+      var goldCard = "";
+      try { goldCard = foQsGolden(nxt, ordersIn, t); } catch (eQg) {}
+      var html = "<div class='fo-ch fo-ch-min'>" + search + hero + goldCard + "<div id='fo-chal-alert'></div>" + stats +
         "<div class='fo-c2-grid'>" + newsCard + standings + fxCard + watchCard + "</div>" +
         "<div class='fo-c2-bottom'>" + leadBat + leadBowl + leadCombo + msCard + fin + "</div></div>";
       setTimeout(foNextFriendly, 80);
@@ -9149,6 +9220,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       page.querySelectorAll(".fo-scoutname").forEach(function (c) { c.addEventListener("click", function () { scoutClub(c.textContent || ""); }); });
       var cta = page.querySelector(".fo-next-cta[data-r]");
       if (cta) cta.addEventListener("click", function () { foSetOrdersForRound(+cta.getAttribute("data-r")); });
+      foQsGoldenWire(page);
       page.querySelectorAll(".fo-todo a[data-go]").forEach(function (a) {
         a.addEventListener("click", function () {
           var go = a.getAttribute("data-go");
@@ -10676,7 +10748,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260712-1341-8d383e";
+  var FO_BUILD = "20260712-1512-4e62c9";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10724,9 +10796,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // re-apply fixture match-times after any re-render of the game page
   try {
     var _mt = null, pg0 = document.getElementById("page");
-    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foStatsClubTags(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); }, 40); }).observe(pg0, { childList: true, subtree: true });
+    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foStatsClubTags(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} return r; }; }
+  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} return r; }; }
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
@@ -10793,6 +10865,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
   function foOnHash() {
     try {
+      // #/create: the quick-start flow, straight off the invite link. A manager
+      // who already founded a club just lands on the club home.
+      if ((location.hash || "").indexOf("#/create") === 0) {
+        location.hash = "#/club"; foOnHash._last = "#/club";
+        if (LG && SYNC && !lsGet("fo_onb_done") && !window.store("fo_onb_done")) startDraft((SYNC && SYNC.myTeam) || {});
+        return;
+      }
       // Saving orders for a challenge friendly: attach the lineup to the
       // challenge and land back on Matches with a spelled-out confirmation.
       if (foHashPath() === "#/match" && App && App.pending && App.pending.__chal) {
@@ -11702,6 +11781,365 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
 
   window.__folBuildPool = buildCountryPool;   // debug/test hook (harmless)
   window.__folRepairBowlerBat = foRepairBowlerBatting;
+
+  // ===========================================================================
+  //  QUICK-START · "pick one starter, get a club"
+  //  A new manager makes exactly three decisions - club name, home pitch, one
+  //  franchise player - and a full squad is generated around that player with
+  //  the archetype's flavour. Every bias below is REAL: it changes numbers the
+  //  match engine actually reads, and the balance harness (resolver/balance.mjs)
+  //  proves all ten squads land in a 40-60% win-rate band on neutral pitches.
+  //  The full draft (foOnbStart) stays in the codebase behind league config.
+  // ===========================================================================
+  var FO_QS_ON = true;                 // quick-start replaces the draft for new clubs
+  var FO_TAKEOVER_ON = false;          // later seasons: take over a bot club (S1: off)
+  function foUseQuickStart() {
+    try { if (LG && LG.full_draft) return false; } catch (e) {}   // league config can restore the full draft
+    return FO_QS_ON;
+  }
+  // shared strength budget (best-XI weighted engine-rating sum) every squad is
+  // normalised onto - same total, different shape. Measured by the harness.
+  var FO_QS_T = (window.__FO_QS_T_OVERRIDE != null ? +window.__FO_QS_T_OVERRIDE : 2200);   // test hook: harness can pin/disable the budget
+  var FO_QS_WAGEBILL = 36000;          // per-matchday squad wage bill, identical for every club
+
+  // One config object per archetype: the card copy AND the real generation
+  // biases live together so they can never drift apart.
+  //   counts    - squad shape beyond the starter (keepers always total 2)
+  //   focus     - which groups get the top of the quality ladder
+  //   ages      - squad age range; bias - [who, {skill: multiplier}] applied
+  //               BEFORE the equal-budget pass, so weaknesses survive it
+  //   syn       - pitch synergy hints (never blocking)
+  var FO_ARCHETYPES = [
+    { id: "express", nm: "The Express", role: "Fast bowler", ic: "bolt",
+      line: "First name on the team sheet. Last thing a batter wants to see.",
+      chips: ["Pace-heavy attack", "Lethal on green tops"], weak: "Thin spin options",
+      syn: { good: ["green"], bad: ["dry", "cracked"] },
+      counts: { opener: 2, top: 2, mid: 2, wk: 2, ar: 2, pace: 3, spin: 1 },
+      focus: ["pace", "bat", "wk", "ar", "spin"],
+      bias: [["bowlers", { wicket: 1.08, moveTurn: 1.08 }], ["batters", { vsSpin: 0.94 }]],
+      talents: ["bouncer", "newBallSpecialist", "partnershipBreaker"],
+      starter: { role: "seamFast", age: 26, talents: ["bouncer", "newBallSpecialist"] } },
+    { id: "wizard", nm: "The Wizard", role: "Mystery spinner", ic: "spin",
+      line: "Nobody reads him off the hand. Nobody.",
+      chips: ["Spin-heavy attack", "Owns dry, turning decks"], weak: "Blunted on green tops",
+      syn: { good: ["dry", "cracked"], bad: ["green"] },
+      counts: { opener: 2, top: 2, mid: 2, wk: 2, ar: 2, pace: 1, spin: 3 },
+      budgetMult: 1.047,
+      focus: ["spin", "bat", "wk", "ar", "pace"],
+      bias: [["bowlers", { moveTurn: 1.08, variation: 1.12 }], ["batters", { vsPace: 0.96 }]],
+      talents: ["mysteryBall", "goldenArm", "partnershipBreaker"],
+      starter: { role: "wristSpin", age: 27, talents: ["mysteryBall", "goldenArm"] } },
+    { id: "rock", nm: "The Rock", role: "Anchor opener", ic: "shield",
+      line: "Sees off the new ball. Then sees off the old one too.",
+      chips: ["Deep batting technique", "Hardest side to bowl out"], weak: "Slow to accelerate",
+      syn: { good: ["green", "slow", "twoPaced"], bad: ["flat"] },
+      counts: { opener: 2, top: 2, mid: 1, wk: 2, ar: 2, pace: 3, spin: 2 },
+      budgetMult: 0.963,
+      focus: ["bat", "wk", "pace", "ar", "spin"],
+      bias: [["batters", { vsPace: 1.10, vsSpin: 1.10, temperament: 1.14, power: 0.70 }]],
+      talents: ["anchor", "busyRunner", "safeHands"],
+      starter: { role: "opener", age: 28, talents: ["anchor", "safeHands"] } },
+    { id: "finisher", nm: "The Finisher", role: "Death-overs hitter", ic: "rocket",
+      line: "Forty needed off twenty? He calls that a home game.",
+      chips: ["Brutal power late", "Wins tight chases"], weak: "Top order can cave",
+      syn: { good: ["flat"], bad: ["cracked", "twoPaced"] },
+      counts: { opener: 2, top: 2, mid: 1, wk: 2, ar: 2, pace: 3, spin: 2 },
+      budgetMult: 0.968,
+      focus: ["bat", "ar", "wk", "pace", "spin"],
+      bias: [["batters", { power: 1.24, rotation: 1.05, vsPace: 0.93, vsSpin: 0.93, temperament: 0.88 }]],
+      talents: ["finisher", "sixMachine", "deathSpecialist"],
+      starter: { role: "middleOrderBat", age: 27, talents: ["finisher", "sixMachine"] } },
+    { id: "gloveman", nm: "The Gloveman", role: "Keeper-batter", ic: "gloves",
+      line: "Nothing gets past him. Ask the edges.",
+      chips: ["Elite glovework", "Catches change games"], weak: "Modest bowling threat",
+      syn: { good: ["cracked"], bad: [] },
+      counts: { opener: 2, top: 2, mid: 2, wk: 1, ar: 2, pace: 3, spin: 2 },
+      budgetMult: 0.99,
+      focus: ["wk", "bat", "pace", "ar", "spin"],
+      bias: [["all", { fielding: 1.16, catching: 1.18 }], ["keepers", { keeping: 1.10, stumping: 1.10 }], ["bowlers", { wicket: 0.90 }]],
+      talents: ["lightningHands", "safeHands", "rocketArm", "busyRunner"],
+      starter: { role: "wicketkeeper", age: 27, talents: ["lightningHands", "safeHands"] } },
+    { id: "prodigy", nm: "The Prodigy", role: "Teenage prodigy", ic: "spark",
+      line: "Eighteen years old and already the story of the season.",
+      chips: ["Fastest training gains", "Highest ceiling in the league"], weak: "Starts raw and green",
+      syn: { good: [], bad: [] },
+      counts: { opener: 2, top: 2, mid: 1, wk: 2, ar: 2, pace: 3, spin: 2 },
+      focus: ["bat", "pace", "wk", "ar", "spin"],
+      ages: [18, 21], budgetMult: 0.872, talentExtra: 1,
+      bias: [],
+      talents: ["busyRunner", "paceHunter", "spinKiller"],
+      starter: { role: "opener", age: 18, talents: ["fastStarter", "busyRunner"] } },
+    { id: "greybeard", nm: "The Greybeard", role: "Veteran captain", ic: "star",
+      line: "Won everything twice. Remembers how, every time.",
+      chips: ["Ice-cold under pressure", "Master captaincy"], weak: "Tires fast, little headroom",
+      syn: { good: ["slow", "twoPaced"], bad: [] },
+      counts: { opener: 2, top: 2, mid: 1, wk: 2, ar: 2, pace: 3, spin: 2 },
+      budgetMult: 1.015,
+      focus: ["bat", "pace", "wk", "ar", "spin"],
+      ages: [29, 33], expAdj: 12, captAdj: 1.18,
+      bias: [["all", { stamina: 0.78 }], ["batters", { temperament: 1.10 }]],
+      talents: ["anchor", "partnershipBreaker", "miser"],
+      starter: { role: "topOrderBat", age: 32, talents: ["anchor", "partnershipBreaker"] } },
+    { id: "miser", nm: "The Miser", role: "Economy bowler", ic: "lock",
+      line: "Gives you nothing, and enjoys watching you try.",
+      chips: ["Suffocating economy", "Wins low-scoring grinds"], weak: "Fewer wicket-takers",
+      syn: { good: ["slow", "dry"], bad: ["flat"] },
+      counts: { opener: 2, top: 2, mid: 1, wk: 2, ar: 2, pace: 3, spin: 2 },
+      budgetMult: 1.025,
+      focus: ["pace", "spin", "bat", "wk", "ar"],
+      bias: [["bowlers", { economy: 1.18, discipline: 1.15, variation: 1.05, wicket: 0.80 }]],
+      talents: ["miser", "deathSpecialist", "newBallSpecialist"],
+      starter: { role: "seamFastMedium", age: 28, talents: ["miser", "deathSpecialist"] } },
+    { id: "blade", nm: "The Blade", role: "Strokeplayer", ic: "bat",
+      line: "If it's there to hit, it's gone. If it isn't - also gone.",
+      chips: ["Scorching strike rates", "Sets huge totals"], weak: "Nervy when it tightens",
+      syn: { good: ["flat"], bad: ["slow"] },
+      counts: { opener: 2, top: 2, mid: 1, wk: 2, ar: 2, pace: 3, spin: 2 },
+      budgetMult: 0.937,
+      focus: ["bat", "ar", "wk", "pace", "spin"],
+      expAdj: -10,
+      bias: [["batters", { power: 1.14, rotation: 1.10, vsPace: 1.04, temperament: 0.80 }]],
+      talents: ["fastStarter", "sixMachine", "paceHunter"],
+      starter: { role: "opener", age: 25, talents: ["fastStarter", "sixMachine"] } },
+    { id: "engine", nm: "The Engine", role: "All-rounder", ic: "gear",
+      line: "Bats, bowls, fields, and never stops running in.",
+      chips: ["Deep batting, deep bowling", "Everyone chips in"], weak: "No elite specialist",
+      syn: { good: ["twoPaced", "cracked"], bad: [] },
+      counts: { opener: 2, top: 1, mid: 1, wk: 2, ar: 4, pace: 2, spin: 2 },
+      budgetMult: 1.048,
+      focus: ["ar", "bat", "wk", "pace", "spin"],
+      flatQ: true, partTimers: 2,
+      bias: [],
+      talents: ["busyRunner", "goldenArm", "finisher"],
+      starter: { role: "allRounder", age: 27, talents: ["goldenArm", "busyRunner"] } }
+  ];
+  function foQsHash(s) { var h = 2166136261; s = String(s || ""); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function foArchById(id) { for (var i = 0; i < FO_ARCHETYPES.length; i++) if (FO_ARCHETYPES[i].id === id) return FO_ARCHETYPES[i]; return FO_ARCHETYPES[0]; }
+
+  // quality ladder for the 14 players behind the starter - the SAME multiset
+  // for every archetype; the archetype only decides where the quality goes.
+  var FO_QS_QL = [0.80, 0.73, 0.67, 0.62, 0.58, 0.545, 0.51, 0.48, 0.45, 0.425, 0.40, 0.375, 0.35, 0.33];
+
+  // no duplicate first names or surnames inside one squad (and no clash with
+  // anyone already in the league - natName's own findPlayer pass covers that)
+  function foQsUniqueName(country, rnd, firsts, lasts) {
+    for (var tries = 0; tries < 60; tries++) {
+      var cand = natName(country, rnd, null);
+      var sp = cand.split(/\s+/), fn = (sp[0] || "").toLowerCase(), ln = (sp.slice(1).join(" ") || sp[0] || "").toLowerCase();
+      if (!firsts[fn] && !lasts[ln]) { firsts[fn] = 1; lasts[ln] = 1; return cand; }
+    }
+    return natName(country, rnd, null);   // tiny name bank: accept rather than loop forever
+  }
+  // engine-faithful talent eligibility (mirrors genDraftPool's rules)
+  function foQsElig(p, t) {
+    var isB = p.bowlTypeFull && p.bowlTypeFull !== "none" && !/^partTime/.test(p.bowlTypeFull);
+    var isAR = p.role === "allRounder", isWK = !!p.keeper;
+    var isBat = !isB && !isWK && !isAR;
+    if (t === "lightningHands") return isWK;
+    if (t === "bouncer") return ["seamFast", "seamFastMedium"].indexOf(p.bowlTypeFull) >= 0;
+    if (t === "mysteryBall") return ["wristSpin", "fingerSpin"].indexOf(p.bowlTypeFull) >= 0;
+    if (["newBallSpecialist", "deathSpecialist", "miser", "goldenArm", "partnershipBreaker"].indexOf(t) >= 0) return isB || isAR;
+    if (t === "fastStarter") return p.role === "opener";
+    if (t === "anchor") return p.role === "opener" || p.role === "topOrderBat";
+    if (t === "finisher") return p.role === "middleOrderBat" || isAR;
+    if (t === "sixMachine") return p.role === "middleOrderBat" || isAR || isWK;
+    if (t === "busyRunner" || t === "spinKiller" || t === "paceHunter") return isBat || isAR || isWK;
+    return true;   // safeHands, rocketArm
+  }
+  function foQsPlayer(spec, country, rnd, firsts, lasts) {
+    var role = spec.role;
+    var isB = ["seamFast", "seamFastMedium", "seamMedium", "wristSpin", "fingerSpin"].indexOf(role) >= 0;
+    var isWK = role === "wicketkeeper", isAR = role === "allRounder";
+    var ages = spec.ages || [21, 30];
+    var age = spec.age != null ? spec.age : (ages[0] + Math.floor(rnd() * (ages[1] - ages[0] + 1)));
+    var q = Math.max(0.05, Math.min(0.99, spec.q));
+    var exp = foGenExp(age, q, rnd);
+    var g = function (m, s) { return Math.max(5, Math.min(96, Math.round(m + s * (rnd() + rnd() + rnd() - 1.5)))); };
+    return { name: foQsUniqueName(country, rnd, firsts, lasts), age: age, nat: country,
+      hand: rnd() < 0.72 ? "R" : "L", role: role,
+      bowlTypeFull: isB ? role : (isAR ? (rnd() < 0.5 ? "seamMedium" : "fingerSpin") : "none"),
+      keeper: isWK, exp: exp, expWord: foExpWordOf(exp), capt: g(45, 16), formIx: 3, fatigue: "rested",
+      skills: foGenSkills(role, q, age, rnd), talents: [] };
+  }
+  // SIM-AWARE squad strength: counts only numbers the ball engine actually
+  // reads (bat/power/rotation, threat/control/stamina, fielding/catching,
+  // keeping, experience). Display-only skills (variation, discipline,
+  // move/turn) are deliberately excluded, so an archetype can wear them as
+  // flavour without buying or losing real strength.
+  function foQsSimValue(p) {
+    var s = p.skills || {};
+    return {
+      bat: (p.bat || 0) + 0.45 * (s.power || 0) + 0.25 * (s.rotation || 0),
+      bowl: p.bowlType ? (1.15 * (p.threat || 0) + 0.85 * (p.control || 0) + 0.25 * (s.stamina || 0)) : 0,
+      other: 0.20 * (p.field || 0) + 0.15 * (s.catching || 0) + (p.keeper ? 0.45 * (s.keeping || 0) : 0) + 0.45 * (p.exp || 0)
+    };
+  }
+  function foQsSquadStrength(players) {
+    var xi = null;
+    try { xi = pickXI({ name: "QS", players: players }); } catch (e) {}
+    if (!xi || !xi.length) xi = players.slice().sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); }).slice(0, 11);
+    var others = 0, bowls = [], batList = [];
+    xi.forEach(function (p) {
+      var v = foQsSimValue(p);
+      batList.push(v.bat); others += v.other;
+      if (v.bowl > 0) bowls.push(v.bowl);
+    });
+    // the top order faces most of the balls: deep batting is worth far less
+    // than the same runs concentrated at the top (the sim agrees)
+    var BATW = [1, 1, 1, 0.95, 0.9, 0.85, 0.75, 0.6, 0.4, 0.25, 0.15];
+    batList.sort(function (a, b) { return b - a; });
+    var bats = 0;
+    batList.forEach(function (b, i) { bats += b * (BATW[i] != null ? BATW[i] : 0.1); });
+    // a real 50-over split: five frontline options plus a part-share sixth
+    bowls.sort(function (a, b) { return b - a; });
+    var bowlSum = 0;
+    bowls.slice(0, 6).forEach(function (b, i) { bowlSum += b * (i < 5 ? 1 : 0.4); });
+    var bench = 0;
+    players.forEach(function (p) {
+      if (xi.indexOf(p) >= 0) return;
+      var v = foQsSimValue(p); bench += 0.15 * (v.bat + v.bowl);
+    });
+    return bats + 0.85 * bowlSum + others + bench;
+  }
+  // Generate a full 15-player squad for one archetype. Deterministic from
+  // (seed, country, archId) - every client and the resolver agree exactly.
+  function foGenArchetypeSquad(seed, country, archId) {
+    var A = foArchById(archId);
+    var rnd = window.rng(foQsHash(String(seed) + "|" + archId));
+    var firsts = {}, lasts = {};
+    var C = A.counts || {};
+    var slots = [];
+    var addN = function (n, role, gTag) { for (var i = 0; i < (n || 0); i++) slots.push({ role: role, g: gTag }); };
+    addN(C.opener, "opener", "bat"); addN(C.top, "topOrderBat", "bat"); addN(C.mid, "middleOrderBat", "bat");
+    addN(C.wk, "wicketkeeper", "wk"); addN(C.ar, "allRounder", "ar");
+    // honest style rarity: no second genuine quick - the Express starter is the
+    // league's apex predator; wrist spin stays scarce outside the Wizard
+    var paceStyles = ["seamFastMedium", "seamFastMedium", "seamMedium", "seamMedium"];
+    var spinStyles = ["fingerSpin", "wristSpin", "fingerSpin", "fingerSpin"];
+    for (var iP = 0; iP < (C.pace || 0); iP++) slots.push({ role: paceStyles[iP % paceStyles.length], g: "pace" });
+    for (var iS = 0; iS < (C.spin || 0); iS++) slots.push({ role: spinStyles[iS % spinStyles.length], g: "spin" });
+    // hand the quality ladder out by the archetype's focus order (stable sort
+    // keeps each group's internal order); flat archetypes squash the ladder
+    var ladder = FO_QS_QL.slice();
+    if (A.flatQ) {
+      var avgQ = ladder.reduce(function (s, v) { return s + v; }, 0) / ladder.length;
+      ladder = ladder.map(function (v) { return avgQ + (v - avgQ) * 0.25; });
+    }
+    var pr = {}; (A.focus || []).forEach(function (gname, i2) { pr[gname] = i2; });
+    var order = slots.slice().sort(function (a, b) { return (pr[a.g] == null ? 9 : pr[a.g]) - (pr[b.g] == null ? 9 : pr[b.g]); });
+    order.forEach(function (sl, i3) { sl.q = ladder[i3] != null ? ladder[i3] : 0.33; });
+    // the franchise player first, then the squad in natural order
+    var st = A.starter || {};
+    var players = [];
+    var starter = foQsPlayer({ role: st.role || "topOrderBat", age: st.age, ages: A.ages, q: 0.97 }, country, rnd, firsts, lasts);
+    players.push(starter);
+    slots.forEach(function (sl) { players.push(foQsPlayer({ role: sl.role, ages: A.ages, q: sl.q }, country, rnd, firsts, lasts)); });
+    var qOf = {}; qOf[starter.name] = 0.97; slots.forEach(function (sl, i5) { qOf[players[i5 + 1].name] = sl.q; });
+    // archetype flavour: real multipliers on the raw skills, BEFORE the
+    // equal-budget pass, so the weakness survives normalisation as SHAPE
+    var isBowlP = function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none"; };
+    var BATSK = { vsPace: 1, vsSpin: 1, rotation: 1, temperament: 1, power: 1 };
+    var inGroup = function (p, who) {
+      if (who === "all") return true;
+      if (who === "bowlers") return isBowlP(p);
+      if (who === "batters") return !foPureBowler(p);
+      if (who === "keepers") return !!p.keeper;
+      return false;
+    };
+    (A.bias || []).forEach(function (rule) {
+      players.forEach(function (p) {
+        if (!inGroup(p, rule[0])) return;
+        for (var k in rule[1]) {
+          if (p.skills[k] == null) continue;
+          if (BATSK[k] && foPureBowler(p)) continue;   // a specialist bowler's batting stays a bowler's
+          p.skills[k] = Math.max(4, Math.min(96, Math.round(p.skills[k] * rule[1][k])));
+        }
+      });
+    });
+    if (A.expAdj) players.forEach(function (p) { p.exp = Math.max(2, Math.min(99, Math.round(p.exp + A.expAdj))); p.expWord = foExpWordOf(p.exp); });
+    if (A.captAdj) players.forEach(function (p) { p.capt = Math.max(5, Math.min(96, Math.round(p.capt * A.captAdj))); });
+    // The Engine: two batters pick up honest part-time overs - everyone chips in
+    if (A.partTimers) {
+      players.filter(function (p) { return p !== starter && !isBowlP(p) && !p.keeper && p.role !== "allRounder"; })
+        .slice(0, A.partTimers).forEach(function (p, i4) {
+          p.bowlTypeFull = i4 % 2 ? "partTimeSpin" : "partTimeSeam";
+          [["wicket", 30], ["economy", 34], ["discipline", 32], ["moveTurn", 28], ["variation", 26], ["stamina", 40]].forEach(function (kv) {
+            p.skills[kv[0]] = Math.max(p.skills[kv[0]] || 5, kv[1] + Math.round((rnd() - 0.5) * 8));
+          });
+        });
+    }
+    // talents: archetype-flavoured, engine-eligible, capped so they stay flavour
+    players.forEach(function (p) {
+      var isStar = p === starter;
+      var q = qOf[p.name] || 0.4;
+      var n = isStar ? 2 : (q > 0.55 ? (rnd() < 0.6 ? 2 : 1) : (rnd() < 0.45 ? 1 : 0));
+      if (A.talentExtra && !isStar) n = Math.min(3, n + A.talentExtra);
+      var want = (isStar ? (st.talents || []) : []).concat(A.talents || []);
+      var pool = Object.keys(TALN).sort(function (a, b) { return foQsHash(p.name + a) - foQsHash(p.name + b); });
+      want.concat(pool).forEach(function (t) {
+        if (p.talents.length >= n || p.talents.indexOf(t) >= 0) return;
+        if (foQsElig(p, t)) p.talents.push(t);
+      });
+    });
+    // equal-budget pass: every archetype lands on the same strength target
+    // (The Prodigy sits ~9% under it by design, paid back in age + talents)
+    players.forEach(function (p) { jsDerive(p); });
+    // the franchise player is unmistakably the squad's best (the Prodigy's
+    // 18-year-old would otherwise trail his 21-year-old teammates)
+    var bestV = 0;
+    players.slice(1).forEach(function (p2) { bestV = Math.max(bestV, foSkillValue(p2)); });
+    for (var g2 = 0; g2 < 8 && foSkillValue(starter) < bestV * 1.08; g2++) {
+      for (var k3 in starter.skills) starter.skills[k3] = Math.max(4, Math.min(96, Math.round(starter.skills[k3] * 1.05)));
+      jsDerive(starter);
+    }
+    var target = FO_QS_T * (A.budgetMult || 1);
+    for (var itn = 0; target > 0 && itn < 6; itn++) {
+      var S = foQsSquadStrength(players);
+      var f = target / Math.max(1, S);   // metric is linear in skills
+      if (Math.abs(f - 1) < 0.008) break;
+      f = Math.max(0.8, Math.min(1.25, f));
+      players.forEach(function (p) {
+        for (var k2 in p.skills) p.skills[k2] = Math.max(4, Math.min(96, Math.round(p.skills[k2] * f)));
+        jsDerive(p);
+      });
+    }
+    // pure bowlers bat by the game-wide name-derived rule, like every squad -
+    // except the franchise bowler, who bats at the top of the specialist band
+    // ("average": as good as a specialist gets, and stable under the repair rule)
+    players.forEach(function (p) { if (p !== starter && foPureBowler(p)) foApplyBowlerBat(p); });
+    if (foPureBowler(starter)) {
+      var sb = starter.skills;
+      sb.vsPace = 31; sb.vsSpin = 30; sb.rotation = 27; sb.temperament = 35; sb.power = 29;
+      jsDerive(starter);
+    }
+    // one wage bill for everyone - no club starts with a finance edge
+    var wsum = players.reduce(function (s, p) { return s + (p.wage || 0); }, 0);
+    if (wsum > 0) players.forEach(function (p) { p.wage = Math.max(500, Math.round(p.wage * FO_QS_WAGEBILL / wsum / 10) * 10); });
+    // fees tell the founding story: ~$800k of the grant went on signings
+    // (founderConfirm sums p.fee into the bank, then strips it from the club)
+    var vsum = 0;
+    players.forEach(function (p) { vsum += foSkillValue(p); });
+    players.forEach(function (p) { p.fee = Math.max(8000, Math.round(800000 * foSkillValue(p) / Math.max(1, vsum) / 500) * 500); });
+    // the franchise player leads by default; The Prodigy is 18, so the oldest
+    // head wears the armband and the kid is tagged the future captain
+    var seasonNow = (typeof App !== "undefined" && App.seasonNo) || 1;
+    if (A.id === "prodigy") {
+      starter.capt = 30;
+      var eldest = players.slice(1).sort(function (a, b) { return (b.age - a.age) || ((b.capt || 0) - (a.capt || 0)); })[0];
+      if (eldest) eldest.capt = Math.max(eldest.capt || 0, 88);
+      starter.origin_tag = "Franchise player - chosen at founding · future captain";
+    } else {
+      starter.capt = 92;
+      starter.origin_tag = "Franchise player - chosen at founding";
+    }
+    starter.archetype = A.id;
+    starter._prov = { how: "draft", s: seasonNow, founding: 1 };
+    return { players: players, starter: starter.name, arch: A.id };
+  }
+  window.__foArchetypes = FO_ARCHETYPES;
+  window.__foSkillValue = foSkillValue;
+  window.__foQsStrength = foQsSquadStrength;
+  window.__foGenArchetypeSquad = foGenArchetypeSquad;
   window.__folOnbPreview = function (step) { try {
     if (!FO_ONB) FO_ONB = { team: {}, step: 1, needsSetup: true, country: NAT[0], clubName: "Thunder Empire", ground: "Riverview Oval", pitch: "balanced", style: "balanced", sponsor: null, scenario: "average", role: "all", riskAck: false };
     FO_ONB.needsSetup = true;
@@ -12073,7 +12511,490 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     });
   }
 
-  function startDraft(team) { foOnbStart(team); }
+  // Quick-start replaces the draft as the default way in; the full draft is
+  // one league-config flag away (leagues.full_draft) and returns later as an
+  // offseason event. Takeover mode (bot-club handover) waits behind its flag.
+  function startDraft(team) {
+    if (FO_TAKEOVER_ON && SYNC && SYNC.started && !SYNC.isFounder) return foTakeoverStart(team || {});
+    if (foUseQuickStart()) return foQsStart(team || {});
+    foOnbStart(team);
+  }
+
+  // ---- QUICK-START UI · name → pitch → starter → confirmation ---------------
+  var FO_QS = null;
+  var FO_QS_GLYPHS = {
+    bolt: "<path d='M13 2 6 13h5l-1.5 9L18 10h-5l1.5-8z'/>",
+    spin: "<path d='M20 12a8 8 0 1 1-2.5-5.9M20 3v4h-4'/>",
+    shield: "<path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/>",
+    rocket: "<path d='M12 2c3 2 5 6 5 10l-2.5 2.5h-5L7 12c0-4 2-8 5-10z'/><path d='M9.5 14.5 7 20l3-1 2 2 2-2 3 1-2.5-5.5'/><circle cx='12' cy='9' r='1.6'/>",
+    gloves: "<path d='M8 21v-8a4 4 0 0 1 8 0v8z'/><path d='M8 15H6.2a2 2 0 0 1 0-4H8M16 15h1.8a2 2 0 0 0 0-4H16'/>",
+    spark: "<path d='M12 2v5M12 17v5M2 12h5M17 12h5M5.5 5.5l3 3M15.5 15.5l3 3M18.5 5.5l-3 3M8.5 15.5l-3 3'/>",
+    star: "<path d='m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-3-5.4 3 1.1-6L3.2 9.4l6.1-.8Z'/>",
+    lock: "<rect x='5' y='11' width='14' height='9' rx='2'/><path d='M8 11V8a4 4 0 0 1 8 0v3'/>",
+    bat: "<path d='M5 19l-1 1m2-2L17 7a2.4 2.4 0 0 1 3.4 3.4L9.5 21.5a2 2 0 0 1-2.8 0L6 20.8a2 2 0 0 1 0-2.8Z'/><circle cx='5.5' cy='5.5' r='2'/>",
+    gear: "<circle cx='12' cy='12' r='3.2'/><path d='M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9 19 19M19 5l-2.1 2.1M7.1 16.9 5 19'/>"
+  };
+  function foQsIcon(name, size) {
+    return "<svg width='" + (size || 19) + "' height='" + (size || 19) + "' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'>" + (FO_QS_GLYPHS[name] || FO_QS_GLYPHS.star) + "</svg>";
+  }
+  // pitch one-liners in plain language (quick-start's own copy - no draft talk)
+  var FO_QS_PITCH = {
+    balanced: "Fair contest. Nobody gets favours.",
+    green: "Seam bowlers thrive; batting is hard early.",
+    dry: "Turns square as it wears - spinners feast.",
+    flat: "A batter's paradise: boundaries flow, big totals.",
+    slow: "Low and grippy - sixes die here, patience wins.",
+    cracked: "Unpredictable bounce. Wickets for everyone.",
+    twoPaced: "Some balls hurry, some hold. Timing is never safe."
+  };
+  function foQsSynNote(a, pitch) {
+    var pt = FO_PITCH_CARDS.find(function (x) { return x.id === pitch; });
+    var pn = pt ? pt.nm.toLowerCase() : pitch;
+    if ((a.syn.good || []).indexOf(pitch) >= 0) return { cls: "", txt: "&#10003; Your " + pn + " home track suits this squad." };
+    if ((a.syn.bad || []).indexOf(pitch) >= 0) return { cls: "bad", txt: "&#9888; Fair warning: your " + pn + " home track fights this squad." };
+    return null;
+  }
+  function foQsAbbrOf(nm) {
+    var w = String(nm || "").trim().split(/\s+/).filter(Boolean);
+    if (!w.length) return "";
+    var a = w.length >= 3 ? (w[0][0] + w[1][0] + w[2][0]) : w.length === 2 ? (w[0][0] + w[1][0] + (w[1][1] || "")) : w[0].slice(0, 3);
+    return a.toUpperCase().slice(0, 3);
+  }
+  function foQsStart(team) {
+    team = team || {};
+    var seedGuess = team.draft_seed || (SYNC && SYNC.myMid) || "fo-qs";
+    FO_QS = {
+      team: team, step: 1,
+      clubName: team.name || "", abbr: "", abbrTouched: false,
+      pitch: "balanced", arch: null, gen: null,
+      country: team.country || NAT[foQsHash("cty|" + seedGuess) % NAT.length],
+      needsSetup: !(team.country && team.draft_seed)
+    };
+    foQsName();
+  }
+  window.__foQs = { start: foQsStart, state: function () { return FO_QS; }, gen: foGenArchetypeSquad, name: function () { return foQsName(); }, pitch: function () { return foQsPitch(); }, starter: function () { return foQsStarter(); }, confirm: function () { return foQsConfirm(); }, golden: function (nxt, oi, t) { return foQsGolden(nxt, oi, t); }, goldenWire: function (pg) { return foQsGoldenWire(pg); },
+    goldenTest: function (opp) {   // headless probe: render the real golden card on the current page
+      try {
+        SYNC = SYNC || {};
+        var oS = SYNC.started, oP = SYNC.practice;
+        SYNC.started = true; SYNC.practice = false;
+        if (!lsGet("fo_qs_new")) lsSet("fo_qs_new", "1");
+        var nxt = { round: (App.season && App.season.round) || 0, isHome: true, opp: { name: opp || "Meow Monks" } };
+        var html = foQsGolden(nxt, false, userTeam());
+        var pg = document.getElementById("page");
+        if (pg && html) { var d = document.createElement("div"); d.innerHTML = html; pg.insertBefore(d.firstChild, pg.firstChild); foQsGoldenWire(pg); }
+        SYNC.started = oS; SYNC.practice = oP;
+        return !!html;
+      } catch (e) { return "ERR " + e.message; }
+    } };
+  function foQsShell(stepIx, body, ctaHtml) {
+    var host = document.getElementById("fo-onb");
+    if (!host) { host = document.createElement("div"); host.id = "fo-onb"; document.body.appendChild(host); }
+    var dots = [1, 2, 3].map(function (n) {
+      return "<span class='fo-qs-dot" + (n < stepIx ? " done" : n === stepIx ? " on" : "") + "'></span>";
+    }).join("");
+    host.innerHTML = "<div class='fo-ob-shell'><div class='fo-qs-wrap'>" +
+      "<div class='fo-qs-top'><span class='fo-qs-brand'>Fifty Overs</span><span class='fo-qs-dots'>" + dots + "</span></div>" +
+      body + "</div>" + (ctaHtml || "") + "</div>";
+    host.style.display = "block"; host.scrollTop = 0;
+    try { openWrap(false); } catch (e) {}
+    return host;
+  }
+  function foQsCtaBar(label, id, disabled, backId) {
+    return "<div class='fo-qs-ctabar'>" +
+      (backId ? "<button class='fo-ob-ghost' id='" + backId + "'>Back</button>" : "") +
+      "<button class='fo-qs-cta' id='" + id + "'" + (disabled ? " disabled" : "") + ">" + label + "</button></div>";
+  }
+  var foQsFlag = function (c) { try { return (typeof foFlag === "function" && foFlag(c)) || ""; } catch (e) { return ""; } };
+  // ---- step 1 · name --------------------------------------------------------
+  function foQsName() {
+    FO_QS.step = 1;
+    var body =
+      "<div class='fo-ob-card fo-qs-card1'>" +
+      "<div class='fo-ob-eyebrow'>Found your club &middot; step 1 of 3</div>" +
+      "<h1 class='fo-ob-h1'>Name your club</h1>" +
+      "<p class='fo-ob-lead'>Three choices and you're a manager: a name, a home pitch, and the player you build everything around. The squad, the money and the fixtures take care of themselves.</p>" +
+      "<label class='fo-ob-lbl'>Club name</label><input id='fo-qs-nm' class='fo-ob-input' maxlength='28' value='" + E(FO_QS.clubName) + "' placeholder='Harbor City CC'>" +
+      "<label class='fo-ob-lbl'>Short name <span class='fo-ob-hint'>: for tables and tight corners</span></label><input id='fo-qs-ab' class='fo-ob-input fo-qs-abbr' maxlength='3' value='" + E(FO_QS.abbr) + "' placeholder='HCC'>" +
+      "<div class='fo-qs-cty'>Your players hail from <b id='fo-qs-ctyn'>" + foQsFlag(FO_QS.country) + " " + E(FO_QS.country) + "</b><a id='fo-qs-shuf'>shuffle</a></div>" +
+      "</div>";
+    var host = foQsShell(1, body, foQsCtaBar("Continue", "fo-qs-c1"));
+    var nmEl = host.querySelector("#fo-qs-nm"), abEl = host.querySelector("#fo-qs-ab");
+    nmEl.addEventListener("input", function () {
+      if (!FO_QS.abbrTouched) { abEl.value = foQsAbbrOf(nmEl.value); }
+    });
+    abEl.addEventListener("input", function () { FO_QS.abbrTouched = true; abEl.value = abEl.value.toUpperCase(); });
+    host.querySelector("#fo-qs-shuf").addEventListener("click", function () {
+      FO_QS.country = NAT[(NAT.indexOf(FO_QS.country) + 1 + Math.floor(Math.random() * (NAT.length - 1))) % NAT.length];
+      var el = host.querySelector("#fo-qs-ctyn"); if (el) el.innerHTML = foQsFlag(FO_QS.country) + " " + E(FO_QS.country);
+    });
+    host.querySelector("#fo-qs-c1").addEventListener("click", function () {
+      var nm = (nmEl.value || "").trim();
+      if (nm.length < 2) { nmEl.focus(); return; }
+      FO_QS.clubName = nm;
+      FO_QS.abbr = (abEl.value || "").trim().toUpperCase() || foQsAbbrOf(nm);
+      foQsPitch();
+    });
+    if (!FO_QS.clubName) setTimeout(function () { try { nmEl.focus(); } catch (e) {} }, 60);
+  }
+  // ---- step 2 · home pitch --------------------------------------------------
+  function foQsPitch() {
+    FO_QS.step = 2;
+    var cards = FO_PITCH_CARDS.map(function (pt) {
+      return "<button type='button' class='fo-qs-pitch" + (FO_QS.pitch === pt.id ? " on" : "") + "' data-p='" + pt.id + "'><b>" + pt.nm + "</b><span>" + (FO_QS_PITCH[pt.id] || pt.d) + "</span></button>";
+    }).join("");
+    var body =
+      "<div class='fo-ob-card'>" +
+      "<div class='fo-ob-eyebrow'>" + E(FO_QS.clubName) + " &middot; step 2 of 3</div>" +
+      "<h1 class='fo-ob-h1'>Choose your home pitch</h1>" +
+      "<p class='fo-ob-lead'>Nine of your eighteen matches are played on it. Pick the cricket you want to watch - the next step will tell you which squads thrive here.</p>" +
+      "<div class='fo-qs-pitches'>" + cards + "</div></div>";
+    var host = foQsShell(2, body, foQsCtaBar("Continue", "fo-qs-c2", false, "fo-qs-b2"));
+    host.querySelectorAll(".fo-qs-pitch").forEach(function (b) {
+      b.addEventListener("click", function () {
+        FO_QS.pitch = b.getAttribute("data-p");
+        host.querySelectorAll(".fo-qs-pitch").forEach(function (x) { x.classList.toggle("on", x === b); });
+      });
+    });
+    host.querySelector("#fo-qs-b2").addEventListener("click", foQsName);
+    host.querySelector("#fo-qs-c2").addEventListener("click", foQsStarter);
+  }
+  // ---- step 3 · the starter (ten archetype cards) ---------------------------
+  function foQsStarter() {
+    FO_QS.step = 3;
+    var cards = FO_ARCHETYPES.map(function (a) {
+      var syn = foQsSynNote(a, FO_QS.pitch);
+      return "<button type='button' class='fo-qs-arch" + (FO_QS.arch === a.id ? " on" : "") + "' data-a='" + a.id + "'>" +
+        "<span class='fo-qs-aic'>" + foQsIcon(a.ic) + "</span>" +
+        "<b class='fo-qs-anm'>" + a.nm + "</b>" +
+        "<span class='fo-qs-arole'>" + a.role + "</span>" +
+        "<span class='fo-qs-aline'>" + a.line + "</span>" +
+        "<span class='fo-qs-chips'>" + a.chips.map(function (s) { return "<i class='fo-qs-chip g'>" + s + "</i>"; }).join("") +
+        "<i class='fo-qs-chip w'>" + a.weak + "</i></span>" +
+        (syn ? "<span class='fo-qs-syn " + syn.cls + "'>" + syn.txt + "</span>" : "") +
+        "</button>";
+    }).join("");
+    var body =
+      "<div class='fo-ob-card'>" +
+      "<div class='fo-ob-eyebrow'>" + E(FO_QS.clubName) + " &middot; step 3 of 3</div>" +
+      "<h1 class='fo-ob-h1'>Choose your franchise player</h1>" +
+      "<p class='fo-ob-lead'>One player to build a club around. He arrives as your best player, and the squad signed around him takes after him - his strengths, and one honest weakness.</p>" +
+      "<div class='fo-qs-grid'>" + cards + "</div></div>";
+    var host = foQsShell(3, body, foQsCtaBar("Found my club", "fo-qs-go", !FO_QS.arch, "fo-qs-b3"));
+    host.querySelectorAll(".fo-qs-arch").forEach(function (b) {
+      b.addEventListener("click", function () {
+        FO_QS.arch = b.getAttribute("data-a");
+        host.querySelectorAll(".fo-qs-arch").forEach(function (x) { x.classList.toggle("on", x === b); });
+        var go = host.querySelector("#fo-qs-go"); if (go) go.disabled = false;
+      });
+    });
+    host.querySelector("#fo-qs-b3").addEventListener("click", foQsPitch);
+    host.querySelector("#fo-qs-go").addEventListener("click", foQsFound);
+  }
+  // ---- found: save the club row, generate the squad, show the confirmation --
+  function foQsFound() {
+    if (!FO_QS.arch) return;
+    var btn = document.querySelector("#fo-qs-go");
+    if (btn) { btn.disabled = true; btn.textContent = "Founding " + FO_QS.clubName + "…"; }
+    var fail = function (e) { if (btn) { btn.disabled = false; btn.textContent = "Found my club"; } say(e); };
+    var ensure = FO_QS.needsSetup
+      ? rpc("create_league_team", { p_league_id: LG.id, p_team_name: FO_QS.clubName, p_manager_name: (SYNC && SYNC.me && SYNC.me.display_name) || "Manager", p_country: FO_QS.country })
+          .then(function (team) { SYNC.myTeam = team; FO_QS.team = team; FO_QS.needsSetup = false; if (team.country) FO_QS.country = team.country; return team; })
+      : Promise.resolve(FO_QS.team);
+    ensure.then(function (team) {
+      FO_QS.gen = foGenArchetypeSquad(team.draft_seed || FO_QS.clubName, FO_QS.country, FO_QS.arch);
+      foQsConfirm();
+    }).catch(fail);
+  }
+  // best-effort "your first match" line: read the live snapshot and predict
+  // which bot this club will replace (display only - the join itself re-checks)
+  function foQsFixtureLine(cb) {
+    var fallback = "Round 1 &middot; 9:00 AM ET &middot; fixtures are drawn when your league kicks off.";
+    if (!(SYNC && SYNC.started && LG)) { cb(fallback); return; }
+    sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,round").then(function (a) {
+      try {
+        var snap = a && a[0] && a[0].snapshot;
+        var teams = (snap && snap.teams) || [], sched = (snap && snap.season && snap.season.schedule) || [];
+        var rd = (snap && snap.season && snap.season.round) || 0;
+        var meIx = -1;
+        teams.forEach(function (t, i) { if (t && t.name === FO_QS.clubName) meIx = i; });
+        if (meIx < 0) {
+          for (var i2 = teams.length - 1; i2 >= 0; i2--) if (teams[i2] && !teams[i2].founded) { meIx = i2; break; }
+        }
+        var pair = (sched[rd] || []).filter(function (pr2) { return pr2[0] === meIx || pr2[1] === meIx; })[0];
+        if (!pair) { cb(fallback); return; }
+        var oppIx = pair[0] === meIx ? pair[1] : pair[0];
+        var opp = teams[oppIx] ? teams[oppIx].name : "?";
+        var home = pair[0] === meIx;
+        // has today's round already been advanced? then this one plays tomorrow
+        var when = "today";
+        try {
+          var f = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
+          var advanced = snap.__foAdvDate && String(snap.__foAdvDate) >= f.format(new Date());
+          var hourET = +new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", hour12: false }).format(new Date());
+          if (advanced || hourET >= 9) when = "tomorrow";
+        } catch (eW) {}
+        cb("Your first match: <b>Round " + (rd + 1) + " " + (home ? "vs" : "at") + " " + E(opp) + "</b> &middot; " + when + " &middot; 9:00 AM ET.");
+      } catch (e) { cb(fallback); }
+    }).catch(function () { cb(fallback); });
+  }
+  // ---- confirmation · club, pitch, starter card, first fixture --------------
+  function foQsConfirm() {
+    var A = foArchById(FO_QS.arch);
+    var gen = FO_QS.gen || {};
+    var starter = (gen.players || [])[0] || {};
+    var pt = FO_PITCH_CARDS.find(function (x) { return x.id === FO_QS.pitch; }) || FO_PITCH_CARDS[0];
+    var bt = starter.btLabel || "";
+    var tals = (starter.talents || []).map(function (t) { return "<i>" + E(foTalentName(t)) + "</i>"; }).join("");
+    var body =
+      "<div class='fo-ob-card'>" +
+      "<div class='fo-ob-eyebrow'>The charter is signed</div>" +
+      "<h1 class='fo-ob-h1'>" + E(FO_QS.clubName) + " is founded</h1>" +
+      "<div class='fo-qs-sum'>" +
+      "<span><b>" + E(FO_QS.abbr) + "</b> &middot; short name</span>" +
+      "<span><b>" + pt.nm + "</b> home pitch</span>" +
+      "<span>" + foQsFlag(FO_QS.country) + " " + E(FO_QS.country) + "</span>" +
+      "<span><b>15</b> players signed</span>" +
+      "</div>" +
+      "<div class='fo-qs-star'>" +
+      "<div class='fo-qs-star-tag'>" + foQsIcon(A.ic, 13) + " Franchise player &middot; " + A.nm + "</div>" +
+      "<div class='fo-qs-star-nm'>" + E(starter.name || "") + "</div>" +
+      "<div class='fo-qs-star-meta'>" + E(A.role) + " &middot; age " + (starter.age || "?") + (bt ? " &middot; " + E(bt) : "") + (starter.hand === "L" ? " &middot; left-hand bat" : "") + "</div>" +
+      "<div class='fo-qs-star-meta' style='margin-top:6px'>" + E(A.line) + "</div>" +
+      (tals ? "<div class='fo-qs-star-tal'>" + tals + "</div>" : "") +
+      "</div>" +
+      "<div class='fo-qs-fix' id='fo-qs-fix'>Checking the fixture list&hellip;</div>" +
+      "<p class='fo-ob-lead' style='margin-top:12px'>The rest of the squad is signed and paid for, your XI is ready to confirm, and the groundsman is already rolling the " + pt.nm.toLowerCase() + " deck at " + E(FO_QS.clubName) + " Oval.</p>" +
+      "</div>";
+    var host = foQsShell(3, body, foQsCtaBar("Take me to my club", "fo-qs-enter"));
+    foQsFixtureLine(function (line) { var el = document.getElementById("fo-qs-fix"); if (el) el.innerHTML = line; });
+    host.querySelector("#fo-qs-enter").addEventListener("click", foQsGo);
+  }
+  // ---- commit through the engine + league wrapper (push_club / join) --------
+  function foQsGo() {
+    try {
+      var gen = FO_QS.gen, team = FO_QS.team || {};
+      if (!gen || !gen.players) { say("Squad not ready - go back one step and try again."); return; }
+      App.founder = {
+        name: FO_QS.clubName, budget: 1000000, pool: gen.players.slice(), picked: gen.players.slice(),
+        identity: "Founding XI", mgr: (SYNC && SYNC.me && SYNC.me.display_name) || "Manager",
+        __league: (LG && LG.id) ? { league_id: LG.id, team_id: team.id } : null
+      };
+      try {
+        window.store("fo_onb_done", "1"); window.store("fo_sponsor", "community");
+        window.store("fo_ground", FO_QS.clubName + " Oval"); window.store("fo_pitch", FO_QS.pitch);
+        lsSet("fo_qs_new", "1");
+      } catch (e) {}
+      // club-level identity goes on BEFORE founderConfirm so the league wrapper
+      // uploads a complete record (it deep-copies the club synchronously)
+      try {
+        var t0 = GD.teams[App.teamIx || 0];
+        if (t0) {
+          t0.ground = FO_QS.clubName + " Oval"; t0.homePitch = FO_QS.pitch;
+          t0.sponsor = "community"; t0.abbr = FO_QS.abbr || foQsAbbrOf(FO_QS.clubName);
+          t0.archetype = FO_QS.arch; t0.bank = 200000;
+          var deal0 = foSponsorById("community");
+          t0.sponsorDeal = { id: deal0.id, base: deal0.base, win: deal0.win, halfway: deal0.halfway, seasonTop3: deal0.seasonTop3, champ: deal0.champ };
+        }
+      } catch (e) {}
+      window.founderConfirm();   // engine builds GD.teams[ix]; league wrapper uploads + joins/lobbies
+      try {
+        var t = GD.teams[App.teamIx];
+        if (t) (t.players || []).forEach(function (dp) { dp._prov = dp._prov || { how: "draft", s: App.seasonNo || 1 }; });
+        // the whole grant story: ~$800k went on signings, $200k stays as the
+        // operating reserve - the same for every quick-start club
+        if (App.fin) { App.fin.bank = 200000; App.fin.sponsorBase = foSponsorById("community").base; }
+        if (t) t.bank = 200000;
+        if (typeof window.saveGame === "function") window.saveGame(false);
+      } catch (e) {}
+      foOnbClose();
+    } catch (e) { say(e); foOnbClose(); }
+  }
+
+  // ---- first-session golden path --------------------------------------------
+  // After creation the club home "needs you today" strip shows exactly ONE
+  // item: confirm the suggested XI for tonight. One tap; a quiet link to tweak.
+  // No training, market or finance tasks in session one.
+  function foQsGolden(nxt, ordersIn, t) {
+    var flag = lsGet("fo_qs_new");
+    if (!flag) return "";
+    if (!(SYNC && SYNC.started) || SYNC.practice || !nxt) return "";
+    // confirmed just now: keep the green tick through re-renders for a while
+    if (/^done:/.test(flag)) {
+      var ts9 = +flag.slice(5) || 0;
+      if (Date.now() - ts9 > 10 * 60000) { lsDel("fo_qs_new"); return ""; }
+      return "<div class='fo-card fo-qs-gold' id='fo-qs-gold'><div class='fo-qs-gold-ok'>&#10003; XI confirmed &middot; you play at 9:00 AM ET. <a data-r='" + nxt.round + "'>Review or tweak &rsaquo;</a></div></div>";
+    }
+    if (ordersIn) { lsDel("fo_qs_new"); return ""; }   // confirmed (maybe via a tweak) - retire the strip
+    var starterNm = "";
+    try { ((t && t.players) || []).some(function (p) { if (p && p.origin_tag && /Franchise player/.test(p.origin_tag)) { starterNm = p.name; return true; } return false; }); } catch (e) {}
+    return "<div class='fo-card fo-qs-gold' id='fo-qs-gold'><div class='fo-qs-gold-l'>" +
+      "<div class='fo-qs-gk'>Needs you today</div>" +
+      "<div class='fo-qs-gt'>Confirm your XI for Round " + (nxt.round + 1) + " " + (nxt.isHome ? "vs" : "at") + " " + E(nxt.opp.name) + "</div>" +
+      "<div class='fo-qs-gs'>Your best eleven and sensible orders are already picked" + (starterNm ? ", built around " + E(starterNm) : "") + ". One tap and you play at 9:00 AM ET.</div></div>" +
+      "<div class='fo-qs-gold-r'><button class='fo-next-cta' id='fo-qs-gold-btn' data-r='" + nxt.round + "'>Confirm my XI</button>" +
+      "<a class='fo-qs-gtweak' data-r='" + nxt.round + "'>tweak it instead &rsaquo;</a></div></div>";
+  }
+  function foQsGoldenWire(page) {
+    try {
+      var gBtn = page.querySelector("#fo-qs-gold-btn");
+      if (gBtn) gBtn.addEventListener("click", function () {
+        try {
+          var r = +gBtn.getAttribute("data-r");
+          suggestOrders();
+          App.orders.saved = true;
+          App.defaults = JSON.parse(JSON.stringify(App.orders));
+          foPushRound(r, App.orders);
+          lsSet("fo_qs_new", "done:" + Date.now());
+          var card = page.querySelector("#fo-qs-gold");
+          if (card) {
+            card.innerHTML = "<div class='fo-qs-gold-ok'>&#10003; XI confirmed &middot; you play at 9:00 AM ET. <a data-r='" + r + "'>Review or tweak &rsaquo;</a></div>";
+            var tw2 = card.querySelector("a[data-r]");
+            if (tw2) tw2.addEventListener("click", function () { foSetOrdersForRound(r); });
+          }
+          toast("XI confirmed for Round " + (r + 1) + " · good luck out there.");
+        } catch (e) { say(e); }
+      });
+      var gTw = page.querySelector(".fo-qs-gtweak");
+      if (gTw) gTw.addEventListener("click", function () { lsDel("fo_qs_new"); foSetOrdersForRound(+gTw.getAttribute("data-r")); });
+      var gOk = page.querySelector(".fo-qs-gold-ok a[data-r]");
+      if (gOk && !gOk.__w) { gOk.__w = 1; gOk.addEventListener("click", function () { foSetOrdersForRound(+gOk.getAttribute("data-r")); }); }
+    } catch (e) {}
+  }
+
+  // franchise players carry a permanent origin tag and a gold star on the
+  // squad / club / player pages (the tag text is the tooltip)
+  function foFranchiseBadges() {
+    try {
+      if (typeof App === "undefined" || !App || ["squad", "club", "player", "scout"].indexOf(App.page) < 0) return;
+      var page = document.getElementById("page"); if (!page) return;
+      var tags = {};
+      ((typeof GD !== "undefined" && GD.teams) || []).forEach(function (t) {
+        (t.players || []).forEach(function (p) { if (p && p.origin_tag) tags[p.name] = p.origin_tag; });
+      });
+      for (var k in tags) { k = null; break; }
+      if (k === undefined) return;   // no franchise players anywhere - nothing to do
+      page.querySelectorAll("a, b, h1").forEach(function (el) {
+        if (el.__foFp || el.querySelector(".fo-qs-fp")) return;
+        var txt = (el.textContent || "").trim().replace(/\s*\u2020$/, "");
+        if (tags[txt] == null) return;
+        el.__foFp = 1;
+        var i = document.createElement("i");
+        i.className = "fo-qs-fp"; i.title = tags[txt]; i.textContent = "\u2605";
+        el.appendChild(i);
+      });
+      // the player page writes the name as a bare crumb text node
+      if (App.page === "player") {
+        var cr = page.querySelector(".crumb");
+        if (cr && !cr.querySelector(".fo-qs-fp")) {
+          for (var nIx = 0; nIx < cr.childNodes.length; nIx++) {
+            var nd = cr.childNodes[nIx];
+            var ndT = nd.nodeType === 3 ? (nd.textContent || "").trim() : "";
+            if (ndT && tags[ndT] != null) {
+              var st = document.createElement("i");
+              st.className = "fo-qs-fp"; st.title = tags[ndT]; st.textContent = "\u2605";
+              cr.insertBefore(st, nd.nextSibling);
+              // and spell the tag out in the info panel - it is permanent history
+              var info = page.querySelector(".ftp-pinfo-hand");
+              if (info && !page.querySelector(".fo-qs-origin")) {
+                var ln = document.createElement("div");
+                ln.className = "fo-qs-origin"; ln.innerHTML = "\u2605 " + E(tags[ndT]);
+                info.parentNode.insertBefore(ln, info.nextSibling);
+              }
+              break;
+            }
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  // ---- TAKEOVER VARIANT (behind FO_TAKEOVER_ON, off for season 1) -----------
+  // Take over an existing bot club: optional rename, keep its ground and pitch,
+  // choose one of three franchise-player swaps. The join itself reuses the
+  // battle-tested foJoinRunningSeason splice.
+  var FO_TK = null;
+  window.__foTk = { start: function (t2) { return foTakeoverStart(t2); },
+    test: function (bot, offers) { FO_TK = { team: {}, bot: bot, name: bot.name, offers: offers || ["express", "rock", "wizard"], pick: null, country: "India", seed: "tk-test" }; foTkName(); } };
+  function foTakeoverStart(team) {
+    team = team || {};
+    sel("league_state", "league_id=eq." + LG.id + "&select=snapshot").then(function (a) {
+      var snap = a && a[0] && a[0].snapshot;
+      var bots = ((snap && snap.teams) || []).filter(function (t) { return t && !t.founded; });
+      if (!bots.length) { say("No bot club is free to take over - ask your commissioner to restart the season."); return; }
+      var bot = bots[bots.length - 1];
+      var seed = team.draft_seed || (SYNC && SYNC.myMid) || bot.name;
+      // three deterministic archetype offers
+      var ids = FO_ARCHETYPES.map(function (x) { return x.id; })
+        .sort(function (x, y) { return foQsHash(seed + x) - foQsHash(seed + y); }).slice(0, 3);
+      FO_TK = { team: team, bot: bot, name: bot.name, offers: ids, pick: null,
+        country: team.country || (((bot.players || [])[0] || {}).nat) || NAT[0], seed: seed };
+      foTkName();
+    }).catch(say);
+  }
+  function foTkName() {
+    var bot = FO_TK.bot;
+    var body =
+      "<div class='fo-ob-card'>" +
+      "<div class='fo-ob-eyebrow'>Mid-season takeover &middot; step 1 of 2</div>" +
+      "<h1 class='fo-ob-h1'>You inherit " + E(bot.name) + "</h1>" +
+      "<p class='fo-ob-lead'>The board hands you a going concern: the squad, the fixtures already played, <b>" + E(bot.ground || "the ground") + "</b> and its " + E(foPitchName(bot.homePitch || "balanced").toLowerCase()) + " pitch. Rename the club if you like - or keep the history.</p>" +
+      "<label class='fo-ob-lbl'>Club name</label><input id='fo-tk-nm' class='fo-ob-input' maxlength='28' value='" + E(FO_TK.name) + "'>" +
+      "</div>";
+    var host = foQsShell(1, body, foQsCtaBar("Continue", "fo-tk-c1"));
+    host.querySelector("#fo-tk-c1").addEventListener("click", function () {
+      var nm = (host.querySelector("#fo-tk-nm").value || "").trim();
+      FO_TK.name = nm.length >= 2 ? nm : FO_TK.bot.name;
+      foTkOffers();
+    });
+  }
+  function foTkOffers() {
+    var cards = FO_TK.offers.map(function (id) {
+      var a = foArchById(id);
+      return "<button type='button' class='fo-qs-arch" + (FO_TK.pick === id ? " on" : "") + "' data-a='" + id + "'>" +
+        "<span class='fo-qs-aic'>" + foQsIcon(a.ic) + "</span>" +
+        "<b class='fo-qs-anm'>" + a.nm + "</b>" +
+        "<span class='fo-qs-arole'>" + a.role + "</span>" +
+        "<span class='fo-qs-aline'>" + a.line + "</span>" +
+        "<span class='fo-qs-chips'>" + a.chips.map(function (s) { return "<i class='fo-qs-chip g'>" + s + "</i>"; }).join("") + "</span></button>";
+    }).join("");
+    var body =
+      "<div class='fo-ob-card'>" +
+      "<div class='fo-ob-eyebrow'>Mid-season takeover &middot; step 2 of 2</div>" +
+      "<h1 class='fo-ob-h1'>The board backs one marquee signing</h1>" +
+      "<p class='fo-ob-lead'>Three franchise players want the move. Whoever you pick replaces the weakest man in his position - the rest of the squad stays.</p>" +
+      "<div class='fo-qs-grid'>" + cards + "</div></div>";
+    var host = foQsShell(2, body, foQsCtaBar("Take over the club", "fo-tk-go", !FO_TK.pick, "fo-tk-b"));
+    host.querySelectorAll(".fo-qs-arch").forEach(function (b) {
+      b.addEventListener("click", function () {
+        FO_TK.pick = b.getAttribute("data-a");
+        host.querySelectorAll(".fo-qs-arch").forEach(function (x) { x.classList.toggle("on", x === b); });
+        var go = host.querySelector("#fo-tk-go"); if (go) go.disabled = false;
+      });
+    });
+    host.querySelector("#fo-tk-b").addEventListener("click", foTkName);
+    host.querySelector("#fo-tk-go").addEventListener("click", foTkGo);
+  }
+  function foTkGo() {
+    try {
+      var club = JSON.parse(JSON.stringify(FO_TK.bot));
+      club.name = FO_TK.name; club.founded = true; club.archetype = FO_TK.pick;
+      var star = foGenArchetypeSquad(FO_TK.seed + "|tk", FO_TK.country, FO_TK.pick).players[0];
+      // replace the weakest player in the starter's own bucket
+      var bucketOf = function (p) { return p.keeper ? "wk" : (p.bowlTypeFull && p.bowlTypeFull !== "none" && p.role !== "allRounder") ? "bowl" : "bat"; };
+      var bkt = bucketOf(star);
+      var pool = (club.players || []).filter(function (p) { return bucketOf(p) === bkt; })
+        .sort(function (a, b) { return (a.rating || 0) - (b.rating || 0); });
+      var out = pool[0];
+      if (out) club.players.splice(club.players.indexOf(out), 1);
+      star.origin_tag = "Franchise player - marquee takeover signing";
+      club.players.push(star);
+      try { window.store("fo_onb_done", "1"); lsSet("fo_qs_new", "1"); } catch (e) {}
+      foOnbClose();
+      rpc("push_club", { p_league_id: LG.id, p_club: club, p_team_ix: null })
+        .then(function () { foJoinRunningSeason(club); }).catch(say);
+    } catch (e) { say(e); }
+  }
 
   // ---- squad shape + advisor -----------------------------------------------
   function foRoleShort(p) {
@@ -13113,7 +14034,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (!spells.north.length || !spells.south.length) return foOrigSuggest();
     App.orders.spells = spells;
     App.orders.grid = null;                          // let the grid reseed from the new plan
-    try { pgOrders(); } catch (e) {}
+    // only re-render when the manager is actually ON the orders page - the
+    // one-tap XI confirm calls this from the club home and must stay there
+    try { if (App.page === "orders") pgOrders(); } catch (e) {}
   }
   // The engine dates rounds a week apart (its solo roots). This league plays
   // one round per day at 9:00 AM ET: round dates anchor to TODAY's round.
