@@ -7386,6 +7386,32 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-qs-gold-ok{font-size:14px;color:#166534;font-weight:600;line-height:1.5}" +
     ".fo-qs-gold-ok a{color:#C95532;cursor:pointer}" +
     ".fo-qs-fp{font-style:normal;color:#D9B75A;margin-left:4px;cursor:help;font-size:.85em;vertical-align:1px}" +
+    // the captain wears a different colour scheme, forever
+    ".fo-capt-chip{display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-weight:800;font-size:10px;width:16px;height:16px;border-radius:5px;background:linear-gradient(150deg,#D9B75A,#B8933A);color:#0a2342;margin-left:5px;vertical-align:1px;cursor:help;box-shadow:0 1px 3px rgba(0,0,0,.25)}" +
+    "tr.fo-capt-glow>td{background:linear-gradient(90deg,rgba(217,183,90,.16),rgba(217,183,90,.05)) !important}" +
+    "tr.fo-capt-glow>td:first-child{border-left:3px solid #D9B75A}" +
+    ".fo-dc.fo-capt-glow,.fo-sq-item.fo-capt-glow,.fo-c2-wr.fo-capt-glow,.fo-sq-mfx.fo-capt-glow,.fo-sqr-row.fo-capt-glow{background:linear-gradient(120deg,rgba(217,183,90,.16),rgba(217,183,90,.04)) !important;border-left:3px solid #D9B75A !important;border-radius:8px}" +
+    ".fo-qs-origin-c{color:#8a6d1f;font-weight:600}" +
+    ".fo-qs-story{font-size:11.5px;color:#6b5d33;font-style:italic;margin-top:3px;line-height:1.45}" +
+    // step 4: captain candidate cards - navy & gold, unmistakably different
+    ".fo-qs-cgrid{grid-template-columns:1fr 1fr}" +
+    "html body button.fo-qs-capt,html body.ftpskin button.fo-qs-capt{position:relative;display:flex;flex-direction:column;gap:5px;text-align:left;padding:13px 12px 11px;border:1.5px solid rgba(217,183,90,.45) !important;border-radius:14px;background:linear-gradient(165deg,#0a2342,#132f52) !important;cursor:pointer;font:inherit;overflow:hidden;color:#dfe6ef !important}" +
+    ".fo-qs-capt:before{content:'';position:absolute;inset:0;background:radial-gradient(120% 80% at 85% -10%,rgba(217,183,90,.18),transparent 60%)}" +
+    ".fo-qs-capt>*{position:relative}" +
+    "html body button.fo-qs-capt.on,html body.ftpskin button.fo-qs-capt.on{border-color:#D9B75A !important;box-shadow:0 0 0 2px rgba(217,183,90,.4),0 12px 26px rgba(10,35,66,.35) !important}" +
+    ".fo-qs-capt.on:after{content:'\\2713';position:absolute;top:8px;right:10px;width:20px;height:20px;border-radius:50%;background:#D9B75A;color:#0a2342;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}" +
+    ".fo-qs-cflav{font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:#D9B75A;font-weight:800}" +
+    ".fo-qs-cnm{font-size:16px;font-weight:800;color:#FFFEFC;font-family:Georgia,'Times New Roman',serif}" +
+    ".fo-qs-cmeta{font-size:11px;color:#9fb0c4}.fo-qs-cmeta u{text-decoration:none;color:#EAD9A8;font-weight:700}" +
+    ".fo-qs-cstory{font-size:11.5px;color:#b8c2d1;font-style:italic;line-height:1.4;min-height:44px}" +
+    ".fo-qs-chip.cg{background:rgba(34,197,94,.16);color:#a7e3bd;border:1px solid rgba(34,197,94,.35)}" +
+    ".fo-qs-chip.cw{background:rgba(217,119,6,.18);color:#ecc190;border:1px solid rgba(217,119,6,.4)}" +
+    // tutorial: the captain's first call
+    ".fo-tut-plan{display:flex;flex-direction:column;gap:3px;width:100%;text-align:left;margin-top:8px;padding:12px 13px;border:1.5px solid rgba(10,35,66,.14);border-radius:12px;background:#FFFEFC;cursor:pointer;font:inherit}" +
+    ".fo-tut-plan b{font-size:14px;color:#0a2342}" +
+    ".fo-tut-plan span{font-size:12px;color:#5b6472;line-height:1.35}" +
+    ".fo-tut-plan:hover{border-color:#C95532;box-shadow:0 0 0 2px rgba(201,85,50,.15)}" +
+    ".fo-tut-fit{font-style:normal;font-size:10.5px;color:#166534;font-weight:700}" +
     ".fo-qs-origin{font-size:11.5px;color:#8a6d1f;margin-top:3px;font-style:italic}" +
     // the engine skin's generic button rules (.ftpskin button, button.on) outrank
     // single-class selectors - pin the quick-start controls the house way
@@ -7399,6 +7425,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     "html body button.fo-qs-arch{background:linear-gradient(170deg,#FFFEFC,#F7F3E9) !important;border:1.5px solid rgba(10,35,66,.14) !important}" +
     "html body button.fo-qs-arch.on,html body.ftpskin button.fo-qs-arch.on{background:linear-gradient(170deg,#FFFDF8,#FDEEE6) !important;border-color:#C95532 !important;box-shadow:0 0 0 2px rgba(201,85,50,.25),0 10px 22px rgba(10,35,66,.10) !important}" +
     "@media(max-width:700px){.fo-qs-pitches{grid-template-columns:1fr}.fo-qs-grid{grid-template-columns:1fr 1fr;gap:8px}.fo-qs-gold{flex-direction:column;align-items:stretch}.fo-qs-gold-r{min-width:0}}" +
+    "@media(max-width:420px){.fo-qs-cgrid{grid-template-columns:1fr}}" +
     "@media(max-width:370px){.fo-qs-grid{grid-template-columns:1fr}}" +
     ".fo-ob-shell{min-height:100vh;background:radial-gradient(circle at 20% 0%,rgba(77,166,162,.08),transparent 34%),radial-gradient(circle at 85% 12%,rgba(200,103,74,.06),transparent 30%),linear-gradient(180deg,#EEEAE1 0%,#EDE8DB 100%);color:#111827;padding:24px 16px 48px}" +
     ".fo-ob-inner{max-width:960px;margin:0 auto}" +
@@ -9207,6 +9234,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // first-session golden path: exactly ONE "needs you today" item
       var goldCard = "";
       try { goldCard = foQsGolden(nxt, ordersIn, t); } catch (eQg) {}
+      // a freshly founded club owes its manager one warm-up: launch it once
+      try { if (lsGet("fo_qs_tut") && !document.getElementById("fo-tut")) setTimeout(foQsTutorial, 500); } catch (eTu) {}
       var html = "<div class='fo-ch fo-ch-min'>" + search + hero + goldCard + "<div id='fo-chal-alert'></div>" + stats +
         "<div class='fo-c2-grid'>" + newsCard + standings + fxCard + watchCard + "</div>" +
         "<div class='fo-c2-bottom'>" + leadBat + leadBowl + leadCombo + msCard + fin + "</div></div>";
@@ -10751,7 +10780,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260712-1919-21defa";
+  var FO_BUILD = "20260712-2235-b48df8";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10827,7 +10856,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // practice vs bots: bank the match and broadcast it ball by ball, the
       // same experience as friendlies and league matchdays
       try {
-        if (!window.__foPracRun && App && App.pending && App.pending.__friendly && App.orders && App.orders.saved && !(typeof M !== "undefined" && M && !M.done)) {
+        if (!window.__foPracRun && App && App.pending && App.pending.__friendly && !App.pending.__tut && App.orders && App.orders.saved && !(typeof M !== "undefined" && M && !M.done)) {
           var cP = foPracBroadcast();
           if (cP && cP.id) {
             try { foFriendlies = (foFriendlies || []).filter(function (f) { return f.oppName !== cP.opponent_club; }); foFrSchedSave(); } catch (eSch) {}
@@ -12044,6 +12073,58 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       starter: { role: "allRounder", age: 27, talents: ["goldenArm", "busyRunner"] } }
   ];
   function foQsHash(s) { var h = 2166136261; s = String(s || ""); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+  // ---- the captain pool: six candidates, six characters -------------------
+  // Every candidate is franchise-grade in the squad's chosen mould, aged
+  // 24-31, with genuinely high captaincy (85-96). The differences are REAL
+  // trade-offs the engine reads: personal brilliance vs leadership aura,
+  // stamina vs experience, growth ahead vs wisdom now.
+  var FO_CAPT_FLAVOURS = [
+    { id: "general", nm: "The General", age: 29, capt: 96, q: 0.93, expAdj: 8,
+      chips: ["Lifts the whole XI in the field", "Never loses the plot"], trade: "Modest personal numbers",
+      story: "Turned down richer offers to build something of his own. Fielders swear the dots come easier when he is at mid-off, quietly moving people two steps at a time." },
+    { id: "talisman", nm: "The Talisman", age: 26, capt: 85, q: 1.00,
+      chips: ["The squad's outright best player", "Wins matches on his own"], trade: "Leads by deeds, not words",
+      story: "The most gifted cricketer this club will ever sign. Speeches are not his thing; the first over of a big chase usually is." },
+    { id: "ironman", nm: "The Iron Man", age: 27, capt: 88, q: 0.95, stamMult: 1.3,
+      chips: ["Never tires, never rests", "Fresh for every matchday"], trade: "A shade below the very elite",
+      story: "Has not missed a game in six years, anywhere, for anyone. Trains before training. The physio's job is mostly watching him in disbelief." },
+    { id: "clutch", nm: "The Big Occasion", age: 28, capt: 90, q: 0.94, tempMult: 1.12, expAdj: 12,
+      chips: ["Pressure-proof temperament", "Made for the tight finishes"], trade: "Coasts through the quiet days",
+      story: "Career average: ordinary. Career average when it actually matters: ask the bowlers who had to defend seven off the last over against him." },
+    { id: "younggun", nm: "The Young Marshal", age: 24, capt: 87, q: 0.96, expAdj: -8, talentExtra: 1,
+      chips: ["Years of growth still ahead", "Trains faster than anyone"], trade: "Still earning his stripes",
+      story: "Captained every age-group side he ever played in. The old pros grumbled about taking orders from a kid - for about two matches." },
+    { id: "master", nm: "The Old Master", age: 31, capt: 94, q: 0.95, expAdj: 16, stamMult: 0.8,
+      chips: ["Seen everything, twice", "Reads a game overs ahead"], trade: "The legs are going",
+      story: "Three titles, two comebacks and one famous last-ball single. Joins for one final project: yours." }
+  ];
+  function foCaptFlavourById(id) { for (var i = 0; i < FO_CAPT_FLAVOURS.length; i++) if (FO_CAPT_FLAVOURS[i].id === id) return FO_CAPT_FLAVOURS[i]; return FO_CAPT_FLAVOURS[0]; }
+  // Six deterministic candidates in the archetype's franchise mould. The
+  // squad generator re-derives this same pool, so the card a manager taps is
+  // byte-for-byte the captain who leads the squad out.
+  function foGenCaptainPool(seed, country, archId) {
+    var A = foArchById(archId), st = A.starter || {};
+    var firsts = {}, lasts = {};
+    return FO_CAPT_FLAVOURS.map(function (F) {
+      var rnd = window.rng(foQsHash(String(seed) + "|cap|" + archId + "|" + F.id));
+      var p = foQsPlayer({ role: st.role || "topOrderBat", age: F.age, q: Math.min(0.99, 0.97 * (F.q || 1)) }, country, rnd, firsts, lasts);
+      p.capt = F.capt;
+      p.exp = Math.max(2, Math.min(99, Math.round(p.exp + (F.expAdj || 0)))); p.expWord = foExpWordOf(p.exp);
+      if (F.stamMult) p.skills.stamina = Math.max(4, Math.min(96, Math.round(p.skills.stamina * F.stamMult)));
+      if (F.tempMult && !foPureBowler(p)) p.skills.temperament = Math.max(4, Math.min(96, Math.round(p.skills.temperament * F.tempMult)));
+      var want = (st.talents || []).concat(A.talents || []);
+      var nT = 2 + (F.talentExtra || 0);
+      var poolT = Object.keys(TALN).sort(function (a, b) { return foQsHash(p.name + a) - foQsHash(p.name + b); });
+      want.concat(poolT).forEach(function (t) { if (p.talents.length >= nT || p.talents.indexOf(t) >= 0) return; if (foQsElig(p, t)) p.talents.push(t); });
+      jsDerive(p);
+      p.captFlavour = F.id;
+      p.backstory = F.story;
+      return p;
+    });
+  }
+  window.__foGenCaptainPool = foGenCaptainPool;
+  window.__foCaptFlavours = FO_CAPT_FLAVOURS;
   function foArchById(id) { for (var i = 0; i < FO_ARCHETYPES.length; i++) if (FO_ARCHETYPES[i].id === id) return FO_ARCHETYPES[i]; return FO_ARCHETYPES[0]; }
 
   // quality ladder for the 14 players behind the starter - the SAME multiset
@@ -12131,10 +12212,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     });
     return bats + 0.85 * bowlSum + others + bench;
   }
-  // Generate a full 15-player squad for one archetype. Deterministic from
-  // (seed, country, archId) - every client and the resolver agree exactly.
-  function foGenArchetypeSquad(seed, country, archId) {
+  // Generate a full 15-player squad for one archetype, led by the chosen
+  // captain flavour. Deterministic from (seed, country, archId, captId) -
+  // every client and the resolver agree exactly.
+  function foGenArchetypeSquad(seed, country, archId, captId) {
     var A = foArchById(archId);
+    var CF = foCaptFlavourById(captId || "general");
     var rnd = window.rng(foQsHash(String(seed) + "|" + archId));
     var firsts = {}, lasts = {};
     var C = A.counts || {};
@@ -12158,13 +12241,20 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var pr = {}; (A.focus || []).forEach(function (gname, i2) { pr[gname] = i2; });
     var order = slots.slice().sort(function (a, b) { return (pr[a.g] == null ? 9 : pr[a.g]) - (pr[b.g] == null ? 9 : pr[b.g]); });
     order.forEach(function (sl, i3) { sl.q = ladder[i3] != null ? ladder[i3] : 0.33; });
-    // the franchise player first, then the squad in natural order
+    // the captain first (from the same pool the picker showed), then the squad
     var st = A.starter || {};
     var players = [];
-    var starter = foQsPlayer({ role: st.role || "topOrderBat", age: st.age, ages: A.ages, q: 0.97 }, country, rnd, firsts, lasts);
+    var pool6 = foGenCaptainPool(seed, country, archId);
+    var starter = pool6[FO_CAPT_FLAVOURS.indexOf(CF)] || pool6[0];
+    // the captain's name is taken: squad names must not clash with it
+    (function () {
+      var sp = starter.name.split(/\s+/);
+      firsts[(sp[0] || "").toLowerCase()] = 1;
+      lasts[((sp.slice(1).join(" ") || sp[0]) + "").toLowerCase()] = 1;
+    })();
     players.push(starter);
     slots.forEach(function (sl) { players.push(foQsPlayer({ role: sl.role, ages: A.ages, q: sl.q }, country, rnd, firsts, lasts)); });
-    var qOf = {}; qOf[starter.name] = 0.97; slots.forEach(function (sl, i5) { qOf[players[i5 + 1].name] = sl.q; });
+    var qOf = {}; qOf[starter.name] = 0.97 * (CF.q || 1); slots.forEach(function (sl, i5) { qOf[players[i5 + 1].name] = sl.q; });
     // archetype flavour: real multipliers on the raw skills, BEFORE the
     // equal-budget pass, so the weakness survives normalisation as SHAPE
     var isBowlP = function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none"; };
@@ -12201,10 +12291,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     // talents: archetype-flavoured, engine-eligible, capped so they stay flavour
     players.forEach(function (p) {
       var isStar = p === starter;
+      if (isStar) return;   // the captain's talents were set with his flavour
       var q = qOf[p.name] || 0.4;
-      var n = isStar ? 2 : (q > 0.55 ? (rnd() < 0.6 ? 2 : 1) : (rnd() < 0.45 ? 1 : 0));
+      var n = q > 0.55 ? (rnd() < 0.6 ? 2 : 1) : (rnd() < 0.45 ? 1 : 0);
       if (A.talentExtra && !isStar) n = Math.min(3, n + A.talentExtra);
-      var want = (isStar ? (st.talents || []) : []).concat(A.talents || []);
+      var want = (A.talents || []).slice();
       var pool = Object.keys(TALN).sort(function (a, b) { return foQsHash(p.name + a) - foQsHash(p.name + b); });
       want.concat(pool).forEach(function (t) {
         if (p.talents.length >= n || p.talents.indexOf(t) >= 0) return;
@@ -12250,21 +12341,17 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var vsum = 0;
     players.forEach(function (p) { vsum += foSkillValue(p); });
     players.forEach(function (p) { p.fee = Math.max(8000, Math.round(800000 * foSkillValue(p) / Math.max(1, vsum) / 500) * 500); });
-    // the franchise player leads by default; The Prodigy is 18, so the oldest
-    // head wears the armband and the kid is tagged the future captain
+    // the chosen captain leads, whatever the archetype: re-assert his exact
+    // captaincy after the archetype-wide adjustments, and no teammate outranks him
     var seasonNow = (typeof App !== "undefined" && App.seasonNo) || 1;
-    if (A.id === "prodigy") {
-      starter.capt = 30;
-      var eldest = players.slice(1).sort(function (a, b) { return (b.age - a.age) || ((b.capt || 0) - (a.capt || 0)); })[0];
-      if (eldest) eldest.capt = Math.max(eldest.capt || 0, 88);
-      starter.origin_tag = "Franchise player - future captain of the founding squad";
-    } else {
-      starter.capt = 92;
-      starter.origin_tag = "Franchise player - face of the founding squad";
-    }
+    starter.capt = CF.capt;
+    players.slice(1).forEach(function (p) { if ((p.capt || 0) > CF.capt - 8) p.capt = CF.capt - 8; });
+    starter.origin_tag = "Franchise captain - " + CF.nm + " of the founding squad";
     starter.archetype = A.id;
+    starter.captFlavour = CF.id;
+    starter.backstory = CF.story;
     starter._prov = { how: "draft", s: seasonNow, founding: 1 };
-    return { players: players, starter: starter.name, arch: A.id };
+    return { players: players, starter: starter.name, captFlavour: CF.id, arch: A.id };
   }
   window.__foArchetypes = FO_ARCHETYPES;
   window.__foSkillValue = foSkillValue;
@@ -12696,7 +12783,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     FO_QS = {
       team: team, step: 1,
       clubName: team.name || "", abbr: "", abbrTouched: false,
-      pitch: "balanced", arch: null, gen: null,
+      pitch: "balanced", arch: null, capt: null, pool: null, gen: null,
       country: team.country || NAT[foQsHash("cty|" + seedGuess) % NAT.length],
       needsSetup: !(team.country && team.draft_seed)
     };
@@ -12720,7 +12807,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foQsShell(stepIx, body, ctaHtml) {
     var host = document.getElementById("fo-onb");
     if (!host) { host = document.createElement("div"); host.id = "fo-onb"; document.body.appendChild(host); }
-    var dots = [1, 2, 3].map(function (n) {
+    var dots = [1, 2, 3, 4].map(function (n) {
       return "<span class='fo-qs-dot" + (n < stepIx ? " done" : n === stepIx ? " on" : "") + "'></span>";
     }).join("");
     host.innerHTML = "<div class='fo-ob-shell'><div class='fo-qs-wrap'>" +
@@ -12741,7 +12828,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     FO_QS.step = 1;
     var body =
       "<div class='fo-ob-card fo-qs-card1'>" +
-      "<div class='fo-ob-eyebrow'>Found your club &middot; step 1 of 3</div>" +
+      "<div class='fo-ob-eyebrow'>Found your club &middot; step 1 of 4</div>" +
       "<h1 class='fo-ob-h1'>Name your club</h1>" +
       "<p class='fo-ob-lead'>Three choices and you're a manager: a name, a home pitch, and the player you build everything around. The squad, the money and the fixtures take care of themselves.</p>" +
       "<label class='fo-ob-lbl'>Club name</label><input id='fo-qs-nm' class='fo-ob-input' maxlength='28' value='" + E(FO_QS.clubName) + "' placeholder='Harbor City CC'>" +
@@ -12775,7 +12862,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     }).join("");
     var body =
       "<div class='fo-ob-card'>" +
-      "<div class='fo-ob-eyebrow'>" + E(FO_QS.clubName) + " &middot; step 2 of 3</div>" +
+      "<div class='fo-ob-eyebrow'>" + E(FO_QS.clubName) + " &middot; step 2 of 4</div>" +
       "<h1 class='fo-ob-h1'>Choose your home pitch</h1>" +
       "<p class='fo-ob-lead'>Nine of your eighteen matches are played on it. Pick the cricket you want to watch - the next step will tell you which squads thrive here.</p>" +
       "<div class='fo-qs-pitches'>" + cards + "</div></div>";
@@ -12806,35 +12893,80 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     }).join("");
     var body =
       "<div class='fo-ob-card'>" +
-      "<div class='fo-ob-eyebrow'>" + E(FO_QS.clubName) + " &middot; step 3 of 3</div>" +
+      "<div class='fo-ob-eyebrow'>" + E(FO_QS.clubName) + " &middot; step 3 of 4</div>" +
       "<h1 class='fo-ob-h1'>What kind of team do you want?</h1>" +
       "<p class='fo-ob-lead'>Pick your squad's identity. Fifteen players arrive signed and ready - real strengths, one honest weakness, and a franchise player leading the way.</p>" +
       "<div class='fo-qs-grid'>" + cards + "</div></div>";
-    var host = foQsShell(3, body, foQsCtaBar("Found my club", "fo-qs-go", !FO_QS.arch, "fo-qs-b3"));
+    var host = foQsShell(3, body, foQsCtaBar("Continue", "fo-qs-go", !FO_QS.arch, "fo-qs-b3"));
     host.querySelectorAll(".fo-qs-arch").forEach(function (b) {
       b.addEventListener("click", function () {
+        var prev = FO_QS.arch;
         FO_QS.arch = b.getAttribute("data-a");
+        if (prev !== FO_QS.arch) { FO_QS.capt = null; FO_QS.pool = null; }
         host.querySelectorAll(".fo-qs-arch").forEach(function (x) { x.classList.toggle("on", x === b); });
         var go = host.querySelector("#fo-qs-go"); if (go) go.disabled = false;
       });
     });
     host.querySelector("#fo-qs-b3").addEventListener("click", foQsPitch);
-    host.querySelector("#fo-qs-go").addEventListener("click", foQsFound);
+    host.querySelector("#fo-qs-go").addEventListener("click", foQsCaptainEnter);
   }
-  // ---- found: save the club row, generate the squad, show the confirmation --
-  function foQsFound() {
+  function foQsSeed() { return (FO_QS.team && FO_QS.team.draft_seed) || FO_QS.clubName; }
+  // entering the captain step needs the server seed, so the club row is
+  // created here (the name is final after step 1)
+  function foQsCaptainEnter() {
     if (!FO_QS.arch) return;
+    if (!FO_QS.needsSetup) { foQsCaptain(); return; }
     var btn = document.querySelector("#fo-qs-go");
-    if (btn) { btn.disabled = true; btn.textContent = "Founding " + FO_QS.clubName + "…"; }
-    var fail = function (e) { if (btn) { btn.disabled = false; btn.textContent = "Found my club"; } say(e); };
-    var ensure = FO_QS.needsSetup
-      ? rpc("create_league_team", { p_league_id: LG.id, p_team_name: FO_QS.clubName, p_manager_name: (SYNC && SYNC.me && SYNC.me.display_name) || "Manager", p_country: FO_QS.country })
-          .then(function (team) { SYNC.myTeam = team; FO_QS.team = team; FO_QS.needsSetup = false; if (team.country) FO_QS.country = team.country; return team; })
-      : Promise.resolve(FO_QS.team);
-    ensure.then(function (team) {
-      FO_QS.gen = foGenArchetypeSquad(team.draft_seed || FO_QS.clubName, FO_QS.country, FO_QS.arch);
+    if (btn) { btn.disabled = true; btn.textContent = "Saving the club…"; }
+    rpc("create_league_team", { p_league_id: LG.id, p_team_name: FO_QS.clubName, p_manager_name: (SYNC && SYNC.me && SYNC.me.display_name) || "Manager", p_country: FO_QS.country })
+      .then(function (team) {
+        SYNC.myTeam = team; FO_QS.team = team; FO_QS.needsSetup = false;
+        if (team.country) FO_QS.country = team.country;
+        foQsCaptain();
+      })
+      .catch(function (e) { if (btn) { btn.disabled = false; btn.textContent = "Continue"; } say(e); });
+  }
+  // ---- step 4 · choose the captain (six candidates, six characters) --------
+  function foQsCaptain() {
+    FO_QS.step = 4;
+    var A = foArchById(FO_QS.arch);
+    if (!FO_QS.pool) FO_QS.pool = foGenCaptainPool(foQsSeed(), FO_QS.country, FO_QS.arch);
+    var cards = FO_QS.pool.map(function (pl, i) {
+      var F = FO_CAPT_FLAVOURS[i];
+      var cw = foWord(pl.capt) || "elite";
+      return "<button type='button' class='fo-qs-capt" + (FO_QS.capt === F.id ? " on" : "") + "' data-c='" + F.id + "'>" +
+        "<span class='fo-qs-cflav'>" + E(F.nm) + "</span>" +
+        "<b class='fo-qs-cnm'>" + E(pl.name) + "</b>" +
+        "<span class='fo-qs-cmeta'>" + E(A.starRole || A.role) + " &middot; age " + pl.age + " &middot; <u>" + E(cw) + "</u> captaincy</span>" +
+        "<span class='fo-qs-cstory'>" + E(F.story) + "</span>" +
+        "<span class='fo-qs-chips'>" + F.chips.map(function (s) { return "<i class='fo-qs-chip cg'>" + s + "</i>"; }).join("") +
+        "<i class='fo-qs-chip cw'>" + F.trade + "</i></span>" +
+        "</button>";
+    }).join("");
+    var body =
+      "<div class='fo-ob-card'>" +
+      "<div class='fo-ob-eyebrow'>" + E(FO_QS.clubName) + " &middot; step 4 of 4</div>" +
+      "<h1 class='fo-ob-h1'>Choose your captain</h1>" +
+      "<p class='fo-ob-lead'>Six leaders want the " + E(FO_QS.clubName) + " armband. Each is the finished article in your squad's mould - the difference is character, and every line below is a real trade-off on the pitch. The squad is signed around whoever you pick.</p>" +
+      "<div class='fo-qs-grid fo-qs-cgrid'>" + cards + "</div></div>";
+    var host = foQsShell(4, body, foQsCtaBar("Found my club", "fo-qs-cgo", !FO_QS.capt, "fo-qs-b4"));
+    host.querySelectorAll(".fo-qs-capt").forEach(function (b) {
+      b.addEventListener("click", function () {
+        FO_QS.capt = b.getAttribute("data-c");
+        host.querySelectorAll(".fo-qs-capt").forEach(function (x) { x.classList.toggle("on", x === b); });
+        var go = host.querySelector("#fo-qs-cgo"); if (go) go.disabled = false;
+      });
+    });
+    host.querySelector("#fo-qs-b4").addEventListener("click", foQsStarter);
+    host.querySelector("#fo-qs-cgo").addEventListener("click", foQsFound);
+  }
+  // ---- found: generate the squad around the chosen captain ------------------
+  function foQsFound() {
+    if (!FO_QS.arch || !FO_QS.capt) return;
+    try {
+      FO_QS.gen = foGenArchetypeSquad(foQsSeed(), FO_QS.country, FO_QS.arch, FO_QS.capt);
       foQsConfirm();
-    }).catch(fail);
+    } catch (e) { say(e); }
   }
   // best-effort "your first match" line: read the live snapshot and predict
   // which bot this club will replace (display only - the join itself re-checks)
@@ -12896,20 +13028,24 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "<div class='fo-qs-star-tag'>" + foQsIcon(A.ic, 13) + " " + A.nm + " &middot; your founding squad</div>" +
       "<div class='fo-qs-star-meta' style='margin-top:4px'>" + E(A.line) + "</div>" +
       "<div class='fo-qs-shape'><span><b>15</b> signed</span><span><b>" + paceN9 + "</b> quick" + (paceN9 === 1 ? "" : "s") + "</span><span><b>" + spinN9 + "</b> spinner" + (spinN9 === 1 ? "" : "s") + "</span><span><b>" + arN9 + "</b> all-rounders</span><span><b>" + wkN9 + "</b> keepers</span></div>" +
-      "<div class='fo-qs-star-tag' style='margin-top:12px'>Led by your franchise player</div>" +
-      "<div class='fo-qs-star-nm'>" + E(starter.name || "") + "</div>" +
+      "<div class='fo-qs-star-tag' style='margin-top:12px'>Your captain &middot; " + E((foCaptFlavourById(FO_QS.capt) || {}).nm || "") + "</div>" +
+      "<div class='fo-qs-star-nm'>" + E(starter.name || "") + " <i class='fo-capt-chip'>C</i></div>" +
       "<div class='fo-qs-star-meta'>" + E(A.starRole || A.role) + " &middot; age " + (starter.age || "?") + (bt ? " &middot; " + E(bt) : "") + (starter.hand === "L" ? " &middot; left-hand bat" : "") + "</div>" +
+      (starter.backstory ? "<div class='fo-qs-star-meta' style='margin-top:6px;font-style:italic'>" + E(starter.backstory) + "</div>" : "") +
       (tals ? "<div class='fo-qs-star-tal'>" + tals + "</div>" : "") +
       "</div>" +
       "<div class='fo-qs-fix' id='fo-qs-fix'>Checking the fixture list&hellip;</div>" +
       "<p class='fo-ob-lead' style='margin-top:12px'>The squad is signed and paid for, your XI is ready to confirm, and the groundsman is already rolling the " + pt.nm.toLowerCase() + " deck at " + E(FO_QS.clubName) + " Oval.</p>" +
       "</div>";
-    var host = foQsShell(3, body, foQsCtaBar("Take me to my club", "fo-qs-enter"));
+    var host = foQsShell(4, body, foQsCtaBar("Play a warm-up with your captain", "fo-qs-enter", false, "fo-qs-skip"));
+    var skipB = host.querySelector("#fo-qs-skip");
+    if (skipB) skipB.textContent = "Skip to my club";
     foQsFixtureLine(function (line) { var el = document.getElementById("fo-qs-fix"); if (el) el.innerHTML = line; });
-    host.querySelector("#fo-qs-enter").addEventListener("click", foQsGo);
+    host.querySelector("#fo-qs-enter").addEventListener("click", function () { foQsGo(true); });
+    if (skipB) skipB.addEventListener("click", function () { foQsGo(false); });
   }
   // ---- commit through the engine + league wrapper (push_club / join) --------
-  function foQsGo() {
+  function foQsGo(withTut) {
     try {
       var gen = FO_QS.gen, team = FO_QS.team || {};
       if (!gen || !gen.players) { say("Squad not ready - go back one step and try again."); return; }
@@ -12922,6 +13058,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         window.store("fo_onb_done", "1");
         window.store("fo_ground", FO_QS.clubName + " Oval"); window.store("fo_pitch", FO_QS.pitch);
         lsSet("fo_qs_new", "1");
+        if (withTut) lsSet("fo_qs_tut", "1"); else lsDel("fo_qs_tut");
       } catch (e) {}
       // club-level identity goes on BEFORE founderConfirm so the league wrapper
       // uploads a complete record (it deep-copies the club synchronously)
@@ -12954,6 +13091,98 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       } catch (e) {}
       foOnbClose();
     } catch (e) { say(e); foOnbClose(); }
+  }
+
+  // ---- the tutorial warm-up: one match, ONE strategic call ------------------
+  // Launched from the club home right after founding. The captain's first
+  // call sets the plan (a real orders delta, not the whole lineup); the rest
+  // of the XI is auto-picked and the match plays in the live match centre.
+  function foQsTutorial() {
+    try {
+      if (typeof M !== "undefined" && M && !M.done) return;   // never stomp a live match
+      var me = userTeam(); if (!me || !me.players || me.players.length < 11) return;
+      var ix = -1;
+      (GD.teams || []).forEach(function (t, i) { if (ix < 0 && t && t.name !== me.name && !t.founded) ix = i; });
+      if (ix < 0) (GD.teams || []).forEach(function (t, i) { if (ix < 0 && t && t.name !== me.name) ix = i; });
+      if (ix < 0) { lsDel("fo_qs_tut"); return; }
+      var opp = GD.teams[ix];
+      var pitch = me.homePitch || "balanced";
+      var capName = "";
+      try { (me.players || []).some(function (p) { if (p && p.origin_tag && /Franchise captain/.test(p.origin_tag)) { capName = p.name; return true; } return false; }); } catch (e) {}
+      // three plans, each a REAL orders delta the engine reads ball by ball
+      var plans = [
+        { id: "attack", nm: "Take the game on", d: "Attack with bat and field from ball one. Big scores - and big risks.",
+          fit: pitch === "flat" || pitch === "balanced",
+          pi: { pp: 1, mid: 0, death: 2 }, fp: { pp: "att", mid: "bal", death: "def" } },
+        { id: "build", nm: "Build, then explode", d: "Keep wickets in hand for 35 overs, then swing from the deep end.",
+          fit: pitch === "green" || pitch === "cracked" || pitch === "twoPaced",
+          pi: { pp: -1, mid: 0, death: 2 }, fp: { pp: "bal", mid: "bal", death: "def" } },
+        { id: "squeeze", nm: "Squeeze them out", d: "Defensive fields, patient batting - strangle them and pounce late.",
+          fit: pitch === "slow" || pitch === "dry",
+          pi: { pp: 0, mid: 0, death: 1 }, fp: { pp: "bal", mid: "def", death: "def" } }
+      ];
+      if (!plans.some(function (pl) { return pl.fit; })) plans[0].fit = true;
+      var ex = document.getElementById("fo-tut"); if (ex) ex.remove();
+      var m = document.createElement("div"); m.id = "fo-tut"; m.className = "fo-modal";
+      m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>Warm-up vs " + E(opp.name) + "</div>" +
+        "<h3>" + (capName ? E(capName) + " wants a plan" : "Your captain wants a plan") + "</h3>" +
+        "<div class='small' style='margin:4px 0 10px'>One friendly before the league - nothing counts, everything teaches. The XI picks itself; <b>you make the captain's call</b>. Conditions: <b>" + E(foPitchName(pitch)) + "</b> pitch, sunny.</div>" +
+        plans.map(function (pl) {
+          return "<button type='button' class='fo-tut-plan' data-p='" + pl.id + "'><b>" + pl.nm + "</b>" +
+            (pl.fit ? "<i class='fo-tut-fit'>&#10003; the captain's pick for this deck</i>" : "") +
+            "<span>" + pl.d + "</span></button>";
+        }).join("") +
+        "<div class='small' style='margin-top:10px;text-align:center'><a id='fo-tut-skip' style='cursor:pointer;text-decoration:underline dotted'>Skip the warm-up</a></div></div>";
+      document.body.appendChild(m);
+      m.querySelector("#fo-tut-skip").addEventListener("click", function () { lsDel("fo_qs_tut"); m.remove(); });
+      m.querySelectorAll(".fo-tut-plan").forEach(function (b) {
+        b.addEventListener("click", function () {
+          try {
+            var pl = plans.filter(function (x) { return x.id === b.getAttribute("data-p"); })[0] || plans[0];
+            try { M = null; } catch (_) {}
+            App.tossState = null;
+            App.pending = { oppIx: ix, home: me.name, away: opp.name, ground: me.ground, pitch: pitch, weather: "Sunny",
+              seed: 4200 + ix, date: (typeof simDate === "function" ? simDate() : ""), comp: "friendly", __friendly: true, __tut: 1 };
+            suggestOrders();
+            App.orders.phaseIntent = pl.pi; App.orders.fieldPlan = pl.fp;
+            App.orders.saved = true;
+            App.defaults = JSON.parse(JSON.stringify(App.orders));
+            lsDel("fo_qs_tut");
+            m.remove();
+            toast("Plan set: " + pl.nm + " · your XI walks out. Use the speed controls, or just watch.");
+            location.hash = "#/match"; if (typeof window.route === "function") window.route();
+            foQsTutWatch();
+          } catch (e) { say(e); }
+        });
+      });
+    } catch (e) { try { lsDel("fo_qs_tut"); } catch (e2) {} }
+  }
+  // when the warm-up ends, close the loop: one call, one match, now the league
+  function foQsTutWatch() {
+    try { if (window.__foTutIv) clearInterval(window.__foTutIv); } catch (e) {}
+    var started = Date.now();
+    window.__foTutIv = setInterval(function () {
+      try {
+        if (Date.now() - started > 45 * 60000) { clearInterval(window.__foTutIv); window.__foTutIv = null; return; }
+        if (!(typeof M !== "undefined" && M && M.done)) return;
+        clearInterval(window.__foTutIv); window.__foTutIv = null;
+        setTimeout(function () {
+          try {
+            var txt = (M && M.result && M.result.text) || "Full time.";
+            var ex = document.getElementById("fo-tut2"); if (ex) ex.remove();
+            var m2 = document.createElement("div"); m2.id = "fo-tut2"; m2.className = "fo-modal";
+            m2.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>Full time</div>" +
+              "<h3>" + E(txt) + "</h3>" +
+              "<div class='small' style='margin:6px 0 12px'>That was one call shaping fifty overs - and it never counted for anything. Tonight's league match does. Your XI is one tap away on the club home.</div>" +
+              "<div style='text-align:center'><button class='primary' id='fo-tut2-go'>To my club ▸</button></div></div>";
+            document.body.appendChild(m2);
+            m2.querySelector("#fo-tut2-go").addEventListener("click", function () {
+              m2.remove(); location.hash = "#/club"; if (typeof window.route === "function") window.route();
+            });
+          } catch (e) {}
+        }, 2200);
+      } catch (e) {}
+    }, 2000);
   }
 
   // ---- first-session golden path --------------------------------------------
@@ -13013,20 +13242,32 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     try {
       if (typeof App === "undefined" || !App || ["squad", "club", "player", "scout"].indexOf(App.page) < 0) return;
       var page = document.getElementById("page"); if (!page) return;
-      var tags = {};
+      var tags = {}, capts = {}, stories = {};
       ((typeof GD !== "undefined" && GD.teams) || []).forEach(function (t) {
-        (t.players || []).forEach(function (p) { if (p && p.origin_tag) tags[p.name] = p.origin_tag; });
+        (t.players || []).forEach(function (p) {
+          if (!p || !p.origin_tag) return;
+          tags[p.name] = p.origin_tag;
+          if (/Franchise captain/.test(p.origin_tag)) capts[p.name] = 1;
+          if (p.backstory) stories[p.name] = p.backstory;
+        });
       });
       for (var k in tags) { k = null; break; }
       if (k === undefined) return;   // no franchise players anywhere - nothing to do
       page.querySelectorAll("a, b, h1").forEach(function (el) {
-        if (el.__foFp || el.querySelector(".fo-qs-fp")) return;
+        if (el.__foFp || el.querySelector(".fo-qs-fp") || el.querySelector(".fo-capt-chip")) return;
         var txt = (el.textContent || "").trim().replace(/\s*\u2020$/, "");
         if (tags[txt] == null) return;
         el.__foFp = 1;
         var i = document.createElement("i");
-        i.className = "fo-qs-fp"; i.title = tags[txt]; i.textContent = "\u2605";
+        if (capts[txt]) { i.className = "fo-capt-chip"; i.title = tags[txt]; i.textContent = "C"; }
+        else { i.className = "fo-qs-fp"; i.title = tags[txt]; i.textContent = "\u2605"; }
         el.appendChild(i);
+        // the captain's card is forever a different colour scheme: glow the
+        // row or card that carries his name
+        if (capts[txt]) {
+          var box = el.closest("tr") || el.closest(".fo-dc") || el.closest(".fo-c2-wr") || el.closest(".fo-sq-item") || el.closest(".fo-sq-mfx") || el.closest(".fo-sqr-row");
+          if (box) box.classList.add("fo-capt-glow");
+        }
       });
       // the player page writes the name as a bare crumb text node
       if (App.page === "player") {
@@ -13037,13 +13278,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             var ndT = nd.nodeType === 3 ? (nd.textContent || "").trim() : "";
             if (ndT && tags[ndT] != null) {
               var st = document.createElement("i");
-              st.className = "fo-qs-fp"; st.title = tags[ndT]; st.textContent = "\u2605";
+              if (capts[ndT]) { st.className = "fo-capt-chip"; st.title = tags[ndT]; st.textContent = "C"; }
+              else { st.className = "fo-qs-fp"; st.title = tags[ndT]; st.textContent = "\u2605"; }
               cr.insertBefore(st, nd.nextSibling);
               // and spell the tag out in the info panel - it is permanent history
               var info = page.querySelector(".ftp-pinfo-hand");
               if (info && !page.querySelector(".fo-qs-origin")) {
                 var ln = document.createElement("div");
-                ln.className = "fo-qs-origin"; ln.innerHTML = "\u2605 " + E(tags[ndT]);
+                ln.className = "fo-qs-origin" + (capts[ndT] ? " fo-qs-origin-c" : "");
+                ln.innerHTML = (capts[ndT] ? "<i class='fo-capt-chip'>C</i> " : "\u2605 ") + E(tags[ndT]) +
+                  (stories[ndT] ? "<div class='fo-qs-story'>" + E(stories[ndT]) + "</div>" : "");
                 info.parentNode.insertBefore(ln, info.nextSibling);
               }
               break;
