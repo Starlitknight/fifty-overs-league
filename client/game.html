@@ -7357,8 +7357,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-qs-chip{font-style:normal;font-size:10.5px;font-weight:600;padding:3px 7px;border-radius:99px;line-height:1.15}" +
     ".fo-qs-chip.g{background:rgba(22,163,74,.12);color:#166534;border:1px solid rgba(22,163,74,.25)}" +
     ".fo-qs-chip.w{background:rgba(217,119,6,.12);color:#92400e;border:1px solid rgba(217,119,6,.28)}" +
-    ".fo-qs-syn{font-size:11px;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(10,35,66,.14);color:#166534;line-height:1.3}" +
-    ".fo-qs-syn.bad{color:#92400e}" +
     ".fo-qs-ctabar{position:fixed;left:0;right:0;bottom:0;z-index:6;padding:10px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,#F5EFDC 62%,rgba(245,239,220,0));display:flex;gap:10px;justify-content:center;align-items:stretch}" +
     ".fo-qs-cta{flex:1;max-width:420px;height:50px;border:none;border-radius:13px;background:#C95532;color:#FFFEFC;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 10px 24px rgba(201,85,50,.35)}" +
     ".fo-qs-cta:disabled{opacity:.45;cursor:default;box-shadow:none}" +
@@ -7414,7 +7412,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-tut-plan b{font-size:14px;color:#0a2342}" +
     ".fo-tut-plan span{font-size:12px;color:#5b6472;line-height:1.35}" +
     ".fo-tut-plan:hover{border-color:#C95532;box-shadow:0 0 0 2px rgba(201,85,50,.15)}" +
-    ".fo-tut-fit{font-style:normal;font-size:10.5px;color:#166534;font-weight:700}" +
     ".fo-qs-origin{font-size:11.5px;color:#8a6d1f;margin-top:3px;font-style:italic}" +
     // the engine skin's generic button rules (.ftpskin button, button.on) outrank
     // single-class selectors - pin the quick-start controls the house way
@@ -10783,7 +10780,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260712-2252-e5e3ec";
+  var FO_BUILD = "20260712-2255-0f58b0";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -12768,13 +12765,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     cracked: "Unpredictable bounce. Wickets for everyone.",
     twoPaced: "Some balls hurry, some hold. Timing is never safe."
   };
-  function foQsSynNote(a, pitch) {
-    var pt = FO_PITCH_CARDS.find(function (x) { return x.id === pitch; });
-    var pn = pt ? pt.nm.toLowerCase() : pitch;
-    if ((a.syn.good || []).indexOf(pitch) >= 0) return { cls: "", txt: "&#10003; Your " + pn + " home track suits this squad." };
-    if ((a.syn.bad || []).indexOf(pitch) >= 0) return { cls: "bad", txt: "&#9888; Fair warning: your " + pn + " home track fights this squad." };
-    return null;
-  }
   function foQsAbbrOf(nm) {
     var w = String(nm || "").trim().split(/\s+/).filter(Boolean);
     if (!w.length) return "";
@@ -12868,7 +12858,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "<div class='fo-ob-card'>" +
       "<div class='fo-ob-eyebrow'>" + E(FO_QS.clubName) + " &middot; step 2 of 4</div>" +
       "<h1 class='fo-ob-h1'>Choose your home pitch</h1>" +
-      "<p class='fo-ob-lead'>Nine of your eighteen matches are played on it. Pick the cricket you want to watch - the next step will tell you which squads thrive here.</p>" +
+      "<p class='fo-ob-lead'>Nine of your eighteen matches are played on it. Pick the cricket you want to watch.</p>" +
       "<div class='fo-qs-pitches'>" + cards + "</div></div>";
     var host = foQsShell(2, body, foQsCtaBar("Continue", "fo-qs-c2", false, "fo-qs-b2"));
     host.querySelectorAll(".fo-qs-pitch").forEach(function (b) {
@@ -12884,7 +12874,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foQsStarter() {
     FO_QS.step = 3;
     var cards = FO_ARCHETYPES.map(function (a) {
-      var syn = foQsSynNote(a, FO_QS.pitch);
       return "<button type='button' class='fo-qs-arch" + (FO_QS.arch === a.id ? " on" : "") + "' data-a='" + a.id + "'>" +
         "<span class='fo-qs-aic'>" + foQsIcon(a.ic) + "</span>" +
         "<b class='fo-qs-anm'>" + a.nm + "</b>" +
@@ -12892,7 +12881,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<span class='fo-qs-aline'>" + a.line + "</span>" +
         "<span class='fo-qs-chips'>" + a.chips.map(function (s) { return "<i class='fo-qs-chip g'>" + s + "</i>"; }).join("") +
         "<i class='fo-qs-chip w'>" + a.weak + "</i></span>" +
-        (syn ? "<span class='fo-qs-syn " + syn.cls + "'>" + syn.txt + "</span>" : "") +
         "</button>";
     }).join("");
     var body =
@@ -12954,8 +12942,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<span class='fo-qs-cmeta'>" + E(A.starRole || A.role) + " &middot; age " + pl.age + " &middot; " +
           (bt && !/does not bowl/i.test(bt) ? E(bt) : (pl.hand === "L" ? "left" : "right") + "-hand bat") +
           " &middot; exp " + E(pl.expWord || "") + "</span>" +
-        "<span class='fo-qs-chips'>" + F.chips.map(function (s) { return "<i class='fo-qs-chip g'>" + s + "</i>"; }).join("") +
-        "<i class='fo-qs-chip w'>" + F.trade + "</i>" + tals + "</span>" +
+        (tals ? "<span class='fo-qs-chips'>" + tals + "</span>" : "") +
         bars +
         "</span></button>";
     }).join("");
@@ -13127,16 +13114,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // three plans, each a REAL orders delta the engine reads ball by ball
       var plans = [
         { id: "attack", nm: "Take the game on", d: "Attack with bat and field from ball one. Big scores - and big risks.",
-          fit: pitch === "flat" || pitch === "balanced",
           pi: { pp: 1, mid: 0, death: 2 }, fp: { pp: "att", mid: "bal", death: "def" } },
         { id: "build", nm: "Build, then explode", d: "Keep wickets in hand for 35 overs, then swing from the deep end.",
-          fit: pitch === "green" || pitch === "cracked" || pitch === "twoPaced",
           pi: { pp: -1, mid: 0, death: 2 }, fp: { pp: "bal", mid: "bal", death: "def" } },
         { id: "squeeze", nm: "Squeeze them out", d: "Defensive fields, patient batting - strangle them and pounce late.",
-          fit: pitch === "slow" || pitch === "dry",
           pi: { pp: 0, mid: 0, death: 1 }, fp: { pp: "bal", mid: "def", death: "def" } }
       ];
-      if (!plans.some(function (pl) { return pl.fit; })) plans[0].fit = true;
       var ex = document.getElementById("fo-tut"); if (ex) ex.remove();
       var m = document.createElement("div"); m.id = "fo-tut"; m.className = "fo-modal";
       m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>Warm-up vs " + E(opp.name) + "</div>" +
@@ -13144,7 +13127,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<div class='small' style='margin:4px 0 10px'>One friendly before the league - nothing counts, everything teaches. The XI picks itself; <b>you make the captain's call</b>. Conditions: <b>" + E(foPitchName(pitch)) + "</b> pitch, sunny.</div>" +
         plans.map(function (pl) {
           return "<button type='button' class='fo-tut-plan' data-p='" + pl.id + "'><b>" + pl.nm + "</b>" +
-            (pl.fit ? "<i class='fo-tut-fit'>&#10003; the captain's pick for this deck</i>" : "") +
             "<span>" + pl.d + "</span></button>";
         }).join("") +
         "<div class='small' style='margin-top:10px;text-align:center'><a id='fo-tut-skip' style='cursor:pointer;text-decoration:underline dotted'>Skip the warm-up</a></div></div>";
