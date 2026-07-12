@@ -11630,9 +11630,16 @@
       if (typeof cur !== "number" || cur < 0) return;
       var dropped = 0;
       App.results = App.results.filter(function (r) {
-        if (!r || r.comp !== "league") return true;
+        if (!r) return true;
+        // ghost rows from clobbered snapshots often arrive with their comp
+        // field stripped - treat comp-less rows like league rows here
+        if (r.comp !== "league" && r.comp != null) return true;
         if (typeof r.round === "number" && r.round >= cur) { dropped++; return false; }
-        if (r.round == null) {
+        if (r.round == null || r.comp == null) {
+          // can't validate by round: a date in the future is impossible for a
+          // played result (legit league rows with fictional future dates all
+          // carry comp === "league" AND a valid past round, kept above)
+          if (typeof r.round === "number" && r.round < cur && r.comp === "league") return true;
           var tG = Date.parse(r.date || "");
           if (!isNaN(tG) && tG > Date.now() + 26 * 3600000) { dropped++; return false; }
         }
