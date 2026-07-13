@@ -8,6 +8,13 @@ on:
     # GitHub heavily delays or drops schedules that fire on the popular
     # quarter-hour marks; off-peak minutes fire far more reliably.
     - cron: '4,19,34,49 * * * *'
+    # In practice GitHub throttles this repo's schedule to every 1-3.5 hours,
+    # which can skip the whole 8:00-9:00 ET banking window and start the 9:00
+    # round hours late (it did on 2026-07-13). Queue DENSE attempts around the
+    # window - 11:00-15:59 UTC covers 8:00-9:59 ET in both summer and winter
+    # time - so even heavily-delayed attempts land inside it. Runs outside the
+    # window exit in seconds ("before 8:00"), so the extra attempts cost ~nothing.
+    - cron: '1,7,13,21,27,33,41,47,53 11-15 * * *'
   workflow_dispatch: {}       # allow manual runs from the Actions tab
 
 concurrency:
