@@ -12249,7 +12249,11 @@
       ".fo-of2-head span{font-size:13px;color:#687386}" +
       ".fo-of2-headl{display:flex;gap:16px;align-items:center}" +
       ".fo-of2-dl{font-size:12.5px;font-weight:700;color:#c94726 !important;text-decoration:none;white-space:nowrap}" +
-      ".fo-of2-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:0 0 14px}" +
+      ".fo-of2-mchips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}" +
+    ".fo-of2-mchip{display:inline-flex;gap:6px;align-items:baseline;background:rgba(28,36,51,.05);border-radius:8px;padding:5px 10px;font-size:12px}" +
+    ".fo-of2-mchip i{font-style:normal;color:#6b7280;text-transform:uppercase;font-size:9.5px;letter-spacing:.06em;font-weight:800}" +
+    ".fo-of2-one .fo-of2-kpi{width:100%}" +
+    ".fo-of2-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:0 0 14px}" +
       ".fo-of2-kpi{background:#fff;border:1px solid rgba(15,35,60,.11);border-radius:12px;padding:14px 16px;box-shadow:0 5px 14px rgba(15,35,60,.055)}" +
       ".fo-of2-l{display:block;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#687386}" +
       ".fo-of2-kpi b{display:block;font-size:23px;color:#13233a;margin:3px 0 1px;font-variant-numeric:tabular-nums;white-space:nowrap}" +
@@ -12464,14 +12468,18 @@
       var kpi = function (label, big, sub, tone) {
         return "<div class='fo-of2-kpi'><span class='fo-of2-l'>" + label + "</span><b" + (tone ? " class='fo-t-" + tone + "'" : "") + ">" + big + "</b><i>" + sub + "</i></div>";
       };
-      var kpis = "<div class='fo-of2-kpis'>" +
-        kpi("Current bank", foOfMoney(bank), foHealth(bank), bank >= 0 ? "" : "red") +
-        kpi("Next round", foOfMoney(projBank),
-          (projBank - bank >= 0 ? "+" : "&minus;") + foOfMoney(Math.abs(projBank - bank)) + " projected", projBank >= 0 ? "" : "red") +
-        kpi("Net per round", (avg >= 0 ? "+" : "&minus;") + foOfMoney(Math.abs(avg)),
-          "home " + (split.homeNet >= 0 ? "+" : "&minus;") + foOfMoney(Math.abs(split.homeNet)) + " &middot; away " + (split.awayNet >= 0 ? "+" : "&minus;") + foOfMoney(Math.abs(split.awayNet)), avg >= 0 ? "green" : "red") +
-        kpi("Season end", foOfMoney(proj), fx.length + " round" + (fx.length === 1 ? "" : "s") + " remaining", proj >= 0 ? "green" : "red") +
-        "</div>";
+      // ONE money card: the bank is the number that matters - everything else
+      // is a small chip pointing forward. (Four stacked hero tiles repeated
+      // figures the forecast card below already breaks down.)
+      var mChip = function (label, val, tone) {
+        return "<span class='fo-of2-mchip'><i>" + label + "</i><b class='fo-t-" + tone + "'>" + val + "</b></span>";
+      };
+      var kpis = "<div class='fo-of2-kpis fo-of2-one'>" +
+        "<div class='fo-of2-kpi'><span class='fo-of2-l'>Bank</span><b" + (bank >= 0 ? "" : " class='fo-t-red'") + ">" + foOfMoney(bank) + "</b>" +
+        "<span class='fo-of2-mchips'>" +
+        mChip("per round", (avg >= 0 ? "+" : "&minus;") + foOfMoney(Math.abs(avg)), avg >= 0 ? "green" : "red") +
+        mChip("season end", foOfMoney(proj), proj >= 0 ? "green" : "red") +
+        "</span></div></div>";
 
       // ---- financial health strip: honest statuses, no green for a 33% gate ----
       var hRow = function (tone, txt) {
