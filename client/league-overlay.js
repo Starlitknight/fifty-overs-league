@@ -5692,7 +5692,7 @@
   //  The full draft (foOnbStart) stays in the codebase behind league config.
   // ===========================================================================
   // quick-start replaces the draft for new clubs; a league with full_draft set
-  // in its config gets the classic draft room back (foOnbAllRounder branches)
+  // in its config gets the classic draft room back (the sponsor screen branches)
   var FO_TAKEOVER_ON = false;          // later seasons: take over a bot club (S1: off)
   // shared strength budget (best-XI weighted engine-rating sum) every squad is
   // normalised onto - same total, different shape. Measured by the harness.
@@ -6164,7 +6164,7 @@
         App.founder.picked = _picked;
       }
     }
-    ({ create: foOnbCreate, charter: foOnbCharter, money: foOnbMoney, sponsor: foOnbSponsor, players: foOnbPlayers, team: foObTeam, draft: foOnbDraft, report: foOnbReport }[step || "create"] || foOnbCreate)();
+    ({ create: foOnbCreate, charter: foOnbCharter, money: foOnbMoney, sponsor: foOnbSponsor, team: foObTeam, draft: foOnbDraft, report: foOnbReport }[step || "create"] || foOnbCreate)();
   } catch (e) { console.warn("onb preview", e); } };   // debug/test hook (harmless)
 
   // Draft happens in the game's OWN founder screen (pgFounder). We hand it a
@@ -6290,7 +6290,7 @@
   function FO_I(name, size) {
     return "<svg class='fo-i' width='" + (size || 18) + "' height='" + (size || 18) + "' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'>" + (FO_ICONS[name] || "") + "</svg>";
   }
-  var FO_STEPS = ["Club", "Charter", "Money", "Sponsor", "Players", "Squad", "Report"];
+  var FO_STEPS = ["Club", "Charter", "Money", "Sponsor", "Squad", "Report"];
   function foOnbShell(stepIx, body) {
     var prog = FO_STEPS.map(function (s, i) {
       var cls = i < stepIx ? "done" : (i === stepIx ? "on" : "");
@@ -6377,7 +6377,7 @@
       "<div class='fo-snap-row'><i>" + FO_I("users") + "</i><div><b>10-team league</b></div></div>" +
       "<div class='fo-snap-row'><i>" + FO_I("calendar") + "</i><div><b>18 matchdays</b></div></div>" +
       "<div class='fo-snap-row'><i>" + FO_I("coins") + "</i><div><b>$1,000,000</b><span>starting bank</span></div></div>" +
-      "<div class='fo-snap-row'><i>" + FO_I("bat") + "</i><div><b>11&#8211;16 player</b><span>squad draft</span></div></div>" +
+      "<div class='fo-snap-row'><i>" + FO_I("bat") + "</i><div><b>11&#8211;18 player</b><span>squad</span></div></div>" +
       "</aside></div></div>";
     var host = foOnbMount(0, body);
     // live identity preview: watching "your" club take shape as you type
@@ -6442,14 +6442,14 @@
     var body =
       "<div class='fo-ob-card fo-ob-charter fo-charter-big'>" +
       "<div class='fo-charter-ic'>" + FO_I("trophy", 40) + "</div>" +
-      "<div class='fo-ob-eyebrow'>The charter is signed</div>" +
+      "<div class='fo-ob-eyebrow'>Your club is ready</div>" +
       "<h1 class='fo-ob-h1 fo-charter-h1'>" + E(FO_ONB.clubName) + " is founded</h1>" +
       "<div class='fo-charter-date'>Founded " + new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) + "</div>" +
-      "<p class='fo-ob-lead fo-charter-lead'>The board is seated, the groundsman has the keys to <b>" + E(FO_ONB.ground) + "</b>" +
-      (pt.id !== "balanced" ? ", a <b>" + pt.nm.toLowerCase() + "</b> deck," : "") +
-      " and your founding sponsor has wired the grant to get the club off the ground.</p>" +
+      "<p class='fo-ob-lead fo-charter-lead'>Home ground: <b>" + E(FO_ONB.ground) + "</b>" +
+      (pt.id !== "balanced" ? " with a <b>" + pt.nm.toLowerCase() + "</b> pitch" : "") +
+      ". Your founding sponsor has paid in $1,000,000 to get you started - that money signs your squad and runs the club.</p>" +
       "<div class='fo-charter-grant'><span>Founding grant</span><b>$1,000,000</b></div>" +
-      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Show me the money</button></div></div>";
+      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Continue</button></div></div>";
     var host = foOnbMount(1, body);
     host.querySelector("#fo-ob-b").addEventListener("click", foOnbCreate);
     host.querySelector("#fo-ob-c").addEventListener("click", foOnbMoney);
@@ -6467,11 +6467,11 @@
       "<div class='fo-ob-jobs'><div class='fo-ob-job'><span class='fo-ob-jic fo-jic-teal'>" + FO_I("bat", 20) + "</span><div><b>Build the squad</b><div class='fo-ob-muted'>Spend in the draft to sign the best players.</div></div></div>" +
       "<div class='fo-ob-job'><span class='fo-ob-jic fo-jic-terra'>" + FO_I("shield", 20) + "</span><div><b>Keep the club running</b><div class='fo-ob-muted'>Cover wages, costs and build a healthy future.</div></div></div></div>" +
       "<div class='fo-ob-tiles'>" + tile("wallet", "Starting bank", "$1,000,000", "Draft + operating money", "teal") +
-      tile("tag", "Recommended draft spend", "$750k&#8211;$850k", "Leaves room to operate", "terra") +
-      tile("shieldCheck", "Recommended reserve", "$150k&#8211;$250k", "Cover wages &amp; injuries", "teal") + "</div>" +
-      "<div class='fo-ob-chks'>" + chk("Every player has a <b>draft price</b> and a <b>daily wage</b>.") + chk("You pay wages to your squad every matchday.") +
-      chk("Home matches bring ticket income (about $22k a game).") + chk("Running the club costs about $25k every matchday on top of wages.") + chk("Sponsors, wins and prize money keep you solvent.") + "</div>" +
-      "<div class='fo-ob-warn'><i>" + FO_I("warn", 17) + "</i>Spend too much in the draft and you may have to release players later.</div>" +
+      tile("tag", "Signing fees", "$615k&#8211;$935k", "Set by squad size (11&#8211;18)", "terra") +
+      tile("shieldCheck", "Left in the bank", "$65k&#8211;$385k", "Covers wages &amp; running costs", "teal") + "</div>" +
+      "<div class='fo-ob-chks'>" + chk("Every player costs a one-off <b>signing fee</b> and a <b>wage</b> every matchday.") + chk("You pay wages to your squad every matchday.") +
+      chk("Home matches bring ticket income (about $22k a game).") + chk("Running the club costs about $25k every matchday on top of wages.") + chk("Sponsor money, wins and prize money come in on top.") + "</div>" +
+      "<div class='fo-ob-warn'><i>" + FO_I("warn", 17) + "</i>A bigger squad means less in the bank and a bigger wage bill - keep an eye on both.</div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Continue</button></div></div>";
     var host = foOnbMount(2, body);
     host.querySelector("#fo-ob-b").addEventListener("click", foOnbCharter);
@@ -6498,9 +6498,9 @@
     }).join("");
     var body =
       "<div class='fo-ob-card fo-ob-mid'>" +
-      "<div class='fo-ob-eyebrow'>Your first big decision</div>" +
-      "<h1 class='fo-ob-h1'>Three sponsors want your shirt</h1>" +
-      "<p class='fo-ob-lead'>Each offer pays after every match, all season. The terms differ in how much of your money rides on results. The deal locks in for Season 1 and cannot be renegotiated.</p>" +
+      "<div class='fo-ob-eyebrow'>Pick a sponsor</div>" +
+      "<h1 class='fo-ob-h1'>Three offers on the table</h1>" +
+      "<p class='fo-ob-lead'>Each one pays you after every match, all season. The difference is how much of the money depends on results. Whichever you sign is locked in for season 1.</p>" +
       "<div class='fo-pks'>" + cards + "</div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'" + (FO_ONB.sponsor ? "" : " disabled") + ">Sign with " + (FO_ONB.sponsor ? foSponsorById(FO_ONB.sponsor).name : "&hellip;") + "</button></div></div>";
     var host = foOnbMount(3, body);
@@ -6515,7 +6515,7 @@
     host.querySelector("#fo-ob-b").addEventListener("click", foOnbMoney);
     host.querySelector("#fo-ob-c").addEventListener("click", function () {
       if (!FO_ONB.sponsor) { say("Pick a sponsor first. This deal pays you every matchday all season."); return; }
-      foOnbPlayers();
+      if (LG && LG.full_draft) foOnbDraft(); else foObTeam();
     });
   }
 
@@ -6593,10 +6593,10 @@
       "<div class='fo-ob-card fo-ob-mid'>" +
       "<div class='fo-ob-eyebrow'>Build your squad &middot; 1 of 3</div>" +
       "<h1 class='fo-ob-h1'>What kind of team do you want?</h1>" +
-      "<p class='fo-ob-lead'>Pick the squad's identity: real strengths, one honest weakness, a franchise captain to lead it. This is the club's DNA - it does not change.</p>" +
+      "<p class='fo-ob-lead'>Each card is a different style of squad, with real strengths and a real weakness. Your whole squad gets built in this style, so pick the one that suits how you like to play.</p>" +
       "<div class='fo-qs-grid'>" + cards + "</div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'" + (FO_ONB.arch ? "" : " disabled") + ">Continue</button></div></div>";
-    var host = foOnbMount(5, body);
+    var host = foOnbMount(4, body);
     host.querySelectorAll(".fo-qs-arch").forEach(function (b) {
       b.addEventListener("click", function () {
         var prev = FO_ONB.arch;
@@ -6608,7 +6608,7 @@
         var c = host.querySelector("#fo-ob-c"); if (c) c.disabled = false;
       });
     });
-    host.querySelector("#fo-ob-b").addEventListener("click", foOnbAllRounder);
+    host.querySelector("#fo-ob-b").addEventListener("click", foOnbSponsor);
     host.querySelector("#fo-ob-c").addEventListener("click", function () { if (FO_ONB.arch) foObCaptain(); });
   }
   // ---- 2 of 3 · the captain (full draft-card stat read-out) -----------------
@@ -6642,10 +6642,10 @@
       "<div class='fo-ob-card fo-ob-mid'>" +
       "<div class='fo-ob-eyebrow'>Build your squad &middot; 2 of 3</div>" +
       "<h1 class='fo-ob-h1'>Choose your captain</h1>" +
-      "<p class='fo-ob-lead'>Six leaders want the " + E(FO_ONB.clubName) + " armband. Each is the finished article in your squad's mould - every number below is real, and the rest of the squad is signed around whoever you pick.</p>" +
+      "<p class='fo-ob-lead'>Six candidates for the captaincy. The stats on each card are exactly what you get, and the rest of the squad is signed around whoever you pick.</p>" +
       "<div class='fo-qs-grid fo-qs-cgrid'>" + cards + "</div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'" + (FO_ONB.capt ? "" : " disabled") + ">Continue</button></div></div>";
-    var host = foOnbMount(5, body);
+    var host = foOnbMount(4, body);
     host.querySelectorAll(".fo-qs-capt").forEach(function (b) {
       b.addEventListener("click", function () {
         FO_ONB.capt = b.getAttribute("data-c");
@@ -6684,12 +6684,12 @@
       "<div class='fo-ob-card fo-ob-mid'>" +
       "<div class='fo-ob-eyebrow'>Build your squad &middot; 3 of 3</div>" +
       "<h1 class='fo-ob-h1'>How big, and what shape?</h1>" +
-      "<p class='fo-ob-lead'>Between <b>11 and 18</b> players. Every signing takes a fee from the <b>$1,000,000</b> grant and draws a wage every matchday - a big squad costs real money, a small one has nothing in reserve when legs get tired or a knock rules someone out. An XI must field a wicketkeeper and cover fifty overs with at least five bowling options.</p>" +
+      "<p class='fo-ob-lead'>Anywhere from <b>11 to 18</b> players. Every signing takes a fee out of your <b>$1,000,000</b> and adds a matchday wage, so a bigger squad costs more - but a small one leaves you thin when someone is tired or injured. You need at least one wicketkeeper and five bowling options.</p>" +
       "<div class='fo-comp-grid'>" + rows + "</div>" +
       "<div class='fo-comp-note' id='fo-comp-note'></div>" +
       "<div class='fo-comp-money' id='fo-comp-money'></div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Sign the squad &#9654;</button></div></div>";
-    var host = foOnbMount(5, body);
+    var host = foOnbMount(4, body);
     var recalcT = null;
     var money = function () {
       try {
@@ -7339,81 +7339,6 @@
     var order = (keys && keys.length) ? keys : ["batting", "bowling", "reserves", "field", "footer", "reading"];
     return order.map(function (k) { return G[k] || ""; }).join("");
   }
-  // ---- Screen 5 : How to read a player, one archetype per page ------------
-  // batsman -> bowler (with bowling styles) -> wicketkeeper -> all-rounder.
-  // Each page shows ONE live example card from the manager's own draft pool
-  // beside only the glossary groups that player type actually raises.
-  function foOnbPool() { return (App.founder && App.founder.pool) || []; }
-  function foOnbExamples() {
-    var pool = foOnbPool();
-    var byRat = function (a, b) { return (b.rating || 0) - (a.rating || 0); };
-    var isBowl = function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none"; };
-    return {
-      bat: pool.filter(function (p) { return !isBowl(p) && !p.keeper && p.role !== "allRounder"; }).sort(byRat)[0] || null,
-      bowl: pool.filter(function (p) { return isBowl(p) && p.role !== "allRounder" && !p.keeper; }).sort(byRat)[0] || null,
-      wk: pool.filter(function (p) { return p.keeper; }).sort(byRat)[0] || null,
-      ar: pool.filter(function (p) { return p.role === "allRounder"; }).sort(byRat)[0] || null
-    };
-  }
-  function foOnbPlayerPage(opts) {
-    FO_ONB.step = 5;
-    var body =
-      "<div class='fo-ob-card fo-ob-mid'>" +
-      "<div class='fo-ob-eyebrow'>" + opts.eyebrow + "</div>" +
-      "<h1 class='fo-ob-h1'>" + opts.h1 + "</h1>" +
-      "<p class='fo-ob-lead'>" + opts.lead + "</p>" +
-      "<div class='fo-exp-cols'><div class='fo-exp-cards'>" + foExpCard(opts.ex, opts.tag, "draft") + "</div>" +
-      "<div class='fo-exp-defs'><div class='fo-exp-dh'>What every number actually does</div>" + foTraitGlossary(opts.gloss) + "</div></div>" +
-      (opts.extra || "") +
-      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>" + opts.next + "</button></div></div>";
-    var host = foOnbMount(4, body);
-    host.querySelector("#fo-ob-b").addEventListener("click", opts.onBack);
-    host.querySelector("#fo-ob-c").addEventListener("click", opts.onNext);
-  }
-  function foOnbPlayers() {
-    var ex = foOnbExamples();
-    foOnbPlayerPage({
-      eyebrow: "Know what you are buying &middot; 1 of 4", h1: "How to read a batsman",
-      lead: "A real batter from your draft pool, exactly as every player page shows him. Skills come in groups, each with a number, a bar and an honest word, and the headline <b>Overall</b> sits at the top of the Batting group. Every trait beside the card says exactly what it does in the match engine - nothing here is flavour text.",
-      ex: ex.bat, tag: "The batsman",
-      gloss: ["batting", "reserves", "reading"],
-      onBack: foOnbSponsor, next: "Next: the bowler", onNext: foOnbBowler
-    });
-  }
-  function foOnbBowler() {
-    var ex = foOnbExamples();
-    var C = null; try { C = foCondCards(); } catch (e) {}
-    foOnbPlayerPage({
-      eyebrow: "Know what you are buying &middot; 2 of 4", h1: "How to read a bowler",
-      lead: "Bowlers carry everything a batter does <i>plus</i> the Bowling group, with its own headline <b>Overall</b> at the top. Two of these numbers are checked on every single ball he bowls: <b>Wicket threat</b> and <b>Economy</b>. His bowling <b>type</b>, below, decides how the pitch and sky treat him.",
-      ex: ex.bowl, tag: "The bowler",
-      gloss: ["bowling"],
-      extra: (C ? C.sec(1, "The five bowling styles", "rarity is value: the rare styles cost more and win more", C.bowlers).replace("fo-cnd-grid", "fo-cnd-grid fo-cnd-grid5") : ""),
-      onBack: foOnbPlayers, next: "Next: the wicketkeeper", onNext: foOnbKeeper
-    });
-  }
-  function foOnbKeeper() {
-    var ex = foOnbExamples();
-    foOnbPlayerPage({
-      eyebrow: "Know what you are buying &middot; 3 of 4", h1: "How to read a wicketkeeper",
-      lead: "Keepers add two glove skills to the In-the-field group: <b>Keeping</b> and <b>Stumping</b>. Behind the scenes the engine blends keeping (half), stumping and catching into one glove rating that answers for byes, edges taken and stumpings on every ball. A weak gloveman quietly leaks runs and chances all innings - every squad needs a real one.",
-      ex: ex.wk, tag: "The wicketkeeper",
-      gloss: ["field"],
-      onBack: foOnbBowler, next: "Next: the all-rounder", onNext: foOnbAllRounder
-    });
-  }
-  function foOnbAllRounder() {
-    var ex = foOnbExamples();
-    foOnbPlayerPage({
-      eyebrow: "Know what you are buying &middot; 4 of 4", h1: "How to read an all-rounder",
-      lead: "The all-rounder carries every group at once - batting, bowling and the field - which is why a good one is the most expensive shape of cricketer. This page also covers the card&rsquo;s footer: the quiet lines that decide whether the skills above actually show up on the day.",
-      ex: ex.ar, tag: "The all-rounder",
-      gloss: ["footer"],
-      extra: "<div class='fo-exp-talbox'><b>Talents</b> are permanent traits that fire in specific situations: a <i>Finisher</i> finds boundaries at the death, a <i>New-ball Specialist</i> is deadly in his first spell, a <i>Spin Killer</i> feasts on slow bowling. Tap any talent chip in the game to see what it does.</div>",
-      onBack: foOnbKeeper, next: "Build your squad", onNext: function () { if (LG && LG.full_draft) foOnbDraft(); else foObTeam(); }
-    });
-  }
-
   // ---- Screen 6 : Reading conditions -----------------------------------
   // Bowling styles + rarity, pitch types, weather types: every effect below is
   // real in the match engine. Sits between the player primer and the draft so
@@ -7635,7 +7560,7 @@
       "<div class='fo-ob-act fo-dr-act'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c' " + (ready ? "" : "disabled") + ">Continue &#8594; Board report</button></div>" +
       (ready ? "" : "<div class='fo-dr-needs'>Need 11+ players, a keeper and 5+ bowling options to continue.</div>") +
       "</div>";
-    var host = foOnbMount(5, body);
+    var host = foOnbMount(4, body);
     if (keepScroll) requestAnimationFrame(function () {
       try {
         host.scrollTop = _pageY;
@@ -7656,7 +7581,7 @@
     host.querySelectorAll(".fo-dr-add").forEach(function (b) { b.addEventListener("click", function () { foOnbPick(b.getAttribute("data-p")); }); });
     host.querySelectorAll(".fo-dr-view").forEach(function (b) { b.addEventListener("click", function () { foDraftDetail(b.getAttribute("data-p")); }); });
     host.querySelectorAll(".fo-sq-x").forEach(function (b) { b.addEventListener("click", function () { foOnbPick(b.getAttribute("data-p")); }); });
-    host.querySelector("#fo-ob-b").addEventListener("click", foOnbAllRounder);
+    host.querySelector("#fo-ob-b").addEventListener("click", foOnbSponsor);
     var c = host.querySelector("#fo-ob-c"); if (c) c.addEventListener("click", foOnbAfterDraft);
   }
 
@@ -7679,7 +7604,7 @@
       "<ul class='fo-ob-list fo-risk-list'><li>Forced player releases</li><li>Blocked signings</li><li>Supporter mood drop</li></ul>" +
       "<label class='fo-ob-check'><input type='checkbox' id='fo-ob-ack' " + (FO_ONB.riskAck ? "checked" : "") + "> I understand the risk</label>" +
       "<div class='fo-ob-act'><button class='fo-ob-ghost' id='fo-ob-revise'>Revise squad</button><button class='fo-ob-cta fo-cta-danger' id='fo-ob-cont' disabled>Continue anyway</button></div></div>";
-    var host = foOnbMount(5, body);
+    var host = foOnbMount(4, body);
     var ack = host.querySelector("#fo-ob-ack"), cont = host.querySelector("#fo-ob-cont");
     var sync = function () { FO_ONB.riskAck = ack.checked; cont.disabled = !ack.checked; };
     ack.addEventListener("change", sync); sync();
@@ -7719,9 +7644,9 @@
       fact("Sponsor", E(sp.name)) +
       fact("Bank", FO$(fc.bankAfter)) +
       fact("First matchday", "9:00 AM ET") + "</div>" +
-      "<div class='fo-br-closure'><p>The paperwork is done. Your name is on the office door, " + E(sp.name) + "&rsquo;s name is on the shirts, and out past the pavilion the groundsman is rolling your " + E(foPitchName(FO_ONB.pitch || "balanced").toLowerCase()) + " pitch flat for the first morning.</p>" +
-      "<p>From here it is cricket: one match every day, eighteen rounds, nine other managers who want what you want. Pick your eleven, trust your judgement, and enjoy every ball.</p>" +
-      "<p class='fo-br-luck'>Good luck, " + E((SYNC && SYNC.me && SYNC.me.display_name) || "manager") + ". The season starts now.</p></div>" +
+      "<div class='fo-br-closure'><p>That's everything - your club is set up, your squad is signed, and " + E(sp.name) + " is on the shirt.</p>" +
+      "<p>One match plays every day at 9:00 AM ET, eighteen rounds against nine other clubs. Pick your eleven each day and take it from there.</p>" +
+      "<p class='fo-br-luck'>Good luck, " + E((SYNC && SYNC.me && SYNC.me.display_name) || "manager") + ".</p></div>" +
       "</div><aside class='fo-br-side'>" +
       "<div class='fo-clubprev' style='margin-bottom:0'><div class='fo-clubprev-crest'>" + E(FO_ONB.clubName.split(/\s+/).map(function (w) { return w[0] || ""; }).join("").slice(0, 3).toUpperCase()) + "</div>" +
       "<div class='fo-clubprev-nm'>" + E(FO_ONB.clubName) + "</div>" +
@@ -7731,7 +7656,7 @@
       starRow("Batting", batStr) + starRow("Bowling", bowlStr) + starRow("Fielding", fieldStr) + starRow("Keeping", keepStr) + "</div>" +
       "</aside></div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back to the squad</button><button class='fo-ob-cta' id='fo-ob-done'>Enter the League</button></div></div>";
-    var host = foOnbMount(6, body);
+    var host = foOnbMount(5, body);
     host.querySelector("#fo-ob-b").addEventListener("click", function () { if (LG && LG.full_draft) foOnbDraft(); else foObComp(); });
     host.querySelector("#fo-ob-done").addEventListener("click", foOnbCommit);
   }
