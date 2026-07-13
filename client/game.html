@@ -7110,6 +7110,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ".fo-c2-fxm{flex:1;min-width:0}.fo-c2-fxm b{display:block;font-size:12.5px;color:#0E233F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fo-c2-fxm span{font-size:10.5px;color:#8a93a3}" +
     ".fo-c2-fxn{flex:0 0 auto;background:#B04A2C;color:#FFFEFC;border-radius:6px;padding:2px 7px;font-size:9px;font-weight:800;letter-spacing:.06em}" +
     ".fo-c2-fxn.fr{background:#41577a}" +
+    ".fo-c2-wok{font-size:13px;font-weight:700;color:#16A34A;padding:6px 0 2px}" +
     ".fo-c2-wsum{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:9px}" +
     ".fo-c2-wk{border-radius:8px;padding:3px 9px;font-size:11px;font-weight:600;background:#F3F1EA;color:#5a6472}.fo-c2-wk b{font-weight:800}" +
     ".fo-c2-wk.g{background:#E3F0E7;color:#1c5537}.fo-c2-wk.a{background:#F6E3B4;color:#7a5c13}.fo-c2-wk.r{background:#F3D8D3;color:#8a2f1d}" +
@@ -8992,17 +8993,21 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           "<span class='fo-c2-wtag' style='color:" + col + "'>" + (en.tired ? "TIRED" : en.word === "rested" ? "RESTED" : "FIT") + "</span>" +
           "<div class='fo-c2-wbar'><i style='width:" + en.pct + "%;background:" + col + "'></i></div><span class='fo-c2-wpct'>" + en.pct + "%</span></div>";
       };
-      // phones show only players needing attention (tired, rested, low energy);
-      // when everyone is fresh, the three lowest tanks stand in
-      var wAttn = wPool.filter(function (p2) { var en = enOf(p2); return en.tired || en.word === "rested" || en.pct < 90; }).slice(0, 3);
-      var wRowsM = (wAttn.length ? wAttn : wPool.slice(0, 3)).map(wRow).join("");
+      // exceptions only: rows exist ONLY for players who need attention
+      // (tired, resting, low tank). A healthy squad is one green line, not
+      // a table of FIT / 100% repeated fifteen times.
+      var wAttn = wPool.filter(function (p2) { var en = enOf(p2); return en.tired || en.word === "rested" || en.pct < 90; });
+      var wOk = "<div class='fo-c2-wok'>&#10003; All " + fitN + " players fit and fresh</div>";
       var watchCard = "<div class='fo-card fo-o-watch'><div class='fo-card-h2row'><div class='fo-card-h2'>Squad watch</div><a href='#/squad' class='fo-morelink'>Manage squad &rsaquo;</a></div><div class='fo-card-b'>" +
-        "<div class='fo-c2-wsum'><span class='fo-c2-wk g'><b>" + fitN + "</b> fit</span><span class='fo-c2-wk a'><b>" + tiredN + "</b> tired</span>" +
+        "<div class='fo-c2-wsum'><span class='fo-c2-wk g'><b>" + fitN + "</b> fit</span>" +
+        (tiredN ? "<span class='fo-c2-wk a'><b>" + tiredN + "</b> tired</span>" : "") +
         (hotP.length ? "<span class='fo-c2-wk g'><b>" + hotP.length + "</b> in form</span>" : "") +
         (coldP.length ? "<span class='fo-c2-wk r'><b>" + coldP.length + "</b> struggling</span>" : "") + "</div>" +
-        "<div class='fo-c2-whead'><span>Player</span><span>Status</span><span>Energy</span></div>" +
-        "<div class='fo-wgrp-d'>" + wPool.slice(0, 6).map(wRow).join("") + "</div>" +
-        "<div class='fo-wgrp-m'>" + wRowsM + "<a class='fo-c2-wmore' href='#/squad'>View full squad &rsaquo;</a></div></div></div>";
+        (wAttn.length
+          ? "<div class='fo-c2-whead'><span>Player</span><span>Status</span><span>Energy</span></div>" +
+            "<div class='fo-wgrp-d'>" + wAttn.slice(0, 6).map(wRow).join("") + "</div>" +
+            "<div class='fo-wgrp-m'>" + wAttn.slice(0, 3).map(wRow).join("") + "<a class='fo-c2-wmore' href='#/squad'>View full squad &rsaquo;</a></div>"
+          : wOk) + "</div></div>";
       // milestone watch: unfinished business is what brings a manager back
       var msRows = [];
       try { msRows = foMilestoneWatch(t); } catch (e) {}
@@ -10783,7 +10788,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260713-1630-28de3e";
+  var FO_BUILD = "20260713-1634-e260a7";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
