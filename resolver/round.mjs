@@ -133,6 +133,19 @@ async function advanceOne(page, st) {
     for (const p of pkts) {
       if (p && typeof p.teamIx === 'number' && p.orders) {
         foRemapOrders(p.orders);
+        // the packet must belong to the CURRENT world: league relaunches and
+        // season rollovers reuse round numbers, and league_packets rows are
+        // never purged, so a retired era's round-N orders would otherwise
+        // drive whatever club sits at that teamIx today (possibly another
+        // manager's). Fingerprint: the club name must match, and most of the
+        // batting order must exist on that squad.
+        const team = (typeof GD !== 'undefined' && GD.teams && GD.teams[p.teamIx]) || null;
+        if (!team) continue;
+        if (p.club && team.name !== p.club) continue;                       // index now belongs to someone else
+        const have = new Set((team.players || []).map((q) => q.name));
+        const bo = Array.isArray(p.orders.batOrder) ? p.orders.batOrder : [];
+        const hits = bo.filter((n) => have.has(n)).length;
+        if (bo.length && hits < Math.ceil(bo.length / 2)) continue;         // stale-era squad - ignore the packet
         App.mp.packets[p.teamIx] = { orders: p.orders, round: p.round, club: p.club, manager: p.manager };
       }
     }

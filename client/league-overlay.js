@@ -4104,20 +4104,27 @@
         try {
           var __rep = false;
           try { __rep = !!(typeof M !== "undefined" && M && M.meta && (App.results || []).some(function (rr) { return rr.seed === M.meta.seed && rr.home === M.meta.home && rr.away === M.meta.away; })); } catch (e) {}
-          var __want = __rep ? 3000 : 6000;
-          if (UI.apMs !== __want) {
-            UI.apMs = __want;
-            if (window.__ap) { clearInterval(window.__ap); window.__ap = null; if (typeof window.foEnsureAutoplay === "function") window.foEnsureAutoplay(); }
+          // an interactive friendly (the tutorial warm-up, a challenge lineup)
+          // is the manager's OWN match: they keep the speed select and the
+          // turbo option. Broadcast pacing is for league viewing and replays.
+          var __mine = false;
+          try { __mine = !!(typeof M !== "undefined" && M && !M.done && M.meta && M.meta.comp === "friendly" && !__rep); } catch (e) {}
+          if (!__mine) {
+            var __want = __rep ? 3000 : 6000;
+            if (UI.apMs !== __want) {
+              UI.apMs = __want;
+              if (window.__ap) { clearInterval(window.__ap); window.__ap = null; if (typeof window.foEnsureAutoplay === "function") window.foEnsureAutoplay(); }
+            }
+            document.querySelectorAll("#page select[title='commentary speed']").forEach(function (s) {
+              var row = s.previousElementSibling;
+              if (row && /commentary speed/i.test(row.textContent || "")) row.style.display = "none";
+              s.style.display = "none";
+            });
           }
           if (typeof UI !== "undefined" && UI.matchTab === "Scorecard" && M && M.innings) {
             var mb = document.querySelector(".ftp-match-body");
             if (mb) foBowlOrderFix(mb, M.innings.filter(Boolean), M.log);
           }
-          document.querySelectorAll("#page select[title='commentary speed']").forEach(function (s) {
-            var row = s.previousElementSibling;
-            if (row && /commentary speed/i.test(row.textContent || "")) row.style.display = "none";
-            s.style.display = "none";
-          });
         } catch (e) {}
       }
     } catch (e) {}
@@ -4540,26 +4547,59 @@
     };
   }
   // The tutorial warm-up promises "nothing counts". The engine's saveMatch
-  // still marks long-batting/bowling players tired and shifts form - which
-  // would poison the golden card's suggested XI minutes later (pickXI docks
-  // tired players). Snapshot both sides' condition and put it back.
+  // still marks long-batting/bowling players tired, shifts form, files a
+  // result row and appends career/fielding lines - the fatigue would poison
+  // the golden card's suggested XI minutes later (pickXI docks tired
+  // players), and the rest contradicts the promise on every player page.
+  // Snapshot everything the warm-up would touch and put it all back.
   if (typeof window.saveMatch === "function") {
     var _fosm = window.saveMatch;
     window.saveMatch = function (m) {
       var tut = !!(m && m.meta && m.meta.__tut);
-      var stash = null;
+      var stash = null, scrub = null;
       if (tut) {
         try {
-          stash = [];
+          stash = []; scrub = { res: (App.results || []).length, hist: {}, field: {} };
           ((typeof GD !== "undefined" && GD.teams) || []).forEach(function (t) {
             if (!t || (t.name !== m.meta.home && t.name !== m.meta.away)) return;
-            (t.players || []).forEach(function (p) { stash.push([p, p.fatigue, p.formIx, p.formWord]); });
+            (t.players || []).forEach(function (p) {
+              stash.push([p, p.fatigue, p.formIx, p.formWord]);
+              scrub.hist[p.name] = ((App.playerHist || {})[p.name] || []).length;
+              var fs0 = (App.fieldStats || {})[p.name];
+              scrub.field[p.name] = fs0 ? JSON.stringify(fs0) : null;
+            });
           });
-        } catch (e) { stash = null; }
+        } catch (e) { stash = null; scrub = null; }
       }
       var r = _fosm.apply(this, arguments);
       if (stash) {
         try { stash.forEach(function (s) { s[0].fatigue = s[1]; s[0].formIx = s[2]; s[0].formWord = s[3]; }); } catch (e) {}
+      }
+      if (scrub) {
+        try {
+          // drop the warm-up's result row, career lines and fielding tallies
+          if (App.results && App.results.length > scrub.res) App.results.length = scrub.res;
+          for (var nm9 in scrub.hist) {
+            var h9 = (App.playerHist || {})[nm9];
+            if (!h9) continue;
+            if (scrub.hist[nm9] > 0) h9.length = scrub.hist[nm9];
+            else delete App.playerHist[nm9];
+          }
+          for (var nf9 in scrub.field) {
+            if (!App.fieldStats) break;
+            if (scrub.field[nf9]) App.fieldStats[nf9] = JSON.parse(scrub.field[nf9]);
+            else delete App.fieldStats[nf9];
+          }
+          // ...and put the manager's real plan back where the warm-up plan sat
+          if (window.__foTutOrders) {
+            var o9 = JSON.parse(window.__foTutOrders); window.__foTutOrders = null;
+            if (App.orders) {
+              App.orders.phaseIntent = o9.pi || { pp: 0, mid: 0, death: 1 };
+              App.orders.fieldPlan = o9.fp || { pp: "att", mid: "bal", death: "def" };
+            }
+            App.defaults = o9.defaults || null;
+          }
+        } catch (e) {}
       }
       return r;
     };
@@ -5309,6 +5349,13 @@
       } catch (eCal) {}
       world.forEach(function (t) { t.__foEpoch = epoch; });
       GD.teams = world;
+      // a relaunch is a fresh WORLD, not just fresh teams: the snapshot below
+      // carries App.* to every member, so the commissioner's old-era treasury,
+      // ledger, news feed, market listings and fielding stats must all retire
+      // with the old clubs. econInit no-ops while App.fin exists - clear it so
+      // the full fresh init (fin/history/market/cup + team defaults) runs.
+      App.fin = null;
+      App.news = []; App.fieldStats = {};
       if (typeof window.econInit === "function") window.econInit();
       App.teamIx = 0;
       App.season = null; if (typeof window.seasonInit === "function") window.seasonInit();
@@ -5322,6 +5369,22 @@
         SYNC.started = true;
         window.__foRelaunchEpoch = epoch;
         window.__foRejoin = null;
+        // push_league_state is last-write-wins with no version guard: a
+        // resolver pass that read the OLD snapshot before the relaunch will
+        // overwrite it minutes later when its sims finish. Watch the era for
+        // an hour and re-push the relaunch until it sticks - any new-era club
+        // that joined in between is re-spliced by its own join watchdog.
+        try { (window.__foRelTimers || []).forEach(clearTimeout); } catch (eT) {}
+        window.__foRelTimers = [45, 180, 600, 1800, 3600].map(function (sec) {
+          return setTimeout(function () {
+            sel("league_state", "league_id=eq." + LG.id + "&select=snapshot").then(function (a2) {
+              var cur = a2 && a2[0];
+              if (cur && cur.snapshot && foRelaunchEpochOf(cur.snapshot) !== epoch) {
+                rpc("push_league_state", { p_league_id: LG.id, p_snapshot: snap, p_round: 0 }).catch(function () {});
+              }
+            }).catch(function () {});
+          }, sec * 1000);
+        });
         toast("League relaunched · now found your own new club.");
         foRefound();
       }).catch(say);
@@ -6023,9 +6086,14 @@
           if (foPureBowler(p)) foApplyBowlerBat(p); else jsDerive(p);
         }
         // ...and on the DISPLAYED rating too: the squad page must show the
-        // captain on top, not just the internal value metric
-        for (var g3 = 0; g3 < 10 && (p.rating || 0) > (starter.rating || 0) * 0.96; g3++) {
-          for (var k5 in p.skills) p.skills[k5] = Math.max(4, Math.round(p.skills[k5] * 0.975));
+        // captain on top, not just the internal value metric. The factor is
+        // fed back from the measured rating each pass (a fixed x0.975 could
+        // need 17+ passes after a full budget-pass inflation), and floor -
+        // not round - so low skills (<=20, where round(v*0.975)===v) still
+        // actually shrink.
+        for (var g3 = 0; g3 < 12 && (p.rating || 0) > (starter.rating || 0) * 0.96; g3++) {
+          var fcR = Math.max(0.8, Math.min(0.99, Math.pow(((starter.rating || 1) * 0.955) / Math.max(1, p.rating), 0.6)));
+          for (var k5 in p.skills) p.skills[k5] = Math.max(4, Math.min(96, Math.floor(p.skills[k5] * fcR)));
           if (foPureBowler(p)) foApplyBowlerBat(p); else jsDerive(p);
         }
       });
@@ -6109,12 +6177,14 @@
   // ===========================================================================
   // Finance model calibrated to the ENGINE's real weekly economy tick:
   //   income  = sponsor base (+ win bonus) + home gate (attendance x $9)
-  //   costs   = wage bill + stadium ($1/seat on 9,000 seats) + academies ($16k at lvl 2/2)
+  //   costs   = wage bill + stadium ($1/seat on 9,000 seats) + senior academy
+  //             ($8k at lvl 2 - the resolver's fair settle bills senior only,
+  //             resolve-harness FO_ACAD[2]; there is no youth league)
   //   prizes  = engine PRIZES by final position at season end
   // Crowds follow the engine's attendance() = supporters x (0.55 + 0.13 x mood).
   var FO_FIN = {
     seasonLength: 18, homeMatches: 9, startingBank: 1000000, ticketPrice: 9,
-    stadiumCost: 9000, academyCost: 16000,
+    stadiumCost: 9000, academyCost: 8000,
     health: [{ label: "Excellent", min: 250000 }, { label: "Safe", min: 100000 }, { label: "Tight", min: 25000 }, { label: "Danger", min: 0 }, { label: "Crisis", min: null }],
     styles: [
       { id: "balanced", name: "Balanced", draftBudget: 800000, reserve: 200000, risk: "Low", rec: true, tone: "teal", tag: "Sustainable growth for new managers." },
@@ -6531,7 +6601,9 @@
       b.addEventListener("click", function () {
         var prev = FO_ONB.arch;
         FO_ONB.arch = b.getAttribute("data-a");
-        if (prev !== FO_ONB.arch) { FO_ONB.capt = null; FO_ONB.pool = null; FO_ONB.comp = null; }
+        // a new archetype means a new squad: the insolvency acknowledgement
+        // given for the OLD squad must not silence the risk screen for this one
+        if (prev !== FO_ONB.arch) { FO_ONB.capt = null; FO_ONB.pool = null; FO_ONB.comp = null; FO_ONB.riskAck = false; }
         host.querySelectorAll(".fo-qs-arch").forEach(function (x) { x.classList.toggle("on", x === b); });
         var c = host.querySelector("#fo-ob-c"); if (c) c.disabled = false;
       });
@@ -6697,9 +6769,11 @@
       if (!page.querySelector("#fo-simres")) {
         var b = document.createElement("button");
         b.id = "fo-simres"; b.type = "button"; b.textContent = "Sim to the result \u25B8";
+        // only into the speed row: it appears once the innings are live. On the
+        // toss screens autoPick/stepBall would just throw on M.innings[0]=null,
+        // so a top-of-page fallback button would sit there doing nothing.
         var row = sel2 && sel2.closest(".ctlrow");
         if (row) row.appendChild(b);
-        else page.insertBefore(b, page.firstChild);
       }
     } catch (e) {}
   }
@@ -6762,12 +6836,24 @@
       m.querySelectorAll(".fo-tut-plan").forEach(function (b) {
         b.addEventListener("click", function () {
           try {
+            // re-check at CLICK time: the engine's background tick can start a
+            // queued match while this modal sits open, and its 1.4s toss timer
+            // would then resolve OUR match's toss with the old call. Never
+            // stomp a live match - the invite simply waits for the next visit.
+            if (typeof M !== "undefined" && M && !M.done) {
+              m.remove();
+              say("A match is already live - finish it first. The warm-up invite will be waiting on your club home.");
+              return;
+            }
             var pl = plans.filter(function (x) { return x.id === b.getAttribute("data-p"); })[0] || plans[0];
-            try { M = null; } catch (_) {}
             App.tossState = null;
             App.pending = { oppIx: ix, home: me.name, away: opp.name, ground: me.ground, pitch: pitch, weather: "Sunny",
               seed: 4200 + ix, date: (typeof simDate === "function" ? simDate() : ""), comp: "friendly", __friendly: true, __tut: 1 };
             suggestOrders();
+            // the plan must never leak into the real league orders (the golden
+            // one-tap confirm pushes App.orders wholesale): stash what the plan
+            // overwrites - the saveMatch wrapper puts it back at full time
+            window.__foTutOrders = JSON.stringify({ pi: App.orders.phaseIntent || null, fp: App.orders.fieldPlan || null, defaults: App.defaults || null });
             App.orders.phaseIntent = pl.pi; App.orders.fieldPlan = pl.fp;
             App.orders.saved = true;
             App.defaults = JSON.parse(JSON.stringify(App.orders));
@@ -7025,10 +7111,14 @@
       if (out) club.players.splice(club.players.indexOf(out), 1);
       star.origin_tag = "Franchise player - marquee takeover signing";
       club.players.push(star);
-      try { window.store("fo_onb_done", "1"); lsSet("fo_qs_new", "1"); } catch (e) {}
       foOnbClose();
       rpc("push_club", { p_league_id: LG.id, p_club: club, p_team_ix: null })
-        .then(function () { foJoinRunningSeason(club); }).catch(say);
+        .then(function () {
+          // flags only once the club actually reached the server - a failed
+          // push must not leave this device claiming a finished onboarding
+          try { window.store("fo_onb_done", "1"); lsSet("fo_qs_new", "1"); } catch (e) {}
+          foJoinRunningSeason(club);
+        }).catch(say);
     } catch (e) { say(e); }
   }
 
@@ -7593,7 +7683,10 @@
     var ack = host.querySelector("#fo-ob-ack"), cont = host.querySelector("#fo-ob-cont");
     var sync = function () { FO_ONB.riskAck = ack.checked; cont.disabled = !ack.checked; };
     ack.addEventListener("change", sync); sync();
-    host.querySelector("#fo-ob-revise").addEventListener("click", function () { if (LG && LG.full_draft) foOnbDraft(); else foObComp(); });
+    host.querySelector("#fo-ob-revise").addEventListener("click", function () {
+      FO_ONB.riskAck = false;   // revising withdraws the acknowledgement - the next squad gets its own warning
+      if (LG && LG.full_draft) foOnbDraft(); else foObComp();
+    });
     cont.addEventListener("click", function () { FO_ONB.riskAck = true; foOnbReport(); });
   }
 
@@ -7649,11 +7742,6 @@
       var F = App.founder;
       F.name = FO_ONB.clubName; App.founder.identity = "Founding XI";
       var fc = foForecast(F.picked, FO_ONB.sponsor);
-      // remember the onboarding choices + a flag so we never show this flow again
-      try {
-        window.store("fo_onb_done", "1"); window.store("fo_sponsor", FO_ONB.sponsor);
-        window.store("fo_ground", FO_ONB.ground); window.store("fo_pitch", FO_ONB.pitch);
-      } catch (e) {}
       var _bank = Math.round(fc.bankAfter);
       // club identity + relaunch era go on BEFORE founderConfirm: the league
       // wrapper deep-copies and uploads the club synchronously
@@ -7669,24 +7757,38 @@
         }
       } catch (ePre) {}
       window.__foRejoin = null;
-      try { lsSet("fo_qs_new", "1"); if (FO_ONB.arch) lsSet("fo_qs_tut", String(Date.now())); else lsDel("fo_qs_tut"); } catch (eFl) {}
-      // let the engine build the real club record, then re-point finance at the
-      // brief's model ($1M is draft + operating money) and store the sponsor.
-      var _confirm = window.founderConfirm;
-      window.founderConfirm();                         // builds GD.teams[teamIx] + uploads (existing wrapper)
-      try {
+      // The bank the onboarding promised ($1M minus signing fees) and the
+      // players' provenance must be ON the club before the league wrapper
+      // deep-copies it for push_club - the engine's own founderConfirm banks
+      // a different formula (150k + 40% of unused), which would make every
+      // OTHER client and the resolver see a different treasury than the
+      // founder was shown. The wrapper calls this hook right after the
+      // engine builds the club and right before it copies it.
+      window.__foAfterConfirm = function () {
         var t = GD.teams[App.teamIx];
-        if (t) { t.ground = FO_ONB.ground || t.ground; t.sponsor = FO_ONB.sponsor; t.homePitch = FO_ONB.pitch || "balanced"; t.bank = _bank; }
-        if (t) (t.players || []).forEach(function (dp) {
+        if (!t) return;
+        t.ground = FO_ONB.ground || t.ground; t.sponsor = FO_ONB.sponsor; t.homePitch = FO_ONB.pitch || "balanced"; t.bank = _bank;
+        (t.players || []).forEach(function (dp) {
           dp._prov = dp._prov || { how: "draft", s: App.seasonNo || 1 };
           delete dp._qsPriced;   // fee-pricing flag was for the draft board only - founderConfirm deleted the fees, so don't let it ride the snapshots
         });
         var _deal = foSponsorById(FO_ONB.sponsor);
         t.sponsorDeal = { id: _deal.id, base: _deal.base, win: _deal.win, halfway: _deal.halfway, seasonTop3: _deal.seasonTop3, champ: _deal.champ };
         if (App.fin) { App.fin.bank = _bank; App.fin.sponsorBase = _deal.base; }
-        try { foFranchiseBadges._c = null; } catch (eBc) {}   // origin_tag just landed in-place - next render must see it
-        if (typeof window.saveGame === "function") window.saveGame(false);
+      };
+      // let the engine build the real club record; the wrapper runs the hook
+      // above, deep-copies, and uploads.
+      try { window.founderConfirm(); } finally { window.__foAfterConfirm = null; }
+      // flags only AFTER a successful commit: a founderConfirm throw must not
+      // leave this device claiming a finished onboarding it never finished
+      // (that state kills the #/create re-entry until a full reload).
+      try {
+        window.store("fo_onb_done", "1"); window.store("fo_sponsor", FO_ONB.sponsor);
+        window.store("fo_ground", FO_ONB.ground); window.store("fo_pitch", FO_ONB.pitch);
       } catch (e) {}
+      try { lsSet("fo_qs_new", "1"); if (FO_ONB.arch) lsSet("fo_qs_tut", String(Date.now())); else lsDel("fo_qs_tut"); } catch (eFl) {}
+      try { foFranchiseBadges._c = null; } catch (eBc) {}   // origin_tag just landed in-place - next render must see it
+      try { if (typeof window.saveGame === "function") window.saveGame(false); } catch (eSv) {}
       foOnbClose();
       // the existing post-confirm flow (showWait / club home) now owns the screen
     } catch (e) { say(e); foOnbClose(); }
@@ -7754,6 +7856,11 @@
     window.founderConfirm = function () {
       var lg = App.founder && App.founder.__league;
       var out = _fc.apply(this, arguments);   // game writes the drafted squad into GD.teams[teamIx]
+      // onboarding's post-confirm corrections (forecast bank, provenance,
+      // sponsor deal) must land BEFORE the copy below, or the pushed club -
+      // the copy every other client and the resolver settle from - diverges
+      // from what the founder sees locally
+      try { if (typeof window.__foAfterConfirm === "function") window.__foAfterConfirm(); } catch (eAc) {}
       if (lg) {
         try {
           var club = JSON.parse(JSON.stringify(GD.teams[App.teamIx]));
@@ -7788,6 +7895,12 @@
       try {
         var era9 = foRelaunchEpochOf(snap);
         if (era9 && +club.__foEpoch !== era9) {
+          // adopt the era only on the INITIAL join, right after founding - the
+          // club is brand new, its stamp just predates the snapshot it lands
+          // in. A watchdog re-splice crossing a relaunch boundary is the
+          // opposite case: the club was retired with the old era, and
+          // restamping it would resurrect it past the relaunch gate forever.
+          if (attempt) { window.__foRejoin = null; try { (window.__foJoinTimers || []).forEach(clearTimeout); } catch (eT9) {} return; }
           club.__foEpoch = era9;
           rpc("push_club", { p_league_id: LG.id, p_club: club, p_team_ix: null }).catch(function () {});
         }
@@ -7796,9 +7909,16 @@
       var target = already ? club.name : null;
       if (!target) {
         var bots = snap.teams.filter(function (t) { return t && !t.founded; });
-        if (!bots.length) { if (!attempt) { say("The league is already full of human clubs · ask your commissioner to restart the season to fit you in."); showWait(true); } return; }
-        // take over the bottom-most bot (least disruption to the title race)
-        var bot = bots[bots.length - 1];
+        if (!bots.length) {
+          if (!attempt) { say("The league is already full of human clubs · ask your commissioner to restart the season to fit you in."); showWait(true); }
+          else if (attempt === 1) say("Another club took the last open place while you were joining · ask your commissioner to restart the season to fit you in.");
+          return;
+        }
+        // take over a bottom-half bot, salted by club name: two managers
+        // joining in the same minute pick DIFFERENT bots instead of both
+        // claiming the bottom one and clobbering each other's join
+        var half = bots.slice(Math.floor(bots.length / 2)) ;
+        var bot = half[foHash32(club.name || "fo") % half.length] || bots[bots.length - 1];
         target = bot.name;
       }
       var raw = JSON.stringify(snap);
@@ -8103,7 +8223,17 @@
 
   var foOrigSuggest = window.suggestOrders;
   if (typeof foOrigSuggest === "function") {
-    window.suggestOrders = function () { try { return foSmartBowling(); } catch (e) { return foOrigSuggest(); } };
+    window.suggestOrders = function () {
+      var r; try { r = foSmartBowling(); } catch (e) { r = foOrigSuggest(); }
+      // foSmartBowling's rare bail-outs call the ENGINE's suggestOrders, which
+      // ends in pgOrders() and repaints #page with the Orders screen. When the
+      // caller was NOT on the orders page (the one-tap XI confirm on the club
+      // home, the tutorial), put the page back where the manager was.
+      try {
+        if (App.page !== "orders" && document.querySelector("#page .ftp-orders") && typeof window.route === "function") window.route();
+      } catch (e2) {}
+      return r;
+    };
   }
   // Swap the engine's Club home for the premium branded dashboard.
   var foOrigClub = window.pgClub;
