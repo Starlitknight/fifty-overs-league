@@ -7003,10 +7003,13 @@
           if (box) box.classList.add("fo-capt-glow");
         }
       });
-      // the player page writes the name as a bare crumb text node
+      // the player page writes the name as a bare crumb text node. The dedupe
+      // guard must cover BOTH chip classes - checking only the star meant a
+      // captain's C chip never satisfied it, and every 40ms mutation pass
+      // stacked another C onto the crumb forever.
       if (App.page === "player") {
         var cr = page.querySelector(".crumb");
-        if (cr && !cr.querySelector(".fo-qs-fp")) {
+        if (cr && !cr.querySelector(".fo-qs-fp, .fo-capt-chip")) {
           for (var nIx = 0; nIx < cr.childNodes.length; nIx++) {
             var nd = cr.childNodes[nIx];
             var ndT = nd.nodeType === 3 ? (nd.textContent || "").trim() : "";

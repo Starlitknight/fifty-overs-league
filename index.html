@@ -10783,7 +10783,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260713-0431-d5c6c8";
+  var FO_BUILD = "20260713-1517-611e57";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -13355,10 +13355,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           if (box) box.classList.add("fo-capt-glow");
         }
       });
-      // the player page writes the name as a bare crumb text node
+      // the player page writes the name as a bare crumb text node. The dedupe
+      // guard must cover BOTH chip classes - checking only the star meant a
+      // captain's C chip never satisfied it, and every 40ms mutation pass
+      // stacked another C onto the crumb forever.
       if (App.page === "player") {
         var cr = page.querySelector(".crumb");
-        if (cr && !cr.querySelector(".fo-qs-fp")) {
+        if (cr && !cr.querySelector(".fo-qs-fp, .fo-capt-chip")) {
           for (var nIx = 0; nIx < cr.childNodes.length; nIx++) {
             var nd = cr.childNodes[nIx];
             var ndT = nd.nodeType === 3 ? (nd.textContent || "").trim() : "";
