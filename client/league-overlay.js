@@ -7206,7 +7206,7 @@
       ["Fielding", foAgg(p, "field")]];
     var tip = function (label) { try { return (typeof TIPS !== "undefined" && TIPS[label]) ? TIPS[label] : ""; } catch (e) { return ""; } };
     return "<div class='fo-dc-bars'>" + bars.map(function (b) {
-      return "<span class='fo-db'><i title='" + E(tip(b[0])) + "'>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + b[1] + "%'></u></b><em>" + (foWord(b[1]) || b[1]) + "</em></span>";
+      return "<span class='fo-db'><i title='" + E(tip(b[0])) + "'>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + b[1] + "%'></u></b><em title='" + E(foWord(b[1]) || "") + "'>" + b[1] + "</em></span>";
     }).join("") + "</div>";
   }
   // One draft-room player card · the game's own card, in the brand theme.
@@ -7241,7 +7241,7 @@
       var pw = 0; try { pw = (typeof S === "function" ? S(p).power : (p.skills && p.skills.power)) || 0; } catch (e) {}
       var bars = [["Batting", agg("bat")], ["Bowling", isBowler ? agg("bowl") : 0], ["Keeping", agg("keep")], ["Fielding", agg("field")], ["Power", pw], ["Technique", agg("tech")], ["Endurance", agg("end")]];
       var word = function (v) { try { return typeof window.word === "function" ? window.word(v) : ""; } catch (e) { return ""; } };
-      var barHtml = bars.map(function (b) { var v = Math.max(0, Math.min(100, Math.round(b[1] || 0))); return "<div class='fo-pd-bar'><span>" + b[0] + "</span><i><b class='fo-sk-" + foSkTone(v) + "' style='width:" + v + "%'></b></i><em>" + (word(v) || v) + "</em></div>"; }).join("");
+      var barHtml = bars.map(function (b) { var v = Math.max(0, Math.min(100, Math.round(b[1] || 0))); return "<div class='fo-pd-bar'><span>" + b[0] + "</span><i><b class='fo-sk-" + foSkTone(v) + "' style='width:" + v + "%'></b></i><em title='" + E(word(v) || "") + "'>" + v + "</em></div>"; }).join("");
       var talents = (p.talents || []).map(function (t) { var d = (typeof TALTIPS !== "undefined" && TALTIPS[t]) || ""; return "<span title='" + E(d) + "' style='text-decoration:underline dotted'>" + E(foTalentName(t)) + "</span>"; }).join(", ") || "None";
       var inSquad = F.picked.indexOf(p) >= 0;
       var host = document.getElementById("fo-onb"); if (!host) return;
@@ -8634,9 +8634,9 @@
       }).join("");
       page.innerHTML =
         "<div class='crumb'>" + E(t.name) + " &raquo; Transfers</div>" +
-        "<div class='page-head'><div><div class='eyebrow'>Free agents</div><h1>Transfer market</h1><p>One shared pool for the whole league · when a club signs a player, they're gone for everyone. First come, first served. Fresh names every " + FO_MARKET_REFRESH + " matchdays.</p></div></div>" +
+        "<div class='page-head'><div><div class='eyebrow'>Free agents</div><h1>Transfer market</h1><p>One shared pool &middot; signed players are gone for everyone &middot; fresh names every " + FO_MARKET_REFRESH + " matchdays.</p></div></div>" +
         "<div class='panel'><h4>On the market &middot; restocks in " + foMarketRefreshIn() + " matchday" + (foMarketRefreshIn() === 1 ? "" : "s") + (SYNC && SYNC.started && !SYNC.practice ? " &middot; <span id='fo-mk-cd'></span>" : "") + "</h4><div class='pad'>" +
-        "<div class='fo-yc-note'>Bank: <b>" + FO$(bank) + "</b> · Squad: <b>" + t.players.length + "/18</b>. Signings join your squad after the next matchday resolves. The whole shelf is replaced every " + FO_MARKET_REFRESH + " matchdays &middot; unsigned players move on.</div>" +
+        "<div class='fo-yc-note'>Bank <b>" + FO$(bank) + "</b> &middot; Squad <b>" + t.players.length + "/18</b> &middot; signings join after the next matchday</div>" +
         "<div class='fo-ycs'>" + cards + "</div></div></div>";
       // tick a real clock down to the restock: N-1 full days plus the time to
       // the next 9:00 AM ET resolution
@@ -10349,7 +10349,7 @@
       // exists by mouseup and simply die. Only touch the DOM when the
       // rendered HTML actually changed.
       var inner = "<h4>All matches <span class='small' style='font-weight:400'>&middot; league, friendlies &amp; practice &middot; oldest first</span></h4><div class='pad'>" +
-        "<div class='fo-frs-bar'><button class='primary' id='fo-frs-new'>New practice game</button><span class='small'>Challenge a friend&rsquo;s club from their scout report &middot; friendlies carry no points and no fatigue.</span></div>" +
+        "<div class='fo-frs-bar'><button class='primary' id='fo-frs-new'>New practice game</button><span class='small'>No points, no fatigue.</span></div>" +
         (entries.length ? "<table><tr><th>Date</th><th>Type</th><th>Match</th><th>Result</th></tr>" + entries.map(function (e3) { return e3.html; }).join("") + "</table>" : "<div class='small' style='margin-top:8px'>No matches yet. Set up a practice game above, or challenge a rival from their club page.</div>") +
         "</div>";
       var pnl = page.querySelector("#fo-frs");
@@ -10580,7 +10580,7 @@
         "<td class='fo-tr-nm'>" + flag + " <a class='fo-tr-link' href='#/player?n=" + encodeURIComponent(p.name) + "'><b>" + E(p.name) + "</b></a><span class='fo-tr-meta'>" + foRoleShort(p) + " · age " + (p.age || "?") + "</span></td>" +
         "<td>" + enBar(en) + "</td>" +
         "<td><select class='fo-tr-prog' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + progOpts(tr.program) + "</select></td>" +
-        "<td class='fo-tr-progress'><div class='fo-tr-bar' title='Progress to the next +1'><u style='width:" + pr.pct + "%'></u></div><span>" + gainOf(p, tr, pr) + " &middot; <i class='fo-tr-pace'>" + foTrPace(p, tr) + "</i></span></td>" +
+        "<td class='fo-tr-progress'><div class='fo-tr-bar' title='" + E(gainOf(p, tr, pr) + " \u00b7 " + foTrPace(p, tr)) + "'><u style='width:" + pr.pct + "%'></u></div></td>" +
         "</tr>";
     }).join("");
     // phone: per-player decision cards instead of a five-column scroll
@@ -10597,7 +10597,7 @@
         enBar(en, true) + warn +
         "<div class='fo-trc-row fo-trc-one'><label>Program<select class='fo-tr-prog' data-p='" + E(p.name).replace(/'/g, "&#39;") + "'>" + progOpts(tr.program) + "</select></label></div>" +
         (chips ? "<div class='fo-trc-ws'>" + chips + "</div>" : "<div class='fo-trc-ws small'>Recovery week &middot; energy climbs instead of skills.</div>") +
-        "<div class='fo-tr-progress'><div class='fo-tr-bar' title='Progress to the next +1'><u style='width:" + pr.pct + "%'></u></div><span>" + gainOf(p, tr, pr) + " &middot; <i class='fo-tr-pace'>" + foTrPace(p, tr) + "</i></span></div>" +
+        "<div class='fo-tr-progress'><div class='fo-tr-bar' title='" + E(gainOf(p, tr, pr) + " \u00b7 " + foTrPace(p, tr)) + "'><u style='width:" + pr.pct + "%'></u></div></div>" +
         "</div>";
     }).join("");
 
@@ -10614,7 +10614,7 @@
         tiredHtml +
         "</div></div>";
     } else {
-      repHtml = ward + "<div class='panel'><h4>This week in the nets</h4><div class='pad fo-tr-rep'><div class='small'>Gains land after each matchday. Young players improve fastest; tired players train poorly &middot; use Rest.</div>" + tiredHtml + "</div></div>";
+      repHtml = ward + "<div class='panel'><h4>This week in the nets</h4><div class='pad fo-tr-rep'><div class='small'>Gains land after each matchday.</div>" + tiredHtml + "</div></div>";
     }
 
     // youth scout panel: pick a country, reveal a shortlist of three, sign one
@@ -11791,7 +11791,7 @@
     var dbar = function (v, lbl) {
       v = Math.round(v);
       var col = v >= 75 ? "#16A34A" : v >= 50 ? "#4DA6A2" : v >= 30 ? "#F59E0B" : "#DC2626";
-      return "<div class='fo-sq-dline'><span>" + lbl + "</span><span class='fo-sq-dbar'><i style='width:" + Math.max(2, Math.min(100, v)) + "%;background:" + col + "'></i></span><b>" + v + "</b><em>" + word(v) + "</em></div>";
+      return "<div class='fo-sq-dline' title='" + E(word(v) || "") + "'><span>" + lbl + "</span><span class='fo-sq-dbar'><i style='width:" + Math.max(2, Math.min(100, v)) + "%;background:" + col + "'></i></span><b>" + v + "</b></div>";
     };
     var sk = S(p);
     var c1 = "<div><div class='fo-sq-dh'>Batting</div>" + dbar(aggBat(p), "Overall") + dbar(sk.vsPace || 0, "vs pace") + dbar(sk.vsSpin || 0, "vs spin") + dbar(sk.rotation || 0, "Rotation") + dbar(sk.power || 0, "Power") + dbar(sk.temperament || 0, "Temperament") + "</div>";
@@ -11893,14 +11893,16 @@
           "<div class='fo-sq-nm'>" + flag(p.nat) + " " + playerLink(p) + (p._nick ? "<span class='fo-sq-nickchip'>“" + E(p._nick) + "”</span>" : "") + (p.keeper ? " <span title='wicketkeeper'>&dagger;</span>" : "") + (p.__y ? "<span class='fo-sq-talent'>U20</span>" : "") + (p.fatigue === "tired" ? "<span class='fo-sq-tired' title='tired · recovers next match or with Rest'>TIRED</span>" : "") + tchips +
           "<div class='fo-sq-sub'>" + sub + "</div></div>" +
           "<div class='fo-sq-age'>" + (p.age | 0) + " " + traj + "</div>" +
-          "<div class='fo-sq-form'><span class='fo-fb " + fb + "' title='" + FORMTIP + "'>" + FORMW_UI[fi] + "</span>" +
+          "<div class='fo-sq-form'>" + (fi !== 3 ? "<span class='fo-fb " + fb + "' title='" + FORMTIP + "'>" + FORMW_UI[fi] + "</span>" : "") +
           "<span class='fo-sq-enb' title='Energy: " + en.word + (en.tired ? " - recovers with the Rest program" : "") + "'><i style='width:" + en.pct + "%;background:" + enCol + "'></i></span></div>" +
           foSqSkillCell(aggBat(p), false, "Batting") +
           foSqSkillCell(p.bowlType ? aggBowl(p) : aggBowl(p), !p.bowlType, "Bowling") +
           "<div class='fo-sq-ovr' title='Overall rating (rating / 1,000)'>" + Math.round((p.rating || 0) / 1000) + "</div>" +
           "<div class='fo-sq-wage'>$" + (p.wage || 0).toLocaleString() + "<i>per matchday</i></div>" +
           "<div class='fo-sq-caret'>" + (open ? "&#9662;" : "&#9656;") + "</div>" +
-          "<div class='fo-sq-mfx'><span><i>Form</i> <b class='" + fCls + "'>" + FORMW_UI[fi] + "</b></span><span><i>Energy</i> <b class='" + enCls + "'>" + en.word + "</b><span class='fo-sq-enb fo-sq-enb-m' title='" + en.pct + "%'><i style='width:" + en.pct + "%;background:" + enCol + "'></i></span></span></div></div>" +
+          ((fi !== 3 || en.word !== "fresh")
+            ? "<div class='fo-sq-mfx'>" + (fi !== 3 ? "<span><i>Form</i> <b class='" + fCls + "'>" + FORMW_UI[fi] + "</b></span>" : "") + (en.word !== "fresh" ? "<span><i>Energy</i> <b class='" + enCls + "'>" + en.word + "</b><span class='fo-sq-enb fo-sq-enb-m' title='" + en.pct + "%'><i style='width:" + en.pct + "%;background:" + enCol + "'></i></span></span>" : "") + "</div>"
+            : "") + "</div>" +
           (open ? foSqDetail(p, !!p.__y) : "");
       }).join("");
       var foot = "<div class='fo-sq-foot'>Rows expand on click for full attributes and talents · training assignments live on the <a href='#/training'>Training page</a></div>";
@@ -12475,15 +12477,15 @@
         "<div class='fo-of2-hbadge fo-t-" + overallHealth[1] + "'>Financial health: <b>" + overallHealth[0] + "</b></div>" +
         "<div class='fo-of2-hrows'>" +
         (insolvent
-          ? hRow("red", dip ? "The books go negative around <b>R" + dip + "</b> at the current run rate." : "Season ends <b>" + foOfMoney(proj) + " in the red</b> at the current run rate.")
-          : hRow("green", "The club is solvent through the end of the season (<b>+" + foOfMoney(proj) + "</b> projected).")) +
+          ? hRow("red", dip ? "Books go negative around <b>R" + dip + "</b>" : "Season ends <b>" + foOfMoney(proj) + "</b> in the red")
+          : hRow("green", "Solvent to season end &middot; <b>+" + foOfMoney(proj) + "</b>")) +
         (F.chargesWages()
-          ? hRow(wagePct > 60 ? "amber" : "green", "Wages consume <b>" + wagePct + "%</b> of typical round income" + (wagePct > 60 ? " &middot; over the 60% comfort line." : "."))
-          : hRow("green", "Wages (" + foOfMoney(wages) + "/matchday) are informational here &middot; practice books don't charge them.")) +
-        hRow(fill < 60 ? "amber" : "green", "The ground is <b>" + fill + "%</b> full on matchdays" + (fill < 60 ? " &middot; expansion currently has poor payback." : " &middot; expansion is worth a look.")) +
+          ? hRow(wagePct > 60 ? "amber" : "green", "Wages &middot; <b>" + wagePct + "%</b> of round income" + (wagePct > 60 ? " &middot; high" : ""))
+          : hRow("green", "Wages <b>" + foOfMoney(wages) + "</b>/matchday &middot; not charged in practice")) +
+        hRow(fill < 60 ? "amber" : "green", "Ground <b>" + fill + "%</b> full on matchdays") +
         (F.paysSponsor()
-          ? hRow("green", E(deal.d.name) + " pays <b>" + foOfMoney(base) + "</b> every matchday" + (deal.d.win ? " plus " + foOfMoney(deal.d.win) + " per win" : ", win or lose") + ".")
-          : hRow("green", "Sponsor deals pay out in league play.")) +
+          ? hRow("green", E(deal.d.name) + " &middot; <b>" + foOfMoney(base) + "</b>/matchday" + (deal.d.win ? " + " + foOfMoney(deal.d.win) + "/win" : ""))
+          : hRow("green", "Sponsor pays in league play.")) +
         "</div></div>";
 
       // ---- next-round forecast: income and expenses grouped, balance dominant ----
@@ -12503,7 +12505,6 @@
         fRow("Academy upkeep", acadUp, true) +
         (tc > 0 ? fRow("Training intensity", tc, true) : "") +
         "<div class='fo-of2-ftotal'><span>Projected balance</span><b class='" + (projBank >= 0 ? "fo-t-green" : "fo-t-red") + "'>" + foOfMoney(projBank) + "</b></div>" +
-        "<div class='fo-of2-note'>Win bonuses are added after results and are not included in advance projections.</div>" +
         "</div></div>";
 
       // ---- decision centre: only things a manager can act on ----
@@ -12514,11 +12515,11 @@
       var lowFillD = fill < 60;
       var decisions = "<div class='fo-of2-card'><div class='fo-of2-ch'>Decision centre</div><div class='fo-of2-cb fo-of2-dlist'>" +
         dItem("Ground expansion",
-          "Current fill is <b>" + fill + "%</b>. " + (lowFillD ? "Expansion is unlikely to repay its cost. Recommendation: wait until average fill exceeds 85%." : (fill >= 85 ? "The ground sells close to out &middot; extra seats would earn from day one." : "Expansion is a judgement call at this fill rate.")),
+          "Fill <b>" + fill + "%</b>" + (lowFillD ? " &middot; poor payback below 85%" : (fill >= 85 ? " &middot; sells out, seats earn from day one" : " &middot; judgement call")),
           lowFillD ? "Wait" : (fill >= 85 ? "Expand" : "Consider"), lowFillD ? "amber" : (fill >= 85 ? "green" : "amber"),
           "<a href='#fo-stadium' class='fo-of2-dl' data-scroll='fo-stadium'>Review ground &rsaquo;</a>") +
         dItem("Wage pressure",
-          F.chargesWages() ? "Wages are <b>" + wagePct + "%</b> of typical round income." : "Practice books don't charge wages; the bill is informational.",
+          F.chargesWages() ? "Wages &middot; <b>" + wagePct + "%</b> of round income." : "Not charged in practice books.",
           F.chargesWages() ? (wagePct > 60 ? "Over the comfort line" : "Sustainable") : "Informational",
           F.chargesWages() && wagePct > 60 ? "amber" : "green",
           "<a href='#/squad' class='fo-of2-dl'>Review squad wages &rsaquo;</a>") +
