@@ -91,7 +91,7 @@ async function advanceOne(page, st) {
   const blocked = advDate
     ? advDate >= now.date
     : (last.date >= now.date && Date.now() - Date.parse(st.updated_at) < 2 * 3600 * 1000);
-  if (blocked) { console.log(lid, advDate ? 'already advanced today' : 'fresh client push - waiting out the grace period'); return; }
+  if (blocked) { console.log(lid, advDate ? 'already advanced today' : `fresh client push - waiting out the grace period (last push ${st.updated_at}, grace ends ${new Date(Date.parse(st.updated_at) + 2 * 3600 * 1000).toISOString()})`); return; }
 
   // Season over: the next 09:00 runs the engine's own rollover — prize money
   // for every club, age decline, retirements (seeded from the season number,
