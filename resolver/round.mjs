@@ -63,7 +63,10 @@ async function playChallenges(page) {
 
 export async function advanceLeagues() {
   assertEnv();
-  const states = await rest('league_state?select=league_id,snapshot,version,round,updated_at');
+  // egress guard: the snapshot is megabytes; fetch only the cheap columns
+  // up front, and pull the snapshot lazily inside advanceOne once the time
+  // gates have passed (most passes exit at the gates without it).
+  const states = await rest('league_state?select=league_id,version,round,updated_at');
   if (!states.length) { console.log('no leagues to advance'); return; }
   const { page, close } = await openEngine();
   try {
@@ -76,8 +79,7 @@ export async function advanceLeagues() {
 }
 
 async function advanceOne(page, st) {
-  const lid = st.league_id, round = st.round, snap = st.snapshot;
-  const sched = snap && snap.season && snap.season.schedule;
+  const lid = st.league_id, round = st.round;
 
   // Gate to one ROUND per day at 09:00 New York time. The snapshot carries the
   // date of the last resolver advance; updated_at alone is not enough - any
@@ -87,6 +89,11 @@ async function advanceOne(page, st) {
   const now = tzDateHour(new Date());
   const last = tzDateHour(new Date(st.updated_at));
   if (now.hour * 60 + now.minute < MATCH_HOUR * 60 - BANK_EARLY_MIN) { console.log(lid, `before ${MATCH_HOUR - 1}:00 ${MATCH_TZ} (rounds bank from an hour ahead of the ${MATCH_HOUR}:00 start)`); return; }
+  // time gate passed - only now is the multi-megabyte snapshot worth fetching
+  const full = await rest(`league_state?league_id=eq.${lid}&select=snapshot`);
+  const snap = full && full[0] && full[0].snapshot;
+  if (!snap) { console.log(lid, 'no snapshot'); return; }
+  const sched = snap && snap.season && snap.season.schedule;
   const advDate = snap && snap.__foAdvDate ? String(snap.__foAdvDate) : null;
   const blocked = advDate
     ? advDate >= now.date

@@ -5468,8 +5468,15 @@
         });
       }).catch(function () {});
     }
-    sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version,round").then(function (a) {
-      var st = a[0]; if (!st || st.version <= SYNC.lastVersion) return;
+    // egress guard: the snapshot is megabytes and this poll runs every 15s on
+    // every open tab - ask for the tiny version number first and download the
+    // snapshot ONLY when it actually moved
+    sel("league_state", "league_id=eq." + LG.id + "&select=version").then(function (a0) {
+      var v0 = a0 && a0[0] && a0[0].version;
+      if (v0 == null || v0 <= SYNC.lastVersion) return [];
+      return sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version,round");
+    }).then(function (a) {
+      var st = a && a[0]; if (!st || st.version <= SYNC.lastVersion) return;
       if (document.getElementById("fo-onb")) return;               // never yank the draft room away mid-pick
       SYNC.lastVersion = st.version;
       // auto-enter once a rebuild includes us; if we were parked in the lobby, land on the club page
