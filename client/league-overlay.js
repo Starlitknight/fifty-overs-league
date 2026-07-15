@@ -4601,6 +4601,12 @@
             if (App.orders) {
               App.orders.phaseIntent = o9.pi || { pp: 0, mid: 0, death: 1 };
               App.orders.fieldPlan = o9.fp || { pp: "att", mid: "bal", death: "def" };
+              if (o9.bo) App.orders.batOrder = o9.bo;
+              if (o9.sp) App.orders.spells = o9.sp;
+              if (o9.cap !== undefined && o9.cap !== null) App.orders.captain = o9.cap;
+              if (o9.kp !== undefined && o9.kp !== null) App.orders.keeper = o9.kp;
+              if (o9.tc !== undefined) App.orders.tossCall = o9.tc;
+              if (o9.td !== undefined) App.orders.tossDecision = o9.td;
             }
             App.defaults = o9.defaults || null;
           }
@@ -6334,7 +6340,7 @@
         __league: (LG && LG.id) ? { league_id: LG.id, team_id: team.id } : null
       };
       FO_ONB = { team: team, step: 1, needsSetup: needsSetup, country: team.country || NAT[0], clubName: team.name || "", ground: (team.name ? team.name + " Oval" : "Riverview Oval"), pitch: "balanced", style: "balanced", sponsor: null, scenario: "average", role: "all", riskAck: false };
-      foOnbCreate();
+      foJIntro();
     } catch (e) {
       // never leave a new manager on a blank screen · fall back to the engine's draft
       console.warn("Fifty Overs onboarding failed, using the standard draft:", e);
@@ -7733,6 +7739,757 @@
       // the existing post-confirm flow (showWait / club home) now owns the screen
     } catch (e) { say(e); foOnbClose(); }
   }
+
+
+  // ================= The Founding Journey =====================================
+  // Gaffer-led onboarding: intro -> create -> founded -> soul -> money ->
+  // (marquee signing) -> Thorne -> newspaper -> commit -> conditions ->
+  // three calls -> REAL warm-up in the live match centre -> debrief -> club.
+  // Presentation only: squads, fees, bank, sponsor and the warm-up all run
+  // through the existing, verified plumbing (foGenArchetypeSquad, foForecast,
+  // foOnbCommit, suggestOrders, the __foTutOrders zero-trace stash).
+  (function foJCss() {
+    if (document.getElementById("fo-j-css")) return;
+    var st = document.createElement("style"); st.id = "fo-j-css";
+    st.textContent =
+      ".fo-j-chap{display:flex;gap:14px;justify-content:center;margin:0 0 22px;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;flex-wrap:wrap}" +
+      ".fo-j-chap span{color:#b9b29a}.fo-j-chap span.on{color:#C8674A;border-bottom:2px solid #C8674A;padding-bottom:2px}.fo-j-chap span.done{color:#101B2D}.fo-j-chap i{font-style:normal;color:#d5cdb2}" +
+      ".fo-j-dwrap{max-width:760px;margin:0 auto}" +
+      ".fo-j-badge{display:flex;align-items:center;gap:10px;margin:6px 0 12px}.fo-j-badge i{width:44px;height:44px;border-radius:50%;border:2px solid #C9A24B;background:#FFFEFC;display:grid;place-items:center;font-style:normal;font-size:20px}.fo-j-badge b{letter-spacing:2px;font-size:12px;color:#5b6472;text-transform:uppercase}" +
+      ".fo-j-dbox{display:block;width:100%;text-align:left;background:#FFFEFC;border:2px solid #C9A24B;border-radius:14px;padding:16px 20px;box-shadow:0 4px 0 rgba(16,27,45,.28);cursor:pointer;font:inherit}" +
+      ".fo-j-dbox .sp{display:block;font-size:11px;letter-spacing:2.5px;color:#C8674A;font-weight:700;text-transform:uppercase;margin-bottom:6px}" +
+      ".fo-j-dbox .tx{font-size:18px;line-height:1.55;color:#101B2D;min-height:56px}.fo-j-tri{color:#C8674A;animation:foJb 1s infinite}@keyframes foJb{50%{opacity:.25}}" +
+      ".fo-j-gbox{max-width:640px;margin:10px auto;background:#FFFEFC;border:1.5px solid #D9B75A;border-radius:12px;padding:10px 16px;text-align:left}" +
+      ".fo-j-gbox .sp{display:block;font-size:10px;letter-spacing:2px;color:#C8674A;font-weight:700;text-transform:uppercase;margin-bottom:2px}.fo-j-gbox .tx{font-size:14.5px;color:#101B2D;line-height:1.5}" +
+      ".fo-j-cert{background:#FBF7EA;border:1px solid #d8d0b8;padding:24px 22px;position:relative;max-width:600px;margin:0 auto;text-align:center;border-radius:6px}" +
+      ".fo-j-stamp{position:absolute;top:14px;right:14px;width:66px;height:66px;border:2.5px solid rgba(200,103,74,.45);border-radius:50%;display:grid;place-items:center;color:rgba(200,103,74,.55);font-size:8.5px;font-weight:700;transform:rotate(12deg);letter-spacing:1px;text-align:center;line-height:1.3;padding:6px}" +
+      ".fo-j-marq{font-weight:800;text-transform:uppercase;letter-spacing:3px;font-size:clamp(22px,4.5vw,34px);color:#101B2D;line-height:1.1}" +
+      ".fo-j-rule{display:flex;align-items:center;gap:12px;justify-content:center;color:#C9A24B;margin:6px 0}.fo-j-rule i{flex:0 0 80px;height:2px;background:linear-gradient(90deg,transparent,#C9A24B);border-radius:2px}.fo-j-rule i:last-child{background:linear-gradient(270deg,transparent,#C9A24B)}.fo-j-rule b{font-size:11px;letter-spacing:3px;color:#C9A24B}" +
+      ".fo-j-souls{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:14px 0}" +
+      ".fo-j-soul{background:#FFFEFC;border:1.5px solid rgba(16,27,45,.16);border-radius:14px;padding:14px;cursor:pointer;text-align:center;font:inherit;transition:border-color .15s}" +
+      ".fo-j-soul.on{border-color:#C8674A;box-shadow:0 0 0 2px rgba(200,103,74,.3);background:#FFFEFC;color:inherit}" +
+      ".fo-j-soul .nm{display:block;font-weight:800;letter-spacing:2px;text-transform:uppercase;font-size:14px;margin:8px 0 2px}" +
+      ".fo-j-soul .ln{display:block;font-size:12.5px;color:#5b6472;font-style:italic;min-height:34px}" +
+      ".fo-j-stats{margin:8px 0 6px}.fo-j-stat{display:flex;align-items:center;gap:8px;margin:3px 0}.fo-j-stat span{flex:0 0 62px;font-size:9.5px;letter-spacing:1px;color:#8a90a0;text-transform:uppercase;text-align:left}.fo-j-stat i{flex:1;height:7px;background:rgba(16,27,45,.08);border-radius:99px;overflow:hidden;font-style:normal}.fo-j-stat i b{display:block;height:100%;border-radius:99px}" +
+      ".fo-j-pros{font-size:12px;line-height:1.55;color:#2E7A3C;font-weight:600;text-align:left}.fo-j-pros .w{color:#B23A2E}" +
+      ".fo-j-prev{background:#FFFEFC;border:1px solid rgba(16,27,45,.16);border-radius:14px;padding:14px 18px;margin-top:12px;text-align:left;max-width:680px;margin-left:auto;margin-right:auto}" +
+      ".fo-j-pl{display:flex;gap:8px;font-size:13.5px;padding:3px 0;color:#4a5568}.fo-j-pl i{font-style:normal;font-weight:700;color:#101B2D;flex:0 0 128px}" +
+      ".fo-j-money{width:100%;max-width:520px;margin:12px auto;border-collapse:collapse;font-size:15px}" +
+      ".fo-j-money td{padding:9px 12px;border-bottom:1px solid rgba(16,27,45,.12);text-align:left;color:#4a5568}.fo-j-money td:last-child{text-align:right;font-weight:700;color:#101B2D;font-variant-numeric:tabular-nums}" +
+      ".fo-j-money tr.g td{font-weight:700;color:#101B2D}.fo-j-money tr.g td:last-child{font-size:18px;color:#2E7A3C}.fo-j-money td.neg{color:#B23A2E}.fo-j-money tr.r td{font-weight:600;border-bottom:none}.fo-j-money tr.r td:last-child{color:#2E7A3C;font-size:16px}" +
+      ".fo-j-choice{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;max-width:760px;margin:10px auto}" +
+      ".fo-j-card{background:#FFFEFC;border:2px solid rgba(16,27,45,.14);border-radius:14px;padding:16px;text-align:center;cursor:pointer;font:inherit;transition:border-color .15s,transform .15s}" +
+      ".fo-j-card:hover{border-color:#C8674A;transform:translateY(-2px)}" +
+      ".fo-j-card h3{margin:0 0 6px;font-size:15px;letter-spacing:1.5px;text-transform:uppercase;color:#101B2D}.fo-j-card .fx{font-size:13px;color:#5b6472;line-height:1.5}" +
+      ".fo-j-sign{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:14px 0;align-items:start}" +
+      ".fo-j-signc{background:#FFFEFC;border:1.5px solid rgba(16,27,45,.16);border-radius:14px;padding:14px;text-align:left}" +
+      ".fo-j-risk{color:#B23A2E;font-size:12.5px;margin-top:6px;font-weight:600}" +
+      ".fo-j-rivstage{display:flex;gap:26px;justify-content:center;align-items:flex-start;margin:6px 0 16px;flex-wrap:wrap}" +
+      ".fo-j-rivfig{text-align:center;max-width:200px}.fo-j-rivnm{font-weight:800;letter-spacing:2.5px;font-size:14px;color:#101B2D;margin-top:8px;text-transform:uppercase}.fo-j-rivsub{font-size:12px;color:#6b7280;font-style:italic;margin-top:2px}.fo-j-vs{font-size:24px;color:#C9A24B;align-self:center;font-weight:700}" +
+      ".fo-j-wire{font-family:Georgia,'Times New Roman',serif;background:#FBF7E8;border:1px solid #d8d0b8;padding:20px 22px;box-shadow:0 3px 10px rgba(16,27,45,.1);text-align:left;max-width:620px;margin:0 auto}" +
+      ".fo-j-wire .mast{display:flex;justify-content:space-between;align-items:baseline;font-size:10.5px;letter-spacing:1px;color:#8a7b4f}.fo-j-wire .mast .mh{font-weight:700;font-size:19px;letter-spacing:3px;color:#101B2D}" +
+      ".fo-j-wire .dl{border-top:1px solid #101B2D;border-bottom:2.5px solid #101B2D;padding:3px 0;margin:4px 0 12px;font-size:10px;letter-spacing:2px;text-align:center;color:#6b6244}" +
+      ".fo-j-wire h3{font-size:24px;line-height:1.15;color:#101B2D;margin:0 0 8px;text-transform:uppercase}" +
+      ".fo-j-wire .by{font-style:italic;font-size:12.5px;color:#6b6244;margin-bottom:10px;border-bottom:1px solid #d8d0b8;padding-bottom:6px}" +
+      ".fo-j-wire p{text-align:justify;font-size:14.5px;line-height:1.7;color:#33302a;margin:0 0 10px}" +
+      ".fo-j-wfig{float:right;width:118px;margin:0 0 8px 16px;text-align:center}.fo-j-wcap{font-size:10.5px;font-style:italic;color:#6b6244;line-height:1.4;margin-top:4px}" +
+      ".fo-j-pick{border-radius:12px;margin:0 auto 8px;max-width:680px;cursor:pointer}" +
+      ".fo-j-prow{background:#FFFEFC;border:1.5px solid rgba(16,27,45,.14);border-radius:12px;padding:11px 15px;text-align:left}" +
+      ".fo-j-pick.sel .fo-j-prow{border-color:#C8674A;box-shadow:0 0 0 2px rgba(200,103,74,.32)}" +
+      ".fo-j-pnm{font-weight:700;color:#101B2D;font-size:15.5px}.fo-j-psub{display:block;font-size:12px;color:#6b7280;margin-top:1px}.fo-j-why{display:block;font-size:12.5px;color:#C8674A;font-weight:600;margin-top:2px}" +
+      ".fo-j-bars{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 14px;margin-top:8px}" +
+      ".fo-j-bar{display:flex;flex-direction:column;gap:3px;font-size:10px;letter-spacing:.5px;color:#8a90a0;text-transform:uppercase}" +
+      ".fo-j-bar i{height:8px;background:#EDF3EA;border:1px solid #C2D4BD;border-radius:99px;overflow:hidden;font-style:normal}.fo-j-bar i b{display:block;height:100%;background:#2E9E4F;border-radius:99px}.fo-j-bar em{font-style:normal;color:#44503c;font-size:11px;text-transform:none}" +
+      ".fo-j-chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 0}" +
+      ".fo-j-chip{padding:8px 16px;border-radius:99px;border:1px solid rgba(16,27,45,.25);background:#FFFEFC;cursor:pointer;font-size:13px;font-weight:600;color:#101B2D;font:inherit}" +
+      ".fo-j-chip.on{background:#101B2D;color:#F5EFDC;border-color:#101B2D}" +
+      ".fo-j-sec{display:flex;align-items:center;gap:10px;margin:20px auto 8px;max-width:680px;letter-spacing:2px;text-transform:uppercase;color:#101B2D;font-size:13px;font-weight:700}.fo-j-sec i{flex:1;height:1px;background:rgba(16,27,45,.18);font-style:normal}" +
+      "@media(max-width:640px){.fo-j-bars{grid-template-columns:1fr}.fo-j-dbox .tx{font-size:16px}}" +
+      // the ftpskin sheet paints EVERY button (and its focus state) - out-gun it
+      "html body #fo-onb .fo-j-soul,html body.ftpskin #fo-onb .fo-j-soul{background:#FFFEFC !important;color:#111827 !important;border:1.5px solid rgba(16,27,45,.16) !important}" +
+      "html body #fo-onb .fo-j-soul.on,html body.ftpskin #fo-onb .fo-j-soul.on,html body #fo-onb .fo-j-soul:focus,html body.ftpskin #fo-onb .fo-j-soul:focus{background:#FFFEFC !important;color:#111827 !important}" +
+      "html body #fo-onb .fo-j-soul.on,html body.ftpskin #fo-onb .fo-j-soul.on{border-color:#C8674A !important;box-shadow:0 0 0 2px rgba(200,103,74,.3) !important}" +
+      "html body #fo-onb .fo-j-card,html body.ftpskin #fo-onb .fo-j-card{background:#FFFEFC !important;color:#111827 !important;border:2px solid rgba(16,27,45,.14) !important}" +
+      "html body #fo-onb .fo-j-card:hover,html body.ftpskin #fo-onb .fo-j-card:hover,html body #fo-onb .fo-j-card:focus,html body.ftpskin #fo-onb .fo-j-card:focus{background:#FFFEFC !important;border-color:#C8674A !important}" +
+      "html body #fo-onb .fo-j-dbox,html body.ftpskin #fo-onb .fo-j-dbox{background:#FFFEFC !important;color:#101B2D !important;border:2px solid #C9A24B !important}" +
+      "html body #fo-onb .fo-j-dbox:focus,html body.ftpskin #fo-onb .fo-j-dbox:focus{background:#FFFEFC !important}" +
+      "html body #fo-onb .fo-j-chip,html body.ftpskin #fo-onb .fo-j-chip{background:#FFFEFC !important;color:#101B2D !important;border:1px solid rgba(16,27,45,.25) !important}" +
+      "html body #fo-onb .fo-j-chip.on,html body.ftpskin #fo-onb .fo-j-chip.on{background:#101B2D !important;color:#F5EFDC !important;border-color:#101B2D !important}" +
+      "html body #fo-onb .fo-j-pick .fo-j-prow,html body.ftpskin #fo-onb .fo-j-pick .fo-j-prow{background:#FFFEFC !important}";
+    document.head.appendChild(st);
+  })();
+
+  var FO_J_ACCENT = { express: "#D93425", blade: "#E09A19", rock: "#2F8F46", wizard: "#8B4FD8", gloveman: "#0E9E97", engine: "#2F80ED" };
+  var FO_J_SOULS = ["express", "blade", "rock", "wizard", "gloveman", "engine"];
+  var FO_J_COUNTER = { express: "rock", blade: "express", rock: "blade", wizard: "express", gloveman: "blade", engine: "express" };
+  var FO_J_PREV = {
+    express: { pitch: "green", bars: { Batting: 2, Bowling: 5, Fielding: 3, Nerve: 3 }, stars: "Fast bowler, seam-bowling all-rounder", prob: "Batting depth", conds: "Green and cloudy", quip: "Pace. Good. Nothing clears a Sunday crowd like broken stumps." },
+    blade: { pitch: "flat", bars: { Batting: 5, Bowling: 2, Fielding: 3, Nerve: 2 }, stars: "Two attacking openers", prob: "Bowling at the death", conds: "Flat and dry", quip: "The Cavaliers. Glorious or gone by lunch, and I love them for it." },
+    rock: { pitch: "slow", bars: { Batting: 4, Bowling: 3, Fielding: 3, Nerve: 5 }, stars: "An immovable opener, a miser seamer", prob: "Chasing steep rates", conds: "Anything slow", quip: "The Stonewall. Boring wins more trophies than brilliant, don't tell anyone." },
+    wizard: { pitch: "dry", bars: { Batting: 3, Bowling: 5, Fielding: 2, Nerve: 3 }, stars: "Wrist spinner, finger spinner", prob: "Green wickets early on", conds: "Dry and turning", quip: "Spin. Cruelty in slow motion. My favourite kind." },
+    gloveman: { pitch: "balanced", bars: { Batting: 3, Bowling: 2, Fielding: 5, Nerve: 4 }, stars: "Wicketkeeper, cover fielder", prob: "Bowling sides out", conds: "Fair, even contests", quip: "Safe Hands. Catches win matches, and I've got the knuckles to prove it." },
+    engine: { pitch: "balanced", bars: { Batting: 4, Bowling: 4, Fielding: 4, Nerve: 3 }, stars: "A pair of do-everything all-rounders", prob: "Winning a match by yourself", conds: "Long seasons", quip: "All-rounders everywhere. Six bowling options and a batting card that never ends." }
+  };
+  var FO_J_NATQUIP = {
+    "Australia": "Australia. Sledging counts as small talk out there.", "India": "India. A billion coaches in the stands, boss.",
+    "Pakistan": "Pakistan. Wrists like conjurers, the lot of them.", "Sri Lanka": "Sri Lanka. They invent shots the coaching manuals ban.",
+    "New Zealand": "New Zealand. Nicest people ever to knock you out of a cup.", "South Africa": "South Africa. They breed fast bowlers like weather.",
+    "England": "England. Proper tea at the interval, then.", "Netherlands": "The Dutch. Give them one sniff and they take the whole hand.",
+    "West Indies": "West Indies. Rhythm in everything, including the bouncer.", "Afghanistan": "Afghanistan. Fearless. Every single one of them.",
+    "Ireland": "Ireland. Rain stops play there; the heart never did.", "Zimbabwe": "Zimbabwe. Tougher cricket people do not exist."
+  };
+  function foJArch(id) { return foArchById(id); }
+  function foJChapBar(ix) {
+    var L = ["Build the club", "Meet the rival", "Play the friendly"];
+    return "<div class='fo-j-chap'>" + L.map(function (l, k) {
+      return "<span class='" + (k === ix ? "on" : (k < ix ? "done" : "")) + "'>" + l + "</span>" + (k < 2 ? "<i>&rarr;</i>" : "");
+    }).join("") + "</div>";
+  }
+  function foJMount(ch, body) {
+    var host = document.getElementById("fo-onb");
+    if (!host) { host = document.createElement("div"); host.id = "fo-onb"; document.body.appendChild(host); }
+    host.innerHTML = "<div class='fo-ob-shell'><div class='fo-ob-inner'>" + foJChapBar(ch) + body + "</div></div>";
+    host.style.display = "block";
+    try { openWrap(false); } catch (e) {}
+    try { host.scrollTop = 0; window.scrollTo(0, 0); } catch (e2) {}
+    return host;
+  }
+  function foJHl(t) { return t.replace(/Reggie Thorne/g, "<b style='color:#C8674A'>Reggie Thorne</b>"); }
+  // Pokemon-style typewriter dialogue. Click: finish the line, then advance.
+  function foJDbox(ch, lines, next, topHtml) {
+    var body = "<div class='fo-j-dwrap'>" + (topHtml || "") +
+      "<div class='fo-j-badge'><i>&#9749;</i><b>The Gaffer</b></div>" +
+      "<button type='button' class='fo-j-dbox' id='fo-j-db'><span class='sp'>The Gaffer</span><span class='tx' id='fo-j-dtx'></span></button></div>";
+    var host = foJMount(ch, body);
+    var i = 0, n = 0, done = false, iv = null;
+    var tx = host.querySelector("#fo-j-dtx");
+    var type = function () {
+      clearInterval(iv); n = 0; done = false;
+      iv = setInterval(function () {
+        n++;
+        if (n >= lines[i].length) { clearInterval(iv); done = true; tx.innerHTML = foJHl(lines[i]) + " <i class='fo-j-tri'>&#9662;</i>"; }
+        else tx.textContent = lines[i].slice(0, n);
+      }, 14);
+    };
+    host.querySelector("#fo-j-db").addEventListener("click", function () {
+      if (!done) { clearInterval(iv); done = true; tx.innerHTML = foJHl(lines[i]) + " <i class='fo-j-tri'>&#9662;</i>"; return; }
+      if (i < lines.length - 1) { i++; type(); } else next();
+    });
+    type();
+  }
+  function foJGbox(t) { return "<div class='fo-j-gbox'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;" + t + "&rdquo;</span></div>"; }
+  function foJCrest(accent, sz, initials) {
+    return "<svg viewBox='0 0 120 120' width='" + sz + "' height='" + sz + "'><path d='M60 6 L108 20 L108 64 C108 92 86 108 60 116 C34 108 12 92 12 64 L12 20 Z' fill='" + accent + "' stroke='#C9A24B' stroke-width='3.5'/><path d='M60 13 L101 25 L101 63 C101 86 83 100 60 108 C37 100 19 86 19 63 L19 25 Z' fill='none' stroke='#FFF6DE' stroke-width='1.6' opacity='.55'/><text x='60' y='72' text-anchor='middle' font-size='34' font-weight='800' fill='#FDF7E3' font-family='inherit'>" + E(initials || "") + "</text></svg>";
+  }
+  function foJInitials(nm) { return String(nm || "CC").split(/\s+/).map(function (w) { return w[0] || ""; }).join("").slice(0, 2).toUpperCase(); }
+  function foJMiniBars(rows) {
+    return "<span class='fo-j-bars'>" + rows.map(function (r) {
+      var v = Math.max(2, Math.min(100, r[1] || 0));
+      return "<span class='fo-j-bar'>" + r[0] + "<i><b style='width:" + v + "%'></b></i><em>" + E(foWord(r[1]) || String(r[1])) + "</em></span>";
+    }).join("") + "</span>";
+  }
+
+  // ---- Chapter 1 -------------------------------------------------------------
+  function foJIntro() {
+    FO_ONB.j = FO_ONB.j || {};
+    foJDbox(0, [
+      "Ah. So you're the new manager they sent me.",
+      "Eleven players, fifty overs, and a thousand ways to lose your nerve.",
+      "You've inherited a name nobody knows, an empty dressing room, and a fixture list. Let's fix the first two."
+    ], foJCreate);
+  }
+  function foJCreate() {
+    var mgr0 = FO_ONB.mgr || (SYNC && SYNC.me && SYNC.me.display_name) || "Manager";
+    var ctyLocked = !FO_ONB.needsSetup;
+    var body = "<div class='fo-j-dwrap'>" +
+      "<h1 class='fo-ob-h1' style='text-align:center'>Create your club</h1>" +
+      "<div class='fo-j-cert'><div class='fo-j-stamp'>LEAGUE<br>OFFICE<br>2026</div>" +
+      "<div id='fo-j-pcr'>" + foJCrest("#101B2D", 92, foJInitials(FO_ONB.clubName || "Harbor City CC")) + "</div>" +
+      "<div class='fo-j-marq' id='fo-j-pnm'>" + E(FO_ONB.clubName || "Harbor City CC") + "</div>" +
+      "<div class='small' style='margin-top:4px'>Managed by <b id='fo-j-pmg'>" + E(mgr0) + "</b> <span id='fo-j-pfl'>" + (foQsFlag(FO_ONB.country) || "") + "</span> &middot; Established 2026</div>" +
+      "<div style='text-align:left;margin-top:16px'>" +
+      "<label class='fo-ob-lbl'>Club name</label><input id='fo-j-cn' class='fo-ob-input' maxlength='28' value='" + E(FO_ONB.clubName || "") + "' placeholder='Harbor City CC'>" +
+      "<label class='fo-ob-lbl'>Your name</label><input id='fo-j-mn' class='fo-ob-input' maxlength='24' value='" + E(mgr0) + "'>" +
+      "<label class='fo-ob-lbl'>Home nation" + (ctyLocked ? " <span class='fo-ob-hint'>: set when you joined</span>" : "") + "</label>" +
+      "<div class='fo-ctygrid'>" + NAT.map(function (c) {
+        var on = FO_ONB.country === c;
+        if (ctyLocked && !on) return "";
+        return "<button type='button' class='fo-cty" + (on ? " on" : "") + "'" + (ctyLocked ? " disabled" : "") + " data-cty='" + E(c) + "'><i>" + (foQsFlag(c) || "") + "</i><span>" + E(c) + "</span></button>";
+      }).join("") + "</div></div></div>" +
+      foJGbox("<span id='fo-j-crq'>Take your time, boss. This one goes above the door.</span>") +
+      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-j-go'>Put it on the honours board</button></div></div>";
+    var host = foJMount(0, body);
+    var cn = host.querySelector("#fo-j-cn"), mn = host.querySelector("#fo-j-mn");
+    cn.addEventListener("input", function () {
+      var v = cn.value || "Harbor City CC";
+      host.querySelector("#fo-j-pnm").textContent = v;
+      host.querySelector("#fo-j-pcr").innerHTML = foJCrest("#101B2D", 92, foJInitials(v));
+      if (cn.value.length > 2) host.querySelector("#fo-j-crq").innerHTML = E(cn.value) + ". Say it out loud. Good. Does it scare anyone yet?";
+    });
+    mn.addEventListener("input", function () { host.querySelector("#fo-j-pmg").textContent = mn.value || "Manager"; });
+    host.querySelectorAll(".fo-cty").forEach(function (b) {
+      b.addEventListener("click", function () {
+        FO_ONB.country = b.getAttribute("data-cty");
+        host.querySelectorAll(".fo-cty").forEach(function (x) { x.classList.toggle("on", x === b); });
+        host.querySelector("#fo-j-pfl").innerHTML = foQsFlag(FO_ONB.country) || "";
+        host.querySelector("#fo-j-crq").innerHTML = E(FO_J_NATQUIP[FO_ONB.country] || FO_ONB.country + ". Fine cricket country.");
+      });
+    });
+    host.querySelector("#fo-j-go").addEventListener("click", function () {
+      var nm = (cn.value || "").trim();
+      if (nm.length < 3) { say("Give the club a real name - three letters or more."); return; }
+      FO_ONB.clubName = nm; FO_ONB.mgr = (mn.value || "").trim() || mgr0;
+      FO_ONB.ground = nm + " Oval";
+      if (!FO_ONB.country) FO_ONB.country = NAT[0];
+      try { App.founder.name = nm; App.founder.mgr = FO_ONB.mgr; } catch (e) {}
+      foJFounded();
+    });
+  }
+  function foJFounded() {
+    var body = "<div class='fo-j-dwrap' style='text-align:center'>" +
+      "<div class='fo-ob-eyebrow'>The ink dries</div><h1 class='fo-ob-h1'>Club founded</h1>" +
+      "<div style='margin:6px auto'>" + foJCrest("#101B2D", 140, foJInitials(FO_ONB.clubName)) + "</div>" +
+      "<div class='fo-j-rule'><i></i><b>EST. 2026</b><i></i></div>" +
+      "<div class='fo-j-marq'>" + E(FO_ONB.clubName) + "</div>" +
+      "<div class='fo-j-rule'><i></i><b>&#10022;</b><i></i></div>" +
+      "<p class='fo-ob-lead' style='text-align:center'>Founded 2026 &middot; Managed by " + E(FO_ONB.mgr || "you") + " " + (foQsFlag(FO_ONB.country) || "") + " &middot; Home ground: " + E(FO_ONB.ground) + "</p>" +
+      "<p class='fo-ob-lead' style='text-align:center'>The name is on the door. Now give the club a soul.</p>" +
+      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-j-go'>Choose what we are</button></div></div>";
+    foJMount(0, body).querySelector("#fo-j-go").addEventListener("click", function () {
+      foJDbox(0, [
+        E(FO_ONB.clubName) + ". Good name. Looks right over a doorway.",
+        "And " + E(FO_ONB.mgr || "you") + "… I'll call you boss, if it's all the same.",
+        "So that's who we are on paper. Now the real question: what are we?",
+        "Six ways to build a cricket club. Pick the one you'd pay to watch."
+      ], foJStyle);
+    });
+  }
+  function foJStyle() {
+    var cards = FO_J_SOULS.map(function (id) {
+      var A = foJArch(id), pv = FO_J_PREV[id], ac = FO_J_ACCENT[id];
+      var bars = "<span class='fo-j-stats'>" + Object.keys(pv.bars).map(function (k) {
+        return "<span class='fo-j-stat'><span>" + k + "</span><i><b style='width:" + (pv.bars[k] * 20) + "%;background:" + ac + "'></b></i></span>";
+      }).join("") + "</span>";
+      return "<button type='button' class='fo-j-soul" + (FO_ONB.arch === id ? " on" : "") + "' data-a='" + id + "'>" +
+        foJCrest(ac, 76, "") +
+        "<span class='nm' style='color:" + ac + "'>" + E(A.nm) + "</span>" +
+        "<span class='ln'>&ldquo;" + E(A.line) + "&rdquo;</span>" + bars +
+        "<span class='fo-j-pros'>&#9650; " + E(A.chips[0]) + "<br>&#9650; " + E(A.chips[1]) + "<br><span class='w'>&#9660; " + E(A.weak) + "</span></span></button>";
+    }).join("");
+    var body = "<div>" +
+      "<h1 class='fo-ob-h1' style='text-align:center'>Choose your club's identity</h1>" +
+      "<p class='fo-ob-lead' style='text-align:center'>Every strength is real, and so is the weakness. Your club can evolve later; this is where it starts.</p>" +
+      "<div class='fo-j-souls'>" + cards + "</div><div id='fo-j-prev'>" + (FO_ONB.arch ? foJPrevHtml() : "") + "</div></div>";
+    var host = foJMount(0, body);
+    host.querySelectorAll(".fo-j-soul").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var prev = FO_ONB.arch;
+        FO_ONB.arch = b.getAttribute("data-a");
+        if (prev !== FO_ONB.arch) { FO_ONB.capt = null; FO_ONB.pool = null; FO_ONB.comp = null; FO_ONB.gen = null; FO_ONB.riskAck = false; FO_ONB.marquee = null; }
+        FO_ONB.pitch = FO_J_PREV[FO_ONB.arch].pitch;
+        host.querySelectorAll(".fo-j-soul").forEach(function (x) { x.classList.toggle("on", x === b); });
+        host.querySelector("#fo-j-prev").innerHTML = foJPrevHtml();
+        foJPrevWire(host);
+      });
+    });
+    foJPrevWire(host);
+  }
+  function foJPrevHtml() {
+    if (!FO_ONB.arch) return "";
+    var pv = FO_J_PREV[FO_ONB.arch];
+    return "<div class='fo-j-prev'>" + foJGbox(E(pv.quip)) +
+      "<div class='fo-j-pl'><i>Your likely stars</i><span>" + E(pv.stars) + "</span></div>" +
+      "<div class='fo-j-pl'><i>Your early problem</i><span>" + E(pv.prob) + "</span></div>" +
+      "<div class='fo-j-pl'><i>Best conditions</i><span>" + E(pv.conds) + "</span></div>" +
+      "<div class='fo-j-pl'><i>Home pitch</i><span>" + E(foPitchName(pv.pitch)) + " - prepared to suit this squad</span></div>" +
+      "<p class='small' style='margin-top:8px'>This choice shapes your first squad, wages and home conditions. Nothing here is permanent.</p>" +
+      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-j-stygo'>Build this club</button></div></div>";
+  }
+  function foJPrevWire(host) {
+    var b = host.querySelector("#fo-j-stygo");
+    if (b) b.addEventListener("click", function () {
+      foJDbox(0, [
+        "The board wired a million this morning. Don't get romantic; most of it is already spent.",
+        "Squad, wages, the ground. What's left is the reserve, and the reserve is yours.",
+        "Come and see the books."
+      ], foJMoney);
+    });
+  }
+  function foJTrimComp(comp) {
+    var capB = foQsBucketOf((foJArch(FO_ONB.arch).starter || {}).role || "topOrderBat");
+    comp = JSON.parse(JSON.stringify(comp));
+    for (var cut = 0; cut < 2; cut++) {
+      var ks = ["bat", "pace", "spin", "ar"].sort(function (a, b2) { return (comp[b2] || 0) - (comp[a] || 0); });
+      for (var i = 0; i < ks.length; i++) {
+        var t = {}; for (var kk in comp) t[kk] = comp[kk];
+        t[ks[i]] = (t[ks[i]] || 0) - 1;
+        if (t[ks[i]] < 0) continue;
+        if (!foObCompLegal(t, capB)) { comp = t; break; }
+      }
+    }
+    return comp;
+  }
+  function foJBaseComp() {
+    var comp = foQsDefaultComp(FO_ONB.arch);
+    if (FO_ONB.reserve === "bench") { comp = JSON.parse(JSON.stringify(comp)); comp.bat = (comp.bat || 0) + 1; comp.pace = (comp.pace || 0) + 1; }
+    else if (FO_ONB.reserve === "marquee") comp = foJTrimComp(comp);
+    return comp;
+  }
+  function foJFeesOf(comp) {
+    var g = foGenArchetypeSquad(foObSeed(), FO_ONB.country, FO_ONB.arch, "talisman", comp);
+    var f = 0; g.players.forEach(function (p) { f += p.fee || 0; });
+    return { fees: f, n: g.players.length };
+  }
+  function foJMoney() {
+    var gen, fees = 0, wages = 0, cashN = 0, benchBank = 0, benchN = 0, mqCore = 0, mqLo = 0, mqHi = 0, mqN = 0;
+    try {
+      var def = foQsDefaultComp(FO_ONB.arch);
+      gen = foGenArchetypeSquad(foObSeed(), FO_ONB.country, FO_ONB.arch, "talisman", def);
+      gen.players.forEach(function (p) { fees += p.fee || 0; wages += p.wage || 0; });
+      cashN = gen.players.length;
+      var bComp = JSON.parse(JSON.stringify(def)); bComp.bat = (bComp.bat || 0) + 1; bComp.pace = (bComp.pace || 0) + 1;
+      var bF = foJFeesOf(bComp); benchBank = 1000000 - bF.fees; benchN = bF.n;
+      var mF = foJFeesOf(foJTrimComp(def)); mqCore = mF.fees; mqN = mF.n + 1;
+      var mqFees = foGenCaptainPool(String(foObSeed()) + "-marquee", FO_ONB.country, FO_ONB.arch).slice(0, 3).map(function (p) { return foDraftPrice(p); });
+      mqLo = 1000000 - mqCore - Math.max.apply(null, mqFees); mqHi = 1000000 - mqCore - Math.min.apply(null, mqFees);
+    } catch (e) { say(e); return; }
+    var sp = foSponsorById("community");
+    var body = "<div class='fo-j-dwrap' style='text-align:center'>" +
+      "<h1 class='fo-ob-h1'>Your first million</h1>" +
+      "<table class='fo-j-money'><tr class='g'><td>Founding grant</td><td>" + FO$(1000000) + "</td></tr>" +
+      "<tr><td>Core squad signings (" + gen.players.length + " players)</td><td class='neg'>&minus;" + FO$(fees) + "</td></tr>" +
+      "<tr><td>Wage bill</td><td class='neg'>&minus;" + FO$(wages) + " / matchday</td></tr>" +
+      "<tr><td>Sponsor income (" + E(sp.name) + ", flat, no strings)</td><td style='color:#2E7A3C'>+" + FO$(sp.base) + " / matchday</td></tr>" +
+      "<tr class='r'><td>Bank on day one</td><td>" + FO$(1000000 - fees) + "</td></tr></table>" +
+      foJGbox("There's no wrong answer here. There are two wrong answers if you dither.") +
+      "<p class='fo-ob-lead' style='text-align:center;margin-top:6px'>Spend the rest of the room on:</p>" +
+      "<div class='fo-j-choice'>" +
+      "<button type='button' class='fo-j-card' data-r='bench'><h3>A deeper bench</h3><div class='fx'>Two extra squad players (" + benchN + " total). Cover for everything.<br><b>Bank on day one: " + FO$(benchBank) + "</b></div></button>" +
+      "<button type='button' class='fo-j-card' data-r='marquee'><h3>A marquee signing</h3><div class='fx'>One star, two fewer core signings (" + mqN + " total). Quality over depth.<br><b>Bank on day one: " + FO$(mqLo) + "&ndash;" + FO$(mqHi) + "</b></div></button>" +
+      "<button type='button' class='fo-j-card' data-r='cash'><h3>Keep the cash</h3><div class='fx'>The standard " + cashN + "-man squad, maximum flexibility.<br><b>Bank on day one: " + FO$(1000000 - fees) + "</b></div></button>" +
+      "</div></div>";
+    var host = foJMount(0, body);
+    host.querySelectorAll(".fo-j-card").forEach(function (b) {
+      b.addEventListener("click", function () {
+        FO_ONB.reserve = b.getAttribute("data-r"); FO_ONB.marquee = null; FO_ONB.riskAck = false;
+        if (FO_ONB.reserve === "marquee") { foJSign(); return; }
+        foJDbox(0, FO_ONB.reserve === "bench"
+          ? ["Two more names on the sheet. Depth wins the long months; remember I said that.", "Right. Before you meet the league, there's a name you need to know."]
+          : ["Money in the bank never pulled a hamstring. Smart.", "Right. Before you meet the league, there's a name you need to know."], foJThorne);
+      });
+    });
+  }
+  function foJSign() {
+    var cands;
+    try { cands = foGenCaptainPool(String(foObSeed()) + "-marquee", FO_ONB.country, FO_ONB.arch).slice(0, 3); }
+    catch (e) { say(e); return; }
+    var A = foJArch(FO_ONB.arch);
+    var riskOf = function (p) { return p.age >= 30 ? "Little improvement left in him" : (p.age <= 21 ? "Raw. Two seasons from his best" : "A heavy workload, priced in"); };
+    var cards = cands.map(function (p, i) {
+      var fee = foDraftPrice(p), wage = foDailyWage(p);
+      var tals = (p.talents || []).map(function (t) { return "<span class='fo-dc-tal'>" + E(foTalentName(t)) + "</span>"; }).join(" ");
+      var bars = ""; try { bars = foSkillBars(p); } catch (e2) {}
+      return "<div class='fo-j-signc'><div class='fo-j-pnm'>" + E(p.name) + ", " + p.age + "</div>" +
+        "<span class='fo-j-psub'>" + E(A.starRole || A.role) + (p.btLabel && !/does not bowl/i.test(p.btLabel) ? " &middot; " + E(p.btLabel) : "") + "</span>" +
+        bars + (tals ? "<div style='margin:6px 0'>" + tals + "</div>" : "") +
+        "<div class='small'>Fee <b>" + FO$(fee) + "</b> &middot; Wage <b>" + FO$(wage) + "</b> / matchday</div>" +
+        "<div class='fo-j-risk'>Risk: " + riskOf(p) + "</div>" +
+        "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' data-i='" + i + "'>Sign " + E(p.name.split(" ").slice(-1)[0]) + "</button></div></div>";
+    }).join("");
+    var body = "<div><h1 class='fo-ob-h1' style='text-align:center'>Choose the final signing</h1>" +
+      "<p class='fo-ob-lead' style='text-align:center'>Three contracts on the desk. Sign one.</p>" +
+      "<div class='fo-j-sign'>" + cards + "</div></div>";
+    var host = foJMount(0, body);
+    host.querySelectorAll(".fo-ob-cta[data-i]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var p = cands[+b.getAttribute("data-i")];
+        FO_ONB.marquee = p;
+        var line = p.age >= 30 ? E(p.name) + ". Seasons of first-class runs and a handshake like a bench vice. He'll hold an end while the rest learn."
+          : (p.age <= 21 ? E(p.name) + ". " + p.age + " years old, and I still can't read him from the balcony. Patience, boss."
+          : E(p.name) + ". Does the job of two men and sends one invoice. Work him wisely.");
+        foJDbox(0, [line, "Right. Before you meet the league, there's a name you need to know."], foJThorne);
+      });
+    });
+  }
+
+  // ---- Chapter 2: the rival, then commit ------------------------------------
+  function foJThorne() {
+    var rid = FO_J_COUNTER[FO_ONB.arch] || "rock";
+    var R = foJArch(rid), ac = FO_J_ACCENT[rid];
+    var stage = "<div class='fo-j-rivstage'>" +
+      "<div class='fo-j-rivfig'><svg viewBox='0 0 120 120' width='112' height='112'><path d='M46 34 L34 12 L50 26 L52 4 L62 25 L74 6 L72 26 L88 14 L78 32 L90 30 L79 40 Z' fill='#101B2D'/><circle cx='60' cy='42' r='15' fill='#101B2D'/><path d='M45 55 L30 70 L52 62 Z' fill='#101B2D'/><path d='M75 55 L90 70 L68 62 Z' fill='#101B2D'/><path d='M22 118 C26 78 42 64 60 64 C78 64 94 78 98 118 Z' fill='#101B2D'/><path d='M36 88 Q60 79 84 88' fill='none' stroke='#F5EFDC' stroke-width='3' stroke-linecap='round'/><path d='M40 97 Q60 88 80 97' fill='none' stroke='#F5EFDC' stroke-width='3' stroke-linecap='round'/></svg>" +
+      "<div class='fo-j-rivnm'>Reggie Thorne</div><div class='fo-j-rivsub'>Manager</div></div>" +
+      "<div class='fo-j-vs'>v</div>" +
+      "<div class='fo-j-rivfig'>" + foJCrest(ac, 100, "") + "<div class='fo-j-rivnm' style='color:" + ac + "'>" + E(R.nm) + "</div><div class='fo-j-rivsub'>&ldquo;" + E(R.line) + "&rdquo;</div></div></div>";
+    foJDbox(1, [
+      "Reggie Thorne. Runs a " + E(R.nm) + " side. Plays the exact opposite way to your lot, and rates his squad a notch above anything new.",
+      "Twenty years in this league, and he has never once lost gracefully. Sharp tongue to go with it.",
+      "He's already been talking, mind. This morning's paper proves it. Here, read it yourself."
+    ], foJWire, stage);
+  }
+  function foJWire() {
+    var rid = FO_J_COUNTER[FO_ONB.arch] || "rock";
+    var R = foJArch(rid), ac = FO_J_ACCENT[rid];
+    var body = "<div class='fo-j-dwrap'>" +
+      "<div class='fo-j-wire'><div class='mast'><span>Vol. XCII &middot; No. 214</span><span class='mh'>THE LEAGUE WIRE</span><span>Price 50c</span></div>" +
+      "<div class='dl'>PRE-SEASON EDITION &middot; NEW CLUBS REGISTERED THIS WEEK</div>" +
+      "<h3>Thorne: &ldquo;New clubs always think money is a plan.&rdquo;</h3>" +
+      "<div class='by'>By our cricket correspondent</div>" +
+      "<div class='fo-j-wfig'>" + foJCrest(ac, 68, "") + "<div class='fo-j-wcap'>Thorne's " + E(R.nm) + ": &ldquo;a notch above&rdquo;, by his own arithmetic.</div></div>" +
+      "<p>" + E(R.nm) + " manager <b>Reggie Thorne</b> has questioned whether " + E(FO_ONB.clubName) + " will survive a first season. &ldquo;Money cannot buy a cricketing identity,&rdquo; Thorne told the Wire from the pavilion balcony. &ldquo;Ask me about them when they've won something.&rdquo;</p>" +
+      "<p>Asked whether the newcomers' " + E(foJArch(FO_ONB.arch).nm.replace(/^The /, "")) + " approach concerned him, Thorne laughed once, checked his watch, and closed the window.</p></div>" +
+      foJGbox("Don't read the comments, boss. Sign the papers and let's get to work.") +
+      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-j-go'>Fold the paper &middot; sign the squad</button></div></div>";
+    foJMount(1, body).querySelector("#fo-j-go").addEventListener("click", foJCommitGate);
+  }
+  function foJCommitGate() {
+    try {
+      FO_ONB.capt = FO_ONB.capt || "talisman";
+      FO_ONB.sponsor = "community";
+      FO_ONB.comp = foJBaseComp();
+      FO_ONB.gen = foGenArchetypeSquad(foObSeed(), FO_ONB.country, FO_ONB.arch, FO_ONB.capt, FO_ONB.comp);
+      var picked = FO_ONB.gen.players.slice();
+      if (FO_ONB.reserve === "marquee" && FO_ONB.marquee) {
+        var mq = FO_ONB.marquee;
+        mq.fee = foDraftPrice(mq); mq.wage = foDailyWage(mq); mq._qsPriced = 1;
+        if (!mq.origin_tag) mq.origin_tag = "Founding marquee signing - Season 1";
+        // the captain stays the talisman: trim the marquee to captain parity,
+        // exactly like every generated teammate
+        try {
+          var capP = null;
+          picked.forEach(function (q) { if (q.origin_tag && /Franchise captain/.test(q.origin_tag)) capP = q; });
+          for (var g9 = 0; capP && g9 < 12 && (mq.rating || 0) > (capP.rating || 0) * 0.96; g9++) {
+            for (var k9 in mq.skills) mq.skills[k9] = Math.max(4, Math.min(96, Math.floor(mq.skills[k9] * 0.97)));
+            if (typeof foPureBowler === "function" && foPureBowler(mq)) foApplyBowlerBat(mq); else jsDerive(mq);
+          }
+        } catch (eMq) {}
+        picked.push(mq);
+      }
+      App.founder.picked = picked;
+      var fc = foForecast(picked, FO_ONB.sponsor);
+      if (fc.bankAfter < 0) {
+        foJDbox(1, ["Hold on, boss. Those fees land the club " + FO$s(fc.bankAfter) + " on day one, and the board will not bank a minus.", "Back to the reserve. Spend lighter."], foJMoney);
+        return;
+      }
+      var bad = foForecast(picked, FO_ONB.sponsor, "bad");
+      if ((fc.end < 0 || bad.end < -60000) && !FO_ONB.riskAck) {
+        foJDbox(1, [
+          "One thing before the ink dries, boss. The books say this squad could end the season " + FO$s(fc.end) + " in the red.",
+          "That means forced releases, blocked signings, and a board with opinions.",
+          "Say the word and we sign anyway. Or go back and spend lighter."
+        ], function () {
+          var body = "<div class='fo-j-dwrap' style='text-align:center'><h1 class='fo-ob-h1'>Your call</h1><div class='fo-j-choice' style='grid-template-columns:1fr 1fr'>" +
+            "<button type='button' class='fo-j-card' id='fo-j-riskgo'><h3>Sign anyway</h3><div class='fx'>The Gaffer shrugs. Your club, your risk.</div></button>" +
+            "<button type='button' class='fo-j-card' id='fo-j-riskback'><h3>Spend lighter</h3><div class='fx'>Back to the reserve decision.</div></button></div></div>";
+          var host = foJMount(1, body);
+          host.querySelector("#fo-j-riskgo").addEventListener("click", function () { FO_ONB.riskAck = true; foJCommitGate(); });
+          host.querySelector("#fo-j-riskback").addEventListener("click", foJMoney);
+        });
+        return;
+      }
+      foOnbCommit();
+      // commit success is recorded by the done-flag; on failure stay put so
+      // nothing downstream runs against a half-built club
+      var ok = false; try { ok = !!window.store("fo_onb_done"); } catch (eS) {}
+      if (!ok) return;
+      setTimeout(foJCond, 80);
+    } catch (e) { say(e); }
+  }
+
+  // ---- Chapter 3: the guided friendly over the REAL engine -------------------
+  function foJOppIx() {
+    var me = userTeam(); var ix = -1;
+    (GD.teams || []).forEach(function (t, i) { if (ix < 0 && t && t.name !== me.name && !t.founded) ix = i; });
+    if (ix < 0) (GD.teams || []).forEach(function (t, i) { if (ix < 0 && t && t.name !== me.name) ix = i; });
+    return ix;
+  }
+  function foJCond() {
+    try {
+      var me = userTeam();
+      if (!me || !me.players || me.players.length < 11) { foOnbClose(); return; }
+      var ix = foJOppIx(); if (ix < 0) { foOnbClose(); return; }
+      FO_ONB.j = FO_ONB.j || {}; FO_ONB.j.oppIx = ix;
+      var opp = GD.teams[ix];
+      var pitch = me.homePitch || "balanced";
+      var pc = null; FO_PITCH_CARDS.forEach(function (c) { if (c.id === pitch) pc = c; });
+      var body = "<div class='fo-j-dwrap' style='text-align:center'>" +
+        "<div class='fo-ob-eyebrow'>Warm-up friendly &middot; vs " + E(opp.name) + " &middot; nothing counts, everything teaches</div>" +
+        "<h1 class='fo-ob-h1'>Read the conditions</h1>" +
+        foJGbox("Nets are done, so I've booked us a warm-up against " + E(opp.name) + ". The pitch picks half your team for you, if you listen to it.") +
+        "<div class='fo-j-choice' style='grid-template-columns:1fr 1fr'>" +
+        "<div class='fo-j-card' style='cursor:default'><h3>" + E(foPitchName(pitch)) + " pitch</h3><div class='fx'>" + E((pc && pc.d) || "Your groundsman prepared it for this squad.") + "</div></div>" +
+        "<div class='fo-j-card' style='cursor:default'><h3>Sunny day</h3><div class='fx'>No help in the air. Fielders stay sharp, nobody tires quickly. A fair contest.</div></div></div>" +
+        "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-j-go'>To the team sheet</button></div></div>";
+      foJMount(2, body).querySelector("#fo-j-go").addEventListener("click", foJOrders);
+    } catch (e) { say(e); foOnbClose(); }
+  }
+  function foJCandRow(p, why, bars, sel, cls, idx) {
+    return "<div class='fo-j-pick " + cls + (sel ? " sel" : "") + "' data-i='" + idx + "'><div class='fo-j-prow'>" +
+      "<span class='fo-j-pnm'>" + E(p.name) + "</span> " + (foQsFlag(p.nat) || "") +
+      "<span class='fo-j-psub'>" + E(prole(p.role)) + " &middot; age " + p.age + ((p.btLabel && !/does not bowl/i.test(p.btLabel)) ? " &middot; " + E(p.btLabel) : "") + "</span>" +
+      "<span class='fo-j-why'>" + why + "</span>" + bars + "</div></div>";
+  }
+  function foJOrders() {
+    try {
+      var me = userTeam(); var S9 = function (p) { return p.skills || {}; };
+      var capName = ""; (me.players || []).some(function (p) { if (p && p.origin_tag && /Franchise captain/.test(p.origin_tag)) { capName = p.name; return true; } return false; });
+      var bats = (me.players || []).filter(function (p) { return p && p.name !== capName && /opener|OrderBat|wicketkeeper/.test(p.role || ""); });
+      var by = function (arr, f) { return arr.slice().sort(function (a, b) { return f(b) - f(a); }); };
+      var slug = by(bats, function (p) { return S9(p).power || 0; })[0];
+      var tech = by(bats, function (p) { return (S9(p).vsPace || 0) + (S9(p).vsSpin || 0) + (S9(p).temperament || 0); }).filter(function (p) { return p !== slug; })[0];
+      var acc = by(bats, function (p) { return S9(p).rotation || 0; }).filter(function (p) { return p !== slug && p !== tech; })[0];
+      var opCands = [[slug, "The slugger. Clears the rope or holes out; powerplay chaos either way"], [tech, "The technician. Slow to start, but they will not get him out cheaply"], [acc, "The accumulator. Ticks the board over and keeps the strike moving"]].filter(function (r) { return r[0]; });
+      var seams = (me.players || []).filter(function (p) { return p && p.bowlTypeFull && /seam/i.test(p.bowlTypeFull); });
+      if (seams.length < 3) seams = (me.players || []).filter(function (p) { return p && p.bowlTypeFull && p.bowlTypeFull !== "none"; });
+      var strike = by(seams, function (p) { return S9(p).wicket || 0; })[0];
+      var swing = by(seams, function (p) { return S9(p).moveTurn || 0; }).filter(function (p) { return p !== strike; })[0];
+      var miser = by(seams, function (p) { return (S9(p).economy || 0) + (S9(p).discipline || 0); }).filter(function (p) { return p !== strike && p !== swing; })[0];
+      var nbCands = [[strike, "The spearhead. Takes wickets in his sleep; leaks runs on his off days"], [swing, "The swing man. These conditions will talk to him all morning"], [miser, "The miser. Nagging length, dot after dot; pressure does his hunting"]].filter(function (r) { return r[0]; });
+      FO_ONB.j.opCands = opCands.map(function (r) { return r[0].name; });
+      FO_ONB.j.nbCandNames = nbCands.map(function (r) { return r[0].name; });
+      FO_ONB.j.opener = FO_ONB.j.opener || null; FO_ONB.j.nb = FO_ONB.j.nb || []; FO_ONB.j.intent = FO_ONB.j.intent || "build"; FO_ONB.j.toss = FO_ONB.j.toss || "bowl";
+      var batBars = function (p) { return foJMiniBars([["Batting", foAgg(p, "bat")], ["Technique", foAgg(p, "tech")], ["Power", S9(p).power || 0]]); };
+      var bowlBars = function (p) { return foJMiniBars([["Bowling", foAgg(p, "bowl")], ["Technique", foAgg(p, "tech")], ["Power", S9(p).power || 0]]); };
+      var intents = [["attack", "Attack early"], ["build", "Build, then explode"], ["squeeze", "Squeeze them out"]];
+      var body = "<div>" +
+        "<h1 class='fo-ob-h1' style='text-align:center'>Three calls before the toss</h1>" +
+        foJGbox("I've pencilled a balanced side for this pitch. The eleven picks itself today; from the next match the whole sheet is yours. Three calls are mine to give away, boss.") +
+        "<div class='fo-j-sec'><span>1 &middot; Who opens with " + (capName ? E(capName) : "the captain") + "?</span><i></i></div>" +
+        opCands.map(function (r, i) { return foJCandRow(r[0], r[1], batBars(r[0]), FO_ONB.j.opener === r[0].name, "fo-j-op", i); }).join("") +
+        "<div class='fo-j-sec'><span>2 &middot; Who takes the new ball? Pick two</span><i></i></div>" +
+        nbCands.map(function (r, i) { return foJCandRow(r[0], r[1], bowlBars(r[0]), FO_ONB.j.nb.indexOf(r[0].name) >= 0, "fo-j-nb", i); }).join("") +
+        "<div class='fo-j-sec'><span>3 &middot; How do we play it?</span><i></i></div>" +
+        "<div class='fo-j-chips'>" + intents.map(function (r) { return "<button type='button' class='fo-j-chip fo-j-int" + (FO_ONB.j.intent === r[0] ? " on" : "") + "' data-v='" + r[0] + "'>" + r[1] + "</button>"; }).join("") + "</div>" +
+        "<div class='fo-j-chips'><span class='small' style='align-self:center'>If we win the toss:</span>" +
+        "<button type='button' class='fo-j-chip fo-j-toss" + (FO_ONB.j.toss === "bat" ? " on" : "") + "' data-v='bat'>Bat first</button>" +
+        "<button type='button' class='fo-j-chip fo-j-toss" + (FO_ONB.j.toss === "bowl" ? " on" : "") + "' data-v='bowl'>Bowl first</button></div>" +
+        "<p class='small' style='text-align:center'>The assistant completes the rest of the sheet. Everything is editable from Match Orders once the season starts.</p>" +
+        "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-j-go' disabled>Walk to the toss</button></div></div>";
+      var host = foJMount(2, body);
+      var ready = function () {
+        var g = host.querySelector("#fo-j-go");
+        if (g) g.disabled = !(FO_ONB.j.opener && FO_ONB.j.nb.length === 2);
+      };
+      host.querySelectorAll(".fo-j-op").forEach(function (el) {
+        el.addEventListener("click", function () {
+          FO_ONB.j.opener = FO_ONB.j.opCands[+el.getAttribute("data-i")];
+          host.querySelectorAll(".fo-j-op").forEach(function (x) { x.classList.toggle("sel", x === el); });
+          ready();
+        });
+      });
+      host.querySelectorAll(".fo-j-nb").forEach(function (el) {
+        el.addEventListener("click", function () {
+          var nm = FO_ONB.j.nbCandNames[+el.getAttribute("data-i")];
+          var at = FO_ONB.j.nb.indexOf(nm);
+          if (at >= 0) { FO_ONB.j.nb.splice(at, 1); el.classList.remove("sel"); }
+          else { if (FO_ONB.j.nb.length >= 2) { say("Two take the new ball. Drop one first."); return; } FO_ONB.j.nb.push(nm); el.classList.add("sel"); }
+          ready();
+        });
+      });
+      host.querySelectorAll(".fo-j-int").forEach(function (el) {
+        el.addEventListener("click", function () { FO_ONB.j.intent = el.getAttribute("data-v"); host.querySelectorAll(".fo-j-int").forEach(function (x) { x.classList.toggle("on", x === el); }); });
+      });
+      host.querySelectorAll(".fo-j-toss").forEach(function (el) {
+        el.addEventListener("click", function () { FO_ONB.j.toss = el.getAttribute("data-v"); host.querySelectorAll(".fo-j-toss").forEach(function (x) { x.classList.toggle("on", x === el); }); });
+      });
+      ready();
+      host.querySelector("#fo-j-go").addEventListener("click", foJLaunch);
+    } catch (e) { say(e); foOnbClose(); }
+  }
+  function foJLaunch() {
+    try {
+      if (typeof M !== "undefined" && M && !M.done) { say("A match is already live - finish it first."); foOnbClose(); return; }
+      var me = userTeam(); var ix = FO_ONB.j.oppIx; var opp = GD.teams[ix];
+      if (!opp) { foOnbClose(); return; }
+      var pitch = me.homePitch || "balanced";
+      var PLANS = {
+        attack: { pi: { pp: 1, mid: 0, death: 2 }, fp: { pp: "att", mid: "bal", death: "def" }, nm: "Attack early" },
+        build: { pi: { pp: -1, mid: 0, death: 2 }, fp: { pp: "bal", mid: "bal", death: "def" }, nm: "Build, then explode" },
+        squeeze: { pi: { pp: 0, mid: 0, death: 1 }, fp: { pp: "bal", mid: "def", death: "def" }, nm: "Squeeze them out" }
+      };
+      var pl = PLANS[FO_ONB.j.intent] || PLANS.build;
+      App.tossState = null;
+      App.pending = { oppIx: ix, home: me.name, away: opp.name, ground: me.ground, pitch: pitch, weather: "Sunny",
+        seed: 4200 + ix, date: (typeof simDate === "function" ? simDate() : ""), comp: "friendly", __friendly: true, __tut: 1 };
+      suggestOrders();
+      // zero-trace: stash EVERYTHING the three calls overwrite; the saveMatch
+      // wrapper restores it at full time so nothing leaks into league orders
+      window.__foTutOrders = JSON.stringify({
+        pi: App.orders.phaseIntent || null, fp: App.orders.fieldPlan || null, defaults: App.defaults || null,
+        bo: (App.orders.batOrder || []).slice(), sp: JSON.parse(JSON.stringify(App.orders.spells || { north: [], south: [] })),
+        cap: App.orders.captain || null, kp: App.orders.keeper || null,
+        tc: App.orders.tossCall || "", td: App.orders.tossDecision || "bat"
+      });
+      // call 1: the chosen partner opens with the captain
+      var capName = App.orders.captain;
+      var bo = (App.orders.batOrder || []).slice();
+      var want = [capName, FO_ONB.j.opener].filter(Boolean);
+      var rest = bo.filter(function (n) { return want.indexOf(n) < 0; });
+      if (want.length === 2 && bo.indexOf(FO_ONB.j.opener) >= 0) App.orders.batOrder = want.concat(rest);
+      // call 2: the chosen pair take the new ball (swap names, overs unchanged)
+      var swapIn = function (endArr, from, to) {
+        if (!endArr || !endArr.length || from === to) return;
+        endArr.forEach(function (sp9) {
+          if (!sp9) return;
+          if (sp9.bowler === from) sp9.bowler = to;
+          else if (sp9.bowler === to) sp9.bowler = from;
+        });
+      };
+      var sp = App.orders.spells || {};
+      var xiNames = (App.orders.batOrder || []);
+      var nbOk = FO_ONB.j.nb.filter(function (n) { return xiNames.indexOf(n) >= 0; });
+      if (nbOk.length === 2 && sp.north && sp.north[0] && sp.south && sp.south[0]) {
+        var curN = sp.north[0].bowler, curS = sp.south[0].bowler;
+        if (nbOk.indexOf(curN) < 0 && nbOk.indexOf(curS) < 0) {
+          swapIn(sp.north, curN, nbOk[0]); swapIn(sp.south, curN, nbOk[0]);
+          swapIn(sp.north, curS, nbOk[1]); swapIn(sp.south, curS, nbOk[1]);
+        } else if (nbOk.indexOf(curN) < 0) {
+          var missN = nbOk[0] === curS ? nbOk[1] : nbOk[0];
+          swapIn(sp.north, curN, missN); swapIn(sp.south, curN, missN);
+        } else if (nbOk.indexOf(curS) < 0) {
+          var missS = nbOk[0] === curN ? nbOk[1] : nbOk[0];
+          swapIn(sp.north, curS, missS); swapIn(sp.south, curS, missS);
+        }
+      }
+      // call 3: intent + the toss preference
+      App.orders.phaseIntent = pl.pi; App.orders.fieldPlan = pl.fp;
+      App.orders.tossCall = "H"; App.orders.tossDecision = FO_ONB.j.toss;
+      App.orders.saved = true;
+      App.defaults = JSON.parse(JSON.stringify(App.orders));
+      FO_ONB.j.planNm = pl.nm;
+      try { lsDel("fo_qs_tut"); } catch (e9) {}
+      foOnbClose();
+      toast("The Gaffer hands you the sheet. Your eleven walks out - watch, or ride the speed controls.");
+      location.hash = "#/match"; if (typeof window.route === "function") window.route();
+      App.orders.saved = false;
+      foJWatch();
+    } catch (e) { say(e); foOnbClose(); }
+  }
+  function foJWatch() {
+    try { if (window.__foTutIv) clearInterval(window.__foTutIv); } catch (e) {}
+    var started = Date.now();
+    window.__foTutIv = setInterval(function () {
+      try {
+        if (Date.now() - started > 45 * 60000) { clearInterval(window.__foTutIv); window.__foTutIv = null; return; }
+        var tut = (typeof M !== "undefined" && M && M.meta && M.meta.__tut);
+        if (!tut) {
+          if (!(typeof App !== "undefined" && App && App.pending && App.pending.__tut)) { clearInterval(window.__foTutIv); window.__foTutIv = null; }
+          return;
+        }
+        if (!M.done) return;
+        clearInterval(window.__foTutIv); window.__foTutIv = null;
+        setTimeout(foJDebrief, 2200);
+      } catch (e) {}
+    }, 2000);
+  }
+  function foJDebrief() {
+    try {
+      var me = userTeam();
+      var txt = (M && M.result && M.result.text) || "Full time.";
+      var won = new RegExp("^" + me.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(txt);
+      var inns = (M && M.innings || []).filter(Boolean);
+      var ourBat = null, ourBowl = null;
+      inns.forEach(function (x) { if (x.batTeam === me.name) ourBat = x; else ourBowl = x; });
+      var bullets = [];
+      var tossTxt = (App.tossState && App.tossState.txt) || "";
+      if (tossTxt) bullets.push(E(tossTxt));
+      bullets.push("The plan: <b>" + E(FO_ONB.j.planNm || "Build, then explode") + "</b>, set before a ball was bowled.");
+      var findBowler = function (nm) {
+        var row = null;
+        if (ourBowl && ourBowl.bowlers) Object.keys(ourBowl.bowlers).forEach(function (k) {
+          var r = ourBowl.bowlers[k];
+          if (r && r.p && r.p.name === nm) row = r;
+        });
+        return row;
+      };
+      (FO_ONB.j.nb || []).forEach(function (nm) {
+        var r = findBowler(nm);
+        if (r) bullets.push("New ball to <b>" + E(nm) + "</b>: " + (r.w || 0) + " wicket" + ((r.w || 0) === 1 ? "" : "s") + " for " + (r.r || 0) + ".");
+      });
+      var topBat = null;
+      if (ourBat && ourBat.bat) ourBat.bat.forEach(function (r) { if (r && r.p && (!topBat || (r.r || 0) > (topBat.r || 0))) topBat = r; });
+      if (topBat) bullets.push("Top score: <b>" + E(topBat.p.name) + "</b> with " + (topBat.r || 0) + ".");
+      var capName2 = ""; (me.players || []).some(function (p) { if (p && p.origin_tag && /Franchise captain/.test(p.origin_tag)) { capName2 = p.name; return true; } return false; });
+      var momCands = [];
+      if (topBat) momCands.push([topBat.p.name, "Top score with the bat"]);
+      var bestBowl = null;
+      if (ourBowl && ourBowl.bowlers) Object.keys(ourBowl.bowlers).forEach(function (k) {
+        var r = ourBowl.bowlers[k];
+        if (r && r.p && (!bestBowl || (r.w || 0) > (bestBowl.w || 0))) bestBowl = r;
+      });
+      if (bestBowl && (bestBowl.w || 0) > 0) momCands.push([bestBowl.p.name, "Best bowling of the day"]);
+      if (capName2) momCands.push([capName2, "Held the whole day together"]);
+      var seen = {}; momCands = momCands.filter(function (r) { if (!r[0] || seen[r[0]]) return false; seen[r[0]] = 1; return true; }).slice(0, 3);
+      var ex = document.getElementById("fo-tut2"); if (ex) ex.remove();
+      var m2 = document.createElement("div"); m2.id = "fo-tut2"; m2.className = "fo-modal";
+      m2.innerHTML = "<div class='fo-modal-card' style='max-width:560px'><div class='fo-modal-eyebrow'>The dressing room</div>" +
+        "<h3>" + E(txt) + "</h3>" +
+        "<div class='small' style='margin:8px 0 4px;font-weight:700;letter-spacing:1px;text-transform:uppercase'>What your calls changed</div>" +
+        bullets.map(function (b9) { return "<div class='small' style='margin:4px 0;padding:7px 10px;background:#F4FAF2;border-left:3px solid #2E9E4F;border-radius:6px;text-align:left'>" + b9 + "</div>"; }).join("") +
+        (momCands.length ? "<div class='small' style='margin:10px 0 4px;font-weight:700;letter-spacing:1px;text-transform:uppercase'>Hand the match ball</div><div id='fo-j-mom'>" +
+          momCands.map(function (r, i) { return "<button type='button' class='fo-j-chip' data-i='" + i + "' style='margin:3px'>" + E(r[0]) + " &middot; " + r[1] + "</button>"; }).join("") + "</div>" : "") +
+        "<div class='small' id='fo-j-momr' style='margin:6px 0;min-height:16px'></div>" +
+        "<div class='small' style='margin:8px 0 12px'>" + (won ? "The Gaffer: &ldquo;First blood, boss. Enjoy it for exactly one evening.&rdquo;" : "The Gaffer: &ldquo;Better to bleed in a friendly than on a matchday. We learned plenty.&rdquo;") +
+        " Nothing today counted - no fatigue, no form, no history. The league does.</div>" +
+        "<div style='text-align:center'><button class='primary' id='fo-tut2-go'>Into the season &#9654;</button></div></div>";
+      document.body.appendChild(m2);
+      m2.querySelectorAll("#fo-j-mom .fo-j-chip").forEach(function (b) {
+        b.addEventListener("click", function () {
+          m2.querySelectorAll("#fo-j-mom .fo-j-chip").forEach(function (x) { x.classList.toggle("on", x === b); });
+          var r = momCands[+b.getAttribute("data-i")];
+          var el = m2.querySelector("#fo-j-momr");
+          if (el) el.innerHTML = "You hand the match ball to <b>" + E(r[0]) + "</b>. He tries not to grin. He fails.";
+        });
+      });
+      m2.querySelector("#fo-tut2-go").addEventListener("click", function () {
+        m2.remove(); location.hash = "#/club"; if (typeof window.route === "function") window.route();
+      });
+    } catch (e) {
+      // debrief must never trap a manager: fall back to the plain full-time modal
+      try { var m3 = document.getElementById("fo-tut2"); if (m3) m3.remove(); } catch (e2) {}
+      try { location.hash = "#/club"; if (typeof window.route === "function") window.route(); } catch (e3) {}
+    }
+  }
+
+  // ---- Returning managers: the Gaffer's morning briefing ---------------------
+  function foJBrief() {
+    try {
+      if (SYNC && SYNC.practice) return;
+      if (!window.store("fo_onb_done")) return;
+      if (lsGet("fo_qs_new")) return;                       // first session: the golden card owns the screen
+      if (sessionStorage.getItem("fo_j_brief")) return;
+      var page = document.getElementById("page"); if (!page) return;
+      if (document.getElementById("fo-j-brief")) return;
+      var me = userTeam(); if (!me) return;
+      var bank = (App.fin && App.fin.bank != null) ? App.fin.bank : me.bank;
+      var w = 0, l = 0;
+      (App.results || []).forEach(function (r) { try { if (r && r.result && r.result.winner) { if (r.result.winner === me.name) w++; else l++; } } catch (e) {} });
+      var lines = [
+        "Morning, boss. Sleep well? The league table doesn't.",
+        "Round " + ((App.season && App.season.round != null ? App.season.round : 0) + 1) + ", " + (w + l > 0 ? w + " won, " + l + " lost so far" : "the season's still young") + ", " + FO$(bank || 0) + " in the bank.",
+        "Next league match plays at 9:00 AM ET. The office is yours - I'll be by the kettle."
+      ];
+      var el = document.createElement("div"); el.id = "fo-j-brief";
+      el.innerHTML = "<div class='fo-j-gbox' style='max-width:none;margin:0 0 10px;position:relative'><span class='sp'>The Gaffer</span>" +
+        "<span class='tx'>" + lines.map(E).join(" ") + "</span>" +
+        "<button type='button' id='fo-j-briefx' style='position:absolute;top:8px;right:10px;background:none;border:none;color:#8a90a0;cursor:pointer;font-size:14px' title='Dismiss'>&#10005;</button></div>";
+      page.insertBefore(el, page.firstChild);
+      el.querySelector("#fo-j-briefx").addEventListener("click", function () {
+        try { sessionStorage.setItem("fo_j_brief", "1"); } catch (e2) {}
+        el.remove();
+      });
+    } catch (e) {}
+  }
+  setTimeout(function () {
+    try {
+      var _pc = window.pgClub;
+      if (typeof _pc === "function" && !_pc.__foJBrief) {
+        window.pgClub = function () { var r = _pc.apply(this, arguments); try { foJBrief(); } catch (e) {} return r; };
+        window.pgClub.__foJBrief = 1;
+      }
+    } catch (e) {}
+  }, 0);
+  window.__foJ = { intro: foJIntro, cond: foJCond, orders: foJOrders, debrief: foJDebrief, brief: foJBrief, state: function () { return FO_ONB; } };
 
   // Player links built from stored text can carry baggage the engine's exact
   // name lookup chokes on - "Jayant Dixit 4w" from a mom string, "(123 pts)"
