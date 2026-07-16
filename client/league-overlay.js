@@ -8115,6 +8115,7 @@
     }).join("");
     var body = "<div>" +
       "<h1 class='fo-ob-h1' style='text-align:center'>Choose your club's identity</h1>" +
+      "<p class='fo-ob-lead' style='text-align:center;max-width:640px;margin:0 auto 6px'>This is the most important call you'll make: <b>it decides the players your club is founded with.</b> Pick The Pace Battery and your squad arrives full of fast bowlers; pick The Spin Circus and it's spinners. You can reshape the squad later through transfers and youth signings &mdash; nothing here is permanent.</p>" +
       "<div class='fo-j-souls'>" + cards + "</div><div id='fo-j-prev'>" + (FO_ONB.arch ? foJPrevHtml() : "") + "</div></div>";
     var host = foJMount(0, body);
     host.querySelectorAll(".fo-j-soul").forEach(function (b) {
@@ -8218,7 +8219,10 @@
   // One component for every surface that shows a player as a card. Role picks
   // the color and the artwork; all numbers come off the live player object.
   var FO_PK_AC = { bat: ["#C9A227", "#a9861a"], pace: ["#2F6FBF", "#245a9e"], wspin: ["#7A4FBF", "#6a3fae"], fspin: ["#B34A7D", "#983c68"], ar: ["#6B8E23", "#5a7a1c"], wk: ["#0E9E97", "#0b837d"] };
-  var FO_PK_ROLELBL = { opener: "Opener", topOrderBat: "Top-order Batter", middleOrderBat: "Middle-order Batter", allRounder: "All-Rounder", wicketkeeper: "Wicketkeeper", seamFast: "Fast Bowler", seamFastMedium: "Fast-Medium Bowler", seamMedium: "Medium Pacer", wristSpin: "Wrist Spinner", fingerSpin: "Finger Spinner" };
+  // The engine doesn't distinguish opener/top/middle batting slots - they play
+  // identically - so every specialist batter is just "Batsman" on the card.
+  var FO_PK_ROLELBL = { opener: "Batsman", topOrderBat: "Batsman", middleOrderBat: "Batsman", allRounder: "All-Rounder", wicketkeeper: "Wicketkeeper", seamFast: "Fast Bowler", seamFastMedium: "Fast-Medium Bowler", seamMedium: "Medium Pacer", wristSpin: "Wrist Spinner", fingerSpin: "Finger Spinner" };
+  function foPkRoleLbl(p) { return FO_PK_ROLELBL[p.role] || "Player"; }
   function foPkKind(p) {
     if (p.keeper || p.role === "wicketkeeper") return "wk";
     if (p.role === "allRounder") return "ar";
@@ -8364,7 +8368,7 @@
     var A = foJArch(FO_ONB.arch);
     var bowlRole = FO_ONB.arch === "wizard" ? "wristSpin" : (FO_ONB.arch === "express" ? "seamFast" : (FO_ONB.arch === "gloveman" ? "fingerSpin" : "seamFastMedium"));
     var specs = [
-      { role: "topOrderBat", age: 26, lbl: "Top-order Batter" },
+      { role: "topOrderBat", age: 26, lbl: "Batsman" },
       { role: bowlRole, age: 21, lbl: "Strike Bowler" },
       { role: "allRounder", age: 31, lbl: "All-Rounder" }
     ];
@@ -12984,7 +12988,7 @@
         var en = foEnergyOf(p);
         var enCol = en.tired ? "#DC2626" : en.word === "rested" ? "#4DA6A2" : "#16A34A";
         var onlyK = hlName && p.name === hlName;
-        var sub = prole(p.role) + " &middot; age " + (p.age | 0) + (p.__y ? " &middot; U20" : "");
+        var sub = foPkRoleLbl(p) + " &middot; age " + (p.age | 0) + (p.__y ? " &middot; U20" : "");
         var chips = "";
         if (p.fatigue === "tired") chips += "<span class='pkm-chip pkm-chip-lo' title='tired · recovers next match or with Rest'>TIRED</span>";
         if (fi !== 3) chips += "<span class='pkm-chip' title='" + FORMTIP + "'>Form: " + FORMW_UI[fi] + "</span>";
