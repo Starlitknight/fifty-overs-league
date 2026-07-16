@@ -8045,7 +8045,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (!document.getElementById("fo-font")) {
       var fl = document.createElement("link");
       fl.id = "fo-font"; fl.rel = "stylesheet";
-      fl.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oswald:wght@400;500;600;700&family=Spline+Sans:wght@400;500;600&display=swap";
+      fl.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oswald:wght@400;500;600;700&family=Spline+Sans:wght@400;500;600&family=Archivo:wght@700;800&display=swap";
       document.head.appendChild(fl);
     }
   } catch (e) {}
@@ -10788,7 +10788,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260716-1612-b63f6e";
+  var FO_BUILD = "20260716-2050-3bdbc9";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14163,6 +14163,61 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-j-chip{padding:8px 16px;border-radius:99px;border:1px solid rgba(16,27,45,.25);background:#FFFEFC;cursor:pointer;font-size:13px;font-weight:600;color:#101B2D;font:inherit}" +
       ".fo-j-chip.on{background:#101B2D;color:#F5EFDC;border-color:#101B2D}" +
       ".fo-j-sec{display:flex;align-items:center;gap:10px;margin:20px auto 8px;max-width:680px;letter-spacing:2px;text-transform:uppercase;color:#101B2D;font-size:13px;font-weight:700}.fo-j-sec i{flex:1;height:1px;background:rgba(16,27,45,.18);font-style:normal}" +
+
+      // ==== the trading-card player card (used in the journey and, soon, squad/scout/market) ====
+      ".pk-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;align-items:flex-start;margin:14px 0}" +
+      ".pk{width:min(440px,96vw);--ink:#14213D;--paper:#F7F2E4;font-family:'Spline Sans','Inter',ui-sans-serif,sans-serif;text-align:left}" +
+      ".pk-frame{border:3px solid var(--tc);border-radius:20px;padding:3px;background:var(--paper);position:relative;box-shadow:0 8px 22px rgba(16,27,45,.22)}" +
+      ".pk-in{border:1.5px solid var(--tc);border-radius:15px;padding:13px 16px;position:relative;background:radial-gradient(circle at 30% 8%, #FDFAF1 0%, var(--paper) 60%)}" +
+      ".pk-notch{position:absolute;top:-8px;left:50%;transform:translateX(-50%) rotate(45deg);width:12px;height:12px;background:var(--paper);border:2px solid var(--tc)}" +
+      ".pk-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}" +
+      ".pk-role-lbl{font-family:Oswald;font-size:13.5px;letter-spacing:2.2px;color:var(--tcD);text-transform:uppercase;font-weight:600}" +
+      ".pk-name{font-family:Archivo,Oswald,sans-serif;font-weight:800;font-size:28px;color:var(--ink);line-height:1.04;letter-spacing:-.2px;margin-top:2px}" +
+      ".pk-flag{font-size:21px;line-height:1;margin-top:6px;display:inline-block}.pk-flag img{width:26px;vertical-align:middle}" +
+      ".pk-ovc{text-align:right;flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end}" +
+      ".pk-ovr i{font-style:normal;font-family:Oswald;font-size:13px;letter-spacing:2px;color:var(--ink);font-weight:500;vertical-align:12px;margin-right:5px}" +
+      ".pk-ovr b{font-family:Oswald;font-size:36px;font-weight:600;color:var(--tcD)}" +
+      ".pk-hand{display:block;margin-top:4px;font-family:Oswald;font-size:12px;letter-spacing:1.8px;font-weight:600;color:var(--tcD);border:1.4px solid var(--tc);border-radius:8px;padding:2.5px 10px;background:rgba(255,255,255,.4);cursor:help;text-align:center}" +
+      ".pk-art{height:180px;position:relative;margin:2px -6px 6px}" +
+      ".pk-art img{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);height:170px;max-width:78%;object-fit:contain}" +
+      ".pk-art .gnd{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);width:52%;height:5px;border-radius:50%;background:radial-gradient(ellipse,rgba(20,33,61,.45),transparent 70%)}" +
+      ".pk-meta{border:1.3px solid rgba(20,33,61,.25);border-radius:11px;padding:6px 12px;display:flex;gap:7px;align-items:center;justify-content:center;font-style:italic;font-size:14px;color:#2b3550;background:rgba(255,255,255,.35);flex-wrap:wrap}" +
+      ".pk-meta i{font-style:normal;color:var(--tcD)}.pk-meta .fl{font-style:normal;font-size:14px}.pk-meta .fl img{width:22px;vertical-align:middle}" +
+      ".pk-tal-h{display:flex;align-items:center;gap:11px;margin:9px 0 6px;font-family:Oswald;font-size:12.5px;letter-spacing:2.6px;color:var(--tcD);font-weight:600}" +
+      ".pk-tal-h i{flex:1;height:1.3px;background:rgba(20,33,61,.18);font-style:normal}" +
+      ".pk-tals{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}" +
+      ".pk-tal{border:1.3px solid rgba(20,33,61,.28);border-radius:10px;padding:4px 14px;font-size:13.5px;font-weight:600;color:var(--ink);background:rgba(255,255,255,.4);cursor:help}" +
+      ".pk-stats{margin-top:8px}" +
+      ".pk-st{display:flex;align-items:center;gap:11px;padding:3.5px 0;cursor:help;border-radius:8px}.pk-st:hover{background:rgba(255,255,255,.5)}" +
+      ".pk-en{width:24px;height:24px;border-radius:50%;flex:0 0 24px;display:grid;place-items:center;background:var(--tc);border:1.5px solid var(--tcD)}" +
+      ".pk-en svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}" +
+      ".pk-st b{font-family:Oswald;font-weight:600;font-size:15px;letter-spacing:1.3px;flex:0 0 102px;color:var(--ink)}" +
+      ".pk-bar{flex:1;height:9px;border-radius:99px;background:rgba(20,33,61,.1);overflow:hidden}" +
+      ".pk-bar i{display:block;height:100%;border-radius:99px;background:var(--tc)}" +
+      ".pk-st em{font-style:normal;font-family:Oswald;font-weight:600;font-size:17px;flex:0 0 30px;text-align:right;color:var(--ink)}" +
+      ".pk-mid{display:flex;border-top:1.3px solid rgba(20,33,61,.18);margin-top:7px;padding-top:7px}" +
+      ".pk-foot{display:flex;border-top:1.3px solid rgba(20,33,61,.14);margin-top:7px;padding-top:7px}" +
+      ".pk-fc{flex:1;display:flex;gap:7px;align-items:center;padding:0 4px;cursor:help;min-width:0}" +
+      ".pk-fc + .pk-fc{border-left:1.3px solid rgba(20,33,61,.14)}" +
+      ".pk-fc svg{width:20px;height:20px;stroke:var(--tcD);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:0 0 20px}" +
+      ".pk-fc i{display:block;font-style:normal;font-family:Oswald;font-size:9.5px;letter-spacing:1.3px;color:var(--tcD);font-weight:600}" +
+      ".pk-fc b{font-family:Oswald;font-weight:600;font-size:14px;color:var(--ink);white-space:nowrap}" +
+      ".pk-risk{color:#B23A2E;font-size:13px;font-weight:600;margin-top:7px;text-align:center}" +
+      "html body .pk-cta,html body.ftpskin .pk-cta{display:block;width:100%;margin-top:9px;font-family:Oswald,sans-serif !important;letter-spacing:3.5px;text-transform:uppercase;font-weight:600 !important;font-size:18px;background:var(--tc) !important;color:#FDFAF1 !important;border:none !important;border-radius:11px;padding:10px;cursor:pointer;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}" +
+      "html body .pk-cta:hover,html body.ftpskin .pk-cta:hover,html body .pk-cta:focus,html body.ftpskin .pk-cta:focus{background:var(--tcD) !important;color:#FDFAF1 !important}" +
+      // tooltips: hover on desktop, tap (.tipshow) on touch
+      "[data-tip]{position:relative}" +
+      "[data-tip]:hover:after,[data-tip].tipshow:after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 9px);transform:translateX(-50%);background:#101B2D;color:#F5EFDC;font-family:'Spline Sans',sans-serif;font-size:13px;font-weight:500;font-style:normal;letter-spacing:.2px;line-height:1.5;padding:9px 13px;border-radius:10px;width:240px;text-align:center;z-index:99;box-shadow:0 5px 14px rgba(0,0,0,.3);text-transform:none;pointer-events:none}" +
+      "[data-tip]:hover:before,[data-tip].tipshow:before{content:'';position:absolute;left:50%;bottom:100%;transform:translateX(-50%);border:7px solid transparent;border-top-color:#101B2D;margin-bottom:-4px;z-index:99}" +
+      // gaffer + rival portraits, soul crests
+      ".fo-j-badge img.gf{width:52px;height:52px;border-radius:50%;object-fit:cover;object-position:top;border:2px solid #C9A24B;background:#FFFEFC}" +
+      ".fo-j-gbox{display:flex;gap:12px;align-items:center}" +
+      ".fo-j-gbox img.gf{width:46px;height:46px;border-radius:50%;object-fit:cover;object-position:top;border:1.5px solid #D9B75A;background:#FFFEFC;flex:0 0 46px}" +
+      ".fo-j-gbox .bx{flex:1;min-width:0;text-align:left}" +
+      ".fo-j-crimg{display:block;height:78px;margin:0 auto 4px;filter:drop-shadow(0 2px 4px rgba(16,27,45,.25))}" +
+      ".fo-j-crimg.lg{height:110px}" +
+      ".fo-j-face{width:120px;height:120px;border-radius:50%;object-fit:cover;object-position:top;border:3px solid #101B2D;background:#FFFEFC;box-shadow:0 4px 10px rgba(16,27,45,.3)}" +
+      ".fo-j-wimg{width:110px;filter:grayscale(.85) sepia(.25) contrast(1.05);border:1px solid #b8ab84;display:block}" +
       "@media(max-width:640px){.fo-j-bars{grid-template-columns:1fr}.fo-j-dbox .tx{font-size:16px}}" +
       // the ftpskin sheet paints EVERY button (and its focus state) - out-gun it
       "html body #fo-onb .fo-j-soul,html body.ftpskin #fo-onb .fo-j-soul{background:#FFFEFC !important;color:#111827 !important;border:1.5px solid rgba(16,27,45,.16) !important}" +
@@ -14207,6 +14262,18 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     document.head.appendChild(st);
   })();
 
+  // tap-to-show tooltips on touch devices (hover handles desktop)
+  try {
+    if (!window.__foPkTipWired) {
+      window.__foPkTipWired = 1;
+      document.addEventListener("click", function (ev) {
+        var t = ev.target && ev.target.closest ? ev.target.closest("[data-tip]") : null;
+        Array.prototype.forEach.call(document.querySelectorAll("[data-tip].tipshow"), function (x) { if (x !== t) x.classList.remove("tipshow"); });
+        if (t && window.matchMedia && !window.matchMedia("(hover:hover)").matches) t.classList.toggle("tipshow");
+      }, true);
+    }
+  } catch (eTT) {}
+
   var FO_J_ACCENT = { express: "#D93425", blade: "#E09A19", rock: "#2F8F46", wizard: "#8B4FD8", gloveman: "#0E9E97", engine: "#2F80ED" };
   var FO_J_SOULS = ["express", "blade", "rock", "wizard", "gloveman", "engine"];
   var FO_J_COUNTER = { express: "rock", blade: "express", rock: "blade", wizard: "express", gloveman: "blade", engine: "express" };
@@ -14244,9 +14311,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
   function foJHl(t) { return t.replace(/Reggie Thorne/g, "<b style='color:#C8674A'>Reggie Thorne</b>"); }
   // Pokemon-style typewriter dialogue. Click: finish the line, then advance.
-  function foJDbox(ch, lines, next, topHtml) {
+  function foJDbox(ch, lines, next, topHtml, mood) {
     var body = "<div class='fo-j-dwrap'>" + (topHtml || "") +
-      "<div class='fo-j-badge'><i>&#9749;</i><b>The Gaffer</b></div>" +
+      "<div class='fo-j-badge'><img class='gf' src='client/art/gaffer" + (mood ? "-" + mood : "") + ".png' alt=''><b>The Gaffer</b></div>" +
       "<button type='button' class='fo-j-dbox' id='fo-j-db'><span class='sp'>The Gaffer</span><span class='tx' id='fo-j-dtx'></span></button></div>";
     var host = foJMount(ch, body);
     var i = 0, n = 0, done = false, iv = null;
@@ -14265,7 +14332,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     });
     type();
   }
-  function foJGbox(t) { return "<div class='fo-j-gbox'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;" + t + "&rdquo;</span></div>"; }
+  function foJGbox(t, mood) { return "<div class='fo-j-gbox'><img class='gf' src='client/art/gaffer" + (mood ? "-" + mood : "") + ".png' alt=''><span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;" + t + "&rdquo;</span></span></div>"; }
   function foJCrest(accent, sz, initials) {
     return "<svg viewBox='0 0 120 120' width='" + sz + "' height='" + sz + "'><path d='M60 6 L108 20 L108 64 C108 92 86 108 60 116 C34 108 12 92 12 64 L12 20 Z' fill='" + accent + "' stroke='#C9A24B' stroke-width='3.5'/><path d='M60 13 L101 25 L101 63 C101 86 83 100 60 108 C37 100 19 86 19 63 L19 25 Z' fill='none' stroke='#FFF6DE' stroke-width='1.6' opacity='.55'/><text x='60' y='72' text-anchor='middle' font-size='34' font-weight='800' fill='#FDF7E3' font-family='inherit'>" + E(initials || "") + "</text></svg>";
   }
@@ -14373,7 +14440,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         return "<span class='fo-j-stat'><span>" + k + "</span><i><b style='width:" + (pv.bars[k] * 20) + "%;background:" + ac + "'></b></i></span>";
       }).join("") + "</span>";
       return "<button type='button' class='fo-j-soul" + (FO_ONB.arch === id ? " on" : "") + "' data-a='" + id + "'>" +
-        foJCrest(ac, 76, "") +
+        "<img class='fo-j-crimg' src='client/art/crests/" + id + ".png' alt=''>" +
         "<span class='nm' style='color:" + ac + "'>" + E(A.nm) + "</span>" +
         "<span class='ln'>&ldquo;" + E(A.line) + "&rdquo;</span>" + bars +
         "<span class='fo-j-pros'>&#9650; " + E(A.chips[0]) + "<br>&#9650; " + E(A.chips[1]) + "<br><span class='w'>&#9660; " + E(A.weak) + "</span></span></button>";
@@ -14452,7 +14519,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var bComp = JSON.parse(JSON.stringify(def)); bComp.bat = (bComp.bat || 0) + 1; bComp.pace = (bComp.pace || 0) + 1;
       var bF = foJFeesOf(bComp); benchBank = 1000000 - bF.fees; benchN = bF.n;
       var mF = foJFeesOf(foJTrimComp(def)); mqCore = mF.fees; mqN = mF.n + 1;
-      var mqFees = foGenCaptainPool(String(foObSeed()) + "-marquee", FO_ONB.country, FO_ONB.arch).slice(0, 3).map(function (p) { return foDraftPrice(p); });
+      var mqFees = foJMarqueeCands().map(function (p) { return foDraftPrice(p); });
       mqLo = 1000000 - mqCore - Math.max.apply(null, mqFees); mqHi = 1000000 - mqCore - Math.min.apply(null, mqFees);
     } catch (e) { say(e); return; }
     var sp = foSponsorById("community");
@@ -14464,7 +14531,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "<tr><td>Wage bill <span class='nt'>per matchday</span></td><td class='neg'>&minus;" + FO$(wages) + "</td></tr>" +
       "<tr><td>Sponsor income <span class='nt'>" + E(sp.name) + ", flat, no strings</span></td><td class='pos'>+" + FO$(sp.base) + "</td></tr>" +
       "<tr class='r'><td>Bank on day one</td><td>" + FO$(1000000 - fees) + "</td></tr></table></div>" +
-      foJGbox("There's no wrong answer here. There are two wrong answers if you dither.") +
+      foJGbox("There's no wrong answer here. There are two wrong answers if you dither.", "wink") +
       "<p class='fo-ob-lead' style='text-align:center;margin-top:6px'>Spend the rest of the room on:</p>" +
       "<div class='fo-j-choice'>" +
       "<button type='button' class='fo-j-card' data-r='bench'><h3>A deeper bench</h3><div class='fx'>Two extra squad players (" + benchN + " total). Cover for everything.</div><span class='bk'><i>Bank on day one</i><b>" + FO$(benchBank) + "</b></span></button>" +
@@ -14482,34 +14549,159 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       });
     });
   }
+
+  // ==== The trading-card player card ==========================================
+  // One component for every surface that shows a player as a card. Role picks
+  // the color and the artwork; all numbers come off the live player object.
+  var FO_PK_AC = { bat: ["#C9A227", "#a9861a"], pace: ["#2F6FBF", "#245a9e"], wspin: ["#7A4FBF", "#6a3fae"], fspin: ["#B34A7D", "#983c68"], ar: ["#6B8E23", "#5a7a1c"], wk: ["#0E9E97", "#0b837d"] };
+  var FO_PK_ROLELBL = { opener: "Opener", topOrderBat: "Top-order Batter", middleOrderBat: "Middle-order Batter", allRounder: "All-Rounder", wicketkeeper: "Wicketkeeper", seamFast: "Fast Bowler", seamFastMedium: "Fast-Medium Bowler", seamMedium: "Medium Pacer", wristSpin: "Wrist Spinner", fingerSpin: "Finger Spinner" };
+  function foPkKind(p) {
+    if (p.keeper || p.role === "wicketkeeper") return "wk";
+    if (p.role === "allRounder") return "ar";
+    if (p.role === "wristSpin") return "wspin";
+    if (p.role === "fingerSpin") return "fspin";
+    if (/^seam/.test(p.role || "")) return "pace";
+    return "bat";
+  }
+  function foPkArt(p) {
+    var k = foPkKind(p);
+    if (k === "wk") return "keeper.png";
+    if (k === "ar") return "ar.png";
+    if (k === "wspin") return "spin-wrist.png";
+    if (k === "fspin") return "spin-finger.png";
+    if (k === "pace") return p.role === "seamFast" ? "pace1.png" : (p.role === "seamFastMedium" ? "pace2.png" : "pace3.png");
+    return "bat.png";
+  }
+  var FO_PK_TIPS = {
+    BATTING: "Run-scoring ability with the bat - how reliably he builds and converts innings.",
+    BOWLING: "Wicket-taking threat and the ability to keep runs down with the ball.",
+    TECHNIQUE: "Consistency and execution - how often he does exactly what he intends.",
+    POWER: "Raw strength: boundary hitting with the bat, heavy-ball impact with it.",
+    FIELDING: "Catching, ground fielding and agility in the ring or on the rope.",
+    KEEPING: "Glovework behind the stumps - takes, stumpings and standing up to spin.",
+    FORM: "Current form - hot players get a lift on everything, cold ones a dent. It moves match by match.",
+    EXPERIENCE: "Experience - matches under the belt. Seasoned players handle pressure and tough conditions better.",
+    CAPTAINCY: "Leadership and tactical nous. A strong captain lifts the whole XI on the field.",
+    STAMINA: "Energy and durability - how well he holds up over long spells and packed schedules."
+  };
+  function foPkIco(k) {
+    var I = {
+      bat: "<path d=\'M5 19 17 7m-3-2 5 5\'/>",
+      bowl: "<circle cx=\'12\' cy=\'12\' r=\'8\'/><path d=\'M8.5 6.5c2.5 3 3.5 8 3 11M15.5 6.5c-1 3.5-1 8 0 11\' stroke-width=\'1.4\'/>",
+      tech: "<circle cx=\'12\' cy=\'12\' r=\'3.2\'/><circle cx=\'12\' cy=\'12\' r=\'8\'/><path d=\'M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4\'/>",
+      pow: "<path d=\'M13 2 6 13h5l-1.5 9L18 10h-5l1.5-8z\'/>",
+      fld: "<path d=\'M7 21V11a5 5 0 0 1 10 0v10zM7 15H5a2 2 0 0 1 0-4h2m10 4h2a2 2 0 0 0 0-4h-2\'/>",
+      form: "<path d=\'M3 17l5-6 4 3 5-8 4 5\'/>",
+      exp: "<circle cx=\'12\' cy=\'8\' r=\'4\'/><path d=\'M4 21c1-4 4-6 8-6s7 2 8 6\'/>",
+      capt: "<path d=\'M12 3 4 7v5c0 5 3.4 8.4 8 9 4.6-.6 8-4 8-9V7z\'/><path d=\'M12 8v5M9.5 10.5h5\'/>",
+      fee: "<rect x=\'5\' y=\'4\' width=\'14\' height=\'17\' rx=\'2\'/><path d=\'M9 4V2.5h6V4M9 9h6M9 13h6M9 17h4\'/>",
+      wage: "<ellipse cx=\'12\' cy=\'6\' rx=\'7\' ry=\'3\'/><path d=\'M5 6v4c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 10v4c0 1.7 3.1 3 7 3s7-1.3 7-3v-4M5 14v4c0 1.7 3.1 3 7 3s7-1.3 7-3v-4\'/>",
+      sta: "<path d=\'M12 21C7 16.5 3 13.3 3 9.5 3 7 5 5 7.5 5c1.7 0 3.3.9 4.5 2.4C13.2 5.9 14.8 5 16.5 5 19 5 21 7 21 9.5c0 3.8-4 7-9 11.5z\'/><path d=\'M6 12h3l1.5-3 2.5 5 1.5-2h3.5\'/>"
+    };
+    return "<svg viewBox=\'0 0 24 24\'>" + I[k] + "</svg>";
+  }
+  function foPkStatRow(lbl, icoK, v) {
+    v = Math.round(v || 0);
+    return "<div class=\'pk-st\' data-tip=\"" + E(FO_PK_TIPS[lbl] || "") + "\"><span class=\'pk-en\'>" + foPkIco(icoK) + "</span><b>" + lbl + "</b><span class=\'pk-bar\'><i style=\'width:" + Math.max(2, Math.min(100, v)) + "%\'></i></span><em>" + v + "</em></div>";
+  }
+  // A FIFA-style 0-100 overall from the same 0-100 aggregates the card shows -
+  // p.rating is the engine's internal ranking value (x420 scaled), not an OVR.
+  function foPkOvr(p) {
+    var bat = aggBat(p) || 0, tech = aggTech(p) || 0, pow = (p.power != null ? p.power : ((p.skills && p.skills.power) || 0));
+    var batScore = 0.58 * bat + 0.24 * tech + 0.18 * pow;
+    var bowl = p.bowlType ? (aggBowl(p) || 0) : 0;
+    var fld = aggField(p) || 0;
+    var ovr;
+    if (p.keeper || p.role === "wicketkeeper") ovr = 0.46 * (aggKeep(p) || 0) + 0.40 * batScore + 0.14 * fld;
+    else if (p.role === "allRounder") { var hi = Math.max(batScore, bowl), lo = Math.min(batScore, bowl); ovr = 0.60 * hi + 0.28 * lo + 0.12 * fld; }
+    else if (bowl > batScore) ovr = 0.74 * bowl + 0.12 * tech + 0.14 * fld;
+    else ovr = 0.60 * batScore + 0.12 * bat + 0.14 * pow + 0.14 * fld;
+    return Math.max(1, Math.min(99, Math.round(ovr)));
+  }
+  function foPkCard(p, opts) {
+    opts = opts || {};
+    var k = foPkKind(p), ac = FO_PK_AC[k];
+    var roleLbl = opts.roleLbl || p.__mqLbl || FO_PK_ROLELBL[p.role] || "Player";
+    var ovr = foPkOvr(p);
+    var hand = (p.hand === "L") ? "LHB" : "RHB";
+    var tals = (p.talents || []).map(function (t) {
+      var tip = (typeof TALTIPS !== "undefined" && TALTIPS[t]) || "Special ability that triggers in matches.";
+      return "<span class=\'pk-tal\' data-tip=\"" + E(tip) + "\">" + E((typeof TALN !== "undefined" && TALN[t]) || t) + "</span>";
+    }).join("");
+    var rows = foPkStatRow("BATTING", "bat", aggBat(p)) + foPkStatRow("BOWLING", "bowl", p.bowlType ? aggBowl(p) : 8) +
+      foPkStatRow("TECHNIQUE", "tech", aggTech(p)) + foPkStatRow("POWER", "pow", p.power != null ? p.power : ((p.skills && p.skills.power) || 0)) +
+      (k === "wk" ? foPkStatRow("KEEPING", "fld", aggKeep(p)) : foPkStatRow("FIELDING", "fld", aggField(p)));
+    var metaRole = (p.btLabel && !/does not bowl/i.test(p.btLabel)) ? p.btLabel : roleLbl;
+    var meta = "<span>" + E(metaRole) + "</span><i>&bull;</i><span>Age " + (p.age | 0) + "</span><i>&bull;</i><span>" + E(p.nat || "") + "</span><span class=\'fl\'>" + (foQsFlag(p.nat) || "") + "</span>";
+    var formW = (typeof FORMW !== "undefined" && FORMW[p.formIx != null ? p.formIx : 3]) || "steady";
+    var mid = "<div class=\'pk-mid\'>" +
+      "<div class=\'pk-fc\' data-tip=\"" + E(FO_PK_TIPS.FORM) + "\">" + foPkIco("form") + "<span><i>FORM</i><b>" + E(formW) + "</b></span></div>" +
+      "<div class=\'pk-fc\' data-tip=\"" + E(FO_PK_TIPS.EXPERIENCE) + "\">" + foPkIco("exp") + "<span><i>EXPERIENCE</i><b>" + E(p.expWord || "-") + "</b></span></div>" +
+      "<div class=\'pk-fc\' data-tip=\"" + E(FO_PK_TIPS.CAPTAINCY) + "\">" + foPkIco("capt") + "<span><i>CAPTAINCY</i><b>" + (p.capt | 0) + "</b></span></div></div>";
+    var foot = "";
+    if (opts.fee != null) {
+      foot = "<div class=\'pk-foot\'>" +
+        "<div class=\'pk-fc\'>" + foPkIco("fee") + "<span><i>FEE</i><b>" + FO$(opts.fee) + "</b></span></div>" +
+        "<div class=\'pk-fc\'>" + foPkIco("wage") + "<span><i>WAGE</i><b>" + FO$(opts.wage || 0) + "/day</b></span></div>" +
+        "<div class=\'pk-fc\' data-tip=\"" + E(FO_PK_TIPS.STAMINA) + "\">" + foPkIco("sta") + "<span><i>STAMINA</i><b>" + Math.round((p.skills && p.skills.stamina) || 0) + "</b></span></div></div>";
+    }
+    var risk = opts.risk ? "<div class=\'pk-risk\'>Risk: " + E(opts.risk) + "</div>" : "";
+    var cta = opts.cta ? "<button type=\'button\' class=\'pk-cta\'" + (opts.ctaAttr || "") + ">" + E(opts.cta) + "</button>" : "";
+    return "<div class=\'pk\' style=\'--tc:" + ac[0] + ";--tcD:" + ac[1] + "\'><div class=\'pk-frame\'><span class=\'pk-notch\'></span><div class=\'pk-in\'>" +
+      "<div class=\'pk-hd\'><div class=\'pk-idc\'><div class=\'pk-role-lbl\'>" + E(roleLbl) + "</div><div class=\'pk-name\'>" + E(p.name) + "</div><span class=\'pk-flag\'>" + (foQsFlag(p.nat) || "") + "</span></div>" +
+      "<div class=\'pk-ovc\'><div class=\'pk-ovr\'><i>OVR</i><b>" + ovr + "</b></div>" +
+      "<div class=\'pk-hand\' data-tip=\"" + (hand === "LHB" ? "Bats left-handed" : "Bats right-handed") + "\">" + hand + "</div></div></div>" +
+      "<div class=\'pk-art\'><div class=\'gnd\'></div><img src=\'client/art/" + foPkArt(p) + "\' alt=\'\'></div>" +
+      "<div class=\'pk-meta\'>" + meta + "</div>" +
+      (tals ? "<div class=\'pk-tal-h\'><i></i>TALENTS<i></i></div><div class=\'pk-tals\'>" + tals + "</div>" : "") +
+      "<div class=\'pk-stats\'>" + rows + "</div>" + mid + foot + risk + cta +
+      "</div></div></div>";
+  }
+  // Three marquee archetypes: a batter, a strike bowler shaped by the club
+  // soul, and an all-rounder - the manager plugs a real hole instead of
+  // choosing between three copies of the captain. Deterministic from the seed.
+  function foJMarqueeCands() {
+    var seed = String(foObSeed()) + "-marquee2";
+    var A = foJArch(FO_ONB.arch);
+    var bowlRole = FO_ONB.arch === "wizard" ? "wristSpin" : (FO_ONB.arch === "express" ? "seamFast" : (FO_ONB.arch === "gloveman" ? "fingerSpin" : "seamFastMedium"));
+    var specs = [
+      { role: "topOrderBat", age: 26, lbl: "Top-order Batter" },
+      { role: bowlRole, age: 21, lbl: "Strike Bowler" },
+      { role: "allRounder", age: 31, lbl: "All-Rounder" }
+    ];
+    var firsts = {}, lasts = {};
+    return specs.map(function (s) {
+      var rnd = window.rng(foHash32(seed + "|" + s.role));
+      var p = foQsPlayer({ role: s.role, age: s.age, q: 0.44 }, FO_ONB.country, rnd, firsts, lasts);
+      var want = (A.talents || []).slice();
+      var poolT = Object.keys(TALN).sort(function (a, b) { return foHash32(p.name + a) - foHash32(p.name + b); });
+      want.concat(poolT).forEach(function (t) { if (p.talents.length >= 2 || p.talents.indexOf(t) >= 0) return; if (foQsElig(p, t)) p.talents.push(t); });
+      if (foPureBowler(p)) { p.skills.vsPace = 31; p.skills.vsSpin = 30; p.skills.rotation = 27; p.skills.temperament = 35; p.skills.power = 29; }
+      jsDerive(p);
+      p.__mqLbl = s.lbl;
+      return p;
+    });
+  }
   function foJSign() {
     var cands;
-    try { cands = foGenCaptainPool(String(foObSeed()) + "-marquee", FO_ONB.country, FO_ONB.arch).slice(0, 3); }
+    try { cands = foJMarqueeCands(); }
     catch (e) { say(e); return; }
-    var A = foJArch(FO_ONB.arch);
     var riskOf = function (p) { return p.age >= 30 ? "Little improvement left in him" : (p.age <= 21 ? "Raw. Two seasons from his best" : "A heavy workload, priced in"); };
     var cards = cands.map(function (p, i) {
-      var fee = foDraftPrice(p), wage = foDailyWage(p);
-      var tals = (p.talents || []).map(function (t) { return "<span class='fo-dc-tal'>" + E(foTalentName(t)) + "</span>"; }).join(" ");
-      var bars = ""; try { bars = foSkillBars(p); } catch (e2) {}
-      return "<div class='fo-j-signc'><div class='fo-j-pnm'>" + E(p.name) + ", " + p.age + "</div>" +
-        "<span class='fo-j-psub'>" + E(A.starRole || A.role) + (p.btLabel && !/does not bowl/i.test(p.btLabel) ? " &middot; " + E(p.btLabel) : "") + "</span>" +
-        bars + (tals ? "<div style='margin:6px 0'>" + tals + "</div>" : "") +
-        "<div class='small'>Fee <b>" + FO$(fee) + "</b> &middot; Wage <b>" + FO$(wage) + "</b> / matchday</div>" +
-        "<div class='fo-j-risk'>Risk: " + riskOf(p) + "</div>" +
-        "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' data-i='" + i + "'>Sign " + E(p.name.split(" ").slice(-1)[0]) + "</button></div></div>";
+      return foPkCard(p, { fee: foDraftPrice(p), wage: foDailyWage(p), risk: riskOf(p),
+        cta: "Sign " + p.name.split(" ").slice(-1)[0], ctaAttr: " data-i='" + i + "'" });
     }).join("");
     var body = "<div><h1 class='fo-ob-h1' style='text-align:center'>Choose the final signing</h1>" +
-      "<p class='fo-ob-lead' style='text-align:center'>Three contracts on the desk. Sign one.</p>" +
-      "<div class='fo-j-sign'>" + cards + "</div></div>";
+      "<p class='fo-ob-lead' style='text-align:center'>Three contracts on the desk - a batter, a strike bowler, an all-rounder. Sign one.</p>" +
+      "<div class='pk-row'>" + cards + "</div></div>";
     var host = foJMount(0, body);
-    host.querySelectorAll(".fo-ob-cta[data-i]").forEach(function (b) {
+    host.querySelectorAll(".pk-cta[data-i]").forEach(function (b) {
       b.addEventListener("click", function () {
         var p = cands[+b.getAttribute("data-i")];
         FO_ONB.marquee = p;
-        var line = p.age >= 30 ? E(p.name) + ". Seasons of first-class runs and a handshake like a bench vice. He'll hold an end while the rest learn."
+        var line = p.age >= 30 ? E(p.name) + ". Seasons of first-class cricket and a handshake like a bench vice. He'll hold this side together while the rest learn."
           : (p.age <= 21 ? E(p.name) + ". " + p.age + " years old, and I still can't read him from the balcony. Patience, boss."
-          : E(p.name) + ". Does the job of two men and sends one invoice. Work him wisely.");
+          : E(p.name) + ". Runs at the top, a cool head, and he sends one invoice. Work him wisely.");
         foJDbox(0, [line, "Right. Before you meet the league, there's a name you need to know."], foJThorne);
       });
     });
@@ -14520,10 +14712,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var rid = FO_J_COUNTER[FO_ONB.arch] || "rock";
     var R = foJArch(rid), ac = FO_J_ACCENT[rid];
     var stage = "<div class='fo-j-rivstage'>" +
-      "<div class='fo-j-rivfig'><svg viewBox='0 0 120 120' width='112' height='112'><path d='M46 34 L34 12 L50 26 L52 4 L62 25 L74 6 L72 26 L88 14 L78 32 L90 30 L79 40 Z' fill='#101B2D'/><circle cx='60' cy='42' r='15' fill='#101B2D'/><path d='M45 55 L30 70 L52 62 Z' fill='#101B2D'/><path d='M75 55 L90 70 L68 62 Z' fill='#101B2D'/><path d='M22 118 C26 78 42 64 60 64 C78 64 94 78 98 118 Z' fill='#101B2D'/><path d='M36 88 Q60 79 84 88' fill='none' stroke='#F5EFDC' stroke-width='3' stroke-linecap='round'/><path d='M40 97 Q60 88 80 97' fill='none' stroke='#F5EFDC' stroke-width='3' stroke-linecap='round'/></svg>" +
+      "<div class='fo-j-rivfig'><img class='fo-j-face' src='client/art/thorne.png' alt=''>" +
       "<div class='fo-j-rivnm'>Reggie Thorne</div><div class='fo-j-rivsub'>Manager</div></div>" +
       "<div class='fo-j-vs'>v</div>" +
-      "<div class='fo-j-rivfig'>" + foJCrest(ac, 100, "") + "<div class='fo-j-rivnm' style='color:" + ac + "'>" + E(R.nm) + "</div><div class='fo-j-rivsub'>&ldquo;" + E(R.line) + "&rdquo;</div></div></div>";
+      "<div class='fo-j-rivfig'><img class='fo-j-crimg lg' src='client/art/crests/" + rid + ".png' alt=''><div class='fo-j-rivnm' style='color:" + ac + "'>" + E(R.nm) + "</div><div class='fo-j-rivsub'>&ldquo;" + E(R.line) + "&rdquo;</div></div></div>";
     foJDbox(1, [
       "Reggie Thorne. Runs a " + E(R.nm) + " side. Plays the exact opposite way to your lot, and rates his squad a notch above anything new.",
       "Twenty years in this league, and he has never once lost gracefully. Sharp tongue to go with it.",
@@ -14538,7 +14730,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "<div class='dl'>PRE-SEASON EDITION &middot; NEW CLUBS REGISTERED THIS WEEK</div>" +
       "<h3>Thorne: &ldquo;New clubs always think money is a plan.&rdquo;</h3>" +
       "<div class='by'>By our cricket correspondent</div>" +
-      "<div class='fo-j-wfig'>" + foJCrest(ac, 68, "") + "<div class='fo-j-wcap'>Thorne's " + E(R.nm) + ": &ldquo;a notch above&rdquo;, by his own arithmetic.</div></div>" +
+      "<div class='fo-j-wfig'><img class='fo-j-wimg' src='client/art/thorne.png' alt=''><div class='fo-j-wcap'>R. Thorne at the pavilion: &ldquo;a notch above&rdquo;, by his own arithmetic.</div></div>" +
       "<p>" + E(R.nm) + " manager <b>Reggie Thorne</b> has questioned whether " + E(FO_ONB.clubName) + " will survive a first season. &ldquo;Money cannot buy a cricketing identity,&rdquo; Thorne told the Wire from the pavilion balcony. &ldquo;Ask me about them when they've won something.&rdquo;</p>" +
       "<p>Asked whether the newcomers' " + E(foJArch(FO_ONB.arch).nm.replace(/^The /, "")) + " approach concerned him, Thorne laughed once, checked his watch, and closed the window.</p></div>" +
       foJGbox("Don't read the comments, boss. Sign the papers and let's get to work.") +
@@ -14571,7 +14763,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       App.founder.picked = picked;
       var fc = foForecast(picked, FO_ONB.sponsor);
       if (fc.bankAfter < 0) {
-        foJDbox(1, ["Hold on, boss. Those fees land the club " + FO$s(fc.bankAfter) + " on day one, and the board will not bank a minus.", "Back to the reserve. Spend lighter."], foJMoney);
+        foJDbox(1, ["Hold on, boss. Those fees land the club " + FO$s(fc.bankAfter) + " on day one, and the board will not bank a minus.", "Back to the reserve. Spend lighter."], foJMoney, null, "serious");
         return;
       }
       var bad = foForecast(picked, FO_ONB.sponsor, "bad");
@@ -14587,7 +14779,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           var host = foJMount(1, body);
           host.querySelector("#fo-j-riskgo").addEventListener("click", function () { FO_ONB.riskAck = true; foJCommitGate(); });
           host.querySelector("#fo-j-riskback").addEventListener("click", foJMoney);
-        });
+        }, null, "serious");
         return;
       }
       foOnbCommit();
@@ -14932,8 +15124,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "Next league match plays at 9:00 AM ET. The office is yours - I'll be by the kettle."
       ];
       var el = document.createElement("div"); el.id = "fo-j-brief";
-      el.innerHTML = "<div class='fo-j-gbox' style='max-width:none;margin:0 0 10px;position:relative'><span class='sp'>The Gaffer</span>" +
-        "<span class='tx'>" + lines.map(E).join(" ") + "</span>" +
+      el.innerHTML = "<div class='fo-j-gbox' style='max-width:none;margin:0 0 10px;position:relative'><img class='gf' src='client/art/gaffer.png' alt=''><span class='bx'><span class='sp'>The Gaffer</span>" +
+        "<span class='tx'>" + lines.map(E).join(" ") + "</span></span>" +
         "<button type='button' id='fo-j-briefx' style='position:absolute;top:8px;right:10px;background:none;border:none;color:#8a90a0;cursor:pointer;font-size:14px' title='Dismiss'>&#10005;</button></div>";
       page.insertBefore(el, page.firstChild);
       el.querySelector("#fo-j-briefx").addEventListener("click", function () {
