@@ -8127,7 +8127,7 @@
     }).join("");
     var body = "<div>" +
       "<h1 class='fo-ob-h1' style='text-align:center'>Choose your club's identity</h1>" +
-      "<p class='fo-ob-lead' style='text-align:center;max-width:600px;margin:0 auto 6px'>Your choice here <b>decides the players your club is founded with</b> &mdash; and you can reshape the squad later.</p>" +
+      "<p class='fo-ob-lead' style='text-align:center;max-width:600px;margin:0 auto 6px'>Your choice here <b>decides the players your club is founded with</b>.</p>" +
       "<div class='fo-j-souls'>" + cards + "</div><div id='fo-j-prev'>" + (FO_ONB.arch ? foJPrevHtml() : "") + "</div></div>";
     var host = foJMount(0, body);
     host.querySelectorAll(".fo-j-soul").forEach(function (b) {

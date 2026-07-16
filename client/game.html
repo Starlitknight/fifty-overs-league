@@ -10788,7 +10788,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260716-2204-8b0b4f";
+  var FO_BUILD = "20260716-2215-793884";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14479,7 +14479,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     }).join("");
     var body = "<div>" +
       "<h1 class='fo-ob-h1' style='text-align:center'>Choose your club's identity</h1>" +
-      "<p class='fo-ob-lead' style='text-align:center;max-width:600px;margin:0 auto 6px'>Your choice here <b>decides the players your club is founded with</b> &mdash; and you can reshape the squad later.</p>" +
+      "<p class='fo-ob-lead' style='text-align:center;max-width:600px;margin:0 auto 6px'>Your choice here <b>decides the players your club is founded with</b>.</p>" +
       "<div class='fo-j-souls'>" + cards + "</div><div id='fo-j-prev'>" + (FO_ONB.arch ? foJPrevHtml() : "") + "</div></div>";
     var host = foJMount(0, body);
     host.querySelectorAll(".fo-j-soul").forEach(function (b) {
