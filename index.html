@@ -10788,7 +10788,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260716-2050-3bdbc9";
+  var FO_BUILD = "20260716-2105-119925";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14436,18 +14436,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foJStyle() {
     var cards = FO_J_SOULS.map(function (id) {
       var A = foJArch(id), pv = FO_J_PREV[id], ac = FO_J_ACCENT[id];
-      var bars = "<span class='fo-j-stats'>" + Object.keys(pv.bars).map(function (k) {
+      var bars = "<span class='fo-j-stats'>" + Object.keys(pv.bars).filter(function (k) { return k !== "Nerve"; }).map(function (k) {
         return "<span class='fo-j-stat'><span>" + k + "</span><i><b style='width:" + (pv.bars[k] * 20) + "%;background:" + ac + "'></b></i></span>";
       }).join("") + "</span>";
       return "<button type='button' class='fo-j-soul" + (FO_ONB.arch === id ? " on" : "") + "' data-a='" + id + "'>" +
         "<img class='fo-j-crimg' src='client/art/crests/" + id + ".png' alt=''>" +
         "<span class='nm' style='color:" + ac + "'>" + E(A.nm) + "</span>" +
-        "<span class='ln'>&ldquo;" + E(A.line) + "&rdquo;</span>" + bars +
-        "<span class='fo-j-pros'>&#9650; " + E(A.chips[0]) + "<br>&#9650; " + E(A.chips[1]) + "<br><span class='w'>&#9660; " + E(A.weak) + "</span></span></button>";
+        "<span class='ln'>&ldquo;" + E(A.line) + "&rdquo;</span>" + bars + "</button>";
     }).join("");
     var body = "<div>" +
       "<h1 class='fo-ob-h1' style='text-align:center'>Choose your club's identity</h1>" +
-      "<p class='fo-ob-lead' style='text-align:center'>Every strength is real, and so is the weakness. Your club can evolve later; this is where it starts.</p>" +
       "<div class='fo-j-souls'>" + cards + "</div><div id='fo-j-prev'>" + (FO_ONB.arch ? foJPrevHtml() : "") + "</div></div>";
     var host = foJMount(0, body);
     host.querySelectorAll(".fo-j-soul").forEach(function (b) {
@@ -14467,11 +14465,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (!FO_ONB.arch) return "";
     var pv = FO_J_PREV[FO_ONB.arch];
     return "<div class='fo-j-prev'>" + foJGbox(E(pv.quip)) +
-      "<div class='fo-j-pl'><i>Your likely stars</i><span>" + E(pv.stars) + "</span></div>" +
-      "<div class='fo-j-pl'><i>Your early problem</i><span>" + E(pv.prob) + "</span></div>" +
-      "<div class='fo-j-pl'><i>Best conditions</i><span>" + E(pv.conds) + "</span></div>" +
-      "<div class='fo-j-pl'><i>Home pitch</i><span>" + E(foPitchName(pv.pitch)) + " - prepared to suit this squad</span></div>" +
-      "<p class='small' style='margin-top:8px'>This choice shapes your first squad, wages and home conditions. Nothing here is permanent.</p>" +
+      "<div class='fo-j-pl'><i>Your strength</i><span>" + E(pv.stars) + "</span></div>" +
+      "<div class='fo-j-pl'><i>Your weakness</i><span>" + E(pv.prob) + "</span></div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-j-stygo'>Build this club</button></div></div>";
   }
   function foJPrevWire(host) {
@@ -14686,9 +14681,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var cands;
     try { cands = foJMarqueeCands(); }
     catch (e) { say(e); return; }
-    var riskOf = function (p) { return p.age >= 30 ? "Little improvement left in him" : (p.age <= 21 ? "Raw. Two seasons from his best" : "A heavy workload, priced in"); };
     var cards = cands.map(function (p, i) {
-      return foPkCard(p, { fee: foDraftPrice(p), wage: foDailyWage(p), risk: riskOf(p),
+      return foPkCard(p, { fee: foDraftPrice(p), wage: foDailyWage(p),
         cta: "Sign " + p.name.split(" ").slice(-1)[0], ctaAttr: " data-i='" + i + "'" });
     }).join("");
     var body = "<div><h1 class='fo-ob-h1' style='text-align:center'>Choose the final signing</h1>" +
