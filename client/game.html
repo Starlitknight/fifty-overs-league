@@ -10788,7 +10788,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260716-2105-119925";
+  var FO_BUILD = "20260716-2133-9e08df";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -12988,39 +12988,23 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (!FO_ONB.pool) FO_ONB.pool = foGenCaptainPool(foObSeed(), FO_ONB.country, FO_ONB.arch);
     var cards = FO_ONB.pool.map(function (pl, i) {
       var F = FO_CAPT_FLAVOURS[i];
-      var cw = foWord(pl.capt) || "elite";
-      var bt = "";
-      try { bt = (typeof foBT === "function" && foBT(pl)) || pl.btLabel || ""; } catch (e) { bt = pl.btLabel || ""; }
-      var ttip = function (t) { try { return (typeof TALTIPS !== "undefined" && TALTIPS[t]) ? TALTIPS[t] : ""; } catch (e) { return ""; } };
-      var tals = (pl.talents || []).map(function (t) { return "<span class='fo-dc-tal' title='" + E(ttip(t)) + "'>" + E(foTalentName(t)) + "</span>"; }).join("");
-      var bars = "";
-      try { bars = foSkillBars(pl); } catch (e) {}
-      return "<button type='button' class='fo-qs-capt" + (FO_ONB.capt === F.id ? " on" : "") + "' data-c='" + F.id + "'>" +
-        "<span class='fo-qs-cband'><span class='fo-qs-cflav'>" + E(F.nm) + "</span><span class='fo-qs-ccapt'><u>" + E(cw) + "</u> captaincy</span></span>" +
-        "<span class='fo-qs-cbody'>" +
-        "<span class='fo-qs-chead'>" + (foQsFlag(pl.nat) ? "<span class='fo-qs-cflag'>" + foQsFlag(pl.nat) + "</span>" : "") +
-        "<b class='fo-qs-cnm'>" + E(pl.name) + "</b>" +
-        "<span class='fo-qs-covr'>OVR <b>" + (pl.rating ? (pl.rating / 1000).toFixed(1) : "-") + "</b></span></span>" +
-        "<span class='fo-qs-cmeta'>" + E(A.starRole || A.role) + " &middot; age " + pl.age + " &middot; " +
-          (bt && !/does not bowl/i.test(bt) ? E(bt) : (pl.hand === "L" ? "left" : "right") + "-hand bat") +
-          " &middot; exp " + E(pl.expWord || "") + "</span>" +
-        (tals ? "<span class='fo-qs-chips'>" + tals + "</span>" : "") +
-        bars +
-        "</span></button>";
+      return "<div class='pkm-cell pk-capt-cell" + (FO_ONB.capt === F.id ? " on" : "") + "' data-c='" + F.id + "'>" +
+        "<div class='pk-capt-flav'>" + E(F.nm) + "</div>" +
+        foPkCard(pl, { roleLbl: A.starRole || A.role, cta: (FO_ONB.capt === F.id ? "✓ Captain" : "Make captain") }) +
+        "</div>";
     }).join("");
     var body =
       "<div class='fo-ob-card fo-ob-mid'>" +
       "<div class='fo-ob-eyebrow'>Build your squad &middot; 2 of 3</div>" +
       "<h1 class='fo-ob-h1'>Choose your captain</h1>" +
       "<p class='fo-ob-lead'>Six candidates for the captaincy. The stats on each card are exactly what you get, and the rest of the squad is signed around whoever you pick.</p>" +
-      "<div class='fo-qs-grid fo-qs-cgrid'>" + cards + "</div>" +
+      "<div class='pk-row pk-capt-row'>" + cards + "</div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'" + (FO_ONB.capt ? "" : " disabled") + ">Continue</button></div></div>";
     var host = foOnbMount(4, body);
-    host.querySelectorAll(".fo-qs-capt").forEach(function (b) {
+    host.querySelectorAll(".pk-capt-cell").forEach(function (b) {
       b.addEventListener("click", function () {
         FO_ONB.capt = b.getAttribute("data-c");
-        host.querySelectorAll(".fo-qs-capt").forEach(function (x) { x.classList.toggle("on", x === b); });
-        var c = host.querySelector("#fo-ob-c"); if (c) c.disabled = false;
+        foObCaptain();
       });
     });
     host.querySelector("#fo-ob-b").addEventListener("click", foObTeam);
@@ -14218,6 +14202,43 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-j-crimg.lg{height:110px}" +
       ".fo-j-face{width:120px;height:120px;border-radius:50%;object-fit:cover;object-position:top;border:3px solid #101B2D;background:#FFFEFC;box-shadow:0 4px 10px rgba(16,27,45,.3)}" +
       ".fo-j-wimg{width:110px;filter:grayscale(.85) sepia(.25) contrast(1.05);border:1px solid #b8ab84;display:block}" +
+      // ==== compact card for squad / market / scout grids ====
+      ".pkm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin:4px 0 6px}" +
+      ".pkm{--ink:#14213D;--paper:#F7F2E4;border:2px solid var(--tc);border-radius:13px;background:linear-gradient(180deg,#FDFAF1,var(--paper));padding:10px 12px 11px;font-family:'Spline Sans','Inter',sans-serif;box-shadow:0 3px 10px rgba(16,27,45,.12);position:relative}" +
+      ".pkm-dim{opacity:.55;filter:saturate(.6)}" +
+      ".pkm-top{display:flex;align-items:center;gap:10px}" +
+      ".pkm-art{width:58px;height:62px;flex:0 0 58px;display:grid;place-items:end center;background:radial-gradient(ellipse at 50% 92%,rgba(20,33,61,.13),transparent 62%)}" +
+      ".pkm-art img{max-height:60px;max-width:56px;width:auto;height:auto;object-fit:contain;display:block}" +
+      ".pkm-id{flex:1;min-width:0}" +
+      ".pkm-tag{display:inline-block;font-family:Oswald;font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;font-weight:600;color:#fff;background:var(--tcD);border-radius:6px;padding:1px 7px;margin-bottom:2px}" +
+      ".pkm-nm{font-family:Archivo,Oswald,sans-serif;font-weight:800;font-size:17px;color:var(--ink);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".pkm-nm img{width:18px;vertical-align:-3px}" +
+      ".pkm-sub{font-size:12px;color:#5b6472;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".pkm-ovc{flex:0 0 auto;text-align:center;line-height:1}" +
+      ".pkm-ovc b{font-family:Oswald;font-weight:600;font-size:26px;color:var(--tcD)}" +
+      ".pkm-ovc i{display:block;font-style:normal;font-family:Oswald;font-size:8.5px;letter-spacing:1.5px;color:#8a90a0;margin-top:-1px}" +
+      ".pkm-hand{display:inline-block;margin-top:3px;font-family:Oswald;font-size:9.5px;letter-spacing:1px;font-weight:600;color:var(--tcD);border:1.2px solid var(--tc);border-radius:6px;padding:1px 6px}" +
+      ".pkm-bars{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px 10px;margin:9px 0 2px}" +
+      ".pkm-b{display:flex;align-items:center;gap:5px;cursor:help}" +
+      ".pkm-b i{font-style:normal;font-family:Oswald;font-size:9.5px;letter-spacing:.5px;color:#8a90a0;flex:0 0 24px}" +
+      ".pkm-b u{flex:1;height:6px;border-radius:99px;background:rgba(20,33,61,.1);overflow:hidden;text-decoration:none}" +
+      ".pkm-b u b{display:block;height:100%;border-radius:99px;background:var(--tc)}" +
+      ".pkm-b em{font-style:normal;font-family:Oswald;font-weight:600;font-size:12.5px;color:var(--ink);flex:0 0 20px;text-align:right}" +
+      ".pkm-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;padding-top:8px;border-top:1px solid rgba(20,33,61,.12);flex-wrap:wrap}" +
+      ".pkm-fee{font-size:12.5px;color:#5b6472}.pkm-fee b{color:var(--ink);font-family:Oswald;font-weight:600}" +
+      "html body .pkm-act,html body.ftpskin .pkm-act{font-family:Oswald,sans-serif !important;letter-spacing:1px;text-transform:uppercase;font-weight:600 !important;font-size:12.5px;background:var(--tc) !important;color:#FDFAF1 !important;border:none !important;border-radius:8px;padding:7px 14px;cursor:pointer;box-shadow:inset 0 -2px 0 rgba(0,0,0,.18)}" +
+      "html body .pkm-act:hover,html body.ftpskin .pkm-act:hover{background:var(--tcD) !important;color:#FDFAF1 !important}" +
+      ".pkm-act[disabled]{opacity:.5;cursor:not-allowed}" +
+      ".pkm-gone{font-size:12.5px;color:#5b6472;font-style:italic}" +
+      ".pkm-cell{cursor:pointer;text-decoration:none;color:inherit;display:block}" +
+      ".pkm-warn .pkm{border-color:#DC2626}" +
+      ".pkm-chips{display:block;margin-top:3px}" +
+      ".pkm-chip{display:inline-block;font-size:10.5px;font-weight:600;color:#5b6472;background:rgba(20,33,61,.07);border-radius:6px;padding:1px 7px;margin:2px 4px 0 0}" +
+      ".pkm-chip-lo{color:#b02a1e;background:rgba(220,38,38,.1)}" +
+      ".pkm-energy{display:flex;align-items:center;gap:5px;font-size:11px;color:#8a90a0}.pkm-energy i{font-style:normal;font-family:Oswald;letter-spacing:.5px}.pkm-energy u{width:46px;height:6px;border-radius:99px;background:rgba(20,33,61,.1);overflow:hidden;text-decoration:none}.pkm-energy u b{display:block;height:100%;border-radius:99px}" +
+      ".pk-capt-row{align-items:stretch}.pk-capt-cell{cursor:pointer;position:relative}.pk-capt-cell .pk-frame{transition:box-shadow .15s}" +
+      ".pk-capt-cell.on .pk-frame{box-shadow:0 0 0 4px rgba(200,103,74,.6),0 8px 22px rgba(16,27,45,.22)}" +
+      ".pk-capt-flav{text-align:center;font-family:Oswald;font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#C8674A;margin-bottom:6px}" +
       "@media(max-width:640px){.fo-j-bars{grid-template-columns:1fr}.fo-j-dbox .tx{font-size:16px}}" +
       // the ftpskin sheet paints EVERY button (and its focus state) - out-gun it
       "html body #fo-onb .fo-j-soul,html body.ftpskin #fo-onb .fo-j-soul{background:#FFFEFC !important;color:#111827 !important;border:1.5px solid rgba(16,27,45,.16) !important}" +
@@ -14651,6 +14672,41 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       (tals ? "<div class=\'pk-tal-h\'><i></i>TALENTS<i></i></div><div class=\'pk-tals\'>" + tals + "</div>" : "") +
       "<div class=\'pk-stats\'>" + rows + "</div>" + mid + foot + risk + cta +
       "</div></div></div>";
+  }
+  // Compact card for BROWSING surfaces (squad, market, scout) where a full
+  // hero card per player would be an endless scroll. Same visual language -
+  // role-color frame, art thumbnail, OVR, RHB/LHB, three mini bars - tiled a
+  // few per row. opts: {fee, sub, action(html), tag, tone, dim}.
+  function foPkMini(p, opts) {
+    opts = opts || {};
+    var k = foPkKind(p), ac = FO_PK_AC[k];
+    var roleLbl = opts.roleLbl || FO_PK_ROLELBL[p.role] || "Player";
+    var ovr = foPkOvr(p);
+    var hand = (p.hand === "L") ? "LHB" : "RHB";
+    var bowlV = p.bowlType ? (aggBowl(p) || 0) : 0;
+    var secLbl = (k === "wk") ? "KEEP" : "BOWL", secV = (k === "wk") ? (aggKeep(p) || 0) : bowlV;
+    var bar = function (lbl, tip, v) {
+      v = Math.round(v || 0);
+      return "<span class=\'pkm-b\' data-tip=\"" + E(FO_PK_TIPS[tip] || "") + "\"><i>" + lbl + "</i><u><b style=\'width:" + Math.max(3, Math.min(100, v)) + "%\'></b></u><em>" + v + "</em></span>";
+    };
+    var bars = bar("BAT", "BATTING", aggBat(p)) + bar(secLbl, k === "wk" ? "KEEPING" : "BOWLING", secV) + bar("FLD", "FIELDING", aggField(p));
+    var tag = opts.tag ? "<span class=\'pkm-tag\'>" + opts.tag + "</span>" : "";
+    var sub = opts.sub || (E(roleLbl) + " &middot; age " + (p.age | 0));
+    var money = "";
+    if (opts.fee != null) money = "<span class=\'pkm-fee\'>Fee <b>" + FO$(opts.fee) + "</b>" + (opts.wage != null ? " &middot; " + FO$(opts.wage) + "/day" : "") + "</span>";
+    var act = opts.action || "";
+    var foot = opts.foot != null ? opts.foot : (money || act ? money + act : "");
+    return "<div class=\'pkm" + (opts.dim ? " pkm-dim" : "") + "\' style=\'--tc:" + ac[0] + ";--tcD:" + ac[1] + "\'>" +
+      "<div class=\'pkm-top\'>" +
+      "<div class=\'pkm-art\'><img src=\'client/art/" + foPkArt(p) + "\' alt=\'\'></div>" +
+      "<div class=\'pkm-id\'>" + tag +
+      "<div class=\'pkm-nm\'>" + (foQsFlag(p.nat) || "") + " " + E(p.name) + "</div>" +
+      "<div class=\'pkm-sub\'>" + sub + "</div></div>" +
+      "<div class=\'pkm-ovc\'><b>" + ovr + "</b><i>OVR</i><span class=\'pkm-hand\'>" + hand + "</span></div>" +
+      "</div>" +
+      "<div class=\'pkm-bars\'>" + bars + "</div>" +
+      (foot ? "<div class=\'pkm-foot\'>" + foot + "</div>" : "") +
+      "</div>";
   }
   // Three marquee archetypes: a batter, a strike bowler shaped by the club
   // soul, and an all-rounder - the manager plugs a real hole instead of
@@ -16034,27 +16090,19 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var claim = byName[p.name];
         var mine = claim && SYNC && SYNC.myMid && claim.manager_id === SYNC.myMid;
         var pending = pendingNames[p.name];
-        var rare = p.bowlTypeFull === "seamFast" ? "Genuine pace" : p.bowlTypeFull === "wristSpin" ? "Wrist spin" : null;
-        var flag = ""; try { flag = (typeof foFlag === "function" && p.nat) ? foFlag(p.nat) : ""; } catch (e) {}
-        var bars = [["Bat", foAgg(p, "bat")], [(p.keeper ? "Keep" : "Bowl"), p.keeper ? foAgg(p, "keep") : ((p.bowlTypeFull && p.bowlTypeFull !== "none") ? foAgg(p, "bowl") : 0)], ["Field", foAgg(p, "field")]];
-        var barHtml = bars.map(function (b) { return "<span class='fo-sk'><i>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + b[1] + "%'></u></b><em>" + b[1] + "</em></span>"; }).join("");
+        var rare = p.bowlTypeFull === "seamFast" ? "Rare &middot; genuine pace" : p.bowlTypeFull === "wristSpin" ? "Rare &middot; wrist spin" : null;
         var act;
-        if (claim) act = "<div class='fo-mk-gone'>" + (mine ? "Joining your club" : "Signed by <b>" + E(claim.club) + "</b>") + "</div>";
-        else if (pending) act = "<div class='fo-mk-gone'>Joining after next matchday</div>";
-        else act = "<button class='fo-yc-sign fo-mk-claim' data-i='" + i + "'" + (bank < p.fee ? " disabled title='Not enough in the bank'" : "") + ">Sign · " + FO$(p.fee) + "</button>";
-        return "<div class='fo-yc" + (claim ? " fo-mk-claimed" : "") + (rare && !claim ? " fo-mk-rare" : "") + "'>" +
-          (rare && !claim ? "<div class='fo-mk-rareband'>&#9670; Rare &middot; " + rare + "</div>" : "") +
-          "<div class='fo-yc-h'>" + flag + " <b class='fo-mk-view' data-i='" + i + "'>" + E(p.name) + "</b></div>" +
-          "<div class='fo-yc-meta'>" + foRoleShort(p) + " · age " + p.age + " · OVR " + ((p.rating || 0) / 1000).toFixed(1) + "</div>" +
-          "<div class='fo-yc-bars'>" + barHtml + "</div>" +
-          "<div class='fo-yc-money'><span>Fee <b>" + FO$(p.fee) + "</b></span><span>Wage <b>" + FO$(foDailyWage(p)) + "/matchday</b></span></div>" + act + "</div>";
+        if (claim) act = "<span class='pkm-gone'>" + (mine ? "Joining your club" : "Signed by <b>" + E(claim.club) + "</b>") + "</span>";
+        else if (pending) act = "<span class='pkm-gone'>Joining after next matchday</span>";
+        else act = "<button class='pkm-act fo-mk-claim' data-i='" + i + "'" + (bank < p.fee ? " disabled title='Not enough in the bank'" : "") + ">Sign</button>";
+        return "<div class='pkm-cell' data-i='" + i + "'>" + foPkMini(p, { fee: p.fee, wage: foDailyWage(p), tag: (rare && !claim) ? rare : null, action: act, dim: !!claim || !!pending }) + "</div>";
       }).join("");
       page.innerHTML =
         "<div class='crumb'>" + E(t.name) + " &raquo; Transfers</div>" +
         "<div class='page-head'><div><div class='eyebrow'>Free agents</div><h1>Transfer market</h1><p>One shared pool &middot; signed players are gone for everyone &middot; fresh names every " + FO_MARKET_REFRESH + " matchdays.</p></div></div>" +
         "<div class='panel'><h4>On the market &middot; restocks in " + foMarketRefreshIn() + " matchday" + (foMarketRefreshIn() === 1 ? "" : "s") + (SYNC && SYNC.started && !SYNC.practice ? " &middot; <span id='fo-mk-cd'></span>" : "") + "</h4><div class='pad'>" +
         "<div class='fo-yc-note'>Bank <b>" + FO$(bank) + "</b> &middot; Squad <b>" + t.players.length + "/18</b> &middot; signings join after the next matchday</div>" +
-        "<div class='fo-ycs'>" + cards + "</div></div></div>";
+        "<div class='pkm-grid'>" + cards + "</div></div></div>";
       // tick a real clock down to the restock: N-1 full days plus the time to
       // the next 9:00 AM ET resolution
       var cdEl = page.querySelector("#fo-mk-cd");
@@ -16070,8 +16118,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         if (window.__foMkCd) clearInterval(window.__foMkCd);
         window.__foMkCd = setInterval(mkTick, 1000); mkTick();
       }
-      page.querySelectorAll(".fo-mk-claim").forEach(function (b) { b.addEventListener("click", function () { foMarketClaim(pool[+b.getAttribute("data-i")]); }); });
-      page.querySelectorAll(".fo-mk-view").forEach(function (b) { b.addEventListener("click", function () { foYouthDetail(pool[+b.getAttribute("data-i")], true); }); });
+      page.querySelectorAll(".fo-mk-claim").forEach(function (b) { b.addEventListener("click", function (ev) { ev.stopPropagation(); foMarketClaim(pool[+b.getAttribute("data-i")]); }); });
+      page.querySelectorAll(".pkm-cell").forEach(function (c) { c.addEventListener("click", function (ev) { if (ev.target.closest("button")) return; foYouthDetail(pool[+c.getAttribute("data-i")], true); }); });
     };
     if (SYNC && SYNC.started && !SYNC.practice && LG) {
       sel("league_market", "league_id=eq." + LG.id + "&select=player_name,club,manager_id").then(renderList).catch(function () { renderList([]); });
@@ -18047,19 +18095,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     }).join("") + "</select>";
     var scouts = foScoutList();
     var scoutCards = scouts.map(function (p, i) {
-      var flag = ""; try { flag = (typeof foFlag === "function" && p.nat) ? foFlag(p.nat) : ""; } catch (e) {}
-      var pot = foPotential(p);
-      var bars = [["Bat", foAgg(p, "bat")], [(p.keeper ? "Keep" : "Bowl"), p.keeper ? foAgg(p, "keep") : ((p.bowlTypeFull && p.bowlTypeFull !== "none") ? foAgg(p, "bowl") : 0)], ["Field", foAgg(p, "field")]];
-      var barHtml = bars.map(function (b) { return "<span class='fo-sk'><i>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + b[1] + "%'></u></b><em>" + b[1] + "</em></span>"; }).join("");
       var yt = FO_YT[p._ytier || "raw"] || FO_YT.raw;
-      return "<div class='fo-yc" + (p._ytier === "gen" ? " fo-yc-genc" : "") + "'>" +
-        "<div class='fo-yc-h'>" + flag + " <b class='fo-yc-view' data-i='" + i + "'>" + E(p.name) + "</b></div>" +
-        "<div class='fo-yc-meta'>" + foRoleShort(p) + " · age " + p.age + " · OVR " + ((p.rating || 0) / 1000).toFixed(1) + "</div>" +
-        "<div><span class='fo-yt fo-yt-" + (p._ytier || "raw") + "'>" + yt.lbl + "</span></div>" +
-        "<div class='fo-yc-bars'>" + barHtml + "</div>" +
-        "<div class='fo-yc-money'><span>Fee <b>Free</b></span><span>Wage <b>" + FO$(foDailyWage(p)) + "/matchday</b></span></div>" +
-        "<button class='fo-yc-sign' data-i='" + i + "'" + (signBlock ? " disabled title='" + E(signBlock) + "'" : "") + ">" + (signBlock || "Sign") + "</button>" +
-        "</div>";
+      var act = "<button class='pkm-act fo-ycsign-mini' data-i='" + i + "'" + (signBlock ? " disabled title='" + E(signBlock) + "'" : "") + ">" + (signBlock || "Sign") + "</button>";
+      var foot = "<span class='pkm-fee'>Free &middot; " + FO$(foDailyWage(p)) + "/day</span>" + act;
+      return "<div class='pkm-cell fo-yc-cell" + (p._ytier === "gen" ? " pkm-gen" : "") + "' data-i='" + i + "'>" +
+        foPkMini(p, { tag: yt.lbl, foot: foot }) + "</div>";
     }).join("") || "<div class='small'>The scout came back empty-handed; reveal again next window.</div>";
     var scoutNote = st.youthPending.length
       ? "<b>" + E(st.youthPending[0].name) + "</b> has agreed terms · the signing completes after the next matchday."
@@ -18081,10 +18121,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       scoutBody = "<div class='fo-yc-note'>" + scoutNote + " The scout is ready to travel again.</div>" +
         "<div class='ctlrow' style='margin:8px 0'><span class='small'>Next trip:</span>" + natSel +
         "<button class='fo-yc-sign' id='fo-yc-reveal'>&#128269; Reveal a new shortlist</button></div>" +
-        "<div class='fo-ycs'>" + scoutCards + "</div>";
+        "<div class='pkm-grid'>" + scoutCards + "</div>";
     } else {
       scoutBody = "<div class='fo-yc-note'>" + scoutNote + " Scouted in <b>" + E((st.scoutReveal.nat || foScoutDefaultNat())) + "</b>; a new shortlist can be revealed in <b>" + revealIn + "</b> matchday(s).</div>" +
-        "<div class='fo-ycs'>" + scoutCards + "</div>";
+        "<div class='pkm-grid'>" + scoutCards + "</div>";
     }
 
     page.innerHTML =
@@ -18122,7 +18162,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       m.querySelector("#fo-tr-howx").addEventListener("click", function () { m.remove(); });
     });
 
-    page.querySelectorAll(".fo-yc-sign[data-i]").forEach(function (b) { b.addEventListener("click", function () { foSignYouth(scouts[+b.getAttribute("data-i")]); }); });
+    page.querySelectorAll(".fo-ycsign-mini[data-i]").forEach(function (b) { b.addEventListener("click", function () { foSignYouth(scouts[+b.getAttribute("data-i")]); }); });
     var natS = page.querySelector("#fo-yc-nat");
     if (natS) natS.addEventListener("change", function () { var st2 = foTrainState(); st2.scoutNat = natS.value; foTrainSave(st2); });
     var revealB = page.querySelector("#fo-yc-reveal");
@@ -18135,7 +18175,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       toast("The scout is back from " + nat2 + " with three names.");
       foTrainingPage();
     });
-    page.querySelectorAll(".fo-yc-view").forEach(function (b) { b.addEventListener("click", function () { foYouthDetail(scouts[+b.getAttribute("data-i")]); }); });
+    page.querySelectorAll(".fo-yc-cell[data-i]").forEach(function (c) { c.addEventListener("click", function (ev) { if (ev.target.closest("button")) return; foYouthDetail(scouts[+c.getAttribute("data-i")]); }); });
   }
   // The engine's own hashchange handler calls its INTERNAL route (bypassing the
   // window.route wrapper) and falls back to the club page for hashes it doesn't
@@ -19291,53 +19331,35 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // expanded, so it's obvious the rows open and close
       if (!squadView.__seeded && shown.length) { squadView.__seeded = 1; squadView.open[shown[0].name] = true; }
 
-      var head = "<div class='fo-sq-head'><span>Player</span><span>Age</span><span class='fo-sq-form'>Form / energy</span><span>Bat</span><span>Bowl</span><span style='text-align:right'>OVR</span><span class='fo-sq-hwage' style='text-align:right'>Wage</span><span class='fo-sq-caret'></span></div>";
-      var rows = shown.map(function (p) {
+      var rows = "<div class='pkm-grid'>" + shown.map(function (p) {
         var fi = p.formIx == null ? 3 : p.formIx;
-        var fb = fi <= 1 ? "fo-fb-lo" : fi === 2 ? "fo-fb-sh" : fi === 3 ? "fo-fb-md" : "fo-fb-hi";
         var en = foEnergyOf(p);
         var enCol = en.tired ? "#DC2626" : en.word === "rested" ? "#4DA6A2" : "#16A34A";
-        var enCls = en.tired ? "fo-mfx-lo" : en.word === "rested" ? "fo-mfx-md" : "fo-mfx-hi";
-        var fCls = fi <= 1 ? "fo-mfx-lo" : fi === 2 ? "fo-mfx-sh" : fi === 3 ? "fo-mfx-md" : "fo-mfx-hi";
-        var traj = (p.age || 25) <= 24 ? "<i class='up' title='improving with age'>&#8599;</i>" : (p.age || 25) <= 29 ? "<i title='peak years'>&ndash;</i>" : "<i class='dn' title='past peak'>&#8600;</i>";
-        var tchips = (p.talents || []).slice(0, 2).map(function (t2) { return "<span class='fo-sq-talent' title='" + E(TALTIPS[t2] || "") + "'>" + E(ptal(t2)) + "</span>"; }).join("");
-        if ((p.talents || []).length > 2) tchips += "<span class='fo-sq-talent'>+" + (p.talents.length - 2) + "</span>";
         var onlyK = hlName && p.name === hlName;
-        if (onlyK) tchips += "<span class='fo-sq-talent fo-sq-t-warn'>Only keeper</span>";
-        var sub = prole(p.role) + " · " + (p.hand === "L" ? "LHB" : "RHB") + (p.btLabel && !/does not/i.test(p.btLabel) ? " / " + E(p.btLabel) : "");
-        var open = !!squadView.open[p.name];
-        return "<div class='fo-sqr-row" + (onlyK ? " fo-sq-warnrow" : "") + "' data-n='" + E(p.name) + "'>" +
-          "<div class='fo-sq-nm'>" + flag(p.nat) + " " + playerLink(p) + (p._nick ? "<span class='fo-sq-nickchip'>“" + E(p._nick) + "”</span>" : "") + (p.keeper ? " <span title='wicketkeeper'>&dagger;</span>" : "") + (p.__y ? "<span class='fo-sq-talent'>U20</span>" : "") + (p.fatigue === "tired" ? "<span class='fo-sq-tired' title='tired · recovers next match or with Rest'>TIRED</span>" : "") + tchips +
-          "<div class='fo-sq-sub'>" + sub + "</div></div>" +
-          "<div class='fo-sq-age'>" + (p.age | 0) + " " + traj + "</div>" +
-          "<div class='fo-sq-form'>" + (fi !== 3 ? "<span class='fo-fb " + fb + "' title='" + FORMTIP + "'>" + FORMW_UI[fi] + "</span>" : "") +
-          "<span class='fo-sq-enb' title='Energy: " + en.word + (en.tired ? " - recovers with the Rest program" : "") + "'><i style='width:" + en.pct + "%;background:" + enCol + "'></i></span></div>" +
-          foSqSkillCell(aggBat(p), false, "Batting") +
-          foSqSkillCell(p.bowlType ? aggBowl(p) : aggBowl(p), !p.bowlType, "Bowling") +
-          "<div class='fo-sq-ovr' title='Overall rating (rating / 1,000)'>" + Math.round((p.rating || 0) / 1000) + "</div>" +
-          "<div class='fo-sq-wage'>$" + (p.wage || 0).toLocaleString() + "<i>per matchday</i></div>" +
-          "<div class='fo-sq-caret'>" + (open ? "&#9662;" : "&#9656;") + "</div>" +
-          ((fi !== 3 || en.word !== "fresh")
-            ? "<div class='fo-sq-mfx'>" + (fi !== 3 ? "<span><i>Form</i> <b class='" + fCls + "'>" + FORMW_UI[fi] + "</b></span>" : "") + (en.word !== "fresh" ? "<span><i>Energy</i> <b class='" + enCls + "'>" + en.word + "</b><span class='fo-sq-enb fo-sq-enb-m' title='" + en.pct + "%'><i style='width:" + en.pct + "%;background:" + enCol + "'></i></span></span>" : "") + "</div>"
-            : "") + "</div>" +
-          (open ? foSqDetail(p, !!p.__y) : "");
-      }).join("");
-      var foot = "<div class='fo-sq-foot'>Rows expand on click for full attributes and talents · training assignments live on the <a href='#/training'>Training page</a></div>";
+        var sub = prole(p.role) + " &middot; age " + (p.age | 0) + (p.__y ? " &middot; U20" : "");
+        var chips = "";
+        if (p.fatigue === "tired") chips += "<span class='pkm-chip pkm-chip-lo' title='tired · recovers next match or with Rest'>TIRED</span>";
+        if (fi !== 3) chips += "<span class='pkm-chip' title='" + FORMTIP + "'>Form: " + FORMW_UI[fi] + "</span>";
+        if (onlyK) chips += "<span class='pkm-chip pkm-chip-lo'>Only keeper</span>";
+        var foot = "<span class='pkm-fee'>Wage <b>$" + (p.wage || 0).toLocaleString() + "</b></span>" +
+          "<span class='pkm-energy' title='Energy: " + en.word + (en.tired ? " - recovers with the Rest program" : "") + "'><i>Energy</i><u><b style='width:" + en.pct + "%;background:" + enCol + "'></b></u></span>";
+        return "<div class='pkm-cell" + (onlyK ? " pkm-warn" : "") + "' data-n='" + E(p.name) + "'>" +
+          foPkMini(p, { sub: sub + (chips ? "<span class='pkm-chips'>" + chips + "</span>" : ""), foot: foot }) + "</div>";
+      }).join("") + "</div>";
+      var foot = "<div class='fo-sq-foot'>Tap a card for the full player profile · training assignments live on the <a href='#/training'>Training page</a></div>";
 
       var page = document.getElementById("page"); if (!page) return;
-      page.innerHTML = (typeof crumb === "function" ? crumb(t.name, "Squad") : "") + strip + warnHtml + tools + head + rows + foot;
+      page.innerHTML = (typeof crumb === "function" ? crumb(t.name, "Squad") : "") + strip + warnHtml + tools + rows + foot;
 
       // wiring (listeners, not inline handlers · names stay quote-safe)
       page.querySelectorAll(".fo-sq-pill").forEach(function (b) { b.addEventListener("click", function () { squadView.roleF = b.getAttribute("data-f"); pgSquad(); }); });
       var so = page.querySelector("#fo-sq-sort");
       if (so) so.addEventListener("change", function () { squadView.sortK = so.value; pgSquad(); });
       page.querySelectorAll(".fo-sq-fix").forEach(function (b) { b.addEventListener("click", function (ev) { ev.stopPropagation(); location.hash = b.getAttribute("data-go"); }); });
-      page.querySelectorAll(".fo-sqr-row").forEach(function (r) {
+      page.querySelectorAll(".pkm-cell[data-n]").forEach(function (r) {
         r.addEventListener("click", function (ev) {
           if (ev.target.closest("a") || ev.target.closest("button")) return;
-          var n = r.getAttribute("data-n");
-          squadView.open[n] = !squadView.open[n];
-          pgSquad();
+          location.hash = "#/player?n=" + encodeURIComponent(r.getAttribute("data-n"));
         });
       });
       page.querySelectorAll(".fo-sq-promote").forEach(function (b) {
