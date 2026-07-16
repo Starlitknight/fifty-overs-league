@@ -5173,7 +5173,7 @@
                 '<div class="folsmall" style="margin-top:4px">' +
                 (allReady ? "" : "Clubs still drafting join automatically when they finish · they take over a bot club. ") +
                 (solo ? "Empty slots fill with bot clubs to make a full 10-team league." : "") + "</div>" +
-                (SYNC.started ? '<button class="mini" data-act="relaunch" style="margin-top:8px;background:#5a2620;border-color:#7a3a30;color:#f0d0c8">Relaunch league · new format, everyone re-founds ▸</button>' : "")
+                (SYNC.started ? '<button class="mini" data-act="relaunch" style="margin-top:8px;background:#5a2620;border-color:#7a3a30;color:#f0d0c8">Relaunch league · new era, everyone re-founds ▸</button>' : "")
               : '<div class="folsmall">The season starts once at least one club has drafted.</div>') +
             '<div style="margin-top:8px"><button class="mini" data-act="mkInvite">Create invite code</button> <span id="folInvite" class="folsmall"></span></div>' +
           "</div>"
@@ -5320,10 +5320,10 @@
       openWrap(true); setNavy(true);
       var who = wrap.querySelector("#folWho"); if (who) who.textContent = LG ? LG.name : "";
       main.innerHTML = folAuthShell(
-        "<h1>A new season is starting</h1>" +
-        '<div class="fol-sub">Your commissioner has relaunched the league with a new format. Old clubs are retired with honour - everyone founds a fresh one and the table starts from zero.</div>' +
+        "<h1>A new era is starting</h1>" +
+        '<div class="fol-sub">The game has been rebuilt and your commissioner has relaunched the league. Old clubs are retired with honour - everyone founds a fresh club and the table starts from zero.</div>' +
         '<div class="fol-form">' +
-        '<div class="folsmall" style="line-height:1.6;margin-bottom:4px">Founding a club now takes about two minutes: pick a <b>name</b>, a <b>home pitch</b> and the <b>kind of team</b> you want. The squad, the money and a suggested first XI are all handled - your first match plays at <b>9:00 AM ET</b>.</div>' +
+        '<div class="folsmall" style="line-height:1.6;margin-bottom:4px">Founding a club is a whole new experience now: the <b>Gaffer</b> walks you through naming your club, choosing its soul, spending your first million and a live warm-up friendly. League matches play at <b>9:00 AM ET</b>.</div>' +
         '<button class="fol-cta" data-act="refound">Found my new club ▸</button>' +
         "</div>" +
         '<div class="fol-links"><a class="fol-mut" data-act="logout">Log out</a></div>' + FOOT);
@@ -5347,7 +5347,7 @@
   // quick-start strength budget), stamp the new era, push round 0, and walk
   // straight into the new onboarding yourself.
   function relaunchLeague() {
-    var sure = confirm("Relaunch the league with the new format?\n\nEvery current club is retired, the table and results reset, and every manager - including you - founds a fresh club through the new three-step onboarding. Managers see a note explaining the relaunch the next time they open the game.\n\nThis cannot be undone.");
+    var sure = confirm("Relaunch the league for the new era?\n\nEvery current club is retired, the table and results reset, and every manager - including you - founds a fresh club through the new Gaffer-led founding journey. Managers see a note explaining the relaunch the next time they open the game.\n\nThis cannot be undone.");
     if (!sure) return;
     try {
       var epoch = Date.now();
