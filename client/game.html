@@ -8045,7 +8045,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (!document.getElementById("fo-font")) {
       var fl = document.createElement("link");
       fl.id = "fo-font"; fl.rel = "stylesheet";
-      fl.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap";
+      fl.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oswald:wght@400;500;600;700&family=Spline+Sans:wght@400;500;600&display=swap";
       document.head.appendChild(fl);
     }
   } catch (e) {}
@@ -10465,7 +10465,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           // is the manager's OWN match: they keep the speed select and the
           // turbo option. Broadcast pacing is for league viewing and replays.
           var __mine = false;
-          try { __mine = !!(typeof M !== "undefined" && M && !M.done && M.meta && M.meta.comp === "friendly" && !__rep); } catch (e) {}
+          try { __mine = !!(typeof M !== "undefined" && M && M.meta && ((!M.done && M.meta.comp === "friendly" && !__rep) || M.meta.__tut)); } catch (e) {}
           if (!__mine) {
             var __want = __rep ? 3000 : 6000;
             if (UI.apMs !== __want) {
@@ -10788,7 +10788,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260715-2250-faaf93";
+  var FO_BUILD = "20260716-1552-30b5a2";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -12066,7 +12066,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   var FO_TAKEOVER_ON = false;          // later seasons: take over a bot club (S1: off)
   // shared strength budget (best-XI weighted engine-rating sum) every squad is
   // normalised onto - same total, different shape. Measured by the harness.
-  var FO_QS_T = (window.__FO_QS_T_OVERRIDE != null ? +window.__FO_QS_T_OVERRIDE : 2200);   // test hook: harness can pin/disable the budget
+  var FO_QS_T = (window.__FO_QS_T_OVERRIDE != null ? +window.__FO_QS_T_OVERRIDE : 1700);   // test hook: harness can pin/disable the budget
 
   // One config object per archetype: the card copy AND the real generation
   // biases live together so they can never drift apart.
@@ -12192,7 +12192,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var firsts = {}, lasts = {};
     var out = FO_CAPT_FLAVOURS.map(function (F) {
       var rnd = window.rng(foHash32(String(seed) + "|cap|" + archId + "|" + F.id));
-      var p = foQsPlayer({ role: st.role || "topOrderBat", age: F.age, q: Math.min(0.99, 0.97 * (F.q || 1)) }, country, rnd, firsts, lasts);
+      var p = foQsPlayer({ role: st.role || "topOrderBat", age: F.age, q: Math.min(0.99, 0.30 * (F.q || 1)) }, country, rnd, firsts, lasts);
       p.capt = F.capt;
       p.exp = Math.max(2, Math.min(99, Math.round(p.exp + (F.expAdj || 0)))); p.expWord = foExpWordOf(p.exp);
       if (F.stamMult) p.skills.stamina = Math.max(4, Math.min(96, Math.round(p.skills.stamina * F.stamMult)));
@@ -14126,9 +14126,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-j-pros{font-size:12px;line-height:1.55;color:#2E7A3C;font-weight:600;text-align:left}.fo-j-pros .w{color:#B23A2E}" +
       ".fo-j-prev{background:#FFFEFC;border:1px solid rgba(16,27,45,.16);border-radius:14px;padding:14px 18px;margin-top:12px;text-align:left;max-width:680px;margin-left:auto;margin-right:auto}" +
       ".fo-j-pl{display:flex;gap:8px;font-size:13.5px;padding:3px 0;color:#4a5568}.fo-j-pl i{font-style:normal;font-weight:700;color:#101B2D;flex:0 0 128px}" +
-      ".fo-j-money{width:100%;max-width:520px;margin:12px auto;border-collapse:collapse;font-size:15px}" +
-      ".fo-j-money td{padding:9px 12px;border-bottom:1px solid rgba(16,27,45,.12);text-align:left;color:#4a5568}.fo-j-money td:last-child{text-align:right;font-weight:700;color:#101B2D;font-variant-numeric:tabular-nums}" +
-      ".fo-j-money tr.g td{font-weight:700;color:#101B2D}.fo-j-money tr.g td:last-child{font-size:18px;color:#2E7A3C}.fo-j-money td.neg{color:#B23A2E}.fo-j-money tr.r td{font-weight:600;border-bottom:none}.fo-j-money tr.r td:last-child{color:#2E7A3C;font-size:16px}" +
+      ".fo-j-ledger{background:#FBF7EA;border:1px solid #d8d0b8;border-radius:8px;max-width:560px;margin:14px auto 4px;padding:16px 20px 10px;box-shadow:0 3px 10px rgba(16,27,45,.08);text-align:left}" +
+      ".fo-j-ledger .lmast{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:#8a7b4f;border-bottom:2px solid #101B2D;padding-bottom:6px;flex-wrap:wrap}" +
+      ".fo-j-money{width:100%;margin:2px auto 0;border-collapse:collapse;font-size:14.5px}" +
+      ".fo-j-money td{padding:10px 2px;border-bottom:1px solid rgba(138,123,79,.28);text-align:left;color:#4a5568}.fo-j-money td:last-child{text-align:right;font-weight:600;color:#101B2D;font-variant-numeric:tabular-nums;white-space:nowrap;padding-left:14px}" +
+      ".fo-j-money .nt{display:block;font-size:11px;color:#8a7b4f;letter-spacing:.3px;margin-top:1px}" +
+      ".fo-j-money tr.g td{color:#101B2D;font-weight:600}.fo-j-money tr.g td:last-child{font-size:17px}.fo-j-money td.neg{color:#B23A2E}.fo-j-money td.pos{color:#2E7A3C}" +
+      ".fo-j-money tr.r td{font-weight:600;border-bottom:none;border-top:3px double #101B2D;color:#101B2D}.fo-j-money tr.r td:last-child{color:#2E7A3C;font-size:17px}" +
+      ".fo-j-card .bk{display:block;margin-top:10px;padding-top:9px;border-top:1px dashed rgba(16,27,45,.2)}" +
+      ".fo-j-card .bk i{display:block;font-style:normal;font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;color:#8a90a0}" +
+      ".fo-j-card .bk b{font-size:17px;color:#2E7A3C;letter-spacing:.5px}" +
       ".fo-j-choice{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;max-width:760px;margin:10px auto}" +
       ".fo-j-card{background:#FFFEFC;border:2px solid rgba(16,27,45,.14);border-radius:14px;padding:16px;text-align:center;cursor:pointer;font:inherit;transition:border-color .15s,transform .15s}" +
       ".fo-j-card:hover{border-color:#C8674A;transform:translateY(-2px)}" +
@@ -14167,7 +14174,36 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "html body #fo-onb .fo-j-dbox:focus,html body.ftpskin #fo-onb .fo-j-dbox:focus{background:#FFFEFC !important}" +
       "html body #fo-onb .fo-j-chip,html body.ftpskin #fo-onb .fo-j-chip{background:#FFFEFC !important;color:#101B2D !important;border:1px solid rgba(16,27,45,.25) !important}" +
       "html body #fo-onb .fo-j-chip.on,html body.ftpskin #fo-onb .fo-j-chip.on{background:#101B2D !important;color:#F5EFDC !important;border-color:#101B2D !important}" +
-      "html body #fo-onb .fo-j-pick .fo-j-prow,html body.ftpskin #fo-onb .fo-j-pick .fo-j-prow{background:#FFFEFC !important}";
+      "html body #fo-onb .fo-j-pick .fo-j-prow,html body.ftpskin #fo-onb .fo-j-pick .fo-j-prow{background:#FFFEFC !important}" +
+      // Typography: the prototype's voice. The app-wide sheet forces Inter on
+      // #fo-onb with !important, so these carry the specificity to win it back:
+      // Spline Sans for prose, Oswald for headers/labels/CTAs, Georgia for the
+      // newspaper. Weights come DOWN across the board - elegance over bold.
+      "html body #fo-onb .fo-ob-shell,html body #fo-onb .fo-ob-shell button,html body #fo-onb .fo-ob-shell input,html body #fo-onb .fo-ob-shell select{font-family:'Spline Sans','Inter',ui-sans-serif,system-ui,sans-serif !important}" +
+      "html body #fo-onb .fo-j-chap,html body #fo-onb .fo-j-chap span,html body #fo-onb .fo-j-badge b,html body #fo-onb .fo-j-dbox .sp,html body #fo-onb .fo-j-gbox .sp,html body #fo-onb .fo-j-marq,html body #fo-onb .fo-j-rule b,html body #fo-onb .fo-j-soul .nm,html body #fo-onb .fo-j-card h3,html body #fo-onb .fo-j-sec,html body #fo-onb .fo-j-stat span,html body #fo-onb .fo-j-bar,html body #fo-onb .fo-j-rivnm,html body #fo-onb .fo-j-stamp,html body #fo-onb .fo-ob-h1,html body #fo-onb .fo-ob-eyebrow,html body #fo-onb .fo-ob-lbl,html body #fo-onb .fo-ob-shell .fo-ob-cta,html body #fo-onb .fo-ob-shell .fo-ob-ghost{font-family:'Oswald','Inter',sans-serif !important}" +
+      "html body #fo-onb .fo-ob-h1{font-weight:600 !important;text-transform:uppercase;letter-spacing:1.5px;font-size:clamp(22px,4.6vw,30px);color:#101B2D}" +
+      "html body #fo-onb .fo-ob-eyebrow{font-weight:500 !important;letter-spacing:3px !important}" +
+      "html body #fo-onb .fo-ob-lbl{font-weight:500 !important;letter-spacing:.14em !important;color:#6b7280 !important;font-size:11.5px !important}" +
+      "html body #fo-onb .fo-ob-cta{font-weight:600 !important;letter-spacing:1px !important;text-transform:uppercase !important}" +
+      "html body #fo-onb .fo-ob-ghost{font-weight:500 !important;letter-spacing:1px !important;text-transform:uppercase !important;font-size:13px !important}" +
+      "html body #fo-onb .fo-j-dbox .tx{font-weight:400}" +
+      "html body #fo-onb .fo-j-gbox .tx{font-weight:400}" +
+      "html body #fo-onb .fo-j-chap span{font-weight:500 !important}" +
+      "html body #fo-onb .fo-j-badge b,html body #fo-onb .fo-j-dbox .sp,html body #fo-onb .fo-j-gbox .sp{font-weight:500 !important}" +
+      "html body #fo-onb .fo-j-marq{font-weight:700 !important;letter-spacing:4px}" +
+      "html body #fo-onb .fo-j-soul .nm,html body #fo-onb .fo-j-rivnm{font-weight:600 !important}" +
+      "html body #fo-onb .fo-j-sec,html body #fo-onb .fo-j-card h3{font-weight:600 !important}" +
+      "html body #fo-onb .fo-j-pros{font-weight:500}" +
+      "html body #fo-onb .fo-j-pnm{font-weight:600}" +
+      "html body #fo-onb .fo-j-wire,html body #fo-onb .fo-j-wire p,html body #fo-onb .fo-j-wire .by,html body #fo-onb .fo-j-wcap{font-family:Georgia,'Times New Roman',serif !important}" +
+      "html body #fo-onb .fo-j-wire .mast,html body #fo-onb .fo-j-wire .dl,html body #fo-onb .fo-j-wire h3{font-family:'Oswald',sans-serif !important;font-weight:600}" +
+      "html body #fo-onb .fo-j-ledger .lmast,html body #fo-onb .fo-j-money td:last-child,html body #fo-onb .fo-j-card .bk i,html body #fo-onb .fo-j-card .bk b{font-family:'Oswald','Inter',sans-serif !important}" +
+      // the warm-up banner lives OUTSIDE #fo-onb, pinned on the live match page
+      "#fo-j-tutbar{background:#101B2D;color:#F5EFDC;border:1.5px solid #C9A24B;border-radius:12px;padding:12px 16px 13px;margin:0 0 14px;text-align:center}" +
+      "#fo-j-tutbar .t1{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2.5px;color:#D9B75A;text-transform:uppercase}" +
+      "#fo-j-tutbar .t2{font-family:'Oswald',sans-serif;font-weight:700;font-size:clamp(24px,5vw,38px);letter-spacing:2px;text-transform:uppercase;line-height:1.12;margin:3px 0 4px}" +
+      "#fo-j-tutbar .t2 .vs{font-size:.42em;font-weight:500;color:#b9b29a;letter-spacing:1.5px}" +
+      "#fo-j-tutbar .t3{font-size:12.5px;color:#cfc9b4;line-height:1.5;max-width:640px;margin:0 auto}";
     document.head.appendChild(st);
   })();
 
@@ -14252,7 +14288,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
   function foJCreate() {
     var mgr0 = FO_ONB.mgr || (SYNC && SYNC.me && SYNC.me.display_name) || "Manager";
-    var ctyLocked = !FO_ONB.needsSetup;
+    var ctyLocked = false;   // choosable until commit - create_league_team upserts name+country
     var body = "<div class='fo-j-dwrap'>" +
       "<h1 class='fo-ob-h1' style='text-align:center'>Create your club</h1>" +
       "<div class='fo-j-cert'><div class='fo-j-stamp'>LEAGUE<br>OFFICE<br>2026</div>" +
@@ -14294,7 +14330,21 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       FO_ONB.ground = nm + " Oval";
       if (!FO_ONB.country) FO_ONB.country = NAT[0];
       try { App.founder.name = nm; App.founder.mgr = FO_ONB.mgr; } catch (e) {}
-      foJFounded();
+      // League clubs live on the server: the row (name + country) must be
+      // saved BEFORE anything downstream - the squad seed comes back with it.
+      // create_league_team upserts, so a rename or a country change re-saves.
+      if (!LG || (FO_ONB.team && !FO_ONB.needsSetup && nm === FO_ONB.team.name && (FO_ONB.country || "") === (FO_ONB.team.country || ""))) { foJFounded(); return; }
+      var btn = host.querySelector("#fo-j-go"); btn.disabled = true; btn.textContent = "Saving…";
+      rpc("create_league_team", { p_league_id: LG.id, p_team_name: nm, p_manager_name: (SYNC && SYNC.me && SYNC.me.display_name) || "Manager", p_country: FO_ONB.country })
+        .then(function (team) {
+          SYNC.myTeam = team; FO_ONB.team = team; FO_ONB.needsSetup = false;
+          FO_ONB.country = team.country || FO_ONB.country;
+          FO_ONB.genSeed = null;   // pick up the server-issued draft seed
+          App.founder.pool = buildCountryPool(team.draft_seed || nm, team.country || FO_ONB.country);
+          if (App.founder.__league) App.founder.__league.team_id = team.id;
+          foJFounded();
+        })
+        .catch(function (e) { btn.disabled = false; btn.textContent = "Put it on the honours board"; say(e); });
     });
   }
   function foJFounded() {
@@ -14407,18 +14457,19 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     } catch (e) { say(e); return; }
     var sp = foSponsorById("community");
     var body = "<div class='fo-j-dwrap' style='text-align:center'>" +
-      "<h1 class='fo-ob-h1'>Your first million</h1>" +
+      "<div class='fo-ob-eyebrow'>The books</div><h1 class='fo-ob-h1'>Your first million</h1>" +
+      "<div class='fo-j-ledger'><div class='lmast'><span>Founding account &middot; " + E(FO_ONB.clubName || "Your club") + "</span><span>Season one</span></div>" +
       "<table class='fo-j-money'><tr class='g'><td>Founding grant</td><td>" + FO$(1000000) + "</td></tr>" +
-      "<tr><td>Core squad signings (" + gen.players.length + " players)</td><td class='neg'>&minus;" + FO$(fees) + "</td></tr>" +
-      "<tr><td>Wage bill</td><td class='neg'>&minus;" + FO$(wages) + " / matchday</td></tr>" +
-      "<tr><td>Sponsor income (" + E(sp.name) + ", flat, no strings)</td><td style='color:#2E7A3C'>+" + FO$(sp.base) + " / matchday</td></tr>" +
-      "<tr class='r'><td>Bank on day one</td><td>" + FO$(1000000 - fees) + "</td></tr></table>" +
+      "<tr><td>Core squad signings <span class='nt'>" + gen.players.length + " players</span></td><td class='neg'>&minus;" + FO$(fees) + "</td></tr>" +
+      "<tr><td>Wage bill <span class='nt'>per matchday</span></td><td class='neg'>&minus;" + FO$(wages) + "</td></tr>" +
+      "<tr><td>Sponsor income <span class='nt'>" + E(sp.name) + ", flat, no strings</span></td><td class='pos'>+" + FO$(sp.base) + "</td></tr>" +
+      "<tr class='r'><td>Bank on day one</td><td>" + FO$(1000000 - fees) + "</td></tr></table></div>" +
       foJGbox("There's no wrong answer here. There are two wrong answers if you dither.") +
       "<p class='fo-ob-lead' style='text-align:center;margin-top:6px'>Spend the rest of the room on:</p>" +
       "<div class='fo-j-choice'>" +
-      "<button type='button' class='fo-j-card' data-r='bench'><h3>A deeper bench</h3><div class='fx'>Two extra squad players (" + benchN + " total). Cover for everything.<br><b>Bank on day one: " + FO$(benchBank) + "</b></div></button>" +
-      "<button type='button' class='fo-j-card' data-r='marquee'><h3>A marquee signing</h3><div class='fx'>One star, two fewer core signings (" + mqN + " total). Quality over depth.<br><b>Bank on day one: " + FO$(mqLo) + "&ndash;" + FO$(mqHi) + "</b></div></button>" +
-      "<button type='button' class='fo-j-card' data-r='cash'><h3>Keep the cash</h3><div class='fx'>The standard " + cashN + "-man squad, maximum flexibility.<br><b>Bank on day one: " + FO$(1000000 - fees) + "</b></div></button>" +
+      "<button type='button' class='fo-j-card' data-r='bench'><h3>A deeper bench</h3><div class='fx'>Two extra squad players (" + benchN + " total). Cover for everything.</div><span class='bk'><i>Bank on day one</i><b>" + FO$(benchBank) + "</b></span></button>" +
+      "<button type='button' class='fo-j-card' data-r='marquee'><h3>A marquee signing</h3><div class='fx'>One star, two fewer core signings (" + mqN + " total). Quality over depth.</div><span class='bk'><i>Bank on day one</i><b>" + FO$(mqLo) + "&ndash;" + FO$(mqHi) + "</b></span></button>" +
+      "<button type='button' class='fo-j-card' data-r='cash'><h3>Keep the cash</h3><div class='fx'>The standard " + cashN + "-man squad, maximum flexibility.</div><span class='bk'><i>Bank on day one</i><b>" + FO$(1000000 - fees) + "</b></span></button>" +
       "</div></div>";
     var host = foJMount(0, body);
     host.querySelectorAll(".fo-j-card").forEach(function (b) {
@@ -14710,16 +14761,62 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       App.defaults = JSON.parse(JSON.stringify(App.orders));
       FO_ONB.j.planNm = pl.nm;
       try { lsDel("fo_qs_tut"); } catch (e9) {}
-      foOnbClose();
-      toast("The Gaffer hands you the sheet. Your eleven walks out - watch, or ride the speed controls.");
-      location.hash = "#/match"; if (typeof window.route === "function") window.route();
-      App.orders.saved = false;
-      foJWatch();
+      // the broadcast walk-out: before the match page appears, the Gaffer
+      // explains what a warm-up is, that it plays itself, and where the speed
+      // control lives. The first over should never ambush a new manager.
+      var walkOut = function () {
+        try {
+          // walking pace for the first broadcast; the debrief restores the
+          // manager's own setting
+          try { if (typeof UI !== "undefined") { window.__foTutApMs = UI.apMs || 1600; UI.apMs = 3200; } } catch (eA) {}
+          foOnbClose();
+          location.hash = "#/match"; if (typeof window.route === "function") window.route();
+          App.orders.saved = false;
+          foJWatch();
+        } catch (eW) { say(eW); foOnbClose(); }
+      };
+      foJDbox(2, [
+        "Orders are in. Before you walk out - listen, this bit matters.",
+        "This is a warm-up. Nothing out there counts: no money, no league points, no career bruises. A dress rehearsal with a crowd.",
+        "The match plays itself, ball by ball, like a broadcast. You don't press a thing - the commentary tells you the story as it happens.",
+        "I've set the broadcast to a walking pace so you can read every ball. Want it quicker, or slower still? The commentary speed control sits at the top of the match page.",
+        "I'll fetch you at full time for the debrief. Off you go, boss. The first walk-out only happens once - enjoy it."
+      ], walkOut);
     } catch (e) { say(e); foOnbClose(); }
   }
+  // The warm-up banner: pinned above the live match page while the tutorial
+  // friendly runs. The manager's OWN club in lights, the opponent small, and
+  // one plain sentence about what's happening. renderMatch repaints #page on
+  // every ball, so the hook below re-pins it after each repaint.
+  function foJTutBar() {
+    try {
+      var tut = (typeof M !== "undefined" && M && M.meta && M.meta.__tut);
+      var bar = document.getElementById("fo-j-tutbar");
+      if (!tut || location.hash.indexOf("#/match") !== 0) { if (bar) bar.remove(); return; }
+      var page = document.getElementById("page");
+      if (!page) return;
+      var me = userTeam(); if (!me) return;
+      var opp = M.meta.home === me.name ? M.meta.away : M.meta.home;
+      if (!bar) { bar = document.createElement("div"); bar.id = "fo-j-tutbar"; }
+      if (bar.parentNode !== page || page.firstChild !== bar) page.insertBefore(bar, page.firstChild);
+      var status = M.done ? "Full time. The Gaffer is on his way over for the debrief."
+        : "This warm-up plays itself, ball by ball - nothing here counts. Adjust the commentary speed below; the Gaffer returns at full time.";
+      var html = "<div class='t1'>Warm-up friendly &middot; nothing counts</div>" +
+        "<div class='t2'>" + E(me.name) + " <span class='vs'>v " + E(opp || "") + "</span></div>" +
+        "<div class='t3'>" + status + "</div>";
+      if (bar.innerHTML !== html) bar.innerHTML = html;
+    } catch (e) {}
+  }
+  try {
+    if (typeof window.renderMatch === "function" && !window.renderMatch.__foJTut) {
+      var _rmJ = window.renderMatch;
+      window.renderMatch = function () { _rmJ.apply(this, arguments); foJTutBar(); };
+      window.renderMatch.__foJTut = 1;
+    }
+  } catch (eRM) {}
   function foJWatch() {
     try { if (window.__foTutIv) clearInterval(window.__foTutIv); } catch (e) {}
-    var started = Date.now();
+    var started = Date.now(), lastInns = -1, tossed = false;
     window.__foTutIv = setInterval(function () {
       try {
         if (Date.now() - started > 45 * 60000) { clearInterval(window.__foTutIv); window.__foTutIv = null; return; }
@@ -14728,14 +14825,27 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           if (!(typeof App !== "undefined" && App && App.pending && App.pending.__tut)) { clearInterval(window.__foTutIv); window.__foTutIv = null; }
           return;
         }
+        foJTutBar();
+        // staged notices: the new manager always knows which act they're in
+        if (!tossed && App.tossState && App.tossState.txt) { tossed = true; toast(App.tossState.txt); }
+        if (!M.done && typeof M.inns === "number" && M.inns !== lastInns) {
+          if (M.inns === 1 && lastInns === 0) {
+            var i1 = (M.innings || [])[0];
+            if (i1) toast("Innings break: " + i1.batTeam + " made " + i1.runs + ". The chase begins - " + (i1.runs + 1) + " to win.");
+          }
+          lastInns = M.inns;
+        }
         if (!M.done) return;
         clearInterval(window.__foTutIv); window.__foTutIv = null;
         setTimeout(foJDebrief, 2200);
       } catch (e) {}
-    }, 2000);
+    }, 900);
   }
   function foJDebrief() {
     try {
+      // hand the broadcast speed back to the manager's own setting
+      try { if (typeof UI !== "undefined" && window.__foTutApMs) { UI.apMs = window.__foTutApMs; window.__foTutApMs = null; } } catch (eS) {}
+      try { var tb = document.getElementById("fo-j-tutbar"); if (tb) tb.remove(); } catch (eT) {}
       var me = userTeam();
       var txt = (M && M.result && M.result.text) || "Full time.";
       var won = new RegExp("^" + me.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(txt);
