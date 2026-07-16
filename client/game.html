@@ -10788,7 +10788,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260716-2140-596aba";
+  var FO_BUILD = "20260716-2204-8b0b4f";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14239,6 +14239,18 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".pk-capt-row{align-items:stretch}.pk-capt-cell{cursor:pointer;position:relative}.pk-capt-cell .pk-frame{transition:box-shadow .15s}" +
       ".pk-capt-cell.on .pk-frame{box-shadow:0 0 0 4px rgba(200,103,74,.6),0 8px 22px rgba(16,27,45,.22)}" +
       ".pk-capt-flav{text-align:center;font-family:Oswald;font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#C8674A;margin-bottom:6px}" +
+      // player-page hero strip (art + card-consistent OVR / role label)
+      ".fo-plh{display:flex;align-items:center;gap:16px;background:linear-gradient(180deg,#FDFAF1,#F7F2E4);border:2px solid var(--tc);border-radius:14px;padding:11px 18px;margin:0 0 14px;box-shadow:0 3px 10px rgba(16,27,45,.1)}" +
+      ".fo-plh-art{width:72px;height:78px;flex:0 0 72px;display:grid;place-items:end center;background:radial-gradient(ellipse at 50% 92%,rgba(20,33,61,.13),transparent 62%)}" +
+      ".fo-plh-art img{max-height:76px;max-width:70px;width:auto;height:auto;object-fit:contain}" +
+      ".fo-plh-id{flex:1;min-width:0}" +
+      ".fo-plh-role{font-family:Oswald;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--tcD);font-weight:600}" +
+      ".fo-plh-name{font-family:Archivo,Oswald,sans-serif;font-weight:800;font-size:26px;color:#14213D;line-height:1.05}" +
+      ".fo-plh-name img{width:20px;vertical-align:-3px}" +
+      ".fo-plh-meta{font-size:13.5px;color:#5b6472;margin-top:2px}.fo-plh-meta img{width:19px;vertical-align:-3px}" +
+      ".fo-plh-ovr{text-align:center;flex:0 0 auto}" +
+      ".fo-plh-ovr b{font-family:Oswald;font-weight:600;font-size:40px;color:var(--tcD)}" +
+      ".fo-plh-ovr i{display:block;font-style:normal;font-family:Oswald;font-size:10px;letter-spacing:2px;color:#8a90a0;margin-top:-4px}" +
       "@media(max-width:640px){.fo-j-bars{grid-template-columns:1fr}.fo-j-dbox .tx{font-size:16px}}" +
       // the ftpskin sheet paints EVERY button (and its focus state) - out-gun it
       "html body #fo-onb .fo-j-soul,html body.ftpskin #fo-onb .fo-j-soul{background:#FFFEFC !important;color:#111827 !important;border:1.5px solid rgba(16,27,45,.16) !important}" +
@@ -14467,7 +14479,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     }).join("");
     var body = "<div>" +
       "<h1 class='fo-ob-h1' style='text-align:center'>Choose your club's identity</h1>" +
-      "<p class='fo-ob-lead' style='text-align:center;max-width:640px;margin:0 auto 6px'>This is the most important call you'll make: <b>it decides the players your club is founded with.</b> Pick The Pace Battery and your squad arrives full of fast bowlers; pick The Spin Circus and it's spinners. You can reshape the squad later through transfers and youth signings &mdash; nothing here is permanent.</p>" +
+      "<p class='fo-ob-lead' style='text-align:center;max-width:600px;margin:0 auto 6px'>Your choice here <b>decides the players your club is founded with</b> &mdash; and you can reshape the squad later.</p>" +
       "<div class='fo-j-souls'>" + cards + "</div><div id='fo-j-prev'>" + (FO_ONB.arch ? foJPrevHtml() : "") + "</div></div>";
     var host = foJMount(0, body);
     host.querySelectorAll(".fo-j-soul").forEach(function (b) {
@@ -20933,6 +20945,33 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var p = pl0.p;
       var t = foMyClub();
       var own = !!(t && (t.players || []).concat(t.youth || []).some(function (x) { return x.name === name; }));
+      // Card-consistency: a hero strip with the player's artwork, the card's
+      // 0-100 OVR and role label, plus the same fixes inside the info panel.
+      try {
+        var grid0 = page.querySelector(".fo-pl-grid") || page.querySelector(".grid2");
+        if (grid0 && !page.querySelector(".fo-plh")) {
+          var acH = FO_PK_AC[foPkKind(p)];
+          var handH = p.hand === "L" ? "LHB" : "RHB";
+          var btH = (p.btLabel && !/does not bowl/i.test(p.btLabel)) ? (" &middot; " + E(p.btLabel)) : "";
+          var hero = document.createElement("div");
+          hero.className = "fo-plh"; hero.style.cssText = "--tc:" + acH[0] + ";--tcD:" + acH[1];
+          hero.innerHTML = "<div class='fo-plh-art'><img src='client/art/" + foPkArt(p) + "' alt=''></div>" +
+            "<div class='fo-plh-id'><div class='fo-plh-role'>" + E(foPkRoleLbl(p)) + "</div>" +
+            "<div class='fo-plh-name'>" + E(foDisplayName(p)) + "</div>" +
+            "<div class='fo-plh-meta'>" + (foQsFlag(p.nat) || "") + " " + E(p.nat || "") + " &middot; age " + (p.age | 0) + " &middot; " + handH + btH + "</div></div>" +
+            "<div class='fo-plh-ovr'><b>" + foPkOvr(p) + "</b><i>OVR</i></div>";
+          grid0.parentNode.insertBefore(hero, grid0);
+          // card consistency inside the Player info panel (all engine layouts)
+          var topL = page.querySelector(".ftp-pinfo-top") || page.querySelector(".fo-pinfo-top");
+          if (topL) topL.innerHTML = topL.innerHTML.replace(/<b[^>]*>\s*\d[\d,]*\s*<\/b>\s*rating/i, "<b>OVR " + foPkOvr(p) + "</b>");
+          Array.prototype.forEach.call(page.querySelectorAll("#page .panel tr"), function (tr) {
+            var tds = tr.querySelectorAll("td"); if (tds.length < 2) return;
+            var lbl = (tds[0].textContent || "").trim();
+            if (/^Rating$/i.test(lbl)) tds[1].innerHTML = "<b>OVR " + foPkOvr(p) + "</b>";
+            else if (/^Role$/i.test(lbl)) tds[1].textContent = foPkRoleLbl(p);
+          });
+        }
+      } catch (ePh) {}
       var prov = p._prov;
       var homeTxt = ""; try { homeTxt = " · born in " + foHometown(p); } catch (eH) {}
       var estD = ""; try { estD = foClubEst(pl0.team); } catch (eE) {}
