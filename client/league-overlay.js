@@ -4515,7 +4515,7 @@
       // practice vs bots: bank the match and broadcast it ball by ball, the
       // same experience as friendlies and league matchdays
       try {
-        if (!window.__foPracRun && App && App.pending && App.pending.__friendly && !App.pending.__tut && App.orders && App.orders.saved && !(typeof M !== "undefined" && M && !M.done)) {
+        if (!window.__foPracRun && App && App.pending && App.pending.__friendly && !App.pending.__tut && !App.pending.__circuit && App.orders && App.orders.saved && !(typeof M !== "undefined" && M && !M.done)) {
           var cP = foPracBroadcast();
           if (cP && cP.id) {
             try { foFriendlies = (foFriendlies || []).filter(function (f) { return f.oppName !== cP.opponent_club; }); foFrSchedSave(); } catch (eSch) {}
@@ -9604,7 +9604,13 @@
       // Tiers roll deterministically from the reveal seed: mostly raw kids,
       // the good ones rare, and once in a generation a genuine jewel.
       var roll = foHash32(seedBase + "-tier-" + p.name) % 1000;
-      var tier = roll < 12 ? "gen" : roll < 95 ? "gift" : roll < 345 ? "prom" : "raw";
+      // a conquered Circuit nation's academy takes your calls: the same free
+      // lottery, but the good tickets come up two-and-a-half times as often
+      var acad = false;
+      try { acad = foCxAcademyNats().indexOf(nat) >= 0; } catch (eAc) {}
+      var tier = acad
+        ? (roll < 30 ? "gen" : roll < 210 ? "gift" : roll < 520 ? "prom" : "raw")
+        : (roll < 12 ? "gen" : roll < 95 ? "gift" : roll < 345 ? "prom" : "raw");
       foYouthBless(q, tier, seedBase);
       q.fee = 0;
       return q;
@@ -16755,6 +16761,367 @@
     document.head.appendChild(bcs);
     window.__foBcastTest = function (minsAgo) { lsSet(foBcastKey(), JSON.stringify({ round: foLastRoundIx(), t0: Date.now() - minsAgo * 60000 })); };
   })(); } catch (e) { console.warn("matchday theatre", e); }
+
+  // ==========================================================================
+  //  THE CIRCUIT - the solo world tour. Six cricketing nations, each a master
+  //  of one real-life skill; 2 minor clubs + a boss per nation, one 50-over
+  //  match each on THEIR conditions via the friendly plumbing. Beat the boss
+  //  to conquer the nation: trophy to the museum, prize money to the bank,
+  //  and that nation's youth academy opens for good (better scout odds).
+  //  Strict linear ladder. Progress is per-manager, on device.
+  // ==========================================================================
+  var FO_CX_REGIONS = [
+    { id: "eng", nm: "England", cty: "England", arch: "rock", type: "Swing & Graft", ac: "#2E7A3C",
+      pitch: "green", wx: "Overcast",
+      cond: "Green, overcast seamers. The ball talks all day; patient, correct cricket wins.",
+      gaffer: "Cloud cover and a green top. Leave well, bat time, and let their grafters die of boredom before you cash in.",
+      academy: "technically-correct batsmen and swing bowlers",
+      trophy: "The Long Room Urn", nats: ["England", "Ireland"],
+      clubs: [
+        { nm: "Tyke County CC", city: "Leeds", note: "dour opening pair", mult: 0.84 },
+        { nm: "The Southern Shires", city: "Canterbury", note: "gritty county pros", mult: 0.90 },
+        { boss: 1, nm: "Marylebone Old Guard", city: "London", capt: "master",
+          leader: "Sir Giles Pemberley", note: "bats time and never, ever gives it away", mult: 0.97 }
+      ] },
+    { id: "win", nm: "West Indies", cty: "West Indies", arch: "finisher", type: "Power & Flair", ac: "#B5892F",
+      pitch: "flat", wx: "Hot",
+      cond: "True, sun-baked deck and a lightning outfield. Big hitting, big grins, big totals.",
+      gaffer: "They swing hard and field harder. Choke the boundaries, take pace off, and make the showmen play the boring ball.",
+      academy: "power-hitters and big-hitting all-rounders",
+      trophy: "The Calypso Crown", nats: ["West Indies"],
+      clubs: [
+        { nm: "Windward Kings", city: "Bridgetown", note: "clean ball-strikers", mult: 0.88 },
+        { nm: "Sugar City CC", city: "Kingston", note: "carnival hitters", mult: 0.94 },
+        { boss: 1, nm: "The Calypso Titans", city: "Port of Spain", capt: "talisman",
+          leader: "King Emmanuel", note: "can win a match in ten overs flat", mult: 1.01 }
+      ] },
+    { id: "rsa", nm: "South Africa", cty: "South Africa", arch: "express", type: "Express Pace", ac: "#B23A2E",
+      pitch: "green", wx: "Windy",
+      cond: "Green, bouncy and quick. Survive the new ball or perish - and their cordon drops nothing.",
+      gaffer: "Raw pace, short stuff, catchers everywhere. See off the first ten, protect the tail, and cash in when the quicks tire.",
+      academy: "express fast bowlers and gun fielders",
+      trophy: "The Veldt Shield", nats: ["South Africa", "Zimbabwe"],
+      clubs: [
+        { nm: "Highveld Reef", city: "Johannesburg", note: "hostile quicks", mult: 0.92 },
+        { nm: "Cape Storm CC", city: "Cape Town", note: "gully-cordon hawks", mult: 0.98 },
+        { boss: 1, nm: "The Veldt Fire", city: "Durban", capt: "ironman",
+          leader: "Morné Steenkamp", note: "bowls thunderbolts and sets attacking fields", mult: 1.05 }
+      ] },
+    { id: "aus", nm: "Australia", cty: "Australia", arch: "blade", type: "Flat-Track Runs", ac: "#D08A12",
+      pitch: "flat", wx: "Scorching",
+      cond: "Flat, hard and true. Run-mountains on a road - you'll chase or defend a monster.",
+      gaffer: "Roads, son. Nothing in the pitch for anyone - it's your bat against theirs. Pack the top order and don't lose the toss.",
+      academy: "aggressive, high-strike-rate top-order batsmen",
+      trophy: "The Golden Bat", nats: ["Australia"],
+      clubs: [
+        { nm: "Goldfields CC", city: "Perth", note: "hard-running openers", mult: 0.96 },
+        { nm: "Outback Rovers", city: "Alice Springs", note: "relentless run-scorers", mult: 1.02 },
+        { boss: 1, nm: "The Sunburnt XI", city: "Melbourne", capt: "general",
+          leader: "Doug Cazaly", note: "a merciless run-machine who bats you out of the game", mult: 1.09 }
+      ] },
+    { id: "nzl", nm: "New Zealand", cty: "New Zealand", arch: "gloveman", type: "Safe Hands", ac: "#0E9E97",
+      pitch: "balanced", wx: "Chilly",
+      cond: "Fair, breezy, even bounce. Nothing lavish - ruthless discipline and nothing hits the grass.",
+      gaffer: "No freebies here. They squeeze every run and drop nothing. Run hard, rotate strike, and out-hit a modest attack.",
+      academy: "keeper-batsmen and disciplined seam bowlers",
+      trophy: "The Long White Cup", nats: ["New Zealand"],
+      clubs: [
+        { nm: "Kauri Coast CC", city: "Christchurch", note: "tidy medium-pacers", mult: 1.00 },
+        { nm: "Southern Cross XI", city: "Wellington", note: "canny keeper-bats", mult: 1.06 },
+        { boss: 1, nm: "The Longwhite XI", city: "Auckland", capt: "clutch",
+          leader: "Kane Whitcombe", note: "never drops a chance, never gives an inch", mult: 1.12 }
+      ] },
+    { id: "sub", nm: "The Subcontinent", cty: "India", arch: "wizard", type: "Spin Web", ac: "#7B45C4",
+      pitch: "dry", wx: "Humid",
+      cond: "Dry, dusty, sharp turn from over one. The ball grips, rips, and reads your footwork.",
+      gaffer: "The final exam. Sweep hard, use your feet, and pick the wrong'un early - because out here the pitch is on their side.",
+      academy: "spinners and wristy, spin-savvy batsmen",
+      trophy: "The Turning Trophy", nats: ["India", "Pakistan", "Sri Lanka", "Afghanistan"],
+      clubs: [
+        { nm: "Monsoon CC", city: "Colombo", note: "flighted off-spin", mult: 1.04 },
+        { nm: "The Maidan Kings", city: "Mumbai", note: "wristy mystery-spin", mult: 1.10 },
+        { boss: 1, nm: "The Dust Devils", city: "Lahore", capt: "talisman",
+          leader: "Vikram Anand", note: "bowls six different balls an over", mult: 1.18 }
+      ] }
+  ];
+  function foCxRegionByIx(ri) { return FO_CX_REGIONS[ri] || null; }
+  // nations whose youth academies you've unlocked by conquering their region
+  function foCxAcademyNats() {
+    var st = foCxState(), out = [];
+    FO_CX_REGIONS.forEach(function (r) { if ((st.conq || []).indexOf(r.id) >= 0) out = out.concat(r.nats || []); });
+    return out;
+  }
+  function foCxKey() { return "fo_cx_" + ((SYNC && SYNC.myMid) || "solo"); }
+  function foCxState() {
+    try { var st = JSON.parse(lsGet(foCxKey()) || "null"); if (st && st.beat) return st; } catch (e) {}
+    return { beat: {}, conq: [] };
+  }
+  function foCxSave(st) { try { lsSet(foCxKey(), JSON.stringify(st)); } catch (e) {} }
+  function foCxConquered(st, id) { return (st.conq || []).indexOf(id) >= 0; }
+  // strict linear ladder: the first unconquered region is the live one
+  function foCxCurrent(st) {
+    for (var i = 0; i < FO_CX_REGIONS.length; i++) if (!foCxConquered(st, FO_CX_REGIONS[i].id)) return i;
+    return FO_CX_REGIONS.length;   // world tour complete
+  }
+  function foCxBeaten(st, rid, ci) { return !!((st.beat[rid] || [])[ci]); }
+  // within a region the clubs unlock in order; the boss needs both minors
+  function foCxClubOpen(st, ri, ci) {
+    if (ri !== foCxCurrent(st)) return false;
+    var rid = FO_CX_REGIONS[ri].id;
+    for (var i = 0; i < ci; i++) if (!foCxBeaten(st, rid, i)) return false;
+    return true;
+  }
+  function foCxPrize(ri, boss) { return boss ? (35000 + ri * 10000) : (12000 + ri * 4000); }
+  // Build the club's squad: the archetype generator on THEIR nation's names,
+  // then one honest difficulty dial - every skill scaled by the club's mult.
+  function foCxTeam(ri, ci) {
+    var r = FO_CX_REGIONS[ri], c = r.clubs[ci];
+    var gen = foGenArchetypeSquad("cx|" + r.id + "|" + c.nm, r.cty, r.arch, c.capt || "talisman");
+    var players = (gen.players || []).map(function (p0) {
+      var p = JSON.parse(JSON.stringify(p0)); delete p.fee;
+      for (var k in (p.skills || {})) {
+        if (typeof p.skills[k] === "number") p.skills[k] = Math.max(4, Math.min(96, Math.round(p.skills[k] * c.mult)));
+      }
+      p.fatigue = "rested"; p.formIx = 3;
+      try { jsDerive(p); } catch (e) {}
+      return p;
+    });
+    return { name: c.nm, ground: c.city + (c.boss ? " Colosseum" : " Oval"), players: players, youth: [],
+      founded: false, homePitch: r.pitch, bank: 300000, seats: c.boss ? 24000 : 9000,
+      supporters: 2600, mood: 3, acadY: 2, acadS: 2, __cx: 1 };
+  }
+  // place (or refresh) the circuit club in the world and hand over to the
+  // friendly flow - lineup, toss, live match centre, the lot
+  function foCxChallenge(ri, ci) {
+    try {
+      if (typeof M !== "undefined" && M && !M.done) { say("A match is already live - finish it first."); return; }
+      var st = foCxState();
+      if (!foCxClubOpen(st, ri, ci)) { say("That door isn't open yet - beat the clubs before it."); return; }
+      var r = FO_CX_REGIONS[ri], c = r.clubs[ci];
+      var T = foCxTeam(ri, ci);
+      var ix = -1;
+      (GD.teams || []).forEach(function (t, i) { if (t && t.name === T.name) ix = i; });
+      if (ix < 0) { GD.teams.push(T); ix = GD.teams.length - 1; } else GD.teams[ix] = T;
+      foChallenge(ix, r.pitch, r.wx);
+      // played on THEIR ground, under their locked conditions
+      if (App.pending) {
+        App.pending.ground = T.ground;
+        App.pending.__circuit = { r: ri, c: ci };
+      }
+      say("The Circuit: " + T.name + " at " + T.ground + " · " + foPitchName(r.pitch) + " pitch, " + r.wx + ". Set your XI, then Save.");
+    } catch (e) { say(e); }
+  }
+  // the conquest ceremony / the debrief after a loss - journey styled
+  function foCxModal(win, r, c, conquered, prize) {
+    try {
+      var ex = document.getElementById("fo-cx-end"); if (ex) ex.remove();
+      var m = document.createElement("div"); m.id = "fo-cx-end"; m.className = "fo-modal";
+      var head = win ? (conquered ? r.nm + " conquered!" : c.nm + " beaten!") : "They hold the door";
+      var gline = win
+        ? (conquered ? "That's the whole nation, boss. " + r.trophy + " is ours, and their academy will take our calls now. On to the next flight."
+          : "Good cricket. " + (r.clubs[r.clubs.indexOf(c) + 1] ? "Next door: " + r.clubs[r.clubs.indexOf(c) + 1].nm + "." : "The boss is waiting."))
+        : "No shame in it - their ground, their rules. Patch the hole they found and we go again. The door stays open.";
+      m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>The Circuit · " + E(r.nm) + "</div>" +
+        "<h3>" + E(head) + "</h3>" +
+        (win && prize ? "<div class='small' style='margin:2px 0 8px'>Prize money: <b>" + FO$(prize) + "</b>" +
+          (conquered ? " · <b>" + E(r.trophy) + "</b> → museum · " + E(r.nm) + "'s youth academy unlocked" : "") + "</div>" : "") +
+        "<div class='fo-j-gbox' style='max-width:none;margin:8px 0'><img class='gf' src='" + FO_ART + "gaffer" + (win ? "-laugh" : "-serious") + ".png' alt=''>" +
+        "<span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;" + E(gline) + "&rdquo;</span></span></div>" +
+        "<div class='fo-modal-act'><button class='fo-su-go primary' id='fo-cx-back'>" + (win && conquered ? "See the map ▸" : "Back to the Circuit ▸") + "</button></div></div>";
+      document.body.appendChild(m);
+      m.querySelector("#fo-cx-back").addEventListener("click", function () {
+        m.remove(); location.hash = "#/circuit"; if (typeof window.route === "function") window.route();
+      });
+    } catch (e) {}
+  }
+  function foCxRecord(tag, win) {
+    try {
+      var r = FO_CX_REGIONS[tag.r], c = r.clubs[tag.c]; if (!r || !c) return;
+      var st = foCxState(), conquered = false, prize = 0;
+      if (win && !foCxBeaten(st, r.id, tag.c)) {
+        (st.beat[r.id] = st.beat[r.id] || [])[tag.c] = true;
+        prize = foCxPrize(tag.r, !!c.boss);
+        if (c.boss) {
+          conquered = true;
+          st.conq = st.conq || []; st.conq.push(r.id);
+          try {
+            var me = userTeam();
+            var mus = (me._museum = me._museum || { trophies: [], awards: [], legends: [] });
+            mus.trophies.push({ s: App.seasonNo || 1, kind: r.trophy + " · The Circuit: conquered " + r.nm });
+          } catch (eM) {}
+        }
+        try { if (App.fin) App.fin.bank = (App.fin.bank || 0) + prize; } catch (eB) {}
+        foCxSave(st);
+        try { if (typeof window.saveGame === "function") window.saveGame(false); } catch (eS) {}
+      }
+      // the visitors fly home: their club leaves the world once the tie is done
+      try {
+        for (var i = (GD.teams || []).length - 1; i >= 0; i--) {
+          if (GD.teams[i] && GD.teams[i].__cx && (!App.pending || App.pending.away !== GD.teams[i].name)) GD.teams.splice(i, 1);
+        }
+      } catch (eR) {}
+      foCxModal(win, r, c, conquered, prize);
+    } catch (e) {}
+  }
+  // keeper: records finished circuit matches, and re-seats the circuit club if
+  // a league snapshot refresh rebuilt GD.teams under a live tie
+  setInterval(function () {
+    try {
+      if (App && App.pending && App.pending.__circuit && typeof GD !== "undefined" && GD.teams) {
+        var nm = App.pending.away, found = -1;
+        GD.teams.forEach(function (t, i) { if (t && t.name === nm) found = i; });
+        if (found < 0) {
+          var T2 = foCxTeam(App.pending.__circuit.r, App.pending.__circuit.c);
+          GD.teams.push(T2); App.pending.oppIx = GD.teams.length - 1;
+        } else App.pending.oppIx = found;
+        // lineup saved -> walk out: circuit ties play LIVE in the match centre
+        if (App.orders && App.orders.saved && !App.pending.__cxGo && !(typeof M !== "undefined" && M && !M.done)) {
+          App.pending.__cxGo = 1;
+          location.hash = "#/match"; if (typeof window.route === "function") window.route();
+        }
+      }
+      if (typeof M !== "undefined" && M && M.done && M.meta && M.meta.__circuit && !M.__cxSeen) {
+        M.__cxSeen = 1;
+        var win = false;
+        try { win = !!(M.result && M.result.winner === userTeam().name); } catch (e2) {}
+        foCxRecord(M.meta.__circuit, win);
+      }
+    } catch (e) {}
+  }, 2500);
+  // ---- the Circuit page (#/circuit): the approved region-screen layout ------
+  (function foCxCss() {
+    if (document.getElementById("fo-cx-css")) return;
+    var st = document.createElement("style"); st.id = "fo-cx-css";
+    st.textContent =
+      ".fo-cx{max-width:760px;margin:0 auto;padding:6px 2px 30px}" +
+      ".fo-cx-chap{display:flex;gap:10px;justify-content:center;margin:4px 0 16px;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;font-weight:500;flex-wrap:wrap}" +
+      ".fo-cx-chap span{color:#b9b29a;cursor:pointer}.fo-cx-chap span.on{color:#C8674A;border-bottom:2px solid #C8674A;padding-bottom:2px}" +
+      ".fo-cx-chap span.done{color:#2E7A3C}.fo-cx-chap i{font-style:normal;color:#d5cdb2}" +
+      ".fo-cx-head{text-align:center;margin-bottom:12px}" +
+      ".fo-cx-rule{display:flex;align-items:center;gap:12px;justify-content:center;color:#C9A24B;margin:4px 0}" +
+      ".fo-cx-rule i{flex:0 0 70px;height:2px;background:linear-gradient(90deg,transparent,#C9A24B);border-radius:2px}" +
+      ".fo-cx-rule i:last-child{background:linear-gradient(270deg,transparent,#C9A24B)}" +
+      ".fo-cx-rule b{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2.6px;color:#C9A24B;font-weight:500}" +
+      ".fo-cx-h1{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:2.5px;font-size:clamp(28px,6vw,40px);color:#101B2D;line-height:1.05}" +
+      ".fo-cx-type{display:inline-block;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.8px;font-weight:500;font-size:12px;color:#fff;border-radius:99px;padding:4px 14px;margin-top:7px}" +
+      ".fo-cx-cond{color:#5b6472;font-size:14px;margin:9px auto 0;max-width:56ch}" +
+      ".fo-cx-cond b{color:#101B2D}" +
+      ".fo-cx-prog{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:10px;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:#8a90a0}" +
+      ".fo-cx-prog i{width:10px;height:10px;border-radius:50%;border:2px solid var(--cxc,#C9A24B);display:inline-block}" +
+      ".fo-cx-prog i.f{background:var(--cxc,#C9A24B)}" +
+      ".fo-cx-sec{display:flex;align-items:center;gap:10px;margin:18px auto 9px;max-width:680px;letter-spacing:2px;text-transform:uppercase;color:#101B2D;font-size:12.5px;font-weight:500;font-family:Oswald,sans-serif}" +
+      ".fo-cx-sec i{flex:1;height:1px;background:rgba(16,27,45,.18);font-style:normal}" +
+      ".fo-cx-rows{display:flex;flex-direction:column;gap:9px;max-width:680px;margin:0 auto}" +
+      ".fo-cx-row{background:#FFFEFC;border:1.5px solid rgba(16,27,45,.14);border-radius:12px;padding:11px 15px;display:flex;align-items:center;gap:13px;text-align:left}" +
+      ".fo-cx-row .no{font-family:Oswald,sans-serif;font-weight:600;font-size:15px;color:var(--cxc,#B06E08);width:30px;height:30px;border:2px solid var(--cxc,#D08A12);border-radius:50%;display:grid;place-items:center;flex:0 0 30px}" +
+      ".fo-cx-row.done{opacity:.75}.fo-cx-row.done .no{background:#69B578;border-color:#69B578;color:#fff}" +
+      ".fo-cx-row.bossr{border:2px solid #C8674A;box-shadow:0 3px 0 rgba(16,27,45,.16)}" +
+      ".fo-cx-row.bossr .no{border-color:#C8674A;color:#C8674A}" +
+      ".fo-cx-row .m{flex:1;min-width:0}" +
+      ".fo-cx-nm{font-weight:700;color:#101B2D;font-size:15.5px}" +
+      ".fo-cx-sub{display:block;font-size:12px;color:#6b7280;margin-top:1px}" +
+      ".fo-cx-why{display:block;font-size:12.5px;color:#C8674A;font-weight:600;margin-top:2px}" +
+      "html body .fo-cx-ch,html body.ftpskin .fo-cx-ch{font-family:Oswald,sans-serif !important;letter-spacing:2.2px;text-transform:uppercase;font-weight:600 !important;font-size:13px;background:#C8674A !important;color:#FDFAF1 !important;border:none !important;border-radius:10px;padding:9px 17px;cursor:pointer;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18);white-space:nowrap}" +
+      "html body .fo-cx-ch:hover,html body.ftpskin .fo-cx-ch:hover{background:#B5563B !important}" +
+      ".fo-cx-lock{font-family:Oswald,sans-serif;letter-spacing:2px;text-transform:uppercase;font-weight:500;font-size:12px;color:#a9a291;border:1.5px dashed #c5bda6;border-radius:10px;padding:8px 15px;white-space:nowrap}" +
+      ".fo-cx-won{font-family:Oswald,sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-weight:600;font-size:12.5px;color:#2E7A3C;white-space:nowrap}" +
+      ".fo-cx-ledger{background:#FBF7EA;border:1px solid #d8d0b8;border-radius:8px;max-width:680px;margin:16px auto 0;padding:13px 17px;box-shadow:0 3px 10px rgba(16,27,45,.08);text-align:left}" +
+      ".fo-cx-ledger .lh{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:#8a7b4f;border-bottom:2px solid #101B2D;padding-bottom:6px;margin-bottom:8px;font-weight:500}" +
+      ".fo-cx-ledger p{font-size:14px;color:#4a5568;margin:0}" +
+      ".fo-cx-ledger b{color:#101B2D}.fo-cx-ledger .pos{color:#2E7A3C;font-weight:600}" +
+      ".fo-cx-done{text-align:center;padding:30px 10px}" +
+      ".fo-cx .fo-j-gbox{margin:14px auto}" +
+      "@media(max-width:640px){.fo-cx-row{flex-wrap:wrap}.fo-cx-row .m{flex:1 1 100%;order:2}.fo-cx-row .no{order:1}.fo-cx-row .fo-cx-ch,.fo-cx-row .fo-cx-lock,.fo-cx-row .fo-cx-won{order:3;margin-left:auto}}";
+    document.head.appendChild(st);
+  })();
+  function foCxNav() {
+    try {
+      var tb = document.getElementById("topbar"); if (!tb) return;
+      var wrap = tb.querySelector(".fo-nav-scroll"); if (!wrap) return;
+      if (wrap.querySelector("a.fo-circuit")) return;
+      var a = document.createElement("a"); a.className = "fo-circuit"; a.href = "#"; a.textContent = "Circuit";
+      a.addEventListener("click", function (e) { e.preventDefault(); location.hash = "#/circuit"; if (typeof window.route === "function") window.route(); });
+      var guide = wrap.querySelector("a.fo-guide");
+      if (guide) wrap.insertBefore(a, guide); else wrap.appendChild(a);
+    } catch (e) {}
+  }
+  var foCxView = null;   // region the chapter strip is looking at (defaults to live one)
+  function foRenderCircuit() {
+    try {
+      foCxNav();
+      if (location.hash.indexOf("#/circuit") !== 0) return;
+      var page = document.getElementById("page"); if (!page) return;
+      var st = foCxState();
+      var cur = foCxCurrent(st);
+      var ri = (foCxView == null || foCxView > cur) ? Math.min(cur, FO_CX_REGIONS.length - 1) : foCxView;
+      var sig = "cx|" + ri + "|" + cur + "|" + JSON.stringify(st.beat) + "|" + (st.conq || []).join(",");
+      if (page.__foCxSig === sig && page.querySelector(".fo-cx")) return;
+      page.__foCxSig = sig;
+      var chap = FO_CX_REGIONS.map(function (r2, i) {
+        var cls = foCxConquered(st, r2.id) ? "done" : (i === ri ? "on" : "");
+        return "<span class='" + cls + "' data-ri='" + i + "'>" + E(r2.nm) + "</span>";
+      }).join("<i>›</i>") + "<i>›</i><span>★ Thorne</span>";
+      var html;
+      if (cur >= FO_CX_REGIONS.length && foCxView == null) {
+        html = "<div class='fo-cx'><div class='fo-cx-chap'>" + chap + "</div>" +
+          "<div class='fo-cx-done'><div class='fo-cx-rule'><i></i><b>THE CIRCUIT</b><i></i></div>" +
+          "<div class='fo-cx-h1'>World tour complete</div>" +
+          "<p class='fo-cx-cond'>Six nations, six trophies. Reggie Thorne's World Final is being built - the summit match arrives in the next update. Your trophies live in the club museum.</p></div></div>";
+      } else {
+        var r = FO_CX_REGIONS[ri];
+        var beatN = (st.beat[r.id] || []).filter(Boolean).length;
+        var dots = r.clubs.map(function (c2, i2) { return "<i class='" + (foCxBeaten(st, r.id, i2) ? "f" : "") + "'></i>"; }).join("");
+        var live = ri === cur;
+        var nextCi = -1;
+        if (live) for (var i3 = 0; i3 < r.clubs.length; i3++) if (!foCxBeaten(st, r.id, i3)) { nextCi = i3; break; }
+        var rows = r.clubs.map(function (c3, ci) {
+          var done = foCxBeaten(st, r.id, ci);
+          var open = live && ci === nextCi;
+          var act = done ? "<span class='fo-cx-won'>✓ Beaten</span>"
+            : open ? "<button type='button' class='fo-cx-ch' data-ci='" + ci + "'>Challenge</button>"
+            : "<span class='fo-cx-lock'>Locked</span>";
+          var sub = c3.city + (c3.boss ? " · captain <b>" + E(c3.leader) + "</b>, " + E(c3.note) : " · " + E(c3.note));
+          var why = (open && !c3.boss) ? "<span class='fo-cx-why'>The Gaffer: " + E(r.gaffer.split(".")[0]) + ".</span>" : "";
+          return "<div class='fo-cx-row" + (done ? " done" : "") + (c3.boss ? " bossr" : "") + "'>" +
+            "<span class='no'>" + (done ? "✓" : (c3.boss ? "★" : (ci + 1))) + "</span>" +
+            "<div class='m'><span class='fo-cx-nm'>" + E(c3.nm) + (c3.boss ? " — Boss" : "") + "</span>" +
+            "<span class='fo-cx-sub'>" + sub + "</span>" + why + "</div>" + act + "</div>";
+        }).join("");
+        var nxt = FO_CX_REGIONS[ri + 1];
+        html = "<div class='fo-cx' style='--cxc:" + r.ac + "'>" +
+          "<div class='fo-cx-chap'>" + chap + "</div>" +
+          "<div class='fo-cx-head'>" +
+          "<div class='fo-cx-rule'><i></i><b>THE CIRCUIT · REGION " + (ri + 1) + " OF " + FO_CX_REGIONS.length + "</b><i></i></div>" +
+          "<div class='fo-cx-h1'>" + E(r.nm) + "</div>" +
+          "<span class='fo-cx-type' style='background:" + r.ac + "'>" + E(r.type) + "</span>" +
+          "<p class='fo-cx-cond'><b>" + E(r.cond.split(".")[0]) + ".</b> " + E(r.cond.split(".").slice(1).join(".").trim()) + "</p>" +
+          "<div class='fo-cx-prog'>Progress · " + beatN + " / " + r.clubs.length + " beaten <span style='display:inline-flex;gap:5px;margin-left:4px'>" + dots + "</span></div>" +
+          "</div>" +
+          (live ? foJGbox(r.gaffer) : "") +
+          "<div class='fo-cx-sec'><i></i>The Challenges<i></i></div>" +
+          "<div class='fo-cx-rows'>" + rows + "</div>" +
+          "<div class='fo-cx-ledger'><div class='lh'>On conquering " + E(r.nm) + "</div>" +
+          "<p><b>" + E(r.trophy) + "</b> goes in your museum, the board wires <span class='pos'>" + FO$(foCxPrize(ri, true)) + "</span> prize money, and " + E(r.nm) + "'s youth academy opens for good — <b>better odds of " + E(r.academy) + "</b> in your youth scout." +
+          (nxt ? " Then the route to <b>" + E(nxt.nm) + "</b> unlocks." : " Then the road ends at <b>Reggie Thorne</b> himself.") + "</p></div>" +
+          "</div>";
+      }
+      page.innerHTML = html;
+      page.querySelectorAll(".fo-cx-chap span[data-ri]").forEach(function (s2) {
+        s2.addEventListener("click", function () {
+          var i4 = +s2.getAttribute("data-ri");
+          if (i4 > foCxCurrent(foCxState())) { say("Conquer " + FO_CX_REGIONS[foCxCurrent(foCxState())].nm + " first - the ladder is strict."); return; }
+          foCxView = i4; page.__foCxSig = null; foRenderCircuit();
+        });
+      });
+      page.querySelectorAll(".fo-cx-ch[data-ci]").forEach(function (b2) {
+        b2.addEventListener("click", function () { foCxChallenge(ri, +b2.getAttribute("data-ci")); });
+      });
+      try { if (window.__foLive) window.__foLive.mask(); } catch (eM2) {}
+    } catch (e) {}
+  }
+  setInterval(foRenderCircuit, 900);
+  window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/circuit") === 0) { foCxView = null; setTimeout(foRenderCircuit, 40); } });
+  try { window.__foTest.cx = { state: foCxState, team: foCxTeam, challenge: foCxChallenge, record: foCxRecord, key: foCxKey }; } catch (eCx) {}
 
   console.info("Fifty Overs League overlay ready.");
 })();
