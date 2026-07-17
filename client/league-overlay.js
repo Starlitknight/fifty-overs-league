@@ -7840,6 +7840,31 @@
       ".pk-risk{color:#B23A2E;font-size:13px;font-weight:600;margin-top:7px;text-align:center}" +
       "html body .pk-cta,html body.ftpskin .pk-cta{display:block;width:100%;margin-top:9px;font-family:Oswald,sans-serif !important;letter-spacing:3.5px;text-transform:uppercase;font-weight:600 !important;font-size:18px;background:var(--tc) !important;color:#FDFAF1 !important;border:none !important;border-radius:11px;padding:10px;cursor:pointer;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}" +
       "html body .pk-cta:hover,html body.ftpskin .pk-cta:hover,html body .pk-cta:focus,html body.ftpskin .pk-cta:focus{background:var(--tcD) !important;color:#FDFAF1 !important}" +
+      // compact variant: the journey's signing row shows three cards at once -
+      // hand-of-cards scale, so the choice reads side by side without scrolling
+      ".pk-sign{gap:12px}" +
+      ".pk-sign .pk{width:min(302px,94vw)}" +
+      ".pk-sign .pk-in{padding:10px 12px}" +
+      ".pk-sign .pk-role-lbl{font-size:11px;letter-spacing:1.8px}" +
+      ".pk-sign .pk-name{font-size:20px}" +
+      ".pk-sign .pk-flag{font-size:17px;margin-top:4px}.pk-sign .pk-flag img{width:21px}" +
+      ".pk-sign .pk-ovr i{font-size:10.5px;letter-spacing:1.4px;vertical-align:8px;margin-right:4px}" +
+      ".pk-sign .pk-ovr b{font-size:26px}" +
+      ".pk-sign .pk-hand{font-size:10px;letter-spacing:1.4px;padding:2px 8px;margin-top:3px}" +
+      ".pk-sign .pk-art{height:110px;margin:1px -4px 4px}.pk-sign .pk-art img{height:104px}" +
+      ".pk-sign .pk-meta{font-size:12px;padding:4px 9px;gap:5px}.pk-sign .pk-meta .fl img{width:18px}" +
+      ".pk-sign .pk-tal-h{font-size:10.5px;letter-spacing:2px;margin:6px 0 4px}" +
+      ".pk-sign .pk-tal{font-size:11.5px;padding:2.5px 10px;border-radius:8px}" +
+      ".pk-sign .pk-stats{margin-top:5px}" +
+      ".pk-sign .pk-st{padding:2px 0;gap:8px}" +
+      ".pk-sign .pk-en{width:19px;height:19px;flex:0 0 19px}.pk-sign .pk-en svg{width:10px;height:10px}" +
+      ".pk-sign .pk-st b{font-size:12px;letter-spacing:1px;flex:0 0 78px}" +
+      ".pk-sign .pk-bar{height:7px}" +
+      ".pk-sign .pk-st em{font-size:14px;flex:0 0 24px}" +
+      ".pk-sign .pk-mid,.pk-sign .pk-foot{margin-top:5px;padding-top:5px}" +
+      ".pk-sign .pk-fc{gap:5px;padding:0 2px}.pk-sign .pk-fc svg{width:15px;height:15px;flex:0 0 15px}" +
+      ".pk-sign .pk-fc i{font-size:8.5px;letter-spacing:1px}.pk-sign .pk-fc b{font-size:11.5px}" +
+      "html body .pk-sign .pk-cta,html body.ftpskin .pk-sign .pk-cta{font-size:14px;letter-spacing:2.2px;padding:7px;margin-top:7px;border-radius:9px}" +
       // tooltips: hover on desktop, tap (.tipshow) on touch
       "[data-tip]{position:relative}" +
       "[data-tip]:hover:after,[data-tip].tipshow:after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 9px);transform:translateX(-50%);background:#101B2D;color:#F5EFDC;font-family:'Spline Sans',sans-serif;font-size:13px;font-weight:500;font-style:normal;letter-spacing:.2px;line-height:1.5;padding:9px 13px;border-radius:10px;width:240px;text-align:center;z-index:99;box-shadow:0 5px 14px rgba(0,0,0,.3);text-transform:none;pointer-events:none}" +
@@ -8295,12 +8320,18 @@
     var bowl = p.bowlType ? (aggBowl(p) || 0) : 0;
     var fld = aggField(p) || 0;
     var ovr;
-    if (p.keeper || p.role === "wicketkeeper") ovr = 0.46 * (aggKeep(p) || 0) + 0.40 * batScore + 0.14 * fld;
-    else if (p.role === "allRounder") { var hi = Math.max(batScore, bowl), lo = Math.min(batScore, bowl); ovr = 0.60 * hi + 0.28 * lo + 0.12 * fld; }
-    else if (bowl > batScore) ovr = 0.74 * bowl + 0.12 * tech + 0.14 * fld;
+    // each branch is normalised onto the batter's scale (measured over the
+    // generator's whole quality range), so a 70 bowler and a 70 batter are
+    // genuinely the same class of player
+    if (p.keeper || p.role === "wicketkeeper") ovr = 1.07 * (0.46 * (aggKeep(p) || 0) + 0.40 * batScore + 0.14 * fld) - 1;
+    else if (p.role === "allRounder") { var hi = Math.max(batScore, bowl), lo = Math.min(batScore, bowl); ovr = 1.04 * (0.60 * hi + 0.28 * lo + 0.12 * fld); }
+    else if (bowl > batScore) ovr = 1.5 * (0.74 * bowl + 0.12 * tech + 0.14 * fld) - 14;
     else ovr = 0.60 * batScore + 0.12 * bat + 0.14 * pow + 0.14 * fld;
     return Math.max(1, Math.min(99, Math.round(ovr)));
   }
+  // test-harness hook: lets the Playwright probes generate players and read
+  // OVRs without reaching into the closure (never used by the game itself)
+  try { window.__foTest = { gen: foQsPlayer, ovr: foPkOvr, hash: foHash32 }; } catch (eT) {}
   function foPkCard(p, opts) {
     opts = opts || {};
     var k = foPkKind(p), ac = FO_PK_AC[k];
@@ -8384,17 +8415,34 @@
     var bowlRole = FO_ONB.arch === "wizard" ? "wristSpin" : (FO_ONB.arch === "express" ? "seamFast" : (FO_ONB.arch === "gloveman" ? "fingerSpin" : "seamFastMedium"));
     var specs = [
       { role: "topOrderBat", age: 26, lbl: "Batsman" },
-      { role: bowlRole, age: 21, lbl: "Strike Bowler" },
-      { role: "allRounder", age: 31, lbl: "All-Rounder" }
+      { role: bowlRole, age: 24, lbl: "Strike Bowler" },
+      { role: "allRounder", age: 29, lbl: "All-Rounder" }
     ];
     var firsts = {}, lasts = {};
     return specs.map(function (s) {
-      var rnd = window.rng(foHash32(seed + "|" + s.role));
-      var p = foQsPlayer({ role: s.role, age: s.age, q: 0.44 }, FO_ONB.country, rnd, firsts, lasts);
+      // The three contracts must be a real choice: whatever the role, nudge the
+      // generation quality until the card's OVR lands in one shared band. The
+      // rng is reseeded per attempt, so the name stays put while skills move.
+      var fSnap = JSON.stringify(firsts), lSnap = JSON.stringify(lasts);
+      var TGT = 69, lo = 0.18, hi = 0.97, best = null;
+      for (var it = 0; it < 14; it++) {
+        var q = (lo + hi) / 2;
+        var f2 = JSON.parse(fSnap), l2 = JSON.parse(lSnap);
+        var rnd = window.rng(foHash32(seed + "|" + s.role));
+        var cand = foQsPlayer({ role: s.role, age: s.age, q: q }, FO_ONB.country, rnd, f2, l2);
+        if (foPureBowler(cand)) { cand.skills.vsPace = 31; cand.skills.vsSpin = 30; cand.skills.rotation = 27; cand.skills.temperament = 35; cand.skills.power = 29; }
+        jsDerive(cand);   // the card reads DERIVED aggregates - measure what it shows
+        var ovr = foPkOvr(cand);
+        if (!best || Math.abs(ovr - TGT) < Math.abs(best.ovr - TGT)) best = { p: cand, ovr: ovr, f: f2, l: l2 };
+        if (ovr >= TGT - 2 && ovr <= TGT + 2) break;
+        if (ovr < TGT) lo = q; else hi = q;
+      }
+      var p = best.p;
+      Object.keys(best.f).forEach(function (k) { firsts[k] = best.f[k]; });
+      Object.keys(best.l).forEach(function (k) { lasts[k] = best.l[k]; });
       var want = (A.talents || []).slice();
       var poolT = Object.keys(TALN).sort(function (a, b) { return foHash32(p.name + a) - foHash32(p.name + b); });
       want.concat(poolT).forEach(function (t) { if (p.talents.length >= 2 || p.talents.indexOf(t) >= 0) return; if (foQsElig(p, t)) p.talents.push(t); });
-      if (foPureBowler(p)) { p.skills.vsPace = 31; p.skills.vsSpin = 30; p.skills.rotation = 27; p.skills.temperament = 35; p.skills.power = 29; }
       jsDerive(p);
       p.__mqLbl = s.lbl;
       return p;
@@ -8410,7 +8458,7 @@
     }).join("");
     var body = "<div><h1 class='fo-ob-h1' style='text-align:center'>Choose the final signing</h1>" +
       "<p class='fo-ob-lead' style='text-align:center'>Three contracts on the desk - a batter, a strike bowler, an all-rounder. Sign one.</p>" +
-      "<div class='pk-row'>" + cards + "</div></div>";
+      "<div class='pk-row pk-sign'>" + cards + "</div></div>";
     var host = foJMount(0, body);
     host.querySelectorAll(".pk-cta[data-i]").forEach(function (b) {
       b.addEventListener("click", function () {
