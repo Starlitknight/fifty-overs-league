@@ -67,12 +67,17 @@ FOC.england = (function () {
       },
       function (ctx) {
         var sen = ctx.pickSenior(), kid = ctx.pickProspect(), fr = ctx.pickFringe();
+        var wk = ctx.pickKeeper(), nb = ctx.strikeBowler();
         ctx.setCast("senior", sen); ctx.setCast("prospect", kid); ctx.setCast("fringe", fr);
+        if (wk) ctx.setCast("keeper", wk); if (nb) ctx.setCast("strike", nb);
         return s("The Gaffer", "gaffer",
-          "Three more faces before you go. " + sen.name + " — " + sen.age + ", seen everything, says little. " +
-          kid.name + " — " + kid.age + ", turned up to pre-season a week early. " +
+          "Six anchors, then, and the rest of the squad hangs off them. Your captain you've named. " +
+          sen.name + " — " + sen.age + ", seen everything, says little. " +
+          (wk ? wk.name + " keeps wicket; a keeper sets the standard of a fielding side whether he means to or not. " : "") +
+          (nb ? nb.name + " takes the new ball — the first over of the season is already his. " : "") +
+          kid.name + " — " + kid.age + ", turned up to pre-season a week early, asking for a chance nobody's promised him. " +
           "And " + fr.name + ", who believes — with some evidence — that there's an XI spot with his name on it that keeps going to other people. " +
-          "You'll manage all three of those stories whether you mean to or not.");
+          "Learn those six. The other names will introduce themselves one scorecard at a time.");
       },
       function (ctx) {
         return s("Margaret Hobb — club secretary", "npc:MH",
@@ -86,7 +91,16 @@ FOC.england = (function () {
       function (ctx) {
         return s("The Gaffer", "gaffer-wink",
           "That's the table set. Willowmere on Saturday — nice ground, soft hands, they'll smile while they beat you if you let them. " +
-          "If you want a look at anyone first, the Match Lab is open all week; a trial costs nothing but an afternoon. Otherwise: pick your XI in the lineup room and we'll walk out together.");
+          "One more offer before match day: I can raise a Trial XI this afternoon — a proper game, a proper scorecard, and the first hard evidence about your own squad. Entirely optional.",
+          [
+            { t: "Straight to Willowmere — match day is the only trial that counts", fx: function (c) {
+                c.choose("prologue", "trial", "no");
+              } },
+            { t: "Run the trial match — I want evidence before Saturday", fx: function (c) {
+                c.choose("prologue", "trial", "yes");
+                c.save.flags.trialPending = 1;
+              } }
+          ]);
       }
     ]
   };

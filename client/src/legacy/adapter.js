@@ -40,7 +40,9 @@ FOC.adapter = (function () {
   // draft = {xi:[names in batting order], captain, keeper}
   // Neutral validation: `errors` block Confirm (the engine could not play the
   // card as written); `facts` are observations, stated without judgement.
-  function validate(draft) {
+  // Pass the campaign save as `save` to include promise-deadline and
+  // order-change observations.
+  function validate(draft, save) {
     var errors = [], facts = [];
     var roster = {}, seen = {};
     players().forEach(function (p) { if (p) roster[p.name] = p; });
@@ -70,6 +72,37 @@ FOC.adapter = (function () {
         (part ? " plus " + part + " part-time" : "") + ". Fifty overs must come from somewhere.");
       var lefties = xi.filter(function (nm) { return roster[nm] && /l/i.test(roster[nm].hand || ""); }).length;
       if (lefties) facts.push(lefties + " left-hander" + (lefties > 1 ? "s" : "") + " in the order.");
+      // fatigue / availability — stated, not judged
+      xi.forEach(function (nm) {
+        var p = roster[nm];
+        if (p && p.fatigue && p.fatigue !== "rested") facts.push(nm + " is " + p.fatigue + ".");
+      });
+      // planned overs beyond a bowler's legal ten
+      try {
+        var tot = {};
+        [].concat((App.orders.spells || {}).north || [], (App.orders.spells || {}).south || [])
+          .forEach(function (sp) { if (sp && sp.bowler) tot[sp.bowler] = (tot[sp.bowler] || 0) + (sp.n || 0); });
+        Object.keys(tot).forEach(function (nm) {
+          if (tot[nm] > 10) facts.push("The current plan pencils " + tot[nm] + " overs for " + nm + "; ten is the legal limit — the captain will trim on the day.");
+        });
+      } catch (eSp) {}
+      if (save) {
+        // live promise deadlines
+        (save.promises || []).forEach(function (pr) {
+          if (pr.status !== "active") return;
+          if (xi.indexOf(pr.nm) >= 0) facts.push("This card keeps a live promise: " + pr.txt + ".");
+          else facts.push("Live promise: " + pr.txt + " — " + pr.left + " match" + (pr.left === 1 ? "" : "es") + " left, and " + pr.nm + " is not on this card.");
+        });
+        // large batting-position moves vs the last confirmed campaign/league card
+        try {
+          var lus = (save.events || []).filter(function (e) { return e.t === "LineupConfirmed"; });
+          var prevXi = lus.length ? lus[lus.length - 1].data.xi : null;
+          if (prevXi) xi.forEach(function (nm, i) {
+            var j = prevXi.indexOf(nm);
+            if (j >= 0 && Math.abs(j - i) >= 3) facts.push(nm + " moves from " + (j + 1) + " to " + (i + 1) + " in the order.");
+          });
+        } catch (eMv) {}
+      }
     }
     return { ok: !errors.length, errors: errors, facts: facts };
   }
@@ -91,7 +124,7 @@ FOC.adapter = (function () {
   // The ONLY mutation path: a validated draft becomes real engine orders.
   // Emits LineupConfirmed (+ selection diffs) exactly once per confirm.
   function applyOrders(save, draft) {
-    var v = validate(draft);
+    var v = validate(draft, save);
     if (!v.ok) return v;
     var roster = {}; players().forEach(function (p) { if (p) roster[p.name] = p; });
     var prev = (App.orders && App.orders.saved && App.orders.batOrder && App.orders.batOrder.length === 11)

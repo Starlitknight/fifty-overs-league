@@ -91,6 +91,19 @@ FOC.game = (function () {
       var ps = A.players().slice().sort(function (a, b) { return (a.age || 0) - (b.age || 0); });
       return ps[0];
     };
+    ctx.pickKeeper = function () {
+      var best = null;
+      A.players().forEach(function (p) { if (p && p.keeper && (!best || (p.keep || 0) > (best.keep || 0))) best = p; });
+      return best;
+    };
+    ctx.strikeBowler = function () {
+      var best = null;
+      A.players().forEach(function (p) {
+        if (p && p.bowlType && !A.isPartTimer(p) &&
+          (!best || ((p.threat || 0) + (p.control || 0)) > ((best.threat || 0) + (best.control || 0)))) best = p;
+      });
+      return best;
+    };
     ctx.pickFringe = function () {
       var t = A.team(); if (!t) return null;
       var inXI = {};
@@ -213,6 +226,15 @@ FOC.game = (function () {
         (f && f.oppTopNm ? f.oppTopNm + "'s " + f.oppTopR + " was the difference. " : "") +
         "The fixture stands — this club fails forward. Patch what they found, pick your XI again, and we go back out.");
     }
+    if (it.kind === "trial") {
+      var ft = ctx.facts();
+      return EN.scene("The Gaffer", "gaffer",
+        "Evidence, as promised. " +
+        (ft && ft.topNm ? ft.topNm + " made " + ft.topR + " off " + ft.topB + ". " : "") +
+        (ft && ft.bbNm ? ft.bbNm + " took " + ft.bbW + "-" + ft.bbR + ". " : "") +
+        (ft && ft.ducks && ft.ducks.length ? ft.ducks.join(" and ") + " got nought — a trial duck is a fact, not a verdict. " : "") +
+        "Nothing is proven in a trial, but nothing is invisible either. It's all in the book. Willowmere on Saturday.");
+    }
     if (it.kind === "promiseFulfilled") {
       return EN.scene(it.nm, "player:bat",
         "You said I'd get my start, and there was my name on the sheet. Whatever happens the rest of the summer — I'll remember which kind of manager you are.");
@@ -299,6 +321,14 @@ FOC.game = (function () {
     return A.startMatch(s, spec);
   }
 
+  // the optional prologue trial: a REAL match against a raised Trial XI.
+  // It generates evidence (scorecard memories) and never advances chapters.
+  function playTrial(s) {
+    return A.startMatch(s, { id: "trial", nm: "Club Trial XI",
+      ground: (A.team() || {}).ground || "Home", pitch: "flat", wx: "Sunny",
+      arch: "blade", mult: 0.8, chKey: "trial", captFlavour: "talisman" });
+  }
+
   function scanPromises(s) {
     var lus = campaignLineups(s);
     var lastXI = lus.length ? lus[lus.length - 1].data.xi : [];
@@ -339,6 +369,14 @@ FOC.game = (function () {
     if (!chKey) return;
     A.recordMatch(s, chKey, win, facts, oppName);
     scanPromises(s);
+    if (chKey === "trial") {
+      // evidence only: no chapter movement, no fail-forward bookkeeping
+      delete s.flags.trialPending;
+      delete s.losses.trial;
+      (s.flags.inter = s.flags.inter || []).push({ kind: "trial" });
+      persist();
+      return;
+    }
     if (chKey === "crown") {
       var v = epilogueVariant(s, win, facts);
       if (!s.epilogue) s.epilogue = { first: v, variant: v, attempts: 1, permanent: true };
@@ -385,7 +423,7 @@ FOC.game = (function () {
 
   return { save: save, persist: persist, chapter: chapter, chapterByKey: chapterByKey,
     makeCtx: makeCtx, currentBeat: currentBeat, advance: advance, choose: choose,
-    matchSpec: matchSpec, playMatch: playMatch, onMatchDone: onMatchDone,
+    matchSpec: matchSpec, playMatch: playMatch, playTrial: playTrial, onMatchDone: onMatchDone,
     interstitial: interstitial, popInterstitial: popInterstitial, scanPromises: scanPromises,
     epilogueVariant: epilogueVariant, list: list, init: init,
     _resetForTest: function () { _save = null; } };

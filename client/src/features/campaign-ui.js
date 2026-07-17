@@ -89,7 +89,7 @@ FOC.campaignUI = (function () {
       var s = G.save();
       var inter = G.interstitial(s);
       var beat = inter || G.currentBeat(s);
-      var sig = JSON.stringify([s.ch, s.beat, s.status, (s.flags.inter || []).length, !!inter,
+      var sig = JSON.stringify([s.ch, s.beat, s.status, (s.flags.inter || []).length, !!inter, !!s.flags.trialPending,
         s.matches.length, (function () { try { return !!(App.pending && App.pending.__camp) && !!(App.orders && App.orders.saved); } catch (e) { return 0; } })()]);
       if (!force && page.__smSig === sig && page.querySelector(".fo-sm")) return;
       page.__smSig = sig;
@@ -100,6 +100,19 @@ FOC.campaignUI = (function () {
       h += statusHTML(s);
       if (s.status === "complete" && !beat) h += doneHTML(s);
       else if (inter) h += sceneHTML(inter, true);
+      else if (s.flags.trialPending) {
+        var liveT = false, savedT = false;
+        try { liveT = !!(App.pending && App.pending.__camp); savedT = !!(App.orders && App.orders.saved); } catch (eT) {}
+        h += "<div class='sm-where'>Prologue · The Trial</div>" +
+          "<div class='sm-tie'><div class='sm-tie-k'>Optional trial</div>" +
+          "<div class='sm-tie-nm'>Club Trial XI</div>" +
+          "<div class='sm-tie-c'>Your ground · a real match, a real scorecard — evidence before Saturday</div>" +
+          (liveT && savedT ? "<button class='sm-go' id='sm-walk'>Walk out ▸</button>"
+            : liveT ? "<button class='sm-go' id='sm-lineup'>Pick your XI ▸</button>"
+            : "<button class='sm-go' id='sm-trial'>Raise the Trial XI ▸</button>" +
+              "<div><button class='sm-skip' id='sm-trial-skip'>Skip the trial — on to Willowmere</button></div>") +
+          "</div>";
+      }
       else if (beat && beat.kind === "scene") {
         var c0 = G.chapter(s);
         h += "<div class='sm-where'>" + esc(s.ch >= 11 ? "Epilogue" : (c0 ? c0.title : "")) + (c0 && c0.tag && s.ch < 11 ? " · " + esc(c0.tag) : "") + "</div>";
@@ -135,6 +148,10 @@ FOC.campaignUI = (function () {
     if (pl) pl.addEventListener("click", function () {
       if (!G.playMatch(s)) { /* a live match blocks the fixture */ }
     });
+    var tr = page.querySelector("#sm-trial");
+    if (tr) tr.addEventListener("click", function () { G.playTrial(s); });
+    var trs = page.querySelector("#sm-trial-skip");
+    if (trs) trs.addEventListener("click", function () { delete s.flags.trialPending; G.persist(); render(true); });
     var lu = page.querySelector("#sm-lineup");
     if (lu) lu.addEventListener("click", function () { location.hash = "#/lineup"; if (typeof window.route === "function") window.route(); });
     var wk = page.querySelector("#sm-walk");
@@ -195,6 +212,7 @@ FOC.campaignUI = (function () {
       ".sm-tie-c{color:#5b6472;font-size:13px}" +
       ".sm-rem{color:#9c2f18;font-size:12px;margin-top:4px}" +
       "html body #page .sm-go{margin-top:12px;background:#C8674A;border:none;color:#fff;border-radius:9px;padding:12px 22px;font-family:Oswald,sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-size:13px;min-height:44px}" +
+      "html body #page .sm-skip{margin-top:9px;border:none;background:transparent;color:#8a90a0;font-size:12px;text-decoration:underline dotted}" +
       ".sm-hist{margin:10px 0;text-align:left;max-width:420px;margin-left:auto;margin-right:auto}" +
       ".sm-hrow{font-size:13px;color:#2a3140;padding:3px 0;border-bottom:1px dashed #e3dcc6}" +
       ".sm-hrow .w{color:#2E7A3C;font-weight:700}.sm-hrow .l{color:#9c2f18;font-weight:700}" +

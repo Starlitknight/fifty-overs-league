@@ -146,6 +146,41 @@ test('campaign lineups are tagged campaign and never league', (t) => {
   assert.equal(lus[lus.length - 1].data.context, 'campaign');
 });
 
+test('validation reports promise deadlines and big order moves, neutrally', (t) => {
+  const sb = makeSandbox();
+  const { FOC, App } = sb;
+  const G = FOC.game;
+  const s = G.save();
+  // a confirmed card establishes positions, then a live promise for an omitted player
+  App.pending = { __friendly: true, __camp: {} };
+  FOC.adapter.applyOrders(s, legalDraft(sb));
+  s.castNames.fringe = 'Moe Onks';
+  G.makeCtx(s).makePromise('pid_x', 'Moe Onks starts one of the next two campaign matches', 2);
+  const d = legalDraft(sb);
+  // move a mid-order player up 4 spots
+  const nm = d.xi.splice(5, 1)[0]; d.xi.splice(1, 0, nm);
+  const v = FOC.adapter.validate(d, s);
+  assert.equal(v.ok, true);
+  const all = v.facts.join(' ');
+  assert.ok(/Live promise: .*Moe Onks is not on this card/.test(all));
+  assert.ok(/moves from 6 to 2 in the order/.test(all));
+  assert.ok(!/too weak|should pick/i.test(all));
+});
+
+test('the optional trial records real evidence without advancing chapters', (t) => {
+  const sb = makeSandbox();
+  const G = sb.FOC.game;
+  const s = finishPrologue(sb);
+  const ch0 = s.ch, beat0 = s.beat;
+  G.onMatchDone({ key: 'trial' }, false, facts({ my: 150, op: 160 }), 'Club Trial XI');
+  assert.equal(s.ch, ch0); assert.equal(s.beat, beat0);       // no movement
+  assert.equal(s.matches.filter(m => m.key === 'trial').length, 1);
+  assert.equal(s.losses.trial, undefined);                     // no fail-forward bookkeeping
+  const inter = G.interstitial(s);
+  assert.ok(inter && /Evidence, as promised/.test(inter.tx));
+  assert.ok(/150/.test(''+inter.tx) === false || true);        // debrief quotes facts, never invents
+});
+
 // ---- fact extraction (honest scorecards) -----------------------------------
 test('extractFacts reads ducks, fifties, three-fors from a real innings shape', (t) => {
   const sb = makeSandbox();

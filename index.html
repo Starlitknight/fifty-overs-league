@@ -10852,7 +10852,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260717-2200-e01962";
+  var FO_BUILD = "20260717-2349-682558";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -24572,7 +24572,9 @@ FOC.adapter = (function () {
   // draft = {xi:[names in batting order], captain, keeper}
   // Neutral validation: `errors` block Confirm (the engine could not play the
   // card as written); `facts` are observations, stated without judgement.
-  function validate(draft) {
+  // Pass the campaign save as `save` to include promise-deadline and
+  // order-change observations.
+  function validate(draft, save) {
     var errors = [], facts = [];
     var roster = {}, seen = {};
     players().forEach(function (p) { if (p) roster[p.name] = p; });
@@ -24602,6 +24604,37 @@ FOC.adapter = (function () {
         (part ? " plus " + part + " part-time" : "") + ". Fifty overs must come from somewhere.");
       var lefties = xi.filter(function (nm) { return roster[nm] && /l/i.test(roster[nm].hand || ""); }).length;
       if (lefties) facts.push(lefties + " left-hander" + (lefties > 1 ? "s" : "") + " in the order.");
+      // fatigue / availability — stated, not judged
+      xi.forEach(function (nm) {
+        var p = roster[nm];
+        if (p && p.fatigue && p.fatigue !== "rested") facts.push(nm + " is " + p.fatigue + ".");
+      });
+      // planned overs beyond a bowler's legal ten
+      try {
+        var tot = {};
+        [].concat((App.orders.spells || {}).north || [], (App.orders.spells || {}).south || [])
+          .forEach(function (sp) { if (sp && sp.bowler) tot[sp.bowler] = (tot[sp.bowler] || 0) + (sp.n || 0); });
+        Object.keys(tot).forEach(function (nm) {
+          if (tot[nm] > 10) facts.push("The current plan pencils " + tot[nm] + " overs for " + nm + "; ten is the legal limit — the captain will trim on the day.");
+        });
+      } catch (eSp) {}
+      if (save) {
+        // live promise deadlines
+        (save.promises || []).forEach(function (pr) {
+          if (pr.status !== "active") return;
+          if (xi.indexOf(pr.nm) >= 0) facts.push("This card keeps a live promise: " + pr.txt + ".");
+          else facts.push("Live promise: " + pr.txt + " — " + pr.left + " match" + (pr.left === 1 ? "" : "es") + " left, and " + pr.nm + " is not on this card.");
+        });
+        // large batting-position moves vs the last confirmed campaign/league card
+        try {
+          var lus = (save.events || []).filter(function (e) { return e.t === "LineupConfirmed"; });
+          var prevXi = lus.length ? lus[lus.length - 1].data.xi : null;
+          if (prevXi) xi.forEach(function (nm, i) {
+            var j = prevXi.indexOf(nm);
+            if (j >= 0 && Math.abs(j - i) >= 3) facts.push(nm + " moves from " + (j + 1) + " to " + (i + 1) + " in the order.");
+          });
+        } catch (eMv) {}
+      }
     }
     return { ok: !errors.length, errors: errors, facts: facts };
   }
@@ -24623,7 +24656,7 @@ FOC.adapter = (function () {
   // The ONLY mutation path: a validated draft becomes real engine orders.
   // Emits LineupConfirmed (+ selection diffs) exactly once per confirm.
   function applyOrders(save, draft) {
-    var v = validate(draft);
+    var v = validate(draft, save);
     if (!v.ok) return v;
     var roster = {}; players().forEach(function (p) { if (p) roster[p.name] = p; });
     var prev = (App.orders && App.orders.saved && App.orders.batOrder && App.orders.batOrder.length === 11)
@@ -24900,12 +24933,17 @@ FOC.england = (function () {
       },
       function (ctx) {
         var sen = ctx.pickSenior(), kid = ctx.pickProspect(), fr = ctx.pickFringe();
+        var wk = ctx.pickKeeper(), nb = ctx.strikeBowler();
         ctx.setCast("senior", sen); ctx.setCast("prospect", kid); ctx.setCast("fringe", fr);
+        if (wk) ctx.setCast("keeper", wk); if (nb) ctx.setCast("strike", nb);
         return s("The Gaffer", "gaffer",
-          "Three more faces before you go. " + sen.name + " — " + sen.age + ", seen everything, says little. " +
-          kid.name + " — " + kid.age + ", turned up to pre-season a week early. " +
+          "Six anchors, then, and the rest of the squad hangs off them. Your captain you've named. " +
+          sen.name + " — " + sen.age + ", seen everything, says little. " +
+          (wk ? wk.name + " keeps wicket; a keeper sets the standard of a fielding side whether he means to or not. " : "") +
+          (nb ? nb.name + " takes the new ball — the first over of the season is already his. " : "") +
+          kid.name + " — " + kid.age + ", turned up to pre-season a week early, asking for a chance nobody's promised him. " +
           "And " + fr.name + ", who believes — with some evidence — that there's an XI spot with his name on it that keeps going to other people. " +
-          "You'll manage all three of those stories whether you mean to or not.");
+          "Learn those six. The other names will introduce themselves one scorecard at a time.");
       },
       function (ctx) {
         return s("Margaret Hobb — club secretary", "npc:MH",
@@ -24919,7 +24957,16 @@ FOC.england = (function () {
       function (ctx) {
         return s("The Gaffer", "gaffer-wink",
           "That's the table set. Willowmere on Saturday — nice ground, soft hands, they'll smile while they beat you if you let them. " +
-          "If you want a look at anyone first, the Match Lab is open all week; a trial costs nothing but an afternoon. Otherwise: pick your XI in the lineup room and we'll walk out together.");
+          "One more offer before match day: I can raise a Trial XI this afternoon — a proper game, a proper scorecard, and the first hard evidence about your own squad. Entirely optional.",
+          [
+            { t: "Straight to Willowmere — match day is the only trial that counts", fx: function (c) {
+                c.choose("prologue", "trial", "no");
+              } },
+            { t: "Run the trial match — I want evidence before Saturday", fx: function (c) {
+                c.choose("prologue", "trial", "yes");
+                c.save.flags.trialPending = 1;
+              } }
+          ]);
       }
     ]
   };
@@ -25362,6 +25409,19 @@ FOC.game = (function () {
       var ps = A.players().slice().sort(function (a, b) { return (a.age || 0) - (b.age || 0); });
       return ps[0];
     };
+    ctx.pickKeeper = function () {
+      var best = null;
+      A.players().forEach(function (p) { if (p && p.keeper && (!best || (p.keep || 0) > (best.keep || 0))) best = p; });
+      return best;
+    };
+    ctx.strikeBowler = function () {
+      var best = null;
+      A.players().forEach(function (p) {
+        if (p && p.bowlType && !A.isPartTimer(p) &&
+          (!best || ((p.threat || 0) + (p.control || 0)) > ((best.threat || 0) + (best.control || 0)))) best = p;
+      });
+      return best;
+    };
     ctx.pickFringe = function () {
       var t = A.team(); if (!t) return null;
       var inXI = {};
@@ -25484,6 +25544,15 @@ FOC.game = (function () {
         (f && f.oppTopNm ? f.oppTopNm + "'s " + f.oppTopR + " was the difference. " : "") +
         "The fixture stands — this club fails forward. Patch what they found, pick your XI again, and we go back out.");
     }
+    if (it.kind === "trial") {
+      var ft = ctx.facts();
+      return EN.scene("The Gaffer", "gaffer",
+        "Evidence, as promised. " +
+        (ft && ft.topNm ? ft.topNm + " made " + ft.topR + " off " + ft.topB + ". " : "") +
+        (ft && ft.bbNm ? ft.bbNm + " took " + ft.bbW + "-" + ft.bbR + ". " : "") +
+        (ft && ft.ducks && ft.ducks.length ? ft.ducks.join(" and ") + " got nought — a trial duck is a fact, not a verdict. " : "") +
+        "Nothing is proven in a trial, but nothing is invisible either. It's all in the book. Willowmere on Saturday.");
+    }
     if (it.kind === "promiseFulfilled") {
       return EN.scene(it.nm, "player:bat",
         "You said I'd get my start, and there was my name on the sheet. Whatever happens the rest of the summer — I'll remember which kind of manager you are.");
@@ -25570,6 +25639,14 @@ FOC.game = (function () {
     return A.startMatch(s, spec);
   }
 
+  // the optional prologue trial: a REAL match against a raised Trial XI.
+  // It generates evidence (scorecard memories) and never advances chapters.
+  function playTrial(s) {
+    return A.startMatch(s, { id: "trial", nm: "Club Trial XI",
+      ground: (A.team() || {}).ground || "Home", pitch: "flat", wx: "Sunny",
+      arch: "blade", mult: 0.8, chKey: "trial", captFlavour: "talisman" });
+  }
+
   function scanPromises(s) {
     var lus = campaignLineups(s);
     var lastXI = lus.length ? lus[lus.length - 1].data.xi : [];
@@ -25610,6 +25687,14 @@ FOC.game = (function () {
     if (!chKey) return;
     A.recordMatch(s, chKey, win, facts, oppName);
     scanPromises(s);
+    if (chKey === "trial") {
+      // evidence only: no chapter movement, no fail-forward bookkeeping
+      delete s.flags.trialPending;
+      delete s.losses.trial;
+      (s.flags.inter = s.flags.inter || []).push({ kind: "trial" });
+      persist();
+      return;
+    }
     if (chKey === "crown") {
       var v = epilogueVariant(s, win, facts);
       if (!s.epilogue) s.epilogue = { first: v, variant: v, attempts: 1, permanent: true };
@@ -25656,7 +25741,7 @@ FOC.game = (function () {
 
   return { save: save, persist: persist, chapter: chapter, chapterByKey: chapterByKey,
     makeCtx: makeCtx, currentBeat: currentBeat, advance: advance, choose: choose,
-    matchSpec: matchSpec, playMatch: playMatch, onMatchDone: onMatchDone,
+    matchSpec: matchSpec, playMatch: playMatch, playTrial: playTrial, onMatchDone: onMatchDone,
     interstitial: interstitial, popInterstitial: popInterstitial, scanPromises: scanPromises,
     epilogueVariant: epilogueVariant, list: list, init: init,
     _resetForTest: function () { _save = null; } };
@@ -25779,7 +25864,7 @@ FOC.lineup = (function () {
   }
 
   function html() {
-    var v = A.validate(draft);
+    var v = A.validate(draft, FOC.game.save());
     var isCamp = false, oppLine = "";
     try {
       if (App.pending && App.pending.__camp) {
@@ -26119,7 +26204,7 @@ FOC.campaignUI = (function () {
       var s = G.save();
       var inter = G.interstitial(s);
       var beat = inter || G.currentBeat(s);
-      var sig = JSON.stringify([s.ch, s.beat, s.status, (s.flags.inter || []).length, !!inter,
+      var sig = JSON.stringify([s.ch, s.beat, s.status, (s.flags.inter || []).length, !!inter, !!s.flags.trialPending,
         s.matches.length, (function () { try { return !!(App.pending && App.pending.__camp) && !!(App.orders && App.orders.saved); } catch (e) { return 0; } })()]);
       if (!force && page.__smSig === sig && page.querySelector(".fo-sm")) return;
       page.__smSig = sig;
@@ -26130,6 +26215,19 @@ FOC.campaignUI = (function () {
       h += statusHTML(s);
       if (s.status === "complete" && !beat) h += doneHTML(s);
       else if (inter) h += sceneHTML(inter, true);
+      else if (s.flags.trialPending) {
+        var liveT = false, savedT = false;
+        try { liveT = !!(App.pending && App.pending.__camp); savedT = !!(App.orders && App.orders.saved); } catch (eT) {}
+        h += "<div class='sm-where'>Prologue · The Trial</div>" +
+          "<div class='sm-tie'><div class='sm-tie-k'>Optional trial</div>" +
+          "<div class='sm-tie-nm'>Club Trial XI</div>" +
+          "<div class='sm-tie-c'>Your ground · a real match, a real scorecard — evidence before Saturday</div>" +
+          (liveT && savedT ? "<button class='sm-go' id='sm-walk'>Walk out ▸</button>"
+            : liveT ? "<button class='sm-go' id='sm-lineup'>Pick your XI ▸</button>"
+            : "<button class='sm-go' id='sm-trial'>Raise the Trial XI ▸</button>" +
+              "<div><button class='sm-skip' id='sm-trial-skip'>Skip the trial — on to Willowmere</button></div>") +
+          "</div>";
+      }
       else if (beat && beat.kind === "scene") {
         var c0 = G.chapter(s);
         h += "<div class='sm-where'>" + esc(s.ch >= 11 ? "Epilogue" : (c0 ? c0.title : "")) + (c0 && c0.tag && s.ch < 11 ? " · " + esc(c0.tag) : "") + "</div>";
@@ -26165,6 +26263,10 @@ FOC.campaignUI = (function () {
     if (pl) pl.addEventListener("click", function () {
       if (!G.playMatch(s)) { /* a live match blocks the fixture */ }
     });
+    var tr = page.querySelector("#sm-trial");
+    if (tr) tr.addEventListener("click", function () { G.playTrial(s); });
+    var trs = page.querySelector("#sm-trial-skip");
+    if (trs) trs.addEventListener("click", function () { delete s.flags.trialPending; G.persist(); render(true); });
     var lu = page.querySelector("#sm-lineup");
     if (lu) lu.addEventListener("click", function () { location.hash = "#/lineup"; if (typeof window.route === "function") window.route(); });
     var wk = page.querySelector("#sm-walk");
@@ -26225,6 +26327,7 @@ FOC.campaignUI = (function () {
       ".sm-tie-c{color:#5b6472;font-size:13px}" +
       ".sm-rem{color:#9c2f18;font-size:12px;margin-top:4px}" +
       "html body #page .sm-go{margin-top:12px;background:#C8674A;border:none;color:#fff;border-radius:9px;padding:12px 22px;font-family:Oswald,sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-size:13px;min-height:44px}" +
+      "html body #page .sm-skip{margin-top:9px;border:none;background:transparent;color:#8a90a0;font-size:12px;text-decoration:underline dotted}" +
       ".sm-hist{margin:10px 0;text-align:left;max-width:420px;margin-left:auto;margin-right:auto}" +
       ".sm-hrow{font-size:13px;color:#2a3140;padding:3px 0;border-bottom:1px dashed #e3dcc6}" +
       ".sm-hrow .w{color:#2E7A3C;font-weight:700}.sm-hrow .l{color:#9c2f18;font-weight:700}" +

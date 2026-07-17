@@ -114,7 +114,7 @@ FOC.lineup = (function () {
   }
 
   function html() {
-    var v = A.validate(draft);
+    var v = A.validate(draft, FOC.game.save());
     var isCamp = false, oppLine = "";
     try {
       if (App.pending && App.pending.__camp) {
