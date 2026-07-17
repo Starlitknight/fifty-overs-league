@@ -10791,7 +10791,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260717-1842-c687f3";
+  var FO_BUILD = "20260717-1906-1f7171";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -23288,10 +23288,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       academy: "technically-correct batsmen and swing bowlers",
       trophy: "The Ashes Urn", nats: ["England", "Ireland"],
       clubs: [
-        { mx: 61, my: 55, nm: "Tyke County CC", city: "Leeds", note: "dour opening pair", nug: "Leeds: cloud rolls off the moors and the ball talks all morning. Their openers bat until tea and nothing is given away. But they only have one gear - keep wickets in hand and they run out of tricks.", mult: 0.84 },
-        { mx: 72, my: 79.5, nm: "The Southern Shires", city: "Canterbury", note: "gritty county pros", nug: "Canterbury: old trees, older pros. Deep, stubborn batting and nagging medium pace that never misses its line. Quick singles rattle them - they set fields for maidens, not for hustle.", mult: 0.90 },
+        { mx: 61, my: 55, nm: "Tyke County CC", city: "Leeds", note: "dour opening pair", gq: "Tyke County? Dour Yorkshiremen who bat till you beg. Bore 'em out — patience, not fireworks.", nug: "Leeds: cloud rolls off the moors and the ball talks all morning. Their openers bat until tea and nothing is given away. But they only have one gear - keep wickets in hand and they run out of tricks.", mult: 0.84 },
+        { mx: 72, my: 79.5, nm: "The Southern Shires", city: "Canterbury", note: "gritty county pros", gq: "Southern Shires nick your singles all day. Run hard, or they squeeze the life out of you.", nug: "Canterbury: old trees, older pros. Deep, stubborn batting and nagging medium pace that never misses its line. Quick singles rattle them - they set fields for maidens, not for hustle.", mult: 0.90 },
         { boss: 1, mx: 64.5, my: 74.5, nm: "Marylebone Old Guard", city: "London", capt: "master",
-          leader: "Sir Giles Pemberley", note: "bats time and never, ever gives it away", nug: "London: the long room hushes when Pemberley walks out - he bats TIME, not runs. Force the pace at the other end; his partners panic long before he does.", mult: 0.97 }
+          leader: "Sir Giles Pemberley", note: "bats time and never, ever gives it away", gq: "Pemberley bats time, not runs. Strand him — starve the other end and he cracks.", nug: "London: the long room hushes when Pemberley walks out - he bats TIME, not runs. Force the pace at the other end; his partners panic long before he does.", mult: 0.97 }
       ] },
     { id: "win", nm: "West Indies", cty: "West Indies", arch: "finisher", type: "Power & Flair", ac: "#B5892F",
       pitch: "flat", wx: "Hot",
@@ -23300,10 +23300,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       academy: "power-hitters and big-hitting all-rounders",
       trophy: "The Caribbean Crown", nats: ["West Indies"],
       clubs: [
-        { mx: 89.5, my: 56.5, nm: "Windward Kings", city: "Bridgetown", note: "clean ball-strikers", nug: "Bridgetown: sea breeze, lightning outfield, and openers who hit through the line from ball one. When it swings early they fall over - two quick wickets turn the party quiet.", mult: 0.88 },
-        { mx: 26.5, my: 46.5, nm: "Sugar City CC", city: "Kingston", note: "carnival hitters", nug: "Kingston: the drums start when the sixes do, and late in the innings nobody clears a rope like them. Strangle the first fifteen overs and the carnival never gets going.", mult: 0.94 },
+        { mx: 89.5, my: 56.5, nm: "Windward Kings", city: "Bridgetown", note: "clean ball-strikers", gq: "Windward Kings swing from ball one. Two early wickets and the party's over.", nug: "Bridgetown: sea breeze, lightning outfield, and openers who hit through the line from ball one. When it swings early they fall over - two quick wickets turn the party quiet.", mult: 0.88 },
+        { mx: 26.5, my: 46.5, nm: "Sugar City CC", city: "Kingston", note: "carnival hitters", gq: "Sugar City live for the death. Choke the first fifteen and the drums go quiet.", nug: "Kingston: the drums start when the sixes do, and late in the innings nobody clears a rope like them. Strangle the first fifteen overs and the carnival never gets going.", mult: 0.94 },
         { boss: 1, mx: 87, my: 79.5, nm: "The Calypso Titans", city: "Port of Spain", capt: "talisman",
-          leader: "King Emmanuel", note: "can win a match in ten overs flat", nug: "Port of Spain: King Emmanuel can win a match in ten overs - he's done it, twice, laughing. Get ahead of the rate early and he gambles; that's when kings fall.", mult: 1.01 }
+          leader: "King Emmanuel", note: "can win a match in ten overs flat", gq: "King Emmanuel wins games in ten overs, laughing. Get ahead early — that's when kings gamble.", nug: "Port of Spain: King Emmanuel can win a match in ten overs - he's done it, twice, laughing. Get ahead of the rate early and he gambles; that's when kings fall.", mult: 1.01 }
       ] },
     { id: "rsa", nm: "South Africa", cty: "South Africa", arch: "express", type: "Express Pace", ac: "#B23A2E",
       pitch: "green", wx: "Windy",
@@ -23312,10 +23312,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       academy: "express fast bowlers and gun fielders",
       trophy: "The Protea Shield", nats: ["South Africa", "Zimbabwe"],
       clubs: [
-        { mx: 45, my: 46, nm: "Highveld Reef", city: "Johannesburg", note: "hostile quicks", nug: "Johannesburg: thin air on the Highveld - the ball flies, and so do their quicks. Their spin is an afterthought: see the shine off and the middle overs are yours.", mult: 0.92 },
-        { mx: 36, my: 67, nm: "Cape Storm CC", city: "Cape Town", note: "gully-cordon hawks", nug: "Cape Town: the wind howls in from the sea and their cordon catches everything that moves. Their batting is thinner than their bowling - make them chase, and dig in.", mult: 0.98 },
+        { mx: 45, my: 46, nm: "Highveld Reef", city: "Johannesburg", note: "hostile quicks", gq: "Highveld quicks fly in the thin air. Their spin's an afterthought — cash in the middle.", nug: "Johannesburg: thin air on the Highveld - the ball flies, and so do their quicks. Their spin is an afterthought: see the shine off and the middle overs are yours.", mult: 0.92 },
+        { mx: 36, my: 67, nm: "Cape Storm CC", city: "Cape Town", note: "gully-cordon hawks", gq: "Cape Storm catch everything that moves. Make 'em chase, then dig in.", nug: "Cape Town: the wind howls in from the sea and their cordon catches everything that moves. Their batting is thinner than their bowling - make them chase, and dig in.", mult: 0.98 },
         { boss: 1, mx: 53, my: 57, nm: "The Veldt Fire", city: "Durban", capt: "ironman",
-          leader: "Morné Steenkamp", note: "bowls thunderbolts and sets attacking fields", nug: "Durban: Steenkamp with a new ball under lights is the fastest thing on the Circuit. Survive his first two spells and the sting fades - the support cast is mortal.", mult: 1.05 }
+          leader: "Morné Steenkamp", note: "bowls thunderbolts and sets attacking fields", gq: "Steenkamp under lights is the quickest out here. Ride two spells — then he's mortal.", nug: "Durban: Steenkamp with a new ball under lights is the fastest thing on the Circuit. Survive his first two spells and the sting fades - the support cast is mortal.", mult: 1.05 }
       ] },
     { id: "aus", nm: "Australia", cty: "Australia", arch: "blade", type: "Flat-Track Runs", ac: "#D08A12",
       pitch: "flat", wx: "Scorching",
@@ -23324,10 +23324,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       academy: "aggressive, high-strike-rate top-order batsmen",
       trophy: "The Golden Bat", nats: ["Australia"],
       clubs: [
-        { mx: 14.5, my: 49, nm: "Goldfields CC", city: "Perth", note: "hard-running openers", nug: "Perth: real bounce and openers who run everything twice. They live on the front foot - short, straight and disciplined seam makes them sweat.", mult: 0.96 },
-        { mx: 32, my: 42, nm: "Outback Rovers", city: "Alice Springs", note: "relentless run-scorers", nug: "Alice Springs: a road in the red centre - they grind out mountains of runs in the heat. Patience beats them: dry up the boundaries and the desert does the rest.", mult: 1.02 },
+        { mx: 14.5, my: 49, nm: "Goldfields CC", city: "Perth", note: "hard-running openers", gq: "Goldfields run everything twice. Short and straight — make 'em earn it.", nug: "Perth: real bounce and openers who run everything twice. They live on the front foot - short, straight and disciplined seam makes them sweat.", mult: 0.96 },
+        { mx: 32, my: 42, nm: "Outback Rovers", city: "Alice Springs", note: "relentless run-scorers", gq: "Rovers pile it on in the heat. Dry up the rope, let the desert do the work.", nug: "Alice Springs: a road in the red centre - they grind out mountains of runs in the heat. Patience beats them: dry up the boundaries and the desert does the rest.", mult: 1.02 },
         { boss: 1, mx: 45.5, my: 61.5, nm: "The Sunburnt XI", city: "Melbourne", capt: "general",
-          leader: "Doug Cazaly", note: "a merciless run-machine who bats you out of the game", nug: "Melbourne: ninety thousand seats and Cazaly bats like he owns every one of them. His bowlers are ordinary once the shine goes - out-bat him, if you dare.", mult: 1.09 }
+          leader: "Doug Cazaly", note: "a merciless run-machine who bats you out of the game", gq: "Cazaly bats like he owns the 'G. His bowlers are ordinary — out-bat him, if you've the nerve.", nug: "Melbourne: ninety thousand seats and Cazaly bats like he owns every one of them. His bowlers are ordinary once the shine goes - out-bat him, if you dare.", mult: 1.09 }
       ] },
     { id: "nzl", nm: "New Zealand", cty: "New Zealand", arch: "gloveman", type: "Safe Hands", ac: "#0E9E97",
       pitch: "balanced", wx: "Chilly",
@@ -23336,10 +23336,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       academy: "keeper-batsmen and disciplined seam bowlers",
       trophy: "The Safe Hands Cup", nats: ["New Zealand"],
       clubs: [
-        { mx: 33, my: 53, nm: "Kauri Coast CC", city: "Christchurch", note: "tidy medium-pacers", nug: "Christchurch: tidy seamers, straight lines, and not a single dropped catch all season. There's no mystery to solve - just more discipline than you. Outscore it.", mult: 1.00 },
-        { mx: 48, my: 38, nm: "Southern Cross XI", city: "Wellington", note: "canny keeper-bats", nug: "Wellington: they read the gale like sailors and their keeper-bats steal runs you didn't know existed. Genuine pace hurries them - bend your backs.", mult: 1.06 },
+        { mx: 33, my: 53, nm: "Kauri Coast CC", city: "Christchurch", note: "tidy medium-pacers", gq: "Kauri Coast: straight lines, no drops. No mystery — just outscore the discipline.", nug: "Christchurch: tidy seamers, straight lines, and not a single dropped catch all season. There's no mystery to solve - just more discipline than you. Outscore it.", mult: 1.00 },
+        { mx: 48, my: 38, nm: "Southern Cross XI", city: "Wellington", note: "canny keeper-bats", gq: "Southern Cross read the gale like sailors. Genuine pace hurries them — bend your backs.", nug: "Wellington: they read the gale like sailors and their keeper-bats steal runs you didn't know existed. Genuine pace hurries them - bend your backs.", mult: 1.06 },
         { boss: 1, mx: 48, my: 19.5, nm: "The Longwhite XI", city: "Auckland", capt: "clutch",
-          leader: "Kane Whitcombe", note: "never drops a chance, never gives an inch", nug: "Auckland: Whitcombe hasn't dropped a chance in four seasons. Nothing loose, nothing scary - set a real total and squeeze, because they will not crack first.", mult: 1.12 }
+          leader: "Kane Whitcombe", note: "never drops a chance, never gives an inch", gq: "Whitcombe hasn't shelled a catch in four years. Post a real total and squeeze — they won't crack first.", nug: "Auckland: Whitcombe hasn't dropped a chance in four seasons. Nothing loose, nothing scary - set a real total and squeeze, because they will not crack first.", mult: 1.12 }
       ] },
     { id: "sub", nm: "The Subcontinent", cty: "India", arch: "wizard", type: "Spin Web", ac: "#7B45C4",
       pitch: "dry", wx: "Humid",
@@ -23348,10 +23348,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       academy: "spinners and wristy, spin-savvy batsmen",
       trophy: "The Spin Web Trophy", nats: ["India", "Pakistan", "Sri Lanka", "Afghanistan"],
       clubs: [
-        { mx: 46, my: 88, nm: "Monsoon CC", city: "Colombo", note: "flighted off-spin", nug: "Colombo: heat, flight and off-spin that dips late. They're a different side when the ball seams - pray for cloud, bowl full, and attack before it grips.", mult: 1.04 },
-        { mx: 26, my: 55, nm: "The Maidan Kings", city: "Mumbai", note: "wristy mystery-spin", nug: "Mumbai: wristy magicians raised on maidan dust bowls. Sweep hard and use your feet early - once the pitch bites, the web is spun.", mult: 1.10 },
+        { mx: 46, my: 88, nm: "Monsoon CC", city: "Colombo", note: "flighted off-spin", gq: "Monsoon flight it and let it dip. Bowl full, attack before it grips.", nug: "Colombo: heat, flight and off-spin that dips late. They're a different side when the ball seams - pray for cloud, bowl full, and attack before it grips.", mult: 1.04 },
+        { mx: 26, my: 55, nm: "The Maidan Kings", city: "Mumbai", note: "wristy mystery-spin", gq: "Maidan wristmen spin webs from dust. Sweep hard, use your feet — early.", nug: "Mumbai: wristy magicians raised on maidan dust bowls. Sweep hard and use your feet early - once the pitch bites, the web is spun.", mult: 1.10 },
         { boss: 1, mx: 27, my: 19, nm: "The Dust Devils", city: "Lahore", capt: "talisman",
-          leader: "Vikram Anand", note: "bowls six different balls an over", nug: "Lahore: Anand bowls six different balls an over and reads your feet like a newspaper. His quicks are ordinary - cash in at the other end and duel him on YOUR terms.", mult: 1.18 }
+          leader: "Vikram Anand", note: "bowls six different balls an over", gq: "Anand bowls six different balls an over and reads your feet. Duel him on your terms; cash in at the other.", nug: "Lahore: Anand bowls six different balls an over and reads your feet like a newspaper. His quicks are ordinary - cash in at the other end and duel him on YOUR terms.", mult: 1.18 }
       ] }
   ];
   function foCxRegionByIx(ri) { return FO_CX_REGIONS[ri] || null; }
@@ -23525,6 +23525,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-cx-prog{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:10px;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:#8a90a0}" +
       ".fo-cx-prog i{width:10px;height:10px;border-radius:50%;border:2px solid var(--cxc,#C9A24B);display:inline-block}" +
       ".fo-cx-prog i.f{background:var(--cxc,#C9A24B)}" +
+      ".fo-cx-brief{max-width:680px;margin:15px auto 0;background:#FFFEFC;border:1.5px solid #D9B75A;border-radius:13px;padding:13px 17px;display:flex;gap:13px;align-items:flex-start;text-align:left;box-shadow:0 4px 0 rgba(16,27,45,.16)}" +
+      ".fo-cx-brief.flash{animation:foCxBriefFlash .5s ease-out}" +
+      "@keyframes foCxBriefFlash{0%{box-shadow:0 4px 0 rgba(16,27,45,.16),0 0 0 3px var(--cxc,#C9A24B)}100%{box-shadow:0 4px 0 rgba(16,27,45,.16),0 0 0 0 rgba(201,162,75,0)}}" +
+      ".fo-cx-brief img.gf{width:54px;height:54px;border-radius:50%;object-fit:cover;object-position:top;border:1.5px solid #D9B75A;background:#FFFEFC;flex:0 0 54px}" +
+      ".fo-cx-brief .bx{flex:1;min-width:0}" +
+      ".fo-cx-brief .sp{display:block;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1.4px;font-weight:600;text-transform:uppercase;margin-bottom:3px;color:#C8674A}" +
+      ".fo-cx-brief .tx{font-size:15.5px;color:#101B2D;line-height:1.5;font-style:italic}" +
+      ".fo-cx-brief .act{margin-top:11px;min-height:20px}" +
+      ".fo-cx-brief .hint{font-size:12.5px;color:#8a90a0;font-style:italic}" +
       ".fo-cx-sec{display:flex;align-items:center;gap:10px;margin:18px auto 9px;max-width:680px;letter-spacing:2px;text-transform:uppercase;color:#101B2D;font-size:12.5px;font-weight:500;font-family:Oswald,sans-serif}" +
       ".fo-cx-sec i{flex:1;height:1px;background:rgba(16,27,45,.18);font-style:normal}" +
       ".fo-cx-rows{display:flex;flex-direction:column;gap:9px;max-width:680px;margin:0 auto}" +
@@ -23631,27 +23640,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var live = !foCxConquered(st, r.id);
         var nextCi = -1;
         if (live) for (var i3 = 0; i3 < r.clubs.length; i3++) if (!foCxBeaten(st, r.id, i3)) { nextCi = i3; break; }
-        var rows = r.clubs.map(function (c3, ci) {
-          var done = foCxBeaten(st, r.id, ci);
-          var open = live && ci === nextCi;
-          var act = done ? "<span class='fo-cx-won'>✓ Beaten</span>"
-            : open ? "<button type='button' class='fo-cx-ch' data-ci='" + ci + "'>Challenge</button>"
-            : "<span class='fo-cx-lock'>Locked</span>";
-          var sub = c3.city + (c3.boss ? " · captain <b>" + E(c3.leader) + "</b>, " + E(c3.note) : " · " + E(c3.note));
-          var why = (open && !c3.boss) ? "<span class='fo-cx-why'>The Gaffer: " + E(r.gaffer.split(".")[0]) + ".</span>" : "";
-          return "<div class='fo-cx-row" + (done ? " done" : "") + (c3.boss ? " bossr" : "") + "'>" +
-            (c3.boss ? "<span class='fo-cx-bossav'><img src='" + FO_ART + "circuit/boss-" + r.id + ".webp' alt=''>" + (done ? "<i>✓</i>" : "") + "</span>"
-                     : "<span class='no'>" + (done ? "✓" : (ci + 1)) + "</span>") +
-            "<div class='m'><span class='fo-cx-nm'>" + E(c3.nm) + (c3.boss ? " — Boss" : "") + "</span>" +
-            "<span class='fo-cx-sub'>" + sub + "</span>" + why + "</div>" + act + "</div>";
-        }).join("");
         html = "<div class='fo-cx' style='--cxc:" + r.ac + "'>" +
           "<div class='fo-cx-chap'>" + chap + "</div>" +
           "<div class='fo-cx-head'>" +
-          "<div class='fo-cx-rule'><i></i><b>THE CIRCUIT · " + (st.conq || []).length + " OF " + FO_CX_REGIONS.length + " NATIONS CONQUERED</b><i></i></div>" +
+          "<div class='fo-cx-rule'><i></i><b>THE CIRCUIT · " + (st.conq || []).length + " OF " + FO_CX_REGIONS.length + " REGIONS CONQUERED</b><i></i></div>" +
           "<div class='fo-cx-h1'>" + E(r.nm) + "</div>" +
-          "<span class='fo-cx-type' style='background:" + r.ac + "'>" + E(r.type) + "</span>" +
-          "<p class='fo-cx-cond'><b>" + E(r.cond.split(".")[0]) + ".</b> " + E(r.cond.split(".").slice(1).join(".").trim()) + "</p>" +
           "<div class='fo-cx-prog'>Progress · " + beatN + " / " + r.clubs.length + " beaten <span style='display:inline-flex;gap:5px;margin-left:4px'>" + dots + "</span></div>" +
           "</div>" +
           (function () {
@@ -23666,7 +23659,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
                 return "<button type='button' class='" + cls5 + "' data-ci='" + i5 + "' style='left:" + c5.mx + "%;top:" + c5.my + "%'>" +
                   (done5 ? "✓" : (c5.boss ? "★" : (i5 + 1))) + "<span class='cl'>" + E(c5.city) + "</span></button>";
               }).join("") +
-              "<div class='fo-cx-info' id='fo-cx-info' hidden></div>" +
               "</div></div>" +
               "<div class='fo-cx-rail'>" +
               "<div class='fo-cx-bosscard" + (bossDone ? " conq" : "") + "'>" +
@@ -23682,12 +23674,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
               "</div>" +
               "</div></div>";
           })() +
-          (live ? foJGbox(r.gaffer) : "") +
-          "<div class='fo-cx-sec'><i></i>The Challenges<i></i></div>" +
-          "<div class='fo-cx-rows'>" + rows + "</div>" +
-          "<div class='fo-cx-ledger'><div class='lh'>On conquering " + E(r.nm) + "</div>" +
-          "<p><b>" + E(r.trophy) + "</b> goes in your museum, the board wires <span class='pos'>" + FO$(foCxPrize(ri, true)) + "</span> prize money, and " + E(r.nm) + "'s youth academy opens for good — <b>better odds of " + E(r.academy) + "</b> in your youth scout." +
-          " Fly anywhere next - every nation's door is open, and all six trophies earn the shot at <b>Reggie Thorne</b>.</p></div>" +
+          "<div class='fo-cx-brief' id='fo-cx-brief'>" +
+          "<img class='gf' src='" + FO_ART + "gaffer.png' alt=''>" +
+          "<div class='bx'>" +
+          "<span class='sp' id='fo-cx-brief-sp'>The Gaffer</span>" +
+          "<span class='tx' id='fo-cx-brief-tx'>&ldquo;" + E(r.gaffer) + "&rdquo;</span>" +
+          "<div class='act' id='fo-cx-brief-act'><span class='hint'>Tap a city on the map to scout its club" + (live ? " &mdash; then challenge it." : ".") + "</span></div>" +
+          "</div></div>" +
           "</div>";
       }
       page.innerHTML = html;
@@ -23699,20 +23692,33 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       page.querySelectorAll(".fo-cx-ch[data-ci]").forEach(function (b2) {
         b2.addEventListener("click", function () { foCxChallenge(ri, +b2.getAttribute("data-ci")); });
       });
-      // tap a city: the scout's nugget on that club, right on the map
-      page.querySelectorAll(".fo-cx-node[data-ci]").forEach(function (nd2) {
-        nd2.addEventListener("click", function () {
-          var info = page.querySelector("#fo-cx-info"); if (!info) return;
-          var ci2 = +nd2.getAttribute("data-ci"), c6 = FO_CX_REGIONS[ri].clubs[ci2];
-          if (!info.hidden && info.__ci === ci2) { info.hidden = true; return; }
-          info.__ci = ci2;
-          info.innerHTML = "<button type='button' class='x' aria-label='Close'>×</button>" +
-            "<div class='inm'>" + E(c6.nm) + (c6.boss ? " — Boss" : "") + "</div>" +
-            "<div class='itx'>" + E(c6.nug || (c6.city + " · " + c6.note)) + "</div>";
-          info.hidden = false;
-          info.querySelector(".x").addEventListener("click", function (ev2) { ev2.stopPropagation(); info.hidden = true; });
+      // tap a city: the Gaffer scouts that club in the briefing box, and offers
+      // the challenge right there. The map + the Gaffer ARE the interface now.
+      (function () {
+        var rr = FO_CX_REGIONS[ri], stt = foCxState();
+        var liveR = !foCxConquered(stt, rr.id);
+        var nCi = -1; if (liveR) for (var q = 0; q < rr.clubs.length; q++) if (!foCxBeaten(stt, rr.id, q)) { nCi = q; break; }
+        var sp = page.querySelector("#fo-cx-brief-sp"), tx = page.querySelector("#fo-cx-brief-tx"), act = page.querySelector("#fo-cx-brief-act");
+        var brief = page.querySelector("#fo-cx-brief");
+        var show = function (ci2) {
+          var c6 = rr.clubs[ci2], done6 = foCxBeaten(stt, rr.id, ci2), open6 = liveR && ci2 === nCi;
+          if (sp) { sp.textContent = c6.nm + (c6.boss ? " · Boss" : ""); sp.style.color = rr.ac; }
+          if (tx) tx.innerHTML = "&ldquo;" + E(c6.gq || (c6.city + " · " + c6.note)) + "&rdquo;";
+          if (act) {
+            if (done6) act.innerHTML = "<span class='fo-cx-won'>&#10003; " + E(c6.city) + " conquered</span>";
+            else if (open6) act.innerHTML = "<button type='button' class='fo-cx-ch' data-ci='" + ci2 + "'>Challenge " + E(c6.nm) + " &#9654;</button>";
+            else { var prev = rr.clubs[ci2 - 1]; act.innerHTML = "<span class='fo-cx-lock'>&#128274; Beat " + E(prev ? prev.city : "the others") + " first</span>"; }
+            var cb = act.querySelector(".fo-cx-ch[data-ci]");
+            if (cb) cb.addEventListener("click", function () { foCxChallenge(ri, +cb.getAttribute("data-ci")); });
+          }
+          if (brief) { brief.classList.remove("flash"); void brief.offsetWidth; brief.classList.add("flash"); }
+        };
+        page.querySelectorAll(".fo-cx-node[data-ci]").forEach(function (nd2) {
+          nd2.addEventListener("click", function () { show(+nd2.getAttribute("data-ci")); });
         });
-      });
+        // open on the next club to play, so the challenge is one tap away
+        if (liveR && nCi >= 0) show(nCi);
+      })();
       try { if (window.__foLive) window.__foLive.mask(); } catch (eM2) {}
     } catch (e) {}
   }
