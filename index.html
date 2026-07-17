@@ -10791,7 +10791,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260717-1824-658aca";
+  var FO_BUILD = "20260717-1842-c687f3";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -11771,7 +11771,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     // While planning a future round, don't auto-push the current round's orders.
     if (!(SYNC.planRound == null && SYNC.started && window.App && App.season && typeof GD !== "undefined" && GD.teams)) return;
     var tro = foTrainState();
-    var ordersReady = App.orders && App.orders.saved;
+    // COMPETITION SCOPE: App.orders is shared with the tutorial, friendlies and
+    // the Circuit. Never serialize those into a LEAGUE packet - a Circuit XI must
+    // not silently become the plan for the next competitive round. Training,
+    // youth and market pending are competition-independent and still push.
+    var inNonLeague = !!(App.pending && (App.pending.__circuit || App.pending.__friendly || App.pending.__tut) || (typeof M !== "undefined" && M && !M.done && M.meta && (M.meta.__circuit || M.meta.__friendly || M.meta.__tut)));
+    var ordersReady = App.orders && App.orders.saved && !inNonLeague;
     var sig = (ordersReady ? JSON.stringify(App.orders) : "-") + "|" + JSON.stringify(tro.training) + "|" + JSON.stringify(tro.youthPending.map(function (y) { return y.name; })) + "|" + JSON.stringify((tro.marketPending || []).map(function (y) { return y.name; })) + "|" + JSON.stringify(tro.seatsPending || null) + "|" + (tro.sponsorPending || "") + "|" + App.season.round;
     if (!force && sig === SYNC.lastOrderSig) return;
     if (!(ordersReady || Object.keys(tro.training).length || tro.youthPending.length || (tro.marketPending || []).length || tro.seatsPending || tro.sponsorPending)) return;
@@ -11805,6 +11810,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         try {
           if (!(SYNC && SYNC.started && !SYNC.practice && LG)) return;
           if (!(App.orders && App.orders.saved)) return;
+          if (App.pending && (App.pending.__circuit || App.pending.__friendly || App.pending.__tut)) return;   // never push a non-league XI
           if (SYNC.planRound != null) foPushRound(SYNC.planRound, App.orders);
           else foPushCurrentPacket(true);
           foRefreshLineupButtons();
@@ -14217,26 +14223,45 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".pk-sign .pk-fc{gap:5px;padding:0 2px}.pk-sign .pk-fc svg{width:15px;height:15px;flex:0 0 15px}" +
       ".pk-sign .pk-fc i{font-size:8.5px;letter-spacing:1px}.pk-sign .pk-fc b{font-size:11.5px}" +
       "html body .pk-sign .pk-cta,html body.ftpskin .pk-sign .pk-cta{font-size:14px;letter-spacing:2.2px;padding:7px;margin-top:7px;border-radius:9px}" +
-      // the unboxing: sealed pack + cards dealt to the grid in role order
-      ".fo-jrv{text-align:center}" +
-      "html body #fo-onb .fo-jrv-pack{display:inline-flex;flex-direction:column;align-items:center;gap:6px;margin:14px auto 6px;padding:22px 30px 16px;cursor:pointer;font:inherit;color:#F5EFDC;background:radial-gradient(circle at 50% 24%,#1c2c49 0%,#101B2D 70%);border:2.5px solid #C9A24B;border-radius:18px;box-shadow:0 10px 26px rgba(16,27,45,.4),inset 0 0 0 1.5px rgba(201,162,75,.35);transition:transform .35s,opacity .35s}" +
-      "html body #fo-onb .fo-jrv-pack:hover{transform:translateY(-2px)}" +
-      ".fo-jrv-pack img.fo-j-crimg{width:84px;height:84px}" +
+      // the unboxing: a spotlit pack, then compact role-tinted chips dealt 1-by-1
+      ".fo-jrv-wrap{background:radial-gradient(120% 90% at 50% 0%,#16223c 0%,#0d1626 60%,#0a1220 100%);border-radius:20px;margin:6px auto 0;max-width:760px;padding:20px 16px 26px;box-shadow:inset 0 0 0 1.5px rgba(201,162,75,.28),0 14px 40px rgba(6,12,22,.4)}" +
+      ".fo-jrv{text-align:center;position:relative}" +
+      ".fo-jrv-spot{position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:340px;height:280px;background:radial-gradient(circle,rgba(201,162,75,.28),transparent 66%);pointer-events:none;filter:blur(4px)}" +
+      ".fo-jrv-eyebrow{position:relative;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:4px;text-transform:uppercase;font-size:11px;color:#C9A24B}" +
+      "html body #fo-onb .fo-jrv-h1,html body.ftpskin #fo-onb .fo-jrv-h1{color:#F5EFDC !important;margin:2px 0 4px;font-size:clamp(30px,6vw,44px);text-shadow:0 2px 14px rgba(201,162,75,.35)}" +
+      "html body #fo-onb .fo-jrv-pack{position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:6px;margin:10px auto 4px;padding:20px 34px 15px;cursor:pointer;font:inherit;color:#F5EFDC;background:radial-gradient(circle at 50% 22%,#22345a 0%,#141f38 72%);border:2.5px solid #C9A24B;border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.5),0 0 34px rgba(201,162,75,.35),inset 0 0 0 1.5px rgba(201,162,75,.45);transition:transform .35s,opacity .35s;animation:foJrvFloat 3s ease-in-out infinite}" +
+      "@keyframes foJrvFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}" +
+      "html body #fo-onb .fo-jrv-pack:hover{transform:translateY(-3px) scale(1.02)}" +
+      ".fo-jrv-pack img.fo-j-crimg{width:82px;height:82px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.5))}" +
       ".fo-jrv-pack .pk1{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;font-size:16px}" +
-      ".fo-jrv-pack .pk2{font-family:Oswald,sans-serif;font-weight:500;letter-spacing:2px;text-transform:uppercase;font-size:10.5px;color:#C9A24B;animation:foJb 1.6s infinite}" +
-      ".fo-jrv-pack.open{transform:scale(.6) rotate(-7deg);opacity:0;pointer-events:none;position:absolute;left:50%;margin-left:-90px}" +
-      ".fo-jrv-lab{min-height:26px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:3px;text-transform:uppercase;font-size:15px;color:#C8674A;margin:6px 0 8px}" +
+      ".fo-jrv-pack .pk2{font-family:Oswald,sans-serif;font-weight:500;letter-spacing:2px;text-transform:uppercase;font-size:10.5px;color:#E4C463;animation:foJb 1.6s infinite}" +
+      ".fo-jrv-pack.open{animation:none;transform:scale(.4) rotate(-8deg);opacity:0;pointer-events:none;position:absolute;left:50%;top:70px;margin-left:-90px}" +
+      ".fo-jrv-burst{position:absolute;left:50%;top:44%;width:20px;height:20px;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 0 rgba(201,162,75,.7)}" +
+      ".fo-jrv-pack.open .fo-jrv-burst{animation:foJrvBurst .6s ease-out}" +
+      "@keyframes foJrvBurst{0%{box-shadow:0 0 0 0 rgba(201,162,75,.8)}100%{box-shadow:0 0 0 220px rgba(201,162,75,0)}}" +
+      ".fo-jrv-lab{position:relative;min-height:22px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:3px;text-transform:uppercase;font-size:14px;color:#E4C463;margin:4px 0 10px}" +
       ".fo-jrv-lab.pop{animation:foJrvPop .4s ease-out}" +
       "@keyframes foJrvPop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}" +
-      ".fo-jrv-grid{position:relative;text-align:left}" +
+      ".fo-jrv-grid{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left}" +
+      "@media(max-width:560px){.fo-jrv-grid{grid-template-columns:1fr}}" +
       ".fo-jrv-cell{opacity:0}" +
-      ".fo-jrv-cell.fly{animation:foJrvFly .6s cubic-bezier(.18,.7,.28,1.12) forwards}" +
-      ".fo-jrv-cell.fly.insta{animation-duration:.01s}" +
-      "@keyframes foJrvFly{0%{opacity:0;transform:translate(var(--dx,0),var(--dy,-200px)) scale(.18) rotate(var(--rot,12deg))}55%{opacity:1}100%{opacity:1;transform:none}}" +
-      "@media (prefers-reduced-motion:reduce){.fo-jrv-cell{opacity:1}.fo-jrv-cell.fly{animation:none}}" +
-      ".fo-jrv-foot{margin-top:14px}" +
-      ".fo-jrv-skip{min-height:20px;margin-top:10px}" +
-      ".fo-jrv-skip a{cursor:pointer;font-size:12.5px;color:#8a90a0;text-decoration:underline dotted}" +
+      ".fo-jrv-cell.in{animation:foJrvFly .5s cubic-bezier(.16,.72,.28,1.1) forwards}" +
+      ".fo-jrv-cell.in.insta{animation-duration:.01s}" +
+      "@keyframes foJrvFly{0%{opacity:0;transform:translate(var(--dx,0),var(--dy,-180px)) scale(.2) rotate(var(--rot,10deg))}60%{opacity:1}100%{opacity:1;transform:none}}" +
+      "@media (prefers-reduced-motion:reduce){.fo-jrv-cell{opacity:1}.fo-jrv-cell.in{animation:none}}" +
+      ".jrc{display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,#FFFEFC,#FBF6E9);border:1px solid rgba(201,162,75,.4);border-left:4px solid var(--ac);border-radius:11px;padding:6px 12px 6px 9px;box-shadow:0 3px 9px rgba(6,12,22,.28)}" +
+      ".jrc-art{width:38px;height:42px;flex:0 0 38px;border-radius:8px;background:radial-gradient(circle at 50% 26%,color-mix(in srgb,var(--ac) 26%,#fff),#F1EAD9);display:grid;place-items:center;overflow:hidden}" +
+      ".jrc-art img{height:40px;max-width:34px;object-fit:contain}" +
+      ".jrc-mid{flex:1;min-width:0}" +
+      ".jrc-nm{font-family:Archivo,Oswald,sans-serif;font-weight:800;font-size:15px;color:#14213D;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".jrc-rl{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:#7a8194;margin-top:2px}" +
+      ".jrc-ovr{text-align:right;flex:0 0 auto;line-height:1}" +
+      ".jrc-ovr b{font-family:Oswald,sans-serif;font-weight:600;font-size:23px;color:var(--acd)}" +
+      ".jrc-ovr i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:8px;letter-spacing:1.6px;color:#9aa1b1;margin-top:-2px}" +
+      ".fo-jrv-foot{margin-top:16px}" +
+      ".fo-jrv-foot .fo-j-gbox{background:rgba(255,254,252,.96)}" +
+      ".fo-jrv-skip{min-height:18px;margin-top:10px}" +
+      ".fo-jrv-skip a{cursor:pointer;font-size:12px;color:#b9c0cf;text-decoration:underline dotted}" +
       // tooltips: hover on desktop, tap (.tipshow) on touch
       "[data-tip]{position:relative}" +
       "[data-tip]:hover:after,[data-tip].tipshow:after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 9px);transform:translateX(-50%);background:#101B2D;color:#F5EFDC;font-family:'Spline Sans',sans-serif;font-size:13px;font-weight:500;font-style:normal;letter-spacing:.2px;line-height:1.5;padding:9px 13px;border-radius:10px;width:240px;text-align:center;z-index:99;box-shadow:0 5px 14px rgba(0,0,0,.3);text-transform:none;pointer-events:none}" +
@@ -14588,24 +14613,26 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     });
     var A = foJArch(FO_ONB.arch);
     var cells = ps.map(function (p, i) {
-      return "<div class='pkm-cell fo-jrv-cell' data-i='" + i + "' data-g='" + foJrvGroup(p) + "'>" + foPkMini(p, {}) + "</div>";
+      return "<div class='fo-jrv-cell' data-i='" + i + "' data-g='" + foJrvGroup(p) + "'>" + foJrvChip(p) + "</div>";
     }).join("");
-    var body = "<div>" +
-      "<h1 class='fo-ob-h1' style='text-align:center'>" + E(A.nm) + " unlocked</h1>" +
-      "<p class='fo-ob-lead' style='text-align:center;max-width:600px;margin:0 auto 2px'>Your founding squad is in the wrapper. Open it.</p>" +
+    var body = "<div class='fo-jrv-wrap'>" +
       "<div class='fo-jrv'>" +
+      "<div class='fo-jrv-spot'></div>" +
+      "<div class='fo-jrv-eyebrow'>Your club is founded</div>" +
+      "<h1 class='fo-ob-h1 fo-jrv-h1' style='text-align:center'>" + E(A.nm) + "</h1>" +
       "<button type='button' class='fo-jrv-pack' id='fo-jrv-pack'>" +
+      "<span class='fo-jrv-burst'></span>" +
       "<img class='fo-j-crimg' src='" + FO_ART + "crests/" + FO_ONB.arch + ".png' alt=''>" +
       "<span class='pk1'>" + E(A.nm) + "</span><span class='pk2'>Founding squad · tap to open</span></button>" +
       "<div class='fo-jrv-lab' id='fo-jrv-lab'></div>" +
-      "<div class='pkm-grid fo-jrv-grid' id='fo-jrv-grid'>" + cells + "</div>" +
+      "<div class='fo-jrv-grid' id='fo-jrv-grid'>" + cells + "</div>" +
+      "<div class='fo-jrv-skip'><a id='fo-jrv-skip' hidden>Deal them all &#9654;</a></div>" +
       "<div class='fo-jrv-foot' id='fo-jrv-foot' hidden>" +
       foJGbox("Every name on that sheet is yours now. In a year they'll either be a team or a story. To the books, boss.") +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-jrv-go'>To the books &#9654;</button></div></div>" +
-      "<div class='fo-jrv-skip'><a id='fo-jrv-skip' hidden>Deal them all &#9654;</a></div>" +
       "</div></div>";
     var host = foJMount(0, body);
-    var pack = host.querySelector("#fo-jrv-pack"), grid = host.querySelector("#fo-jrv-grid");
+    var pack = host.querySelector("#fo-jrv-pack");
     var lab = host.querySelector("#fo-jrv-lab"), foot = host.querySelector("#fo-jrv-foot");
     var skip = host.querySelector("#fo-jrv-skip");
     var timers = [], dealt = 0;
@@ -14613,9 +14640,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     try { reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e2) {}
     var finish = function () {
       timers.forEach(clearTimeout); timers = [];
-      host.querySelectorAll(".fo-jrv-cell").forEach(function (c) { c.classList.add("fly", "insta"); });
+      host.querySelectorAll(".fo-jrv-cell").forEach(function (c) { c.classList.add("in", "insta"); });
       lab.textContent = "Your founding squad";
-      lab.classList.add("pop");
+      lab.classList.remove("pop"); void lab.offsetWidth; lab.classList.add("pop");
       skip.hidden = true; foot.hidden = false;
       try { foot.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" }); } catch (e3) {}
     };
@@ -14628,32 +14655,44 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var cellsEls = [].slice.call(host.querySelectorAll(".fo-jrv-cell"));
       var packR = pack.getBoundingClientRect();
       var px = packR.left + packR.width / 2, py = packR.top + packR.height / 2;
-      var t = 420, lastG = null;
+      // strict one-by-one: each card launches after the last, a small extra
+      // beat when the role wave changes so the banner registers
+      var STEP = 150, GAP = 240, t = 360, lastG = null;
       cellsEls.forEach(function (c, i) {
         var g = c.getAttribute("data-g");
-        if (g !== lastG) { t += (lastG == null ? 0 : 420); lastG = g; (function (g2, tt) {
+        if (g !== lastG) { if (lastG != null) t += GAP; lastG = g; (function (g2, tt) {
           timers.push(setTimeout(function () {
             var gr = FO_JRV_GROUPS.filter(function (x) { return x.k === g2; })[0];
             lab.textContent = gr ? gr.lbl : "";
             lab.classList.remove("pop"); void lab.offsetWidth; lab.classList.add("pop");
           }, tt));
         })(g, t); }
-        (function (c2, tt) {
+        (function (c2, tt, idx) {
           timers.push(setTimeout(function () {
             var r = c2.getBoundingClientRect();
             var dx = px - (r.left + r.width / 2), dy = py - (r.top + r.height / 2);
             c2.style.setProperty("--dx", dx.toFixed(0) + "px");
             c2.style.setProperty("--dy", dy.toFixed(0) + "px");
-            c2.style.setProperty("--rot", ((foHash32(FO_ONB.arch + i) % 50) - 25) + "deg");
-            c2.classList.add("fly");
+            c2.style.setProperty("--rot", ((foHash32(FO_ONB.arch + idx) % 40) - 20) + "deg");
+            c2.classList.add("in");
             dealt++;
-            if (dealt >= cellsEls.length) timers.push(setTimeout(finish, 700));
+            if (dealt >= cellsEls.length) timers.push(setTimeout(finish, 500));
           }, tt));
-        })(c, t);
-        t += 170;
+        })(c, t, i);
+        t += STEP;
       });
       if (reduce) finish();
     });
+  }
+  // compact reveal chip: art tile + name/role + big OVR, tinted by role colour
+  function foJrvChip(p) {
+    var k = foPkKind(p), ac = (FO_PK_AC[k] || ["#C8674A", "#a94f38"]);
+    var ovr = foPkOvr(p), hand = (p.hand === "L") ? "LHB" : "RHB";
+    return "<div class='jrc' style='--ac:" + ac[0] + ";--acd:" + ac[1] + "'>" +
+      "<div class='jrc-art'><img src='" + FO_ART + foPkArt(p) + "' alt=''></div>" +
+      "<div class='jrc-mid'><div class='jrc-nm'>" + E(p.name) + "</div>" +
+      "<div class='jrc-rl'>" + E(foPkRoleLbl(p)) + " &middot; " + p.age + " &middot; " + hand + "</div></div>" +
+      "<div class='jrc-ovr'><b>" + ovr + "</b><i>OVR</i></div></div>";
   }
   function foJTrimComp(comp) {
     var capB = foQsBucketOf((foJArch(FO_ONB.arch).starter || {}).role || "topOrderBat");
@@ -15067,10 +15106,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var opCands = [[slug, "The slugger. Clears the rope or holes out; powerplay chaos either way"], [tech, "The technician. Slow to start, but they will not get him out cheaply"], [acc, "The accumulator. Ticks the board over and keeps the strike moving"]].filter(function (r) { return r[0]; });
       var seams = (me.players || []).filter(function (p) { return p && p.bowlTypeFull && /seam/i.test(p.bowlTypeFull); });
       if (seams.length < 3) seams = (me.players || []).filter(function (p) { return p && p.bowlTypeFull && p.bowlTypeFull !== "none"; });
+      // every candidate is picked on a skill/talent the ENGINE actually reads
+      // per ball: Wicket threat, Economy, and the new-ball talent. (Move/turn
+      // and Discipline feed a bowler's overall and fee, not his live figures -
+      // so we never sell a "swing man" the match won't deliver.)
+      var hasT = function (p, t) { return ((p && p.talents) || []).indexOf(t) >= 0; };
       var strike = by(seams, function (p) { return S9(p).wicket || 0; })[0];
-      var swing = by(seams, function (p) { return S9(p).moveTurn || 0; }).filter(function (p) { return p !== strike; })[0];
-      var miser = by(seams, function (p) { return (S9(p).economy || 0) + (S9(p).discipline || 0); }).filter(function (p) { return p !== strike && p !== swing; })[0];
-      var nbCands = [[strike, "The spearhead. Takes wickets in his sleep; leaks runs on his off days"], [swing, "The swing man. These conditions will talk to him all morning"], [miser, "The miser. Nagging length, dot after dot; pressure does his hunting"]].filter(function (r) { return r[0]; });
+      var newb = by(seams, function (p) { return (hasT(p, "newBallSpecialist") ? 1000 : 0) + (S9(p).wicket || 0); }).filter(function (p) { return p !== strike; })[0];
+      var miser = by(seams, function (p) { return (hasT(p, "miser") ? 1000 : 0) + (S9(p).economy || 0); }).filter(function (p) { return p !== strike && p !== newb; })[0];
+      var nbCands = [[strike, "The spearhead. Highest wicket threat in the group - takes chances in his sleep, leaks on his off days"], [newb, "The enforcer. Backs the spearhead up front and keeps the wickets coming"], [miser, "The miser. Best economy of the lot - dot after dot, and pressure does his hunting"]].filter(function (r) { return r[0]; });
       FO_ONB.j.opCands = opCands.map(function (r) { return r[0].name; });
       FO_ONB.j.nbCandNames = nbCands.map(function (r) { return r[0].name; });
       FO_ONB.j.opener = FO_ONB.j.opener || null; FO_ONB.j.nb = FO_ONB.j.nb || []; FO_ONB.j.intent = FO_ONB.j.intent || "build"; FO_ONB.j.toss = FO_ONB.j.toss || "bowl";
@@ -23368,6 +23412,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var ix = -1;
       (GD.teams || []).forEach(function (t, i) { if (t && t.name === T.name) ix = i; });
       if (ix < 0) { GD.teams.push(T); ix = GD.teams.length - 1; } else GD.teams[ix] = T;
+      // in a live league, snapshot the manager's real league plan before the
+      // Circuit overwrites App.orders, so it can be put back untouched afterward
+      try { if (SYNC && SYNC.started && !SYNC.practice && App.orders) window.__foCxOrdStash = JSON.stringify(App.orders); } catch (eSt) {}
       foChallenge(ix, r.pitch, r.wx);
       // played on THEIR ground, under their locked conditions
       if (App.pending) {
@@ -23427,6 +23474,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           if (GD.teams[i] && GD.teams[i].__cx && (!App.pending || App.pending.away !== GD.teams[i].name)) GD.teams.splice(i, 1);
         }
       } catch (eR) {}
+      // restore the league plan the Circuit borrowed App.orders from
+      try { if (window.__foCxOrdStash) { App.orders = JSON.parse(window.__foCxOrdStash); window.__foCxOrdStash = null; } } catch (eOr) {}
       foCxModal(win, r, c, conquered, prize);
     } catch (e) {}
   }
@@ -23518,7 +23567,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-cx-stage .fo-cx-map .mapin img{width:100%;height:100%;object-fit:cover}" +
       ".fo-cx-bosscard{flex:1.5;min-height:0;background:#FFFEFC;border:2px solid #C9A24B;border-radius:14px;padding:8px;box-shadow:0 4px 0 rgba(16,27,45,.28);display:flex;flex-direction:column}" +
       ".fo-cx-bosscard .bimg{position:relative;flex:1;min-height:0;border-radius:9px;overflow:hidden;background:#0a1220}" +
-      ".fo-cx-bosscard .bimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:50% 0%;background:linear-gradient(180deg,#EAF6FF,#D7ECFA);display:block}" +
+      ".fo-cx-bosscard .bimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 6%;display:block}" +
       ".fo-cx-bosscard.conq .bimg img{filter:saturate(.85)}" +
       ".fo-cx-bosscard .bwon{position:absolute;top:8px;left:8px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;font-size:11px;color:#fff;background:#3E9455;border-radius:99px;padding:3px 11px;box-shadow:0 2px 6px rgba(0,0,0,.4)}" +
       ".fo-cx-bosscard .bmeta{padding:8px 6px 3px;text-align:center}" +
