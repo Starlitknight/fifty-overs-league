@@ -9046,9 +9046,12 @@
         "Round " + ((App.season && App.season.round != null ? App.season.round : 0) + 1) + ", " + (w + l > 0 ? w + " won, " + l + " lost so far" : "the season's still young") + ", " + FO$(bank || 0) + " in the bank.",
         "Next league match plays at 9:00 AM ET. The office is yours - I'll be by the kettle."
       ];
+      var hook = "";
+      try { var stH = foStState(); if (stH && stH.hook) hook = stH.hook; } catch (eH) {}
       var el = document.createElement("div"); el.id = "fo-j-brief";
       el.innerHTML = "<div class='fo-j-gbox' style='max-width:none;margin:0 0 10px;position:relative'><img class='gf' src='" + FO_ART + "gaffer.png' alt=''><span class='bx'><span class='sp'>The Gaffer</span>" +
-        "<span class='tx'>" + lines.map(E).join(" ") + "</span></span>" +
+        "<span class='tx'>" + lines.map(E).join(" ") + (hook ? " <b>" + E(hook) + "</b>" : "") + "</span>" +
+        "<a class='fo-st-chip' href='#/story'>Club story &rsaquo;</a></span>" +
         "<button type='button' id='fo-j-briefx' style='position:absolute;top:8px;right:10px;background:none;border:none;color:#8a90a0;cursor:pointer;font-size:14px' title='Dismiss'>&#10005;</button></div>";
       page.insertBefore(el, page.firstChild);
       el.querySelector("#fo-j-briefx").addEventListener("click", function () {
@@ -17444,6 +17447,292 @@
   setInterval(foRenderCircuit, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/circuit") === 0) { foCxView = null; setTimeout(foRenderCircuit, 40); } });
   try { window.__foTest.cx = { state: foCxState, team: foCxTeam, challenge: foCxChallenge, record: foCxRecord, key: foCxKey }; } catch (eCx) {}
+
+  // ==========================================================================
+  //  THE CLUB STORY - narrative engine v1. The simulation writes the story:
+  //  real results generate moments, promises are remembered and visibly kept
+  //  or broken, the captain and the youngest pro get arcs, and Thorne needles
+  //  you about things that ACTUALLY happened. Everything here is client-side
+  //  colour - story variables gate scenes and copy, never match numbers.
+  // ==========================================================================
+  function foStKey() { return "fo_story_" + ((SYNC && SYNC.myMid) || "solo"); }
+  function foStState() {
+    try { var st = JSON.parse(lsGet(foStKey()) || "null"); if (st && st.vars) return st; } catch (e) {}
+    return { vars: { board: 55, fans: 40, unity: 60, thorne: 8 }, promises: [], log: [], flags: {}, done: {}, queue: [], hook: null };
+  }
+  function foStSave(st) { try { lsSet(foStKey(), JSON.stringify(st)); } catch (e) {} }
+  function foStRound() { return (App.season && App.season.round != null) ? App.season.round : 0; }
+  function foStVar(st, k, d) { st.vars[k] = Math.max(0, Math.min(100, Math.round((st.vars[k] || 0) + d))); }
+  function foStLog(st, kind, txt) {
+    st.log.unshift({ s: App.seasonNo || 1, r: foStRound(), kind: kind, txt: txt });
+    if (st.log.length > 60) st.log = st.log.slice(0, 60);
+  }
+  function foStPromise(st, id, txt, due) {
+    if (st.promises.some(function (p) { return p.id === id; })) return;
+    st.promises.push({ id: id, txt: txt, due: due, status: "active", made: foStRound() });
+  }
+  function foStProm(st, id) { return st.promises.filter(function (p) { return p.id === id; })[0]; }
+  // the recurring cast: who is speaking, and with whose face
+  function foStFace(who) {
+    if (who === "thorne") return { nm: "Reggie Thorne", img: FO_ART + "thorne.png" };
+    if (who === "capt") { var c = foStCaptain(); return { nm: (c ? c.name : "Your captain"), img: FO_ART + "bat.png" }; }
+    if (who === "kid") { var k = foStProspect(); return { nm: (k ? k.name : "The prospect"), img: FO_ART + "ar.png" }; }
+    return { nm: "The Gaffer", img: FO_ART + "gaffer.png" };
+  }
+  function foStCaptain() {
+    try {
+      var me = userTeam(), best = null;
+      (me.players || []).forEach(function (p) {
+        if (p && p.origin_tag && /Franchise captain/.test(p.origin_tag)) best = best || p;
+      });
+      if (!best) (me.players || []).forEach(function (p) { if (p && (!best || (p.capt || 0) > (best.capt || 0))) best = p; });
+      return best;
+    } catch (e) { return null; }
+  }
+  function foStProspect() {
+    try {
+      var me = userTeam(), kid = null;
+      (me.players || []).forEach(function (p) { if (p && (!kid || (p.age || 99) < (kid.age || 99))) kid = p; });
+      return kid;
+    } catch (e) { return null; }
+  }
+  // scene builders: the queue persists ids+data (functions don't survive
+  // storage), and the builder recreates the live choices at display time
+  var FO_ST_SCENES = {
+    kidAsk: function (d) {
+      return { who: "kid", txt: "Boss - " + d.age + " isn't too young. Give me one league match before Round 5. I'll do the rest.", choices: [
+        { t: "You'll get your game", d: "A promise, on the record", fx: function (s2) { foStPromise(s2, "prospect", d.nm + " expects a league debut before Round 5", 4); foStVar(s2, "unity", 3); }, line: "Promise made: " + d.nm + " debuts before Round 5." },
+        { t: "No promises", d: "Honest. Colder", fx: function (s2) { foStVar(s2, "unity", -2); foStVar(s2, "board", 2); }, line: "You promised the prospect nothing. He went back to the nets." }] };
+    },
+    kidThanks: function (d) {
+      return { who: "kid", txt: "You kept your word, boss. Whatever happens now - I won't forget the day you gave me.", choices: [
+        { t: "You earned it", d: "The dressing room notices", fx: function (s2) { foStVar(s2, "unity", 2); } }] };
+    },
+    kidSulk: function (d) {
+      return { who: "kid", txt: "Round " + d.dueR + " came and went, boss. I kept my head down, like you asked. My agent's stopped keeping his.", choices: [
+        { t: "I owe you one", d: "Promise him the very next match", fx: function (s2) { foStPromise(s2, "prospect2", d.nm + " expects the very next league XI", foStRound() + 1); }, line: "You promised the kid the next match." },
+        { t: "Form picks the team", d: "Unity falls further", fx: function (s2) { foStVar(s2, "unity", -3); }, line: "You told the prospect form picks the team." }] };
+    },
+    capTalk: function (d) {
+      return { who: "capt", txt: d.runs + " in my last three. I know the numbers, boss - and I'm still the best man to walk out first when it hardens.", choices: [
+        { t: "Back him", d: "Publicly. The room is watching", fx: function (s2) { s2.flags.capBacked = foStRound(); foStVar(s2, "unity", 4); }, line: "You backed the captain in public." },
+        { t: "The hard talk", d: "Form rules, even for him", fx: function (s2) { foStVar(s2, "board", 3); foStVar(s2, "unity", -3); }, line: "You told the captain nobody outranks form." }] };
+    },
+    thorne3w: function (d) {
+      return { who: "thorne", txt: "Three on the bounce. " + (d.topNm ? d.topNm + " carrying the bat for you - " + d.topR + " last time out. " : "") + "Yes, " + d.club + ", I watch the small leagues too. Enjoy the weather down there.", choices: [
+        { t: "Fire back", d: "Supporters roar. Boards frown", fx: function (s2) { foStVar(s2, "fans", 5); foStVar(s2, "board", -2); foStVar(s2, "thorne", 3); }, line: "You answered Thorne in the Wire: \"Keep watching.\"" },
+        { t: "Say nothing", d: "Let the table talk", fx: function (s2) { foStVar(s2, "thorne", 1); }, line: "Thorne needled the club. You let the table answer." }] };
+    },
+    thorneJab: function (d) {
+      return { who: "thorne", txt: d.club + ", " + d.my + " chasing " + d.opp + "? A word of advice, free of charge: identity is what you do when it's hard. Yours folded by the twentieth over.", choices: [
+        { t: "We go again", d: "Calm. Unity holds", fx: function (s2) { foStVar(s2, "unity", 2); }, line: "Thorne mocked the defeat. You kept the room calm." },
+        { t: "Fire back", d: "Fans up, pressure up", fx: function (s2) { foStVar(s2, "fans", 4); foStVar(s2, "thorne", 2); foStVar(s2, "board", -2); }, line: "You bit back at Thorne. The Wire loved it." }] };
+    }
+  };
+  // one scene at a time, journey-styled: a speaker, a line, and real choices
+  function foStScene(ref) {
+    try {
+      if (document.getElementById("fo-st-scene")) return false;
+      var mkr = FO_ST_SCENES[ref.id]; if (!mkr) return true;   // unknown: drop it
+      var sc = mkr(ref.data || {}); if (!sc) return true;
+      var f = foStFace(sc.who);
+      var m = document.createElement("div"); m.id = "fo-st-scene"; m.className = "fo-modal";
+      m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>Club story</div>" +
+        "<div class='fo-j-gbox' style='max-width:none;margin:4px 0 10px'><img class='gf' src='" + f.img + "' alt=''>" +
+        "<span class='bx'><span class='sp'>" + E(f.nm) + "</span><span class='tx'>&ldquo;" + E(sc.txt) + "&rdquo;</span></span></div>" +
+        (sc.choices || []).map(function (c, i) {
+          return "<button type='button' class='fo-st-ch' data-i='" + i + "'><b>" + E(c.t) + "</b>" + (c.d ? "<span>" + E(c.d) + "</span>" : "") + "</button>";
+        }).join("") + "</div>";
+      document.body.appendChild(m);
+      m.querySelectorAll(".fo-st-ch").forEach(function (b) {
+        b.addEventListener("click", function () {
+          try {
+            var ch = sc.choices[+b.getAttribute("data-i")];
+            var st = foStState();
+            if (ch.fx) ch.fx(st);
+            if (ch.line) foStLog(st, "choice", ch.line);
+            foStSave(st);
+          } catch (e2) {}
+          m.remove();
+        });
+      });
+      return true;
+    } catch (e) { return false; }
+  }
+  // -------- the fact miner: real league results -> story moments ------------
+  function foStScan() {
+    try {
+      var me = userTeam(); if (!me || !me.name) return;
+      var st = foStState(), changed = false;
+      var mine = (App.results || []).filter(function (r) {
+        return r && r.comp === "league" && r.result && (r.home === me.name || r.away === me.name);
+      });
+      var kid = foStProspect(), cap = foStCaptain();
+      mine.forEach(function (r, ix) {
+        var sig = (r.round != null ? r.round : ix) + "|" + ((r.result && r.result.text) || "");
+        if (st.done[sig]) return;
+        st.done[sig] = 1; changed = true;
+        var win = r.result.winner === me.name;
+        var myCards = [], opCards = [];
+        (r.scorecard || []).forEach(function (inn) {
+          if (!inn) return;
+          if (inn.batTeam === me.name) myCards.push(inn); else opCards.push(inn);
+        });
+        // centuries and five-fors, named and remembered
+        myCards.forEach(function (inn) {
+          (inn.batting || []).forEach(function (b) {
+            if (b.r >= 100) { foStLog(st, "moment", b.name + " " + b.r + " (" + b.b + ") vs " + (r.home === me.name ? r.away : r.home) + " - a century for the museum wall."); foStVar(st, "fans", 4); }
+          });
+        });
+        opCards.forEach(function (inn) {
+          (inn.bowling || []).forEach(function (bw) {
+            if (bw.w >= 5) { foStLog(st, "moment", bw.name + " " + bw.w + "-" + bw.r + " vs " + (r.home === me.name ? r.away : r.home) + " - a five-for."); foStVar(st, "fans", 3); }
+          });
+        });
+        // a defended total under 220: the kind of win supporters retell
+        if (win && myCards[0] && opCards[0] && myCards[0].runs < 220 && (r.scorecard || [])[0] === myCards[0]) {
+          foStLog(st, "moment", "Defended " + myCards[0].runs + " - the Wire calls it the wall of " + me.name + ".");
+          foStVar(st, "board", 3);
+        }
+        // prospect promise: a debut before the deadline?
+        var pr = foStProm(st, "prospect");
+        if (pr && pr.status === "active" && kid) {
+          var played = myCards.concat(opCards).some(function (inn) {
+            return (inn.batting || []).some(function (b) { return b.name === kid.name; }) ||
+                   (inn.bowling || []).some(function (b2) { return b2.name === kid.name; });
+          });
+          if (played) {
+            pr.status = "fulfilled"; foStVar(st, "unity", 6); foStVar(st, "fans", 3);
+            foStLog(st, "promise", "Promise kept: " + kid.name + " got his debut, as you said he would.");
+            st.queue.push({ id: "kidThanks", data: {} });
+          } else if ((r.round || 0) + 1 >= (pr.due || 5) && pr.status === "active") {
+            pr.status = "broken"; foStVar(st, "unity", -7);
+            foStLog(st, "promise", "Promise broken: " + kid.name + " never saw the field before Round " + ((pr.due || 5) + 1) + ".");
+            st.queue.push({ id: "kidSulk", data: { nm: kid.name, dueR: (pr.due || 5) + 1 } });
+          }
+        }
+        // captain watch: three lean league innings in a row
+        if (cap) {
+          var capKnock = null;
+          myCards.forEach(function (inn) { (inn.batting || []).forEach(function (b) { if (b.name === cap.name) capKnock = b; }); });
+          if (capKnock) {
+            st.flags.capRuns = (st.flags.capRuns || []).concat([capKnock.r]).slice(-3);
+            if (st.flags.capBacked != null) {
+              // the callback: you backed him publicly - what did he do next?
+              if (capKnock.r >= 40) { foStLog(st, "arc", cap.name + " answered with " + capKnock.r + ". Backing him looks like leadership now."); foStVar(st, "unity", 4); foStVar(st, "fans", 3); }
+              else if (capKnock.r < 15) { foStLog(st, "arc", cap.name + " fell for " + capKnock.r + " after you backed him. The Wire sharpens its knives."); foStVar(st, "board", -4); }
+              delete st.flags.capBacked;
+            }
+            if (!st.flags.capTalk && st.flags.capRuns.length === 3 && st.flags.capRuns.every(function (x) { return x < 20; })) {
+              st.flags.capTalk = 1;
+              st.queue.push({ id: "capTalk", data: { nm: cap.name, runs: st.flags.capRuns.join(", ") } });
+            }
+          }
+        }
+        // streaks - and Thorne, who was watching the whole time
+        st.flags.form = ((st.flags.form || "") + (win ? "W" : "L")).slice(-5);
+        if (/WWW$/.test(st.flags.form) && !st.flags.thorne3w) {
+          st.flags.thorne3w = 1;
+          var top = null;
+          myCards.forEach(function (inn) { (inn.batting || []).forEach(function (b) { if (!top || b.r > top.r) top = b; }); });
+          st.queue.push({ id: "thorne3w", data: { club: me.name, topNm: top && top.name, topR: top && top.r } });
+        }
+        if (!win && myCards[0] && opCards[0]) {
+          var margin = (opCards[0].runs || 0) - (myCards[0].runs || 0);
+          var sigL = "thorneJab" + (r.round != null ? r.round : ix);
+          if (margin >= 60 && !st.flags[sigL] && !st.flags.thorneJabbed) {
+            st.flags[sigL] = 1; st.flags.thorneJabbed = 1;
+            st.queue.push({ id: "thorneJab", data: { club: me.name, my: myCards[0].runs, opp: opCards[0].runs } });
+          }
+        }
+      });
+      // the prospect asks - once, early in the season
+      if (!st.flags.kidAsked && kid && mine.length >= 1 && (kid.age || 99) <= 25) {
+        st.flags.kidAsked = 1; changed = true;
+        st.queue.push({ id: "kidAsk", data: { nm: kid.name, age: kid.age } });
+      }
+      // the session hook: the next unresolved thing, always visible
+      var act = st.promises.filter(function (p) { return p.status === "active"; })[0];
+      st.hook = act ? ("Next: " + act.txt + " (Round " + ((act.due || 0) + 1) + " deadline).")
+        : (st.queue.length ? "Next: someone wants a word - see the club story." : null);
+      if (changed || st.queue.length) foStSave(st);
+    } catch (e) {}
+  }
+  // scenes fire on the club pages, one at a time, never over a live match
+  setInterval(function () {
+    try {
+      foStScan();
+      if (!/^#\/(club|story)/.test(location.hash || "#/club")) return;
+      if (typeof M !== "undefined" && M && !M.done) return;
+      if (document.querySelector(".fo-modal") || document.getElementById("fo-onb")) return;
+      var st = foStState();
+      if (!st.queue.length) return;
+      var sc = st.queue[0];
+      if (foStScene(sc)) { st.queue.shift(); foStSave(st); }
+    } catch (e) {}
+  }, 3000);
+  // -------- the Club Story page (#/story) -----------------------------------
+  function foRenderStory() {
+    try {
+      if (location.hash.indexOf("#/story") !== 0) return;
+      var page = document.getElementById("page"); if (!page) return;
+      var st = foStState();
+      var sig = "st|" + JSON.stringify(st.vars) + "|" + st.promises.length + "|" + st.log.length + "|" + (st.hook || "");
+      if (page.__foStSig === sig && page.querySelector(".fo-story")) return;
+      page.__foStSig = sig;
+      var meter = function (lbl, v, col) {
+        return "<div class='fo-st-m'><span>" + lbl + "</span><i><b style='width:" + Math.max(3, Math.min(100, v)) + "%;background:" + col + "'></b></i><em>" + v + "</em></div>";
+      };
+      var proms = st.promises.length ? st.promises.map(function (p) {
+        var cls = p.status === "fulfilled" ? "ok" : p.status === "broken" ? "bad" : "on";
+        var word = p.status === "active" ? "ACTIVE" : p.status.toUpperCase();
+        return "<div class='fo-st-p " + cls + "'><i>" + word + "</i><span>" + E(p.txt) + "</span></div>";
+      }).join("") : "<div class='small' style='color:#8a90a0'>No promises on the books. They start the moment you make one.</div>";
+      var logs = st.log.length ? st.log.map(function (L) {
+        return "<div class='fo-st-l'><i>R" + ((L.r || 0) + 1) + "</i><span>" + E(L.txt) + "</span></div>";
+      }).join("") : "<div class='small' style='color:#8a90a0'>The story writes itself from real matches - play one.</div>";
+      page.innerHTML = "<div class='fo-story'>" +
+        "<div class='fo-cx-rule'><i></i><b>THE CLUB STORY</b><i></i></div>" +
+        "<h1 class='fo-cx-h1' style='text-align:center'>" + E((userTeam() || {}).name || "Your club") + "</h1>" +
+        (st.hook ? "<div class='fo-st-hook'>" + E(st.hook) + "</div>" : "") +
+        "<div class='fo-st-vars'>" +
+        meter("Board confidence", st.vars.board, "#2F6FBF") + meter("Supporters", st.vars.fans, "#C8674A") +
+        meter("Dressing room", st.vars.unity, "#2E7A3C") + meter("Thorne's respect", st.vars.thorne, "#7B45C4") +
+        "</div>" +
+        "<div class='fo-cx-sec'><i></i>Promises<i></i></div><div class='fo-st-proms'>" + proms + "</div>" +
+        "<div class='fo-cx-sec'><i></i>The story so far<i></i></div><div class='fo-st-logs'>" + logs + "</div>" +
+        "</div>";
+    } catch (e) {}
+  }
+  setInterval(foRenderStory, 900);
+  (function foStCss() {
+    if (document.getElementById("fo-st-css")) return;
+    var el = document.createElement("style"); el.id = "fo-st-css";
+    el.textContent =
+      ".fo-story{max-width:680px;margin:0 auto;padding:8px 2px 30px}" +
+      ".fo-st-hook{max-width:560px;margin:10px auto 4px;text-align:center;background:#FBF7EA;border:1px dashed #C9A24B;border-radius:10px;padding:9px 14px;font-size:13.5px;color:#6b5d33;font-weight:600}" +
+      ".fo-st-vars{display:grid;grid-template-columns:1fr 1fr;gap:9px 22px;max-width:620px;margin:16px auto 0}" +
+      "@media(max-width:560px){.fo-st-vars{grid-template-columns:1fr}}" +
+      ".fo-st-m{display:flex;align-items:center;gap:10px;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:#5b6472}" +
+      ".fo-st-m span{flex:0 0 128px;text-align:left}" +
+      ".fo-st-m i{flex:1;height:9px;border-radius:99px;background:rgba(16,27,45,.1);overflow:hidden;font-style:normal}" +
+      ".fo-st-m i b{display:block;height:100%;border-radius:99px}" +
+      ".fo-st-m em{font-style:normal;flex:0 0 26px;text-align:right;font-size:13px;color:#101B2D}" +
+      ".fo-st-proms,.fo-st-logs{display:flex;flex-direction:column;gap:8px}" +
+      ".fo-st-p{display:flex;gap:11px;align-items:center;background:#FFFEFC;border:1.5px solid rgba(16,27,45,.14);border-radius:11px;padding:9px 13px;font-size:14px;color:#101B2D;text-align:left}" +
+      ".fo-st-p i{font-style:normal;font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:1.6px;font-weight:600;border-radius:20px;padding:2.5px 9px;flex:0 0 auto}" +
+      ".fo-st-p.on i{color:#8a7b4f;border:1.5px solid #C9A24B}" +
+      ".fo-st-p.ok i{color:#fff;background:#3E9455}" +
+      ".fo-st-p.bad i{color:#fff;background:#B23A2E}" +
+      ".fo-st-l{display:flex;gap:11px;align-items:flex-start;font-size:13.5px;color:#4a5568;text-align:left;padding:3px 2px}" +
+      ".fo-st-l i{font-style:normal;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:1px;color:#C8674A;flex:0 0 30px;margin-top:2px}" +
+      "html body .fo-st-ch,html body.ftpskin .fo-st-ch{display:block;width:100%;text-align:left;background:#FFFEFC !important;border:1.5px solid rgba(16,27,45,.18) !important;border-radius:11px;padding:10px 14px;margin-top:8px;cursor:pointer;font:inherit;color:#101B2D !important}" +
+      "html body .fo-st-ch:hover,html body.ftpskin .fo-st-ch:hover{border-color:#C8674A !important;background:#FFFEFC !important}" +
+      ".fo-st-ch b{display:block;font-size:14.5px}.fo-st-ch span{display:block;font-size:12px;color:#8a90a0;margin-top:1px}" +
+      ".fo-st-chip{display:inline-block;margin-top:7px;font-size:12.5px;color:#C8674A;text-decoration:underline dotted;cursor:pointer}";
+    document.head.appendChild(el);
+  })();
+  try { window.__foTest.story = { state: foStState, scan: foStScan, key: foStKey, save: foStSave }; } catch (eSt2) {}
 
   console.info("Fifty Overs League overlay ready.");
 })();
