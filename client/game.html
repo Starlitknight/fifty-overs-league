@@ -10852,7 +10852,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260717-2035-1237b8";
+  var FO_BUILD = "20260717-2134-a941b1";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -23327,7 +23327,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   //  Strict linear ladder. Progress is per-manager, on device.
   // ==========================================================================
   var FO_CX_REGIONS = [
-    { id: "eng", nm: "England", cty: "England", arch: "rock", type: "Swing & Graft", ac: "#2E7A3C",
+    { id: "eng", nm: "England", cty: "England", arch: "rock", type: "Swing & Graft", ac: "#2E7A3C", arrive: "England, boss. Old pavilions, older opinions. They'll call our cricket reckless until it works - and improper after it does.",
       pitch: "green", wx: "Overcast",
       cond: "Green, overcast seamers. The ball talks all day; patient, correct cricket wins.",
       gaffer: "Cloud cover and a green top. Leave well, bat time, and let their grafters die of boredom before you cash in.",
@@ -23339,7 +23339,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         { boss: 1, mx: 64.5, my: 74.5, nm: "Marylebone Old Guard", city: "London", capt: "master",
           leader: "Sir Giles Pemberley", note: "bats time and never, ever gives it away", gq: "Pemberley bats time, not runs. Strand him — starve the other end and he cracks.", taunt: "I've batted through better sides than yours, lad. Twice.", nug: "London: the long room hushes when Pemberley walks out - he bats TIME, not runs. Force the pace at the other end; his partners panic long before he does.", mult: 0.97 }
       ] },
-    { id: "win", nm: "West Indies", cty: "West Indies", arch: "finisher", type: "Power & Flair", ac: "#B5892F",
+    { id: "win", nm: "West Indies", cty: "West Indies", arch: "finisher", type: "Power & Flair", ac: "#B5892F", arrive: "Smell that? Salt and woodsmoke. Out here they play like the game owes them a good time. Don't blink in the field.",
       pitch: "flat", wx: "Hot",
       cond: "True, sun-baked deck and a lightning outfield. Big hitting, big grins, big totals.",
       gaffer: "They swing hard and field harder. Choke the boundaries, take pace off, and make the showmen play the boring ball.",
@@ -23351,7 +23351,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         { boss: 1, mx: 87, my: 79.5, nm: "The Calypso Titans", city: "Port of Spain", capt: "talisman",
           leader: "King Emmanuel", note: "can win a match in ten overs flat", gq: "King Emmanuel wins games in ten overs, laughing. Get ahead early — that's when kings gamble.", taunt: "Ten overs is all I need. Ask anyone who's tried to stop me.", nug: "Port of Spain: King Emmanuel can win a match in ten overs - he's done it, twice, laughing. Get ahead of the rate early and he gambles; that's when kings fall.", mult: 1.01 }
       ] },
-    { id: "rsa", nm: "South Africa", cty: "South Africa", arch: "express", type: "Express Pace", ac: "#B23A2E",
+    { id: "rsa", nm: "South Africa", cty: "South Africa", arch: "express", type: "Express Pace", ac: "#B23A2E", arrive: "Thin air, hard light, harder cricket. Everything here comes at you a yard quicker than you'd like. Chin up. Literally.",
       pitch: "green", wx: "Windy",
       cond: "Green, bouncy and quick. Survive the new ball or perish - and their cordon drops nothing.",
       gaffer: "Raw pace, short stuff, catchers everywhere. See off the first ten, protect the tail, and cash in when the quicks tire.",
@@ -23363,7 +23363,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         { boss: 1, mx: 53, my: 57, nm: "The Veldt Fire", city: "Durban", capt: "ironman",
           leader: "Morné Steenkamp", note: "bowls thunderbolts and sets attacking fields", gq: "Steenkamp under lights is the quickest out here. Ride two spells — then he's mortal.", taunt: "Two spells under lights and you'll be walking back before you've settled in.", nug: "Durban: Steenkamp with a new ball under lights is the fastest thing on the Circuit. Survive his first two spells and the sting fades - the support cast is mortal.", mult: 1.05 }
       ] },
-    { id: "aus", nm: "Australia", cty: "Australia", arch: "blade", type: "Flat-Track Runs", ac: "#D08A12",
+    { id: "aus", nm: "Australia", cty: "Australia", arch: "blade", type: "Flat-Track Runs", ac: "#D08A12", arrive: "Australia. The grounds are bigger, the crowds are louder, and the papers already hate us. Perfect. Let's ruin their week.",
       pitch: "flat", wx: "Scorching",
       cond: "Flat, hard and true. Run-mountains on a road - you'll chase or defend a monster.",
       gaffer: "Roads, son. Nothing in the pitch for anyone - it's your bat against theirs. Pack the top order and don't lose the toss.",
@@ -23375,7 +23375,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         { boss: 1, mx: 45.5, my: 61.5, nm: "The Sunburnt XI", city: "Melbourne", capt: "general",
           leader: "Doug Cazaly", note: "a merciless run-machine who bats you out of the game", gq: "Cazaly bats like he owns the 'G. His bowlers are ordinary — out-bat him, if you've the nerve.", taunt: "I'll bat you clean out of the contest. Bring a bigger total than that.", nug: "Melbourne: ninety thousand seats and Cazaly bats like he owns every one of them. His bowlers are ordinary once the shine goes - out-bat him, if you dare.", mult: 1.09 }
       ] },
-    { id: "nzl", nm: "New Zealand", cty: "New Zealand", arch: "gloveman", type: "Safe Hands", ac: "#0E9E97",
+    { id: "nzl", nm: "New Zealand", cty: "New Zealand", arch: "gloveman", type: "Safe Hands", ac: "#0E9E97", arrive: "Wind off the strait and not a superstar in sight. Don't let that fool you - these sides beat you eleven-on-one. Team against team.",
       pitch: "balanced", wx: "Chilly",
       cond: "Fair, breezy, even bounce. Nothing lavish - ruthless discipline and nothing hits the grass.",
       gaffer: "No freebies here. They squeeze every run and drop nothing. Run hard, rotate strike, and out-hit a modest attack.",
@@ -23387,7 +23387,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         { boss: 1, mx: 48, my: 19.5, nm: "The Longwhite XI", city: "Auckland", capt: "clutch",
           leader: "Kane Whitcombe", note: "never drops a chance, never gives an inch", gq: "Whitcombe hasn't shelled a catch in four years. Post a real total and squeeze — they won't crack first.", taunt: "We don't crack first. We never have.", nug: "Auckland: Whitcombe hasn't dropped a chance in four seasons. Nothing loose, nothing scary - set a real total and squeeze, because they will not crack first.", mult: 1.12 }
       ] },
-    { id: "sub", nm: "The Subcontinent", cty: "India", arch: "wizard", type: "Spin Web", ac: "#7B45C4",
+    { id: "sub", nm: "The Subcontinent", cty: "India", arch: "wizard", type: "Spin Web", ac: "#7B45C4", arrive: "Feel the crowd before you see the ground. A hundred thousand opinions, all about us. Spin, dust and expectation, boss - the final exam.",
       pitch: "dry", wx: "Humid",
       cond: "Dry, dusty, sharp turn from over one. The ball grips, rips, and reads your footwork.",
       gaffer: "The final exam. Sweep hard, use your feet, and pick the wrong'un early - because out here the pitch is on their side.",
@@ -23442,6 +23442,35 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       try { jsDerive(p); } catch (e) {}
       return p;
     });
+    // ---- England, a living chapter: the world reads your scorecards --------
+    try {
+      var stE = foCxState();
+      if (r.id === "eng" && ci === 1) {
+        // Southern Shires saw the Tyke scorecard - they pick for what beat it
+        var t0 = (stE.hist || []).filter(function (h) { return h.rid === "eng" && h.ci === 0 && h.win; })[0];
+        if (t0 && (t0.paceW || t0.spinW)) {
+          var vsK = t0.paceW >= t0.spinW ? "vsPace" : "vsSpin";
+          players.forEach(function (p8) {
+            if (p8.skills && typeof p8.skills[vsK] === "number") { p8.skills[vsK] = Math.min(96, Math.round(p8.skills[vsK] * 1.07)); try { jsDerive(p8); } catch (e8) {} }
+          });
+          window.__foCxIntel = "Southern Shires read the Tyke scorecard - they've picked batters for " + (vsK === "vsPace" ? "seam" : "spin") + ". Someone is paying attention.";
+        }
+      }
+      if (r.id === "eng" && ci === 2 && !(stE.flags && stE.flags.valeSigned)) {
+        // Arthur Vale - the batter everyone remembers. Yours, if you'd moved.
+        var best = null;
+        players.forEach(function (p7) { if (!p7.bowlType && !p7.keeper && (!best || (aggBat(p7) || 0) > (aggBat(best) || 0))) best = p7; });
+        if (best) {
+          best.name = "Arthur Vale"; best.age = 21;
+          if (best.skills) {
+            best.skills.temperament = Math.min(96, (best.skills.temperament || 40) + 10);
+            best.skills.vsPace = Math.min(96, (best.skills.vsPace || 40) + 6);
+          }
+          best.origin_tag = "Marylebone's jewel - bats until the lights come on";
+          try { jsDerive(best); } catch (e7) {}
+        }
+      }
+    } catch (eEng) {}
     return { name: c.nm, ground: c.city + (c.boss ? " Colosseum" : " Oval"), players: players, youth: [],
       founded: false, homePitch: r.pitch, bank: 300000, seats: c.boss ? 24000 : 9000,
       supporters: 2600, mood: 3, acadY: 2, acadS: 2, __cx: 1 };
@@ -23537,6 +23566,32 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     try {
       var r = FO_CX_REGIONS[tag.r], c = r.clubs[tag.c]; if (!r || !c) return;
       var st = foCxState(), conquered = false, prize = 0;
+      // the passport remembers: score, hero, best figures, and HOW you won
+      try {
+        var me9 = userTeam();
+        if (typeof M !== "undefined" && M && M.done && M.innings && me9) {
+          var h = { rid: r.id, ci: tag.c, win: !!win, opp: c.nm, my: 0, op: 0, topNm: null, topR: -1, bbNm: null, bbW: -1, bbR: 0, paceW: 0, spinW: 0 };
+          var byName = {}; (me9.players || []).forEach(function (p9) { if (p9) byName[p9.name] = p9; });
+          [M.innings[0], M.innings[1]].forEach(function (inn) {
+            if (!inn) return;
+            if (inn.batTeam === me9.name) {
+              h.my = inn.runs || 0;
+              (inn.bat || []).forEach(function (b9) {
+                if (b9 && b9.p && b9.r > h.topR) { h.topR = b9.r; h.topNm = b9.p.name; }
+              });
+            } else {
+              h.op = inn.runs || 0;
+              Object.keys(inn.bowlers || {}).forEach(function (k9) {
+                var bw = inn.bowlers[k9]; if (!bw) return;
+                if ((bw.w || 0) > h.bbW || ((bw.w || 0) === h.bbW && (bw.r || 0) < h.bbR)) { h.bbW = bw.w || 0; h.bbR = bw.r || 0; h.bbNm = k9; }
+                var pl9 = byName[k9];
+                if (pl9 && pl9.bowlType) { if (/spin/i.test(pl9.bowlType)) h.spinW += (bw.w || 0); else h.paceW += (bw.w || 0); }
+              });
+            }
+          });
+          st.hist = (st.hist || []).concat([h]).slice(-60);
+        }
+      } catch (eH9) {}
       if (win && !foCxBeaten(st, r.id, tag.c)) {
         (st.beat[r.id] = st.beat[r.id] || [])[tag.c] = true;
         prize = foCxPrize(tag.r, !!c.boss);
@@ -23550,9 +23605,33 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           } catch (eM) {}
         }
         try { if (App.fin) App.fin.bank = (App.fin.bank || 0) + prize; } catch (eB) {}
+        if (conquered) {
+          // Thorne watches every conquest - and England leaves a loose thread
+          try {
+            var stT = foStState();
+            stT.queue.push({ id: "thorneCx", data: { first: (st.conq || []).length <= 1, region: r.nm } });
+            if (r.id === "eng") {
+              stT.queue.push({ id: "gtReveal1", data: {} });
+              foStLog(stT, "mystery", "The scorebook question lingers: the Gaffer's name, beside Thorne's, in a Marylebone ledger dated twenty years back.");
+            }
+            foStVar(stT, "thorne", 2);
+            foStSave(stT);
+          } catch (eTq) {}
+        }
         foCxSave(st);
         try { if (typeof window.saveGame === "function") window.saveGame(false); } catch (eS) {}
       }
+      // between the Shires and Pemberley: the scout has found Arthur Vale
+      try {
+        if (r.id === "eng" && win) {
+          var engBeat = (st.beat.eng || []).filter(Boolean).length;
+          st.flags = st.flags || {};
+          if (engBeat === 2 && !foCxBeaten(st, "eng", 2) && !st.flags.valeAsked) {
+            st.flags.valeAsked = 1;
+            var stV = foStState(); stV.queue.push({ id: "valeOffer", data: {} }); foStSave(stV);
+          }
+        }
+      } catch (eVo) {}
       // the visitors fly home: their club leaves the world once the tie is done
       try {
         for (var i = (GD.teams || []).length - 1; i >= 0; i--) {
@@ -23920,6 +23999,47 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       return { who: "thorne", txt: "Three on the bounce. " + (d.topNm ? d.topNm + " carrying the bat for you - " + d.topR + " last time out. " : "") + "Yes, " + d.club + ", I watch the small leagues too. Enjoy the weather down there.", choices: [
         { t: "Fire back", d: "Supporters roar. Boards frown", fx: function (s2) { foStVar(s2, "fans", 5); foStVar(s2, "board", -2); foStVar(s2, "thorne", 3); }, line: "You answered Thorne in the Wire: \"Keep watching.\"" },
         { t: "Say nothing", d: "Let the table talk", fx: function (s2) { foStVar(s2, "thorne", 1); }, line: "Thorne needled the club. You let the table answer." }] };
+    },
+    valeOffer: function (d) {
+      var mp = !!(SYNC && SYNC.started && !SYNC.practice);
+      var ch;
+      if (mp) ch = [{ t: "Note the name", d: "League rules bar mid-tour registrations", fx: function (s2) { foStVar(s2, "board", 1); }, line: "Arthur Vale, 21, of Marylebone. The board couldn't register him mid-tour. Remember the name." }];
+      else ch = [
+        { t: "Sign him - $45,000", d: "21. No promises. Judge him yourself", fx: function (s2) {
+            try {
+              var me3 = userTeam();
+              if ((me3.players || []).length >= 18) { toast("Squad is full (18) - Vale stays in county cricket.", "error"); return; }
+              if (App.fin && (App.fin.bank || 0) < 45000) { toast("The bank won't cover his fee.", "error"); return; }
+              var rnd3 = window.rng(foHash32("vale|" + me3.name));
+              var v = foQsPlayer({ role: "topOrderBat", age: 21, q: 0.52 }, "England", rnd3, {}, {});
+              v.name = "Arthur Vale";
+              if (v.skills) { v.skills.temperament = Math.min(96, (v.skills.temperament || 40) + 10); v.skills.vsPace = Math.min(96, (v.skills.vsPace || 40) + 6); }
+              v.fatigue = "rested"; v.formIx = 3; delete v.fee;
+              v._prov = { how: "scout", nat: "England" }; v.origin_tag = "Found in county cricket, signed on the England tour";
+              try { jsDerive(v); } catch (e3) {}
+              me3.players.push(v);
+              if (App.fin) App.fin.bank = (App.fin.bank || 0) - 45000;
+              try { var cxV = foCxState(); cxV.flags = cxV.flags || {}; cxV.flags.valeSigned = 1; foCxSave(cxV); } catch (e4) {}
+              try { if (typeof window.saveGame === "function") window.saveGame(false); } catch (e5) {}
+              toast("Arthur Vale joins the squad. Pemberley will not be pleased.");
+            } catch (e6) {}
+          }, line: "Signed: Arthur Vale, 21, from under Pemberley's nose. $45,000." },
+        { t: "Let him be", d: "If he's real, he'll play for the boss", fx: function (s2) {}, line: "You passed on Arthur Vale. If he's the real thing, Pemberley has him now." }];
+      return { who: "gaffer", txt: "Scout's note, boss. Arthur Vale, twenty-one, bats top three for a village side - 137 not out against the county attack last month. Wants $45,000 and a real shirt. That's what I know. The judging is yours.", choices: ch };
+    },
+    scorebook: function (d) {
+      return { who: "gaffer", txt: "Where'd you find that? ...An old scorebook, that's all. Marylebone seconds, twenty years back. Yes, that's my name in the bowling column. Yes, that's Thorne's beside it. Another time, boss. Pemberley first.", choices: [
+        { t: "Another time, then", d: "The story goes in the club record", fx: function (s2) { foStLog(s2, "mystery", "An old scorebook, found near Leeds: the Gaffer and Thorne, on the same Marylebone card, twenty years ago."); }, line: null }] };
+    },
+    gtReveal1: function (d) {
+      return { who: "gaffer", txt: "Alright. You've earned one answer. Thorne and I came up together - same club, same season, same dressing room. He batted, I bowled, and for one summer nobody in England could touch us. What broke it... that's a longer innings. Five more regions, boss.", choices: [
+        { t: "Five more regions", d: "Revelation one of six", fx: function (s2) { foStLog(s2, "mystery", "Revelation I: the Gaffer and Thorne were teammates - one golden summer at Marylebone before it all went wrong."); foStVar(s2, "unity", 2); } }] };
+    },
+    thorneCx: function (d) {
+      var t = d.first ? "One trophy. Try not to mistake arrival for importance." : ("So " + d.region + " falls too. The collection grows - and so does the file I keep on you.");
+      return { who: "thorne", txt: t, choices: [
+        { t: "Frame it", d: "Supporters love the feud", fx: function (s2) { foStVar(s2, "fans", 3); foStVar(s2, "thorne", 1); }, line: "Thorne wired his congratulations, of a kind. The Wire printed it." },
+        { t: "No reply", d: "Let the cabinet speak", fx: function (s2) { foStVar(s2, "thorne", 1); }, line: "Thorne noticed the conquest. You let the trophy answer." }] };
     },
     thorneJab: function (d) {
       return { who: "thorne", txt: d.club + ", " + d.my + " chasing " + d.opp + "? A word of advice, free of charge: identity is what you do when it's hard. Yours folded by the twentieth over.", choices: [
