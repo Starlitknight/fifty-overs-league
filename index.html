@@ -10791,7 +10791,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260717-1701-142ac5";
+  var FO_BUILD = "20260717-1802-1f006e";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -12164,7 +12164,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     { id: "engine", nm: "The Engine Room", role: "All-rounder depth", starRole: "tireless all-rounder", ic: "gear",
       line: "All-rounders everywhere - everyone bats and everyone bowls.",
       chips: ["Batting and bowling depth", "Everyone contributes"], weak: "No elite specialist",
-      counts: { opener: 2, top: 1, mid: 1, wk: 2, ar: 4, pace: 2, spin: 2 },
+      counts: { opener: 2, top: 2, mid: 2, wk: 2, ar: 2, pace: 2, spin: 2 },
       budgetMult: 1.048,
       focus: ["ar", "bat", "wk", "pace", "spin"],
       flatQ: true, partTimers: 2,
@@ -14217,6 +14217,26 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".pk-sign .pk-fc{gap:5px;padding:0 2px}.pk-sign .pk-fc svg{width:15px;height:15px;flex:0 0 15px}" +
       ".pk-sign .pk-fc i{font-size:8.5px;letter-spacing:1px}.pk-sign .pk-fc b{font-size:11.5px}" +
       "html body .pk-sign .pk-cta,html body.ftpskin .pk-sign .pk-cta{font-size:14px;letter-spacing:2.2px;padding:7px;margin-top:7px;border-radius:9px}" +
+      // the unboxing: sealed pack + cards dealt to the grid in role order
+      ".fo-jrv{text-align:center}" +
+      "html body #fo-onb .fo-jrv-pack{display:inline-flex;flex-direction:column;align-items:center;gap:6px;margin:14px auto 6px;padding:22px 30px 16px;cursor:pointer;font:inherit;color:#F5EFDC;background:radial-gradient(circle at 50% 24%,#1c2c49 0%,#101B2D 70%);border:2.5px solid #C9A24B;border-radius:18px;box-shadow:0 10px 26px rgba(16,27,45,.4),inset 0 0 0 1.5px rgba(201,162,75,.35);transition:transform .35s,opacity .35s}" +
+      "html body #fo-onb .fo-jrv-pack:hover{transform:translateY(-2px)}" +
+      ".fo-jrv-pack img.fo-j-crimg{width:84px;height:84px}" +
+      ".fo-jrv-pack .pk1{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;font-size:16px}" +
+      ".fo-jrv-pack .pk2{font-family:Oswald,sans-serif;font-weight:500;letter-spacing:2px;text-transform:uppercase;font-size:10.5px;color:#C9A24B;animation:foJb 1.6s infinite}" +
+      ".fo-jrv-pack.open{transform:scale(.6) rotate(-7deg);opacity:0;pointer-events:none;position:absolute;left:50%;margin-left:-90px}" +
+      ".fo-jrv-lab{min-height:26px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:3px;text-transform:uppercase;font-size:15px;color:#C8674A;margin:6px 0 8px}" +
+      ".fo-jrv-lab.pop{animation:foJrvPop .4s ease-out}" +
+      "@keyframes foJrvPop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}" +
+      ".fo-jrv-grid{position:relative;text-align:left}" +
+      ".fo-jrv-cell{opacity:0}" +
+      ".fo-jrv-cell.fly{animation:foJrvFly .6s cubic-bezier(.18,.7,.28,1.12) forwards}" +
+      ".fo-jrv-cell.fly.insta{animation-duration:.01s}" +
+      "@keyframes foJrvFly{0%{opacity:0;transform:translate(var(--dx,0),var(--dy,-200px)) scale(.18) rotate(var(--rot,12deg))}55%{opacity:1}100%{opacity:1;transform:none}}" +
+      "@media (prefers-reduced-motion:reduce){.fo-jrv-cell{opacity:1}.fo-jrv-cell.fly{animation:none}}" +
+      ".fo-jrv-foot{margin-top:14px}" +
+      ".fo-jrv-skip{min-height:20px;margin-top:10px}" +
+      ".fo-jrv-skip a{cursor:pointer;font-size:12.5px;color:#8a90a0;text-decoration:underline dotted}" +
       // tooltips: hover on desktop, tap (.tipshow) on touch
       "[data-tip]{position:relative}" +
       "[data-tip]:hover:after,[data-tip].tipshow:after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 9px);transform:translateX(-50%);background:#101B2D;color:#F5EFDC;font-family:'Spline Sans',sans-serif;font-size:13px;font-weight:500;font-style:normal;letter-spacing:.2px;line-height:1.5;padding:9px 13px;border-radius:10px;width:240px;text-align:center;z-index:99;box-shadow:0 5px 14px rgba(0,0,0,.3);text-transform:none;pointer-events:none}" +
@@ -14533,12 +14553,106 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
   function foJPrevWire(host) {
     var b = host.querySelector("#fo-j-stygo");
-    if (b) b.addEventListener("click", function () {
-      foJDbox(0, [
-        "The board wired a million this morning. Don't get romantic; most of it is already spent.",
-        "Squad, wages, the ground. What's left is the reserve, and the reserve is yours.",
-        "Come and see the books."
-      ], foJMoney);
+    if (b) b.addEventListener("click", function () { foJReveal(); });
+  }
+  function foJRevealDone() {
+    foJDbox(0, [
+      "The board wired a million this morning. Don't get romantic; most of it is already spent.",
+      "Squad, wages, the ground. What's left is the reserve, and the reserve is yours.",
+      "Come and see the books."
+    ], foJMoney);
+  }
+  // The unboxing: the squad your DNA choice just unlocked, dealt like a pack
+  // of trading cards - batsmen first, then the gloves, the all-rounders, and
+  // the bowlers last. Pure theatre; the same deterministic squad you'll sign.
+  var FO_JRV_GROUPS = [
+    { k: "bat", lbl: "The Batsmen" }, { k: "wk", lbl: "The Gloves" },
+    { k: "ar", lbl: "The All-Rounders" }, { k: "bowl", lbl: "The Bowlers" }
+  ];
+  function foJrvGroup(p) {
+    if (p.keeper || p.role === "wicketkeeper") return "wk";
+    if (p.role === "allRounder") return "ar";
+    // group by PRIMARY role: a part-time trundler still walks out with the bats
+    if (/opener|Bat$|Bat\b/i.test(p.role || "") || /batsman/i.test(p.role || "")) return "bat";
+    if (p.bowlType || /seam|spin|pace/i.test(p.role || "")) return "bowl";
+    return "bat";
+  }
+  function foJReveal() {
+    var gen;
+    try { gen = foGenArchetypeSquad(foObSeed(), FO_ONB.country, FO_ONB.arch, "talisman", foQsDefaultComp(FO_ONB.arch)); }
+    catch (e) { foJRevealDone(); return; }
+    var ordIx = { bat: 0, wk: 1, ar: 2, bowl: 3 };
+    var ps = gen.players.slice().sort(function (a, b2) {
+      var d = ordIx[foJrvGroup(a)] - ordIx[foJrvGroup(b2)];
+      return d !== 0 ? d : (foPkOvr(b2) - foPkOvr(a));
+    });
+    var A = foJArch(FO_ONB.arch);
+    var cells = ps.map(function (p, i) {
+      return "<div class='pkm-cell fo-jrv-cell' data-i='" + i + "' data-g='" + foJrvGroup(p) + "'>" + foPkMini(p, {}) + "</div>";
+    }).join("");
+    var body = "<div>" +
+      "<h1 class='fo-ob-h1' style='text-align:center'>" + E(A.nm) + " unlocked</h1>" +
+      "<p class='fo-ob-lead' style='text-align:center;max-width:600px;margin:0 auto 2px'>Your founding squad is in the wrapper. Open it.</p>" +
+      "<div class='fo-jrv'>" +
+      "<button type='button' class='fo-jrv-pack' id='fo-jrv-pack'>" +
+      "<img class='fo-j-crimg' src='" + FO_ART + "crests/" + FO_ONB.arch + ".png' alt=''>" +
+      "<span class='pk1'>" + E(A.nm) + "</span><span class='pk2'>Founding squad · tap to open</span></button>" +
+      "<div class='fo-jrv-lab' id='fo-jrv-lab'></div>" +
+      "<div class='pkm-grid fo-jrv-grid' id='fo-jrv-grid'>" + cells + "</div>" +
+      "<div class='fo-jrv-foot' id='fo-jrv-foot' hidden>" +
+      foJGbox("Every name on that sheet is yours now. In a year they'll either be a team or a story. To the books, boss.") +
+      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-jrv-go'>To the books &#9654;</button></div></div>" +
+      "<div class='fo-jrv-skip'><a id='fo-jrv-skip' hidden>Deal them all &#9654;</a></div>" +
+      "</div></div>";
+    var host = foJMount(0, body);
+    var pack = host.querySelector("#fo-jrv-pack"), grid = host.querySelector("#fo-jrv-grid");
+    var lab = host.querySelector("#fo-jrv-lab"), foot = host.querySelector("#fo-jrv-foot");
+    var skip = host.querySelector("#fo-jrv-skip");
+    var timers = [], dealt = 0;
+    var reduce = false;
+    try { reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e2) {}
+    var finish = function () {
+      timers.forEach(clearTimeout); timers = [];
+      host.querySelectorAll(".fo-jrv-cell").forEach(function (c) { c.classList.add("fly", "insta"); });
+      lab.textContent = "Your founding squad";
+      lab.classList.add("pop");
+      skip.hidden = true; foot.hidden = false;
+      try { foot.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" }); } catch (e3) {}
+    };
+    host.querySelector("#fo-jrv-go").addEventListener("click", foJRevealDone);
+    skip.addEventListener("click", finish);
+    pack.addEventListener("click", function () {
+      if (pack.__opened) return; pack.__opened = 1;
+      pack.classList.add("open");
+      skip.hidden = false;
+      var cellsEls = [].slice.call(host.querySelectorAll(".fo-jrv-cell"));
+      var packR = pack.getBoundingClientRect();
+      var px = packR.left + packR.width / 2, py = packR.top + packR.height / 2;
+      var t = 420, lastG = null;
+      cellsEls.forEach(function (c, i) {
+        var g = c.getAttribute("data-g");
+        if (g !== lastG) { t += (lastG == null ? 0 : 420); lastG = g; (function (g2, tt) {
+          timers.push(setTimeout(function () {
+            var gr = FO_JRV_GROUPS.filter(function (x) { return x.k === g2; })[0];
+            lab.textContent = gr ? gr.lbl : "";
+            lab.classList.remove("pop"); void lab.offsetWidth; lab.classList.add("pop");
+          }, tt));
+        })(g, t); }
+        (function (c2, tt) {
+          timers.push(setTimeout(function () {
+            var r = c2.getBoundingClientRect();
+            var dx = px - (r.left + r.width / 2), dy = py - (r.top + r.height / 2);
+            c2.style.setProperty("--dx", dx.toFixed(0) + "px");
+            c2.style.setProperty("--dy", dy.toFixed(0) + "px");
+            c2.style.setProperty("--rot", ((foHash32(FO_ONB.arch + i) % 50) - 25) + "deg");
+            c2.classList.add("fly");
+            dealt++;
+            if (dealt >= cellsEls.length) timers.push(setTimeout(finish, 700));
+          }, tt));
+        })(c, t);
+        t += 170;
+      });
+      if (reduce) finish();
     });
   }
   function foJTrimComp(comp) {
