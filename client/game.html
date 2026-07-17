@@ -10852,7 +10852,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260717-2134-a941b1";
+  var FO_BUILD = "20260717-2200-e01962";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10928,7 +10928,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // practice vs bots: bank the match and broadcast it ball by ball, the
       // same experience as friendlies and league matchdays
       try {
-        if (!window.__foPracRun && App && App.pending && App.pending.__friendly && !App.pending.__tut && !App.pending.__circuit && App.orders && App.orders.saved && !(typeof M !== "undefined" && M && !M.done)) {
+        if (!window.__foPracRun && App && App.pending && App.pending.__friendly && !App.pending.__tut && !App.pending.__circuit && !App.pending.__camp && App.orders && App.orders.saved && !(typeof M !== "undefined" && M && !M.done)) {
           var cP = foPracBroadcast();
           if (cP && cP.id) {
             try { foFriendlies = (foFriendlies || []).filter(function (f) { return f.oppName !== cP.opponent_club; }); foFrSchedSave(); } catch (eSch) {}
@@ -24252,7 +24252,2029 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   })();
   try { window.__foTest.story = { state: foStState, scan: foStScan, key: foStKey, save: foStSave }; } catch (eSt2) {}
 
+  // Intentional export surface for the campaign bundle (client/src/**): a
+  // thin, read-mostly bridge so modular code can reuse overlay plumbing
+  // without reaching into this IIFE. Everything here already exists above.
+  try {
+    window.__foGame = {
+      art: FO_ART,
+      gen: foQsPlayer,
+      squad: foGenArchetypeSquad,
+      mini: foPkMini,
+      ovr: foPkOvr,
+      crest: foJCrest,
+      hash: foHash32,
+      challenge: foChallenge,
+      pitchName: foPitchName,
+      pushPacket: foPushCurrentPacket,
+      story: { state: foStState, save: foStSave, log: foStLog, varAdj: foStVar }
+    };
+  } catch (eXp) {}
+
   console.info("Fifty Overs League overlay ready.");
+})();
+
+</script>
+<script id="fo-campaign">
+(function(){
+"use strict";
+
+/* ---- 00-ns.js ---- */
+/* Fifty Overs — The First Summer (England solo campaign)
+ *
+ * Modular campaign sources. Each file attaches one module to the shared FOC
+ * namespace; build.sh concatenates them (in manifest order) into a single
+ * IIFE appended after the league overlay, so nothing here leaks globals
+ * except the intentional window.__foSummer test/debug surface set in boot.
+ *
+ * Ground rules (mirrors docs/first-summer.md):
+ *  - The pristine engine is never edited and never rebalanced.
+ *  - Matches are always real engine matches; results are never fabricated.
+ *  - Story effects live in the campaign save only — they never touch player
+ *    skills, so solo narrative can't create multiplayer advantages.
+ */
+var FOC = {};
+
+/* ---- core/util.js ---- */
+/* core/util — tiny shared helpers, no engine dependencies. */
+FOC.util = (function () {
+  function hash32(s) {
+    s = String(s == null ? "" : s);
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 16777619) >>> 0; }
+    return h >>> 0;
+  }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function clamp(x, lo, hi) { return x < lo ? lo : (x > hi ? hi : x); }
+  function deep(x) { return x == null ? x : JSON.parse(JSON.stringify(x)); }
+  function last(arr) { return arr && arr.length ? arr[arr.length - 1] : null; }
+  // most frequent element of a list of strings; ties break on first seen
+  function mode(list) {
+    var n = {}, best = null, bc = -1;
+    (list || []).forEach(function (x) {
+      n[x] = (n[x] || 0) + 1;
+      if (n[x] > bc) { bc = n[x]; best = x; }
+    });
+    return best;
+  }
+  return { hash32: hash32, esc: esc, clamp: clamp, deep: deep, last: last, mode: mode };
+})();
+
+/* ---- core/ids.js ---- */
+/* core/ids — stable identity for players, clubs, matches and arcs.
+ *
+ * Engine objects have no ids (players are keyed by display name). We mint an
+ * id once per entity and persist the name→id map inside the campaign save so
+ * identity survives reloads and container restarts. Minting is
+ * non-destructive: engine objects are never required to carry the id — the
+ * map is the source of truth — but where a roster object passes through
+ * campaign UI we also stamp a __foid convenience field.
+ *
+ * Known v1 limit (documented in docs/first-summer.md): two squad members with
+ * the identical display name and country would share an id; the engine's
+ * name banks make this effectively impossible inside one squad.
+ */
+FOC.ids = (function () {
+  var U = FOC.util;
+
+  // mint a stable id from a namespace + natural key; same key → same id
+  function mint(map, ns, naturalKey) {
+    var key = ns + "|" + naturalKey;
+    if (map[key]) return map[key];
+    map[key] = ns + "_" + U.hash32(key).toString(36) + "_" + (Object.keys(map).length + 1).toString(36);
+    return map[key];
+  }
+
+  function playerId(save, p) {
+    if (!p || !p.name) return null;
+    save.idmap = save.idmap || {};
+    return mint(save.idmap, "p", p.name + "|" + (p.country || ""));
+  }
+
+  // ensure every player on the roster has a stable id in save.idmap
+  function ensurePlayers(save, players) {
+    (players || []).forEach(function (p) {
+      if (!p || !p.name) return;
+      var id = playerId(save, p);
+      try { p.__foid = id; } catch (e) {}
+    });
+    return save.idmap;
+  }
+
+  function byId(players, save, id) {
+    var hit = null;
+    (players || []).forEach(function (p) {
+      if (hit || !p) return;
+      if (p.__foid === id || playerId(save, p) === id) hit = p;
+    });
+    return hit;
+  }
+
+  // a match result signature: stable for the same completed match, distinct
+  // across a season even when two matches share a scoreline
+  function matchSig(rec) {
+    return "m_" + U.hash32([rec.ch, rec.n, rec.opp, rec.my, rec.op, rec.win ? 1 : 0, rec.topNm, rec.bbNm].join("|")).toString(36);
+  }
+
+  return { mint: mint, ensurePlayers: ensurePlayers, playerId: playerId, byId: byId, matchSig: matchSig };
+})();
+
+/* ---- core/events.js ---- */
+/* core/events — the canonical, append-only game event log.
+ *
+ * Every meaningful thing that happens is recorded as one event; the story
+ * layer only ever REACTS to events (a lineup that was confirmed, a match
+ * that finished) — it never invents facts. The log lives inside the
+ * campaign save, capped so the save can't grow without bound.
+ */
+FOC.events = (function () {
+  var CAP = 500;
+  // canonical types (the story layer switches on these strings)
+  var TYPES = ["ClubFounded", "CaptainAppointed", "LineupConfirmed", "PlayerSelected",
+    "PlayerDropped", "PromiseMade", "PromiseFulfilled", "PromiseBroken",
+    "MatchCompleted", "TransferOfferReceived", "RegionEntered", "RegionalBossDefeated",
+    "PhilosophyChosen", "NoteWritten", "ChapterCompleted"];
+
+  function emit(save, type, data) {
+    save.events = save.events || [];
+    var ev = { t: type, ch: save.ch, n: (save.evSeq = (save.evSeq || 0) + 1), data: data || {} };
+    save.events.push(ev);
+    if (save.events.length > CAP) save.events = save.events.slice(-CAP);
+    return ev;
+  }
+  function ofType(save, type) {
+    return (save.events || []).filter(function (e) { return e.t === type; });
+  }
+  return { TYPES: TYPES, emit: emit, ofType: ofType };
+})();
+
+/* ---- core/save.js ---- */
+/* core/save — the versioned canonical solo campaign save.
+ *
+ * Storage: localStorage key fo_summer_<scope>, where scope isolates the save
+ * per league/club so a multiplayer session never shadows a solo one. The
+ * save is versioned (v) and loaded through an explicit migration chain; an
+ * unreadable save is never silently erased — it is moved to a timestamped
+ * backup key and a fresh save begins, with the backup listed for recovery.
+ */
+FOC.save = (function () {
+  var U = FOC.util;
+  var VERSION = 1;
+
+  function key(scope) { return "fo_summer_" + (scope || "solo"); }
+
+  function fresh(scope) {
+    return {
+      v: VERSION,
+      id: "camp_" + U.hash32(String(scope)).toString(36),
+      scope: scope || "solo",
+      ch: 0,               // 0 = prologue … 10 = The Crown Ground, 11 = epilogue done
+      beat: 0,             // index into the current chapter's beat list
+      status: "active",    // active | complete
+      philosophy: null,    // {k, label, chChosen}
+      matchBall: null,     // prologue keepsake choice
+      cast: {},            // role → player id (captain, senior, prospect, fringe)
+      castNames: {},       // role → display name snapshot (survives transfers)
+      choices: {},         // chapterKey → choice key(s) made
+      rapport: { gaffer: 55, captain: 55, dressingRoom: 55 },  // story-only; never touches skills
+      promises: [],        // {id, pid, txt, madeCh, dueMatches, status, replacedBy}
+      notes: {},           // player id → private manager note
+      idmap: {},           // natural key → stable id (see core/ids)
+      events: [],          // canonical event log (see core/events)
+      evSeq: 0,
+      matches: [],         // {ch, n, sig, opp, win, my, op, facts, rematch}
+      losses: {},          // chapterKey → loss count (fail-forward bookkeeping)
+      epilogue: null,      // {variant, permanent:true} once written, never rewritten
+      flags: {}
+    };
+  }
+
+  // ---- migration chain -----------------------------------------------------
+  // Each step upgrades exactly one version. v0 = any pre-versioned object.
+  var MIGRATIONS = {
+    0: function (raw) {
+      // v0 → v1: graft whatever fields exist onto a fresh v1 shell
+      var s = fresh(raw && raw.scope);
+      if (raw && typeof raw === "object") {
+        for (var k in s) if (raw[k] != null && k !== "v") s[k] = raw[k];
+      }
+      s.v = 1;
+      return s;
+    }
+  };
+
+  function migrate(raw) {
+    var v = (raw && typeof raw.v === "number") ? raw.v : 0;
+    var guard = 0;
+    while (v < VERSION && guard++ < 20) {
+      var step = MIGRATIONS[v];
+      if (!step) break;
+      raw = step(raw);
+      v = raw.v;
+    }
+    return raw;
+  }
+
+  function store() {
+    try { return window.localStorage; } catch (e) { return null; }
+  }
+
+  function load(scope) {
+    var ls = store(); if (!ls) return fresh(scope);
+    var txt = null;
+    try { txt = ls.getItem(key(scope)); } catch (e) {}
+    if (!txt) return fresh(scope);
+    var raw = null;
+    try { raw = JSON.parse(txt); } catch (e) {}
+    if (!raw || typeof raw !== "object") {
+      // corrupt: back it up, never erase silently
+      try { ls.setItem(key(scope) + "_backup_" + U.hash32(txt).toString(36), txt); } catch (e2) {}
+      var s0 = fresh(scope); s0.flags.recoveredFromCorrupt = 1;
+      return s0;
+    }
+    return migrate(raw);
+  }
+
+  function persist(save) {
+    var ls = store(); if (!ls) return false;
+    try { ls.setItem(key(save.scope), JSON.stringify(save)); return true; } catch (e) { return false; }
+  }
+
+  function reset(scope) {
+    var ls = store(); if (!ls) return;
+    // a reset archives the old save instead of destroying it
+    try {
+      var old = ls.getItem(key(scope));
+      if (old) ls.setItem(key(scope) + "_archived_" + U.hash32(old).toString(36), old);
+      ls.removeItem(key(scope));
+    } catch (e) {}
+  }
+
+  function backups(scope) {
+    var ls = store(), out = []; if (!ls) return out;
+    try {
+      for (var i = 0; i < ls.length; i++) {
+        var k = ls.key(i);
+        if (k && k.indexOf(key(scope) + "_") === 0) out.push(k);
+      }
+    } catch (e) {}
+    return out;
+  }
+
+  return { VERSION: VERSION, key: key, fresh: fresh, migrate: migrate, load: load,
+    persist: persist, reset: reset, backups: backups };
+})();
+
+/* ---- legacy/adapter.js ---- */
+/* legacy/adapter — the only module that touches engine globals.
+ *
+ * It translates between the campaign's world (stable ids, drafts, events)
+ * and the pristine engine's world (App.orders by display name, GD.teams,
+ * the global live match M). The engine is never modified; orders written
+ * here use the exact structure the engine's own suggestOrders() produces.
+ *
+ * A campaign tie rides the friendly plumbing (comp:'friendly' + __camp meta),
+ * which the overlay's competition-scope guard already excludes from
+ * multiplayer league packets — campaign lineups can never leak into a
+ * league round, and campaign results never touch league standings.
+ */
+FOC.adapter = (function () {
+  var U = FOC.util, E = FOC.events;
+
+  function gm() { return (typeof window !== "undefined" && window.__foGame) || null; }
+  function engineReady() {
+    return typeof App !== "undefined" && typeof GD !== "undefined" && typeof userTeam === "function";
+  }
+  function team() { try { return engineReady() ? userTeam() : null; } catch (e) { return null; } }
+  function players() { var t = team(); return (t && t.players) || []; }
+
+  // save scope: one campaign per manager identity, stable across reloads —
+  // the same key the Circuit uses (SYNC.myMid), so solo worlds and league
+  // membership never shadow each other's campaign
+  function scope() {
+    try { if (typeof SYNC !== "undefined" && SYNC && SYNC.myMid) return String(SYNC.myMid); } catch (e) {}
+    return "solo";
+  }
+
+  // ---- orders ---------------------------------------------------------------
+  function ordersSnapshot() {
+    try { return U.deep(App.orders); } catch (e) { return null; }
+  }
+
+  function isPartTimer(p) {
+    try { return typeof isPT === "function" ? isPT(p) : false; } catch (e) { return false; }
+  }
+
+  // draft = {xi:[names in batting order], captain, keeper}
+  // Neutral validation: `errors` block Confirm (the engine could not play the
+  // card as written); `facts` are observations, stated without judgement.
+  function validate(draft) {
+    var errors = [], facts = [];
+    var roster = {}, seen = {};
+    players().forEach(function (p) { if (p) roster[p.name] = p; });
+    var xi = (draft && draft.xi) || [];
+    if (xi.length !== 11) errors.push("An XI is eleven names — this card has " + xi.length + ".");
+    xi.forEach(function (nm) {
+      if (!roster[nm]) errors.push(nm + " is not on your roster.");
+      if (seen[nm]) errors.push(nm + " appears twice.");
+      seen[nm] = 1;
+    });
+    if (!draft.keeper) errors.push("No wicketkeeper designated.");
+    else if (xi.indexOf(draft.keeper) < 0) errors.push("Designated keeper " + draft.keeper + " is not in the XI.");
+    if (!draft.captain) errors.push("No captain designated.");
+    else if (xi.indexOf(draft.captain) < 0) errors.push("Designated captain " + draft.captain + " is not in the XI.");
+    // neutral facts (never "too weak" / "bad pick")
+    if (!errors.length) {
+      var kp = roster[draft.keeper];
+      if (kp && !kp.keeper) facts.push(draft.keeper + " has no wicketkeeping background; the gloves are a choice, not a habit.");
+      var frontline = 0, part = 0, pace = 0, spin = 0;
+      xi.forEach(function (nm) {
+        var p = roster[nm]; if (!p || !p.bowlType) return;
+        if (isPartTimer(p)) { part++; return; }
+        frontline++;
+        if (/spin/i.test(p.bowlType)) spin++; else pace++;
+      });
+      facts.push("Bowling cover: " + frontline + " frontline (" + pace + " pace, " + spin + " spin)" +
+        (part ? " plus " + part + " part-time" : "") + ". Fifty overs must come from somewhere.");
+      var lefties = xi.filter(function (nm) { return roster[nm] && /l/i.test(roster[nm].hand || ""); }).length;
+      if (lefties) facts.push(lefties + " left-hander" + (lefties > 1 ? "s" : "") + " in the order.");
+    }
+    return { ok: !errors.length, errors: errors, facts: facts };
+  }
+
+  // engine-identical default spells (mirrors the engine's suggestOrders)
+  function buildSpells(xiPlayers) {
+    var bs = xiPlayers.filter(function (p) { return p && p.bowlType && !isPartTimer(p); })
+      .sort(function (a, b) { return ((b.threat || 0) + (b.control || 0)) - ((a.threat || 0) + (a.control || 0)); });
+    if (bs.length < 5) return null;
+    var b1 = bs[0], b2 = bs[1], b3 = bs[2], b4 = bs[3], b5 = bs[4];
+    return {
+      north: [{ bowler: b1.name, first: 1, n: 5, field: "att" }, { bowler: b3.name, first: 11, n: 10, field: "bal" },
+              { bowler: b5.name, first: 31, n: 5, field: "bal" }, { bowler: b1.name, first: 41, n: 5, field: "def" }],
+      south: [{ bowler: b2.name, first: 2, n: 5, field: "att" }, { bowler: b4.name, first: 12, n: 10, field: "bal" },
+              { bowler: b2.name, first: 32, n: 5, field: "bal" }, { bowler: b5.name, first: 42, n: 5, field: "def" }]
+    };
+  }
+
+  // The ONLY mutation path: a validated draft becomes real engine orders.
+  // Emits LineupConfirmed (+ selection diffs) exactly once per confirm.
+  function applyOrders(save, draft) {
+    var v = validate(draft);
+    if (!v.ok) return v;
+    var roster = {}; players().forEach(function (p) { if (p) roster[p.name] = p; });
+    var prev = (App.orders && App.orders.saved && App.orders.batOrder && App.orders.batOrder.length === 11)
+      ? App.orders.batOrder.slice() : null;
+    var prevCapt = App.orders && App.orders.captain;
+
+    App.orders.batOrder = draft.xi.slice();
+    App.orders.captain = draft.captain;
+    App.orders.keeper = draft.keeper;
+    // keep existing spells only if every named bowler is still in the XI
+    var keep = false;
+    try {
+      var sp = App.orders.spells || {};
+      var names = [].concat(sp.north || [], sp.south || []).map(function (s) { return s.bowler; }).filter(Boolean);
+      keep = names.length > 0 && names.every(function (nm) { return draft.xi.indexOf(nm) >= 0; });
+    } catch (e) {}
+    if (!keep) {
+      var built = buildSpells(draft.xi.map(function (nm) { return roster[nm]; }));
+      if (built) App.orders.spells = built;
+      else App.orders.spells = { north: [], south: [] };   // AI captain decides
+    }
+    App.orders.saved = true;
+    try { App.defaults = U.deep(App.orders); } catch (e2) {}
+    try { if (typeof saveGame === "function") saveGame(); } catch (e3) {}
+    // league context: push the packet through the overlay's guarded path,
+    // which refuses to serialize friendly/circuit/campaign orders
+    try { var g = gm(); if (g && g.pushPacket) g.pushPacket(); } catch (e4) {}
+
+    // canonical events
+    var ids = FOC.ids;
+    if (prev) {
+      draft.xi.forEach(function (nm) {
+        if (prev.indexOf(nm) < 0) E.emit(save, "PlayerSelected", { pid: ids.playerId(save, roster[nm]), nm: nm });
+      });
+      prev.forEach(function (nm) {
+        if (draft.xi.indexOf(nm) < 0) E.emit(save, "PlayerDropped", { pid: roster[nm] ? ids.playerId(save, roster[nm]) : null, nm: nm });
+      });
+    }
+    if (prevCapt && prevCapt !== draft.captain) {
+      E.emit(save, "CaptainAppointed", { pid: ids.playerId(save, roster[draft.captain]), nm: draft.captain, prev: prevCapt });
+    }
+    E.emit(save, "LineupConfirmed", {
+      xi: draft.xi.slice(), captain: draft.captain, keeper: draft.keeper,
+      context: (App.pending && App.pending.__camp) ? "campaign" :
+               (App.pending && (App.pending.__friendly || App.pending.__circuit)) ? "friendly" : "league"
+    });
+    FOC.save.persist(save);
+    return { ok: true, errors: [], facts: v.facts };
+  }
+
+  // ---- campaign matches -----------------------------------------------------
+  // Real engine matches against a generated England XI, on their ground,
+  // under their conditions. Never simulated by hand, never faked.
+  function buildOpponent(spec) {
+    var g = gm(); if (!g || !g.squad) return null;
+    var gen = g.squad("summer|" + spec.id + "|" + (spec.seed || 0), "England", spec.arch, spec.captFlavour || "talisman");
+    var ps = (gen.players || []).map(function (p0) {
+      var p = U.deep(p0); delete p.fee;
+      for (var k in (p.skills || {})) {
+        if (typeof p.skills[k] === "number") p.skills[k] = Math.max(4, Math.min(96, Math.round(p.skills[k] * (spec.mult || 1))));
+      }
+      p.fatigue = "rested"; p.formIx = 3;
+      try { jsDerive(p); } catch (e) {}
+      return p;
+    });
+    if (spec.boost && spec.boost.skill) {
+      // an opponent that has genuinely read your scorebook: a solo-difficulty
+      // adjustment on THEIR generated squad (never on the player's squad)
+      ps.forEach(function (p) {
+        if (p.bowlType || p.keeper || !p.skills) return;
+        if (typeof p.skills[spec.boost.skill] === "number") {
+          p.skills[spec.boost.skill] = Math.min(96, Math.round(p.skills[spec.boost.skill] * (spec.boost.mult || 1.06)));
+          try { jsDerive(p); } catch (e) {}
+        }
+      });
+    }
+    if (spec.rename) {
+      // stable, deterministic renames (e.g. Thorne's named lieutenants)
+      Object.keys(spec.rename).forEach(function (ixs) {
+        var i = +ixs; if (ps[i]) ps[i].name = spec.rename[ixs];
+      });
+    }
+    return { name: spec.nm, ground: spec.ground, players: ps, youth: [], founded: false,
+      homePitch: spec.pitch, bank: 300000, seats: spec.boss ? 22000 : 7000,
+      supporters: 2200, mood: 3, acadY: 2, acadS: 2, __camp: 1 };
+  }
+
+  function startMatch(save, spec) {
+    var g = gm();
+    if (!engineReady() || !g || !g.challenge) return false;
+    if (typeof M !== "undefined" && M && !M.done) return false;   // a match is live
+    var T = buildOpponent(spec); if (!T) return false;
+    var ix = -1;
+    (GD.teams || []).forEach(function (t, i) { if (t && t.name === T.name) ix = i; });
+    if (ix < 0) { GD.teams.push(T); ix = GD.teams.length - 1; } else GD.teams[ix] = T;
+    // protect a live league plan exactly like the Circuit does
+    try {
+      if (typeof SYNC !== "undefined" && SYNC && SYNC.started && !SYNC.practice && App.orders)
+        window.__foSummerOrdStash = JSON.stringify(App.orders);
+    } catch (e) {}
+    g.challenge(ix, spec.pitch, spec.wx);
+    if (App.pending) {
+      App.pending.ground = T.ground;
+      App.pending.__camp = { ch: save.ch, key: spec.chKey };
+    }
+    save.flags.liveMatch = { chKey: spec.chKey, rematch: (save.losses[spec.chKey] || 0) };
+    FOC.save.persist(save);
+    // the campaign sets its XI in the lineup room, not the legacy orders page
+    try { location.hash = "#/lineup"; if (typeof window.route === "function") window.route(); } catch (e2) {}
+    return true;
+  }
+
+  // honest facts from a REAL finished match — the only source of story truth
+  function extractFacts(match, meName) {
+    var f = { my: 0, op: 0, myW: 0, opW: 0, topNm: null, topR: -1, topB: 0, bbNm: null, bbW: -1, bbR: 0,
+      ducks: [], fifties: [], threeFors: [], paceW: 0, spinW: 0, oppTopNm: null, oppTopR: -1,
+      batLines: [], bowlLines: [] };
+    var byName = {};
+    try { (userTeam().players || []).forEach(function (p) { if (p) byName[p.name] = p; }); } catch (e) {}
+    [match.innings[0], match.innings[1]].forEach(function (inn) {
+      if (!inn) return;
+      if (inn.batTeam === meName) {
+        f.my = inn.runs || 0; f.myW = inn.wkts || 0;
+        (inn.bat || []).forEach(function (b) {
+          if (!b || !b.p) return;
+          if (b.b > 0 || b.out) f.batLines.push({ nm: b.p.name, r: b.r, b: b.b, out: !!b.out });
+          if (b.r > f.topR) { f.topR = b.r; f.topNm = b.p.name; f.topB = b.b; }
+          if (b.out && b.r === 0) f.ducks.push(b.p.name);
+          if (b.r >= 50) f.fifties.push({ nm: b.p.name, r: b.r, b: b.b });
+        });
+      } else {
+        f.op = inn.runs || 0; f.opW = inn.wkts || 0;
+        (inn.bat || []).forEach(function (b) {
+          if (b && b.p && b.r > f.oppTopR) { f.oppTopR = b.r; f.oppTopNm = b.p.name; }
+        });
+        Object.keys(inn.bowlers || {}).forEach(function (nm) {
+          var bw = inn.bowlers[nm]; if (!bw) return;
+          f.bowlLines.push({ nm: nm, w: bw.w || 0, r: bw.r || 0 });
+          if ((bw.w || 0) > f.bbW || ((bw.w || 0) === f.bbW && (bw.r || 0) < f.bbR)) { f.bbW = bw.w || 0; f.bbR = bw.r || 0; f.bbNm = nm; }
+          if ((bw.w || 0) >= 3) f.threeFors.push({ nm: nm, w: bw.w, r: bw.r });
+          var pl = byName[nm];
+          if (pl && pl.bowlType) { if (/spin/i.test(pl.bowlType)) f.spinW += (bw.w || 0); else f.paceW += (bw.w || 0); }
+        });
+      }
+    });
+    return f;
+  }
+
+  // record a finished campaign match into the save (idempotent per match)
+  function recordMatch(save, chKey, win, facts, oppName) {
+    var rec = { ch: save.ch, key: chKey, n: save.matches.length + 1, opp: oppName, win: !!win,
+      my: facts.my, op: facts.op, facts: facts, rematch: save.losses[chKey] || 0 };
+    rec.sig = FOC.ids.matchSig({ ch: rec.ch, n: rec.n, opp: rec.opp, my: rec.my, op: rec.op, win: rec.win, topNm: facts.topNm, bbNm: facts.bbNm });
+    save.matches.push(rec);
+    if (!win) save.losses[chKey] = (save.losses[chKey] || 0) + 1;
+    E.emit(save, "MatchCompleted", { sig: rec.sig, key: chKey, win: rec.win, my: rec.my, op: rec.op });
+    delete save.flags.liveMatch;
+    FOC.save.persist(save);
+    return rec;
+  }
+
+  // the campaign keeper: walks the manager out once the XI is confirmed, and
+  // hands finished ties to the story engine. Mirrors the Circuit's keeper.
+  function startKeeper(onDone) {
+    if (typeof window === "undefined") return;
+    setInterval(function () {
+      try {
+        if (typeof App === "undefined" || typeof GD === "undefined") return;
+        if (App && App.pending && App.pending.__camp && GD.teams) {
+          var nm = App.pending.away, found = -1;
+          GD.teams.forEach(function (t, i) { if (t && t.name === nm) found = i; });
+          if (found >= 0) App.pending.oppIx = found;
+          if (App.orders && App.orders.saved && !App.pending.__campGo && !(typeof M !== "undefined" && M && !M.done)) {
+            App.pending.__campGo = 1;
+            location.hash = "#/match"; if (typeof window.route === "function") window.route();
+          }
+        }
+        if (typeof M !== "undefined" && M && M.done && M.meta && M.meta.__camp && !M.__campSeen) {
+          M.__campSeen = 1;
+          var me = null; try { me = userTeam(); } catch (e1) {}
+          var win = false;
+          try { win = !!(M.result && me && M.result.winner === me.name); } catch (e2) {}
+          var facts = extractFacts(M, me ? me.name : "");
+          // visitors leave the world once the tie is done
+          try {
+            for (var i = (GD.teams || []).length - 1; i >= 0; i--) {
+              if (GD.teams[i] && GD.teams[i].__camp && (!App.pending || App.pending.away !== GD.teams[i].name)) GD.teams.splice(i, 1);
+            }
+          } catch (e3) {}
+          // give the league its plan back, untouched
+          try {
+            if (window.__foSummerOrdStash) { App.orders = JSON.parse(window.__foSummerOrdStash); window.__foSummerOrdStash = null; }
+          } catch (e4) {}
+          if (onDone) onDone(M.meta.__camp, win, facts, M.meta.away);
+        }
+      } catch (e) {}
+    }, 2000);
+  }
+
+  return { engineReady: engineReady, team: team, players: players, scope: scope,
+    ordersSnapshot: ordersSnapshot, validate: validate, buildSpells: buildSpells,
+    applyOrders: applyOrders, buildOpponent: buildOpponent, startMatch: startMatch,
+    extractFacts: extractFacts, recordMatch: recordMatch, startKeeper: startKeeper,
+    isPartTimer: isPartTimer };
+})();
+
+/* ---- story/england.js ---- */
+/* story/england — THE FIRST SUMMER: the England campaign content.
+ *
+ * Chapters are code, not save-data: the save stores only (ch, beat, choices,
+ * matches, promises). Every beat is a function (ctx) → descriptor:
+ *   {kind:'scene', sp, face, tx, choices?:[{t, fx(ctx)}]}
+ *   {kind:'match'}   — the hub offers the tie; a REAL engine match decides it
+ * Post-match beats read ctx.facts — honest numbers from the actual
+ * scorecard, never invented. Nobody in this file ever labels a player's
+ * potential; they present evidence and let the manager conclude.
+ */
+FOC.england = (function () {
+  var U = FOC.util;
+
+  function s(sp, face, tx, choices) {
+    return { kind: "scene", sp: sp, face: face, tx: tx, choices: choices || null };
+  }
+  function score(f) { return f.my + "/" + f.myW + " to their " + f.op + "/" + f.opW; }
+  function nmShort(nm) { return nm ? nm.split(" ").slice(-1)[0] : ""; }
+
+  var PHILOSOPHIES = [
+    { k: "courage", label: "Courage", line: "We take the positive option. Every time. Even when it costs us." },
+    { k: "discipline", label: "Discipline", line: "We do the boring things properly. Overs, angles, fields. Runs follow." },
+    { k: "community", label: "Community", line: "This club belongs to the town. Nobody bigger than the shirt." },
+    { k: "ambition", label: "Ambition", line: "We're not here to make up the numbers. We're here to take the Crown Ground." }
+  ];
+
+  // ---- prologue: the selection table ---------------------------------------
+  var PROLOGUE = {
+    key: "prologue", title: "Prologue", tag: "The Selection Table", opp: null,
+    beats: [
+      function (ctx) {
+        return s("Margaret Hobb — club secretary", "npc:MH",
+          "Keys, ledger, and the pavilion smells of linseed and old tea. I've run this club's paperwork for thirty-one years, and you're the first manager who's had to be shown where the light switch is. " +
+          "The Gaffer's waiting in the long room. He's laid the squad out on the table like a hand of cards.");
+      },
+      function (ctx) {
+        var g = ctx.groups();
+        return s("The Gaffer", "gaffer",
+          "Don't learn twenty names tonight. Learn the shape. " +
+          g.bats + " specialist bats, " + g.keepers + " with the gloves, " + g.ars + " who do both jobs, " + g.bowlers + " who take the ball. " +
+          "Four units. A club is those four units agreeing to pull the same direction. The names will come to you one match at a time — that's how names are supposed to arrive.");
+      },
+      function (ctx) {
+        return s("The Gaffer", "gaffer-serious",
+          "Before a single net: what is this club FOR? Say it now and I'll hold you to it in August.",
+          PHILOSOPHIES.map(function (ph) {
+            return { t: ph.label + " — " + ph.line, fx: function (c) {
+              c.save.philosophy = { k: ph.k, label: ph.label, chChosen: 0 };
+              c.choose("prologue", "philosophy", ph.k);
+              c.emit("PhilosophyChosen", { k: ph.k });
+            } };
+          }));
+      },
+      function (ctx) {
+        var cands = ctx.captainCandidates();
+        return s("The Gaffer", "gaffer",
+          "Captain. I'll give you the evidence, you give me the name. " +
+          cands.map(function (c) { return c.nm + " — " + c.why; }).join(" ") +
+          " Whoever you pick, pick them out loud.",
+          cands.map(function (c) {
+            return { t: c.nm + " (" + c.why + ")", fx: function (cx) {
+              cx.setCast("captain", c.p);
+              cx.choose("prologue", "captain", c.nm);
+              cx.emit("CaptainAppointed", { pid: cx.pid(c.p), nm: c.nm, prev: null });
+            } };
+          }));
+      },
+      function (ctx) {
+        var sen = ctx.pickSenior(), kid = ctx.pickProspect(), fr = ctx.pickFringe();
+        ctx.setCast("senior", sen); ctx.setCast("prospect", kid); ctx.setCast("fringe", fr);
+        return s("The Gaffer", "gaffer",
+          "Three more faces before you go. " + sen.name + " — " + sen.age + ", seen everything, says little. " +
+          kid.name + " — " + kid.age + ", turned up to pre-season a week early. " +
+          "And " + fr.name + ", who believes — with some evidence — that there's an XI spot with his name on it that keeps going to other people. " +
+          "You'll manage all three of those stories whether you mean to or not.");
+      },
+      function (ctx) {
+        return s("Margaret Hobb — club secretary", "npc:MH",
+          "One tradition before your first match: the manager chooses the match ball for the season opener. Pick from the cabinet.",
+          [
+            { t: "The 1987 ball — scuffed, famous, older than half the squad", fx: function (c) { c.save.matchBall = "heritage"; c.choose("prologue", "ball", "heritage"); } },
+            { t: "A brand-new cherry, straight out of the wrapper", fx: function (c) { c.save.matchBall = "new"; c.choose("prologue", "ball", "new"); } },
+            { t: "The ball from the club's last promotion — kept behind glass", fx: function (c) { c.save.matchBall = "promotion"; c.choose("prologue", "ball", "promotion"); } }
+          ]);
+      },
+      function (ctx) {
+        return s("The Gaffer", "gaffer-wink",
+          "That's the table set. Willowmere on Saturday — nice ground, soft hands, they'll smile while they beat you if you let them. " +
+          "If you want a look at anyone first, the Match Lab is open all week; a trial costs nothing but an afternoon. Otherwise: pick your XI in the lineup room and we'll walk out together.");
+      }
+    ]
+  };
+
+  // ---- the chapter spine ----------------------------------------------------
+  var CHAPTERS = [PROLOGUE,
+    {
+      key: "willowmere", title: "Chapter 1 — Willowmere", tag: "Openers",
+      opp: { id: "club_willowmere", nm: "Willowmere CC", city: "Willowmere", ground: "The Meadow",
+        pitch: "green", wx: "Overcast", arch: "blade", mult: 0.84, captFlavour: "talisman" },
+      beats: [
+        function (ctx) {
+          var op = ctx.confirmedOpeners();
+          return s("The Gaffer", "gaffer",
+            "Willowmere. Green pitch, cloud about, and their new-ball pair will ask your openers the same question forty times: are you good enough to leave it? " +
+            (op ? "You've pencilled " + op[0] + " and " + op[1] + " at the top. Your call stands — just know WHY it's them." :
+              "You haven't named your openers yet. Do it in the lineup room, and do it on purpose — the first forty balls of the season belong to those two.") +
+            " Set the XI when you're ready.");
+        },
+        { kind: "match" },
+        function (ctx) {
+          var f = ctx.facts(), bits = [];
+          if (f.fifties.length) bits.push(f.fifties[0].nm + " made " + f.fifties[0].r + " off " + f.fifties[0].b + " — first fifty of the summer, and the scorebook will remember it longer than he will.");
+          if (f.ducks.length) bits.push(nmShort(f.ducks[0]) + " got a duck. Say nothing tomorrow. Everything you need to say, say at training on Tuesday.");
+          if (f.threeFors.length) bits.push(f.threeFors[0].nm + " took " + f.threeFors[0].w + " for " + f.threeFors[0].r + ". Three-plus on debut weekend — that's a fact now, not an opinion.");
+          if (!bits.length) bits.push("No fifties, no ducks, no big hauls — a quiet card. Quiet cards still count " + (f.win ? "wins" : "losses") + ".");
+          return s("The Gaffer", f.win ? "gaffer-laugh" : "gaffer-serious",
+            (f.win ? "First blood: " : "First scar: ") + score(f) + ". " + bits.join(" "));
+        },
+        function (ctx) {
+          var f = ctx.facts();
+          var head = f.win
+            ? "NEW HANDS, OLD MEADOW: " + ctx.clubName().toUpperCase() + " SPOIL WILLOWMERE'S SATURDAY"
+            : "WILLOWMERE TOO STREETWISE FOR NEW-LOOK " + ctx.clubName().toUpperCase();
+          var det = f.win
+            ? (f.topNm ? nmShort(f.topNm) + "'s " + f.topR + " the difference" : "a professional afternoon")
+            : (f.oppTopNm ? nmShort(f.oppTopNm) + "'s " + f.oppTopR + " settles it" : "a hard lesson");
+          return s("Sam Whitlow — the Argus", "npc:SW",
+            "Tomorrow's back page: “" + head + "” — " + det + ". I don't do puff pieces and I don't do hatchet jobs. I print what the scorebook prints. You'll learn to like me in the good weeks.");
+        },
+        function (ctx) {
+          var f = ctx.facts();
+          var jab = f.win
+            ? (f.topNm ? "Your " + nmShort(f.topNm) + " scored " + f.topR + " against a village new-ball attack. Lovely. Bring him to the Crown Ground and we'll finish the sentence." :
+              "You beat Willowmere. So does the weather, most years.")
+            : "Willowmere. WILLOWMERE. I have a photograph of their captain holding a raffle prize. Do better, or this is going to be a very short summer.";
+          return s("Reggie Thorne", "thorne", jab);
+        }
+      ]
+    },
+    {
+      key: "ironbridge", title: "Chapter 2 — Ironbridge", tag: "The Bowling Plan",
+      opp: { id: "club_ironbridge", nm: "Ironbridge CC", city: "Ironbridge", ground: "Foundry Field",
+        pitch: "flat", wx: "Sunny", arch: "express", mult: 0.9, captFlavour: "enforcer" },
+      beats: [
+        function (ctx) {
+          var f0 = ctx.facts(1);
+          var split = f0 ? "Last Saturday your wickets split " + f0.paceW + " to pace, " + f0.spinW + " to spin. " : "";
+          return s("The Gaffer", "gaffer",
+            "Foundry Field is a runway — flat, fast outfield, and Ironbridge's batters swing like shift workers on payday. " + split +
+            "This week I want a bowling PLAN, not a bowling hope: who takes the new ball, who bowls the middle, who you're hiding at the death. " +
+            "Set your spells in the lineup room. Whatever you write down, I'll read back to you at the innings break.");
+        },
+        { kind: "match" },
+        function (ctx) {
+          var f = ctx.facts();
+          var used = f.bowlLines.slice().sort(function (a, b) { return b.w - a.w || a.r - b.r; });
+          var plan = used.length
+            ? "The plan on paper met the plan on grass: " + used.slice(0, 3).map(function (b) { return b.nm.split(" ").slice(-1)[0] + " " + b.w + "-" + b.r; }).join(", ") + "."
+            : "The card says the overs got bowled; the details were the captain's on the day.";
+          return s("The Gaffer", f.win ? "gaffer-laugh" : "gaffer-serious",
+            score(f) + ". " + plan + " " +
+            (f.bbNm ? nmShort(f.bbNm) + " finished " + f.bbW + "-" + f.bbR + " — best figures on the card. " : "") +
+            (f.win ? "That's what a plan looks like when it survives contact." : "The plan didn't fail — it ran out of overs. Different problem, fixable one."));
+        }
+      ]
+    },
+    {
+      key: "moorland", title: "Chapter 3 — Moorland", tag: "Conditions",
+      opp: { id: "club_moorland", nm: "Moorland CC", city: "High Moor", ground: "High Tor",
+        pitch: "green", wx: "Windy", arch: "rock", mult: 0.94, captFlavour: "wall" },
+      beats: [
+        function (ctx) {
+          return s("The Gaffer", "gaffer-serious",
+            "High Tor. Six hundred feet up, wind like a debt collector, and a green top that seams all day. Here's the selection dilemma, plainly: " +
+            "extra seamer suits the surface but shortens your batting; the balanced card bats deep but leaves overs to part-timers. There is no right answer. There is only YOUR answer.",
+            [
+              { t: "Pack the seam attack — trust the surface", fx: function (c) { c.choose("moorland", "conditions", "seam"); } },
+              { t: "Keep the balanced card — trust the batting", fx: function (c) { c.choose("moorland", "conditions", "balance"); } }
+            ]);
+        },
+        function (ctx) {
+          var fr = ctx.cast("fringe");
+          return s("The Gaffer", "gaffer",
+            "Whichever way you cut it, somebody who played last week carries the drinks this week. " + fr.nm + " has already done the maths in the car park. How do you handle the drop?",
+            [
+              { t: "Tell him face to face, before the team sheet goes up", fx: function (c) { c.rapport("dressingRoom", 4); c.choose("moorland", "drop", "face"); } },
+              { t: "Let the team sheet do the talking", fx: function (c) { c.rapport("dressingRoom", -4); c.choose("moorland", "drop", "sheet"); } }
+            ]);
+        },
+        { kind: "match" },
+        function (ctx) {
+          var f = ctx.facts();
+          var drop = ctx.choice("moorland", "drop") === "face"
+            ? "And for what it's worth — the dressing room noticed you did your own bad news this week. That buys quiet loyalty. Spend it carefully."
+            : "The team sheet did your talking this week. Cheap at the time. The bill comes later.";
+          return s("The Gaffer", f.win ? "gaffer" : "gaffer-serious", score(f) + " in that wind. " + drop);
+        },
+        function (ctx) {
+          return s("Margaret Hobb — club secretary", "npc:MH",
+            "Filing the High Tor card, I found something. A Marylebone scorebook, 2006. Same handwriting in two columns: R. THORNE, capt … and underneath, in the assistants' line, a name I believe you know. I've left it on your desk. I don't gossip. I file.");
+        }
+      ]
+    },
+    {
+      key: "fenholt", title: "Chapter 4 — A Place in the Side", tag: "The Promise",
+      opp: { id: "club_fenholt", nm: "Fenholt Athletic", city: "Fenholt", ground: "Brick Lane End",
+        pitch: "dry", wx: "Sunny", arch: "finisher", mult: 0.97, captFlavour: "talisman" },
+      beats: [
+        function (ctx) {
+          var fr = ctx.cast("fringe");
+          var picked = ctx.selectionCount(fr.pid);
+          return s(fr.nm, "player:bat",
+            "Boss — straight question, I'll take a straight answer. " + picked + " selection" + (picked === 1 ? "" : "s") + " for me so far this summer. " +
+            "I'm not asking for charity. I'm asking where I stand.",
+            [
+              { t: "Promise him a start within the next two matches", fx: function (c) {
+                  c.makePromise(fr.pid, fr.nm + " starts one of the next two campaign matches", 2);
+                  c.rapport("dressingRoom", 3);
+                } },
+              { t: "“I can't promise starts. I can promise you'll always know why.”", fx: function (c) {
+                  c.rapport("dressingRoom", 1); c.choose("fenholt", "stance", "honest");
+                } },
+              { t: "“Earn it in the Lab. The team sheet is the only answer I give.”", fx: function (c) {
+                  c.rapport("dressingRoom", -3); c.choose("fenholt", "stance", "hard");
+                } }
+            ]);
+        },
+        { kind: "match" },
+        function (ctx) {
+          var f = ctx.facts(), pr = ctx.activePromises();
+          var tail = pr.length
+            ? "You're carrying a live promise: " + pr[0].txt + " — " + pr[0].dueMatches + " match" + (pr[0].dueMatches === 1 ? "" : "es") + " left on it. Promises at this club get kept, broken, or replaced. Never forgotten."
+            : "No promises on the books. Clean ledger — one way to run a club.";
+          return s("The Gaffer", f.win ? "gaffer" : "gaffer-serious", score(f) + ". " + tail);
+        }
+      ]
+    },
+    {
+      key: "bellminster", title: "Chapter 5 — Bellminster", tag: "They Read Your Scorebook",
+      opp: { id: "club_bellminster", nm: "Bellminster CC", city: "Bellminster", ground: "Cathedral Green",
+        pitch: "dusty", wx: "Sunny", arch: "wizard", mult: 1.0, captFlavour: "professor" },
+      beats: [
+        function (ctx) {
+          var pat = ctx.patterns();
+          return s("The Gaffer", "gaffer-serious",
+            "Bellminster don't guess — they subscribe to the Argus. Facts they'll have highlighted: " +
+            "your wickets this summer are " + pat.paceW + " pace, " + pat.spinW + " spin; " +
+            (pat.topBat ? pat.topBat.nm + " has " + pat.topBat.runs + " of your runs" + (pat.dependence >= 40 ? " — " + pat.dependence + "% of everything you've scored" : "") + "; " : "") +
+            (pat.commonOpeners ? "you've opened with " + pat.commonOpeners + " in every match. " : "") +
+            "I'm not telling you to change anything. I'm telling you they know. Cathedral Green turns square — their spinners have been raised on it.");
+        },
+        { kind: "match" },
+        function (ctx) {
+          var f = ctx.facts();
+          return s("The Gaffer", f.win ? "gaffer-laugh" : "gaffer-serious",
+            score(f) + ". " + (f.win
+              ? "They knew your patterns and it didn't save them. That's the difference between information and cricket."
+              : "They did their homework and it showed. Fine. From now on, so do we."));
+        }
+      ]
+    },
+    {
+      key: "blackstone", title: "Chapter 6 — The Setback", tag: "How You Respond",
+      opp: { id: "club_blackstone", nm: "Blackstone Ramblers", city: "Blackstone", ground: "The Quarry",
+        pitch: "flat", wx: "Sunny", arch: "express", mult: 1.12, captFlavour: "enforcer" },
+      beats: [
+        function (ctx) {
+          return s("The Gaffer", "gaffer-serious",
+            "Blackstone Ramblers. Semi-pro money, two quicks who've played first-class cricket, and a fixture list they treat as a formality. " +
+            "This is the strongest side we've met. I'd rather you knew that walking in than found out at 30 for 4.");
+        },
+        { kind: "match" },
+        function (ctx) {
+          var f = ctx.facts();
+          var evid = [];
+          if (f.ducks.length) evid.push(f.ducks.map(nmShort).join(" and ") + " out for nought");
+          if (f.myW >= 8) evid.push("eight-plus wickets gone");
+          if (!f.win) evid.push("beaten " + score(f));
+          var rough = !f.win || evid.length > 0;
+          var intro = !f.win
+            ? "That's the first real one. " + evid.join(", ") + ". The scorebook doesn't do mercy and neither does the league table."
+            : (rough ? "A win with teeth marks in it — " + evid.join(", ") + ". Won ugly is still won, but the wobble was real." :
+              "You walked into the hardest fixture on the card and came out clean: " + score(f) + ". I'll say one thing and then never again: that was managed well.");
+          if (!rough) return s("The Gaffer", "gaffer-laugh", intro);
+          var phil = ctx.save.philosophy ? " You told me in the prologue this club stood for " + ctx.save.philosophy.label.toLowerCase() + ". This is where that word costs something." : "";
+          return s("The Gaffer", "gaffer-serious", intro + phil + " So — how do we respond? There's no correct answer on this card. Only yours.",
+            [
+              { t: "Call the room together tonight — front it as one voice", fx: function (c) { c.rapport("dressingRoom", 3); c.rapport("gaffer", 1); c.choose("blackstone", "response", "rally"); } },
+              { t: "A hard week: standards, fitness, fielding until dark", fx: function (c) { c.rapport("dressingRoom", -2); c.rapport("gaffer", 3); c.choose("blackstone", "response", "standards"); } },
+              { t: "Absorb it quietly — no speeches, next match is the answer", fx: function (c) { c.rapport("captain", 2); c.choose("blackstone", "response", "quiet"); } },
+              { t: "Change the side — someone pays for that card", fx: function (c) { c.rapport("dressingRoom", -4); c.choose("blackstone", "response", "axe"); } }
+            ]);
+        }
+      ]
+    },
+    {
+      key: "kestrel", title: "Chapter 7 — The Captain's Side", tag: "Form Is a Fact",
+      opp: { id: "club_kestrel", nm: "Kestrel Park CC", city: "Kestrel Park", ground: "The Aviary",
+        pitch: "green", wx: "Overcast", arch: "gloveman", mult: 1.02, captFlavour: "wall" },
+      beats: [
+        function (ctx) {
+          var cap = ctx.cast("captain");
+          var runs = ctx.playerScores(cap.nm, 3);
+          var line = runs.length
+            ? "his last scores read " + runs.map(function (r) { return r.r + (r.out ? "" : "*"); }).join(", ")
+            : "the book has nothing on him yet this summer";
+          return s("The Gaffer", "gaffer-serious",
+            "Your captain. " + cap.nm + " — " + line + ". I don't deal in vibes, I deal in columns, and that's the column. " +
+            "The armband weighs more when the bat's quiet. What's your move?",
+            [
+              { t: "Back him publicly — the armband stays, no discussion", fx: function (c) { c.rapport("captain", 5); c.choose("kestrel", "captain", "back"); } },
+              { t: "Keep him captain, redistribute the pressure — drop him down the order", fx: function (c) { c.rapport("captain", 1); c.choose("kestrel", "captain", "redistribute"); } },
+              { t: "A temporary rest from the armband — one match, framed as such", fx: function (c) { c.rapport("captain", -3); c.choose("kestrel", "captain", "temporary"); } },
+              { t: "Replace him — form is a fact and so is the table", fx: function (c) { c.rapport("captain", -6); c.choose("kestrel", "captain", "replace"); } },
+              { t: "Create a leadership group — share the weight formally", fx: function (c) { c.rapport("captain", 2); c.rapport("dressingRoom", 2); c.choose("kestrel", "captain", "group"); } }
+            ]);
+        },
+        { kind: "match" },
+        function (ctx) {
+          var cap = ctx.cast("captain"), pick = ctx.choice("kestrel", "captain");
+          var actual = ctx.lastConfirmedCaptain();
+          var kept = actual === cap.nm;
+          var said = (pick === "back" || pick === "redistribute" || pick === "group");
+          var line;
+          if (said && kept) line = "You said you'd back " + nmShort(cap.nm) + " and the team sheet agreed with your mouth. Players notice when those two match.";
+          else if (said && !kept) line = "You told me you'd back " + nmShort(cap.nm) + " — then the sheet went up with " + (actual ? nmShort(actual) : "another name") + " as captain. I manage the cricket; you'll manage the conversation that's coming.";
+          else if (!said && kept) line = "You talked about taking the armband off " + nmShort(cap.nm) + ", then handed it straight back. Mercy or nerves — he'll wonder which. So will the room.";
+          else line = "You said it and you did it: " + (actual ? nmShort(actual) : "a new man") + " led the side. Clean. Costly, maybe, but clean.";
+          var f = ctx.facts();
+          return s("The Gaffer", f.win ? "gaffer" : "gaffer-serious", score(f) + ". " + line);
+        }
+      ]
+    },
+    {
+      key: "harrowgate", title: "Chapter 8 — The Qualifier", tag: "The Right Player Exists",
+      opp: { id: "club_harrowgate", nm: "Harrowgate CC", city: "Harrowgate", ground: "Spa Ground",
+        pitch: "dusty", wx: "Sunny", arch: "wizard", mult: 1.08, captFlavour: "professor" },
+      beats: [
+        function (ctx) {
+          var per = ctx.peripheralForSpin();
+          return s("The Gaffer", "gaffer",
+            "Win this and the Crown Ground has to open its gates. Harrowgate bowl spin from both ends on a dust bowl — that's not a scouting report, it's a religion. " +
+            (per ? "One column worth your eyes: " + per.nm + " — " + per.picks + " selection" + (per.picks === 1 ? "" : "s") + " all summer, and the best numbers against spin in the squad. I'm not picking your side. I'm pointing at a page." :
+              "Look down your own card for who actually plays the turning ball — the answer isn't always the name you'd expect.") +
+            " Sometimes the right player for the biggest day is the one who's spent all season watching it.");
+        },
+        { kind: "match" },
+        function (ctx) {
+          var f = ctx.facts();
+          return s("The Gaffer", f.win ? "gaffer-laugh" : "gaffer-serious",
+            score(f) + ". " + (f.win
+              ? "That's qualification. The Crown Ground can't pretend we don't exist any more. Enjoy tonight; Thorne will have started planning by breakfast."
+              : "Not this time. The fixture stands whenever we've earned it again — the door doesn't close, it just gets heavier."));
+        }
+      ]
+    },
+    {
+      key: "gafferthorne", title: "Chapter 9 — Gaffer and Thorne", tag: "Two Versions",
+      opp: null,
+      beats: [
+        function (ctx) {
+          return s("Margaret Hobb — club secretary", "npc:MH",
+            "You asked about the scorebook. Marylebone, 2006: R. Thorne captain, and your Gaffer listed as playing assistant — that's an old term for the man who does the selecting the captain doesn't want his fingerprints on. The last page of that season is torn out. I've never known him tear a page in his life.");
+        },
+        function (ctx) {
+          return s("The Gaffer", "gaffer-serious",
+            "So you've seen the book. Fine. I was Reggie Thorne's assistant for six seasons, and his friend for five of them. The final that year, there was a selection call — a kid who'd earned his spot against a name who sold memberships. Reggie wanted the name. I picked the kid, because somebody had let me hold the pen that week. We lost the final by four runs. He's never once asked me whether the kid was the right call. That's the whole story.");
+        },
+        function (ctx) {
+          return s("Reggie Thorne", "thorne",
+            "He's told you his version? Sweet. Here's the ledger's version: it was MY final, MY club, and he changed MY team sheet an hour before the toss without a word to me. The kid dropped the catch that lost it — you can look that up. He remembers holding the pen. He forgets whose name was on the trophy engraving they'd already half-finished. We were friends. Then he decided being right mattered more.");
+        },
+        function (ctx) {
+          var warm = ctx.save.rapport.gaffer >= 58;
+          return s("The Gaffer", "gaffer",
+            (warm ? "You've dealt straight with me all summer, so I'll deal straight back: " : "") +
+            "he's not lying, you know. Neither am I. Two men can carry the same afternoon out of a ground and never once be describing the same match. What do you want to do with it?",
+            [
+              { t: "“Did you ever tell him the kid was your mistake to make — not your apology to give?”", fx: function (c) { c.rapport("gaffer", 3); c.choose("gafferthorne", "stance", "press"); } },
+              { t: "Let it lie — it's their history, your fixture list", fx: function (c) { c.choose("gafferthorne", "stance", "lie"); } },
+              { t: "“At the Crown Ground, you two talk. Before or after, but you talk.”", fx: function (c) { c.rapport("gaffer", 1); c.rapport("captain", 0); c.choose("gafferthorne", "stance", "broker"); } }
+            ]);
+        }
+      ]
+    },
+    {
+      key: "crown", title: "Chapter 10 — The Crown Ground", tag: "He Knows Everything",
+      opp: { id: "club_crown", nm: "Crown Ground XI", city: "The Crown Ground", ground: "The Crown Ground",
+        pitch: "flat", wx: "Sunny", arch: "rock", mult: 1.18, captFlavour: "talisman", boss: true },
+      beats: [
+        function (ctx) {
+          var prep = ctx.thornePrep();
+          return s("The Gaffer", "gaffer-serious",
+            "Thorne's staff have pulled every card you've filled in this summer. On his whiteboard, verbatim: " + prep.join(" ") +
+            " He's built his plan around everything you've already done. Good. Let him play your past. You manage what happens next.");
+        },
+        { kind: "match" },
+        function (ctx) {
+          var f = ctx.facts();
+          if (f.win) return s("Reggie Thorne", "thorne",
+            score(f) + ". At MY ground. " + (f.topNm ? nmShort(f.topNm) + " with " + f.topR + " — I had a plan for him, you know. I had a plan for all of it. " : "") +
+            "Twenty years I've watched managers arrive with a philosophy and leave with an excuse. You appear to have arrived with a club. … Tell your Gaffer the last page of that scorebook is in my desk. He can come and read it whenever he finds the nerve.");
+          return s("Reggie Thorne", "thorne",
+            score(f) + ". " + (f.op - f.my <= 25 && f.op > f.my ? "Closer than my staff promised me it would be — I'll be having a word about that." : "About what the whiteboard predicted, give or take your batting.") +
+            " The fixture stands whenever you've earned it again. I do hope you come back. Winters are dull when nobody's coming for you.");
+        }
+      ]
+    }
+  ];
+
+  // ---- epilogue variants (chapter 11) --------------------------------------
+  function epilogueScenes(ctx) {
+    var v = (ctx.save.epilogue || {}).variant || "victory";
+    var out = [];
+    if (v === "victory" || v === "loyalty") {
+      out.push(s("The Gaffer", "gaffer-laugh",
+        "The Crown Ground, taken. I've been in this game since before you owned long trousers and I have never once said what I'm about to say: thank you. " +
+        (v === "loyalty" ? "And you did it with the squad that started the summer — every name on that first table still on the last one. That's rarer than the trophy. " : "") +
+        "England is yours. The Circuit map has five more flags on it — and the academy here will take our calls now."));
+      out.push(s("Reggie Thorne", "thorne",
+        "One line for the record: the kid dropped the catch, but the Gaffer was right to pick him. Twenty years to say one sentence. Don't wait twenty years to say yours. Now get off my ground — you've a map to see to."));
+    } else if (v === "narrow") {
+      out.push(s("The Gaffer", "gaffer-serious",
+        "That close. CLOSE is a fact with two faces: it proves we belong on that ground, and it proves belonging isn't enough. The fixture stands. We patch what their plan found, and we go back. This club fails forward or it doesn't bother failing."));
+    } else if (v === "heavy") {
+      out.push(s("The Gaffer", "gaffer-serious",
+        "No varnish: they were better, everywhere, all day. Right. Now we know the size of it. Nobody hides, nobody quits, and nobody mentions moral victories in my pavilion — we weren't within a mile of one. Rebuild, requalify, return. In that order."));
+    } else if (v === "damaged") {
+      out.push(s("The Gaffer", "gaffer-serious",
+        "We lost, and worse — we lost as strangers. Half that dressing room found out my decisions from a team sheet this summer. That's on both of us. Before we talk about Thorne again, we repair THIS room. The Crown Ground isn't going anywhere. Neither am I, unless you'd rather I did."));
+    }
+    return out;
+  }
+
+  return { CHAPTERS: CHAPTERS, PHILOSOPHIES: PHILOSOPHIES, epilogueScenes: epilogueScenes, scene: s };
+})();
+
+/* ---- story/engine.js ---- */
+/* story/engine — the campaign state machine.
+ *
+ * Owns: beat progression, the ctx object handed to content beats, the
+ * promise ledger, fail-forward losses (a defeat never ends the campaign —
+ * the fixture stands and the story continues), and the write-once epilogue
+ * record. All story effects live in the campaign save; player skills are
+ * never touched.
+ */
+FOC.game = (function () {
+  var U = FOC.util, E = FOC.events, A = FOC.adapter, EN = FOC.england;
+
+  var _save = null;
+
+  function save() {
+    if (!_save) {
+      _save = FOC.save.load(A.scope());
+      bootstrap(_save);
+    }
+    return _save;
+  }
+  function persist() { if (_save) FOC.save.persist(_save); }
+
+  function bootstrap(s) {
+    if (!A.engineReady()) return;
+    FOC.ids.ensurePlayers(s, A.players());
+    if (!s.flags.founded) {
+      s.flags.founded = 1;
+      s.flags.foundingRoster = A.players().map(function (p) { return p.name; });
+      E.emit(s, "ClubFounded", { nm: (A.team() || {}).name });
+      E.emit(s, "RegionEntered", { region: "england" });
+      FOC.save.persist(s);
+    }
+  }
+
+  function chapter(s) { return EN.CHAPTERS[s.ch] || null; }
+  function chapterByKey(key) {
+    var hit = null;
+    EN.CHAPTERS.forEach(function (c) { if (c.key === key) hit = c; });
+    return hit;
+  }
+
+  // ---- the ctx handed to every content beat --------------------------------
+  function agg(p, k) { return (p && typeof p[k] === "number") ? p[k] : 0; }
+
+  function campaignLineups(s) {
+    return E.ofType(s, "LineupConfirmed").filter(function (e) { return e.data.context === "campaign"; });
+  }
+
+  function makeCtx(s) {
+    var ctx = { save: s, U: U };
+    ctx.clubName = function () { return (A.team() || {}).name || "the club"; };
+    ctx.pid = function (p) { return FOC.ids.playerId(s, p); };
+    ctx.emit = function (t, d) { E.emit(s, t, d); persist(); };
+    ctx.choose = function (chKey, k, v) { (s.choices[chKey] = s.choices[chKey] || {})[k] = v; persist(); };
+    ctx.choice = function (chKey, k) { return (s.choices[chKey] || {})[k]; };
+    ctx.rapport = function (k, d) { s.rapport[k] = U.clamp((s.rapport[k] || 50) + d, 0, 100); persist(); };
+    ctx.setCast = function (role, p) {
+      if (!p) return;
+      s.cast[role] = ctx.pid(p); s.castNames[role] = p.name; persist();
+    };
+    ctx.cast = function (role) { return { pid: s.cast[role], nm: s.castNames[role] || "—" }; };
+
+    ctx.groups = function () {
+      var ps = A.players(), g = { bats: 0, keepers: 0, ars: 0, bowlers: 0 };
+      ps.forEach(function (p) {
+        if (!p) return;
+        if (p.keeper) g.keepers++;
+        else if (p.bowlType && !A.isPartTimer(p)) g.bowlers++;
+        else if (p.bowlType) g.ars++;
+        else g.bats++;
+      });
+      return g;
+    };
+    ctx.captainCandidates = function () {
+      var ps = A.players().slice(), out = [], used = {};
+      function take(p, why) { if (p && !used[p.name]) { used[p.name] = 1; out.push({ p: p, nm: p.name, why: why }); } }
+      var byCapt = ps.slice().sort(function (a, b) { return (b.capt || 0) - (a.capt || 0); });
+      take(byCapt[0], "the squad's top leadership marks");
+      var byAge = ps.slice().sort(function (a, b) { return (b.age || 0) - (a.age || 0); });
+      take(byAge[0] && used[byAge[0].name] ? byAge[1] : byAge[0], "the senior head — " + ((byAge[0] && used[byAge[0].name] ? byAge[1] : byAge[0]) || {}).age + " years old");
+      var byBat = ps.slice().sort(function (a, b) { return agg(b, "bat") - agg(a, "bat"); });
+      var bb = byBat[0]; if (bb && used[bb.name]) bb = byBat[1]; if (bb && used[bb.name]) bb = byBat[2];
+      take(bb, "the heaviest bat in the squad");
+      return out.slice(0, 3);
+    };
+    ctx.pickSenior = function () {
+      var ps = A.players().slice().sort(function (a, b) { return (b.age || 0) - (a.age || 0); });
+      return ps[0];
+    };
+    ctx.pickProspect = function () {
+      var ps = A.players().slice().sort(function (a, b) { return (a.age || 0) - (b.age || 0); });
+      return ps[0];
+    };
+    ctx.pickFringe = function () {
+      var t = A.team(); if (!t) return null;
+      var inXI = {};
+      try { (typeof pickXI === "function" ? pickXI(t) : []).forEach(function (p) { inXI[p.name] = 1; }); } catch (e) {}
+      var out = A.players().filter(function (p) { return p && !inXI[p.name]; })
+        .sort(function (a, b) { return agg(b, "bat") - agg(a, "bat"); });
+      return out[0] || A.players()[A.players().length - 1];
+    };
+
+    ctx.confirmedOpeners = function () {
+      try {
+        if (App.orders && App.orders.saved && App.orders.batOrder && App.orders.batOrder.length >= 2)
+          return [App.orders.batOrder[0], App.orders.batOrder[1]];
+      } catch (e) {}
+      return null;
+    };
+    ctx.facts = function (back) {
+      var m = s.matches[s.matches.length - 1 - (back || 0)];
+      if (!m) return null;
+      var f = U.deep(m.facts); f.win = m.win;   // beats read the result off the facts
+      return f;
+    };
+    ctx.selectionCount = function (pidOrNm) {
+      // accept a stable id or a display name; sheets store names
+      var nm = pidOrNm;
+      if (s.idmap) {
+        for (var k in s.idmap) {
+          if (s.idmap[k] === pidOrNm) { nm = k.split("|")[1]; break; }
+        }
+      }
+      var n = 0;
+      campaignLineups(s).forEach(function (e) {
+        if (e.data.xi.indexOf(nm) >= 0) n++;
+      });
+      return n;
+    };
+    ctx.makePromise = function (pid, txt, dueMatches) {
+      var pr = { id: "pr_" + (s.promises.length + 1), pid: pid, nm: s.castNames.fringe, txt: txt,
+        madeCh: s.ch, dueMatches: dueMatches, left: dueMatches, status: "active" };
+      s.promises.push(pr);
+      E.emit(s, "PromiseMade", { id: pr.id, pid: pid, txt: txt, due: dueMatches });
+      persist();
+      return pr;
+    };
+    ctx.activePromises = function () {
+      return s.promises.filter(function (p) { return p.status === "active"; });
+    };
+    ctx.patterns = function () {
+      var paceW = 0, spinW = 0, runs = {}, total = 0;
+      s.matches.forEach(function (m) {
+        paceW += m.facts.paceW || 0; spinW += m.facts.spinW || 0;
+        (m.facts.batLines || []).forEach(function (b) { runs[b.nm] = (runs[b.nm] || 0) + b.r; total += b.r; });
+      });
+      var topBat = null;
+      Object.keys(runs).forEach(function (nm) { if (!topBat || runs[nm] > topBat.runs) topBat = { nm: nm, runs: runs[nm] }; });
+      var lus = campaignLineups(s), oc = {};
+      lus.forEach(function (e) { var k = e.data.xi.slice(0, 2).join(" & "); oc[k] = (oc[k] || 0) + 1; });
+      var commonOpeners = null;
+      Object.keys(oc).forEach(function (k) { if (oc[k] === lus.length && lus.length > 1) commonOpeners = k; });
+      return { paceW: paceW, spinW: spinW, topBat: topBat,
+        dependence: (topBat && total) ? Math.round(100 * topBat.runs / total) : 0,
+        commonOpeners: commonOpeners };
+    };
+    ctx.playerScores = function (nm, n) {
+      var out = [];
+      s.matches.forEach(function (m) {
+        (m.facts.batLines || []).forEach(function (b) { if (b.nm === nm) out.push({ r: b.r, b: b.b, out: b.out }); });
+      });
+      return out.slice(-(n || 3));
+    };
+    ctx.lastConfirmedCaptain = function () {
+      var lus = campaignLineups(s);
+      return lus.length ? lus[lus.length - 1].data.captain : null;
+    };
+    ctx.peripheralForSpin = function () {
+      var counts = {};
+      campaignLineups(s).forEach(function (e) { e.data.xi.forEach(function (nm) { counts[nm] = (counts[nm] || 0) + 1; }); });
+      var ps = A.players().filter(function (p) { return p && !p.keeper; });
+      var median = campaignLineups(s).length / 2;
+      var per = ps.filter(function (p) { return (counts[p.name] || 0) <= median; })
+        .sort(function (a, b) { return ((b.skills || {}).vsSpin || 0) - ((a.skills || {}).vsSpin || 0); })[0];
+      return per ? { nm: per.name, picks: counts[per.name] || 0 } : null;
+    };
+    ctx.thornePrep = function () {
+      var out = [], lus = campaignLineups(s), pat = ctx.patterns();
+      if (lus.length) {
+        var counts = {};
+        lus.forEach(function (e) { e.data.xi.forEach(function (nm) { counts[nm] = (counts[nm] || 0) + 1; }); });
+        var top = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).slice(0, 3)
+          .map(function (nm) { return nm.split(" ").slice(-1)[0]; });
+        out.push("“Most-picked names: " + top.join(", ") + " — " + lus.length + " team sheets on file.”");
+        var op = U.mode(lus.map(function (e) { return e.data.xi.slice(0, 2).join(" & "); }));
+        if (op) out.push("“Opening pair: " + op + ".”");
+        if (lus.length >= 2) {
+          var a = lus[lus.length - 2].data.xi, b = lus[lus.length - 1].data.xi;
+          var ch = b.filter(function (nm) { return a.indexOf(nm) < 0; }).length;
+          out.push("“Last two sheets: " + ch + " change" + (ch === 1 ? "" : "s") + ".”");
+        }
+      }
+      if (pat.topBat) out.push("“" + pat.topBat.nm + ": " + pat.topBat.runs + " runs — " + pat.dependence + "% of their output. Remove him, remove them.”");
+      var wk = {}, bw = null;
+      s.matches.forEach(function (m) { (m.facts.bowlLines || []).forEach(function (l) { wk[l.nm] = (wk[l.nm] || 0) + l.w; }); });
+      Object.keys(wk).forEach(function (nm) { if (!bw || wk[nm] > wk[bw]) bw = nm; });
+      if (bw) out.push("“" + bw + " leads their attack: " + wk[bw] + " wickets.”");
+      if (!out.length) out.push("“No sheets on file. Nobody arrives at my ground without a paper trail — except, apparently, you.”");
+      return out;
+    };
+    return ctx;
+  }
+
+  // ---- interstitials (serializable, rebuilt at render time) ----------------
+  function interstitial(s) {
+    var q = (s.flags.inter || []);
+    if (!q.length) return null;
+    var it = q[0], ctx = makeCtx(s);
+    if (it.kind === "loss") {
+      var f = ctx.facts();
+      return EN.scene("The Gaffer", "gaffer-serious",
+        "Beaten, " + (f ? f.my + "/" + f.myW + " against " + f.op + "/" + f.opW : "and it stings") + ". " +
+        (f && f.oppTopNm ? f.oppTopNm + "'s " + f.oppTopR + " was the difference. " : "") +
+        "The fixture stands — this club fails forward. Patch what they found, pick your XI again, and we go back out.");
+    }
+    if (it.kind === "promiseFulfilled") {
+      return EN.scene(it.nm, "player:bat",
+        "You said I'd get my start, and there was my name on the sheet. Whatever happens the rest of the summer — I'll remember which kind of manager you are.");
+    }
+    if (it.kind === "promiseBroken") {
+      return EN.scene(it.nm, "player:bat",
+        "Two matches, you said. I counted. Both sheets went up without me. I'm not making a scene — I'm asking what your word costs.",
+        [
+          { t: "Replace the promise: he starts within the next two, guaranteed", fx: function (c) {
+              var pr = { id: "pr_" + (s.promises.length + 1), pid: it.pid, nm: it.nm,
+                txt: it.nm + " starts one of the next two campaign matches (replacement promise)",
+                madeCh: s.ch, dueMatches: 2, left: 2, status: "active", replacement: 1 };
+              s.promises.push(pr);
+              E.emit(s, "PromiseMade", { id: pr.id, pid: it.pid, txt: pr.txt, due: 2, replacement: true });
+            } },
+          { t: "“No new promises. An apology, and the truth: I picked the XI I believed in.”", fx: function (c) {
+              c.rapport("dressingRoom", -2);
+            } }
+        ]);
+    }
+    return null;
+  }
+  function popInterstitial(s) { (s.flags.inter || []).shift(); persist(); }
+
+  // ---- beat resolution ------------------------------------------------------
+  function currentBeat(s) {
+    if (s.status === "complete" && s.ch >= 11) return null;
+    if (s.ch >= 11) {
+      // epilogue playthrough
+      var eps = EN.epilogueScenes(makeCtx(s));
+      return s.beat < eps.length ? eps[s.beat] : null;
+    }
+    var c = chapter(s); if (!c) return null;
+    var b = c.beats[s.beat];
+    if (!b) return null;
+    if (typeof b === "function") { try { return b(makeCtx(s)); } catch (e) { return EN.scene("The Gaffer", "gaffer", "…lost my thread. Carry on."); } }
+    return b;   // {kind:'match'}
+  }
+
+  function advance(s) {
+    if (s.ch >= 11) {
+      var eps = EN.epilogueScenes(makeCtx(s));
+      s.beat++;
+      if (s.beat >= eps.length) {
+        if (s.flags.crownWon) s.status = "complete";
+        else { s.ch = 10; s.beat = 1; }   // fail forward: the fixture stands — rematch
+      }
+      persist(); return;
+    }
+    var c = chapter(s); if (!c) return;
+    s.beat++;
+    if (s.beat >= c.beats.length) {
+      E.emit(s, "ChapterCompleted", { key: c.key });
+      s.ch++; s.beat = 0;
+    }
+    persist();
+  }
+
+  function choose(s, i) {
+    var b = currentBeat(s);
+    // interstitial choices are handled by the UI via chooseInter
+    if (!b || !b.choices || !b.choices[i]) return;
+    try { b.choices[i].fx(makeCtx(s)); } catch (e) {}
+    advance(s);
+  }
+
+  // ---- matches --------------------------------------------------------------
+  function matchSpec(s) {
+    var c = chapter(s); if (!c || !c.opp) return null;
+    var spec = U.deep(c.opp);
+    spec.chKey = c.key;
+    spec.seed = (s.losses[c.key] || 0);   // a rematch meets a re-cut of the same cloth
+    spec.wxKeep = spec.wx;
+    if (c.key === "bellminster" && s.matches.length) {
+      // they read the actual scorebook: counter whichever attack has hurt more
+      var pat = makeCtx(s).patterns();
+      spec.boost = { skill: (pat.paceW >= pat.spinW) ? "vsPace" : "vsSpin", mult: 1.06 };
+    }
+    return spec;
+  }
+
+  function playMatch(s) {
+    var spec = matchSpec(s); if (!spec) return false;
+    return A.startMatch(s, spec);
+  }
+
+  function scanPromises(s) {
+    var lus = campaignLineups(s);
+    var lastXI = lus.length ? lus[lus.length - 1].data.xi : [];
+    s.promises.forEach(function (pr) {
+      if (pr.status !== "active") return;
+      if (lastXI.indexOf(pr.nm) >= 0) {
+        pr.status = "fulfilled";
+        E.emit(s, "PromiseFulfilled", { id: pr.id, pid: pr.pid });
+        (s.flags.inter = s.flags.inter || []).push({ kind: "promiseFulfilled", pid: pr.pid, nm: pr.nm });
+        var r = s.rapport; r.dressingRoom = U.clamp((r.dressingRoom || 50) + 4, 0, 100);
+      } else {
+        pr.left--;
+        if (pr.left <= 0) {
+          pr.status = "broken";
+          E.emit(s, "PromiseBroken", { id: pr.id, pid: pr.pid });
+          (s.flags.inter = s.flags.inter || []).push({ kind: "promiseBroken", pid: pr.pid, nm: pr.nm });
+          var r2 = s.rapport; r2.dressingRoom = U.clamp((r2.dressingRoom || 50) - 5, 0, 100);
+        }
+      }
+    });
+  }
+
+  function epilogueVariant(s, win, facts) {
+    if (win) {
+      var founding = s.flags.foundingRoster || [], now = {};
+      A.players().forEach(function (p) { if (p) now[p.name] = 1; });
+      var intact = founding.length > 0 && founding.every(function (nm) { return now[nm]; });
+      return intact ? "loyalty" : "victory";
+    }
+    if ((s.rapport.dressingRoom || 50) < 45 || (s.rapport.captain || 50) < 42) return "damaged";
+    return (Math.abs((facts.op || 0) - (facts.my || 0)) <= 25) ? "narrow" : "heavy";
+  }
+
+  function onMatchDone(tag, win, facts, oppName) {
+    var s = save();
+    var c = chapter(s);
+    var chKey = (tag && tag.key) || (c && c.key);
+    if (!chKey) return;
+    A.recordMatch(s, chKey, win, facts, oppName);
+    scanPromises(s);
+    if (chKey === "crown") {
+      var v = epilogueVariant(s, win, facts);
+      if (!s.epilogue) s.epilogue = { first: v, variant: v, attempts: 1, permanent: true };
+      else { s.epilogue.variant = v; s.epilogue.attempts++; }
+      if (win) {
+        s.flags.crownWon = 1;
+        E.emit(s, "RegionalBossDefeated", { region: "england", boss: "Reggie Thorne" });
+        // hand the conquest to the wider world: England opens on the Circuit map
+        try {
+          var g = window.__foGame;
+          if (g && g.story) {
+            var stT = g.story.state();
+            g.story.log(stT, "moment", "The Crown Ground fell — the First Summer campaign is won.");
+            g.story.save(stT);
+          }
+        } catch (e) {}
+      }
+    }
+    if (win) {
+      // move past the match beat into the post-match scenes
+      s.beat++;
+      persist();
+    } else {
+      if (chKey === "crown") { s.beat++; persist(); }   // ch10 loss still plays Thorne's needle + epilogue
+      else (s.flags.inter = s.flags.inter || []).push({ kind: "loss", chKey: chKey });
+      persist();
+    }
+  }
+
+  // list for the hub rail
+  function list(s) {
+    return EN.CHAPTERS.map(function (c, i) {
+      var st = i < s.ch ? "done" : (i === s.ch ? "now" : "locked");
+      var rec = null;
+      s.matches.forEach(function (m) { if (m.key === c.key) rec = m; });
+      return { i: i, key: c.key, title: c.title, tag: c.tag, state: st, hasMatch: !!c.opp,
+        result: rec ? { win: rec.win, my: rec.my, op: rec.op, opp: rec.opp, rematch: rec.rematch } : null };
+    });
+  }
+
+  function init() {
+    A.startKeeper(onMatchDone);
+  }
+
+  return { save: save, persist: persist, chapter: chapter, chapterByKey: chapterByKey,
+    makeCtx: makeCtx, currentBeat: currentBeat, advance: advance, choose: choose,
+    matchSpec: matchSpec, playMatch: playMatch, onMatchDone: onMatchDone,
+    interstitial: interstitial, popInterstitial: popInterstitial, scanPromises: scanPromises,
+    epilogueVariant: epilogueVariant, list: list, init: init,
+    _resetForTest: function () { _save = null; } };
+})();
+
+/* ---- features/lineup.js ---- */
+/* features/lineup — the Lineup Room (#/lineup).
+ *
+ * Four questions, in order: who is in the XI, what order they bat, who
+ * carries the gloves and the armband, and is the card legal. Everything is
+ * tap-first (no drag required), works as three panes on desktop and four
+ * steps on a phone, and holds a DRAFT — nothing touches the engine until
+ * Confirm, which routes through the legacy adapter (the only mutation path)
+ * and emits LineupConfirmed. Validation is neutral and factual: the room
+ * reports counts and gaps, never "too weak".
+ */
+FOC.lineup = (function () {
+  var U = FOC.util, A = FOC.adapter;
+  var draft = null, undoStack = [], sel = null, cmp = [], step = 1, noteTimer = null;
+
+  function esc(s) { return U.esc(s); }
+  function roster() { return A.players().filter(Boolean); }
+  function byName(nm) {
+    var hit = null; roster().forEach(function (p) { if (p.name === nm) hit = p; });
+    return hit;
+  }
+  function roleOf(p) {
+    if (p.keeper) return { k: "WK", c: "#B08D2E" };
+    if (p.bowlType && !A.isPartTimer(p)) return { k: /spin/i.test(p.bowlType) ? "SPIN" : "PACE", c: "#4E7A4E" };
+    if (p.bowlType) return { k: "AR", c: "#7A5C9E" };
+    return { k: "BAT", c: "#C8674A" };
+  }
+
+  function freshDraft() {
+    try {
+      if (App.orders && App.orders.saved && App.orders.batOrder && App.orders.batOrder.length === 11) {
+        return { xi: App.orders.batOrder.slice(), captain: App.orders.captain, keeper: App.orders.keeper };
+      }
+    } catch (e) {}
+    return suggested();
+  }
+  function suggested() {
+    try {
+      var xi = pickXI(userTeam()).map(function (p) { return p.name; });
+      var kp = null, cp = null;
+      xi.forEach(function (nm) { var p = byName(nm); if (p && p.keeper && !kp) kp = nm; });
+      cp = FOC.game.save().castNames.captain || xi[0];
+      if (xi.indexOf(cp) < 0) cp = xi[0];
+      return { xi: xi, captain: cp, keeper: kp || xi[0] };
+    } catch (e) { return { xi: [], captain: null, keeper: null }; }
+  }
+  function snap() { undoStack.push(U.deep(draft)); if (undoStack.length > 40) undoStack.shift(); }
+  function undo() { if (undoStack.length) { draft = undoStack.pop(); render(true); } }
+
+  function toggle(nm) {
+    snap();
+    var i = draft.xi.indexOf(nm);
+    if (i >= 0) {
+      draft.xi.splice(i, 1);
+      if (draft.captain === nm) draft.captain = null;
+      if (draft.keeper === nm) draft.keeper = null;
+    } else {
+      if (draft.xi.length >= 11) { undoStack.pop(); flash("The card holds eleven — remove someone first."); return; }
+      draft.xi.push(nm);
+      var p = byName(nm);
+      if (p && p.keeper && !draft.keeper) draft.keeper = nm;
+    }
+    render(true);
+  }
+  function move(i, d) {
+    var j = i + d; if (j < 0 || j >= draft.xi.length) return;
+    snap();
+    var t = draft.xi[i]; draft.xi[i] = draft.xi[j]; draft.xi[j] = t;
+    render(true);
+  }
+
+  var flashMsg = null, flashT = null;
+  function flash(m) {
+    flashMsg = m; render(true);
+    clearTimeout(flashT); flashT = setTimeout(function () { flashMsg = null; render(true); }, 3200);
+  }
+
+  function memories(nm) {
+    var s = FOC.game.save(), out = [];
+    s.matches.forEach(function (m) {
+      (m.facts.batLines || []).forEach(function (b) {
+        if (b.nm === nm) out.push(b.r + (b.out ? "" : "*") + " (" + b.b + ") vs " + m.opp);
+      });
+      (m.facts.bowlLines || []).forEach(function (b) {
+        if (b.nm === nm) out.push(b.w + "-" + b.r + " vs " + m.opp);
+      });
+    });
+    return out.slice(-4);
+  }
+
+  function bar(lbl, v) {
+    var w = U.clamp(Math.round(v), 0, 100);
+    return "<div class='lr-bar'><span class='l'>" + lbl + "</span><span class='t' aria-hidden='true'><i style='width:" + w + "%'></i></span><span class='n'>" + w + "</span></div>";
+  }
+  function evidence(p) {
+    // evidence, not verdicts: raw aggregates + real scorecard memories
+    var h = "<div class='lr-ev'>";
+    h += "<div class='lr-ev-h'>" + esc(p.name) + " <span class='sub'>" + esc(roleOf(p).k) + " · " + p.age + " · " + esc(p.hand || "") + "</span></div>";
+    h += bar("Batting", p.bat || 0);
+    if (p.bowlType) h += bar("Bowling", ((p.threat || 0) + (p.control || 0)) / 2);
+    if (p.keeper) h += bar("Keeping", p.keep || 0);
+    h += bar("Fielding", p.field || 0);
+    var mem = memories(p.name);
+    if (mem.length) h += "<div class='lr-mem'><b>This summer:</b> " + mem.map(esc).join(" · ") + "</div>";
+    else h += "<div class='lr-mem sub'>No campaign scorecards yet.</div>";
+    return h + "</div>";
+  }
+
+  function noteBox(p) {
+    var s = FOC.game.save();
+    var pid = FOC.ids.playerId(s, p);
+    var v = s.notes[pid] || "";
+    return "<label class='lr-notel' for='lr-note'>Private manager note</label>" +
+      "<textarea id='lr-note' class='lr-note' data-pid='" + esc(pid) + "' rows='2' placeholder='Only you see this.'>" + esc(v) + "</textarea>";
+  }
+
+  function html() {
+    var v = A.validate(draft);
+    var isCamp = false, oppLine = "";
+    try {
+      if (App.pending && App.pending.__camp) {
+        isCamp = true;
+        oppLine = "vs " + App.pending.away + " · " + App.pending.ground + " · " + (App.pending.pitch || "") + " pitch, " + (App.pending.weather || "");
+      } else if (App.pending && App.pending.__friendly) oppLine = "Friendly vs " + App.pending.away;
+      else oppLine = "League plan";
+    } catch (e) {}
+    var narrow = false;
+    try { narrow = document.documentElement.clientWidth <= 880; } catch (e2) {}
+
+    var h = "<div class='fo-lr' data-step='" + step + "'>";
+    h += "<div class='lr-head'><div class='lr-kicker'>The Lineup Room</div><h2 class='lr-h1'>" + esc(oppLine) + "</h2>";
+    h += "<div class='lr-count' role='status'>" + draft.xi.length + " of 11 picked" +
+      (draft.captain ? " · captain " + esc(draft.captain.split(" ").slice(-1)[0]) : " · no captain") +
+      (draft.keeper ? " · gloves " + esc(draft.keeper.split(" ").slice(-1)[0]) : " · no keeper") + "</div></div>";
+    if (flashMsg) h += "<div class='lr-flash' role='alert'>" + esc(flashMsg) + "</div>";
+
+    if (narrow) {
+      h += "<div class='lr-steps' role='tablist'>" +
+        [1, 2, 3, 4].map(function (n) {
+          var lbl = ["Pick", "Order", "Roles", "Confirm"][n - 1];
+          return "<button role='tab' aria-selected='" + (step === n) + "' class='lr-step" + (step === n ? " on" : "") + "' data-step='" + n + "'>" + n + " · " + lbl + "</button>";
+        }).join("") + "</div>";
+    }
+
+    h += "<div class='lr-panes'>";
+    // ---- pane 1: the squad ----
+    h += "<section class='lr-pane lr-squad' aria-label='Squad'" + (narrow && step !== 1 ? " hidden" : "") + ">";
+    h += "<div class='lr-pt'>Squad — tap to pick</div>";
+    roster().slice().sort(function (a, b) { return (draft.xi.indexOf(b.name) >= 0 ? 1 : 0) - (draft.xi.indexOf(a.name) >= 0 ? 1 : 0) || (b.bat || 0) - (a.bat || 0); })
+      .forEach(function (p) {
+        var inXI = draft.xi.indexOf(p.name) >= 0, r = roleOf(p);
+        h += "<div class='lr-row" + (inXI ? " in" : "") + "'>" +
+          "<button class='lr-pick' data-nm='" + esc(p.name) + "' aria-pressed='" + inXI + "' aria-label='" + (inXI ? "Remove " : "Pick ") + esc(p.name) + "'>" +
+          "<span class='chip' style='--rc:" + r.c + "'>" + r.k + "</span><span class='nm'>" + esc(p.name) + "</span><span class='ag'>" + p.age + "</span>" +
+          "<span class='st'>" + (inXI ? "IN" : "—") + "</span></button>" +
+          "<button class='lr-info' data-nm='" + esc(p.name) + "' aria-label='Details for " + esc(p.name) + "'>i</button>" +
+          "<label class='lr-cmp'><input type='checkbox' data-cmp='" + esc(p.name) + "'" + (cmp.indexOf(p.name) >= 0 ? " checked" : "") + "><span>vs</span></label>" +
+          "</div>";
+      });
+    h += "</section>";
+
+    // ---- pane 2: the XI in order + roles ----
+    h += "<section class='lr-pane lr-xi' aria-label='Your XI'" + (narrow && step !== 2 && step !== 3 ? " hidden" : "") + ">";
+    h += "<div class='lr-pt'>Batting order</div>";
+    if (!draft.xi.length) h += "<div class='sub' style='padding:8px 2px'>Nobody picked yet.</div>";
+    draft.xi.forEach(function (nm, i) {
+      var p = byName(nm), r = p ? roleOf(p) : { k: "?", c: "#888" };
+      h += "<div class='lr-xirow" + (sel === nm ? " sel" : "") + "'>" +
+        "<span class='pos'>" + (i + 1) + "</span>" +
+        "<button class='lr-xisel' data-nm='" + esc(nm) + "'><span class='chip' style='--rc:" + r.c + "'>" + r.k + "</span><span class='nm'>" + esc(nm) + "</span>" +
+        (draft.captain === nm ? "<span class='bdg c'>C</span>" : "") + (draft.keeper === nm ? "<span class='bdg wk'>WK</span>" : "") + "</button>" +
+        "<span class='mv'><button class='lr-up' data-i='" + i + "' aria-label='Move " + esc(nm) + " up'" + (i === 0 ? " disabled" : "") + ">▲</button>" +
+        "<button class='lr-dn' data-i='" + i + "' aria-label='Move " + esc(nm) + " down'" + (i === draft.xi.length - 1 ? " disabled" : "") + ">▼</button></span></div>";
+    });
+    if (narrow ? step === 3 : true) {
+      h += "<div class='lr-pt' style='margin-top:12px'>Responsibilities</div>";
+      h += "<div class='lr-roles'>";
+      h += "<div class='lr-rl'><span>Captain</span><div class='opts'>" + draft.xi.map(function (nm) {
+        return "<button class='lr-setc" + (draft.captain === nm ? " on" : "") + "' data-nm='" + esc(nm) + "' aria-pressed='" + (draft.captain === nm) + "'>" + esc(nm.split(" ").slice(-1)[0]) + "</button>";
+      }).join("") + "</div></div>";
+      h += "<div class='lr-rl'><span>Keeper</span><div class='opts'>" + draft.xi.map(function (nm) {
+        var p = byName(nm);
+        return "<button class='lr-setk" + (draft.keeper === nm ? " on" : "") + "' data-nm='" + esc(nm) + "' aria-pressed='" + (draft.keeper === nm) + "'>" + esc(nm.split(" ").slice(-1)[0]) + (p && p.keeper ? " ✚" : "") + "</button>";
+      }).join("") + "</div><div class='sub'>✚ marks a trained keeper — the gloves are still your call.</div></div>";
+      h += "</div>";
+    }
+    h += "</section>";
+
+    // ---- pane 3: evidence + validation + confirm ----
+    h += "<section class='lr-pane lr-side' aria-label='Evidence and confirmation'" + (narrow && step !== 4 && !sel && cmp.length < 2 ? " hidden" : "") + ">";
+    if (cmp.length === 2) {
+      var pa = byName(cmp[0]), pb = byName(cmp[1]);
+      h += "<div class='lr-pt'>Side by side</div><div class='lr-cmp2'>" +
+        (pa ? evidence(pa) : "") + (pb ? evidence(pb) : "") + "</div>" +
+        "<button class='lr-cmpx'>Close comparison</button>";
+    } else if (sel && byName(sel)) {
+      h += "<div class='lr-pt'>The evidence</div>" + evidence(byName(sel)) + noteBox(byName(sel));
+    } else {
+      h += "<div class='lr-pt'>The card</div><div class='sub'>Tap a name for evidence, or tick two “vs” boxes to compare.</div>";
+    }
+    h += "<div class='lr-pt' style='margin-top:12px'>Legality</div><div class='lr-val'>";
+    if (v.errors.length) v.errors.forEach(function (e2) { h += "<div class='lr-err'>✕ " + esc(e2) + "</div>"; });
+    else h += "<div class='lr-ok'>✓ The card is legal.</div>";
+    v.facts.forEach(function (f2) { h += "<div class='lr-fact'>• " + esc(f2) + "</div>"; });
+    h += "</div>";
+    h += "<div class='lr-act'>" +
+      "<button id='lr-confirm' class='lr-go'" + (v.ok ? "" : " disabled") + ">" + (isCamp ? "Confirm XI — walk out ▸" : "Confirm XI ▸") + "</button>" +
+      "<button id='lr-undo'" + (undoStack.length ? "" : " disabled") + ">Undo</button>" +
+      "<button id='lr-auto'>Coach's suggestion</button>" +
+      "<button id='lr-cancel'>Discard draft</button></div>";
+    h += "</section></div>";
+
+    if (narrow) {
+      h += "<div class='lr-mnav'>" +
+        (step > 1 ? "<button class='lr-prev'>◂ Back</button>" : "<span></span>") +
+        (step < 4 ? "<button class='lr-next'>Next ▸</button>" : "<span></span>") + "</div>";
+    }
+    h += "</div>";
+    return h;
+  }
+
+  function wire(page) {
+    page.querySelectorAll(".lr-pick").forEach(function (b) { b.addEventListener("click", function () { toggle(b.getAttribute("data-nm")); }); });
+    page.querySelectorAll(".lr-info, .lr-xisel").forEach(function (b) {
+      b.addEventListener("click", function () { sel = b.getAttribute("data-nm"); render(true); });
+    });
+    page.querySelectorAll(".lr-up").forEach(function (b) { b.addEventListener("click", function () { move(+b.getAttribute("data-i"), -1); }); });
+    page.querySelectorAll(".lr-dn").forEach(function (b) { b.addEventListener("click", function () { move(+b.getAttribute("data-i"), 1); }); });
+    page.querySelectorAll(".lr-setc").forEach(function (b) { b.addEventListener("click", function () { snap(); draft.captain = b.getAttribute("data-nm"); render(true); }); });
+    page.querySelectorAll(".lr-setk").forEach(function (b) { b.addEventListener("click", function () { snap(); draft.keeper = b.getAttribute("data-nm"); render(true); }); });
+    page.querySelectorAll("input[data-cmp]").forEach(function (c) {
+      c.addEventListener("change", function () {
+        var nm = c.getAttribute("data-cmp");
+        var i = cmp.indexOf(nm);
+        if (i >= 0) cmp.splice(i, 1); else { cmp.push(nm); if (cmp.length > 2) cmp.shift(); }
+        render(true);
+      });
+    });
+    var cx = page.querySelector(".lr-cmpx"); if (cx) cx.addEventListener("click", function () { cmp = []; render(true); });
+    page.querySelectorAll(".lr-step").forEach(function (b) { b.addEventListener("click", function () { step = +b.getAttribute("data-step"); render(true); }); });
+    var pv = page.querySelector(".lr-prev"); if (pv) pv.addEventListener("click", function () { step = Math.max(1, step - 1); render(true); });
+    var nx = page.querySelector(".lr-next"); if (nx) nx.addEventListener("click", function () { step = Math.min(4, step + 1); render(true); });
+    var note = page.querySelector("#lr-note");
+    if (note) note.addEventListener("input", function () {
+      clearTimeout(noteTimer);
+      noteTimer = setTimeout(function () {
+        var s = FOC.game.save(), pid = note.getAttribute("data-pid");
+        var had = !!s.notes[pid];
+        s.notes[pid] = note.value.slice(0, 400);
+        if (!had) FOC.events.emit(s, "NoteWritten", { pid: pid });
+        FOC.save.persist(s);
+      }, 500);
+    });
+    var un = page.querySelector("#lr-undo"); if (un) un.addEventListener("click", undo);
+    var au = page.querySelector("#lr-auto"); if (au) au.addEventListener("click", function () { snap(); draft = suggested(); flash("The coach's card — yours to change."); });
+    var ca = page.querySelector("#lr-cancel"); if (ca) ca.addEventListener("click", function () {
+      draft = null; undoStack = []; sel = null; cmp = [];
+      location.hash = FOC.game.save().flags.liveMatch ? "#/summer" : "#/club";
+      if (typeof window.route === "function") window.route();
+    });
+    var go = page.querySelector("#lr-confirm");
+    if (go) go.addEventListener("click", function () {
+      var s = FOC.game.save();
+      var res = A.applyOrders(s, draft);
+      if (!res.ok) { flash(res.errors[0] || "The card isn't legal yet."); return; }
+      draft = null; undoStack = []; sel = null; cmp = [];
+      var camp = false; try { camp = !!(App.pending && App.pending.__camp); } catch (e) {}
+      // campaign: the keeper walks the manager out to the match centre;
+      // league/friendly: back to the club with the plan saved
+      if (!camp) { location.hash = "#/club"; if (typeof window.route === "function") window.route(); }
+    });
+  }
+
+  var lastSig = null;
+  function render(force) {
+    try {
+      if (location.hash.indexOf("#/lineup") !== 0) return;
+      var page = document.getElementById("page"); if (!page) return;
+      if (!draft) { draft = freshDraft(); undoStack = []; }
+      var sig = JSON.stringify([draft, sel, cmp, step, flashMsg, undoStack.length]);
+      if (!force && page.__lrSig === sig && page.querySelector(".fo-lr")) return;
+      page.__lrSig = sig;
+      var active = document.activeElement && document.activeElement.id === "lr-note";
+      if (active && !force) return;   // don't clobber a note mid-keystroke
+      page.innerHTML = html();
+      wire(page);
+    } catch (e) {}
+  }
+
+  function css() {
+    if (document.getElementById("fo-lr-css")) return;
+    var st = document.createElement("style"); st.id = "fo-lr-css";
+    st.textContent =
+      ".fo-lr{max-width:1060px;margin:0 auto;padding:4px 2px 40px}" +
+      ".lr-kicker{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:#C9A24B}" +
+      ".lr-h1{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:1.4px;font-size:clamp(19px,4vw,26px);color:#101B2D;margin:2px 0 2px}" +
+      ".lr-count{color:#5b6472;font-size:13px}" +
+      ".lr-flash{background:#FBEFE8;border:1px solid #C8674A;color:#8a3a24;border-radius:8px;padding:8px 12px;margin:8px 0;font-size:13px}" +
+      ".lr-steps{display:flex;gap:6px;margin:10px 0}" +
+      "html body #page .lr-step{flex:1;background:#F6F1E3;border:1px solid #d8d0b8;border-radius:8px;padding:8px 4px;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#5b6472}" +
+      "html body #page .lr-step.on{background:#14213D;color:#F1EADA;border-color:#14213D}" +
+      ".lr-panes{display:grid;grid-template-columns:1.1fr 1fr 1.1fr;gap:14px;margin-top:10px}" +
+      "@media(max-width:880px){.lr-panes{grid-template-columns:1fr}}" +
+      ".lr-pane{background:#FDFBF4;border:1px solid #e3dcc6;border-radius:12px;padding:10px}" +
+      ".lr-pt{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8a90a0;margin-bottom:6px}" +
+      ".lr-row{display:flex;align-items:center;gap:6px;margin:3px 0}" +
+      "html body #page .lr-pick{flex:1;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e3dcc6;border-radius:8px;padding:7px 9px;text-align:left;color:#101B2D;min-height:40px}" +
+      "html body #page .lr-row.in .lr-pick{background:#EFF5EC;border-color:#4E7A4E}" +
+      ".lr-pick .chip,.lr-xirow .chip{font-family:Oswald,sans-serif;font-size:9px;letter-spacing:1px;color:#fff;background:var(--rc);border-radius:4px;padding:2px 5px;min-width:32px;text-align:center}" +
+      ".lr-pick .nm{flex:1;font-size:13.5px}.lr-pick .ag{color:#8a90a0;font-size:12px}" +
+      ".lr-pick .st{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1px;color:#4E7A4E;min-width:22px;text-align:right}" +
+      "html body #page .lr-info{width:34px;height:34px;border-radius:50%;border:1px solid #d8d0b8;background:#F6F1E3;color:#5b6472;font-style:italic;font-weight:700}" +
+      ".lr-cmp{display:flex;align-items:center;gap:3px;font-size:10px;color:#8a90a0}" +
+      ".lr-xirow{display:flex;align-items:center;gap:6px;margin:3px 0}" +
+      ".lr-xirow .pos{font-family:Oswald,sans-serif;color:#C9A24B;min-width:18px;text-align:right}" +
+      "html body #page .lr-xisel{flex:1;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e3dcc6;border-radius:8px;padding:7px 9px;text-align:left;color:#101B2D;min-height:40px}" +
+      ".lr-xirow.sel .lr-xisel{border-color:#14213D;box-shadow:0 0 0 1px #14213D}" +
+      ".lr-xisel .nm{flex:1;font-size:13.5px}" +
+      ".bdg{font-family:Oswald,sans-serif;font-size:9px;letter-spacing:1px;border-radius:4px;padding:2px 5px}" +
+      ".bdg.c{background:#14213D;color:#F1EADA}.bdg.wk{background:#B08D2E;color:#fff}" +
+      ".lr-xirow .mv{display:flex;flex-direction:column;gap:2px}" +
+      "html body #page .lr-up,html body #page .lr-dn{width:34px;height:19px;line-height:1;border:1px solid #d8d0b8;background:#F6F1E3;border-radius:5px;font-size:9px;color:#5b6472}" +
+      "html body #page .lr-up:disabled,html body #page .lr-dn:disabled{opacity:.35}" +
+      ".lr-rl{margin:6px 0}.lr-rl>span{font-size:12px;color:#5b6472;display:block;margin-bottom:3px}" +
+      ".lr-rl .opts{display:flex;flex-wrap:wrap;gap:4px}" +
+      "html body #page .lr-setc,html body #page .lr-setk{border:1px solid #d8d0b8;background:#fff;border-radius:99px;padding:5px 10px;font-size:12px;color:#101B2D;min-height:32px}" +
+      "html body #page .lr-setc.on,html body #page .lr-setk.on{background:#14213D;color:#F1EADA;border-color:#14213D}" +
+      ".lr-ev{background:#fff;border:1px solid #e3dcc6;border-radius:10px;padding:9px;margin:4px 0}" +
+      ".lr-ev-h{font-weight:700;color:#101B2D;font-size:14px;margin-bottom:5px}.lr-ev-h .sub{font-weight:400;color:#8a90a0;font-size:12px}" +
+      ".lr-bar{display:flex;align-items:center;gap:7px;margin:3px 0;font-size:11px;color:#5b6472}" +
+      ".lr-bar .l{min-width:52px}.lr-bar .t{flex:1;height:7px;background:#EDE6D2;border-radius:5px;overflow:hidden}" +
+      ".lr-bar .t i{display:block;height:100%;background:linear-gradient(90deg,#C8674A,#C9A24B);border-radius:5px}" +
+      ".lr-bar .n{min-width:22px;text-align:right;font-variant-numeric:tabular-nums}" +
+      ".lr-mem{font-size:12px;color:#5b6472;margin-top:5px}.lr-mem b{color:#101B2D}" +
+      ".lr-cmp2{display:grid;grid-template-columns:1fr 1fr;gap:8px}@media(max-width:520px){.lr-cmp2{grid-template-columns:1fr}}" +
+      "html body #page .lr-cmpx{border:1px solid #d8d0b8;background:#F6F1E3;border-radius:8px;padding:6px 10px;font-size:12px;color:#5b6472;margin-top:4px}" +
+      ".lr-notel{display:block;font-size:11px;color:#8a90a0;margin:8px 0 3px}" +
+      ".lr-note{width:100%;box-sizing:border-box;border:1px solid #d8d0b8;border-radius:8px;padding:7px;font:inherit;font-size:13px;background:#fff;color:#101B2D}" +
+      ".lr-val{font-size:12.5px}" +
+      ".lr-err{color:#9c2f18;margin:3px 0}.lr-ok{color:#2E7A3C;margin:3px 0}.lr-fact{color:#5b6472;margin:3px 0}" +
+      ".lr-act{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}" +
+      "html body #page .lr-go{background:#C8674A;border:none;color:#fff;border-radius:9px;padding:11px 16px;font-family:Oswald,sans-serif;letter-spacing:1.2px;text-transform:uppercase;font-size:13px;min-height:44px}" +
+      "html body #page .lr-go:disabled{background:#c9c2ae;color:#7d7766}" +
+      "html body #page .lr-act button:not(.lr-go){border:1px solid #d8d0b8;background:#F6F1E3;border-radius:9px;padding:10px 12px;font-size:12px;color:#5b6472;min-height:44px}" +
+      ".lr-mnav{display:flex;justify-content:space-between;margin-top:10px}" +
+      "html body #page .lr-mnav button{border:1px solid #14213D;background:#14213D;color:#F1EADA;border-radius:9px;padding:11px 18px;font-family:Oswald,sans-serif;letter-spacing:1px;text-transform:uppercase;font-size:12px;min-height:44px}" +
+      ".fo-lr .sub{color:#8a90a0;font-size:12px}" +
+      ".fo-lr button:focus-visible{outline:3px solid #C9A24B;outline-offset:1px}" +
+      "@media(prefers-reduced-motion:no-preference){.lr-row,.lr-xirow{transition:background .15s}}";
+    document.head.appendChild(st);
+  }
+
+  function init() {
+    if (typeof window === "undefined") return;
+    css();
+    window.addEventListener("hashchange", function () {
+      if (location.hash.indexOf("#/lineup") === 0) { lastSig = null; setTimeout(function () { render(true); }, 30); }
+    });
+    setInterval(function () { render(false); }, 900);
+  }
+
+  return { init: init, render: render, freshDraft: freshDraft,
+    _test: { getDraft: function () { return draft; }, setDraft: function (d) { draft = d; }, toggle: toggle, move: move, undo: undo } };
+})();
+
+/* ---- features/campaign-ui.js ---- */
+/* features/campaign-ui — THE FIRST SUMMER hub (#/summer).
+ *
+ * One screen: the episode rail across the top, and below it exactly one
+ * thing to do — the current scene (with its choices), the next tie, or the
+ * walk-out. A returning manager always lands on a short "where we are"
+ * strip with a direct Continue; no re-reading, no hunting.
+ */
+FOC.campaignUI = (function () {
+  var U = FOC.util, G = FOC.game, A = FOC.adapter;
+  function esc(s) { return U.esc(s); }
+  function art() { try { return (window.__foGame && window.__foGame.art) || "client/art/"; } catch (e) { return "client/art/"; } }
+
+  function faceImg(face, sp) {
+    if (!face) face = "gaffer";
+    if (face.indexOf("npc:") === 0) {
+      var mono = face.split(":")[1] || "?";
+      return "<span class='sm-mono' aria-hidden='true'>" + esc(mono) + "</span>";
+    }
+    if (face.indexOf("player:") === 0) return "<img class='sm-face' src='" + art() + (face.split(":")[1] || "bat") + ".png' alt=''>";
+    return "<img class='sm-face' src='" + art() + face + ".png' alt=''>";
+  }
+
+  function sceneHTML(b, isInter) {
+    var h = "<div class='sm-scene'>" + faceImg(b.face, b.sp) +
+      "<div class='sm-bx'><div class='sm-sp'>" + esc(b.sp) + "</div><div class='sm-tx'>" + esc(b.tx) + "</div>";
+    if (b.choices) {
+      h += "<div class='sm-choices'>" + b.choices.map(function (c, i) {
+        return "<button class='sm-ch' data-i='" + i + "' data-inter='" + (isInter ? 1 : 0) + "'>" + esc(c.t) + "</button>";
+      }).join("") + "</div>";
+    } else {
+      h += "<div class='sm-choices'><button class='sm-ch sm-cont' data-inter='" + (isInter ? 1 : 0) + "'>Continue ▸</button></div>";
+    }
+    return h + "</div></div>";
+  }
+
+  function matchHTML(s) {
+    var c = G.chapter(s), o = c.opp;
+    var live = false, saved = false;
+    try {
+      live = !!(App.pending && App.pending.__camp);
+      saved = !!(App.orders && App.orders.saved);
+    } catch (e) {}
+    var rem = s.losses[c.key] ? "<div class='sm-rem'>Attempt " + (s.losses[c.key] + 1) + " — the fixture stands.</div>" : "";
+    var h = "<div class='sm-tie'><div class='sm-tie-k'>The tie</div>" +
+      "<div class='sm-tie-nm'>" + esc(o.nm) + "</div>" +
+      "<div class='sm-tie-c'>" + esc(o.ground) + " · " + esc(o.pitch) + " pitch · " + esc(o.wx) + "</div>" + rem;
+    if (live && saved) h += "<button class='sm-go' id='sm-walk'>Walk out ▸</button>";
+    else if (live) h += "<button class='sm-go' id='sm-lineup'>Pick your XI ▸</button>";
+    else h += "<button class='sm-go' id='sm-play'>Take the fixture ▸</button>";
+    return h + "</div>";
+  }
+
+  function railHTML(s) {
+    return "<div class='sm-rail' role='list'>" + G.list(s).map(function (c) {
+      var cls = "sm-ep " + c.state;
+      var res = c.result ? "<span class='r " + (c.result.win ? "w" : "l") + "'>" + (c.result.win ? "W" : "L") + " " + c.result.my + "–" + c.result.op + "</span>" : "";
+      return "<div role='listitem' class='" + cls + "' title='" + esc(c.title) + "'><span class='n'>" + (c.i === 0 ? "P" : c.i) + "</span><span class='t'>" + esc(c.tag) + "</span>" + res + "</div>";
+    }).join("") + "</div>";
+  }
+
+  function statusHTML(s) {
+    var ph = s.philosophy ? "<span class='sm-chip'>" + esc(s.philosophy.label) + "</span>" : "";
+    var proms = s.promises.filter(function (p) { return p.status === "active"; }).length;
+    var pc = proms ? "<span class='sm-chip gold'>" + proms + " live promise" + (proms > 1 ? "s" : "") + "</span>" : "";
+    return "<div class='sm-status'>" + ph + pc +
+      "<span class='sm-chip dim'>" + s.matches.length + " match" + (s.matches.length === 1 ? "" : "es") + " played</span>" +
+      "<button class='sm-reset' id='sm-reset'>Reset campaign</button></div>";
+  }
+
+  function doneHTML(s) {
+    var h = "<div class='sm-done'><div class='sm-tie-k'>The record — permanent</div>";
+    h += "<div class='sm-tie-nm'>" + (s.flags.crownWon ? "The Crown Ground, taken." : "The First Summer") + "</div>";
+    if (s.epilogue) h += "<div class='sm-tie-c'>First final: " + esc(s.epilogue.first) + " · attempts: " + s.epilogue.attempts + "</div>";
+    h += "<div class='sm-hist'>" + s.matches.map(function (m) {
+      return "<div class='sm-hrow'><span class='" + (m.win ? "w" : "l") + "'>" + (m.win ? "W" : "L") + "</span> " +
+        esc(m.opp) + " " + m.my + "–" + m.op +
+        (m.facts.topNm ? " · " + esc(m.facts.topNm) + " " + m.facts.topR : "") + "</div>";
+    }).join("") + "</div>";
+    h += "<a class='sm-go' href='#/circuit' style='text-decoration:none;display:inline-block'>The Circuit map ▸</a></div>";
+    return h;
+  }
+
+  var lastSig = null;
+  function render(force) {
+    try {
+      if (location.hash.indexOf("#/summer") !== 0) return;
+      if (!A.engineReady()) return;
+      var page = document.getElementById("page"); if (!page) return;
+      var s = G.save();
+      var inter = G.interstitial(s);
+      var beat = inter || G.currentBeat(s);
+      var sig = JSON.stringify([s.ch, s.beat, s.status, (s.flags.inter || []).length, !!inter,
+        s.matches.length, (function () { try { return !!(App.pending && App.pending.__camp) && !!(App.orders && App.orders.saved); } catch (e) { return 0; } })()]);
+      if (!force && page.__smSig === sig && page.querySelector(".fo-sm")) return;
+      page.__smSig = sig;
+
+      var h = "<div class='fo-sm'>";
+      h += "<div class='sm-head'><div class='sm-kick'>England · Solo Campaign</div><h2 class='sm-h1'>The First Summer</h2></div>";
+      h += railHTML(s);
+      h += statusHTML(s);
+      if (s.status === "complete" && !beat) h += doneHTML(s);
+      else if (inter) h += sceneHTML(inter, true);
+      else if (beat && beat.kind === "scene") {
+        var c0 = G.chapter(s);
+        h += "<div class='sm-where'>" + esc(s.ch >= 11 ? "Epilogue" : (c0 ? c0.title : "")) + (c0 && c0.tag && s.ch < 11 ? " · " + esc(c0.tag) : "") + "</div>";
+        h += sceneHTML(beat, false);
+      } else if (beat && beat.kind === "match") {
+        var c1 = G.chapter(s);
+        h += "<div class='sm-where'>" + esc(c1.title) + " · " + esc(c1.tag) + "</div>";
+        h += matchHTML(s);
+      } else h += doneHTML(s);
+      h += "</div>";
+      page.innerHTML = h;
+      wire(page, s);
+    } catch (e) {}
+  }
+
+  function wire(page, s) {
+    page.querySelectorAll(".sm-ch").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var isInter = b.getAttribute("data-inter") === "1";
+        if (isInter) {
+          var inter = G.interstitial(s);
+          var i = +(b.getAttribute("data-i") || -1);
+          if (inter && inter.choices && inter.choices[i]) { try { inter.choices[i].fx(G.makeCtx(s)); } catch (e) {} }
+          G.popInterstitial(s);
+        } else {
+          var i2 = +(b.getAttribute("data-i") || -1);
+          if (i2 >= 0) G.choose(s, i2); else G.advance(s);
+        }
+        render(true);
+      });
+    });
+    var pl = page.querySelector("#sm-play");
+    if (pl) pl.addEventListener("click", function () {
+      if (!G.playMatch(s)) { /* a live match blocks the fixture */ }
+    });
+    var lu = page.querySelector("#sm-lineup");
+    if (lu) lu.addEventListener("click", function () { location.hash = "#/lineup"; if (typeof window.route === "function") window.route(); });
+    var wk = page.querySelector("#sm-walk");
+    if (wk) wk.addEventListener("click", function () { location.hash = "#/match"; if (typeof window.route === "function") window.route(); });
+    var rs = page.querySelector("#sm-reset");
+    if (rs) rs.addEventListener("click", function () {
+      if (!window.confirm("Reset The First Summer? Your current campaign is archived (not deleted) and a fresh one begins.")) return;
+      FOC.save.reset(s.scope);
+      G._resetForTest();
+      render(true);
+    });
+  }
+
+  function injectNav() {
+    try {
+      var ex = document.querySelector("a.fo-summer"); if (ex) return;
+      var cx = document.querySelector("a.fo-circuit"); if (!cx || !cx.parentNode) return;
+      var a = document.createElement("a");
+      a.className = cx.className.replace("fo-circuit", "fo-summer");
+      a.href = "#/summer"; a.textContent = "The First Summer";
+      a.addEventListener("click", function (e) { e.preventDefault(); location.hash = "#/summer"; if (typeof window.route === "function") window.route(); });
+      cx.parentNode.insertBefore(a, cx);
+    } catch (e) {}
+  }
+
+  function css() {
+    if (document.getElementById("fo-sm-css")) return;
+    var st = document.createElement("style"); st.id = "fo-sm-css";
+    st.textContent =
+      ".fo-sm{max-width:760px;margin:0 auto;padding:4px 2px 40px}" +
+      ".sm-kick{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:#C9A24B}" +
+      ".sm-h1{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:2.2px;font-size:clamp(24px,5vw,34px);color:#101B2D;margin:2px 0 8px}" +
+      ".sm-rail{display:flex;gap:5px;overflow-x:auto;padding:4px 0 8px;-webkit-overflow-scrolling:touch}" +
+      ".sm-ep{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:52px;border:1px solid #e3dcc6;border-radius:9px;padding:5px 6px;background:#FDFBF4}" +
+      ".sm-ep.done{border-color:#4E7A4E;background:#EFF5EC}.sm-ep.now{border-color:#C8674A;box-shadow:0 0 0 1px #C8674A}" +
+      ".sm-ep.locked{opacity:.45}" +
+      ".sm-ep .n{font-family:Oswald,sans-serif;font-size:13px;color:#101B2D}" +
+      ".sm-ep .t{font-size:8.5px;letter-spacing:.4px;text-transform:uppercase;color:#8a90a0;white-space:nowrap}" +
+      ".sm-ep .r{font-size:9px;font-weight:700}.sm-ep .r.w{color:#2E7A3C}.sm-ep .r.l{color:#9c2f18}" +
+      ".sm-status{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 12px}" +
+      ".sm-chip{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;background:#14213D;color:#F1EADA;border-radius:99px;padding:4px 10px}" +
+      ".sm-chip.gold{background:#B08D2E}.sm-chip.dim{background:#EDE6D2;color:#5b6472}" +
+      "html body #page .sm-reset{margin-left:auto;border:1px solid #d8d0b8;background:transparent;border-radius:99px;padding:4px 10px;font-size:10px;color:#8a90a0}" +
+      ".sm-where{font-family:Oswald,sans-serif;font-size:12px;letter-spacing:1.8px;text-transform:uppercase;color:#8a90a0;margin:8px 0 6px}" +
+      ".sm-scene{display:flex;gap:10px;align-items:flex-start;background:#FDFBF4;border:1px solid #e3dcc6;border-radius:14px;padding:12px}" +
+      ".sm-face{width:64px;height:64px;border-radius:12px;object-fit:cover;object-position:50% 8%;flex:0 0 64px;background:#14213D}" +
+      ".sm-mono{width:64px;height:64px;border-radius:12px;flex:0 0 64px;background:#14213D;color:#C9A24B;display:flex;align-items:center;justify-content:center;font-family:Oswald,sans-serif;font-size:20px;letter-spacing:1px}" +
+      ".sm-bx{flex:1;min-width:0}" +
+      ".sm-sp{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:#C8674A;margin-bottom:3px}" +
+      ".sm-tx{color:#2a3140;font-size:14.5px;line-height:1.5}" +
+      ".sm-choices{display:flex;flex-direction:column;gap:6px;margin-top:10px}" +
+      "html body #page .sm-ch{text-align:left;border:1px solid #d8d0b8;background:#fff;border-radius:9px;padding:10px 12px;font-size:13.5px;color:#101B2D;min-height:44px;line-height:1.35}" +
+      "html body #page .sm-ch:hover{border-color:#C8674A}" +
+      "html body #page .sm-cont{background:#14213D;color:#F1EADA;border-color:#14213D;font-family:Oswald,sans-serif;letter-spacing:1.2px;text-transform:uppercase;font-size:12px;text-align:center}" +
+      ".sm-tie,.sm-done{background:#FDFBF4;border:1px solid #e3dcc6;border-radius:14px;padding:16px;text-align:center}" +
+      ".sm-tie-k{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:2.2px;text-transform:uppercase;color:#C9A24B}" +
+      ".sm-tie-nm{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:1.6px;font-size:22px;color:#101B2D;margin:3px 0}" +
+      ".sm-tie-c{color:#5b6472;font-size:13px}" +
+      ".sm-rem{color:#9c2f18;font-size:12px;margin-top:4px}" +
+      "html body #page .sm-go{margin-top:12px;background:#C8674A;border:none;color:#fff;border-radius:9px;padding:12px 22px;font-family:Oswald,sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-size:13px;min-height:44px}" +
+      ".sm-hist{margin:10px 0;text-align:left;max-width:420px;margin-left:auto;margin-right:auto}" +
+      ".sm-hrow{font-size:13px;color:#2a3140;padding:3px 0;border-bottom:1px dashed #e3dcc6}" +
+      ".sm-hrow .w{color:#2E7A3C;font-weight:700}.sm-hrow .l{color:#9c2f18;font-weight:700}" +
+      ".fo-sm button:focus-visible,.fo-sm a:focus-visible{outline:3px solid #C9A24B;outline-offset:1px}";
+    document.head.appendChild(st);
+  }
+
+  function init() {
+    if (typeof window === "undefined") return;
+    css();
+    window.addEventListener("hashchange", function () {
+      if (location.hash.indexOf("#/summer") === 0) setTimeout(function () { render(true); }, 30);
+    });
+    setInterval(function () { render(false); injectNav(); }, 1000);
+  }
+
+  return { init: init, render: render };
+})();
+
+/* ---- boot.js ---- */
+/* boot — wire the campaign into the page.
+ *
+ * Waits for the engine + overlay to exist, then starts the match keeper and
+ * the two routed surfaces (#/summer, #/lineup). Exposes __foSummer for the
+ * Playwright probes and nothing else.
+ */
+(function () {
+  if (typeof window === "undefined") return;
+  var tries = 0;
+  var t = setInterval(function () {
+    tries++;
+    var ready = false;
+    try { ready = FOC.adapter.engineReady() && !!window.__foGame; } catch (e) {}
+    if (!ready && tries < 120) return;
+    clearInterval(t);
+    if (!ready) return;   // engine never appeared; stay dormant
+    try {
+      FOC.game.init();
+      FOC.lineup.init();
+      FOC.campaignUI.init();
+      window.__foSummer = {
+        save: function () { return FOC.game.save(); },
+        engine: FOC.game, adapter: FOC.adapter, lineup: FOC.lineup,
+        saveMod: FOC.save, ids: FOC.ids, events: FOC.events, england: FOC.england
+      };
+      try { console.info("The First Summer ready."); } catch (e2) {}
+    } catch (e3) {}
+  }, 250);
+})();
+
 })();
 
 </script>

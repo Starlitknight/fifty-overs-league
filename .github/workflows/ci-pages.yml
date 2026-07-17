@@ -1,0 +1,60 @@
+# CI for Fifty Overs: unit tests, a reproducible build, and a pinned-engine
+# integrity check on every push; a GitHub Pages artifact deploy that only
+# runs from the default branch AFTER tests pass.
+#
+# IMPORTANT — current publication path: the live site is served by GitHub
+# Pages directly from committed root files (index.html / client/game.html on
+# the default branch). Switching the Pages source to "GitHub Actions" without
+# coordination would take the game offline, so the deploy job below is gated
+# behind the repository variable PAGES_VIA_ACTIONS. Follow-up (documented in
+# docs/first-summer.md): flip the Pages source to Actions in repo settings,
+# set PAGES_VIA_ACTIONS=true, and the artifact deploy takes over atomically.
+#
+# No secrets are read or written here. Supabase service-role keys must never
+# appear in this workflow, the repository, or the browser bundle.
+name: CI & Pages
+
+on:
+  push:
+    branches: [main, 'feat/**', 'claude/**']
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax-check overlay and campaign modules
+        run: |
+          node --check client/league-overlay.js
+          while IFS= read -r f; do [ -n "$f" ] && node --check "client/src/$f"; done < client/src/manifest.txt
+      - name: Unit tests (save migration, identity, lineup, promises, chapters)
+        run: node --test test/*.test.mjs
+      - name: Build site from pristine engine + overlay + campaign
+        run: ./build.sh
+      - name: Verify the pristine engine is untouched
+        run: |
+          echo "e558745ede94e2502d5cccaa829feb42818cbcb1e779664c4b784a851b3f00ff  Fifty_Overs_Club_Manager_2026_v11_6.html" | sha256sum -c -
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy:
+    needs: test-and-build
+    if: github.ref == 'refs/heads/main' && vars.PAGES_VIA_ACTIONS == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

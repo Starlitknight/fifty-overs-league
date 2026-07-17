@@ -10,6 +10,21 @@ cd "$(dirname "$0")"
 ENGINE="Fifty_Overs_Club_Manager_2026_v11_6.html"
 OVERLAY="client/league-overlay.js"
 
+# The First Summer campaign ships as modular sources (client/src/**), listed
+# in dependency order by client/src/manifest.txt and concatenated into ONE
+# extra <script> wrapped in an IIFE — no toolchain, no external requests,
+# and the pristine engine stays byte-identical.
+CAMPAIGN_DIR="client/src"
+campaign_js() {
+  printf '(function(){\n"use strict";\n'
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    printf '\n/* ---- %s ---- */\n' "$f"
+    cat "$CAMPAIGN_DIR/$f"
+  done < "$CAMPAIGN_DIR/manifest.txt"
+  printf '\n})();\n'
+}
+
 # Boot veil, injected into the OUTPUT's <head> (the engine file itself is untouched,
 # so its pinned sha256 is unaffected): hides the page in brand navy while the 1MB
 # document parses, so the engine's original teal UI never flashes before the overlay
@@ -20,10 +35,10 @@ BOOT='<style id="fo-boot">html{background:#0B1322}html>body{visibility:hidden;an
 # Every build gets a unique stamp (UTC time + overlay content hash). The overlay
 # shows it (console + clock tooltip) and polls version.json to offer one-tap
 # updates when the deployed build is newer than the one the CDN handed out.
-BUILD_ID="$(date -u +%Y%m%d-%H%M)-$(sha256sum "$OVERLAY" | cut -c1-6)"
+BUILD_ID="$(date -u +%Y%m%d-%H%M)-$( (cat "$OVERLAY"; campaign_js) | sha256sum | cut -c1-6)"
 
 build() {
-  { sed "s|<head>|<head>$BOOT|" "$ENGINE"; printf '\n<script id="fo-league-overlay">\n'; sed "s|__FO_BUILD__|$BUILD_ID|g" "$OVERLAY"; printf '\n</script>\n'; } > "$1"
+  { sed "s|<head>|<head>$BOOT|" "$ENGINE"; printf '\n<script id="fo-league-overlay">\n'; sed "s|__FO_BUILD__|$BUILD_ID|g" "$OVERLAY"; printf '\n</script>\n<script id="fo-campaign">\n'; campaign_js; printf '\n</script>\n'; } > "$1"
   echo "built $1 ($(wc -c < "$1") bytes)"
 }
 

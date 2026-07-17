@@ -4576,7 +4576,7 @@
       // practice vs bots: bank the match and broadcast it ball by ball, the
       // same experience as friendlies and league matchdays
       try {
-        if (!window.__foPracRun && App && App.pending && App.pending.__friendly && !App.pending.__tut && !App.pending.__circuit && App.orders && App.orders.saved && !(typeof M !== "undefined" && M && !M.done)) {
+        if (!window.__foPracRun && App && App.pending && App.pending.__friendly && !App.pending.__tut && !App.pending.__circuit && !App.pending.__camp && App.orders && App.orders.saved && !(typeof M !== "undefined" && M && !M.done)) {
           var cP = foPracBroadcast();
           if (cP && cP.id) {
             try { foFriendlies = (foFriendlies || []).filter(function (f) { return f.oppName !== cP.opponent_club; }); foFrSchedSave(); } catch (eSch) {}
@@ -17899,6 +17899,25 @@
     document.head.appendChild(el);
   })();
   try { window.__foTest.story = { state: foStState, scan: foStScan, key: foStKey, save: foStSave }; } catch (eSt2) {}
+
+  // Intentional export surface for the campaign bundle (client/src/**): a
+  // thin, read-mostly bridge so modular code can reuse overlay plumbing
+  // without reaching into this IIFE. Everything here already exists above.
+  try {
+    window.__foGame = {
+      art: FO_ART,
+      gen: foQsPlayer,
+      squad: foGenArchetypeSquad,
+      mini: foPkMini,
+      ovr: foPkOvr,
+      crest: foJCrest,
+      hash: foHash32,
+      challenge: foChallenge,
+      pitchName: foPitchName,
+      pushPacket: foPushCurrentPacket,
+      story: { state: foStState, save: foStSave, log: foStLog, varAdj: foStVar }
+    };
+  } catch (eXp) {}
 
   console.info("Fifty Overs League overlay ready.");
 })();
