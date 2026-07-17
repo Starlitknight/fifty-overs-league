@@ -257,8 +257,8 @@
     "#folPanel .folbadge.warn{background:rgba(200,103,74,.13)}" +
     "#folPanel .folsmall{color:rgba(246,244,238,.6);opacity:1;line-height:1.5}" +
     // ---- toast notifications (replace native alert) ----
-    "#fo-toasts{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:2147483200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;max-width:min(92vw,560px)}" +
-    ".fo-toast{pointer-events:auto;display:flex;gap:10px;align-items:flex-start;background:rgba(28,36,51,.97);color:#FFFEFC;border:1px solid rgba(246,244,238,.16);border-radius:13px;padding:12px 16px;font:13.5px/1.45 -apple-system,'Segoe UI',Roboto,Inter,system-ui,sans-serif;box-shadow:0 14px 40px -10px rgba(0,0,0,.6);opacity:0;transform:translateY(-8px);transition:opacity .25s,transform .25s;cursor:pointer;max-width:100%}" +
+    "#fo-toasts{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:2147483200;display:flex;flex-direction:column-reverse;gap:8px;align-items:center;pointer-events:none;max-width:min(92vw,560px)}" +
+    ".fo-toast{pointer-events:auto;display:flex;gap:10px;align-items:flex-start;background:rgba(28,36,51,.97);color:#FFFEFC;border:1px solid rgba(246,244,238,.16);border-radius:13px;padding:12px 16px;font:13.5px/1.45 -apple-system,'Segoe UI',Roboto,Inter,system-ui,sans-serif;box-shadow:0 14px 40px -10px rgba(0,0,0,.6);opacity:0;transform:translateY(10px);transition:opacity .25s,transform .25s;cursor:pointer;max-width:100%}" +
     ".fo-toast.on{opacity:1;transform:none}" +
     ".fo-toast-ic{flex:none;display:flex;margin-top:1px;color:#4DA6A2}" +
     ".fo-toast-error{border-color:rgba(200,103,74,.5);background:linear-gradient(160deg,rgba(58,32,26,.97),rgba(40,22,20,.97))}" +
