@@ -7932,13 +7932,14 @@
       ".pk-sign .pk-fc{gap:5px;padding:0 2px}.pk-sign .pk-fc svg{width:15px;height:15px;flex:0 0 15px}" +
       ".pk-sign .pk-fc i{font-size:8.5px;letter-spacing:1px}.pk-sign .pk-fc b{font-size:11.5px}" +
       "html body .pk-sign .pk-cta,html body.ftpskin .pk-sign .pk-cta{font-size:14px;letter-spacing:2.2px;padding:7px;margin-top:7px;border-radius:9px}" +
-      // the unboxing: a spotlit pack, then compact role-tinted chips dealt 1-by-1
-      ".fo-jrv-wrap{background:radial-gradient(120% 90% at 50% 0%,#16223c 0%,#0d1626 60%,#0a1220 100%);border-radius:20px;margin:6px auto 0;max-width:760px;padding:20px 16px 26px;box-shadow:inset 0 0 0 1.5px rgba(201,162,75,.28),0 14px 40px rgba(6,12,22,.4)}" +
+      // the unboxing: a spotlit pack on a light stage, then the FULL detailed
+      // player cards dealt into a grid one at a time
+      ".fo-jrv-wrap{background:radial-gradient(120% 80% at 50% 0%,#FFFDF7 0%,#F5EFE1 62%,#F1E9D8 100%);border-radius:20px;margin:6px auto 0;max-width:820px;padding:20px 16px 26px;box-shadow:inset 0 0 0 1.5px rgba(201,162,75,.4),0 12px 34px rgba(16,27,45,.14)}" +
       ".fo-jrv{text-align:center;position:relative}" +
-      ".fo-jrv-spot{position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:340px;height:280px;background:radial-gradient(circle,rgba(201,162,75,.28),transparent 66%);pointer-events:none;filter:blur(4px)}" +
-      ".fo-jrv-eyebrow{position:relative;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:4px;text-transform:uppercase;font-size:11px;color:#C9A24B}" +
-      "html body #fo-onb .fo-jrv-h1,html body.ftpskin #fo-onb .fo-jrv-h1{color:#F5EFDC !important;margin:2px 0 4px;font-size:clamp(30px,6vw,44px);text-shadow:0 2px 14px rgba(201,162,75,.35)}" +
-      "html body #fo-onb .fo-jrv-pack{position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:6px;margin:10px auto 4px;padding:20px 34px 15px;cursor:pointer;font:inherit;color:#F5EFDC;background:radial-gradient(circle at 50% 22%,#22345a 0%,#141f38 72%);border:2.5px solid #C9A24B;border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.5),0 0 34px rgba(201,162,75,.35),inset 0 0 0 1.5px rgba(201,162,75,.45);transition:transform .35s,opacity .35s;animation:foJrvFloat 3s ease-in-out infinite}" +
+      ".fo-jrv-spot{position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:340px;height:280px;background:radial-gradient(circle,rgba(201,162,75,.22),transparent 66%);pointer-events:none;filter:blur(4px)}" +
+      ".fo-jrv-eyebrow{position:relative;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:4px;text-transform:uppercase;font-size:11px;color:#C8674A}" +
+      "html body #fo-onb .fo-jrv-h1,html body.ftpskin #fo-onb .fo-jrv-h1{color:#101B2D !important;margin:2px 0 4px;font-size:clamp(30px,6vw,44px);text-shadow:0 1px 0 rgba(255,255,255,.6)}" +
+      "html body #fo-onb .fo-jrv-pack{position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:6px;margin:10px auto 4px;padding:20px 34px 15px;cursor:pointer;font:inherit;color:#F5EFDC;background:radial-gradient(circle at 50% 22%,#22345a 0%,#141f38 72%);border:2.5px solid #C9A24B;border-radius:18px;box-shadow:0 12px 30px rgba(16,27,45,.35),0 0 30px rgba(201,162,75,.3),inset 0 0 0 1.5px rgba(201,162,75,.45);transition:transform .35s,opacity .35s;animation:foJrvFloat 3s ease-in-out infinite}" +
       "@keyframes foJrvFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}" +
       "html body #fo-onb .fo-jrv-pack:hover{transform:translateY(-3px) scale(1.02)}" +
       ".fo-jrv-pack img.fo-j-crimg{width:82px;height:82px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.5))}" +
@@ -7947,30 +7948,21 @@
       ".fo-jrv-pack.open{animation:none;transform:scale(.4) rotate(-8deg);opacity:0;pointer-events:none;position:absolute;left:50%;top:70px;margin-left:-90px}" +
       ".fo-jrv-burst{position:absolute;left:50%;top:44%;width:20px;height:20px;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 0 rgba(201,162,75,.7)}" +
       ".fo-jrv-pack.open .fo-jrv-burst{animation:foJrvBurst .6s ease-out}" +
-      "@keyframes foJrvBurst{0%{box-shadow:0 0 0 0 rgba(201,162,75,.8)}100%{box-shadow:0 0 0 220px rgba(201,162,75,0)}}" +
-      ".fo-jrv-lab{position:relative;min-height:22px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:3px;text-transform:uppercase;font-size:14px;color:#E4C463;margin:4px 0 10px}" +
+      "@keyframes foJrvBurst{0%{box-shadow:0 0 0 0 rgba(201,162,75,.7)}100%{box-shadow:0 0 0 220px rgba(201,162,75,0)}}" +
+      ".fo-jrv-lab{position:relative;min-height:22px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:3px;text-transform:uppercase;font-size:14px;color:#C8674A;margin:4px 0 12px}" +
       ".fo-jrv-lab.pop{animation:foJrvPop .4s ease-out}" +
       "@keyframes foJrvPop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}" +
-      ".fo-jrv-grid{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left}" +
-      "@media(max-width:560px){.fo-jrv-grid{grid-template-columns:1fr}}" +
+      ".fo-jrv-grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;text-align:left}" +
+      "@media(max-width:520px){.fo-jrv-grid{grid-template-columns:1fr}}" +
       ".fo-jrv-cell{opacity:0}" +
       ".fo-jrv-cell.in{animation:foJrvFly .5s cubic-bezier(.16,.72,.28,1.1) forwards}" +
       ".fo-jrv-cell.in.insta{animation-duration:.01s}" +
       "@keyframes foJrvFly{0%{opacity:0;transform:translate(var(--dx,0),var(--dy,-180px)) scale(.2) rotate(var(--rot,10deg))}60%{opacity:1}100%{opacity:1;transform:none}}" +
       "@media (prefers-reduced-motion:reduce){.fo-jrv-cell{opacity:1}.fo-jrv-cell.in{animation:none}}" +
-      ".jrc{display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,#FFFEFC,#FBF6E9);border:1px solid rgba(201,162,75,.4);border-left:4px solid var(--ac);border-radius:11px;padding:6px 12px 6px 9px;box-shadow:0 3px 9px rgba(6,12,22,.28)}" +
-      ".jrc-art{width:38px;height:42px;flex:0 0 38px;border-radius:8px;background:radial-gradient(circle at 50% 26%,color-mix(in srgb,var(--ac) 26%,#fff),#F1EAD9);display:grid;place-items:center;overflow:hidden}" +
-      ".jrc-art img{height:40px;max-width:34px;object-fit:contain}" +
-      ".jrc-mid{flex:1;min-width:0}" +
-      ".jrc-nm{font-family:Archivo,Oswald,sans-serif;font-weight:800;font-size:15px;color:#14213D;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
-      ".jrc-rl{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:#7a8194;margin-top:2px}" +
-      ".jrc-ovr{text-align:right;flex:0 0 auto;line-height:1}" +
-      ".jrc-ovr b{font-family:Oswald,sans-serif;font-weight:600;font-size:23px;color:var(--acd)}" +
-      ".jrc-ovr i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:8px;letter-spacing:1.6px;color:#9aa1b1;margin-top:-2px}" +
+      ".fo-jrv-cell .pkm{box-shadow:0 4px 14px rgba(16,27,45,.15)}" +
       ".fo-jrv-foot{margin-top:16px}" +
-      ".fo-jrv-foot .fo-j-gbox{background:rgba(255,254,252,.96)}" +
-      ".fo-jrv-skip{min-height:18px;margin-top:10px}" +
-      ".fo-jrv-skip a{cursor:pointer;font-size:12px;color:#b9c0cf;text-decoration:underline dotted}" +
+      ".fo-jrv-skip{min-height:18px;margin-top:12px}" +
+      ".fo-jrv-skip a{cursor:pointer;font-size:12.5px;color:#8a90a0;text-decoration:underline dotted}" +
       // tooltips: hover on desktop, tap (.tipshow) on touch
       "[data-tip]{position:relative}" +
       "[data-tip]:hover:after,[data-tip].tipshow:after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 9px);transform:translateX(-50%);background:#101B2D;color:#F5EFDC;font-family:'Spline Sans',sans-serif;font-size:13px;font-weight:500;font-style:normal;letter-spacing:.2px;line-height:1.5;padding:9px 13px;border-radius:10px;width:240px;text-align:center;z-index:99;box-shadow:0 5px 14px rgba(0,0,0,.3);text-transform:none;pointer-events:none}" +
@@ -8322,7 +8314,7 @@
     });
     var A = foJArch(FO_ONB.arch);
     var cells = ps.map(function (p, i) {
-      return "<div class='fo-jrv-cell' data-i='" + i + "' data-g='" + foJrvGroup(p) + "'>" + foJrvChip(p) + "</div>";
+      return "<div class='fo-jrv-cell' data-i='" + i + "' data-g='" + foJrvGroup(p) + "'>" + foPkMini(p, {}) + "</div>";
     }).join("");
     var body = "<div class='fo-jrv-wrap'>" +
       "<div class='fo-jrv'>" +
@@ -8392,16 +8384,6 @@
       });
       if (reduce) finish();
     });
-  }
-  // compact reveal chip: art tile + name/role + big OVR, tinted by role colour
-  function foJrvChip(p) {
-    var k = foPkKind(p), ac = (FO_PK_AC[k] || ["#C8674A", "#a94f38"]);
-    var ovr = foPkOvr(p), hand = (p.hand === "L") ? "LHB" : "RHB";
-    return "<div class='jrc' style='--ac:" + ac[0] + ";--acd:" + ac[1] + "'>" +
-      "<div class='jrc-art'><img src='" + FO_ART + foPkArt(p) + "' alt=''></div>" +
-      "<div class='jrc-mid'><div class='jrc-nm'>" + E(p.name) + "</div>" +
-      "<div class='jrc-rl'>" + E(foPkRoleLbl(p)) + " &middot; " + p.age + " &middot; " + hand + "</div></div>" +
-      "<div class='jrc-ovr'><b>" + ovr + "</b><i>OVR</i></div></div>";
   }
   function foJTrimComp(comp) {
     var capB = foQsBucketOf((foJArch(FO_ONB.arch).starter || {}).role || "topOrderBat");
