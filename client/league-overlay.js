@@ -686,6 +686,28 @@
     "html body button.fo-next-cta,html body.ftpskin #page button.fo-next-cta{background:#e85a2a !important;border:0 !important;color:#fff !important;font:800 14px/1 Inter,ui-sans-serif,system-ui,-apple-system,sans-serif !important}" +
     "html body button.fo-next-cta:hover,html body.ftpskin #page button.fo-next-cta:hover{background:#c94c22 !important}" +
     "html body button.fo-next-cta.fo-done,html body.ftpskin #page button.fo-next-cta.fo-done{background:#15803D !important;color:#fff !important}" +
+    ".fo-c2-hero2{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}" +
+    // the Journey centerpiece: solo story first, the league one step below
+    "html body #page .fo-home-j{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:16px;align-items:center;background:linear-gradient(180deg,#FFFEFC,#FBF6E9);border:2px solid #C9A24B;border-radius:14px;padding:14px 18px 14px 14px;margin:0 0 14px;box-shadow:0 5px 0 rgba(16,27,45,.18);cursor:pointer}" +
+    ".fo-home-j .fo-hj-map{position:relative;width:120px;height:96px;border-radius:10px;overflow:hidden;background:#0a1220}" +
+    ".fo-home-j .fo-hj-map img{width:100%;height:100%;object-fit:cover}" +
+    ".fo-home-j .fo-hj-reg{position:absolute;left:0;right:0;bottom:0;padding:3px 7px;font-family:Oswald,sans-serif;font-weight:600;font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:#F3EEDF;background:linear-gradient(transparent,rgba(6,12,22,.85));text-align:left}" +
+    ".fo-home-j .fo-hj-eyebrow{font-family:Oswald,sans-serif;font-weight:600;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--cxc,#C8674A)}" +
+    ".fo-home-j .fo-hj-opp{display:flex;align-items:center;gap:9px;font-size:16.5px;color:#101B2D;margin-top:4px}" +
+    ".fo-home-j .fo-hj-opp b{font-weight:800}" +
+    ".fo-home-j .fo-hj-opp img.bossy{width:34px;height:34px;border-radius:50%;object-fit:cover;object-position:50% 6%;border:2px solid var(--cxc,#C8674A);flex:0 0 34px}" +
+    ".fo-home-j .fo-hj-quip{font-size:13px;color:#5b6472;font-style:italic;margin-top:4px}" +
+    ".fo-home-j .fo-hj-story{font-size:12.5px;color:#8a7b4f;margin-top:7px;padding-top:7px;border-top:1px dashed rgba(201,162,75,.5)}" +
+    ".fo-home-j .fo-hj-story a{color:#C8674A}" +
+    ".fo-home-j .fo-hj-side{display:flex;flex-direction:column;align-items:center;gap:9px}" +
+    ".fo-home-j .fo-hj-tr{font-family:Oswald,sans-serif;font-weight:600;font-size:13px;letter-spacing:1px;color:#8a7b4f;white-space:nowrap}" +
+    "html body button.fo-hj-cta,html body.ftpskin #page button.fo-hj-cta{background:#C8674A !important;border:0 !important;color:#FDFAF1 !important;font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:2px;text-transform:uppercase;font-size:13.5px;border-radius:10px;padding:10px 18px;cursor:pointer;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18);white-space:nowrap}" +
+    "html body button.fo-hj-cta:hover,html body.ftpskin #page button.fo-hj-cta:hover{background:#B5563B !important}" +
+    "@media(max-width:700px){html body #page .fo-home-j{grid-template-columns:88px minmax(0,1fr)}.fo-home-j .fo-hj-map{width:88px;height:78px}.fo-home-j .fo-hj-side{grid-column:1/-1;flex-direction:row;justify-content:space-between;width:100%}}" +
+    // the league card slims down to a side strip
+    "html body #page .fo-c2-next{padding:12px 16px;box-shadow:0 3px 12px rgba(20,36,58,.08);border:1px solid rgba(20,36,58,.10);margin-bottom:2px}" +
+    "html body #page .fo-c2-next .fo-c2-nopp{font-size:16px}" +
+    "html body #page .fo-c2-next .fo-c2-cd{font-size:20px}" +
     ".fo-c2-grid{display:grid;grid-template-columns:1.15fr 1fr 1fr 1fr;gap:18px;align-items:stretch;margin-top:16px}" +
     ".fo-c2-bottom{display:grid;grid-template-columns:1.15fr 1fr 1fr 1fr;gap:18px;align-items:stretch;margin-top:18px}" +
     "@media(max-width:1250px){.fo-c2-grid,.fo-c2-bottom{grid-template-columns:repeat(2,minmax(0,1fr))}}" +
@@ -2696,7 +2718,7 @@
         var oppRow = rowsL.findIndex(function (x) { return x.nm === nxt.opp.name; });
         var oppForm = (foFormMap()[nxt.opp.name] || []).map(function (x) { return "<i class='fo-pip fo-" + x + "'></i>"; }).join("");
         nextCard = "<div class='fo-c2-next'><div class='fo-c2-nl'>" +
-          "<div class='fo-c2-nk'>Next match &middot; Round " + (nxt.round + 1) + "</div>" +
+          "<div class='fo-c2-nk'>League &middot; Round " + (nxt.round + 1) + "</div>" +
           "<div class='fo-c2-nopp'>" + (nxt.isHome ? "vs " : "at ") + E(nxt.opp.name) + "</div>" +
           "<div class='fo-c2-nsub'>" + E(nxt.ground) + " &middot; " + foPitchName(nxt.pitch) + " pitch" + (nxt.weather ? " &middot; " + E(nxt.weather) : "") + "</div>" +
           "<div class='fo-c2-nchips'>" + (oppRow >= 0 ? "<span class='fo-c2-nchip'>" + foOrdinal(oppRow + 1) + "</span>" : "") + (oppForm ? "<span class='fo-c2-nchip'>Form <span class='fo-form'>" + oppForm + "</span></span>" : "") + "</div></div>" +
@@ -2716,7 +2738,39 @@
       if (ctry) metaBits.push((ctryFlag ? ctryFlag + " " : "") + E(ctry));
       metaBits.push(E(lgName));
       if (posLineTop) metaBits.push("<b class='fo-c2-gold'>" + posLineTop + "</b>");
-      var hero = "<div class='fo-c2-hero'>" +
+      // ---- the Journey centerpiece: the solo story leads, the league follows
+      var journeyCard = "";
+      try {
+        if (typeof FO_CX_REGIONS !== "undefined") {
+          var stJ = foCxState(), curJ = foCxCurrent(stJ);
+          var conqN = (stJ.conq || []).length;
+          var stS = null; try { stS = foStState(); } catch (eS0) {}
+          var hookJ = (stS && stS.hook) ? stS.hook : null;
+          var lastLog = (stS && stS.log && stS.log[0]) ? stS.log[0].txt : null;
+          if (curJ >= FO_CX_REGIONS.length) {
+            journeyCard = "<div class='fo-home-j' data-go='circuit'><div class='fo-hj-map'><img src='" + FO_ART + "circuit/trophy-crown.webp' alt=''></div>" +
+              "<div class='fo-hj-main'><div class='fo-hj-eyebrow'>The Journey &middot; complete</div>" +
+              "<div class='fo-hj-opp'>Six regions. Six trophies.</div>" +
+              "<div class='fo-hj-quip'>Reggie Thorne's World Final is coming. Your cabinet is ready for the crown.</div>" +
+              (hookJ || lastLog ? "<div class='fo-hj-story'>" + E(hookJ || lastLog) + " <a href='#/story'>Club story &rsaquo;</a></div>" : "") + "</div>" +
+              "<div class='fo-hj-side'><span class='fo-hj-tr'>&#127942; 6 / 6</span><button class='fo-hj-cta' data-go='circuit'>The Circuit &rsaquo;</button></div></div>";
+          } else {
+            var rJ = FO_CX_REGIONS[curJ];
+            var nextCiJ = -1;
+            for (var iJ = 0; iJ < rJ.clubs.length; iJ++) if (!foCxBeaten(stJ, rJ.id, iJ)) { nextCiJ = iJ; break; }
+            var cJ = rJ.clubs[Math.max(0, nextCiJ)];
+            var oppArt = cJ.boss ? "<img class='bossy' src='" + FO_ART + "circuit/boss-" + rJ.id + ".webp' alt=''>" : "";
+            journeyCard = "<div class='fo-home-j' data-go='circuit' style='--cxc:" + rJ.ac + "'>" +
+              "<div class='fo-hj-map'><img src='" + FO_ART + "circuit/" + rJ.id + ".webp' alt=''><span class='fo-hj-reg'>" + E(rJ.nm) + "</span></div>" +
+              "<div class='fo-hj-main'><div class='fo-hj-eyebrow'>The Journey &middot; " + conqN + " of " + FO_CX_REGIONS.length + " regions conquered</div>" +
+              "<div class='fo-hj-opp'>" + oppArt + "<span>Next: <b>" + E(cJ.nm) + "</b>" + (cJ.boss ? " &middot; Boss" : "") + " &middot; " + E(cJ.city) + "</span></div>" +
+              (cJ.gq ? "<div class='fo-hj-quip'>&ldquo;" + E(cJ.gq.split(". ")[0]) + ".&rdquo; &mdash; the Gaffer</div>" : "") +
+              (hookJ || lastLog ? "<div class='fo-hj-story'>" + E(hookJ || lastLog) + " <a href='#/story'>Club story &rsaquo;</a></div>" : "") + "</div>" +
+              "<div class='fo-hj-side'><span class='fo-hj-tr'>&#127942; " + conqN + " / 6</span><button class='fo-hj-cta' data-go='circuit'>Continue &rsaquo;</button></div></div>";
+          }
+        }
+      } catch (eJc) {}
+      var hero = "<div class='fo-c2-hero fo-c2-hero2'>" +
         "<div class='fo-c2-id'><div class='fo-c2-idt'>" +
         "<div class='fo-c2-eyebrow'>Your club</div>" +
         "<h1 class='fo-c2-name'>" + E(t.name) + "</h1>" +
@@ -2729,7 +2783,7 @@
         "<div class='fo-c2-prog'><div class='fo-c2-k'>Season progress</div>" +
         "<div class='fo-c2-pv'>Round " + Math.min(played + 1, totalRounds) + " of " + totalRounds + "</div>" +
         "<div class='fo-progress-bar'><u style='width:" + pct + "%'></u></div><div class='fo-c2-ppct'>" + pct + "% complete</div></div>" +
-        nextCard + "</div>";
+        "</div>" + journeyCard + nextCard;
       // ---- today's to-do: unfinished business pulls you back tomorrow ----
       var todo = [];
       if (nxt && !ordersIn) todo.push("<a data-go='orders' data-r='" + nxt.round + "'>&#9998; Set your lineup for round " + (nxt.round + 1) + "</a>");
@@ -2910,6 +2964,13 @@
           var go = a.getAttribute("data-go");
           if (go === "orders") foSetOrdersForRound(+a.getAttribute("data-r"));
           else { location.hash = "#/" + go; if (typeof window.route === "function") window.route(); }
+        });
+      });
+      // the Journey centerpiece: the whole card walks you to the Circuit
+      page.querySelectorAll(".fo-home-j[data-go]").forEach(function (jc) {
+        jc.addEventListener("click", function (ev) {
+          if (ev.target && ev.target.closest && ev.target.closest("a")) return;   // Club story link keeps its own hash
+          location.hash = "#/circuit"; if (typeof window.route === "function") window.route();
         });
       });
       // live countdown; the interval kills itself when the element leaves the page
