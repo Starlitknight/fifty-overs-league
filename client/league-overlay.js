@@ -17298,6 +17298,8 @@
       ".fo-cx-vs .vs-them{transform:translateX(46px);opacity:0;transition:transform .55s cubic-bezier(.2,.7,.3,1),opacity .55s}" +
       ".fo-cx-vs.in .vs-you,.fo-cx-vs.in .vs-them{transform:none;opacity:1}" +
       ".fo-cx-vs .vs-crest{width:130px;height:130px;display:grid;place-items:center;filter:drop-shadow(0 8px 18px rgba(16,27,45,.28))}" +
+      ".fo-cx-vs .vs-crest svg{width:100%;height:100%;display:block}" +
+      ".fo-cx-vs .vs-nm{margin-top:4px}" +
       ".fo-cx-vs .vs-crest img.vs-soul{width:116px;height:116px;object-fit:contain}" +
       ".fo-cx-vs .vs-crest.boss{border-radius:50%;overflow:hidden;border:3px solid var(--cxc,#C8674A);background:#FFFEFC;box-shadow:0 6px 18px rgba(16,27,45,.28)}" +
       ".fo-cx-vs .vs-crest img.vs-boss{width:100%;height:100%;object-fit:cover;object-position:50% 7%}" +
