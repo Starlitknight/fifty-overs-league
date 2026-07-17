@@ -16776,7 +16776,7 @@
       cond: "Green, overcast seamers. The ball talks all day; patient, correct cricket wins.",
       gaffer: "Cloud cover and a green top. Leave well, bat time, and let their grafters die of boredom before you cash in.",
       academy: "technically-correct batsmen and swing bowlers",
-      trophy: "The Long Room Urn", nats: ["England", "Ireland"],
+      trophy: "The Ashes Urn", nats: ["England", "Ireland"],
       clubs: [
         { mx: 61, my: 55, nm: "Tyke County CC", city: "Leeds", note: "dour opening pair", mult: 0.84 },
         { mx: 72, my: 79.5, nm: "The Southern Shires", city: "Canterbury", note: "gritty county pros", mult: 0.90 },
@@ -16788,7 +16788,7 @@
       cond: "True, sun-baked deck and a lightning outfield. Big hitting, big grins, big totals.",
       gaffer: "They swing hard and field harder. Choke the boundaries, take pace off, and make the showmen play the boring ball.",
       academy: "power-hitters and big-hitting all-rounders",
-      trophy: "The Calypso Crown", nats: ["West Indies"],
+      trophy: "The Caribbean Crown", nats: ["West Indies"],
       clubs: [
         { mx: 89.5, my: 56.5, nm: "Windward Kings", city: "Bridgetown", note: "clean ball-strikers", mult: 0.88 },
         { mx: 26.5, my: 46.5, nm: "Sugar City CC", city: "Kingston", note: "carnival hitters", mult: 0.94 },
@@ -16800,7 +16800,7 @@
       cond: "Green, bouncy and quick. Survive the new ball or perish - and their cordon drops nothing.",
       gaffer: "Raw pace, short stuff, catchers everywhere. See off the first ten, protect the tail, and cash in when the quicks tire.",
       academy: "express fast bowlers and gun fielders",
-      trophy: "The Veldt Shield", nats: ["South Africa", "Zimbabwe"],
+      trophy: "The Protea Shield", nats: ["South Africa", "Zimbabwe"],
       clubs: [
         { mx: 45, my: 46, nm: "Highveld Reef", city: "Johannesburg", note: "hostile quicks", mult: 0.92 },
         { mx: 36, my: 67, nm: "Cape Storm CC", city: "Cape Town", note: "gully-cordon hawks", mult: 0.98 },
@@ -16824,7 +16824,7 @@
       cond: "Fair, breezy, even bounce. Nothing lavish - ruthless discipline and nothing hits the grass.",
       gaffer: "No freebies here. They squeeze every run and drop nothing. Run hard, rotate strike, and out-hit a modest attack.",
       academy: "keeper-batsmen and disciplined seam bowlers",
-      trophy: "The Long White Cup", nats: ["New Zealand"],
+      trophy: "The Safe Hands Cup", nats: ["New Zealand"],
       clubs: [
         { mx: 33, my: 53, nm: "Kauri Coast CC", city: "Christchurch", note: "tidy medium-pacers", mult: 1.00 },
         { mx: 48, my: 38, nm: "Southern Cross XI", city: "Wellington", note: "canny keeper-bats", mult: 1.06 },
@@ -16836,7 +16836,7 @@
       cond: "Dry, dusty, sharp turn from over one. The ball grips, rips, and reads your footwork.",
       gaffer: "The final exam. Sweep hard, use your feet, and pick the wrong'un early - because out here the pitch is on their side.",
       academy: "spinners and wristy, spin-savvy batsmen",
-      trophy: "The Turning Trophy", nats: ["India", "Pakistan", "Sri Lanka", "Afghanistan"],
+      trophy: "The Spin Web Trophy", nats: ["India", "Pakistan", "Sri Lanka", "Afghanistan"],
       clubs: [
         { mx: 46, my: 88, nm: "Monsoon CC", city: "Colombo", note: "flighted off-spin", mult: 1.04 },
         { mx: 26, my: 55, nm: "The Maidan Kings", city: "Mumbai", note: "wristy mystery-spin", mult: 1.10 },
@@ -16923,6 +16923,7 @@
         : "No shame in it - their ground, their rules. Patch the hole they found and we go again. The door stays open.";
       m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>The Circuit · " + E(r.nm) + "</div>" +
         "<h3>" + E(head) + "</h3>" +
+        (win && conquered ? "<img class='fo-cx-troph' src='" + FO_ART + "circuit/trophy-" + r.id + ".webp' alt='" + E(r.trophy) + "'>" : "") +
         (win && prize ? "<div class='small' style='margin:2px 0 8px'>Prize money: <b>" + FO$(prize) + "</b>" +
           (conquered ? " · <b>" + E(r.trophy) + "</b> → museum · " + E(r.nm) + "'s youth academy unlocked" : "") + "</div>" : "") +
         "<div class='fo-j-gbox' style='max-width:none;margin:8px 0'><img class='gf' src='" + FO_ART + "gaffer" + (win ? "-laugh" : "-serious") + ".png' alt=''>" +
@@ -17040,6 +17041,12 @@
       ".fo-cx-node.lock{background:rgba(10,18,32,.62);color:#aeb6c6;border-color:rgba(255,255,255,.45)}" +
       ".fo-cx-node.bossn{width:38px;height:38px;font-size:17px;border-color:#F3D37A}" +
       ".fo-cx-node .cl{position:absolute;top:104%;left:50%;transform:translateX(-50%);font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:#F3EEDF;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 6px rgba(0,0,0,.7)}" +
+      ".fo-cx-bossav{position:relative;width:46px;height:46px;flex:0 0 46px}" +
+      ".fo-cx-bossav img{width:46px;height:46px;border-radius:50%;object-fit:cover;object-position:50% 12%;border:2px solid #C8674A;background:#FFFEFC;display:block}" +
+      ".fo-cx-row.done .fo-cx-bossav img{border-color:#69B578}" +
+      ".fo-cx-bossav i{position:absolute;right:-4px;bottom:-4px;width:18px;height:18px;border-radius:50%;background:#69B578;color:#fff;font-style:normal;font-size:11px;display:grid;place-items:center;border:2px solid #FFFEFC}" +
+      ".fo-cx-ledtr{float:right;height:86px;margin:-4px 0 6px 12px;filter:drop-shadow(0 3px 6px rgba(16,27,45,.3))}" +
+      ".fo-cx-troph{display:block;height:130px;margin:6px auto 2px;filter:drop-shadow(0 5px 12px rgba(16,27,45,.35))}" +
       ".fo-cx-done{text-align:center;padding:30px 10px}" +
       ".fo-cx .fo-j-gbox{margin:14px auto}" +
       "@media(max-width:640px){.fo-cx-row{flex-wrap:wrap}.fo-cx-row .m{flex:1 1 100%;order:2}.fo-cx-row .no{order:1}.fo-cx-row .fo-cx-ch,.fo-cx-row .fo-cx-lock,.fo-cx-row .fo-cx-won{order:3;margin-left:auto}}";
@@ -17094,7 +17101,8 @@
           var sub = c3.city + (c3.boss ? " · captain <b>" + E(c3.leader) + "</b>, " + E(c3.note) : " · " + E(c3.note));
           var why = (open && !c3.boss) ? "<span class='fo-cx-why'>The Gaffer: " + E(r.gaffer.split(".")[0]) + ".</span>" : "";
           return "<div class='fo-cx-row" + (done ? " done" : "") + (c3.boss ? " bossr" : "") + "'>" +
-            "<span class='no'>" + (done ? "✓" : (c3.boss ? "★" : (ci + 1))) + "</span>" +
+            (c3.boss ? "<span class='fo-cx-bossav'><img src='" + FO_ART + "circuit/boss-" + r.id + ".webp' alt=''>" + (done ? "<i>✓</i>" : "") + "</span>"
+                     : "<span class='no'>" + (done ? "✓" : (ci + 1)) + "</span>") +
             "<div class='m'><span class='fo-cx-nm'>" + E(c3.nm) + (c3.boss ? " — Boss" : "") + "</span>" +
             "<span class='fo-cx-sub'>" + sub + "</span>" + why + "</div>" + act + "</div>";
         }).join("");
@@ -17119,7 +17127,8 @@
           (live ? foJGbox(r.gaffer) : "") +
           "<div class='fo-cx-sec'><i></i>The Challenges<i></i></div>" +
           "<div class='fo-cx-rows'>" + rows + "</div>" +
-          "<div class='fo-cx-ledger'><div class='lh'>On conquering " + E(r.nm) + "</div>" +
+          "<div class='fo-cx-ledger'><img class='fo-cx-ledtr' src='" + FO_ART + "circuit/trophy-" + r.id + ".webp' alt=''>" +
+          "<div class='lh'>On conquering " + E(r.nm) + "</div>" +
           "<p><b>" + E(r.trophy) + "</b> goes in your museum, the board wires <span class='pos'>" + FO$(foCxPrize(ri, true)) + "</span> prize money, and " + E(r.nm) + "'s youth academy opens for good — <b>better odds of " + E(r.academy) + "</b> in your youth scout." +
           " Fly anywhere next - every nation's door is open, and all six trophies earn the shot at <b>Reggie Thorne</b>.</p></div>" +
           "</div>";
