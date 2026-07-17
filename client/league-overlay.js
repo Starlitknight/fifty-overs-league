@@ -17041,6 +17041,20 @@
       ".fo-cx-node.lock{background:rgba(10,18,32,.62);color:#aeb6c6;border-color:rgba(255,255,255,.45)}" +
       ".fo-cx-node.bossn{width:38px;height:38px;font-size:17px;border-color:#F3D37A}" +
       ".fo-cx-node .cl{position:absolute;top:104%;left:50%;transform:translateX(-50%);font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:#F3EEDF;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 6px rgba(0,0,0,.7)}" +
+      ".fo-cx-stage{display:flex;gap:13px;max-width:680px;margin:14px auto 2px;align-items:stretch}" +
+      ".fo-cx-stage .fo-cx-map{flex:1.55;min-width:0;margin:0;display:flex;flex-direction:column}" +
+      ".fo-cx-stage .fo-cx-map .mapin{aspect-ratio:1/1;flex:0 0 auto}" +
+      ".fo-cx-stage .fo-cx-map .mapin img{width:100%;height:100%;object-fit:cover}" +
+      ".fo-cx-bosscard{flex:1;min-width:0;background:#FFFEFC;border:2px solid #C9A24B;border-radius:14px;padding:8px;box-shadow:0 4px 0 rgba(16,27,45,.28);display:flex;flex-direction:column}" +
+      ".fo-cx-bosscard .bimg{position:relative;flex:1;min-height:0;border-radius:9px;overflow:hidden;background:#0a1220}" +
+      ".fo-cx-bosscard .bimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 18%;display:block}" +
+      ".fo-cx-bosscard.conq .bimg img{filter:saturate(.85)}" +
+      ".fo-cx-bosscard .bwon{position:absolute;top:8px;left:8px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;font-size:11px;color:#fff;background:#3E9455;border-radius:99px;padding:3px 11px;box-shadow:0 2px 6px rgba(0,0,0,.4)}" +
+      ".fo-cx-bosscard .bmeta{padding:8px 6px 3px;text-align:center}" +
+      ".fo-cx-bosscard .btag{font-family:Oswald,sans-serif;font-weight:500;letter-spacing:2.2px;text-transform:uppercase;font-size:9.5px}" +
+      ".fo-cx-bosscard .bnm{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:.6px;text-transform:uppercase;font-size:15.5px;color:#101B2D;line-height:1.15;margin-top:1px}" +
+      ".fo-cx-bosscard .bcl{font-size:11px;color:#6b7280;margin-top:1px}" +
+      "@media(max-width:600px){.fo-cx-stage{flex-direction:column}.fo-cx-bosscard .bimg{min-height:230px}.fo-cx-bosscard .bimg img{object-position:50% 14%}}" +
       ".fo-cx-bossav{position:relative;width:46px;height:46px;flex:0 0 46px}" +
       ".fo-cx-bossav img{width:46px;height:46px;border-radius:50%;object-fit:cover;object-position:50% 12%;border:2px solid #C8674A;background:#FFFEFC;display:block}" +
       ".fo-cx-row.done .fo-cx-bossav img{border-color:#69B578}" +
@@ -17115,15 +17129,27 @@
           "<p class='fo-cx-cond'><b>" + E(r.cond.split(".")[0]) + ".</b> " + E(r.cond.split(".").slice(1).join(".").trim()) + "</p>" +
           "<div class='fo-cx-prog'>Progress · " + beatN + " / " + r.clubs.length + " beaten <span style='display:inline-flex;gap:5px;margin-left:4px'>" + dots + "</span></div>" +
           "</div>" +
-          "<div class='fo-cx-map'><div class='mapin'>" +
-          "<img src='" + FO_ART + "circuit/" + r.id + ".webp' alt=''>" +
-          r.clubs.map(function (c5, i5) {
-            var done5 = foCxBeaten(st, r.id, i5);
-            var cls5 = "fo-cx-node" + (c5.boss ? " bossn" : "") + (done5 ? " done" : (live && i5 === nextCi ? " nxt" : " lock"));
-            return "<div class='" + cls5 + "' style='left:" + c5.mx + "%;top:" + c5.my + "%' title='" + E(c5.nm) + " · " + E(c5.city) + "'>" +
-              (done5 ? "✓" : (c5.boss ? "★" : (i5 + 1))) + "<span class='cl'>" + E(c5.city) + "</span></div>";
-          }).join("") +
-          "</div></div>" +
+          (function () {
+            var bc = r.clubs.filter(function (x) { return x.boss; })[0];
+            var bossDone = foCxBeaten(st, r.id, r.clubs.indexOf(bc));
+            return "<div class='fo-cx-stage'>" +
+              "<div class='fo-cx-map'><div class='mapin'>" +
+              "<img src='" + FO_ART + "circuit/" + r.id + ".webp' alt=''>" +
+              r.clubs.map(function (c5, i5) {
+                var done5 = foCxBeaten(st, r.id, i5);
+                var cls5 = "fo-cx-node" + (c5.boss ? " bossn" : "") + (done5 ? " done" : (live && i5 === nextCi ? " nxt" : " lock"));
+                return "<div class='" + cls5 + "' style='left:" + c5.mx + "%;top:" + c5.my + "%' title='" + E(c5.nm) + " · " + E(c5.city) + "'>" +
+                  (done5 ? "✓" : (c5.boss ? "★" : (i5 + 1))) + "<span class='cl'>" + E(c5.city) + "</span></div>";
+              }).join("") +
+              "</div></div>" +
+              "<div class='fo-cx-bosscard" + (bossDone ? " conq" : "") + "'>" +
+              "<div class='bimg'><img src='" + FO_ART + "circuit/boss-" + r.id + ".webp' alt='" + E(bc.leader) + "'>" +
+              (bossDone ? "<span class='bwon'>✓ Beaten</span>" : "") + "</div>" +
+              "<div class='bmeta'><span class='btag' style='color:" + r.ac + "'>Region Boss</span>" +
+              "<div class='bnm'>" + E(bc.leader) + "</div>" +
+              "<div class='bcl'>" + E(bc.nm) + " · " + E(bc.city) + "</div></div>" +
+              "</div></div>";
+          })() +
           (live ? foJGbox(r.gaffer) : "") +
           "<div class='fo-cx-sec'><i></i>The Challenges<i></i></div>" +
           "<div class='fo-cx-rows'>" + rows + "</div>" +
