@@ -10852,7 +10852,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260718-1326-fccb85";
+  var FO_BUILD = "20260718-1344-b6cfb7";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -28657,6 +28657,7 @@ FOC.oval = (function () {
       "<div class='ov-score'><span id='ov-team'></span><b id='ov-runs'></b><span id='ov-ov'></span></div>" +
       "<div class='ov-bats' id='ov-bats'></div>" +
       "<div class='ov-bowl' id='ov-bowl'></div>" +
+      "<span class='ov-fld' id='ov-fld'></span>" +
       "<div class='ov-strip' id='ov-strip' aria-label='This over'></div>" +
       "</div>" +
       "<svg viewBox='0 0 400 260' class='ov-svg' aria-hidden='true'>" +
@@ -28668,12 +28669,66 @@ FOC.oval = (function () {
       "<line x1='190' y1='170' x2='210' y2='170' stroke='#fff' stroke-width='1'/>" +
       "<g id='ov-stumps-b'><line x1='197' y1='84' x2='197' y2='78' stroke='#f5efdd' stroke-width='1.6'/><line x1='200' y1='84' x2='200' y2='78' stroke='#f5efdd' stroke-width='1.6'/><line x1='203' y1='84' x2='203' y2='78' stroke='#f5efdd' stroke-width='1.6'/></g>" +
       "<g id='ov-stumps-a'><line x1='197' y1='182' x2='197' y2='176' stroke='#f5efdd' stroke-width='1.6'/><line x1='200' y1='182' x2='200' y2='176' stroke='#f5efdd' stroke-width='1.6'/><line x1='203' y1='182' x2='203' y2='176' stroke='#f5efdd' stroke-width='1.6'/></g>" +
+      "<g id='ov-field'></g>" +
+      "<circle id='ov-keeper' r='4' fill='#1f4d3a' stroke='#fff' stroke-width='1.2' style='transition:transform .9s ease' transform='translate(200,66)'/>" +
       "<circle id='ov-batter' cx='206' cy='86' r='5' fill='#C8674A' stroke='#fff' stroke-width='1.4'/>" +
       "<circle id='ov-nonstriker' cx='192' cy='174' r='5' fill='#C8674A' stroke='#fff' stroke-width='1.4' opacity='.75'/>" +
       "<circle id='ov-bowler' cx='200' cy='196' r='5' fill='#14213D' stroke='#fff' stroke-width='1.4'/>" +
       "<circle id='ov-ball' cx='200' cy='190' r='3.2' fill='#a3242b' stroke='#fff' stroke-width='.8' opacity='0'/>" +
       "<text id='ov-pop' x='200' y='128' text-anchor='middle' class='ov-pop'></text>" +
-      "</svg><div class='ov-note'>theatre · directions illustrative</div></div>";
+      "</svg><div class='ov-note'>theatre · field &amp; directions illustrative</div></div>";
+  }
+
+  // nine placements per setting (angle°, radius fraction): attacking crowds
+  // the bat, balanced holds the ring, defensive rides the rope. The SETTING
+  // is real (the compiled spell plan / the engine's own aiField); the exact
+  // spots are illustrative templates.
+  var FIELDS = {
+    att: [[-75, .32], [-60, .30], [-45, .34], [0, .42], [30, .45], [60, .5], [120, .5], [150, .45], [180, .42]],
+    bal: [[-70, .30], [-35, .85], [0, .55], [40, .6], [70, .6], [110, .6], [140, .6], [180, .55], [-145, .85]],
+    def: [[-35, .92], [0, .9], [40, .9], [70, .85], [60, .45], [110, .85], [140, .9], [180, .9], [-145, .92]]
+  };
+  var curField = null;
+  function fieldSetting(inn) {
+    try {
+      var over = Math.floor((inn.legal || 0) / 6) + 1;
+      var userBowling = M.isUserMatch && inn.bowlTeam === M.user.name;
+      var orders = userBowling ? App.orders : (typeof ordersFor === "function" ? ordersFor(inn.bowlTeam) : null);
+      if (orders) {
+        var sp = [].concat((orders.spells || {}).north || [], (orders.spells || {}).south || []);
+        for (var i = 0; i < sp.length; i++) {
+          if (sp[i] && sp[i].field && over >= sp[i].first && over < sp[i].first + (sp[i].n || 0)) return sp[i].field;
+        }
+        if (orders.fieldPlan) {
+          var ph = over <= 10 ? "pp" : (over > 40 ? "death" : "mid");
+          return orders.fieldPlan[ph] || "bal";
+        }
+      }
+      if (typeof aiField === "function") return aiField(inn);
+    } catch (e) {}
+    return "bal";
+  }
+  function placeField(setting) {
+    var g = document.getElementById("ov-field"); if (!g) return;
+    if (!g.childNodes.length) {
+      var h = "";
+      for (var i = 0; i < 9; i++) h += "<circle r='4' fill='#1f4d3a' stroke='#fff' stroke-width='1.2' style='transition:transform .9s ease' transform='translate(200,130)'/>";
+      g.innerHTML = h;
+    }
+    var spots = FIELDS[setting] || FIELDS.bal;
+    var cs = g.childNodes;
+    for (var j = 0; j < cs.length && j < spots.length; j++) {
+      var a = spots[j][0] * Math.PI / 180, r = spots[j][1];
+      var x = 200 + Math.cos(a) * 186 * r, y = 130 + Math.sin(a) * 116 * r;
+      cs[j].setAttribute("transform", "translate(" + x.toFixed(1) + "," + y.toFixed(1) + ")");
+    }
+    var chip = document.getElementById("ov-fld");
+    if (chip) {
+      var LBL = { att: "attacking", bal: "balanced", def: "defensive" };
+      chip.textContent = "field: " + (LBL[setting] || setting);
+      chip.className = "ov-fld f-" + setting;
+    }
+    curField = setting;
   }
 
   function board() {
@@ -28691,6 +28746,8 @@ FOC.oval = (function () {
         (s2 && s2.p ? "  ·  " + nmS(s2.p.name) + " " + s2.r + " (" + s2.b + ")" : "");
       var bw = inn.bowlers && inn.bowlers[inn.curBowlerName];
       el("ov-bowl").textContent = bw ? nmS(inn.curBowlerName) + "  " + Math.floor((bw.b || 0) / 6) + "-" + (bw.r || 0) + "-" + (bw.w || 0) : "";
+      var fs = fieldSetting(inn);
+      if (fs !== curField) placeField(fs);
       // this over: the last balls since the over began
       var balls = [];
       (M.log || []).slice(0, 30).forEach(function (L) {
@@ -28764,11 +28821,11 @@ FOC.oval = (function () {
     })();
   }
   function shatter() {
-    var st = document.getElementById("ov-stumps-a");
+    var st = document.getElementById("ov-stumps-b");
     if (!st) return;
     st.style.transition = "transform .3s ease";
-    st.style.transformOrigin = "200px 182px";
-    st.style.transform = "rotate(24deg) translateX(5px)";
+    st.style.transformOrigin = "200px 84px";
+    st.style.transform = "rotate(-24deg) translateX(-5px)";
     setTimeout(function () { st.style.transition = "transform .4s ease"; st.style.transform = ""; }, 700);
   }
   function flashPop(txt, pop, color) {
@@ -28793,16 +28850,22 @@ FOC.oval = (function () {
 
   function tick() {
     try {
-      if (location.hash.indexOf("#/match") !== 0) { seenLogLen = 0; return; }
+      if (location.hash.indexOf("#/match") !== 0) {
+        seenLogLen = 0; curField = null;
+        var pg0 = document.getElementById("page");
+        if (pg0 && pg0.classList.contains("fo-ovalgrid")) pg0.classList.remove("fo-ovalgrid");
+        return;
+      }
       if (typeof M === "undefined" || !M || !M.log) return;
       var page = document.getElementById("page");
       if (!page) return;
       if (!document.getElementById("fo-oval")) {
-        var host = page.querySelector(".matchwrap, .card, div");
         page.insertAdjacentHTML("afterbegin", stageHTML());
         seenLogLen = M.log.length;   // join the broadcast from now
         seenInn = M.inns;
+        curField = null;
       }
+      page.classList.add("fo-ovalgrid");
       if (M.inns !== seenInn) { seenInn = M.inns; seenLogLen = M.log.length; }
       if (M.log.length > seenLogLen) {
         // engine unshifts: new entries are at the FRONT
@@ -28822,7 +28885,28 @@ FOC.oval = (function () {
     if (document.getElementById("fo-oval-css")) return;
     var st = document.createElement("style"); st.id = "fo-oval-css";
     st.textContent =
-      "#fo-oval{max-width:560px;margin:0 auto 14px;background:#0F1A2E;border:1px solid #24334f;border-radius:14px;overflow:hidden}" +
+      "#fo-oval{max-width:640px;margin:0 auto 14px;background:#0F1A2E;border:1px solid #24334f;border-radius:14px;overflow:hidden}" +
+      "@media(min-width:1020px){" +
+      // Generic split: oval left, everything else right. Used on match pages
+      // that don't carry the overlay's own .fo-matchpage grid.
+      "html body #page.fo-ovalgrid{display:grid;grid-template-columns:minmax(430px,46%) minmax(0,1fr);gap:0 20px;align-items:start}" +
+      "html body #page.fo-ovalgrid #fo-oval{grid-column:1;grid-row:1/span 40;position:sticky;top:64px;max-width:none;margin:0}" +
+      "html body #page.fo-ovalgrid:not(.fo-matchpage)>*:not(#fo-oval){grid-column:2}" +
+      // Match centre: the overlay lays #page out as a named-area grid
+      // (mlinks|mbody|mside). Re-template it with the oval as its own left
+      // area and stack crumb / score+details / tab links / commentary right.
+      "html body #page.fo-ovalgrid.fo-matchpage{grid-template-columns:minmax(430px,46%) minmax(0,1fr);grid-template-rows:auto auto auto auto 1fr;grid-template-areas:'moval mcrumb' 'moval mtop' 'moval mlinks' 'moval mbody' 'moval mrest'}" +
+      "html body #page.fo-ovalgrid.fo-matchpage #fo-oval{grid-area:moval}" +
+      "html body #page.fo-ovalgrid.fo-matchpage>.crumb{grid-area:mcrumb}" +
+      "html body #page.fo-ovalgrid.fo-matchpage .mc-top{grid-area:mtop;display:flex !important;flex-direction:row !important;align-items:stretch;gap:12px;margin:0 0 12px}" +
+      "html body #page.fo-ovalgrid.fo-matchpage .mc-top .panel{flex:1 1 0 !important;min-width:0;margin:0}" +
+      "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links{grid-area:mlinks;display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;padding:6px;margin:0 0 12px;position:static}" +
+      "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links h4{display:none}" +
+      "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links a{white-space:nowrap;border-bottom:none !important;border-radius:8px}" +
+      "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-body{grid-area:mbody;min-width:0;margin:0}" +
+      "}" +
+      ".ov-fld{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;border-radius:99px;padding:3px 10px;background:#1f2d4a;color:#cfd6e4}" +
+      ".ov-fld.f-att{background:#C8674A;color:#fff}.ov-fld.f-def{background:#2E5A7A;color:#fff}.ov-fld.f-bal{background:#4E7A4E;color:#fff}" +
       ".ov-board{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;padding:9px 14px;background:#14213D;color:#F1EADA}" +
       ".ov-score{display:flex;gap:8px;align-items:baseline}" +
       ".ov-score span{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:#b9c2d4}" +
