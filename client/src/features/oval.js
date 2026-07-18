@@ -45,6 +45,7 @@ FOC.oval = (function () {
       "<ellipse cx='200' cy='130' rx='192' ry='122' fill='url(#ovg)' stroke='#e8e2cc' stroke-width='3'/>" +
       "<defs><radialGradient id='ovg'><stop offset='0%' stop-color='#7ea86c'/><stop offset='72%' stop-color='#5d8a4e'/><stop offset='100%' stop-color='#4c7440'/></radialGradient></defs>" +
       "<ellipse cx='200' cy='130' rx='186' ry='116' fill='none' stroke='rgba(255,255,255,.5)' stroke-width='1.5' stroke-dasharray='3 6'/>" +
+      "<ellipse cx='200' cy='130' rx='110' ry='80' fill='none' stroke='rgba(255,255,255,.32)' stroke-width='1.1' stroke-dasharray='2 5'/>" +
       "<rect x='188' y='78' width='24' height='104' rx='3' fill='#d9c9a3'/>" +
       "<line x1='190' y1='90' x2='210' y2='90' stroke='#fff' stroke-width='1'/>" +
       "<line x1='190' y1='170' x2='210' y2='170' stroke='#fff' stroke-width='1'/>" +
@@ -57,17 +58,27 @@ FOC.oval = (function () {
       "<circle id='ov-bowler' cx='200' cy='196' r='5' fill='#14213D' stroke='#fff' stroke-width='1.4'/>" +
       "<circle id='ov-ball' cx='200' cy='190' r='3.2' fill='#a3242b' stroke='#fff' stroke-width='.8' opacity='0'/>" +
       "<text id='ov-pop' x='200' y='128' text-anchor='middle' class='ov-pop'></text>" +
-      "</svg><div class='ov-note'>theatre · field &amp; directions illustrative</div></div>";
+      "</svg><div class='ov-note'>theatre · real field setting · standard placements</div></div>";
   }
 
-  // nine placements per setting (angle°, radius fraction): attacking crowds
-  // the bat, balanced holds the ring, defensive rides the rope. The SETTING
-  // is real (the compiled spell plan / the engine's own aiField); the exact
-  // spots are illustrative templates.
+  // Nine named positions per setting as [x, y, label], drawn for a
+  // right-hand striker at the top end with the bowler below: off side is
+  // stage-left, leg side stage-right (TV orientation); the whole field is
+  // mirrored for a left-hander. Templates follow ODI fielding restrictions
+  // against the 30-yard circle on the stage: attacking (new ball) keeps 2
+  // men out, balanced (middle overs) 4, defensive (death) 5. The SETTING is
+  // real (compiled spell plan / the engine's aiField); the placements are
+  // standard cricket fields, not per-ball tracking.
   var FIELDS = {
-    att: [[-75, .32], [-60, .30], [-45, .34], [0, .42], [30, .45], [60, .5], [120, .5], [150, .45], [180, .42]],
-    bal: [[-70, .30], [-35, .85], [0, .55], [40, .6], [70, .6], [110, .6], [140, .6], [180, .55], [-145, .85]],
-    def: [[-35, .92], [0, .9], [40, .9], [70, .85], [60, .45], [110, .85], [140, .9], [180, .9], [-145, .92]]
+    att: [[184, 62, "slip"], [171, 68, ""], [112, 103, "point"], [116, 160, "cover"],
+      [166, 200, "mid-off"], [234, 200, "mid-on"], [277, 155, "midwicket"],
+      [156, 27, "third man"], [244, 27, "fine leg"]],
+    bal: [[108, 102, "point"], [112, 162, "cover"], [166, 200, "mid-off"], [234, 200, "mid-on"],
+      [280, 95, "square leg"], [156, 27, "third man"], [62, 190, "sweeper"],
+      [338, 190, "deep midwicket"], [244, 27, "fine leg"]],
+    def: [[112, 103, "point"], [116, 160, "cover"], [277, 155, "midwicket"], [280, 95, "square leg"],
+      [62, 190, "deep cover"], [146, 230, "long-off"], [254, 230, "long-on"],
+      [338, 190, "deep midwicket"], [244, 27, "fine leg"]]
   };
   var curField = null;
   function fieldSetting(inn) {
@@ -89,19 +100,24 @@ FOC.oval = (function () {
     } catch (e) {}
     return "bal";
   }
-  function placeField(setting) {
+  function placeField(setting, lhb) {
     var g = document.getElementById("ov-field"); if (!g) return;
     if (!g.childNodes.length) {
       var h = "";
-      for (var i = 0; i < 9; i++) h += "<circle r='4' fill='#1f4d3a' stroke='#fff' stroke-width='1.2' style='transition:transform .9s ease' transform='translate(200,130)'/>";
+      for (var i = 0; i < 9; i++) {
+        h += "<g class='ov-f' style='transition:transform .9s ease' transform='translate(200,130)'>" +
+          "<circle r='4' fill='#1f4d3a' stroke='#fff' stroke-width='1.2'/>" +
+          "<text y='12' class='ov-flbl'></text></g>";
+      }
       g.innerHTML = h;
     }
     var spots = FIELDS[setting] || FIELDS.bal;
     var cs = g.childNodes;
     for (var j = 0; j < cs.length && j < spots.length; j++) {
-      var a = spots[j][0] * Math.PI / 180, r = spots[j][1];
-      var x = 200 + Math.cos(a) * 186 * r, y = 130 + Math.sin(a) * 116 * r;
-      cs[j].setAttribute("transform", "translate(" + x.toFixed(1) + "," + y.toFixed(1) + ")");
+      var x = lhb ? 400 - spots[j][0] : spots[j][0], y = spots[j][1];
+      cs[j].setAttribute("transform", "translate(" + x + "," + y + ")");
+      var t = cs[j].querySelector("text");
+      if (t) t.textContent = spots[j][2] || "";
     }
     var chip = document.getElementById("ov-fld");
     if (chip) {
@@ -109,7 +125,7 @@ FOC.oval = (function () {
       chip.textContent = "field: " + (LBL[setting] || setting);
       chip.className = "ov-fld f-" + setting;
     }
-    curField = setting;
+    curField = setting + (lhb ? "|L" : "|R");
   }
 
   function board() {
@@ -128,7 +144,8 @@ FOC.oval = (function () {
       var bw = inn.bowlers && inn.bowlers[inn.curBowlerName];
       el("ov-bowl").textContent = bw ? nmS(inn.curBowlerName) + "  " + Math.floor((bw.b || 0) / 6) + "-" + (bw.r || 0) + "-" + (bw.w || 0) : "";
       var fs = fieldSetting(inn);
-      if (fs !== curField) placeField(fs);
+      var lhb = !!(s1 && s1.p && s1.p.hand === "L");
+      if (fs + (lhb ? "|L" : "|R") !== curField) placeField(fs, lhb);
       // this over: the last balls since the over began
       var balls = [];
       (M.log || []).slice(0, 30).forEach(function (L) {
@@ -313,6 +330,7 @@ FOC.oval = (function () {
       ".ov-strip .b4{background:#C9A24B;color:#14213D}.ov-strip .b6{background:#C8674A;color:#fff}" +
       ".ov-strip .bw{background:#a3242b;color:#fff}.ov-strip .bd{opacity:.75}" +
       ".ov-svg{display:block;width:100%;height:auto;background:#0F1A2E}" +
+      ".ov-flbl{font:600 7px Inter,-apple-system,sans-serif;fill:rgba(241,234,218,.78);letter-spacing:.05em;text-anchor:middle;text-transform:uppercase}" +
       ".ov-pop{font-family:Oswald,sans-serif;font-size:30px;letter-spacing:4px;font-weight:600;opacity:0;paint-order:stroke;stroke:#0F1A2E;stroke-width:4px}" +
       ".ov-pop.on{animation:ovPop 1.05s ease}" +
       "@keyframes ovPop{0%{opacity:0;transform:scale(.6)}18%{opacity:1;transform:scale(1.12)}70%{opacity:1;transform:scale(1)}100%{opacity:0}}" +
@@ -327,5 +345,6 @@ FOC.oval = (function () {
     setInterval(tick, 300);
   }
 
-  return { init: init, tick: tick, symOf: symOf, angleFor: angleFor };
+  return { init: init, tick: tick, symOf: symOf, angleFor: angleFor,
+    __test: { placeField: placeField, FIELDS: FIELDS } };
 })();

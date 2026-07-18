@@ -27,7 +27,7 @@
         career: FOC.career, careerHub: FOC.careerHub, save2: FOC.save2,
         world: { gen: FOC.worldgen, sim: FOC.worldsim, comps: FOC.competitions,
           npc: FOC.npc, transfers: FOC.transfers, rivalry: FOC.rivalry },
-        rng: FOC.rng, storylets: FOC.storylets
+        rng: FOC.rng, storylets: FOC.storylets, oval: FOC.oval
       };
       try { console.info("The First Summer ready."); } catch (e2) {}
     } catch (e3) {}
