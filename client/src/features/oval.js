@@ -78,7 +78,12 @@ FOC.oval = (function () {
       [338, 190, "deep midwicket"], [244, 27, "fine leg"]],
     def: [[112, 103, "point"], [116, 160, "cover"], [277, 155, "midwicket"], [280, 95, "square leg"],
       [62, 190, "deep cover"], [146, 230, "long-off"], [254, 230, "long-on"],
-      [338, 190, "deep midwicket"], [244, 27, "fine leg"]]
+      [338, 190, "deep midwicket"], [244, 27, "fine leg"]],
+    // attacking with a spinner on: close catchers around the bat instead of
+    // a pace cordon — slip, silly point and short leg, everyone in the ring
+    attSpin: [[184, 62, "slip"], [176, 99, "silly point"], [224, 99, "short leg"],
+      [108, 102, "point"], [112, 162, "cover"], [166, 200, "mid-off"], [234, 200, "mid-on"],
+      [277, 155, "midwicket"], [280, 95, "square leg"]]
   };
   var curField = null;
   function fieldSetting(inn) {
@@ -100,7 +105,20 @@ FOC.oval = (function () {
     } catch (e) {}
     return "bal";
   }
-  function placeField(setting, lhb) {
+  // the current bowler's real type from the bowling XI (wristSpin,
+  // fingerSpin, partTimeSpin → spin; seam* → pace)
+  function spinOn(inn) {
+    try {
+      var nm = inn.curBowlerName; if (!nm) return false;
+      var xi = inn.bxi || [];
+      for (var i = 0; i < xi.length; i++) {
+        if (xi[i] && xi[i].name === nm) return /spin/i.test(xi[i].bowlTypeFull || "");
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  function placeField(setting, lhb, spin) {
     var g = document.getElementById("ov-field"); if (!g) return;
     if (!g.childNodes.length) {
       var h = "";
@@ -111,7 +129,7 @@ FOC.oval = (function () {
       }
       g.innerHTML = h;
     }
-    var spots = FIELDS[setting] || FIELDS.bal;
+    var spots = (setting === "att" && spin) ? FIELDS.attSpin : (FIELDS[setting] || FIELDS.bal);
     var cs = g.childNodes;
     for (var j = 0; j < cs.length && j < spots.length; j++) {
       var x = lhb ? 400 - spots[j][0] : spots[j][0], y = spots[j][1];
@@ -122,10 +140,11 @@ FOC.oval = (function () {
     var chip = document.getElementById("ov-fld");
     if (chip) {
       var LBL = { att: "attacking", bal: "balanced", def: "defensive" };
-      chip.textContent = "field: " + (LBL[setting] || setting);
+      chip.textContent = "field: " + (LBL[setting] || setting) +
+        (setting === "att" && spin ? " · spin" : "");
       chip.className = "ov-fld f-" + setting;
     }
-    curField = setting + (lhb ? "|L" : "|R");
+    curField = setting + (lhb ? "|L" : "|R") + (spin ? "|S" : "|P");
   }
 
   function board() {
@@ -145,7 +164,8 @@ FOC.oval = (function () {
       el("ov-bowl").textContent = bw ? nmS(inn.curBowlerName) + "  " + Math.floor((bw.b || 0) / 6) + "-" + (bw.r || 0) + "-" + (bw.w || 0) : "";
       var fs = fieldSetting(inn);
       var lhb = !!(s1 && s1.p && s1.p.hand === "L");
-      if (fs + (lhb ? "|L" : "|R") !== curField) placeField(fs, lhb);
+      var sp = spinOn(inn);
+      if (fs + (lhb ? "|L" : "|R") + (sp ? "|S" : "|P") !== curField) placeField(fs, lhb, sp);
       // this over: the last balls since the over began
       var balls = [];
       (M.log || []).slice(0, 30).forEach(function (L) {
