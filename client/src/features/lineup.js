@@ -117,7 +117,7 @@ FOC.lineup = (function () {
     var v = A.validate(draft, FOC.game.save());
     var isCamp = false, oppLine = "";
     try {
-      if (App.pending && App.pending.__camp) {
+      if (App.pending && (App.pending.__camp || App.pending.__career)) {
         isCamp = true;
         oppLine = "vs " + App.pending.away + " · " + App.pending.ground + " · " + (App.pending.pitch || "") + " pitch, " + (App.pending.weather || "");
       } else if (App.pending && App.pending.__friendly) oppLine = "Friendly vs " + App.pending.away;
@@ -263,7 +263,7 @@ FOC.lineup = (function () {
       var res = A.applyOrders(s, draft);
       if (!res.ok) { flash(res.errors[0] || "The card isn't legal yet."); return; }
       draft = null; undoStack = []; sel = null; cmp = [];
-      var camp = false; try { camp = !!(App.pending && App.pending.__camp); } catch (e) {}
+      var camp = false; try { camp = !!(App.pending && (App.pending.__camp || App.pending.__career)); } catch (e) {}
       // campaign: the keeper walks the manager out to the match centre;
       // league/friendly: back to the club with the plan saved
       if (!camp) { location.hash = "#/club"; if (typeof window.route === "function") window.route(); }

@@ -85,6 +85,8 @@ FOC.campaignUI = (function () {
     try {
       if (location.hash.indexOf("#/summer") !== 0) return;
       if (!A.engineReady()) return;
+      // once the prologue hands over, the persistent career owns this screen
+      try { if (FOC.career && FOC.career.active()) return; } catch (eCr) {}
       var page = document.getElementById("page"); if (!page) return;
       var s = G.save();
       var inter = G.interstitial(s);
@@ -211,7 +213,7 @@ FOC.campaignUI = (function () {
       ".sm-tie-nm{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:1.6px;font-size:22px;color:#101B2D;margin:3px 0}" +
       ".sm-tie-c{color:#5b6472;font-size:13px}" +
       ".sm-rem{color:#9c2f18;font-size:12px;margin-top:4px}" +
-      "html body #page .sm-go{margin-top:12px;background:#C8674A;border:none;color:#fff;border-radius:9px;padding:12px 22px;font-family:Oswald,sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-size:13px;min-height:44px}" +
+      "html body #page .sm-go{margin-top:12px;background:#C8674A!important;border:none!important;color:#fff!important;border-radius:9px;padding:12px 22px;font-family:Oswald,sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-size:13px;min-height:44px}" +
       "html body #page .sm-skip{margin-top:9px;border:none;background:transparent;color:#8a90a0;font-size:12px;text-decoration:underline dotted}" +
       ".sm-hist{margin:10px 0;text-align:left;max-width:420px;margin-left:auto;margin-right:auto}" +
       ".sm-hrow{font-size:13px;color:#2a3140;padding:3px 0;border-bottom:1px dashed #e3dcc6}" +

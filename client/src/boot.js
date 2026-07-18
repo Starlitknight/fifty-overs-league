@@ -18,10 +18,15 @@
       FOC.game.init();
       FOC.lineup.init();
       FOC.campaignUI.init();
+      FOC.careerHub.init();
       window.__foSummer = {
         save: function () { return FOC.game.save(); },
         engine: FOC.game, adapter: FOC.adapter, lineup: FOC.lineup,
-        saveMod: FOC.save, ids: FOC.ids, events: FOC.events, england: FOC.england
+        saveMod: FOC.save, ids: FOC.ids, events: FOC.events, england: FOC.england,
+        career: FOC.career, careerHub: FOC.careerHub, save2: FOC.save2,
+        world: { gen: FOC.worldgen, sim: FOC.worldsim, comps: FOC.competitions,
+          npc: FOC.npc, transfers: FOC.transfers, rivalry: FOC.rivalry },
+        rng: FOC.rng, storylets: FOC.storylets
       };
       try { console.info("The First Summer ready."); } catch (e2) {}
     } catch (e3) {}

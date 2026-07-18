@@ -10852,7 +10852,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260717-2349-682558";
+  var FO_BUILD = "20260718-0013-a6c43d";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10928,7 +10928,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // practice vs bots: bank the match and broadcast it ball by ball, the
       // same experience as friendlies and league matchdays
       try {
-        if (!window.__foPracRun && App && App.pending && App.pending.__friendly && !App.pending.__tut && !App.pending.__circuit && !App.pending.__camp && App.orders && App.orders.saved && !(typeof M !== "undefined" && M && !M.done)) {
+        if (!window.__foPracRun && App && App.pending && App.pending.__friendly && !App.pending.__tut && !App.pending.__circuit && !App.pending.__camp && !App.pending.__career && App.orders && App.orders.saved && !(typeof M !== "undefined" && M && !M.done)) {
           var cP = foPracBroadcast();
           if (cP && cP.id) {
             try { foFriendlies = (foFriendlies || []).filter(function (f) { return f.oppName !== cP.opponent_club; }); foFrSchedSave(); } catch (eSch) {}
@@ -24267,7 +24267,37 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       challenge: foChallenge,
       pitchName: foPitchName,
       pushPacket: foPushCurrentPacket,
-      story: { state: foStState, save: foStSave, log: foStLog, varAdj: foStVar }
+      story: { state: foStState, save: foStSave, log: foStLog, varAdj: foStVar },
+      // headless full match between two arbitrary team objects through the
+      // REAL engine (newMatch + autoPick/stepBall — the same logic every
+      // match uses). isUserMatch stays false so App.orders never applies;
+      // onMatchEnd is suppressed so nothing leaks into App.results,
+      // player history or fatigue. Same pattern as the engine's own
+      // simBackground and the overlay's practice broadcast.
+      simWorld: function (tA, tB, pitch, weather, seed) {
+        var prevM = null, prevToss = null, prevOME = null, ok = false;
+        try { prevM = M; } catch (e0) {}
+        try { prevToss = App.tossState; } catch (e1) {}
+        try {
+          prevOME = window.onMatchEnd; window.onMatchEnd = function () {};
+          M = newMatch(tA, tB, pitch, (seed >>> 0) || 1);
+          M.meta = { home: tA.name, away: tB.name, pitch: pitch, weather: weather || "Sunny", comp: "world", isUser: false };
+          M.isUserMatch = false;
+          M.ordersMap = {};
+          App.tossState = { stage: "x" };
+          var aiBats = aiTossDecision();
+          applyToss(aiBats);
+          var g = 0;
+          while (M && !M.done && g++ < 3000) { autoPick(); stepBall(); }
+          ok = !!(M && M.done && M.result);
+          return ok ? { innings: M.innings, result: M.result, batFirstTeam: M.batFirstTeam } : null;
+        } catch (eSim) { return null; }
+        finally {
+          try { window.onMatchEnd = prevOME; } catch (e2) {}
+          try { M = prevM; } catch (e3) {}
+          try { App.tossState = prevToss; } catch (e4) {}
+        }
+      }
     };
   } catch (eXp) {}
 
@@ -24527,6 +24557,263 @@ FOC.save = (function () {
 
   return { VERSION: VERSION, key: key, fresh: fresh, migrate: migrate, load: load,
     persist: persist, reset: reset, backups: backups };
+})();
+
+/* ---- core/rng.js ---- */
+/* core/rng — serialisable seeded randomness with named independent streams.
+ *
+ * Every stream is its own mulberry32 state, seeded once from
+ * hash(worldSeed | streamName) and persisted as a single uint32 in the save,
+ * so: (a) the same seed + the same decisions reproduce the same world;
+ * (b) drawing from one stream never shifts another (adding a storylet roll
+ * cannot change a cup draw); (c) state survives reload exactly.
+ * Career simulation must never touch Math.random().
+ */
+FOC.rng = (function () {
+  var U = FOC.util;
+
+  function create(seedStr) {
+    return { seed: String(seedStr), streams: {}, recent: [] };
+  }
+
+  // one mulberry32 step from a uint32 state → {v in [0,1), s: next state}
+  function step(state) {
+    var s = (state + 0x6D2B79F5) | 0;
+    var t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return { v: ((t ^ (t >>> 14)) >>> 0) / 4294967296, s: s };
+  }
+
+  function next(R, stream, tag) {
+    if (R.streams[stream] == null) R.streams[stream] = U.hash32(R.seed + "|" + stream) | 0;
+    var r = step(R.streams[stream] | 0);
+    R.streams[stream] = r.s;
+    if (tag) {
+      // meaningful outcomes keep a short debuggable trail
+      R.recent.push({ st: stream, tag: tag, v: Math.round(r.v * 1000) / 1000 });
+      if (R.recent.length > 120) R.recent = R.recent.slice(-120);
+    }
+    return r.v;
+  }
+
+  function int(R, stream, n, tag) { return Math.floor(next(R, stream, tag) * n); }
+  function pick(R, stream, arr, tag) { return arr[int(R, stream, arr.length, tag)]; }
+  function chance(R, stream, p, tag) { return next(R, stream, tag) < p; }
+  function range(R, stream, lo, hi, tag) { return lo + next(R, stream, tag) * (hi - lo); }
+  function shuffle(R, stream, arr, tag) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = int(R, stream, i + 1, tag);
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  // weighted pick from [{w, ...}] — returns the item
+  function weighted(R, stream, items, tag) {
+    var tot = 0; items.forEach(function (it) { tot += (it.w || 1); });
+    var roll = next(R, stream, tag) * tot;
+    for (var i = 0; i < items.length; i++) {
+      roll -= (items[i].w || 1);
+      if (roll <= 0) return items[i];
+    }
+    return items[items.length - 1];
+  }
+
+  return { create: create, next: next, int: int, pick: pick, chance: chance,
+    range: range, shuffle: shuffle, weighted: weighted };
+})();
+
+/* ---- core/calendar.js ---- */
+/* core/calendar — the season's shape: 15 weeks of league rounds, Founders
+ * Cup rounds and the Crown Cup finale. Pure data; no HTML, no engine.
+ * League defeats stand, cup defeats eliminate — the calendar never waits
+ * for anybody.
+ */
+FOC.calendar = (function () {
+  // kind: 'league' (round r), 'founders' (stage), 'crown' (stage)
+  var WEEKS = [
+    { w: 1, kind: "league", round: 1, label: "League · Round 1" },
+    { w: 2, kind: "league", round: 2, label: "League · Round 2" },
+    { w: 3, kind: "founders", stage: "playin", label: "Founders Cup · Play-in" },
+    { w: 4, kind: "league", round: 3, label: "League · Round 3" },
+    { w: 5, kind: "league", round: 4, label: "League · Round 4" },
+    { w: 6, kind: "founders", stage: "qf", label: "Founders Cup · Quarter-finals" },
+    { w: 7, kind: "league", round: 5, label: "League · Round 5" },
+    { w: 8, kind: "league", round: 6, label: "League · Round 6" },
+    { w: 9, kind: "founders", stage: "sf", label: "Founders Cup · Semi-finals" },
+    { w: 10, kind: "league", round: 7, label: "League · Round 7" },
+    { w: 11, kind: "league", round: 8, label: "League · Round 8" },
+    { w: 12, kind: "founders", stage: "final", label: "Founders Cup · Final" },
+    { w: 13, kind: "league", round: 9, label: "League · Round 9" },
+    { w: 14, kind: "crown", stage: "sf", label: "Crown Cup · Semi-finals" },
+    { w: 15, kind: "crown", stage: "final", label: "Crown Cup · Final" }
+  ];
+  var MONTHS = ["April", "April", "May", "May", "May", "June", "June", "June",
+    "July", "July", "July", "August", "August", "September", "September"];
+
+  function week(w) { return WEEKS[w - 1] || null; }
+  function label(w) {
+    var wk = week(w);
+    return wk ? ("Week " + w + " · " + MONTHS[w - 1] + " · " + wk.label) : "Season over";
+  }
+  function total() { return WEEKS.length; }
+
+  return { WEEKS: WEEKS, week: week, label: label, total: total };
+})();
+
+/* ---- core/save2.js ---- */
+/* core/save2 — the canonical versioned CAREER save (v2).
+ *
+ * One store for everything the career is: world, club, relationships,
+ * rivalries, story state and history. Replaces the scattered
+ * fo_summer_/fo_story_/fo_cx_ stores as the primary record; migration
+ * consolidates what those contained and ARCHIVES the originals — nothing
+ * is silently erased, even data that cannot be translated.
+ *
+ * History is never capped away: routine events live in the current
+ * season's log, season archives keep full per-season records, and
+ * milestones/trophies/departures are permanent.
+ */
+FOC.save2 = (function () {
+  var U = FOC.util;
+  var VERSION = 2;
+
+  function key(scope) { return "fo_career_" + (scope || "solo"); }
+
+  function fresh(scope, worldSeed) {
+    return {
+      version: VERSION,
+      careerId: "career_" + U.hash32(scope + "|" + worldSeed).toString(36),
+      scope: scope,
+      worldSeed: String(worldSeed),
+      rng: FOC.rng.create(String(worldSeed)),
+      idSeq: 0,
+      week: 1, seasonNumber: 1,
+      user: { managerId: null, clubId: null, employment: "employed", reputation: 30,
+        philosophy: null, matchBall: null, objectives: [] },
+      world: { clubsById: {}, managersById: {}, playersById: {}, fixturesById: {},
+        competitionsById: {}, transfers: [], news: [], peerManagerId: null, thorneManagerId: null },
+      relationships: { managerToManager: {}, managerToPlayer: {}, clubToClub: {} },
+      rivalries: { clubs: {}, duels: {}, threads: [] },
+      story: { cast: {}, castNames: {}, pending: [], seen: {}, cooldowns: {},
+        promises: [], notes: {}, rapport: { gaffer: 55, captain: 55, dressingRoom: 55 },
+        gtClues: [], directorState: { lastCast: [], quietStreak: 0 } },
+      history: { events: [], seasonArchives: [], milestones: [], trophies: [],
+        departures: [], famousMatches: [] },
+      flags: {}, legacy: null, settings: {}
+    };
+  }
+
+  function store() { try { return window.localStorage; } catch (e) { return null; } }
+
+  // ---- migration: v1 First Summer (+ fo_story_/fo_cx_) → v2 career ---------
+  function migrateFromV1(scope, v1, worldSeed) {
+    var v2 = fresh(scope, worldSeed);
+    if (!v1) return v2;
+    v2.legacy = { firstSummer: U.deep(v1) };   // archive the untranslated source
+    v2.user.philosophy = v1.philosophy || null;
+    v2.user.matchBall = v1.matchBall || null;
+    v2.story.cast = U.deep(v1.cast || {});
+    v2.story.castNames = U.deep(v1.castNames || {});
+    v2.story.promises = U.deep(v1.promises || []);
+    v2.story.notes = U.deep(v1.notes || {});
+    v2.story.rapport = U.deep(v1.rapport || v2.story.rapport);
+    v2.flags.v1idmap = U.deep(v1.idmap || {});  // player identity carries over
+    (v1.events || []).forEach(function (e) { v2.history.events.push(e); });
+    (v1.matches || []).forEach(function (m) {
+      v2.history.famousMatches.push({ from: "first-summer", key: m.key, opp: m.opp,
+        win: m.win, my: m.my, op: m.op, sig: m.sig, facts: m.facts });
+    });
+    if (v1.epilogue) v2.history.milestones.push({ kind: "first-summer-final", detail: U.deep(v1.epilogue) });
+    return v2;
+  }
+
+  function consolidateSideStores(v2, ls) {
+    // fold fo_story_* and fo_cx_* in where reliable; archive them verbatim
+    try {
+      for (var i = 0; i < ls.length; i++) {
+        var k = ls.key(i);
+        if (!k) continue;
+        if (k.indexOf("fo_story_") === 0 || k.indexOf("fo_cx_") === 0) {
+          var raw = ls.getItem(k);
+          v2.legacy = v2.legacy || {};
+          (v2.legacy.sideStores = v2.legacy.sideStores || {})[k] = raw;
+          try {
+            var st = JSON.parse(raw);
+            if (k.indexOf("fo_cx_") === 0 && st && st.conq) {
+              st.conq.forEach(function (rid) {
+                v2.history.trophies.push({ kind: "circuit", region: rid, note: "Circuit region conquered (pre-career)" });
+              });
+              if (st.flags && st.flags.valeSigned) v2.flags.valeSigned = 1;
+            }
+            if (k.indexOf("fo_story_") === 0 && st && st.log) {
+              st.log.slice(0, 40).forEach(function (l) {
+                if (l && l.txt) v2.history.milestones.push({ kind: "club-story", note: l.txt });
+              });
+            }
+          } catch (eP) {}
+        }
+      }
+    } catch (e) {}
+    return v2;
+  }
+
+  function load(scope) {
+    var ls = store(); if (!ls) return null;
+    var txt = null;
+    try { txt = ls.getItem(key(scope)); } catch (e) {}
+    if (!txt) return null;
+    try {
+      var raw = JSON.parse(txt);
+      if (raw && raw.version === VERSION) return raw;
+      if (raw && raw.version > VERSION) return raw;   // forward saves load untouched
+      return raw;   // future: chain v2→v3 here
+    } catch (e2) {
+      try { ls.setItem(key(scope) + "_backup_" + U.hash32(txt).toString(36), txt); } catch (e3) {}
+      return null;
+    }
+  }
+
+  // create (or migrate into) a career for this scope; never erases v1 stores
+  function begin(scope, worldSeed) {
+    var ls = store();
+    var existing = load(scope);
+    if (existing) return existing;
+    var v1 = null;
+    try { v1 = FOC.save.load(scope); if (v1 && !v1.flags.founded && !(v1.events || []).length) v1 = null; } catch (e) {}
+    var v2 = migrateFromV1(scope, v1, worldSeed);
+    if (ls) consolidateSideStores(v2, ls);
+    persist(v2);
+    return v2;
+  }
+
+  function persist(v2) {
+    var ls = store(); if (!ls) return false;
+    try { ls.setItem(key(v2.scope), JSON.stringify(v2)); return true; } catch (e) { return false; }
+  }
+
+  function reset(scope) {
+    var ls = store(); if (!ls) return;
+    try {
+      var old = ls.getItem(key(scope));
+      if (old) ls.setItem(key(scope) + "_archived_" + U.hash32(old).toString(36), old);
+      ls.removeItem(key(scope));
+    } catch (e) {}
+  }
+
+  function exportCareer(v2) { return JSON.stringify(v2); }
+  function importCareer(scope, txt) {
+    var raw = JSON.parse(txt);   // throws on bad input — caller reports
+    if (!raw || typeof raw.version !== "number" || !raw.worldSeed) throw new Error("Not a career file.");
+    raw.scope = scope;
+    persist(raw);
+    return raw;
+  }
+
+  return { VERSION: VERSION, key: key, fresh: fresh, load: load, begin: begin,
+    persist: persist, reset: reset, migrateFromV1: migrateFromV1,
+    consolidateSideStores: consolidateSideStores,
+    exportCareer: exportCareer, importCareer: importCareer };
 })();
 
 /* ---- legacy/adapter.js ---- */
@@ -24861,6 +25148,945 @@ FOC.adapter = (function () {
     applyOrders: applyOrders, buildOpponent: buildOpponent, startMatch: startMatch,
     extractFacts: extractFacts, recordMatch: recordMatch, startKeeper: startKeeper,
     isPartTimer: isPartTimer };
+})();
+
+/* ---- world/model.js ---- */
+/* world/model — entity constructors and id minting for the persistent world.
+ * Pure data helpers: no HTML, no engine globals. Identity is an opaque
+ * minted id (prefix + sequence), generated exactly once and never derived
+ * from a name — names are editable display data.
+ */
+FOC.model = (function () {
+  function mint(v2, prefix) {
+    v2.idSeq = (v2.idSeq || 0) + 1;
+    return prefix + "_" + v2.idSeq.toString(36);
+  }
+
+  function club(v2, cfg) {
+    return {
+      id: mint(v2, "c"), key: cfg.key, name: cfg.name, city: cfg.city,
+      ground: cfg.ground, pitch: cfg.pitch, arch: cfg.arch,
+      reputation: cfg.rep, isUser: !!cfg.isUser,
+      managerId: null, rosterIds: [], captainId: null,
+      finances: { bank: cfg.bank != null ? cfg.bank : 250000, wageBill: 0 },
+      tendency: cfg.tendency || "balanced",   // balanced | attacking | defensive
+      form: [],                                // last results, oldest→newest: W/L/T
+      founded: cfg.founded || null,            // season number if newly founded
+      compHistory: [], goals: cfg.goals || null
+    };
+  }
+
+  function manager(v2, cfg) {
+    return {
+      id: mint(v2, "m"), name: cfg.name, clubId: null, region: cfg.region || "england",
+      persona: cfg.persona || "",
+      traits: cfg.traits,   // ambition loyalty risk prudence youthBias patience adaptability media sellWill rivalry jobSecurity (0-100)
+      mood: 55, seasonsAtClub: 0,
+      history: [],          // {season, clubId, note}
+      memory: []            // {kind, aboutId, note} — transfers, disputes
+    };
+  }
+
+  function playerFromEngine(v2, p, clubId) {
+    // wraps a full engine-compatible player object with immutable identity
+    return {
+      id: mint(v2, "p"), name: p.name, age: p.age, clubId: clubId,
+      contract: null,       // {years, wage}
+      injuryWeeks: 0,
+      caps: 0, runs: 0, wickets: 0, dismissals: 0,   // career stats, never reset by transfer
+      engine: p             // the real skills object the match engine plays with
+    };
+  }
+
+  function fixture(v2, wk, comp, round, homeId, awayId) {
+    return { id: mint(v2, "f"), week: wk, comp: comp, round: round,
+      homeId: homeId, awayId: awayId, status: "scheduled",
+      weather: null, result: null };
+  }
+
+  function transferRecord(v2, o) {
+    // a material departure: everything needed to remember it honestly
+    return Object.assign({ id: mint(v2, "tr") }, o);
+  }
+
+  return { mint: mint, club: club, manager: manager, playerFromEngine: playerFromEngine,
+    fixture: fixture, transferRecord: transferRecord };
+})();
+
+/* ---- world/generator.js ---- */
+/* world/generator — builds the persistent England world from the career seed.
+ *
+ * Ten clubs (nine NPC + the player's), each with a named manager, a full
+ * engine-compatible roster, finances and tendencies; a nine-round league;
+ * the Founders Cup play-in draw (persisted — reloading never rerolls it);
+ * and the wider cast of international managers who exist in the world long
+ * before the player ever meets them.
+ */
+FOC.worldgen = (function () {
+  var MDL = FOC.model, RNG = FOC.rng;
+
+  var CLUBS = [
+    { key: "willowmere", name: "Willowmere CC", city: "Willowmere", ground: "The Meadow", pitch: "green", arch: "blade", rep: 38, mult: 0.86,
+      mgr: { name: "Ted Marsh", persona: "thirty years at one club; charming in print, immovable in selection",
+        traits: { ambition: 30, loyalty: 90, risk: 25, prudence: 75, youthBias: 45, patience: 85, adaptability: 35, media: 75, sellWill: 20, rivalry: 40, jobSecurity: 85 } } },
+    { key: "ironbridge", name: "Ironbridge CC", city: "Ironbridge", ground: "Foundry Field", pitch: "flat", arch: "express", rep: 45, mult: 0.92,
+      mgr: { name: "Frank Ostler", persona: "attacks with the bat, the ball and the budget; apologises to none of them",
+        traits: { ambition: 80, loyalty: 40, risk: 85, prudence: 20, youthBias: 35, patience: 30, adaptability: 55, media: 60, sellWill: 55, rivalry: 70, jobSecurity: 45 } } },
+    { key: "moorland", name: "Moorland CC", city: "High Moor", ground: "High Tor", pitch: "green", arch: "rock", rep: 42, mult: 0.9,
+      mgr: { name: "Gwen Sorley", persona: "plays kids nobody else would and demands standards nobody else could",
+        traits: { ambition: 55, loyalty: 70, risk: 45, prudence: 60, youthBias: 90, patience: 60, adaptability: 50, media: 30, sellWill: 45, rivalry: 35, jobSecurity: 60 } } },
+    { key: "fenholt", name: "Fenholt Athletic", city: "Fenholt", ground: "Brick Lane End", pitch: "dry", arch: "finisher", rep: 40, mult: 0.9, founded: 1,
+      mgr: { name: "Priya Raman", persona: "refounded Fenholt the same spring you arrived; keeps a photograph of an empty trophy cabinet as motivation", peer: true,
+        traits: { ambition: 85, loyalty: 60, risk: 60, prudence: 65, youthBias: 65, patience: 50, adaptability: 70, media: 55, sellWill: 35, rivalry: 55, jobSecurity: 50 } } },
+    { key: "bellminster", name: "Bellminster CC", city: "Bellminster", ground: "Cathedral Green", pitch: "dusty", arch: "wizard", rep: 55, mult: 1.0,
+      mgr: { name: "Alan Whitgift", persona: "reads every scorebook in the league and quotes yours back at you",
+        traits: { ambition: 60, loyalty: 55, risk: 35, prudence: 70, youthBias: 40, patience: 40, adaptability: 80, media: 45, sellWill: 40, rivalry: 50, jobSecurity: 65 } } },
+    { key: "blackstone", name: "Blackstone Ramblers", city: "Blackstone", ground: "The Quarry", pitch: "flat", arch: "express", rep: 65, mult: 1.06,
+      mgr: { name: "Vic Crane", persona: "semi-pro money, pro expectations; sells anyone at the right price except his opening bowlers",
+        traits: { ambition: 75, loyalty: 30, risk: 60, prudence: 45, youthBias: 20, patience: 35, adaptability: 60, media: 65, sellWill: 80, rivalry: 65, jobSecurity: 40 } } },
+    { key: "kestrel", name: "Kestrel Park CC", city: "Kestrel Park", ground: "The Aviary", pitch: "green", arch: "gloveman", rep: 52, mult: 0.98,
+      mgr: { name: "Sam Iredale", persona: "believes a fielding side is a moral position; warm until the team sheet goes up",
+        traits: { ambition: 45, loyalty: 75, risk: 30, prudence: 80, youthBias: 55, patience: 70, adaptability: 45, media: 40, sellWill: 30, rivalry: 30, jobSecurity: 70 } } },
+    { key: "harrowgate", name: "Harrowgate CC", city: "Harrowgate", ground: "Spa Ground", pitch: "dusty", arch: "wizard", rep: 58, mult: 1.02,
+      mgr: { name: "Nerys Fell", persona: "two spinners minimum, three when nervous; runs the tightest budget in the league",
+        traits: { ambition: 55, loyalty: 65, risk: 40, prudence: 90, youthBias: 50, patience: 65, adaptability: 55, media: 35, sellWill: 45, rivalry: 45, jobSecurity: 75 } } },
+    { key: "crown", name: "Crown Ground XI", city: "The Crown Ground", ground: "The Crown Ground", pitch: "flat", arch: "rock", rep: 80, mult: 1.14,
+      mgr: { name: "Reggie Thorne", persona: "the institution; protects the club from everything, occasionally including its own players",
+        traits: { ambition: 90, loyalty: 50, risk: 40, prudence: 60, youthBias: 25, patience: 55, adaptability: 65, media: 85, sellWill: 25, rivalry: 85, jobSecurity: 55 } } }
+  ];
+
+  // international figures — they exist now, tour later; contradictions, not stereotypes
+  var WORLD_MANAGERS = [
+    { name: "Desmond Clarke", region: "west-indies", persona: "captain-manager who preaches expression and then hands you a forty-page plan" },
+    { name: "Thandi Mokoena", region: "southern-africa", persona: "builds academies like fortresses; nurturing in the corridor, merciless at the selection table" },
+    { name: "Arjun Mehta", region: "subcontinent", persona: "the sharpest tactical mind in club cricket, employed by owners who want tomorrow's result yesterday" },
+    { name: "Merv Callahan", region: "australia", persona: "serial winner who will fight anyone on your behalf, including you" },
+    { name: "Kiri Waititi", region: "new-zealand", persona: "remembers every volunteer's name and drops his best mate without blinking" }
+  ];
+
+  function jitter(v2, base, amt, tag) { return Math.round(base + RNG.range(v2.rng, "worldgen", -amt, amt, tag)); }
+
+  function buildRoster(v2, club, mult, io) {
+    var gen = io.squadGen("world|" + v2.worldSeed + "|" + club.key, "England", club.arch, "talisman");
+    (gen.players || []).forEach(function (p0) {
+      var p = JSON.parse(JSON.stringify(p0)); delete p.fee;
+      for (var k in (p.skills || {})) {
+        if (typeof p.skills[k] === "number") {
+          var m = mult * (1 + RNG.range(v2.rng, "worldgen", -0.04, 0.04));
+          p.skills[k] = Math.max(4, Math.min(96, Math.round(p.skills[k] * m)));
+        }
+      }
+      p.fatigue = "rested"; p.formIx = 3;
+      try { io.derive(p); } catch (e) {}
+      var wp = MDL.playerFromEngine(v2, p, club.id);
+      wp.contract = { years: 1 + RNG.int(v2.rng, "worldgen", 3), wage: 400 + RNG.int(v2.rng, "worldgen", 900) };
+      v2.world.playersById[wp.id] = wp;
+      club.rosterIds.push(wp.id);
+      club.finances.wageBill += wp.contract.wage;
+    });
+    // captain: best leadership marks in the generated squad
+    var best = null;
+    club.rosterIds.forEach(function (pid) {
+      var wp = v2.world.playersById[pid];
+      if (!best || (wp.engine.capt || 0) > (v2.world.playersById[best].engine.capt || 0)) best = pid;
+    });
+    club.captainId = best;
+  }
+
+  // circle-method round robin for 10 teams; user at slot 0, willowmere at
+  // slot 9 so the career's first competitive fixture is Willowmere away
+  function leagueFixtures(v2, clubIds) {
+    var n = clubIds.length, rounds = n - 1;
+    var arr = clubIds.slice(1);           // rotate all but clubIds[0]
+    var weeksByRound = {};
+    FOC.calendar.WEEKS.forEach(function (wk) { if (wk.kind === "league") weeksByRound[wk.round] = wk.w; });
+    for (var r = 0; r < rounds; r++) {
+      var wk = weeksByRound[r + 1];
+      var pairs = [[clubIds[0], arr[arr.length - 1]]];
+      for (var i = 0; i < (n / 2) - 1; i++) pairs.push([arr[i], arr[arr.length - 2 - i]]);
+      pairs.forEach(function (pr, pi) {
+        var home = (r + pi) % 2 === 0 ? pr[0] : pr[1];
+        var away = home === pr[0] ? pr[1] : pr[0];
+        var f = MDL.fixture(v2, wk, "league", r + 1, home, away);
+        v2.world.fixturesById[f.id] = f;
+      });
+      arr.unshift(arr.pop());
+    }
+  }
+
+  function generate(v2, io) {
+    var W = v2.world;
+    var userClub = null;
+    CLUBS.forEach(function (cfg) {
+      var c = MDL.club(v2, Object.assign({}, cfg, { bank: 150000 + cfg.rep * 3000 }));
+      c.reputation = jitter(v2, cfg.rep, 4, "club-rep");
+      W.clubsById[c.id] = c;
+      var m = MDL.manager(v2, cfg.mgr);
+      m.clubId = c.id; c.managerId = m.id;
+      if (cfg.mgr.peer) { m.isPeer = true; v2.world.peerManagerId = m.id; }
+      if (cfg.key === "crown") v2.world.thorneManagerId = m.id;
+      W.managersById[m.id] = m;
+      buildRoster(v2, c, cfg.mult, io);
+    });
+    // the player's club: real engine roster, referenced not duplicated
+    var uc = MDL.club(v2, { key: "user", name: io.userClubName, city: "Home", ground: io.userGround,
+      pitch: io.userPitch || "balanced", arch: "user", rep: 35, isUser: true, founded: 1,
+      goals: { league: 6, note: "Finish 6th or higher and stay solvent — provisional status depends on it." } });
+    uc.rosterRef = "engine";
+    W.clubsById[uc.id] = uc;
+    v2.user.clubId = uc.id;
+    var um = MDL.manager(v2, { name: io.userManagerName || "You", persona: "the new arrival",
+      traits: { ambition: 50, loyalty: 50, risk: 50, prudence: 50, youthBias: 50, patience: 50, adaptability: 50, media: 50, sellWill: 50, rivalry: 50, jobSecurity: 50 } });
+    um.clubId = uc.id; uc.managerId = um.id; um.isUser = true;
+    W.managersById[um.id] = um;
+    v2.user.managerId = um.id;
+
+    WORLD_MANAGERS.forEach(function (wm) {
+      var m2 = MDL.manager(v2, { name: wm.name, persona: wm.persona, region: wm.region,
+        traits: { ambition: 60, loyalty: 60, risk: 50, prudence: 60, youthBias: 50, patience: 55, adaptability: 60, media: 50, sellWill: 40, rivalry: 50, jobSecurity: 60 } });
+      W.managersById[m2.id] = m2;   // no England club — they exist beyond this league
+    });
+
+    // league: user at slot 0, willowmere last so they meet in round 1
+    var ids = Object.keys(W.clubsById);
+    var wm9 = ids.filter(function (id) { return W.clubsById[id].key === "willowmere"; })[0];
+    var ordered = [uc.id].concat(ids.filter(function (id) { return id !== uc.id && id !== wm9; })).concat([wm9]);
+    leagueFixtures(v2, ordered);
+
+    // Founders Cup play-in draw: four lowest-reputation clubs, drawn and PERSISTED
+    var byRep = ids.slice().sort(function (a, b) { return W.clubsById[a].reputation - W.clubsById[b].reputation; });
+    var playin = RNG.shuffle(v2.rng, "cupdraw", byRep.slice(0, 4), "founders-playin");
+    v2.world.competitionsById.founders = {
+      id: "comp_founders", name: "Founders Cup", stage: "playin",
+      playin: [[playin[0], playin[1]], [playin[2], playin[3]]],
+      alive: ids.slice(), bracket: {}, out: [], winner: null
+    };
+    var wkPlayin = 3;
+    v2.world.competitionsById.founders.playin.forEach(function (pr) {
+      var f = MDL.fixture(v2, wkPlayin, "founders", 1, pr[0], pr[1]);
+      v2.world.fixturesById[f.id] = f;
+    });
+    v2.world.competitionsById.crown = {
+      id: "comp_crown", name: "Crown Cup", stage: "pending",
+      note: "Entry: top four of the league after Round 9.", entrants: [], bracket: {}, winner: null
+    };
+    return v2;
+  }
+
+  return { generate: generate, CLUBS: CLUBS, WORLD_MANAGERS: WORLD_MANAGERS };
+})();
+
+/* ---- world/competitions.js ---- */
+/* world/competitions — league table, NRR, and knockout-cup rules.
+ * Pure functions over the v2 save. No UI, no engine. Cup defeats are
+ * permanent for the edition; draws are made once, stored, and never
+ * rerolled by a reload.
+ */
+FOC.competitions = (function () {
+  var MDL = FOC.model, RNG = FOC.rng;
+
+  function fixtures(v2, filter) {
+    var out = [];
+    for (var id in v2.world.fixturesById) {
+      var f = v2.world.fixturesById[id];
+      if (!filter || filter(f)) out.push(f);
+    }
+    return out;
+  }
+
+  // standard NRR: an all-out innings counts the full 50 overs
+  function oversFor(inn) {
+    return (inn.wkts >= 10) ? 50 : Math.max(1e-6, (inn.balls || 0) / 6);
+  }
+
+  function table(v2) {
+    var T = {};
+    for (var cid in v2.world.clubsById) {
+      T[cid] = { clubId: cid, p: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, of: 0, ra: 0, oa: 0 };
+    }
+    fixtures(v2, function (f) { return f.comp === "league" && f.status === "played" && f.result; })
+      .forEach(function (f) {
+        var r = f.result, h = T[f.homeId], a = T[f.awayId];
+        if (!h || !a) return;
+        h.p++; a.p++;
+        if (!r.winnerId) { h.t++; a.t++; h.pts++; a.pts++; }
+        else if (r.winnerId === f.homeId) { h.w++; a.l++; h.pts += 2; }
+        else { a.w++; h.l++; a.pts += 2; }
+        h.rf += r.home.runs; h.of += oversFor(r.home); h.ra += r.away.runs; h.oa += oversFor(r.away);
+        a.rf += r.away.runs; a.of += oversFor(r.away); a.ra += r.home.runs; a.oa += oversFor(r.home);
+      });
+    var rows = Object.keys(T).map(function (cid) {
+      var x = T[cid];
+      x.nrr = (x.of && x.oa) ? (x.rf / x.of - x.ra / x.oa) : 0;
+      return x;
+    });
+    rows.sort(function (a, b) { return b.pts - a.pts || b.nrr - a.nrr; });
+    return rows;
+  }
+
+  function position(v2, clubId) {
+    var rows = table(v2);
+    for (var i = 0; i < rows.length; i++) if (rows[i].clubId === clubId) return i + 1;
+    return rows.length;
+  }
+
+  // ---- Founders Cup progression ---------------------------------------------
+  function foundersAdvance(v2) {
+    var cup = v2.world.competitionsById.founders;
+    if (!cup || cup.winner) return;
+    var stageFx = fixtures(v2, function (f) { return f.comp === "founders"; });
+    var unplayed = stageFx.filter(function (f) { return f.status !== "played"; });
+    if (unplayed.length) return;   // current stage not finished
+    var winners = [], losers = [];
+    var maxRound = 0;
+    stageFx.forEach(function (f) { if (f.round > maxRound) maxRound = f.round; });
+    stageFx.filter(function (f) { return f.round === maxRound; }).forEach(function (f) {
+      var w = f.result.winnerId || f.homeId;   // a tied cup tie goes to the home side (documented rule)
+      winners.push(w);
+      var l = w === f.homeId ? f.awayId : f.homeId;
+      losers.push(l);
+      if (cup.out.indexOf(l) < 0) cup.out.push(l);
+      cup.alive = cup.alive.filter(function (id) { return id !== l; });
+    });
+    if (cup.stage === "playin") {
+      // QF: the six exempt clubs + two play-in winners, drawn ONCE and stored
+      var exempt = cup.alive.filter(function (id) {
+        return !cup.playin.some(function (pr) { return pr[0] === id || pr[1] === id; });
+      });
+      var pool = RNG.shuffle(v2.rng, "cupdraw", exempt.concat(winners), "founders-qf-draw");
+      cup.bracket.qf = [];
+      for (var i = 0; i < 8; i += 2) cup.bracket.qf.push([pool[i], pool[i + 1]]);
+      cup.bracket.qf.forEach(function (pr) {
+        var f = MDL.fixture(v2, 6, "founders", 2, pr[0], pr[1]);
+        v2.world.fixturesById[f.id] = f;
+      });
+      cup.stage = "qf";
+    } else if (cup.stage === "qf") {
+      var pool2 = RNG.shuffle(v2.rng, "cupdraw", winners, "founders-sf-draw");
+      cup.bracket.sf = [[pool2[0], pool2[1]], [pool2[2], pool2[3]]];
+      cup.bracket.sf.forEach(function (pr) {
+        var f = MDL.fixture(v2, 9, "founders", 3, pr[0], pr[1]);
+        v2.world.fixturesById[f.id] = f;
+      });
+      cup.stage = "sf";
+    } else if (cup.stage === "sf") {
+      cup.bracket.final = [winners[0], winners[1]];
+      var f2 = MDL.fixture(v2, 12, "founders", 4, winners[0], winners[1]);
+      f2.neutral = true;   // neutral final, bigger occasion
+      v2.world.fixturesById[f2.id] = f2;
+      cup.stage = "final";
+    } else if (cup.stage === "final") {
+      cup.winner = winners[0];
+      cup.stage = "done";
+    }
+  }
+
+  // ---- Crown Cup: entry is EARNED — top four of the league after round 9 ----
+  function crownSeed(v2) {
+    var cup = v2.world.competitionsById.crown;
+    if (!cup || cup.stage !== "pending") return;
+    var leagueLeft = fixtures(v2, function (f) { return f.comp === "league" && f.status !== "played"; });
+    if (leagueLeft.length) return;   // league not finished yet
+    var top4 = table(v2).slice(0, 4).map(function (r) { return r.clubId; });
+    cup.entrants = top4;
+    cup.bracket.sf = [[top4[0], top4[3]], [top4[1], top4[2]]];
+    cup.bracket.sf.forEach(function (pr) {
+      var f = MDL.fixture(v2, 14, "crown", 1, pr[0], pr[1]);
+      v2.world.fixturesById[f.id] = f;
+    });
+    cup.stage = "sf";
+  }
+  function crownAdvance(v2) {
+    var cup = v2.world.competitionsById.crown;
+    if (!cup || cup.winner || cup.stage === "pending") return;
+    var fx = fixtures(v2, function (f) { return f.comp === "crown"; });
+    if (fx.some(function (f) { return f.status !== "played"; })) return;
+    var maxRound = 0;
+    fx.forEach(function (f) { if (f.round > maxRound) maxRound = f.round; });
+    var winners = fx.filter(function (f) { return f.round === maxRound; })
+      .map(function (f) { return f.result.winnerId || f.homeId; });
+    if (cup.stage === "sf" && winners.length === 2) {
+      cup.bracket.final = winners;
+      var f2 = MDL.fixture(v2, 15, "crown", 2, winners[0], winners[1]);
+      f2.neutral = true;
+      v2.world.fixturesById[f2.id] = f2;
+      cup.stage = "final";
+    } else if (cup.stage === "final") {
+      cup.winner = winners[0];
+      cup.stage = "done";
+    }
+  }
+
+  function weekFixtures(v2, w) {
+    return fixtures(v2, function (f) { return f.week === w; });
+  }
+  function userFixture(v2, w) {
+    var uc = v2.user.clubId;
+    return weekFixtures(v2, w).filter(function (f) { return f.homeId === uc || f.awayId === uc; })[0] || null;
+  }
+
+  return { fixtures: fixtures, table: table, position: position, oversFor: oversFor,
+    foundersAdvance: foundersAdvance, crownSeed: crownSeed, crownAdvance: crownAdvance,
+    weekFixtures: weekFixtures, userFixture: userFixture };
+})();
+
+/* ---- world/managers.js ---- */
+/* world/managers — NPC manager decisions: a transparent utility model plus
+ * bounded seeded variation. Traits are tendencies, not scripts; decisions
+ * record their reasons for debugging. Managers never touch match results —
+ * they pick, plan, trade, react and remember.
+ */
+FOC.npc = (function () {
+  var RNG = FOC.rng;
+
+  function club(v2, id) { return v2.world.clubsById[id]; }
+  function mgr(v2, id) { return v2.world.managersById[id]; }
+  function roster(v2, c) { return c.rosterIds.map(function (pid) { return v2.world.playersById[pid]; }); }
+
+  function recentForm(c, n) { return (c.form || []).slice(-(n || 5)); }
+  function lossStreak(c) {
+    var s = 0, f = c.form || [];
+    for (var i = f.length - 1; i >= 0 && f[i] === "L"; i--) s++;
+    return s;
+  }
+
+  function decide(v2, m, log) {
+    var c = club(v2, m.clubId); if (!c || c.isUser) return;
+    var t = m.traits;
+    // --- tactic shift after repeated failure: adaptable managers move sooner
+    var streak = lossStreak(c);
+    var shiftAt = t.adaptability >= 60 ? 2 : (t.patience >= 70 ? 4 : 3);
+    if (streak >= shiftAt && RNG.chance(v2.rng, "managers", 0.5 + t.adaptability / 250, "tactic-shift?")) {
+      var was = c.tendency;
+      c.tendency = c.tendency === "balanced" ? (t.risk >= 55 ? "attacking" : "defensive")
+        : (c.tendency === "attacking" ? "defensive" : "attacking");
+      m.mood = Math.max(20, m.mood - 5);
+      log("tactics", m.name + " tears up the plan after " + streak + " straight defeats: " + was + " → " + c.tendency + ".",
+        { managerId: m.id, clubId: c.id, from: was, to: c.tendency, why: "loss streak " + streak });
+    }
+    // --- captain change: impatient managers act on sustained failure
+    if (streak >= (t.patience >= 60 ? 5 : 3) && c.rosterIds.length > 2 &&
+        RNG.chance(v2.rng, "managers", 0.35 + (100 - t.patience) / 400, "captain-change?")) {
+      var cur = c.captainId;
+      var cand = null;
+      roster(v2, c).forEach(function (p) {
+        if (p.id !== cur && (!cand || (p.engine.capt || 0) > (cand.engine.capt || 0))) cand = p;
+      });
+      if (cand) {
+        c.captainId = cand.id;
+        m.memory.push({ kind: "captain-change", aboutId: cur, note: "removed the armband during the " + streak + "-loss run" });
+        log("captain", c.name + " hand the captaincy to " + cand.name + ".",
+          { managerId: m.id, clubId: c.id, from: cur, to: cand.id, why: "form" });
+      }
+    }
+    // --- mood and job security track results
+    var f5 = recentForm(c, 5);
+    var wins = f5.filter(function (x) { return x === "W"; }).length;
+    m.mood = Math.max(10, Math.min(95, m.mood + (wins >= 3 ? 3 : wins <= 1 && f5.length >= 4 ? -4 : 0)));
+    if (f5.length >= 5 && wins <= 1) t.jobSecurity = Math.max(5, t.jobSecurity - 4);
+    if (wins >= 4) t.jobSecurity = Math.min(95, t.jobSecurity + 3);
+  }
+
+  // end of season: boards judge managers on position vs reputation-derived hopes
+  function boardReview(v2, m, pos, nClubs, log) {
+    var c = club(v2, m.clubId); if (!c || c.isUser) return null;
+    var expected = Math.max(1, Math.round(nClubs * (1 - c.reputation / 100)));
+    var verdict = pos <= expected ? "safe" : (pos - expected >= 3 ? "dismissed" : "warned");
+    if (verdict === "dismissed" && m.traits.jobSecurity > 65) verdict = "warned";   // credit in the bank
+    if (verdict === "dismissed") {
+      m.history.push({ season: v2.seasonNumber, clubId: c.id, note: "dismissed — finished " + pos + " (expected " + expected + ")" });
+      m.clubId = null; c.managerId = null;
+      log("dismissal", m.name + " leaves " + c.name + " — " + pos + "th was not the board's idea of a season.",
+        { managerId: m.id, clubId: c.id, pos: pos, expected: expected });
+    }
+    return verdict;
+  }
+
+  return { decide: decide, boardReview: boardReview, lossStreak: lossStreak };
+})();
+
+/* ---- world/transfers.js ---- */
+/* world/transfers — players move for reasons: money, opportunity, ambition.
+ * Every material departure is recorded in full (history.departures) and the
+ * player keeps their immutable id and career statistics wherever they go.
+ * A former player is never deleted — they are simply somewhere else now.
+ */
+FOC.transfers = (function () {
+  var RNG = FOC.rng, MDL = FOC.model;
+
+  function valuation(p) {
+    var e = p.engine || {};
+    var skill = (e.bat || 40) + ((e.threat || 0) + (e.control || 0)) / 2;
+    var ageF = p.age <= 23 ? 1.5 : (p.age <= 28 ? 1.2 : (p.age <= 32 ? 0.8 : 0.45));
+    return Math.round(skill * ageF * 400);
+  }
+
+  function weakestRole(v2, c) {
+    var bats = 0, bowls = 0;
+    c.rosterIds.forEach(function (pid) {
+      var p = v2.world.playersById[pid];
+      if (p.engine.bowlType) bowls++; else bats++;
+    });
+    return bowls < 6 ? "bowler" : "batter";
+  }
+
+  function bestSellable(v2, seller, role) {
+    var best = null;
+    seller.rosterIds.forEach(function (pid) {
+      var p = v2.world.playersById[pid];
+      var isBowler = !!p.engine.bowlType;
+      if ((role === "bowler") !== isBowler) return;
+      if (seller.captainId === pid) return;              // captains don't go quietly
+      if (!best || valuation(p) > valuation(best)) best = p;
+    });
+    return best;
+  }
+
+  function execute(v2, p, fromClub, toClub, fee, why, log) {
+    // full departure record — the club remembers even when the fans forget
+    var dep = MDL.transferRecord(v2, {
+      playerId: p.id, playerName: p.name, fromId: fromClub.id, fromName: fromClub.name,
+      toId: toClub.id, toName: toClub.name, season: v2.seasonNumber, week: v2.week,
+      fee: fee, contract: p.contract ? { years: p.contract.years, wage: p.contract.wage } : null,
+      caps: p.caps, runs: p.runs, wickets: p.wickets, why: why,
+      role: p.engine.bowlType ? "bowler" : (p.engine.keeper ? "keeper" : "batter")
+    });
+    v2.world.transfers.push(dep);
+    v2.history.departures.push(dep);
+    fromClub.rosterIds = fromClub.rosterIds.filter(function (id) { return id !== p.id; });
+    toClub.rosterIds.push(p.id);
+    p.clubId = toClub.id;
+    p.contract = { years: 1 + RNG.int(v2.rng, "transfers", 3), wage: (p.contract ? p.contract.wage : 600) + 150 };
+    fromClub.finances.bank += fee; toClub.finances.bank -= fee;
+    fromClub.finances.wageBill = Math.max(0, fromClub.finances.wageBill - (dep.contract ? dep.contract.wage : 0));
+    toClub.finances.wageBill += p.contract.wage;
+    if (fromClub.captainId === p.id) fromClub.captainId = fromClub.rosterIds[0] || null;
+    log("transfer", p.name + " leaves " + fromClub.name + " for " + toClub.name + " (" + Math.round(fee / 1000) + "k). " + why,
+      { transferId: dep.id, playerId: p.id, fromId: fromClub.id, toId: toClub.id, fee: fee });
+    return dep;
+  }
+
+  // weekly NPC↔NPC market: rich ambitious clubs shop; willing sellers sell
+  function weeklyMarket(v2, log) {
+    if (v2.week % 3 !== 0) return;   // windows: every third week, not a bazaar
+    var ids = Object.keys(v2.world.clubsById);
+    var buyers = ids.filter(function (cid) {
+      var c = v2.world.clubsById[cid], m = c.managerId && v2.world.managersById[c.managerId];
+      return c && !c.isUser && m && c.finances.bank > 220000 && m.traits.ambition >= 55;
+    });
+    buyers.forEach(function (cid) {
+      var c = v2.world.clubsById[cid], m = v2.world.managersById[c.managerId];
+      if (!RNG.chance(v2.rng, "transfers", 0.28 + m.traits.risk / 400, "npc-bid?")) return;
+      var role = weakestRole(v2, c);
+      var sellers = ids.filter(function (sid) {
+        if (sid === cid) return false;
+        var sc = v2.world.clubsById[sid], sm = sc.managerId && v2.world.managersById[sc.managerId];
+        return sc && !sc.isUser && sm && (sm.traits.sellWill >= 55 || sc.finances.bank < 90000);
+      });
+      if (!sellers.length) return;
+      var sc2 = v2.world.clubsById[RNG.pick(v2.rng, "transfers", sellers, "npc-seller")];
+      var p = bestSellable(v2, sc2, role);
+      if (!p) return;
+      var fee = Math.round(valuation(p) * RNG.range(v2.rng, "transfers", 0.9, 1.25, "npc-fee"));
+      if (fee > c.finances.bank * 0.5) return;   // prudence beats appetite
+      var sm2 = v2.world.managersById[sc2.managerId];
+      execute(v2, p, sc2, c, fee, m.name + " wanted a " + role + "; " + sm2.name + " wanted the money.", log);
+      sm2.memory.push({ kind: "sold", aboutId: p.id, note: "sold to " + c.name + " for " + Math.round(fee / 1000) + "k" });
+      m.memory.push({ kind: "bought", aboutId: p.id, note: "signed from " + sc2.name });
+    });
+  }
+
+  // occasionally an NPC club bids for a USER player — an offer, never a raid
+  function maybeUserOffer(v2, userPlayers, log) {
+    if (v2.week % 4 !== 0) return null;
+    if (!RNG.chance(v2.rng, "transfers", 0.35, "user-offer?")) return null;
+    var ids = Object.keys(v2.world.clubsById).filter(function (cid) {
+      var c = v2.world.clubsById[cid];
+      return c && !c.isUser && c.finances.bank > 260000;
+    });
+    if (!ids.length || !userPlayers.length) return null;
+    var buyer = v2.world.clubsById[RNG.pick(v2.rng, "transfers", ids, "user-offer-club")];
+    // they bid for form, not for your favourite: highest recent aggregate
+    var target = userPlayers[RNG.int(v2.rng, "transfers", Math.min(5, userPlayers.length), "user-offer-target")];
+    var fee = Math.round((40 + (target.bat || 40)) * 450 * RNG.range(v2.rng, "transfers", 0.9, 1.3));
+    return { buyerId: buyer.id, buyerName: buyer.name, playerName: target.name, fee: fee };
+  }
+
+  return { valuation: valuation, execute: execute, weeklyMarket: weeklyMarket,
+    maybeUserOffer: maybeUserOffer, weakestRole: weakestRole, bestSellable: bestSellable };
+})();
+
+/* ---- world/simulator.js ---- */
+/* world/simulator — the weekly tick that keeps the world moving whether or
+ * not the player is watching. NPC fixtures are played through the REAL
+ * match engine via an injected runner (never a loose score formula);
+ * managers decide, players get hurt and develop, money moves, cups advance.
+ *
+ * The one thing the simulator never does is play the user's fixture — that
+ * belongs to the live match centre, and its result stands forever.
+ */
+FOC.worldsim = (function () {
+  var RNG = FOC.rng, C = FOC.competitions, MDL = FOC.model;
+
+  function log(v2) {
+    return function (kind, text, data) {
+      v2.world.news.unshift({ week: v2.week, season: v2.seasonNumber, kind: kind, text: text, data: data || {} });
+      if (v2.world.news.length > 250) v2.world.news = v2.world.news.slice(0, 250);
+      v2.history.events.push({ t: "News", week: v2.week, season: v2.seasonNumber, kind: kind, text: text });
+    };
+  }
+
+  function clubTeam(v2, clubId) {
+    var c = v2.world.clubsById[clubId];
+    var ps = c.rosterIds.map(function (pid) { return v2.world.playersById[pid]; });
+    var fit = ps.filter(function (p) { return !p.injuryWeeks; });
+    if (fit.length < 11) fit = ps;                       // needs must — walking wounded play
+    return { name: c.name, ground: c.ground, homePitch: c.pitch,
+      players: fit.map(function (p) { return p.engine; }),
+      youth: [], founded: false, bank: c.finances.bank, seats: 8000, supporters: 2000,
+      mood: 3, acadY: 2, acadS: 2, __world: 1 };
+  }
+
+  function extractSide(inn) {
+    var s = { runs: inn.runs || 0, wkts: inn.wkts || 0, balls: inn.legal || 0, topNm: null, topR: -1, bbNm: null, bbW: -1, bbR: 0 };
+    (inn.bat || []).forEach(function (b) {
+      if (b && b.p && b.r > s.topR) { s.topR = b.r; s.topNm = b.p.name; }
+    });
+    Object.keys(inn.bowlers || {}).forEach(function (nm) {
+      var bw = inn.bowlers[nm]; if (!bw) return;
+      if ((bw.w || 0) > s.bbW || ((bw.w || 0) === s.bbW && (bw.r || 0) < s.bbR)) { s.bbW = bw.w || 0; s.bbR = bw.r || 0; s.bbNm = nm; }
+    });
+    return s;
+  }
+
+  // credit real statistics to persistent players by name within the two clubs
+  function creditStats(v2, f, sim) {
+    [f.homeId, f.awayId].forEach(function (cid) {
+      var c = v2.world.clubsById[cid]; if (!c || c.isUser) return;
+      var byName = {};
+      c.rosterIds.forEach(function (pid) { byName[v2.world.playersById[pid].name] = v2.world.playersById[pid]; });
+      (sim.innings || []).forEach(function (inn) {
+        if (!inn) return;
+        if (inn.batTeam === c.name) {
+          (inn.bat || []).forEach(function (b) {
+            var p = b && b.p && byName[b.p.name];
+            if (p) { p.runs += (b.r || 0); if (b.b > 0 || b.out) p.caps = p.caps; }
+          });
+        } else {
+          Object.keys(inn.bowlers || {}).forEach(function (nm) {
+            var p = byName[nm]; if (p) p.wickets += (inn.bowlers[nm].w || 0);
+          });
+        }
+      });
+      c.rosterIds.forEach(function (pid) {
+        var p = v2.world.playersById[pid];
+        // an appearance = fielded through a completed fixture for this club
+        if (!p.injuryWeeks) p.caps++;
+      });
+    });
+  }
+
+  function recordResult(v2, f, sim) {
+    var home = v2.world.clubsById[f.homeId], away = v2.world.clubsById[f.awayId];
+    var i0 = sim.innings[0], i1 = sim.innings[1];
+    var homeFirst = i0 && i0.batTeam === home.name;
+    var hs = extractSide(homeFirst ? i0 : (i1 || {}));
+    var as = extractSide(homeFirst ? (i1 || {}) : i0);
+    var winnerId = null, tie = false;
+    var wnm = sim.result && sim.result.winner;
+    if (wnm === home.name) winnerId = f.homeId;
+    else if (wnm === away.name) winnerId = f.awayId;
+    else tie = true;
+    f.status = "played";
+    f.result = { winnerId: winnerId, tie: tie, home: hs, away: as,
+      text: (sim.result && sim.result.text) || "",
+      sig: "r_" + FOC.util.hash32([f.id, hs.runs, hs.wkts, as.runs, as.wkts, wnm].join("|")).toString(36) };
+    [ [home, winnerId === f.homeId ? "W" : (tie ? "T" : "L")],
+      [away, winnerId === f.awayId ? "W" : (tie ? "T" : "L")] ].forEach(function (x) {
+      x[0].form.push(x[1]);
+      if (x[0].form.length > 12) x[0].form = x[0].form.slice(-12);
+    });
+    creditStats(v2, f, sim);
+    v2.history.events.push({ t: "MatchCompleted", week: v2.week, season: v2.seasonNumber,
+      fixtureId: f.id, comp: f.comp, sig: f.result.sig,
+      homeId: f.homeId, awayId: f.awayId, winnerId: winnerId, tie: tie,
+      score: hs.runs + "/" + hs.wkts + " v " + as.runs + "/" + as.wkts });
+    return f.result;
+  }
+
+  // the user's live match reports back through here — same shape, same rules
+  function recordUserResult(v2, f, sim) { return recordResult(v2, f, sim); }
+
+  function weeklyInjuries(v2, played, L) {
+    played.forEach(function (f) {
+      [f.homeId, f.awayId].forEach(function (cid) {
+        var c = v2.world.clubsById[cid]; if (!c || c.isUser) return;
+        if (!RNG.chance(v2.rng, "injuries", 0.09, "injury?")) return;
+        var ps = c.rosterIds.map(function (pid) { return v2.world.playersById[pid]; })
+          .filter(function (p) { return !p.injuryWeeks; });
+        if (!ps.length) return;
+        // age-weighted: old pros break; nobody is struck down for drama
+        var weights = ps.map(function (p) { return { p: p, w: p.age >= 33 ? 3 : (p.age >= 29 ? 2 : 1) }; });
+        var pick = RNG.weighted(v2.rng, "injuries", weights, "injury-who");
+        pick.p.injuryWeeks = 1 + RNG.int(v2.rng, "injuries", 3, "injury-len");
+        L("injury", pick.p.name + " (" + c.name + ") picks up a knock — out around " + pick.p.injuryWeeks + " week" + (pick.p.injuryWeeks > 1 ? "s" : "") + ".",
+          { playerId: pick.p.id, clubId: cid, weeks: pick.p.injuryWeeks });
+      });
+    });
+    // recovery ticks for everyone
+    for (var pid in v2.world.playersById) {
+      var p = v2.world.playersById[pid];
+      if (p.injuryWeeks > 0) p.injuryWeeks--;
+    }
+  }
+
+  function weeklyFinances(v2) {
+    for (var cid in v2.world.clubsById) {
+      var c = v2.world.clubsById[cid]; if (c.isUser) continue;
+      var gate = 4000 + Math.round(c.reputation * 120);
+      var homeGame = C.weekFixtures(v2, v2.week).some(function (f) { return f.homeId === cid && f.status === "played"; });
+      c.finances.bank += (homeGame ? gate * 2 : gate) - c.finances.wageBill;
+    }
+  }
+
+  function development(v2, io, L) {
+    if (v2.week !== 5 && v2.week !== 10 && v2.week !== 15) return;
+    for (var pid in v2.world.playersById) {
+      var p = v2.world.playersById[pid];
+      var e = p.engine; if (!e || !e.skills) continue;
+      var delta = 0;
+      if (p.age <= 23 && RNG.chance(v2.rng, "development", 0.4, "dev-up?")) delta = 1 + RNG.int(v2.rng, "development", 2);
+      else if (p.age >= 34 && RNG.chance(v2.rng, "development", 0.35, "dev-down?")) delta = -(1 + RNG.int(v2.rng, "development", 2));
+      if (!delta) continue;
+      for (var k in e.skills) {
+        if (typeof e.skills[k] === "number") e.skills[k] = Math.max(4, Math.min(96, e.skills[k] + delta));
+      }
+      try { io.derive(e); } catch (eD) {}
+    }
+  }
+
+  // resolve the current week: every non-user fixture through the real engine
+  function resolveWeek(v2, io) {
+    var L = log(v2);
+    var wk = FOC.calendar.week(v2.week);
+    if (!wk) return { done: true };
+    var fx = C.weekFixtures(v2, v2.week);
+    var uf = C.userFixture(v2, v2.week);
+    if (uf && uf.status !== "played") return { blocked: "user-fixture", fixture: uf };
+    var played = [];
+    fx.forEach(function (f) {
+      if (f.status === "played") { played.push(f); return; }
+      if (!f.weather) f.weather = RNG.pick(v2.rng, "weather", ["Sunny", "Overcast", "Humid", "Windy"], "wx");
+      var home = clubTeam(v2, f.homeId), away = clubTeam(v2, f.awayId);
+      var seed = FOC.util.hash32(v2.worldSeed + "|" + f.id);
+      var sim = io.matchRunner(home, away, v2.world.clubsById[f.homeId].pitch, f.weather, seed);
+      if (!sim) { L("abandoned", "Fixture " + home.name + " v " + away.name + " could not be completed — rescheduled.", { fixtureId: f.id }); return; }
+      recordResult(v2, f, sim);
+      played.push(f);
+      var r = f.result;
+      L("result", home.name + " " + r.home.runs + "/" + r.home.wkts + " v " + away.name + " " + r.away.runs + "/" + r.away.wkts +
+        (r.tie ? " — a tie." : " — " + v2.world.clubsById[r.winnerId].name + " win."), { fixtureId: f.id, sig: r.sig });
+    });
+    weeklyInjuries(v2, played, L);
+    weeklyFinances(v2);
+    development(v2, io, L);
+    for (var mid in v2.world.managersById) {
+      var m = v2.world.managersById[mid];
+      if (m.clubId && !m.isUser) FOC.npc.decide(v2, m, L);
+    }
+    FOC.transfers.weeklyMarket(v2, L);
+    C.foundersAdvance(v2);
+    C.crownSeed(v2);
+    C.crownAdvance(v2);
+    if (io.afterWeek) io.afterWeek(v2, L);
+    v2.week++;
+    if (v2.week > FOC.calendar.total()) return { seasonOver: true };
+    return { ok: true };
+  }
+
+  // season close: judgements, archive, rollover — the world keeps going
+  function seasonEnd(v2, io) {
+    var L = log(v2);
+    var rows = C.table(v2);
+    var n = rows.length;
+    rows.forEach(function (row, i) {
+      var c = v2.world.clubsById[row.clubId];
+      c.compHistory.push({ season: v2.seasonNumber, pos: i + 1, pts: row.pts });
+      if (i === 0 && !c.isUser) L("champions", c.name + " are league champions.", { clubId: c.id });
+    });
+    var founders = v2.world.competitionsById.founders;
+    var crown = v2.world.competitionsById.crown;
+    if (founders && founders.winner) {
+      v2.history.trophies.push({ kind: "founders", season: v2.seasonNumber, clubId: founders.winner,
+        note: v2.world.clubsById[founders.winner].name + " lift the Founders Cup" });
+    }
+    if (crown && crown.winner) {
+      v2.history.trophies.push({ kind: "crown", season: v2.seasonNumber, clubId: crown.winner,
+        note: v2.world.clubsById[crown.winner].name + " take the Crown Cup" });
+    }
+    for (var mid in v2.world.managersById) {
+      var m = v2.world.managersById[mid];
+      if (m.clubId && !m.isUser) FOC.npc.boardReview(v2, m, C.position(v2, m.clubId), n, L);
+    }
+    // vacant chairs get filled from the dismissed pool — careers continue
+    var vacant = Object.keys(v2.world.clubsById).filter(function (cid) {
+      var c = v2.world.clubsById[cid]; return !c.isUser && !c.managerId;
+    });
+    var free = Object.keys(v2.world.managersById).filter(function (mid2) {
+      var m2 = v2.world.managersById[mid2]; return !m2.clubId && !m2.isUser && m2.region === "england";
+    });
+    vacant.forEach(function (cid) {
+      if (!free.length) return;
+      var mid3 = free.shift();
+      v2.world.managersById[mid3].clubId = cid;
+      v2.world.clubsById[cid].managerId = mid3;
+      L("appointment", v2.world.managersById[mid3].name + " takes over at " + v2.world.clubsById[cid].name + ".", {});
+    });
+    // archive the season in full, then reset the live log
+    v2.history.seasonArchives.push({
+      season: v2.seasonNumber,
+      table: rows.map(function (r) { return { clubId: r.clubId, pts: r.pts, w: r.w, l: r.l, t: r.t, nrr: Math.round(r.nrr * 1000) / 1000 }; }),
+      founders: founders ? { winner: founders.winner, out: founders.out } : null,
+      crown: crown ? { winner: crown.winner, entrants: crown.entrants } : null,
+      events: v2.history.events, news: v2.world.news.slice(0, 120)
+    });
+    v2.history.events = [];
+    var userPos = C.position(v2, v2.user.clubId);
+    return { userPos: userPos, rows: rows, founders: founders, crown: crown };
+  }
+
+  function newSeason(v2, io) {
+    // ageing, contracts, and a fresh calendar — same world, next year
+    for (var pid in v2.world.playersById) {
+      var p = v2.world.playersById[pid];
+      p.age++;
+      if (p.contract) {
+        p.contract.years--;
+        if (p.contract.years <= 0) p.contract = { years: 1 + RNG.int(v2.rng, "transfers", 2), wage: p.contract.wage + 100 };
+      }
+      if (p.engine) p.engine.age = p.age;
+    }
+    v2.world.fixturesById = {};
+    v2.seasonNumber++; v2.week = 1;
+    var ids = Object.keys(v2.world.clubsById);
+    var uc = v2.user.clubId;
+    var others = RNG.shuffle(v2.rng, "worldgen", ids.filter(function (id) { return id !== uc; }), "s" + v2.seasonNumber + "-order");
+    // reuse the generator's league builder shape: user slot 0
+    var ordered = [uc].concat(others);
+    var weeksByRound = {};
+    FOC.calendar.WEEKS.forEach(function (wk) { if (wk.kind === "league") weeksByRound[wk.round] = wk.w; });
+    var arr = ordered.slice(1), nn = ordered.length;
+    for (var r = 0; r < nn - 1; r++) {
+      var wkN = weeksByRound[r + 1];
+      var pairs = [[ordered[0], arr[arr.length - 1]]];
+      for (var i = 0; i < (nn / 2) - 1; i++) pairs.push([arr[i], arr[arr.length - 2 - i]]);
+      /* eslint-disable no-loop-func */
+      pairs.forEach(function (pr, pi) {
+        var home = (r + pi) % 2 === 0 ? pr[0] : pr[1];
+        var away = home === pr[0] ? pr[1] : pr[0];
+        var f = MDL.fixture(v2, wkN, "league", r + 1, home, away);
+        v2.world.fixturesById[f.id] = f;
+      });
+      arr.unshift(arr.pop());
+    }
+    var byRep = ids.slice().sort(function (a, b) { return v2.world.clubsById[a].reputation - v2.world.clubsById[b].reputation; });
+    var playin = RNG.shuffle(v2.rng, "cupdraw", byRep.slice(0, 4), "founders-playin-s" + v2.seasonNumber);
+    v2.world.competitionsById.founders = { id: "comp_founders", name: "Founders Cup", stage: "playin",
+      playin: [[playin[0], playin[1]], [playin[2], playin[3]]], alive: ids.slice(), bracket: {}, out: [], winner: null };
+    v2.world.competitionsById.founders.playin.forEach(function (pr) {
+      var f = MDL.fixture(v2, 3, "founders", 1, pr[0], pr[1]);
+      v2.world.fixturesById[f.id] = f;
+    });
+    v2.world.competitionsById.crown = { id: "comp_crown", name: "Crown Cup", stage: "pending",
+      note: "Entry: top four of the league after Round 9.", entrants: [], bracket: {}, winner: null };
+  }
+
+  return { resolveWeek: resolveWeek, seasonEnd: seasonEnd, newSeason: newSeason,
+    clubTeam: clubTeam, recordResult: recordResult, recordUserResult: recordUserResult,
+    extractSide: extractSide, log: log };
+})();
+
+/* ---- rivalries/ledger.js ---- */
+/* rivalries/ledger — rivalries are earned, never declared. The ledger only
+ * records what actually happened (meetings, close finishes, cup knockouts,
+ * finals, transfers) and recognises thresholds as they are crossed.
+ * Cooling is real too: a season without meetings drops the temperature.
+ */
+FOC.rivalry = (function () {
+  function pairKey(a, b) { return a < b ? a + "~" + b : b + "~" + a; }
+
+  function entry(v2, a, b) {
+    var k = pairKey(a, b);
+    var R = v2.rivalries.clubs;
+    if (!R[k]) R[k] = { key: k, a: a < b ? a : b, b: a < b ? b : a, games: 0, aWins: 0, bWins: 0,
+      close: 0, cupKOs: [], finals: 0, transfers: 0, level: 0, lastSeason: 0, notes: [] };
+    return R[k];
+  }
+
+  function score(e) {
+    return e.close * 2 + e.cupKOs.length * 3 + e.finals * 4 + e.transfers * 2 + (e.games >= 3 ? 1 : 0);
+  }
+  var LEVELS = ["none", "emerging", "recognised", "escalated"];
+  function levelFor(s) { return s >= 10 ? 3 : (s >= 6 ? 2 : (s >= 3 ? 1 : 0)); }
+
+  function onResult(v2, f, log) {
+    if (!f.result || f.__riv) return;   // each fixture counts exactly once
+    f.__riv = 1;
+    var e = entry(v2, f.homeId, f.awayId);
+    e.games++; e.lastSeason = v2.seasonNumber;
+    if (f.result.winnerId === e.a) e.aWins++;
+    else if (f.result.winnerId === e.b) e.bWins++;
+    var margin = Math.abs((f.result.home.runs || 0) - (f.result.away.runs || 0));
+    if (f.result.tie || margin <= 15) { e.close++; e.notes.push("S" + v2.seasonNumber + "W" + v2.week + ": decided by " + (f.result.tie ? "a tie" : margin + " runs")); }
+    if (f.comp !== "league") {
+      e.cupKOs.push({ season: v2.seasonNumber, by: f.result.winnerId, comp: f.comp });
+      if (f.round >= 4 || f.neutral) e.finals++;
+    }
+    check(v2, e, log);
+  }
+
+  function onTransfer(v2, dep, log) {
+    var e = entry(v2, dep.fromId, dep.toId);
+    e.transfers++; e.lastSeason = v2.seasonNumber;
+    e.notes.push("S" + dep.season + ": " + dep.playerName + " crossed over");
+    check(v2, e, log);
+  }
+
+  function check(v2, e, log) {
+    var lv = levelFor(score(e));
+    if (lv > e.level) {
+      e.level = lv;
+      var names = [v2.world.clubsById[e.a], v2.world.clubsById[e.b]].map(function (c) { return c ? c.name : "?"; });
+      var evName = lv === 1 ? "RivalryEmerging" : (lv === 2 ? "RivalryRecognised" : "RivalryEscalated");
+      v2.history.events.push({ t: evName, week: v2.week, season: v2.seasonNumber, key: e.key });
+      v2.history.milestones.push({ kind: evName, note: names[0] + " v " + names[1] + " — " + LEVELS[lv] });
+      if (log) log("rivalry", names[0] + " v " + names[1] + ": this fixture means something now (" + LEVELS[lv] + ").", { key: e.key, level: lv });
+    }
+  }
+
+  // a quiet season cools things — called at season end
+  function coolAll(v2, log) {
+    for (var k in v2.rivalries.clubs) {
+      var e = v2.rivalries.clubs[k];
+      if (e.level > 0 && e.lastSeason < v2.seasonNumber) {
+        e.level--;
+        v2.history.events.push({ t: "RivalryCooled", season: v2.seasonNumber, key: k });
+        if (log) log("rivalry", "Time does its work — an old edge dulls (" + k + ").", { key: k });
+      }
+    }
+  }
+
+  function forClub(v2, clubId) {
+    var out = [];
+    for (var k in v2.rivalries.clubs) {
+      var e = v2.rivalries.clubs[k];
+      if (e.a === clubId || e.b === clubId) out.push(e);
+    }
+    return out.sort(function (x, y) { return score(y) - score(x); });
+  }
+
+  return { pairKey: pairKey, entry: entry, score: score, levelFor: levelFor,
+    onResult: onResult, onTransfer: onTransfer, coolAll: coolAll, forClub: forClub, LEVELS: LEVELS };
 })();
 
 /* ---- story/england.js ---- */
@@ -25747,6 +26973,329 @@ FOC.game = (function () {
     _resetForTest: function () { _save = null; } };
 })();
 
+/* ---- story/storylets.js ---- */
+/* story/storylets — conditional narrative units + the director that decides
+ * what deserves attention this week. Storylets fire when their trigger and
+ * eligibility conditions are true, weighted and seeded — the same situation
+ * does not always produce the same scene, and a quiet week is always a
+ * legitimate outcome. The director controls ATTENTION, never outcomes: it
+ * cannot change a result, injure anyone, or rescue a season.
+ *
+ * Scenes may only quote facts that exist in the save; every template
+ * validates its required data before rendering and withdraws if missing.
+ */
+FOC.storylets = (function () {
+  var RNG = FOC.rng;
+  var DEFS = [];   // registered by content packs
+
+  function register(def) { DEFS.push(def); }
+
+  function eligible(v2, trigger, api) {
+    return DEFS.filter(function (d) {
+      if (d.on !== trigger) return false;
+      var seen = v2.story.seen[d.id] || 0;
+      if (d.maxUses && seen >= d.maxUses) return false;
+      var cd = v2.story.cooldowns[d.id];
+      if (cd && (v2.seasonNumber * 100 + v2.week) < cd) return false;
+      try { if (d.when && !d.when(v2, api)) return false; } catch (e) { return false; }
+      // required facts must exist — a scene never invents statistics
+      try { if (d.needs && !d.needs(v2, api)) return false; } catch (e2) { return false; }
+      return true;
+    });
+  }
+
+  // pick at most `cap` storylets for this trigger; quiet is always on the table
+  function select(v2, trigger, api, cap) {
+    var pool = eligible(v2, trigger, api);
+    if (!pool.length) return [];
+    var picked = [];
+    var guard = 0;
+    while (picked.length < (cap || 1) && pool.length && guard++ < 10) {
+      var quietW = 2 + (v2.story.directorState.quietStreak < 1 ? 2 : 0);
+      var items = pool.map(function (d) {
+        var w = d.weight || 3;
+        // rotation: characters who just spoke yield the floor
+        if (d.cast && v2.story.directorState.lastCast.indexOf(d.cast) >= 0) w = Math.max(1, w - 2);
+        if (d.priority === "urgent") w += 8;
+        return { w: w, d: d };
+      }).concat([{ w: quietW, d: null }]);
+      var choice = RNG.weighted(v2.rng, "storylets", items, trigger);
+      if (!choice.d) break;   // a quiet week
+      picked.push(choice.d);
+      pool = pool.filter(function (d) { return d !== choice.d; });
+    }
+    if (!picked.length) v2.story.directorState.quietStreak++;
+    else v2.story.directorState.quietStreak = 0;
+    picked.forEach(function (d) {
+      v2.story.seen[d.id] = (v2.story.seen[d.id] || 0) + 1;
+      if (d.cooldown) v2.story.cooldowns[d.id] = v2.seasonNumber * 100 + v2.week + d.cooldown;
+      if (d.cast) {
+        v2.story.directorState.lastCast.push(d.cast);
+        v2.story.directorState.lastCast = v2.story.directorState.lastCast.slice(-3);
+      }
+      v2.story.pending.push({ id: d.id, week: v2.week, season: v2.seasonNumber });
+    });
+    return picked;
+  }
+
+  function byId(id) {
+    for (var i = 0; i < DEFS.length; i++) if (DEFS[i].id === id) return DEFS[i];
+    return null;
+  }
+
+  // build the scene for the first pending storylet; null if queue empty
+  function nextScene(v2, api) {
+    while (v2.story.pending.length) {
+      var ref = v2.story.pending[0];
+      var d = byId(ref.id);
+      if (!d) { v2.story.pending.shift(); continue; }
+      try {
+        var sc = d.scene(v2, api, ref);
+        if (sc) return { def: d, scene: sc, ref: ref };
+      } catch (e) {}
+      v2.story.pending.shift();   // template refused (missing facts) — drop it
+    }
+    return null;
+  }
+  function popScene(v2) { v2.story.pending.shift(); }
+
+  return { register: register, eligible: eligible, select: select,
+    nextScene: nextScene, popScene: popScene, byId: byId, _defs: DEFS };
+})();
+
+/* ---- story/content/england.js ---- */
+/* story/content/england — the England storylet pack.
+ * Converted from the First Summer's authored chapters into conditional,
+ * reusable units. Nothing here fires in a fixed order; everything quotes
+ * only real saved facts and withdraws when the facts are missing.
+ */
+(function () {
+  var S = FOC.storylets;
+  function sc(sp, face, tx, choices) { return { sp: sp, face: face, tx: tx, choices: choices || null }; }
+  function nmS(nm) { return nm ? String(nm).split(" ").slice(-1)[0] : ""; }
+
+  // ---- opening pair (once, early) ------------------------------------------
+  S.register({
+    id: "openers-talk", on: "lineup", cast: "gaffer", weight: 5, maxUses: 1,
+    when: function (v2, api) { return api.userMatches() === 0; },
+    scene: function (v2, api) {
+      var op = api.confirmedOpeners(); if (!op) return null;
+      return sc("The Gaffer", "gaffer",
+        "First card of the season, and you've given the new ball's first forty balls to " + op[0] + " and " + op[1] + ". " +
+        "Right or wrong isn't the point yet — on purpose is the point. The book will tell us the rest.");
+    }
+  });
+
+  // ---- conditions dilemma (repeatable, green tops) --------------------------
+  S.register({
+    id: "conditions-green", on: "preview", cast: "gaffer", weight: 4, cooldown: 4,
+    when: function (v2, api) {
+      var f = api.nextUserFixture();
+      return f && api.fixturePitch(f) === "green" && api.userMatches() >= 1;
+    },
+    scene: function (v2, api) {
+      var f = api.nextUserFixture(); if (!f) return null;
+      return sc("The Gaffer", "gaffer-serious",
+        api.clubName(f) + " on a green top. Same dilemma as ever, and it never gets friendlier: the extra seamer shortens your batting, the balanced card leaves overs to part-timers. " +
+        "There's no right answer, only your answer — and the scorebook keeps them all.");
+    }
+  });
+
+  // ---- the prospect asks (evidence, not potential) --------------------------
+  S.register({
+    id: "prospect-asks", on: "week", cast: "prospect", weight: 4, maxUses: 1, priority: "urgent",
+    when: function (v2, api) {
+      var kid = api.castName("prospect");
+      return kid && api.userMatches() >= 2 && api.selections(kid) === 0 && api.activePromises().length === 0;
+    },
+    scene: function (v2, api) {
+      var kid = api.castName("prospect"); if (!kid) return null;
+      return sc(kid, "player:ar",
+        "Boss — " + api.userMatches() + " matches, and my name hasn't been on a sheet yet. I'm not asking you to rate me. I'm asking what I'd have to show you.",
+        [
+          { t: "Promise him a start within two matches", fx: function (v2b, apiB) { apiB.makePromise("prospect", kid + " starts one of the next two matches", 2); apiB.rapport("dressingRoom", 3); } },
+          { t: "“A defined role: conditions player. Green top or dust bowl, you're in the conversation.”", fx: function (v2b, apiB) { apiB.rapport("dressingRoom", 1); apiB.note("prospect", "conditions selection"); } },
+          { t: "“No promises. Selection is earned in the Lab and at training.”", fx: function (v2b, apiB) { apiB.rapport("dressingRoom", -2); } }
+        ]);
+    }
+  });
+
+  // ---- captain's bat goes quiet ---------------------------------------------
+  S.register({
+    id: "captain-form", on: "week", cast: "captain", weight: 4, cooldown: 5,
+    when: function (v2, api) {
+      var runs = api.captainLastScores(3);
+      return runs.length >= 3 && runs.every(function (r) { return r.r < 25; });
+    },
+    scene: function (v2, api) {
+      var cap = api.castName("captain"), runs = api.captainLastScores(3);
+      if (!cap || runs.length < 3) return null;
+      return sc("The Gaffer", "gaffer-serious",
+        cap + "'s last scores read " + runs.map(function (r) { return r.r + (r.out ? "" : "*"); }).join(", ") + ". I deal in columns, and that's the column. The armband weighs more when the bat's quiet — your move, or no move at all.",
+        [
+          { t: "Back him publicly — no discussion", fx: function (v2b, apiB) { apiB.rapport("captain", 5); apiB.flag("captBacked", 1); } },
+          { t: "Keep the armband, drop him down the order", fx: function (v2b, apiB) { apiB.rapport("captain", 1); apiB.flag("captMoved", 1); } },
+          { t: "Have the hard conversation about a rest", fx: function (v2b, apiB) { apiB.rapport("captain", -3); apiB.flag("captWarned", 1); } }
+        ]);
+    }
+  });
+  // the callback both ways — a later week reads the sheet against the word
+  S.register({
+    id: "captain-callback", on: "userMatch", cast: "gaffer", weight: 6, maxUses: 2,
+    when: function (v2, api) {
+      return (v2.flags.captBacked || v2.flags.captWarned) && api.lastConfirmedCaptain();
+    },
+    scene: function (v2, api) {
+      var cap = api.castName("captain"), actual = api.lastConfirmedCaptain();
+      if (!cap || !actual) return null;
+      var kept = actual === cap;
+      var backed = !!v2.flags.captBacked;
+      delete v2.flags.captBacked; delete v2.flags.captWarned;
+      var line = backed
+        ? (kept ? "You said you'd back " + nmS(cap) + " and the sheet agreed with your mouth. Players notice when those two match."
+                : "You said you'd back " + nmS(cap) + " — then the armband went to " + nmS(actual) + ". I'll manage the cricket; you manage the conversation that's coming.")
+        : (kept ? "After the hard words, you handed " + nmS(cap) + " the armband anyway. Mercy or nerves — the room will wonder which."
+                : "You said it and did it: " + nmS(actual) + " led the side. Clean. Costly, maybe, but clean.");
+      return sc("The Gaffer", "gaffer", line);
+    }
+  });
+
+  // ---- setback response (real defeat, four answers, none correct) -----------
+  S.register({
+    id: "setback", on: "userMatch", cast: "gaffer", weight: 6, cooldown: 4,
+    when: function (v2, api) {
+      var f = api.lastUserFacts();
+      return f && !f.win && (f.op - f.my >= 60 || f.myW >= 9 || api.userLossStreak() >= 2);
+    },
+    scene: function (v2, api) {
+      var f = api.lastUserFacts(); if (!f) return null;
+      var phil = v2.user.philosophy ? " You told me this club stood for " + v2.user.philosophy.label.toLowerCase() + ". This is where that word costs something." : "";
+      return sc("The Gaffer", "gaffer-serious",
+        "Beaten " + f.my + " to " + f.op + ", and not by accident." + phil + " How do we respond? No answer on this card is the correct one.",
+        [
+          { t: "Call the room together tonight", fx: function (v2b, apiB) { apiB.rapport("dressingRoom", 3); } },
+          { t: "Speak privately with the captain first", fx: function (v2b, apiB) { apiB.rapport("captain", 3); } },
+          { t: "Review the scorecards before saying a word", fx: function (v2b, apiB) { apiB.rapport("gaffer", 3); } },
+          { t: "Give them space — next match is the answer", fx: function (v2b, apiB) { apiB.rapport("captain", 1); } }
+        ]);
+    }
+  });
+
+  // ---- being studied (real pattern, stated as fact) -------------------------
+  S.register({
+    id: "studied", on: "preview", cast: "gaffer", weight: 3, cooldown: 6,
+    when: function (v2, api) {
+      var pat = api.patterns();
+      return api.userMatches() >= 3 && pat && (pat.paceW + pat.spinW) >= 8;
+    },
+    scene: function (v2, api) {
+      var pat = api.patterns(), f = api.nextUserFixture();
+      if (!pat || !f) return null;
+      return sc("The Gaffer", "gaffer-serious",
+        api.clubName(f) + " subscribe to the Argus. What they'll have highlighted: your wickets are " + pat.paceW + " pace, " + pat.spinW + " spin" +
+        (pat.topBat ? "; " + pat.topBat.nm + " has " + pat.topBat.runs + " of your runs" : "") +
+        ". I'm not telling you to change. I'm telling you they know.");
+    }
+  });
+
+  // ---- reporter headline (varies, quotes the card) --------------------------
+  S.register({
+    id: "headline", on: "userMatch", cast: "reporter", weight: 4, cooldown: 2,
+    when: function (v2, api) { return !!api.lastUserFacts(); },
+    scene: function (v2, api) {
+      var f = api.lastUserFacts(); if (!f) return null;
+      var variants = f.win
+        ? [(f.topNm ? nmS(f.topNm).toUpperCase() + " " + f.topR + " SETTLES IT" : "PROFESSIONAL AFTERNOON FOR THE NEW CLUB"),
+           "PROVISIONAL? THE TABLE DISAGREES"]
+        : [(f.oppTopNm ? nmS(f.oppTopNm).toUpperCase() + "'S " + f.oppTopR + " TOO GOOD" : "A HARD LESSON, PLAINLY TAUGHT"),
+           "QUESTIONS, AND SATURDAY KEEPS ASKING THEM"];
+      var pick = variants[FOC.rng.int(v2.rng, "storylets", variants.length, "headline")];
+      api.headline(pick);
+      return sc("Sam Whitlow — the Argus", "npc:SW",
+        "Tomorrow's back page: “" + pick + "”. I print what the scorebook prints — you'll learn to like me in the good weeks.");
+    }
+  });
+
+  // ---- Thorne needles — earned, not scheduled -------------------------------
+  S.register({
+    id: "thorne-notice", on: "userMatch", cast: "thorne", weight: 3, cooldown: 5,
+    when: function (v2, api) {
+      var f = api.lastUserFacts();
+      return f && f.win && api.userPosition() <= 4;
+    },
+    scene: function (v2, api) {
+      var f = api.lastUserFacts(); if (!f) return null;
+      return sc("Reggie Thorne", "thorne",
+        api.userPosition() + (api.userPosition() === 1 ? "st" : api.userPosition() === 2 ? "nd" : api.userPosition() === 3 ? "rd" : "th") +
+        " in the table. My scouts filed your scorecard — " + f.my + " for " + f.myW + ". Adequate. The Crown Ground doesn't play adequate.");
+    }
+  });
+
+  // ---- Gaffer–Thorne clues: order shuffled per career, never guaranteed -----
+  function gtOrder(v2) {
+    if (!v2.story.gtOrder) v2.story.gtOrder = FOC.rng.shuffle(v2.rng, "storylets", ["gt-scorebook", "gt-photo", "gt-torn-page"], "gt-order");
+    return v2.story.gtOrder;
+  }
+  function gtNext(v2) {
+    var order = gtOrder(v2);
+    for (var i = 0; i < order.length; i++) if (!(v2.story.seen[order[i]])) return order[i];
+    return null;
+  }
+  var GT = {
+    "gt-scorebook": sc("Margaret Hobb — club secretary", "npc:MH",
+      "Filing, I found a Marylebone scorebook, 2006. Two names in one handwriting: R. THORNE, capt — and in the assistants' line, a name I believe you know. I don't gossip. I file."),
+    "gt-photo": sc("Sam Whitlow — the Argus", "npc:SW",
+      "Archive room turned up a photograph: Thorne lifting a plate trophy, and at the frame's edge, carrying the kit bags, a younger version of a face you see every day. Neither man has ever mentioned it in print."),
+    "gt-torn-page": sc("Margaret Hobb — club secretary", "npc:MH",
+      "The last page of that 2006 scorebook is torn out. I have never known your Gaffer tear a page in his life. Whatever the final of that season says, somebody preferred it unsaid.")
+  };
+  ["gt-scorebook", "gt-photo", "gt-torn-page"].forEach(function (id) {
+    S.register({
+      id: id, on: "week", cast: "secretary", weight: 2, maxUses: 1,
+      when: function (v2, api) { return api.userMatches() >= 2 && gtNext(v2) === id; },
+      scene: function (v2) {
+        v2.story.gtClues.push(id);
+        return GT[id];
+      }
+    });
+  });
+
+  // ---- the peer manager's parallel career -----------------------------------
+  S.register({
+    id: "peer-milestone", on: "week", cast: "peer", weight: 3, cooldown: 4,
+    when: function (v2, api) { return !!api.peerNote(); },
+    scene: function (v2, api) {
+      var note = api.peerNote(); if (!note) return null;
+      return sc(note.nm, "npc:PR", note.txt);
+    }
+  });
+
+  // ---- a transfer offer for one of yours ------------------------------------
+  S.register({
+    id: "transfer-offer", on: "offer", cast: "secretary", weight: 10, priority: "urgent",
+    scene: function (v2, api, ref) {
+      var o = ref.data; if (!o || !o.playerName) return null;
+      return sc("Margaret Hobb — club secretary", "npc:MH",
+        o.buyerName + " have lodged " + Math.round(o.fee / 1000) + "k for " + o.playerName + ". In writing, properly stamped. What do I send back?",
+        [
+          { t: "Refuse — not for sale", fx: function (v2b, apiB) { apiB.refuseOffer(ref.data); } },
+          { t: "Accept the fee" + (api.canSell() ? "" : " (league rules block mid-season sales — noted for the window)"), fx: function (v2b, apiB) { apiB.acceptOffer(ref.data); } }
+        ]);
+    }
+  });
+
+  // ---- an emergent talent somewhere in the world ----------------------------
+  S.register({
+    id: "talent-noticed", on: "week", cast: "gaffer", weight: 2, maxUses: 2, cooldown: 6,
+    when: function (v2, api) { return !!api.talentFact(); },
+    scene: function (v2, api) {
+      var tf = api.talentFact(); if (!tf) return null;
+      return sc("The Gaffer", "gaffer",
+        "Worth a line in your notebook: " + tf.nm + " at " + tf.club + " — " + tf.evidence + ". I'm not telling you what he'll become. I'm telling you what he's done.");
+    }
+  });
+})();
+
 /* ---- features/lineup.js ---- */
 /* features/lineup — the Lineup Room (#/lineup).
  *
@@ -25867,7 +27416,7 @@ FOC.lineup = (function () {
     var v = A.validate(draft, FOC.game.save());
     var isCamp = false, oppLine = "";
     try {
-      if (App.pending && App.pending.__camp) {
+      if (App.pending && (App.pending.__camp || App.pending.__career)) {
         isCamp = true;
         oppLine = "vs " + App.pending.away + " · " + App.pending.ground + " · " + (App.pending.pitch || "") + " pitch, " + (App.pending.weather || "");
       } else if (App.pending && App.pending.__friendly) oppLine = "Friendly vs " + App.pending.away;
@@ -26013,7 +27562,7 @@ FOC.lineup = (function () {
       var res = A.applyOrders(s, draft);
       if (!res.ok) { flash(res.errors[0] || "The card isn't legal yet."); return; }
       draft = null; undoStack = []; sel = null; cmp = [];
-      var camp = false; try { camp = !!(App.pending && App.pending.__camp); } catch (e) {}
+      var camp = false; try { camp = !!(App.pending && (App.pending.__camp || App.pending.__career)); } catch (e) {}
       // campaign: the keeper walks the manager out to the match centre;
       // league/friendly: back to the club with the plan saved
       if (!camp) { location.hash = "#/club"; if (typeof window.route === "function") window.route(); }
@@ -26200,6 +27749,8 @@ FOC.campaignUI = (function () {
     try {
       if (location.hash.indexOf("#/summer") !== 0) return;
       if (!A.engineReady()) return;
+      // once the prologue hands over, the persistent career owns this screen
+      try { if (FOC.career && FOC.career.active()) return; } catch (eCr) {}
       var page = document.getElementById("page"); if (!page) return;
       var s = G.save();
       var inter = G.interstitial(s);
@@ -26326,7 +27877,7 @@ FOC.campaignUI = (function () {
       ".sm-tie-nm{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:1.6px;font-size:22px;color:#101B2D;margin:3px 0}" +
       ".sm-tie-c{color:#5b6472;font-size:13px}" +
       ".sm-rem{color:#9c2f18;font-size:12px;margin-top:4px}" +
-      "html body #page .sm-go{margin-top:12px;background:#C8674A;border:none;color:#fff;border-radius:9px;padding:12px 22px;font-family:Oswald,sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-size:13px;min-height:44px}" +
+      "html body #page .sm-go{margin-top:12px;background:#C8674A!important;border:none!important;color:#fff!important;border-radius:9px;padding:12px 22px;font-family:Oswald,sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-size:13px;min-height:44px}" +
       "html body #page .sm-skip{margin-top:9px;border:none;background:transparent;color:#8a90a0;font-size:12px;text-decoration:underline dotted}" +
       ".sm-hist{margin:10px 0;text-align:left;max-width:420px;margin-left:auto;margin-right:auto}" +
       ".sm-hrow{font-size:13px;color:#2a3140;padding:3px 0;border-bottom:1px dashed #e3dcc6}" +
@@ -26342,6 +27893,708 @@ FOC.campaignUI = (function () {
       if (location.hash.indexOf("#/summer") === 0) setTimeout(function () { render(true); }, 30);
     });
     setInterval(function () { render(false); injectNav(); }, 1000);
+  }
+
+  return { init: init, render: render };
+})();
+
+/* ---- features/career.js ---- */
+/* features/career — the Career Hub (#/summer once the prologue is done) and
+ * the glue between the persistent world and the live engine.
+ *
+ * The prologue remains the guided onboarding; after it, the simulated
+ * season takes control. The user's fixtures play LIVE through the real
+ * match centre; everyone else's play headlessly through the same engine.
+ * League defeats stand. Cup defeats eliminate. Nothing waits.
+ */
+FOC.career = (function () {
+  var U = FOC.util, A = FOC.adapter, C = FOC.competitions, W = FOC.worldsim;
+  var RNG = FOC.rng, SL = FOC.storylets;
+  var _v2 = null;
+
+  function esc(s) { return U.esc(s); }
+  function scope() { return A.scope(); }
+
+  function genSeed() {
+    var t = "";
+    try { t = String(Date.now()); } catch (e) { t = "seed"; }
+    return U.hash32(scope() + "|" + t + "|" + Math.random()).toString(36);
+  }
+
+  function io() {
+    var g = window.__foGame || {};
+    return {
+      squadGen: g.squad,
+      derive: function (p) { try { jsDerive(p); } catch (e) {} },
+      matchRunner: function (home, away, pitch, wx, seed) { return g.simWorld ? g.simWorld(home, away, pitch, wx, seed) : null; },
+      userClubName: (A.team() || {}).name || "Your Club",
+      userGround: (A.team() || {}).ground || "Home Ground",
+      userManagerName: "The Manager",
+      afterWeek: function (v2, L) {
+        // rivalries from this week's real results and any fresh transfers
+        C.weekFixtures(v2, v2.week).forEach(function (f) { if (f.status === "played") FOC.rivalry.onResult(v2, f, L); });
+        v2.world.transfers.forEach(function (dep) {
+          if (!dep.__riv && dep.season === v2.seasonNumber && dep.week === v2.week) { dep.__riv = 1; FOC.rivalry.onTransfer(v2, dep, L); }
+        });
+      }
+    };
+  }
+
+  function prologueDone() {
+    try { return FOC.game.save().ch >= 1; } catch (e) { return false; }
+  }
+  function career() {
+    if (_v2) return _v2;
+    _v2 = FOC.save2.load(scope());
+    return _v2;
+  }
+  function active() { return !!career() && prologueDone(); }
+  function persist() { if (_v2) FOC.save2.persist(_v2); }
+
+  function begin(seedInput) {
+    var seed = (seedInput || "").trim() || genSeed();
+    _v2 = FOC.save2.begin(scope(), seed);
+    if (!Object.keys(_v2.world.clubsById).length) {
+      FOC.worldgen.generate(_v2, io());
+      // an emergent talent exists in SOME worlds — never the same story twice
+      if (RNG.chance(_v2.rng, "newplayers", 0.6, "talent-world?")) {
+        var ids = Object.keys(_v2.world.clubsById).filter(function (id) { return !_v2.world.clubsById[id].isUser; });
+        var host = _v2.world.clubsById[RNG.pick(_v2.rng, "newplayers", ids, "talent-club")];
+        var young = host.rosterIds.map(function (pid) { return _v2.world.playersById[pid]; })
+          .filter(function (p) { return !p.engine.bowlType && !p.engine.keeper; })
+          .sort(function (a, b) { return a.age - b.age; })[0];
+        if (young) {
+          young.age = Math.min(young.age, 20); young.engine.age = young.age;
+          if (RNG.chance(_v2.rng, "newplayers", 0.35, "talent-is-vale?")) young.name = young.engine.name = "Arthur Vale";
+          for (var k in young.engine.skills) {
+            if (typeof young.engine.skills[k] === "number") young.engine.skills[k] = Math.min(96, young.engine.skills[k] + 8);
+          }
+          io().derive(young.engine);
+          _v2.world.talentId = young.id;
+        }
+      }
+      _v2.history.events.push({ t: "RegionEntered", region: "england", season: 1, week: 1 });
+      persist();
+    }
+    return _v2;
+  }
+
+  // ---- the storylet api -----------------------------------------------------
+  function api(v2) {
+    var a = {};
+    a.userMatches = function () {
+      return C.fixtures(v2, function (f) {
+        return f.status === "played" && (f.homeId === v2.user.clubId || f.awayId === v2.user.clubId);
+      }).length;
+    };
+    a.nextUserFixture = function () { return C.userFixture(v2, v2.week); };
+    a.fixturePitch = function (f) {
+      var host = v2.world.clubsById[f.homeId];
+      return host ? host.pitch : "balanced";
+    };
+    a.clubName = function (f) {
+      var opp = f.homeId === v2.user.clubId ? f.awayId : f.homeId;
+      return (v2.world.clubsById[opp] || {}).name || "The opposition";
+    };
+    a.castName = function (role) { return v2.story.castNames[role] || (FOC.game.save().castNames || {})[role] || null; };
+    a.selections = function (nm) {
+      var n = 0;
+      (v2.history.events || []).forEach(function (e) {
+        if (e.t === "LineupConfirmed" && e.xi && e.xi.indexOf(nm) >= 0) n++;
+      });
+      return n;
+    };
+    a.activePromises = function () { return v2.story.promises.filter(function (p) { return p.status === "active"; }); };
+    a.makePromise = function (role, txt, due) {
+      v2.story.promises.push({ id: "pr_" + (v2.story.promises.length + 1), nm: a.castName(role), txt: txt,
+        left: due, status: "active", season: v2.seasonNumber });
+      v2.history.events.push({ t: "PromiseMade", txt: txt, week: v2.week, season: v2.seasonNumber });
+    };
+    a.rapport = function (k, d) { var r = v2.story.rapport; r[k] = U.clamp((r[k] || 50) + d, 0, 100); };
+    a.note = function (role, txt) { v2.story.notes["role:" + role] = txt; };
+    a.flag = function (k, val) { v2.flags[k] = val; };
+    a.headline = function (txt) {
+      v2.world.news.unshift({ week: v2.week, season: v2.seasonNumber, kind: "headline", text: txt });
+    };
+    a.lastUserFacts = function () { return v2.flags.lastUserFacts || null; };
+    a.userLossStreak = function () {
+      var c = v2.world.clubsById[v2.user.clubId], s = 0;
+      for (var i = (c.form || []).length - 1; i >= 0 && c.form[i] === "L"; i--) s++;
+      return s;
+    };
+    a.userPosition = function () { return C.position(v2, v2.user.clubId); };
+    a.confirmedOpeners = function () {
+      var evs = (v2.history.events || []).filter(function (e) { return e.t === "LineupConfirmed"; });
+      var last = evs[evs.length - 1];
+      return last && last.xi && last.xi.length >= 2 ? [last.xi[0], last.xi[1]] : null;
+    };
+    a.lastConfirmedCaptain = function () {
+      var evs = (v2.history.events || []).filter(function (e) { return e.t === "LineupConfirmed"; });
+      return evs.length ? evs[evs.length - 1].captain : null;
+    };
+    a.captainLastScores = function (n) {
+      var cap = a.castName("captain"), out = [];
+      (v2.flags.userFactsHist || []).forEach(function (f) {
+        (f.batLines || []).forEach(function (b) { if (b.nm === cap) out.push(b); });
+      });
+      return out.slice(-(n || 3));
+    };
+    a.patterns = function () {
+      var paceW = 0, spinW = 0, runs = {}, top = null;
+      (v2.flags.userFactsHist || []).forEach(function (f) {
+        paceW += f.paceW || 0; spinW += f.spinW || 0;
+        (f.batLines || []).forEach(function (b) { runs[b.nm] = (runs[b.nm] || 0) + b.r; });
+      });
+      Object.keys(runs).forEach(function (nm) { if (!top || runs[nm] > top.runs) top = { nm: nm, runs: runs[nm] }; });
+      return { paceW: paceW, spinW: spinW, topBat: top };
+    };
+    a.peerNote = function () {
+      var mid = v2.world.peerManagerId; if (!mid) return null;
+      var m = v2.world.managersById[mid], pc = m && m.clubId && v2.world.clubsById[m.clubId];
+      if (!m || !pc) return null;
+      var k = "peer_s" + v2.seasonNumber + "_w" + v2.week;
+      if (v2.flags[k]) return null;
+      var pos = C.position(v2, pc.id);
+      var f5 = (pc.form || []).slice(-3).join("");
+      var txt = null;
+      if (pos === 1) txt = "Top of the table with the club I refounded in a car park in March. I'm not calling it a race, but I did check where you are before I called you.";
+      else if (f5 === "LLL") txt = "Three straight defeats. The photograph of the empty cabinet stays up. Some weeks that's motivation; this week it's just an empty cabinet. How are you finding it?";
+      else if (v2.world.competitionsById.founders && v2.world.competitionsById.founders.out.indexOf(pc.id) >= 0 && !v2.flags.peerCupOut) { v2.flags.peerCupOut = 1; txt = "Out of the Founders Cup. One bad afternoon and the whole ladder's gone — that's knockout cricket, and I chose this life. League table it is, then."; }
+      if (!txt) return null;
+      v2.flags[k] = 1;
+      return { nm: m.name + " — " + pc.name, txt: txt };
+    };
+    a.talentFact = function () {
+      var tid = v2.world.talentId; if (!tid) return null;
+      var p = v2.world.playersById[tid]; if (!p || p.runs < 60) return null;
+      var c = v2.world.clubsById[p.clubId];
+      return { nm: p.name, club: c ? c.name : "?", evidence: p.runs + " runs at " + p.age + " this season" };
+    };
+    a.canSell = function () {
+      try { return !(typeof SYNC !== "undefined" && SYNC && SYNC.started && !SYNC.practice); } catch (e) { return true; }
+    };
+    a.acceptOffer = function (o) {
+      if (!a.canSell()) {
+        v2.world.news.unshift({ week: v2.week, season: v2.seasonNumber, kind: "transfer",
+          text: "The board noted " + o.buyerName + "'s bid for " + o.playerName + " — league rules park it until the window." });
+        return;
+      }
+      try {
+        var me = A.team(), ix = -1;
+        (me.players || []).forEach(function (p, i) { if (p && p.name === o.playerName) ix = i; });
+        if (ix < 0) return;
+        var pl = me.players.splice(ix, 1)[0];
+        try { App.fin.bank = (App.fin.bank || 0) + o.fee; } catch (eB) {}
+        try { if (typeof saveGame === "function") saveGame(); } catch (eS) {}
+        var buyer = v2.world.clubsById[o.buyerId];
+        var wp = FOC.model.playerFromEngine(v2, pl, buyer.id);
+        wp.contract = { years: 2, wage: 800 };
+        v2.world.playersById[wp.id] = wp;
+        buyer.rosterIds.push(wp.id);
+        var dep = FOC.model.transferRecord(v2, {
+          playerId: wp.id, playerName: pl.name, fromId: v2.user.clubId, fromName: (me || {}).name,
+          toId: buyer.id, toName: buyer.name, season: v2.seasonNumber, week: v2.week, fee: o.fee,
+          caps: 0, runs: 0, wickets: 0, role: pl.bowlType ? "bowler" : (pl.keeper ? "keeper" : "batter"),
+          why: "Accepted bid.", fromUser: true
+        });
+        v2.world.transfers.push(dep); v2.history.departures.push(dep);
+        FOC.rivalry.onTransfer(v2, dep, W.log(v2));
+        v2.history.events.push({ t: "PlayerDropped", nm: pl.name, week: v2.week, season: v2.seasonNumber, transfer: dep.id });
+        v2.world.news.unshift({ week: v2.week, season: v2.seasonNumber, kind: "transfer",
+          text: pl.name + " leaves for " + buyer.name + " (" + Math.round(o.fee / 1000) + "k). He remains fully simulated — you may meet him again." });
+      } catch (e) {}
+    };
+    a.refuseOffer = function (o) {
+      v2.world.news.unshift({ week: v2.week, season: v2.seasonNumber, kind: "transfer",
+        text: o.buyerName + "'s bid for " + o.playerName + " is refused. " + o.buyerName + " will remember the phone call." });
+      var buyer = v2.world.clubsById[o.buyerId];
+      var m = buyer && buyer.managerId && v2.world.managersById[buyer.managerId];
+      if (m) m.memory.push({ kind: "refused", note: "bid for " + o.playerName + " refused S" + v2.seasonNumber });
+    };
+    return a;
+  }
+
+  // ---- user fixture flow ----------------------------------------------------
+  function startUserFixture() {
+    var v2 = career(); if (!v2) return false;
+    var f = C.userFixture(v2, v2.week);
+    if (!f || f.status === "played") return false;
+    if (typeof M !== "undefined" && M && !M.done) return false;
+    var g = window.__foGame; if (!g) return false;
+    var oppId = f.homeId === v2.user.clubId ? f.awayId : f.homeId;
+    var T = W.clubTeam(v2, oppId);
+    var ix = -1;
+    (GD.teams || []).forEach(function (t, i) { if (t && t.name === T.name) ix = i; });
+    if (ix < 0) { GD.teams.push(T); ix = GD.teams.length - 1; } else GD.teams[ix] = T;
+    try {
+      if (typeof SYNC !== "undefined" && SYNC && SYNC.started && !SYNC.practice && App.orders)
+        window.__foSummerOrdStash = JSON.stringify(App.orders);
+    } catch (e) {}
+    if (!f.weather) f.weather = RNG.pick(v2.rng, "weather", ["Sunny", "Overcast", "Humid", "Windy"], "user-wx");
+    var host = v2.world.clubsById[f.homeId];
+    g.challenge(ix, host.pitch, f.weather);
+    if (App.pending) {
+      App.pending.ground = f.neutral ? "The Crown Ground" : host.ground;
+      App.pending.__career = { fid: f.id };
+    }
+    persist();
+    try { location.hash = "#/lineup"; if (typeof window.route === "function") window.route(); } catch (e2) {}
+    return true;
+  }
+
+  function recordUser(fid) {
+    var v2 = career(); if (!v2) return;
+    var f = v2.world.fixturesById[fid]; if (!f || f.status === "played") return;
+    var me = A.team();
+    var sim = { innings: M.innings, result: M.result };
+    W.recordUserResult(v2, f, sim);
+    var facts = A.extractFacts(M, me.name);
+    facts.win = !!(M.result && M.result.winner === me.name);
+    v2.flags.lastUserFacts = facts;
+    (v2.flags.userFactsHist = v2.flags.userFactsHist || []).push(facts);
+    v2.flags.userFactsHist = v2.flags.userFactsHist.slice(-30);
+    // the confirmed card that actually played is the canonical one
+    try {
+      v2.history.events.push({ t: "LineupConfirmed", xi: App.orders.batOrder.slice(), captain: App.orders.captain,
+        keeper: App.orders.keeper, week: v2.week, season: v2.seasonNumber, context: "career" });
+    } catch (eL) {}
+    FOC.rivalry.onResult(v2, f, W.log(v2));
+    // promises resolve through the confirmed lineup, nothing else
+    v2.story.promises.forEach(function (pr) {
+      if (pr.status !== "active") return;
+      var xi = []; try { xi = App.orders.batOrder || []; } catch (eX) {}
+      if (xi.indexOf(pr.nm) >= 0) {
+        pr.status = "fulfilled";
+        v2.history.events.push({ t: "PromiseFulfilled", txt: pr.txt, week: v2.week, season: v2.seasonNumber });
+        v2.story.pending.push({ id: "promise-kept", week: v2.week, season: v2.seasonNumber, data: { nm: pr.nm } });
+      } else {
+        pr.left--;
+        if (pr.left <= 0) {
+          pr.status = "broken";
+          v2.history.events.push({ t: "PromiseBroken", txt: pr.txt, week: v2.week, season: v2.seasonNumber });
+          v2.story.pending.push({ id: "promise-broken", week: v2.week, season: v2.seasonNumber, data: { nm: pr.nm } });
+          api(v2).rapport("dressingRoom", -5);
+        }
+      }
+    });
+    SL.select(v2, "userMatch", api(v2), 2);
+    persist();
+  }
+
+  function advanceWeek() {
+    var v2 = career(); if (!v2) return null;
+    var res = W.resolveWeek(v2, io());
+    if (res.blocked) { persist(); return res; }
+    if (res.ok || res.seasonOver) {
+      var A2 = api(v2);
+      SL.select(v2, "week", A2, 2);
+      var uf2 = C.userFixture(v2, v2.week);
+      if (uf2 && uf2.status !== "played") SL.select(v2, "preview", A2, 1);
+      // a club may come calling for one of yours
+      var offer = FOC.transfers.maybeUserOffer(v2, (A.team() || {}).players || []);
+      if (offer) {
+        v2.history.events.push({ t: "TransferOfferReceived", week: v2.week, season: v2.seasonNumber, data: offer });
+        v2.story.pending.push({ id: "transfer-offer", week: v2.week, season: v2.seasonNumber, data: offer });
+      }
+    }
+    if (res.seasonOver && !v2.flags.seasonClosed) {
+      v2.flags.seasonClosed = 1;
+      var end = W.seasonEnd(v2, io());
+      FOC.rivalry.coolAll(v2, W.log(v2));
+      v2.flags.seasonOutcome = seasonOutcome(v2, end);
+    }
+    persist();
+    return res;
+  }
+
+  // honest seasonal judgement: position, cups, solvency — no disguised triumphs
+  function seasonOutcome(v2, end) {
+    var pos = end.userPos, n = end.rows.length;
+    var bank = 0; try { bank = App.fin.bank || 0; } catch (e) {}
+    var wonLeague = end.rows[0] && end.rows[0].clubId === v2.user.clubId;
+    var wonFounders = end.founders && end.founders.winner === v2.user.clubId;
+    var wonCrown = end.crown && end.crown.winner === v2.user.clubId;
+    var o = { pos: pos, n: n, bank: bank, wonLeague: wonLeague, wonFounders: wonFounders, wonCrown: wonCrown };
+    if (wonLeague) { o.kind = "champions"; o.txt = "League champions in a provisional season. Permanent status granted without a vote."; }
+    else if (wonCrown) { o.kind = "crown"; o.txt = "Crown Cup winners. The establishment will pretend it saw you coming."; }
+    else if (wonFounders) { o.kind = "cup"; o.txt = "Founders Cup winners — a knockout club before a league one. Status secured."; }
+    else if (pos <= 6 && bank > 0) { o.kind = "secured"; o.txt = "Finished " + pos + " of " + n + ", solvent. Permanent English status: granted. Quietly, which is how the important votes go."; }
+    else if (pos <= 8 && bank > 0) { o.kind = "warned"; o.txt = "Finished " + pos + " of " + n + ". Status extended one more provisional year — the board's patience is now a named, finite thing."; }
+    else if (bank <= 0) { o.kind = "insolvent"; o.txt = "The money ran out. Finishing " + pos + " is a footnote when the wages aren't. The board moves to dismiss."; }
+    else { o.kind = "dismissed"; o.txt = "Finished " + pos + " of " + n + ". The board thanks you for the foundations and hands the keys to somebody else."; }
+    if (wonLeague || wonFounders || wonCrown) {
+      v2.history.trophies.push({ kind: o.kind, season: v2.seasonNumber, clubId: v2.user.clubId, note: o.txt });
+      try {
+        var mus = (A.team()._museum = A.team()._museum || { trophies: [], awards: [], legends: [] });
+        mus.trophies.push({ s: v2.seasonNumber, kind: o.txt });
+      } catch (eM) {}
+    }
+    v2.history.milestones.push({ kind: "season-" + v2.seasonNumber, note: o.txt });
+    if (o.kind === "dismissed" || o.kind === "insolvent") v2.user.employment = "dismissed";
+    return o;
+  }
+
+  function continueNextSeason(asCaretaker) {
+    var v2 = career(); if (!v2) return;
+    if (v2.user.employment === "dismissed") {
+      if (!asCaretaker) return;
+      v2.user.employment = "employed";
+      v2.user.reputation = Math.max(5, (v2.user.reputation || 30) - 10);
+      v2.world.news.unshift({ week: 1, season: v2.seasonNumber + 1, kind: "board",
+        text: "The board relents into a final-warning season. The keys stay, the patience doesn't." });
+    }
+    W.newSeason(v2, io());
+    delete v2.flags.seasonClosed; delete v2.flags.seasonOutcome;
+    persist();
+  }
+
+  // ---- keeper ---------------------------------------------------------------
+  function startKeeper() {
+    if (typeof window === "undefined") return;
+    setInterval(function () {
+      try {
+        if (typeof App === "undefined") return;
+        if (App.pending && App.pending.__career) {
+          var v2 = career();
+          if (v2 && App.orders && App.orders.saved && !App.pending.__careerGo && !(typeof M !== "undefined" && M && !M.done)) {
+            App.pending.__careerGo = 1;
+            location.hash = "#/match"; if (typeof window.route === "function") window.route();
+          }
+        }
+        if (typeof M !== "undefined" && M && M.done && M.meta && M.meta.__career && !M.__careerSeen) {
+          M.__careerSeen = 1;
+          recordUser(M.meta.__career.fid);
+          try {
+            for (var i = (GD.teams || []).length - 1; i >= 0; i--) {
+              if (GD.teams[i] && GD.teams[i].__world && (!App.pending || App.pending.away !== GD.teams[i].name)) GD.teams.splice(i, 1);
+            }
+          } catch (e3) {}
+          try {
+            if (window.__foSummerOrdStash) { App.orders = JSON.parse(window.__foSummerOrdStash); window.__foSummerOrdStash = null; }
+          } catch (e4) {}
+        }
+      } catch (e) {}
+    }, 2000);
+  }
+
+  return { scope: scope, career: career, active: active, begin: begin, persist: persist,
+    api: api, io: io, startUserFixture: startUserFixture, recordUser: recordUser,
+    advanceWeek: advanceWeek, seasonOutcome: seasonOutcome, continueNextSeason: continueNextSeason,
+    startKeeper: startKeeper, prologueDone: prologueDone,
+    _reset: function () { _v2 = null; } };
+})();
+
+/* promise resolution scenes — registered here so the pack stays factual */
+(function () {
+  FOC.storylets.register({
+    id: "promise-kept", on: "_direct", cast: "prospect", weight: 1,
+    scene: function (v2, api, ref) {
+      var nm = ref.data && ref.data.nm; if (!nm) return null;
+      return { sp: nm, face: "player:ar", tx: "You said I'd get my start, and there was my name on the sheet. Whatever the summer brings — I'll remember which kind of manager you are." };
+    }
+  });
+  FOC.storylets.register({
+    id: "promise-broken", on: "_direct", cast: "prospect", weight: 1,
+    scene: function (v2, api, ref) {
+      var nm = ref.data && ref.data.nm; if (!nm) return null;
+      return { sp: nm, face: "player:ar",
+        tx: "You gave me a number and I counted to it. The sheets went up without me. I'm not making a scene — I'm asking what your word costs.",
+        choices: [
+          { t: "Replace the promise — two more matches, guaranteed", fx: function (v2b, apiB) { apiB.makePromise("prospect", nm + " starts one of the next two matches (replacement)", 2); } },
+          { t: "An apology and the truth: you picked the XI you believed in", fx: function (v2b, apiB) { apiB.rapport("dressingRoom", -2); } }
+        ] };
+    }
+  });
+})();
+
+/* ---- features/career-hub.js ---- */
+/* features/career-hub — the Season Hub UI (#/summer, post-prologue).
+ * One primary action per visit; everything else is tabs of dense, honest
+ * information. Expressive presentation stays with scenes and finals;
+ * tables stay tables.
+ */
+FOC.careerHub = (function () {
+  var U = FOC.util, CR = FOC.career, C = FOC.competitions, SL = FOC.storylets;
+  var tab = "season";
+  function esc(s) { return U.esc(s); }
+
+  function clubNm(v2, id) { return (v2.world.clubsById[id] || {}).name || "?"; }
+
+  function faceImg(face) {
+    var art = (window.__foGame && window.__foGame.art) || "client/art/";
+    if (!face) face = "gaffer";
+    if (face.indexOf("npc:") === 0) return "<span class='sm-mono'>" + esc(face.split(":")[1] || "?") + "</span>";
+    if (face.indexOf("player:") === 0) return "<img class='sm-face' src='" + art + (face.split(":")[1] || "bat") + ".png' alt=''>";
+    return "<img class='sm-face' src='" + art + face + ".png' alt=''>";
+  }
+
+  function sceneHTML(sc) {
+    var h = "<div class='sm-scene'>" + faceImg(sc.face) +
+      "<div class='sm-bx'><div class='sm-sp'>" + esc(sc.sp) + "</div><div class='sm-tx'>" + esc(sc.tx) + "</div>";
+    if (sc.choices) h += "<div class='sm-choices'>" + sc.choices.map(function (c, i) {
+      return "<button class='sm-ch' data-ch='" + i + "'>" + esc(c.t) + "</button>";
+    }).join("") + "</div>";
+    else h += "<div class='sm-choices'><button class='sm-ch sm-cont' data-ch='-1'>Continue ▸</button></div>";
+    return h + "</div></div>";
+  }
+
+  function briefHTML(v2) {
+    var news = (v2.world.news || []).slice(0, 2).map(function (n) { return esc(n.text); });
+    var uf = C.userFixture(v2, v2.week);
+    var prom = v2.story.promises.filter(function (p) { return p.status === "active"; })[0];
+    var bits = [];
+    if (news.length) bits.push(news.join(" "));
+    if (prom) bits.push("Live promise: " + esc(prom.txt) + " — " + prom.left + " match" + (prom.left === 1 ? "" : "es") + " left.");
+    if (uf && uf.status !== "played") bits.push("Next: " + esc(clubNm(v2, uf.homeId === v2.user.clubId ? uf.awayId : uf.homeId)) + " (" + esc(FOC.calendar.week(v2.week).label) + ").");
+    if (!bits.length) bits.push("A quiet week. They exist, whatever the Argus implies.");
+    return "<div class='sm-scene'>" + faceImg("gaffer") +
+      "<div class='sm-bx'><div class='sm-sp'>The Gaffer — while you were away</div><div class='sm-tx'>" + bits.join(" ") + "</div></div></div>";
+  }
+
+  function ctaHTML(v2) {
+    var uf = C.userFixture(v2, v2.week);
+    var wk = FOC.calendar.week(v2.week);
+    if (!wk) return "";
+    var live = false, saved = false;
+    try { live = !!(App.pending && App.pending.__career); saved = !!(App.orders && App.orders.saved); } catch (e) {}
+    if (uf && uf.status !== "played") {
+      var oppId = uf.homeId === v2.user.clubId ? uf.awayId : uf.homeId;
+      var host = v2.world.clubsById[uf.homeId];
+      return "<div class='sm-tie'><div class='sm-tie-k'>" + esc(wk.label) + (uf.neutral ? " · neutral ground" : "") + "</div>" +
+        "<div class='sm-tie-nm'>" + esc(clubNm(v2, oppId)) + "</div>" +
+        "<div class='sm-tie-c'>" + esc(host.ground) + " · " + esc(host.pitch) + " pitch" + (uf.weather ? " · forecast " + esc(uf.weather) : "") + "</div>" +
+        (live && saved ? "<button class='sm-go' id='cr-walk'>Walk out ▸</button>"
+          : live ? "<button class='sm-go' id='cr-lineup'>Pick your XI ▸</button>"
+          : "<button class='sm-go' id='cr-play'>Play the fixture ▸</button>") + "</div>";
+    }
+    return "<div class='sm-tie'><div class='sm-tie-k'>" + esc(wk.label) + "</div>" +
+      "<div class='sm-tie-nm'>" + (uf ? "Your result is in" : "No fixture for you") + "</div>" +
+      "<div class='sm-tie-c'>" + (uf ? "The rest of the round plays out when you advance." : "Cup week — you're not in this stage. The world plays on without you.") + "</div>" +
+      "<button class='sm-go' id='cr-advance'>Advance the week ▸</button></div>";
+  }
+
+  function tableHTML(v2) {
+    var rows = C.table(v2);
+    var h = "<table class='cr-tbl'><tr><th></th><th style='text-align:left'>Club</th><th>P</th><th>W</th><th>L</th><th>T</th><th>Pts</th><th>NRR</th></tr>";
+    rows.forEach(function (r, i) {
+      var c = v2.world.clubsById[r.clubId];
+      h += "<tr class='" + (c.isUser ? "me" : "") + "'><td>" + (i + 1) + "</td><td style='text-align:left'>" + esc(c.name) +
+        "</td><td>" + r.p + "</td><td>" + r.w + "</td><td>" + r.l + "</td><td>" + r.t + "</td><td><b>" + r.pts + "</b></td><td>" +
+        (r.nrr >= 0 ? "+" : "") + r.nrr.toFixed(2) + "</td></tr>";
+    });
+    return h + "</table>";
+  }
+
+  function cupsHTML(v2) {
+    var f = v2.world.competitionsById.founders, cr = v2.world.competitionsById.crown;
+    var h = "<div class='cr-sec'>Founders Cup — " + esc(f ? f.stage : "?") + "</div>";
+    if (f) {
+      if (f.winner) h += "<div class='cr-line'>🏆 " + esc(clubNm(v2, f.winner)) + "</div>";
+      h += "<div class='cr-line'>Out: " + (f.out.length ? f.out.map(function (id) { return esc(clubNm(v2, id)); }).join(", ") : "nobody yet") + "</div>";
+      if (f.out.indexOf(v2.user.clubId) >= 0) h += "<div class='cr-line'><b>Your cup is over for this edition — the league remains.</b></div>";
+    }
+    h += "<div class='cr-sec'>Crown Cup — " + esc(cr ? cr.stage : "?") + "</div>";
+    if (cr) {
+      h += "<div class='cr-line'>" + esc(cr.note || "") + "</div>";
+      if (cr.entrants && cr.entrants.length) h += "<div class='cr-line'>Entrants: " + cr.entrants.map(function (id) { return esc(clubNm(v2, id)); }).join(", ") + "</div>";
+      if (cr.winner) h += "<div class='cr-line'>🏆 " + esc(clubNm(v2, cr.winner)) + "</div>";
+    }
+    return h;
+  }
+
+  function worldHTML(v2) {
+    var h = "<div class='cr-sec'>Clubs and managers</div>";
+    Object.keys(v2.world.clubsById).forEach(function (cid) {
+      var c = v2.world.clubsById[cid];
+      var m = c.managerId && v2.world.managersById[c.managerId];
+      h += "<div class='cr-line'><b>" + esc(c.name) + "</b> — " + (m ? esc(m.name) : "no manager") +
+        " · form " + esc((c.form || []).slice(-5).join("") || "—") +
+        " · " + esc(c.tendency) + (c.isUser ? " · <b>you</b>" : "") + "</div>";
+    });
+    var tr = (v2.world.transfers || []).slice(-8).reverse();
+    if (tr.length) {
+      h += "<div class='cr-sec'>Recent transfers</div>";
+      tr.forEach(function (d) {
+        h += "<div class='cr-line'>" + esc(d.playerName) + ": " + esc(d.fromName) + " → " + esc(d.toName) + " (" + Math.round(d.fee / 1000) + "k, S" + d.season + "W" + d.week + ")</div>";
+      });
+    }
+    return h;
+  }
+
+  function rivalHTML(v2) {
+    var all = [];
+    for (var k in v2.rivalries.clubs) { if (v2.rivalries.clubs[k].level > 0 || v2.rivalries.clubs[k].games > 0) all.push(v2.rivalries.clubs[k]); }
+    all.sort(function (a, b) { return FOC.rivalry.score(b) - FOC.rivalry.score(a); });
+    if (!all.length) return "<div class='cr-line'>No history yet. Rivalries are earned here, not declared.</div>";
+    var h = "";
+    all.slice(0, 10).forEach(function (e) {
+      h += "<div class='cr-line'><b>" + esc(clubNm(v2, e.a)) + " v " + esc(clubNm(v2, e.b)) + "</b> — " +
+        esc(FOC.rivalry.LEVELS[e.level]) + " · " + e.games + " meetings (" + e.aWins + "–" + e.bWins + ")" +
+        (e.close ? " · " + e.close + " close" : "") + (e.cupKOs.length ? " · " + e.cupKOs.length + " cup KO" : "") +
+        (e.transfers ? " · " + e.transfers + " transfer" + (e.transfers > 1 ? "s" : "") : "") + "</div>";
+    });
+    return h;
+  }
+
+  function historyHTML(v2) {
+    var h = "<div class='cr-sec'>Trophies</div>";
+    h += (v2.history.trophies || []).length
+      ? v2.history.trophies.map(function (t) { return "<div class='cr-line'>🏆 " + esc(t.note || t.kind) + "</div>"; }).join("")
+      : "<div class='cr-line'>The cabinet is honest about itself.</div>";
+    h += "<div class='cr-sec'>Departures</div>";
+    h += (v2.history.departures || []).length
+      ? v2.history.departures.slice(-8).reverse().map(function (d) {
+          return "<div class='cr-line'>" + esc(d.playerName) + " → " + esc(d.toName) + " (S" + d.season + ", " + Math.round((d.fee || 0) / 1000) + "k)</div>";
+        }).join("")
+      : "<div class='cr-line'>Nobody has left. Yet.</div>";
+    h += "<div class='cr-sec'>Milestones</div>";
+    h += (v2.history.milestones || []).slice(-10).reverse().map(function (m) { return "<div class='cr-line'>" + esc(m.note || m.kind) + "</div>"; }).join("") || "<div class='cr-line'>—</div>";
+    if ((v2.history.seasonArchives || []).length) {
+      h += "<div class='cr-sec'>Season archives</div>";
+      v2.history.seasonArchives.forEach(function (a) {
+        h += "<div class='cr-line'>Season " + a.season + ": " + (a.table && a.table[0] ? esc(clubNm(v2, a.table[0].clubId)) + " champions" : "") + "</div>";
+      });
+    }
+    return h;
+  }
+
+  function settingsHTML(v2) {
+    return "<div class='cr-sec'>World seed</div>" +
+      "<div class='cr-line'>Seed: <code id='cr-seed'>" + esc(v2.worldSeed) + "</code> — share it and a friend starts the same world; your decisions will still diverge.</div>" +
+      "<div class='cr-sec'>Export / import</div>" +
+      "<textarea id='cr-io' class='cr-io' rows='3' placeholder='Paste a career export here to import.'></textarea>" +
+      "<div style='display:flex;gap:8px;margin-top:6px'>" +
+      "<button class='sm-ch' id='cr-export' style='flex:0'>Export</button>" +
+      "<button class='sm-ch' id='cr-import' style='flex:0'>Import</button>" +
+      "<button class='sm-ch' id='cr-reset' style='flex:0'>Reset career (archives first)</button></div>";
+  }
+
+  function outcomeHTML(v2) {
+    var o = v2.flags.seasonOutcome; if (!o) return "";
+    var h = "<div class='sm-tie'><div class='sm-tie-k'>Season " + v2.seasonNumber + " · the reckoning</div>" +
+      "<div class='sm-tie-nm'>" + esc(o.kind === "champions" ? "Champions" : o.kind === "dismissed" || o.kind === "insolvent" ? "The board decides" : "Season complete") + "</div>" +
+      "<div class='sm-tie-c'>" + esc(o.txt) + "</div>";
+    if (v2.user.employment === "dismissed") {
+      h += "<button class='sm-go' id='cr-caretaker'>Take the final-warning season ▸</button>" +
+        "<div><button class='sm-skip' id='cr-endcareer'>End the career — view the record</button></div>";
+    } else {
+      h += "<button class='sm-go' id='cr-next'>Begin season " + (v2.seasonNumber + 1) + " ▸</button>";
+    }
+    return h + "</div>";
+  }
+
+  var TABS = [["season", "Season"], ["table", "Table"], ["cups", "Cups"], ["world", "World"], ["rivals", "Rivalries"], ["history", "History"], ["settings", "Seed & Save"]];
+
+  function render(force) {
+    try {
+      if (location.hash.indexOf("#/summer") !== 0) return;
+      if (!CR.active()) return;                      // prologue still owns the screen
+      var page = document.getElementById("page"); if (!page) return;
+      var v2 = CR.career();
+      var scene = SL.nextScene(v2, CR.api(v2));
+      var sig = JSON.stringify([v2.week, v2.seasonNumber, tab, v2.story.pending.length, !!scene,
+        (v2.world.news[0] || {}).text, v2.flags.seasonClosed || 0,
+        (function () { try { return !!(App.pending && App.pending.__career) && !!(App.orders && App.orders.saved); } catch (e) { return 0; } })()]);
+      if (!force && page.__crSig === sig && page.querySelector(".fo-cr")) return;
+      page.__crSig = sig;
+      var h = "<div class='fo-sm fo-cr'>";
+      h += "<div class='sm-head'><div class='sm-kick'>" + esc((A0() || {}).name || "") + " · Season " + v2.seasonNumber + "</div>" +
+        "<h2 class='sm-h1'>" + esc(FOC.calendar.week(v2.week) ? FOC.calendar.label(v2.week) : "Season " + v2.seasonNumber + " — closed") + "</h2></div>";
+      h += "<div class='cr-tabs'>" + TABS.map(function (t) {
+        return "<button class='cr-tab" + (tab === t[0] ? " on" : "") + "' data-tab='" + t[0] + "'>" + t[1] + "</button>";
+      }).join("") + "</div>";
+      if (tab === "season") {
+        if (v2.flags.seasonClosed) h += outcomeHTML(v2);
+        else if (scene) h += sceneHTML(scene.scene);
+        else { h += briefHTML(v2); h += ctaHTML(v2); }
+      }
+      else if (tab === "table") h += "<div style='overflow-x:auto'>" + tableHTML(v2) + "</div>";
+      else if (tab === "cups") h += cupsHTML(v2);
+      else if (tab === "world") h += worldHTML(v2);
+      else if (tab === "rivals") h += rivalHTML(v2);
+      else if (tab === "history") h += historyHTML(v2);
+      else if (tab === "settings") h += settingsHTML(v2);
+      h += "</div>";
+      page.innerHTML = h;
+      wire(page, v2, scene);
+    } catch (e) {}
+  }
+  function A0() { try { return userTeam(); } catch (e) { return null; } }
+
+  function wire(page, v2, scene) {
+    page.querySelectorAll(".cr-tab").forEach(function (b) {
+      b.addEventListener("click", function () { tab = b.getAttribute("data-tab"); render(true); });
+    });
+    page.querySelectorAll(".sm-ch[data-ch]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var i = +b.getAttribute("data-ch");
+        if (scene && scene.scene.choices && scene.scene.choices[i]) {
+          try { scene.scene.choices[i].fx(v2, CR.api(v2)); } catch (e) {}
+        }
+        SL.popScene(v2); CR.persist(); render(true);
+      });
+    });
+    var play = page.querySelector("#cr-play");
+    if (play) play.addEventListener("click", function () { CR.startUserFixture(); });
+    var lu = page.querySelector("#cr-lineup");
+    if (lu) lu.addEventListener("click", function () { location.hash = "#/lineup"; if (window.route) window.route(); });
+    var wk2 = page.querySelector("#cr-walk");
+    if (wk2) wk2.addEventListener("click", function () { location.hash = "#/match"; if (window.route) window.route(); });
+    var adv = page.querySelector("#cr-advance");
+    if (adv) adv.addEventListener("click", function () { CR.advanceWeek(); render(true); });
+    var nx = page.querySelector("#cr-next");
+    if (nx) nx.addEventListener("click", function () { CR.continueNextSeason(false); render(true); });
+    var ct = page.querySelector("#cr-caretaker");
+    if (ct) ct.addEventListener("click", function () { CR.continueNextSeason(true); render(true); });
+    var ec = page.querySelector("#cr-endcareer");
+    if (ec) ec.addEventListener("click", function () { tab = "history"; render(true); });
+    var ex = page.querySelector("#cr-export");
+    if (ex) ex.addEventListener("click", function () {
+      var ta = page.querySelector("#cr-io"); if (ta) { ta.value = FOC.save2.exportCareer(v2); ta.select(); }
+    });
+    var im = page.querySelector("#cr-import");
+    if (im) im.addEventListener("click", function () {
+      var ta = page.querySelector("#cr-io"); if (!ta || !ta.value.trim()) return;
+      try { FOC.save2.importCareer(CR.scope(), ta.value.trim()); FOC.career._reset(); render(true); }
+      catch (e) { ta.value = "Import failed: " + e.message; }
+    });
+    var rs = page.querySelector("#cr-reset");
+    if (rs) rs.addEventListener("click", function () {
+      if (!window.confirm("Reset the career? The current one is archived, never deleted.")) return;
+      FOC.save2.reset(CR.scope()); FOC.career._reset(); render(true);
+    });
+  }
+
+  function css() {
+    if (document.getElementById("fo-cr-css")) return;
+    var st = document.createElement("style"); st.id = "fo-cr-css";
+    st.textContent =
+      ".cr-tabs{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 12px}" +
+      "html body #page .cr-tab{border:1px solid #d8d0b8;background:#F6F1E3;border-radius:99px;padding:6px 12px;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#5b6472;min-height:34px}" +
+      "html body #page .cr-tab.on{background:#14213D;color:#F1EADA;border-color:#14213D}" +
+      ".cr-tbl{width:100%;border-collapse:collapse;font-size:13px;background:#FDFBF4;border:1px solid #e3dcc6;border-radius:10px}" +
+      ".cr-tbl th{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#8a90a0;padding:7px 6px;border-bottom:1px solid #e3dcc6}" +
+      ".cr-tbl td{padding:6px;text-align:center;border-bottom:1px dashed #efe9d8;color:#2a3140;font-variant-numeric:tabular-nums}" +
+      ".cr-tbl tr.me td{background:#EFF5EC;font-weight:600}" +
+      ".cr-sec{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#C9A24B;margin:14px 0 5px}" +
+      ".cr-line{font-size:13.5px;color:#2a3140;padding:3px 0;border-bottom:1px dashed #efe9d8}" +
+      ".cr-io{width:100%;box-sizing:border-box;border:1px solid #d8d0b8;border-radius:8px;padding:7px;font-size:11px;font-family:monospace}" +
+      ".fo-cr button:focus-visible{outline:3px solid #C9A24B;outline-offset:1px}";
+    document.head.appendChild(st);
+  }
+
+  function init() {
+    if (typeof window === "undefined") return;
+    css();
+    CR.startKeeper();
+    window.addEventListener("hashchange", function () {
+      if (location.hash.indexOf("#/summer") === 0) setTimeout(function () { render(true); }, 30);
+    });
+    setInterval(function () {
+      // the career begins the moment the prologue hands over
+      try { if (CR.prologueDone() && !CR.career()) CR.begin(); } catch (e) {}
+      render(false);
+    }, 1000);
   }
 
   return { init: init, render: render };
@@ -26368,10 +28621,15 @@ FOC.campaignUI = (function () {
       FOC.game.init();
       FOC.lineup.init();
       FOC.campaignUI.init();
+      FOC.careerHub.init();
       window.__foSummer = {
         save: function () { return FOC.game.save(); },
         engine: FOC.game, adapter: FOC.adapter, lineup: FOC.lineup,
-        saveMod: FOC.save, ids: FOC.ids, events: FOC.events, england: FOC.england
+        saveMod: FOC.save, ids: FOC.ids, events: FOC.events, england: FOC.england,
+        career: FOC.career, careerHub: FOC.careerHub, save2: FOC.save2,
+        world: { gen: FOC.worldgen, sim: FOC.worldsim, comps: FOC.competitions,
+          npc: FOC.npc, transfers: FOC.transfers, rivalry: FOC.rivalry },
+        rng: FOC.rng, storylets: FOC.storylets
       };
       try { console.info("The First Summer ready."); } catch (e2) {}
     } catch (e3) {}

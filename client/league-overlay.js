@@ -4576,7 +4576,7 @@
       // practice vs bots: bank the match and broadcast it ball by ball, the
       // same experience as friendlies and league matchdays
       try {
-        if (!window.__foPracRun && App && App.pending && App.pending.__friendly && !App.pending.__tut && !App.pending.__circuit && !App.pending.__camp && App.orders && App.orders.saved && !(typeof M !== "undefined" && M && !M.done)) {
+        if (!window.__foPracRun && App && App.pending && App.pending.__friendly && !App.pending.__tut && !App.pending.__circuit && !App.pending.__camp && !App.pending.__career && App.orders && App.orders.saved && !(typeof M !== "undefined" && M && !M.done)) {
           var cP = foPracBroadcast();
           if (cP && cP.id) {
             try { foFriendlies = (foFriendlies || []).filter(function (f) { return f.oppName !== cP.opponent_club; }); foFrSchedSave(); } catch (eSch) {}
@@ -17915,7 +17915,37 @@
       challenge: foChallenge,
       pitchName: foPitchName,
       pushPacket: foPushCurrentPacket,
-      story: { state: foStState, save: foStSave, log: foStLog, varAdj: foStVar }
+      story: { state: foStState, save: foStSave, log: foStLog, varAdj: foStVar },
+      // headless full match between two arbitrary team objects through the
+      // REAL engine (newMatch + autoPick/stepBall — the same logic every
+      // match uses). isUserMatch stays false so App.orders never applies;
+      // onMatchEnd is suppressed so nothing leaks into App.results,
+      // player history or fatigue. Same pattern as the engine's own
+      // simBackground and the overlay's practice broadcast.
+      simWorld: function (tA, tB, pitch, weather, seed) {
+        var prevM = null, prevToss = null, prevOME = null, ok = false;
+        try { prevM = M; } catch (e0) {}
+        try { prevToss = App.tossState; } catch (e1) {}
+        try {
+          prevOME = window.onMatchEnd; window.onMatchEnd = function () {};
+          M = newMatch(tA, tB, pitch, (seed >>> 0) || 1);
+          M.meta = { home: tA.name, away: tB.name, pitch: pitch, weather: weather || "Sunny", comp: "world", isUser: false };
+          M.isUserMatch = false;
+          M.ordersMap = {};
+          App.tossState = { stage: "x" };
+          var aiBats = aiTossDecision();
+          applyToss(aiBats);
+          var g = 0;
+          while (M && !M.done && g++ < 3000) { autoPick(); stepBall(); }
+          ok = !!(M && M.done && M.result);
+          return ok ? { innings: M.innings, result: M.result, batFirstTeam: M.batFirstTeam } : null;
+        } catch (eSim) { return null; }
+        finally {
+          try { window.onMatchEnd = prevOME; } catch (e2) {}
+          try { M = prevM; } catch (e3) {}
+          try { App.tossState = prevToss; } catch (e4) {}
+        }
+      }
     };
   } catch (eXp) {}
 
