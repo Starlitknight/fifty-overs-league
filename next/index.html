@@ -10852,7 +10852,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260718-1833-367823";
+  var FO_BUILD = "20260718-1857-bb280d";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21640,7 +21640,19 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             x = (x ^ (x >>> 13)) >>> 0; return x % 99991;
           };
           var pick = function (arr, salt) { return arr[H(salt) % arr.length]; };
-          var reg = pick(FO_REGIONS, 3), reg2 = pick(FO_REGIONS, 5);
+          // name only fielders who are actually posted: the campaign bundle
+          // exports the live field template (setting + spin variant + mirror)
+          var FT = null;
+          try { if (window.__foField) FT = window.__foField.active(inn, sb.p.hand); } catch (eF) {}
+          var allL = FT && FT.dirs.length ? FT.dirs : FO_REGIONS;
+          var ringL = FT && FT.ring.length ? FT.ring : FO_REGIONS;
+          var reg = pick(allL, 3), reg2 = pick(allL, 5);
+          var regRing = pick(ringL, 4);
+          // null means "nobody is out" (an all-in attacking field) - phrases
+          // about the rope then switch to open-space variants
+          var regDeep = FT ? (FT.deep.length ? pick(FT.deep, 6) : null) : pick(FO_REGIONS, 6);
+          var sqOr = FT ? (FT.ring.indexOf("square leg") >= 0 ? "square leg" : regRing) : "square leg";
+          var slipsOr = FT && !FT.hasSlip ? "behind the wicket" : "the slips";
           var F = (typeof M !== "undefined" && M && M._fielder) ? ln(M._fielder.name) : null;
           // anti-repeat: never reuse an exact line within the last 60 of this
           // innings. Deterministic - the sim visits balls in a fixed order.
@@ -21676,11 +21688,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
               "Edged and taken! " + bwl + " draws the outside edge and " + (F || kp) + " does the rest",
               "Skied a mile - " + (F || "the fielder") + " circles under it at " + reg + " and settles the nerves. Gone",
               "Miscued! The leading edge loops to " + (F || "the man") + " and " + bat + " walks",
-              "Big shot, bad choice: " + bat + " finds " + (F || "the sweeper") + " on the rope at " + reg,
-              "Soft hands, hard luck - " + bat + " chips it straight to " + (F || "the man") + " at " + reg,
+              (regDeep ? "Big shot, bad choice: " + bat + " finds " + (F || "the sweeper") + " on the rope at " + regDeep : "Big shot, bad choice: the mistimed slog hangs up and " + (F || "the man") + " at " + regRing + " barely moves"),
+              "Soft hands, hard luck - " + bat + " chips it straight to " + (F || "the man") + " at " + regRing,
               "A thin feather down the leg side and " + (F || kp) + " clings on. " + bat + " drags himself off",
               "The short ball climbs, the glove goes up, and " + (F || kp) + " accepts the gift",
-              "Slower ball, early through the drive - the checked chip finds " + (F || "the man") + " at " + reg
+              "Slower ball, early through the drive - the checked chip finds " + (F || "the man") + " at " + regRing
             ], 12);
             else if (out === "wLBW") core = pickF([
               "Rapped on the pads and up goes the finger! " + bat + " is plumb in front",
@@ -21742,11 +21754,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
               bat + " drives on the up, taking the fielder out of the game",
               bat + " tickles it fine, too fine for " + kp
             ];
-            var fourEnd = [". It races away for FOUR", " - one bounce, into the rope. FOUR", " and it beats the dive. FOUR all the way", " - " + reg2 + " gives chase in vain. FOUR", ". FOUR, and the pressure eases", ". FOUR - no one moved"];
+            var fourEnd = [". It races away for FOUR", " - one bounce, into the rope. FOUR", " and it beats the dive. FOUR all the way", (regDeep ? " - " + regDeep + " gives chase in vain. FOUR" : " - nothing in the deep to stop it. FOUR"), ". FOUR, and the pressure eases", ". FOUR - no one moved"];
             if (H(33) % 7 === 0) return pickF([
               "Streaky! " + bat + " gets an inside edge past " + (pace ? kp : "the stumps") + " and it runs away for FOUR",
               "Top edge on the pull... it lands SAFE and skips to the rope. FOUR, and " + bat + " smiles",
-              "The outside edge flies wide of the slip - FOUR, and " + bwl + " puts his hands on his head",
+              (FT && !FT.hasSlip ? "The outside edge flies through the vacant cordon - FOUR, and " + bwl + " puts his hands on his head" : "The outside edge flies wide of the slip - FOUR, and " + bwl + " puts his hands on his head"),
               "Not in control! But it bisects the fielders and the umpire signals FOUR"], 34) + ".";
             return used(fresh(function (sa) {
               return fourLead[H(sa * 7 + 3) % fourLead.length] + fourShot[H(sa) % fourShot.length] + fourEnd[H(sa * 3 + 29) % fourEnd.length];
@@ -21770,7 +21782,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             "Through everything! " + kp + " grabs at air and they pinch a bye"
           ], 35) + ".";
           if (out === "legbye") return pickF([
-            "Off the pad and squirting to " + reg + " - they cross for a leg bye",
+            "Off the pad and squirting to " + regRing + " - they cross for a leg bye",
             "Clipped off the thigh pad, past " + kp + " - a leg bye stolen"
           ], 36) + ".";
 
@@ -21778,18 +21790,18 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             // rare standalone drama
             if (H(41) % 11 === 0) return pickF(pace ? [
               "Loud appeal for caught behind! The umpire is unmoved, and " + bwl + " cannot believe it",
-              "Edged... just SHORT of the slip! Hearts in mouths all round",
+              (FT && !FT.hasSlip ? "Edged... but it dies in front of the diving keeper! Hearts in mouths" : "Edged... just SHORT of the slip! Hearts in mouths all round"),
               bat + " inside-edges into his own boot and it dribbles to safety. Ugly but effective",
               "A ferocious shout for lbw - too high, says the umpire, and it probably was",
               "That one KEPT LOW - " + bat + " jams down on it just in time",
               "A snorter from " + bwl + "! " + bat + " somehow keeps it out and the bowler applauds",
               "Rapped on the thigh pad - " + bwl + " wants lbw, the umpire wants none of it",
-              "Half a shout for a catch at short leg - the umpire is already shaking his head"
+              (FT && !FT.hasShortLeg ? "Half a shout for a bat-pad catch - the umpire is already shaking his head" : "Half a shout for a catch at short leg - the umpire is already shaking his head")
             ] : [
               "Big appeal for lbw as " + bat + " misses the sweep... not out, says the umpire",
               "Past the edge, past the stumps, past " + kp + " - and somehow no damage done",
               bat + " is beaten in the flight, stranded mid-pitch... but " + kp + " fumbles the take! A life",
-              "Bat-pad! It pops up... and lands just wide of the crouching short leg",
+              (FT && !FT.hasShortLeg ? "Bat-pad! It pops up... and lands agonisingly out of anyone" + String.fromCharCode(39) + "s reach" : "Bat-pad! It pops up... and lands just wide of the crouching short leg"),
               "Bowled him?! No - off the pad, and it trickles wide of the stumps. Heart-stopper",
               "The slider goes on with the arm - " + bat + " adjusts his defence just in time",
               "Around his legs! " + kp + " misses the stumping chance by a whisker",
@@ -21800,24 +21812,24 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
               var bucket = H(43) % 3;
               if (bucket === 0) d = compose(
                 ["Full and straight from " + bwl, "A yorker speared in", "Overpitched, inviting the drive", "Full on the pads", "A searching full length"],
-                ["dug out at the very last moment", "driven hard but straight to " + reg, "squeezed into the leg side, no run", bat + " flicks but finds the man", bat + " drives and misses. A puff of dust", "met with the full face, but no gap"], 44);
+                ["dug out at the very last moment", "driven hard but straight to " + regRing, "squeezed into the leg side, no run", bat + " flicks but finds the man", bat + " drives and misses. A puff of dust", "met with the full face, but no gap"], 44);
               else if (bucket === 1) d = compose(
                 ["Banged in short", "A sharp bouncer at the badge", "Short and climbing", "Dug in hard, chest high"],
-                [bat + " sways away at the last instant", bat + " ducks under it", "taken on the glove but it drops safe", bat + " pulls... straight to " + reg, "fended awkwardly down into the leg side"], 45);
+                [bat + " sways away at the last instant", bat + " ducks under it", "taken on the glove but it drops safe", bat + " pulls... straight to " + regRing, "fended awkwardly down into the leg side"], 45);
               else d = compose(
                 ["Good length, just outside off", "A heavy ball into the hip", "The nip-backer from " + bwl, "Length, shaping away late", "Cross-seam, hitting the pitch hard", "The slower ball, well disguised", "A tight line at the stumps"],
-                [bat + " plays and misses. A groan from the slips", "left well alone", "defended with a dead bat", "beaten past the outside edge", "chopped down into the ground", "pushed to " + reg + " where the fielder swoops", "an inside edge into the pads", bat + " prods forward and gets nowhere"], 46);
+                [bat + " plays and misses. A groan from " + slipsOr, "left well alone", "defended with a dead bat", "beaten past the outside edge", "chopped down into the ground", "pushed to " + regRing + " where the fielder swoops", "an inside edge into the pads", bat + " prods forward and gets nowhere"], 46);
             } else {
               var bucket2 = H(47) % 3;
               if (bucket2 === 0) d = compose(
                 ["Tossed up, dipping late", "Flighted generously", "Looped up above the eyeline", "Given real air outside off"],
-                [bat + " smothers it with bat and pad together", "driven, but " + reg + " cuts it off", bat + " lunges and jabs it out", "the checked drive goes straight back to the bowler", bat + " watches it right onto the bat"], 48);
+                [bat + " smothers it with bat and pad together", "driven, but " + regRing + " cuts it off", bat + " lunges and jabs it out", "the checked drive goes straight back to the bowler", bat + " watches it right onto the bat"], 48);
               else if (bucket2 === 1) d = compose(
                 ["Ripping past the outside edge", "Turning square out of the rough", "The googly, picked late", "Biting and bouncing at " + bat],
                 [bat + " is beaten all ends up", bat + " adjusts just in time", kp + " takes it smartly with " + bat + " groping", "an inside edge spares him the lbw shout"], 49);
               else d = compose(
                 ["The quicker one, skidding on", "Flat and fast at the stumps", "Darted into the pads", "A tight, flat line from " + bwl],
-                ["jammed out", bat + " works it straight to " + reg, bat + " is rushed and can only block", "kept out with a dead-straight blade", "swept, but square leg is right there"], 50);
+                ["jammed out", bat + " works it straight to " + regRing, bat + " is rushed and can only block", "kept out with a dead-straight blade", "swept, but " + sqOr + " is right there"], 50);
             }
             if (field === "def" && H(26) % 5 === 0) d += ". The ring holds the single";
             if (chase && chase.need > 0 && H(27) % 7 === 0) d += ". " + chase.need + " needed off " + chase.balls;
@@ -21833,12 +21845,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           ], 28);
           else if (rb === 2) runs = used(fresh(function (sa) {
             var v2 = ["clips", "drops", "steers", "lofts", "works"][H(sa) % 5];
-            var t2 = ["into the gap at " + reg + " and comes back hard for two", "into the deep and pushes for two. Smart cricket", "wide of " + reg2 + " - the sweeper cuts it off but they get two", "short of the rope at " + reg + ". Two more"][H(sa * 3 + 11) % 4];
+            var t2 = ["into the gap at " + reg + " and comes back hard for two", "into the deep and pushes for two. Smart cricket", (regDeep ? "wide of " + regDeep + " - the sweeper cuts it off but they get two" : "into the open acres - they jog back for two"), (regDeep ? "short of the rope at " + regDeep + ". Two more" : "into the vacant deep. Two more, easy")][H(sa * 3 + 11) % 4];
             return bat + " " + v2 + " it " + t2;
           }, 29));
           else runs = used(fresh(function (sa) {
             var v1 = ["works", "nudges", "tucks", "steers", "dabs", "punches", "clips", "eases"][H(sa) % 8];
-            var t1 = ["off the hip", "into the covers", "to " + reg, "behind square", "into the gap", "with soft hands"][H(sa * 5 + 13) % 6];
+            var t1 = ["off the hip", "into the covers", "to " + regRing, "behind square", "into the gap", "with soft hands"][H(sa * 5 + 13) % 6];
             var e1 = [" for a quick single", " for one, good running", " and they stroll the single", (sb.r >= 40 ? " - he moves to " + (sb.r + 1) : " to keep the strike ticking"), " - just the one"][H(sa * 7 + 19) % 5];
             return bat + " " + v1 + " it " + t1 + e1;
           }, 30));
@@ -28626,7 +28638,7 @@ FOC.campaignUI = (function () {
  */
 FOC.oval = (function () {
   var U = FOC.util;
-  var seenLogLen = 0, seenInn = -1, queue = [], animating = false, lastSig = null;
+  var seenLogLen = 0, seenInn = -1, queue = [], animating = false, lastSig = null; var seenM = null;
 
   function reduced() {
     try { return window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; }
@@ -28665,6 +28677,7 @@ FOC.oval = (function () {
       "<defs><radialGradient id='ovg'><stop offset='0%' stop-color='#7ea86c'/><stop offset='72%' stop-color='#5d8a4e'/><stop offset='100%' stop-color='#4c7440'/></radialGradient></defs>" +
       "<ellipse cx='200' cy='130' rx='186' ry='116' fill='none' stroke='rgba(255,255,255,.5)' stroke-width='1.5' stroke-dasharray='3 6'/>" +
       "<ellipse cx='200' cy='130' rx='110' ry='80' fill='none' stroke='rgba(255,255,255,.32)' stroke-width='1.1' stroke-dasharray='2 5'/>" +
+      "<g id='ov-trails'></g>" +
       "<rect x='188' y='78' width='24' height='104' rx='3' fill='#d9c9a3'/>" +
       "<line x1='190' y1='90' x2='210' y2='90' stroke='#fff' stroke-width='1'/>" +
       "<line x1='190' y1='170' x2='210' y2='170' stroke='#fff' stroke-width='1'/>" +
@@ -28677,7 +28690,7 @@ FOC.oval = (function () {
       "<circle id='ov-bowler' cx='200' cy='196' r='5' fill='#14213D' stroke='#fff' stroke-width='1.4'/>" +
       "<circle id='ov-ball' cx='200' cy='190' r='3.2' fill='#a3242b' stroke='#fff' stroke-width='.8' opacity='0'/>" +
       "<text id='ov-pop' x='200' y='128' text-anchor='middle' class='ov-pop'></text>" +
-      "</svg><div class='ov-note'>theatre · real field setting · standard placements</div></div>";
+      "</svg><div class='ov-note'>theatre · live directions · real field setting</div></div>";
   }
 
   // Nine named positions per setting as [x, y, label], drawn for a
@@ -28705,6 +28718,82 @@ FOC.oval = (function () {
       [277, 155, "midwicket"], [280, 95, "square leg"]]
   };
   var curField = null;
+
+  // ---- shared field truth ---------------------------------------------------
+  // The active posted field for this innings ball: setting + spin variant +
+  // handedness mirror. Exported as window.__foField so the overlay's
+  // commentary voice names only fielders who are actually standing there.
+  var DEEP_POS = { "third man": 1, "fine leg": 1, "sweeper": 1, "deep midwicket": 1, "deep cover": 1, "long-off": 1, "long-on": 1 };
+  var CLOSE_POS = { "slip": 1, "silly point": 1, "short leg": 1 };
+  function activeField(inn, hand) {
+    var fs = fieldSetting(inn), sp = spinOn(inn), lhb = hand === "L";
+    var spots = (fs === "att" && sp) ? FIELDS.attSpin : (FIELDS[fs] || FIELDS.bal);
+    var out = { setting: fs, spin: sp, lhb: lhb, ring: [], deep: [], dirs: [],
+      hasSlip: false, hasShortLeg: false, spots: [] };
+    for (var i = 0; i < spots.length; i++) {
+      var lbl = spots[i][2]; if (!lbl) continue;
+      out.spots.push({ label: lbl, x: lhb ? 400 - spots[i][0] : spots[i][0], y: spots[i][1], deep: !!DEEP_POS[lbl] });
+      if (lbl === "slip") out.hasSlip = true;
+      if (lbl === "short leg") out.hasShortLeg = true;
+      if (DEEP_POS[lbl]) { out.deep.push(lbl); out.dirs.push(lbl); }
+      else if (!CLOSE_POS[lbl]) { out.ring.push(lbl); out.dirs.push(lbl); }
+    }
+    return out;
+  }
+  if (typeof window !== "undefined") window.__foField = { active: activeField };
+
+  // every label the templates know, longest first so "deep midwicket" wins
+  // over "midwicket" when scanning a commentary line
+  var ALL_LBL = (function () {
+    var seen = {};
+    Object.keys(FIELDS).forEach(function (k) {
+      FIELDS[k].forEach(function (t) { if (t[2]) seen[t[2]] = 1; });
+    });
+    return Object.keys(seen).sort(function (a, b) { return b.length - a.length; });
+  })();
+  function lblIn(txt) {
+    var t = (txt || "").toLowerCase();
+    for (var i = 0; i < ALL_LBL.length; i++) if (t.indexOf(ALL_LBL[i]) >= 0) return ALL_LBL[i];
+    return null;
+  }
+  function spotFor(lbl) {
+    if (!lbl) return null;
+    var gs = document.querySelectorAll("#ov-field g");
+    for (var i = 0; i < gs.length; i++) {
+      var t = gs[i].querySelector("text");
+      if (t && t.textContent === lbl) {
+        var m = /translate\((-?[\d.]+),(-?[\d.]+)\)/.exec(gs[i].getAttribute("transform") || "");
+        if (m) return { g: gs[i], x: +m[1], y: +m[2] };
+      }
+    }
+    return null;
+  }
+  function pulseDot(g, wicket) {
+    try {
+      g.classList.remove("ov-hot", "ov-hotw");
+      void g.getBoundingClientRect();
+      g.classList.add(wicket ? "ov-hotw" : "ov-hot");
+      setTimeout(function () { g.classList.remove("ov-hot", "ov-hotw"); }, 950);
+    } catch (e) {}
+  }
+  // boundary trails: every four and six this innings stays on the grass as a
+  // faint line along its real direction
+  var trails = [];
+  function addTrail(x, y, sym) {
+    trails.push({ x: x, y: y, sym: sym, inn: (typeof M !== "undefined" && M) ? M.inns : 0 });
+    if (trails.length > 80) trails.shift();
+    drawTrails();
+  }
+  function drawTrails() {
+    var g = document.getElementById("ov-trails"); if (!g) return;
+    var inn = (typeof M !== "undefined" && M) ? M.inns : 0;
+    g.innerHTML = trails.filter(function (t) { return t.inn === inn; }).map(function (t) {
+      return "<line x1='200' y1='92' x2='" + t.x.toFixed(1) + "' y2='" + t.y.toFixed(1) +
+        "' stroke='" + (t.sym === "6" ? "#C8674A" : "#C9A24B") + "' stroke-opacity='" +
+        (t.sym === "6" ? ".5" : ".42") + "' stroke-width='1.3'/>";
+    }).join("");
+  }
+
   function fieldSetting(inn) {
     try {
       var over = Math.floor((inn.legal || 0) / 6) + 1;
@@ -28799,34 +28888,55 @@ FOC.oval = (function () {
   }
 
   // ---- the theatre ----------------------------------------------------------
-  function animate(sym, ballIx, done) {
+  function animate(sym, ballIx, done, lbl) {
     var svg = document.querySelector("#fo-oval .ov-svg");
     var ball = document.getElementById("ov-ball");
     var pop = document.getElementById("ov-pop");
     if (!svg || !ball) { done(); return; }
     if (reduced()) { flashPop(sym, pop); done(); return; }
+    var spot = spotFor(lbl);   // the fielder the commentary actually named
     // delivery: bowler end (200,190) to the striker (200,88)
     ball.setAttribute("opacity", "1");
     slide(ball, 200, 190, 200, 92, 220, function () {
       if (sym === "W") {
-        shatter(); flashPop("OUT", pop, "#a3242b");
-        setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, 620);
+        if (spot) {
+          // caught (or run out) at a named position: the ball travels there
+          slide(ball, 200, 92, spot.x, spot.y, 430, function () {
+            pulseDot(spot.g, true); flashPop("OUT", pop, "#a3242b");
+            setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, 620);
+          });
+        } else {
+          shatter(); flashPop("OUT", pop, "#a3242b");
+          setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, 620);
+        }
         return;
       }
       if (sym === "·" || sym === "+") {
-        setTimeout(function () { ball.setAttribute("opacity", "0"); if (sym === "+") flashPop("extra", pop, "#5b6472"); done(); }, 160);
+        if (sym === "·" && spot) {
+          // defended or driven straight to the named fielder
+          slide(ball, 200, 92, spot.x, spot.y, 300, function () {
+            pulseDot(spot.g);
+            setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, 180);
+          });
+        } else {
+          setTimeout(function () { ball.setAttribute("opacity", "0"); if (sym === "+") flashPop("extra", pop, "#5b6472"); done(); }, 160);
+        }
         return;
       }
-      // a scoring shot: seeded direction, distance by outcome
-      var a = angleFor(ballIx, sym);
+      // a scoring shot: real direction when the line names a position,
+      // seeded decoration otherwise
+      var a = spot ? Math.atan2(spot.y - 130, spot.x - 200) : angleFor(ballIx, sym);
       var dist = sym === "6" ? 1.06 : sym === "4" ? 0.97 : 0.45 + ((ballIx % 3) * 0.1);
       var tx = 200 + Math.cos(a) * 186 * dist;
       var ty = 130 + Math.sin(a) * 116 * dist;
       var runs = sym === "4" ? 0 : sym === "6" ? 0 : parseInt(sym, 10) || 0;
+      if (runs && spot) { tx = spot.x; ty = spot.y; }
       if (runs) swapRunners(runs);
       slide(ball, 200, 92, tx, ty, sym === "6" ? 560 : 440, function () {
         if (sym === "4") flashPop("FOUR", pop, "#C9A24B");
         if (sym === "6") flashPop("SIX", pop, "#C8674A");
+        if (sym === "4" || sym === "6") addTrail(tx, ty, sym);
+        else if (spot) pulseDot(spot.g);
         setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, sym === "4" || sym === "6" ? 480 : 140);
       }, sym === "6");
     });
@@ -28882,13 +28992,13 @@ FOC.oval = (function () {
     var next = queue.shift();
     if (!next) return;
     animating = true;
-    animate(next.sym, next.ix, function () { animating = false; board(); pump(); });
+    animate(next.sym, next.ix, function () { animating = false; board(); pump(); }, next.lbl);
   }
 
   function tick() {
     try {
       if (location.hash.indexOf("#/match") !== 0) {
-        seenLogLen = 0; curField = null;
+        curField = null;
         var pg0 = document.getElementById("page");
         if (pg0 && pg0.classList.contains("fo-ovalgrid")) pg0.classList.remove("fo-ovalgrid");
         return;
@@ -28898,19 +29008,26 @@ FOC.oval = (function () {
       if (!page) return;
       if (!document.getElementById("fo-oval")) {
         page.insertAdjacentHTML("afterbegin", stageHTML());
-        seenLogLen = M.log.length;   // join the broadcast from now
-        seenInn = M.inns;
+        // the engine re-renders #page on every ball, killing the stage; only
+        // a genuinely NEW match joins the broadcast from now — a rebuilt
+        // stage for the same match keeps its counters so no ball is skipped
+        if (seenM !== M) { seenM = M; seenLogLen = M.log.length; seenInn = M.inns; trails = []; }
         curField = null;
+        drawTrails();
       }
       page.classList.add("fo-ovalgrid");
-      if (M.inns !== seenInn) { seenInn = M.inns; seenLogLen = M.log.length; }
+      if (M.inns !== seenInn) { seenInn = M.inns; seenLogLen = M.log.length; trails = []; drawTrails(); }
       if (M.log.length > seenLogLen) {
         // engine unshifts: new entries are at the FRONT
         var fresh = M.log.slice(0, M.log.length - seenLogLen);
         seenLogLen = M.log.length;
         for (var i = fresh.length - 1; i >= 0; i--) {
           var s = symOf(fresh[i]);
-          if (s) queue.push({ sym: s, ix: seenLogLen - i });
+          if (s) {
+            var lb = lblIn(fresh[i].txt);
+            fresh[i].__foL = lb || undefined;
+            queue.push({ sym: s, ix: seenLogLen - i, lbl: lb });
+          }
         }
         pump();
       }
@@ -28970,6 +29087,10 @@ FOC.oval = (function () {
       ".ov-strip .bw{background:#a3242b;color:#fff}.ov-strip .bd{opacity:.75}" +
       ".ov-svg{display:block;width:100%;height:auto;background:#0F1A2E}" +
       ".ov-flbl{font:600 7px Inter,-apple-system,sans-serif;fill:rgba(241,234,218,.78);letter-spacing:.05em;text-anchor:middle;text-transform:uppercase}" +
+      ".ov-f.ov-hot circle{animation:ovHot .9s ease}" +
+      ".ov-f.ov-hotw circle{animation:ovHotW .9s ease}" +
+      "@keyframes ovHot{0%{stroke:#C9A24B;stroke-width:1.2}35%{stroke:#C9A24B;stroke-width:5.5}100%{stroke:#fff;stroke-width:1.2}}" +
+      "@keyframes ovHotW{0%{stroke:#e04b3a;stroke-width:1.2}35%{stroke:#e04b3a;stroke-width:6}100%{stroke:#fff;stroke-width:1.2}}" +
       ".ov-pop{font-family:Oswald,sans-serif;font-size:30px;letter-spacing:4px;font-weight:600;opacity:0;paint-order:stroke;stroke:#0F1A2E;stroke-width:4px}" +
       ".ov-pop.on{animation:ovPop 1.05s ease}" +
       "@keyframes ovPop{0%{opacity:0;transform:scale(.6)}18%{opacity:1;transform:scale(1.12)}70%{opacity:1;transform:scale(1)}100%{opacity:0}}" +
@@ -28985,7 +29106,8 @@ FOC.oval = (function () {
   }
 
   return { init: init, tick: tick, symOf: symOf, angleFor: angleFor,
-    __test: { placeField: placeField, FIELDS: FIELDS } };
+    __test: { placeField: placeField, FIELDS: FIELDS, activeField: activeField, lblIn: lblIn,
+      trailCount: function () { return trails.length; } } };
 })();
 
 /* ---- features/career.js ---- */

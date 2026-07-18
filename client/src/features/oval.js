@@ -7,7 +7,7 @@
  */
 FOC.oval = (function () {
   var U = FOC.util;
-  var seenLogLen = 0, seenInn = -1, queue = [], animating = false, lastSig = null;
+  var seenLogLen = 0, seenInn = -1, queue = [], animating = false, lastSig = null; var seenM = null;
 
   function reduced() {
     try { return window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; }
@@ -46,6 +46,7 @@ FOC.oval = (function () {
       "<defs><radialGradient id='ovg'><stop offset='0%' stop-color='#7ea86c'/><stop offset='72%' stop-color='#5d8a4e'/><stop offset='100%' stop-color='#4c7440'/></radialGradient></defs>" +
       "<ellipse cx='200' cy='130' rx='186' ry='116' fill='none' stroke='rgba(255,255,255,.5)' stroke-width='1.5' stroke-dasharray='3 6'/>" +
       "<ellipse cx='200' cy='130' rx='110' ry='80' fill='none' stroke='rgba(255,255,255,.32)' stroke-width='1.1' stroke-dasharray='2 5'/>" +
+      "<g id='ov-trails'></g>" +
       "<rect x='188' y='78' width='24' height='104' rx='3' fill='#d9c9a3'/>" +
       "<line x1='190' y1='90' x2='210' y2='90' stroke='#fff' stroke-width='1'/>" +
       "<line x1='190' y1='170' x2='210' y2='170' stroke='#fff' stroke-width='1'/>" +
@@ -58,7 +59,7 @@ FOC.oval = (function () {
       "<circle id='ov-bowler' cx='200' cy='196' r='5' fill='#14213D' stroke='#fff' stroke-width='1.4'/>" +
       "<circle id='ov-ball' cx='200' cy='190' r='3.2' fill='#a3242b' stroke='#fff' stroke-width='.8' opacity='0'/>" +
       "<text id='ov-pop' x='200' y='128' text-anchor='middle' class='ov-pop'></text>" +
-      "</svg><div class='ov-note'>theatre · real field setting · standard placements</div></div>";
+      "</svg><div class='ov-note'>theatre · live directions · real field setting</div></div>";
   }
 
   // Nine named positions per setting as [x, y, label], drawn for a
@@ -86,6 +87,82 @@ FOC.oval = (function () {
       [277, 155, "midwicket"], [280, 95, "square leg"]]
   };
   var curField = null;
+
+  // ---- shared field truth ---------------------------------------------------
+  // The active posted field for this innings ball: setting + spin variant +
+  // handedness mirror. Exported as window.__foField so the overlay's
+  // commentary voice names only fielders who are actually standing there.
+  var DEEP_POS = { "third man": 1, "fine leg": 1, "sweeper": 1, "deep midwicket": 1, "deep cover": 1, "long-off": 1, "long-on": 1 };
+  var CLOSE_POS = { "slip": 1, "silly point": 1, "short leg": 1 };
+  function activeField(inn, hand) {
+    var fs = fieldSetting(inn), sp = spinOn(inn), lhb = hand === "L";
+    var spots = (fs === "att" && sp) ? FIELDS.attSpin : (FIELDS[fs] || FIELDS.bal);
+    var out = { setting: fs, spin: sp, lhb: lhb, ring: [], deep: [], dirs: [],
+      hasSlip: false, hasShortLeg: false, spots: [] };
+    for (var i = 0; i < spots.length; i++) {
+      var lbl = spots[i][2]; if (!lbl) continue;
+      out.spots.push({ label: lbl, x: lhb ? 400 - spots[i][0] : spots[i][0], y: spots[i][1], deep: !!DEEP_POS[lbl] });
+      if (lbl === "slip") out.hasSlip = true;
+      if (lbl === "short leg") out.hasShortLeg = true;
+      if (DEEP_POS[lbl]) { out.deep.push(lbl); out.dirs.push(lbl); }
+      else if (!CLOSE_POS[lbl]) { out.ring.push(lbl); out.dirs.push(lbl); }
+    }
+    return out;
+  }
+  if (typeof window !== "undefined") window.__foField = { active: activeField };
+
+  // every label the templates know, longest first so "deep midwicket" wins
+  // over "midwicket" when scanning a commentary line
+  var ALL_LBL = (function () {
+    var seen = {};
+    Object.keys(FIELDS).forEach(function (k) {
+      FIELDS[k].forEach(function (t) { if (t[2]) seen[t[2]] = 1; });
+    });
+    return Object.keys(seen).sort(function (a, b) { return b.length - a.length; });
+  })();
+  function lblIn(txt) {
+    var t = (txt || "").toLowerCase();
+    for (var i = 0; i < ALL_LBL.length; i++) if (t.indexOf(ALL_LBL[i]) >= 0) return ALL_LBL[i];
+    return null;
+  }
+  function spotFor(lbl) {
+    if (!lbl) return null;
+    var gs = document.querySelectorAll("#ov-field g");
+    for (var i = 0; i < gs.length; i++) {
+      var t = gs[i].querySelector("text");
+      if (t && t.textContent === lbl) {
+        var m = /translate\((-?[\d.]+),(-?[\d.]+)\)/.exec(gs[i].getAttribute("transform") || "");
+        if (m) return { g: gs[i], x: +m[1], y: +m[2] };
+      }
+    }
+    return null;
+  }
+  function pulseDot(g, wicket) {
+    try {
+      g.classList.remove("ov-hot", "ov-hotw");
+      void g.getBoundingClientRect();
+      g.classList.add(wicket ? "ov-hotw" : "ov-hot");
+      setTimeout(function () { g.classList.remove("ov-hot", "ov-hotw"); }, 950);
+    } catch (e) {}
+  }
+  // boundary trails: every four and six this innings stays on the grass as a
+  // faint line along its real direction
+  var trails = [];
+  function addTrail(x, y, sym) {
+    trails.push({ x: x, y: y, sym: sym, inn: (typeof M !== "undefined" && M) ? M.inns : 0 });
+    if (trails.length > 80) trails.shift();
+    drawTrails();
+  }
+  function drawTrails() {
+    var g = document.getElementById("ov-trails"); if (!g) return;
+    var inn = (typeof M !== "undefined" && M) ? M.inns : 0;
+    g.innerHTML = trails.filter(function (t) { return t.inn === inn; }).map(function (t) {
+      return "<line x1='200' y1='92' x2='" + t.x.toFixed(1) + "' y2='" + t.y.toFixed(1) +
+        "' stroke='" + (t.sym === "6" ? "#C8674A" : "#C9A24B") + "' stroke-opacity='" +
+        (t.sym === "6" ? ".5" : ".42") + "' stroke-width='1.3'/>";
+    }).join("");
+  }
+
   function fieldSetting(inn) {
     try {
       var over = Math.floor((inn.legal || 0) / 6) + 1;
@@ -180,34 +257,55 @@ FOC.oval = (function () {
   }
 
   // ---- the theatre ----------------------------------------------------------
-  function animate(sym, ballIx, done) {
+  function animate(sym, ballIx, done, lbl) {
     var svg = document.querySelector("#fo-oval .ov-svg");
     var ball = document.getElementById("ov-ball");
     var pop = document.getElementById("ov-pop");
     if (!svg || !ball) { done(); return; }
     if (reduced()) { flashPop(sym, pop); done(); return; }
+    var spot = spotFor(lbl);   // the fielder the commentary actually named
     // delivery: bowler end (200,190) to the striker (200,88)
     ball.setAttribute("opacity", "1");
     slide(ball, 200, 190, 200, 92, 220, function () {
       if (sym === "W") {
-        shatter(); flashPop("OUT", pop, "#a3242b");
-        setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, 620);
+        if (spot) {
+          // caught (or run out) at a named position: the ball travels there
+          slide(ball, 200, 92, spot.x, spot.y, 430, function () {
+            pulseDot(spot.g, true); flashPop("OUT", pop, "#a3242b");
+            setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, 620);
+          });
+        } else {
+          shatter(); flashPop("OUT", pop, "#a3242b");
+          setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, 620);
+        }
         return;
       }
       if (sym === "·" || sym === "+") {
-        setTimeout(function () { ball.setAttribute("opacity", "0"); if (sym === "+") flashPop("extra", pop, "#5b6472"); done(); }, 160);
+        if (sym === "·" && spot) {
+          // defended or driven straight to the named fielder
+          slide(ball, 200, 92, spot.x, spot.y, 300, function () {
+            pulseDot(spot.g);
+            setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, 180);
+          });
+        } else {
+          setTimeout(function () { ball.setAttribute("opacity", "0"); if (sym === "+") flashPop("extra", pop, "#5b6472"); done(); }, 160);
+        }
         return;
       }
-      // a scoring shot: seeded direction, distance by outcome
-      var a = angleFor(ballIx, sym);
+      // a scoring shot: real direction when the line names a position,
+      // seeded decoration otherwise
+      var a = spot ? Math.atan2(spot.y - 130, spot.x - 200) : angleFor(ballIx, sym);
       var dist = sym === "6" ? 1.06 : sym === "4" ? 0.97 : 0.45 + ((ballIx % 3) * 0.1);
       var tx = 200 + Math.cos(a) * 186 * dist;
       var ty = 130 + Math.sin(a) * 116 * dist;
       var runs = sym === "4" ? 0 : sym === "6" ? 0 : parseInt(sym, 10) || 0;
+      if (runs && spot) { tx = spot.x; ty = spot.y; }
       if (runs) swapRunners(runs);
       slide(ball, 200, 92, tx, ty, sym === "6" ? 560 : 440, function () {
         if (sym === "4") flashPop("FOUR", pop, "#C9A24B");
         if (sym === "6") flashPop("SIX", pop, "#C8674A");
+        if (sym === "4" || sym === "6") addTrail(tx, ty, sym);
+        else if (spot) pulseDot(spot.g);
         setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, sym === "4" || sym === "6" ? 480 : 140);
       }, sym === "6");
     });
@@ -263,13 +361,13 @@ FOC.oval = (function () {
     var next = queue.shift();
     if (!next) return;
     animating = true;
-    animate(next.sym, next.ix, function () { animating = false; board(); pump(); });
+    animate(next.sym, next.ix, function () { animating = false; board(); pump(); }, next.lbl);
   }
 
   function tick() {
     try {
       if (location.hash.indexOf("#/match") !== 0) {
-        seenLogLen = 0; curField = null;
+        curField = null;
         var pg0 = document.getElementById("page");
         if (pg0 && pg0.classList.contains("fo-ovalgrid")) pg0.classList.remove("fo-ovalgrid");
         return;
@@ -279,19 +377,26 @@ FOC.oval = (function () {
       if (!page) return;
       if (!document.getElementById("fo-oval")) {
         page.insertAdjacentHTML("afterbegin", stageHTML());
-        seenLogLen = M.log.length;   // join the broadcast from now
-        seenInn = M.inns;
+        // the engine re-renders #page on every ball, killing the stage; only
+        // a genuinely NEW match joins the broadcast from now — a rebuilt
+        // stage for the same match keeps its counters so no ball is skipped
+        if (seenM !== M) { seenM = M; seenLogLen = M.log.length; seenInn = M.inns; trails = []; }
         curField = null;
+        drawTrails();
       }
       page.classList.add("fo-ovalgrid");
-      if (M.inns !== seenInn) { seenInn = M.inns; seenLogLen = M.log.length; }
+      if (M.inns !== seenInn) { seenInn = M.inns; seenLogLen = M.log.length; trails = []; drawTrails(); }
       if (M.log.length > seenLogLen) {
         // engine unshifts: new entries are at the FRONT
         var fresh = M.log.slice(0, M.log.length - seenLogLen);
         seenLogLen = M.log.length;
         for (var i = fresh.length - 1; i >= 0; i--) {
           var s = symOf(fresh[i]);
-          if (s) queue.push({ sym: s, ix: seenLogLen - i });
+          if (s) {
+            var lb = lblIn(fresh[i].txt);
+            fresh[i].__foL = lb || undefined;
+            queue.push({ sym: s, ix: seenLogLen - i, lbl: lb });
+          }
         }
         pump();
       }
@@ -351,6 +456,10 @@ FOC.oval = (function () {
       ".ov-strip .bw{background:#a3242b;color:#fff}.ov-strip .bd{opacity:.75}" +
       ".ov-svg{display:block;width:100%;height:auto;background:#0F1A2E}" +
       ".ov-flbl{font:600 7px Inter,-apple-system,sans-serif;fill:rgba(241,234,218,.78);letter-spacing:.05em;text-anchor:middle;text-transform:uppercase}" +
+      ".ov-f.ov-hot circle{animation:ovHot .9s ease}" +
+      ".ov-f.ov-hotw circle{animation:ovHotW .9s ease}" +
+      "@keyframes ovHot{0%{stroke:#C9A24B;stroke-width:1.2}35%{stroke:#C9A24B;stroke-width:5.5}100%{stroke:#fff;stroke-width:1.2}}" +
+      "@keyframes ovHotW{0%{stroke:#e04b3a;stroke-width:1.2}35%{stroke:#e04b3a;stroke-width:6}100%{stroke:#fff;stroke-width:1.2}}" +
       ".ov-pop{font-family:Oswald,sans-serif;font-size:30px;letter-spacing:4px;font-weight:600;opacity:0;paint-order:stroke;stroke:#0F1A2E;stroke-width:4px}" +
       ".ov-pop.on{animation:ovPop 1.05s ease}" +
       "@keyframes ovPop{0%{opacity:0;transform:scale(.6)}18%{opacity:1;transform:scale(1.12)}70%{opacity:1;transform:scale(1)}100%{opacity:0}}" +
@@ -366,5 +475,6 @@ FOC.oval = (function () {
   }
 
   return { init: init, tick: tick, symOf: symOf, angleFor: angleFor,
-    __test: { placeField: placeField, FIELDS: FIELDS } };
+    __test: { placeField: placeField, FIELDS: FIELDS, activeField: activeField, lblIn: lblIn,
+      trailCount: function () { return trails.length; } } };
 })();
