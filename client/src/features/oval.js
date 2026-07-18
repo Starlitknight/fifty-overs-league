@@ -277,9 +277,11 @@ FOC.oval = (function () {
       // (mlinks|mbody|mside). Re-template it: the oval fills the left half
       // with scoreboard + match details tucked under it, while the right
       // half is all reading — crumb, tab links, then full-height commentary.
-      "html body #page.fo-ovalgrid.fo-matchpage{grid-template-columns:minmax(500px,55%) minmax(0,1fr);grid-template-rows:auto auto auto auto 1fr;grid-template-areas:'moval mcrumb' 'moval mlinks' 'moval mbody' 'mtop mbody' 'mrest mbody'}" +
+      // crumb and tab bar span the full width; the oval and the commentary
+      // panel then open on the same row, flush at the top
+      "html body #page.fo-ovalgrid.fo-matchpage{grid-template-columns:minmax(500px,55%) minmax(0,1fr);grid-template-rows:auto auto auto auto 1fr;grid-template-areas:'mcrumb mcrumb' 'mlinks mlinks' 'moval mbody' 'mtop mbody' 'mrest mbody'}" +
       "html body #page.fo-ovalgrid.fo-matchpage #fo-oval{grid-area:moval;position:static}" +
-      "html body #page.fo-ovalgrid.fo-matchpage>.crumb{grid-area:mcrumb}" +
+      "html body #page.fo-ovalgrid.fo-matchpage>.crumb{grid-area:mcrumb;margin:0 0 10px}" +
       "html body #page.fo-ovalgrid.fo-matchpage .mc-top{grid-area:mtop;display:flex !important;flex-direction:row !important;align-items:stretch !important;gap:10px;margin:10px 0 0}" +
       "html body #page.fo-ovalgrid.fo-matchpage .mc-top .panel{flex:1 1 0 !important;min-width:0;margin:0;height:auto}" +
       // compact the two cards so the stage keeps the vertical room
@@ -289,11 +291,12 @@ FOC.oval = (function () {
       "html body #page.fo-ovalgrid.fo-matchpage .mc-top .kv td{padding:2px 6px !important;font-size:11px !important;line-height:1.35}" +
       "html body #page.fo-ovalgrid.fo-matchpage .mc-details table.kv{font-size:11px !important}" +
       // tab links: one tight pill row in the UI face, not the roomy sidebar list
-      "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links{grid-area:mlinks;display:flex;flex-direction:row;flex-wrap:wrap;gap:2px;padding:4px;margin:0 0 10px;position:static}" +
+      "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links{grid-area:mlinks;display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px;padding:5px;margin:0 0 14px;position:static}" +
       "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links h4{display:none}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links a{white-space:nowrap;font-family:Inter,-apple-system,'Segoe UI',sans-serif !important;font-size:12px !important;font-weight:600;line-height:1.2;letter-spacing:0;padding:6px 10px !important;border:none !important;border-radius:7px}" +
+      "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links a{white-space:nowrap;font-family:Inter,-apple-system,'Segoe UI',sans-serif !important;font-size:12.5px !important;font-weight:600;line-height:1.2;letter-spacing:0;padding:8px 14px !important;border:none !important;border-radius:8px}" +
       "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-body{grid-area:mbody;min-width:0;margin:0}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-body .commfeed,html body #page.fo-ovalgrid.fo-matchpage .ftp-match-body #ftpcomm{max-height:calc(100vh - 200px) !important}" +
+      "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-body>.panel:first-child,html body #page.fo-ovalgrid.fo-matchpage .ftp-match-body>:first-child{margin-top:0 !important}" +
+      "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-body .commfeed,html body #page.fo-ovalgrid.fo-matchpage .ftp-match-body #ftpcomm{max-height:calc(100vh - 280px) !important;min-height:46vh !important}" +
       // the engine's full-screen FOUR/SIX/WICKET splash straddles the column
       // seam on the split stage, and the oval pops the same event on-field
       "body:has(#page.fo-ovalgrid) .bigflash{display:none}" +
