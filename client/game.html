@@ -6372,7 +6372,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   var JWT = "", LG = null, SYNC = null;
   // Art lives in client/art/. From index.html at the repo root that's "client/art/";
   // from client/game.html the page itself sits inside client/, so it's just "art/".
-  var FO_ART = (location.pathname.indexOf("/client/") !== -1) ? "art/" : "client/art/";
+  var FO_ART = (location.pathname.indexOf("/client/") !== -1) ? "art/" : (location.pathname.indexOf("/next/") !== -1 ? "../client/art/" : "client/art/");
   // the game's own nationality list; each manager picks one as their home country
   var NAT = ["Australia", "India", "Pakistan", "Sri Lanka", "New Zealand", "South Africa", "England", "Netherlands", "West Indies", "Afghanistan", "Ireland", "Zimbabwe"];
 
@@ -10852,7 +10852,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260718-0219-87a0aa";
+  var FO_BUILD = "20260718-0416-c26305";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -24906,8 +24906,12 @@ FOC.adapter = (function () {
   // the same key the Circuit uses (SYNC.myMid), so solo worlds and league
   // membership never shadow each other's campaign
   function scope() {
-    try { if (typeof SYNC !== "undefined" && SYNC && SYNC.myMid) return String(SYNC.myMid); } catch (e) {}
-    return "solo";
+    var base = "solo";
+    try { if (typeof SYNC !== "undefined" && SYNC && SYNC.myMid) base = String(SYNC.myMid); } catch (e) {}
+    // the illustrated world client keeps its career entirely separate from
+    // Classic saves in the same browser
+    try { if (typeof window !== "undefined" && window.__FO_WORLD) return base + "_world"; } catch (e2) {}
+    return base;
   }
 
   // ---- orders ---------------------------------------------------------------
@@ -25381,6 +25385,8 @@ FOC.worldgen = (function () {
       for (var i = 0; i < (n / 2) - 1; i++) pairs.push([arr[i], arr[arr.length - 2 - i]]);
       pairs.forEach(function (pr, pi) {
         var home = (r + pi) % 2 === 0 ? pr[0] : pr[1];
+        // the career opens AWAY at Willowmere — The Meadow, their pitch
+        if (r === 0 && pi === 0) home = pr[1];
         var away = home === pr[0] ? pr[1] : pr[0];
         var f = MDL.fixture(v2, wk, "league", r + 1, home, away);
         v2.world.fixturesById[f.id] = f;
@@ -25508,20 +25514,33 @@ FOC.competitions = (function () {
   // ---- Founders Cup progression ---------------------------------------------
   // a tied knockout is settled explicitly, never by home advantage: fewer
   // wickets lost wins; still level → a seeded super-over coin, recorded
-  function tieBreak(v2, f) {
-    var r = f.result, w;
+  function tieBreak(v2, f, runner) {
+    var r = f.result, w = null;
     if ((r.home.wkts || 0) !== (r.away.wkts || 0)) {
       w = r.home.wkts < r.away.wkts ? f.homeId : f.awayId;
       r.tieBreak = "fewer wickets lost";
-    } else {
-      w = RNG.chance(v2.rng, "cupdraw", 0.5, "super-over:" + f.id) ? f.homeId : f.awayId;
-      r.tieBreak = "super over";
+    } else if (runner && FOC.worldsim) {
+      // dead level: an actual engine replay on a derived seed IS the super
+      // over — a real result, recorded, never a labelled coin
+      try {
+        var home = FOC.worldsim.clubTeam(v2, f.homeId), away = FOC.worldsim.clubTeam(v2, f.awayId);
+        var so = runner(home, away, "balanced", "Sunny", FOC.util.hash32(v2.worldSeed + "|" + f.id + "|super-over"));
+        if (so && so.result && so.result.winner) {
+          w = so.result.winner === home.name ? f.homeId : f.awayId;
+          r.tieBreak = "super over (replayed through the engine)";
+          r.superOver = so.result.text || "";
+        }
+      } catch (eSO) {}
+    }
+    if (!w) {
+      w = RNG.chance(v2.rng, "cupdraw", 0.5, "bowl-out:" + f.id) ? f.homeId : f.awayId;
+      r.tieBreak = "bowl-out (seeded, recorded)";
     }
     r.tieWinnerId = w;
     return w;
   }
 
-  function foundersAdvance(v2) {
+  function foundersAdvance(v2, io) {
     var cup = v2.world.competitionsById.founders;
     if (!cup || cup.winner) return;
     var stageFx = fixtures(v2, function (f) { return f.comp === "founders"; });
@@ -25531,7 +25550,7 @@ FOC.competitions = (function () {
     var maxRound = 0;
     stageFx.forEach(function (f) { if (f.round > maxRound) maxRound = f.round; });
     stageFx.filter(function (f) { return f.round === maxRound; }).forEach(function (f) {
-      var w = f.result.winnerId || tieBreak(v2, f);
+      var w = f.result.winnerId || tieBreak(v2, f, io && io.matchRunner);
       winners.push(w);
       var l = w === f.homeId ? f.awayId : f.homeId;
       losers.push(l);
@@ -25586,7 +25605,7 @@ FOC.competitions = (function () {
     });
     cup.stage = "sf";
   }
-  function crownAdvance(v2) {
+  function crownAdvance(v2, io) {
     var cup = v2.world.competitionsById.crown;
     if (!cup || cup.winner || cup.stage === "pending") return;
     var fx = fixtures(v2, function (f) { return f.comp === "crown"; });
@@ -25594,7 +25613,7 @@ FOC.competitions = (function () {
     var maxRound = 0;
     fx.forEach(function (f) { if (f.round > maxRound) maxRound = f.round; });
     var winners = fx.filter(function (f) { return f.round === maxRound; })
-      .map(function (f) { return f.result.winnerId || tieBreak(v2, f); });
+      .map(function (f) { return f.result.winnerId || tieBreak(v2, f, io && io.matchRunner); });
     if (cup.stage === "sf" && winners.length === 2) {
       cup.bracket.final = winners;
       var f2 = MDL.fixture(v2, 15, "crown", 2, winners[0], winners[1]);
@@ -26081,9 +26100,9 @@ FOC.worldsim = (function () {
       if (m.clubId && !m.isUser) FOC.npc.decide(v2, m, L);
     }
     FOC.transfers.weeklyMarket(v2, L);
-    C.foundersAdvance(v2);
+    C.foundersAdvance(v2, io);
     C.crownSeed(v2);
-    C.crownAdvance(v2);
+    C.crownAdvance(v2, io);
     if (io.afterWeek) io.afterWeek(v2, L);
     v2.week++;
     if (v2.week > FOC.calendar.total()) return { seasonOver: true };
@@ -26191,6 +26210,15 @@ FOC.worldsim = (function () {
         if (p.contract.years <= 0) p.contract = { years: 1 + RNG.int(v2.rng, "transfers", 2), wage: p.contract.wage + 100 };
       }
     }
+    // wage bills reflect this year's contracts, not last year's ghosts
+    for (var cidW in v2.world.clubsById) {
+      var cW = v2.world.clubsById[cidW];
+      if (cW.isUser) continue;
+      cW.finances.wageBill = cW.rosterIds.reduce(function (sum, pidW) {
+        var pW = v2.world.playersById[pidW];
+        return sum + ((pW && pW.contract && pW.contract.wage) || 0);
+      }, 0);
+    }
     // youth intake: thin squads take on the next generation
     for (var cid9 in v2.world.clubsById) {
       var c10 = v2.world.clubsById[cid9];
@@ -26209,6 +26237,7 @@ FOC.worldsim = (function () {
         wp9.contract = { years: 2, wage: 300 };
         v2.world.playersById[wp9.id] = wp9;
         c10.rosterIds.push(wp9.id);
+        c10.finances.wageBill += wp9.contract.wage;
         Lr("intake", c10.name + " register " + wp9.name + ", " + wp9.age + ", from the youth intake.", { playerId: wp9.id });
       }
     }
@@ -28783,6 +28812,11 @@ FOC.career = (function () {
       }
       try {
         var me = A.team(), ix = -1;
+        if ((me.players || []).length <= 12) {
+          v2.world.news.unshift({ week: v2.week, season: v2.seasonNumber, kind: "transfer",
+            text: "The board blocks the sale of " + o.playerName + " — twelve players is not a squad." });
+          return;
+        }
         (me.players || []).forEach(function (p, i) { if (p && p.name === o.playerName) ix = i; });
         if (ix < 0) return;
         var pl = me.players.splice(ix, 1)[0];

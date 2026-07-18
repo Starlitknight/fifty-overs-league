@@ -206,9 +206,9 @@ FOC.worldsim = (function () {
       if (m.clubId && !m.isUser) FOC.npc.decide(v2, m, L);
     }
     FOC.transfers.weeklyMarket(v2, L);
-    C.foundersAdvance(v2);
+    C.foundersAdvance(v2, io);
     C.crownSeed(v2);
-    C.crownAdvance(v2);
+    C.crownAdvance(v2, io);
     if (io.afterWeek) io.afterWeek(v2, L);
     v2.week++;
     if (v2.week > FOC.calendar.total()) return { seasonOver: true };
@@ -316,6 +316,15 @@ FOC.worldsim = (function () {
         if (p.contract.years <= 0) p.contract = { years: 1 + RNG.int(v2.rng, "transfers", 2), wage: p.contract.wage + 100 };
       }
     }
+    // wage bills reflect this year's contracts, not last year's ghosts
+    for (var cidW in v2.world.clubsById) {
+      var cW = v2.world.clubsById[cidW];
+      if (cW.isUser) continue;
+      cW.finances.wageBill = cW.rosterIds.reduce(function (sum, pidW) {
+        var pW = v2.world.playersById[pidW];
+        return sum + ((pW && pW.contract && pW.contract.wage) || 0);
+      }, 0);
+    }
     // youth intake: thin squads take on the next generation
     for (var cid9 in v2.world.clubsById) {
       var c10 = v2.world.clubsById[cid9];
@@ -334,6 +343,7 @@ FOC.worldsim = (function () {
         wp9.contract = { years: 2, wage: 300 };
         v2.world.playersById[wp9.id] = wp9;
         c10.rosterIds.push(wp9.id);
+        c10.finances.wageBill += wp9.contract.wage;
         Lr("intake", c10.name + " register " + wp9.name + ", " + wp9.age + ", from the youth intake.", { playerId: wp9.id });
       }
     }

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><style id="fo-boot">html{background:#0B1322}html>body{visibility:hidden;animation:fo-boot-reveal .01s 4s forwards}@keyframes fo-boot-reveal{to{visibility:visible}}</style><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fifty Overs - Club Manager v11.6</title><style>:root{--ftp-blue:#2d6a8f;--ftp-blue-dark:#1d4a66;--ftp-border:#cfc8b8;--ftp-bg:#f5f1e6;
+<!DOCTYPE html><html lang="en"><head><style id="fo-boot">html{background:#0B1322}html>body{visibility:hidden;animation:fo-boot-reveal .01s 4s forwards}@keyframes fo-boot-reveal{to{visibility:visible}}</style><script>try{localStorage.getItem('fo_welcomed')||localStorage.setItem('fo_welcomed','1');localStorage.getItem('fo_club')||localStorage.setItem('fo_club','0');window.__FO_WORLD=1}catch(e){}</script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fifty Overs - Club Manager v11.6</title><style>:root{--ftp-blue:#2d6a8f;--ftp-blue-dark:#1d4a66;--ftp-border:#cfc8b8;--ftp-bg:#f5f1e6;
 --ftp-panel:#ffffff;--ftp-link:#1a5276;--ftp-bar:#3f9e3f;--ftp-text:#22302a;--ftp-warn:#a33}
 *{box-sizing:border-box}
 body{margin:0;background:var(--ftp-bg);color:var(--ftp-text);font:12px Verdana,Geneva,Tahoma,sans-serif;line-height:1.45}
@@ -29449,6 +29449,1174 @@ FOC.careerHub = (function () {
     } catch (e3) {}
   }, 250);
 })();
+
+})();
+
+</script>
+<script id="fo-world">
+(function(){
+"use strict";
+
+/* ---- world:state.js ---- */
+/* world-client/state — the world-layer save (scene position, visited places,
+ * discoveries, notebook, settings). Versioned, browser-local, and entirely
+ * separate from Classic saves: key fifty_overs_world_v3. Cricket state
+ * continues to live in the canonical career save (scoped *_world so a
+ * Classic career in the same browser is never touched).
+ */
+var FOW = {};
+FOW.state = (function () {
+  var KEY = "fifty_overs_world_v3";
+  var _s = null;
+
+  function fresh() {
+    return {
+      v: 3,
+      scene: "station",           // where the manager is standing right now
+      visited: {},                 // sceneId -> 1 (unlocks quick travel)
+      seen: {},                    // dialogueId -> times seen
+      flags: {},                   // world flags (metGaffer, founded, …)
+      discoveries: [],             // optional hotspot ids found
+      notebook: [],                // [{t, txt}] anchors, promises, history
+      history: [],                 // dialogue transcript (capped)
+      settings: { textSpeed: 1, instant: false, reduced: false, sound: false }
+    };
+  }
+  function load() {
+    if (_s) return _s;
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) { _s = JSON.parse(raw); if (_s && _s.v === 3) return _s; }
+    } catch (e) {}
+    _s = fresh();
+    return _s;
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(_s)); } catch (e) {}
+  }
+  function note(txt) {
+    var s = load();
+    if (s.notebook.some(function (n) { return n.txt === txt; })) return;
+    s.notebook.push({ t: Date.now ? 0 : 0, txt: txt });
+    save();
+  }
+  function logLine(sp, txt) {
+    var s = load();
+    s.history.push(sp + ": " + txt);
+    if (s.history.length > 200) s.history = s.history.slice(-200);
+  }
+  function reset() {
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    _s = null;
+  }
+  return { KEY: KEY, load: load, save: save, note: note, logLine: logLine, reset: reset, fresh: fresh };
+})();
+
+/* ---- world:assets.js ---- */
+/* world-client/assets — the asset manifest: stable IDs, never inline paths.
+ * FINAL art that already exists (Gaffer expressions, Thorne, the England
+ * day-map, player role art, crests) is referenced directly; every scene
+ * background is a PLACEHOLDER painted composition (layered CSS gradients +
+ * silhouettes) and is listed, by this same stable ID, in ART_REQUIREMENTS.md
+ * for replacement. Swapping a placeholder for final art is a manifest edit.
+ */
+FOW.assets = (function () {
+  function artBase() {
+    try { if (location.pathname.indexOf("/next/") >= 0) return "../client/art/"; } catch (e) {}
+    return "client/art/";
+  }
+  var A = artBase();
+  var M = {
+    // ---- FINAL (existing art) ----
+    "portrait.gaffer.neutral": A + "gaffer.png",
+    "portrait.gaffer.serious": A + "gaffer-serious.png",
+    "portrait.gaffer.amused": A + "gaffer-laugh.png",
+    "portrait.gaffer.wry": A + "gaffer-wink.png",
+    "portrait.thorne.composed": A + "thorne.png",
+    "cutout.player.bat": A + "bat.png",
+    "cutout.player.ar": A + "ar.png",
+    "cutout.player.keeper": A + "keeper.png",
+    "cutout.player.pace": A + "pace1.png",
+    "cutout.player.spin": A + "spin-finger.png",
+    "map.england.day": A + "circuit/eng.webp",
+    "crest.soul.blade": A + "crests/blade.png",
+    // ---- PLACEHOLDER scene paints (CSS class names, not files) ----
+    "loc.station.home.morning": "css:sc-station",
+    "loc.home.exterior.morning": "css:sc-home-morning",
+    "loc.home.exterior.dusk": "css:sc-home-dusk",
+    "loc.pavilion.interior": "css:sc-pavilion",
+    "loc.dressing.room": "css:sc-dressing",
+    "loc.nets": "css:sc-nets",
+    "loc.secretary.office": "css:sc-office",
+    "loc.trophy.room": "css:sc-trophy",
+    "loc.willowmere.town": "css:sc-wm-town",
+    "loc.willowmere.ground": "css:sc-wm-ground",
+    "loc.willowmere.dressing": "css:sc-wm-dressing",
+    "loc.willowmere.entry": "css:sc-wm-entry"
+  };
+  function get(id) { return M[id] || null; }
+  function isCss(id) { var v = M[id]; return typeof v === "string" && v.indexOf("css:") === 0; }
+  function cssClass(id) { return isCss(id) ? M[id].slice(4) : null; }
+  return { get: get, isCss: isCss, cssClass: cssClass, manifest: M, artBase: artBase };
+})();
+
+/* ---- world:scenes.js ---- */
+/* world-client/scenes — data-driven scene definitions. A scene is a place:
+ * a painted background, people standing in it, and hotspots the player
+ * chooses between. Nothing here renders itself; the renderer reads this.
+ * Conditions receive (w = world state, B = bridge facts).
+ */
+FOW.scenes = (function () {
+  var S = {};
+
+  function def(d) { S[d.id] = d; return d; }
+
+  def({
+    id: "station", region: "england", location: "home-town",
+    bg: "loc.station.home.morning", label: "Harbour Town station",
+    characters: [{ id: "gaffer", asset: "portrait.gaffer.serious", x: 66, y: 58,
+      when: function (w) { return !w.flags.leftStation; } }],
+    hotspots: [
+      { id: "hs.station.timetable", x: 18, y: 44, label: "Timetable", kind: "look", dlg: "look.timetable", optional: true },
+      { id: "hs.station.gaffer", x: 66, y: 46, label: "The waiting man", kind: "talk", dlg: "arrival.gaffer",
+        when: function (w) { return !w.flags.metGaffer; } },
+      { id: "hs.station.road", x: 46, y: 78, label: "The road to the ground", kind: "go", go: "home-exterior",
+        when: function (w) { return !!w.flags.metGaffer; } }
+    ]
+  });
+
+  def({
+    id: "home-exterior", region: "england", location: "home-club",
+    bg: "loc.home.exterior.morning", label: "The home ground",
+    variant: function (w, B) {
+      if (w.flags.firstMatchDone) return { bg: "loc.home.exterior.dusk", label: "The home ground · evening" };
+      return null;
+    },
+    characters: [
+      { id: "captain", asset: "cutout.player.bat", x: 24, y: 60,
+        when: function (w) { return !w.flags.firstMatchDone && !w.flags.sawArgument; } },
+      { id: "prospect", asset: "cutout.player.ar", x: 84, y: 62,
+        when: function (w) { return !w.flags.firstMatchDone; } },
+      { id: "gaffer", asset: "portrait.gaffer.neutral", x: 55, y: 58,
+        when: function (w) { return !!w.flags.firstMatchDone; } }
+    ],
+    hotspots: [
+      { id: "hs.home.pavdoor", x: 52, y: 40, label: "Pavilion door", kind: "go", go: "pavilion" },
+      { id: "hs.home.honours", x: 38, y: 34, label: "Old honours board", kind: "look", dlg: "look.honours", optional: true },
+      { id: "hs.home.argument", x: 24, y: 48, label: "Two players, arguing", kind: "talk", dlg: "meet.argument", optional: true,
+        when: function (w) { return !w.flags.firstMatchDone && !w.flags.sawArgument; } },
+      { id: "hs.home.prospect", x: 84, y: 50, label: "A lad bowling alone", kind: "talk", dlg: "meet.prospect", optional: true,
+        when: function (w) { return !w.flags.firstMatchDone; } },
+      { id: "hs.home.photo", x: 66, y: 30, label: "Faded photograph", kind: "look", dlg: "look.photo", optional: true },
+      { id: "hs.home.volunteers", x: 12, y: 74, label: "Volunteers at the square", kind: "look", dlg: "look.volunteers", optional: true,
+        when: function (w) { return !w.flags.firstMatchDone; } },
+      { id: "hs.home.newspaper", x: 30, y: 72, label: "Evening paper", kind: "look", dlg: "post.newspaper", optional: true,
+        when: function (w) { return !!w.flags.firstMatchDone; } },
+      { id: "hs.home.gaffer.post", x: 55, y: 46, label: "The Gaffer", kind: "talk", dlg: "post.gaffer",
+        when: function (w) { return !!w.flags.firstMatchDone && !w.flags.postGafferDone; } },
+      { id: "hs.home.captain.post", x: 76, y: 66, label: "Your captain", kind: "talk", dlg: "post.captain", optional: true,
+        when: function (w) { return !!w.flags.firstMatchDone; } },
+      { id: "hs.home.map", x: 90, y: 84, label: "England map", kind: "go", go: "map",
+        when: function (w) { return !!w.flags.founded; } }
+    ]
+  });
+
+  def({
+    id: "pavilion", region: "england", location: "home-club",
+    bg: "loc.pavilion.interior", label: "The pavilion",
+    characters: [{ id: "veteran", asset: "cutout.player.bat", x: 78, y: 60 }],
+    hotspots: [
+      { id: "hs.pav.veteran", x: 78, y: 48, label: "The senior pro", kind: "talk", dlg: "meet.veteran", optional: true },
+      { id: "hs.pav.dressing", x: 24, y: 44, label: "Dressing room", kind: "go", go: "dressing" },
+      { id: "hs.pav.office", x: 44, y: 42, label: "Secretary's office", kind: "go", go: "office" },
+      { id: "hs.pav.trophy", x: 62, y: 42, label: "Trophy room", kind: "go", go: "trophy" },
+      { id: "hs.pav.nets", x: 88, y: 78, label: "Out to the nets", kind: "go", go: "nets" },
+      { id: "hs.pav.out", x: 10, y: 80, label: "Back outside", kind: "go", go: "home-exterior" },
+      { id: "hs.pav.urn", x: 12, y: 38, label: "The tea urn", kind: "look", dlg: "look.urn", optional: true }
+    ]
+  });
+
+  def({
+    id: "dressing", region: "england", location: "home-club",
+    bg: "loc.dressing.room", label: "The dressing room",
+    characters: [
+      { id: "keeper", asset: "cutout.player.keeper", x: 16, y: 60 },
+      { id: "bowler", asset: "cutout.player.pace", x: 86, y: 60 }
+    ],
+    hotspots: [
+      { id: "hs.dr.keeper", x: 16, y: 48, label: "The wicketkeeper", kind: "talk", dlg: "meet.keeper", optional: true },
+      { id: "hs.dr.bowler", x: 86, y: 48, label: "The strike bowler", kind: "talk", dlg: "meet.bowler", optional: true },
+      { id: "hs.dr.captaincy", x: 50, y: 36, label: "The armband question", kind: "talk", dlg: "choose.captain",
+        when: function (w) { return !!w.flags.founded && !w.flags.captainChosen; } },
+      { id: "hs.dr.board", x: 50, y: 52, label: "The lineup board", kind: "action", act: "lineup",
+        when: function (w) { return !!w.flags.captainChosen; } },
+      { id: "hs.dr.out", x: 8, y: 80, label: "Back to the pavilion", kind: "go", go: "pavilion" }
+    ]
+  });
+
+  def({
+    id: "nets", region: "england", location: "home-club",
+    bg: "loc.nets", label: "The practice nets",
+    characters: [{ id: "prospect", asset: "cutout.player.ar", x: 70, y: 58 }],
+    hotspots: [
+      { id: "hs.nets.prospect", x: 70, y: 46, label: "The prospect, still here", kind: "talk", dlg: "nets.prospect", optional: true },
+      { id: "hs.nets.trial", x: 30, y: 46, label: "Raise a Trial XI", kind: "action", act: "trial",
+        when: function (w) { return !!w.flags.captainChosen && !w.flags.firstMatchDone; } },
+      { id: "hs.nets.out", x: 8, y: 80, label: "Back to the pavilion", kind: "go", go: "pavilion" }
+    ]
+  });
+
+  def({
+    id: "office", region: "england", location: "home-club",
+    bg: "loc.secretary.office", label: "Margaret's office",
+    characters: [{ id: "margaret", mono: "MH", x: 60, y: 56 }],
+    hotspots: [
+      { id: "hs.of.founding", x: 60, y: 42, label: "Margaret Hobb", kind: "talk", dlg: "founding.margaret",
+        when: function (w) { return !w.flags.founded; } },
+      { id: "hs.of.margaret", x: 60, y: 42, label: "Margaret Hobb", kind: "talk", dlg: "office.margaret", optional: true,
+        when: function (w) { return !!w.flags.founded; } },
+      { id: "hs.of.papers", x: 24, y: 40, label: "Committee papers", kind: "look", dlg: "look.papers", optional: true },
+      { id: "hs.of.out", x: 8, y: 80, label: "Back to the pavilion", kind: "go", go: "pavilion" }
+    ]
+  });
+
+  def({
+    id: "trophy", region: "england", location: "home-club",
+    bg: "loc.trophy.room", label: "The trophy room",
+    characters: [{ id: "star", asset: "cutout.player.bat", x: 30, y: 60 }],
+    hotspots: [
+      { id: "hs.tr.star", x: 30, y: 48, label: "A batter, studying the shelf", kind: "talk", dlg: "meet.star", optional: true },
+      { id: "hs.tr.shelf", x: 62, y: 38, label: "The empty shelf", kind: "look", dlg: "look.shelf", optional: true },
+      { id: "hs.tr.out", x: 8, y: 80, label: "Back to the pavilion", kind: "go", go: "pavilion" }
+    ]
+  });
+
+  def({
+    id: "map", region: "england", location: "england",
+    bg: "map.england.day", label: "England", isMap: true,
+    hotspots: [
+      { id: "hs.map.willowmere", x: 48, y: 46, label: "Willowmere · The Meadow", kind: "go", go: "wm-town",
+        when: function (w, B) { return B.nextOpponentKey() === "willowmere" && !w.flags.firstMatchDone; } },
+      { id: "hs.map.home", x: 58, y: 70, label: "Home", kind: "go", go: "home-exterior" },
+      { id: "hs.map.career", x: 90, y: 88, label: "Season ledger", kind: "action", act: "career", optional: true }
+    ]
+  });
+
+  def({
+    id: "wm-town", region: "england", location: "willowmere",
+    bg: "loc.willowmere.town", label: "Willowmere village",
+    hotspots: [
+      { id: "hs.wm.sign", x: 20, y: 40, label: "Village sign", kind: "look", dlg: "wm.sign", optional: true },
+      { id: "hs.wm.ground", x: 62, y: 56, label: "The Meadow", kind: "go", go: "wm-ground" },
+      { id: "hs.wm.home", x: 8, y: 82, label: "The train home", kind: "go", go: "map" }
+    ]
+  });
+
+  def({
+    id: "wm-ground", region: "england", location: "willowmere",
+    bg: "loc.willowmere.ground", label: "The Meadow",
+    characters: [{ id: "wm-manager", mono: "TM", x: 74, y: 58 }],
+    hotspots: [
+      { id: "hs.wmg.manager", x: 74, y: 46, label: "Ted Marsh, their manager", kind: "talk", dlg: "wm.manager", optional: true },
+      { id: "hs.wmg.dressing", x: 30, y: 44, label: "Away dressing room", kind: "go", go: "wm-dressing" },
+      { id: "hs.wmg.back", x: 8, y: 82, label: "Back to the village", kind: "go", go: "wm-town" }
+    ]
+  });
+
+  def({
+    id: "wm-dressing", region: "england", location: "willowmere",
+    bg: "loc.willowmere.dressing", label: "Away dressing room",
+    hotspots: [
+      { id: "hs.wmd.board", x: 50, y: 44, label: "Pin up the XI", kind: "action", act: "lineup" },
+      { id: "hs.wmd.entry", x: 84, y: 70, label: "To the field", kind: "go", go: "wm-entry",
+        when: function (w, B) { return B.xiConfirmed(); } },
+      { id: "hs.wmd.back", x: 8, y: 82, label: "Back outside", kind: "go", go: "wm-ground" }
+    ]
+  });
+
+  def({
+    id: "wm-entry", region: "england", location: "willowmere",
+    bg: "loc.willowmere.entry", label: "The players' gate",
+    hotspots: [
+      { id: "hs.wme.walk", x: 50, y: 55, label: "Walk out", kind: "action", act: "walkout" },
+      { id: "hs.wme.back", x: 8, y: 82, label: "One more minute", kind: "go", go: "wm-dressing" }
+    ]
+  });
+
+  function get(id) { return S[id] || null; }
+  function all() { return S; }
+  return { get: get, all: all };
+})();
+
+/* ---- world:dialogue.js ---- */
+/* world-client/dialogue — the conversation engine. One thought per box,
+ * tap / Enter / Space to advance, expressions, 2–3 choices when a choice is
+ * real, conditional lines from actual facts. Lines may be strings or
+ * functions of (w, B) so dialogue can only ever quote saved facts.
+ */
+FOW.dialogue = (function () {
+  var NODES = {};
+  var active = null;   // {node, lineIx, onClose}
+
+  function register(n) { NODES[n.id] = n; }
+  function node(id) { return NODES[id] || null; }
+
+  function resolveLines(n, w, B) {
+    var out = [];
+    (n.lines || []).forEach(function (l) {
+      var txt = typeof l === "function" ? l(w, B) : l;
+      if (txt) out.push(txt);
+    });
+    return out;
+  }
+
+  function play(id, onClose) {
+    var n = node(id);
+    var w = FOW.state.load(), B = FOW.bridge;
+    if (!n) { if (onClose) onClose(); return; }
+    if (n.cond && !n.cond(w, B)) { if (onClose) onClose(); return; }
+    active = { node: n, lines: resolveLines(n, w, B), lineIx: 0, onClose: onClose || null };
+    w.seen[id] = (w.seen[id] || 0) + 1;
+    FOW.state.save();
+    FOW.renderer.showDialogue(active);
+  }
+
+  // advance one box; returns true while the conversation continues
+  function advance() {
+    if (!active) return false;
+    var w = FOW.state.load(), B = FOW.bridge;
+    var n = active.node;
+    FOW.state.logLine(n.sp, active.lines[active.lineIx] || "");
+    active.lineIx++;
+    if (active.lineIx < active.lines.length) {
+      FOW.renderer.showDialogue(active);
+      return true;
+    }
+    // lines exhausted: choices (static or built live from the squad), chain, or close
+    if ((n.choices && n.choices.length) || n.dynChoices) {
+      FOW.renderer.showChoices(active);
+      return true;
+    }
+    finish(n, null);
+    return false;
+  }
+
+  function choose(i) {
+    if (!active) return;
+    var n = active.node;
+    var c = n.choices && n.choices[i];
+    if (!c) return;
+    FOW.state.logLine("You", c.t);
+    finish(n, c);
+  }
+
+  function finish(n, choice) {
+    var w = FOW.state.load(), B = FOW.bridge;
+    try { if (n.effects) n.effects(w, B); } catch (e) {}
+    try { if (choice && choice.fx) choice.fx(w, B); } catch (e2) {}
+    FOW.state.save();
+    var nxt = (choice && choice.next) || n.next;
+    var onClose = active.onClose;
+    active = null;
+    FOW.renderer.hideDialogue();
+    if (nxt) play(nxt, onClose);
+    else {
+      if (onClose) onClose();
+      FOW.renderer.refresh();   // control returns to the place
+    }
+  }
+
+  function isOpen() { return !!active; }
+  function skipAll() {   // repeat-play courtesy: jump to the end of the lines
+    if (!active) return;
+    active.lineIx = Math.max(active.lineIx, active.lines.length - 1);
+    FOW.renderer.showDialogue(active);
+  }
+
+  return { register: register, node: node, play: play, advance: advance,
+    choose: choose, isOpen: isOpen, skipAll: skipAll, _nodes: NODES };
+})();
+
+/* ---- world:content.js ---- */
+/* world-client/content — the vertical-slice conversations. Short boxes,
+ * original words, real facts. Anchor names come from the bridge (the actual
+ * generated squad); match dialogue quotes the actual scorecard or refuses
+ * to render.
+ */
+(function () {
+  var D = FOW.dialogue;
+  function reg(n) { D.register(n); }
+  function nmS(nm) { return nm ? String(nm).split(" ").slice(-1)[0] : ""; }
+
+  // ---- arrival --------------------------------------------------------------
+  reg({ id: "arrival.gaffer", sp: "The Gaffer", expr: "portrait.gaffer.serious",
+    lines: ["You're late.", "…", "Good. Club's late by twenty years.", "Come on."],
+    effects: function (w) { w.flags.metGaffer = 1; FOW.state.note("The Gaffer: waiting at the station. Knew my train before I did."); } });
+  reg({ id: "look.timetable", sp: "Timetable", expr: null,
+    lines: ["Three trains a day. The last one back left an hour before you arrived.",
+      "Someone has ringed Saturday's service to Willowmere in pencil."],
+    effects: function (w) { if (w.discoveries.indexOf("timetable") < 0) w.discoveries.push("timetable"); } });
+
+  // ---- club discovery -------------------------------------------------------
+  reg({ id: "look.honours", sp: "Honours board", expr: null,
+    lines: ["Gold leaf, last touched decades ago.", "The final line reads: CHAMPIONS — and then nothing, for twenty years."],
+    effects: function (w) { if (w.discoveries.indexOf("honours") < 0) w.discoveries.push("honours"); } });
+  reg({ id: "look.photo", sp: "Faded photograph", expr: null,
+    lines: ["A younger Gaffer carries kit bags at the frame's edge.",
+      "The man lifting the trophy is unmistakably Reggie Thorne."],
+    effects: function (w) {
+      if (w.discoveries.indexOf("photo") < 0) w.discoveries.push("photo");
+      FOW.state.note("A photograph: the Gaffer and Reggie Thorne, one team, long ago.");
+    } });
+  reg({ id: "look.volunteers", sp: "Volunteers", expr: null,
+    lines: ["Four locals and a roller older than any of them.", "“Square'll be ready Saturday. It's always ready Saturday.”"],
+    effects: function (w) { if (w.discoveries.indexOf("volunteers") < 0) w.discoveries.push("volunteers"); } });
+  reg({ id: "look.urn", sp: "Tea urn", expr: null,
+    lines: ["Still warm. In this club, that counts as infrastructure."] });
+  reg({ id: "look.papers", sp: "Committee papers", expr: null,
+    lines: ["Provisional status. One season to prove the club deserves permanence.",
+      "Margaret has underlined 'solvent' twice."] });
+  reg({ id: "look.shelf", sp: "The trophy shelf", expr: null,
+    lines: ["Dust, and space.", "Somebody has measured the widest gap. In pencil. Recently."] });
+
+  reg({ id: "meet.argument", sp: null, expr: "cutout.player.bat",
+    lines: [
+      function (w, B) { var a = B.anchor("captain"); return (a ? a : "The senior batter") + ": “We bat properly for ten overs. THEN we go.”"; },
+      function (w, B) { var o = B.anchor("star"); return (o ? o : "The opener") + ": “The game's fifty overs, not sixty. We go from ball one.”"; },
+      "They both turn to you at the same moment."
+    ],
+    choices: [
+      { t: "“Start careful. Earn the right to attack.”", fx: function (w) { w.flags.sawArgument = 1; w.flags.argumentSide = "careful"; } },
+      { t: "“Intent from the first ball.”", fx: function (w) { w.flags.sawArgument = 1; w.flags.argumentSide = "attack"; } },
+      { t: "“Show me on Saturday. Both of you.”", fx: function (w) { w.flags.sawArgument = 1; w.flags.argumentSide = "prove"; } }
+    ],
+    effects: function (w, B) {
+      var a = B.anchor("captain"), o = B.anchor("star");
+      if (a) FOW.state.note(a + ": leads the batting. Wants control first.");
+      if (o) FOW.state.note(o + ": the aggressor at the top.");
+    } });
+
+  reg({ id: "meet.prospect", sp: null, expr: "cutout.player.ar",
+    lines: [
+      function (w, B) { var k = B.anchor("prospect"); return (k ? k : "The lad") + " doesn't stop bowling when you approach."; },
+      "“Been here since seven. Someone had to be.”",
+      "“You're the new manager? I'm ready. Whenever. Just saying.”"],
+    effects: function (w, B) {
+      var k = B.anchor("prospect");
+      if (k) FOW.state.note(k + ": bowls alone before anyone arrives. Wants one chance.");
+    } });
+  reg({ id: "nets.prospect", sp: null, expr: "cutout.player.ar",
+    lines: [function (w, B) {
+      var t = B.trialFacts();
+      var k = B.anchor("prospect");
+      if (t && t.mine && t.mine.length) {
+        var line = t.mine.filter(function (b) { return b.nm === k; })[0];
+        if (line) return (k || "The prospect") + ": “" + line.r + " in the trial. It's in the book now. In ink.”";
+      }
+      return (k || "The prospect") + ": “Same net. Same length. Every morning until you pick me.”";
+    }] });
+
+  reg({ id: "meet.veteran", sp: null, expr: "cutout.player.bat",
+    lines: [
+      function (w, B) { var v = B.anchor("veteran"); return (v ? v : "The senior pro") + " nods at the empty room."; },
+      "“I've seen this club die twice. Third time's yours to prevent.”",
+      "“Ask me anything except how long I've got left.”"],
+    effects: function (w, B) { var v = B.anchor("veteran"); if (v) FOW.state.note(v + ": " + "seen everything, says little. The room listens when he does."); } });
+  reg({ id: "meet.keeper", sp: null, expr: "cutout.player.keeper",
+    lines: [
+      function (w, B) { var k = B.anchor("keeper"); return (k ? k : "The keeper") + " is re-webbing a glove with dental floss."; },
+      "“Keeper sets the standard. Everything in front of me is my business.”"],
+    effects: function (w, B) { var k = B.anchor("keeper"); if (k) FOW.state.note(k + ": the gloves, and the standards."); } });
+  reg({ id: "meet.bowler", sp: null, expr: "cutout.player.pace",
+    lines: [
+      function (w, B) { var b = B.anchor("bowler"); return (b ? b : "The quick") + " is asleep under a towel. One eye opens."; },
+      "“First over Saturday is mine. That's not a request.”"],
+    effects: function (w, B) { var b = B.anchor("bowler"); if (b) FOW.state.note(b + ": takes the new ball. The first over is already his."); } });
+  reg({ id: "meet.star", sp: null, expr: "cutout.player.bat",
+    lines: [
+      function (w, B) { var s = B.anchor("star"); return (s ? s : "The batter") + " is measuring the empty shelf with a pencil."; },
+      "“Just seeing what fits. Something should fit.”"],
+    effects: function (w, B) { var s = B.anchor("star"); if (s) FOW.state.note(s + ": the heaviest bat in the side. Measures trophy shelves for fun."); } });
+
+  // ---- founding -------------------------------------------------------------
+  reg({ id: "founding.margaret", sp: "Margaret Hobb", expr: null, mono: "MH",
+    input: { flag: "clubName", placeholder: "The club's name, for the register" },
+    lines: ["Thirty-one years I've filed for this club. You're the first manager I've had to dust for.",
+      "Paperwork, then. The league requires a name and an identity. Colours first."],
+    choices: [
+      { t: "Navy and cream — the old way", fx: function (w, B) { w.flags.colour = "navy"; }, next: "founding.crest" },
+      { t: "Terracotta and gold — a new flag", fx: function (w, B) { w.flags.colour = "terracotta"; }, next: "founding.crest" },
+      { t: "Green and white — the meadow's own", fx: function (w, B) { w.flags.colour = "green"; }, next: "founding.crest" }
+    ] });
+  reg({ id: "founding.crest", sp: "Margaret Hobb", expr: null, mono: "MH",
+    lines: ["And a crest. The stamp is older than I am; choose what it presses."],
+    choices: [
+      { t: "The harbour lantern", fx: function (w, B) { w.flags.crest = "lantern"; B.found(w); }, next: "founding.done" },
+      { t: "Crossed bats and a rose", fx: function (w, B) { w.flags.crest = "bats"; B.found(w); }, next: "founding.done" },
+      { t: "The railway wheel", fx: function (w, B) { w.flags.crest = "wheel"; B.found(w); }, next: "founding.done" }
+    ] });
+  reg({ id: "founding.done", sp: "Margaret Hobb", expr: null, mono: "MH",
+    lines: [
+      function (w, B) { return "Stamped. " + B.clubName() + ", of this town, in " + (w.flags.colour || "navy") + "."; },
+      "The dressing room will want a captain before it wants anything else.",
+      "I file. You manage."],
+    effects: function (w, B) { FOW.state.note("Founded: " + B.clubName() + ". Provisional status — one season to earn permanence."); } });
+  reg({ id: "office.margaret", sp: "Margaret Hobb", expr: null, mono: "MH",
+    lines: [function (w, B) {
+      var pr = B.activePromise();
+      if (pr) return "For your records: a live promise. " + pr + ". I file these too.";
+      return "The ledger is current and the tea is not. One of those I can fix.";
+    }] });
+
+  // ---- captaincy + philosophy ----------------------------------------------
+  reg({ id: "choose.captain", sp: "The Gaffer", expr: "portrait.gaffer.neutral",
+    lines: [
+      function (w, B) { var c = B.captainCandidates(); return "Armband. Evidence first: " + c.map(function (x) { return x.nm + " — " + x.why; }).join(". ") + "."; },
+      "Pick one. Out loud."],
+    choices: [] ,
+    // choices are built live from the actual squad at open time
+    dynChoices: function (w, B) {
+      return B.captainCandidates().map(function (c) {
+        return { t: c.nm + " (" + c.why + ")", fx: function (w2, B2) { B2.chooseCaptain(c.nm); }, next: "choose.philosophy" };
+      });
+    } });
+  reg({ id: "choose.philosophy", sp: "The Gaffer", expr: "portrait.gaffer.serious",
+    lines: ["Last question, and I'll hold you to the answer in August.", "What is this club FOR?"],
+    choices: [
+      { t: "Courage — the positive option, every time", fx: function (w, B) { B.choosePhilosophy("courage"); }, next: "choose.done" },
+      { t: "Discipline — boring things done properly", fx: function (w, B) { B.choosePhilosophy("discipline"); }, next: "choose.done" },
+      { t: "Community — nobody bigger than the shirt", fx: function (w, B) { B.choosePhilosophy("community"); }, next: "choose.done" },
+      { t: "Ambition — here to take the Crown Ground", fx: function (w, B) { B.choosePhilosophy("ambition"); }, next: "choose.done" }
+    ] });
+  reg({ id: "choose.done", sp: "The Gaffer", expr: "portrait.gaffer.wry",
+    lines: [
+      function (w, B) { return nmS(B.anchor("captain")) + " it is. The board's behind you — chalk your XI on it."; },
+      "Willowmere on Saturday. Away. The Meadow suits soft hands and hard heads."],
+    effects: function (w, B) { w.flags.captainChosen = 1; FOW.state.note("Captain: " + (B.anchor("captain") || "chosen") + ". Willowmere away first."); } });
+
+  // ---- willowmere -----------------------------------------------------------
+  reg({ id: "wm.sign", sp: "Village sign", expr: null,
+    lines: ["WILLOWMERE — winner, Best Kept Village, four years running.", "Underneath, smaller: 'And we bat all fifty overs.'"] });
+  reg({ id: "wm.manager", sp: "Ted Marsh", expr: null, mono: "TM",
+    lines: ["Welcome to The Meadow. Thirty years I've managed here.",
+      "We'll smile while we beat you. It's the local style.",
+      "Soft hands, son. The pitch rewards patience and punishes tourists."] });
+
+  // ---- post-match: the world remembers -------------------------------------
+  reg({ id: "post.gaffer", sp: "The Gaffer", expr: null,
+    lines: [
+      function (w, B) {
+        var f = B.lastFacts(); if (!f) return null;
+        if (f.tie) return "A tie. Rarest page in the book. Nobody gets to sulk and nobody gets to sing.";
+        return f.win ? "First blood: " + f.my + " for " + f.myW + " against their " + f.op + ". It stands forever now."
+                     : "First scar: " + f.op + " to our " + f.my + ". It stands forever now. Good.";
+      },
+      function (w, B) {
+        var f = B.lastFacts(); if (!f || !f.topNm) return null;
+        return nmS(f.topNm) + "'s " + f.topR + " is in the scorebook. Ink, not opinion.";
+      },
+      "Get some sleep. The league table wakes up before you do."],
+    effects: function (w, B) {
+      w.flags.postGafferDone = 1;
+      var f = B.lastFacts();
+      if (f) FOW.state.note("Willowmere, first competitive match: " + f.my + "/" + f.myW + " v " + f.op + "/" + f.opW + (f.win ? " — won." : f.tie ? " — tied." : " — lost."));
+    },
+    expr2: function (w, B) { var f = B.lastFacts(); return f && f.win ? "portrait.gaffer.amused" : "portrait.gaffer.serious"; } });
+  reg({ id: "post.captain", sp: null, expr: "cutout.player.bat",
+    lines: [
+      function (w, B) {
+        var cap = B.anchor("captain"), f = B.lastFacts();
+        if (!cap || !f) return null;
+        var line = (f.batLines || []).filter(function (b) { return b.nm === cap; })[0];
+        var own = line ? "Made " + line.r + " myself. " : "";
+        if (w.flags.argumentSide === "careful") return nmS(cap) + ": “" + own + "You asked for careful starts. That's how I read it out there.”";
+        if (w.flags.argumentSide === "attack") return nmS(cap) + ": “" + own + "Intent from ball one, you said. We lived by that today.”";
+        return nmS(cap) + ": “" + own + "You told us to show you. Well. Now you've seen.”";
+      }] });
+  reg({ id: "post.newspaper", sp: "The Argus", expr: null,
+    lines: [function (w, B) {
+      var h = B.latestHeadline();
+      return h ? "Tomorrow's back page: “" + h + "”" : "The presses are still warm. Nothing filed yet.";
+    }] });
+  reg({ id: "trial.debrief", sp: "The Gaffer", expr: "portrait.gaffer.neutral",
+    lines: [function (w, B) {
+      var t = B.trialFacts(); if (!t) return null;
+      return "Trial's in the book: " + (t.topNm ? t.topNm + " " + t.topR : "quiet cards") + (t.bbNm ? ", " + t.bbNm + " " + t.bbW + "-" + t.bbR : "") + ". Evidence, not verdicts.";
+    }] });
+})();
+
+/* ---- world:director.js ---- */
+/* world-client/director — turns factual events into world changes. It never
+ * decides results; it decides what the PLACES show: which scene the manager
+ * returns to, which props appear, which conversations exist. Every change
+ * it makes is keyed to a concrete recorded fact (a match count, a stored
+ * scorecard), never to "whatever happened most recently" by guesswork.
+ */
+FOW.director = (function () {
+  var lastMatchCount = null, lastTrial = null;
+
+  function tick() {
+    var w = FOW.state.load(), B = FOW.bridge;
+    if (!B.ready()) return;
+    if (lastMatchCount === null) lastMatchCount = B.userMatchCount();
+    if (lastTrial === null) lastTrial = B.trialDone();
+
+    // the first competitive result changes the world: dusk light, newspaper
+    // prop, moved characters, and post-match conversations become available
+    var mc = B.userMatchCount();
+    if (mc > lastMatchCount) {
+      lastMatchCount = mc;
+      if (!w.flags.firstMatchDone) {
+        w.flags.firstMatchDone = 1;
+        w.flags.postGafferDone = 0;
+        FOW.state.save();
+        FOW.renderer.travelCard("The train home", function () {
+          FOW.app.goto("home-exterior");
+        });
+        return;
+      }
+      // later matches: come home quietly, the scene variants read the save
+      FOW.renderer.travelCard("Back to the club", function () { FOW.app.goto("home-exterior"); });
+      return;
+    }
+    // the optional trial finished: back to the nets with the real figures
+    var td = B.trialDone();
+    if (td && !lastTrial) {
+      lastTrial = true;
+      w.flags.trialDone = 1;
+      FOW.state.save();
+      FOW.renderer.travelCard("Back to the nets", function () {
+        FOW.app.goto("nets");
+        FOW.dialogue.play("trial.debrief");
+      });
+    }
+  }
+
+  return { tick: tick };
+})();
+
+/* ---- world:bridge.js ---- */
+/* world-client/bridge — the ONLY module that touches legacy globals
+ * (FOC.*, App, GD, userTeam, location.hash). Everything the world needs
+ * from the cricket simulation passes through here, by stable ids and
+ * plain facts. If it isn't in this file, it doesn't read legacy state.
+ */
+FOW.bridge = (function () {
+  // legacy access goes through the intentional exports only:
+  // __foSummer (campaign/career modules) and __foGame (engine plumbing)
+  function ready() {
+    try { return !!(window.__foSummer && window.__foSummer.career) && !!window.__foGame && typeof userTeam === "function"; }
+    catch (e) { return false; }
+  }
+  function S() { return window.__foSummer; }
+  function v1() { return S().save(); }
+  function v2() { return S().career.career(); }
+  function team() { try { return userTeam(); } catch (e) { return null; } }
+  function players() { return (team() || {}).players || []; }
+
+  // ---- anchors: real names from the real squad ------------------------------
+  function anchor(role) {
+    var s = v1();
+    if (role === "captain") {
+      if (s.castNames.captain) return s.castNames.captain;
+      var c = captainCandidates()[0]; return c ? c.nm : null;
+    }
+    var ps = players().slice();
+    if (!ps.length) return null;
+    if (role === "veteran") return ps.sort(function (a, b) { return (b.age || 0) - (a.age || 0); })[0].name;
+    if (role === "prospect") return ps.sort(function (a, b) { return (a.age || 0) - (b.age || 0); })[0].name;
+    if (role === "star") return ps.sort(function (a, b) { return (b.bat || 0) - (a.bat || 0); })[0].name;
+    if (role === "keeper") {
+      var k = ps.filter(function (p) { return p.keeper; }).sort(function (a, b) { return (b.keep || 0) - (a.keep || 0); })[0];
+      return k ? k.name : null;
+    }
+    if (role === "bowler") {
+      var b = ps.filter(function (p) { return p.bowlType; })
+        .sort(function (x, y) { return ((y.threat || 0) + (y.control || 0)) - ((x.threat || 0) + (x.control || 0)); })[0];
+      return b ? b.name : null;
+    }
+    return null;
+  }
+  function captainCandidates() {
+    try { return S().engine.makeCtx(v1()).captainCandidates(); } catch (e) { return []; }
+  }
+
+  // ---- founding -------------------------------------------------------------
+  function clubName() { return (team() || {}).name || "the club"; }
+  function found(w) {
+    try {
+      var nm = (w.flags.clubName || "").trim().slice(0, 26);
+      if (nm && team()) team().name = nm;
+      w.flags.founded = 1;
+      var s = v1();
+      S().events.emit(s, "ClubFounded", { nm: clubName(), colour: w.flags.colour, crest: w.flags.crest });
+      S().saveMod.persist(s);
+      try { if (typeof saveGame === "function") saveGame(false); } catch (e2) {}
+    } catch (e) {}
+  }
+  function chooseCaptain(nm) {
+    try {
+      var s = v1(), ctx = S().engine.makeCtx(s);
+      var p = players().filter(function (x) { return x.name === nm; })[0];
+      if (p) ctx.setCast("captain", p);
+      ctx.setCast("senior", ctx.pickSenior());
+      ctx.setCast("prospect", ctx.pickProspect());
+      ctx.setCast("fringe", ctx.pickFringe());
+      var wk = ctx.pickKeeper(); if (wk) ctx.setCast("keeper", wk);
+      var sb = ctx.strikeBowler(); if (sb) ctx.setCast("strike", sb);
+      S().events.emit(s, "CaptainAppointed", { nm: nm, prev: null });
+      S().saveMod.persist(s);
+    } catch (e) {}
+  }
+  function choosePhilosophy(k) {
+    try {
+      var s = v1();
+      var PH = { courage: "Courage", discipline: "Discipline", community: "Community", ambition: "Ambition" };
+      s.philosophy = { k: k, label: PH[k] || k, chChosen: 0 };
+      S().events.emit(s, "PhilosophyChosen", { k: k });
+      // the world's onboarding replaces the chapter prologue: hand over
+      s.ch = 1; s.beat = 0;
+      S().saveMod.persist(s);
+      S().career.begin();
+    } catch (e) {}
+  }
+
+  // ---- fixtures and facts ---------------------------------------------------
+  function nextOpponentKey() {
+    try {
+      var w2 = v2(); if (!w2) return null;
+      var f = S().world.comps.userFixture(w2, w2.week);
+      if (!f) return null;
+      var opp = f.homeId === w2.user.clubId ? f.awayId : f.homeId;
+      return (w2.world.clubsById[opp] || {}).key || null;
+    } catch (e) { return null; }
+  }
+  function fixtureLive() { try { return !!(App.pending && App.pending.__career); } catch (e) { return false; } }
+  function xiConfirmed() { try { return fixtureLive() && !!(App.orders && App.orders.saved); } catch (e) { return false; } }
+  function userMatchCount() {
+    try { return ((v2() || {}).flags.userFactsHist || []).length; } catch (e) { return 0; }
+  }
+  function lastFacts() { try { return (v2() || {}).flags.lastUserFacts || null; } catch (e) { return null; } }
+  function latestHeadline() {
+    try {
+      var n = ((v2() || {}).world.news || []).filter(function (x) { return x.kind === "headline" || x.kind === "result"; })[0];
+      return n ? n.text : null;
+    } catch (e) { return null; }
+  }
+  function activePromise() {
+    try {
+      var pr = ((v2() || {}).story.promises || []).filter(function (p) { return p.status === "active"; })[0];
+      return pr ? pr.txt : null;
+    } catch (e) { return null; }
+  }
+  function trialFacts() {
+    try {
+      var m = (v1().matches || []).filter(function (x) { return x.key === "trial"; }).slice(-1)[0];
+      return m ? { topNm: m.facts.topNm, topR: m.facts.topR, bbNm: m.facts.bbNm, bbW: m.facts.bbW, bbR: m.facts.bbR, mine: m.facts.batLines } : null;
+    } catch (e) { return null; }
+  }
+  function trialDone() { return !!trialFacts(); }
+
+  // ---- actions that leave the world (and come back) -------------------------
+  function openLineup(withFixture) {
+    try {
+      if (withFixture && !fixtureLive()) S().career.startUserFixture();
+      else { location.hash = "#/lineup"; if (window.route) window.route(); }
+    } catch (e) {}
+  }
+  function walkout() {
+    try { location.hash = "#/match"; if (window.route) window.route(); } catch (e) {}
+  }
+  function startTrial() { try { S().engine.playTrial(v1()); } catch (e) {} }
+  function openCareer() { try { location.hash = "#/summer"; if (window.route) window.route(); } catch (e) {} }
+
+  // engine surfaces are "away from the world"; the watcher brings us home
+  function inLegacySurface() {
+    try { return /#\/(lineup|match|summer|scorecard|orders)/.test(location.hash || ""); } catch (e) { return false; }
+  }
+
+  return { ready: ready, anchor: anchor, captainCandidates: captainCandidates,
+    clubName: clubName, found: found, chooseCaptain: chooseCaptain, choosePhilosophy: choosePhilosophy,
+    nextOpponentKey: nextOpponentKey, fixtureLive: fixtureLive, xiConfirmed: xiConfirmed,
+    userMatchCount: userMatchCount, lastFacts: lastFacts, latestHeadline: latestHeadline,
+    activePromise: activePromise, trialFacts: trialFacts, trialDone: trialDone,
+    openLineup: openLineup, walkout: walkout, startTrial: startTrial, openCareer: openCareer,
+    inLegacySurface: inLegacySurface };
+})();
+
+/* ---- world:renderer.js ---- */
+/* world-client/renderer — DOM scene renderer. Layered full-screen places,
+ * positioned hotspots (44px+, keyboard focusable), character cutouts, a
+ * dialogue box with typed text (instant under reduced motion), choices,
+ * an input row for founding, the notebook drawer, and travel cards.
+ * Placeholder backgrounds are painted with layered CSS by stable asset id.
+ */
+FOW.renderer = (function () {
+  var root = null, hidden = false, typeTimer = null;
+
+  function el(tag, cls, html) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html != null) e.innerHTML = html;
+    return e;
+  }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function mount() {
+    if (root) return root;
+    css();
+    root = el("div", "fow");
+    root.id = "fow-root";
+    document.body.appendChild(root);
+    document.addEventListener("keydown", function (ev) {
+      if (hidden) return;
+      if ((ev.key === "Enter" || ev.key === " ") && FOW.dialogue.isOpen()) {
+        var box = document.querySelector(".fow-dlg .fow-choices");
+        if (!box) { ev.preventDefault(); FOW.dialogue.advance(); }
+      }
+    });
+    return root;
+  }
+
+  function sceneDef() {
+    var w = FOW.state.load();
+    var d = FOW.scenes.get(w.scene) || FOW.scenes.get("station");
+    var v = d.variant && d.variant(w, FOW.bridge);
+    if (v) d = Object.assign({}, d, v);
+    return d;
+  }
+
+  function refresh() {
+    if (!root || hidden) return;
+    var w = FOW.state.load(), B = FOW.bridge;
+    var d = sceneDef();
+    var bgId = d.bg;
+    var isCss = FOW.assets.isCss(bgId);
+    var h = "<div class='fow-scene " + (isCss ? FOW.assets.cssClass(bgId) : "") + "' data-scene='" + esc(d.id) + "'>";
+    if (!isCss) h += "<img class='fow-bgimg' src='" + esc(FOW.assets.get(bgId)) + "' alt=''>";
+    h += "<div class='fow-veil'></div>";
+    (d.characters || []).forEach(function (c) {
+      if (c.when && !c.when(w, B)) return;
+      if (c.asset) h += "<img class='fow-cutout' style='left:" + c.x + "%;top:" + c.y + "%' src='" + esc(FOW.assets.get(c.asset)) + "' alt=''>";
+      else if (c.mono) h += "<span class='fow-mono' style='left:" + c.x + "%;top:" + c.y + "%'>" + esc(c.mono) + "</span>";
+    });
+    (d.hotspots || []).forEach(function (hs) {
+      if (hs.when && !hs.when(w, B)) return;
+      var seen = hs.dlg && w.seen[hs.dlg];
+      h += "<button class='fow-hs" + (hs.optional ? " opt" : "") + (seen ? " seen" : "") + "' style='left:" + hs.x + "%;top:" + hs.y + "%'" +
+        " data-hs='" + esc(hs.id) + "' aria-label='" + esc(hs.label) + "'>" +
+        "<span class='pip'>" + (hs.kind === "go" ? "➜" : hs.kind === "talk" ? "💬" : hs.kind === "action" ? "✦" : "👁") + "</span>" +
+        "<span class='lbl'>" + esc(hs.label) + "</span></button>";
+    });
+    h += "<div class='fow-title'>" + esc(d.label) + "</div>";
+    h += "<button class='fow-nb' aria-label='Manager notebook'>✎ Notebook</button>";
+    h += "</div>";
+    root.innerHTML = h;
+    root.querySelectorAll(".fow-hs").forEach(function (b) {
+      b.addEventListener("click", function () { FOW.app.hotspot(b.getAttribute("data-hs")); });
+    });
+    var nb = root.querySelector(".fow-nb");
+    if (nb) nb.addEventListener("click", showNotebook);
+  }
+
+  // ---- dialogue -------------------------------------------------------------
+  function typeInto(box, txt) {
+    clearTimeout(typeTimer);
+    var w = FOW.state.load();
+    var reduced = w.settings.reduced || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+    if (w.settings.instant || reduced) { box.textContent = txt; return; }
+    var i = 0, step = Math.max(1, Math.round(2 * (w.settings.textSpeed || 1)));
+    box.textContent = "";
+    (function tick() {
+      i += step;
+      box.textContent = txt.slice(0, i);
+      if (i < txt.length) typeTimer = setTimeout(tick, 16);
+    })();
+  }
+
+  function showDialogue(active) {
+    if (!root) return;
+    var n = active.node, w = FOW.state.load(), B = FOW.bridge;
+    var txt = active.lines[active.lineIx] || "";
+    var ex = document.querySelector(".fow-dlg");
+    if (ex) ex.remove();
+    var exprId = (n.expr2 && n.expr2(w, B)) || n.expr;
+    var face = exprId && FOW.assets.get(exprId)
+      ? "<img class='face' src='" + esc(FOW.assets.get(exprId)) + "' alt=''>"
+      : (n.mono ? "<span class='face mono'>" + esc(n.mono) + "</span>" : "");
+    var d = el("div", "fow-dlg",
+      "<div class='fow-dlg-in' role='dialog' aria-live='polite'>" + face +
+      "<div class='bx'>" + (n.sp ? "<div class='sp'>" + esc(n.sp) + "</div>" : "") +
+      "<div class='tx' id='fow-tx'></div>" +
+      "<div class='adv' aria-hidden='true'>▾</div></div></div>");
+    root.appendChild(d);
+    typeInto(d.querySelector("#fow-tx"), txt);
+    d.addEventListener("click", function (ev) {
+      // choices and inputs handle themselves; the box only advances TEXT
+      if (ev.target.closest(".fow-choices") || ev.target.closest(".fow-in")) return;
+      if (d.querySelector(".fow-choices")) return;
+      FOW.dialogue.advance();
+    });
+  }
+
+  function showChoices(active) {
+    var n = active.node, w = FOW.state.load(), B = FOW.bridge;
+    var d = document.querySelector(".fow-dlg .bx");
+    if (!d) return;
+    var adv = d.querySelector(".adv"); if (adv) adv.remove();
+    // idempotent: never stack duplicate choice panels
+    var oldc = d.querySelector(".fow-choices"); if (oldc) return;
+    var choices = n.dynChoices ? n.dynChoices(w, B) : n.choices;
+    active.node = Object.assign({}, n, { choices: choices });
+    var h = "";
+    if (n.input) {
+      h += "<input class='fow-in' id='fow-in' maxlength='26' placeholder='" + esc(n.input.placeholder || "") + "' value='" + esc(w.flags[n.input.flag] || FOW.bridge.clubName()) + "' aria-label='" + esc(n.input.placeholder || "name") + "'>";
+    }
+    h += "<div class='fow-choices'>" + choices.map(function (c, i) {
+      return "<button class='fow-ch' data-i='" + i + "'>" + esc(c.t) + "</button>";
+    }).join("") + "</div>";
+    d.insertAdjacentHTML("beforeend", h);
+    d.querySelectorAll(".fow-ch").forEach(function (b) {
+      b.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        if (n.input) {
+          var inp = d.querySelector("#fow-in");
+          if (inp) { var ww = FOW.state.load(); ww.flags[n.input.flag] = inp.value; FOW.state.save(); }
+        }
+        FOW.dialogue.choose(+b.getAttribute("data-i"));
+      });
+    });
+    var first = d.querySelector(".fow-ch"); if (first) first.focus();
+  }
+  function hideDialogue() {
+    clearTimeout(typeTimer);
+    var ex = document.querySelector(".fow-dlg"); if (ex) ex.remove();
+  }
+
+  // ---- notebook, travel, legacy hand-off ------------------------------------
+  function showNotebook() {
+    var w = FOW.state.load();
+    var ex = document.querySelector(".fow-book"); if (ex) { ex.remove(); return; }
+    var h = "<div class='fow-book-in'><h3>Manager's notebook</h3>";
+    h += "<div class='sec'>People &amp; places</div>";
+    h += (w.notebook.length ? w.notebook.map(function (n) { return "<div class='ln'>• " + esc(n.txt) + "</div>"; }).join("") : "<div class='ln dim'>Nothing yet. Talk to people.</div>");
+    var visited = Object.keys(w.visited);
+    if (visited.length > 1) {
+      h += "<div class='sec'>Quick travel</div><div class='fow-qt'>" + visited.map(function (sid) {
+        var s = FOW.scenes.get(sid);
+        return s ? "<button class='fow-ch qt' data-go='" + esc(sid) + "'>" + esc(s.label) + "</button>" : "";
+      }).join("") + "</div>";
+    }
+    h += "<div class='sec'>Settings</div><div class='fow-qt'>" +
+      "<button class='fow-ch' data-set='instant'>" + (w.settings.instant ? "☑" : "☐") + " Instant text</button>" +
+      "<button class='fow-ch' data-set='reduced'>" + (w.settings.reduced ? "☑" : "☐") + " Reduce motion</button></div>";
+    h += "<div class='sec'>Recent conversation</div>" + w.history.slice(-6).map(function (l) { return "<div class='ln dim'>" + esc(l) + "</div>"; }).join("");
+    h += "<button class='fow-ch' data-close='1' style='margin-top:10px'>Close</button></div>";
+    var b = el("div", "fow-book", h);
+    root.appendChild(b);
+    b.addEventListener("click", function (ev) {
+      var t = ev.target.closest("button"); if (!t) return;
+      if (t.getAttribute("data-close")) { b.remove(); return; }
+      var go = t.getAttribute("data-go");
+      if (go) { b.remove(); FOW.app.goto(go); return; }
+      var st = t.getAttribute("data-set");
+      if (st) { var ww = FOW.state.load(); ww.settings[st] = !ww.settings[st]; FOW.state.save(); b.remove(); showNotebook(); }
+    });
+  }
+
+  function travelCard(label, then) {
+    show();
+    var c = el("div", "fow-travel", "<div class='in'><span class='tk'>🎫</span><span>" + esc(label) + "</span></div>");
+    root.appendChild(c);
+    setTimeout(function () { c.remove(); if (then) then(); refresh(); },
+      FOW.state.load().settings.reduced ? 60 : 1200);
+  }
+
+  // hand the screen to a legacy surface (lineup / match / hub), leave a way home
+  function hide(returnLabel) {
+    hidden = true;
+    if (root) root.style.display = "none";
+    var ex = document.getElementById("fow-return"); if (ex) ex.remove();
+    if (returnLabel) {
+      var chip = el("button", "fow-chip", "◂ " + esc(returnLabel));
+      chip.id = "fow-return";
+      chip.addEventListener("click", function () { chip.remove(); show(); refresh(); });
+      document.body.appendChild(chip);
+    }
+  }
+  function show() {
+    hidden = false;
+    var ex = document.getElementById("fow-return"); if (ex) ex.remove();
+    if (root) root.style.display = "";
+  }
+  function isHidden() { return hidden; }
+
+  function css() {
+    if (document.getElementById("fow-css")) return;
+    var st = el("style"); st.id = "fow-css";
+    st.textContent =
+      ".fow{position:fixed;inset:0;z-index:2147482000;background:#0B1322;font-family:Georgia,serif}" +
+      ".fow-scene{position:absolute;inset:0;overflow:hidden}" +
+      ".fow-bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.92}" +
+      ".fow-veil{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,transparent 55%,rgba(8,12,24,.35))}" +
+      ".fow-cutout{position:absolute;width:120px;height:120px;object-fit:cover;object-position:50% 8%;border-radius:14px;transform:translate(-50%,-50%);box-shadow:0 8px 24px rgba(0,0,0,.4);border:2px solid rgba(255,250,235,.5)}" +
+      ".fow-mono{position:absolute;width:96px;height:96px;transform:translate(-50%,-50%);border-radius:14px;background:#14213D;color:#C9A24B;display:flex;align-items:center;justify-content:center;font-size:26px;letter-spacing:2px;border:2px solid rgba(255,250,235,.5)}" +
+      ".fow-hs{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:7px;background:rgba(12,19,34,.78);color:#F1EADA;border:1px solid rgba(201,162,75,.65);border-radius:999px;padding:9px 14px;min-height:44px;min-width:44px;cursor:pointer;font-size:14px;backdrop-filter:blur(2px)}" +
+      ".fow-hs:hover,.fow-hs:focus-visible{border-color:#C9A24B;background:rgba(20,33,61,.92);outline:none;box-shadow:0 0 0 3px rgba(201,162,75,.45)}" +
+      ".fow-hs .pip{font-size:15px}" +
+      ".fow-hs.opt .pip{opacity:.85}" +
+      ".fow-hs.seen{opacity:.72}" +
+      "@media(prefers-reduced-motion:no-preference){.fow-hs .pip{animation:fowPulse 2.4s infinite}}" +
+      "@keyframes fowPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}" +
+      ".fow-title{position:absolute;top:14px;left:16px;color:#F1EADA;font-size:15px;letter-spacing:2.4px;text-transform:uppercase;background:rgba(11,19,34,.6);padding:7px 14px;border-radius:9px;border:1px solid rgba(201,162,75,.4)}" +
+      ".fow-nb{position:absolute;top:14px;right:16px;background:rgba(11,19,34,.7);color:#C9A24B;border:1px solid rgba(201,162,75,.5);border-radius:9px;padding:9px 14px;min-height:44px;cursor:pointer;font-size:13px}" +
+      ".fow-nb:focus-visible{outline:3px solid #C9A24B}" +
+      // dialogue
+      ".fow-dlg{position:absolute;left:0;right:0;bottom:0;padding:14px;display:flex;justify-content:center;background:linear-gradient(transparent,rgba(6,10,20,.72) 40%)}" +
+      ".fow-dlg-in{display:flex;gap:12px;align-items:flex-end;max-width:760px;width:100%}" +
+      ".fow-dlg .face{width:110px;height:110px;border-radius:14px;object-fit:cover;object-position:50% 8%;border:2px solid #C9A24B;flex:0 0 110px;background:#14213D}" +
+      ".fow-dlg .face.mono{display:flex;align-items:center;justify-content:center;color:#C9A24B;font-size:30px;letter-spacing:2px}" +
+      ".fow-dlg .bx{flex:1;background:#FDFBF4;border:2px solid #14213D;border-radius:14px;padding:12px 16px;min-height:86px;box-shadow:0 10px 30px rgba(0,0,0,.45)}" +
+      ".fow-dlg .sp{font-size:11px;letter-spacing:2.2px;text-transform:uppercase;color:#C8674A;font-weight:700;margin-bottom:4px}" +
+      ".fow-dlg .tx{color:#1c2333;font-size:17px;line-height:1.5;min-height:26px}" +
+      ".fow-dlg .adv{color:#C8674A;text-align:right;font-size:15px}" +
+      "@media(prefers-reduced-motion:no-preference){.fow-dlg .adv{animation:fowPulse 1.6s infinite}}" +
+      ".fow-choices{display:flex;flex-direction:column;gap:7px;margin-top:9px}" +
+      ".fow-ch{text-align:left;background:#fff;border:1.5px solid #cfc6ac;border-radius:9px;padding:10px 13px;font-size:14.5px;color:#1c2333;cursor:pointer;min-height:44px;font-family:inherit}" +
+      ".fow-ch:hover,.fow-ch:focus-visible{border-color:#C8674A;outline:none;box-shadow:0 0 0 3px rgba(200,103,74,.25)}" +
+      ".fow-in{width:100%;box-sizing:border-box;border:1.5px solid #cfc6ac;border-radius:9px;padding:10px;font-size:15px;margin-top:9px;font-family:inherit}" +
+      // notebook + travel + return chip
+      ".fow-book{position:absolute;inset:0;background:rgba(8,12,22,.55);display:flex;align-items:center;justify-content:center;padding:16px}" +
+      ".fow-book-in{background:#FDFBF4;border-radius:14px;max-width:520px;width:100%;max-height:80vh;overflow:auto;padding:18px;color:#1c2333}" +
+      ".fow-book-in h3{margin:0 0 6px;font-size:18px}" +
+      ".fow-book-in .sec{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#B08D2E;margin:12px 0 4px}" +
+      ".fow-book-in .ln{font-size:13.5px;padding:2px 0}" +
+      ".fow-book-in .dim{color:#7a7f8c}" +
+      ".fow-qt{display:flex;flex-wrap:wrap;gap:6px}" +
+      ".fow-qt .fow-ch{flex:0 0 auto}" +
+      ".fow-travel{position:absolute;inset:0;background:#0B1322;display:flex;align-items:center;justify-content:center;z-index:5}" +
+      ".fow-travel .in{color:#F1EADA;font-size:20px;letter-spacing:1px;display:flex;gap:12px;align-items:center;border:1px solid rgba(201,162,75,.5);border-radius:12px;padding:18px 26px}" +
+      ".fow-chip{position:fixed;top:64px;right:14px;z-index:2147482500;background:#14213D;color:#F1EADA;border:1px solid #C9A24B;border-radius:999px;padding:11px 18px;min-height:44px;cursor:pointer;font-size:13.5px}" +
+      // ---- placeholder scene paints (stable ids in ART_REQUIREMENTS.md) ----
+      ".sc-station{background:linear-gradient(#8fa8bf 0 38%,#b7c4b1 38% 62%,#6f7f6a 62% 100%)}" +
+      ".sc-station:before{content:'';position:absolute;left:8%;right:8%;top:30%;height:16%;background:#5d4a3a;border-radius:6px 6px 0 0;box-shadow:0 10px 0 #4a3b2e}" +
+      ".sc-home-morning{background:linear-gradient(#a9c2d6 0 42%,#8fb383 42% 78%,#5d7a54 78%)}" +
+      ".sc-home-morning:before{content:'';position:absolute;left:38%;width:26%;top:26%;height:20%;background:#f0e8d4;border:3px solid #6b5b46;border-radius:8px 8px 0 0}" +
+      ".sc-home-dusk{background:linear-gradient(#3d3a5c 0 34%,#c2764a 34% 46%,#4d5f46 46% 80%,#2e3c2b 80%)}" +
+      ".sc-home-dusk:before{content:'';position:absolute;left:38%;width:26%;top:26%;height:20%;background:#3a3428;border:3px solid #241f16;border-radius:8px 8px 0 0;box-shadow:inset 0 0 0 100px rgba(255,190,90,.12)}" +
+      ".sc-pavilion{background:linear-gradient(#efe6cf 0 70%,#8a6f52 70%)}" +
+      ".sc-pavilion:before{content:'';position:absolute;left:6%;right:6%;top:12%;height:8%;background:repeating-linear-gradient(90deg,#5d4a3a 0 40px,#6b5744 40px 80px)}" +
+      ".sc-dressing{background:linear-gradient(#dfd7c2 0 68%,#7a6a52 68%)}" +
+      ".sc-dressing:before{content:'';position:absolute;left:30%;right:30%;top:24%;height:26%;background:#2e3c2b;border:4px solid #6b5744;border-radius:6px}" +
+      ".sc-nets{background:linear-gradient(#bcd0de 0 40%,#7fa06f 40%)}" +
+      ".sc-nets:before{content:'';position:absolute;inset:22% 10% 30% 10%;background:repeating-linear-gradient(90deg,transparent 0 26px,rgba(40,50,40,.35) 26px 28px),repeating-linear-gradient(0deg,transparent 0 26px,rgba(40,50,40,.35) 26px 28px)}" +
+      ".sc-office{background:linear-gradient(#e9dfc8 0 72%,#6d5a44 72%)}" +
+      ".sc-office:before{content:'';position:absolute;left:12%;top:22%;width:20%;height:30%;background:#8a734f;border-radius:4px;box-shadow:34% 0 0 #8a734f}" +
+      ".sc-trophy{background:linear-gradient(#efe8d8 0 74%,#5d4a3a 74%)}" +
+      ".sc-trophy:before{content:'';position:absolute;left:20%;right:20%;top:26%;height:5%;background:#6b5744;box-shadow:0 60px 0 #6b5744}" +
+      ".sc-wm-town{background:linear-gradient(#cfe0ea 0 44%,#a7c290 44% 82%,#6f8a5e 82%)}" +
+      ".sc-wm-town:before{content:'';position:absolute;left:14%;width:14%;top:30%;height:14%;background:#e8dcc2;border:2px solid #6b5b46;box-shadow:180% 0 0 #e8dcc2,90% 40% 0 #d8ccb2}" +
+      ".sc-wm-ground{background:linear-gradient(#cfe0ea 0 38%,#8fb383 38% 84%,#54704b 84%)}" +
+      ".sc-wm-ground:before{content:'';position:absolute;left:34%;right:34%;top:46%;height:12%;background:#d9c9a3;border-radius:50%}" +
+      ".sc-wm-dressing{background:linear-gradient(#d8d0bb 0 70%,#6d5f4a 70%)}" +
+      ".sc-wm-entry{background:linear-gradient(#bcd0de 0 30%,#8fb383 30%)}" +
+      ".sc-wm-entry:before{content:'';position:absolute;left:44%;width:12%;top:20%;bottom:0;background:linear-gradient(rgba(240,232,212,.9),rgba(240,232,212,.2))}" +
+      "@media(max-width:700px){.fow-dlg .face{width:84px;height:84px;flex-basis:84px}.fow-dlg .tx{font-size:15.5px}.fow-cutout{width:96px;height:96px}}";
+    document.head.appendChild(st);
+  }
+
+  return { mount: mount, refresh: refresh, showDialogue: showDialogue, showChoices: showChoices,
+    hideDialogue: hideDialogue, showNotebook: showNotebook, travelCard: travelCard,
+    hide: hide, show: show, isHidden: isHidden };
+})();
+
+/* ---- world:app.js ---- */
+/* world-client/app — boot, navigation, and hotspot actions. Mounts only
+ * when the page was built as the world client (window.__FO_WORLD). The
+ * Classic build never loads this bundle.
+ */
+FOW.app = (function () {
+  function goto(sceneId) {
+    var w = FOW.state.load();
+    if (!FOW.scenes.get(sceneId)) return;
+    w.scene = sceneId;
+    w.visited[sceneId] = 1;
+    if (sceneId !== "station") w.flags.leftStation = 1;
+    FOW.state.save();
+    FOW.renderer.show();
+    FOW.renderer.refresh();
+  }
+
+  function hotspot(id) {
+    var w = FOW.state.load(), B = FOW.bridge;
+    var d = FOW.scenes.get(w.scene); if (!d) return;
+    var hs = (d.hotspots || []).filter(function (h) { return h.id === id; })[0];
+    if (!hs) return;
+    if (hs.kind === "go" && hs.go) {
+      if (hs.go === "wm-town" && !w.visited["wm-town"]) {
+        FOW.renderer.travelCard("The Saturday service to Willowmere", function () { goto("wm-town"); });
+        return;
+      }
+      goto(hs.go);
+      return;
+    }
+    if (hs.dlg) { FOW.dialogue.play(hs.dlg); return; }
+    if (hs.kind === "action") {
+      if (hs.act === "lineup") {
+        // away dressing room starts the real fixture; home board edits the plan
+        var withFixture = w.scene === "wm-dressing";
+        FOW.renderer.hide("Back to the dressing room");
+        B.openLineup(withFixture);
+      } else if (hs.act === "walkout") {
+        FOW.renderer.hide(null);   // no way back mid-match; the director returns us
+        B.walkout();
+      } else if (hs.act === "trial") {
+        FOW.renderer.hide("Back to the nets");
+        B.startTrial();
+      } else if (hs.act === "career") {
+        FOW.renderer.hide("Back to the world");
+        B.openCareer();
+      }
+    }
+  }
+
+  function init() {
+    if (typeof window === "undefined" || !window.__FO_WORLD) return;
+    var tries = 0;
+    var t = setInterval(function () {
+      tries++;
+      if (!FOW.bridge.ready()) { if (tries > 120) clearInterval(t); return; }
+      clearInterval(t);
+      // the world owns the screen: no auth gate in the world build
+      try { var wrap = document.getElementById("folWrap"); if (wrap) wrap.remove(); } catch (e) {}
+      FOW.renderer.mount();
+      var w = FOW.state.load();
+      w.visited[w.scene] = 1;
+      FOW.state.save();
+      FOW.renderer.refresh();
+      setInterval(function () {
+        try { FOW.director.tick(); } catch (e2) {}
+        // if a legacy surface was left by its own navigation, come home
+        try {
+          if (FOW.renderer.isHidden() && !FOW.bridge.inLegacySurface() &&
+              !(typeof M !== "undefined" && M && !M.done) && !document.getElementById("fow-return")) {
+            FOW.renderer.show(); FOW.renderer.refresh();
+          }
+        } catch (e3) {}
+      }, 1500);
+      try { console.info("Fifty Overs world client ready."); } catch (e4) {}
+    }, 300);
+  }
+
+  return { init: init, goto: goto, hotspot: hotspot };
+})();
+
+FOW.app.init();
+try { window.__foWorld = FOW; } catch (e) {}
 
 })();
 

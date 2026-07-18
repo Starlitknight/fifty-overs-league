@@ -193,6 +193,11 @@ FOC.career = (function () {
       }
       try {
         var me = A.team(), ix = -1;
+        if ((me.players || []).length <= 12) {
+          v2.world.news.unshift({ week: v2.week, season: v2.seasonNumber, kind: "transfer",
+            text: "The board blocks the sale of " + o.playerName + " — twelve players is not a squad." });
+          return;
+        }
         (me.players || []).forEach(function (p, i) { if (p && p.name === o.playerName) ix = i; });
         if (ix < 0) return;
         var pl = me.players.splice(ix, 1)[0];

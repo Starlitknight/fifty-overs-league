@@ -20,7 +20,7 @@
   var JWT = "", LG = null, SYNC = null;
   // Art lives in client/art/. From index.html at the repo root that's "client/art/";
   // from client/game.html the page itself sits inside client/, so it's just "art/".
-  var FO_ART = (location.pathname.indexOf("/client/") !== -1) ? "art/" : "client/art/";
+  var FO_ART = (location.pathname.indexOf("/client/") !== -1) ? "art/" : (location.pathname.indexOf("/next/") !== -1 ? "../client/art/" : "client/art/");
   // the game's own nationality list; each manager picks one as their home country
   var NAT = ["Australia", "India", "Pakistan", "Sri Lanka", "New Zealand", "South Africa", "England", "Netherlands", "West Indies", "Afghanistan", "Ireland", "Zimbabwe"];
 

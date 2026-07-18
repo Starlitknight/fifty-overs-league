@@ -54,20 +54,33 @@ FOC.competitions = (function () {
   // ---- Founders Cup progression ---------------------------------------------
   // a tied knockout is settled explicitly, never by home advantage: fewer
   // wickets lost wins; still level → a seeded super-over coin, recorded
-  function tieBreak(v2, f) {
-    var r = f.result, w;
+  function tieBreak(v2, f, runner) {
+    var r = f.result, w = null;
     if ((r.home.wkts || 0) !== (r.away.wkts || 0)) {
       w = r.home.wkts < r.away.wkts ? f.homeId : f.awayId;
       r.tieBreak = "fewer wickets lost";
-    } else {
-      w = RNG.chance(v2.rng, "cupdraw", 0.5, "super-over:" + f.id) ? f.homeId : f.awayId;
-      r.tieBreak = "super over";
+    } else if (runner && FOC.worldsim) {
+      // dead level: an actual engine replay on a derived seed IS the super
+      // over — a real result, recorded, never a labelled coin
+      try {
+        var home = FOC.worldsim.clubTeam(v2, f.homeId), away = FOC.worldsim.clubTeam(v2, f.awayId);
+        var so = runner(home, away, "balanced", "Sunny", FOC.util.hash32(v2.worldSeed + "|" + f.id + "|super-over"));
+        if (so && so.result && so.result.winner) {
+          w = so.result.winner === home.name ? f.homeId : f.awayId;
+          r.tieBreak = "super over (replayed through the engine)";
+          r.superOver = so.result.text || "";
+        }
+      } catch (eSO) {}
+    }
+    if (!w) {
+      w = RNG.chance(v2.rng, "cupdraw", 0.5, "bowl-out:" + f.id) ? f.homeId : f.awayId;
+      r.tieBreak = "bowl-out (seeded, recorded)";
     }
     r.tieWinnerId = w;
     return w;
   }
 
-  function foundersAdvance(v2) {
+  function foundersAdvance(v2, io) {
     var cup = v2.world.competitionsById.founders;
     if (!cup || cup.winner) return;
     var stageFx = fixtures(v2, function (f) { return f.comp === "founders"; });
@@ -77,7 +90,7 @@ FOC.competitions = (function () {
     var maxRound = 0;
     stageFx.forEach(function (f) { if (f.round > maxRound) maxRound = f.round; });
     stageFx.filter(function (f) { return f.round === maxRound; }).forEach(function (f) {
-      var w = f.result.winnerId || tieBreak(v2, f);
+      var w = f.result.winnerId || tieBreak(v2, f, io && io.matchRunner);
       winners.push(w);
       var l = w === f.homeId ? f.awayId : f.homeId;
       losers.push(l);
@@ -132,7 +145,7 @@ FOC.competitions = (function () {
     });
     cup.stage = "sf";
   }
-  function crownAdvance(v2) {
+  function crownAdvance(v2, io) {
     var cup = v2.world.competitionsById.crown;
     if (!cup || cup.winner || cup.stage === "pending") return;
     var fx = fixtures(v2, function (f) { return f.comp === "crown"; });
@@ -140,7 +153,7 @@ FOC.competitions = (function () {
     var maxRound = 0;
     fx.forEach(function (f) { if (f.round > maxRound) maxRound = f.round; });
     var winners = fx.filter(function (f) { return f.round === maxRound; })
-      .map(function (f) { return f.result.winnerId || tieBreak(v2, f); });
+      .map(function (f) { return f.result.winnerId || tieBreak(v2, f, io && io.matchRunner); });
     if (cup.stage === "sf" && winners.length === 2) {
       cup.bracket.final = winners;
       var f2 = MDL.fixture(v2, 15, "crown", 2, winners[0], winners[1]);

@@ -412,7 +412,7 @@ test('tied knockouts resolve by explicit tie-break, never home advantage', () =>
   const clone = JSON.parse(JSON.stringify(v2));
   const fc = JSON.parse(JSON.stringify(f2));
   assert.equal(sb.FOC.competitions.tieBreak(v2, f2), sb.FOC.competitions.tieBreak(clone, fc));
-  assert.equal(f2.result.tieBreak, 'super over');
+  assert.equal(f2.result.tieBreak, 'bowl-out (seeded, recorded)');   // no engine runner in node: the honest fallback
 });
 
 test('neutral finals play on a neutral balanced pitch', () => {

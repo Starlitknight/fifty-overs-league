@@ -24,8 +24,12 @@ FOC.adapter = (function () {
   // the same key the Circuit uses (SYNC.myMid), so solo worlds and league
   // membership never shadow each other's campaign
   function scope() {
-    try { if (typeof SYNC !== "undefined" && SYNC && SYNC.myMid) return String(SYNC.myMid); } catch (e) {}
-    return "solo";
+    var base = "solo";
+    try { if (typeof SYNC !== "undefined" && SYNC && SYNC.myMid) base = String(SYNC.myMid); } catch (e) {}
+    // the illustrated world client keeps its career entirely separate from
+    // Classic saves in the same browser
+    try { if (typeof window !== "undefined" && window.__FO_WORLD) return base + "_world"; } catch (e2) {}
+    return base;
   }
 
   // ---- orders ---------------------------------------------------------------

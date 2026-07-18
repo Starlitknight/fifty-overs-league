@@ -90,6 +90,8 @@ FOC.worldgen = (function () {
       for (var i = 0; i < (n / 2) - 1; i++) pairs.push([arr[i], arr[arr.length - 2 - i]]);
       pairs.forEach(function (pr, pi) {
         var home = (r + pi) % 2 === 0 ? pr[0] : pr[1];
+        // the career opens AWAY at Willowmere — The Meadow, their pitch
+        if (r === 0 && pi === 0) home = pr[1];
         var away = home === pr[0] ? pr[1] : pr[0];
         var f = MDL.fixture(v2, wk, "league", r + 1, home, away);
         v2.world.fixturesById[f.id] = f;
