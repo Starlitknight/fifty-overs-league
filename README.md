@@ -1,4 +1,24 @@
-# Fifty Overs — Multiplayer League
+# Fifty Overs — a narrative cricket-management game
+
+**Found a club. Play a career. Bring your friends.**
+
+Fifty Overs is a solo-first cricket management game set in a persistent,
+seeded England: ten clubs with named managers who select, scheme, trade and
+get sacked; a real league and knockout cups where defeat is permanent;
+promises, rivalries and a recurring cast (the Gaffer, Reggie Thorne, Priya
+Raman, the club secretary, the local reporter) whose stories are built from
+your actual scorecards. Every match — yours live in the match centre,
+everyone else's headlessly — runs through the same deterministic engine.
+
+**Play now:** https://starlitknight.github.io/fifty-overs-league/ — click
+*Start a Solo Career*. No account needed; the career runs entirely in your
+browser. Share your world seed with a friend and they start in the same
+world; your decisions will still diverge.
+
+Docs: `docs/emergent-world.md` (the career world), `docs/first-summer.md`
+(the guided prologue and Lineup Room).
+
+## Multiplayer (the bonus built on the same engine)
 
 An invite-only multiplayer league built on top of the deterministic single-file
 cricket sim `Fifty_Overs_Club_Manager_2026_v11_6.html`, **without rewriting the

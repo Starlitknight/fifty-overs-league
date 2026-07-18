@@ -9,6 +9,11 @@ FOC.careerHub = (function () {
   function esc(s) { return U.esc(s); }
 
   function clubNm(v2, id) { return (v2.world.clubsById[id] || {}).name || "?"; }
+  function clubDot(v2, id) {
+    var c = v2.world.clubsById[id];
+    return "<span class='cr-dot' style='background:" + ((c && (c.ac || (c.isUser && "#C8674A"))) || "#8a90a0") + "'></span>";
+  }
+  var BALLS = { heritage: "The 1987 ball", "new": "A new cherry", promotion: "The promotion ball" };
 
   function faceImg(face) {
     var art = (window.__foGame && window.__foGame.art) || "client/art/";
@@ -68,26 +73,68 @@ FOC.careerHub = (function () {
     var h = "<table class='cr-tbl'><tr><th></th><th style='text-align:left'>Club</th><th>P</th><th>W</th><th>L</th><th>T</th><th>Pts</th><th>NRR</th></tr>";
     rows.forEach(function (r, i) {
       var c = v2.world.clubsById[r.clubId];
-      h += "<tr class='" + (c.isUser ? "me" : "") + "'><td>" + (i + 1) + "</td><td style='text-align:left'>" + esc(c.name) +
+      h += "<tr class='" + (c.isUser ? "me" : "") + (i === 3 ? " crownline" : "") + "'><td>" + (i + 1) + "</td><td style='text-align:left'>" + clubDot(v2, r.clubId) + esc(c.name) +
         "</td><td>" + r.p + "</td><td>" + r.w + "</td><td>" + r.l + "</td><td>" + r.t + "</td><td><b>" + r.pts + "</b></td><td>" +
         (r.nrr >= 0 ? "+" : "") + r.nrr.toFixed(2) + "</td></tr>";
     });
-    return h + "</table>";
+    h += "</table><div class='cr-note'>— everything above this line qualifies for the Crown Cup —</div>";
+    // season leaders: real aggregates from real scorecards
+    var runs = [], wkts = [];
+    for (var pid in v2.world.playersById) {
+      var p = v2.world.playersById[pid];
+      if (p.seasonRuns) runs.push({ nm: p.name, club: clubNm(v2, p.clubId), v: p.seasonRuns });
+      if (p.seasonWickets) wkts.push({ nm: p.name, club: clubNm(v2, p.clubId), v: p.seasonWickets });
+    }
+    (v2.flags.userFactsHist || []).forEach(function (f) {
+      (f.batLines || []).forEach(function (b) {
+        var hit = runs.filter(function (x) { return x.nm === b.nm && x.mine; })[0];
+        if (hit) hit.v += b.r; else runs.push({ nm: b.nm, club: (A0() || {}).name || "you", v: b.r, mine: 1 });
+      });
+      (f.bowlLines || []).forEach(function (b) {
+        var hit = wkts.filter(function (x) { return x.nm === b.nm && x.mine; })[0];
+        if (hit) hit.v += b.w; else wkts.push({ nm: b.nm, club: (A0() || {}).name || "you", v: b.w, mine: 1 });
+      });
+    });
+    runs.sort(function (a, b) { return b.v - a.v; }); wkts.sort(function (a, b) { return b.v - a.v; });
+    if (runs.length || wkts.length) {
+      h += "<div class='cr-sec'>Season leaders</div>";
+      runs.slice(0, 3).forEach(function (x) { h += "<div class='cr-line'>&#127951; " + esc(x.nm) + " (" + esc(x.club) + ") — " + x.v + " runs</div>"; });
+      wkts.slice(0, 3).forEach(function (x) { h += "<div class='cr-line'>&#9918; " + esc(x.nm) + " (" + esc(x.club) + ") — " + x.v + " wickets</div>"; });
+    }
+    return h;
   }
 
+  function bracketCol(v2, title, pairs) {
+    if (!pairs || !pairs.length) return "";
+    var h = "<div class='cr-bkcol'><div class='cr-bkt'>" + esc(title) + "</div>";
+    pairs.forEach(function (pr) {
+      h += "<div class='cr-bkpair'>" + pr.map(function (id) {
+        return "<div class='cr-bkteam'>" + clubDot(v2, id) + esc(clubNm(v2, id)) + "</div>";
+      }).join("") + "</div>";
+    });
+    return h + "</div>";
+  }
   function cupsHTML(v2) {
     var f = v2.world.competitionsById.founders, cr = v2.world.competitionsById.crown;
     var h = "<div class='cr-sec'>Founders Cup — " + esc(f ? f.stage : "?") + "</div>";
     if (f) {
-      if (f.winner) h += "<div class='cr-line'>🏆 " + esc(clubNm(v2, f.winner)) + "</div>";
+      h += "<div class='cr-bracket'>" +
+        bracketCol(v2, "Play-in", f.playin) +
+        bracketCol(v2, "Quarter-finals", f.bracket.qf) +
+        bracketCol(v2, "Semi-finals", f.bracket.sf) +
+        bracketCol(v2, "Final · neutral ground", f.bracket.final ? [f.bracket.final] : null) +
+        "</div>";
+      if (f.winner) h += "<div class='cr-line'>🏆 " + esc(clubNm(v2, f.winner)) + " — champions</div>";
       h += "<div class='cr-line'>Out: " + (f.out.length ? f.out.map(function (id) { return esc(clubNm(v2, id)); }).join(", ") : "nobody yet") + "</div>";
       if (f.out.indexOf(v2.user.clubId) >= 0) h += "<div class='cr-line'><b>Your cup is over for this edition — the league remains.</b></div>";
     }
     h += "<div class='cr-sec'>Crown Cup — " + esc(cr ? cr.stage : "?") + "</div>";
     if (cr) {
       h += "<div class='cr-line'>" + esc(cr.note || "") + "</div>";
-      if (cr.entrants && cr.entrants.length) h += "<div class='cr-line'>Entrants: " + cr.entrants.map(function (id) { return esc(clubNm(v2, id)); }).join(", ") + "</div>";
-      if (cr.winner) h += "<div class='cr-line'>🏆 " + esc(clubNm(v2, cr.winner)) + "</div>";
+      h += "<div class='cr-bracket'>" +
+        bracketCol(v2, "Semi-finals", cr.bracket.sf) +
+        bracketCol(v2, "Final · neutral ground", cr.bracket.final ? [cr.bracket.final] : null) + "</div>";
+      if (cr.winner) h += "<div class='cr-line'>🏆 " + esc(clubNm(v2, cr.winner)) + " — champions</div>";
     }
     return h;
   }
@@ -188,7 +235,8 @@ FOC.careerHub = (function () {
       if (!force && page.__crSig === sig && page.querySelector(".fo-cr")) return;
       page.__crSig = sig;
       var h = "<div class='fo-sm fo-cr'>";
-      h += "<div class='sm-head'><div class='sm-kick'>" + esc((A0() || {}).name || "") + " · Season " + v2.seasonNumber + "</div>" +
+      var ball = (v2.user.matchBall && BALLS[v2.user.matchBall]) ? " · <span title='Your chosen match ball travels with the club'>&#9899; " + esc(BALLS[v2.user.matchBall]) + "</span>" : "";
+      h += "<div class='sm-head'><div class='sm-kick'>" + esc((A0() || {}).name || "") + " · Season " + v2.seasonNumber + ball + "</div>" +
         "<h2 class='sm-h1'>" + esc(FOC.calendar.week(v2.week) ? FOC.calendar.label(v2.week) : "Season " + v2.seasonNumber + " — closed") + "</h2></div>";
       h += "<div class='cr-tabs'>" + TABS.map(function (t) {
         return "<button class='cr-tab" + (tab === t[0] ? " on" : "") + "' data-tab='" + t[0] + "'>" + t[1] + "</button>";
@@ -269,6 +317,16 @@ FOC.careerHub = (function () {
       ".cr-sec{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#C9A24B;margin:14px 0 5px}" +
       ".cr-line{font-size:13.5px;color:#2a3140;padding:3px 0;border-bottom:1px dashed #efe9d8}" +
       ".cr-io{width:100%;box-sizing:border-box;border:1px solid #d8d0b8;border-radius:8px;padding:7px;font-size:11px;font-family:monospace}" +
+      ".cr-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:baseline}" +
+      ".cr-tbl tr.crownline td{border-bottom:2px solid #C9A24B}" +
+      ".cr-note{font-size:11px;color:#B08D2E;text-align:center;margin:4px 0 8px;font-style:italic}" +
+      ".cr-bracket{display:flex;gap:14px;overflow-x:auto;padding:6px 0;align-items:center}" +
+      ".cr-bkcol{flex:0 0 auto;min-width:150px}" +
+      ".cr-bkt{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#8a90a0;margin-bottom:4px}" +
+      ".cr-bkpair{border:1px solid #e3dcc6;border-radius:8px;background:#fff;margin:5px 0;overflow:hidden}" +
+      ".cr-bkteam{padding:5px 8px;font-size:12.5px;color:#2a3140;border-bottom:1px dashed #efe9d8}" +
+      ".cr-bkpair .cr-bkteam:last-child{border-bottom:none}" +
+      ".fo-cr .sm-face,.fo-cr .sm-mono{width:88px;height:88px;flex:0 0 88px;font-size:26px}" +
       ".fo-cr button:focus-visible{outline:3px solid #C9A24B;outline-offset:1px}";
     document.head.appendChild(st);
   }

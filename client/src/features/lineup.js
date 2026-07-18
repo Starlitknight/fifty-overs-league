@@ -11,6 +11,7 @@
 FOC.lineup = (function () {
   var U = FOC.util, A = FOC.adapter;
   var draft = null, undoStack = [], sel = null, cmp = [], step = 1, noteTimer = null;
+  var allCands = false, filterQ = "", filterRole = "ALL";
 
   function esc(s) { return U.esc(s); }
   function roster() { return A.players().filter(Boolean); }
@@ -74,17 +75,35 @@ FOC.lineup = (function () {
     clearTimeout(flashT); flashT = setTimeout(function () { flashMsg = null; render(true); }, 3200);
   }
 
+  function careerV2() {
+    try { return FOC.career && FOC.career.active() ? FOC.career.career() : null; } catch (e) { return null; }
+  }
   function memories(nm) {
-    var s = FOC.game.save(), out = [];
-    s.matches.forEach(function (m) {
-      (m.facts.batLines || []).forEach(function (b) {
-        if (b.nm === nm) out.push(b.r + (b.out ? "" : "*") + " (" + b.b + ") vs " + m.opp);
+    var out = [];
+    var v2 = careerV2();
+    if (v2) {
+      (v2.flags.userFactsHist || []).forEach(function (f) {
+        (f.batLines || []).forEach(function (b) { if (b.nm === nm) out.push(b.r + (b.out ? "" : "*") + " (" + b.b + ")"); });
+        (f.bowlLines || []).forEach(function (b) { if (b.nm === nm) out.push(b.w + "-" + b.r); });
       });
-      (m.facts.bowlLines || []).forEach(function (b) {
-        if (b.nm === nm) out.push(b.w + "-" + b.r + " vs " + m.opp);
+    } else {
+      var s = FOC.game.save();
+      s.matches.forEach(function (m) {
+        (m.facts.batLines || []).forEach(function (b) { if (b.nm === nm) out.push(b.r + (b.out ? "" : "*") + " (" + b.b + ") vs " + m.opp); });
+        (m.facts.bowlLines || []).forEach(function (b) { if (b.nm === nm) out.push(b.w + "-" + b.r + " vs " + m.opp); });
       });
+    }
+    return out.slice(-5);
+  }
+  function seasonLine(nm) {
+    var v2 = careerV2(); if (!v2) return null;
+    var r = 0, inns = 0, w = 0;
+    (v2.flags.userFactsHist || []).forEach(function (f) {
+      (f.batLines || []).forEach(function (b) { if (b.nm === nm) { r += b.r; inns++; } });
+      (f.bowlLines || []).forEach(function (b) { if (b.nm === nm) w += b.w; });
     });
-    return out.slice(-4);
+    if (!inns && !w) return null;
+    return "Season: " + (inns ? r + " runs in " + inns + " inns" : "") + (inns && w ? " · " : "") + (w ? w + " wickets" : "");
   }
 
   function bar(lbl, v) {
@@ -99,9 +118,17 @@ FOC.lineup = (function () {
     if (p.bowlType) h += bar("Bowling", ((p.threat || 0) + (p.control || 0)) / 2);
     if (p.keeper) h += bar("Keeping", p.keep || 0);
     h += bar("Fielding", p.field || 0);
+    var sl = seasonLine(p.name);
+    if (sl) h += "<div class='lr-mem'><b>" + esc(sl) + "</b></div>";
     var mem = memories(p.name);
-    if (mem.length) h += "<div class='lr-mem'><b>This summer:</b> " + mem.map(esc).join(" · ") + "</div>";
-    else h += "<div class='lr-mem sub'>No campaign scorecards yet.</div>";
+    if (mem.length) h += "<div class='lr-mem'><b>Recent:</b> " + mem.map(esc).join(" · ") + "</div>";
+    else h += "<div class='lr-mem sub'>No scorecards yet — evidence arrives one match at a time.</div>";
+    var v2p = careerV2();
+    if (v2p) {
+      (v2p.story.promises || []).forEach(function (pr) {
+        if (pr.nm === p.name && pr.status === "active") h += "<div class='lr-mem' style='color:#B08D2E'><b>Promise:</b> " + esc(pr.txt) + " (" + pr.left + " left)</div>";
+      });
+    }
     return h + "</div>";
   }
 
@@ -114,7 +141,9 @@ FOC.lineup = (function () {
   }
 
   function html() {
-    var v = A.validate(draft, FOC.game.save());
+    // career mode validates against the CANONICAL career promises and events
+    var v2h = careerV2();
+    var v = A.validate(draft, v2h ? { promises: v2h.story.promises, events: v2h.history.events } : FOC.game.save());
     var isCamp = false, oppLine = "";
     try {
       if (App.pending && (App.pending.__camp || App.pending.__career)) {
@@ -145,10 +174,14 @@ FOC.lineup = (function () {
     // ---- pane 1: the squad ----
     h += "<section class='lr-pane lr-squad' aria-label='Squad'" + (narrow && step !== 1 ? " hidden" : "") + ">";
     h += "<div class='lr-pt'>Squad — tap to pick</div>";
+    h += "<div class='lr-filters'><input id='lr-q' type='search' placeholder='Search name…' value='" + esc(filterQ) + "' aria-label='Search squad'>" +
+      ["ALL", "BAT", "WK", "AR", "PACE", "SPIN"].map(function (rk) {
+        return "<button class='lr-frole" + (filterRole === rk ? " on" : "") + "' data-role='" + rk + "'>" + rk + "</button>";
+      }).join("") + "</div>";
     roster().slice().sort(function (a, b) { return (draft.xi.indexOf(b.name) >= 0 ? 1 : 0) - (draft.xi.indexOf(a.name) >= 0 ? 1 : 0) || (b.bat || 0) - (a.bat || 0); })
       .forEach(function (p) {
         var inXI = draft.xi.indexOf(p.name) >= 0, r = roleOf(p);
-        h += "<div class='lr-row" + (inXI ? " in" : "") + "'>" +
+        h += "<div class='lr-row" + (inXI ? " in" : "") + "' data-nm='" + esc(p.name.toLowerCase()) + "' data-role='" + r.k + "'>" +
           "<button class='lr-pick' data-nm='" + esc(p.name) + "' aria-pressed='" + inXI + "' aria-label='" + (inXI ? "Remove " : "Pick ") + esc(p.name) + "'>" +
           "<span class='chip' style='--rc:" + r.c + "'>" + r.k + "</span><span class='nm'>" + esc(p.name) + "</span><span class='ag'>" + p.age + "</span>" +
           "<span class='st'>" + (inXI ? "IN" : "—") + "</span></button>" +
@@ -165,7 +198,8 @@ FOC.lineup = (function () {
     draft.xi.forEach(function (nm, i) {
       var p = byName(nm), r = p ? roleOf(p) : { k: "?", c: "#888" };
       h += "<div class='lr-xirow" + (sel === nm ? " sel" : "") + "'>" +
-        "<span class='pos'>" + (i + 1) + "</span>" +
+        "<select class='lr-pos' data-i='" + i + "' aria-label='Batting position for " + esc(nm) + "'>" +
+        draft.xi.map(function (_, j) { return "<option value='" + j + "'" + (j === i ? " selected" : "") + ">" + (j + 1) + "</option>"; }).join("") + "</select>" +
         "<button class='lr-xisel' data-nm='" + esc(nm) + "'><span class='chip' style='--rc:" + r.c + "'>" + r.k + "</span><span class='nm'>" + esc(nm) + "</span>" +
         (draft.captain === nm ? "<span class='bdg c'>C</span>" : "") + (draft.keeper === nm ? "<span class='bdg wk'>WK</span>" : "") + "</button>" +
         "<span class='mv'><button class='lr-up' data-i='" + i + "' aria-label='Move " + esc(nm) + " up'" + (i === 0 ? " disabled" : "") + ">▲</button>" +
@@ -174,10 +208,15 @@ FOC.lineup = (function () {
     if (narrow ? step === 3 : true) {
       h += "<div class='lr-pt' style='margin-top:12px'>Responsibilities</div>";
       h += "<div class='lr-roles'>";
-      h += "<div class='lr-rl'><span>Captain</span><div class='opts'>" + draft.xi.map(function (nm) {
+      var capCands = draft.xi.slice().sort(function (a, b) { return ((byName(b) || {}).capt || 0) - ((byName(a) || {}).capt || 0); });
+      if (!allCands) capCands = capCands.slice(0, 5).concat(draft.captain && capCands.slice(0, 5).indexOf(draft.captain) < 0 ? [draft.captain] : []);
+      h += "<div class='lr-rl'><span>Captain <span class='sub'>(top leadership marks" + (allCands ? "" : " — <a href='#' id='lr-allc'>show all</a>") + ")</span></span><div class='opts'>" + capCands.map(function (nm) {
         return "<button class='lr-setc" + (draft.captain === nm ? " on" : "") + "' data-nm='" + esc(nm) + "' aria-pressed='" + (draft.captain === nm) + "'>" + esc(nm.split(" ").slice(-1)[0]) + "</button>";
       }).join("") + "</div></div>";
-      h += "<div class='lr-rl'><span>Keeper</span><div class='opts'>" + draft.xi.map(function (nm) {
+      var wkCands = draft.xi.filter(function (nm) { var p = byName(nm); return p && p.keeper; });
+      if (allCands || !wkCands.length) wkCands = draft.xi.slice();
+      else if (draft.keeper && wkCands.indexOf(draft.keeper) < 0) wkCands.push(draft.keeper);
+      h += "<div class='lr-rl'><span>Keeper <span class='sub'>(trained keepers" + (allCands ? "" : " — <a href='#' id='lr-allk'>show all</a>") + ")</span></span><div class='opts'>" + wkCands.map(function (nm) {
         var p = byName(nm);
         return "<button class='lr-setk" + (draft.keeper === nm ? " on" : "") + "' data-nm='" + esc(nm) + "' aria-pressed='" + (draft.keeper === nm) + "'>" + esc(nm.split(" ").slice(-1)[0]) + (p && p.keeper ? " ✚" : "") + "</button>";
       }).join("") + "</div><div class='sub'>✚ marks a trained keeper — the gloves are still your call.</div></div>";
@@ -223,6 +262,35 @@ FOC.lineup = (function () {
     page.querySelectorAll(".lr-info, .lr-xisel").forEach(function (b) {
       b.addEventListener("click", function () { sel = b.getAttribute("data-nm"); render(true); });
     });
+    page.querySelectorAll(".lr-pos").forEach(function (selEl) {
+      selEl.addEventListener("change", function () {
+        var from = +selEl.getAttribute("data-i"), to = +selEl.value;
+        if (from === to) return;
+        snap();
+        var nm = draft.xi.splice(from, 1)[0];
+        draft.xi.splice(to, 0, nm);
+        render(true);
+      });
+    });
+    function applyFilter() {
+      page.querySelectorAll(".lr-row").forEach(function (row) {
+        var okQ = !filterQ || (row.getAttribute("data-nm") || "").indexOf(filterQ.toLowerCase()) >= 0;
+        var okR = filterRole === "ALL" || row.getAttribute("data-role") === filterRole;
+        row.style.display = okQ && okR ? "" : "none";
+      });
+    }
+    var q = page.querySelector("#lr-q");
+    if (q) q.addEventListener("input", function () { filterQ = q.value; applyFilter(); });
+    page.querySelectorAll(".lr-frole").forEach(function (b) {
+      b.addEventListener("click", function () {
+        filterRole = b.getAttribute("data-role");
+        page.querySelectorAll(".lr-frole").forEach(function (x) { x.classList.toggle("on", x === b); });
+        applyFilter();
+      });
+    });
+    applyFilter();
+    var ac = page.querySelector("#lr-allc"); if (ac) ac.addEventListener("click", function (e) { e.preventDefault(); allCands = true; render(true); });
+    var ak = page.querySelector("#lr-allk"); if (ak) ak.addEventListener("click", function (e) { e.preventDefault(); allCands = true; render(true); });
     page.querySelectorAll(".lr-up").forEach(function (b) { b.addEventListener("click", function () { move(+b.getAttribute("data-i"), -1); }); });
     page.querySelectorAll(".lr-dn").forEach(function (b) { b.addEventListener("click", function () { move(+b.getAttribute("data-i"), 1); }); });
     page.querySelectorAll(".lr-setc").forEach(function (b) { b.addEventListener("click", function () { snap(); draft.captain = b.getAttribute("data-nm"); render(true); }); });
@@ -248,6 +316,8 @@ FOC.lineup = (function () {
         s.notes[pid] = note.value.slice(0, 400);
         if (!had) FOC.events.emit(s, "NoteWritten", { pid: pid });
         FOC.save.persist(s);
+        var v2n = careerV2();
+        if (v2n) { v2n.story.notes[pid] = s.notes[pid]; FOC.career.persist(); }
       }, 500);
     });
     var un = page.querySelector("#lr-undo"); if (un) un.addEventListener("click", undo);
@@ -302,6 +372,11 @@ FOC.lineup = (function () {
       "@media(max-width:880px){.lr-panes{grid-template-columns:1fr}}" +
       ".lr-pane{background:#FDFBF4;border:1px solid #e3dcc6;border-radius:12px;padding:10px}" +
       ".lr-pt{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8a90a0;margin-bottom:6px}" +
+      ".lr-filters{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px;align-items:center}" +
+      ".lr-filters input{flex:1 1 110px;border:1px solid #d8d0b8;border-radius:8px;padding:6px 8px;font-size:12px;background:#fff;min-width:0}" +
+      "html body #page .lr-frole{border:1px solid #d8d0b8;background:#fff;border-radius:99px;padding:4px 8px;font-family:Oswald,sans-serif;font-size:9px;letter-spacing:.8px;color:#5b6472}" +
+      "html body #page .lr-frole.on{background:#14213D;color:#F1EADA;border-color:#14213D}" +
+      "html body #page .lr-pos{border:1px solid #d8d0b8;border-radius:6px;background:#F6F1E3;font-family:Oswald,sans-serif;font-size:12px;color:#C9A24B;padding:3px 1px;min-width:38px;min-height:34px}" +
       ".lr-row{display:flex;align-items:center;gap:6px;margin:3px 0}" +
       "html body #page .lr-pick{flex:1;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e3dcc6;border-radius:8px;padding:7px 9px;text-align:left;color:#101B2D;min-height:40px}" +
       "html body #page .lr-row.in .lr-pick{background:#EFF5EC;border-color:#4E7A4E}" +

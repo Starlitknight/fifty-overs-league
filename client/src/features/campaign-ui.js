@@ -169,11 +169,13 @@ FOC.campaignUI = (function () {
 
   function injectNav() {
     try {
-      var ex = document.querySelector("a.fo-summer"); if (ex) return;
+      var label = (FOC.career && FOC.career.active()) ? "Career" : "The First Summer";
+      var ex = document.querySelector("a.fo-summer");
+      if (ex) { if (ex.textContent !== label) ex.textContent = label; return; }
       var cx = document.querySelector("a.fo-circuit"); if (!cx || !cx.parentNode) return;
       var a = document.createElement("a");
       a.className = cx.className.replace("fo-circuit", "fo-summer");
-      a.href = "#/summer"; a.textContent = "The First Summer";
+      a.href = "#/summer"; a.textContent = label;
       a.addEventListener("click", function (e) { e.preventDefault(); location.hash = "#/summer"; if (typeof window.route === "function") window.route(); });
       cx.parentNode.insertBefore(a, cx);
     } catch (e) {}

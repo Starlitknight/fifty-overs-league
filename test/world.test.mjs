@@ -10,6 +10,8 @@ function stubRunner() {
     const r1 = 140 + (seed % 131), r2 = 140 + ((seed * 7 + 13) % 131);
     const mk = (team, runs, opp) => ({
       batTeam: team.name, runs, wkts: runs % 11, legal: 300 - (runs % 60),
+      xi: team.players.slice(0, 11).map(p => ({ name: p.name })),
+      bxi: opp.players.slice(0, 11).map(p => ({ name: p.name })),
       bat: [{ p: { name: team.players[0].name }, r: Math.min(runs, 40 + (seed % 60)), b: 50, out: 'b X' }],
       bowlers: (() => { const o = {}; o[(opp.players[8] || opp.players[0]).name] = { w: 2 + (seed % 3), r: 40 }; return o; })()
     });
@@ -17,7 +19,7 @@ function stubRunner() {
     const i0 = homeFirst ? mk(home, r1, away) : mk(away, r1, home);
     const i1 = homeFirst ? mk(away, r2, home) : mk(home, r2, away);
     const winner = r1 === r2 ? null : (r1 > r2 ? i0.batTeam : i1.batTeam);
-    return { innings: [i0, i1], result: { winner, text: winner ? winner + ' win' : 'A tie' } };
+    return { innings: [i0, i1], batFirstTeam: i0.batTeam, result: { winner, text: winner ? winner + ' win' : 'A tie' } };
   };
 }
 
@@ -291,9 +293,10 @@ test('storylets fire only when eligible, respect cooldowns and max uses, allow q
   const sb = makeSandbox();
   const { v2 } = makeWorld(sb, 'story-seed');
   const SL = sb.FOC.storylets;
-  // openers-talk requires zero user matches
+  // openers-talk fires off the FIRST confirmed card only (the lineup trigger
+  // runs post-record, when exactly one user match exists)
   assert.equal(SL.eligible(v2, 'lineup', fakeApi({ userMatches: () => 3 })).length, 0);
-  assert.equal(SL.eligible(v2, 'lineup', fakeApi({ userMatches: () => 0, confirmedOpeners: () => ['A', 'B'] })).length, 1);
+  assert.equal(SL.eligible(v2, 'lineup', fakeApi({ userMatches: () => 1, confirmedOpeners: () => ['A', 'B'] })).length, 1);
   // captain-form needs three real low scores — never invents them
   const low = [{ r: 5, out: true }, { r: 11, out: true }, { r: 2, out: true }];
   assert.ok(SL.eligible(v2, 'week', fakeApi({ captainLastScores: () => low })).some(d => d.id === 'captain-form'));
@@ -389,4 +392,178 @@ test('career export/import round-trips through text', () => {
   assert.equal(back.scope, 'other');
   assert.equal(JSON.stringify(back.world.competitionsById.founders.playin),
     JSON.stringify(v2.world.competitionsById.founders.playin));
+});
+
+// ---- world-truth regression: the feedback fixes ----------------------------
+test('tied knockouts resolve by explicit tie-break, never home advantage', () => {
+  const sb = makeSandbox();
+  const { v2 } = makeWorld(sb, 'tb-seed');
+  const ids = Object.keys(v2.world.clubsById);
+  const f = sb.FOC.model.fixture(v2, 3, 'founders', 1, ids[0], ids[1]);
+  f.status = 'played';
+  f.result = { winnerId: null, tie: true, home: { runs: 200, wkts: 7 }, away: { runs: 200, wkts: 4 } };
+  const w = sb.FOC.competitions.tieBreak(v2, f);
+  assert.equal(w, ids[1], 'fewer wickets lost wins the tie');
+  assert.equal(f.result.tieBreak, 'fewer wickets lost');
+  // dead level → seeded super over, recorded and reproducible
+  const f2 = sb.FOC.model.fixture(v2, 3, 'founders', 1, ids[0], ids[1]);
+  f2.status = 'played';
+  f2.result = { winnerId: null, tie: true, home: { runs: 200, wkts: 6 }, away: { runs: 200, wkts: 6 } };
+  const clone = JSON.parse(JSON.stringify(v2));
+  const fc = JSON.parse(JSON.stringify(f2));
+  assert.equal(sb.FOC.competitions.tieBreak(v2, f2), sb.FOC.competitions.tieBreak(clone, fc));
+  assert.equal(f2.result.tieBreak, 'super over');
+});
+
+test('neutral finals play on a neutral balanced pitch', () => {
+  const sb = makeSandbox();
+  const { v2, io } = makeWorld(sb, 'nf-seed');
+  const pitches = [];
+  const base = io.matchRunner;
+  io.matchRunner = (h, a, pitch, wx, seed) => { pitches.push(pitch); return base(h, a, pitch, wx, seed); };
+  // fabricate a neutral fixture this week between two NPC clubs
+  const npc = Object.keys(v2.world.clubsById).filter(id => !v2.world.clubsById[id].isUser);
+  const f = sb.FOC.model.fixture(v2, 1, 'founders', 4, npc[0], npc[1]);
+  f.neutral = true;
+  v2.world.fixturesById[f.id] = f;
+  playWeek(sb, v2, io);
+  assert.ok(pitches.includes('balanced'), 'the neutral tie used the neutral pitch');
+});
+
+test('closeness: a comfortable chase is NOT close; a two-wickets-in-hand chase IS', () => {
+  const sb = makeSandbox();
+  const { v2 } = makeWorld(sb, 'close-seed');
+  const ids = Object.keys(v2.world.clubsById);
+  const mkF = (winWkts, ballsUsed) => {
+    const f = sb.FOC.model.fixture(v2, 1, 'league', 1, ids[0], ids[1]);
+    f.status = 'played';
+    f.result = { winnerId: ids[1], tie: false, batFirstId: ids[0],
+      home: { runs: 200, wkts: 10, balls: 300 }, away: { runs: 201, wkts: winWkts, balls: ballsUsed } };
+    return f;
+  };
+  const e = sb.FOC.rivalry.entry(v2, ids[0], ids[1]);
+  sb.FOC.rivalry.onResult(v2, mkF(3, 250), () => {});   // cruised home: 7 in hand, 50 balls left
+  assert.equal(e.close, 0, 'a comfortable chase by 51 runs of margin is not close');
+  sb.FOC.rivalry.onResult(v2, mkF(8, 298), () => {});   // scraped home
+  assert.equal(e.close, 1);
+});
+
+test('caps go to the actual XI; dismissals and season aggregates are recorded', () => {
+  const sb = makeSandbox();
+  const { v2, io } = makeWorld(sb, 'caps-seed');
+  playWeek(sb, v2, io);
+  const npcClubs = Object.keys(v2.world.clubsById).filter(id => !v2.world.clubsById[id].isUser);
+  let capped = 0, squad = 0, dism = 0, season = 0;
+  npcClubs.forEach(cid => {
+    const c = v2.world.clubsById[cid];
+    if (!sb.FOC.competitions.fixtures(v2, f => f.week === 1 && f.status === 'played' && (f.homeId === cid || f.awayId === cid)).length) return;
+    squad += c.rosterIds.length;
+    c.rosterIds.forEach(pid => {
+      const p = v2.world.playersById[pid];
+      if (p.caps) capped++;
+      if (p.dismissals) dism++;
+      if (p.seasonRuns || p.seasonWickets) season++;
+    });
+  });
+  assert.ok(capped > 0 && capped < squad, 'eleven per club capped, not the whole squad');
+  assert.ok(dism > 0, 'dismissals update');
+  assert.ok(season > 0, 'season aggregates update');
+});
+
+test("NPC manager orders reach the runner: batting order, captain, spells", () => {
+  const sb = makeSandbox();
+  const { v2, io } = makeWorld(sb, 'orders-seed');
+  let seen = null;
+  const base = io.matchRunner;
+  io.matchRunner = (h, a, pitch, wx, seed, ordersMap) => { if (ordersMap && Object.keys(ordersMap).length) seen = ordersMap; return base(h, a, pitch, wx, seed); };
+  // resolveWeek passes ordersMap through — patch io to capture (career io does 6-arg)
+  const uf = sb.FOC.competitions.userFixture(v2, 1);
+  if (uf) {
+    const teamOf = cid => v2.world.clubsById[cid].isUser
+      ? { name: v2.world.clubsById[cid].name, players: Array.from({ length: 12 }, (_, i) => ({ name: 'U P' + i })) }
+      : sb.FOC.worldsim.clubTeam(v2, cid);
+    sb.FOC.worldsim.recordUserResult(v2, uf, base(teamOf(uf.homeId), teamOf(uf.awayId), 'flat', 'Sunny', 1));
+  }
+  sb.FOC.worldsim.resolveWeek(v2, io);
+  assert.ok(seen, 'an ordersMap was handed to the engine runner');
+  const nm = Object.keys(seen)[0];
+  assert.equal(seen[nm].batOrder.length, 11);
+  assert.ok(seen[nm].captain && seen[nm].keeper);
+  assert.ok(seen[nm].spells.north.length >= 1, 'spells carry the manager plan');
+});
+
+test('a dismissed manager is not reappointed to the same club', () => {
+  const sb = makeSandbox();
+  const { v2, io } = makeWorld(sb, 'reapp-seed');
+  const cid = Object.keys(v2.world.clubsById).find(id => !v2.world.clubsById[id].isUser);
+  const c = v2.world.clubsById[cid];
+  const m = v2.world.managersById[c.managerId];
+  // make him the only free manager, then dismiss him
+  m.traits.jobSecurity = 5;
+  m.clubId = null; c.managerId = null; m.lastClubId = cid;
+  const end = playSeason(sb, v2, io);
+  assert.notEqual(c.managerId, m.id, 'the sacked man does not get his own chair back');
+});
+
+test('rollover: retirements are recorded and youth intake refills squads', () => {
+  const sb = makeSandbox();
+  const { v2, io } = makeWorld(sb, 'ret-seed');
+  const cid = Object.keys(v2.world.clubsById).find(id => !v2.world.clubsById[id].isUser);
+  const c = v2.world.clubsById[cid];
+  // age three players to the brink and thin the squad
+  c.rosterIds.slice(0, 3).forEach(pid => { v2.world.playersById[pid].age = 38; });
+  sb.FOC.worldsim.newSeason(v2, io);
+  const retired = v2.history.departures.filter(d => d.toName === 'retirement');
+  assert.ok(retired.length >= 1, 'the late thirties claim somebody');
+  assert.ok(retired[0].why.includes('Retired at'));
+  assert.ok(c.rosterIds.length >= 14, 'the youth intake refills the squad');
+  const p0 = v2.world.playersById[Object.keys(v2.world.playersById)[0]];
+  assert.equal(p0.seasonRuns, 0, 'season aggregates reset at rollover');
+});
+
+test('one unified trophy ledger: NPC league titles recorded like user titles', () => {
+  const sb = makeSandbox();
+  const { v2, io } = makeWorld(sb, 'trophy-seed');
+  playSeason(sb, v2, io);
+  const league = v2.history.trophies.filter(t => t.kind === 'league');
+  assert.equal(league.length, 1, 'exactly one league title per season');
+  assert.ok(league[0].clubId && league[0].note.includes('league champions'));
+  const founders = v2.history.trophies.filter(t => t.kind === 'founders');
+  assert.equal(founders.length, 1, 'exactly one Founders Cup entry — never duplicated');
+  // the winning managers carry the titles in their own histories
+  const champMgr = v2.world.clubsById[league[0].clubId].managerId;
+  if (champMgr) assert.ok(v2.world.managersById[champMgr].history.some(h => h.note === 'league title'));
+});
+
+test('arcs advance on real conditions, not weeks: captaincy and gaffer-thorne', () => {
+  const sb = makeSandbox();
+  const { v2 } = makeWorld(sb, 'arc-seed');
+  const api = fakeApi({
+    castName: r => ({ captain: 'Alf Onion', prospect: 'Len Nash' })[r],
+    captainLastScores: () => [{ r: 5, out: true }, { r: 11, out: true }, { r: 2, out: true }, { r: 9, out: true }],
+    lastUserFacts: () => null
+  });
+  sb.FOC.arcs.tick(v2, api, 'week');
+  assert.equal(v2.story.arcs.captaincy.stage, 'pressure');
+  assert.ok(v2.story.pending.some(p => p.id === 'arc-capt-pressure'));
+  // quiet form → the arc never seeds
+  const w2 = makeWorld(sb, 'arc-seed-2').v2;
+  sb.FOC.arcs.tick(w2, fakeApi({ captainLastScores: () => [{ r: 60, out: true }] }), 'week');
+  assert.ok(!w2.story.arcs || !w2.story.arcs.captaincy || w2.story.arcs.captaincy.stage === 'dormant');
+  // gaffer-thorne waits for two real clues
+  v2.story.gtClues = ['gt-scorebook'];
+  sb.FOC.arcs.tick(v2, api, 'week');
+  assert.equal(v2.story.arcs.gafferthorne.stage, 'dormant');
+  v2.story.gtClues.push('gt-photo');
+  sb.FOC.arcs.tick(v2, api, 'week');
+  assert.equal(v2.story.arcs.gafferthorne.stage, 'question');
+});
+
+test('validation reads career promises when handed the career shim', () => {
+  const sb = makeSandbox();
+  const { v2 } = makeWorld(sb, 'shim-seed');
+  v2.story.promises.push({ nm: 'Moe Onks', txt: 'Moe Onks starts one of the next two matches', left: 1, status: 'active' });
+  const draft = { xi: sb.roster.slice(0, 11).map(p => p.name), captain: 'Alf Onion', keeper: 'Ed Gorse' };
+  const v = sb.FOC.adapter.validate(draft, { promises: v2.story.promises, events: v2.history.events });
+  assert.ok(v.facts.some(f => /Live promise:.*Moe Onks is not on this card/.test(f)));
 });

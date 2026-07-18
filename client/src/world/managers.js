@@ -69,5 +69,64 @@ FOC.npc = (function () {
     return verdict;
   }
 
-  return { decide: decide, boardReview: boardReview, lossStreak: lossStreak };
+  // Engine orders for an NPC club — personality reaching actual deliveries.
+  // The engine consults ordersMap for: the batting ORDER, the captain, and
+  // the bowling SPELLS (ordersFor at mkInns + the spell compiler). We
+  // therefore predict the XI exactly the way the engine's pickXI will pick
+  // it from the fit roster, then let the manager shape order and overs.
+  function matchOrders(v2, clubId, fixture) {
+    var c = club(v2, clubId); if (!c || c.isUser) return null;
+    var m = mgr(v2, c.managerId); if (!m) return null;
+    var ps = roster(v2, c).filter(function (p) { return !p.injuryWeeks; });
+    if (ps.length < 11) ps = roster(v2, c);
+    var E = function (p) { return p.engine; };
+    // replicate engine pickXI: best-bat keeper, five bowlers, rest by bat
+    var kps = ps.filter(function (p) { return E(p).keeper; }).sort(function (a, b) { return (E(b).bat || 0) - (E(a).bat || 0); });
+    var keeper = kps[0] || ps.slice().sort(function (a, b) { return (E(b).bat || 0) - (E(a).bat || 0); })[0];
+    var bowlers = ps.filter(function (p) { return E(p).bowlType && p !== keeper; })
+      .sort(function (a, b) { return ((E(b).threat || 0) + (E(b).control || 0)) - ((E(a).threat || 0) + (E(a).control || 0)); });
+    var five = bowlers.slice(0, 5);
+    var chosen = {}; chosen[keeper.name] = 1; five.forEach(function (p) { chosen[p.name] = 1; });
+    var rest = ps.filter(function (p) { return !chosen[p.name]; })
+      .sort(function (a, b) { return (E(b).bat || 0) - (E(a).bat || 0); });
+    var xi = [keeper].concat(five, rest).slice(0, 11);
+    var order = xi.slice().sort(function (a, b) { return (E(b).bat || 0) - (E(a).bat || 0); });
+    // youth bias, observable: a young batter is promoted one place
+    if (m.traits.youthBias >= 70) {
+      for (var yi = 1; yi < order.length - 1; yi++) {
+        if (order[yi].age <= 22) { var t = order[yi - 1]; order[yi - 1] = order[yi]; order[yi] = t; break; }
+      }
+    }
+    var captain = null;
+    order.forEach(function (p) { if (p.id === c.captainId) captain = p; });
+    // spells, shaped by taste: spin-devoted clubs hand the middle overs to
+    // spinners; risk-takers frontload and return their best at the death;
+    // the prudent spread the load
+    var spinFirst = c.arch === "wizard" || m.traits.prudence >= 85;
+    var pool = five.slice();
+    if (spinFirst) pool.sort(function (a, b) {
+      var sa = /spin/i.test(E(a).bowlType || "") ? 1 : 0, sb = /spin/i.test(E(b).bowlType || "") ? 1 : 0;
+      return sb - sa || ((E(b).threat || 0) + (E(b).control || 0)) - ((E(a).threat || 0) + (E(a).control || 0));
+    });
+    var spells = null;
+    if (pool.length >= 5) {
+      var b1 = pool[spinFirst ? 3 : 0], b2 = pool[spinFirst ? 4 : 1], b3 = pool[spinFirst ? 0 : 2], b4 = pool[spinFirst ? 1 : 3], b5 = pool[spinFirst ? 2 : 4];
+      var att = m.traits.risk >= 60 ? "att" : "bal";
+      spells = {
+        north: [{ bowler: b1.name, first: 1, n: 5, field: att }, { bowler: b3.name, first: 11, n: 10, field: "bal" },
+                { bowler: b5.name, first: 31, n: 5, field: "bal" }, { bowler: b1.name, first: 41, n: 5, field: m.traits.risk >= 60 ? "att" : "def" }],
+        south: [{ bowler: b2.name, first: 2, n: 5, field: att }, { bowler: b4.name, first: 12, n: 10, field: "bal" },
+                { bowler: b2.name, first: 32, n: 5, field: "bal" }, { bowler: b5.name, first: 42, n: 5, field: "def" }]
+      };
+    }
+    return {
+      batOrder: order.map(function (p) { return p.name; }),
+      captain: captain ? captain.name : (order[0] && order[0].name),
+      keeper: keeper.name,
+      tossCall: "", tossDecision: c.tendency === "attacking" ? "bat" : "bowl",
+      spells: spells || { north: [], south: [] }, compiled: [], showPT: false, saved: true
+    };
+  }
+
+  return { decide: decide, boardReview: boardReview, lossStreak: lossStreak, matchOrders: matchOrders };
 })();

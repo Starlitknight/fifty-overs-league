@@ -10852,7 +10852,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260718-0013-a6c43d";
+  var FO_BUILD = "20260718-0219-87a0aa";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -11115,7 +11115,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // opens the league menu instead. Keep the element (hidden) so old refs are safe.
   var btn = document.createElement("button");
   btn.id = "folBtn"; btn.textContent = "League"; btn.style.display = "none";
-  function openLeagueMenu() { openWrap(true); if (!JWT) renderLogin(); else if (SYNC && LG) showWait(!!SYNC.myTeam); else enterApp(); }
+  function openLeagueMenu() { openWrap(true); if (!JWT) renderWelcome(); else if (SYNC && LG) showWait(!!SYNC.myTeam); else enterApp(); }
   function doLogout() { JWT = ""; LG = null; SYNC = null; clearSession(); openWrap(true); renderLogin(); }
 
   var wrap = document.createElement("div");
@@ -11146,6 +11146,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var acts = {
       login: doLogin, logout: doLogout,
       showLogin: renderLogin, showJoin: renderJoin, showForgot: renderForgot,
+      showWelcome: renderWelcome,
+      soloStart: function () {
+        var nmEl = wrap.querySelector("#folClubNm"), sdEl = wrap.querySelector("#folSeed");
+        foSoloBegin(nmEl ? nmEl.value : "", sdEl ? sdEl.value : "");
+      },
+      soloContinue: function () { foSoloBegin("", ""); },
+      soloNewForm: function () { window.__folSoloForce = 1; renderWelcome(); window.__folSoloForce = 0; },
       sendReset: sendReset, joinNew: doJoinSignup,
       openId: function () { enterGameById(t.getAttribute("data-id")); }, join: joinLeague,
       startLeague: startLeague, mkInvite: mkInvite,
@@ -11207,13 +11214,61 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     return '<div class="fol-auth">' +
       '<div class="fol-brand">' + FOL_MARK +
       '<div class="fol-word">FIFTY <i>OVERS</i></div>' +
-      '<div class="fol-tag"><b>&middot;</b>Private cricket leagues.<b>&middot;</b></div>' +
-      '<div class="fol-feats">Draft squads<b>&middot;</b>Set orders<b>&middot;</b>Watch every ball.</div>' +
+      '<div class="fol-tag"><b>&middot;</b>A living cricket world.<b>&middot;</b></div>' +
+      '<div class="fol-feats">Found a club<b>&middot;</b>Play a career<b>&middot;</b>Bring your friends.</div>' +
       '<img class="fol-minilogo" src="' + APPICON + '" alt="">' +
       "</div>" +
       '<div class="fol-side"><div class="fol-card">' + LOGO + card + "</div></div></div>";
   }
 
+  // ---- solo-first front door -------------------------------------------------
+  // The career is the front door; leagues are the bonus built on the same
+  // engine. Solo runs entirely locally — no account, no server.
+  function foHasSoloSave() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && (k.indexOf("fo_career_") === 0 || k.indexOf("fo_summer_") === 0) &&
+            k.indexOf("_backup_") < 0 && k.indexOf("_archived_") < 0) return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+  function foSoloBegin(name, seed) {
+    try {
+      var nm = String(name || "").trim().slice(0, 26);
+      try { window.store("fo_welcomed", "1"); window.store("fo_club", "0"); } catch (e0) {
+        try { localStorage.setItem("fo_welcomed", "1"); localStorage.setItem("fo_club", "0"); } catch (e1) {}
+      }
+      if (nm && typeof GD !== "undefined" && GD.teams && GD.teams[0]) GD.teams[0].name = nm;
+      if (seed && String(seed).trim()) { try { localStorage.setItem("fo_seed_pending", String(seed).trim().slice(0, 40)); } catch (e2) {} }
+      try { if (typeof saveGame === "function") saveGame(false); } catch (e3) {}
+      openWrap(false);
+      location.hash = "#/summer";
+      if (typeof window.route === "function") window.route();
+    } catch (e) { say(e); }
+  }
+  function renderWelcome() {
+    wrap.querySelector("#folWho").textContent = "";
+    setNavy(true);
+    var has = foHasSoloSave() && !window.__folSoloForce;
+    main.innerHTML = folAuthShell(
+      "<h1>" + (has ? "Welcome back, boss" : "Your club is waiting") + "</h1>" +
+      '<div class="fol-sub" style="display:flex;gap:10px;align-items:center;text-align:left">' +
+      '<img src="' + FO_ART + 'gaffer.png" alt="" style="width:52px;height:52px;border-radius:10px;object-fit:cover;object-position:50% 8%;flex:0 0 52px">' +
+      "<span>&ldquo;" + (has ? "The season doesn&rsquo;t wait and neither do I. Pick up where we left off."
+        : "I&rsquo;m the Gaffer. Give the club a name and I&rsquo;ll walk you through the rest &mdash; squad, captain, first match. No account needed.") + "&rdquo;</span></div>" +
+      '<div class="fol-form">' +
+      (has ? '<button class="fol-cta" data-act="soloContinue">Continue career ▸</button>' +
+             '<button class="mini" style="width:100%" data-act="soloNewForm">Start a fresh solo career</button>'
+           : '<div><label for="folClubNm">Club name</label><input id="folClubNm" type="text" maxlength="26" placeholder="e.g. Harbour Town CC"></div>' +
+             '<div><label for="folSeed">World seed <span style="opacity:.6">(optional — share one with a friend)</span></label><input id="folSeed" type="text" maxlength="40" placeholder="leave blank for a new world"></div>' +
+             '<button class="fol-cta" data-act="soloStart">Start a Solo Career ▸</button>') +
+      "</div>" +
+      '<div class="fol-or">or play with friends</div>' +
+      '<div class="fol-links"><a data-act="showLogin">Sign in to a league</a><a data-act="showJoin">' + ICON_JOIN + "Join with invite code</a></div>" +
+      FOOT);
+  }
   function renderLogin() {
     wrap.querySelector("#folWho").textContent = "";
     setNavy(true);
@@ -11227,7 +11282,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       '<button class="fol-cta" data-act="login">Log In</button>' +
       "</div>" +
       '<div class="fol-or">or</div>' +
-      '<div class="fol-links"><a data-act="showJoin">' + ICON_JOIN + "Join with invite code</a></div>" +
+      '<div class="fol-links"><a data-act="showWelcome">&#9666; Solo career</a><a data-act="showJoin">' + ICON_JOIN + "Join with invite code</a></div>" +
       FOOT);
   }
 
@@ -15911,16 +15966,21 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   var foOrigClub = window.pgClub;
   if (typeof foOrigClub === "function") window.pgClub = foPremiumClub;
 
-  // Multiplayer-first: the league login takes over the moment the site loads,
-  // and the page behind it is locked so the solo game stays private until you
-  // are in a league · then your game IS the league. A saved session is restored
-  // first, so a refresh keeps you logged in.
+  // Solo-first: the career is the front door. A returning solo manager goes
+  // straight back into their game; a fresh visitor meets the Gaffer and can
+  // found a club with no account; leagues remain one tap away.
+  function foFrontDoor() {
+    var welcomed = false;
+    try { welcomed = !!(typeof window.store === "function" ? window.store("fo_welcomed") : localStorage.getItem("fo_welcomed")); } catch (eW) {}
+    if (welcomed && foHasSoloSave()) { openWrap(false); return; }   // mid-career: no gate
+    renderWelcome();
+  }
   var _authRedirect = foConsumeAuthHash();
   openWrap(true);
   foLoading("Signing you in…");
   if (_authRedirect === "ok") { enterApp(); }
   else if (_authRedirect === "error") { renderLogin(); setTimeout(function () { say("That email link expired or was already used. Log in with your email and password below."); }, 60); }
-  else restoreSession().then(function () { if (JWT) enterApp(); else renderLogin(); }).catch(function () { renderLogin(); });
+  else restoreSession().then(function () { if (JWT) enterApp(); else foFrontDoor(); }).catch(function () { foFrontDoor(); });
 
   // ===========================================================================
   //  TRAINING & YOUTH SCOUTING (From-the-Pavilion-style)
@@ -24274,7 +24334,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // onMatchEnd is suppressed so nothing leaks into App.results,
       // player history or fatigue. Same pattern as the engine's own
       // simBackground and the overlay's practice broadcast.
-      simWorld: function (tA, tB, pitch, weather, seed) {
+      simWorld: function (tA, tB, pitch, weather, seed, ordersMap) {
         var prevM = null, prevToss = null, prevOME = null, ok = false;
         try { prevM = M; } catch (e0) {}
         try { prevToss = App.tossState; } catch (e1) {}
@@ -24283,7 +24343,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           M = newMatch(tA, tB, pitch, (seed >>> 0) || 1);
           M.meta = { home: tA.name, away: tB.name, pitch: pitch, weather: weather || "Sunny", comp: "world", isUser: false };
           M.isUserMatch = false;
-          M.ordersMap = {};
+          // per-team orders (captain, keeper, batting order, phase intent):
+          // this is how NPC managers' decisions reach actual deliveries —
+          // ordersFor(teamName) consults M.ordersMap before anything else
+          M.ordersMap = ordersMap || {};
           App.tossState = { stage: "x" };
           var aiBats = aiTossDecision();
           applyToss(aiBats);
@@ -24889,6 +24952,18 @@ FOC.adapter = (function () {
       });
       facts.push("Bowling cover: " + frontline + " frontline (" + pace + " pace, " + spin + " spin)" +
         (part ? " plus " + part + " part-time" : "") + ". Fifty overs must come from somewhere.");
+      // the generated plan, summarised — the advanced editor stays optional
+      try {
+        var plan = buildSpells(xi.map(function (nm) { return roster[nm]; }));
+        if (plan) {
+          var tots = { pace: 0, spin: 0 };
+          [].concat(plan.north, plan.south).forEach(function (sp2) {
+            var b2 = roster[sp2.bowler];
+            if (b2) tots[/spin/i.test(b2.bowlType || "") ? "spin" : "pace"] += sp2.n || 0;
+          });
+          facts.push("Default plan covers " + (tots.pace + tots.spin) + " of 50 overs: " + tots.pace + " pace, " + tots.spin + " spin; the captain fills the rest on the day.");
+        } else facts.push("Fewer than five frontline bowlers: the captain improvises all fifty overs.");
+      } catch (eP2) {}
       var lefties = xi.filter(function (nm) { return roster[nm] && /l/i.test(roster[nm].hand || ""); }).length;
       if (lefties) facts.push(lefties + " left-hander" + (lefties > 1 ? "s" : "") + " in the order.");
       // fatigue / availability — stated, not judged
@@ -25226,31 +25301,31 @@ FOC.worldgen = (function () {
   var MDL = FOC.model, RNG = FOC.rng;
 
   var CLUBS = [
-    { key: "willowmere", name: "Willowmere CC", city: "Willowmere", ground: "The Meadow", pitch: "green", arch: "blade", rep: 38, mult: 0.86,
+    { key: "willowmere", ac: "#5B8C5A", name: "Willowmere CC", city: "Willowmere", ground: "The Meadow", pitch: "green", arch: "blade", rep: 38, mult: 0.86,
       mgr: { name: "Ted Marsh", persona: "thirty years at one club; charming in print, immovable in selection",
         traits: { ambition: 30, loyalty: 90, risk: 25, prudence: 75, youthBias: 45, patience: 85, adaptability: 35, media: 75, sellWill: 20, rivalry: 40, jobSecurity: 85 } } },
-    { key: "ironbridge", name: "Ironbridge CC", city: "Ironbridge", ground: "Foundry Field", pitch: "flat", arch: "express", rep: 45, mult: 0.92,
+    { key: "ironbridge", ac: "#B3541E", name: "Ironbridge CC", city: "Ironbridge", ground: "Foundry Field", pitch: "flat", arch: "express", rep: 45, mult: 0.92,
       mgr: { name: "Frank Ostler", persona: "attacks with the bat, the ball and the budget; apologises to none of them",
         traits: { ambition: 80, loyalty: 40, risk: 85, prudence: 20, youthBias: 35, patience: 30, adaptability: 55, media: 60, sellWill: 55, rivalry: 70, jobSecurity: 45 } } },
-    { key: "moorland", name: "Moorland CC", city: "High Moor", ground: "High Tor", pitch: "green", arch: "rock", rep: 42, mult: 0.9,
+    { key: "moorland", ac: "#4E6E81", name: "Moorland CC", city: "High Moor", ground: "High Tor", pitch: "green", arch: "rock", rep: 42, mult: 0.9,
       mgr: { name: "Gwen Sorley", persona: "plays kids nobody else would and demands standards nobody else could",
         traits: { ambition: 55, loyalty: 70, risk: 45, prudence: 60, youthBias: 90, patience: 60, adaptability: 50, media: 30, sellWill: 45, rivalry: 35, jobSecurity: 60 } } },
-    { key: "fenholt", name: "Fenholt Athletic", city: "Fenholt", ground: "Brick Lane End", pitch: "dry", arch: "finisher", rep: 40, mult: 0.9, founded: 1,
+    { key: "fenholt", ac: "#8E5BA6", name: "Fenholt Athletic", city: "Fenholt", ground: "Brick Lane End", pitch: "dry", arch: "finisher", rep: 40, mult: 0.9, founded: 1,
       mgr: { name: "Priya Raman", persona: "refounded Fenholt the same spring you arrived; keeps a photograph of an empty trophy cabinet as motivation", peer: true,
         traits: { ambition: 85, loyalty: 60, risk: 60, prudence: 65, youthBias: 65, patience: 50, adaptability: 70, media: 55, sellWill: 35, rivalry: 55, jobSecurity: 50 } } },
-    { key: "bellminster", name: "Bellminster CC", city: "Bellminster", ground: "Cathedral Green", pitch: "dusty", arch: "wizard", rep: 55, mult: 1.0,
+    { key: "bellminster", ac: "#B08D2E", name: "Bellminster CC", city: "Bellminster", ground: "Cathedral Green", pitch: "dry", arch: "wizard", rep: 55, mult: 1.0,
       mgr: { name: "Alan Whitgift", persona: "reads every scorebook in the league and quotes yours back at you",
         traits: { ambition: 60, loyalty: 55, risk: 35, prudence: 70, youthBias: 40, patience: 40, adaptability: 80, media: 45, sellWill: 40, rivalry: 50, jobSecurity: 65 } } },
-    { key: "blackstone", name: "Blackstone Ramblers", city: "Blackstone", ground: "The Quarry", pitch: "flat", arch: "express", rep: 65, mult: 1.06,
+    { key: "blackstone", ac: "#3B3B3B", name: "Blackstone Ramblers", city: "Blackstone", ground: "The Quarry", pitch: "flat", arch: "express", rep: 65, mult: 1.06,
       mgr: { name: "Vic Crane", persona: "semi-pro money, pro expectations; sells anyone at the right price except his opening bowlers",
         traits: { ambition: 75, loyalty: 30, risk: 60, prudence: 45, youthBias: 20, patience: 35, adaptability: 60, media: 65, sellWill: 80, rivalry: 65, jobSecurity: 40 } } },
-    { key: "kestrel", name: "Kestrel Park CC", city: "Kestrel Park", ground: "The Aviary", pitch: "green", arch: "gloveman", rep: 52, mult: 0.98,
+    { key: "kestrel", ac: "#2E7A8C", name: "Kestrel Park CC", city: "Kestrel Park", ground: "The Aviary", pitch: "green", arch: "gloveman", rep: 52, mult: 0.98,
       mgr: { name: "Sam Iredale", persona: "believes a fielding side is a moral position; warm until the team sheet goes up",
         traits: { ambition: 45, loyalty: 75, risk: 30, prudence: 80, youthBias: 55, patience: 70, adaptability: 45, media: 40, sellWill: 30, rivalry: 30, jobSecurity: 70 } } },
-    { key: "harrowgate", name: "Harrowgate CC", city: "Harrowgate", ground: "Spa Ground", pitch: "dusty", arch: "wizard", rep: 58, mult: 1.02,
+    { key: "harrowgate", ac: "#A64253", name: "Harrowgate CC", city: "Harrowgate", ground: "Spa Ground", pitch: "dry", arch: "wizard", rep: 58, mult: 1.02,
       mgr: { name: "Nerys Fell", persona: "two spinners minimum, three when nervous; runs the tightest budget in the league",
         traits: { ambition: 55, loyalty: 65, risk: 40, prudence: 90, youthBias: 50, patience: 65, adaptability: 55, media: 35, sellWill: 45, rivalry: 45, jobSecurity: 75 } } },
-    { key: "crown", name: "Crown Ground XI", city: "The Crown Ground", ground: "The Crown Ground", pitch: "flat", arch: "rock", rep: 80, mult: 1.14,
+    { key: "crown", ac: "#14213D", name: "Crown Ground XI", city: "The Crown Ground", ground: "The Crown Ground", pitch: "flat", arch: "rock", rep: 80, mult: 1.14,
       mgr: { name: "Reggie Thorne", persona: "the institution; protects the club from everything, occasionally including its own players",
         traits: { ambition: 90, loyalty: 50, risk: 40, prudence: 60, youthBias: 25, patience: 55, adaptability: 65, media: 85, sellWill: 25, rivalry: 85, jobSecurity: 55 } } }
   ];
@@ -25431,6 +25506,21 @@ FOC.competitions = (function () {
   }
 
   // ---- Founders Cup progression ---------------------------------------------
+  // a tied knockout is settled explicitly, never by home advantage: fewer
+  // wickets lost wins; still level → a seeded super-over coin, recorded
+  function tieBreak(v2, f) {
+    var r = f.result, w;
+    if ((r.home.wkts || 0) !== (r.away.wkts || 0)) {
+      w = r.home.wkts < r.away.wkts ? f.homeId : f.awayId;
+      r.tieBreak = "fewer wickets lost";
+    } else {
+      w = RNG.chance(v2.rng, "cupdraw", 0.5, "super-over:" + f.id) ? f.homeId : f.awayId;
+      r.tieBreak = "super over";
+    }
+    r.tieWinnerId = w;
+    return w;
+  }
+
   function foundersAdvance(v2) {
     var cup = v2.world.competitionsById.founders;
     if (!cup || cup.winner) return;
@@ -25441,7 +25531,7 @@ FOC.competitions = (function () {
     var maxRound = 0;
     stageFx.forEach(function (f) { if (f.round > maxRound) maxRound = f.round; });
     stageFx.filter(function (f) { return f.round === maxRound; }).forEach(function (f) {
-      var w = f.result.winnerId || f.homeId;   // a tied cup tie goes to the home side (documented rule)
+      var w = f.result.winnerId || tieBreak(v2, f);
       winners.push(w);
       var l = w === f.homeId ? f.awayId : f.homeId;
       losers.push(l);
@@ -25504,7 +25594,7 @@ FOC.competitions = (function () {
     var maxRound = 0;
     fx.forEach(function (f) { if (f.round > maxRound) maxRound = f.round; });
     var winners = fx.filter(function (f) { return f.round === maxRound; })
-      .map(function (f) { return f.result.winnerId || f.homeId; });
+      .map(function (f) { return f.result.winnerId || tieBreak(v2, f); });
     if (cup.stage === "sf" && winners.length === 2) {
       cup.bracket.final = winners;
       var f2 = MDL.fixture(v2, 15, "crown", 2, winners[0], winners[1]);
@@ -25525,7 +25615,7 @@ FOC.competitions = (function () {
     return weekFixtures(v2, w).filter(function (f) { return f.homeId === uc || f.awayId === uc; })[0] || null;
   }
 
-  return { fixtures: fixtures, table: table, position: position, oversFor: oversFor,
+  return { fixtures: fixtures, table: table, position: position, oversFor: oversFor, tieBreak: tieBreak,
     foundersAdvance: foundersAdvance, crownSeed: crownSeed, crownAdvance: crownAdvance,
     weekFixtures: weekFixtures, userFixture: userFixture };
 })();
@@ -25602,7 +25692,66 @@ FOC.npc = (function () {
     return verdict;
   }
 
-  return { decide: decide, boardReview: boardReview, lossStreak: lossStreak };
+  // Engine orders for an NPC club — personality reaching actual deliveries.
+  // The engine consults ordersMap for: the batting ORDER, the captain, and
+  // the bowling SPELLS (ordersFor at mkInns + the spell compiler). We
+  // therefore predict the XI exactly the way the engine's pickXI will pick
+  // it from the fit roster, then let the manager shape order and overs.
+  function matchOrders(v2, clubId, fixture) {
+    var c = club(v2, clubId); if (!c || c.isUser) return null;
+    var m = mgr(v2, c.managerId); if (!m) return null;
+    var ps = roster(v2, c).filter(function (p) { return !p.injuryWeeks; });
+    if (ps.length < 11) ps = roster(v2, c);
+    var E = function (p) { return p.engine; };
+    // replicate engine pickXI: best-bat keeper, five bowlers, rest by bat
+    var kps = ps.filter(function (p) { return E(p).keeper; }).sort(function (a, b) { return (E(b).bat || 0) - (E(a).bat || 0); });
+    var keeper = kps[0] || ps.slice().sort(function (a, b) { return (E(b).bat || 0) - (E(a).bat || 0); })[0];
+    var bowlers = ps.filter(function (p) { return E(p).bowlType && p !== keeper; })
+      .sort(function (a, b) { return ((E(b).threat || 0) + (E(b).control || 0)) - ((E(a).threat || 0) + (E(a).control || 0)); });
+    var five = bowlers.slice(0, 5);
+    var chosen = {}; chosen[keeper.name] = 1; five.forEach(function (p) { chosen[p.name] = 1; });
+    var rest = ps.filter(function (p) { return !chosen[p.name]; })
+      .sort(function (a, b) { return (E(b).bat || 0) - (E(a).bat || 0); });
+    var xi = [keeper].concat(five, rest).slice(0, 11);
+    var order = xi.slice().sort(function (a, b) { return (E(b).bat || 0) - (E(a).bat || 0); });
+    // youth bias, observable: a young batter is promoted one place
+    if (m.traits.youthBias >= 70) {
+      for (var yi = 1; yi < order.length - 1; yi++) {
+        if (order[yi].age <= 22) { var t = order[yi - 1]; order[yi - 1] = order[yi]; order[yi] = t; break; }
+      }
+    }
+    var captain = null;
+    order.forEach(function (p) { if (p.id === c.captainId) captain = p; });
+    // spells, shaped by taste: spin-devoted clubs hand the middle overs to
+    // spinners; risk-takers frontload and return their best at the death;
+    // the prudent spread the load
+    var spinFirst = c.arch === "wizard" || m.traits.prudence >= 85;
+    var pool = five.slice();
+    if (spinFirst) pool.sort(function (a, b) {
+      var sa = /spin/i.test(E(a).bowlType || "") ? 1 : 0, sb = /spin/i.test(E(b).bowlType || "") ? 1 : 0;
+      return sb - sa || ((E(b).threat || 0) + (E(b).control || 0)) - ((E(a).threat || 0) + (E(a).control || 0));
+    });
+    var spells = null;
+    if (pool.length >= 5) {
+      var b1 = pool[spinFirst ? 3 : 0], b2 = pool[spinFirst ? 4 : 1], b3 = pool[spinFirst ? 0 : 2], b4 = pool[spinFirst ? 1 : 3], b5 = pool[spinFirst ? 2 : 4];
+      var att = m.traits.risk >= 60 ? "att" : "bal";
+      spells = {
+        north: [{ bowler: b1.name, first: 1, n: 5, field: att }, { bowler: b3.name, first: 11, n: 10, field: "bal" },
+                { bowler: b5.name, first: 31, n: 5, field: "bal" }, { bowler: b1.name, first: 41, n: 5, field: m.traits.risk >= 60 ? "att" : "def" }],
+        south: [{ bowler: b2.name, first: 2, n: 5, field: att }, { bowler: b4.name, first: 12, n: 10, field: "bal" },
+                { bowler: b2.name, first: 32, n: 5, field: "bal" }, { bowler: b5.name, first: 42, n: 5, field: "def" }]
+      };
+    }
+    return {
+      batOrder: order.map(function (p) { return p.name; }),
+      captain: captain ? captain.name : (order[0] && order[0].name),
+      keeper: keeper.name,
+      tossCall: "", tossDecision: c.tendency === "attacking" ? "bat" : "bowl",
+      spells: spells || { north: [], south: [] }, compiled: [], showPT: false, saved: true
+    };
+  }
+
+  return { decide: decide, boardReview: boardReview, lossStreak: lossStreak, matchOrders: matchOrders };
 })();
 
 /* ---- world/transfers.js ---- */
@@ -25631,6 +25780,7 @@ FOC.transfers = (function () {
   }
 
   function bestSellable(v2, seller, role) {
+    if (seller.rosterIds.length <= 12) return null;   // never sell into an unplayable squad
     var best = null;
     seller.rosterIds.forEach(function (pid) {
       var p = v2.world.playersById[pid];
@@ -25705,7 +25855,13 @@ FOC.transfers = (function () {
       return c && !c.isUser && c.finances.bank > 260000;
     });
     if (!ids.length || !userPlayers.length) return null;
-    var buyer = v2.world.clubsById[RNG.pick(v2.rng, "transfers", ids, "user-offer-club")];
+    // relationships matter: a manager whose bid you refused calls less often
+    var weighted = ids.map(function (cid) {
+      var c = v2.world.clubsById[cid];
+      var trust = ((v2.relationships.managerToManager || {})[c.managerId] || {}).trust;
+      return { id: cid, w: trust != null ? Math.max(1, Math.round(trust / 20)) : 3 };
+    });
+    var buyer = v2.world.clubsById[RNG.weighted(v2.rng, "transfers", weighted, "user-offer-club").id];
     // they bid for form, not for your favourite: highest recent aggregate
     var target = userPlayers[RNG.int(v2.rng, "transfers", Math.min(5, userPlayers.length), "user-offer-target")];
     var fee = Math.round((40 + (target.bat || 40)) * 450 * RNG.range(v2.rng, "transfers", 0.9, 1.3));
@@ -25748,40 +25904,53 @@ FOC.worldsim = (function () {
   }
 
   function extractSide(inn) {
-    var s = { runs: inn.runs || 0, wkts: inn.wkts || 0, balls: inn.legal || 0, topNm: null, topR: -1, bbNm: null, bbW: -1, bbR: 0 };
+    var s = { runs: inn.runs || 0, wkts: inn.wkts || 0, balls: inn.legal || 0, topNm: null, topR: -1,
+      bbNm: null, bbW: -1, bbR: 0, batLines: [], bowlLines: [], xi: [] };
+    (inn.xi || []).forEach(function (p) { if (p && p.name) s.xi.push(p.name); });
     (inn.bat || []).forEach(function (b) {
-      if (b && b.p && b.r > s.topR) { s.topR = b.r; s.topNm = b.p.name; }
+      if (!b || !b.p) return;
+      if (b.b > 0 || b.out) s.batLines.push({ nm: b.p.name, r: b.r || 0, b: b.b || 0, out: !!b.out });
+      if (b.r > s.topR) { s.topR = b.r; s.topNm = b.p.name; }
     });
     Object.keys(inn.bowlers || {}).forEach(function (nm) {
       var bw = inn.bowlers[nm]; if (!bw) return;
+      s.bowlLines.push({ nm: nm, w: bw.w || 0, r: bw.r || 0 });
       if ((bw.w || 0) > s.bbW || ((bw.w || 0) === s.bbW && (bw.r || 0) < s.bbR)) { s.bbW = bw.w || 0; s.bbR = bw.r || 0; s.bbNm = nm; }
     });
     return s;
   }
 
-  // credit real statistics to persistent players by name within the two clubs
+  // credit real statistics to persistent players: caps go to the eleven who
+  // actually played (the engine names each innings XI), never the whole squad
   function creditStats(v2, f, sim) {
     [f.homeId, f.awayId].forEach(function (cid) {
       var c = v2.world.clubsById[cid]; if (!c || c.isUser) return;
       var byName = {};
       c.rosterIds.forEach(function (pid) { byName[v2.world.playersById[pid].name] = v2.world.playersById[pid]; });
+      var capped = {};
       (sim.innings || []).forEach(function (inn) {
         if (!inn) return;
         if (inn.batTeam === c.name) {
+          (inn.xi || []).forEach(function (pe) {
+            var p = pe && byName[pe.name];
+            if (p && !capped[p.id]) { capped[p.id] = 1; p.caps++; p.seasonCaps = (p.seasonCaps || 0) + 1; }
+          });
           (inn.bat || []).forEach(function (b) {
-            var p = b && b.p && byName[b.p.name];
-            if (p) { p.runs += (b.r || 0); if (b.b > 0 || b.out) p.caps = p.caps; }
+            var p = b && b.p && byName[b.p.name]; if (!p) return;
+            p.runs += (b.r || 0); p.seasonRuns = (p.seasonRuns || 0) + (b.r || 0);
+            if (b.out) { p.dismissals = (p.dismissals || 0) + 1; }
           });
         } else {
+          (inn.bxi || []).forEach(function (pe) {
+            var p = pe && byName[pe.name];
+            if (p && !capped[p.id]) { capped[p.id] = 1; p.caps++; p.seasonCaps = (p.seasonCaps || 0) + 1; }
+          });
           Object.keys(inn.bowlers || {}).forEach(function (nm) {
-            var p = byName[nm]; if (p) p.wickets += (inn.bowlers[nm].w || 0);
+            var p = byName[nm]; if (!p) return;
+            p.wickets += (inn.bowlers[nm].w || 0);
+            p.seasonWickets = (p.seasonWickets || 0) + (inn.bowlers[nm].w || 0);
           });
         }
-      });
-      c.rosterIds.forEach(function (pid) {
-        var p = v2.world.playersById[pid];
-        // an appearance = fielded through a completed fixture for this club
-        if (!p.injuryWeeks) p.caps++;
       });
     });
   }
@@ -25799,6 +25968,7 @@ FOC.worldsim = (function () {
     else tie = true;
     f.status = "played";
     f.result = { winnerId: winnerId, tie: tie, home: hs, away: as,
+      batFirstId: (sim.batFirstTeam === home.name) ? f.homeId : ((sim.batFirstTeam === away.name) ? f.awayId : null),
       text: (sim.result && sim.result.text) || "",
       sig: "r_" + FOC.util.hash32([f.id, hs.runs, hs.wkts, as.runs, as.wkts, wnm].join("|")).toString(36) };
     [ [home, winnerId === f.homeId ? "W" : (tie ? "T" : "L")],
@@ -25843,9 +26013,10 @@ FOC.worldsim = (function () {
   function weeklyFinances(v2) {
     for (var cid in v2.world.clubsById) {
       var c = v2.world.clubsById[cid]; if (c.isUser) continue;
-      var gate = 4000 + Math.round(c.reputation * 120);
-      var homeGame = C.weekFixtures(v2, v2.week).some(function (f) { return f.homeId === cid && f.status === "played"; });
-      c.finances.bank += (homeGame ? gate * 2 : gate) - c.finances.wageBill;
+      var sponsorship = 2500 + Math.round(c.reputation * 45);
+      var hosted = C.weekFixtures(v2, v2.week).some(function (f) { return f.homeId === cid && f.status === "played"; });
+      var gate = hosted ? 6000 + Math.round(c.reputation * 150) : 0;
+      c.finances.bank += sponsorship + gate - c.finances.wageBill;
     }
   }
 
@@ -25858,8 +26029,17 @@ FOC.worldsim = (function () {
       if (p.age <= 23 && RNG.chance(v2.rng, "development", 0.4, "dev-up?")) delta = 1 + RNG.int(v2.rng, "development", 2);
       else if (p.age >= 34 && RNG.chance(v2.rng, "development", 0.35, "dev-down?")) delta = -(1 + RNG.int(v2.rng, "development", 2));
       if (!delta) continue;
+      var isBowler = !!e.bowlType;
       for (var k in e.skills) {
-        if (typeof e.skills[k] === "number") e.skills[k] = Math.max(4, Math.min(96, e.skills[k] + delta));
+        if (typeof e.skills[k] !== "number") continue;
+        // primary craft moves at full rate, secondary skills at half:
+        // batters grow their batting (vs*, temperament, power...), bowlers
+        // their bowling craft — nobody improves everything equally
+        var batting = /^vs|temper|power|tech|run/i.test(k);
+        var primary = isBowler ? !batting : batting;
+        var d2 = primary ? delta : (delta > 0 ? Math.floor(delta / 2) : Math.ceil(delta / 2));
+        if (!d2) continue;
+        e.skills[k] = Math.max(4, Math.min(96, e.skills[k] + d2));
       }
       try { io.derive(e); } catch (eD) {}
     }
@@ -25879,7 +26059,13 @@ FOC.worldsim = (function () {
       if (!f.weather) f.weather = RNG.pick(v2.rng, "weather", ["Sunny", "Overcast", "Humid", "Windy"], "wx");
       var home = clubTeam(v2, f.homeId), away = clubTeam(v2, f.awayId);
       var seed = FOC.util.hash32(v2.worldSeed + "|" + f.id);
-      var sim = io.matchRunner(home, away, v2.world.clubsById[f.homeId].pitch, f.weather, seed);
+      var pitch = f.neutral ? "balanced" : v2.world.clubsById[f.homeId].pitch;
+      var ordersMap = {};
+      [f.homeId, f.awayId].forEach(function (cid2) {
+        var o = FOC.npc.matchOrders(v2, cid2, f);
+        if (o) ordersMap[v2.world.clubsById[cid2].name] = o;
+      });
+      var sim = io.matchRunner(home, away, pitch, f.weather, seed, ordersMap);
       if (!sim) { L("abandoned", "Fixture " + home.name + " v " + away.name + " could not be completed — rescheduled.", { fixtureId: f.id }); return; }
       recordResult(v2, f, sim);
       played.push(f);
@@ -25912,21 +26098,36 @@ FOC.worldsim = (function () {
     rows.forEach(function (row, i) {
       var c = v2.world.clubsById[row.clubId];
       c.compHistory.push({ season: v2.seasonNumber, pos: i + 1, pts: row.pts });
-      if (i === 0 && !c.isUser) L("champions", c.name + " are league champions.", { clubId: c.id });
+      // reputation follows results, for every club under the same rule
+      var expected = Math.max(1, Math.round(n * (1 - c.reputation / 100)));
+      c.reputation = Math.max(15, Math.min(92, c.reputation + Math.max(-5, Math.min(5, expected - (i + 1)))));
+      if (i === 0) {
+        // ONE trophy ledger for everyone — NPC titles get the same record
+        v2.history.trophies.push({ kind: "league", season: v2.seasonNumber, clubId: c.id,
+          note: c.name + " — league champions, season " + v2.seasonNumber });
+        var mCh = c.managerId && v2.world.managersById[c.managerId];
+        if (mCh) mCh.history.push({ season: v2.seasonNumber, clubId: c.id, note: "league title" });
+        L("champions", c.name + " are league champions.", { clubId: c.id });
+      }
     });
     var founders = v2.world.competitionsById.founders;
     var crown = v2.world.competitionsById.crown;
-    if (founders && founders.winner) {
-      v2.history.trophies.push({ kind: "founders", season: v2.seasonNumber, clubId: founders.winner,
-        note: v2.world.clubsById[founders.winner].name + " lift the Founders Cup" });
-    }
-    if (crown && crown.winner) {
-      v2.history.trophies.push({ kind: "crown", season: v2.seasonNumber, clubId: crown.winner,
-        note: v2.world.clubsById[crown.winner].name + " take the Crown Cup" });
-    }
+    [["founders", founders, "lift the Founders Cup"], ["crown", crown, "take the Crown Cup"]].forEach(function (cu) {
+      if (!cu[1] || !cu[1].winner) return;
+      var wc = v2.world.clubsById[cu[1].winner];
+      v2.history.trophies.push({ kind: cu[0], season: v2.seasonNumber, clubId: cu[1].winner,
+        note: wc.name + " " + cu[2] + ", season " + v2.seasonNumber });
+      var mW = wc.managerId && v2.world.managersById[wc.managerId];
+      if (mW) mW.history.push({ season: v2.seasonNumber, clubId: wc.id, note: cu[0] + " cup" });
+    });
     for (var mid in v2.world.managersById) {
       var m = v2.world.managersById[mid];
-      if (m.clubId && !m.isUser) FOC.npc.boardReview(v2, m, C.position(v2, m.clubId), n, L);
+      if (m.clubId && !m.isUser) {
+        m.seasonsAtClub = (m.seasonsAtClub || 0) + 1;
+        var before = m.clubId;
+        FOC.npc.boardReview(v2, m, C.position(v2, m.clubId), n, L);
+        if (!m.clubId) { m.lastClubId = before; m.seasonsAtClub = 0; }
+      }
     }
     // vacant chairs get filled from the dismissed pool — careers continue
     var vacant = Object.keys(v2.world.clubsById).filter(function (cid) {
@@ -25936,11 +26137,18 @@ FOC.worldsim = (function () {
       var m2 = v2.world.managersById[mid2]; return !m2.clubId && !m2.isUser && m2.region === "england";
     });
     vacant.forEach(function (cid) {
-      if (!free.length) return;
-      var mid3 = free.shift();
-      v2.world.managersById[mid3].clubId = cid;
+      // the man the board just sacked does not get his own chair back
+      var pickIx = -1;
+      for (var fi = 0; fi < free.length; fi++) {
+        if (v2.world.managersById[free[fi]].lastClubId !== cid) { pickIx = fi; break; }
+      }
+      if (pickIx < 0) return;   // nobody suitable this year — the chair stays empty
+      var mid3 = free.splice(pickIx, 1)[0];
+      var m3 = v2.world.managersById[mid3];
+      m3.clubId = cid; m3.seasonsAtClub = 0;
       v2.world.clubsById[cid].managerId = mid3;
-      L("appointment", v2.world.managersById[mid3].name + " takes over at " + v2.world.clubsById[cid].name + ".", {});
+      m3.history.push({ season: v2.seasonNumber, clubId: cid, note: "appointed" });
+      L("appointment", m3.name + " takes over at " + v2.world.clubsById[cid].name + ".", {});
     });
     // archive the season in full, then reset the live log
     v2.history.seasonArchives.push({
@@ -25956,15 +26164,53 @@ FOC.worldsim = (function () {
   }
 
   function newSeason(v2, io) {
-    // ageing, contracts, and a fresh calendar — same world, next year
+    // ageing, contracts, retirements and a fresh calendar — same world, next year
+    var Lr = log(v2);
     for (var pid in v2.world.playersById) {
       var p = v2.world.playersById[pid];
       p.age++;
+      p.seasonRuns = 0; p.seasonWickets = 0; p.seasonCaps = 0;   // season aggregates reset
+      if (p.engine) p.engine.age = p.age;
+      var c9 = v2.world.clubsById[p.clubId];
+      // retirement: the late thirties claim people, gradually not arbitrarily
+      if (c9 && p.age >= 36 && RNG.chance(v2.rng, "development", (p.age - 35) * 0.25, "retire?")) {
+        c9.rosterIds = c9.rosterIds.filter(function (id9) { return id9 !== p.id; });
+        if (c9.captainId === p.id) c9.captainId = c9.rosterIds[0] || null;
+        p.retired = v2.seasonNumber;
+        v2.history.departures.push(FOC.model.transferRecord(v2, {
+          playerId: p.id, playerName: p.name, fromId: c9.id, fromName: c9.name,
+          toId: null, toName: "retirement", season: v2.seasonNumber, week: 15, fee: 0,
+          caps: p.caps, runs: p.runs, wickets: p.wickets, role: p.engine && p.engine.bowlType ? "bowler" : "batter",
+          why: "Retired at " + p.age + " after " + p.caps + " appearances."
+        }));
+        Lr("retirement", p.name + " retires at " + p.age + " — " + p.runs + " career runs, " + p.wickets + " wickets.", { playerId: p.id });
+        continue;
+      }
       if (p.contract) {
         p.contract.years--;
         if (p.contract.years <= 0) p.contract = { years: 1 + RNG.int(v2.rng, "transfers", 2), wage: p.contract.wage + 100 };
       }
-      if (p.engine) p.engine.age = p.age;
+    }
+    // youth intake: thin squads take on the next generation
+    for (var cid9 in v2.world.clubsById) {
+      var c10 = v2.world.clubsById[cid9];
+      if (c10.isUser) continue;
+      while (c10.rosterIds.length < 14 && io.squadGen) {
+        var gen9 = io.squadGen("intake|" + v2.worldSeed + "|" + c10.key + "|" + v2.seasonNumber + "|" + c10.rosterIds.length, "England", c10.arch, "talisman");
+        var y9 = (gen9.players || []).slice().sort(function (a, b) { return (a.age || 30) - (b.age || 30); })[0];
+        if (!y9) break;
+        var yp = JSON.parse(JSON.stringify(y9)); delete yp.fee;
+        yp.age = 17 + RNG.int(v2.rng, "newplayers", 3, "intake-age");
+        for (var yk in (yp.skills || {})) {
+          if (typeof yp.skills[yk] === "number") yp.skills[yk] = Math.max(4, Math.round(yp.skills[yk] * 0.82));
+        }
+        try { io.derive(yp); } catch (eY) {}
+        var wp9 = FOC.model.playerFromEngine(v2, yp, c10.id);
+        wp9.contract = { years: 2, wage: 300 };
+        v2.world.playersById[wp9.id] = wp9;
+        c10.rosterIds.push(wp9.id);
+        Lr("intake", c10.name + " register " + wp9.name + ", " + wp9.age + ", from the youth intake.", { playerId: wp9.id });
+      }
     }
     v2.world.fixturesById = {};
     v2.seasonNumber++; v2.week = 1;
@@ -26036,8 +26282,25 @@ FOC.rivalry = (function () {
     e.games++; e.lastSeason = v2.seasonNumber;
     if (f.result.winnerId === e.a) e.aWins++;
     else if (f.result.winnerId === e.b) e.bWins++;
-    var margin = Math.abs((f.result.home.runs || 0) - (f.result.away.runs || 0));
-    if (f.result.tie || margin <= 15) { e.close++; e.notes.push("S" + v2.seasonNumber + "W" + v2.week + ": decided by " + (f.result.tie ? "a tie" : margin + " runs")); }
+    // closeness by proper result semantics: defending wins by a small run
+    // margin; chasing wins with two or fewer wickets in hand or off the last
+    // few balls; ties always
+    var r = f.result, closeTxt = null;
+    if (r.tie) closeTxt = "a tie";
+    else {
+      var winSide = r.winnerId === f.homeId ? r.home : r.away;
+      var chased = r.batFirstId && r.winnerId && r.batFirstId !== r.winnerId;
+      if (chased) {
+        var inHand = 10 - (winSide.wkts || 0);
+        var ballsLeft = 300 - (winSide.balls || 300);
+        if (inHand <= 2) closeTxt = "won with " + inHand + " wicket" + (inHand === 1 ? "" : "s") + " in hand";
+        else if (ballsLeft <= 6) closeTxt = "won off the final over";
+      } else {
+        var margin = Math.abs((r.home.runs || 0) - (r.away.runs || 0));
+        if (margin <= 15) closeTxt = "defended by " + margin + " runs";
+      }
+    }
+    if (closeTxt) { e.close++; e.notes.push("S" + v2.seasonNumber + "W" + v2.week + ": " + closeTxt); }
     if (f.comp !== "league") {
       e.cupKOs.push({ season: v2.seasonNumber, by: f.result.winnerId, comp: f.comp });
       if (f.round >= 4 || f.neutral) e.finals++;
@@ -27063,6 +27326,267 @@ FOC.storylets = (function () {
     nextScene: nextScene, popScene: popScene, byId: byId, _defs: DEFS };
 })();
 
+/* ---- story/arcs.js ---- */
+/* story/arcs — authored, conditional arc state machines.
+ *
+ * An arc is not a chapter: each stage is entered only when its real-world
+ * condition is true, so the same arc lands at different times (or never)
+ * across careers. State lives in v2.story.arcs[id] = {stage, data}.
+ * Scenes are pushed through the ordinary storylet queue and obey the same
+ * rule as everything else: quote saved facts or stay silent.
+ *
+ * Shape: Seed → Pressure → Choice → Delayed consequence → Resolution/rupture.
+ */
+FOC.arcs = (function () {
+  var SL = FOC.storylets;
+  function st(v2, id) { return v2.story.arcs = v2.story.arcs || {}, v2.story.arcs[id] = v2.story.arcs[id] || { stage: "dormant", data: {} }; }
+  function fire(v2, defId) { v2.story.pending.push({ id: defId, week: v2.week, season: v2.seasonNumber, arc: 1 }); }
+  function sc(sp, face, tx, choices) { return { sp: sp, face: face, tx: tx, choices: choices || null }; }
+  function nmS(nm) { return nm ? String(nm).split(" ").slice(-1)[0] : ""; }
+
+  var ARCS = [];
+
+  // ---- 1 · captaincy legitimacy --------------------------------------------
+  ARCS.push({
+    id: "captaincy",
+    tick: function (v2, api, trigger) {
+      var a = st(v2, "captaincy");
+      var cap = api.castName("captain"); if (!cap) return;
+      var runs = api.captainLastScores(4);
+      if (a.stage === "dormant" && runs.length >= 4 && runs.filter(function (r) { return r.r < 20; }).length >= 3) {
+        a.stage = "pressure";
+        // the successor is a fact, not an invention: next-best leadership marks
+        var ps = FOC.adapter.players().filter(function (p) { return p && p.name !== cap; })
+          .sort(function (x, y) { return (y.capt || 0) - (x.capt || 0); });
+        a.data.successor = ps[0] ? ps[0].name : null;
+        fire(v2, "arc-capt-pressure");
+      } else if (a.stage === "chosen" && trigger === "userMatch") {
+        var f = api.lastUserFacts();
+        var capLine = f && (f.batLines || []).filter(function (b) { return b.nm === cap; })[0];
+        if (a.data.backed && capLine && capLine.r >= 50) { a.stage = "resolved"; a.data.vindicated = capLine.r; fire(v2, "arc-capt-vindicated"); }
+        else if (!a.data.backed && api.lastConfirmedCaptain() && api.lastConfirmedCaptain() !== cap) {
+          a.stage = "resolved"; a.data.succeeded = api.lastConfirmedCaptain(); fire(v2, "arc-capt-succession");
+        }
+      }
+    }
+  });
+  SL.register({ id: "arc-capt-pressure", on: "_arc", cast: "captain", weight: 1,
+    scene: function (v2, api) {
+      var a = st(v2, "captaincy"), cap = api.castName("captain");
+      if (!cap) return null;
+      return sc("The Gaffer", "gaffer-serious",
+        "This is now a question, not a wobble: " + cap + "'s bat has gone quiet for a month" +
+        (a.data.successor ? ", and half the room can see " + a.data.successor + " standing at slip with leadership marks nearly as good" : "") +
+        ". Legitimacy isn't given by the armband — it's renewed weekly. Where do you stand?",
+        [
+          { t: "The captain is the captain. Full stop.", fx: function (v2b) { var a2 = st(v2b, "captaincy"); a2.stage = "chosen"; a2.data.backed = 1; } },
+          { t: "Nobody's spot is above the scorebook — his included.", fx: function (v2b) { var a2 = st(v2b, "captaincy"); a2.stage = "chosen"; a2.data.backed = 0; } }
+        ]);
+    } });
+  SL.register({ id: "arc-capt-vindicated", on: "_arc", cast: "captain", weight: 1,
+    scene: function (v2, api) {
+      var a = st(v2, "captaincy"), cap = api.castName("captain");
+      return sc(cap || "Your captain", "player:bat",
+        (a.data.vindicated || 50) + " today. I knew the runs were there; what I didn't know was whether you'd wait for them. You did. That's between us now — the kind of thing a dressing room doesn't forget.");
+    } });
+  SL.register({ id: "arc-capt-succession", on: "_arc", cast: "gaffer", weight: 1,
+    scene: function (v2, api) {
+      var a = st(v2, "captaincy");
+      return sc("The Gaffer", "gaffer",
+        nmS(a.data.succeeded) + " leads the side now, and you did it by the book: said the scorebook ruled, then followed it. The old captain will carry it one of two ways, and which way depends mostly on how you treat him from here.");
+    } });
+
+  // ---- 2 · the prospect pathway --------------------------------------------
+  ARCS.push({
+    id: "prospect",
+    tick: function (v2, api, trigger) {
+      var a = st(v2, "prospect");
+      var kid = api.castName("prospect"); if (!kid) return;
+      if (trigger !== "userMatch") return;
+      var f = api.lastUserFacts(); if (!f) return;
+      var line = (f.batLines || []).filter(function (b) { return b.nm === kid; })[0] ||
+                 (f.bowlLines || []).filter(function (b) { return b.nm === kid; })[0];
+      if (a.stage === "dormant" && line) { a.stage = "debut"; a.data.debut = line; fire(v2, "arc-kid-debut"); }
+      else if (a.stage === "debut" && line && (line.r >= 40 || line.w >= 3)) {
+        a.stage = "arrived"; a.data.big = line; fire(v2, "arc-kid-arrived");
+      } else if (a.stage === "arrived" && api.selections(kid) >= 4) {
+        a.stage = "established"; fire(v2, "arc-kid-established");
+      }
+    }
+  });
+  SL.register({ id: "arc-kid-debut", on: "_arc", cast: "prospect", weight: 1,
+    scene: function (v2, api) {
+      var a = st(v2, "prospect"), kid = api.castName("prospect"), d = a.data.debut || {};
+      return sc(kid, "player:ar",
+        "First real scorecard with my name in it" + (d.r != null ? ": " + d.r + (d.b ? " off " + d.b : "") : (d.w != null ? ": " + d.w + " for " + d.rc : "")) +
+        ". I know it's one line in one book. But it's my line, and I'd like there to be more of them.");
+    } });
+  SL.register({ id: "arc-kid-arrived", on: "_arc", cast: "gaffer", weight: 1,
+    scene: function (v2, api) {
+      var a = st(v2, "prospect"), kid = api.castName("prospect"), d = a.data.big || {};
+      return sc("The Gaffer", "gaffer",
+        kid + ", " + (d.r >= 40 ? d.r + " under pressure" : d.w + " wickets") + ". I present evidence, not prophecy — and the evidence now says this is a cricketer, not a hopeful. Other clubs read scorebooks too. Worth remembering when his contract comes up.");
+    } });
+  SL.register({ id: "arc-kid-established", on: "_arc", cast: "prospect", weight: 1,
+    scene: function (v2, api) {
+      var kid = api.castName("prospect");
+      return sc(kid, "player:ar",
+        "Four sheets with my name on. I stopped checking whether I'm playing and started checking who we're playing. Thought you'd want to know the difference arrived.");
+    } });
+
+  // ---- 3 · Gaffer and Thorne: from clues to a reckoning (or never) ---------
+  ARCS.push({
+    id: "gafferthorne",
+    tick: function (v2, api, trigger) {
+      var a = st(v2, "gafferthorne");
+      var clues = (v2.story.gtClues || []).length;
+      if (a.stage === "dormant" && clues >= 2) { a.stage = "question"; fire(v2, "arc-gt-question"); }
+      else if (a.stage === "pressed" && trigger === "userMatch") {
+        // the reckoning only comes after actually facing Thorne's club
+        var f = api.lastUserFacts();
+        var crown = Object.keys(v2.world.clubsById).filter(function (id) { return v2.world.clubsById[id].key === "crown"; })[0];
+        var uf = (v2.flags.userFactsHist || []).length;
+        var met = FOC.competitions.fixtures(v2, function (fx) {
+          return fx.status === "played" && ((fx.homeId === crown && fx.awayId === v2.user.clubId) || (fx.awayId === crown && fx.homeId === v2.user.clubId));
+        }).length > 0;
+        if (met && f) { a.stage = "reckoning"; a.data.won = !!f.win; fire(v2, "arc-gt-reckoning"); }
+      }
+      // "let it lie" careers simply never advance — permanent uncertainty is an ending
+    }
+  });
+  SL.register({ id: "arc-gt-question", on: "_arc", cast: "gaffer", weight: 1,
+    scene: function (v2, api) {
+      return sc("The Gaffer", "gaffer-serious",
+        "You've been collecting pieces of 2006 — the scorebook, the rest of it. So ask me, or don't. But decide, because half-knowing a thing poisons it.",
+        [
+          { t: "Ask him for the whole story", fx: function (v2b) { var a2 = st(v2b, "gafferthorne"); a2.stage = "pressed"; a2.data.asked = 1;
+              v2b.story.pending.push({ id: "arc-gt-story", week: v2b.week, season: v2b.seasonNumber, arc: 1 }); } },
+          { t: "Let it lie — it's his history, our fixture list", fx: function (v2b) { var a2 = st(v2b, "gafferthorne"); a2.stage = "closed"; } }
+        ]);
+    } });
+  SL.register({ id: "arc-gt-story", on: "_arc", cast: "gaffer", weight: 1,
+    scene: function (v2) {
+      return sc("The Gaffer", "gaffer-serious",
+        "2006, Marylebone. I was Reggie's playing assistant; he was my friend. Before the final, a selection call — a kid who'd earned it against a name who sold memberships. Board money leaned on Reggie; I held the pen and picked the kid. We lost by four runs, the kid dropped the catch, and neither of us has said the honest sentence since: we were both right, and it cost us anyway. Now you know what you're managing.");
+    } });
+  SL.register({ id: "arc-gt-reckoning", on: "_arc", cast: "thorne", weight: 1,
+    scene: function (v2, api) {
+      var a = st(v2, "gafferthorne");
+      return sc("Reggie Thorne", "thorne",
+        a.data.won
+          ? "Your club beat mine, and your Gaffer finally has a scoreline he'd rather talk about than 2006. Tell him the torn page is in my desk. He can come and read it whenever he finds the nerve — and tell him... the kid was the right call. Twenty years to say one sentence."
+          : "My club beat yours, which spares your Gaffer a conversation he's been rehearsing for twenty years. The page stays in my desk. Some accounts are better left open — it gives old men a reason to keep score.");
+    } });
+
+  // ---- 4 · Priya Raman: benchmark, confidante, rival ------------------------
+  ARCS.push({
+    id: "peer",
+    tick: function (v2, api, trigger) {
+      if (trigger !== "week" || v2.week !== 10) return;
+      var a = st(v2, "peer");
+      if (a.stage !== "dormant") return;
+      var mid = v2.world.peerManagerId, m = mid && v2.world.managersById[mid];
+      var pc = m && m.clubId && v2.world.clubsById[m.clubId];
+      if (!pc) return;
+      a.stage = "midseason";
+      a.data.peerPos = FOC.competitions.position(v2, pc.id);
+      a.data.userPos = api.userPosition();
+      fire(v2, "arc-peer-mid");
+    }
+  });
+  SL.register({ id: "arc-peer-mid", on: "_arc", cast: "peer", weight: 1,
+    scene: function (v2, api) {
+      var a = st(v2, "peer");
+      var ahead = a.data.peerPos < a.data.userPos;
+      return sc("Priya Raman", "npc:PR",
+        (ahead ? "Midway: I'm " + a.data.peerPos + ", you're " + a.data.userPos + ". I'd apologise for enjoying it, but we promised each other honesty over sentiment. "
+               : "Midway: you're " + a.data.userPos + ", I'm " + a.data.peerPos + ". Noted, filed, and photographed next to the empty cabinet. ") +
+        "Either way — the two new clubs are still standing in a league that expected neither of us to be. That's worth one drink. One.",
+        [
+          { t: "Trade honest notes on the league (friends first)", fx: function (v2b) {
+              var rel = (v2b.relationships.managerToManager[v2b.world.peerManagerId] = v2b.relationships.managerToManager[v2b.world.peerManagerId] || { trust: 50 });
+              rel.trust = Math.min(100, rel.trust + 10); } },
+          { t: "Keep your cards close (rivals first)", fx: function (v2b) {
+              var rel = (v2b.relationships.managerToManager[v2b.world.peerManagerId] = v2b.relationships.managerToManager[v2b.world.peerManagerId] || { trust: 50 });
+              rel.trust = Math.max(0, rel.trust - 8); } }
+        ]);
+    } });
+
+  // ---- 5 · the returning former player --------------------------------------
+  ARCS.push({
+    id: "former",
+    tick: function (v2, api, trigger) {
+      var a = st(v2, "former");
+      var dep = (v2.history.departures || []).filter(function (d) { return d.fromUser && d.toId; })[0];
+      if (!dep) return;
+      if (a.stage === "dormant") {
+        // reunion: a fixture against his new club is on the calendar
+        var nf = null;
+        for (var w = v2.week; w <= 15 && !nf; w++) {
+          var f = FOC.competitions.userFixture(v2, w);
+          if (f && (f.homeId === dep.toId || f.awayId === dep.toId)) nf = f;
+        }
+        if (nf && nf.week === v2.week) { a.stage = "reunion"; a.data.dep = { nm: dep.playerName, club: dep.toName, fee: dep.fee }; fire(v2, "arc-former-reunion"); }
+      } else if (a.stage === "reunion" && trigger === "userMatch") {
+        var f2 = api.lastUserFacts(); if (!f2) return;
+        // what did he ACTUALLY do against you? quote it or note the quiet day
+        var opp = null;
+        (v2.flags.userFactsHist || []).slice(-1).forEach(function (ff) { opp = ff; });
+        a.stage = "aftermath";
+        a.data.oppTop = f2.oppTopNm === a.data.dep.nm ? f2.oppTopR : null;
+        fire(v2, "arc-former-aftermath");
+      }
+    }
+  });
+  SL.register({ id: "arc-former-reunion", on: "_arc", cast: "secretary", weight: 1,
+    scene: function (v2) {
+      var a = st(v2, "former");
+      return sc("Margaret Hobb — club secretary", "npc:MH",
+        "A note for your team talk: " + a.data.dep.nm + " is in " + a.data.dep.club + "'s squad this week. We sold him for " + Math.round((a.data.dep.fee || 0) / 1000) + "k; he knows every net session we run. I file. You manage.");
+    } });
+  SL.register({ id: "arc-former-aftermath", on: "_arc", cast: "gaffer", weight: 1,
+    scene: function (v2) {
+      var a = st(v2, "former");
+      return sc("The Gaffer", "gaffer",
+        a.data.oppTop != null
+          ? a.data.dep.nm + " top-scored against us — " + a.data.oppTop + ". No revenge script wrote that; he's simply good, and we knew it when we cashed the cheque. Both things are true and both were your call."
+          : a.data.dep.nm + " had a quiet one against his old club. No fairy tale either way — the engine doesn't do sentiment, and honestly, neither should we.");
+    } });
+
+  // ---- 6 · public trust ------------------------------------------------------
+  ARCS.push({
+    id: "trust",
+    tick: function (v2, api, trigger) {
+      var a = st(v2, "trust");
+      var broken = (v2.story.promises || []).filter(function (p) { return p.status === "broken"; }).length;
+      var kept = (v2.story.promises || []).filter(function (p) { return p.status === "fulfilled"; }).length;
+      if (a.stage === "dormant" && broken >= 2) { a.stage = "strained"; fire(v2, "arc-trust-strained"); }
+      else if (a.stage === "strained" && kept > broken) { a.stage = "restored"; fire(v2, "arc-trust-restored"); }
+    }
+  });
+  SL.register({ id: "arc-trust-strained", on: "_arc", cast: "reporter", weight: 1,
+    scene: function (v2) {
+      var broken = (v2.story.promises || []).filter(function (p) { return p.status === "broken"; }).length;
+      return sc("Sam Whitlow — the Argus", "npc:SW",
+        "I'm running a piece on manager's promises. My count says " + broken + " made to players at your club and not kept. I print counts, not opinions — but readers form the opinions, and so do dressing rooms. Anything you'd like on the record?",
+        [
+          { t: "“Print it. And print the next six months too.”", fx: function (v2b) { v2b.flags.trustChallenge = 1; } },
+          { t: "“No comment.”", fx: function (v2b, apiB) { apiB.rapport("dressingRoom", -2); } }
+        ]);
+    } });
+  SL.register({ id: "arc-trust-restored", on: "_arc", cast: "reporter", weight: 1,
+    scene: function (v2) {
+      return sc("Sam Whitlow — the Argus", "npc:SW",
+        "Follow-up piece, as promised: the ledger has turned — more promises kept than broken now, and the room knows it. I'd call it a redemption arc but my editor says I'm not allowed the word 'arc'. Good week to be your press officer, if you had one.");
+    } });
+
+  function tick(v2, api, trigger) {
+    ARCS.forEach(function (arc) { try { arc.tick(v2, api, trigger); } catch (e) {} });
+  }
+
+  return { tick: tick, ARCS: ARCS, _st: st };
+})();
+
 /* ---- story/content/england.js ---- */
 /* story/content/england — the England storylet pack.
  * Converted from the First Summer's authored chapters into conditional,
@@ -27077,7 +27601,7 @@ FOC.storylets = (function () {
   // ---- opening pair (once, early) ------------------------------------------
   S.register({
     id: "openers-talk", on: "lineup", cast: "gaffer", weight: 5, maxUses: 1,
-    when: function (v2, api) { return api.userMatches() === 0; },
+    when: function (v2, api) { return api.userMatches() === 1; },
     scene: function (v2, api) {
       var op = api.confirmedOpeners(); if (!op) return null;
       return sc("The Gaffer", "gaffer",
@@ -27095,9 +27619,12 @@ FOC.storylets = (function () {
     },
     scene: function (v2, api) {
       var f = api.nextUserFixture(); if (!f) return null;
+      var condNote = v2.story.notes["role:prospect"] === "conditions selection"
+        ? " And a note from your own book: you told " + (api.castName("prospect") || "the prospect") + " he was a conditions player. This is the condition."
+        : "";
       return sc("The Gaffer", "gaffer-serious",
         api.clubName(f) + " on a green top. Same dilemma as ever, and it never gets friendlier: the extra seamer shortens your batting, the balanced card leaves overs to part-timers. " +
-        "There's no right answer, only your answer — and the scorebook keeps them all.");
+        "There's no right answer, only your answer — and the scorebook keeps them all." + condNote);
     }
   });
 
@@ -27143,11 +27670,21 @@ FOC.storylets = (function () {
   S.register({
     id: "captain-callback", on: "userMatch", cast: "gaffer", weight: 6, maxUses: 2,
     when: function (v2, api) {
-      return (v2.flags.captBacked || v2.flags.captWarned) && api.lastConfirmedCaptain();
+      return (v2.flags.captBacked || v2.flags.captWarned || v2.flags.captMoved) && api.lastConfirmedCaptain();
     },
     scene: function (v2, api) {
       var cap = api.castName("captain"), actual = api.lastConfirmedCaptain();
       if (!cap || !actual) return null;
+      if (v2.flags.captMoved) {
+        delete v2.flags.captMoved;
+        var evs = (v2.history.events || []).filter(function (e) { return e.t === "LineupConfirmed"; });
+        var lastXi = evs.length ? evs[evs.length - 1].xi : [];
+        var pos = lastXi.indexOf(cap) + 1;
+        if (!pos) return null;
+        return sc("The Gaffer", "gaffer",
+          "You said you'd take the pressure off " + nmS(cap) + " by moving him down — the sheet has him at " + pos + ". " +
+          (pos >= 5 ? "Word and card agree. He noticed; the room noticed." : "That's still top-order pressure with extra steps. He noticed that too."));
+      }
       var kept = actual === cap;
       var backed = !!v2.flags.captBacked;
       delete v2.flags.captBacked; delete v2.flags.captWarned;
@@ -27165,7 +27702,7 @@ FOC.storylets = (function () {
     id: "setback", on: "userMatch", cast: "gaffer", weight: 6, cooldown: 4,
     when: function (v2, api) {
       var f = api.lastUserFacts();
-      return f && !f.win && (f.op - f.my >= 60 || f.myW >= 9 || api.userLossStreak() >= 2);
+      return f && !f.win && !f.tie && (f.op - f.my >= 60 || f.myW >= 9 || api.userLossStreak() >= 2);
     },
     scene: function (v2, api) {
       var f = api.lastUserFacts(); if (!f) return null;
@@ -27204,7 +27741,9 @@ FOC.storylets = (function () {
     when: function (v2, api) { return !!api.lastUserFacts(); },
     scene: function (v2, api) {
       var f = api.lastUserFacts(); if (!f) return null;
-      var variants = f.win
+      var variants = f.tie
+        ? ["NOTHING BETWEEN THEM — A TIE, AND BOTH SIDES EARNED IT", "SCORES LEVEL: THE RAREST RESULT IN THE BOOK"]
+        : f.win
         ? [(f.topNm ? nmS(f.topNm).toUpperCase() + " " + f.topR + " SETTLES IT" : "PROFESSIONAL AFTERNOON FOR THE NEW CLUB"),
            "PROVISIONAL? THE TABLE DISAGREES"]
         : [(f.oppTopNm ? nmS(f.oppTopNm).toUpperCase() + "'S " + f.oppTopR + " TOO GOOD" : "A HARD LESSON, PLAINLY TAUGHT"),
@@ -27260,12 +27799,85 @@ FOC.storylets = (function () {
     });
   });
 
+  // ---- rapport is read back, not just written --------------------------------
+  S.register({
+    id: "room-murmurs", on: "week", cast: "captain", weight: 5, cooldown: 6,
+    when: function (v2, api) { return (v2.story.rapport.dressingRoom || 50) <= 38; },
+    scene: function (v2, api) {
+      var cap = api.castName("captain"); if (!cap) return null;
+      return sc(cap, "player:bat",
+        "Boss, straight signal from the room: broken promises and cold team sheets are being counted. Nobody's downing tools — but the benefit of the doubt is spent. What you do next gets read closely.",
+        [
+          { t: "Address the squad and own it", fx: function (v2b, apiB) { apiB.rapport("dressingRoom", 6); } },
+          { t: "\u201cResults fix rooms. Nothing else.\u201d", fx: function (v2b, apiB) { apiB.rapport("captain", -2); apiB.flag("hardLine", 1); } }
+        ]);
+    }
+  });
+  S.register({
+    id: "captain-confides", on: "week", cast: "captain", weight: 3, cooldown: 8, maxUses: 2,
+    when: function (v2, api) { return (v2.story.rapport.captain || 50) >= 70; },
+    scene: function (v2, api) {
+      var cap = api.castName("captain"); if (!cap) return null;
+      return sc(cap, "player:bat",
+        "Between us: whatever the table says, this room would run through walls for you at the moment. You've backed people in public and told them the truth in private. Keep doing both and we'll carry the rest.");
+    }
+  });
+
+  // ---- the world reveal: England, the cups, Priya, Thorne ------------------
+  S.register({ id: "career-intro-1", on: "_direct", cast: "gaffer", weight: 1,
+    scene: function (v2, api) {
+      return sc("The Gaffer", "gaffer",
+        "Right — the actual landscape. Nine clubs besides us, one league, nine rounds, and every one of them plays whether we watch or not. The Founders Cup is a knockout: lose once and it's over for the year. Finish top four and the Crown Cup lets you in. Nobody waits for us, and I wouldn't have it any other way.");
+    } });
+  S.register({ id: "career-intro-2", on: "_direct", cast: "peer", weight: 1,
+    scene: function (v2, api) {
+      var mid = v2.world.peerManagerId, m = mid && v2.world.managersById[mid];
+      if (!m) return null;
+      var pc = m.clubId && v2.world.clubsById[m.clubId];
+      return sc(m.name + (pc ? " — " + pc.name : ""), "npc:PR",
+        "We founded clubs the same spring, you and I, which makes us the two newest names on the fixture list. I keep a photograph of an empty trophy cabinet on my desk. One of us fills theirs first. No hard feelings either way — well. Few hard feelings.");
+    } });
+  S.register({ id: "career-intro-3", on: "_direct", cast: "thorne", weight: 1,
+    scene: function (v2, api) {
+      return sc("Reggie Thorne", "thorne",
+        "The provisional club. I chair the committee that granted you that word, and the committee that can retract it. Finish the season solvent and respectable, and we'll talk again. Fail, and the fixture list simply closes over you like water. Willowmere first, I believe. Do try to be interesting.");
+    } });
+
+  // ---- quiet weeks are for working: a real choice on cup-off weeks ----------
+  S.register({
+    id: "week-focus", on: "week", cast: "gaffer", weight: 6, cooldown: 2,
+    when: function (v2, api) {
+      var f = api.nextUserFixture();
+      return !f;   // no fixture: the week belongs to the manager
+    },
+    scene: function (v2, api) {
+      return sc("The Gaffer", "gaffer",
+        "No fixture for us this week. The week doesn't have to be empty — where do we spend it?",
+        [
+          { t: "Scout the next opponent properly", fx: function (v2b, apiB) {
+              var nf = null, w = v2b.week + 1;
+              while (!nf && w <= 15) { nf = FOC.competitions.userFixture(v2b, w); w++; }
+              if (nf) {
+                var oppId = nf.homeId === v2b.user.clubId ? nf.awayId : nf.homeId;
+                var opp = v2b.world.clubsById[oppId];
+                var mgr2 = opp.managerId && v2b.world.managersById[opp.managerId];
+                apiB.headline("SCOUTING FILE: " + opp.name.toUpperCase() + " — form " + ((opp.form || []).slice(-5).join("") || "unknown") +
+                  ", " + opp.pitch + " pitch at " + opp.ground + (mgr2 ? ", " + mgr2.name + " favours " + opp.tendency + " cricket" : ""));
+                v2b.flags.scouted = oppId;
+              }
+            } },
+          { t: "A long lunch with the captain", fx: function (v2b, apiB) { apiB.rapport("captain", 4); } },
+          { t: "An afternoon at the academy nets", fx: function (v2b, apiB) { apiB.rapport("dressingRoom", 2); apiB.note("prospect", v2b.story.notes["role:prospect"] || "developing role"); } }
+        ]);
+    }
+  });
+
   // ---- the peer manager's parallel career -----------------------------------
   S.register({
     id: "peer-milestone", on: "week", cast: "peer", weight: 3, cooldown: 4,
     when: function (v2, api) { return !!api.peerNote(); },
     scene: function (v2, api) {
-      var note = api.peerNote(); if (!note) return null;
+      var note = api.peerNote(true); if (!note) return null;
       return sc(note.nm, "npc:PR", note.txt);
     }
   });
@@ -27310,6 +27922,7 @@ FOC.storylets = (function () {
 FOC.lineup = (function () {
   var U = FOC.util, A = FOC.adapter;
   var draft = null, undoStack = [], sel = null, cmp = [], step = 1, noteTimer = null;
+  var allCands = false, filterQ = "", filterRole = "ALL";
 
   function esc(s) { return U.esc(s); }
   function roster() { return A.players().filter(Boolean); }
@@ -27373,17 +27986,35 @@ FOC.lineup = (function () {
     clearTimeout(flashT); flashT = setTimeout(function () { flashMsg = null; render(true); }, 3200);
   }
 
+  function careerV2() {
+    try { return FOC.career && FOC.career.active() ? FOC.career.career() : null; } catch (e) { return null; }
+  }
   function memories(nm) {
-    var s = FOC.game.save(), out = [];
-    s.matches.forEach(function (m) {
-      (m.facts.batLines || []).forEach(function (b) {
-        if (b.nm === nm) out.push(b.r + (b.out ? "" : "*") + " (" + b.b + ") vs " + m.opp);
+    var out = [];
+    var v2 = careerV2();
+    if (v2) {
+      (v2.flags.userFactsHist || []).forEach(function (f) {
+        (f.batLines || []).forEach(function (b) { if (b.nm === nm) out.push(b.r + (b.out ? "" : "*") + " (" + b.b + ")"); });
+        (f.bowlLines || []).forEach(function (b) { if (b.nm === nm) out.push(b.w + "-" + b.r); });
       });
-      (m.facts.bowlLines || []).forEach(function (b) {
-        if (b.nm === nm) out.push(b.w + "-" + b.r + " vs " + m.opp);
+    } else {
+      var s = FOC.game.save();
+      s.matches.forEach(function (m) {
+        (m.facts.batLines || []).forEach(function (b) { if (b.nm === nm) out.push(b.r + (b.out ? "" : "*") + " (" + b.b + ") vs " + m.opp); });
+        (m.facts.bowlLines || []).forEach(function (b) { if (b.nm === nm) out.push(b.w + "-" + b.r + " vs " + m.opp); });
       });
+    }
+    return out.slice(-5);
+  }
+  function seasonLine(nm) {
+    var v2 = careerV2(); if (!v2) return null;
+    var r = 0, inns = 0, w = 0;
+    (v2.flags.userFactsHist || []).forEach(function (f) {
+      (f.batLines || []).forEach(function (b) { if (b.nm === nm) { r += b.r; inns++; } });
+      (f.bowlLines || []).forEach(function (b) { if (b.nm === nm) w += b.w; });
     });
-    return out.slice(-4);
+    if (!inns && !w) return null;
+    return "Season: " + (inns ? r + " runs in " + inns + " inns" : "") + (inns && w ? " · " : "") + (w ? w + " wickets" : "");
   }
 
   function bar(lbl, v) {
@@ -27398,9 +28029,17 @@ FOC.lineup = (function () {
     if (p.bowlType) h += bar("Bowling", ((p.threat || 0) + (p.control || 0)) / 2);
     if (p.keeper) h += bar("Keeping", p.keep || 0);
     h += bar("Fielding", p.field || 0);
+    var sl = seasonLine(p.name);
+    if (sl) h += "<div class='lr-mem'><b>" + esc(sl) + "</b></div>";
     var mem = memories(p.name);
-    if (mem.length) h += "<div class='lr-mem'><b>This summer:</b> " + mem.map(esc).join(" · ") + "</div>";
-    else h += "<div class='lr-mem sub'>No campaign scorecards yet.</div>";
+    if (mem.length) h += "<div class='lr-mem'><b>Recent:</b> " + mem.map(esc).join(" · ") + "</div>";
+    else h += "<div class='lr-mem sub'>No scorecards yet — evidence arrives one match at a time.</div>";
+    var v2p = careerV2();
+    if (v2p) {
+      (v2p.story.promises || []).forEach(function (pr) {
+        if (pr.nm === p.name && pr.status === "active") h += "<div class='lr-mem' style='color:#B08D2E'><b>Promise:</b> " + esc(pr.txt) + " (" + pr.left + " left)</div>";
+      });
+    }
     return h + "</div>";
   }
 
@@ -27413,7 +28052,9 @@ FOC.lineup = (function () {
   }
 
   function html() {
-    var v = A.validate(draft, FOC.game.save());
+    // career mode validates against the CANONICAL career promises and events
+    var v2h = careerV2();
+    var v = A.validate(draft, v2h ? { promises: v2h.story.promises, events: v2h.history.events } : FOC.game.save());
     var isCamp = false, oppLine = "";
     try {
       if (App.pending && (App.pending.__camp || App.pending.__career)) {
@@ -27444,10 +28085,14 @@ FOC.lineup = (function () {
     // ---- pane 1: the squad ----
     h += "<section class='lr-pane lr-squad' aria-label='Squad'" + (narrow && step !== 1 ? " hidden" : "") + ">";
     h += "<div class='lr-pt'>Squad — tap to pick</div>";
+    h += "<div class='lr-filters'><input id='lr-q' type='search' placeholder='Search name…' value='" + esc(filterQ) + "' aria-label='Search squad'>" +
+      ["ALL", "BAT", "WK", "AR", "PACE", "SPIN"].map(function (rk) {
+        return "<button class='lr-frole" + (filterRole === rk ? " on" : "") + "' data-role='" + rk + "'>" + rk + "</button>";
+      }).join("") + "</div>";
     roster().slice().sort(function (a, b) { return (draft.xi.indexOf(b.name) >= 0 ? 1 : 0) - (draft.xi.indexOf(a.name) >= 0 ? 1 : 0) || (b.bat || 0) - (a.bat || 0); })
       .forEach(function (p) {
         var inXI = draft.xi.indexOf(p.name) >= 0, r = roleOf(p);
-        h += "<div class='lr-row" + (inXI ? " in" : "") + "'>" +
+        h += "<div class='lr-row" + (inXI ? " in" : "") + "' data-nm='" + esc(p.name.toLowerCase()) + "' data-role='" + r.k + "'>" +
           "<button class='lr-pick' data-nm='" + esc(p.name) + "' aria-pressed='" + inXI + "' aria-label='" + (inXI ? "Remove " : "Pick ") + esc(p.name) + "'>" +
           "<span class='chip' style='--rc:" + r.c + "'>" + r.k + "</span><span class='nm'>" + esc(p.name) + "</span><span class='ag'>" + p.age + "</span>" +
           "<span class='st'>" + (inXI ? "IN" : "—") + "</span></button>" +
@@ -27464,7 +28109,8 @@ FOC.lineup = (function () {
     draft.xi.forEach(function (nm, i) {
       var p = byName(nm), r = p ? roleOf(p) : { k: "?", c: "#888" };
       h += "<div class='lr-xirow" + (sel === nm ? " sel" : "") + "'>" +
-        "<span class='pos'>" + (i + 1) + "</span>" +
+        "<select class='lr-pos' data-i='" + i + "' aria-label='Batting position for " + esc(nm) + "'>" +
+        draft.xi.map(function (_, j) { return "<option value='" + j + "'" + (j === i ? " selected" : "") + ">" + (j + 1) + "</option>"; }).join("") + "</select>" +
         "<button class='lr-xisel' data-nm='" + esc(nm) + "'><span class='chip' style='--rc:" + r.c + "'>" + r.k + "</span><span class='nm'>" + esc(nm) + "</span>" +
         (draft.captain === nm ? "<span class='bdg c'>C</span>" : "") + (draft.keeper === nm ? "<span class='bdg wk'>WK</span>" : "") + "</button>" +
         "<span class='mv'><button class='lr-up' data-i='" + i + "' aria-label='Move " + esc(nm) + " up'" + (i === 0 ? " disabled" : "") + ">▲</button>" +
@@ -27473,10 +28119,15 @@ FOC.lineup = (function () {
     if (narrow ? step === 3 : true) {
       h += "<div class='lr-pt' style='margin-top:12px'>Responsibilities</div>";
       h += "<div class='lr-roles'>";
-      h += "<div class='lr-rl'><span>Captain</span><div class='opts'>" + draft.xi.map(function (nm) {
+      var capCands = draft.xi.slice().sort(function (a, b) { return ((byName(b) || {}).capt || 0) - ((byName(a) || {}).capt || 0); });
+      if (!allCands) capCands = capCands.slice(0, 5).concat(draft.captain && capCands.slice(0, 5).indexOf(draft.captain) < 0 ? [draft.captain] : []);
+      h += "<div class='lr-rl'><span>Captain <span class='sub'>(top leadership marks" + (allCands ? "" : " — <a href='#' id='lr-allc'>show all</a>") + ")</span></span><div class='opts'>" + capCands.map(function (nm) {
         return "<button class='lr-setc" + (draft.captain === nm ? " on" : "") + "' data-nm='" + esc(nm) + "' aria-pressed='" + (draft.captain === nm) + "'>" + esc(nm.split(" ").slice(-1)[0]) + "</button>";
       }).join("") + "</div></div>";
-      h += "<div class='lr-rl'><span>Keeper</span><div class='opts'>" + draft.xi.map(function (nm) {
+      var wkCands = draft.xi.filter(function (nm) { var p = byName(nm); return p && p.keeper; });
+      if (allCands || !wkCands.length) wkCands = draft.xi.slice();
+      else if (draft.keeper && wkCands.indexOf(draft.keeper) < 0) wkCands.push(draft.keeper);
+      h += "<div class='lr-rl'><span>Keeper <span class='sub'>(trained keepers" + (allCands ? "" : " — <a href='#' id='lr-allk'>show all</a>") + ")</span></span><div class='opts'>" + wkCands.map(function (nm) {
         var p = byName(nm);
         return "<button class='lr-setk" + (draft.keeper === nm ? " on" : "") + "' data-nm='" + esc(nm) + "' aria-pressed='" + (draft.keeper === nm) + "'>" + esc(nm.split(" ").slice(-1)[0]) + (p && p.keeper ? " ✚" : "") + "</button>";
       }).join("") + "</div><div class='sub'>✚ marks a trained keeper — the gloves are still your call.</div></div>";
@@ -27522,6 +28173,35 @@ FOC.lineup = (function () {
     page.querySelectorAll(".lr-info, .lr-xisel").forEach(function (b) {
       b.addEventListener("click", function () { sel = b.getAttribute("data-nm"); render(true); });
     });
+    page.querySelectorAll(".lr-pos").forEach(function (selEl) {
+      selEl.addEventListener("change", function () {
+        var from = +selEl.getAttribute("data-i"), to = +selEl.value;
+        if (from === to) return;
+        snap();
+        var nm = draft.xi.splice(from, 1)[0];
+        draft.xi.splice(to, 0, nm);
+        render(true);
+      });
+    });
+    function applyFilter() {
+      page.querySelectorAll(".lr-row").forEach(function (row) {
+        var okQ = !filterQ || (row.getAttribute("data-nm") || "").indexOf(filterQ.toLowerCase()) >= 0;
+        var okR = filterRole === "ALL" || row.getAttribute("data-role") === filterRole;
+        row.style.display = okQ && okR ? "" : "none";
+      });
+    }
+    var q = page.querySelector("#lr-q");
+    if (q) q.addEventListener("input", function () { filterQ = q.value; applyFilter(); });
+    page.querySelectorAll(".lr-frole").forEach(function (b) {
+      b.addEventListener("click", function () {
+        filterRole = b.getAttribute("data-role");
+        page.querySelectorAll(".lr-frole").forEach(function (x) { x.classList.toggle("on", x === b); });
+        applyFilter();
+      });
+    });
+    applyFilter();
+    var ac = page.querySelector("#lr-allc"); if (ac) ac.addEventListener("click", function (e) { e.preventDefault(); allCands = true; render(true); });
+    var ak = page.querySelector("#lr-allk"); if (ak) ak.addEventListener("click", function (e) { e.preventDefault(); allCands = true; render(true); });
     page.querySelectorAll(".lr-up").forEach(function (b) { b.addEventListener("click", function () { move(+b.getAttribute("data-i"), -1); }); });
     page.querySelectorAll(".lr-dn").forEach(function (b) { b.addEventListener("click", function () { move(+b.getAttribute("data-i"), 1); }); });
     page.querySelectorAll(".lr-setc").forEach(function (b) { b.addEventListener("click", function () { snap(); draft.captain = b.getAttribute("data-nm"); render(true); }); });
@@ -27547,6 +28227,8 @@ FOC.lineup = (function () {
         s.notes[pid] = note.value.slice(0, 400);
         if (!had) FOC.events.emit(s, "NoteWritten", { pid: pid });
         FOC.save.persist(s);
+        var v2n = careerV2();
+        if (v2n) { v2n.story.notes[pid] = s.notes[pid]; FOC.career.persist(); }
       }, 500);
     });
     var un = page.querySelector("#lr-undo"); if (un) un.addEventListener("click", undo);
@@ -27601,6 +28283,11 @@ FOC.lineup = (function () {
       "@media(max-width:880px){.lr-panes{grid-template-columns:1fr}}" +
       ".lr-pane{background:#FDFBF4;border:1px solid #e3dcc6;border-radius:12px;padding:10px}" +
       ".lr-pt{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8a90a0;margin-bottom:6px}" +
+      ".lr-filters{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px;align-items:center}" +
+      ".lr-filters input{flex:1 1 110px;border:1px solid #d8d0b8;border-radius:8px;padding:6px 8px;font-size:12px;background:#fff;min-width:0}" +
+      "html body #page .lr-frole{border:1px solid #d8d0b8;background:#fff;border-radius:99px;padding:4px 8px;font-family:Oswald,sans-serif;font-size:9px;letter-spacing:.8px;color:#5b6472}" +
+      "html body #page .lr-frole.on{background:#14213D;color:#F1EADA;border-color:#14213D}" +
+      "html body #page .lr-pos{border:1px solid #d8d0b8;border-radius:6px;background:#F6F1E3;font-family:Oswald,sans-serif;font-size:12px;color:#C9A24B;padding:3px 1px;min-width:38px;min-height:34px}" +
       ".lr-row{display:flex;align-items:center;gap:6px;margin:3px 0}" +
       "html body #page .lr-pick{flex:1;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e3dcc6;border-radius:8px;padding:7px 9px;text-align:left;color:#101B2D;min-height:40px}" +
       "html body #page .lr-row.in .lr-pick{background:#EFF5EC;border-color:#4E7A4E}" +
@@ -27833,11 +28520,13 @@ FOC.campaignUI = (function () {
 
   function injectNav() {
     try {
-      var ex = document.querySelector("a.fo-summer"); if (ex) return;
+      var label = (FOC.career && FOC.career.active()) ? "Career" : "The First Summer";
+      var ex = document.querySelector("a.fo-summer");
+      if (ex) { if (ex.textContent !== label) ex.textContent = label; return; }
       var cx = document.querySelector("a.fo-circuit"); if (!cx || !cx.parentNode) return;
       var a = document.createElement("a");
       a.className = cx.className.replace("fo-circuit", "fo-summer");
-      a.href = "#/summer"; a.textContent = "The First Summer";
+      a.href = "#/summer"; a.textContent = label;
       a.addEventListener("click", function (e) { e.preventDefault(); location.hash = "#/summer"; if (typeof window.route === "function") window.route(); });
       cx.parentNode.insertBefore(a, cx);
     } catch (e) {}
@@ -27952,7 +28641,9 @@ FOC.career = (function () {
   function persist() { if (_v2) FOC.save2.persist(_v2); }
 
   function begin(seedInput) {
-    var seed = (seedInput || "").trim() || genSeed();
+    var pendingSeed = "";
+    try { pendingSeed = localStorage.getItem("fo_seed_pending") || ""; localStorage.removeItem("fo_seed_pending"); } catch (eS) {}
+    var seed = (seedInput || "").trim() || pendingSeed.trim() || genSeed();
     _v2 = FOC.save2.begin(scope(), seed);
     if (!Object.keys(_v2.world.clubsById).length) {
       FOC.worldgen.generate(_v2, io());
@@ -27974,6 +28665,10 @@ FOC.career = (function () {
         }
       }
       _v2.history.events.push({ t: "RegionEntered", region: "england", season: 1, week: 1 });
+      // the world reveal: who England is, what the cups mean, who is watching
+      _v2.story.pending.push({ id: "career-intro-1", week: 1, season: 1 });
+      _v2.story.pending.push({ id: "career-intro-2", week: 1, season: 1 });
+      _v2.story.pending.push({ id: "career-intro-3", week: 1, season: 1 });
       persist();
     }
     return _v2;
@@ -28048,7 +28743,12 @@ FOC.career = (function () {
       Object.keys(runs).forEach(function (nm) { if (!top || runs[nm] > top.runs) top = { nm: nm, runs: runs[nm] }; });
       return { paceW: paceW, spinW: spinW, topBat: top };
     };
-    a.peerNote = function () {
+    a.peerNote = function (consume) {
+      if (v2.flags.peerNotePending) {
+        var stash = v2.flags.peerNotePending;
+        if (consume) delete v2.flags.peerNotePending;
+        return stash;
+      }
       var mid = v2.world.peerManagerId; if (!mid) return null;
       var m = v2.world.managersById[mid], pc = m && m.clubId && v2.world.clubsById[m.clubId];
       if (!m || !pc) return null;
@@ -28062,7 +28762,9 @@ FOC.career = (function () {
       else if (v2.world.competitionsById.founders && v2.world.competitionsById.founders.out.indexOf(pc.id) >= 0 && !v2.flags.peerCupOut) { v2.flags.peerCupOut = 1; txt = "Out of the Founders Cup. One bad afternoon and the whole ladder's gone — that's knockout cricket, and I chose this life. League table it is, then."; }
       if (!txt) return null;
       v2.flags[k] = 1;
-      return { nm: m.name + " — " + pc.name, txt: txt };
+      var note = { nm: m.name + " — " + pc.name, txt: txt };
+      v2.flags.peerNotePending = note;   // held for the scene that follows
+      return note;
     };
     a.talentFact = function () {
       var tid = v2.world.talentId; if (!tid) return null;
@@ -28088,7 +28790,10 @@ FOC.career = (function () {
         try { if (typeof saveGame === "function") saveGame(); } catch (eS) {}
         var buyer = v2.world.clubsById[o.buyerId];
         var wp = FOC.model.playerFromEngine(v2, pl, buyer.id);
+        if (pl.__foid) wp.id = pl.__foid;   // identity survives the move
+        buyer.finances.bank -= o.fee;       // the buyer's money is real too
         wp.contract = { years: 2, wage: 800 };
+        buyer.finances.wageBill += wp.contract.wage;
         v2.world.playersById[wp.id] = wp;
         buyer.rosterIds.push(wp.id);
         var dep = FOC.model.transferRecord(v2, {
@@ -28109,7 +28814,11 @@ FOC.career = (function () {
         text: o.buyerName + "'s bid for " + o.playerName + " is refused. " + o.buyerName + " will remember the phone call." });
       var buyer = v2.world.clubsById[o.buyerId];
       var m = buyer && buyer.managerId && v2.world.managersById[buyer.managerId];
-      if (m) m.memory.push({ kind: "refused", note: "bid for " + o.playerName + " refused S" + v2.seasonNumber });
+      if (m) {
+        m.memory.push({ kind: "refused", note: "bid for " + o.playerName + " refused S" + v2.seasonNumber });
+        var rel = (v2.relationships.managerToManager[m.id] = v2.relationships.managerToManager[m.id] || { trust: 50 });
+        rel.trust = Math.max(0, rel.trust - 12);   // fewer calls from this club now
+      }
     };
     return a;
   }
@@ -28150,6 +28859,7 @@ FOC.career = (function () {
     W.recordUserResult(v2, f, sim);
     var facts = A.extractFacts(M, me.name);
     facts.win = !!(M.result && M.result.winner === me.name);
+    facts.tie = !!(M.result && !M.result.winner);
     v2.flags.lastUserFacts = facts;
     (v2.flags.userFactsHist = v2.flags.userFactsHist || []).push(facts);
     v2.flags.userFactsHist = v2.flags.userFactsHist.slice(-30);
@@ -28177,7 +28887,9 @@ FOC.career = (function () {
         }
       }
     });
+    SL.select(v2, "lineup", api(v2), 1);
     SL.select(v2, "userMatch", api(v2), 2);
+    FOC.arcs && FOC.arcs.tick(v2, api(v2), "userMatch");
     persist();
   }
 
@@ -28188,6 +28900,7 @@ FOC.career = (function () {
     if (res.ok || res.seasonOver) {
       var A2 = api(v2);
       SL.select(v2, "week", A2, 2);
+      FOC.arcs && FOC.arcs.tick(v2, A2, "week");
       var uf2 = C.userFixture(v2, v2.week);
       if (uf2 && uf2.status !== "played") SL.select(v2, "preview", A2, 1);
       // a club may come calling for one of yours
@@ -28207,7 +28920,15 @@ FOC.career = (function () {
     return res;
   }
 
-  // honest seasonal judgement: position, cups, solvency — no disguised triumphs
+  // honest seasonal judgement: position, cups, solvency — no disguised triumphs.
+  // Philosophy is a real term of employment: Ambition boards demand more,
+  // Community boards forgive a place if the dressing room held together.
+  function boardTarget(v2) {
+    var k = v2.user.philosophy && v2.user.philosophy.k;
+    if (k === "ambition") return 5;
+    if (k === "community") return (v2.story.rapport.dressingRoom || 50) >= 55 ? 7 : 6;
+    return 6;
+  }
   function seasonOutcome(v2, end) {
     var pos = end.userPos, n = end.rows.length;
     var bank = 0; try { bank = App.fin.bank || 0; } catch (e) {}
@@ -28218,12 +28939,13 @@ FOC.career = (function () {
     if (wonLeague) { o.kind = "champions"; o.txt = "League champions in a provisional season. Permanent status granted without a vote."; }
     else if (wonCrown) { o.kind = "crown"; o.txt = "Crown Cup winners. The establishment will pretend it saw you coming."; }
     else if (wonFounders) { o.kind = "cup"; o.txt = "Founders Cup winners — a knockout club before a league one. Status secured."; }
-    else if (pos <= 6 && bank > 0) { o.kind = "secured"; o.txt = "Finished " + pos + " of " + n + ", solvent. Permanent English status: granted. Quietly, which is how the important votes go."; }
-    else if (pos <= 8 && bank > 0) { o.kind = "warned"; o.txt = "Finished " + pos + " of " + n + ". Status extended one more provisional year — the board's patience is now a named, finite thing."; }
+    else if (pos <= boardTarget(v2) && bank > 0) { o.kind = "secured"; o.txt = "Finished " + pos + " of " + n + ", solvent, against a board target of " + boardTarget(v2) + (v2.user.philosophy ? " (they hold you to " + v2.user.philosophy.label.toLowerCase() + ")" : "") + ". Permanent English status: granted."; }
+    else if (pos <= boardTarget(v2) + 2 && bank > 0) { o.kind = "warned"; o.txt = "Finished " + pos + " of " + n + " against a target of " + boardTarget(v2) + ". Status extended one more provisional year — the board's patience is now a named, finite thing."; }
     else if (bank <= 0) { o.kind = "insolvent"; o.txt = "The money ran out. Finishing " + pos + " is a footnote when the wages aren't. The board moves to dismiss."; }
     else { o.kind = "dismissed"; o.txt = "Finished " + pos + " of " + n + ". The board thanks you for the foundations and hands the keys to somebody else."; }
     if (wonLeague || wonFounders || wonCrown) {
-      v2.history.trophies.push({ kind: o.kind, season: v2.seasonNumber, clubId: v2.user.clubId, note: o.txt });
+      // history.trophies already holds these (worldsim.seasonEnd writes one
+      // unified ledger for every club) — only the pavilion cabinet echoes here
       try {
         var mus = (A.team()._museum = A.team()._museum || { trophies: [], awards: [], legends: [] });
         mus.trophies.push({ s: v2.seasonNumber, kind: o.txt });
@@ -28319,6 +29041,11 @@ FOC.careerHub = (function () {
   function esc(s) { return U.esc(s); }
 
   function clubNm(v2, id) { return (v2.world.clubsById[id] || {}).name || "?"; }
+  function clubDot(v2, id) {
+    var c = v2.world.clubsById[id];
+    return "<span class='cr-dot' style='background:" + ((c && (c.ac || (c.isUser && "#C8674A"))) || "#8a90a0") + "'></span>";
+  }
+  var BALLS = { heritage: "The 1987 ball", "new": "A new cherry", promotion: "The promotion ball" };
 
   function faceImg(face) {
     var art = (window.__foGame && window.__foGame.art) || "client/art/";
@@ -28378,26 +29105,68 @@ FOC.careerHub = (function () {
     var h = "<table class='cr-tbl'><tr><th></th><th style='text-align:left'>Club</th><th>P</th><th>W</th><th>L</th><th>T</th><th>Pts</th><th>NRR</th></tr>";
     rows.forEach(function (r, i) {
       var c = v2.world.clubsById[r.clubId];
-      h += "<tr class='" + (c.isUser ? "me" : "") + "'><td>" + (i + 1) + "</td><td style='text-align:left'>" + esc(c.name) +
+      h += "<tr class='" + (c.isUser ? "me" : "") + (i === 3 ? " crownline" : "") + "'><td>" + (i + 1) + "</td><td style='text-align:left'>" + clubDot(v2, r.clubId) + esc(c.name) +
         "</td><td>" + r.p + "</td><td>" + r.w + "</td><td>" + r.l + "</td><td>" + r.t + "</td><td><b>" + r.pts + "</b></td><td>" +
         (r.nrr >= 0 ? "+" : "") + r.nrr.toFixed(2) + "</td></tr>";
     });
-    return h + "</table>";
+    h += "</table><div class='cr-note'>— everything above this line qualifies for the Crown Cup —</div>";
+    // season leaders: real aggregates from real scorecards
+    var runs = [], wkts = [];
+    for (var pid in v2.world.playersById) {
+      var p = v2.world.playersById[pid];
+      if (p.seasonRuns) runs.push({ nm: p.name, club: clubNm(v2, p.clubId), v: p.seasonRuns });
+      if (p.seasonWickets) wkts.push({ nm: p.name, club: clubNm(v2, p.clubId), v: p.seasonWickets });
+    }
+    (v2.flags.userFactsHist || []).forEach(function (f) {
+      (f.batLines || []).forEach(function (b) {
+        var hit = runs.filter(function (x) { return x.nm === b.nm && x.mine; })[0];
+        if (hit) hit.v += b.r; else runs.push({ nm: b.nm, club: (A0() || {}).name || "you", v: b.r, mine: 1 });
+      });
+      (f.bowlLines || []).forEach(function (b) {
+        var hit = wkts.filter(function (x) { return x.nm === b.nm && x.mine; })[0];
+        if (hit) hit.v += b.w; else wkts.push({ nm: b.nm, club: (A0() || {}).name || "you", v: b.w, mine: 1 });
+      });
+    });
+    runs.sort(function (a, b) { return b.v - a.v; }); wkts.sort(function (a, b) { return b.v - a.v; });
+    if (runs.length || wkts.length) {
+      h += "<div class='cr-sec'>Season leaders</div>";
+      runs.slice(0, 3).forEach(function (x) { h += "<div class='cr-line'>&#127951; " + esc(x.nm) + " (" + esc(x.club) + ") — " + x.v + " runs</div>"; });
+      wkts.slice(0, 3).forEach(function (x) { h += "<div class='cr-line'>&#9918; " + esc(x.nm) + " (" + esc(x.club) + ") — " + x.v + " wickets</div>"; });
+    }
+    return h;
   }
 
+  function bracketCol(v2, title, pairs) {
+    if (!pairs || !pairs.length) return "";
+    var h = "<div class='cr-bkcol'><div class='cr-bkt'>" + esc(title) + "</div>";
+    pairs.forEach(function (pr) {
+      h += "<div class='cr-bkpair'>" + pr.map(function (id) {
+        return "<div class='cr-bkteam'>" + clubDot(v2, id) + esc(clubNm(v2, id)) + "</div>";
+      }).join("") + "</div>";
+    });
+    return h + "</div>";
+  }
   function cupsHTML(v2) {
     var f = v2.world.competitionsById.founders, cr = v2.world.competitionsById.crown;
     var h = "<div class='cr-sec'>Founders Cup — " + esc(f ? f.stage : "?") + "</div>";
     if (f) {
-      if (f.winner) h += "<div class='cr-line'>🏆 " + esc(clubNm(v2, f.winner)) + "</div>";
+      h += "<div class='cr-bracket'>" +
+        bracketCol(v2, "Play-in", f.playin) +
+        bracketCol(v2, "Quarter-finals", f.bracket.qf) +
+        bracketCol(v2, "Semi-finals", f.bracket.sf) +
+        bracketCol(v2, "Final · neutral ground", f.bracket.final ? [f.bracket.final] : null) +
+        "</div>";
+      if (f.winner) h += "<div class='cr-line'>🏆 " + esc(clubNm(v2, f.winner)) + " — champions</div>";
       h += "<div class='cr-line'>Out: " + (f.out.length ? f.out.map(function (id) { return esc(clubNm(v2, id)); }).join(", ") : "nobody yet") + "</div>";
       if (f.out.indexOf(v2.user.clubId) >= 0) h += "<div class='cr-line'><b>Your cup is over for this edition — the league remains.</b></div>";
     }
     h += "<div class='cr-sec'>Crown Cup — " + esc(cr ? cr.stage : "?") + "</div>";
     if (cr) {
       h += "<div class='cr-line'>" + esc(cr.note || "") + "</div>";
-      if (cr.entrants && cr.entrants.length) h += "<div class='cr-line'>Entrants: " + cr.entrants.map(function (id) { return esc(clubNm(v2, id)); }).join(", ") + "</div>";
-      if (cr.winner) h += "<div class='cr-line'>🏆 " + esc(clubNm(v2, cr.winner)) + "</div>";
+      h += "<div class='cr-bracket'>" +
+        bracketCol(v2, "Semi-finals", cr.bracket.sf) +
+        bracketCol(v2, "Final · neutral ground", cr.bracket.final ? [cr.bracket.final] : null) + "</div>";
+      if (cr.winner) h += "<div class='cr-line'>🏆 " + esc(clubNm(v2, cr.winner)) + " — champions</div>";
     }
     return h;
   }
@@ -28498,7 +29267,8 @@ FOC.careerHub = (function () {
       if (!force && page.__crSig === sig && page.querySelector(".fo-cr")) return;
       page.__crSig = sig;
       var h = "<div class='fo-sm fo-cr'>";
-      h += "<div class='sm-head'><div class='sm-kick'>" + esc((A0() || {}).name || "") + " · Season " + v2.seasonNumber + "</div>" +
+      var ball = (v2.user.matchBall && BALLS[v2.user.matchBall]) ? " · <span title='Your chosen match ball travels with the club'>&#9899; " + esc(BALLS[v2.user.matchBall]) + "</span>" : "";
+      h += "<div class='sm-head'><div class='sm-kick'>" + esc((A0() || {}).name || "") + " · Season " + v2.seasonNumber + ball + "</div>" +
         "<h2 class='sm-h1'>" + esc(FOC.calendar.week(v2.week) ? FOC.calendar.label(v2.week) : "Season " + v2.seasonNumber + " — closed") + "</h2></div>";
       h += "<div class='cr-tabs'>" + TABS.map(function (t) {
         return "<button class='cr-tab" + (tab === t[0] ? " on" : "") + "' data-tab='" + t[0] + "'>" + t[1] + "</button>";
@@ -28579,6 +29349,16 @@ FOC.careerHub = (function () {
       ".cr-sec{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#C9A24B;margin:14px 0 5px}" +
       ".cr-line{font-size:13.5px;color:#2a3140;padding:3px 0;border-bottom:1px dashed #efe9d8}" +
       ".cr-io{width:100%;box-sizing:border-box;border:1px solid #d8d0b8;border-radius:8px;padding:7px;font-size:11px;font-family:monospace}" +
+      ".cr-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:baseline}" +
+      ".cr-tbl tr.crownline td{border-bottom:2px solid #C9A24B}" +
+      ".cr-note{font-size:11px;color:#B08D2E;text-align:center;margin:4px 0 8px;font-style:italic}" +
+      ".cr-bracket{display:flex;gap:14px;overflow-x:auto;padding:6px 0;align-items:center}" +
+      ".cr-bkcol{flex:0 0 auto;min-width:150px}" +
+      ".cr-bkt{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#8a90a0;margin-bottom:4px}" +
+      ".cr-bkpair{border:1px solid #e3dcc6;border-radius:8px;background:#fff;margin:5px 0;overflow:hidden}" +
+      ".cr-bkteam{padding:5px 8px;font-size:12.5px;color:#2a3140;border-bottom:1px dashed #efe9d8}" +
+      ".cr-bkpair .cr-bkteam:last-child{border-bottom:none}" +
+      ".fo-cr .sm-face,.fo-cr .sm-mono{width:88px;height:88px;flex:0 0 88px;font-size:26px}" +
       ".fo-cr button:focus-visible{outline:3px solid #C9A24B;outline-offset:1px}";
     document.head.appendChild(st);
   }

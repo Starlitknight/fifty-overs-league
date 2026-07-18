@@ -27,8 +27,25 @@ FOC.rivalry = (function () {
     e.games++; e.lastSeason = v2.seasonNumber;
     if (f.result.winnerId === e.a) e.aWins++;
     else if (f.result.winnerId === e.b) e.bWins++;
-    var margin = Math.abs((f.result.home.runs || 0) - (f.result.away.runs || 0));
-    if (f.result.tie || margin <= 15) { e.close++; e.notes.push("S" + v2.seasonNumber + "W" + v2.week + ": decided by " + (f.result.tie ? "a tie" : margin + " runs")); }
+    // closeness by proper result semantics: defending wins by a small run
+    // margin; chasing wins with two or fewer wickets in hand or off the last
+    // few balls; ties always
+    var r = f.result, closeTxt = null;
+    if (r.tie) closeTxt = "a tie";
+    else {
+      var winSide = r.winnerId === f.homeId ? r.home : r.away;
+      var chased = r.batFirstId && r.winnerId && r.batFirstId !== r.winnerId;
+      if (chased) {
+        var inHand = 10 - (winSide.wkts || 0);
+        var ballsLeft = 300 - (winSide.balls || 300);
+        if (inHand <= 2) closeTxt = "won with " + inHand + " wicket" + (inHand === 1 ? "" : "s") + " in hand";
+        else if (ballsLeft <= 6) closeTxt = "won off the final over";
+      } else {
+        var margin = Math.abs((r.home.runs || 0) - (r.away.runs || 0));
+        if (margin <= 15) closeTxt = "defended by " + margin + " runs";
+      }
+    }
+    if (closeTxt) { e.close++; e.notes.push("S" + v2.seasonNumber + "W" + v2.week + ": " + closeTxt); }
     if (f.comp !== "league") {
       e.cupKOs.push({ season: v2.seasonNumber, by: f.result.winnerId, comp: f.comp });
       if (f.round >= 4 || f.neutral) e.finals++;

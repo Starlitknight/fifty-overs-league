@@ -4763,7 +4763,7 @@
   // opens the league menu instead. Keep the element (hidden) so old refs are safe.
   var btn = document.createElement("button");
   btn.id = "folBtn"; btn.textContent = "League"; btn.style.display = "none";
-  function openLeagueMenu() { openWrap(true); if (!JWT) renderLogin(); else if (SYNC && LG) showWait(!!SYNC.myTeam); else enterApp(); }
+  function openLeagueMenu() { openWrap(true); if (!JWT) renderWelcome(); else if (SYNC && LG) showWait(!!SYNC.myTeam); else enterApp(); }
   function doLogout() { JWT = ""; LG = null; SYNC = null; clearSession(); openWrap(true); renderLogin(); }
 
   var wrap = document.createElement("div");
@@ -4794,6 +4794,13 @@
     var acts = {
       login: doLogin, logout: doLogout,
       showLogin: renderLogin, showJoin: renderJoin, showForgot: renderForgot,
+      showWelcome: renderWelcome,
+      soloStart: function () {
+        var nmEl = wrap.querySelector("#folClubNm"), sdEl = wrap.querySelector("#folSeed");
+        foSoloBegin(nmEl ? nmEl.value : "", sdEl ? sdEl.value : "");
+      },
+      soloContinue: function () { foSoloBegin("", ""); },
+      soloNewForm: function () { window.__folSoloForce = 1; renderWelcome(); window.__folSoloForce = 0; },
       sendReset: sendReset, joinNew: doJoinSignup,
       openId: function () { enterGameById(t.getAttribute("data-id")); }, join: joinLeague,
       startLeague: startLeague, mkInvite: mkInvite,
@@ -4855,13 +4862,61 @@
     return '<div class="fol-auth">' +
       '<div class="fol-brand">' + FOL_MARK +
       '<div class="fol-word">FIFTY <i>OVERS</i></div>' +
-      '<div class="fol-tag"><b>&middot;</b>Private cricket leagues.<b>&middot;</b></div>' +
-      '<div class="fol-feats">Draft squads<b>&middot;</b>Set orders<b>&middot;</b>Watch every ball.</div>' +
+      '<div class="fol-tag"><b>&middot;</b>A living cricket world.<b>&middot;</b></div>' +
+      '<div class="fol-feats">Found a club<b>&middot;</b>Play a career<b>&middot;</b>Bring your friends.</div>' +
       '<img class="fol-minilogo" src="' + APPICON + '" alt="">' +
       "</div>" +
       '<div class="fol-side"><div class="fol-card">' + LOGO + card + "</div></div></div>";
   }
 
+  // ---- solo-first front door -------------------------------------------------
+  // The career is the front door; leagues are the bonus built on the same
+  // engine. Solo runs entirely locally — no account, no server.
+  function foHasSoloSave() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && (k.indexOf("fo_career_") === 0 || k.indexOf("fo_summer_") === 0) &&
+            k.indexOf("_backup_") < 0 && k.indexOf("_archived_") < 0) return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+  function foSoloBegin(name, seed) {
+    try {
+      var nm = String(name || "").trim().slice(0, 26);
+      try { window.store("fo_welcomed", "1"); window.store("fo_club", "0"); } catch (e0) {
+        try { localStorage.setItem("fo_welcomed", "1"); localStorage.setItem("fo_club", "0"); } catch (e1) {}
+      }
+      if (nm && typeof GD !== "undefined" && GD.teams && GD.teams[0]) GD.teams[0].name = nm;
+      if (seed && String(seed).trim()) { try { localStorage.setItem("fo_seed_pending", String(seed).trim().slice(0, 40)); } catch (e2) {} }
+      try { if (typeof saveGame === "function") saveGame(false); } catch (e3) {}
+      openWrap(false);
+      location.hash = "#/summer";
+      if (typeof window.route === "function") window.route();
+    } catch (e) { say(e); }
+  }
+  function renderWelcome() {
+    wrap.querySelector("#folWho").textContent = "";
+    setNavy(true);
+    var has = foHasSoloSave() && !window.__folSoloForce;
+    main.innerHTML = folAuthShell(
+      "<h1>" + (has ? "Welcome back, boss" : "Your club is waiting") + "</h1>" +
+      '<div class="fol-sub" style="display:flex;gap:10px;align-items:center;text-align:left">' +
+      '<img src="' + FO_ART + 'gaffer.png" alt="" style="width:52px;height:52px;border-radius:10px;object-fit:cover;object-position:50% 8%;flex:0 0 52px">' +
+      "<span>&ldquo;" + (has ? "The season doesn&rsquo;t wait and neither do I. Pick up where we left off."
+        : "I&rsquo;m the Gaffer. Give the club a name and I&rsquo;ll walk you through the rest &mdash; squad, captain, first match. No account needed.") + "&rdquo;</span></div>" +
+      '<div class="fol-form">' +
+      (has ? '<button class="fol-cta" data-act="soloContinue">Continue career ▸</button>' +
+             '<button class="mini" style="width:100%" data-act="soloNewForm">Start a fresh solo career</button>'
+           : '<div><label for="folClubNm">Club name</label><input id="folClubNm" type="text" maxlength="26" placeholder="e.g. Harbour Town CC"></div>' +
+             '<div><label for="folSeed">World seed <span style="opacity:.6">(optional — share one with a friend)</span></label><input id="folSeed" type="text" maxlength="40" placeholder="leave blank for a new world"></div>' +
+             '<button class="fol-cta" data-act="soloStart">Start a Solo Career ▸</button>') +
+      "</div>" +
+      '<div class="fol-or">or play with friends</div>' +
+      '<div class="fol-links"><a data-act="showLogin">Sign in to a league</a><a data-act="showJoin">' + ICON_JOIN + "Join with invite code</a></div>" +
+      FOOT);
+  }
   function renderLogin() {
     wrap.querySelector("#folWho").textContent = "";
     setNavy(true);
@@ -4875,7 +4930,7 @@
       '<button class="fol-cta" data-act="login">Log In</button>' +
       "</div>" +
       '<div class="fol-or">or</div>' +
-      '<div class="fol-links"><a data-act="showJoin">' + ICON_JOIN + "Join with invite code</a></div>" +
+      '<div class="fol-links"><a data-act="showWelcome">&#9666; Solo career</a><a data-act="showJoin">' + ICON_JOIN + "Join with invite code</a></div>" +
       FOOT);
   }
 
@@ -9559,16 +9614,21 @@
   var foOrigClub = window.pgClub;
   if (typeof foOrigClub === "function") window.pgClub = foPremiumClub;
 
-  // Multiplayer-first: the league login takes over the moment the site loads,
-  // and the page behind it is locked so the solo game stays private until you
-  // are in a league · then your game IS the league. A saved session is restored
-  // first, so a refresh keeps you logged in.
+  // Solo-first: the career is the front door. A returning solo manager goes
+  // straight back into their game; a fresh visitor meets the Gaffer and can
+  // found a club with no account; leagues remain one tap away.
+  function foFrontDoor() {
+    var welcomed = false;
+    try { welcomed = !!(typeof window.store === "function" ? window.store("fo_welcomed") : localStorage.getItem("fo_welcomed")); } catch (eW) {}
+    if (welcomed && foHasSoloSave()) { openWrap(false); return; }   // mid-career: no gate
+    renderWelcome();
+  }
   var _authRedirect = foConsumeAuthHash();
   openWrap(true);
   foLoading("Signing you in…");
   if (_authRedirect === "ok") { enterApp(); }
   else if (_authRedirect === "error") { renderLogin(); setTimeout(function () { say("That email link expired or was already used. Log in with your email and password below."); }, 60); }
-  else restoreSession().then(function () { if (JWT) enterApp(); else renderLogin(); }).catch(function () { renderLogin(); });
+  else restoreSession().then(function () { if (JWT) enterApp(); else foFrontDoor(); }).catch(function () { foFrontDoor(); });
 
   // ===========================================================================
   //  TRAINING & YOUTH SCOUTING (From-the-Pavilion-style)
@@ -17922,7 +17982,7 @@
       // onMatchEnd is suppressed so nothing leaks into App.results,
       // player history or fatigue. Same pattern as the engine's own
       // simBackground and the overlay's practice broadcast.
-      simWorld: function (tA, tB, pitch, weather, seed) {
+      simWorld: function (tA, tB, pitch, weather, seed, ordersMap) {
         var prevM = null, prevToss = null, prevOME = null, ok = false;
         try { prevM = M; } catch (e0) {}
         try { prevToss = App.tossState; } catch (e1) {}
@@ -17931,7 +17991,10 @@
           M = newMatch(tA, tB, pitch, (seed >>> 0) || 1);
           M.meta = { home: tA.name, away: tB.name, pitch: pitch, weather: weather || "Sunny", comp: "world", isUser: false };
           M.isUserMatch = false;
-          M.ordersMap = {};
+          // per-team orders (captain, keeper, batting order, phase intent):
+          // this is how NPC managers' decisions reach actual deliveries —
+          // ordersFor(teamName) consults M.ordersMap before anything else
+          M.ordersMap = ordersMap || {};
           App.tossState = { stage: "x" };
           var aiBats = aiTossDecision();
           applyToss(aiBats);

@@ -23,6 +23,7 @@ FOC.transfers = (function () {
   }
 
   function bestSellable(v2, seller, role) {
+    if (seller.rosterIds.length <= 12) return null;   // never sell into an unplayable squad
     var best = null;
     seller.rosterIds.forEach(function (pid) {
       var p = v2.world.playersById[pid];
@@ -97,7 +98,13 @@ FOC.transfers = (function () {
       return c && !c.isUser && c.finances.bank > 260000;
     });
     if (!ids.length || !userPlayers.length) return null;
-    var buyer = v2.world.clubsById[RNG.pick(v2.rng, "transfers", ids, "user-offer-club")];
+    // relationships matter: a manager whose bid you refused calls less often
+    var weighted = ids.map(function (cid) {
+      var c = v2.world.clubsById[cid];
+      var trust = ((v2.relationships.managerToManager || {})[c.managerId] || {}).trust;
+      return { id: cid, w: trust != null ? Math.max(1, Math.round(trust / 20)) : 3 };
+    });
+    var buyer = v2.world.clubsById[RNG.weighted(v2.rng, "transfers", weighted, "user-offer-club").id];
     // they bid for form, not for your favourite: highest recent aggregate
     var target = userPlayers[RNG.int(v2.rng, "transfers", Math.min(5, userPlayers.length), "user-offer-target")];
     var fee = Math.round((40 + (target.bat || 40)) * 450 * RNG.range(v2.rng, "transfers", 0.9, 1.3));

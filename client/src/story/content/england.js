@@ -11,7 +11,7 @@
   // ---- opening pair (once, early) ------------------------------------------
   S.register({
     id: "openers-talk", on: "lineup", cast: "gaffer", weight: 5, maxUses: 1,
-    when: function (v2, api) { return api.userMatches() === 0; },
+    when: function (v2, api) { return api.userMatches() === 1; },
     scene: function (v2, api) {
       var op = api.confirmedOpeners(); if (!op) return null;
       return sc("The Gaffer", "gaffer",
@@ -29,9 +29,12 @@
     },
     scene: function (v2, api) {
       var f = api.nextUserFixture(); if (!f) return null;
+      var condNote = v2.story.notes["role:prospect"] === "conditions selection"
+        ? " And a note from your own book: you told " + (api.castName("prospect") || "the prospect") + " he was a conditions player. This is the condition."
+        : "";
       return sc("The Gaffer", "gaffer-serious",
         api.clubName(f) + " on a green top. Same dilemma as ever, and it never gets friendlier: the extra seamer shortens your batting, the balanced card leaves overs to part-timers. " +
-        "There's no right answer, only your answer — and the scorebook keeps them all.");
+        "There's no right answer, only your answer — and the scorebook keeps them all." + condNote);
     }
   });
 
@@ -77,11 +80,21 @@
   S.register({
     id: "captain-callback", on: "userMatch", cast: "gaffer", weight: 6, maxUses: 2,
     when: function (v2, api) {
-      return (v2.flags.captBacked || v2.flags.captWarned) && api.lastConfirmedCaptain();
+      return (v2.flags.captBacked || v2.flags.captWarned || v2.flags.captMoved) && api.lastConfirmedCaptain();
     },
     scene: function (v2, api) {
       var cap = api.castName("captain"), actual = api.lastConfirmedCaptain();
       if (!cap || !actual) return null;
+      if (v2.flags.captMoved) {
+        delete v2.flags.captMoved;
+        var evs = (v2.history.events || []).filter(function (e) { return e.t === "LineupConfirmed"; });
+        var lastXi = evs.length ? evs[evs.length - 1].xi : [];
+        var pos = lastXi.indexOf(cap) + 1;
+        if (!pos) return null;
+        return sc("The Gaffer", "gaffer",
+          "You said you'd take the pressure off " + nmS(cap) + " by moving him down — the sheet has him at " + pos + ". " +
+          (pos >= 5 ? "Word and card agree. He noticed; the room noticed." : "That's still top-order pressure with extra steps. He noticed that too."));
+      }
       var kept = actual === cap;
       var backed = !!v2.flags.captBacked;
       delete v2.flags.captBacked; delete v2.flags.captWarned;
@@ -99,7 +112,7 @@
     id: "setback", on: "userMatch", cast: "gaffer", weight: 6, cooldown: 4,
     when: function (v2, api) {
       var f = api.lastUserFacts();
-      return f && !f.win && (f.op - f.my >= 60 || f.myW >= 9 || api.userLossStreak() >= 2);
+      return f && !f.win && !f.tie && (f.op - f.my >= 60 || f.myW >= 9 || api.userLossStreak() >= 2);
     },
     scene: function (v2, api) {
       var f = api.lastUserFacts(); if (!f) return null;
@@ -138,7 +151,9 @@
     when: function (v2, api) { return !!api.lastUserFacts(); },
     scene: function (v2, api) {
       var f = api.lastUserFacts(); if (!f) return null;
-      var variants = f.win
+      var variants = f.tie
+        ? ["NOTHING BETWEEN THEM — A TIE, AND BOTH SIDES EARNED IT", "SCORES LEVEL: THE RAREST RESULT IN THE BOOK"]
+        : f.win
         ? [(f.topNm ? nmS(f.topNm).toUpperCase() + " " + f.topR + " SETTLES IT" : "PROFESSIONAL AFTERNOON FOR THE NEW CLUB"),
            "PROVISIONAL? THE TABLE DISAGREES"]
         : [(f.oppTopNm ? nmS(f.oppTopNm).toUpperCase() + "'S " + f.oppTopR + " TOO GOOD" : "A HARD LESSON, PLAINLY TAUGHT"),
@@ -194,12 +209,85 @@
     });
   });
 
+  // ---- rapport is read back, not just written --------------------------------
+  S.register({
+    id: "room-murmurs", on: "week", cast: "captain", weight: 5, cooldown: 6,
+    when: function (v2, api) { return (v2.story.rapport.dressingRoom || 50) <= 38; },
+    scene: function (v2, api) {
+      var cap = api.castName("captain"); if (!cap) return null;
+      return sc(cap, "player:bat",
+        "Boss, straight signal from the room: broken promises and cold team sheets are being counted. Nobody's downing tools — but the benefit of the doubt is spent. What you do next gets read closely.",
+        [
+          { t: "Address the squad and own it", fx: function (v2b, apiB) { apiB.rapport("dressingRoom", 6); } },
+          { t: "\u201cResults fix rooms. Nothing else.\u201d", fx: function (v2b, apiB) { apiB.rapport("captain", -2); apiB.flag("hardLine", 1); } }
+        ]);
+    }
+  });
+  S.register({
+    id: "captain-confides", on: "week", cast: "captain", weight: 3, cooldown: 8, maxUses: 2,
+    when: function (v2, api) { return (v2.story.rapport.captain || 50) >= 70; },
+    scene: function (v2, api) {
+      var cap = api.castName("captain"); if (!cap) return null;
+      return sc(cap, "player:bat",
+        "Between us: whatever the table says, this room would run through walls for you at the moment. You've backed people in public and told them the truth in private. Keep doing both and we'll carry the rest.");
+    }
+  });
+
+  // ---- the world reveal: England, the cups, Priya, Thorne ------------------
+  S.register({ id: "career-intro-1", on: "_direct", cast: "gaffer", weight: 1,
+    scene: function (v2, api) {
+      return sc("The Gaffer", "gaffer",
+        "Right — the actual landscape. Nine clubs besides us, one league, nine rounds, and every one of them plays whether we watch or not. The Founders Cup is a knockout: lose once and it's over for the year. Finish top four and the Crown Cup lets you in. Nobody waits for us, and I wouldn't have it any other way.");
+    } });
+  S.register({ id: "career-intro-2", on: "_direct", cast: "peer", weight: 1,
+    scene: function (v2, api) {
+      var mid = v2.world.peerManagerId, m = mid && v2.world.managersById[mid];
+      if (!m) return null;
+      var pc = m.clubId && v2.world.clubsById[m.clubId];
+      return sc(m.name + (pc ? " — " + pc.name : ""), "npc:PR",
+        "We founded clubs the same spring, you and I, which makes us the two newest names on the fixture list. I keep a photograph of an empty trophy cabinet on my desk. One of us fills theirs first. No hard feelings either way — well. Few hard feelings.");
+    } });
+  S.register({ id: "career-intro-3", on: "_direct", cast: "thorne", weight: 1,
+    scene: function (v2, api) {
+      return sc("Reggie Thorne", "thorne",
+        "The provisional club. I chair the committee that granted you that word, and the committee that can retract it. Finish the season solvent and respectable, and we'll talk again. Fail, and the fixture list simply closes over you like water. Willowmere first, I believe. Do try to be interesting.");
+    } });
+
+  // ---- quiet weeks are for working: a real choice on cup-off weeks ----------
+  S.register({
+    id: "week-focus", on: "week", cast: "gaffer", weight: 6, cooldown: 2,
+    when: function (v2, api) {
+      var f = api.nextUserFixture();
+      return !f;   // no fixture: the week belongs to the manager
+    },
+    scene: function (v2, api) {
+      return sc("The Gaffer", "gaffer",
+        "No fixture for us this week. The week doesn't have to be empty — where do we spend it?",
+        [
+          { t: "Scout the next opponent properly", fx: function (v2b, apiB) {
+              var nf = null, w = v2b.week + 1;
+              while (!nf && w <= 15) { nf = FOC.competitions.userFixture(v2b, w); w++; }
+              if (nf) {
+                var oppId = nf.homeId === v2b.user.clubId ? nf.awayId : nf.homeId;
+                var opp = v2b.world.clubsById[oppId];
+                var mgr2 = opp.managerId && v2b.world.managersById[opp.managerId];
+                apiB.headline("SCOUTING FILE: " + opp.name.toUpperCase() + " — form " + ((opp.form || []).slice(-5).join("") || "unknown") +
+                  ", " + opp.pitch + " pitch at " + opp.ground + (mgr2 ? ", " + mgr2.name + " favours " + opp.tendency + " cricket" : ""));
+                v2b.flags.scouted = oppId;
+              }
+            } },
+          { t: "A long lunch with the captain", fx: function (v2b, apiB) { apiB.rapport("captain", 4); } },
+          { t: "An afternoon at the academy nets", fx: function (v2b, apiB) { apiB.rapport("dressingRoom", 2); apiB.note("prospect", v2b.story.notes["role:prospect"] || "developing role"); } }
+        ]);
+    }
+  });
+
   // ---- the peer manager's parallel career -----------------------------------
   S.register({
     id: "peer-milestone", on: "week", cast: "peer", weight: 3, cooldown: 4,
     when: function (v2, api) { return !!api.peerNote(); },
     scene: function (v2, api) {
-      var note = api.peerNote(); if (!note) return null;
+      var note = api.peerNote(true); if (!note) return null;
       return sc(note.nm, "npc:PR", note.txt);
     }
   });

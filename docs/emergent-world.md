@@ -105,3 +105,62 @@ simulation never touches `Math.random()`.
 - NPC caps count fielded fixtures, not verified XI membership.
 - The user club plays every league round even while cup-alive (single
   fixture per week for the user; NPC cup weeks run parallel).
+
+## Consolidation pass (feedback review of 4047575)
+
+**Solo front door.** The site now opens on *"Your club is waiting"* — the
+Gaffer on screen, club name + optional shared world seed, **Start a Solo
+Career** with no account. Returning solo managers skip the gate entirely;
+league sign-in and invite codes are one tap away. README repositioned to
+match.
+
+**Result semantics fixed.** Tied knockouts resolve by explicit tie-break
+(fewer wickets lost, then a seeded recorded super-over) — never home
+advantage; neutral finals play on a neutral balanced pitch; the dead
+'dusty' pitch value became the engine's real 'dry'; rivalry closeness now
+reads chases properly (wickets in hand / balls left, not run difference);
+ties are ties in every story line; caps go to the actual named XI;
+dismissals and season-vs-career aggregates are tracked separately; one
+unified trophy ledger records NPC titles with the same detail as the
+user's, exactly once.
+
+**Managers reach the pitch.** NPC orders (batting order, captain, bowling
+spells shaped by traits — spin-devoted clubs hand spinners the middle
+overs, risk-takers frontload and attack at the death, youth-biased
+managers promote young batters) travel into the engine via ordersMap, the
+same channel the engine's own background sims use. Tenure, title
+histories, reputation evolution, and no same-club reappointments; NPC
+squads can no longer sell below a playable roster; retirements and youth
+intakes arrive at rollover; development is role-weighted.
+
+**Choices leave scars.** Philosophy sets the board's actual season target
+(Ambition demands 5th; Community forgives 7th if the dressing room held);
+low dressing-room rapport triggers murmurs, high captain trust earns
+confidences; the "conditions player" note is read back on green tops;
+refusing a transfer bid measurably reduces that manager's future calls;
+the captain "move him down the order" promise is checked against the real
+sheet; the match ball travels in the hub header.
+
+**Six arc state machines** (`story/arcs.js`): captaincy legitimacy, the
+prospect pathway, Gaffer–Thorne (clues → optional confrontation → a
+reckoning only after actually facing Thorne's club — or permanent
+uncertainty), Priya's parallel career, the returning former player (reacts
+to what he actually did against you), and public trust (the Argus counts
+promises). Stages advance on real conditions, never on week numbers.
+
+**Career save is canonical for the Lineup Room**: evidence panes read the
+career's real scorecard history (season totals + recent lines + live
+promises), validation checks career promises, notes write to the career
+save; plus squad search/role filters, a tap-position menu, realistic
+captain/keeper candidate lists, and a bowling-plan coverage summary.
+
+**Hub**: cup brackets, the Crown qualification line, season leaders from
+real aggregates, club colour identity, 88px portraits, world-reveal
+handover (Gaffer → Priya → Thorne) before round 1, and the nav renames to
+*Career* post-prologue.
+
+**Still open** (accurately): full engine-side fatigue parity for NPC
+players; an interactive England map and clickable club/manager profiles;
+per-ball duel data; portrait art for the full recurring cast (needs art
+drops); the 500–1,000-season real-engine harness (the runner exists —
+`resolver/_harness.mjs N`; large N is a long local run).

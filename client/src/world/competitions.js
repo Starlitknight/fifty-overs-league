@@ -52,6 +52,21 @@ FOC.competitions = (function () {
   }
 
   // ---- Founders Cup progression ---------------------------------------------
+  // a tied knockout is settled explicitly, never by home advantage: fewer
+  // wickets lost wins; still level → a seeded super-over coin, recorded
+  function tieBreak(v2, f) {
+    var r = f.result, w;
+    if ((r.home.wkts || 0) !== (r.away.wkts || 0)) {
+      w = r.home.wkts < r.away.wkts ? f.homeId : f.awayId;
+      r.tieBreak = "fewer wickets lost";
+    } else {
+      w = RNG.chance(v2.rng, "cupdraw", 0.5, "super-over:" + f.id) ? f.homeId : f.awayId;
+      r.tieBreak = "super over";
+    }
+    r.tieWinnerId = w;
+    return w;
+  }
+
   function foundersAdvance(v2) {
     var cup = v2.world.competitionsById.founders;
     if (!cup || cup.winner) return;
@@ -62,7 +77,7 @@ FOC.competitions = (function () {
     var maxRound = 0;
     stageFx.forEach(function (f) { if (f.round > maxRound) maxRound = f.round; });
     stageFx.filter(function (f) { return f.round === maxRound; }).forEach(function (f) {
-      var w = f.result.winnerId || f.homeId;   // a tied cup tie goes to the home side (documented rule)
+      var w = f.result.winnerId || tieBreak(v2, f);
       winners.push(w);
       var l = w === f.homeId ? f.awayId : f.homeId;
       losers.push(l);
@@ -125,7 +140,7 @@ FOC.competitions = (function () {
     var maxRound = 0;
     fx.forEach(function (f) { if (f.round > maxRound) maxRound = f.round; });
     var winners = fx.filter(function (f) { return f.round === maxRound; })
-      .map(function (f) { return f.result.winnerId || f.homeId; });
+      .map(function (f) { return f.result.winnerId || tieBreak(v2, f); });
     if (cup.stage === "sf" && winners.length === 2) {
       cup.bracket.final = winners;
       var f2 = MDL.fixture(v2, 15, "crown", 2, winners[0], winners[1]);
@@ -146,7 +161,7 @@ FOC.competitions = (function () {
     return weekFixtures(v2, w).filter(function (f) { return f.homeId === uc || f.awayId === uc; })[0] || null;
   }
 
-  return { fixtures: fixtures, table: table, position: position, oversFor: oversFor,
+  return { fixtures: fixtures, table: table, position: position, oversFor: oversFor, tieBreak: tieBreak,
     foundersAdvance: foundersAdvance, crownSeed: crownSeed, crownAdvance: crownAdvance,
     weekFixtures: weekFixtures, userFixture: userFixture };
 })();

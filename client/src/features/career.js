@@ -51,7 +51,9 @@ FOC.career = (function () {
   function persist() { if (_v2) FOC.save2.persist(_v2); }
 
   function begin(seedInput) {
-    var seed = (seedInput || "").trim() || genSeed();
+    var pendingSeed = "";
+    try { pendingSeed = localStorage.getItem("fo_seed_pending") || ""; localStorage.removeItem("fo_seed_pending"); } catch (eS) {}
+    var seed = (seedInput || "").trim() || pendingSeed.trim() || genSeed();
     _v2 = FOC.save2.begin(scope(), seed);
     if (!Object.keys(_v2.world.clubsById).length) {
       FOC.worldgen.generate(_v2, io());
@@ -73,6 +75,10 @@ FOC.career = (function () {
         }
       }
       _v2.history.events.push({ t: "RegionEntered", region: "england", season: 1, week: 1 });
+      // the world reveal: who England is, what the cups mean, who is watching
+      _v2.story.pending.push({ id: "career-intro-1", week: 1, season: 1 });
+      _v2.story.pending.push({ id: "career-intro-2", week: 1, season: 1 });
+      _v2.story.pending.push({ id: "career-intro-3", week: 1, season: 1 });
       persist();
     }
     return _v2;
@@ -147,7 +153,12 @@ FOC.career = (function () {
       Object.keys(runs).forEach(function (nm) { if (!top || runs[nm] > top.runs) top = { nm: nm, runs: runs[nm] }; });
       return { paceW: paceW, spinW: spinW, topBat: top };
     };
-    a.peerNote = function () {
+    a.peerNote = function (consume) {
+      if (v2.flags.peerNotePending) {
+        var stash = v2.flags.peerNotePending;
+        if (consume) delete v2.flags.peerNotePending;
+        return stash;
+      }
       var mid = v2.world.peerManagerId; if (!mid) return null;
       var m = v2.world.managersById[mid], pc = m && m.clubId && v2.world.clubsById[m.clubId];
       if (!m || !pc) return null;
@@ -161,7 +172,9 @@ FOC.career = (function () {
       else if (v2.world.competitionsById.founders && v2.world.competitionsById.founders.out.indexOf(pc.id) >= 0 && !v2.flags.peerCupOut) { v2.flags.peerCupOut = 1; txt = "Out of the Founders Cup. One bad afternoon and the whole ladder's gone — that's knockout cricket, and I chose this life. League table it is, then."; }
       if (!txt) return null;
       v2.flags[k] = 1;
-      return { nm: m.name + " — " + pc.name, txt: txt };
+      var note = { nm: m.name + " — " + pc.name, txt: txt };
+      v2.flags.peerNotePending = note;   // held for the scene that follows
+      return note;
     };
     a.talentFact = function () {
       var tid = v2.world.talentId; if (!tid) return null;
@@ -187,7 +200,10 @@ FOC.career = (function () {
         try { if (typeof saveGame === "function") saveGame(); } catch (eS) {}
         var buyer = v2.world.clubsById[o.buyerId];
         var wp = FOC.model.playerFromEngine(v2, pl, buyer.id);
+        if (pl.__foid) wp.id = pl.__foid;   // identity survives the move
+        buyer.finances.bank -= o.fee;       // the buyer's money is real too
         wp.contract = { years: 2, wage: 800 };
+        buyer.finances.wageBill += wp.contract.wage;
         v2.world.playersById[wp.id] = wp;
         buyer.rosterIds.push(wp.id);
         var dep = FOC.model.transferRecord(v2, {
@@ -208,7 +224,11 @@ FOC.career = (function () {
         text: o.buyerName + "'s bid for " + o.playerName + " is refused. " + o.buyerName + " will remember the phone call." });
       var buyer = v2.world.clubsById[o.buyerId];
       var m = buyer && buyer.managerId && v2.world.managersById[buyer.managerId];
-      if (m) m.memory.push({ kind: "refused", note: "bid for " + o.playerName + " refused S" + v2.seasonNumber });
+      if (m) {
+        m.memory.push({ kind: "refused", note: "bid for " + o.playerName + " refused S" + v2.seasonNumber });
+        var rel = (v2.relationships.managerToManager[m.id] = v2.relationships.managerToManager[m.id] || { trust: 50 });
+        rel.trust = Math.max(0, rel.trust - 12);   // fewer calls from this club now
+      }
     };
     return a;
   }
@@ -249,6 +269,7 @@ FOC.career = (function () {
     W.recordUserResult(v2, f, sim);
     var facts = A.extractFacts(M, me.name);
     facts.win = !!(M.result && M.result.winner === me.name);
+    facts.tie = !!(M.result && !M.result.winner);
     v2.flags.lastUserFacts = facts;
     (v2.flags.userFactsHist = v2.flags.userFactsHist || []).push(facts);
     v2.flags.userFactsHist = v2.flags.userFactsHist.slice(-30);
@@ -276,7 +297,9 @@ FOC.career = (function () {
         }
       }
     });
+    SL.select(v2, "lineup", api(v2), 1);
     SL.select(v2, "userMatch", api(v2), 2);
+    FOC.arcs && FOC.arcs.tick(v2, api(v2), "userMatch");
     persist();
   }
 
@@ -287,6 +310,7 @@ FOC.career = (function () {
     if (res.ok || res.seasonOver) {
       var A2 = api(v2);
       SL.select(v2, "week", A2, 2);
+      FOC.arcs && FOC.arcs.tick(v2, A2, "week");
       var uf2 = C.userFixture(v2, v2.week);
       if (uf2 && uf2.status !== "played") SL.select(v2, "preview", A2, 1);
       // a club may come calling for one of yours
@@ -306,7 +330,15 @@ FOC.career = (function () {
     return res;
   }
 
-  // honest seasonal judgement: position, cups, solvency — no disguised triumphs
+  // honest seasonal judgement: position, cups, solvency — no disguised triumphs.
+  // Philosophy is a real term of employment: Ambition boards demand more,
+  // Community boards forgive a place if the dressing room held together.
+  function boardTarget(v2) {
+    var k = v2.user.philosophy && v2.user.philosophy.k;
+    if (k === "ambition") return 5;
+    if (k === "community") return (v2.story.rapport.dressingRoom || 50) >= 55 ? 7 : 6;
+    return 6;
+  }
   function seasonOutcome(v2, end) {
     var pos = end.userPos, n = end.rows.length;
     var bank = 0; try { bank = App.fin.bank || 0; } catch (e) {}
@@ -317,12 +349,13 @@ FOC.career = (function () {
     if (wonLeague) { o.kind = "champions"; o.txt = "League champions in a provisional season. Permanent status granted without a vote."; }
     else if (wonCrown) { o.kind = "crown"; o.txt = "Crown Cup winners. The establishment will pretend it saw you coming."; }
     else if (wonFounders) { o.kind = "cup"; o.txt = "Founders Cup winners — a knockout club before a league one. Status secured."; }
-    else if (pos <= 6 && bank > 0) { o.kind = "secured"; o.txt = "Finished " + pos + " of " + n + ", solvent. Permanent English status: granted. Quietly, which is how the important votes go."; }
-    else if (pos <= 8 && bank > 0) { o.kind = "warned"; o.txt = "Finished " + pos + " of " + n + ". Status extended one more provisional year — the board's patience is now a named, finite thing."; }
+    else if (pos <= boardTarget(v2) && bank > 0) { o.kind = "secured"; o.txt = "Finished " + pos + " of " + n + ", solvent, against a board target of " + boardTarget(v2) + (v2.user.philosophy ? " (they hold you to " + v2.user.philosophy.label.toLowerCase() + ")" : "") + ". Permanent English status: granted."; }
+    else if (pos <= boardTarget(v2) + 2 && bank > 0) { o.kind = "warned"; o.txt = "Finished " + pos + " of " + n + " against a target of " + boardTarget(v2) + ". Status extended one more provisional year — the board's patience is now a named, finite thing."; }
     else if (bank <= 0) { o.kind = "insolvent"; o.txt = "The money ran out. Finishing " + pos + " is a footnote when the wages aren't. The board moves to dismiss."; }
     else { o.kind = "dismissed"; o.txt = "Finished " + pos + " of " + n + ". The board thanks you for the foundations and hands the keys to somebody else."; }
     if (wonLeague || wonFounders || wonCrown) {
-      v2.history.trophies.push({ kind: o.kind, season: v2.seasonNumber, clubId: v2.user.clubId, note: o.txt });
+      // history.trophies already holds these (worldsim.seasonEnd writes one
+      // unified ledger for every club) — only the pavilion cabinet echoes here
       try {
         var mus = (A.team()._museum = A.team()._museum || { trophies: [], awards: [], legends: [] });
         mus.trophies.push({ s: v2.seasonNumber, kind: o.txt });

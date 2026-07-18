@@ -70,6 +70,18 @@ FOC.adapter = (function () {
       });
       facts.push("Bowling cover: " + frontline + " frontline (" + pace + " pace, " + spin + " spin)" +
         (part ? " plus " + part + " part-time" : "") + ". Fifty overs must come from somewhere.");
+      // the generated plan, summarised — the advanced editor stays optional
+      try {
+        var plan = buildSpells(xi.map(function (nm) { return roster[nm]; }));
+        if (plan) {
+          var tots = { pace: 0, spin: 0 };
+          [].concat(plan.north, plan.south).forEach(function (sp2) {
+            var b2 = roster[sp2.bowler];
+            if (b2) tots[/spin/i.test(b2.bowlType || "") ? "spin" : "pace"] += sp2.n || 0;
+          });
+          facts.push("Default plan covers " + (tots.pace + tots.spin) + " of 50 overs: " + tots.pace + " pace, " + tots.spin + " spin; the captain fills the rest on the day.");
+        } else facts.push("Fewer than five frontline bowlers: the captain improvises all fifty overs.");
+      } catch (eP2) {}
       var lefties = xi.filter(function (nm) { return roster[nm] && /l/i.test(roster[nm].hand || ""); }).length;
       if (lefties) facts.push(lefties + " left-hander" + (lefties > 1 ? "s" : "") + " in the order.");
       // fatigue / availability — stated, not judged
