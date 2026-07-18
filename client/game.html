@@ -10852,7 +10852,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260718-1344-b6cfb7";
+  var FO_BUILD = "20260718-1403-3b36b3";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -28893,17 +28893,22 @@ FOC.oval = (function () {
       "html body #page.fo-ovalgrid #fo-oval{grid-column:1;grid-row:1/span 40;position:sticky;top:64px;max-width:none;margin:0}" +
       "html body #page.fo-ovalgrid:not(.fo-matchpage)>*:not(#fo-oval){grid-column:2}" +
       // Match centre: the overlay lays #page out as a named-area grid
-      // (mlinks|mbody|mside). Re-template it with the oval as its own left
-      // area and stack crumb / score+details / tab links / commentary right.
-      "html body #page.fo-ovalgrid.fo-matchpage{grid-template-columns:minmax(430px,46%) minmax(0,1fr);grid-template-rows:auto auto auto auto 1fr;grid-template-areas:'moval mcrumb' 'moval mtop' 'moval mlinks' 'moval mbody' 'moval mrest'}" +
-      "html body #page.fo-ovalgrid.fo-matchpage #fo-oval{grid-area:moval}" +
+      // (mlinks|mbody|mside). Re-template it: the oval fills the left half
+      // with scoreboard + match details tucked under it, while the right
+      // half is all reading — crumb, tab links, then full-height commentary.
+      "html body #page.fo-ovalgrid.fo-matchpage{grid-template-columns:minmax(460px,50%) minmax(0,1fr);grid-template-rows:auto auto auto auto 1fr;grid-template-areas:'moval mcrumb' 'moval mlinks' 'moval mbody' 'mtop mbody' 'mrest mbody'}" +
+      "html body #page.fo-ovalgrid.fo-matchpage #fo-oval{grid-area:moval;position:static}" +
       "html body #page.fo-ovalgrid.fo-matchpage>.crumb{grid-area:mcrumb}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .mc-top{grid-area:mtop;display:flex !important;flex-direction:row !important;align-items:stretch;gap:12px;margin:0 0 12px}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .mc-top .panel{flex:1 1 0 !important;min-width:0;margin:0}" +
+      "html body #page.fo-ovalgrid.fo-matchpage .mc-top{grid-area:mtop;display:flex !important;flex-direction:row !important;align-items:stretch !important;gap:12px;margin:12px 0 0}" +
+      "html body #page.fo-ovalgrid.fo-matchpage .mc-top .panel{flex:1 1 0 !important;min-width:0;margin:0;height:auto}" +
       "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links{grid-area:mlinks;display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;padding:6px;margin:0 0 12px;position:static}" +
       "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links h4{display:none}" +
       "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links a{white-space:nowrap;border-bottom:none !important;border-radius:8px}" +
       "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-body{grid-area:mbody;min-width:0;margin:0}" +
+      "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-body .commfeed,html body #page.fo-ovalgrid.fo-matchpage .ftp-match-body #ftpcomm{max-height:calc(100vh - 200px) !important}" +
+      // the engine's full-screen FOUR/SIX/WICKET splash straddles the column
+      // seam on the split stage, and the oval pops the same event on-field
+      "body:has(#page.fo-ovalgrid) .bigflash{display:none}" +
       "}" +
       ".ov-fld{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;border-radius:99px;padding:3px 10px;background:#1f2d4a;color:#cfd6e4}" +
       ".ov-fld.f-att{background:#C8674A;color:#fff}.ov-fld.f-def{background:#2E5A7A;color:#fff}.ov-fld.f-bal{background:#4E7A4E;color:#fff}" +
