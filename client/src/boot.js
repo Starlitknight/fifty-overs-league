@@ -19,6 +19,7 @@
       FOC.lineup.init();
       FOC.campaignUI.init();
       FOC.careerHub.init();
+      FOC.oval.init();
       window.__foSummer = {
         save: function () { return FOC.game.save(); },
         engine: FOC.game, adapter: FOC.adapter, lineup: FOC.lineup,
