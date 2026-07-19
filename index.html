@@ -1059,19 +1059,257 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
   if(done)endInnings();
   render();
 }
-function comm(inn,out,rb,sb,bowler,intent,field,ev){
-  const nm=sb.p.name.split(' ').slice(-1)[0];
-  if(isWkt(out)){
-    const how=DFULL[out];
-    const why=intent>=1?'the aggression finally costs him':(inn.faced[sb.p.name]||0)<6?'gone before getting set':'a genuine breakthrough';
-    return `WICKET - ${sb.p.name} ${how}${out!=='wRO'&&out!=='wST'?' b '+bowler.name.split(' ').slice(-1)[0]:''}, ${why}.`}
-  if(out==='6'){const v=['SIX! '+nm+' launches '+bowler.name.split(' ').slice(-1)[0]+' into the stands','SIX - '+nm+' picks the length early and swings clean','Huge from '+nm+'! That is out of the ground'];return v[(inn.legal+inn.runs)%3]+(intent>=2?' - launch mode pays.':'.')}
-  if(out==='4'){const v=['FOUR - '+nm+' pierces the '+(field==='def'?'packed ':'')+'field','FOUR! Crisp from '+nm+', no one moved','Streaky but four for '+nm+' - the edge runs away'];return v[(inn.legal+inn.runs)%3]+'.'}
-  if(out==='wide')return 'Wide, gift run.';
-  if(out==='noball')return 'No-ball! Free run - and the next ball is a FREE HIT.';
-  if(out==='dot')return `Dot ball${field==='def'?', ring holds the single':''}.`;
-  return `${rb} run${rb>1?'s':''}, ${nm} rotates.`;
+// the living commentary — a rich, deterministic ball-by-ball voice. Called
+// AFTER the outcome is decided; consumes no M.rand() (variants are
+// hash-picked from ball state), so words never change gameplay.
+const FO_REGIONS=["midwicket","cover","mid-off","long-on","deep square leg","point","extra cover","mid-on","long-off","backward point"];
+function comm(inn, out, rb, sb, bowler, intent, field, ev) {
+
+        try {
+          var fhTag = (inn && inn.freeHit && out !== "noball" && out !== "wide") ? "FREE HIT - " : "";
+          var ln = function (n) { return String(n || "").split(" ").slice(-1)[0]; };
+          var bat = ln(sb.p.name), bwl = ln(bowler.name);
+          var faced = (inn.faced && inn.faced[sb.p.name]) || 0;
+          var over = Math.floor(inn.legal / 6);
+          var pace = bowler.bowlType === "fast" || bowler.bowlType === "fastMedium" || bowler.bowlType === "medium";
+          var quick = bowler.bowlType === "fast";
+          var death = over >= 40;
+          var keeperP = (inn.bxi || []).filter(function (q) { return q.keeper; })[0];
+          var kp = keeperP ? ln(keeperP.name) : "the keeper";
+          var chase = (typeof M !== "undefined" && M && M.inns === 1 && M.target) ? { need: M.target - inn.runs, balls: 300 - inn.legal } : null;
+          var H = function (salt) {
+            var x = (inn.legal * 2654435761 + inn.runs * 40503 + (sb.b || 0) * 9973 + (sb.r || 0) * 271 + rb * 131 + salt * 7919) >>> 0;
+            x = (x ^ (x >>> 13)) >>> 0; return x % 99991;
+          };
+          var pick = function (arr, salt) { return arr[H(salt) % arr.length]; };
+          // the ENGINE's structured ball event names where this ball went,
+          // against the field actually posted — the oval animates the same
+          // event, so words and picture agree by construction
+          var FT = ev || null;
+          var allL = FT && (FT.ring.length + FT.deep.length) ? FT.ring.concat(FT.deep) : FO_REGIONS;
+          var ringL = FT && FT.ring.length ? FT.ring : FO_REGIONS;
+          // primary region = the event's position, or for a boundary through
+          // a gap the truthful direction REGION (a region is a direction
+          // word, not a fielder claim)
+          var reg = (FT && (FT.pos || FT.region)) || pick(allL, 3);
+          var reg2 = pick(allL, 5);
+          var regRing = (FT && FT.pos && !FT.posDeep) ? FT.pos : pick(ringL, 4);
+          // null means "nobody is out" (an all-in attacking field) - phrases
+          // about the rope then switch to open-space variants
+          var regDeep = FT ? (FT.pos && FT.posDeep ? FT.pos : (FT.deep.length ? pick(FT.deep, 6) : null)) : pick(FO_REGIONS, 6);
+          var sqOr = FT ? (FT.ring.indexOf("square leg") >= 0 ? "square leg" : regRing) : "square leg";
+          var slipsOr = FT && !FT.hasSlip ? "behind the wicket" : "the slips";
+          var F = (typeof M !== "undefined" && M && M._fielder) ? ln(M._fielder.name) : null;
+          // anti-repeat: never reuse an exact line within the last 60 of this
+          // innings. Deterministic - the sim visits balls in a fixed order.
+          var recent = inn.__foRecent = inn.__foRecent || [];
+          var fresh = function (gen, salt) {
+            for (var a = 0; a < 10; a++) { var L = gen(salt + a * 41); if (recent.indexOf(L) < 0) return L; }
+            return gen(salt);
+          };
+          var used = function (L) { recent.push(L); if (recent.length > 60) recent.shift(); return L; };
+          // freshness works on CORES (no punctuation, no tails): every outcome
+          // picks its core through the guard, records it, then decorates
+          var pickF = function (arr, salt) { return used(fresh(function (sa) { return arr[H(sa) % arr.length]; }, salt)); };
+          var compose = function (dels, resps, salt) {
+            return used(fresh(function (sa) {
+              return dels[H(sa) % dels.length] + " - " + resps[H(sa * 3 + 17) % resps.length];
+            }, salt));
+          };
+
+          if (typeof isWkt === "function" && isWkt(out)) {
+            var core;
+            if (out === "wB") core = pickF([
+              "Cleaned him up! " + bat + " plays all around a straight one and the stumps are wrecked",
+              "Bowled him! " + bwl + " sneaks it through the gate and " + bat + " hears the death rattle",
+              "Timber! The " + (quick ? "yorker is too quick" : "arm ball goes on with the angle") + " and " + bat + " is bowled",
+              bat + " charges, misses, and " + bwl + " hits the top of off. Emphatic",
+              "The slower ball does him - " + bat + " is through the shot early and it clatters into middle",
+              "Chopped on! " + bat + " drags it back into his own stumps and cannot believe it",
+              "The leg stump is knocked back! " + bat + " misses a straight one and the walk begins",
+              bwl + " keeps it full and honest, and the swing beats " + bat + " completely. Bowled"
+            ], 11);
+            else if (out === "wC") core = pickF([
+              bat + " goes hard at it and picks out " + (F || "the man") + " at " + reg + ". Straight down the throat",
+              "Edged and taken! " + bwl + " draws the outside edge and " + (F || kp) + " does the rest",
+              "Skied a mile - " + (F || "the fielder") + " circles under it at " + reg + " and settles the nerves. Gone",
+              "Miscued! The leading edge loops to " + (F || "the man") + " and " + bat + " walks",
+              (regDeep ? "Big shot, bad choice: " + bat + " finds " + (F || "the man") + " on the rope at " + regDeep : "Big shot, bad choice: the mistimed slog hangs up and " + (F || "the man") + " at " + regRing + " barely moves"),
+              "Soft hands, hard luck - " + bat + " chips it straight to " + (F || "the man") + " at " + regRing,
+              "A thin feather down the leg side and " + (F || kp) + " clings on. " + bat + " drags himself off",
+              "The short ball climbs, the glove goes up, and " + (F || kp) + " accepts the gift",
+              "Slower ball, early through the drive - the checked chip finds " + (F || "the man") + " at " + regRing
+            ], 12);
+            else if (out === "wLBW") core = pickF([
+              "Rapped on the pads and up goes the finger! " + bat + " is plumb in front",
+              "Big appeal... GIVEN! " + bwl + " " + (pace ? "nips one back" : "slides one on") + " and " + bat + " is trapped lbw",
+              bat + " misses the sweep and that is stone dead. The umpire barely hesitates",
+              "Full, straight, and " + bat + " plays down the wrong line. LBW - " + bwl + " roars",
+              "Pinned on the crease! " + bat + " offers no shot and pays the full price. LBW",
+              "The " + (pace ? "inswinger" : "arm ball") + " finds the front pad and the slow finger is raised. " + bat + " lingers, then goes"
+            ], 13);
+            else if (out === "wST") core = pickF([
+              "Stumped! " + bat + " dances down, beaten in the flight, and " + kp + " whips off the bails",
+              "Gone in a flash - " + bat + " overbalances and " + kp + " does the rest. Lightning work",
+              bat + " goes walkabout, the ball turns past the edge, and " + kp + " makes him pay",
+              "Deceived in the air! " + bat + " is a foot short of his ground and " + kp + " is ruthless",
+              "The dance down the track ends in tears - beaten by the turn, stumped by " + kp
+            ], 14);
+            else core = pickF([
+              "RUN OUT! Direct hit" + (F ? " from " + F : "") + " and " + bat + " is well short. Brilliant fielding",
+              "Terrible call! " + bat + " is sent back, loses his footing, and" + (F ? " " + F + " throws down the stumps" : " the throw beats him home"),
+              "Two fielders converge, one clean pick-up" + (F ? " by " + F : "") + ", and " + bat + " is run out by a yard",
+              "There was never a second run there! " + (F ? F + "'s arm is too strong" : "The relay is perfect") + " and " + bat + " is gone",
+              "Chaos! A yes, a no, a dive - the bails are off and " + bat + " has to go"
+            ], 15);
+            var tail = "";
+            if (sb.r >= 50) tail = " A huge wicket - he was set and dangerous on " + sb.r + ".";
+            else if (faced < 6) tail = " Gone before he got set.";
+            else if (intent >= 2) tail = " Launch mode finally costs him.";
+            else if (chase && chase.need > 0 && chase.need / Math.max(1, chase.balls / 6) > 7.5) tail = " The chase is creaking now.";
+            else tail = pick([" A genuine breakthrough.", " " + bwl + " has earned that.", " The pressure told.", " The stand is broken.", " Just what the fielding side needed."], 16);
+            return "WICKET - " + core + "." + tail;
+          }
+
+          if (out === "6") {
+            var sixOpen = ["SIX!", "SIX - that is enormous!", "SIX, and the bowler stares at the pitch.", "SIX! The fielder never moved.", "SIX - a souvenir for someone in the crowd.", "SIX more!"];
+            var sixShot = [
+              bat + " launches " + bwl + " high over " + reg,
+              bat + " picks the length early and swings clean over " + reg,
+              bat + " goes downtown - flat, brutal, and gone",
+              bat + " skips down and lifts it into the sightscreen",
+              bat + " muscles the short ball over the square-leg fence",
+              bat + " carves it high over point, all wrists",
+              bat + " gets underneath the " + (pace ? "slower ball" : "flighted one") + " and clears " + reg + " with ease"
+            ];
+            var sx = used(fresh(function (sa) { return sixOpen[H(sa) % sixOpen.length] + " " + sixShot[H(sa * 3 + 7) % sixShot.length]; }, 21));
+            return fhTag + sx + (chase && chase.need > 0 && chase.need <= 30 ? ". The target is suddenly very close." : (intent >= 2 ? ". Launch mode pays." : "."));
+          }
+
+          if (out === "4") {
+            var fourLead = ["", "", "", "Poor from " + bwl + ", straying onto the pads - ", "Width on offer, and ", "Overpitched, and ", "Dropped short, and ", "A rare loose one from " + bwl + " - "];
+            var fourShot = [
+              bat + " leans into a cover drive, pure timing",
+              bat + " cuts savagely behind point",
+              bat + " whips it off the pads through " + reg,
+              bat + " pulls hard in front of square",
+              bat + " opens the face and steers it wide of " + reg2,
+              bat + " punches off the back foot through " + reg,
+              bat + " sweeps hard and fine",
+              bat + " lofts it over the infield at " + reg,
+              bat + " drives on the up, taking the fielder out of the game",
+              bat + " tickles it fine, too fine for " + kp
+            ];
+            var fourEnd = [". It races away for FOUR", " - one bounce, into the rope. FOUR", " and it beats the dive. FOUR all the way", (regDeep ? " - " + regDeep + " gives chase in vain. FOUR" : " - nothing in the deep to stop it. FOUR"), ". FOUR, and the pressure eases", ". FOUR - no one moved"];
+            if (H(33) % 7 === 0) return pickF([
+              "Streaky! " + bat + " gets an inside edge past " + (pace ? kp : "the stumps") + " and it runs away for FOUR",
+              "Top edge on the pull... it lands SAFE and skips to the rope. FOUR, and " + bat + " smiles",
+              (FT && !FT.hasSlip ? "The outside edge flies through the vacant cordon - FOUR, and " + bwl + " puts his hands on his head" : "The outside edge flies wide of the slip - FOUR, and " + bwl + " puts his hands on his head"),
+              "Not in control! But it bisects the fielders and the umpire signals FOUR"], 34) + ".";
+            return fhTag + used(fresh(function (sa) {
+              return fourLead[H(sa * 7 + 3) % fourLead.length] + fourShot[H(sa) % fourShot.length] + fourEnd[H(sa * 3 + 29) % fourEnd.length];
+            }, 22)) + ".";
+          }
+
+          if (out === "wide") return pickF([
+            "Wide - " + bwl + " sprays it down the leg side. " + kp + " does well to save more",
+            "Called wide outside off. " + bwl + " is hunting the edge but that is too far across",
+            "Wide again - the radar is off and the umpire signals another gift",
+            "A bouncer sails over everything - wide called, and " + kp + " leaps in vain",
+            bwl + " loses his line and the umpire's arms go out. Wide"
+          ], 23) + ".";
+          if (out === "noball") return pickF([
+            "NO-BALL! " + bwl + " oversteps - a free run, and the next ball is a FREE HIT",
+            "No-ball called - the front foot is well over. Sloppy from " + bwl + ", and a free hit to come",
+            "The umpire's arm shoots out - NO-BALL. A free hit is coming, and " + bat + " knows it"
+          ], 24) + ".";
+          if (out === "bye") return pickF([
+            "The ball beats everyone - " + kp + " cannot gather and they scamper a bye",
+            "Through everything! " + kp + " grabs at air and they pinch a bye"
+          ], 35) + ".";
+          if (out === "legbye") return pickF([
+            "Off the pad and squirting to " + regRing + " - they cross for a leg bye",
+            "Clipped off the thigh pad, past " + kp + " - a leg bye stolen"
+          ], 36) + ".";
+
+          if (out === "dot") {
+            // rare standalone drama
+            if (H(41) % 11 === 0) return pickF(pace ? [
+              "Loud appeal for caught behind! The umpire is unmoved, and " + bwl + " cannot believe it",
+              (FT && !FT.hasSlip ? "Edged... but it dies in front of the diving keeper! Hearts in mouths" : "Edged... just SHORT of the slip! Hearts in mouths all round"),
+              bat + " inside-edges into his own boot and it dribbles to safety. Ugly but effective",
+              "A ferocious shout for lbw - too high, says the umpire, and it probably was",
+              "That one KEPT LOW - " + bat + " jams down on it just in time",
+              "A snorter from " + bwl + "! " + bat + " somehow keeps it out and the bowler applauds",
+              "Rapped on the thigh pad - " + bwl + " wants lbw, the umpire wants none of it",
+              (FT && !FT.hasShortLeg ? "Half a shout for a bat-pad catch - the umpire is already shaking his head" : "Half a shout for a catch at short leg - the umpire is already shaking his head")
+            ] : [
+              "Big appeal for lbw as " + bat + " misses the sweep... not out, says the umpire",
+              "Past the edge, past the stumps, past " + kp + " - and somehow no damage done",
+              bat + " is beaten in the flight, stranded mid-pitch... but " + kp + " fumbles the take! A life",
+              (FT && !FT.hasShortLeg ? "Bat-pad! It pops up... and lands agonisingly out of anyone" + String.fromCharCode(39) + "s reach" : "Bat-pad! It pops up... and lands just wide of the crouching short leg"),
+              "Bowled him?! No - off the pad, and it trickles wide of the stumps. Heart-stopper",
+              "The slider goes on with the arm - " + bat + " adjusts his defence just in time",
+              "Around his legs! " + kp + " misses the stumping chance by a whisker",
+              "Half-stopped by " + bwl + " in his follow-through - so nearly a return catch"
+            ], 42) + ".";
+            var d;
+            if (pace) {
+              var bucket = H(43) % 3;
+              if (bucket === 0) d = compose(
+                ["Full and straight from " + bwl, "A yorker speared in", "Overpitched, inviting the drive", "Full on the pads", "A searching full length"],
+                ["dug out at the very last moment", "driven hard but straight to " + regRing, "squeezed into the leg side, no run", bat + " flicks but finds the man", bat + " drives and misses. A puff of dust", "met with the full face, but no gap"], 44);
+              else if (bucket === 1) d = compose(
+                ["Banged in short", "A sharp bouncer at the badge", "Short and climbing", "Dug in hard, chest high"],
+                [bat + " sways away at the last instant", bat + " ducks under it", "taken on the glove but it drops safe", bat + " pulls... straight to " + regRing, "fended awkwardly down into the leg side"], 45);
+              else d = compose(
+                ["Good length, just outside off", "A heavy ball into the hip", "The nip-backer from " + bwl, "Length, shaping away late", "Cross-seam, hitting the pitch hard", "The slower ball, well disguised", "A tight line at the stumps"],
+                [bat + " plays and misses. A groan from " + slipsOr, "left well alone", "defended with a dead bat", "beaten past the outside edge", "chopped down into the ground", "pushed to " + regRing + " where the fielder swoops", "an inside edge into the pads", bat + " prods forward and gets nowhere"], 46);
+            } else {
+              var bucket2 = H(47) % 3;
+              if (bucket2 === 0) d = compose(
+                ["Tossed up, dipping late", "Flighted generously", "Looped up above the eyeline", "Given real air outside off"],
+                [bat + " smothers it with bat and pad together", "driven, but " + regRing + " cuts it off", bat + " lunges and jabs it out", "the checked drive goes straight back to the bowler", bat + " watches it right onto the bat"], 48);
+              else if (bucket2 === 1) d = compose(
+                ["Ripping past the outside edge", "Turning square out of the rough", "The googly, picked late", "Biting and bouncing at " + bat],
+                [bat + " is beaten all ends up", bat + " adjusts just in time", kp + " takes it smartly with " + bat + " groping", "an inside edge spares him the lbw shout"], 49);
+              else d = compose(
+                ["The quicker one, skidding on", "Flat and fast at the stumps", "Darted into the pads", "A tight, flat line from " + bwl],
+                ["jammed out", bat + " works it straight to " + regRing, bat + " is rushed and can only block", "kept out with a dead-straight blade", "swept, but " + sqOr + " is right there"], 50);
+            }
+            if (field === "def" && H(26) % 5 === 0) d += ". The ring holds the single";
+            d = fhTag + d;
+            if (chase && chase.need > 0 && H(27) % 7 === 0) d += ". " + chase.need + " needed off " + chase.balls;
+            return d + ".";
+          }
+
+          // 1s, 2s, 3s - composed from verb x target x tail
+          var runs;
+          if (rb === 3) runs = pickF([
+            "Three! Driven wide of " + reg + " and they run hard all the way",
+            "Excellent running - " + bat + " places it in the gap and they steal three",
+            "Into the gap at " + reg + " - the chase is slow and they take three"
+          ], 28);
+          else if (rb === 2) runs = used(fresh(function (sa) {
+            var v2 = ["clips", "drops", "steers", "lofts", "works"][H(sa) % 5];
+            var t2 = ["into the gap at " + reg + " and comes back hard for two", "into the deep and pushes for two. Smart cricket", (regDeep ? "wide of " + regDeep + " - run down in the deep, but they get two" : "into the open acres - they jog back for two"), (regDeep ? "short of the rope at " + regDeep + ". Two more" : "into the vacant deep. Two more, easy")][H(sa * 3 + 11) % 4];
+            return bat + " " + v2 + " it " + t2;
+          }, 29));
+          else runs = used(fresh(function (sa) {
+            var v1 = ["works", "nudges", "tucks", "steers", "dabs", "punches", "clips", "eases"][H(sa) % 8];
+            var t1 = ["off the hip", "into the covers", "to " + regRing, "behind square", "into the gap", "with soft hands"][H(sa * 5 + 13) % 6];
+            var e1 = [" for a quick single", " for one, good running", " and they stroll the single", (sb.r >= 40 ? " - he moves to " + (sb.r + 1) : " to keep the strike ticking"), " - just the one"][H(sa * 7 + 19) % 5];
+            return bat + " " + v1 + " it " + t1 + e1;
+          }, 30));
+          if ((typeof M !== "undefined") && M && M.meta && H(31) % 22 === 0) {
+            var wx = String(M.meta.weather || "").toLowerCase();
+            if (wx === "scorching" || wx === "hot") runs += ". The heat is punishing out there";
+            else if (wx === "humid") runs += ". Heavy, sapping air at " + (M.meta.ground ? M.meta.ground.split(" ")[0] : "the ground");
+          }
+          return runs + ".";
+        } catch (e) { return (rb ? rb + " run" + (rb > 1 ? "s" : "") : "Dot ball") + "."; }
 }
+
 function endInnings(){
   const inn=M.innings[M.inns];
   if(M.inns===0){
@@ -11158,7 +11396,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260719-0849-a4abd1";
+  var FO_BUILD = "20260719-0852-371888";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21893,262 +22131,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
 
   // ===========================================================================
-  //  LIVING COMMENTARY - a rich, deterministic ball-by-ball voice
-  //  window.comm is the engine's top-level text generator, called AFTER the
-  //  outcome of each ball is decided, so replacing it changes words only:
-  //  no M.rand() is consumed (variants are hash-picked from the ball state),
-  //  so every match still plays out identically for a given seed.
+  //  LIVING COMMENTARY moved into the engine core (one comm implementation).
+  //  What remains here is sim-scratch cleanup + the umpire-naming decorator.
   // ===========================================================================
   try {
-    if (typeof window.comm === "function" && !window.comm.__foRich) {
-      var FO_REGIONS = ["midwicket", "cover", "mid-off", "long-on", "deep square leg", "point", "extra cover", "mid-on", "long-off", "backward point"];
-      window.comm = function (inn, out, rb, sb, bowler, intent, field, ev) {
-        try {
-          var fhTag = (inn && inn.freeHit && out !== "noball" && out !== "wide") ? "FREE HIT - " : "";
-          var ln = function (n) { return String(n || "").split(" ").slice(-1)[0]; };
-          var bat = ln(sb.p.name), bwl = ln(bowler.name);
-          var faced = (inn.faced && inn.faced[sb.p.name]) || 0;
-          var over = Math.floor(inn.legal / 6);
-          var pace = bowler.bowlType === "fast" || bowler.bowlType === "fastMedium" || bowler.bowlType === "medium";
-          var quick = bowler.bowlType === "fast";
-          var death = over >= 40;
-          var keeperP = (inn.bxi || []).filter(function (q) { return q.keeper; })[0];
-          var kp = keeperP ? ln(keeperP.name) : "the keeper";
-          var chase = (typeof M !== "undefined" && M && M.inns === 1 && M.target) ? { need: M.target - inn.runs, balls: 300 - inn.legal } : null;
-          var H = function (salt) {
-            var x = (inn.legal * 2654435761 + inn.runs * 40503 + (sb.b || 0) * 9973 + (sb.r || 0) * 271 + rb * 131 + salt * 7919) >>> 0;
-            x = (x ^ (x >>> 13)) >>> 0; return x % 99991;
-          };
-          var pick = function (arr, salt) { return arr[H(salt) % arr.length]; };
-          // the ENGINE's structured ball event names where this ball went,
-          // against the field actually posted — the oval animates the same
-          // event, so words and picture agree by construction
-          var FT = ev || null;
-          var allL = FT && (FT.ring.length + FT.deep.length) ? FT.ring.concat(FT.deep) : FO_REGIONS;
-          var ringL = FT && FT.ring.length ? FT.ring : FO_REGIONS;
-          // primary region = the event's position, or for a boundary through
-          // a gap the truthful direction REGION (a region is a direction
-          // word, not a fielder claim)
-          var reg = (FT && (FT.pos || FT.region)) || pick(allL, 3);
-          var reg2 = pick(allL, 5);
-          var regRing = (FT && FT.pos && !FT.posDeep) ? FT.pos : pick(ringL, 4);
-          // null means "nobody is out" (an all-in attacking field) - phrases
-          // about the rope then switch to open-space variants
-          var regDeep = FT ? (FT.pos && FT.posDeep ? FT.pos : (FT.deep.length ? pick(FT.deep, 6) : null)) : pick(FO_REGIONS, 6);
-          var sqOr = FT ? (FT.ring.indexOf("square leg") >= 0 ? "square leg" : regRing) : "square leg";
-          var slipsOr = FT && !FT.hasSlip ? "behind the wicket" : "the slips";
-          var F = (typeof M !== "undefined" && M && M._fielder) ? ln(M._fielder.name) : null;
-          // anti-repeat: never reuse an exact line within the last 60 of this
-          // innings. Deterministic - the sim visits balls in a fixed order.
-          var recent = inn.__foRecent = inn.__foRecent || [];
-          var fresh = function (gen, salt) {
-            for (var a = 0; a < 10; a++) { var L = gen(salt + a * 41); if (recent.indexOf(L) < 0) return L; }
-            return gen(salt);
-          };
-          var used = function (L) { recent.push(L); if (recent.length > 60) recent.shift(); return L; };
-          // freshness works on CORES (no punctuation, no tails): every outcome
-          // picks its core through the guard, records it, then decorates
-          var pickF = function (arr, salt) { return used(fresh(function (sa) { return arr[H(sa) % arr.length]; }, salt)); };
-          var compose = function (dels, resps, salt) {
-            return used(fresh(function (sa) {
-              return dels[H(sa) % dels.length] + " - " + resps[H(sa * 3 + 17) % resps.length];
-            }, salt));
-          };
-
-          if (typeof isWkt === "function" && isWkt(out)) {
-            var core;
-            if (out === "wB") core = pickF([
-              "Cleaned him up! " + bat + " plays all around a straight one and the stumps are wrecked",
-              "Bowled him! " + bwl + " sneaks it through the gate and " + bat + " hears the death rattle",
-              "Timber! The " + (quick ? "yorker is too quick" : "arm ball goes on with the angle") + " and " + bat + " is bowled",
-              bat + " charges, misses, and " + bwl + " hits the top of off. Emphatic",
-              "The slower ball does him - " + bat + " is through the shot early and it clatters into middle",
-              "Chopped on! " + bat + " drags it back into his own stumps and cannot believe it",
-              "The leg stump is knocked back! " + bat + " misses a straight one and the walk begins",
-              bwl + " keeps it full and honest, and the swing beats " + bat + " completely. Bowled"
-            ], 11);
-            else if (out === "wC") core = pickF([
-              bat + " goes hard at it and picks out " + (F || "the man") + " at " + reg + ". Straight down the throat",
-              "Edged and taken! " + bwl + " draws the outside edge and " + (F || kp) + " does the rest",
-              "Skied a mile - " + (F || "the fielder") + " circles under it at " + reg + " and settles the nerves. Gone",
-              "Miscued! The leading edge loops to " + (F || "the man") + " and " + bat + " walks",
-              (regDeep ? "Big shot, bad choice: " + bat + " finds " + (F || "the man") + " on the rope at " + regDeep : "Big shot, bad choice: the mistimed slog hangs up and " + (F || "the man") + " at " + regRing + " barely moves"),
-              "Soft hands, hard luck - " + bat + " chips it straight to " + (F || "the man") + " at " + regRing,
-              "A thin feather down the leg side and " + (F || kp) + " clings on. " + bat + " drags himself off",
-              "The short ball climbs, the glove goes up, and " + (F || kp) + " accepts the gift",
-              "Slower ball, early through the drive - the checked chip finds " + (F || "the man") + " at " + regRing
-            ], 12);
-            else if (out === "wLBW") core = pickF([
-              "Rapped on the pads and up goes the finger! " + bat + " is plumb in front",
-              "Big appeal... GIVEN! " + bwl + " " + (pace ? "nips one back" : "slides one on") + " and " + bat + " is trapped lbw",
-              bat + " misses the sweep and that is stone dead. The umpire barely hesitates",
-              "Full, straight, and " + bat + " plays down the wrong line. LBW - " + bwl + " roars",
-              "Pinned on the crease! " + bat + " offers no shot and pays the full price. LBW",
-              "The " + (pace ? "inswinger" : "arm ball") + " finds the front pad and the slow finger is raised. " + bat + " lingers, then goes"
-            ], 13);
-            else if (out === "wST") core = pickF([
-              "Stumped! " + bat + " dances down, beaten in the flight, and " + kp + " whips off the bails",
-              "Gone in a flash - " + bat + " overbalances and " + kp + " does the rest. Lightning work",
-              bat + " goes walkabout, the ball turns past the edge, and " + kp + " makes him pay",
-              "Deceived in the air! " + bat + " is a foot short of his ground and " + kp + " is ruthless",
-              "The dance down the track ends in tears - beaten by the turn, stumped by " + kp
-            ], 14);
-            else core = pickF([
-              "RUN OUT! Direct hit" + (F ? " from " + F : "") + " and " + bat + " is well short. Brilliant fielding",
-              "Terrible call! " + bat + " is sent back, loses his footing, and" + (F ? " " + F + " throws down the stumps" : " the throw beats him home"),
-              "Two fielders converge, one clean pick-up" + (F ? " by " + F : "") + ", and " + bat + " is run out by a yard",
-              "There was never a second run there! " + (F ? F + "'s arm is too strong" : "The relay is perfect") + " and " + bat + " is gone",
-              "Chaos! A yes, a no, a dive - the bails are off and " + bat + " has to go"
-            ], 15);
-            var tail = "";
-            if (sb.r >= 50) tail = " A huge wicket - he was set and dangerous on " + sb.r + ".";
-            else if (faced < 6) tail = " Gone before he got set.";
-            else if (intent >= 2) tail = " Launch mode finally costs him.";
-            else if (chase && chase.need > 0 && chase.need / Math.max(1, chase.balls / 6) > 7.5) tail = " The chase is creaking now.";
-            else tail = pick([" A genuine breakthrough.", " " + bwl + " has earned that.", " The pressure told.", " The stand is broken.", " Just what the fielding side needed."], 16);
-            return "WICKET - " + core + "." + tail;
-          }
-
-          if (out === "6") {
-            var sixOpen = ["SIX!", "SIX - that is enormous!", "SIX, and the bowler stares at the pitch.", "SIX! The fielder never moved.", "SIX - a souvenir for someone in the crowd.", "SIX more!"];
-            var sixShot = [
-              bat + " launches " + bwl + " high over " + reg,
-              bat + " picks the length early and swings clean over " + reg,
-              bat + " goes downtown - flat, brutal, and gone",
-              bat + " skips down and lifts it into the sightscreen",
-              bat + " muscles the short ball over the square-leg fence",
-              bat + " carves it high over point, all wrists",
-              bat + " gets underneath the " + (pace ? "slower ball" : "flighted one") + " and clears " + reg + " with ease"
-            ];
-            var sx = used(fresh(function (sa) { return sixOpen[H(sa) % sixOpen.length] + " " + sixShot[H(sa * 3 + 7) % sixShot.length]; }, 21));
-            return fhTag + sx + (chase && chase.need > 0 && chase.need <= 30 ? ". The target is suddenly very close." : (intent >= 2 ? ". Launch mode pays." : "."));
-          }
-
-          if (out === "4") {
-            var fourLead = ["", "", "", "Poor from " + bwl + ", straying onto the pads - ", "Width on offer, and ", "Overpitched, and ", "Dropped short, and ", "A rare loose one from " + bwl + " - "];
-            var fourShot = [
-              bat + " leans into a cover drive, pure timing",
-              bat + " cuts savagely behind point",
-              bat + " whips it off the pads through " + reg,
-              bat + " pulls hard in front of square",
-              bat + " opens the face and steers it wide of " + reg2,
-              bat + " punches off the back foot through " + reg,
-              bat + " sweeps hard and fine",
-              bat + " lofts it over the infield at " + reg,
-              bat + " drives on the up, taking the fielder out of the game",
-              bat + " tickles it fine, too fine for " + kp
-            ];
-            var fourEnd = [". It races away for FOUR", " - one bounce, into the rope. FOUR", " and it beats the dive. FOUR all the way", (regDeep ? " - " + regDeep + " gives chase in vain. FOUR" : " - nothing in the deep to stop it. FOUR"), ". FOUR, and the pressure eases", ". FOUR - no one moved"];
-            if (H(33) % 7 === 0) return pickF([
-              "Streaky! " + bat + " gets an inside edge past " + (pace ? kp : "the stumps") + " and it runs away for FOUR",
-              "Top edge on the pull... it lands SAFE and skips to the rope. FOUR, and " + bat + " smiles",
-              (FT && !FT.hasSlip ? "The outside edge flies through the vacant cordon - FOUR, and " + bwl + " puts his hands on his head" : "The outside edge flies wide of the slip - FOUR, and " + bwl + " puts his hands on his head"),
-              "Not in control! But it bisects the fielders and the umpire signals FOUR"], 34) + ".";
-            return fhTag + used(fresh(function (sa) {
-              return fourLead[H(sa * 7 + 3) % fourLead.length] + fourShot[H(sa) % fourShot.length] + fourEnd[H(sa * 3 + 29) % fourEnd.length];
-            }, 22)) + ".";
-          }
-
-          if (out === "wide") return pickF([
-            "Wide - " + bwl + " sprays it down the leg side. " + kp + " does well to save more",
-            "Called wide outside off. " + bwl + " is hunting the edge but that is too far across",
-            "Wide again - the radar is off and the umpire signals another gift",
-            "A bouncer sails over everything - wide called, and " + kp + " leaps in vain",
-            bwl + " loses his line and the umpire's arms go out. Wide"
-          ], 23) + ".";
-          if (out === "noball") return pickF([
-            "NO-BALL! " + bwl + " oversteps - a free run, and the next ball is a FREE HIT",
-            "No-ball called - the front foot is well over. Sloppy from " + bwl + ", and a free hit to come",
-            "The umpire's arm shoots out - NO-BALL. A free hit is coming, and " + bat + " knows it"
-          ], 24) + ".";
-          if (out === "bye") return pickF([
-            "The ball beats everyone - " + kp + " cannot gather and they scamper a bye",
-            "Through everything! " + kp + " grabs at air and they pinch a bye"
-          ], 35) + ".";
-          if (out === "legbye") return pickF([
-            "Off the pad and squirting to " + regRing + " - they cross for a leg bye",
-            "Clipped off the thigh pad, past " + kp + " - a leg bye stolen"
-          ], 36) + ".";
-
-          if (out === "dot") {
-            // rare standalone drama
-            if (H(41) % 11 === 0) return pickF(pace ? [
-              "Loud appeal for caught behind! The umpire is unmoved, and " + bwl + " cannot believe it",
-              (FT && !FT.hasSlip ? "Edged... but it dies in front of the diving keeper! Hearts in mouths" : "Edged... just SHORT of the slip! Hearts in mouths all round"),
-              bat + " inside-edges into his own boot and it dribbles to safety. Ugly but effective",
-              "A ferocious shout for lbw - too high, says the umpire, and it probably was",
-              "That one KEPT LOW - " + bat + " jams down on it just in time",
-              "A snorter from " + bwl + "! " + bat + " somehow keeps it out and the bowler applauds",
-              "Rapped on the thigh pad - " + bwl + " wants lbw, the umpire wants none of it",
-              (FT && !FT.hasShortLeg ? "Half a shout for a bat-pad catch - the umpire is already shaking his head" : "Half a shout for a catch at short leg - the umpire is already shaking his head")
-            ] : [
-              "Big appeal for lbw as " + bat + " misses the sweep... not out, says the umpire",
-              "Past the edge, past the stumps, past " + kp + " - and somehow no damage done",
-              bat + " is beaten in the flight, stranded mid-pitch... but " + kp + " fumbles the take! A life",
-              (FT && !FT.hasShortLeg ? "Bat-pad! It pops up... and lands agonisingly out of anyone" + String.fromCharCode(39) + "s reach" : "Bat-pad! It pops up... and lands just wide of the crouching short leg"),
-              "Bowled him?! No - off the pad, and it trickles wide of the stumps. Heart-stopper",
-              "The slider goes on with the arm - " + bat + " adjusts his defence just in time",
-              "Around his legs! " + kp + " misses the stumping chance by a whisker",
-              "Half-stopped by " + bwl + " in his follow-through - so nearly a return catch"
-            ], 42) + ".";
-            var d;
-            if (pace) {
-              var bucket = H(43) % 3;
-              if (bucket === 0) d = compose(
-                ["Full and straight from " + bwl, "A yorker speared in", "Overpitched, inviting the drive", "Full on the pads", "A searching full length"],
-                ["dug out at the very last moment", "driven hard but straight to " + regRing, "squeezed into the leg side, no run", bat + " flicks but finds the man", bat + " drives and misses. A puff of dust", "met with the full face, but no gap"], 44);
-              else if (bucket === 1) d = compose(
-                ["Banged in short", "A sharp bouncer at the badge", "Short and climbing", "Dug in hard, chest high"],
-                [bat + " sways away at the last instant", bat + " ducks under it", "taken on the glove but it drops safe", bat + " pulls... straight to " + regRing, "fended awkwardly down into the leg side"], 45);
-              else d = compose(
-                ["Good length, just outside off", "A heavy ball into the hip", "The nip-backer from " + bwl, "Length, shaping away late", "Cross-seam, hitting the pitch hard", "The slower ball, well disguised", "A tight line at the stumps"],
-                [bat + " plays and misses. A groan from " + slipsOr, "left well alone", "defended with a dead bat", "beaten past the outside edge", "chopped down into the ground", "pushed to " + regRing + " where the fielder swoops", "an inside edge into the pads", bat + " prods forward and gets nowhere"], 46);
-            } else {
-              var bucket2 = H(47) % 3;
-              if (bucket2 === 0) d = compose(
-                ["Tossed up, dipping late", "Flighted generously", "Looped up above the eyeline", "Given real air outside off"],
-                [bat + " smothers it with bat and pad together", "driven, but " + regRing + " cuts it off", bat + " lunges and jabs it out", "the checked drive goes straight back to the bowler", bat + " watches it right onto the bat"], 48);
-              else if (bucket2 === 1) d = compose(
-                ["Ripping past the outside edge", "Turning square out of the rough", "The googly, picked late", "Biting and bouncing at " + bat],
-                [bat + " is beaten all ends up", bat + " adjusts just in time", kp + " takes it smartly with " + bat + " groping", "an inside edge spares him the lbw shout"], 49);
-              else d = compose(
-                ["The quicker one, skidding on", "Flat and fast at the stumps", "Darted into the pads", "A tight, flat line from " + bwl],
-                ["jammed out", bat + " works it straight to " + regRing, bat + " is rushed and can only block", "kept out with a dead-straight blade", "swept, but " + sqOr + " is right there"], 50);
-            }
-            if (field === "def" && H(26) % 5 === 0) d += ". The ring holds the single";
-            d = fhTag + d;
-            if (chase && chase.need > 0 && H(27) % 7 === 0) d += ". " + chase.need + " needed off " + chase.balls;
-            return d + ".";
-          }
-
-          // 1s, 2s, 3s - composed from verb x target x tail
-          var runs;
-          if (rb === 3) runs = pickF([
-            "Three! Driven wide of " + reg + " and they run hard all the way",
-            "Excellent running - " + bat + " places it in the gap and they steal three",
-            "Into the gap at " + reg + " - the chase is slow and they take three"
-          ], 28);
-          else if (rb === 2) runs = used(fresh(function (sa) {
-            var v2 = ["clips", "drops", "steers", "lofts", "works"][H(sa) % 5];
-            var t2 = ["into the gap at " + reg + " and comes back hard for two", "into the deep and pushes for two. Smart cricket", (regDeep ? "wide of " + regDeep + " - run down in the deep, but they get two" : "into the open acres - they jog back for two"), (regDeep ? "short of the rope at " + regDeep + ". Two more" : "into the vacant deep. Two more, easy")][H(sa * 3 + 11) % 4];
-            return bat + " " + v2 + " it " + t2;
-          }, 29));
-          else runs = used(fresh(function (sa) {
-            var v1 = ["works", "nudges", "tucks", "steers", "dabs", "punches", "clips", "eases"][H(sa) % 8];
-            var t1 = ["off the hip", "into the covers", "to " + regRing, "behind square", "into the gap", "with soft hands"][H(sa * 5 + 13) % 6];
-            var e1 = [" for a quick single", " for one, good running", " and they stroll the single", (sb.r >= 40 ? " - he moves to " + (sb.r + 1) : " to keep the strike ticking"), " - just the one"][H(sa * 7 + 19) % 5];
-            return bat + " " + v1 + " it " + t1 + e1;
-          }, 30));
-          if ((typeof M !== "undefined") && M && M.meta && H(31) % 22 === 0) {
-            var wx = String(M.meta.weather || "").toLowerCase();
-            if (wx === "scorching" || wx === "hot") runs += ". The heat is punishing out there";
-            else if (wx === "humid") runs += ". Heavy, sapping air at " + (M.meta.ground ? M.meta.ground.split(" ")[0] : "the ground");
-          }
-          return runs + ".";
-        } catch (e) { return (rb ? rb + " run" + (rb > 1 ? "s" : "") : "Dot ball") + "."; }
-      };
-      window.comm.__foRich = 1;
-    }
+    // (the living-commentary voice now IS the engine comm — engine/src/00-core.js)
 
     // the anti-repeat memory is sim-scratch: strip it before the innings are
     // frozen into App.results / snapshots
@@ -24672,8 +24659,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
 /* ---- presentation:00-ns.js ---- */
 /* Fifty Overs — presentation & engine-model layer.
  *
- * Modular sources concatenated by build.sh (manifest order) into a single
- * IIFE appended after the league overlay. Nothing here leaks globals except
+ * Presentation modules (engine/src/presentation, manifest order), built
+ * into a single IIFE as the page's final script block. Nothing here leaks globals except
  * the intentional window.__foSummer probe surface (boot.js), the
  * window.__foField field-truth export (oval.js) and the wrapped engine
  * globals (ballDist, renderMatch).
