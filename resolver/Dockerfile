@@ -9,7 +9,7 @@ COPY resolver/package.json ./resolver/package.json
 RUN cd resolver && npm install --omit=dev playwright@1.56.1
 
 # the PINNED engine build + resolver code (build hash is computed over this file)
-COPY Fifty_Overs_Club_Manager_2026_v11_6.html ./Fifty_Overs_Club_Manager_2026_v11_6.html
+COPY index.html ./index.html
 COPY resolver/resolve-harness.js ./resolver/resolve-harness.js
 COPY resolver/resolve.mjs ./resolver/resolve.mjs
 COPY resolver/worker.mjs ./resolver/worker.mjs

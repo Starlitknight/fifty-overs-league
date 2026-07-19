@@ -55,8 +55,14 @@ async function playChallenges(page) {
           { pitch: ch.pitch || 'balanced', weather: ch.weather || 'Sunny', ground: home.ground, friendly: true, seed: (Date.parse(ch.play_at) % 2147483647) });
         return { result_text: r.result_text, winner: r.winner_team, mom: r.mom, scorecard: r.scorecard, worm: r.worm, log: r.log, track: r.track, toss: r.toss, ratings_html: r.ratings_html, fantasy: r.fantasy, pitch: r.pitch, meta: r.meta };
       }, { snap: st.snapshot, ch });
+      // never bank a failed sim as "played" - leave the row accepted so a
+      // later pass (with a snapshot that has both clubs) can retry it
+      if (!result || result.error || !result.result_text) {
+        console.log('challenge', ch.id, 'skipped (will retry):', (result && result.error) || 'no result');
+        continue;
+      }
       await rpc('challenge_record_result', { p_id: ch.id, p_result: result });
-      console.log('challenge', ch.id, 'played:', result.result_text || result.error);
+      console.log('challenge', ch.id, 'played:', result.result_text);
     } catch (e) { console.log('challenge', ch.id, 'error:', e.message); }
   }
 }

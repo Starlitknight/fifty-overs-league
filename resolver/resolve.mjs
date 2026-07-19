@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const GAME = resolve(__dirname, '../Fifty_Overs_Club_Manager_2026_v11_6.html');
+const GAME = resolve(__dirname, '../index.html');   // the committed build (engine extraction retired the old single-file HTML)
 const HARNESS = resolve(__dirname, 'resolve-harness.js');
 
 /** sha256 of the game file the resolver will actually run. */

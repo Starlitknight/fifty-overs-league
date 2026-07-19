@@ -1,7 +1,7 @@
 # Fifty Overs — Resolver (Phase 0 feasibility artifacts)
 
 Headless, deterministic match resolver built on the **real** game engine in
-`Fifty_Overs_Club_Manager_2026_v11_6.html`. No engine-logic (`ballDist`/`apply`)
+`index.html` (the committed build). No engine-logic (`ballDist`/`apply`)
 changes — only an additive entry point and a per-team input redirect.
 
 ## Files
@@ -50,7 +50,7 @@ NODE_PATH=/opt/node22/lib/node_modules node prove.mjs
   restored — a resolve has zero side effects on a running game.
 
 ## Engine build hash
-`sha256(Fifty_Overs_Club_Manager_2026_v11_6.html)` (unmodified) =
+`sha256(index.html)` (unmodified) =
 `e558745ede94e2502d5cccaa829feb42818cbcb1e779664c4b784a851b3f00ff`
 
 This will be recomputed over the final baked build and pinned per-league in Phase 4.
