@@ -15232,7 +15232,7 @@
   try {
     if (typeof window.comm === "function" && !window.comm.__foRich) {
       var FO_REGIONS = ["midwicket", "cover", "mid-off", "long-on", "deep square leg", "point", "extra cover", "mid-on", "long-off", "backward point"];
-      window.comm = function (inn, out, rb, sb, bowler, intent, field) {
+      window.comm = function (inn, out, rb, sb, bowler, intent, field, ev) {
         try {
           var ln = function (n) { return String(n || "").split(" ").slice(-1)[0]; };
           var bat = ln(sb.p.name), bwl = ln(bowler.name);
@@ -15249,17 +15249,19 @@
             x = (x ^ (x >>> 13)) >>> 0; return x % 99991;
           };
           var pick = function (arr, salt) { return arr[H(salt) % arr.length]; };
-          // name only fielders who are actually posted: the campaign bundle
-          // exports the live field template (setting + spin variant + mirror)
-          var FT = null;
-          try { if (window.__foField) FT = window.__foField.active(inn, sb.p.hand); } catch (eF) {}
-          var allL = FT && FT.dirs.length ? FT.dirs : FO_REGIONS;
+          // the ENGINE's structured ball event names where this ball went,
+          // against the field actually posted — the oval animates the same
+          // event, so words and picture agree by construction
+          var FT = ev || null;
+          var allL = FT && (FT.ring.length + FT.deep.length) ? FT.ring.concat(FT.deep) : FO_REGIONS;
           var ringL = FT && FT.ring.length ? FT.ring : FO_REGIONS;
-          var reg = pick(allL, 3), reg2 = pick(allL, 5);
-          var regRing = pick(ringL, 4);
+          // primary region = the event's position wherever one was chosen
+          var reg = (FT && FT.pos) || pick(allL, 3);
+          var reg2 = pick(allL, 5);
+          var regRing = (FT && FT.pos && !FT.posDeep) ? FT.pos : pick(ringL, 4);
           // null means "nobody is out" (an all-in attacking field) - phrases
           // about the rope then switch to open-space variants
-          var regDeep = FT ? (FT.deep.length ? pick(FT.deep, 6) : null) : pick(FO_REGIONS, 6);
+          var regDeep = FT ? (FT.pos && FT.posDeep ? FT.pos : (FT.deep.length ? pick(FT.deep, 6) : null)) : pick(FO_REGIONS, 6);
           var sqOr = FT ? (FT.ring.indexOf("square leg") >= 0 ? "square leg" : regRing) : "square leg";
           var slipsOr = FT && !FT.hasSlip ? "behind the wicket" : "the slips";
           var F = (typeof M !== "undefined" && M && M._fielder) ? ln(M._fielder.name) : null;
@@ -15297,7 +15299,7 @@
               "Edged and taken! " + bwl + " draws the outside edge and " + (F || kp) + " does the rest",
               "Skied a mile - " + (F || "the fielder") + " circles under it at " + reg + " and settles the nerves. Gone",
               "Miscued! The leading edge loops to " + (F || "the man") + " and " + bat + " walks",
-              (regDeep ? "Big shot, bad choice: " + bat + " finds " + (F || "the sweeper") + " on the rope at " + regDeep : "Big shot, bad choice: the mistimed slog hangs up and " + (F || "the man") + " at " + regRing + " barely moves"),
+              (regDeep ? "Big shot, bad choice: " + bat + " finds " + (F || "the man") + " on the rope at " + regDeep : "Big shot, bad choice: the mistimed slog hangs up and " + (F || "the man") + " at " + regRing + " barely moves"),
               "Soft hands, hard luck - " + bat + " chips it straight to " + (F || "the man") + " at " + regRing,
               "A thin feather down the leg side and " + (F || kp) + " clings on. " + bat + " drags himself off",
               "The short ball climbs, the glove goes up, and " + (F || kp) + " accepts the gift",
@@ -15320,7 +15322,7 @@
             ], 14);
             else core = pickF([
               "RUN OUT! Direct hit" + (F ? " from " + F : "") + " and " + bat + " is well short. Brilliant fielding",
-              "Terrible call! " + bat + " is sent back, slips, and" + (F ? " " + F + " throws down the stumps" : " the throw beats him home"),
+              "Terrible call! " + bat + " is sent back, loses his footing, and" + (F ? " " + F + " throws down the stumps" : " the throw beats him home"),
               "Two fielders converge, one clean pick-up" + (F ? " by " + F : "") + ", and " + bat + " is run out by a yard",
               "There was never a second run there! " + (F ? F + "'s arm is too strong" : "The relay is perfect") + " and " + bat + " is gone",
               "Chaos! A yes, a no, a dive - the bails are off and " + bat + " has to go"
@@ -15454,7 +15456,7 @@
           ], 28);
           else if (rb === 2) runs = used(fresh(function (sa) {
             var v2 = ["clips", "drops", "steers", "lofts", "works"][H(sa) % 5];
-            var t2 = ["into the gap at " + reg + " and comes back hard for two", "into the deep and pushes for two. Smart cricket", (regDeep ? "wide of " + regDeep + " - the sweeper cuts it off but they get two" : "into the open acres - they jog back for two"), (regDeep ? "short of the rope at " + regDeep + ". Two more" : "into the vacant deep. Two more, easy")][H(sa * 3 + 11) % 4];
+            var t2 = ["into the gap at " + reg + " and comes back hard for two", "into the deep and pushes for two. Smart cricket", (regDeep ? "wide of " + regDeep + " - run down in the deep, but they get two" : "into the open acres - they jog back for two"), (regDeep ? "short of the rope at " + regDeep + ". Two more" : "into the vacant deep. Two more, easy")][H(sa * 3 + 11) % 4];
             return bat + " " + v2 + " it " + t2;
           }, 29));
           else runs = used(fresh(function (sa) {

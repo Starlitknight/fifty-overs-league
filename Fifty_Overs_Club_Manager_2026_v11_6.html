@@ -491,6 +491,91 @@ function foTurnsAway(bowl,bat){
   if(bt==='wristSpin')return (bowl.hand||'R')===(bat.hand||'R');
   return false;
 }
+// ---- structured ball events (P2): the engine names where each ball went,
+// against the field actually posted; commentary and the oval stage both
+// consume the same event, so words and picture can never disagree. Event
+// position picks use a pure hash of the ball identity — never M.rand() —
+// so golden-master replays stay bit-identical.
+const FO_FIELDS={
+  att:[[184,62,'slip'],[171,68,''],[112,103,'point'],[116,160,'cover'],
+    [166,200,'mid-off'],[234,200,'mid-on'],[277,155,'midwicket'],
+    [156,27,'third man'],[244,27,'fine leg']],
+  bal:[[108,102,'point'],[112,162,'cover'],[166,200,'mid-off'],[234,200,'mid-on'],
+    [280,95,'square leg'],[156,27,'third man'],[62,190,'sweeper'],
+    [338,190,'deep midwicket'],[244,27,'fine leg']],
+  def:[[112,103,'point'],[116,160,'cover'],[277,155,'midwicket'],[280,95,'square leg'],
+    [62,190,'deep cover'],[146,230,'long-off'],[254,230,'long-on'],
+    [338,190,'deep midwicket'],[244,27,'fine leg']],
+  attSpin:[[184,62,'slip'],[176,99,'silly point'],[224,99,'short leg'],
+    [108,102,'point'],[112,162,'cover'],[166,200,'mid-off'],[234,200,'mid-on'],
+    [277,155,'midwicket'],[280,95,'square leg']]
+};
+const FO_DEEP_POS={'third man':1,'fine leg':1,'sweeper':1,'deep midwicket':1,'deep cover':1,'long-off':1,'long-on':1};
+const FO_CLOSE_POS={'slip':1,'silly point':1,'short leg':1};
+function foSpinOn(inn){
+  try{
+    const nm=inn.curBowlerName;if(!nm)return false;
+    const pl=(inn.bxi||[]).find(x=>x.name===nm);
+    return !!(pl&&/spin/i.test(pl.bowlTypeFull||''));
+  }catch(e){}
+  return false;
+}
+function foFieldSetting(inn){
+  try{
+    const ov=Math.floor((inn.legal||0)/6)+1;
+    const userBowling=M.isUserMatch&&inn.bowlTeam===M.user.name;
+    const O=userBowling?App.orders:(typeof ordersFor==='function'?ordersFor(inn.bowlTeam):null);
+    if(O){
+      const sp=[].concat((O.spells||{}).north||[],(O.spells||{}).south||[]);
+      for(const x of sp)if(x&&x.field&&ov>=x.first&&ov<x.first+(x.n||0))return x.field;
+      if(O.fieldPlan){const ph2=ov<=10?'pp':(ov>40?'death':'mid');return O.fieldPlan[ph2]||'bal'}
+    }
+    if(typeof aiField==='function')return aiField(inn);
+  }catch(e){}
+  return 'bal';
+}
+function foFieldState(inn,hand){
+  const setting=foFieldSetting(inn),spin=foSpinOn(inn),lhb=hand==='L';
+  const spots=(setting==='att'&&spin)?FO_FIELDS.attSpin:(FO_FIELDS[setting]||FO_FIELDS.bal);
+  const out={setting,spin,lhb,spots:[],ring:[],deep:[],hasSlip:false,hasShortLeg:false};
+  for(const t of spots){
+    const lbl=t[2];if(!lbl)continue;
+    out.spots.push({label:lbl,x:lhb?400-t[0]:t[0],y:t[1],deep:!!FO_DEEP_POS[lbl]});
+    if(lbl==='slip')out.hasSlip=true;
+    if(lbl==='short leg')out.hasShortLeg=true;
+    if(FO_DEEP_POS[lbl])out.deep.push(lbl);
+    else if(!FO_CLOSE_POS[lbl])out.ring.push(lbl);
+  }
+  return out;
+}
+function foEvHash(a,b,c){
+  let x=((a>>>0)*2654435761+(b>>>0)*40503+(c>>>0)*9973)>>>0;
+  x^=x>>>13;x=(x*1274126177)>>>0;x^=x>>>16;
+  return x>>>0;
+}
+function foBallEvent(inn,out,rb,sb,bowler){
+  try{
+    const hand=(sb&&sb.p&&sb.p.hand)||'R';
+    const F=foFieldState(inn,hand);
+    const salt={'dot':1,'1':2,'2':3,'3':4,'4':5,'6':6}[out]||(isWkt(out)?7:8);
+    const h=foEvHash((M&&M.seed)||0,(M.inns||0)*512+(inn.legal||0),salt*31+rb);
+    const spotOf=lbl=>F.spots.find(x=>x.label===lbl)||null;
+    const pickL=list=>list.length?list[h%list.length]:null;
+    let pos=null;
+    if(out==='wC'){
+      const nonClose=F.spots.filter(x=>!FO_CLOSE_POS[x.label]||x.label==='slip').map(x=>x.label);
+      pos=pickL(nonClose);
+    }
+    else if(out==='wRO')pos=pickL(F.ring);
+    else if(out==='4'||out==='6')pos=pickL(F.ring.concat(F.deep));
+    else if(out==='dot'||out==='1')pos=pickL(F.ring);
+    else if(out==='2'||out==='3')pos=pickL(F.deep.length?F.deep:F.ring);
+    const sp=pos?spotOf(pos):null;
+    return {setting:F.setting,spin:F.spin,lhb:F.lhb,
+      pos:pos||null,x:sp?sp.x:null,y:sp?sp.y:null,posDeep:sp?!!sp.deep:false,
+      ring:F.ring,deep:F.deep,hasSlip:F.hasSlip,hasShortLeg:F.hasShortLeg};
+  }catch(e){return null}
+}
 function foTuneDist(e,bat,bowl,ph,intent,pitch,field,over){
   try{
     if(typeof window!=='undefined'&&window.__foTuneOff)return e;
@@ -758,7 +843,8 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
       for(const k in M.fat)M.fat[k]*=0.62;
       M.log.unshift({no:'',out:'☕',txt:'DRINKS - over 25. Players take on fluids; fatigue eases across the board.',d:null,inn:M.inns,mile:true});}}
   const ballNo=over+'.'+(ext?(inn.legal%6)+1:((inn.legal-1)%6)+1);
-  let txt=comm(inn,out,rb,sb,bowler,intent,field);
+  const ev=foBallEvent(inn,out,rb,sb,bowler);
+  let txt=comm(inn,out,rb,sb,bowler,intent,field,ev);
   if(M._dropped)txt='DROPPED! '+M._dropped.by+' puts it down - '+(rb?rb+' run.':'no run.');
   if(M._fieldingEvent)txt+=(txt.endsWith('.')?' ':' ')+M._fieldingEvent;
   // catch + talent-fire + fielding flavor (text only)
@@ -783,7 +869,7 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
     if(fs>=68&&out==='dot')txt+=' Brilliant diving stop by '+f.name+' - certain runs saved!';
     else if(fs<42&&out==='1')txt+=' Misfield! '+f.name+' fumbles and they steal the single.';
   }
-  M.log.unshift({no:ballNo,out,txt,d,inn:M.inns,mile:false});
+  M.log.unshift({no:ballNo,out,txt,d,inn:M.inns,mile:false,ev});
   for(const m of milestones)M.log.unshift({no:'',out:'★',txt:m,d:null,inn:M.inns,mile:true});
   if(wk){
     inn.wkts++;brec.w++;
@@ -819,7 +905,7 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
   if(done)endInnings();
   render();
 }
-function comm(inn,out,rb,sb,bowler,intent,field){
+function comm(inn,out,rb,sb,bowler,intent,field,ev){
   const nm=sb.p.name.split(' ').slice(-1)[0];
   if(isWkt(out)){
     const how=DFULL[out];

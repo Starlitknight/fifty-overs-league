@@ -62,69 +62,10 @@ FOC.oval = (function () {
       "</svg><div class='ov-note'>theatre · live directions · real field setting</div></div>";
   }
 
-  // Nine named positions per setting as [x, y, label], drawn for a
-  // right-hand striker at the top end with the bowler below: off side is
-  // stage-left, leg side stage-right (TV orientation); the whole field is
-  // mirrored for a left-hander. Templates follow ODI fielding restrictions
-  // against the 30-yard circle on the stage: attacking (new ball) keeps 2
-  // men out, balanced (middle overs) 4, defensive (death) 5. The SETTING is
-  // real (compiled spell plan / the engine's aiField); the placements are
-  // standard cricket fields, not per-ball tracking.
-  var FIELDS = {
-    att: [[184, 62, "slip"], [171, 68, ""], [112, 103, "point"], [116, 160, "cover"],
-      [166, 200, "mid-off"], [234, 200, "mid-on"], [277, 155, "midwicket"],
-      [156, 27, "third man"], [244, 27, "fine leg"]],
-    bal: [[108, 102, "point"], [112, 162, "cover"], [166, 200, "mid-off"], [234, 200, "mid-on"],
-      [280, 95, "square leg"], [156, 27, "third man"], [62, 190, "sweeper"],
-      [338, 190, "deep midwicket"], [244, 27, "fine leg"]],
-    def: [[112, 103, "point"], [116, 160, "cover"], [277, 155, "midwicket"], [280, 95, "square leg"],
-      [62, 190, "deep cover"], [146, 230, "long-off"], [254, 230, "long-on"],
-      [338, 190, "deep midwicket"], [244, 27, "fine leg"]],
-    // attacking with a spinner on: close catchers around the bat instead of
-    // a pace cordon — slip, silly point and short leg, everyone in the ring
-    attSpin: [[184, 62, "slip"], [176, 99, "silly point"], [224, 99, "short leg"],
-      [108, 102, "point"], [112, 162, "cover"], [166, 200, "mid-off"], [234, 200, "mid-on"],
-      [277, 155, "midwicket"], [280, 95, "square leg"]]
-  };
   var curField = null;
 
-  // ---- shared field truth ---------------------------------------------------
-  // The active posted field for this innings ball: setting + spin variant +
-  // handedness mirror. Exported as window.__foField so the overlay's
-  // commentary voice names only fielders who are actually standing there.
-  var DEEP_POS = { "third man": 1, "fine leg": 1, "sweeper": 1, "deep midwicket": 1, "deep cover": 1, "long-off": 1, "long-on": 1 };
-  var CLOSE_POS = { "slip": 1, "silly point": 1, "short leg": 1 };
-  function activeField(inn, hand) {
-    var fs = fieldSetting(inn), sp = spinOn(inn), lhb = hand === "L";
-    var spots = (fs === "att" && sp) ? FIELDS.attSpin : (FIELDS[fs] || FIELDS.bal);
-    var out = { setting: fs, spin: sp, lhb: lhb, ring: [], deep: [], dirs: [],
-      hasSlip: false, hasShortLeg: false, spots: [] };
-    for (var i = 0; i < spots.length; i++) {
-      var lbl = spots[i][2]; if (!lbl) continue;
-      out.spots.push({ label: lbl, x: lhb ? 400 - spots[i][0] : spots[i][0], y: spots[i][1], deep: !!DEEP_POS[lbl] });
-      if (lbl === "slip") out.hasSlip = true;
-      if (lbl === "short leg") out.hasShortLeg = true;
-      if (DEEP_POS[lbl]) { out.deep.push(lbl); out.dirs.push(lbl); }
-      else if (!CLOSE_POS[lbl]) { out.ring.push(lbl); out.dirs.push(lbl); }
-    }
-    return out;
-  }
-  if (typeof window !== "undefined") window.__foField = { active: activeField };
-
-  // every label the templates know, longest first so "deep midwicket" wins
-  // over "midwicket" when scanning a commentary line
-  var ALL_LBL = (function () {
-    var seen = {};
-    Object.keys(FIELDS).forEach(function (k) {
-      FIELDS[k].forEach(function (t) { if (t[2]) seen[t[2]] = 1; });
-    });
-    return Object.keys(seen).sort(function (a, b) { return b.length - a.length; });
-  })();
-  function lblIn(txt) {
-    var t = (txt || "").toLowerCase();
-    for (var i = 0; i < ALL_LBL.length; i++) if (t.indexOf(ALL_LBL[i]) >= 0) return ALL_LBL[i];
-    return null;
-  }
+  // field truth lives in the ENGINE now (foFieldState / FO_FIELDS); the
+  // stage only renders it and consumes per-ball events from the log.
   function spotFor(lbl) {
     if (!lbl) return null;
     var gs = document.querySelectorAll("#ov-field g");
@@ -163,39 +104,9 @@ FOC.oval = (function () {
     }).join("");
   }
 
-  function fieldSetting(inn) {
-    try {
-      var over = Math.floor((inn.legal || 0) / 6) + 1;
-      var userBowling = M.isUserMatch && inn.bowlTeam === M.user.name;
-      var orders = userBowling ? App.orders : (typeof ordersFor === "function" ? ordersFor(inn.bowlTeam) : null);
-      if (orders) {
-        var sp = [].concat((orders.spells || {}).north || [], (orders.spells || {}).south || []);
-        for (var i = 0; i < sp.length; i++) {
-          if (sp[i] && sp[i].field && over >= sp[i].first && over < sp[i].first + (sp[i].n || 0)) return sp[i].field;
-        }
-        if (orders.fieldPlan) {
-          var ph = over <= 10 ? "pp" : (over > 40 ? "death" : "mid");
-          return orders.fieldPlan[ph] || "bal";
-        }
-      }
-      if (typeof aiField === "function") return aiField(inn);
-    } catch (e) {}
-    return "bal";
-  }
-  // the current bowler's real type from the bowling XI (wristSpin,
-  // fingerSpin, partTimeSpin → spin; seam* → pace)
-  function spinOn(inn) {
-    try {
-      var nm = inn.curBowlerName; if (!nm) return false;
-      var xi = inn.bxi || [];
-      for (var i = 0; i < xi.length; i++) {
-        if (xi[i] && xi[i].name === nm) return /spin/i.test(xi[i].bowlTypeFull || "");
-      }
-    } catch (e) {}
-    return false;
-  }
-
-  function placeField(setting, lhb, spin) {
+  // render an engine field state (foFieldState): spots arrive with labels
+  // and already-mirrored coordinates
+  function placeField(st) {
     var g = document.getElementById("ov-field"); if (!g) return;
     if (!g.childNodes.length) {
       var h = "";
@@ -206,22 +117,24 @@ FOC.oval = (function () {
       }
       g.innerHTML = h;
     }
-    var spots = (setting === "att" && spin) ? FIELDS.attSpin : (FIELDS[setting] || FIELDS.bal);
+    // the attacking template has one unlabeled second slip; rebuild the
+    // full 9-spot list from the engine template so the dot count stays 9
+    var raw = (st.setting === "att" && st.spin) ? FO_FIELDS.attSpin : (FO_FIELDS[st.setting] || FO_FIELDS.bal);
     var cs = g.childNodes;
-    for (var j = 0; j < cs.length && j < spots.length; j++) {
-      var x = lhb ? 400 - spots[j][0] : spots[j][0], y = spots[j][1];
+    for (var j = 0; j < cs.length && j < raw.length; j++) {
+      var x = st.lhb ? 400 - raw[j][0] : raw[j][0], y = raw[j][1];
       cs[j].setAttribute("transform", "translate(" + x + "," + y + ")");
       var t = cs[j].querySelector("text");
-      if (t) t.textContent = spots[j][2] || "";
+      if (t) t.textContent = raw[j][2] || "";
     }
     var chip = document.getElementById("ov-fld");
     if (chip) {
       var LBL = { att: "attacking", bal: "balanced", def: "defensive" };
-      chip.textContent = "field: " + (LBL[setting] || setting) +
-        (setting === "att" && spin ? " · spin" : "");
-      chip.className = "ov-fld f-" + setting;
+      chip.textContent = "field: " + (LBL[st.setting] || st.setting) +
+        (st.setting === "att" && st.spin ? " · spin" : "");
+      chip.className = "ov-fld f-" + st.setting;
     }
-    curField = setting + (lhb ? "|L" : "|R") + (spin ? "|S" : "|P");
+    curField = st.setting + (st.lhb ? "|L" : "|R") + (st.spin ? "|S" : "|P");
   }
 
   function board() {
@@ -239,10 +152,11 @@ FOC.oval = (function () {
         (s2 && s2.p ? "  ·  " + nmS(s2.p.name) + " " + s2.r + " (" + s2.b + ")" : "");
       var bw = inn.bowlers && inn.bowlers[inn.curBowlerName];
       el("ov-bowl").textContent = bw ? nmS(inn.curBowlerName) + "  " + Math.floor((bw.b || 0) / 6) + "-" + (bw.r || 0) + "-" + (bw.w || 0) : "";
-      var fs = fieldSetting(inn);
-      var lhb = !!(s1 && s1.p && s1.p.hand === "L");
-      var sp = spinOn(inn);
-      if (fs + (lhb ? "|L" : "|R") + (sp ? "|S" : "|P") !== curField) placeField(fs, lhb, sp);
+      if (typeof foFieldState === "function") {
+        var st = foFieldState(inn, (s1 && s1.p && s1.p.hand) || "R");
+        var key = st.setting + (st.lhb ? "|L" : "|R") + (st.spin ? "|S" : "|P");
+        if (key !== curField) placeField(st);
+      }
       // this over: the last balls since the over began
       var balls = [];
       (M.log || []).slice(0, 30).forEach(function (L) {
@@ -392,11 +306,7 @@ FOC.oval = (function () {
         seenLogLen = M.log.length;
         for (var i = fresh.length - 1; i >= 0; i--) {
           var s = symOf(fresh[i]);
-          if (s) {
-            var lb = lblIn(fresh[i].txt);
-            fresh[i].__foL = lb || undefined;
-            queue.push({ sym: s, ix: seenLogLen - i, lbl: lb });
-          }
+          if (s) queue.push({ sym: s, ix: seenLogLen - i, lbl: (fresh[i].ev && fresh[i].ev.pos) || null });
         }
         pump();
       }
@@ -475,6 +385,5 @@ FOC.oval = (function () {
   }
 
   return { init: init, tick: tick, symOf: symOf, angleFor: angleFor,
-    __test: { placeField: placeField, FIELDS: FIELDS, activeField: activeField, lblIn: lblIn,
-      trailCount: function () { return trails.length; } } };
+    __test: { placeField: placeField, trailCount: function () { return trails.length; } } };
 })();

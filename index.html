@@ -491,6 +491,91 @@ function foTurnsAway(bowl,bat){
   if(bt==='wristSpin')return (bowl.hand||'R')===(bat.hand||'R');
   return false;
 }
+// ---- structured ball events (P2): the engine names where each ball went,
+// against the field actually posted; commentary and the oval stage both
+// consume the same event, so words and picture can never disagree. Event
+// position picks use a pure hash of the ball identity — never M.rand() —
+// so golden-master replays stay bit-identical.
+const FO_FIELDS={
+  att:[[184,62,'slip'],[171,68,''],[112,103,'point'],[116,160,'cover'],
+    [166,200,'mid-off'],[234,200,'mid-on'],[277,155,'midwicket'],
+    [156,27,'third man'],[244,27,'fine leg']],
+  bal:[[108,102,'point'],[112,162,'cover'],[166,200,'mid-off'],[234,200,'mid-on'],
+    [280,95,'square leg'],[156,27,'third man'],[62,190,'sweeper'],
+    [338,190,'deep midwicket'],[244,27,'fine leg']],
+  def:[[112,103,'point'],[116,160,'cover'],[277,155,'midwicket'],[280,95,'square leg'],
+    [62,190,'deep cover'],[146,230,'long-off'],[254,230,'long-on'],
+    [338,190,'deep midwicket'],[244,27,'fine leg']],
+  attSpin:[[184,62,'slip'],[176,99,'silly point'],[224,99,'short leg'],
+    [108,102,'point'],[112,162,'cover'],[166,200,'mid-off'],[234,200,'mid-on'],
+    [277,155,'midwicket'],[280,95,'square leg']]
+};
+const FO_DEEP_POS={'third man':1,'fine leg':1,'sweeper':1,'deep midwicket':1,'deep cover':1,'long-off':1,'long-on':1};
+const FO_CLOSE_POS={'slip':1,'silly point':1,'short leg':1};
+function foSpinOn(inn){
+  try{
+    const nm=inn.curBowlerName;if(!nm)return false;
+    const pl=(inn.bxi||[]).find(x=>x.name===nm);
+    return !!(pl&&/spin/i.test(pl.bowlTypeFull||''));
+  }catch(e){}
+  return false;
+}
+function foFieldSetting(inn){
+  try{
+    const ov=Math.floor((inn.legal||0)/6)+1;
+    const userBowling=M.isUserMatch&&inn.bowlTeam===M.user.name;
+    const O=userBowling?App.orders:(typeof ordersFor==='function'?ordersFor(inn.bowlTeam):null);
+    if(O){
+      const sp=[].concat((O.spells||{}).north||[],(O.spells||{}).south||[]);
+      for(const x of sp)if(x&&x.field&&ov>=x.first&&ov<x.first+(x.n||0))return x.field;
+      if(O.fieldPlan){const ph2=ov<=10?'pp':(ov>40?'death':'mid');return O.fieldPlan[ph2]||'bal'}
+    }
+    if(typeof aiField==='function')return aiField(inn);
+  }catch(e){}
+  return 'bal';
+}
+function foFieldState(inn,hand){
+  const setting=foFieldSetting(inn),spin=foSpinOn(inn),lhb=hand==='L';
+  const spots=(setting==='att'&&spin)?FO_FIELDS.attSpin:(FO_FIELDS[setting]||FO_FIELDS.bal);
+  const out={setting,spin,lhb,spots:[],ring:[],deep:[],hasSlip:false,hasShortLeg:false};
+  for(const t of spots){
+    const lbl=t[2];if(!lbl)continue;
+    out.spots.push({label:lbl,x:lhb?400-t[0]:t[0],y:t[1],deep:!!FO_DEEP_POS[lbl]});
+    if(lbl==='slip')out.hasSlip=true;
+    if(lbl==='short leg')out.hasShortLeg=true;
+    if(FO_DEEP_POS[lbl])out.deep.push(lbl);
+    else if(!FO_CLOSE_POS[lbl])out.ring.push(lbl);
+  }
+  return out;
+}
+function foEvHash(a,b,c){
+  let x=((a>>>0)*2654435761+(b>>>0)*40503+(c>>>0)*9973)>>>0;
+  x^=x>>>13;x=(x*1274126177)>>>0;x^=x>>>16;
+  return x>>>0;
+}
+function foBallEvent(inn,out,rb,sb,bowler){
+  try{
+    const hand=(sb&&sb.p&&sb.p.hand)||'R';
+    const F=foFieldState(inn,hand);
+    const salt={'dot':1,'1':2,'2':3,'3':4,'4':5,'6':6}[out]||(isWkt(out)?7:8);
+    const h=foEvHash((M&&M.seed)||0,(M.inns||0)*512+(inn.legal||0),salt*31+rb);
+    const spotOf=lbl=>F.spots.find(x=>x.label===lbl)||null;
+    const pickL=list=>list.length?list[h%list.length]:null;
+    let pos=null;
+    if(out==='wC'){
+      const nonClose=F.spots.filter(x=>!FO_CLOSE_POS[x.label]||x.label==='slip').map(x=>x.label);
+      pos=pickL(nonClose);
+    }
+    else if(out==='wRO')pos=pickL(F.ring);
+    else if(out==='4'||out==='6')pos=pickL(F.ring.concat(F.deep));
+    else if(out==='dot'||out==='1')pos=pickL(F.ring);
+    else if(out==='2'||out==='3')pos=pickL(F.deep.length?F.deep:F.ring);
+    const sp=pos?spotOf(pos):null;
+    return {setting:F.setting,spin:F.spin,lhb:F.lhb,
+      pos:pos||null,x:sp?sp.x:null,y:sp?sp.y:null,posDeep:sp?!!sp.deep:false,
+      ring:F.ring,deep:F.deep,hasSlip:F.hasSlip,hasShortLeg:F.hasShortLeg};
+  }catch(e){return null}
+}
 function foTuneDist(e,bat,bowl,ph,intent,pitch,field,over){
   try{
     if(typeof window!=='undefined'&&window.__foTuneOff)return e;
@@ -758,7 +843,8 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
       for(const k in M.fat)M.fat[k]*=0.62;
       M.log.unshift({no:'',out:'☕',txt:'DRINKS - over 25. Players take on fluids; fatigue eases across the board.',d:null,inn:M.inns,mile:true});}}
   const ballNo=over+'.'+(ext?(inn.legal%6)+1:((inn.legal-1)%6)+1);
-  let txt=comm(inn,out,rb,sb,bowler,intent,field);
+  const ev=foBallEvent(inn,out,rb,sb,bowler);
+  let txt=comm(inn,out,rb,sb,bowler,intent,field,ev);
   if(M._dropped)txt='DROPPED! '+M._dropped.by+' puts it down - '+(rb?rb+' run.':'no run.');
   if(M._fieldingEvent)txt+=(txt.endsWith('.')?' ':' ')+M._fieldingEvent;
   // catch + talent-fire + fielding flavor (text only)
@@ -783,7 +869,7 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
     if(fs>=68&&out==='dot')txt+=' Brilliant diving stop by '+f.name+' - certain runs saved!';
     else if(fs<42&&out==='1')txt+=' Misfield! '+f.name+' fumbles and they steal the single.';
   }
-  M.log.unshift({no:ballNo,out,txt,d,inn:M.inns,mile:false});
+  M.log.unshift({no:ballNo,out,txt,d,inn:M.inns,mile:false,ev});
   for(const m of milestones)M.log.unshift({no:'',out:'★',txt:m,d:null,inn:M.inns,mile:true});
   if(wk){
     inn.wkts++;brec.w++;
@@ -819,7 +905,7 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
   if(done)endInnings();
   render();
 }
-function comm(inn,out,rb,sb,bowler,intent,field){
+function comm(inn,out,rb,sb,bowler,intent,field,ev){
   const nm=sb.p.name.split(' ').slice(-1)[0];
   if(isWkt(out)){
     const how=DFULL[out];
@@ -10918,7 +11004,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260719-0804-4b480b";
+  var FO_BUILD = "20260719-0813-21c409";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21662,7 +21748,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   try {
     if (typeof window.comm === "function" && !window.comm.__foRich) {
       var FO_REGIONS = ["midwicket", "cover", "mid-off", "long-on", "deep square leg", "point", "extra cover", "mid-on", "long-off", "backward point"];
-      window.comm = function (inn, out, rb, sb, bowler, intent, field) {
+      window.comm = function (inn, out, rb, sb, bowler, intent, field, ev) {
         try {
           var ln = function (n) { return String(n || "").split(" ").slice(-1)[0]; };
           var bat = ln(sb.p.name), bwl = ln(bowler.name);
@@ -21679,17 +21765,19 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             x = (x ^ (x >>> 13)) >>> 0; return x % 99991;
           };
           var pick = function (arr, salt) { return arr[H(salt) % arr.length]; };
-          // name only fielders who are actually posted: the campaign bundle
-          // exports the live field template (setting + spin variant + mirror)
-          var FT = null;
-          try { if (window.__foField) FT = window.__foField.active(inn, sb.p.hand); } catch (eF) {}
-          var allL = FT && FT.dirs.length ? FT.dirs : FO_REGIONS;
+          // the ENGINE's structured ball event names where this ball went,
+          // against the field actually posted — the oval animates the same
+          // event, so words and picture agree by construction
+          var FT = ev || null;
+          var allL = FT && (FT.ring.length + FT.deep.length) ? FT.ring.concat(FT.deep) : FO_REGIONS;
           var ringL = FT && FT.ring.length ? FT.ring : FO_REGIONS;
-          var reg = pick(allL, 3), reg2 = pick(allL, 5);
-          var regRing = pick(ringL, 4);
+          // primary region = the event's position wherever one was chosen
+          var reg = (FT && FT.pos) || pick(allL, 3);
+          var reg2 = pick(allL, 5);
+          var regRing = (FT && FT.pos && !FT.posDeep) ? FT.pos : pick(ringL, 4);
           // null means "nobody is out" (an all-in attacking field) - phrases
           // about the rope then switch to open-space variants
-          var regDeep = FT ? (FT.deep.length ? pick(FT.deep, 6) : null) : pick(FO_REGIONS, 6);
+          var regDeep = FT ? (FT.pos && FT.posDeep ? FT.pos : (FT.deep.length ? pick(FT.deep, 6) : null)) : pick(FO_REGIONS, 6);
           var sqOr = FT ? (FT.ring.indexOf("square leg") >= 0 ? "square leg" : regRing) : "square leg";
           var slipsOr = FT && !FT.hasSlip ? "behind the wicket" : "the slips";
           var F = (typeof M !== "undefined" && M && M._fielder) ? ln(M._fielder.name) : null;
@@ -21727,7 +21815,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
               "Edged and taken! " + bwl + " draws the outside edge and " + (F || kp) + " does the rest",
               "Skied a mile - " + (F || "the fielder") + " circles under it at " + reg + " and settles the nerves. Gone",
               "Miscued! The leading edge loops to " + (F || "the man") + " and " + bat + " walks",
-              (regDeep ? "Big shot, bad choice: " + bat + " finds " + (F || "the sweeper") + " on the rope at " + regDeep : "Big shot, bad choice: the mistimed slog hangs up and " + (F || "the man") + " at " + regRing + " barely moves"),
+              (regDeep ? "Big shot, bad choice: " + bat + " finds " + (F || "the man") + " on the rope at " + regDeep : "Big shot, bad choice: the mistimed slog hangs up and " + (F || "the man") + " at " + regRing + " barely moves"),
               "Soft hands, hard luck - " + bat + " chips it straight to " + (F || "the man") + " at " + regRing,
               "A thin feather down the leg side and " + (F || kp) + " clings on. " + bat + " drags himself off",
               "The short ball climbs, the glove goes up, and " + (F || kp) + " accepts the gift",
@@ -21750,7 +21838,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             ], 14);
             else core = pickF([
               "RUN OUT! Direct hit" + (F ? " from " + F : "") + " and " + bat + " is well short. Brilliant fielding",
-              "Terrible call! " + bat + " is sent back, slips, and" + (F ? " " + F + " throws down the stumps" : " the throw beats him home"),
+              "Terrible call! " + bat + " is sent back, loses his footing, and" + (F ? " " + F + " throws down the stumps" : " the throw beats him home"),
               "Two fielders converge, one clean pick-up" + (F ? " by " + F : "") + ", and " + bat + " is run out by a yard",
               "There was never a second run there! " + (F ? F + "'s arm is too strong" : "The relay is perfect") + " and " + bat + " is gone",
               "Chaos! A yes, a no, a dive - the bails are off and " + bat + " has to go"
@@ -21884,7 +21972,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           ], 28);
           else if (rb === 2) runs = used(fresh(function (sa) {
             var v2 = ["clips", "drops", "steers", "lofts", "works"][H(sa) % 5];
-            var t2 = ["into the gap at " + reg + " and comes back hard for two", "into the deep and pushes for two. Smart cricket", (regDeep ? "wide of " + regDeep + " - the sweeper cuts it off but they get two" : "into the open acres - they jog back for two"), (regDeep ? "short of the rope at " + regDeep + ". Two more" : "into the vacant deep. Two more, easy")][H(sa * 3 + 11) % 4];
+            var t2 = ["into the gap at " + reg + " and comes back hard for two", "into the deep and pushes for two. Smart cricket", (regDeep ? "wide of " + regDeep + " - run down in the deep, but they get two" : "into the open acres - they jog back for two"), (regDeep ? "short of the rope at " + regDeep + ". Two more" : "into the vacant deep. Two more, easy")][H(sa * 3 + 11) % 4];
             return bat + " " + v2 + " it " + t2;
           }, 29));
           else runs = used(fresh(function (sa) {
@@ -24662,69 +24750,10 @@ FOC.oval = (function () {
       "</svg><div class='ov-note'>theatre · live directions · real field setting</div></div>";
   }
 
-  // Nine named positions per setting as [x, y, label], drawn for a
-  // right-hand striker at the top end with the bowler below: off side is
-  // stage-left, leg side stage-right (TV orientation); the whole field is
-  // mirrored for a left-hander. Templates follow ODI fielding restrictions
-  // against the 30-yard circle on the stage: attacking (new ball) keeps 2
-  // men out, balanced (middle overs) 4, defensive (death) 5. The SETTING is
-  // real (compiled spell plan / the engine's aiField); the placements are
-  // standard cricket fields, not per-ball tracking.
-  var FIELDS = {
-    att: [[184, 62, "slip"], [171, 68, ""], [112, 103, "point"], [116, 160, "cover"],
-      [166, 200, "mid-off"], [234, 200, "mid-on"], [277, 155, "midwicket"],
-      [156, 27, "third man"], [244, 27, "fine leg"]],
-    bal: [[108, 102, "point"], [112, 162, "cover"], [166, 200, "mid-off"], [234, 200, "mid-on"],
-      [280, 95, "square leg"], [156, 27, "third man"], [62, 190, "sweeper"],
-      [338, 190, "deep midwicket"], [244, 27, "fine leg"]],
-    def: [[112, 103, "point"], [116, 160, "cover"], [277, 155, "midwicket"], [280, 95, "square leg"],
-      [62, 190, "deep cover"], [146, 230, "long-off"], [254, 230, "long-on"],
-      [338, 190, "deep midwicket"], [244, 27, "fine leg"]],
-    // attacking with a spinner on: close catchers around the bat instead of
-    // a pace cordon — slip, silly point and short leg, everyone in the ring
-    attSpin: [[184, 62, "slip"], [176, 99, "silly point"], [224, 99, "short leg"],
-      [108, 102, "point"], [112, 162, "cover"], [166, 200, "mid-off"], [234, 200, "mid-on"],
-      [277, 155, "midwicket"], [280, 95, "square leg"]]
-  };
   var curField = null;
 
-  // ---- shared field truth ---------------------------------------------------
-  // The active posted field for this innings ball: setting + spin variant +
-  // handedness mirror. Exported as window.__foField so the overlay's
-  // commentary voice names only fielders who are actually standing there.
-  var DEEP_POS = { "third man": 1, "fine leg": 1, "sweeper": 1, "deep midwicket": 1, "deep cover": 1, "long-off": 1, "long-on": 1 };
-  var CLOSE_POS = { "slip": 1, "silly point": 1, "short leg": 1 };
-  function activeField(inn, hand) {
-    var fs = fieldSetting(inn), sp = spinOn(inn), lhb = hand === "L";
-    var spots = (fs === "att" && sp) ? FIELDS.attSpin : (FIELDS[fs] || FIELDS.bal);
-    var out = { setting: fs, spin: sp, lhb: lhb, ring: [], deep: [], dirs: [],
-      hasSlip: false, hasShortLeg: false, spots: [] };
-    for (var i = 0; i < spots.length; i++) {
-      var lbl = spots[i][2]; if (!lbl) continue;
-      out.spots.push({ label: lbl, x: lhb ? 400 - spots[i][0] : spots[i][0], y: spots[i][1], deep: !!DEEP_POS[lbl] });
-      if (lbl === "slip") out.hasSlip = true;
-      if (lbl === "short leg") out.hasShortLeg = true;
-      if (DEEP_POS[lbl]) { out.deep.push(lbl); out.dirs.push(lbl); }
-      else if (!CLOSE_POS[lbl]) { out.ring.push(lbl); out.dirs.push(lbl); }
-    }
-    return out;
-  }
-  if (typeof window !== "undefined") window.__foField = { active: activeField };
-
-  // every label the templates know, longest first so "deep midwicket" wins
-  // over "midwicket" when scanning a commentary line
-  var ALL_LBL = (function () {
-    var seen = {};
-    Object.keys(FIELDS).forEach(function (k) {
-      FIELDS[k].forEach(function (t) { if (t[2]) seen[t[2]] = 1; });
-    });
-    return Object.keys(seen).sort(function (a, b) { return b.length - a.length; });
-  })();
-  function lblIn(txt) {
-    var t = (txt || "").toLowerCase();
-    for (var i = 0; i < ALL_LBL.length; i++) if (t.indexOf(ALL_LBL[i]) >= 0) return ALL_LBL[i];
-    return null;
-  }
+  // field truth lives in the ENGINE now (foFieldState / FO_FIELDS); the
+  // stage only renders it and consumes per-ball events from the log.
   function spotFor(lbl) {
     if (!lbl) return null;
     var gs = document.querySelectorAll("#ov-field g");
@@ -24763,39 +24792,9 @@ FOC.oval = (function () {
     }).join("");
   }
 
-  function fieldSetting(inn) {
-    try {
-      var over = Math.floor((inn.legal || 0) / 6) + 1;
-      var userBowling = M.isUserMatch && inn.bowlTeam === M.user.name;
-      var orders = userBowling ? App.orders : (typeof ordersFor === "function" ? ordersFor(inn.bowlTeam) : null);
-      if (orders) {
-        var sp = [].concat((orders.spells || {}).north || [], (orders.spells || {}).south || []);
-        for (var i = 0; i < sp.length; i++) {
-          if (sp[i] && sp[i].field && over >= sp[i].first && over < sp[i].first + (sp[i].n || 0)) return sp[i].field;
-        }
-        if (orders.fieldPlan) {
-          var ph = over <= 10 ? "pp" : (over > 40 ? "death" : "mid");
-          return orders.fieldPlan[ph] || "bal";
-        }
-      }
-      if (typeof aiField === "function") return aiField(inn);
-    } catch (e) {}
-    return "bal";
-  }
-  // the current bowler's real type from the bowling XI (wristSpin,
-  // fingerSpin, partTimeSpin → spin; seam* → pace)
-  function spinOn(inn) {
-    try {
-      var nm = inn.curBowlerName; if (!nm) return false;
-      var xi = inn.bxi || [];
-      for (var i = 0; i < xi.length; i++) {
-        if (xi[i] && xi[i].name === nm) return /spin/i.test(xi[i].bowlTypeFull || "");
-      }
-    } catch (e) {}
-    return false;
-  }
-
-  function placeField(setting, lhb, spin) {
+  // render an engine field state (foFieldState): spots arrive with labels
+  // and already-mirrored coordinates
+  function placeField(st) {
     var g = document.getElementById("ov-field"); if (!g) return;
     if (!g.childNodes.length) {
       var h = "";
@@ -24806,22 +24805,24 @@ FOC.oval = (function () {
       }
       g.innerHTML = h;
     }
-    var spots = (setting === "att" && spin) ? FIELDS.attSpin : (FIELDS[setting] || FIELDS.bal);
+    // the attacking template has one unlabeled second slip; rebuild the
+    // full 9-spot list from the engine template so the dot count stays 9
+    var raw = (st.setting === "att" && st.spin) ? FO_FIELDS.attSpin : (FO_FIELDS[st.setting] || FO_FIELDS.bal);
     var cs = g.childNodes;
-    for (var j = 0; j < cs.length && j < spots.length; j++) {
-      var x = lhb ? 400 - spots[j][0] : spots[j][0], y = spots[j][1];
+    for (var j = 0; j < cs.length && j < raw.length; j++) {
+      var x = st.lhb ? 400 - raw[j][0] : raw[j][0], y = raw[j][1];
       cs[j].setAttribute("transform", "translate(" + x + "," + y + ")");
       var t = cs[j].querySelector("text");
-      if (t) t.textContent = spots[j][2] || "";
+      if (t) t.textContent = raw[j][2] || "";
     }
     var chip = document.getElementById("ov-fld");
     if (chip) {
       var LBL = { att: "attacking", bal: "balanced", def: "defensive" };
-      chip.textContent = "field: " + (LBL[setting] || setting) +
-        (setting === "att" && spin ? " · spin" : "");
-      chip.className = "ov-fld f-" + setting;
+      chip.textContent = "field: " + (LBL[st.setting] || st.setting) +
+        (st.setting === "att" && st.spin ? " · spin" : "");
+      chip.className = "ov-fld f-" + st.setting;
     }
-    curField = setting + (lhb ? "|L" : "|R") + (spin ? "|S" : "|P");
+    curField = st.setting + (st.lhb ? "|L" : "|R") + (st.spin ? "|S" : "|P");
   }
 
   function board() {
@@ -24839,10 +24840,11 @@ FOC.oval = (function () {
         (s2 && s2.p ? "  ·  " + nmS(s2.p.name) + " " + s2.r + " (" + s2.b + ")" : "");
       var bw = inn.bowlers && inn.bowlers[inn.curBowlerName];
       el("ov-bowl").textContent = bw ? nmS(inn.curBowlerName) + "  " + Math.floor((bw.b || 0) / 6) + "-" + (bw.r || 0) + "-" + (bw.w || 0) : "";
-      var fs = fieldSetting(inn);
-      var lhb = !!(s1 && s1.p && s1.p.hand === "L");
-      var sp = spinOn(inn);
-      if (fs + (lhb ? "|L" : "|R") + (sp ? "|S" : "|P") !== curField) placeField(fs, lhb, sp);
+      if (typeof foFieldState === "function") {
+        var st = foFieldState(inn, (s1 && s1.p && s1.p.hand) || "R");
+        var key = st.setting + (st.lhb ? "|L" : "|R") + (st.spin ? "|S" : "|P");
+        if (key !== curField) placeField(st);
+      }
       // this over: the last balls since the over began
       var balls = [];
       (M.log || []).slice(0, 30).forEach(function (L) {
@@ -24992,11 +24994,7 @@ FOC.oval = (function () {
         seenLogLen = M.log.length;
         for (var i = fresh.length - 1; i >= 0; i--) {
           var s = symOf(fresh[i]);
-          if (s) {
-            var lb = lblIn(fresh[i].txt);
-            fresh[i].__foL = lb || undefined;
-            queue.push({ sym: s, ix: seenLogLen - i, lbl: lb });
-          }
+          if (s) queue.push({ sym: s, ix: seenLogLen - i, lbl: (fresh[i].ev && fresh[i].ev.pos) || null });
         }
         pump();
       }
@@ -25075,8 +25073,7 @@ FOC.oval = (function () {
   }
 
   return { init: init, tick: tick, symOf: symOf, angleFor: angleFor,
-    __test: { placeField: placeField, FIELDS: FIELDS, activeField: activeField, lblIn: lblIn,
-      trailCount: function () { return trails.length; } } };
+    __test: { placeField: placeField, trailCount: function () { return trails.length; } } };
 })();
 
 /* ---- boot.js ---- */
