@@ -1601,7 +1601,8 @@
           try {
             var me = userTeam();
             var mus = (me._museum = me._museum || { trophies: [], awards: [], legends: [] });
-            mus.trophies.push({ s: App.seasonNo || 1, kind: r.trophy + " · The Circuit: conquered " + r.nm });
+            if (!(mus.trophies || []).some(function (x) { return x.cx === r.id; }))
+              mus.trophies.push({ s: App.seasonNo || 1, kind: r.trophy + " · The Circuit: conquered " + r.nm, cx: r.id, art: "circuit/trophy-" + r.id + ".webp" });
           } catch (eM) {}
         }
         try { if (App.fin) App.fin.bank = (App.fin.bank || 0) + prize; } catch (eB) {}

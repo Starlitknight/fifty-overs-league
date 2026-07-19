@@ -30,8 +30,35 @@ FOC.smoothRender = (function () {
       if (live.getAttribute(a.name) !== a.value) live.setAttribute(a.name, a.value);
     }
   }
+  // The commentary feed is a top-prepended list of immutable rows. Index-based
+  // child alignment rewrites EVERY row when one is prepended (row i receives
+  // row i-1's content) - the whole feed repainted per ball. Instead: find the
+  // live top row inside the target (by textContent - decorators add name links
+  // but never change text), insert only the genuinely new rows above it, trim
+  // the tail. Falls back to the index morph when the lists don't line up
+  // (filter change, innings reset).
+  function feedSync(live, tgt) {
+    var lf = live.firstElementChild;
+    if (!lf) return false;
+    var targetLen = 0; for (var q = tgt.firstChild; q; q = q.nextSibling) targetLen++;
+    var sig = lf.textContent, hit = null, scan = 0;
+    for (var t = tgt.firstElementChild; t && scan < 14; t = t.nextElementSibling, scan++) {
+      if (t.textContent === sig) { hit = t; break; }
+    }
+    if (!hit) return false;
+    var frag = document.createDocumentFragment(), n2 = tgt.firstChild;
+    while (n2 && n2 !== hit) {
+      var nx = n2.nextSibling;
+      if (n2.nodeType === 1 && n2.classList) n2.classList.add("fo-rowin");   // slide in, don't teleport
+      frag.appendChild(n2); n2 = nx;
+    }
+    if (frag.childNodes.length) live.insertBefore(frag, live.firstChild);
+    while (live.childNodes.length > targetLen && live.lastChild) live.removeChild(live.lastChild);
+    return true;
+  }
   function morph(live, tgt) {
     syncAttrs(live, tgt);
+    if ((String(live.className || "").indexOf("commfeed") >= 0 || live.id === "ftpcomm") && feedSync(live, tgt)) return;
     var lc = [], tc = [], n, i;
     for (n = live.firstChild; n; n = n.nextSibling) lc.push(n);
     for (n = tgt.firstChild; n; n = n.nextSibling) tc.push(n);
@@ -51,11 +78,16 @@ FOC.smoothRender = (function () {
     for (i = lc.length - 1; i >= tc.length; i--) lc[i].remove();
   }
   function morphPage(live, stage) {
+    // runtime layout classes live on the REAL page only (the oval tick and the
+    // decorators put them there) - the staging div never has them, so a plain
+    // attr sync would strip them for a beat and flap the whole page layout
     var hadOval = live.classList.contains("fo-ovalgrid");
+    var hadMp = live.classList.contains("fo-matchpage");
     var keepId = live.id;
     syncAttrs(live, stage);   // stage scaffold attrs (id/style) are stripped by the caller
     if (keepId) live.id = keepId;
     if (hadOval) live.classList.add("fo-ovalgrid");
+    if (hadMp) live.classList.add("fo-matchpage");
     var lc = [], tc = [], n, i;
     for (n = live.firstChild; n; n = n.nextSibling) {
       if (!(n.nodeType === 1 && n.id === "fo-oval")) lc.push(n);   // the stage is ours

@@ -336,6 +336,10 @@ FOC.oval = (function () {
     var st = document.createElement("style"); st.id = "fo-oval-css";
     st.textContent =
       "#fo-oval{max-width:640px;margin:0 auto 14px;background:#0F1A2E;border:1px solid #24334f;border-radius:14px;overflow:hidden}" +
+      // the engine's raw main column duplicates the scoreboard + commentary the
+      // tab shell already presents - dead weight below the fold on desktop, a
+      // visible duplicate on mobile
+      "html body #page.fo-ovalgrid .mc-main{display:none!important}" +   // !important: a legacy visible-fix rule forces display:block!important
       "@media(min-width:1020px){" +
       // Generic split: oval left, everything else right. Used on match pages
       // that don't carry the overlay's own .fo-matchpage grid.
@@ -381,7 +385,14 @@ FOC.oval = (function () {
       "html body #page.fo-ovalgrid .ftp-match-links a{white-space:nowrap;font-size:12.5px !important;font-weight:600;line-height:1.2;padding:8px 12px !important;border:none !important;border-radius:8px}" +
       "html body #page.fo-ovalgrid #fo-oval{order:-2}" +
       "html body #page.fo-ovalgrid>.crumb{order:-1;margin:0 0 8px}" +
+      // cap the feed so the page stops growing every ball (the growth shoved
+      // everything below down a row per delivery - read as a page refresh)
+      "html body #page.fo-ovalgrid .ftp-match-body .commfeed,html body #page.fo-ovalgrid .ftp-match-body #ftpcomm{max-height:56vh!important;overflow-y:auto!important}" +
       "}" +
+      // a freshly-inserted commentary row grows in smoothly instead of
+      // teleporting the rows below it
+      ".fo-rowin{animation:foRowIn .38s ease;overflow:hidden}" +
+      "@keyframes foRowIn{0%{opacity:0;max-height:0}100%{opacity:1;max-height:200px}}" +
       ".ov-fld{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;border-radius:99px;padding:3px 10px;background:#1f2d4a;color:#cfd6e4}" +
       ".ov-fld.f-att{background:#C8674A;color:#fff}.ov-fld.f-def{background:#2E5A7A;color:#fff}.ov-fld.f-bal{background:#4E7A4E;color:#fff}" +
       ".ov-board{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;padding:9px 14px;background:#14213D;color:#F1EADA}" +

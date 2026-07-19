@@ -904,9 +904,26 @@
 
   // ---- the club museum (#/museum) ----
   function foMuseumHTML(t) {
-    var mus = t._museum || { trophies: [], awards: [], legends: [] };
-    var cups = (mus.trophies || []).map(function (tr) { return "<span class='fo-mu-cup'>&#127942; " + E(tr.kind) + " &middot; S" + tr.s + "</span>"; }).join("") ||
-      "<span class='small'>The cabinet waits for its first trophy.</span>";
+    var mus = (t._museum = t._museum || { trophies: [], awards: [], legends: [] });
+    // Circuit trophies are earned by conquering a region (beating its boss).
+    // The conquest push could historically be lost (tab closed on the final
+    // ball) or land on a misresolved team - the conquered-regions record is
+    // the durable truth, so reconstruct any missing cabinet entry from it.
+    try {
+      if (typeof foCxState === "function" && typeof FO_CX_REGIONS !== "undefined") {
+        var stCx = foCxState();
+        (stCx.conq || []).forEach(function (rid) {
+          if ((mus.trophies || []).some(function (x) { return x.cx === rid; })) return;
+          var rg = FO_CX_REGIONS.filter(function (x) { return x && x.id === rid; })[0];
+          if (rg) mus.trophies.push({ s: App.seasonNo || 1, kind: rg.trophy + " · The Circuit: conquered " + rg.nm, cx: rid, art: "circuit/trophy-" + rid + ".webp" });
+        });
+      }
+    } catch (eCxB) {}
+    var cups = (mus.trophies || []).map(function (tr) {
+      var img = tr.art ? "<img src='" + FO_ART + E(tr.art) + "' alt='' style='height:52px;vertical-align:middle;margin-right:7px;border-radius:8px'>" : "&#127942; ";
+      return "<span class='fo-mu-cup'>" + img + E(tr.kind) + " &middot; S" + tr.s + "</span>";
+    }).join("") ||
+      "<span class='small'>The cabinet waits for its first trophy. Conquer a Circuit region - beat its boss - and their silverware lives here.</span>";
     var awards = (mus.awards || []).slice().reverse().map(function (a) {
       var medal = /league/.test(a.kind) ? "&#129351;" : "&#127941;";
       return "<tr><td>S" + a.s + "</td><td>" + medal + " " + E(a.kind) + "</td><td><b>" + E(a.name) + "</b></td><td class='small'>" + E(a.line || "") + "</td></tr>";

@@ -64,7 +64,7 @@
   // the smooth-render staging div during a staged render). The old
   // document-wide removals gutted the LIVE page mid-staging, so the morph
   // re-created the whole tab shell on every ball - the per-ball hard refresh.
-  renderMatch=function(){if(!UI.matchTab)UI.matchTab='Commentary';fo55PreviousRenderMatch();fo55LiveTopbar();const root=document.getElementById('page');if(!M||!M.innings||!M.innings[M.inns]||!root||!root.querySelector('.mc-top'))return;root.querySelectorAll('.mc-cards').forEach(x=>x.remove());root.querySelectorAll('.ftp-match-shell').forEach(x=>x.remove());const top=root.querySelector('.mc-top');const shell=document.createElement('div');shell.className='ftp-match-shell';shell.innerHTML=fo55Tabs()+`<div class="ftp-match-body">${fo55PanelForTab()}</div>`;top.insertAdjacentElement('afterend',shell);if(!M.done)fo55EnsureAutoplay();fo55Sanitize()};
+  renderMatch=function(){if(!UI.matchTab)UI.matchTab='Commentary';fo55PreviousRenderMatch();fo55LiveTopbar();const root=document.getElementById('page');if(!M||!M.innings||!M.innings[M.inns]||!root||!root.querySelector('.mc-top'))return;root.querySelectorAll('.ftp-match-shell .mc-main').forEach(mm=>root.appendChild(mm));root.querySelectorAll('.mc-cards').forEach(x=>x.remove());root.querySelectorAll('.ftp-match-shell').forEach(x=>x.remove());const top=root.querySelector('.mc-top');const shell=document.createElement('div');shell.className='ftp-match-shell';shell.innerHTML=fo55Tabs()+`<div class="ftp-match-body">${fo55PanelForTab()}</div>`;top.insertAdjacentElement('afterend',shell);if(!M.done)fo55EnsureAutoplay();fo55Sanitize()};
 
   // Scorecard page: keep it narrow and add match-tab navigation when a live match exists.
   const fo55OldPgScorecard=pgScorecard;

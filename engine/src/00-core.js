@@ -4255,20 +4255,26 @@ const foRenderMatchBase=renderMatch;
 renderMatch=function(){
   foRenderMatchBase();
   foUpdateLiveTopbar();
-  if(!M||!M.innings||!M.innings[M.inns]||!document.querySelector('.mc-main'))return;
-  const main=document.querySelector('.mc-main');
-  if(main&&!document.querySelector('.ftp-match-shell')){
+  // scoped to the CURRENT render root (the smooth-render staging div during a
+  // staged render). The old document-wide guard read the LIVE page's shell
+  // state, so whether this built its shell alternated ball to ball - and the
+  // later fo55 rebuild destroyed mc-main whenever it had (the page-height
+  // bounce that read as a hard refresh every delivery).
+  const rootRM=document.getElementById('page');
+  if(!M||!M.innings||!M.innings[M.inns]||!rootRM||!rootRM.querySelector('.mc-main'))return;
+  const main=rootRM.querySelector('.mc-main');
+  if(main&&!rootRM.querySelector('.ftp-match-shell')){
     const shell=document.createElement('div'); shell.className='ftp-match-shell';
     const body=document.createElement('div'); body.className='ftp-match-body';
     main.parentNode.insertBefore(shell,main); shell.appendChild(document.createRange().createContextualFragment(foMatchLinks())); shell.appendChild(body); body.appendChild(main);
   }
-  document.querySelectorAll('.mc-cards b').forEach(b=>{const fp=findPlayer(b.textContent.trim());if(fp){b.title=playerTip(fp.p);b.classList.add('player-hoverable')}});
-  const ctrl=document.querySelector('.mc-controls');
+  rootRM.querySelectorAll('.mc-cards b').forEach(b=>{const fp=findPlayer(b.textContent.trim());if(fp){b.title=playerTip(fp.p);b.classList.add('player-hoverable')}});
+  const ctrl=rootRM.querySelector('.mc-controls');
   if(ctrl&&!ctrl.querySelector('.comm-filter'))ctrl.insertAdjacentHTML('beforeend',foFilterSelect('live'));
-  const feed=document.querySelector('.mc-comm .commfeed');
+  const feed=rootRM.querySelector('.mc-comm .commfeed');
   if(feed)feed.innerHTML=foCommentRows(M.log,UI.commFilter||'all',90);
-  const commPanel=document.querySelector('.mc-comm .panel');
-  if(commPanel&&!document.querySelector('.match-subpanel'))commPanel.insertAdjacentHTML('afterend',foMatchPanel());
+  const commPanel=rootRM.querySelector('.mc-comm .panel');
+  if(commPanel&&!rootRM.querySelector('.match-subpanel'))commPanel.insertAdjacentHTML('afterend',foMatchPanel());
 };
 
 pgCommentary=function(q){

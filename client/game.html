@@ -4545,20 +4545,26 @@ const foRenderMatchBase=renderMatch;
 renderMatch=function(){
   foRenderMatchBase();
   foUpdateLiveTopbar();
-  if(!M||!M.innings||!M.innings[M.inns]||!document.querySelector('.mc-main'))return;
-  const main=document.querySelector('.mc-main');
-  if(main&&!document.querySelector('.ftp-match-shell')){
+  // scoped to the CURRENT render root (the smooth-render staging div during a
+  // staged render). The old document-wide guard read the LIVE page's shell
+  // state, so whether this built its shell alternated ball to ball - and the
+  // later fo55 rebuild destroyed mc-main whenever it had (the page-height
+  // bounce that read as a hard refresh every delivery).
+  const rootRM=document.getElementById('page');
+  if(!M||!M.innings||!M.innings[M.inns]||!rootRM||!rootRM.querySelector('.mc-main'))return;
+  const main=rootRM.querySelector('.mc-main');
+  if(main&&!rootRM.querySelector('.ftp-match-shell')){
     const shell=document.createElement('div'); shell.className='ftp-match-shell';
     const body=document.createElement('div'); body.className='ftp-match-body';
     main.parentNode.insertBefore(shell,main); shell.appendChild(document.createRange().createContextualFragment(foMatchLinks())); shell.appendChild(body); body.appendChild(main);
   }
-  document.querySelectorAll('.mc-cards b').forEach(b=>{const fp=findPlayer(b.textContent.trim());if(fp){b.title=playerTip(fp.p);b.classList.add('player-hoverable')}});
-  const ctrl=document.querySelector('.mc-controls');
+  rootRM.querySelectorAll('.mc-cards b').forEach(b=>{const fp=findPlayer(b.textContent.trim());if(fp){b.title=playerTip(fp.p);b.classList.add('player-hoverable')}});
+  const ctrl=rootRM.querySelector('.mc-controls');
   if(ctrl&&!ctrl.querySelector('.comm-filter'))ctrl.insertAdjacentHTML('beforeend',foFilterSelect('live'));
-  const feed=document.querySelector('.mc-comm .commfeed');
+  const feed=rootRM.querySelector('.mc-comm .commfeed');
   if(feed)feed.innerHTML=foCommentRows(M.log,UI.commFilter||'all',90);
-  const commPanel=document.querySelector('.mc-comm .panel');
-  if(commPanel&&!document.querySelector('.match-subpanel'))commPanel.insertAdjacentHTML('afterend',foMatchPanel());
+  const commPanel=rootRM.querySelector('.mc-comm .panel');
+  if(commPanel&&!rootRM.querySelector('.match-subpanel'))commPanel.insertAdjacentHTML('afterend',foMatchPanel());
 };
 
 pgCommentary=function(q){
@@ -4703,7 +4709,7 @@ a[href="#/editor"]{display:none!important}
   // the smooth-render staging div during a staged render). The old
   // document-wide removals gutted the LIVE page mid-staging, so the morph
   // re-created the whole tab shell on every ball - the per-ball hard refresh.
-  renderMatch=function(){if(!UI.matchTab)UI.matchTab='Commentary';fo55PreviousRenderMatch();fo55LiveTopbar();const root=document.getElementById('page');if(!M||!M.innings||!M.innings[M.inns]||!root||!root.querySelector('.mc-top'))return;root.querySelectorAll('.mc-cards').forEach(x=>x.remove());root.querySelectorAll('.ftp-match-shell').forEach(x=>x.remove());const top=root.querySelector('.mc-top');const shell=document.createElement('div');shell.className='ftp-match-shell';shell.innerHTML=fo55Tabs()+`<div class="ftp-match-body">${fo55PanelForTab()}</div>`;top.insertAdjacentElement('afterend',shell);if(!M.done)fo55EnsureAutoplay();fo55Sanitize()};
+  renderMatch=function(){if(!UI.matchTab)UI.matchTab='Commentary';fo55PreviousRenderMatch();fo55LiveTopbar();const root=document.getElementById('page');if(!M||!M.innings||!M.innings[M.inns]||!root||!root.querySelector('.mc-top'))return;root.querySelectorAll('.ftp-match-shell .mc-main').forEach(mm=>root.appendChild(mm));root.querySelectorAll('.mc-cards').forEach(x=>x.remove());root.querySelectorAll('.ftp-match-shell').forEach(x=>x.remove());const top=root.querySelector('.mc-top');const shell=document.createElement('div');shell.className='ftp-match-shell';shell.innerHTML=fo55Tabs()+`<div class="ftp-match-body">${fo55PanelForTab()}</div>`;top.insertAdjacentElement('afterend',shell);if(!M.done)fo55EnsureAutoplay();fo55Sanitize()};
 
   // Scorecard page: keep it narrow and add match-tab navigation when a live match exists.
   const fo55OldPgScorecard=pgScorecard;
@@ -9933,7 +9939,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260719-1721-0955b0";
+  var FO_BUILD = "20260719-2026-a1f75b";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -20602,9 +20608,26 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
 
   // ---- the club museum (#/museum) ----
   function foMuseumHTML(t) {
-    var mus = t._museum || { trophies: [], awards: [], legends: [] };
-    var cups = (mus.trophies || []).map(function (tr) { return "<span class='fo-mu-cup'>&#127942; " + E(tr.kind) + " &middot; S" + tr.s + "</span>"; }).join("") ||
-      "<span class='small'>The cabinet waits for its first trophy.</span>";
+    var mus = (t._museum = t._museum || { trophies: [], awards: [], legends: [] });
+    // Circuit trophies are earned by conquering a region (beating its boss).
+    // The conquest push could historically be lost (tab closed on the final
+    // ball) or land on a misresolved team - the conquered-regions record is
+    // the durable truth, so reconstruct any missing cabinet entry from it.
+    try {
+      if (typeof foCxState === "function" && typeof FO_CX_REGIONS !== "undefined") {
+        var stCx = foCxState();
+        (stCx.conq || []).forEach(function (rid) {
+          if ((mus.trophies || []).some(function (x) { return x.cx === rid; })) return;
+          var rg = FO_CX_REGIONS.filter(function (x) { return x && x.id === rid; })[0];
+          if (rg) mus.trophies.push({ s: App.seasonNo || 1, kind: rg.trophy + " · The Circuit: conquered " + rg.nm, cx: rid, art: "circuit/trophy-" + rid + ".webp" });
+        });
+      }
+    } catch (eCxB) {}
+    var cups = (mus.trophies || []).map(function (tr) {
+      var img = tr.art ? "<img src='" + FO_ART + E(tr.art) + "' alt='' style='height:52px;vertical-align:middle;margin-right:7px;border-radius:8px'>" : "&#127942; ";
+      return "<span class='fo-mu-cup'>" + img + E(tr.kind) + " &middot; S" + tr.s + "</span>";
+    }).join("") ||
+      "<span class='small'>The cabinet waits for its first trophy. Conquer a Circuit region - beat its boss - and their silverware lives here.</span>";
     var awards = (mus.awards || []).slice().reverse().map(function (a) {
       var medal = /league/.test(a.kind) ? "&#129351;" : "&#127941;";
       return "<tr><td>S" + a.s + "</td><td>" + medal + " " + E(a.kind) + "</td><td><b>" + E(a.name) + "</b></td><td class='small'>" + E(a.line || "") + "</td></tr>";
@@ -22485,7 +22508,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           try {
             var me = userTeam();
             var mus = (me._museum = me._museum || { trophies: [], awards: [], legends: [] });
-            mus.trophies.push({ s: App.seasonNo || 1, kind: r.trophy + " · The Circuit: conquered " + r.nm });
+            if (!(mus.trophies || []).some(function (x) { return x.cx === r.id; }))
+              mus.trophies.push({ s: App.seasonNo || 1, kind: r.trophy + " · The Circuit: conquered " + r.nm, cx: r.id, art: "circuit/trophy-" + r.id + ".webp" });
           } catch (eM) {}
         }
         try { if (App.fin) App.fin.bank = (App.fin.bank || 0) + prize; } catch (eB) {}
@@ -23315,8 +23339,35 @@ FOC.smoothRender = (function () {
       if (live.getAttribute(a.name) !== a.value) live.setAttribute(a.name, a.value);
     }
   }
+  // The commentary feed is a top-prepended list of immutable rows. Index-based
+  // child alignment rewrites EVERY row when one is prepended (row i receives
+  // row i-1's content) - the whole feed repainted per ball. Instead: find the
+  // live top row inside the target (by textContent - decorators add name links
+  // but never change text), insert only the genuinely new rows above it, trim
+  // the tail. Falls back to the index morph when the lists don't line up
+  // (filter change, innings reset).
+  function feedSync(live, tgt) {
+    var lf = live.firstElementChild;
+    if (!lf) return false;
+    var targetLen = 0; for (var q = tgt.firstChild; q; q = q.nextSibling) targetLen++;
+    var sig = lf.textContent, hit = null, scan = 0;
+    for (var t = tgt.firstElementChild; t && scan < 14; t = t.nextElementSibling, scan++) {
+      if (t.textContent === sig) { hit = t; break; }
+    }
+    if (!hit) return false;
+    var frag = document.createDocumentFragment(), n2 = tgt.firstChild;
+    while (n2 && n2 !== hit) {
+      var nx = n2.nextSibling;
+      if (n2.nodeType === 1 && n2.classList) n2.classList.add("fo-rowin");   // slide in, don't teleport
+      frag.appendChild(n2); n2 = nx;
+    }
+    if (frag.childNodes.length) live.insertBefore(frag, live.firstChild);
+    while (live.childNodes.length > targetLen && live.lastChild) live.removeChild(live.lastChild);
+    return true;
+  }
   function morph(live, tgt) {
     syncAttrs(live, tgt);
+    if ((String(live.className || "").indexOf("commfeed") >= 0 || live.id === "ftpcomm") && feedSync(live, tgt)) return;
     var lc = [], tc = [], n, i;
     for (n = live.firstChild; n; n = n.nextSibling) lc.push(n);
     for (n = tgt.firstChild; n; n = n.nextSibling) tc.push(n);
@@ -23336,11 +23387,16 @@ FOC.smoothRender = (function () {
     for (i = lc.length - 1; i >= tc.length; i--) lc[i].remove();
   }
   function morphPage(live, stage) {
+    // runtime layout classes live on the REAL page only (the oval tick and the
+    // decorators put them there) - the staging div never has them, so a plain
+    // attr sync would strip them for a beat and flap the whole page layout
     var hadOval = live.classList.contains("fo-ovalgrid");
+    var hadMp = live.classList.contains("fo-matchpage");
     var keepId = live.id;
     syncAttrs(live, stage);   // stage scaffold attrs (id/style) are stripped by the caller
     if (keepId) live.id = keepId;
     if (hadOval) live.classList.add("fo-ovalgrid");
+    if (hadMp) live.classList.add("fo-matchpage");
     var lc = [], tc = [], n, i;
     for (n = live.firstChild; n; n = n.nextSibling) {
       if (!(n.nodeType === 1 && n.id === "fo-oval")) lc.push(n);   // the stage is ours
@@ -23732,6 +23788,10 @@ FOC.oval = (function () {
     var st = document.createElement("style"); st.id = "fo-oval-css";
     st.textContent =
       "#fo-oval{max-width:640px;margin:0 auto 14px;background:#0F1A2E;border:1px solid #24334f;border-radius:14px;overflow:hidden}" +
+      // the engine's raw main column duplicates the scoreboard + commentary the
+      // tab shell already presents - dead weight below the fold on desktop, a
+      // visible duplicate on mobile
+      "html body #page.fo-ovalgrid .mc-main{display:none!important}" +   // !important: a legacy visible-fix rule forces display:block!important
       "@media(min-width:1020px){" +
       // Generic split: oval left, everything else right. Used on match pages
       // that don't carry the overlay's own .fo-matchpage grid.
@@ -23777,7 +23837,14 @@ FOC.oval = (function () {
       "html body #page.fo-ovalgrid .ftp-match-links a{white-space:nowrap;font-size:12.5px !important;font-weight:600;line-height:1.2;padding:8px 12px !important;border:none !important;border-radius:8px}" +
       "html body #page.fo-ovalgrid #fo-oval{order:-2}" +
       "html body #page.fo-ovalgrid>.crumb{order:-1;margin:0 0 8px}" +
+      // cap the feed so the page stops growing every ball (the growth shoved
+      // everything below down a row per delivery - read as a page refresh)
+      "html body #page.fo-ovalgrid .ftp-match-body .commfeed,html body #page.fo-ovalgrid .ftp-match-body #ftpcomm{max-height:56vh!important;overflow-y:auto!important}" +
       "}" +
+      // a freshly-inserted commentary row grows in smoothly instead of
+      // teleporting the rows below it
+      ".fo-rowin{animation:foRowIn .38s ease;overflow:hidden}" +
+      "@keyframes foRowIn{0%{opacity:0;max-height:0}100%{opacity:1;max-height:200px}}" +
       ".ov-fld{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;border-radius:99px;padding:3px 10px;background:#1f2d4a;color:#cfd6e4}" +
       ".ov-fld.f-att{background:#C8674A;color:#fff}.ov-fld.f-def{background:#2E5A7A;color:#fff}.ov-fld.f-bal{background:#4E7A4E;color:#fff}" +
       ".ov-board{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;padding:9px 14px;background:#14213D;color:#F1EADA}" +
