@@ -22,6 +22,7 @@ story/content/england.js
 features/lineup.js
 features/campaign-ui.js
 features/engine-tuning.js
+features/smooth-render.js
 features/oval.js
 features/career.js
 features/career-hub.js
