@@ -31,7 +31,7 @@ const scan = vm.runInContext(`
       // avoid double-counting substrings of an already-found longer label
       if (!mentioned.some(function (m2) { return m2.indexOf(lb) >= 0; })) mentioned.push(lb);
     } });
-    rows.push({ out: L.out, pos: L.ev ? L.ev.pos : undefined,
+    rows.push({ out: L.out, pos: L.ev ? L.ev.pos : undefined, region: L.ev ? L.ev.region : null,
       posted: L.ev ? L.ev.ring.concat(L.ev.deep, L.ev.hasSlip ? ['slip'] : [], L.ev.hasShortLeg ? ['short leg'] : [], ['silly point']) : [],
       mentioned: mentioned });
   }
@@ -52,10 +52,11 @@ test('event positions are always genuinely posted fielders', () => {
   }
 });
 
-test('commentary never names a fielder who is not posted', () => {
+test('commentary never names an unposted fielder (direction regions allowed)', () => {
   for (const r of rows) {
     for (const m of r.mentioned) {
-      assert.ok(r.posted.indexOf(m) >= 0, r.out + ': commentary says "' + m + '" but posted are ' + r.posted.join('|'));
+      const ok = r.posted.indexOf(m) >= 0 || (r.region && r.region.indexOf(m) >= 0);
+      assert.ok(ok, r.out + ': commentary says "' + m + '" but posted are ' + r.posted.join('|') + ' (region ' + r.region + ')');
     }
   }
 });

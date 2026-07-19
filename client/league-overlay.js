@@ -15255,8 +15255,10 @@
           var FT = ev || null;
           var allL = FT && (FT.ring.length + FT.deep.length) ? FT.ring.concat(FT.deep) : FO_REGIONS;
           var ringL = FT && FT.ring.length ? FT.ring : FO_REGIONS;
-          // primary region = the event's position wherever one was chosen
-          var reg = (FT && FT.pos) || pick(allL, 3);
+          // primary region = the event's position, or for a boundary through
+          // a gap the truthful direction REGION (a region is a direction
+          // word, not a fielder claim)
+          var reg = (FT && (FT.pos || FT.region)) || pick(allL, 3);
           var reg2 = pick(allL, 5);
           var regRing = (FT && FT.pos && !FT.posDeep) ? FT.pos : pick(ringL, 4);
           // null means "nobody is out" (an all-in attacking field) - phrases

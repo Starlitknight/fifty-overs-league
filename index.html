@@ -548,31 +548,36 @@ function foFieldState(inn,hand){
   }
   return out;
 }
-function foEvHash(a,b,c){
-  let x=((a>>>0)*2654435761+(b>>>0)*40503+(c>>>0)*9973)>>>0;
-  x^=x>>>13;x=(x*1274126177)>>>0;x^=x>>>16;
-  return x>>>0;
-}
 function foBallEvent(inn,out,rb,sb,bowler){
   try{
     const hand=(sb&&sb.p&&sb.p.hand)||'R';
-    const F=foFieldState(inn,hand);
-    const salt={'dot':1,'1':2,'2':3,'3':4,'4':5,'6':6}[out]||(isWkt(out)?7:8);
-    const h=foEvHash((M&&M.seed)||0,(M.inns||0)*512+(inn.legal||0),salt*31+rb);
-    const spotOf=lbl=>F.spots.find(x=>x.label===lbl)||null;
-    const pickL=list=>list.length?list[h%list.length]:null;
+    const F=M._ballFS||foFieldState(inn,hand);
+    const dir=(M._ballDir!=null)?M._ballDir:null;
+    const spotOf=lbl=>F.spots.find(q=>q.label===lbl)||null;
     let pos=null;
-    if(out==='wC'){
-      const nonClose=F.spots.filter(x=>!FO_CLOSE_POS[x.label]||x.label==='slip').map(x=>x.label);
-      pos=pickL(nonClose);
+    if(M._fieldPos)pos=M._fieldPos;               // a real interception happened there
+    else if(dir!=null){
+      if(out==='4'||out==='6'){
+        const near=foNearestFielder(F,dir,false,false);
+        pos=(near&&near.ang<=25)?near.spot.label:null;   // null = through the gap
+      }else if(out==='wC'){
+        const near=foNearestFielder(F,dir,false,false);
+        pos=near?near.spot.label:null;
+      }else if(out==='dot'||out==='1'||out==='wRO'){
+        const near=foNearestFielder(F,dir,false,true)||foNearestFielder(F,dir,false,false);
+        pos=near?near.spot.label:null;
+      }else if(out==='2'||out==='3'){
+        const near=foNearestFielder(F,dir,true,false)||foNearestFielder(F,dir,false,false);
+        pos=near?near.spot.label:null;
+      }
     }
-    else if(out==='wRO')pos=pickL(F.ring);
-    else if(out==='4'||out==='6')pos=pickL(F.ring.concat(F.deep));
-    else if(out==='dot'||out==='1')pos=pickL(F.ring);
-    else if(out==='2'||out==='3')pos=pickL(F.deep.length?F.deep:F.ring);
     const sp=pos?spotOf(pos):null;
+    let x=null,y=null;
+    if(sp){x=sp.x;y=sp.y}
+    else if(dir!=null){const rad=dir*Math.PI/180;x=200+Math.cos(rad)*186*0.97;y=130+Math.sin(rad)*116*0.97}
     return {setting:F.setting,spin:F.spin,lhb:F.lhb,
-      pos:pos||null,x:sp?sp.x:null,y:sp?sp.y:null,posDeep:sp?!!sp.deep:false,
+      pos:pos||null,dir:dir,region:(dir!=null)?foRegionOf(dir,F.lhb):null,
+      x:x,y:y,posDeep:sp?!!sp.deep:false,
       ring:F.ring,deep:F.deep,hasSlip:F.hasSlip,hasShortLeg:F.hasShortLeg};
   }catch(e){return null}
 }
@@ -746,18 +751,110 @@ function aiField(inn){
   if(inn.since<=2)return 'att';
   return 'bal';
 }
+// ---- true fielding (P3a): each in-play ball gets a real direction from
+// the seeded stream, and the POSTED field intercepts geometrically - saves
+// on the rope, cut-off twos, misfields - at the fielder nearest the line.
+// Stage angles: atan2(y-130, x-200); 0=leg side (RHB), 90=straight, 180=off,
+// 270=behind. LHB mirrors via a -> (180 - a).
+const FO_SECTORS={   // canonical shot lines for a RIGHT-hander
+  thirdMan:247,slipCorr:262,fineLeg:293,squareLeg:336,point:197,cover:160,
+  midOff:116,straight:90,midOn:64,midwicket:18
+};
+const FO_SHOT_W={    // weights per outcome class over the sectors above
+  dot:{point:3,cover:3,midOff:2,midOn:2,midwicket:2,straight:1,slipCorr:1,squareLeg:1},
+  '1':{squareLeg:3,midwicket:3,point:2,cover:2,fineLeg:2,midOn:2,thirdMan:1,straight:1},
+  '2':{midwicket:3,cover:3,squareLeg:2,point:2,midOn:2,midOff:2,fineLeg:1,thirdMan:1},
+  '3':{cover:3,midwicket:3,fineLeg:2,thirdMan:2,midOff:1,midOn:1},
+  '4':{cover:3,point:2,midwicket:3,squareLeg:2,midOff:2,midOn:2,straight:2,fineLeg:2,thirdMan:2},
+  '6':{straight:3,midwicket:3,cover:2,midOn:2,squareLeg:2,midOff:1},
+  wC:{thirdMan:2,slipCorr:3,point:2,cover:2,midwicket:2,straight:2,midOn:1,squareLeg:1},
+  wRO:{point:3,cover:3,midwicket:3,midOn:2,midOff:2,squareLeg:2}
+};
+const FO_REGION_NAME={thirdMan:'third man',slipCorr:'backward point',fineLeg:'fine leg',
+  squareLeg:'square leg',point:'point',cover:'cover',midOff:'mid-off',
+  straight:'the sight screen',midOn:'mid-on',midwicket:'midwicket'};
+function foRegionOf(dir,lhb){
+  let best=null,bd=1e9;
+  for(const k in FO_SECTORS){
+    const a=lhb?(180-FO_SECTORS[k]+360)%360:FO_SECTORS[k];
+    const d=foAngDiff(a,dir);
+    if(d<bd){bd=d;best=k}
+  }
+  return best?FO_REGION_NAME[best]:null;
+}
+function foShotDir(out,hand){
+  const W=FO_SHOT_W[out];if(!W)return null;
+  let tot=0;for(const k in W)tot+=W[k];
+  let r=M.rand()*tot,sect=null;
+  for(const k in W){r-=W[k];if(r<=0){sect=k;break}}
+  if(!sect)sect='straight';
+  let a=FO_SECTORS[sect]+(M.rand()*24-12);   // jitter inside the sector
+  if(hand==='L')a=180-a;
+  return ((a%360)+360)%360;
+}
+function foAngDiff(a,b){let d=Math.abs(a-b)%360;return d>180?360-d:d}
+function foSpotAngle(sp){return ((Math.atan2(sp.y-130,sp.x-200)*180/Math.PI)%360+360)%360}
+function foNearestFielder(FS,dir,deepOnly,ringOnly){
+  let best=null,bd=1e9;
+  for(const sp of FS.spots){
+    if(FO_CLOSE_POS[sp.label]&&sp.label!=='short leg')continue;
+    if(deepOnly&&!sp.deep)continue;
+    if(ringOnly&&sp.deep)continue;
+    const d=foAngDiff(foSpotAngle(sp),dir);
+    if(d<bd){bd=d;best=sp}
+  }
+  return best?{spot:best,ang:bd}:null;
+}
 function groundFieldingAdjust(inn,out,bowler){
   if(['wide','noball','bye','legbye'].includes(out)||isWkt(out))return out;
+  const dir=M._ballDir,FS=M._ballFS;
+  if(dir==null||!FS)return out;
   const cands=inn.bxi.filter(p=>p.name!==bowler.name);
   if(!cands.length)return out;
+  // the intercepting HUMAN is still skill-weighted (positions are template
+  // spots, not assigned players); the GEOMETRY decides whether anyone is
+  // on the line at all, and where the event happened
   const pick=cands[Math.floor(M.rand()*cands.length)];
   const fs=pick.field||((pick.skills&&pick.skills.fielding)||50);
   const isRocket=(pick.talents||[]).includes('rocketArm');
   M._fieldingEvent=null;
-  if(out==='4'&&fs>=70&&M.rand()<Math.min(0.075,(fs-66)/360)){M._fielder=pick;M._fieldingEvent='Brilliant stop by '+pick.name+' saves two.';return '2'}
-  if(out==='2'&&fs>=72&&M.rand()<Math.min(0.065,(fs-68)/390)){M._fielder=pick;M._fieldingEvent=(isRocket?'Rocket Arm! ':'')+pick.name+' attacks the ball and keeps it to one.';return '1'}
-  if(out==='1'&&fs<42&&M.rand()<Math.min(0.055,(44-fs)/340)){M._fielder=pick;M._fieldingEvent='Misfield by '+pick.name+' turns one into two.';return '2'}
-  if(out==='dot'&&fs<38&&M.rand()<Math.min(0.035,(40-fs)/390)){M._fielder=pick;M._fieldingEvent='Fumble from '+pick.name+' releases a single.';return '1'}
+  const prox=n=>n?Math.max(0,1-n.ang/16):0;   // 1 on the line, 0 at 16 deg
+  if(out==='4'){
+    const near=foNearestFielder(FS,dir,true,false);
+    if(near&&near.ang<=14&&fs>=58&&M.rand()<0.30*prox(near)*Math.min(1,(fs-40)/45)){
+      M._fielder=pick;M._fieldPos=near.spot.label;
+      M._fieldingEvent='Brilliant stop by '+pick.name+' at '+near.spot.label+' saves two.';
+      return '2';
+    }
+    return out;
+  }
+  if(out==='2'){
+    const near=foNearestFielder(FS,dir,false,false);
+    if(near&&near.ang<=11&&fs>=64&&M.rand()<0.26*prox(near)*Math.min(1,(fs-50)/40)){
+      M._fielder=pick;M._fieldPos=near.spot.label;
+      M._fieldingEvent=(isRocket?'Rocket Arm! ':'')+pick.name+' attacks the ball at '+near.spot.label+' and keeps it to one.';
+      return '1';
+    }
+    return out;
+  }
+  if(out==='1'){
+    const near=foNearestFielder(FS,dir,false,true);
+    if(near&&near.ang<=9&&fs<44&&M.rand()<0.30*prox(near)*Math.min(1,(46-fs)/24)){
+      M._fielder=pick;M._fieldPos=near.spot.label;
+      M._fieldingEvent='Misfield by '+pick.name+' at '+near.spot.label+' turns one into two.';
+      return '2';
+    }
+    return out;
+  }
+  if(out==='dot'){
+    const near=foNearestFielder(FS,dir,false,true);
+    if(near&&near.ang<=8&&fs<40&&M.rand()<0.22*prox(near)*Math.min(1,(42-fs)/24)){
+      M._fielder=pick;M._fieldPos=near.spot.label;
+      M._fieldingEvent='Fumble from '+pick.name+' at '+near.spot.label+' releases a single.';
+      return '1';
+    }
+    return out;
+  }
   return out;
 }
 function stepBall(){
@@ -792,7 +889,17 @@ function stepBall(){
   const d=ballDist(batP,bowler,phaseOf(over),faced,intent,rrDef,M.pitch,field,over,{weather:((M.meta&&M.meta.weather)||'sunny').toLowerCase(),pship:inn.pshipR,chase:M.inns===1,bballs:brec?brec.b:0,ballsThisSpell:brec?brec.spellB||0:0,wkts:inn.wkts,ballsLeft:remBalls,reqRate,fieldAvg,keeperQuality,rocketArms:inn.bxi.filter(p=>(p.talents||[]).includes('rocketArm')).length,lightningKeeper:keeperTalent.includes('lightningHands'),mixed:!!(inn.bat[inn.nonstriker]&&!inn.bat[inn.nonstriker].out&&batP.hand!==inn.bat[inn.nonstriker].p.hand),batFat:M.fat[batP.name]||0,bowlFat:M.fat[bowler.name]||0,captBowl:inn.captBowl,captBat:inn.captBat});
   const r=M.rand();let c=0,out='dot';
   for(const k in d){c+=d[k];if(r<=c){out=k;break}}
-  M._fielder=null;M._dropped=false;M._fieldingEvent=null;
+  M._fielder=null;M._dropped=false;M._fieldingEvent=null;M._fieldPos=null;
+  // true fielding: the ball now has a real line off the bat
+  const _hand=(batP&&batP.hand)||'R';
+  const _FS=foFieldState(inn,_hand);
+  let _dir=(FO_SHOT_W[out]!==undefined)?foShotDir(out,_hand):null;
+  if(_dir!=null&&(out==='4'||out==='6')){
+    const _alt=foShotDir(out,_hand);
+    const _n1=foNearestFielder(_FS,_dir,false,false),_n2=foNearestFielder(_FS,_alt,false,false);
+    if(_n1&&_n2&&_n2.ang>_n1.ang)_dir=_alt;   // placement: pick the bigger gap
+  }
+  M._ballDir=_dir;M._ballFS=_FS;
   if(out==='wC'){
     const cands=inn.bxi.map(p=>({p,w:(p.skills?p.skills.catching:55)*(p.keeper?((p.talents||[]).includes('lightningHands')?1.85:1.48):1)*(p.name===bowler.name?0.35:1)}));
     let tot=cands.reduce((a,x)=>a+x.w,0),pick=M.rand()*tot,f=cands[0].p;
@@ -11004,7 +11111,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260719-0813-21c409";
+  var FO_BUILD = "20260719-0818-839b29";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21771,8 +21878,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           var FT = ev || null;
           var allL = FT && (FT.ring.length + FT.deep.length) ? FT.ring.concat(FT.deep) : FO_REGIONS;
           var ringL = FT && FT.ring.length ? FT.ring : FO_REGIONS;
-          // primary region = the event's position wherever one was chosen
-          var reg = (FT && FT.pos) || pick(allL, 3);
+          // primary region = the event's position, or for a boundary through
+          // a gap the truthful direction REGION (a region is a direction
+          // word, not a fielder claim)
+          var reg = (FT && (FT.pos || FT.region)) || pick(allL, 3);
           var reg2 = pick(allL, 5);
           var regRing = (FT && FT.pos && !FT.posDeep) ? FT.pos : pick(ringL, 4);
           // null means "nobody is out" (an all-in attacking field) - phrases
@@ -24859,7 +24968,7 @@ FOC.oval = (function () {
   }
 
   // ---- the theatre ----------------------------------------------------------
-  function animate(sym, ballIx, done, lbl) {
+  function animate(sym, ballIx, done, lbl, dirDeg) {
     var svg = document.querySelector("#fo-oval .ov-svg");
     var ball = document.getElementById("ov-ball");
     var pop = document.getElementById("ov-pop");
@@ -24896,7 +25005,7 @@ FOC.oval = (function () {
       }
       // a scoring shot: real direction when the line names a position,
       // seeded decoration otherwise
-      var a = spot ? Math.atan2(spot.y - 130, spot.x - 200) : angleFor(ballIx, sym);
+      var a = spot ? Math.atan2(spot.y - 130, spot.x - 200) : (dirDeg != null ? dirDeg * Math.PI / 180 : angleFor(ballIx, sym));
       var dist = sym === "6" ? 1.06 : sym === "4" ? 0.97 : 0.45 + ((ballIx % 3) * 0.1);
       var tx = 200 + Math.cos(a) * 186 * dist;
       var ty = 130 + Math.sin(a) * 116 * dist;
@@ -24963,7 +25072,7 @@ FOC.oval = (function () {
     var next = queue.shift();
     if (!next) return;
     animating = true;
-    animate(next.sym, next.ix, function () { animating = false; board(); pump(); }, next.lbl);
+    animate(next.sym, next.ix, function () { animating = false; board(); pump(); }, next.lbl, next.dir);
   }
 
   function tick() {
@@ -24994,7 +25103,9 @@ FOC.oval = (function () {
         seenLogLen = M.log.length;
         for (var i = fresh.length - 1; i >= 0; i--) {
           var s = symOf(fresh[i]);
-          if (s) queue.push({ sym: s, ix: seenLogLen - i, lbl: (fresh[i].ev && fresh[i].ev.pos) || null });
+          if (s) queue.push({ sym: s, ix: seenLogLen - i,
+            lbl: (fresh[i].ev && fresh[i].ev.pos) || null,
+            dir: (fresh[i].ev && fresh[i].ev.dir != null) ? fresh[i].ev.dir : null });
         }
         pump();
       }

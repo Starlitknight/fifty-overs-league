@@ -171,7 +171,7 @@ FOC.oval = (function () {
   }
 
   // ---- the theatre ----------------------------------------------------------
-  function animate(sym, ballIx, done, lbl) {
+  function animate(sym, ballIx, done, lbl, dirDeg) {
     var svg = document.querySelector("#fo-oval .ov-svg");
     var ball = document.getElementById("ov-ball");
     var pop = document.getElementById("ov-pop");
@@ -208,7 +208,7 @@ FOC.oval = (function () {
       }
       // a scoring shot: real direction when the line names a position,
       // seeded decoration otherwise
-      var a = spot ? Math.atan2(spot.y - 130, spot.x - 200) : angleFor(ballIx, sym);
+      var a = spot ? Math.atan2(spot.y - 130, spot.x - 200) : (dirDeg != null ? dirDeg * Math.PI / 180 : angleFor(ballIx, sym));
       var dist = sym === "6" ? 1.06 : sym === "4" ? 0.97 : 0.45 + ((ballIx % 3) * 0.1);
       var tx = 200 + Math.cos(a) * 186 * dist;
       var ty = 130 + Math.sin(a) * 116 * dist;
@@ -275,7 +275,7 @@ FOC.oval = (function () {
     var next = queue.shift();
     if (!next) return;
     animating = true;
-    animate(next.sym, next.ix, function () { animating = false; board(); pump(); }, next.lbl);
+    animate(next.sym, next.ix, function () { animating = false; board(); pump(); }, next.lbl, next.dir);
   }
 
   function tick() {
@@ -306,7 +306,9 @@ FOC.oval = (function () {
         seenLogLen = M.log.length;
         for (var i = fresh.length - 1; i >= 0; i--) {
           var s = symOf(fresh[i]);
-          if (s) queue.push({ sym: s, ix: seenLogLen - i, lbl: (fresh[i].ev && fresh[i].ev.pos) || null });
+          if (s) queue.push({ sym: s, ix: seenLogLen - i,
+            lbl: (fresh[i].ev && fresh[i].ev.pos) || null,
+            dir: (fresh[i].ev && fresh[i].ev.dir != null) ? fresh[i].ev.dir : null });
         }
         pump();
       }
