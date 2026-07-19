@@ -391,6 +391,10 @@ FOC.oval = (function () {
       "}" +
       // a freshly-inserted commentary row grows in smoothly instead of
       // teleporting the rows below it
+      ".fo-teamtalk{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:#14213D;border-radius:10px;padding:8px 10px;margin:0 0 8px}" +
+      ".fo-teamtalk .tt-l{flex-basis:100%;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#b9c2d4}" +
+      ".fo-teamtalk .tt-b{border:1px solid #33415e;background:#1f2d4a;color:#dfe5f0;border-radius:8px;padding:7px 13px;font-size:12.5px;font-weight:600;cursor:pointer}" +
+      ".fo-teamtalk .tt-b.on{background:#C8674A;border-color:#C8674A;color:#fff}" +
       ".fo-rowin{animation:foRowIn .38s ease;overflow:hidden}" +
       "@keyframes foRowIn{0%{opacity:0;max-height:0}100%{opacity:1;max-height:200px}}" +
       ".ov-fld{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;border-radius:99px;padding:3px 10px;background:#1f2d4a;color:#cfd6e4}" +

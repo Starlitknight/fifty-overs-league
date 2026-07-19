@@ -3174,6 +3174,57 @@
   // friendly runs. The manager's OWN club in lights, the opponent small, and
   // one plain sentence about what's happening. renderMatch repaints #page on
   // every ball, so the hook below re-pins it after each repaint.
+  // ---- the Gaffer's first-tie walkthrough --------------------------------
+  // The front door promises "give the club a name and I'll walk you through
+  // the rest". This honors it: one short dialogue at the Circuit hub, one on
+  // the first team sheet, a nudge as the first match starts. Light-touch,
+  // fires once, and any played match retires it.
+  function foCoachStage() { return lsGet("fo_coach") || ""; }
+  function foCoachSet(s) { try { lsSet("fo_coach", s); } catch (e) {} }
+  function foCoachTick() {
+    try {
+      var st = foCoachStage();
+      if (st === "done") return;
+      if (typeof SYNC !== "undefined" && SYNC && SYNC.started && !SYNC.practice) { foCoachSet("done"); return; }   // league players have teammates for this
+      if (document.getElementById("folWrap") && document.getElementById("folWrap").offsetParent) return;          // front door still up
+      if (document.getElementById("fo-onb") && document.getElementById("fo-onb").style.display === "block") return; // a dialogue is already open
+      var h = (location.hash || "").split("?")[0];
+      if (!st) {
+        // veterans need no walkthrough
+        var played = false;
+        try { played = (App.results || []).length > 0 || ((foCxState().hist || []).length > 0); } catch (e1) {}
+        if (played) { foCoachSet("done"); return; }
+        if (h === "#/circuit" && document.querySelector(".fo-cx")) {
+          foCoachSet("hub");
+          var me = userTeam();
+          foJDbox(2, [
+            "Welcome to " + ((me && me.name) || "the club") + ", boss. I'm the Gaffer - I promised a walkthrough, and I keep those.",
+            "Your sixteen players live under Squad in the menu: every skill bar, talent and wage. The Manual explains anything I don't.",
+            "This map is the Circuit. Beat a region's three doors and its trophy is ours, boss's academy and all. Tap CHALLENGE on the first door when you're ready - I'll help with the team sheet."
+          ], function () { foOnbClose(); });
+          try { var cb1 = document.querySelector("#fo-onb .fo-j-chap"); if (cb1) cb1.style.display = "none"; } catch (eC1) {}
+        }
+        return;
+      }
+      if (st === "hub" && h === "#/orders" && App.pending && App.pending.__circuit) {
+        foCoachSet("orders");
+        foJDbox(2, [
+          "The team sheet. Top: your batting order - arrows to move a man, C for captain, WK for the gloves.",
+          "Batting intent sets the tempo phase by phase; Field when bowling is how hard your captain attacks. The gold card up top reads the pitch for you.",
+          "Then paint each bowler's overs on the grid - ten each, never two on the trot. Short of ideas? Suggest lineup builds a sensible plan. Save, and we walk out."
+        ], function () { foOnbClose(); });
+        try { var cb2 = document.querySelector("#fo-onb .fo-j-chap"); if (cb2) cb2.style.display = "none"; } catch (eC2) {}
+        return;
+      }
+      if ((st === "orders" || st === "hub") && h === "#/match" && typeof M !== "undefined" && M && !M.done && M.meta && M.meta.__circuit) {
+        foCoachSet("match");
+        setTimeout(function () { try { toast("The Gaffer: it plays itself, ball by ball. Speed control sits above the commentary - and the Team talk buttons change your plan mid-innings. See you at full time."); } catch (e2) {} }, 2600);
+        return;
+      }
+      if (st === "match" && typeof M !== "undefined" && M && M.done) foCoachSet("done");
+    } catch (e) {}
+  }
+  setInterval(foCoachTick, 1100);
   function foJTutBar() {
     try {
       var tut = (typeof M !== "undefined" && M && M.meta && M.meta.__tut);

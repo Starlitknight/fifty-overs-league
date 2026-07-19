@@ -1539,6 +1539,45 @@
     } catch (e) { say(e); }
   }
   // the conquest ceremony / the debrief after a loss - journey styled
+  // The evidence: what actually won (or lost) the tie, from the finished
+  // match itself - scores, the standout performances, and what the surface
+  // did. A win should feel earned; a loss should teach.
+  function foCxEvidence() {
+    try {
+      if (typeof M === "undefined" || !M || !M.done || !M.innings) return "";
+      var me = userTeam(); if (!me) return "";
+      var lines = [];
+      var score = (M.innings || []).filter(Boolean).map(function (inn) {
+        return E(inn.batTeam) + " <b>" + inn.runs + "/" + inn.wkts + "</b> (" + Math.floor(inn.legal / 6) + "." + (inn.legal % 6) + ")";
+      }).join(" · ");
+      if (score) lines.push(score);
+      var bestBat = null, bestBw = null, spinW = 0, paceW = 0;
+      (M.innings || []).forEach(function (inn) {
+        if (!inn) return;
+        if (inn.batTeam === me.name) (inn.bat || []).forEach(function (b) { if (b && b.p && (!bestBat || b.r > bestBat.r)) bestBat = b; });
+        else Object.keys(inn.bowlers || {}).forEach(function (k) {
+          var bw = inn.bowlers[k];
+          if (!bestBw || bw.w > bestBw.w || (bw.w === bestBw.w && bw.r < bestBw.r)) { bestBw = bw; bestBw.nm = k; }
+          var pl = (me.players || []).filter(function (p) { return p && p.name === k; })[0];
+          if (pl && pl.bowlType) { if (/spin/i.test(pl.bowlTypeFull || pl.bowlType)) spinW += bw.w || 0; else paceW += bw.w || 0; }
+        });
+      });
+      var perf = [];
+      if (bestBat && bestBat.r >= 25) perf.push("<b>" + E(bestBat.p.name.split(" ").slice(-1)[0]) + "</b> " + bestBat.r + " (" + bestBat.b + ")");
+      if (bestBw && bestBw.w >= 1) perf.push("<b>" + E(String(bestBw.nm).split(" ").slice(-1)[0]) + "</b> " + bestBw.w + "-" + bestBw.r);
+      if (M.result && M.result.mom) perf.push("MoM " + E(M.result.mom));
+      if (perf.length) lines.push(perf.join(" · "));
+      if (spinW + paceW >= 4) {
+        var px = String(M.pitch || "").toLowerCase();
+        if (spinW > paceW + 1) lines.push("The pitch read: spin took " + spinW + " of your " + (spinW + paceW) + " wickets" + (px === "dry" || px === "slow" ? " - the dry surface did its work" : "") + ".");
+        else if (paceW > spinW + 1) lines.push("The pitch read: seam took " + paceW + " of your " + (spinW + paceW) + " wickets" + (px === "green" || px === "cracked" ? " - the surface backed your quicks" : "") + ".");
+      }
+      var scIx = null;
+      try { for (var i9 = (App.results || []).length - 1; i9 >= 0; i9--) { var r9 = App.results[i9]; if (r9 && r9.home === M.meta.home && r9.away === M.meta.away) { scIx = r9.ix != null ? r9.ix : i9; break; } } } catch (eSc) {}
+      return "<div class='fo-cx-evi'>" + lines.map(function (l) { return "<div>" + l + "</div>"; }).join("") +
+        (scIx != null ? "<a class='fo-morelink' href='#/scorecard?i=" + scIx + "' onclick=\"document.getElementById('fo-cx-end').remove()\">Full scorecard &rsaquo;</a>" : "") + "</div>";
+    } catch (e) { return ""; }
+  }
   function foCxModal(win, r, c, conquered, prize) {
     try {
       var ex = document.getElementById("fo-cx-end"); if (ex) ex.remove();
@@ -1551,8 +1590,9 @@
       m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>The Circuit · " + E(r.nm) + "</div>" +
         "<h3>" + E(head) + "</h3>" +
         (win && conquered ? "<img class='fo-cx-troph' src='" + FO_ART + "circuit/trophy-" + r.id + ".webp' alt='" + E(r.trophy) + "'>" : "") +
-        (win && prize ? "<div class='small' style='margin:2px 0 8px'>Prize money: <b>" + FO$(prize) + "</b>" +
+        (win && prize ? "<div class='small' style='margin:2px 0 8px'>Prize money: <b>" + FO$(prize) + "</b> <span style='color:#8a93a3'>· banked toward wages and your academy - see the Office</span>" +
           (conquered ? " · <b>" + E(r.trophy) + "</b> → museum · " + E(r.nm) + "'s youth academy unlocked" : "") + "</div>" : "") +
+        foCxEvidence() +
         "<div class='fo-j-gbox' style='max-width:none;margin:8px 0'><img class='gf' src='" + FO_ART + "gaffer" + (win ? "-laugh" : "-serious") + ".png' alt=''>" +
         "<span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;" + E(gline) + "&rdquo;</span></span></div>" +
         "<div class='fo-modal-act'><button class='fo-su-go primary' id='fo-cx-back'>" + (win && conquered ? "See the map ▸" : "Back to the Circuit ▸") + "</button></div></div>";

@@ -43,9 +43,9 @@
       _toastHost.appendChild(t);
       t.addEventListener("click", function () { t.remove(); });
       requestAnimationFrame(function () { t.classList.add("on"); });
-      var ttl = Math.min(9000, 3200 + msg.length * 35);   // longer messages linger
+      var ttl = Math.min(6500, 3000 + msg.length * 28);   // longer messages linger (capped - stacked toasts were burying the UI on phones)
       setTimeout(function () { t.classList.remove("on"); setTimeout(function () { t.remove(); }, 350); }, ttl);
-      while (_toastHost.children.length > 3) _toastHost.firstChild.remove();
+      while (_toastHost.children.length > 2) _toastHost.firstChild.remove();
     } catch (e) { try { window.alert(msg); } catch (e2) {} }
   }
   function say(m) {

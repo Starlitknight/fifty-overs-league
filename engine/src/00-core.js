@@ -1523,6 +1523,23 @@ function pgPlayers(){
 }
 
 // ---------- Player details ----------
+// the numbers cricket people think in, aggregated from the match history
+function foSeasonNumbers(name){
+  const h=App.playerHist[name]||[];let runs=0,balls=0,outs=0,inns=0,best=0,w=0,cr=0,cb=0;
+  for(const e of h){
+    if((e.bb||0)>0||e.o){inns++;runs+=e.rr||0;balls+=e.bb||0;if(e.o)outs++;if((e.rr||0)>best)best=e.rr||0;}
+    w+=e.w||0;cr+=e.cr||0;cb+=e.cb||0;
+  }
+  return {matches:h.length,inns,runs,best,avg:outs?runs/outs:(inns?runs:null),sr:balls?100*runs/balls:null,
+    wkts:w,bowlAvg:w?cr/w:null,econ:cb?cr/(cb/6):null,overs:cb};
+}
+function foSeasonLine(name){
+  const n=foSeasonNumbers(name);if(!n.matches)return '';
+  const bits=[];
+  if(n.inns)bits.push(`${n.runs} runs${n.avg!=null?' @ '+n.avg.toFixed(1):''}${n.sr?' · SR '+n.sr.toFixed(0):''} · best ${n.best}`);
+  if(n.overs)bits.push(`${n.wkts} wkt${n.wkts===1?'':'s'}${n.bowlAvg!=null?' @ '+n.bowlAvg.toFixed(1):''}${n.econ!=null?' · econ '+n.econ.toFixed(2):''}`);
+  return bits.join(' &nbsp;·&nbsp; ');
+}
 function pgPlayer(q){
   const hit=findPlayer(q.n||'');
   if(!hit){$('#page').innerHTML='<div class="panel"><div class="pad">Player not found.</div></div>';return}

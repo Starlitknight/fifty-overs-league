@@ -179,6 +179,55 @@
       foOrdRepaint("bowl");
     });
   }
+  // The conditions card: what the pitch + weather actually do in the engine,
+  // which of YOUR bowlers suit them, and who to fear in their XI. The sim
+  // models all of this - the selection screen finally says so.
+  function foCondRead(opp) {
+    try {
+      if (!opp || !App.pending) return "";
+      var pitch = String(opp.pitch || "balanced").toLowerCase(), wx = String(opp.weather || "").toLowerCase();
+      var P = {
+        green: "a green seamer - movement for the quicks, spin does little",
+        dry: "a dry turner - it grips and spins more every over",
+        cracked: "cracked - uneven bounce brings bowled and lbw into play",
+        flat: "flat - a batting paradise, bowlers earn nothing cheap",
+        slow: "slow - the ball holds in the pitch, timing is hard",
+        balanced: "fair for everyone - skill decides it"
+      };
+      var W = {
+        overcast: "cloud cover helps the seamers all day",
+        humid: "heavy air - swing early, and everyone tires faster",
+        drizzle: "drizzle about: boundaries are harder, and rain could shorten the chase (DLS)",
+        hot: "hot - bowlers tire quicker, rotate your spells",
+        scorching: "scorching - fatigue bites hard, a sixth bowling option earns his keep",
+        "dew later": "dew later - gripping the ball gets harder, chasing gets easier",
+        windy: "windy - big hits are riskier",
+        chilly: "chilly - lively for the seamers early",
+        misty: "misty - the new ball does a bit extra",
+        sunny: "good batting weather"
+      };
+      var wantSpin = pitch === "dry" || pitch === "slow";
+      var wantSeam = pitch === "green" || pitch === "cracked" || wx === "overcast" || wx === "humid" || wx === "misty" || wx === "chilly";
+      var me = userTeam();
+      var suited = (me.players || []).filter(function (p) {
+        if (!p || !p.bowlType || p.bowlType === "none") return false;
+        var spin = /spin/i.test(p.bowlTypeFull || p.bowlType);
+        return wantSpin ? spin : (wantSeam ? !spin : false);
+      }).sort(function (a, b) { return ((b.skills && b.skills.wicket) || 0) - ((a.skills && a.skills.wicket) || 0); }).slice(0, 2)
+        .map(function (p) { return p.name.split(" ").slice(-1)[0]; });
+      var suitTxt = suited.length ? (" Suits " + (wantSpin ? "your spinners" : "your seamers") + ": <b>" + suited.map(E).join(", ") + "</b>.") : "";
+      // their dangermen: top of the opposition's squad by rating
+      var oppT = null;
+      try { oppT = (GD.teams || []).filter(function (t9) { return t9 && t9.name === App.pending.away; })[0] || GD.teams[App.pending.oppIx]; } catch (e1) {}
+      var danger = "";
+      if (oppT && oppT.players) {
+        var top3 = oppT.players.slice().sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); }).slice(0, 3)
+          .map(function (p) { return E(p.name.split(" ").slice(-1)[0]) + " <span class='small'>(" + E((typeof prole === "function" ? prole(p.role) : p.role) || "") + ")</span>"; });
+        if (top3.length) danger = "<div style='margin-top:3px'>Their dangermen: " + top3.join(" · ") + "</div>";
+      }
+      return "<div class='fo-ord-read small'><b>The read:</b> " + (P[pitch] || P.balanced) + (W[wx] ? "; " + W[wx] : "") + "." + suitTxt + danger + "</div>";
+    } catch (e) { return ""; }
+  }
   function foOrdersUI() {
     var page = document.getElementById("page"); if (!page) return;
     var t = userTeam(), xi = foOrdXI();
@@ -191,7 +240,7 @@
     var opp = App.pending;
     if (!opp) { try { if (App.season && App.season.schedule) opp = foFixtureMeta(App.season.round); } catch (eFm) {} }
     if (!opp) opp = { home: t.name, away: "(practice)", ground: t.ground, pitch: "balanced", weather: "-" };
-    var cond = "<div class='fo-ord-cond'><b>" + E(opp.home) + " v " + E(opp.away) + "</b> · " + E(foPitchName(opp.pitch)) + " pitch · " + E(opp.weather || "") + " · " + E(opp.ground || "") + "</div>";
+    var cond = "<div class='fo-ord-cond'><b>" + E(opp.home) + " v " + E(opp.away) + "</b> · " + E(foPitchName(opp.pitch)) + " pitch · " + E(opp.weather || "") + " · " + E(opp.ground || "") + "</div>" + foCondRead(opp);
     var sel2 = function (id, opts, cur) {
       return "<select data-fo-sel='" + id + "'>" + opts.map(function (o2) { return "<option value='" + o2[0] + "'" + (String(cur) === String(o2[0]) ? " selected" : "") + ">" + o2[1] + "</option>"; }).join("") + "</select>";
     };
@@ -219,7 +268,9 @@
       "<button data-fo-act='suggest'>Suggest lineup</button>" +
       (prev ? "<button data-fo-act='prev'>Copy previous match</button>" : "") +
       "<button data-fo-act='clear'>Clear</button>" +
-      "<span class='small'>League lineups lock an hour before the 9:00 AM ET start.</span></div>";
+      "<span class='small'>" + (SYNC && SYNC.started && !SYNC.practice && App.pending && !App.pending.__friendly
+        ? "League lineups lock an hour before the 9:00 AM ET start."
+        : (App.pending ? "The match starts the moment you save." : "Orders apply to your next fixture.")) + "</span></div>";
     if (!page.__foOrdWired) {
       page.__foOrdWired = 1;
       page.addEventListener("click", function (ev) {
@@ -251,6 +302,25 @@
             return;
           }
           if ((el = q(".fo-ord-save"))) {
+            // a first-timer can reach Save with zero overs painted - the AI
+            // quietly improvises, which is a lesson nobody gets to learn.
+            // Say it once and offer the one-tap fix.
+            try {
+              gridState();
+              var painted = 0; for (var oC = 1; oC <= 50; oC++) if (App.orders.grid && App.orders.grid[oC]) painted++;
+              var sp0 = App.orders.spells || {};
+              var anyPlan = painted > 0 || ((sp0.north || []).some(function (s9) { return s9 && s9.bowler; })) || ((sp0.south || []).some(function (s9) { return s9 && s9.bowler; }));
+              if (!anyPlan && App.pending && !el.__foNudged) {
+                el.__foNudged = 1;
+                foConfirm({ title: "No bowling plan", body: "You haven't painted any overs, so your AI captain will improvise the bowling. Want a suggested plan first? You can still repaint it before saving.",
+                  confirm: "Suggest a plan", cancel: "Play as is" })
+                  .then(function (ok) {
+                    if (ok) { try { suggestOrders(); App.orders.grid = null; App.orders.gridBowlers = null; gridState(); gridToSpells(); } catch (eS9) {} foOrdersUI(); toast("Plan suggested - look it over, then Save."); }
+                    else { var b9 = document.querySelector(".fo-ord-save"); if (b9) { b9.__foNudged = 1; b9.click(); } }
+                  });
+                return;
+              }
+            } catch (eNg) {}
             // today's league round locks at 8:00 AM ET while the engine warms up
             try {
               if (SYNC && SYNC.started && !SYNC.practice && LG && !App.pending && !SYNC.planRound) {
@@ -294,6 +364,7 @@
     var foOrdCss = document.createElement("style");
     foOrdCss.textContent =
       ".fo-ord-cond{background:#F0F4F8;border:1px solid rgba(31,78,107,.16);border-radius:10px;padding:9px 13px;font-size:12.5px;color:#243244;margin:6px 0 10px}" +
+      ".fo-ord-read{background:#FBF7EC;border:1px solid rgba(201,162,75,.35);border-left:4px solid #C9A24B;border-radius:10px;padding:9px 13px;color:#4a4234;margin:0 0 10px;line-height:1.5}" +
       ".fo-ord-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px;align-items:start}" +
       "@media(max-width:860px){.fo-ord-cols{grid-template-columns:1fr}}" +
       ".fo-ob-row{display:flex;align-items:center;gap:8px;padding:6px 8px;background:#FFFEFC;border:1px solid rgba(28,36,51,.08);border-radius:9px;margin:4px 0}" +
