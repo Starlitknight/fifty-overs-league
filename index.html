@@ -1593,6 +1593,9 @@ function route(){
   const P={club:pgClub,office:pgOffice,matches:pgMatches,squad:pgSquad,orders:pgOrders,players:pgPlayers,
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   (P[App.page]||pgClub)(q);
+  }catch(eRoute){
+    // a broken page renderer must not freeze navigation for the whole session
+    try{console.error('route failed on '+(App&&App.page),eRoute)}catch(e2){}
   }finally{
     // first-class post-route hook: the league layer decorates the page here
     if(typeof window!=='undefined'&&typeof window.foAfterRoute==='function'){try{window.foAfterRoute()}catch(eAR){}}
@@ -1891,6 +1894,7 @@ function simBackground(aIx,bIx,meta){
 }
 function startLeagueMatch(f,r){
   const home=GD.teams[f[0]],away=GD.teams[f[1]];
+  if(!home||!away){location.hash='#/matches';if(typeof route==='function')route();return}   // stale fixture indexes after a teams rebuild
   App.pending={oppIx:f[0]===App.teamIx?f[1]:f[0],home:home.name,away:away.name,ground:home.ground,
     pitch:groundPitch(home.ground),weather:WXLIST[(r*7+f[0]*3)%WXLIST.length],seed:5000+r*10+f[0],date:simDate(),comp:'league',round:r};
   location.hash='#/orders';   // set the lineup for the conditions first - toss comes after
@@ -2410,6 +2414,15 @@ function pgMatch(){
     }
   }
   if(!M||M.done&&App.pending){startPendingIfNeeded()}
+  if(!M){   // start was refused (server-played fixture, missing opponent) — never recurse via renderMatch
+    const srv=App.pending&&(App.pending.__chal||App.pending.comp==='league');
+    $('#page').innerHTML=crumb('Match centre')+'<div class="panel"><div class="pad">'+
+      (srv?'This fixture is played on the league server - the result arrives on the <a href="#/matches">Matches</a> page.'
+        :App.pending?'Setting up the match - one moment. If nothing happens, open the <a href="#/matches">Matches</a> page and start it from there.'
+        :'No fixture pending. Create one on the <a href="#/matches">Matches</a> page.')+
+      '</div></div>';
+    return;
+  }
   renderMatch();
 }
 function startPendingIfNeeded(){
@@ -2436,6 +2449,14 @@ function startFlip(call){
   },1400);
 }
 function resolveToss(call){
+  if(!M||M.done)return;
+  // the toss is history once an innings exists: a stale flip timer or a
+  // resume echo must never redo it (it would consume M.rand mid-match and
+  // regress the toss UI over a running innings)
+  if(M.batFirstTeam){
+    if(!App.tossState||App.tossState.stage!=='done')App.tossState={stage:'done',txt:(App.tossState&&App.tossState.txt)||M.tossText||''};
+    return;
+  }
   const flip=M.rand()<0.5?'H':'T';
   const won=call===flip;
   if(won){
@@ -2448,9 +2469,14 @@ function resolveToss(call){
   }
 }
 function applyToss(userBatsFirst){
-  // the toss is history: never reset a started innings
+  // the toss is history: never reset a started innings — but always leave the
+  // toss UI in the 'done' state, or the decide page wedges over the live match
   try{
-    if(M&&M.innings&&M.innings[0]&&((M.innings[0].legal||0)>0||(M.log||[]).length>2)&&M.batFirstTeam)return;
+    if(M&&M.innings&&M.innings[0]&&((M.innings[0].legal||0)>0||(M.log||[]).length>2)&&M.batFirstTeam){
+      if(!App.tossState||App.tossState.stage!=='done')App.tossState={stage:'done',txt:(App.tossState&&App.tossState.txt)||M.tossText||''};
+      render();
+      return;
+    }
   }catch(e){}
   const bat1=userBatsFirst?M.user:M.ai,bowl1=userBatsFirst?M.ai:M.user;
   M.innings[0]=mkInns(bat1,bowl1);M.batFirstTeam=bat1.name;
@@ -2511,6 +2537,11 @@ function renderMatch(){
   try{
   if(typeof App!=='undefined'&&App&&App.page!=='match')return;   // navigated away mid-broadcast
   if(!M){pgMatch();return}
+  // self-heal the toss UI state: a null tossState used to crash every render
+  // (freezing the page), and a pre-'done' stage over a started innings is a
+  // wedge — the innings, not the UI state machine, is the truth
+  if(!App.tossState)App.tossState=M.batFirstTeam?{stage:'done',txt:M.tossText||''}:{stage:'call'};
+  else if(App.tossState.stage!=='done'&&M.batFirstTeam)App.tossState={stage:'done',txt:App.tossState.txt||M.tossText||''};
   const t=userTeam();
   // toss stage UI
   if(App.tossState&&App.tossState.stage==='call'){
@@ -4614,7 +4645,16 @@ a[href="#/editor"]{display:none!important}
   pgOrders=function(){fo55SeedSpells();fo55OldPgOrders();document.querySelectorAll('.bowlingEndName button').forEach(b=>{if(/add spell/i.test(b.textContent))b.title='Add another spell to this end'});fo55Sanitize()};
 
   // Toss animation restored: starting a pending match always shows the coin before play begins.
-  startPendingIfNeeded=function(){if(M&&!M.done)return;if(!App.pending)return;if(window.__ap){clearInterval(window.__ap);window.__ap=null}const t=userTeam(),o=GD.teams[App.pending.oppIx];M=newMatch(t,o,App.pending.pitch,App.pending.seed);M.meta=Object.assign({},App.pending);M.isUserMatch=true;const auto=!App.orders.tossCall;const call=App.orders.tossCall||(M.rand()<0.5?'H':'T');if(auto)App.orders.tossCall=call;App.tossState={stage:'flip',call};window.setTimeout(()=>{if(!M||M.done)return;resolveToss(call);if(auto)window.setTimeout(()=>{if(App.orders.tossCall===call)App.orders.tossCall=''},80)},1400)};
+  startPendingIfNeeded=function(){if(M&&!M.done)return;if(!App.pending)return;if(window.__ap){clearInterval(window.__ap);window.__ap=null}
+    // the fixture stores an index AND a name; the index can go stale when a
+    // league snapshot or the Circuit rebuilds GD.teams, so the name is the truth
+    const t=userTeam();let o=GD.teams[App.pending.oppIx];
+    if(App.pending.away&&(!o||o.name!==App.pending.away)){const nIx=GD.teams.findIndex(x=>x&&x.name===App.pending.away);if(nIx>=0){App.pending.oppIx=nIx;o=GD.teams[nIx]}}
+    if(!o||o===t)return;
+    if(App.pending.home&&t&&App.pending.home!==t.name)App.pending.home=t.name;
+    M=newMatch(t,o,App.pending.pitch,App.pending.seed);M.meta=Object.assign({},App.pending);M.isUserMatch=true;const auto=!App.orders.tossCall;const call=App.orders.tossCall||(M.rand()<0.5?'H':'T');if(auto)App.orders.tossCall=call;App.tossState={stage:'flip',call};
+    const my=M;   // the coin belongs to THIS match: never resolve a rebuilt or started one
+    window.setTimeout(()=>{if(!M||M!==my||M.done||M.batFirstTeam)return;try{resolveToss(call)}catch(e){App.tossState={stage:'call'};try{renderMatch()}catch(e2){}}if(auto)window.setTimeout(()=>{if(App.orders.tossCall===call)App.orders.tossCall=''},80)},1400)};
 
   function fo55EnsureAutoplay(){if(window.__ap||!M||M.done||!M.innings||!M.innings[M.inns])return;window.__ap=setInterval(()=>{if(!M||M.done||location.hash.indexOf('#/match')!==0){clearInterval(window.__ap);window.__ap=null;if(M&&M.done)renderMatch();return}doBall()},UI.apMs||1600)}
   function fo55IsTalentText(txt){return /SIX MACHINE|Finisher|PARTNERSHIP BREAKER|New Ball Specialist|Golden Arm|Mystery Ball|Bouncer|Lightning Hands|Rocket Arm|Safe Hands|Miser|Spin Killer|Pace Hunter|Fast Starter|Anchor|death specialist/i.test(txt||'')}
@@ -6894,7 +6934,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if(ctx){var cap=((+ctx.captBowl||50)-50)/50, fld=((+ctx.fieldAvg||55)-55)/55, boost=Math.max(-.012,Math.min(.022,cap*.013+fld*.010));mul('dot',1+boost);mul('4',1-boost*.55);mul('6',1-boost*.45);mul('wRO',1+Math.max(0,boost*.65));}
       var tot=0;Object.keys(d).forEach(function(k){d[k]=Math.max(0,d[k]);tot+=d[k];});Object.keys(d).forEach(function(k){d[k]/=tot||1;});return d;};ballDist.__fo11fixed=true;}
   // Background simulation continues after leaving match page.
-  if(!window.__fo11_background_tick){window.__fo11_background_tick=setInterval(function(){try{if(typeof M==='undefined'||!M||M.done||!M.innings)return;if(window.__ap)return;doBall();if(/^#\/match/.test(location.hash)&&typeof renderMatch==='function')renderMatch();if(M.done&&typeof saveMatch==='function')saveMatch();}catch(e){console.warn('[v11 background sim]',e);}},1400);}
+  if(!window.__fo11_background_tick){window.__fo11_background_tick=setInterval(function(){try{if(typeof M==='undefined'||!M||M.done||!M.innings)return;if(window.__ap)return;doBall();if(/^#\/match/.test(location.hash)&&typeof renderMatch==='function')renderMatch();}catch(e){console.warn('[v11 background sim]',e);}},1400);}
   // Orders tactic compact table: actual v10 heading is "Tactics - set now...".
   function compactOrders(){if(!/^#\/orders/.test(location.hash))return;if(!App.orders.phaseIntent)App.orders.phaseIntent={pp:0,mid:0,death:1};if(!App.orders.fieldPlan)App.orders.fieldPlan={pp:'att',mid:'bal',death:'def'};var h=[].slice.call(document.querySelectorAll('.panel h4')).find(function(x){return /Tactics - set now|Batting tactics/i.test(x.textContent||'');});if(!h)return;var pad=h.parentNode.querySelector('.pad');if(!pad||pad.dataset.fo11compact)return;pad.dataset.fo11compact='1';function intent(ph){return '<select onchange="App.orders.phaseIntent[\''+ph+'\']=+this.value">'+[-1,0,1,2].map(function(v){return '<option value="'+v+'" '+(+App.orders.phaseIntent[ph]===v?'selected':'')+'>'+FO11_INTENT[String(v)]+'</option>';}).join('')+'</select>';}function field(ph){return '<select onchange="App.orders.fieldPlan[\''+ph+'\']=this.value">'+['att','bal','def'].map(function(v){return '<option value="'+v+'" '+(App.orders.fieldPlan[ph]===v?'selected':'')+'>'+FO11_FIELD[v]+'</option>';}).join('')+'</select>';}pad.innerHTML='<table><tr><th>Phase</th><th>Batting intent</th><th>Field setting</th></tr>'+['pp','mid','death'].map(function(ph){return '<tr><td><b>'+FO11_PHASE[ph]+'</b></td><td>'+intent(ph)+'</td><td>'+field(ph)+'</td></tr>';}).join('')+'</table><div class="small">Batting intent and bowling field setting are side by side to save space.</div>';}
   // Full post-match commentary with filters.
@@ -9320,15 +9360,20 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     App.orders.tossDecision = (st.toss && st.toss.decision) || "bat";
     App.pending = st.pending;
     var prevPage = App.page; App.page = "__resolve__";
-    try { M = null; } catch (e) {}
-    if (typeof startPendingIfNeeded === "function") startPendingIfNeeded();
-    if (App.tossState && App.tossState.stage !== "done" && typeof resolveToss === "function") resolveToss(App.orders.tossCall || "H");
-    var guard = 0;
-    while (M && !M.done && (M.log || []).length < target && guard++ < 3000) {
-      if (typeof autoPick === "function") autoPick();      // handles innings breaks
-      if (typeof stepBall === "function") stepBall(); else break;
+    try {
+      try { M = null; } catch (e) {}
+      if (typeof startPendingIfNeeded === "function") startPendingIfNeeded();
+      if (App.tossState && App.tossState.stage !== "done" && typeof resolveToss === "function") resolveToss(App.orders.tossCall || "H");
+      var guard = 0;
+      while (M && !M.done && (M.log || []).length < target && guard++ < 3000) {
+        if (typeof autoPick === "function") autoPick();      // handles innings breaks
+        if (typeof stepBall === "function") stepBall(); else break;
+      }
+    } finally {
+      // a throw mid-replay must never leave App.page at "__resolve__" - that
+      // freezes every renderMatch for the rest of the session
+      App.page = prevPage;
     }
-    App.page = prevPage;
     if (M && M.done) {
       M.__foArchived = 1; foSaveFrHist(M); lsSet(foFrKey(), "");
       toast("Full time in your friendly: " + ((M.result && M.result.text) || "match complete") + " · the scorecard is in Live Match, and it's saved under Friendlies on the Matches page.");
@@ -9387,7 +9432,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         if (!st || !st.pending || !st.orders || !st.startAt) { return; }
         if (typeof GD === "undefined" || !GD.teams || !GD.teams.length) return;
         foFriendlyKeeper.__synced = 1;
-        try { foFrResume(st); } catch (e) { try { console.warn("friendly resume failed:", e && e.message); } catch (e2) {} }
+        try { foFrResume(st); } catch (e) {
+          // a failed first resume must stay retryable (bounded), or the stored
+          // friendly freezes at over 0 for the whole session
+          if ((foFriendlyKeeper.__syncTries = (foFriendlyKeeper.__syncTries || 0) + 1) < 5) foFriendlyKeeper.__synced = 0;
+          try { console.warn("friendly resume failed:", e && e.message); } catch (e2) {}
+        }
       }
     } catch (e) {}
   }
@@ -9849,7 +9899,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260719-0923-1581df";
+  var FO_BUILD = "20260719-0954-d2679a";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10466,6 +10516,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     try {
       var prevRound = (window.App && App.season && typeof App.season.round === "number") ? App.season.round : -1;
       var myOrders = (window.App && App.orders) ? App.orders : null;
+      // remember which club was mine BEFORE the restore: snap.teamIx belongs to
+      // whoever pushed the snapshot, and inheriting it silently makes
+      // userTeam() someone else's club
+      var prevClub = null;
+      try { prevClub = (typeof GD !== "undefined" && GD.teams && GD.teams[App.teamIx] && GD.teams[App.teamIx].name) || null; } catch (e0) {}
       // the resolver stamps each advance with its New York date - the client
       // uses it to date rounds truthfully and to anchor the 9 AM broadcast
       try { if (snap && snap.__foAdvDate) window.__foAdvDate = String(snap.__foAdvDate); } catch (eAdv) {}
@@ -10477,8 +10532,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if (!SYNC.submittedLoaded) foLoadSubmitted();
       SYNC.started = true;
       var myName = SYNC.myTeam ? SYNC.myTeam.name : null;
-      if (myName && typeof GD !== "undefined" && GD.teams) {
-        var ix = GD.teams.findIndex(function (t) { return t.name === myName; });
+      if (typeof GD !== "undefined" && GD.teams) {
+        var ix = myName ? GD.teams.findIndex(function (t) { return t.name === myName; }) : -1;
+        if (ix < 0 && prevClub) ix = GD.teams.findIndex(function (t) { return t.name === prevClub; });
         if (ix >= 0) App.teamIx = ix;
       }
       // keep my working line-up; if the round advanced, it needs re-saving for the new round
@@ -10600,7 +10656,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     };
     // if the league season is live, practise against those very teams
     if (SYNC.started && typeof GD !== "undefined" && GD.teams && GD.teams.length >= 2) {
-      go(GD.teams.slice(), SYNC.myTeam ? SYNC.myTeam.name : null); return;
+      var meNm = (SYNC.myTeam && SYNC.myTeam.name) || null;
+      if (!meNm) { try { meNm = (userTeam() || {}).name || null; } catch (eNm) {} }
+      go(GD.teams.slice(), meNm); return;
     }
     sel("league_clubs", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&select=club").then(function (rows) {
       var myClub = (rows && rows[0] && rows[0].club) || makeBotTeam(0);

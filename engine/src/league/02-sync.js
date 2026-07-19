@@ -98,6 +98,11 @@
     try {
       var prevRound = (window.App && App.season && typeof App.season.round === "number") ? App.season.round : -1;
       var myOrders = (window.App && App.orders) ? App.orders : null;
+      // remember which club was mine BEFORE the restore: snap.teamIx belongs to
+      // whoever pushed the snapshot, and inheriting it silently makes
+      // userTeam() someone else's club
+      var prevClub = null;
+      try { prevClub = (typeof GD !== "undefined" && GD.teams && GD.teams[App.teamIx] && GD.teams[App.teamIx].name) || null; } catch (e0) {}
       // the resolver stamps each advance with its New York date - the client
       // uses it to date rounds truthfully and to anchor the 9 AM broadcast
       try { if (snap && snap.__foAdvDate) window.__foAdvDate = String(snap.__foAdvDate); } catch (eAdv) {}
@@ -109,8 +114,9 @@
       if (!SYNC.submittedLoaded) foLoadSubmitted();
       SYNC.started = true;
       var myName = SYNC.myTeam ? SYNC.myTeam.name : null;
-      if (myName && typeof GD !== "undefined" && GD.teams) {
-        var ix = GD.teams.findIndex(function (t) { return t.name === myName; });
+      if (typeof GD !== "undefined" && GD.teams) {
+        var ix = myName ? GD.teams.findIndex(function (t) { return t.name === myName; }) : -1;
+        if (ix < 0 && prevClub) ix = GD.teams.findIndex(function (t) { return t.name === prevClub; });
         if (ix >= 0) App.teamIx = ix;
       }
       // keep my working line-up; if the round advanced, it needs re-saving for the new round
@@ -232,7 +238,9 @@
     };
     // if the league season is live, practise against those very teams
     if (SYNC.started && typeof GD !== "undefined" && GD.teams && GD.teams.length >= 2) {
-      go(GD.teams.slice(), SYNC.myTeam ? SYNC.myTeam.name : null); return;
+      var meNm = (SYNC.myTeam && SYNC.myTeam.name) || null;
+      if (!meNm) { try { meNm = (userTeam() || {}).name || null; } catch (eNm) {} }
+      go(GD.teams.slice(), meNm); return;
     }
     sel("league_clubs", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&select=club").then(function (rows) {
       var myClub = (rows && rows[0] && rows[0].club) || makeBotTeam(0);

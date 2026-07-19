@@ -1750,15 +1750,20 @@
     App.orders.tossDecision = (st.toss && st.toss.decision) || "bat";
     App.pending = st.pending;
     var prevPage = App.page; App.page = "__resolve__";
-    try { M = null; } catch (e) {}
-    if (typeof startPendingIfNeeded === "function") startPendingIfNeeded();
-    if (App.tossState && App.tossState.stage !== "done" && typeof resolveToss === "function") resolveToss(App.orders.tossCall || "H");
-    var guard = 0;
-    while (M && !M.done && (M.log || []).length < target && guard++ < 3000) {
-      if (typeof autoPick === "function") autoPick();      // handles innings breaks
-      if (typeof stepBall === "function") stepBall(); else break;
+    try {
+      try { M = null; } catch (e) {}
+      if (typeof startPendingIfNeeded === "function") startPendingIfNeeded();
+      if (App.tossState && App.tossState.stage !== "done" && typeof resolveToss === "function") resolveToss(App.orders.tossCall || "H");
+      var guard = 0;
+      while (M && !M.done && (M.log || []).length < target && guard++ < 3000) {
+        if (typeof autoPick === "function") autoPick();      // handles innings breaks
+        if (typeof stepBall === "function") stepBall(); else break;
+      }
+    } finally {
+      // a throw mid-replay must never leave App.page at "__resolve__" - that
+      // freezes every renderMatch for the rest of the session
+      App.page = prevPage;
     }
-    App.page = prevPage;
     if (M && M.done) {
       M.__foArchived = 1; foSaveFrHist(M); lsSet(foFrKey(), "");
       toast("Full time in your friendly: " + ((M.result && M.result.text) || "match complete") + " · the scorecard is in Live Match, and it's saved under Friendlies on the Matches page.");
@@ -1817,7 +1822,12 @@
         if (!st || !st.pending || !st.orders || !st.startAt) { return; }
         if (typeof GD === "undefined" || !GD.teams || !GD.teams.length) return;
         foFriendlyKeeper.__synced = 1;
-        try { foFrResume(st); } catch (e) { try { console.warn("friendly resume failed:", e && e.message); } catch (e2) {} }
+        try { foFrResume(st); } catch (e) {
+          // a failed first resume must stay retryable (bounded), or the stored
+          // friendly freezes at over 0 for the whole session
+          if ((foFriendlyKeeper.__syncTries = (foFriendlyKeeper.__syncTries || 0) + 1) < 5) foFriendlyKeeper.__synced = 0;
+          try { console.warn("friendly resume failed:", e && e.message); } catch (e2) {}
+        }
       }
     } catch (e) {}
   }

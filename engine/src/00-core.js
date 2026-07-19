@@ -1303,6 +1303,9 @@ function route(){
   const P={club:pgClub,office:pgOffice,matches:pgMatches,squad:pgSquad,orders:pgOrders,players:pgPlayers,
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   (P[App.page]||pgClub)(q);
+  }catch(eRoute){
+    // a broken page renderer must not freeze navigation for the whole session
+    try{console.error('route failed on '+(App&&App.page),eRoute)}catch(e2){}
   }finally{
     // first-class post-route hook: the league layer decorates the page here
     if(typeof window!=='undefined'&&typeof window.foAfterRoute==='function'){try{window.foAfterRoute()}catch(eAR){}}
@@ -1601,6 +1604,7 @@ function simBackground(aIx,bIx,meta){
 }
 function startLeagueMatch(f,r){
   const home=GD.teams[f[0]],away=GD.teams[f[1]];
+  if(!home||!away){location.hash='#/matches';if(typeof route==='function')route();return}   // stale fixture indexes after a teams rebuild
   App.pending={oppIx:f[0]===App.teamIx?f[1]:f[0],home:home.name,away:away.name,ground:home.ground,
     pitch:groundPitch(home.ground),weather:WXLIST[(r*7+f[0]*3)%WXLIST.length],seed:5000+r*10+f[0],date:simDate(),comp:'league',round:r};
   location.hash='#/orders';   // set the lineup for the conditions first - toss comes after
@@ -2120,6 +2124,15 @@ function pgMatch(){
     }
   }
   if(!M||M.done&&App.pending){startPendingIfNeeded()}
+  if(!M){   // start was refused (server-played fixture, missing opponent) — never recurse via renderMatch
+    const srv=App.pending&&(App.pending.__chal||App.pending.comp==='league');
+    $('#page').innerHTML=crumb('Match centre')+'<div class="panel"><div class="pad">'+
+      (srv?'This fixture is played on the league server - the result arrives on the <a href="#/matches">Matches</a> page.'
+        :App.pending?'Setting up the match - one moment. If nothing happens, open the <a href="#/matches">Matches</a> page and start it from there.'
+        :'No fixture pending. Create one on the <a href="#/matches">Matches</a> page.')+
+      '</div></div>';
+    return;
+  }
   renderMatch();
 }
 function startPendingIfNeeded(){
@@ -2146,6 +2159,14 @@ function startFlip(call){
   },1400);
 }
 function resolveToss(call){
+  if(!M||M.done)return;
+  // the toss is history once an innings exists: a stale flip timer or a
+  // resume echo must never redo it (it would consume M.rand mid-match and
+  // regress the toss UI over a running innings)
+  if(M.batFirstTeam){
+    if(!App.tossState||App.tossState.stage!=='done')App.tossState={stage:'done',txt:(App.tossState&&App.tossState.txt)||M.tossText||''};
+    return;
+  }
   const flip=M.rand()<0.5?'H':'T';
   const won=call===flip;
   if(won){
@@ -2158,9 +2179,14 @@ function resolveToss(call){
   }
 }
 function applyToss(userBatsFirst){
-  // the toss is history: never reset a started innings
+  // the toss is history: never reset a started innings — but always leave the
+  // toss UI in the 'done' state, or the decide page wedges over the live match
   try{
-    if(M&&M.innings&&M.innings[0]&&((M.innings[0].legal||0)>0||(M.log||[]).length>2)&&M.batFirstTeam)return;
+    if(M&&M.innings&&M.innings[0]&&((M.innings[0].legal||0)>0||(M.log||[]).length>2)&&M.batFirstTeam){
+      if(!App.tossState||App.tossState.stage!=='done')App.tossState={stage:'done',txt:(App.tossState&&App.tossState.txt)||M.tossText||''};
+      render();
+      return;
+    }
   }catch(e){}
   const bat1=userBatsFirst?M.user:M.ai,bowl1=userBatsFirst?M.ai:M.user;
   M.innings[0]=mkInns(bat1,bowl1);M.batFirstTeam=bat1.name;
@@ -2221,6 +2247,11 @@ function renderMatch(){
   try{
   if(typeof App!=='undefined'&&App&&App.page!=='match')return;   // navigated away mid-broadcast
   if(!M){pgMatch();return}
+  // self-heal the toss UI state: a null tossState used to crash every render
+  // (freezing the page), and a pre-'done' stage over a started innings is a
+  // wedge — the innings, not the UI state machine, is the truth
+  if(!App.tossState)App.tossState=M.batFirstTeam?{stage:'done',txt:M.tossText||''}:{stage:'call'};
+  else if(App.tossState.stage!=='done'&&M.batFirstTeam)App.tossState={stage:'done',txt:App.tossState.txt||M.tossText||''};
   const t=userTeam();
   // toss stage UI
   if(App.tossState&&App.tossState.stage==='call'){

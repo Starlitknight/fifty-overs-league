@@ -33,7 +33,16 @@
   pgOrders=function(){fo55SeedSpells();fo55OldPgOrders();document.querySelectorAll('.bowlingEndName button').forEach(b=>{if(/add spell/i.test(b.textContent))b.title='Add another spell to this end'});fo55Sanitize()};
 
   // Toss animation restored: starting a pending match always shows the coin before play begins.
-  startPendingIfNeeded=function(){if(M&&!M.done)return;if(!App.pending)return;if(window.__ap){clearInterval(window.__ap);window.__ap=null}const t=userTeam(),o=GD.teams[App.pending.oppIx];M=newMatch(t,o,App.pending.pitch,App.pending.seed);M.meta=Object.assign({},App.pending);M.isUserMatch=true;const auto=!App.orders.tossCall;const call=App.orders.tossCall||(M.rand()<0.5?'H':'T');if(auto)App.orders.tossCall=call;App.tossState={stage:'flip',call};window.setTimeout(()=>{if(!M||M.done)return;resolveToss(call);if(auto)window.setTimeout(()=>{if(App.orders.tossCall===call)App.orders.tossCall=''},80)},1400)};
+  startPendingIfNeeded=function(){if(M&&!M.done)return;if(!App.pending)return;if(window.__ap){clearInterval(window.__ap);window.__ap=null}
+    // the fixture stores an index AND a name; the index can go stale when a
+    // league snapshot or the Circuit rebuilds GD.teams, so the name is the truth
+    const t=userTeam();let o=GD.teams[App.pending.oppIx];
+    if(App.pending.away&&(!o||o.name!==App.pending.away)){const nIx=GD.teams.findIndex(x=>x&&x.name===App.pending.away);if(nIx>=0){App.pending.oppIx=nIx;o=GD.teams[nIx]}}
+    if(!o||o===t)return;
+    if(App.pending.home&&t&&App.pending.home!==t.name)App.pending.home=t.name;
+    M=newMatch(t,o,App.pending.pitch,App.pending.seed);M.meta=Object.assign({},App.pending);M.isUserMatch=true;const auto=!App.orders.tossCall;const call=App.orders.tossCall||(M.rand()<0.5?'H':'T');if(auto)App.orders.tossCall=call;App.tossState={stage:'flip',call};
+    const my=M;   // the coin belongs to THIS match: never resolve a rebuilt or started one
+    window.setTimeout(()=>{if(!M||M!==my||M.done||M.batFirstTeam)return;try{resolveToss(call)}catch(e){App.tossState={stage:'call'};try{renderMatch()}catch(e2){}}if(auto)window.setTimeout(()=>{if(App.orders.tossCall===call)App.orders.tossCall=''},80)},1400)};
 
   function fo55EnsureAutoplay(){if(window.__ap||!M||M.done||!M.innings||!M.innings[M.inns])return;window.__ap=setInterval(()=>{if(!M||M.done||location.hash.indexOf('#/match')!==0){clearInterval(window.__ap);window.__ap=null;if(M&&M.done)renderMatch();return}doBall()},UI.apMs||1600)}
   function fo55IsTalentText(txt){return /SIX MACHINE|Finisher|PARTNERSHIP BREAKER|New Ball Specialist|Golden Arm|Mystery Ball|Bouncer|Lightning Hands|Rocket Arm|Safe Hands|Miser|Spin Killer|Pace Hunter|Fast Starter|Anchor|death specialist/i.test(txt||'')}
