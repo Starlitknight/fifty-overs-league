@@ -350,7 +350,7 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   // v11.1: real ODI correction - more wickets without flattening ODI scoring.
   W+=0.095; L.dot+=0.012; L['1']+=0.018; L['2']+=0.070; L['4']+=0.025;
   if(ctx&&ctx.chase){
-    const reqRate=ctx.reqRate||0, ballsLeft=ctx.ballsLeft??Math.max(0,300-(over||0)*6), wktsLeft=10-(ctx.wkts||0);
+    const reqRate=ctx.reqRate||0, ballsLeft=ctx.ballsLeft??Math.max(0,foBallCap()-(over||0)*6), wktsLeft=10-(ctx.wkts||0);
     const reqP=Math.max(0,(reqRate-6.0)/3.1), lateP=ballsLeft<114?(114-ballsLeft)/114:0, midP=ballsLeft<180?(180-ballsLeft)/180:0, wkP=wktsLeft<=5?(6-wktsLeft)/6:0;
     // Contextual chase pressure: comfortable chases stay normal; hard chases tighten progressively from the middle overs.
     const hardP=Math.max(0,(reqRate-7.2)/2.6), parChaseP=Math.max(0,(reqRate-5.2)/2.8), scoreboardP=ballsLeft<240?(240-ballsLeft)/240:0;
@@ -587,6 +587,46 @@ function foBallEvent(inn,out,rb,sb,bowler){
       ring:F.ring,deep:F.deep,hasSlip:F.hasSlip,hasShortLeg:F.hasShortLeg};
   }catch(e){return null}
 }
+// ---- rain + DLS (P3b): the chase's legal-ball cap (300 unless rain cut
+// it) and the Duckworth-Lewis standard-edition resource curve.
+function foBallCap(){return (M&&M.inns===1&&M.rainCap)?M.rainCap:300}
+function foDLSRes(u,w){
+  const F=[1,0.947,0.889,0.823,0.745,0.650,0.541,0.418,0.286,0.148];
+  const f=F[Math.max(0,Math.min(9,w|0))];
+  const Z0=280*f,b=0.0332/f;
+  return Z0*(1-Math.exp(-b*Math.max(0,u)));
+}
+function foRainCheck(inn){
+  // plan drawn lazily at the first drizzle ball; nothing drawn otherwise
+  if(M.rainPlan===undefined){
+    const wx=((M.meta&&M.meta.weather)||'').toLowerCase();
+    if(wx==='drizzle'){
+      if(M.rand()<0.40){
+        const overAt=12+Math.floor(M.rand()*24);       // strikes overs 12-35 of the chase
+        const lost=6+Math.floor(M.rand()*13);          // 6-18 overs lost
+        M.rainPlan={over:overAt,lost:lost};
+      }else M.rainPlan=null;
+    }else M.rainPlan=null;
+  }
+  if(!M.rainPlan||M.rainDone||M.inns!==1)return;
+  if(inn.legal%6!==0||Math.floor(inn.legal/6)!==M.rainPlan.over)return;
+  // apply the interruption: overs lost, DLS-revised target
+  const w=inn.wkts,legal=inn.legal;
+  let lost=M.rainPlan.lost;
+  const maxLost=Math.floor((300-legal-30)/6);          // always leave >=5 overs
+  if(maxLost<1){M.rainDone=true;return}
+  if(lost>maxLost)lost=maxLost;
+  const uNow=(300-legal)/6,uAfter=uNow-lost;
+  const Rfull=foDLSRes(50,0);
+  const Rlost=foDLSRes(uNow,w)-foDLSRes(uAfter,w);
+  const R2=Math.max(0.05,(Rfull-0)-Rlost);             // chase began with full resources
+  const S1=M.innings[0]?M.innings[0].runs:0;
+  const newTarget=Math.max(inn.runs+1,Math.floor(S1*(R2/Rfull))+1);
+  M.rainCap=300-lost*6;
+  M.rainDone=true;
+  const oldT=M.target;M.target=newTarget;
+  M.log.unshift({no:'',out:'\u2602',txt:'RAIN at '+Math.floor(legal/6)+' overs - '+lost+' overs lost. Revised DLS target: '+newTarget+' from '+(M.rainCap/6)+' overs (was '+oldT+').',d:null,inn:M.inns,mile:true});
+}
 function foTuneDist(e,bat,bowl,ph,intent,pitch,field,over){
   try{
     if(typeof window!=='undefined'&&window.__foTuneOff)return e;
@@ -734,14 +774,14 @@ function userPhaseIntent(inn){
   const over=Math.floor(inn.legal/6);const ph=over<10?'pp':(over>=40?'death':'mid');
   const PI=(typeof App!=='undefined'&&App.orders&&App.orders.phaseIntent)||{pp:0,mid:0,death:1};
   let base=PI[ph]!==undefined?PI[ph]:0;
-  if(M.target){const remBalls=300-inn.legal,rem=remBalls/6;const req=(M.target-inn.runs)/Math.max(0.5,rem);
+  if(M.target){const remBalls=foBallCap()-inn.legal,rem=remBalls/6;const req=(M.target-inn.runs)/Math.max(0.5,rem);
     if(req>9.2&&base<2)base=2;else if((req>7.2||req>6.4&&remBalls<90)&&base<1)base=Math.min(1,base+1);
     else if(req<4.2&&inn.wkts<5&&base>-1)base=base-1;}
   return base;
 }
 function aiIntent(inn){
   const over=Math.floor(inn.legal/6);
-  if(M.target){const rem=300-inn.legal;const need=M.target-inn.runs;
+  if(M.target){const rem=foBallCap()-inn.legal;const need=M.target-inn.runs;
     if(rem<=0)return 2;const req=need/(rem/6);
     if(req>9.2)return 2; if(req>7.1||req>6.3&&rem<90)return 1; if(req<4.2&&inn.wkts<5)return -1; if(inn.wkts>=7&&req<6.5)return -1; return 0;}
   if(over>=44)return 2; if(over>=38)return 1;
@@ -752,7 +792,7 @@ function aiIntent(inn){
 function aiField(inn){
   const over=Math.floor(inn.legal/6);
   if(over<8)return 'att';
-  if(M.target){const req=(M.target-inn.runs)/Math.max(1,(300-inn.legal)/6);if(req>7.5&&inn.wkts>=5)return 'att';if(req>5.8)return 'def';if(req<4.5&&Math.floor(inn.legal/6)>=30)return 'att'}
+  if(M.target){const req=(M.target-inn.runs)/Math.max(1,(foBallCap()-inn.legal)/6);if(req>7.5&&inn.wkts>=5)return 'att';if(req>5.8)return 'def';if(req<4.5&&Math.floor(inn.legal/6)>=30)return 'att'}
   if(phaseOf(over)==='death')return 'def';
   if(inn.since<=2)return 'att';
   return 'bal';
@@ -865,6 +905,7 @@ function groundFieldingAdjust(inn,out,bowler){
 }
 function stepBall(){
   const inn=M.innings[M.inns];
+  foRainCheck(inn);
   const over=Math.floor(inn.legal/6);
   const userBat=(inn.batTeam===M.user.name);
   // bowler for this over
@@ -882,7 +923,7 @@ function stepBall(){
   const brec=bowlerRecord(inn,bowler);
   const sb=inn.bat[inn.striker];const batP=sb.p;
   let rrDef=0;
-  if(M.target&&inn.legal>0){const rem=(300-inn.legal)/6;const req=(M.target-inn.runs)/Math.max(0.5,rem);rrDef=(req-inn.runs/(inn.legal/6))/6}
+  if(M.target&&inn.legal>0){const rem=(foBallCap()-inn.legal)/6;const req=(M.target-inn.runs)/Math.max(0.5,rem);rrDef=(req-inn.runs/(inn.legal/6))/6}
   const intent=userBat?userPhaseIntent(inn):aiIntent(inn);
   const field=(M.isUserMatch&&inn.bowlTeam===M.user.name)?(function(){const _fp=(typeof App!=='undefined'&&App.orders&&App.orders.fieldPlan)||{pp:'bal',mid:'bal',death:'bal'};const _ov=Math.floor(inn.legal/6);const _ph=_ov<10?'pp':(_ov>=40?'death':'mid');return _fp[_ph]||'bal'})():aiField(inn);
   const faced=inn.faced[batP.name]||0;
@@ -891,7 +932,7 @@ function stepBall(){
   const keeperObj=inn.bxi.find(p=>p.keeper)||{};
   const keeperTalent=keeperObj.talents||[];
   const keeperQuality=foKeeperQuality(keeperObj);
-  const remBalls=Math.max(0,300-inn.legal),reqRate=(M.target?(M.target-inn.runs)/Math.max(0.5,remBalls/6):0);
+  const remBalls=Math.max(0,foBallCap()-inn.legal),reqRate=(M.target?(M.target-inn.runs)/Math.max(0.5,remBalls/6):0);
   const d=ballDist(batP,bowler,phaseOf(over),faced,intent,rrDef,M.pitch,field,over,{freeHit:!!inn.freeHit,weather:((M.meta&&M.meta.weather)||'sunny').toLowerCase(),pship:inn.pshipR,chase:M.inns===1,bballs:brec?brec.b:0,ballsThisSpell:brec?brec.spellB||0:0,wkts:inn.wkts,ballsLeft:remBalls,reqRate,fieldAvg,keeperQuality,rocketArms:inn.bxi.filter(p=>(p.talents||[]).includes('rocketArm')).length,lightningKeeper:keeperTalent.includes('lightningHands'),mixed:!!(inn.bat[inn.nonstriker]&&!inn.bat[inn.nonstriker].out&&batP.hand!==inn.bat[inn.nonstriker].p.hand),batFat:M.fat[batP.name]||0,bowlFat:M.fat[bowler.name]||0,captBowl:inn.captBowl,captBat:inn.captBat});
   const r=M.rand();let c=0,out='dot';
   for(const k in d){c+=d[k];if(r<=c){out=k;break}}
@@ -1014,7 +1055,7 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
     if(!userBat){/* refresh user bowler options next over */}
   }
   M.worm[M.inns].push([inn.legal/6,inn.runs,inn.wkts]);
-  const done=inn.wkts>=10||inn.legal>=300||(M.target&&inn.runs>=M.target);
+  const done=inn.wkts>=10||inn.legal>=foBallCap()||(M.target&&inn.runs>=M.target);
   if(done)endInnings();
   render();
 }
@@ -2252,8 +2293,8 @@ function renderMatch(){
   const s1=inn.bat[inn.striker],s2=inn.bat[inn.nonstriker];
   const bw=inn.bxi.find(p=>p.name===inn.curBowlerName);
   const brec=bw?inn.bowlers[bw.name]:null;
-  const tgt=M.target?`Target ${M.target} · need ${M.target-inn.runs} off ${300-inn.legal} (req ${((M.target-inn.runs)/Math.max(0.5,(300-inn.legal)/6)).toFixed(2)})`:'1st innings';
-  const press=M.target?(((M.target-inn.runs)/Math.max(0.5,(300-inn.legal)/6))-(inn.legal>0?inn.runs/(inn.legal/6):5)):0;
+  const tgt=M.target?`Target ${M.target} · need ${M.target-inn.runs} off ${foBallCap()-inn.legal} (req ${((M.target-inn.runs)/Math.max(0.5,(foBallCap()-inn.legal)/6)).toFixed(2)})`:'1st innings';
+  const press=M.target?(((M.target-inn.runs)/Math.max(0.5,(foBallCap()-inn.legal)/6))-(inn.legal>0?inn.runs/(inn.legal/6):5)):0;
   const pressWord=!M.target?'-':press>1.5?'severe':press>0.5?'building':press>-0.5?'even':'in control';
   // this over strip
   const cur=[];for(const L of M.log){if(L.inn!==M.inns||L.mile)continue;
