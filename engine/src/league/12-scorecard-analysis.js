@@ -1429,19 +1429,53 @@
   }
   function foCxPrize(ri, boss) { return boss ? (35000 + ri * 10000) : (12000 + ri * 4000); }
   // Build the club's squad: the archetype generator on THEIR nation's names,
-  // then one honest difficulty dial - every skill scaled by the club's mult.
+  // then scale it RELATIVE to the user's XI. Absolute difficulty dials made
+  // every early door a 200-run blowout for a decent squad - no tension, no
+  // triumph. Doors are honest (just under your level), bosses are genuine
+  // favourites, and later regions run hotter.
   function foCxTeam(ri, ci) {
     var r = FO_CX_REGIONS[ri], c = r.clubs[ci];
     var gen = foGenArchetypeSquad("cx|" + r.id + "|" + c.nm, r.cty, r.arch, c.capt || "talisman");
     var players = (gen.players || []).map(function (p0) {
       var p = JSON.parse(JSON.stringify(p0)); delete p.fee;
-      for (var k in (p.skills || {})) {
-        if (typeof p.skills[k] === "number") p.skills[k] = Math.max(4, Math.min(96, Math.round(p.skills[k] * c.mult)));
-      }
       p.fatigue = "rested"; p.formIx = 3;
       try { jsDerive(p); } catch (e) {}
       return p;
     });
+    try {
+      // calibrate on the XI's MEAN SKILL - the currency the engine actually
+      // spends. (Rating is a nonlinear derivative and lied across squads:
+      // matching ratings produced skill parity and coin-flip "easy" doors.)
+      var skAvg = function (xi) {
+        var s = 0, n = 0;
+        xi.forEach(function (p9) { for (var k9 in (p9.skills || {})) if (typeof p9.skills[k9] === "number") { s += p9.skills[k9]; n++; } });
+        return n ? s / n : 0;
+      };
+      var meT = userTeam();
+      var myXI = null;
+      try { myXI = pickXI(meT); } catch (eXi) {}
+      if (!myXI || !myXI.length) myXI = (meT.players || []).slice(0, 11);
+      var mySk = skAvg(myXI);
+      if (mySk > 0) {
+        // tier in SKILL space - the engine is steep around parity (0.80 of
+        // your skills = 95% wins, 0.90 = coin flip). First door ~0.86 plays
+        // as a comfortable-but-honest favourite, second 0.90 makes you work,
+        // boss 0.97 is a real fight. A slow world-tour ramp on top.
+        var tier = (c.boss ? 0.905 : (ci === 0 ? 0.875 : 0.89)) + ri * 0.005 + (((c.mult || 0.9) - 0.9) * 0.1);
+        for (var pass = 0; pass < 5; pass++) {
+          var theirXI = null;
+          try { theirXI = pickXI({ name: c.nm, players: players }); } catch (eX2) {}
+          var pool9 = (theirXI && theirXI.length) ? theirXI : players;
+          var f9 = (mySk * tier) / Math.max(1, skAvg(pool9));
+          if (Math.abs(f9 - 1) < 0.012) break;
+          var sf9 = Math.max(0.6, Math.min(1.6, f9));
+          players.forEach(function (p9) {
+            for (var k9 in (p9.skills || {})) if (typeof p9.skills[k9] === "number") p9.skills[k9] = Math.max(4, Math.min(96, Math.round(p9.skills[k9] * sf9)));
+            try { jsDerive(p9); } catch (e9) {}
+          });
+        }
+      }
+    } catch (eSc) {}
     // ---- England, a living chapter: the world reads your scorecards --------
     try {
       var stE = foCxState();
@@ -1684,6 +1718,45 @@
       foCxModal(win, r, c, conquered, prize);
     } catch (e) {}
   }
+  // ---- drinks-break reads: the Gaffer talks tactics every ten overs --------
+  // Fires once per drinks break of the user's live match, works at any
+  // broadcast speed (highlights included) by watching for crossed boundaries.
+  function foDrinksNote() {
+    try {
+      if (typeof M === "undefined" || !M || M.done || !M.isUserMatch) return;
+      var inn = M.innings[M.inns]; if (!inn) return;
+      var ov = Math.floor((inn.legal || 0) / 6);
+      var m10 = Math.floor(ov / 10) * 10;
+      if (m10 < 10 || m10 >= 50) return;
+      var key = M.inns + ":" + m10;
+      M.__foDrinks = M.__foDrinks || {};
+      if (M.__foDrinks[key]) return;
+      for (var x = 10; x <= m10; x += 10) M.__foDrinks[M.inns + ":" + x] = 1;   // never backfill a resumed match
+      if (ov - m10 > 1) return;                                                 // only speak AT the break
+      var userBat = inn.batTeam === M.user.name;
+      var rr = inn.legal ? inn.runs / (inn.legal / 6) : 0;
+      var msg;
+      if (M.target) {
+        var need = M.target - inn.runs, balls = (typeof foBallCap === "function" ? foBallCap() : 300) - inn.legal;
+        var req = need / (Math.max(1, balls) / 6);
+        msg = userBat
+          ? (req > rr + 1.5 ? "Drinks. " + need + " off " + balls + " - required rate " + req.toFixed(1) + ". Time to lift: think Attack." :
+             "Drinks. " + need + " off " + balls + " and we're ahead of the rate. Keep heads, bank the singles.")
+          : (req > rr + 1.5 ? "Drinks. They need " + req.toFixed(1) + " an over - squeeze it shut. Defend field and finish the job." :
+             "Drinks. This chase is drifting our way? No - it's live. We need a wicket: keep the field up.");
+      } else {
+        msg = userBat
+          ? ((inn.wkts >= 4 || (inn.wkts >= 3 && ov <= 15)) && ov <= 30 ? "Drinks. " + inn.runs + "/" + inn.wkts + " - rebuild first, fireworks later. Steady is fine." :
+             rr < 4.2 ? "Drinks. " + rr.toFixed(1) + " an over is crawling - someone has to go after the bowling." :
+             "Drinks. " + inn.runs + "/" + inn.wkts + " - platform set. Push on.")
+          : (inn.wkts >= 5 ? "Drinks. They're " + inn.wkts + " down - field up, finish them." :
+             rr > 6 ? "Drinks. " + rr.toFixed(1) + " an over against us - Defend field, dry it up." :
+             "Drinks. Tidy from us. Hold the squeeze and the wickets come.");
+      }
+      toast("The Gaffer: " + msg);
+    } catch (e) {}
+  }
+  try { foMatchRenderHooks.push(foDrinksNote); } catch (eDk) {}
   // Bank a finished circuit tie the moment the final ball is banked: the
   // 2.5s keeper alone lost the prize + progress if the tab closed inside its
   // window (M is never persisted, so the win evaporated). saveMatch runs

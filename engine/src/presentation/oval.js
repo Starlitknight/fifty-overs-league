@@ -39,6 +39,7 @@ FOC.oval = (function () {
       "<div class='ov-bats' id='ov-bats'></div>" +
       "<div class='ov-bowl' id='ov-bowl'></div>" +
       "<span class='ov-fld' id='ov-fld'></span>" +
+      "<span class='ov-need' id='ov-need'></span>" +
       "<div class='ov-strip' id='ov-strip' aria-label='This over'></div>" +
       "</div>" +
       "<svg viewBox='0 0 400 260' class='ov-svg' aria-hidden='true'>" +
@@ -59,7 +60,60 @@ FOC.oval = (function () {
       "<circle id='ov-bowler' cx='200' cy='196' r='5' fill='#14213D' stroke='#fff' stroke-width='1.4'/>" +
       "<circle id='ov-ball' cx='200' cy='190' r='3.2' fill='#a3242b' stroke='#fff' stroke-width='.8' opacity='0'/>" +
       "<text id='ov-pop' x='200' y='128' text-anchor='middle' class='ov-pop'></text>" +
-      "</svg><div class='ov-note'>theatre · live directions · real field setting</div></div>";
+      "</svg><div class='ov-note'><button type='button' id='ov-snd' class='ov-snd' title='Match sound'>&#128263;</button><span>theatre · live directions · real field setting</span></div></div>";
+  }
+
+  // ---- sound: tiny synthesized crowd + bat, no assets, off by default ------
+  var sndOn = (function () { try { return localStorage.getItem("fo_sound") === "1"; } catch (e) { return false; } })();
+  var AC = null;
+  function ac() {
+    if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+    if (AC && AC.state === "suspended") { try { AC.resume(); } catch (e) {} }
+    return AC;
+  }
+  function crowd(vol, dur, freq) {
+    var c = ac(); if (!c) return;
+    var len = Math.floor(c.sampleRate * dur), buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+    for (var i = 0; i < len; i++) { var env = Math.sin(Math.PI * (i / len)); d[i] = (Math.random() * 2 - 1) * env; }
+    var n = c.createBufferSource(); n.buffer = buf;
+    var f = c.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = freq || 900; f.Q.value = 0.6;
+    var g = c.createGain(); g.gain.value = vol;
+    n.connect(f); f.connect(g); g.connect(c.destination); n.start();
+  }
+  function knock() {
+    var c = ac(); if (!c) return;
+    var o = c.createOscillator(); o.type = "square"; o.frequency.value = 190;
+    var g = c.createGain(); g.gain.setValueAtTime(0.10, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.06);
+    o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + 0.07);
+  }
+  function chime() {
+    var c = ac(); if (!c) return;
+    var o = c.createOscillator(); o.type = "triangle";
+    o.frequency.setValueAtTime(880, c.currentTime); o.frequency.linearRampToValueAtTime(1318, c.currentTime + 0.18);
+    var g = c.createGain(); g.gain.setValueAtTime(0.09, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.45);
+    o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + 0.5);
+  }
+  function foSnd(kind) {
+    if (!sndOn) return;
+    try {
+      if (kind === "4") { knock(); crowd(0.22, 0.7, 900); }
+      else if (kind === "6") { knock(); crowd(0.34, 1.1, 700); }
+      else if (kind === "W") { crowd(0.38, 1.0, 1400); }
+      else if (kind === "mile") { chime(); crowd(0.18, 0.8, 1000); }
+      else if (kind === "run") { knock(); }
+    } catch (e) {}
+  }
+  function wireSnd() {
+    var btn = document.getElementById("ov-snd");
+    if (!btn || btn.__foW) return;
+    btn.__foW = 1;
+    btn.textContent = sndOn ? "🔊" : "🔇";
+    btn.addEventListener("click", function () {
+      sndOn = !sndOn;
+      try { localStorage.setItem("fo_sound", sndOn ? "1" : "0"); } catch (e) {}
+      btn.textContent = sndOn ? "🔊" : "🔇";
+      if (sndOn) { ac(); crowd(0.12, 0.4, 900); }   // the user gesture unlocks audio
+    });
   }
 
   var curField = null;
@@ -167,6 +221,20 @@ FOC.oval = (function () {
         var cls = s === "4" ? "b4" : s === "6" ? "b6" : s === "W" ? "bw" : s === "·" ? "bd" : "br";
         return "<i class='" + cls + "'>" + esc(s) + "</i>";
       }).join("");
+      // the death of a chase gets its own heartbeat
+      var nd = el("ov-need");
+      if (nd) {
+        var showNeed = false;
+        if (M.target && M.inns === 1 && !M.done) {
+          var left = (typeof foBallCap === "function" ? foBallCap() : 300) - (inn.legal || 0);
+          var need = M.target - (inn.runs || 0);
+          if (left <= 30 && left > 0 && need > 0 && inn.wkts < 10) {
+            nd.textContent = "NEED " + need + " OFF " + left;
+            nd.classList.add("on"); showNeed = true;
+          }
+        }
+        if (!showNeed) { nd.classList.remove("on"); nd.textContent = ""; }
+      }
     } catch (e) {}
   }
 
@@ -185,11 +253,11 @@ FOC.oval = (function () {
         if (spot) {
           // caught (or run out) at a named position: the ball travels there
           slide(ball, 200, 92, spot.x, spot.y, 430, function () {
-            pulseDot(spot.g, true); flashPop("OUT", pop, "#a3242b");
+            pulseDot(spot.g, true); flashPop("OUT", pop, "#a3242b"); foSnd("W");
             setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, 620);
           });
         } else {
-          shatter(); flashPop("OUT", pop, "#a3242b");
+          shatter(); flashPop("OUT", pop, "#a3242b"); foSnd("W");
           setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, 620);
         }
         return;
@@ -214,10 +282,10 @@ FOC.oval = (function () {
       var ty = 130 + Math.sin(a) * 116 * dist;
       var runs = sym === "4" ? 0 : sym === "6" ? 0 : parseInt(sym, 10) || 0;
       if (runs && spot) { tx = spot.x; ty = spot.y; }
-      if (runs) swapRunners(runs);
+      if (runs) { swapRunners(runs); foSnd("run"); }
       slide(ball, 200, 92, tx, ty, sym === "6" ? 560 : 440, function () {
-        if (sym === "4") flashPop("FOUR", pop, "#C9A24B");
-        if (sym === "6") flashPop("SIX", pop, "#C8674A");
+        if (sym === "4") { flashPop("FOUR", pop, "#C9A24B"); foSnd("4"); }
+        if (sym === "6") { flashPop("SIX", pop, "#C8674A"); foSnd("6"); }
         if (sym === "4" || sym === "6") addTrail(tx, ty, sym);
         else if (spot) pulseDot(spot.g);
         setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, sym === "4" || sym === "6" ? 480 : 140);
@@ -286,6 +354,12 @@ FOC.oval = (function () {
     var next = queue.shift();
     if (!next) return;
     animating = true;
+    if (next.pop) {   // a milestone moment: FIFTY! / HUNDRED!
+      flashPop(next.pop, document.getElementById("ov-pop"), next.col || "#C9A24B");
+      foSnd("mile");
+      setTimeout(function () { animating = false; board(); pump(); }, 950);
+      return;
+    }
     animate(next.sym, next.ix, function () { animating = false; board(); pump(); }, next.lbl, next.dir);
   }
 
@@ -314,6 +388,7 @@ FOC.oval = (function () {
         drawTrails();
       }
       page.classList.add("fo-ovalgrid");
+      wireSnd();
       if (M.inns !== seenInn) { seenInn = M.inns; seenLogLen = M.log.length; trails = []; drawTrails(); }
       if (M.log.length > seenLogLen) {
         // engine unshifts: new entries are at the FRONT
@@ -324,6 +399,11 @@ FOC.oval = (function () {
           if (s) queue.push({ sym: s, ix: seenLogLen - i,
             lbl: (fresh[i].ev && fresh[i].ev.pos) || null,
             dir: (fresh[i].ev && fresh[i].ev.dir != null) ? fresh[i].ev.dir : null });
+          else if (fresh[i].mile) {   // milestone lines become on-field moments
+            var mt = fresh[i].txt || "";
+            if (/HUNDRED|CENTURY/i.test(mt)) queue.push({ pop: "HUNDRED!", col: "#C8674A" });
+            else if (/FIFTY/i.test(mt)) queue.push({ pop: "FIFTY!", col: "#C9A24B" });
+          }
         }
         pump();
       }
@@ -417,7 +497,11 @@ FOC.oval = (function () {
       ".ov-pop{font-family:Oswald,sans-serif;font-size:30px;letter-spacing:4px;font-weight:600;opacity:0;paint-order:stroke;stroke:#0F1A2E;stroke-width:4px}" +
       ".ov-pop.on{animation:ovPop 1.05s ease}" +
       "@keyframes ovPop{0%{opacity:0;transform:scale(.6)}18%{opacity:1;transform:scale(1.12)}70%{opacity:1;transform:scale(1)}100%{opacity:0}}" +
-      ".ov-note{text-align:right;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#5b6a85;padding:3px 10px 5px}" +
+      ".ov-note{display:flex;align-items:center;justify-content:flex-end;gap:8px;text-align:right;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#5b6a85;padding:3px 10px 5px}" +
+      ".ov-snd{background:none;border:1px solid #24334f;border-radius:7px;color:#8fa0bd;font-size:12px;line-height:1;padding:3px 7px;cursor:pointer;margin-right:auto}" +
+      ".ov-need{font-family:Oswald,sans-serif;font-size:13px;letter-spacing:1.5px;color:#fff;background:#a3242b;border-radius:8px;padding:3px 10px;display:none}" +
+      ".ov-need.on{display:inline-block;animation:ovNeed 1.1s ease infinite}" +
+      "@keyframes ovNeed{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.85}}" +
       "@media(prefers-reduced-motion:reduce){.ov-pop.on{animation:none;opacity:1}}";
     document.head.appendChild(st);
   }

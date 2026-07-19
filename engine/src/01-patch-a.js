@@ -44,7 +44,24 @@
     const my=M;   // the coin belongs to THIS match: never resolve a rebuilt or started one
     window.setTimeout(()=>{if(!M||M!==my||M.done||M.batFirstTeam)return;try{resolveToss(call)}catch(e){App.tossState={stage:'call'};try{renderMatch()}catch(e2){}}if(auto)window.setTimeout(()=>{if(App.orders.tossCall===call)App.orders.tossCall=''},80)},1400)};
 
-  function fo55EnsureAutoplay(){if(window.__ap||!M||M.done||!M.innings||!M.innings[M.inns])return;window.__ap=setInterval(()=>{if(!M||M.done||(location.hash||'').split('?')[0]!=='#/match'){clearInterval(window.__ap);window.__ap=null;if(M&&M.done)renderMatch();return}doBall()},UI.apMs||1600)}
+  // Highlights: every ball is still simulated, but the broadcast only LANDS on
+  // the ones worth watching - boundaries, wickets, real milestones, and the
+  // last two overs of a chase. A full match becomes a three-minute cut.
+  function fo55Interesting(){try{
+    const L=M.log&&M.log[0];if(!L)return true;
+    if(L.mile&&!/^End of over/i.test(L.txt||''))return true;
+    if(L.out==='4'||L.out==='6')return true;
+    if(typeof isWkt==='function'&&isWkt(L.out))return true;
+    const inn=M.innings[M.inns];
+    if(M.target&&inn&&(foBallCap()-inn.legal)<=12)return true;
+    return false;
+  }catch(e){return true}}
+  function fo55HighlightStep(){
+    let g=0;
+    do{autoPick();stepBall();g++}while(M&&!M.done&&!fo55Interesting()&&g<60);
+    renderMatch();
+  }
+  function fo55EnsureAutoplay(){if(window.__ap||!M||M.done||!M.innings||!M.innings[M.inns])return;window.__ap=setInterval(()=>{if(!M||M.done||(location.hash||'').split('?')[0]!=='#/match'){clearInterval(window.__ap);window.__ap=null;if(M&&M.done)renderMatch();return}if(UI.apHl)fo55HighlightStep();else doBall()},UI.apMs||1600)}
   function fo55IsTalentText(txt){return /SIX MACHINE|Finisher|PARTNERSHIP BREAKER|New Ball Specialist|Golden Arm|Mystery Ball|Bouncer|Lightning Hands|Rocket Arm|Safe Hands|Miser|Spin Killer|Pace Hunter|Fast Starter|Anchor|death specialist/i.test(txt||'')}
   function fo55CommPass(L,filter){filter=filter||'all';const txt=L.txt||'';if(filter==='all')return true;if(filter==='wickets')return isWkt(L.out)||/WICKET|out for|Partnership ends/i.test(txt);if(filter==='boundaries')return L.out==='4'||L.out==='6'||/FOUR|SIX/i.test(txt);if(filter==='overs')return L.mile||/End of over|DRINKS|Innings break|CHASE BEGINS|PLAY BEGINS/i.test(txt);if(filter==='talents')return fo55IsTalentText(txt);if(filter==='highlights')return L.mile||isWkt(L.out)||L.out==='4'||L.out==='6'||fo55IsTalentText(txt)||/DROPPED|FIFTY|HUNDRED/i.test(txt);return true}
   function fo55RenderText(txt){let h=esc(txt||'');['SIX MACHINE','PARTNERSHIP BREAKER','New Ball Specialist','Golden Arm','Mystery Ball','Bouncer','Finisher','Lightning Hands','Rocket Arm','Safe Hands','Miser','Spin Killer','Pace Hunter','Fast Starter','Anchor','death specialist'].forEach(n=>{const re=new RegExp('('+n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig');h=h.replace(re,'<span class="talent-hit">$1</span>')});return h}
@@ -83,7 +100,7 @@
       renderMatch();
     }catch(e){}
   };
-  function fo55PanelForTab(){const tab=UI.matchTab||'Commentary';if(tab==='Commentary'){const controls=M.done?`<div class="oktxt" style="font-size:14px;padding:6px;background:#eaf4ea;border:1px solid #9c9"><b>${esc(M.result?M.result.text:'Match complete')}</b> · MoM: ${esc(M.result&&M.result.mom?M.result.mom:'-')}<br><span class="small"><a href="#/matches">back to round</a></span></div>`:`<div class="ctlrow"><span class="oktxt"><b>Auto-playing</b></span><span>Commentary speed</span><select title="commentary speed" onchange="UI.apMs=+this.value;if(window.__ap){clearInterval(window.__ap);window.__ap=null}fo55EnsureAutoplay()">${[[800,'fast'],[1600,'normal'],[3200,'slow'],[5200,'very slow']].map(([v,l])=>`<option value="${v}" ${(UI.apMs||1600)===v?'selected':''}>${l}</option>`).join('')}</select>${fo55FilterSelect()}</div><div class="small" style="color:#777;margin-bottom:6px">The match plays automatically from your saved orders.</div>`;return `<div class="panel"><h4>Commentary</h4><div class="pad"><div class="mc-controls">${controls}</div>${fo55TeamTalk()}<div class="commfeed commbig">${fo55CommentRows(M.log,UI.commFilter||'all',120)}</div></div></div>`}return `<div class="match-subpanel ${tab==='Scorecard'?'scorecard':''}"><div class="panel"><h4><span class="fo-match-tab-title"><span>${esc(tab)}</span><span class="fo-tab-actions"><a onclick="UI.matchTab='Commentary';renderMatch()">back to commentary</a><a onclick="UI.matchTab='Scorecard';renderMatch()">scorecard</a><a onclick="UI.matchTab='Match Ratings';renderMatch()">ratings</a></span></span></h4><div class="pad">${fo55TabBody()}</div></div></div>`}
+  function fo55PanelForTab(){const tab=UI.matchTab||'Commentary';if(tab==='Commentary'){const controls=M.done?`<div class="oktxt" style="font-size:14px;padding:6px;background:#eaf4ea;border:1px solid #9c9"><b>${esc(M.result?M.result.text:'Match complete')}</b> · MoM: ${esc(M.result&&M.result.mom?M.result.mom:'-')}<br><span class="small"><a href="#/matches">back to round</a></span></div>`:`<div class="ctlrow"><span class="oktxt"><b>Auto-playing</b></span><span>Commentary speed</span><select title="commentary speed" onchange="UI.apHl=(this.value==='hl');UI.apMs=UI.apHl?1500:+this.value;if(window.__ap){clearInterval(window.__ap);window.__ap=null}renderMatch()"><option value="hl" ${UI.apHl?'selected':''}>highlights ⚡</option>${[[800,'fast'],[1600,'normal'],[3200,'slow'],[5200,'very slow']].map(([v,l])=>`<option value="${v}" ${!UI.apHl&&(UI.apMs||1600)===v?'selected':''}>${l}</option>`).join('')}</select>${fo55FilterSelect()}</div><div class="small" style="color:#777;margin-bottom:6px">The match plays automatically from your saved orders.</div>`;return `<div class="panel"><h4>Commentary</h4><div class="pad"><div class="mc-controls">${controls}</div>${fo55TeamTalk()}<div class="commfeed commbig">${fo55CommentRows(M.log,UI.commFilter||'all',120)}</div></div></div>`}return `<div class="match-subpanel ${tab==='Scorecard'?'scorecard':''}"><div class="panel"><h4><span class="fo-match-tab-title"><span>${esc(tab)}</span><span class="fo-tab-actions"><a onclick="UI.matchTab='Commentary';renderMatch()">back to commentary</a><a onclick="UI.matchTab='Scorecard';renderMatch()">scorecard</a><a onclick="UI.matchTab='Match Ratings';renderMatch()">ratings</a></span></span></h4><div class="pad">${fo55TabBody()}</div></div></div>`}
 
   const fo55PreviousRenderMatch=renderMatch;
   // NOTE: every query is scoped to the CURRENT render root (#page - which is
