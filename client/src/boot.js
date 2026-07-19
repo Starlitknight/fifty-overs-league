@@ -15,6 +15,7 @@
     clearInterval(t);
     if (!ready) return;   // engine never appeared; stay dormant
     try {
+      FOC.engineTuning.install();
       FOC.game.init();
       FOC.lineup.init();
       FOC.campaignUI.init();
@@ -27,7 +28,7 @@
         career: FOC.career, careerHub: FOC.careerHub, save2: FOC.save2,
         world: { gen: FOC.worldgen, sim: FOC.worldsim, comps: FOC.competitions,
           npc: FOC.npc, transfers: FOC.transfers, rivalry: FOC.rivalry },
-        rng: FOC.rng, storylets: FOC.storylets, oval: FOC.oval
+        rng: FOC.rng, storylets: FOC.storylets, oval: FOC.oval, tuning: FOC.engineTuning
       };
       try { console.info("The First Summer ready."); } catch (e2) {}
     } catch (e3) {}
