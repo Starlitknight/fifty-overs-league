@@ -566,13 +566,8 @@
             txt = txt.replace(/[Tt]he umpire/, "Umpire " + u.split(" ").slice(-1)[0]);
           }
         } catch (e) {}
-        // every delivery names the matchup, broadcast style
-        try {
-          if (bowler && bowler.name && sb && sb.p && sb.p.name) {
-            var sn = function (n) { return String(n).split(" ").slice(-1)[0]; };
-            txt = sn(bowler.name) + " to " + sn(sb.p.name) + ": " + txt;
-          }
-        } catch (e2) {}
+        // (the "Bowler to Batter :" prefix is added ONCE, by the engine's
+        // comm wrapper in block 06 - adding it here too doubled every line)
         return txt;
       };
       window.comm.__foWorld = 1;

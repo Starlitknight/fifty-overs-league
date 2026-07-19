@@ -309,7 +309,8 @@
       if(L.mile||/^End of over/i.test(L.txt||'')){
         return '<div class="oversummary-bottom"><div class="text">'+abilize(L.txt)+'</div><div class="clear"></div></div>';
       }
-      var prefix=(L.bowlerNm&&L.strikerNm)?(esc(last(L.bowlerNm))+' to '+esc(last(L.strikerNm))+' : '):'';
+      var preRaw=(L.bowlerNm&&L.strikerNm)?(last(L.bowlerNm)+' to '+last(L.strikerNm)+' : '):'';
+      var prefix=(preRaw&&String(L.txt||'').indexOf(preRaw)!==0)?(esc(last(L.bowlerNm))+' to '+esc(last(L.strikerNm))+' : '):'';
       var rowcls=L.out==='4'?'four':L.out==='6'?'six':wkt(L.out)?'line wkt':'line';
       return '<div class="'+rowcls+'"><div class="del">'+esc(L.no||'')+'</div><div class="rslt">'+ftpRslt(L.out)+
         '</div><div class="text">'+prefix+abilize(L.txt)+'</div><div class="clear"></div></div>';

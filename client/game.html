@@ -5449,7 +5449,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       try{
         var bwl=bowler&&bowler.name?bowler.name.split(' ').slice(-1)[0]:'';
         var bat=sb&&sb.p?sb.p.name.split(' ').slice(-1)[0]:'';
-        if(bwl&&bat)return bwl+' to '+bat+' : '+base;
+        if(bwl&&bat){var pre=bwl+' to '+bat+' : ';if(base.indexOf(pre)===0)return base;return pre+base;}
       }catch(e){}
       return base;
     };
@@ -6247,7 +6247,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if(L.mile||/^End of over/i.test(L.txt||'')){
         return '<div class="oversummary-bottom"><div class="text">'+abilize(L.txt)+'</div><div class="clear"></div></div>';
       }
-      var prefix=(L.bowlerNm&&L.strikerNm)?(esc(last(L.bowlerNm))+' to '+esc(last(L.strikerNm))+' : '):'';
+      var preRaw=(L.bowlerNm&&L.strikerNm)?(last(L.bowlerNm)+' to '+last(L.strikerNm)+' : '):'';
+      var prefix=(preRaw&&String(L.txt||'').indexOf(preRaw)!==0)?(esc(last(L.bowlerNm))+' to '+esc(last(L.strikerNm))+' : '):'';
       var rowcls=L.out==='4'?'four':L.out==='6'?'six':wkt(L.out)?'line wkt':'line';
       return '<div class="'+rowcls+'"><div class="del">'+esc(L.no||'')+'</div><div class="rslt">'+ftpRslt(L.out)+
         '</div><div class="text">'+prefix+abilize(L.txt)+'</div><div class="clear"></div></div>';
@@ -6461,7 +6462,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if(L.mile||/^End of over/i.test(L.txt||'')){
         var top=L.oversumTop?('<div class="oversummary-top"><div class="text">'+L.oversumTop+'</div><div class="clear"></div></div>'):'';
         return top+'<div class="oversummary-bottom"><div class="text">'+abilize(L.txt)+'</div><div class="clear"></div></div>';}
-      var prefix=(L.bowlerNm&&L.strikerNm)?(esc(String(L.bowlerNm).split(' ').slice(-1)[0])+' to '+esc(String(L.strikerNm).split(' ').slice(-1)[0])+' : '):'';
+      var preRaw=(L.bowlerNm&&L.strikerNm)?(String(L.bowlerNm).split(' ').slice(-1)[0]+' to '+String(L.strikerNm).split(' ').slice(-1)[0]+' : '):'';
+      var prefix=(preRaw&&String(L.txt||'').indexOf(preRaw)!==0)?(esc(String(L.bowlerNm).split(' ').slice(-1)[0])+' to '+esc(String(L.strikerNm).split(' ').slice(-1)[0])+' : '):'';
       var rowcls=L.out==='4'?'four':L.out==='6'?'six':wkt(L.out)?'line wkt':'line';
       return '<div class="'+rowcls+'"><div class="del">'+esc(L.no||'')+'</div><div class="rslt">'+ftpRslt(L.out)+'</div><div class="text">'+prefix+abilize(L.txt)+'</div><div class="clear"></div></div>';
     }).join('');
@@ -6645,7 +6647,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if(L.mile||/^End of over/i.test(L.txt||'')){
         var top=L.oversumTop?('<div class="oversummary-top"><div class="text">'+L.oversumTop+'</div><div class="clear"></div></div>'):'';
         return top+'<div class="oversummary-bottom"><div class="text">'+abilize(L.txt)+'</div><div class="clear"></div></div>';}
-      var prefix=(L.bowlerNm&&L.strikerNm)?(esc(String(L.bowlerNm).split(' ').slice(-1)[0])+' to '+esc(String(L.strikerNm).split(' ').slice(-1)[0])+' : '):'';
+      var preRaw=(L.bowlerNm&&L.strikerNm)?(String(L.bowlerNm).split(' ').slice(-1)[0]+' to '+String(L.strikerNm).split(' ').slice(-1)[0]+' : '):'';
+      var prefix=(preRaw&&String(L.txt||'').indexOf(preRaw)!==0)?(esc(String(L.bowlerNm).split(' ').slice(-1)[0])+' to '+esc(String(L.strikerNm).split(' ').slice(-1)[0])+' : '):'';
       var rowcls=L.out==='4'?'four':L.out==='6'?'six':wkt(L.out)?'line wkt':'line';
       return '<div class="'+rowcls+'"><div class="del">'+esc(L.no||'')+'</div><div class="rslt">'+ftpRslt(L.out)+'</div><div class="text">'+prefix+abilize(L.txt)+'</div><div class="clear"></div></div>';
     }).join('');
@@ -9899,7 +9902,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260719-0954-d2679a";
+  var FO_BUILD = "20260719-1006-6213f2";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21416,13 +21419,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             txt = txt.replace(/[Tt]he umpire/, "Umpire " + u.split(" ").slice(-1)[0]);
           }
         } catch (e) {}
-        // every delivery names the matchup, broadcast style
-        try {
-          if (bowler && bowler.name && sb && sb.p && sb.p.name) {
-            var sn = function (n) { return String(n).split(" ").slice(-1)[0]; };
-            txt = sn(bowler.name) + " to " + sn(sb.p.name) + ": " + txt;
-          }
-        } catch (e2) {}
+        // (the "Bowler to Batter :" prefix is added ONCE, by the engine's
+        // comm wrapper in block 06 - adding it here too doubled every line)
         return txt;
       };
       window.comm.__foWorld = 1;

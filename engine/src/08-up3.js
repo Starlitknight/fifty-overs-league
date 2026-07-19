@@ -198,7 +198,8 @@
       if(L.mile||/^End of over/i.test(L.txt||'')){
         var top=L.oversumTop?('<div class="oversummary-top"><div class="text">'+L.oversumTop+'</div><div class="clear"></div></div>'):'';
         return top+'<div class="oversummary-bottom"><div class="text">'+abilize(L.txt)+'</div><div class="clear"></div></div>';}
-      var prefix=(L.bowlerNm&&L.strikerNm)?(esc(String(L.bowlerNm).split(' ').slice(-1)[0])+' to '+esc(String(L.strikerNm).split(' ').slice(-1)[0])+' : '):'';
+      var preRaw=(L.bowlerNm&&L.strikerNm)?(String(L.bowlerNm).split(' ').slice(-1)[0]+' to '+String(L.strikerNm).split(' ').slice(-1)[0]+' : '):'';
+      var prefix=(preRaw&&String(L.txt||'').indexOf(preRaw)!==0)?(esc(String(L.bowlerNm).split(' ').slice(-1)[0])+' to '+esc(String(L.strikerNm).split(' ').slice(-1)[0])+' : '):'';
       var rowcls=L.out==='4'?'four':L.out==='6'?'six':wkt(L.out)?'line wkt':'line';
       return '<div class="'+rowcls+'"><div class="del">'+esc(L.no||'')+'</div><div class="rslt">'+ftpRslt(L.out)+'</div><div class="text">'+prefix+abilize(L.txt)+'</div><div class="clear"></div></div>';
     }).join('');

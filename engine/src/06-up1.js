@@ -42,7 +42,7 @@
       try{
         var bwl=bowler&&bowler.name?bowler.name.split(' ').slice(-1)[0]:'';
         var bat=sb&&sb.p?sb.p.name.split(' ').slice(-1)[0]:'';
-        if(bwl&&bat)return bwl+' to '+bat+' : '+base;
+        if(bwl&&bat){var pre=bwl+' to '+bat+' : ';if(base.indexOf(pre)===0)return base;return pre+base;}
       }catch(e){}
       return base;
     };
