@@ -7,10 +7,11 @@
  * globals (ballDist, renderMatch).
  *
  * Ground rules:
- *  - The pristine engine FILE is never edited (until the P0 golden-master
- *    replay net replaces the hash-lock). The only balance changes live in
- *    features/engine-tuning.js: a documented runtime layer that is
- *    symmetric (never keyed to the user's team) and seed-deterministic.
+ *  - Gameplay is guarded by golden-master replays (test/replay.test.mjs):
+ *    any change must reproduce the recorded ball logs bit-for-bit, or be
+ *    an intentional model change re-blessed via tools/record-masters.mjs
+ *    and passed through the bench gate. Balance changes stay symmetric
+ *    (never keyed to the user's team) and seed-deterministic.
  *  - Matches are always real engine matches; results are never fabricated.
  */
 var FOC = {};

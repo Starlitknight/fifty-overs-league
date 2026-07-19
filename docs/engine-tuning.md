@@ -34,6 +34,22 @@ own model trades in.
 All numbers live in the module's single `CFG` object with per-knob
 comments. Magnitudes are deliberately gentle (≤ ~18% on any one outcome).
 
+## The golden-master replay net
+
+`test/replay.test.mjs` runs the SHIPPED page headless in a Node VM
+(`test/engine-vm.mjs` — full engine + overlay + bundle composition,
+bit-identical to the browser) and asserts it reproduces the recorded
+ball-by-ball logs in `test/golden/masters.json`. This replaced the old
+engine-file hash-lock: refactors must reproduce the masters exactly;
+intentional gameplay changes re-bless them:
+
+```
+./build.sh && node tools/record-masters.mjs && node tools/engine-bench.mjs
+```
+
+and commit the updated masters alongside the change. A refactor that
+alters masters is a regression, not a re-bless.
+
 ## The benchmark gate
 
 After **any** edit to `CFG` (or anything else that could shift balance):

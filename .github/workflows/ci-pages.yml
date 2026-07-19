@@ -1,13 +1,15 @@
-# CI for Fifty Overs: unit tests, a reproducible build, and a pinned-engine
-# integrity check on every push; a GitHub Pages artifact deploy that only
-# runs from the default branch AFTER tests pass.
+# CI for Fifty Overs: a reproducible build, unit tests INCLUDING the
+# golden-master replay suite (test/replay.test.mjs — the built page must
+# reproduce recorded ball-by-ball logs bit-for-bit; this replaced the old
+# pinned-engine sha check), on every push; a GitHub Pages artifact deploy
+# that only runs from the default branch AFTER tests pass.
 #
 # IMPORTANT — current publication path: the live site is served by GitHub
 # Pages directly from committed root files (index.html / client/game.html on
 # the default branch). Switching the Pages source to "GitHub Actions" without
 # coordination would take the game offline, so the deploy job below is gated
-# behind the repository variable PAGES_VIA_ACTIONS. Follow-up (documented in
-# docs/first-summer.md): flip the Pages source to Actions in repo settings,
+# behind the repository variable PAGES_VIA_ACTIONS. Follow-up: flip the
+# Pages source to Actions in repo settings,
 # set PAGES_VIA_ACTIONS=true, and the artifact deploy takes over atomically.
 #
 # No secrets are read or written here. Supabase service-role keys must never
@@ -36,13 +38,10 @@ jobs:
         run: |
           node --check client/league-overlay.js
           while IFS= read -r f; do [ -n "$f" ] && node --check "client/src/$f"; done < client/src/manifest.txt
-      - name: Unit tests (save migration, identity, lineup, promises, chapters)
-        run: node --test test/*.test.mjs
-      - name: Build site from pristine engine + overlay + campaign
+      - name: Build site from engine + overlay + bundle
         run: ./build.sh
-      - name: Verify the pristine engine is untouched
-        run: |
-          echo "e558745ede94e2502d5cccaa829feb42818cbcb1e779664c4b784a851b3f00ff  Fifty_Overs_Club_Manager_2026_v11_6.html" | sha256sum -c -
+      - name: Unit tests + golden-master replays (gameplay must be bit-identical)
+        run: node --test test/*.test.mjs
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
