@@ -2327,10 +2327,18 @@
   // re-apply fixture match-times after any re-render of the game page
   try {
     var _mt = null, pg0 = document.getElementById("page");
-    if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); }, 40); }).observe(pg0, { childList: true, subtree: true });
+    // The page MutationObserver is retired. The same sweep now runs:
+    //   - synchronously after every navigation (foAfterRoute below)
+    //   - debounced after every match render (foMatchRenderHooks)
+    //   - on a slow safety-net interval for any async DOM writer
+    window.foDecorateSweep = function () { foRenderScout(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); foHideWeekChip(); };
+    var _sw = null;
+    window.foSweepSoon = function () { clearTimeout(_sw); _sw = setTimeout(window.foDecorateSweep, 40); };
+    foMatchRenderHooks.push(window.foSweepSoon);
+    setInterval(window.foSweepSoon, 1500);
   } catch (e) {}
   // first-class post-route decoration (core route() calls this in a finally)
-  window.foAfterRoute = function () { bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} };
+  window.foAfterRoute = function () { bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} try { window.foDecorateSweep(); } catch (e) {} };
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();

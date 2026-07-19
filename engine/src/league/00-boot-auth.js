@@ -258,6 +258,9 @@
   function ensureNav() {
     try {
       var tb = document.getElementById("topbar"); if (!tb) return;
+      // scoped reactive hide: a topbar timer keeps re-adding the week/bank
+      // chips, so this tiny observer (topbar-only) hides them instantly;
+      // the page-wide decorator observer stays retired
       if (!tb.__foChipObs && window.MutationObserver) {
         tb.__foChipObs = 1;
         new MutationObserver(function () { foHideWeekChip(); }).observe(tb, { childList: true, subtree: true });
