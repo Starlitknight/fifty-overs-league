@@ -358,10 +358,7 @@
       window.pgScorecard.__foFp = 1;
     }
     // live match viewer: a Charts tab beside Commentary/Scorecard
-    if (typeof window.renderMatch === "function" && !window.renderMatch.__foCharts) {
-      var _rmC = window.renderMatch;
-      window.renderMatch = function () {
-        _rmC.apply(this, arguments);
+    foMatchRenderHooks.push(function () {
         try {
           if (typeof M === "undefined" || !M || !M.innings) return;
           var links = document.querySelector(".ftp-match-links");
@@ -391,9 +388,7 @@
             if (body) body.innerHTML = "<div class='match-subpanel'>" + foMatchCharts(M.innings.filter(Boolean), M.worm) + "</div>";
           }
         } catch (e) {}
-      };
-      window.renderMatch.__foCharts = 1;
-    }
+      });
     var cs = document.createElement("style");
     cs.textContent =
       "html body .fo-sci-head{display:flex;justify-content:space-between;align-items:baseline;background:#07162E !important;color:#FFFEFC !important;padding:11px 14px;font-size:14.5px}" +

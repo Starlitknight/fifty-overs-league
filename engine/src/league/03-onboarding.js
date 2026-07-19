@@ -3194,11 +3194,7 @@
     } catch (e) {}
   }
   try {
-    if (typeof window.renderMatch === "function" && !window.renderMatch.__foJTut) {
-      var _rmJ = window.renderMatch;
-      window.renderMatch = function () { _rmJ.apply(this, arguments); foJTutBar(); };
-      window.renderMatch.__foJTut = 1;
-    }
+    foMatchRenderHooks.push(foJTutBar);
   } catch (eRM) {}
   function foJWatch() {
     try { if (window.__foTutIv) clearInterval(window.__foTutIv); } catch (e) {}

@@ -1286,6 +1286,7 @@ function playerLink(p){return `<a href="#/player?n=${encodeURIComponent(p.name)}
 
 // ---------- router ----------
 function route(){
+  try{
   const h=location.hash||'#/club';
   const [path,qs]=h.slice(2).split('?');
   const q={};if(qs)for(const kv of qs.split('&')){const [k,v]=kv.split('=');q[k]=decodeURIComponent(v||'')}
@@ -1302,6 +1303,10 @@ function route(){
   const P={club:pgClub,office:pgOffice,matches:pgMatches,squad:pgSquad,orders:pgOrders,players:pgPlayers,
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   (P[App.page]||pgClub)(q);
+  }finally{
+    // first-class post-route hook: the league layer decorates the page here
+    if(typeof window!=='undefined'&&typeof window.foAfterRoute==='function'){try{window.foAfterRoute()}catch(eAR){}}
+  }
 }
 window.addEventListener('hashchange',route);
 
@@ -2213,6 +2218,8 @@ function toggleAutoplay(){
   renderMatch();
 }
 function renderMatch(){
+  try{
+  if(typeof App!=='undefined'&&App&&App.page!=='match')return;   // navigated away mid-broadcast
   if(!M){pgMatch();return}
   const t=userTeam();
   // toss stage UI
@@ -2375,6 +2382,10 @@ function renderMatch(){
    <div class="mc-cards">${head}</div>
   </div>`;
   if(!M.done) setTimeout(foEnsureAutoplay,0);
+  }finally{
+    // first-class post-render hook (tab links, charts, tutorial bar)
+    if(typeof window!=='undefined'&&typeof window.foAfterMatchRender==='function'){try{window.foAfterMatchRender()}catch(eMR){}}
+  }
 }
 
 // ---------- Scorecard ----------

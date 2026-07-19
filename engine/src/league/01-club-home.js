@@ -1881,14 +1881,8 @@
   // #/matches and #/matchday - so a running match repainted itself over other
   // pages on every tick. Guard the renderer and fix the autoplay path test.
   try {
-    if (typeof window.renderMatch === "function" && !window.renderMatch.__foGuard) {
-      var _foRM = window.renderMatch;
-      window.renderMatch = function () {
-        try { if (App && App.page !== "match") return; } catch (e) {}
-        return _foRM.apply(this, arguments);
-      };
-      window.renderMatch.__foGuard = 1;
-    }
+    // (the away-from-match render guard is the first line of the engine's
+    // renderMatch now)
     if (typeof window.foEnsureAutoplay === "function") {
       window.foEnsureAutoplay = function () {
         if (window.__ap || typeof M === "undefined" || !M || M.done) return;
@@ -2335,7 +2329,8 @@
     var _mt = null, pg0 = document.getElementById("page");
     if (pg0 && window.MutationObserver) new MutationObserver(function () { clearTimeout(_mt); _mt = setTimeout(function () { foRenderScout(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); }, 40); }).observe(pg0, { childList: true, subtree: true });
   } catch (e) {}
-  if (typeof window.route === "function") { var _rt = window.route; window.route = function () { var r = _rt.apply(this, arguments); bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} return r; }; }
+  // first-class post-route decoration (core route() calls this in a finally)
+  window.foAfterRoute = function () { bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} };
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
