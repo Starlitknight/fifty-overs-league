@@ -15,12 +15,11 @@
     clearInterval(t);
     if (!ready) return;   // engine never appeared; stay dormant
     try {
-      FOC.engineTuning.install();
       FOC.smoothRender.install();
       FOC.oval.init();
       window.__foSummer = {
         adapter: FOC.adapter,
-        oval: FOC.oval, tuning: FOC.engineTuning, smooth: FOC.smoothRender
+        oval: FOC.oval, smooth: FOC.smoothRender
       };
       try { console.info("Fifty Overs presentation layer ready."); } catch (e2) {}
     } catch (e3) {}

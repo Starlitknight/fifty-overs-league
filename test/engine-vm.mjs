@@ -111,8 +111,8 @@ export function makeEngine() {
     try { fn(); } catch (e) {}
   }
 
-  if (!ctx.window.ballDist || !ctx.window.ballDist.__foTuned) {
-    throw new Error('engine-vm: tuning layer did not install — shipped composition incomplete');
+  if (vm.runInContext('typeof foTuneDist', ctx) !== 'function') {
+    throw new Error('engine-vm: engine tuning (foTuneDist) missing — build incomplete');
   }
 
   /* headless full match through the SHIPPED globals (wrapped pickXI,

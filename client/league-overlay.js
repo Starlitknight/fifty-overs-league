@@ -3973,19 +3973,7 @@
     if (foHashPath() === "#/match" && typeof window.route === "function") window.route();
   }
   try {
-    if (typeof window.applyToss === "function" && !window.applyToss.__fo) {
-      var _foAT = window.applyToss;
-      window.applyToss = function () {
-        try {
-          if (typeof M !== "undefined" && M && M.innings && M.innings[0] &&
-              ((M.innings[0].legal || 0) > 0 || (M.log || []).length > 2) && M.batFirstTeam) {
-            return;   // the toss is history: never reset a started innings
-          }
-        } catch (e) {}
-        return _foAT.apply(this, arguments);
-      };
-      window.applyToss.__fo = 1;
-    }
+    // (the started-innings toss guard now lives in the engine's applyToss)
   } catch (e) {}
   window.__foFrTest = { resume: function (st) { return foFrResume(st); }, keeper: function () { return foFriendlyKeeper(); } };
   function foFriendlyKeeper() {
@@ -12303,25 +12291,8 @@
   // =========================================================================
   var FO_ORD_COLS = ["#2d6a8f", "#a33328", "#1c5537", "#c08a2b", "#6a4a8f", "#0E6E6A", "#8f5a2d"];
   try {
-    if (typeof window.pickXI === "function" && !window.pickXI.__foXi) {
-      var _foPickXI = window.pickXI;
-      window.pickXI = function (team) {
-        try {
-          var O = null;
-          if (typeof M !== "undefined" && M && M.ordersMap && M.ordersMap[team.name]) O = M.ordersMap[team.name];
-          else { try { if (typeof App !== "undefined" && App.orders && userTeam() === team) O = App.orders; } catch (eU) {} }
-          var xiN = O && O.xi;
-          if (xiN && xiN.length === 11) {
-            var by = {}; (team.players || []).forEach(function (p) { by[p.name] = p; });
-            var picked = [], seen = {};
-            xiN.forEach(function (nm) { if (by[nm] && !seen[nm]) { seen[nm] = 1; picked.push(by[nm]); } });
-            if (picked.length === 11 && picked.filter(function (p) { return p.bowlType; }).length >= 5) return picked;
-          }
-        } catch (e) {}
-        return _foPickXI.apply(this, arguments);
-      };
-      window.pickXI.__foXi = 1;
-    }
+    // (set-XI honoring — ordersMap / saved user XI — now lives in the
+    // engine's pickXI itself)
   } catch (e) {}
   // the chosen XI as player objects; heals itself if names went stale
   function foOrdXI() {

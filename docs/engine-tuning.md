@@ -1,10 +1,10 @@
 # The engine tuning layer
 
-The match engine ships as a pristine, hash-locked file (`./build.sh` must
-always print sha256 `e558745e…`). All balance changes therefore live in ONE
-place: `client/src/features/engine-tuning.js`, a runtime layer that wraps
-the engine's global `ballDist` and reshapes each ball's outcome
-distribution **before** the engine's single seeded draw.
+The tuning model lives IN the engine (`foTuneDist` / `foTurnsAway` /
+the `FO_TUNE` config, applied at the tail of `ballDist` before the single
+seeded draw). It began life as a runtime wrapper when the engine file was
+hash-locked; the fold was proven behavior-identical by the golden-master
+replay suite.
 
 Multiplying an outcome's probability by `f` and renormalizing is exactly a
 `+log(f)` shift on that outcome's logit — the same currency the engine's
@@ -31,8 +31,7 @@ own model trades in.
 | Matchup geometry | Spin turning **away** from the bat (off-spin→LHB, leg-spin/SLA→RHB) boosts caught/stumped; spin turning **in** trades edges for lbw/bowled; cross-angle pace edges slightly more, same-angle pace pins pads. |
 | Field × intent | Attacking field vs attacking bat: edges carry, ring leaks fours. Spread field vs slogger: fours smothered into twos, sixes the risky way over. Blockers sit safely on an attacking field but score slower. |
 
-All numbers live in the module's single `CFG` object with per-knob
-comments. Magnitudes are deliberately gentle (≤ ~18% on any one outcome).
+All numbers live in the engine's `FO_TUNE` object with per-knob comments. Magnitudes are deliberately gentle (≤ ~18% on any one outcome).
 
 ## The golden-master replay net
 
@@ -52,7 +51,7 @@ alters masters is a regression, not a re-bless.
 
 ## The benchmark gate
 
-After **any** edit to `CFG` (or anything else that could shift balance):
+After **any** edit to `FO_TUNE` (or anything else that could shift balance):
 
 ```
 ./build.sh && node tools/engine-bench.mjs      # BENCH_N=24 for more seeds

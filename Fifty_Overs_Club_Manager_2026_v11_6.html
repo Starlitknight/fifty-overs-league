@@ -467,10 +467,84 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   lo['wC']+=0.174; // drop-model compensation
   const m=Math.max(...Object.values(lo));let Z=0;const e={};
   for(const k in lo){e[k]=Math.exp(lo[k]-m);Z+=e[k]}for(const k in e)e[k]/=Z;
-  return e;
+  return foTuneDist(e,bat,bowl,ph,intent,pitch,field,over);
+}
+// ---- engine tuning (folded from the former runtime wrapper; see
+// docs/engine-tuning.md). Deterministic and symmetric: keyed to
+// conditions, never to which team is the user's. window.__foTuneOff=1
+// restores the stock model (the A/B lever of tools/engine-bench.mjs).
+// After ANY edit to FO_TUNE run:
+//   ./build.sh && node tools/record-masters.mjs && node tools/engine-bench.mjs
+const FO_TUNE={
+  wear:{dry2SpinW:1.16,dry2SpinDot:1.04,dry2Four:0.97,crack2BLbw:1.10,crack2C:1.05,
+    green2C:0.88,green2BLbw:0.94,green2Four:1.03,lateOver:35,lateSpinW:1.06},
+  matchup:{awayC:1.18,awayST:1.10,awayDot:1.02,inLBW:1.18,inB:1.10,inC:0.85,
+    paceCrossC:1.05,paceSameLBW:1.05},
+  fieldIntent:{attAggC:1.08,attAggFour:1.02,attBlockDot:1.05,attBlockOne:0.97,
+    defAggFour:0.94,defAggTwo:1.08,defAggSix:1.02,defAggW:0.98}
+};
+const FO_TUNE_WPITCH=["wC","wB","wLBW","wST"],FO_TUNE_WALL=["wC","wB","wLBW","wRO","wST"];
+// does this bowler's stock ball turn away from this batter's outside edge?
+function foTurnsAway(bowl,bat){
+  const bt=bowl.bowlType;
+  if(bt==='fingerSpin')return (bowl.hand||'R')!==(bat.hand||'R');
+  if(bt==='wristSpin')return (bowl.hand||'R')===(bat.hand||'R');
+  return false;
+}
+function foTuneDist(e,bat,bowl,ph,intent,pitch,field,over){
+  try{
+    if(typeof window!=='undefined'&&window.__foTuneOff)return e;
+    const inns=(typeof M!=='undefined'&&M)?(M.inns||0):0;
+    const f={},C=FO_TUNE;
+    const mul=(k,v)=>{f[k]=(f[k]||1)*v};
+    const mulAll=(ks,v)=>{for(const k of ks)mul(k,v)};
+    const tc=typeClass(bowl.bowlType||'fastMedium');
+    // A. pitch wear
+    if(inns>=1){
+      if(pitch==='dry'&&tc==='spin'){mulAll(FO_TUNE_WPITCH,C.wear.dry2SpinW);mul('dot',C.wear.dry2SpinDot);mul('4',C.wear.dry2Four)}
+      else if(pitch==='cracked'){mul('wB',C.wear.crack2BLbw);mul('wLBW',C.wear.crack2BLbw);mul('wC',C.wear.crack2C)}
+      else if(pitch==='green'&&tc==='pace'){mul('wC',C.wear.green2C);mul('wB',C.wear.green2BLbw);mul('wLBW',C.wear.green2BLbw);mul('4',C.wear.green2Four)}
+    }
+    if((pitch==='dry'||pitch==='cracked')&&tc==='spin'&&over>=C.wear.lateOver)mulAll(FO_TUNE_WPITCH,C.wear.lateSpinW);
+    // B. matchup geometry
+    if(tc==='spin'){
+      if(foTurnsAway(bowl,bat)){mul('wC',C.matchup.awayC);mul('wST',C.matchup.awayST);mul('dot',C.matchup.awayDot)}
+      else{mul('wLBW',C.matchup.inLBW);mul('wB',C.matchup.inB);mul('wC',C.matchup.inC)}
+    }else{
+      if((bowl.hand||'R')!==(bat.hand||'R'))mul('wC',C.matchup.paceCrossC);
+      else mul('wLBW',C.matchup.paceSameLBW);
+    }
+    // C. field x intent
+    if(field==='att'){
+      if(intent>=1){mul('wC',C.fieldIntent.attAggC);mul('4',C.fieldIntent.attAggFour)}
+      else{mul('dot',C.fieldIntent.attBlockDot);mul('1',C.fieldIntent.attBlockOne)}
+    }else if(field==='def'&&intent>=2){
+      mul('4',C.fieldIntent.defAggFour);mul('2',C.fieldIntent.defAggTwo);mul('6',C.fieldIntent.defAggSix);
+      mulAll(FO_TUNE_WALL,C.fieldIntent.defAggW);
+    }
+    const out={};let Zt=0;
+    for(const k in e){out[k]=e[k]*(f[k]||1);Zt+=out[k]}
+    if(!(Zt>0))return e;
+    for(const k in out)out[k]/=Zt;
+    return out;
+  }catch(err){return e}
 }
 // ---------- team prep: pick XI (keeper + >=5 bowlers + best bats), order by mpos ----------
 function pickXI(team){
+  // a set XI (NPC ordersMap or the user's saved orders) wins outright,
+  // if it names 11 real players including five bowlers
+  try{
+    let O=null;
+    if(typeof M!=='undefined'&&M&&M.ordersMap&&M.ordersMap[team.name])O=M.ordersMap[team.name];
+    else{try{if(typeof App!=='undefined'&&App.orders&&userTeam()===team)O=App.orders}catch(eU){}}
+    const xiN=O&&O.xi;
+    if(xiN&&xiN.length===11){
+      const by={};(team.players||[]).forEach(p=>{by[p.name]=p});
+      const picked=[],seen={};
+      xiN.forEach(nm=>{if(by[nm]&&!seen[nm]){seen[nm]=1;picked.push(by[nm])}});
+      if(picked.length===11&&picked.filter(p=>p.bowlType).length>=5)return picked;
+    }
+  }catch(e){}
   const P=team.players.slice();
   const kps=P.filter(p=>p.keeper).sort((a,b)=>b.bat-a.bat);
   const keeper=kps[0]||P.sort((a,b)=>b.bat-a.bat)[0];
@@ -1891,6 +1965,10 @@ function resolveToss(call){
   }
 }
 function applyToss(userBatsFirst){
+  // the toss is history: never reset a started innings
+  try{
+    if(M&&M.innings&&M.innings[0]&&((M.innings[0].legal||0)>0||(M.log||[]).length>2)&&M.batFirstTeam)return;
+  }catch(e){}
   const bat1=userBatsFirst?M.user:M.ai,bowl1=userBatsFirst?M.ai:M.user;
   M.innings[0]=mkInns(bat1,bowl1);M.batFirstTeam=bat1.name;
   if(App.tossState.stage!=='done')App.tossState={stage:'done',txt:`${M.user.name} won the toss and chose to ${userBatsFirst?'bat':'bowl'}.`};

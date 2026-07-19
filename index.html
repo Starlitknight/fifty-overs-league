@@ -467,10 +467,84 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   lo['wC']+=0.174; // drop-model compensation
   const m=Math.max(...Object.values(lo));let Z=0;const e={};
   for(const k in lo){e[k]=Math.exp(lo[k]-m);Z+=e[k]}for(const k in e)e[k]/=Z;
-  return e;
+  return foTuneDist(e,bat,bowl,ph,intent,pitch,field,over);
+}
+// ---- engine tuning (folded from the former runtime wrapper; see
+// docs/engine-tuning.md). Deterministic and symmetric: keyed to
+// conditions, never to which team is the user's. window.__foTuneOff=1
+// restores the stock model (the A/B lever of tools/engine-bench.mjs).
+// After ANY edit to FO_TUNE run:
+//   ./build.sh && node tools/record-masters.mjs && node tools/engine-bench.mjs
+const FO_TUNE={
+  wear:{dry2SpinW:1.16,dry2SpinDot:1.04,dry2Four:0.97,crack2BLbw:1.10,crack2C:1.05,
+    green2C:0.88,green2BLbw:0.94,green2Four:1.03,lateOver:35,lateSpinW:1.06},
+  matchup:{awayC:1.18,awayST:1.10,awayDot:1.02,inLBW:1.18,inB:1.10,inC:0.85,
+    paceCrossC:1.05,paceSameLBW:1.05},
+  fieldIntent:{attAggC:1.08,attAggFour:1.02,attBlockDot:1.05,attBlockOne:0.97,
+    defAggFour:0.94,defAggTwo:1.08,defAggSix:1.02,defAggW:0.98}
+};
+const FO_TUNE_WPITCH=["wC","wB","wLBW","wST"],FO_TUNE_WALL=["wC","wB","wLBW","wRO","wST"];
+// does this bowler's stock ball turn away from this batter's outside edge?
+function foTurnsAway(bowl,bat){
+  const bt=bowl.bowlType;
+  if(bt==='fingerSpin')return (bowl.hand||'R')!==(bat.hand||'R');
+  if(bt==='wristSpin')return (bowl.hand||'R')===(bat.hand||'R');
+  return false;
+}
+function foTuneDist(e,bat,bowl,ph,intent,pitch,field,over){
+  try{
+    if(typeof window!=='undefined'&&window.__foTuneOff)return e;
+    const inns=(typeof M!=='undefined'&&M)?(M.inns||0):0;
+    const f={},C=FO_TUNE;
+    const mul=(k,v)=>{f[k]=(f[k]||1)*v};
+    const mulAll=(ks,v)=>{for(const k of ks)mul(k,v)};
+    const tc=typeClass(bowl.bowlType||'fastMedium');
+    // A. pitch wear
+    if(inns>=1){
+      if(pitch==='dry'&&tc==='spin'){mulAll(FO_TUNE_WPITCH,C.wear.dry2SpinW);mul('dot',C.wear.dry2SpinDot);mul('4',C.wear.dry2Four)}
+      else if(pitch==='cracked'){mul('wB',C.wear.crack2BLbw);mul('wLBW',C.wear.crack2BLbw);mul('wC',C.wear.crack2C)}
+      else if(pitch==='green'&&tc==='pace'){mul('wC',C.wear.green2C);mul('wB',C.wear.green2BLbw);mul('wLBW',C.wear.green2BLbw);mul('4',C.wear.green2Four)}
+    }
+    if((pitch==='dry'||pitch==='cracked')&&tc==='spin'&&over>=C.wear.lateOver)mulAll(FO_TUNE_WPITCH,C.wear.lateSpinW);
+    // B. matchup geometry
+    if(tc==='spin'){
+      if(foTurnsAway(bowl,bat)){mul('wC',C.matchup.awayC);mul('wST',C.matchup.awayST);mul('dot',C.matchup.awayDot)}
+      else{mul('wLBW',C.matchup.inLBW);mul('wB',C.matchup.inB);mul('wC',C.matchup.inC)}
+    }else{
+      if((bowl.hand||'R')!==(bat.hand||'R'))mul('wC',C.matchup.paceCrossC);
+      else mul('wLBW',C.matchup.paceSameLBW);
+    }
+    // C. field x intent
+    if(field==='att'){
+      if(intent>=1){mul('wC',C.fieldIntent.attAggC);mul('4',C.fieldIntent.attAggFour)}
+      else{mul('dot',C.fieldIntent.attBlockDot);mul('1',C.fieldIntent.attBlockOne)}
+    }else if(field==='def'&&intent>=2){
+      mul('4',C.fieldIntent.defAggFour);mul('2',C.fieldIntent.defAggTwo);mul('6',C.fieldIntent.defAggSix);
+      mulAll(FO_TUNE_WALL,C.fieldIntent.defAggW);
+    }
+    const out={};let Zt=0;
+    for(const k in e){out[k]=e[k]*(f[k]||1);Zt+=out[k]}
+    if(!(Zt>0))return e;
+    for(const k in out)out[k]/=Zt;
+    return out;
+  }catch(err){return e}
 }
 // ---------- team prep: pick XI (keeper + >=5 bowlers + best bats), order by mpos ----------
 function pickXI(team){
+  // a set XI (NPC ordersMap or the user's saved orders) wins outright,
+  // if it names 11 real players including five bowlers
+  try{
+    let O=null;
+    if(typeof M!=='undefined'&&M&&M.ordersMap&&M.ordersMap[team.name])O=M.ordersMap[team.name];
+    else{try{if(typeof App!=='undefined'&&App.orders&&userTeam()===team)O=App.orders}catch(eU){}}
+    const xiN=O&&O.xi;
+    if(xiN&&xiN.length===11){
+      const by={};(team.players||[]).forEach(p=>{by[p.name]=p});
+      const picked=[],seen={};
+      xiN.forEach(nm=>{if(by[nm]&&!seen[nm]){seen[nm]=1;picked.push(by[nm])}});
+      if(picked.length===11&&picked.filter(p=>p.bowlType).length>=5)return picked;
+    }
+  }catch(e){}
   const P=team.players.slice();
   const kps=P.filter(p=>p.keeper).sort((a,b)=>b.bat-a.bat);
   const keeper=kps[0]||P.sort((a,b)=>b.bat-a.bat)[0];
@@ -1891,6 +1965,10 @@ function resolveToss(call){
   }
 }
 function applyToss(userBatsFirst){
+  // the toss is history: never reset a started innings
+  try{
+    if(M&&M.innings&&M.innings[0]&&((M.innings[0].legal||0)>0||(M.log||[]).length>2)&&M.batFirstTeam)return;
+  }catch(e){}
   const bat1=userBatsFirst?M.user:M.ai,bowl1=userBatsFirst?M.ai:M.user;
   M.innings[0]=mkInns(bat1,bowl1);M.batFirstTeam=bat1.name;
   if(App.tossState.stage!=='done')App.tossState={stage:'done',txt:`${M.user.name} won the toss and chose to ${userBatsFirst?'bat':'bowl'}.`};
@@ -10325,19 +10403,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (foHashPath() === "#/match" && typeof window.route === "function") window.route();
   }
   try {
-    if (typeof window.applyToss === "function" && !window.applyToss.__fo) {
-      var _foAT = window.applyToss;
-      window.applyToss = function () {
-        try {
-          if (typeof M !== "undefined" && M && M.innings && M.innings[0] &&
-              ((M.innings[0].legal || 0) > 0 || (M.log || []).length > 2) && M.batFirstTeam) {
-            return;   // the toss is history: never reset a started innings
-          }
-        } catch (e) {}
-        return _foAT.apply(this, arguments);
-      };
-      window.applyToss.__fo = 1;
-    }
+    // (the started-innings toss guard now lives in the engine's applyToss)
   } catch (e) {}
   window.__foFrTest = { resume: function (st) { return foFrResume(st); }, keeper: function () { return foFriendlyKeeper(); } };
   function foFriendlyKeeper() {
@@ -10852,7 +10918,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260719-0801-a89d4d";
+  var FO_BUILD = "20260719-0804-4b480b";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18655,25 +18721,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // =========================================================================
   var FO_ORD_COLS = ["#2d6a8f", "#a33328", "#1c5537", "#c08a2b", "#6a4a8f", "#0E6E6A", "#8f5a2d"];
   try {
-    if (typeof window.pickXI === "function" && !window.pickXI.__foXi) {
-      var _foPickXI = window.pickXI;
-      window.pickXI = function (team) {
-        try {
-          var O = null;
-          if (typeof M !== "undefined" && M && M.ordersMap && M.ordersMap[team.name]) O = M.ordersMap[team.name];
-          else { try { if (typeof App !== "undefined" && App.orders && userTeam() === team) O = App.orders; } catch (eU) {} }
-          var xiN = O && O.xi;
-          if (xiN && xiN.length === 11) {
-            var by = {}; (team.players || []).forEach(function (p) { by[p.name] = p; });
-            var picked = [], seen = {};
-            xiN.forEach(function (nm) { if (by[nm] && !seen[nm]) { seen[nm] = 1; picked.push(by[nm]); } });
-            if (picked.length === 11 && picked.filter(function (p) { return p.bowlType; }).length >= 5) return picked;
-          }
-        } catch (e) {}
-        return _foPickXI.apply(this, arguments);
-      };
-      window.pickXI.__foXi = 1;
-    }
+    // (set-XI honoring — ordersMap / saved user XI — now lives in the
+    // engine's pickXI itself)
   } catch (e) {}
   // the chosen XI as player objects; heals itself if names went stale
   function foOrdXI() {
@@ -24437,164 +24486,6 @@ FOC.adapter = (function () {
   return { engineReady: engineReady, team: team, liveMatch: liveMatch };
 })();
 
-/* ---- features/engine-tuning.js ---- */
-/* features/engine-tuning — a deterministic realism layer over ballDist.
- *
- * The pristine engine file is hash-locked, but ballDist is a global
- * function: we wrap it and reshape the probability distribution it returns
- * BEFORE the engine's single seeded draw. Multiplying an outcome's
- * probability by f and renormalizing is exactly a +log(f) shift on its
- * logit — the same currency the engine itself trades in.
- *
- * Fairness rules:
- *  - No extra randomness is consumed (matches stay seed-deterministic).
- *  - Every adjustment is symmetric: it keys off pitch, innings, bowler
- *    type/hand, batter hand, field setting and intent — never off which
- *    team is the user's. Both sides of every match are tuned identically.
- *  - window.__foTuneOff = 1 restores the stock model (A/B benchmarking
- *    and an emergency kill switch).
- *
- * After ANY edit to CFG run the benchmark gate:
- *     ./build.sh && node tools/engine-bench.mjs
- * (docs/engine-tuning.md has the target bands and the full contract.)
- *
- * The three upgrades:
- *  A. Pitch wear — surfaces change across a match: dry decks turn more in
- *     the second innings (and late in an innings), cracked pitches get
- *     more uneven bounce, green seamers flatten out after innings one.
- *  B. Matchup geometry — spin turning AWAY from the bat (off-spin to a
- *     left-hander, leg-spin to a right-hander, SLA to a right-hander)
- *     hunts the outside edge; spin turning IN hunts pads and stumps but
- *     edges less. Cross-angle pace finds the edge a touch more often.
- *  C. Field × intent — an attacking field punishes aggression with edges
- *     but leaks boundaries; a spread field smothers boundaries against a
- *     slogger while conceding twos; blockers can sit safely on an
- *     attacking field but score slower.
- */
-FOC.engineTuning = (function () {
-  var CFG = {
-    wear: {
-      dry2SpinW: 1.16,      // dry pitch, 2nd innings: spin dismissals up
-      dry2SpinDot: 1.04,
-      dry2Four: 0.97,
-      crack2BLbw: 1.10,     // cracked, 2nd innings: uneven bounce → bowled/lbw
-      crack2C: 1.05,
-      green2C: 0.88,        // green flattens: seam catches fade in innings 2
-      green2BLbw: 0.94,
-      green2Four: 1.03,
-      lateOver: 35,         // dry/cracked footholes late in ANY innings
-      lateSpinW: 1.06
-    },
-    matchup: {
-      awayC: 1.18,          // spin turning away: outside edge to slip/keeper
-      awayST: 1.10,         //   ...and beaten in the drift, stumped
-      awayDot: 1.02,
-      inLBW: 1.18,          // spin turning in: pads and stumps in play
-      inB: 1.10,
-      inC: 0.85,
-      paceCrossC: 1.05,     // pace angling across the bat: edges
-      paceSameLBW: 1.05     // pace angling in: lbw
-    },
-    fieldIntent: {
-      attAggC: 1.08,        // attacking field vs attacking bat: edges carry
-      attAggFour: 1.02,     //   ...but the ring has gaps
-      attBlockDot: 1.05,    // blockers can sit on an attacking field
-      attBlockOne: 0.97,
-      defAggFour: 0.94,     // spread field vs slogger: boundaries dry up
-      defAggTwo: 1.08,      //   ...twos into the gaps instead
-      defAggSix: 1.02,      //   ...aerial is the way over a deep-set ring
-      defAggW: 0.98
-    }
-  };
-  var W_PITCH = ["wC", "wB", "wLBW", "wST"];   // pitch-driven dismissals (not run outs)
-  var W_ALL = ["wC", "wB", "wLBW", "wRO", "wST"];
-
-  function typeClassT(t) {
-    return (t === "fast" || t === "fastMedium" || t === "medium") ? "pace" : "spin";
-  }
-  // does this bowler's stock ball turn away from this batter's outside edge?
-  function turnsAway(bowl, bat) {
-    var bt = bowl.bowlType;
-    if (bt === "fingerSpin") return (bowl.hand || "R") !== (bat.hand || "R");
-    if (bt === "wristSpin") return (bowl.hand || "R") === (bat.hand || "R");
-    return false;
-  }
-
-  function tune(e, bat, bowl, ph, intent, pitch, field, over, inns) {
-    var f = {};
-    function mul(k, m) { f[k] = (f[k] || 1) * m; }
-    function mulAll(keys, m) { for (var i = 0; i < keys.length; i++) mul(keys[i], m); }
-    var tc = typeClassT(bowl.bowlType || "fastMedium");
-    var C = CFG;
-
-    // A. pitch wear
-    if (inns >= 1) {
-      if (pitch === "dry" && tc === "spin") {
-        mulAll(W_PITCH, C.wear.dry2SpinW);
-        mul("dot", C.wear.dry2SpinDot); mul("4", C.wear.dry2Four);
-      } else if (pitch === "cracked") {
-        mul("wB", C.wear.crack2BLbw); mul("wLBW", C.wear.crack2BLbw); mul("wC", C.wear.crack2C);
-      } else if (pitch === "green" && tc === "pace") {
-        mul("wC", C.wear.green2C); mul("wB", C.wear.green2BLbw); mul("wLBW", C.wear.green2BLbw);
-        mul("4", C.wear.green2Four);
-      }
-    }
-    if ((pitch === "dry" || pitch === "cracked") && tc === "spin" && over >= C.wear.lateOver) {
-      mulAll(W_PITCH, C.wear.lateSpinW);
-    }
-
-    // B. matchup geometry
-    if (tc === "spin") {
-      if (turnsAway(bowl, bat)) {
-        mul("wC", C.matchup.awayC); mul("wST", C.matchup.awayST); mul("dot", C.matchup.awayDot);
-      } else {
-        mul("wLBW", C.matchup.inLBW); mul("wB", C.matchup.inB); mul("wC", C.matchup.inC);
-      }
-    } else {
-      if ((bowl.hand || "R") !== (bat.hand || "R")) mul("wC", C.matchup.paceCrossC);
-      else mul("wLBW", C.matchup.paceSameLBW);
-    }
-
-    // C. field × intent
-    if (field === "att") {
-      if (intent >= 1) { mul("wC", C.fieldIntent.attAggC); mul("4", C.fieldIntent.attAggFour); }
-      else { mul("dot", C.fieldIntent.attBlockDot); mul("1", C.fieldIntent.attBlockOne); }
-    } else if (field === "def" && intent >= 2) {
-      mul("4", C.fieldIntent.defAggFour); mul("2", C.fieldIntent.defAggTwo);
-      mul("6", C.fieldIntent.defAggSix);
-      mulAll(W_ALL, C.fieldIntent.defAggW);
-    }
-
-    // renormalize
-    var out = {}, Z = 0, k;
-    for (k in e) { out[k] = e[k] * (f[k] || 1); Z += out[k]; }
-    if (!(Z > 0)) return e;
-    for (k in out) out[k] /= Z;
-    return out;
-  }
-
-  function install() {
-    if (typeof window === "undefined") return false;
-    if (typeof window.ballDist !== "function") return false;
-    if (window.ballDist.__foTuned) return true;
-    var orig = window.ballDist;
-    var wrapped = function (bat, bowl, ph, faced, intent, rrDef, pitch, field, over, ctx) {
-      var e = orig.apply(this, arguments);
-      try {
-        if (window.__foTuneOff) return e;
-        var inns = (typeof M !== "undefined" && M) ? (M.inns || 0) : 0;
-        return tune(e, bat, bowl, ph, intent, pitch, field, over, inns);
-      } catch (err) { return e; }
-    };
-    wrapped.__foTuned = true;
-    wrapped.__foOrig = orig;
-    window.ballDist = wrapped;
-    return true;
-  }
-
-  return { install: install, tune: tune, turnsAway: turnsAway, CFG: CFG };
-})();
-
 /* ---- features/smooth-render.js ---- */
 /* features/smooth-render — kill the per-ball page blink on the match centre.
  *
@@ -25206,12 +25097,11 @@ FOC.oval = (function () {
     clearInterval(t);
     if (!ready) return;   // engine never appeared; stay dormant
     try {
-      FOC.engineTuning.install();
       FOC.smoothRender.install();
       FOC.oval.init();
       window.__foSummer = {
         adapter: FOC.adapter,
-        oval: FOC.oval, tuning: FOC.engineTuning, smooth: FOC.smoothRender
+        oval: FOC.oval, smooth: FOC.smoothRender
       };
       try { console.info("Fifty Overs presentation layer ready."); } catch (e2) {}
     } catch (e3) {}
