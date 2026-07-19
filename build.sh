@@ -25,7 +25,7 @@ BOOT='<style id="fo-boot">html{background:#0B1322}html>body{visibility:hidden;an
 
 # Unique build stamp (UTC time + source hash). The league layer shows it and
 # polls version.json to offer one-tap updates when a newer build is deployed.
-BUILD_ID="$(date -u +%Y%m%d-%H%M)-$(cat engine/src/league/*.js engine/src/presentation/*.js | sha256sum | cut -c1-6)"
+BUILD_ID="$(date -u +%Y%m%d-%H%M)-$(cat engine/src/league/*.js engine/src/presentation/*.js engine/src/skin/*.css | sha256sum | cut -c1-6)"
 
 mkdir -p .build
 FO_BUILD_ID="$BUILD_ID" FO_BOOT="$BOOT" python3 - <<'PYASM'
@@ -48,11 +48,16 @@ for n in pres_names:
     pres += open('engine/src/presentation/' + n, encoding='utf-8').read()
 pres += '\n})();\n'
 
-tail = ('\n<script id="fo-league">\n' + league + '\n</script>\n' +
+skin = lambda f: open('engine/src/skin/' + f, encoding='utf-8').read()
+head_css = ('<style id="fo-skin-login">' + skin('10-login.css') + '</style>' +
+            '<style id="fo-skin-modal">' + skin('20-modal.css') + '</style>')
+tail = ('\n<style id="fo-brand">' + skin('30-brand.css') + '</style>\n' +
+        '<script id="fo-league">\n' + league + '\n</script>\n' +
         '<script id="fo-presentation">\n' + pres + '\n</script>\n')
 assert shell.count('</body></html>') == 1
 page = shell.replace('</body></html>', tail + '</body></html>')
 page = page.replace('<head>', '<head>' + boot, 1)
+page = page.replace('</head>', head_css + '</head>', 1)
 page = page.replace('__FO_BUILD__', build_id)
 
 open('.build/page.html', 'w', encoding='utf-8').write(page)
