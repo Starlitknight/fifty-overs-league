@@ -79,7 +79,7 @@ FOC.smoothRender = (function () {
       var live = document.getElementById("page");
       var tab = "";
       try { tab = (typeof UI !== "undefined" && UI && UI.matchTab) || ""; } catch (e0) {}
-      if (!live || location.hash.indexOf("#/match") !== 0 || /chart/i.test(tab)) {
+      if (!live || (location.hash || "").split("?")[0] !== "#/match" || /chart/i.test(tab)) {
         return orig.apply(this, arguments);
       }
       var stage = document.createElement("div");

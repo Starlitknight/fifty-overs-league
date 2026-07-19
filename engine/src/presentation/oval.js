@@ -247,7 +247,18 @@ FOC.oval = (function () {
       b1.style.transform = "translateY(" + off + "px)";
       b2.style.transform = "translateY(" + (-off) + "px)";
       if (n < runs) setTimeout(leg, 480);
-      else setTimeout(function () { b1.style.transform = b2.style.transform = ""; }, 520);
+      else setTimeout(function () {
+        if (runs % 2) {
+          // odd runs: the batters genuinely swapped ends. Snap the markers home
+          // WITHOUT the transition - animating the return read as an extra run.
+          b1.style.transition = b2.style.transition = "none";
+          b1.style.transform = b2.style.transform = "";
+          void b1.getBoundingClientRect();
+          b1.style.transition = b2.style.transition = "";
+        } else {
+          b1.style.transform = b2.style.transform = "";
+        }
+      }, 520);
     })();
   }
   function shatter() {
@@ -280,10 +291,14 @@ FOC.oval = (function () {
 
   function tick() {
     try {
-      if (location.hash.indexOf("#/match") !== 0) {
+      // EXACT path: "#/matches" and "#/matchday" also start with "#/match",
+      // and the prefix test used to mount the whole stage on the Matches page
+      if ((location.hash || "").split("?")[0] !== "#/match") {
         curField = null;
         var pg0 = document.getElementById("page");
         if (pg0 && pg0.classList.contains("fo-ovalgrid")) pg0.classList.remove("fo-ovalgrid");
+        var ov0 = document.getElementById("fo-oval");
+        if (ov0) ov0.remove();
         return;
       }
       if (typeof M === "undefined" || !M || !M.log) return;
@@ -354,6 +369,18 @@ FOC.oval = (function () {
       // the engine's full-screen FOUR/SIX/WICKET splash straddles the column
       // seam on the split stage, and the oval pops the same event on-field
       "body:has(#page.fo-ovalgrid) .bigflash{display:none}" +
+      "}" +
+      // Mobile: stack as menu -> oval -> crumb -> scoreboard -> commentary.
+      // The tab shell dissolves (display:contents) so the pill menu can sit
+      // above the animation while the body keeps its place below.
+      "@media(max-width:1019.98px){" +
+      "html body #page.fo-ovalgrid{display:flex;flex-direction:column}" +
+      "html body #page.fo-ovalgrid .ftp-match-shell{display:contents}" +
+      "html body #page.fo-ovalgrid .ftp-match-links{order:-3;display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px;padding:5px;margin:0 0 10px;position:static}" +
+      "html body #page.fo-ovalgrid .ftp-match-links h4{display:none}" +
+      "html body #page.fo-ovalgrid .ftp-match-links a{white-space:nowrap;font-size:12.5px !important;font-weight:600;line-height:1.2;padding:8px 12px !important;border:none !important;border-radius:8px}" +
+      "html body #page.fo-ovalgrid #fo-oval{order:-2}" +
+      "html body #page.fo-ovalgrid>.crumb{order:-1;margin:0 0 8px}" +
       "}" +
       ".ov-fld{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;border-radius:99px;padding:3px 10px;background:#1f2d4a;color:#cfd6e4}" +
       ".ov-fld.f-att{background:#C8674A;color:#fff}.ov-fld.f-def{background:#2E5A7A;color:#fff}.ov-fld.f-bal{background:#4E7A4E;color:#fff}" +

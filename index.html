@@ -2528,7 +2528,7 @@ function render(){if(App.page==='match')renderMatch()}
 function toggleAutoplay(){
   if(window.__ap){clearInterval(window.__ap);window.__ap=null;renderMatch();return}
   window.__ap=setInterval(()=>{
-    if(typeof M==='undefined'||!M||M.done||location.hash.indexOf('#/match')!==0){clearInterval(window.__ap);window.__ap=null;if(typeof M!=='undefined'&&M&&M.done)renderMatch();return}
+    if(typeof M==='undefined'||!M||M.done||(location.hash||'').split('?')[0]!=='#/match'){clearInterval(window.__ap);window.__ap=null;if(typeof M!=='undefined'&&M&&M.done)renderMatch();return}
     doBall();
   },(UI.apMs||2000));
   renderMatch();
@@ -4381,7 +4381,7 @@ startPendingIfNeeded=function(){
   const bat1=userBatsFirst?M.user:M.ai,bowl1=userBatsFirst?M.ai:M.user; M.innings[0]=mkInns(bat1,bowl1); M.batFirstTeam=bat1.name; setTimeout(foEnsureAutoplay,0);
 };
 function foEnsureAutoplay(){
-  if(window.__ap||!M||M.done)return; window.__ap=setInterval(()=>{if(!M||M.done||location.hash.indexOf('#/match')!==0){clearInterval(window.__ap);window.__ap=null;if(M&&M.done)renderMatch();return} doBall();},UI.apMs||1600);
+  if(window.__ap||!M||M.done)return; window.__ap=setInterval(()=>{if(!M||M.done||(location.hash||'').split('?')[0]!=='#/match'){clearInterval(window.__ap);window.__ap=null;if(M&&M.done)renderMatch();return} doBall();},UI.apMs||1600);
 }
 
 function foSplitDismissal(out){if(!out)return ['','']; if(out==='not out')return ['not out','']; let s=String(out); const ix=s.lastIndexOf(' b '); if(ix>0){return [s.slice(0,ix+1), 'b '+s.slice(ix+3)]} if(s.startsWith('b '))return ['',s]; if(s.startsWith('lbw b '))return ['lbw','b '+s.slice(6)]; return [s,'']}
@@ -4656,7 +4656,7 @@ a[href="#/editor"]{display:none!important}
     const my=M;   // the coin belongs to THIS match: never resolve a rebuilt or started one
     window.setTimeout(()=>{if(!M||M!==my||M.done||M.batFirstTeam)return;try{resolveToss(call)}catch(e){App.tossState={stage:'call'};try{renderMatch()}catch(e2){}}if(auto)window.setTimeout(()=>{if(App.orders.tossCall===call)App.orders.tossCall=''},80)},1400)};
 
-  function fo55EnsureAutoplay(){if(window.__ap||!M||M.done||!M.innings||!M.innings[M.inns])return;window.__ap=setInterval(()=>{if(!M||M.done||location.hash.indexOf('#/match')!==0){clearInterval(window.__ap);window.__ap=null;if(M&&M.done)renderMatch();return}doBall()},UI.apMs||1600)}
+  function fo55EnsureAutoplay(){if(window.__ap||!M||M.done||!M.innings||!M.innings[M.inns])return;window.__ap=setInterval(()=>{if(!M||M.done||(location.hash||'').split('?')[0]!=='#/match'){clearInterval(window.__ap);window.__ap=null;if(M&&M.done)renderMatch();return}doBall()},UI.apMs||1600)}
   function fo55IsTalentText(txt){return /SIX MACHINE|Finisher|PARTNERSHIP BREAKER|New Ball Specialist|Golden Arm|Mystery Ball|Bouncer|Lightning Hands|Rocket Arm|Safe Hands|Miser|Spin Killer|Pace Hunter|Fast Starter|Anchor|death specialist/i.test(txt||'')}
   function fo55CommPass(L,filter){filter=filter||'all';const txt=L.txt||'';if(filter==='all')return true;if(filter==='wickets')return isWkt(L.out)||/WICKET|out for|Partnership ends/i.test(txt);if(filter==='boundaries')return L.out==='4'||L.out==='6'||/FOUR|SIX/i.test(txt);if(filter==='overs')return L.mile||/End of over|DRINKS|Innings break|CHASE BEGINS|PLAY BEGINS/i.test(txt);if(filter==='talents')return fo55IsTalentText(txt);if(filter==='highlights')return L.mile||isWkt(L.out)||L.out==='4'||L.out==='6'||fo55IsTalentText(txt)||/DROPPED|FIFTY|HUNDRED/i.test(txt);return true}
   function fo55RenderText(txt){let h=esc(txt||'');['SIX MACHINE','PARTNERSHIP BREAKER','New Ball Specialist','Golden Arm','Mystery Ball','Bouncer','Finisher','Lightning Hands','Rocket Arm','Safe Hands','Miser','Spin Killer','Pace Hunter','Fast Starter','Anchor','death specialist'].forEach(n=>{const re=new RegExp('('+n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig');h=h.replace(re,'<span class="talent-hit">$1</span>')});return h}
@@ -6937,7 +6937,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if(ctx){var cap=((+ctx.captBowl||50)-50)/50, fld=((+ctx.fieldAvg||55)-55)/55, boost=Math.max(-.012,Math.min(.022,cap*.013+fld*.010));mul('dot',1+boost);mul('4',1-boost*.55);mul('6',1-boost*.45);mul('wRO',1+Math.max(0,boost*.65));}
       var tot=0;Object.keys(d).forEach(function(k){d[k]=Math.max(0,d[k]);tot+=d[k];});Object.keys(d).forEach(function(k){d[k]/=tot||1;});return d;};ballDist.__fo11fixed=true;}
   // Background simulation continues after leaving match page.
-  if(!window.__fo11_background_tick){window.__fo11_background_tick=setInterval(function(){try{if(typeof M==='undefined'||!M||M.done||!M.innings)return;if(window.__ap)return;doBall();if(/^#\/match/.test(location.hash)&&typeof renderMatch==='function')renderMatch();}catch(e){console.warn('[v11 background sim]',e);}},1400);}
+  if(!window.__fo11_background_tick){window.__fo11_background_tick=setInterval(function(){try{if(typeof M==='undefined'||!M||M.done||!M.innings)return;if(window.__ap)return;doBall();if((location.hash||'').split('?')[0]==='#/match'&&typeof renderMatch==='function')renderMatch();}catch(e){console.warn('[v11 background sim]',e);}},1400);}
   // Orders tactic compact table: actual v10 heading is "Tactics - set now...".
   function compactOrders(){if(!/^#\/orders/.test(location.hash))return;if(!App.orders.phaseIntent)App.orders.phaseIntent={pp:0,mid:0,death:1};if(!App.orders.fieldPlan)App.orders.fieldPlan={pp:'att',mid:'bal',death:'def'};var h=[].slice.call(document.querySelectorAll('.panel h4')).find(function(x){return /Tactics - set now|Batting tactics/i.test(x.textContent||'');});if(!h)return;var pad=h.parentNode.querySelector('.pad');if(!pad||pad.dataset.fo11compact)return;pad.dataset.fo11compact='1';function intent(ph){return '<select onchange="App.orders.phaseIntent[\''+ph+'\']=+this.value">'+[-1,0,1,2].map(function(v){return '<option value="'+v+'" '+(+App.orders.phaseIntent[ph]===v?'selected':'')+'>'+FO11_INTENT[String(v)]+'</option>';}).join('')+'</select>';}function field(ph){return '<select onchange="App.orders.fieldPlan[\''+ph+'\']=this.value">'+['att','bal','def'].map(function(v){return '<option value="'+v+'" '+(App.orders.fieldPlan[ph]===v?'selected':'')+'>'+FO11_FIELD[v]+'</option>';}).join('')+'</select>';}pad.innerHTML='<table><tr><th>Phase</th><th>Batting intent</th><th>Field setting</th></tr>'+['pp','mid','death'].map(function(ph){return '<tr><td><b>'+FO11_PHASE[ph]+'</b></td><td>'+intent(ph)+'</td><td>'+field(ph)+'</td></tr>';}).join('')+'</table><div class="small">Batting intent and bowling field setting are side by side to save space.</div>';}
   // Full post-match commentary with filters.
@@ -9902,7 +9902,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260719-1006-6213f2";
+  var FO_BUILD = "20260719-1013-c3d58e";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14414,7 +14414,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     try {
       var tut = (typeof M !== "undefined" && M && M.meta && M.meta.__tut);
       var bar = document.getElementById("fo-j-tutbar");
-      if (!tut || location.hash.indexOf("#/match") !== 0) { if (bar) bar.remove(); return; }
+      if (!tut || (location.hash || "").split("?")[0] !== "#/match") { if (bar) bar.remove(); return; }
       var page = document.getElementById("page");
       if (!page) return;
       var me = userTeam(); if (!me) return;
@@ -23310,7 +23310,7 @@ FOC.smoothRender = (function () {
       var live = document.getElementById("page");
       var tab = "";
       try { tab = (typeof UI !== "undefined" && UI && UI.matchTab) || ""; } catch (e0) {}
-      if (!live || location.hash.indexOf("#/match") !== 0 || /chart/i.test(tab)) {
+      if (!live || (location.hash || "").split("?")[0] !== "#/match" || /chart/i.test(tab)) {
         return orig.apply(this, arguments);
       }
       var stage = document.createElement("div");
@@ -23589,7 +23589,18 @@ FOC.oval = (function () {
       b1.style.transform = "translateY(" + off + "px)";
       b2.style.transform = "translateY(" + (-off) + "px)";
       if (n < runs) setTimeout(leg, 480);
-      else setTimeout(function () { b1.style.transform = b2.style.transform = ""; }, 520);
+      else setTimeout(function () {
+        if (runs % 2) {
+          // odd runs: the batters genuinely swapped ends. Snap the markers home
+          // WITHOUT the transition - animating the return read as an extra run.
+          b1.style.transition = b2.style.transition = "none";
+          b1.style.transform = b2.style.transform = "";
+          void b1.getBoundingClientRect();
+          b1.style.transition = b2.style.transition = "";
+        } else {
+          b1.style.transform = b2.style.transform = "";
+        }
+      }, 520);
     })();
   }
   function shatter() {
@@ -23622,10 +23633,14 @@ FOC.oval = (function () {
 
   function tick() {
     try {
-      if (location.hash.indexOf("#/match") !== 0) {
+      // EXACT path: "#/matches" and "#/matchday" also start with "#/match",
+      // and the prefix test used to mount the whole stage on the Matches page
+      if ((location.hash || "").split("?")[0] !== "#/match") {
         curField = null;
         var pg0 = document.getElementById("page");
         if (pg0 && pg0.classList.contains("fo-ovalgrid")) pg0.classList.remove("fo-ovalgrid");
+        var ov0 = document.getElementById("fo-oval");
+        if (ov0) ov0.remove();
         return;
       }
       if (typeof M === "undefined" || !M || !M.log) return;
@@ -23696,6 +23711,18 @@ FOC.oval = (function () {
       // the engine's full-screen FOUR/SIX/WICKET splash straddles the column
       // seam on the split stage, and the oval pops the same event on-field
       "body:has(#page.fo-ovalgrid) .bigflash{display:none}" +
+      "}" +
+      // Mobile: stack as menu -> oval -> crumb -> scoreboard -> commentary.
+      // The tab shell dissolves (display:contents) so the pill menu can sit
+      // above the animation while the body keeps its place below.
+      "@media(max-width:1019.98px){" +
+      "html body #page.fo-ovalgrid{display:flex;flex-direction:column}" +
+      "html body #page.fo-ovalgrid .ftp-match-shell{display:contents}" +
+      "html body #page.fo-ovalgrid .ftp-match-links{order:-3;display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px;padding:5px;margin:0 0 10px;position:static}" +
+      "html body #page.fo-ovalgrid .ftp-match-links h4{display:none}" +
+      "html body #page.fo-ovalgrid .ftp-match-links a{white-space:nowrap;font-size:12.5px !important;font-weight:600;line-height:1.2;padding:8px 12px !important;border:none !important;border-radius:8px}" +
+      "html body #page.fo-ovalgrid #fo-oval{order:-2}" +
+      "html body #page.fo-ovalgrid>.crumb{order:-1;margin:0 0 8px}" +
       "}" +
       ".ov-fld{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;border-radius:99px;padding:3px 10px;background:#1f2d4a;color:#cfd6e4}" +
       ".ov-fld.f-att{background:#C8674A;color:#fff}.ov-fld.f-def{background:#2E5A7A;color:#fff}.ov-fld.f-bal{background:#4E7A4E;color:#fff}" +

@@ -2238,7 +2238,7 @@ function render(){if(App.page==='match')renderMatch()}
 function toggleAutoplay(){
   if(window.__ap){clearInterval(window.__ap);window.__ap=null;renderMatch();return}
   window.__ap=setInterval(()=>{
-    if(typeof M==='undefined'||!M||M.done||location.hash.indexOf('#/match')!==0){clearInterval(window.__ap);window.__ap=null;if(typeof M!=='undefined'&&M&&M.done)renderMatch();return}
+    if(typeof M==='undefined'||!M||M.done||(location.hash||'').split('?')[0]!=='#/match'){clearInterval(window.__ap);window.__ap=null;if(typeof M!=='undefined'&&M&&M.done)renderMatch();return}
     doBall();
   },(UI.apMs||2000));
   renderMatch();
@@ -4091,7 +4091,7 @@ startPendingIfNeeded=function(){
   const bat1=userBatsFirst?M.user:M.ai,bowl1=userBatsFirst?M.ai:M.user; M.innings[0]=mkInns(bat1,bowl1); M.batFirstTeam=bat1.name; setTimeout(foEnsureAutoplay,0);
 };
 function foEnsureAutoplay(){
-  if(window.__ap||!M||M.done)return; window.__ap=setInterval(()=>{if(!M||M.done||location.hash.indexOf('#/match')!==0){clearInterval(window.__ap);window.__ap=null;if(M&&M.done)renderMatch();return} doBall();},UI.apMs||1600);
+  if(window.__ap||!M||M.done)return; window.__ap=setInterval(()=>{if(!M||M.done||(location.hash||'').split('?')[0]!=='#/match'){clearInterval(window.__ap);window.__ap=null;if(M&&M.done)renderMatch();return} doBall();},UI.apMs||1600);
 }
 
 function foSplitDismissal(out){if(!out)return ['','']; if(out==='not out')return ['not out','']; let s=String(out); const ix=s.lastIndexOf(' b '); if(ix>0){return [s.slice(0,ix+1), 'b '+s.slice(ix+3)]} if(s.startsWith('b '))return ['',s]; if(s.startsWith('lbw b '))return ['lbw','b '+s.slice(6)]; return [s,'']}

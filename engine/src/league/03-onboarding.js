@@ -3178,7 +3178,7 @@
     try {
       var tut = (typeof M !== "undefined" && M && M.meta && M.meta.__tut);
       var bar = document.getElementById("fo-j-tutbar");
-      if (!tut || location.hash.indexOf("#/match") !== 0) { if (bar) bar.remove(); return; }
+      if (!tut || (location.hash || "").split("?")[0] !== "#/match") { if (bar) bar.remove(); return; }
       var page = document.getElementById("page");
       if (!page) return;
       var me = userTeam(); if (!me) return;
