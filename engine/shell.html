@@ -1,0 +1,825 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fifty Overs - Club Manager v11.6</title><style>:root{--ftp-blue:#2d6a8f;--ftp-blue-dark:#1d4a66;--ftp-border:#cfc8b8;--ftp-bg:#f5f1e6;
+--ftp-panel:#ffffff;--ftp-link:#1a5276;--ftp-bar:#3f9e3f;--ftp-text:#22302a;--ftp-warn:#a33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ftp-bg);color:var(--ftp-text);font:12px Verdana,Geneva,Tahoma,sans-serif;line-height:1.45}
+a{color:var(--ftp-link);text-decoration:none}a:hover{text-decoration:underline}
+#topbar{background:linear-gradient(180deg,#173f2b,#1d4a66 140%);color:#fff;border-bottom:3px solid #2c7a2c;padding:0 10px;display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+#topbar .brand{font-weight:bold;font-size:13px;padding:7px 10px 7px 2px;color:#dce9f2}
+#topbar a{color:#dce9f2;padding:7px 9px;font-size:11.5px;display:inline-block}
+#topbar a.on{background:var(--ftp-blue);color:#fff}
+#topbar a:hover{background:var(--ftp-blue);text-decoration:none}
+.wrap{max-width:1060px;margin:0 auto;padding:8px 10px}
+.crumb{font-size:13px;font-weight:bold;color:#1d3a4d;padding:6px 2px}
+.crumb .sep{color:#8aa;padding:0 4px}
+.panel{background:var(--ftp-panel);border:1px solid var(--ftp-border);margin-bottom:8px}
+.panel>h4{background:linear-gradient(180deg,#2d6a8f,#265a7a);color:#fff;font-size:11px;margin:0;padding:3px 8px;font-weight:bold;letter-spacing:.4px;text-transform:uppercase}
+.panel .pad{padding:7px 9px}
+table{border-collapse:collapse;width:100%;font-size:11.5px}
+th{background:#e3e9ec;border-bottom:1px solid var(--ftp-border);text-align:left;padding:3px 6px;font-size:10.5px;color:#33454f}
+td{border-bottom:1px solid #e4e8ea;padding:3px 6px;vertical-align:middle}
+tr:hover td{background:#f4f7f5}
+td.n,th.n{text-align:right}
+.bar{width:104px;height:9px;background:#e2e8e2;border:1px solid #b6c2b6;display:inline-block;vertical-align:middle}
+.bar i{display:block;height:100%;background:var(--ftp-bar)}
+.sklbl{display:inline-block;min-width:82px;color:#405048;font-size:11px}
+.skword{color:#2c6a2c;font-size:11px;padding-left:6px}
+.pblock{border:1px solid var(--ftp-border);background:#fff;margin-bottom:6px;padding:6px 9px}
+.pblock .hd{font-size:12px;margin-bottom:3px}
+.pblock .hd a{font-weight:bold}
+.pblock .meta{color:#5a6a63;font-size:11px}
+.pblock .cols{display:flex;gap:26px;flex-wrap:wrap;margin-top:4px}
+.pblock .cols>div{min-width:220px}
+select,input[type=text],input[type=number]{font:11.5px Verdana;padding:2px 4px;border:1px solid var(--ftp-border);background:#fff}
+button{font:11.5px Verdana;padding:3px 10px;border:1px solid #4a7;background:#e7f0e7;cursor:pointer}
+button:hover{background:#d8e8d8}
+button.primary{background:var(--ftp-blue);color:#fff;border-color:var(--ftp-blue-dark);font-weight:bold}
+button.primary:hover{background:var(--ftp-blue-dark)}
+button.warn{border-color:#a55;background:#f2e3e3}
+.ctlrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:5px 2px;font-size:11.5px}
+.grid2{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.grid2>.col{flex:1;min-width:300px}
+.side{width:250px;flex:0 0 250px}
+.small{font-size:10.5px;color:#697}
+.warntxt{color:var(--ftp-warn);font-size:11px}
+.oktxt{color:#2c6a2c;font-size:11px}
+.commfeed{max-height:330px;overflow-y:auto;font-size:11.5px}
+.commfeed .bl{padding:2px 4px;border-bottom:1px solid #eef}
+.commfeed .bl b.W{color:#a22}.commfeed .bl b.four{color:#246}.commfeed .bl b.six{color:#161}
+.commfeed .mile{background:#f3eedd}
+.tob{display:inline-block;width:20px;height:20px;border:1px solid #9ab;background:#eef2ef;text-align:center;line-height:20px;font-size:10px;font-weight:bold;margin-right:2px}
+.tob.r4{background:#2d6a8f;color:#fff}.tob.r6{background:#2c7a2c;color:#fff}.tob.W{background:#a33;color:#fff}.tob.ex{background:#c8a13a;color:#fff}
+.scorebig{font-size:22px;font-weight:bold}
+.spellrow{display:flex;gap:4px;align-items:center;margin-bottom:3px;font-size:11px}
+.spellrow select{max-width:150px}
+.phasechip{font-size:9.5px;padding:1px 4px;border:1px solid #aab;background:#eef;color:#345}
+.kv td:first-child{color:#5a6a63;width:46%}
+details.adv{margin-top:6px}
+details.adv summary{cursor:pointer;color:var(--ftp-link);font-size:11px}
+.navsub{margin:4px 0 8px;font-size:11px}
+.rowlink{cursor:pointer}
+
+.crumb{border-left:4px solid #2c7a2c;padding-left:8px}
+.scorebig{font-family:Georgia,'Times New Roman',serif;color:#173f2b}
+button.primary{background:linear-gradient(180deg,#2c7a2c,#1c5537);border-color:#144427}
+.panel{box-shadow:0 1px 2px rgba(20,40,25,.08)}
+
+body{background:#f5f1e6}
+.panel{background:#fffdf7;border-color:#d8d0bd}
+.panel>h4{background:linear-gradient(180deg,#355e3b,#2a4b30);letter-spacing:.6px}
+th{background:#efe9d9;color:#4a4536}
+.crumb{border-left:4px solid #b5322e;color:#3a2f1e}
+#topbar{background:linear-gradient(180deg,#20321f,#173f2b);border-bottom:3px solid #c8a13a}
+#topbar a.on{background:#c8a13a;color:#20321f;font-weight:bold}
+button.primary{background:linear-gradient(180deg,#355e3b,#274428);border-color:#1d331e}
+.pblock{background:#fffdf7;border-color:#d8d0bd}
+
+.evflash{position:absolute;top:4px;right:8px;font-family:Georgia,serif;font-weight:bold;font-size:19px;padding:2px 12px;animation:pop .55s ease-out}
+@keyframes pop{0%{transform:scale(.4);opacity:0}55%{transform:scale(1.18);opacity:1}100%{transform:scale(1)}}
+.scorebig{font-size:24px;font-weight:bold}
+.commfeed .bl{padding:2px 4px;border-bottom:1px dotted #e2dccb;font-size:11.5px}
+.commfeed .mile{border-left:3px solid #c8a13a;background:#faf6ea}
+
+.pcard{border:1px solid #d8d0bd;border-bottom:none;background:#fffdf7}
+.pcard:last-child{border-bottom:1px solid #d8d0bd}
+.pcard-row{display:grid;grid-template-columns:34px minmax(150px,1.2fr) minmax(120px,.9fr) 108px 108px 108px minmax(90px,1fr) 44px 14px;gap:6px;align-items:center;padding:3px 6px;cursor:pointer}
+.pcard-row.alt{background:#faf7ee}
+.pcard-row:hover{background:#f2edde}
+.rolechip{font-size:8.5px;letter-spacing:.5px;text-align:center;border:1px solid #b9b2a0;background:#efe9d9;color:#4a4536;padding:1px 0}
+.pname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pmeta{font-size:9.5px;color:#777;white-space:nowrap}
+.collbl{font-size:7.5px;letter-spacing:.6px;color:#998f78;display:block;line-height:1}
+.pcol{white-space:nowrap}
+.talchip{display:inline-block;font-size:8.5px;border:1px solid #d9c68a;border-left:3px solid #c8a13a;background:#fbf7ea;padding:0 4px;margin:0 2px 1px 0;color:#5a4a1e}
+.tiredchip{font-size:8px;letter-spacing:.5px;border:1px solid #c99;background:#f6dede;color:#7a1d1d;padding:0 3px}
+.prat{font-weight:bold;color:#4a4536}
+.caret{color:#998f78}
+.pcard-detail{border-top:1px solid #e8e2d2;background:#fcfaf3}
+
+.sbar{display:inline-block;width:34px;height:7px;background:#e8e2d2;border:1px solid #c9c2ae;vertical-align:middle;margin-left:4px}
+.sbar i{display:block;height:100%}
+
+/* coin flip */
+.coin{width:120px;height:120px;margin:0 auto;position:relative;transform-style:preserve-3d}
+.coin-face{position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;
+ font:bold 52px Georgia,serif;color:#5a4a1e;background:radial-gradient(circle at 35% 30%,#f7e7ad,#d9b94a 60%,#a8862a);
+ border:4px solid #a8862a;backface-visibility:hidden;box-shadow:0 4px 14px rgba(90,70,20,.45)}
+.coin-back{transform:rotateX(180deg)}
+.coin.flipping{animation:coinspin .5s linear infinite}
+.coin.show-h{transform:rotateX(0)}
+.coin.show-t{transform:rotateX(180deg)}
+@keyframes coinspin{from{transform:rotateX(0)}to{transform:rotateX(360deg)}}
+/* full-screen event flash */
+.bigflash{position:fixed;top:38%;left:0;right:0;text-align:center;font:bold 110px Georgia,serif;
+ letter-spacing:6px;pointer-events:none;z-index:999;text-shadow:0 3px 18px rgba(0,0,0,.25);
+ animation:bigpop .95s ease-out forwards}
+@keyframes bigpop{0%{transform:scale(.3);opacity:0}25%{transform:scale(1.12);opacity:1}70%{transform:scale(1);opacity:.95}100%{transform:scale(1.05);opacity:0}}
+/* commentary weight */
+.commfeed{max-height:600px;font-size:13px}
+.commfeed .bl{padding:4px 6px;font-size:13px}
+.commfeed .bl:first-child{font-size:15px;background:#fbf7ea;border-left:3px solid #2c7a2c;font-weight:500}
+
+.natpill{display:inline-block;font-size:8.5px;font-weight:700;letter-spacing:.5px;color:#4a4536;background:#ece5d3;border:1px solid #cfc7b2;border-radius:3px;padding:0 4px;vertical-align:middle;min-width:20px;text-align:center}
+
+/* ---- draft redesign ---- */
+.draftgrid{gap:12px}
+.draftside{max-width:300px}
+.chip{font-size:10px;padding:2px 9px;margin:0 3px 3px 0;border:1px solid #cfc7b2;background:#fbf8ef;color:#5a5138;border-radius:12px;cursor:pointer}
+.chip.on{background:#2c7a2c;color:#fff;border-color:#1c5537}
+.dlist{display:flex;flex-direction:column;gap:5px}
+.dcard{border:1px solid #ddd5c2;border-radius:5px;background:#fffdf7;overflow:hidden;transition:box-shadow .12s}
+.dcard:hover{box-shadow:0 1px 5px rgba(90,70,20,.10)}
+.dcard.picked{background:#eef6ec;border-color:#a9cfa2}
+.dcard.open{box-shadow:0 2px 9px rgba(90,70,20,.14);border-color:#c8a13a}
+.dcard-head{display:grid;grid-template-columns:34px minmax(96px,1.4fr) 52px minmax(80px,1fr) 58px 66px 16px;gap:7px;align-items:center;padding:7px 9px;cursor:pointer}
+.dnat{text-align:center}
+.dname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.drole{font-size:8px;letter-spacing:.6px;color:#7a7157;background:#efe9d9;border:1px solid #ddd5c2;border-radius:3px;padding:1px 0;text-align:center}
+.dprim{font-size:8.5px;color:#8a8168;white-space:nowrap;display:flex;align-items:center;gap:3px}
+.dfee{text-align:right;font-size:13px;color:#3a3628}
+.dsign button{font-size:11px;padding:3px 10px}
+.dcaret{color:#b0a789;text-align:center}
+.dscout{font-size:11px;font-style:italic;color:#6a6250;padding:0 9px 7px 41px;line-height:1.35}
+.ddetail{border-top:1px solid #ece4d0;background:#fcfaf3;padding-top:3px}
+.budgetcard .pad{padding:10px 12px}
+.budgetbig{font-size:24px;font-weight:800;line-height:1.1;letter-spacing:-.5px}
+.budgetbar{height:7px;background:#e8e2d2;border-radius:4px;overflow:hidden;margin-top:5px}
+.budgetbar i{display:block;height:100%}
+.squadmeta{display:flex;flex-wrap:wrap;gap:5px 10px;font-size:11px;margin:8px 0;color:#5a5138}
+.squadmeta .need{color:#a33328;font-weight:700}
+.confirmbtn{width:100%;font-size:14px;padding:9px 0;margin-top:2px}
+.confirmbtn:disabled{opacity:.45}
+.sqrow{display:grid;grid-template-columns:26px 1fr auto auto 16px;gap:6px;align-items:center;padding:3px 5px;border-bottom:1px solid #f0ebdc;font-size:12px}
+.sqrow:last-child{border-bottom:none}
+.sqname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.sqrole{color:#8a8168}
+.sqfee{color:#3a3628}
+.sqx{color:#a33328;cursor:pointer;text-align:center}
+@media(max-width:760px){.dcard-head{grid-template-columns:30px 1fr 46px 52px 60px 14px}.dprim{display:none}.draftside{max-width:none}}
+
+/* ================= FTP THEME (final overrides) ================= */
+:root{--ftp-blue:#3496bd;--ftp-blue-dark:#25789a;--ftp-orange:#f18a1e;--ftp-bg:#ececec;--ftp-border:#c9c9c9;--ftp-link:#1a6f9c;--ftp-text:#2b2b2b}
+body{background:var(--ftp-bg);color:var(--ftp-text)}
+a{color:var(--ftp-link)}
+#topbar{background:#3a3a3a;border-bottom:3px solid var(--ftp-blue);}
+#topbar .brand{color:#fff}
+#topbar .brand::before{content:'';display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ftp-orange);margin-right:6px}
+#topbar a{color:#e6e6e6}
+#topbar a.on{background:var(--ftp-blue);color:#fff;font-weight:bold}
+#topbar a:hover{background:#4a4a4a}
+.crumb{color:#2b2b2b;border-left:4px solid var(--ftp-orange);padding-left:8px}
+.panel{background:#fff;border:1px solid var(--ftp-border);border-radius:2px}
+.panel>h4{background:linear-gradient(180deg,#3aa3cb,#2f8db1);color:#fff;text-transform:none;font-size:12px;letter-spacing:.2px;padding:4px 9px}
+th{background:#e4e4e4;color:#3a3a3a;border-bottom:1px solid #cfcfcf}
+td{border-bottom:1px solid #ececec}
+tr:hover td{background:#f2f8fb}
+button{background:#f4f4f4;border:1px solid #b9b9b9;color:#333}
+button:hover{background:#e9f3f8;border-color:var(--ftp-blue)}
+button.primary{background:var(--ftp-blue);border-color:var(--ftp-blue-dark);color:#fff}
+button.primary:hover{background:var(--ftp-blue-dark)}
+.chip{background:#f6f6f6;border:1px solid #c5c5c5;color:#444;border-radius:3px}
+.chip.on{background:var(--ftp-blue);border-color:var(--ftp-blue-dark);color:#fff}
+.pblock{border:1px solid #d6d6d6;background:#fff}
+.pblock .meta{color:#666}
+.sklbl{color:#444}
+.skword{color:#2c7a2c}
+.sknum{font-size:9.5px;color:#7a7a7a;padding-left:3px;font-weight:700}
+.natpill{background:#eef4f8;border-color:#bcd4e0;color:#2b5b74}
+.budgetcard .pad{background:#fbfdfe}
+.budgetbar{background:#e2e2e2}
+.budgetbar i{background:#2c7a2c}
+.warntxt{color:#b03a2e}
+.oktxt{color:#1c7a35}
+.talchip{background:#fdf3e3;border:1px solid #e9c98f;color:#8a5a12;border-radius:3px;font-size:9px;padding:0 5px}
+/* ---- match centre layout ---- */
+.mc-top{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;margin-bottom:8px}
+.mc-score{flex:0 1 340px;min-width:280px}
+.mc-details{flex:1;min-width:260px}
+.mc-main{display:flex;gap:10px;align-items:flex-start}
+.mc-comm{flex:1;min-width:0}
+.mc-controls{border-bottom:1px solid #e2e2e2;padding-bottom:6px;margin-bottom:6px}
+.commbig{font-size:13px;line-height:1.55}
+.commbig .commrow:first-child{font-size:14px;font-weight:600;background:#f2f8fb;border-left:3px solid var(--ftp-blue);padding:4px 8px}
+.mc-cards{flex:0 0 250px;display:flex;flex-direction:column;gap:8px}
+.mc-cards>div{width:100%}
+@media(max-width:860px){.mc-main{flex-direction:column}.mc-cards{flex-direction:row;flex-wrap:wrap;flex-basis:auto}}
+
+.manualdoc{max-width:860px;font-size:12px;line-height:1.6}
+.manualdoc h2{font-size:18px;margin:4px 0 8px;color:#25789a}
+.manualdoc h3{font-size:14px;margin:16px 0 6px;color:#25789a;border-bottom:2px solid #3aa3cb;padding-bottom:3px}
+.manualdoc h4{font-size:12px;margin:10px 0 4px;color:#333}
+.manualdoc table{margin:6px 0}
+.manualdoc hr{border:none;border-top:1px solid #ddd;margin:14px 0}
+.manualdoc .manual-tip{background:#f2f8fb;border-left:3px solid #3aa3cb;padding:6px 10px;margin:8px 0;font-size:11.5px}
+.manualdoc ol,.manualdoc ul{padding-left:22px}
+.manualdoc li{margin:2px 0}
+
+/* compact match details (item: smaller details tab) */
+.mc-details{flex:0 1 300px;min-width:230px}
+.mc-details .pad{padding:4px 6px}
+.mc-details td{padding:2px 5px;font-size:10.5px}
+.mc-details h4{font-size:11px;padding:3px 8px}
+.mc-score{flex:0 1 360px}
+
+/* ================= FULL UPGRADE DESIGN SYSTEM ================= */
+:root{--bg:#edf0f2;--surface:#ffffff;--surface-soft:#f7fafc;--border:#d4d9de;--nav:#303030;--blue:#3496bd;--blue-dark:#25789a;--orange:#f18a1e;--green:#2f8f46;--red:#b23a33;--gold:#c99a2e;--text:#202428;--muted:#66717a;--shadow-sm:0 1px 2px rgba(0,0,0,.08);--shadow-md:0 3px 10px rgba(0,0,0,.10);--radius:4px}
+body{background:var(--bg);color:var(--text);font:13px Verdana,Aptos,system-ui,sans-serif;line-height:1.48}
+.wrap{max-width:1280px;padding:14px 16px}.wrap.match-mode{max-width:1440px}
+#topbar{background:var(--nav);border-bottom:3px solid var(--blue);gap:0;flex-wrap:nowrap;overflow-x:auto}
+#topbar a{font-size:12px;padding:9px 10px;white-space:nowrap}#topbar .brand{font-size:14px;padding:9px 14px 9px 4px;white-space:nowrap}
+#topbar a.on{background:var(--blue);box-shadow:inset 0 -3px 0 var(--orange)}#fo-top-status{margin-left:auto;display:flex;gap:10px;align-items:center;white-space:nowrap;color:#e9eef2;font-size:11px;padding:0 8px}#fo-top-status span{border-left:1px solid #5b5b5b;padding-left:10px}
+.panel,.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);margin-bottom:12px}.panel>h4,.card-title{background:linear-gradient(180deg,var(--blue),var(--blue-dark));color:#fff;font-weight:bold;font-size:12.5px;padding:7px 10px;margin:0;border-radius:var(--radius) var(--radius) 0 0}.card-body{padding:11px 12px}.panel .pad{padding:10px 12px}
+.crumb{font-size:14px;border-left:4px solid var(--orange);margin-bottom:12px}.page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin:4px 0 14px}.page-head h1,.welcome-hero h1{font-size:26px;line-height:1.1;margin:3px 0 5px;color:#162a3a}.page-head p,.welcome-hero p{color:var(--muted);margin:0;max-width:760px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--blue-dark);font-weight:bold}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;box-shadow:var(--shadow-sm)}.kpi-card span{display:block;color:var(--muted);font-size:11px}.kpi-card b{display:block;font-size:18px;margin-top:2px;color:var(--text)}
+.manager-note{border-left:4px solid var(--blue);background:#eef7fb;padding:9px 11px;margin:8px 0}.manager-note.warn{border-left-color:var(--orange);background:#fff6e8}.empty-state{color:var(--muted);background:var(--surface-soft);border:1px dashed var(--border);padding:12px;text-align:center}
+.tag{display:inline-block;border:1px solid var(--border);border-radius:3px;background:#eef2f5;color:var(--text);font-size:10px;padding:1px 5px}.tag.wicket{background:#f8e6e4;border-color:#e1aaa4;color:var(--red)}.tag.four{background:#eaf5fb;border-color:#9fd0e5;color:var(--blue-dark)}.tag.six,.tag.talent{background:#fff4d9;border-color:#e1c37b;color:#7b5a0a}.tag.fatigue{background:#f8e6e4;border-color:#e1aaa4;color:var(--red)}
+.page-grid-2{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,.75fr);gap:14px}.page-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.page-grid-draft{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start}.draft-sticky{position:sticky;top:8px}
+.action-row,.status-strip{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.status-strip span{background:var(--surface-soft);border:1px solid var(--border);border-radius:var(--radius);padding:4px 8px;font-size:11px}.progress-bar{display:block;height:8px;background:#e3e8ec;border-radius:999px;overflow:hidden;margin:5px 0}.progress-bar i{display:block;height:100%;background:var(--green)}.progress-bar.mini{display:inline-block;width:74px;vertical-align:middle;margin:0 4px}.warning-list div,.checklist div{padding:3px 0}
+button.big{font-size:14px;padding:9px 18px}.welcome-hero{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:center;background:linear-gradient(135deg,#fff,#eef7fb);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:14px;box-shadow:var(--shadow-md)}.hero-kpis{margin:0}.identity-card{cursor:pointer;transition:.12s}.identity-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+table{font-size:12px}th{padding:6px 7px}td{padding:5px 7px}.rowlink:hover td{background:#eef8fb}
+.dcard{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:7px}.dcard.picked{border-left:4px solid var(--green);background:#f3fbf4}.dcard-head{display:grid;grid-template-columns:42px minmax(140px,1.2fr) 76px minmax(140px,1fr) 58px 78px 12px;gap:8px;align-items:center;padding:8px 10px;cursor:pointer}.dscout{padding:0 10px 8px 52px;color:var(--muted);font-size:11px}.draftside,.draft-sticky{max-width:none}
+.player-drawer{background:var(--surface-soft);padding:12px;border-top:1px solid var(--border)}
+.next-fixture h2{margin:0 0 8px}.mc-top,.mc-main{gap:14px}.commfeed .bl{font-size:13px;padding:5px 7px}.scorebig{font-size:30px;color:#152f40}
+@media(max-width:900px){#topbar{flex-wrap:wrap}#fo-top-status{width:100%;margin-left:0;padding:5px 0}.page-head,.welcome-hero{display:block}.page-grid-2,.page-grid-3,.page-grid-draft{grid-template-columns:1fr}.draft-sticky{position:static}.dcard-head{grid-template-columns:34px 1fr 62px 62px 60px 12px}.dprim{display:none}}
+
+/* ===== FTP-style requested UI overrides ===== */
+.ftp-classic-wrap .page-head{display:none}
+.pblock{border:1px solid #d6d6d6;background:#fff;margin-bottom:6px;padding:6px 9px;border-radius:0;box-shadow:none}
+.pblock .hd{font-size:13px;margin-bottom:3px}.pblock .hd a,.pblock .hd b{font-size:14px}.pblock .cols{display:flex;gap:34px;flex-wrap:wrap;margin-top:6px}.pblock .cols>div{min-width:250px}
+.pblock .meta{color:#5f6368;font-size:12px}.pblock .talchip{font-size:10px;background:#fff4df;border:1px solid #e4bd7d;color:#8a5a12;border-radius:3px;padding:1px 5px;margin-left:4px}
+.draftgrid{align-items:flex-start}.draftside{max-width:315px}.budgetbig{font-size:26px;color:#07513c}.confirmbtn{border-radius:0}
+/* FTP orders mimic */
+.ftp-orders{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}.ftp-orders .orders-left{flex:0 0 380px}.ftp-orders .orders-main{flex:1;min-width:540px}.ftp-orders .orders-side{flex:0 0 255px}
+.ftp-lineup p{clear:both;margin:4px 0;padding:3px 0;min-height:28px}.battingorder{display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;background:#e7e7e7;border:1px solid #c5c5c5;font-weight:bold;margin-right:6px;color:#555}.ftp-lineup select{width:220px}.ftp-small-btn{font-size:10px;padding:1px 6px;margin-left:2px}.ftp-tactic{float:right;white-space:nowrap}.ftp-tactic button.on{background:var(--ftp-blue);color:#fff;border-color:var(--ftp-blue-dark)}
+.ftp-bowling-ends{display:grid;grid-template-columns:1fr 1fr;gap:10px}.bowlingend{border:1px solid #d5d5d5;background:#fafafa;padding:6px}.bowlingEndName{display:flex;align-items:center;gap:8px;border-bottom:1px solid #d8d8d8;margin-bottom:5px}.bowlingEndName h3{font-size:13px;margin:0 0 4px;color:#333}.oversOdd,.oversEven{display:grid;grid-template-columns:repeat(10,1fr);gap:1px;margin:4px 0}.oversOdd div,.oversEven div{text-align:center;background:#e6e6e6;border:1px solid #ccc;font-size:10px;padding:1px 0}.spells .spell{border:1px solid #cfcfcf;background:#fff;margin:5px 0;padding:5px;box-shadow:0 1px 1px rgba(0,0,0,.06)}.spell p{margin:2px 0;clear:both}.spell select.bowler{max-width:185px}.startOver{width:38px}.spellLength{width:44px}.spell .footer{height:18px}.orders-helpbox{background:#f6fbfd;border-left:3px solid var(--ftp-blue);padding:7px 9px;margin-bottom:8px}.player-pool-tabs button.on{background:var(--ftp-blue);color:#fff}.pool-mini{max-height:420px;overflow:auto}.pool-mini tr td{font-size:11px}
+@media(max-width:980px){.ftp-orders{display:block}.ftp-orders .orders-left,.ftp-orders .orders-side{flex-basis:auto}.ftp-bowling-ends{grid-template-columns:1fr}}
+/* FTP scorecard */
+table.ftp-scorecard,table.ftp-bowling{font-size:12px;margin-bottom:10px}table.ftp-scorecard thead th,table.ftp-bowling thead th{background:#dedede;color:#222;text-align:left}table.ftp-scorecard td,table.ftp-scorecard th,table.ftp-bowling td,table.ftp-bowling th{border-bottom:1px solid #e7e7e7;padding:5px 7px}.ftp-scorecard tfoot th{background:#f0f0f0;text-align:left}.ftp-score-summary .kv th{background:#ededed}.ftp-no-bars .bar,.ftp-no-bars .sbar{display:none!important}
+
+/* ===== FTP live match page patch: top icons, player hover, filters, no bar numbers ===== */
+.sknum{display:none!important}
+#fo-live-icons{display:flex;gap:5px;align-items:center;margin-left:auto;padding:4px 8px;background:#2e9bc2;border-left:1px solid rgba(255,255,255,.25)}
+#fo-live-icons a{width:30px;height:28px;display:inline-flex;align-items:center;justify-content:center;background:#f7f7f7;border:1px solid #d4d4d4;border-radius:6px;color:#666!important;font-size:17px;line-height:1;text-decoration:none;box-shadow:0 1px 0 rgba(0,0,0,.12)}
+#fo-live-icons a:hover{background:#fff;text-decoration:none;transform:translateY(-1px)}
+#fo-live-icons .live-dot{width:7px;height:7px;border-radius:50%;background:#f18a1e;display:inline-block;margin-right:3px;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+.ftp-match-shell{display:grid;grid-template-columns:162px minmax(0,1fr);gap:12px;align-items:start}
+.ftp-match-links{border:1px solid #d1d1d1;border-radius:6px;background:#fff;overflow:hidden;position:sticky;top:8px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.ftp-match-links h4{margin:0;background:#3496bd;color:#fff;font-size:13px;padding:7px 10px}
+.ftp-match-links a{display:block;padding:5px 9px;border-bottom:1px dotted #ccc;color:#333;text-decoration:none;cursor:pointer}
+.ftp-match-links a:hover,.ftp-match-links a.on{background:#eef8fc;color:#146b93;text-decoration:none}
+.ftp-match-body{min-width:0}
+.comm-filter{display:inline-flex;gap:5px;align-items:center;margin-left:8px}
+.talent-hit{display:inline-block;background:#fff2c9;border:1px solid #d9b75a;color:#6a4800;border-radius:3px;padding:0 4px;font-weight:bold;box-shadow:inset 0 -1px 0 rgba(0,0,0,.06)}
+.ability-row{border-left:4px solid #d9a421!important;background:#fff9e6!important}
+.live-score-mini table{font-size:11px}.live-score-mini th,.live-score-mini td{padding:3px 5px}.live-score-mini{max-height:430px;overflow:auto}
+.match-subpanel{margin-top:10px}.match-subpanel .panel{margin-bottom:0}
+.player-hoverable{cursor:help;border-bottom:1px dotted #777}
+@media(max-width:880px){.ftp-match-shell{display:block}.ftp-match-links{position:static;margin-bottom:10px}#fo-live-icons{width:100%;margin-left:0;justify-content:flex-start}.comm-filter{margin-left:0;margin-top:4px}}
+
+</style></head><body><div id="topbar">
+  <span class="brand">&#127951; Fifty Overs</span>
+  <a href="#/club" data-nav="club">Club</a>
+  <a href="#/squad" data-nav="squad">Squad</a>
+  <a href="#/orders" data-nav="orders">Orders</a>
+  <a href="#/matches" data-nav="matches">Matches</a>
+  <a href="#/stats" data-nav="stats">Stats</a>
+  <a href="#/reports" data-nav="reports">Reports</a>
+  <a href="#/office" data-nav="office">Office</a>
+  <a href="#/manual" data-nav="manual">Manual</a>
+  <a href="#/nets" data-nav="nets">Nets</a>
+</div>
+<div class="wrap"><div id="page"></div></div>
+<script>/*FO_ENGINE_BLOCK_0*/</script>
+
+<!-- ===== GPT patch: clean match tabs, round progression fixes, compact club home ===== -->
+<style>
+/* Header: keep one return-to-match control and make it match the dark FTP header */
+#fo-live-icons{background:transparent!important;border-left:1px solid #555!important;margin-left:0!important;padding:3px 8px!important;gap:4px!important}
+#fo-live-icons a{background:#4a4a4a!important;border:1px solid #666!important;color:#fff!important;border-radius:4px!important;box-shadow:none!important;width:32px!important;height:28px!important;font-size:15px!important}
+#fo-live-icons a:not(:first-of-type){display:none!important}
+#fo-live-icons .live-dot{margin-right:4px!important}
+a[href="#/editor"]{display:none!important}
+.wrap{padding-top:8px!important}.wrap.match-mode{max-width:1180px!important}
+.mc-top{gap:10px!important;margin-bottom:8px!important;align-items:flex-start!important}.mc-score{flex:0 1 330px!important}.mc-details{flex:0 1 290px!important}.mc-score .pad{padding:8px 10px!important}.mc-details .pad{padding:5px 7px!important}.scorebig{font-size:27px!important}.mc-cards{display:none!important}.mc-main{display:block!important}.mc-comm{width:100%!important}.mc-comm .panel{max-width:900px!important}.commfeed{max-height:560px!important}.ftp-match-shell{grid-template-columns:150px minmax(0,1fr)!important;gap:10px!important}.ftp-match-body{max-width:940px!important}.ftp-match-links{top:6px!important}.ftp-match-links h4{padding:5px 9px!important}.ftp-match-links a{padding:5px 8px!important}.match-subpanel .panel{max-width:940px!important}.fo-match-tab-title{display:flex;justify-content:space-between;align-items:center;gap:10px}.fo-tab-actions a{margin-left:8px;font-size:11px}.fo-scorecard-wrap{max-width:940px;margin:0 auto}.fo-scorecard-wrap .ftp-scorecard,.fo-scorecard-wrap .ftp-bowling{max-width:920px}.fo-club-min .welcome-hero{padding:18px 20px;margin-bottom:10px;grid-template-columns:minmax(0,1fr) 300px}.fo-club-min .kpi-grid{grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px}.fo-club-min .kpi-card{padding:8px 10px}.fo-club-min .kpi-card b{font-size:16px}.fo-club-min .page-grid-2{grid-template-columns:minmax(0,1fr) 380px;gap:12px}.fo-club-min table{font-size:11.5px}.fo-flag{font-size:13px;margin-right:4px;vertical-align:-1px}.ftp-orders{max-width:1080px;margin:0 auto;gap:10px!important}.ftp-orders .orders-left{flex:0 0 310px!important}.ftp-orders .orders-main{flex:0 1 560px!important;min-width:500px!important}.ftp-orders .orders-side{flex:0 0 210px!important}.ftp-lineup select{width:188px!important}.spell{padding:4px!important;margin:4px 0!important}.spell select.bowler{max-width:160px!important}.bowlingend{padding:5px!important}.bowlingEndName button::before{content:'＋ ';font-weight:bold}.orders-helpbox{max-width:1080px;margin-left:auto;margin-right:auto}.fo-round-actions button{margin-right:6px;margin-bottom:4px}.coin{width:96px!important;height:96px!important}.coin-face{font-size:42px!important}
+@media(max-width:900px){.fo-club-min .page-grid-2{grid-template-columns:1fr}.ftp-orders .orders-main{min-width:0!important}.ftp-orders{max-width:none}.ftp-match-shell{display:block!important}.ftp-match-links{position:static!important;margin-bottom:8px}}
+</style>
+<script>/*FO_ENGINE_BLOCK_1*/</script>
+<!-- ============================================================= -->
+<!-- FIFTY OVERS - FINAL POLISH PATCH (authoritative, load-last)   -->
+<!-- ============================================================= -->
+<style>
+/* ---- 2. role-type icons replace nationality flags next to players ---- */
+.natpill,.fo-flag{display:none!important}
+.fo-role-ic{display:inline-flex;width:15px;height:15px;vertical-align:-3px;margin-right:4px;justify-content:center;align-items:center;flex:0 0 15px}
+.fo-role-ic svg{width:14px;height:14px;display:block}
+.fo-ic-bat{color:#2c6a2c}.fo-ic-bowl{color:#a3402a}.fo-ic-ar{color:#7a5c1e}.fo-ic-wk{color:#2d6a8f}
+
+/* ---- 1 & 7. general intuitiveness / smoothness polish ---- */
+button{transition:background .12s,border-color .12s}
+button:disabled{opacity:.5;cursor:not-allowed}
+.crumb{margin-bottom:6px}
+.fo-round-actions{gap:8px;padding:8px 4px;border-top:1px solid #e4dfce;margin-top:8px}
+.fo-round-actions button{font-size:12px;padding:5px 12px}
+.panel>h4{display:flex;align-items:center;gap:6px}
+
+/* ---- 5. Set Orders: cleaner, closer to FTP ---- */
+.ftp-orders .panel>h4{background:linear-gradient(180deg,#2d6a8f,#215576)}
+.ftp-lineup p.draggable{display:flex;align-items:center;gap:6px;border-bottom:1px solid #efeadd;padding:4px 2px;margin:0;min-height:30px}
+.ftp-lineup p.draggable:hover{background:#faf7ec}
+.battingorder{background:linear-gradient(180deg,#3a5e40,#2c4a31);color:#fff;border-color:#24391f}
+.ftp-lineup .ftp-tactic{margin-left:auto}
+.ftp-lineup label.small{border:1px solid #d8d0bd;border-radius:3px;padding:0 4px;background:#fbf8ef;white-space:nowrap}
+.bowlingend{border-radius:4px}
+.bowlingEndName h3{color:#215576}
+.oversOdd div,.oversEven div{background:#eef3f6;border-color:#cdd8dd;color:#4a5a63}
+.spells .spell{border-radius:4px;border-left:3px solid #c8a13a}
+.spell select.bowler{max-width:170px!important}
+.orders-helpbox{border-radius:4px}
+.player-pool-tabs{display:flex;gap:4px;margin-bottom:5px}
+.player-pool-tabs button{font-size:10px;padding:2px 9px;border-radius:12px}
+
+/* ---- 4. Live match viewer: closer to FTP commentary ---- */
+.commfeed{border:1px solid #e4dfce;background:#fffdf7;border-radius:4px}
+.commfeed .bl{display:flex;gap:8px;align-items:baseline;padding:5px 8px;border-bottom:1px dotted #ece5d3}
+.commfeed .bl>b{flex:0 0 34px;font-family:'Courier New',monospace;font-size:12px;color:#8a7f63;text-align:right}
+.commfeed .bl:nth-child(even){background:#faf7ee}
+.commfeed .bl.mile{background:#eef4f7!important;border-left:3px solid #2d6a8f;border-bottom:1px solid #d3e0e6;font-weight:600;color:#22485c}
+.commfeed .bl.mile>b{color:#2d6a8f}
+.commfeed .bl b.W{color:#a3281f}.commfeed .bl b.four{color:#1f4e79}.commfeed .bl b.six{color:#1c6b1c}
+.commfeed .talent-hit{background:#fbf3d6;border-bottom:1px solid #d9c68a;padding:0 2px;border-radius:2px}
+.ftp-match-links h4{background:linear-gradient(180deg,#355e3b,#284a30)}
+.ftp-match-links a{display:block;padding:5px 9px;border-bottom:1px solid #eee6d2;color:#2d5064}
+.ftp-match-links a:hover{background:#eef4f7;text-decoration:none}
+.ftp-match-links a.on{background:#c8a13a;color:#20321f;font-weight:bold}
+.mc-score .scorebig{color:#173f2b}
+.mc-top .panel>h4{background:linear-gradient(180deg,#2d6a8f,#215576)}
+.comm-filter select,.mc-controls select{max-width:170px}
+</style>
+<script>/*FO_ENGINE_BLOCK_2*/</script>
+
+<!-- ============================================================= -->
+<!-- FTP PIXEL SKIN  (presentation only - engine untouched)         -->
+<!-- Palette + metrics extracted from the uploaded FTP .mhtml pages  -->
+<!-- ============================================================= -->
+<style>
+/* ================= FTP GLOBAL THEME ================= */
+body.ftpskin{background:#f8f8f8!important;color:#424242!important;font:12px "Lucida Grande",Helvetica,Arial,sans-serif!important}
+body.ftpskin a{color:#03759a!important;text-decoration:none}
+body.ftpskin a:hover,body.ftpskin a:focus{color:#ff9900!important;text-decoration:underline}
+body.ftpskin .wrap{max-width:980px!important;background:#fff!important;padding:8px 10px!important;box-shadow:0 0 0 1px #e6e6e6}
+
+/* top navigation -> FTP teal bar, orange active */
+body.ftpskin #topbar{background:#3299bb!important;border-bottom:3px solid #ff9900!important;padding:0 8px!important}
+body.ftpskin #topbar .brand{color:#fff!important}
+body.ftpskin #topbar a{color:#eaf6fb!important;font-size:11.5px!important}
+body.ftpskin #topbar a:hover{background:#2b87a6!important;color:#fff!important;text-decoration:none}
+body.ftpskin #topbar a.on{background:#ff9900!important;color:#fff!important;font-weight:bold}
+body.ftpskin #fo-live-icons{border-left:1px solid #2b87a6!important}
+body.ftpskin #fo-live-icons a{background:#2b87a6!important;border-color:#57a7c4!important}
+
+/* breadcrumb */
+body.ftpskin .crumb{border-left:none!important;color:#424242!important;font-size:14px!important;font-weight:bold;padding:6px 2px 8px!important}
+body.ftpskin .crumb .sep{color:#bbb!important}
+
+/* panels -> FTP "h2.rounded" teal header + bordered rounded body */
+body.ftpskin .panel{background:#fff!important;border:none!important;box-shadow:none!important;margin-bottom:10px!important}
+body.ftpskin .panel>h4{background:#3299bb!important;color:#fff!important;border-radius:7px 7px 0 0!important;
+  padding:5px 5px 5px 10px!important;font:bold 12px "Lucida Grande",Helvetica,Arial!important;letter-spacing:normal!important;text-transform:none!important}
+body.ftpskin .panel>.pad,body.ftpskin .panel>div:not(h4){border:1px solid #cdcdcd;border-top:none;border-radius:0 0 7px 7px;background:#fff}
+body.ftpskin .panel .pad{padding:6px 8px!important}
+
+/* tables -> FTP flat look, teal sortable headers, zebra, yellow "my team" */
+body.ftpskin table{font-size:12px!important;border-collapse:collapse;width:100%}
+body.ftpskin th{background:#eeeeed!important;color:#424242!important;border-bottom:1px solid #d0d0d0!important;border-top:1px solid #d0d0d0!important;
+  padding:4px 6px!important;font-size:11px!important;text-align:left}
+body.ftpskin td{border-bottom:1px solid #ededed!important;padding:4px 6px!important}
+body.ftpskin tr:nth-child(even) td{background:#fafafa}
+body.ftpskin tr:hover td{background:#fff7e8!important}
+body.ftpskin tr[style*="eef4ee"] td,body.ftpskin tr[style*="eef8fb"] td{background:#feffcc!important}
+
+/* buttons + inputs -> FTP jQuery-UI style */
+body.ftpskin button{background:#f6f6f6!important;border:1px solid #ccc!important;color:#424242!important;font:bold 11.5px "Lucida Grande",Helvetica,Arial!important;
+  border-radius:4px!important;padding:3px 10px!important}
+body.ftpskin button:hover{background:#3299bb!important;color:#fff!important;border-color:#2b87a6!important}
+body.ftpskin button.primary{background:#ff9900!important;border-color:#e08600!important;color:#fff!important}
+body.ftpskin button.primary:hover{background:#e58a00!important}
+body.ftpskin button.warn{background:#f6f6f6!important;border-color:#d1a3a3!important;color:#a33!important}
+body.ftpskin button:disabled{background:#efefef!important;color:#aaa!important;border-color:#ddd!important}
+body.ftpskin select,body.ftpskin input[type=text],body.ftpskin input[type=number]{font:11.5px "Lucida Grande",Helvetica,Arial!important;
+  border:1px solid #c5c5c5!important;border-radius:3px!important;padding:2px 4px!important;color:#424242}
+body.ftpskin .oktxt{color:#009900!important}
+body.ftpskin .warntxt,body.ftpskin .warn-text{color:#cc5200!important}
+body.ftpskin .phasechip{background:#eef6fa!important;border:1px solid #bcdbe7!important;color:#2b6a82!important;border-radius:3px}
+body.ftpskin .talchip{border-left-color:#ff9900!important;background:#fff7e6!important;color:#8a5a00!important}
+body.ftpskin .rolechip{background:#eeeeed!important;border-color:#d0d0d0!important;color:#555!important}
+
+/* ================= ORDERS (FTP orders.htm) ================= */
+body.ftpskin .ftp-orders{max-width:980px!important;gap:8px!important}
+body.ftpskin .ftp-orders .orders-left{flex:0 0 300px!important}
+body.ftpskin .ftp-orders .orders-main{flex:0 1 440px!important;min-width:400px!important}
+body.ftpskin .ftp-orders .orders-side{flex:0 0 210px!important}
+body.ftpskin .ftp-lineup p.draggable{border-bottom:1px dotted #e0e0e0;padding:3px 2px;min-height:26px}
+body.ftpskin .battingorder{width:22px;height:22px;line-height:22px;background:#bcbcbc!important;color:#fff!important;border:none!important;border-radius:3px;font-weight:bold}
+body.ftpskin .ftp-lineup select{width:150px!important}
+body.ftpskin .ftp-tactic button{width:20px;height:20px;padding:0!important;border:1px solid #ddd!important;background:#f6f6f6!important;color:#555!important;font-size:9px!important;border-radius:2px!important}
+body.ftpskin .ftp-tactic button.on{background:#3299bb!important;color:#fff!important;border-color:#2b87a6!important}
+body.ftpskin .ftp-bowling-ends{gap:6px!important}
+body.ftpskin .bowlingend{border:none!important;background:transparent!important;padding:0!important}
+body.ftpskin .bowlingEndName h3{color:#424242!important;font-size:13px!important;font-weight:normal!important;padding:3px 0}
+body.ftpskin .oversOdd div,body.ftpskin .oversEven div{background:#eeeeed!important;border:1px solid #d0d0d0!important;color:#666!important;font-size:9px!important;padding:2px 0}
+body.ftpskin .spell{border:2px solid #d0d0d0!important;background:#f6f6f6!important;border-radius:4px!important;border-left:2px solid #d0d0d0!important;padding:3px!important}
+body.ftpskin .spell select.bowler{width:135px!important;max-width:135px!important}
+body.ftpskin .startOver{width:26px!important}
+body.ftpskin .spellLength{width:44px!important}
+body.ftpskin .bowlingEndName button::before,body.ftpskin .spell .warn::before{content:''}
+body.ftpskin .orders-helpbox{background:#eef6fa!important;border-left:3px solid #3299bb!important;border-radius:4px}
+body.ftpskin .player-pool-tabs button.on{background:#3299bb!important;color:#fff!important}
+
+/* ================= LIVE MATCH (Links + commentary) ================= */
+body.ftpskin .ftp-match-shell{grid-template-columns:135px minmax(0,1fr)!important;gap:8px!important}
+body.ftpskin .ftp-match-links{position:static!important}
+body.ftpskin .ftp-match-links h4{background:#3299bb!important;color:#fff!important;border-radius:7px 7px 0 0;padding:5px 9px!important}
+body.ftpskin .ftp-match-links a{display:block;padding:5px 9px!important;border-bottom:1px dotted #ddd!important;color:#424242!important;font-size:12px}
+body.ftpskin .ftp-match-links a:hover{background:#f2f2f2!important;color:#ff9900!important;text-decoration:none}
+body.ftpskin .ftp-match-links a.on{background:#ff9900!important;color:#fff!important;font-weight:bold}
+body.ftpskin .mc-top .panel>h4{background:#3299bb!important}
+body.ftpskin .mc-score .scorebig{font-family:"Lucida Grande",Helvetica,Arial!important;color:#424242!important}
+
+/* FTP commentary feed: del | rslt | text three-column rows */
+body.ftpskin #ftpcomm{border:1px solid #cdcdcd;border-radius:4px;background:#fff}
+body.ftpskin #ftpcomm .line,body.ftpskin #ftpcomm .four,body.ftpskin #ftpcomm .six{padding:4px 0;border-bottom:1px solid #f0f0f0}
+body.ftpskin #ftpcomm .del{float:left;padding-left:6px;width:34px;color:#8a8a8a;font-size:11px}
+body.ftpskin #ftpcomm .rslt{float:left;padding-left:5px;width:34px;text-align:center;font-weight:bold}
+body.ftpskin #ftpcomm .text{overflow:hidden;padding:0 8px 0 4px;color:#333}
+body.ftpskin #ftpcomm .clear{clear:both}
+body.ftpskin #ftpcomm .rslt .four{display:inline-block;color:#fff;background:#3299bb;border-radius:5px;padding:1px 4px;min-width:14px;font-weight:bold}
+body.ftpskin #ftpcomm .rslt .six{display:inline-block;color:#fff;background:#009900;border-radius:5px;padding:1px 4px;min-width:14px;font-weight:bold}
+body.ftpskin #ftpcomm .rslt .wicket{display:inline-block;color:#fff;background:#ff9900;border-radius:5px;padding:1px 4px;min-width:14px;font-weight:bold}
+body.ftpskin #ftpcomm .rslt .exb{color:#b06a00;font-weight:bold}
+body.ftpskin #ftpcomm .oversummary-top{background:#eee;border-top:1px solid #cdcdcd;padding:5px 8px 2px}
+body.ftpskin #ftpcomm .oversummary-bottom{background:#eee;border-bottom:1px solid #cdcdcd;padding:2px 8px 5px}
+body.ftpskin #ftpcomm .oversummary-top .text,body.ftpskin #ftpcomm .oversummary-bottom .text{float:none;width:auto;padding:0;color:#333}
+body.ftpskin #ftpcomm .talent-hit,body.ftpskin #ftpcomm .skillcheck{font-weight:bold;background:#fff3d6;border-radius:2px;padding:0 2px}
+body.ftpskin #ftpcomm .line.wkt .text{color:#a33}
+
+/* worm / ratings inherit theme; keep role icons visible */
+body.ftpskin .fo-role-ic svg{width:13px;height:13px}
+</style>
+<script>/*FO_ENGINE_BLOCK_3*/</script>
+
+
+<style id="fo-up1-css">
+/* ===================== FIFTY OVERS — 18-item UI upgrade CSS ===================== */
+
+/* ---- assets: flags + role icons ---- */
+img.foflag{width:19px;height:14px;object-fit:cover;border:1px solid #d8d8d8;border-radius:2px;vertical-align:middle;box-shadow:0 0 0 .5px rgba(0,0,0,.04)}
+img.foric{width:16px;height:16px;object-fit:contain;vertical-align:middle;margin-right:1px}
+
+/* ---- #14 label tooltips: subtle affordance ---- */
+[title]{cursor:default}
+.lbl,.kv td[title],th[title],.eyebrow[title],.kpi-card[title]{cursor:help}
+.fo-cap{color:#b5322e;font-weight:bold;font-size:10px}
+.fo-wk{color:#c9860e;font-weight:bold}
+.fo-hand,.fo-type{color:#5a7f93;font-weight:bold;font-size:10px;letter-spacing:.3px}
+
+/* ---- #13/#18 ability chips: distinct font + hover ---- */
+.foabil{font-family:"Iowan Old Style",Georgia,"Times New Roman",serif;font-style:italic;font-weight:600;
+  color:#7b5a0a;background:#fff4d9;border:1px solid #e1c37b;border-radius:3px;padding:0 5px;cursor:help;
+  display:inline-block;line-height:1.5;margin:0 1px}
+.foabil:hover{background:#ffe9ad}
+
+/* ---- #2 welcome: bigger, less whitespace ---- */
+.welcome-hero{padding:30px 40px 32px!important;gap:34px!important;grid-template-columns:minmax(0,1.15fr) 380px!important}
+.welcome-hero h1{font-size:34px!important;line-height:1.08!important;margin:6px 0 10px!important}
+.welcome-hero p{font-size:14px!important;max-width:640px!important;line-height:1.55}
+.welcome-hero .hero-kpis .kpi-card b{font-size:20px}
+.welcome-hero .identity-grid,.page-grid-3.identity-grid{margin-top:4px}
+.identity-card .card-body{font-size:12px;padding:12px 14px}
+.identity-card .card-title{font-size:13px}
+
+/* ---- #1 black header on the v5 FTP skin ---- */
+body.ftpskin #topbar{background:#3a3a3a!important;border-bottom:3px solid #3496bd!important;padding:0 8px!important}
+body.ftpskin #topbar .brand{color:#fff!important}
+body.ftpskin #topbar .brand::before{content:'';display:inline-block;width:9px;height:9px;border-radius:50%;background:#f18a1e;margin-right:6px;vertical-align:middle}
+body.ftpskin #topbar a{color:#e6e6e6!important}
+body.ftpskin #topbar a:hover{background:#4a4a4a!important;color:#fff!important;text-decoration:none}
+body.ftpskin #topbar a.on{background:#3496bd!important;color:#fff!important;box-shadow:inset 0 -3px 0 #f18a1e}
+body.ftpskin #fo-top-status{color:#e9eef2!important}
+body.ftpskin #fo-top-status span{border-left-color:#5b5b5b!important}
+body.ftpskin #fo-live-icons{background:#2e2e2e!important;border-left-color:#555!important}
+
+/* ---- #4 draft: tone down brightness (draft page only) ---- */
+.page-grid-draft{background:#eceef0;border-radius:6px;padding:4px}
+.page-grid-draft .dcard{background:#fbfaf7;border-color:#d8d6cf}
+.page-grid-draft .dcard:hover{background:#fffdf8}
+.page-grid-draft .dcard.picked{background:#eef6ec}
+.page-grid-draft .card,.page-grid-draft .budgetcard{background:#fbfbf9}
+.draft-war,.page-head .eyebrow{color:#4c6470}
+.dscout{color:#5f5a4c}
+
+/* ---- #7 club dashboard ---- */
+.fo-form{display:flex;align-items:center;gap:5px}
+.formpip{display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;border-radius:50%;
+  font-size:11px;font-weight:bold;color:#fff}
+.formpip.w{background:#2f8f46}.formpip.l{background:#b23a33}.formpip.d{background:#8a8a8a}
+.fo-next{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;
+  background:linear-gradient(135deg,#fff,#eef6fb);border:1px solid var(--border,#d4d9de);border-radius:6px;
+  padding:14px 18px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.fo-next-opp{font-size:20px;font-weight:bold;color:#152f40;margin:2px 0}
+.fo-stars{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.fo-star{background:#fff;border:1px solid var(--border,#d4d9de);border-left:4px solid var(--orange,#f18a1e);
+  border-radius:5px;padding:9px 12px}
+.fo-star-n{font-size:22px;font-weight:800;color:#152f40}
+.myrow td{background:#fff7d6!important}
+.kpi-card b{font-size:17px}
+
+/* ---- #8/#15 orders layout ---- */
+.fo-orders-details .pad{padding:6px 10px}
+.fo-detgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.fo-detgrid>div{display:flex;flex-direction:column}
+.fo-detgrid .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#7a828a}
+.fo-detgrid b{font-size:13px}
+.fo-orders-main{display:grid;grid-template-columns:minmax(300px,360px) minmax(0,1fr);gap:12px;align-items:start}
+.fo-batrow{display:flex;align-items:center;gap:6px;padding:2px 0;border-bottom:1px dotted #e6e6e6}
+.fo-batrow .bno{width:20px;height:20px;line-height:20px;text-align:center;background:#e7e7e7;border:1px solid #cfcfcf;
+  border-radius:3px;font-weight:bold;color:#555;font-size:11px}
+.fo-batrow.dup select{border-color:#b23a33;background:#fbe9e7}
+.fo-batrow select{flex:1;max-width:170px}
+.fo-batrow .mini{font-size:10px;color:#666;white-space:nowrap}
+.fo-tactics{margin-top:8px;border-top:1px solid #ececec;padding-top:6px}
+.fo-tacrow{display:flex;align-items:center;gap:8px;margin:2px 0}
+.fo-tacrow .small{min-width:96px}
+.fo-ends{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fo-end{border:1px solid #d8d8d8;background:#fafafa;border-radius:4px;padding:6px}
+.fo-end-h{font-weight:bold;font-size:12px;color:#33454f;border-bottom:1px solid #e0e0e0;padding-bottom:3px;margin-bottom:5px;cursor:help}
+.fo-pooltabs{display:flex;gap:4px;margin-bottom:6px}
+.fo-pooltab{font-size:11px;padding:3px 12px;border:1px solid #c5c5c5;background:#f4f4f4;border-radius:3px;cursor:pointer}
+.fo-pooltab.on{background:var(--blue,#3496bd);color:#fff;border-color:var(--blue-dark,#25789a)}
+.fo-pool table{font-size:11.5px}
+@media(max-width:980px){.fo-orders-main{grid-template-columns:1fr}.fo-ends{grid-template-columns:1fr}.fo-detgrid{grid-template-columns:1fr 1fr}}
+
+/* ---- #10 scorecard alignment ---- */
+table.fo-scorecard,table.fo-bowling{width:100%;border-collapse:collapse;font-size:12px;table-layout:auto}
+table.fo-scorecard th,table.fo-bowling th{background:#e4e4e4;color:#33454f;text-align:left;padding:5px 8px;border-bottom:1px solid #cfcfcf}
+table.fo-scorecard td,table.fo-bowling td{padding:5px 8px;border-bottom:1px solid #eee;vertical-align:middle}
+table.fo-scorecard th.n,table.fo-scorecard td.n,table.fo-bowling th.n,table.fo-bowling td.n{text-align:right;white-space:nowrap;width:44px}
+.fo-scorecard .fo-bat-nm{width:auto}
+.fo-scorecard .fo-out{color:#6a6a6a}
+.fo-scorecard .fo-extras td,.fo-scorecard .fo-total td{background:#f4f4f4}
+.fo-scorecard .fo-total td{border-top:1px solid #cfcfcf}
+.fo-bowling .fo-type{margin-left:4px}
+
+/* ---- #18 player header ---- */
+.fo-phead{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;
+  background:linear-gradient(135deg,#fff,#eef4f8);border:1px solid var(--border,#d4d9de);border-radius:6px;
+  padding:14px 18px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.fo-phead-l{display:flex;align-items:center;gap:12px}
+.fo-phead-l img.foric{width:34px;height:34px}
+.fo-phead h1{font-size:24px;margin:0;color:#152f40}
+.fo-phead-sub{color:#5f6c74;font-size:12px;margin-top:2px}
+.fo-phead-r{display:flex;align-items:center;gap:14px}
+.fo-bigrat{text-align:right}.fo-bigrat span{display:block;font-size:10px;letter-spacing:.6px;color:#7a828a}
+.fo-bigrat b{font-size:26px;color:#152f40}
+.fo-chips{display:flex;flex-direction:column;gap:3px}
+.fo-abilbar{background:#fffaf0;border:1px solid #ecd8a8;border-radius:5px;padding:7px 12px;margin-bottom:12px}
+.fo-abilbar .eyebrow{color:#8a6a1a;margin-right:6px}
+
+/* ---- #9 commentary symmetry (kill top-right whitespace) ---- */
+.ftp-match-shell{grid-template-columns:150px minmax(0,1fr)!important}
+.ftp-match-body .panel{margin-bottom:0}
+.mc-main{align-items:stretch}
+.mc-comm{flex:1 1 auto;min-width:0}
+.mc-cards{flex:0 0 240px}
+@media(min-width:1100px){.mc-cards{flex-basis:260px}}
+
+/* ---- #17 belt-and-braces: hide inline worm in scoreboard via CSS too ---- */
+.mc-score .pad>div>svg,.fo-scoreboard .pad svg{display:none}
+.fo-handinfo{margin-top:4px;color:#40566a}
+
+/* ============ v8 additions ============ */
+/* item 2: orders batting rows — grid aligned, no icons */
+.fo-batrow{display:grid!important;grid-template-columns:26px minmax(0,1fr) 96px 42px 46px;align-items:center;gap:8px;padding:2px 0;border-bottom:1px dotted #ededed}
+.fo-batrow select{width:100%;max-width:none}
+.fo-batskill{font-size:11px;color:#2c6a2c;white-space:nowrap}
+.fo-cwk{font-size:10px;color:#555;white-space:nowrap;text-align:center}
+.fo-cwk input{margin:0 2px 0 0;vertical-align:middle}
+
+/* item 4: sortable pool headers */
+.fo-sorth{cursor:pointer;user-select:none}
+.fo-sorth:hover{color:#146b93}
+.fo-sorth.on{color:#146b93;background:#eef8fc}
+
+/* item 1: draft full-width card polish (uses existing .pblock look) */
+.fo-draftcard{margin-bottom:6px}
+.fo-draftcard.picked{border-left:3px solid #2f8f46;background:#eef6ec}
+.fo-draftcard .cols{display:flex;gap:34px;flex-wrap:wrap;margin-top:6px}
+.fo-draftcard .cols>div{min-width:230px}
+.page-grid-draft{background:transparent;padding:0}
+
+/* item 5: FTP player view */
+.fo-pl-grid{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:12px;align-items:start}
+.fo-pl-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fo-pinfo-top{font-size:12px;margin-bottom:2px}
+.fo-pinfo-hand{color:#5a6a72;font-size:12px;border-bottom:1px solid #eee;padding-bottom:5px;margin-bottom:4px}
+.fo-pinfo-kv td:first-child{color:#5a6a72;width:38%}
+.fo-pl-skills{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px}
+.fo-pl-skills .fo-pl-adv{grid-column:1/-1}
+.fo-pl-side .panel{margin-bottom:10px}
+.fo-pl-links{display:flex;flex-direction:column;gap:4px}
+@media(max-width:900px){.fo-pl-grid{grid-template-columns:1fr}.fo-pl-two{grid-template-columns:1fr}.fo-pl-skills{grid-template-columns:1fr}}
+
+/* item 7: toss line on scorecard */
+.fo-toss{color:#5a6a72;margin:-2px 0 8px;font-weight:bold}
+
+/* item 8: commentary intro */
+#ftpcomm .fo-comm-intro{background:#f7f9fb;border-left:3px solid #3496bd;padding:8px 12px;margin-bottom:6px;
+  font-size:12px;line-height:1.5;color:#2b3b44;font-style:italic}
+
+</style>
+
+<style id="fo-up2-css">
+/* ===================== FIFTY OVERS — v8 correction CSS ===================== */
+
+/* ---- #2 orders: aligned, symmetric, no icons ---- */
+.fo-batrow2{display:grid;grid-template-columns:26px minmax(0,1fr) 92px 16px 40px 52px;gap:8px;align-items:center;
+  padding:3px 2px;border-bottom:1px solid #eee}
+.fo-batrow2 .bno{width:22px;height:22px;line-height:22px;text-align:center;background:#e7e7e7;border:1px solid #cfcfcf;
+  border-radius:3px;font-weight:bold;color:#555;font-size:11px}
+.fo-batrow2 select{width:100%}
+.fo-batrow2 .bskill{font-size:11px;color:#2c6a2c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fo-batrow2 .bwk{text-align:center;color:#c9860e;font-weight:bold}
+.fo-batrow2 .bopt{font-size:10px;color:#555;white-space:nowrap;text-align:center}
+.fo-batrow2.dup select{border-color:#b23a33;background:#fbe9e7}
+
+/* sortable pool headers */
+.fo-sorth{cursor:pointer;user-select:none}
+.fo-sorth:hover{background:#e0eef4}
+.fo-sorth.on{background:#dcecf3;color:#146b93}
+
+/* ---- #5 FTP player page ---- */
+.ftp-pinfo-top{font-size:13px;color:#2b2b2b}
+.ftp-pinfo-hand{color:#5a6a72;font-size:12px;margin-top:2px}
+.ftp-skills-2col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:640px){.ftp-skills-2col{grid-template-columns:1fr}}
+
+/* ---- #8 commentary FTP polish (matches image target) ---- */
+body.ftpskin #ftpcomm{border:1px solid #d3d3d3;border-radius:4px;background:#fff;overflow:hidden}
+body.ftpskin #ftpcomm .line,body.ftpskin #ftpcomm .four,body.ftpskin #ftpcomm .six{padding:6px 0;border-bottom:1px solid #eee}
+body.ftpskin #ftpcomm .del{float:left;padding-left:8px;width:38px;color:#8a8a8a;font-size:11px}
+body.ftpskin #ftpcomm .rslt{float:left;padding-left:4px;width:34px;text-align:center;font-weight:bold}
+body.ftpskin #ftpcomm .text{overflow:hidden;padding:0 10px 0 6px;color:#333;line-height:1.4}
+body.ftpskin #ftpcomm .clear{clear:both}
+body.ftpskin #ftpcomm .rslt .four{display:inline-block;color:#fff;background:#3299bb;border-radius:5px;padding:1px 5px;min-width:14px;font-weight:bold}
+body.ftpskin #ftpcomm .rslt .six{display:inline-block;color:#fff;background:#009900;border-radius:5px;padding:1px 5px;min-width:14px;font-weight:bold}
+body.ftpskin #ftpcomm .rslt .wicket{display:inline-block;color:#fff;background:#ff9900;border-radius:5px;padding:1px 5px;min-width:14px;font-weight:bold}
+body.ftpskin #ftpcomm .rslt .exb{color:#b06a00;font-weight:bold}
+body.ftpskin #ftpcomm .oversummary-bottom,body.ftpskin #ftpcomm .oversummary-top{background:#eee;border-top:1px solid #d3d3d3;border-bottom:1px solid #d3d3d3;padding:5px 10px}
+body.ftpskin #ftpcomm .oversummary-bottom .text{float:none;width:auto;padding:0;color:#333}
+body.ftpskin #ftpcomm .line.wkt .text{color:#a33}
+body.ftpskin #ftpcomm .four:hover,body.ftpskin #ftpcomm .six:hover,body.ftpskin #ftpcomm .line:hover{background:#fafafa}
+
+/* toss line on scorecard */
+.fo-toss{color:#5a6a72}
+
+</style>
+
+<style id="fo-up3-css">
+/* ===================== FIFTY OVERS — v9 correction CSS ===================== */
+
+/* ---- #7 talents: clean, professional pill (no serif italic) ---- */
+.foabil{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-style:normal;
+  font-weight:600;font-size:10.5px;letter-spacing:.02em;color:#3f5a6b;background:#eef4f8;border:1px solid #cfe0ea;
+  border-radius:11px;padding:1px 9px;cursor:help;display:inline-block;line-height:1.6;margin:0 1px}
+.foabil:hover{background:#e2eef5;border-color:#b9d3e2}
+
+/* ---- #1 club density ---- */
+.fo-nextpanel .kv td:first-child{width:38%;color:#5a6a72}
+.fo-star{background:#fff;border:1px solid var(--border,#d4d9de);border-left:4px solid var(--orange,#f18a1e);border-radius:5px;padding:9px 12px}
+.fo-stars{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.fo-star-n{font-size:22px;font-weight:800;color:#152f40}
+.formpip{display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;border-radius:50%;font-size:11px;font-weight:bold;color:#fff}
+.formpip.w{background:#2f8f46}.formpip.l{background:#b23a33}.formpip.d{background:#8a8a8a}
+.fo-form{display:flex;align-items:center;gap:5px}
+.myrow td{background:#fff7d6!important}
+
+/* ---- #5 player Skills panel: bigger + highlighted centerpiece ---- */
+.fo-skills-panel{border:2px solid var(--blue,#3496bd);box-shadow:0 2px 12px rgba(52,150,189,.14)}
+.fo-skills-panel>h4{font-size:13px;background:linear-gradient(180deg,#3aa3cb,#2f8db1)!important}
+.fo-bigskill{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13px}
+.fo-bigskill-l{min-width:92px;color:#33454f;font-weight:600}
+.fo-bigskill-bar{flex:1;max-width:280px;height:14px;background:#e6ece6;border:1px solid #b6c2b6;border-radius:3px;overflow:hidden}
+.fo-bigskill-bar i{display:block;height:100%}
+.fo-bigskill-w{min-width:96px;font-weight:600;font-size:12.5px}
+
+/* ---- #4 scorecard-page tabs ---- */
+.fo-sctabs{display:flex;gap:4px;margin:8px 0 0;flex-wrap:wrap}
+.fo-sctab{font-size:12px;padding:6px 16px;border:1px solid #c5c5c5;background:#f2f2f2;border-bottom:none;border-radius:4px 4px 0 0;cursor:pointer}
+.fo-sctab.on{background:var(--blue,#3496bd);color:#fff;border-color:var(--blue-dark,#25789a)}
+.fo-sctabs + .ftpskin{border-top:2px solid var(--blue,#3496bd);padding-top:10px}
+
+/* ---- #9 ratings alignment (live + page) ---- */
+.fo-ratingswrap table{width:100%;border-collapse:collapse;table-layout:auto}
+.fo-ratingswrap th,.fo-ratingswrap td{padding:6px 10px;border-bottom:1px solid #eee}
+.fo-ratingswrap td.n,.fo-ratingswrap th.n{text-align:right;white-space:nowrap;width:120px}
+.fo-ratingswrap tr td:first-child,.fo-ratingswrap tr th:first-child{text-align:left}
+.match-subpanel{min-width:0;margin-top:0}
+.match-subpanel .panel{margin-bottom:8px}
+
+/* ---- #8 ORDERS: fix truncation + stacked ends, no overflow ---- */
+.fo-orders-main{grid-template-columns:minmax(340px,430px) minmax(0,1fr)!important}
+.fo-batrow2{grid-template-columns:22px minmax(140px,1fr) 60px 12px 30px 40px!important;gap:6px!important}
+.fo-batrow2 select{width:100%;min-width:0}
+.fo-batrow2 .bskill{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+.fo-ends{grid-template-columns:1fr!important}          /* stack End A over End B — no horizontal overflow */
+.fo-end{overflow:hidden}
+.fo-end .spellrow{flex-wrap:wrap;gap:4px}
+.fo-end .spellrow select{max-width:160px}
+.fo-end .spellrow select:first-child{flex:1 1 150px;max-width:200px}
+.fo-pool table{table-layout:auto}
+.fo-orders-details{overflow:hidden}
+
+/* ---- #2 over-summary top line (batsmen + bowler) ---- */
+body.ftpskin #ftpcomm .oversummary-top{background:#eee;border-top:1px solid #d3d3d3;padding:5px 10px 2px}
+body.ftpskin #ftpcomm .oversummary-top .text{float:none;width:auto;padding:0;color:#333}
+body.ftpskin #ftpcomm .oversummary-top strong{color:#1d3a4d}
+body.ftpskin #ftpcomm .oversummary-bottom{padding-top:2px}
+
+</style>
+
+<style id="fo-up4-css">
+/* ===================== FIFTY OVERS — v10 CSS ===================== */
+
+/* ---- #2/#10 THE alignment root cause: ftpskin's generic th{text-align:left} was
+   beating th.n. Kill it once, everywhere. ---- */
+body.ftpskin th.n,body.ftpskin td.n{text-align:right!important;white-space:nowrap}
+table.fo-stattbl{width:100%;table-layout:fixed}
+table.fo-stattbl th,table.fo-stattbl td{overflow:hidden;text-overflow:ellipsis;padding:5px 8px}
+table.fo-stattbl th.n,table.fo-stattbl td.n{text-align:right!important}
+table.fo-gridtbl td.n,table.fo-gridtbl th.n{text-align:right!important}
+
+/* ---- #1 club header band + crest ---- */
+.fo-clubband{background:linear-gradient(120deg,#1d4a66,#2f8db1 60%,#3aa3cb);border-radius:6px;
+  padding:14px 20px;color:#fff;box-shadow:0 2px 10px rgba(20,60,90,.25);align-items:center;gap:16px;display:flex}
+.fo-clubband h1{color:#fff!important;margin:2px 0 4px}
+.fo-clubband .eyebrow{color:#cfe8f4!important}
+.fo-clubband p,.fo-clubband .small{color:#dcedf6!important}
+.fo-clubband .fo-form .small{color:#dcedf6!important}
+.fo-clubband .fo-form{margin-left:auto}
+img.fo-clubcrest{width:64px;height:64px;object-fit:contain;background:#fff;border-radius:10px;padding:6px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+
+/* ---- #3 skills: one colour only ---- */
+.fo-bigskill-bar i{background:#2f8f46!important}
+.fo-bigskill-w{color:#33454f!important}
+.fo-bigskill{cursor:help}
+.fo-bigskill-sm .fo-bigskill-bar{max-width:200px;height:11px}
+.fo-bigskill-sm{font-size:12px;margin:5px 0}
+
+/* ---- #5 pinned intro line ---- */
+body.ftpskin #ftpcomm .fo-introline{background:#f4efe0;border-top:2px solid #c8a13a;border-bottom:1px solid #d3d3d3;padding:7px 10px;font-style:normal}
+body.ftpskin #ftpcomm .fo-introline .text{float:none;width:auto;padding:0;color:#4a4030;font-size:12px;line-height:1.5}
+
+/* ---- #7/#8 equal Scoreboard / Match details boxes ---- */
+.mc-top{display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px;align-items:stretch}
+.mc-top .panel{height:100%;margin-bottom:0;display:flex;flex-direction:column;min-width:0}
+.mc-top .panel .pad{flex:1;position:relative}
+.mc-score,.mc-details{flex:none!important;min-width:0!important;max-width:none!important}
+.fo-detart{position:absolute;right:10px;bottom:8px;opacity:.85}
+.fo-detart img{width:64px;height:64px;object-fit:contain}
+@media(max-width:760px){.mc-top{grid-template-columns:1fr!important}}
+
+/* ---- #9 bowling click-grid ---- */
+.fo-gridrow{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;padding:5px;border:1px solid #e2e2e2;background:#fbfbfb;border-radius:4px}
+.fo-gridside{flex:0 0 190px}
+.fo-gridside select{width:100%}
+.fo-gridcells{flex:1;line-height:1}
+.fo-gcell{display:inline-block;width:17px;height:17px;line-height:17px;text-align:center;font-size:8px;margin:0 1px 2px 0;border:1px solid;border-radius:2px;user-select:none}
+@media(max-width:820px){.fo-gridrow{flex-direction:column}.fo-gridside{flex-basis:auto}}
+
+/* ---- #15 lineups ---- */
+.fo-lineups{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:820px){.fo-lineups{grid-template-columns:1fr}}
+
+/* ---- #17 full commentary, scrollable ---- */
+body.ftpskin #ftpcomm{max-height:640px;overflow-y:auto}
+.commfeed{max-height:640px;overflow-y:auto}
+
+</style>
+
+<script id="fo-assets">/*FO_ENGINE_BLOCK_4*/</script>
+
+<script id="fo-clubimg">/*FO_ENGINE_BLOCK_5*/</script>
+
+<script id="fo-up1-js">/*FO_ENGINE_BLOCK_6*/</script>
+
+<script id="fo-up2-js">/*FO_ENGINE_BLOCK_7*/</script>
+
+<script id="fo-up3-js">/*FO_ENGINE_BLOCK_8*/</script>
+
+<script id="fo-up4-js">/*FO_ENGINE_BLOCK_9*/</script>
+
+<script id="fo-v11-visible-fix">/*FO_ENGINE_BLOCK_10*/</script>
+
+
+<script id="fo-v11-1-engine-audit-fix">/*FO_ENGINE_BLOCK_11*/</script>
+
+<script id="fo-v11-3-pace-tune">/*FO_ENGINE_BLOCK_12*/</script>
+</body></html>

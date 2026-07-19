@@ -11,7 +11,7 @@
 // bootstrap at the bottom is guarded by `typeof window`.
 
 // BUILD_HASH — sha256 of the exact game engine file this client ships with.
-// (Base build Fifty_Overs_Club_Manager_2026_v11_6.html.) Recompute and update
+// (Base build: the assembled engine, .build/engine.html.) Recompute and update
 // this constant whenever the engine file changes; the league pins one build.
 export const BUILD_HASH =
   "e558745ede94e2502d5cccaa829feb42818cbcb1e779664c4b784a851b3f00ff";

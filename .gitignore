@@ -10,3 +10,4 @@ resolver/_*.png
 secrets/
 supabase/.env
 supabase/deploy/.env
+.build/

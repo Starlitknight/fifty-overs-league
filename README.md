@@ -21,7 +21,8 @@ Docs: `docs/emergent-world.md` (the career world), `docs/first-summer.md`
 ## Multiplayer (the bonus built on the same engine)
 
 An invite-only multiplayer league built on top of the deterministic single-file
-cricket sim `Fifty_Overs_Club_Manager_2026_v11_6.html`, **without rewriting the
+cricket sim (now maintained as source modules in `engine/src/`, assembled by
+the build), **without rewriting the
 game engine**. The server owns every outcome-determining fact; the client is a
 view + an action submitter; official match results come only from a server-side
 headless resolver running the *real* engine.
@@ -57,7 +58,7 @@ headless resolver running the *real* engine.
 ## Layout
 | path | what |
 |---|---|
-| `Fifty_Overs_Club_Manager_2026_v11_6.html` | the pinned game engine (unmodified) |
+| `engine/shell.html` + `engine/src/*.js` | the game engine, as source modules (gameplay guarded by golden-master replays in `test/replay.test.mjs`) |
 | `resolver/resolve-harness.js` | additive `window.__resolveMatch` entry point (no engine-logic edits) |
 | `resolver/resolve.mjs` | headless engine caller (hash-pin check, resolve, `verifyResult`) |
 | `resolver/worker.mjs` / `server.mjs` / `Dockerfile` | the resolver container |

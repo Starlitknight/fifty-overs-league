@@ -11,7 +11,7 @@ import { dirname, resolve } from 'node:path';
 import { snakeDeal, dealReport } from '../functions/_shared/draft.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const GAME = resolve(__dirname, '../../Fifty_Overs_Club_Manager_2026_v11_6.html');
+const GAME = resolve(__dirname, '../../.build/engine.html');   // assembled by ./build.sh
 
 let pass = 0;
 const ok = (c, m) => { console.log(`${c ? 'PASS' : 'FAIL'}  ${m}`); if (!c) process.exitCode = 1; else pass++; };

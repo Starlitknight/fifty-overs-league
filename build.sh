@@ -1,13 +1,26 @@
 #!/usr/bin/env bash
-# Build the playable site: the pristine engine + the league overlay, concatenated.
-# The pristine engine is never edited (its sha256 is pinned as BUILD_HASH); the
-# overlay is simply appended as a <script>. Emits two identical entry points:
+# Build the playable site: the engine (assembled from engine/src modules into
+# its HTML shell) + the league overlay + the presentation bundle. Gameplay is
+# guarded by the golden-master replay suite, not a pinned hash. Emits two
+# identical entry points:
 #   index.html        -> https://<user>.github.io/<repo>/            (clean URL)
 #   client/game.html  -> .../client/game.html                        (kept stable)
 set -euo pipefail
 cd "$(dirname "$0")"
 
-ENGINE="Fifty_Overs_Club_Manager_2026_v11_6.html"
+# assemble the engine from its source modules (exact-split extraction of the
+# former single file; markers in the shell are replaced in manifest order)
+mkdir -p .build
+python3 - <<'PYASM'
+import re
+shell = open('engine/shell.html', encoding='utf-8').read()
+names = [n for n in open('engine/src/manifest.txt').read().split('\n') if n]
+for i, n in enumerate(names):
+    shell = shell.replace('/*FO_ENGINE_BLOCK_' + str(i) + '*/',
+                          open('engine/src/' + n + '.js', encoding='utf-8').read(), 1)
+open('.build/engine.html', 'w', encoding='utf-8').write(shell)
+PYASM
+ENGINE=".build/engine.html"
 OVERLAY="client/league-overlay.js"
 
 # The First Summer campaign ships as modular sources (client/src/**), listed

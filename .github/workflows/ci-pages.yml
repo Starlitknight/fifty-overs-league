@@ -34,8 +34,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Syntax-check overlay and campaign modules
+      - name: Syntax-check engine modules, overlay and bundle
         run: |
+          for f in engine/src/*.js; do node --check "$f"; done
           node --check client/league-overlay.js
           while IFS= read -r f; do [ -n "$f" ] && node --check "client/src/$f"; done < client/src/manifest.txt
       - name: Build site from engine + overlay + bundle

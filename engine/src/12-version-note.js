@@ -1,0 +1,1 @@
+console.info("Fifty Overs v11.6 loaded: age\u00d7quality draft skills (peak after 27), experience tied to age, FTP-scaled ratings, bat/bowl within ~1-2 levels of technique, worm axes (runs vs overs), sortable wages, full-season fixtures\u0026results, robust reset, draft locked until a legal squad.");
