@@ -4796,11 +4796,10 @@
       showLogin: renderLogin, showJoin: renderJoin, showForgot: renderForgot,
       showWelcome: renderWelcome,
       soloStart: function () {
-        var nmEl = wrap.querySelector("#folClubNm"), sdEl = wrap.querySelector("#folSeed");
-        foSoloBegin(nmEl ? nmEl.value : "", sdEl ? sdEl.value : "");
+        var nmEl = wrap.querySelector("#folClubNm");
+        foSoloBegin(nmEl ? nmEl.value : "");
       },
-      soloContinue: function () { foSoloBegin("", ""); },
-      soloNewForm: function () { window.__folSoloForce = 1; renderWelcome(); window.__folSoloForce = 0; },
+      soloContinue: function () { foSoloBegin(""); },
       sendReset: sendReset, joinNew: doJoinSignup,
       openId: function () { enterGameById(t.getAttribute("data-id")); }, join: joinLeague,
       startLeague: startLeague, mkInvite: mkInvite,
@@ -4873,26 +4872,19 @@
   // The career is the front door; leagues are the bonus built on the same
   // engine. Solo runs entirely locally — no account, no server.
   function foHasSoloSave() {
-    try {
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && (k.indexOf("fo_career_") === 0 || k.indexOf("fo_summer_") === 0) &&
-            k.indexOf("_backup_") < 0 && k.indexOf("_archived_") < 0) return true;
-      }
-    } catch (e) {}
+    try { return localStorage.getItem("fo_welcomed") === "1"; } catch (e) {}
     return false;
   }
-  function foSoloBegin(name, seed) {
+  function foSoloBegin(name) {
     try {
       var nm = String(name || "").trim().slice(0, 26);
       try { window.store("fo_welcomed", "1"); window.store("fo_club", "0"); } catch (e0) {
         try { localStorage.setItem("fo_welcomed", "1"); localStorage.setItem("fo_club", "0"); } catch (e1) {}
       }
       if (nm && typeof GD !== "undefined" && GD.teams && GD.teams[0]) GD.teams[0].name = nm;
-      if (seed && String(seed).trim()) { try { localStorage.setItem("fo_seed_pending", String(seed).trim().slice(0, 40)); } catch (e2) {} }
       try { if (typeof saveGame === "function") saveGame(false); } catch (e3) {}
       openWrap(false);
-      location.hash = "#/summer";
+      location.hash = "#/circuit";
       if (typeof window.route === "function") window.route();
     } catch (e) { say(e); }
   }
@@ -4904,14 +4896,12 @@
       "<h1>" + (has ? "Welcome back, boss" : "Your club is waiting") + "</h1>" +
       '<div class="fol-sub" style="display:flex;gap:10px;align-items:center;text-align:left">' +
       '<img src="' + FO_ART + 'gaffer.png" alt="" style="width:52px;height:52px;border-radius:10px;object-fit:cover;object-position:50% 8%;flex:0 0 52px">' +
-      "<span>&ldquo;" + (has ? "The season doesn&rsquo;t wait and neither do I. Pick up where we left off."
+      "<span>&ldquo;" + (has ? "The Circuit doesn&rsquo;t wait and neither do I. Pick up where we left off."
         : "I&rsquo;m the Gaffer. Give the club a name and I&rsquo;ll walk you through the rest &mdash; squad, captain, first match. No account needed.") + "&rdquo;</span></div>" +
       '<div class="fol-form">' +
-      (has ? '<button class="fol-cta" data-act="soloContinue">Continue career ▸</button>' +
-             '<button class="mini" style="width:100%" data-act="soloNewForm">Start a fresh solo career</button>'
+      (has ? '<button class="fol-cta" data-act="soloContinue">Continue playing ▸</button>'
            : '<div><label for="folClubNm">Club name</label><input id="folClubNm" type="text" maxlength="26" placeholder="e.g. Harbour Town CC"></div>' +
-             '<div><label for="folSeed">World seed <span style="opacity:.6">(optional — share one with a friend)</span></label><input id="folSeed" type="text" maxlength="40" placeholder="leave blank for a new world"></div>' +
-             '<button class="fol-cta" data-act="soloStart">Start a Solo Career ▸</button>') +
+             '<button class="fol-cta" data-act="soloStart">Start playing ▸</button>') +
       "</div>" +
       '<div class="fol-or">or play with friends</div>' +
       '<div class="fol-links"><a data-act="showLogin">Sign in to a league</a><a data-act="showJoin">' + ICON_JOIN + "Join with invite code</a></div>" +

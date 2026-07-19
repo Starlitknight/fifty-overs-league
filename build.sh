@@ -42,30 +42,8 @@ build() {
   echo "built $1 ($(wc -c < "$1") bytes)"
 }
 
-# The illustrated-world client (/next/): same pristine engine + overlay +
-# campaign, plus the world bundle from apps/world-client/src (manifest order).
-# A head script marks the build as the world client and pre-seeds the solo
-# flags so the engine boots straight into a local game — no account, no gate.
-WORLD_DIR="apps/world-client/src"
-world_js() {
-  printf '(function(){\n"use strict";\n'
-  while IFS= read -r f; do
-    [ -n "$f" ] || continue
-    printf '\n/* ---- world:%s ---- */\n' "$f"
-    cat "$WORLD_DIR/$f"
-  done < "$WORLD_DIR/manifest.txt"
-  printf '\n})();\n'
-}
-WORLDBOOT="<script>try{localStorage.getItem('fo_welcomed')||localStorage.setItem('fo_welcomed','1');localStorage.getItem('fo_club')||localStorage.setItem('fo_club','0');window.__FO_WORLD=1}catch(e){}</script>"
-build_next() {
-  mkdir -p next
-  { sed "s~<head>~<head>$BOOT$WORLDBOOT~" "$ENGINE"; printf '\n<script id="fo-league-overlay">\n'; sed "s|__FO_BUILD__|$BUILD_ID|g" "$OVERLAY"; printf '\n</script>\n<script id="fo-campaign">\n'; campaign_js; printf '\n</script>\n<script id="fo-world">\n'; world_js; printf '\n</script>\n'; } > next/index.html
-  echo "built next/index.html ($(wc -c < next/index.html) bytes)"
-}
-
 build index.html
 build client/game.html
-build_next
 printf '{"build":"%s"}\n' "$BUILD_ID" > version.json
 
 echo "build id: $BUILD_ID"

@@ -1,7 +1,7 @@
-/* boot — wire the campaign into the page.
+/* boot — wire the presentation + engine layers into the page.
  *
- * Waits for the engine + overlay to exist, then starts the match keeper and
- * the two routed surfaces (#/summer, #/lineup). Exposes __foSummer for the
+ * Waits for the engine to exist, then installs the tuning layer, the
+ * smooth renderer and the oval stage. Exposes __foSummer for the
  * Playwright probes and nothing else.
  */
 (function () {
@@ -17,21 +17,12 @@
     try {
       FOC.engineTuning.install();
       FOC.smoothRender.install();
-      FOC.game.init();
-      FOC.lineup.init();
-      FOC.campaignUI.init();
-      FOC.careerHub.init();
       FOC.oval.init();
       window.__foSummer = {
-        save: function () { return FOC.game.save(); },
-        engine: FOC.game, adapter: FOC.adapter, lineup: FOC.lineup,
-        saveMod: FOC.save, ids: FOC.ids, events: FOC.events, england: FOC.england,
-        career: FOC.career, careerHub: FOC.careerHub, save2: FOC.save2,
-        world: { gen: FOC.worldgen, sim: FOC.worldsim, comps: FOC.competitions,
-          npc: FOC.npc, transfers: FOC.transfers, rivalry: FOC.rivalry },
-        rng: FOC.rng, storylets: FOC.storylets, oval: FOC.oval, tuning: FOC.engineTuning, smooth: FOC.smoothRender
+        adapter: FOC.adapter,
+        oval: FOC.oval, tuning: FOC.engineTuning, smooth: FOC.smoothRender
       };
-      try { console.info("The First Summer ready."); } catch (e2) {}
+      try { console.info("Fifty Overs presentation layer ready."); } catch (e2) {}
     } catch (e3) {}
   }, 250);
 })();
