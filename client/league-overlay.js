@@ -15234,6 +15234,7 @@
       var FO_REGIONS = ["midwicket", "cover", "mid-off", "long-on", "deep square leg", "point", "extra cover", "mid-on", "long-off", "backward point"];
       window.comm = function (inn, out, rb, sb, bowler, intent, field, ev) {
         try {
+          var fhTag = (inn && inn.freeHit && out !== "noball" && out !== "wide") ? "FREE HIT - " : "";
           var ln = function (n) { return String(n || "").split(" ").slice(-1)[0]; };
           var bat = ln(sb.p.name), bwl = ln(bowler.name);
           var faced = (inn.faced && inn.faced[sb.p.name]) || 0;
@@ -15350,7 +15351,7 @@
               bat + " gets underneath the " + (pace ? "slower ball" : "flighted one") + " and clears " + reg + " with ease"
             ];
             var sx = used(fresh(function (sa) { return sixOpen[H(sa) % sixOpen.length] + " " + sixShot[H(sa * 3 + 7) % sixShot.length]; }, 21));
-            return sx + (chase && chase.need > 0 && chase.need <= 30 ? ". The target is suddenly very close." : (intent >= 2 ? ". Launch mode pays." : "."));
+            return fhTag + sx + (chase && chase.need > 0 && chase.need <= 30 ? ". The target is suddenly very close." : (intent >= 2 ? ". Launch mode pays." : "."));
           }
 
           if (out === "4") {
@@ -15373,7 +15374,7 @@
               "Top edge on the pull... it lands SAFE and skips to the rope. FOUR, and " + bat + " smiles",
               (FT && !FT.hasSlip ? "The outside edge flies through the vacant cordon - FOUR, and " + bwl + " puts his hands on his head" : "The outside edge flies wide of the slip - FOUR, and " + bwl + " puts his hands on his head"),
               "Not in control! But it bisects the fielders and the umpire signals FOUR"], 34) + ".";
-            return used(fresh(function (sa) {
+            return fhTag + used(fresh(function (sa) {
               return fourLead[H(sa * 7 + 3) % fourLead.length] + fourShot[H(sa) % fourShot.length] + fourEnd[H(sa * 3 + 29) % fourEnd.length];
             }, 22)) + ".";
           }
@@ -15386,9 +15387,9 @@
             bwl + " loses his line and the umpire's arms go out. Wide"
           ], 23) + ".";
           if (out === "noball") return pickF([
-            "NO-BALL! " + bwl + " oversteps - a free run and he has to bowl it again",
-            "No-ball called - the front foot is well over. Sloppy from " + bwl,
-            "The umpire's arm shoots out - NO-BALL. " + bwl + " shakes his head at his own follow-through"
+            "NO-BALL! " + bwl + " oversteps - a free run, and the next ball is a FREE HIT",
+            "No-ball called - the front foot is well over. Sloppy from " + bwl + ", and a free hit to come",
+            "The umpire's arm shoots out - NO-BALL. A free hit is coming, and " + bat + " knows it"
           ], 24) + ".";
           if (out === "bye") return pickF([
             "The ball beats everyone - " + kp + " cannot gather and they scamper a bye",
@@ -15445,6 +15446,7 @@
                 ["jammed out", bat + " works it straight to " + regRing, bat + " is rushed and can only block", "kept out with a dead-straight blade", "swept, but " + sqOr + " is right there"], 50);
             }
             if (field === "def" && H(26) % 5 === 0) d += ". The ring holds the single";
+            d = fhTag + d;
             if (chase && chase.need > 0 && H(27) % 7 === 0) d += ". " + chase.need + " needed off " + chase.balls;
             return d + ".";
           }

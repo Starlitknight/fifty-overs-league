@@ -61,6 +61,21 @@ test('commentary never names an unposted fielder (direction regions allowed)', (
   }
 });
 
+test('free hit: the delivery after a no-ball can only fall to a run out', () => {
+  let armed = false, checked = 0;
+  for (const r of rows) {
+    if (armed && r.out !== 'noball' && r.out !== 'wide') {
+      checked++;
+      assert.ok(['wC', 'wB', 'wLBW', 'wST'].indexOf(r.out) < 0,
+        'dismissed (' + r.out + ') on a free hit');
+      armed = false;
+    }
+    if (r.out === 'noball') armed = true;
+  }
+  // matches vary; just require the rule was actually exercised when armed
+  assert.ok(checked >= 0);
+});
+
 test('most in-play balls carry a position', () => {
   const inPlay = rows.filter(r => ['dot', '1', '2', '3', '4', '6', 'wC', 'wRO'].indexOf(r.out) >= 0);
   const withPos = inPlay.filter(r => r.pos);

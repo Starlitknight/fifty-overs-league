@@ -462,6 +462,12 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   lo.wide=CAL.wide-wc*0.01;lo.noball=CAL.noball;lo.bye=CAL.bye;lo.legbye=CAL.bye-0.4;
   if(ctx.keeperQuality){const kq=(ctx.keeperQuality-55);lo.bye-=0.020*kq;lo.legbye-=0.008*kq;lo.wide-=0.004*kq;lo.wC+=0.0055*kq;lo.wST+=0.017*kq;}
   for(const k in DIS)lo[k]=W+Math.log(DIS[k]);
+  // FREE HIT (real ODI rule): after a no-ball the next legal delivery can
+  // only fall to a run out - and batters swing at it
+  if(ctx&&ctx.freeHit){
+    for(const k of['wC','wB','wLBW','wST'])lo[k]-=9;
+    lo['4']+=0.30;lo['6']+=0.30;lo.dot-=0.15;
+  }
   if(ctx.rocketArms)lo.wRO+=Math.min(0.26,0.13*ctx.rocketArms);
   if(ctx.lightningKeeper){lo.wST+=0.38;lo.wC+=0.090}
   lo['wC']+=0.174; // drop-model compensation
@@ -886,7 +892,7 @@ function stepBall(){
   const keeperTalent=keeperObj.talents||[];
   const keeperQuality=foKeeperQuality(keeperObj);
   const remBalls=Math.max(0,300-inn.legal),reqRate=(M.target?(M.target-inn.runs)/Math.max(0.5,remBalls/6):0);
-  const d=ballDist(batP,bowler,phaseOf(over),faced,intent,rrDef,M.pitch,field,over,{weather:((M.meta&&M.meta.weather)||'sunny').toLowerCase(),pship:inn.pshipR,chase:M.inns===1,bballs:brec?brec.b:0,ballsThisSpell:brec?brec.spellB||0:0,wkts:inn.wkts,ballsLeft:remBalls,reqRate,fieldAvg,keeperQuality,rocketArms:inn.bxi.filter(p=>(p.talents||[]).includes('rocketArm')).length,lightningKeeper:keeperTalent.includes('lightningHands'),mixed:!!(inn.bat[inn.nonstriker]&&!inn.bat[inn.nonstriker].out&&batP.hand!==inn.bat[inn.nonstriker].p.hand),batFat:M.fat[batP.name]||0,bowlFat:M.fat[bowler.name]||0,captBowl:inn.captBowl,captBat:inn.captBat});
+  const d=ballDist(batP,bowler,phaseOf(over),faced,intent,rrDef,M.pitch,field,over,{freeHit:!!inn.freeHit,weather:((M.meta&&M.meta.weather)||'sunny').toLowerCase(),pship:inn.pshipR,chase:M.inns===1,bballs:brec?brec.b:0,ballsThisSpell:brec?brec.spellB||0:0,wkts:inn.wkts,ballsLeft:remBalls,reqRate,fieldAvg,keeperQuality,rocketArms:inn.bxi.filter(p=>(p.talents||[]).includes('rocketArm')).length,lightningKeeper:keeperTalent.includes('lightningHands'),mixed:!!(inn.bat[inn.nonstriker]&&!inn.bat[inn.nonstriker].out&&batP.hand!==inn.bat[inn.nonstriker].p.hand),batFat:M.fat[batP.name]||0,bowlFat:M.fat[bowler.name]||0,captBowl:inn.captBowl,captBat:inn.captBat});
   const r=M.rand();let c=0,out='dot';
   for(const k in d){c+=d[k];if(r<=c){out=k;break}}
   M._fielder=null;M._dropped=false;M._fieldingEvent=null;M._fieldPos=null;
@@ -929,7 +935,7 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
   else if(['wide','noball','bye','legbye'].includes(out))rb=1;
   inn.runs+=rb;inn.ph_r[phaseOf(over)]+=rb;inn.pshipR+=rb;
   if(out==='wide'){inn.extras.wd+=rb;brec.wd=(brec.wd||0)+1;brec.r+=rb}
-  else if(out==='noball'){inn.extras.nb+=rb;brec.nb=(brec.nb||0)+1;brec.r+=rb}
+  else if(out==='noball'){inn.extras.nb+=rb;brec.nb=(brec.nb||0)+1;brec.r+=rb;inn.freeHit=true}
   else if(out==='bye'){inn.extras.b+=rb}
   else if(out==='legbye'){inn.extras.lb+=rb}
   else{brec.r+=rb}
@@ -937,7 +943,7 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
   const milestones=[];
   if(sb.r>=50&&!sb.fifty){sb.fifty=true;milestones.push(`FIFTY for ${sb.p.name} - ${sb.r} off ${sb.b}.`)}
   if(sb.r>=100&&!sb.hundred){sb.hundred=true;milestones.push(`HUNDRED! ${sb.p.name} raises the bat - ${sb.r} off ${sb.b}.`)}
-  if(!ext){inn.legal++;brec.b++;brec.spellB=(brec.spellB||0)+1;inn.ph_b[phaseOf(over)]++;inn.pshipB++;inn.faced[sb.p.name]=(inn.faced[sb.p.name]||0)+1;
+  if(!ext){if(inn.freeHit&&out!=='noball')inn.freeHit=false;inn.legal++;brec.b++;brec.spellB=(brec.spellB||0)+1;inn.ph_b[phaseOf(over)]++;inn.pshipB++;inn.faced[sb.p.name]=(inn.faced[sb.p.name]||0)+1;
     const stB=(sb.p.skills&&sb.p.skills.stamina)||50,stW=(bowler.skills&&bowler.skills.stamina)||50;
     const ageB=(sb.p._ageTire||foAgeTireFactor(sb.p)),ageW=(bowler._ageTire||foAgeTireFactor(bowler));
     const roleB=sb.p.keeper?1.04:1.0, roleW=(bowler.bowlType==='fast'?1.08:(bowler.bowlType==='fastMedium'?1.04:1.0));
@@ -1021,7 +1027,7 @@ function comm(inn,out,rb,sb,bowler,intent,field,ev){
   if(out==='6'){const v=['SIX! '+nm+' launches '+bowler.name.split(' ').slice(-1)[0]+' into the stands','SIX - '+nm+' picks the length early and swings clean','Huge from '+nm+'! That is out of the ground'];return v[(inn.legal+inn.runs)%3]+(intent>=2?' - launch mode pays.':'.')}
   if(out==='4'){const v=['FOUR - '+nm+' pierces the '+(field==='def'?'packed ':'')+'field','FOUR! Crisp from '+nm+', no one moved','Streaky but four for '+nm+' - the edge runs away'];return v[(inn.legal+inn.runs)%3]+'.'}
   if(out==='wide')return 'Wide, gift run.';
-  if(out==='noball')return 'No-ball! Free run and bowled again.';
+  if(out==='noball')return 'No-ball! Free run - and the next ball is a FREE HIT.';
   if(out==='dot')return `Dot ball${field==='def'?', ring holds the single':''}.`;
   return `${rb} run${rb>1?'s':''}, ${nm} rotates.`;
 }
@@ -11111,7 +11117,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260719-0818-839b29";
+  var FO_BUILD = "20260719-0821-e345cc";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21857,6 +21863,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var FO_REGIONS = ["midwicket", "cover", "mid-off", "long-on", "deep square leg", "point", "extra cover", "mid-on", "long-off", "backward point"];
       window.comm = function (inn, out, rb, sb, bowler, intent, field, ev) {
         try {
+          var fhTag = (inn && inn.freeHit && out !== "noball" && out !== "wide") ? "FREE HIT - " : "";
           var ln = function (n) { return String(n || "").split(" ").slice(-1)[0]; };
           var bat = ln(sb.p.name), bwl = ln(bowler.name);
           var faced = (inn.faced && inn.faced[sb.p.name]) || 0;
@@ -21973,7 +21980,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
               bat + " gets underneath the " + (pace ? "slower ball" : "flighted one") + " and clears " + reg + " with ease"
             ];
             var sx = used(fresh(function (sa) { return sixOpen[H(sa) % sixOpen.length] + " " + sixShot[H(sa * 3 + 7) % sixShot.length]; }, 21));
-            return sx + (chase && chase.need > 0 && chase.need <= 30 ? ". The target is suddenly very close." : (intent >= 2 ? ". Launch mode pays." : "."));
+            return fhTag + sx + (chase && chase.need > 0 && chase.need <= 30 ? ". The target is suddenly very close." : (intent >= 2 ? ". Launch mode pays." : "."));
           }
 
           if (out === "4") {
@@ -21996,7 +22003,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
               "Top edge on the pull... it lands SAFE and skips to the rope. FOUR, and " + bat + " smiles",
               (FT && !FT.hasSlip ? "The outside edge flies through the vacant cordon - FOUR, and " + bwl + " puts his hands on his head" : "The outside edge flies wide of the slip - FOUR, and " + bwl + " puts his hands on his head"),
               "Not in control! But it bisects the fielders and the umpire signals FOUR"], 34) + ".";
-            return used(fresh(function (sa) {
+            return fhTag + used(fresh(function (sa) {
               return fourLead[H(sa * 7 + 3) % fourLead.length] + fourShot[H(sa) % fourShot.length] + fourEnd[H(sa * 3 + 29) % fourEnd.length];
             }, 22)) + ".";
           }
@@ -22009,9 +22016,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             bwl + " loses his line and the umpire's arms go out. Wide"
           ], 23) + ".";
           if (out === "noball") return pickF([
-            "NO-BALL! " + bwl + " oversteps - a free run and he has to bowl it again",
-            "No-ball called - the front foot is well over. Sloppy from " + bwl,
-            "The umpire's arm shoots out - NO-BALL. " + bwl + " shakes his head at his own follow-through"
+            "NO-BALL! " + bwl + " oversteps - a free run, and the next ball is a FREE HIT",
+            "No-ball called - the front foot is well over. Sloppy from " + bwl + ", and a free hit to come",
+            "The umpire's arm shoots out - NO-BALL. A free hit is coming, and " + bat + " knows it"
           ], 24) + ".";
           if (out === "bye") return pickF([
             "The ball beats everyone - " + kp + " cannot gather and they scamper a bye",
@@ -22068,6 +22075,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
                 ["jammed out", bat + " works it straight to " + regRing, bat + " is rushed and can only block", "kept out with a dead-straight blade", "swept, but " + sqOr + " is right there"], 50);
             }
             if (field === "def" && H(26) % 5 === 0) d += ". The ring holds the single";
+            d = fhTag + d;
             if (chase && chase.need > 0 && H(27) % 7 === 0) d += ". " + chase.need + " needed off " + chase.balls;
             return d + ".";
           }
