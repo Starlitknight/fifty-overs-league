@@ -58,7 +58,7 @@ headless resolver running the *real* engine.
 ## Layout
 | path | what |
 |---|---|
-| `engine/shell.html` + `engine/src/*.js` | the game engine, as source modules (gameplay guarded by golden-master replays in `test/replay.test.mjs`) |
+| `engine/shell.html` + `engine/src/*.js` | the whole game, as ONE source tree: core sim blocks, `20-league.js` (skin, multiplayer, Circuit), `presentation/` (oval stage, smooth render). Gameplay guarded by golden-master replays. |
 | `resolver/resolve-harness.js` | additive `window.__resolveMatch` entry point (no engine-logic edits) |
 | `resolver/resolve.mjs` | headless engine caller (hash-pin check, resolve, `verifyResult`) |
 | `resolver/worker.mjs` / `server.mjs` / `Dockerfile` | the resolver container |

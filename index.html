@@ -6666,8 +6666,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
 <script id="fo-v11-1-engine-audit-fix">console.info("Fifty Overs v11.1 engine calibration loaded: fatigue, wickets/dots, death overs, fielding/captaincy, bowling types, keeping.");</script>
 
 <script id="fo-v11-3-pace-tune">console.info("Fifty Overs v11.6 loaded: age\u00d7quality draft skills (peak after 27), experience tied to age, FTP-scaled ratings, bat/bowl within ~1-2 levels of technique, worm axes (runs vs overs), sortable wages, full-season fixtures\u0026results, robust reset, draft locked until a legal squad.");</script>
-</body></html>
-<script id="fo-league-overlay">
+
+<script id="fo-league">
 /* ============================================================================
    Fifty Overs :: LEAGUE sync. Your game IS the multiplayer game. This module is
    a thin login gate + sync layer, not a parallel UI: after you log in it hands
@@ -11158,7 +11158,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260719-0826-e345cc";
+  var FO_BUILD = "20260719-0849-a4abd1";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -24665,11 +24665,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
 })();
 
 </script>
-<script id="fo-campaign">
+<script id="fo-presentation">
 (function(){
 "use strict";
 
-/* ---- 00-ns.js ---- */
+/* ---- presentation:00-ns.js ---- */
 /* Fifty Overs — presentation & engine-model layer.
  *
  * Modular sources concatenated by build.sh (manifest order) into a single
@@ -24688,7 +24688,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
  */
 var FOC = {};
 
-/* ---- core/util.js ---- */
+/* ---- presentation:util.js ---- */
 /* core/util — tiny shared helpers, no engine dependencies. */
 FOC.util = (function () {
   function hash32(s) {
@@ -24717,7 +24717,7 @@ FOC.util = (function () {
   return { hash32: hash32, esc: esc, clamp: clamp, deep: deep, last: last, mode: mode };
 })();
 
-/* ---- legacy/adapter.js ---- */
+/* ---- presentation:adapter.js ---- */
 /* legacy/adapter — the thin seam onto engine globals.
  *
  * Everything that reads engine state from the bundle goes through here, so
@@ -24732,7 +24732,7 @@ FOC.adapter = (function () {
   return { engineReady: engineReady, team: team, liveMatch: liveMatch };
 })();
 
-/* ---- features/smooth-render.js ---- */
+/* ---- presentation:smooth-render.js ---- */
 /* features/smooth-render — kill the per-ball page blink on the match centre.
  *
  * The engine's renderMatch() rebuilds the whole match page with
@@ -24843,7 +24843,7 @@ FOC.smoothRender = (function () {
   return { install: install, __test: { morph: morph, morphPage: morphPage } };
 })();
 
-/* ---- features/oval.js ---- */
+/* ---- presentation:oval.js ---- */
 /* features/oval — the animated oval: a top-down ground where every delivery
  * of a LIVE match plays out visually. Outcomes are the engine's real ball
  * log; only the shot DIRECTION is seeded decoration (never used as data —
@@ -25236,7 +25236,7 @@ FOC.oval = (function () {
     __test: { placeField: placeField, trailCount: function () { return trails.length; } } };
 })();
 
-/* ---- boot.js ---- */
+/* ---- presentation:boot.js ---- */
 /* boot — wire the presentation + engine layers into the page.
  *
  * Waits for the engine to exist, then installs the tuning layer, the
@@ -25268,3 +25268,4 @@ FOC.oval = (function () {
 })();
 
 </script>
+</body></html>

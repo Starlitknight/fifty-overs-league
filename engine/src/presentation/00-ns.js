@@ -1,7 +1,7 @@
 /* Fifty Overs — presentation & engine-model layer.
  *
- * Modular sources concatenated by build.sh (manifest order) into a single
- * IIFE appended after the league overlay. Nothing here leaks globals except
+ * Presentation modules (engine/src/presentation, manifest order), built
+ * into a single IIFE as the page's final script block. Nothing here leaks globals except
  * the intentional window.__foSummer probe surface (boot.js), the
  * window.__foField field-truth export (oval.js) and the wrapped engine
  * globals (ballDist, renderMatch).
