@@ -10852,7 +10852,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260719-0111-ef4d94";
+  var FO_BUILD = "20260719-0118-2aa9ad";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -28646,6 +28646,10 @@ FOC.campaignUI = (function () {
  *    team is the user's. Both sides of every match are tuned identically.
  *  - window.__foTuneOff = 1 restores the stock model (A/B benchmarking
  *    and an emergency kill switch).
+ *
+ * After ANY edit to CFG run the benchmark gate:
+ *     ./build.sh && node tools/engine-bench.mjs
+ * (docs/engine-tuning.md has the target bands and the full contract.)
  *
  * The three upgrades:
  *  A. Pitch wear — surfaces change across a match: dry decks turn more in

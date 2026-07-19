@@ -14,6 +14,10 @@
  *  - window.__foTuneOff = 1 restores the stock model (A/B benchmarking
  *    and an emergency kill switch).
  *
+ * After ANY edit to CFG run the benchmark gate:
+ *     ./build.sh && node tools/engine-bench.mjs
+ * (docs/engine-tuning.md has the target bands and the full contract.)
+ *
  * The three upgrades:
  *  A. Pitch wear — surfaces change across a match: dry decks turn more in
  *     the second innings (and late in an innings), cracked pitches get
