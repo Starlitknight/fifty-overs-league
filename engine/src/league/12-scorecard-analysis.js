@@ -1643,8 +1643,31 @@
       foCxModal(win, r, c, conquered, prize);
     } catch (e) {}
   }
-  // keeper: records finished circuit matches, and re-seats the circuit club if
-  // a league snapshot refresh rebuilt GD.teams under a live tie
+  // Bank a finished circuit tie the moment the final ball is banked: the
+  // 2.5s keeper alone lost the prize + progress if the tab closed inside its
+  // window (M is never persisted, so the win evaporated). saveMatch runs
+  // synchronously from the last delivery - record right there.
+  try {
+    if (typeof window.saveMatch === "function" && !window.saveMatch.__foCx) {
+      var _foCxSm = window.saveMatch;
+      window.saveMatch = function (m) {
+        var r9 = _foCxSm.apply(this, arguments);
+        try {
+          if (m && m.done && m.meta && m.meta.__circuit && !m.__cxSeen) {
+            m.__cxSeen = 1;
+            var win9 = false;
+            try { win9 = !!(m.result && m.result.winner === userTeam().name); } catch (e1) {}
+            foCxRecord(m.meta.__circuit, win9);
+          }
+        } catch (e) {}
+        return r9;
+      };
+      window.saveMatch.__foCx = 1;
+    }
+  } catch (eCxSm) {}
+  // keeper: records finished circuit matches (now a backup for the saveMatch
+  // hook above), and re-seats the circuit club if a league snapshot refresh
+  // rebuilt GD.teams under a live tie
   setInterval(function () {
     try {
       if (App && App.pending && App.pending.__circuit && typeof GD !== "undefined" && GD.teams) {

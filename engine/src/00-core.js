@@ -786,7 +786,7 @@ function comm(inn, out, rb, sb, bowler, intent, field, ev) {
           var death = over >= 40;
           var keeperP = (inn.bxi || []).filter(function (q) { return q.keeper; })[0];
           var kp = keeperP ? ln(keeperP.name) : "the keeper";
-          var chase = (typeof M !== "undefined" && M && M.inns === 1 && M.target) ? { need: M.target - inn.runs, balls: 300 - inn.legal } : null;
+          var chase = (typeof M !== "undefined" && M && M.inns === 1 && M.target) ? { need: M.target - inn.runs, balls: (typeof foBallCap === "function" ? foBallCap() : 300) - inn.legal } : null;
           var H = function (salt) {
             var x = (inn.legal * 2654435761 + inn.runs * 40503 + (sb.b || 0) * 9973 + (sb.r || 0) * 271 + rb * 131 + salt * 7919) >>> 0;
             x = (x ^ (x >>> 13)) >>> 0; return x % 99991;
@@ -1034,7 +1034,7 @@ function endInnings(){
 }
 function banner(){
   const a=M.innings[0],b=M.innings[1];let res,marg;
-  if(b.runs>=M.target){res=b.batTeam;marg=`by ${10-b.wkts} wickets (${300-b.legal} balls left)`}
+  if(b.runs>=M.target){res=b.batTeam;marg=`by ${10-b.wkts} wickets (${foBallCap()-b.legal} balls left)`}
   else if(b.runs===M.target-1){res=null;marg='Match tied'}
   else{res=a.batTeam;marg=`by ${M.target-1-b.runs} runs`}
   // MoM: top runs+2*wkts... simple
@@ -2206,8 +2206,10 @@ function saveMatch(m){
   for(const inn of m.innings){if(!inn)continue;
     for(const b of inn.bat){if(b.b>0||b.out){
       played.add(b.p.name);
-      (App.playerHist[b.p.name]=App.playerHist[b.p.name]||[]).push({date:r.date,teams:r.home+' v '+r.away,
+      const hB=(App.playerHist[b.p.name]=App.playerHist[b.p.name]||[]);
+      hB.push({date:r.date,teams:r.home+' v '+r.away,
         bat:`${b.r} (${b.b})`,bowl:'-',rr:b.r,bb:b.b,o:!!b.out,w:0,cr:0,cb:0,s6:b.f6||0,s4:b.f4||0});
+      if(hB.length>60)hB.splice(0,hB.length-60);   // unbounded history was a quota leak
       const pl=findPlayer(b.p.name);if(pl){
         if(b.r>=50)pl.p.formIx=Math.min(6,(pl.p.formIx??3)+1);
         else if(b.r<10&&b.out)pl.p.formIx=Math.max(1,(pl.p.formIx??3)-1);
@@ -2221,6 +2223,7 @@ function saveMatch(m){
       const line=`${Math.floor(br.b/6)}.${br.b%6}-${br.r}-${br.w}`;
       if(last&&last.date===r.date&&last.teams===r.home+' v '+r.away){last.bowl=line;last.w=br.w;last.cr=br.r;last.cb=br.b}
       else h.push({date:r.date,teams:r.home+' v '+r.away,bat:'-',bowl:line,rr:0,bb:0,o:false,w:br.w,cr:br.r,cb:br.b});
+      if(h.length>60)h.splice(0,h.length-60);
       const pl=findPlayer(k);if(pl){
         if(br.w>=3)pl.p.formIx=Math.min(6,(pl.p.formIx??3)+1);
         else if(br.b>=36&&br.w===0&&br.r/(br.b/6)>6.8)pl.p.formIx=Math.max(1,(pl.p.formIx??3)-1);
@@ -3259,11 +3262,27 @@ function startLeagueFromMerge(){
   alert('Season started with '+humans.length+' founder clubs and '+bots.length+' bot clubs. Export this save and send it to all managers - it is now the official league file.');
   location.hash='#/matches';route();
 }
+// Older results carry two full XIs of cloned player objects per innings -
+// the dominant save-size cost (a season of fixtures is several MB, past iOS
+// Safari's quota). Saved scorecards/ratings/reports only read bat[].p and
+// bowlers[].p basics, so archive innings keep exactly those.
+function foSlimPlayer(p){
+  return p?{name:p.name,keeper:!!p.keeper,bowlType:p.bowlType,bowlTypeFull:p.bowlTypeFull,role:p.role,hand:p.hand,rating:p.rating}:p;
+}
+function foSlimInns(inn){
+  if(!inn||inn.__slim)return inn;
+  const c={...inn,__slim:1};
+  delete c.xi;delete c.bxi;delete c.__foRecent;
+  c.bat=(inn.bat||[]).map(b=>({...b,p:foSlimPlayer(b.p)}));
+  const bw={};for(const k in (inn.bowlers||{})){const r0=inn.bowlers[k];bw[k]={...r0,p:foSlimPlayer(r0.p)}}
+  c.bowlers=bw;
+  return c;
+}
 function snapshot(full){
   econInit();
   const res=App.results.map((r,i)=>{
     const keep=full||i>=App.results.length-5;
-    const c={...r};if(!keep)delete c.log;return c;});
+    const c={...r};if(!keep){delete c.log;try{c.innings=(r.innings||[]).map(foSlimInns)}catch(e){}}return c;});
   return {v:2,seasonNo:App.seasonNo,teamIx:App.teamIx,teams:GD.teams,
     fin:App.fin,market:App.market,cup:App.cup,news:App.news||[],history:App.history,
     season:App.season,round:App.round,results:res,playerHist:App.playerHist,
@@ -3271,8 +3290,16 @@ function snapshot(full){
 }
 function saveGame(tell){
   try{const s=JSON.stringify(snapshot(false));localStorage.setItem('fo_save_v11_3_pace_tuned',s);
-    if(tell)alert('Saved ('+Math.round(s.length/1024)+' KB).');return true;
-  }catch(e){if(tell)alert('Browser storage unavailable or full - use Export file instead.');return false}
+    if(tell)alert('Saved ('+Math.round(s.length/1024)+' KB).');window.__foSaveBroken=0;return true;
+  }catch(e){
+    if(tell)alert('Browser storage unavailable or full - use Export file instead.');
+    else if(!window.__foSaveBroken){
+      // autosaves used to swallow quota/private-mode failures silently -
+      // the player kept playing on a save that no longer saved. Say it once.
+      window.__foSaveBroken=1;
+      try{if(typeof toast==='function')toast('Heads up: the browser refused to save your game (storage full or private browsing). Progress may not survive a reload - use Office → Export for a backup.');}catch(e2){}
+    }
+    return false}
 }
 function restoreFrom(d){
   if(!d||!d.teams)return false;
@@ -3303,7 +3330,7 @@ function foResetGame(){
   // #8 Robust reset: explicitly remove every fo_* key (clear() can silently fail in restricted
   // storage, which used to leave the old founded squad behind), wipe in-memory state, then reload.
   try{
-    const keys=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.indexOf('fo_')===0)keys.push(k);}
+    const keys=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k.indexOf('fo_')===0||k.indexOf('fol_')===0))keys.push(k);}
     keys.forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});
     try{localStorage.clear()}catch(e){}
   }catch(e){}
