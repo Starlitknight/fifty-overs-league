@@ -37,6 +37,11 @@ jobs:
       - name: Syntax-check every engine module
         run: |
           for f in engine/src/*.js engine/src/presentation/*.js; do node --check "$f"; done
+          python3 -c "
+import sys
+names=[n for n in open('engine/src/league/manifest.txt').read().split() if n]
+open('/tmp/league-cat.js','w').write(''.join(open('engine/src/league/'+n).read() for n in names))"
+          node --check /tmp/league-cat.js
       - name: Build site from engine + overlay + bundle
         run: ./build.sh
       - name: Unit tests + golden-master replays (gameplay must be bit-identical)

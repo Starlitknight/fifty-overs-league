@@ -4,8 +4,9 @@
 #   engine/shell.html            the page: HTML + inline CSS, with one marker
 #                                per core script block at its original position
 #   engine/src/00..12-*.js       the simulation + base-UI core blocks
-#   engine/src/20-league.js      the league layer: brand skin, auth/multiplayer,
-#                                Circuit, broadcasts, rich commentary voice
+#   engine/src/league/*.js       the league layer as domain chunks (auth, club
+#                                home, sync, onboarding, market, orders, ...)
+#                                concatenated in manifest order — one closure
 #   engine/src/presentation/*    the presentation modules (oval stage, smooth
 #                                renderer, boot), one IIFE, manifest order
 #
@@ -24,7 +25,7 @@ BOOT='<style id="fo-boot">html{background:#0B1322}html>body{visibility:hidden;an
 
 # Unique build stamp (UTC time + source hash). The league layer shows it and
 # polls version.json to offer one-tap updates when a newer build is deployed.
-BUILD_ID="$(date -u +%Y%m%d-%H%M)-$(cat engine/src/20-league.js engine/src/presentation/*.js | sha256sum | cut -c1-6)"
+BUILD_ID="$(date -u +%Y%m%d-%H%M)-$(cat engine/src/league/*.js engine/src/presentation/*.js | sha256sum | cut -c1-6)"
 
 mkdir -p .build
 FO_BUILD_ID="$BUILD_ID" FO_BOOT="$BOOT" python3 - <<'PYASM'
@@ -38,7 +39,8 @@ for i, n in enumerate(names):
     shell = shell.replace('/*FO_ENGINE_BLOCK_' + str(i) + '*/',
                           open('engine/src/' + n + '.js', encoding='utf-8').read(), 1)
 
-league = open('engine/src/20-league.js', encoding='utf-8').read()
+league_names = [n for n in open('engine/src/league/manifest.txt').read().split('\n') if n]
+league = ''.join(open('engine/src/league/' + n, encoding='utf-8').read() for n in league_names)
 pres_names = [n for n in open('engine/src/presentation/manifest.txt').read().split('\n') if n]
 pres = '(function(){\n"use strict";\n'
 for n in pres_names:

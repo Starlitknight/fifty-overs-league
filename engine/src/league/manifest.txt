@@ -1,0 +1,13 @@
+00-boot-auth.js
+01-club-home.js
+02-sync.js
+03-onboarding.js
+04-training-scouting.js
+05-transfer-market.js
+06-manual.js
+07-matchday-centre.js
+08-orders.js
+09-squad-matchlab.js
+10-office-settings.js
+11-chronicle.js
+12-scorecard-analysis.js
