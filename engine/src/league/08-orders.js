@@ -271,10 +271,12 @@
     if (p.role === "allRounder") return Math.max(b, foOrdBowlComp(p));
     return foOrdFrontline(p) ? foOrdBowlComp(p) : b;
   }
-  function foOrdStars(p, ranked) {
-    var ix = ranked.indexOf(p.name);
-    if (ix < 0 || !ranked.length) return 3;
-    return Math.max(1, 5 - Math.floor(ix / ranked.length * 5));
+  // ABSOLUTE calibration, out of ten: composite 15 or below (dreadful in
+  // everything) is 0 stars, 92+ (legendary in all three ingredients) is 10,
+  // linear between. The same ladder for every player in the world - a
+  // starting club reads ~4-5 stars with the whole climb ahead of it.
+  function foOrdStars(comp) {
+    return Math.max(0, Math.min(10, Math.round((comp - 15) / 77 * 10)));
   }
   // the one bar left: a horizontal stamina strip under the stars
   function foOrdStam(p) {
@@ -283,8 +285,8 @@
   }
   function foOrdStarHTML(n) {
     var s = "";
-    for (var i = 1; i <= 5; i++) s += "<em class='" + (i <= n ? "f" : "") + "'>&#9733;</em>";
-    return "<s class='st'>" + s + "</s>";
+    for (var i = 1; i <= 10; i++) s += "<em class='" + (i <= n ? "f" : "") + "'>&#9733;</em>";
+    return "<s class='st' title='" + n + " / 10'>" + s + "</s>";
   }
   // one plain-language line on WHY this player is in the sheet
   function foOrdWhy(p, boIx) {
@@ -362,9 +364,6 @@
       }).join("") + "</div>";
       // quality is visible: stars relative to this squad, role words, and a
       // bench row so the XI reads as a CHOICE the manager can question
-      var ranked = ((t && t.players) || []).slice().sort(function (a, b) { return foOrdPrimeComp(b) - foOrdPrimeComp(a); }).map(function (p9) { return p9.name; });
-      var bowlRanked = ((t && t.players) || []).filter(function (p9) { return p9.bowlType && p9.bowlType !== "none"; })
-        .sort(function (a, b) { return foOrdBowlComp(b) - foOrdBowlComp(a); }).map(function (p9) { return p9.name; });
       var ROLE_W = { pace: "Seam", spin: "Spin", wk: "Keeper", bat: "Batter" };
       // two Smiths in one squad: surname-only chips would show the same name
       // in the XI and on the bench - disambiguate with a first-name initial
@@ -378,7 +377,7 @@
         var pills = foOrdTalPills(p, 2);
         return "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + "' data-fo-pc='" + E(nm) + "'>" +
           "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + "<b>" + E(dispNm(nm)) + "</b>" + tag + "</span>" +
-          "<span class='r2'>" + foOrdStarHTML(foOrdStars(p, ranked)) + "</span>" +
+          "<span class='r2'>" + foOrdStarHTML(foOrdStars(foOrdPrimeComp(p))) + "</span>" +
           foOrdStam(p) +
           "<span class='r3'>" + (pills || "<span class='rl'>" + ROLE_W[role] + "</span>") + "</span></button>";
       };
@@ -428,7 +427,7 @@
         var p3 = by[nm3] || {};
         return "<button type='button' class='bw' data-fo-pc='" + E(nm3) + "'>" +
           "<span class='bw-h'><b>" + E(dispNm(nm3)) + "</b><span class='bt'>" + E(foOrdBType(p3)) + "</span><u>" + tot[nm3] + " ov</u></span>" +
-          "<span class='bw-r'>" + foOrdStarHTML(foOrdStars(p3, bowlRanked)) + (foOrdTalPills(p3, 2) || "") + "</span>" +
+          "<span class='bw-r'>" + foOrdStarHTML(foOrdStars(foOrdBowlComp(p3))) + (foOrdTalPills(p3, 2) || "") + "</span>" +
           foOrdStam(p3) + "</button>";
       }).join("") + "</div>";
       return cards + "<div class='fo-ord-vzh'>The XI</div>" + xiChips + bench +
@@ -633,7 +632,7 @@
       ".fo-ord-xis .xc u{width:17px;height:17px;background:#EEF2F7;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:9px;font-weight:800;color:#41577a;flex:0 0 auto}" +
       ".fo-ord-xis .xc i{font-style:normal;font-size:8px;background:#0E233F;color:#FFFEFC;border-radius:4px;padding:1px 4px;font-weight:800;flex:0 0 auto}" +
       ".fo-ord-xis .xc .r2{display:flex;align-items:center;gap:6px;width:100%}" +
-      ".fo-ord-xis .xc .st,.fo-ord-bws .bw .st{text-decoration:none;font-size:10px;letter-spacing:1px;line-height:1}" +
+      ".fo-ord-xis .xc .st,.fo-ord-bws .bw .st{text-decoration:none;font-size:8.5px;letter-spacing:.5px;line-height:1;white-space:nowrap}" +
       ".fo-ord-xis .xc .st em,.fo-ord-bws .bw .st em{font-style:normal;color:#d8d3c6}.fo-ord-xis .xc .st em.f,.fo-ord-bws .bw .st em.f{color:#D9A441}" +
       ".fo-ord-xis .xc .rl{font-size:9px;letter-spacing:.05em;text-transform:uppercase;font-weight:800;color:#8a93a3;margin-left:auto}" +
       ".fo-ord-xis .xc-pace u{background:#F6E3D3;color:#8a4a13}.fo-ord-xis .xc-spin u{background:#EBE3F6;color:#5b3a8a}.fo-ord-xis .xc-wk u{background:#D9EFE3;color:#1d6b45}" +
