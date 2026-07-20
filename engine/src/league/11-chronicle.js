@@ -635,23 +635,12 @@
       var p = pl0.p;
       var t = foMyClub();
       var own = !!(t && (t.players || []).concat(t.youth || []).some(function (x) { return x.name === name; }));
-      // Card-consistency: a hero strip with the player's artwork, the card's
-      // 0-100 OVR and role label, plus the same fixes inside the info panel.
+      // Card-consistency inside the info panel: the holo card is the page's
+      // hero now, so no strip - just align the engine's numbers with the card.
       try {
         var grid0 = page.querySelector(".fo-pl-grid") || page.querySelector(".grid2");
-        if (grid0 && !page.querySelector(".fo-plh")) {
-          var acH = FO_PK_AC[foPkKind(p)];
-          var handH = p.hand === "L" ? "LHB" : "RHB";
-          var btH = (p.btLabel && !/does not bowl/i.test(p.btLabel)) ? (" &middot; " + E(p.btLabel)) : "";
-          var hero = document.createElement("div");
-          hero.className = "fo-plh"; hero.style.cssText = "--tc:" + acH[0] + ";--tcD:" + acH[1];
-          hero.innerHTML = "<div class='fo-plh-art'><img src='" + FO_ART + foPkArt(p) + "' alt=''></div>" +
-            "<div class='fo-plh-id'><div class='fo-plh-role'>" + E(foPkRoleLbl(p)) + "</div>" +
-            "<div class='fo-plh-name'>" + E(foDisplayName(p)) + "</div>" +
-            "<div class='fo-plh-meta'>" + (foQsFlag(p.nat) || "") + " " + E(p.nat || "") + " &middot; age " + (p.age | 0) + " &middot; " + handH + btH + "</div></div>" +
-            "<div class='fo-plh-ovr'><b>" + foPkOvr(p) + "</b><i>OVR</i></div>";
-          grid0.parentNode.insertBefore(hero, grid0);
-          // card consistency inside the Player info panel (all engine layouts)
+        if (grid0 && !grid0.__foCardFix) {
+          grid0.__foCardFix = 1;
           var topL = page.querySelector(".ftp-pinfo-top") || page.querySelector(".fo-pinfo-top");
           if (topL) topL.innerHTML = topL.innerHTML.replace(/<b[^>]*>\s*\d[\d,]*\s*<\/b>\s*rating/i, "<b>OVR " + foPkOvr(p) + "</b>");
           Array.prototype.forEach.call(page.querySelectorAll("#page .panel tr"), function (tr) {

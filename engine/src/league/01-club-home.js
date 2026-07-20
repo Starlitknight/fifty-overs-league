@@ -1974,7 +1974,30 @@
       el.style.setProperty("--tc", built.ac[0]); el.style.setProperty("--tcD", built.ac[1]);
       el.innerHTML = built.html;
       el.querySelector(".phc").id = "fo-phc";
-      page.insertBefore(el, page.firstChild);
+      // The dossier stage: the card pinned on the left, everything the engine
+      // rendered moved into a dark right-hand column styled to match the card.
+      var stage = document.getElementById("fo-pstage");
+      if (stage && page.contains(stage)) {
+        stage.className = "ph-" + built.tier;
+        stage.style.setProperty("--tc", built.ac[0]); stage.style.setProperty("--tcD", built.ac[1]);
+        var psl0 = stage.querySelector(".fo-ps-l");
+        psl0.innerHTML = ""; psl0.appendChild(el);
+      } else {
+        page.insertBefore(el, page.firstChild);
+        stage = document.createElement("div");
+        stage.id = "fo-pstage"; stage.className = "ph-" + built.tier;
+        stage.style.setProperty("--tc", built.ac[0]); stage.style.setProperty("--tcD", built.ac[1]);
+        stage.innerHTML = "<div class='fo-ps-l'></div><div class='fo-ps-r'></div>";
+        var psl = stage.firstChild, psr = stage.lastChild;
+        var kids = Array.prototype.slice.call(page.children);
+        page.insertBefore(stage, page.firstChild);
+        kids.forEach(function (k) {
+          if (k === stage) return;
+          if (k === el) { psl.appendChild(k); return; }
+          if (k.classList && k.classList.contains("crumb")) { k.remove(); return; }   // redundant over the card
+          psr.appendChild(k);
+        });
+      }
       foHoloTilt(el);
     } catch (e) {}
   }
@@ -2029,7 +2052,63 @@
       ".fo-pd-hmoney{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:13px 2px 0}" +
       ".fo-pd-hmoney span{display:flex;flex-direction:column;gap:2px;align-items:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:7px 13px;color:#b9c2d4;font-size:10.5px;text-align:center}" +
       ".fo-pd-hmoney b{color:#FFFEFC;font-size:14.5px;font-family:Oswald,sans-serif;font-weight:600}" +
-      ".fo-pd-holo .fo-pd-act{margin-top:12px;padding:0 2px}";
+      ".fo-pd-holo .fo-pd-act{margin-top:12px;padding:0 2px}" +
+      // ==== the dossier stage: the whole player page goes card-dark ==========
+      "#fo-pstage{display:grid;grid-template-columns:minmax(0,458px) minmax(0,1fr);gap:20px;align-items:start;background:radial-gradient(130% 90% at 50% 0%,#1b2a4a 0%,#101B2D 55%,#0B1322 100%);border:1.5px solid rgba(201,162,75,.35);border-radius:22px;padding:20px;margin:6px 0 24px;box-shadow:0 18px 44px rgba(10,16,30,.38)}" +
+      "#fo-pstage .fo-ps-l,#fo-pstage .fo-ps-r{min-width:0}" +
+      "#fo-pstage .fo-ps-l{position:sticky;top:70px}" +
+      "#fo-pstage #fo-phero{margin:0}" +
+      "@media(max-width:1020px){#fo-pstage{grid-template-columns:1fr;padding:10px;gap:14px}#fo-pstage .fo-ps-l{position:static}#fo-pstage .phc{width:100%;max-width:430px}}" +
+      // phone: the fixed min-widths in the skills rows and kv tables overflow
+      // the column - let them flex instead
+      "@media(max-width:640px){" +
+      "#fo-pstage .fo-bigskill{gap:7px}" +
+      "#fo-pstage .fo-bigskill-l{min-width:62px;font-size:11px}" +
+      "html body #page #fo-pstage .fo-bigskill-bar{max-width:none !important;flex:1 1 40px;min-width:40px}" +
+      "#fo-pstage .fo-bigskill-w{min-width:0;font-size:11px}" +
+      "#fo-pstage table.kv{width:100%}#fo-pstage table.kv td:last-child{overflow-wrap:anywhere}" +
+      "}" +
+      "#fo-pstage .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:0}" +
+      "@media(max-width:1330px){#fo-pstage .grid2{grid-template-columns:1fr}}" +
+      "#fo-pstage .grid2 .col{display:flex;flex-direction:column;min-width:0}" +
+      // panels: dark slabs with gold Oswald headers
+      "html body #page #fo-pstage .panel{background:rgba(255,255,255,.045) !important;border:1px solid rgba(201,162,75,.28) !important;border-radius:14px !important;box-shadow:none !important;color:#dfe5f0 !important;margin:0 0 14px !important;overflow:hidden}" +
+      "html body #page #fo-pstage .panel h4{background:transparent !important;color:#C9A24B !important;font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:2.2px;text-transform:uppercase;font-size:12px !important;border-bottom:1px solid rgba(255,255,255,.09) !important;border-radius:0 !important;padding:11px 14px 9px !important;margin:0 !important}" +
+      "#fo-pstage .pad{padding:11px 14px 13px}" +
+      "html body #page #fo-pstage .pad{background:transparent !important}" +
+      // the skin's white sticky first column has no place on the dark stage -
+      // except inside the horizontally-scrolling career tables, where the
+      // pinned column goes solid navy instead
+      "html body #page #fo-pstage .panel table th:first-child,html body #page #fo-pstage .panel table td:first-child{background:transparent !important;box-shadow:none !important;position:static !important}" +
+      "html body #page #fo-pstage .fo-cp-scroll table th:first-child,html body #page #fo-pstage .fo-cp-scroll table td:first-child{position:sticky !important;left:0;background:#152238 !important;box-shadow:1px 0 0 rgba(255,255,255,.08) !important}" +
+      "html body #page #fo-pstage tr{background:transparent !important}" +
+      "html body #page #fo-pstage .ftp-pinfo-top{color:#dfe5f0}" +
+      "html body #page #fo-pstage .ftp-pinfo-top b{color:#F0B94E}" +
+      "html body #page #fo-pstage .ftp-pinfo-hand{color:#b9c2d4}" +
+      "html body #page #fo-pstage .foabil,html body #page #fo-pstage .fo-tal-tag{background:rgba(201,162,75,.16) !important;border:1px solid rgba(201,162,75,.42) !important;color:#E4C463 !important}" +
+      "html body #page #fo-pstage table{background:transparent !important;color:#dfe5f0}" +
+      "html body #page #fo-pstage td,html body #page #fo-pstage th{border-color:rgba(255,255,255,.09) !important;color:#dfe5f0}" +
+      "html body #page #fo-pstage th{background:transparent !important;color:#8a93a3 !important;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;font-size:10px}" +
+      "html body #page #fo-pstage td{background:transparent !important}" +
+      "html body #page #fo-pstage table.kv td:first-child{color:#8a93a3;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;padding-right:12px;white-space:nowrap}" +
+      "html body #page #fo-pstage table.kv b{color:#F0B94E}" +
+      "html body #page #fo-pstage a{color:#E4C463}" +
+      "html body #page #fo-pstage .small{color:#8a93a3 !important}" +
+      // skill bars: dark track, role-colour-to-gold fill, light words
+      "html body #page #fo-pstage .fo-bigskill-l{color:#b9c2d4 !important}" +
+      "html body #page #fo-pstage .fo-bigskill-bar{background:rgba(255,255,255,.12) !important;border:none !important;border-radius:99px}" +
+      "html body #page #fo-pstage .fo-bigskill-bar i{background:linear-gradient(90deg,var(--tc),#F0B94E) !important;border-radius:99px}" +
+      "html body #page #fo-pstage .fo-bigskill-w{color:#dfe5f0 !important}" +
+      // career panel: pill tabs, gold moments
+      "html body #page #fo-pstage .fo-cp-prov{background:rgba(255,255,255,.06) !important;border:1px solid rgba(255,255,255,.14) !important;color:#c7cede !important;font-style:italic}" +
+      "#fo-pstage .fo-cp-tabs{display:flex;gap:8px;margin:9px 0 5px}" +
+      "html body #page #fo-pstage .fo-cp-tab{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);color:#dfe5f0 !important;border-radius:99px;padding:4px 15px;cursor:pointer;font-family:Oswald,sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-size:10.5px;text-decoration:none}" +
+      "html body #page #fo-pstage .fo-cp-tab.on{background:#C9A24B;border-color:#C9A24B;color:#101B2D !important;font-weight:600}" +
+      "#fo-pstage .fo-cp-ev i{color:#C9A24B;font-style:normal;font-family:Oswald,sans-serif;letter-spacing:1px;font-size:10.5px;text-transform:uppercase}" +
+      "#fo-pstage .fo-cp-ev span{color:#dfe5f0}" +
+      "html body #page #fo-pstage .fo-cp-tot td{color:#F0B94E !important;font-weight:700}" +
+      "#fo-pstage .fo-cp-fld{color:#b9c2d4}" +
+      "#fo-pstage details.adv summary{color:#8a93a3;cursor:pointer}";
     document.head.appendChild(foPhCss);
   } catch (ePh) {}
   function foHashPath() { return (location.hash || "").split("?")[0]; }   // "#/match" not "#/matches"
