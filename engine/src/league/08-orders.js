@@ -268,11 +268,6 @@
   function foOrdStars(comp) {
     return Math.max(0, Math.min(10, Math.round((comp - 15) / 77 * 10)));
   }
-  // the one bar left: a horizontal stamina strip under the stars
-  function foOrdStam(p) {
-    var v = Math.max(0, Math.min(100, Math.round(((p.skills || {}).stamina) || 0)));
-    return "<span class='stb' title='Stamina: " + v + "'><span class='stbt'><b style='width:" + Math.max(6, v) + "%;background:" + foOrdVCol(v) + "'></b></span><span class='stbl'>Stamina</span></span>";
-  }
   function foOrdStarHTML(n) {
     var s = "";
     for (var i = 1; i <= 10; i++) s += "<em class='" + (i <= n ? "f" : "") + "'>&#9733;</em>";
@@ -366,11 +361,9 @@
         var role = p.bowlType && p.bowlType !== "none" ? (/spin/i.test(p.bowlTypeFull || p.bowlType) ? "spin" : "pace") : (p.keeper ? "wk" : "bat");
         var pills = foOrdTalPills(p, 2);
         return "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + "' data-fo-pc='" + E(nm) + "'>" +
-          "<span class='xh' title='Drag to move'>&#8801;</span><span class='xbody'>" +
-          "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + "<b>" + E(dispNm(nm)) + "</b>" + tag + "</span>" +
-          "<span class='r2'>" + foOrdStarHTML(foOrdStars(foOrdBatComp(p))) + "</span>" +
-          foOrdStam(p) +
-          "<span class='r3'>" + (pills || "<span class='rl'>" + ROLE_W[role] + "</span>") + "</span></span></button>";
+          "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + "<b>" + E(dispNm(nm)) + "</b>" + tag +
+          "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" + foOrdStarHTML(foOrdStars(foOrdBatComp(p))) + "</span>" +
+          (pills ? "<span class='r3'>" + pills + "</span>" : "") + "</button>";
       };
       var xiNames = bo.slice(0, 11);
       var nBowl = 0, nSeam = 0, nSpin = 0, nAr = 0, nBat = 0, nWk = 0;
@@ -381,7 +374,7 @@
         if (p.bowlType && p.bowlType !== "none") { nBowl++; if (/spin/i.test(p.bowlTypeFull || p.bowlType)) nSpin++; else nSeam++; }
         if (p.role === "allRounder") nAr++;
       });
-      var mix = "<div class='fo-ord-xinote'><b>" + nBat + " bat" + (nBat === 1 ? "" : "s") + "</b> · <b>" + nWk + " keeper" + (nWk === 1 ? "" : "s") + "</b> · <b>" + nSeam + " seam</b> · <b>" + nSpin + " spin</b> · <b>" + nAr + " all-rounder" + (nAr === 1 ? "" : "s") + "</b> · drag &#8801; to reorder · drag a bench man onto the XI to swap him in · tap a player for his card</div>";
+      var mix = "<div class='fo-ord-xinote'><b>" + nBat + " bat" + (nBat === 1 ? "" : "s") + "</b> · <b>" + nWk + " keeper" + (nWk === 1 ? "" : "s") + "</b> · <b>" + nSeam + " seam</b> · <b>" + nSpin + " spin</b> · <b>" + nAr + " all-rounder" + (nAr === 1 ? "" : "s") + "</b> · drag to reorder · drag a bench man in to swap · tap for his card</div>";
       var benchNames = ((t && t.players) || []).map(function (p9) { return p9.name; }).filter(function (nm) { return xiNames.indexOf(nm) < 0; });
       // vertical, editable: the XI as a draggable list, the bench beside it
       var xiChips = mix + "<div class='fo-ord-xiwrap'>" +
@@ -428,13 +421,19 @@
         var p3 = by[nm3] || {};
         return "<button type='button' class='bw' data-fo-pc='" + E(nm3) + "'>" +
           "<span class='bw-h'><b>" + E(dispNm(nm3)) + "</b><span class='bt'>" + E(foOrdBType(p3)) + "</span><u>" + (tot[nm3] || 0) + " ov</u></span>" +
-          "<span class='bw-r'>" + foOrdStarHTML(foOrdStars(foOrdBowlComp(p3))) + (foOrdTalPills(p3, 2) || "") + "</span>" +
-          foOrdStam(p3) + "</button>";
+          "<span class='bw-r'>" + foOrdStarHTML(foOrdStars(foOrdBowlComp(p3))) + (foOrdTalPills(p3, 2) || "") + "</span></button>";
       }).join("") + "</div>";
       return cards + "<div class='fo-ord-vzh'>The XI</div>" + xiChips + bench +
         "<div class='fo-ord-vzh'>Batting tempo</div>" + curve + phases +
         "<div class='fo-ord-vzh'>Bowling</div>" + lanes + legend +
-        "<div class='small' style='margin-top:8px;color:#8a93a3'>Toss: " + (App.orders.tossDecision === "bowl" ? "bowl" : "bat") + " first if we win it</div>";
+        "<div class='fo-ord-vzh'>Toss</div><div class='fo-ord-toss'>" +
+        "<span class='tl'>Call</span>" +
+        "<button type='button' data-fo-toss='call:H' class='" + ((App.orders.tossCall || "H") === "H" ? "on" : "") + "'>Heads</button>" +
+        "<button type='button' data-fo-toss='call:T' class='" + (App.orders.tossCall === "T" ? "on" : "") + "'>Tails</button>" +
+        "<span class='tl'>If we win it</span>" +
+        "<button type='button' data-fo-toss='dec:bat' class='" + (App.orders.tossDecision !== "bowl" ? "on" : "") + "'>Bat first</button>" +
+        "<button type='button' data-fo-toss='dec:bowl' class='" + (App.orders.tossDecision === "bowl" ? "on" : "") + "'>Bowl first</button>" +
+        "</div>";
     } catch (e) { return ""; }
   }
   function foOrdersUI() {
@@ -580,7 +579,13 @@
           // the click fired by a just-finished drag must not read as a tap -
           // the flag self-expires so it can never swallow a LATER real click
           if (window.__foOrdDragged) return;
-          if (q(".xh")) return;
+          if ((el = q("[data-fo-toss]"))) {
+            var pr9 = el.getAttribute("data-fo-toss").split(":");
+            if (pr9[0] === "call") App.orders.tossCall = pr9[1];
+            else App.orders.tossDecision = pr9[1];
+            foOrdersUI();
+            return;
+          }
           // tap an over cell: give it to that lane's bowler, or take it back
           if ((el = q("[data-lo]"))) {
             var oT = +el.getAttribute("data-lo"), nmT = el.getAttribute("data-ln");
@@ -619,25 +624,35 @@
           }
         } catch (e) {}
       });
-      // drag the batting order: grab the handle, drop on a slot. Dragging a
+      // drag ANYWHERE on a card to reorder; a plain tap still opens the
+      // player card. Mouse: a 6px move starts the drag. Touch: a short hold
+      // starts it (so the list still scrolls naturally); wandering off
+      // during the hold cancels it and lets the scroll through. Dragging a
       // bench man onto an XI slot swaps him in (five bowling options kept).
       page.addEventListener("pointerdown", function (ev) {
         try {
           if (!/^#\/orders/.test(location.hash || "")) return;
-          var h = ev.target.closest ? ev.target.closest(".xh") : null;
-          if (!h) return;
-          var chipEl = h.closest(".xc"); if (!chipEl) return;
-          ev.preventDefault();
+          var chipEl = ev.target.closest ? ev.target.closest(".fo-ord-xis .xc") : null;
+          if (!chipEl) return;
+          var list = document.getElementById("fo-ord-xi-list"); if (!list) return;
           var fromBench = chipEl.classList.contains("xc-dim");
           var nm = chipEl.getAttribute("data-fo-pc");
-          var list = document.getElementById("fo-ord-xi-list"); if (!list) return;
+          var sx = ev.clientX, sy = ev.clientY;
+          var isTouch = ev.pointerType === "touch";
           var r0 = chipEl.getBoundingClientRect();
-          var ghost = chipEl.cloneNode(true);
-          ghost.classList.add("xc-ghost");
-          ghost.style.width = r0.width + "px";
-          document.body.appendChild(ghost);
-          chipEl.classList.add("xc-src");
-          var moved = false, tgtIx = -1;
+          var dragging = false, tgtIx = -1, ghost = null, holdT = null;
+          var blockScroll = function (e3) { e3.preventDefault(); };
+          var begin = function () {
+            if (dragging) return;
+            dragging = true;
+            ghost = chipEl.cloneNode(true);
+            ghost.classList.add("xc-ghost");
+            ghost.style.width = r0.width + "px";
+            document.body.appendChild(ghost);
+            chipEl.classList.add("xc-src");
+            document.addEventListener("touchmove", blockScroll, { passive: false });
+          };
+          if (isTouch) holdT = setTimeout(begin, 260);
           var place = function (x, y) {
             ghost.style.left = (x - 24) + "px";
             ghost.style.top = (y - r0.height / 2) + "px";
@@ -650,13 +665,28 @@
             });
             if (tgtIx >= 0) chips9[tgtIx].classList.add("xc-tgt");
           };
-          var mv = function (e2) { moved = true; place(e2.clientX, e2.clientY); };
-          var up = function () {
+          var cleanup = function () {
+            clearTimeout(holdT);
             document.removeEventListener("pointermove", mv);
             document.removeEventListener("pointerup", up);
-            ghost.remove(); chipEl.classList.remove("xc-src");
-            if (moved) { window.__foOrdDragged = true; setTimeout(function () { window.__foOrdDragged = false; }, 250); }
-            if (!moved) return;
+            document.removeEventListener("touchmove", blockScroll);
+            if (ghost) ghost.remove();
+            chipEl.classList.remove("xc-src");
+          };
+          var mv = function (e2) {
+            var dx = e2.clientX - sx, dy = e2.clientY - sy, d2 = dx * dx + dy * dy;
+            if (!dragging) {
+              if (!isTouch && d2 > 36) begin();
+              else if (isTouch && d2 > 120) { cleanup(); return; }   // scroll intent
+              if (!dragging) return;
+            }
+            place(e2.clientX, e2.clientY);
+          };
+          var up = function () {
+            var was = dragging;
+            cleanup();
+            if (!was) return;   // plain tap: the native click opens the card
+            window.__foOrdDragged = true; setTimeout(function () { window.__foOrdDragged = false; }, 250);
             if (tgtIx < 0) { foOrdersUI(); return; }
             var bo9 = App.orders.batOrder;
             if (!fromBench) {
@@ -711,22 +741,21 @@
       ".fo-ord-xiwrap{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}" +
       "@media(max-width:700px){.fo-ord-xiwrap{grid-template-columns:1fr}}" +
       ".fo-ord-xis{display:flex;flex-direction:column;gap:5px}" +
-      ".fo-ord-xis .xc .xh{flex:0 0 auto;font-size:15px;color:#b6bcc7;cursor:grab;touch-action:none;padding:2px 4px;line-height:1;align-self:center}" +
-      ".fo-ord-xis .xc .xh:hover{color:#B04A2C}" +
-      ".fo-ord-xis .xc .xbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;align-items:flex-start}" +
       ".fo-ord-xis .xc.xc-src{opacity:.35}" +
       ".fo-ord-xis .xc.xc-tgt{border-color:#B04A2C !important;box-shadow:0 0 0 2px rgba(176,74,44,.25)}" +
       ".xc-ghost{position:fixed;z-index:9999;pointer-events:none;opacity:.92;transform:rotate(1.5deg);box-shadow:0 10px 24px rgba(16,27,45,.3) !important;background:#FFFEFC;border:1px solid rgba(28,36,51,.2);border-radius:10px;display:flex;padding:6px 9px;gap:6px;list-style:none}" +
-      "html body.ftpskin #page button.fo-ord-xis-btn,html body #page .fo-ord-xis button.xc{display:flex;flex-direction:row;align-items:stretch;gap:6px;background:#FFFEFC !important;border:1px solid rgba(28,36,51,.12) !important;border-radius:10px;padding:6px 9px;cursor:pointer;min-width:0;text-align:left;width:100%}" +
+      "html body.ftpskin #page button.fo-ord-xis-btn,html body #page .fo-ord-xis button.xc{display:flex;flex-direction:column;align-items:stretch;gap:2px;background:#FFFEFC !important;border:1px solid rgba(28,36,51,.12) !important;border-radius:9px;padding:4px 9px;cursor:grab;min-width:0;text-align:left;width:100%}" +
       "html body #page .fo-ord-xis button.xc:hover{border-color:#B04A2C !important}" +
       ".fo-ord-xis .xc.xc-dim{opacity:.62}" +
-      ".fo-ord-xis .xc .r1{display:flex;align-items:center;gap:5px;min-width:0;width:100%}" +
+      ".fo-ord-xis .xc .r1{display:flex;align-items:center;gap:6px;min-width:0;width:100%}" +
+      ".fo-ord-xis .xc .r1 .hd{font-size:8px;font-weight:800;color:#9aa3af;letter-spacing:.04em;flex:0 0 auto}" +
+      ".fo-ord-xis .xc .r1 .st{margin-left:auto}" +
       ".fo-ord-xis .xc .r1 b{font-size:11.5px;font-weight:800;color:#243244;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".fo-ord-xis .xc u{width:17px;height:17px;background:#EEF2F7;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:9px;font-weight:800;color:#41577a;flex:0 0 auto}" +
       ".fo-ord-xis .xc i{font-style:normal;font-size:8px;background:#0E233F;color:#FFFEFC;border-radius:4px;padding:1px 4px;font-weight:800;flex:0 0 auto}" +
       ".fo-ord-xis .xc .r2{display:flex;align-items:center;gap:6px;width:100%}" +
       ".fo-ord-xis .xc .st,.fo-ord-bws .bw .st{text-decoration:none;font-size:8.5px;letter-spacing:.5px;line-height:1;white-space:nowrap}" +
-      ".fo-ord-xis .xc .st em,.fo-ord-bws .bw .st em{font-style:normal;color:#d8d3c6}.fo-ord-xis .xc .st em.f,.fo-ord-bws .bw .st em.f{color:#D9A441}" +
+      ".fo-ord-xis .xc .st em,.fo-ord-bws .bw .st em{font-style:normal;color:#d8d3c6}.fo-ord-xis .xc .st em.f{color:#D9A441}.fo-ord-bws .bw .st em.f{color:#41577a}" +
       ".fo-ord-xis .xc .rl{font-size:9px;letter-spacing:.05em;text-transform:uppercase;font-weight:800;color:#8a93a3;margin-left:auto}" +
       ".fo-ord-xis .xc-pace u{background:#F6E3D3;color:#8a4a13}.fo-ord-xis .xc-spin u{background:#EBE3F6;color:#5b3a8a}.fo-ord-xis .xc-wk u{background:#D9EFE3;color:#1d6b45}" +
       ".fo-ord-xis .xc-pace .rl{color:#a06a2c}.fo-ord-xis .xc-spin .rl{color:#7a58ab}.fo-ord-xis .xc-wk .rl{color:#2c7a52}" +
@@ -761,15 +790,15 @@
       "html body #page .fo-ord-herosub,html body.ftpskin #page .fo-ord-herosub{text-align:center;font-family:Oswald,sans-serif;letter-spacing:2.2px;text-transform:uppercase;font-size:10.5px;color:#8a93a3 !important;margin:0 0 14px;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +
       "@media(max-width:600px){.fo-ord-hero .h-t{font-size:21px}.fo-ord-hero{gap:9px}}" +
       "@media(max-width:480px){.fo-ord-lane .ln{flex-basis:62px;font-size:9.5px}.fo-ord-lane.lax em{font-size:6.5px}.fo-ord-lane .lt.lnum em{font-size:6.5px}}" +
-      ".stb{display:flex;align-items:center;gap:6px;width:100%}" +
-      ".stb .stbt{flex:1;height:5px;background:rgba(28,36,51,.09);border-radius:3px;overflow:hidden;min-width:0}" +
-      ".stb .stbt b{display:block;height:100%;border-radius:3px}" +
-      ".stb .stbl{flex:0 0 auto;font-size:7px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#8a93a3;line-height:1}" +
       ".fo-ord-tp{display:inline-flex;align-items:center;background:#F6E9CE;border:1px solid rgba(201,162,75,.4);color:#8a5c13;border-radius:99px;padding:1px 7px;font-size:8.5px;font-weight:800;letter-spacing:.03em;white-space:nowrap}" +
       ".fo-ord-xis .xc .r2{justify-content:space-between}" +
       ".fo-ord-xis .xc .r3{display:flex;flex-wrap:wrap;gap:3px;width:100%;min-height:15px;align-items:center}" +
       ".fo-ord-bws{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:6px;margin-top:8px}" +
-      "html body.ftpskin #page .fo-ord-bws button.bw,html body #page .fo-ord-bws button.bw{display:flex;flex-direction:column;gap:5px;background:#FFFEFC !important;border:1px solid rgba(28,36,51,.12) !important;border-radius:10px;padding:7px 10px;cursor:pointer;text-align:left;min-width:0}" +
+      "html body.ftpskin #page .fo-ord-bws button.bw,html body #page .fo-ord-bws button.bw{display:flex;flex-direction:column;gap:3px;background:#FFFEFC !important;border:1px solid rgba(28,36,51,.12) !important;border-radius:9px;padding:5px 10px;cursor:pointer;text-align:left;min-width:0}" +
+      ".fo-ord-toss{display:flex;align-items:center;gap:7px;flex-wrap:wrap}" +
+      ".fo-ord-toss .tl{font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:800;color:#8a93a3}" +
+      "html body.ftpskin #page .fo-ord-toss button,html body #page .fo-ord-toss button{border:1px solid rgba(28,36,51,.16) !important;background:#FFFEFC !important;color:#3a4353 !important;border-radius:99px;padding:4px 13px;font-size:11.5px;font-weight:700;cursor:pointer}" +
+      "html body.ftpskin #page .fo-ord-toss button.on,html body #page .fo-ord-toss button.on{background:#0E233F !important;color:#FFFEFC !important;border-color:#0E233F !important}" +
       "html body #page .fo-ord-bws button.bw:hover{border-color:#B04A2C !important}" +
       ".fo-ord-bws .bw-h{display:flex;align-items:center;gap:6px;width:100%;min-width:0}" +
       ".fo-ord-bws .bw-h i{width:10px;height:10px;border-radius:3px;flex:0 0 auto}" +
