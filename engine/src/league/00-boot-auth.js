@@ -143,6 +143,103 @@
       .catch(function () { clearSession(); return false; });
   }
 
+  // ---- cross-device cloud saves (needs the 0022 migration; fails silently
+  // until it is run). The whole game state already lives in fo_*/fol_*
+  // localStorage keys (career save, circuit progress, journey flags), so the
+  // cloud copy is simply that key set, one row per account. Pushes ride the
+  // engine's own autosaves (debounced); the pull runs once per sign-in and
+  // ASKS before replacing this device's progress - it never clobbers quietly. ----
+  var CLOUD_TS = "fo_cloud_ts";                 // updated_at of the copy this device last wrote/loaded
+  var FO_CLOUD_SKIP = { fol_session: 1, fo_cloud_ts: 1, fo_bldseen: 1 };   // device-local, never synced
+  function foCloudKeys() {
+    var out = {};
+    try {
+      for (var i = 0; i < window.localStorage.length; i++) {
+        var k = window.localStorage.key(i);
+        if (!k || (k.indexOf("fo_") !== 0 && k.indexOf("fol_") !== 0)) continue;
+        if (FO_CLOUD_SKIP[k] || k.indexOf("fol_clubmeta_") === 0) continue;
+        out[k] = window.localStorage.getItem(k);
+      }
+    } catch (e) {}
+    return out;
+  }
+  function foCloudHash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return String(h >>> 0); }
+  var foCloudBusy = false, foCloudSent = "", foCloudTimer = null;
+  function foCloudPush(force) {
+    try {
+      if (!JWT || foCloudBusy) return;
+      var body = JSON.stringify([{ data: { ls: foCloudKeys() } }]);
+      var h = foCloudHash(body);
+      if (!force && h === foCloudSent) return;    // nothing changed since the last push
+      foCloudBusy = true;
+      var hh = headers(); hh.Prefer = "resolution=merge-duplicates,return=representation";
+      fetch(URL + "/rest/v1/player_saves?on_conflict=user_id", { method: "POST", headers: hh, body: body })
+        .then(function (r) { return r.text().then(function (t) { if (!r.ok) throw new Error(t); return t ? JSON.parse(t) : null; }); })
+        .then(function (rows) {
+          foCloudSent = h;
+          try { if (rows && rows[0] && rows[0].updated_at) lsSet(CLOUD_TS, rows[0].updated_at); } catch (e) {}
+          foCloudBusy = false;
+        }, function () { foCloudBusy = false; });
+    } catch (e) { foCloudBusy = false; }
+  }
+  function foCloudQueue() {
+    if (!JWT) return;
+    if (foCloudTimer) clearTimeout(foCloudTimer);
+    foCloudTimer = setTimeout(function () { foCloudTimer = null; foCloudPush(false); }, 12000);
+  }
+  function foCloudLoad(row) {
+    try {
+      var ls = row && row.data && row.data.ls; if (!ls) return;
+      // stale local fo_* keys from another save would blend into the loaded
+      // one - clear anything the cloud copy does not carry (session survives)
+      var kill = [];
+      try {
+        for (var i = 0; i < window.localStorage.length; i++) {
+          var k = window.localStorage.key(i);
+          if (!k || (k.indexOf("fo_") !== 0 && k.indexOf("fol_") !== 0)) continue;
+          if (FO_CLOUD_SKIP[k]) continue;
+          if (!(k in ls)) kill.push(k);
+        }
+      } catch (e) {}
+      kill.forEach(function (k) { lsDel(k); });
+      for (var k2 in ls) lsSet(k2, ls[k2]);
+      lsSet(CLOUD_TS, row.updated_at || "");
+      location.reload();
+    } catch (e) { say(e); }
+  }
+  function foCloudBoot() {
+    try {
+      if (!JWT || foCloudBoot.__ran) return; foCloudBoot.__ran = 1;
+      sel("player_saves", "select=data,updated_at&limit=1").then(function (rows) {
+        var row = rows && rows[0];
+        if (!row || !row.data || !row.data.ls) { foCloudPush(true); return; }   // first device: seed the cloud
+        if (lsGet(CLOUD_TS) === row.updated_at) return;                          // already carrying this copy
+        var when = ""; try { when = new Date(row.updated_at).toLocaleString(); } catch (e) {}
+        foConfirm({
+          title: "Load your save from another device?",
+          body: "This account has cloud progress saved " + (when ? "on " + when + " " : "") + "from another device. Load it here to continue that career? (Keep playing here instead and this device's progress becomes the cloud copy.)",
+          confirm: "Load cloud save", cancel: "Keep this device"
+        }).then(function (ok) {
+          if (ok) foCloudLoad(row);
+          else { lsSet(CLOUD_TS, row.updated_at || ""); foCloudPush(true); }
+        });
+      }).catch(function () {});
+      // pushes ride the engine's autosave, plus a safety net on tab-hide
+      setTimeout(function () {
+        try {
+          if (typeof window.saveGame === "function" && !window.saveGame.__foCloud) {
+            var _sv = window.saveGame;
+            window.saveGame = function () { var r = _sv.apply(this, arguments); try { foCloudQueue(); } catch (e) {} return r; };
+            window.saveGame.__foCloud = 1;
+          }
+        } catch (e) {}
+      }, 0);
+      document.addEventListener("visibilitychange", function () { try { if (document.visibilityState === "hidden") foCloudPush(false); } catch (e) {} });
+      setInterval(function () { foCloudPush(false); }, 240000);
+    } catch (e) {}
+  }
+  try { window.__foCloud = { keys: foCloudKeys, push: foCloudPush, load: foCloudLoad, boot: foCloudBoot }; } catch (eCw) {}
+
   // ---- styles + shell ----
   // (login skin is static now: engine/src/skin/10-login.css -> <style id="fo-skin-login">)
 

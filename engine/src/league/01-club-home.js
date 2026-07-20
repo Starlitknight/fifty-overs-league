@@ -2303,6 +2303,14 @@
         if (foCheckUpdate._seen === v.build) return;
         foCheckUpdate._seen = v.build;
         var live = false; try { live = (typeof M !== "undefined") && M && !M.done; } catch (e) {}
+        // Nothing on air: pull the new build in automatically, once per build
+        // (the guard stops a reload loop if a stale CDN node keeps serving the
+        // old page). Mid-match the pill still asks first.
+        if (!live && lsGet("fo_bldseen") !== v.build) {
+          lsSet("fo_bldseen", v.build);
+          location.replace(location.pathname + "?v=" + encodeURIComponent(v.build) + location.hash);
+          return;
+        }
         var el = document.createElement("div");
         el.id = "fo-update-pill";
         el.innerHTML = "A new version is ready &middot; <b>tap to update</b>" + (live ? " (your live match resumes at the right over)" : "");
@@ -2772,6 +2780,7 @@
   // the join-by-invite form.
   function enterApp() {
     foLoading("Signing you in…");
+    try { foCloudBoot(); } catch (eCl) {}
     return redeemPending().then(function () {
       return sel("leagues", "select=id,name,status,build_hash,draft_budget,season_no");
     }).then(function (ls) {

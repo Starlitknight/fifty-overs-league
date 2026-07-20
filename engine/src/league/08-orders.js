@@ -434,7 +434,7 @@
       root = root || document.getElementById("page") || document;
       var by9 = {};
       (GD.teams || []).forEach(function (t9) { ((t9.players || []).concat(t9.youth || [])).forEach(function (p9) { by9[p9.name] = p9; }); });
-      root.querySelectorAll("table.fo-sct td.fo-sci-nm").forEach(function (td) {
+      root.querySelectorAll("table.fo-sct td.fo-sci-nm, table.ftp-scorecard tbody td:first-child, table.ftp-bowling tbody td:first-child").forEach(function (td) {
         td.querySelectorAll(".fo-tal-tag").forEach(function (x9) { x9.remove(); });
         if (td.querySelector(".fo-scst")) return;
         var a9 = td.querySelector("a"); if (!a9) return;
@@ -442,7 +442,7 @@
         try { nm9 = decodeURIComponent((a9.getAttribute("href") || "").split("n=")[1] || ""); } catch (e0) {}
         var p9 = nm9 && by9[nm9]; if (!p9) return;
         var tb9 = td.closest("table");
-        var bowl9 = !!(tb9 && tb9.classList.contains("fo-sct-bowl"));
+        var bowl9 = !!(tb9 && (tb9.classList.contains("fo-sct-bowl") || tb9.classList.contains("ftp-bowling")));
         var s9 = document.createElement("span");
         s9.className = "fo-scst " + (bowl9 ? "fo-scst-w" : "fo-scst-b");
         s9.innerHTML = foOrdStarHTML(foOrdStars(bowl9 ? foOrdBowlComp(p9) : foOrdBatComp(p9)));
@@ -450,10 +450,19 @@
       });
     } catch (e) {}
   }
-  try { if (typeof foMatchRenderHooks !== "undefined") foMatchRenderHooks.push(function () { foScStars(); }); } catch (eH) {}
+  // decorate now AND a tick later: the hook fires from the core renderer,
+  // but the patch layer rebuilds the live tab shell after core returns -
+  // the deferred pass stars the freshly rebuilt tables without waiting for
+  // the safety-net interval (which reads as flicker mid-broadcast)
+  try { if (typeof foMatchRenderHooks !== "undefined") foMatchRenderHooks.push(function () { foScStars(); setTimeout(foScStars, 0); }); } catch (eH) {}
+  // #/match: the live Scorecard tab is appended AFTER the core render (the
+  // patch layer builds the tab shell around it), so the render hook fires too
+  // early there - the interval is what actually stars the live tables.
   setInterval(function () {
-    try { if (/^#\/(scorecard|reports)/.test(location.hash || "")) foScStars(); } catch (e) {}
+    try { if (/^#\/(scorecard|reports|match|friendly|matchday)/.test(location.hash || "")) foScStars(); } catch (e) {}
   }, 800);
+  // the oval's who-cards borrow the star language
+  try { window.foStarsFor = { bat: foOrdBatComp, bowl: foOrdBowlComp, stars: foOrdStars, html: foOrdStarHTML, btype: foOrdBType }; } catch (eSF) {}
   function foOrdersUI() {
     var page = document.getElementById("page"); if (!page) return;
     var t = userTeam(), xi = foOrdXI();
@@ -578,6 +587,13 @@
                 return;
               }
             } catch (eNg) {}
+            // eleven men and nobody to stand behind the stumps? Not on my watch
+            try {
+              if (!foOrdXI().some(function (p9) { return p9.keeper; })) {
+                toast("You can't take the field without a wicket-keeper - swap one into the XI.");
+                return;
+              }
+            } catch (eWk) {}
             // today's league round locks at 8:00 AM ET while the engine warms up
             try {
               if (SYNC && SYNC.started && !SYNC.practice && LG && !App.pending && !SYNC.planRound) {
@@ -709,6 +725,7 @@
               var xiAfter = bo9.slice(0, 11).map(function (n9) { return n9 === outNm ? nm : n9; });
               var bowlN9 = xiAfter.filter(function (n9) { return by9[n9] && by9[n9].bowlType && by9[n9].bowlType !== "none"; }).length;
               if (bowlN9 < 5) { toast("That leaves fewer than five bowling options - swap him for a bowler instead."); foOrdersUI(); return; }
+              if (!xiAfter.some(function (n9) { return by9[n9] && by9[n9].keeper; })) { toast("That leaves no wicket-keeper in the XI - keep one in."); foOrdersUI(); return; }
               bo9[tgtIx] = nm;
               // the man coming out loses his overs; captaincy and gloves self-heal
               try { gridState(); for (var o9 = 1; o9 <= 50; o9++) if (App.orders.grid[o9] === outNm) App.orders.grid[o9] = null; gridToSpells(); } catch (e9) {}
@@ -776,13 +793,13 @@
       ".fo-ord-xis .xc .st em,.fo-ord-bws .bw .st em{font-style:normal;color:#d8d3c6}.fo-ord-xis .xc .st em.f{color:#D9A441}.fo-ord-bws .bw .st em.f{color:#41577a}" +
       ".fo-ord-xis .xc .st em.h{background:linear-gradient(90deg,#D9A441 50%,#d8d3c6 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       ".fo-scst{white-space:nowrap;margin-left:7px;display:inline-block;vertical-align:1px}" +
-      ".fo-scst .st{text-decoration:none;font-size:8.5px;letter-spacing:.6px;line-height:1;white-space:nowrap}" +
+      ".fo-scst .st{text-decoration:none;font-size:12px;letter-spacing:.9px;line-height:1;white-space:nowrap}" +
       ".fo-scst .st em{font-style:normal;color:#e2ddd2}" +
       ".fo-scst-b .st em.f{color:#D9A441}" +
       ".fo-scst-b .st em.h{background:linear-gradient(90deg,#D9A441 50%,#e2ddd2 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
-      ".fo-scst-w .st em.f{color:#41577a}" +
-      ".fo-scst-w .st em.h{background:linear-gradient(90deg,#41577a 50%,#e2ddd2 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
-      ".fo-ord-bws .bw .st em.h{background:linear-gradient(90deg,#41577a 50%,#d8d3c6 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".fo-scst-w .st em.f{color:#2E7BD1}" +
+      ".fo-scst-w .st em.h{background:linear-gradient(90deg,#2E7BD1 50%,#e2ddd2 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".fo-ord-bws .bw .st em.h{background:linear-gradient(90deg,#2E7BD1 50%,#d8d3c6 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       ".fo-ord-xis .xc .rl{font-size:9px;letter-spacing:.05em;text-transform:uppercase;font-weight:800;color:#8a93a3;margin-left:auto}" +
                   ".fo-ord-pctal{margin-top:8px;display:flex;flex-direction:column;gap:4px}" +
       ".fo-ord-pctal .tl{background:#FBF7EC;border:1px solid rgba(201,162,75,.3);border-radius:8px;padding:5px 9px;font-size:11.5px;color:#4a4234;line-height:1.4}" +

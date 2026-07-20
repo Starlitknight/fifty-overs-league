@@ -7203,6 +7203,103 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       .catch(function () { clearSession(); return false; });
   }
 
+  // ---- cross-device cloud saves (needs the 0022 migration; fails silently
+  // until it is run). The whole game state already lives in fo_*/fol_*
+  // localStorage keys (career save, circuit progress, journey flags), so the
+  // cloud copy is simply that key set, one row per account. Pushes ride the
+  // engine's own autosaves (debounced); the pull runs once per sign-in and
+  // ASKS before replacing this device's progress - it never clobbers quietly. ----
+  var CLOUD_TS = "fo_cloud_ts";                 // updated_at of the copy this device last wrote/loaded
+  var FO_CLOUD_SKIP = { fol_session: 1, fo_cloud_ts: 1, fo_bldseen: 1 };   // device-local, never synced
+  function foCloudKeys() {
+    var out = {};
+    try {
+      for (var i = 0; i < window.localStorage.length; i++) {
+        var k = window.localStorage.key(i);
+        if (!k || (k.indexOf("fo_") !== 0 && k.indexOf("fol_") !== 0)) continue;
+        if (FO_CLOUD_SKIP[k] || k.indexOf("fol_clubmeta_") === 0) continue;
+        out[k] = window.localStorage.getItem(k);
+      }
+    } catch (e) {}
+    return out;
+  }
+  function foCloudHash(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return String(h >>> 0); }
+  var foCloudBusy = false, foCloudSent = "", foCloudTimer = null;
+  function foCloudPush(force) {
+    try {
+      if (!JWT || foCloudBusy) return;
+      var body = JSON.stringify([{ data: { ls: foCloudKeys() } }]);
+      var h = foCloudHash(body);
+      if (!force && h === foCloudSent) return;    // nothing changed since the last push
+      foCloudBusy = true;
+      var hh = headers(); hh.Prefer = "resolution=merge-duplicates,return=representation";
+      fetch(URL + "/rest/v1/player_saves?on_conflict=user_id", { method: "POST", headers: hh, body: body })
+        .then(function (r) { return r.text().then(function (t) { if (!r.ok) throw new Error(t); return t ? JSON.parse(t) : null; }); })
+        .then(function (rows) {
+          foCloudSent = h;
+          try { if (rows && rows[0] && rows[0].updated_at) lsSet(CLOUD_TS, rows[0].updated_at); } catch (e) {}
+          foCloudBusy = false;
+        }, function () { foCloudBusy = false; });
+    } catch (e) { foCloudBusy = false; }
+  }
+  function foCloudQueue() {
+    if (!JWT) return;
+    if (foCloudTimer) clearTimeout(foCloudTimer);
+    foCloudTimer = setTimeout(function () { foCloudTimer = null; foCloudPush(false); }, 12000);
+  }
+  function foCloudLoad(row) {
+    try {
+      var ls = row && row.data && row.data.ls; if (!ls) return;
+      // stale local fo_* keys from another save would blend into the loaded
+      // one - clear anything the cloud copy does not carry (session survives)
+      var kill = [];
+      try {
+        for (var i = 0; i < window.localStorage.length; i++) {
+          var k = window.localStorage.key(i);
+          if (!k || (k.indexOf("fo_") !== 0 && k.indexOf("fol_") !== 0)) continue;
+          if (FO_CLOUD_SKIP[k]) continue;
+          if (!(k in ls)) kill.push(k);
+        }
+      } catch (e) {}
+      kill.forEach(function (k) { lsDel(k); });
+      for (var k2 in ls) lsSet(k2, ls[k2]);
+      lsSet(CLOUD_TS, row.updated_at || "");
+      location.reload();
+    } catch (e) { say(e); }
+  }
+  function foCloudBoot() {
+    try {
+      if (!JWT || foCloudBoot.__ran) return; foCloudBoot.__ran = 1;
+      sel("player_saves", "select=data,updated_at&limit=1").then(function (rows) {
+        var row = rows && rows[0];
+        if (!row || !row.data || !row.data.ls) { foCloudPush(true); return; }   // first device: seed the cloud
+        if (lsGet(CLOUD_TS) === row.updated_at) return;                          // already carrying this copy
+        var when = ""; try { when = new Date(row.updated_at).toLocaleString(); } catch (e) {}
+        foConfirm({
+          title: "Load your save from another device?",
+          body: "This account has cloud progress saved " + (when ? "on " + when + " " : "") + "from another device. Load it here to continue that career? (Keep playing here instead and this device's progress becomes the cloud copy.)",
+          confirm: "Load cloud save", cancel: "Keep this device"
+        }).then(function (ok) {
+          if (ok) foCloudLoad(row);
+          else { lsSet(CLOUD_TS, row.updated_at || ""); foCloudPush(true); }
+        });
+      }).catch(function () {});
+      // pushes ride the engine's autosave, plus a safety net on tab-hide
+      setTimeout(function () {
+        try {
+          if (typeof window.saveGame === "function" && !window.saveGame.__foCloud) {
+            var _sv = window.saveGame;
+            window.saveGame = function () { var r = _sv.apply(this, arguments); try { foCloudQueue(); } catch (e) {} return r; };
+            window.saveGame.__foCloud = 1;
+          }
+        } catch (e) {}
+      }, 0);
+      document.addEventListener("visibilitychange", function () { try { if (document.visibilityState === "hidden") foCloudPush(false); } catch (e) {} });
+      setInterval(function () { foCloudPush(false); }, 240000);
+    } catch (e) {}
+  }
+  try { window.__foCloud = { keys: foCloudKeys, push: foCloudPush, load: foCloudLoad, boot: foCloudBoot }; } catch (eCw) {}
+
   // ---- styles + shell ----
   // (login skin is static now: engine/src/skin/10-login.css -> <style id="fo-skin-login">)
 
@@ -10000,7 +10097,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260720-1640-7f30e2";
+  var FO_BUILD = "20260720-1729-dd3d8d";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10013,6 +10110,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         if (foCheckUpdate._seen === v.build) return;
         foCheckUpdate._seen = v.build;
         var live = false; try { live = (typeof M !== "undefined") && M && !M.done; } catch (e) {}
+        // Nothing on air: pull the new build in automatically, once per build
+        // (the guard stops a reload loop if a stale CDN node keeps serving the
+        // old page). Mid-match the pill still asks first.
+        if (!live && lsGet("fo_bldseen") !== v.build) {
+          lsSet("fo_bldseen", v.build);
+          location.replace(location.pathname + "?v=" + encodeURIComponent(v.build) + location.hash);
+          return;
+        }
         var el = document.createElement("div");
         el.id = "fo-update-pill";
         el.innerHTML = "A new version is ready &middot; <b>tap to update</b>" + (live ? " (your live match resumes at the right over)" : "");
@@ -10482,6 +10587,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // the join-by-invite form.
   function enterApp() {
     foLoading("Signing you in…");
+    try { foCloudBoot(); } catch (eCl) {}
     return redeemPending().then(function () {
       return sel("leagues", "select=id,name,status,build_hash,draft_budget,season_no");
     }).then(function (ls) {
@@ -18306,7 +18412,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       root = root || document.getElementById("page") || document;
       var by9 = {};
       (GD.teams || []).forEach(function (t9) { ((t9.players || []).concat(t9.youth || [])).forEach(function (p9) { by9[p9.name] = p9; }); });
-      root.querySelectorAll("table.fo-sct td.fo-sci-nm").forEach(function (td) {
+      root.querySelectorAll("table.fo-sct td.fo-sci-nm, table.ftp-scorecard tbody td:first-child, table.ftp-bowling tbody td:first-child").forEach(function (td) {
         td.querySelectorAll(".fo-tal-tag").forEach(function (x9) { x9.remove(); });
         if (td.querySelector(".fo-scst")) return;
         var a9 = td.querySelector("a"); if (!a9) return;
@@ -18314,7 +18420,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         try { nm9 = decodeURIComponent((a9.getAttribute("href") || "").split("n=")[1] || ""); } catch (e0) {}
         var p9 = nm9 && by9[nm9]; if (!p9) return;
         var tb9 = td.closest("table");
-        var bowl9 = !!(tb9 && tb9.classList.contains("fo-sct-bowl"));
+        var bowl9 = !!(tb9 && (tb9.classList.contains("fo-sct-bowl") || tb9.classList.contains("ftp-bowling")));
         var s9 = document.createElement("span");
         s9.className = "fo-scst " + (bowl9 ? "fo-scst-w" : "fo-scst-b");
         s9.innerHTML = foOrdStarHTML(foOrdStars(bowl9 ? foOrdBowlComp(p9) : foOrdBatComp(p9)));
@@ -18322,10 +18428,19 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       });
     } catch (e) {}
   }
-  try { if (typeof foMatchRenderHooks !== "undefined") foMatchRenderHooks.push(function () { foScStars(); }); } catch (eH) {}
+  // decorate now AND a tick later: the hook fires from the core renderer,
+  // but the patch layer rebuilds the live tab shell after core returns -
+  // the deferred pass stars the freshly rebuilt tables without waiting for
+  // the safety-net interval (which reads as flicker mid-broadcast)
+  try { if (typeof foMatchRenderHooks !== "undefined") foMatchRenderHooks.push(function () { foScStars(); setTimeout(foScStars, 0); }); } catch (eH) {}
+  // #/match: the live Scorecard tab is appended AFTER the core render (the
+  // patch layer builds the tab shell around it), so the render hook fires too
+  // early there - the interval is what actually stars the live tables.
   setInterval(function () {
-    try { if (/^#\/(scorecard|reports)/.test(location.hash || "")) foScStars(); } catch (e) {}
+    try { if (/^#\/(scorecard|reports|match|friendly|matchday)/.test(location.hash || "")) foScStars(); } catch (e) {}
   }, 800);
+  // the oval's who-cards borrow the star language
+  try { window.foStarsFor = { bat: foOrdBatComp, bowl: foOrdBowlComp, stars: foOrdStars, html: foOrdStarHTML, btype: foOrdBType }; } catch (eSF) {}
   function foOrdersUI() {
     var page = document.getElementById("page"); if (!page) return;
     var t = userTeam(), xi = foOrdXI();
@@ -18450,6 +18565,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
                 return;
               }
             } catch (eNg) {}
+            // eleven men and nobody to stand behind the stumps? Not on my watch
+            try {
+              if (!foOrdXI().some(function (p9) { return p9.keeper; })) {
+                toast("You can't take the field without a wicket-keeper - swap one into the XI.");
+                return;
+              }
+            } catch (eWk) {}
             // today's league round locks at 8:00 AM ET while the engine warms up
             try {
               if (SYNC && SYNC.started && !SYNC.practice && LG && !App.pending && !SYNC.planRound) {
@@ -18581,6 +18703,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
               var xiAfter = bo9.slice(0, 11).map(function (n9) { return n9 === outNm ? nm : n9; });
               var bowlN9 = xiAfter.filter(function (n9) { return by9[n9] && by9[n9].bowlType && by9[n9].bowlType !== "none"; }).length;
               if (bowlN9 < 5) { toast("That leaves fewer than five bowling options - swap him for a bowler instead."); foOrdersUI(); return; }
+              if (!xiAfter.some(function (n9) { return by9[n9] && by9[n9].keeper; })) { toast("That leaves no wicket-keeper in the XI - keep one in."); foOrdersUI(); return; }
               bo9[tgtIx] = nm;
               // the man coming out loses his overs; captaincy and gloves self-heal
               try { gridState(); for (var o9 = 1; o9 <= 50; o9++) if (App.orders.grid[o9] === outNm) App.orders.grid[o9] = null; gridToSpells(); } catch (e9) {}
@@ -18648,13 +18771,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-ord-xis .xc .st em,.fo-ord-bws .bw .st em{font-style:normal;color:#d8d3c6}.fo-ord-xis .xc .st em.f{color:#D9A441}.fo-ord-bws .bw .st em.f{color:#41577a}" +
       ".fo-ord-xis .xc .st em.h{background:linear-gradient(90deg,#D9A441 50%,#d8d3c6 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       ".fo-scst{white-space:nowrap;margin-left:7px;display:inline-block;vertical-align:1px}" +
-      ".fo-scst .st{text-decoration:none;font-size:8.5px;letter-spacing:.6px;line-height:1;white-space:nowrap}" +
+      ".fo-scst .st{text-decoration:none;font-size:12px;letter-spacing:.9px;line-height:1;white-space:nowrap}" +
       ".fo-scst .st em{font-style:normal;color:#e2ddd2}" +
       ".fo-scst-b .st em.f{color:#D9A441}" +
       ".fo-scst-b .st em.h{background:linear-gradient(90deg,#D9A441 50%,#e2ddd2 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
-      ".fo-scst-w .st em.f{color:#41577a}" +
-      ".fo-scst-w .st em.h{background:linear-gradient(90deg,#41577a 50%,#e2ddd2 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
-      ".fo-ord-bws .bw .st em.h{background:linear-gradient(90deg,#41577a 50%,#d8d3c6 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".fo-scst-w .st em.f{color:#2E7BD1}" +
+      ".fo-scst-w .st em.h{background:linear-gradient(90deg,#2E7BD1 50%,#e2ddd2 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".fo-ord-bws .bw .st em.h{background:linear-gradient(90deg,#2E7BD1 50%,#d8d3c6 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       ".fo-ord-xis .xc .rl{font-size:9px;letter-spacing:.05em;text-transform:uppercase;font-weight:800;color:#8a93a3;margin-left:auto}" +
                   ".fo-ord-pctal{margin-top:8px;display:flex;flex-direction:column;gap:4px}" +
       ".fo-ord-pctal .tl{background:#FBF7EC;border:1px solid rgba(201,162,75,.3);border-radius:8px;padding:5px 9px;font-size:11.5px;color:#4a4234;line-height:1.4}" +
@@ -24466,7 +24589,7 @@ FOC.oval = (function () {
       "<circle id='ov-bowler' cx='200' cy='196' r='5' fill='#14213D' stroke='#fff' stroke-width='1.4'/>" +
       "<circle id='ov-ball' cx='200' cy='190' r='3.2' fill='#a3242b' stroke='#fff' stroke-width='.8' opacity='0'/>" +
       "<text id='ov-pop' x='200' y='128' text-anchor='middle' class='ov-pop'></text>" +
-      "</svg><div class='ov-note'><button type='button' id='ov-snd' class='ov-snd' title='Match sound'>&#128263;</button><span>theatre · live directions · real field setting</span></div></div>";
+      "</svg><div class='ov-who' id='ov-who'></div><div class='ov-note'><button type='button' id='ov-snd' class='ov-snd' title='Match sound'>&#128263;</button><span>theatre · live directions · real field setting</span></div></div>";
   }
 
   // ---- sound: tiny synthesized crowd + bat, no assets, off by default ------
@@ -24545,23 +24668,6 @@ FOC.oval = (function () {
       g.classList.add(wicket ? "ov-hotw" : "ov-hot");
       setTimeout(function () { g.classList.remove("ov-hot", "ov-hotw"); }, 950);
     } catch (e) {}
-  }
-  // boundary trails: every four and six this innings stays on the grass as a
-  // faint line along its real direction
-  var trails = [];
-  function addTrail(x, y, sym) {
-    trails.push({ x: x, y: y, sym: sym, inn: (typeof M !== "undefined" && M) ? M.inns : 0 });
-    if (trails.length > 80) trails.shift();
-    drawTrails();
-  }
-  function drawTrails() {
-    var g = document.getElementById("ov-trails"); if (!g) return;
-    var inn = (typeof M !== "undefined" && M) ? M.inns : 0;
-    g.innerHTML = trails.filter(function (t) { return t.inn === inn; }).map(function (t) {
-      return "<line x1='200' y1='92' x2='" + t.x.toFixed(1) + "' y2='" + t.y.toFixed(1) +
-        "' stroke='" + (t.sym === "6" ? "#C8674A" : "#C9A24B") + "' stroke-opacity='" +
-        (t.sym === "6" ? ".5" : ".42") + "' stroke-width='1.3'/>";
-    }).join("");
   }
 
   // render an engine field state (foFieldState): spots arrive with labels
@@ -24692,7 +24798,6 @@ FOC.oval = (function () {
       slide(ball, 200, 92, tx, ty, sym === "6" ? 560 : 440, function () {
         if (sym === "4") { flashPop("FOUR", pop, "#C9A24B"); foSnd("4"); }
         if (sym === "6") { flashPop("SIX", pop, "#C8674A"); foSnd("6"); }
-        if (sym === "4" || sym === "6") addTrail(tx, ty, sym);
         else if (spot) pulseDot(spot.g);
         setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, sym === "4" || sym === "6" ? 480 : 140);
       }, sym === "6");
@@ -24769,7 +24874,31 @@ FOC.oval = (function () {
     animate(next.sym, next.ix, function () { animating = false; board(); pump(); }, next.lbl, next.dir);
   }
 
+  function ee(s9) { return String(s9 == null ? "" : s9).replace(/[&<>]/g, function (c9) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c9]; }); }
+  var whoLast = "";
+  // who's on: striker (hand + gold batting stars) and bowler (type + blue
+  // bowling stars) as small cards over the top corners of the oval
+  function whoSync() {
+    try {
+      var el = document.getElementById("ov-who"); if (!el) return;
+      var F = window.foStarsFor;
+      var h = "";
+      if (F && typeof M !== "undefined" && M && M.innings) {
+        var inn = M.innings[M.inns];
+        if (inn && inn.bat) {
+          var sb = inn.bat[inn.striker], bp = sb && !sb.out && sb.p;
+          var bw = null;
+          if (inn.curBowlerName && inn.bxi) inn.bxi.forEach(function (p9) { if (p9.name === inn.curBowlerName) bw = p9; });
+          var shrt = function (nm9) { var a9 = String(nm9).split(" "); return a9.length > 1 ? a9[0].charAt(0) + ". " + a9.slice(1).join(" ") : nm9; };
+          if (bp) h += "<span class='ow'><b>" + ee(shrt(bp.name)) + "<i>" + (bp.hand === "L" ? "LHB" : "RHB") + "</i></b>" + F.html(F.stars(F.bat(bp))) + "</span>";
+          if (bw) h += "<span class='ow owb'><b>" + ee(shrt(bw.name)) + "<i>" + ee(F.btype(bw) || "BOWLING") + "</i></b>" + F.html(F.stars(F.bowl(bw))) + "</span>";
+        }
+      }
+      if (h !== whoLast) { whoLast = h; el.innerHTML = h; }
+    } catch (e) {}
+  }
   function tick() {
+    whoSync();
     try {
       // EXACT path: "#/matches" and "#/matchday" also start with "#/match",
       // and the prefix test used to mount the whole stage on the Matches page
@@ -24821,7 +24950,18 @@ FOC.oval = (function () {
     if (document.getElementById("fo-oval-css")) return;
     var st = document.createElement("style"); st.id = "fo-oval-css";
     st.textContent =
-      "#fo-oval{max-width:640px;margin:0 auto 14px;background:#0F1A2E;border:1px solid #24334f;border-radius:14px;overflow:hidden}" +
+      "#fo-oval{max-width:640px;margin:0 auto 14px;background:#0F1A2E;border:1px solid #24334f;border-radius:14px;overflow:hidden;position:relative}" +
+      ".ov-who{display:flex;justify-content:space-between;gap:8px;padding:2px 8px 4px;pointer-events:none}" +
+      ".ov-who:empty{display:none}" +
+      ".ov-who .ow{background:rgba(255,254,250,.94);border:1px solid rgba(28,36,51,.16);border-radius:9px;padding:4px 9px;display:flex;flex-direction:column;gap:2px;max-width:47%;box-shadow:0 2px 6px rgba(16,27,45,.18)}" +
+      ".ov-who .ow b{font-size:10.5px;font-weight:800;color:#14213D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".ov-who .ow b i{font-style:normal;font-size:7px;color:#8a93a3;font-weight:800;margin-left:5px;letter-spacing:.05em;text-transform:uppercase}" +
+      ".ov-who .ow .st{text-decoration:none;font-size:8.5px;letter-spacing:.5px;line-height:1;white-space:nowrap}" +
+      ".ov-who .ow .st em{font-style:normal;color:#ddd8ca}" +
+      ".ov-who .ow .st em.f{color:#D9A441}" +
+      ".ov-who .ow .st em.h{background:linear-gradient(90deg,#D9A441 50%,#ddd8ca 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".ov-who .ow.owb .st em.f{color:#2E7BD1}" +
+      ".ov-who .ow.owb .st em.h{background:linear-gradient(90deg,#2E7BD1 50%,#ddd8ca 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       // the engine's raw main column duplicates the scoreboard + commentary the
       // tab shell already presents - dead weight below the fold on desktop, a
       // visible duplicate on mobile
@@ -24839,7 +24979,7 @@ FOC.oval = (function () {
       // crumb and tab bar span the full width; the oval and the commentary
       // panel then open on the same row, flush at the top
       "html body #page.fo-ovalgrid.fo-matchpage{grid-template-columns:minmax(500px,55%) minmax(0,1fr);grid-template-rows:auto auto auto auto 1fr;grid-template-areas:'mcrumb mcrumb' 'mlinks mlinks' 'moval mbody' 'mtop mbody' 'mrest mbody'}" +
-      "html body #page.fo-ovalgrid.fo-matchpage #fo-oval{grid-area:moval;position:static}" +
+      "html body #page.fo-ovalgrid.fo-matchpage #fo-oval{grid-area:moval;position:relative}" +   // relative (not static): the sticky reset must keep anchoring the .ov-who cards
       "html body #page.fo-ovalgrid.fo-matchpage>.crumb{grid-area:mcrumb;margin:0 0 10px}" +
       "html body #page.fo-ovalgrid.fo-matchpage .mc-top{grid-area:mtop;display:flex !important;flex-direction:row !important;align-items:stretch !important;gap:10px;margin:10px 0 0}" +
       "html body #page.fo-ovalgrid.fo-matchpage .mc-top .panel{flex:1 1 0 !important;min-width:0;margin:0;height:auto}" +

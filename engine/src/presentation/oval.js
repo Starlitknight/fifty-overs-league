@@ -60,7 +60,7 @@ FOC.oval = (function () {
       "<circle id='ov-bowler' cx='200' cy='196' r='5' fill='#14213D' stroke='#fff' stroke-width='1.4'/>" +
       "<circle id='ov-ball' cx='200' cy='190' r='3.2' fill='#a3242b' stroke='#fff' stroke-width='.8' opacity='0'/>" +
       "<text id='ov-pop' x='200' y='128' text-anchor='middle' class='ov-pop'></text>" +
-      "</svg><div class='ov-note'><button type='button' id='ov-snd' class='ov-snd' title='Match sound'>&#128263;</button><span>theatre · live directions · real field setting</span></div></div>";
+      "</svg><div class='ov-who' id='ov-who'></div><div class='ov-note'><button type='button' id='ov-snd' class='ov-snd' title='Match sound'>&#128263;</button><span>theatre · live directions · real field setting</span></div></div>";
   }
 
   // ---- sound: tiny synthesized crowd + bat, no assets, off by default ------
@@ -139,23 +139,6 @@ FOC.oval = (function () {
       g.classList.add(wicket ? "ov-hotw" : "ov-hot");
       setTimeout(function () { g.classList.remove("ov-hot", "ov-hotw"); }, 950);
     } catch (e) {}
-  }
-  // boundary trails: every four and six this innings stays on the grass as a
-  // faint line along its real direction
-  var trails = [];
-  function addTrail(x, y, sym) {
-    trails.push({ x: x, y: y, sym: sym, inn: (typeof M !== "undefined" && M) ? M.inns : 0 });
-    if (trails.length > 80) trails.shift();
-    drawTrails();
-  }
-  function drawTrails() {
-    var g = document.getElementById("ov-trails"); if (!g) return;
-    var inn = (typeof M !== "undefined" && M) ? M.inns : 0;
-    g.innerHTML = trails.filter(function (t) { return t.inn === inn; }).map(function (t) {
-      return "<line x1='200' y1='92' x2='" + t.x.toFixed(1) + "' y2='" + t.y.toFixed(1) +
-        "' stroke='" + (t.sym === "6" ? "#C8674A" : "#C9A24B") + "' stroke-opacity='" +
-        (t.sym === "6" ? ".5" : ".42") + "' stroke-width='1.3'/>";
-    }).join("");
   }
 
   // render an engine field state (foFieldState): spots arrive with labels
@@ -286,7 +269,6 @@ FOC.oval = (function () {
       slide(ball, 200, 92, tx, ty, sym === "6" ? 560 : 440, function () {
         if (sym === "4") { flashPop("FOUR", pop, "#C9A24B"); foSnd("4"); }
         if (sym === "6") { flashPop("SIX", pop, "#C8674A"); foSnd("6"); }
-        if (sym === "4" || sym === "6") addTrail(tx, ty, sym);
         else if (spot) pulseDot(spot.g);
         setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, sym === "4" || sym === "6" ? 480 : 140);
       }, sym === "6");
@@ -363,7 +345,31 @@ FOC.oval = (function () {
     animate(next.sym, next.ix, function () { animating = false; board(); pump(); }, next.lbl, next.dir);
   }
 
+  function ee(s9) { return String(s9 == null ? "" : s9).replace(/[&<>]/g, function (c9) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c9]; }); }
+  var whoLast = "";
+  // who's on: striker (hand + gold batting stars) and bowler (type + blue
+  // bowling stars) as small cards over the top corners of the oval
+  function whoSync() {
+    try {
+      var el = document.getElementById("ov-who"); if (!el) return;
+      var F = window.foStarsFor;
+      var h = "";
+      if (F && typeof M !== "undefined" && M && M.innings) {
+        var inn = M.innings[M.inns];
+        if (inn && inn.bat) {
+          var sb = inn.bat[inn.striker], bp = sb && !sb.out && sb.p;
+          var bw = null;
+          if (inn.curBowlerName && inn.bxi) inn.bxi.forEach(function (p9) { if (p9.name === inn.curBowlerName) bw = p9; });
+          var shrt = function (nm9) { var a9 = String(nm9).split(" "); return a9.length > 1 ? a9[0].charAt(0) + ". " + a9.slice(1).join(" ") : nm9; };
+          if (bp) h += "<span class='ow'><b>" + ee(shrt(bp.name)) + "<i>" + (bp.hand === "L" ? "LHB" : "RHB") + "</i></b>" + F.html(F.stars(F.bat(bp))) + "</span>";
+          if (bw) h += "<span class='ow owb'><b>" + ee(shrt(bw.name)) + "<i>" + ee(F.btype(bw) || "BOWLING") + "</i></b>" + F.html(F.stars(F.bowl(bw))) + "</span>";
+        }
+      }
+      if (h !== whoLast) { whoLast = h; el.innerHTML = h; }
+    } catch (e) {}
+  }
   function tick() {
+    whoSync();
     try {
       // EXACT path: "#/matches" and "#/matchday" also start with "#/match",
       // and the prefix test used to mount the whole stage on the Matches page
@@ -415,7 +421,18 @@ FOC.oval = (function () {
     if (document.getElementById("fo-oval-css")) return;
     var st = document.createElement("style"); st.id = "fo-oval-css";
     st.textContent =
-      "#fo-oval{max-width:640px;margin:0 auto 14px;background:#0F1A2E;border:1px solid #24334f;border-radius:14px;overflow:hidden}" +
+      "#fo-oval{max-width:640px;margin:0 auto 14px;background:#0F1A2E;border:1px solid #24334f;border-radius:14px;overflow:hidden;position:relative}" +
+      ".ov-who{display:flex;justify-content:space-between;gap:8px;padding:2px 8px 4px;pointer-events:none}" +
+      ".ov-who:empty{display:none}" +
+      ".ov-who .ow{background:rgba(255,254,250,.94);border:1px solid rgba(28,36,51,.16);border-radius:9px;padding:4px 9px;display:flex;flex-direction:column;gap:2px;max-width:47%;box-shadow:0 2px 6px rgba(16,27,45,.18)}" +
+      ".ov-who .ow b{font-size:10.5px;font-weight:800;color:#14213D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".ov-who .ow b i{font-style:normal;font-size:7px;color:#8a93a3;font-weight:800;margin-left:5px;letter-spacing:.05em;text-transform:uppercase}" +
+      ".ov-who .ow .st{text-decoration:none;font-size:8.5px;letter-spacing:.5px;line-height:1;white-space:nowrap}" +
+      ".ov-who .ow .st em{font-style:normal;color:#ddd8ca}" +
+      ".ov-who .ow .st em.f{color:#D9A441}" +
+      ".ov-who .ow .st em.h{background:linear-gradient(90deg,#D9A441 50%,#ddd8ca 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".ov-who .ow.owb .st em.f{color:#2E7BD1}" +
+      ".ov-who .ow.owb .st em.h{background:linear-gradient(90deg,#2E7BD1 50%,#ddd8ca 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       // the engine's raw main column duplicates the scoreboard + commentary the
       // tab shell already presents - dead weight below the fold on desktop, a
       // visible duplicate on mobile
@@ -433,7 +450,7 @@ FOC.oval = (function () {
       // crumb and tab bar span the full width; the oval and the commentary
       // panel then open on the same row, flush at the top
       "html body #page.fo-ovalgrid.fo-matchpage{grid-template-columns:minmax(500px,55%) minmax(0,1fr);grid-template-rows:auto auto auto auto 1fr;grid-template-areas:'mcrumb mcrumb' 'mlinks mlinks' 'moval mbody' 'mtop mbody' 'mrest mbody'}" +
-      "html body #page.fo-ovalgrid.fo-matchpage #fo-oval{grid-area:moval;position:static}" +
+      "html body #page.fo-ovalgrid.fo-matchpage #fo-oval{grid-area:moval;position:relative}" +   // relative (not static): the sticky reset must keep anchoring the .ov-who cards
       "html body #page.fo-ovalgrid.fo-matchpage>.crumb{grid-area:mcrumb;margin:0 0 10px}" +
       "html body #page.fo-ovalgrid.fo-matchpage .mc-top{grid-area:mtop;display:flex !important;flex-direction:row !important;align-items:stretch !important;gap:10px;margin:10px 0 0}" +
       "html body #page.fo-ovalgrid.fo-matchpage .mc-top .panel{flex:1 1 0 !important;min-width:0;margin:0;height:auto}" +
