@@ -258,11 +258,12 @@
   // linear between. The same ladder for every player in the world - a
   // starting club reads ~4-5 stars with the whole climb ahead of it.
   function foOrdStars(comp) {
-    return Math.max(0, Math.min(10, Math.round((comp - 15) / 77 * 10)));
+    return Math.max(0, Math.min(10, Math.round(((comp - 15) / 77 * 10) * 2) / 2));
   }
   function foOrdStarHTML(n) {
+    var full = Math.floor(n), half = (n - full) >= 0.5;
     var s = "";
-    for (var i = 1; i <= 10; i++) s += "<em class='" + (i <= n ? "f" : "") + "'>&#9733;</em>";
+    for (var i = 1; i <= 10; i++) s += "<em class='" + (i <= full ? "f" : (half && i === full + 1 ? "h" : "")) + "'>&#9733;</em>";
     return "<s class='st' title='" + n + " / 10'>" + s + "</s>";
   }
   // one plain-language line on WHY this player is in the sheet
@@ -361,24 +362,15 @@
         return "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + "' data-fo-pc='" + E(nm) + "'>" +
           "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + "<b>" + E(dispNm(nm)) + "</b>" + tag +
           "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
-          "<span class='ov'><b>" + Math.round(foOrdBatComp(p)) + "</b><i>OVR</i></span></span>" +
+          "<span class='ov' title='Overall rating'><b>" + foPkOvr(p) + "</b></span></span>" +
           "<span class='r2'>" + foOrdStarHTML(foOrdStars(foOrdBatComp(p))) + "</span>" +
           (pills ? "<span class='r3'>" + pills + "</span>" : "") + "</button>";
       };
       var xiNames = bo.slice(0, 11);
-      var nBowl = 0, nSeam = 0, nSpin = 0, nAr = 0, nBat = 0, nWk = 0;
-      xiNames.forEach(function (nm) {
-        var p = by[nm] || {};
-        if (p.keeper) nWk++;
-        else if (!(p.bowlType && p.bowlType !== "none")) nBat++;
-        if (p.bowlType && p.bowlType !== "none") { nBowl++; if (/spin/i.test(p.bowlTypeFull || p.bowlType)) nSpin++; else nSeam++; }
-        if (p.role === "allRounder") nAr++;
-      });
-      var mix = "<div class='fo-ord-xinote'><b>" + nBat + " bat" + (nBat === 1 ? "" : "s") + "</b> · <b>" + nWk + " keeper" + (nWk === 1 ? "" : "s") + "</b> · <b>" + nSeam + " seam</b> · <b>" + nSpin + " spin</b> · <b>" + nAr + " all-rounder" + (nAr === 1 ? "" : "s") + "</b> · drag to reorder · drag a bench man in to swap · tap for his card</div>";
       var benchNames = ((t && t.players) || []).map(function (p9) { return p9.name; }).filter(function (nm) { return xiNames.indexOf(nm) < 0; });
       // vertical, editable: the XI as a draggable list, the bench beside it
-      var xiChips = mix + "<div class='fo-ord-xiwrap'>" +
-        "<div><div class='fo-ord-vzh' style='margin-top:2px'>Batting order</div><div class='fo-ord-xis' id='fo-ord-xi-list'>" + xiNames.map(function (nm, i) { return chip(nm, i, false); }).join("") + "</div></div>" +
+      var xiChips = "<div class='fo-ord-xiwrap'>" +
+        "<div><div class='fo-ord-vzh' style='margin-top:2px'>Batting order <span>&middot; drag to reorder</span></div><div class='fo-ord-xis' id='fo-ord-xi-list'>" + xiNames.map(function (nm, i) { return chip(nm, i, false); }).join("") + "</div></div>" +
         "<div><div class='fo-ord-vzh' style='margin-top:2px'>Bench</div><div class='fo-ord-xis' id='fo-ord-bench-list'>" + benchNames.map(function (nm) { return chip(nm, null, true); }).join("") + "</div></div>" +
         "</div>";
       var bench = "";
@@ -412,7 +404,7 @@
         var pills3 = foOrdTalPills(p3, 2);
         return "<button type='button' class='bw' data-fo-pc='" + E(nm3) + "'>" +
           "<span class='bw-h'><b>" + E(dispNm(nm3)) + "</b><span class='bt'>" + E(foOrdBType(p3)) + " &middot; " + (tot[nm3] || 0) + " ov</span>" +
-          "<span class='ov'><b>" + Math.round(foOrdBowlComp(p3)) + "</b><i>OVR</i></span></span>" +
+          "<span class='ov' title='Overall rating'><b>" + foPkOvr(p3) + "</b></span></span>" +
           "<span class='r2'>" + foOrdStarHTML(foOrdStars(foOrdBowlComp(p3))) + "</span>" +
           (pills3 ? "<span class='r3'>" + pills3 + "</span>" : "") + "</button>";
       }).join("") + "</div>";
@@ -424,7 +416,7 @@
         "<button type='button' data-fo-toss='dec:bat' class='" + (App.orders.tossDecision !== "bowl" ? "on" : "") + "'>Bat first</button>" +
         "<button type='button' data-fo-toss='dec:bowl' class='" + (App.orders.tossDecision === "bowl" ? "on" : "") + "'>Bowl first</button>" +
         "</div>";
-      return toss + "<div class='fo-ord-vzh'>The XI</div>" + xiChips + bench +
+      return toss + xiChips + bench +
         "<div class='fo-ord-vzh'>Bowling</div>" + lanes + legend;
     } catch (e) { return ""; }
   }
@@ -733,8 +725,7 @@
       ".fo-ord-xis .xc .r1{display:flex;align-items:center;gap:6px;min-width:0;width:100%}" +
       ".fo-ord-xis .xc .r1 .hd{font-size:8px;font-weight:800;color:#9aa3af;letter-spacing:.04em;flex:0 0 auto}" +
       ".fo-ord-xis .xc .r1 .ov,.fo-ord-bws .bw .bw-h .ov{margin-left:auto;display:inline-flex;align-items:baseline;gap:2px;flex:0 0 auto}" +
-      ".fo-ord-xis .xc .ov b,.fo-ord-bws .bw .ov b{font-size:13.5px;font-weight:800;color:#0E233F}" +
-      ".fo-ord-xis .xc .ov i,.fo-ord-bws .bw .ov i{font-style:normal;font-size:6.5px;font-weight:800;color:#9aa3af;letter-spacing:.05em}" +
+      ".fo-ord-xis .xc .ov b,.fo-ord-bws .bw .ov b{font-size:16.5px;font-weight:800;color:#B04A2C}" +
       ".fo-ord-xis .xc .r2,.fo-ord-bws .bw .r2{margin-top:-1px}" +
       ".fo-ord-pcx2{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}" +
       "html body #page .fo-ord-pcx2 button,html body .fo-modal .fo-ord-pcx2 button{border:1px solid rgba(28,36,51,.2);background:#FFFEFC;color:#0E233F;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer}" +
@@ -744,6 +735,8 @@
       ".fo-ord-xis .xc .r2{display:flex;align-items:center;gap:6px;width:100%}" +
       ".fo-ord-xis .xc .st,.fo-ord-bws .bw .st{text-decoration:none;font-size:13px;letter-spacing:1.2px;line-height:1;white-space:nowrap}" +
       ".fo-ord-xis .xc .st em,.fo-ord-bws .bw .st em{font-style:normal;color:#d8d3c6}.fo-ord-xis .xc .st em.f{color:#D9A441}.fo-ord-bws .bw .st em.f{color:#41577a}" +
+      ".fo-ord-xis .xc .st em.h{background:linear-gradient(90deg,#D9A441 50%,#d8d3c6 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".fo-ord-bws .bw .st em.h{background:linear-gradient(90deg,#41577a 50%,#d8d3c6 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       ".fo-ord-xis .xc .rl{font-size:9px;letter-spacing:.05em;text-transform:uppercase;font-weight:800;color:#8a93a3;margin-left:auto}" +
                   ".fo-ord-pctal{margin-top:8px;display:flex;flex-direction:column;gap:4px}" +
       ".fo-ord-pctal .tl{background:#FBF7EC;border:1px solid rgba(201,162,75,.3);border-radius:8px;padding:5px 9px;font-size:11.5px;color:#4a4234;line-height:1.4}" +
@@ -776,7 +769,8 @@
       "html body #page .fo-ord-herosub,html body.ftpskin #page .fo-ord-herosub{text-align:center;font-family:Oswald,sans-serif;letter-spacing:2.2px;text-transform:uppercase;font-size:10.5px;color:#8a93a3 !important;margin:0 0 14px;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +
       "@media(max-width:600px){.fo-ord-hero .h-t{font-size:21px}.fo-ord-hero{gap:9px}}" +
       "@media(max-width:480px){.fo-ord-lane .ln{flex-basis:62px;font-size:9.5px}.fo-ord-lane.lax em{font-size:6.5px}.fo-ord-lane .lt.lnum em{font-size:6.5px}}" +
-      ".fo-ord-tp{display:inline-flex;align-items:center;background:#F9F1DD;border:1px solid rgba(201,162,75,.28);color:#a3803a;border-radius:99px;padding:0 6px;font-size:7px;font-weight:800;letter-spacing:.04em;white-space:nowrap;line-height:1.7}" +
+      ".fo-ord-tp{display:inline;background:none;border:none;padding:0;color:#b3bac4;font-size:7.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}" +
+      ".fo-ord-tp + .fo-ord-tp:before{content:'· ';color:#d3d8de}" +
       ".fo-ord-xis .xc .r2{justify-content:space-between}" +
       ".fo-ord-xis .xc .r3{display:flex;flex-wrap:wrap;gap:3px;width:100%;min-height:15px;align-items:center}" +
       ".fo-ord-bws{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:6px;margin-top:8px}" +
