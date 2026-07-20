@@ -1905,6 +1905,59 @@
   // the painted role-x-nation figure, a rarity frame by OVR (80+ gold holo,
   // 70+ silver, else role-colour), a moving holo sheen that follows the
   // cursor, star lines, talents as ability boxes, and collector fine print.
+  // The card itself, reusable anywhere (player page, onboarding pack rip):
+  // returns the .phc markup plus the tier + role colours the wrapper needs.
+  function foHoloCardHTML(p, teamName) {
+    var k = foPkKind(p), ac = FO_PK_AC[k] || ["#C9A227", "#a9861a"];
+    var ovr = foPkOvr(p);
+    var tier = ovr >= 80 ? "legend" : ovr >= 70 ? "star" : "club";
+    var rar = tier === "legend" ? "★" : tier === "star" ? "◆" : "●";
+    var roleLbl = (p.btLabel && !/does not bowl/i.test(p.btLabel)) ? p.btLabel : (FO_PK_ROLELBL[p.role] || "Player");
+    var batS = foOrdStars(foOrdBatComp(p));
+    var secLbl = p.keeper ? "KEEPING" : "BOWLING";
+    var secS = p.keeper ? foOrdStars(aggKeep(p)) : foOrdStars(foOrdBowlComp(p));
+    var tals = (p.talents || []).slice(0, 2).map(function (t) {
+      var tip = (typeof TALTIPS !== "undefined" && TALTIPS[t]) || "Triggers in matches when the moment fits.";
+      return "<div class='pht'><span class='pht-k'>TALENT</span><div><b>" + E((typeof TALN !== "undefined" && TALN[t]) || t) + "</b><p>" + E(tip) + "</p></div></div>";
+    }).join("");
+    var no = ("00" + (foHash32("cardno|" + p.name) % 199 + 1)).slice(-3);
+    var meta = [];
+    if (teamName) meta.push(E(teamName));
+    meta.push("Age " + (p.age | 0));
+    meta.push(E(p.formWord || "steady") + " form");
+    if (p.expWord) meta.push(E(p.expWord));
+    var html =
+      "<div class='phc'><div class='phc-in'>" +
+      "<div class='phc-hd'><div class='phc-idc'><span class='phc-role'>" + E(roleLbl) + " &middot; " + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
+      "<div class='phc-nm'>" + E(p.name) + " <span class='phc-fl'>" + (foQsFlag(p.nat) || "") + "</span></div></div>" +
+      "<div class='phc-ovr'><b>" + ovr + "</b><i>OVR</i></div></div>" +
+      "<div class='phc-art'><img src='" + FO_ART + foPkArt(p) + "' alt=''><span class='phc-holo'></span><span class='phc-glare'></span></div>" +
+      "<div class='phc-stars'>" +
+      "<div class='phr phr-b'><i>BATTING</i>" + foOrdStarHTML(batS) + "<em>" + Math.round(aggBat(p)) + "</em></div>" +
+      "<div class='phr phr-w'><i>" + secLbl + "</i>" + foOrdStarHTML(secS) + "<em>" + Math.round(p.keeper ? aggKeep(p) : (p.bowlType ? aggBowl(p) : 0)) + "</em></div>" +
+      "</div>" +
+      (tals ? "<div class='phc-tals'>" + tals + "</div>" : "") +
+      "<div class='phc-meta'><span>" + meta.join("</span><s>&middot;</s><span>") + "</span></div>" +
+      "<div class='phc-ft'><span>No. " + no + "/199</span><span class='rr'>" + rar + "</span><span>FIFTY OVERS &middot; FIRST EDITION</span></div>" +
+      "</div></div>";
+    return { html: html, tier: tier, ac: ac };
+  }
+  // the tilt: the card leans toward the cursor and the holo sheen sweeps
+  function foHoloTilt(wrap) {
+    var card = wrap && wrap.querySelector(".phc"); if (!card) return;
+    var still = false; try { still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e0) {}
+    if (still) return;
+    wrap.addEventListener("pointermove", function (ev) {
+      var r = card.getBoundingClientRect();
+      var x = (ev.clientX - r.left) / r.width, y = (ev.clientY - r.top) / r.height;
+      x = Math.max(0, Math.min(1, x)); y = Math.max(0, Math.min(1, y));
+      card.style.setProperty("--mx", x); card.style.setProperty("--my", y);
+      card.style.transform = "rotateX(" + ((0.5 - y) * 9).toFixed(2) + "deg) rotateY(" + ((x - 0.5) * 12).toFixed(2) + "deg)";
+    });
+    wrap.addEventListener("pointerleave", function () {
+      card.style.transform = ""; card.style.setProperty("--mx", 0.5); card.style.setProperty("--my", 0.35);
+    });
+  }
   function foPlayerHero() {
     try {
       var ex = document.getElementById("fo-phero");
@@ -1915,59 +1968,22 @@
       if (ex && ex.getAttribute("data-nm") === nm && page.contains(ex)) return;
       var hit = (typeof findPlayer === "function") ? findPlayer(nm) : null; if (!hit || !hit.p) return;
       if (ex) ex.remove();
-      var p = hit.p, team = hit.team || {};
-      var k = foPkKind(p), ac = FO_PK_AC[k] || ["#C9A227", "#a9861a"];
-      var ovr = foPkOvr(p);
-      var tier = ovr >= 80 ? "legend" : ovr >= 70 ? "star" : "club";
-      var rar = tier === "legend" ? "★" : tier === "star" ? "◆" : "●";
-      var roleLbl = (p.btLabel && !/does not bowl/i.test(p.btLabel)) ? p.btLabel : (FO_PK_ROLELBL[p.role] || "Player");
-      var batS = foOrdStars(foOrdBatComp(p));
-      var secLbl = p.keeper ? "KEEPING" : "BOWLING";
-      var secS = p.keeper ? foOrdStars(aggKeep(p)) : foOrdStars(foOrdBowlComp(p));
-      var tals = (p.talents || []).slice(0, 2).map(function (t) {
-        var tip = (typeof TALTIPS !== "undefined" && TALTIPS[t]) || "Triggers in matches when the moment fits.";
-        return "<div class='pht'><span class='pht-k'>TALENT</span><div><b>" + E((typeof TALN !== "undefined" && TALN[t]) || t) + "</b><p>" + E(tip) + "</p></div></div>";
-      }).join("");
-      var no = ("00" + (foHash32("cardno|" + p.name) % 199 + 1)).slice(-3);
+      var built = foHoloCardHTML(hit.p, (hit.team || {}).name || "");
       var el = document.createElement("div");
-      el.id = "fo-phero"; el.className = "ph-" + tier; el.setAttribute("data-nm", nm);
-      el.style.setProperty("--tc", ac[0]); el.style.setProperty("--tcD", ac[1]);
-      el.innerHTML =
-        "<div class='phc' id='fo-phc'><div class='phc-in'>" +
-        "<div class='phc-hd'><div class='phc-idc'><span class='phc-role'>" + E(roleLbl) + " &middot; " + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
-        "<div class='phc-nm'>" + E(p.name) + " <span class='phc-fl'>" + (foQsFlag(p.nat) || "") + "</span></div></div>" +
-        "<div class='phc-ovr'><b>" + ovr + "</b><i>OVR</i></div></div>" +
-        "<div class='phc-art'><img src='" + FO_ART + foPkArt(p) + "' alt=''><span class='phc-holo'></span><span class='phc-glare'></span></div>" +
-        "<div class='phc-stars'>" +
-        "<div class='phr phr-b'><i>BATTING</i>" + foOrdStarHTML(batS) + "<em>" + Math.round(aggBat(p)) + "</em></div>" +
-        "<div class='phr phr-w'><i>" + secLbl + "</i>" + foOrdStarHTML(secS) + "<em>" + Math.round(p.keeper ? aggKeep(p) : (p.bowlType ? aggBowl(p) : 0)) + "</em></div>" +
-        "</div>" +
-        (tals ? "<div class='phc-tals'>" + tals + "</div>" : "") +
-        "<div class='phc-meta'><span>" + E(team.name || "") + "</span><s>&middot;</s><span>Age " + (p.age | 0) + "</span><s>&middot;</s><span>" + E(p.formWord || "steady") + " form</span><s>&middot;</s><span>" + E(p.expWord || "") + "</span></div>" +
-        "<div class='phc-ft'><span>No. " + no + "/199</span><span class='rr'>" + rar + "</span><span>FIFTY OVERS &middot; FIRST EDITION</span></div>" +
-        "</div></div>";
+      el.id = "fo-phero"; el.className = "ph-" + built.tier; el.setAttribute("data-nm", nm);
+      el.style.setProperty("--tc", built.ac[0]); el.style.setProperty("--tcD", built.ac[1]);
+      el.innerHTML = built.html;
+      el.querySelector(".phc").id = "fo-phc";
       page.insertBefore(el, page.firstChild);
-      // the tilt: the card leans toward the cursor and the holo sheen sweeps
-      var card = el.querySelector("#fo-phc");
-      var still = false; try { still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e0) {}
-      if (card && !still) {
-        el.addEventListener("pointermove", function (ev) {
-          var r = card.getBoundingClientRect();
-          var x = (ev.clientX - r.left) / r.width, y = (ev.clientY - r.top) / r.height;
-          x = Math.max(0, Math.min(1, x)); y = Math.max(0, Math.min(1, y));
-          card.style.setProperty("--mx", x); card.style.setProperty("--my", y);
-          card.style.transform = "rotateX(" + ((0.5 - y) * 9).toFixed(2) + "deg) rotateY(" + ((x - 0.5) * 12).toFixed(2) + "deg)";
-        });
-        el.addEventListener("pointerleave", function () {
-          card.style.transform = ""; card.style.setProperty("--mx", 0.5); card.style.setProperty("--my", 0.35);
-        });
-      }
+      foHoloTilt(el);
     } catch (e) {}
   }
   try {
     var foPhCss = document.createElement("style");
     foPhCss.textContent =
       "#fo-phero{display:flex;justify-content:center;margin:8px 0 20px;perspective:1100px}" +
+      // .fo-phw: the same card dropped anywhere else (onboarding pack rip)
+      ".fo-phw{display:flex;justify-content:center;perspective:1100px}" +
       ".phc{width:min(430px,94vw);border-radius:24px;padding:11px;position:relative;transform-style:preserve-3d;transition:transform .16s ease-out;box-shadow:0 18px 44px rgba(10,16,30,.45),0 4px 12px rgba(10,16,30,.3)}" +
       // rarity frames: role colour, brushed silver, or woven gold
       ".ph-club .phc{background:linear-gradient(160deg,var(--tc),var(--tcD) 55%,var(--tc))}" +

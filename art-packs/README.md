@@ -8,8 +8,8 @@ The extracted, game-ready assets live in `client/art/`:
 - `client/art/players/<role>_<nation>.webp` — player figures used by squad
   cards, the transfer market, orders modals, and the player-page hero card.
   Roles: `bat`, `ar`, `wk`, `f` (fast), `fm` (fast-medium), `mp` (medium
-  pacer), `fs` (finger spin — also used for wrist spinners until a `ws_` pack
-  lands). Nations: `eng`, `aus`, `ind`, `nzl`, `rsa`, `win`.
+  pacer), `fs` (finger spin), `ws` (wrist spin).
+  Nations: `eng`, `aus`, `ind`, `nzl`, `rsa`, `win`.
 - `client/art/orders-room.webp` — the orders-page backdrop, compressed from
   `orders-room-source.png` in this folder.
 

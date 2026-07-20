@@ -2185,6 +2185,9 @@
       "@keyframes foJrvPop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}" +
       ".fo-jrv-grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;text-align:left}" +
       "@media(max-width:520px){.fo-jrv-grid{grid-template-columns:1fr}}" +
+      // holo mode: one FULL trading card per row, a column you scroll through
+      ".fo-jrv-grid.fo-jrv-holo{display:flex;flex-direction:column;align-items:center;gap:22px}" +
+      ".fo-jrv-holo .fo-jrv-cell{width:100%}" +
       ".fo-jrv-cell{opacity:0}" +
       ".fo-jrv-cell.in{animation:foJrvFly .5s cubic-bezier(.16,.72,.28,1.1) forwards}" +
       ".fo-jrv-cell.in.insta{animation-duration:.01s}" +
@@ -2547,8 +2550,12 @@
       return d !== 0 ? d : (foPkOvr(b2) - foPkOvr(a));
     });
     var A = foJArch(FO_ONB.arch);
+    // v2: every card out of the pack is the FULL holo trading card, dealt into
+    // a single scrollable column - the same card the player page shows
     var cells = ps.map(function (p, i) {
-      return "<div class='fo-jrv-cell' data-i='" + i + "' data-g='" + foJrvGroup(p) + "'>" + foPkMini(p, {}) + "</div>";
+      var built = foHoloCardHTML(p, A.nm);
+      return "<div class='fo-jrv-cell' data-i='" + i + "' data-g='" + foJrvGroup(p) + "'>" +
+        "<div class='fo-phw ph-" + built.tier + "' style='--tc:" + built.ac[0] + ";--tcD:" + built.ac[1] + "'>" + built.html + "</div></div>";
     }).join("");
     var body = "<div class='fo-jrv-wrap'>" +
       "<div class='fo-jrv'>" +
@@ -2560,7 +2567,7 @@
       "<img class='fo-j-crimg' src='" + FO_ART + "crests/" + FO_ONB.arch + ".png' alt=''>" +
       "<span class='pk1'>" + E(A.nm) + "</span><span class='pk2'>Founding squad · tap to open</span></button>" +
       "<div class='fo-jrv-lab' id='fo-jrv-lab'></div>" +
-      "<div class='fo-jrv-grid' id='fo-jrv-grid'>" + cells + "</div>" +
+      "<div class='fo-jrv-grid fo-jrv-holo' id='fo-jrv-grid'>" + cells + "</div>" +
       "<div class='fo-jrv-skip'><a id='fo-jrv-skip' hidden>Deal them all &#9654;</a></div>" +
       "<div class='fo-jrv-foot' id='fo-jrv-foot' hidden>" +
       foJGbox("Every name on that sheet is yours now. In a year they'll either be a team or a story. To the books, boss.") +
@@ -2573,6 +2580,11 @@
     var timers = [], dealt = 0;
     var reduce = false;
     try { reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e2) {}
+    [].forEach.call(host.querySelectorAll(".fo-jrv-cell .fo-phw"), foHoloTilt);
+    // the camera follows each card as it's dealt - until the manager scrolls
+    var follow = true, stopFollow = function () { follow = false; };
+    window.addEventListener("wheel", stopFollow, { passive: true, once: true });
+    window.addEventListener("touchmove", stopFollow, { passive: true, once: true });
     var finish = function () {
       timers.forEach(clearTimeout); timers = [];
       host.querySelectorAll(".fo-jrv-cell").forEach(function (c) { c.classList.add("in", "insta"); });
@@ -2590,9 +2602,10 @@
       var cellsEls = [].slice.call(host.querySelectorAll(".fo-jrv-cell"));
       var packR = pack.getBoundingClientRect();
       var px = packR.left + packR.width / 2, py = packR.top + packR.height / 2;
-      // strict one-by-one: each card launches after the last, a small extra
-      // beat when the role wave changes so the banner registers
-      var STEP = 150, GAP = 240, t = 360, lastG = null;
+      // strict one-by-one: each full card lands, the camera follows it, the
+      // next launches - an extra beat when the role wave changes so the
+      // banner registers
+      var STEP = 700, GAP = 350, t = 360, lastG = null;
       cellsEls.forEach(function (c, i) {
         var g = c.getAttribute("data-g");
         if (g !== lastG) { if (lastG != null) t += GAP; lastG = g; (function (g2, tt) {
@@ -2610,6 +2623,7 @@
             c2.style.setProperty("--dy", dy.toFixed(0) + "px");
             c2.style.setProperty("--rot", ((foHash32(FO_ONB.arch + idx) % 40) - 20) + "deg");
             c2.classList.add("in");
+            if (follow) try { c2.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e4) {}
             dealt++;
             if (dealt >= cellsEls.length) timers.push(setTimeout(finish, 500));
           }, tt));
@@ -2710,7 +2724,7 @@
   function foPkArt(p) {
     var k = foPkKind(p);
     var r = k === "wk" ? "wk" : k === "ar" ? "ar"
-      : (k === "wspin" || k === "fspin") ? "fs"   // wrist spinners borrow the finger-spin figure until their own pack lands
+      : k === "wspin" ? "ws" : k === "fspin" ? "fs"
       : k === "pace" ? (p.role === "seamFast" ? "f" : (p.role === "seamFastMedium" ? "fm" : "mp"))
       : "bat";
     // the same player always gets the same nation figure: his own when it was
