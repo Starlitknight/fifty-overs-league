@@ -509,7 +509,11 @@
         var s9 = document.createElement("span");
         s9.className = "fo-scst " + (bowl9 ? "fo-scst-w" : "fo-scst-b");
         s9.innerHTML = foOrdStarHTML(starsN);
-        a9.insertAdjacentElement("afterend", s9);
+        // stars go AFTER the name AND its captain (c) / keeper (†) / bowl-type
+        // marks - inserting right after the anchor shoved those marks past the
+        // stars. Anchor on the last such mark when present, else the name.
+        var marks9 = td.querySelectorAll(".fo-sci-cap, .fo-bt-tag");
+        (marks9.length ? marks9[marks9.length - 1] : a9).insertAdjacentElement("afterend", s9);
       });
     } catch (e) {}
   }

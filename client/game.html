@@ -10129,7 +10129,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260720-2034-06f658";
+  var FO_BUILD = "20260720-2045-ae3cec";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18523,7 +18523,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var s9 = document.createElement("span");
         s9.className = "fo-scst " + (bowl9 ? "fo-scst-w" : "fo-scst-b");
         s9.innerHTML = foOrdStarHTML(starsN);
-        a9.insertAdjacentElement("afterend", s9);
+        // stars go AFTER the name AND its captain (c) / keeper (†) / bowl-type
+        // marks - inserting right after the anchor shoved those marks past the
+        // stars. Anchor on the last such mark when present, else the name.
+        var marks9 = td.querySelectorAll(".fo-sci-cap, .fo-bt-tag");
+        (marks9.length ? marks9[marks9.length - 1] : a9).insertAdjacentElement("afterend", s9);
       });
     } catch (e) {}
   }
