@@ -2108,9 +2108,12 @@
       ".pk-ovr i{font-style:normal;font-family:Oswald;font-size:13px;letter-spacing:2px;color:var(--ink);font-weight:500;vertical-align:12px;margin-right:5px}" +
       ".pk-ovr b{font-family:Oswald;font-size:36px;font-weight:600;color:var(--tcD)}" +
       ".pk-hand{display:block;margin-top:4px;font-family:Oswald;font-size:12px;letter-spacing:1.8px;font-weight:600;color:var(--tcD);border:1.4px solid var(--tc);border-radius:8px;padding:2.5px 10px;background:rgba(255,255,255,.4);cursor:help;text-align:center}" +
-      ".pk-art{height:180px;position:relative;margin:2px -6px 6px}" +
-      ".pk-art img{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);height:170px;max-width:78%;object-fit:contain}" +
-      ".pk-art .gnd{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);width:52%;height:5px;border-radius:50%;background:radial-gradient(ellipse,rgba(20,33,61,.45),transparent 70%)}" +
+      // v2 art: the painted role-x-nation figure fills a full-bleed panel -
+      // the national brush-stroke background IS the card's hero
+      ".pk-art{height:236px;position:relative;margin:2px -6px 8px;border-radius:12px;overflow:hidden;box-shadow:inset 0 0 0 1.5px rgba(20,33,61,.3),0 4px 12px rgba(16,27,45,.2)}" +
+      ".pk-art img{position:absolute;inset:0;left:0;bottom:auto;transform:none;width:100%;height:100%;max-width:none;object-fit:cover;object-position:50% 16%}" +
+      ".pk-art .gnd{display:none}" +
+      ".pk-art:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 78%,rgba(20,25,40,.22));pointer-events:none}" +
       ".pk-meta{border:1.3px solid rgba(20,33,61,.25);border-radius:11px;padding:6px 12px;display:flex;gap:7px;align-items:center;justify-content:center;font-style:italic;font-size:14px;color:#2b3550;background:rgba(255,255,255,.35);flex-wrap:wrap}" +
       ".pk-meta i{font-style:normal;color:var(--tcD)}.pk-meta .fl{font-style:normal;font-size:14px}.pk-meta .fl img{width:22px;vertical-align:middle}" +
       ".pk-tal-h{display:flex;align-items:center;gap:11px;margin:9px 0 6px;font-family:Oswald;font-size:12.5px;letter-spacing:2.6px;color:var(--tcD);font-weight:600}" +
@@ -2146,7 +2149,7 @@
       ".pk-sign .pk-ovr i{font-size:10.5px;letter-spacing:1.4px;vertical-align:8px;margin-right:4px}" +
       ".pk-sign .pk-ovr b{font-size:26px}" +
       ".pk-sign .pk-hand{font-size:10px;letter-spacing:1.4px;padding:2px 8px;margin-top:3px}" +
-      ".pk-sign .pk-art{height:110px;margin:1px -4px 4px}.pk-sign .pk-art img{height:104px}" +
+      ".pk-sign .pk-art{height:150px;margin:1px -4px 5px}.pk-sign .pk-art img{height:100%}" +
       ".pk-sign .pk-meta{font-size:12px;padding:4px 9px;gap:5px}.pk-sign .pk-meta .fl img{width:18px}" +
       ".pk-sign .pk-tal-h{font-size:10.5px;letter-spacing:2px;margin:6px 0 4px}" +
       ".pk-sign .pk-tal{font-size:11.5px;padding:2.5px 10px;border-radius:8px}" +
@@ -2206,11 +2209,14 @@
       ".fo-j-wimg{width:110px;filter:grayscale(.85) sepia(.25) contrast(1.05);border:1px solid #b8ab84;display:block}" +
       // ==== compact card for squad / market / scout grids ====
       ".pkm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin:4px 0 6px}" +
-      ".pkm{--ink:#14213D;--paper:#F7F2E4;border:2px solid var(--tc);border-radius:13px;background:linear-gradient(180deg,#FDFAF1,var(--paper));padding:10px 12px 11px;font-family:'Spline Sans','Inter',sans-serif;box-shadow:0 3px 10px rgba(16,27,45,.12);position:relative}" +
+      // v2: the painted figure fills a full-height panel down the card's left
+      // edge - every player card becomes a mini poster in his nation's colours
+      ".pkm{--ink:#14213D;--paper:#F7F2E4;border:2px solid var(--tc);border-radius:13px;background:linear-gradient(180deg,#FDFAF1,var(--paper));padding:10px 12px 11px 102px;font-family:'Spline Sans','Inter',sans-serif;box-shadow:0 3px 10px rgba(16,27,45,.12);position:relative;overflow:hidden}" +
       ".pkm-dim{opacity:.55;filter:saturate(.6)}" +
       ".pkm-top{display:flex;align-items:center;gap:10px}" +
-      ".pkm-art{width:58px;height:62px;flex:0 0 58px;display:grid;place-items:end center;background:radial-gradient(ellipse at 50% 92%,rgba(20,33,61,.13),transparent 62%)}" +
-      ".pkm-art img{max-height:60px;max-width:56px;width:auto;height:auto;object-fit:contain;display:block}" +
+      ".pkm-art{position:absolute;left:0;top:0;bottom:0;width:90px;overflow:hidden;background:#14213D;display:block}" +
+      ".pkm-art img{width:100%;height:100%;max-height:none;max-width:none;object-fit:cover;object-position:50% 12%;display:block}" +
+      ".pkm-art:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 70%,rgba(247,242,228,.45));pointer-events:none}" +
       ".pkm-id{flex:1;min-width:0}" +
       ".pkm-tag{display:inline-block;font-family:Oswald;font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;font-weight:600;color:#fff;background:var(--tcD);border-radius:6px;padding:1px 7px;margin-bottom:2px}" +
       ".pkm-nm{font-family:Archivo,Oswald,sans-serif;font-weight:800;font-size:17px;color:var(--ink);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
@@ -2695,14 +2701,22 @@
     if (/^seam/.test(p.role || "")) return "pace";
     return "bat";
   }
+  // Card art v2: full-bleed painted figures picked by ROLE x NATIONALITY
+  // (client/art/players/<role>_<nat>.webp). Six nations were painted; the
+  // rest borrow the closest kit/region. Spinners borrow the medium-pacer
+  // figure (a bowler in his delivery stride) until a spin pack lands.
+  var FO_PK_NAT = { England: "eng", Australia: "aus", India: "ind", "New Zealand": "nzl", "South Africa": "rsa", "West Indies": "win",
+    Pakistan: "ind", "Sri Lanka": "ind", Afghanistan: "ind", Netherlands: "eng", Ireland: "eng", Zimbabwe: "rsa" };
   function foPkArt(p) {
     var k = foPkKind(p);
-    if (k === "wk") return "keeper.png";
-    if (k === "ar") return "ar.png";
-    if (k === "wspin") return "spin-wrist.png";
-    if (k === "fspin") return "spin-finger.png";
-    if (k === "pace") return p.role === "seamFast" ? "pace1.png" : (p.role === "seamFastMedium" ? "pace2.png" : "pace3.png");
-    return "bat.png";
+    var r = k === "wk" ? "wk" : k === "ar" ? "ar"
+      : (k === "wspin" || k === "fspin") ? "mp"
+      : k === "pace" ? (p.role === "seamFast" ? "f" : (p.role === "seamFastMedium" ? "fm" : "mp"))
+      : "bat";
+    // the same player always gets the same nation figure: his own when it was
+    // painted, a stable regional stand-in otherwise
+    var n = FO_PK_NAT[p.nat] || ["eng", "aus", "ind", "nzl", "rsa", "win"][foHash32("pknat|" + (p.name || "")) % 6];
+    return "players/" + r + "_" + n + ".webp";
   }
   var FO_PK_TIPS = {
     BATTING: "Run-scoring ability with the bat - how reliably he builds and converts innings.",

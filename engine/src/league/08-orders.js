@@ -917,6 +917,11 @@
       ".fo-ord-xis .xc .dh{display:none}" +
       "@media(pointer:coarse){.fo-ord-xis .xc .dh{display:flex;align-items:center;justify-content:center;position:absolute;right:4px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:8px;background:#EEF2F7;color:#41577a;font-size:17px;font-weight:400;touch-action:none}" +
       "html body #page .fo-ord-xis button.xc{position:relative;padding-right:46px!important}}" +
+      // the player-card modal is narrow: slim the v2 art panel so the name
+      // never truncates beside the OVR
+      "#fo-ord-pc .pkm{padding-left:84px}" +
+      "#fo-ord-pc .pkm-art{width:74px}" +
+      "#fo-ord-pc .pkm-nm{white-space:normal;overflow:visible;text-overflow:clip;font-size:16px;line-height:1.15}" +   // the narrow modal wraps the full name instead of ellipsizing it
       // FTP-style role glyphs beside every name in the order
       ".fo-ord-xis .xc .ric{display:inline-flex;width:16px;height:16px;flex:0 0 auto;align-items:center;margin-left:5px}" +
       ".fo-ord-xis .xc .ric svg{width:16px;height:16px;display:block}" +
