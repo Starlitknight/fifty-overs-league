@@ -249,6 +249,62 @@
     { id: "build", ic: "&#128737;&#65039;", nm: "Build, then explode", sub: "Keep wickets in hand, then launch over the last ten.", pi: { pp: -1, mid: 0, death: 2 }, fp: { pp: "bal", mid: "bal", death: "def" } },
     { id: "squeeze", ic: "&#128376;&#65039;", nm: "Squeeze them out", sub: "Bat sensibly, strangle them in the field, nick it late.", pi: { pp: 0, mid: 0, death: 1 }, fp: { pp: "bal", mid: "def", death: "def" } }
   ];
+  // Stars are RELATIVE to this club's own squad (quintiles by rating):
+  // a new manager can't read a 0-100 skill number, but five gold stars on
+  // his best player and one on his weakest needs no manual.
+  function foOrdStars(p, ranked) {
+    var ix = ranked.indexOf(p.name);
+    if (ix < 0 || !ranked.length) return 3;
+    return Math.max(1, 5 - Math.floor(ix / ranked.length * 5));
+  }
+  function foOrdStarHTML(n) {
+    var s = "";
+    for (var i = 1; i <= 5; i++) s += "<em class='" + (i <= n ? "f" : "") + "'>&#9733;</em>";
+    return "<s class='st'>" + s + "</s>";
+  }
+  // one plain-language line on WHY this player is in the sheet
+  function foOrdWhy(p, boIx) {
+    try {
+      var bits = [];
+      if (App.orders.captain === p.name) bits.push("The captain - coolest head at the club.");
+      if (App.orders.keeper === p.name) bits.push("Your best gloves - he keeps wicket.");
+      if (boIx === 0 || boIx === 1) bits.push("Opens the innings - he faces the new ball.");
+      else if (p.bowlType && p.bowlType !== "none") bits.push(/spin/i.test(p.bowlTypeFull || p.bowlType) ? "Part of the attack - the spin option." : "Part of the seam attack.");
+      var bestK = null, bestV = -1;
+      for (var k in (p.skills || {})) if (typeof p.skills[k] === "number" && p.skills[k] > bestV) { bestV = p.skills[k]; bestK = k; }
+      if (bestK) bits.push("Strongest suit: " + (foSkillLabel(bestK) || bestK) + ".");
+      return bits.join(" ");
+    } catch (e) { return ""; }
+  }
+  // tap a chip: the full trading card, so names grow into players
+  function foOrdPlayerCard(nm) {
+    try {
+      var t = userTeam(), p = ((t && t.players) || []).filter(function (x) { return x.name === nm; })[0];
+      if (!p) return;
+      var boIx = (App.orders.batOrder || []).indexOf(nm);
+      var tals = (p.talents || []).map(function (t2) {
+        var lbl = (typeof ptal === "function" ? ptal(t2) : t2);
+        var tip = (typeof TALTIPS !== "undefined" && TALTIPS[t2]) || "";
+        return "<div class='tl'><b>" + E(lbl) + "</b>" + (tip ? " - " + E(tip) : "") + "</div>";
+      }).join("");
+      var form = "";
+      try { if (p.formIx != null && typeof FORMW_UI !== "undefined") form = "Form: <b>" + E(FORMW_UI[p.formIx] || "") + "</b> · "; } catch (eF) {}
+      var why = foOrdWhy(p, boIx);
+      var ex = document.getElementById("fo-ord-pc"); if (ex) ex.remove();
+      var m = document.createElement("div"); m.id = "fo-ord-pc"; m.className = "fo-modal";
+      m.innerHTML = "<div class='fo-modal-card' style='max-width:340px'>" +
+        "<div class='fo-modal-eyebrow'>" + (boIx >= 0 && boIx < 11 ? "Batting at #" + (boIx + 1) : "The bench") + "</div>" +
+        foPkMini(p, { foot: "" }) +
+        (why ? "<div class='fo-j-gbox' style='max-width:none;margin:10px 0 0'><img class='gf' src='" + FO_ART + "gaffer.png' alt=''>" +
+          "<span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;" + E(why) + "&rdquo;</span></span></div>" : "") +
+        (tals ? "<div class='fo-ord-pctal'>" + tals + "</div>" : "") +
+        "<div class='small' style='margin-top:7px;color:#8a93a3'>" + form + "Fatigue: <b>" + E(String(p.fatigue || "rested")) + "</b> · age " + (p.age | 0) + "</div>" +
+        "<div class='fo-modal-act'><button class='fo-su-go primary' id='fo-ord-pcx'>Got it ▸</button></div></div>";
+      document.body.appendChild(m);
+      m.querySelector("#fo-ord-pcx").addEventListener("click", function () { m.remove(); });
+      m.addEventListener("click", function (ev) { if (ev.target === m) m.remove(); });
+    } catch (e) {}
+  }
   // the saved plan as a matchday visual: game-plan cards, the XI strip,
   // a tempo curve, and the fifty overs of bowling as a coloured timeline
   function foOrdPlanVisual() {
@@ -266,12 +322,36 @@
         return "<button type='button' class='fo-ord-pcard" + (pl.id === curId ? " on" : "") + "' data-fo-plan='" + pl.id + "'>" +
           "<span class='ic'>" + pl.ic + "</span><b>" + pl.nm + "</b><span class='sub'>" + pl.sub + "</span></button>";
       }).join("") + "</div>";
-      var xiChips = "<div class='fo-ord-xis'>" + bo.slice(0, 11).map(function (nm, i) {
+      // quality is visible: stars relative to this squad, role words, and a
+      // bench row so the XI reads as a CHOICE the manager can question
+      var ranked = ((t && t.players) || []).slice().sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); }).map(function (p9) { return p9.name; });
+      var ROLE_W = { pace: "Seam", spin: "Spin", wk: "Keeper", bat: "Batter" };
+      // two Smiths in one squad: surname-only chips would show the same name
+      // in the XI and on the bench - disambiguate with a first-name initial
+      var snCount = {};
+      ((t && t.players) || []).forEach(function (p9) { var s9 = sn(p9.name); snCount[s9] = (snCount[s9] || 0) + 1; });
+      var dispNm = function (nm) { var s9 = sn(nm); return (snCount[s9] > 1 ? nm.charAt(0) + ". " : "") + s9; };
+      var chip = function (nm, i, dim) {
         var p = by[nm] || {};
         var tag = (App.orders.captain === nm ? "<i>C</i>" : "") + (App.orders.keeper === nm ? "<i>WK</i>" : "");
         var role = p.bowlType && p.bowlType !== "none" ? (/spin/i.test(p.bowlTypeFull || p.bowlType) ? "spin" : "pace") : (p.keeper ? "wk" : "bat");
-        return "<span class='xc xc-" + role + "'><u>" + (i + 1) + "</u>" + E(sn(nm)) + tag + "</span>";
-      }).join("") + "</div>";
+        return "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + "' data-fo-pc='" + E(nm) + "'>" +
+          "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + "<b>" + E(dispNm(nm)) + "</b>" + tag + "</span>" +
+          "<span class='r2'>" + foOrdStarHTML(foOrdStars(p, ranked)) + "<span class='rl'>" + ROLE_W[role] + "</span></span></button>";
+      };
+      var xiNames = bo.slice(0, 11);
+      var nBowl = 0, nSeam = 0, nSpin = 0, nAr = 0;
+      xiNames.forEach(function (nm) {
+        var p = by[nm] || {};
+        if (p.bowlType && p.bowlType !== "none") { nBowl++; if (/spin/i.test(p.bowlTypeFull || p.bowlType)) nSpin++; else nSeam++; }
+        if (p.role === "allRounder") nAr++;
+      });
+      var mix = "<div class='fo-ord-xinote'>The mix: <b>" + nSeam + " seam</b> · <b>" + nSpin + " spin</b> · <b>" + nAr + " all-rounder" + (nAr === 1 ? "" : "s") + "</b> - " + nBowl + " bowling options for this pitch. Stars show each man's standing in YOUR squad · tap any player for his full card.</div>";
+      var xiChips = mix + "<div class='fo-ord-xis'>" + xiNames.map(function (nm, i) { return chip(nm, i, false); }).join("") + "</div>";
+      var benchNames = ((t && t.players) || []).map(function (p9) { return p9.name; }).filter(function (nm) { return xiNames.indexOf(nm) < 0; });
+      var bench = benchNames.length
+        ? "<div class='fo-ord-vzh'>Left out today</div><div class='fo-ord-xis'>" + benchNames.map(function (nm) { return chip(nm, null, true); }).join("") + "</div>"
+        : "";
       // the innings, as a shape: intent per phase drawn across the 50 overs
       var Y = { "-1": 24, "0": 17, "1": 10, "2": 4 };
       var yp = Y[String(pi.pp || 0)], ym = Y[String(pi.mid || 0)], yd = Y[String(pi.death || 0)];
@@ -292,7 +372,7 @@
       var legend = Object.keys(tot).map(function (nm3) {
         return "<span class='lg'><i style='background:" + (cols[nm3] || "#8a93a3") + "'></i>" + E(sn(nm3)) + "<u>" + tot[nm3] + " ov</u></span>";
       }).join("");
-      return cards + "<div class='fo-ord-vzh'>The XI, in batting order</div>" + xiChips +
+      return cards + "<div class='fo-ord-vzh'>The XI, in batting order</div>" + xiChips + bench +
         "<div class='fo-ord-vzh'>Batting tempo <span>&middot; over 1 &rarr; 50</span></div>" + curve + phases +
         "<div class='fo-ord-vzh'>The fifty overs of bowling</div><div class='fo-ord-bstrip'>" + cells + "</div><div class='fo-ord-blegend'>" + legend + "</div>" +
         "<div class='small' style='margin-top:8px;color:#8a93a3'>Toss: " + (App.orders.tossDecision === "bowl" ? "bowl" : "bat") + " first if we win it &middot; the game plan you pick above changes how the XI actually plays.</div>";
@@ -436,6 +516,7 @@
             else { toast("Orders saved."); }
             return;
           }
+          if ((el = q("[data-fo-pc]"))) { foOrdPlayerCard(el.getAttribute("data-fo-pc")); return; }
           if ((el = q("[data-fo-plan]"))) {
             var pl9 = FO_ORD_PLANS.filter(function (x) { return x.id === el.getAttribute("data-fo-plan"); })[0];
             if (pl9) {
@@ -483,11 +564,23 @@
       ".fo-ord-pcard b{font-size:13.5px;color:#0E233F}" +
       ".fo-ord-pcard.on b{color:#B04A2C}" +
       ".fo-ord-pcard .sub{font-size:11px;color:#6b7280;line-height:1.4;font-weight:500}" +
-      ".fo-ord-xis{display:flex;flex-wrap:wrap;gap:5px}" +
-      ".fo-ord-xis .xc{display:inline-flex;align-items:center;gap:6px;background:#FFFEFC;border:1px solid rgba(28,36,51,.12);border-radius:99px;padding:3px 10px 3px 4px;font-size:11.5px;font-weight:700;color:#243244;white-space:nowrap}" +
-      ".fo-ord-xis .xc u{width:18px;height:18px;background:#EEF2F7;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:9.5px;font-weight:800;color:#41577a;flex:0 0 auto}" +
-      ".fo-ord-xis .xc i{font-style:normal;font-size:8.5px;background:#0E233F;color:#FFFEFC;border-radius:4px;padding:1px 4px;font-weight:800}" +
+      ".fo-ord-xinote{background:#F0F4F8;border:1px solid rgba(31,78,107,.14);border-radius:9px;padding:7px 11px;font-size:11.5px;color:#3a4353;margin:0 0 8px;line-height:1.5}" +
+      ".fo-ord-xis{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:6px}" +
+      "html body.ftpskin #page button.fo-ord-xis-btn,html body #page .fo-ord-xis button.xc{display:flex;flex-direction:column;align-items:flex-start;gap:3px;background:#FFFEFC !important;border:1px solid rgba(28,36,51,.12) !important;border-radius:10px;padding:6px 9px;cursor:pointer;min-width:0;text-align:left}" +
+      "html body #page .fo-ord-xis button.xc:hover{border-color:#B04A2C !important}" +
+      ".fo-ord-xis .xc.xc-dim{opacity:.62}" +
+      ".fo-ord-xis .xc .r1{display:flex;align-items:center;gap:5px;min-width:0;width:100%}" +
+      ".fo-ord-xis .xc .r1 b{font-size:11.5px;font-weight:800;color:#243244;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".fo-ord-xis .xc u{width:17px;height:17px;background:#EEF2F7;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:9px;font-weight:800;color:#41577a;flex:0 0 auto}" +
+      ".fo-ord-xis .xc i{font-style:normal;font-size:8px;background:#0E233F;color:#FFFEFC;border-radius:4px;padding:1px 4px;font-weight:800;flex:0 0 auto}" +
+      ".fo-ord-xis .xc .r2{display:flex;align-items:center;gap:6px;width:100%}" +
+      ".fo-ord-xis .xc .st{text-decoration:none;font-size:10px;letter-spacing:1px;line-height:1}" +
+      ".fo-ord-xis .xc .st em{font-style:normal;color:#d8d3c6}.fo-ord-xis .xc .st em.f{color:#D9A441}" +
+      ".fo-ord-xis .xc .rl{font-size:9px;letter-spacing:.05em;text-transform:uppercase;font-weight:800;color:#8a93a3;margin-left:auto}" +
       ".fo-ord-xis .xc-pace u{background:#F6E3D3;color:#8a4a13}.fo-ord-xis .xc-spin u{background:#EBE3F6;color:#5b3a8a}.fo-ord-xis .xc-wk u{background:#D9EFE3;color:#1d6b45}" +
+      ".fo-ord-xis .xc-pace .rl{color:#a06a2c}.fo-ord-xis .xc-spin .rl{color:#7a58ab}.fo-ord-xis .xc-wk .rl{color:#2c7a52}" +
+      ".fo-ord-pctal{margin-top:8px;display:flex;flex-direction:column;gap:4px}" +
+      ".fo-ord-pctal .tl{background:#FBF7EC;border:1px solid rgba(201,162,75,.3);border-radius:8px;padding:5px 9px;font-size:11.5px;color:#4a4234;line-height:1.4}" +
       ".fo-ord-vzh{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:#41577a;font-weight:800;margin:13px 0 6px}" +
       ".fo-ord-vzh span{color:#9aa3af;letter-spacing:.02em;text-transform:none;font-weight:600}" +
       ".fo-ord-curve{width:100%;height:56px;display:block;background:#FBFAF7;border:1px solid rgba(28,36,51,.08);border-radius:10px}" +
