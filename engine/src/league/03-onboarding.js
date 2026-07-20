@@ -3211,7 +3211,7 @@
         foJDbox(2, [
           "The team sheet, boss - and I've already filled it in. Eleven picked, batting order sorted, every over of bowling planned for these conditions.",
           "Your call is the game plan: attack, build, or squeeze - tap one and watch the tempo curve change. Stars rate every man out of ten; tap any player for his full card.",
-          "Happy? PLAY WITH THIS PLAN and we walk out. Curious? FINE-TUNE IT MYSELF opens the full sheet. You can't break anything: I'll always have a fresh plan when you want one."
+          "It's all live, boss: drag the handles to reshuffle the batting order or swap a bench man in, and tap any over in the bowling grid to hand it to a bowler. Happy? PLAY WITH THIS PLAN and we walk out."
         ], function () { foOnbClose(); });
         try { var cb2 = document.querySelector("#fo-onb .fo-j-chap"); if (cb2) cb2.style.display = "none"; } catch (eC2) {}
         return;
