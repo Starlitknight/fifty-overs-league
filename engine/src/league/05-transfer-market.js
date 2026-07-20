@@ -70,7 +70,18 @@
       }
     });
     out.sort(function (a, b) { return (b.fee || 0) - (a.fee || 0); });
-    return out.slice(0, 18);
+    out = out.slice(0, 18);
+    // the Circuit's conquest signing headlines the shelf until he's taken
+    try {
+      var mq = foCxState().marquee;
+      if (mq && mq.p && !foOnAnyRoster(mq.p.name)) {
+        var q0 = JSON.parse(JSON.stringify(mq.p));
+        q0.fee = Math.max(20000, Math.round(foMarketFee(q0) * 1.2 / 500) * 500);
+        q0.__marquee = (foCxRegionByIx(mq.ri) || {}).nm || "the Circuit";
+        out.unshift(q0);
+      }
+    } catch (eMq) {}
+    return out;
   }
   function foMarketPage() {
     var page = document.getElementById("page"); if (!page) return;
@@ -94,7 +105,7 @@
         var claim = byName[p.name];
         var mine = claim && SYNC && SYNC.myMid && claim.manager_id === SYNC.myMid;
         var pending = pendingNames[p.name];
-        var rare = p.bowlTypeFull === "seamFast" ? "Rare &middot; genuine pace" : p.bowlTypeFull === "wristSpin" ? "Rare &middot; wrist spin" : null;
+        var rare = p.__marquee ? "Marquee &middot; " + E(p.__marquee) : p.bowlTypeFull === "seamFast" ? "Rare &middot; genuine pace" : p.bowlTypeFull === "wristSpin" ? "Rare &middot; wrist spin" : null;
         var act;
         if (claim) act = "<span class='pkm-gone'>" + (mine ? "Joining your club" : "Signed by <b>" + E(claim.club) + "</b>") + "</span>";
         else if (pending) act = "<span class='pkm-gone'>Joining after next matchday</span>";
@@ -147,6 +158,7 @@
             var st = foTrainState();
             (st.marketPending = st.marketPending || []).push(p);
             foTrainSave(st);
+            if (p.__marquee) { try { var stq2 = foCxState(); if (stq2.marquee && stq2.marquee.p && stq2.marquee.p.name === p.name) { delete stq2.marquee; foCxSave(stq2); } } catch (eQc2) {} }
             toast(p.name + " is yours! The signing completes after the next matchday.");
             foMarketPage();
           })
@@ -159,9 +171,10 @@
       } else {
         // solo/practice: instant
         try {
-          var q = JSON.parse(JSON.stringify(p)); delete q.fee;
+          var q = JSON.parse(JSON.stringify(p)); delete q.fee; delete q.__marquee;
           q.fatigue = "rested"; q.formIx = 3;
           t.players.push(q);
+          if (p.__marquee) { try { var stq = foCxState(); if (stq.marquee && stq.marquee.p && stq.marquee.p.name === p.name) { delete stq.marquee; foCxSave(stq); } } catch (eQc) {} }
           if (typeof window.ledger === "function" && window.ledger.length >= 3) window.ledger("Transfer", "Signed " + q.name, -p.fee);
           else if (App.fin) App.fin.bank -= p.fee;
           if (typeof window.saveGame === "function") window.saveGame(false);
