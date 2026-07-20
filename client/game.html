@@ -10000,7 +10000,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260720-1419-ac64b6";
+  var FO_BUILD = "20260720-1518-cbb274";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18135,14 +18135,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var sk = p.skills || {};
     return 0.6 * (aggBowl(p) || 0) + 0.2 * (sk.wicket || 0) + 0.2 * (sk.economy || 0);
   }
-  function foOrdFrontline(p) { return !!p.bowlType && p.bowlType !== "none" && !/part/i.test(p.bowlTypeFull || ""); }
-  // each man is rated at HIS job: bowlers on the ball, batters on the bat,
-  // all-rounders on their better half
-  function foOrdPrimeComp(p) {
-    var b = foOrdBatComp(p);
-    if (p.role === "allRounder") return Math.max(b, foOrdBowlComp(p));
-    return foOrdFrontline(p) ? foOrdBowlComp(p) : b;
-  }
+  // the batting order shows BATTING stars for everyone (a tail-ender must
+  // never out-star the opener); bowling stars live on the bowler cards
   // ABSOLUTE calibration, out of ten: composite 15 or below (dreadful in
   // everything) is 0 stars, 92+ (legendary in all three ingredients) is 10,
   // linear between. The same ladder for every player in the world - a
@@ -18249,18 +18243,20 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var pills = foOrdTalPills(p, 2);
         return "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + "' data-fo-pc='" + E(nm) + "'>" +
           "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + "<b>" + E(dispNm(nm)) + "</b>" + tag + "</span>" +
-          "<span class='r2'>" + foOrdStarHTML(foOrdStars(foOrdPrimeComp(p))) + "</span>" +
+          "<span class='r2'>" + foOrdStarHTML(foOrdStars(foOrdBatComp(p))) + "</span>" +
           foOrdStam(p) +
           "<span class='r3'>" + (pills || "<span class='rl'>" + ROLE_W[role] + "</span>") + "</span></button>";
       };
       var xiNames = bo.slice(0, 11);
-      var nBowl = 0, nSeam = 0, nSpin = 0, nAr = 0;
+      var nBowl = 0, nSeam = 0, nSpin = 0, nAr = 0, nBat = 0, nWk = 0;
       xiNames.forEach(function (nm) {
         var p = by[nm] || {};
+        if (p.keeper) nWk++;
+        else if (!(p.bowlType && p.bowlType !== "none")) nBat++;
         if (p.bowlType && p.bowlType !== "none") { nBowl++; if (/spin/i.test(p.bowlTypeFull || p.bowlType)) nSpin++; else nSeam++; }
         if (p.role === "allRounder") nAr++;
       });
-      var mix = "<div class='fo-ord-xinote'><b>" + nSeam + " seam</b> · <b>" + nSpin + " spin</b> · <b>" + nAr + " all-rounder" + (nAr === 1 ? "" : "s") + "</b> · tap a player for his card</div>";
+      var mix = "<div class='fo-ord-xinote'><b>" + nBat + " bat" + (nBat === 1 ? "" : "s") + "</b> · <b>" + nWk + " keeper" + (nWk === 1 ? "" : "s") + "</b> · <b>" + nSeam + " seam</b> · <b>" + nSpin + " spin</b> · <b>" + nAr + " all-rounder" + (nAr === 1 ? "" : "s") + "</b> · tap a player for his card</div>";
       var xiChips = mix + "<div class='fo-ord-xis'>" + xiNames.map(function (nm, i) { return chip(nm, i, false); }).join("") + "</div>";
       var benchNames = ((t && t.players) || []).map(function (p9) { return p9.name; }).filter(function (nm) { return xiNames.indexOf(nm) < 0; });
       var bench = benchNames.length
@@ -18292,6 +18288,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           cellsL += "<i class='" + (g[oL] === nmL ? "f" : "") + (oL <= 10 ? " pp" : oL >= 41 ? " dth" : "") + "' title='Over " + oL + "'></i>";
         return "<div class='fo-ord-lane'><span class='ln'>" + E(dispNm(nmL)) + "</span><span class='lt'>" + cellsL + "</span><u>" + tot[nmL] + "</u></div>";
       }).join("") +
+        "<div class='fo-ord-lane lax'><span class='ln'></span><span class='lt lnum'>" +
+        [1, 10, 20, 30, 40, 50].map(function (o9) { return "<em style='left:" + (((o9 - 0.5) / 50) * 100).toFixed(1) + "%'>" + o9 + "</em>"; }).join("") +
+        "</span><u></u></div>" +
         "<div class='fo-ord-lane lax'><span class='ln'></span><span class='lt'><em style='flex:10'>Powerplay</em><em style='flex:30'>Middle</em><em style='flex:10'>Death</em></span><u></u></div></div>";
       // each bowler as a small card: type, overs, bowling stars (ranked
       // against the club's other bowlers), stamina, and his talents
@@ -18343,7 +18342,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var painted0 = 0; for (var oS = 1; oS <= 50; oS++) if (App.orders.grid && App.orders.grid[oS]) painted0++;
         if (!painted0 && !App.orders.saved) { suggestOrders(); App.orders.grid = null; App.orders.gridBowlers = null; gridState(); gridToSpells(); }
       } catch (eSg) {}
-      page.innerHTML = "<div class='crumb'>" + E(opp.home) + " v " + E(opp.away) + " &raquo; Orders</div>" + cond +
+      // the fixture IS the occasion: a broadcast-sized matchup title, the
+      // conditions in one quiet line beneath, and no conditions essay
+      page.innerHTML = "<div class='crumb'>" + E(opp.home) + " v " + E(opp.away) + " &raquo; Orders</div>" +
+        "<div class='fo-ord-hero'><span class='h-t'>" + E(opp.home) + "</span><span class='h-v'>v</span><span class='h-t'>" + E(opp.away) + "</span></div>" +
+        "<div class='fo-ord-herosub'>" + E(foPitchName(opp.pitch)) + " pitch &middot; " + E(opp.weather || "") + " &middot; " + E(opp.ground || "") + "</div>" +
         "<div class='panel fo-keep'><h4>The Gaffer's plan</h4><div class='pad'>" +
         "<div class='fo-j-gbox' style='max-width:none;margin:2px 0 10px'><img class='gf' src='" + FO_ART + "gaffer.png' alt=''>" +
         "<span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;My plan for these conditions, boss. Pick the game plan - the rest is done.&rdquo;</span></span></div>" +
@@ -18530,7 +18533,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-ord-lane u{flex:0 0 22px;text-decoration:none;font-size:9.5px;color:#8a93a3;font-weight:700}" +
       ".fo-ord-lane.lax .lt{height:auto;gap:1px}" +
       ".fo-ord-lane.lax em{font-style:normal;font-size:8px;letter-spacing:.06em;text-transform:uppercase;font-weight:800;color:#b0a67f;text-align:center;min-width:0;overflow:hidden;white-space:nowrap}" +
-      "@media(max-width:480px){.fo-ord-lane .ln{flex-basis:62px;font-size:9.5px}.fo-ord-lane.lax em{font-size:6.5px}}" +
+      ".fo-ord-lane .lt.lnum{position:relative;display:block;height:10px}" +
+      ".fo-ord-lane .lt.lnum em{position:absolute;top:0;transform:translateX(-50%);font-style:normal;font-size:7.5px;font-weight:700;color:#8a93a3;letter-spacing:0;text-transform:none}" +
+      "html body #page .fo-ord-hero,html body.ftpskin #page .fo-ord-hero{display:flex;align-items:baseline;justify-content:center;gap:14px;flex-wrap:wrap;margin:16px 0 3px;text-align:center;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +
+      "html body #page .fo-ord-hero .h-t{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.6px;font-size:31px;color:#0E233F !important;line-height:1.08}" +
+      "html body #page .fo-ord-hero .h-v{font-family:Oswald,sans-serif;font-size:14px;color:#B04A2C !important;font-weight:600;text-transform:uppercase;letter-spacing:2px}" +
+      "html body #page .fo-ord-herosub,html body.ftpskin #page .fo-ord-herosub{text-align:center;font-family:Oswald,sans-serif;letter-spacing:2.2px;text-transform:uppercase;font-size:10.5px;color:#8a93a3 !important;margin:0 0 14px;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +
+      "@media(max-width:600px){.fo-ord-hero .h-t{font-size:21px}.fo-ord-hero{gap:9px}}" +
+      "@media(max-width:480px){.fo-ord-lane .ln{flex-basis:62px;font-size:9.5px}.fo-ord-lane.lax em{font-size:6.5px}.fo-ord-lane .lt.lnum em{font-size:6.5px}}" +
       ".stb{display:flex;align-items:center;gap:6px;width:100%}" +
       ".stb .stbt{flex:1;height:5px;background:rgba(28,36,51,.09);border-radius:3px;overflow:hidden;min-width:0}" +
       ".stb .stbt b{display:block;height:100%;border-radius:3px}" +
