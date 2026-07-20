@@ -1595,6 +1595,9 @@
         }
       }
     } catch (eEng) {}
+    // remember the visitors' star ratings: their club leaves the world after
+    // the tie, and the archived scorecard still wants stars beside each name
+    try { if (typeof foStarmapAdd === "function") foStarmapAdd(players); } catch (eSm) {}
     return { name: c.nm, ground: c.city + (c.boss ? " Colosseum" : " Oval"), players: players, youth: [],
       founded: false, homePitch: r.pitch, bank: 300000, seats: c.boss ? 24000 : 9000,
       supporters: 2600, mood: 3, acadY: 2, acadS: 2, __cx: 1 };
@@ -1794,6 +1797,16 @@
           h.ground = (M.meta && M.meta.ground) || "";
           h.regionNm = r.nm; h.city = c.city || "";
           try { h.card = { scorecard: (M.innings || []).map(foInnCard), worm: M.worm || null }; } catch (eCd) {}
+          // every player on the card keeps his stars after the visitors fly home
+          try {
+            var pls9 = [];
+            (M.innings || []).forEach(function (inn9) {
+              if (!inn9) return;
+              (inn9.bat || []).forEach(function (b9) { if (b9 && b9.p) pls9.push(b9.p); });
+              Object.keys(inn9.bowlers || {}).forEach(function (k9) { var r9 = inn9.bowlers[k9]; if (r9 && r9.p) pls9.push(r9.p); });
+            });
+            if (typeof foStarmapAdd === "function") foStarmapAdd(pls9);
+          } catch (eSp) {}
           try { if (typeof foSaveFrHist === "function") { foSaveFrHist({ innings: M.innings, meta: M.meta, worm: M.worm, result: M.result, __at: at9 }); M.__foArchived = 1; } } catch (eAr) {}
           st.hist = (st.hist || []).concat([h]).slice(-60);
         }

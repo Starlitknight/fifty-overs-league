@@ -9790,6 +9790,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           // turbo option. Broadcast pacing is for league viewing and replays.
           var __mine = false;
           try { __mine = !!(typeof M !== "undefined" && M && M.meta && ((!M.done && M.meta.comp === "friendly" && !__rep) || M.meta.__tut)); } catch (e) {}
+          // the manager's own match OPENS at "very slow" - time to read the
+          // field and the commentary. The speed select still changes it, and
+          // the choice sticks for the rest of that match.
+          try {
+            if (__mine && M && !M.__foSpdInit) {
+              M.__foSpdInit = 1;
+              UI.apHl = false; UI.apMs = 5200;
+              if (window.__ap) { clearInterval(window.__ap); window.__ap = null; if (typeof window.foEnsureAutoplay === "function") window.foEnsureAutoplay(); }
+            }
+          } catch (eSp) {}
           if (!__mine) {
             var __want = __rep ? 3000 : 6000;
             if (UI.apMs !== __want) {
@@ -10112,7 +10122,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260720-1846-b4856a";
+  var FO_BUILD = "20260720-1926-ee0470";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18358,6 +18368,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var role = p.bowlType && p.bowlType !== "none" ? (/spin/i.test(p.bowlTypeFull || p.bowlType) ? "spin" : "pace") : (p.keeper ? "wk" : "bat");
         var pills = foOrdTalPills(p, 2);
         return "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + "' data-fo-pc='" + E(nm) + "'>" +
+          "<span class='dh' title='Drag to move' aria-hidden='true'>&#x2261;</span>" +
           "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + "<b>" + E(dispNm(nm)) + "</b>" + tag +
           "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
           "<span class='ov' title='Overall rating'><b>" + foPkOvr(p) + "</b></span></span>" +
@@ -18367,11 +18378,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var xiNames = bo.slice(0, 11);
       var benchNames = ((t && t.players) || []).map(function (p9) { return p9.name; }).filter(function (nm) { return xiNames.indexOf(nm) < 0; });
       // vertical, editable: the XI as a draggable list, the bench beside it
-      var xiChips = "<div class='fo-ord-xiwrap'>" +
-        "<div><div class='fo-ord-vzh' style='margin-top:2px'>Batting order <span>&middot; drag to reorder</span></div><div class='fo-ord-xis' id='fo-ord-xi-list'>" + xiNames.map(function (nm, i) { return chip(nm, i, false); }).join("") + "</div></div>" +
-        "<div><div class='fo-ord-vzh' style='margin-top:2px'>Bench</div><div class='fo-ord-xis' id='fo-ord-bench-list'>" + benchNames.map(function (nm) { return chip(nm, null, true); }).join("") + "</div></div>" +
-        "</div>";
-      var bench = "";
+      var xiCol = "<div class='pv-xi'><div class='fo-ord-vzh' style='margin-top:2px'>Batting order <span>&middot; drag to reorder</span></div><div class='fo-ord-xis' id='fo-ord-xi-list'>" + xiNames.map(function (nm, i) { return chip(nm, i, false); }).join("") + "</div></div>";
+      var benchCol = "<div class='pv-bench'><div class='fo-ord-vzh' style='margin-top:2px'>Bench</div><div class='fo-ord-xis' id='fo-ord-bench-list'>" + benchNames.map(function (nm) { return chip(nm, null, true); }).join("") + "</div></div>";
       // one lane per bowling option (even the unused sixth): filled blocks
       // are his overs, and every cell is a BUTTON - tap an empty over to
       // hand it to that bowler, tap his own to take it back
@@ -18406,22 +18414,62 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           "<span class='r2'>" + foOrdStarHTML(foOrdStars(foOrdBowlComp(p3))) + "</span>" +
           "<span class='r3'>" + (pills3 || "") + "</span></button>";
       }).join("") + "</div>";
-      var toss = "<div class='fo-ord-vzh' style='margin-top:2px'>Toss</div><div class='fo-ord-toss'>" +
+      var toss = "<div class='pv-toss'><div class='fo-ord-vzh' style='margin-top:2px'>Toss</div><div class='fo-ord-toss'>" +
         "<span class='tl'>Call</span>" +
         "<button type='button' data-fo-toss='call:H' class='" + ((App.orders.tossCall || "H") === "H" ? "on" : "") + "'>Heads</button>" +
         "<button type='button' data-fo-toss='call:T' class='" + (App.orders.tossCall === "T" ? "on" : "") + "'>Tails</button>" +
         "<span class='tl'>If we win it</span>" +
         "<button type='button' data-fo-toss='dec:bat' class='" + (App.orders.tossDecision !== "bowl" ? "on" : "") + "'>Bat first</button>" +
         "<button type='button' data-fo-toss='dec:bowl' class='" + (App.orders.tossDecision === "bowl" ? "on" : "") + "'>Bowl first</button>" +
-        "</div>";
-      return toss + xiChips + bench +
-        "<div class='fo-ord-vzh'>Bowling</div>" + lanes + legend;
+        "</div></div>";
+      // phones: the 50-cell lanes are unusably narrow. Instead: arm a bowler,
+      // then tap big over-cells in a 10-per-row grid. Same data, same guards.
+      var armNm = window.__foOrdArm;
+      if (bowlNames.indexOf(armNm) < 0) armNm = null;
+      if (!armNm) { for (var iA = 0; iA < bowlNames.length; iA++) { if ((tot[bowlNames[iA]] || 0) < 10) { armNm = bowlNames[iA]; break; } } armNm = armNm || bowlNames[0]; }
+      window.__foOrdArm = armNm;
+      var colorIx = {}; bowlNames.forEach(function (n9, i9) { colorIx[n9] = i9 % 6; });
+      var inits = function (nm9) { var a9 = String(nm9).split(" "); return (a9[0].charAt(0) + (a9.length > 1 ? a9[a9.length - 1].charAt(0) : "")).toUpperCase(); };
+      var mgrid = "<div class='fo-ord-mgrid'>" +
+        "<div class='mg-hint'>Pick a bowler, then tap overs to hand them to him &middot; tap his over again to clear it. Top row is the powerplay, bottom row the death.</div>" +
+        "<div class='mg-chips'>" + bowlNames.map(function (n9) {
+          return "<button type='button' class='mgb mgb-c" + colorIx[n9] + (n9 === armNm ? " on" : "") + "' data-fo-arm='" + E(n9) + "'><i></i>" + E(dispNm(n9)) + "<u>" + (tot[n9] || 0) + "</u></button>";
+        }).join("") + "</div>" +
+        "<div class='mg-grid'>" + (function () {
+          var h9 = "";
+          for (var o9 = 1; o9 <= 50; o9++) {
+            var b9 = g[o9];
+            h9 += "<button type='button' class='mgc" + (b9 ? " mgc-c" + colorIx[b9] : "") + (o9 <= 10 ? " pp" : o9 >= 41 ? " dth" : "") + "' data-mo='" + o9 + "'><em>" + o9 + "</em>" + (b9 ? "<b>" + inits(b9) + "</b>" : "") + "</button>";
+          }
+          return h9;
+        })() + "</div></div>";
+      return "<div class='fo-ord-planv'>" + toss + xiCol + benchCol +
+        "<div class='pv-bowl'><div class='fo-ord-vzh'>Bowling</div>" + lanes + mgrid + legend + "</div></div>";
     } catch (e) { return ""; }
   }
   // scorecards speak the same star language: gold batting stars on the
   // batting card, navy bowling stars on the bowling card, talents removed.
   // Players whose club has left the world (old circuit visitors) simply
   // show no stars - the lookup is by live rosters.
+  // Visiting clubs (the Circuit's opponents) leave the world when a tie ends,
+  // taking their player objects with them - so their scorecard stars are
+  // remembered here: a small persistent name -> star-values map, written
+  // whenever a circuit squad is generated or archived.
+  function foStarmapAdd(list) {
+    try {
+      var m = {}; try { m = JSON.parse(lsGet("fo_starmap") || "{}"); } catch (e0) {}
+      (list || []).forEach(function (p9) {
+        if (p9 && p9.name) m[p9.name] = { b: foOrdStars(foOrdBatComp(p9)), w: foOrdStars(foOrdBowlComp(p9)) };
+      });
+      var ks = Object.keys(m);
+      if (ks.length > 800) ks.slice(0, ks.length - 800).forEach(function (k9) { delete m[k9]; });
+      lsSet("fo_starmap", JSON.stringify(m));
+    } catch (e) {}
+  }
+  function foStarmapGet(nm9) {
+    try { return (JSON.parse(lsGet("fo_starmap") || "{}") || {})[nm9] || null; } catch (e) { return null; }
+  }
+  try { window.foStarmapAdd = foStarmapAdd; } catch (eSm) {}
   function foScStars(root) {
     try {
       root = root || document.getElementById("page") || document;
@@ -18433,12 +18481,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var a9 = td.querySelector("a"); if (!a9) return;
         var nm9 = null;
         try { nm9 = decodeURIComponent((a9.getAttribute("href") || "").split("n=")[1] || ""); } catch (e0) {}
-        var p9 = nm9 && by9[nm9]; if (!p9) return;
+        if (!nm9) return;
         var tb9 = td.closest("table");
         var bowl9 = !!(tb9 && (tb9.classList.contains("fo-sct-bowl") || tb9.classList.contains("ftp-bowling")));
+        var p9 = by9[nm9], starsN = null;
+        if (p9) starsN = foOrdStars(bowl9 ? foOrdBowlComp(p9) : foOrdBatComp(p9));
+        else { var e9 = foStarmapGet(nm9); if (e9) starsN = bowl9 ? e9.w : e9.b; }   // departed circuit visitor
+        if (starsN == null) return;
         var s9 = document.createElement("span");
         s9.className = "fo-scst " + (bowl9 ? "fo-scst-w" : "fo-scst-b");
-        s9.innerHTML = foOrdStarHTML(foOrdStars(bowl9 ? foOrdBowlComp(p9) : foOrdBatComp(p9)));
+        s9.innerHTML = foOrdStarHTML(starsN);
         a9.insertAdjacentElement("afterend", s9);
       });
     } catch (e) {}
@@ -18493,7 +18545,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       } catch (eSg) {}
       // the fixture IS the occasion: a broadcast-sized matchup title, the
       // conditions in one quiet line beneath, and no conditions essay
-      page.innerHTML = "<div class='crumb'>" + E(opp.home) + " v " + E(opp.away) + " &raquo; Orders</div>" +
+      page.innerHTML =
         "<div class='fo-ord-hero'><span class='h-t'>" + E(opp.home) + "</span><span class='h-v'>v</span><span class='h-t'>" + E(opp.away) + "</span></div>" +
         "<div class='fo-ord-herosub'>" + E(foPitchName(opp.pitch)) + " pitch &middot; " + E(opp.weather || "") + " &middot; " + E(opp.ground || "") + "</div>" +
         "<div class='panel fo-keep'><h4>The Gaffer's plan</h4><div class='pad'>" +
@@ -18509,7 +18561,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       foOrdWire(page);
       return;
     }
-    page.innerHTML = "<div class='crumb'>" + E(opp.home) + " v " + E(opp.away) + " &raquo; Orders</div>" + cond +
+    page.innerHTML = cond +
       "<div class='fo-ord-cols'>" +
       "<div class='panel fo-keep'><h4>Batting order</h4><div class='pad'>" +
       "<div class='small' style='margin-bottom:6px'>Arrows move a batter · tap <b>C</b> for captain, <b>WK</b> for the gloves.</div>" +
@@ -18615,6 +18667,25 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             foOrdersUI();
             return;
           }
+          // phone bowling grid: arm a bowler, then tap overs
+          if ((el = q("[data-fo-arm]"))) { window.__foOrdArm = el.getAttribute("data-fo-arm"); foOrdersUI(); return; }
+          if ((el = q("[data-mo]"))) {
+            var oM = +el.getAttribute("data-mo"), nmM = window.__foOrdArm;
+            if (!nmM) return;
+            gridState();
+            var gM = App.orders.grid;
+            if (gM[oM] === nmM) gM[oM] = null;
+            else {
+              var cM = 0; for (var oC8 = 1; oC8 <= 50; oC8++) if (gM[oC8] === nmM) cM++;
+              if (cM >= 10) { toast("Ten overs is the limit for one bowler."); return; }
+              if (gM[oM - 1] === nmM || gM[oM + 1] === nmM) { toast("No bowler can bowl two overs in a row."); return; }
+              gM[oM] = nmM;
+              if (App.orders.gridBowlers && App.orders.gridBowlers.indexOf(nmM) < 0) App.orders.gridBowlers.push(nmM);
+            }
+            gridToSpells();
+            foOrdersUI();
+            return;
+          }
           // tap an over cell: give it to that lane's bowler, or take it back
           if ((el = q("[data-lo]"))) {
             var oT = +el.getAttribute("data-lo"), nmT = el.getAttribute("data-ln");
@@ -18672,7 +18743,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             chipEl.classList.add("xc-src");
             document.addEventListener("touchmove", blockScroll, { passive: false });
           };
-          if (isTouch) holdT = setTimeout(begin, 260);
+          // the ≡ handle drags INSTANTLY on touch (its touch-action:none stops
+          // the browser claiming the gesture for scroll); anywhere else on the
+          // card a short hold starts the drag so the list still scrolls
+          var onHandle = !!(ev.target.closest && ev.target.closest(".dh"));
+          if (isTouch) { if (onHandle) begin(); else holdT = setTimeout(begin, 260); }
           var place = function (x, y) {
             ghost.style.left = (x - 24) + "px";
             ghost.style.top = (y - r0.height / 2) + "px";
@@ -18755,12 +18830,65 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // index.html (client/art/) and client/game.html (art/). A faint cream
       // wash keeps text crisp over the busier corners.
       // a dedicated fixed layer (unique id, so the skin's re-appended brand
-      // sheet can never win it back the way it does a body-level rule)
-      "#fo-ord-bg{position:fixed;inset:0;z-index:-1;background-image:linear-gradient(rgba(244,239,226,.18),rgba(244,239,226,.30)),var(--fo-ord-bg);background-size:cover;background-position:center center;background-repeat:no-repeat;pointer-events:none}" +
-      "@media(max-width:820px){#fo-ord-bg{background-position:center top}}" +
-      // the white content wrap goes clear so the room shows through
+      // sheet can never win it back the way it does a body-level rule).
+      // The horizontal gradient FADES the art into cream where the plan sits:
+      // shelves and kit stay vivid at the edges, the centre is a clean page.
+      "#fo-ord-bg{position:fixed;inset:0;z-index:-1;background-image:linear-gradient(90deg,rgba(244,239,226,.10) 0%,rgba(244,239,226,.72) 16%,rgba(244,239,226,.94) 30%,rgba(244,239,226,.94) 70%,rgba(244,239,226,.72) 84%,rgba(244,239,226,.10) 100%),var(--fo-ord-bg);background-size:cover;background-position:center center;background-repeat:no-repeat;pointer-events:none}" +
+      "@media(max-width:820px){#fo-ord-bg{background-position:center top;background-image:linear-gradient(rgba(244,239,226,.82),rgba(244,239,226,.88)),var(--fo-ord-bg)}}" +
+      // the white content wrap goes clear so the room shows through, and the
+      // plan keeps to the cream centre of the scene
       "html body.fo-ord-room .wrap{background:transparent!important;box-shadow:none!important}" +
-      "html body.fo-ord-room #page{background:transparent!important}" +
+      "html body.fo-ord-room #page{background:transparent!important;max-width:1120px;margin:0 auto}" +
+      // ---- one-screen plan: on wide desktops the sheet splits into two
+      // columns (toss + batting left, bench + bowling right) with compact
+      // cards, so the whole plan fits a laptop window without scrolling
+      ".fo-ord-planv{display:flex;flex-direction:column}" +
+      "@media(min-width:900px) and (max-width:1179.98px){.fo-ord-planv{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 16px;grid-template-areas:'toss toss' 'xi bench' 'bowl bowl';align-items:start}.pv-toss{grid-area:toss}.pv-xi{grid-area:xi}.pv-bench{grid-area:bench}.pv-bowl{grid-area:bowl}}" +
+      "@media(min-width:1180px){" +
+      ".fo-ord-planv{display:grid;grid-template-columns:minmax(0,46%) minmax(0,1fr);gap:0 20px;grid-template-areas:'toss bench' 'xi bench' 'xi bowl';align-items:start}" +
+      ".pv-toss{grid-area:toss}.pv-xi{grid-area:xi}.pv-bench{grid-area:bench}.pv-bowl{grid-area:bowl}" +
+      // compact cards: tighter padding, smaller stars, slimmer talent row -
+      // the whole plan should sit inside one laptop screen
+      ".fo-ord-xis{gap:3px}" +
+      "html body #page .fo-ord-xis button.xc{padding:2px 9px!important;gap:0!important}" +
+      ".fo-ord-xis .xc .st{font-size:10.5px;letter-spacing:.8px;line-height:1}" +
+      ".fo-ord-xis .xc .r3{min-height:9px}" +   // slim but CONSTANT: cards stay the same height with or without a talent
+      ".fo-ord-xis .xc .ov b{font-size:14px}" +
+      ".fo-ord-bws{gap:4px;grid-template-columns:repeat(auto-fill,minmax(185px,1fr))}" +
+      ".fo-ord-bws .bw{padding:3px 9px;gap:1px}" +
+      ".fo-ord-bws .bw .r3{min-height:0}.fo-ord-bws .bw .r3:empty{display:none}" +
+      ".fo-ord-vzh{margin:8px 0 4px}" +
+      ".fo-ord-planv .fo-j-gbox{padding:7px 11px}" +
+      "}" +
+      // ---- phone bowling: arm a bowler, tap big over-cells (the 50-wide
+      // lanes are desktop-only - their cells are unusably narrow on a phone)
+      ".fo-ord-mgrid{display:none}" +
+      "@media(max-width:820px){" +
+      "html body #page .fo-ord-lanes{display:none!important}" +   // outranks the base .fo-ord-lanes{display:flex} that follows in this sheet
+      ".fo-ord-mgrid{display:block}" +
+      ".mg-hint{font-size:11.5px;color:#5b6472;line-height:1.5;margin:0 0 8px}" +
+      ".mg-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 9px}" +
+      "html body #page .mg-chips button.mgb{display:inline-flex;align-items:center;gap:6px;border:2px solid rgba(28,36,51,.14)!important;background:#FFFEFC!important;border-radius:99px;padding:7px 12px;font-size:12.5px;font-weight:800;color:#243244;cursor:pointer}" +
+      "html body #page .mg-chips button.mgb.on{border-color:#B04A2C!important;background:#FFF6F2!important;color:#B04A2C}" +
+      ".mg-chips .mgb i{width:11px;height:11px;border-radius:50%;flex:0 0 auto}" +
+      ".mg-chips .mgb u{text-decoration:none;font-size:11px;color:#8a93a3;font-weight:800}" +
+      ".mg-chips .mgb.on u{color:#B04A2C}" +
+      ".mg-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}" +
+      "html body #page .mg-grid button.mgc{position:relative;border:1px solid rgba(28,36,51,.16)!important;background:#F6F3EC!important;border-radius:7px;height:36px;padding:0;cursor:pointer;overflow:hidden}" +
+      "html body #page .mg-grid button.mgc.pp{border-bottom:3px solid #4E7A4E!important}" +
+      "html body #page .mg-grid button.mgc.dth{border-bottom:3px solid #B04A2C!important}" +
+      ".mg-grid .mgc em{position:absolute;top:1px;left:3px;font-style:normal;font-size:7.5px;color:#a8aeb9;font-weight:700}" +
+      ".mg-grid .mgc b{display:flex;align-items:center;justify-content:center;height:100%;font-size:11px;font-weight:800;color:#fff}" +
+      "}" +
+      // one colour per bowler, chips and cells alike
+      ".mgb-c0 i,.mgc-c0 b{background:#2E5A7A}.mgb-c1 i,.mgc-c1 b{background:#C8674A}.mgb-c2 i,.mgc-c2 b{background:#0FB4C4}.mgb-c3 i,.mgc-c3 b{background:#C9A24B}.mgb-c4 i,.mgc-c4 b{background:#4E7A4E}.mgb-c5 i,.mgc-c5 b{background:#7A4E7A}" +
+      "html body #page .mg-grid button.mgc-c0{background:#2E5A7A!important}html body #page .mg-grid button.mgc-c1{background:#C8674A!important}html body #page .mg-grid button.mgc-c2{background:#0FB4C4!important}html body #page .mg-grid button.mgc-c3{background:#C9A24B!important}html body #page .mg-grid button.mgc-c4{background:#4E7A4E!important}html body #page .mg-grid button.mgc-c5{background:#7A4E7A!important}" +
+      ".mg-grid .mgc-c0 em,.mg-grid .mgc-c1 em,.mg-grid .mgc-c2 em,.mg-grid .mgc-c3 em,.mg-grid .mgc-c4 em,.mg-grid .mgc-c5 em{color:rgba(255,255,255,.75)}" +
+      // ---- the ≡ drag handle: hidden for mouse users (drag-anywhere covers
+      // them), a fat instant-drag target on touch screens
+      ".fo-ord-xis .xc .dh{display:none}" +
+      "@media(pointer:coarse){.fo-ord-xis .xc .dh{display:flex;align-items:center;justify-content:center;position:absolute;right:4px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:8px;background:#EEF2F7;color:#41577a;font-size:17px;font-weight:400;touch-action:none}" +
+      "html body #page .fo-ord-xis button.xc{position:relative;padding-right:46px!important}}" +
       ".fo-ord-cond{background:#F0F4F8;border:1px solid rgba(31,78,107,.16);border-radius:10px;padding:9px 13px;font-size:12.5px;color:#243244;margin:6px 0 10px}" +
       ".fo-ord-read{background:#FBF7EC;border:1px solid rgba(201,162,75,.35);border-left:4px solid #C9A24B;border-radius:10px;padding:9px 13px;color:#4a4234;margin:0 0 10px;line-height:1.5}" +
       ".fo-ord-strat{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:2px 0 4px}" +
@@ -18832,10 +18960,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-ord-lane.lax em{font-style:normal;font-size:8px;letter-spacing:.06em;text-transform:uppercase;font-weight:800;color:#b0a67f;text-align:center;min-width:0;overflow:hidden;white-space:nowrap}" +
       ".fo-ord-lane .lt.lnum{position:relative;display:block;height:10px}" +
       ".fo-ord-lane .lt.lnum em{position:absolute;top:0;transform:translateX(-50%);font-style:normal;font-size:7.5px;font-weight:700;color:#8a93a3;letter-spacing:0;text-transform:none}" +
-      "html body #page .fo-ord-hero,html body.ftpskin #page .fo-ord-hero{display:flex;align-items:baseline;justify-content:center;gap:14px;flex-wrap:wrap;margin:16px 0 3px;text-align:center;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +
-      "html body #page .fo-ord-hero .h-t{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.6px;font-size:31px;color:#0E233F !important;line-height:1.08}" +
-      "html body #page .fo-ord-hero .h-v{font-family:Oswald,sans-serif;font-size:14px;color:#B04A2C !important;font-weight:600;text-transform:uppercase;letter-spacing:2px}" +
-      "html body #page .fo-ord-herosub,html body.ftpskin #page .fo-ord-herosub{text-align:center;font-family:Oswald,sans-serif;letter-spacing:2.2px;text-transform:uppercase;font-size:10.5px;color:#8a93a3 !important;margin:0 0 14px;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +
+      "html body #page .fo-ord-hero,html body.ftpskin #page .fo-ord-hero{display:flex;align-items:baseline;justify-content:center;gap:14px;flex-wrap:wrap;margin:8px 0 2px;text-align:center;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +
+      "html body #page .fo-ord-hero .h-t{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.6px;font-size:27px;color:#0E233F !important;line-height:1.08}" +
+      "html body #page .fo-ord-hero .h-v{font-family:Oswald,sans-serif;font-size:13px;color:#B04A2C !important;font-weight:600;text-transform:uppercase;letter-spacing:2px}" +
+      "html body #page .fo-ord-herosub,html body.ftpskin #page .fo-ord-herosub{text-align:center;font-family:Oswald,sans-serif;letter-spacing:2px;text-transform:uppercase;font-size:13px;font-weight:600;color:#33415e !important;margin:0 0 10px;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +
       "@media(max-width:600px){.fo-ord-hero .h-t{font-size:21px}.fo-ord-hero{gap:9px}}" +
       "@media(max-width:480px){.fo-ord-lane .ln{flex-basis:62px;font-size:9.5px}.fo-ord-lane.lax em{font-size:6.5px}.fo-ord-lane .lt.lnum em{font-size:6.5px}}" +
       ".fo-ord-tp{display:inline;background:none;border:none;padding:0;color:#b3bac4;font-size:7.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}" +
@@ -23320,6 +23448,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         }
       }
     } catch (eEng) {}
+    // remember the visitors' star ratings: their club leaves the world after
+    // the tie, and the archived scorecard still wants stars beside each name
+    try { if (typeof foStarmapAdd === "function") foStarmapAdd(players); } catch (eSm) {}
     return { name: c.nm, ground: c.city + (c.boss ? " Colosseum" : " Oval"), players: players, youth: [],
       founded: false, homePitch: r.pitch, bank: 300000, seats: c.boss ? 24000 : 9000,
       supporters: 2600, mood: 3, acadY: 2, acadS: 2, __cx: 1 };
@@ -23519,6 +23650,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           h.ground = (M.meta && M.meta.ground) || "";
           h.regionNm = r.nm; h.city = c.city || "";
           try { h.card = { scorecard: (M.innings || []).map(foInnCard), worm: M.worm || null }; } catch (eCd) {}
+          // every player on the card keeps his stars after the visitors fly home
+          try {
+            var pls9 = [];
+            (M.innings || []).forEach(function (inn9) {
+              if (!inn9) return;
+              (inn9.bat || []).forEach(function (b9) { if (b9 && b9.p) pls9.push(b9.p); });
+              Object.keys(inn9.bowlers || {}).forEach(function (k9) { var r9 = inn9.bowlers[k9]; if (r9 && r9.p) pls9.push(r9.p); });
+            });
+            if (typeof foStarmapAdd === "function") foStarmapAdd(pls9);
+          } catch (eSp) {}
           try { if (typeof foSaveFrHist === "function") { foSaveFrHist({ innings: M.innings, meta: M.meta, worm: M.worm, result: M.result, __at: at9 }); M.__foArchived = 1; } } catch (eAr) {}
           st.hist = (st.hist || []).concat([h]).slice(-60);
         }
