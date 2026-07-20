@@ -10129,7 +10129,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260720-2017-4d90cd";
+  var FO_BUILD = "20260720-2025-e85bc2";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18274,10 +18274,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // Keeper wins (the gloves define his job), then the declared all-rounder,
   // then anyone with a bowling type, then the pure batter.
   var FO_RIC = {
-    bat: "<svg viewBox='0 0 16 16'><rect x='6.7' y='1' width='2.6' height='4' rx='1' fill='#8a6d3b'/><rect x='5.4' y='4.6' width='5.2' height='10.2' rx='2.2' fill='#C9A24B'/></svg>",
-    bwl: "<svg viewBox='0 0 16 16'><circle cx='8' cy='8' r='6' fill='#B04A2C'/><path d='M6.2 3.2c-1.5 3-1.5 6.6 0 9.6M9.8 3.2c1.5 3 1.5 6.6 0 9.6' stroke='#FFFEFC' stroke-width='1.1' fill='none' stroke-linecap='round'/></svg>",
-    ar: "<svg viewBox='0 0 16 16'><rect x='2.6' y='1.4' width='2.2' height='3.4' rx='.9' fill='#8a6d3b'/><rect x='1.6' y='4.4' width='4.2' height='9.6' rx='1.9' fill='#C9A24B'/><circle cx='11' cy='10' r='4.4' fill='#B04A2C'/><path d='M9.7 6.6c-1.1 2.2-1.1 4.7 0 6.9M12.3 6.6c1.1 2.2 1.1 4.7 0 6.9' stroke='#FFFEFC' stroke-width='.9' fill='none' stroke-linecap='round'/></svg>",
-    wk: "<svg viewBox='0 0 16 16'><path d='M4 2.6h1.6v10.8H4zM7.2 2.6h1.6v10.8H7.2zM10.4 2.6H12v10.8h-1.6z' fill='#41577a'/><rect x='3.6' y='1.2' width='4.6' height='1.4' rx='.7' fill='#8a93a3'/><rect x='7.8' y='1.2' width='4.6' height='1.4' rx='.7' fill='#8a93a3'/></svg>"
+    // an angled willow bat: handle top-right, blade bottom-left
+    bat: "<svg viewBox='0 0 16 16'><g transform='rotate(40 8 8)'><rect x='7' y='1' width='2' height='3.4' rx='.9' fill='#7a5230'/><rect x='5.5' y='4.2' width='5' height='9.6' rx='2.1' fill='#C9A24B'/></g></svg>",
+    // a solid red cricket ball with a quiet darker-red seam
+    bwl: "<svg viewBox='0 0 16 16'><circle cx='8' cy='8' r='6.4' fill='#C2352A'/><path d='M4 5.2c2.5 1.3 5.5 1.3 8 0M4 10.8c2.5-1.3 5.5-1.3 8 0' stroke='#8f231b' stroke-width='.9' fill='none' stroke-linecap='round'/></svg>",
+    // both: an angled bat on the left, a red ball on the right
+    ar: "<svg viewBox='0 0 16 16'><g transform='rotate(40 5 8)'><rect x='4.4' y='1.6' width='1.5' height='2.5' rx='.7' fill='#7a5230'/><rect x='3.4' y='3.9' width='3.6' height='7.2' rx='1.5' fill='#C9A24B'/></g><circle cx='11.3' cy='10.6' r='4.1' fill='#C2352A'/><path d='M8.3 8.9c1.9.8 4.1.8 6 0' stroke='#8f231b' stroke-width='.7' fill='none' stroke-linecap='round'/></svg>",
+    // three brown stumps with bails, filling the box
+    wk: "<svg viewBox='0 0 16 16'><g fill='#7a5230'><rect x='2.7' y='2.2' width='2.2' height='11.6' rx='.6'/><rect x='6.9' y='2.2' width='2.2' height='11.6' rx='.6'/><rect x='11.1' y='2.2' width='2.2' height='11.6' rx='.6'/></g><g fill='#a9803f'><rect x='2.3' y='1' width='3.3' height='1.6' rx='.8'/><rect x='10.5' y='1' width='3.3' height='1.6' rx='.8'/></g></svg>"
   };
   function foOrdRoleIcon(p) {
     var k = p.keeper ? "wk"
@@ -18392,7 +18396,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var pills = foOrdTalPills(p, 2);
         return "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + "' data-fo-pc='" + E(nm) + "'>" +
           "<span class='dh' title='Drag to move' aria-hidden='true'>&#x2261;</span>" +
-          "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + foOrdRoleIcon(p) + "<b>" + E(dispNm(nm)) + "</b>" + tag +
+          "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + "<b>" + E(dispNm(nm)) + "</b>" + foOrdRoleIcon(p) + tag +
           "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
           "<span class='ov' title='Overall rating'><b>" + foPkOvr(p) + "</b></span></span>" +
           "<span class='r2'>" + foOrdStarHTML(foOrdStars(foOrdBatComp(p))) + "</span>" +
@@ -18919,8 +18923,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "@media(pointer:coarse){.fo-ord-xis .xc .dh{display:flex;align-items:center;justify-content:center;position:absolute;right:4px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:8px;background:#EEF2F7;color:#41577a;font-size:17px;font-weight:400;touch-action:none}" +
       "html body #page .fo-ord-xis button.xc{position:relative;padding-right:46px!important}}" +
       // FTP-style role glyphs beside every name in the order
-      ".fo-ord-xis .xc .ric{display:inline-flex;width:14px;height:14px;flex:0 0 auto;align-items:center;margin-right:1px}" +
-      ".fo-ord-xis .xc .ric svg{width:14px;height:14px;display:block}" +
+      ".fo-ord-xis .xc .ric{display:inline-flex;width:16px;height:16px;flex:0 0 auto;align-items:center;margin-left:5px}" +
+      ".fo-ord-xis .xc .ric svg{width:16px;height:16px;display:block}" +
       ".fo-ord-xis .xc.xc-dim .ric{opacity:.55}" +
       // scorecard talent tags are retired: hide them instantly so the old
       // look never flashes while the star decorator catches up
