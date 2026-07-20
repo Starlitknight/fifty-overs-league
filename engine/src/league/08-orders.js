@@ -356,7 +356,12 @@
       var dispNm = function (nm) { return nm.charAt(0) + ". " + sn(nm); };
       var chip = function (nm, i, dim) {
         var p = by[nm] || {}, sk = p.skills || {};
-        var tag = (App.orders.captain === nm ? "<i>C</i>" : "") + (App.orders.keeper === nm ? "<i>WK</i>" : "");
+        // C and the gloves live ON the cards: filled on the holder, ghost on
+        // everyone eligible - one tap moves the armband
+        var isC = App.orders.captain === nm, isK = App.orders.keeper === nm;
+        var tag = dim ? "" :
+          "<i class='bdg" + (isC ? " on" : "") + "' data-fo-mkc='" + E(nm) + "' title='" + (isC ? "Captain" : "Make captain") + "'>C</i>" +
+          (p.keeper ? "<i class='bdg" + (isK ? " on" : "") + "' data-fo-mkk='" + E(nm) + "' title='" + (isK ? "Wicket-keeper" : "Give him the gloves") + "'>WK</i>" : "");
         var role = p.bowlType && p.bowlType !== "none" ? (/spin/i.test(p.bowlTypeFull || p.bowlType) ? "spin" : "pace") : (p.keeper ? "wk" : "bat");
         var pills = foOrdTalPills(p, 2);
         return "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + "' data-fo-pc='" + E(nm) + "'>" +
@@ -364,7 +369,7 @@
           "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
           "<span class='ov' title='Overall rating'><b>" + foPkOvr(p) + "</b></span></span>" +
           "<span class='r2'>" + foOrdStarHTML(foOrdStars(foOrdBatComp(p))) + "</span>" +
-          (pills ? "<span class='r3'>" + pills + "</span>" : "") + "</button>";
+          "<span class='r3'>" + (pills || "") + "</span></button>";
       };
       var xiNames = bo.slice(0, 11);
       var benchNames = ((t && t.players) || []).map(function (p9) { return p9.name; }).filter(function (nm) { return xiNames.indexOf(nm) < 0; });
@@ -406,7 +411,7 @@
           "<span class='bw-h'><b>" + E(dispNm(nm3)) + "</b><span class='bt'>" + E(foOrdBType(p3)) + " &middot; " + (tot[nm3] || 0) + " ov</span>" +
           "<span class='ov' title='Overall rating'><b>" + foPkOvr(p3) + "</b></span></span>" +
           "<span class='r2'>" + foOrdStarHTML(foOrdStars(foOrdBowlComp(p3))) + "</span>" +
-          (pills3 ? "<span class='r3'>" + pills3 + "</span>" : "") + "</button>";
+          "<span class='r3'>" + (pills3 || "") + "</span></button>";
       }).join("") + "</div>";
       var toss = "<div class='fo-ord-vzh' style='margin-top:2px'>Toss</div><div class='fo-ord-toss'>" +
         "<span class='tl'>Call</span>" +
@@ -420,6 +425,35 @@
         "<div class='fo-ord-vzh'>Bowling</div>" + lanes + legend;
     } catch (e) { return ""; }
   }
+  // scorecards speak the same star language: gold batting stars on the
+  // batting card, navy bowling stars on the bowling card, talents removed.
+  // Players whose club has left the world (old circuit visitors) simply
+  // show no stars - the lookup is by live rosters.
+  function foScStars(root) {
+    try {
+      root = root || document.getElementById("page") || document;
+      var by9 = {};
+      (GD.teams || []).forEach(function (t9) { ((t9.players || []).concat(t9.youth || [])).forEach(function (p9) { by9[p9.name] = p9; }); });
+      root.querySelectorAll("table.fo-sct td.fo-sci-nm").forEach(function (td) {
+        td.querySelectorAll(".fo-tal-tag").forEach(function (x9) { x9.remove(); });
+        if (td.querySelector(".fo-scst")) return;
+        var a9 = td.querySelector("a"); if (!a9) return;
+        var nm9 = null;
+        try { nm9 = decodeURIComponent((a9.getAttribute("href") || "").split("n=")[1] || ""); } catch (e0) {}
+        var p9 = nm9 && by9[nm9]; if (!p9) return;
+        var tb9 = td.closest("table");
+        var bowl9 = !!(tb9 && tb9.classList.contains("fo-sct-bowl"));
+        var s9 = document.createElement("span");
+        s9.className = "fo-scst " + (bowl9 ? "fo-scst-w" : "fo-scst-b");
+        s9.innerHTML = foOrdStarHTML(foOrdStars(bowl9 ? foOrdBowlComp(p9) : foOrdBatComp(p9)));
+        a9.insertAdjacentElement("afterend", s9);
+      });
+    } catch (e) {}
+  }
+  try { if (typeof foMatchRenderHooks !== "undefined") foMatchRenderHooks.push(function () { foScStars(); }); } catch (eH) {}
+  setInterval(function () {
+    try { if (/^#\/(scorecard|reports)/.test(location.hash || "")) foScStars(); } catch (e) {}
+  }, 800);
   function foOrdersUI() {
     var page = document.getElementById("page"); if (!page) return;
     var t = userTeam(), xi = foOrdXI();
@@ -563,6 +597,8 @@
           // the click fired by a just-finished drag must not read as a tap -
           // the flag self-expires so it can never swallow a LATER real click
           if (window.__foOrdDragged) return;
+          if ((el = q("[data-fo-mkc]"))) { App.orders.captain = el.getAttribute("data-fo-mkc"); foOrdersUI(); return; }
+          if ((el = q("[data-fo-mkk]"))) { App.orders.keeper = el.getAttribute("data-fo-mkk"); foOrdersUI(); return; }
           if ((el = q("[data-fo-toss]"))) {
             var pr9 = el.getAttribute("data-fo-toss").split(":");
             if (pr9[0] === "call") App.orders.tossCall = pr9[1];
@@ -732,10 +768,20 @@
       ".fo-ord-xis .xc .r1 b{font-size:11.5px;font-weight:800;color:#243244;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".fo-ord-xis .xc u{width:17px;height:17px;background:#EEF2F7;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:9px;font-weight:800;color:#41577a;flex:0 0 auto}" +
       ".fo-ord-xis .xc i{font-style:normal;font-size:8px;background:#0E233F;color:#FFFEFC;border-radius:4px;padding:1px 4px;font-weight:800;flex:0 0 auto}" +
+      ".fo-ord-xis .xc i.bdg{background:transparent;color:#c3c9d2;border:1px solid rgba(28,36,51,.16);cursor:pointer}" +
+      ".fo-ord-xis .xc i.bdg:hover{border-color:#B04A2C;color:#B04A2C}" +
+      ".fo-ord-xis .xc i.bdg.on{background:#0E233F;color:#FFFEFC;border-color:#0E233F}" +
       ".fo-ord-xis .xc .r2{display:flex;align-items:center;gap:6px;width:100%}" +
       ".fo-ord-xis .xc .st,.fo-ord-bws .bw .st{text-decoration:none;font-size:13px;letter-spacing:1.2px;line-height:1;white-space:nowrap}" +
       ".fo-ord-xis .xc .st em,.fo-ord-bws .bw .st em{font-style:normal;color:#d8d3c6}.fo-ord-xis .xc .st em.f{color:#D9A441}.fo-ord-bws .bw .st em.f{color:#41577a}" +
       ".fo-ord-xis .xc .st em.h{background:linear-gradient(90deg,#D9A441 50%,#d8d3c6 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".fo-scst{white-space:nowrap;margin-left:7px;display:inline-block;vertical-align:1px}" +
+      ".fo-scst .st{text-decoration:none;font-size:8.5px;letter-spacing:.6px;line-height:1;white-space:nowrap}" +
+      ".fo-scst .st em{font-style:normal;color:#e2ddd2}" +
+      ".fo-scst-b .st em.f{color:#D9A441}" +
+      ".fo-scst-b .st em.h{background:linear-gradient(90deg,#D9A441 50%,#e2ddd2 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".fo-scst-w .st em.f{color:#41577a}" +
+      ".fo-scst-w .st em.h{background:linear-gradient(90deg,#41577a 50%,#e2ddd2 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       ".fo-ord-bws .bw .st em.h{background:linear-gradient(90deg,#41577a 50%,#d8d3c6 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       ".fo-ord-xis .xc .rl{font-size:9px;letter-spacing:.05em;text-transform:uppercase;font-weight:800;color:#8a93a3;margin-left:auto}" +
                   ".fo-ord-pctal{margin-top:8px;display:flex;flex-direction:column;gap:4px}" +
@@ -772,7 +818,7 @@
       ".fo-ord-tp{display:inline;background:none;border:none;padding:0;color:#b3bac4;font-size:7.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}" +
       ".fo-ord-tp + .fo-ord-tp:before{content:'· ';color:#d3d8de}" +
       ".fo-ord-xis .xc .r2{justify-content:space-between}" +
-      ".fo-ord-xis .xc .r3{display:flex;flex-wrap:wrap;gap:3px;width:100%;min-height:15px;align-items:center}" +
+      ".fo-ord-xis .xc .r3,.fo-ord-bws .bw .r3{display:flex;flex-wrap:wrap;gap:3px;width:100%;min-height:11px;align-items:center}" +
       ".fo-ord-bws{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:6px;margin-top:8px}" +
       "html body.ftpskin #page .fo-ord-bws button.bw,html body #page .fo-ord-bws button.bw{display:flex;flex-direction:column;gap:3px;background:#FFFEFC !important;border:1px solid rgba(28,36,51,.12) !important;border-radius:9px;padding:5px 10px;cursor:pointer;text-align:left;min-width:0}" +
       ".fo-ord-toss{display:flex;align-items:center;gap:7px;flex-wrap:wrap}" +
