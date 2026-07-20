@@ -4182,6 +4182,7 @@ function foCommPass(L,filter){
   if(filter==='wickets')return isWkt(L.out)||/WICKET|out for|Partnership ends/i.test(txt);
   if(filter==='boundaries')return L.out==='4'||L.out==='6'||/FOUR|SIX/i.test(txt);
   if(filter==='overs')return L.mile||/End of over|DRINKS|Innings break|CHASE BEGINS|PLAY BEGINS/i.test(txt);
+  if(filter==='fielding')return L.out==='wC'||L.out==='wRO'||L.out==='wST'||/DROPPED|Misfield|fumbles|Brilliant stop|diving stop|phenomenal stop|attacks the ball|Stumping chance missed|Rocket Arm|Lightning Hands|run out|caught (behind|at|by)|takes (a|the|it|his).{0,24}catch|saves two|cuts it off/i.test(txt);
   if(filter==='talents')return foIsTalentText(txt);
   if(filter==='highlights')return L.mile||isWkt(L.out)||L.out==='4'||L.out==='6'||foIsTalentText(txt)||/DROPPED|FIFTY|HUNDRED/i.test(txt);
   return true;
@@ -4196,7 +4197,7 @@ function foFilterSelect(scope){
   const key=scope==='saved'?'_savedCommFilter':'commFilter';
   const cur=(scope==='saved'?(App._savedCommFilter||'all'):(UI.commFilter||'all'));
   return `<span class="comm-filter"><span>Display</span><select onchange="${scope==='saved'?'App._savedCommFilter':'UI.commFilter'}=this.value;${scope==='saved'?'route()':'renderMatch()'}">
-    ${[['all','All commentary'],['highlights','Highlights'],['wickets','Wickets'],['boundaries','Boundaries'],['overs','Over summaries'],['talents','Ability triggers']].map(([v,l])=>`<option value="${v}" ${cur===v?'selected':''}>${l}</option>`).join('')}
+    ${[['all','All commentary'],['highlights','Highlights'],['wickets','Wickets'],['boundaries','Boundaries'],['fielding','Fielding'],['overs','Over summaries'],['talents','Ability triggers']].map(([v,l])=>`<option value="${v}" ${cur===v?'selected':''}>${l}</option>`).join('')}
   </select></span>`;
 }
 function foCommentRows(log,filter,limit){

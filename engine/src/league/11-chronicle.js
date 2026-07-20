@@ -1068,8 +1068,10 @@
           return h;
         };
         var fieldTest = function (L) {
-          if (L.out === "wRO") return true;
-          return /DROPPED|Misfield|fumbles|Brilliant stop|diving stop|phenomenal stop|attacks the ball|Stumping chance missed|Rocket Arm|Lightning Hands|run out/i.test(L.txt || "");
+          // catches, stumpings and run-outs are the wicket-side of fielding;
+          // drops, misfields and great stops are the non-wicket side
+          if (L.out === "wRO" || L.out === "wC" || L.out === "wST") return true;
+          return /DROPPED|Misfield|fumbles|Brilliant stop|diving stop|phenomenal stop|attacks the ball|Stumping chance missed|Rocket Arm|Lightning Hands|run out|caught (behind|at|by)|takes (a|the|it|his).{0,24}catch|saves two|cuts it off/i.test(L.txt || "");
         };
         // the chase equation rides every second-innings over summary:
         // "Need 41 from 12 overs" / "Need 3 from 8 balls"

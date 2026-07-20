@@ -1809,7 +1809,9 @@
         return;
       }
       if (typeof M !== "undefined" && M && M.done && M.meta && M.meta.__friendly) {
-        if (!M.__foArchived) { M.__foArchived = 1; foSaveFrHist(M); }
+        // Circuit ties are archived by foCxRecord (tagged so the Circuit record
+        // panel can link to them) - don't bank a second copy here.
+        if (!M.__foArchived && !M.meta.__circuit) { M.__foArchived = 1; foSaveFrHist(M); }
         lsSet(foFrKey(), "");
         return;
       }

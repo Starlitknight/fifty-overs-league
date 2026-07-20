@@ -8,6 +8,11 @@
 FOC.oval = (function () {
   var U = FOC.util;
   var seenLogLen = 0, seenInn = -1, queue = [], animating = false, lastSig = null; var seenM = null;
+  // set true the moment the viewer leaves #/match; the next time the stage is
+  // rebuilt we SNAP to the current ball instead of animating everything that
+  // happened while they were away (a per-ball page re-render never sets this,
+  // so live play still animates each delivery)
+  var leftMatch = false;
 
   function reduced() {
     try { return window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; }
@@ -34,6 +39,7 @@ FOC.oval = (function () {
 
   function stageHTML() {
     return "<div id='fo-oval' title='Ball-by-ball theatre — outcomes are real; shot directions are illustrative.'>" +
+      "<div class='ov-who' id='ov-who'></div>" +
       "<div class='ov-board'>" +
       "<div class='ov-score'><span id='ov-team'></span><b id='ov-runs'></b><span id='ov-ov'></span></div>" +
       "<div class='ov-bats' id='ov-bats'></div>" +
@@ -60,7 +66,7 @@ FOC.oval = (function () {
       "<circle id='ov-bowler' cx='200' cy='196' r='5' fill='#14213D' stroke='#fff' stroke-width='1.4'/>" +
       "<circle id='ov-ball' cx='200' cy='190' r='3.2' fill='#a3242b' stroke='#fff' stroke-width='.8' opacity='0'/>" +
       "<text id='ov-pop' x='200' y='128' text-anchor='middle' class='ov-pop'></text>" +
-      "</svg><div class='ov-who' id='ov-who'></div><div class='ov-note'><button type='button' id='ov-snd' class='ov-snd' title='Match sound'>&#128263;</button><span>theatre · live directions · real field setting</span></div></div>";
+      "</svg><div class='ov-note'><button type='button' id='ov-snd' class='ov-snd' title='Match sound'>&#128263;</button><span>theatre · live directions · real field setting</span></div></div>";
   }
 
   // ---- sound: tiny synthesized crowd + bat, no assets, off by default ------
@@ -347,8 +353,9 @@ FOC.oval = (function () {
 
   function ee(s9) { return String(s9 == null ? "" : s9).replace(/[&<>]/g, function (c9) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c9]; }); }
   var whoLast = "";
-  // who's on: striker (hand + gold batting stars) and bowler (type + blue
-  // bowling stars) as small cards over the top corners of the oval
+  // the broadcast lower-third, but on TOP: the two men in the middle right now —
+  // the STRIKER (hand + live score + gold batting stars) and the BOWLER (type +
+  // live figures + teal bowling stars) as big, prominent cards above the field.
   function whoSync() {
     try {
       var el = document.getElementById("ov-who"); if (!el) return;
@@ -360,9 +367,24 @@ FOC.oval = (function () {
           var sb = inn.bat[inn.striker], bp = sb && !sb.out && sb.p;
           var bw = null;
           if (inn.curBowlerName && inn.bxi) inn.bxi.forEach(function (p9) { if (p9.name === inn.curBowlerName) bw = p9; });
+          var bf = inn.bowlers && inn.curBowlerName && inn.bowlers[inn.curBowlerName];
           var shrt = function (nm9) { var a9 = String(nm9).split(" "); return a9.length > 1 ? a9[0].charAt(0) + ". " + a9.slice(1).join(" ") : nm9; };
-          if (bp) h += "<span class='ow'><b>" + ee(shrt(bp.name)) + "<i>" + (bp.hand === "L" ? "LHB" : "RHB") + "</i></b>" + F.html(F.stars(F.bat(bp))) + "</span>";
-          if (bw) h += "<span class='ow owb'><b>" + ee(shrt(bw.name)) + "<i>" + ee(F.btype(bw) || "BOWLING") + "</i></b>" + F.html(F.stars(F.bowl(bw))) + "</span>";
+          if (bp) {
+            var bscore = (sb.r || 0) + "<em>*</em> (" + (sb.b || 0) + ")";
+            h += "<span class='ow ow-bat'>" +
+              "<span class='owr'>On strike</span>" +
+              "<b class='own'>" + ee(shrt(bp.name)) + "<i>" + (bp.hand === "L" ? "LHB" : "RHB") + "</i></b>" +
+              "<span class='ows'>" + bscore + "</span>" +
+              "<span class='owstars'>" + F.html(F.stars(F.bat(bp))) + "</span></span>";
+          }
+          if (bw) {
+            var fig = bf ? (Math.floor((bf.b || 0) / 6) + "." + ((bf.b || 0) % 6) + "-" + (bf.r || 0) + "-" + (bf.w || 0)) : "";
+            h += "<span class='ow owb'>" +
+              "<span class='owr'>Bowling</span>" +
+              "<b class='own'>" + ee(shrt(bw.name)) + "<i>" + ee(F.btype(bw) || "BOWLING") + "</i></b>" +
+              "<span class='ows'>" + ee(fig) + "</span>" +
+              "<span class='owstars'>" + F.html(F.stars(F.bowl(bw))) + "</span></span>";
+          }
         }
       }
       if (h !== whoLast) { whoLast = h; el.innerHTML = h; }
@@ -379,6 +401,7 @@ FOC.oval = (function () {
         if (pg0 && pg0.classList.contains("fo-ovalgrid")) pg0.classList.remove("fo-ovalgrid");
         var ov0 = document.getElementById("fo-oval");
         if (ov0) ov0.remove();
+        leftMatch = true;   // on return, pick up the live ball — don't replay the gap
         return;
       }
       if (typeof M === "undefined" || !M || !M.log) return;
@@ -388,8 +411,13 @@ FOC.oval = (function () {
         page.insertAdjacentHTML("afterbegin", stageHTML());
         // the engine re-renders #page on every ball, killing the stage; only
         // a genuinely NEW match joins the broadcast from now — a rebuilt
-        // stage for the same match keeps its counters so no ball is skipped
-        if (seenM !== M) { seenM = M; seenLogLen = M.log.length; seenInn = M.inns; trails = []; }
+        // stage for the same match keeps its counters so no ball is skipped.
+        // But if the viewer navigated AWAY and came back (leftMatch), snap to
+        // the live ball: replaying the overs they missed, all at once, felt wrong.
+        if (seenM !== M || leftMatch) {
+          seenM = M; seenLogLen = M.log.length; seenInn = M.inns; trails = [];
+          queue = []; animating = false; leftMatch = false;
+        }
         curField = null;
         drawTrails();
       }
@@ -422,17 +450,26 @@ FOC.oval = (function () {
     var st = document.createElement("style"); st.id = "fo-oval-css";
     st.textContent =
       "#fo-oval{max-width:640px;margin:0 auto 14px;background:#0F1A2E;border:1px solid #24334f;border-radius:14px;overflow:hidden;position:relative}" +
-      ".ov-who{display:flex;justify-content:space-between;gap:8px;padding:2px 8px 4px;pointer-events:none}" +
+      // the prominent broadcast cards, on top, on the navy header ground
+      ".ov-who{display:flex;gap:9px;padding:11px 11px 9px;background:#0F1A2E;pointer-events:none}" +
       ".ov-who:empty{display:none}" +
-      ".ov-who .ow{background:rgba(255,254,250,.94);border:1px solid rgba(28,36,51,.16);border-radius:9px;padding:4px 9px;display:flex;flex-direction:column;gap:2px;max-width:47%;box-shadow:0 2px 6px rgba(16,27,45,.18)}" +
-      ".ov-who .ow b{font-size:10.5px;font-weight:800;color:#14213D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
-      ".ov-who .ow b i{font-style:normal;font-size:7px;color:#8a93a3;font-weight:800;margin-left:5px;letter-spacing:.05em;text-transform:uppercase}" +
-      ".ov-who .ow .st{text-decoration:none;font-size:8.5px;letter-spacing:.5px;line-height:1;white-space:nowrap}" +
-      ".ov-who .ow .st em{font-style:normal;color:#ddd8ca}" +
-      ".ov-who .ow .st em.f{color:#D9A441}" +
-      ".ov-who .ow .st em.h{background:linear-gradient(90deg,#D9A441 50%,#ddd8ca 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
-      ".ov-who .ow.owb .st em.f{color:#2E7BD1}" +
-      ".ov-who .ow.owb .st em.h{background:linear-gradient(90deg,#2E7BD1 50%,#ddd8ca 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".ov-who .ow{flex:1 1 0;min-width:0;background:linear-gradient(180deg,#1d2c4d,#16233d);border:1px solid #2b3c60;border-left:4px solid #D9A441;border-radius:12px;padding:9px 13px;display:flex;flex-direction:column;gap:3px;box-shadow:0 3px 10px rgba(9,15,28,.35)}" +
+      ".ov-who .ow.owb{border-left-color:#14C0CE}" +
+      ".ov-who .owr{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8ea0c0;font-weight:800}" +
+      ".ov-who .own{font-size:18px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.1;letter-spacing:.1px}" +
+      ".ov-who .own i{font-style:normal;font-size:9.5px;font-weight:800;color:#aeb9d0;margin-left:7px;letter-spacing:.06em;vertical-align:middle}" +
+      ".ov-who .ows{font-size:15px;font-weight:800;color:#eef2fa;font-variant-numeric:tabular-nums;letter-spacing:.3px}" +
+      ".ov-who .ows em{font-style:normal;color:#C8674A;font-weight:800}" +
+      ".ov-who .owstars{font-size:13px;letter-spacing:1.2px;line-height:1;white-space:nowrap}" +
+      ".ov-who .owstars .st{text-decoration:none}" +
+      ".ov-who .owstars em{font-style:normal;color:#394561}" +
+      ".ov-who .ow-bat .owstars em.f{color:#F0B94E}" +
+      ".ov-who .ow-bat .owstars em.h{background:linear-gradient(90deg,#F0B94E 50%,#394561 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".ov-who .owb .owstars em.f{color:#22D3E0}" +
+      ".ov-who .owb .owstars em.h{background:linear-gradient(90deg,#22D3E0 50%,#394561 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      "@media(max-width:520px){.ov-who .own{font-size:16px}.ov-who .ows{font-size:13.5px}.ov-who .ow{padding:8px 11px}}" +
+      // the board's small striker/bowler text is now the big cards' job
+      ".ov-board .ov-bats,.ov-board .ov-bowl{display:none}" +
       // the engine's raw main column duplicates the scoreboard + commentary the
       // tab shell already presents - dead weight below the fold on desktop, a
       // visible duplicate on mobile
@@ -450,7 +487,7 @@ FOC.oval = (function () {
       // crumb and tab bar span the full width; the oval and the commentary
       // panel then open on the same row, flush at the top
       "html body #page.fo-ovalgrid.fo-matchpage{grid-template-columns:minmax(500px,55%) minmax(0,1fr);grid-template-rows:auto auto auto auto 1fr;grid-template-areas:'mcrumb mcrumb' 'mlinks mlinks' 'moval mbody' 'mtop mbody' 'mrest mbody'}" +
-      "html body #page.fo-ovalgrid.fo-matchpage #fo-oval{grid-area:moval;position:relative}" +   // relative (not static): the sticky reset must keep anchoring the .ov-who cards
+      "html body #page.fo-ovalgrid.fo-matchpage #fo-oval{grid-area:moval;position:relative;top:0}" +   // relative anchors the .ov-who cards; top:0 undoes the generic split's sticky top:64px (which was pushing the stage 64px below the scorecard header)
       "html body #page.fo-ovalgrid.fo-matchpage>.crumb{grid-area:mcrumb;margin:0 0 10px}" +
       "html body #page.fo-ovalgrid.fo-matchpage .mc-top{grid-area:mtop;display:flex !important;flex-direction:row !important;align-items:stretch !important;gap:10px;margin:10px 0 0}" +
       "html body #page.fo-ovalgrid.fo-matchpage .mc-top .panel{flex:1 1 0 !important;min-width:0;margin:0;height:auto}" +

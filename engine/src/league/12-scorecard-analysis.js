@@ -1779,6 +1779,22 @@
               });
             }
           });
+          // the full card, kept forever: the visiting club flies home and is
+          // spliced out of the world (below), so App.results can't hold this -
+          // stash the scorecard on the passport entry AND in the friendly
+          // history store the Matches list reads, tagged so a Circuit-record
+          // link can reopen it. Mark the match archived so the friendly keeper
+          // doesn't bank a second copy.
+          var at9 = Date.now();
+          h.at = at9;
+          h.mom = (M.result && M.result.mom) || "";
+          h.txt = (M.result && M.result.text) || (win ? "Won" : "Lost");
+          h.pitch = (M.meta && M.meta.pitch) || r.pitch || "";
+          h.wx = (M.meta && M.meta.weather) || r.wx || "";
+          h.ground = (M.meta && M.meta.ground) || "";
+          h.regionNm = r.nm; h.city = c.city || "";
+          try { h.card = { scorecard: (M.innings || []).map(foInnCard), worm: M.worm || null }; } catch (eCd) {}
+          try { if (typeof foSaveFrHist === "function") { foSaveFrHist({ innings: M.innings, meta: M.meta, worm: M.worm, result: M.result, __at: at9 }); M.__foArchived = 1; } } catch (eAr) {}
           st.hist = (st.hist || []).concat([h]).slice(-60);
         }
       } catch (eH9) {}
@@ -1999,6 +2015,23 @@
       ".fo-cx-brief .tx{font-size:15.5px;color:#101B2D;line-height:1.5;font-style:italic}" +
       ".fo-cx-brief .act{margin-top:11px;min-height:20px}" +
       ".fo-cx-brief .hint{font-size:12.5px;color:#8a90a0;font-style:italic}" +
+      // the Circuit record ledger: every tie played, newest first, each a tap
+      // from the full scorecard
+      ".fo-cx-record{max-width:680px;margin:26px auto 0}" +
+      ".fo-cx-record .fo-cx-rule b{font-family:Oswald,sans-serif;font-size:12px;letter-spacing:2px;color:#8a7a46}" +
+      ".cxr-tbl{width:100%;border-collapse:collapse;margin-top:12px;background:#FFFEFC;border:1px solid rgba(28,36,51,.12);border-radius:12px;overflow:hidden;font-size:13px}" +
+      ".cxr-tbl thead th{text-align:left;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:#98a0ad;font-weight:800;padding:8px 12px;background:#F6F3EC}" +
+      ".cxr-tbl td{padding:8px 12px;border-top:1px solid rgba(28,36,51,.07);vertical-align:middle}" +
+      ".cxr-res .cxr-w{font-family:Oswald,sans-serif;font-weight:700;letter-spacing:.06em;color:#2E7A3C;font-size:12px}" +
+      ".cxr-res .cxr-l{font-family:Oswald,sans-serif;font-weight:700;letter-spacing:.06em;color:#B04A2C;font-size:12px}" +
+      ".cxr-opp{font-weight:700;color:#243244}" +
+      ".cxr-opp .cxr-reg{font-weight:600;color:#98a0ad;font-size:11px}" +
+      ".cxr-sc{font-variant-numeric:tabular-nums;color:#41577a;font-weight:700;white-space:nowrap}" +
+      ".cxr-h .cxr-hero{color:#a06a2c;font-weight:700;white-space:nowrap}" +
+      ".cxr-lk{text-align:right;white-space:nowrap}" +
+      ".cxr-lk a{color:#C8674A;font-weight:700;text-decoration:none}.cxr-lk a:hover{text-decoration:underline}" +
+      ".cxr-lk .cxr-no{color:#c3c8d0}" +
+      "@media(max-width:560px){.cxr-tbl .cxr-h{display:none}.cxr-tbl thead th:nth-child(4){display:none}}" +
       // the VS walk-out - light theme, the region map behind, a rival taunt
       ".fo-cx-vs{position:fixed;inset:0;z-index:2147482000;display:grid;place-items:center;padding:22px;opacity:0;transition:opacity .3s;background:#F1EADA;overflow:hidden}" +
       ".fo-cx-vs.in{opacity:1}.fo-cx-vs.out{opacity:0}" +
@@ -2115,6 +2148,26 @@
     } catch (e) {}
   }
   var foCxView = null;   // region the chapter strip is looking at (defaults to live one)
+  // every tie you play on the Circuit, kept for good: score, result, your hero,
+  // and a link straight to the full scorecard (the visiting clubs leave the
+  // world, so this passport - not App.results - is where the record lives).
+  function foCxRecordPanel(st) {
+    try {
+      var hist = ((st && st.hist) || []).slice().reverse();   // newest first
+      if (!hist.length) return "";
+      var rows = hist.slice(0, 14).map(function (h) {
+        var res = h.win ? "<span class='cxr-w'>WON</span>" : "<span class='cxr-l'>LOST</span>";
+        var opp = E(h.opp || "-") + (h.regionNm ? " <span class='cxr-reg'>" + E(h.regionNm) + "</span>" : "");
+        var score = (h.my != null && h.op != null) ? (h.my + " &middot; " + h.op) : "";
+        var hero = h.topNm && h.topR >= 0 ? "<span class='cxr-hero'>" + E(String(h.topNm).split(" ").slice(-1)[0]) + " " + h.topR + "</span>" : "";
+        var link = (h.at && h.card) ? "<a href='#/friendly?id=hist-" + h.at + "'>Scorecard &rsaquo;</a>" : "<span class='cxr-no'>-</span>";
+        return "<tr><td class='cxr-res'>" + res + "</td><td class='cxr-opp'>" + opp + "</td><td class='cxr-sc'>" + score + "</td><td class='cxr-h'>" + hero + "</td><td class='cxr-lk'>" + link + "</td></tr>";
+      }).join("");
+      return "<div class='fo-cx-record'>" +
+        "<div class='fo-cx-rule'><i></i><b>YOUR CIRCUIT RECORD</b><i></i></div>" +
+        "<table class='cxr-tbl'><thead><tr><th></th><th>Opponent</th><th>Score</th><th>Top score</th><th></th></tr></thead><tbody>" + rows + "</tbody></table></div>";
+    } catch (e) { return ""; }
+  }
   function foRenderCircuit() {
     try {
       foCxNav();
@@ -2123,7 +2176,7 @@
       var st = foCxState();
       var cur = foCxCurrent(st);
       var ri = (foCxView == null) ? Math.min(cur, FO_CX_REGIONS.length - 1) : Math.min(foCxView, FO_CX_REGIONS.length - 1);
-      var sig = "cx|" + ri + "|" + cur + "|" + JSON.stringify(st.beat) + "|" + (st.conq || []).join(",");
+      var sig = "cx|" + ri + "|" + cur + "|" + JSON.stringify(st.beat) + "|" + (st.conq || []).join(",") + "|h" + ((st.hist || []).length);
       if (page.__foCxSig === sig && page.querySelector(".fo-cx")) return;
       page.__foCxSig = sig;
       var chap = FO_CX_REGIONS.map(function (r2, i) {
@@ -2137,7 +2190,7 @@
           "<div class='fo-cx-done'><div class='fo-cx-rule'><i></i><b>THE CIRCUIT · COMPLETE</b><i></i></div>" +
           "<div class='fo-cx-h1'>World champions</div>" +
           "<img src='" + FO_ART + "circuit/trophy-crown.webp' alt='The Thorne Crown' style='display:block;height:150px;margin:12px auto 4px'>" +
-          "<p class='fo-cx-cond'>Six nations. Six trophies. And the Thorne Crown, taken off the man himself at Marylebone. Every piece of it lives in the club museum - and somewhere, Reggie Thorne is rewriting his arithmetic.</p></div></div>";
+          "<p class='fo-cx-cond'>Six nations. Six trophies. And the Thorne Crown, taken off the man himself at Marylebone. Every piece of it lives in the club museum - and somewhere, Reggie Thorne is rewriting his arithmetic.</p></div>" + foCxRecordPanel(st) + "</div>";
       } else {
         var r = FO_CX_REGIONS[ri];
         var beatN = (st.beat[r.id] || []).filter(Boolean).length;
@@ -2187,6 +2240,7 @@
           "<span class='tx' id='fo-cx-brief-tx'>&ldquo;" + E(r.gaffer) + "&rdquo;</span>" +
           "<div class='act' id='fo-cx-brief-act'><span class='hint'>Tap a city on the map to scout its club" + (live ? " &mdash; then challenge it." : ".") + "</span></div>" +
           "</div></div>" +
+          foCxRecordPanel(st) +
           "</div>";
       }
       page.innerHTML = html;
