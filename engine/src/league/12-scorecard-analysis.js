@@ -222,7 +222,11 @@
         var dnb = (inn.xi || []).filter(function (p) { return !played[p.name]; }).map(function (p) { return playerLink(p); }).join(", ");
         var fow = (inn.fow || []).map(function (f2) { return "<b>" + f2.w + "-" + f2.sc + "</b> (" + E(f2.who) + ", " + (f2.ov != null ? (+f2.ov).toFixed(1) : "-") + " ov)"; }).join(" &nbsp; ");
         var bowl = Object.values(inn.bowlers || {}).sort(function (a, b) { return b.w - a.w || a.r - b.r; }).map(function (rr2) {
-          return "<tr><td class='fo-sci-nm'>" + playerLink(rr2.p) + "</td><td class='n'>" + Math.floor(rr2.b / 6) + (rr2.b % 6 ? "." + rr2.b % 6 : "") + "</td><td class='n'>" + (rr2.mdn != null ? rr2.mdn : "&ndash;") + "</td><td class='n'>" + rr2.r + "</td><td class='n'><b>" + rr2.w + "</b></td><td class='n'>" + (rr2.b ? (rr2.r / (rr2.b / 6)).toFixed(2) : "-") + "</td></tr>";
+          // bowler type baked into the row (not left to the async decorator,
+          // which flickered off every ball as the live table was rebuilt)
+          var bt2 = "";
+          try { if (typeof foBowlCode === "function") { var cd2 = foBowlCode(rr2.p); if (cd2) bt2 = " <span class='fo-bt-tag' title='" + E((typeof foOrdBType === "function" ? foOrdBType(rr2.p) : "") || "") + "'>" + cd2 + "</span>"; } } catch (eBt2) {}
+          return "<tr><td class='fo-sci-nm'>" + playerLink(rr2.p) + bt2 + "</td><td class='n'>" + Math.floor(rr2.b / 6) + (rr2.b % 6 ? "." + rr2.b % 6 : "") + "</td><td class='n'>" + (rr2.mdn != null ? rr2.mdn : "&ndash;") + "</td><td class='n'>" + rr2.r + "</td><td class='n'><b>" + rr2.w + "</b></td><td class='n'>" + (rr2.b ? (rr2.r / (rr2.b / 6)).toFixed(2) : "-") + "</td></tr>";
         }).join("");
         var ovTxt = Math.floor(inn.legal / 6) + (inn.legal % 6 ? "." + inn.legal % 6 : "");
         var tgt = "";
