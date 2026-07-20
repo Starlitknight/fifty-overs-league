@@ -39,7 +39,6 @@ FOC.oval = (function () {
 
   function stageHTML() {
     return "<div id='fo-oval' title='Ball-by-ball theatre — outcomes are real; shot directions are illustrative.'>" +
-      "<div class='ov-who' id='ov-who'></div>" +
       "<div class='ov-board'>" +
       "<div class='ov-score'><span id='ov-team'></span><b id='ov-runs'></b><span id='ov-ov'></span></div>" +
       "<div class='ov-bats' id='ov-bats'></div>" +
@@ -48,6 +47,7 @@ FOC.oval = (function () {
       "<span class='ov-need' id='ov-need'></span>" +
       "<div class='ov-strip' id='ov-strip' aria-label='This over'></div>" +
       "</div>" +
+      "<div class='ov-who' id='ov-who'></div>" +
       "<svg viewBox='0 0 400 260' class='ov-svg' aria-hidden='true'>" +
       "<ellipse cx='200' cy='130' rx='192' ry='122' fill='url(#ovg)' stroke='#e8e2cc' stroke-width='3'/>" +
       "<defs><radialGradient id='ovg'><stop offset='0%' stop-color='#7ea86c'/><stop offset='72%' stop-color='#5d8a4e'/><stop offset='100%' stop-color='#4c7440'/></radialGradient></defs>" +

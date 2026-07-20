@@ -258,7 +258,11 @@
         var mS9 = /^#\/scorecard\?i=(\d+)/.exec(h9);
         if (mS9) rM = ((typeof App !== "undefined" && App.results) || [])[+mS9[1]];
         if (rM) mClubs = [rM.home, rM.away].filter(Boolean);
-        else {
+        else if (/^#\/match/.test(h9)) {
+          // the LIVE match tab: the two clubs come from the running match,
+          // so abbreviated bowler names ("J. Cole") can still be resolved
+          try { if (typeof M !== "undefined" && M && M.meta) mClubs = [M.meta.home, M.meta.away].filter(Boolean); } catch (eLm9) {}
+        } else {
           var mF9 = /^#\/friendly\?id=([\w-]+)/.exec(h9);
           var chF9 = mF9 && window.__foFrCache;
           if (chF9 && chF9.id === mF9[1] && chF9.row) mClubs = [chF9.row.challenger_club, chF9.row.opponent_club].filter(Boolean);

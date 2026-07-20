@@ -270,8 +270,9 @@
     bwl: "<svg viewBox='0 0 16 16'><circle cx='8' cy='8' r='6.4' fill='#C2352A'/><path d='M4 5.2c2.5 1.3 5.5 1.3 8 0M4 10.8c2.5-1.3 5.5-1.3 8 0' stroke='#8f231b' stroke-width='.9' fill='none' stroke-linecap='round'/></svg>",
     // both: an angled bat on the left, a red ball on the right
     ar: "<svg viewBox='0 0 16 16'><g transform='rotate(40 5 8)'><rect x='4.4' y='1.6' width='1.5' height='2.5' rx='.7' fill='#7a5230'/><rect x='3.4' y='3.9' width='3.6' height='7.2' rx='1.5' fill='#C9A24B'/></g><circle cx='11.3' cy='10.6' r='4.1' fill='#C2352A'/><path d='M8.3 8.9c1.9.8 4.1.8 6 0' stroke='#8f231b' stroke-width='.7' fill='none' stroke-linecap='round'/></svg>",
-    // three brown stumps with bails, filling the box
-    wk: "<svg viewBox='0 0 16 16'><g fill='#7a5230'><rect x='2.7' y='2.2' width='2.2' height='11.6' rx='.6'/><rect x='6.9' y='2.2' width='2.2' height='11.6' rx='.6'/><rect x='11.1' y='2.2' width='2.2' height='11.6' rx='.6'/></g><g fill='#a9803f'><rect x='2.3' y='1' width='3.3' height='1.6' rx='.8'/><rect x='10.5' y='1' width='3.3' height='1.6' rx='.8'/></g></svg>"
+    // three brown stumps with two bails that BOTH rest on the middle stump
+    // (bail 1 bridges left+middle, bail 2 bridges middle+right)
+    wk: "<svg viewBox='0 0 16 16'><g fill='#7a5230'><rect x='2.7' y='2.4' width='2.2' height='11.4' rx='.6'/><rect x='6.9' y='2.4' width='2.2' height='11.4' rx='.6'/><rect x='11.1' y='2.4' width='2.2' height='11.4' rx='.6'/></g><g fill='#a9803f'><rect x='3.4' y='1.1' width='4.9' height='1.5' rx='.7'/><rect x='7.7' y='1.1' width='4.9' height='1.5' rx='.7'/></g></svg>"
   };
   function foOrdRoleIcon(p) {
     var k = p.keeper ? "wk"
