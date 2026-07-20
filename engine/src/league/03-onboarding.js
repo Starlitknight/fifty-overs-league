@@ -3209,9 +3209,9 @@
       if (st === "hub" && h === "#/orders" && App.pending && App.pending.__circuit) {
         foCoachSet("orders");
         foJDbox(2, [
-          "The team sheet. Top: your batting order - arrows to move a man, C for captain, WK for the gloves.",
-          "Batting intent sets the tempo phase by phase; Field when bowling is how hard your captain attacks. The gold card up top reads the pitch for you.",
-          "Then paint each bowler's overs on the grid - ten each, never two on the trot. Short of ideas? Suggest lineup builds a sensible plan. Save, and we walk out."
+          "The team sheet, boss - and I've already filled it in. Eleven picked, batting order sorted, every over of bowling planned for these conditions.",
+          "The gold card reads the pitch, and the plan below it says what we'll do in plain cricket. Happy with it? Tap PLAY WITH THIS PLAN and we walk out.",
+          "Curious? FINE-TUNE IT MYSELF opens the full sheet - batting order, tempo dials, and painting each bowler's overs. You can't break anything: I'll always have a fresh plan when you want one."
         ], function () { foOnbClose(); });
         try { var cb2 = document.querySelector("#fo-onb .fo-j-chap"); if (cb2) cb2.style.display = "none"; } catch (eC2) {}
         return;

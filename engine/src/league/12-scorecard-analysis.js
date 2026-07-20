@@ -1660,7 +1660,8 @@
         App.pending.ground = T.ground;
         App.pending.__circuit = { r: ri, c: ci };
       }
-      say("The Circuit: " + T.name + " at " + T.ground + " · " + foPitchName(r.pitch) + " pitch, " + r.wx + ". Set your XI, then Save.");
+      say("The Circuit: " + T.name + " at " + T.ground + " · " + foPitchName(r.pitch) + " pitch, " + r.wx + ". " +
+        (typeof foOrdMode === "function" && foOrdMode() === "simple" ? "The Gaffer's plan is ready - play it or fine-tune it." : "Set your XI, then Save."));
       // squad-generation intel (e.g. the Shires reading your Tyke scorecard)
       // is computed while the team is built - speak it now that it exists
       try { if (window.__foCxIntel) { toast(window.__foCxIntel); window.__foCxIntel = null; } } catch (eIn) {}

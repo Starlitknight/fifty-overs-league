@@ -228,6 +228,44 @@
       return "<div class='fo-ord-read small'><b>The read:</b> " + (P[pitch] || P.balanced) + (W[wx] ? "; " + W[wx] : "") + "." + suitTxt + danger + "</div>";
     } catch (e) { return ""; }
   }
+  // ---- simple mode: the whole sheet is a lot for a new manager. Until
+  // they've played a handful of matches (or ask for the full editor), the
+  // orders page is one readable Gaffer plan and one button.
+  function foOrdMode() {
+    var m = lsGet("fo_ord_mode");
+    if (m === "simple" || m === "full") return m;
+    var n = 0;
+    try {
+      var t9 = userTeam();
+      n = (App.results || []).filter(function (r) { return r && t9 && (r.home === t9.name || r.away === t9.name); }).length;
+    } catch (e) {}
+    return n >= 6 ? "full" : "simple";
+  }
+  // the saved plan, in plain cricket language
+  function foOrdPlanSummary() {
+    try {
+      var bo = App.orders.batOrder || [], sn = foOrdSurname;
+      var lines = [];
+      lines.push("<b>Openers</b> " + E(sn(bo[0] || "")) + " &amp; " + E(sn(bo[1] || "")) + " · <b>captain</b> " + E(sn(App.orders.captain || "")) + " · <b>gloves</b> " + E(sn(App.orders.keeper || "")));
+      var W = { "-1": "defend", "0": "steady", "1": "attack", "2": "launch" };
+      var pi = App.orders.phaseIntent || {};
+      lines.push("<b>Batting</b> " + (W[String(pi.pp || 0)]) + " through the powerplay, " + (W[String(pi.mid || 0)]) + " in the middle, " + (W[String(pi.death || 0)]) + " at the death");
+      gridState();
+      var g = App.orders.grid || {};
+      var uniq = function (a) { var s = [], o = {}; a.forEach(function (x) { if (x && !o[x]) { o[x] = 1; s.push(x); } }); return s; };
+      var nb = [], dh = [];
+      for (var o1 = 1; o1 <= 10; o1++) nb.push(g[o1]);
+      for (var o2 = 50; o2 >= 41; o2--) dh.push(g[o2]);
+      nb = uniq(nb).slice(0, 2).map(sn); dh = uniq(dh).slice(0, 2).map(sn);
+      if (nb.length) lines.push("<b>New ball</b> " + nb.map(E).join(" &amp; ") + (dh.length ? " · <b>death overs</b> " + dh.map(E).join(" &amp; ") : ""));
+      // capitalized on purpose: the legacy conditions decorator title-cases
+      // "balanced" in any text node, so lowercase here renders half-capitalized
+      var F = { bal: "Balanced", att: "Attacking", def: "Defensive" };
+      var fp = App.orders.fieldPlan || {};
+      lines.push("<b>Field</b> " + (F[fp.pp] || "Balanced") + " early, " + (F[fp.mid] || "Balanced") + " through the middle, " + (F[fp.death] || "Balanced") + " late · <b>toss</b> " + (App.orders.tossDecision === "bowl" ? "bowl" : "bat") + " first if we win it");
+      return "<div class='fo-ord-plan'>" + lines.map(function (l) { return "<div>" + l + "</div>"; }).join("") + "</div>";
+    } catch (e) { return ""; }
+  }
   function foOrdersUI() {
     var page = document.getElementById("page"); if (!page) return;
     var t = userTeam(), xi = foOrdXI();
@@ -255,6 +293,30 @@
       "<div class='fo-ord-tach'>Toss</div>" +
       "<div class='fo-ord-tr3'>" + cell2("Call", sel2("toss:call", [["H", "Heads"], ["T", "Tails"]], App.orders.tossCall || "H")) + cell2("If won", sel2("toss:dec", [["bat", "Bat"], ["bowl", "Bowl"]], App.orders.tossDecision || "bat")) + "<span></span></div></div>";
     var prev = null; try { prev = (typeof foPreviousOrders === "function") ? foPreviousOrders() : null; } catch (e) {}
+    // ---- simple mode: the Gaffer fills the sheet, the manager reads it -----
+    if (foOrdMode() === "simple") {
+      try {
+        // only auto-plan an EMPTY sheet - a saved or hand-painted plan is kept
+        gridState();
+        var painted0 = 0; for (var oS = 1; oS <= 50; oS++) if (App.orders.grid && App.orders.grid[oS]) painted0++;
+        if (!painted0 && !App.orders.saved) { suggestOrders(); App.orders.grid = null; App.orders.gridBowlers = null; gridState(); gridToSpells(); }
+      } catch (eSg) {}
+      page.innerHTML = "<div class='crumb'>" + E(opp.home) + " v " + E(opp.away) + " &raquo; Orders</div>" + cond +
+        "<div class='panel fo-keep'><h4>The Gaffer's plan</h4><div class='pad'>" +
+        "<div class='fo-j-gbox' style='max-width:none;margin:2px 0 10px'><img class='gf' src='" + FO_ART + "gaffer.png' alt=''>" +
+        "<span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;I've set the whole sheet for these conditions - eleven picked, order sorted, overs planned. Play it as it is, or open it up and make it yours. You can't break anything; I'll always have a fresh plan.&rdquo;</span></span></div>" +
+        foOrdPlanSummary() +
+        "<div class='fo-ord-acts' style='margin-top:12px'>" +
+        "<button class='primary fo-ord-save'>" + (App.pending ? "Play with this plan &#9654;" : "Save this plan") + "</button>" +
+        "<button data-fo-act='reroll'>Fresh suggestion</button>" +
+        "<button data-fo-act='fine'>Fine-tune it myself</button>" +
+        "<span class='small'>" + (SYNC && SYNC.started && !SYNC.practice && App.pending && !App.pending.__friendly
+          ? "League lineups lock an hour before the 9:00 AM ET start."
+          : (App.pending ? "The match starts the moment you play." : "Orders apply to your next fixture.")) + "</span></div>" +
+        "</div></div>";
+      foOrdWire(page);
+      return;
+    }
     page.innerHTML = "<div class='crumb'>" + E(opp.home) + " v " + E(opp.away) + " &raquo; Orders</div>" + cond +
       "<div class='fo-ord-cols'>" +
       "<div class='panel fo-keep'><h4>Batting order</h4><div class='pad'>" +
@@ -268,10 +330,15 @@
       "<button data-fo-act='suggest'>Suggest lineup</button>" +
       (prev ? "<button data-fo-act='prev'>Copy previous match</button>" : "") +
       "<button data-fo-act='clear'>Clear</button>" +
+      "<button data-fo-act='simplemode'>Gaffer's plan</button>" +
       "<span class='small'>" + (SYNC && SYNC.started && !SYNC.practice && App.pending && !App.pending.__friendly
         ? "League lineups lock an hour before the 9:00 AM ET start."
         : (App.pending ? "The match starts the moment you save." : "Orders apply to your next fixture.")) + "</span></div>";
-    if (!page.__foOrdWired) {
+    foOrdWire(page);
+  }
+  function foOrdWire(page) {
+    if (page.__foOrdWired) return;
+    {
       page.__foOrdWired = 1;
       page.addEventListener("click", function (ev) {
         try {
@@ -339,9 +406,11 @@
           }
           if ((el = q("[data-fo-act]"))) {
             var act = el.getAttribute("data-fo-act");
-            if (act === "suggest") { try { suggestOrders(); App.orders.grid = null; App.orders.gridBowlers = null; gridState(); gridToSpells(); } catch (eS) {} foOrdersUI(); }
+            if (act === "suggest" || act === "reroll") { try { suggestOrders(); App.orders.grid = null; App.orders.gridBowlers = null; gridState(); gridToSpells(); } catch (eS) {} foOrdersUI(); if (act === "reroll") toast("Fresh plan set - same conditions, new thinking."); }
             else if (act === "prev") { try { var pv = foPreviousOrders(); if (pv) foApplyPrevOrders(pv); } catch (eP) {} foOrdersUI(); }
             else if (act === "clear") { App.orders.batOrder = []; App.orders.spells = { north: [], south: [] }; App.orders.grid = null; App.orders.gridBowlers = null; App.orders.captain = null; foOrdersUI(); }
+            else if (act === "fine") { try { lsSet("fo_ord_mode", "full"); } catch (eM1) {} foOrdersUI(); }
+            else if (act === "simplemode") { try { lsSet("fo_ord_mode", "simple"); } catch (eM2) {} foOrdersUI(); }
             return;
           }
         } catch (e) {}
@@ -365,6 +434,9 @@
     foOrdCss.textContent =
       ".fo-ord-cond{background:#F0F4F8;border:1px solid rgba(31,78,107,.16);border-radius:10px;padding:9px 13px;font-size:12.5px;color:#243244;margin:6px 0 10px}" +
       ".fo-ord-read{background:#FBF7EC;border:1px solid rgba(201,162,75,.35);border-left:4px solid #C9A24B;border-radius:10px;padding:9px 13px;color:#4a4234;margin:0 0 10px;line-height:1.5}" +
+      ".fo-ord-plan{display:flex;flex-direction:column;gap:7px}" +
+      ".fo-ord-plan>div{background:#FFFEFC;border:1px solid rgba(28,36,51,.1);border-radius:9px;padding:8px 12px;font-size:13px;color:#243244;line-height:1.5}" +
+      ".fo-ord-plan b{color:#0E233F;text-transform:uppercase;font-size:10.5px;letter-spacing:.06em;margin-right:2px}" +
       ".fo-ord-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px;align-items:start}" +
       "@media(max-width:860px){.fo-ord-cols{grid-template-columns:1fr}}" +
       ".fo-ob-row{display:flex;align-items:center;gap:8px;padding:6px 8px;background:#FFFEFC;border:1px solid rgba(28,36,51,.08);border-radius:9px;margin:4px 0}" +
