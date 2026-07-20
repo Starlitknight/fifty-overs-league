@@ -755,6 +755,19 @@
   try {
     var foOrdCss = document.createElement("style");
     foOrdCss.textContent =
+      // the changing-room backdrop: a full-viewport fixed scene behind the
+      // orders page, its cream centre holding the plan. The white content
+      // wrap goes transparent so the room shows edge to edge; --fo-ord-bg is
+      // set on <body> at render time so the art path resolves from both
+      // index.html (client/art/) and client/game.html (art/). A faint cream
+      // wash keeps text crisp over the busier corners.
+      // a dedicated fixed layer (unique id, so the skin's re-appended brand
+      // sheet can never win it back the way it does a body-level rule)
+      "#fo-ord-bg{position:fixed;inset:0;z-index:-1;background-image:linear-gradient(rgba(244,239,226,.18),rgba(244,239,226,.30)),var(--fo-ord-bg);background-size:cover;background-position:center center;background-repeat:no-repeat;pointer-events:none}" +
+      "@media(max-width:820px){#fo-ord-bg{background-position:center top}}" +
+      // the white content wrap goes clear so the room shows through
+      "html body.fo-ord-room .wrap{background:transparent!important;box-shadow:none!important}" +
+      "html body.fo-ord-room #page{background:transparent!important}" +
       ".fo-ord-cond{background:#F0F4F8;border:1px solid rgba(31,78,107,.16);border-radius:10px;padding:9px 13px;font-size:12.5px;color:#243244;margin:6px 0 10px}" +
       ".fo-ord-read{background:#FBF7EC;border:1px solid rgba(201,162,75,.35);border-left:4px solid #C9A24B;border-radius:10px;padding:9px 13px;color:#4a4234;margin:0 0 10px;line-height:1.5}" +
       ".fo-ord-strat{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:2px 0 4px}" +

@@ -1836,8 +1836,20 @@
   }
   function foOrdersExtras() {
     try {
-      if (location.hash.indexOf("#/orders") !== 0) { if (window.__foOrdT) { clearInterval(window.__foOrdT); window.__foOrdT = null; } return; }
+      if (location.hash.indexOf("#/orders") !== 0) {
+        if (window.__foOrdT) { clearInterval(window.__foOrdT); window.__foOrdT = null; }
+        document.body.classList.remove("fo-ord-room");
+        var bgOff = document.getElementById("fo-ord-bg"); if (bgOff) bgOff.remove();
+        return;
+      }
       var page = document.getElementById("page"); if (!page) return;
+      // the changing-room backdrop: a fixed layer behind the transparent wrap.
+      // --fo-ord-bg carries the art URL so it resolves from either shell.
+      try {
+        document.body.style.setProperty("--fo-ord-bg", "url('" + FO_ART + "orders-room.webp')");
+        document.body.classList.add("fo-ord-room");
+        if (!document.getElementById("fo-ord-bg")) { var bgd = document.createElement("div"); bgd.id = "fo-ord-bg"; document.body.insertBefore(bgd, document.body.firstChild); }
+      } catch (eBg) {}
       // heat advisory: in draining weather a sixth bowling option is worth
       // real overs (the old auto-pick/status bar is gone - the rebuilt page
       // carries its own actions, and Save states show on the buttons)
