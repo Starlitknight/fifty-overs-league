@@ -489,14 +489,9 @@ FOC.oval = (function () {
       "html body #page.fo-ovalgrid.fo-matchpage{grid-template-columns:minmax(500px,55%) minmax(0,1fr);grid-template-rows:auto auto auto auto 1fr;grid-template-areas:'mcrumb mcrumb' 'mlinks mlinks' 'moval mbody' 'mtop mbody' 'mrest mbody'}" +
       "html body #page.fo-ovalgrid.fo-matchpage #fo-oval{grid-area:moval;position:relative;top:0}" +   // relative anchors the .ov-who cards; top:0 undoes the generic split's sticky top:64px (which was pushing the stage 64px below the scorecard header)
       "html body #page.fo-ovalgrid.fo-matchpage>.crumb{grid-area:mcrumb;margin:0 0 10px}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .mc-top{grid-area:mtop;display:flex !important;flex-direction:row !important;align-items:stretch !important;gap:10px;margin:10px 0 0}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .mc-top .panel{flex:1 1 0 !important;min-width:0;margin:0;height:auto}" +
-      // compact the two cards so the stage keeps the vertical room
-      "html body #page.fo-ovalgrid.fo-matchpage .mc-top h4{font-size:10.5px !important;padding:5px 10px !important;letter-spacing:.07em}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .mc-score .pad,html body #page.fo-ovalgrid.fo-matchpage .mc-details .pad{padding:6px 10px !important;font-size:11.5px !important;line-height:1.45}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .mc-score .scorebig{font-size:20px !important}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .mc-top .kv td{padding:2px 6px !important;font-size:11px !important;line-height:1.35}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .mc-details table.kv{font-size:11px !important}" +
+      // the scoreboard + match-details cards under the stage are RETIRED: the
+      // stage's own board and the Scorecard/Details tabs carry everything
+      "html body #page.fo-ovalgrid .mc-top{display:none !important}" +
       // tab links: one tight pill row in the UI face, not the roomy sidebar list
       "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links{grid-area:mlinks;display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px;padding:5px;margin:0 0 14px;position:static}" +
       "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links h4{display:none}" +

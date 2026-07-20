@@ -260,6 +260,22 @@
   function foOrdStars(comp) {
     return Math.max(0, Math.min(10, Math.round(((comp - 15) / 77 * 10) * 2) / 2));
   }
+  // FTP-style role glyphs beside each name: bat / ball / bat+ball / stumps.
+  // Keeper wins (the gloves define his job), then the declared all-rounder,
+  // then anyone with a bowling type, then the pure batter.
+  var FO_RIC = {
+    bat: "<svg viewBox='0 0 16 16'><rect x='6.7' y='1' width='2.6' height='4' rx='1' fill='#8a6d3b'/><rect x='5.4' y='4.6' width='5.2' height='10.2' rx='2.2' fill='#C9A24B'/></svg>",
+    bwl: "<svg viewBox='0 0 16 16'><circle cx='8' cy='8' r='6' fill='#B04A2C'/><path d='M6.2 3.2c-1.5 3-1.5 6.6 0 9.6M9.8 3.2c1.5 3 1.5 6.6 0 9.6' stroke='#FFFEFC' stroke-width='1.1' fill='none' stroke-linecap='round'/></svg>",
+    ar: "<svg viewBox='0 0 16 16'><rect x='2.6' y='1.4' width='2.2' height='3.4' rx='.9' fill='#8a6d3b'/><rect x='1.6' y='4.4' width='4.2' height='9.6' rx='1.9' fill='#C9A24B'/><circle cx='11' cy='10' r='4.4' fill='#B04A2C'/><path d='M9.7 6.6c-1.1 2.2-1.1 4.7 0 6.9M12.3 6.6c1.1 2.2 1.1 4.7 0 6.9' stroke='#FFFEFC' stroke-width='.9' fill='none' stroke-linecap='round'/></svg>",
+    wk: "<svg viewBox='0 0 16 16'><path d='M4 2.6h1.6v10.8H4zM7.2 2.6h1.6v10.8H7.2zM10.4 2.6H12v10.8h-1.6z' fill='#41577a'/><rect x='3.6' y='1.2' width='4.6' height='1.4' rx='.7' fill='#8a93a3'/><rect x='7.8' y='1.2' width='4.6' height='1.4' rx='.7' fill='#8a93a3'/></svg>"
+  };
+  function foOrdRoleIcon(p) {
+    var k = p.keeper ? "wk"
+      : (p.role === "allRounder" ? "ar"
+        : (p.bowlType && p.bowlType !== "none" ? "bwl" : "bat"));
+    var TT = { bat: "Batter", bwl: "Bowler", ar: "All-rounder", wk: "Wicket-keeper" };
+    return "<span class='ric' title='" + TT[k] + "'>" + FO_RIC[k] + "</span>";
+  }
   function foOrdStarHTML(n) {
     var full = Math.floor(n), half = (n - full) >= 0.5;
     var s = "";
@@ -366,7 +382,7 @@
         var pills = foOrdTalPills(p, 2);
         return "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + "' data-fo-pc='" + E(nm) + "'>" +
           "<span class='dh' title='Drag to move' aria-hidden='true'>&#x2261;</span>" +
-          "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + "<b>" + E(dispNm(nm)) + "</b>" + tag +
+          "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + foOrdRoleIcon(p) + "<b>" + E(dispNm(nm)) + "</b>" + tag +
           "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
           "<span class='ov' title='Overall rating'><b>" + foPkOvr(p) + "</b></span></span>" +
           "<span class='r2'>" + foOrdStarHTML(foOrdStars(foOrdBatComp(p))) + "</span>" +
@@ -892,6 +908,13 @@
       ".fo-ord-xis .xc .dh{display:none}" +
       "@media(pointer:coarse){.fo-ord-xis .xc .dh{display:flex;align-items:center;justify-content:center;position:absolute;right:4px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:8px;background:#EEF2F7;color:#41577a;font-size:17px;font-weight:400;touch-action:none}" +
       "html body #page .fo-ord-xis button.xc{position:relative;padding-right:46px!important}}" +
+      // FTP-style role glyphs beside every name in the order
+      ".fo-ord-xis .xc .ric{display:inline-flex;width:14px;height:14px;flex:0 0 auto;align-items:center;margin-right:1px}" +
+      ".fo-ord-xis .xc .ric svg{width:14px;height:14px;display:block}" +
+      ".fo-ord-xis .xc.xc-dim .ric{opacity:.55}" +
+      // scorecard talent tags are retired: hide them instantly so the old
+      // look never flashes while the star decorator catches up
+      "table.fo-sct .fo-tal-tag,table.ftp-scorecard .fo-tal-tag,table.ftp-bowling .fo-tal-tag{display:none!important}" +
       ".fo-ord-cond{background:#F0F4F8;border:1px solid rgba(31,78,107,.16);border-radius:10px;padding:9px 13px;font-size:12.5px;color:#243244;margin:6px 0 10px}" +
       ".fo-ord-read{background:#FBF7EC;border:1px solid rgba(201,162,75,.35);border-left:4px solid #C9A24B;border-radius:10px;padding:9px 13px;color:#4a4234;margin:0 0 10px;line-height:1.5}" +
       ".fo-ord-strat{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:2px 0 4px}" +
@@ -960,7 +983,8 @@
       ".fo-ord-lane .lt i.f{background:#41577a}" +
       ".fo-ord-lane u{flex:0 0 22px;text-decoration:none;font-size:9.5px;color:#8a93a3;font-weight:700}" +
       ".fo-ord-lane.lax .lt{height:auto;gap:1px}" +
-      ".fo-ord-lane.lax em{font-style:normal;font-size:8px;letter-spacing:.06em;text-transform:uppercase;font-weight:800;color:#b0a67f;text-align:center;min-width:0;overflow:hidden;white-space:nowrap}" +
+      ".fo-ord-lane.lax em{font-style:normal;font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:800;color:#33415e;text-align:center;min-width:0;overflow:hidden;white-space:nowrap}" +
+      ".fo-ord-lane.lax .lt.lnum em{font-size:8px;color:#b0a67f}" +   // the over numbers stay quiet; only the phase words darken
       ".fo-ord-lane .lt.lnum{position:relative;display:block;height:10px}" +
       ".fo-ord-lane .lt.lnum em{position:absolute;top:0;transform:translateX(-50%);font-style:normal;font-size:7.5px;font-weight:700;color:#8a93a3;letter-spacing:0;text-transform:none}" +
       "html body #page .fo-ord-hero,html body.ftpskin #page .fo-ord-hero{display:flex;align-items:baseline;justify-content:center;gap:14px;flex-wrap:wrap;margin:8px 0 2px;text-align:center;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +

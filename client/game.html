@@ -4733,7 +4733,14 @@ a[href="#/editor"]{display:none!important}
   function fo55LiveScorecardForInnings(inn){if(!inn)return '<div class="small">No innings yet.</div>';const bat=inn.bat.filter(b=>b.b>0||b.out||(!b.out&&(b===inn.bat[inn.striker]||b===inn.bat[inn.nonstriker]))).map(b=>`<tr><td>${playerLink(b.p)}${!b.out?' *':''}</td><td class="small">${esc(b.out||'not out')}</td><td class="n"><b>${b.r}</b></td><td class="n">${b.b}</td><td class="n">${b.f4}</td><td class="n">${b.f6}</td><td class="n">${b.b?(100*b.r/b.b).toFixed(1):'-'}</td></tr>`).join('');const bowl=Object.values(inn.bowlers||{}).map(r=>`<tr><td>${playerLink(r.p)}</td><td class="n">${Math.floor(r.b/6)}.${r.b%6}</td><td class="n">${r.r}</td><td class="n"><b>${r.w}</b></td><td class="n">${r.b?(r.r/(r.b/6)).toFixed(2):'-'}</td></tr>`).join('')||'<tr><td colspan="5" class="small">Bowling card appears after the first ball.</td></tr>';const ex=inn.extras||{wd:0,nb:0,b:0,lb:0};const rr=inn.legal?(inn.runs/(inn.legal/6)).toFixed(2):'0.00';return `<div class="live-score-mini ftp-no-bars"><table class="ftp-scorecard"><thead><tr><th colspan="2">${esc(inn.batTeam)}</th><th class="n">R</th><th class="n">B</th><th class="n">4s</th><th class="n">6s</th><th class="n">SR</th></tr></thead><tbody>${bat}</tbody><tfoot><tr><th>Extras</th><td>(b ${ex.b}, lb ${ex.lb}, w ${ex.wd}, nb ${ex.nb})</td><td class="n"><b>${ex.wd+ex.nb+ex.b+ex.lb}</b></td><td colspan="4"></td></tr><tr><th>Total</th><td>(${inn.wkts} wickets, ${Math.floor(inn.legal/6)}.${inn.legal%6} overs)</td><td class="n"><b>${inn.runs}</b></td><td colspan="4">RR: ${rr}</td></tr></tfoot></table><table class="ftp-bowling"><thead><tr><th>Bowling</th><th class="n">O</th><th class="n">R</th><th class="n">W</th><th class="n">Econ</th></tr></thead><tbody>${bowl}</tbody></table></div>`}
   function fo55Worm(){if(!M||!M.worm)return '<div class="small">No worm data yet.</div>';const all=M.worm.filter(w=>w&&w.length);if(!all.length)return '<div class="small">No worm data yet.</div>';const mx=Math.max(10,...all.flatMap(w=>w.map(p=>p[1])))+10,mo=Math.max(50,...all.flatMap(w=>w.map(p=>p[0])));const line=(w,col)=>`<polyline fill="none" stroke="${col}" stroke-width="2" points="${w.map(p=>((12+p[0]/mo*520).toFixed(1))+','+((180-p[1]/mx*165).toFixed(1))).join(' ')}"/>`+w.filter((p,i)=>i>0&&(p[2]||0)>(w[i-1][2]||0)).map(p=>`<circle cx="${(12+p[0]/mo*520).toFixed(1)}" cy="${(180-p[1]/mx*165).toFixed(1)}" r="3" fill="#a33328"/>`).join('');return `<svg viewBox="0 0 545 190" style="width:100%;max-width:620px;height:210px;border-bottom:1px solid #bbb">${M.worm[0]?line(M.worm[0],'#2d6a8f'):''}${M.worm[1]?line(M.worm[1],'#c8a13a'):''}</svg><div class="small"><span style="color:#2d6a8f">■</span> ${esc(M.innings[0]?M.innings[0].batTeam:'1st innings')} &nbsp; <span style="color:#c8a13a">■</span> ${esc(M.innings[1]?M.innings[1].batTeam:'2nd innings')} &nbsp; ● wicket</div>`}
   function fo55OrdersPanel(){const O=App.orders||{};const bat=(O.batOrder||[]).slice(0,11).map((n,i)=>`<tr><td class="n">${i+1}</td><td>${esc(n)}</td></tr>`).join('');const overs=(O.compiled||[]).map((n,i)=>n?`<span class="phasechip" title="over ${i+1}: ${esc(n)}">${i+1}</span>`:'').join(' ');return `<table><tr><th colspan="2">Batting order</th></tr>${bat||'<tr><td colspan="2" class="small">No batting order saved.</td></tr>'}</table><div style="margin-top:8px"><b class="small">Bowling map</b><br>${overs||'<span class="small">No bowling map saved.</span>'}</div><div class="small" style="margin-top:6px"><a href="#/orders">Open full orders page</a></div>`}
-  function fo55Rivalry(){if(!M||!M.meta)return '<div class="small">No rivalry yet.</div>';const A=M.meta.home,B=M.meta.away;let a=0,b=0,t=0;const rows=[];for(const r of (App.results||[])){if(!((r.home===A&&r.away===B)||(r.home===B&&r.away===A)))continue;if(!r.result||!r.result.winner)t++;else if(r.result.winner===A)a++;else if(r.result.winner===B)b++;rows.push(`<tr><td>${esc(r.date)}</td><td>${esc(r.result.text)}</td><td><a href="#/scorecard?i=${r.ix}">scorecard</a></td></tr>`)}return `<div class="status-strip"><span>${esc(A)}: <b>${a}</b></span><span>${esc(B)}: <b>${b}</b></span><span>Ties: <b>${t}</b></span></div><table style="margin-top:8px"><tr><th>Date</th><th>Result</th><th></th></tr>${rows.slice(-8).reverse().join('')||'<tr><td colspan="3" class="small">First meeting in this save.</td></tr>'}</table>`}
+  function fo55Rivalry(){if(!M||!M.meta)return '<div class="small">No rivalry yet.</div>';const A=M.meta.home,B=M.meta.away;
+    // Circuit opponents: the passport is the truth (App.results is replaced by
+    // league snapshots, which was zeroing this tab against clubs played often)
+    try{if(window.foCxH2H){const cx=window.foCxH2H(A,B);if(cx){
+      const rws=cx.rows.slice(-8).reverse().map(r=>`<tr><td>${r.at?new Date(r.at).toLocaleDateString():'-'}</td><td>${esc(r.win?cx.me+' won':cx.opp+' won')}${r.my!=null&&r.op!=null?` <span class="small">(${r.my} · ${r.op})</span>`:''}</td><td>${r.card?`<a href="${r.card}">scorecard</a>`:''}</td></tr>`).join('');
+      return `<div class="status-strip"><span>${esc(cx.me)}: <b>${cx.w}</b></span><span>${esc(cx.opp)}: <b>${cx.l}</b></span><span>Ties: <b>${cx.t}</b></span></div><table style="margin-top:8px"><tr><th>Date</th><th>Result</th><th></th></tr>${rws||'<tr><td colspan="3" class="small">First meeting in this save.</td></tr>'}</table>`;
+    }}}catch(e){}
+    let a=0,b=0,t=0;const rows=[];for(const r of (App.results||[])){if(!((r.home===A&&r.away===B)||(r.home===B&&r.away===A)))continue;if(!r.result||!r.result.winner)t++;else if(r.result.winner===A)a++;else if(r.result.winner===B)b++;rows.push(`<tr><td>${esc(r.date)}</td><td>${esc(r.result.text)}</td><td><a href="#/scorecard?i=${r.ix}">scorecard</a></td></tr>`)}return `<div class="status-strip"><span>${esc(A)}: <b>${a}</b></span><span>${esc(B)}: <b>${b}</b></span><span>Ties: <b>${t}</b></span></div><table style="margin-top:8px"><tr><th>Date</th><th>Result</th><th></th></tr>${rows.slice(-8).reverse().join('')||'<tr><td colspan="3" class="small">First meeting in this save.</td></tr>'}</table>`}
   function fo55Partnerships(){return M.innings.filter(Boolean).map(inn=>`<div class="small"><b>${esc(inn.batTeam)}</b></div>${pshipBars(inn)||'<span class="small">No partnerships yet.</span>'}`).join('<div style="height:8px"></div>')}
   function fo55Tabs(){const tabs=['Details','Orders','Scorecard','Match Ratings','Commentary','Worm','Partnerships','Rivalry'];UI.matchTab=UI.matchTab||'Commentary';return `<div class="ftp-match-links"><h4>Links</h4>${tabs.map(t=>`<a class="${UI.matchTab===t?'on':''}" onclick="UI.matchTab='${t}';renderMatch()">${t}</a>`).join('')}</div>`}
   function fo55TabBody(){const tab=UI.matchTab||'Commentary';if(tab==='Details')return `<table class="kv"><tr><td>Ground</td><td>${esc(M.meta.ground)}</td></tr><tr><td>Pitch</td><td>${esc(M.pitch)}</td></tr><tr><td>Weather</td><td>${esc(M.meta.weather||'')}</td></tr><tr><td>Toss</td><td>${esc(App.tossState&&App.tossState.txt||'-')}</td></tr>${M.innings.filter(Boolean).map(x=>`<tr><td>${esc(x.batTeam)}</td><td>${x.runs}/${x.wkts} (${Math.floor(x.legal/6)}.${x.legal%6})</td></tr>`).join('')}</table>`;if(tab==='Orders')return fo55OrdersPanel();if(tab==='Scorecard')return M.innings.filter(Boolean).map(fo55LiveScorecardForInnings).join('<div style="height:8px"></div>');if(tab==='Match Ratings')return ratingsTable({home:M.meta.home,away:M.meta.away,innings:M.innings,result:M.result||{}});if(tab==='Worm')return fo55Worm();if(tab==='Partnerships')return fo55Partnerships();if(tab==='Rivalry')return fo55Rivalry();return ''}
@@ -9108,7 +9115,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var me = userTeam();
       App.pending = { oppIx: ix, home: me.name, away: GD.teams[ix].name, ground: me.ground, pitch: pitch || me.homePitch || groundPitch(me.ground), weather: weather || "Sunny", seed: 4200 + ix, date: typeof simDate === "function" ? simDate() : "", comp: "friendly", __friendly: true };
       App.orders.saved = false;                             // must set + save a lineup before it plays
-      say("vs " + GD.teams[ix].name + " · set your lineup, then Save to play.");
+      // (no toast - the orders page announces the matchup itself)
       location.hash = "#/orders"; if (typeof window.route === "function") window.route();
     } catch (e) { say(e); }
   }
@@ -10122,7 +10129,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260720-2000-7084c0";
+  var FO_BUILD = "20260720-2017-4d90cd";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10189,7 +10196,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     setInterval(window.foSweepSoon, 1500);
   } catch (e) {}
   // first-class post-route decoration (core route() calls this in a finally)
-  window.foAfterRoute = function () { bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} try { window.foDecorateSweep(); } catch (e) {} };
+  window.foAfterRoute = function () { bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); try { foScStars(); } catch (e) {} foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} try { window.foDecorateSweep(); } catch (e) {} };
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
@@ -18263,6 +18270,22 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foOrdStars(comp) {
     return Math.max(0, Math.min(10, Math.round(((comp - 15) / 77 * 10) * 2) / 2));
   }
+  // FTP-style role glyphs beside each name: bat / ball / bat+ball / stumps.
+  // Keeper wins (the gloves define his job), then the declared all-rounder,
+  // then anyone with a bowling type, then the pure batter.
+  var FO_RIC = {
+    bat: "<svg viewBox='0 0 16 16'><rect x='6.7' y='1' width='2.6' height='4' rx='1' fill='#8a6d3b'/><rect x='5.4' y='4.6' width='5.2' height='10.2' rx='2.2' fill='#C9A24B'/></svg>",
+    bwl: "<svg viewBox='0 0 16 16'><circle cx='8' cy='8' r='6' fill='#B04A2C'/><path d='M6.2 3.2c-1.5 3-1.5 6.6 0 9.6M9.8 3.2c1.5 3 1.5 6.6 0 9.6' stroke='#FFFEFC' stroke-width='1.1' fill='none' stroke-linecap='round'/></svg>",
+    ar: "<svg viewBox='0 0 16 16'><rect x='2.6' y='1.4' width='2.2' height='3.4' rx='.9' fill='#8a6d3b'/><rect x='1.6' y='4.4' width='4.2' height='9.6' rx='1.9' fill='#C9A24B'/><circle cx='11' cy='10' r='4.4' fill='#B04A2C'/><path d='M9.7 6.6c-1.1 2.2-1.1 4.7 0 6.9M12.3 6.6c1.1 2.2 1.1 4.7 0 6.9' stroke='#FFFEFC' stroke-width='.9' fill='none' stroke-linecap='round'/></svg>",
+    wk: "<svg viewBox='0 0 16 16'><path d='M4 2.6h1.6v10.8H4zM7.2 2.6h1.6v10.8H7.2zM10.4 2.6H12v10.8h-1.6z' fill='#41577a'/><rect x='3.6' y='1.2' width='4.6' height='1.4' rx='.7' fill='#8a93a3'/><rect x='7.8' y='1.2' width='4.6' height='1.4' rx='.7' fill='#8a93a3'/></svg>"
+  };
+  function foOrdRoleIcon(p) {
+    var k = p.keeper ? "wk"
+      : (p.role === "allRounder" ? "ar"
+        : (p.bowlType && p.bowlType !== "none" ? "bwl" : "bat"));
+    var TT = { bat: "Batter", bwl: "Bowler", ar: "All-rounder", wk: "Wicket-keeper" };
+    return "<span class='ric' title='" + TT[k] + "'>" + FO_RIC[k] + "</span>";
+  }
   function foOrdStarHTML(n) {
     var full = Math.floor(n), half = (n - full) >= 0.5;
     var s = "";
@@ -18369,7 +18392,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var pills = foOrdTalPills(p, 2);
         return "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + "' data-fo-pc='" + E(nm) + "'>" +
           "<span class='dh' title='Drag to move' aria-hidden='true'>&#x2261;</span>" +
-          "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + "<b>" + E(dispNm(nm)) + "</b>" + tag +
+          "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + foOrdRoleIcon(p) + "<b>" + E(dispNm(nm)) + "</b>" + tag +
           "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
           "<span class='ov' title='Overall rating'><b>" + foPkOvr(p) + "</b></span></span>" +
           "<span class='r2'>" + foOrdStarHTML(foOrdStars(foOrdBatComp(p))) + "</span>" +
@@ -18837,7 +18860,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // phones: a portrait screen cover-crops the wide scene to its EMPTY
       // cream middle - frame the art-rich right side (pads, ball, cap, rainy
       // window) instead, under a light wash so it reads behind the cards
-      "@media(max-width:820px){#fo-ord-bg{background-position:86% 50%;background-image:linear-gradient(rgba(244,239,226,.42),rgba(244,239,226,.52)),var(--fo-ord-bg)}}" +
+      "@media(max-width:820px){#fo-ord-bg{background-position:86% 50%;background-image:linear-gradient(rgba(244,239,226,.32),rgba(244,239,226,.42)),var(--fo-ord-bg)}" +
+      // slim gutters so a slice of the room shows beside the cards
+      "html body.fo-ord-room .wrap{padding-left:13px!important;padding-right:13px!important}}" +
       // the white content wrap goes clear so the room shows through, and the
       // plan keeps to the cream centre of the scene
       "html body.fo-ord-room .wrap{background:transparent!important;box-shadow:none!important}" +
@@ -18893,6 +18918,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-ord-xis .xc .dh{display:none}" +
       "@media(pointer:coarse){.fo-ord-xis .xc .dh{display:flex;align-items:center;justify-content:center;position:absolute;right:4px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:8px;background:#EEF2F7;color:#41577a;font-size:17px;font-weight:400;touch-action:none}" +
       "html body #page .fo-ord-xis button.xc{position:relative;padding-right:46px!important}}" +
+      // FTP-style role glyphs beside every name in the order
+      ".fo-ord-xis .xc .ric{display:inline-flex;width:14px;height:14px;flex:0 0 auto;align-items:center;margin-right:1px}" +
+      ".fo-ord-xis .xc .ric svg{width:14px;height:14px;display:block}" +
+      ".fo-ord-xis .xc.xc-dim .ric{opacity:.55}" +
+      // scorecard talent tags are retired: hide them instantly so the old
+      // look never flashes while the star decorator catches up
+      "table.fo-sct .fo-tal-tag,table.ftp-scorecard .fo-tal-tag,table.ftp-bowling .fo-tal-tag{display:none!important}" +
       ".fo-ord-cond{background:#F0F4F8;border:1px solid rgba(31,78,107,.16);border-radius:10px;padding:9px 13px;font-size:12.5px;color:#243244;margin:6px 0 10px}" +
       ".fo-ord-read{background:#FBF7EC;border:1px solid rgba(201,162,75,.35);border-left:4px solid #C9A24B;border-radius:10px;padding:9px 13px;color:#4a4234;margin:0 0 10px;line-height:1.5}" +
       ".fo-ord-strat{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:2px 0 4px}" +
@@ -18961,7 +18993,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-ord-lane .lt i.f{background:#41577a}" +
       ".fo-ord-lane u{flex:0 0 22px;text-decoration:none;font-size:9.5px;color:#8a93a3;font-weight:700}" +
       ".fo-ord-lane.lax .lt{height:auto;gap:1px}" +
-      ".fo-ord-lane.lax em{font-style:normal;font-size:8px;letter-spacing:.06em;text-transform:uppercase;font-weight:800;color:#b0a67f;text-align:center;min-width:0;overflow:hidden;white-space:nowrap}" +
+      ".fo-ord-lane.lax em{font-style:normal;font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:800;color:#33415e;text-align:center;min-width:0;overflow:hidden;white-space:nowrap}" +
+      ".fo-ord-lane.lax .lt.lnum em{font-size:8px;color:#b0a67f}" +   // the over numbers stay quiet; only the phase words darken
       ".fo-ord-lane .lt.lnum{position:relative;display:block;height:10px}" +
       ".fo-ord-lane .lt.lnum em{position:absolute;top:0;transform:translateX(-50%);font-style:normal;font-size:7.5px;font-weight:700;color:#8a93a3;letter-spacing:0;text-transform:none}" +
       "html body #page .fo-ord-hero,html body.ftpskin #page .fo-ord-hero{display:flex;align-items:baseline;justify-content:center;gap:14px;flex-wrap:wrap;margin:8px 0 2px;text-align:center;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +
@@ -23520,8 +23553,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         App.pending.ground = T.ground;
         App.pending.__circuit = { r: ri, c: ci };
       }
-      say("The Circuit: " + T.name + " at " + T.ground + " · " + foPitchName(r.pitch) + " pitch, " + r.wx + ". " +
-        (typeof foOrdMode === "function" && foOrdMode() === "simple" ? "The Gaffer's plan is ready - play it or fine-tune it." : "Set your XI, then Save."));
+      // (no toast here - the orders page itself carries the matchup and
+      // conditions, and toasts over the lineup sheet annoyed managers)
       // squad-generation intel (e.g. the Shires reading your Tyke scorecard)
       // is computed while the team is built - speak it now that it exists
       try { if (window.__foCxIntel) { toast(window.__foCxIntel); window.__foCxIntel = null; } } catch (eIn) {}
@@ -24155,6 +24188,27 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   setInterval(foRenderCircuit, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/circuit") === 0) { foCxView = null; setTimeout(foRenderCircuit, 40); } });
   try { window.__foTest.cx = { state: foCxState, team: foCxTeam, challenge: foCxChallenge, record: foCxRecord, key: foCxKey }; } catch (eCx) {}
+  // head-to-head vs a Circuit club, answered from the PASSPORT (st.hist) -
+  // App.results is clobbered by every league snapshot, so the match page's
+  // Rivalry tab was reading 0-0 against clubs you had played three times.
+  // Returns null when neither side is a Circuit club (caller falls back).
+  window.foCxH2H = function (A, B) {
+    try {
+      var names = {};
+      FO_CX_REGIONS.forEach(function (r9) { (r9.clubs || []).forEach(function (c9) { names[c9.nm] = 1; }); });
+      var opp = names[B] ? B : (names[A] ? A : null);
+      if (!opp) return null;
+      var me = userTeam().name;
+      var hist = (foCxState().hist || []).filter(function (h) { return h.opp === opp; });
+      var w = 0, l = 0;
+      var rows = hist.map(function (h) {
+        if (h.win) w++; else l++;
+        return { win: !!h.win, my: (h.my != null ? h.my : null), op: (h.op != null ? h.op : null), at: h.at || null,
+                 card: (h.at && h.card) ? ("#/friendly?id=hist-" + h.at) : null };
+      });
+      return { me: me, opp: opp, w: w, l: l, t: 0, rows: rows };
+    } catch (e) { return null; }
+  };
 
   // ==========================================================================
   //  THE CLUB STORY - narrative engine v1. The simulation writes the story:
@@ -25247,14 +25301,9 @@ FOC.oval = (function () {
       "html body #page.fo-ovalgrid.fo-matchpage{grid-template-columns:minmax(500px,55%) minmax(0,1fr);grid-template-rows:auto auto auto auto 1fr;grid-template-areas:'mcrumb mcrumb' 'mlinks mlinks' 'moval mbody' 'mtop mbody' 'mrest mbody'}" +
       "html body #page.fo-ovalgrid.fo-matchpage #fo-oval{grid-area:moval;position:relative;top:0}" +   // relative anchors the .ov-who cards; top:0 undoes the generic split's sticky top:64px (which was pushing the stage 64px below the scorecard header)
       "html body #page.fo-ovalgrid.fo-matchpage>.crumb{grid-area:mcrumb;margin:0 0 10px}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .mc-top{grid-area:mtop;display:flex !important;flex-direction:row !important;align-items:stretch !important;gap:10px;margin:10px 0 0}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .mc-top .panel{flex:1 1 0 !important;min-width:0;margin:0;height:auto}" +
-      // compact the two cards so the stage keeps the vertical room
-      "html body #page.fo-ovalgrid.fo-matchpage .mc-top h4{font-size:10.5px !important;padding:5px 10px !important;letter-spacing:.07em}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .mc-score .pad,html body #page.fo-ovalgrid.fo-matchpage .mc-details .pad{padding:6px 10px !important;font-size:11.5px !important;line-height:1.45}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .mc-score .scorebig{font-size:20px !important}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .mc-top .kv td{padding:2px 6px !important;font-size:11px !important;line-height:1.35}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .mc-details table.kv{font-size:11px !important}" +
+      // the scoreboard + match-details cards under the stage are RETIRED: the
+      // stage's own board and the Scorecard/Details tabs carry everything
+      "html body #page.fo-ovalgrid .mc-top{display:none !important}" +
       // tab links: one tight pill row in the UI face, not the roomy sidebar list
       "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links{grid-area:mlinks;display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px;padding:5px;margin:0 0 14px;position:static}" +
       "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links h4{display:none}" +

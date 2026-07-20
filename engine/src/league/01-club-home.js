@@ -1300,7 +1300,7 @@
       var me = userTeam();
       App.pending = { oppIx: ix, home: me.name, away: GD.teams[ix].name, ground: me.ground, pitch: pitch || me.homePitch || groundPitch(me.ground), weather: weather || "Sunny", seed: 4200 + ix, date: typeof simDate === "function" ? simDate() : "", comp: "friendly", __friendly: true };
       App.orders.saved = false;                             // must set + save a lineup before it plays
-      say("vs " + GD.teams[ix].name + " · set your lineup, then Save to play.");
+      // (no toast - the orders page announces the matchup itself)
       location.hash = "#/orders"; if (typeof window.route === "function") window.route();
     } catch (e) { say(e); }
   }
@@ -2381,7 +2381,7 @@
     setInterval(window.foSweepSoon, 1500);
   } catch (e) {}
   // first-class post-route decoration (core route() calls this in a finally)
-  window.foAfterRoute = function () { bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} try { window.foDecorateSweep(); } catch (e) {} };
+  window.foAfterRoute = function () { bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); try { foScStars(); } catch (e) {} foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} try { window.foDecorateSweep(); } catch (e) {} };
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();

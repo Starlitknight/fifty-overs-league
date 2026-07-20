@@ -1663,8 +1663,8 @@
         App.pending.ground = T.ground;
         App.pending.__circuit = { r: ri, c: ci };
       }
-      say("The Circuit: " + T.name + " at " + T.ground + " · " + foPitchName(r.pitch) + " pitch, " + r.wx + ". " +
-        (typeof foOrdMode === "function" && foOrdMode() === "simple" ? "The Gaffer's plan is ready - play it or fine-tune it." : "Set your XI, then Save."));
+      // (no toast here - the orders page itself carries the matchup and
+      // conditions, and toasts over the lineup sheet annoyed managers)
       // squad-generation intel (e.g. the Shires reading your Tyke scorecard)
       // is computed while the team is built - speak it now that it exists
       try { if (window.__foCxIntel) { toast(window.__foCxIntel); window.__foCxIntel = null; } } catch (eIn) {}
@@ -2298,6 +2298,27 @@
   setInterval(foRenderCircuit, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/circuit") === 0) { foCxView = null; setTimeout(foRenderCircuit, 40); } });
   try { window.__foTest.cx = { state: foCxState, team: foCxTeam, challenge: foCxChallenge, record: foCxRecord, key: foCxKey }; } catch (eCx) {}
+  // head-to-head vs a Circuit club, answered from the PASSPORT (st.hist) -
+  // App.results is clobbered by every league snapshot, so the match page's
+  // Rivalry tab was reading 0-0 against clubs you had played three times.
+  // Returns null when neither side is a Circuit club (caller falls back).
+  window.foCxH2H = function (A, B) {
+    try {
+      var names = {};
+      FO_CX_REGIONS.forEach(function (r9) { (r9.clubs || []).forEach(function (c9) { names[c9.nm] = 1; }); });
+      var opp = names[B] ? B : (names[A] ? A : null);
+      if (!opp) return null;
+      var me = userTeam().name;
+      var hist = (foCxState().hist || []).filter(function (h) { return h.opp === opp; });
+      var w = 0, l = 0;
+      var rows = hist.map(function (h) {
+        if (h.win) w++; else l++;
+        return { win: !!h.win, my: (h.my != null ? h.my : null), op: (h.op != null ? h.op : null), at: h.at || null,
+                 card: (h.at && h.card) ? ("#/friendly?id=hist-" + h.at) : null };
+      });
+      return { me: me, opp: opp, w: w, l: l, t: 0, rows: rows };
+    } catch (e) { return null; }
+  };
 
   // ==========================================================================
   //  THE CLUB STORY - narrative engine v1. The simulation writes the story:
