@@ -241,29 +241,61 @@
     } catch (e) {}
     return n >= 6 ? "full" : "simple";
   }
-  // the saved plan, in plain cricket language
-  function foOrdPlanSummary() {
+  // Three named game plans - the one real strategic choice a new manager
+  // makes. Each writes the SAME live levers the full editor drives
+  // (phase intents + field plans), so the choice has teeth in the sim.
+  var FO_ORD_PLANS = [
+    { id: "attack", ic: "&#9889;", nm: "Attack early", sub: "Take their new ball on. Boundaries now, questions later.", pi: { pp: 1, mid: 0, death: 2 }, fp: { pp: "att", mid: "bal", death: "def" } },
+    { id: "build", ic: "&#128737;&#65039;", nm: "Build, then explode", sub: "Keep wickets in hand, then launch over the last ten.", pi: { pp: -1, mid: 0, death: 2 }, fp: { pp: "bal", mid: "bal", death: "def" } },
+    { id: "squeeze", ic: "&#128376;&#65039;", nm: "Squeeze them out", sub: "Bat sensibly, strangle them in the field, nick it late.", pi: { pp: 0, mid: 0, death: 1 }, fp: { pp: "bal", mid: "def", death: "def" } }
+  ];
+  // the saved plan as a matchday visual: game-plan cards, the XI strip,
+  // a tempo curve, and the fifty overs of bowling as a coloured timeline
+  function foOrdPlanVisual() {
     try {
-      var bo = App.orders.batOrder || [], sn = foOrdSurname;
-      var lines = [];
-      lines.push("<b>Openers</b> " + E(sn(bo[0] || "")) + " &amp; " + E(sn(bo[1] || "")) + " · <b>captain</b> " + E(sn(App.orders.captain || "")) + " · <b>gloves</b> " + E(sn(App.orders.keeper || "")));
-      var W = { "-1": "defend", "0": "steady", "1": "attack", "2": "launch" };
-      var pi = App.orders.phaseIntent || {};
-      lines.push("<b>Batting</b> " + (W[String(pi.pp || 0)]) + " through the powerplay, " + (W[String(pi.mid || 0)]) + " in the middle, " + (W[String(pi.death || 0)]) + " at the death");
       gridState();
-      var g = App.orders.grid || {};
-      var uniq = function (a) { var s = [], o = {}; a.forEach(function (x) { if (x && !o[x]) { o[x] = 1; s.push(x); } }); return s; };
-      var nb = [], dh = [];
-      for (var o1 = 1; o1 <= 10; o1++) nb.push(g[o1]);
-      for (var o2 = 50; o2 >= 41; o2--) dh.push(g[o2]);
-      nb = uniq(nb).slice(0, 2).map(sn); dh = uniq(dh).slice(0, 2).map(sn);
-      if (nb.length) lines.push("<b>New ball</b> " + nb.map(E).join(" &amp; ") + (dh.length ? " · <b>death overs</b> " + dh.map(E).join(" &amp; ") : ""));
-      // capitalized on purpose: the legacy conditions decorator title-cases
-      // "balanced" in any text node, so lowercase here renders half-capitalized
+      var bo = App.orders.batOrder || [], sn = foOrdSurname;
+      var t = userTeam(), by = {}; ((t && t.players) || []).forEach(function (p) { by[p.name] = p; });
+      var pi = App.orders.phaseIntent || {}, fp = App.orders.fieldPlan || {};
+      var curId = null;
+      FO_ORD_PLANS.forEach(function (pl) {
+        if (pl.pi.pp === (pi.pp || 0) && pl.pi.mid === (pi.mid || 0) && pl.pi.death === (pi.death || 0)
+          && pl.fp.pp === (fp.pp || "bal") && pl.fp.mid === (fp.mid || "bal") && pl.fp.death === (fp.death || "bal")) curId = pl.id;
+      });
+      var cards = "<div class='fo-ord-strat'>" + FO_ORD_PLANS.map(function (pl) {
+        return "<button type='button' class='fo-ord-pcard" + (pl.id === curId ? " on" : "") + "' data-fo-plan='" + pl.id + "'>" +
+          "<span class='ic'>" + pl.ic + "</span><b>" + pl.nm + "</b><span class='sub'>" + pl.sub + "</span></button>";
+      }).join("") + "</div>";
+      var xiChips = "<div class='fo-ord-xis'>" + bo.slice(0, 11).map(function (nm, i) {
+        var p = by[nm] || {};
+        var tag = (App.orders.captain === nm ? "<i>C</i>" : "") + (App.orders.keeper === nm ? "<i>WK</i>" : "");
+        var role = p.bowlType && p.bowlType !== "none" ? (/spin/i.test(p.bowlTypeFull || p.bowlType) ? "spin" : "pace") : (p.keeper ? "wk" : "bat");
+        return "<span class='xc xc-" + role + "'><u>" + (i + 1) + "</u>" + E(sn(nm)) + tag + "</span>";
+      }).join("") + "</div>";
+      // the innings, as a shape: intent per phase drawn across the 50 overs
+      var Y = { "-1": 24, "0": 17, "1": 10, "2": 4 };
+      var yp = Y[String(pi.pp || 0)], ym = Y[String(pi.mid || 0)], yd = Y[String(pi.death || 0)];
+      var line = "M0," + yp + " L16," + yp + " C23," + yp + " 23," + ym + " 30," + ym + " L72," + ym + " C79," + ym + " 79," + yd + " 86," + yd + " L100," + yd;
+      var curve = "<svg class='fo-ord-curve' viewBox='0 0 100 30' preserveAspectRatio='none'>" +
+        "<path d='" + line + " L100,30 L0,30 Z' fill='rgba(176,74,44,.16)'></path>" +
+        "<path d='" + line + "' fill='none' stroke='#B04A2C' stroke-width='2' vector-effect='non-scaling-stroke'></path></svg>";
+      var W = { "-1": "Defend", "0": "Steady", "1": "Attack", "2": "Launch" };
       var F = { bal: "Balanced", att: "Attacking", def: "Defensive" };
-      var fp = App.orders.fieldPlan || {};
-      lines.push("<b>Field</b> " + (F[fp.pp] || "Balanced") + " early, " + (F[fp.mid] || "Balanced") + " through the middle, " + (F[fp.death] || "Balanced") + " late · <b>toss</b> " + (App.orders.tossDecision === "bowl" ? "bowl" : "bat") + " first if we win it");
-      return "<div class='fo-ord-plan'>" + lines.map(function (l) { return "<div>" + l + "</div>"; }).join("") + "</div>";
+      var phases = "<div class='fo-ord-ph3'>" + ["pp", "mid", "death"].map(function (k, i) {
+        return "<div><b>" + ["Powerplay 1-10", "Middle 11-40", "Death 41-50"][i] + "</b><span>" + W[String(pi[k] || 0)] + " with the bat</span><span class='f'>" + (F[fp[k]] || "Balanced") + " field</span></div>";
+      }).join("") + "</div>";
+      var g = App.orders.grid || {}, cols = foOrdColors(), tot = {}, cells = "";
+      for (var o = 1; o <= 50; o++) {
+        var nm2 = g[o]; if (nm2) tot[nm2] = (tot[nm2] || 0) + 1;
+        cells += "<i title='Over " + o + (nm2 ? " · " + E(nm2) : "") + "' style='background:" + (nm2 ? (cols[nm2] || "#8a93a3") : "rgba(28,36,51,.08)") + "'></i>";
+      }
+      var legend = Object.keys(tot).map(function (nm3) {
+        return "<span class='lg'><i style='background:" + (cols[nm3] || "#8a93a3") + "'></i>" + E(sn(nm3)) + "<u>" + tot[nm3] + " ov</u></span>";
+      }).join("");
+      return cards + "<div class='fo-ord-vzh'>The XI, in batting order</div>" + xiChips +
+        "<div class='fo-ord-vzh'>Batting tempo <span>&middot; over 1 &rarr; 50</span></div>" + curve + phases +
+        "<div class='fo-ord-vzh'>The fifty overs of bowling</div><div class='fo-ord-bstrip'>" + cells + "</div><div class='fo-ord-blegend'>" + legend + "</div>" +
+        "<div class='small' style='margin-top:8px;color:#8a93a3'>Toss: " + (App.orders.tossDecision === "bowl" ? "bowl" : "bat") + " first if we win it &middot; the game plan you pick above changes how the XI actually plays.</div>";
     } catch (e) { return ""; }
   }
   function foOrdersUI() {
@@ -304,8 +336,8 @@
       page.innerHTML = "<div class='crumb'>" + E(opp.home) + " v " + E(opp.away) + " &raquo; Orders</div>" + cond +
         "<div class='panel fo-keep'><h4>The Gaffer's plan</h4><div class='pad'>" +
         "<div class='fo-j-gbox' style='max-width:none;margin:2px 0 10px'><img class='gf' src='" + FO_ART + "gaffer.png' alt=''>" +
-        "<span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;I've set the whole sheet for these conditions - eleven picked, order sorted, overs planned. Play it as it is, or open it up and make it yours. You can't break anything; I'll always have a fresh plan.&rdquo;</span></span></div>" +
-        foOrdPlanSummary() +
+        "<span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;Sheet's done for these conditions, boss - your call is the game plan. Attack, build, or squeeze: pick one and watch the tempo curve change. Then we walk out.&rdquo;</span></span></div>" +
+        foOrdPlanVisual() +
         "<div class='fo-ord-acts' style='margin-top:12px'>" +
         "<button class='primary fo-ord-save'>" + (App.pending ? "Play with this plan &#9654;" : "Save this plan") + "</button>" +
         "<button data-fo-act='reroll'>Fresh suggestion</button>" +
@@ -404,6 +436,15 @@
             else { toast("Orders saved."); }
             return;
           }
+          if ((el = q("[data-fo-plan]"))) {
+            var pl9 = FO_ORD_PLANS.filter(function (x) { return x.id === el.getAttribute("data-fo-plan"); })[0];
+            if (pl9) {
+              App.orders.phaseIntent = JSON.parse(JSON.stringify(pl9.pi));
+              App.orders.fieldPlan = JSON.parse(JSON.stringify(pl9.fp));
+              foOrdersUI();
+            }
+            return;
+          }
           if ((el = q("[data-fo-act]"))) {
             var act = el.getAttribute("data-fo-act");
             if (act === "suggest" || act === "reroll") { try { suggestOrders(); App.orders.grid = null; App.orders.gridBowlers = null; gridState(); gridToSpells(); } catch (eS) {} foOrdersUI(); if (act === "reroll") toast("Fresh plan set - same conditions, new thinking."); }
@@ -434,9 +475,34 @@
     foOrdCss.textContent =
       ".fo-ord-cond{background:#F0F4F8;border:1px solid rgba(31,78,107,.16);border-radius:10px;padding:9px 13px;font-size:12.5px;color:#243244;margin:6px 0 10px}" +
       ".fo-ord-read{background:#FBF7EC;border:1px solid rgba(201,162,75,.35);border-left:4px solid #C9A24B;border-radius:10px;padding:9px 13px;color:#4a4234;margin:0 0 10px;line-height:1.5}" +
-      ".fo-ord-plan{display:flex;flex-direction:column;gap:7px}" +
-      ".fo-ord-plan>div{background:#FFFEFC;border:1px solid rgba(28,36,51,.1);border-radius:9px;padding:8px 12px;font-size:13px;color:#243244;line-height:1.5}" +
-      ".fo-ord-plan b{color:#0E233F;text-transform:uppercase;font-size:10.5px;letter-spacing:.06em;margin-right:2px}" +
+      ".fo-ord-strat{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:2px 0 4px}" +
+      "@media(max-width:640px){.fo-ord-strat{grid-template-columns:1fr}}" +
+      "html body.ftpskin #page button.fo-ord-pcard,html body #page button.fo-ord-pcard{text-align:left;border:2px solid rgba(28,36,51,.12) !important;background:#FFFEFC !important;border-radius:12px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:3px;min-width:0}" +
+      "html body.ftpskin #page button.fo-ord-pcard.on,html body #page button.fo-ord-pcard.on{border-color:#B04A2C !important;background:#FFF6F2 !important;box-shadow:0 3px 0 rgba(176,74,44,.22)}" +
+      ".fo-ord-pcard .ic{font-size:19px;line-height:1}" +
+      ".fo-ord-pcard b{font-size:13.5px;color:#0E233F}" +
+      ".fo-ord-pcard.on b{color:#B04A2C}" +
+      ".fo-ord-pcard .sub{font-size:11px;color:#6b7280;line-height:1.4;font-weight:500}" +
+      ".fo-ord-xis{display:flex;flex-wrap:wrap;gap:5px}" +
+      ".fo-ord-xis .xc{display:inline-flex;align-items:center;gap:6px;background:#FFFEFC;border:1px solid rgba(28,36,51,.12);border-radius:99px;padding:3px 10px 3px 4px;font-size:11.5px;font-weight:700;color:#243244;white-space:nowrap}" +
+      ".fo-ord-xis .xc u{width:18px;height:18px;background:#EEF2F7;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:9.5px;font-weight:800;color:#41577a;flex:0 0 auto}" +
+      ".fo-ord-xis .xc i{font-style:normal;font-size:8.5px;background:#0E233F;color:#FFFEFC;border-radius:4px;padding:1px 4px;font-weight:800}" +
+      ".fo-ord-xis .xc-pace u{background:#F6E3D3;color:#8a4a13}.fo-ord-xis .xc-spin u{background:#EBE3F6;color:#5b3a8a}.fo-ord-xis .xc-wk u{background:#D9EFE3;color:#1d6b45}" +
+      ".fo-ord-vzh{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:#41577a;font-weight:800;margin:13px 0 6px}" +
+      ".fo-ord-vzh span{color:#9aa3af;letter-spacing:.02em;text-transform:none;font-weight:600}" +
+      ".fo-ord-curve{width:100%;height:56px;display:block;background:#FBFAF7;border:1px solid rgba(28,36,51,.08);border-radius:10px}" +
+      ".fo-ord-ph3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:7px}" +
+      ".fo-ord-ph3>div{background:#FFFEFC;border:1px solid rgba(28,36,51,.1);border-radius:9px;padding:6px 9px;min-width:0}" +
+      ".fo-ord-ph3 b{display:block;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:#8a93a3;font-weight:800}" +
+      ".fo-ord-ph3 span{display:block;font-size:12px;font-weight:700;color:#0E233F;margin-top:1px}" +
+      ".fo-ord-ph3 span.f{font-weight:600;color:#41577a;font-size:11px}" +
+      "@media(max-width:480px){.fo-ord-ph3{grid-template-columns:repeat(3,minmax(0,1fr))}.fo-ord-ph3 span{font-size:11px}}" +
+      ".fo-ord-bstrip{display:flex;gap:1px;height:26px;border-radius:8px;overflow:hidden}" +
+      ".fo-ord-bstrip i{flex:1;min-width:0}" +
+      ".fo-ord-blegend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:7px;font-size:11.5px;font-weight:700;color:#3a4353}" +
+      ".fo-ord-blegend .lg{display:inline-flex;align-items:center;gap:5px}" +
+      ".fo-ord-blegend .lg i{width:10px;height:10px;border-radius:3px;flex:0 0 auto}" +
+      ".fo-ord-blegend .lg u{text-decoration:none;color:#8a93a3;font-weight:600;margin-left:2px}" +
       ".fo-ord-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px;align-items:start}" +
       "@media(max-width:860px){.fo-ord-cols{grid-template-columns:1fr}}" +
       ".fo-ob-row{display:flex;align-items:center;gap:8px;padding:6px 8px;background:#FFFEFC;border:1px solid rgba(28,36,51,.08);border-radius:9px;margin:4px 0}" +
