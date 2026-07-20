@@ -2710,7 +2710,7 @@
   function foPkArt(p) {
     var k = foPkKind(p);
     var r = k === "wk" ? "wk" : k === "ar" ? "ar"
-      : (k === "wspin" || k === "fspin") ? "mp"
+      : (k === "wspin" || k === "fspin") ? "fs"   // wrist spinners borrow the finger-spin figure until their own pack lands
       : k === "pace" ? (p.role === "seamFast" ? "f" : (p.role === "seamFastMedium" ? "fm" : "mp"))
       : "bat";
     // the same player always gets the same nation figure: his own when it was

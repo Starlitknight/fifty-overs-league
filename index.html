@@ -9715,6 +9715,114 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       });
     } catch (e) {}
   }
+  // ==== the FULL PLAYER PAGE hero: a holographic trading card ==============
+  // Opening a player is the game's pack-rip moment: a big tilting card with
+  // the painted role-x-nation figure, a rarity frame by OVR (80+ gold holo,
+  // 70+ silver, else role-colour), a moving holo sheen that follows the
+  // cursor, star lines, talents as ability boxes, and collector fine print.
+  function foPlayerHero() {
+    try {
+      var ex = document.getElementById("fo-phero");
+      if (foHashPath() !== "#/player") { if (ex) ex.remove(); return; }
+      var page = document.getElementById("page"); if (!page) return;
+      var mH = /[?&]n=([^&]+)/.exec(location.hash || ""); if (!mH) return;
+      var nm = decodeURIComponent(mH[1]);
+      if (ex && ex.getAttribute("data-nm") === nm && page.contains(ex)) return;
+      var hit = (typeof findPlayer === "function") ? findPlayer(nm) : null; if (!hit || !hit.p) return;
+      if (ex) ex.remove();
+      var p = hit.p, team = hit.team || {};
+      var k = foPkKind(p), ac = FO_PK_AC[k] || ["#C9A227", "#a9861a"];
+      var ovr = foPkOvr(p);
+      var tier = ovr >= 80 ? "legend" : ovr >= 70 ? "star" : "club";
+      var rar = tier === "legend" ? "★" : tier === "star" ? "◆" : "●";
+      var roleLbl = (p.btLabel && !/does not bowl/i.test(p.btLabel)) ? p.btLabel : (FO_PK_ROLELBL[p.role] || "Player");
+      var batS = foOrdStars(foOrdBatComp(p));
+      var secLbl = p.keeper ? "KEEPING" : "BOWLING";
+      var secS = p.keeper ? foOrdStars(aggKeep(p)) : foOrdStars(foOrdBowlComp(p));
+      var tals = (p.talents || []).slice(0, 2).map(function (t) {
+        var tip = (typeof TALTIPS !== "undefined" && TALTIPS[t]) || "Triggers in matches when the moment fits.";
+        return "<div class='pht'><span class='pht-k'>TALENT</span><div><b>" + E((typeof TALN !== "undefined" && TALN[t]) || t) + "</b><p>" + E(tip) + "</p></div></div>";
+      }).join("");
+      var no = ("00" + (foHash32("cardno|" + p.name) % 199 + 1)).slice(-3);
+      var el = document.createElement("div");
+      el.id = "fo-phero"; el.className = "ph-" + tier; el.setAttribute("data-nm", nm);
+      el.style.setProperty("--tc", ac[0]); el.style.setProperty("--tcD", ac[1]);
+      el.innerHTML =
+        "<div class='phc' id='fo-phc'><div class='phc-in'>" +
+        "<div class='phc-hd'><div class='phc-idc'><span class='phc-role'>" + E(roleLbl) + " &middot; " + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
+        "<div class='phc-nm'>" + E(p.name) + " <span class='phc-fl'>" + (foQsFlag(p.nat) || "") + "</span></div></div>" +
+        "<div class='phc-ovr'><b>" + ovr + "</b><i>OVR</i></div></div>" +
+        "<div class='phc-art'><img src='" + FO_ART + foPkArt(p) + "' alt=''><span class='phc-holo'></span><span class='phc-glare'></span></div>" +
+        "<div class='phc-stars'>" +
+        "<div class='phr phr-b'><i>BATTING</i>" + foOrdStarHTML(batS) + "<em>" + Math.round(aggBat(p)) + "</em></div>" +
+        "<div class='phr phr-w'><i>" + secLbl + "</i>" + foOrdStarHTML(secS) + "<em>" + Math.round(p.keeper ? aggKeep(p) : (p.bowlType ? aggBowl(p) : 0)) + "</em></div>" +
+        "</div>" +
+        (tals ? "<div class='phc-tals'>" + tals + "</div>" : "") +
+        "<div class='phc-meta'><span>" + E(team.name || "") + "</span><s>&middot;</s><span>Age " + (p.age | 0) + "</span><s>&middot;</s><span>" + E(p.formWord || "steady") + " form</span><s>&middot;</s><span>" + E(p.expWord || "") + "</span></div>" +
+        "<div class='phc-ft'><span>No. " + no + "/199</span><span class='rr'>" + rar + "</span><span>FIFTY OVERS &middot; FIRST EDITION</span></div>" +
+        "</div></div>";
+      page.insertBefore(el, page.firstChild);
+      // the tilt: the card leans toward the cursor and the holo sheen sweeps
+      var card = el.querySelector("#fo-phc");
+      var still = false; try { still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e0) {}
+      if (card && !still) {
+        el.addEventListener("pointermove", function (ev) {
+          var r = card.getBoundingClientRect();
+          var x = (ev.clientX - r.left) / r.width, y = (ev.clientY - r.top) / r.height;
+          x = Math.max(0, Math.min(1, x)); y = Math.max(0, Math.min(1, y));
+          card.style.setProperty("--mx", x); card.style.setProperty("--my", y);
+          card.style.transform = "rotateX(" + ((0.5 - y) * 9).toFixed(2) + "deg) rotateY(" + ((x - 0.5) * 12).toFixed(2) + "deg)";
+        });
+        el.addEventListener("pointerleave", function () {
+          card.style.transform = ""; card.style.setProperty("--mx", 0.5); card.style.setProperty("--my", 0.35);
+        });
+      }
+    } catch (e) {}
+  }
+  try {
+    var foPhCss = document.createElement("style");
+    foPhCss.textContent =
+      "#fo-phero{display:flex;justify-content:center;margin:8px 0 20px;perspective:1100px}" +
+      ".phc{width:min(430px,94vw);border-radius:24px;padding:11px;position:relative;transform-style:preserve-3d;transition:transform .16s ease-out;box-shadow:0 18px 44px rgba(10,16,30,.45),0 4px 12px rgba(10,16,30,.3)}" +
+      // rarity frames: role colour, brushed silver, or woven gold
+      ".ph-club .phc{background:linear-gradient(160deg,var(--tc),var(--tcD) 55%,var(--tc))}" +
+      ".ph-star .phc{background:linear-gradient(135deg,#e8ecf2,#9aa7b8 28%,#f4f7fb 50%,#8e9cae 74%,#dfe5ee)}" +
+      ".ph-legend .phc{background:linear-gradient(135deg,#f6e27a,#c9a227 26%,#fff8d8 50%,#b8860b 76%,#f2d868)}" +
+      ".phc-in{background:radial-gradient(140% 100% at 50% 0%,#1b2a4a 0%,#101B2D 58%,#0B1322 100%);border-radius:15px;padding:13px 15px 11px;color:#F5EFDC;position:relative;overflow:hidden}" +
+      ".phc-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:9px}" +
+      ".phc-role{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:#C9A24B;font-weight:600}" +
+      ".phc-nm{font-family:Archivo,Oswald,sans-serif;font-weight:800;font-size:25px;line-height:1.06;color:#FFFEFC;margin-top:2px}" +
+      ".phc-fl img{width:24px;vertical-align:-2px}" +
+      ".phc-ovr{flex:0 0 auto;text-align:center;background:rgba(255,255,255,.08);border:1.5px solid rgba(201,162,75,.55);border-radius:12px;padding:4px 11px;line-height:1}" +
+      ".phc-ovr b{font-family:Oswald;font-size:30px;font-weight:600;color:#F0B94E;display:block}" +
+      ".phc-ovr i{font-style:normal;font-family:Oswald;font-size:8.5px;letter-spacing:2px;color:#b9c2d4}" +
+      ".phc-art{height:min(52vh,352px);border-radius:12px;overflow:hidden;position:relative;box-shadow:inset 0 0 0 2px rgba(255,255,255,.14),0 4px 14px rgba(0,0,0,.35)}" +
+      ".phc-art img{width:100%;height:100%;object-fit:cover;object-position:50% 14%;display:block}" +
+      // the sheen: a prismatic band that slides with the cursor (holo tiers),
+      // plus a soft glare that follows it on every tier
+      ".phc-holo{position:absolute;inset:-12%;pointer-events:none;mix-blend-mode:color-dodge;opacity:0;background:linear-gradient(112deg,transparent 26%,rgba(255,80,220,.22) 38%,rgba(90,230,255,.22) 48%,rgba(255,240,120,.2) 58%,transparent 72%);transform:translateX(calc((var(--mx,.5) - .5)*70%))}" +
+      ".ph-star .phc-holo{opacity:.75}.ph-legend .phc-holo{opacity:1}" +
+      ".phc-glare{position:absolute;inset:0;pointer-events:none;background:radial-gradient(340px 240px at calc(var(--mx,.5)*100%) calc(var(--my,.35)*100%),rgba(255,255,255,.22),transparent 62%);mix-blend-mode:overlay}" +
+      ".phc-stars{display:flex;flex-direction:column;gap:5px;margin:11px 1px 2px}" +
+      ".phr{display:flex;align-items:center;gap:9px}" +
+      ".phr i{font-style:normal;font-family:Oswald;font-size:10.5px;letter-spacing:1.8px;color:#b9c2d4;font-weight:600;flex:0 0 72px}" +
+      ".phr .st{text-decoration:none;font-size:15px;letter-spacing:1.6px;line-height:1}" +
+      ".phr .st em{font-style:normal;color:#2c3a55}" +
+      ".phr-b .st em.f{color:#F0B94E}.phr-b .st em.h{background:linear-gradient(90deg,#F0B94E 50%,#2c3a55 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".phr-w .st em.f{color:#22D3E0}.phr-w .st em.h{background:linear-gradient(90deg,#22D3E0 50%,#2c3a55 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".phr em.n{margin-left:auto}" +
+      ".phr > em{font-style:normal;font-family:Oswald;font-weight:600;font-size:16px;color:#FFFEFC;margin-left:auto}" +
+      ".phc-tals{display:flex;flex-direction:column;gap:6px;margin:10px 0 2px}" +
+      ".pht{display:flex;gap:9px;align-items:flex-start;background:rgba(255,255,255,.06);border:1px solid rgba(201,162,75,.35);border-radius:10px;padding:7px 10px}" +
+      ".pht-k{flex:0 0 auto;font-family:Oswald;font-size:8.5px;letter-spacing:1.6px;color:#0B1322;background:#C9A24B;border-radius:6px;padding:2.5px 7px;font-weight:600;margin-top:1px}" +
+      ".pht b{font-size:13px;color:#FFFEFC}.pht p{margin:1px 0 0;font-size:11.5px;line-height:1.45;color:#b9c2d4}" +
+      ".phc-meta{display:flex;gap:7px;justify-content:center;align-items:center;flex-wrap:wrap;font-style:italic;font-size:12px;color:#c7cede;margin-top:10px}" +
+      ".phc-meta s{text-decoration:none;color:#C9A24B}" +
+      ".phc-ft{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12);font-family:Oswald;font-size:9px;letter-spacing:1.6px;color:#8a93a3}" +
+      ".phc-ft .rr{color:#F0B94E;font-size:12px;letter-spacing:0}" +
+      "@media(max-width:520px){.phc-nm{font-size:21px}.phc-art{height:min(46vh,300px)}}";
+    document.head.appendChild(foPhCss);
+  } catch (ePh) {}
   function foHashPath() { return (location.hash || "").split("?")[0]; }   // "#/match" not "#/matches"
   // The engine's renderMatch() writes straight into #page with no page guard,
   // and its autoplay guard tests indexOf('#/match') - which also matches
@@ -10129,7 +10237,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260720-2120-40affd";
+  var FO_BUILD = "20260720-2139-c8a49a";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10189,14 +10297,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     //   - synchronously after every navigation (foAfterRoute below)
     //   - debounced after every match render (foMatchRenderHooks)
     //   - on a slow safety-net interval for any async DOM writer
-    window.foDecorateSweep = function () { foRenderScout(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); foHideWeekChip(); };
+    window.foDecorateSweep = function () { foRenderScout(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foPlayerHero(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); foHideWeekChip(); };
     var _sw = null;
     window.foSweepSoon = function () { clearTimeout(_sw); _sw = setTimeout(window.foDecorateSweep, 40); };
     foMatchRenderHooks.push(window.foSweepSoon);
     setInterval(window.foSweepSoon, 1500);
   } catch (e) {}
   // first-class post-route decoration (core route() calls this in a finally)
-  window.foAfterRoute = function () { bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foScorecardPolish(); try { foScStars(); } catch (e) {} foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} try { window.foDecorateSweep(); } catch (e) {} };
+  window.foAfterRoute = function () { bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foPlayerHero(); foScorecardPolish(); try { foScStars(); } catch (e) {} foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} try { window.foDecorateSweep(); } catch (e) {} };
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
@@ -14182,7 +14290,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foPkArt(p) {
     var k = foPkKind(p);
     var r = k === "wk" ? "wk" : k === "ar" ? "ar"
-      : (k === "wspin" || k === "fspin") ? "mp"
+      : (k === "wspin" || k === "fspin") ? "fs"   // wrist spinners borrow the finger-spin figure until their own pack lands
       : k === "pace" ? (p.role === "seamFast" ? "f" : (p.role === "seamFastMedium" ? "fm" : "mp"))
       : "bat";
     // the same player always gets the same nation figure: his own when it was
