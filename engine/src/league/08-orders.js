@@ -831,7 +831,12 @@
       // The horizontal gradient FADES the art into cream where the plan sits:
       // shelves and kit stay vivid at the edges, the centre is a clean page.
       "#fo-ord-bg{position:fixed;inset:0;z-index:-1;background-image:linear-gradient(90deg,rgba(244,239,226,.10) 0%,rgba(244,239,226,.72) 16%,rgba(244,239,226,.94) 30%,rgba(244,239,226,.94) 70%,rgba(244,239,226,.72) 84%,rgba(244,239,226,.10) 100%),var(--fo-ord-bg);background-size:cover;background-position:center center;background-repeat:no-repeat;pointer-events:none}" +
-      "@media(max-width:820px){#fo-ord-bg{background-position:center top;background-image:linear-gradient(rgba(244,239,226,.82),rgba(244,239,226,.88)),var(--fo-ord-bg)}}" +
+      // phones: a portrait screen cover-crops the wide scene to its EMPTY
+      // cream middle - frame the art-rich right side (pads, ball, cap, rainy
+      // window) instead, under a light wash so it reads behind the cards
+      "@media(max-width:820px){#fo-ord-bg{background-position:86% 50%;background-image:linear-gradient(rgba(244,239,226,.32),rgba(244,239,226,.42)),var(--fo-ord-bg)}" +
+      // slim gutters so a slice of the room shows beside the cards
+      "html body.fo-ord-room .wrap{padding-left:13px!important;padding-right:13px!important}}" +
       // the white content wrap goes clear so the room shows through, and the
       // plan keeps to the cream centre of the scene
       "html body.fo-ord-room .wrap{background:transparent!important;box-shadow:none!important}" +
@@ -840,10 +845,10 @@
       // columns (toss + batting left, bench + bowling right) with compact
       // cards, so the whole plan fits a laptop window without scrolling
       ".fo-ord-planv{display:flex;flex-direction:column}" +
-      "@media(min-width:900px) and (max-width:1179.98px){.fo-ord-planv{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 16px;grid-template-areas:'toss toss' 'xi bench' 'bowl bowl';align-items:start}.pv-toss{grid-area:toss}.pv-xi{grid-area:xi}.pv-bench{grid-area:bench}.pv-bowl{grid-area:bowl}}" +
+      // batting + bench sit side by side; BOWLING keeps the full page width so
+      // the fifty over-cells stay readable and tappable
+      "@media(min-width:900px){.fo-ord-planv{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 16px;grid-template-areas:'toss toss' 'xi bench' 'bowl bowl';align-items:start}.pv-toss{grid-area:toss}.pv-xi{grid-area:xi}.pv-bench{grid-area:bench}.pv-bowl{grid-area:bowl}}" +
       "@media(min-width:1180px){" +
-      ".fo-ord-planv{display:grid;grid-template-columns:minmax(0,46%) minmax(0,1fr);gap:0 20px;grid-template-areas:'toss bench' 'xi bench' 'xi bowl';align-items:start}" +
-      ".pv-toss{grid-area:toss}.pv-xi{grid-area:xi}.pv-bench{grid-area:bench}.pv-bowl{grid-area:bowl}" +
       // compact cards: tighter padding, smaller stars, slimmer talent row -
       // the whole plan should sit inside one laptop screen
       ".fo-ord-xis{gap:3px}" +
@@ -877,9 +882,10 @@
       ".mg-grid .mgc em{position:absolute;top:1px;left:3px;font-style:normal;font-size:7.5px;color:#a8aeb9;font-weight:700}" +
       ".mg-grid .mgc b{display:flex;align-items:center;justify-content:center;height:100%;font-size:11px;font-weight:800;color:#fff}" +
       "}" +
-      // one colour per bowler, chips and cells alike
-      ".mgb-c0 i,.mgc-c0 b{background:#2E5A7A}.mgb-c1 i,.mgc-c1 b{background:#C8674A}.mgb-c2 i,.mgc-c2 b{background:#0FB4C4}.mgb-c3 i,.mgc-c3 b{background:#C9A24B}.mgb-c4 i,.mgc-c4 b{background:#4E7A4E}.mgb-c5 i,.mgc-c5 b{background:#7A4E7A}" +
-      "html body #page .mg-grid button.mgc-c0{background:#2E5A7A!important}html body #page .mg-grid button.mgc-c1{background:#C8674A!important}html body #page .mg-grid button.mgc-c2{background:#0FB4C4!important}html body #page .mg-grid button.mgc-c3{background:#C9A24B!important}html body #page .mg-grid button.mgc-c4{background:#4E7A4E!important}html body #page .mg-grid button.mgc-c5{background:#7A4E7A!important}" +
+      // one uniform navy for every bowler's cells - the initials tell them
+      // apart, the colour stays calm
+      ".mg-chips .mgb i{display:none}" +
+      "html body #page .mg-grid button.mgc-c0,html body #page .mg-grid button.mgc-c1,html body #page .mg-grid button.mgc-c2,html body #page .mg-grid button.mgc-c3,html body #page .mg-grid button.mgc-c4,html body #page .mg-grid button.mgc-c5{background:#41577a!important}" +
       ".mg-grid .mgc-c0 em,.mg-grid .mgc-c1 em,.mg-grid .mgc-c2 em,.mg-grid .mgc-c3 em,.mg-grid .mgc-c4 em,.mg-grid .mgc-c5 em{color:rgba(255,255,255,.75)}" +
       // ---- the ≡ drag handle: hidden for mouse users (drag-anywhere covers
       // them), a fat instant-drag target on touch screens
