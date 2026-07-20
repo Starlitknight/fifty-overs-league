@@ -915,7 +915,7 @@
         (stCx.conq || []).forEach(function (rid) {
           if ((mus.trophies || []).some(function (x) { return x.cx === rid; })) return;
           var rg = FO_CX_REGIONS.filter(function (x) { return x && x.id === rid; })[0];
-          if (rg) mus.trophies.push({ s: App.seasonNo || 1, kind: rg.trophy + " · The Circuit: conquered " + rg.nm, cx: rid, art: "circuit/trophy-" + rid + ".webp" });
+          if (rg) mus.trophies.push({ s: App.seasonNo || 1, kind: rg.trophy + " · The Circuit: " + (rg.final ? "won the World Final" : "conquered " + rg.nm), cx: rid, art: rg.art || ("circuit/trophy-" + rid + ".webp") });
         });
       }
     } catch (eCxB) {}

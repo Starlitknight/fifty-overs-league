@@ -8257,19 +8257,20 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           if (curJ >= FO_CX_REGIONS.length) {
             journeyCard = "<div class='fo-home-j' data-go='circuit'><div class='fo-hj-map'><img src='" + FO_ART + "circuit/trophy-crown.webp' alt=''></div>" +
               "<div class='fo-hj-main'><div class='fo-hj-eyebrow'>The Journey &middot; complete</div>" +
-              "<div class='fo-hj-opp'>Six regions. Six trophies.</div>" +
-              "<div class='fo-hj-quip'>Reggie Thorne's World Final is coming. Your cabinet is ready for the crown.</div>" +
+              "<div class='fo-hj-opp'>World champions.</div>" +
+              "<div class='fo-hj-quip'>Six regions, six trophies - and the Thorne Crown, taken at Marylebone. The cabinet is full.</div>" +
               (hookJ || lastLog ? "<div class='fo-hj-story'>" + E(hookJ || lastLog) + " <a href='#/story'>Club story &rsaquo;</a></div>" : "") + "</div>" +
-              "<div class='fo-hj-side'><span class='fo-hj-tr'>&#127942; 6 / 6</span><button class='fo-hj-cta' data-go='circuit'>The Circuit &rsaquo;</button></div></div>";
+              "<div class='fo-hj-side'><span class='fo-hj-tr'>&#128081; The Crown</span><button class='fo-hj-cta' data-go='circuit'>The Circuit &rsaquo;</button></div></div>";
           } else {
             var rJ = FO_CX_REGIONS[curJ];
             var nextCiJ = -1;
             for (var iJ = 0; iJ < rJ.clubs.length; iJ++) if (!foCxBeaten(stJ, rJ.id, iJ)) { nextCiJ = iJ; break; }
             var cJ = rJ.clubs[Math.max(0, nextCiJ)];
-            var oppArt = cJ.boss ? "<img class='bossy' src='" + FO_ART + "circuit/boss-" + rJ.id + ".webp' alt=''>" : "";
+            var oppArt = cJ.boss ? "<img class='bossy' src='" + FO_ART + (cJ.bimg || ("circuit/boss-" + rJ.id + ".webp")) + "' alt=''>" : "";
+            var natJ = FO_CX_REGIONS.filter(function (r9) { return !r9.final; }).length;
             journeyCard = "<div class='fo-home-j' data-go='circuit' style='--cxc:" + rJ.ac + "'>" +
-              "<div class='fo-hj-map'><img src='" + FO_ART + "circuit/" + rJ.id + ".webp' alt=''><span class='fo-hj-reg'>" + E(rJ.nm) + "</span></div>" +
-              "<div class='fo-hj-main'><div class='fo-hj-eyebrow'>The Journey &middot; " + conqN + " of " + FO_CX_REGIONS.length + " regions conquered</div>" +
+              "<div class='fo-hj-map'><img src='" + FO_ART + (rJ.final ? "thorne.png" : "circuit/" + rJ.id + ".webp") + "' alt=''><span class='fo-hj-reg'>" + E(rJ.nm) + "</span></div>" +
+              "<div class='fo-hj-main'><div class='fo-hj-eyebrow'>The Journey &middot; " + (rJ.final ? "the World Final" : conqN + " of " + natJ + " regions conquered") + "</div>" +
               "<div class='fo-hj-opp'>" + oppArt + "<span>Next: <b>" + E(cJ.nm) + "</b>" + (cJ.boss ? " &middot; Boss" : "") + " &middot; " + E(cJ.city) + "</span></div>" +
               (cJ.gq ? "<div class='fo-hj-quip'>&ldquo;" + E(cJ.gq.split(". ")[0]) + ".&rdquo; &mdash; the Gaffer</div>" : "") +
               (hookJ || lastLog ? "<div class='fo-hj-story'>" + E(hookJ || lastLog) + " <a href='#/story'>Club story &rsaquo;</a></div>" : "") + "</div>" +
@@ -9999,7 +10000,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260720-0013-0747e5";
+  var FO_BUILD = "20260720-0156-9cdd19";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -20816,7 +20817,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         (stCx.conq || []).forEach(function (rid) {
           if ((mus.trophies || []).some(function (x) { return x.cx === rid; })) return;
           var rg = FO_CX_REGIONS.filter(function (x) { return x && x.id === rid; })[0];
-          if (rg) mus.trophies.push({ s: App.seasonNo || 1, kind: rg.trophy + " · The Circuit: conquered " + rg.nm, cx: rid, art: "circuit/trophy-" + rid + ".webp" });
+          if (rg) mus.trophies.push({ s: App.seasonNo || 1, kind: rg.trophy + " · The Circuit: " + (rg.final ? "won the World Final" : "conquered " + rg.nm), cx: rid, art: rg.art || ("circuit/trophy-" + rid + ".webp") });
         });
       }
     } catch (eCxB) {}
@@ -22514,8 +22515,30 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           leader: "Vikram Anand", note: "bowls six different balls an over", gq: "Anand bowls six different balls an over and reads your feet. Duel him on your terms; cash in at the other.", taunt: "Six different balls an over. Guess which one has your name on it.", nug: "Lahore: Anand bowls six different balls an over and reads your feet like a newspaper. His quicks are ordinary - cash in at the other end and duel him on YOUR terms.", mult: 1.18,
           tadj: 0.04, sig: "web", intel: "Anand bowls six different balls an over and reads feet like headlines. Don't duel him - milk the ordinary quicks at the other end and let his overs die quietly.",
           winln: "You read all six, in my own dust. I taught you nothing, and you took everything.", lossln: "You guessed wrong more than you guessed right. Study the dust, friend, then return." }
+      ] },
+    // -- the seventh door: not a nation but a man. Unlocks when all six
+    //    regions are conquered; beating it ends the world tour.
+    { id: "gt", nm: "The World Final", cty: "England", arch: "greybeard", type: "The Summit", ac: "#C8674A", final: 1,
+      bg: "eng.webp", art: "circuit/trophy-crown.webp",
+      arrive: "Marylebone, boss. Where he and I started, and where one of us finishes. Twenty years I've carried this fixture in my coat pocket.",
+      pitch: "balanced", wx: "Fair",
+      cond: "A true pitch, still air, full house. Nothing in the surface for anyone - no excuses, no hiding. The better side wins.",
+      gaffer: "No wind, no cloud, no demons in the deck. He's built a side with every trick we beat on the tour - so play our cricket, all of it, and trust the lads who got you here.",
+      academy: "", trophy: "The Thorne Crown", nats: [],
+      clubs: [
+        { boss: 1, final: 1, mx: 50, my: 40, nm: "Thorne's Invincible XI", city: "Marylebone", capt: "master",
+          leader: "Reggie Thorne", bimg: "thorne.png", note: "every trick from every nation, drilled to the minute",
+          gq: "He's watched every tie you've played and built an XI out of the answers. There's no puzzle this time - just the best side we've ever faced.",
+          taunt: "Six trophies against small opposition. I've selected accordingly. Bring your whole game - you'll be needing it.",
+          nug: "Marylebone: Thorne's Invincibles have Pemberley's patience, Emmanuel's finish, Steenkamp's new ball and Whitcombe's hands. No weakness to milk - you win this by playing YOUR cricket better than they play theirs.",
+          mult: 1.2, tadj: 0.012, sig: "invincible",
+          intel: "He's coached every flaw you've shown on tour into that XI. There's nothing to exploit - so give them nothing: bat your overs, hold your catches, and make HIM blink first.",
+          winln: "Twenty years ago I told your Gaffer a team is a ledger and he called it a game. Take the Crown. Perhaps you were both right.",
+          lossln: "You were worth the fixture. That's not nothing - I've said less about better sides. Go around again; the Final keeps." }
       ] }
   ];
+  // regions that count toward the world tour (the Final is the epilogue)
+  var FO_CX_NATIONS = FO_CX_REGIONS.filter(function (r9) { return !r9.final; }).length;
   function foCxRegionByIx(ri) { return FO_CX_REGIONS[ri] || null; }
   // nations whose youth academies you've unlocked by conquering their region
   function foCxAcademyNats() {
@@ -22536,8 +22559,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     return FO_CX_REGIONS.length;   // world tour complete
   }
   function foCxBeaten(st, rid, ci) { return !!((st.beat[rid] || [])[ci]); }
-  // within a region the clubs unlock in order; the boss needs both minors
+  // within a region the clubs unlock in order; the boss needs both minors.
+  // Only the LIVE region's doors open - the chapter strip lets you scout
+  // ahead, but the ladder is strict (and the World Final doubly so).
   function foCxClubOpen(st, ri, ci) {
+    if (ri !== foCxCurrent(st)) return false;
     if (foCxConquered(st, FO_CX_REGIONS[ri].id)) return false;   // nothing left to play there
     var rid = FO_CX_REGIONS[ri].id;
     for (var i = 0; i < ci; i++) if (!foCxBeaten(st, rid, i)) return false;
@@ -22583,6 +22609,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         if (isSpin(p)) { mul(p, "wicket", 1.3); mul(p, "variation", 1.38); mul(p, "moveTurn", 1.28); }
         else mul(p, "wicket", 0.84);
       });
+    } else if (sig === "invincible") {
+      // Thorne's Final XI: every lesson of the tour in modest doses - the
+      // wall's temperament, the safe hands, a genuine new-ball threat and a
+      // ruthless best bat. No single weakness to milk.
+      players.forEach(function (p) { mul(p, "temperament", 1.15); mul(p, "discipline", 1.12); mul(p, "catching", 1.15); mul(p, "fielding", 1.12); });
+      var pace9 = bowlers.filter(function (p) { return !isSpin(p); }).sort(function (a, b) { return ((b.skills || {}).wicket || 0) - ((a.skills || {}).wicket || 0); });
+      if (pace9[0]) { mul(pace9[0], "wicket", 1.2); mul(pace9[0], "moveTurn", 1.15); }
+      var best9 = null;
+      players.forEach(function (p) { if (!p.keeper && (!p.bowlType || p.bowlType === "none") && (!best9 || (p.rating || 0) > (best9.rating || 0))) best9 = p; });
+      if (best9) { mul(best9, "vsPace", 1.15); mul(best9, "vsSpin", 1.15); mul(best9, "power", 1.12); }
     }
     players.forEach(function (p) { try { jsDerive(p); } catch (e) {} });
   }
@@ -22685,13 +22721,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var r = FO_CX_REGIONS[ri], c = r.clubs[ci], me = userTeam();
       var myNm = (me && me.name) || "Your club", myInit = foJInitials(myNm);
       var opp = c.boss
-        ? "<div class='vs-crest boss'><img class='vs-boss' src='" + FO_ART + "circuit/boss-" + r.id + ".webp' alt=''></div>"
+        ? "<div class='vs-crest boss'><img class='vs-boss' src='" + FO_ART + (c.bimg || ("circuit/boss-" + r.id + ".webp")) + "' alt=''></div>"
         : "<div class='vs-crest'><img class='vs-soul' src='" + FO_ART + "crests/" + r.arch + ".png' alt=''></div>";
       var att = c.boss ? c.leader : c.nm;
       var quote = c.taunt ? "<div class='vs-quote'><span class='qm'>&ldquo;</span>" + E(c.taunt) + "<span class='qm'>&rdquo;</span><span class='att'>&mdash; " + E(att) + "</span></div>" : "";
       var ex = document.getElementById("fo-cx-vs"); if (ex) ex.remove();
       var m = document.createElement("div"); m.id = "fo-cx-vs"; m.className = "fo-cx-vs"; m.style.setProperty("--cxc", r.ac);
-      m.innerHTML = "<div class='vs-bg' style='background-image:url(" + FO_ART + "circuit/" + r.id + ".webp)'></div><div class='vs-veil'></div>" +
+      m.innerHTML = "<div class='vs-bg' style='background-image:url(" + FO_ART + "circuit/" + (r.bg || (r.id + ".webp")) + ")'></div><div class='vs-veil'></div>" +
         "<div class='vs-stage'>" +
         "<div class='vs-eyebrow'>The Circuit &middot; " + E(r.nm) + "</div>" +
         "<div class='vs-row'>" +
@@ -22780,15 +22816,22 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       x = x || {};
       var ex = document.getElementById("fo-cx-end"); if (ex) ex.remove();
       var m = document.createElement("div"); m.id = "fo-cx-end"; m.className = "fo-modal";
-      var head = win ? (conquered ? r.nm + " conquered!" : c.nm + " beaten!") : "They hold the door";
-      var gline = win
-        ? (conquered ? "That's the whole nation, boss. " + r.trophy + " is ours, and their academy will take our calls now. On to the next flight."
-          : "Good cricket. " + (r.clubs[r.clubs.indexOf(c) + 1] ? "Next door: " + r.clubs[r.clubs.indexOf(c) + 1].nm + "." : "The boss is waiting."))
-        : "No shame in it - their ground, their rules. Patch the hole they found and we go again. The door stays open.";
+      var head = win ? (conquered ? (r.final ? "The Thorne Crown is yours!" : r.nm + " conquered!") : c.nm + " beaten!") : (r.final ? "The Final keeps" : "They hold the door");
+      var gline;
+      if (r.final) {
+        gline = win
+          ? "Twenty years, boss. He batted, I bowled, and it broke over a ledger. Today the club we built together settled it his way AND mine. The Crown comes home - and I owe you the whole story. Ask me anything."
+          : "That's the best side either of us has ever faced - he made sure of it. Good. Sharpen up, come back, and take the Crown off him properly. The fixture keeps.";
+      } else {
+        gline = win
+          ? (conquered ? "That's the whole nation, boss. " + r.trophy + " is ours, and their academy will take our calls now. On to the next flight."
+            : "Good cricket. " + (r.clubs[r.clubs.indexOf(c) + 1] ? "Next door: " + r.clubs[r.clubs.indexOf(c) + 1].nm + "." : "The boss is waiting."))
+          : "No shame in it - their ground, their rules. Patch the hole they found and we go again. The door stays open.";
+      }
       // the boss speaks: victory earns respect, defeat earns the needle
       var bLine = c.boss ? (win ? c.winln : c.lossln) : null;
       var bossQ = bLine
-        ? "<div class='fo-j-gbox' style='max-width:none;margin:8px 0'><img class='gf' src='" + FO_ART + "circuit/boss-" + r.id + ".webp' alt='' style='border-radius:50%;object-fit:cover;object-position:50% 8%'>" +
+        ? "<div class='fo-j-gbox' style='max-width:none;margin:8px 0'><img class='gf' src='" + FO_ART + (c.bimg || ("circuit/boss-" + r.id + ".webp")) + "' alt='' style='border-radius:50%;object-fit:cover;object-position:50% 8%'>" +
           "<span class='bx'><span class='sp'>" + E(c.leader || c.nm) + "</span><span class='tx'>&ldquo;" + E(bLine) + "&rdquo;</span></span></div>"
         : "";
       var trainLn = (x.gains && x.gains.length)
@@ -22797,11 +22840,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         ? "<div class='small' style='margin:6px 0 0'>&#128222; <b>" + E(x.marquee) + "</b> saw the final and wants in - he's on the <a href='#/transfers' onclick=\"document.getElementById('fo-cx-end').remove()\">transfer market</a>, and he won't wait forever.</div>" : "";
       m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>The Circuit · " + E(r.nm) + "</div>" +
         "<h3>" + E(head) + "</h3>" +
-        (win && conquered ? "<img class='fo-cx-troph' src='" + FO_ART + "circuit/trophy-" + r.id + ".webp' alt='" + E(r.trophy) + "'>" : "") +
+        (win && conquered ? "<img class='fo-cx-troph' src='" + FO_ART + (r.art || ("circuit/trophy-" + r.id + ".webp")) + "' alt='" + E(r.trophy) + "'>" : "") +
         (win && prize ? "<div class='small' style='margin:2px 0 8px'>Prize money: <b>" + FO$(prize) + "</b>" +
           (x.mult > 1 ? " <span style='color:#B5892F'>· win streak " + x.streak + " - promoters pay ×" + x.mult + "</span>" : "") +
           " <span style='color:#8a93a3'>· banked toward wages and your academy - see the Office</span>" +
-          (conquered ? " · <b>" + E(r.trophy) + "</b> → museum · " + E(r.nm) + "'s youth academy unlocked" : "") + "</div>" : "") +
+          (conquered ? " · <b>" + E(r.trophy) + "</b> → museum" + ((r.nats || []).length ? " · " + E(r.nm) + "'s youth academy unlocked" : "") : "") + "</div>" : "") +
         foCxEvidence() + bossQ +
         "<div class='fo-j-gbox' style='max-width:none;margin:8px 0'><img class='gf' src='" + FO_ART + "gaffer" + (win ? "-laugh" : "-serious") + ".png' alt=''>" +
         "<span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;" + E(gline) + "&rdquo;</span></span></div>" +
@@ -22858,7 +22901,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             var me = userTeam();
             var mus = (me._museum = me._museum || { trophies: [], awards: [], legends: [] });
             if (!(mus.trophies || []).some(function (x) { return x.cx === r.id; }))
-              mus.trophies.push({ s: App.seasonNo || 1, kind: r.trophy + " · The Circuit: conquered " + r.nm, cx: r.id, art: "circuit/trophy-" + r.id + ".webp" });
+              mus.trophies.push({ s: App.seasonNo || 1, kind: r.trophy + " · The Circuit: " + (r.final ? "won the World Final" : "conquered " + r.nm), cx: r.id, art: r.art || ("circuit/trophy-" + r.id + ".webp") });
           } catch (eM) {}
           // the marquee: a star from the conquered nation saw the final and
           // wants in - he appears on the transfer market until signed (or
@@ -22882,10 +22925,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           // Thorne watches every conquest - and England leaves a loose thread
           try {
             var stT = foStState();
-            stT.queue.push({ id: "thorneCx", data: { first: (st.conq || []).length <= 1, region: r.nm } });
-            if (r.id === "eng") {
-              stT.queue.push({ id: "gtReveal1", data: {} });
-              foStLog(stT, "mystery", "The scorebook question lingers: the Gaffer's name, beside Thorne's, in a Marylebone ledger dated twenty years back.");
+            if (r.final) {
+              // the Crown: the twenty-year mystery pays out in full
+              stT.queue.push({ id: "gtRevealFinal", data: {} });
+              foStLog(stT, "mystery", "Revelation, in full: the ledger, the golden summer, and why it broke. The Crown closed the book.");
+            } else {
+              stT.queue.push({ id: "thorneCx", data: { first: (st.conq || []).length <= 1, region: r.nm } });
+              if (r.id === "eng") {
+                stT.queue.push({ id: "gtReveal1", data: {} });
+                foStLog(stT, "mystery", "The scorebook question lingers: the Gaffer's name, beside Thorne's, in a Marylebone ledger dated twenty years back.");
+              }
             }
             foStVar(stT, "thorne", 2);
             foStSave(stT);
@@ -23183,25 +23232,28 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       page.__foCxSig = sig;
       var chap = FO_CX_REGIONS.map(function (r2, i) {
         var cls = foCxConquered(st, r2.id) ? "done" : (i === ri ? "on" : "");
-        return "<span class='" + cls + "' data-ri='" + i + "'>" + E(r2.nm) + "</span>";
-      }).join("<i>›</i>") + "<i>›</i><span>★ Thorne</span>";
+        return "<span class='" + cls + "' data-ri='" + i + "'>" + (r2.final ? "★ Thorne" : E(r2.nm)) + "</span>";
+      }).join("<i>›</i>");
       var html;
       if (cur >= FO_CX_REGIONS.length && foCxView == null) {
+        // the Crown is won: the epilogue
         html = "<div class='fo-cx'><div class='fo-cx-chap'>" + chap + "</div>" +
-          "<div class='fo-cx-done'><div class='fo-cx-rule'><i></i><b>THE CIRCUIT</b><i></i></div>" +
-          "<div class='fo-cx-h1'>World tour complete</div>" +
-          "<p class='fo-cx-cond'>Six nations, six trophies. Reggie Thorne's World Final is being built - the summit match arrives in the next update. Your trophies live in the club museum.</p></div></div>";
+          "<div class='fo-cx-done'><div class='fo-cx-rule'><i></i><b>THE CIRCUIT · COMPLETE</b><i></i></div>" +
+          "<div class='fo-cx-h1'>World champions</div>" +
+          "<img src='" + FO_ART + "circuit/trophy-crown.webp' alt='The Thorne Crown' style='display:block;height:150px;margin:12px auto 4px'>" +
+          "<p class='fo-cx-cond'>Six nations. Six trophies. And the Thorne Crown, taken off the man himself at Marylebone. Every piece of it lives in the club museum - and somewhere, Reggie Thorne is rewriting his arithmetic.</p></div></div>";
       } else {
         var r = FO_CX_REGIONS[ri];
         var beatN = (st.beat[r.id] || []).filter(Boolean).length;
         var dots = r.clubs.map(function (c2, i2) { return "<i class='" + (foCxBeaten(st, r.id, i2) ? "f" : "") + "'></i>"; }).join("");
-        var live = !foCxConquered(st, r.id);
+        var live = ri === cur && !foCxConquered(st, r.id);
         var nextCi = -1;
         if (live) for (var i3 = 0; i3 < r.clubs.length; i3++) if (!foCxBeaten(st, r.id, i3)) { nextCi = i3; break; }
+        var conqN = (st.conq || []).filter(function (id9) { return id9 !== "gt"; }).length;
         html = "<div class='fo-cx' style='--cxc:" + r.ac + "'>" +
           "<div class='fo-cx-chap'>" + chap + "</div>" +
           "<div class='fo-cx-head'>" +
-          "<div class='fo-cx-rule'><i></i><b>THE CIRCUIT · " + (st.conq || []).length + " OF " + FO_CX_REGIONS.length + " REGIONS CONQUERED</b><i></i></div>" +
+          "<div class='fo-cx-rule'><i></i><b>" + (r.final ? "THE CIRCUIT · THE WORLD FINAL" : "THE CIRCUIT · " + conqN + " OF " + FO_CX_NATIONS + " REGIONS CONQUERED") + "</b><i></i></div>" +
           "<div class='fo-cx-h1'>" + E(r.nm) + "</div>" +
           "<div class='fo-cx-prog'>Progress · " + beatN + " / " + r.clubs.length + " beaten <span style='display:inline-flex;gap:5px;margin-left:4px'>" + dots + "</span></div>" +
           "</div>" +
@@ -23210,7 +23262,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             var bossDone = foCxBeaten(st, r.id, r.clubs.indexOf(bc));
             return "<div class='fo-cx-stage'>" +
               "<div class='fo-cx-map'><div class='mapin'>" +
-              "<img src='" + FO_ART + "circuit/" + r.id + ".webp' alt=''>" +
+              "<img src='" + FO_ART + (r.final ? "thorne.png" : "circuit/" + r.id + ".webp") + "' alt=''" + (r.final ? " style='object-fit:cover;object-position:50% 12%'" : "") + ">" +
               r.clubs.map(function (c5, i5) {
                 var done5 = foCxBeaten(st, r.id, i5);
                 var cls5 = "fo-cx-node" + (c5.boss ? " bossn" : "") + (done5 ? " done" : (live && i5 === nextCi ? " nxt" : " lock"));
@@ -23220,14 +23272,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
               "</div></div>" +
               "<div class='fo-cx-rail'>" +
               "<div class='fo-cx-bosscard" + (bossDone ? " conq" : "") + "'>" +
-              "<div class='bimg'><img src='" + FO_ART + "circuit/boss-" + r.id + ".webp' alt='" + E(bc.leader) + "'>" +
+              "<div class='bimg'><img src='" + FO_ART + (bc.bimg || ("circuit/boss-" + r.id + ".webp")) + "' alt='" + E(bc.leader) + "'>" +
               (bossDone ? "<span class='bwon'>✓ Beaten</span>" : "") + "</div>" +
-              "<div class='bmeta'><span class='btag' style='color:" + r.ac + "'>Region Boss</span>" +
+              "<div class='bmeta'><span class='btag' style='color:" + r.ac + "'>" + (r.final ? "The Final Opponent" : "Region Boss") + "</span>" +
               "<div class='bnm'>" + E(bc.leader) + "</div>" +
               "<div class='bcl'>" + E(bc.nm) + " · " + E(bc.city) + "</div></div>" +
               "</div>" +
               "<div class='fo-cx-trophycard'>" +
-              "<img src='" + FO_ART + "circuit/trophy-" + r.id + ".webp' alt='" + E(r.trophy) + "'>" +
+              "<img src='" + FO_ART + (r.art || ("circuit/trophy-" + r.id + ".webp")) + "' alt='" + E(r.trophy) + "'>" +
               "<div class='tnm'>" + E(r.trophy) + "</div>" +
               "</div>" +
               "</div></div>";
@@ -23254,7 +23306,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // the challenge right there. The map + the Gaffer ARE the interface now.
       (function () {
         var rr = FO_CX_REGIONS[ri], stt = foCxState();
-        var liveR = !foCxConquered(stt, rr.id);
+        var liveR = ri === cur && !foCxConquered(stt, rr.id);
         var nCi = -1; if (liveR) for (var q = 0; q < rr.clubs.length; q++) if (!foCxBeaten(stt, rr.id, q)) { nCi = q; break; }
         var sp = page.querySelector("#fo-cx-brief-sp"), tx = page.querySelector("#fo-cx-brief-tx"), act = page.querySelector("#fo-cx-brief-act");
         var brief = page.querySelector("#fo-cx-brief");
@@ -23393,6 +23445,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     gtReveal1: function (d) {
       return { who: "gaffer", txt: "Alright. You've earned one answer. Thorne and I came up together - same club, same season, same dressing room. He batted, I bowled, and for one summer nobody in England could touch us. What broke it... that's a longer innings. Five more regions, boss.", choices: [
         { t: "Five more regions", d: "Revelation one of six", fx: function (s2) { foStLog(s2, "mystery", "Revelation I: the Gaffer and Thorne were teammates - one golden summer at Marylebone before it all went wrong."); foStVar(s2, "unity", 2); } }] };
+    },
+    gtRevealFinal: function () {
+      // the whole story, paid on the Crown
+      return { who: "gaffer", txt: "The ledger, then. That last summer, Marylebone offered one contract between the two of us - the board wanted an accountant's answer and Thorne gave them one: his name, his numbers, my column crossed out. He wasn't wrong on the arithmetic. He was wrong about what a team is. Twenty years I've wanted to prove it with cricket instead of grudges - and today, boss, YOUR club did. Both of us finally got to be right.", choices: [
+        { t: "Frame the scorecard", d: "The ledger closes for good", fx: function (s2) { foStLog(s2, "mystery", "Revelation, final: one contract, two names, a crossed-out column. Settled twenty years later, by the club that picked both ways of being right."); foStVar(s2, "unity", 5); foStVar(s2, "fans", 5); } },
+        { t: "Buy him a pint instead", d: "Old rivals, older teammates", fx: function (s2) { foStLog(s2, "mystery", "The Gaffer and Thorne left the Colosseum together, arguing about a field setting from twenty years ago. Some ledgers close over a pint."); foStVar(s2, "unity", 6); foStVar(s2, "thorne", 5); } }] };
     },
     thorneCx: function (d) {
       var t = d.first ? "One trophy. Try not to mistake arrival for importance." : ("So " + d.region + " falls too. The collection grows - and so does the file I keep on you.");

@@ -547,19 +547,20 @@
           if (curJ >= FO_CX_REGIONS.length) {
             journeyCard = "<div class='fo-home-j' data-go='circuit'><div class='fo-hj-map'><img src='" + FO_ART + "circuit/trophy-crown.webp' alt=''></div>" +
               "<div class='fo-hj-main'><div class='fo-hj-eyebrow'>The Journey &middot; complete</div>" +
-              "<div class='fo-hj-opp'>Six regions. Six trophies.</div>" +
-              "<div class='fo-hj-quip'>Reggie Thorne's World Final is coming. Your cabinet is ready for the crown.</div>" +
+              "<div class='fo-hj-opp'>World champions.</div>" +
+              "<div class='fo-hj-quip'>Six regions, six trophies - and the Thorne Crown, taken at Marylebone. The cabinet is full.</div>" +
               (hookJ || lastLog ? "<div class='fo-hj-story'>" + E(hookJ || lastLog) + " <a href='#/story'>Club story &rsaquo;</a></div>" : "") + "</div>" +
-              "<div class='fo-hj-side'><span class='fo-hj-tr'>&#127942; 6 / 6</span><button class='fo-hj-cta' data-go='circuit'>The Circuit &rsaquo;</button></div></div>";
+              "<div class='fo-hj-side'><span class='fo-hj-tr'>&#128081; The Crown</span><button class='fo-hj-cta' data-go='circuit'>The Circuit &rsaquo;</button></div></div>";
           } else {
             var rJ = FO_CX_REGIONS[curJ];
             var nextCiJ = -1;
             for (var iJ = 0; iJ < rJ.clubs.length; iJ++) if (!foCxBeaten(stJ, rJ.id, iJ)) { nextCiJ = iJ; break; }
             var cJ = rJ.clubs[Math.max(0, nextCiJ)];
-            var oppArt = cJ.boss ? "<img class='bossy' src='" + FO_ART + "circuit/boss-" + rJ.id + ".webp' alt=''>" : "";
+            var oppArt = cJ.boss ? "<img class='bossy' src='" + FO_ART + (cJ.bimg || ("circuit/boss-" + rJ.id + ".webp")) + "' alt=''>" : "";
+            var natJ = FO_CX_REGIONS.filter(function (r9) { return !r9.final; }).length;
             journeyCard = "<div class='fo-home-j' data-go='circuit' style='--cxc:" + rJ.ac + "'>" +
-              "<div class='fo-hj-map'><img src='" + FO_ART + "circuit/" + rJ.id + ".webp' alt=''><span class='fo-hj-reg'>" + E(rJ.nm) + "</span></div>" +
-              "<div class='fo-hj-main'><div class='fo-hj-eyebrow'>The Journey &middot; " + conqN + " of " + FO_CX_REGIONS.length + " regions conquered</div>" +
+              "<div class='fo-hj-map'><img src='" + FO_ART + (rJ.final ? "thorne.png" : "circuit/" + rJ.id + ".webp") + "' alt=''><span class='fo-hj-reg'>" + E(rJ.nm) + "</span></div>" +
+              "<div class='fo-hj-main'><div class='fo-hj-eyebrow'>The Journey &middot; " + (rJ.final ? "the World Final" : conqN + " of " + natJ + " regions conquered") + "</div>" +
               "<div class='fo-hj-opp'>" + oppArt + "<span>Next: <b>" + E(cJ.nm) + "</b>" + (cJ.boss ? " &middot; Boss" : "") + " &middot; " + E(cJ.city) + "</span></div>" +
               (cJ.gq ? "<div class='fo-hj-quip'>&ldquo;" + E(cJ.gq.split(". ")[0]) + ".&rdquo; &mdash; the Gaffer</div>" : "") +
               (hookJ || lastLog ? "<div class='fo-hj-story'>" + E(hookJ || lastLog) + " <a href='#/story'>Club story &rsaquo;</a></div>" : "") + "</div>" +
