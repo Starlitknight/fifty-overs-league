@@ -9836,7 +9836,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".phc-meta s{text-decoration:none;color:#C9A24B}" +
       ".phc-ft{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12);font-family:Oswald;font-size:9px;letter-spacing:1.6px;color:#8a93a3}" +
       ".phc-ft .rr{color:#F0B94E;font-size:12px;letter-spacing:0}" +
-      "@media(max-width:520px){.phc-nm{font-size:21px}.phc-art{height:min(46vh,300px)}}";
+      "@media(max-width:520px){.phc-nm{font-size:21px}.phc-art{height:min(46vh,300px)}}" +
+      // the signing modal: the holo card on the dark backdrop, money + Sign under it
+      ".fo-pd-holo{position:relative;width:min(452px,96vw);max-height:94vh;overflow-y:auto;overscroll-behavior:contain;padding:6px 4px 10px;scrollbar-width:none}" +
+      ".fo-pd-holo::-webkit-scrollbar{display:none}" +
+      "html body .fo-pd-holo .fo-pd-hx{position:sticky;top:0;left:100%;z-index:6;display:block;margin:0 0 -30px;background:rgba(16,27,45,.85);color:#F5EFDC;border:1px solid rgba(255,255,255,.35)}" +
+      ".fo-pd-hmoney{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:13px 2px 0}" +
+      ".fo-pd-hmoney span{display:flex;flex-direction:column;gap:2px;align-items:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:7px 13px;color:#b9c2d4;font-size:10.5px;text-align:center}" +
+      ".fo-pd-hmoney b{color:#FFFEFC;font-size:14.5px;font-family:Oswald,sans-serif;font-weight:600}" +
+      ".fo-pd-holo .fo-pd-act{margin-top:12px;padding:0 2px}";
     document.head.appendChild(foPhCss);
   } catch (ePh) {}
   function foHashPath() { return (location.hash || "").split("?")[0]; }   // "#/match" not "#/matches"
@@ -10253,7 +10261,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260720-2211-2267e7";
+  var FO_BUILD = "20260720-2224-faa26f";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -15800,24 +15808,21 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
 
   // Full detail card for a scouted youngster (same layout as the draft popover).
+  // The signing pitch IS the trading card: the same full holo card as the
+  // player page and the pack rip, with the money and the Sign button under it.
   function foYouthDetail(p, isMarket) {
     if (!p) return;
-    var isBowler = p.bowlTypeFull && p.bowlTypeFull !== "none";
-    var pw = 0; try { pw = (typeof S === "function" ? S(p).power : (p.skills && p.skills.power)) || 0; } catch (e) {}
-    var bars = [["Batting", foAgg(p, "bat")], ["Bowling", isBowler ? foAgg(p, "bowl") : 0], ["Keeping", foAgg(p, "keep")], ["Fielding", foAgg(p, "field")], ["Power", Math.round(pw)], ["Technique", foAgg(p, "tech")], ["Endurance", foAgg(p, "end")]];
-    var barHtml = bars.map(function (b) { var v = Math.max(0, Math.min(100, Math.round(b[1] || 0))); return "<div class='fo-pd-bar'><span>" + b[0] + "</span><i><b class='fo-sk-" + foSkTone(v) + "' style='width:" + v + "%'></b></i><em>" + (foWord(v) || v) + "</em></div>"; }).join("");
-    var talents = (p.talents || []).map(function (t) { var d = (typeof TALTIPS !== "undefined" && TALTIPS[t]) || ""; return "<span title='" + E(d) + "' style='text-decoration:underline dotted'>" + E(foTalentName(t)) + "</span>"; }).join(", ") || "None";
-    var bt = (typeof foBT === "function") ? foBT(p) : "";
     var old = document.getElementById("fo-pd"); if (old) old.remove();
+    var built = foHoloCardHTML(p);
     var d = document.createElement("div"); d.id = "fo-pd";
-    d.innerHTML = "<div class='fo-pd-back'><div class='fo-pd-card'>" +
-      "<div class='fo-pd-h'><div><div class='fo-pd-nm'>" + ((typeof foFlag === "function" && p.nat) ? foFlag(p.nat) + " " : "") + E(p.name) + "</div><div class='fo-pd-meta'><span class='fo-rl'>" + foRoleShort(p) + "</span> " + E(p.nat || "") + " · age " + (p.age || "?") + (bt ? " · " + E(bt) : "") + " · exp " + E(p.expWord || p.exp || "-") + "</div></div><button class='fo-pd-x'>&#10005;</button></div>" +
-      "<div class='fo-pd-money'><span>Signing fee<b>" + FO$(p.fee) + "</b></span><span>Wage / matchday<b>" + FO$(foDailyWage(p)) + "</b></span><span>Season wages<b>" + FO$(foDailyWage(p) * FO_FIN.seasonLength) + "</b></span></div>" +
-      "<div class='fo-pd-sec'>Skill summary</div><div class='fo-pd-bars'>" + barHtml + "</div>" +
-      "<div class='fo-pd-tal'><b>Talents:</b> " + talents + "</div>" +
+    d.innerHTML = "<div class='fo-pd-back'><div class='fo-pd-holo ph-" + built.tier + "' style='--tc:" + built.ac[0] + ";--tcD:" + built.ac[1] + "'>" +
+      "<button class='fo-pd-x fo-pd-hx'>&#10005;</button>" +
+      "<div class='fo-phw'>" + built.html + "</div>" +
+      "<div class='fo-pd-hmoney'><span>Signing fee<b>" + FO$(p.fee) + "</b></span><span>Wage / matchday<b>" + FO$(foDailyWage(p)) + "</b></span><span>Season wages<b>" + FO$(foDailyWage(p) * FO_FIN.seasonLength) + "</b></span></div>" +
       "<div class='fo-pd-act'><button class='fo-pd-add'>Sign " + E(p.name.split(" ")[0]) + " &middot; " + FO$(p.fee) + "</button></div>" +
       "</div></div>";
     document.body.appendChild(d);
+    foHoloTilt(d.querySelector(".fo-phw"));
     d.querySelector(".fo-pd-x").addEventListener("click", function () { d.remove(); });
     d.querySelector(".fo-pd-back").addEventListener("click", function (e) { if (e.target.classList.contains("fo-pd-back")) d.remove(); });
     d.querySelector(".fo-pd-add").addEventListener("click", function () { d.remove(); if (isMarket) foMarketClaim(p); else foSignYouth(p); });

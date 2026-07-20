@@ -2021,7 +2021,15 @@
       ".phc-meta s{text-decoration:none;color:#C9A24B}" +
       ".phc-ft{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12);font-family:Oswald;font-size:9px;letter-spacing:1.6px;color:#8a93a3}" +
       ".phc-ft .rr{color:#F0B94E;font-size:12px;letter-spacing:0}" +
-      "@media(max-width:520px){.phc-nm{font-size:21px}.phc-art{height:min(46vh,300px)}}";
+      "@media(max-width:520px){.phc-nm{font-size:21px}.phc-art{height:min(46vh,300px)}}" +
+      // the signing modal: the holo card on the dark backdrop, money + Sign under it
+      ".fo-pd-holo{position:relative;width:min(452px,96vw);max-height:94vh;overflow-y:auto;overscroll-behavior:contain;padding:6px 4px 10px;scrollbar-width:none}" +
+      ".fo-pd-holo::-webkit-scrollbar{display:none}" +
+      "html body .fo-pd-holo .fo-pd-hx{position:sticky;top:0;left:100%;z-index:6;display:block;margin:0 0 -30px;background:rgba(16,27,45,.85);color:#F5EFDC;border:1px solid rgba(255,255,255,.35)}" +
+      ".fo-pd-hmoney{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:13px 2px 0}" +
+      ".fo-pd-hmoney span{display:flex;flex-direction:column;gap:2px;align-items:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:7px 13px;color:#b9c2d4;font-size:10.5px;text-align:center}" +
+      ".fo-pd-hmoney b{color:#FFFEFC;font-size:14.5px;font-family:Oswald,sans-serif;font-weight:600}" +
+      ".fo-pd-holo .fo-pd-act{margin-top:12px;padding:0 2px}";
     document.head.appendChild(foPhCss);
   } catch (ePh) {}
   function foHashPath() { return (location.hash || "").split("?")[0]; }   // "#/match" not "#/matches"

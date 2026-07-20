@@ -324,24 +324,21 @@
   }
 
   // Full detail card for a scouted youngster (same layout as the draft popover).
+  // The signing pitch IS the trading card: the same full holo card as the
+  // player page and the pack rip, with the money and the Sign button under it.
   function foYouthDetail(p, isMarket) {
     if (!p) return;
-    var isBowler = p.bowlTypeFull && p.bowlTypeFull !== "none";
-    var pw = 0; try { pw = (typeof S === "function" ? S(p).power : (p.skills && p.skills.power)) || 0; } catch (e) {}
-    var bars = [["Batting", foAgg(p, "bat")], ["Bowling", isBowler ? foAgg(p, "bowl") : 0], ["Keeping", foAgg(p, "keep")], ["Fielding", foAgg(p, "field")], ["Power", Math.round(pw)], ["Technique", foAgg(p, "tech")], ["Endurance", foAgg(p, "end")]];
-    var barHtml = bars.map(function (b) { var v = Math.max(0, Math.min(100, Math.round(b[1] || 0))); return "<div class='fo-pd-bar'><span>" + b[0] + "</span><i><b class='fo-sk-" + foSkTone(v) + "' style='width:" + v + "%'></b></i><em>" + (foWord(v) || v) + "</em></div>"; }).join("");
-    var talents = (p.talents || []).map(function (t) { var d = (typeof TALTIPS !== "undefined" && TALTIPS[t]) || ""; return "<span title='" + E(d) + "' style='text-decoration:underline dotted'>" + E(foTalentName(t)) + "</span>"; }).join(", ") || "None";
-    var bt = (typeof foBT === "function") ? foBT(p) : "";
     var old = document.getElementById("fo-pd"); if (old) old.remove();
+    var built = foHoloCardHTML(p);
     var d = document.createElement("div"); d.id = "fo-pd";
-    d.innerHTML = "<div class='fo-pd-back'><div class='fo-pd-card'>" +
-      "<div class='fo-pd-h'><div><div class='fo-pd-nm'>" + ((typeof foFlag === "function" && p.nat) ? foFlag(p.nat) + " " : "") + E(p.name) + "</div><div class='fo-pd-meta'><span class='fo-rl'>" + foRoleShort(p) + "</span> " + E(p.nat || "") + " · age " + (p.age || "?") + (bt ? " · " + E(bt) : "") + " · exp " + E(p.expWord || p.exp || "-") + "</div></div><button class='fo-pd-x'>&#10005;</button></div>" +
-      "<div class='fo-pd-money'><span>Signing fee<b>" + FO$(p.fee) + "</b></span><span>Wage / matchday<b>" + FO$(foDailyWage(p)) + "</b></span><span>Season wages<b>" + FO$(foDailyWage(p) * FO_FIN.seasonLength) + "</b></span></div>" +
-      "<div class='fo-pd-sec'>Skill summary</div><div class='fo-pd-bars'>" + barHtml + "</div>" +
-      "<div class='fo-pd-tal'><b>Talents:</b> " + talents + "</div>" +
+    d.innerHTML = "<div class='fo-pd-back'><div class='fo-pd-holo ph-" + built.tier + "' style='--tc:" + built.ac[0] + ";--tcD:" + built.ac[1] + "'>" +
+      "<button class='fo-pd-x fo-pd-hx'>&#10005;</button>" +
+      "<div class='fo-phw'>" + built.html + "</div>" +
+      "<div class='fo-pd-hmoney'><span>Signing fee<b>" + FO$(p.fee) + "</b></span><span>Wage / matchday<b>" + FO$(foDailyWage(p)) + "</b></span><span>Season wages<b>" + FO$(foDailyWage(p) * FO_FIN.seasonLength) + "</b></span></div>" +
       "<div class='fo-pd-act'><button class='fo-pd-add'>Sign " + E(p.name.split(" ")[0]) + " &middot; " + FO$(p.fee) + "</button></div>" +
       "</div></div>";
     document.body.appendChild(d);
+    foHoloTilt(d.querySelector(".fo-phw"));
     d.querySelector(".fo-pd-x").addEventListener("click", function () { d.remove(); });
     d.querySelector(".fo-pd-back").addEventListener("click", function (e) { if (e.target.classList.contains("fo-pd-back")) d.remove(); });
     d.querySelector(".fo-pd-add").addEventListener("click", function () { d.remove(); if (isMarket) foMarketClaim(p); else foSignYouth(p); });
