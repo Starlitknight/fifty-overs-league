@@ -3210,8 +3210,8 @@
         foCoachSet("orders");
         foJDbox(2, [
           "The team sheet, boss - and I've already filled it in. Eleven picked, batting order sorted, every over of bowling planned for these conditions.",
-          "Your call is the game plan: attack, build, or squeeze - tap one and watch the tempo curve change. Stars rate every man out of ten; tap any player for his full card.",
-          "It's all live, boss: drag any card to reshuffle the batting order or swap a bench man in, tap any over in the bowling grid to hand it to a bowler, and call the toss at the bottom. Happy? PLAY WITH THIS PLAN and we walk out."
+          "Stars rate every man out of ten - gold with the bat, navy with the ball - and OVR is the number behind them. Tap any player for his full card.",
+          "It's all live, boss: drag any card to reshuffle the batting order or swap a bench man in, tap any over in the bowling grid to hand it to a bowler, and call the toss up top. Happy? PLAY WITH THIS PLAN and we walk out."
         ], function () { foOnbClose(); });
         try { var cb2 = document.querySelector("#fo-onb .fo-j-chap"); if (cb2) cb2.style.display = "none"; } catch (eC2) {}
         return;
