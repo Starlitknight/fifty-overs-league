@@ -2255,6 +2255,7 @@
       ".fo-hg2 .hg-bar{animation:foHgUp .6s .72s both}" +
       ".fo-hg2 .hg-wx{animation:foHgUp .6s .55s both}" +
       "@media (prefers-reduced-motion:reduce){.fo-hg2 .hg-bg,.fo-hg2 .hg-id,.fo-hg2 .hg-gaff,.fo-hg2 .hg-next,.fo-hg2 .hg-bar,.fo-hg2 .hg-wx{animation:none !important}}" +
+      ".fo-hg2 .hg-grain{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.05;mix-blend-mode:overlay;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E\")}" +
       ".fo-hg2 .hg-scrim{position:absolute;inset:0;background:linear-gradient(to top,rgba(5,12,24,.9),rgba(5,12,24,.22) 40%,rgba(5,12,24,.08) 70%),linear-gradient(105deg,rgba(5,12,24,.5),transparent 45%)}" +
       ".fo-hg2 .hg-wx{position:absolute;z-index:3;top:14px;left:16px;background:rgba(7,18,36,.72);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px);border-radius:11px;padding:7px 12px 8px;color:#fff}" +
       ".fo-hg2 .hg-wx b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:8.5px;letter-spacing:2.4px;color:#F3D37A}" +
@@ -2670,6 +2671,7 @@
       }
     }
     return "<div class='fo-hg2'><img class='hg-bg' src='" + FO_ART + "home/arches-" + v + ".webp' alt=''>" +
+      "<div class='hg-grain'></div>" +
       "<div class='hg-scrim'></div>" +
       "<div class='hg-wx'><b>HOME GROUND</b><span>" + (FO_HG_WX[v] || "") + "</span></div>" +
       "<div class='hg-id'><i>YOUR CLUB &middot; THE ELEVEN ARCHES</i>" +
