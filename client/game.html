@@ -10439,7 +10439,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260721-1526-20510a";
+  var FO_BUILD = "20260721-1600-620d8f";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -24829,6 +24829,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
               "</div>" +
               "</div></div>";
           })() +
+          (r.final ? "" : "<div class='fo-cx-tourrow'><button type='button' class='fo-cx-tourbtn' data-tour='" + r.id + "'>&#8982; Tour " + E(r.nm) + "</button><span class='tsub'>walk the map &middot; meet the locals</span></div>") +
           "<div class='fo-cx-brief' id='fo-cx-brief'>" +
           "<img class='gf' src='" + FO_ART + "gaffer.png' alt=''>" +
           "<div class='bx'>" +
@@ -24842,6 +24843,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       page.innerHTML = html;
       var pb = page.querySelector("#fo-cx-pass-btn");
       if (pb) pb.addEventListener("click", foCxPassport);
+      var tb = page.querySelector(".fo-cx-tourbtn[data-tour]");
+      if (tb) tb.addEventListener("click", function () {
+        location.hash = "#/tour?r=" + tb.getAttribute("data-tour");
+        if (typeof window.route === "function") window.route();
+        setTimeout(foRenderTour, 60);
+      });
       page.querySelectorAll(".fo-cx-chap span[data-ri]").forEach(function (s2) {
         s2.addEventListener("click", function () {
           foCxView = +s2.getAttribute("data-ri"); page.__foCxSig = null; foRenderCircuit();
@@ -25058,6 +25065,182 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-cx-explore{display:inline-block;margin-left:12px;font-size:12px;color:#B04A2C;text-decoration:underline dotted;text-underline-offset:2px;cursor:pointer}";
     document.head.appendChild(ctCss);
   } catch (eCt) {}
+  // ==========================================================================
+  //  THE GRAND TOUR - every nation is a place you can wander, and every city
+  //  is a character. One big door on the region screen ("Tour England") opens
+  //  a full-bleed atlas: the whole country as one sharp painting, each city a
+  //  living marker. Tap a city and its postcard rises - who they are, how
+  //  they play, and a local voice worth remembering - then step through into
+  //  the city itself. FO_CT_FOLK is the cast: one hand-written local per
+  //  city. Not the captains (the taunts cover those) - the tea ladies,
+  //  ferrymen and ball-makers who give each place a face you remember.
+  // ==========================================================================
+  var FO_CT_FOLK = {
+    "Leeds": { who: "Edith Hartle", role: "forty years at the Millmoor Lane tea urn", say: "I've watched better sides than yours come up that hill. The clever ones brought patience. The rest caught the early train home." },
+    "Canterbury": { who: "Wilf Peabody", role: "mows the Precincts, prunes the lime tree", say: "The tree's taken more catches than their slip cordon. Club law says it counts. My law says leave it alone." },
+    "London": { who: "Mr. Croft", role: "Long Room steward, forty seasons of silence", say: "Nobody speaks in the Long Room. When Sir Giles walks out you'll understand - the silence here is louder than any crowd." },
+    "Dublin": { who: "Deco Byrne", role: "pulls pints across the road from the ground", say: "A grand soft day means the ball swings sideways and the Gaels bowl maidens till you weep. Sure, you'll learn." },
+    "Belfast": { who: "Maureen Craig", role: "keeps the Corsairs' tide-and-squall log", say: "Forecast says four squalls before tea. The Corsairs bat through all of them. Question is - do you?" },
+    "Cork": { who: "Old Fintan", role: "the Emerald XI's scorer, fifty years in pencil", say: "I've a thousand collapses in this book, mostly visitors'. The Rebels save their best for when it's hopeless. That's when they're happiest." },
+    "Amsterdam": { who: "Joos van der Meer", role: "fixes bicycles, and the Windmillers' kit bags", say: "Eleven batsmen, eleven bowlers, one bicycle each. Efficiency, my friend. You will be out-thought before you are out-played." },
+    "Rotterdam": { who: "Hendrika Bos", role: "harbour crane operator, watches from the dock", say: "This city was rebuilt dead straight, and so is their line. Nothing crooked survives Rotterdam. Bring your straightest bat." },
+    "Utrecht": { who: "Professor Aldert Vink", role: "plays chess by the canal, never loses", say: "The Method is not a nickname, it is a warning. Every field was set on Tuesday. Improvise - it is the one thing the plan cannot hold." },
+    "Bridgetown": { who: "Shelly-Ann", role: "sells snow cones at the boundary rope", say: "First over, watch the rope, not the batsman - that's where the ball's going. And the sea breeze carries it further than you think, sweetheart." },
+    "Kingston": { who: "Brother Zeke", role: "leads the boundary drum band", say: "The drums don't start the party, the sixes do. Keep the sixes quiet and my drums stay sleeping. Good luck with that." },
+    "Port of Spain": { who: "Miss Cynthia", role: "roti shop on the Savannah's edge", say: "The Titans eat here after every win, and they eat here a lot. Book your table anyway, darling - mine is the best consolation in Trinidad." },
+    "Johannesburg": { who: "Danie Kruger", role: "retired mine foreman, sits at fine leg every match", say: "Thin air up here - the ball flies quicker and comes at your ribs quicker. Duck late and you'll wear it. My advice is free. The X-rays aren't." },
+    "Cape Town": { who: "Nomvula", role: "flies kites on the seafront", say: "When my kites fly flat sideways, the wind is right for the Storm. Their gullies wait like gulls. Feed them nothing." },
+    "Durban": { who: "Vusi Dlamini", role: "beachfront lifeguard, bowls in the nets at dawn", say: "Humidity makes the ball talk here all day, and the Fire never tire. Their ironman once bowled nineteen straight in January heat. I counted." },
+    "Bulawayo": { who: "Mrs. Ndlovu", role: "runs the railway tuckshop by the ground", say: "The Miners have never surrendered an innings in my lifetime, and my scones run out by noon. Between the two, plan for the scones." },
+    "Victoria Falls": { who: "Baraka", role: "river guide on the Zambezi", say: "Some days the Drifters play like the falls - roaring, unstoppable. Other days like the still pools above them. Pray for pool days." },
+    "Harare": { who: "Gogo Chipo", role: "grows the flame lilies for the victory garlands", say: "The young captain has kept me busy all season. Bring your own flowers to Harare, or leave without any." },
+    "Perth": { who: "Macca", role: "pours the coldest lemonade east of the Indian Ocean", say: "The Goldfields boys run twos on misfields you haven't made yet. Hydrate, mate. That's not a joke - it's forty in the shade and they know it." },
+    "Alice Springs": { who: "Aunty Rose", role: "keeps the water station at the red-dirt oval", say: "The road out here doesn't crack and neither do they. Bat long and don't argue with the sun. Nobody's ever won that one." },
+    "Melbourne": { who: "Bluey", role: "drives the tram route past the great oval", say: "Ninety thousand seats, and the Sunburnt XI act like every one's watching. Do something they've never seen, mate. That mob hates surprises." },
+    "Christchurch": { who: "Ted Brooking", role: "drives the heavy roller for Kauri Coast", say: "Flattest pitch I roll all year, and still their seamers hit the same blade of grass six balls an over. Boring? Ask the scoreboard." },
+    "Wellington": { who: "Hemi", role: "skippers the harbour ferry", say: "The gale's a team-mate here. Southern Cross read it like sailors, because half of them are. Bowl into it, never with it. Now you know more than most." },
+    "Auckland": { who: "Marama", role: "runs the boat-shed cafe by the ground", say: "The Longwhite XI have won from everywhere - last over, last wicket, doesn't matter. Never let it get close. It always gets close." },
+    "Colombo": { who: "Uncle Siri", role: "sells king coconuts outside the gate", say: "Watch the dust when Monsoon bowl. First puff, the ball grips. Second puff, you're stumped. Have a thambili - you'll be back out here soon enough." },
+    "Galle": { who: "Piyal", role: "fishes off the fort ramparts, misses nothing", say: "From the walls I've watched those silk wrists cut good bowling into lace. They swing late, friend. Bowl at the sticks and make them play crooked." },
+    "Kandy": { who: "Menaka", role: "sells temple flowers on the lake road", say: "The Sorcerers' spinner learned flight from watching temple kites. The ball hangs, hangs - then it's gone. Sweep before the dip, never after." },
+    "Mumbai": { who: "Prakash bhai", role: "cutting chai by the maidan since 1975", say: "A hundred games on one maidan every evening, and the Kings pick the one boy who turns it both ways. Play him off the pitch, not the hand. Chai first." },
+    "Kolkata": { who: "Mrs. Sen", role: "called the cricket on the radio for thirty years", say: "A hundred thousand voices and I could still hear the edge. That crowd bowls the twelfth over here. Quiet them early, or they bat with the home side all day." },
+    "Nagpur": { who: "Baba Saheb", role: "grows oranges beside the ground", say: "Dust devils cross my orchard before every Devils match. Ground staff call it luck. It's the pitch drying to powder - by the thirtieth over it turns square." },
+    "Karachi": { who: "Majid sahab", role: "street-corner umpire, forty years of tape-ball nights", say: "Every fast bowler in this city learned under my one streetlight. The Express just found the quickest. Back away if you must - everyone does, eventually." },
+    "Peshawar": { who: "Gul Khan", role: "pours kahwa in the shadow of the fort", say: "The Chargers sprint in like the ball owes them money - fifty overs, full throttle, nothing held back. Sip slowly. It is the only slow thing you'll get all day." },
+    "Lahore": { who: "Ustad Rafiq", role: "stitched match balls for three generations of Lions", say: "The talisman asks for the seam a thumbnail prouder - legal, just. When it starts reversing at the fortieth over, remember my stitching." },
+    "Kabul": { who: "Zia", role: "kite-runner champion, flies them over the ground", say: "We learned spin from kite string - how a thing on a line can lie to you mid-air. Don't watch the hand. Watch nothing. Play it late." },
+    "Jalalabad": { who: "Haji Noor", role: "sells pomegranates at long-on", say: "The Highlanders hit first and ask never. Eight an over or glorious ruin - there is no third door. I board my windows on match day, friend." },
+    "Kandahar": { who: "Bibi Shirin", role: "bakes naan behind the pavilion", say: "The Storm's young captain practised against my bakery wall until midnight, every night. The wall lost. Bring something the wall didn't have." },
+    "Marylebone": { who: "Mr. Ellsworth", role: "pavilion attendant since before anyone will say", say: "Reggie Thorne sat in your seat once. Same hunger. He'll tell you the Final is just cricket. Nothing here has ever been just cricket." }
+  };
+  function foRenderTour() {
+    try {
+      if (location.hash.indexOf("#/tour") !== 0) return;
+      var page = document.getElementById("page"); if (!page) return;
+      var m = /[?&]r=([^&]+)/.exec(location.hash); if (!m) return;
+      var rid = decodeURIComponent(m[1]);
+      if (page.__foTourSig === rid && page.querySelector(".fo-tour")) return;
+      var ri = -1, r = null;
+      for (var i = 0; i < FO_CX_REGIONS.length; i++) if (FO_CX_REGIONS[i].id === rid) { ri = i; r = FO_CX_REGIONS[i]; }
+      if (!r) { page.__foTourSig = null; return; }
+      page.__foTourSig = rid;
+      var st = foCxState();
+      var pins = r.clubs.map(function (c, ci) {
+        var done = foCxBeaten(st, r.id, ci);
+        var open = !done && foCxClubOpen(st, ri, ci);
+        var cls = "fo-tp" + (c.boss ? " boss" : "") + (done ? " done" : open ? " open" : " far");
+        return "<button type='button' class='" + cls + "' data-tp='" + ci + "' style='left:" + c.mx + "%;top:" + c.my + "%'>" +
+          "<span class='dot'>" + (done ? "&#10003;" : c.boss ? "&#9733;" : "&#9679;") + "</span>" +
+          "<span class='nm'>" + E(c.city) + "</span></button>";
+      }).join("");
+      page.innerHTML =
+        "<div class='fo-tour' style='--cxc:" + r.ac + "'>" +
+        "<a class='fo-tour-back' href='#/circuit'>&#8249; Circuit</a>" +
+        "<div class='fo-tour-hd'><div class='eb'>The Grand Tour</div><h1>" + E(r.nm) + "</h1><div class='ty'>" + E(r.type) + "</div></div>" +
+        "<div class='fo-tour-map'><img src='" + FO_ART + "circuit/" + (r.bg || (r.id + ".webp")) + "' alt=''>" + pins + "</div>" +
+        "<div class='fo-tour-hint' id='fo-tour-hint'>Tap a city to meet it</div>" +
+        "<div class='fo-tour-card' id='fo-tour-card'></div>" +
+        "</div>";
+      var cardEl = page.querySelector("#fo-tour-card");
+      var hintEl = page.querySelector("#fo-tour-hint");
+      var openCard = function (ci) {
+        var c = r.clubs[ci];
+        var L = foCityLore(c.city) || {};
+        var folk = FO_CT_FOLK[c.city];
+        var done = foCxBeaten(st, r.id, ci);
+        var open = !done && foCxClubOpen(st, ri, ci);
+        var chip = done ? "<span class='tc-chip won'>&#10003; Conquered</span>"
+          : open ? "<span class='tc-chip nxt'>Next challenge</span>"
+            : "<span class='tc-chip faroff'>Further down the road</span>";
+        cardEl.innerHTML =
+          (L.custom && L.art ? "<div class='tc-art'><img src='" + FO_ART + L.art + "' alt=''></div>" : "") +
+          "<button type='button' class='tc-x' data-tc-x>&#10005;</button>" +
+          "<div class='tc-bd'>" +
+          "<div class='tc-eb'>" + E(c.city) + " &middot; " + E(r.nm) + "</div>" +
+          "<div class='tc-h2'>" + E(c.nm) + (c.boss ? " <span class='tc-boss'>&#9733; boss</span>" : "") + "</div>" +
+          (L.tag ? "<div class='tc-tag'>" + E(L.tag) + "</div>" : "") +
+          "<div class='tc-line'>" + E(foCtLine(L.city || "")) + "</div>" +
+          (folk ? "<div class='tc-folk'><span class='fw'>" + E(folk.who) + "</span><span class='fr'> &middot; " + E(folk.role) + "</span><div class='fq'>&ldquo;" + E(folk.say) + "&rdquo;</div></div>" : "") +
+          "<div class='tc-row'>" + chip +
+          "<button type='button' class='tc-enter' data-tc-enter>Enter " + E(c.city) + " &#9654;</button>" +
+          (open ? "<button type='button' class='tc-ch' data-tc-ch>Challenge &#9654;</button>" : "") +
+          "</div></div>";
+        cardEl.classList.add("on");
+        if (hintEl) hintEl.style.display = "none";
+        page.querySelectorAll(".fo-tp").forEach(function (p2) { p2.classList.toggle("sel", +p2.getAttribute("data-tp") === ci); });
+        cardEl.querySelector("[data-tc-x]").addEventListener("click", function () {
+          cardEl.classList.remove("on");
+          page.querySelectorAll(".fo-tp").forEach(function (p3) { p3.classList.remove("sel"); });
+        });
+        cardEl.querySelector("[data-tc-enter]").addEventListener("click", function () {
+          location.hash = "#/city?c=" + encodeURIComponent(c.city || "");
+          if (typeof window.route === "function") window.route();
+          setTimeout(foRenderCity, 60);
+        });
+        var chb = cardEl.querySelector("[data-tc-ch]");
+        if (chb) chb.addEventListener("click", function () { foCxChallenge(ri, ci); });
+      };
+      page.querySelectorAll(".fo-tp[data-tp]").forEach(function (p1) {
+        p1.addEventListener("click", function () { openCard(+p1.getAttribute("data-tp")); });
+      });
+      try { if (window.__foLive) window.__foLive.mask(); } catch (eM4) {}
+    } catch (e) { try { console.warn("foRenderTour", e); } catch (e2) {} }
+  }
+  setInterval(foRenderTour, 900);
+  window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/tour") === 0) setTimeout(foRenderTour, 40); });
+  try {
+    var trCss = document.createElement("style"); trCss.id = "fo-tour-css";
+    trCss.textContent =
+      ".fo-tour{position:relative;width:100vw;margin-left:calc(50% - 50vw);height:calc(100vh - 96px);min-height:520px;overflow:hidden;background:radial-gradient(120% 90% at 50% 30%,#12233E 0%,#0B1322 58%,#070D18 100%)}" +
+      ".fo-tour-hd{position:absolute;top:16px;left:0;right:0;text-align:center;z-index:5;pointer-events:none;color:#F5EFDC;text-shadow:0 2px 10px rgba(0,0,0,.5)}" +
+      ".fo-tour-hd .eb{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:4.2px;text-transform:uppercase;color:#F3D37A;font-weight:600}" +
+      ".fo-tour-hd h1{font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(26px,4vw,44px);letter-spacing:3px;text-transform:uppercase;color:#FFFEFC;margin:1px 0 0;line-height:1}" +
+      ".fo-tour-hd .ty{font-style:italic;font-size:12.5px;color:#cfc7ad}" +
+      ".fo-tour-back{position:absolute;top:16px;left:14px;z-index:6;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:#F5EFDC;background:rgba(10,18,32,.55);border:1.5px solid rgba(255,255,255,.3);border-radius:999px;padding:9px 15px;text-decoration:none;backdrop-filter:blur(4px)}" +
+      ".fo-tour-back:hover{color:#F3D37A}" +
+      ".fo-tour-map{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:min(100vw,calc(100vh - 250px));aspect-ratio:1/1}" +
+      ".fo-tour-map>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:12px;box-shadow:0 22px 70px rgba(0,0,0,.6)}" +
+      "html body #page .fo-tp,html body.ftpskin #page .fo-tp{position:absolute;transform:translate(-50%,-50%);background:none !important;border:none !important;box-shadow:none !important;cursor:pointer;z-index:4;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px}" +
+      ".fo-tp .dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;background:rgba(20,33,61,.85);border:2px solid rgba(255,255,255,.7);box-shadow:0 3px 10px rgba(0,0,0,.4)}" +
+      ".fo-tp.done .dot{background:#2E7A3C;border-color:#CFEAD2}" +
+      ".fo-tp.open .dot{background:linear-gradient(180deg,#F0B94E,#C9A24B);border-color:#F3D37A;color:#14213D;animation:foTpPulse 1.8s ease-out infinite}" +
+      ".fo-tp.far .dot{opacity:.72}" +
+      ".fo-tp.boss .dot{width:37px;height:37px;font-size:16px}" +
+      ".fo-tp .nm{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#FFFEFC;text-shadow:0 1px 6px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95)}" +
+      ".fo-tp.sel .dot{outline:3px solid #F3D37A;outline-offset:2px}" +
+      "@keyframes foTpPulse{0%{box-shadow:0 0 0 0 rgba(240,185,78,.65)}100%{box-shadow:0 0 0 16px rgba(240,185,78,0)}}" +
+      "@media (prefers-reduced-motion:reduce){.fo-tp.open .dot{animation:none !important}}" +
+      ".fo-tour-hint{position:absolute;bottom:16px;left:0;right:0;text-align:center;font-style:italic;font-size:12.5px;color:#cfc7ad;z-index:4}" +
+      ".fo-tour-card{position:absolute;left:50%;bottom:12px;transform:translate(-50%,18px);width:min(520px,calc(100vw - 16px));background:#F7F1DE;border:1px solid #D8CBA4;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .35s ease,transform .35s ease;z-index:8;overflow:hidden}" +
+      ".fo-tour-card.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}" +
+      ".tc-art{height:116px;overflow:hidden}.tc-art img{width:100%;height:100%;object-fit:cover;display:block}" +
+      "html body #page .tc-x,html body.ftpskin #page .tc-x{position:absolute;top:8px;right:8px;z-index:2;width:26px;height:26px;border-radius:50%;background:rgba(20,33,61,.55) !important;color:#F5EFDC !important;border:none !important;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}" +
+      ".tc-bd{padding:12px 16px 14px}" +
+      ".tc-eb{font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:2.6px;text-transform:uppercase;color:var(--cxc,#2E7A3C);font-weight:600}" +
+      ".tc-h2{font-family:Oswald,sans-serif;font-weight:600;font-size:20px;letter-spacing:.6px;color:#14213D;line-height:1.15}" +
+      ".tc-boss{font-size:10px;letter-spacing:2px;color:#B04A2C;vertical-align:2px}" +
+      ".tc-tag{font-style:italic;font-size:12.5px;color:#6b6350}" +
+      ".tc-line{font-size:12.5px;line-height:1.5;color:#3a4356;margin-top:6px}" +
+      ".tc-folk{margin-top:9px;border-top:1px dashed #D8CBA4;padding-top:8px}" +
+      ".tc-folk .fw{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:#8a7a46;font-weight:600}" +
+      ".tc-folk .fr{font-size:11px;color:#7a7361;font-style:italic}" +
+      ".tc-folk .fq{font-size:12.5px;line-height:1.5;color:#1E2A3C;font-style:italic;margin-top:3px}" +
+      ".tc-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:11px}" +
+      ".tc-chip{font-family:Oswald,sans-serif;font-size:9px;letter-spacing:1.6px;text-transform:uppercase;border-radius:999px;padding:4px 11px;font-weight:600}" +
+      ".tc-chip.won{color:#2E7A3C;border:1.5px solid rgba(46,122,60,.5)}" +
+      ".tc-chip.nxt{color:#14213D;background:linear-gradient(180deg,#F0B94E,#C9A24B)}" +
+      ".tc-chip.faroff{color:#7a7361;border:1.5px solid #D8CBA4}" +
+      "html body #page .tc-enter,html body.ftpskin #page .tc-enter{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.7px;text-transform:uppercase;font-size:11px;background:#14213D !important;color:#F5EFDC !important;border:none !important;border-radius:999px;padding:9px 18px;cursor:pointer}" +
+      "html body #page .tc-enter:hover{background:#1E2F55 !important}" +
+      "html body #page .tc-ch,html body.ftpskin #page .tc-ch{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.7px;text-transform:uppercase;font-size:11px;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:9px 18px;cursor:pointer;box-shadow:0 3px 0 rgba(16,27,45,.3) !important}" +
+      ".fo-cx-tourrow{text-align:center;margin:14px 0 4px}" +
+      "html body #page .fo-cx-tourbtn,html body.ftpskin #page .fo-cx-tourbtn{font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:14px;letter-spacing:2.8px;text-transform:uppercase;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:13px 34px;cursor:pointer;box-shadow:0 5px 0 rgba(16,27,45,.3),0 10px 26px rgba(201,162,75,.35) !important}" +
+      "html body #page .fo-cx-tourbtn:hover{filter:brightness(1.06)}" +
+      ".fo-cx-tourrow .tsub{display:block;margin-top:6px;font-style:italic;font-size:11.5px;color:#8a8062}" +
+      "@media(max-width:640px){.fo-tour{height:calc(100vh - 130px);min-height:480px}.fo-tour-map{top:50%}.fo-tour-card{bottom:8px}.tc-art{height:96px}.tc-bd{padding:10px 13px 12px}}";
+    document.head.appendChild(trCss);
+  } catch (eTr) {}
   try { window.__foTest.cx = { state: foCxState, team: foCxTeam, challenge: foCxChallenge, record: foCxRecord, key: foCxKey }; } catch (eCx) {}
   // head-to-head vs a Circuit club, answered from the PASSPORT (st.hist) -
   // App.results is clobbered by every league snapshot, so the match page's
