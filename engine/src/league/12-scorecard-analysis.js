@@ -2396,11 +2396,15 @@
     try {
       var tb = document.getElementById("topbar"); if (!tb) return;
       var wrap = tb.querySelector(".fo-nav-scroll"); if (!wrap) return;
-      if (wrap.querySelector("a.fo-circuit")) return;
-      var a = document.createElement("a"); a.className = "fo-circuit"; a.href = "#"; a.textContent = "Circuit";
-      a.addEventListener("click", function (e) { e.preventDefault(); location.hash = "#/circuit"; if (typeof window.route === "function") window.route(); });
-      var guide = wrap.querySelector("a.fo-guide");
-      if (guide) wrap.insertBefore(a, guide); else wrap.appendChild(a);
+      // the Circuit is the game's spine now: its tab sits right after Club
+      var a = wrap.querySelector("a.fo-circuit");
+      if (!a) {
+        a = document.createElement("a"); a.className = "fo-circuit"; a.href = "#"; a.textContent = "Circuit";
+        a.addEventListener("click", function (e) { e.preventDefault(); location.hash = "#/circuit"; if (typeof window.route === "function") window.route(); });
+      }
+      var clubA = wrap.querySelector("a[data-nav='club'], a[data-nav='home']");
+      var want = clubA ? clubA.nextSibling : wrap.firstChild;
+      if (a.parentNode !== wrap || a.previousSibling !== clubA) wrap.insertBefore(a, want);
     } catch (e) {}
   }
   var foCxView = null;   // region the chapter strip is looking at (defaults to live one)
