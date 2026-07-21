@@ -10376,7 +10376,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260721-0101-ff2beb";
+  var FO_BUILD = "20260721-0459-cc9786";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -23492,12 +23492,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   })(); } catch (e) { console.warn("matchday theatre", e); }
 
   // ==========================================================================
-  //  THE CIRCUIT - the solo world tour. Six cricketing nations, each a master
-  //  of one real-life skill; 2 minor clubs + a boss per nation, one 50-over
-  //  match each on THEIR conditions via the friendly plumbing. Beat the boss
-  //  to conquer the nation: trophy to the museum, prize money to the bank,
-  //  and that nation's youth academy opens for good (better scout odds).
-  //  Strict linear ladder. Progress is per-manager, on device.
+  //  THE CIRCUIT - the solo world tour, one big universe: all TWELVE
+  //  cricketing nations of the game world, each a master of one real-life
+  //  skill; 2 minor clubs + a boss per nation, one 50-over match each on
+  //  THEIR conditions via the friendly plumbing. Beat the boss to conquer
+  //  the nation: trophy to the museum, prize money to the bank, and that
+  //  nation's youth academy opens for good (better scout odds).
+  //  Strict linear ladder. Progress is per-manager, on device. Region ids
+  //  are save-state - never rename one ("sub" IS India for old saves).
   // ==========================================================================
   var FO_CX_REGIONS = [
     { id: "eng", nm: "England", cty: "England", arch: "rock", type: "Swing & Graft", ac: "#2E7A3C", arrive: "England, boss. Old pavilions, older opinions. They'll call our cricket reckless until it works - and improper after it does.",
@@ -23505,7 +23507,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       cond: "Green, overcast seamers. The ball talks all day; patient, correct cricket wins.",
       gaffer: "Cloud cover and a green top. Leave well, bat time, and let their grafters die of boredom before you cash in.",
       academy: "technically-correct batsmen and swing bowlers",
-      trophy: "The Ashes Urn", nats: ["England", "Ireland"],
+      trophy: "The Ashes Urn", nats: ["England"],
       clubs: [
         { mx: 61, my: 55, nm: "Tyke County CC", city: "Leeds", note: "dour opening pair", gq: "Tyke County? Dour Yorkshiremen who bat till you beg. Bore 'em out — patience, not fireworks.", taunt: "Come up to Leeds if you fancy it. We'll still be batting come Thursday.", nug: "Leeds: cloud rolls off the moors and the ball talks all morning. Their openers bat until tea and nothing is given away. But they only have one gear - keep wickets in hand and they run out of tricks.", mult: 0.84 },
         { mx: 72, my: 79.5, nm: "The Southern Shires", city: "Canterbury", note: "gritty county pros", gq: "Southern Shires nick your singles all day. Run hard, or they squeeze the life out of you.", taunt: "We don't give away singles, and we don't give away home games.", nug: "Canterbury: old trees, older pros. Deep, stubborn batting and nagging medium pace that never misses its line. Quick singles rattle them - they set fields for maidens, not for hustle.", mult: 0.90 },
@@ -23513,6 +23515,36 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           leader: "Sir Giles Pemberley", note: "bats time and never, ever gives it away", gq: "Pemberley bats time, not runs. Strand him — starve the other end and he cracks.", taunt: "I've batted through better sides than yours, lad. Twice.", nug: "London: the long room hushes when Pemberley walks out - he bats TIME, not runs. Force the pace at the other end; his partners panic long before he does.", mult: 0.97,
           sig: "wall", intel: "Pemberley's lot don't collapse - ever. You won't blast them out. Keep wickets in hand and out-grind them: the last ten overs are where this one's won.",
           winln: "Well batted. I said that to Bradman once. I don't say it often.", lossln: "Come back when you've learned to leave the good ones, lad. The door's open. It always is." }
+      ] },
+    { id: "ire", nm: "Ireland", cty: "Ireland", arch: "engine", type: "Green Graft", ac: "#1F7A4D", bg: "eng.webp", art: "circuit/trophy-eng.webp",
+      arrive: "Ireland, boss. Soft rain, softer ground, and the hardest men you'll meet all tour. They've been beating bigger sides for the craic since before anyone kept score.",
+      pitch: "green", wx: "Drizzle",
+      cond: "Damp, green and slow off the surface. The ball nibbles all day and nothing comes onto the bat.",
+      gaffer: "It'll hoop round corners till lunch. Get through the first fifteen without doing anything famous, then the day belongs to whoever wants it more.",
+      academy: "swing bowlers who love a damp morning",
+      trophy: "The Emerald Shield", nats: ["Ireland"],
+      clubs: [
+        { mx: 55, my: 42, nm: "Liffey Gaels", city: "Dublin", note: "nagging seam, no ego", gq: "The Gaels bowl dots and wait for you to sulk. Don't sulk - rotate.", taunt: "Grand soft day for it. You'll nick off before tea, so you will.", nug: "Dublin: a club side that bowls maidens for the joy of it. Nothing quick, nothing loose - they wait for your patience to die. Rotate the strike and it's their patience that goes first.", mult: 0.86 },
+        { mx: 68, my: 24, nm: "North Coast Corsairs", city: "Belfast", note: "wind-hardened grafters", gq: "Corsairs love a scrap in bad light. Get ahead early, before the weather joins their side.", taunt: "The forecast's ours. It always is.", nug: "Belfast: squalls off the lough and batsmen who treat a dry hour like a holiday. They crawl to par and defend it with the weather. Score quick while the sun's out - it won't be out long.", mult: 0.90 },
+        { boss: 1, mx: 40, my: 68, nm: "The Emerald XI", city: "Cork", capt: "clutch",
+          leader: "Declan Moriarty", bimg: "players/mp_eng.webp", note: "swings the new ball both ways, both ends", gq: "Moriarty's new-ball pair hoop it both ways. Survive the first ten and the day goes flat for them.", taunt: "Ten overs of swing, friend. That's usually all we're needing.", nug: "Cork: Moriarty and his mate bend the new ball like nobody else on the Circuit - both ends, both ways. But once the shine's gone the attack is honest county stuff. Bat time early; cash late.", mult: 0.98,
+          sig: "swing", intel: "Everything happens in the first ten overs here - Moriarty's pair swing it round corners while the lacquer lasts. Leave straight balls alone, take zero risks early, and the last thirty overs are yours.",
+          winln: "You weathered the morning. That's the whole trick, and most never learn it. Fair play to you.", lossln: "The ball talked and you answered back. Never argue with a swinging ball, friend. Come again." }
+      ] },
+    { id: "ned", nm: "Netherlands", cty: "Netherlands", arch: "miser", type: "Total Cricket", ac: "#C46A1F", bg: "eng.webp", art: "circuit/trophy-nzl.webp",
+      arrive: "The Low Countries, boss. Flat land, straight canals, straighter fields. They plan cricket like they plan water - nothing gets through that wasn't budgeted for.",
+      pitch: "balanced", wx: "Windy",
+      cond: "Flat, honest and windswept. No demons - just eleven cricketers who never bowl a bad over.",
+      gaffer: "Total cricket: everyone bats a bit, everyone bowls a bit, nobody gives you a thing. There's no star to knock over - you'll have to out-plan the planners.",
+      academy: "versatile cricketers who do every job well",
+      trophy: "The Windmill Plate", nats: ["Netherlands"],
+      clubs: [
+        { mx: 46, my: 34, nm: "Polder Windmillers", city: "Amsterdam", note: "every man bats, every man bowls", gq: "The Windmillers have no tail and no star. Beat the system, not a man - bat your full fifty.", taunt: "Our number eleven averages more than your number six. Look it up.", nug: "Amsterdam: eleven interchangeable cricketers who all chip in forty runs and eight tidy overs. There's no weak link to attack - but no matchwinner either. Play the full fifty overs and your best three beat their best eleven.", mult: 0.88 },
+        { mx: 38, my: 62, nm: "Delta Dyke XI", city: "Rotterdam", note: "the squeeze, industrialised", gq: "Dyke XI defend totals like flood control. Don't wait for the bad ball - manufacture your own runs.", taunt: "Nothing gets through. We've had four hundred years of practice.", nug: "Rotterdam: field placings drawn like engineering blueprints and bowlers who hit the same brick all afternoon. The bad ball never comes. Sweeps, dabs, hard running - make your own scoring or drown at four an over.", mult: 0.92 },
+        { boss: 1, mx: 62, my: 50, nm: "The Oranje Method", city: "Utrecht", capt: "general",
+          leader: "Pieter van Doorn", bimg: "players/bat_eng.webp", note: "has a plan for every over of the fifty", gq: "Van Doorn has planned all hundred overs before the toss. Do something his spreadsheet hasn't met.", taunt: "I have modelled your innings already. It ends in the forty-third over.", nug: "Utrecht: van Doorn captains with a laminated sheet and the nerve to follow it. Every bowling change lands on schedule. Improvise - a reverse sweep, a cheeky two, a bowling change of your own off-script - and the Method wobbles.", mult: 1.00,
+          sig: "dyke", intel: "The Method is a squeeze: no boundaries, no freebies, pressure by arithmetic. Beat it with singles - their plan strangles big hitters and starves against hustlers who steal ones and twos all day.",
+          winln: "Improvisation, eleven point four percent above projection. I have no answer in the model. Well played.", lossln: "The forty-third over, as computed. Refine your inputs and return." }
       ] },
     { id: "win", nm: "West Indies", cty: "West Indies", arch: "finisher", type: "Power & Flair", ac: "#B5892F", arrive: "Smell that? Salt and woodsmoke. Out here they play like the game owes them a good time. Don't blink in the field.",
       pitch: "flat", wx: "Hot",
@@ -23533,7 +23565,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       cond: "Green, bouncy and quick. Survive the new ball or perish - and their cordon drops nothing.",
       gaffer: "Raw pace, short stuff, catchers everywhere. See off the first ten, protect the tail, and cash in when the quicks tire.",
       academy: "express fast bowlers and gun fielders",
-      trophy: "The Protea Shield", nats: ["South Africa", "Zimbabwe"],
+      trophy: "The Protea Shield", nats: ["South Africa"],
       clubs: [
         { mx: 45, my: 46, nm: "Highveld Reef", city: "Johannesburg", note: "hostile quicks", gq: "Highveld quicks fly in the thin air. Their spin's an afterthought — cash in the middle.", taunt: "Thin air, quick deck. Keep your eyes on the ball, or your teeth.", nug: "Johannesburg: thin air on the Highveld - the ball flies, and so do their quicks. Their spin is an afterthought: see the shine off and the middle overs are yours.", mult: 0.92 },
         { mx: 36, my: 67, nm: "Cape Storm CC", city: "Cape Town", note: "gully-cordon hawks", gq: "Cape Storm catch everything that moves. Make 'em chase, then dig in.", taunt: "Edge it and it sticks. We don't put those down.", nug: "Cape Town: the wind howls in from the sea and their cordon catches everything that moves. Their batting is thinner than their bowling - make them chase, and dig in.", mult: 0.98 },
@@ -23541,6 +23573,21 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           leader: "Morné Steenkamp", note: "bowls thunderbolts and sets attacking fields", gq: "Steenkamp under lights is the quickest out here. Ride two spells — then he's mortal.", taunt: "Two spells under lights and you'll be walking back before you've settled in.", nug: "Durban: Steenkamp with a new ball under lights is the fastest thing on the Circuit. Survive his first two spells and the sting fades - the support cast is mortal.", mult: 1.05,
           sig: "thunder", intel: "Steenkamp's new-ball spell is the storm - see it off, even at two an over. The support bowling is mortal: the middle overs are yours if you're still standing.",
           winln: "You stood in there. Most don't. The Veldt respects that - and so do I.", lossln: "Two spells. That's all it took. Ice the bruises and come again." }
+      ] },
+    { id: "zim", nm: "Zimbabwe", cty: "Zimbabwe", arch: "prodigy", type: "Fighting Spirit", ac: "#B8471F", bg: "rsa.webp", art: "circuit/trophy-rsa.webp",
+      arrive: "Zimbabwe, boss. Msasa trees going red and a ground full of kids who play like the game might be taken away tomorrow. Nobody here has ever been the favourite. Watch them fight anyway.",
+      pitch: "flat", wx: "Sunny",
+      cond: "Sun-baked, true, slow to die. Runs come easy - so do afternoons chasing a team that refuses to fold.",
+      gaffer: "On paper we win. Paper's never once bowled a ball in Harare. They catch everything, run everything, and treat a lost cause like a personal insult. Kill the game early - twice.",
+      academy: "fearless young all-rounders",
+      trophy: "The Flame Lily Cup", nats: ["Zimbabwe"],
+      clubs: [
+        { mx: 34, my: 58, nm: "Msasa Miners", city: "Bulawayo", note: "dig in, never surrender", gq: "The Miners bat like the pit floods at stumps. Bowl them out - they won't give it away.", taunt: "We've survived worse than you. It's not close.", nug: "Bulawayo: a side that has never once declared an innings dead. Their last four wickets average more than their first four. Budget for sixty overs of fight in a fifty-over match.", mult: 0.90 },
+        { mx: 22, my: 30, nm: "Zambezi Drifters", city: "Victoria Falls", note: "brilliant one day in three", gq: "The Drifters are either magic or mud - no telling which. Start fast and find out early.", taunt: "You might get the good us. Pray you don't.", nug: "Victoria Falls: the most talented unpredictable side on the tour. Their best day beats anyone; their worst loses to a school XI. Pressure in the first ten overs tells you which team turned up.", mult: 0.95 },
+        { boss: 1, mx: 52, my: 44, nm: "The Flame Lilies", city: "Harare", capt: "younggun",
+          leader: "Tatenda Gumbo", bimg: "players/ar_rsa.webp", note: "twenty-two years old and afraid of nothing", gq: "Gumbo's kids don't know what a lost game looks like. Don't show mercy - they'll mistake it for a door.", taunt: "Old teams know when they're beaten. We haven't learned that yet.", nug: "Harare: Gumbo is twenty-two and captains like the scoreboard is a rumour. No stars, no fear, no such thing as a dead match. The catches stick and the heads never drop - win by enough that hope can't do arithmetic.", mult: 1.02,
+          sig: "pride", intel: "The Lilies don't have a matchwinner - they have eleven men who refuse to lose. Nothing hits the grass and nobody hides. Take the game away early; give the fight nothing to feed on.",
+          winln: "We chased you until the maths ran out. That's all we know how to do. Respect - you never let us dream.", lossln: "You thought it was over. It's never over here. Come back when you've learned that." }
       ] },
     { id: "aus", nm: "Australia", cty: "Australia", arch: "blade", type: "Flat-Track Runs", ac: "#D08A12", arrive: "Australia. The grounds are bigger, the crowds are louder, and the papers already hate us. Perfect. Let's ruin their week.",
       pitch: "flat", wx: "Scorching",
@@ -23570,22 +23617,67 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           sig: "safehands", intel: "Nothing hits the grass in Auckland - four seasons without a dropped catch. Keep the ball along the floor, run the twos hard, and post a total that squeezes THEM.",
           winln: "First side to make us blink in four seasons. That total squeezed us shut - good cricket.", lossln: "We didn't crack. We never do. Sharpen up and sail back over." }
       ] },
-    { id: "sub", nm: "The Subcontinent", cty: "India", arch: "wizard", type: "Spin Web", ac: "#7B45C4", arrive: "Feel the crowd before you see the ground. A hundred thousand opinions, all about us. Spin, dust and expectation, boss - the final exam.",
+    { id: "slk", nm: "Sri Lanka", cty: "Sri Lanka", arch: "wizard", type: "Flight & Guile", ac: "#2E6FB2", bg: "sub.webp", art: "circuit/trophy-sub.webp",
+      arrive: "Sri Lanka, boss. Sea on three sides, spin on all four. They beat you smiling here - flight, dip, and a hundred years of knowing something you don't.",
+      pitch: "dry", wx: "Humid",
+      cond: "Slow, dry and gripping, heavy air off the ocean. The ball hangs, dips, and turns just enough.",
+      gaffer: "Guile, not violence. They'll toss it above your eyes and let the pitch do the interrogating. Use your feet or use the sweep - standing still is a confession.",
+      academy: "flighted spinners and wristy touch players",
+      trophy: "The Serendib Gem", nats: ["Sri Lanka"],
+      clubs: [
+        { mx: 46, my: 78, nm: "Monsoon CC", city: "Colombo", note: "flighted off-spin", gq: "Monsoon flight it and let it dip. Bowl full, attack before it grips.", taunt: "Flight, dip, a puff of dust. Watch your feet, friend.", nug: "Colombo: heat, flight and off-spin that dips late. They're a different side when the ball seams - pray for cloud, bowl full, and attack before it grips.", mult: 1.00 },
+        { mx: 32, my: 88, nm: "Galle Sea Fort XI", city: "Galle", note: "touch players, silk wrists", gq: "The Fort bat like watchmakers - all touch, no violence. Bowl straight and dry; flair hates a straight ball.", taunt: "You swing hard. We just swing late. Watch which one scores.", nug: "Galle: batsmen who score at a run a ball without one violent shot - late cuts, wristy glances, angles you haven't set a field for. Straight, full and boring strangles the silk.", mult: 1.05 },
+        { boss: 1, mx: 52, my: 62, nm: "The Serendib Sorcerers", city: "Kandy", capt: "talisman",
+          leader: "Chaminda Silva", bimg: "players/fs_ind.webp", note: "the ball above your eyeline is already a trap", gq: "Silva buys wickets with flight - every full toss is bait. Hit him along the floor or not at all.", taunt: "I bowl gifts. Unwrap one and see.", nug: "Kandy: Silva tosses it higher than anyone dares and dips it on your bootlaces - the catchers wait for the mishit he's been shopping for. Along the floor, hard sweeps, no charity: make him buy wickets at full price.", mult: 1.12,
+          sig: "flight", intel: "Every ball above the eyeline is a purchase offer - the boundary you want is the wicket he wants more. Score along the carpet and make him bowl flat; a flat Sorcerer is just a slow bowler.",
+          winln: "You refused every gift I bowled. A batsman with manners AND a brain - rare. The Gem is yours.", lossln: "You unwrapped the wrong ones, friend. My gifts always cost more than they look." }
+      ] },
+    { id: "sub", nm: "India", cty: "India", arch: "wizard", type: "Spin Web", ac: "#7B45C4", arrive: "India, boss. Feel the crowd before you see the ground - a hundred thousand opinions, all about us. Spin, dust and expectation.",
       pitch: "dry", wx: "Humid",
       cond: "Dry, dusty, sharp turn from over one. The ball grips, rips, and reads your footwork.",
-      gaffer: "The final exam. Sweep hard, use your feet, and pick the wrong'un early - because out here the pitch is on their side.",
+      gaffer: "Sweep hard, use your feet, and pick the wrong'un early - because out here the pitch is on their side and the crowd marks your homework.",
       academy: "spinners and wristy, spin-savvy batsmen",
-      trophy: "The Spin Web Trophy", nats: ["India", "Pakistan", "Sri Lanka", "Afghanistan"],
+      trophy: "The Spin Web Trophy", nats: ["India"],
       clubs: [
-        { mx: 46, my: 88, nm: "Monsoon CC", city: "Colombo", note: "flighted off-spin", gq: "Monsoon flight it and let it dip. Bowl full, attack before it grips.", taunt: "Flight, dip, a puff of dust. Watch your feet, friend.", nug: "Colombo: heat, flight and off-spin that dips late. They're a different side when the ball seams - pray for cloud, bowl full, and attack before it grips.", mult: 1.04 },
-        { mx: 26, my: 55, nm: "The Maidan Kings", city: "Mumbai", note: "wristy mystery-spin", gq: "Maidan wristmen spin webs from dust. Sweep hard, use your feet — early.", taunt: "You can't sweep what you can't pick.", nug: "Mumbai: wristy magicians raised on maidan dust bowls. Sweep hard and use your feet early - once the pitch bites, the web is spun.", mult: 1.10 },
-        { boss: 1, mx: 27, my: 19, nm: "The Dust Devils", city: "Lahore", capt: "talisman",
-          leader: "Vikram Anand", note: "bowls six different balls an over", gq: "Anand bowls six different balls an over and reads your feet. Duel him on your terms; cash in at the other.", taunt: "Six different balls an over. Guess which one has your name on it.", nug: "Lahore: Anand bowls six different balls an over and reads your feet like a newspaper. His quicks are ordinary - cash in at the other end and duel him on YOUR terms.", mult: 1.18,
-          tadj: 0.04, sig: "web", intel: "Anand bowls six different balls an over and reads feet like headlines. Don't duel him - milk the ordinary quicks at the other end and let his overs die quietly.",
+        { mx: 26, my: 55, nm: "The Maidan Kings", city: "Mumbai", note: "wristy mystery-spin", gq: "Maidan wristmen spin webs from dust. Sweep hard, use your feet — early.", taunt: "You can't sweep what you can't pick.", nug: "Mumbai: wristy magicians raised on maidan dust bowls. Sweep hard and use your feet early - once the pitch bites, the web is spun.", mult: 1.04 },
+        { mx: 62, my: 42, nm: "Eden Roar", city: "Kolkata", note: "a hundred thousand fielders", gq: "Eden's crowd bats at number twelve. Quiet them in the first ten and the Roar plays for you.", taunt: "A hundred thousand of us. Eleven of you.", nug: "Kolkata: an ordinary over here sounds like a riot and their cricket rises with the noise. Early wickets mute the stands - and a muted Eden Roar is just a decent club side a long way from the rope.", mult: 1.08 },
+        { boss: 1, mx: 40, my: 30, nm: "The Dust Devils", city: "Nagpur", capt: "talisman",
+          leader: "Vikram Anand", note: "bowls six different balls an over", gq: "Anand bowls six different balls an over and reads your feet. Duel him on your terms; cash in at the other.", taunt: "Six different balls an over. Guess which one has your name on it.", nug: "Nagpur: Anand bowls six different balls an over and reads your feet like a newspaper. His quicks are ordinary - cash in at the other end and duel him on YOUR terms.", mult: 1.14,
+          tadj: 0.02, sig: "web", intel: "Anand bowls six different balls an over and reads feet like headlines. Don't duel him - milk the ordinary quicks at the other end and let his overs die quietly.",
           winln: "You read all six, in my own dust. I taught you nothing, and you took everything.", lossln: "You guessed wrong more than you guessed right. Study the dust, friend, then return." }
       ] },
-    // -- the seventh door: not a nation but a man. Unlocks when all six
-    //    regions are conquered; beating it ends the world tour.
+    { id: "pak", nm: "Pakistan", cty: "Pakistan", arch: "express", type: "Reverse & Raw Pace", ac: "#1E7F5C", bg: "sub.webp", art: "circuit/trophy-rsa.webp",
+      arrive: "Pakistan, boss. Somewhere out there is a sixteen-year-old bowling faster than anyone we've ever signed, off a run-up he invented yesterday. This is where fast bowling comes from.",
+      pitch: "dry", wx: "Hot",
+      cond: "Abrasive, baked and cracked. New-ball pace early, and when the ball roughs up it starts to talk backwards.",
+      gaffer: "Two new-ball bursts to survive, then the old ball reverses at ninety miles an hour. Bank runs in the middle overs - the first ten and last ten belong to their quicks.",
+      academy: "tearaway quicks who bend the old ball",
+      trophy: "The Marble Mace", nats: ["Pakistan"],
+      clubs: [
+        { mx: 24, my: 72, nm: "Indus Express", city: "Karachi", note: "pace off the street", gq: "The Express found their attack at a tape-ball tournament. Raw, quick, and short of a plan B - make them bowl a second spell.", taunt: "Our third-change bowler is quicker than your opener. We checked.", nug: "Karachi: an attack discovered on street corners - slingers, skidders, one kid whose action nobody has solved. Hostile but wild: leave the wide ones, survive the straight ones, and the runs arrive in extras.", mult: 1.05 },
+        { mx: 44, my: 22, nm: "Khyber Chargers", city: "Peshawar", note: "fast, fearless, funhouse", gq: "The Chargers bowl fast and bat faster. It's chaos - out-last it, don't out-hit it.", taunt: "Slow overs bore us. We don't bowl any.", nug: "Peshawar: cricket at full throttle - every bowler sprints in, every batsman swings. Glorious when it works, gone in an hour when it doesn't. Keep your head while they lose theirs.", mult: 1.09 },
+        { boss: 1, mx: 56, my: 40, nm: "The Lahore Lions", city: "Lahore", capt: "talisman",
+          leader: "Shaheen Raza", bimg: "players/f_ind.webp", note: "makes a forty-over-old ball swing like new", gq: "Raza's the most dangerous bowler on tour AFTER over thirty - the old ball obeys him. Win the game before it gets old.", taunt: "Everyone fears the new ball. Mine gets better with age.", nug: "Lahore: Raza with a scuffed forty-over ball is the deadliest sight on the Circuit - late reverse at genuine pace, stumps and toes. The middle overs are your whole innings: be ahead of the game before over thirty-five, because after it he's unplayable.", mult: 1.15,
+          sig: "reverse", intel: "The ball starts talking backwards around over thirty and Raza speaks the language fluently. Front-load the innings: wickets in hand mean nothing here if the reverse arrives with six an over still owed.",
+          winln: "Ahead of the game before my ball got old. You read the innings better than I bowled it - take the Mace.", lossln: "The old ball sang and your tail danced to it. Score faster, sooner - or learn to survive it." }
+      ] },
+    { id: "afg", nm: "Afghanistan", cty: "Afghanistan", arch: "wizard", type: "Mystery Spin", ac: "#5B4A91", bg: "sub.webp", art: "circuit/trophy-sub.webp",
+      arrive: "Afghanistan, boss - the last nation before the summit. Twenty years ago this cricket didn't exist. Now their wrist-spinners are the most feared puzzle in the world game. Nobody gave them anything - they took it.",
+      pitch: "dry", wx: "Scorching",
+      cond: "Hard, bare and bone-dry. Grip and rip from the first over, and heat that bakes mistakes into collapses.",
+      gaffer: "Wrist-spin you cannot pick and batting that swings like a mood. They'll hand you twenty in one over then take three wickets in the next. Ride the storms - the side that stays calm longest wins.",
+      academy: "mystery spinners and fearless hitters",
+      trophy: "The Mountain Star", nats: ["Afghanistan"],
+      clubs: [
+        { mx: 38, my: 34, nm: "Kabul Kites", city: "Kabul", note: "wrist-spin off the rooftops", gq: "The Kites learned spin with a taped ball and no coach - nothing they bowl is in a textbook. Watch the hand, not the pitch.", taunt: "Your coaches never taught you our deliveries. Nobody taught us either.", nug: "Kabul: self-taught wrist-spinners with actions no manual describes. The textbook is useless - watch the hand, trust the depth of your crease, and never plant the front foot early.", mult: 1.08 },
+        { mx: 60, my: 56, nm: "Hindu Kush Highlanders", city: "Jalalabad", note: "hit first, ask never", gq: "The Highlanders swing at everything from ball one. Hold your nerve - the collapse is always one ball away.", taunt: "We score at eight an over or we lose trying. Mostly the first one.", nug: "Jalalabad: no anchor, no par score, no fear - they attack every ball of all fifty overs. Terrifying and brittle at once: dots build pressure like nowhere else, and pressure here becomes three wickets in an over.", mult: 1.12 },
+        { boss: 1, mx: 30, my: 74, nm: "The Mountain Storm", city: "Kandahar", capt: "younggun",
+          leader: "Rashid Zadran", bimg: "players/ws_ind.webp", note: "the wrong'un nobody on earth can pick", gq: "Zadran's googly has never been picked - not once, by anyone. Play him off the pitch, milk everything else, and don't be proud.", taunt: "Six batsmen swore they picked it. Ask them what happened next.", nug: "Kandahar: Zadran bowls the one delivery the world game hasn't solved - a wrong'un with no tell. You will NOT pick it; stop trying. Deep crease, play it off the surface, farm the other end, and remember his batting mates are mortals in a hurry.", mult: 1.17, tadj: 0.02,
+          sig: "mystery", intel: "You cannot pick the googly - plan for that instead of pretending. Play Zadran from the crease off the pitch, score off everyone else, and force their mercurial batting to chase under pressure. Calm beats magic.",
+          winln: "You never picked it. You just refused to panic - and the mountain respects nothing more. The Star is yours; the summit is next.", lossln: "Six more swore they picked it today. The Storm keeps their names. Come back calmer." }
+      ] },
+    // -- the last door: not a nation but a man. Unlocks when every nation
+    //    in the universe is conquered; beating it ends the world tour.
     { id: "gt", nm: "The World Final", cty: "England", arch: "greybeard", type: "The Summit", ac: "#C8674A", final: 1,
       bg: "eng.webp", art: "circuit/trophy-crown.webp",
       arrive: "Marylebone, boss. Where he and I started, and where one of us finishes. Twenty years I've carried this fixture in my coat pocket.",
@@ -23597,9 +23689,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         { boss: 1, final: 1, mx: 50, my: 40, nm: "Thorne's Invincible XI", city: "Marylebone", capt: "master",
           leader: "Reggie Thorne", bimg: "thorne.png", note: "every trick from every nation, drilled to the minute",
           gq: "He's watched every tie you've played and built an XI out of the answers. There's no puzzle this time - just the best side we've ever faced.",
-          taunt: "Six trophies against small opposition. I've selected accordingly. Bring your whole game - you'll be needing it.",
+          taunt: "Twelve trophies against small opposition. I've selected accordingly. Bring your whole game - you'll be needing it.",
           nug: "Marylebone: Thorne's Invincibles have Pemberley's patience, Emmanuel's finish, Steenkamp's new ball and Whitcombe's hands. No weakness to milk - you win this by playing YOUR cricket better than they play theirs.",
-          mult: 1.2, tadj: 0.012, sig: "invincible",
+          mult: 1.2, tadj: -0.018, sig: "invincible",   // offsets the longer tour's ri ramp: the Final plays at the exact tier it always did
           intel: "He's coached every flaw you've shown on tour into that XI. There's nothing to exploit - so give them nothing: bat your overs, hold your catches, and make HIM blink first.",
           winln: "Twenty years ago I told your Gaffer a team is a ledger and he called it a game. Take the Crown. Perhaps you were both right.",
           lossln: "You were worth the fixture. That's not nothing - I've said less about better sides. Go around again; the Final keeps." }
@@ -23638,8 +23730,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     return true;
   }
   // Prize money that matters against a ~$500k bank: minors pay real wages,
-  // bosses pay for a marquee signing by the back half of the tour.
-  function foCxPrize(ri, boss) { return boss ? (50000 + ri * 30000) : (15000 + ri * 9000); }
+  // bosses pay for a marquee signing by the back half of the tour. Slopes
+  // retuned for the 12-nation universe so the whole tour still pays out
+  // roughly what the six-nation tour did; the World Final pays a fixed jackpot.
+  function foCxPrize(ri, boss, fin) { return fin ? 250000 : boss ? (30000 + ri * 10000) : (10000 + ri * 3000); }
   // Win-streak multiplier: three doors without a loss and the promoters pay up.
   function foCxStreakMult(streak) { return streak >= 6 ? 2 : streak >= 3 ? 1.5 : 1; }
   // ---- boss signatures: every boss plays a different brand of cricket -------
@@ -23677,6 +23771,36 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         if (isSpin(p)) { mul(p, "wicket", 1.3); mul(p, "variation", 1.38); mul(p, "moveTurn", 1.28); }
         else mul(p, "wicket", 0.84);
       });
+    } else if (sig === "swing") {
+      // the Emerald new-ball pair: it hoops both ends while the shine lasts
+      var sw = bowlers.filter(function (p) { return !isSpin(p); }).sort(function (a, b) { return ((b.skills || {}).moveTurn || 0) - ((a.skills || {}).moveTurn || 0); }).slice(0, 2);
+      sw.forEach(function (p) { mul(p, "moveTurn", 1.34); mul(p, "wicket", 1.2); mul(p, "stamina", 0.9); });
+      players.forEach(function (p) { mul(p, "power", 0.9); });
+    } else if (sig === "dyke") {
+      // Total Cricket: nothing loose, ever - the squeeze wins matches
+      bowlers.forEach(function (p) { mul(p, "economy", 1.3); mul(p, "discipline", 1.25); });
+      players.forEach(function (p) { mul(p, "rotation", 1.12); mul(p, "power", 0.88); });
+    } else if (sig === "pride") {
+      // fight in the dog: catches stick, heads never drop, stars are scarce
+      players.forEach(function (p) { mul(p, "temperament", 1.25); mul(p, "fielding", 1.22); mul(p, "catching", 1.22); });
+      bowlers.forEach(function (p) { mul(p, "wicket", 0.94); });
+    } else if (sig === "flight") {
+      // loop and dip: the spinners buy wickets above the eyeline
+      bowlers.forEach(function (p) {
+        if (isSpin(p)) { mul(p, "variation", 1.3); mul(p, "economy", 1.18); mul(p, "wicket", 1.22); }
+        else mul(p, "wicket", 0.9);
+      });
+    } else if (sig === "reverse") {
+      // the old ball talks backwards at pace; a few runs leak while it's new
+      bowlers.forEach(function (p) {
+        if (!isSpin(p)) { mul(p, "wicket", 1.28); mul(p, "variation", 1.3); mul(p, "economy", 0.94); }
+      });
+    } else if (sig === "mystery") {
+      // wrist-spin nobody picks, batting that lives dangerously
+      bowlers.forEach(function (p) {
+        if (isSpin(p)) { mul(p, "variation", 1.42); mul(p, "wicket", 1.26); }
+      });
+      players.forEach(function (p) { mul(p, "temperament", 0.88); mul(p, "power", 1.12); });
     } else if (sig === "invincible") {
       // Thorne's Final XI: every lesson of the tour in modest doses - the
       // wall's temperament, the safe hands, a genuine new-ball threat and a
@@ -23991,7 +24115,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var mult = foCxStreakMult(st.streak);
       if (win && !foCxBeaten(st, r.id, tag.c)) {
         (st.beat[r.id] = st.beat[r.id] || [])[tag.c] = true;
-        prize = Math.round(foCxPrize(tag.r, !!c.boss) * mult / 500) * 500;
+        prize = Math.round(foCxPrize(tag.r, !!c.boss, !!c.final) * mult / 500) * 500;
         if (c.boss) {
           conquered = true;
           st.conq = st.conq || []; st.conq.push(r.id);
@@ -24376,7 +24500,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           "<div class='fo-cx-done'><div class='fo-cx-rule'><i></i><b>THE CIRCUIT · COMPLETE</b><i></i></div>" +
           "<div class='fo-cx-h1'>World champions</div>" +
           "<img src='" + FO_ART + "circuit/trophy-crown.webp' alt='The Thorne Crown' style='display:block;height:150px;margin:12px auto 4px'>" +
-          "<p class='fo-cx-cond'>Six nations. Six trophies. And the Thorne Crown, taken off the man himself at Marylebone. Every piece of it lives in the club museum - and somewhere, Reggie Thorne is rewriting his arithmetic.</p></div>" + foCxRecordPanel(st) + "</div>";
+          "<p class='fo-cx-cond'>Twelve nations. Twelve trophies. And the Thorne Crown, taken off the man himself at Marylebone. The whole cricketing universe, conquered - every piece of it lives in the club museum, and somewhere, Reggie Thorne is rewriting his arithmetic.</p></div>" + foCxRecordPanel(st) + "</div>";
       } else {
         var r = FO_CX_REGIONS[ri];
         var beatN = (st.beat[r.id] || []).filter(Boolean).length;
@@ -24397,7 +24521,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             var bossDone = foCxBeaten(st, r.id, r.clubs.indexOf(bc));
             return "<div class='fo-cx-stage'>" +
               "<div class='fo-cx-map'><div class='mapin'>" +
-              "<img src='" + FO_ART + (r.final ? "thorne.png" : "circuit/" + r.id + ".webp") + "' alt=''" + (r.final ? " style='object-fit:cover;object-position:50% 12%'" : "") + ">" +
+              "<img src='" + FO_ART + (r.final ? "thorne.png" : "circuit/" + (r.bg || (r.id + ".webp"))) + "' alt=''" + (r.final ? " style='object-fit:cover;object-position:50% 12%'" : "") + ">" +
               r.clubs.map(function (c5, i5) {
                 var done5 = foCxBeaten(st, r.id, i5);
                 var cls5 = "fo-cx-node" + (c5.boss ? " bossn" : "") + (done5 ? " done" : (live && i5 === nextCi ? " nxt" : " lock"));
