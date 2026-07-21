@@ -2727,9 +2727,21 @@
       : k === "wspin" ? "ws" : k === "fspin" ? "fs"
       : k === "pace" ? (p.role === "seamFast" ? "f" : (p.role === "seamFastMedium" ? "fm" : "mp"))
       : "bat";
+    // all-rounders split by their bowling for the variant/legend figures
+    var rv = r === "ar" ? (/spin/i.test(p.bowlTypeFull || p.bowlType || "") ? "arspin" : "ar") : r;
+    // v3: an 80+ player IS a legend, and walks in the midnight-and-gold
+    // legendary figure on every surface - matching his gold card frame
+    try { if (foPkOvr(p) >= 80) return "players/leg_" + rv + ".webp"; } catch (eLg) {}
     // the same player always gets the same nation figure: his own when it was
     // painted, a stable regional stand-in otherwise
     var n = FO_PK_NAT[p.nat] || ["eng", "aus", "ind", "nzl", "rsa", "win"][foHash32("pknat|" + (p.name || "")) % 6];
+    // squad variety: ~30% of players wear a variant figure instead of the
+    // nation one - deterministic per player, complexion matched to region
+    var hV = foHash32("pkvar|" + (p.name || "")) % 10;
+    if (hV < 3) {
+      var euro = (n === "eng" || n === "aus" || n === "nzl") || (n === "rsa" && hV === 0);
+      return "players/" + (euro ? "vc_" : "vb_") + rv + ".webp";
+    }
     return "players/" + r + "_" + n + ".webp";
   }
   var FO_PK_TIPS = {
