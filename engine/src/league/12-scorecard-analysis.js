@@ -2702,11 +2702,15 @@
     var L = FO_CITY[city] || {};
     var r = hit.r, c = hit.c;
     var nugBody = c.nug ? c.nug.replace(/^[^:]*:\s*/, "") : "";
+    var ga = L.groundArt || (FO_CITY_GROUNDS[city] ? "cities/" + foCitySlug(city) + "-ground.webp" : null);
     return {
       r: r, c: c, ri: hit.ri, ci: hit.ci, nm: city, custom: !!FO_CITY[city],
-      art: L.art || ("circuit/" + (r.bg || (r.id + ".webp"))),
+      // a city without its own painting borrows its ground's before falling
+      // back to the region map
+      art: L.art || ga || ("circuit/" + (r.bg || (r.id + ".webp"))),
+      cityArt: !!(L.art || ga),
       streets: L.streets || null,
-      groundArt: L.groundArt || (FO_CITY_GROUNDS[city] ? "cities/" + foCitySlug(city) + "-ground.webp" : null),
+      groundArt: ga,
       groundNm: L.groundNm || FO_CITY_GROUNDS[city] || (city + (c.boss ? " Colosseum" : " Oval")),
       tag: L.tag || r.type,
       city: L.city || (r.arrive || ""),
@@ -2938,7 +2942,7 @@
           : open ? "<span class='tc-chip nxt'>Next challenge</span>"
             : "<span class='tc-chip faroff'>Further down the road</span>";
         cardEl.innerHTML =
-          (L.custom && L.art ? "<div class='tc-art'><img src='" + FO_ART + L.art + "' alt=''></div>" : "") +
+          (L.cityArt ? "<div class='tc-art'><img src='" + FO_ART + L.art + "' alt=''></div>" : "") +
           "<button type='button' class='tc-x' data-tc-x>&#10005;</button>" +
           "<div class='tc-bd'>" +
           "<div class='tc-eb'>" + E(c.city) + " &middot; " + E(r.nm) + "</div>" +
