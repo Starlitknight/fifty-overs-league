@@ -1771,3 +1771,223 @@
   }
   window.addEventListener("hashchange", function () { [120, 500, 1200].forEach(function (ms) { setTimeout(foStatsOwnRows, ms); }); });
   setInterval(function () { try { foStatsOwnRows(); } catch (e) {} }, 2500);
+
+  // ===========================================================================
+  //  THE ILLUSTRATED MATCH - the live match as cinema. The ground painting is
+  //  the set, the weather plays itself, the striker and bowler stand in the
+  //  frame as illustrated figures, and every delivery lands as a MOMENT with
+  //  the engine's own commentary line under it. Mounted INSIDE the #fo-oval
+  //  theatre column (above the field), re-rendered via foMatchRenderHooks on
+  //  every real ball - presentation only, the engine stays the sole truth.
+  // ===========================================================================
+  function foMstArt() {
+    try {
+      var cx = M.meta && M.meta.__circuit;
+      if (cx != null && FO_CX_REGIONS[cx.r]) {
+        var r = FO_CX_REGIONS[cx.r], c = r.clubs[cx.c];
+        var L = FO_CITY[c.city];
+        if (L && L.groundArt) return { img: FO_ART + L.groundArt, mode: "ground", ac: r.ac, gnm: L.groundNm || c.city, city: c.city };
+        return { img: FO_ART + "circuit/" + (r.bg || (r.id + ".webp")), mode: "region", ac: r.ac, gnm: c.city + (c.boss ? " Colosseum" : " Oval"), city: c.city };
+      }
+    } catch (e) {}
+    return { img: FO_ART + "cities/london-ground.webp", mode: "generic", ac: "#2E7A3C", gnm: (M.meta && M.meta.ground) || "The ground", city: "" };
+  }
+  var FO_MST_TITLES = { "6": "SIX!", "4": "FOUR!", dot: "Dot ball", "1": "Single", "2": "Two runs", "3": "Three!", wide: "Wide", noball: "NO BALL!", bye: "Byes", legbye: "Leg byes" };
+  function foMstGaffer(kind, userBat) {
+    var g = {
+      wicketB: "That one was coming three balls ago. Next man - bat time, calm the room.",
+      wicketF: "Built, not bought. Keep the field up and hunt the new man now.",
+      boundaryB: "He didn't fight the pitch - he used it. More of that.",
+      boundaryF: "Too full, too friendly. Drag the length back before this gets away.",
+      dotB: "No panic. The rotation will come - just don't gift them a set.",
+      dotF: "Dots are bricks. Keep stacking, the wall does the rest.",
+      runB: "Good running. Keep the board ticking and the fielders honest.",
+      runF: "Cut the singles off - make him hit over the top to score."
+    };
+    return g[kind + (userBat ? "B" : "F")] || "";
+  }
+  function foMatchStage() {
+    try {
+      if ((location.hash || "").split("?")[0] !== "#/match") { document.body.classList.remove("fo-stage-on"); return; }
+      if (typeof M === "undefined" || !M || !M.innings || !M.meta) return;
+      var page = document.getElementById("page"); if (!page) return;
+      var mcTop = page.querySelector(".mc-top");
+      var oval = document.getElementById("fo-oval");
+      if (!mcTop && !oval) { document.body.classList.remove("fo-stage-on"); return; }
+      var inn = M.innings[M.inns]; if (!inn) return;
+      // rebuild only when the broadcast moved on (or the theatre re-homed us)
+      var old = document.getElementById("fo-mstage");
+      var sig = M.inns + ":" + M.log.length + ":" + inn.runs + "/" + inn.wkts + ":" + (M.done ? 1 : 0) + ":" + (oval ? "ov" : "mc");
+      if (old && old.__foSig === sig && (!oval || old.parentNode === oval)) return;
+      var art = foMstArt();
+      var wx = ((M.meta.weather || "") + "").toLowerCase();
+      var rainy = /rain|drizzle|storm|shower|wet/.test(wx);
+      var gloomy = /overcast|cloud/.test(wx);
+      var s1 = inn.bat && inn.bat[inn.striker];
+      var bw = (inn.bxi || []).filter(function (p) { return p.name === inn.curBowlerName; })[0];
+      var brec = bw && inn.bowlers ? inn.bowlers[bw.name] : null;
+      var userBat = inn.batTeam === M.user.name;
+      // the last real delivery of THIS innings drives the moment
+      var L = null;
+      for (var i = 0; i < Math.min(4, M.log.length); i++) { if (!M.log[i].mile && M.log[i].inn === M.inns) { L = M.log[i]; break; } }
+      var kind = "", title = "", copy = "";
+      if (M.done) { kind = "done"; title = "FULL TIME"; copy = (M.result && M.result.text) || ""; }
+      else if (L) {
+        var o = L.out;
+        title = FO_MST_TITLES[o] || (typeof isWkt === "function" && isWkt(o) ? "WICKET!" : "");
+        kind = (o === "4" || o === "6") ? "boundary" : (typeof isWkt === "function" && isWkt(o)) ? "wicket" : (o === "dot") ? "dot" : "run";
+        if (!title) { title = "Dot ball"; kind = "dot"; }
+        copy = L.txt || "";
+      } else { kind = "start"; title = M.inns ? "THE CHASE" : "PLAY"; copy = (userBat ? "Your openers" : "Their openers") + " walk out at " + art.gnm + "."; }
+      var gaff = (kind === "wicket" || kind === "boundary" || kind === "dot" || kind === "run") ? foMstGaffer(kind, userBat) : "";
+      // this over, as beads
+      var cur = [];
+      for (var i2 = 0; i2 < M.log.length; i2++) {
+        var L2 = M.log[i2]; if (L2.inn !== M.inns || L2.mile) continue;
+        if (Math.floor(parseFloat(L2.no)) === Math.floor(Math.max(0, inn.legal - 1) / 6)) cur.unshift(L2); else break;
+      }
+      var beads = cur.map(function (L3) {
+        var oo = L3.out, cls = oo === "4" || oo === "6" ? " b4" : (typeof isWkt === "function" && isWkt(oo)) ? " bw" : (oo === "wide" || oo === "noball") ? " bx" : "";
+        var sym = oo === "4" ? "4" : oo === "6" ? "6" : (typeof isWkt === "function" && isWkt(oo)) ? "W" : oo === "dot" ? "&middot;" : (["1", "2", "3"].indexOf(oo) >= 0 ? oo : "+");
+        return "<span class='mb" + cls + "'>" + sym + "</span>";
+      }).join("");
+      var tgt = M.target ? ("Target " + M.target + " &middot; need " + Math.max(0, M.target - inn.runs) + " off " + Math.max(0, (typeof foBallCap === "function" ? foBallCap() : 300) - inn.legal)) : "First innings";
+      var apNow = (typeof UI !== "undefined" && UI.apMs) || 1600;
+      var spd = [["Cinematic", 2800], ["Fast", 1100], ["Instant", 350]];
+      var spdBtns = spd.map(function (s) {
+        var on = Math.abs(apNow - s[1]) < 500 || (s[1] === 2800 && apNow >= 2200) || (s[1] === 350 && apNow <= 600) || (s[1] === 1100 && apNow > 600 && apNow < 2200);
+        return "<button type='button' class='fo-mst-sp" + (on ? " on" : "") + "' data-ms='" + s[1] + "'>" + s[0] + "</button>";
+      }).join("");
+      var pArt = function (p) { try { return FO_ART + foPkArt(p); } catch (e) { return ""; } };
+      var batPanel = (!M.done && s1) ?
+        "<div class='fo-mst-p pbat'><img src='" + pArt(s1.p) + "' alt=''><div class='pc'>" +
+        "<div class='rl'>On strike &middot; " + (s1.p.hand === "L" ? "LHB" : "RHB") + "</div>" +
+        "<div class='nm'>" + E(s1.p.name) + "</div>" +
+        "<div class='st'>" + s1.r + "* (" + s1.b + ")</div></div></div>" : "";
+      var bowlPanel = (!M.done && bw) ?
+        "<div class='fo-mst-p pbowl'><img src='" + pArt(bw) + "' alt=''><div class='pc'>" +
+        "<div class='rl'>" + E((bw.btLabel || "bowling").toUpperCase()) + "</div>" +
+        "<div class='nm'>" + E(bw.name) + "</div>" +
+        "<div class='st'>" + (brec ? Math.floor(brec.b / 6) + "." + (brec.b % 6) + "&ndash;" + brec.r + "&ndash;" + brec.w : "new spell") + "</div></div></div>" : "";
+      var el = document.createElement("section");
+      el.id = "fo-mstage";
+      el.className = "fo-mst k-" + kind + (rainy ? " wx-rain" : "") + (gloomy ? " wx-gloom" : "") + " m-" + art.mode;
+      el.style.setProperty("--cxc", art.ac);
+      el.innerHTML =
+        "<div class='fo-mst-bg'><img src='" + art.img + "' alt=''></div><div class='fo-mst-veil'></div>" +
+        (rainy ? "<div class='fo-mst-rain'></div>" : "") +
+        "<div class='fo-mst-top'>" +
+        "<div class='fo-mst-wx'><span>" + E(art.gnm) + (art.city ? " &middot; " + E(art.city) : "") + "</span><span>" + E(M.meta.weather || "") + "</span><span>" + E(M.pitch || "") + " pitch</span></div>" +
+        "<div class='fo-mst-speed'>" + spdBtns + "</div></div>" +
+        "<div class='fo-mst-score'><b>" + inn.runs + "/" + inn.wkts + "</b><span>" + Math.floor(inn.legal / 6) + "." + (inn.legal % 6) + " ov &middot; " + E(inn.batTeam) + "</span><i>" + tgt + "</i></div>" +
+        batPanel + bowlPanel +
+        "<div class='fo-mst-moment'>" +
+        (L && !M.done ? "<span class='chip'>" + E(L.no || "") + "</span>" : "") +
+        "<div class='t'>" + title + "</div>" +
+        (copy ? "<p>" + E(copy) + "</p>" : "") + "</div>" +
+        "<div class='fo-mst-foot'>" +
+        (gaff ? "<span class='gf'><b>The Gaffer:</b> " + E(gaff) + "</span>" : "<span class='gf'></span>") +
+        "<div class='mbs'>" + (beads || "<span class='mb'>&ndash;</span>") + "</div></div>";
+      el.__foSig = sig;
+      if (old) old.replaceWith(el);
+      else if (oval) oval.insertBefore(el, oval.firstChild);
+      else mcTop.parentNode.insertBefore(el, mcTop);
+      // the theatre mounts on its own tick - if it arrived after us, move in
+      if (!oval) setTimeout(function () {
+        try {
+          var ov2 = document.getElementById("fo-oval"), st2 = document.getElementById("fo-mstage");
+          if (ov2 && st2 && st2.parentNode !== ov2) ov2.insertBefore(st2, ov2.firstChild);
+        } catch (eMv) {}
+      }, 450);
+      document.body.classList.add("fo-stage-on");
+      el.querySelectorAll(".fo-mst-sp[data-ms]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          try {
+            UI.apMs = +b.getAttribute("data-ms");
+            el.querySelectorAll(".fo-mst-sp").forEach(function (b2) { b2.classList.toggle("on", b2 === b); });
+            if (window.__ap) { clearInterval(window.__ap); window.__ap = null; }
+            if (typeof foEnsureAutoplay === "function") foEnsureAutoplay();
+          } catch (eSp) {}
+        });
+      });
+    } catch (e) {}
+  }
+  try { foMatchRenderHooks.push(foMatchStage); } catch (eMS) {}
+  setInterval(foMatchStage, 1000);
+  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] !== "#/match") document.body.classList.remove("fo-stage-on"); });
+  try {
+    var msCss = document.createElement("style"); msCss.id = "fo-mst-css";
+    msCss.textContent =
+      ".fo-mst{position:relative;min-height:480px;border-radius:16px;overflow:hidden;margin:0 0 14px;isolation:isolate;background:#081a2b}" +
+      "#fo-oval .fo-mst{min-height:430px;border-radius:14px;margin:0 0 10px}" +
+      // inside the theatre column the stage is narrower - tighten the lockups
+      "#fo-oval .fo-mst-score{top:48px}#fo-oval .fo-mst-score b{font-size:34px}" +
+      "#fo-oval .fo-mst-moment{top:57%;width:min(440px,50%)}" +
+      "#fo-oval .fo-mst-moment .chip{display:none}" +
+      "#fo-oval .fo-mst-moment .t{font-size:clamp(30px,3.6vw,50px)}" +
+      "#fo-oval .fo-mst-moment p{font-size:13px;max-width:360px}" +
+      "#fo-oval .fo-mst-p{width:26%}" +
+      "#fo-oval .fo-mst-p .nm{font-size:19px}" +
+      ".fo-mst-bg{position:absolute;inset:0;z-index:0}" +
+      ".fo-mst-bg img{width:100%;height:100%;object-fit:cover;object-position:center 44%}" +
+      ".fo-mst.m-region .fo-mst-bg img{filter:blur(5px) saturate(.9) brightness(.8);transform:scale(1.06)}" +
+      ".fo-mst-veil{position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(3,16,33,.9) 0%,rgba(3,16,33,.45) 20%,rgba(3,16,33,.05) 45%,rgba(3,16,33,.14) 62%,rgba(3,16,33,.86) 100%),linear-gradient(0deg,rgba(3,15,31,.92) 0%,transparent 42%,rgba(3,15,31,.35) 100%)}" +
+      ".fo-mst.wx-gloom .fo-mst-veil{background:linear-gradient(90deg,rgba(3,16,33,.92) 0%,rgba(3,16,33,.5) 20%,rgba(3,16,33,.14) 45%,rgba(3,16,33,.2) 62%,rgba(3,16,33,.88) 100%),linear-gradient(0deg,rgba(3,15,31,.94) 0%,rgba(6,14,26,.2) 42%,rgba(3,15,31,.5) 100%)}" +
+      ".fo-mst-rain{position:absolute;inset:-80px;z-index:2;pointer-events:none;opacity:.17;background-image:repeating-linear-gradient(108deg,transparent 0 22px,rgba(216,237,255,.7) 23px,transparent 24px 35px);background-size:48px 48px;animation:foMstRain 1.2s linear infinite;mask-image:linear-gradient(to bottom,#000,transparent 78%)}" +
+      "@keyframes foMstRain{from{transform:translate3d(-20px,-30px,0)}to{transform:translate3d(18px,35px,0)}}" +
+      ".fo-mst-top{position:absolute;z-index:6;top:12px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}" +
+      ".fo-mst-wx{display:inline-flex;gap:2px;align-items:center;padding:5px 6px;border-radius:12px;background:rgba(5,22,43,.72);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px)}" +
+      ".fo-mst-wx span{padding:4px 8px;color:rgba(255,255,255,.85);font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;white-space:nowrap}" +
+      ".fo-mst-speed{display:inline-flex;gap:4px;padding:5px;border-radius:12px;background:rgba(5,22,43,.72);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px)}" +
+      "html body #page .fo-mst-sp,html body.ftpskin #page .fo-mst-sp{border:0 !important;border-radius:8px;background:transparent !important;color:rgba(255,255,255,.65) !important;padding:6px 10px;font-family:Oswald,sans-serif !important;font-size:10px;font-weight:600 !important;letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;box-shadow:none !important}" +
+      "html body #page .fo-mst-sp.on,html body.ftpskin #page .fo-mst-sp.on{color:#15243a !important;background:#f4ede0 !important;box-shadow:0 2px 8px rgba(0,0,0,.22) !important}" +
+      ".fo-mst-score{position:absolute;z-index:6;top:58px;left:0;right:0;text-align:center;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.8);pointer-events:none}" +
+      ".fo-mst-score b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:44px;line-height:1;letter-spacing:1px}" +
+      ".fo-mst-score span{display:block;font-size:12px;color:rgba(255,255,255,.85);margin-top:2px}" +
+      ".fo-mst-score i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#F3D37A;margin-top:3px}" +
+      ".fo-mst-p{position:absolute;z-index:3;top:44px;bottom:64px;width:30%;max-width:380px;display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none}" +
+      ".fo-mst-p.pbat{left:0}.fo-mst-p.pbowl{right:0}" +
+      ".fo-mst-p img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 30%;opacity:.94;filter:saturate(.94) contrast(1.03);mask-image:linear-gradient(to bottom,#000 45%,rgba(0,0,0,.93) 72%,transparent 100%)}" +
+      ".fo-mst-p.pbat img{clip-path:polygon(0 0,100% 0,82% 100%,0 100%)}" +
+      ".fo-mst-p.pbowl img{clip-path:polygon(18% 0,100% 0,100% 100%,0 100%)}" +
+      ".fo-mst-p::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgba(5,19,38,.95),transparent 58%)}" +
+      ".fo-mst-p .pc{position:relative;z-index:2;padding:0 22px 16px;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.8)}" +
+      ".fo-mst-p.pbowl .pc{text-align:right}" +
+      ".fo-mst-p .rl{color:#f5c85b;font-family:Oswald,sans-serif;font-size:9px;font-weight:600;letter-spacing:2.2px;text-transform:uppercase}" +
+      ".fo-mst-p .nm{font-family:Oswald,sans-serif;font-weight:600;font-size:26px;letter-spacing:.5px;line-height:1.05;margin:2px 0 2px}" +
+      ".fo-mst-p .st{color:rgba(255,255,255,.85);font-size:12px;font-weight:700}" +
+      ".fo-mst-moment{position:absolute;z-index:5;left:50%;top:52%;width:min(520px,46%);transform:translate(-50%,-50%);text-align:center;color:#fff;text-shadow:0 3px 20px rgba(0,0,0,.85);animation:foMstIn .38s ease-out}" +
+      "@keyframes foMstIn{0%{opacity:0;transform:translate(-50%,-45%) scale(.92)}65%{opacity:1;transform:translate(-50%,-51%) scale(1.035)}100%{transform:translate(-50%,-50%) scale(1)}}" +
+      ".fo-mst-moment .chip{display:inline-flex;padding:5px 11px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(7,25,48,.66);backdrop-filter:blur(8px);color:rgba(255,255,255,.85);font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase}" +
+      ".fo-mst-moment .t{margin:10px 0 7px;font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(42px,5.6vw,74px);line-height:.9;letter-spacing:2px;text-transform:uppercase}" +
+      ".fo-mst.k-boundary .fo-mst-moment .t{color:#f9c957}" +
+      ".fo-mst.k-wicket .fo-mst-moment .t{color:#ff6c61}" +
+      ".fo-mst.k-dot .fo-mst-moment .t{color:#c7e4e8}" +
+      ".fo-mst.k-done .fo-mst-moment .t{color:#8fe3a4}" +
+      ".fo-mst-moment p{max-width:440px;margin:0 auto;color:rgba(255,255,255,.92);font-family:Georgia,serif;font-size:15px;line-height:1.45}" +
+      ".fo-mst-foot{position:absolute;z-index:7;left:14px;right:14px;bottom:12px;min-height:46px;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:8px 12px;border-radius:13px;background:rgba(5,20,40,.8);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px);color:#fff}" +
+      ".fo-mst-foot .gf{font-size:11.5px;color:rgba(255,255,255,.82);line-height:1.4}" +
+      ".fo-mst-foot .gf b{color:#f7c75b;font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;margin-right:4px}" +
+      ".fo-mst-foot .mbs{display:flex;gap:6px;align-items:center;flex:0 0 auto}" +
+      ".fo-mst-foot .mb{width:27px;height:27px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14);font-size:11px;font-weight:800}" +
+      ".fo-mst-foot .mb.b4{color:#2f2109;background:#f3c254;border-color:#f3c254}" +
+      ".fo-mst-foot .mb.bw{background:#d8504b;border-color:#d8504b}" +
+      ".fo-mst-foot .mb.bx{color:#0f2036;background:#9db7d4}" +
+      "body.fo-stage-on .bigflash{display:none !important}" +
+      "@media (prefers-reduced-motion:reduce){.fo-mst-rain,.fo-mst-moment{animation:none !important}}" +
+      "@media(max-width:760px){.fo-mst,#fo-oval .fo-mst{min-height:540px;border-radius:12px}" +
+      ".fo-mst-top{flex-direction:column;align-items:flex-end;gap:6px}.fo-mst-wx{align-self:flex-start;flex-wrap:wrap}" +
+      ".fo-mst-wx span{font-size:9px;padding:3px 6px}" +
+      "html body #page .fo-mst-sp,html body.ftpskin #page .fo-mst-sp{font-size:9px;padding:5px 7px}" +
+      ".fo-mst-score,#fo-oval .fo-mst-score{top:96px}" +
+      ".fo-mst-score b,#fo-oval .fo-mst-score b{font-size:34px}" +
+      ".fo-mst-p,#fo-oval .fo-mst-p{top:150px;bottom:auto;height:185px;width:47%}" +
+      ".fo-mst-p .nm,#fo-oval .fo-mst-p .nm{font-size:16px}" +
+      ".fo-mst-p .pc{padding:0 12px 8px}" +
+      ".fo-mst-moment,#fo-oval .fo-mst-moment{top:auto;bottom:70px;transform:translate(-50%,0);width:92%}" +
+      ".fo-mst-moment .t,#fo-oval .fo-mst-moment .t{font-size:36px}" +
+      ".fo-mst-moment p,#fo-oval .fo-mst-moment p{font-size:12.5px;max-width:320px}" +
+      "@keyframes foMstIn{0%{opacity:0;transform:translate(-50%,10px) scale(.94)}100%{opacity:1;transform:translate(-50%,0) scale(1)}}" +
+      ".fo-mst-foot{flex-wrap:wrap;justify-content:center;min-height:0;padding:6px 10px}.fo-mst-foot .gf{display:none}}";
+    document.head.appendChild(msCss);
+  } catch (eMc) {}
