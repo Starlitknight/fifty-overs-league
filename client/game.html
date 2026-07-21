@@ -10439,7 +10439,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260721-1812-0c7a1b";
+  var FO_BUILD = "20260721-1823-a99e72";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18407,7 +18407,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var inn = M.innings[M.inns]; if (!inn) return;
       // rebuild only when the broadcast moved on (or the theatre re-homed us)
       var old = document.getElementById("fo-mstage");
-      var sig = M.inns + ":" + M.log.length + ":" + inn.runs + "/" + inn.wkts + ":" + (M.done ? 1 : 0) + ":" + (oval ? "ov" : "mc");
+      // field posture comes from the theatre's (now hidden) board - no info lost
+      var fld = ""; try { fld = ((document.getElementById("ov-fld") || {}).textContent || "").trim(); } catch (eF) {}
+      var sig = M.inns + ":" + M.log.length + ":" + inn.runs + "/" + inn.wkts + ":" + (M.done ? 1 : 0) + ":" + (oval ? "ov" : "mc") + ":" + fld;
       if (old && old.__foSig === sig && (!oval || old.parentNode === oval.parentNode)) return;
       var art = foMstArt();
       var wx = ((M.meta.weather || "") + "").toLowerCase();
@@ -18452,16 +18454,20 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         return "<button type='button' class='fo-mst-sp" + (on ? " on" : "") + "' data-ms='" + s[1] + "'>" + s[0] + "</button>";
       }).join("");
       var pArt = function (p) { try { return FO_ART + foPkArt(p); } catch (e) { return ""; } };
+      // the who-card stars now live HERE - same math as the theatre's
+      var FS = window.foStarsFor, batStars = "", bowlStars = "";
+      try { if (FS && s1) batStars = "<div class='stars'>" + FS.html(FS.stars(FS.bat(s1.p))) + "</div>"; } catch (eS1) {}
+      try { if (FS && bw) bowlStars = "<div class='stars'>" + FS.html(FS.stars(FS.bowl(bw))) + "</div>"; } catch (eS2) {}
       var batPanel = (!M.done && s1) ?
         "<div class='fo-mst-p pbat'><img src='" + pArt(s1.p) + "' alt=''><div class='pc'>" +
         "<div class='rl'>On strike &middot; " + (s1.p.hand === "L" ? "LHB" : "RHB") + "</div>" +
         "<div class='nm'>" + E(s1.p.name) + "</div>" +
-        "<div class='st'>" + s1.r + "* (" + s1.b + ")</div></div></div>" : "";
+        "<div class='st'>" + s1.r + "* (" + s1.b + ")</div>" + batStars + "</div></div>" : "";
       var bowlPanel = (!M.done && bw) ?
         "<div class='fo-mst-p pbowl'><img src='" + pArt(bw) + "' alt=''><div class='pc'>" +
         "<div class='rl'>" + E((bw.btLabel || "bowling").toUpperCase()) + "</div>" +
         "<div class='nm'>" + E(bw.name) + "</div>" +
-        "<div class='st'>" + (brec ? Math.floor(brec.b / 6) + "." + (brec.b % 6) + "&ndash;" + brec.r + "&ndash;" + brec.w : "new spell") + "</div></div></div>" : "";
+        "<div class='st'>" + (brec ? Math.floor(brec.b / 6) + "." + (brec.b % 6) + "&ndash;" + brec.r + "&ndash;" + brec.w : "new spell") + "</div>" + bowlStars + "</div></div>" : "";
       var el = document.createElement("section");
       el.id = "fo-mstage";
       el.className = "fo-mst k-" + kind + (rainy ? " wx-rain" : "") + (gloomy ? " wx-gloom" : "") +
@@ -18476,7 +18482,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         (windy ? "<div class='fo-mst-wind'></div>" : "") +
         (chilly ? "<div class='fo-mst-cold'></div>" : "") +
         "<div class='fo-mst-top'>" +
-        "<div class='fo-mst-wx'><span>" + E(art.gnm) + (art.city ? " &middot; " + E(art.city) : "") + "</span><span>" + E(M.meta.weather || "") + "</span><span>" + E(M.pitch || "") + " pitch</span></div>" +
+        "<div class='fo-mst-wx'><span>" + E(art.gnm) + (art.city ? " &middot; " + E(art.city) : "") + "</span><span>" + E(M.meta.weather || "") + "</span><span>" + E(M.pitch || "") + " pitch</span>" + (fld ? "<span class='fld'>" + E(fld) + "</span>" : "") + "</div>" +
         "<div class='fo-mst-speed'>" + spdBtns + "</div></div>" +
         "<div class='fo-mst-score'><b>" + inn.runs + "/" + inn.wkts + "</b><span>" + Math.floor(inn.legal / 6) + "." + (inn.legal % 6) + " ov &middot; " + E(inn.batTeam) + "</span><i>" + tgt + "</i></div>" +
         batPanel + bowlPanel +
@@ -18519,7 +18525,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   try {
     var msCss = document.createElement("style"); msCss.id = "fo-mst-css";
     msCss.textContent =
-      ".fo-mst{position:relative;min-height:460px;height:min(56vh,560px);border-radius:16px;overflow:hidden;margin:0 0 14px;isolation:isolate;background:#081a2b;width:100%;max-width:100%}" +
+      ".fo-mst{position:relative;min-height:460px;height:min(52vh,640px);border-radius:16px;overflow:hidden;margin:0 0 14px;isolation:isolate;background:#081a2b;width:100%;max-width:100%}" +
+      // the theatre's score board and who-cards are duplicated in the hero -
+      // hide them so the oval pane shrinks to just the living field
+      "html body #page.fo-ovalgrid.fo-matchpage #fo-oval .ov-board,html body #page.fo-ovalgrid.fo-matchpage #fo-oval .ov-who{display:none !important}" +
+      // and the animation pane narrows: the commentary column gets the room
+      "html body #page.fo-ovalgrid.fo-matchpage{grid-template-columns:minmax(380px,42%) minmax(0,1fr) !important}" +
       // the stage owns a full-width grid row above the theatre; the oval and
       // the commentary column sit side by side underneath it
       "html body #page.fo-ovalgrid.fo-matchpage{grid-template-rows:auto auto auto auto auto 1fr !important;grid-template-areas:'mcrumb mcrumb' 'mlinks mlinks' 'mstage mstage' 'moval mbody' 'mtop mbody' 'mrest mbody' !important}" +
@@ -18531,7 +18542,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-mst-bg{position:absolute;inset:0;z-index:0}" +
       ".fo-mst-bg img{width:100%;height:100%;object-fit:cover;object-position:center 44%}" +
       ".fo-mst.m-region .fo-mst-bg img{filter:blur(5px) saturate(.9) brightness(.8);transform:scale(1.06)}" +
-      ".fo-mst-veil{position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(3,16,33,.9) 0%,rgba(3,16,33,.45) 20%,rgba(3,16,33,.05) 45%,rgba(3,16,33,.14) 62%,rgba(3,16,33,.86) 100%),linear-gradient(0deg,rgba(3,15,31,.92) 0%,transparent 42%,rgba(3,15,31,.35) 100%)}" +
+      ".fo-mst-veil{position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(3,16,33,.8) 0%,rgba(3,16,33,.3) 11%,rgba(3,16,33,0) 26%,rgba(3,16,33,0) 74%,rgba(3,16,33,.3) 89%,rgba(3,16,33,.8) 100%),linear-gradient(0deg,rgba(3,15,31,.9) 0%,transparent 34%,transparent 78%,rgba(3,15,31,.3) 100%)}" +
       ".fo-mst.wx-gloom .fo-mst-veil{background:linear-gradient(90deg,rgba(3,16,33,.92) 0%,rgba(3,16,33,.5) 20%,rgba(3,16,33,.14) 45%,rgba(3,16,33,.2) 62%,rgba(3,16,33,.88) 100%),linear-gradient(0deg,rgba(3,15,31,.94) 0%,rgba(6,14,26,.2) 42%,rgba(3,15,31,.5) 100%)}" +
       ".fo-mst-rain{position:absolute;inset:-80px;z-index:2;pointer-events:none;opacity:.17;background-image:repeating-linear-gradient(108deg,transparent 0 22px,rgba(216,237,255,.7) 23px,transparent 24px 35px);background-size:48px 48px;animation:foMstRain 1.2s linear infinite;mask-image:linear-gradient(to bottom,#000,transparent 78%)}" +
       "@keyframes foMstRain{from{transform:translate3d(-20px,-30px,0)}to{transform:translate3d(18px,35px,0)}}" +
@@ -18556,21 +18567,29 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-mst-score b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:44px;line-height:1;letter-spacing:1px}" +
       ".fo-mst-score span{display:block;font-size:12px;color:rgba(255,255,255,.85);margin-top:2px}" +
       ".fo-mst-score i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#F3D37A;margin-top:3px}" +
-      ".fo-mst-p{position:absolute;z-index:3;top:44px;bottom:64px;width:30%;max-width:380px;display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none}" +
+      ".fo-mst-p{position:absolute;z-index:3;top:auto;bottom:70px;height:64%;width:17%;max-width:235px;display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none}" +
       ".fo-mst-p.pbat{left:0}.fo-mst-p.pbowl{right:0}" +
       ".fo-mst-p img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 30%;opacity:.94;filter:saturate(.94) contrast(1.03);mask-image:linear-gradient(to bottom,#000 45%,rgba(0,0,0,.93) 72%,transparent 100%)}" +
       ".fo-mst-p.pbat img{clip-path:polygon(0 0,100% 0,82% 100%,0 100%)}" +
       ".fo-mst-p.pbowl img{clip-path:polygon(18% 0,100% 0,100% 100%,0 100%)}" +
       ".fo-mst-p::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgba(5,19,38,.95),transparent 58%)}" +
-      ".fo-mst-p .pc{position:relative;z-index:2;padding:0 22px 16px;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.8)}" +
+      ".fo-mst-p .pc{position:relative;z-index:2;padding:0 14px 12px;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.8)}" +
       ".fo-mst-p.pbowl .pc{text-align:right}" +
-      ".fo-mst-p .rl{color:#f5c85b;font-family:Oswald,sans-serif;font-size:9px;font-weight:600;letter-spacing:2.2px;text-transform:uppercase}" +
-      ".fo-mst-p .nm{font-family:Oswald,sans-serif;font-weight:600;font-size:26px;letter-spacing:.5px;line-height:1.05;margin:2px 0 2px}" +
-      ".fo-mst-p .st{color:rgba(255,255,255,.85);font-size:12px;font-weight:700}" +
+      ".fo-mst-p .rl{color:#f5c85b;font-family:Oswald,sans-serif;font-size:8.5px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase}" +
+      ".fo-mst-p .nm{font-family:Oswald,sans-serif;font-weight:600;font-size:16.5px;letter-spacing:.4px;line-height:1.12;margin:2px 0 2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}" +
+      ".fo-mst-p .st{color:rgba(255,255,255,.88);font-size:12px;font-weight:700}" +
+      ".fo-mst-p .stars{font-size:11.5px;letter-spacing:1px;line-height:1;margin-top:3px;white-space:nowrap}" +
+      ".fo-mst-p .stars em{font-style:normal;color:rgba(255,255,255,.28)}" +
+      ".fo-mst-p.pbat .stars em.f{color:#F0B94E}" +
+      ".fo-mst-p.pbat .stars em.h{background:linear-gradient(90deg,#F0B94E 50%,rgba(255,255,255,.28) 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".fo-mst-p.pbowl .stars em.f{color:#22D3E0}" +
+      ".fo-mst-p.pbowl .stars em.h{background:linear-gradient(90deg,#22D3E0 50%,rgba(255,255,255,.28) 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".fo-mst-p .stars .st{text-decoration:none}" +
+      ".fo-mst-wx .fld{color:#FFB27A !important}" +
       ".fo-mst-moment{position:absolute;z-index:5;left:50%;top:52%;width:min(520px,46%);transform:translate(-50%,-50%);text-align:center;color:#fff;text-shadow:0 3px 20px rgba(0,0,0,.85);animation:foMstIn .38s ease-out}" +
       "@keyframes foMstIn{0%{opacity:0;transform:translate(-50%,-45%) scale(.92)}65%{opacity:1;transform:translate(-50%,-51%) scale(1.035)}100%{transform:translate(-50%,-50%) scale(1)}}" +
       ".fo-mst-moment .chip{display:inline-flex;padding:5px 11px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(7,25,48,.66);backdrop-filter:blur(8px);color:rgba(255,255,255,.85);font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase}" +
-      ".fo-mst-moment .t{margin:10px 0 7px;font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(42px,5.6vw,74px);line-height:.9;letter-spacing:2px;text-transform:uppercase}" +
+      ".fo-mst-moment .t{margin:10px 0 7px;font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(48px,6.5vw,92px);line-height:.9;letter-spacing:2px;text-transform:uppercase}" +
       ".fo-mst.k-boundary .fo-mst-moment .t{color:#f9c957}" +
       ".fo-mst.k-wicket .fo-mst-moment .t{color:#ff6c61}" +
       ".fo-mst.k-dot .fo-mst-moment .t{color:#c7e4e8}" +
@@ -18592,9 +18611,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "html body #page .fo-mst-sp,html body.ftpskin #page .fo-mst-sp{font-size:9px;padding:5px 7px}" +
       ".fo-mst-score,#fo-oval .fo-mst-score{top:96px}" +
       ".fo-mst-score b,#fo-oval .fo-mst-score b{font-size:34px}" +
-      ".fo-mst-p,#fo-oval .fo-mst-p{top:150px;bottom:auto;height:185px;width:47%}" +
-      ".fo-mst-p .nm,#fo-oval .fo-mst-p .nm{font-size:16px}" +
-      ".fo-mst-p .pc{padding:0 12px 8px}" +
+      ".fo-mst-p,#fo-oval .fo-mst-p{top:150px;bottom:auto;height:180px;width:36%}" +
+      ".fo-mst-p .nm,#fo-oval .fo-mst-p .nm{font-size:12.5px}" +
+      ".fo-mst-p .stars{font-size:10px;letter-spacing:.6px}" +
+      ".fo-mst-p .pc{padding:0 10px 8px}" +
       ".fo-mst-moment,#fo-oval .fo-mst-moment{top:auto;bottom:70px;transform:translate(-50%,0);width:92%}" +
       ".fo-mst-moment .t,#fo-oval .fo-mst-moment .t{font-size:36px}" +
       ".fo-mst-moment p,#fo-oval .fo-mst-moment p{font-size:12.5px;max-width:320px}" +
