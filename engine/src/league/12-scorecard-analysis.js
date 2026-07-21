@@ -2706,6 +2706,9 @@
       pitch: r.pitch
     };
   }
+  // Show, don't tell: the city is a full-screen painting with a one-line
+  // whisper; the ground is another. Text is a caption, never a wall.
+  function foCtLine(s) { return String(s || "").split(/(?<=[.!?])\s+/)[0] || ""; }
   function foRenderCity() {
     try {
       if (location.hash.indexOf("#/city") !== 0) return;
@@ -2719,47 +2722,53 @@
       var done = foCxBeaten(st, Lc.r.id, Lc.ci);
       var open = foCxClubOpen(st, Lc.ri, Lc.ci);
       var wxNow = foCxWeather(Lc.r, Lc.ci);
-      var wxChips = Lc.wxPool.map(function (w) { return "<span class='fo-ct-chip" + (w === wxNow ? " now" : "") + "'>" + E(w) + (w === wxNow ? " &middot; today" : "") + "</span>"; }).join("");
-      var act = done
+      var chBtn = done
         ? "<span class='fo-ct-won'>&#10003; " + E(Lc.c.nm) + " beaten here</span>"
         : open
-          ? "<button type='button' class='fo-ct-ch' id='fo-ct-ch'>Challenge " + E(Lc.c.nm) + " &#9654;</button>"
-          : "<span class='fo-ct-lock'>&#128274; The " + E(Lc.r.nm) + " ladder decides when this door opens</span>";
-      page.innerHTML =
-        "<div class='fo-city' style='--cxc:" + Lc.r.ac + "'>" +
-        "<div class='fo-ct-hero'><img src='" + FO_ART + Lc.art + "' alt=''><div class='fo-ct-veil'></div>" +
-        "<div class='fo-ct-hin'><div class='fo-ct-eyebrow'>The Circuit &middot; " + E(Lc.r.nm) + "</div>" +
-        "<h1 class='fo-ct-h1'>" + E(city) + "</h1>" +
-        "<div class='fo-ct-tag'>" + E(Lc.tag) + "</div></div></div>" +
-        "<div class='fo-ct-grid'>" +
-        "<div class='fo-card fo-ct-card'><div class='fo-card-h2row'><div class='fo-card-h2'>The city</div></div><div class='fo-card-b'>" +
-        "<p>" + E(Lc.city) + "</p>" +
-        (Lc.streets ? "<img class='fo-ct-img' src='" + FO_ART + Lc.streets + "' alt=''>" : "") +
-        "<p class='fo-ct-hist'>" + E(Lc.history) + "</p></div></div>" +
-        "<div class='fo-card fo-ct-card'><div class='fo-card-h2row'><div class='fo-card-h2'>How they play</div></div><div class='fo-card-b'>" +
-        "<div class='fo-ct-club'><b>" + E(Lc.c.nm) + "</b>" + (Lc.c.boss ? " <i class='fo-ct-boss'>BOSS &middot; " + E(Lc.c.leader || "") + "</i>" : "") + (Lc.c.note ? " <span>&middot; " + E(Lc.c.note) + "</span>" : "") + "</div>" +
-        "<p>" + E(Lc.phil) + "</p>" +
-        (Lc.c.taunt ? "<div class='fo-ct-quote'>&ldquo;" + E(Lc.c.taunt) + "&rdquo;<span>&mdash; " + E(Lc.c.boss ? (Lc.c.leader || Lc.c.nm) : Lc.c.nm) + "</span></div>" : "") +
-        (Lc.c.gq ? "<div class='fo-ct-gaffer'><b>The Gaffer:</b> &ldquo;" + E(Lc.c.gq) + "&rdquo;</div>" : "") + "</div></div>" +
-        "<div class='fo-card fo-ct-card fo-ct-groundcard'><div class='fo-card-h2row'><div class='fo-card-h2'>The ground &middot; " + E(Lc.groundNm) + "</div></div><div class='fo-card-b'>" +
-        "<div id='fo-ct-tourbody' hidden>" +
-        (Lc.groundArt ? "<img class='fo-ct-img' src='" + FO_ART + Lc.groundArt + "' alt=''>" : "") +
-        "<p>" + E(Lc.ground) + "</p>" +
-        "<div class='fo-ct-chips'><span class='fo-ct-chip pitch'>" + E(foPitchName(Lc.pitch)) + " pitch</span>" + wxChips + "</div></div>" +
-        "<button type='button' class='fo-ct-tour' id='fo-ct-tour'>Tour the ground &#9654;</button>" +
-        "</div></div>" +
-        "</div>" +
-        "<div class='fo-ct-act'>" + act +
-        "<a class='fo-ct-back' href='#/circuit'>&#8592; Back to the Circuit</a></div>" +
-        "</div>";
-      var tb = page.querySelector("#fo-ct-tour");
-      if (tb) tb.addEventListener("click", function () {
-        var body = page.querySelector("#fo-ct-tourbody");
-        if (body) body.hidden = false;
-        tb.remove();
+          ? "<button type='button' class='fo-ct-ch' data-ct-ch>Challenge " + E(Lc.c.nm) + " &#9654;</button>"
+          : "<span class='fo-ct-lock'>&#128274; " + E(Lc.r.nm) + "'s ladder opens this door</span>";
+      // the views: city, streets (when painted), ground - each a full screen
+      var views = [];
+      views.push({ id: "city", img: Lc.art, eyebrow: "The Circuit &middot; " + E(Lc.r.nm), title: E(city), sub: E(Lc.tag), line: E(foCtLine(Lc.city)) });
+      if (Lc.streets) views.push({ id: "streets", img: Lc.streets, eyebrow: E(city), title: "The Streets", sub: "", line: E(foCtLine(Lc.history)) });
+      views.push({ id: "ground", img: Lc.groundArt || Lc.art, eyebrow: E(city) + " &middot; " + (Lc.c.boss ? "the boss's ground" : "home ground"), title: E(Lc.groundNm), sub: "", line: E(foCtLine(Lc.ground)),
+        chips: "<span class='fo-ct-chip pitch'>" + E(foPitchName(Lc.pitch)) + " pitch</span>" + Lc.wxPool.map(function (w) { return "<span class='fo-ct-chip" + (w === wxNow ? " now" : "") + "'>" + E(w) + (w === wxNow ? " &middot; today" : "") + "</span>"; }).join("") });
+      var html = "<div class='fo-city fo-city-full' style='--cxc:" + Lc.r.ac + "'>";
+      views.forEach(function (v, i) {
+        html += "<section class='fo-ctv" + (i === 0 ? " on" : "") + "' data-v='" + v.id + "'>" +
+          "<img src='" + FO_ART + v.img + "' alt=''><div class='fo-ctv-veil'></div>" +
+          "<div class='fo-ctv-cap'>" +
+          "<div class='fo-ct-eyebrow'>" + v.eyebrow + "</div>" +
+          "<h1 class='fo-ct-h1'>" + v.title + "</h1>" +
+          (v.sub ? "<div class='fo-ct-tag'>" + v.sub + "</div>" : "") +
+          (v.line ? "<div class='fo-ctv-line'>" + v.line + "</div>" : "") +
+          (v.chips ? "<div class='fo-ct-chips'>" + v.chips + "</div>" : "") +
+          "</div></section>";
       });
-      var ch = page.querySelector("#fo-ct-ch");
-      if (ch) ch.addEventListener("click", function () { foCxChallenge(Lc.ri, Lc.ci); });
+      // one floating action rail, re-labelled per view
+      html += "<div class='fo-ctv-rail' id='fo-ctv-rail'></div></div>";
+      page.innerHTML = html;
+      var railEl = page.querySelector("#fo-ctv-rail");
+      var cur = 0;
+      var setView = function (ix) {
+        cur = ix;
+        page.querySelectorAll(".fo-ctv").forEach(function (s, i) { s.classList.toggle("on", i === ix); });
+        var v = views[ix], b = [];
+        if (v.id !== "city") b.push("<button type='button' class='fo-ctv-b ghost' data-go-view='0'>&#8592; " + E(city) + "</button>");
+        views.forEach(function (v2, i2) {
+          if (i2 === ix || v2.id === "city") return;
+          b.push("<button type='button' class='fo-ctv-b' data-go-view='" + i2 + "'>" + (v2.id === "ground" ? "Visit the ground" : "Walk the streets") + " &#9654;</button>");
+        });
+        b.push(chBtn);
+        b.push("<a class='fo-ct-back' href='#/circuit'>Circuit</a>");
+        railEl.innerHTML = b.join("");
+        railEl.querySelectorAll("[data-go-view]").forEach(function (bt) {
+          bt.addEventListener("click", function () { setView(+bt.getAttribute("data-go-view")); });
+        });
+        var ch = railEl.querySelector("[data-ct-ch]");
+        if (ch) ch.addEventListener("click", function () { foCxChallenge(Lc.ri, Lc.ci); });
+      };
+      setView(0);
       try { if (window.__foLive) window.__foLive.mask(); } catch (eM3) {}
     } catch (e) {}
   }
@@ -2768,37 +2777,30 @@
   try {
     var ctCss = document.createElement("style"); ctCss.id = "fo-city-css";
     ctCss.textContent =
-      ".fo-city{max-width:1080px;margin:0 auto;padding-bottom:26px}" +
-      ".fo-ct-hero{position:relative;border-radius:18px;overflow:hidden;border:2px solid rgba(201,162,75,.55);box-shadow:0 14px 34px rgba(7,22,46,.28);margin:6px 0 16px;min-height:240px;max-height:400px;display:flex;align-items:flex-end}" +
-      ".fo-ct-hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 40%}" +
-      ".fo-ct-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,16,32,.05) 30%,rgba(7,16,32,.82) 100%)}" +
-      ".fo-ct-hin{position:relative;padding:70px 26px 18px;color:#F5EFDC}" +
-      ".fo-ct-eyebrow{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:3.4px;text-transform:uppercase;color:#E4C463;font-weight:600}" +
-      ".fo-ct-h1{font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(32px,5.5vw,52px);letter-spacing:2px;text-transform:uppercase;line-height:1;color:#FFFEFC;margin:2px 0 4px}" +
-      ".fo-ct-tag{font-style:italic;font-size:14.5px;color:#e6dfc8}" +
-      ".fo-ct-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}" +
-      ".fo-ct-grid .fo-ct-groundcard{grid-column:1/-1}" +
-      "@media(max-width:860px){.fo-ct-grid{grid-template-columns:1fr}}" +
-      ".fo-ct-card p{font-size:13.5px;line-height:1.65;color:#3a4356;margin:6px 0}" +
-      ".fo-ct-hist{border-top:1px dashed rgba(20,36,58,.16);padding-top:9px;color:#5a6472 !important}" +
-      ".fo-ct-img{width:100%;border-radius:11px;margin:8px 0;box-shadow:0 6px 18px rgba(20,36,58,.18);display:block}" +
-      ".fo-ct-club{font-size:14px;color:#0E233F;margin:2px 0 4px}" +
-      ".fo-ct-club .fo-ct-boss{font-style:normal;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.6px;color:#B5892F;font-weight:600}" +
-      ".fo-ct-club span{color:#5a6472;font-size:12.5px}" +
-      ".fo-ct-quote{font-style:italic;font-size:13.5px;color:#0E233F;background:rgba(201,162,75,.1);border-left:3px solid #C9A24B;border-radius:0 9px 9px 0;padding:8px 12px;margin:9px 0 0}" +
-      ".fo-ct-quote span{display:block;font-size:11px;color:#8a7a46;margin-top:3px}" +
-      ".fo-ct-gaffer{font-size:12.5px;color:#5a6472;margin-top:8px}" +
-      ".fo-ct-chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}" +
-      ".fo-ct-chip{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#5a6472;background:rgba(20,36,58,.06);border:1px solid rgba(20,36,58,.14);border-radius:999px;padding:3px 11px}" +
-      ".fo-ct-chip.now{color:#0E233F;border-color:#C9A24B;background:rgba(201,162,75,.16);font-weight:600}" +
-      ".fo-ct-chip.pitch{color:#2b6b68;border-color:rgba(14,158,151,.4);background:rgba(14,158,151,.08)}" +
-      "html body #page .fo-ct-tour,html body.ftpskin #page .fo-ct-tour{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:11.5px;background:transparent !important;color:#8a6d1c !important;border:1.5px solid rgba(150,122,52,.55) !important;border-radius:9px;padding:9px 18px;cursor:pointer;box-shadow:none !important}" +
-      "html body #page .fo-ct-tour:hover{border-color:#8a6d1c !important}" +
-      ".fo-ct-act{display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:18px}" +
-      "html body #page .fo-ct-ch,html body.ftpskin #page .fo-ct-ch{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:13px;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:11px;padding:12px 26px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.35) !important}" +
-      ".fo-ct-won{font-family:Oswald,sans-serif;font-size:12px;letter-spacing:1.6px;color:#3E9455;font-weight:600}" +
-      ".fo-ct-lock{font-size:12.5px;color:#8a93a3}" +
-      ".fo-ct-back{font-size:13px;color:#B04A2C}" +
+      ".fo-city-full{position:relative;width:100vw;margin-left:calc(50% - 50vw);height:calc(100vh - 96px);min-height:520px;overflow:hidden;background:#0B1322}" +
+      ".fo-ctv{position:absolute;inset:0;opacity:0;transition:opacity .55s ease;pointer-events:none}" +
+      ".fo-ctv.on{opacity:1;pointer-events:auto}" +
+      ".fo-ctv>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 38%}" +
+      ".fo-ctv-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,16,32,.18) 0%,rgba(7,16,32,0) 34%,rgba(7,16,32,.06) 58%,rgba(7,16,32,.86) 100%)}" +
+      ".fo-ctv-cap{position:absolute;left:0;right:0;bottom:86px;padding:0 30px;color:#F5EFDC;max-width:760px;text-shadow:0 2px 10px rgba(0,0,0,.55)}" +
+      ".fo-ct-eyebrow{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:3.6px;text-transform:uppercase;color:#F3D37A;font-weight:600}" +
+      ".fo-ct-h1{font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(36px,6.5vw,72px);letter-spacing:2.5px;text-transform:uppercase;line-height:.98;color:#FFFEFC;margin:2px 0 3px}" +
+      ".fo-ct-tag{font-style:italic;font-size:15px;color:#efe8d2}" +
+      ".fo-ctv-line{font-size:13.5px;line-height:1.55;color:#dcd4bd;margin-top:7px;max-width:560px}" +
+      ".fo-ct-chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}" +
+      ".fo-ct-chip{font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;color:#F5EFDC;background:rgba(10,18,32,.55);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:3px 11px;backdrop-filter:blur(3px)}" +
+      ".fo-ct-chip.now{color:#101B2D;border-color:#F0B94E;background:rgba(240,185,78,.92);font-weight:600}" +
+      ".fo-ct-chip.pitch{border-color:rgba(120,220,210,.55);color:#bff0ea}" +
+      ".fo-ctv-rail{position:absolute;left:0;right:0;bottom:20px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;z-index:6;padding:0 14px}" +
+      "html body #page .fo-ctv-b,html body.ftpskin #page .fo-ctv-b{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.7px;text-transform:uppercase;font-size:11.5px;background:rgba(10,18,32,.72) !important;color:#F5EFDC !important;border:1.5px solid rgba(228,196,99,.55) !important;border-radius:999px;padding:10px 20px;cursor:pointer;backdrop-filter:blur(4px);box-shadow:0 4px 14px rgba(0,0,0,.35) !important}" +
+      "html body #page .fo-ctv-b:hover{border-color:#F3D37A !important;color:#F3D37A !important}" +
+      "html body #page .fo-ctv-b.ghost,html body.ftpskin #page .fo-ctv-b.ghost{border-color:rgba(255,255,255,.4) !important}" +
+      "html body #page .fo-ct-ch,html body.ftpskin #page .fo-ct-ch{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:12.5px;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:11px 24px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.35) !important}" +
+      ".fo-ct-won{font-family:Oswald,sans-serif;font-size:11.5px;letter-spacing:1.6px;color:#8fe3a4;font-weight:600;background:rgba(10,18,32,.72);border:1.5px solid rgba(143,227,164,.5);border-radius:999px;padding:10px 18px;backdrop-filter:blur(4px)}" +
+      ".fo-ct-lock{font-size:12px;color:#cdd5e3;background:rgba(10,18,32,.72);border:1.5px solid rgba(255,255,255,.28);border-radius:999px;padding:10px 18px;backdrop-filter:blur(4px)}" +
+      ".fo-ct-back{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:#F5EFDC;background:rgba(10,18,32,.55);border:1.5px solid rgba(255,255,255,.3);border-radius:999px;padding:10px 16px;text-decoration:none;backdrop-filter:blur(4px)}" +
+      ".fo-ct-back:hover{color:#F3D37A}" +
+      "@media(max-width:640px){.fo-city-full{height:calc(100vh - 130px);min-height:440px}.fo-ctv-cap{bottom:118px;padding:0 16px}.fo-ctv-line{font-size:12.5px}.fo-ctv-rail{bottom:14px;gap:7px}html body #page .fo-ctv-b{padding:9px 14px;font-size:10.5px}}" +
       // city names on the region map are doors too - make them look like it
       ".fo-cx-node .cl{pointer-events:auto;cursor:pointer;text-decoration:underline dotted rgba(255,255,255,.55);text-underline-offset:3px}" +
       ".fo-cx-node .cl:hover{color:#F3D37A !important;text-decoration-color:#F3D37A}" +
