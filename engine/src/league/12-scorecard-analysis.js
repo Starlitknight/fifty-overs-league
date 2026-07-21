@@ -2801,6 +2801,11 @@
       ".fo-ct-back{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:#F5EFDC;background:rgba(10,18,32,.55);border:1.5px solid rgba(255,255,255,.3);border-radius:999px;padding:10px 16px;text-decoration:none;backdrop-filter:blur(4px)}" +
       ".fo-ct-back:hover{color:#F3D37A}" +
       "@media(max-width:640px){.fo-city-full{height:calc(100vh - 130px);min-height:440px}.fo-ctv-cap{bottom:118px;padding:0 16px}.fo-ctv-line{font-size:12.5px}.fo-ctv-rail{bottom:14px;gap:7px}html body #page .fo-ctv-b{padding:9px 14px;font-size:10.5px}}" +
+      // phones hold these wide paintings in portrait: instead of cropping to
+      // a sliver, the camera pans - the whole scene reveals in a slow sweep
+      "@media (orientation:portrait){.fo-ctv.on>img{animation:foCtPan 26s ease-in-out infinite alternate}}" +
+      "@keyframes foCtPan{0%{object-position:8% 40%}100%{object-position:92% 40%}}" +
+      "@media (prefers-reduced-motion:reduce){.fo-ctv.on>img{animation:none !important}}" +
       // city names on the region map are doors too - make them look like it
       ".fo-cx-node .cl{pointer-events:auto;cursor:pointer;text-decoration:underline dotted rgba(255,255,255,.55);text-underline-offset:3px}" +
       ".fo-cx-node .cl:hover{color:#F3D37A !important;text-decoration-color:#F3D37A}" +
