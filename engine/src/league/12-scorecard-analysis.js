@@ -2158,6 +2158,9 @@
       ".fo-cx-brief .hint{font-size:12.5px;color:#8a90a0;font-style:italic}" +
       // the Circuit record ledger: every tie played, newest first, each a tap
       // from the full scorecard
+      ".fo-cx-passrow{text-align:center;margin:4px 0 2px}" +
+      "html body #page .fo-cx-passrow #fo-cx-pass-btn{font-family:Oswald,sans-serif;font-weight:600;font-size:10px;letter-spacing:2.6px;color:#8a7a46;background:transparent;border:1.5px solid rgba(138,122,70,.55);border-radius:999px;padding:4px 15px;cursor:pointer}" +
+      "html body #page .fo-cx-passrow #fo-cx-pass-btn:hover{color:#14213D;border-color:#8a7a46}" +
       ".fo-cx-record{max-width:680px;margin:26px auto 0}" +
       ".fo-cx-record .fo-cx-rule b{font-family:Oswald,sans-serif;font-size:12px;letter-spacing:2px;color:#8a7a46}" +
       ".cxr-tbl{width:100%;border-collapse:collapse;margin-top:12px;background:#FFFEFC;border:1px solid rgba(28,36,51,.12);border-radius:12px;overflow:hidden;font-size:13px}" +
@@ -2309,6 +2312,94 @@
         "<table class='cxr-tbl'><thead><tr><th></th><th>Opponent</th><th>Score</th><th>Top score</th><th></th></tr></thead><tbody>" + rows + "</tbody></table></div>";
     } catch (e) { return ""; }
   }
+  // ==== THE TOUR PASSPORT: a stamp book of the whole universe ==============
+  // One ink stamp per conquered nation - accent-colour ink, the boss's scalp,
+  // the city and the date - blank dashed slots for the road ahead, and a gold
+  // crown seal once the World Final falls. Opens as an overlay off the hub.
+  var FO_CXP_MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function foCxPassDate(st, rid) {
+    try {
+      var hs = (st.hist || []).filter(function (h) { return h.rid === rid && h.win; });
+      var h = hs[hs.length - 1];
+      if (!h || !h.at) return "";
+      var d = new Date(h.at);
+      return d.getDate() + " " + FO_CXP_MON[d.getMonth()] + " " + d.getFullYear();
+    } catch (e) { return ""; }
+  }
+  function foCxPassport() {
+    try {
+      if (!document.getElementById("fo-cxp-css")) {
+        var cs = document.createElement("style"); cs.id = "fo-cxp-css";
+        cs.textContent =
+          "#fo-cxp{position:fixed;inset:0;z-index:100002;background:rgba(8,14,26,.78);display:flex;align-items:center;justify-content:center;padding:14px}" +
+          ".cxp-book{background:linear-gradient(150deg,#152238,#0B1322 70%);border:1.5px solid rgba(201,162,75,.55);border-radius:20px;padding:13px;box-shadow:0 26px 70px rgba(0,0,0,.6);width:min(880px,97vw);max-height:94vh;display:flex;flex-direction:column;position:relative}" +
+          ".cxp-x{position:absolute;top:-11px;right:-11px;width:32px;height:32px;border-radius:50%;background:#101B2D;color:#F5EFDC;border:1.5px solid rgba(201,162,75,.7);cursor:pointer;font-size:14px;z-index:3}" +
+          ".cxp-page{background:#F7F2E4 radial-gradient(rgba(20,33,61,.045) 1px,transparent 1.4px);background-size:26px 26px;border-radius:11px;padding:22px 24px 18px;overflow-y:auto;box-shadow:inset 0 0 44px rgba(120,98,52,.14)}" +
+          ".cxp-mast{text-align:center;border-bottom:2px solid rgba(20,33,61,.16);padding-bottom:12px;margin-bottom:14px}" +
+          ".cxp-eyebrow{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:5px;color:#8a7a46;font-weight:600}" +
+          ".cxp-h1{font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(21px,4vw,30px);letter-spacing:6px;color:#14213D;margin:2px 0 3px}" +
+          ".cxp-holder{font-size:12.5px;color:#5b6472;font-style:italic}" +
+          ".cxp-holder b{color:#14213D;font-style:normal}" +
+          ".cxp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(186px,1fr));gap:12px}" +
+          ".cxp-cell{min-height:118px;display:flex;align-items:center;justify-content:center;padding:4px}" +
+          ".cxp-stamp{--ink:#2E7A3C;position:relative;width:100%;border:2.5px solid var(--ink);border-radius:13px 8px 12px 9px;box-shadow:inset 0 0 0 1.5px var(--ink);color:var(--ink);padding:8px 11px 7px;text-align:center;opacity:.9;mix-blend-mode:multiply;background:transparent}" +
+          ".cxp-stamp:after{content:'';position:absolute;inset:-3px;pointer-events:none;background:radial-gradient(4px 3px at 14% 26%,#F7F2E4 55%,transparent 56%),radial-gradient(5px 4px at 82% 64%,#F7F2E4 55%,transparent 56%),radial-gradient(3px 5px at 58% 88%,#F7F2E4 55%,transparent 56%),radial-gradient(3px 3px at 38% 8%,#F7F2E4 55%,transparent 56%);opacity:.75}" +
+          ".cxp-stamp i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:8.5px;letter-spacing:3.4px;font-weight:600}" +
+          ".cxp-stamp b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:17px;letter-spacing:1.6px;text-transform:uppercase;margin:1px 0}" +
+          ".cxp-stamp u{display:block;text-decoration:none;font-size:10.5px;font-weight:600;margin-top:1px}" +
+          ".cxp-stamp s{display:block;text-decoration:none;font-family:Oswald,sans-serif;font-size:9px;letter-spacing:1.4px;margin-top:2px}" +
+          ".cxp-stamp em{display:block;font-size:9.5px;font-style:italic;margin-top:1px;opacity:.85}" +
+          ".cxp-wait{width:100%;border:2px dashed rgba(20,33,61,.24);border-radius:12px;color:rgba(20,33,61,.38);text-align:center;padding:14px 10px;min-height:96px;display:flex;flex-direction:column;justify-content:center;gap:3px}" +
+          ".cxp-wait b{font-family:Oswald,sans-serif;font-weight:600;font-size:14px;letter-spacing:2px;text-transform:uppercase}" +
+          ".cxp-wait span{font-family:Oswald,sans-serif;font-size:8.5px;letter-spacing:2.6px}" +
+          ".cxp-crown{--ink:#8a6d1c}" +
+          ".cxp-crown .st1{font-size:19px;letter-spacing:2px}" +
+          ".cxp-crown .star{font-size:15px;line-height:1;display:block}" +
+          ".cxp-foot{display:flex;justify-content:center;gap:8px 22px;flex-wrap:wrap;border-top:2px solid rgba(20,33,61,.16);margin-top:15px;padding-top:10px;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:2.2px;color:#5b6472}" +
+          ".cxp-foot b{color:#14213D}" +
+          "@media(max-width:560px){.cxp-page{padding:15px 12px 12px}.cxp-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}}";
+        document.head.appendChild(cs);
+      }
+      var st = foCxState();
+      var me = null; try { me = userTeam(); } catch (e0) {}
+      var mgr = (typeof SYNC !== "undefined" && SYNC && SYNC.me && SYNC.me.display_name) || "The Manager";
+      var hist = st.hist || [];
+      var wins = hist.filter(function (h) { return h.win; }).length;
+      var streak = 0;
+      for (var iS = hist.length - 1; iS >= 0; iS--) { if (hist[iS].win) streak++; else break; }
+      var conqN = (st.conq || []).filter(function (id) { return id !== "gt"; }).length;
+      var cells = FO_CX_REGIONS.map(function (r) {
+        var done = foCxConquered(st, r.id);
+        var rot = ((foHash32("stamp|" + r.id) % 9) - 4);
+        var boss = r.clubs.filter(function (c) { return c.boss; })[0] || {};
+        if (r.final) {
+          if (!done) return "<div class='cxp-cell'><div class='cxp-wait'><span>THE WORLD FINAL</span><b>★</b><span>AWAITING ENTRY</span></div></div>";
+          return "<div class='cxp-cell'><div class='cxp-stamp cxp-crown' style='transform:rotate(" + rot + "deg)'>" +
+            "<span class='star'>★</span><i>WORLD CHAMPION</i><b class='st1'>THE THORNE CROWN</b>" +
+            "<u>def. Reggie Thorne</u><s>MARYLEBONE" + (foCxPassDate(st, r.id) ? " &middot; " + foCxPassDate(st, r.id).toUpperCase() : "") + "</s></div></div>";
+        }
+        if (!done) return "<div class='cxp-cell'><div class='cxp-wait'><b>" + E(r.nm) + "</b><span>AWAITING ENTRY</span></div></div>";
+        var dt = foCxPassDate(st, r.id);
+        return "<div class='cxp-cell'><div class='cxp-stamp' style='--ink:" + r.ac + ";transform:rotate(" + rot + "deg)'>" +
+          "<i>CONQUERED</i><b>" + E(r.nm) + "</b>" +
+          (boss.leader ? "<u>def. " + E(boss.leader) + "</u>" : "") +
+          "<s>" + E((boss.city || "").toUpperCase()) + (dt ? " &middot; " + dt.toUpperCase() : "") + "</s>" +
+          "<em>" + E(r.trophy) + "</em></div></div>";
+      }).join("");
+      var old = document.getElementById("fo-cxp"); if (old) old.remove();
+      var ov = document.createElement("div"); ov.id = "fo-cxp";
+      ov.innerHTML = "<div class='cxp-book'><button type='button' class='cxp-x'>&#10005;</button><div class='cxp-page'>" +
+        "<div class='cxp-mast'><div class='cxp-eyebrow'>FIFTY OVERS &middot; THE CIRCUIT</div>" +
+        "<div class='cxp-h1'>WORLD TOUR PASSPORT</div>" +
+        "<div class='cxp-holder'>Issued to <b>" + E((me && me.name) || "the club") + "</b> &middot; " + E(mgr) + " &middot; Season " + (App.seasonNo || 1) + "</div></div>" +
+        "<div class='cxp-grid'>" + cells + "</div>" +
+        "<div class='cxp-foot'><span><b>" + conqN + "</b> / 12 NATIONS</span><span>PLAYED <b>" + hist.length + "</b></span><span>WON <b>" + wins + "</b></span><span>LOST <b>" + (hist.length - wins) + "</b></span><span>STREAK <b>" + streak + "</b></span></div>" +
+        "</div></div>";
+      document.body.appendChild(ov);
+      ov.querySelector(".cxp-x").addEventListener("click", function () { ov.remove(); });
+      ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
+    } catch (e) { try { console.warn("passport", e); } catch (e2) {} }
+  }
   function foRenderCircuit() {
     try {
       foCxNav();
@@ -2328,6 +2419,7 @@
       if (cur >= FO_CX_REGIONS.length && foCxView == null) {
         // the Crown is won: the epilogue
         html = "<div class='fo-cx'><div class='fo-cx-chap'>" + chap + "</div>" +
+          "<div class='fo-cx-passrow'><button type='button' id='fo-cx-pass-btn'>TOUR PASSPORT</button></div>" +
           "<div class='fo-cx-done'><div class='fo-cx-rule'><i></i><b>THE CIRCUIT · COMPLETE</b><i></i></div>" +
           "<div class='fo-cx-h1'>World champions</div>" +
           "<img src='" + FO_ART + "circuit/trophy-crown.webp' alt='The Thorne Crown' style='display:block;height:150px;margin:12px auto 4px'>" +
@@ -2342,6 +2434,7 @@
         var conqN = (st.conq || []).filter(function (id9) { return id9 !== "gt"; }).length;
         html = "<div class='fo-cx' style='--cxc:" + r.ac + "'>" +
           "<div class='fo-cx-chap'>" + chap + "</div>" +
+          "<div class='fo-cx-passrow'><button type='button' id='fo-cx-pass-btn'>TOUR PASSPORT</button></div>" +
           "<div class='fo-cx-head'>" +
           "<div class='fo-cx-rule'><i></i><b>" + (r.final ? "THE CIRCUIT · THE WORLD FINAL" : "THE CIRCUIT · " + conqN + " OF " + FO_CX_NATIONS + " REGIONS CONQUERED") + "</b><i></i></div>" +
           "<div class='fo-cx-h1'>" + E(r.nm) + "</div>" +
@@ -2385,6 +2478,8 @@
           "</div>";
       }
       page.innerHTML = html;
+      var pb = page.querySelector("#fo-cx-pass-btn");
+      if (pb) pb.addEventListener("click", foCxPassport);
       page.querySelectorAll(".fo-cx-chap span[data-ri]").forEach(function (s2) {
         s2.addEventListener("click", function () {
           foCxView = +s2.getAttribute("data-ri"); page.__foCxSig = null; foRenderCircuit();
