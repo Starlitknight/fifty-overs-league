@@ -1806,6 +1806,51 @@
     };
     return g[kind + (userBat ? "B" : "F")] || "";
   }
+  // --- the manager's hand: manual balls by default, opt-in slow auto-play,
+  // --- and timed prompts at the moments that matter ------------------------
+  function foMstAuto() { return !!window.__foMstAuto; }
+  function foMstKillAp() { try { if (window.__ap) { clearInterval(window.__ap); window.__ap = null; } } catch (e) {} }
+  // the engine restarts its autoplay interval after every render - while the
+  // manager is in manual mode (or a prompt holds play), keep putting it down
+  setInterval(function () {
+    try {
+      if ((location.hash || "").split("?")[0] !== "#/match") return;
+      if (typeof M === "undefined" || !M || M.done) return;
+      if (!foMstAuto() || window.__foMstHold) foMstKillAp();
+    } catch (e) {}
+  }, 250);
+  function foMstResume() {
+    window.__foMstHold = false;
+    try { if (foMstAuto() && typeof foEnsureAutoplay === "function") { UI.apMs = 3200; foEnsureAutoplay(); } } catch (e) {}
+  }
+  function foMstAsk(opts) {
+    try {
+      var st = document.getElementById("fo-mstage"); if (!st) return;
+      var oldA = document.getElementById("fo-mst-ask"); if (oldA) oldA.remove();
+      window.__foMstHold = true; foMstKillAp();
+      var d = document.createElement("div"); d.id = "fo-mst-ask"; d.className = "fo-mst-ask";
+      d.innerHTML = "<div class='ask-bx'><div class='ask-t'>" + opts.title + "</div>" +
+        (opts.sub ? "<div class='ask-s'>" + opts.sub + "</div>" : "") +
+        "<div class='ask-opts'>" + opts.options.map(function (o, i) {
+          return "<button type='button' data-ask='" + i + "'" + (o.def ? " class='def'" : "") + ">" + o.label + (o.meta ? "<i>" + o.meta + "</i>" : "") + "</button>";
+        }).join("") + "</div>" +
+        "<div class='ask-bar'><i style='animation-duration:" + opts.secs + "s'></i></div></div>";
+      st.appendChild(d);
+      var done = false;
+      var finish = function (cb) {
+        if (done) return; done = true;
+        try { d.remove(); } catch (e) {}
+        if (window.__foMstAskT) { clearTimeout(window.__foMstAskT); window.__foMstAskT = null; }
+        if (cb) { try { cb(); } catch (e) {} }
+        foMstResume();
+        try { renderMatch(); } catch (e) {}
+      };
+      d.querySelectorAll("[data-ask]").forEach(function (b) {
+        b.addEventListener("click", function () { finish(opts.options[+b.getAttribute("data-ask")].cb); });
+      });
+      window.__foMstAskT = setTimeout(function () { finish(null); }, opts.secs * 1000);
+    } catch (e) { window.__foMstHold = false; }
+  }
   function foMatchStage() {
     try {
       if ((location.hash || "").split("?")[0] !== "#/match") { document.body.classList.remove("fo-stage-on"); return; }
@@ -1815,11 +1860,47 @@
       var oval = document.getElementById("fo-oval");
       if (!mcTop && !oval) { document.body.classList.remove("fo-stage-on"); return; }
       var inn = M.innings[M.inns]; if (!inn) return;
+      // a NEW match starts in manual mode with a clean slate
+      if (window.__foMstM !== M) {
+        window.__foMstM = M; window.__foMstAuto = false; window.__foMstHold = false;
+        window.__foMstLL = M.log.length;
+        var oldAsk0 = document.getElementById("fo-mst-ask"); if (oldAsk0) oldAsk0.remove();
+      }
+      var userBatNow = inn.batTeam === M.user.name;
+      // once the new over is underway, a manual bowler pick has been consumed
+      try { if (inn.legal % 6 !== 0 && UI.userBowler) { UI.userBowler = null; UI.usePlan = true; } } catch (eUb) {}
+      if (!foMstAuto() || window.__foMstHold) foMstKillAp();
+      // team talk lives in the centre theatre now: field calls when bowling,
+      // batting intent when batting - wired straight into the live orders
+      try {
+        if (oval && !M.done) {
+          var tb2 = document.getElementById("fo-mst-talk");
+          if (!tb2) {
+            tb2 = document.createElement("div"); tb2.id = "fo-mst-talk";
+            var sv2 = oval.querySelector(".ov-svg");
+            if (sv2 && sv2.parentNode === oval) oval.insertBefore(tb2, sv2.nextSibling); else oval.appendChild(tb2);
+          }
+          var ov3 = Math.floor(inn.legal / 6), ph3 = ov3 < 10 ? "pp" : (ov3 >= 40 ? "death" : "mid");
+          var h3;
+          if (userBatNow) {
+            var cur3 = (App.orders.phaseIntent && App.orders.phaseIntent[ph3] !== undefined) ? App.orders.phaseIntent[ph3] : 0;
+            h3 = "<span class='tl'>Batting</span>" + [[-1, "Defensive"], [0, "Steady"], [1, "Aggressive"], [2, "Launch"]].map(function (o3) {
+              return "<button type='button' class='tb" + (cur3 === o3[0] ? " on" : "") + "' onclick=\"foTeamTalk('bat','" + ph3 + "'," + o3[0] + ")\">" + o3[1] + "</button>";
+            }).join("");
+          } else {
+            var cf3 = (App.orders.fieldPlan && App.orders.fieldPlan[ph3]) || "bal";
+            h3 = "<span class='tl'>Field</span>" + [["att", "Attack"], ["bal", "Balanced"], ["def", "Defence"]].map(function (o4) {
+              return "<button type='button' class='tb" + (cf3 === o4[0] ? " on" : "") + "' onclick=\"foTeamTalk('field','" + ph3 + "','" + o4[0] + "')\">" + o4[1] + "</button>";
+            }).join("");
+          }
+          if (tb2.__h !== h3) { tb2.__h = h3; tb2.innerHTML = h3; }
+        } else if (M.done) { var tbx = document.getElementById("fo-mst-talk"); if (tbx) tbx.remove(); }
+      } catch (eT) {}
       // rebuild only when the broadcast moved on (or the theatre re-homed us)
       var old = document.getElementById("fo-mstage");
       // field posture comes from the theatre's (now hidden) board - no info lost
       var fld = ""; try { fld = ((document.getElementById("ov-fld") || {}).textContent || "").trim(); } catch (eF) {}
-      var sig = M.inns + ":" + M.log.length + ":" + inn.runs + "/" + inn.wkts + ":" + (M.done ? 1 : 0) + ":" + (oval ? "ov" : "mc") + ":" + fld;
+      var sig = M.inns + ":" + M.log.length + ":" + inn.runs + "/" + inn.wkts + ":" + (M.done ? 1 : 0) + ":" + (oval ? "ov" : "mc") + ":" + fld + ":" + (foMstAuto() ? 1 : 0);
       if (old && old.__foSig === sig && (!oval || old.parentNode === oval.parentNode)) return;
       var art = foMstArt();
       var wx = ((M.meta.weather || "") + "").toLowerCase();
@@ -1857,12 +1938,13 @@
         return "<span class='mb" + cls + "'>" + sym + "</span>";
       }).join("");
       var tgt = M.target ? ("Target " + M.target + " &middot; need " + Math.max(0, M.target - inn.runs) + " off " + Math.max(0, (typeof foBallCap === "function" ? foBallCap() : 300) - inn.legal)) : "First innings";
-      var apNow = (typeof UI !== "undefined" && UI.apMs) || 1600;
-      var spd = [["Cinematic", 2800], ["Fast", 1100], ["Instant", 350]];
-      var spdBtns = spd.map(function (s) {
-        var on = Math.abs(apNow - s[1]) < 500 || (s[1] === 2800 && apNow >= 2200) || (s[1] === 350 && apNow <= 600) || (s[1] === 1100 && apNow > 600 && apNow < 2200);
-        return "<button type='button' class='fo-mst-sp" + (on ? " on" : "") + "' data-ms='" + s[1] + "'>" + s[0] + "</button>";
-      }).join("");
+      // manual by default: the manager pushes the game forward ball by ball,
+      // or hands it to the broadcast at slow speed
+      var autoOn = foMstAuto();
+      var ctlBtns = (!M.done ?
+        "<button type='button' class='fo-mst-next' id='fo-mst-next'>Next ball &#9654;</button>" +
+        "<button type='button' class='fo-mst-autob" + (autoOn ? " on" : "") + "' id='fo-mst-auto'>" + (autoOn ? "&#10073;&#10073; Pause auto-play" : "&#9655; Auto-play") + "</button>"
+        : "");
       var pArt = function (p) { try { return FO_ART + foPkArt(p); } catch (e) { return ""; } };
       // the who-card stars now live HERE - same math as the theatre's
       var FS = window.foStarsFor, batStars = "", bowlStars = "";
@@ -1893,7 +1975,7 @@
         (chilly ? "<div class='fo-mst-cold'></div>" : "") +
         "<div class='fo-mst-top'>" +
         "<div class='fo-mst-wx'><span>" + E(art.gnm) + (art.city ? " &middot; " + E(art.city) : "") + "</span><span>" + E(M.meta.weather || "") + "</span><span>" + E(M.pitch || "") + " pitch</span>" + (fld ? "<span class='fld'>" + E(fld) + "</span>" : "") + "</div>" +
-        "<div class='fo-mst-speed'>" + spdBtns + "</div></div>" +
+        "<div class='fo-mst-ctlg'>" + ctlBtns + "</div></div>" +
         "<div class='fo-mst-score'><b>" + inn.runs + "/" + inn.wkts + "</b><span>" + Math.floor(inn.legal / 6) + "." + (inn.legal % 6) + " ov &middot; " + E(inn.batTeam) + "</span><i>" + tgt + "</i></div>" +
         batPanel + bowlPanel +
         "<div class='fo-mst-moment'>" +
@@ -1905,8 +1987,11 @@
         "<div class='mbs'>" + (beads || "<span class='mb'>&ndash;</span>") + "</div></div>";
       el.__foSig = sig;
       // full-width hero: the stage is a SIBLING above the theatre, its own
-      // grid row spanning both columns - the oval + commentary sit below it
-      if (old) old.replaceWith(el);
+      // grid row spanning both columns - the oval + commentary sit below it.
+      // An open prompt survives the rebuild - its 5s/3s clock, not a repaint,
+      // decides when it goes
+      var askKeep = old ? old.querySelector("#fo-mst-ask") : null;
+      if (old) { old.replaceWith(el); if (askKeep) el.appendChild(askKeep); }
       else if (oval) oval.parentNode.insertBefore(el, oval);
       else mcTop.parentNode.insertBefore(el, mcTop);
       // the theatre mounts on its own tick - if it arrived after us, move up
@@ -1917,16 +2002,55 @@
         } catch (eMv) {}
       }, 450);
       document.body.classList.add("fo-stage-on");
-      el.querySelectorAll(".fo-mst-sp[data-ms]").forEach(function (b) {
-        b.addEventListener("click", function () {
-          try {
-            UI.apMs = +b.getAttribute("data-ms");
-            el.querySelectorAll(".fo-mst-sp").forEach(function (b2) { b2.classList.toggle("on", b2 === b); });
-            if (window.__ap) { clearInterval(window.__ap); window.__ap = null; }
-            if (typeof foEnsureAutoplay === "function") foEnsureAutoplay();
-          } catch (eSp) {}
-        });
+      var nb = el.querySelector("#fo-mst-next");
+      if (nb) nb.addEventListener("click", function () {
+        if (window.__foMstHold || !M || M.done) return;
+        try { doBall(); } catch (eNb) {}
       });
+      var ab = el.querySelector("#fo-mst-auto");
+      if (ab) ab.addEventListener("click", function () {
+        window.__foMstAuto = !window.__foMstAuto;
+        if (window.__foMstAuto) { try { UI.apMs = 3200; if (!window.__foMstHold && typeof foEnsureAutoplay === "function") foEnsureAutoplay(); } catch (eAb) {} }
+        else foMstKillAp();
+        try { renderMatch(); } catch (eAr) {}
+      });
+      // the timed prompts: fired once per fresh delivery, never on re-renders
+      var newBall = M.log.length > (window.__foMstLL || 0);
+      window.__foMstLL = M.log.length;
+      if (newBall && !M.done && !document.getElementById("fo-mst-ask")) {
+        if (kind === "wicket" && userBatNow && s1 && s1.b === 0 && inn.nextBat <= 10) {
+          // 5 seconds: promote a batsman, or the planned man walks in
+          var si = inn.striker, cands = [];
+          for (var jx = inn.nextBat; jx <= 10 && cands.length < 3; jx++) if (inn.bat[jx] && !inn.bat[jx].out) cands.push(jx);
+          if (cands.length) {
+            foMstAsk({
+              title: "Wicket &middot; who walks in?",
+              sub: E(s1.p.name) + " is next on the card &mdash; or promote someone.",
+              secs: 5,
+              options: [{ label: E(s1.p.name), meta: "as planned", def: 1, cb: null }].concat(cands.map(function (j2) {
+                return { label: E(inn.bat[j2].p.name), meta: "promote", cb: function () {
+                  try { var t2 = inn.bat[si]; inn.bat[si] = inn.bat[j2]; inn.bat[j2] = t2; } catch (eSw) {}
+                } };
+              }))
+            });
+          }
+        } else if (!userBatNow && inn.legal > 0 && inn.legal % 6 === 0 && inn.wkts < 10 &&
+                   (typeof foBallCap !== "function" || inn.legal < foBallCap())) {
+          // 3 seconds: hand the ball to someone else, or the plan continues
+          var over2 = Math.floor(inn.legal / 6);
+          var planned2 = null; try { planned2 = (typeof plannedBowler === "function") ? plannedBowler(inn, over2) : null; } catch (eP2) {}
+          var av2 = []; try { av2 = availableBowlers(inn) || []; } catch (eA2) {}
+          var opts2 = [];
+          if (planned2) opts2.push({ label: E(planned2.name), meta: "as planned", def: 1, cb: null });
+          av2.filter(function (p2) { return !planned2 || p2.name !== planned2.name; }).slice(0, 3).forEach(function (p2) {
+            var rec2 = inn.bowlers[p2.name];
+            opts2.push({ label: E(p2.name), meta: rec2 ? (Math.floor((rec2.b || 0) / 6) + "-" + (rec2.r || 0) + "-" + (rec2.w || 0)) : "fresh", cb: function () {
+              try { UI.userBowler = p2.name; UI.usePlan = false; } catch (eBw) {}
+            } });
+          });
+          if (opts2.length > 1) foMstAsk({ title: "End of the over &middot; who bowls?", sub: "", secs: 3, options: opts2 });
+        }
+      }
     } catch (e) {}
   }
   try { foMatchRenderHooks.push(foMatchStage); } catch (eMS) {}
@@ -1970,9 +2094,37 @@
       ".fo-mst-top{position:absolute;z-index:6;top:12px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}" +
       ".fo-mst-wx{display:inline-flex;gap:2px;align-items:center;padding:5px 6px;border-radius:12px;background:rgba(5,22,43,.72);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px)}" +
       ".fo-mst-wx span{padding:4px 8px;color:rgba(255,255,255,.85);font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;white-space:nowrap}" +
-      ".fo-mst-speed{display:inline-flex;gap:4px;padding:5px;border-radius:12px;background:rgba(5,22,43,.72);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px)}" +
-      "html body #page .fo-mst-sp,html body.ftpskin #page .fo-mst-sp{border:0 !important;border-radius:8px;background:transparent !important;color:rgba(255,255,255,.65) !important;padding:6px 10px;font-family:Oswald,sans-serif !important;font-size:10px;font-weight:600 !important;letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;box-shadow:none !important}" +
-      "html body #page .fo-mst-sp.on,html body.ftpskin #page .fo-mst-sp.on{color:#15243a !important;background:#f4ede0 !important;box-shadow:0 2px 8px rgba(0,0,0,.22) !important}" +
+      ".fo-mst-ctlg{display:inline-flex;gap:8px;align-items:center}" +
+      "html body #page .fo-mst-next,html body.ftpskin #page .fo-mst-next{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:12.5px;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:11px 22px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.35),0 8px 22px rgba(201,162,75,.3) !important}" +
+      "html body #page .fo-mst-next:hover{filter:brightness(1.06)}" +
+      "html body #page .fo-mst-next:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(16,27,45,.35) !important}" +
+      "html body #page .fo-mst-autob,html body.ftpskin #page .fo-mst-autob{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.5px;text-transform:uppercase;font-size:10.5px;background:rgba(5,22,43,.72) !important;color:rgba(255,255,255,.8) !important;border:1.5px solid rgba(255,255,255,.3) !important;border-radius:999px;padding:10px 16px;cursor:pointer;backdrop-filter:blur(8px);box-shadow:none !important}" +
+      "html body #page .fo-mst-autob.on,html body.ftpskin #page .fo-mst-autob.on{color:#8fe3a4 !important;border-color:rgba(143,227,164,.6) !important}" +
+      // the timed prompts: a wicket asks who walks in (5s), an over-end asks
+      // who bowls (3s) - then the plan continues on its own
+      ".fo-mst-ask{position:absolute;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;background:rgba(4,11,22,.62);backdrop-filter:blur(3px)}" +
+      ".fo-mst-ask .ask-bx{width:min(480px,92%);background:rgba(7,18,36,.94);border:1px solid rgba(240,185,78,.4);border-radius:16px;padding:16px 18px;box-shadow:0 20px 60px rgba(0,0,0,.6);color:#fff}" +
+      ".fo-mst-ask .ask-t{font-family:Oswald,sans-serif;font-weight:600;font-size:19px;letter-spacing:1.6px;text-transform:uppercase;color:#F3D37A}" +
+      ".fo-mst-ask .ask-s{font-size:12.5px;color:rgba(255,255,255,.8);margin-top:3px}" +
+      ".fo-mst-ask .ask-opts{display:flex;flex-direction:column;gap:7px;margin-top:12px}" +
+      "html body #page .fo-mst-ask .ask-opts button,html body.ftpskin #page .fo-mst-ask .ask-opts button{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;font-size:13.5px;font-weight:700;color:#fff !important;background:rgba(255,255,255,.07) !important;border:1.5px solid rgba(255,255,255,.22) !important;border-radius:11px;padding:11px 14px;cursor:pointer;box-shadow:none !important}" +
+      "html body #page .fo-mst-ask .ask-opts button:hover{border-color:#F3D37A !important;background:rgba(240,185,78,.12) !important}" +
+      "html body #page .fo-mst-ask .ask-opts button.def{border-color:rgba(240,185,78,.55) !important;background:rgba(240,185,78,.14) !important}" +
+      ".fo-mst-ask .ask-opts button i{font-style:normal;font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:1.6px;text-transform:uppercase;color:#F3D37A}" +
+      ".fo-mst-ask .ask-bar{height:4px;border-radius:99px;background:rgba(255,255,255,.14);margin-top:13px;overflow:hidden}" +
+      ".fo-mst-ask .ask-bar i{display:block;height:100%;background:linear-gradient(90deg,#F0B94E,#C9A24B);animation:foMstAskT linear forwards}" +
+      "@keyframes foMstAskT{from{width:100%}to{width:0}}" +
+      // team talk in the centre theatre
+      "#fo-mst-talk{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:9px 12px;background:#0F1A2E;border-top:1px solid #24334f}" +
+      "#fo-mst-talk .tl{font-family:Oswald,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#8ea0c0;margin-right:4px}" +
+      "html body #page #fo-mst-talk .tb,html body.ftpskin #page #fo-mst-talk .tb{font-size:11px;font-weight:700;color:#c7d2e4 !important;background:rgba(255,255,255,.06) !important;border:1.5px solid rgba(255,255,255,.18) !important;border-radius:9px;padding:7px 13px;cursor:pointer;box-shadow:none !important}" +
+      "html body #page #fo-mst-talk .tb.on,html body.ftpskin #page #fo-mst-talk .tb.on{color:#101B2D !important;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;border-color:#F3D37A !important}" +
+      // the old ways retire: engine speed row, display filter, sim button and
+      // the commentary-column team talk all step aside for the new controls
+      "body.fo-stage-on .mc-controls .ctlrow{display:none !important}" +
+      "body.fo-stage-on .mc-controls div.small{display:none !important}" +
+      "body.fo-stage-on #fo-simres{display:none !important}" +
+      "body.fo-stage-on .ftp-match-body .fo-teamtalk{display:none !important}" +
       ".fo-mst-score{position:absolute;z-index:6;top:58px;left:0;right:0;text-align:center;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.8);pointer-events:none}" +
       ".fo-mst-score b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:44px;line-height:1;letter-spacing:1px}" +
       ".fo-mst-score span{display:block;font-size:12px;color:rgba(255,255,255,.85);margin-top:2px}" +
@@ -2018,7 +2170,8 @@
       "@media(max-width:760px){.fo-mst,#fo-oval .fo-mst{min-height:540px;border-radius:12px}" +
       ".fo-mst-top{flex-direction:column;align-items:flex-end;gap:6px}.fo-mst-wx{align-self:flex-start;flex-wrap:wrap}" +
       ".fo-mst-wx span{font-size:9px;padding:3px 6px}" +
-      "html body #page .fo-mst-sp,html body.ftpskin #page .fo-mst-sp{font-size:9px;padding:5px 7px}" +
+      "html body #page .fo-mst-next{font-size:11px;padding:10px 16px}" +
+      "html body #page .fo-mst-autob{font-size:9.5px;padding:9px 12px}" +
       ".fo-mst-score,#fo-oval .fo-mst-score{top:96px}" +
       ".fo-mst-score b,#fo-oval .fo-mst-score b{font-size:34px}" +
       ".fo-mst-p,#fo-oval .fo-mst-p{top:150px;bottom:auto;height:180px;width:36%}" +

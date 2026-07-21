@@ -3260,7 +3260,7 @@
       }
       if ((st === "orders" || st === "hub") && h === "#/match" && typeof M !== "undefined" && M && !M.done && M.meta && M.meta.__circuit) {
         foCoachSet("match");
-        setTimeout(function () { try { toast("The Gaffer: it plays itself, ball by ball. Speed control sits above the commentary - and the Team talk buttons change your plan mid-innings. See you at full time."); } catch (e2) {} }, 2600);
+        setTimeout(function () { try { toast("The Gaffer: push the game forward with Next ball, or let Auto-play run it. The Team talk buttons under the field change your plan mid-innings. See you at full time."); } catch (e2) {} }, 2600);
         return;
       }
       if (st === "match" && typeof M !== "undefined" && M && M.done) foCoachSet("done");
