@@ -2893,6 +2893,7 @@
         "<a class='fo-tour-back' href='#/circuit'>&#8249; Circuit</a>" +
         "<div class='fo-tour-hd'><div class='eb'>The Grand Tour</div><h1>" + E(r.nm) + "</h1><div class='ty'>" + E(r.type) + "</div></div>" +
         "<div class='fo-tour-map'><img src='" + FO_ART + "circuit/" + (r.bg || (r.id + ".webp")) + "' alt=''>" + pins + "</div>" +
+        "<div class='fo-tour-fx'></div>" +
         "<div class='fo-tour-hint' id='fo-tour-hint'>Drag to roam &middot; tap a city to meet it</div>" +
         "<div class='fo-tour-card' id='fo-tour-card'></div>" +
         "</div>";
@@ -2947,6 +2948,12 @@
         var cy = (Math.min.apply(0, ys) + Math.max.apply(0, ys)) / 200;
         var S = mapEl.offsetWidth;
         foTourPan(mapEl, (0.5 - cx) * S, (0.5 - cy) * S);
+        // the header owns the top ~170px - if the camera opened with a pin
+        // underneath it, nudge the world down until every pin is clear
+        var host = mapEl.parentElement;
+        var mapTop = host.clientHeight / 2 - S / 2 + (mapEl.__dy || 0);
+        var minPinY = Math.min.apply(0, ys) / 100 * S + mapTop;
+        if (minPinY < 170) foTourPan(mapEl, mapEl.__dx || 0, (mapEl.__dy || 0) + (170 - minPinY));
       })();
       try { if (window.__foLive) window.__foLive.mask(); } catch (eM4) {}
     } catch (e) { try { console.warn("foRenderTour", e); } catch (e2) {} }
@@ -2986,7 +2993,15 @@
     var trCss = document.createElement("style"); trCss.id = "fo-tour-css";
     trCss.textContent =
       ".fo-tour{position:relative;width:100vw;margin-left:calc(50% - 50vw);height:calc(100vh - 96px);min-height:520px;overflow:hidden;background:radial-gradient(120% 90% at 50% 30%,#12233E 0%,#0B1322 58%,#070D18 100%)}" +
-      ".fo-tour-hd{position:absolute;top:16px;left:0;right:0;text-align:center;z-index:5;pointer-events:none;color:#F5EFDC;text-shadow:0 2px 10px rgba(0,0,0,.5)}" +
+      // cinematic scrims: dark breath at top and bottom so the header, hint
+      // and labels always sit on shadow, never on bare parchment or cloud
+      ".fo-tour::before{content:'';position:absolute;left:0;right:0;top:0;height:158px;background:linear-gradient(180deg,rgba(6,11,21,.82) 0%,rgba(6,11,21,.42) 55%,rgba(6,11,21,0) 100%);z-index:2;pointer-events:none}" +
+      ".fo-tour::after{content:'';position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(0deg,rgba(6,11,21,.74) 0%,rgba(6,11,21,0) 100%);z-index:2;pointer-events:none}" +
+      // film grain + vignette: masks upscaling softness on big screens and
+      // pulls the eye to the middle of the painting
+      ".fo-tour-fx{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(115% 100% at 50% 45%,rgba(5,10,20,0) 58%,rgba(5,10,20,.38) 100%)}" +
+      ".fo-tour-fx::after{content:'';position:absolute;inset:0;opacity:.055;mix-blend-mode:overlay;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E\")}" +
+      ".fo-tour-hd{position:absolute;top:16px;left:0;right:0;text-align:center;z-index:5;pointer-events:none;color:#F5EFDC;text-shadow:0 2px 16px rgba(0,0,0,.85),0 1px 4px rgba(0,0,0,.7)}" +
       ".fo-tour-hd .eb{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:4.2px;text-transform:uppercase;color:#F3D37A;font-weight:600}" +
       ".fo-tour-hd h1{font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(26px,4vw,44px);letter-spacing:3px;text-transform:uppercase;color:#FFFEFC;margin:1px 0 0;line-height:1}" +
       ".fo-tour-hd .ty{font-style:italic;font-size:12.5px;color:#cfc7ad}" +
@@ -3001,11 +3016,11 @@
       ".fo-tp.open .dot{background:linear-gradient(180deg,#F0B94E,#C9A24B);border-color:#F3D37A;color:#14213D;animation:foTpPulse 1.8s ease-out infinite}" +
       ".fo-tp.far .dot{opacity:.72}" +
       ".fo-tp.boss .dot{width:37px;height:37px;font-size:16px}" +
-      ".fo-tp .nm{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#FFFEFC;text-shadow:0 1px 6px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95)}" +
+      ".fo-tp .nm{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:#FFFEFC;background:rgba(8,15,28,.76);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:2.5px 9px;backdrop-filter:blur(3px);white-space:nowrap}" +
       ".fo-tp.sel .dot{outline:3px solid #F3D37A;outline-offset:2px}" +
       "@keyframes foTpPulse{0%{box-shadow:0 0 0 0 rgba(240,185,78,.65)}100%{box-shadow:0 0 0 16px rgba(240,185,78,0)}}" +
       "@media (prefers-reduced-motion:reduce){.fo-tp.open .dot{animation:none !important}}" +
-      ".fo-tour-hint{position:absolute;bottom:16px;left:0;right:0;text-align:center;font-style:italic;font-size:12.5px;color:#cfc7ad;z-index:4}" +
+      ".fo-tour-hint{position:absolute;bottom:16px;left:0;right:0;text-align:center;font-style:italic;font-size:12.5px;color:#EDE5CC;z-index:4;text-shadow:0 1px 8px rgba(0,0,0,.8)}" +
       ".fo-tour-card{position:absolute;left:50%;bottom:12px;transform:translate(-50%,18px);width:min(520px,calc(100vw - 16px));background:#F7F1DE;border:1px solid #D8CBA4;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .35s ease,transform .35s ease;z-index:8;overflow:hidden}" +
       ".fo-tour-card.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}" +
       ".tc-art{height:116px;overflow:hidden}.tc-art img{width:100%;height:100%;object-fit:cover;display:block}" +
