@@ -10439,7 +10439,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260721-1843-2a8042";
+  var FO_BUILD = "20260721-1919-f4f72d";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18406,9 +18406,22 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     try {
       if ((location.hash || "").split("?")[0] !== "#/match") return;
       if (typeof M === "undefined" || !M || M.done) return;
-      if (!foMstAuto() || window.__foMstHold) foMstKillAp();
+      if (document.getElementById("fo-mst-ask")) window.__foMstHold = true;
+      if (!foMstAuto() || window.__foMstHold) { foMstKillAp(); try { if (UI.apMs < 900000) UI.apMs = 999999; } catch (eAp) {} }
     } catch (e) {}
   }, 250);
+  // the last line of defence: while a prompt holds play, no delivery may be
+  // bowled - whoever asks
+  try {
+    if (typeof window.doBall === "function" && !window.doBall.__foHold) {
+      var _foDb = window.doBall;
+      window.doBall = function () {
+        if (window.__foMstHold && (location.hash || "").split("?")[0] === "#/match") return;
+        return _foDb.apply(this, arguments);
+      };
+      window.doBall.__foHold = 1;
+    }
+  } catch (eDb) {}
   function foMstResume() {
     window.__foMstHold = false;
     try { if (foMstAuto() && typeof foEnsureAutoplay === "function") { UI.apMs = 3200; foEnsureAutoplay(); } } catch (e) {}
@@ -18419,16 +18432,29 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var oldA = document.getElementById("fo-mst-ask"); if (oldA) oldA.remove();
       window.__foMstHold = true; foMstKillAp();
       var d = document.createElement("div"); d.id = "fo-mst-ask"; d.className = "fo-mst-ask";
-      d.innerHTML = "<div class='ask-bx'><div class='ask-t'>" + opts.title + "</div>" +
+      var anyCard = opts.options.some(function (o) { return !!o.p; });
+      d.innerHTML = "<div class='ask-bx" + (anyCard ? " wide" : "") + "'><div class='ask-t'>" + opts.title + "</div>" +
         (opts.sub ? "<div class='ask-s'>" + opts.sub + "</div>" : "") +
-        "<div class='ask-opts'>" + opts.options.map(function (o, i) {
+        "<div class='ask-opts" + (anyCard ? " cards" : "") + "'>" + opts.options.map(function (o, i) {
+          // the choice IS the player: his full holo card, scaled to the hand
+          var cardH = "";
+          if (o.p) {
+            try {
+              var cb = foHoloCardHTML(o.p);
+              cardH = "<span class='cardbox'><span class='cardscale'><span class='fo-phw ph-" + cb.tier + "' style='--tc:" + cb.ac[0] + ";--tcD:" + cb.ac[1] + "'>" + cb.html + "</span></span></span>";
+            } catch (eCb) {}
+          }
+          if (cardH) return "<div role='button' tabindex='0' class='askopt" + (o.def ? " def" : "") + "' data-ask='" + i + "'>" + cardH + "<span class='tag'>" + (o.meta || "") + "</span></div>";
           return "<button type='button' data-ask='" + i + "'" + (o.def ? " class='def'" : "") + ">" + o.label + (o.meta ? "<i>" + o.meta + "</i>" : "") + "</button>";
         }).join("") + "</div>" +
         "<div class='ask-bar'><i style='animation-duration:" + opts.secs + "s'></i></div></div>";
       st.appendChild(d);
+      try { d.querySelectorAll(".fo-phw").forEach(function (w9) { foHoloTilt(w9); }); } catch (eTl) {}
       var done = false;
-      var finish = function (cb) {
+      window.__foMstAskEnd = null;
+      var finish = function (cb, why) {
         if (done) return; done = true;
+        window.__foMstAskEnd = why || "?";
         try { d.remove(); } catch (e) {}
         if (window.__foMstAskT) { clearTimeout(window.__foMstAskT); window.__foMstAskT = null; }
         if (cb) { try { cb(); } catch (e) {} }
@@ -18436,10 +18462,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         try { renderMatch(); } catch (e) {}
       };
       d.querySelectorAll("[data-ask]").forEach(function (b) {
-        b.addEventListener("click", function () { finish(opts.options[+b.getAttribute("data-ask")].cb); });
+        b.addEventListener("click", function () { finish(opts.options[+b.getAttribute("data-ask")].cb, "click"); });
       });
-      window.__foMstAskT = setTimeout(function () { finish(null); }, opts.secs * 1000);
-    } catch (e) { window.__foMstHold = false; }
+      window.__foMstAskT = setTimeout(function () { finish(null, "timeout"); }, opts.secs * 1000);
+    } catch (e) { window.__foMstHold = false; try { console.warn("foMstAsk", e); } catch (e2) {} }
   }
   function foMatchStage() {
     try {
@@ -18594,13 +18620,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       document.body.classList.add("fo-stage-on");
       var nb = el.querySelector("#fo-mst-next");
       if (nb) nb.addEventListener("click", function () {
-        if (window.__foMstHold || !M || M.done) return;
+        if (window.__foMstHold || document.getElementById("fo-mst-ask") || !M || M.done) return;
         try { doBall(); } catch (eNb) {}
+        try { if (!foMstAuto()) UI.apMs = 999999; } catch (eNa) {}
       });
       var ab = el.querySelector("#fo-mst-auto");
       if (ab) ab.addEventListener("click", function () {
         window.__foMstAuto = !window.__foMstAuto;
-        if (window.__foMstAuto) { try { UI.apMs = 3200; if (!window.__foMstHold && typeof foEnsureAutoplay === "function") foEnsureAutoplay(); } catch (eAb) {} }
+        if (window.__foMstAuto) { try { UI.apMs = 3200; foMstKillAp(); if (!window.__foMstHold && typeof foEnsureAutoplay === "function") foEnsureAutoplay(); } catch (eAb) {} }
         else foMstKillAp();
         try { renderMatch(); } catch (eAr) {}
       });
@@ -18617,9 +18644,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
               title: "Wicket &middot; who walks in?",
               sub: E(s1.p.name) + " is next on the card &mdash; or promote someone.",
               secs: 5,
-              options: [{ label: E(s1.p.name), meta: "as planned", def: 1, cb: null }].concat(cands.map(function (j2) {
-                return { label: E(inn.bat[j2].p.name), meta: "promote", cb: function () {
-                  try { var t2 = inn.bat[si]; inn.bat[si] = inn.bat[j2]; inn.bat[j2] = t2; } catch (eSw) {}
+              options: [{ label: E(s1.p.name), meta: "as planned", def: 1, p: s1.p, cb: null }].concat(cands.map(function (j2) {
+                return { label: E(inn.bat[j2].p.name), meta: "promote", p: inn.bat[j2].p, cb: function () {
+                  try { if (inn.bat[si] && inn.bat[si].p === s1.p && inn.bat[si].b === 0) { var t2 = inn.bat[si]; inn.bat[si] = inn.bat[j2]; inn.bat[j2] = t2; } } catch (eSw) {}
                 } };
               }))
             });
@@ -18631,10 +18658,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           var planned2 = null; try { planned2 = (typeof plannedBowler === "function") ? plannedBowler(inn, over2) : null; } catch (eP2) {}
           var av2 = []; try { av2 = availableBowlers(inn) || []; } catch (eA2) {}
           var opts2 = [];
-          if (planned2) opts2.push({ label: E(planned2.name), meta: "as planned", def: 1, cb: null });
+          if (planned2) opts2.push({ label: E(planned2.name), meta: "as planned", def: 1, p: planned2, cb: null });
           av2.filter(function (p2) { return !planned2 || p2.name !== planned2.name; }).slice(0, 3).forEach(function (p2) {
             var rec2 = inn.bowlers[p2.name];
-            opts2.push({ label: E(p2.name), meta: rec2 ? (Math.floor((rec2.b || 0) / 6) + "-" + (rec2.r || 0) + "-" + (rec2.w || 0)) : "fresh", cb: function () {
+            opts2.push({ label: E(p2.name), meta: rec2 ? (Math.floor((rec2.b || 0) / 6) + "-" + (rec2.r || 0) + "-" + (rec2.w || 0)) : "fresh", p: p2, cb: function () {
               try { UI.userBowler = p2.name; UI.usePlan = false; } catch (eBw) {}
             } });
           });
@@ -18694,6 +18721,17 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // who bowls (3s) - then the plan continues on its own
       ".fo-mst-ask{position:absolute;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;background:rgba(4,11,22,.62);backdrop-filter:blur(3px)}" +
       ".fo-mst-ask .ask-bx{width:min(480px,92%);background:rgba(7,18,36,.94);border:1px solid rgba(240,185,78,.4);border-radius:16px;padding:16px 18px;box-shadow:0 20px 60px rgba(0,0,0,.6);color:#fff}" +
+      ".fo-mst-ask .ask-bx.wide{width:min(880px,97%);max-height:96%;overflow:auto}" +
+      // the choices are the cards themselves - a dealt hand of holo cards
+      ".fo-mst-ask .ask-opts.cards{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:10px;align-items:flex-start}" +
+      ".fo-mst-ask .askopt{position:relative;cursor:pointer;border-radius:12px;padding:4px 4px 21px;border:2px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}" +
+      ".fo-mst-ask .askopt:hover{transform:translateY(-5px);border-color:#F3D37A;box-shadow:0 14px 34px rgba(0,0,0,.5)}" +
+      ".fo-mst-ask .askopt.def{border-color:rgba(240,185,78,.6);background:rgba(240,185,78,.08)}" +
+      ".fo-mst-ask .cardbox{display:block;width:172px;height:265px;overflow:hidden;border-radius:9px}" +
+      ".fo-mst-ask .cardscale{display:block;width:430px;transform:scale(.4);transform-origin:top left}" +
+      ".fo-mst-ask .askopt .tag{position:absolute;left:50%;bottom:3px;transform:translateX(-50%);font-family:Oswald,sans-serif;font-size:9px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:#F3D37A;white-space:nowrap}" +
+      ".fo-mst-ask .askopt.def .tag{color:#8fe3a4}" +
+      "@media(max-width:760px){.fo-mst-ask .cardbox{width:128px;height:197px}.fo-mst-ask .cardscale{transform:scale(.2977)}.fo-mst-ask .ask-opts.cards{gap:7px}.fo-mst-ask .askopt{padding:3px 3px 18px}.fo-mst-ask .ask-bx.wide{padding:12px 10px}}" +
       ".fo-mst-ask .ask-t{font-family:Oswald,sans-serif;font-weight:600;font-size:19px;letter-spacing:1.6px;text-transform:uppercase;color:#F3D37A}" +
       ".fo-mst-ask .ask-s{font-size:12.5px;color:rgba(255,255,255,.8);margin-top:3px}" +
       ".fo-mst-ask .ask-opts{display:flex;flex-direction:column;gap:7px;margin-top:12px}" +
