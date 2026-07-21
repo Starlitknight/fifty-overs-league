@@ -2238,6 +2238,15 @@
     var st = document.createElement("style"); st.id = "fo-cx-css";
     st.textContent =
       ".fo-cx{max-width:760px;margin:0 auto;padding:6px 2px 30px}" +
+      ".fo-hg{position:relative;margin:2px 0 16px;border-radius:16px;overflow:hidden;height:clamp(190px,32vh,330px);box-shadow:0 18px 44px -18px rgba(16,27,45,.45)}" +
+      ".fo-hg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 38%;animation:foHgIn .9s ease-out}" +
+      "@keyframes foHgIn{from{opacity:0}to{opacity:1}}" +
+      "@media (prefers-reduced-motion:reduce){.fo-hg img{animation:none}}" +
+      ".fo-hg-scrim{position:absolute;inset:0;background:linear-gradient(to top,rgba(8,18,34,.72),rgba(8,18,34,.05) 55%)}" +
+      ".fo-hg-tx{position:absolute;left:18px;bottom:13px;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.7)}" +
+      ".fo-hg-tx i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:2.4px;color:#F3D37A}" +
+      ".fo-hg-tx b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(22px,3.4vw,34px);letter-spacing:.6px;line-height:1.05;margin-top:3px}" +
+      "@media(max-width:760px){.fo-hg{height:180px;border-radius:12px}.fo-hg-tx{left:13px;bottom:10px}}" +
       ".fo-cx-chap{display:flex;gap:10px;justify-content:center;margin:4px 0 16px;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;font-weight:500;flex-wrap:wrap}" +
       ".fo-cx-chap span{color:#b9b29a;cursor:pointer}.fo-cx-chap span.on{color:#C8674A;border-bottom:2px solid #C8674A;padding-bottom:2px}" +
       ".fo-cx-chap span.done{color:#2E7A3C}.fo-cx-chap i{font-style:normal;color:#d5cdb2}" +
@@ -2516,6 +2525,25 @@
       ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
     } catch (e) { try { console.warn("passport", e); } catch (e2) {} }
   }
+  // ---- The Eleven Arches: the club's own ground opens the Circuit page.
+  // Six painted hours of the same view under the viaduct; the pick follows
+  // the real clock plus a "weather of the day", so it is deterministic -
+  // never a shuffle - and shifts naturally as the day moves on.
+  function foHgVariant() {
+    var d = new Date(), h = d.getHours();
+    var wet = (Math.floor(d.getTime() / 86400000) % 3) === 1;
+    if (h >= 5 && h < 8) return "dawn-mist";
+    if (h >= 8 && h < 15) return wet ? "storm-front" : "summer-noon";
+    if (h >= 15 && h < 20) return wet ? "storm-front" : "sunbreak-match";
+    if (h >= 20 && h < 22) return "blue-hour-cup";
+    return "quiet-night";
+  }
+  function foHgHero() {
+    var me = null; try { me = userTeam(); } catch (e) {}
+    return "<div class='fo-hg'><img src='" + FO_ART + "home/arches-" + foHgVariant() + ".webp' alt=''>" +
+      "<div class='fo-hg-scrim'></div>" +
+      "<div class='fo-hg-tx'><i>HOME GROUND &middot; THE ELEVEN ARCHES</i><b>" + E((me && me.name) || "Your club") + "</b></div></div>";
+  }
   function foRenderCircuit() {
     try {
       foCxNav();
@@ -2524,7 +2552,7 @@
       var st = foCxState();
       var cur = foCxCurrent(st);
       var ri = (foCxView == null) ? Math.min(cur, FO_CX_REGIONS.length - 1) : Math.min(foCxView, FO_CX_REGIONS.length - 1);
-      var sig = "cx|" + ri + "|" + cur + "|" + JSON.stringify(st.beat) + "|" + (st.conq || []).join(",") + "|h" + ((st.hist || []).length);
+      var sig = "cx|" + ri + "|" + cur + "|" + JSON.stringify(st.beat) + "|" + (st.conq || []).join(",") + "|h" + ((st.hist || []).length) + "|hg" + foHgVariant();
       if (page.__foCxSig === sig && page.querySelector(".fo-cx")) return;
       page.__foCxSig = sig;
       var chap = FO_CX_REGIONS.map(function (r2, i) {
@@ -2534,7 +2562,7 @@
       var html;
       if (cur >= FO_CX_REGIONS.length && foCxView == null) {
         // the Crown is won: the epilogue
-        html = "<div class='fo-cx'><div class='fo-cx-chap'>" + chap + "</div>" +
+        html = "<div class='fo-cx'>" + foHgHero() + "<div class='fo-cx-chap'>" + chap + "</div>" +
           "<div class='fo-cx-passrow'><button type='button' id='fo-cx-pass-btn'>TOUR PASSPORT</button></div>" +
           "<div class='fo-cx-done'><div class='fo-cx-rule'><i></i><b>THE CIRCUIT · COMPLETE</b><i></i></div>" +
           "<div class='fo-cx-h1'>World champions</div>" +
@@ -2548,7 +2576,7 @@
         var nextCi = -1;
         if (live) for (var i3 = 0; i3 < r.clubs.length; i3++) if (!foCxBeaten(st, r.id, i3)) { nextCi = i3; break; }
         var conqN = (st.conq || []).filter(function (id9) { return id9 !== "gt"; }).length;
-        html = "<div class='fo-cx' style='--cxc:" + r.ac + "'>" +
+        html = "<div class='fo-cx' style='--cxc:" + r.ac + "'>" + foHgHero() +
           "<div class='fo-cx-chap'>" + chap + "</div>" +
           "<div class='fo-cx-passrow'><button type='button' id='fo-cx-pass-btn'>TOUR PASSPORT</button></div>" +
           "<div class='fo-cx-head'>" +
