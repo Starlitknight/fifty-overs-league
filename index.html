@@ -10439,7 +10439,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260721-1341-2d8360";
+  var FO_BUILD = "20260721-1400-6179d7";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -24866,6 +24866,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             if (done6) act.innerHTML = "<span class='fo-cx-won'>&#10003; " + E(c6.city) + " conquered</span>";
             else if (open6) act.innerHTML = "<button type='button' class='fo-cx-ch' data-ci='" + ci2 + "'>Challenge " + E(c6.nm) + " &#9654;</button>";
             else { var prev = rr.clubs[ci2 - 1]; act.innerHTML = "<span class='fo-cx-lock'>&#128274; Beat " + E(prev ? prev.city : "the others") + " first</span>"; }
+            act.innerHTML += "<a class='fo-cx-explore' href='#/city?c=" + encodeURIComponent(c6.city || "") + "'>Explore " + E(c6.city) + " &rsaquo;</a>";
             var cb = act.querySelector(".fo-cx-ch[data-ci]");
             if (cb) cb.addEventListener("click", function () { foCxChallenge(ri, +cb.getAttribute("data-ci")); });
           }
@@ -24873,6 +24874,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         };
         page.querySelectorAll(".fo-cx-node[data-ci]").forEach(function (nd2) {
           nd2.addEventListener("click", function () { show(+nd2.getAttribute("data-ci")); });
+          // the city's NAME is a door of its own: tap it and travel there
+          var cl2 = nd2.querySelector(".cl");
+          if (cl2) cl2.addEventListener("click", function (ev2) {
+            ev2.stopPropagation(); ev2.preventDefault();
+            location.hash = "#/city?c=" + encodeURIComponent(cl2.textContent || "");
+            if (typeof window.route === "function") window.route();
+            setTimeout(foRenderCity, 60);
+          });
         });
         // open on the next club to play, so the challenge is one tap away
         if (liveR && nCi >= 0) show(nCi);
@@ -24882,6 +24891,166 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
   setInterval(foRenderCircuit, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/circuit") === 0) { foCxView = null; setTimeout(foRenderCircuit, 40); } });
+  // ==========================================================================
+  //  CITY PAGES - travel, wonder, discovery. Tap a city's name anywhere on
+  //  the Circuit and the whole place opens up: its art, its culture, how
+  //  they play, the ground and its character, today's forecast - and the
+  //  challenge, right there. Hand-written lore + painted art for cities
+  //  that have it; every other circuit city builds its page from region
+  //  and club character so no door is ever a dead link.
+  // ==========================================================================
+  var FO_CITY = {
+    "Leeds": {
+      art: "cities/leeds.webp", groundArt: "cities/leeds-ground.webp", groundNm: "Millmoor Lane",
+      tag: "Wool, rain, and the forward defensive",
+      city: "A market town that got ideas. Cloth made the money and the railway spent it - steam still crosses the viaduct over the Saturday stalls, and the moors lean on the rooftops from every street end. It rains softly, almost always; nobody here considers that weather. Tea urns, bacon butties, and applause so polite it apologises.",
+      history: "Tyke County have won seven pennants and mention none of them - bragging is for southerners. The club was founded by mill foremen who wanted somewhere to disagree on Sundays, and the constitution still bans “unnecessary flair.”",
+      phil: "Bat time, bowl straight, and treat a boundary as a mild embarrassment of field placement. They do not collapse; they erode. Beat them before tea, or be ground into the turf after it.",
+      ground: "A mill chimney stands at long-on, drystone walls make the boundary fence, and cloud rolls off the moors at eleven sharp. The ball talks all morning - swing first, seam after lunch - and the outfield drinks rain like a local. The pavilion clock has been four minutes slow since the war, and so, therefore, is tea."
+    },
+    "Canterbury": {
+      art: "cities/canterbury.webp", streets: "cities/canterbury-streets.webp", groundArt: "cities/canterbury-ground.webp", groundNm: "The Precincts",
+      tag: "Bells, orchards, and a tree inside the rope",
+      city: "The bells set the day's tempo here. Pilgrims' lanes, orchard smoke, and a cathedral that has watched a thousand seasons and remains unimpressed by all of them. In spring the blossom lands on the outfield like confetti that knows its place.",
+      history: "The Southern Shires have played on the Precincts since before overs had numbers. The honours board lists captains back two centuries; the tea ladies, they will tell you, go back further and matter more.",
+      phil: "Nagging, courteous, merciless. They bowl the same ball for fifty overs and field like the hedge has hands. Nothing is given here: not a single, not a bye, not an inch.",
+      ground: "A lime tree stands INSIDE the boundary - club law says hit it clean and run what you dare, clear it on the full for six. The cathedral fills the sightscreen end, evensong drifts over the covers at six, and slow bowling from the Bell Tower End has won more matches here than pace ever will."
+    },
+    "London": {
+      art: "cities/london.webp", streets: "cities/london-streets.webp", groundArt: "cities/london-ground.webp", groundNm: "The Old Ground, Marylebone",
+      tag: "The long room hush",
+      city: "The capital: railway arches, river fog, trains overhead and eight million opinions underneath. Cricket here is played in whites and judged in silence - this city has seen everything, and it lets you know it.",
+      history: "The Old Guard's pavilion predates the postal district. Sir Giles Pemberley has captained here for twenty years, and a young Reggie Thorne learned his arithmetic in this very long room. When you earn the World Final, it is played on this square.",
+      phil: "Bat time, then bat more time. The Old Guard treat risk as a character flaw and the follow-on as a moral position. Strand the captain, starve the other end, and the rest remember they are mortal.",
+      ground: "A famous slope falls from one rail to the other, and seam bowlers use it like a conjuror's table. Members in egg-and-bacon ties watch from the pavilion in absolute quiet - a hundred at Marylebone is worth three anywhere else, and every professional in the world knows it."
+    }
+  };
+  function foCityClub(city) {
+    for (var ri = 0; ri < FO_CX_REGIONS.length; ri++) {
+      var r = FO_CX_REGIONS[ri];
+      for (var ci = 0; ci < r.clubs.length; ci++) if ((r.clubs[ci].city || "") === city) return { r: r, ri: ri, c: r.clubs[ci], ci: ci };
+    }
+    return null;
+  }
+  function foCityLore(city) {
+    var hit = foCityClub(city); if (!hit) return null;
+    var L = FO_CITY[city] || {};
+    var r = hit.r, c = hit.c;
+    var nugBody = c.nug ? c.nug.replace(/^[^:]*:\s*/, "") : "";
+    return {
+      r: r, c: c, ri: hit.ri, ci: hit.ci, nm: city, custom: !!FO_CITY[city],
+      art: L.art || ("circuit/" + (r.bg || (r.id + ".webp"))),
+      streets: L.streets || null,
+      groundArt: L.groundArt || null,
+      groundNm: L.groundNm || (city + (c.boss ? " Colosseum" : " Oval")),
+      tag: L.tag || r.type,
+      city: L.city || (r.arrive || ""),
+      history: L.history || ((c.boss && c.leader ? c.leader + " holds this ground, and the whole region knows it. " : "") + "“" + (c.taunt || "") + "” - that is how " + city + " greets its visitors."),
+      phil: L.phil || nugBody || r.cond,
+      ground: L.ground || (r.cond + (c.note ? " The locals are known for " + c.note + "." : "")),
+      wxPool: (FO_CX_WX[r.id] || [r.wx]).filter(function (x, i, a) { return a.indexOf(x) === i; }),
+      pitch: r.pitch
+    };
+  }
+  function foRenderCity() {
+    try {
+      if (location.hash.indexOf("#/city") !== 0) return;
+      var page = document.getElementById("page"); if (!page) return;
+      var m = /[?&]c=([^&]+)/.exec(location.hash); if (!m) return;
+      var city = decodeURIComponent(m[1]);
+      if (page.__foCitySig === city && page.querySelector(".fo-city")) return;
+      var Lc = foCityLore(city); if (!Lc) { page.__foCitySig = null; return; }
+      page.__foCitySig = city;
+      var st = foCxState();
+      var done = foCxBeaten(st, Lc.r.id, Lc.ci);
+      var open = foCxClubOpen(st, Lc.ri, Lc.ci);
+      var wxNow = foCxWeather(Lc.r, Lc.ci);
+      var wxChips = Lc.wxPool.map(function (w) { return "<span class='fo-ct-chip" + (w === wxNow ? " now" : "") + "'>" + E(w) + (w === wxNow ? " &middot; today" : "") + "</span>"; }).join("");
+      var act = done
+        ? "<span class='fo-ct-won'>&#10003; " + E(Lc.c.nm) + " beaten here</span>"
+        : open
+          ? "<button type='button' class='fo-ct-ch' id='fo-ct-ch'>Challenge " + E(Lc.c.nm) + " &#9654;</button>"
+          : "<span class='fo-ct-lock'>&#128274; The " + E(Lc.r.nm) + " ladder decides when this door opens</span>";
+      page.innerHTML =
+        "<div class='fo-city' style='--cxc:" + Lc.r.ac + "'>" +
+        "<div class='fo-ct-hero'><img src='" + FO_ART + Lc.art + "' alt=''><div class='fo-ct-veil'></div>" +
+        "<div class='fo-ct-hin'><div class='fo-ct-eyebrow'>The Circuit &middot; " + E(Lc.r.nm) + "</div>" +
+        "<h1 class='fo-ct-h1'>" + E(city) + "</h1>" +
+        "<div class='fo-ct-tag'>" + E(Lc.tag) + "</div></div></div>" +
+        "<div class='fo-ct-grid'>" +
+        "<div class='fo-card fo-ct-card'><div class='fo-card-h2row'><div class='fo-card-h2'>The city</div></div><div class='fo-card-b'>" +
+        "<p>" + E(Lc.city) + "</p>" +
+        (Lc.streets ? "<img class='fo-ct-img' src='" + FO_ART + Lc.streets + "' alt=''>" : "") +
+        "<p class='fo-ct-hist'>" + E(Lc.history) + "</p></div></div>" +
+        "<div class='fo-card fo-ct-card'><div class='fo-card-h2row'><div class='fo-card-h2'>How they play</div></div><div class='fo-card-b'>" +
+        "<div class='fo-ct-club'><b>" + E(Lc.c.nm) + "</b>" + (Lc.c.boss ? " <i class='fo-ct-boss'>BOSS &middot; " + E(Lc.c.leader || "") + "</i>" : "") + (Lc.c.note ? " <span>&middot; " + E(Lc.c.note) + "</span>" : "") + "</div>" +
+        "<p>" + E(Lc.phil) + "</p>" +
+        (Lc.c.taunt ? "<div class='fo-ct-quote'>&ldquo;" + E(Lc.c.taunt) + "&rdquo;<span>&mdash; " + E(Lc.c.boss ? (Lc.c.leader || Lc.c.nm) : Lc.c.nm) + "</span></div>" : "") +
+        (Lc.c.gq ? "<div class='fo-ct-gaffer'><b>The Gaffer:</b> &ldquo;" + E(Lc.c.gq) + "&rdquo;</div>" : "") + "</div></div>" +
+        "<div class='fo-card fo-ct-card fo-ct-groundcard'><div class='fo-card-h2row'><div class='fo-card-h2'>The ground &middot; " + E(Lc.groundNm) + "</div></div><div class='fo-card-b'>" +
+        "<div id='fo-ct-tourbody' hidden>" +
+        (Lc.groundArt ? "<img class='fo-ct-img' src='" + FO_ART + Lc.groundArt + "' alt=''>" : "") +
+        "<p>" + E(Lc.ground) + "</p>" +
+        "<div class='fo-ct-chips'><span class='fo-ct-chip pitch'>" + E(foPitchName(Lc.pitch)) + " pitch</span>" + wxChips + "</div></div>" +
+        "<button type='button' class='fo-ct-tour' id='fo-ct-tour'>Tour the ground &#9654;</button>" +
+        "</div></div>" +
+        "</div>" +
+        "<div class='fo-ct-act'>" + act +
+        "<a class='fo-ct-back' href='#/circuit'>&#8592; Back to the Circuit</a></div>" +
+        "</div>";
+      var tb = page.querySelector("#fo-ct-tour");
+      if (tb) tb.addEventListener("click", function () {
+        var body = page.querySelector("#fo-ct-tourbody");
+        if (body) body.hidden = false;
+        tb.remove();
+      });
+      var ch = page.querySelector("#fo-ct-ch");
+      if (ch) ch.addEventListener("click", function () { foCxChallenge(Lc.ri, Lc.ci); });
+      try { if (window.__foLive) window.__foLive.mask(); } catch (eM3) {}
+    } catch (e) {}
+  }
+  setInterval(foRenderCity, 900);
+  window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/city") === 0) setTimeout(foRenderCity, 40); });
+  try {
+    var ctCss = document.createElement("style"); ctCss.id = "fo-city-css";
+    ctCss.textContent =
+      ".fo-city{max-width:1080px;margin:0 auto;padding-bottom:26px}" +
+      ".fo-ct-hero{position:relative;border-radius:18px;overflow:hidden;border:2px solid rgba(201,162,75,.55);box-shadow:0 14px 34px rgba(7,22,46,.28);margin:6px 0 16px;min-height:240px;max-height:400px;display:flex;align-items:flex-end}" +
+      ".fo-ct-hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 40%}" +
+      ".fo-ct-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,16,32,.05) 30%,rgba(7,16,32,.82) 100%)}" +
+      ".fo-ct-hin{position:relative;padding:70px 26px 18px;color:#F5EFDC}" +
+      ".fo-ct-eyebrow{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:3.4px;text-transform:uppercase;color:#E4C463;font-weight:600}" +
+      ".fo-ct-h1{font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(32px,5.5vw,52px);letter-spacing:2px;text-transform:uppercase;line-height:1;color:#FFFEFC;margin:2px 0 4px}" +
+      ".fo-ct-tag{font-style:italic;font-size:14.5px;color:#e6dfc8}" +
+      ".fo-ct-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}" +
+      ".fo-ct-grid .fo-ct-groundcard{grid-column:1/-1}" +
+      "@media(max-width:860px){.fo-ct-grid{grid-template-columns:1fr}}" +
+      ".fo-ct-card p{font-size:13.5px;line-height:1.65;color:#3a4356;margin:6px 0}" +
+      ".fo-ct-hist{border-top:1px dashed rgba(20,36,58,.16);padding-top:9px;color:#5a6472 !important}" +
+      ".fo-ct-img{width:100%;border-radius:11px;margin:8px 0;box-shadow:0 6px 18px rgba(20,36,58,.18);display:block}" +
+      ".fo-ct-club{font-size:14px;color:#0E233F;margin:2px 0 4px}" +
+      ".fo-ct-club .fo-ct-boss{font-style:normal;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.6px;color:#B5892F;font-weight:600}" +
+      ".fo-ct-club span{color:#5a6472;font-size:12.5px}" +
+      ".fo-ct-quote{font-style:italic;font-size:13.5px;color:#0E233F;background:rgba(201,162,75,.1);border-left:3px solid #C9A24B;border-radius:0 9px 9px 0;padding:8px 12px;margin:9px 0 0}" +
+      ".fo-ct-quote span{display:block;font-size:11px;color:#8a7a46;margin-top:3px}" +
+      ".fo-ct-gaffer{font-size:12.5px;color:#5a6472;margin-top:8px}" +
+      ".fo-ct-chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}" +
+      ".fo-ct-chip{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#5a6472;background:rgba(20,36,58,.06);border:1px solid rgba(20,36,58,.14);border-radius:999px;padding:3px 11px}" +
+      ".fo-ct-chip.now{color:#0E233F;border-color:#C9A24B;background:rgba(201,162,75,.16);font-weight:600}" +
+      ".fo-ct-chip.pitch{color:#2b6b68;border-color:rgba(14,158,151,.4);background:rgba(14,158,151,.08)}" +
+      "html body #page .fo-ct-tour,html body.ftpskin #page .fo-ct-tour{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:11.5px;background:transparent !important;color:#8a6d1c !important;border:1.5px solid rgba(150,122,52,.55) !important;border-radius:9px;padding:9px 18px;cursor:pointer;box-shadow:none !important}" +
+      "html body #page .fo-ct-tour:hover{border-color:#8a6d1c !important}" +
+      ".fo-ct-act{display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:18px}" +
+      "html body #page .fo-ct-ch,html body.ftpskin #page .fo-ct-ch{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:13px;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:11px;padding:12px 26px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.35) !important}" +
+      ".fo-ct-won{font-family:Oswald,sans-serif;font-size:12px;letter-spacing:1.6px;color:#3E9455;font-weight:600}" +
+      ".fo-ct-lock{font-size:12.5px;color:#8a93a3}" +
+      ".fo-ct-back{font-size:13px;color:#B04A2C}" +
+      // city names on the region map are doors too - make them look like it
+      ".fo-cx-node .cl{pointer-events:auto;cursor:pointer;text-decoration:underline dotted rgba(255,255,255,.55);text-underline-offset:3px}" +
+      ".fo-cx-node .cl:hover{color:#F3D37A !important;text-decoration-color:#F3D37A}" +
+      ".fo-cx-explore{display:inline-block;margin-left:12px;font-size:12px;color:#B04A2C;text-decoration:underline dotted;text-underline-offset:2px;cursor:pointer}";
+    document.head.appendChild(ctCss);
+  } catch (eCt) {}
   try { window.__foTest.cx = { state: foCxState, team: foCxTeam, challenge: foCxChallenge, record: foCxRecord, key: foCxKey }; } catch (eCx) {}
   // head-to-head vs a Circuit club, answered from the PASSPORT (st.hist) -
   // App.results is clobbered by every league snapshot, so the match page's
