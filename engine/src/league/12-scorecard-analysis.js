@@ -2238,15 +2238,51 @@
     var st = document.createElement("style"); st.id = "fo-cx-css";
     st.textContent =
       ".fo-cx{max-width:760px;margin:0 auto;padding:6px 2px 30px}" +
-      ".fo-hg{position:relative;margin:2px 0 16px;border-radius:16px;overflow:hidden;height:clamp(190px,32vh,330px);box-shadow:0 18px 44px -18px rgba(16,27,45,.45)}" +
-      ".fo-hg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 38%;animation:foHgIn .9s ease-out}" +
+      ".fo-hg2{position:relative;width:100vw;margin:-10px 0 20px calc(50% - 50vw);height:calc(100vh - 96px);min-height:540px;overflow:hidden;background:#0B1322}" +
+      ".fo-hg2 .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 42%;animation:foHgIn .9s ease-out}" +
       "@keyframes foHgIn{from{opacity:0}to{opacity:1}}" +
-      "@media (prefers-reduced-motion:reduce){.fo-hg img{animation:none}}" +
-      ".fo-hg-scrim{position:absolute;inset:0;background:linear-gradient(to top,rgba(8,18,34,.72),rgba(8,18,34,.05) 55%)}" +
-      ".fo-hg-tx{position:absolute;left:18px;bottom:13px;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.7)}" +
-      ".fo-hg-tx i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:2.4px;color:#F3D37A}" +
-      ".fo-hg-tx b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(22px,3.4vw,34px);letter-spacing:.6px;line-height:1.05;margin-top:3px}" +
-      "@media(max-width:760px){.fo-hg{height:180px;border-radius:12px}.fo-hg-tx{left:13px;bottom:10px}}" +
+      "@media (prefers-reduced-motion:reduce){.fo-hg2 .bg{animation:none}}" +
+      ".fo-hg2 .scrim{position:absolute;inset:0;background:linear-gradient(to top,rgba(5,12,24,.9),rgba(5,12,24,.22) 40%,rgba(5,12,24,.08) 70%),linear-gradient(105deg,rgba(5,12,24,.5),transparent 45%)}" +
+      ".fo-hg2 .wxchip{position:absolute;z-index:3;top:14px;left:16px;background:rgba(7,18,36,.72);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px);border-radius:11px;padding:7px 12px 8px;color:#fff}" +
+      ".fo-hg2 .wxchip b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:8.5px;letter-spacing:2.4px;color:#F3D37A}" +
+      ".fo-hg2 .wxchip span{font-size:11px;color:rgba(255,255,255,.88)}" +
+      ".fo-hg2 .id{position:absolute;z-index:3;left:26px;bottom:74px;color:#fff;max-width:56%;text-shadow:0 2px 14px rgba(0,0,0,.75)}" +
+      ".fo-hg2 .id i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:3px;color:#F3D37A}" +
+      ".fo-hg2 .id b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(34px,5.4vw,62px);line-height:.98;letter-spacing:1px;text-transform:uppercase;margin:6px 0 8px}" +
+      ".fo-hg2 .id .sub{display:block;font-size:13px;color:rgba(255,255,255,.85)}" +
+      ".fo-hg2 .id .form{display:flex;gap:5px;align-items:center;margin-top:9px}" +
+      ".fo-hg2 .id .form u{text-decoration:none;font-family:Oswald,sans-serif;font-size:9px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,.6);margin-right:3px}" +
+      ".fo-hg2 .id .form em{font-style:normal;width:21px;height:21px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800}" +
+      ".fo-hg2 .id .form em.w{background:#2E7A3C;color:#fff}" +
+      ".fo-hg2 .id .form em.l{background:#B23A2E;color:#fff}" +
+      ".fo-hg2 .id .form .nf{font-size:11.5px;color:rgba(255,255,255,.6);font-style:italic}" +
+      ".fo-hg2 .next{position:absolute;z-index:3;right:22px;bottom:74px;width:min(315px,88vw);background:rgba(7,18,36,.84);border:1px solid rgba(243,211,122,.42);border-top:2px solid #F3D37A;border-radius:14px;padding:13px 16px 15px;color:#fff;backdrop-filter:blur(10px)}" +
+      ".fo-hg2 .next i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:8.5px;font-weight:600;letter-spacing:2.4px;color:rgba(255,255,255,.6)}" +
+      ".fo-hg2 .next em{position:absolute;top:13px;right:14px;font-style:normal;font-family:Oswald,sans-serif;font-size:8.5px;font-weight:600;letter-spacing:1.8px;color:#F3D37A}" +
+      ".fo-hg2 .next b{display:block;font-family:Georgia,serif;font-weight:700;font-size:22px;margin:6px 0 3px}" +
+      ".fo-hg2 .next span{display:block;font-size:11px;color:rgba(255,255,255,.75)}" +
+      "html body #page .fo-hg2 .next button{margin-top:11px;width:100%;font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:11.5px;letter-spacing:2.6px;color:#221803 !important;background:linear-gradient(180deg,#F5C963,#DFA83B) !important;border:1px solid #F8DF9A !important;border-radius:10px;padding:11px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.4) !important}" +
+      "html body #page .fo-hg2 .next button:hover{filter:brightness(1.06)}" +
+      ".fo-hg2 .next.champ{text-align:center}.fo-hg2 .next.champ .crn{height:92px;display:block;margin:8px auto 2px;filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))}" +
+      ".fo-hg2 .gaffer{position:absolute;z-index:3;left:50%;transform:translateX(-50%);bottom:74px;display:flex;gap:10px;align-items:center;max-width:400px;background:rgba(7,18,36,.78);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:8px 18px 8px 9px;color:#fff;backdrop-filter:blur(8px)}" +
+      ".fo-hg2 .gaffer img{width:38px;height:38px;border-radius:50%;object-fit:cover;object-position:50% 12%;border:1.5px solid rgba(243,211,122,.6);flex:0 0 38px}" +
+      ".fo-hg2 .gaffer span{font-family:Georgia,serif;font-size:12px;line-height:1.4;color:rgba(255,255,255,.92)}" +
+      ".fo-hg2 .gaffer span b{display:block;font-family:Oswald,sans-serif;font-size:8px;font-weight:600;letter-spacing:2.2px;color:#F3D37A}" +
+      "@media(max-width:1180px){.fo-hg2 .gaffer{display:none}}" +
+      ".fo-hg2 .bar{position:absolute;z-index:4;left:0;right:0;bottom:0;display:flex;gap:10px;align-items:center;justify-content:center;padding:11px 14px 13px;background:linear-gradient(to top,rgba(4,10,20,.92),rgba(4,10,20,.5) 70%,transparent)}" +
+      "html body #page .fo-hg2 .bar button{font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:10px;letter-spacing:2.2px;color:#EDE7D4 !important;background:rgba(255,255,255,.07) !important;border:1.5px solid rgba(255,255,255,.28) !important;border-radius:999px;padding:9px 17px;white-space:nowrap;cursor:pointer;box-shadow:none !important}" +
+      "html body #page .fo-hg2 .bar button:hover{border-color:#F3D37A !important;color:#F3D37A !important}" +
+      "@media(max-width:760px){" +
+      ".fo-hg2{min-height:600px;margin-top:-8px}" +
+      ".fo-hg2 .id{left:14px;bottom:214px;max-width:92%}" +
+      ".fo-hg2 .id b{font-size:31px}" +
+      ".fo-hg2 .id .sub{font-size:12px}" +
+      ".fo-hg2 .next{left:10px;right:10px;width:auto;bottom:54px;padding:11px 13px 12px}" +
+      ".fo-hg2 .next b{font-size:19px}" +
+      "html body #page .fo-hg2 .next button{padding:10px;margin-top:9px}" +
+      ".fo-hg2 .bar{gap:6px;padding:8px 6px 10px}" +
+      "html body #page .fo-hg2 .bar button{font-size:9px;padding:8px 11px;letter-spacing:1.6px}" +
+      "}" +
       ".fo-cx-chap{display:flex;gap:10px;justify-content:center;margin:4px 0 16px;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;font-weight:500;flex-wrap:wrap}" +
       ".fo-cx-chap span{color:#b9b29a;cursor:pointer}.fo-cx-chap span.on{color:#C8674A;border-bottom:2px solid #C8674A;padding-bottom:2px}" +
       ".fo-cx-chap span.done{color:#2E7A3C}.fo-cx-chap i{font-style:normal;color:#d5cdb2}" +
@@ -2453,77 +2489,82 @@
   }
   function foCxPassport() {
     try {
-      if (!document.getElementById("fo-cxp-css")) {
-        var cs = document.createElement("style"); cs.id = "fo-cxp-css";
+      if (!document.getElementById("fo-cxc-css")) {
+        var cs = document.createElement("style"); cs.id = "fo-cxc-css";
         cs.textContent =
-          "#fo-cxp{position:fixed;inset:0;z-index:100002;background:rgba(8,14,26,.78);display:flex;align-items:center;justify-content:center;padding:14px}" +
-          ".cxp-book{background:linear-gradient(150deg,#152238,#0B1322 70%);border:1.5px solid rgba(201,162,75,.55);border-radius:20px;padding:13px;box-shadow:0 26px 70px rgba(0,0,0,.6);width:min(880px,97vw);max-height:94vh;display:flex;flex-direction:column;position:relative}" +
-          ".cxp-x{position:absolute;top:-11px;right:-11px;width:32px;height:32px;border-radius:50%;background:#101B2D;color:#F5EFDC;border:1.5px solid rgba(201,162,75,.7);cursor:pointer;font-size:14px;z-index:3}" +
-          ".cxp-page{background:#F7F2E4 radial-gradient(rgba(20,33,61,.045) 1px,transparent 1.4px);background-size:26px 26px;border-radius:11px;padding:22px 24px 18px;overflow-y:auto;box-shadow:inset 0 0 44px rgba(120,98,52,.14)}" +
-          ".cxp-mast{text-align:center;border-bottom:2px solid rgba(20,33,61,.16);padding-bottom:12px;margin-bottom:14px}" +
-          ".cxp-eyebrow{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:5px;color:#8a7a46;font-weight:600}" +
-          ".cxp-h1{font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(21px,4vw,30px);letter-spacing:6px;color:#14213D;margin:2px 0 3px}" +
-          ".cxp-holder{font-size:12.5px;color:#5b6472;font-style:italic}" +
-          ".cxp-holder b{color:#14213D;font-style:normal}" +
-          ".cxp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(186px,1fr));gap:12px}" +
-          ".cxp-cell{min-height:118px;display:flex;align-items:center;justify-content:center;padding:4px}" +
-          ".cxp-stamp{--ink:#2E7A3C;position:relative;width:100%;border:2.5px solid var(--ink);border-radius:13px 8px 12px 9px;box-shadow:inset 0 0 0 1.5px var(--ink);color:var(--ink);padding:8px 11px 7px;text-align:center;opacity:.9;mix-blend-mode:multiply;background:transparent}" +
-          ".cxp-stamp:after{content:'';position:absolute;inset:-3px;pointer-events:none;background:radial-gradient(4px 3px at 14% 26%,#F7F2E4 55%,transparent 56%),radial-gradient(5px 4px at 82% 64%,#F7F2E4 55%,transparent 56%),radial-gradient(3px 5px at 58% 88%,#F7F2E4 55%,transparent 56%),radial-gradient(3px 3px at 38% 8%,#F7F2E4 55%,transparent 56%);opacity:.75}" +
-          ".cxp-stamp i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:8.5px;letter-spacing:3.4px;font-weight:600}" +
-          ".cxp-stamp b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:17px;letter-spacing:1.6px;text-transform:uppercase;margin:1px 0}" +
-          ".cxp-stamp u{display:block;text-decoration:none;font-size:10.5px;font-weight:600;margin-top:1px}" +
-          ".cxp-stamp s{display:block;text-decoration:none;font-family:Oswald,sans-serif;font-size:9px;letter-spacing:1.4px;margin-top:2px}" +
-          ".cxp-stamp em{display:block;font-size:9.5px;font-style:italic;margin-top:1px;opacity:.85}" +
-          ".cxp-wait{width:100%;border:2px dashed rgba(20,33,61,.24);border-radius:12px;color:rgba(20,33,61,.38);text-align:center;padding:14px 10px;min-height:96px;display:flex;flex-direction:column;justify-content:center;gap:3px}" +
-          ".cxp-wait b{font-family:Oswald,sans-serif;font-weight:600;font-size:14px;letter-spacing:2px;text-transform:uppercase}" +
-          ".cxp-wait span{font-family:Oswald,sans-serif;font-size:8.5px;letter-spacing:2.6px}" +
-          ".cxp-crown{--ink:#8a6d1c}" +
-          ".cxp-crown .st1{font-size:19px;letter-spacing:2px}" +
-          ".cxp-crown .star{font-size:15px;line-height:1;display:block}" +
-          ".cxp-foot{display:flex;justify-content:center;gap:8px 22px;flex-wrap:wrap;border-top:2px solid rgba(20,33,61,.16);margin-top:15px;padding-top:10px;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:2.2px;color:#5b6472}" +
-          ".cxp-foot b{color:#14213D}" +
-          "@media(max-width:560px){.cxp-page{padding:15px 12px 12px}.cxp-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}}";
+          "#fo-cxp{position:fixed;inset:0;z-index:100002;background:rgba(6,11,22,.82);display:flex;align-items:center;justify-content:center;padding:14px}" +
+          ".cxc-cab{position:relative;width:min(920px,97vw);max-height:94vh;display:flex;flex-direction:column;border-radius:18px;padding:14px;background:linear-gradient(160deg,#4a3319,#2c1d0c 55%,#1d1206);border:2px solid #C9A24B;box-shadow:0 30px 90px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,235,180,.25)}" +
+          ".cxc-x{position:absolute;top:-11px;right:-11px;width:32px;height:32px;border-radius:50%;background:#101B2D;color:#F5EFDC;border:1.5px solid rgba(201,162,75,.7);cursor:pointer;font-size:14px;z-index:3}" +
+          ".cxc-in{border-radius:11px;overflow-y:auto;padding:20px 20px 14px;background:radial-gradient(120% 80% at 50% 0%,#241708 0%,#170e04 70%),#170e04;box-shadow:inset 0 0 60px rgba(0,0,0,.75)}" +
+          ".cxc-mast{text-align:center;margin-bottom:6px}" +
+          ".cxc-eyebrow{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:5px;color:#C9A24B;font-weight:600}" +
+          ".cxc-h1{font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(21px,4vw,30px);letter-spacing:7px;color:#F5EFDC;margin:3px 0 2px;text-shadow:0 2px 14px rgba(0,0,0,.7)}" +
+          ".cxc-holder{font-size:12px;color:rgba(245,239,220,.6);font-style:italic}" +
+          ".cxc-holder b{color:#F5EFDC;font-style:normal}" +
+          ".cxc-crownrow{display:flex;justify-content:center;margin:10px 0 2px}" +
+          ".cxc-shelf{display:grid;grid-template-columns:repeat(3,1fr);gap:0 14px;margin-top:8px}" +
+          ".cxc-slot{position:relative;text-align:center;padding:16px 8px 10px;border-bottom:7px solid #0d0802;background:linear-gradient(to top,rgba(255,205,120,.07),transparent 62%);box-shadow:0 8px 12px -8px rgba(0,0,0,.9)}" +
+          ".cxc-slot .glow{position:absolute;left:12%;right:12%;top:6%;bottom:16%;background:radial-gradient(55% 60% at 50% 62%,rgba(255,205,110,.22),transparent 75%);pointer-events:none}" +
+          ".cxc-slot img{position:relative;height:104px;max-width:88%;object-fit:contain;filter:drop-shadow(0 10px 14px rgba(0,0,0,.75))}" +
+          ".cxc-slot.won img{animation:foCxcIn .5s ease-out}" +
+          "@keyframes foCxcIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}" +
+          "@media (prefers-reduced-motion:reduce){.cxc-slot.won img{animation:none}}" +
+          ".cxc-slot.tba img{filter:brightness(0) opacity(.28)}" +
+          ".cxc-slot.tba .glow{opacity:.25}" +
+          ".cxc-plq{margin:9px auto 0;width:88%;border-radius:5px;padding:5px 7px 6px;background:linear-gradient(160deg,#d9b25e,#a97f2e 65%,#8a6520);color:#241708;box-shadow:inset 0 1px 0 rgba(255,240,200,.75),0 2px 5px rgba(0,0,0,.55)}" +
+          ".cxc-plq b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:11px;letter-spacing:1.1px;text-transform:uppercase;line-height:1.15}" +
+          ".cxc-plq span{display:block;font-size:9px;line-height:1.3;margin-top:1px;color:rgba(36,23,8,.85)}" +
+          ".cxc-slot.tba .cxc-plq{background:linear-gradient(160deg,#3a2c16,#241a0b);color:rgba(245,239,220,.5);box-shadow:inset 0 1px 0 rgba(255,240,200,.12)}" +
+          ".cxc-slot.tba .cxc-plq span{color:rgba(245,239,220,.38)}" +
+          ".cxc-crown{max-width:330px;flex:1;border-bottom-width:8px}" +
+          ".cxc-crown img{height:128px}" +
+          ".cxc-crown .cxc-plq b{font-size:12.5px;letter-spacing:2px}" +
+          ".cxc-foot{display:flex;justify-content:center;gap:8px 22px;flex-wrap:wrap;margin-top:16px;padding-top:10px;border-top:1px solid rgba(201,162,75,.35);font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:2.2px;color:rgba(245,239,220,.55)}" +
+          ".cxc-foot b{color:#F5EFDC}" +
+          "@media(max-width:640px){.cxc-in{padding:14px 10px 10px}.cxc-shelf{grid-template-columns:repeat(2,1fr);gap:0 9px}.cxc-slot img{height:84px}.cxc-crown img{height:106px}}";
         document.head.appendChild(cs);
       }
       var st = foCxState();
       var me = null; try { me = userTeam(); } catch (e0) {}
-      var mgr = (typeof SYNC !== "undefined" && SYNC && SYNC.me && SYNC.me.display_name) || "The Manager";
       var hist = st.hist || [];
       var wins = hist.filter(function (h) { return h.win; }).length;
-      var streak = 0;
-      for (var iS = hist.length - 1; iS >= 0; iS--) { if (hist[iS].win) streak++; else break; }
       var conqN = (st.conq || []).filter(function (id) { return id !== "gt"; }).length;
-      var cells = FO_CX_REGIONS.map(function (r) {
+      var slot = function (r) {
         var done = foCxConquered(st, r.id);
-        var rot = ((foHash32("stamp|" + r.id) % 9) - 4);
         var boss = r.clubs.filter(function (c) { return c.boss; })[0] || {};
-        if (r.final) {
-          if (!done) return "<div class='cxp-cell'><div class='cxp-wait'><span>THE WORLD FINAL</span><b>★</b><span>AWAITING ENTRY</span></div></div>";
-          return "<div class='cxp-cell'><div class='cxp-stamp cxp-crown' style='transform:rotate(" + rot + "deg)'>" +
-            "<span class='star'>★</span><i>WORLD CHAMPION</i><b class='st1'>THE THORNE CROWN</b>" +
-            "<u>def. Reggie Thorne</u><s>MARYLEBONE" + (foCxPassDate(st, r.id) ? " &middot; " + foCxPassDate(st, r.id).toUpperCase() : "") + "</s></div></div>";
-        }
-        if (!done) return "<div class='cxp-cell'><div class='cxp-wait'><b>" + E(r.nm) + "</b><span>AWAITING ENTRY</span></div></div>";
-        var dt = foCxPassDate(st, r.id);
-        return "<div class='cxp-cell'><div class='cxp-stamp' style='--ink:" + r.ac + ";transform:rotate(" + rot + "deg)'>" +
-          "<i>CONQUERED</i><b>" + E(r.nm) + "</b>" +
-          (boss.leader ? "<u>def. " + E(boss.leader) + "</u>" : "") +
-          "<s>" + E((boss.city || "").toUpperCase()) + (dt ? " &middot; " + dt.toUpperCase() : "") + "</s>" +
-          "<em>" + E(r.trophy) + "</em></div></div>";
-      }).join("");
+        var img = FO_ART + (r.art || ("circuit/trophy-" + r.id + ".webp"));
+        var dt = done ? foCxPassDate(st, r.id) : "";
+        var plq = done
+          ? "<div class='cxc-plq'><b>" + E(r.trophy) + "</b><span>" + E(r.nm) + (boss.leader ? " &middot; def. " + E(boss.leader) : "") + (dt ? "<br>" + dt : "") + "</span></div>"
+          : "<div class='cxc-plq'><b>" + E(r.trophy) + "</b><span>" + E(r.nm) + " &middot; unclaimed</span></div>";
+        return "<div class='cxc-slot " + (done ? "won" : "tba") + "'><span class='glow'></span><img src='" + img + "' alt=''>" + plq + "</div>";
+      };
+      var finalR = FO_CX_REGIONS.filter(function (r) { return r.final; })[0];
+      var crown = "";
+      if (finalR) {
+        var cDone = foCxConquered(st, finalR.id);
+        var cDt = cDone ? foCxPassDate(st, finalR.id) : "";
+        crown = "<div class='cxc-crownrow'><div class='cxc-slot cxc-crown " + (cDone ? "won" : "tba") + "'><span class='glow'></span>" +
+          "<img src='" + FO_ART + "circuit/trophy-crown.webp' alt=''>" +
+          (cDone ? "<div class='cxc-plq'><b>The Thorne Crown</b><span>World Champions &middot; def. Reggie Thorne" + (cDt ? "<br>" + cDt : "") + "</span></div>"
+                 : "<div class='cxc-plq'><b>The Thorne Crown</b><span>held by Reggie Thorne &middot; Marylebone</span></div>") +
+          "</div></div>";
+      }
+      var shelves = FO_CX_REGIONS.filter(function (r) { return !r.final; }).map(slot).join("");
       var old = document.getElementById("fo-cxp"); if (old) old.remove();
       var ov = document.createElement("div"); ov.id = "fo-cxp";
-      ov.innerHTML = "<div class='cxp-book'><button type='button' class='cxp-x'>&#10005;</button><div class='cxp-page'>" +
-        "<div class='cxp-mast'><div class='cxp-eyebrow'>FIFTY OVERS &middot; THE CIRCUIT</div>" +
-        "<div class='cxp-h1'>WORLD TOUR PASSPORT</div>" +
-        "<div class='cxp-holder'>Issued to <b>" + E((me && me.name) || "the club") + "</b> &middot; " + E(mgr) + " &middot; Season " + (App.seasonNo || 1) + "</div></div>" +
-        "<div class='cxp-grid'>" + cells + "</div>" +
-        "<div class='cxp-foot'><span><b>" + conqN + "</b> / 12 NATIONS</span><span>PLAYED <b>" + hist.length + "</b></span><span>WON <b>" + wins + "</b></span><span>LOST <b>" + (hist.length - wins) + "</b></span><span>STREAK <b>" + streak + "</b></span></div>" +
+      ov.innerHTML = "<div class='cxc-cab'><button type='button' class='cxc-x'>&#10005;</button><div class='cxc-in'>" +
+        "<div class='cxc-mast'><div class='cxc-eyebrow'>FIFTY OVERS &middot; THE CIRCUIT</div>" +
+        "<div class='cxc-h1'>TROPHY CABINET</div>" +
+        "<div class='cxc-holder'>The silverware of <b>" + E((me && me.name) || "the club") + "</b></div></div>" +
+        crown +
+        "<div class='cxc-shelf'>" + shelves + "</div>" +
+        "<div class='cxc-foot'><span><b>" + conqN + "</b> / 12 TROPHIES</span><span>PLAYED <b>" + hist.length + "</b></span><span>WON <b>" + wins + "</b></span></div>" +
         "</div></div>";
       document.body.appendChild(ov);
-      ov.querySelector(".cxp-x").addEventListener("click", function () { ov.remove(); });
+      ov.querySelector(".cxc-x").addEventListener("click", function () { ov.remove(); });
       ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
-    } catch (e) { try { console.warn("passport", e); } catch (e2) {} }
+    } catch (e) { try { console.warn("cabinet", e); } catch (e2) {} }
   }
   // ---- The Eleven Arches: the club's own ground opens the Circuit page.
   // Six painted hours of the same view under the viaduct; the pick follows
@@ -2538,11 +2579,65 @@
     if (h >= 20 && h < 22) return "blue-hour-cup";
     return "quiet-night";
   }
-  function foHgHero() {
+  var FO_HG_WX = {
+    "dawn-mist": "Dawn mist · ground staff at work",
+    "summer-noon": "High summer · perfect for batting",
+    "storm-front": "Storm front building · heavy air",
+    "sunbreak-match": "Sun breaking through · light breeze",
+    "blue-hour-cup": "Blue hour · floodlights on",
+    "quiet-night": "All quiet · gates locked"
+  };
+  function foHgFit(el) {
+    try {
+      if (!el) return;
+      var top = el.getBoundingClientRect().top + window.scrollY;
+      el.style.height = Math.max(540, window.innerHeight - top) + "px";
+    } catch (e) {}
+  }
+  window.addEventListener("resize", function () { foHgFit(document.querySelector(".fo-hg2")); });
+  function foHgHero(st, cur) {
     var me = null; try { me = userTeam(); } catch (e) {}
-    return "<div class='fo-hg'><img src='" + FO_ART + "home/arches-" + foHgVariant() + ".webp' alt=''>" +
-      "<div class='fo-hg-scrim'></div>" +
-      "<div class='fo-hg-tx'><i>HOME GROUND &middot; THE ELEVEN ARCHES</i><b>" + E((me && me.name) || "Your club") + "</b></div></div>";
+    var v = foHgVariant();
+    var hist = (st && st.hist) || [];
+    var beads = hist.slice(-5).map(function (h) {
+      return "<em class='" + (h.win ? "w" : "l") + "'>" + (h.win ? "W" : "L") + "</em>";
+    }).join("") || "<span class='nf'>first tie awaits</span>";
+    var conqN = ((st && st.conq) || []).filter(function (id) { return id !== "gt"; }).length;
+    var champ = st && cur >= FO_CX_REGIONS.length;
+    var nextCard = "", gq = "";
+    if (champ) {
+      nextCard = "<div class='next champ'><i>THE CIRCUIT &middot; COMPLETE</i>" +
+        "<img src='" + FO_ART + "circuit/trophy-crown.webp' alt='' class='crn'>" +
+        "<b>World Champions</b><span>The Thorne Crown lives here now.</span></div>";
+      gq = "Twelve nations, boss. Every morning I polish that crown and think: they said we were a village club.";
+    } else if (st) {
+      var curRi = Math.min(cur, FO_CX_REGIONS.length - 1);
+      var curR = FO_CX_REGIONS[curRi];
+      var nx = -1;
+      for (var i9 = 0; i9 < curR.clubs.length; i9++) if (!foCxBeaten(st, curR.id, i9)) { nx = i9; break; }
+      if (nx >= 0) {
+        var c9 = curR.clubs[nx];
+        nextCard = "<div class='next'><i>NEXT ON THE CIRCUIT</i><em>" + (curR.final ? "THE WORLD FINAL" : E(curR.nm).toUpperCase()) + "</em>" +
+          "<b>" + E(c9.nm) + "</b>" +
+          "<span>" + E(foPitchName(curR.pitch)) + " pitch &middot; " + E(foCxWeather(curR, nx)) + " &middot; " + E(c9.city) + (c9.boss ? " &middot; BOSS" : "") + "</span>" +
+          "<button type='button' id='fo-hg-ch' data-ri='" + curRi + "' data-ci='" + nx + "'>CHALLENGE &#9654;</button></div>";
+        gq = c9.gq || curR.cond || "";
+      }
+    }
+    return "<div class='fo-hg2'><img class='bg' src='" + FO_ART + "home/arches-" + v + ".webp' alt=''>" +
+      "<div class='scrim'></div>" +
+      "<div class='wxchip'><b>HOME GROUND</b><span>" + (FO_HG_WX[v] || "") + "</span></div>" +
+      "<div class='id'><i>YOUR CLUB &middot; THE ELEVEN ARCHES</i>" +
+      "<b>" + E((me && me.name) || "Your club") + "</b>" +
+      "<span class='sub'>The Circuit &middot; " + conqN + " of 12 regions conquered</span>" +
+      "<span class='form'><u>FORM</u>" + beads + "</span></div>" +
+      nextCard +
+      (gq ? "<div class='gaffer'><img src='" + FO_ART + "gaffer.png' alt=''><span><b>THE GAFFER</b>&ldquo;" + E(gq) + "&rdquo;</span></div>" : "") +
+      "<div class='bar'>" +
+      "<button type='button' id='fo-hg-map'>EXPLORE THE MAP &#8595;</button>" +
+      "<button type='button' id='fo-hg-cab'>TROPHY CABINET</button>" +
+      "<button type='button' id='fo-hg-sq'>SQUAD</button>" +
+      "</div></div>";
   }
   function foRenderCircuit() {
     try {
@@ -2562,8 +2657,8 @@
       var html;
       if (cur >= FO_CX_REGIONS.length && foCxView == null) {
         // the Crown is won: the epilogue
-        html = "<div class='fo-cx'>" + foHgHero() + "<div class='fo-cx-chap'>" + chap + "</div>" +
-          "<div class='fo-cx-passrow'><button type='button' id='fo-cx-pass-btn'>TOUR PASSPORT</button></div>" +
+        html = "<div class='fo-cx'>" + foHgHero(st, cur) + "<div class='fo-cx-chap'>" + chap + "</div>" +
+          "<div class='fo-cx-passrow'><button type='button' id='fo-cx-pass-btn'>TROPHY CABINET</button></div>" +
           "<div class='fo-cx-done'><div class='fo-cx-rule'><i></i><b>THE CIRCUIT · COMPLETE</b><i></i></div>" +
           "<div class='fo-cx-h1'>World champions</div>" +
           "<img src='" + FO_ART + "circuit/trophy-crown.webp' alt='The Thorne Crown' style='display:block;height:150px;margin:12px auto 4px'>" +
@@ -2576,9 +2671,9 @@
         var nextCi = -1;
         if (live) for (var i3 = 0; i3 < r.clubs.length; i3++) if (!foCxBeaten(st, r.id, i3)) { nextCi = i3; break; }
         var conqN = (st.conq || []).filter(function (id9) { return id9 !== "gt"; }).length;
-        html = "<div class='fo-cx' style='--cxc:" + r.ac + "'>" + foHgHero() +
+        html = "<div class='fo-cx' style='--cxc:" + r.ac + "'>" + foHgHero(st, cur) +
           "<div class='fo-cx-chap'>" + chap + "</div>" +
-          "<div class='fo-cx-passrow'><button type='button' id='fo-cx-pass-btn'>TOUR PASSPORT</button></div>" +
+          "<div class='fo-cx-passrow'><button type='button' id='fo-cx-pass-btn'>TROPHY CABINET</button></div>" +
           "<div class='fo-cx-head'>" +
           "<div class='fo-cx-rule'><i></i><b>" + (r.final ? "THE CIRCUIT · THE WORLD FINAL" : "THE CIRCUIT · " + conqN + " OF " + FO_CX_NATIONS + " REGIONS CONQUERED") + "</b><i></i></div>" +
           "<div class='fo-cx-h1'>" + E(r.nm) + "</div>" +
@@ -2625,6 +2720,21 @@
       page.innerHTML = html;
       var pb = page.querySelector("#fo-cx-pass-btn");
       if (pb) pb.addEventListener("click", foCxPassport);
+      var hg = page.querySelector(".fo-hg2");
+      if (hg) {
+        foHgFit(hg);
+        var hgCh = hg.querySelector("#fo-hg-ch");
+        if (hgCh) hgCh.addEventListener("click", function () { foCxChallenge(+hgCh.getAttribute("data-ri"), +hgCh.getAttribute("data-ci")); });
+        var hgCab = hg.querySelector("#fo-hg-cab");
+        if (hgCab) hgCab.addEventListener("click", foCxPassport);
+        var hgSq = hg.querySelector("#fo-hg-sq");
+        if (hgSq) hgSq.addEventListener("click", function () { location.hash = "#/squad"; if (typeof window.route === "function") window.route(); });
+        var hgMap = hg.querySelector("#fo-hg-map");
+        if (hgMap) hgMap.addEventListener("click", function () {
+          var t = page.querySelector(".fo-cx-chap") || page.querySelector(".fo-cx-stage");
+          if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      }
       var tb = page.querySelector(".fo-cx-tourbtn[data-tour]");
       if (tb) tb.addEventListener("click", function () {
         location.hash = "#/tour?r=" + tb.getAttribute("data-tour");
