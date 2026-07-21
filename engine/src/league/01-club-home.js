@@ -2094,7 +2094,12 @@
       "html body #page #fo-pstage table.kv b{color:#F0B94E}" +
       "html body #page #fo-pstage a{color:#E4C463}" +
       "html body #page #fo-pstage .small{color:#8a93a3 !important}" +
-      // skill bars: dark track, role-colour-to-gold fill, light words
+      // skill bars: dark track, role-colour-to-gold fill, light words.
+      // The engine's two-column skills split leaves ~15px for the bar once
+      // label+word have their fixed widths - stack them and let bars run long
+      "html body #page #fo-pstage .ftp-skills-2col{display:block !important}" +
+      "html body #page #fo-pstage .fo-bigskill-bar{max-width:none !important}" +
+      "html body #page #fo-pstage .fo-bigskill-w{text-align:right}" +
       "html body #page #fo-pstage .fo-bigskill-l{color:#b9c2d4 !important}" +
       "html body #page #fo-pstage .fo-bigskill-bar{background:rgba(255,255,255,.12) !important;border:none !important;border-radius:99px}" +
       "html body #page #fo-pstage .fo-bigskill-bar i{background:linear-gradient(90deg,var(--tc),#F0B94E) !important;border-radius:99px}" +
