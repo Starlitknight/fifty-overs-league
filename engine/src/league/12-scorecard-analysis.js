@@ -1567,6 +1567,45 @@
   function foCxPrize(ri, boss, fin) { return fin ? 250000 : boss ? (30000 + ri * 10000) : (10000 + ri * 3000); }
   // Win-streak multiplier: three doors without a loss and the promoters pay up.
   function foCxStreakMult(streak) { return streak >= 6 ? 2 : streak >= 3 ? 1.5 : 1; }
+  // ---- living conditions: the forecast rolls per attempt -------------------
+  // Every region has a weather personality; the actual sky is drawn
+  // deterministically from its pool per attempt, so a retry never plays the
+  // same afternoon twice. Drizzle and dew feed the engine's real rain/DLS
+  // and conditions machinery. The Final stays a windless, cloudless summit.
+  var FO_CX_WX = {
+    eng: ["Overcast", "Overcast", "Drizzle", "Sunny"], ire: ["Drizzle", "Drizzle", "Overcast", "Misty"],
+    ned: ["Windy", "Overcast", "Windy", "Sunny"], win: ["Hot", "Sunny", "Hot", "Humid"],
+    rsa: ["Windy", "Sunny", "Overcast", "Windy"], zim: ["Sunny", "Hot", "Sunny", "Scorching"],
+    aus: ["Scorching", "Hot", "Sunny", "Scorching"], nzl: ["Chilly", "Windy", "Overcast", "Chilly"],
+    slk: ["Humid", "Hot", "Drizzle", "Humid"], sub: ["Humid", "Hot", "Dew later", "Humid"],
+    pak: ["Hot", "Scorching", "Dew later", "Hot"], afg: ["Scorching", "Hot", "Sunny", "Scorching"]
+  };
+  function foCxAttempts(st, rid, ci) { return ((st.hist || []).filter(function (h) { return h.rid === rid && h.ci === ci; })).length; }
+  function foCxWeather(r, ci) {
+    try {
+      var pool = FO_CX_WX[r.id];
+      if (!pool || r.final) return r.wx;
+      var st = foCxState();
+      return pool[foHash32("wx|" + r.id + "|" + ci + "|" + foCxAttempts(st, r.id, ci)) % pool.length];
+    } catch (e) { return r.wx; }
+  }
+  // ---- the promoter's wager: optional stakes on every door -----------------
+  // A deterministic side-bet per attempt: stake 40% of the door's base prize,
+  // collect double on delivery, forfeit the stake on a miss (or a loss).
+  var FO_CX_WAGERS = [
+    { kind: "allout", txt: "Bowl them out - take all ten wickets" },
+    { kind: "margin", txt: "Win big - by 40+ runs batting first, or with 8+ overs to spare in a chase" },
+    { kind: "star50", txt: "Keep every one of their batsmen under fifty" }
+  ];
+  function foCxWagerFor(ri, ci) {
+    try {
+      var st = foCxState(), r = FO_CX_REGIONS[ri], c = r.clubs[ci];
+      var stake = Math.round(foCxPrize(ri, !!c.boss, !!c.final) * 0.4 / 500) * 500;
+      if (!stake || !App.fin || (App.fin.bank || 0) < stake) return null;
+      var w = FO_CX_WAGERS[foHash32("wager|" + r.id + "|" + ci + "|" + foCxAttempts(st, r.id, ci)) % FO_CX_WAGERS.length];
+      return { kind: w.kind, txt: w.txt, stake: stake };
+    } catch (e) { return null; }
+  }
   // ---- boss signatures: every boss plays a different brand of cricket -------
   // Applied AFTER the relative calibration, so each shape is a puzzle layered
   // on an honestly-levelled squad. Deterministic - no dice, only the squad.
@@ -1697,15 +1736,29 @@
     // ---- England, a living chapter: the world reads your scorecards --------
     try {
       var stE = foCxState();
-      if (r.id === "eng" && ci === 1) {
-        // Southern Shires saw the Tyke scorecard - they pick for what beat it
-        var t0 = (stE.hist || []).filter(function (h) { return h.rid === "eng" && h.ci === 0 && h.win; })[0];
+      // the WHOLE universe reads your scorecards now, not just England:
+      // every second club counters what beat the first, and every boss has
+      // studied both warm-up ties before you walk out
+      if (ci === 1) {
+        var t0 = (stE.hist || []).filter(function (h) { return h.rid === r.id && h.ci === 0 && h.win; })[0];
         if (t0 && (t0.paceW || t0.spinW)) {
           var vsK = t0.paceW >= t0.spinW ? "vsPace" : "vsSpin";
           players.forEach(function (p8) {
             if (p8.skills && typeof p8.skills[vsK] === "number") { p8.skills[vsK] = Math.min(96, Math.round(p8.skills[vsK] * 1.07)); try { jsDerive(p8); } catch (e8) {} }
           });
-          window.__foCxIntel = "Southern Shires read the Tyke scorecard - they've picked batters for " + (vsK === "vsPace" ? "seam" : "spin") + ". Someone is paying attention.";
+          window.__foCxIntel = c.nm + " read the " + (r.clubs[0] ? r.clubs[0].nm : "first") + " scorecard - they've picked batters for " + (vsK === "vsPace" ? "seam" : "spin") + ". Someone is paying attention.";
+        }
+      }
+      if (c.boss && !c.final) {
+        var hsB = (stE.hist || []).filter(function (h) { return h.rid === r.id && h.win; });
+        var pwB = 0, swB = 0;
+        hsB.forEach(function (h) { pwB += h.paceW || 0; swB += h.spinW || 0; });
+        if (pwB || swB) {
+          var vsB = pwB >= swB ? "vsPace" : "vsSpin";
+          players.forEach(function (p6) {
+            if (p6.skills && typeof p6.skills[vsB] === "number") { p6.skills[vsB] = Math.min(96, Math.round(p6.skills[vsB] * 1.05)); try { jsDerive(p6); } catch (e6) {} }
+          });
+          window.__foCxIntel = (c.leader || c.nm) + " has studied your tour scorecards - his batting is drilled against your " + (vsB === "vsPace" ? "seam attack" : "spinners") + ".";
         }
       }
       if (r.id === "eng" && ci === 2 && !(stE.flags && stE.flags.valeSigned)) {
@@ -1764,12 +1817,25 @@
         "<div class='vs-nm'>" + E(c.nm) + "</div><div class='vs-tag'>" + (c.boss ? "Boss &middot; " + E(c.leader) : E(c.city)) + "</div></div>" +
         "</div>" + quote +
         (c.boss && c.intel ? "<div class='vs-intel'><span class='sp'>The Gaffer's read</span>" + E(c.intel) + "</div>" : "") +
-        "<div class='vs-cond'>" + E(foPitchName(r.pitch)) + " pitch &middot; " + E(r.wx) + " &middot; " + E(c.city) + "</div>" +
+        (function () {
+          var wgr0 = foCxWagerFor(ri, ci);
+          return wgr0 ? "<label class='vs-wager'><input type='checkbox' id='fo-cx-wager'><span><b>The promoter's wager</b> &middot; " + E(wgr0.txt) + " &middot; stake <b>" + FO$(wgr0.stake) + "</b>, collect <b>" + FO$(wgr0.stake * 2) + "</b></span></label>" : "";
+        })() +
+        "<div class='vs-cond'>" + E(foPitchName(r.pitch)) + " pitch &middot; " + E(foCxWeather(r, ci)) + " forecast &middot; " + E(c.city) + "</div>" +
         "<button type='button' class='vs-go' id='fo-cx-vs-go'>Set your XI &#9654;</button>" +
         "</div>";
       document.body.appendChild(m);
       requestAnimationFrame(function () { m.classList.add("in"); });
-      var go = function () { m.classList.add("out"); setTimeout(function () { if (m.parentNode) m.remove(); onGo(); }, 260); };
+      var go = function () {
+        try {
+          var cb = m.querySelector("#fo-cx-wager");
+          var wgr = foCxWagerFor(ri, ci);
+          var st2 = foCxState();
+          if (cb && cb.checked && wgr) { st2.wager = { rid: FO_CX_REGIONS[ri].id, ci: ci, kind: wgr.kind, stake: wgr.stake, txt: wgr.txt }; foCxSave(st2); }
+          else if (st2.wager) { delete st2.wager; foCxSave(st2); }
+        } catch (eWg) {}
+        m.classList.add("out"); setTimeout(function () { if (m.parentNode) m.remove(); onGo(); }, 260);
+      };
       m.querySelector("#fo-cx-vs-go").addEventListener("click", go);
       m.addEventListener("click", function (ev) { if (ev.target === m) go(); });
     } catch (e) { onGo(); }
@@ -1785,7 +1851,7 @@
       // in a live league, snapshot the manager's real league plan before the
       // Circuit overwrites App.orders, so it can be put back untouched afterward
       try { if (SYNC && SYNC.started && !SYNC.practice && App.orders) window.__foCxOrdStash = JSON.stringify(App.orders); } catch (eSt) {}
-      foChallenge(ix, r.pitch, r.wx);
+      foChallenge(ix, r.pitch, foCxWeather(r, ci));
       // played on THEIR ground, under their locked conditions
       if (App.pending) {
         App.pending.ground = T.ground;
@@ -1863,8 +1929,20 @@
         : "";
       var trainLn = (x.gains && x.gains.length)
         ? "<div class='small' style='margin:6px 0 0'><b>The training ground:</b> " + x.gains.map(E).join(" · ") + "</div>" : "";
+      // the conquest signing walks out as his full holo card - the wow moment
+      var mqCard = "";
+      if (x.marqueeP) {
+        try {
+          var bt9 = foHoloCardHTML(x.marqueeP, r.nm);
+          mqCard = "<div class='fo-cx-mq'><div class='fo-phw ph-" + bt9.tier + "' style='--tc:" + bt9.ac[0] + ";--tcD:" + bt9.ac[1] + "'>" + bt9.html + "</div></div>";
+        } catch (eMc) {}
+      }
       var mqLn = x.marquee
-        ? "<div class='small' style='margin:6px 0 0'>&#128222; <b>" + E(x.marquee) + "</b> saw the final and wants in - he's on the <a href='#/transfers' onclick=\"document.getElementById('fo-cx-end').remove()\">transfer market</a>, and he won't wait forever.</div>" : "";
+        ? mqCard + "<div class='small' style='margin:6px 0 0'>&#128222; <b>" + E(x.marquee) + "</b> saw the final and wants in - he's on the <a href='#/transfers' onclick=\"document.getElementById('fo-cx-end').remove()\">transfer market</a>, and he won't wait forever.</div>" : "";
+      var wgLn = x.wager
+        ? "<div class='small' style='margin:6px 0 0'>" + (x.wager.hit
+          ? "&#127919; <b>The promoter's wager lands:</b> " + FO$(x.wager.delta) + " on top of the purse."
+          : "<b>The promoter collects his stake:</b> " + FO$(x.wager.delta) + ". &ldquo;Next time, friend.&rdquo;") + "</div>" : "";
       m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>The Circuit · " + E(r.nm) + "</div>" +
         "<h3>" + E(head) + "</h3>" +
         (win && conquered ? "<img class='fo-cx-troph' src='" + FO_ART + (r.art || ("circuit/trophy-" + r.id + ".webp")) + "' alt='" + E(r.trophy) + "'>" : "") +
@@ -1875,9 +1953,10 @@
         foCxEvidence() + bossQ +
         "<div class='fo-j-gbox' style='max-width:none;margin:8px 0'><img class='gf' src='" + FO_ART + "gaffer" + (win ? "-laugh" : "-serious") + ".png' alt=''>" +
         "<span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;" + E(gline) + "&rdquo;</span></span></div>" +
-        trainLn + mqLn +
+        trainLn + wgLn + mqLn +
         "<div class='fo-modal-act'><button class='fo-su-go primary' id='fo-cx-back'>" + (win && conquered ? "See the map ▸" : "Back to the Circuit ▸") + "</button></div></div>";
       document.body.appendChild(m);
+      try { var mq9 = m.querySelector(".fo-cx-mq .fo-phw"); if (mq9) foHoloTilt(mq9); } catch (eT9) {}
       m.querySelector("#fo-cx-back").addEventListener("click", function () {
         m.remove(); location.hash = "#/circuit"; if (typeof window.route === "function") window.route();
       });
@@ -1891,17 +1970,21 @@
       try {
         var me9 = userTeam();
         if (typeof M !== "undefined" && M && M.done && M.innings && me9) {
-          var h = { rid: r.id, ci: tag.c, win: !!win, opp: c.nm, my: 0, op: 0, topNm: null, topR: -1, bbNm: null, bbW: -1, bbR: 0, paceW: 0, spinW: 0 };
+          var h = { rid: r.id, ci: tag.c, win: !!win, opp: c.nm, my: 0, op: 0, topNm: null, topR: -1, bbNm: null, bbW: -1, bbR: 0, paceW: 0, spinW: 0, opWk: 0, opTop: 0 };
           var byName = {}; (me9.players || []).forEach(function (p9) { if (p9) byName[p9.name] = p9; });
-          [M.innings[0], M.innings[1]].forEach(function (inn) {
+          [M.innings[0], M.innings[1]].forEach(function (inn, innIx) {
             if (!inn) return;
             if (inn.batTeam === me9.name) {
               h.my = inn.runs || 0;
+              h.myLegal = inn.legal || 0;
+              if (innIx === 0) h.batFirst = true;
               (inn.bat || []).forEach(function (b9) {
                 if (b9 && b9.p && b9.r > h.topR) { h.topR = b9.r; h.topNm = b9.p.name; }
               });
             } else {
               h.op = inn.runs || 0;
+              h.opWk = inn.wkts || 0;
+              (inn.bat || []).forEach(function (b9) { if (b9 && b9.p && (b9.r || 0) > h.opTop) h.opTop = b9.r || 0; });
               Object.keys(inn.bowlers || {}).forEach(function (k9) {
                 var bw = inn.bowlers[k9]; if (!bw) return;
                 if ((bw.w || 0) > h.bbW || ((bw.w || 0) === h.bbW && (bw.r || 0) < h.bbR)) { h.bbW = bw.w || 0; h.bbR = bw.r || 0; h.bbNm = k9; }
@@ -1916,6 +1999,25 @@
           // history store the Matches list reads, tagged so a Circuit-record
           // link can reopen it. Mark the match archived so the friendly keeper
           // doesn't bank a second copy.
+          // the promoter settles the wager, win or lose - a miss (or a loss)
+          // forfeits the stake, delivery collects double
+          try {
+            var wg = st.wager;
+            if (wg && wg.rid === r.id && wg.ci === tag.c) {
+              delete st.wager;
+              var hitW = false;
+              if (win) {
+                if (wg.kind === "allout") hitW = (h.opWk || 0) >= 10;
+                else if (wg.kind === "star50") hitW = (h.opTop || 0) < 50;
+                else hitW = h.batFirst ? (h.my - h.op) >= 40 : (h.myLegal || 300) <= 252;
+              }
+              var deltaW = hitW ? wg.stake * 2 : -wg.stake;
+              try { ledger((hitW ? "Promoter's wager won - " : "Promoter's wager lost - ") + c.nm, deltaW); }
+              catch (eLg) { try { if (App.fin) App.fin.bank = (App.fin.bank || 0) + deltaW; } catch (eLg2) {} }
+              h.wager = { kind: wg.kind, hit: hitW, delta: deltaW };
+              window.__foCxWager = { hit: hitW, delta: deltaW, txt: wg.txt };
+            }
+          } catch (eWg9) {}
           var at9 = Date.now();
           h.at = at9;
           h.mom = (M.result && M.result.mom) || "";
@@ -2032,10 +2134,14 @@
           if (typeof window.saveGame === "function") window.saveGame(false);
         }
       } catch (eTr) {}
+      var mqOk = (win && conquered && st.marquee && st.marquee.ri === tag.r && st.marquee.p);
       foCxModal(win, r, c, conquered, prize, {
         streak: st.streak, mult: mult, gains: gains,
-        marquee: (win && conquered && st.marquee && st.marquee.ri === tag.r && st.marquee.p) ? st.marquee.p.name : null
+        marquee: mqOk ? st.marquee.p.name : null,
+        marqueeP: mqOk ? st.marquee.p : null,
+        wager: window.__foCxWager || null
       });
+      window.__foCxWager = null;
     } catch (e) {}
   }
   // ---- drinks-break reads: the Gaffer talks tactics every ten overs --------
@@ -2209,6 +2315,10 @@
       ".fo-cx-vs .vs-intel .sp{display:block;font-family:Oswald,sans-serif;letter-spacing:1.8px;text-transform:uppercase;font-size:10px;color:var(--cxc,#C8674A);margin-bottom:2px}" +
       "@media(max-width:480px){.fo-cx-vs .vs-intel{font-size:12.5px;margin-top:10px}}" +
       ".fo-cx-vs .vs-cond{margin:18px 0 2px;font-size:13px;color:#6b7280;letter-spacing:.3px;text-transform:uppercase;font-family:Oswald,sans-serif;letter-spacing:1.4px}" +
+      ".fo-cx-vs .vs-wager{display:flex;gap:10px;align-items:flex-start;justify-content:flex-start;margin:12px auto 0;max-width:560px;background:rgba(201,162,75,.16);border:1.5px solid rgba(150,122,52,.55);border-radius:11px;padding:9px 13px;color:#3a4356;font-size:12.5px;line-height:1.5;cursor:pointer;text-align:left}" +
+      ".fo-cx-vs .vs-wager b{color:#8a6d1c}" +
+      ".fo-cx-vs .vs-wager input{margin-top:3px;accent-color:#C9A24B;flex:0 0 auto}" +
+      ".fo-cx-mq{display:flex;justify-content:center;margin:12px 0 2px}" +
       "html body .fo-cx-vs .vs-go,html body.ftpskin .fo-cx-vs .vs-go{display:inline-block;font-family:Oswald,sans-serif !important;letter-spacing:2.5px;text-transform:uppercase;font-weight:600 !important;font-size:15px;color:#FDFAF1 !important;background:#C8674A !important;border:none !important;border-radius:11px;padding:12px 30px;cursor:pointer;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2),0 6px 16px rgba(16,27,45,.28);margin-top:16px}" +
       "html body .fo-cx-vs .vs-go:hover,html body.ftpskin .fo-cx-vs .vs-go:hover{background:#B5563B !important}" +
       "@media(prefers-reduced-motion:reduce){.fo-cx-vs .vs-you,.fo-cx-vs .vs-them,.fo-cx-vs .vs-emblem{transition:none;transform:none;opacity:1}.fo-cx-vs.in .vs-clash{animation:none}}" +
