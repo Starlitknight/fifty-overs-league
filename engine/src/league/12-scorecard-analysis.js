@@ -2238,7 +2238,14 @@
     var st = document.createElement("style"); st.id = "fo-cx-css";
     st.textContent =
       ".fo-cx{max-width:760px;margin:0 auto;padding:6px 2px 30px}" +
-      ".fo-hg2{position:relative;width:100vw;margin:-10px 0 20px calc(50% - 50vw);height:calc(100vh - 96px);min-height:540px;overflow:hidden;background:#0B1322}" +
+      ".fo-hg2{position:relative;width:100vw;margin:0 0 0 calc(50% - 50vw);height:100vh;min-height:540px;overflow:hidden;background:#0B1322}" +
+      // the header dissolves into the painting while the wallpaper is up
+      "html body.fo-home-on #topbar,html body.ftpskin.fo-home-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(4,10,20,.6),rgba(4,10,20,.24) 60%,transparent) !important;border-bottom:none !important;box-shadow:none !important}" +
+      "body.fo-home-on #fo-top-status{display:none}" +
+      // #page clips x-overflow for ordinary pages - the wallpaper must paint
+      // to the true screen edges, so lift the clip while it is up
+      "html body.fo-home-on #page,html body.ftpskin.fo-home-on #page{overflow:visible !important}" +
+      "body.fo-home-on #fo-clock{display:none}" +
       ".fo-hg2 .hg-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 42%;animation:foHgIn .9s ease-out}" +
       "@keyframes foHgIn{from{opacity:0}to{opacity:1}}" +
       "@keyframes foHgUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}" +
@@ -2297,6 +2304,23 @@
       ".fo-hg2 .hg-bar{gap:6px;padding:8px 6px 10px}" +
       "html body #page .fo-hg2 .hg-bar button{font-size:9px;padding:8px 11px;letter-spacing:1.6px}" +
       "@media (prefers-reduced-motion:reduce){.fo-hg2 .hg-bg{animation:none !important}}" +
+      // wallpaper mode on phones: barely-there text, the art is the page
+      ".fo-cx-wall .hg-wx{display:none}" +
+      ".fo-cx-wall .hg-gaff{display:none}" +
+      ".fo-cx-wall .hg-scrim{background:linear-gradient(to top,rgba(5,12,24,.62),transparent 34%)}" +
+      ".fo-cx-wall .hg-id{text-align:center}" +
+      ".fo-cx-wall .hg-id i{font-size:8px;letter-spacing:3.6px;color:rgba(243,211,122,.8)}" +
+      ".fo-cx-wall .hg-id b{font-size:26px;font-weight:500;letter-spacing:3px;margin:5px 0 2px;opacity:.96;text-shadow:0 1px 10px rgba(0,0,0,.55)}" +
+      ".fo-cx-wall .hg-id .hg-sub{font-size:9.5px;color:rgba(255,255,255,.55);letter-spacing:.4px}" +
+      ".fo-cx-wall .hg-id .hg-form{display:none}" +
+      ".fo-cx-wall .hg-next{background:transparent;border:none;backdrop-filter:none;text-align:center;padding:0;margin:9px 0 0}" +
+      ".fo-cx-wall .hg-next i{color:rgba(255,255,255,.45);font-size:8px}" +
+      ".fo-cx-wall .hg-next em{position:static;margin-left:7px;color:rgba(243,211,122,.7)}" +
+      ".fo-cx-wall .hg-next b{font-size:15px;margin:3px 0 0;color:rgba(255,255,255,.9)}" +
+      ".fo-cx-wall .hg-next>span{display:none}" +
+      "html body #page .fo-cx-wall .hg-next button{width:auto;display:inline-block;padding:9px 30px;margin-top:9px;background:rgba(232,182,80,.9) !important;border-color:rgba(248,223,154,.7) !important;box-shadow:0 4px 16px rgba(0,0,0,.35) !important}" +
+      ".fo-cx-wall .hg-bar{background:none;padding:8px 6px 18px}" +
+      "html body #page .fo-cx-wall .hg-bar button{font-size:8px;padding:7px 12px;letter-spacing:1.8px;background:rgba(6,14,28,.32) !important;border-color:rgba(255,255,255,.22) !important;color:rgba(237,231,212,.85) !important}" +
       "}" +
       ".fo-cx-chap{display:flex;gap:10px;justify-content:center;margin:4px 0 16px;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;font-weight:500;flex-wrap:wrap}" +
       ".fo-cx-chap span{color:#b9b29a;cursor:pointer}.fo-cx-chap span.on{color:#C8674A;border-bottom:2px solid #C8674A;padding-bottom:2px}" +
@@ -2605,8 +2629,14 @@
   function foHgFit(el) {
     try {
       if (!el) return;
+      // wallpaper mode: the painting owns the whole screen - pull up under
+      // the (transparent) header, fill the viewport, kill any leftover scroll
+      el.style.marginTop = "0px"; el.style.marginBottom = "0px";
       var top = el.getBoundingClientRect().top + window.scrollY;
-      el.style.height = Math.max(540, window.innerHeight - top) + "px";
+      el.style.marginTop = (-top) + "px";
+      el.style.height = window.innerHeight + "px";
+      var over = document.documentElement.scrollHeight - window.innerHeight;
+      if (over > 0) el.style.marginBottom = (-over) + "px";
     } catch (e) {}
   }
   window.addEventListener("resize", function () { foHgFit(document.querySelector(".fo-hg2")); });
@@ -2649,7 +2679,7 @@
       nextCard +
       (gq ? "<div class='hg-gaff'><img src='" + FO_ART + "gaffer.png' alt=''><span><b>THE GAFFER</b>&ldquo;" + E(gq) + "&rdquo;</span></div>" : "") +
       "<div class='hg-bar'>" +
-      "<button type='button' id='fo-hg-map'><span class='hg-lf'>EXPLORE THE MAP &#8595;</span><span class='hg-ls'>MAP &#8595;</span></button>" +
+      "<button type='button' id='fo-hg-map'><span class='hg-lf'>WORLD MAP</span><span class='hg-ls'>MAP</span></button>" +
       "<button type='button' id='fo-hg-cab'><span class='hg-lf'>TROPHY CABINET</span><span class='hg-ls'>CABINET</span></button>" +
       "<button type='button' id='fo-hg-sq'><span class='hg-lf'>SQUAD</span><span class='hg-ls'>SQUAD</span></button>" +
       "</div></div>";
@@ -2657,12 +2687,15 @@
   function foRenderCircuit() {
     try {
       foCxNav();
-      if (location.hash.indexOf("#/circuit") !== 0) return;
+      if (location.hash.indexOf("#/circuit") !== 0) { try { document.body.classList.remove("fo-home-on"); } catch (eBc) {} return; }
       var page = document.getElementById("page"); if (!page) return;
+      // the homepage is a pure wallpaper - the world tour lives at ?m=1
+      var wall = !/[?&]m=1/.test(location.hash || "");
+      try { document.body.classList.toggle("fo-home-on", wall); } catch (eBc2) {}
       var st = foCxState();
       var cur = foCxCurrent(st);
       var ri = (foCxView == null) ? Math.min(cur, FO_CX_REGIONS.length - 1) : Math.min(foCxView, FO_CX_REGIONS.length - 1);
-      var sig = "cx|" + ri + "|" + cur + "|" + JSON.stringify(st.beat) + "|" + (st.conq || []).join(",") + "|h" + ((st.hist || []).length) + "|hg" + foHgVariant();
+      var sig = "cx|" + ri + "|" + cur + "|" + JSON.stringify(st.beat) + "|" + (st.conq || []).join(",") + "|h" + ((st.hist || []).length) + "|hg" + foHgVariant() + "|w" + (wall ? 1 : 0);
       if (page.__foCxSig === sig && page.querySelector(".fo-cx")) return;
       page.__foCxSig = sig;
       var chap = FO_CX_REGIONS.map(function (r2, i) {
@@ -2670,9 +2703,11 @@
         return "<span class='" + cls + "' data-ri='" + i + "'>" + (r2.final ? "★ Thorne" : E(r2.nm)) + "</span>";
       }).join("<i>›</i>");
       var html;
-      if (cur >= FO_CX_REGIONS.length && foCxView == null) {
+      if (wall) {
+        html = "<div class='fo-cx fo-cx-wall'>" + foHgHero(st, cur) + "</div>";
+      } else if (cur >= FO_CX_REGIONS.length && foCxView == null) {
         // the Crown is won: the epilogue
-        html = "<div class='fo-cx'>" + foHgHero(st, cur) + "<div class='fo-cx-chap'>" + chap + "</div>" +
+        html = "<div class='fo-cx'><div class='fo-cx-chap'>" + chap + "</div>" +
           "<div class='fo-cx-passrow'><button type='button' id='fo-cx-pass-btn'>TROPHY CABINET</button></div>" +
           "<div class='fo-cx-done'><div class='fo-cx-rule'><i></i><b>THE CIRCUIT · COMPLETE</b><i></i></div>" +
           "<div class='fo-cx-h1'>World champions</div>" +
@@ -2686,7 +2721,7 @@
         var nextCi = -1;
         if (live) for (var i3 = 0; i3 < r.clubs.length; i3++) if (!foCxBeaten(st, r.id, i3)) { nextCi = i3; break; }
         var conqN = (st.conq || []).filter(function (id9) { return id9 !== "gt"; }).length;
-        html = "<div class='fo-cx' style='--cxc:" + r.ac + "'>" + foHgHero(st, cur) +
+        html = "<div class='fo-cx' style='--cxc:" + r.ac + "'>" +
           "<div class='fo-cx-chap'>" + chap + "</div>" +
           "<div class='fo-cx-passrow'><button type='button' id='fo-cx-pass-btn'>TROPHY CABINET</button></div>" +
           "<div class='fo-cx-head'>" +
@@ -2746,8 +2781,7 @@
         if (hgSq) hgSq.addEventListener("click", function () { location.hash = "#/squad"; if (typeof window.route === "function") window.route(); });
         var hgMap = hg.querySelector("#fo-hg-map");
         if (hgMap) hgMap.addEventListener("click", function () {
-          var t = page.querySelector(".fo-cx-chap") || page.querySelector(".fo-cx-stage");
-          if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+          location.hash = "#/circuit?m=1"; if (typeof window.route === "function") window.route();
         });
       }
       var tb = page.querySelector(".fo-cx-tourbtn[data-tour]");
