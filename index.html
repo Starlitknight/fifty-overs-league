@@ -10439,7 +10439,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260721-1600-620d8f";
+  var FO_BUILD = "20260721-1614-17d31c";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -25139,7 +25139,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<a class='fo-tour-back' href='#/circuit'>&#8249; Circuit</a>" +
         "<div class='fo-tour-hd'><div class='eb'>The Grand Tour</div><h1>" + E(r.nm) + "</h1><div class='ty'>" + E(r.type) + "</div></div>" +
         "<div class='fo-tour-map'><img src='" + FO_ART + "circuit/" + (r.bg || (r.id + ".webp")) + "' alt=''>" + pins + "</div>" +
-        "<div class='fo-tour-hint' id='fo-tour-hint'>Tap a city to meet it</div>" +
+        "<div class='fo-tour-hint' id='fo-tour-hint'>Drag to roam &middot; tap a city to meet it</div>" +
         "<div class='fo-tour-card' id='fo-tour-card'></div>" +
         "</div>";
       var cardEl = page.querySelector("#fo-tour-card");
@@ -25184,9 +25184,48 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       page.querySelectorAll(".fo-tp[data-tp]").forEach(function (p1) {
         p1.addEventListener("click", function () { openCard(+p1.getAttribute("data-tp")); });
       });
+      // full-bleed means the painting overflows the screen - open the camera
+      // over the cities, and let the player drag to roam the rest
+      var mapEl = page.querySelector(".fo-tour-map");
+      (function () {
+        var xs = r.clubs.map(function (c) { return c.mx; }), ys = r.clubs.map(function (c) { return c.my; });
+        var cx = (Math.min.apply(0, xs) + Math.max.apply(0, xs)) / 200;
+        var cy = (Math.min.apply(0, ys) + Math.max.apply(0, ys)) / 200;
+        var S = mapEl.offsetWidth;
+        foTourPan(mapEl, (0.5 - cx) * S, (0.5 - cy) * S);
+      })();
       try { if (window.__foLive) window.__foLive.mask(); } catch (eM4) {}
     } catch (e) { try { console.warn("foRenderTour", e); } catch (e2) {} }
   }
+  function foTourPan(el, dx, dy) {
+    var host = el.parentElement; if (!host) return;
+    var S = el.offsetWidth;
+    var bx = Math.max(0, (S - host.clientWidth) / 2), by = Math.max(0, (S - host.clientHeight) / 2);
+    dx = Math.max(-bx, Math.min(bx, dx)); dy = Math.max(-by, Math.min(by, dy));
+    el.style.setProperty("--dx", dx + "px"); el.style.setProperty("--dy", dy + "px");
+    el.__dx = dx; el.__dy = dy;
+  }
+  var foTourDrag = null;
+  document.addEventListener("pointerdown", function (ev) {
+    var mp = ev.target && ev.target.closest ? ev.target.closest(".fo-tour-map") : null;
+    if (!mp) return;
+    foTourDrag = { el: mp, x: ev.clientX, y: ev.clientY, dx: mp.__dx || 0, dy: mp.__dy || 0, moved: false };
+  });
+  document.addEventListener("pointermove", function (ev) {
+    if (!foTourDrag) return;
+    var mx = ev.clientX - foTourDrag.x, my = ev.clientY - foTourDrag.y;
+    if (Math.abs(mx) + Math.abs(my) > 7) foTourDrag.moved = true;
+    if (foTourDrag.moved) foTourPan(foTourDrag.el, foTourDrag.dx + mx, foTourDrag.dy + my);
+  });
+  document.addEventListener("pointerup", function () {
+    if (foTourDrag && foTourDrag.moved) foTourDrag.el.__justDragged = Date.now();
+    foTourDrag = null;
+  });
+  // a roam must not fire the pin that happened to be under the finger
+  document.addEventListener("click", function (ev) {
+    var mp = ev.target && ev.target.closest ? ev.target.closest(".fo-tour-map") : null;
+    if (mp && mp.__justDragged && Date.now() - mp.__justDragged < 300) { ev.stopPropagation(); ev.preventDefault(); }
+  }, true);
   setInterval(foRenderTour, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/tour") === 0) setTimeout(foRenderTour, 40); });
   try {
@@ -25199,8 +25238,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-tour-hd .ty{font-style:italic;font-size:12.5px;color:#cfc7ad}" +
       ".fo-tour-back{position:absolute;top:16px;left:14px;z-index:6;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:#F5EFDC;background:rgba(10,18,32,.55);border:1.5px solid rgba(255,255,255,.3);border-radius:999px;padding:9px 15px;text-decoration:none;backdrop-filter:blur(4px)}" +
       ".fo-tour-back:hover{color:#F3D37A}" +
-      ".fo-tour-map{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:min(100vw,calc(100vh - 250px));aspect-ratio:1/1}" +
-      ".fo-tour-map>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:12px;box-shadow:0 22px 70px rgba(0,0,0,.6)}" +
+      ".fo-tour-map{position:absolute;left:50%;top:50%;width:max(100vw,calc(100vh - 96px));aspect-ratio:1/1;transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,0px)));touch-action:none;cursor:grab;user-select:none}" +
+      ".fo-tour-map:active{cursor:grabbing}" +
+      ".fo-tour-map>img{position:absolute;inset:0;width:100%;height:100%;-webkit-user-drag:none;pointer-events:none}" +
       "html body #page .fo-tp,html body.ftpskin #page .fo-tp{position:absolute;transform:translate(-50%,-50%);background:none !important;border:none !important;box-shadow:none !important;cursor:pointer;z-index:4;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px}" +
       ".fo-tp .dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;background:rgba(20,33,61,.85);border:2px solid rgba(255,255,255,.7);box-shadow:0 3px 10px rgba(0,0,0,.4)}" +
       ".fo-tp.done .dot{background:#2E7A3C;border-color:#CFEAD2}" +
@@ -25238,7 +25278,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "html body #page .fo-cx-tourbtn,html body.ftpskin #page .fo-cx-tourbtn{font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:14px;letter-spacing:2.8px;text-transform:uppercase;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:13px 34px;cursor:pointer;box-shadow:0 5px 0 rgba(16,27,45,.3),0 10px 26px rgba(201,162,75,.35) !important}" +
       "html body #page .fo-cx-tourbtn:hover{filter:brightness(1.06)}" +
       ".fo-cx-tourrow .tsub{display:block;margin-top:6px;font-style:italic;font-size:11.5px;color:#8a8062}" +
-      "@media(max-width:640px){.fo-tour{height:calc(100vh - 130px);min-height:480px}.fo-tour-map{top:50%}.fo-tour-card{bottom:8px}.tc-art{height:96px}.tc-bd{padding:10px 13px 12px}}";
+      "@media(max-width:640px){.fo-tour{height:calc(100vh - 130px);min-height:480px}.fo-tour-map{width:max(100vw,calc(100vh - 130px))}.fo-tour-card{bottom:8px}.tc-art{height:96px}.tc-bd{padding:10px 13px 12px}}";
     document.head.appendChild(trCss);
   } catch (eTr) {}
   try { window.__foTest.cx = { state: foCxState, team: foCxTeam, challenge: foCxChallenge, record: foCxRecord, key: foCxKey }; } catch (eCx) {}
