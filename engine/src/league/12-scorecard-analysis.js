@@ -2359,7 +2359,9 @@
       ".fo-cx-rail{flex:1;min-width:0;display:flex;flex-direction:column;gap:13px}" +
       ".fo-cx-trophycard{flex:1;min-height:0;background:#FFFEFC;border:2px solid #C9A24B;border-radius:14px;padding:8px 8px 6px;box-shadow:0 4px 0 rgba(16,27,45,.28);display:flex;flex-direction:column;align-items:center;position:relative;overflow:hidden}" +
       ".fo-cx-trophycard::before{content:\"\";position:absolute;inset:8px 8px 26px;border-radius:9px;background:radial-gradient(circle at 50% 38%,#FFFDF6 0%,#EFE7D3 80%);box-shadow:inset 0 0 0 1px rgba(201,162,75,.28)}" +
-      ".fo-cx-trophycard img{position:absolute;left:0;right:0;top:12px;bottom:34px;margin:auto;max-width:72%;max-height:calc(100% - 52px);width:auto;height:auto;filter:drop-shadow(0 5px 10px rgba(16,27,45,.28))}" +
+      // 72% width once suited the narrow original silverware; the wider new
+      // family hit that cap and shrank - let every trophy fill its case
+      ".fo-cx-trophycard img{position:absolute;left:0;right:0;top:9px;bottom:31px;margin:auto;max-width:88%;max-height:calc(100% - 42px);width:auto;height:auto;filter:drop-shadow(0 5px 10px rgba(16,27,45,.28))}" +
       ".fo-cx-trophycard .tnm{position:absolute;left:8px;right:8px;bottom:7px}" +
       ".fo-cx-trophycard .tnm{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;font-size:10.5px;color:#8a7b4f;text-align:center}" +
       ".fo-cx-stage .fo-cx-map .mapin{aspect-ratio:1/1;flex:0 0 auto}" +
