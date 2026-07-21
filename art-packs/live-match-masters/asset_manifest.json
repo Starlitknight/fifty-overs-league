@@ -1,0 +1,53 @@
+{
+  "collection": "fifty-overs-distinctive-live-match-city-art",
+  "version": 2,
+  "aspectRatio": "16:9",
+  "pixelDimensions": {
+    "width": 1672,
+    "height": 941
+  },
+  "assets": [
+    {
+      "id": "live_ground_dublin_cover_drive",
+      "city": "Dublin",
+      "path": "runtime/dublin_morning_cover_drive.webp",
+      "matchMoment": "cover_drive",
+      "overlayZone": "upper_left"
+    },
+    {
+      "id": "live_ground_belfast_fast_spell",
+      "city": "Belfast",
+      "path": "runtime/belfast_into_the_wind.webp",
+      "matchMoment": "fast_bowling_spell",
+      "overlayZone": "upper_right"
+    },
+    {
+      "id": "live_ground_cork_lofted_hit",
+      "city": "Cork",
+      "path": "runtime/cork_six_over_the_river.webp",
+      "matchMoment": "lofted_boundary_attempt",
+      "overlayZone": "lower_center_water"
+    },
+    {
+      "id": "live_ground_amsterdam_spin_duel",
+      "city": "Amsterdam",
+      "path": "runtime/amsterdam_keepers_view.webp",
+      "matchMoment": "spin_duel",
+      "overlayZone": "upper_right"
+    },
+    {
+      "id": "live_ground_utrecht_quick_single",
+      "city": "Utrecht",
+      "path": "runtime/utrecht_impossible_single.webp",
+      "matchMoment": "quick_single",
+      "overlayZone": "left_shadow"
+    },
+    {
+      "id": "live_ground_rotterdam_final_over",
+      "city": "Rotterdam",
+      "path": "runtime/rotterdam_last_over.webp",
+      "matchMoment": "final_over_pace",
+      "overlayZone": "upper_left_sky"
+    }
+  ]
+}

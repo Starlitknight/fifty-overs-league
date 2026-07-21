@@ -1780,6 +1780,10 @@
   //  theatre column (above the field), re-rendered via foMatchRenderHooks on
   //  every real ball - presentation only, the engine stays the sole truth.
   // ===========================================================================
+  // cities with a dedicated LIVE-match canvas: a real delivery in progress,
+  // painted to sit beneath the running match UI (the static -ground.webp
+  // stays on the city page's "Visit the ground" view)
+  var FO_CITY_LIVE = { Dublin: 1, Belfast: 1, Cork: 1, Amsterdam: 1, Rotterdam: 1, Utrecht: 1 };
   function foMstArt() {
     try {
       var cx = M.meta && M.meta.__circuit;
@@ -1789,6 +1793,7 @@
         var ga = (L && L.groundArt) || (typeof FO_CITY_GROUNDS !== "undefined" && FO_CITY_GROUNDS[c.city] ? "cities/" + foCitySlug(c.city) + "-ground.webp" : null);
         if (ga) {
           var gnm = (L && L.groundNm) || (typeof FO_CITY_GROUNDS !== "undefined" && FO_CITY_GROUNDS[c.city]) || c.city;
+          if (FO_CITY_LIVE[c.city]) ga = "cities/" + foCitySlug(c.city) + "-live.webp";
           // Dublin owns a second canvas for the rain
           if (c.city === "Dublin" && /rain|drizzle|storm|shower|wet/.test(((M.meta.weather || "") + "").toLowerCase())) ga = "cities/dublin-ground-rain.webp";
           return { img: FO_ART + ga, mode: "ground", ac: r.ac, gnm: gnm, city: c.city };
