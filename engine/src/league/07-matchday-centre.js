@@ -1818,11 +1818,14 @@
       // rebuild only when the broadcast moved on (or the theatre re-homed us)
       var old = document.getElementById("fo-mstage");
       var sig = M.inns + ":" + M.log.length + ":" + inn.runs + "/" + inn.wkts + ":" + (M.done ? 1 : 0) + ":" + (oval ? "ov" : "mc");
-      if (old && old.__foSig === sig && (!oval || old.parentNode === oval)) return;
+      if (old && old.__foSig === sig && (!oval || old.parentNode === oval.parentNode)) return;
       var art = foMstArt();
       var wx = ((M.meta.weather || "") + "").toLowerCase();
       var rainy = /rain|drizzle|storm|shower|wet/.test(wx);
       var gloomy = /overcast|cloud/.test(wx);
+      var sunny = /sunny|clear/.test(wx), heat = /hot|scorch/.test(wx);
+      var misty = /mist|fog/.test(wx), humid = /humid|dew/.test(wx);
+      var windy = /windy|breez|gale/.test(wx), chilly = /chill|cold/.test(wx);
       var s1 = inn.bat && inn.bat[inn.striker];
       var bw = (inn.bxi || []).filter(function (p) { return p.name === inn.curBowlerName; })[0];
       var brec = bw && inn.bowlers ? inn.bowlers[bw.name] : null;
@@ -1871,11 +1874,17 @@
         "<div class='st'>" + (brec ? Math.floor(brec.b / 6) + "." + (brec.b % 6) + "&ndash;" + brec.r + "&ndash;" + brec.w : "new spell") + "</div></div></div>" : "";
       var el = document.createElement("section");
       el.id = "fo-mstage";
-      el.className = "fo-mst k-" + kind + (rainy ? " wx-rain" : "") + (gloomy ? " wx-gloom" : "") + " m-" + art.mode;
+      el.className = "fo-mst k-" + kind + (rainy ? " wx-rain" : "") + (gloomy ? " wx-gloom" : "") +
+        (sunny ? " wx-sun" : "") + (heat ? " wx-heat" : "") + (misty ? " wx-mist" : "") +
+        (humid ? " wx-humid" : "") + (windy ? " wx-wind" : "") + (chilly ? " wx-chill" : "") + " m-" + art.mode;
       el.style.setProperty("--cxc", art.ac);
       el.innerHTML =
         "<div class='fo-mst-bg'><img src='" + art.img + "' alt=''></div><div class='fo-mst-veil'></div>" +
         (rainy ? "<div class='fo-mst-rain'></div>" : "") +
+        (sunny || heat ? "<div class='fo-mst-sun'></div>" : "") +
+        (misty || humid ? "<div class='fo-mst-mist'></div>" : "") +
+        (windy ? "<div class='fo-mst-wind'></div>" : "") +
+        (chilly ? "<div class='fo-mst-cold'></div>" : "") +
         "<div class='fo-mst-top'>" +
         "<div class='fo-mst-wx'><span>" + E(art.gnm) + (art.city ? " &middot; " + E(art.city) : "") + "</span><span>" + E(M.meta.weather || "") + "</span><span>" + E(M.pitch || "") + " pitch</span></div>" +
         "<div class='fo-mst-speed'>" + spdBtns + "</div></div>" +
@@ -1889,14 +1898,16 @@
         (gaff ? "<span class='gf'><b>The Gaffer:</b> " + E(gaff) + "</span>" : "<span class='gf'></span>") +
         "<div class='mbs'>" + (beads || "<span class='mb'>&ndash;</span>") + "</div></div>";
       el.__foSig = sig;
+      // full-width hero: the stage is a SIBLING above the theatre, its own
+      // grid row spanning both columns - the oval + commentary sit below it
       if (old) old.replaceWith(el);
-      else if (oval) oval.insertBefore(el, oval.firstChild);
+      else if (oval) oval.parentNode.insertBefore(el, oval);
       else mcTop.parentNode.insertBefore(el, mcTop);
-      // the theatre mounts on its own tick - if it arrived after us, move in
+      // the theatre mounts on its own tick - if it arrived after us, move up
       if (!oval) setTimeout(function () {
         try {
           var ov2 = document.getElementById("fo-oval"), st2 = document.getElementById("fo-mstage");
-          if (ov2 && st2 && st2.parentNode !== ov2) ov2.insertBefore(st2, ov2.firstChild);
+          if (ov2 && st2 && st2.nextElementSibling !== ov2) ov2.parentNode.insertBefore(st2, ov2);
         } catch (eMv) {}
       }, 450);
       document.body.classList.add("fo-stage-on");
@@ -1918,16 +1929,15 @@
   try {
     var msCss = document.createElement("style"); msCss.id = "fo-mst-css";
     msCss.textContent =
-      ".fo-mst{position:relative;min-height:480px;border-radius:16px;overflow:hidden;margin:0 0 14px;isolation:isolate;background:#081a2b}" +
-      "#fo-oval .fo-mst{min-height:430px;border-radius:14px;margin:0 0 10px}" +
-      // inside the theatre column the stage is narrower - tighten the lockups
-      "#fo-oval .fo-mst-score{top:48px}#fo-oval .fo-mst-score b{font-size:34px}" +
-      "#fo-oval .fo-mst-moment{top:57%;width:min(440px,50%)}" +
-      "#fo-oval .fo-mst-moment .chip{display:none}" +
-      "#fo-oval .fo-mst-moment .t{font-size:clamp(30px,3.6vw,50px)}" +
-      "#fo-oval .fo-mst-moment p{font-size:13px;max-width:360px}" +
-      "#fo-oval .fo-mst-p{width:26%}" +
-      "#fo-oval .fo-mst-p .nm{font-size:19px}" +
+      ".fo-mst{position:relative;min-height:460px;height:min(56vh,560px);border-radius:16px;overflow:hidden;margin:0 0 14px;isolation:isolate;background:#081a2b;width:100%;max-width:100%}" +
+      // the stage owns a full-width grid row above the theatre; the oval and
+      // the commentary column sit side by side underneath it
+      "html body #page.fo-ovalgrid.fo-matchpage{grid-template-rows:auto auto auto auto auto 1fr !important;grid-template-areas:'mcrumb mcrumb' 'mlinks mlinks' 'mstage mstage' 'moval mbody' 'mtop mbody' 'mrest mbody' !important}" +
+      "html body #page.fo-ovalgrid.fo-matchpage #fo-mstage{grid-area:mstage}" +
+      "html body #page.fo-ovalgrid .fo-mst{order:-2}" +
+      // the theatre's margin:0 auto turns off flex stretching on phones - the
+      // column then sizes to its content and hangs off the screen edge
+      "html body #page.fo-ovalgrid #fo-oval{width:100% !important;max-width:100% !important;min-width:0 !important;margin-left:0 !important;margin-right:0 !important}" +
       ".fo-mst-bg{position:absolute;inset:0;z-index:0}" +
       ".fo-mst-bg img{width:100%;height:100%;object-fit:cover;object-position:center 44%}" +
       ".fo-mst.m-region .fo-mst-bg img{filter:blur(5px) saturate(.9) brightness(.8);transform:scale(1.06)}" +
@@ -1935,6 +1945,17 @@
       ".fo-mst.wx-gloom .fo-mst-veil{background:linear-gradient(90deg,rgba(3,16,33,.92) 0%,rgba(3,16,33,.5) 20%,rgba(3,16,33,.14) 45%,rgba(3,16,33,.2) 62%,rgba(3,16,33,.88) 100%),linear-gradient(0deg,rgba(3,15,31,.94) 0%,rgba(6,14,26,.2) 42%,rgba(3,15,31,.5) 100%)}" +
       ".fo-mst-rain{position:absolute;inset:-80px;z-index:2;pointer-events:none;opacity:.17;background-image:repeating-linear-gradient(108deg,transparent 0 22px,rgba(216,237,255,.7) 23px,transparent 24px 35px);background-size:48px 48px;animation:foMstRain 1.2s linear infinite;mask-image:linear-gradient(to bottom,#000,transparent 78%)}" +
       "@keyframes foMstRain{from{transform:translate3d(-20px,-30px,0)}to{transform:translate3d(18px,35px,0)}}" +
+      // every forecast wears its own light: golden sun, amber heat, drifting
+      // mist, streaking wind, a cold blue bite
+      ".fo-mst-sun{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(85% 60% at 72% -12%,rgba(255,214,120,.34),rgba(255,190,90,.10) 45%,transparent 65%);mix-blend-mode:screen}" +
+      ".fo-mst.wx-heat .fo-mst-sun{background:radial-gradient(92% 68% at 70% -10%,rgba(255,186,76,.52),rgba(255,140,50,.16) 48%,transparent 70%)}" +
+      ".fo-mst-mist{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(216,226,238,.22),rgba(216,226,238,.05) 40%,rgba(206,220,232,.28) 100%);animation:foMstMist 9s ease-in-out infinite alternate}" +
+      ".fo-mst.wx-humid .fo-mst-mist{opacity:.5}" +
+      "@keyframes foMstMist{from{opacity:.72}to{opacity:1}}" +
+      ".fo-mst-wind{position:absolute;inset:-60px;z-index:2;pointer-events:none;opacity:.10;background-image:repeating-linear-gradient(170deg,transparent 0 34px,rgba(230,240,250,.8) 35px,transparent 36px 60px);background-size:70px 70px;animation:foMstWind 1.6s linear infinite;mask-image:linear-gradient(to bottom,#000 20%,transparent 85%)}" +
+      "@keyframes foMstWind{from{transform:translate3d(-40px,0,0)}to{transform:translate3d(30px,0,0)}}" +
+      ".fo-mst-cold{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(140,180,220,.16),rgba(90,130,180,.10));mix-blend-mode:multiply}" +
+      "@media (prefers-reduced-motion:reduce){.fo-mst-mist,.fo-mst-wind{animation:none !important}}" +
       ".fo-mst-top{position:absolute;z-index:6;top:12px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}" +
       ".fo-mst-wx{display:inline-flex;gap:2px;align-items:center;padding:5px 6px;border-radius:12px;background:rgba(5,22,43,.72);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px)}" +
       ".fo-mst-wx span{padding:4px 8px;color:rgba(255,255,255,.85);font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;white-space:nowrap}" +
