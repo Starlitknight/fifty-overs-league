@@ -1786,7 +1786,13 @@
       if (cx != null && FO_CX_REGIONS[cx.r]) {
         var r = FO_CX_REGIONS[cx.r], c = r.clubs[cx.c];
         var L = FO_CITY[c.city];
-        if (L && L.groundArt) return { img: FO_ART + L.groundArt, mode: "ground", ac: r.ac, gnm: L.groundNm || c.city, city: c.city };
+        var ga = (L && L.groundArt) || (typeof FO_CITY_GROUNDS !== "undefined" && FO_CITY_GROUNDS[c.city] ? "cities/" + foCitySlug(c.city) + "-ground.webp" : null);
+        if (ga) {
+          var gnm = (L && L.groundNm) || (typeof FO_CITY_GROUNDS !== "undefined" && FO_CITY_GROUNDS[c.city]) || c.city;
+          // Dublin owns a second canvas for the rain
+          if (c.city === "Dublin" && /rain|drizzle|storm|shower|wet/.test(((M.meta.weather || "") + "").toLowerCase())) ga = "cities/dublin-ground-rain.webp";
+          return { img: FO_ART + ga, mode: "ground", ac: r.ac, gnm: gnm, city: c.city };
+        }
         return { img: FO_ART + "circuit/" + (r.bg || (r.id + ".webp")), mode: "region", ac: r.ac, gnm: c.city + (c.boss ? " Colosseum" : " Oval"), city: c.city };
       }
     } catch (e) {}
@@ -1827,7 +1833,9 @@
     if (typeof window.doBall === "function" && !window.doBall.__foHold) {
       var _foDb = window.doBall;
       window.doBall = function () {
-        if (window.__foMstHold && (location.hash || "").split("?")[0] === "#/match") return;
+        var onM = (location.hash || "").split("?")[0] === "#/match";
+        if (onM && window.__foMstHold) return;
+        if (onM && !foMstAuto() && !window.__foMstStep) return;
         return _foDb.apply(this, arguments);
       };
       window.doBall.__foHold = 1;
@@ -1855,7 +1863,13 @@
               cardH = "<span class='cardbox'><span class='cardscale'><span class='fo-phw ph-" + cb.tier + "' style='--tc:" + cb.ac[0] + ";--tcD:" + cb.ac[1] + "'>" + cb.html + "</span></span></span>";
             } catch (eCb) {}
           }
-          if (cardH) return "<div role='button' tabindex='0' class='askopt" + (o.def ? " def" : "") + "' data-ask='" + i + "'>" + cardH + "<span class='tag'>" + (o.meta || "") + "</span></div>";
+          if (cardH) {
+            var ov9 = ""; try { ov9 = foPkOvr(o.p); } catch (eOv) {}
+            var rl9 = (o.p.btLabel && !/does not bowl/i.test(o.p.btLabel)) ? o.p.btLabel : (o.p.keeper ? "Keeper-bat" : "Batsman");
+            return "<div role='button' tabindex='0' class='askopt" + (o.def ? " def" : "") + "' data-ask='" + i + "'>" + cardH +
+              "<span class='who'><b>" + E(o.p.name) + "</b><i>" + (ov9 ? ov9 + " OVR &middot; " : "") + E(rl9) + "</i></span>" +
+              "<span class='tag'>" + (o.meta || "") + "</span></div>";
+          }
           return "<button type='button' data-ask='" + i + "'" + (o.def ? " class='def'" : "") + ">" + o.label + (o.meta ? "<i>" + o.meta + "</i>" : "") + "</button>";
         }).join("") + "</div>" +
         "<div class='ask-bar'><i style='animation-duration:" + opts.secs + "s'></i></div></div>";
@@ -2035,7 +2049,9 @@
         if (window.__foMstHold || document.getElementById("fo-mst-ask") || !M || M.done) return;
         try {
           var before = M.log.length;
+          window.__foMstStep = 1;
           doBall();
+          window.__foMstStep = 0;
           // an innings break or a wedged state can swallow the tap - punch
           // through with the sim recipe, never over a manual bowler pick
           if (M && !M.done && M.log.length === before) {
@@ -2050,7 +2066,7 @@
       if (ab) ab.addEventListener("click", function () {
         window.__foMstAuto = !window.__foMstAuto;
         if (window.__foMstAuto) { try { UI.apMs = 5200; foMstKillAp(); if (!window.__foMstHold && typeof foEnsureAutoplay === "function") foEnsureAutoplay(); } catch (eAb) {} }
-        else foMstKillAp();
+        else { foMstKillAp(); try { UI.apMs = 999999; } catch (eOf) {} }
         try { renderMatch(); } catch (eAr) {}
       });
       // the timed prompts: fired once per fresh delivery, never on re-renders
@@ -2092,6 +2108,51 @@
       }
     } catch (e) {}
   }
+  try {
+    if (window.foTeamTalk && !window.foTeamTalk.__foSpell) {
+      var _foTT = window.foTeamTalk;
+      window.foTeamTalk = function (kind, ph, v) {
+        var r0 = _foTT.apply(this, arguments);
+        try {
+          if (kind === "field" && App && App.orders && App.orders.spells) {
+            ["north", "south"].forEach(function (e2) { (App.orders.spells[e2] || []).forEach(function (x2) { if (x2 && x2.field) x2.field = null; }); });
+          }
+        } catch (eTT) {}
+        return r0;
+      };
+      window.foTeamTalk.__foSpell = 1;
+    }
+  } catch (eTW) {}
+  // the story stays short: the visible feed holds ~5 overs; the full book
+  // opens in its own full-screen reader
+  function foCommFull() {
+    try {
+      var ex = document.getElementById("fo-commfull"); if (ex) { ex.remove(); return; }
+      if (typeof M === "undefined" || !M || !M.log) return;
+      var rows = M.log.map(function (L9) {
+        var o9 = L9.out;
+        var bg9 = (typeof isWkt === "function" && isWkt(o9)) ? "background:#fbe9e7;" : (o9 === "6" ? "background:#fdf6df;" : (o9 === "4" ? "background:#eef4fa;" : ""));
+        return "<div class='bl " + (L9.mile ? "mile" : "") + "' style='" + bg9 + "'><b>" + E(L9.no || "") + "</b> " + E(L9.txt || "") + "</div>";
+      }).join("");
+      var d9 = document.createElement("div"); d9.id = "fo-commfull";
+      d9.innerHTML = "<div class='cf-bx'><div class='cf-hd'><span>Full commentary &middot; every ball</span><button type='button' id='fo-commfull-x'>&#10005;</button></div><div class='cf-feed commfeed'>" + (rows || "<span class='small'>No balls yet.</span>") + "</div></div>";
+      document.body.appendChild(d9);
+      d9.addEventListener("click", function (ev9) { if (ev9.target === d9 || ev9.target.id === "fo-commfull-x") d9.remove(); });
+    } catch (eCf) {}
+  }
+  function foCommBtn() {
+    try {
+      if ((location.hash || "").split("?")[0] !== "#/match") return;
+      var feed = document.querySelector(".ftp-match-body .commfeed");
+      if (!feed || document.getElementById("fo-commfull-btn")) return;
+      var b9 = document.createElement("button");
+      b9.type = "button"; b9.id = "fo-commfull-btn"; b9.textContent = "Full commentary \u25B8";
+      feed.parentNode.insertBefore(b9, feed.nextSibling);
+      b9.addEventListener("click", foCommFull);
+    } catch (eCb) {}
+  }
+  try { foMatchRenderHooks.push(foCommBtn); } catch (eCB2) {}
+  setInterval(foCommBtn, 1200);
   try { foMatchRenderHooks.push(foMatchStage); } catch (eMS) {}
   setInterval(foMatchStage, 1000);
   window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] !== "#/match") document.body.classList.remove("fo-stage-on"); });
@@ -2146,14 +2207,18 @@
       ".fo-mst-ask .ask-bx.wide{width:min(880px,97%);max-height:96%;overflow:auto}" +
       // the choices are the cards themselves - a dealt hand of holo cards
       ".fo-mst-ask .ask-opts.cards{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:10px;align-items:flex-start}" +
-      ".fo-mst-ask .askopt{position:relative;cursor:pointer;border-radius:12px;padding:4px 4px 21px;border:2px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}" +
+      ".fo-mst-ask .askopt{position:relative;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;border-radius:12px;padding:5px 5px 7px;border:2px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}" +
+      ".fo-mst-ask .askopt .who{display:block;text-align:center;color:#fff;line-height:1.3;margin-top:2px}" +
+      ".fo-mst-ask .askopt .who b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:13.5px;letter-spacing:.5px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".fo-mst-ask .askopt .who i{font-style:normal;font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.72)}" +
       ".fo-mst-ask .askopt:hover{transform:translateY(-5px);border-color:#F3D37A;box-shadow:0 14px 34px rgba(0,0,0,.5)}" +
       ".fo-mst-ask .askopt.def{border-color:rgba(240,185,78,.6);background:rgba(240,185,78,.08)}" +
-      ".fo-mst-ask .cardbox{display:block;width:172px;height:265px;overflow:hidden;border-radius:9px}" +
-      ".fo-mst-ask .cardscale{display:block;width:430px;transform:scale(.4);transform-origin:top left}" +
-      ".fo-mst-ask .askopt .tag{position:absolute;left:50%;bottom:3px;transform:translateX(-50%);font-family:Oswald,sans-serif;font-size:9px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:#F3D37A;white-space:nowrap}" +
+      ".fo-mst-ask .phc-tals,.fo-mst-ask .phc-meta,.fo-mst-ask .phc-ft{display:none !important}" +
+      ".fo-mst-ask .cardbox{display:block;width:190px;height:250px;overflow:hidden;border-radius:9px}" +
+      ".fo-mst-ask .cardscale{display:block;width:430px;transform:scale(.4418);transform-origin:top left}" +
+      ".fo-mst-ask .askopt .tag{position:static;transform:none;font-family:Oswald,sans-serif;font-size:9px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:#F3D37A;white-space:nowrap}" +
       ".fo-mst-ask .askopt.def .tag{color:#8fe3a4}" +
-      "@media(max-width:760px){.fo-mst-ask .cardbox{width:128px;height:197px}.fo-mst-ask .cardscale{transform:scale(.2977)}.fo-mst-ask .ask-opts.cards{gap:7px}.fo-mst-ask .askopt{padding:3px 3px 18px}.fo-mst-ask .ask-bx.wide{padding:12px 10px}}" +
+      "@media(max-width:760px){.fo-mst-ask .cardbox{width:132px;height:175px}.fo-mst-ask .cardscale{transform:scale(.307)}.fo-mst-ask .ask-opts.cards{gap:7px}.fo-mst-ask .askopt{padding:4px 4px 6px}.fo-mst-ask .askopt .who b{font-size:12px;max-width:132px}.fo-mst-ask .ask-bx.wide{padding:12px 10px}}" +
       ".fo-mst-ask .ask-t{font-family:Oswald,sans-serif;font-weight:600;font-size:19px;letter-spacing:1.6px;text-transform:uppercase;color:#F3D37A}" +
       ".fo-mst-ask .ask-s{font-size:12.5px;color:rgba(255,255,255,.8);margin-top:3px}" +
       ".fo-mst-ask .ask-opts{display:flex;flex-direction:column;gap:7px;margin-top:12px}" +
@@ -2216,6 +2281,15 @@
       ".fo-mst-foot .mb.bw{background:#d8504b;border-color:#d8504b}" +
       ".fo-mst-foot .mb.bx{color:#0f2036;background:#9db7d4}" +
       "body.fo-stage-on .bigflash{display:none !important}" +
+      "html body #page #fo-commfull-btn,html body.ftpskin #page #fo-commfull-btn{display:block;margin:8px auto 2px;font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:10.5px;letter-spacing:1.8px;text-transform:uppercase;color:#5a6472 !important;background:transparent !important;border:1.5px solid #d8d2c5 !important;border-radius:999px;padding:8px 18px;cursor:pointer;box-shadow:none !important}" +
+      "html body #page #fo-commfull-btn:hover{color:#0E233F !important;border-color:#8a7a46 !important}" +
+      "#fo-commfull{position:fixed;inset:0;z-index:3000;background:rgba(7,13,24,.72);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:18px}" +
+      "#fo-commfull .cf-bx{width:min(860px,96vw);height:min(88vh,900px);background:#FFFEFC;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.5)}" +
+      "#fo-commfull .cf-hd{display:flex;justify-content:space-between;align-items:center;background:#07162E;color:#FFFEFC;padding:12px 16px;font-family:Oswald,sans-serif;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase}" +
+      "html body #fo-commfull #fo-commfull-x{background:none !important;border:none !important;color:#FFFEFC !important;font-size:15px;cursor:pointer;box-shadow:none !important}" +
+      "#fo-commfull .cf-feed{flex:1;overflow-y:auto;padding:10px 14px;font-size:13px;line-height:1.5}" +
+      "#fo-commfull .cf-feed .bl{padding:7px 9px;border-bottom:1px solid #eee8dc}" +
+      "#fo-commfull .cf-feed .bl.mile{background:#f4f0e6;font-weight:600}" +
       "@media (prefers-reduced-motion:reduce){.fo-mst-rain,.fo-mst-moment{animation:none !important}}" +
       "@media(max-width:760px){.fo-mst,#fo-oval .fo-mst{min-height:540px;border-radius:12px}" +
       ".fo-mst-top{flex-direction:column;align-items:flex-end;gap:6px}.fo-mst-wx{align-self:flex-start;flex-wrap:wrap}" +

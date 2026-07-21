@@ -2686,6 +2686,10 @@
       ground: "A famous slope falls from one rail to the other, and seam bowlers use it like a conjuror's table. Members in egg-and-bacon ties watch from the pavilion in absolute quiet - a hundred at Marylebone is worth three anywhere else, and every professional in the world knows it."
     }
   };
+  // grounds painted before their city lore exists - the ground pages and the
+  // match stage pick these up automatically (cities/<slug>-ground.webp)
+  var FO_CITY_GROUNDS = { Dublin: "The Liffey Paddocks", Belfast: "Lough Green", Cork: "The Rebel Field", Amsterdam: "Polder Park", Rotterdam: "The Dyke Yard", Utrecht: "The Cloister Ground" };
+  function foCitySlug(c) { return String(c || "").toLowerCase().replace(/\s+/g, "-"); }
   function foCityClub(city) {
     for (var ri = 0; ri < FO_CX_REGIONS.length; ri++) {
       var r = FO_CX_REGIONS[ri];
@@ -2702,8 +2706,8 @@
       r: r, c: c, ri: hit.ri, ci: hit.ci, nm: city, custom: !!FO_CITY[city],
       art: L.art || ("circuit/" + (r.bg || (r.id + ".webp"))),
       streets: L.streets || null,
-      groundArt: L.groundArt || null,
-      groundNm: L.groundNm || (city + (c.boss ? " Colosseum" : " Oval")),
+      groundArt: L.groundArt || (FO_CITY_GROUNDS[city] ? "cities/" + foCitySlug(city) + "-ground.webp" : null),
+      groundNm: L.groundNm || FO_CITY_GROUNDS[city] || (city + (c.boss ? " Colosseum" : " Oval")),
       tag: L.tag || r.type,
       city: L.city || (r.arrive || ""),
       history: L.history || ((c.boss && c.leader ? c.leader + " holds this ground, and the whole region knows it. " : "") + "“" + (c.taunt || "") + "” - that is how " + city + " greets its visitors."),
