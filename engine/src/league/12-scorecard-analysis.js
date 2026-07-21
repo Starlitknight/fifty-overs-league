@@ -2755,6 +2755,7 @@
       // one floating action rail, re-labelled per view
       html += "<div class='fo-ctv-rail' id='fo-ctv-rail'></div></div>";
       page.innerHTML = html;
+      foFullBleedFit(page.querySelector(".fo-city-full"));
       var railEl = page.querySelector("#fo-ctv-rail");
       var cur = 0;
       var setView = function (ix) {
@@ -2868,6 +2869,29 @@
     "Kandahar": { who: "Bibi Shirin", role: "bakes naan behind the pavilion", say: "The Storm's young captain practised against my bakery wall until midnight, every night. The wall lost. Bring something the wall didn't have." },
     "Marylebone": { who: "Mr. Ellsworth", role: "pavilion attendant since before anyone will say", say: "Reggie Thorne sat in your seat once. Same hunger. He'll tell you the Final is just cricket. Nothing here has ever been just cricket." }
   };
+  // the CSS height for these full-bleed stages guesses the topbar at 96px;
+  // the real chrome varies, which leaves a cream strip of page background
+  // under the painting. Measure instead: stage runs from its actual top
+  // edge to the viewport bottom, and any page padding left below it is
+  // pulled up with a negative margin.
+  function foFullBleedFit(el) {
+    try {
+      if (!el) return;
+      el.style.marginBottom = "0px";
+      var top = el.getBoundingClientRect().top + window.scrollY;
+      el.style.height = Math.max(440, window.innerHeight - top) + "px";
+      var mapEl = el.querySelector(".fo-tour-map");
+      if (mapEl) {
+        mapEl.style.width = Math.max(el.clientWidth, el.clientHeight) + "px";
+        foTourPan(mapEl, mapEl.__dx || 0, mapEl.__dy || 0);
+      }
+      var over = document.documentElement.scrollHeight - window.innerHeight;
+      if (over > 0) el.style.marginBottom = (-over) + "px";
+    } catch (e) {}
+  }
+  window.addEventListener("resize", function () {
+    foFullBleedFit(document.querySelector(".fo-tour") || document.querySelector(".fo-city-full"));
+  });
   function foRenderTour() {
     try {
       if (location.hash.indexOf("#/tour") !== 0) return;
@@ -2897,6 +2921,7 @@
         "<div class='fo-tour-hint' id='fo-tour-hint'>Drag to roam &middot; tap a city to meet it</div>" +
         "<div class='fo-tour-card' id='fo-tour-card'></div>" +
         "</div>";
+      foFullBleedFit(page.querySelector(".fo-tour"));
       var cardEl = page.querySelector("#fo-tour-card");
       var hintEl = page.querySelector("#fo-tour-hint");
       var openCard = function (ci) {
