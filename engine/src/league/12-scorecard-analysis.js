@@ -1336,7 +1336,7 @@
     { id: "eng", nm: "England", cty: "England", arch: "rock", type: "Swing & Graft", ac: "#2E7A3C", arrive: "England, boss. Old pavilions, older opinions. They'll call our cricket reckless until it works - and improper after it does.",
       pitch: "green", wx: "Overcast",
       cond: "Green, overcast seamers. The ball talks all day; patient, correct cricket wins.",
-      gaffer: "Cloud cover and a green top. Leave well, bat time, and let their grafters die of boredom before you cash in.",
+      gaffer: "In England, the sky joins the attack. Leave well, trust your defence, and wait - the pitch will eventually give you permission to score.",
       academy: "technically-correct batsmen and swing bowlers",
       trophy: "The Ashes Urn", nats: ["England"],
       clubs: [
