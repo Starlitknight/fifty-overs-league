@@ -1287,10 +1287,17 @@ function playerLink(p){return `<a href="#/player?n=${encodeURIComponent(p.name)}
 // ---------- router ----------
 function route(){
   try{
-  const h=location.hash||'#/club';
+  // an empty hash becomes a real #/circuit hash (not just a default) so the
+  // overlay page renderers - which gate on location.hash - actually paint
+  if(!location.hash){location.hash='#/circuit';return}
+  const h=location.hash;
   const [path,qs]=h.slice(2).split('?');
   const q={};if(qs)for(const kv of qs.split('&')){const [k,v]=kv.split('=');q[k]=decodeURIComponent(v||'')}
-  App.page=path||'club';
+  App.page=path||'circuit';
+  // Circuit-only era: the club dashboard and the league/office/training
+  // surfaces are retired; any old link or bookmark lands on the Circuit.
+  const GONE={club:1,office:1,nets:1,stats:1,matches:1,matchday:1,training:1,transfers:1,story:1,friendly:1,scout:1,reports:1,commentary:1,calibration:1,editor:1};
+  if(GONE[App.page]){location.hash='#/circuit';App.page='circuit';return}
   // #9 Draft lock: a new player cannot navigate away until they've confirmed a legal squad.
   // founderConfirm sets fo_welcomed; until then, keep them in the draft/onboarding.
   try{

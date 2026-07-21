@@ -3411,7 +3411,7 @@
       var el = document.createElement("div"); el.id = "fo-j-brief";
       el.innerHTML = "<div class='fo-j-gbox' style='max-width:none;margin:0 0 10px;position:relative'><img class='gf' src='" + FO_ART + "gaffer.png' alt=''><span class='bx'><span class='sp'>The Gaffer</span>" +
         "<span class='tx'>" + lines.map(E).join(" ") + (hook ? " <b>" + E(hook) + "</b>" : "") + "</span>" +
-        "<a class='fo-st-chip' href='#/story'>Club story &rsaquo;</a></span>" +
+        "</span>" +
         "<button type='button' id='fo-j-briefx' style='position:absolute;top:8px;right:10px;background:none;border:none;color:#8a90a0;cursor:pointer;font-size:14px' title='Dismiss'>&#10005;</button></div>";
       page.insertBefore(el, page.firstChild);
       el.querySelector("#fo-j-briefx").addEventListener("click", function () {
@@ -3885,10 +3885,9 @@
     if (welcomed && foHasSoloSave()) { openWrap(false); return; }   // mid-career: no gate
     renderWelcome();
   }
-  var _authRedirect = foConsumeAuthHash();
+  // Circuit-only era: no accounts, no league sign-in - the solo career IS
+  // the game. The front door either resumes the save or asks for a club name.
+  try { foConsumeAuthHash(); } catch (eAH) {}
   openWrap(true);
-  foLoading("Signing you in…");
-  if (_authRedirect === "ok") { enterApp(); }
-  else if (_authRedirect === "error") { renderLogin(); setTimeout(function () { say("That email link expired or was already used. Log in with your email and password below."); }, 60); }
-  else restoreSession().then(function () { if (JWT) enterApp(); else foFrontDoor(); }).catch(function () { foFrontDoor(); });
+  foFrontDoor();
 

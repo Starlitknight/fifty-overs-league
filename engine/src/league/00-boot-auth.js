@@ -270,7 +270,7 @@
   function foHideWeekChip() {
     try {
       document.querySelectorAll("#fo-top-status span").forEach(function (s) {
-        if (/^\s*(Week\s+\d+|Bank\b)/.test(s.textContent || "")) s.style.display = "none";
+        if (/^\s*(Week\s+\d+|Bank\b|Next:)/.test(s.textContent || "")) s.style.display = "none";
       });
     } catch (e) {}
   }
@@ -410,8 +410,9 @@
         var a = tb.querySelector("a." + cls); if (!a) a = mk(label, cls, fn);
         if (a.parentNode !== wrap) { if (cls === "fo-live") wrap.insertBefore(a, wrap.firstChild); else wrap.appendChild(a); }
       };
-      addNav("fo-training", "Training", function () { location.hash = "#/training"; if (typeof window.route === "function") window.route(); });
-      addNav("fo-transfers", "Transfers", function () { location.hash = "#/transfers"; if (typeof window.route === "function") window.route(); });
+      // Circuit-only era: Training and Transfers pills are retired until
+      // those systems return in their redesigned form
+      ["fo-training", "fo-transfers"].forEach(function (c) { var st0 = tb.querySelector("a." + c); if (st0) st0.remove(); });
       // Live Match appears only while a match is actually in progress
       var liveOn = false; try { liveOn = (typeof M !== "undefined") && M && !M.done; } catch (e) {}
       var lv = tb.querySelector("a.fo-live");
@@ -421,22 +422,17 @@
       ["fo-friendly", "fo-matchday"].forEach(function (c) { var st = tb.querySelector("a." + c); if (st) st.remove(); });
       addNav("fo-guide", "Manual", function () { location.hash = "#/guide"; if (typeof window.route === "function") window.route(); });
       try { foBellWire(tb, wrap); } catch (eB) {}
-      // Admin is founder-only: add it for the founder, and remove it for everyone
-      // else (so a player never inherits a stale Admin link).
-      var adm = tb.querySelector("a.fo-league");
-      if (SYNC && SYNC.isFounder) { if (!adm) addNav("fo-league", "Admin", openLeagueMenu); }
-      else if (adm) adm.remove();
+      // Circuit-only era: no Admin (league founders) and no Log out (no
+      // accounts) - the solo game just is the game
+      ["fo-league", "fo-logout"].forEach(function (c) { var st1 = tb.querySelector("a." + c); if (st1) st1.remove(); });
       // date + time (in the topbar flow, to the right of the status)
       var ck = tb.querySelector("#fo-clock");
       if (!ck) { ck = document.createElement("span"); ck.id = "fo-clock"; tickClock(); }
       tb.appendChild(ck);
-      // Log out is always the very last item, so it never feels buried in the nav.
-      var out = tb.querySelector("a.fo-logout"); if (!out) out = mk("Log out", "fo-logout", doLogout);
-      if (out.parentNode !== wrap) wrap.appendChild(out);
       // active-pill marking for overlay-added links (engine handles its own via data-nav)
       try {
         var route0 = (location.hash || "#/club").split("?")[0];
-        var navMap = { "fo-training": "#/training", "fo-transfers": "#/transfers", "fo-guide": "#/guide", "fo-matchday": "#/matchday", "fo-live": "#/match" };
+        var navMap = { "fo-guide": "#/guide", "fo-live": "#/match", "fo-circuit": "#/circuit" };
         wrap.querySelectorAll("a").forEach(function (a) {
           for (var c in navMap) if (a.classList.contains(c)) a.classList.toggle("on", route0 === navMap[c]);
         });

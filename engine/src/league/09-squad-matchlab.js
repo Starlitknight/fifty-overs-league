@@ -283,7 +283,7 @@
       "<span>Energy <b>" + E((typeof foEnergyOf === "function" ? foEnergyOf(p).word : p.fatigue) || "-") + "</b></span>" +
       "<span>Nationality <b>" + E(p.nat || "-") + "</b></span>" +
       (tals ? "<span>" + tals + "</span>" : "") +
-      "<span class='fo-sq-train'>Training: " + E(p.trainFocus || "none") + "</span><a href='#/training' class='fo-morelink'>Training centre ›</a>" +
+      "<span class='fo-sq-train'>Training: " + E(p.trainFocus || "none") + "</span>" +
       (isYouth ? "<button class='fo-sq-promote mini' data-n='" + E(p.name) + "'>Promote to seniors</button>" : "") +
       "</div>";
     return "<div class='fo-sq-detail'><div class='fo-sq-dcols'>" + c1 + c2 + c3 + "</div>" + foot + "</div>";
@@ -323,7 +323,7 @@
       if (frontline.length < 5) warns.push("Only " + frontline.length + " frontline bowlers · five are needed to cover 50 overs.");
       if (seniors.length < 11) warns.push("Only " + seniors.length + " senior players · eleven are needed for a match.");
       var warnHtml = warns.map(function (w) {
-        return "<div class='fo-sq-warn'><span>&#9888;</span><span>" + w + "</span><button class='fo-sq-fix' data-go='#/transfers'>Fix this &#8599;</button></div>";
+        return "<div class='fo-sq-warn'><span>&#9888;</span><span>" + w + "</span></div>";
       }).join("");
 
       // --- toolbar: role filter pills + sort ---
@@ -365,7 +365,7 @@
         return "<div class='pkm-cell" + (onlyK ? " pkm-warn" : "") + "' data-n='" + E(p.name) + "'>" +
           foPkMini(p, { sub: sub + (chips ? "<span class='pkm-chips'>" + chips + "</span>" : ""), foot: foot }) + "</div>";
       }).join("") + "</div>";
-      var foot = "<div class='fo-sq-foot'>Tap a card for the full player profile · training assignments live on the <a href='#/training'>Training page</a></div>";
+      var foot = "<div class='fo-sq-foot'>Tap a card for the full player profile</div>";
 
       var page = document.getElementById("page"); if (!page) return;
       page.innerHTML = (typeof crumb === "function" ? crumb(t.name, "Squad") : "") + strip + warnHtml + tools + rows + foot;

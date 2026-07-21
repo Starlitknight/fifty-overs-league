@@ -1938,7 +1938,7 @@
         } catch (eMc) {}
       }
       var mqLn = x.marquee
-        ? mqCard + "<div class='small' style='margin:6px 0 0'>&#128222; <b>" + E(x.marquee) + "</b> saw the final and wants in - he's on the <a href='#/transfers' onclick=\"document.getElementById('fo-cx-end').remove()\">transfer market</a>, and he won't wait forever.</div>" : "";
+        ? mqCard + "<div class='small' style='margin:6px 0 0'>&#128222; <b>" + E(x.marquee) + "</b> saw the final and wants in - your people have his number for when the signing window reopens.</div>" : "";
       var wgLn = x.wager
         ? "<div class='small' style='margin:6px 0 0'>" + (x.wager.hit
           ? "&#127919; <b>The promoter's wager lands:</b> " + FO$(x.wager.delta) + " on top of the purse."
@@ -3384,40 +3384,10 @@
       if (foStScene(sc)) { st.queue.shift(); foStSave(st); }
     } catch (e) {}
   }, 3000);
-  // -------- the Club Story page (#/story) -----------------------------------
-  function foRenderStory() {
-    try {
-      if (location.hash.indexOf("#/story") !== 0) return;
-      var page = document.getElementById("page"); if (!page) return;
-      var st = foStState();
-      var sig = "st|" + JSON.stringify(st.vars) + "|" + st.promises.length + "|" + st.log.length + "|" + (st.hook || "");
-      if (page.__foStSig === sig && page.querySelector(".fo-story")) return;
-      page.__foStSig = sig;
-      var meter = function (lbl, v, col) {
-        return "<div class='fo-st-m'><span>" + lbl + "</span><i><b style='width:" + Math.max(3, Math.min(100, v)) + "%;background:" + col + "'></b></i><em>" + v + "</em></div>";
-      };
-      var proms = st.promises.length ? st.promises.map(function (p) {
-        var cls = p.status === "fulfilled" ? "ok" : p.status === "broken" ? "bad" : "on";
-        var word = p.status === "active" ? "ACTIVE" : p.status.toUpperCase();
-        return "<div class='fo-st-p " + cls + "'><i>" + word + "</i><span>" + E(p.txt) + "</span></div>";
-      }).join("") : "<div class='small' style='color:#8a90a0'>No promises on the books. They start the moment you make one.</div>";
-      var logs = st.log.length ? st.log.map(function (L) {
-        return "<div class='fo-st-l'><i>R" + ((L.r || 0) + 1) + "</i><span>" + E(L.txt) + "</span></div>";
-      }).join("") : "<div class='small' style='color:#8a90a0'>The story writes itself from real matches - play one.</div>";
-      page.innerHTML = "<div class='fo-story'>" +
-        "<div class='fo-cx-rule'><i></i><b>THE CLUB STORY</b><i></i></div>" +
-        "<h1 class='fo-cx-h1' style='text-align:center'>" + E((userTeam() || {}).name || "Your club") + "</h1>" +
-        (st.hook ? "<div class='fo-st-hook'>" + E(st.hook) + "</div>" : "") +
-        "<div class='fo-st-vars'>" +
-        meter("Board confidence", st.vars.board, "#2F6FBF") + meter("Supporters", st.vars.fans, "#C8674A") +
-        meter("Dressing room", st.vars.unity, "#2E7A3C") + meter("Thorne's respect", st.vars.thorne, "#7B45C4") +
-        "</div>" +
-        "<div class='fo-cx-sec'><i></i>Promises<i></i></div><div class='fo-st-proms'>" + proms + "</div>" +
-        "<div class='fo-cx-sec'><i></i>The story so far<i></i></div><div class='fo-st-logs'>" + logs + "</div>" +
-        "</div>";
-    } catch (e) {}
-  }
-  setInterval(foRenderStory, 900);
+  // -------- the Club Story page (#/story) is RETIRED (circuit-only era).
+  // The story STATE engine above stays: foCxRecord still journals conquest
+  // beats into it, ready for the story's redesigned return. The page itself
+  // is gone and the router sends #/story to the Circuit.
   (function foStCss() {
     if (document.getElementById("fo-st-css")) return;
     var el = document.createElement("style"); el.id = "fo-st-css";
