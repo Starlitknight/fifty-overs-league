@@ -2296,21 +2296,28 @@
       "#fo-commfull .cf-feed .bl{padding:7px 9px;border-bottom:1px solid #eee8dc}" +
       "#fo-commfull .cf-feed .bl.mile{background:#f4f0e6;font-weight:600}" +
       "@media (prefers-reduced-motion:reduce){.fo-mst-rain,.fo-mst-moment{animation:none !important}}" +
-      "@media(max-width:760px){.fo-mst,#fo-oval .fo-mst{min-height:540px;border-radius:12px}" +
-      ".fo-mst-top{flex-direction:column;align-items:flex-end;gap:6px}.fo-mst-wx{align-self:flex-start;flex-wrap:wrap}" +
-      ".fo-mst-wx span{font-size:9px;padding:3px 6px}" +
+      // phones: every layer gets its own band - chips+buttons, score, players,
+      // moment card, beads - so nothing ever prints over anything else
+      "@media(max-width:760px){.fo-mst,#fo-oval .fo-mst{min-height:600px;border-radius:12px}" +
+      ".fo-mst-top{flex-direction:column;align-items:flex-end;gap:6px}.fo-mst-wx{align-self:flex-start;flex-wrap:wrap;row-gap:4px}" +
+      ".fo-mst-wx span{font-size:8.5px;padding:3px 6px}" +
       "html body #page .fo-mst-next{font-size:11px;padding:10px 16px}" +
       "html body #page .fo-mst-autob{font-size:9.5px;padding:9px 12px}" +
-      ".fo-mst-score,#fo-oval .fo-mst-score{top:96px}" +
-      ".fo-mst-score b,#fo-oval .fo-mst-score b{font-size:34px}" +
-      ".fo-mst-p,#fo-oval .fo-mst-p{top:150px;bottom:auto;height:180px;width:36%}" +
+      ".fo-mst-score,#fo-oval .fo-mst-score{top:118px}" +
+      ".fo-mst-score b,#fo-oval .fo-mst-score b{font-size:32px}" +
+      ".fo-mst-p,#fo-oval .fo-mst-p{top:205px;bottom:auto;height:160px;width:36%}" +
       ".fo-mst-p .nm,#fo-oval .fo-mst-p .nm{font-size:12.5px}" +
       ".fo-mst-p .stars{font-size:10px;letter-spacing:.6px}" +
       ".fo-mst-p .pc{padding:0 10px 8px}" +
-      ".fo-mst-moment,#fo-oval .fo-mst-moment{top:auto;bottom:70px;transform:translate(-50%,0);width:92%}" +
-      ".fo-mst-moment .t,#fo-oval .fo-mst-moment .t{font-size:36px}" +
-      ".fo-mst-moment p,#fo-oval .fo-mst-moment p{font-size:12.5px;max-width:320px}" +
+      // the moment becomes a readable card - a soft scrim instead of raw text
+      // floating on the painting
+      ".fo-mst-moment,#fo-oval .fo-mst-moment{top:auto;bottom:74px;transform:translate(-50%,0);width:94%;background:linear-gradient(180deg,rgba(7,22,44,.78),rgba(7,22,44,.62));border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:10px 12px 12px;backdrop-filter:blur(6px)}" +
+      ".fo-mst-moment .t,#fo-oval .fo-mst-moment .t{font-size:28px;margin:7px 0 6px}" +
+      ".fo-mst-moment p,#fo-oval .fo-mst-moment p{font-size:12.5px;max-width:none}" +
       "@keyframes foMstIn{0%{opacity:0;transform:translate(-50%,10px) scale(.94)}100%{opacity:1;transform:translate(-50%,0) scale(1)}}" +
-      ".fo-mst-foot{flex-wrap:wrap;justify-content:center;min-height:0;padding:6px 10px}.fo-mst-foot .gf{display:none}}";
+      ".fo-mst-foot{flex-wrap:wrap;justify-content:center;min-height:0;padding:6px 10px}.fo-mst-foot .gf{display:none}" +
+      // toasts ride at the top on phones while the stage is on - the bottom
+      // of the screen belongs to the moment card and the over beads
+      "body.fo-stage-on #fo-toasts{bottom:auto;top:66px}}";
     document.head.appendChild(msCss);
   } catch (eMc) {}
