@@ -2715,12 +2715,14 @@
     if (/^seam/.test(p.role || "")) return "pace";
     return "bat";
   }
-  // Card art v2: full-bleed painted figures picked by ROLE x NATIONALITY
-  // (client/art/players/<role>_<nat>.webp). Six nations were painted; the
-  // rest borrow the closest kit/region. Spinners borrow the medium-pacer
-  // figure (a bowler in his delivery stride) until a spin pack lands.
+  // Card art v3: full-bleed painted figures picked by ROLE x NATIONALITY
+  // (client/art/players/<role>_<nat>.webp). All TWELVE nations are painted
+  // natively now; 80+ players wear the legendary figures, and a share of
+  // everyone else wears a variant figure for squad variety.
   var FO_PK_NAT = { England: "eng", Australia: "aus", India: "ind", "New Zealand": "nzl", "South Africa": "rsa", "West Indies": "win",
-    Pakistan: "ind", "Sri Lanka": "ind", Afghanistan: "ind", Netherlands: "eng", Ireland: "eng", Zimbabwe: "rsa" };
+    Pakistan: "pak", "Sri Lanka": "slk", Afghanistan: "afg", Netherlands: "ned", Ireland: "ire", Zimbabwe: "zim" };
+  // the six expansion nations ship a dedicated spin all-rounder figure
+  var FO_PK_ARSPIN = { ire: 1, ned: 1, pak: 1, slk: 1, afg: 1, zim: 1 };
   function foPkArt(p) {
     var k = foPkKind(p);
     var r = k === "wk" ? "wk" : k === "ar" ? "ar"
@@ -2732,17 +2734,17 @@
     // v3: an 80+ player IS a legend, and walks in the midnight-and-gold
     // legendary figure on every surface - matching his gold card frame
     try { if (foPkOvr(p) >= 80) return "players/leg_" + rv + ".webp"; } catch (eLg) {}
-    // the same player always gets the same nation figure: his own when it was
-    // painted, a stable regional stand-in otherwise
-    var n = FO_PK_NAT[p.nat] || ["eng", "aus", "ind", "nzl", "rsa", "win"][foHash32("pknat|" + (p.name || "")) % 6];
+    // the same player always gets the same nation figure: his own nation's,
+    // or a stable stand-in for any nationality outside the twelve
+    var n = FO_PK_NAT[p.nat] || ["eng", "aus", "ind", "nzl", "rsa", "win", "ire", "ned", "pak", "slk", "afg", "zim"][foHash32("pknat|" + (p.name || "")) % 12];
     // squad variety: ~30% of players wear a variant figure instead of the
     // nation one - deterministic per player, complexion matched to region
     var hV = foHash32("pkvar|" + (p.name || "")) % 10;
     if (hV < 3) {
-      var euro = (n === "eng" || n === "aus" || n === "nzl") || (n === "rsa" && hV === 0);
+      var euro = (n === "eng" || n === "aus" || n === "nzl" || n === "ire" || n === "ned") || (n === "rsa" && hV === 0);
       return "players/" + (euro ? "vc_" : "vb_") + rv + ".webp";
     }
-    return "players/" + r + "_" + n + ".webp";
+    return "players/" + (rv === "arspin" && !FO_PK_ARSPIN[n] ? "ar" : rv === "arspin" ? "arspin" : r) + "_" + n + ".webp";
   }
   var FO_PK_TIPS = {
     BATTING: "Run-scoring ability with the bat - how reliably he builds and converts innings.",
