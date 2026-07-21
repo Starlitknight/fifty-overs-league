@@ -1926,6 +1926,10 @@
     meta.push("Age " + (p.age | 0));
     meta.push(E(p.formWord || "steady") + " form");
     if (p.expWord) meta.push(E(p.expWord));
+    // second meta line: the business facts that used to need an info panel
+    var meta2 = [];
+    try { var wg = foDailyWage(p); if (wg) meta2.push(FO$(wg) + " wage"); } catch (eW) {}
+    try { var cw = word(p.capt || 30); if (cw) meta2.push(E(cw) + " captaincy"); } catch (eC) {}
     var html =
       "<div class='phc'><div class='phc-in'>" +
       "<div class='phc-hd'><div class='phc-idc'><span class='phc-role'>" + E(roleLbl) + " &middot; " + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
@@ -1938,6 +1942,7 @@
       "</div>" +
       (tals ? "<div class='phc-tals'>" + tals + "</div>" : "") +
       "<div class='phc-meta'><span>" + meta.join("</span><s>&middot;</s><span>") + "</span></div>" +
+      (meta2.length ? "<div class='phc-meta phc-m2'><span>" + meta2.join("</span><s>&middot;</s><span>") + "</span></div>" : "") +
       "<div class='phc-ft'><span>No. " + no + "/199</span><span class='rr'>" + rar + "</span><span>FIFTY OVERS &middot; FIRST EDITION</span></div>" +
       "</div></div>";
     return { html: html, tier: tier, ac: ac };
@@ -2001,6 +2006,31 @@
       foHoloTilt(el);
     } catch (e) {}
   }
+  // Dossier order: the card carries wage + captaincy now, so Player info only
+  // duplicates it - hide it, and read the column as Skills, then the career
+  // record, then recent matches. Runs after foCareerPanel each sweep; every
+  // move is guarded so settled DOM is never churned.
+  function foPsArrange() {
+    try {
+      if (foHashPath() !== "#/player") return;
+      var psr = document.querySelector("#fo-pstage .fo-ps-r"); if (!psr) return;
+      var find = function (re) {
+        return Array.prototype.filter.call(psr.querySelectorAll(".panel"), function (pn) {
+          var h = pn.querySelector("h4"); return h && re.test((h.textContent || "").trim());
+        })[0];
+      };
+      var info = find(/^Player info$/i);
+      if (info && info.style.display !== "none") info.style.display = "none";
+      var skills = find(/^Skills$/i);
+      var career = document.getElementById("fo-career");
+      var recent = find(/^Recent matches/i);
+      if (skills && psr.children[0] !== skills) psr.insertBefore(skills, psr.firstChild);
+      if (skills && career && skills.nextElementSibling !== career) skills.insertAdjacentElement("afterend", career);
+      if (recent && career && career.nextElementSibling !== recent) career.insertAdjacentElement("afterend", recent);
+      var g2 = psr.querySelector(".grid2");
+      if (g2 && g2.style.display !== "none" && !Array.prototype.some.call(g2.querySelectorAll(".panel"), function (pn) { return pn.offsetHeight > 10; })) g2.style.display = "none";
+    } catch (e) {}
+  }
   try {
     var foPhCss = document.createElement("style");
     foPhCss.textContent =
@@ -2041,6 +2071,7 @@
       ".pht-k{flex:0 0 auto;font-family:Oswald;font-size:8.5px;letter-spacing:1.6px;color:#0B1322;background:#C9A24B;border-radius:6px;padding:2.5px 7px;font-weight:600;margin-top:1px}" +
       ".pht b{font-size:13px;color:#FFFEFC}.pht p{margin:1px 0 0;font-size:11.5px;line-height:1.45;color:#b9c2d4}" +
       ".phc-meta{display:flex;gap:7px;justify-content:center;align-items:center;flex-wrap:wrap;font-style:italic;font-size:12px;color:#c7cede;margin-top:10px}" +
+      ".phc-meta.phc-m2{margin-top:2px;font-size:11px;color:#a7b1c6}" +
       ".phc-meta s{text-decoration:none;color:#C9A24B}" +
       ".phc-ft{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12);font-family:Oswald;font-size:9px;letter-spacing:1.6px;color:#8a93a3}" +
       ".phc-ft .rr{color:#F0B94E;font-size:12px;letter-spacing:0}" +
@@ -2590,14 +2621,14 @@
     //   - synchronously after every navigation (foAfterRoute below)
     //   - debounced after every match render (foMatchRenderHooks)
     //   - on a slow safety-net interval for any async DOM writer
-    window.foDecorateSweep = function () { foRenderScout(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foPlayerHero(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); foHideWeekChip(); };
+    window.foDecorateSweep = function () { foRenderScout(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foMobileTables(); foOfficeExtras(); foFixWIFlags(); foNetsOwnTeam(); foFriendlyKeeper(); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foPlayerHero(); foScorecardPolish(); foRoundBands(); foRefreshLineupButtons(); foCareerPanel(); foPsArrange(); foHideWeekChip(); };
     var _sw = null;
     window.foSweepSoon = function () { clearTimeout(_sw); _sw = setTimeout(window.foDecorateSweep, 40); };
     foMatchRenderHooks.push(window.foSweepSoon);
     setInterval(window.foSweepSoon, 1500);
   } catch (e) {}
   // first-class post-route decoration (core route() calls this in a finally)
-  window.foAfterRoute = function () { bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foPlayerHero(); foScorecardPolish(); try { foScStars(); } catch (e) {} foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); } catch (e) {} try { window.foDecorateSweep(); } catch (e) {} };
+  window.foAfterRoute = function () { bumpBrand(); ensureNav(); try { foUniqueNames(); } catch (e) {} foRenderTraining(); foRenderMarket(); foRenderManual(); foRenderMatchday(); foPolishSquad(); foDecorateMatchRows(); foFlagStandings(); foCondSymbols(); foBowlOrderSort(); foBowlTypeTags(); foFranchiseBadges(); foStatsClubTags(); foMatchSimControls(); foRenderScout(); decorateFixtureTimes(); tidyPage(); try { foFriendliesPanel(); } catch (eFr) {} setTimeout(foLinkifyNames, 320); setTimeout(foLinkifyNames, 1000); foTagMatchPage(); foRenderPlanner(); foOrdersExtras(); foHidePlayerSkills(); foPlayerHero(); foScorecardPolish(); try { foScStars(); } catch (e) {} foRoundBands(); foRefreshLineupButtons(); try { foRenderSettings(); } catch (e) {} try { foRenderMuseum(); foCareerPanel(); foPsArrange(); } catch (e) {} try { window.foDecorateSweep(); } catch (e) {} };
   window.addEventListener("hashchange", function () { setTimeout(foRenderScout, 0); });
   window.addEventListener("hashchange", bumpBrand);
   ensureNav();
