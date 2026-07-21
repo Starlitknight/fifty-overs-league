@@ -90,9 +90,13 @@ FOC.smoothRender = (function () {
     if (hadMp) live.classList.add("fo-matchpage");
     var lc = [], tc = [], n, i;
     for (n = live.firstChild; n; n = n.nextSibling) {
-      if (!(n.nodeType === 1 && n.id === "fo-oval")) lc.push(n);   // the stage is ours
+      if (!(n.nodeType === 1 && (n.id === "fo-oval" || n.id === "fo-mstage"))) lc.push(n);   // the stage + cinematic hero are ours
     }
-    for (n = stage.firstChild; n; n = n.nextSibling) tc.push(n);
+    for (n = stage.firstChild; n; n = n.nextSibling) {
+      // a cinematic hero rendered into the staging div (its hook runs while
+      // the staging carries the #page id) must not be adopted as a duplicate
+      if (!(n.nodeType === 1 && n.id === "fo-mstage")) tc.push(n);
+    }
     for (i = 0; i < tc.length; i++) {
       var t = tc[i], l = lc[i];
       if (!l) { live.appendChild(t); continue; }
