@@ -10439,7 +10439,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260721-2052-4f4bc0";
+  var FO_BUILD = "20260721-2057-46d343";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18438,7 +18438,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   } catch (eDb) {}
   function foMstResume() {
     window.__foMstHold = false;
-    try { if (foMstAuto() && typeof foEnsureAutoplay === "function") { UI.apMs = 5200; foEnsureAutoplay(); } } catch (e) {}
+    try { if (foMstAuto() && typeof foEnsureAutoplay === "function") { UI.apMs = 3200; foEnsureAutoplay(); } } catch (e) {}
   }
   function foMstAsk(opts) {
     try {
@@ -18660,7 +18660,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var ab = el.querySelector("#fo-mst-auto");
       if (ab) ab.addEventListener("click", function () {
         window.__foMstAuto = !window.__foMstAuto;
-        if (window.__foMstAuto) { try { UI.apMs = 5200; foMstKillAp(); if (!window.__foMstHold && typeof foEnsureAutoplay === "function") foEnsureAutoplay(); } catch (eAb) {} }
+        if (window.__foMstAuto) { try { UI.apMs = 3200; foMstKillAp(); if (!window.__foMstHold && typeof foEnsureAutoplay === "function") foEnsureAutoplay(); } catch (eAb) {} }
         else { foMstKillAp(); try { UI.apMs = 999999; } catch (eOf) {} }
         try { renderMatch(); } catch (eAr) {}
       });
