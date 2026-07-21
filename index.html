@@ -10439,7 +10439,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260721-1628-a9e25c";
+  var FO_BUILD = "20260721-1632-5e8db4";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -25131,7 +25131,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var open = !done && foCxClubOpen(st, ri, ci);
         var cls = "fo-tp" + (c.boss ? " boss" : "") + (done ? " done" : open ? " open" : " far");
         return "<button type='button' class='" + cls + "' data-tp='" + ci + "' style='left:" + c.mx + "%;top:" + c.my + "%'>" +
-          "<span class='dot'>" + (done ? "&#10003;" : c.boss ? "&#9733;" : "&#9679;") + "</span>" +
+          "<span class='dot'>" + (done ? "&#10003;" : c.boss ? "&#9733;" : (ci + 1)) + "</span>" +
           "<span class='nm'>" + E(c.city) + "</span></button>";
       }).join("");
       page.innerHTML =
@@ -25256,15 +25256,20 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-tour-map{position:absolute;left:50%;top:50%;width:max(100vw,calc(100vh - 96px));aspect-ratio:1/1;transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,0px)));touch-action:none;cursor:grab;user-select:none}" +
       ".fo-tour-map:active{cursor:grabbing}" +
       ".fo-tour-map>img{position:absolute;inset:0;width:100%;height:100%;-webkit-user-drag:none;pointer-events:none}" +
-      "html body #page .fo-tp,html body.ftpskin #page .fo-tp{position:absolute;transform:translate(-50%,-50%);background:none !important;border:none !important;box-shadow:none !important;cursor:pointer;z-index:4;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px}" +
-      ".fo-tp .dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;background:rgba(20,33,61,.85);border:2px solid rgba(255,255,255,.7);box-shadow:0 3px 10px rgba(0,0,0,.4)}" +
-      ".fo-tp.done .dot{background:#2E7A3C;border-color:#CFEAD2}" +
-      ".fo-tp.open .dot{background:linear-gradient(180deg,#F0B94E,#C9A24B);border-color:#F3D37A;color:#14213D;animation:foTpPulse 1.8s ease-out infinite}" +
+      "html body #page .fo-tp,html body.ftpskin #page .fo-tp{position:absolute;transform:translate(-50%,-50%);background:none !important;border:none !important;box-shadow:none !important;cursor:pointer;z-index:4;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px}" +
+      // medallions you WANT to press: big, layered, springy
+      ".fo-tp .dot{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Oswald,sans-serif;font-weight:600;font-size:19px;color:#fff;background:radial-gradient(120% 120% at 32% 24%,#2A3E6B,#14213D 68%);border:2.5px solid rgba(255,255,255,.78);box-shadow:0 7px 18px rgba(0,0,0,.55),inset 0 0 0 3px rgba(255,255,255,.12);transition:transform .18s ease}" +
+      ".fo-tp.done .dot{background:radial-gradient(120% 120% at 32% 24%,#3FA254,#256B33 70%);border-color:#CFEAD2;font-size:22px}" +
+      ".fo-tp.open .dot{background:linear-gradient(180deg,#F6C862,#C9A24B);border-color:#FFE9AE;color:#14213D;animation:foTpPulse 1.8s ease-out infinite}" +
       ".fo-tp.far .dot{opacity:.72}" +
-      ".fo-tp.boss .dot{width:37px;height:37px;font-size:16px}" +
-      ".fo-tp .nm{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:#FFFEFC;background:rgba(8,15,28,.76);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:2.5px 9px;backdrop-filter:blur(3px);white-space:nowrap}" +
-      ".fo-tp.sel .dot{outline:3px solid #F3D37A;outline-offset:2px}" +
-      "@keyframes foTpPulse{0%{box-shadow:0 0 0 0 rgba(240,185,78,.65)}100%{box-shadow:0 0 0 16px rgba(240,185,78,0)}}" +
+      ".fo-tp.boss .dot{width:60px;height:60px;font-size:27px}" +
+      ".fo-tp:hover .dot{transform:scale(1.1)}" +
+      ".fo-tp:active .dot{transform:scale(.93)}" +
+      ".fo-tp .nm{font-family:Oswald,sans-serif;font-weight:600;font-size:13px;letter-spacing:2.4px;text-transform:uppercase;color:#FFFEFC;background:rgba(8,15,28,.78);border:1px solid rgba(255,255,255,.26);border-radius:999px;padding:4px 14px;backdrop-filter:blur(3px);white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.4);transition:border-color .18s ease,color .18s ease}" +
+      ".fo-tp:hover .nm{border-color:#F3D37A;color:#F3D37A}" +
+      ".fo-tp.sel .dot{outline:3px solid #F3D37A;outline-offset:3px}" +
+      "@keyframes foTpPulse{0%{box-shadow:0 0 0 0 rgba(240,185,78,.7),0 7px 18px rgba(0,0,0,.55)}100%{box-shadow:0 0 0 20px rgba(240,185,78,0),0 7px 18px rgba(0,0,0,.55)}}" +
+      "@media(max-width:640px){.fo-tp .dot{width:44px;height:44px;font-size:17px}.fo-tp.boss .dot{width:54px;height:54px;font-size:24px}.fo-tp .nm{font-size:11.5px;padding:3px 11px}}" +
       "@media (prefers-reduced-motion:reduce){.fo-tp.open .dot{animation:none !important}}" +
       ".fo-tour-hint{position:absolute;bottom:16px;left:0;right:0;text-align:center;font-style:italic;font-size:12.5px;color:#EDE5CC;z-index:4;text-shadow:0 1px 8px rgba(0,0,0,.8)}" +
       ".fo-tour-card{position:absolute;left:50%;bottom:12px;transform:translate(-50%,18px);width:min(520px,calc(100vw - 16px));background:#F7F1DE;border:1px solid #D8CBA4;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .35s ease,transform .35s ease;z-index:8;overflow:hidden}" +
