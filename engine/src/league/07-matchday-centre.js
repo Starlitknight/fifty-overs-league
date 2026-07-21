@@ -1817,6 +1817,7 @@
       if ((location.hash || "").split("?")[0] !== "#/match") return;
       if (typeof M === "undefined" || !M || M.done) return;
       if (document.getElementById("fo-mst-ask")) window.__foMstHold = true;
+      else if (window.__foMstHold && !window.__foMstAskT) window.__foMstHold = false;
       if (!foMstAuto() || window.__foMstHold) { foMstKillAp(); try { if (UI.apMs < 900000) UI.apMs = 999999; } catch (eAp) {} }
     } catch (e) {}
   }, 250);
@@ -1834,7 +1835,7 @@
   } catch (eDb) {}
   function foMstResume() {
     window.__foMstHold = false;
-    try { if (foMstAuto() && typeof foEnsureAutoplay === "function") { UI.apMs = 3200; foEnsureAutoplay(); } } catch (e) {}
+    try { if (foMstAuto() && typeof foEnsureAutoplay === "function") { UI.apMs = 5200; foEnsureAutoplay(); } } catch (e) {}
   }
   function foMstAsk(opts) {
     try {
@@ -2030,14 +2031,25 @@
       document.body.classList.add("fo-stage-on");
       var nb = el.querySelector("#fo-mst-next");
       if (nb) nb.addEventListener("click", function () {
+        try { if (window.__foMstHold && !document.getElementById("fo-mst-ask") && !window.__foMstAskT) window.__foMstHold = false; } catch (eH) {}
         if (window.__foMstHold || document.getElementById("fo-mst-ask") || !M || M.done) return;
-        try { doBall(); } catch (eNb) {}
+        try {
+          var before = M.log.length;
+          doBall();
+          // an innings break or a wedged state can swallow the tap - punch
+          // through with the sim recipe, never over a manual bowler pick
+          if (M && !M.done && M.log.length === before) {
+            if (!UI.userBowler && typeof autoPick === "function") autoPick();
+            if (typeof stepBall === "function") stepBall();
+            if (typeof renderMatch === "function") renderMatch();
+          }
+        } catch (eNb) {}
         try { if (!foMstAuto()) UI.apMs = 999999; } catch (eNa) {}
       });
       var ab = el.querySelector("#fo-mst-auto");
       if (ab) ab.addEventListener("click", function () {
         window.__foMstAuto = !window.__foMstAuto;
-        if (window.__foMstAuto) { try { UI.apMs = 3200; foMstKillAp(); if (!window.__foMstHold && typeof foEnsureAutoplay === "function") foEnsureAutoplay(); } catch (eAb) {} }
+        if (window.__foMstAuto) { try { UI.apMs = 5200; foMstKillAp(); if (!window.__foMstHold && typeof foEnsureAutoplay === "function") foEnsureAutoplay(); } catch (eAb) {} }
         else foMstKillAp();
         try { renderMatch(); } catch (eAr) {}
       });
