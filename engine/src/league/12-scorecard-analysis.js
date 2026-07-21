@@ -2703,6 +2703,9 @@
     var r = hit.r, c = hit.c;
     var nugBody = c.nug ? c.nug.replace(/^[^:]*:\s*/, "") : "";
     var ga = L.groundArt || (FO_CITY_GROUNDS[city] ? "cities/" + foCitySlug(city) + "-ground.webp" : null);
+    // cities with a live-match canvas show it on the ground visit, freeing
+    // the quieter v1 ground painting to serve as the city portrait
+    var la = (typeof FO_CITY_LIVE !== "undefined" && FO_CITY_LIVE[city]) ? "cities/" + foCitySlug(city) + "-live.webp" : null;
     return {
       r: r, c: c, ri: hit.ri, ci: hit.ci, nm: city, custom: !!FO_CITY[city],
       // a city without its own painting borrows its ground's before falling
@@ -2710,7 +2713,7 @@
       art: L.art || ga || ("circuit/" + (r.bg || (r.id + ".webp"))),
       cityArt: !!(L.art || ga),
       streets: L.streets || null,
-      groundArt: ga,
+      groundArt: la || ga,
       groundNm: L.groundNm || FO_CITY_GROUNDS[city] || (city + (c.boss ? " Colosseum" : " Oval")),
       tag: L.tag || r.type,
       city: L.city || (r.arrive || ""),
