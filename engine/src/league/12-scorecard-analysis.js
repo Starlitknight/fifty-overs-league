@@ -3023,7 +3023,7 @@
       var open = foCxClubOpen(st, Lc.ri, Lc.ci);
       var wxNow = foCxWeather(Lc.r, Lc.ci);
       var chBtn = done
-        ? "<span class='fo-ct-won'>&#10003; " + E(Lc.c.nm) + " beaten here</span>"
+        ? "<span class='fo-ct-won'>&#10003; Beaten</span>"
         : open
           ? "<button type='button' class='fo-ct-ch' data-ct-ch>Challenge " + E(Lc.c.nm) + " &#9654;</button>"
           : "<span class='fo-ct-lock'>&#128274; " + E(Lc.r.nm) + "'s ladder opens this door</span>";
@@ -3104,6 +3104,14 @@
       ".fo-ct-back:hover{color:#F3D37A}" +
       ".fo-city-full .fo-ct-h1{font-weight:500;letter-spacing:2.5px;opacity:.97}" +
       ".fo-city-full .fo-ctv-cap .fo-ctv-line{opacity:.85}" +
+      // phones read the painting, not a data sheet: one gold chip, no caption
+      "@media(max-width:640px){" +
+      ".fo-city-full .fo-ctv-line{display:none}" +
+      ".fo-city-full .fo-ct-chip{display:none}" +
+      ".fo-city-full .fo-ct-chip.now{display:inline-block}" +
+      ".fo-city-full .fo-ct-h1{font-size:27px;letter-spacing:3px;font-weight:500}" +
+      ".fo-city-full .fo-ctv-eb{font-size:8.5px;letter-spacing:3px;opacity:.85}" +
+      "}" +
       "@media(max-width:640px){.fo-city-full{height:calc(100vh - 130px);min-height:440px}.fo-ctv-cap{bottom:118px;padding:0 16px}.fo-ctv-line{font-size:12.5px}.fo-ctv-rail{bottom:14px;gap:7px}html body #page .fo-ctv-b{padding:9px 14px;font-size:10.5px}}" +
       // phones hold these wide paintings in portrait: instead of cropping to
       // a sliver, the camera pans - the whole scene reveals in a slow sweep
