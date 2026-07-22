@@ -1593,7 +1593,13 @@ function route(){
   document.querySelectorAll('#topbar a').forEach(a=>a.classList.toggle('on',a.dataset.nav===App.page));
   const P={club:pgClub,office:pgOffice,matches:pgMatches,squad:pgSquad,orders:pgOrders,players:pgPlayers,
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
-  (P[App.page]||pgClub)(q);
+  // Circuit-era pages paint themselves; dispatch them directly so a refresh
+  // never flashes the retired club dashboard while their interval spins up
+  const OV={circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour'}[App.page];
+  if(P[App.page])P[App.page](q);
+  else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){}}
+  else if(OV){/* overlay not parsed yet: leave the page blank, its interval paints */}
+  else pgClub(q);
   }catch(eRoute){
     // a broken page renderer must not freeze navigation for the whole session
     try{console.error('route failed on '+(App&&App.page),eRoute)}catch(e2){}
@@ -10436,7 +10442,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260722-0259-09d96b";
+  var FO_BUILD = "20260722-0344-b9118c";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -25658,6 +25664,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       try { if (window.__foLive) window.__foLive.mask(); } catch (eM2) {}
     } catch (e) {}
   }
+  // the router dispatches these directly on load/navigation - no dashboard
+  // flash while waiting for the interval to notice
+  try { window.foRenderCircuit = foRenderCircuit; } catch (eEx) {}
   setInterval(foRenderCircuit, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/circuit") === 0) { foCxView = null; setTimeout(foRenderCircuit, 40); } });
   // ==========================================================================
@@ -25801,6 +25810,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       try { if (window.__foLive) window.__foLive.mask(); } catch (eM3) {}
     } catch (e) {}
   }
+  try { window.foRenderCity = foRenderCity; } catch (eEx2) {}
   setInterval(foRenderCity, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/city") === 0) setTimeout(foRenderCity, 40); });
   try {
@@ -26033,6 +26043,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var mp = ev.target && ev.target.closest ? ev.target.closest(".fo-tour-map") : null;
     if (mp && mp.__justDragged && Date.now() - mp.__justDragged < 300) { ev.stopPropagation(); ev.preventDefault(); }
   }, true);
+  try { window.foRenderTour = foRenderTour; } catch (eEx3) {}
   setInterval(foRenderTour, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/tour") === 0) setTimeout(foRenderTour, 40); });
   try {

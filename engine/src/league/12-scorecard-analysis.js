@@ -2874,6 +2874,9 @@
       try { if (window.__foLive) window.__foLive.mask(); } catch (eM2) {}
     } catch (e) {}
   }
+  // the router dispatches these directly on load/navigation - no dashboard
+  // flash while waiting for the interval to notice
+  try { window.foRenderCircuit = foRenderCircuit; } catch (eEx) {}
   setInterval(foRenderCircuit, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/circuit") === 0) { foCxView = null; setTimeout(foRenderCircuit, 40); } });
   // ==========================================================================
@@ -3017,6 +3020,7 @@
       try { if (window.__foLive) window.__foLive.mask(); } catch (eM3) {}
     } catch (e) {}
   }
+  try { window.foRenderCity = foRenderCity; } catch (eEx2) {}
   setInterval(foRenderCity, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/city") === 0) setTimeout(foRenderCity, 40); });
   try {
@@ -3249,6 +3253,7 @@
     var mp = ev.target && ev.target.closest ? ev.target.closest(".fo-tour-map") : null;
     if (mp && mp.__justDragged && Date.now() - mp.__justDragged < 300) { ev.stopPropagation(); ev.preventDefault(); }
   }, true);
+  try { window.foRenderTour = foRenderTour; } catch (eEx3) {}
   setInterval(foRenderTour, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/tour") === 0) setTimeout(foRenderTour, 40); });
   try {

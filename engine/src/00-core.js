@@ -1309,7 +1309,13 @@ function route(){
   document.querySelectorAll('#topbar a').forEach(a=>a.classList.toggle('on',a.dataset.nav===App.page));
   const P={club:pgClub,office:pgOffice,matches:pgMatches,squad:pgSquad,orders:pgOrders,players:pgPlayers,
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
-  (P[App.page]||pgClub)(q);
+  // Circuit-era pages paint themselves; dispatch them directly so a refresh
+  // never flashes the retired club dashboard while their interval spins up
+  const OV={circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour'}[App.page];
+  if(P[App.page])P[App.page](q);
+  else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){}}
+  else if(OV){/* overlay not parsed yet: leave the page blank, its interval paints */}
+  else pgClub(q);
   }catch(eRoute){
     // a broken page renderer must not freeze navigation for the whole session
     try{console.error('route failed on '+(App&&App.page),eRoute)}catch(e2){}
