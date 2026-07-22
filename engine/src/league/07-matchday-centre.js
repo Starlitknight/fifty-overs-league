@@ -1794,6 +1794,14 @@
         if (ga) {
           var gnm = (L && L.groundNm) || (typeof FO_CITY_GROUNDS !== "undefined" && FO_CITY_GROUNDS[c.city]) || c.city;
           if (FO_CITY_LIVE[c.city]) ga = "cities/" + foCitySlug(c.city) + "-live.webp";
+          // twelve grounds ship a night painting too - pick day or night per
+          // match (stable for that match) so the theatre gets both
+          else if (typeof FO_CITY_NIGHT !== "undefined" && FO_CITY_NIGHT[c.city]) {
+            var sdN = 0;
+            try { sdN = (M.meta.seed >>> 0) || 0; } catch (eN0) {}
+            if (!sdN) { try { sdN = foHash32((M.meta.home || "") + "|" + (M.meta.away || "")); } catch (eN1) { sdN = 0; } }
+            if (sdN % 2 === 1) ga = "cities/" + foCitySlug(c.city) + "-ground-night.webp";
+          }
           // Dublin owns a second canvas for the rain
           if (c.city === "Dublin" && /rain|drizzle|storm|shower|wet/.test(((M.meta.weather || "") + "").toLowerCase())) ga = "cities/dublin-ground-rain.webp";
           return { img: FO_ART + ga, mode: "ground", ac: r.ac, gnm: gnm, city: c.city };

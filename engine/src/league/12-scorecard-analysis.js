@@ -1428,7 +1428,7 @@
       trophy: "The Golden Bat", nats: ["Australia"],
       clubs: [
         { mx: 21, my: 57, nm: "Perth CC", city: "Perth", note: "hard-running openers", gq: "Perth CC run everything twice. Short and straight — make 'em earn it.", taunt: "We run everything twice. You'll be blowing by the tenth over.", nug: "Perth: real bounce and openers who run everything twice. They live on the front foot - short, straight and disciplined seam makes them sweat.", mult: 0.96 },
-        { mx: 47, my: 44, nm: "Alice Springs CC", city: "Alice Springs", note: "relentless run-scorers", gq: "Rovers pile it on in the heat. Dry up the rope, let the desert do the work.", taunt: "Forty degrees and we bat all day. Your move.", nug: "Alice Springs: a road in the red centre - they grind out mountains of runs in the heat. Patience beats them: dry up the boundaries and the desert does the rest.", mult: 1.02 },
+        { mx: 47, my: 44, nm: "Sydney CC", city: "Sydney", note: "harbourside stroke-players", gq: "Sydney CC feast when the ball comes on. Bounce and carry - hit the deck hard and the edge will come.", taunt: "Sun's out, harbour's blue, and we're 200 for 3. Try and catch us.", nug: "Sydney: fast, bouncy and played by the water - they are stroke-makers who cash in when the ball comes onto the bat. Bang it into the deck and the extra bounce brings the outside edge.", mult: 1.02 },
         { boss: 1, mx: 65, my: 73, nm: "Melbourne CC", city: "Melbourne", capt: "general",
           leader: "Doug Cazaly", note: "a merciless run-machine who bats you out of the game", gq: "Cazaly bats like he owns the 'G. His bowlers are ordinary — out-bat him, if you've the nerve.", taunt: "I'll bat you clean out of the contest. Bring a bigger total than that.", nug: "Melbourne: ninety thousand seats and Cazaly bats like he owns every one of them. His bowlers are ordinary once the shine goes - out-bat him, if you dare.", mult: 1.09,
           sig: "runmachine", intel: "Cazaly WILL get his - budget for it and don't panic when he does. The bowling around him is ordinary: out-bat one man and you win the match.",
@@ -3018,7 +3018,12 @@
   };
   // grounds painted before their city lore exists - the ground pages and the
   // match stage pick these up automatically (cities/<slug>-ground.webp)
-  var FO_CITY_GROUNDS = { Dublin: "The Liffey Paddocks", Belfast: "Lough Green", Cork: "The Rebel Field", Amsterdam: "Polder Park", Rotterdam: "The Dyke Yard", Utrecht: "The Cloister Ground" };
+  var FO_CITY_GROUNDS = { Dublin: "The Liffey Paddocks", Belfast: "Lough Green", Cork: "The Rebel Field", Amsterdam: "Polder Park", Rotterdam: "The Dyke Yard", Utrecht: "The Cloister Ground",
+    "Victoria Falls": "The Thundering Ground", Bulawayo: "The Kopje Oval", Harare: "Jacaranda Park", Colombo: "The Fort Maidan", Kandy: "The Temple Ground", Galle: "The Rampart Ground", Mumbai: "The Maidan", Nagpur: "The Orange Bowl", Kolkata: "Eden Field",
+    Kingston: "Sabina Yard", Bridgetown: "The Garrison", "Port of Spain": "The Savannah", Johannesburg: "Highveld Park", Durban: "Kingsmead Green", "Cape Town": "The Newlands Oaks", Perth: "The Swan Ground", Melbourne: "The Great Oval", Sydney: "The Harbour Ground", Auckland: "The Domain", Christchurch: "Hagley Oval", Wellington: "The Basin" };
+  // cities that also ship a night ground - the match stage picks day or
+  // night per match; the city page always shows the day painting
+  var FO_CITY_NIGHT = { Kingston:1, Bridgetown:1, "Port of Spain":1, Johannesburg:1, Durban:1, "Cape Town":1, Perth:1, Melbourne:1, Sydney:1, Auckland:1, Christchurch:1, Wellington:1 };
   function foCitySlug(c) { return String(c || "").toLowerCase().replace(/\s+/g, "-"); }
   function foCityClub(city) {
     for (var ri = 0; ri < FO_CX_REGIONS.length; ri++) {
@@ -3204,7 +3209,7 @@
     "Victoria Falls": { who: "Baraka", role: "river guide on the Zambezi", say: "Some days Victoria Falls CC play like the falls - roaring, unstoppable. Other days like the still pools above them. Pray for pool days." },
     "Harare": { who: "Gogo Chipo", role: "grows the flame lilies for the victory garlands", say: "The young captain has kept me busy all season. Bring your own flowers to Harare, or leave without any." },
     "Perth": { who: "Macca", role: "pours the coldest lemonade east of the Indian Ocean", say: "The Perth boys run twos on misfields you haven't made yet. Hydrate, mate. That's not a joke - it's forty in the shade and they know it." },
-    "Alice Springs": { who: "Aunty Rose", role: "keeps the water station at the red-dirt oval", say: "The road out here doesn't crack and neither do they. Bat long and don't argue with the sun. Nobody's ever won that one." },
+    "Sydney": { who: "Macca", role: "skippers the ferry that passes the ground", say: "Blue skies, quick outfield, and a crowd that's seen it all from the hill. Score fast or they'll let you know about it." },
     "Melbourne": { who: "Bluey", role: "drives the tram route past the great oval", say: "Ninety thousand seats, and Melbourne CC act like every one's watching. Do something they've never seen, mate. That mob hates surprises." },
     "Christchurch": { who: "Ted Brooking", role: "drives the heavy roller for Christchurch CC", say: "Flattest pitch I roll all year, and still their seamers hit the same blade of grass six balls an over. Boring? Ask the scoreboard." },
     "Wellington": { who: "Hemi", role: "skippers the harbour ferry", say: "The gale's a team-mate here. Wellington CC read it like sailors, because half of them are. Bowl into it, never with it. Now you know more than most." },
