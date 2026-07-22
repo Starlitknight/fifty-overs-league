@@ -10436,7 +10436,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260722-0254-7f00cc";
+  var FO_BUILD = "20260722-0259-09d96b";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -25493,27 +25493,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       return "<em class='" + (h.win ? "hg-w" : "hg-l") + "'>" + (h.win ? "W" : "L") + "</em>";
     }).join("") || "<span class='hg-nf'>first tie awaits</span>";
     var conqN = ((st && st.conq) || []).filter(function (id) { return id !== "gt"; }).length;
-    var champ = st && cur >= FO_CX_REGIONS.length;
-    var nextCard = "", gq = "";
-    if (champ) {
-      nextCard = "<div class='hg-next hg-champ'><i>THE CIRCUIT &middot; COMPLETE</i>" +
-        "<img src='" + FO_ART + "circuit/trophy-crown.webp' alt='' class='hg-crn'>" +
-        "<b>World Champions</b><span>The Thorne Crown lives here now.</span></div>";
-      gq = "Twelve nations, boss. Every morning I polish that crown and think: they said we were a village club.";
-    } else if (st) {
-      var curRi = Math.min(cur, FO_CX_REGIONS.length - 1);
-      var curR = FO_CX_REGIONS[curRi];
-      var nx = -1;
-      for (var i9 = 0; i9 < curR.clubs.length; i9++) if (!foCxBeaten(st, curR.id, i9)) { nx = i9; break; }
-      if (nx >= 0) {
-        var c9 = curR.clubs[nx];
-        nextCard = "<div class='hg-next'><i>NEXT ON THE CIRCUIT</i><em>" + (curR.final ? "THE WORLD FINAL" : E(curR.nm).toUpperCase()) + "</em>" +
-          "<b>" + E(c9.nm) + "</b>" +
-          "<span>" + E(foPitchName(curR.pitch)) + " pitch &middot; " + E(foCxWeather(curR, nx)) + " &middot; " + E(c9.city) + (c9.boss ? " &middot; BOSS" : "") + "</span>" +
-          "<button type='button' id='fo-hg-ch' data-ri='" + curRi + "' data-ci='" + nx + "'>CHALLENGE &#9654;</button></div>";
-        gq = c9.gq || curR.cond || "";
-      }
-    }
     return "<div class='fo-hg2'><img class='hg-bg' src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
       "<div class='hg-grain'></div>" +
       "<div class='hg-scrim'></div>" +
@@ -25522,8 +25501,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "<b>" + E((me && me.name) || "Your club") + "</b>" +
       "<span class='hg-sub'>The Circuit &middot; " + conqN + " of 12 regions conquered</span>" +
       "<span class='hg-form'><u>FORM</u>" + beads + "</span></div>" +
-      nextCard +
-      (gq ? "<div class='hg-gaff'><img src='" + FO_ART + "gaffer.png' alt=''><span><b>THE GAFFER</b>&ldquo;" + E(gq) + "&rdquo;</span></div>" : "") +
       "<div class='hg-bar'>" +
       "<button type='button' id='fo-hg-map'><span class='hg-lf'>WORLD MAP</span><span class='hg-ls'>MAP</span></button>" +
       "<button type='button' id='fo-hg-cab'><span class='hg-lf'>TROPHY CABINET</span><span class='hg-ls'>CABINET</span></button>" +
@@ -25619,8 +25596,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var hg = page.querySelector(".fo-hg2");
       if (hg) {
         foHgFit(hg);
-        var hgCh = hg.querySelector("#fo-hg-ch");
-        if (hgCh) hgCh.addEventListener("click", function () { foCxChallenge(+hgCh.getAttribute("data-ri"), +hgCh.getAttribute("data-ci")); });
         var hgCab = hg.querySelector("#fo-hg-cab");
         if (hgCab) hgCab.addEventListener("click", foCxPassport);
         var hgSq = hg.querySelector("#fo-hg-sq");
