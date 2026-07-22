@@ -2799,7 +2799,6 @@
       "<div class='hg-bar'>" +
       "<button type='button' id='fo-hg-map'><span class='hg-lf'>WORLD MAP</span><span class='hg-ls'>MAP</span></button>" +
       "<button type='button' id='fo-hg-cab'><span class='hg-lf'>TROPHY CABINET</span><span class='hg-ls'>CABINET</span></button>" +
-      "<button type='button' id='fo-hg-sq'><span class='hg-lf'>SQUAD</span><span class='hg-ls'>SQUAD</span></button>" +
       "</div></div>";
   }
   function foRenderCircuit() {
@@ -2898,8 +2897,6 @@
         foHgFit(hg);
         var hgCab = hg.querySelector("#fo-hg-cab");
         if (hgCab) hgCab.addEventListener("click", foCxPassport);
-        var hgSq = hg.querySelector("#fo-hg-sq");
-        if (hgSq) hgSq.addEventListener("click", function () { location.hash = "#/squad"; if (typeof window.route === "function") window.route(); });
         var hgMap = hg.querySelector("#fo-hg-map");
         if (hgMap) hgMap.addEventListener("click", function () {
           location.hash = "#/circuit?m=1"; if (typeof window.route === "function") window.route();

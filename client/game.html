@@ -10463,7 +10463,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260722-1457-9e6bd6";
+  var FO_BUILD = "20260722-1505-f69402";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -25614,7 +25614,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "<div class='hg-bar'>" +
       "<button type='button' id='fo-hg-map'><span class='hg-lf'>WORLD MAP</span><span class='hg-ls'>MAP</span></button>" +
       "<button type='button' id='fo-hg-cab'><span class='hg-lf'>TROPHY CABINET</span><span class='hg-ls'>CABINET</span></button>" +
-      "<button type='button' id='fo-hg-sq'><span class='hg-lf'>SQUAD</span><span class='hg-ls'>SQUAD</span></button>" +
       "</div></div>";
   }
   function foRenderCircuit() {
@@ -25713,8 +25712,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         foHgFit(hg);
         var hgCab = hg.querySelector("#fo-hg-cab");
         if (hgCab) hgCab.addEventListener("click", foCxPassport);
-        var hgSq = hg.querySelector("#fo-hg-sq");
-        if (hgSq) hgSq.addEventListener("click", function () { location.hash = "#/squad"; if (typeof window.route === "function") window.route(); });
         var hgMap = hg.querySelector("#fo-hg-map");
         if (hgMap) hgMap.addEventListener("click", function () {
           location.hash = "#/circuit?m=1"; if (typeof window.route === "function") window.route();
