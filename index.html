@@ -1596,7 +1596,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour'}[App.page];
+  const OV={circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld'}[App.page];
   if(P[App.page])P[App.page](q);
   else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){}}
   else if(OV){/* overlay not parsed yet: leave the page blank, its interval paints */}
@@ -10463,7 +10463,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260722-1932-76d4ff";
+  var FO_BUILD = "20260722-1940-ff239e";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -26016,7 +26016,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foArtChrome() {
     try {
       var full = (location.hash || "").split("?")[0];
-      var artful = (full === "#/circuit" && !/[?&]m=1/.test(location.hash || "")) ||
+      var artful = full === "#/world" ||
+        (full === "#/circuit" && !/[?&]m=1/.test(location.hash || "")) ||
                    full === "#/city" || full === "#/tour";
       document.body.classList.toggle("fo-home-on", artful);
     } catch (e) {}
@@ -26155,7 +26156,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         if (hgCab) hgCab.addEventListener("click", foCxPassport);
         var hgMap = hg.querySelector("#fo-hg-map");
         if (hgMap) hgMap.addEventListener("click", function () {
-          location.hash = "#/circuit?m=1"; if (typeof window.route === "function") window.route();
+          location.hash = "#/world"; if (typeof window.route === "function") window.route();
+          setTimeout(function () { try { window.foRenderWorld(); } catch (eW) {} }, 60);
         });
       }
       var tb = page.querySelector(".fo-cx-tourbtn[data-tour]");
@@ -26346,11 +26348,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         : open
           ? "<button type='button' class='fo-ct-ch' data-ct-ch>Challenge " + E(Lc.c.nm) + " &#9654;</button>"
           : "<span class='fo-ct-lock'>&#128274; " + E(Lc.r.nm) + "'s ladder opens this door</span>";
-      // the views: city, streets (when painted), ground - each a full screen
+      // one view only: the city IS its ground - you arrive at the gate
       var views = [];
-      views.push({ id: "city", img: Lc.art, eyebrow: "The Circuit &middot; " + E(Lc.r.nm), title: E(city), sub: E(Lc.tag), line: E(foCtLine(Lc.city)) });
-      if (Lc.streets) views.push({ id: "streets", img: Lc.streets, eyebrow: E(city), title: "The Streets", sub: "", line: E(foCtLine(Lc.history)) });
-      views.push({ id: "ground", img: Lc.groundArt || Lc.art, eyebrow: E(city) + " &middot; " + (Lc.c.boss ? "the boss's ground" : "home ground"), title: E(Lc.groundNm), sub: "", line: E(foCtLine(Lc.ground)),
+      views.push({ id: "ground", img: Lc.groundArt || Lc.art, eyebrow: "The Circuit &middot; " + E(Lc.r.nm) + " &middot; " + E(city) + (Lc.c.boss ? " &middot; the boss's ground" : ""), title: E(Lc.groundNm), sub: E(Lc.tag), line: E(foCtLine(Lc.ground) || foCtLine(Lc.city)),
         chips: "<span class='fo-ct-chip pitch'>" + E(foPitchName(Lc.pitch)) + " pitch</span>" + Lc.wxPool.map(function (w) { return "<span class='fo-ct-chip" + (w === wxNow ? " now" : "") + "'>" + E(w) + (w === wxNow ? " &middot; today" : "") + "</span>"; }).join("") });
       var html = "<div class='fo-city fo-city-full' style='--cxc:" + Lc.r.ac + "'>";
       views.forEach(function (v, i) {
@@ -26369,26 +26369,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       page.innerHTML = html;
       foFullBleedFit(page.querySelector(".fo-city-full"));
       var railEl = page.querySelector("#fo-ctv-rail");
-      var cur = 0;
-      var setView = function (ix) {
-        cur = ix;
-        page.querySelectorAll(".fo-ctv").forEach(function (s, i) { s.classList.toggle("on", i === ix); });
-        var v = views[ix], b = [];
-        if (v.id !== "city") b.push("<button type='button' class='fo-ctv-b ghost' data-go-view='0'>&#8592; " + E(city) + "</button>");
-        views.forEach(function (v2, i2) {
-          if (i2 === ix || v2.id === "city") return;
-          b.push("<button type='button' class='fo-ctv-b' data-go-view='" + i2 + "'>" + (v2.id === "ground" ? "Visit the ground" : "Walk the streets") + " &#9654;</button>");
-        });
-        b.push(chBtn);
-        b.push("<a class='fo-ct-back' href='#/circuit'>Circuit</a>");
-        railEl.innerHTML = b.join("");
-        railEl.querySelectorAll("[data-go-view]").forEach(function (bt) {
-          bt.addEventListener("click", function () { setView(+bt.getAttribute("data-go-view")); });
-        });
-        var ch = railEl.querySelector("[data-ct-ch]");
-        if (ch) ch.addEventListener("click", function () { foCxChallenge(Lc.ri, Lc.ci); });
-      };
-      setView(0);
+      railEl.innerHTML = chBtn +
+        "<a class='fo-ct-back' href='#/tour?r=" + encodeURIComponent(Lc.r.id) + "'>&#8592; Tour " + E(Lc.r.nm) + "</a>" +
+        "<a class='fo-ct-back' href='#/world'>World map</a>";
+      var ch = railEl.querySelector("[data-ct-ch]");
+      if (ch) ch.addEventListener("click", function () { foCxChallenge(Lc.ri, Lc.ci); });
       try { if (window.__foLive) window.__foLive.mask(); } catch (eM3) {}
     } catch (e) {}
   }
@@ -26579,7 +26564,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           "<div class='tc-line'>" + E(foCtLine(L.city || "")) + "</div>" +
           (folk ? "<div class='tc-folk'><span class='fw'>" + E(folk.who) + "</span><span class='fr'> &middot; " + E(folk.role) + "</span><div class='fq'>&ldquo;" + E(folk.say) + "&rdquo;</div></div>" : "") +
           "<div class='tc-row'>" + chip +
-          "<button type='button' class='tc-enter' data-tc-enter>Enter " + E(c.city) + " &#9654;</button>" +
+          "<button type='button' class='tc-enter' data-tc-enter>Visit the ground &#9654;</button>" +
           (open ? "<button type='button' class='tc-ch' data-tc-ch>Challenge &#9654;</button>" : "") +
           "</div></div>";
         cardEl.classList.add("on");
@@ -26651,6 +26636,180 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   try { window.foRenderTour = foRenderTour; } catch (eEx3) {}
   setInterval(foRenderTour, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/tour") === 0) setTimeout(foRenderTour, 40); });
+  // ==========================================================================
+  //  THE WORLD MAP - one painted globe, every nation of the tour a medallion.
+  //  Tap a nation for its card (boss, progress, conditions) and tour it.
+  // ==========================================================================
+  var FO_WORLD_PINS = {
+    ire: [42.4, 22.4], eng: [46.3, 24.6], ned: [48.9, 27.2], gt: [43.9, 31.4],
+    win: [26.5, 42], rsa: [53.5, 71.5], zim: [54.8, 63.5],
+    aus: [86.5, 71], nzl: [92.4, 79.8], slk: [68.8, 55.5], sub: [66.4, 45.5],
+    pak: [63.2, 39.5], afg: [60.2, 35.6]
+  };
+  function foRenderWorld() {
+    try {
+      if ((location.hash || "").split("?")[0] !== "#/world") return;
+      var page = document.getElementById("page"); if (!page) return;
+      var st = foCxState();
+      var conqN = (st.conq || []).filter(function (id) { return id !== "gt"; }).length;
+      var sig = "world|" + JSON.stringify(st.beat) + "|" + (st.conq || []).join(",");
+      if (page.__foWorldSig === sig && page.querySelector(".fo-world")) return;
+      page.__foWorldSig = sig;
+      var pins = FO_CX_REGIONS.map(function (r, i) {
+        var p = FO_WORLD_PINS[r.id]; if (!p) return "";
+        var done = foCxConquered(st, r.id);
+        var live = !done && (!r.final || conqN >= FO_CX_NATIONS);
+        var lockF = r.final && conqN < FO_CX_NATIONS;
+        var cls = "fo-wp" + (r.final ? " crown" : "") + (done ? " done" : live ? " live" : "") + (lockF ? " lockf" : "");
+        return "<button type='button' class='" + cls + "' data-wr='" + i + "' style='left:" + p[0] + "%;top:" + p[1] + "%;--wac:" + r.ac + "'>" +
+          "<span class='dot'>" + (done ? "&#10003;" : r.final ? "&#9818;" : "&#9873;") + "</span>" +
+          "<span class='nm'>" + (r.final ? "Marylebone" : E(r.nm)) + "</span></button>";
+      }).join("");
+      page.innerHTML =
+        "<div class='fo-world'>" +
+        "<div class='fo-world-map' id='fo-world-map'><img src='" + FO_ART + "circuit/world.webp' alt=''>" + pins + "</div>" +
+        "<div class='fo-world-hd'><div class='eb'>The Circuit</div><h1>The World</h1><div class='ty'>" + conqN + " of " + FO_CX_NATIONS + " nations conquered</div></div>" +
+        "<a class='fo-world-back' href='#/circuit'>&#8249; Club</a>" +
+        "<div class='fo-world-hint' id='fo-world-hint'>Drag to roam &middot; tap a nation to tour it</div>" +
+        "<div class='fo-world-card' id='fo-world-card'></div>" +
+        "</div>";
+      var mapEl = page.querySelector("#fo-world-map");
+      var cardEl = page.querySelector("#fo-world-card");
+      var hintEl = page.querySelector("#fo-world-hint");
+      // full-viewport fit + centered start
+      try { foFullBleedFit(page.querySelector(".fo-world")); } catch (eF) {}
+      var openCard = function (i) {
+        var r = FO_CX_REGIONS[i]; if (!r) return;
+        var done = foCxConquered(st, r.id);
+        var lockF = r.final && conqN < FO_CX_NATIONS;
+        var bc = r.clubs.filter(function (x) { return x.boss; })[0] || r.clubs[r.clubs.length - 1];
+        var beatN = (st.beat[r.id] || []).filter(Boolean).length;
+        var dots = r.clubs.map(function (c2, i2) { return "<i class='" + (foCxBeaten(st, r.id, i2) ? "f" : "") + "'></i>"; }).join("");
+        var chip = done ? "<span class='wc-chip won'>&#10003; Conquered &middot; " + E(r.trophy) + "</span>"
+          : lockF ? "<span class='wc-chip faroff'>&#128274; Opens after " + FO_CX_NATIONS + " pennants</span>"
+            : "<span class='wc-chip nxt'>" + beatN + " / " + r.clubs.length + " beaten</span>";
+        cardEl.innerHTML =
+          "<div class='wc-art'><img src='" + FO_ART + (r.final ? "thorne.png" : "circuit/boss-" + r.id + ".webp") + "' alt=''></div>" +
+          "<button type='button' class='wc-x' data-wc-x>&#10005;</button>" +
+          "<div class='wc-bd' style='--wac:" + r.ac + "'>" +
+          "<div class='wc-eb'>" + (r.final ? "The Summit" : "The Grand Tour") + " &middot; " + E(r.type) + "</div>" +
+          "<div class='wc-h2'>" + (r.final ? "The World Final" : E(r.nm)) + "</div>" +
+          "<div class='wc-boss'><b>" + E(bc.leader || bc.nm) + "</b> &middot; " + E(bc.nm) + ", " + E(bc.city) + "</div>" +
+          "<div class='wc-line'>" + E(foCtLine(r.cond)) + "</div>" +
+          "<div class='wc-prog'>" + chip + "<span class='wcd'>" + dots + "</span></div>" +
+          "<div class='wc-row'>" +
+          (r.final
+            ? "<button type='button' class='wc-tour' data-wc-final>The World Final &#9654;</button>"
+            : "<button type='button' class='wc-tour' data-wc-tour='" + r.id + "'>Tour " + E(r.nm) + " &#9654;</button>") +
+          "</div></div>";
+        cardEl.classList.add("on");
+        if (hintEl) hintEl.style.display = "none";
+        page.querySelectorAll(".fo-wp").forEach(function (p2) { p2.classList.toggle("sel", +p2.getAttribute("data-wr") === i); });
+        cardEl.querySelector("[data-wc-x]").addEventListener("click", function () {
+          cardEl.classList.remove("on");
+          page.querySelectorAll(".fo-wp").forEach(function (p3) { p3.classList.remove("sel"); });
+          if (hintEl) hintEl.style.display = "";
+        });
+        var tb2 = cardEl.querySelector("[data-wc-tour]");
+        if (tb2) tb2.addEventListener("click", function () {
+          location.hash = "#/tour?r=" + tb2.getAttribute("data-wc-tour");
+          if (typeof window.route === "function") window.route();
+          setTimeout(foRenderTour, 60);
+        });
+        var fb2 = cardEl.querySelector("[data-wc-final]");
+        if (fb2) fb2.addEventListener("click", function () {
+          location.hash = "#/circuit?m=1"; if (typeof window.route === "function") window.route();
+        });
+      };
+      page.querySelectorAll(".fo-wp[data-wr]").forEach(function (p1) {
+        p1.addEventListener("click", function (ev1) {
+          if (mapEl.__justDragged && Date.now() - mapEl.__justDragged < 300) return;
+          openCard(+p1.getAttribute("data-wr"));
+        });
+      });
+      // centre the painting; drag to roam with true 16:9 clamps
+      var host = page.querySelector(".fo-world");
+      var panW = function (dx, dy) {
+        var W = mapEl.offsetWidth, H = mapEl.offsetHeight;
+        var bx = Math.max(0, (W - host.clientWidth) / 2), by = Math.max(0, (H - host.clientHeight) / 2);
+        dx = Math.max(-bx, Math.min(bx, dx)); dy = Math.max(-by, Math.min(by, dy));
+        mapEl.style.transform = "translate(calc(-50% + " + dx + "px),calc(-50% + " + dy + "px))";
+        mapEl.__dx = dx; mapEl.__dy = dy;
+      };
+      panW(0, 0);
+      mapEl.addEventListener("pointerdown", function (ev) {
+        var d0 = { x: ev.clientX, y: ev.clientY, dx: mapEl.__dx || 0, dy: mapEl.__dy || 0, moved: false };
+        var mv = function (e2) {
+          var mx = e2.clientX - d0.x, my = e2.clientY - d0.y;
+          if (Math.abs(mx) + Math.abs(my) > 7) d0.moved = true;
+          if (d0.moved) panW(d0.dx + mx, d0.dy + my);
+        };
+        var up = function () {
+          if (d0.moved) mapEl.__justDragged = Date.now();
+          document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up);
+        };
+        document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
+      });
+    } catch (e) {}
+  }
+  try { window.foRenderWorld = foRenderWorld; } catch (eEx5) {}
+  setInterval(foRenderWorld, 900);
+  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] === "#/world") setTimeout(foRenderWorld, 40); });
+  try {
+    var woCss = document.createElement("style"); woCss.id = "fo-world-css";
+    woCss.textContent =
+      ".fo-world{position:relative;width:100vw;margin-left:calc(50% - 50vw);height:calc(100vh - 96px);min-height:520px;overflow:hidden;background:#071527}" +
+      // the painting: cover the viewport at 16:9, centred, draggable
+      ".fo-world-map{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:max(100vw,177.8vh);height:max(56.25vw,100vh);cursor:grab;touch-action:none}" +
+      ".fo-world-map:active{cursor:grabbing}" +
+      ".fo-world-map>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;user-select:none;-webkit-user-drag:none}" +
+      // nation medallions
+      "html body #page .fo-wp,html body.ftpskin #page .fo-wp{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:5px;background:none !important;border:none !important;box-shadow:none !important;padding:0;cursor:pointer;z-index:3}" +
+      ".fo-wp .dot{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(6,16,32,.82);border:2.5px solid var(--wac,#F0B94E);color:#fff;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.55),0 0 0 3px rgba(6,16,32,.35);transition:transform .15s ease,box-shadow .15s ease}" +
+      ".fo-wp:hover .dot{transform:scale(1.16)}" +
+      ".fo-wp.sel .dot{box-shadow:0 0 0 4px rgba(240,185,78,.5),0 0 22px rgba(240,185,78,.8),0 4px 14px rgba(0,0,0,.55)}" +
+      ".fo-wp.done .dot{background:#3E9455;border-color:#8fe3a4}" +
+      ".fo-wp.live .dot{animation:foWpPulse 2s ease-out infinite}" +
+      "@keyframes foWpPulse{0%{box-shadow:0 0 0 0 rgba(240,185,78,.55),0 4px 14px rgba(0,0,0,.55)}70%{box-shadow:0 0 0 13px rgba(240,185,78,0),0 4px 14px rgba(0,0,0,.55)}100%{box-shadow:0 0 0 0 rgba(240,185,78,0),0 4px 14px rgba(0,0,0,.55)}}" +
+      ".fo-wp.crown .dot{width:42px;height:42px;font-size:20px;border-color:#F3D37A;color:#F3D37A}" +
+      ".fo-wp.lockf .dot{opacity:.75;filter:saturate(.5)}" +
+      ".fo-wp .nm{font-family:Oswald,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#F3EEDF;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.95),0 0 8px rgba(0,0,0,.7)}" +
+      "@media (prefers-reduced-motion:reduce){.fo-wp.live .dot{animation:none}}" +
+      // header, hint, back
+      ".fo-world-hd{position:absolute;z-index:4;top:22px;left:0;right:0;text-align:center;pointer-events:none;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.8)}" +
+      "body.fo-home-on .fo-world-hd{top:64px}" +
+      ".fo-world-hd .eb{font-family:Oswald,sans-serif;font-size:11px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#F3D37A}" +
+      ".fo-world-hd h1{margin:4px 0 3px;font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(30px,4vw,52px);letter-spacing:3px;text-transform:uppercase}" +
+      ".fo-world-hd .ty{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2.6px;text-transform:uppercase;color:rgba(255,255,255,.85)}" +
+      "html body .fo-world-back{position:absolute;z-index:5;top:22px;left:18px;font-family:Oswald,sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#fff;background:rgba(5,20,40,.66);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:9px 16px;text-decoration:none;backdrop-filter:blur(8px)}" +
+      "body.fo-home-on .fo-world-back{top:64px}" +
+      ".fo-world-hint{position:absolute;z-index:4;bottom:18px;left:0;right:0;text-align:center;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:rgba(255,255,255,.75);text-shadow:0 1px 4px rgba(0,0,0,.9);pointer-events:none}" +
+      // the nation card
+      ".fo-world-card{position:absolute;z-index:6;left:26px;bottom:26px;width:min(470px,calc(100vw - 52px));display:none;background:rgba(7,18,36,.88);border:1px solid rgba(255,255,255,.2);border-radius:18px;overflow:hidden;backdrop-filter:blur(14px);box-shadow:0 26px 70px rgba(0,0,0,.6)}" +
+      ".fo-world-card.on{display:flex;animation:foWcIn .32s ease}" +
+      "@keyframes foWcIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}" +
+      ".fo-world-card .wc-art{flex:0 0 158px;position:relative}" +
+      ".fo-world-card .wc-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 14%}" +
+      "html body .fo-world-card .wc-x{position:absolute;top:9px;right:9px;z-index:2;width:28px;height:28px;border-radius:999px;background:rgba(5,20,40,.8) !important;border:1px solid rgba(255,255,255,.3) !important;color:#fff !important;font-size:11px;cursor:pointer;box-shadow:none !important}" +
+      ".fo-world-card .wc-bd{flex:1;min-width:0;padding:15px 16px 14px;color:#fff}" +
+      ".fo-world-card .wc-eb{font-family:Oswald,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:2.4px;text-transform:uppercase;color:var(--wac,#F3D37A)}" +
+      ".fo-world-card .wc-h2{font-family:Oswald,sans-serif;font-weight:600;font-size:25px;letter-spacing:1.2px;text-transform:uppercase;margin:2px 0 4px}" +
+      ".fo-world-card .wc-boss{font-size:12.5px;color:rgba(255,255,255,.92)}" +
+      ".fo-world-card .wc-boss b{color:#F3D37A}" +
+      ".fo-world-card .wc-line{font-family:Georgia,serif;font-size:12.5px;line-height:1.45;color:rgba(255,255,255,.85);margin-top:5px}" +
+      ".fo-world-card .wc-prog{display:flex;align-items:center;gap:9px;margin-top:9px;flex-wrap:wrap}" +
+      ".fo-world-card .wc-chip{font-family:Oswald,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;padding:5px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.25);color:#fff}" +
+      ".fo-world-card .wc-chip.won{background:rgba(62,148,85,.35);border-color:rgba(143,227,164,.6)}" +
+      ".fo-world-card .wc-chip.nxt{background:rgba(240,185,78,.16);border-color:rgba(240,185,78,.5);color:#F3D37A}" +
+      ".fo-world-card .wcd{display:inline-flex;gap:4px}" +
+      ".fo-world-card .wcd i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.22)}" +
+      ".fo-world-card .wcd i.f{background:#F0B94E}" +
+      ".fo-world-card .wc-row{margin-top:11px}" +
+      "html body .fo-world-card .wc-tour{font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:12px;letter-spacing:2.2px;text-transform:uppercase;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:11px 22px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.3),0 8px 20px rgba(201,162,75,.3) !important}" +
+      "html body .fo-world-card .wc-tour:hover{filter:brightness(1.06)}" +
+      "@media(max-width:700px){.fo-world-card{left:10px;right:10px;bottom:12px;width:auto}.fo-world-card .wc-art{flex-basis:112px}.fo-world-card .wc-h2{font-size:20px}}";
+    document.head.appendChild(woCss);
+  } catch (eWc) {}
   try {
     var trCss = document.createElement("style"); trCss.id = "fo-tour-css";
     trCss.textContent =
