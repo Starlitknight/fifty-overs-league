@@ -3889,9 +3889,13 @@
   }
   // the nav's Log out returns here (solo: leaving the room, not deleting it)
   window.foDoorOpen = function () { try { openWrap(true); renderWelcome(); } catch (e) {} };
-  // Circuit-only era: no accounts, no league sign-in - the solo career IS
-  // the game. The front door either resumes the save or asks for a club name.
-  try { foConsumeAuthHash(); } catch (eAH) {}
+  // Solo-first boot: a stored league session (commissioner / league manager)
+  // signs back in silently; everyone else gets the solo front door, which
+  // resumes the save or asks for a club name. No login screen on refresh.
+  var _authRedirect = null;
+  try { _authRedirect = foConsumeAuthHash(); } catch (eAH) {}
   openWrap(true);
-  foFrontDoor();
+  if (_authRedirect === "ok") { foLoading("Signing you in…"); enterApp(); }
+  else if (_authRedirect === "error") { renderLogin(); setTimeout(function () { say("That email link expired or was already used. Log in with your email and password below."); }, 60); }
+  else restoreSession().then(function () { if (JWT) { foLoading("Signing you in…"); enterApp(); } else foFrontDoor(); }).catch(function () { foFrontDoor(); });
 

@@ -7509,11 +7509,18 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ["fo-friendly", "fo-matchday"].forEach(function (c) { var st = tb.querySelector("a." + c); if (st) st.remove(); });
       addNav("fo-guide", "Manual", function () { location.hash = "#/guide"; if (typeof window.route === "function") window.route(); });
       try { foBellWire(tb, wrap); } catch (eB) {}
-      // Circuit-only era: no Admin (league founders). Log out lives on -
-      // it walks back out to the front door.
-      var adm0 = tb.querySelector("a.fo-league"); if (adm0) adm0.remove();
+      // Admin is founder-only: add it for the league founder, remove it for
+      // everyone else (so a player never inherits a stale Admin link).
+      var adm0 = tb.querySelector("a.fo-league");
+      if (SYNC && SYNC.isFounder) { if (!adm0) addNav("fo-league", "Admin", openLeagueMenu); }
+      else if (adm0) adm0.remove();
+      // Log out: in a league session it signs out of the account; solo it
+      // just walks back out to the front door.
       var out0 = tb.querySelector("a.fo-logout");
-      if (!out0) out0 = mk("Log out", "fo-logout", function () { if (typeof window.foDoorOpen === "function") window.foDoorOpen(); });
+      if (!out0) out0 = mk("Log out", "fo-logout", function () {
+        if (JWT) { doLogout(); }
+        else if (typeof window.foDoorOpen === "function") window.foDoorOpen();
+      });
       if (out0.parentNode !== wrap) wrap.appendChild(out0);
       // date + time (in the topbar flow, to the right of the status)
       var ck = tb.querySelector("#fo-clock");
@@ -10457,7 +10464,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260722-1609-1d093e";
+  var FO_BUILD = "20260722-1634-7e598c";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10737,7 +10744,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // opens the league menu instead. Keep the element (hidden) so old refs are safe.
   var btn = document.createElement("button");
   btn.id = "folBtn"; btn.textContent = "League"; btn.style.display = "none";
-  function openLeagueMenu() { openWrap(true); renderWelcome(); }
+  function openLeagueMenu() { openWrap(true); if (!JWT) renderWelcome(); else if (SYNC && LG) showWait(!!SYNC.myTeam); else enterApp(); }
   function doLogout() { JWT = ""; LG = null; SYNC = null; clearSession(); openWrap(true); renderLogin(); }
 
   var wrap = document.createElement("div");
@@ -10765,15 +10772,23 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     var a = t.getAttribute("data-act");
     if (a === "close") { openWrap(false); return; }
     ev.preventDefault();
-    // Circuit-only era: the front door only knows the solo career - the
-    // league/lobby/auth actions are retired until multiplayer returns
+    // The solo career is the front door; the league/auth actions live on so
+    // a commissioner can sign in and run their league (Admin lobby).
     var acts = {
+      login: doLogin, logout: doLogout,
+      showLogin: renderLogin, showJoin: renderJoin, showForgot: renderForgot,
       showWelcome: renderWelcome,
       soloStart: function () {
         var nmEl = wrap.querySelector("#folClubNm");
         foSoloBegin(nmEl ? nmEl.value : "");
       },
       soloContinue: function () { foSoloBegin(""); },
+      sendReset: sendReset, joinNew: doJoinSignup,
+      openId: function () { enterGameById(t.getAttribute("data-id")); }, join: joinLeague,
+      startLeague: startLeague, mkInvite: mkInvite,
+      relaunch: relaunchLeague, refound: foRefound,
+      delTeam: function () { delTeam(t.getAttribute("data-id"), t.getAttribute("data-name")); },
+      draftMine: draftMine, practice: practice,
       reload: function () { location.reload(); },
       backToGame: function () { openWrap(false); if (typeof window.route === "function") window.route(); }
     };
@@ -10871,6 +10886,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
            : '<div><label for="folClubNm">Club name</label><input id="folClubNm" type="text" maxlength="26" placeholder="e.g. Harbour Town CC"></div>' +
              '<button class="fol-cta" data-act="soloStart">Start playing ▸</button>') +
       "</div>" +
+      '<div class="fol-or">or play with friends</div>' +
+      '<div class="fol-links"><a data-act="showLogin">Sign in to a league</a><a data-act="showJoin">' + ICON_JOIN + "Join with invite code</a></div>" +
       FOOT);
   }
   function renderLogin() {
@@ -15681,11 +15698,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
   // the nav's Log out returns here (solo: leaving the room, not deleting it)
   window.foDoorOpen = function () { try { openWrap(true); renderWelcome(); } catch (e) {} };
-  // Circuit-only era: no accounts, no league sign-in - the solo career IS
-  // the game. The front door either resumes the save or asks for a club name.
-  try { foConsumeAuthHash(); } catch (eAH) {}
+  // Solo-first boot: a stored league session (commissioner / league manager)
+  // signs back in silently; everyone else gets the solo front door, which
+  // resumes the save or asks for a club name. No login screen on refresh.
+  var _authRedirect = null;
+  try { _authRedirect = foConsumeAuthHash(); } catch (eAH) {}
   openWrap(true);
-  foFrontDoor();
+  if (_authRedirect === "ok") { foLoading("Signing you in…"); enterApp(); }
+  else if (_authRedirect === "error") { renderLogin(); setTimeout(function () { say("That email link expired or was already used. Log in with your email and password below."); }, 60); }
+  else restoreSession().then(function () { if (JWT) { foLoading("Signing you in…"); enterApp(); } else foFrontDoor(); }).catch(function () { foFrontDoor(); });
 
   // ===========================================================================
   //  TRAINING & YOUTH SCOUTING (From-the-Pavilion-style)

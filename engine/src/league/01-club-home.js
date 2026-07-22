@@ -2904,7 +2904,7 @@
   // opens the league menu instead. Keep the element (hidden) so old refs are safe.
   var btn = document.createElement("button");
   btn.id = "folBtn"; btn.textContent = "League"; btn.style.display = "none";
-  function openLeagueMenu() { openWrap(true); renderWelcome(); }
+  function openLeagueMenu() { openWrap(true); if (!JWT) renderWelcome(); else if (SYNC && LG) showWait(!!SYNC.myTeam); else enterApp(); }
   function doLogout() { JWT = ""; LG = null; SYNC = null; clearSession(); openWrap(true); renderLogin(); }
 
   var wrap = document.createElement("div");
@@ -2932,15 +2932,23 @@
     var a = t.getAttribute("data-act");
     if (a === "close") { openWrap(false); return; }
     ev.preventDefault();
-    // Circuit-only era: the front door only knows the solo career - the
-    // league/lobby/auth actions are retired until multiplayer returns
+    // The solo career is the front door; the league/auth actions live on so
+    // a commissioner can sign in and run their league (Admin lobby).
     var acts = {
+      login: doLogin, logout: doLogout,
+      showLogin: renderLogin, showJoin: renderJoin, showForgot: renderForgot,
       showWelcome: renderWelcome,
       soloStart: function () {
         var nmEl = wrap.querySelector("#folClubNm");
         foSoloBegin(nmEl ? nmEl.value : "");
       },
       soloContinue: function () { foSoloBegin(""); },
+      sendReset: sendReset, joinNew: doJoinSignup,
+      openId: function () { enterGameById(t.getAttribute("data-id")); }, join: joinLeague,
+      startLeague: startLeague, mkInvite: mkInvite,
+      relaunch: relaunchLeague, refound: foRefound,
+      delTeam: function () { delTeam(t.getAttribute("data-id"), t.getAttribute("data-name")); },
+      draftMine: draftMine, practice: practice,
       reload: function () { location.reload(); },
       backToGame: function () { openWrap(false); if (typeof window.route === "function") window.route(); }
     };
@@ -3038,6 +3046,8 @@
            : '<div><label for="folClubNm">Club name</label><input id="folClubNm" type="text" maxlength="26" placeholder="e.g. Harbour Town CC"></div>' +
              '<button class="fol-cta" data-act="soloStart">Start playing ▸</button>') +
       "</div>" +
+      '<div class="fol-or">or play with friends</div>' +
+      '<div class="fol-links"><a data-act="showLogin">Sign in to a league</a><a data-act="showJoin">' + ICON_JOIN + "Join with invite code</a></div>" +
       FOOT);
   }
   function renderLogin() {

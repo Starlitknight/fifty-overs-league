@@ -422,11 +422,18 @@
       ["fo-friendly", "fo-matchday"].forEach(function (c) { var st = tb.querySelector("a." + c); if (st) st.remove(); });
       addNav("fo-guide", "Manual", function () { location.hash = "#/guide"; if (typeof window.route === "function") window.route(); });
       try { foBellWire(tb, wrap); } catch (eB) {}
-      // Circuit-only era: no Admin (league founders). Log out lives on -
-      // it walks back out to the front door.
-      var adm0 = tb.querySelector("a.fo-league"); if (adm0) adm0.remove();
+      // Admin is founder-only: add it for the league founder, remove it for
+      // everyone else (so a player never inherits a stale Admin link).
+      var adm0 = tb.querySelector("a.fo-league");
+      if (SYNC && SYNC.isFounder) { if (!adm0) addNav("fo-league", "Admin", openLeagueMenu); }
+      else if (adm0) adm0.remove();
+      // Log out: in a league session it signs out of the account; solo it
+      // just walks back out to the front door.
       var out0 = tb.querySelector("a.fo-logout");
-      if (!out0) out0 = mk("Log out", "fo-logout", function () { if (typeof window.foDoorOpen === "function") window.foDoorOpen(); });
+      if (!out0) out0 = mk("Log out", "fo-logout", function () {
+        if (JWT) { doLogout(); }
+        else if (typeof window.foDoorOpen === "function") window.foDoorOpen();
+      });
       if (out0.parentNode !== wrap) wrap.appendChild(out0);
       // date + time (in the topbar flow, to the right of the status)
       var ck = tb.querySelector("#fo-clock");
