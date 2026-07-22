@@ -10442,7 +10442,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260722-1322-c1289f";
+  var FO_BUILD = "20260722-1334-1df8ce";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -26589,6 +26589,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
 
   console.info("Fifty Overs League overlay ready.");
 })();
+
+  // The engine painted its first frame before the overlay finished loading,
+  // so a cold refresh on #/squad (or any wrapped page) showed the RAW engine
+  // render. This is the LAST league module: every pg* override exists now -
+  // route once more so the overlay owns the first visible frame.
+  setTimeout(function () { try { if (typeof window.route === "function") window.route(); } catch (eRR) {} }, 0);
 
 </script>
 <script id="fo-presentation">

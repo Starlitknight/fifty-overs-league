@@ -3799,3 +3799,9 @@
 
   console.info("Fifty Overs League overlay ready.");
 })();
+
+  // The engine painted its first frame before the overlay finished loading,
+  // so a cold refresh on #/squad (or any wrapped page) showed the RAW engine
+  // render. This is the LAST league module: every pg* override exists now -
+  // route once more so the overlay owns the first visible frame.
+  setTimeout(function () { try { if (typeof window.route === "function") window.route(); } catch (eRR) {} }, 0);
