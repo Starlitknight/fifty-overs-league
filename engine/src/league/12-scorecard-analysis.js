@@ -3329,6 +3329,9 @@
       // pulls the eye to the middle of the painting
       ".fo-tour-fx{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(115% 100% at 50% 45%,rgba(5,10,20,0) 58%,rgba(5,10,20,.38) 100%)}" +
       ".fo-tour-fx::after{content:'';position:absolute;inset:0;opacity:.055;mix-blend-mode:overlay;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E\")}" +
+      // with the floating header, the tour's own masthead steps down below it
+      "body.fo-home-on .fo-tour-hd{top:60px}" +
+      "body.fo-home-on .fo-tour-back{top:60px}" +
       ".fo-tour-hd{position:absolute;top:16px;left:0;right:0;text-align:center;z-index:5;pointer-events:none;color:#F5EFDC;text-shadow:0 2px 16px rgba(0,0,0,.85),0 1px 4px rgba(0,0,0,.7)}" +
       ".fo-tour-hd .eb{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:4.2px;text-transform:uppercase;color:#F3D37A;font-weight:600}" +
       ".fo-tour-hd h1{font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(26px,4vw,44px);letter-spacing:3px;text-transform:uppercase;color:#FFFEFC;margin:1px 0 0;line-height:1}" +
