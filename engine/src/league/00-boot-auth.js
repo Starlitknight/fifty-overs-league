@@ -422,9 +422,12 @@
       ["fo-friendly", "fo-matchday"].forEach(function (c) { var st = tb.querySelector("a." + c); if (st) st.remove(); });
       addNav("fo-guide", "Manual", function () { location.hash = "#/guide"; if (typeof window.route === "function") window.route(); });
       try { foBellWire(tb, wrap); } catch (eB) {}
-      // Circuit-only era: no Admin (league founders) and no Log out (no
-      // accounts) - the solo game just is the game
-      ["fo-league", "fo-logout"].forEach(function (c) { var st1 = tb.querySelector("a." + c); if (st1) st1.remove(); });
+      // Circuit-only era: no Admin (league founders). Log out lives on -
+      // it walks back out to the front door.
+      var adm0 = tb.querySelector("a.fo-league"); if (adm0) adm0.remove();
+      var out0 = tb.querySelector("a.fo-logout");
+      if (!out0) out0 = mk("Log out", "fo-logout", function () { if (typeof window.foDoorOpen === "function") window.foDoorOpen(); });
+      if (out0.parentNode !== wrap) wrap.appendChild(out0);
       // date + time (in the topbar flow, to the right of the status)
       var ck = tb.querySelector("#fo-clock");
       if (!ck) { ck = document.createElement("span"); ck.id = "fo-clock"; tickClock(); }

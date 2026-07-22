@@ -3228,7 +3228,7 @@
       var st = foCoachStage();
       if (st === "done") return;
       if (typeof SYNC !== "undefined" && SYNC && SYNC.started && !SYNC.practice) { foCoachSet("done"); return; }   // league players have teammates for this
-      if (document.getElementById("folWrap") && document.getElementById("folWrap").offsetParent) return;          // front door still up
+      var fwD = document.getElementById("folWrap"); if (fwD && fwD.classList.contains("on")) return;              // front door still up (fixed-position: offsetParent lies)
       if (document.getElementById("fo-onb") && document.getElementById("fo-onb").style.display === "block") return; // a dialogue is already open
       var h = (location.hash || "").split("?")[0];
       if (!st) {
@@ -3880,11 +3880,12 @@
   // straight back into their game; a fresh visitor meets the Gaffer and can
   // found a club with no account; leagues remain one tap away.
   function foFrontDoor() {
-    var welcomed = false;
-    try { welcomed = !!(typeof window.store === "function" ? window.store("fo_welcomed") : localStorage.getItem("fo_welcomed")); } catch (eW) {}
-    if (welcomed && foHasSoloSave()) { openWrap(false); return; }   // mid-career: no gate
+    // the front door greets every launch: a returning boss gets one
+    // "Continue playing" tap, a fresh visitor names the club
     renderWelcome();
   }
+  // the nav's Log out returns here (solo: leaving the room, not deleting it)
+  window.foDoorOpen = function () { try { openWrap(true); renderWelcome(); } catch (e) {} };
   // Circuit-only era: no accounts, no league sign-in - the solo career IS
   // the game. The front door either resumes the save or asks for a club name.
   try { foConsumeAuthHash(); } catch (eAH) {}

@@ -1296,14 +1296,15 @@ function route(){
   App.page=path||'circuit';
   // Circuit-only era: the club dashboard and the league/office/training
   // surfaces are retired; any old link or bookmark lands on the Circuit.
-  const GONE={club:1,office:1,nets:1,stats:1,matches:1,matchday:1,training:1,transfers:1,story:1,friendly:1,scout:1,reports:1,commentary:1,calibration:1,editor:1};
+  const GONE={club:1,office:1,nets:1,stats:1,matches:1,matchday:1,training:1,transfers:1,story:1,friendly:1,scout:1,reports:1,commentary:1,calibration:1,editor:1,welcome:1,founder:1,create:1};
   if(GONE[App.page]){location.hash='#/circuit';App.page='circuit';return}
   // #9 Draft lock: a new player cannot navigate away until they've confirmed a legal squad.
   // founderConfirm sets fo_welcomed; until then, keep them in the draft/onboarding.
   try{
-    if(!store('fo_welcomed') && App.page!=='welcome' && App.page!=='manual' && App.page!=='help'){
-      if(App.founder && App.founder.pool){ pgFounder(); return; }   // mid-draft: stay in the draft, preserve picks
-      App.page='welcome'; pgWelcome(); return;                      // otherwise back to onboarding
+    if(!store('fo_welcomed') && App.page!=='manual' && App.page!=='help'){
+      // circuit-only era: the overlay front door (name your club) owns entry -
+      // the engine's welcome/draft pitch is retired
+      if(App.page!=='circuit'){location.hash='#/circuit';return}
     }
   }catch(e){}
   document.querySelectorAll('#topbar a').forEach(a=>a.classList.toggle('on',a.dataset.nav===App.page));
@@ -1315,7 +1316,7 @@ function route(){
   if(P[App.page])P[App.page](q);
   else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){}}
   else if(OV){/* overlay not parsed yet: leave the page blank, its interval paints */}
-  else pgClub(q);
+  else{location.hash='#/circuit';return}
   }catch(eRoute){
     // a broken page renderer must not freeze navigation for the whole session
     try{console.error('route failed on '+(App&&App.page),eRoute)}catch(e2){}
@@ -4385,3 +4386,5 @@ pgReports=function(){};
 pgCal=function(){};
 pgEditor=function(){};
 pgCommentary=function(){};
+pgWelcome=function(){};
+pgFounder=function(){};

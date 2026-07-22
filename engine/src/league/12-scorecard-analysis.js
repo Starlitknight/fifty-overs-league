@@ -2448,15 +2448,16 @@
       ".fo-cx-map .mapin{position:relative;border-radius:9px;overflow:hidden;background:#0a1220}" +
       ".fo-cx-map img{display:block;width:100%;height:auto}" +
       "html body #page .fo-cx-node,html body.ftpskin #page .fo-cx-node{cursor:pointer;appearance:none;-webkit-appearance:none;font:inherit;padding:0 !important;margin:0;position:absolute;transform:translate(-50%,-50%);width:32px !important;height:32px;border-radius:50% !important;display:grid;place-items:center;font-family:Oswald,sans-serif !important;font-weight:600;font-size:14px !important;color:#fff !important;background:rgba(10,18,32,.62) !important;border:2.5px solid #fff !important;box-shadow:0 0 0 3px rgba(6,12,22,.35),0 3px 10px rgba(0,0,0,.5) !important;line-height:1;min-width:0}" +
-      ".fo-cx-node .cxn-str{position:absolute;top:-15px;left:50%;transform:translateX(-50%);display:flex;gap:.5px;font-style:normal;font-size:8.5px;line-height:1;pointer-events:none;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.85)}" +
-      ".fo-cx-node .cxn-str em{font-style:normal;color:#FFFEFC}" +
-      ".fo-cx-node .cxn-str em.e{color:rgba(255,255,255,.28)}" +
-      ".fo-cx-node .cxn-str em.h{background:linear-gradient(90deg,#FFFEFC 50%,rgba(255,255,255,.28) 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
-      ".fo-cx-node.bossn .cxn-str{top:-17px;font-size:9.5px}" +
-      ".fo-cx-node.bossn .cxn-str em{color:#F3D37A}" +
-      ".fo-cx-node.bossn .cxn-str em.e{color:rgba(243,211,122,.3)}" +
-      ".fo-cx-node.bossn .cxn-str em.h{background:linear-gradient(90deg,#F3D37A 50%,rgba(243,211,122,.3) 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".fo-cx-node .cxn-str{position:absolute;top:-22px;left:50%;transform:translateX(-50%);display:flex;gap:1px;align-items:center;font-style:normal;font-size:11px;line-height:1;pointer-events:none;white-space:nowrap;padding:3px 6px 4px;border-radius:999px;background:rgba(6,12,22,.82);border:1px solid rgba(255,255,255,.35);box-shadow:0 2px 8px rgba(0,0,0,.45)}" +
+      ".fo-cx-node .cxn-str em{font-style:normal;color:#FFC93C;text-shadow:0 1px 2px rgba(0,0,0,.6)}" +
+      ".fo-cx-node .cxn-str em.e{color:rgba(255,255,255,.3);text-shadow:none}" +
+      ".fo-cx-node .cxn-str em.h{background:linear-gradient(90deg,#FFC93C 50%,rgba(255,255,255,.3) 50%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}" +
+      ".fo-cx-node.bossn .cxn-str{top:-25px;font-size:12.5px;border-color:rgba(243,211,122,.75)}" +
       ".fo-cx-node.done .cxn-str{display:none}" +
+      ".fo-cx-node.strlow .cxn-str{top:auto;bottom:-27px}" +
+      ".fo-cx-node.bossn.strlow .cxn-str{top:auto;bottom:-30px}" +
+      // the green ring travels to whichever city was tapped last
+      "html body #page .fo-cx-node.sel,html body.ftpskin #page .fo-cx-node.sel{border-color:#3E9455 !important;box-shadow:0 0 0 4px rgba(62,148,85,.55),0 0 18px rgba(62,148,85,.8),0 3px 10px rgba(0,0,0,.5) !important}" +
       "html body #page .fo-cx-node.done,html body.ftpskin #page .fo-cx-node.done{background:#3E9455 !important;color:#fff !important}" +
       "html body #page .fo-cx-node.nxt,html body.ftpskin #page .fo-cx-node.nxt{background:var(--cxc,#C8674A) !important;color:#fff !important}" +
       "@media (prefers-reduced-motion:no-preference){.fo-cx-node.nxt{animation:foCxPulse 1.8s ease-out infinite}}" +
@@ -2941,8 +2942,29 @@
           }
           if (brief) { brief.classList.remove("flash"); void brief.offsetWidth; brief.classList.add("flash"); }
         };
+        // a star pill that would print over a neighbouring medallion flips
+        // below its own city label instead
+        try {
+          var nds0 = [].slice.call(page.querySelectorAll(".fo-cx-node"));
+          nds0.forEach(function (nd9) {
+            var st9 = nd9.querySelector(".cxn-str"); if (!st9) return;
+            var r9 = st9.getBoundingClientRect();
+            nds0.forEach(function (o9) {
+              if (o9 === nd9) return;
+              var q9 = o9.getBoundingClientRect();
+              if (r9.left < q9.right && r9.right > q9.left && r9.top < q9.bottom && r9.bottom > q9.top) nd9.classList.add("strlow");
+            });
+          });
+        } catch (eFl) {}
+        // the open door starts selected; the ring follows every tap
+        var selDef = page.querySelector(".fo-cx-node.nxt");
+        if (selDef) selDef.classList.add("sel");
         page.querySelectorAll(".fo-cx-node[data-ci]").forEach(function (nd2) {
-          nd2.addEventListener("click", function () { show(+nd2.getAttribute("data-ci")); });
+          nd2.addEventListener("click", function () {
+            page.querySelectorAll(".fo-cx-node.sel").forEach(function (o2) { o2.classList.remove("sel"); });
+            nd2.classList.add("sel");
+            show(+nd2.getAttribute("data-ci"));
+          });
           // the city's NAME is a door of its own: tap it and travel there
           var cl2 = nd2.querySelector(".cl");
           if (cl2) cl2.addEventListener("click", function (ev2) {
