@@ -67,7 +67,7 @@ FOC.oval = (function () {
       "<circle id='ov-ball' cx='200' cy='190' r='3.2' fill='#a3242b' stroke='#fff' stroke-width='.8' opacity='0'/>" +
       "<text id='ov-pop' x='200' y='128' text-anchor='middle' class='ov-pop'></text>" +
       "<text id='ov-pop2' x='200' y='150' text-anchor='middle' class='ov-pop2'></text>" +
-      "</svg><div class='ov-note'><button type='button' id='ov-snd' class='ov-snd' title='Match sound'>&#128263;</button><span>theatre · live directions · real field setting</span></div></div>";
+      "</svg><div class='ov-note'><button type='button' id='ov-snd' class='ov-snd' title='Match sound'>&#128263;</button><span>theatre · live directions · real field · fielder ratings</span></div></div>";
   }
 
   // ---- sound: tiny synthesized crowd + bat, no assets, off by default ------
@@ -148,6 +148,49 @@ FOC.oval = (function () {
     } catch (e) {}
   }
 
+  // the ENGINE keeps positions as template spots, not assigned players -
+  // so the stage plays captain: the bowling XI (minus bowler and keeper)
+  // fills the nine posts deterministically, best catchers in the cordon,
+  // best athletes in the deep, the weakest hidden at mid-on. Presentation
+  // only - fielding EVENTS in the engine stay skill-weighted draws.
+  function fieldLvl(p) {
+    var f = (p.skills && p.skills.fielding) || 50, c = (p.skills && p.skills.catching) || 55;
+    return Math.round((f + c) / 2);
+  }
+  function fieldAssign(raw) {
+    try {
+      var inn = M.innings[M.inns]; if (!inn || !inn.bxi) return null;
+      var pool = inn.bxi.filter(function (p) { return p.name !== inn.curBowlerName && !p.keeper; });
+      while (pool.length > 9) {   // no flagged keeper: the best gloveman stays behind the stumps
+        var kb = pool.slice().sort(function (a, b) { return ((b.skills || {}).keeping || 0) - ((a.skills || {}).keeping || 0); })[0];
+        pool = pool.filter(function (p) { return p !== kb; });
+      }
+      var srt = function (arr, sk) {
+        return arr.slice().sort(function (a, b) {
+          var d = (((b.skills || {})[sk]) || 50) - (((a.skills || {})[sk]) || 50);
+          return d !== 0 ? d : (a.name < b.name ? -1 : 1);
+        });
+      };
+      var CLOSE = { slip: 1, "": 1, "silly point": 1, "short leg": 1 };
+      var closeIx = [], deepIx = [], ringIx = [];
+      raw.forEach(function (t, i) {
+        var lbl = t[2] || "";
+        if (CLOSE[lbl]) closeIx.push(i);
+        else if (FO_DEEP_POS[lbl]) deepIx.push(i);
+        else ringIx.push(i);
+      });
+      var left = pool.slice(), out = new Array(raw.length), take = function (arr) { var p = arr[0]; left = left.filter(function (q) { return q !== p; }); return p; };
+      closeIx.forEach(function (i) { out[i] = take(srt(left, "catching")); });
+      deepIx.forEach(function (i) { out[i] = take(srt(left, "fielding")); });
+      // the ring: strongest at the hot spots, weakest hidden at mid-on
+      var ringOrder = ringIx.slice().sort(function (a, b) {
+        var hide = { "mid-on": 2, "mid-off": 1 };
+        return (hide[raw[a][2]] || 0) - (hide[raw[b][2]] || 0);
+      });
+      ringOrder.forEach(function (i) { out[i] = take(srt(left, "fielding")); });
+      return out;
+    } catch (e) { return null; }
+  }
   // render an engine field state (foFieldState): spots arrive with labels
   // and already-mirrored coordinates
   function placeField(st) {
@@ -157,19 +200,28 @@ FOC.oval = (function () {
       for (var i = 0; i < 9; i++) {
         h += "<g class='ov-f' style='transition:transform .9s ease' transform='translate(200,130)'>" +
           "<circle r='4' fill='#1f4d3a' stroke='#fff' stroke-width='1.2'/>" +
-          "<text y='12' class='ov-flbl'></text></g>";
+          "<text y='12' class='ov-flbl'></text><text y='21' class='ov-fplr'></text></g>";
       }
       g.innerHTML = h;
     }
     // the attacking template has one unlabeled second slip; rebuild the
     // full 9-spot list from the engine template so the dot count stays 9
     var raw = (st.setting === "att" && st.spin) ? FO_FIELDS.attSpin : (FO_FIELDS[st.setting] || FO_FIELDS.bal);
+    var who = fieldAssign(raw);
     var cs = g.childNodes;
     for (var j = 0; j < cs.length && j < raw.length; j++) {
       var x = st.lhb ? 400 - raw[j][0] : raw[j][0], y = raw[j][1];
       cs[j].setAttribute("transform", "translate(" + x + "," + y + ")");
       var t = cs[j].querySelector("text");
       if (t) t.textContent = raw[j][2] || "";
+      var pl = who && who[j], t2 = cs[j].querySelector(".ov-fplr");
+      var tier = "";
+      if (pl) {
+        var lv = fieldLvl(pl);
+        tier = lv >= 72 ? "f-hi" : lv >= 58 ? "f-ok" : lv >= 45 ? "" : "f-lo";
+        if (t2) t2.textContent = nmS(pl.name) + " " + lv;
+      } else if (t2) t2.textContent = "";
+      cs[j].setAttribute("class", "ov-f " + tier);
     }
     var chip = document.getElementById("ov-fld");
     if (chip) {
@@ -178,7 +230,7 @@ FOC.oval = (function () {
         (st.setting === "att" && st.spin ? " · spin" : "");
       chip.className = "ov-fld f-" + st.setting;
     }
-    curField = st.setting + (st.lhb ? "|L" : "|R") + (st.spin ? "|S" : "|P");
+    curField = st.setting + (st.lhb ? "|L" : "|R") + (st.spin ? "|S" : "|P") + "|" + (((M.innings || [])[M.inns] || {}).curBowlerName || "") + "|" + M.inns;
   }
 
   function board() {
@@ -198,7 +250,7 @@ FOC.oval = (function () {
       el("ov-bowl").textContent = bw ? nmS(inn.curBowlerName) + "  " + Math.floor((bw.b || 0) / 6) + "-" + (bw.r || 0) + "-" + (bw.w || 0) : "";
       if (typeof foFieldState === "function") {
         var st = foFieldState(inn, (s1 && s1.p && s1.p.hand) || "R");
-        var key = st.setting + (st.lhb ? "|L" : "|R") + (st.spin ? "|S" : "|P");
+        var key = st.setting + (st.lhb ? "|L" : "|R") + (st.spin ? "|S" : "|P") + "|" + (inn.curBowlerName || "") + "|" + M.inns;
         if (key !== curField) placeField(st);
       }
       // this over: the last balls since the over began
@@ -611,6 +663,10 @@ FOC.oval = (function () {
       ".ov-strip .bw{background:#a3242b;color:#fff}.ov-strip .bd{opacity:.75}" +
       ".ov-svg{display:block;width:100%;height:auto;background:#0F1A2E}" +
       ".ov-flbl{font:600 7px Inter,-apple-system,sans-serif;fill:rgba(241,234,218,.78);letter-spacing:.05em;text-anchor:middle;text-transform:uppercase}" +
+      ".ov-fplr{font:600 6.5px Inter,-apple-system,sans-serif;fill:rgba(241,234,218,.5);text-anchor:middle}" +
+      ".ov-f.f-hi circle{fill:#C9A24B}.ov-f.f-hi .ov-fplr{fill:#F3D37A}" +
+      ".ov-f.f-ok circle{fill:#1F6E74}.ov-f.f-ok .ov-fplr{fill:#7fd7de}" +
+      ".ov-f.f-lo circle{fill:#7B3B2E}.ov-f.f-lo .ov-fplr{fill:#e0937f}" +
       ".ov-f.ov-hot circle{animation:ovHot .9s ease}" +
       ".ov-f.ov-hotw circle{animation:ovHotW .9s ease}" +
       "@keyframes ovHot{0%{stroke:#C9A24B;stroke-width:1.2}35%{stroke:#C9A24B;stroke-width:5.5}100%{stroke:#fff;stroke-width:1.2}}" +
