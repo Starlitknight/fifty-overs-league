@@ -3021,7 +3021,7 @@
               "</div>" +
               "</div></div>";
           })() +
-          (r.final ? "" : "<div class='fo-cx-tourrow'><button type='button' class='fo-cx-tourbtn' data-tour='" + r.id + "'>&#8982; Tour " + E(r.nm) + "</button><span class='tsub'>walk the map &middot; meet the locals</span></div>") +
+          (r.final ? "" : "<div class='fo-cx-tourrow'><button type='button' class='fo-cx-tourbtn' data-tour='" + r.id + "'>ENTER " + E(r.nm) + " &#9654;</button><span class='tsub'>walk the full map &middot; meet the locals</span></div>") +
           "<div class='fo-cx-brief' id='fo-cx-brief'>" +
           "<img class='gf' src='" + FO_ART + "gaffer.png' alt=''>" +
           "<div class='bx'>" +
@@ -3125,7 +3125,14 @@
   // flash while waiting for the interval to notice
   try { window.foRenderCircuit = foRenderCircuit; } catch (eEx) {}
   setInterval(foRenderCircuit, 900);
-  window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/circuit") === 0) { foCxView = null; setTimeout(foRenderCircuit, 40); } });
+  window.addEventListener("hashchange", function () {
+    if (location.hash.indexOf("#/circuit") !== 0) return;
+    // a "Tour X" click requests a specific country page; otherwise the
+    // strip snaps back to the live region
+    foCxView = (window.__foCxViewReq != null) ? window.__foCxViewReq : null;
+    window.__foCxViewReq = null;
+    setTimeout(foRenderCircuit, 40);
+  });
   // ==========================================================================
   //  CITY PAGES - travel, wonder, discovery. Tap a city's name anywhere on
   //  the Circuit and the whole place opens up: its art, its culture, how
@@ -3425,7 +3432,7 @@
       }).join("");
       page.innerHTML =
         "<div class='fo-tour' style='--cxc:" + r.ac + "'>" +
-        "<a class='fo-tour-back' href='#/circuit'>&#8249; Circuit</a>" +
+        "<a class='fo-tour-back' href='#/circuit?m=1'>&#8249; Country</a>" +
         "<div class='fo-tour-hd'><div class='eb'>The Grand Tour</div><h1>" + E(r.nm) + "</h1><div class='ty'>" + E(r.type) + "</div></div>" +
         "<div class='fo-tour-map'><img src='" + FO_ART + "circuit/" + (r.bg || (r.id + ".webp")) + "' alt=''>" + pins + "</div>" +
         "<div class='fo-tour-fx'></div>" +
@@ -3480,6 +3487,8 @@
       // full-bleed means the painting overflows the screen - open the camera
       // over the cities, and let the player drag to roam the rest
       var mapEl = page.querySelector(".fo-tour-map");
+      var bk9 = page.querySelector(".fo-tour-back");
+      if (bk9) bk9.addEventListener("click", function () { window.__foCxViewReq = ri; });
       var tzi = page.querySelector("#fo-tz-in"), tzo = page.querySelector("#fo-tz-out");
       if (tzi) tzi.addEventListener("click", function () { foTourZoom(mapEl, (mapEl.__z || 1) * 1.35); });
       if (tzo) tzo.addEventListener("click", function () { foTourZoom(mapEl, (mapEl.__z || 1) / 1.35); });
@@ -3638,10 +3647,14 @@
         });
         var tb2 = cardEl.querySelector("[data-wc-tour]");
         if (tb2) tb2.addEventListener("click", function () {
-          location.hash = "#/tour?r=" + tb2.getAttribute("data-wc-tour");
+          var rid2 = tb2.getAttribute("data-wc-tour");
+          for (var i2 = 0; i2 < FO_CX_REGIONS.length; i2++) if (FO_CX_REGIONS[i2].id === rid2) { foCxView = i2; window.__foCxViewReq = i2; }
+          location.hash = "#/circuit?m=1";
           if (typeof window.route === "function") window.route();
-          setTimeout(foRenderTour, 60);
+          setTimeout(foRenderCircuit, 60);
+          return;
         });
+
         var fb2 = cardEl.querySelector("[data-wc-final]");
         if (fb2) fb2.addEventListener("click", function () {
           location.hash = "#/circuit?m=1"; if (typeof window.route === "function") window.route();
@@ -3843,7 +3856,7 @@
       "html body #page .tc-enter:hover{background:#1E2F55 !important}" +
       "html body #page .tc-ch,html body.ftpskin #page .tc-ch{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.7px;text-transform:uppercase;font-size:11px;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:9px 18px;cursor:pointer;box-shadow:0 3px 0 rgba(16,27,45,.3) !important}" +
       ".fo-cx-tourrow{text-align:center;margin:14px 0 4px}" +
-      "html body #page .fo-cx-tourbtn,html body.ftpskin #page .fo-cx-tourbtn{font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:14px;letter-spacing:2.8px;text-transform:uppercase;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:13px 34px;cursor:pointer;box-shadow:0 5px 0 rgba(16,27,45,.3),0 10px 26px rgba(201,162,75,.35) !important}" +
+      "html body #page .fo-cx-tourbtn,html body.ftpskin #page .fo-cx-tourbtn{font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:14px;letter-spacing:2.8px;text-transform:uppercase;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:15px 44px;cursor:pointer;box-shadow:0 5px 0 rgba(16,27,45,.3),0 10px 26px rgba(201,162,75,.35) !important;font-size:16px !important}" +
       "html body #page .fo-cx-tourbtn:hover{filter:brightness(1.06)}" +
       ".fo-cx-tourrow .tsub{display:block;margin-top:6px;font-style:italic;font-size:11.5px;color:#8a8062}" +
       "@media(max-width:640px){.fo-tour{height:calc(100vh - 130px);min-height:480px}.fo-tour-map{width:max(100vw,calc(100vh - 130px))}.fo-tour-card{bottom:8px}.tc-art{height:96px}.tc-bd{padding:10px 13px 12px}.tc-h2{font-size:17px}.tc-eb{font-size:8.5px;letter-spacing:1.8px}.tc-tag{font-size:10px}.tc-line{font-size:11px;line-height:1.4}.tc-folk .fq{font-size:10.5px}.tc-chip{font-size:8.5px;padding:4px 8px}}";
