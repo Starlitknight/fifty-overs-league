@@ -1959,7 +1959,7 @@
     if (!on) {
       ["fo-th", "fo-thd", "fo-th-ov0", "fo-th-gfon", "fo-th-pin"].forEach(function (c) { document.body.classList.remove(c); });
       document.body.removeAttribute("data-thtab");
-      ["fo-th-rail", "fo-thd-x", "fo-th-gf", "fo-th-cut", "fo-mstage"].forEach(function (id) { var e9 = document.getElementById(id); if (e9) e9.remove(); });
+      ["fo-th-rail", "fo-thd-x", "fo-th-gf", "fo-th-cut", "fo-th-gauge", "fo-mstage"].forEach(function (id) { var e9 = document.getElementById(id); if (e9) e9.remove(); });
       return;
     }
     foThCss();
@@ -2100,29 +2100,30 @@
       "body.fo-th .fo-mst-moment .t{margin:0;font-size:29px;letter-spacing:6px;line-height:1;height:29px;transition:none;animation:none !important;opacity:1 !important}" +
       "body.fo-th .fo-mst-moment .t:empty{visibility:hidden}" +
       "body.fo-th .fo-mst-moment .rib{min-height:42px}" +
-      "body.fo-th .fo-mst-moment .mbs{min-height:22px}" +
+      
       "body.fo-th .fo-mst-moment .t.settle{opacity:0}" +
       "body.fo-th .fo-mst-moment .rib{display:flex;align-items:center;gap:10px;max-width:100%;padding:9px 16px;background:rgba(5,20,40,.72);border:1px solid rgba(255,255,255,.16);border-radius:12px;backdrop-filter:blur(10px)}" +
       "body.fo-th .fo-mst-moment .rib:not(:has(p)):not(:has(.chip)){display:none}" +
       "body.fo-th .fo-mst-moment .rib .chip{border:none;background:none;padding:0;color:#F3D37A;backdrop-filter:none;font-size:12.5px}" +
       "body.fo-th .fo-mst-moment .rib .kph{font-family:Oswald,sans-serif;font-size:12.5px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:#22D3E0;white-space:nowrap}" +
       "body.fo-th .fo-mst-moment .rib p{margin:0;font-family:Oswald,sans-serif;font-size:15.5px;font-weight:500;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.96);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:680px}" +
-      "body.fo-th .fo-mst-moment .mbs{display:flex;gap:5px}" +
-      "body.fo-th .fo-mst-moment .mb{width:22px;height:22px;font-size:10px;background:rgba(5,20,40,.6);border-color:rgba(255,255,255,.2)}" +
-      "body.fo-th .fo-mst-moment .mb.b4{background:#f3c254;border-color:#f3c254;color:#2f2109}" +
-      "body.fo-th .fo-mst-moment .mb.bw{background:#d8504b;border-color:#d8504b;color:#fff}" +
+      "body.fo-th .fo-mst-score .mbs{display:flex;gap:7px;justify-content:center;margin-top:9px;min-height:30px}" +
+      "body.fo-th .fo-mst-score .mb{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-family:Oswald,sans-serif;font-weight:600;font-size:13.5px;color:#fff;background:rgba(255,255,255,.13);border:1.5px solid rgba(255,255,255,.24)}" +
+      "body.fo-th .fo-mst-score .mb.b4{background:#f3c254;border-color:#f3c254;color:#2f2109}" +
+      "body.fo-th .fo-mst-score .mb.bw{background:#d8504b;border-color:#d8504b;color:#fff}" +
+      "body.fo-th .fo-mst-score .mb.bx{background:#9db7d4;border-color:#9db7d4;color:#0f2036}" +
       // ---- the speedo: half-dial above the bowler, re-armed every ball ----
-      "body.fo-th .fo-th-gauge{position:absolute;right:80px;top:calc(50% + 208px);width:124px;pointer-events:none;text-align:center;z-index:6;background:rgba(5,20,40,.72);border:1px solid rgba(255,255,255,.18);border-radius:14px;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.4);padding:7px 6px 3px}" +
-      "body.fo-th .fo-th-gauge svg{display:block;width:100%;height:auto;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))}" +
-      "body.fo-th .fo-th-gauge .ndl{transform-origin:50px 50px;animation:foNdl .7s cubic-bezier(.25,.9,.35,1.08)}" +
-      "@keyframes foNdl{from{transform:rotate(-90deg)}}" +
-      "body.fo-th .fo-th-gauge .arc{animation:foArc .7s cubic-bezier(.25,.9,.35,1)}" +
-      "@keyframes foArc{from{stroke-dashoffset:125.7}}" +
-      "body.fo-th .fo-th-gauge .gv{position:absolute;left:0;right:0;bottom:-3px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.8)}" +
-      "body.fo-th .fo-th-gauge .gv b{font-family:Oswald,sans-serif;font-weight:600;font-size:19px;letter-spacing:1px}" +
-      "body.fo-th .fo-th-gauge .gv i{font-style:normal;font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:#F3D37A;margin-left:4px}" +
-      "@media (prefers-reduced-motion:reduce){body.fo-th .fo-th-gauge .ndl,body.fo-th .fo-th-gauge .arc{animation:none !important}}" +
-      "@media(max-width:760px){body.fo-th .fo-th-gauge{display:none}}" +
+      "body.fo-th #fo-th-gauge{position:fixed;right:80px;top:calc(50% + 208px);width:124px;pointer-events:none;text-align:center;z-index:55;background:rgba(5,20,40,.72);border:1px solid rgba(255,255,255,.18);border-radius:14px;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.4);padding:7px 6px 3px}" +
+      "body.fo-th #fo-th-gauge svg{display:block;width:100%;height:auto;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))}" +
+      "body.fo-th #fo-th-gauge .ndl{transform-origin:50px 50px;transition:transform .6s cubic-bezier(.25,.9,.35,1.08)}" +
+      "body.fo-th #fo-th-gauge .arc{transition:stroke-dashoffset .6s cubic-bezier(.25,.9,.35,1)}" +
+      "body.fo-th.fo-thd #fo-th-gauge{display:none !important}" +
+      "@media(min-width:761px){body.fo-th.fo-th-ov0 #fo-th-gauge{top:50%;transform:translateY(calc(-50% + 52px))}}" +
+      "body.fo-th #fo-th-gauge .gv{position:absolute;left:0;right:0;bottom:-3px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.8)}" +
+      "body.fo-th #fo-th-gauge .gv b{font-family:Oswald,sans-serif;font-weight:600;font-size:19px;letter-spacing:1px}" +
+      "body.fo-th #fo-th-gauge .gv i{font-style:normal;font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:#F3D37A;margin-left:4px}" +
+      "@media (prefers-reduced-motion:reduce){body.fo-th #fo-th-gauge .ndl,body.fo-th #fo-th-gauge .arc{transition:none !important}}" +
+      "@media(max-width:760px){body.fo-th #fo-th-gauge{display:none !important}}" +
       // ---- analysis rail ----
       "#fo-th-rail{position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:55;display:flex;flex-direction:column;gap:10px}" +
       "#fo-th-rail button{position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(5,20,40,.72);border:1.5px solid rgba(255,255,255,.28);color:rgba(255,255,255,.85);cursor:pointer;backdrop-filter:blur(10px);transition:border-color .15s ease,color .15s ease;padding:0}" +
@@ -2147,12 +2148,13 @@
       "body.fo-th[data-thtab='Commentary'] .ftp-match-shell .match-subpanel{display:none !important}" +
       "body.fo-th:not([data-thtab='Commentary']) .ftp-match-shell .mc-comm{display:none !important}" +
       // ---- the LIVE BALL pane (the docked oval) ----
-      "html body.fo-th #page #fo-oval{position:fixed !important;left:auto !important;right:74px !important;top:50% !important;bottom:auto !important;transform:translateY(-52%);width:390px !important;max-width:390px !important;min-width:0 !important;margin:0 !important;z-index:54;background:rgba(6,16,32,.78);border:1px solid rgba(255,255,255,.2);border-radius:16px !important;backdrop-filter:blur(12px);box-shadow:0 18px 50px rgba(0,0,0,.5);overflow:hidden}" +
+      "html body.fo-th #fo-oval{position:fixed !important;left:auto !important;right:74px !important;top:50% !important;bottom:auto !important;transform:translateY(-52%);width:390px !important;max-width:390px !important;min-width:0 !important;margin:0 !important;z-index:54;background:rgba(6,16,32,.78);border:1px solid rgba(255,255,255,.2);border-radius:16px !important;backdrop-filter:blur(12px);box-shadow:0 18px 50px rgba(0,0,0,.5);overflow:hidden}" +
       "body.fo-th.fo-th-ov0 #fo-oval{display:none !important}" +
       "body.fo-th.fo-thd:not(.fo-th-pin) #fo-oval{display:none !important}" +
       // pinned: the pane steps left so the drawer and the field share the screen
-      "@media(min-width:1200px){html body.fo-th.fo-thd.fo-th-pin #page #fo-oval{right:calc(86px + min(560px,calc(100vw - 150px))) !important}}" +
+      "@media(min-width:1200px){html body.fo-th.fo-thd.fo-th-pin #fo-oval{right:calc(86px + min(560px,calc(100vw - 150px))) !important}}" +
       "@media(max-width:1199.98px){body.fo-th.fo-thd.fo-th-pin #fo-oval{display:none !important}}" +
+      "body.fo-th #fo-oval .ov-board,body.fo-th #fo-oval .ov-who{display:none !important}" +
       "body.fo-th #fo-oval .ov-svg{background:transparent}" +
       "#fo-ovhd{display:flex;align-items:center;gap:8px;padding:9px 12px 7px;color:#fff}" +
       "#fo-ovhd b{font-family:Oswald,sans-serif;font-weight:600;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:#F3D37A}" +
@@ -2210,12 +2212,12 @@
       "body.fo-th .fo-mst-moment{bottom:8px;width:96vw;background:none;border:none;padding:0;backdrop-filter:none;gap:6px}" +
       "body.fo-th .fo-mst-moment .t{font-size:22px;letter-spacing:4px}" +
       "body.fo-th .fo-mst-moment .rib p{font-size:10.5px;letter-spacing:1.1px}" +
-      "body.fo-th .fo-mst-moment .mbs{display:none}" +
+      "body.fo-th .fo-mst-score .mbs{display:none}" +
       "#fo-th-rail{right:6px;gap:7px}" +
       "#fo-th-rail button{width:38px;height:38px}" +
       "#fo-th-rail button svg{width:16px;height:16px}" +
       // the field pane becomes a bottom sheet; the drawer goes full-bleed
-      "html body.fo-th #page #fo-oval{left:8px !important;right:8px !important;top:auto !important;bottom:8px !important;transform:none;width:auto !important;max-width:none !important}" +
+      "html body.fo-th #fo-oval{left:8px !important;right:8px !important;top:auto !important;bottom:8px !important;transform:none;width:auto !important;max-width:none !important}" +
       "html body.fo-th.fo-thd #page .ftp-match-shell{left:8px;right:8px;top:52px;bottom:8px;width:auto}" +
       "#fo-thd-x{top:60px;right:20px}" +
       "#fo-th-gf{left:8px;right:56px;bottom:150px;max-width:none}" +
@@ -2235,6 +2237,9 @@
       // frame so the theatre never flickers between balls
       if (!document.getElementById("fo-oval")) { try { if (typeof FOC !== "undefined" && FOC.oval && FOC.oval.tick) FOC.oval.tick(); } catch (eOt) {} }
       var oval = document.getElementById("fo-oval");
+      // re-home the pane on <body>: the engine's per-ball #page re-render can
+      // never destroy it there, so the LIVE BALL animation never flickers
+      if (oval && oval.parentNode !== document.body) document.body.appendChild(oval);
       if (!mcTop && !oval) { document.body.classList.remove("fo-stage-on"); foThChrome(false); return; }
       var inn = M.innings[M.inns]; if (!inn) return;
       // the broadcast runs itself: every match auto-plays at the measured pace,
@@ -2323,21 +2328,30 @@
         }
       } catch (eKp) {}
       // the speedo: a racing sweep above the bowler, 60-160 kph across a
-      // half-dial. Each delivery's UI repaint re-arms the sweep animation.
-      var gaugeH = "";
+      // half-dial. ONE persistent dial on <body> - each ball only moves the
+      // needle (CSS transitions do the sweep), so the plate never blinks.
       try {
+        var gEl = document.getElementById("fo-th-gauge");
         if (kphTx && bw && !M.done) {
           var kv9 = parseInt(kphTx, 10) || 0;
           var f9 = Math.max(0, Math.min(1, (kv9 - 60) / 100));
           var ang9 = (-90 + f9 * 180).toFixed(1);
-          gaugeH = "<div class='fo-th-gauge'><svg viewBox='0 0 100 58'>" +
-            "<defs><linearGradient id='foGg' gradientUnits='userSpaceOnUse' x1='10' y1='50' x2='90' y2='50'><stop offset='0' stop-color='#22D3E0'/><stop offset='.55' stop-color='#F0B94E'/><stop offset='1' stop-color='#E0504B'/></linearGradient></defs>" +
-            "<path d='M10 50 A40 40 0 0 1 90 50' fill='none' stroke='rgba(255,255,255,.16)' stroke-width='7' stroke-linecap='round'/>" +
-            "<path d='M10 50 A40 40 0 0 1 90 50' fill='none' stroke='url(#foGg)' stroke-width='7' stroke-linecap='round' stroke-dasharray='125.7' stroke-dashoffset='" + (125.7 * (1 - f9)).toFixed(1) + "' class='arc'/>" +
-            "<line x1='50' y1='50' x2='50' y2='17' stroke='#fff' stroke-width='2.4' stroke-linecap='round' class='ndl' style='transform:rotate(" + ang9 + "deg)'/>" +
-            "<circle cx='50' cy='50' r='3.4' fill='#fff'/></svg>" +
-            "<span class='gv'><b>" + kv9 + "</b><i>kph</i></span></div>";
-        }
+          if (!gEl) {
+            gEl = document.createElement("div"); gEl.id = "fo-th-gauge";
+            gEl.innerHTML = "<svg viewBox='0 0 100 58'>" +
+              "<defs><linearGradient id='foGg' gradientUnits='userSpaceOnUse' x1='10' y1='50' x2='90' y2='50'><stop offset='0' stop-color='#22D3E0'/><stop offset='.55' stop-color='#F0B94E'/><stop offset='1' stop-color='#E0504B'/></linearGradient></defs>" +
+              "<path d='M10 50 A40 40 0 0 1 90 50' fill='none' stroke='rgba(255,255,255,.16)' stroke-width='7' stroke-linecap='round'/>" +
+              "<path d='M10 50 A40 40 0 0 1 90 50' fill='none' stroke='url(#foGg)' stroke-width='7' stroke-linecap='round' stroke-dasharray='125.7' stroke-dashoffset='125.7' class='arc'/>" +
+              "<line x1='50' y1='50' x2='50' y2='17' stroke='#fff' stroke-width='2.4' stroke-linecap='round' class='ndl' style='transform:rotate(-90deg)'/>" +
+              "<circle cx='50' cy='50' r='3.4' fill='#fff'/></svg>" +
+              "<span class='gv'><b>0</b><i>kph</i></span>";
+            document.body.appendChild(gEl);
+          }
+          gEl.style.display = "";
+          gEl.querySelector(".arc").style.strokeDashoffset = (125.7 * (1 - f9)).toFixed(1);
+          gEl.querySelector(".ndl").style.transform = "rotate(" + ang9 + "deg)";
+          gEl.querySelector(".gv b").textContent = kv9;
+        } else if (gEl) gEl.style.display = "none";
       } catch (eGa) {}
       // this over, as beads
       var cur = [];
@@ -2390,16 +2404,16 @@
         "<div class='fo-mst-wx'><span>" + E(art.gnm) + (art.city ? " &middot; " + E(art.city) : "") + "</span><span>" + E(M.meta.weather || "") + "</span><span>" + E(M.pitch || "") + " pitch</span>" + (fld ? "<span class='fld'>" + E(fld) + "</span>" : "") + "</div>" +
         "<div class='fo-mst-ctlg'>" + ctlBtns + "</div></div>" +
         "<div class='fo-mst-score'><span class='tm'>" + E(inn.batTeam) + "</span><b>" + inn.runs + "/" + inn.wkts + "</b><span class='ovs'>" + Math.floor(inn.legal / 6) + "." + (inn.legal % 6) + " overs</span><i>" + tgt + "</i>" +
-        (tossTx ? "<i class='tossl'>" + tossTx + "</i>" : "") + "</div>" +
-        batPanel + bowlPanel + gaugeH +
+        (tossTx ? "<i class='tossl'>" + tossTx + "</i>" : "") +
+        "<div class='mbs'>" + (beads || "<span class='mb'>&ndash;</span>") + "</div></div>" +
+        batPanel + bowlPanel +
         // the broadcast lower third: transient result label, then a slim ribbon
         // (ball number + the line), then this over as beads
         "<div class='fo-mst-moment'>" +
         "<div class='t'>" + title + "</div>" +
         "<div class='rib'>" + (L && !M.done ? "<span class='chip'>" + E(L.no || "") + "</span>" : "") +
         (kphTx ? "<span class='kph'>" + kphTx + "</span>" : "") +
-        (copy ? "<p>" + E(copy) + "</p>" : "") + "</div>" +
-        "<div class='mbs'>" + (beads || "<span class='mb'>&ndash;</span>") + "</div></div>";
+        (copy ? "<p>" + E(copy) + "</p>" : "") + "</div></div>";
       var el;
       if (old && old.__foArtKey === artKey) {
         el = old;
