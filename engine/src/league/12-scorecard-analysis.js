@@ -2729,6 +2729,17 @@
     var pool = FO_HG_POOLS[m ? "m" : "d"][slot];
     return pool[day % pool.length];
   }
+  // one rule for every full-art page (wallpaper, city, tour): the header
+  // dissolves into the art and the stage owns the whole screen
+  function foArtChrome() {
+    try {
+      var full = (location.hash || "").split("?")[0];
+      var artful = (full === "#/circuit" && !/[?&]m=1/.test(location.hash || "")) ||
+                   full === "#/city" || full === "#/tour";
+      document.body.classList.toggle("fo-home-on", artful);
+    } catch (e) {}
+  }
+  window.addEventListener("hashchange", function () { setTimeout(foArtChrome, 10); });
   function foHgFit(el) {
     try {
       if (!el) return;
@@ -2768,11 +2779,11 @@
   function foRenderCircuit() {
     try {
       foCxNav();
-      if (location.hash.indexOf("#/circuit") !== 0) { try { document.body.classList.remove("fo-home-on"); } catch (eBc) {} return; }
+      foArtChrome();
+      if (location.hash.indexOf("#/circuit") !== 0) return;
       var page = document.getElementById("page"); if (!page) return;
       // the homepage is a pure wallpaper - the world tour lives at ?m=1
       var wall = !/[?&]m=1/.test(location.hash || "");
-      try { document.body.classList.toggle("fo-home-on", wall); } catch (eBc2) {}
       var st = foCxState();
       var cur = foCxCurrent(st);
       var ri = (foCxView == null) ? Math.min(cur, FO_CX_REGIONS.length - 1) : Math.min(foCxView, FO_CX_REGIONS.length - 1);
@@ -3091,6 +3102,8 @@
       ".fo-ct-lock{font-size:12px;color:#cdd5e3;background:rgba(10,18,32,.72);border:1.5px solid rgba(255,255,255,.28);border-radius:999px;padding:10px 18px;backdrop-filter:blur(4px)}" +
       ".fo-ct-back{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:#F5EFDC;background:rgba(10,18,32,.55);border:1.5px solid rgba(255,255,255,.3);border-radius:999px;padding:10px 16px;text-decoration:none;backdrop-filter:blur(4px)}" +
       ".fo-ct-back:hover{color:#F3D37A}" +
+      ".fo-city-full .fo-ct-h1{font-weight:500;letter-spacing:2.5px;opacity:.97}" +
+      ".fo-city-full .fo-ctv-cap .fo-ctv-line{opacity:.85}" +
       "@media(max-width:640px){.fo-city-full{height:calc(100vh - 130px);min-height:440px}.fo-ctv-cap{bottom:118px;padding:0 16px}.fo-ctv-line{font-size:12.5px}.fo-ctv-rail{bottom:14px;gap:7px}html body #page .fo-ctv-b{padding:9px 14px;font-size:10.5px}}" +
       // phones hold these wide paintings in portrait: instead of cropping to
       // a sliver, the camera pans - the whole scene reveals in a slow sweep
@@ -3161,8 +3174,14 @@
     try {
       if (!el) return;
       el.style.marginBottom = "0px";
+      foArtChrome();
+      el.style.marginTop = "0px";
       var top = el.getBoundingClientRect().top + window.scrollY;
-      el.style.height = Math.max(440, window.innerHeight - top) + "px";
+      if (document.body.classList.contains("fo-home-on")) {
+        // the header floats transparent above - the art runs to y=0
+        el.style.marginTop = (-top) + "px";
+        el.style.height = window.innerHeight + "px";
+      } else el.style.height = Math.max(440, window.innerHeight - top) + "px";
       var mapEl = el.querySelector(".fo-tour-map");
       if (mapEl) {
         mapEl.style.width = Math.max(el.clientWidth, el.clientHeight) + "px";
