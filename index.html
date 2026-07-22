@@ -10436,7 +10436,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260721-2227-6f872e";
+  var FO_BUILD = "20260722-0254-7f00cc";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -25403,14 +25403,74 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (h >= 20 && h < 22) return "blue-hour-cup";
     return "quiet-night";
   }
+  // ---- the club-home gallery: every painting knows its hour, its weather
+  // and its orientation. Phones draw from the portrait set, desktops from
+  // the landscape set; the pick is seeded by the DAY so it never shuffles
+  // mid-session, and a different painting greets each new day.
   var FO_HG_WX = {
-    "dawn-mist": "Dawn mist · ground staff at work",
-    "summer-noon": "High summer · perfect for batting",
-    "storm-front": "Storm front building · heavy air",
-    "sunbreak-match": "Sun breaking through · light breeze",
-    "blue-hour-cup": "Blue hour · floodlights on",
-    "quiet-night": "All quiet · gates locked"
+    "arches-dawn-mist": "Dawn mist · ground staff at work",
+    "arches-summer-noon": "High summer · perfect for batting",
+    "arches-storm-front": "Storm front building · heavy air",
+    "arches-sunbreak-match": "Sun breaking through · light breeze",
+    "arches-blue-hour-cup": "Blue hour · floodlights on",
+    "arches-quiet-night": "All quiet · gates locked",
+    "hgd-dressing-room": "The dressing room · quiet before the storm",
+    "hgm-dressing-room": "The dressing room · quiet before the storm",
+    "hgd-clubroom": "The clubroom · stories getting taller",
+    "hgm-clubroom": "The clubroom · stories getting taller",
+    "hgd-veranda-rain": "Rain delay · watching from the veranda",
+    "hgm-veranda-rain": "Rain delay · watching from the veranda",
+    "hgd-nets-day": "Nets session · high sun",
+    "hgm-nets-day": "Nets session · high sun",
+    "hgd-nets-night": "Late nets · one more over",
+    "hgd-office": "The manager's office · plans on the board",
+    "hgm-office": "The manager's office · plans on the board",
+    "hgd-workshop": "The kit room · bats getting a new edge",
+    "hgm-workshop": "The kit room · bats getting a new edge",
+    "hgm-arch-dawn": "Dawn through the arch",
+    "hgm-sunlit-day": "High summer · the train rolls over",
+    "hgm-tunnel-night": "Under the arches · rain on the brick",
+    "hgm-bowled-storm": "Storm cricket · timbers flying",
+    "hgm-blue-hour": "Blue hour · floodlights on",
+    "hgm-late-afternoon": "Late afternoon · long shadows",
+    "hgm-moonlit-rain": "Moonlit · after the rain",
+    "hgm-nostalgic": "The attic · old glories",
+    "hgm-stormy-autumn": "Autumn storm rolling in",
+    "hgd-heart-of-club": "The pavilion · the heart of the club",
+    "club-home-quiet-background": "The ground at rest"
   };
+  var FO_HG_POOLS = {
+    m: {
+      dawn: ["hgm-arch-dawn"],
+      dayDry: ["hgm-sunlit-day", "hgm-nets-day", "hgm-office", "hgm-workshop", "hgm-dressing-room", "hgm-clubroom"],
+      dayWet: ["hgm-veranda-rain", "hgm-stormy-autumn", "hgm-bowled-storm"],
+      lateDry: ["hgm-late-afternoon", "hgm-sunlit-day", "hgm-nets-day"],
+      lateWet: ["hgm-bowled-storm", "hgm-veranda-rain", "hgm-stormy-autumn"],
+      eve: ["hgm-blue-hour", "hgm-clubroom", "hgm-nostalgic"],
+      night: ["hgm-moonlit-rain", "hgm-tunnel-night", "hgm-nostalgic"]
+    },
+    d: {
+      dawn: ["arches-dawn-mist"],
+      dayDry: ["arches-summer-noon", "hgd-nets-day", "hgd-office", "hgd-workshop"],
+      dayWet: ["arches-storm-front", "hgd-veranda-rain", "hgd-heart-of-club"],
+      lateDry: ["arches-sunbreak-match", "hgd-nets-day"],
+      lateWet: ["hgd-veranda-rain", "arches-storm-front", "hgd-heart-of-club"],
+      eve: ["arches-blue-hour-cup", "hgd-clubroom"],
+      night: ["arches-quiet-night", "hgd-nets-night", "hgd-dressing-room", "club-home-quiet-background"]
+    }
+  };
+  function foHgVariant() {
+    var d = new Date(), h = d.getHours();
+    var day = Math.floor(d.getTime() / 86400000);
+    var wet = (day % 3) === 1;
+    var slot = (h >= 5 && h < 8) ? "dawn"
+      : (h >= 8 && h < 15) ? (wet ? "dayWet" : "dayDry")
+      : (h >= 15 && h < 20) ? (wet ? "lateWet" : "lateDry")
+      : (h >= 20 && h < 22) ? "eve" : "night";
+    var m = false; try { m = window.innerWidth <= 760; } catch (e) {}
+    var pool = FO_HG_POOLS[m ? "m" : "d"][slot];
+    return pool[day % pool.length];
+  }
   function foHgFit(el) {
     try {
       if (!el) return;
@@ -25454,7 +25514,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         gq = c9.gq || curR.cond || "";
       }
     }
-    return "<div class='fo-hg2'><img class='hg-bg' src='" + FO_ART + "home/arches-" + v + ".webp' alt=''>" +
+    return "<div class='fo-hg2'><img class='hg-bg' src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
       "<div class='hg-grain'></div>" +
       "<div class='hg-scrim'></div>" +
       "<div class='hg-wx'><b>HOME GROUND</b><span>" + (FO_HG_WX[v] || "") + "</span></div>" +
@@ -25670,6 +25730,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     }
     return null;
   }
+  // Nagpur's own painting - the city after the monsoon
+  FO_CITY.Nagpur = FO_CITY.Nagpur || { art: "cities/nagpur.webp" };
   function foCityLore(city) {
     var hit = foCityClub(city); if (!hit) return null;
     var L = FO_CITY[city] || {};
