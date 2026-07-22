@@ -4457,18 +4457,9 @@ function foMatchLabel(){
   return 'Current match';
 }
 function foUpdateLiveTopbar(){
-  const tb=document.getElementById('topbar'); if(!tb)return;
-  let box=document.getElementById('fo-live-icons');
-  const active=(M&&!M.done)||App.pending;
-  if(!active){ if(box)box.remove(); return; }
-  if(!box){box=document.createElement('span');box.id='fo-live-icons';tb.appendChild(box)}
-  const label=esc(foMatchLabel());
-  box.innerHTML=`<span class="live-dot" title="Live / pending match"></span>
-    <a href="#/match" title="Back to current match: ${label}">🎙️</a>
-    <a href="#/scorecard" title="Live scorecard: ${label}">🔎</a>
-    <a href="#/orders" title="Orders: ${label}">✉️</a>
-    <a href="#/scorecard?view=worm" title="Worm chart: ${label}">📎</a>
-    <a href="#/scorecard?view=ratings" title="Match ratings: ${label}">$</a>`;
+  // retired: the live-icons cluster (dot + return/scorecard/orders links) is
+  // redundant with the nav's "Live Match" pill. Only clear any stale box.
+  const box=document.getElementById('fo-live-icons'); if(box)box.remove();
 }
 window.addEventListener('hashchange',()=>setTimeout(foUpdateLiveTopbar,0));
 setInterval(foUpdateLiveTopbar,1200);
@@ -4709,7 +4700,10 @@ a[href="#/editor"]{display:none!important}
 
   // Header live controls: only one return-to-current-match icon.
   function fo55LiveLabel(){if(M&&M.meta)return `${M.meta.home} v ${M.meta.away}`;if(App.pending)return `${App.pending.home} v ${App.pending.away}`;return 'current match'}
-  function fo55LiveTopbar(){const tb=document.getElementById('topbar');if(!tb)return;let box=document.getElementById('fo-live-icons');const active=(M&&!M.done)||App.pending;if(!active){if(box)box.remove();return}if(!box){box=document.createElement('span');box.id='fo-live-icons';tb.appendChild(box)}box.innerHTML=`<span class="live-dot" title="Live / pending match"></span><a class="fo-return-match" href="#/match" title="Return to ${esc(fo55LiveLabel())}">↩</a>`}
+  // retired: the orange-dot + teal return-arrow cluster is redundant with the
+  // nav's "Live Match" pill. Keep the function (many callers) but only ensure
+  // the old box is gone.
+  function fo55LiveTopbar(){const box=document.getElementById('fo-live-icons');if(box)box.remove();}
   setInterval(fo55LiveTopbar,450);window.addEventListener('hashchange',()=>setTimeout(fo55LiveTopbar,0));
 
   // Minimal club home.
@@ -10463,7 +10457,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260722-1505-f69402";
+  var FO_BUILD = "20260722-1537-f69402";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");

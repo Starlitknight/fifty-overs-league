@@ -21,7 +21,10 @@
 
   // Header live controls: only one return-to-current-match icon.
   function fo55LiveLabel(){if(M&&M.meta)return `${M.meta.home} v ${M.meta.away}`;if(App.pending)return `${App.pending.home} v ${App.pending.away}`;return 'current match'}
-  function fo55LiveTopbar(){const tb=document.getElementById('topbar');if(!tb)return;let box=document.getElementById('fo-live-icons');const active=(M&&!M.done)||App.pending;if(!active){if(box)box.remove();return}if(!box){box=document.createElement('span');box.id='fo-live-icons';tb.appendChild(box)}box.innerHTML=`<span class="live-dot" title="Live / pending match"></span><a class="fo-return-match" href="#/match" title="Return to ${esc(fo55LiveLabel())}">↩</a>`}
+  // retired: the orange-dot + teal return-arrow cluster is redundant with the
+  // nav's "Live Match" pill. Keep the function (many callers) but only ensure
+  // the old box is gone.
+  function fo55LiveTopbar(){const box=document.getElementById('fo-live-icons');if(box)box.remove();}
   setInterval(fo55LiveTopbar,450);window.addEventListener('hashchange',()=>setTimeout(fo55LiveTopbar,0));
 
   // Minimal club home.

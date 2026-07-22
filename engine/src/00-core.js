@@ -4173,18 +4173,9 @@ function foMatchLabel(){
   return 'Current match';
 }
 function foUpdateLiveTopbar(){
-  const tb=document.getElementById('topbar'); if(!tb)return;
-  let box=document.getElementById('fo-live-icons');
-  const active=(M&&!M.done)||App.pending;
-  if(!active){ if(box)box.remove(); return; }
-  if(!box){box=document.createElement('span');box.id='fo-live-icons';tb.appendChild(box)}
-  const label=esc(foMatchLabel());
-  box.innerHTML=`<span class="live-dot" title="Live / pending match"></span>
-    <a href="#/match" title="Back to current match: ${label}">🎙️</a>
-    <a href="#/scorecard" title="Live scorecard: ${label}">🔎</a>
-    <a href="#/orders" title="Orders: ${label}">✉️</a>
-    <a href="#/scorecard?view=worm" title="Worm chart: ${label}">📎</a>
-    <a href="#/scorecard?view=ratings" title="Match ratings: ${label}">$</a>`;
+  // retired: the live-icons cluster (dot + return/scorecard/orders links) is
+  // redundant with the nav's "Live Match" pill. Only clear any stale box.
+  const box=document.getElementById('fo-live-icons'); if(box)box.remove();
 }
 window.addEventListener('hashchange',()=>setTimeout(foUpdateLiveTopbar,0));
 setInterval(foUpdateLiveTopbar,1200);
