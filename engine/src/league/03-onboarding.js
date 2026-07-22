@@ -3880,8 +3880,11 @@
   // straight back into their game; a fresh visitor meets the Gaffer and can
   // found a club with no account; leagues remain one tap away.
   function foFrontDoor() {
-    // the front door greets every launch: a returning boss gets one
-    // "Continue playing" tap, a fresh visitor names the club
+    // fresh visitors meet the door; a returning boss on a refresh goes
+    // straight back into the game (Log out reopens the door on demand)
+    var welcomed = false;
+    try { welcomed = !!(typeof window.store === "function" ? window.store("fo_welcomed") : localStorage.getItem("fo_welcomed")); } catch (eW) {}
+    if (welcomed && foHasSoloSave()) { openWrap(false); return; }
     renderWelcome();
   }
   // the nav's Log out returns here (solo: leaving the room, not deleting it)

@@ -10463,7 +10463,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260722-1454-caeb12";
+  var FO_BUILD = "20260722-1457-9e6bd6";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -15678,8 +15678,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // straight back into their game; a fresh visitor meets the Gaffer and can
   // found a club with no account; leagues remain one tap away.
   function foFrontDoor() {
-    // the front door greets every launch: a returning boss gets one
-    // "Continue playing" tap, a fresh visitor names the club
+    // fresh visitors meet the door; a returning boss on a refresh goes
+    // straight back into the game (Log out reopens the door on demand)
+    var welcomed = false;
+    try { welcomed = !!(typeof window.store === "function" ? window.store("fo_welcomed") : localStorage.getItem("fo_welcomed")); } catch (eW) {}
+    if (welcomed && foHasSoloSave()) { openWrap(false); return; }
     renderWelcome();
   }
   // the nav's Log out returns here (solo: leaving the room, not deleting it)
