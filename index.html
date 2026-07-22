@@ -10463,7 +10463,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260722-1914-a6e6fe";
+  var FO_BUILD = "20260722-1932-76d4ff";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18672,7 +18672,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "html body.fo-th #fo-mstage .fo-mst-next:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(16,27,45,.35) !important}" +
       // the accelerator docks right under the LIVE BALL pane, big enough to
       // never miss - and steps aside while an analysis drawer is open
-      "@media(min-width:761px){html body.fo-th #fo-mstage .fo-mst-next{position:fixed;right:74px;top:calc(50% + 208px);z-index:56;width:390px;min-height:56px;font-size:16px;letter-spacing:2.8px;padding:17px 26px !important;text-align:center}}" +
+      "@media(min-width:761px){html body.fo-th #fo-mstage .fo-mst-next{position:fixed;right:212px;top:calc(50% + 208px);z-index:56;width:252px;min-height:56px;font-size:15px;letter-spacing:2.4px;padding:17px 20px !important;text-align:center}}" +
       "body.fo-th.fo-thd #fo-mstage .fo-mst-next{display:none}" +
       "@media(min-width:761px){body.fo-th.fo-th-ov0 #fo-mstage .fo-mst-next{top:50%;transform:translateY(-50%)}}" +
       "@media(min-width:761px){body.fo-th.fo-th-ov0 #fo-mstage .fo-mst-next:active{transform:translateY(calc(-50% + 2px))}}" +
@@ -18717,22 +18717,35 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // ---- the lower third: transient label, ribbon, over beads ----
       // the lower third holds absolutely still between balls: no entrance
       // slide, fixed row heights - only the label's opacity breathes
-      "body.fo-th .fo-mst-moment{top:auto;bottom:84px;left:50%;transform:translateX(-50%);width:min(760px,66vw);display:flex;flex-direction:column;align-items:center;gap:8px;animation:none !important}" +
-      "body.fo-th .fo-mst-moment .t{margin:0;font-size:29px;letter-spacing:6px;line-height:1;height:29px;transition:opacity .6s ease;animation:foThTIn .22s ease}" +
-      "@keyframes foThTIn{from{opacity:0}to{opacity:1}}" +
+      "body.fo-th .fo-mst-moment{top:auto;bottom:84px;left:50%;transform:translateX(-50%);width:min(820px,72vw);display:flex;flex-direction:column;align-items:center;gap:8px;animation:none !important}" +
+      // the result label holds absolutely still: no fade-out, no re-entrance -
+      // the text simply changes when the next ball lands
+      "body.fo-th .fo-mst-moment .t{margin:0;font-size:29px;letter-spacing:6px;line-height:1;height:29px;transition:none;animation:none !important;opacity:1 !important}" +
       "body.fo-th .fo-mst-moment .t:empty{visibility:hidden}" +
-      "body.fo-th .fo-mst-moment .rib{min-height:37px}" +
+      "body.fo-th .fo-mst-moment .rib{min-height:42px}" +
       "body.fo-th .fo-mst-moment .mbs{min-height:22px}" +
       "body.fo-th .fo-mst-moment .t.settle{opacity:0}" +
       "body.fo-th .fo-mst-moment .rib{display:flex;align-items:center;gap:10px;max-width:100%;padding:9px 16px;background:rgba(5,20,40,.72);border:1px solid rgba(255,255,255,.16);border-radius:12px;backdrop-filter:blur(10px)}" +
       "body.fo-th .fo-mst-moment .rib:not(:has(p)):not(:has(.chip)){display:none}" +
-      "body.fo-th .fo-mst-moment .rib .chip{border:none;background:none;padding:0;color:#F3D37A;backdrop-filter:none}" +
-      "body.fo-th .fo-mst-moment .rib .kph{font-family:Oswald,sans-serif;font-size:11px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:#22D3E0;white-space:nowrap}" +
-      "body.fo-th .fo-mst-moment .rib p{margin:0;font-family:Oswald,sans-serif;font-size:12.5px;font-weight:500;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.94);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:620px}" +
+      "body.fo-th .fo-mst-moment .rib .chip{border:none;background:none;padding:0;color:#F3D37A;backdrop-filter:none;font-size:12.5px}" +
+      "body.fo-th .fo-mst-moment .rib .kph{font-family:Oswald,sans-serif;font-size:12.5px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:#22D3E0;white-space:nowrap}" +
+      "body.fo-th .fo-mst-moment .rib p{margin:0;font-family:Oswald,sans-serif;font-size:15.5px;font-weight:500;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.96);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:680px}" +
       "body.fo-th .fo-mst-moment .mbs{display:flex;gap:5px}" +
       "body.fo-th .fo-mst-moment .mb{width:22px;height:22px;font-size:10px;background:rgba(5,20,40,.6);border-color:rgba(255,255,255,.2)}" +
       "body.fo-th .fo-mst-moment .mb.b4{background:#f3c254;border-color:#f3c254;color:#2f2109}" +
       "body.fo-th .fo-mst-moment .mb.bw{background:#d8504b;border-color:#d8504b;color:#fff}" +
+      // ---- the speedo: half-dial above the bowler, re-armed every ball ----
+      "body.fo-th .fo-th-gauge{position:absolute;right:80px;top:calc(50% + 208px);width:124px;pointer-events:none;text-align:center;z-index:6;background:rgba(5,20,40,.72);border:1px solid rgba(255,255,255,.18);border-radius:14px;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.4);padding:7px 6px 3px}" +
+      "body.fo-th .fo-th-gauge svg{display:block;width:100%;height:auto;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))}" +
+      "body.fo-th .fo-th-gauge .ndl{transform-origin:50px 50px;animation:foNdl .7s cubic-bezier(.25,.9,.35,1.08)}" +
+      "@keyframes foNdl{from{transform:rotate(-90deg)}}" +
+      "body.fo-th .fo-th-gauge .arc{animation:foArc .7s cubic-bezier(.25,.9,.35,1)}" +
+      "@keyframes foArc{from{stroke-dashoffset:125.7}}" +
+      "body.fo-th .fo-th-gauge .gv{position:absolute;left:0;right:0;bottom:-3px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.8)}" +
+      "body.fo-th .fo-th-gauge .gv b{font-family:Oswald,sans-serif;font-weight:600;font-size:19px;letter-spacing:1px}" +
+      "body.fo-th .fo-th-gauge .gv i{font-style:normal;font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:#F3D37A;margin-left:4px}" +
+      "@media (prefers-reduced-motion:reduce){body.fo-th .fo-th-gauge .ndl,body.fo-th .fo-th-gauge .arc{animation:none !important}}" +
+      "@media(max-width:760px){body.fo-th .fo-th-gauge{display:none}}" +
       // ---- analysis rail ----
       "#fo-th-rail{position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:55;display:flex;flex-direction:column;gap:10px}" +
       "#fo-th-rail button{position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(5,20,40,.72);border:1.5px solid rgba(255,255,255,.28);color:rgba(255,255,255,.85);cursor:pointer;backdrop-filter:blur(10px);transition:border-color .15s ease,color .15s ease;padding:0}" +
@@ -18932,6 +18945,23 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           kphTx = Math.round(mid9 + j9 + 2) + " kph";
         }
       } catch (eKp) {}
+      // the speedo: a racing sweep above the bowler, 60-160 kph across a
+      // half-dial. Each delivery's UI repaint re-arms the sweep animation.
+      var gaugeH = "";
+      try {
+        if (kphTx && bw && !M.done) {
+          var kv9 = parseInt(kphTx, 10) || 0;
+          var f9 = Math.max(0, Math.min(1, (kv9 - 60) / 100));
+          var ang9 = (-90 + f9 * 180).toFixed(1);
+          gaugeH = "<div class='fo-th-gauge'><svg viewBox='0 0 100 58'>" +
+            "<defs><linearGradient id='foGg' gradientUnits='userSpaceOnUse' x1='10' y1='50' x2='90' y2='50'><stop offset='0' stop-color='#22D3E0'/><stop offset='.55' stop-color='#F0B94E'/><stop offset='1' stop-color='#E0504B'/></linearGradient></defs>" +
+            "<path d='M10 50 A40 40 0 0 1 90 50' fill='none' stroke='rgba(255,255,255,.16)' stroke-width='7' stroke-linecap='round'/>" +
+            "<path d='M10 50 A40 40 0 0 1 90 50' fill='none' stroke='url(#foGg)' stroke-width='7' stroke-linecap='round' stroke-dasharray='125.7' stroke-dashoffset='" + (125.7 * (1 - f9)).toFixed(1) + "' class='arc'/>" +
+            "<line x1='50' y1='50' x2='50' y2='17' stroke='#fff' stroke-width='2.4' stroke-linecap='round' class='ndl' style='transform:rotate(" + ang9 + "deg)'/>" +
+            "<circle cx='50' cy='50' r='3.4' fill='#fff'/></svg>" +
+            "<span class='gv'><b>" + kv9 + "</b><i>kph</i></span></div>";
+        }
+      } catch (eGa) {}
       // this over, as beads
       var cur = [];
       for (var i2 = 0; i2 < M.log.length; i2++) {
@@ -18984,7 +19014,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<div class='fo-mst-ctlg'>" + ctlBtns + "</div></div>" +
         "<div class='fo-mst-score'><span class='tm'>" + E(inn.batTeam) + "</span><b>" + inn.runs + "/" + inn.wkts + "</b><span class='ovs'>" + Math.floor(inn.legal / 6) + "." + (inn.legal % 6) + " overs</span><i>" + tgt + "</i>" +
         (tossTx ? "<i class='tossl'>" + tossTx + "</i>" : "") + "</div>" +
-        batPanel + bowlPanel +
+        batPanel + bowlPanel + gaugeH +
         // the broadcast lower third: transient result label, then a slim ribbon
         // (ball number + the line), then this over as beads
         "<div class='fo-mst-moment'>" +
@@ -19028,11 +19058,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       try {
         el.style.setProperty("--thfocal", FO_TH_FOCAL[art.city] || "center 50%");
         foThChrome(true);
-        // the big result label settles once the delivery has landed
-        clearTimeout(window.__foThSet);
-        var tEl = el.querySelector(".fo-mst-moment .t");
-        if (tEl && kind !== "start" && kind !== "done")
-          window.__foThSet = setTimeout(function () { try { tEl.classList.add("settle"); } catch (eSt) {} }, Math.max(1000, 2600 / (window.__foThMult || 1)));
       } catch (eTh) {}
       var db = el.querySelector("#fo-mst-done");
       if (db) db.addEventListener("click", function () { location.hash = "#/circuit"; if (typeof window.route === "function") window.route(); });
