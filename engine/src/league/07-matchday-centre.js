@@ -1812,19 +1812,8 @@
     return { img: FO_ART + "cities/london-ground.webp", mode: "generic", ac: "#2E7A3C", gnm: (M.meta && M.meta.ground) || "The ground", city: "" };
   }
   var FO_MST_TITLES = { "6": "SIX!", "4": "FOUR!", dot: "Dot ball", "1": "Single", "2": "Two runs", "3": "Three!", wide: "Wide", noball: "NO BALL!", bye: "Byes", legbye: "Leg byes" };
-  function foMstGaffer(kind, userBat) {
-    var g = {
-      wicketB: "That one was coming three balls ago. Next man - bat time, calm the room.",
-      wicketF: "Built, not bought. Keep the field up and hunt the new man now.",
-      boundaryB: "He didn't fight the pitch - he used it. More of that.",
-      boundaryF: "Too full, too friendly. Drag the length back before this gets away.",
-      dotB: "No panic. The rotation will come - just don't gift them a set.",
-      dotF: "Dots are bricks. Keep stacking, the wall does the rest.",
-      runB: "Good running. Keep the board ticking and the fielders honest.",
-      runF: "Cut the singles off - make him hit over the top to score."
-    };
-    return g[kind + (userBat ? "B" : "F")] || "";
-  }
+  // (the Gaffer's ball-by-ball punditry retired from the broadcast - the
+  // venue speaks for itself)
   // --- the manager's hand: manual balls by default, opt-in slow auto-play,
   // --- and timed prompts at the moments that matter ------------------------
   function foMstAuto() { return !!window.__foMstAuto; }
@@ -1950,25 +1939,6 @@
       setTimeout(function () { try { d.remove(); } catch (e) {} }, 3250);
     } catch (e) {}
   }
-  // the Gaffer speaks only when he has something to say: a transient bubble
-  // that collapses into the rail's notification icon
-  function foThGaffer(txt) {
-    try {
-      if (!txt || txt === window.__foThGfL) return;
-      window.__foThGfL = txt;
-      var g = document.getElementById("fo-th-gf");
-      if (!g) {
-        g = document.createElement("div"); g.id = "fo-th-gf";
-        document.body.appendChild(g);
-      }
-      g.innerHTML = "<img src='" + FO_ART + "gaffer.png' alt=''><span><b>The Gaffer</b>" + E(txt) + "</span>";
-      document.body.classList.add("fo-th-gfon");
-      var rb = document.querySelector("#fo-th-rail [data-th='gaffer']");
-      if (rb) rb.classList.add("ping");
-      clearTimeout(window.__foThGfT);
-      window.__foThGfT = setTimeout(function () { try { document.body.classList.remove("fo-th-gfon"); } catch (e) {} }, 7000);
-    } catch (e) {}
-  }
   var FO_TH_ICONS = {
     field: "<svg viewBox='0 0 24 24'><ellipse cx='12' cy='12' rx='9' ry='6.6' fill='none' stroke='currentColor' stroke-width='1.7'/><rect x='10.7' y='8.4' width='2.6' height='7.2' rx='1.1' fill='currentColor'/></svg>",
     Commentary: "<svg viewBox='0 0 24 24'><path d='M4 5.5h16v10.5H10l-5.5 4v-4H4z' fill='none' stroke='currentColor' stroke-width='1.7' stroke-linejoin='round'/></svg>",
@@ -1979,7 +1949,7 @@
   };
   var FO_TH_RAIL = [
     ["field", "Ball animation"], ["Commentary", "Commentary"], ["Scorecard", "Scorecard"],
-    ["Worm", "Worm & partnerships"], ["Orders", "Tactics & orders"], ["gaffer", "The Gaffer"]
+    ["Worm", "Worm & partnerships"], ["Orders", "Tactics & orders"]
   ];
   function foThDrawer(open) {
     document.body.classList.toggle("fo-thd", !!open);
@@ -2077,6 +2047,12 @@
       "html body.fo-th #fo-mstage .fo-mst-next{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:12.5px;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:11px 22px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.35),0 8px 22px rgba(201,162,75,.3) !important}" +
       "html body.fo-th #fo-mstage .fo-mst-next:hover{filter:brightness(1.06)}" +
       "html body.fo-th #fo-mstage .fo-mst-next:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(16,27,45,.35) !important}" +
+      // the accelerator docks right under the LIVE BALL pane, big enough to
+      // never miss - and steps aside while an analysis drawer is open
+      "@media(min-width:761px){html body.fo-th #fo-mstage .fo-mst-next{position:fixed;right:74px;top:calc(50% + 208px);z-index:56;width:390px;min-height:56px;font-size:16px;letter-spacing:2.8px;padding:17px 26px !important;text-align:center}}" +
+      "body.fo-th.fo-thd #fo-mstage .fo-mst-next{display:none}" +
+      "@media(min-width:761px){body.fo-th.fo-th-ov0 #fo-mstage .fo-mst-next{top:50%;transform:translateY(-50%)}}" +
+      "@media(min-width:761px){body.fo-th.fo-th-ov0 #fo-mstage .fo-mst-next:active{transform:translateY(calc(-50% + 2px))}}" +
       "html body.fo-th .fo-mst-ask .ask-opts button{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;font-size:13.5px;font-weight:700;color:#fff !important;background:rgba(255,255,255,.07) !important;border:1.5px solid rgba(255,255,255,.22) !important;border-radius:11px;padding:11px 14px;cursor:pointer;box-shadow:none !important}" +
       "html body.fo-th .fo-mst-ask .ask-opts button:hover{border-color:#F3D37A !important;background:rgba(240,185,78,.12) !important}" +
       "html body.fo-th .fo-mst-ask .ask-opts button.def{border-color:rgba(240,185,78,.55) !important;background:rgba(240,185,78,.14) !important}" +
@@ -2128,6 +2104,7 @@
       "body.fo-th .fo-mst-moment .rib{display:flex;align-items:center;gap:10px;max-width:100%;padding:9px 16px;background:rgba(5,20,40,.72);border:1px solid rgba(255,255,255,.16);border-radius:12px;backdrop-filter:blur(10px)}" +
       "body.fo-th .fo-mst-moment .rib:not(:has(p)):not(:has(.chip)){display:none}" +
       "body.fo-th .fo-mst-moment .rib .chip{border:none;background:none;padding:0;color:#F3D37A;backdrop-filter:none}" +
+      "body.fo-th .fo-mst-moment .rib .kph{font-family:Oswald,sans-serif;font-size:11px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:#22D3E0;white-space:nowrap}" +
       "body.fo-th .fo-mst-moment .rib p{margin:0;font-family:Oswald,sans-serif;font-size:12.5px;font-weight:500;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.94);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:620px}" +
       "body.fo-th .fo-mst-moment .mbs{display:flex;gap:5px}" +
       "body.fo-th .fo-mst-moment .mb{width:22px;height:22px;font-size:10px;background:rgba(5,20,40,.6);border-color:rgba(255,255,255,.2)}" +
@@ -2317,7 +2294,21 @@
         if (!title) { title = "Dot ball"; kind = "dot"; }
         copy = L.txt || "";
       } else { kind = "start"; title = M.inns ? "THE CHASE" : "PLAY"; copy = (userBat ? "Your openers" : "Their openers") + " walk out at " + art.gnm + "."; }
-      var gaff = (kind === "wicket" || kind === "boundary" || kind === "dot" || kind === "run") ? foMstGaffer(kind, userBat) : "";
+      // ball speed, broadcast-style: the engine keeps no velocity, so this is
+      // deterministic decoration - type sets the band, the bowler's rating
+      // sets where he lives in it, the seed wobbles it ball to ball
+      var kphTx = "";
+      try {
+        if (L && bw && !L.mile && !M.done) {
+          var bt9 = bw.bowlType || "";
+          var band9 = bt9 === "fast" ? [138, 152] : bt9 === "fastMedium" ? [129, 140] : bt9 === "medium" ? [117, 129] :
+            bt9 === "wristSpin" ? [78, 90] : (bt9 === "fingerSpin" || bt9 === "offSpin") ? [82, 94] : [112, 126];
+          var rt9 = 50; try { if (window.foStarsFor) rt9 = window.foStarsFor.bowl(bw) || 50; } catch (eR9) {}
+          var mid9 = band9[0] + (Math.max(20, Math.min(95, rt9)) - 20) / 75 * (band9[1] - band9[0] - 5);
+          var j9 = 0; try { j9 = (foHash32((((M.meta && M.meta.seed) || 0) + "") + "|" + (L.no || "") + "|kph") % 7) - 3; } catch (eJ9) {}
+          kphTx = Math.round(mid9 + j9 + 2) + " kph";
+        }
+      } catch (eKp) {}
       // this over, as beads
       var cur = [];
       for (var i2 = 0; i2 < M.log.length; i2++) {
@@ -2376,6 +2367,7 @@
         "<div class='fo-mst-moment'>" +
         "<div class='t'>" + title + "</div>" +
         "<div class='rib'>" + (L && !M.done ? "<span class='chip'>" + E(L.no || "") + "</span>" : "") +
+        (kphTx ? "<span class='kph'>" + kphTx + "</span>" : "") +
         (copy ? "<p>" + E(copy) + "</p>" : "") + "</div>" +
         "<div class='mbs'>" + (beads || "<span class='mb'>&ndash;</span>") + "</div></div>";
       var el;
@@ -2468,7 +2460,6 @@
             }
           }
         } catch (eCt) {}
-        try { foThGaffer(gaff); } catch (eGf) {}
       }
       if (newBall && !M.done && !document.getElementById("fo-mst-ask")) {
         if (kind === "wicket" && userBatNow && s1 && s1.b === 0 && inn.nextBat <= 10) {
