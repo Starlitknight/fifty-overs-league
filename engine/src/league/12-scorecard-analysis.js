@@ -2448,9 +2448,14 @@
       ".fo-cx-map .mapin{position:relative;border-radius:9px;overflow:hidden;background:#0a1220}" +
       ".fo-cx-map img{display:block;width:100%;height:auto}" +
       "html body #page .fo-cx-node,html body.ftpskin #page .fo-cx-node{cursor:pointer;appearance:none;-webkit-appearance:none;font:inherit;padding:0 !important;margin:0;position:absolute;transform:translate(-50%,-50%);width:32px !important;height:32px;border-radius:50% !important;display:grid;place-items:center;font-family:Oswald,sans-serif !important;font-weight:600;font-size:14px !important;color:#fff !important;background:rgba(10,18,32,.62) !important;border:2.5px solid #fff !important;box-shadow:0 0 0 3px rgba(6,12,22,.35),0 3px 10px rgba(0,0,0,.5) !important;line-height:1;min-width:0}" +
-      ".fo-cx-node .cxn-str{position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:36px;height:4.5px;border-radius:99px;background:rgba(6,12,22,.6);border:1px solid rgba(255,255,255,.4);overflow:hidden;font-style:normal;pointer-events:none}" +
-      ".fo-cx-node .cxn-str b{display:block;height:100%;border-radius:99px}" +
-      ".fo-cx-node.bossn .cxn-str{top:-14px;width:44px;height:5px;border-color:#F3D37A}" +
+      ".fo-cx-node .cxn-str{position:absolute;top:-15px;left:50%;transform:translateX(-50%);display:flex;gap:.5px;font-style:normal;font-size:8.5px;line-height:1;pointer-events:none;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.85)}" +
+      ".fo-cx-node .cxn-str em{font-style:normal;color:#FFFEFC}" +
+      ".fo-cx-node .cxn-str em.e{color:rgba(255,255,255,.28)}" +
+      ".fo-cx-node .cxn-str em.h{background:linear-gradient(90deg,#FFFEFC 50%,rgba(255,255,255,.28) 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".fo-cx-node.bossn .cxn-str{top:-17px;font-size:9.5px}" +
+      ".fo-cx-node.bossn .cxn-str em{color:#F3D37A}" +
+      ".fo-cx-node.bossn .cxn-str em.e{color:rgba(243,211,122,.3)}" +
+      ".fo-cx-node.bossn .cxn-str em.h{background:linear-gradient(90deg,#F3D37A 50%,rgba(243,211,122,.3) 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       ".fo-cx-node.done .cxn-str{display:none}" +
       "html body #page .fo-cx-node.done,html body.ftpskin #page .fo-cx-node.done{background:#3E9455 !important;color:#fff !important}" +
       "html body #page .fo-cx-node.nxt,html body.ftpskin #page .fo-cx-node.nxt{background:var(--cxc,#C8674A) !important;color:#fff !important}" +
@@ -2851,10 +2856,11 @@
               r.clubs.map(function (c5, i5) {
                 var done5 = foCxBeaten(st, r.id, i5);
                 var cls5 = "fo-cx-node" + (c5.boss ? " bossn" : "") + (done5 ? " done" : (live && i5 === nextCi ? " nxt" : " lock"));
-                var pc5 = foCxStrPct(ri, i5);
-                var hue5 = Math.max(0, 115 - Math.round(pc5 * 1.15));
+                var hs5 = Math.max(1, Math.round(foCxStrPct(ri, i5) / 10));   // half-star steps 1..10
+                var st5 = "";
+                for (var k5 = 1; k5 <= 5; k5++) st5 += "<em class='" + (hs5 >= k5 * 2 ? "f" : hs5 === k5 * 2 - 1 ? "h" : "e") + "'>★</em>";
                 return "<button type='button' class='" + cls5 + "' data-ci='" + i5 + "' style='left:" + c5.mx + "%;top:" + c5.my + "%'>" +
-                  "<i class='cxn-str' title='Team strength'><b style='width:" + pc5 + "%;background:hsl(" + hue5 + ",62%,52%)'></b></i>" +
+                  "<i class='cxn-str' title='Team strength'>" + st5 + "</i>" +
                   (done5 ? "✓" : (c5.boss ? "★" : (i5 + 1))) + "<span class='cl'>" + E(c5.city) + "</span></button>";
               }).join("") +
               "</div></div>" +
