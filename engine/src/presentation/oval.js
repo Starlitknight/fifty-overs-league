@@ -66,6 +66,7 @@ FOC.oval = (function () {
       "<circle id='ov-bowler' cx='200' cy='196' r='5' fill='#14213D' stroke='#fff' stroke-width='1.4'/>" +
       "<circle id='ov-ball' cx='200' cy='190' r='3.2' fill='#a3242b' stroke='#fff' stroke-width='.8' opacity='0'/>" +
       "<text id='ov-pop' x='200' y='128' text-anchor='middle' class='ov-pop'></text>" +
+      "<text id='ov-pop2' x='200' y='150' text-anchor='middle' class='ov-pop2'></text>" +
       "</svg><div class='ov-note'><button type='button' id='ov-snd' class='ov-snd' title='Match sound'>&#128263;</button><span>theatre · live directions · real field setting</span></div></div>";
   }
 
@@ -228,57 +229,120 @@ FOC.oval = (function () {
   }
 
   // ---- the theatre ----------------------------------------------------------
-  function animate(sym, ballIx, done, lbl, dirDeg) {
+  // every duration honours the broadcast speed control (1x/2x/4x)
+  function sp(ms) { return Math.max(60, Math.round(ms / (window.__foThMult || 1))); }
+  var SVGNS = "http://www.w3.org/2000/svg";
+  function fx(tag, attrs) {
+    try {
+      var svg = document.querySelector("#fo-oval .ov-svg"); if (!svg) return null;
+      var e = document.createElementNS(SVGNS, tag);
+      for (var k in attrs) e.setAttribute(k, attrs[k]);
+      svg.appendChild(e); return e;
+    } catch (err) { return null; }
+  }
+  // a small pulse where the delivery pitched
+  function pitchPulse(x, y) {
+    var c = fx("circle", { cx: x, cy: y, r: 2.5, "class": "ov-pit" });
+    if (c) setTimeout(function () { try { c.remove(); } catch (e) {} }, 700);
+  }
+  // the rope ripples where a boundary crosses it
+  function ripple(x, y, col, big) {
+    var c = fx("circle", { cx: x, cy: y, r: 3, "class": "ov-rip" + (big ? " big" : ""), style: "stroke:" + col });
+    if (c) setTimeout(function () { try { c.remove(); } catch (e) {} }, 950);
+  }
+  // the dismissal detail line under the OUT pop (CAUGHT · POINT, LBW, ...)
+  function pop2(t) {
+    var p2 = document.getElementById("ov-pop2"); if (!p2) return;
+    p2.textContent = t;
+    p2.classList.remove("on");
+    void p2.getBoundingClientRect();
+    p2.classList.add("on");
+    setTimeout(function () { p2.classList.remove("on"); p2.textContent = ""; }, 1500);
+  }
+  // lbw: the projected continuation onto the stumps
+  function lbwFlash() {
+    var l = fx("line", { x1: 200, y1: 94, x2: 200, y2: 80, "class": "ov-lbw" });
+    if (l) setTimeout(function () { try { l.remove(); } catch (e) {} }, 750);
+  }
+  function animate(n, done) {
+    var sym = n.sym, ballIx = n.ix, lbl = n.lbl, dirDeg = n.dir, wk = n.wk;
     var svg = document.querySelector("#fo-oval .ov-svg");
     var ball = document.getElementById("ov-ball");
     var pop = document.getElementById("ov-pop");
     if (!svg || !ball) { done(); return; }
-    if (reduced()) { flashPop(sym, pop); done(); return; }
+    if (reduced()) { flashPop(sym === "W" ? "OUT" : sym, pop); done(); return; }
     var spot = spotFor(lbl);   // the fielder the commentary actually named
-    // delivery: bowler end (200,190) to the striker (200,88)
+    // one controlled sequence per delivery:
+    // release -> pitch (pulse) -> batter -> contact -> shot -> result -> settle
     ball.setAttribute("opacity", "1");
-    slide(ball, 200, 190, 200, 92, 220, function () {
+    slide(ball, 200, 190, 200, 138, sp(430), function () {
+      pitchPulse(200, 138);
+      slide(ball, 200, 138, 200, 94, sp(210), function () { contact(); });
+    });
+    function finish(ms) { setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, sp(ms)); }
+    function contact() {
       if (sym === "W") {
-        if (spot) {
-          // caught (or run out) at a named position: the ball travels there
-          slide(ball, 200, 92, spot.x, spot.y, 430, function () {
-            pulseDot(spot.g, true); flashPop("OUT", pop, "#a3242b"); foSnd("W");
-            setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, 620);
+        // each mode of dismissal plays its own truth - the engine's, always
+        if (wk === "wB" || wk === "wLBW") {
+          if (wk === "wLBW") lbwFlash();
+          shatter(); flashPop("OUT", pop, "#a3242b"); pop2(wk === "wLBW" ? "LBW" : "BOWLED"); foSnd("W");
+          finish(650);
+        } else if (wk === "wST") {
+          // beaten, and the keeper does the rest
+          slide(ball, 200, 94, 200, 66, sp(190), function () {
+            shatter(); flashPop("OUT", pop, "#a3242b"); pop2("STUMPED"); foSnd("W");
+            finish(650);
+          });
+        } else if (wk === "wRO" && spot) {
+          // into the field, the return throw, the direct hit
+          slide(ball, 200, 94, spot.x, spot.y, sp(380), function () {
+            pulseDot(spot.g, true);
+            var endY = spot.y < 130 ? 84 : 178;
+            slide(ball, spot.x, spot.y, 200, endY, sp(300), function () {
+              shatter(); flashPop("OUT", pop, "#a3242b"); pop2("RUN OUT"); foSnd("W");
+              finish(650);
+            });
+          });
+        } else if (spot) {
+          // caught at the named position
+          slide(ball, 200, 94, spot.x, spot.y, sp(430), function () {
+            pulseDot(spot.g, true); flashPop("OUT", pop, "#a3242b"); pop2("CAUGHT" + (lbl ? " · " + lbl : "")); foSnd("W");
+            finish(620);
           });
         } else {
           shatter(); flashPop("OUT", pop, "#a3242b"); foSnd("W");
-          setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, 620);
+          finish(620);
         }
         return;
       }
       if (sym === "·" || sym === "+") {
         if (sym === "·" && spot) {
           // defended or driven straight to the named fielder
-          slide(ball, 200, 92, spot.x, spot.y, 300, function () {
+          slide(ball, 200, 94, spot.x, spot.y, sp(300), function () {
             pulseDot(spot.g);
-            setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, 180);
+            finish(180);
           });
         } else {
-          setTimeout(function () { ball.setAttribute("opacity", "0"); if (sym === "+") flashPop("extra", pop, "#5b6472"); done(); }, 160);
+          setTimeout(function () { ball.setAttribute("opacity", "0"); if (sym === "+") flashPop("extra", pop, "#5b6472"); done(); }, sp(160));
         }
         return;
       }
       // a scoring shot: real direction when the line names a position,
       // seeded decoration otherwise
       var a = spot ? Math.atan2(spot.y - 130, spot.x - 200) : (dirDeg != null ? dirDeg * Math.PI / 180 : angleFor(ballIx, sym));
-      var dist = sym === "6" ? 1.06 : sym === "4" ? 0.97 : 0.45 + ((ballIx % 3) * 0.1);
+      var dist = sym === "6" ? 1.1 : sym === "4" ? 0.97 : 0.45 + ((ballIx % 3) * 0.1);
       var tx = 200 + Math.cos(a) * 186 * dist;
       var ty = 130 + Math.sin(a) * 116 * dist;
       var runs = sym === "4" ? 0 : sym === "6" ? 0 : parseInt(sym, 10) || 0;
       if (runs && spot) { tx = spot.x; ty = spot.y; }
       if (runs) { swapRunners(runs); foSnd("run"); }
-      slide(ball, 200, 92, tx, ty, sym === "6" ? 560 : 440, function () {
-        if (sym === "4") { flashPop("FOUR", pop, "#C9A24B"); foSnd("4"); }
-        if (sym === "6") { flashPop("SIX", pop, "#C8674A"); foSnd("6"); }
+      slide(ball, 200, 94, tx, ty, sp(sym === "6" ? 700 : 520), function () {
+        if (sym === "4") { ripple(tx, ty, "#C9A24B"); flashPop("FOUR", pop, "#C9A24B"); foSnd("4"); }
+        if (sym === "6") { ripple(tx, ty, "#C8674A", true); flashPop("SIX", pop, "#C8674A"); foSnd("6"); }
         else if (spot) pulseDot(spot.g);
-        setTimeout(function () { ball.setAttribute("opacity", "0"); done(); }, sym === "4" || sym === "6" ? 480 : 140);
+        finish(sym === "4" || sym === "6" ? 520 : 140);
       }, sym === "6");
-    });
+    }
   }
   function slide(el2, x0, y0, x1, y1, ms, then, lob) {
     var t0 = null;
@@ -295,14 +359,14 @@ FOC.oval = (function () {
   function swapRunners(runs) {
     var b1 = document.getElementById("ov-batter"), b2 = document.getElementById("ov-nonstriker");
     if (!b1 || !b2) return;
-    b1.style.transition = b2.style.transition = "transform .5s ease";
+    b1.style.transition = b2.style.transition = "transform " + (sp(500) / 1000) + "s ease";
     var n = 0;
     (function leg() {
       n++;
       var off = (n % 2) ? 86 : 0;
       b1.style.transform = "translateY(" + off + "px)";
       b2.style.transform = "translateY(" + (-off) + "px)";
-      if (n < runs) setTimeout(leg, 480);
+      if (n < runs) setTimeout(leg, sp(480));
       else setTimeout(function () {
         if (runs % 2) {
           // odd runs: the batters genuinely swapped ends. Snap the markers home
@@ -314,7 +378,7 @@ FOC.oval = (function () {
         } else {
           b1.style.transform = b2.style.transform = "";
         }
-      }, 520);
+      }, sp(520));
     })();
   }
   function shatter() {
@@ -345,10 +409,15 @@ FOC.oval = (function () {
     if (next.pop) {   // a milestone moment: FIFTY! / HUNDRED!
       flashPop(next.pop, document.getElementById("ov-pop"), next.col || "#C9A24B");
       foSnd("mile");
-      setTimeout(function () { animating = false; board(); pump(); }, 950);
+      setTimeout(function () { animating = false; board(); pump(); }, sp(950));
       return;
     }
-    animate(next.sym, next.ix, function () { animating = false; board(); pump(); }, next.lbl, next.dir);
+    // the LIVE BALL pane header reads the delivery + region as it plays
+    try {
+      var hs = document.getElementById("fo-ovhd-sub");
+      if (hs) hs.textContent = (next.no ? next.no + " · " : "") + (next.reg || (next.sym === "W" ? "wicket" : ""));
+    } catch (eH) {}
+    animate(next, function () { animating = false; board(); pump(); });
   }
 
   function ee(s9) { return String(s9 == null ? "" : s9).replace(/[&<>]/g, function (c9) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c9]; }); }
@@ -432,7 +501,10 @@ FOC.oval = (function () {
           var s = symOf(fresh[i]);
           if (s) queue.push({ sym: s, ix: seenLogLen - i,
             lbl: (fresh[i].ev && fresh[i].ev.pos) || null,
-            dir: (fresh[i].ev && fresh[i].ev.dir != null) ? fresh[i].ev.dir : null });
+            dir: (fresh[i].ev && fresh[i].ev.dir != null) ? fresh[i].ev.dir : null,
+            wk: s === "W" ? fresh[i].out : null,
+            no: fresh[i].no || "",
+            reg: (fresh[i].ev && fresh[i].ev.region) || "" });
           else if (fresh[i].mile) {   // milestone lines become on-field moments
             var mt = fresh[i].txt || "";
             if (/HUNDRED|CENTURY/i.test(mt)) queue.push({ pop: "HUNDRED!", col: "#C8674A" });
@@ -546,6 +618,17 @@ FOC.oval = (function () {
       ".ov-pop{font-family:Oswald,sans-serif;font-size:30px;letter-spacing:4px;font-weight:600;opacity:0;paint-order:stroke;stroke:#0F1A2E;stroke-width:4px}" +
       ".ov-pop.on{animation:ovPop 1.05s ease}" +
       "@keyframes ovPop{0%{opacity:0;transform:scale(.6)}18%{opacity:1;transform:scale(1.12)}70%{opacity:1;transform:scale(1)}100%{opacity:0}}" +
+      // delivery grammar: pitch pulse, boundary ripple, dismissal detail, lbw ray
+      ".ov-pit{fill:none;stroke:#f5efdd;stroke-width:1.4;transform-box:fill-box;transform-origin:center;animation:ovPit .6s ease-out forwards}" +
+      "@keyframes ovPit{0%{opacity:.9;transform:scale(.6)}100%{opacity:0;transform:scale(3)}}" +
+      ".ov-rip{fill:none;stroke-width:2;transform-box:fill-box;transform-origin:center;animation:ovRip .85s ease-out forwards}" +
+      ".ov-rip.big{stroke-width:2.6;animation-duration:1s}" +
+      "@keyframes ovRip{0%{opacity:.95;transform:scale(.7)}100%{opacity:0;transform:scale(4.4)}}" +
+      ".ov-pop2{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2.6px;font-weight:600;fill:#F1EADA;text-transform:uppercase;opacity:0;paint-order:stroke;stroke:#0F1A2E;stroke-width:3px}" +
+      ".ov-pop2.on{animation:ovPop 1.45s ease}" +
+      ".ov-lbw{stroke:#e04b3a;stroke-width:1.6;stroke-dasharray:3 3;animation:ovLbw .7s ease forwards}" +
+      "@keyframes ovLbw{0%{opacity:0}30%{opacity:1}100%{opacity:0}}" +
+      "@media(prefers-reduced-motion:reduce){.ov-pit,.ov-rip,.ov-lbw{animation:none;opacity:0}}" +
       ".ov-note{display:flex;align-items:center;justify-content:flex-end;gap:8px;text-align:right;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#5b6a85;padding:3px 10px 5px}" +
       ".ov-snd{background:none;border:1px solid #24334f;border-radius:7px;color:#8fa0bd;font-size:12px;line-height:1;padding:3px 7px;cursor:pointer;margin-right:auto}" +
       ".ov-need{font-family:Oswald,sans-serif;font-size:13px;letter-spacing:1.5px;color:#fff;background:#a3242b;border-radius:8px;padding:3px 10px;display:none}" +
