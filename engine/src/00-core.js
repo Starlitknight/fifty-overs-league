@@ -4370,3 +4370,18 @@ route();
 
 
 // Engine patch 2026-balanced: pace/spin balance, real Rocket Arm/Lightning Hands hooks, stronger fatigue, contextual chase pressure, death power, and ground-fielding run impact.
+
+// ---- Circuit-only era: the retired engine pages render NOTHING. Their
+// routes redirect to the Circuit, and the pages that live on (squad) are
+// re-rendered by the league overlay, which replaces these globals as it
+// loads. Emptying the originals guarantees the old engine UI can never
+// paint, not even for the boot frame before the overlay arrives.
+pgSquad=function(){};
+pgOffice=function(){};
+pgMatches=function(){};
+pgStats=function(){};
+pgNets=function(){};
+pgReports=function(){};
+pgCal=function(){};
+pgEditor=function(){};
+pgCommentary=function(){};

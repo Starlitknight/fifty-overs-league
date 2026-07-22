@@ -4654,6 +4654,21 @@ route();
 
 
 // Engine patch 2026-balanced: pace/spin balance, real Rocket Arm/Lightning Hands hooks, stronger fatigue, contextual chase pressure, death power, and ground-fielding run impact.
+
+// ---- Circuit-only era: the retired engine pages render NOTHING. Their
+// routes redirect to the Circuit, and the pages that live on (squad) are
+// re-rendered by the league overlay, which replaces these globals as it
+// loads. Emptying the originals guarantees the old engine UI can never
+// paint, not even for the boot frame before the overlay arrives.
+pgSquad=function(){};
+pgOffice=function(){};
+pgMatches=function(){};
+pgStats=function(){};
+pgNets=function(){};
+pgReports=function(){};
+pgCal=function(){};
+pgEditor=function(){};
+pgCommentary=function(){};
 </script>
 
 <!-- ===== GPT patch: clean match tabs, round progression fixes, compact club home ===== -->
@@ -10442,7 +10457,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260722-1338-c33853";
+  var FO_BUILD = "20260722-1340-c33853";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
