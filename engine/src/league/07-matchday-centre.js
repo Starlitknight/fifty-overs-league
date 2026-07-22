@@ -1916,8 +1916,17 @@
     Leeds: "center 54%", Mumbai: "center 56%", Kingston: "center 58%", Wellington: "center 56%",
     Perth: "center 58%"
   };
-  // one broadcast pace: unhurried, watchable. "Next ball" is the accelerator.
-  function foThMs() { return 3200; }
+  // one broadcast pace, three tempos: the viewer picks 1x / 2x / 4x
+  function foThMs() { return Math.round(3200 / (window.__foThMult || 1)); }
+  function foThSetSpeed(m) {
+    try {
+      window.__foThMult = m;
+      if (typeof UI !== "undefined") UI.apMs = foThMs();
+      if (window.__ap) { clearInterval(window.__ap); window.__ap = null; }
+      if (typeof foEnsureAutoplay === "function" && typeof M !== "undefined" && M && !M.done) foEnsureAutoplay();
+      if (typeof renderMatch === "function") renderMatch();
+    } catch (e) {}
+  }
   // moment cut-in: full character art earns the screen for ~2.5s, then leaves
   function foThCut(img, big, name) {
     try {
@@ -1970,6 +1979,7 @@
   function foMobSheet(st) {
     try {
       document.body.setAttribute("data-mobsheet", st);
+      if (st !== "oval") document.body.classList.remove("fo-mob-xl");
       if (foMobIsOn()) {
         if (st === "score" || st === "tactics") {
           try {
@@ -2010,6 +2020,7 @@
       document.body.removeAttribute("data-thtab");
       ["fo-th-rail", "fo-thd-x", "fo-th-gf", "fo-th-cut", "fo-th-gauge", "fo-mob-sheet", "fo-mob-nav", "fo-mstage"].forEach(function (id) { var e9 = document.getElementById(id); if (e9) e9.remove(); });
       document.body.removeAttribute("data-mobsheet");
+      document.body.classList.remove("fo-mob-xl");
       return;
     }
     foThCss();
@@ -2077,15 +2088,36 @@
         if (!a7) return;
         setTimeout(function () { try { document.body.setAttribute("data-thtab", (typeof UI !== "undefined" && UI.matchTab) || "Scorecard"); } catch (e6) {} }, 0);
       });
-      // pull the sheet down by its grip to fall back to the live ground
+      // the grip: drag DOWN to step back toward the live ground, drag UP
+      // (in the oval sheet) to take the ball animation full screen. The grip
+      // CAPTURES the pointer - mobile browsers love cancelling drags that
+      // cross moving panels, and capture keeps the stream alive.
       var drY9 = null;
       sh9.addEventListener("pointerdown", function (e8) {
-        if (e8.clientY < sh9.getBoundingClientRect().top + 36) drY9 = e8.clientY;
+        if (e8.clientY < sh9.getBoundingClientRect().top + 36) {
+          drY9 = e8.clientY;
+          try { if (e8.target && e8.target.setPointerCapture) e8.target.setPointerCapture(e8.pointerId); } catch (eC) {}
+          e8.preventDefault();
+        }
       });
-      document.addEventListener("pointermove", function (e8) {
-        if (drY9 != null && e8.clientY - drY9 > 52) { drY9 = null; foMobSheet("live"); }
-      });
-      document.addEventListener("pointerup", function () { drY9 = null; });
+      var drMove9 = function (e8) {
+        if (drY9 == null) return;
+        var dy9 = e8.clientY - drY9;
+        if (dy9 > 44) {
+          drY9 = null;
+          if (document.body.classList.contains("fo-mob-xl")) document.body.classList.remove("fo-mob-xl");
+          else foMobSheet("live");
+        } else if (dy9 < -44) {
+          drY9 = null;
+          if (document.body.getAttribute("data-mobsheet") === "oval") document.body.classList.add("fo-mob-xl");
+        }
+      };
+      sh9.addEventListener("pointermove", drMove9);
+      document.addEventListener("pointermove", drMove9);
+      var drEnd9 = function () { drY9 = null; };
+      sh9.addEventListener("pointerup", drEnd9);
+      sh9.addEventListener("pointercancel", drEnd9);
+      document.addEventListener("pointerup", drEnd9);
     }
     if (!document.body.getAttribute("data-mobsheet")) foMobSheet("live");
     foMobTalkHome();
@@ -2136,6 +2168,12 @@
       // the accelerator docks right under the LIVE BALL pane, big enough to
       // never miss - and steps aside while an analysis drawer is open
       "@media(min-width:761px){html body.fo-th #fo-mstage .fo-mst-next{position:fixed;right:212px;top:calc(50% + 208px);z-index:56;width:252px;min-height:56px;font-size:15px;letter-spacing:2.4px;padding:17px 20px !important;text-align:center}}" +
+      "body.fo-th #fo-mst-spd{display:flex;gap:8px;align-items:center}" +
+      "html body.fo-th #fo-mst-spd button{flex:1;min-height:48px;min-width:64px;font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:15px;letter-spacing:1.5px;background:rgba(5,20,40,.72) !important;border:1.5px solid rgba(255,255,255,.3) !important;color:rgba(255,255,255,.85) !important;border-radius:12px;cursor:pointer;backdrop-filter:blur(8px);padding:10px 0;box-shadow:none !important}" +
+      "html body.fo-th #fo-mst-spd button.on{background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;border-color:#F0B94E !important;color:#101B2D !important;box-shadow:0 4px 0 rgba(16,27,45,.35),0 8px 22px rgba(201,162,75,.3) !important}" +
+      "@media(min-width:761px){body.fo-th #fo-mst-spd{position:fixed;right:212px;top:calc(50% + 208px);z-index:56;width:252px}}" +
+      "body.fo-th.fo-thd #fo-mst-spd{display:none}" +
+      "@media(min-width:761px){body.fo-th.fo-th-ov0 #fo-mst-spd{top:50%;transform:translateY(-50%)}}" +
       "body.fo-th.fo-thd #fo-mstage .fo-mst-next{display:none}" +
       "@media(min-width:761px){body.fo-th.fo-th-ov0 #fo-mstage .fo-mst-next{top:50%;transform:translateY(-50%)}}" +
       "@media(min-width:761px){body.fo-th.fo-th-ov0 #fo-mstage .fo-mst-next:active{transform:translateY(calc(-50% + 2px))}}" +
@@ -2321,6 +2359,8 @@
       "body.fo-th .fo-mst-score .mbs{display:none}" +
       "body.fo-th .fo-mst-top{top:112px !important}" +
       "html body.fo-th #fo-mstage .fo-mst-next{position:fixed;left:auto;right:14px;top:auto !important;bottom:12px;transform:none;width:210px;min-height:46px;font-size:13px;letter-spacing:2px;padding:12px !important;text-align:center;z-index:56}" +
+      "body.fo-th #fo-mst-spd{position:fixed;left:auto;right:14px;top:auto;bottom:12px;width:210px;z-index:56}" +
+      "html body.fo-th #fo-mst-spd button{min-height:42px;font-size:13px}" +
       "#fo-th-gauge{display:none !important}" +
       "html body.fo-th #fo-oval{width:300px !important;max-width:300px !important;transform:translateY(-50%);max-height:calc(100vh - 16px);overflow:hidden}" +
       "body.fo-th #fo-oval .ov-svg svg{max-height:calc(100vh - 150px)}" +
@@ -2331,7 +2371,7 @@
       "body.fo-th .fo-mst-p .stars{display:none}" +
       "body.fo-th .fo-mst-p.pbowl{right:240px}" +
       "body.fo-th:not(.fo-th-ov0):not(.fo-thd) .fo-mst-p{display:none}" +
-      "body.fo-th:not(.fo-th-ov0):not(.fo-thd) #fo-mstage .fo-mst-next{right:330px}" +
+      "body.fo-th:not(.fo-th-ov0):not(.fo-thd) #fo-mstage .fo-mst-next,body.fo-th:not(.fo-th-ov0):not(.fo-thd) #fo-mst-spd{right:330px}" +
       "body.fo-th .fo-mst-moment{bottom:76px;width:min(460px,52vw)}" +
       "body.fo-th:not(.fo-th-ov0):not(.fo-thd) .fo-mst-moment{left:37%}" +
       "body.fo-th .fo-mst-moment .t{font-size:19px;letter-spacing:3px;height:auto}" +
@@ -2355,32 +2395,32 @@
       "#fo-thd-x{display:none !important}" +
       "body.fo-th .fo-mst-bg img{object-position:var(--thfocal-m,50% 56%)}" +
       // scorebug: ONE horizontal bug - team, score dominant, overs
-      "body.fo-th .fo-mst-score{top:calc(56px + env(safe-area-inset-top));left:50%;right:auto;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:2px 12px;width:max-content;min-width:0;max-width:calc(100vw - 20px);padding:10px 20px 11px;border-radius:16px}" +
-      "body.fo-th .fo-mst-score .tm{font-size:13px;letter-spacing:1.8px;text-transform:uppercase;color:#F3D37A;margin:0}" +
-      "body.fo-th .fo-mst-score b{font-size:31px;line-height:1}" +
-      "body.fo-th .fo-mst-score .ovs{display:inline;font-size:11px;letter-spacing:2.2px;margin:0}" +
+      "body.fo-th .fo-mst-score{top:calc(56px + env(safe-area-inset-top));left:50%;right:auto;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:2px 12px;width:max-content;min-width:0;max-width:calc(100vw - 20px);padding:8px 17px 9px;border-radius:14px}" +
+      "body.fo-th .fo-mst-score .tm{font-size:11.5px;letter-spacing:1.6px;text-transform:uppercase;color:#F3D37A;margin:0}" +
+      "body.fo-th .fo-mst-score b{font-size:27px;line-height:1}" +
+      "body.fo-th .fo-mst-score .ovs{display:inline;font-size:10px;letter-spacing:2px;margin:0}" +
       "body.fo-th .fo-mst-score i{display:none}" +
-      "body.fo-th .fo-mst-score i.chase{display:block;flex-basis:100%;text-align:center;font-size:10.5px;letter-spacing:.6px;color:rgba(255,255,255,.78);margin-top:1px}" +
+      "body.fo-th .fo-mst-score i.chase{display:block;flex-basis:100%;text-align:center;font-size:9.5px;letter-spacing:.6px;color:rgba(255,255,255,.78);margin-top:1px}" +
       // conditions: one small centred pill - CITY / WEATHER / PITCH / FIELD
       "body.fo-th .fo-mst-top{position:static !important;display:contents}" +
       "body.fo-th .fo-mst-wx{position:fixed;z-index:52;top:calc(122px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 16px);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;background:rgba(6,14,26,.62);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:6px 15px;backdrop-filter:blur(8px)}" +
-      "body.fo-th .fo-mst-wx span{background:none !important;border:none !important;padding:0 !important;margin:0 !important;font-size:9px;letter-spacing:1.1px;white-space:nowrap;color:#F5EFDC}" +
+      "body.fo-th .fo-mst-wx span{background:none !important;border:none !important;padding:0 !important;margin:0 !important;font-size:8.5px;letter-spacing:1px;white-space:nowrap;color:#F5EFDC}" +
       "body.fo-th .fo-mst-wx span+span::before{content:'\\2022';margin:0 6px;color:#F0B94E}" +
       "body.fo-th .fo-mst-wx .gnd{display:none}" +
       "body.fo-th .fo-mst-wx .cty-m{display:inline}" +
       "body.fo-th .fo-mst-wx .cty-m::before{content:none !important}" +
       "body.fo-th .fo-mst-ctlg{position:static}" +
       // matchup strip: one compact bar, batter left, bowler right
-      "body.fo-th .fo-mst-p{position:fixed;top:auto !important;bottom:calc(196px + env(safe-area-inset-bottom)) !important;height:58px !important;max-width:none;padding:6px 10px;gap:9px;border-radius:0;background:rgba(7,18,36,.8);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px);box-shadow:0 8px 22px rgba(0,0,0,.4);z-index:50}" +
+      "body.fo-th .fo-mst-p{position:fixed;top:auto !important;bottom:calc(196px + env(safe-area-inset-bottom)) !important;height:64px !important;max-width:none;padding:6px 10px;gap:9px;border-radius:0;background:rgba(7,18,36,.8);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px);box-shadow:0 8px 22px rgba(0,0,0,.4);z-index:50}" +
       "body.fo-th .fo-mst-p.pbat{left:10px;right:calc(50vw + .5px);border-radius:15px 5px 5px 15px;border-right:none}" +
       "body.fo-th .fo-mst-p.pbowl{left:calc(50vw + .5px);right:10px;border-radius:5px 15px 15px 5px;flex-direction:row-reverse;padding:6px 10px;border-left-color:rgba(255,255,255,.1)}" +
       "body.fo-th .fo-mst-p img{width:40px;height:40px;flex:0 0 40px;border-width:1.5px;object-position:50% 12%}" +
       "body.fo-th .fo-mst-p .pc{min-width:0}" +
       "body.fo-th .fo-mst-p.pbowl .pc{text-align:right}" +
       "body.fo-th .fo-mst-p .rl{display:none}" +
-      "body.fo-th .fo-mst-p .nm{font-size:12.5px;letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
-      "body.fo-th .fo-mst-p .st{font-size:11.5px}" +
-      "body.fo-th .fo-mst-p .stars{display:none}" +
+      "body.fo-th .fo-mst-p .nm{font-size:11.5px;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      "body.fo-th .fo-mst-p .st{font-size:10.5px}" +
+      "body.fo-th .fo-mst-p .stars{display:block;font-size:8.5px;letter-spacing:1px;line-height:1.2;margin-top:1px;white-space:nowrap}" +
       "body.fo-th[data-mobsheet='score'] .fo-mst-p,body.fo-th[data-mobsheet='tactics'] .fo-mst-p{display:none !important}" +
       "body.fo-th[data-mobsheet='score'] .fo-mst-wx,body.fo-th[data-mobsheet='tactics'] .fo-mst-wx{display:none !important}" +
       "body.fo-th[data-mobsheet='oval'] .fo-mst-p{bottom:calc(60dvh - 84px + env(safe-area-inset-bottom)) !important;z-index:53;background:transparent;border-color:transparent;backdrop-filter:none;box-shadow:none}" +
@@ -2396,25 +2436,38 @@
       "html body #fo-mob-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:58;justify-content:space-around;padding:2px 6px calc(4px + env(safe-area-inset-bottom))}" +
       "html body #fo-mob-nav button{flex:1;max-width:120px;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none !important;border:none !important;box-shadow:none !important;color:rgba(255,255,255,.7);cursor:pointer;padding:5px 0;border-radius:10px}" +
       "html body #fo-mob-nav button svg{width:20px;height:20px}" +
-      "html body #fo-mob-nav button span{font-family:Oswald,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:2.2px;text-transform:uppercase}" +
+      "html body #fo-mob-nav button span{font-family:Oswald,sans-serif;font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase}" +
       "html body #fo-mob-nav button.on{color:#F0B94E}" +
       "html body #fo-mob-nav button.on span{border-bottom:2px solid #F0B94E;padding-bottom:1px}" +
       // latest delivery: chip + line, result as a small badge on the right
       "body.fo-th .fo-mst-moment{top:auto;left:50%;transform:translateX(-50%);bottom:calc(128px + env(safe-area-inset-bottom));width:calc(100vw - 30px);background:none;border:none;padding:0;backdrop-filter:none;display:flex;flex-direction:row-reverse;align-items:center;gap:8px;z-index:53}" +
       "body.fo-th .fo-mst-moment .t{height:auto;min-height:0;font-size:10px;letter-spacing:1.8px;padding:4px 10px;border:1px solid rgba(255,255,255,.24);border-radius:999px;background:rgba(6,14,26,.62);flex:0 0 auto;text-shadow:none;animation:none !important}" +
       "body.fo-th .fo-mst-moment .rib{flex:1;min-width:0;min-height:0;justify-content:flex-start;background:none;border:none;padding:0;backdrop-filter:none}" +
-      "body.fo-th .fo-mst-moment .rib p{font-size:13.5px;letter-spacing:.2px;text-transform:none;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#F5EFDC;text-shadow:0 1px 6px rgba(0,0,0,.7)}" +
+      "body.fo-th .fo-mst-moment .rib p{font-size:12.5px;letter-spacing:.2px;text-transform:none;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#F5EFDC;text-shadow:0 1px 6px rgba(0,0,0,.7)}" +
       "body.fo-th .fo-mst-moment .rib .kph{display:none}" +
       "body.fo-th[data-mobsheet='score'] .fo-mst-moment,body.fo-th[data-mobsheet='tactics'] .fo-mst-moment{display:none !important}" +
       "body.fo-th[data-mobsheet='oval'] .fo-mst-moment{bottom:calc(60dvh - 134px + env(safe-area-inset-bottom))}" +
-      // NEXT BALL: the big warm-gold thumb target
+      // the tempo row: the thumb target where NEXT BALL used to live
       "html body.fo-th #fo-mstage .fo-mst-next{position:fixed;left:14px;right:14px;top:auto;transform:none;width:auto;min-height:50px;z-index:57;bottom:calc(64px + env(safe-area-inset-bottom));font-size:15px;letter-spacing:2.8px;padding:14px !important;text-align:center;border-radius:14px}" +
       "html body.fo-th #fo-mstage .fo-mst-next:active{transform:translateY(1px)}" +
-      "html body.fo-th[data-mobsheet='oval'] #fo-mstage .fo-mst-next{left:50%;right:auto;transform:translateX(-50%);min-width:200px;min-height:44px;padding:11px 26px !important;font-size:13px}" +
+      "body.fo-th #fo-mst-spd{position:fixed;left:14px;right:14px;top:auto;transform:none;width:auto;z-index:57;bottom:calc(64px + env(safe-area-inset-bottom))}" +
+      "html body.fo-th #fo-mst-spd button{min-height:46px}" +
+      "body.fo-th[data-mobsheet='oval'] #fo-mst-spd{left:50%;right:auto;transform:translateX(-50%);width:230px;bottom:calc(62px + env(safe-area-inset-bottom))}" +
+      "body.fo-th[data-mobsheet='oval'] #fo-mst-spd button{min-height:40px;font-size:13px}" +
       // the LIVE BALL pane docks INSIDE the oval sheet - never a separate page
       "body.fo-th[data-mobsheet]:not([data-mobsheet='oval']) #fo-oval{display:none !important}" +
-      "html body.fo-th[data-mobsheet='oval'] #fo-oval{display:block !important;position:fixed !important;left:12px !important;right:12px !important;top:auto !important;bottom:calc(128px + env(safe-area-inset-bottom)) !important;transform:none;width:auto !important;max-width:none !important;max-height:calc(60dvh - 268px);z-index:54;background:transparent;border:none;border-radius:0 !important;box-shadow:none;backdrop-filter:none;overflow:hidden}" +
-      "body.fo-th[data-mobsheet='oval'] #fo-oval .ov-svg svg{max-height:calc(60dvh - 306px)}" +
+      "html body.fo-th[data-mobsheet='oval'] #fo-oval{display:block !important;position:fixed !important;left:12px !important;right:12px !important;top:auto !important;bottom:calc(128px + env(safe-area-inset-bottom)) !important;transform:none;width:auto !important;max-width:none !important;max-height:calc(60dvh - 250px);z-index:54;background:transparent;border:none;border-radius:0 !important;box-shadow:none;backdrop-filter:none;overflow:visible}" +
+      // .ov-svg IS the <svg>: cap its height and let the viewBox letterbox it
+      "body.fo-th[data-mobsheet='oval'] #fo-oval .ov-svg{max-height:calc(60dvh - 290px);margin:0 auto;background:transparent}" +
+      // drag the grip UP and the ball animation takes the whole screen
+      "body.fo-th.fo-mob-xl[data-mobsheet='oval'] #fo-mob-sheet,body.fo-th.fo-mob-xl[data-mobsheet='oval'] #fo-mstage::after{height:calc(100dvh - 48px - env(safe-area-inset-top))}" +
+      "body.fo-th.fo-mob-xl[data-mobsheet='oval'] .fo-mst-p{bottom:calc(100dvh - 176px) !important}" +
+      // full screen means full screen: the scorebug and conditions yield to
+      // the animation (the grip at the very top brings them back)
+      "body.fo-th.fo-mob-xl[data-mobsheet='oval'] .fo-mst-score,body.fo-th.fo-mob-xl[data-mobsheet='oval'] .fo-mst-wx{display:none !important}" +
+      "body.fo-th.fo-mob-xl[data-mobsheet='oval'] .fo-mst-moment{bottom:calc(100dvh - 204px)}" +
+      "html body.fo-th.fo-mob-xl[data-mobsheet='oval'] #fo-oval{max-height:calc(100dvh - 336px)}" +
+      "body.fo-th.fo-mob-xl[data-mobsheet='oval'] #fo-oval .ov-svg{max-height:calc(100dvh - 356px)}" +
       "body.fo-th #fo-ovhd{display:none}" +
       "body.fo-th #fo-oval .ov-note{display:none}" +
       "body.fo-th #fo-ovhd button{display:none}" +
@@ -2585,9 +2638,12 @@
         var tM0 = /^(.+?) won the toss and chose to (bat|bowl)/.exec(tt0);
         if (tM0) tossTx = tM0[1] + " won the toss &middot; chose to " + tM0[2];
       } catch (eTs) {}
-      // the broadcast never stops: the only control is impatience
+      // the broadcast never stops: the only control is its tempo
+      var spdNow = window.__foThMult || 1;
       var ctlBtns = (!M.done ?
-        "<button type='button' class='fo-mst-next' id='fo-mst-next'>Next ball &#9654;</button>"
+        "<div class='fo-mst-spd' id='fo-mst-spd'>" + [1, 2, 4].map(function (m9) {
+          return "<button type='button' data-spd='" + m9 + "'" + (spdNow === m9 ? " class='on'" : "") + ">" + m9 + "&times;</button>";
+        }).join("") + "</div>"
         : "<button type='button' class='fo-mst-next' id='fo-mst-done'>Continue &#9654;</button>");
       var pArt = function (p) { try { return FO_ART + foPkArt(p); } catch (e) { return ""; } };
       // the who-card stars now live HERE - same math as the theatre's
@@ -2666,6 +2722,9 @@
       } catch (eTh) {}
       var db = el.querySelector("#fo-mst-done");
       if (db) db.addEventListener("click", function () { location.hash = "#/circuit"; if (typeof window.route === "function") window.route(); });
+      el.querySelectorAll("#fo-mst-spd [data-spd]").forEach(function (sb9) {
+        sb9.addEventListener("click", function () { foThSetSpeed(+sb9.getAttribute("data-spd")); });
+      });
       var nb = el.querySelector("#fo-mst-next");
       if (nb) nb.addEventListener("click", function () {
         try { if (window.__foMstHold && !document.getElementById("fo-mst-ask") && !window.__foMstAskT) window.__foMstHold = false; } catch (eH) {}

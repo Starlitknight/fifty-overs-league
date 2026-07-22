@@ -152,6 +152,19 @@
       });
     }
   } catch (e) {}
+  // the frontier nations draw from their own name banks
+  try {
+    var FO_NEW_NATS = {
+      Bangladesh: { fn: ["Tamim", "Mushfiq", "Mehidy", "Litton", "Shoriful", "Nurul", "Afif", "Taskin", "Anamul", "Sabbir", "Rubel", "Mahedi"], ln: ["Chowdhury", "Hossain", "Rahman", "Islam", "Ahmed", "Sarkar", "Miah", "Uddin", "Karim", "Bhuiyan", "Talukder", "Sheikh"] },
+      Nepal: { fn: ["Sandeep", "Kushal", "Rohit", "Dipendra", "Karan", "Sompal", "Gulsan", "Binod", "Sagar", "Lalit", "Pawan", "Aarif"], ln: ["Rana", "Thapa", "Gurung", "Shrestha", "Karki", "Bhandari", "Magar", "Khadka", "Lamichhane", "Paudel", "Airee", "Bhurtel"] },
+      Scotland: { fn: ["Angus", "Calum", "Ewan", "Fraser", "Hamish", "Lachlan", "Murray", "Rory", "Duncan", "Finlay", "Gregor", "Struan"], ln: ["MacLeod", "Campbell", "Stewart", "MacDonald", "Munro", "Sinclair", "Douglas", "Cameron", "Buchanan", "Lamont", "Kerr", "Wallace"] },
+      Wales: { fn: ["Gareth", "Rhys", "Owain", "Dylan", "Ieuan", "Carwyn", "Aled", "Emyr", "Morgan", "Sion", "Tomos", "Bryn"], ln: ["Llewellyn", "Morgan", "Davies", "Evans", "Griffiths", "Hughes", "Jenkins", "Owens", "Price", "Thomas", "Vaughan", "Probert"] },
+      Kenya: { fn: ["David", "Collins", "Nelson", "Shem", "Dhiren", "Rakep", "Irfan", "Lucas", "Gerald", "Emmanuel", "Brian", "Peter"], ln: ["Otieno", "Odhiambo", "Ouma", "Obuya", "Ngoche", "Karim", "Patel", "Musyoka", "Wanjala", "Omondi", "Mwangi", "Njoroge"] },
+      "United States": { fn: ["Tyler", "Corey", "Aaron", "Monank", "Jaskaran", "Saurabh", "Andries", "Steven", "Cameron", "Milind", "Hayden", "Jessy"], ln: ["Brooks", "Anderson", "Walker", "Patel", "Sharma", "Taylor", "Johnson", "Mitchell", "Hayes", "Kumar", "Reyes", "Van Buren"] },
+      Canada: { fn: ["Marcus", "Navneet", "Harsh", "Nicholas", "Aaron", "Dilpreet", "Kaleem", "Ravinder", "Shreyas", "Liam", "Jatinder", "Cody"], ln: ["Dhillon", "Singh", "Gill", "Kirton", "Johnson", "Bajwa", "Sandhu", "Persaud", "Whyte", "Tremblay", "Mackenzie", "Sidhu"] }
+    };
+    if (typeof NATNAMES !== "undefined") Object.keys(FO_NEW_NATS).forEach(function (k) { if (!NATNAMES[k]) NATNAMES[k] = FO_NEW_NATS[k]; });
+  } catch (eNn) {}
   function foNameParts(nm) { var i = (nm || "").indexOf(" "); return i < 0 ? [nm || "", ""] : [nm.slice(0, i), nm.slice(i + 1)]; }
   function foHash32(s) { var h = 2166136261; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
   try {

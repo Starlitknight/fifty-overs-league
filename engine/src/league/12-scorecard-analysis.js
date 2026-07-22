@@ -1514,6 +1514,134 @@
           sig: "mystery", intel: "You cannot pick the googly - plan for that instead of pretending. Play Zadran from the crease off the pitch, score off everyone else, and force their mercurial batting to chase under pressure. Calm beats magic.",
           winln: "You never picked it. You just refused to panic - and the mountain respects nothing more. The Flame is yours; the summit is next.", lossln: "Six more swore they picked it today. The Storm keeps their names. Come back calmer." }
       ] },
+    // -- the frontier nations: one great stronghold each, painted from life.
+    //    Their tour "map" is the stadium itself until a country map is drawn.
+    { id: "bgd", nm: "Bangladesh", cty: "Bangladesh", arch: "wizard", type: "The Tigers' Web", ac: "#0E6E4F",
+      bg: "../cities/sylhet-ground.webp",
+      arrive: "Bangladesh, boss. Tea gardens on the hills and a hundred million people who treat cricket as the national weather. In Sylhet the whole valley turns up.",
+      pitch: "dry", wx: "Humid",
+      cond: "Low, slow and turning from the first hour - and the humidity makes the old ball skid at dusk.",
+      gaffer: "Three spinners before you've had your tea, and every single is applauded like a hundred. Sweep well, run harder, and don't let the noise pick your shots.",
+      academy: "left-arm spinners and wristy accumulators",
+      trophy: "The Royal Bengal Banner", nats: ["Bangladesh"],
+      clubs: [
+        { boss: 1, mx: 50, my: 58, nm: "Sylhet CC", city: "Sylhet", capt: "talisman",
+          leader: "Farhan Chowdhury", note: "left-arm spin that never gives you the same ball twice",
+          gq: "Chowdhury's fields look friendly for two overs - that's the trap. He wants your sweep before you've read the pitch. Milk him straight and make his quicks do a full shift.",
+          taunt: "The tigers hunt slowly, friend. You will not feel the innings close around you until it has.",
+          nug: "Sylhet: a bowl of green hills, a tea-garden breeze, and Chowdhury turning the screw one dot at a time. Nothing frightening ever happens - you're just forty for three before you've noticed. Rotate early, sweep late, and never let three quiet overs become six.",
+          mult: 1.10,
+          sig: "web", intel: "Chowdhury strangles by degrees - his spinners bowl to the scoreboard, not the batsman. Keep the singles flowing from over one; the moment the rate stalls, the web closes.",
+          winln: "You never stopped moving. A tiger cannot close on prey that will not stand still - well played.", lossln: "You stood still, friend. In Sylhet that is the only mistake that matters. Come and move your feet again." }
+      ] },
+    { id: "nep", nm: "Nepal", cty: "Nepal", arch: "prodigy", type: "Mountain Roar", ac: "#B5304C",
+      bg: "../cities/kathmandu-ground.webp",
+      arrive: "Nepal, boss. The ground sits in a bowl under the Himalaya and every seat is taken four hours before the toss. No cricket crowd on earth loves harder.",
+      pitch: "balanced", wx: "Chilly",
+      cond: "Thin mountain air, a slow outfield, and twenty thousand people singing from the first ball to the last.",
+      gaffer: "The crowd is the twelfth man and he never gets tired. Quiet them early - every early wicket buys you three cheap overs. Let them sing and the kids play like giants.",
+      academy: "fearless leg-spinners and boundary riders",
+      trophy: "The Himalayan Khukuri", nats: ["Nepal"],
+      clubs: [
+        { boss: 1, mx: 50, my: 58, nm: "Kathmandu CC", city: "Kathmandu", capt: "younggun",
+          leader: "Sandeep Rana", note: "twenty-one, leg-spin, and a nation on his shoulder",
+          gq: "Rana bowls leg-spin like the hill has no scoreboard - flight, rip, and absolute nerve. He feeds on the roar. Take the crowd out of it and he's a kid again.",
+          taunt: "Twenty thousand came to watch you lose. It would be rude to disappoint them.",
+          nug: "Kathmandu: prayer flags over the sightscreen and a leg-spinner the whole country stops work to watch. When the ground sings, Rana grows a foot taller. Bat ugly, bat quiet, and the mountain runs out of songs.",
+          mult: 1.11,
+          sig: "pride", intel: "Rana and the roar rise together - every boundary he concedes in silence is worth two wickets. Start fast, hush the bowl, and the magic thins out with the air.",
+          winln: "You silenced the valley. Nobody has done that since I was a boy in the stands myself. Namaste - it was an honour.", lossln: "Hear them? They will sing that song about this match for years. Come back and give them a better one." }
+      ] },
+    { id: "sco", nm: "Scotland", cty: "Scotland", arch: "rock", type: "Northern Grit", ac: "#2B5AA6",
+      bg: "../cities/edinburgh-ground.webp",
+      arrive: "Scotland, boss. A tidy wee ground under a castle rock, a gale off the Forth, and eleven men who've been underestimated their whole lives. Sound familiar?",
+      pitch: "green", wx: "Windy",
+      cond: "Green-topped, cold, and the wind never stops. Every total is worth forty more than it reads.",
+      gaffer: "They've beaten world champions on this ground and nobody south of the border noticed. Respect them from ball one - grind first, flourish later, and keep your bonnet on.",
+      academy: "hard-handed seamers and stubborn openers",
+      trophy: "The Saltire Quaich", nats: ["Scotland"],
+      clubs: [
+        { boss: 1, mx: 50, my: 58, nm: "Edinburgh CC", city: "Edinburgh", capt: "ironman",
+          leader: "Angus MacLeod", note: "opens the batting AND the bowling, both into the gale",
+          gq: "MacLeod takes the wind end himself, both disciplines, all day. He's granite. Don't try to blast him out - bore him out, and mind the man never sledges back.",
+          taunt: "Cold, is it? Aye. We hadnae noticed.",
+          nug: "Edinburgh: the flags point four different directions at once and MacLeod uses every one of them. He'll bowl ten straight into the gale then open the batting without changing his shirt. Patience beats granite - eventually.",
+          mult: 1.12,
+          sig: "wall", intel: "MacLeod cannot be hurried and won't be intimidated - he plans to still be there at the end. Win the match around him: strangle the other ten and leave the mountain unclimbed.",
+          winln: "Ye out-lasted me. On this ground, in that wind - that's the only compliment I own. Take it.", lossln: "The weather's free, the runs are not. Away and practise your leaving, and come north again." }
+      ] },
+    { id: "wal", nm: "Wales", cty: "Wales", arch: "engine", type: "Valley Swing", ac: "#A62A2E",
+      bg: "../cities/cardiff-ground.webp",
+      arrive: "Wales, boss. A river runs past the ground, the hills sing on a Saturday, and the ball swings under Welsh cloud like it's been coached to.",
+      pitch: "green", wx: "Drizzle",
+      cond: "Soft air off the Taff, low cloud, and a ball that hoops till lunch. Survive the morning and the valley opens up.",
+      gaffer: "It's England's weather with better singing. The new ball talks for fifteen overs - play late, leave loud, and when the choir starts, that's for them, not you.",
+      academy: "swing bowlers and left-handed stylists",
+      trophy: "The Red Dragon Shield", nats: ["Wales"],
+      clubs: [
+        { boss: 1, mx: 50, my: 58, nm: "Cardiff CC", city: "Cardiff", capt: "clutch",
+          leader: "Gareth Llewellyn", note: "late in-swing, later out-swing, and a baritone appeal",
+          gq: "Llewellyn swings it both ways off the same grip and appeals in harmony with the crowd. Fifteen overs of care buys you thirty-five of freedom.",
+          taunt: "The river brings the cloud and the cloud sings in Welsh. You'll not read a word of it.",
+          nug: "Cardiff: Sophia Gardens under low valley cloud, and Llewellyn bending the new ball like a hymn. It's the last swinging morning on the tour - everything you learned in England and Ireland, spent in one innings.",
+          mult: 1.13,
+          sig: "swing", intel: "Llewellyn's spell IS the match - both ways, no tells, choir behind him. Bank overs, not runs, till the shine dies; then the valley's flat and the singing stops.",
+          winln: "You played the morning like a Welshman. There's no higher praise in this ground - take the Shield and the song with you.", lossln: "The cloud came down and you went up. Learn the difference, bach, and come back for the encore." }
+      ] },
+    { id: "ken", nm: "Kenya", cty: "Kenya", arch: "finisher", type: "Highland Tempo", ac: "#237A46",
+      bg: "../cities/nairobi-ground.webp",
+      arrive: "Kenya, boss. A mile above the sea, jacarandas round the boundary, and a club that once shocked the whole World Cup. They've been waiting thirty years to do it again - to somebody like us.",
+      pitch: "flat", wx: "Sunny",
+      cond: "Hard, quick and a mile high - the thin air carries every drive a bounce further and every top-edge over the rope.",
+      gaffer: "The altitude bats at both ends: full faces fly for six, mishits carry to the sponsors' tents. Bowl fuller than feels right and never post a short boundary sweeper on hope.",
+      academy: "athletic all-rounders and death-overs hitters",
+      trophy: "The Rift Valley Horn", nats: ["Kenya"],
+      clubs: [
+        { boss: 1, mx: 50, my: 58, nm: "Nairobi CC", city: "Nairobi", capt: "talisman",
+          leader: "David Otieno", note: "finishes innings the way lions finish sprints",
+          gq: "Otieno holds himself back till over thirty-five, then hits the thin air like it owes him money. Get him in early - a waiting finisher is a wasted one.",
+          taunt: "This ground has beaten world champions, rafiki. You are not world champions.",
+          nug: "Nairobi: gymkhana shade, a lightning outfield, and Otieno pacing the pavilion till the death overs. At altitude his sixes need no invitation. Drag him to the crease before the fifteenth or plan your final overs like a siege.",
+          mult: 1.14,
+          sig: "barrage", intel: "Everything Otieno's men save is spent after over thirty-five - at this altitude a good death over still leaks ten. Take wickets early so the barrage starts from the bunker, not the balcony.",
+          winln: "Thirty years we waited to shock the world again, and you shocked us instead. Asante - now the Horn travels.", lossln: "The altitude is ours, rafiki. Train your lungs and your yorkers and come up the hill again." }
+      ] },
+    { id: "usa", nm: "United States", cty: "United States", arch: "blade", type: "Franchise Fireworks", ac: "#33366E",
+      bg: "../cities/grand-prairie-ground.webp",
+      arrive: "America, boss. A drop-in pitch inside a converted ballpark, fireworks on the scoreboard, and a team assembled like a heist crew. Subtle it is not.",
+      pitch: "flat", wx: "Hot",
+      cond: "A drop-in road under Texas sun, short square ropes, and a scoreboard that plays guitar riffs for sixes.",
+      gaffer: "Everything here is built for the highlight reel - short ropes, hard deck, hitters one through eight. Boring cricket breaks them: dots, angles, and a long boundary they refuse to run twos into.",
+      academy: "power-hitters with franchise-league polish",
+      trophy: "The Star-Spangled Gauntlet", nats: ["United States"],
+      clubs: [
+        { boss: 1, mx: 50, my: 58, nm: "Grand Prairie CC", city: "Grand Prairie", capt: "general",
+          leader: "Tyler Brooks", note: "launch angles, exit velocity, and zero respect for par",
+          gq: "Brooks talks in launch angles and treats fifty overs like a home-run derby. There's no plan B on the roster - make plan A miss three times in a row and watch the dugout go quiet.",
+          taunt: "We do fireworks after every win. The crew's already loading the truck.",
+          nug: "Grand Prairie: a baseball cathedral taught cricket, all short ropes and big swings. Brooks's men clear the rope or perish - there is no gear between. Take the pace off, drag the long boundary into play, and the fireworks stay in the truck.",
+          mult: 1.15,
+          sig: "runmachine", intel: "Brooks hits till he misses - and his whole order is built the same. Every dot is a crisis for them; three in a row is a collapse rehearsal. Cutters, wide lines, long side. No fuel, no fireworks.",
+          winln: "Scoreboard don't lie, partner. First outfit to out-entertain us in our own park - the Gauntlet's yours.", lossln: "That's what peak exit velocity looks like, friend. Go work on your slower ball and book a rematch." }
+      ] },
+    { id: "can", nm: "Canada", cty: "Canada", arch: "gloveman", type: "Polar Poise", ac: "#C2483B",
+      bg: "../cities/king-city-ground.webp",
+      arrive: "Canada, boss - the last frontier stop. Maple woods round a country ground an hour north of Toronto, and the politest team that will ever quietly take you apart.",
+      pitch: "balanced", wx: "Chilly",
+      cond: "Cool air, honest carry, a slow morning dew - and a side that apologises for every wicket it takes.",
+      gaffer: "Nothing flashy, nothing free. They field like curlers - every angle swept clean before you've hit it. Manufacture runs; the loose ball comes twice an hour, eh.",
+      academy: "safe-handed keepers and tidy seam-bowling all-rounders",
+      trophy: "The Maple Crown", nats: ["Canada"],
+      clubs: [
+        { boss: 1, mx: 50, my: 58, nm: "King City CC", city: "King City", capt: "clutch",
+          leader: "Marcus Dhillon", note: "keeper-captain; nothing past him, ever, sorry",
+          gq: "Dhillon keeps like the puck must never cross the line and captains the same way. You won't be given a run after over ten. Bank early, then grind without complaint.",
+          taunt: "Sorry in advance about your average, bud.",
+          nug: "King City: maple shade, a keeper-captain who hasn't conceded a bye all season, and fielders who cut angles like hockey defencemen. The freebies end at over ten sharp. Whatever you've banked by then, you'll defend the rest of the afternoon.",
+          mult: 1.16,
+          sig: "safehands", intel: "Dhillon's side never beats itself - no byes, no overthrows, no second chances. Post a total with running and placement, because the boundary board is shut from over ten.",
+          winln: "First side all year to make us reach. Genuinely happy for you, bud - the Crown suits your trophy room.", lossln: "Sorry about that, eh. Tighten up the singles and swing by again - door's always open." }
+      ] },
     // -- the last door: not a nation but a man. Unlocks when every nation
     //    in the universe is conquered; beating it ends the world tour.
     { id: "gt", nm: "The World Final", cty: "England", arch: "greybeard", type: "The Summit", ac: "#C8674A", final: 1,
@@ -1601,7 +1729,11 @@
     rsa: ["Windy", "Sunny", "Overcast", "Windy"], zim: ["Sunny", "Hot", "Sunny", "Scorching"],
     aus: ["Scorching", "Hot", "Sunny", "Scorching"], nzl: ["Chilly", "Windy", "Overcast", "Chilly"],
     slk: ["Humid", "Hot", "Drizzle", "Humid"], sub: ["Humid", "Hot", "Dew later", "Humid"],
-    pak: ["Hot", "Scorching", "Dew later", "Hot"], afg: ["Scorching", "Hot", "Sunny", "Scorching"]
+    pak: ["Hot", "Scorching", "Dew later", "Hot"], afg: ["Scorching", "Hot", "Sunny", "Scorching"],
+    bgd: ["Humid", "Hot", "Dew later", "Drizzle"], nep: ["Chilly", "Sunny", "Misty", "Chilly"],
+    sco: ["Windy", "Drizzle", "Overcast", "Chilly"], wal: ["Drizzle", "Overcast", "Drizzle", "Windy"],
+    ken: ["Sunny", "Hot", "Sunny", "Windy"], usa: ["Hot", "Scorching", "Sunny", "Hot"],
+    can: ["Chilly", "Sunny", "Windy", "Overcast"]
   };
   function foCxAttempts(st, rid, ci) { return ((st.hist || []).filter(function (h) { return h.rid === rid && h.ci === ci; })).length; }
   function foCxWeather(r, ci) {
@@ -1812,7 +1944,7 @@
     try {
       if (typeof M !== "undefined" && M && !M.done) { say("A match is already live - finish it first."); return; }
       var st = foCxState();
-      if (!foCxClubOpen(st, ri, ci)) { say("That door isn't open yet - beat the clubs before it."); return; }
+      if (!foCxClubOpen(st, ri, ci) && !foCxBeaten(st, FO_CX_REGIONS[ri].id, ci)) { say("That door isn't open yet - beat the clubs before it."); return; }
       foCxVs(ri, ci, function () { foCxStart(ri, ci); });
     } catch (e) { say(e); }
   }
@@ -1823,7 +1955,7 @@
       var r = FO_CX_REGIONS[ri], c = r.clubs[ci], me = userTeam();
       var myNm = (me && me.name) || "Your club", myInit = foJInitials(myNm);
       var opp = c.boss
-        ? "<div class='vs-crest boss'><img class='vs-boss' src='" + FO_ART + (c.bimg || ("circuit/boss-" + r.id + ".webp")) + "' alt=''></div>"
+        ? "<div class='vs-crest boss'><img class='vs-boss' src='" + FO_ART + (c.bimg || ("circuit/boss-" + r.id + ".webp")) + "' alt='' onerror=\"this.onerror=null;this.src='" + FO_ART + "crests/" + r.arch + ".png'\"></div>"
         : "<div class='vs-crest'><img class='vs-soul' src='" + FO_ART + "crests/" + r.arch + ".png' alt=''></div>";
       var att = c.boss ? c.leader : c.nm;
       var quote = c.taunt ? "<div class='vs-quote'><span class='qm'>&ldquo;</span>" + E(c.taunt) + "<span class='qm'>&rdquo;</span><span class='att'>&mdash; " + E(att) + "</span></div>" : "";
@@ -1947,7 +2079,7 @@
       // the boss speaks: victory earns respect, defeat earns the needle
       var bLine = c.boss ? (win ? c.winln : c.lossln) : null;
       var bossQ = bLine
-        ? "<div class='fo-j-gbox' style='max-width:none;margin:8px 0'><img class='gf' src='" + FO_ART + (c.bimg || ("circuit/boss-" + r.id + ".webp")) + "' alt='' style='border-radius:50%;object-fit:cover;object-position:50% 8%'>" +
+        ? "<div class='fo-j-gbox' style='max-width:none;margin:8px 0'><img class='gf' src='" + FO_ART + (c.bimg || ("circuit/boss-" + r.id + ".webp")) + "' alt='' style='border-radius:50%;object-fit:cover;object-position:50% 8%' onerror=\"this.onerror=null;this.src='" + FO_ART + "crests/" + r.arch + ".png'\">" +
           "<span class='bx'><span class='sp'>" + E(c.leader || c.nm) + "</span><span class='tx'>&ldquo;" + E(bLine) + "&rdquo;</span></span></div>"
         : "";
       var trainLn = (x.gains && x.gains.length)
@@ -1968,7 +2100,7 @@
           : "<b>The promoter collects his stake:</b> " + FO$(x.wager.delta) + ". &ldquo;Next time, friend.&rdquo;") + "</div>" : "";
       m.innerHTML = "<div class='fo-modal-card'><div class='fo-modal-eyebrow'>The Circuit · " + E(r.nm) + "</div>" +
         "<h3>" + E(head) + "</h3>" +
-        (win && conquered ? "<img class='fo-cx-troph' src='" + FO_ART + (r.art || ("circuit/trophy-" + r.id + ".webp")) + "' alt='" + E(r.trophy) + "'>" : "") +
+        (win && conquered ? "<img class='fo-cx-troph' src='" + FO_ART + (r.art || ("circuit/trophy-" + r.id + ".webp")) + "' alt='" + E(r.trophy) + "' onerror=\"this.style.display='none'\">" : "") +
         (win && prize ? "<div class='small' style='margin:2px 0 8px'>Prize money: <b>" + FO$(prize) + "</b>" +
           (x.mult > 1 ? " <span style='color:#B5892F'>· win streak " + x.streak + " - promoters pay ×" + x.mult + "</span>" : "") +
           " <span style='color:#8a93a3'>· banked toward wages and your academy - see the Office</span>" +
@@ -2877,14 +3009,14 @@
               "</div></div>" +
               "<div class='fo-cx-rail'>" +
               "<div class='fo-cx-bosscard" + (bossDone ? " conq" : "") + "'>" +
-              "<div class='bimg'><img src='" + FO_ART + (bc.bimg || ("circuit/boss-" + r.id + ".webp")) + "' alt='" + E(bc.leader) + "'>" +
+              "<div class='bimg'><img src='" + FO_ART + (bc.bimg || ("circuit/boss-" + r.id + ".webp")) + "' alt='" + E(bc.leader) + "' onerror=\"this.onerror=null;this.src='" + FO_ART + "cities/" + foCitySlug(bc.city || "") + "-ground.webp'\">" +
               (bossDone ? "<span class='bwon'>✓ Beaten</span>" : "") + "</div>" +
               "<div class='bmeta'><span class='btag' style='color:" + r.ac + "'>" + (r.final ? "The Final Opponent" : "Region Boss") + "</span>" +
               "<div class='bnm'>" + E(bc.leader) + "</div>" +
               "<div class='bcl'>" + E(bc.nm) + " · " + E(bc.city) + "</div></div>" +
               "</div>" +
               "<div class='fo-cx-trophycard'>" +
-              "<img src='" + FO_ART + (r.art || ("circuit/trophy-" + r.id + ".webp")) + "' alt='" + E(r.trophy) + "'>" +
+              "<img src='" + FO_ART + (r.art || ("circuit/trophy-" + r.id + ".webp")) + "' alt='" + E(r.trophy) + "' onerror=\"this.style.display='none'\">" +
               "<div class='tnm'>" + E(r.trophy) + "</div>" +
               "</div>" +
               "</div></div>";
@@ -2942,7 +3074,7 @@
           if (sp) { sp.textContent = c6.nm + (c6.boss ? " · Boss" : ""); sp.style.color = rr.ac; }
           if (tx) tx.innerHTML = "&ldquo;" + E(c6.gq || (c6.city + " · " + c6.note)) + "&rdquo;";
           if (act) {
-            if (done6) act.innerHTML = "<span class='fo-cx-won'>&#10003; " + E(c6.city) + " conquered</span>";
+            if (done6) act.innerHTML = "<span class='fo-cx-won'>&#10003; " + E(c6.city) + " conquered</span> <button type='button' class='fo-cx-ch' data-ci='" + ci2 + "'>Play again &#9654;</button>";
             else if (open6) act.innerHTML = "<button type='button' class='fo-cx-ch' data-ci='" + ci2 + "'>Challenge " + E(c6.nm) + " &#9654;</button>";
             else { var prev = rr.clubs[ci2 - 1]; act.innerHTML = "<span class='fo-cx-lock'>&#128274; Beat " + E(prev ? prev.city : "the others") + " first</span>"; }
             act.innerHTML += "<a class='fo-cx-explore' href='#/city?c=" + encodeURIComponent(c6.city || "") + "'>Explore " + E(c6.city) + " &rsaquo;</a>";
@@ -3030,8 +3162,8 @@
   };
   // grounds painted before their city lore exists - the ground pages and the
   // match stage pick these up automatically (cities/<slug>-ground.webp)
-  var FO_CITY_GROUNDS = { Dublin: "The Liffey Paddocks", Belfast: "Lough Green", Cork: "The Rebel Field", Amsterdam: "Polder Park", Rotterdam: "The Dyke Yard", Utrecht: "The Cloister Ground",
-    "Victoria Falls": "The Thundering Ground", Bulawayo: "The Kopje Oval", Harare: "Jacaranda Park", Colombo: "The Fort Maidan", Kandy: "The Temple Ground",
+  var FO_CITY_GROUNDS = { Dublin: "Malahide Cricket Club Ground", Belfast: "Lough Green", Cork: "The Rebel Field", Amsterdam: "VRA Cricket Ground", Rotterdam: "The Dyke Yard", Utrecht: "The Cloister Ground",
+    "Victoria Falls": "The Thundering Ground", Bulawayo: "The Kopje Oval", Harare: "Harare Sports Club", Colombo: "The Fort Maidan", Kandy: "The Temple Ground",
     // the famous grounds wear their real names - painted from life
     Galle: "Galle International Stadium",
     Mumbai: "Wankhede Stadium", Nagpur: "The Orange Bowl", Kolkata: "Eden Gardens", Dharamshala: "HPCA Stadium", Chennai: "MA Chidambaram Stadium",
@@ -3039,7 +3171,11 @@
     Johannesburg: "The Wanderers Stadium", Durban: "Kingsmead Green", "Cape Town": "Newlands",
     Perth: "The Swan Ground", Melbourne: "Melbourne Cricket Ground", Sydney: "Sydney Cricket Ground", Brisbane: "The Gabba", Adelaide: "Adelaide Oval",
     Auckland: "The Domain", Christchurch: "Hagley Oval", Wellington: "Basin Reserve",
-    Nottingham: "Trent Bridge", Manchester: "Old Trafford", Sharjah: "Sharjah Cricket Stadium", Marylebone: "Lord's" };
+    Nottingham: "Trent Bridge", Manchester: "Old Trafford", Sharjah: "Sharjah Cricket Stadium", Marylebone: "Lord's",
+    Lahore: "Gaddafi Stadium", Kabul: "Kabul International Cricket Stadium",
+    Sylhet: "Sylhet International Cricket Stadium", Kathmandu: "TU Cricket Ground",
+    Edinburgh: "The Grange Club", Cardiff: "Sophia Gardens", Nairobi: "Nairobi Gymkhana Club",
+    "Grand Prairie": "Grand Prairie Stadium", "King City": "Maple Leaf Cricket Club" };
   // cities that also ship a night ground - the match stage picks day or
   // night per match; the city page always shows the day painting.
   // (Night canvases retire as the real painted-from-life stadiums arrive.)
@@ -3098,7 +3234,7 @@
       var open = foCxClubOpen(st, Lc.ri, Lc.ci);
       var wxNow = foCxWeather(Lc.r, Lc.ci);
       var chBtn = done
-        ? "<span class='fo-ct-won'>&#10003; Beaten</span>"
+        ? "<span class='fo-ct-won'>&#10003; Beaten</span> <button type='button' class='fo-ct-ch' data-ct-ch>Play again &#9654;</button>"
         : open
           ? "<button type='button' class='fo-ct-ch' data-ct-ch>Challenge " + E(Lc.c.nm) + " &#9654;</button>"
           : "<span class='fo-ct-lock'>&#128274; " + E(Lc.r.nm) + "'s ladder opens this door</span>";
@@ -3320,7 +3456,8 @@
           (folk ? "<div class='tc-folk'><span class='fw'>" + E(folk.who) + "</span><span class='fr'> &middot; " + E(folk.role) + "</span><div class='fq'>&ldquo;" + E(folk.say) + "&rdquo;</div></div>" : "") +
           "<div class='tc-row'>" + chip +
           "<button type='button' class='tc-enter' data-tc-enter>Visit " + E(c.city) + " &#9654;</button>" +
-          (open ? "<button type='button' class='tc-ch' data-tc-ch>Challenge &#9654;</button>" : "") +
+          (open ? "<button type='button' class='tc-ch' data-tc-ch>Challenge &#9654;</button>"
+            : done ? "<button type='button' class='tc-ch' data-tc-ch>Play again &#9654;</button>" : "") +
           "</div></div>";
         cardEl.classList.add("on");
         if (hintEl) hintEl.style.display = "none";
@@ -3421,10 +3558,18 @@
   // ==========================================================================
   // [x%, y%, label side] on the world painting - tuned to the real geography
   var FO_WORLD_PINS = {
-    ire: [42.1, 25.6, "l"], eng: [45.2, 26.8, "t"], ned: [48.6, 27.6, "r"], gt: [45.6, 30.6, "b"],
+    ire: [41.6, 23.4, "l"], eng: [45.2, 26.8, "l"], ned: [48.6, 27.6, "r"], gt: [45.8, 32.2, "b"],
     win: [27.4, 44.6, "b"], rsa: [53.3, 71.8, "b"], zim: [54.9, 63.8, "r"],
-    aus: [86.2, 71.4, "b"], nzl: [92.3, 79.6, "l"], slk: [69.0, 56.4, "r"], sub: [66.2, 46.4, "r"],
-    pak: [62.8, 40.0, "r"], afg: [59.6, 37.2, "t"]
+    aus: [86.2, 71.4, "b"], nzl: [92.3, 79.6, "l"], slk: [69.0, 56.4, "r"], sub: [66.2, 46.4, "l"],
+    pak: [62.8, 40.0, "r"], afg: [59.6, 37.2, "t"],
+    bgd: [68.3, 46.6, "r"], nep: [67.4, 43.2, "r"], sco: [44.6, 21.4, "r"], wal: [42.9, 29.8, "l"],
+    ken: [57.3, 56.2, "l"], usa: [16.8, 34.0, "b"], can: [19.5, 27.0, "r"]
+  };
+  // which real flag file each nation flies (files under art/flags/)
+  var FO_FLAG_FILE = {
+    ire: "ire", eng: "eng", ned: "ned", win: "wi", rsa: "saf", zim: "zim", aus: "aus", nzl: "nz",
+    slk: "sri", sub: "ind", pak: "pak", afg: "afg", bgd: "ban", nep: "nep", sco: "sco", wal: "wal",
+    ken: "ken", usa: "usa", can: "can"
   };
   function foRenderWorld() {
     try {
@@ -3442,7 +3587,7 @@
         var lockF = r.final && conqN < FO_CX_NATIONS;
         var cls = "fo-wp lbl-" + (p[2] || "b") + (r.final ? " crown" : "") + (done ? " done" : live ? " live" : "") + (lockF ? " lockf" : "");
         return "<button type='button' class='" + cls + "' data-wr='" + i + "' style='left:" + p[0] + "%;top:" + p[1] + "%;--wac:" + r.ac + "'>" +
-          "<span class='dot'>" + (r.final ? "<i class='crn'>&#9818;</i>" : "<i class='flag flag-" + r.id + "'></i>") + (done ? "<i class='tick'>&#10003;</i>" : "") + "</span>" +
+          "<span class='dot'>" + (r.final ? "<i class='crn'>&#9818;</i>" : "<img class='flag' src='" + FO_ART + "flags/" + (FO_FLAG_FILE[r.id] || r.id) + ".svg' alt='" + E(r.nm) + "'>") + (done ? "<i class='tick'>&#10003;</i>" : "") + "</span>" +
           "<span class='nm'>" + (r.final ? "Marylebone" : E(r.nm)) + "</span></button>";
       }).join("");
       page.innerHTML =
@@ -3470,7 +3615,7 @@
           : lockF ? "<span class='wc-chip faroff'>&#128274; Opens after " + FO_CX_NATIONS + " pennants</span>"
             : "<span class='wc-chip nxt'>" + beatN + " / " + r.clubs.length + " beaten</span>";
         cardEl.innerHTML =
-          "<div class='wc-art'><img src='" + FO_ART + (r.final ? "thorne.png" : "circuit/boss-" + r.id + ".webp") + "' alt=''></div>" +
+          "<div class='wc-art'><img src='" + FO_ART + (r.final ? "thorne.png" : "circuit/boss-" + r.id + ".webp") + "' alt='' onerror=\"this.onerror=null;this.src='" + FO_ART + "cities/" + foCitySlug(bc.city || "") + "-ground.webp'\"></div>" +
           "<button type='button' class='wc-x' data-wc-x>&#10005;</button>" +
           "<div class='wc-bd' style='--wac:" + r.ac + "'>" +
           "<div class='wc-eb'>" + (r.final ? "The Summit" : "The Grand Tour") + " &middot; " + E(r.type) + "</div>" +
@@ -3584,20 +3729,7 @@
       ".fo-wp.crown .crn{font-style:normal;font-size:26px;color:#F3D37A;text-shadow:0 2px 8px rgba(0,0,0,.7)}" +
       ".fo-wp.lockf .dot{opacity:.8;filter:saturate(.55)}" +
       // the flags, painted in CSS - crisp at any zoom, no emoji roulette
-      ".fo-wp .flag{display:block;width:27px;height:18px;border-radius:3px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25);font-style:normal;position:relative}" +
-      ".fo-wp .flag::after{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1}" +
-      ".flag-ire{background:linear-gradient(90deg,#169B62 0 33%,#fff 33% 66%,#FF883E 66%)}" +
-      ".flag-eng{background:linear-gradient(90deg,transparent 0 41%,#CE1124 41% 59%,transparent 59%),linear-gradient(180deg,transparent 0 36%,#CE1124 36% 64%,transparent 64%),#fff}" +
-      ".flag-ned{background:linear-gradient(180deg,#AE1C28 0 33%,#fff 33% 66%,#21468B 66%)}" +
-      ".flag-win{background:#7B1C2E}.flag-win::after{content:'\\2726';color:#F7B718}" +
-      ".flag-rsa{background:linear-gradient(180deg,#DE3831 0 30%,#fff 30% 38%,#007847 38% 62%,#fff 62% 70%,#001489 70%)}" +
-      ".flag-zim{background:linear-gradient(180deg,#319E31 0 14%,#FFD200 14% 28%,#DE2010 28% 42%,#000 42% 58%,#DE2010 58% 72%,#FFD200 72% 86%,#319E31 86%)}" +
-      ".flag-aus{background:#00247D}.flag-aus::after{content:'\\2736';color:#fff}" +
-      ".flag-nzl{background:#00247D}.flag-nzl::after{content:'\\2736';color:#C8102E;text-shadow:0 0 1px #fff}" +
-      ".flag-slk{background:linear-gradient(90deg,#F7B718 0 7%,#00534E 7% 21%,#EB7400 21% 35%,#F7B718 35% 42%,#8D153A 42%)}" +
-      ".flag-sub{background:linear-gradient(180deg,#FF9933 0 33%,#fff 33% 66%,#138808 66%)}.flag-sub::after{content:'\\25CF';color:#000080;font-size:6px}" +
-      ".flag-pak{background:linear-gradient(90deg,#fff 0 24%,#01411C 24%)}.flag-pak::after{content:'\\263D';color:#fff;font-size:9px;padding-left:7px}" +
-      ".flag-afg{background:linear-gradient(90deg,#000 0 33%,#D32011 33% 66%,#007A36 66%)}" +
+      ".fo-wp .flag{display:block;width:28px;height:21px;border-radius:3px;object-fit:cover;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25),0 1px 3px rgba(0,0,0,.35);-webkit-user-drag:none}" +
       // labels: bigger, on a dark pill, placed per-pin to dodge neighbours
       ".fo-wp .nm{position:absolute;font-family:Oswald,sans-serif;font-size:13.5px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:#FFFDF6;white-space:nowrap;background:rgba(6,14,26,.8);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:5px 12px;box-shadow:0 3px 10px rgba(0,0,0,.5);pointer-events:none}" +
       ".fo-wp.lbl-b .nm{top:calc(100% + 7px);left:50%;transform:translateX(-50%)}" +
@@ -3642,7 +3774,7 @@
       ".fo-world-card .wc-row{margin-top:15px}" +
       "html body .fo-world-card .wc-tour{font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:14px;letter-spacing:2.4px;text-transform:uppercase;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:14px 28px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.3),0 8px 20px rgba(201,162,75,.3) !important}" +
       "html body .fo-world-card .wc-tour:hover{filter:brightness(1.06)}" +
-      "@media(max-width:700px){.fo-world-card{left:10px;right:10px;bottom:12px;width:auto}.fo-world-card .wc-art{flex-basis:118px;min-height:0}.fo-world-card .wc-h2{font-size:22px}.fo-world-card .wc-bd{padding:14px 15px 13px}}";
+      "@media(max-width:700px){.fo-world-card{left:10px;right:10px;bottom:12px;width:auto}.fo-world-card .wc-art{flex-basis:100px;min-height:0}.fo-world-card .wc-h2{font-size:18px;letter-spacing:1px}.fo-world-card .wc-bd{padding:11px 12px 11px}.fo-world-card .wc-boss{font-size:12px}.fo-world-card .wc-line{font-size:11.5px;line-height:1.4}.fo-world-card .wc-eb{font-size:9px;letter-spacing:2px}.fo-world-card .wc-chip{font-size:9px;padding:4px 9px}html body .fo-world-card .wc-tour{font-size:11px;padding:9px 16px}.fo-world-card .wc-prog{margin-top:7px}.fo-world-card .wc-row{margin-top:9px}}";
     document.head.appendChild(woCss);
   } catch (eWc) {}
   try {
@@ -3714,7 +3846,7 @@
       "html body #page .fo-cx-tourbtn,html body.ftpskin #page .fo-cx-tourbtn{font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:14px;letter-spacing:2.8px;text-transform:uppercase;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:13px 34px;cursor:pointer;box-shadow:0 5px 0 rgba(16,27,45,.3),0 10px 26px rgba(201,162,75,.35) !important}" +
       "html body #page .fo-cx-tourbtn:hover{filter:brightness(1.06)}" +
       ".fo-cx-tourrow .tsub{display:block;margin-top:6px;font-style:italic;font-size:11.5px;color:#8a8062}" +
-      "@media(max-width:640px){.fo-tour{height:calc(100vh - 130px);min-height:480px}.fo-tour-map{width:max(100vw,calc(100vh - 130px))}.fo-tour-card{bottom:8px}.tc-art{height:96px}.tc-bd{padding:10px 13px 12px}}";
+      "@media(max-width:640px){.fo-tour{height:calc(100vh - 130px);min-height:480px}.fo-tour-map{width:max(100vw,calc(100vh - 130px))}.fo-tour-card{bottom:8px}.tc-art{height:96px}.tc-bd{padding:10px 13px 12px}.tc-h2{font-size:17px}.tc-eb{font-size:8.5px;letter-spacing:1.8px}.tc-tag{font-size:10px}.tc-line{font-size:11px;line-height:1.4}.tc-folk .fq{font-size:10.5px}.tc-chip{font-size:8.5px;padding:4px 8px}}";
     document.head.appendChild(trCss);
   } catch (eTr) {}
   try { window.__foTest.cx = { state: foCxState, team: foCxTeam, challenge: foCxChallenge, record: foCxRecord, key: foCxKey }; } catch (eCx) {}

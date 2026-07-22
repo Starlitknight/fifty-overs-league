@@ -110,18 +110,39 @@
   function foWIFlagImg() { return '<img class="foflag" src="' + FO_WI_FLAG + '" alt="West Indies" title="West Indies">'; }
   // overlay render sites go through this wrapper; engine-rendered pages are
   // swept by foFixWIFlags() on every route
+  // every nationality flies its REAL flag (SVGs under art/flags/); the West
+  // Indies keep their painted maroon standard - there is no ISO flag to fly
+  var FO_FLAG_ART = {
+    England: "eng", ENG: "eng", Australia: "aus", AUS: "aus", India: "ind", IND: "ind",
+    Pakistan: "pak", PAK: "pak", "Sri Lanka": "sri", SRI: "sri", "New Zealand": "nz", NZ: "nz",
+    "South Africa": "saf", SAF: "saf", Netherlands: "ned", NED: "ned",
+    Afghanistan: "afg", AFG: "afg", Ireland: "ire", IRE: "ire", Zimbabwe: "zim", ZIM: "zim",
+    Canada: "can", CAN: "can", USA: "usa", "United States": "usa", Kenya: "ken", KEN: "ken",
+    Nepal: "nep", NEP: "nep", Namibia: "nam", NAM: "nam", Oman: "oma", OMA: "oma",
+    Scotland: "sco", SCO: "sco", Bangladesh: "ban", BAN: "ban", UAE: "uae", Wales: "wal", WAL: "wal",
+    "West Indies": "wi", WI: "wi"
+  };
+  function foRealFlagSrc(nat) {
+    var f = FO_FLAG_ART[(nat || "") + ""];
+    return f ? (f === "wi" ? FO_WI_FLAG : FO_ART + "flags/" + f + ".svg") : null;
+  }
   try {
     var _foFlagOrig = (typeof foFlag === "function") ? foFlag : null;
     window.foFlag = function (nat) {
+      var src = foRealFlagSrc(nat);
+      if (src) return '<img class="foflag" src="' + src + '" alt="' + nat + '" title="' + nat + '">';
       if (/west indies/i.test((nat || "") + "")) return foWIFlagImg();
       return _foFlagOrig ? _foFlagOrig.apply(this, arguments) : "";
     };
     foFlag = window.foFlag;
   } catch (e) {}
+  // engine-rendered pages emit the old baked-in flags; sweep them to the
+  // real ones by their title (which carries the nationality/NORM code)
   function foFixWIFlags() {
     try {
-      document.querySelectorAll('img.foflag[title="West Indies"]').forEach(function (i) {
-        if (i.getAttribute("src") !== FO_WI_FLAG) i.src = FO_WI_FLAG;
+      document.querySelectorAll("img.foflag[title]").forEach(function (i) {
+        var src = foRealFlagSrc(i.getAttribute("title"));
+        if (src && i.getAttribute("src") !== src) i.src = src;
       });
     } catch (e) {}
   }
