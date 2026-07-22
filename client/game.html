@@ -10436,7 +10436,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260722-0259-09d96b";
+  var FO_BUILD = "20260722-0304-fe222f";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -25434,6 +25434,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     "hgm-blue-hour": "Blue hour · floodlights on",
     "hgm-late-afternoon": "Late afternoon · long shadows",
     "hgm-moonlit-rain": "Moonlit · after the rain",
+    "hgd-after-hours-rain": "After hours · rain on the pavilion",
+    "hgm-after-hours-rain": "After hours · rain on the pavilion",
     "hgm-nostalgic": "The attic · old glories",
     "hgm-stormy-autumn": "Autumn storm rolling in",
     "hgd-heart-of-club": "The pavilion · the heart of the club",
@@ -25447,7 +25449,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       lateDry: ["hgm-late-afternoon", "hgm-sunlit-day", "hgm-nets-day"],
       lateWet: ["hgm-bowled-storm", "hgm-veranda-rain", "hgm-stormy-autumn"],
       eve: ["hgm-blue-hour", "hgm-clubroom", "hgm-nostalgic"],
-      night: ["hgm-moonlit-rain", "hgm-tunnel-night", "hgm-nostalgic"]
+      night: ["hgm-moonlit-rain", "hgm-after-hours-rain", "hgm-tunnel-night", "hgm-nostalgic"]
     },
     d: {
       dawn: ["arches-dawn-mist"],
@@ -25456,7 +25458,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       lateDry: ["arches-sunbreak-match", "hgd-nets-day"],
       lateWet: ["hgd-veranda-rain", "arches-storm-front", "hgd-heart-of-club"],
       eve: ["arches-blue-hour-cup", "hgd-clubroom"],
-      night: ["arches-quiet-night", "hgd-nets-night", "hgd-dressing-room", "club-home-quiet-background"]
+      night: ["arches-quiet-night", "hgd-after-hours-rain", "hgd-nets-night", "hgd-dressing-room", "club-home-quiet-background"]
     }
   };
   function foHgVariant() {

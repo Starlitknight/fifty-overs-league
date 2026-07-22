@@ -2650,6 +2650,8 @@
     "hgm-blue-hour": "Blue hour · floodlights on",
     "hgm-late-afternoon": "Late afternoon · long shadows",
     "hgm-moonlit-rain": "Moonlit · after the rain",
+    "hgd-after-hours-rain": "After hours · rain on the pavilion",
+    "hgm-after-hours-rain": "After hours · rain on the pavilion",
     "hgm-nostalgic": "The attic · old glories",
     "hgm-stormy-autumn": "Autumn storm rolling in",
     "hgd-heart-of-club": "The pavilion · the heart of the club",
@@ -2663,7 +2665,7 @@
       lateDry: ["hgm-late-afternoon", "hgm-sunlit-day", "hgm-nets-day"],
       lateWet: ["hgm-bowled-storm", "hgm-veranda-rain", "hgm-stormy-autumn"],
       eve: ["hgm-blue-hour", "hgm-clubroom", "hgm-nostalgic"],
-      night: ["hgm-moonlit-rain", "hgm-tunnel-night", "hgm-nostalgic"]
+      night: ["hgm-moonlit-rain", "hgm-after-hours-rain", "hgm-tunnel-night", "hgm-nostalgic"]
     },
     d: {
       dawn: ["arches-dawn-mist"],
@@ -2672,7 +2674,7 @@
       lateDry: ["arches-sunbreak-match", "hgd-nets-day"],
       lateWet: ["hgd-veranda-rain", "arches-storm-front", "hgd-heart-of-club"],
       eve: ["arches-blue-hour-cup", "hgd-clubroom"],
-      night: ["arches-quiet-night", "hgd-nets-night", "hgd-dressing-room", "club-home-quiet-background"]
+      night: ["arches-quiet-night", "hgd-after-hours-rain", "hgd-nets-night", "hgd-dressing-room", "club-home-quiet-background"]
     }
   };
   function foHgVariant() {
