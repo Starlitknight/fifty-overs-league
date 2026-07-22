@@ -2116,9 +2116,14 @@
       "body.fo-th .fo-mst-p .st{font-size:15.5px}" +
       "body.fo-th .fo-mst-p .stars{font-size:13px}" +
       // ---- the lower third: transient label, ribbon, over beads ----
-      "body.fo-th .fo-mst-moment{top:auto;bottom:84px;left:50%;transform:translateX(-50%);width:min(760px,66vw);display:flex;flex-direction:column;align-items:center;gap:8px}" +
-      "body.fo-th .fo-mst-moment .t{margin:0;font-size:29px;letter-spacing:6px;line-height:1;transition:opacity .6s ease}" +
-      "body.fo-th .fo-mst-moment .t:empty{display:none}" +
+      // the lower third holds absolutely still between balls: no entrance
+      // slide, fixed row heights - only the label's opacity breathes
+      "body.fo-th .fo-mst-moment{top:auto;bottom:84px;left:50%;transform:translateX(-50%);width:min(760px,66vw);display:flex;flex-direction:column;align-items:center;gap:8px;animation:none !important}" +
+      "body.fo-th .fo-mst-moment .t{margin:0;font-size:29px;letter-spacing:6px;line-height:1;height:29px;transition:opacity .6s ease;animation:foThTIn .22s ease}" +
+      "@keyframes foThTIn{from{opacity:0}to{opacity:1}}" +
+      "body.fo-th .fo-mst-moment .t:empty{visibility:hidden}" +
+      "body.fo-th .fo-mst-moment .rib{min-height:37px}" +
+      "body.fo-th .fo-mst-moment .mbs{min-height:22px}" +
       "body.fo-th .fo-mst-moment .t.settle{opacity:0}" +
       "body.fo-th .fo-mst-moment .rib{display:flex;align-items:center;gap:10px;max-width:100%;padding:9px 16px;background:rgba(5,20,40,.72);border:1px solid rgba(255,255,255,.16);border-radius:12px;backdrop-filter:blur(10px)}" +
       "body.fo-th .fo-mst-moment .rib:not(:has(p)):not(:has(.chip)){display:none}" +
