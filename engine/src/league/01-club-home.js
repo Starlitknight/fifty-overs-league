@@ -2292,13 +2292,12 @@
           // turbo option. Broadcast pacing is for league viewing and replays.
           var __mine = false;
           try { __mine = !!(typeof M !== "undefined" && M && M.meta && ((!M.done && M.meta.comp === "friendly" && !__rep) || M.meta.__tut)); } catch (e) {}
-          // the manager's own match OPENS at "very slow" - time to read the
-          // field and the commentary. The speed select still changes it, and
-          // the choice sticks for the rest of that match.
+          // the manager's own match OPENS at the broadcast's unhurried pace -
+          // time to read the field and the commentary.
           try {
             if (__mine && M && !M.__foSpdInit) {
               M.__foSpdInit = 1;
-              UI.apHl = false; UI.apMs = 5200;
+              UI.apHl = false; UI.apMs = 3200;
               if (window.__ap) { clearInterval(window.__ap); window.__ap = null; if (typeof window.foEnsureAutoplay === "function") window.foEnsureAutoplay(); }
             }
           } catch (eSp) {}

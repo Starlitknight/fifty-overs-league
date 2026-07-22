@@ -1838,6 +1838,8 @@
       if (document.getElementById("fo-mst-ask")) window.__foMstHold = true;
       else if (window.__foMstHold && !window.__foMstAskT) window.__foMstHold = false;
       if (!foMstAuto() || window.__foMstHold) { foMstKillAp(); try { if (UI.apMs < 900000) UI.apMs = 999999; } catch (eAp) {} }
+      // the broadcast never stalls: once a hold lifts, restore the pace
+      else { try { if (UI.apMs > 900000) { UI.apMs = foThMs(); foMstKillAp(); if (typeof foEnsureAutoplay === "function") foEnsureAutoplay(); } } catch (eAp2) {} }
     } catch (e) {}
   }, 250);
   // the last line of defence: while a prompt holds play, no delivery may be
@@ -1918,7 +1920,8 @@
     "Cape Town": "52% 56%", Dublin: "center 42%", London: "center 46%", Leeds: "center 48%",
     Mumbai: "center 50%", Kingston: "center 52%", Wellington: "center 50%", Perth: "center 52%"
   };
-  function foThMs() { return Math.max(500, Math.round(3200 / (window.__foThMult || 1))); }
+  // one broadcast pace: unhurried, watchable. "Next ball" is the accelerator.
+  function foThMs() { return 3200; }
   // moment cut-in: full character art earns the screen for ~2.5s, then leaves
   function foThCut(img, big, name) {
     try {
@@ -1929,6 +1932,22 @@
       document.body.appendChild(d);
       setTimeout(function () { try { d.classList.add("out"); } catch (e) {} }, 2100);
       setTimeout(function () { try { d.remove(); } catch (e) {} }, 2650);
+    } catch (e) {}
+  }
+  // the big moment cut-in, holo-card edition: the player's ACTUAL card at
+  // near full size, fonts legible, held for ~3s
+  function foThCutCard(p, big, sub) {
+    try {
+      if (!p) return;
+      var cb = foHoloCardHTML(p);
+      var old = document.getElementById("fo-th-cut"); if (old) old.remove();
+      var d = document.createElement("div"); d.id = "fo-th-cut"; d.className = "pcut";
+      d.innerHTML =
+        "<span class='cardbox'><span class='cardscale'><span class='fo-phw ph-" + cb.tier + "' style='--tc:" + cb.ac[0] + ";--tcD:" + cb.ac[1] + "'>" + cb.html + "</span></span></span>" +
+        "<span class='ct'><b>" + E(big) + "</b><i>" + E(sub || "") + "</i></span>";
+      document.body.appendChild(d);
+      setTimeout(function () { try { d.classList.add("out"); } catch (e) {} }, 2700);
+      setTimeout(function () { try { d.remove(); } catch (e) {} }, 3250);
     } catch (e) {}
   }
   // the Gaffer speaks only when he has something to say: a transient bubble
@@ -1970,7 +1989,7 @@
     if (!on) {
       ["fo-th", "fo-thd", "fo-th-ov0", "fo-th-gfon", "fo-th-pin"].forEach(function (c) { document.body.classList.remove(c); });
       document.body.removeAttribute("data-thtab");
-      ["fo-th-rail", "fo-thd-x", "fo-th-gf", "fo-th-cut"].forEach(function (id) { var e9 = document.getElementById(id); if (e9) e9.remove(); });
+      ["fo-th-rail", "fo-thd-x", "fo-th-gf", "fo-th-cut", "fo-mstage"].forEach(function (id) { var e9 = document.getElementById(id); if (e9) e9.remove(); });
       return;
     }
     foThCss();
@@ -2040,38 +2059,62 @@
     var s = document.createElement("style"); s.id = "fo-th-css";
     s.textContent =
       // ---- the shell: stage fills the viewport, page chrome dissolves ----
-      "html:has(body.fo-th){overflow:hidden}" +
-      "body.fo-th{overflow:hidden;height:100vh}" +
+      "html:has(body.fo-th){overflow:hidden;background:#071527}" +
+      "html body.fo-th,html body.ftpskin.fo-th{overflow:hidden;height:100vh;background:#071527 !important}" +
+      "html body.fo-th .wrap,html body.fo-th #page,html body.ftpskin.fo-th .wrap,html body.ftpskin.fo-th #page{background:transparent !important}" +
+      // two stage layers: the painting never repaints between balls
+      ".fo-mst-scene{position:absolute;inset:0;z-index:0}" +
+      ".fo-mst-ui{position:absolute;inset:0;z-index:5}" +
+      ".fo-mst .fo-mst-ui.k-boundary .fo-mst-moment .t{color:#f9c957}" +
+      ".fo-mst .fo-mst-ui.k-wicket .fo-mst-moment .t{color:#ff6c61}" +
+      ".fo-mst .fo-mst-ui.k-dot .fo-mst-moment .t{color:#c7e4e8}" +
+      ".fo-mst .fo-mst-ui.k-done .fo-mst-moment .t{color:#8fe3a4}" +
       "html body.fo-th #topbar,html body.ftpskin.fo-th #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(4,10,20,.62),rgba(4,10,20,.26) 60%,transparent) !important;border-bottom:none !important;box-shadow:none !important}" +
       "body.fo-th #fo-top-status,body.fo-th #fo-clock{display:none !important}" +
       "html body.fo-th #page{overflow:visible !important;padding-bottom:0 !important}" +
-      "html body.fo-th #page #fo-mstage{position:fixed !important;inset:0 !important;height:100vh !important;min-height:100vh !important;width:100vw;max-width:none !important;border-radius:0 !important;margin:0 !important;z-index:1}" +
-      "body.fo-th .fo-mst-bg img{object-position:var(--thfocal,center 44%)}" +
-      // localized readability gradients only - the painting stays the star
-      "body.fo-th .fo-mst-veil{background:linear-gradient(180deg,rgba(3,15,31,.62) 0%,rgba(3,15,31,.18) 12%,transparent 24%,transparent 72%,rgba(3,15,31,.24) 86%,rgba(3,15,31,.68) 100%)}" +
+      "html body.fo-th #fo-mstage{position:fixed !important;inset:0 !important;height:100vh !important;min-height:100vh !important;width:100vw;max-width:none !important;border-radius:0 !important;margin:0 !important;z-index:1}" +
+      // the stage sits on body now: restate the #page-scoped control styling
+      "html body.fo-th #fo-mstage .fo-mst-next{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:12.5px;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:11px 22px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.35),0 8px 22px rgba(201,162,75,.3) !important}" +
+      "html body.fo-th #fo-mstage .fo-mst-next:hover{filter:brightness(1.06)}" +
+      "html body.fo-th #fo-mstage .fo-mst-next:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(16,27,45,.35) !important}" +
+      "html body.fo-th .fo-mst-ask .ask-opts button{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;font-size:13.5px;font-weight:700;color:#fff !important;background:rgba(255,255,255,.07) !important;border:1.5px solid rgba(255,255,255,.22) !important;border-radius:11px;padding:11px 14px;cursor:pointer;box-shadow:none !important}" +
+      "html body.fo-th .fo-mst-ask .ask-opts button:hover{border-color:#F3D37A !important;background:rgba(240,185,78,.12) !important}" +
+      "html body.fo-th .fo-mst-ask .ask-opts button.def{border-color:rgba(240,185,78,.55) !important;background:rgba(240,185,78,.14) !important}" +
+      "body.fo-th .fo-mst-bg img{object-position:var(--thfocal,center 50%)}" +
+      // the painting is the star: NO mood dimming, whatever the forecast -
+      // just thin readability gradients at the very edges
+      "body.fo-th .fo-mst-veil,body.fo-th .fo-mst.wx-gloom .fo-mst-veil{background:linear-gradient(180deg,rgba(3,15,31,.5) 0%,rgba(3,15,31,.12) 9%,transparent 18%,transparent 78%,rgba(3,15,31,.16) 88%,rgba(3,15,31,.55) 100%) !important}" +
+      "body.fo-th .fo-mst-cold{display:none !important}" +
+      "body.fo-th .fo-mst-mist{animation:none !important;opacity:.18 !important}" +
+      "body.fo-th .fo-mst.wx-humid .fo-mst-mist{opacity:.18 !important}" +
       "body.fo-th #page>.crumb,body.fo-th #page>.panel,body.fo-th #page .mc-top{display:none !important}" +
       "html body.fo-th #page .mc-main{display:none !important}" +
       "body.fo-th .mc-cards{display:none !important}" +
       // ---- top chrome: venue chip / scorebug / compact controls ----
       "body.fo-th .fo-mst-top{top:54px;left:18px;right:74px;align-items:flex-start}" +
-      "body.fo-th .fo-mst-score{top:8px;left:50%;right:auto;transform:translateX(-50%);width:auto;min-width:250px;padding:9px 26px 10px;background:rgba(5,20,40,.72);border:1px solid rgba(255,255,255,.18);border-radius:14px;backdrop-filter:blur(12px);box-shadow:0 8px 26px rgba(0,0,0,.35);z-index:61}" +
-      "body.fo-th .fo-mst-score .tm{display:inline-block;font-family:Oswald,sans-serif;font-weight:600;font-size:15px;letter-spacing:1px;color:#fff;margin-right:8px;vertical-align:baseline}" +
-      "body.fo-th .fo-mst-score b{display:inline-block;font-size:26px;vertical-align:baseline}" +
-      "body.fo-th .fo-mst-score .ovs{display:block;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:#F3D37A;margin-top:3px}" +
-      "body.fo-th .fo-mst-score i{display:block;color:rgba(255,255,255,.75);margin-top:2px}" +
+      "body.fo-th .fo-mst-score{top:8px;left:50%;right:auto;transform:translateX(-50%);width:auto;min-width:330px;padding:13px 38px 14px;background:rgba(5,20,40,.74);border:1px solid rgba(255,255,255,.2);border-radius:16px;backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:61}" +
+      "body.fo-th .fo-mst-score .tm{display:inline-block;font-family:Oswald,sans-serif;font-weight:600;font-size:22px;letter-spacing:1px;color:#fff;margin-right:12px;vertical-align:baseline}" +
+      "body.fo-th .fo-mst-score b{display:inline-block;font-size:44px;vertical-align:baseline}" +
+      "body.fo-th .fo-mst-score .ovs{display:block;font-family:Oswald,sans-serif;font-size:14px;letter-spacing:3px;text-transform:uppercase;color:#F3D37A;margin-top:4px}" +
+      "body.fo-th .fo-mst-score i{display:block;color:rgba(255,255,255,.8);font-size:11px;margin-top:3px}" +
+      "body.fo-th .fo-mst-score i.tossl{color:rgba(255,255,255,.62);font-size:10px;letter-spacing:1.2px}" +
       "body.fo-th .fo-mst-ctlg{position:relative}" +
       "html body.fo-th #page .fo-mst-ic{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(5,22,43,.72) !important;color:rgba(255,255,255,.9) !important;border:1.5px solid rgba(255,255,255,.3) !important;font-size:13px;font-weight:700;font-family:Oswald,sans-serif;cursor:pointer;backdrop-filter:blur(8px);box-shadow:none !important;padding:0}" +
       "html body.fo-th #page .fo-mst-ic:hover{border-color:#F3D37A !important;color:#F3D37A !important}" +
       "html body.fo-th #page .fo-mst-ic.play.on{color:#8fe3a4 !important;border-color:rgba(143,227,164,.6) !important}" +
       "html body.fo-th #page .fo-mst-ic.next{background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;font-size:20px}" +
       // ---- player chips: circular portrait + name plate, not a mural ----
-      "body.fo-th .fo-mst-p{position:absolute;top:auto;bottom:22px;height:auto;width:auto;max-width:330px;display:flex;flex-direction:row;align-items:center;gap:12px;padding:6px 20px 6px 7px;background:rgba(5,20,40,.72);border:1px solid rgba(255,255,255,.18);border-radius:999px;backdrop-filter:blur(10px);box-shadow:0 8px 26px rgba(0,0,0,.4)}" +
+      "body.fo-th .fo-mst-p{position:absolute;top:auto;bottom:22px;height:auto;width:auto;max-width:430px;display:flex;flex-direction:row;align-items:center;gap:15px;padding:8px 26px 8px 9px;background:rgba(5,20,40,.74);border:1px solid rgba(255,255,255,.2);border-radius:999px;backdrop-filter:blur(10px);box-shadow:0 10px 30px rgba(0,0,0,.45)}" +
       "body.fo-th .fo-mst-p.pbat{left:20px}" +
-      "body.fo-th .fo-mst-p.pbowl{right:20px;flex-direction:row-reverse;padding:6px 7px 6px 20px}" +
-      "body.fo-th .fo-mst-p img{position:static;width:74px;height:74px;border-radius:50%;object-fit:cover;object-position:50% 10%;border:2px solid rgba(240,185,78,.7);opacity:1;filter:none;mask-image:none;-webkit-mask-image:none;clip-path:none !important;flex:0 0 74px}" +
-      "body.fo-th .fo-mst-p.pbowl img{border-color:rgba(34,211,224,.65)}" +
+      "body.fo-th .fo-mst-p.pbowl{right:20px;flex-direction:row-reverse;padding:8px 9px 8px 26px}" +
+      "body.fo-th .fo-mst-p img{position:static;width:104px;height:104px;border-radius:50%;object-fit:cover;object-position:50% 10%;border:2.5px solid rgba(240,185,78,.75);opacity:1;filter:none;mask-image:none;-webkit-mask-image:none;clip-path:none !important;flex:0 0 104px}" +
+      "body.fo-th .fo-mst-p.pbowl img{border-color:rgba(34,211,224,.7)}" +
       "body.fo-th .fo-mst-p::after{display:none}" +
       "body.fo-th .fo-mst-p .pc{position:static;padding:0}" +
+      "body.fo-th .fo-mst-p .rl{font-size:10.5px}" +
+      "body.fo-th .fo-mst-p .nm{font-size:21px}" +
+      "body.fo-th .fo-mst-p .st{font-size:15.5px}" +
+      "body.fo-th .fo-mst-p .stars{font-size:13px}" +
       // ---- the lower third: transient label, ribbon, over beads ----
       "body.fo-th .fo-mst-moment{top:auto;bottom:84px;left:50%;transform:translateX(-50%);width:min(760px,66vw);display:flex;flex-direction:column;align-items:center;gap:8px}" +
       "body.fo-th .fo-mst-moment .t{margin:0;font-size:29px;letter-spacing:6px;line-height:1;transition:opacity .6s ease}" +
@@ -2139,6 +2182,15 @@
       "#fo-th-cut .ct{position:absolute;left:16px;bottom:16vh;display:flex;flex-direction:column;color:#fff;text-shadow:0 3px 16px rgba(0,0,0,.9)}" +
       "#fo-th-cut .ct b{font-family:Oswald,sans-serif;font-weight:600;font-size:30px;letter-spacing:5px;color:#F3D37A}" +
       "#fo-th-cut .ct i{font-style:normal;font-family:Oswald,sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase}" +
+      // holo-card cut-in: the real card, big enough to read
+      "#fo-th-cut.pcut{left:30px;bottom:auto;top:50%;transform:translateY(-50%);height:auto;display:flex;align-items:center;gap:20px;animation:foThCutIn .38s ease}" +
+      "#fo-th-cut.pcut .cardbox{display:block;width:345px;height:454px;overflow:hidden;border-radius:15px;box-shadow:0 28px 70px rgba(0,0,0,.65)}" +
+      "#fo-th-cut.pcut .cardscale{display:block;width:430px;transform:scale(.8);transform-origin:top left}" +
+      "#fo-th-cut.pcut .ct{position:static;display:flex;flex-direction:column;gap:2px}" +
+      "@media(max-width:1250px){#fo-th-cut.pcut .cardbox{width:259px;height:340px}#fo-th-cut.pcut .cardscale{transform:scale(.6)}#fo-th-cut.pcut .ct b{font-size:24px}}" +
+      "@media(max-width:760px){#fo-th-cut.pcut{left:8px;gap:10px}#fo-th-cut.pcut .cardbox{width:194px;height:255px}#fo-th-cut.pcut .cardscale{transform:scale(.45)}#fo-th-cut.pcut .ct b{font-size:19px;letter-spacing:3px}}" +
+      // the on-demand bowling change lives with the field talk
+      "html body #page #fo-mst-talk .tb.tbc,html body.ftpskin #page #fo-mst-talk .tb.tbc{margin-left:auto;color:#F3D37A !important;border-color:rgba(243,211,122,.55) !important}" +
       "body.fo-th .fo-mst-ask{position:fixed;z-index:80}" +
       "body.fo-th #fo-toasts{top:64px;bottom:auto;z-index:81}" +
       "#fo-commfull{z-index:3000}" +
@@ -2149,15 +2201,16 @@
       "@media(max-width:760px){" +
       "body.fo-th .fo-mst-top{top:104px !important;left:8px;right:56px;flex-direction:row;align-items:flex-start}" +
       "body.fo-th .fo-mst-wx{max-width:56vw}" +
-      "body.fo-th .fo-mst-score{top:52px;min-width:0;padding:7px 14px 8px}" +
-      "body.fo-th .fo-mst-score b{font-size:19px}" +
-      "body.fo-th .fo-mst-score .tm{font-size:12px}" +
+      "body.fo-th .fo-mst-score{top:52px;min-width:0;padding:9px 18px 10px}" +
+      "body.fo-th .fo-mst-score b{font-size:27px}" +
+      "body.fo-th .fo-mst-score .tm{font-size:14px;margin-right:8px}" +
+      "body.fo-th .fo-mst-score .ovs{font-size:11px;letter-spacing:2.2px}" +
       "body.fo-th .fo-mst-score i{display:none}" +
-      "html body.fo-th #page .fo-mst-ic{width:34px;height:34px;font-size:11.5px}" +
-      "body.fo-th .fo-mst-p{top:auto !important;bottom:88px !important;height:auto !important;width:auto !important;max-width:46vw;padding:4px 12px 4px 5px;gap:8px}" +
-      "body.fo-th .fo-mst-p.pbat{left:8px}body.fo-th .fo-mst-p.pbowl{right:8px;padding:4px 5px 4px 12px}" +
-      "body.fo-th .fo-mst-p img{width:44px;height:44px;flex-basis:44px}" +
-      "body.fo-th .fo-mst-p .nm{font-size:11px}" +
+      "body.fo-th .fo-mst-p{top:auto !important;bottom:88px !important;height:auto !important;width:auto !important;max-width:47vw;padding:4px 13px 4px 5px;gap:9px}" +
+      "body.fo-th .fo-mst-p.pbat{left:8px}body.fo-th .fo-mst-p.pbowl{right:8px;padding:4px 5px 4px 13px}" +
+      "body.fo-th .fo-mst-p img{width:56px;height:56px;flex-basis:56px;border-width:2px}" +
+      "body.fo-th .fo-mst-p .nm{font-size:13px}" +
+      "body.fo-th .fo-mst-p .st{font-size:12px}" +
       "body.fo-th .fo-mst-p .stars{display:none}" +
       "body.fo-th .fo-mst-moment{bottom:8px;width:96vw;background:none;border:none;padding:0;backdrop-filter:none;gap:6px}" +
       "body.fo-th .fo-mst-moment .t{font-size:22px;letter-spacing:4px}" +
@@ -2183,18 +2236,26 @@
       if (typeof M === "undefined" || !M || !M.innings || !M.meta) return;
       var page = document.getElementById("page"); if (!page) return;
       var mcTop = page.querySelector(".mc-top");
+      // the engine's re-render wipes the field pane; remount it in the SAME
+      // frame so the theatre never flickers between balls
+      if (!document.getElementById("fo-oval")) { try { if (typeof FOC !== "undefined" && FOC.oval && FOC.oval.tick) FOC.oval.tick(); } catch (eOt) {} }
       var oval = document.getElementById("fo-oval");
       if (!mcTop && !oval) { document.body.classList.remove("fo-stage-on"); foThChrome(false); return; }
       var inn = M.innings[M.inns]; if (!inn) return;
-      // a NEW match starts in manual mode with a clean slate
+      // the broadcast runs itself: every match auto-plays at the measured pace,
+      // and "Next ball" simply refuses to wait for the next tick
       if (window.__foMstM !== M) {
-        window.__foMstM = M; window.__foMstAuto = false; window.__foMstHold = false;
+        window.__foMstM = M; window.__foMstAuto = true; window.__foMstHold = false;
+        window.__foThMult = 1;
         window.__foMstLL = M.log.length;
         var oldAsk0 = document.getElementById("fo-mst-ask"); if (oldAsk0) oldAsk0.remove();
+        try { UI.apMs = foThMs(); if (typeof foEnsureAutoplay === "function" && !M.done) foEnsureAutoplay(); } catch (eAp0) {}
       }
+      if (!window.__foMstAuto) window.__foMstAuto = true;   // no pause in the broadcast era
       var userBatNow = inn.batTeam === M.user.name;
-      // once the new over is underway, a manual bowler pick has been consumed
-      try { if (inn.legal % 6 !== 0 && UI.userBowler) { UI.userBowler = null; UI.usePlan = true; } } catch (eUb) {}
+      // a manual bowler pick is consumed once the picked man is actually into
+      // his over (a mid-over pick stays pending for the NEXT over)
+      try { if (inn.legal % 6 !== 0 && UI.userBowler && inn.curBowlerName === UI.userBowler) { UI.userBowler = null; UI.usePlan = true; } } catch (eUb) {}
       if (!foMstAuto() || window.__foMstHold) foMstKillAp();
       // team talk lives in the centre theatre now: field calls when bowling,
       // batting intent when batting - wired straight into the live orders
@@ -2217,7 +2278,7 @@
             var cf3 = (App.orders.fieldPlan && App.orders.fieldPlan[ph3]) || "bal";
             h3 = "<span class='tl'>Field</span>" + [["att", "Attack"], ["bal", "Balanced"], ["def", "Defence"]].map(function (o4) {
               return "<button type='button' class='tb" + (cf3 === o4[0] ? " on" : "") + "' onclick=\"foTeamTalk('field','" + ph3 + "','" + o4[0] + "')\">" + o4[1] + "</button>";
-            }).join("");
+            }).join("") + "<button type='button' class='tb tbc' onclick='foThBowlAsk()'>Bowling change &#9654;</button>";
           }
           if (tb2.__h !== h3) { tb2.__h = h3; tb2.innerHTML = h3; }
         } else if (M.done) { var tbx = document.getElementById("fo-mst-talk"); if (tbx) tbx.remove(); }
@@ -2264,14 +2325,16 @@
         return "<span class='mb" + cls + "'>" + sym + "</span>";
       }).join("");
       var tgt = M.target ? ("Target " + M.target + " &middot; need " + Math.max(0, M.target - inn.runs) + " off " + Math.max(0, (typeof foBallCap === "function" ? foBallCap() : 300) - inn.legal)) : "First innings";
-      // manual by default: the manager pushes the game forward ball by ball,
-      // or hands it to the broadcast; 1x/2x/4x scales autoplay AND the oval
-      var autoOn = foMstAuto();
-      var mlt = window.__foThMult || 1;
+      // the toss, told plainly: who called it right and what they did with it
+      var tossTx = "";
+      try {
+        var tt0 = (App.tossState && App.tossState.txt) || "";
+        var tM0 = /^(.+?) won the toss and chose to (bat|bowl)/.exec(tt0);
+        if (tM0) tossTx = tM0[1] + " won the toss &middot; chose to " + tM0[2];
+      } catch (eTs) {}
+      // the broadcast never stops: the only control is impatience
       var ctlBtns = (!M.done ?
-        "<button type='button' class='fo-mst-ic play" + (autoOn ? " on" : "") + "' id='fo-mst-auto' title='" + (autoOn ? "Pause" : "Auto-play") + "'>" + (autoOn ? "&#10073;&#10073;" : "&#9654;") + "</button>" +
-        "<button type='button' class='fo-mst-ic' id='fo-mst-spd' title='Match speed'>" + mlt + "&times;</button>" +
-        "<button type='button' class='fo-mst-ic next' id='fo-mst-next' title='Next ball'>&#8250;</button>"
+        "<button type='button' class='fo-mst-next' id='fo-mst-next'>Next ball &#9654;</button>"
         : "<button type='button' class='fo-mst-next' id='fo-mst-done'>Continue &#9654;</button>");
       var pArt = function (p) { try { return FO_ART + foPkArt(p); } catch (e) { return ""; } };
       // the who-card stars now live HERE - same math as the theatre's
@@ -2288,23 +2351,20 @@
         "<div class='rl'>" + E((bw.btLabel || "bowling").toUpperCase()) + "</div>" +
         "<div class='nm'>" + E(bw.name) + "</div>" +
         "<div class='st'>" + (brec ? Math.floor(brec.b / 6) + "." + (brec.b % 6) + "&ndash;" + brec.r + "&ndash;" + brec.w : "new spell") + "</div>" + bowlStars + "</div></div>" : "";
-      var el = document.createElement("section");
-      el.id = "fo-mstage";
-      el.className = "fo-mst k-" + kind + (rainy ? " wx-rain" : "") + (gloomy ? " wx-gloom" : "") +
+      // the stage is TWO layers: a scene (the painting + weather, static for
+      // the whole match) and a UI skin repainted per ball. Patching only the
+      // skin keeps the artwork untouched between deliveries - no flash, no
+      // "page refresh" feel.
+      var sceneCls = "fo-mst" + (rainy ? " wx-rain" : "") + (gloomy ? " wx-gloom" : "") +
         (sunny ? " wx-sun" : "") + (heat ? " wx-heat" : "") + (misty ? " wx-mist" : "") +
         (humid ? " wx-humid" : "") + (windy ? " wx-wind" : "") + (chilly ? " wx-chill" : "") + " m-" + art.mode;
-      el.style.setProperty("--cxc", art.ac);
-      el.innerHTML =
-        "<div class='fo-mst-bg'><img src='" + art.img + "' alt=''></div><div class='fo-mst-veil'></div>" +
-        (rainy ? "<div class='fo-mst-rain'></div>" : "") +
-        (sunny || heat ? "<div class='fo-mst-sun'></div>" : "") +
-        (misty || humid ? "<div class='fo-mst-mist'></div>" : "") +
-        (windy ? "<div class='fo-mst-wind'></div>" : "") +
-        (chilly ? "<div class='fo-mst-cold'></div>" : "") +
+      var artKey = art.img + "|" + sceneCls;
+      var uiHTML =
         "<div class='fo-mst-top'>" +
         "<div class='fo-mst-wx'><span>" + E(art.gnm) + (art.city ? " &middot; " + E(art.city) : "") + "</span><span>" + E(M.meta.weather || "") + "</span><span>" + E(M.pitch || "") + " pitch</span>" + (fld ? "<span class='fld'>" + E(fld) + "</span>" : "") + "</div>" +
         "<div class='fo-mst-ctlg'>" + ctlBtns + "</div></div>" +
-        "<div class='fo-mst-score'><span class='tm'>" + E(inn.batTeam) + "</span><b>" + inn.runs + "/" + inn.wkts + "</b><span class='ovs'>" + Math.floor(inn.legal / 6) + "." + (inn.legal % 6) + " overs</span><i>" + tgt + "</i></div>" +
+        "<div class='fo-mst-score'><span class='tm'>" + E(inn.batTeam) + "</span><b>" + inn.runs + "/" + inn.wkts + "</b><span class='ovs'>" + Math.floor(inn.legal / 6) + "." + (inn.legal % 6) + " overs</span><i>" + tgt + "</i>" +
+        (tossTx ? "<i class='tossl'>" + tossTx + "</i>" : "") + "</div>" +
         batPanel + bowlPanel +
         // the broadcast lower third: transient result label, then a slim ribbon
         // (ball number + the line), then this over as beads
@@ -2313,26 +2373,40 @@
         "<div class='rib'>" + (L && !M.done ? "<span class='chip'>" + E(L.no || "") + "</span>" : "") +
         (copy ? "<p>" + E(copy) + "</p>" : "") + "</div>" +
         "<div class='mbs'>" + (beads || "<span class='mb'>&ndash;</span>") + "</div></div>";
+      var el;
+      if (old && old.__foArtKey === artKey) {
+        el = old;
+        var ui0 = el.querySelector(".fo-mst-ui");
+        if (ui0) { ui0.className = "fo-mst-ui k-" + kind; ui0.innerHTML = uiHTML; }
+      } else {
+        el = document.createElement("section");
+        el.id = "fo-mstage";
+        el.className = sceneCls;
+        el.__foArtKey = artKey;
+        el.innerHTML =
+          "<div class='fo-mst-scene'>" +
+          "<div class='fo-mst-bg'><img src='" + art.img + "' alt=''></div><div class='fo-mst-veil'></div>" +
+          (rainy ? "<div class='fo-mst-rain'></div>" : "") +
+          (sunny || heat ? "<div class='fo-mst-sun'></div>" : "") +
+          (misty || humid ? "<div class='fo-mst-mist'></div>" : "") +
+          (windy ? "<div class='fo-mst-wind'></div>" : "") +
+          (chilly ? "<div class='fo-mst-cold'></div>" : "") + "</div>" +
+          "<div class='fo-mst-ui k-" + kind + "'>" + uiHTML + "</div>";
+        // the stage lives on BODY, outside #page: the engine's per-ball page
+        // re-render can never touch it, so the painting is rock steady.
+        // An open prompt survives the rebuild - its clock, not a repaint,
+        // decides when it goes
+        var askKeep = old ? old.querySelector("#fo-mst-ask") : null;
+        if (old) { old.replaceWith(el); if (askKeep) el.appendChild(askKeep); }
+        else document.body.appendChild(el);
+      }
+      if (el.parentNode !== document.body) document.body.appendChild(el);
+      el.style.setProperty("--cxc", art.ac);
       el.__foSig = sig;
-      // full-width hero: the stage is a SIBLING above the theatre, its own
-      // grid row spanning both columns - the oval + commentary sit below it.
-      // An open prompt survives the rebuild - its 5s/3s clock, not a repaint,
-      // decides when it goes
-      var askKeep = old ? old.querySelector("#fo-mst-ask") : null;
-      if (old) { old.replaceWith(el); if (askKeep) el.appendChild(askKeep); }
-      else if (oval) oval.parentNode.insertBefore(el, oval);
-      else mcTop.parentNode.insertBefore(el, mcTop);
-      // the theatre mounts on its own tick - if it arrived after us, move up
-      if (!oval) setTimeout(function () {
-        try {
-          var ov2 = document.getElementById("fo-oval"), st2 = document.getElementById("fo-mstage");
-          if (ov2 && st2 && st2.nextElementSibling !== ov2) ov2.parentNode.insertBefore(st2, ov2);
-        } catch (eMv) {}
-      }, 450);
       document.body.classList.add("fo-stage-on");
       // ---- broadcast theatre: the venue IS the interface ----
       try {
-        el.style.setProperty("--thfocal", FO_TH_FOCAL[art.city] || "center 44%");
+        el.style.setProperty("--thfocal", FO_TH_FOCAL[art.city] || "center 50%");
         foThChrome(true);
         // the big result label settles once the delivery has landed
         clearTimeout(window.__foThSet);
@@ -2342,13 +2416,6 @@
       } catch (eTh) {}
       var db = el.querySelector("#fo-mst-done");
       if (db) db.addEventListener("click", function () { location.hash = "#/circuit"; if (typeof window.route === "function") window.route(); });
-      var spb = el.querySelector("#fo-mst-spd");
-      if (spb) spb.addEventListener("click", function () {
-        var seq = { 1: 2, 2: 4, 4: 1 };
-        window.__foThMult = seq[window.__foThMult || 1] || 1;
-        try { if (foMstAuto()) { UI.apMs = foThMs(); foMstKillAp(); if (!window.__foMstHold && typeof foEnsureAutoplay === "function") foEnsureAutoplay(); } } catch (eSp) {}
-        try { renderMatch(); } catch (eSr) {}
-      });
       var nb = el.querySelector("#fo-mst-next");
       if (nb) nb.addEventListener("click", function () {
         try { if (window.__foMstHold && !document.getElementById("fo-mst-ask") && !window.__foMstAskT) window.__foMstHold = false; } catch (eH) {}
@@ -2368,29 +2435,31 @@
         } catch (eNb) {}
         try { if (!foMstAuto()) UI.apMs = 999999; } catch (eNa) {}
       });
-      var ab = el.querySelector("#fo-mst-auto");
-      if (ab) ab.addEventListener("click", function () {
-        window.__foMstAuto = !window.__foMstAuto;
-        if (window.__foMstAuto) { try { UI.apMs = foThMs(); foMstKillAp(); if (!window.__foMstHold && typeof foEnsureAutoplay === "function") foEnsureAutoplay(); } catch (eAb) {} }
-        else { foMstKillAp(); try { UI.apMs = 999999; } catch (eOf) {} }
-        try { renderMatch(); } catch (eAr) {}
-      });
       // the timed prompts: fired once per fresh delivery, never on re-renders
       var prevLL = (window.__foMstLL || 0);
       var newBall = M.log.length > prevLL;
       window.__foMstLL = M.log.length;
-      // moment cut-ins: full player art appears only for the moments that
-      // earn it (wicket, fifty, hundred), for ~2.5s, then the venue returns
+      // moment cut-ins: the player's actual holo card, near full size, for the
+      // moments that earn it - a wicket shows the man who fell, a milestone
+      // the man who made it. (When the user is batting, the who-walks-in
+      // prompt with its dealt cards IS the wicket moment.)
       if (newBall && !document.getElementById("fo-mst-ask")) {
         try {
-          if (kind === "wicket" && bw) foThCut(pArt(bw), "WICKET", bw.name);
-          else {
+          if (kind === "wicket" && !userBatNow) {
+            var pOut = null;
+            try {
+              var fw9 = inn.fow && inn.fow[inn.fow.length - 1];
+              if (fw9 && fw9.who) inn.bat.forEach(function (bb9) { if (bb9 && bb9.p && bb9.p.name === fw9.who) pOut = bb9.p; });
+            } catch (eFw) {}
+            if (pOut) foThCutCard(pOut, "WICKET", pOut.name + " departs");
+            else if (bw) foThCut(pArt(bw), "WICKET", bw.name);
+          } else if (kind !== "wicket") {
             var freshL = M.log.slice(0, Math.max(0, M.log.length - prevLL));
             for (var fm = 0; fm < freshL.length; fm++) {
               if (!freshL[fm].mile) continue;
               var mtx = freshL[fm].txt || "";
-              if (/HUNDRED|CENTURY/i.test(mtx) && s1) { foThCut(pArt(s1.p), "HUNDRED!", s1.p.name); break; }
-              if (/FIFTY/i.test(mtx) && s1) { foThCut(pArt(s1.p), "FIFTY!", s1.p.name); break; }
+              if (/HUNDRED|CENTURY/i.test(mtx) && s1) { foThCutCard(s1.p, "HUNDRED!", s1.p.name); break; }
+              if (/FIFTY/i.test(mtx) && s1) { foThCutCard(s1.p, "FIFTY!", s1.p.name); break; }
             }
           }
         } catch (eCt) {}
@@ -2413,25 +2482,33 @@
               }))
             });
           }
-        } else if (!userBatNow && inn.legal > 0 && inn.legal % 6 === 0 && inn.wkts < 10 &&
-                   (typeof foBallCap !== "function" || inn.legal < foBallCap())) {
-          // 3 seconds: hand the ball to someone else, or the plan continues
-          var over2 = Math.floor(inn.legal / 6);
-          var planned2 = null; try { planned2 = (typeof plannedBowler === "function") ? plannedBowler(inn, over2) : null; } catch (eP2) {}
-          var av2 = []; try { av2 = availableBowlers(inn) || []; } catch (eA2) {}
-          var opts2 = [];
-          if (planned2) opts2.push({ label: E(planned2.name), meta: "as planned", def: 1, p: planned2, cb: null });
-          av2.filter(function (p2) { return !planned2 || p2.name !== planned2.name; }).slice(0, 3).forEach(function (p2) {
-            var rec2 = inn.bowlers[p2.name];
-            opts2.push({ label: E(p2.name), meta: rec2 ? (Math.floor((rec2.b || 0) / 6) + "-" + (rec2.r || 0) + "-" + (rec2.w || 0)) : "fresh", p: p2, cb: function () {
-              try { UI.userBowler = p2.name; UI.usePlan = false; } catch (eBw) {}
-            } });
-          });
-          if (opts2.length > 1) foMstAsk({ title: "End of the over &middot; who bowls?", sub: "", secs: 3, options: opts2 });
         }
+        // no automatic over-end interruption any more: the plan bowls itself,
+        // and the manager reaches for "Bowling change" in the pane when they
+        // want a different man for the coming overs
       }
     } catch (e) {}
   }
+  // on-demand bowling change: opens the dealt-cards prompt for the NEXT over.
+  // The pick writes UI.userBowler, exactly as the old timed prompt did.
+  window.foThBowlAsk = function () {
+    try {
+      if (typeof M === "undefined" || !M || M.done) return;
+      var innB = M.innings[M.inns]; if (!innB || innB.batTeam === M.user.name) return;
+      var overB = Math.floor(innB.legal / 6) + (innB.legal % 6 === 0 ? 0 : 1);
+      var plannedB = null; try { plannedB = (typeof plannedBowler === "function") ? plannedBowler(innB, overB) : null; } catch (ePb) {}
+      var avB = []; try { avB = availableBowlers(innB) || []; } catch (eAb2) {}
+      var optsB = [];
+      if (plannedB) optsB.push({ label: E(plannedB.name), meta: "as planned", def: 1, p: plannedB, cb: null });
+      avB.filter(function (pB) { return (!plannedB || pB.name !== plannedB.name) && pB.name !== innB.curBowlerName; }).slice(0, 3).forEach(function (pB) {
+        var recB = innB.bowlers[pB.name];
+        optsB.push({ label: E(pB.name), meta: recB ? (Math.floor((recB.b || 0) / 6) + "-" + (recB.r || 0) + "-" + (recB.w || 0)) : "fresh", p: pB, cb: function () {
+          try { UI.userBowler = pB.name; UI.usePlan = false; } catch (eBw2) {}
+        } });
+      });
+      if (optsB.length) foMstAsk({ title: "Bowling change &middot; who takes the next over?", sub: "The change comes on at the end of this over.", secs: 20, options: optsB });
+    } catch (eBa) {}
+  };
   try {
     if (window.foTeamTalk && !window.foTeamTalk.__foSpell) {
       var _foTT = window.foTeamTalk;
