@@ -69,10 +69,21 @@ function ensureCup(state, season, resultFn) {
   return cup;
 }
 
-// resolve one knockout tie with the Thorne guard
+// pull a side's {runs,wkts} out of a real result's innings (matches sim with the
+// team id as its name, so innings.batTeam === teamId). Null for Thorne-guard wins
+// (short-circuited before a real sim) and any failed/tied match.
+function scoreLine(innings, teamId) {
+  if (!innings) return null;
+  for (const i of innings) if (i.batTeam === teamId) return { runs: i.runs, wkts: i.wkts };
+  return null;
+}
+
+// resolve one knockout tie with the Thorne guard, keeping the real scoreline
 function koTie(a, b, resFn, stage) {
   const res = resFn(a, b, { competition: "cup", stage });
-  return res.winner === a.id ? { win: a, lose: b } : { win: b, lose: a };
+  const win = res.winner === a.id ? a : b;
+  const lose = res.winner === a.id ? b : a;
+  return { win, lose, winScore: scoreLine(res.innings, win.id), loseScore: scoreLine(res.innings, lose.id) };
 }
 
 function resolveCupStage(state, season, stage, resultFn) {

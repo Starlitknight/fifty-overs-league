@@ -87,6 +87,10 @@ export function wireForDay(state, day) {
     push("break", 10, `Season ${ds.season + 1} closes — the world takes a breath`, {});
   }
 
+  // bucket each headline for the Wire's filter tabs (transfers/retirements are
+  // synthesised separately in the snapshot builder from the world's aging model)
+  const CAT = { upset: "upset", "boss-fall": "upset", thorne: "cup", "cup-groups": "cup", "cup-ko": "cup", "cup-third": "cup", "cup-final": "cup", "league-day": "league", break: "league" };
+  for (const h of heads) h.category = CAT[h.kind] || "league";
   heads.sort((a, b) => b.importance - a.importance);
   return { day, season: ds.season, phase: ds.phase, headlines: heads };
 }
