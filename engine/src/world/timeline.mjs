@@ -107,11 +107,20 @@ function teamStrength(roster, bump) {
   const top = roster.map(p => p.skill).sort((a, b) => b - a).slice(0, 11);
   return Math.round((top.reduce((a, b) => a + b, 0) / top.length + bump) * 10) / 10;
 }
+// bot clubs cycle through a spread of engine archetypes for variety; the boss
+// plays his region's signature style.
+const BOT_ARCHES = ["balanced", "general", "clutch", "engine", "miser", "results", "community", "talisman"];
+
 function makeTeam(seed, region, kind, name, idx, season) {
   const teamId = region.id + "-" + (kind === "boss" ? "boss" : "b" + idx);
   const roster = [];
   for (let i = 0; i < 14; i++) roster.push(makePlayer(seed, teamId, i, season));
-  return { id: teamId, regionId: region.id, kind, name, human: false, strength: teamStrength(roster, kind === "boss" ? 6 : 0), roster };
+  const archId = kind === "boss" ? region.arch : BOT_ARCHES[idx % BOT_ARCHES.length];
+  // `gen` is the deterministic recipe for this team's REAL engine squad: the
+  // world-timeline stays engine-free (just strings + a seed); the match adapter
+  // materialises the full squad from it on demand.
+  const gen = { country: region.name, archId, captId: "general", seed: hash32(teamId + "|s" + season) };
+  return { id: teamId, regionId: region.id, kind, name, human: false, strength: teamStrength(roster, kind === "boss" ? 6 : 0), roster, gen };
 }
 
 // A region's league for a season: the boss (permanent) + bots to the 8-team size.

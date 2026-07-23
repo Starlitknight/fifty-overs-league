@@ -143,6 +143,26 @@ export function makeEngine() {
   __vmRunMatch`;
   const runMatchIn = vm.runInContext(runner, ctx, { filename: 'vm-runner.js' });
 
+  // The Living World adapter: generate an engine-native squad from a seed +
+  // country + archetype, and play two arbitrary squads through the REAL engine
+  // (window.__foGame.simWorld). Objects cross the realm boundary as JSON so all
+  // engine values stay VM-realm. This is the pure-Node bot-match path.
+  const worldFns = vm.runInContext(`(function(){
+    function __vmGen(seed, country, archId, captId){
+      var f = (typeof __foGenArchetypeSquad==='function') ? __foGenArchetypeSquad
+            : (window.__foGame && window.__foGame.squad) || null;
+      if(!f) return null;
+      var sq = f(seed, country, archId, captId);
+      return sq ? JSON.stringify(sq) : null;
+    }
+    function __vmSim(taJson, tbJson, pitch, weather, seed){
+      var g = window.__foGame; if(!g || !g.simWorld) return null;
+      var r = g.simWorld(JSON.parse(taJson), JSON.parse(tbJson), pitch, weather, seed);
+      return r ? JSON.stringify(r) : null;
+    }
+    return { gen: __vmGen, sim: __vmSim };
+  })()`, ctx, { filename: 'vm-world.js' });
+
   return {
     ctx,
     // JSON round-trip: hand out host-realm plain objects (VM-realm
@@ -151,6 +171,16 @@ export function makeEngine() {
       const r = runMatchIn(aIx, bIx, pitch, weather, seed);
       return r ? JSON.parse(JSON.stringify(r)) : r;
     },
-    setTuning: on => { ctx.__foTuneOff = on ? 0 : 1; }
+    setTuning: on => { ctx.__foTuneOff = on ? 0 : 1; },
+    // Living World: seed -> engine-native squad {players, starter, arch}
+    genSquad: (seed, country, archId, captId) => {
+      const s = worldFns.gen((seed >>> 0) || 1, country || 'England', archId || 'balanced', captId || 'general');
+      return s ? JSON.parse(s) : null;
+    },
+    // Living World: play two team objects ({name, players}) -> real result
+    sim: (tA, tB, pitch, weather, seed) => {
+      const r = worldFns.sim(JSON.stringify(tA), JSON.stringify(tB), pitch || 'balanced', weather || 'Sunny', (seed >>> 0) || 1);
+      return r ? JSON.parse(r) : null;
+    }
   };
 }
