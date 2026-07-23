@@ -10505,7 +10505,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260723-2130-97e9db";
+  var FO_BUILD = "20260723-2147-d8d555";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21495,19 +21495,23 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-sqx-sort{margin-left:auto;font-family:Oswald,sans-serif;letter-spacing:1.5px;font-size:11px;color:#8ea3c4}",
       ".fo-sqx-sort select{font-family:Oswald,sans-serif;letter-spacing:1px;font-size:12px;background:rgba(255,255,255,.06);color:#eaf0fb;border:1px solid rgba(126,158,208,.22);border-radius:8px;padding:5px 8px;margin-left:4px}",
       // body: gallery + rail
-      ".fo-sqx-body{display:grid;grid-template-columns:1fr 340px;gap:18px;flex:1;min-height:0;align-items:start}",
-      // a big-card RAIL you sweep left to right (snap + smooth), cards stay
-      // their full beautiful size — the selected one lifts a touch larger
-      ".fo-sqx-gallery{display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;padding:8px 6px 14px;align-items:center;scroll-snap-type:x mandatory;scroll-behavior:smooth;scroll-padding:0 40%}",
+      ".fo-sqx-body{display:block;flex:1;min-height:0}",
+      // a big-card RAIL of the collectible phc cards you sweep left to right
+      ".fo-sqx-gallery{display:flex;gap:16px;overflow-x:auto;overflow-y:hidden;padding:10px 6px 16px;align-items:flex-start;scroll-snap-type:x proximity;scroll-behavior:smooth}",
       ".fo-sqx-gallery::-webkit-scrollbar{height:10px}.fo-sqx-gallery::-webkit-scrollbar-thumb{background:rgba(126,158,208,.3);border-radius:5px}.fo-sqx-gallery::-webkit-scrollbar-track{background:transparent}",
-      // cards render at native width; a light zoom keeps foPkCard's internal
-      // layout intact while fitting a few across the rail
-      ".fo-sqx-card{position:relative;flex:0 0 auto;cursor:pointer;transition:filter .2s ease,opacity .2s,zoom .2s;filter:saturate(.94) brightness(.9);opacity:.82;scroll-snap-align:center;zoom:.82}",
-      ".fo-sqx-card:hover{opacity:1;filter:none}",
-      ".fo-sqx-card .pk{width:300px}",
-      ".fo-sqx-card.sel{opacity:1;filter:none;zoom:1}",
-      ".fo-sqx-card.sel .pk-frame{box-shadow:0 0 0 2px #EBC271,0 18px 44px -12px rgba(235,194,113,.6),0 10px 30px rgba(0,0,0,.5)}",
-      ".fo-sqx-card.inxi::after{content:'XI';position:absolute;top:8px;left:8px;z-index:3;font-family:Oswald,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;color:#101b2d;background:#EBC271;border-radius:6px;padding:2px 8px;box-shadow:0 2px 6px rgba(0,0,0,.35)}",
+      // EVERY card is one fixed size for symmetry: the phc is rendered at a
+      // comfortable native width and zoomed as a whole (so its internal layout
+      // never breaks), with a fixed native height whose ART flexes to absorb any
+      // difference in talent/meta lines — so all cards end up identical.
+      ".fo-sqx-card{position:relative;flex:0 0 auto;cursor:pointer;scroll-snap-align:start;zoom:.6;transition:transform .16s ease;will-change:transform}",
+      ".fo-sqx-card:hover{transform:translateY(-8px)}",
+      ".fo-sqx-card .phc{width:392px !important;max-width:none !important;height:772px;margin:0;display:flex;flex-direction:column}",
+      ".fo-sqx-card .phc-in{flex:1;min-height:0;display:flex;flex-direction:column}",
+      ".fo-sqx-card .phc-art{height:auto !important;flex:1 1 auto;min-height:150px}",
+      ".fo-sqx-card .phc-art img{width:100%;height:100%;object-fit:cover}",
+      ".fo-sqx-card .phc-holo,.fo-sqx-card .phc-glare{display:none}",
+      ".fo-sqx-card.inxi::after{content:'XI';position:absolute;top:16px;left:16px;z-index:5;font-family:Oswald,sans-serif;font-size:17px;font-weight:700;letter-spacing:1px;color:#101b2d;background:#EBC271;border-radius:7px;padding:3px 11px;box-shadow:0 3px 8px rgba(0,0,0,.45)}",
+      ".fo-sqx-card.inxi .phc-role{padding-left:46px}",
       ".fo-sqx-empty{color:#8ea3c4;padding:60px 20px;font-size:14px}",
       // detail rail
       ".fo-sqx-rail{background:linear-gradient(180deg,rgba(16,26,45,.82),rgba(10,16,30,.82));border:1px solid rgba(126,158,208,.16);border-radius:16px;padding:18px 18px 16px;position:sticky;top:14px;box-shadow:0 18px 50px -20px rgba(0,0,0,.8)}",
@@ -21558,7 +21562,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-sqx-bal{margin-left:auto;font-family:Oswald,sans-serif;letter-spacing:1px;font-size:13px;color:#eaf0fb;display:flex;align-items:center;gap:7px}",
       ".fo-sqx-bal .lbl{font-size:10px;letter-spacing:2px;color:#8ea3c4;margin-right:4px}",
       ".fo-sqx-bal b{color:#EBC271}.fo-sqx-bal i{color:#586a86;font-style:normal}",
-      "@media(max-width:900px){.fo-sqx-body{grid-template-columns:1fr}.fo-sqx-rail{position:static}.fo-sqx-hd{gap:12px}.fo-sqx-sort{margin-left:0}}"
+      "@media(max-width:900px){.fo-sqx-hd{gap:12px}.fo-sqx-sort{margin-left:0}.fo-sqx-card{zoom:.72}}"
     ].join("");
     (document.head || document.documentElement).appendChild(s);
   }
@@ -21652,7 +21656,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       sv.xi.forEach(function (n) { var c = foSqClass(byName[n]); bal[c] = (bal[c] || 0) + 1; });
 
       var cards = pool.map(function (p) {
-        return "<div class='fo-sqx-card" + (p.name === sv.sel ? " sel" : "") + (xiSet[p.name] ? " inxi" : "") + "' data-n='" + E(p.name) + "'>" + foPkCard(p) + "</div>";
+        var hc = foHoloCardHTML(p, t.name);   // the collectible phc card + its rarity tier
+        return "<div class='fo-sqx-card ph-" + hc.tier + (xiSet[p.name] ? " inxi" : "") + "' data-n='" + E(p.name) + "'>" + hc.html + "</div>";
       }).join("") || "<div class='fo-sqx-empty'>No players in this view.</div>";
 
       var tabs = [["xi", "XI"], ["bat", "BAT"], ["bowl", "BOWL"], ["keep", "KEEP"], ["youth", "YOUTH"]].map(function (tb) {
@@ -21669,34 +21674,20 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       page.innerHTML =
         "<div class='fo-sqx'><div class='fo-sqx-bg' style='background-image:url(" + FO_ART + "orders-room.webp)'></div><div class='fo-sqx-veil'></div><div class='fo-sqx-in'>" +
         "<header class='fo-sqx-hd'>" +
-        "<div class='fo-sqx-title'><h1>Your Squad</h1><div class='fo-sqx-sub'>" + seniors.length + " players <i>&middot;</i> " + sv.xi.length + " selected <i>&middot;</i> energy " + enAvg + "%</div></div>" +
+        "<div class='fo-sqx-title'><h1>Your Squad</h1><div class='fo-sqx-sub'>" + seniors.length + " players <i>&middot;</i> " + sv.xi.length + " selected</div></div>" +
         "<div class='fo-sqx-tabs'>" + tabs + "</div>" + sortSel +
         "</header>" +
         "<div class='fo-sqx-body'>" +
         "<div class='fo-sqx-gallery'>" + cards + "</div>" +
-        "<aside class='fo-sqx-rail'>" + (sel ? foSqxRail(sel, xiSet[sel.name]) : "") + "</aside>" +
         "</div>" +
         "<footer class='fo-sqx-foot'><div class='fo-sqx-rars'>" + rar + "</div>" + balHtml + "</footer>" +
         "</div></div>";
 
-      // centre the selected card by scrolling ONLY the rail (never the page)
-      var scrollSel = function () { try {
-        var gal = page.querySelector(".fo-sqx-gallery"), s2 = page.querySelector(".fo-sqx-card.sel");
-        if (gal && s2) { var gr = gal.getBoundingClientRect(), sr = s2.getBoundingClientRect(); gal.scrollLeft += (sr.left - gr.left) - (gr.width - sr.width) / 2; }
-      } catch (e) {} };
-      page.querySelectorAll(".fo-sqx-tab").forEach(function (b) { b.addEventListener("click", function () { sv.tab = b.getAttribute("data-tab"); sv.sel = null; pgSquad(); }); });
+      page.querySelectorAll(".fo-sqx-tab").forEach(function (b) { b.addEventListener("click", function () { sv.tab = b.getAttribute("data-tab"); pgSquad(); }); });
       var so = page.querySelector("#fo-sqx-sort"); if (so) so.addEventListener("change", function () { sv.sortK = so.value; pgSquad(); });
-      page.querySelectorAll(".fo-sqx-rar").forEach(function (b) { b.addEventListener("click", function () { sv.rarity = b.getAttribute("data-r"); sv.sel = null; pgSquad(); }); });
-      page.querySelectorAll(".fo-sqx-card[data-n]").forEach(function (c) { c.addEventListener("click", function () { sv.sel = c.getAttribute("data-n"); pgSquad(); }); });
-      var vp = page.querySelector(".fo-sqx-viewp"); if (vp) vp.addEventListener("click", function () { location.hash = "#/player?n=" + encodeURIComponent(sv.sel); });
-      var xb = page.querySelector(".fo-sqx-xi"); if (xb) xb.addEventListener("click", function () {
-        var n = sv.sel; if (!n || byName[n].__y) return;
-        if (xiSet[n]) sv.xi = sv.xi.filter(function (x) { return x !== n; });
-        else if (sv.xi.length < 11) sv.xi.push(n);
-        pgSquad();
-      });
-      var prm = page.querySelector(".fo-sqx-promote"); if (prm) prm.addEventListener("click", function () { try { promoteYouth(App.teamIx, sv.sel); } catch (e) {} sv.sel = null; sv.tab = "xi"; pgSquad(); });
-      scrollSel();
+      page.querySelectorAll(".fo-sqx-rar").forEach(function (b) { b.addEventListener("click", function () { sv.rarity = b.getAttribute("data-r"); pgSquad(); }); });
+      // a tap on a card opens that player's full page
+      page.querySelectorAll(".fo-sqx-card[data-n]").forEach(function (c) { c.addEventListener("click", function () { location.hash = "#/player?n=" + encodeURIComponent(c.getAttribute("data-n")); }); });
     } catch (e) { console.warn("pgSquad", e); }
   };
   // restore the normal app column when leaving the squad
