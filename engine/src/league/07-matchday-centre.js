@@ -1784,6 +1784,7 @@
   // painted to sit beneath the running match UI (the static -ground.webp
   // stays on the city page's "Visit the ground" view)
   var FO_CITY_LIVE = { Dublin: 1, Belfast: 1, Cork: 1, Amsterdam: 1, Rotterdam: 1, Utrecht: 1 };
+  var FO_MOB_GROUND = { johannesburg: 1, mumbai: 1, kathmandu: 1, sylhet: 1, kabul: 1, sharjah: 1 };
   function foMstArt() {
     try {
       var cx = M.meta && M.meta.__circuit;
@@ -1804,6 +1805,9 @@
           }
           // Dublin owns a second canvas for the rain
           if (c.city === "Dublin" && /rain|drizzle|storm|shower|wet/.test(((M.meta.weather || "") + "").toLowerCase())) ga = "cities/dublin-ground-rain.webp";
+          // portrait phones get the 9:16 painting where one exists
+          if (foMobIsOn() && FO_MOB_GROUND[foCitySlug(c.city)] && ga === "cities/" + foCitySlug(c.city) + "-ground.webp")
+            ga = "cities/" + foCitySlug(c.city) + "-ground-m.webp";
           return { img: FO_ART + ga, mode: "ground", ac: r.ac, gnm: gnm, city: c.city };
         }
         return { img: FO_ART + "circuit/" + (r.bg || (r.id + ".webp")), mode: "region", ac: r.ac, gnm: c.city + (c.boss ? " Colosseum" : " Oval"), city: c.city };
@@ -2385,6 +2389,7 @@
       "#fo-th-rail{display:none !important}" +
       "#fo-thd-x{display:none !important}" +
       "body.fo-th .fo-mst-bg img{object-position:var(--thfocal-m,50% 56%)}" +
+      "body.fo-th .fo-mst.m-ground .fo-mst-bg img[src*='-ground-m']{object-position:50% 50%}" +
       // scorebug: ONE horizontal bug - team, score dominant, overs
       "body.fo-th .fo-mst-score{top:calc(56px + env(safe-area-inset-top));left:50%;right:auto;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:2px 12px;width:max-content;min-width:0;max-width:calc(100vw - 20px);padding:8px 17px 9px;border-radius:14px}" +
       "body.fo-th .fo-mst-score .tm{font-size:11.5px;letter-spacing:1.6px;text-transform:uppercase;color:#F3D37A;margin:0}" +
@@ -2654,7 +2659,7 @@
       var sceneCls = "fo-mst" + (rainy ? " wx-rain" : "") + (gloomy ? " wx-gloom" : "") +
         (sunny ? " wx-sun" : "") + (heat ? " wx-heat" : "") + (misty ? " wx-mist" : "") +
         (humid ? " wx-humid" : "") + (windy ? " wx-wind" : "") + (chilly ? " wx-chill" : "") + " m-" + art.mode;
-      var artKey = art.img + "|" + sceneCls;
+      var artKey = art.img + "|" + sceneCls + "|" + (foMobIsOn() ? "m" : "d");
       var uiHTML =
         "<div class='fo-mst-top'>" +
         "<div class='fo-mst-wx'><span class='gnd'>" + E(art.gnm) + (art.city ? " &middot; " + E(art.city) : "") + "</span>" + (art.city ? "<span class='cty-m'>" + E(art.city) + "</span>" : "") + "<span>" + E(M.meta.weather || "") + "</span><span>" + E(M.pitch || "") + " pitch</span>" + (fld ? "<span class='fld'>" + E(fld) + "</span>" : "") + "</div>" +
