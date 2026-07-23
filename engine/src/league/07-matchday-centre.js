@@ -2384,7 +2384,7 @@
       "@media (prefers-reduced-motion:reduce){#fo-mstage::after{transition:none}}" +
       "body.fo-th #fo-mstage .fo-mst-ui{z-index:auto}" +
       "body.fo-th #fo-mstage .fo-mst-scene{z-index:0}" +
-      "html body.fo-th #topbar,html body.ftpskin.fo-th #topbar{background:rgba(6,14,26,.82) !important;backdrop-filter:blur(10px);padding-top:env(safe-area-inset-top)}" +
+      "html body.fo-th #topbar,html body.ftpskin.fo-th #topbar{background:linear-gradient(180deg,rgba(4,10,20,.6),rgba(4,10,20,.22) 62%,transparent) !important;backdrop-filter:none;padding-top:env(safe-area-inset-top)}" +
       "body.fo-th #fo-bell{display:none !important}" +
       "#fo-th-rail{display:none !important}" +
       "#fo-thd-x{display:none !important}" +
@@ -2423,6 +2423,7 @@
       "body.fo-th[data-mobsheet='oval'] .fo-mst-wx{display:none !important}" +
       // the command sheet itself: frosted navy, rounded, animated snap
       "#fo-mob-sheet{display:block;position:fixed;left:0;right:0;bottom:0;z-index:51;background:none;border:none;box-shadow:none;height:calc(160px + env(safe-area-inset-bottom));transition:height .28s ease;touch-action:none;pointer-events:none}" +
+      "body.fo-th[data-mobsheet='live'] #fo-mstage::after{background:linear-gradient(180deg,rgba(4,10,20,0),rgba(4,10,20,.52) 34%,rgba(4,10,20,.84) 78%,rgba(4,10,20,.9));border:none;border-radius:0;box-shadow:none;backdrop-filter:none;height:calc(214px + env(safe-area-inset-bottom))}" +
       "#fo-mob-sheet .sh-grip{pointer-events:auto;width:100%;height:26px;margin:1px 0 0;display:flex;align-items:center;justify-content:center;touch-action:none}" +
       "#fo-mob-sheet .sh-grip::after{content:'';width:44px;height:4.5px;border-radius:999px;background:rgba(255,255,255,.3)}" +
       "#fo-mob-tac{pointer-events:auto}" +
