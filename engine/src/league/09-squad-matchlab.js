@@ -301,104 +301,238 @@
       "</div>";
     return "<div class='fo-sq-detail'><div class='fo-sq-dcols'>" + c1 + c2 + c3 + "</div>" + foot + "</div>";
   }
+  // === Squad — the trading-card gallery + selected-player detail rail =========
+  function foSqxCss() {
+    if (document.getElementById("fo-sqx-css")) return;
+    var s = document.createElement("style"); s.id = "fo-sqx-css";
+    s.textContent = [
+      // full-bleed dark stage (widen the app's padded .wrap while mounted)
+      "html body.fo-sqx-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
+      "#page .fo-sqx{position:relative;min-height:100vh;background:#0a1220;color:#eaf0fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}",
+      "#page .fo-sqx *{box-sizing:border-box}",
+      // the backdrop is ABSOLUTE inside .fo-sqx (not fixed) so it covers the full
+      // content height on a tall stacked mobile page, not just the first viewport
+      ".fo-sqx-bg{position:absolute;inset:0;background-size:cover;background-position:center;z-index:0}",
+      ".fo-sqx-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,12,22,.86),rgba(7,11,20,.9) 55%,rgba(6,10,18,.96));z-index:0}",
+      ".fo-sqx-in{position:relative;z-index:1;max-width:1520px;margin:0 auto;padding:10px 22px 14px;min-height:calc(100vh - 58px);display:flex;flex-direction:column}",
+      // header
+      ".fo-sqx-hd{display:flex;align-items:flex-end;gap:20px;margin:4px 0 14px;flex-wrap:wrap}",
+      ".fo-sqx-title h1{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:clamp(30px,4vw,50px);line-height:.9;margin:0;color:#fff}",
+      ".fo-sqx-sub{font-family:Oswald,sans-serif;letter-spacing:2px;text-transform:uppercase;font-size:12px;color:#8ea3c4;margin-top:6px}",
+      ".fo-sqx-sub i{color:#586a86;font-style:normal;margin:0 3px}",
+      ".fo-sqx-tabs{display:flex;gap:6px;margin-left:8px}",
+      ".fo-sqx-tab{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.5px;font-size:12px;color:#93a4c0;background:rgba(255,255,255,.04);border:1px solid rgba(126,158,208,.16);border-radius:999px;padding:7px 16px;cursor:pointer;transition:.14s}",
+      ".fo-sqx-tab:hover{color:#eaf0fb}",
+      ".fo-sqx-tab.on{background:#EBC271;color:#101b2d;border-color:#EBC271}",
+      ".fo-sqx-sort{margin-left:auto;font-family:Oswald,sans-serif;letter-spacing:1.5px;font-size:11px;color:#8ea3c4}",
+      ".fo-sqx-sort select{font-family:Oswald,sans-serif;letter-spacing:1px;font-size:12px;background:rgba(255,255,255,.06);color:#eaf0fb;border:1px solid rgba(126,158,208,.22);border-radius:8px;padding:5px 8px;margin-left:4px}",
+      // body: gallery + rail
+      ".fo-sqx-body{display:grid;grid-template-columns:1fr 340px;gap:18px;flex:1;min-height:0;align-items:start}",
+      // a big-card RAIL you sweep left to right (snap + smooth), cards stay
+      // their full beautiful size — the selected one lifts a touch larger
+      ".fo-sqx-gallery{display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;padding:8px 6px 14px;align-items:center;scroll-snap-type:x mandatory;scroll-behavior:smooth;scroll-padding:0 40%}",
+      ".fo-sqx-gallery::-webkit-scrollbar{height:10px}.fo-sqx-gallery::-webkit-scrollbar-thumb{background:rgba(126,158,208,.3);border-radius:5px}.fo-sqx-gallery::-webkit-scrollbar-track{background:transparent}",
+      // cards render at native width; a light zoom keeps foPkCard's internal
+      // layout intact while fitting a few across the rail
+      ".fo-sqx-card{position:relative;flex:0 0 auto;cursor:pointer;transition:filter .2s ease,opacity .2s,zoom .2s;filter:saturate(.94) brightness(.9);opacity:.82;scroll-snap-align:center;zoom:.82}",
+      ".fo-sqx-card:hover{opacity:1;filter:none}",
+      ".fo-sqx-card .pk{width:300px}",
+      ".fo-sqx-card.sel{opacity:1;filter:none;zoom:1}",
+      ".fo-sqx-card.sel .pk-frame{box-shadow:0 0 0 2px #EBC271,0 18px 44px -12px rgba(235,194,113,.6),0 10px 30px rgba(0,0,0,.5)}",
+      ".fo-sqx-card.inxi::after{content:'XI';position:absolute;top:8px;left:8px;z-index:3;font-family:Oswald,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;color:#101b2d;background:#EBC271;border-radius:6px;padding:2px 8px;box-shadow:0 2px 6px rgba(0,0,0,.35)}",
+      ".fo-sqx-empty{color:#8ea3c4;padding:60px 20px;font-size:14px}",
+      // detail rail
+      ".fo-sqx-rail{background:linear-gradient(180deg,rgba(16,26,45,.82),rgba(10,16,30,.82));border:1px solid rgba(126,158,208,.16);border-radius:16px;padding:18px 18px 16px;position:sticky;top:14px;box-shadow:0 18px 50px -20px rgba(0,0,0,.8)}",
+      ".fo-sqx-rh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding-bottom:14px;border-bottom:1px solid rgba(126,158,208,.14)}",
+      ".fo-sqx-rnm{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:24px;line-height:1;color:#fff}",
+      ".fo-sqx-rrole{font-family:Oswald,sans-serif;letter-spacing:1.5px;font-size:11px;color:#EBC271;margin-top:5px}",
+      ".fo-sqx-rnat{font-size:12px;color:#9bb0cf;margin-top:6px;display:flex;align-items:center;gap:6px}.fo-sqx-rnat img,.fo-sqx-rnat svg{width:18px;height:12px;border-radius:2px}",
+      ".fo-sqx-rovr{text-align:center;flex:0 0 auto;border:1.5px solid rgba(235,194,113,.5);border-radius:12px;padding:6px 10px;background:rgba(235,194,113,.08)}",
+      ".fo-sqx-rovr i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:9px;letter-spacing:2px;color:#c9a24b}",
+      ".fo-sqx-rovr b{font-family:Oswald,sans-serif;font-size:30px;line-height:1;color:#EBC271}",
+      ".fo-sqx-sec{margin-top:15px}",
+      ".fo-sqx-lbl{font-family:Oswald,sans-serif;letter-spacing:2px;text-transform:uppercase;font-size:10px;color:#8ea3c4;display:block;margin-bottom:8px}",
+      ".fo-sqx-lbl em{font-style:normal;color:#586a86;letter-spacing:1px}",
+      ".fo-sqx-pips{display:flex;gap:8px}",
+      ".fo-sqx-pip{flex:1;text-align:center;font-family:Oswald,sans-serif;font-weight:600;font-size:14px;padding:8px 0;border-radius:9px;border:1.5px solid}",
+      ".fo-sqx-pip.hi{color:#7ee0a0;border-color:rgba(126,224,160,.5);background:rgba(126,224,160,.1)}",
+      ".fo-sqx-pip.mid{color:#EBC271;border-color:rgba(235,194,113,.5);background:rgba(235,194,113,.1)}",
+      ".fo-sqx-pip.lo{color:#e8917f;border-color:rgba(232,145,127,.5);background:rgba(232,145,127,.1)}",
+      ".fo-sqx-pip.empty{color:#4a5876;border-color:rgba(74,88,118,.4)}",
+      ".fo-sqx-stam{display:flex;align-items:center;gap:10px}",
+      ".fo-sqx-stam u{flex:1;height:9px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden;display:block}",
+      ".fo-sqx-stam u b{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#22D3E0,#4DA6A2)}",
+      ".fo-sqx-stam span{font-family:Oswald,sans-serif;font-size:15px;color:#fff}",
+      ".fo-sqx-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}",
+      ".fo-sqx-stats>div{background:rgba(255,255,255,.04);border:1px solid rgba(126,158,208,.14);border-radius:10px;padding:9px 6px;text-align:center}",
+      ".fo-sqx-stats i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:9px;letter-spacing:1.5px;color:#8ea3c4}",
+      ".fo-sqx-stats b{font-family:Oswald,sans-serif;font-size:20px;color:#fff}",
+      ".fo-sqx-mile .fo-sqx-milerow{display:flex;align-items:center;gap:10px;margin-bottom:8px}",
+      ".fo-sqx-mile .star{color:#EBC271;font-size:18px}",
+      ".fo-sqx-mile b{font-family:Oswald,sans-serif;font-size:13px;color:#fff;display:block;letter-spacing:.5px}",
+      ".fo-sqx-mile i{font-style:normal;font-family:Oswald,sans-serif;font-size:12px;letter-spacing:1px;color:#EBC271}",
+      ".fo-sqx-mbar{display:flex;align-items:center;gap:9px}",
+      ".fo-sqx-mbar u{flex:1;height:7px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;display:block}",
+      ".fo-sqx-mbar u b{display:block;height:100%;background:linear-gradient(90deg,#C9A24B,#EBC271)}",
+      ".fo-sqx-mbar span{font-family:Oswald,sans-serif;font-size:10px;color:#8ea3c4;white-space:nowrap}",
+      ".fo-sqx-cta{margin-top:16px;display:flex;flex-direction:column;gap:9px}",
+      ".fo-sqx-cta button{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;font-size:13px;border-radius:11px;padding:13px;cursor:pointer;border:none}",
+      ".fo-sqx-viewp{background:linear-gradient(180deg,#C8674A,#a84e34);color:#fff;box-shadow:0 6px 18px -6px rgba(200,103,74,.6)}",
+      ".fo-sqx-viewp:hover{filter:brightness(1.07)}",
+      ".fo-sqx-xi,.fo-sqx-promote{background:transparent;color:#eaf0fb;border:1.5px solid rgba(126,158,208,.35) !important}",
+      ".fo-sqx-xi:hover,.fo-sqx-promote:hover{border-color:#EBC271 !important;color:#EBC271}",
+      // footer filter bar + balance
+      ".fo-sqx-foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 4px 4px;border-top:1px solid rgba(126,158,208,.14);margin-top:6px}",
+      ".fo-sqx-rars{display:flex;gap:6px;flex-wrap:wrap}",
+      ".fo-sqx-rar{font-family:Oswald,sans-serif;letter-spacing:1px;font-size:10.5px;color:#8ea3c4;background:rgba(255,255,255,.04);border:1px solid rgba(126,158,208,.16);border-radius:999px;padding:5px 12px;cursor:pointer;transition:.14s}",
+      ".fo-sqx-rar:hover{color:#eaf0fb}",
+      ".fo-sqx-rar.on{background:#EBC271;color:#101b2d;border-color:#EBC271}",
+      ".fo-sqx-bal{margin-left:auto;font-family:Oswald,sans-serif;letter-spacing:1px;font-size:13px;color:#eaf0fb;display:flex;align-items:center;gap:7px}",
+      ".fo-sqx-bal .lbl{font-size:10px;letter-spacing:2px;color:#8ea3c4;margin-right:4px}",
+      ".fo-sqx-bal b{color:#EBC271}.fo-sqx-bal i{color:#586a86;font-style:normal}",
+      "@media(max-width:900px){.fo-sqx-body{grid-template-columns:1fr}.fo-sqx-rail{position:static}.fo-sqx-hd{gap:12px}.fo-sqx-sort{margin-left:0}}"
+    ].join("");
+    (document.head || document.documentElement).appendChild(s);
+  }
+
+  // the selected-player detail rail (real career data + live form)
+  function foSqxRail(p, inXi) {
+    var tot = (typeof foClubTotals === "function") ? foClubTotals(p.name) : { runs: 0, wkts: 0, matches: 0, hs: 0 };
+    var hist = ((App.playerHist && App.playerHist[p.name]) || []).filter(function (e) { return !e.fr; });
+    var last5 = hist.slice(-5).map(function (e) { return +e.rr || 0; });
+    while (last5.length < 5) last5.unshift(null);
+    var pip = function (v) {
+      if (v == null) return "<span class='fo-sqx-pip empty'>&ndash;</span>";
+      var c = v >= 50 ? "hi" : v >= 25 ? "mid" : "lo";
+      return "<span class='fo-sqx-pip " + c + "'>" + v + "</span>";
+    };
+    var en = foEnergyOf(p);
+    var cls = foSqClass(p);
+    // next milestone: career runs for batters/keepers/AR, career wickets for bowlers
+    var mileHave, mileTarget, mileLbl;
+    if (cls === "bowl") { mileHave = tot.wkts; mileTarget = Math.max(10, Math.ceil((tot.wkts + 1) / 10) * 10); mileLbl = mileTarget + " career wickets"; }
+    else { mileHave = tot.runs; mileTarget = Math.max(250, Math.ceil((tot.runs + 1) / 250) * 250); mileLbl = mileTarget + " career runs"; }
+    var away = Math.max(0, mileTarget - mileHave);
+    var milePct = mileTarget ? Math.min(100, Math.round(mileHave / mileTarget * 100)) : 0;
+    var avg = tot.matches ? (tot.runs / tot.matches).toFixed(1) : "0.0";
+    var flag = (typeof foQsFlag === "function" ? foQsFlag(p.nat) : "") || "";
+    return "" +
+      "<div class='fo-sqx-rh'><div><div class='fo-sqx-rnm'>" + E(p.name) + "</div>" +
+      "<div class='fo-sqx-rrole'>" + E(foPkRoleLbl(p).toUpperCase()) + "</div>" +
+      "<div class='fo-sqx-rnat'>" + flag + "<span>" + E(p.nat || "") + "</span></div></div>" +
+      "<div class='fo-sqx-rovr'><i>OVR</i><b>" + foPkOvr(p) + "</b></div></div>" +
+      "<div class='fo-sqx-sec'><span class='fo-sqx-lbl'>Form <em>(last 5)</em></span><div class='fo-sqx-pips'>" + last5.map(pip).join("") + "</div></div>" +
+      "<div class='fo-sqx-sec'><span class='fo-sqx-lbl'>Stamina</span><div class='fo-sqx-stam'><u><b style='width:" + en.pct + "%'></b></u><span>" + en.pct + "%</span></div></div>" +
+      "<div class='fo-sqx-sec'><span class='fo-sqx-lbl'>Season stats</span><div class='fo-sqx-stats'>" +
+      "<div><i>RUNS</i><b>" + (tot.runs || 0) + "</b></div><div><i>AVG</i><b>" + avg + "</b></div><div><i>HS</i><b>" + (tot.hs || 0) + "</b></div></div></div>" +
+      "<div class='fo-sqx-sec fo-sqx-mile'><span class='fo-sqx-lbl'>Next milestone</span>" +
+      "<div class='fo-sqx-milerow'><span class='star'>&#9733;</span><div><b>" + away + " away from</b><i>" + mileLbl + "</i></div></div>" +
+      "<div class='fo-sqx-mbar'><u><b style='width:" + milePct + "%'></b></u><span>" + mileHave + " / " + mileTarget + "</span></div></div>" +
+      "<div class='fo-sqx-cta'><button type='button' class='fo-sqx-viewp'>View player &rsaquo;</button>" +
+      (p.__y ? "<button type='button' class='fo-sqx-promote'>Promote to senior +</button>"
+             : "<button type='button' class='fo-sqx-xi'>" + (inXi ? "&#10003; In XI &middot; remove" : "Add to XI +") + "</button>") +
+      "</div>";
+  }
+
   window.pgSquad = function () {
     try {
+      foSqxCss();
       var t = userTeam();
       (t.players || []).forEach(foEnsureTraining); (t.youth || []).forEach(foEnsureTraining);
       window.squadView = window.squadView || {};
-      squadView.open = squadView.open || {};
-      squadView.roleF = squadView.roleF || "all";
-      squadView.sortK = squadView.sortK || "Rating";
+      var sv = window.squadView;
+      sv.tab = sv.tab || "xi"; sv.sortK = sv.sortK || "OVR"; sv.rarity = sv.rarity || "all";
       var seniors = (t.players || []).map(function (p) { return Object.assign({}, p); });
       var youths = (t.youth || []).map(function (p) { return Object.assign({ __y: true }, p); });
-      var pool = seniors.concat(youths);
+      var all = seniors.concat(youths);
+      var byName = {}; all.forEach(function (p) { byName[p.name] = p; });
 
-      // --- summary strip ---
-      var mix = { bat: 0, bowl: 0, ar: 0, wk: 0 };
-      seniors.forEach(function (p) { mix[foSqClass(p)]++; });
-      var ageAvg = seniors.length ? seniors.reduce(function (s, p) { return s + (p.age || 0); }, 0) / seniors.length : 0;
-      var ageWord = ageAvg < 25 ? "<i class='fo-pos'>young core</i>" : ageAvg <= 28 ? "<i>prime years</i>" : "<i class='fo-warm'>aging core</i>";
-      var wageSum = seniors.reduce(function (s, p) { return s + (p.wage || 0); }, 0);
-      var strip = "<div class='fo-sq-strip'>" +
-        "<div class='fo-sq-stat fo-sqs-c1'><div class='fo-sqs-ic'>" + FO_I("users", 20) + "</div><div class='fo-sqs-tx'><span>Squad</span><b>" + seniors.length + "</b><i>" + mix.bat + " bat · " + mix.bowl + " bowl · " + mix.ar + " AR · " + mix.wk + " wk" + (youths.length ? " · " + youths.length + " U20" : "") + "</i></div></div>" +
-        "<div class='fo-sq-stat fo-sqs-c2'><div class='fo-sqs-ic'>" + FO_I("calendar", 20) + "</div><div class='fo-sqs-tx'><span>Average age</span><b>" + ageAvg.toFixed(1) + "</b>" + ageWord + "</div></div>" +
-        "<div class='fo-sq-stat fo-sqs-c3'><div class='fo-sqs-ic'>" + FO_I("coins", 20) + "</div><div class='fo-sqs-tx'><span>Wage bill</span><b>$" + wageSum.toLocaleString() + "</b><i>/ matchday</i></div></div></div>";
+      // the XI: a persisted selection defaulting to the top 11 by OVR
+      if (!sv.xi) sv.xi = seniors.slice().sort(function (a, b) { return foPkOvr(b) - foPkOvr(a); }).slice(0, 11).map(function (p) { return p.name; });
+      sv.xi = sv.xi.filter(function (n) { return byName[n] && !byName[n].__y; });
+      var xiSet = {}; sv.xi.forEach(function (n) { xiSet[n] = 1; });
 
-      // --- structural warnings ---
-      var warns = [], hlName = null;
-      var glovemen = seniors.filter(function (p) { return p.keeper || aggKeep(p) >= 35; });
-      if (!glovemen.length) warns.push("No wicketkeeper in the squad · an untrained fielder will take the gloves.");
-      else if (glovemen.length === 1) {
-        var g = glovemen[0]; hlName = g.name;
-        warns.push("No backup wicketkeeper · " + E(g.name) + " is your only gloveman" + ((g.formIx != null && g.formIx <= 2) ? ", and his form is " + FORMW_UI[g.formIx] : "") + ".");
-      }
-      var frontline = seniors.filter(function (p) { return p.bowlType && !isPT(p); });
-      if (frontline.length < 5) warns.push("Only " + frontline.length + " frontline bowlers · five are needed to cover 50 overs.");
-      if (seniors.length < 11) warns.push("Only " + seniors.length + " senior players · eleven are needed for a match.");
-      var warnHtml = warns.map(function (w) {
-        return "<div class='fo-sq-warn'><span>&#9888;</span><span>" + w + "</span></div>";
-      }).join("");
+      var rarityOf = function (p) { var o = foPkOvr(p); return o >= 80 ? "elite" : o >= 72 ? "rare" : o >= 64 ? "uncommon" : "common"; };
+      var enAvg = seniors.length ? Math.round(seniors.reduce(function (s, p) { return s + foEnergyOf(p).pct; }, 0) / seniors.length) : 0;
 
-      // --- toolbar: role filter pills + sort ---
-      var pills = [["all", "All"], ["bat", "Batters"], ["bowl", "Bowlers"], ["ar", "All-rounders"], ["wk", "Keepers"]];
-      if (youths.length) pills.push(["u20", "U20"]);
-      var tools = "<div class='fo-sq-tools'>" + pills.map(function (pr) {
-        return "<button class='fo-sq-pill" + (squadView.roleF === pr[0] ? " on" : "") + "' data-f='" + pr[0] + "'>" + pr[1] + "</button>";
-      }).join("") +
-        "<span class='fo-sq-sortw'>Sort: <select id='fo-sq-sort'>" + ["Rating", "Batting", "Bowling", "Age", "Wage", "Form"].map(function (o) { return "<option" + (squadView.sortK === o ? " selected" : "") + ">" + o + "</option>"; }).join("") + "</select></span></div>";
+      // filter by tab
+      var pool;
+      if (sv.tab === "xi") pool = seniors.filter(function (p) { return xiSet[p.name]; });
+      else if (sv.tab === "youth") pool = youths;
+      else if (sv.tab === "bat") pool = seniors.filter(function (p) { var c = foSqClass(p); return c === "bat" || c === "ar"; });
+      else if (sv.tab === "bowl") pool = seniors.filter(function (p) { var c = foSqClass(p); return c === "bowl" || c === "ar"; });
+      else if (sv.tab === "keep") pool = seniors.filter(function (p) { return foSqClass(p) === "wk"; });
+      else pool = seniors;
+      // rarity / role sub-filter (bottom bar)
+      if (["elite", "rare", "uncommon", "common"].indexOf(sv.rarity) >= 0) pool = pool.filter(function (p) { return rarityOf(p) === sv.rarity; });
+      else if (["bat", "bowl", "wk", "ar"].indexOf(sv.rarity) >= 0) pool = pool.filter(function (p) { return foSqClass(p) === sv.rarity; });
+      else if (sv.rarity === "spin") pool = pool.filter(function (p) { return /spin|wrist|orthodox|legbreak|offbreak|slow/i.test(p.bowlTypeFull || p.bowlType || ""); });
+      else if (sv.rarity === "fast") pool = pool.filter(function (p) { return /fast|pace|seam|medium/i.test(p.bowlTypeFull || p.bowlType || ""); });
 
-      // --- rows ---
-      var shown = pool.filter(function (p) {
-        if (squadView.roleF === "all") return true;
-        if (squadView.roleF === "u20") return !!p.__y;
-        return foSqClass(p) === squadView.roleF;
-      });
       var sf = {
-        Rating: function (p) { return -(p.rating || 0); }, Batting: function (p) { return -aggBat(p); },
-        Bowling: function (p) { return -(p.bowlType ? aggBowl(p) : -1); }, Age: function (p) { return p.age || 0; },
-        Wage: function (p) { return -(p.wage || 0); }, Form: function (p) { return -(p.formIx == null ? 3 : p.formIx); }
-      }[squadView.sortK] || function (p) { return -(p.rating || 0); };
-      shown = shown.slice().sort(function (a, b) { var x = sf(a), y = sf(b); return x < y ? -1 : x > y ? 1 : 0; });
-      // teach the affordance: the first visit lands with the top player's row
-      // expanded, so it's obvious the rows open and close
-      if (!squadView.__seeded && shown.length) { squadView.__seeded = 1; squadView.open[shown[0].name] = true; }
+        OVR: function (p) { return -foPkOvr(p); }, BAT: function (p) { return -aggBat(p); },
+        BOWL: function (p) { return -(p.bowlType ? aggBowl(p) : -1); }, AGE: function (p) { return p.age || 0; },
+        FORM: function (p) { return -(p.formIx == null ? 3 : p.formIx); }
+      }[sv.sortK] || function (p) { return -foPkOvr(p); };
+      pool = pool.slice().sort(function (a, b) { var x = sf(a), y = sf(b); return x < y ? -1 : x > y ? 1 : 0; });
 
-      var rows = "<div class='pkm-grid'>" + shown.map(function (p) {
-        var fi = p.formIx == null ? 3 : p.formIx;
-        var en = foEnergyOf(p);
-        var enCol = en.tired ? "#DC2626" : en.word === "rested" ? "#4DA6A2" : "#16A34A";
-        var onlyK = hlName && p.name === hlName;
-        var sub = foPkRoleLbl(p) + " &middot; age " + (p.age | 0) + (p.__y ? " &middot; U20" : "");
-        var chips = "";
-        if (p.fatigue === "tired") chips += "<span class='pkm-chip pkm-chip-lo' title='tired · recovers next match or with Rest'>TIRED</span>";
-        if (fi !== 3) chips += "<span class='pkm-chip' title='" + FORMTIP + "'>Form: " + FORMW_UI[fi] + "</span>";
-        if (onlyK) chips += "<span class='pkm-chip pkm-chip-lo'>Only keeper</span>";
-        var foot = "<span class='pkm-fee'>Wage <b>$" + (p.wage || 0).toLocaleString() + "</b></span>" +
-          "<span class='pkm-energy' title='Energy: " + en.word + (en.tired ? " - recovers with the Rest program" : "") + "'><i>Energy</i><u><b style='width:" + en.pct + "%;background:" + enCol + "'></b></u></span>";
-        return "<div class='pkm-cell" + (onlyK ? " pkm-warn" : "") + "' data-n='" + E(p.name) + "'>" +
-          foPkMini(p, { sub: sub + (chips ? "<span class='pkm-chips'>" + chips + "</span>" : ""), foot: foot }) + "</div>";
-      }).join("") + "</div>";
-      var foot = "<div class='fo-sq-foot'>Tap a card for the full player profile</div>";
+      if (!sv.sel || !byName[sv.sel] || pool.indexOf(byName[sv.sel]) < 0) sv.sel = pool.length ? pool[0].name : (seniors[0] && seniors[0].name);
+      var sel = sv.sel ? byName[sv.sel] : null;
+
+      // squad balance from the XI
+      var bal = { bat: 0, bowl: 0, ar: 0, wk: 0 };
+      sv.xi.forEach(function (n) { var c = foSqClass(byName[n]); bal[c] = (bal[c] || 0) + 1; });
+
+      var cards = pool.map(function (p) {
+        return "<div class='fo-sqx-card" + (p.name === sv.sel ? " sel" : "") + (xiSet[p.name] ? " inxi" : "") + "' data-n='" + E(p.name) + "'>" + foPkCard(p) + "</div>";
+      }).join("") || "<div class='fo-sqx-empty'>No players in this view.</div>";
+
+      var tabs = [["xi", "XI"], ["bat", "BAT"], ["bowl", "BOWL"], ["keep", "KEEP"], ["youth", "YOUTH"]].map(function (tb) {
+        return "<button class='fo-sqx-tab" + (sv.tab === tb[0] ? " on" : "") + "' data-tab='" + tb[0] + "'>" + tb[1] + "</button>";
+      }).join("");
+      var sortSel = "<div class='fo-sqx-sort'>SORT: <select id='fo-sqx-sort'>" + ["OVR", "BAT", "BOWL", "AGE", "FORM"].map(function (o) { return "<option" + (sv.sortK === o ? " selected" : "") + ">" + o + "</option>"; }).join("") + "</select></div>";
+      var rar = [["all", "ALL"], ["elite", "ELITE"], ["rare", "RARE"], ["uncommon", "UNCOMMON"], ["common", "COMMON"], ["bat", "BATTER"], ["bowl", "BOWLER"], ["wk", "KEEPER"], ["ar", "ALL-ROUNDER"], ["spin", "SPINNER"], ["fast", "FAST"]].map(function (r9) {
+        return "<button class='fo-sqx-rar" + (sv.rarity === r9[0] ? " on" : "") + "' data-r='" + r9[0] + "'>" + r9[1] + "</button>";
+      }).join("");
+      var balHtml = "<div class='fo-sqx-bal'><span class='lbl'>SQUAD BALANCE</span><b>" + (bal.bat + bal.ar) + " BAT</b><i>&middot;</i><b>" + (bal.bowl + bal.ar) + " BOWL</b><i>&middot;</i><b>" + (bal.wk || 0) + " KEEP</b></div>";
 
       var page = document.getElementById("page"); if (!page) return;
-      page.innerHTML = (typeof crumb === "function" ? crumb(t.name, "Squad") : "") + strip + warnHtml + tools + rows + foot;
+      document.body.classList.add("fo-sqx-on");
+      page.innerHTML =
+        "<div class='fo-sqx'><div class='fo-sqx-bg' style='background-image:url(" + FO_ART + "orders-room.webp)'></div><div class='fo-sqx-veil'></div><div class='fo-sqx-in'>" +
+        "<header class='fo-sqx-hd'>" +
+        "<div class='fo-sqx-title'><h1>Your Squad</h1><div class='fo-sqx-sub'>" + seniors.length + " players <i>&middot;</i> " + sv.xi.length + " selected <i>&middot;</i> energy " + enAvg + "%</div></div>" +
+        "<div class='fo-sqx-tabs'>" + tabs + "</div>" + sortSel +
+        "</header>" +
+        "<div class='fo-sqx-body'>" +
+        "<div class='fo-sqx-gallery'>" + cards + "</div>" +
+        "<aside class='fo-sqx-rail'>" + (sel ? foSqxRail(sel, xiSet[sel.name]) : "") + "</aside>" +
+        "</div>" +
+        "<footer class='fo-sqx-foot'><div class='fo-sqx-rars'>" + rar + "</div>" + balHtml + "</footer>" +
+        "</div></div>";
 
-      // wiring (listeners, not inline handlers · names stay quote-safe)
-      page.querySelectorAll(".fo-sq-pill").forEach(function (b) { b.addEventListener("click", function () { squadView.roleF = b.getAttribute("data-f"); pgSquad(); }); });
-      var so = page.querySelector("#fo-sq-sort");
-      if (so) so.addEventListener("change", function () { squadView.sortK = so.value; pgSquad(); });
-      page.querySelectorAll(".fo-sq-fix").forEach(function (b) { b.addEventListener("click", function (ev) { ev.stopPropagation(); location.hash = b.getAttribute("data-go"); }); });
-      page.querySelectorAll(".pkm-cell[data-n]").forEach(function (r) {
-        r.addEventListener("click", function (ev) {
-          if (ev.target.closest("a") || ev.target.closest("button")) return;
-          location.hash = "#/player?n=" + encodeURIComponent(r.getAttribute("data-n"));
-        });
+      // centre the selected card by scrolling ONLY the rail (never the page)
+      var scrollSel = function () { try {
+        var gal = page.querySelector(".fo-sqx-gallery"), s2 = page.querySelector(".fo-sqx-card.sel");
+        if (gal && s2) { var gr = gal.getBoundingClientRect(), sr = s2.getBoundingClientRect(); gal.scrollLeft += (sr.left - gr.left) - (gr.width - sr.width) / 2; }
+      } catch (e) {} };
+      page.querySelectorAll(".fo-sqx-tab").forEach(function (b) { b.addEventListener("click", function () { sv.tab = b.getAttribute("data-tab"); sv.sel = null; pgSquad(); }); });
+      var so = page.querySelector("#fo-sqx-sort"); if (so) so.addEventListener("change", function () { sv.sortK = so.value; pgSquad(); });
+      page.querySelectorAll(".fo-sqx-rar").forEach(function (b) { b.addEventListener("click", function () { sv.rarity = b.getAttribute("data-r"); sv.sel = null; pgSquad(); }); });
+      page.querySelectorAll(".fo-sqx-card[data-n]").forEach(function (c) { c.addEventListener("click", function () { sv.sel = c.getAttribute("data-n"); pgSquad(); }); });
+      var vp = page.querySelector(".fo-sqx-viewp"); if (vp) vp.addEventListener("click", function () { location.hash = "#/player?n=" + encodeURIComponent(sv.sel); });
+      var xb = page.querySelector(".fo-sqx-xi"); if (xb) xb.addEventListener("click", function () {
+        var n = sv.sel; if (!n || byName[n].__y) return;
+        if (xiSet[n]) sv.xi = sv.xi.filter(function (x) { return x !== n; });
+        else if (sv.xi.length < 11) sv.xi.push(n);
+        pgSquad();
       });
-      page.querySelectorAll(".fo-sq-promote").forEach(function (b) {
-        b.addEventListener("click", function (ev) { ev.stopPropagation(); try { promoteYouth(App.teamIx, b.getAttribute("data-n")); } catch (e) {} pgSquad(); });
-      });
-    } catch (e) { console.warn("pgSquad overlay", e); }
+      var prm = page.querySelector(".fo-sqx-promote"); if (prm) prm.addEventListener("click", function () { try { promoteYouth(App.teamIx, sv.sel); } catch (e) {} sv.sel = null; sv.tab = "xi"; pgSquad(); });
+      scrollSel();
+    } catch (e) { console.warn("pgSquad", e); }
   };
+  // restore the normal app column when leaving the squad
+  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] !== "#/squad") document.body.classList.remove("fo-sqx-on"); });
 
   // =========================================================================
   // Match lab (reviewer pass on Nets). The page answers "which choice should
