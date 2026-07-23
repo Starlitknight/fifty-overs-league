@@ -548,6 +548,41 @@ function foFieldState(inn,hand){
   }
   return out;
 }
+// Deterministic captaincy: the bowling XI minus bowler and keeper mans the
+// current template's nine posts - specialist catchers in the cordon, the
+// best athletes in the deep, the weakest hidden at mid-on/mid-off. No RNG:
+// same XI + bowler + field = same men at the same posts, every ball, and
+// the oval stage renders this exact assignment.
+function foFieldAssign(inn){
+  try{
+    const setting=foFieldSetting(inn),spin=foSpinOn(inn);
+    const key=setting+'|'+(spin?1:0)+'|'+(inn.curBowlerName||'');
+    if(inn._fassign&&inn._fassign.key===key)return inn._fassign;
+    const raw=(setting==='att'&&spin)?FO_FIELDS.attSpin:(FO_FIELDS[setting]||FO_FIELDS.bal);
+    let pool=(inn.bxi||[]).filter(p=>p.name!==inn.curBowlerName&&!p.keeper);
+    while(pool.length>9){   // no flagged keeper: best gloveman stays behind the stumps
+      const kb=pool.slice().sort((a,b)=>((((b.skills||{}).keeping)||0)-(((a.skills||{}).keeping)||0)))[0];
+      pool=pool.filter(p=>p!==kb);
+    }
+    const srt=(arr,sk)=>arr.slice().sort((a,b)=>{
+      const d=((((b.skills||{})[sk])||50)-(((a.skills||{})[sk])||50));
+      return d!==0?d:(a.name<b.name?-1:1);
+    });
+    const CLOSE={slip:1,'':1,'silly point':1,'short leg':1};
+    const close=[],deep=[],ring=[];
+    raw.forEach((t,i)=>{const l=t[2]||'';if(CLOSE[l])close.push(i);else if(FO_DEEP_POS[l])deep.push(i);else ring.push(i)});
+    let left=pool.slice();const byIx=new Array(raw.length);
+    const take=arr=>{const p=arr[0];left=left.filter(q=>q!==p);return p};
+    close.forEach(i=>{byIx[i]=take(srt(left,'catching'))});
+    deep.forEach(i=>{byIx[i]=take(srt(left,'fielding'))});
+    const hide={'mid-on':2,'mid-off':1};
+    ring.slice().sort((a,b)=>((hide[raw[a][2]]||0)-(hide[raw[b][2]]||0))).forEach(i=>{byIx[i]=take(srt(left,'fielding'))});
+    const byLbl={};raw.forEach((t,i)=>{if(t[2]&&byIx[i])byLbl[t[2]]=byIx[i]});
+    const out={key,raw,byIx,byLbl};
+    inn._fassign=out;
+    return out;
+  }catch(e){return null}
+}
 function foBallEvent(inn,out,rb,sb,bowler){
   try{
     const hand=(sb&&sb.p&&sb.p.hand)||'R';
@@ -560,9 +595,6 @@ function foBallEvent(inn,out,rb,sb,bowler){
       if(out==='4'||out==='6'){
         const near=foNearestFielder(F,dir,false,false);
         pos=(near&&near.ang<=25)?near.spot.label:null;   // null = through the gap
-      }else if(out==='wC'){
-        const near=foNearestFielder(F,dir,false,false);
-        pos=near?near.spot.label:null;
       }else if(out==='dot'||out==='1'||out==='wRO'){
         const near=foNearestFielder(F,dir,false,true)||foNearestFielder(F,dir,false,false);
         pos=near?near.spot.label:null;
@@ -576,7 +608,7 @@ function foBallEvent(inn,out,rb,sb,bowler){
     if(sp){x=sp.x;y=sp.y}
     else if(dir!=null){const rad=dir*Math.PI/180;x=200+Math.cos(rad)*186*0.97;y=130+Math.sin(rad)*116*0.97}
     return {setting:F.setting,spin:F.spin,lhb:F.lhb,
-      pos:pos||null,dir:dir,region:(dir!=null)?foRegionOf(dir,F.lhb):null,
+      pos:pos||null,fldNm:(M._fielder&&M._fielder.name)||null,dir:dir,region:(dir!=null)?foRegionOf(dir,F.lhb):null,
       x:x,y:y,posDeep:sp?!!sp.deep:false,
       ring:F.ring,deep:F.deep,hasSlip:F.hasSlip,hasShortLeg:F.hasShortLeg};
   }catch(e){return null}
@@ -849,19 +881,16 @@ function groundFieldingAdjust(inn,out,bowler){
   if(['wide','noball','bye','legbye'].includes(out)||isWkt(out))return out;
   const dir=M._ballDir,FS=M._ballFS;
   if(dir==null||!FS)return out;
-  const cands=inn.bxi.filter(p=>p.name!==bowler.name);
-  if(!cands.length)return out;
-  // the intercepting HUMAN is still skill-weighted (positions are template
-  // spots, not assigned players); the GEOMETRY decides whether anyone is
-  // on the line at all, and where the event happened
-  const pick=cands[Math.floor(M.rand()*cands.length)];
-  const fs=pick.field||((pick.skills&&pick.skills.fielding)||50);
-  const isRocket=(pick.talents||[]).includes('rocketArm');
+  // real fielding layout: the intercepting human IS the man the captain
+  // posted at the spot the ball went to - his skills decide the outcome
+  const A=foFieldAssign(inn);
+  const manAt=near=>(A&&near&&A.byLbl[near.spot.label])||null;
   M._fieldingEvent=null;
   const prox=n=>n?Math.max(0,1-n.ang/16):0;   // 1 on the line, 0 at 16 deg
   if(out==='4'){
-    const near=foNearestFielder(FS,dir,true,false);
-    if(near&&near.ang<=14&&fs>=58&&M.rand()<0.30*prox(near)*Math.min(1,(fs-40)/45)){
+    const near=foNearestFielder(FS,dir,true,false),pick=manAt(near);
+    const fs=pick?(pick.field||((pick.skills&&pick.skills.fielding)||50)):0;
+    if(near&&pick&&near.ang<=14&&fs>=58&&M.rand()<0.30*prox(near)*Math.min(1,(fs-55)/60)){
       M._fielder=pick;M._fieldPos=near.spot.label;
       M._fieldingEvent='Brilliant stop by '+pick.name+' at '+near.spot.label+' saves two.';
       return '2';
@@ -869,8 +898,10 @@ function groundFieldingAdjust(inn,out,bowler){
     return out;
   }
   if(out==='2'){
-    const near=foNearestFielder(FS,dir,false,false);
-    if(near&&near.ang<=11&&fs>=64&&M.rand()<0.26*prox(near)*Math.min(1,(fs-50)/40)){
+    const near=foNearestFielder(FS,dir,false,false),pick=manAt(near);
+    const fs=pick?(pick.field||((pick.skills&&pick.skills.fielding)||50)):0;
+    const isRocket=pick?(pick.talents||[]).includes('rocketArm'):false;
+    if(near&&pick&&near.ang<=11&&fs>=64&&M.rand()<0.26*prox(near)*Math.min(1,(fs-60)/50)){
       M._fielder=pick;M._fieldPos=near.spot.label;
       M._fieldingEvent=(isRocket?'Rocket Arm! ':'')+pick.name+' attacks the ball at '+near.spot.label+' and keeps it to one.';
       return '1';
@@ -878,8 +909,9 @@ function groundFieldingAdjust(inn,out,bowler){
     return out;
   }
   if(out==='1'){
-    const near=foNearestFielder(FS,dir,false,true);
-    if(near&&near.ang<=9&&fs<44&&M.rand()<0.30*prox(near)*Math.min(1,(46-fs)/24)){
+    const near=foNearestFielder(FS,dir,false,true),pick=manAt(near);
+    const fs=pick?(pick.field||((pick.skills&&pick.skills.fielding)||50)):99;
+    if(near&&pick&&near.ang<=9&&fs<44&&M.rand()<0.30*prox(near)*Math.min(1,(46-fs)/24)){
       M._fielder=pick;M._fieldPos=near.spot.label;
       M._fieldingEvent='Misfield by '+pick.name+' at '+near.spot.label+' turns one into two.';
       return '2';
@@ -887,8 +919,9 @@ function groundFieldingAdjust(inn,out,bowler){
     return out;
   }
   if(out==='dot'){
-    const near=foNearestFielder(FS,dir,false,true);
-    if(near&&near.ang<=8&&fs<40&&M.rand()<0.22*prox(near)*Math.min(1,(42-fs)/24)){
+    const near=foNearestFielder(FS,dir,false,true),pick=manAt(near);
+    const fs=pick?(pick.field||((pick.skills&&pick.skills.fielding)||50)):99;
+    if(near&&pick&&near.ang<=8&&fs<40&&M.rand()<0.22*prox(near)*Math.min(1,(42-fs)/24)){
       M._fielder=pick;M._fieldPos=near.spot.label;
       M._fieldingEvent='Fumble from '+pick.name+' at '+near.spot.label+' releases a single.';
       return '1';
@@ -942,13 +975,19 @@ function stepBall(){
   }
   M._ballDir=_dir;M._ballFS=_FS;
   if(out==='wC'){
-    const cands=inn.bxi.map(p=>({p,w:(p.skills?p.skills.catching:55)*(p.keeper?((p.talents||[]).includes('lightningHands')?1.85:1.48):1)*(p.name===bowler.name?0.35:1)}));
-    let tot=cands.reduce((a,x)=>a+x.w,0),pick=M.rand()*tot,f=cands[0].p;
-    for(const x of cands){pick-=x.w;if(pick<=0){f=x.p;break}}
+    // the catch happens WHERE the ball went: the man posted at the nearest
+    // spot takes it; an edge with nobody near goes through to the keeper,
+    // a straight chance with nobody near is caught-and-bowled
+    const A=foFieldAssign(inn);
+    let f=null;
+    const near=(_dir!=null&&_FS)?foNearestFielder(_FS,_dir,false,false):null;
+    if(near&&near.ang<=30&&A&&A.byLbl[near.spot.label]){f=A.byLbl[near.spot.label];M._fieldPos=near.spot.label;}
+    else if(_dir!=null&&foRegionOf(_dir,_FS?_FS.lhb:false)==='the sight screen')f=bowler;
+    if(!f){f=inn.bxi.find(p=>p.keeper)||inn.bxi[0];M._ballDir=null;}
     const cat=f.keeper?foKeeperQuality(f):(f.skills?f.skills.catching:55);
     const wxd=((M.meta&&M.meta.weather)||'').toLowerCase();
-    let pDrop=Math.min(0.34,Math.max(0.009,0.165-0.0048*(cat-55)-((f.talents||[]).includes('safeHands')?0.052:0)-((f.talents||[]).includes('lightningHands')&&f.keeper?0.050:0)+(wxd==='chilly'?0.045:0)+(wxd==='misty'?0.030:0)));
-    if(M.rand()<pDrop){M._dropped={by:f.name};out=(M.rand()<0.65?'dot':'1');}
+    let pDrop=Math.min(0.36,Math.max(0.009,0.215-0.0048*(cat-55)-((f.talents||[]).includes('safeHands')?0.052:0)-((f.talents||[]).includes('lightningHands')&&f.keeper?0.050:0)+(wxd==='chilly'?0.045:0)+(wxd==='misty'?0.030:0)));
+    if(M.rand()<pDrop){M._dropped={by:f.name};M._fieldPos=null;out=(M.rand()<0.65?'dot':'1');}
     else M._fielder=f;
   }else if(out==='wST'){M._fielder=inn.bxi.find(p=>p.keeper)||inn.bxi[0];
     const kq=foKeeperQuality(M._fielder), miss=foClamp(0.20-0.0038*(kq-55),0.014,0.30);
@@ -1011,11 +1050,13 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
   }else if(out==='6'&&TB2.includes('sixMachine')&&intent>=1){txt+=' The SIX MACHINE delivers!';}
   else if((out==='4'||out==='6')&&TB2.includes('finisher')&&overNow>=40){txt+=' Finisher’s instinct at the death.';}
   else if((out==='dot'||out==='1')&&M.rand()<0.045){
-    const cands=inn.bxi.filter(p=>p.name!==bowler.name);
-    const f=cands[Math.floor(M.rand()*cands.length)];
-    const fs=(f.field||((f.skills&&f.skills.fielding)||50));
-    if(fs>=68&&out==='dot')txt+=' Brilliant diving stop by '+f.name+' - certain runs saved!';
-    else if(fs<42&&out==='1')txt+=' Misfield! '+f.name+' fumbles and they steal the single.';
+    const A2=foFieldAssign(inn);
+    const f=(ev&&ev.pos&&A2&&A2.byLbl[ev.pos])||null;
+    if(f){
+      const fs=(f.field||((f.skills&&f.skills.fielding)||50));
+      if(fs>=68&&out==='dot')txt+=' Brilliant diving stop by '+f.name+' - certain runs saved!';
+      else if(fs<42&&out==='1')txt+=' Misfield! '+f.name+' fumbles and they steal the single.';
+    }
   }
   M.log.unshift({no:ballNo,out,txt,d,inn:M.inns,mile:false,ev});
   for(const m of milestones)M.log.unshift({no:'',out:'★',txt:m,d:null,inn:M.inns,mile:true});
@@ -3120,7 +3161,7 @@ const MANUAL_HTML=`<h2>Game Manual</h2>
 <h4>Runs</h4>
 <p>Scoring depends on batter scoring skills, bowler control, field setting, phase, pitch, weather and intent. Power helps boundaries. Rotation helps avoid dots. Economy and discipline suppress scoring.</p>
 <h4>Catches and Fielding</h4>
-<p>Caught chances are assigned to real fielders. Better catchers take more chances and drop fewer. Good fielding saves runs and creates pressure; bad fielding turns scorecards into arguments.</p>
+<p>Fielders are POSTED, not abstract: your captain puts the best catchers in the cordon, the best athletes in the deep, and hides the weakest at mid-on. The ball goes where it goes - and the man standing there takes the chance, makes the stop, or fumbles it. Better catchers drop fewer; a butter-fingered cordon leaks edges. Where the hands stand matters.</p>
 <h4>Advanced Engine View</h4>
 <p>Player pages may show advanced engine values. These are the raw numbers used by the engine, such as batting aggregate, bowler threat, bowler control and matchup-specific values. They are provided for managers who want to inspect the machinery, not because you need a spreadsheet to enjoy cricket.</p>
 <div class="manual-tip"><strong>Manager tip:</strong> Skill shifts odds. It does not guarantee outcomes. If your legendary batter edges behind first ball, it was unlikely, not impossible. Cricket has been doing this to managers for a long time.</div>
@@ -10463,7 +10504,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260723-0047-29ccc8";
+  var FO_BUILD = "20260723-0101-ba72c7";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -28122,7 +28163,7 @@ FOC.oval = (function () {
       "<circle id='ov-ball' cx='200' cy='190' r='3.2' fill='#a3242b' stroke='#fff' stroke-width='.8' opacity='0'/>" +
       "<text id='ov-pop' x='200' y='128' text-anchor='middle' class='ov-pop'></text>" +
       "<text id='ov-pop2' x='200' y='150' text-anchor='middle' class='ov-pop2'></text>" +
-      "</svg><div class='ov-note'><button type='button' id='ov-snd' class='ov-snd' title='Match sound'>&#128263;</button><span>theatre · live directions · real field · fielder ratings</span></div></div>";
+      "</svg><div class='ov-note'><button type='button' id='ov-snd' class='ov-snd' title='Match sound'>&#128263;</button><span>theatre · live directions · real fielders at real posts</span></div></div>";
   }
 
   // ---- sound: tiny synthesized crowd + bat, no assets, off by default ------
@@ -28203,48 +28244,11 @@ FOC.oval = (function () {
     } catch (e) {}
   }
 
-  // the ENGINE keeps positions as template spots, not assigned players -
-  // so the stage plays captain: the bowling XI (minus bowler and keeper)
-  // fills the nine posts deterministically, best catchers in the cordon,
-  // best athletes in the deep, the weakest hidden at mid-on. Presentation
-  // only - fielding EVENTS in the engine stay skill-weighted draws.
+  // the ENGINE posts real players to the nine spots (foFieldAssign) -
+  // the stage renders that exact assignment, ratings and all
   function fieldLvl(p) {
     var f = (p.skills && p.skills.fielding) || 50, c = (p.skills && p.skills.catching) || 55;
     return Math.round((f + c) / 2);
-  }
-  function fieldAssign(raw) {
-    try {
-      var inn = M.innings[M.inns]; if (!inn || !inn.bxi) return null;
-      var pool = inn.bxi.filter(function (p) { return p.name !== inn.curBowlerName && !p.keeper; });
-      while (pool.length > 9) {   // no flagged keeper: the best gloveman stays behind the stumps
-        var kb = pool.slice().sort(function (a, b) { return ((b.skills || {}).keeping || 0) - ((a.skills || {}).keeping || 0); })[0];
-        pool = pool.filter(function (p) { return p !== kb; });
-      }
-      var srt = function (arr, sk) {
-        return arr.slice().sort(function (a, b) {
-          var d = (((b.skills || {})[sk]) || 50) - (((a.skills || {})[sk]) || 50);
-          return d !== 0 ? d : (a.name < b.name ? -1 : 1);
-        });
-      };
-      var CLOSE = { slip: 1, "": 1, "silly point": 1, "short leg": 1 };
-      var closeIx = [], deepIx = [], ringIx = [];
-      raw.forEach(function (t, i) {
-        var lbl = t[2] || "";
-        if (CLOSE[lbl]) closeIx.push(i);
-        else if (FO_DEEP_POS[lbl]) deepIx.push(i);
-        else ringIx.push(i);
-      });
-      var left = pool.slice(), out = new Array(raw.length), take = function (arr) { var p = arr[0]; left = left.filter(function (q) { return q !== p; }); return p; };
-      closeIx.forEach(function (i) { out[i] = take(srt(left, "catching")); });
-      deepIx.forEach(function (i) { out[i] = take(srt(left, "fielding")); });
-      // the ring: strongest at the hot spots, weakest hidden at mid-on
-      var ringOrder = ringIx.slice().sort(function (a, b) {
-        var hide = { "mid-on": 2, "mid-off": 1 };
-        return (hide[raw[a][2]] || 0) - (hide[raw[b][2]] || 0);
-      });
-      ringOrder.forEach(function (i) { out[i] = take(srt(left, "fielding")); });
-      return out;
-    } catch (e) { return null; }
   }
   // render an engine field state (foFieldState): spots arrive with labels
   // and already-mirrored coordinates
@@ -28262,7 +28266,8 @@ FOC.oval = (function () {
     // the attacking template has one unlabeled second slip; rebuild the
     // full 9-spot list from the engine template so the dot count stays 9
     var raw = (st.setting === "att" && st.spin) ? FO_FIELDS.attSpin : (FO_FIELDS[st.setting] || FO_FIELDS.bal);
-    var who = fieldAssign(raw);
+    var who = null;
+    try { var A = (typeof foFieldAssign === "function") ? foFieldAssign(M.innings[M.inns]) : null; who = A && A.byIx; } catch (eA) {}
     var cs = g.childNodes;
     for (var j = 0; j < cs.length && j < raw.length; j++) {
       var x = st.lhb ? 400 - raw[j][0] : raw[j][0], y = raw[j][1];

@@ -67,7 +67,7 @@ FOC.oval = (function () {
       "<circle id='ov-ball' cx='200' cy='190' r='3.2' fill='#a3242b' stroke='#fff' stroke-width='.8' opacity='0'/>" +
       "<text id='ov-pop' x='200' y='128' text-anchor='middle' class='ov-pop'></text>" +
       "<text id='ov-pop2' x='200' y='150' text-anchor='middle' class='ov-pop2'></text>" +
-      "</svg><div class='ov-note'><button type='button' id='ov-snd' class='ov-snd' title='Match sound'>&#128263;</button><span>theatre · live directions · real field · fielder ratings</span></div></div>";
+      "</svg><div class='ov-note'><button type='button' id='ov-snd' class='ov-snd' title='Match sound'>&#128263;</button><span>theatre · live directions · real fielders at real posts</span></div></div>";
   }
 
   // ---- sound: tiny synthesized crowd + bat, no assets, off by default ------
@@ -148,48 +148,11 @@ FOC.oval = (function () {
     } catch (e) {}
   }
 
-  // the ENGINE keeps positions as template spots, not assigned players -
-  // so the stage plays captain: the bowling XI (minus bowler and keeper)
-  // fills the nine posts deterministically, best catchers in the cordon,
-  // best athletes in the deep, the weakest hidden at mid-on. Presentation
-  // only - fielding EVENTS in the engine stay skill-weighted draws.
+  // the ENGINE posts real players to the nine spots (foFieldAssign) -
+  // the stage renders that exact assignment, ratings and all
   function fieldLvl(p) {
     var f = (p.skills && p.skills.fielding) || 50, c = (p.skills && p.skills.catching) || 55;
     return Math.round((f + c) / 2);
-  }
-  function fieldAssign(raw) {
-    try {
-      var inn = M.innings[M.inns]; if (!inn || !inn.bxi) return null;
-      var pool = inn.bxi.filter(function (p) { return p.name !== inn.curBowlerName && !p.keeper; });
-      while (pool.length > 9) {   // no flagged keeper: the best gloveman stays behind the stumps
-        var kb = pool.slice().sort(function (a, b) { return ((b.skills || {}).keeping || 0) - ((a.skills || {}).keeping || 0); })[0];
-        pool = pool.filter(function (p) { return p !== kb; });
-      }
-      var srt = function (arr, sk) {
-        return arr.slice().sort(function (a, b) {
-          var d = (((b.skills || {})[sk]) || 50) - (((a.skills || {})[sk]) || 50);
-          return d !== 0 ? d : (a.name < b.name ? -1 : 1);
-        });
-      };
-      var CLOSE = { slip: 1, "": 1, "silly point": 1, "short leg": 1 };
-      var closeIx = [], deepIx = [], ringIx = [];
-      raw.forEach(function (t, i) {
-        var lbl = t[2] || "";
-        if (CLOSE[lbl]) closeIx.push(i);
-        else if (FO_DEEP_POS[lbl]) deepIx.push(i);
-        else ringIx.push(i);
-      });
-      var left = pool.slice(), out = new Array(raw.length), take = function (arr) { var p = arr[0]; left = left.filter(function (q) { return q !== p; }); return p; };
-      closeIx.forEach(function (i) { out[i] = take(srt(left, "catching")); });
-      deepIx.forEach(function (i) { out[i] = take(srt(left, "fielding")); });
-      // the ring: strongest at the hot spots, weakest hidden at mid-on
-      var ringOrder = ringIx.slice().sort(function (a, b) {
-        var hide = { "mid-on": 2, "mid-off": 1 };
-        return (hide[raw[a][2]] || 0) - (hide[raw[b][2]] || 0);
-      });
-      ringOrder.forEach(function (i) { out[i] = take(srt(left, "fielding")); });
-      return out;
-    } catch (e) { return null; }
   }
   // render an engine field state (foFieldState): spots arrive with labels
   // and already-mirrored coordinates
@@ -207,7 +170,8 @@ FOC.oval = (function () {
     // the attacking template has one unlabeled second slip; rebuild the
     // full 9-spot list from the engine template so the dot count stays 9
     var raw = (st.setting === "att" && st.spin) ? FO_FIELDS.attSpin : (FO_FIELDS[st.setting] || FO_FIELDS.bal);
-    var who = fieldAssign(raw);
+    var who = null;
+    try { var A = (typeof foFieldAssign === "function") ? foFieldAssign(M.innings[M.inns]) : null; who = A && A.byIx; } catch (eA) {}
     var cs = g.childNodes;
     for (var j = 0; j < cs.length && j < raw.length; j++) {
       var x = st.lhb ? 400 - raw[j][0] : raw[j][0], y = raw[j][1];
