@@ -9665,12 +9665,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // freezes every renderMatch for the rest of the session
       App.page = prevPage;
     }
+    // no toasts here: managers navigating around should not be nagged that
+    // the match is live or has progressed - the Live pill is the reminder
     if (M && M.done) {
       M.__foArchived = 1; foSaveFrHist(M); lsSet(foFrKey(), "");
-      toast("Full time in your friendly: " + ((M.result && M.result.text) || "match complete") + " · the scorecard is in Live Match, and it's saved under Friendlies on the Matches page.");
-    } else if (M) {
-      var ov = Math.floor(((M.innings[1] ? 300 : 0) + ((M.innings[M.innings[1] ? 1 : 0] || {}).legal || 0)) / 6);
-      toast("Your friendly has moved with the clock · over " + ov + " live now. Watch it in Live Match.");
     }
     // repaint only if the user is already looking at the match page
     if (foHashPath() === "#/match" && typeof window.route === "function") window.route();
@@ -10506,7 +10504,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260723-0207-ec43cc";
+  var FO_BUILD = "20260723-0416-fda877";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10604,7 +10602,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           if (cP && cP.id) {
             try { foFriendlies = (foFriendlies || []).filter(function (f) { return f.oppName !== cP.opponent_club; }); foFrSchedSave(); } catch (eSch) {}
             var goPrac = function (pid) {
-              toast("The umpires are out - your practice match is LIVE.");
               location.hash = "#/friendly?id=" + pid;
               if (typeof window.route === "function") try { window.route(); } catch (eRt) {}
               setTimeout(foRenderFriendlyLive, 30);
@@ -13010,7 +13007,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             App.defaults = JSON.parse(JSON.stringify(App.orders));
             lsDel("fo_qs_tut");
             m.remove();
-            toast("Plan set: " + pl.nm + " · your XI walks out. Use the speed controls, or just watch.");
             location.hash = "#/match"; if (typeof window.route === "function") window.route();
             // the match is live now - drop the saved flag so the 15s packet
             // poll never uploads the warm-up plan as the round's league orders
@@ -15110,8 +15106,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         return;
       }
       if ((st === "orders" || st === "hub") && h === "#/match" && typeof M !== "undefined" && M && !M.done && M.meta && M.meta.__circuit) {
-        foCoachSet("match");
-        setTimeout(function () { try { toast("The Gaffer: push the game forward with Next ball, or let Auto-play run it. The Team talk buttons under the field change your plan mid-innings. See you at full time."); } catch (e2) {} }, 2600);
+        foCoachSet("match");   // no gaffer toast - the broadcast speaks for itself
         return;
       }
       if (st === "match" && typeof M !== "undefined" && M && M.done) foCoachSet("done");
@@ -15152,15 +15147,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           return;
         }
         foJTutBar();
-        // staged notices: the new manager always knows which act they're in
-        if (!tossed && App.tossState && App.tossState.txt) { tossed = true; toast(App.tossState.txt); }
-        if (!M.done && typeof M.inns === "number" && M.inns !== lastInns) {
-          if (M.inns === 1 && lastInns === 0) {
-            var i1 = (M.innings || [])[0];
-            if (i1) toast("Innings break: " + i1.batTeam + " made " + i1.runs + ". The chase begins - " + (i1.runs + 1) + " to win.");
-          }
-          lastInns = M.inns;
-        }
+        // no staged toasts over the broadcast - the theatre carries the state
+        if (!tossed && App.tossState && App.tossState.txt) tossed = true;
+        if (!M.done && typeof M.inns === "number" && M.inns !== lastInns) lastInns = M.inns;
         if (!M.done) return;
         clearInterval(window.__foTutIv); window.__foTutIv = null;
         setTimeout(foJDebrief, 2200);
@@ -25994,45 +25983,6 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       window.__foCxWager = null;
     } catch (e) {}
   }
-  // ---- drinks-break reads: the Gaffer talks tactics every ten overs --------
-  // Fires once per drinks break of the user's live match, works at any
-  // broadcast speed (highlights included) by watching for crossed boundaries.
-  function foDrinksNote() {
-    try {
-      if (typeof M === "undefined" || !M || M.done || !M.isUserMatch) return;
-      var inn = M.innings[M.inns]; if (!inn) return;
-      var ov = Math.floor((inn.legal || 0) / 6);
-      var m10 = Math.floor(ov / 10) * 10;
-      if (m10 < 10 || m10 >= 50) return;
-      var key = M.inns + ":" + m10;
-      M.__foDrinks = M.__foDrinks || {};
-      if (M.__foDrinks[key]) return;
-      for (var x = 10; x <= m10; x += 10) M.__foDrinks[M.inns + ":" + x] = 1;   // never backfill a resumed match
-      if (ov - m10 > 1) return;                                                 // only speak AT the break
-      var userBat = inn.batTeam === M.user.name;
-      var rr = inn.legal ? inn.runs / (inn.legal / 6) : 0;
-      var msg;
-      if (M.target) {
-        var need = M.target - inn.runs, balls = (typeof foBallCap === "function" ? foBallCap() : 300) - inn.legal;
-        var req = need / (Math.max(1, balls) / 6);
-        msg = userBat
-          ? (req > rr + 1.5 ? "Drinks. " + need + " off " + balls + " - required rate " + req.toFixed(1) + ". Time to lift: think Attack." :
-             "Drinks. " + need + " off " + balls + " and we're ahead of the rate. Keep heads, bank the singles.")
-          : (req > rr + 1.5 ? "Drinks. They need " + req.toFixed(1) + " an over - squeeze it shut. Defend field and finish the job." :
-             "Drinks. This chase is drifting our way? No - it's live. We need a wicket: keep the field up.");
-      } else {
-        msg = userBat
-          ? ((inn.wkts >= 4 || (inn.wkts >= 3 && ov <= 15)) && ov <= 30 ? "Drinks. " + inn.runs + "/" + inn.wkts + " - rebuild first, fireworks later. Steady is fine." :
-             rr < 4.2 ? "Drinks. " + rr.toFixed(1) + " an over is crawling - someone has to go after the bowling." :
-             "Drinks. " + inn.runs + "/" + inn.wkts + " - platform set. Push on.")
-          : (inn.wkts >= 5 ? "Drinks. They're " + inn.wkts + " down - field up, finish them." :
-             rr > 6 ? "Drinks. " + rr.toFixed(1) + " an over against us - Defend field, dry it up." :
-             "Drinks. Tidy from us. Hold the squeeze and the wickets come.");
-      }
-      toast("The Gaffer: " + msg);
-    } catch (e) {}
-  }
-  try { foMatchRenderHooks.push(foDrinksNote); } catch (eDk) {}
   // Bank a finished circuit tie the moment the final ball is banked: the
   // 2.5s keeper alone lost the prize + progress if the tab closed inside its
   // window (M is never persisted, so the win evaporated). saveMatch runs

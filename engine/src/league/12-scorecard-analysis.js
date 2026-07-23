@@ -2313,45 +2313,6 @@
       window.__foCxWager = null;
     } catch (e) {}
   }
-  // ---- drinks-break reads: the Gaffer talks tactics every ten overs --------
-  // Fires once per drinks break of the user's live match, works at any
-  // broadcast speed (highlights included) by watching for crossed boundaries.
-  function foDrinksNote() {
-    try {
-      if (typeof M === "undefined" || !M || M.done || !M.isUserMatch) return;
-      var inn = M.innings[M.inns]; if (!inn) return;
-      var ov = Math.floor((inn.legal || 0) / 6);
-      var m10 = Math.floor(ov / 10) * 10;
-      if (m10 < 10 || m10 >= 50) return;
-      var key = M.inns + ":" + m10;
-      M.__foDrinks = M.__foDrinks || {};
-      if (M.__foDrinks[key]) return;
-      for (var x = 10; x <= m10; x += 10) M.__foDrinks[M.inns + ":" + x] = 1;   // never backfill a resumed match
-      if (ov - m10 > 1) return;                                                 // only speak AT the break
-      var userBat = inn.batTeam === M.user.name;
-      var rr = inn.legal ? inn.runs / (inn.legal / 6) : 0;
-      var msg;
-      if (M.target) {
-        var need = M.target - inn.runs, balls = (typeof foBallCap === "function" ? foBallCap() : 300) - inn.legal;
-        var req = need / (Math.max(1, balls) / 6);
-        msg = userBat
-          ? (req > rr + 1.5 ? "Drinks. " + need + " off " + balls + " - required rate " + req.toFixed(1) + ". Time to lift: think Attack." :
-             "Drinks. " + need + " off " + balls + " and we're ahead of the rate. Keep heads, bank the singles.")
-          : (req > rr + 1.5 ? "Drinks. They need " + req.toFixed(1) + " an over - squeeze it shut. Defend field and finish the job." :
-             "Drinks. This chase is drifting our way? No - it's live. We need a wicket: keep the field up.");
-      } else {
-        msg = userBat
-          ? ((inn.wkts >= 4 || (inn.wkts >= 3 && ov <= 15)) && ov <= 30 ? "Drinks. " + inn.runs + "/" + inn.wkts + " - rebuild first, fireworks later. Steady is fine." :
-             rr < 4.2 ? "Drinks. " + rr.toFixed(1) + " an over is crawling - someone has to go after the bowling." :
-             "Drinks. " + inn.runs + "/" + inn.wkts + " - platform set. Push on.")
-          : (inn.wkts >= 5 ? "Drinks. They're " + inn.wkts + " down - field up, finish them." :
-             rr > 6 ? "Drinks. " + rr.toFixed(1) + " an over against us - Defend field, dry it up." :
-             "Drinks. Tidy from us. Hold the squeeze and the wickets come.");
-      }
-      toast("The Gaffer: " + msg);
-    } catch (e) {}
-  }
-  try { foMatchRenderHooks.push(foDrinksNote); } catch (eDk) {}
   // Bank a finished circuit tie the moment the final ball is banked: the
   // 2.5s keeper alone lost the prize + progress if the tab closed inside its
   // window (M is never persisted, so the win evaporated). saveMatch runs

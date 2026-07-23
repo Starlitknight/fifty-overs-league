@@ -1159,7 +1159,6 @@
             App.defaults = JSON.parse(JSON.stringify(App.orders));
             lsDel("fo_qs_tut");
             m.remove();
-            toast("Plan set: " + pl.nm + " · your XI walks out. Use the speed controls, or just watch.");
             location.hash = "#/match"; if (typeof window.route === "function") window.route();
             // the match is live now - drop the saved flag so the 15s packet
             // poll never uploads the warm-up plan as the round's league orders
@@ -3259,8 +3258,7 @@
         return;
       }
       if ((st === "orders" || st === "hub") && h === "#/match" && typeof M !== "undefined" && M && !M.done && M.meta && M.meta.__circuit) {
-        foCoachSet("match");
-        setTimeout(function () { try { toast("The Gaffer: push the game forward with Next ball, or let Auto-play run it. The Team talk buttons under the field change your plan mid-innings. See you at full time."); } catch (e2) {} }, 2600);
+        foCoachSet("match");   // no gaffer toast - the broadcast speaks for itself
         return;
       }
       if (st === "match" && typeof M !== "undefined" && M && M.done) foCoachSet("done");
@@ -3301,15 +3299,9 @@
           return;
         }
         foJTutBar();
-        // staged notices: the new manager always knows which act they're in
-        if (!tossed && App.tossState && App.tossState.txt) { tossed = true; toast(App.tossState.txt); }
-        if (!M.done && typeof M.inns === "number" && M.inns !== lastInns) {
-          if (M.inns === 1 && lastInns === 0) {
-            var i1 = (M.innings || [])[0];
-            if (i1) toast("Innings break: " + i1.batTeam + " made " + i1.runs + ". The chase begins - " + (i1.runs + 1) + " to win.");
-          }
-          lastInns = M.inns;
-        }
+        // no staged toasts over the broadcast - the theatre carries the state
+        if (!tossed && App.tossState && App.tossState.txt) tossed = true;
+        if (!M.done && typeof M.inns === "number" && M.inns !== lastInns) lastInns = M.inns;
         if (!M.done) return;
         clearInterval(window.__foTutIv); window.__foTutIv = null;
         setTimeout(foJDebrief, 2200);

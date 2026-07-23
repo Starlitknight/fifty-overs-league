@@ -1782,12 +1782,10 @@
       // freezes every renderMatch for the rest of the session
       App.page = prevPage;
     }
+    // no toasts here: managers navigating around should not be nagged that
+    // the match is live or has progressed - the Live pill is the reminder
     if (M && M.done) {
       M.__foArchived = 1; foSaveFrHist(M); lsSet(foFrKey(), "");
-      toast("Full time in your friendly: " + ((M.result && M.result.text) || "match complete") + " · the scorecard is in Live Match, and it's saved under Friendlies on the Matches page.");
-    } else if (M) {
-      var ov = Math.floor(((M.innings[1] ? 300 : 0) + ((M.innings[M.innings[1] ? 1 : 0] || {}).legal || 0)) / 6);
-      toast("Your friendly has moved with the clock · over " + ov + " live now. Watch it in Live Match.");
     }
     // repaint only if the user is already looking at the match page
     if (foHashPath() === "#/match" && typeof window.route === "function") window.route();
@@ -2721,7 +2719,6 @@
           if (cP && cP.id) {
             try { foFriendlies = (foFriendlies || []).filter(function (f) { return f.oppName !== cP.opponent_club; }); foFrSchedSave(); } catch (eSch) {}
             var goPrac = function (pid) {
-              toast("The umpires are out - your practice match is LIVE.");
               location.hash = "#/friendly?id=" + pid;
               if (typeof window.route === "function") try { window.route(); } catch (eRt) {}
               setTimeout(foRenderFriendlyLive, 30);
