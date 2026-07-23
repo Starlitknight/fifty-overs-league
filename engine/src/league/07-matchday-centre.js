@@ -1991,21 +1991,21 @@
   function foThDrawer(open) {
     document.body.classList.toggle("fo-thd", !!open);
   }
-  // one controlled state for the phone command sheet: live | oval | score |
-  // tactics. Pure presentation - it only chooses what is visible and which
-  // engine tab renders; the broadcast itself never pauses for it.
+  // one controlled state for the phone command sheet: live | oval | score.
+  // Pure presentation - it only chooses what is visible and which engine
+  // tab renders; the broadcast itself never pauses for it.
   function foMobIsOn() {
     try { return window.matchMedia("(max-width:767.98px) and (orientation:portrait)").matches; } catch (e) { return false; }
   }
   function foMobSheet(st) {
     try {
+      if (st === "tactics") st = "oval";   // the tactics sheet folded into the oval
       document.body.setAttribute("data-mobsheet", st);
       if (foMobIsOn()) {
-        if (st === "score" || st === "tactics") {
+        if (st === "score") {
           try {
             if (typeof UI !== "undefined") {
-              if (st === "tactics") { if (UI.matchTab !== "Orders" && UI.matchTab !== "Lineups") UI.matchTab = "Orders"; }
-              else if (["Scorecard", "Commentary", "Worm", "Partnerships", "Match Ratings", "Charts", "Details", "Rivalry"].indexOf(UI.matchTab) < 0) UI.matchTab = "Scorecard";
+              if (["Scorecard", "Commentary", "Charts"].indexOf(UI.matchTab) < 0) UI.matchTab = "Scorecard";
               document.body.setAttribute("data-thtab", UI.matchTab);
             }
           } catch (e1) {}
@@ -2020,14 +2020,12 @@
     } catch (e) {}
   }
   try { window.foMobSheet = foMobSheet; } catch (eMx) {}
-  // the field-talk row lives in the oval pane; on phones the TACTICS sheet
-  // borrows it, and it goes home the moment the sheet (or the phone) is gone
+  // the field-talk row lives in the oval pane, on every screen size; if a
+  // re-render orphaned it, send it home under the svg
   function foMobTalkHome() {
     try {
-      var talk = document.getElementById("fo-mst-talk"), tac = document.getElementById("fo-mob-tac"), ov = document.getElementById("fo-oval");
-      var wantTac = foMobIsOn() && document.body.getAttribute("data-mobsheet") === "tactics";
-      if (wantTac && talk && tac && talk.parentNode !== tac) tac.appendChild(talk);
-      else if (!wantTac && talk && ov && talk.parentNode !== ov) {
+      var talk = document.getElementById("fo-mst-talk"), ov = document.getElementById("fo-oval");
+      if (talk && ov && talk.parentNode !== ov) {
         var sv = ov.querySelector(".ov-svg");
         if (sv && sv.parentNode === ov) ov.insertBefore(talk, sv.nextSibling); else ov.appendChild(talk);
       }
@@ -2087,14 +2085,13 @@
     // ---- phone portrait chrome: bottom command sheet + tab bar ----
     if (!document.getElementById("fo-mob-nav")) {
       var sh9 = document.createElement("div"); sh9.id = "fo-mob-sheet";
-      sh9.innerHTML = "<div class='sh-grip'></div><div id='fo-mob-tac'></div>";
+      sh9.innerHTML = "<div class='sh-grip'></div>";
       document.body.appendChild(sh9);
       var nv9 = document.createElement("div"); nv9.id = "fo-mob-nav";
       nv9.innerHTML = [
         ["live", "Live", "<svg viewBox='0 0 24 24'><circle cx='12' cy='12' r='2.4' fill='currentColor'/><path d='M7.6 7.6a6.2 6.2 0 0 0 0 8.8M16.4 7.6a6.2 6.2 0 0 1 0 8.8' fill='none' stroke='currentColor' stroke-width='1.7' stroke-linecap='round'/></svg>"],
         ["oval", "Oval", FO_TH_ICONS.field],
-        ["score", "Score", FO_TH_ICONS.Scorecard],
-        ["tactics", "Tactics", FO_TH_ICONS.Orders]
+        ["score", "Score", FO_TH_ICONS.Scorecard]
       ].map(function (t9) { return "<button type='button' data-mob='" + t9[0] + "' aria-label='" + t9[1] + "'>" + t9[2] + "<span>" + t9[1] + "</span></button>"; }).join("");
       document.body.appendChild(nv9);
       nv9.addEventListener("click", function (e9) {
@@ -2408,7 +2405,7 @@
       "html body.fo-th #fo-mstage{height:100dvh !important;min-height:100dvh !important;z-index:50 !important}" +
       "#fo-mstage::after{content:'';position:absolute;left:0;right:0;bottom:0;z-index:6;height:calc(124px + env(safe-area-inset-bottom));background:rgba(7,17,33,.9);border:1px solid rgba(255,255,255,.14);border-bottom:none;border-radius:20px 20px 0 0;backdrop-filter:blur(14px);box-shadow:0 -14px 40px rgba(0,0,0,.5);transition:height .28s ease;pointer-events:none}" +
       "body.fo-th[data-mobsheet='oval'] #fo-mstage::after{height:calc(100dvh - 126px - env(safe-area-inset-top))}" +
-      "body.fo-th[data-mobsheet='score'] #fo-mstage::after,body.fo-th[data-mobsheet='tactics'] #fo-mstage::after{height:calc(88dvh + env(safe-area-inset-bottom))}" +
+      "body.fo-th[data-mobsheet='score'] #fo-mstage::after{height:calc(88dvh + env(safe-area-inset-bottom))}" +
       "@media (prefers-reduced-motion:reduce){#fo-mstage::after{transition:none}}" +
       "body.fo-th #fo-mstage .fo-mst-ui{z-index:auto}" +
       "body.fo-th #fo-mstage .fo-mst-scene{z-index:0}" +
@@ -2425,6 +2422,9 @@
       "body.fo-th .fo-mst-score .ovs{display:inline;font-size:10px;letter-spacing:2px;margin:0}" +
       "body.fo-th .fo-mst-score i{display:none}" +
       "body.fo-th .fo-mst-score i.chase{display:block;flex-basis:100%;text-align:center;font-size:9.5px;letter-spacing:.6px;color:rgba(255,255,255,.78);margin-top:1px}" +
+      // the last six deliveries ride under the bug
+      "body.fo-th .fo-mst-score .mbs{display:flex;flex-basis:100%;justify-content:center;gap:5px;margin-top:4px;min-height:0}" +
+      "body.fo-th .fo-mst-score .mb{width:21px;height:21px;font-size:10.5px;border-width:1px}" +
       // conditions: one small centred pill - CITY / WEATHER / PITCH / FIELD
       "body.fo-th .fo-mst-top{position:static !important;display:contents}" +
       "body.fo-th .fo-mst-wx{position:fixed;z-index:52;top:calc(122px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 16px);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;background:rgba(6,14,26,.62);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:6px 15px;backdrop-filter:blur(8px)}" +
@@ -2435,18 +2435,20 @@
       "body.fo-th .fo-mst-wx .cty-m::before{content:none !important}" +
       "body.fo-th .fo-mst-ctlg{position:static}" +
       // matchup strip: one compact bar, batter left, bowler right
-      "body.fo-th .fo-mst-p{position:fixed;top:auto !important;bottom:calc(138px + env(safe-area-inset-bottom)) !important;height:64px !important;max-width:none;padding:6px 10px;gap:9px;border-radius:0;background:rgba(7,18,36,.8);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px);box-shadow:0 8px 22px rgba(0,0,0,.4);z-index:50}" +
+      "body.fo-th .fo-mst-p{position:fixed;top:auto !important;bottom:calc(138px + env(safe-area-inset-bottom)) !important;height:auto !important;min-height:64px;max-width:none;padding:6px 10px;gap:9px;border-radius:0;background:rgba(7,18,36,.8);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px);box-shadow:0 8px 22px rgba(0,0,0,.4);z-index:50}" +
       "body.fo-th .fo-mst-p.pbat{left:10px;right:calc(50vw + .5px);border-radius:15px 5px 5px 15px;border-right:none}" +
       "body.fo-th .fo-mst-p.pbowl{left:calc(50vw + .5px);right:10px;border-radius:5px 15px 15px 5px;flex-direction:row-reverse;padding:6px 10px;border-left-color:rgba(255,255,255,.1)}" +
       "body.fo-th .fo-mst-p img{width:40px;height:40px;flex:0 0 40px;border-width:1.5px;object-position:50% 12%}" +
       "body.fo-th .fo-mst-p .pc{min-width:0}" +
       "body.fo-th .fo-mst-p.pbowl .pc{text-align:right}" +
-      "body.fo-th .fo-mst-p .rl{display:none}" +
+      // the role line carries the matchup facts: hand for the batter, the
+      // bowler's type for the bowler
+      "body.fo-th .fo-mst-p .rl{display:block;font-size:7.5px;letter-spacing:1.1px;text-transform:uppercase;color:#F3D37A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px}" +
       "body.fo-th .fo-mst-p .nm{font-size:11.5px;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       "body.fo-th .fo-mst-p .st{font-size:10.5px}" +
       "body.fo-th .fo-mst-p .stars{display:block;font-size:8.5px;letter-spacing:1px;line-height:1.2;margin-top:1px;white-space:nowrap}" +
-      "body.fo-th[data-mobsheet='score'] .fo-mst-p,body.fo-th[data-mobsheet='tactics'] .fo-mst-p{display:none !important}" +
-      "body.fo-th[data-mobsheet='score'] .fo-mst-wx,body.fo-th[data-mobsheet='tactics'] .fo-mst-wx{display:none !important}" +
+      "body.fo-th[data-mobsheet='score'] .fo-mst-p{display:none !important}" +
+      "body.fo-th[data-mobsheet='score'] .fo-mst-wx{display:none !important}" +
       "body.fo-th[data-mobsheet='oval'] .fo-mst-p{top:calc(158px + env(safe-area-inset-top)) !important;bottom:auto !important;z-index:53;background:transparent;border-color:transparent;backdrop-filter:none;box-shadow:none}" +
       "body.fo-th[data-mobsheet='oval'] .fo-mst-wx{display:none !important}" +
       // the command sheet itself: frosted navy, rounded, animated snap
@@ -2454,12 +2456,11 @@
       "body.fo-th[data-mobsheet='live'] #fo-mstage::after{background:linear-gradient(180deg,rgba(4,10,20,0),rgba(4,10,20,.52) 34%,rgba(4,10,20,.84) 78%,rgba(4,10,20,.9));border:none;border-radius:0;box-shadow:none;backdrop-filter:none;height:calc(178px + env(safe-area-inset-bottom))}" +
       "#fo-mob-sheet .sh-grip{pointer-events:auto;width:100%;height:26px;margin:1px 0 0;display:flex;align-items:center;justify-content:center;touch-action:none}" +
       "#fo-mob-sheet .sh-grip::after{content:'';width:44px;height:4.5px;border-radius:999px;background:rgba(255,255,255,.3)}" +
-      "#fo-mob-tac{pointer-events:auto}" +
       "body.fo-th.fo-spd-open[data-mobsheet='live'] #fo-mob-sheet,body.fo-th.fo-spd-open[data-mobsheet='live'] #fo-mstage::after{height:calc(216px + env(safe-area-inset-bottom))}" +
       "body.fo-th[data-mobsheet='oval'] #fo-mob-sheet{height:calc(100dvh - 126px - env(safe-area-inset-top))}" +
-      "body.fo-th[data-mobsheet='score'] #fo-mob-sheet,body.fo-th[data-mobsheet='tactics'] #fo-mob-sheet{height:calc(88dvh + env(safe-area-inset-bottom))}" +
+      "body.fo-th[data-mobsheet='score'] #fo-mob-sheet{height:calc(88dvh + env(safe-area-inset-bottom))}" +
       "@media (prefers-reduced-motion:reduce){#fo-mob-sheet{transition:none}}" +
-      // tab bar: LIVE / OVAL / SCORE / TACTICS
+      // tab bar: LIVE / OVAL / SCORE
       "html body #fo-mob-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:58;justify-content:space-around;padding:2px 6px calc(4px + env(safe-area-inset-bottom))}" +
       "html body #fo-mob-nav button{flex:1;max-width:120px;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none !important;border:none !important;box-shadow:none !important;color:rgba(255,255,255,.7);cursor:pointer;padding:5px 0;border-radius:10px}" +
       "html body #fo-mob-nav button svg{width:20px;height:20px}" +
@@ -2474,7 +2475,7 @@
       "body.fo-th .fo-mst-moment .rib{flex:1;min-width:0;min-height:0;justify-content:flex-start;background:none;border:none;padding:0;backdrop-filter:none}" +
       "body.fo-th .fo-mst-moment .rib p{font-size:12.5px;letter-spacing:.2px;text-transform:none;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#F5EFDC;text-shadow:0 1px 6px rgba(0,0,0,.7)}" +
       "body.fo-th .fo-mst-moment .rib .kph{display:none}" +
-      "body.fo-th[data-mobsheet='score'] .fo-mst-moment,body.fo-th[data-mobsheet='tactics'] .fo-mst-moment{display:none !important}" +
+      "body.fo-th[data-mobsheet='score'] .fo-mst-moment{display:none !important}" +
       "body.fo-th[data-mobsheet='oval'] .fo-mst-moment{top:calc(230px + env(safe-area-inset-top));bottom:auto;transition:opacity .2s ease}" +
       // the commentary line + result pill wait for the animated ball to land
       "body.fo-th.fo-ov-wait[data-mobsheet='oval'] .fo-mst-moment{opacity:0}" +
@@ -2486,11 +2487,15 @@
       "html body.fo-th #fo-mst-spd button{flex:0 0 auto;min-width:58px;min-height:34px;font-size:12px;letter-spacing:1px;padding:7px 0;border-radius:9px}" +
       "html body #fo-mob-spdchip{display:flex;align-items:center;justify-content:center;position:fixed;right:12px;bottom:calc(66px + env(safe-area-inset-bottom));z-index:57;min-width:44px;min-height:32px;padding:5px 10px;border-radius:999px;font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:12px;letter-spacing:1px;background:rgba(5,20,40,.6) !important;border:1.5px solid rgba(255,255,255,.3) !important;color:rgba(255,255,255,.88) !important;cursor:pointer;box-shadow:none !important;transition:bottom .25s ease}" +
       "body.fo-spd-open #fo-mob-spdchip{border-color:#F0B94E !important;color:#F0B94E !important}" +
-      "body.fo-th[data-mobsheet='score'] #fo-mob-spdchip,body.fo-th[data-mobsheet='tactics'] #fo-mob-spdchip,body.fo-th.fo-thd #fo-mob-spdchip{display:none}" +
+      "body.fo-th[data-mobsheet='score'] #fo-mob-spdchip,body.fo-th.fo-thd:not([data-mobsheet='oval']) #fo-mob-spdchip{display:none}" +
+      // in the oval sheet the bottom edge belongs to the tactics row - the
+      // chip and the tempo row step up beside the delivery line
+      "body.fo-th[data-mobsheet='oval'] #fo-mob-spdchip{bottom:auto;top:calc(226px + env(safe-area-inset-top));transition:none}" +
+      "body.fo-th[data-mobsheet='oval'] #fo-mst-spd{bottom:auto;top:calc(266px + env(safe-area-inset-top))}" +
       "body.fo-th:has(#fo-mst-done) #fo-mob-spdchip{display:none}" +
       // the LIVE BALL pane docks INSIDE the oval sheet - never a separate page
       "body.fo-th[data-mobsheet]:not([data-mobsheet='oval']) #fo-oval{display:none !important}" +
-      "html body.fo-th[data-mobsheet='oval'] #fo-oval{display:block !important;position:fixed !important;left:6px !important;right:6px !important;top:calc(258px + env(safe-area-inset-top)) !important;bottom:calc(112px + env(safe-area-inset-bottom)) !important;transform:none;width:auto !important;max-width:none !important;max-height:none;z-index:54;background:transparent;border:none;border-radius:0 !important;box-shadow:none;backdrop-filter:none;overflow:visible}" +
+      "html body.fo-th[data-mobsheet='oval'] #fo-oval{display:block !important;position:fixed !important;left:6px !important;right:6px !important;top:calc(258px + env(safe-area-inset-top)) !important;bottom:calc(170px + env(safe-area-inset-bottom)) !important;transform:none;width:auto !important;max-width:none !important;max-height:none;z-index:54;background:transparent;border:none;border-radius:0 !important;box-shadow:none;backdrop-filter:none;overflow:visible}" +
       // .ov-svg IS the <svg>: fill the pane and let the viewBox centre itself
       "body.fo-th[data-mobsheet='oval'] #fo-oval .ov-svg{width:100%;height:100% !important;max-height:none;background:transparent}" +
       "body.fo-th[data-mobsheet='oval'] #fo-oval .ov-snd{position:absolute;top:4px;right:6px;z-index:2}" +
@@ -2502,22 +2507,23 @@
       "body.fo-th #fo-ovhd{display:none}" +
       "body.fo-th #fo-oval .ov-note{display:none}" +
       "body.fo-th #fo-ovhd button{display:none}" +
+      // tactics live IN the oval now: field call when bowling, batting intent
+      // when batting, pinned above the tab bar with the active choice lit
       "body.fo-th #fo-oval #fo-mst-talk{display:none}" +
+      "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk{display:flex;position:fixed;left:10px;right:10px;bottom:calc(64px + env(safe-area-inset-bottom));z-index:56;flex-wrap:wrap;align-items:center;justify-content:center;gap:7px;background:transparent;border:none;padding:0}" +
+      "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk .tl{flex-basis:100%;text-align:center;font-family:Oswald,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:2.2px;text-transform:uppercase;color:#F3D37A;margin:0}" +
+      "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk .tb{min-height:36px;font-size:11.5px;font-weight:600;padding:7px 12px;border-radius:999px;background:rgba(5,20,40,.72) !important;border:1.5px solid rgba(255,255,255,.25) !important;color:#fff !important;cursor:pointer;box-shadow:none !important;backdrop-filter:blur(6px)}" +
+      "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk .tb.on{background:#F0B94E !important;border-color:#F0B94E !important;color:#101B2D !important}" +
+      "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk .tb.tbc{margin-left:0;color:#F3D37A !important;border-color:rgba(243,211,122,.55) !important;background:rgba(243,211,122,.1) !important}" +
       // gaffer bubble rides above the sheet
       "#fo-th-gf{left:10px;right:10px;bottom:calc(206px + env(safe-area-inset-bottom));max-width:none}" +
       // SCORE / TACTICS: the engine tabs render inside the tall sheet
       "html body.fo-th.fo-thd #page .ftp-match-shell{left:10px;right:10px;top:auto;bottom:calc(60px + env(safe-area-inset-bottom));height:calc(88dvh - 82px);width:auto;z-index:56;background:transparent;border:none;box-shadow:none;backdrop-filter:none;padding:2px 2px 8px;border-radius:0;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}" +
-      "body.fo-th[data-mobsheet='tactics'].fo-thd #page .ftp-match-shell{height:calc(88dvh - 200px)}" +
       "html body.fo-th.fo-thd #page .ftp-match-links{position:sticky;top:0;z-index:2;background:rgba(7,17,33,.96) !important;padding:6px 0 10px;margin:0}" +
       "html body.fo-th.fo-thd #page .ftp-match-links a{min-height:34px;display:inline-flex;align-items:center}" +
-      // tactics: the live field-talk row pinned at the sheet top
-      "#fo-mob-tac{display:none;margin:8px 12px 6px}" +
-      "body.fo-th[data-mobsheet='tactics'] #fo-mob-tac{display:block}" +
-      "body.fo-th #fo-mob-tac #fo-mst-talk{display:flex;flex-wrap:wrap;align-items:center;gap:7px;background:transparent;border:none;padding:0 0 8px;border-bottom:1px solid rgba(255,255,255,.12)}" +
-      "html body #fo-mob-tac #fo-mst-talk .tl{font-family:Oswald,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:2.2px;text-transform:uppercase;color:#F3D37A;margin-right:2px}" +
-      "html body #fo-mob-tac #fo-mst-talk .tb{min-height:38px;font-size:12px;font-weight:600;padding:8px 13px;border-radius:999px;background:rgba(255,255,255,.08) !important;border:1.5px solid rgba(255,255,255,.22) !important;color:#fff !important;cursor:pointer;box-shadow:none !important}" +
-      "html body #fo-mob-tac #fo-mst-talk .tb.on{background:#F0B94E !important;border-color:#F0B94E !important;color:#101B2D !important}" +
-      "html body #fo-mob-tac #fo-mst-talk .tb.tbc{margin-left:auto;color:#F3D37A !important;border-color:rgba(243,211,122,.55) !important;background:rgba(243,211,122,.08) !important}" +
+      // the score sheet keeps three panels - scorecard, commentary, charts;
+      // everything else lives elsewhere on the phone (or not at all)
+      "html body.fo-th.fo-thd #page .ftp-match-links a[onclick*=\"'Details'\"],html body.fo-th.fo-thd #page .ftp-match-links a[onclick*=\"'Orders'\"],html body.fo-th.fo-thd #page .ftp-match-links a[onclick*=\"'Match Ratings'\"],html body.fo-th.fo-thd #page .ftp-match-links a[onclick*=\"'Worm'\"],html body.fo-th.fo-thd #page .ftp-match-links a[onclick*=\"'Partnerships'\"],html body.fo-th.fo-thd #page .ftp-match-links a[onclick*=\"'Rivalry'\"],html body.fo-th.fo-thd #page .ftp-match-links a[data-fo-lineups]{display:none !important}" +
       // cut-ins float above the sheet but below the tab bar
       "#fo-th-cut{z-index:57}" +
       "body.fo-th #fo-toasts{top:calc(60px + env(safe-area-inset-top))}" +
@@ -2650,11 +2656,12 @@
           gEl.querySelector(".gv b").textContent = kv9;
         } else if (gEl) gEl.style.display = "none";
       } catch (eGa) {}
-      // this over, as beads
+      // the last six deliveries, as beads - a rolling window, so the row
+      // never goes empty at the top of an over
       var cur = [];
-      for (var i2 = 0; i2 < M.log.length; i2++) {
+      for (var i2 = 0; i2 < M.log.length && cur.length < 6; i2++) {
         var L2 = M.log[i2]; if (L2.inn !== M.inns || L2.mile) continue;
-        if (Math.floor(parseFloat(L2.no)) === Math.floor(Math.max(0, inn.legal - 1) / 6)) cur.unshift(L2); else break;
+        cur.unshift(L2);
       }
       var beads = cur.map(function (L3) {
         var oo = L3.out, cls = oo === "4" || oo === "6" ? " b4" : (typeof isWkt === "function" && isWkt(oo)) ? " bw" : (oo === "wide" || oo === "noball") ? " bx" : "";

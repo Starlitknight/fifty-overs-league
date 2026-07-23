@@ -4297,7 +4297,7 @@ function foPartnershipPanel(){
   if(!M)return ''; return M.innings.filter(Boolean).map(inn=>`<div class="small"><b>${esc(inn.batTeam)}</b></div>${pshipBars(inn)||'<span class="small">No partnerships yet.</span>'}`).join('<div style="height:8px"></div>');
 }
 function foMatchLinks(){
-  const tabs=['Details','Orders','Scorecard','Match Ratings','Commentary','Worm','Partnerships','Rivalry'];
+  const tabs=['Details','Orders','Scorecard','Charts','Match Ratings','Commentary','Worm','Partnerships','Rivalry'];
   UI.matchTab=UI.matchTab||'Scorecard';
   return `<div class="ftp-match-links"><h4>Links</h4>${tabs.map(t=>`<a class="${UI.matchTab===t?'on':''}" onclick="UI.matchTab='${t}';renderMatch()">${t}</a>`).join('')}</div>`;
 }
@@ -4310,6 +4310,7 @@ function foMatchPanel(){
   else if(tab==='Match Ratings')body=(M.done&&M.result)?ratingsTable({home:M.meta.home,away:M.meta.away,innings:M.innings,result:M.result}):'<div class="small">Full ratings are finalised when the match ends. Current partial view:</div>'+ratingsTable({home:M.meta.home,away:M.meta.away,innings:M.innings,result:M.result||{}});
   else if(tab==='Commentary')body=`<div class="commfeed commbig">${foCommentRows(M.log,UI.commFilter||'all',140)}</div>`;
   else if(tab==='Worm')body=foWormMini();
+  else if(tab==='Charts')body=(typeof window.foMatchCharts==='function')?window.foMatchCharts(M.innings.filter(Boolean),M.worm):foWormMini();
   else if(tab==='Partnerships')body=foPartnershipPanel();
   else if(tab==='Rivalry')body=foRivalryPanel();
   return `<div class="match-subpanel"><div class="panel"><h4>${esc(tab)}</h4><div class="pad">${body}</div></div></div>`;
