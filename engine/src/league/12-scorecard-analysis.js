@@ -1517,7 +1517,6 @@
     // -- the frontier nations: one great stronghold each, painted from life.
     //    Their tour "map" is the stadium itself until a country map is drawn.
     { id: "bgd", nm: "Bangladesh", cty: "Bangladesh", arch: "wizard", type: "The Tigers' Web", ac: "#0E6E4F",
-      bg: "../cities/sylhet-ground.webp",
       arrive: "Bangladesh, boss. Tea gardens on the hills and a hundred million people who treat cricket as the national weather. In Sylhet the whole valley turns up.",
       pitch: "dry", wx: "Humid",
       cond: "Low, slow and turning from the first hour - and the humidity makes the old ball skid at dusk.",
@@ -1535,7 +1534,6 @@
           winln: "You never stopped moving. A tiger cannot close on prey that will not stand still - well played.", lossln: "You stood still, friend. In Sylhet that is the only mistake that matters. Come and move your feet again." }
       ] },
     { id: "nep", nm: "Nepal", cty: "Nepal", arch: "prodigy", type: "Mountain Roar", ac: "#B5304C",
-      bg: "../cities/kathmandu-ground.webp",
       arrive: "Nepal, boss. The ground sits in a bowl under the Himalaya and every seat is taken four hours before the toss. No cricket crowd on earth loves harder.",
       pitch: "balanced", wx: "Chilly",
       cond: "Thin mountain air, a slow outfield, and twenty thousand people singing from the first ball to the last.",
@@ -1553,7 +1551,6 @@
           winln: "You silenced the valley. Nobody has done that since I was a boy in the stands myself. Namaste - it was an honour.", lossln: "Hear them? They will sing that song about this match for years. Come back and give them a better one." }
       ] },
     { id: "sco", nm: "Scotland", cty: "Scotland", arch: "rock", type: "Northern Grit", ac: "#2B5AA6",
-      bg: "../cities/edinburgh-ground.webp",
       arrive: "Scotland, boss. A tidy wee ground under a castle rock, a gale off the Forth, and eleven men who've been underestimated their whole lives. Sound familiar?",
       pitch: "green", wx: "Windy",
       cond: "Green-topped, cold, and the wind never stops. Every total is worth forty more than it reads.",
@@ -1571,7 +1568,6 @@
           winln: "Ye out-lasted me. On this ground, in that wind - that's the only compliment I own. Take it.", lossln: "The weather's free, the runs are not. Away and practise your leaving, and come north again." }
       ] },
     { id: "wal", nm: "Wales", cty: "Wales", arch: "engine", type: "Valley Swing", ac: "#A62A2E",
-      bg: "../cities/cardiff-ground.webp",
       arrive: "Wales, boss. A river runs past the ground, the hills sing on a Saturday, and the ball swings under Welsh cloud like it's been coached to.",
       pitch: "green", wx: "Drizzle",
       cond: "Soft air off the Taff, low cloud, and a ball that hoops till lunch. Survive the morning and the valley opens up.",
@@ -1589,7 +1585,6 @@
           winln: "You played the morning like a Welshman. There's no higher praise in this ground - take the Shield and the song with you.", lossln: "The cloud came down and you went up. Learn the difference, bach, and come back for the encore." }
       ] },
     { id: "ken", nm: "Kenya", cty: "Kenya", arch: "finisher", type: "Highland Tempo", ac: "#237A46",
-      bg: "../cities/nairobi-ground.webp",
       arrive: "Kenya, boss. A mile above the sea, jacarandas round the boundary, and a club that once shocked the whole World Cup. They've been waiting thirty years to do it again - to somebody like us.",
       pitch: "flat", wx: "Sunny",
       cond: "Hard, quick and a mile high - the thin air carries every drive a bounce further and every top-edge over the rope.",
@@ -1607,7 +1602,6 @@
           winln: "Thirty years we waited to shock the world again, and you shocked us instead. Asante - now the Horn travels.", lossln: "The altitude is ours, rafiki. Train your lungs and your yorkers and come up the hill again." }
       ] },
     { id: "usa", nm: "United States", cty: "United States", arch: "blade", type: "Franchise Fireworks", ac: "#33366E",
-      bg: "../cities/grand-prairie-ground.webp",
       arrive: "America, boss. A drop-in pitch inside a converted ballpark, fireworks on the scoreboard, and a team assembled like a heist crew. Subtle it is not.",
       pitch: "flat", wx: "Hot",
       cond: "A drop-in road under Texas sun, short square ropes, and a scoreboard that plays guitar riffs for sixes.",
@@ -1625,7 +1619,6 @@
           winln: "Scoreboard don't lie, partner. First outfit to out-entertain us in our own park - the Gauntlet's yours.", lossln: "That's what peak exit velocity looks like, friend. Go work on your slower ball and book a rematch." }
       ] },
     { id: "can", nm: "Canada", cty: "Canada", arch: "gloveman", type: "Polar Poise", ac: "#C2483B",
-      bg: "../cities/king-city-ground.webp",
       arrive: "Canada, boss - the last frontier stop. Maple woods round a country ground an hour north of Toronto, and the politest team that will ever quietly take you apart.",
       pitch: "balanced", wx: "Chilly",
       cond: "Cool air, honest carry, a slow morning dew - and a side that apologises for every wicket it takes.",
