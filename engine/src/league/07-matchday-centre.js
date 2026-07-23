@@ -2231,21 +2231,24 @@
       "html body.fo-th #page .fo-mst-ic.play.on{color:#8fe3a4 !important;border-color:rgba(143,227,164,.6) !important}" +
       "html body.fo-th #page .fo-mst-ic.next{background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;font-size:20px}" +
       // ---- player chips: circular portrait + name plate, not a mural ----
-      "body.fo-th .fo-mst-p{position:absolute;top:auto;bottom:22px;height:auto;width:auto;max-width:430px;display:flex;flex-direction:row;align-items:center;gap:15px;padding:8px 26px 8px 9px;background:rgba(5,20,40,.74);border:1px solid rgba(255,255,255,.2);border-radius:999px;backdrop-filter:blur(10px);box-shadow:0 10px 30px rgba(0,0,0,.45)}" +
+      "body.fo-th .fo-mst-p{position:absolute;top:auto;bottom:22px;height:auto;width:auto;max-width:330px;display:flex;flex-direction:row;align-items:center;gap:12px;padding:7px 20px 7px 8px;background:rgba(5,20,40,.74);border:1px solid rgba(255,255,255,.2);border-radius:999px;backdrop-filter:blur(10px);box-shadow:0 10px 30px rgba(0,0,0,.45)}" +
       "body.fo-th .fo-mst-p.pbat{left:20px}" +
-      "body.fo-th .fo-mst-p.pbowl{right:20px;flex-direction:row-reverse;padding:8px 9px 8px 26px}" +
-      "body.fo-th .fo-mst-p img{position:static;width:104px;height:104px;border-radius:50%;object-fit:cover;object-position:50% 10%;border:2.5px solid rgba(240,185,78,.75);opacity:1;filter:none;mask-image:none;-webkit-mask-image:none;clip-path:none !important;flex:0 0 104px}" +
+      "body.fo-th .fo-mst-p.pbowl{right:20px;flex-direction:row-reverse;padding:7px 8px 7px 20px}" +
+      "body.fo-th .fo-mst-p img{position:static;width:80px;height:80px;border-radius:50%;object-fit:cover;object-position:50% 10%;border:2.5px solid rgba(240,185,78,.75);opacity:1;filter:none;mask-image:none;-webkit-mask-image:none;clip-path:none !important;flex:0 0 80px}" +
       "body.fo-th .fo-mst-p.pbowl img{border-color:rgba(34,211,224,.7)}" +
       "body.fo-th .fo-mst-p::after{display:none}" +
       "body.fo-th .fo-mst-p .pc{position:static;padding:0}" +
-      "body.fo-th .fo-mst-p .rl{font-size:10.5px}" +
-      "body.fo-th .fo-mst-p .nm{font-size:21px}" +
-      "body.fo-th .fo-mst-p .st{font-size:15.5px}" +
-      "body.fo-th .fo-mst-p .stars{font-size:13px}" +
+      "body.fo-th .fo-mst-p .rl{font-size:10px}" +
+      "body.fo-th .fo-mst-p .nm{font-size:18px}" +
+      "body.fo-th .fo-mst-p .st{font-size:14px}" +
+      "body.fo-th .fo-mst-p .stars{font-size:12px}" +
       // ---- the lower third: transient label, ribbon, over beads ----
       // the lower third holds absolutely still between balls: no entrance
       // slide, fixed row heights - only the label's opacity breathes
-      "body.fo-th .fo-mst-moment{top:auto;bottom:84px;left:50%;transform:translateX(-50%);width:min(820px,72vw);display:flex;flex-direction:column;align-items:center;gap:8px;animation:none !important}" +
+      // the lower-third sits in the CENTRAL lane only: the striker chip owns the
+      // bottom-left, the field pane + accelerator own the right (their inner edge
+      // is 464px in), so cap the width to clear both at every desktop width
+      "body.fo-th .fo-mst-moment{top:auto;bottom:84px;left:50%;transform:translateX(-50%);width:max(280px,min(700px,calc(100vw - 980px)));display:flex;flex-direction:column;align-items:center;gap:8px;animation:none !important}" +
       // the result label holds absolutely still: no fade-out, no re-entrance -
       // the text simply changes when the next ball lands
       "body.fo-th .fo-mst-moment .t{margin:0;font-size:29px;letter-spacing:6px;line-height:1;height:29px;transition:none;animation:none !important;opacity:1 !important}" +
