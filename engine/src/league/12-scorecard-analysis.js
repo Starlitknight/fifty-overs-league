@@ -3761,10 +3761,10 @@
       page.innerHTML =
         "<div class='fo-world'>" +
         "<div class='fo-world-map' id='fo-world-map'><img src='" + FO_ART + "circuit/world.webp' alt=''>" + pins + "</div>" +
-        "<div class='fo-world-hd'><div class='eb'>The Circuit</div><h1>The World</h1><div class='ty'>" + conqN + " of " + FO_CX_NATIONS + " nations conquered</div></div>" +
+        "<div class='fo-world-hd'><div class='eb'>The Leagues of the World</div><h1>The World</h1><div class='ty'>" + FO_CX_NATIONS + " national leagues &middot; one Champions Cup</div></div>" +
         "<a class='fo-world-back' href='#/circuit'>&#8249; Club</a>" +
         "<div class='fo-world-zoom'><button type='button' id='fo-wz-in'>+</button><button type='button' id='fo-wz-out'>&#8722;</button></div>" +
-        "<div class='fo-world-hint' id='fo-world-hint'>Drag to roam &middot; scroll to zoom &middot; tap a nation to tour it</div>" +
+        "<div class='fo-world-hint' id='fo-world-hint'>Drag to roam &middot; scroll to zoom &middot; tap a nation to see its league</div>" +
         "<div class='fo-world-card' id='fo-world-card'></div>" +
         "</div>";
       var mapEl = page.querySelector("#fo-world-map");
@@ -3795,9 +3795,11 @@
           "<div class='wc-prog'>" + chip + "<span class='wcd'>" + dots + "</span></div>" +
           "<div class='wc-row'>" +
           (r.final
-            ? "<button type='button' class='wc-tour' data-wc-final>The World Final &#9654;</button>"
-            : "<button type='button' class='wc-tour' data-wc-tour='" + r.id + "'>Tour " + E(r.nm) + " &#9654;</button>") +
-          (r.final ? "<a class='wc-dossier' href='#/side?r=gt'>Thorne dossier &#8250;</a>" : "<a class='wc-dossier' href='#/boss?r=" + encodeURIComponent(r.id) + "'>Boss dossier &#8250;</a>") +
+            ? "<a class='wc-tour' href='#/cup'>The Champions Cup &#9654;</a><a class='wc-dossier' href='#/side?r=gt'>Thorne dossier &#8250;</a>"
+            : ((r.id === foLgNation()
+              ? "<a class='wc-tour' href='#/league'>Your league &#9654;</a>"
+              : "<a class='wc-tour' href='#/league?n=" + encodeURIComponent(r.id) + "'>View " + E(r.nm) + " league &#9654;</a>") +
+              "<a class='wc-dossier' href='#/boss?r=" + encodeURIComponent(r.id) + "'>Boss dossier &#8250;</a>")) +
           "</div></div>";
         cardEl.classList.add("on");
         if (hintEl) hintEl.style.display = "none";
@@ -3806,20 +3808,6 @@
           cardEl.classList.remove("on");
           page.querySelectorAll(".fo-wp").forEach(function (p3) { p3.classList.remove("sel"); });
           if (hintEl) hintEl.style.display = "";
-        });
-        var tb2 = cardEl.querySelector("[data-wc-tour]");
-        if (tb2) tb2.addEventListener("click", function () {
-          var rid2 = tb2.getAttribute("data-wc-tour");
-          for (var i2 = 0; i2 < FO_CX_REGIONS.length; i2++) if (FO_CX_REGIONS[i2].id === rid2) { foCxView = i2; window.__foCxViewReq = i2; }
-          location.hash = "#/circuit?m=1";
-          if (typeof window.route === "function") window.route();
-          setTimeout(foRenderCircuit, 60);
-          return;
-        });
-
-        var fb2 = cardEl.querySelector("[data-wc-final]");
-        if (fb2) fb2.addEventListener("click", function () {
-          location.hash = "#/circuit?m=1"; if (typeof window.route === "function") window.route();
         });
       };
       page.querySelectorAll(".fo-wp[data-wr]").forEach(function (p1) {
@@ -3961,9 +3949,8 @@
         "<div class='fo-boss-scrim'></div>" +
         "<div class='fo-boss-in'>" +
         "<div class='fo-boss-nav'>" +
-        (r.final ? "" : "<a href='#/tour?r=" + encodeURIComponent(r.id) + "'>&#8592; Tour " + E(r.nm) + "</a>") +
+        (r.final ? "<a href='#/cup'>&#8592; Champions Cup</a>" : "<a href='#/league?n=" + encodeURIComponent(r.id) + "'>&#8592; " + E(r.nm) + " League</a>") +
         "<a href='#/world'>World map</a>" +
-        "<a href='#/circuit'>The Circuit</a>" +
         "</div>" +
         // hero: boss portrait + crest lockup
         "<header class='fo-boss-hero'>" +
@@ -4146,8 +4133,7 @@
         "<div class='fo-boss-scrim'></div>" +
         "<div class='fo-boss-in'>" +
         "<div class='fo-boss-nav'>" +
-        "<a href='#/tour?r=" + encodeURIComponent(r.id) + "'>&#8592; Tour " + E(r.nm) + "</a>" +
-        "<a href='#/circuit'>The Circuit</a>" +
+        "<a href='#/league?n=" + encodeURIComponent(r.id) + "'>&#8592; " + E(r.nm) + " League</a>" +
         "<a href='#/world'>World map</a>" +
         "</div>" +
         "<header class='fo-boss-hero'>" +
@@ -4419,85 +4405,118 @@
   try { window.__foLgAPI = { state: foLgState, ensure: foLgEnsure, nation: foLgNation, table: foLgTable, lineup: foLgLineup, play: foLgPlay }; } catch (eApi) {}
 
   // ---- the league hub (#/league) ---------------------------------------
+  // recent world headlines that mention a nation (its rival-league form)
+  function foLgWireFor(region) {
+    try {
+      var w = window.FO_WORLD_SNAPSHOT; if (!w || !w.wire) return [];
+      var nm = region.nm, keys = [nm].concat((region.clubs || []).map(function (c) { return c.leader; }).filter(Boolean));
+      return w.wire.filter(function (h) { return h.headline && keys.some(function (k) { return h.headline.indexOf(k) >= 0; }); }).slice(0, 5);
+    } catch (e) { return []; }
+  }
   function foRenderLeague() {
     try {
       try { foCxNav(); } catch (eN) {}
       if ((location.hash || "").split("?")[0] !== "#/league") return;
       var page = document.getElementById("page"); if (!page) return;
-      var s = foLgEnsure(), nation = s.nation;
-      var region = (foRegionById(nation) || {}).r || { nm: "League", ac: "#3a6ea5", bg: "eng.webp", pitch: "balanced" };
-      var L = foLgLineup(nation), sched = foLgSchedule();
-      var round = Math.min(14, s.round || 0), done = round >= 14;
-      var sig = "lg|" + nation + "|" + round + "|" + Object.keys(s.res || {}).length + "|" + foLgMyTeam().name;
+      var mN = /[?&]n=([^&]+)/.exec(location.hash || "");
+      var myNation = foLgNation();
+      var nation = mN ? decodeURIComponent(mN[1]) : myNation;
+      var own = (nation === myNation);
+      var region = (foRegionById(nation) || {}).r;
+      if (!region) { nation = myNation; own = true; region = (foRegionById(nation) || {}).r || { nm: "League", ac: "#3a6ea5", bg: "eng.webp", pitch: "balanced", type: "", cond: "", arrive: "" }; }
+      var ac = region.ac || "#3a6ea5";
+      var meNm = foLgMyTeam().name;
+
+      var s = null, L = null, sched = null, round = 0, done = false, table = null, mePos = 0, champ = null;
+      if (own) {
+        s = foLgEnsure(); L = foLgLineup(nation); sched = foLgSchedule();
+        round = Math.min(14, s.round || 0); done = round >= 14;
+        table = foLgTable(L, s.res || {});
+        mePos = table.findIndex(function (x) { return x.name === meNm; }) + 1;
+        champ = done ? table[0] : null;
+      } else {
+        table = foRegionSides(nation).map(function (sd, i) { return { rank: i + 1, name: sd.club, city: sd.city, P: sd.P, W: sd.W, L: sd.L, T: sd.T, pts: sd.pts, nrr: null, wid: sd.wid, boss: sd.boss, sideObj: sd, isMe: false }; });
+      }
+      var sig = "lg|" + nation + "|" + own + "|" + (own ? (round + "|" + Object.keys(s.res || {}).length + "|" + meNm) : "ro");
       if (page.__foLgSig === sig && page.querySelector(".fo-lg")) return;
       page.__foLgSig = sig;
-      var meNm = foLgMyTeam().name;
-      var table = foLgTable(L, s.res || {});
-      var mePos = table.findIndex(function (x) { return x.name === meNm; }) + 1;
-      var champ = done ? table[0] : null;
 
       var tableRows = table.map(function (x, i) {
         var q = i < 4;
         var av = x.isMe
           ? "<span class='av me'><img src='" + foLgArtFallback(nation) + "' alt=''></span>"
           : "<span class='av'>" + (x.boss ? "<img src='" + foLgClubCrest(nation, x.sideObj) + "' class='crest' alt='' onerror=\"this.onerror=null;this.src='" + foLgClubArt(nation, x.sideObj) + "'\">" : foLgArtImg(nation, x.sideObj)) + "</span>";
-        return "<a class='fo-lg-row" + (x.name === meNm ? " me" : "") + (x.boss ? " boss" : "") + (q ? " q" : "") + "'" +
+        return "<a class='fo-lg-row" + (x.isMe ? " me" : "") + (x.boss ? " boss" : "") + (q ? " q" : "") + "'" +
           (x.wid && x.wid !== "me" ? " href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'" : "") + ">" +
           "<span class='rk'>" + (i + 1) + "</span>" + av +
           "<span class='nm'>" + E(x.name) + (x.isMe ? " <em class='you'>YOU</em>" : (x.boss ? " <em class='bs'>BOSS</em>" : "")) + "<i>" + E(x.city) + "</i></span>" +
           "<span class='c'>" + x.P + "</span><span class='c'>" + x.W + "</span><span class='c'>" + x.L + "</span>" +
-          "<span class='c nrr'>" + (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2) + "</span>" +
+          "<span class='c nrr'>" + (x.nrr == null ? "&middot;" : (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2)) + "</span>" +
           "<span class='c pt'>" + x.pts + "</span></a>";
       }).join("");
 
-      var fxHTML = "";
-      if (!done) {
-        var rd = sched[round] || [];
-        fxHTML = rd.map(function (f) {
-          var key = round + ":" + f[0] + ":" + f[1], stored = (s.res || {})[key];
-          var hn = L[f[0]].name, an = L[f[1]].name, mine = (f[0] === 0 || f[1] === 0);
-          var mid;
-          if (stored) mid = "<span class='sc'>" + stored.hr + " &ndash; " + stored.ar + "</span>";
-          else if (mine) mid = "<span class='vs'>v</span>";
-          else mid = "<span class='vs'>v</span>";
-          return "<div class='fo-lg-fx" + (mine ? " mine" : "") + "'>" +
-            "<span class='h'>" + E(hn) + "</span>" + mid + "<span class='a'>" + E(an) + "</span>" +
-            (stored && stored.w >= 0 ? "<span class='res'>" + E(stored.w === f[0] ? hn : an) + " won</span>" : (stored ? "<span class='res'>tie</span>" : "")) +
-            "</div>";
-        }).join("");
+      // side panel: own -> fixtures + play/sim; rival -> recent results (the wire)
+      var sideHTML;
+      if (own) {
+        var fxHTML = "";
+        if (!done) {
+          fxHTML = (sched[round] || []).map(function (f) {
+            var key = round + ":" + f[0] + ":" + f[1], stored = (s.res || {})[key];
+            var hn = L[f[0]].name, an = L[f[1]].name, mine = (f[0] === 0 || f[1] === 0);
+            return "<div class='fo-lg-fx" + (mine ? " mine" : "") + "'>" +
+              "<span class='h'>" + E(hn) + "</span>" + (stored ? "<span class='sc'>" + stored.hr + " &ndash; " + stored.ar + "</span>" : "<span class='vs'>v</span>") + "<span class='a'>" + E(an) + "</span>" +
+              (stored && stored.w >= 0 ? "<span class='res'>" + E(stored.w === f[0] ? hn : an) + " won</span>" : (stored ? "<span class='res'>tie</span>" : "")) + "</div>";
+          }).join("");
+        }
+        var actHTML = done
+          ? "<div class='fo-lg-done'><div class='fo-lg-champ'>&#127942; <b>" + E(champ ? champ.name : "") + "</b> are " + E(region.nm) + " champions</div>" +
+            "<div class='fo-lg-finish'>You finished <b>" + foOrdinal(mePos) + "</b> of 8" + (mePos <= 4 ? " &mdash; qualified for the Champions Cup" : "") + "</div>" +
+            "<div class='fo-lg-cta'><a class='fo-lg-btn gold' href='#/cup'>Champions Cup &#9654;</a><button type='button' class='fo-lg-btn' id='fo-lg-new'>New season</button></div></div>"
+          : "<div class='fo-lg-cta'><button type='button' class='fo-lg-btn gold' id='fo-lg-play'>Play your Round " + (round + 1) + " fixture &#9654;</button><button type='button' class='fo-lg-btn' id='fo-lg-sim'>Sim the round</button></div>";
+        sideHTML = "<div class='fo-lg-panel'><h3>" + (done ? "Final table" : "Round " + (round + 1) + " fixtures") + "</h3>" + (fxHTML || "<div class='fo-lg-fxempty'>Season complete.</div>") + "</div>" + actHTML;
+      } else {
+        var wire = foLgWireFor(region);
+        var wireHTML = wire.length
+          ? wire.map(function (h) { return "<div class='fo-lg-wire'>" + E(h.headline) + "</div>"; }).join("")
+          : "<div class='fo-lg-fxempty'>A quiet week in the " + E(region.nm) + " league.</div>";
+        sideHTML = "<div class='fo-lg-panel'><h3>From the " + E(region.nm) + " wire</h3>" + wireHTML + "</div>" +
+          "<div class='fo-lg-cta'><a class='fo-lg-btn gold' href='#/league'>Back to your league &#9654;</a><a class='fo-lg-btn' href='#/world'>World map</a></div>";
       }
 
-      var actHTML = "";
-      if (done) {
-        actHTML = "<div class='fo-lg-done'>" +
-          "<div class='fo-lg-champ'>&#127942; <b>" + E(champ ? champ.name : "") + "</b> are " + E(region.nm) + " champions</div>" +
-          "<div class='fo-lg-finish'>You finished <b>" + foOrdinal(mePos) + "</b> of 8" + (mePos <= 4 ? " &mdash; qualified for the Champions Cup" : "") + "</div>" +
-          "<div class='fo-lg-cta'><a class='fo-lg-btn gold' href='#/cup'>Champions Cup &#9654;</a><button type='button' class='fo-lg-btn' id='fo-lg-new'>New season</button></div>" +
-          "</div>";
-      } else {
-        actHTML = "<div class='fo-lg-cta'>" +
-          "<button type='button' class='fo-lg-btn gold' id='fo-lg-play'>Play your Round " + (round + 1) + " fixture &#9654;</button>" +
-          "<button type='button' class='fo-lg-btn' id='fo-lg-sim'>Sim the round</button>" +
-          "</div>";
-      }
+      // a strip of the league's home grounds - the nation, city by city
+      var grounds = table.filter(function (x) { return !x.isMe && x.sideObj; }).slice(0, 7).map(function (x) {
+        return "<a class='fo-lg-ground' href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'>" +
+          foLgArtImg(nation, x.sideObj, "") + "<span class='cap'>" + E(x.city) + "</span></a>";
+      }).join("");
+
+      var flag = "<img class='fo-lg-flag' src='" + FO_ART + "flags/" + (FO_FLAG_FILE[nation] || nation) + ".svg' alt='' onerror=\"this.style.display='none'\">";
+      var tagline = String(region.arrive || region.cond || "").replace(/\bboss\b[.,]?/i, "").trim();
+      var statusLine = own
+        ? (done ? "Season complete &middot; you finished <b>" + foOrdinal(mePos) + "</b>" : "Round <b>" + (round + 1) + "</b> of 14 &middot; you sit <b>" + foOrdinal(mePos || 8) + "</b>")
+        : "A rival league &middot; " + E(table[0] ? table[0].name : "") + " lead";
 
       page.innerHTML =
-        "<div class='fo-lg' style='--lac:" + region.ac + "'>" +
+        "<div class='fo-lg" + (own ? "" : " ro") + "' style='--lac:" + ac + "'>" +
         "<div class='fo-lg-bg' style='background-image:url(" + FO_ART + "circuit/" + (region.bg || (nation + ".webp")) + ")'></div><div class='fo-lg-scrim'></div>" +
         "<div class='fo-lg-in'>" +
-        "<div class='fo-lg-hd'>" +
-        "<div class='eb'>" + E(region.nm) + " Domestic League &middot; Season " + (s.season || 1) + "</div>" +
-        "<h1>" + E(region.nm) + " League</h1>" +
-        "<div class='sub'>" + (done ? "Season complete" : "Round " + (round + 1) + " of 14") + " &middot; you sit <b>" + foOrdinal(mePos || 8) + "</b>" +
-        " &middot; <a href='#/cup'>Champions Cup &rsaquo;</a></div>" +
-        "</div>" +
+        "<div class='fo-lg-nav'><a href='#/world'>&#127760; World map</a>" + (own ? "<a href='#/cup'>Champions Cup</a>" : "<a href='#/league'>Your league</a>") + "</div>" +
+        // hero: the nation's map painting + identity
+        "<header class='fo-lg-hero'>" +
+        "<a class='fo-lg-map' href='#/world'><img src='" + FO_ART + "circuit/" + (region.bg || (nation + ".webp")) + "' alt=''>" + flag + "</a>" +
+        "<div class='fo-lg-id'>" +
+        "<div class='eb'>" + (own ? "Your Domestic League &middot; Season " + (s.season || 1) : "The Grand Tour &middot; Rival League") + "</div>" +
+        "<h1>" + E(region.nm) + "</h1>" +
+        "<div class='fo-lg-style'>" + (region.type ? "<span class='pill'>" + E(region.type) + "</span>" : "") + "<span class='pill ghost'>" + E(foPitchName(region.pitch)) + " pitches</span><span class='pill ghost'>" + E(region.wx || "") + "</span></div>" +
+        (tagline ? "<p class='fo-lg-tag'>&ldquo;" + E(tagline) + "&rdquo;</p>" : "") +
+        "<div class='fo-lg-status'>" + statusLine + "</div>" +
+        "</div></header>" +
         "<div class='fo-lg-grid'>" +
         "<div class='fo-lg-tablewrap'><div class='fo-lg-thead'><span class='rk'>#</span><span class='av'></span><span class='nm'>Club</span><span class='c'>P</span><span class='c'>W</span><span class='c'>L</span><span class='c'>NRR</span><span class='c'>Pts</span></div>" +
         tableRows + "<div class='fo-lg-qnote'>Top 4 qualify for the Champions Cup</div></div>" +
-        "<div class='fo-lg-side'>" +
-        "<div class='fo-lg-panel'><h3>" + (done ? "Final table" : "Round " + (round + 1) + " fixtures") + "</h3>" + (fxHTML || "<div class='fo-lg-fxempty'>Season complete.</div>") + "</div>" +
-        actHTML +
-        "</div></div></div></div>";
+        "<div class='fo-lg-side'>" + sideHTML + "</div>" +
+        "</div>" +
+        (grounds ? "<div class='fo-lg-groundsec'><div class='fo-lg-grhd'><i></i><b>THE GROUNDS OF " + E(String(region.nm).toUpperCase()) + "</b><i></i></div><div class='fo-lg-grounds'>" + grounds + "</div></div>" : "") +
+        "</div></div>";
       try { document.body.classList.add("fo-boss-on"); } catch (eBc) {}
       var pb = page.querySelector("#fo-lg-play");
       if (pb) pb.addEventListener("click", function () { foLgPlay(nation, round, false); });
@@ -4553,8 +4572,45 @@
       "#page .fo-lg{position:relative;min-height:100vh;color:#eef3fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#080d18;--lac:#3a6ea5}",
       "#page .fo-lg *{box-sizing:border-box}",
       ".fo-lg-bg{position:fixed;inset:0;background-size:cover;background-position:center;filter:blur(30px) brightness(.42) saturate(1.05);transform:scale(1.12);z-index:0}",
-      ".fo-lg-scrim{position:fixed;inset:0;background:radial-gradient(120% 90% at 50% 0%,rgba(8,13,24,.3),rgba(8,13,24,.9) 60%,rgba(6,10,18,.98));z-index:0}",
+      ".fo-lg-scrim{position:fixed;inset:0;background:radial-gradient(120% 90% at 50% 0%,color-mix(in srgb,var(--lac) 22%,rgba(8,13,24,.55)),rgba(8,13,24,.9) 58%,rgba(6,10,18,.98));z-index:0}",
       ".fo-lg-in{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:16px 20px 60px}",
+      // top nav
+      ".fo-lg-nav{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 16px}",
+      "html body #page .fo-lg-nav a{font-family:Oswald,sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-size:11px;font-weight:600;color:#dbe4f2;text-decoration:none;background:color-mix(in srgb,var(--lac) 14%,rgba(255,255,255,.05));border:1px solid color-mix(in srgb,var(--lac) 40%,rgba(150,180,225,.18));border-radius:999px;padding:8px 16px;transition:.14s}",
+      "html body #page .fo-lg-nav a:hover{background:color-mix(in srgb,var(--lac) 30%,rgba(255,255,255,.08));color:#fff}",
+      // hero: the nation map painting + identity
+      ".fo-lg-hero{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:28px;align-items:center;margin:2px 0 26px}",
+      ".fo-lg-map{position:relative;display:block;border-radius:16px;overflow:hidden;aspect-ratio:4/3;box-shadow:0 24px 60px rgba(0,0,0,.55),inset 0 0 0 2px color-mix(in srgb,var(--lac) 55%,rgba(255,255,255,.14));background:#0a1220;text-decoration:none}",
+      ".fo-lg-map img{width:100%;height:100%;object-fit:cover;transition:transform .5s ease}",
+      ".fo-lg-map:hover img{transform:scale(1.04)}",
+      ".fo-lg-map:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,13,24,0) 45%,color-mix(in srgb,var(--lac) 22%,rgba(8,13,24,.5)))}",
+      ".fo-lg-map .fo-lg-flag{position:absolute;left:14px;bottom:14px;width:44px;height:30px;object-fit:cover;border-radius:4px;box-shadow:0 3px 10px rgba(0,0,0,.6);z-index:2}",
+      ".fo-lg-id .eb{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:3.2px;font-size:11.5px;font-weight:600;color:var(--lac);filter:brightness(1.5)}",
+      ".fo-lg-id h1{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:clamp(38px,6vw,72px);line-height:.9;margin:6px 0 0;color:#fff;text-wrap:balance}",
+      ".fo-lg-style{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0}",
+      ".fo-lg-style .pill{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.3px;text-transform:uppercase;font-size:11px;color:#0d1524;background:var(--lac);border-radius:999px;padding:6px 14px;filter:brightness(1.1)}",
+      ".fo-lg-style .pill.ghost{color:#dbe4f2;background:color-mix(in srgb,var(--lac) 16%,rgba(255,255,255,.05));border:1px solid color-mix(in srgb,var(--lac) 40%,rgba(150,180,225,.2))}",
+      ".fo-lg-tag{margin:16px 0 0;font-size:15px;line-height:1.6;color:#e3eaf6;font-style:italic;max-width:600px;border-left:3px solid var(--lac);padding-left:14px}",
+      ".fo-lg-status{margin-top:14px;font-size:13px;color:#9fb0cc}.fo-lg-status b{color:#fff}",
+      // accent-tinted table + panels so each nation feels its own
+      ".fo-lg-tablewrap,.fo-lg-panel{background:color-mix(in srgb,var(--lac) 10%,rgba(12,19,33,.75)) !important;border-color:color-mix(in srgb,var(--lac) 30%,rgba(150,180,225,.16)) !important}",
+      ".fo-lg-row.me{background:color-mix(in srgb,var(--lac) 22%,transparent);border-left:3px solid var(--lac)}",
+      ".fo-lg-qnote{color:color-mix(in srgb,var(--lac) 40%,#8ea3c4)}",
+      // rival wire
+      ".fo-lg-wire{font-size:12.5px;color:#cdd9ee;line-height:1.4;padding:8px 0;border-top:1px solid rgba(150,180,225,.1)}",
+      ".fo-lg-wire:first-of-type{border-top:0}",
+      // grounds strip
+      ".fo-lg-groundsec{margin:30px 0 0}",
+      ".fo-lg-grhd{display:flex;align-items:center;gap:14px;margin:0 0 14px}",
+      ".fo-lg-grhd i{flex:1;height:1px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--lac) 55%,transparent),transparent)}",
+      ".fo-lg-grhd b{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:3px;font-size:12.5px;color:#cdd9ee}",
+      ".fo-lg-grounds{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}",
+      ".fo-lg-ground{position:relative;display:block;border-radius:12px;overflow:hidden;aspect-ratio:3/2;text-decoration:none;box-shadow:0 6px 16px rgba(0,0,0,.4);border:1px solid color-mix(in srgb,var(--lac) 30%,rgba(150,180,225,.14))}",
+      ".fo-lg-ground img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease}",
+      ".fo-lg-ground:hover img{transform:scale(1.07)}",
+      ".fo-lg-ground:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,13,24,0) 40%,rgba(8,13,24,.82))}",
+      ".fo-lg-ground .cap{position:absolute;left:10px;bottom:8px;z-index:2;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:.6px;font-size:12.5px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.7)}",
+      "@media(max-width:820px){.fo-lg-hero{grid-template-columns:1fr;gap:16px}.fo-lg-map{max-width:520px;aspect-ratio:16/9}}",
       ".fo-lg-hd{margin:4px 0 20px}",
       ".fo-lg-hd .eb{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:3px;font-size:11.5px;font-weight:600;color:var(--lac);filter:brightness(1.4)}",
       ".fo-lg-hd h1{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:clamp(30px,4.6vw,52px);line-height:.92;margin:6px 0 0;color:#fff}",
@@ -4680,7 +4736,7 @@
       ".fo-world-card .wcd i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.22)}" +
       ".fo-world-card .wcd i.f{background:#F0B94E}" +
       ".fo-world-card .wc-row{margin-top:15px}" +
-      "html body .fo-world-card .wc-tour{font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:14px;letter-spacing:2.4px;text-transform:uppercase;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:14px 28px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.3),0 8px 20px rgba(201,162,75,.3) !important}" +
+      "html body .fo-world-card .wc-tour{display:inline-block;text-decoration:none;font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:14px;letter-spacing:2.4px;text-transform:uppercase;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:14px 28px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.3),0 8px 20px rgba(201,162,75,.3) !important}" +
       "html body .fo-world-card .wc-tour:hover{filter:brightness(1.06)}" +
       "@media(max-width:700px){.fo-world-card{left:10px;right:10px;bottom:12px;width:auto}.fo-world-card .wc-art{flex-basis:100px;min-height:0}.fo-world-card .wc-h2{font-size:18px;letter-spacing:1px}.fo-world-card .wc-bd{padding:11px 12px 11px}.fo-world-card .wc-boss{font-size:12px}.fo-world-card .wc-line{font-size:11.5px;line-height:1.4}.fo-world-card .wc-eb{font-size:9px;letter-spacing:2px}.fo-world-card .wc-chip{font-size:9px;padding:4px 9px}html body .fo-world-card .wc-tour{font-size:11px;padding:9px 16px}.fo-world-card .wc-prog{margin-top:7px}.fo-world-card .wc-row{margin-top:9px}}";
     document.head.appendChild(woCss);
