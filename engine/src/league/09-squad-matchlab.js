@@ -403,7 +403,30 @@
       ".fo-sqx-bal{margin-left:auto;font-family:Oswald,sans-serif;letter-spacing:1px;font-size:13px;color:#eaf0fb;display:flex;align-items:center;gap:7px}",
       ".fo-sqx-bal .lbl{font-size:10px;letter-spacing:2px;color:#8ea3c4;margin-right:4px}",
       ".fo-sqx-bal b{color:#EBC271}.fo-sqx-bal i{color:#586a86;font-style:normal}",
-      "@media(max-width:900px){.fo-sqx-hd{gap:12px}.fo-sqx-sort{margin-left:0}.fo-sqx-card{zoom:.5}.fo-sqx-card.sel{zoom:.84}.fo-sqx-gallery{padding:12px calc(50% - 158px)}.fo-sqx-arrow{width:44px;height:44px;font-size:24px}}"
+      "@media(max-width:900px){.fo-sqx-hd{gap:12px}.fo-sqx-sort{margin-left:0}.fo-sqx-card{zoom:.5}.fo-sqx-card.sel{zoom:.84}.fo-sqx-gallery{padding:12px calc(50% - 158px)}.fo-sqx-arrow{width:44px;height:44px;font-size:24px}}",
+      // the focused-card counter under the rail
+      ".fo-sqx-count{text-align:center;font-family:Oswald,sans-serif;letter-spacing:1px;color:#8ea3c4;font-size:14px;margin:2px 0 2px}",
+      ".fo-sqx-count b{color:#EBC271;font-weight:700;font-size:17px}.fo-sqx-count s{color:#3f4d66;text-decoration:none;margin:0 2px}",
+      ".fo-sqx-count em{display:block;font-style:normal;font-size:9.5px;letter-spacing:2px;color:#5a6b86;margin-top:2px}",
+      // ------- mobile: a poster-like, single-hero reimagining -------
+      "@media(max-width:600px){",
+      "  #page .fo-sqx{background:#070c16}",
+      "  .fo-sqx-veil{background:linear-gradient(180deg,rgba(7,12,22,.72) 0%,rgba(7,11,20,.34) 26%,rgba(7,11,20,.30) 58%,rgba(6,10,18,.82)) !important}",
+      "  .fo-sqx-in{padding:8px 10px 12px}",
+      "  .fo-sqx-hd{flex-direction:column;align-items:center;gap:10px;margin:2px 0 6px;text-align:center}",
+      "  .fo-sqx-title h1{font-size:34px;letter-spacing:2px;text-shadow:0 2px 18px rgba(0,0,0,.6)}",
+      "  .fo-sqx-sub{margin-top:3px;letter-spacing:2.5px}",
+      "  .fo-sqx-tabs{margin-left:0;gap:7px;max-width:100%;overflow-x:auto;scrollbar-width:none;padding:2px;justify-content:flex-start;-webkit-overflow-scrolling:touch}",
+      "  .fo-sqx-tabs::-webkit-scrollbar{display:none}",
+      "  .fo-sqx-tab{flex:0 0 auto;padding:9px 18px;font-size:12.5px}",
+      "  .fo-sqx-sort{margin:0}",
+      "  .fo-sqx-body{margin:2px 0 0}",
+      "  .fo-sqx-card{zoom:.62}.fo-sqx-card.sel{zoom:1}",
+      "  .fo-sqx-gallery{padding:6px calc(50% - 168px);gap:2px}",
+      "  .fo-sqx-arrow{width:40px;height:40px;font-size:22px;background:rgba(10,18,32,.6);border-color:rgba(235,194,113,.35)}",
+      "  .fo-sqx-arrow.prev{left:2px}.fo-sqx-arrow.next{right:2px}",
+      "  .fo-sqx-foot{justify-content:center;border-top:0;padding:6px 4px 2px}",
+      "}"
     ].join("");
     (document.head || document.documentElement).appendChild(s);
   }
@@ -524,6 +547,7 @@
         "<div class='fo-sqx-gallery'>" + cards + "</div>" +
         "<button type='button' class='fo-sqx-arrow next' aria-label='Next player'>&#8250;</button>" +
         "</div>" +
+        "<div class='fo-sqx-count' id='fo-sqx-count'></div>" +
         "<footer class='fo-sqx-foot'>" + balHtml + "</footer>" +
         "</div></div>";
 
@@ -531,6 +555,7 @@
       var so = page.querySelector("#fo-sqx-sort"); if (so) so.addEventListener("change", function () { sv.sortK = so.value; pgSquad(); });
       // arrow carousel: step the focused (large) card left/right through the rail
       var order = [].slice.call(page.querySelectorAll(".fo-sqx-card[data-n]")).map(function (c) { return c.getAttribute("data-n"); });
+      (function () { var ce = page.querySelector("#fo-sqx-count"); if (ce) { var ci = order.indexOf(sv.sel) + 1; ce.innerHTML = order.length ? "<b>" + ci + "</b> <s>/</s> " + order.length + " <em>&middot; swipe or tap arrows</em>" : ""; } })();
       var move = function (d) { var i = order.indexOf(sv.sel); if (i < 0) i = 0; var j = Math.max(0, Math.min(order.length - 1, i + d)); if (order[j] && order[j] !== sv.sel) { sv.sel = order[j]; pgSquad(); } };
       var pv = page.querySelector(".fo-sqx-arrow.prev"); if (pv) pv.addEventListener("click", function () { move(-1); });
       var nx = page.querySelector(".fo-sqx-arrow.next"); if (nx) nx.addEventListener("click", function () { move(1); });
