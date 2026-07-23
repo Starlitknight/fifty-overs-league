@@ -10505,7 +10505,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260723-1923-f5d864";
+  var FO_BUILD = "20260723-1952-bcd8d9";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -15849,7 +15849,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     "<path d='M38 18c5-6 10-8 15-6-5 2-10 4-15 8z' fill='#16A34A'/>" +
     "<path d='M38 18c0-7-2-11-7-13 2 4 4 9 7 13z' fill='#2F7A3D'/>" +
     "</svg>");
-  function foWIFlagImg() { return '<img class="foflag" src="' + FO_WI_FLAG + '" alt="West Indies" title="West Indies">'; }
+  function foWIFlagImg() { return '<img class="foflag" src="' + FO_ART + 'flags/wi.svg" alt="West Indies" title="West Indies">'; }
   // overlay render sites go through this wrapper; engine-rendered pages are
   // swept by foFixWIFlags() on every route
   // every nationality flies its REAL flag (SVGs under art/flags/); the West
@@ -15866,7 +15866,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   };
   function foRealFlagSrc(nat) {
     var f = FO_FLAG_ART[(nat || "") + ""];
-    return f ? (f === "wi" ? FO_WI_FLAG : FO_ART + "flags/" + f + ".svg") : null;
+    return f ? (FO_ART + "flags/" + f + ".svg") : null;
   }
   try {
     var _foFlagOrig = (typeof foFlag === "function") ? foFlag : null;
@@ -27257,9 +27257,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var live = !done && (!r.final || conqN >= FO_CX_NATIONS);
         var lockF = r.final && conqN < FO_CX_NATIONS;
         var cls = "fo-wp lbl-" + (p[2] || "b") + (r.final ? " crown" : "") + (done ? " done" : live ? " live" : "") + (lockF ? " lockf" : "");
-        return "<button type='button' class='" + cls + "' data-wr='" + i + "' style='left:" + p[0] + "%;top:" + p[1] + "%;--wac:" + r.ac + "'>" +
-          "<span class='dot'>" + (r.final ? "<i class='crn'>&#9818;</i>" : "<img class='flag' src='" + FO_ART + "flags/" + (FO_FLAG_FILE[r.id] || r.id) + ".svg' alt='" + E(r.nm) + "'>") + (done ? "<i class='tick'>&#10003;</i>" : "") + "</span>" +
-          "<span class='nm'>" + (r.final ? "Marylebone" : E(r.nm)) + "</span></button>";
+        return "<button type='button' class='" + cls + "' data-wr='" + i + "' title='" + (r.final ? "Marylebone" : E(r.nm)) + "' style='left:" + p[0] + "%;top:" + p[1] + "%;--wac:" + r.ac + "'>" +
+          "<span class='dot'>" + (r.final ? "<i class='crn'>&#9818;</i>" : "<img class='flag' src='" + FO_ART + "flags/" + (FO_FLAG_FILE[r.id] || r.id) + ".svg' alt='" + E(r.nm) + "' title='" + E(r.nm) + "'>") + (done ? "<i class='tick'>&#10003;</i>" : "") + "</span>" +
+          "</button>";
       }).join("");
       page.innerHTML =
         "<div class='fo-world'>" +

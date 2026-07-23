@@ -107,7 +107,7 @@
     "<path d='M38 18c5-6 10-8 15-6-5 2-10 4-15 8z' fill='#16A34A'/>" +
     "<path d='M38 18c0-7-2-11-7-13 2 4 4 9 7 13z' fill='#2F7A3D'/>" +
     "</svg>");
-  function foWIFlagImg() { return '<img class="foflag" src="' + FO_WI_FLAG + '" alt="West Indies" title="West Indies">'; }
+  function foWIFlagImg() { return '<img class="foflag" src="' + FO_ART + 'flags/wi.svg" alt="West Indies" title="West Indies">'; }
   // overlay render sites go through this wrapper; engine-rendered pages are
   // swept by foFixWIFlags() on every route
   // every nationality flies its REAL flag (SVGs under art/flags/); the West
@@ -124,7 +124,7 @@
   };
   function foRealFlagSrc(nat) {
     var f = FO_FLAG_ART[(nat || "") + ""];
-    return f ? (f === "wi" ? FO_WI_FLAG : FO_ART + "flags/" + f + ".svg") : null;
+    return f ? (FO_ART + "flags/" + f + ".svg") : null;
   }
   try {
     var _foFlagOrig = (typeof foFlag === "function") ? foFlag : null;

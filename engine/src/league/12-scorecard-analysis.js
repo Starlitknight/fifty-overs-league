@@ -3579,9 +3579,9 @@
         var live = !done && (!r.final || conqN >= FO_CX_NATIONS);
         var lockF = r.final && conqN < FO_CX_NATIONS;
         var cls = "fo-wp lbl-" + (p[2] || "b") + (r.final ? " crown" : "") + (done ? " done" : live ? " live" : "") + (lockF ? " lockf" : "");
-        return "<button type='button' class='" + cls + "' data-wr='" + i + "' style='left:" + p[0] + "%;top:" + p[1] + "%;--wac:" + r.ac + "'>" +
-          "<span class='dot'>" + (r.final ? "<i class='crn'>&#9818;</i>" : "<img class='flag' src='" + FO_ART + "flags/" + (FO_FLAG_FILE[r.id] || r.id) + ".svg' alt='" + E(r.nm) + "'>") + (done ? "<i class='tick'>&#10003;</i>" : "") + "</span>" +
-          "<span class='nm'>" + (r.final ? "Marylebone" : E(r.nm)) + "</span></button>";
+        return "<button type='button' class='" + cls + "' data-wr='" + i + "' title='" + (r.final ? "Marylebone" : E(r.nm)) + "' style='left:" + p[0] + "%;top:" + p[1] + "%;--wac:" + r.ac + "'>" +
+          "<span class='dot'>" + (r.final ? "<i class='crn'>&#9818;</i>" : "<img class='flag' src='" + FO_ART + "flags/" + (FO_FLAG_FILE[r.id] || r.id) + ".svg' alt='" + E(r.nm) + "' title='" + E(r.nm) + "'>") + (done ? "<i class='tick'>&#10003;</i>" : "") + "</span>" +
+          "</button>";
       }).join("");
       page.innerHTML =
         "<div class='fo-world'>" +
