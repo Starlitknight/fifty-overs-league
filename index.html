@@ -1638,7 +1638,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',wire:'foRenderWire'}[App.page];
+  const OV={circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire'}[App.page];
   if(P[App.page])P[App.page](q);
   else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){}}
   else if(OV){/* overlay not parsed yet: leave the page blank, its interval paints */}
@@ -10505,7 +10505,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260723-2222-aa4c7e";
+  var FO_BUILD = "20260723-2243-fb91a0";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -25528,6 +25528,78 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     return "<img class='" + (cls || "fo-crest") + "' src='" + src + "' alt='' loading='lazy' onerror=\"this.style.display='none'\">";
   }
   try { window.foCxCrestSrc = foCxCrestSrc; window.foCxBossInfo = foCxBossInfo; } catch (eCr) {}
+  // ---- the domestic league: every nation fields 8 clubs (7 bots + 1 boss),
+  // mirrored from the living-world simulation (window.FO_WORLD_SNAPSHOT). We
+  // give each a home city and a scattered map pin so the region reads like a
+  // real domestic league you can tour, club by club. Boss city sits first.
+  var FO_CX_CITY = {
+    eng: ["London", "Leeds", "Nottingham", "Manchester", "Canterbury", "Birmingham", "Bristol", "Durham"],
+    ire: ["Cork", "Dublin", "Belfast", "Galway", "Limerick", "Waterford", "Derry", "Kilkenny"],
+    ned: ["Utrecht", "Amsterdam", "Rotterdam", "The Hague", "Eindhoven", "Groningen", "Deventer", "Haarlem"],
+    win: ["Port of Spain", "Bridgetown", "Kingston", "Georgetown", "Gros Islet", "St John's", "Roseau", "Basseterre"],
+    rsa: ["Durban", "Johannesburg", "Cape Town", "Pretoria", "Gqeberha", "Bloemfontein", "Paarl", "Kimberley"],
+    zim: ["Harare", "Bulawayo", "Victoria Falls", "Mutare", "Kwekwe", "Gweru", "Masvingo", "Kadoma"],
+    aus: ["Melbourne", "Perth", "Sydney", "Brisbane", "Adelaide", "Hobart", "Canberra", "Geelong"],
+    nzl: ["Auckland", "Christchurch", "Wellington", "Hamilton", "Dunedin", "Napier", "Tauranga", "Nelson"],
+    slk: ["Kandy", "Colombo", "Galle", "Dambulla", "Pallekele", "Hambantota", "Kurunegala", "Matara"],
+    sub: ["Nagpur", "Mumbai", "Kolkata", "Chennai", "Delhi", "Bengaluru", "Dharamshala", "Ahmedabad"],
+    pak: ["Lahore", "Karachi", "Peshawar", "Multan", "Rawalpindi", "Faisalabad", "Sialkot", "Hyderabad"],
+    afg: ["Kandahar", "Kabul", "Jalalabad", "Herat", "Mazar-i-Sharif", "Khost", "Ghazni", "Kunduz"],
+    bgd: ["Sylhet", "Dhaka", "Chittagong", "Khulna", "Rajshahi", "Barisal", "Rangpur", "Comilla"],
+    nep: ["Kathmandu", "Pokhara", "Bhairahawa", "Biratnagar", "Chitwan", "Lalitpur", "Dharan", "Birgunj"],
+    sco: ["Edinburgh", "Glasgow", "Aberdeen", "Dundee", "Stirling", "Perth", "Inverness", "Ayr"],
+    wal: ["Cardiff", "Swansea", "Newport", "Wrexham", "Bangor", "Aberystwyth", "Colwyn Bay", "Neath"],
+    ken: ["Nairobi", "Mombasa", "Kisumu", "Nakuru", "Eldoret", "Thika", "Nyeri", "Machakos"],
+    usa: ["Grand Prairie", "Dallas", "New York", "Lauderhill", "Morrisville", "Houston", "San Jose", "Chicago"],
+    can: ["King City", "Toronto", "Vancouver", "Brampton", "Edmonton", "Calgary", "Ottawa", "Winnipeg"]
+  };
+  // eight scattered map pins (boss = slot 0, sits prominent-central)
+  var FO_CX_SIDEPOS = [[50, 43], [28, 26], [72, 28], [20, 56], [50, 68], [80, 58], [37, 82], [66, 82]];
+  function foRegionById(rid) { for (var i = 0; i < FO_CX_REGIONS.length; i++) if (FO_CX_REGIONS[i].id === rid) return { r: FO_CX_REGIONS[i], ri: i }; return null; }
+  // the 8 clubs of a region, mirrored from the living-world league table
+  function foRegionSides(rid) {
+    var lg = null;
+    try { var sn = window.FO_WORLD_SNAPSHOT; if (sn && sn.leagues) lg = sn.leagues.filter(function (L) { return L.regionId === rid; })[0]; } catch (e) {}
+    var hit = foRegionById(rid); if (!hit) return [];
+    var r = hit.r, cities = FO_CX_CITY[rid] || [];
+    var bc = null; (r.clubs || []).forEach(function (c) { if (c.boss) bc = c; });
+    if (!lg || !lg.table) return [];
+    return lg.table.map(function (row, rank) {
+      var isBoss = row.kind === "boss";
+      var slot = isBoss ? 0 : Math.max(1, Math.min(7, parseInt((row.id.split("-b")[1] || "1"), 10)));
+      var city = cities[slot] || r.nm;
+      return {
+        wid: row.id, worldName: row.name, kind: row.kind, boss: isBoss,
+        city: isBoss ? (bc ? bc.city : city) : city,
+        club: isBoss ? (bc ? bc.nm : row.name) : (city + " CC"),
+        leader: isBoss ? (bc ? bc.leader : null) : null,
+        rank: rank + 1, P: row.P || 0, W: row.W || 0, L: row.L || 0, T: row.T || 0, pts: row.pts || 0,
+        pos: FO_CX_SIDEPOS[slot] || [50, 50],
+        seed: "side|" + rid + "|" + row.id
+      };
+    });
+  }
+  // a deterministic XI for any club: bosses reuse the calibrated boss build,
+  // bot sides get a nation-flavoured archetype squad seeded by club id
+  function foSideSquad(rid, side) {
+    try {
+      var hit = foRegionById(rid); if (!hit) return [];
+      var r = hit.r;
+      if (side.boss) {
+        var bi = -1; (r.clubs || []).forEach(function (c, i) { if (c.boss) bi = i; });
+        if (bi >= 0) { try { var t = foCxTeam(hit.ri, bi); return t.players || []; } catch (eB) {} }
+      }
+      var capts = ["general", "talisman", "clutch", "ironman", "younggun"];
+      var capt = capts[foHash32(side.seed + "|c") % capts.length];
+      var gen = foGenArchetypeSquad(side.seed, r.cty, r.arch || "engine", capt);
+      return (gen.players || []).map(function (p0) {
+        var p = JSON.parse(JSON.stringify(p0)); delete p.fee; p.fatigue = "rested"; p.formIx = 3;
+        try { jsDerive(p); } catch (e) {}
+        return p;
+      });
+    } catch (e) { return []; }
+  }
+  try { window.foRegionSides = foRegionSides; } catch (eRs) {}
   // nations whose youth academies you've unlocked by conquering their region
   function foCxAcademyNats() {
     var st = foCxState(), out = [];
@@ -26797,6 +26869,35 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "<button type='button' id='fo-hg-cab'><span class='hg-lf'>TROPHY CABINET</span><span class='hg-ls'>CABINET</span></button>" +
       "</div></div>";
   }
+  // the domestic league of a region: the eight clubs on a nation map + a
+  // standings ladder, each a link into that club's dossier. This is where
+  // the Circuit meets the living world - the sim's real table, made playable.
+  function foCxLeagueSection(r, ri) {
+    try {
+      var sides = foRegionSides(r.id);
+      if (!sides.length) return "";
+      var bg = FO_ART + "circuit/" + (r.bg || (r.id + ".webp"));
+      var hrefOf = function (s) { return s.boss ? ("#/boss?r=" + encodeURIComponent(r.id)) : ("#/side?r=" + encodeURIComponent(r.id) + "&c=" + encodeURIComponent(s.wid)); };
+      var pins = sides.map(function (s) {
+        return "<a class='fo-cxl-pin" + (s.boss ? " boss" : "") + "' href='" + hrefOf(s) + "' style='left:" + s.pos[0] + "%;top:" + s.pos[1] + "%' title='" + E(s.club) + "'>" +
+          "<i class='dot'>" + (s.boss ? "&#9733;" : s.rank) + "</i><span class='cl'>" + E(s.city) + "</span></a>";
+      }).join("");
+      var rows = sides.map(function (s) {
+        return "<a class='fo-cxl-row" + (s.boss ? " boss" : "") + "' href='" + hrefOf(s) + "'>" +
+          "<span class='rk'>" + s.rank + "</span>" +
+          "<span class='nm'>" + E(s.club) + (s.boss ? " <em>BOSS</em>" : "") + "<i>" + E(s.city) + "</i></span>" +
+          "<span class='wl'>" + s.W + "&ndash;" + s.L + (s.T ? "&ndash;" + s.T : "") + "</span>" +
+          "<span class='pt'>" + s.pts + "</span></a>";
+      }).join("");
+      return "<div class='fo-cxl'>" +
+        "<div class='fo-cxl-hd'><i></i><b>THE " + E(String(r.nm).toUpperCase()) + " LEAGUE</b><i></i></div>" +
+        "<div class='fo-cxl-sub'>Eight clubs across the nation &mdash; tap any city to see its squad and standing</div>" +
+        "<div class='fo-cxl-grid'>" +
+        "<div class='fo-cxl-map'><img src='" + bg + "' alt=''><div class='fo-cxl-veil'></div>" + pins + "</div>" +
+        "<div class='fo-cxl-table'><div class='fo-cxl-thead'><span class='rk'>#</span><span class='nm'>Club</span><span class='wl'>W&ndash;L</span><span class='pt'>Pts</span></div>" + rows + "</div>" +
+        "</div></div>";
+    } catch (e) { return ""; }
+  }
   function foRenderCircuit() {
     try {
       foCxNav();
@@ -26884,6 +26985,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           "<span class='tx' id='fo-cx-brief-tx'>&ldquo;" + E(r.gaffer) + "&rdquo;</span>" +
           "<div class='act' id='fo-cx-brief-act'><span class='hint'>Tap a city on the map to scout its club" + (live ? " &mdash; then challenge it." : ".") + "</span></div>" +
           "</div></div>" +
+          (r.final ? "" : foCxLeagueSection(r, ri)) +
           foCxRecordPanel(st) +
           "</div>";
       }
@@ -27504,7 +27606,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           (r.final
             ? "<button type='button' class='wc-tour' data-wc-final>The World Final &#9654;</button>"
             : "<button type='button' class='wc-tour' data-wc-tour='" + r.id + "'>Tour " + E(r.nm) + " &#9654;</button>") +
-          (r.final ? "" : "<a class='wc-dossier' href='#/boss?r=" + encodeURIComponent(r.id) + "'>Boss dossier &#8250;</a>") +
+          (r.final ? "<a class='wc-dossier' href='#/side?r=gt'>Thorne dossier &#8250;</a>" : "<a class='wc-dossier' href='#/boss?r=" + encodeURIComponent(r.id) + "'>Boss dossier &#8250;</a>") +
           "</div></div>";
         cardEl.classList.add("on");
         if (hintEl) hintEl.style.display = "none";
@@ -27789,6 +27891,190 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     ].join("");
     (document.head || document.documentElement).appendChild(boCss);
   } catch (eBoCss) {}
+
+  // =====================================================================
+  //  Club dossier (#/side?r=<region>&c=<clubId>) - a page for any of the
+  //  eight clubs in a region's domestic league: a bot side, or Thorne's
+  //  Invincible XI (r=gt). Bosses redirect to their richer #/boss shrine.
+  //  Reuses the .fo-boss-* stage; adds a monogram crest for bot sides.
+  // =====================================================================
+  function foOrdinal(n) { var s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+  function foRenderSide() {
+    try {
+      if ((location.hash || "").split("?")[0] !== "#/side") return;
+      var page = document.getElementById("page"); if (!page) return;
+      var mR = /[?&]r=([^&]+)/.exec(location.hash || ""); if (!mR) return;
+      var rid = decodeURIComponent(mR[1]);
+      var mC = /[?&]c=([^&]+)/.exec(location.hash || "");
+      var wid = mC ? decodeURIComponent(mC[1]) : "";
+
+      // --- Thorne's Invincible XI: the King, his own dossier -------------
+      if (rid === "gt") { foRenderThorne(page); return; }
+
+      var hit = foRegionById(rid); if (!hit) { page.__foSideSig = null; return; }
+      var r = hit.r, ri = hit.ri;
+      var sides = foRegionSides(rid);
+      var side = null; for (var i = 0; i < sides.length; i++) if (sides[i].wid === wid) { side = sides[i]; break; }
+      if (!side && sides.length) side = sides[0];
+      if (!side) { page.__foSideSig = null; return; }
+      // a boss has a far richer shrine already - send them there
+      if (side.boss) { location.hash = "#/boss?r=" + encodeURIComponent(rid); if (typeof window.route === "function") window.route(); return; }
+
+      var sig = "side|" + rid + "|" + wid;
+      if (page.__foSideSig === sig && page.querySelector(".fo-boss")) return;
+      page.__foSideSig = sig;
+
+      var ac = r.ac || "#3a6ea5";
+      var flag = "<img class='fo-boss-flag' src='" + FO_ART + "flags/" + (FO_FLAG_FILE[r.id] || r.id) + ".svg' alt='' onerror=\"this.style.display='none'\">";
+      var bgart = FO_ART + "circuit/" + (r.bg || (r.id + ".webp"));
+      var pct = Math.max(18, Math.min(94, Math.round((side.pts / 28) * 100)));
+      var monogram = foJCrest(ac, 150, foJInitials(side.city + " CC"));
+
+      // dedicated XI
+      var squadHTML = "<div class='fo-boss-squad-empty'>Squad sheet loading&hellip;</div>";
+      try {
+        var players = foSideSquad(rid, side);
+        var xiS = null; try { xiS = pickXI({ name: side.club, players: players }); } catch (eXiS) {}
+        var rosterS = (xiS && xiS.length) ? xiS : players.slice(0, 11);
+        squadHTML = rosterS.slice(0, 11).map(function (p) {
+          var hc = foHoloCardHTML(p, side.club);
+          return "<div class='fo-boss-card ph-" + hc.tier + "' style='--tc:" + hc.ac[0] + ";--tcD:" + hc.ac[1] + "'>" + hc.html + "</div>";
+        }).join("");
+      } catch (eSq) {}
+
+      var recCards =
+        "<div class='fo-boss-stat'><b>" + foOrdinal(side.rank) + "</b><span>of 8 &middot; " + E(r.nm) + " League</span></div>" +
+        "<div class='fo-boss-stat'><b>" + side.W + " &ndash; " + side.L + (side.T ? " &ndash; " + side.T : "") + "</b><span>W&ndash;L" + (side.T ? "&ndash;T" : "") + " &middot; " + side.P + " played</span></div>" +
+        "<div class='fo-boss-stat'><b>" + side.pts + "</b><span>league points</span></div>";
+
+      var brand = side.city + " CC are " + foOrdinal(side.rank) + " in this season's " + r.nm + " League - a domestic side playing " + (r.type || "honest cricket") + " in " + r.cond.replace(/\.$/, "") + ". Beat them and their city's academy opens to your scouts.";
+
+      page.innerHTML =
+        "<div class='fo-boss fo-side' style='--bac:" + ac + "'>" +
+        "<div class='fo-boss-bgart' style='background-image:url(" + bgart + ")'></div>" +
+        "<div class='fo-boss-scrim'></div>" +
+        "<div class='fo-boss-in'>" +
+        "<div class='fo-boss-nav'>" +
+        "<a href='#/tour?r=" + encodeURIComponent(r.id) + "'>&#8592; Tour " + E(r.nm) + "</a>" +
+        "<a href='#/circuit'>The Circuit</a>" +
+        "<a href='#/world'>World map</a>" +
+        "</div>" +
+        "<header class='fo-boss-hero'>" +
+        "<div class='fo-boss-portrait fo-side-mono'>" + monogram + "</div>" +
+        "<div class='fo-boss-id'>" +
+        "<div class='fo-boss-eb'>" + E(r.nm) + " League &middot; Domestic side</div>" +
+        "<div class='fo-boss-lockup'>" +
+        "<div class='fo-boss-names'>" +
+        "<h1>" + E(side.club) + "</h1>" +
+        "<div class='fo-boss-lead'>" + flag + "<b>" + E(side.city) + "</b><span>" + E(side.worldName) + "</span></div>" +
+        "</div></div>" +
+        "<div class='fo-boss-type'><span class='fo-boss-badge'>" + E(r.type || "League side") + "</span><span class='fo-boss-stars'>" + foBossStarHTML(pct) + "<i>" + pct + "% strength</i></span></div>" +
+        "<p class='fo-boss-brand'>" + E(brand) + "</p>" +
+        "<div class='fo-boss-act'><a class='fo-side-explore' href='#/city?c=" + encodeURIComponent(side.city) + "'>Explore " + E(side.city) + " &rsaquo;</a></div>" +
+        "</div></header>" +
+        "<section class='fo-boss-sec'><div class='fo-boss-sechd'><i></i><b>THE LEAGUE</b><i></i></div>" +
+        "<div class='fo-boss-form'><span class='fo-boss-formlabel'>SEASON</span><span class='fo-boss-firsttie'>Live from the " + E(r.nm) + " domestic league &middot; " + E(sides[0] ? sides[0].club : "") + " lead</span></div>" +
+        "<div class='fo-boss-stats'>" + recCards + "</div>" +
+        "</section>" +
+        "<section class='fo-boss-sec'><div class='fo-boss-sechd'><i></i><b>THE XI</b><i></i></div>" +
+        "<div class='fo-boss-note'>" + E(side.club) + "'s probable eleven &middot; a dedicated " + E(r.cty) + " squad</div>" +
+        "<div class='fo-boss-squad'>" + squadHTML + "</div>" +
+        "</section>" +
+        "</div></div>";
+      try { document.body.classList.add("fo-boss-on"); } catch (eBc) {}
+      try { if (window.__foLive) window.__foLive.mask(); } catch (eM5) {}
+    } catch (e) { try { console.warn("foRenderSide", e); } catch (e2) {} }
+  }
+  // Reggie Thorne - the King - and his Invincible XI, the world's best side
+  function foRenderThorne(page) {
+    try {
+      var gt = null, gi = -1; for (var i = 0; i < FO_CX_REGIONS.length; i++) if (FO_CX_REGIONS[i].final) { gt = FO_CX_REGIONS[i]; gi = i; break; }
+      if (!gt) { page.__foSideSig = null; return; }
+      var bc = gt.clubs[0];
+      var st = foCxState();
+      var conqN = (st.conq || []).filter(function (id) { return id !== "gt"; }).length;
+      var done = foCxBeaten(st, "gt", 0);
+      var king = null; try { king = (window.FO_WORLD_SNAPSHOT || {}).king; } catch (eK) {}
+      var cup = null; try { cup = (window.FO_WORLD_SNAPSHOT || {}).cup; } catch (eC) {}
+      var sig = "thorne|" + done + "|" + conqN + "|" + ((st.hist || []).filter(function (h) { return h.rid === "gt"; }).length);
+      if (page.__foSideSig === sig && page.querySelector(".fo-boss")) return;
+      page.__foSideSig = sig;
+      var ac = gt.ac || "#C8674A";
+      var art = FO_ART + "thorne.png";
+
+      var squadHTML = "<div class='fo-boss-squad-empty'>Squad sheet loading&hellip;</div>";
+      try {
+        var t = foCxTeam(gi, 0);
+        var xi = null; try { xi = pickXI(t); } catch (eXi) {}
+        var roster = (xi && xi.length) ? xi : (t.players || []).slice(0, 11);
+        squadHTML = roster.slice(0, 11).map(function (p) {
+          var hc = foHoloCardHTML(p, "Thorne's Invincible XI");
+          return "<div class='fo-boss-card ph-" + hc.tier + "' style='--tc:" + hc.ac[0] + ";--tcD:" + hc.ac[1] + "'>" + hc.html + "</div>";
+        }).join("");
+      } catch (eSq) {}
+
+      var hs = (st.hist || []).filter(function (h) { return h.rid === "gt"; });
+      var recCards = "";
+      if (cup && cup.champion) recCards += "<div class='fo-boss-stat won'><b>&#9818; Champions</b><span>" + E(cup.champion === (king && king.club) ? "Champions Cup holders" : cup.champion) + "</span></div>";
+      recCards += "<div class='fo-boss-stat'><b>" + (king && king.seasons ? king.seasons : 1) + "</b><span>season" + ((king && king.seasons) === 1 ? "" : "s") + " as King</span></div>";
+      if (hs.length) { var w = hs.filter(function (h) { return h.win; }).length; recCards += "<div class='fo-boss-stat'><b>" + w + " &ndash; " + (hs.length - w) + "</b><span>your record vs Thorne</span></div>"; }
+      recCards += "<div class='fo-boss-stat'><b>" + (done ? "Dethroned" : conqN + "/" + FO_CX_NATIONS) + "</b><span>" + (done ? "the Crown is yours" : "regions before the Final") + "</span></div>";
+
+      var locked = conqN < FO_CX_NATIONS && !done;
+      var action = done
+        ? "<button type='button' class='fo-boss-cta' data-thorne-ch>Play the World Final again &#9654;</button>"
+        : locked
+          ? "<span class='fo-boss-locked'>&#128274; Conquer all " + FO_CX_NATIONS + " regions to earn the Final</span>"
+          : "<button type='button' class='fo-boss-cta' data-thorne-ch>Play the World Final &#9654;</button>";
+
+      page.innerHTML =
+        "<div class='fo-boss fo-thorne' style='--bac:" + ac + "'>" +
+        "<div class='fo-boss-bgart' style='background-image:url(" + art + ")'></div>" +
+        "<div class='fo-boss-scrim'></div>" +
+        "<div class='fo-boss-in'>" +
+        "<div class='fo-boss-nav'><a href='#/world'>World map</a><a href='#/circuit'>The Circuit</a></div>" +
+        "<header class='fo-boss-hero'>" +
+        "<div class='fo-boss-portrait'><img src='" + art + "' alt='Reggie Thorne' style='object-position:50% 12%'>" +
+        (done ? "<span class='fo-boss-conq'>&#10003; Dethroned</span>" : "<span class='fo-thorne-crown'>&#9818;</span>") + "</div>" +
+        "<div class='fo-boss-id'>" +
+        "<div class='fo-boss-eb'>The Summit &middot; The World Final</div>" +
+        "<div class='fo-boss-lockup'><div class='fo-boss-names'>" +
+        "<h1>Thorne's Invincible XI</h1>" +
+        "<div class='fo-boss-lead'><b>Reggie Thorne</b><span>Marylebone &middot; the King of the world game</span></div>" +
+        "</div></div>" +
+        "<div class='fo-boss-type'><span class='fo-boss-badge'>The Summit</span><span class='fo-boss-stars'>" + foBossStarHTML(100) + "<i>100% strength</i></span></div>" +
+        "<p class='fo-boss-brand'>&ldquo;" + E(bc.intel || bc.nug || "Every trick from every nation, drilled to the minute. There is nothing to exploit - you win this by playing YOUR cricket better than he plays his.") + "&rdquo;</p>" +
+        "<div class='fo-boss-act'>" + action + "</div>" +
+        "</div></header>" +
+        "<section class='fo-boss-sec'><div class='fo-boss-sechd'><i></i><b>THE KING'S RECORD</b><i></i></div>" +
+        "<div class='fo-boss-stats'>" + recCards + "</div></section>" +
+        "<section class='fo-boss-sec'><div class='fo-boss-sechd'><i></i><b>THE INVINCIBLE XI</b><i></i></div>" +
+        "<div class='fo-boss-note'>Pemberley's patience, Emmanuel's finish, Steenkamp's new ball, Whitcombe's hands &middot; no weakness to milk</div>" +
+        "<div class='fo-boss-squad'>" + squadHTML + "</div></section>" +
+        "</div></div>";
+      try { document.body.classList.add("fo-boss-on"); } catch (eBc) {}
+      var tb = page.querySelector("[data-thorne-ch]");
+      if (tb) tb.addEventListener("click", function () { location.hash = "#/circuit?m=1"; if (typeof window.route === "function") window.route(); });
+      try { if (window.__foLive) window.__foLive.mask(); } catch (eM6) {}
+    } catch (e) { try { console.warn("foRenderThorne", e); } catch (e2) {} }
+  }
+  try { window.foRenderSide = foRenderSide; } catch (eEx7) {}
+  setInterval(foRenderSide, 900);
+  window.addEventListener("hashchange", function () {
+    if ((location.hash || "").split("?")[0] === "#/side") setTimeout(foRenderSide, 40);
+    else if ((location.hash || "").split("?")[0] !== "#/boss") document.body.classList.remove("fo-boss-on");
+  });
+  try {
+    var siCss = document.createElement("style"); siCss.id = "fo-side-css";
+    siCss.textContent = [
+      ".fo-side-mono{display:flex;align-items:center;justify-content:center;background:radial-gradient(120% 120% at 50% 20%,rgba(255,255,255,.06),rgba(8,13,24,.9))}",
+      ".fo-side-mono svg{width:66%;height:66%;filter:drop-shadow(0 10px 22px rgba(0,0,0,.5))}",
+      "html body #page .fo-side-explore{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;font-size:12px;color:#0d1524;background:var(--bac);border-radius:10px;padding:12px 20px;text-decoration:none;display:inline-block;filter:brightness(1.06)}",
+      "html body #page .fo-side-explore:hover{filter:brightness(1.18)}",
+      ".fo-thorne-crown{position:absolute;left:14px;top:10px;z-index:2;font-size:30px;color:#F3D37A;text-shadow:0 3px 10px rgba(0,0,0,.6)}"
+    ].join("");
+    (document.head || document.documentElement).appendChild(siCss);
+  } catch (eSiCss) {}
   try {
     var woCss = document.createElement("style"); woCss.id = "fo-world-css";
     woCss.textContent =
@@ -27928,6 +28214,36 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "html body #page .tc-enter,html body.ftpskin #page .tc-enter{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.7px;text-transform:uppercase;font-size:11px;background:#14213D !important;color:#F5EFDC !important;border:none !important;border-radius:999px;padding:9px 18px;cursor:pointer}" +
       "html body #page .tc-enter:hover{background:#1E2F55 !important}" +
       "html body #page .tc-ch,html body.ftpskin #page .tc-ch{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.7px;text-transform:uppercase;font-size:11px;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:9px 18px;cursor:pointer;box-shadow:0 3px 0 rgba(16,27,45,.3) !important}" +
+      // ---- the domestic-league section: nation map of 8 pins + standings ----
+      ".fo-cxl{max-width:1080px;margin:26px auto 6px}" +
+      ".fo-cxl-hd{display:flex;align-items:center;gap:14px;margin:0 0 4px}" +
+      ".fo-cxl-hd i{flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(201,162,75,.5),transparent)}" +
+      ".fo-cxl-hd b{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:3px;font-size:14px;color:#6b5a2a}" +
+      ".fo-cxl-sub{text-align:center;font-size:12px;color:#8a8062;font-style:italic;margin:0 0 14px}" +
+      ".fo-cxl-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;align-items:start}" +
+      ".fo-cxl-map{position:relative;border-radius:14px;overflow:hidden;aspect-ratio:4/3;background:#0a1220;border:2px solid #C9A24B;box-shadow:0 4px 0 rgba(16,27,45,.22)}" +
+      ".fo-cxl-map>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}" +
+      ".fo-cxl-veil{position:absolute;inset:0;background:radial-gradient(120% 100% at 50% 30%,rgba(7,16,32,.05),rgba(7,16,32,.5))}" +
+      ".fo-cxl-pin{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;z-index:2;transition:.14s}" +
+      ".fo-cxl-pin .dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Oswald,sans-serif;font-weight:700;font-size:12px;color:#101B2D;background:#F5EFDC;border:2px solid #C9A24B;box-shadow:0 2px 6px rgba(0,0,0,.45)}" +
+      ".fo-cxl-pin.boss .dot{background:linear-gradient(180deg,#F0B94E,#C9A24B);color:#101B2D;width:30px;height:30px;font-size:15px}" +
+      ".fo-cxl-pin .cl{font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;color:#fff;background:rgba(10,18,32,.72);border-radius:5px;padding:1px 5px;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6)}" +
+      ".fo-cxl-pin:hover{transform:translate(-50%,-50%) scale(1.12);z-index:5}" +
+      ".fo-cxl-table{background:#FFFEFC;border:1.5px solid #E4D6AE;border-radius:12px;overflow:hidden;box-shadow:0 4px 0 rgba(16,27,45,.14)}" +
+      ".fo-cxl-thead,.fo-cxl-row{display:grid;grid-template-columns:26px 1fr auto auto;gap:10px;align-items:center;padding:8px 13px}" +
+      ".fo-cxl-thead{background:#F3ECD9;font-family:Oswald,sans-serif;letter-spacing:1.5px;text-transform:uppercase;font-size:10px;color:#8a8062}" +
+      ".fo-cxl-row{text-decoration:none;border-top:1px solid #F0E9D6;transition:background .12s}" +
+      ".fo-cxl-row:hover{background:#FAF4E2}" +
+      ".fo-cxl-row .rk{font-family:Oswald,sans-serif;font-weight:700;color:#b0a074;text-align:center}" +
+      ".fo-cxl-row .nm{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:.3px;font-size:14px;color:#101B2D;line-height:1.05}" +
+      ".fo-cxl-row .nm i{display:block;font-style:normal;font-size:10.5px;letter-spacing:.4px;color:#8a8062;font-weight:400}" +
+      ".fo-cxl-row .nm em{font-style:normal;font-size:8.5px;letter-spacing:1.4px;color:#101B2D;background:linear-gradient(180deg,#F0B94E,#C9A24B);border-radius:4px;padding:1px 5px;margin-left:5px;vertical-align:middle}" +
+      ".fo-cxl-row.boss{background:#FBF3DE}" +
+      ".fo-cxl-row .wl{font-size:12px;color:#6b7280;font-variant-numeric:tabular-nums}" +
+      ".fo-cxl-thead .wl,.fo-cxl-thead .pt{justify-self:end}" +
+      ".fo-cxl-row .wl{justify-self:end}" +
+      ".fo-cxl-row .pt{justify-self:end;font-family:Oswald,sans-serif;font-weight:700;font-size:15px;color:#101B2D;min-width:26px;text-align:right}" +
+      "@media(max-width:720px){.fo-cxl-grid{grid-template-columns:1fr}.fo-cxl-map{aspect-ratio:16/10}}" +
       ".fo-cx-tourrow{text-align:center;margin:14px 0 4px}" +
       "html body #page .fo-cx-tourbtn,html body.ftpskin #page .fo-cx-tourbtn{font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:14px;letter-spacing:2.8px;text-transform:uppercase;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:15px 44px;cursor:pointer;box-shadow:0 5px 0 rgba(16,27,45,.3),0 10px 26px rgba(201,162,75,.35) !important;font-size:16px !important}" +
       "html body #page .fo-cx-tourbtn:hover{filter:brightness(1.06)}" +
