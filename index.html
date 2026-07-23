@@ -10504,7 +10504,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260723-0416-fda877";
+  var FO_BUILD = "20260723-0419-abe759";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18460,7 +18460,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // painted to sit beneath the running match UI (the static -ground.webp
   // stays on the city page's "Visit the ground" view)
   var FO_CITY_LIVE = { Dublin: 1, Belfast: 1, Cork: 1, Amsterdam: 1, Rotterdam: 1, Utrecht: 1 };
-  var FO_MOB_GROUND = { johannesburg: 1, mumbai: 1, kathmandu: 1, sylhet: 1, kabul: 1, sharjah: 1 };
+  var FO_MOB_GROUND = {
+    marylebone: 1, melbourne: 1, sydney: 1, london: 1, brisbane: 1, dharamshala: 1,
+    bridgetown: 1, kolkata: 1, mumbai: 1, nottingham: 1, adelaide: 1, "cape-town": 1,
+    galle: 1, "port-of-spain": 1, kingston: 1, manchester: 1, wellington: 1, chennai: 1,
+    johannesburg: 1, sharjah: 1, lahore: 1, dublin: 1, amsterdam: 1, sylhet: 1,
+    kabul: 1, harare: 1, kathmandu: 1, edinburgh: 1, cardiff: 1, nairobi: 1,
+    "grand-prairie": 1, "king-city": 1
+  };
   function foMstArt() {
     try {
       var cx = M.meta && M.meta.__circuit;

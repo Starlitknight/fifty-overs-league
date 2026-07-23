@@ -1784,7 +1784,14 @@
   // painted to sit beneath the running match UI (the static -ground.webp
   // stays on the city page's "Visit the ground" view)
   var FO_CITY_LIVE = { Dublin: 1, Belfast: 1, Cork: 1, Amsterdam: 1, Rotterdam: 1, Utrecht: 1 };
-  var FO_MOB_GROUND = { johannesburg: 1, mumbai: 1, kathmandu: 1, sylhet: 1, kabul: 1, sharjah: 1 };
+  var FO_MOB_GROUND = {
+    marylebone: 1, melbourne: 1, sydney: 1, london: 1, brisbane: 1, dharamshala: 1,
+    bridgetown: 1, kolkata: 1, mumbai: 1, nottingham: 1, adelaide: 1, "cape-town": 1,
+    galle: 1, "port-of-spain": 1, kingston: 1, manchester: 1, wellington: 1, chennai: 1,
+    johannesburg: 1, sharjah: 1, lahore: 1, dublin: 1, amsterdam: 1, sylhet: 1,
+    kabul: 1, harare: 1, kathmandu: 1, edinburgh: 1, cardiff: 1, nairobi: 1,
+    "grand-prairie": 1, "king-city": 1
+  };
   function foMstArt() {
     try {
       var cx = M.meta && M.meta.__circuit;
