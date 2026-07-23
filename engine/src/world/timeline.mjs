@@ -161,18 +161,18 @@ export function roundRobin(ids) {       // double (home & away)
 
 // ---- resolving a round-robin table via an injected result function ----------
 // resultFn(homeTeam, awayTeam, ctx) => { winner: teamId | null(tie) }
-function tableFrom(teams) {
+export function tableFrom(teams) {
   const t = {};
   teams.forEach(x => { t[x.id] = { id: x.id, name: x.name, P: 0, W: 0, L: 0, T: 0, pts: 0, strength: x.strength }; });
   return t;
 }
-function record(table, hId, aId, winner) {
+export function record(table, hId, aId, winner) {
   const h = table[hId], a = table[aId]; h.P++; a.P++;
   if (winner === hId) { h.W++; a.L++; h.pts += 2; }
   else if (winner === aId) { a.W++; h.L++; a.pts += 2; }
   else { h.T++; a.T++; h.pts++; a.pts++; }
 }
-const rank = (x, y) => y.pts - x.pts || y.W - x.W || y.strength - x.strength || (x.id < y.id ? -1 : 1);
+export const rank = (x, y) => y.pts - x.pts || y.W - x.W || y.strength - x.strength || (x.id < y.id ? -1 : 1);
 
 export function playLeague(league, resultFn) {
   const table = tableFrom(league.teams);
@@ -199,7 +199,7 @@ export function cupField(seed, season, resultFn) {
 }
 
 // Thorne beats every AI side; only a human result stands against him.
-function cupResult(resultFn) {
+export function cupResult(resultFn) {
   return (a, b, ctx) => {
     if (a.id === THORNE_ID && !b.human) return { winner: a.id };
     if (b.id === THORNE_ID && !a.human) return { winner: b.id };
