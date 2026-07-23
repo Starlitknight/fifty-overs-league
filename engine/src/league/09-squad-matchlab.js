@@ -312,8 +312,10 @@
       "#page .fo-sqx *{box-sizing:border-box}",
       // the backdrop is ABSOLUTE inside .fo-sqx (not fixed) so it covers the full
       // content height on a tall stacked mobile page, not just the first viewport
-      ".fo-sqx-bg{position:absolute;inset:0;background-size:cover;background-position:center;z-index:0}",
-      ".fo-sqx-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,12,22,.86),rgba(7,11,20,.9) 55%,rgba(6,10,18,.96));z-index:0}",
+      ".fo-sqx-bg{position:absolute;inset:0;background-size:cover;background-position:center;z-index:0;filter:brightness(1.28) saturate(1.08) contrast(1.02)}",
+      // lighter, art-forward veil: just enough scrim top & bottom to hold the
+      // header and footer copy legible while the dressing-room art shows through
+      ".fo-sqx-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,12,22,.58) 0%,rgba(7,11,20,.30) 26%,rgba(7,11,20,.26) 60%,rgba(6,10,18,.66) 100%);z-index:0}",
       ".fo-sqx-in{position:relative;z-index:1;max-width:1520px;margin:0 auto;padding:10px 22px 14px;min-height:calc(100vh - 58px);display:flex;flex-direction:column}",
       // header
       ".fo-sqx-hd{display:flex;align-items:flex-end;gap:20px;margin:4px 0 14px;flex-wrap:wrap}",

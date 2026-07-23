@@ -1638,7 +1638,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',wire:'foRenderWire'}[App.page];
+  const OV={circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',wire:'foRenderWire'}[App.page];
   if(P[App.page])P[App.page](q);
   else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){}}
   else if(OV){/* overlay not parsed yet: leave the page blank, its interval paints */}
@@ -10505,7 +10505,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260723-2157-da179b";
+  var FO_BUILD = "20260723-2222-aa4c7e";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21480,8 +21480,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "#page .fo-sqx *{box-sizing:border-box}",
       // the backdrop is ABSOLUTE inside .fo-sqx (not fixed) so it covers the full
       // content height on a tall stacked mobile page, not just the first viewport
-      ".fo-sqx-bg{position:absolute;inset:0;background-size:cover;background-position:center;z-index:0}",
-      ".fo-sqx-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,12,22,.86),rgba(7,11,20,.9) 55%,rgba(6,10,18,.96));z-index:0}",
+      ".fo-sqx-bg{position:absolute;inset:0;background-size:cover;background-position:center;z-index:0;filter:brightness(1.28) saturate(1.08) contrast(1.02)}",
+      // lighter, art-forward veil: just enough scrim top & bottom to hold the
+      // header and footer copy legible while the dressing-room art shows through
+      ".fo-sqx-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,12,22,.58) 0%,rgba(7,11,20,.30) 26%,rgba(7,11,20,.26) 60%,rgba(6,10,18,.66) 100%);z-index:0}",
       ".fo-sqx-in{position:relative;z-index:1;max-width:1520px;margin:0 auto;padding:10px 22px 14px;min-height:calc(100vh - 58px);display:flex;flex-direction:column}",
       // header
       ".fo-sqx-hd{display:flex;align-items:flex-end;gap:20px;margin:4px 0 14px;flex-wrap:wrap}",
@@ -25494,6 +25496,38 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // regions that count toward the world tour (the Final is the epilogue)
   var FO_CX_NATIONS = FO_CX_REGIONS.filter(function (r9) { return !r9.final; }).length;
   function foCxRegionByIx(ri) { return FO_CX_REGIONS[ri] || null; }
+  // ---- boss-team crests: the commissioned badge for each region's boss outfit.
+  // Symbol-only art (art/crests/<assetId>.webp); every name here stays LIVE UI
+  // text, never baked into the crest. Keyed by region id.
+  var FO_CX_BOSS = {
+    eng: { crest: "eng-marylebone-old-guard", team: "Marylebone Old Guard", ac: "#2F6B45", motif: "Pavilion cap, crossed bats, stumps and laurel" },
+    ire: { crest: "ire-emerald-xi", team: "The Emerald XI", ac: "#2E8B67", motif: "Celtic harp, ball soundbox and knotwork" },
+    ned: { crest: "ned-oranje-method", team: "The Oranje Method", ac: "#D06A19", motif: "Geometric wind rotor, ball hub and canal grid" },
+    win: { crest: "win-calypso-titans", team: "The Calypso Titans", ac: "#B78926", motif: "Island sun, palms, sea rhythm and ball" },
+    rsa: { crest: "rsa-veldt-fire", team: "The Veldt Fire", ac: "#B7352B", motif: "Protea flame, ball and veld chevrons" },
+    zim: { crest: "zim-flame-lilies", team: "The Flame Lilies", ac: "#D15B22", motif: "Flame lily, ball and stone-bird totem" },
+    aus: { crest: "aus-sunburnt-xi", team: "The Sunburnt XI", ac: "#D59600", motif: "Baked-earth sun, boomerang arcs and ball" },
+    nzl: { crest: "nzl-longwhite-xi", team: "The Longwhite XI", ac: "#079B99", motif: "Long white cloud, fern and safe hands" },
+    slk: { crest: "slk-serendib-sorcerers", team: "The Serendib Sorcerers", ac: "#216DB5", motif: "Spinning ball, palm frond and temple arch" },
+    sub: { crest: "ind-dust-devils", team: "The Dust Devils", ac: "#7A44C5", motif: "Dust whirl, spinning seam and sunburst" },
+    pak: { crest: "pak-lahore-cc", team: "Lahore CC", ac: "#1E7F5C", motif: "Reverse-swing crescent, minaret and ball" },
+    afg: { crest: "afg-kandahar-cc", team: "Kandahar CC", ac: "#5B4A91", motif: "Mountain wrist-spin coil and ball" },
+    bgd: { crest: "bgd-sylhet-cc", team: "Sylhet CC", ac: "#0E6E4F", motif: "Royal Bengal tiger, tea-leaf and ball" },
+    nep: { crest: "nep-kathmandu-cc", team: "Kathmandu CC", ac: "#B5304C", motif: "Himalayan peaks, khukuri and prayer flags" },
+    sco: { crest: "sco-edinburgh-cc", team: "Edinburgh CC", ac: "#2B5AA6", motif: "Saltire, castle rock and cross-wind arrows" },
+    wal: { crest: "wal-cardiff-cc", team: "Cardiff CC", ac: "#A62A2E", motif: "Red dragon, swinging seam and river bend" },
+    ken: { crest: "ken-nairobi-cc", team: "Nairobi CC", ac: "#237A46", motif: "Rift-valley horn, acacia and ball" },
+    usa: { crest: "usa-grand-prairie-cc", team: "Grand Prairie CC", ac: "#33366E", motif: "Franchise star, stadium arc and ball" },
+    can: { crest: "can-king-city-cc", team: "King City CC", ac: "#C2483B", motif: "Maple leaf, safe gloves and ball" }
+  };
+  function foCxBossInfo(id) { return FO_CX_BOSS[id] || null; }
+  function foCxCrestSrc(id) { var b = FO_CX_BOSS[id]; return b ? (FO_ART + "crests/" + b.crest + ".webp") : ""; }
+  // a crest <img> with a graceful fade-out if the asset is ever missing
+  function foCxCrestImg(id, cls) {
+    var src = foCxCrestSrc(id); if (!src) return "";
+    return "<img class='" + (cls || "fo-crest") + "' src='" + src + "' alt='' loading='lazy' onerror=\"this.style.display='none'\">";
+  }
+  try { window.foCxCrestSrc = foCxCrestSrc; window.foCxBossInfo = foCxBossInfo; } catch (eCr) {}
   // nations whose youth academies you've unlocked by conquering their region
   function foCxAcademyNats() {
     var st = foCxState(), out = [];
@@ -25794,7 +25828,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var r = FO_CX_REGIONS[ri], c = r.clubs[ci], me = userTeam();
       var myNm = (me && me.name) || "Your club", myInit = foJInitials(myNm);
       var opp = c.boss
-        ? "<div class='vs-crest boss'><img class='vs-boss' src='" + FO_ART + (c.bimg || ("circuit/boss-" + r.id + ".webp")) + "' alt='' onerror=\"this.onerror=null;this.src='" + FO_ART + "crests/" + r.arch + ".png'\"></div>"
+        ? "<div class='vs-crest boss'><img class='vs-boss' src='" + FO_ART + (c.bimg || ("circuit/boss-" + r.id + ".webp")) + "' alt='' onerror=\"this.onerror=null;this.src='" + FO_ART + "crests/" + r.arch + ".png'\">" + foCxCrestImg(r.id, "vs-badge") + "</div>"
         : "<div class='vs-crest'><img class='vs-soul' src='" + FO_ART + "crests/" + r.arch + ".png' alt=''></div>";
       var att = c.boss ? c.leader : c.nm;
       var quote = c.taunt ? "<div class='vs-quote'><span class='qm'>&ldquo;</span>" + E(c.taunt) + "<span class='qm'>&rdquo;</span><span class='att'>&mdash; " + E(att) + "</span></div>" : "";
@@ -26347,6 +26381,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-cx-vs .vs-crest img.vs-soul{width:116px;height:116px;object-fit:contain}" +
       ".fo-cx-vs .vs-crest.boss{border-radius:50%;overflow:hidden;border:3px solid var(--cxc,#C8674A);background:#FFFEFC;box-shadow:0 6px 18px rgba(16,27,45,.28)}" +
       ".fo-cx-vs .vs-crest img.vs-boss{width:100%;height:100%;object-fit:cover;object-position:50% 7%}" +
+      ".fo-cx-vs .vs-crest.boss{position:relative}" +
+      ".fo-cx-vs .vs-crest.boss .vs-badge{position:absolute;left:50%;bottom:5px;transform:translateX(-50%);width:46px;height:46px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.7));z-index:3}" +
       ".fo-cx-vs .vs-nm{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.6px;font-size:19px;line-height:1.08;color:#101B2D;max-width:15ch}" +
       ".fo-cx-vs .vs-tag{font-family:Oswald,sans-serif;font-weight:500;text-transform:uppercase;letter-spacing:1.3px;font-size:11px;color:var(--cxc,#C8674A)}" +
       ".fo-cx-vs .vs-mid{position:relative;width:72px;height:72px;display:grid;place-items:center}" +
@@ -26429,7 +26465,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-cx-trophycard.tfull .tnm{left:0;right:0;bottom:0;padding:16px 8px 7px;background:linear-gradient(180deg,rgba(255,253,247,0),rgba(255,253,247,.92) 62%);color:#6f5f39}" +
       ".fo-cx-stage .fo-cx-map .mapin{aspect-ratio:1/1;flex:0 0 auto}" +
       ".fo-cx-stage .fo-cx-map .mapin img{width:100%;height:100%;object-fit:cover}" +
-      ".fo-cx-bosscard{flex:1.5;min-height:0;background:#FFFEFC;border:2px solid #C9A24B;border-radius:14px;padding:8px;box-shadow:0 4px 0 rgba(16,27,45,.28);display:flex;flex-direction:column}" +
+      ".fo-cx-bosscard{flex:1.5;min-height:0;background:#FFFEFC;border:2px solid #C9A24B;border-radius:14px;padding:8px;box-shadow:0 4px 0 rgba(16,27,45,.28);display:flex;flex-direction:column;text-decoration:none;transition:transform .14s ease,box-shadow .14s ease}" +
+      "a.fo-cx-bosscard:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(16,27,45,.32)}" +
+      ".fo-cx-bosscard .bimg .bcrest{position:absolute;right:7px;bottom:7px;width:58px;height:58px;object-fit:contain;filter:drop-shadow(0 4px 8px rgba(0,0,0,.55));z-index:2}" +
+      ".fo-cx-bosscard .bdoss{display:block;margin-top:4px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;font-size:10px;color:#B07A1E}" +
+      "a.fo-cx-bosscard:hover .bdoss{color:#101B2D}" +
       ".fo-cx-bosscard .bimg{position:relative;flex:1;min-height:0;border-radius:9px;overflow:hidden;background:#0a1220}" +
       ".fo-cx-bosscard .bimg img{position:absolute;left:0;top:0;right:0;bottom:0;width:100%;height:100%;object-fit:cover;object-position:50% 6%;display:block}" +
       ".fo-cx-bosscard.conq .bimg img{filter:saturate(.85)}" +
@@ -26821,13 +26861,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
               }).join("") +
               "</div></div>" +
               "<div class='fo-cx-rail'>" +
-              "<div class='fo-cx-bosscard" + (bossDone ? " conq" : "") + "'>" +
+              "<a class='fo-cx-bosscard" + (bossDone ? " conq" : "") + "'" + (r.final ? "" : " href='#/boss?r=" + encodeURIComponent(r.id) + "'") + ">" +
               "<div class='bimg'><img src='" + FO_ART + (bc.bimg || ("circuit/boss-" + r.id + ".webp")) + "' alt='" + E(bc.leader) + "' onerror=\"this.onerror=null;this.src='" + FO_ART + "cities/" + foCitySlug(bc.city || "") + "-ground.webp'\">" +
+              foCxCrestImg(r.id, "bcrest") +
               (bossDone ? "<span class='bwon'>✓ Beaten</span>" : "") + "</div>" +
               "<div class='bmeta'><span class='btag' style='color:" + r.ac + "'>" + (r.final ? "The Final Opponent" : "Region Boss") + "</span>" +
               "<div class='bnm'>" + E(bc.leader) + "</div>" +
-              "<div class='bcl'>" + E(bc.nm) + " · " + E(bc.city) + "</div></div>" +
-              "</div>" +
+              "<div class='bcl'>" + E(bc.nm) + " · " + E(bc.city) + "</div>" +
+              (r.final ? "" : "<span class='bdoss'>View dossier &#8250;</span>") + "</div>" +
+              "</a>" +
               "<div class='fo-cx-trophycard" + (FO_CX_TROPHY_FULL[r.id] ? " tfull" : "") + "'>" +
               "<img src='" + FO_ART + (r.art || ("circuit/trophy-" + r.id + ".webp")) + "' alt='" + E(r.trophy) + "' onerror=\"this.style.display='none'\">" +
               "<div class='tnm'>" + E(r.trophy) + "</div>" +
@@ -27067,9 +27109,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       views.push({ id: "ground", img: Lc.groundArt || Lc.art, eyebrow: "The Circuit &middot; " + E(Lc.r.nm) + " &middot; " + E(city) + (Lc.c.boss ? " &middot; the boss's ground" : ""), title: E(Lc.groundNm), sub: E(Lc.tag), line: E(foCtLine(Lc.ground) || foCtLine(Lc.city)),
         chips: "<span class='fo-ct-chip pitch'>" + E(foPitchName(Lc.pitch)) + " pitch</span>" + Lc.wxPool.map(function (w) { return "<span class='fo-ct-chip" + (w === wxNow ? " now" : "") + "'>" + E(w) + (w === wxNow ? " &middot; today" : "") + "</span>"; }).join("") });
       var html = "<div class='fo-city fo-city-full' style='--cxc:" + Lc.r.ac + "'>";
+      var ctCrest = (Lc.c.boss && !Lc.r.final) ? foCxCrestImg(Lc.r.id, "fo-ct-crest") : "";
       views.forEach(function (v, i) {
         html += "<section class='fo-ctv" + (i === 0 ? " on" : "") + "' data-v='" + v.id + "'>" +
-          "<img src='" + FO_ART + v.img + "' alt=''><div class='fo-ctv-veil'></div>" +
+          "<img src='" + FO_ART + v.img + "' alt=''><div class='fo-ctv-veil'></div>" + (i === 0 ? ctCrest : "") +
           "<div class='fo-ctv-cap'>" +
           "<div class='fo-ct-eyebrow'>" + v.eyebrow + "</div>" +
           "<h1 class='fo-ct-h1'>" + v.title + "</h1>" +
@@ -27084,6 +27127,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       foFullBleedFit(page.querySelector(".fo-city-full"));
       var railEl = page.querySelector("#fo-ctv-rail");
       railEl.innerHTML = chBtn +
+        (Lc.c.boss && !Lc.r.final ? "<a class='fo-ct-back fo-ct-doss' href='#/boss?r=" + encodeURIComponent(Lc.r.id) + "'>&#9733; Boss dossier</a>" : "") +
         "<a class='fo-ct-back' href='#/tour?r=" + encodeURIComponent(Lc.r.id) + "'>&#8592; Tour " + E(Lc.r.nm) + "</a>" +
         "<a class='fo-ct-back' href='#/world'>World map</a>";
       var ch = railEl.querySelector("[data-ct-ch]");
@@ -27119,6 +27163,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-ct-won{font-family:Oswald,sans-serif;font-size:11.5px;letter-spacing:1.6px;color:#8fe3a4;font-weight:600;background:rgba(10,18,32,.72);border:1.5px solid rgba(143,227,164,.5);border-radius:999px;padding:10px 18px;backdrop-filter:blur(4px)}" +
       ".fo-ct-lock{font-size:12px;color:#cdd5e3;background:rgba(10,18,32,.72);border:1.5px solid rgba(255,255,255,.28);border-radius:999px;padding:10px 18px;backdrop-filter:blur(4px)}" +
       ".fo-ct-back{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:#F5EFDC;background:rgba(10,18,32,.55);border:1.5px solid rgba(255,255,255,.3);border-radius:999px;padding:10px 16px;text-decoration:none;backdrop-filter:blur(4px)}" +
+      ".fo-ct-doss{color:#101B2D;background:rgba(235,194,113,.92);border-color:rgba(235,194,113,.92)}" +
+      ".fo-ct-crest{position:absolute;right:24px;top:22px;width:clamp(72px,9vw,128px);height:auto;z-index:6;filter:drop-shadow(0 8px 16px rgba(0,0,0,.6))}" +
+      "@media(max-width:640px){.fo-ct-crest{right:14px;top:14px;width:62px}}" +
       ".fo-ct-back:hover{color:#F3D37A}" +
       ".fo-city-full .fo-ct-h1{font-weight:500;letter-spacing:2.5px;opacity:.97}" +
       ".fo-city-full .fo-ctv-cap .fo-ctv-line{opacity:.85}" +
@@ -27442,8 +27489,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var chip = done ? "<span class='wc-chip won'>&#10003; Conquered &middot; " + E(r.trophy) + "</span>"
           : lockF ? "<span class='wc-chip faroff'>&#128274; Opens after " + FO_CX_NATIONS + " pennants</span>"
             : "<span class='wc-chip nxt'>" + beatN + " / " + r.clubs.length + " beaten</span>";
+        var wcCrest = foCxCrestSrc(r.id);
         cardEl.innerHTML =
-          "<div class='wc-art'><img src='" + FO_ART + (r.final ? "thorne.png" : "circuit/boss-" + r.id + ".webp") + "' alt='' onerror=\"this.onerror=null;this.src='" + FO_ART + "cities/" + foCitySlug(bc.city || "") + "-ground.webp'\"></div>" +
+          "<div class='wc-art'><img src='" + FO_ART + (r.final ? "thorne.png" : "circuit/boss-" + r.id + ".webp") + "' alt='' onerror=\"this.onerror=null;this.src='" + FO_ART + "cities/" + foCitySlug(bc.city || "") + "-ground.webp'\">" +
+          (wcCrest ? "<img class='wc-crest' src='" + wcCrest + "' alt='' onerror=\"this.style.display='none'\">" : "") + "</div>" +
           "<button type='button' class='wc-x' data-wc-x>&#10005;</button>" +
           "<div class='wc-bd' style='--wac:" + r.ac + "'>" +
           "<div class='wc-eb'>" + (r.final ? "The Summit" : "The Grand Tour") + " &middot; " + E(r.type) + "</div>" +
@@ -27455,6 +27504,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           (r.final
             ? "<button type='button' class='wc-tour' data-wc-final>The World Final &#9654;</button>"
             : "<button type='button' class='wc-tour' data-wc-tour='" + r.id + "'>Tour " + E(r.nm) + " &#9654;</button>") +
+          (r.final ? "" : "<a class='wc-dossier' href='#/boss?r=" + encodeURIComponent(r.id) + "'>Boss dossier &#8250;</a>") +
           "</div></div>";
         cardEl.classList.add("on");
         if (hintEl) hintEl.style.display = "none";
@@ -27539,6 +27589,206 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   try { window.foRenderWorld = foRenderWorld; } catch (eEx5) {}
   setInterval(foRenderWorld, 900);
   window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] === "#/world") setTimeout(foRenderWorld, 40); });
+
+  // =====================================================================
+  //  The boss-team dossier (#/boss?r=<id>): a full-bleed shrine to one
+  //  region's boss outfit - their crest, their brand of cricket, their
+  //  XI as collectible cards, and your head-to-head record against them.
+  // =====================================================================
+  function foBossStarHTML(pct) {
+    var hs = Math.max(1, Math.round((pct || 10) / 10)), out = "";   // half-star steps 1..10
+    for (var k = 1; k <= 5; k++) out += "<em class='" + (hs >= k * 2 ? "f" : hs === k * 2 - 1 ? "h" : "e") + "'>&#9733;</em>";
+    return out;
+  }
+  function foRenderBoss() {
+    try {
+      if ((location.hash || "").split("?")[0] !== "#/boss") return;
+      var page = document.getElementById("page"); if (!page) return;
+      var m = /[?&]r=([^&]+)/.exec(location.hash || ""); if (!m) return;
+      var rid = decodeURIComponent(m[1]);
+      var ri = -1; for (var i0 = 0; i0 < FO_CX_REGIONS.length; i0++) if (FO_CX_REGIONS[i0].id === rid) { ri = i0; break; }
+      if (ri < 0) { page.__foBossSig = null; return; }
+      var r = FO_CX_REGIONS[ri];
+      var bi = -1; for (var j0 = 0; j0 < r.clubs.length; j0++) if (r.clubs[j0].boss) { bi = j0; break; }
+      if (bi < 0) bi = r.clubs.length - 1;
+      var bc = r.clubs[bi];
+      var st = foCxState();
+      var done = foCxBeaten(st, r.id, bi);
+      var open = foCxClubOpen(st, ri, bi);
+      var info = foCxBossInfo(r.id) || { team: bc.nm, motif: "", ac: r.ac };
+      var sig = "boss|" + rid + "|" + JSON.stringify(st.beat[r.id] || []) + "|" + ((st.conq || []).indexOf(r.id) >= 0) + "|" + ((st.hist || []).filter(function (h) { return h.rid === r.id && h.ci === bi; }).length);
+      if (page.__foBossSig === sig && page.querySelector(".fo-boss")) return;
+      page.__foBossSig = sig;
+      var ac = r.ac || info.ac || "#C8674A";
+      var crest = foCxCrestSrc(r.id);
+      var bossArt = FO_ART + (bc.bimg || (r.final ? "thorne.png" : "circuit/boss-" + r.id + ".webp"));
+      var flag = r.final ? "" : "<img class='fo-boss-flag' src='" + FO_ART + "flags/" + (FO_FLAG_FILE[r.id] || r.id) + ".svg' alt='' onerror=\"this.style.display='none'\">";
+      var pct = foCxStrPct(ri, bi);
+
+      // ---- head-to-head record against this boss --------------------------
+      var hs = (st.hist || []).filter(function (h) { return h.rid === r.id && h.ci === bi; });
+      var wins = hs.filter(function (h) { return h.win; }).length;
+      var beads = hs.slice(-8).map(function (h) { return "<em class='" + (h.win ? "w" : "l") + "'>" + (h.win ? "W" : "L") + "</em>"; }).join("");
+      var last = hs.length ? hs[hs.length - 1] : null;
+      var bestKnock = null, bestFig = null;
+      hs.forEach(function (h) {
+        if (h.topNm && h.topR >= 0 && (!bestKnock || h.topR > bestKnock.r)) bestKnock = { nm: h.topNm, r: h.topR };
+        if (h.bbNm && h.bbW >= 0 && (!bestFig || h.bbW > bestFig.w || (h.bbW === bestFig.w && h.bbR < bestFig.r))) bestFig = { nm: h.bbNm, w: h.bbW, r: h.bbR };
+      });
+      var resultCards = "";
+      if (done) resultCards += "<div class='fo-boss-stat won'><b>&#10003; Conquered</b><span>" + E(r.trophy) + "</span></div>";
+      if (hs.length) resultCards += "<div class='fo-boss-stat'><b>" + wins + " &ndash; " + (hs.length - wins) + "</b><span>Your record (W&ndash;L)</span></div>";
+      if (last) resultCards += "<div class='fo-boss-stat'><b>" + (last.win ? "Won" : "Lost") + "</b><span>Last tie &middot; " + (last.my || 0) + " v " + (last.op || 0) + "</span></div>";
+      if (bestKnock) resultCards += "<div class='fo-boss-stat'><b>" + bestKnock.r + "</b><span>Best knock &middot; " + E(bestKnock.nm) + "</span></div>";
+      if (bestFig) resultCards += "<div class='fo-boss-stat'><b>" + bestFig.w + "/" + bestFig.r + "</b><span>Best figures &middot; " + E(bestFig.nm) + "</span></div>";
+
+      // ---- their XI, as collectible cards --------------------------------
+      var squadHTML = "<div class='fo-boss-squad-empty'>Squad sheet loading&hellip;</div>";
+      try {
+        var team = foCxTeam(ri, bi);
+        var xi = null; try { xi = pickXI(team); } catch (eXi2) {}
+        var roster = (xi && xi.length) ? xi : (team.players || []).slice(0, 11);
+        squadHTML = roster.map(function (p) {
+          var hc = foHoloCardHTML(p, info.team || bc.nm);
+          return "<div class='fo-boss-card ph-" + hc.tier + "' style='--tc:" + hc.ac[0] + ";--tcD:" + hc.ac[1] + "'>" + hc.html + "</div>";
+        }).join("");
+      } catch (eSq) {}
+
+      // ---- the action rail -----------------------------------------------
+      var action = done
+        ? "<button type='button' class='fo-boss-cta' data-boss-ch>Play " + E(info.team || bc.nm) + " again &#9654;</button>"
+        : open
+          ? "<button type='button' class='fo-boss-cta' data-boss-ch>Challenge " + E(info.team || bc.nm) + " &#9654;</button>"
+          : "<span class='fo-boss-locked'>&#128274; Win through " + E(r.nm) + "'s ladder to face " + E(bc.leader || bc.nm) + "</span>";
+
+      var brand = bc.intel || bc.nug || r.cond || "";
+      page.innerHTML =
+        "<div class='fo-boss' style='--bac:" + ac + "'>" +
+        "<div class='fo-boss-bgart' style='background-image:url(" + bossArt + ")'></div>" +
+        "<div class='fo-boss-scrim'></div>" +
+        "<div class='fo-boss-in'>" +
+        "<div class='fo-boss-nav'>" +
+        (r.final ? "" : "<a href='#/tour?r=" + encodeURIComponent(r.id) + "'>&#8592; Tour " + E(r.nm) + "</a>") +
+        "<a href='#/world'>World map</a>" +
+        "<a href='#/circuit'>The Circuit</a>" +
+        "</div>" +
+        // hero: boss portrait + crest lockup
+        "<header class='fo-boss-hero'>" +
+        "<div class='fo-boss-portrait'><img src='" + bossArt + "' alt='" + E(bc.leader || bc.nm) + "' onerror=\"this.onerror=null;this.src='" + FO_ART + "cities/" + foCitySlug(bc.city || "") + "-ground.webp'\">" +
+        (done ? "<span class='fo-boss-conq'>&#10003; Conquered</span>" : "") + "</div>" +
+        "<div class='fo-boss-id'>" +
+        "<div class='fo-boss-eb'>" + (r.final ? "The Summit &middot; The World Final" : "Region Boss &middot; " + E(r.nm)) + "</div>" +
+        "<div class='fo-boss-lockup'>" +
+        (crest ? "<img class='fo-boss-crest' src='" + crest + "' alt='' onerror=\"this.style.display='none'\">" : "") +
+        "<div class='fo-boss-names'>" +
+        "<h1>" + E(info.team || bc.nm) + "</h1>" +
+        "<div class='fo-boss-lead'>" + flag + "<b>" + E(bc.leader || bc.nm) + "</b><span>" + E(bc.city) + (bc.boss && !r.final ? " Colosseum" : "") + "</span></div>" +
+        "</div></div>" +
+        "<div class='fo-boss-type'><span class='fo-boss-badge'>" + E(r.type || "") + "</span><span class='fo-boss-stars'>" + foBossStarHTML(pct) + "<i>" + pct + "% strength</i></span></div>" +
+        (info.motif ? "<div class='fo-boss-motif'><span>CREST</span>" + E(info.motif) + "</div>" : "") +
+        (brand ? "<p class='fo-boss-brand'>&ldquo;" + E(brand) + "&rdquo;</p>" : "") +
+        "<div class='fo-boss-act'>" + action + "</div>" +
+        "</div></header>" +
+        // results strip
+        "<section class='fo-boss-sec'><div class='fo-boss-sechd'><i></i><b>THE RECORD</b><i></i></div>" +
+        "<div class='fo-boss-form'>" + (beads ? "<span class='fo-boss-formlabel'>FORM</span>" + beads : "<span class='fo-boss-firsttie'>No ties played &mdash; the shrine awaits its first scorecard.</span>") + "</div>" +
+        (resultCards ? "<div class='fo-boss-stats'>" + resultCards + "</div>" : "") +
+        "</section>" +
+        // squad grid
+        "<section class='fo-boss-sec'><div class='fo-boss-sechd'><i></i><b>THE XI</b><i></i></div>" +
+        "<div class='fo-boss-note'>" + E(info.team || bc.nm) + " &middot; " + E(bc.leader || bc.nm) + "'s probable eleven &middot; the deck they'll bring to " + E(bc.city) + "</div>" +
+        "<div class='fo-boss-squad'>" + squadHTML + "</div>" +
+        "</section>" +
+        "</div></div>";
+      try { document.body.classList.add("fo-boss-on"); } catch (eBc) {}
+      var chB = page.querySelector("[data-boss-ch]");
+      if (chB) chB.addEventListener("click", function () { foCxChallenge(ri, bi); });
+      try { if (window.__foLive) window.__foLive.mask(); } catch (eM4) {}
+    } catch (e) { try { console.warn("foRenderBoss", e); } catch (e2) {} }
+  }
+  try { window.foRenderBoss = foRenderBoss; } catch (eEx6) {}
+  setInterval(foRenderBoss, 900);
+  window.addEventListener("hashchange", function () {
+    if ((location.hash || "").split("?")[0] === "#/boss") setTimeout(foRenderBoss, 40);
+    else document.body.classList.remove("fo-boss-on");
+  });
+  try {
+    var boCss = document.createElement("style"); boCss.id = "fo-boss-css";
+    boCss.textContent = [
+      "html body.fo-boss-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
+      "#page .fo-boss{position:relative;min-height:100vh;color:#eef3fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#080d18;--bac:#C8674A}",
+      "#page .fo-boss *{box-sizing:border-box}",
+      // ambient art: the boss portrait, blown up, blurred and dimmed behind everything
+      ".fo-boss-bgart{position:fixed;inset:0;background-size:cover;background-position:center 28%;filter:blur(26px) brightness(.5) saturate(1.05);transform:scale(1.12);z-index:0}",
+      ".fo-boss-scrim{position:fixed;inset:0;background:radial-gradient(120% 90% at 50% 0%,rgba(8,13,24,.35),rgba(8,13,24,.86) 62%,rgba(6,10,18,.97));z-index:0}",
+      ".fo-boss-in{position:relative;z-index:1;max-width:1360px;margin:0 auto;padding:14px 22px 60px}",
+      ".fo-boss-nav{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 14px}",
+      ".fo-boss-nav a{font-family:Oswald,sans-serif;letter-spacing:1.5px;text-transform:uppercase;font-size:11px;font-weight:600;color:#cdd9ee;text-decoration:none;background:rgba(255,255,255,.06);border:1px solid rgba(150,180,225,.16);border-radius:999px;padding:7px 15px;transition:.14s}",
+      ".fo-boss-nav a:hover{background:rgba(255,255,255,.12);color:#fff}",
+      // hero
+      ".fo-boss-hero{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:30px;align-items:center;margin:6px 0 30px}",
+      ".fo-boss-portrait{position:relative;border-radius:20px;overflow:hidden;aspect-ratio:1/1;box-shadow:0 30px 70px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.08);background:#0b1424}",
+      ".fo-boss-portrait img{width:100%;height:100%;object-fit:cover;object-position:50% 18%}",
+      ".fo-boss-portrait:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,13,24,0) 40%,rgba(8,13,24,.55));pointer-events:none}",
+      ".fo-boss-conq{position:absolute;left:14px;top:14px;z-index:2;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.5px;font-size:11px;text-transform:uppercase;color:#0b1a12;background:#5fd39a;border-radius:999px;padding:5px 12px}",
+      ".fo-boss-eb{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:3.4px;font-size:11.5px;font-weight:600;color:var(--bac);filter:brightness(1.35)}",
+      ".fo-boss-lockup{display:flex;align-items:center;gap:20px;margin:10px 0 4px}",
+      ".fo-boss-crest{width:clamp(88px,13vw,150px);height:auto;flex:0 0 auto;filter:drop-shadow(0 12px 22px rgba(0,0,0,.5))}",
+      ".fo-boss-names h1{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:clamp(34px,5.2vw,64px);line-height:.9;margin:0;color:#fff;text-wrap:balance}",
+      ".fo-boss-lead{display:flex;align-items:center;gap:9px;margin-top:10px;flex-wrap:wrap}",
+      ".fo-boss-lead .fo-boss-flag{width:26px;height:18px;border-radius:3px;object-fit:cover;box-shadow:0 1px 4px rgba(0,0,0,.5)}",
+      ".fo-boss-lead b{font-family:Oswald,sans-serif;letter-spacing:.5px;font-size:19px;color:#f3e6c8}",
+      ".fo-boss-lead span{font-size:13px;color:#93a4c0}",
+      ".fo-boss-type{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:16px 0 2px}",
+      ".fo-boss-badge{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;font-size:12px;color:#0d1524;background:var(--bac);border-radius:999px;padding:7px 16px;filter:brightness(1.08)}",
+      ".fo-boss-stars{display:inline-flex;align-items:center;gap:3px}",
+      ".fo-boss-stars em{font-style:normal;font-size:16px;color:#33405a;line-height:1}",
+      ".fo-boss-stars em.f{color:#EBC271}.fo-boss-stars em.h{background:linear-gradient(90deg,#EBC271 50%,#33405a 50%);-webkit-background-clip:text;background-clip:text;color:transparent}",
+      ".fo-boss-stars i{font-style:normal;font-size:11.5px;letter-spacing:1px;color:#8ea3c4;margin-left:7px;font-family:Oswald,sans-serif}",
+      ".fo-boss-motif{margin-top:14px;font-size:13px;color:#b9c6dd;max-width:640px;line-height:1.5}",
+      ".fo-boss-motif span{font-family:Oswald,sans-serif;letter-spacing:2px;font-size:10px;color:var(--bac);filter:brightness(1.3);margin-right:8px;font-weight:600}",
+      ".fo-boss-brand{margin:12px 0 0;font-size:15px;line-height:1.6;color:#dbe4f2;max-width:660px;font-style:italic;border-left:3px solid var(--bac);padding-left:14px}",
+      ".fo-boss-act{margin-top:20px}",
+      ".fo-boss-cta{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;font-size:14px;color:#0d1524;background:var(--bac);border:0;border-radius:12px;padding:14px 26px;cursor:pointer;filter:brightness(1.06);box-shadow:0 12px 30px rgba(0,0,0,.4);transition:.14s}",
+      ".fo-boss-cta:hover{transform:translateY(-2px);filter:brightness(1.18)}",
+      ".fo-boss-locked{font-family:Oswald,sans-serif;letter-spacing:1px;font-size:13px;color:#9fb0cc;background:rgba(255,255,255,.05);border:1px solid rgba(150,180,225,.16);border-radius:10px;padding:12px 18px;display:inline-block}",
+      // section chrome
+      ".fo-boss-sec{margin:34px 0 0}",
+      ".fo-boss-sechd{display:flex;align-items:center;gap:14px;margin:0 0 16px}",
+      ".fo-boss-sechd i{flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(150,180,225,.28),transparent)}",
+      ".fo-boss-sechd b{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:3.5px;font-size:13px;color:#cdd9ee}",
+      // record
+      ".fo-boss-form{display:flex;align-items:center;gap:6px;justify-content:center;margin:0 0 16px;flex-wrap:wrap}",
+      ".fo-boss-formlabel{font-family:Oswald,sans-serif;letter-spacing:2px;font-size:11px;color:#8ea3c4;margin-right:6px}",
+      ".fo-boss-form em{font-style:normal;font-family:Oswald,sans-serif;font-weight:700;font-size:13px;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:7px}",
+      ".fo-boss-form em.w{background:rgba(95,211,154,.18);color:#7fe3b0;border:1px solid rgba(95,211,154,.4)}",
+      ".fo-boss-form em.l{background:rgba(224,110,110,.16);color:#f0a2a2;border:1px solid rgba(224,110,110,.36)}",
+      ".fo-boss-firsttie{font-size:13px;color:#93a4c0;font-style:italic}",
+      ".fo-boss-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}",
+      ".fo-boss-stat{background:rgba(16,24,40,.66);border:1px solid rgba(150,180,225,.14);border-radius:14px;padding:16px 16px;backdrop-filter:blur(4px)}",
+      ".fo-boss-stat b{display:block;font-family:Oswald,sans-serif;font-weight:700;font-size:26px;color:#fff;line-height:1}",
+      ".fo-boss-stat span{display:block;margin-top:6px;font-size:11.5px;letter-spacing:.5px;color:#9fb0cc}",
+      ".fo-boss-stat.won{border-color:rgba(95,211,154,.4);background:rgba(20,44,32,.6)}",
+      ".fo-boss-stat.won b{color:#7fe3b0;font-size:19px}",
+      // squad
+      ".fo-boss-note{text-align:center;font-size:13px;color:#9fb0cc;margin:-6px 0 20px}",
+      ".fo-boss-squad{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:10px;justify-items:center}",
+      ".fo-boss-card{zoom:.5;transition:transform .18s ease,filter .18s ease;filter:saturate(1.02)}",
+      ".fo-boss-card:hover{transform:translateY(-6px)}",
+      ".fo-boss-squad-empty{grid-column:1/-1;text-align:center;color:#8ea3c4;padding:30px}",
+      // phone
+      "@media(max-width:760px){",
+      "  .fo-boss-in{padding:10px 12px 50px}",
+      "  .fo-boss-hero{grid-template-columns:1fr;gap:18px}",
+      "  .fo-boss-portrait{max-width:280px;margin:0 auto}",
+      "  .fo-boss-lockup{gap:14px}",
+      "  .fo-boss-crest{width:74px}",
+      "  .fo-boss-squad{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px}",
+      "  .fo-boss-card{zoom:.4}",
+      "}"
+    ].join("");
+    (document.head || document.documentElement).appendChild(boCss);
+  } catch (eBoCss) {}
   try {
     var woCss = document.createElement("style"); woCss.id = "fo-world-css";
     woCss.textContent =
@@ -27589,6 +27839,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "@keyframes foWcIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}" +
       ".fo-world-card .wc-art{flex:0 0 218px;position:relative;min-height:250px}" +
       ".fo-world-card .wc-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 14%}" +
+      ".fo-world-card .wc-art .wc-crest{position:absolute;inset:auto 8px 8px auto;width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 4px 8px rgba(0,0,0,.6));z-index:2}" +
+      ".fo-world-card .wc-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}" +
+      "html body .fo-world-card .wc-dossier{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;font-size:11px;color:#EBC271;text-decoration:none;border-bottom:1px solid rgba(235,194,113,.4);padding-bottom:2px}" +
+      "html body .fo-world-card .wc-dossier:hover{color:#fff}" +
       "html body .fo-world-card .wc-x{position:absolute;top:9px;right:9px;z-index:2;width:28px;height:28px;border-radius:999px;background:rgba(5,20,40,.8) !important;border:1px solid rgba(255,255,255,.3) !important;color:#fff !important;font-size:11px;cursor:pointer;box-shadow:none !important}" +
       ".fo-world-card .wc-bd{flex:1;min-width:0;padding:20px 22px 19px;color:#fff}" +
       ".fo-world-card .wc-eb{font-family:Oswald,sans-serif;font-size:11px;font-weight:600;letter-spacing:2.8px;text-transform:uppercase;color:var(--wac,#F3D37A)}" +
