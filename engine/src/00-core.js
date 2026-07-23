@@ -1330,7 +1330,7 @@ function route(){
   try{
   // an empty hash becomes a real #/circuit hash (not just a default) so the
   // overlay page renderers - which gate on location.hash - actually paint
-  if(!location.hash){location.hash='#/league';return}
+  if(!location.hash){location.hash='#/home';return}
   const h=location.hash;
   const [path,qs]=h.slice(2).split('?');
   const q={};if(qs)for(const kv of qs.split('&')){const [k,v]=kv.split('=');q[k]=decodeURIComponent(v||'')}
@@ -1338,7 +1338,7 @@ function route(){
   // Circuit-only era: the club dashboard and the league/office/training
   // surfaces are retired; any old link or bookmark lands on the Circuit.
   const GONE={club:1,office:1,nets:1,stats:1,matches:1,matchday:1,training:1,transfers:1,story:1,friendly:1,scout:1,reports:1,commentary:1,calibration:1,editor:1,welcome:1,founder:1,create:1};
-  if(GONE[App.page]){location.hash='#/league';App.page='league';return}
+  if(GONE[App.page]){location.hash='#/home';App.page='home';return}
   // the conquest Circuit is retired; its hub folds into the repurposed World map
   if(App.page==='circuit'||App.page==='tour'){location.hash='#/world';App.page='world';return}
   // #9 Draft lock: a new player cannot navigate away until they've confirmed a legal squad.
@@ -1347,7 +1347,7 @@ function route(){
     if(!store('fo_welcomed') && App.page!=='manual' && App.page!=='help'){
       // the overlay front door (name your club) owns entry; park the page on
       // the league behind it (the Circuit hub is retired)
-      if(App.page!=='league'){location.hash='#/league';return}
+      if(App.page!=='home'){location.hash='#/home';return}
     }
   }catch(e){}
   document.querySelectorAll('#topbar a').forEach(a=>a.classList.toggle('on',a.dataset.nav===App.page));
@@ -1355,11 +1355,11 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={league:'foRenderLeague',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire'}[App.page];
+  const OV={home:'foRenderHome',league:'foRenderLeague',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire'}[App.page];
   if(P[App.page])P[App.page](q);
   else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){}}
   else if(OV){/* overlay not parsed yet: leave the page blank, its interval paints */}
-  else{location.hash='#/league';return}
+  else{location.hash='#/home';return}
   }catch(eRoute){
     // a broken page renderer must not freeze navigation for the whole session
     try{console.error('route failed on '+(App&&App.page),eRoute)}catch(e2){}

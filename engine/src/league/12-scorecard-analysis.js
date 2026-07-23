@@ -2491,6 +2491,7 @@
       // toolbar collapse, rubber-band overscroll) must read as night, never
       // as the cream document background
       "html body.fo-home-on,html body.ftpskin.fo-home-on{background:#0B1322 !important}" +
+      "html body.fo-home-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}" +
       "html body.fo-home-on #topbar,html body.ftpskin.fo-home-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(4,10,20,.6),rgba(4,10,20,.24) 60%,transparent) !important;border-bottom:none !important;box-shadow:none !important}" +
       "body.fo-home-on #fo-top-status{display:none}" +
       // #page clips x-overflow for ordinary pages - the wallpaper must paint
@@ -2539,6 +2540,22 @@
       "html body #page .fo-hg2 .hg-bar button:hover{border-color:#F3D37A !important;color:#F3D37A !important}" +
       ".fo-hg2 .hg-bar .hg-ls{display:none}" +
       "@media(max-width:760px){.fo-hg2 .hg-bar .hg-lf{display:none}.fo-hg2 .hg-bar .hg-ls{display:inline}}" +
+      // ---- the club home, elevated: golden-hour bloom, luminous depth ----
+      ".fo-home2 .hg-bg{animation:foHgIn 1.4s ease-out,foHgDrift 34s ease-in-out 1.4s infinite alternate;object-position:50% 46%}" +
+      "@keyframes foHgDrift{from{transform:scale(1.06) translate3d(0,0,0)}to{transform:scale(1.13) translate3d(-2.2%,-1.4%,0)}}" +
+      "@media(prefers-reduced-motion:reduce){.fo-home2 .hg-bg{animation:foHgIn .9s ease-out !important}}" +
+      ".fo-home2 .hg-scrim{background:linear-gradient(to top,rgba(5,10,22,.95),rgba(6,13,28,.24) 44%,rgba(126,166,255,.06) 74%),linear-gradient(118deg,rgba(5,10,22,.5),transparent 46%)}" +
+      ".fo-home2 .hg-bloom{position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:screen;opacity:.82;background:radial-gradient(58% 42% at 76% 4%,color-mix(in srgb,#ffe0a0 55%,transparent),transparent 60%),radial-gradient(70% 46% at 12% 108%,color-mix(in srgb,var(--lac,#EBC271) 34%,transparent),transparent 62%)}" +
+      ".fo-home2 .hg-id{left:34px;bottom:96px;max-width:64%}" +
+      ".fo-home2 .hg-id i{color:color-mix(in srgb,var(--lac,#EBC271) 55%,#F6DFA6);letter-spacing:3.4px}" +
+      ".fo-home2 .hg-id b{font-size:clamp(40px,6.2vw,78px);text-shadow:0 2px 26px rgba(0,0,0,.6),0 0 42px color-mix(in srgb,var(--lac,#EBC271) 40%,transparent)}" +
+      ".fo-home2 .hg-id .hg-sub{font-size:14.5px;color:rgba(255,255,255,.9);margin-top:4px}" +
+      ".fo-home2 .hg-id .hg-form em.hg-t{background:rgba(235,214,140,.85);color:#20180a}" +
+      ".fo-home2 .hg-wx{top:74px;left:22px;background:rgba(9,18,34,.55);border-color:rgba(255,255,255,.2)}" +
+      ".fo-home2 .hg-bar{gap:12px;padding:16px 16px 24px;background:linear-gradient(to top,rgba(4,9,20,.94),rgba(4,9,20,.42) 74%,transparent)}" +
+      "html body #page .fo-home2 .hg-bar button{font-size:11px;letter-spacing:2.6px;padding:13px 24px;background:color-mix(in srgb,var(--lac,#EBC271) 12%,rgba(255,255,255,.06)) !important;border:1.5px solid color-mix(in srgb,var(--lac,#EBC271) 44%,rgba(255,255,255,.22)) !important;color:#F4EEDD !important;backdrop-filter:blur(8px);transition:transform .16s ease,box-shadow .16s ease,background .16s ease}" +
+      "html body #page .fo-home2 .hg-bar button:hover{transform:translateY(-2px);color:#fff !important;background:color-mix(in srgb,var(--lac,#EBC271) 30%,rgba(255,255,255,.08)) !important;border-color:color-mix(in srgb,var(--lac,#EBC271) 80%,#fff) !important;box-shadow:0 10px 30px color-mix(in srgb,var(--lac,#EBC271) 35%,transparent),0 0 0 1px color-mix(in srgb,var(--lac,#EBC271) 40%,transparent) inset !important}" +
+      "@media(max-width:760px){.fo-home2 .hg-id{left:18px;bottom:104px;max-width:88%}.fo-home2 .hg-bar{flex-wrap:wrap;gap:8px;padding:12px 12px 22px}html body #page .fo-home2 .hg-bar button{font-size:10px;padding:11px 16px;letter-spacing:1.8px}}" +
       "@media(max-width:760px){" +
       // phones go cinematic: the camera drifts across the whole painting
       // while the title card builds in bands from the bottom
@@ -2765,11 +2782,13 @@
         a.classList.toggle("on", (location.hash || "").split("?")[0] === hash);
         return a;
       };
+      var hm = mkPill("fo-home-nav", "Club", "#/home");
       var lg = mkPill("fo-lg-nav", "League", "#/league");
       var cp = mkPill("fo-cup-nav", "Cup", "#/cup");
       var anchor = wrap.querySelector("a[data-nav='club'], a[data-nav='home']");
       var want = anchor ? anchor.nextSibling : wrap.firstChild;
-      if (lg.parentNode !== wrap) wrap.insertBefore(lg, want);
+      if (hm.parentNode !== wrap) wrap.insertBefore(hm, want);
+      if (lg.parentNode !== wrap) wrap.insertBefore(lg, hm.nextSibling);
       if (cp.parentNode !== wrap) wrap.insertBefore(cp, lg.nextSibling);
     } catch (e) {}
   }
@@ -4405,6 +4424,64 @@
   try { window.__foLgAPI = { state: foLgState, ensure: foLgEnsure, nation: foLgNation, table: foLgTable, lineup: foLgLineup, play: foLgPlay }; } catch (eApi) {}
 
   // ---- the league hub (#/league) ---------------------------------------
+  // ============ the club home: a full-bleed home-ground at golden hour =======
+  //  The beloved wallpaper hub, restored as the front door. The home art is a
+  //  Makoto-Shinkai-style painting (dawn mist / sunbreak / blue hour) chosen by
+  //  the time of day; the club's identity, league standing and form sit on it,
+  //  and the day's routes fan out below.
+  function foHomeForm() {
+    try {
+      var s = foLgState(); if (!s || !s.res) return "";
+      var arr = [];
+      Object.keys(s.res).forEach(function (k) { var p = k.split(":"), i = +p[1], j = +p[2]; if (i === 0 || j === 0) arr.push({ r: +p[0], w: s.res[k].w }); });
+      arr.sort(function (a, b) { return a.r - b.r; });
+      return arr.slice(-6).map(function (x) { var tie = x.w < 0, win = x.w === 0; return "<em class='" + (tie ? "hg-t" : win ? "hg-w" : "hg-l") + "'>" + (tie ? "T" : win ? "W" : "L") + "</em>"; }).join("");
+    } catch (e) { return ""; }
+  }
+  function foRenderHome() {
+    try {
+      try { foCxNav(); } catch (eN) {}
+      if ((location.hash || "").split("?")[0] !== "#/home") return;
+      var page = document.getElementById("page"); if (!page) return;
+      // re-fit the wallpaper to the viewport on every tick (the first fit can
+      // run before layout settles and leave the CTA bar below the fold)
+      try { var ex0 = page.querySelector(".fo-hg2"); if (ex0) foHgFit(ex0); } catch (eF0) {}
+      var v = foHgVariant();
+      var me = null; try { me = userTeam(); } catch (e) {}
+      var nation = foLgNation(), region = (foRegionById(nation) || {}).r || { nm: "your nation", ac: "#EBC271" };
+      var s = null, pos = 0, round = 0, done = false;
+      try { s = foLgEnsure(); var tbl = foLgTable(foLgLineup(nation), s.res || {}); pos = tbl.findIndex(function (x) { return x.name === (foLgMyTeam().name); }) + 1; round = Math.min(14, s.round || 0); done = round >= 14; } catch (eS) {}
+      var beads = foHomeForm() || "<span class='hg-nf'>the season awaits</span>";
+      var posLine = done ? "Season complete &middot; you finished " + foOrdinal(pos || 8) : (pos ? foOrdinal(pos) + " in the " + region.nm + " League &middot; Round " + (round + 1) + " of 14" : region.nm + " League");
+      var sig = "home|" + v + "|" + ((me && me.name) || "") + "|" + pos + "|" + round;
+      if (page.__foHomeSig === sig && page.querySelector(".fo-home2")) return;
+      page.__foHomeSig = sig;
+      var btn = function (id, lf, ls) { return "<button type='button' id='" + id + "'><span class='hg-lf'>" + lf + "</span><span class='hg-ls'>" + ls + "</span></button>"; };
+      page.innerHTML =
+        "<div class='fo-hg2 fo-home2' style='--lac:" + (region.ac || "#EBC271") + "'>" +
+        "<img class='hg-bg' src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
+        "<div class='hg-grain'></div><div class='hg-scrim'></div><div class='hg-bloom'></div>" +
+        "<div class='hg-wx'><b>HOME GROUND</b><span>" + (FO_HG_WX[v] || "") + "</span></div>" +
+        "<div class='hg-id'><i>YOUR CLUB &middot; THE ELEVEN ARCHES</i>" +
+        "<b>" + E((me && me.name) || "Your Club") + "</b>" +
+        "<span class='hg-sub'>" + posLine + "</span>" +
+        "<span class='hg-form'><u>FORM</u>" + beads + "</span></div>" +
+        "<div class='hg-bar'>" +
+        btn("fo-hm-lg", "YOUR LEAGUE", "LEAGUE") +
+        btn("fo-hm-sq", "THE SQUAD", "SQUAD") +
+        btn("fo-hm-wd", "WORLD MAP", "WORLD") +
+        btn("fo-hm-cp", "CHAMPIONS CUP", "CUP") +
+        "</div></div>";
+      try { document.body.classList.add("fo-home-on"); document.body.classList.remove("fo-boss-on"); } catch (eBc) {}
+      try { foHgFit(page.querySelector(".fo-hg2")); } catch (eF) {}
+      var go = function (id, hash) { var b = page.querySelector("#" + id); if (b) b.addEventListener("click", function () { location.hash = hash; if (typeof window.route === "function") window.route(); }); };
+      go("fo-hm-lg", "#/league"); go("fo-hm-sq", "#/squad"); go("fo-hm-wd", "#/world"); go("fo-hm-cp", "#/cup");
+      try { if (window.__foLive) window.__foLive.mask(); } catch (eM) {}
+    } catch (e) { try { console.warn("foRenderHome", e); } catch (e2) {} }
+  }
+  try { window.foRenderHome = foRenderHome; } catch (eHm) {}
+  setInterval(foRenderHome, 1500);
+  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] === "#/home") setTimeout(foRenderHome, 40); });
   // recent world headlines that mention a nation (its rival-league form)
   function foLgWireFor(region) {
     try {
