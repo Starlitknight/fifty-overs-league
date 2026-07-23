@@ -1,19 +1,21 @@
 // ===========================================================================
-//  The Living World — deterministic timeline core (Phase 0, slice 1)
+//  The Living World — deterministic timeline core (Phase 0)
 //
 //  The whole bot world is a PURE FUNCTION of (worldSeed, day). Given a seed and
-//  a global day index this module can tell you the season, the phase, every
-//  region league's fixtures and standings, the Champions Cup bracket, and how
+//  a global day index this module yields the season, the phase, every region
+//  league's fixtures and table, the Champions Cup (groups + knockouts), and how
 //  the world has aged — identically for every player, with no server and no
 //  live simulation. Match RESULTS are injected (a callback), so this scaffolding
 //  is testable in pure Node now and plugs into the real match engine later.
 //
-//  Design invariants (verified in test/world-timeline.test.mjs):
-//   - determinism: same (seed, day) => byte-identical world
-//   - each league is a proper double round-robin (home & away)
-//   - the Champions Cup field is every league winner + Thorne
-//   - Thorne cannot be beaten by AI (he wins every Cup until a human enters)
-//   - the world ages each season: players age, decline, and retire
+//  Calendar (30-day season): 28 match days ALTERNATE league / Champions Cup
+//  (league on even days, cup on odd), then a 2-day break (rollover: ageing).
+//  → 14 league rounds + 14 cup days + 2 break.
+//
+//  Champions Cup: 20 teams = the PREVIOUS season's 19 league winners + Thorne
+//  (season 0 seeds the 19 bosses). Four groups of five, single round-robin, top
+//  two advance → QF → SF → 3rd place → final. Thorne beats every AI team in
+//  every cup match (groups included); only a human can end his reign.
 // ===========================================================================
 
 // ---- seeded PRNG (mulberry32) — no Math.random anywhere in the world path ---
@@ -26,15 +28,19 @@ export function rng(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-// a stable 32-bit hash so any (seed, ...labels) pair yields its own stream
 export function hash32(str) {
   let h = 2166136261 >>> 0;
   for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
   return h >>> 0;
 }
 function stream(seed, ...parts) { return rng(hash32(seed + "|" + parts.join("|"))); }
+function shuffle(arr, rnd) {   // deterministic Fisher-Yates
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
 
-// ---- the 19 nations + Thorne (ids/names/bosses mirror FO_CX_REGIONS) --------
+// ---- the 19 nations (ids/names/bosses mirror FO_CX_REGIONS) + Thorne ---------
 export const REGIONS = [
   { id: "eng", name: "England", boss: "Sir Giles Pemberley", arch: "master" },
   { id: "ire", name: "Ireland", boss: "Declan Moriarty", arch: "clutch" },
@@ -57,21 +63,26 @@ export const REGIONS = [
   { id: "can", name: "Canada", boss: "Marcus Dhillon", arch: "clutch" }
 ];
 export const THORNE_ID = "thorne";
+export const THORNE = { id: THORNE_ID, name: "Thorne's Invincible XI", strength: 999, human: false, kind: "thorne" };
 
 // ---- calendar ---------------------------------------------------------------
-// One fixture-round resolves per real day. An 8-team double round-robin is 14
-// rounds; then the Champions Cup knockout; then a rollover day (ageing).
-export const LEAGUE_FLOOR = 8;
-export const LEAGUE_ROUNDS = 2 * (LEAGUE_FLOOR - 1);   // 14
-export const CUP_DAYS = 5;                             // 20-team knockout w/ byes
-export const SEASON_DAYS = LEAGUE_ROUNDS + CUP_DAYS + 1; // +1 rollover day
+export const LEAGUE_SIZE = 8;                       // boss + up to 7 humans/bots
+export const LEAGUE_ROUNDS = 2 * (LEAGUE_SIZE - 1); // 14 (double round-robin)
+export const MATCH_DAYS = 28;                       // 14 league + 14 cup, alternating
+export const BREAK_DAYS = 2;
+export const SEASON_DAYS = MATCH_DAYS + BREAK_DAYS; // 30
+export const CUP_SLOTS = MATCH_DAYS / 2;            // 14
+// which cup stage each of the 14 cup days carries; 9 match-rounds + 5 hype/rest
+// days, the final on the last cup day so it climaxes the season.
+export const CUP_STAGES = ["g0", "g1", "g2", "g3", "g4", "rest", "qf", "rest", "sf", "rest", "third", "rest", "rest", "final"];
 
 export function dayState(day) {
   const season = Math.floor(day / SEASON_DAYS);
   const d = day % SEASON_DAYS;
-  if (d < LEAGUE_ROUNDS) return { season, dayInSeason: d, phase: "league", round: d };
-  if (d < LEAGUE_ROUNDS + CUP_DAYS) return { season, dayInSeason: d, phase: "cup", cupDay: d - LEAGUE_ROUNDS };
-  return { season, dayInSeason: d, phase: "rollover" };
+  if (d >= MATCH_DAYS) return { season, dayInSeason: d, phase: "break" };
+  if (d % 2 === 0) return { season, dayInSeason: d, phase: "league", round: d / 2 };
+  const cupSlot = (d - 1) / 2;
+  return { season, dayInSeason: d, phase: "cup", cupSlot, stage: CUP_STAGES[cupSlot] };
 }
 
 // ---- team & player generation (deterministic per seed+season) ---------------
@@ -80,14 +91,11 @@ const ROLES = ["opener", "opener", "top", "top", "middle", "middle", "allrounder
 
 function makePlayer(seed, teamId, i, season) {
   const r = stream(seed, "player", teamId, i, "s" + season);
-  const role = ROLES[i % ROLES.length];
-  // ages spread across a career; season shifts the cohort so the world ages
-  const baseAge = 18 + Math.floor(r() * 17);            // 18..34
-  const skill = 40 + Math.floor(r() * 55);              // 40..94
-  return { id: teamId + "-p" + i, name: teamId.toUpperCase() + " " + (i + 1), role, age: baseAge, skill };
+  return {
+    id: teamId + "-p" + i, name: teamId.toUpperCase() + " " + (i + 1),
+    role: ROLES[i % ROLES.length], age: 18 + Math.floor(r() * 17), skill: 40 + Math.floor(r() * 55)
+  };
 }
-
-// career phase from age (prospect -> rising -> peak -> veteran -> twilight)
 export function phaseOf(age) {
   if (age <= 21) return "prospect";
   if (age <= 25) return "rising";
@@ -95,149 +103,153 @@ export function phaseOf(age) {
   if (age <= 33) return "veteran";
   return "twilight";
 }
-
+function teamStrength(roster, bump) {
+  const top = roster.map(p => p.skill).sort((a, b) => b - a).slice(0, 11);
+  return Math.round((top.reduce((a, b) => a + b, 0) / top.length + bump) * 10) / 10;
+}
 function makeTeam(seed, region, kind, name, idx, season) {
   const teamId = region.id + "-" + (kind === "boss" ? "boss" : "b" + idx);
   const roster = [];
-  const n = 14;
-  for (let i = 0; i < n; i++) roster.push(makePlayer(seed, teamId, i, season));
-  // team strength = mean of the top XI skills, with a boss/style bump
-  const top = roster.map(p => p.skill).sort((a, b) => b - a).slice(0, 11);
-  let strength = top.reduce((a, b) => a + b, 0) / top.length;
-  if (kind === "boss") strength += 6;   // the boss club is strong even league-nerfed
-  return { id: teamId, regionId: region.id, kind, name, strength: Math.round(strength * 10) / 10, roster };
+  for (let i = 0; i < 14; i++) roster.push(makePlayer(seed, teamId, i, season));
+  return { id: teamId, regionId: region.id, kind, name, human: false, strength: teamStrength(roster, kind === "boss" ? 6 : 0), roster };
 }
 
-// Build a region's league for a given season: the boss club + bots to the floor.
+// A region's league for a season: the boss (permanent) + bots to the 8-team size.
 export function buildLeague(seed, region, season) {
   const teams = [makeTeam(seed, region, "boss", region.boss + "'s XI", 0, season)];
-  for (let i = 1; i < LEAGUE_FLOOR; i++) {
-    teams.push(makeTeam(seed, region, "bot", region.name + " " + toClubName(seed, region, i), i, season));
+  for (let i = 1; i < LEAGUE_SIZE; i++) {
+    const r = stream(seed, "club", region.id, i, season);
+    const suff = ["Rovers", "United", "CC", "Strollers", "Wanderers", "Athletic", "Town", "County"];
+    teams.push(makeTeam(seed, region, "bot", region.name + " " + suff[Math.floor(r() * suff.length)], i, season));
   }
   return { regionId: region.id, name: region.name, season, teams };
 }
-function toClubName(seed, region, i) {
-  const suff = ["Rovers", "United", "CC", "Strollers", "Wanderers", "Athletic", "Town", "County"];
-  const r = stream(seed, "club", region.id, i);
-  return suff[Math.floor(r() * suff.length)];
-}
-
-// Build the whole world for a season (19 leagues).
 export function buildWorld(seed, season = 0) {
   return { seed, season, leagues: REGIONS.map(rg => buildLeague(seed, rg, season)) };
 }
 
-// ---- double round-robin fixtures (circle method) ----------------------------
-export function roundRobin(teamIds) {
-  const ids = teamIds.slice();
-  if (ids.length % 2) ids.push(null);          // bye
-  const n = ids.length, half = n / 2, rounds = [];
-  const arr = ids.slice();
+// ---- round-robin schedules (circle method) ----------------------------------
+export function circleRounds(ids) {   // single round-robin rounds
+  const a = ids.slice();
+  if (a.length % 2) a.push(null);      // bye for odd fields
+  const n = a.length, half = n / 2, rounds = [];
+  const arr = a.slice();
   for (let r = 0; r < n - 1; r++) {
     const pairs = [];
     for (let i = 0; i < half; i++) {
-      const a = arr[i], b = arr[n - 1 - i];
-      if (a != null && b != null) pairs.push(r % 2 ? [b, a] : [a, b]); // alternate home/away
+      const x = arr[i], y = arr[n - 1 - i];
+      if (x != null && y != null) pairs.push(r % 2 ? [y, x] : [x, y]);
     }
     rounds.push(pairs);
-    arr.splice(1, 0, arr.pop());               // rotate, first fixed
+    arr.splice(1, 0, arr.pop());        // rotate, first fixed
   }
-  // second leg: same pairings, venues reversed (home & away)
-  const second = rounds.map(rd => rd.map(([a, b]) => [b, a]));
-  return rounds.concat(second);
+  return rounds;
+}
+export function roundRobin(ids) {       // double (home & away)
+  const first = circleRounds(ids);
+  return first.concat(first.map(rd => rd.map(([x, y]) => [y, x])));
 }
 
-// ---- resolving a league via an injected result function --------------------
+// ---- resolving a round-robin table via an injected result function ----------
 // resultFn(homeTeam, awayTeam, ctx) => { winner: teamId | null(tie) }
+function tableFrom(teams) {
+  const t = {};
+  teams.forEach(x => { t[x.id] = { id: x.id, name: x.name, P: 0, W: 0, L: 0, T: 0, pts: 0, strength: x.strength }; });
+  return t;
+}
+function record(table, hId, aId, winner) {
+  const h = table[hId], a = table[aId]; h.P++; a.P++;
+  if (winner === hId) { h.W++; a.L++; h.pts += 2; }
+  else if (winner === aId) { a.W++; h.L++; a.pts += 2; }
+  else { h.T++; a.T++; h.pts++; a.pts++; }
+}
+const rank = (x, y) => y.pts - x.pts || y.W - x.W || y.strength - x.strength || (x.id < y.id ? -1 : 1);
+
 export function playLeague(league, resultFn) {
-  const table = {};
-  league.teams.forEach(t => { table[t.id] = { id: t.id, name: t.name, P: 0, W: 0, L: 0, T: 0, pts: 0, strength: t.strength }; });
+  const table = tableFrom(league.teams);
   const byId = Object.fromEntries(league.teams.map(t => [t.id, t]));
-  const rounds = roundRobin(league.teams.map(t => t.id));
-  rounds.forEach((rd, ri) => rd.forEach(([hId, aId]) => {
-    const res = resultFn(byId[hId], byId[aId], { competition: "league", regionId: league.regionId, round: ri });
-    const h = table[hId], a = table[aId];
-    h.P++; a.P++;
-    if (res.winner === hId) { h.W++; a.L++; h.pts += 2; }
-    else if (res.winner === aId) { a.W++; h.L++; a.pts += 2; }
-    else { h.T++; a.T++; h.pts++; a.pts++; }
-  }));
-  const standings = Object.values(table).sort((x, y) =>
-    y.pts - x.pts || y.W - x.W || y.strength - x.strength || (x.id < y.id ? -1 : 1));
-  return { standings, winner: standings[0].id, rounds };
+  roundRobin(league.teams.map(t => t.id)).forEach((rd, ri) => rd.forEach(([h, a]) =>
+    record(table, h, a, resultFn(byId[h], byId[a], { competition: "league", regionId: league.regionId, round: ri }).winner)));
+  const standings = Object.values(table).sort(rank);
+  return { standings, winner: standings[0].id, winnerTeam: byId[standings[0].id] };
 }
 
-// ---- the Champions Cup: league winners + Thorne, Thorne unbeatable ----------
-// A single-elimination bracket padded with byes to the next power of two, top
-// seeds getting the byes. Thorne is seeded #1 and cannot lose to an AI team.
-export function championsCupField(world, resultFn) {
-  // seed by league-winning team strength; Thorne first, always.
-  const winners = world.leagues.map(lg => {
-    const { winner, standings } = playLeague(lg, resultFn);
-    const t = lg.teams.find(x => x.id === winner);
-    return { id: winner, name: t.name, strength: t.strength, human: false };
-  });
-  winners.sort((a, b) => b.strength - a.strength);
-  const thorne = { id: THORNE_ID, name: "Thorne's Invincible XI", strength: 999, human: false };
-  return [thorne, ...winners];
-}
-
-export function playCup(field, resultFn) {
-  // pad to power of two with byes; top seeds (index 0..) get the byes
-  let size = 1; while (size < field.length) size *= 2;
-  const byes = size - field.length;
-  let alive = field.slice();
-  // give byes: the top `byes` seeds skip round 1 by pairing against a null
-  const bracket = [];
-  const roundLog = [];
-  // simple sequential pairing after seeding (good enough for the deterministic
-  // spine; true snake-seeding comes with the bracket-art phase)
-  let round = alive.slice();
-  // insert byes as nulls interleaved so top seeds advance free
-  const padded = [];
-  for (let i = 0; i < round.length; i++) {
-    padded.push(round[i]);
-    if (i < byes) padded.push(null);      // top `byes` seeds get a null opponent
-  }
-  round = padded;
-  let rNo = 0;
-  while (round.length > 1) {
-    const next = [];
-    const pairs = [];
-    for (let i = 0; i < round.length; i += 2) {
-      const a = round[i], b = round[i + 1] ?? null;
-      pairs.push([a && a.id, b && b.id]);
-      if (!a) { next.push(b); continue; }
-      if (!b) { next.push(a); continue; }   // bye
-      // Thorne is unbeatable by AI
-      let winner;
-      if (a.id === THORNE_ID && !b.human) winner = a;
-      else if (b.id === THORNE_ID && !a.human) winner = b;
-      else { const res = resultFn(a, b, { competition: "cup", round: rNo }); winner = res.winner === a.id ? a : b; }
-      next.push(winner);
+// ---- the Champions Cup field: last season's winners + Thorne ----------------
+// season 0 seeds the 19 bosses; season N seeds season (N-1)'s league winners.
+export function cupField(seed, season, resultFn) {
+  const entrants = REGIONS.map(rg => {
+    if (season === 0) {
+      const lg = buildLeague(seed, rg, 0);
+      const boss = lg.teams.find(t => t.kind === "boss");
+      return { id: boss.id, name: boss.name, strength: boss.strength, human: false, regionId: rg.id };
     }
-    roundLog.push({ round: rNo, pairs });
-    round = next; rNo++;
-  }
-  const champion = round[0];
-  return { champion: champion.id, rounds: roundLog };
+    const w = playLeague(buildLeague(seed, rg, season - 1), resultFn).winnerTeam;
+    return { id: w.id, name: w.name, strength: w.strength, human: !!w.human, regionId: rg.id };
+  });
+  return [THORNE, ...entrants];   // 20 teams
+}
+
+// Thorne beats every AI side; only a human result stands against him.
+function cupResult(resultFn) {
+  return (a, b, ctx) => {
+    if (a.id === THORNE_ID && !b.human) return { winner: a.id };
+    if (b.id === THORNE_ID && !a.human) return { winner: b.id };
+    return resultFn(a, b, ctx);
+  };
+}
+
+// ---- the Champions Cup: groups -> knockout ----------------------------------
+export function drawGroups(field, seed, season) {
+  const order = shuffle(field, stream(seed, "cupdraw", season));
+  return [0, 1, 2, 3].map(g => order.filter((_, i) => i % 4 === g));  // 4 groups of 5
+}
+function playGroup(teams, resFn) {
+  const table = tableFrom(teams);
+  const byId = Object.fromEntries(teams.map(t => [t.id, t]));
+  circleRounds(teams.map(t => t.id)).forEach((rd, ri) => rd.forEach(([h, a]) =>
+    record(table, h, a, resFn(byId[h], byId[a], { competition: "cup-group", round: ri }).winner)));
+  const standings = Object.values(table).sort(rank);
+  return { standings, teams: byId };
+}
+function ko(a, b, resFn, stage) {   // one knockout tie -> winner & loser teams
+  const res = resFn(a, b, { competition: "cup", stage });
+  return res.winner === a.id ? { win: a, lose: b } : { win: b, lose: a };
+}
+
+export function playCup(field, seed, season, resultFn) {
+  const resFn = cupResult(resultFn);
+  const groups = drawGroups(field, seed, season);
+  const gres = groups.map(g => playGroup(g, resFn));
+  const adv = gres.map(r => r.standings.slice(0, 2).map(s => r.teams[s.id]));  // [ [W,R] per group ]
+  const [A, B, C, D] = adv;
+  // cross-group QF so group-mates can't meet before the final
+  const qf = [ko(A[0], B[1], resFn, "qf"), ko(C[0], D[1], resFn, "qf"),
+              ko(B[0], A[1], resFn, "qf"), ko(D[0], C[1], resFn, "qf")];
+  const sf = [ko(qf[0].win, qf[1].win, resFn, "sf"), ko(qf[2].win, qf[3].win, resFn, "sf")];
+  const third = ko(sf[0].lose, sf[1].lose, resFn, "third");
+  const final = ko(sf[0].win, sf[1].win, resFn, "final");
+  return {
+    groups: gres.map(r => r.standings),
+    champion: final.win.id, runnerUp: final.lose.id, third: third.win.id,
+    bracket: { qf, sf, third, final }
+  };
+}
+
+// convenience: play a whole season's Cup straight from (seed, season)
+export function seasonCup(seed, season, resultFn) {
+  return playCup(cupField(seed, season, resultFn), seed, season, resultFn);
 }
 
 // ---- ageing: the whole world grows old at each rollover ---------------------
-// Returns a NEW roster: age +1, retire the old, replace retirees with a youth.
 export function ageRoster(roster, seed, teamId, season) {
-  const kept = [];
-  let youthN = 0;
+  const kept = []; let youthN = 0;
   for (const p of roster) {
     const age = p.age + 1;
-    // retirement: outfielders 35+, a soft chance 34+; keepers/spinners linger
     const retireAge = (p.role === "keeper" || p.role === "spin") ? 37 : 35;
     if (age >= retireAge) { youthN++; continue; }
-    // decline past the peak
     const decline = age > 30 ? (age - 30) * 1.4 : 0;
     kept.push({ ...p, age, skill: Math.max(20, Math.round((p.skill - decline) * 10) / 10) });
   }
-  // promote fresh prospects for every retiree
   for (let i = 0; i < youthN; i++) {
     const r = stream(seed, "youth", teamId, season, i);
     kept.push({ id: teamId + "-y" + season + "-" + i, name: teamId.toUpperCase() + " youth", role: ROLES[Math.floor(r() * ROLES.length)], age: 18 + Math.floor(r() * 3), skill: 42 + Math.floor(r() * 40) });

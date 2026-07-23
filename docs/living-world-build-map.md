@@ -19,30 +19,40 @@ world's founding legend.
 
 ## Locked decisions (v1)
 
-- **One league per region** now; a **pyramid of divisions** is added per region
-  only when it outgrows a single tier.
-- **<100 players in year one.** Leagues are **variable-size**: a region's league
-  holds every human who picks it, plus bots up to a **floor of 8**. England may
-  be a 15-team league, Kenya an 8-team (mostly bots). No slots, no waiting.
-- **24-hour real clock.** One fixture-round resolves per real day at a fixed
-  **match hour** (the world's heartbeat). Season ≈ **3 weeks**: ~2 weeks regular
-  league + ~1 week Champions Cup + a rollover day (ageing, ceremonies) → next
-  season. ~17 seasons a year.
-- **8-team floor, double round-robin (home & away).**
-- The **boss plays the league nerfed** (holding his best XI back) and appears at
-  **full strength only in the Champions Cup**. Beatable in the league, brutal in
-  the Cup. Scouting his B-team via friendlies reveals who he holds back.
-- **Thorne is unbeatable by AI in the Cup.** Only a human can end his reign.
-  Until then he wins every year; runner-up and third vary.
+- **The shared world *is* the game — no solo mode.** An account and a place in
+  the world are required to play. (One offline try-out match for a brand-new
+  visitor is the most we'd consider; there is no standalone solo career.)
+- **Fixed 8-team leagues, one per region. No pyramid yet.** Each region league is
+  the region **boss (permanent) + up to 7 humans, bots filling the rest**. As
+  humans join, they replace bots. A region is **full at 7 humans**; a newcomer
+  who picks a full nation is asked to pick another. The boss slot is never lost.
+  (The division pyramid comes only when regions routinely fill.)
+- **Format: double round-robin (home & away) = 14 rounds.**
+- **The calendar alternates, both competitions running at once.** A **30-day
+  season**: 28 match days that **alternate league / Champions Cup** (league on
+  even days, cup on odd), then a **2-day break** (rollover: ageing, ceremonies).
+  → 14 league days + 14 cup days + 2. ~12 seasons a year (deliberately fast for
+  launch; trivially slowed later).
+- **The Champions Cup — 20 teams (19 nations' entrants + Thorne):**
+  - **Group stage:** four groups of five, drawn randomly (deterministically) each
+    season; **single round-robin** (10 matches/group, 40 total, 5 rounds).
+  - **Knockouts:** top two per group advance (8) → **quarter-finals → semi-finals
+    → 3rd-place play-off → final.** 9 match-rounds; the 14 cup days carry them
+    with rest days the Wire uses to build hype, the **final on the last match day.**
+  - **Qualification is by *last* season's league:** a season's Cup features the
+    **previous season's 19 league winners + Thorne** (season 0 seeds the 19
+    bosses). So **winning your league books next season's Champions Cup** — that
+    is the monumental prize, and a human first appears in the Cup the season after
+    they win their region.
+- The **boss plays the league nerfed** (holds his best XI back) and is at **full
+  strength only in the Champions Cup**. Beatable in the league, brutal in the Cup.
+- **Thorne beats every AI team in every Cup match — group stage included.** He
+  wins every Cup until a **human** knocks him out. Runner-up and third vary.
+- **Match model:** set orders before the daily lock → your fixture **auto-resolves
+  at match hour whether or not you are online**; if you are online you **watch it
+  live in the theatre**, otherwise you get the **replay + post-match stats**. You
+  never miss a match.
 - Your club joins the **region of the nation you choose** at club creation.
-
-### Deferred to Phase 1 (do not block Phase 0)
-
-- **Match model** — leaning: set orders before the daily lock → resolve at match
-  hour → **watch live in the theatre if online, else auto-resolve + replay**.
-- **Solo survival** — leaning: keep a **solo/offline sandbox**, but the real game
-  (a place in the world, leagues, the Cup, your name in the Wire) requires
-  signing in and joining the canonical world.
 
 ## Architecture spine
 
