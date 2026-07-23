@@ -48,10 +48,19 @@ for n in pres_names:
     pres += open('engine/src/presentation/' + n, encoding='utf-8').read()
 pres += '\n})();\n'
 
+# The Living World snapshot (a real, engine-played season) is baked in as a
+# global so the World Desk renders instantly with no fetch (works on file://
+# and GitHub Pages alike). Regenerate with tools/build-world-snapshot.mjs.
+try:
+    world_snapshot = open('world-snapshot.json', encoding='utf-8').read().strip() or '{}'
+except Exception:
+    world_snapshot = '{}'
+
 skin = lambda f: open('engine/src/skin/' + f, encoding='utf-8').read()
 head_css = ('<style id="fo-skin-login">' + skin('10-login.css') + '</style>' +
             '<style id="fo-skin-modal">' + skin('20-modal.css') + '</style>')
 tail = ('\n<style id="fo-brand">' + skin('30-brand.css') + '</style>\n' +
+        '<script id="fo-world-snapshot">window.FO_WORLD_SNAPSHOT=' + world_snapshot + ';</script>\n' +
         '<script id="fo-league">\n' + league + '\n</script>\n' +
         '<script id="fo-presentation">\n' + pres + '\n</script>\n')
 assert shell.count('</body></html>') == 1
