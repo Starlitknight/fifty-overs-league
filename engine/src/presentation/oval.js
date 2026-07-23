@@ -38,7 +38,7 @@ FOC.oval = (function () {
   }
 
   function stageHTML() {
-    return "<div id='fo-oval' title='Ball-by-ball theatre — outcomes are real; shot directions are illustrative.'>" +
+    return "<div id='fo-oval' title='Ball-by-ball theatre — a faithful map: every ball travels the exact line the engine played it, to the fielder who fielded it.'>" +
       "<div class='ov-board'>" +
       "<div class='ov-score'><span id='ov-team'></span><b id='ov-runs'></b><span id='ov-ov'></span></div>" +
       "<div class='ov-bats' id='ov-bats'></div>" +
@@ -288,6 +288,12 @@ FOC.oval = (function () {
     if (!svg || !ball) { done(); return; }
     if (reduced()) { flashPop(sym === "W" ? "OUT" : sym, pop); done(); return; }
     var spot = spotFor(lbl);   // the fielder the commentary actually named
+    // THE MAP IS FAITHFUL: the one true angle for this delivery comes from the
+    // engine — its recorded landing point (ex,ey), else the posted fielder it
+    // reached, else its sampled line. There is no decorative guess.
+    var trueA = (n.ex != null && n.ey != null) ? Math.atan2(n.ey - 130, n.ex - 200)
+      : spot ? Math.atan2(spot.y - 130, spot.x - 200)
+      : (dirDeg != null ? dirDeg * Math.PI / 180 : null);
     // one controlled sequence per delivery:
     // release -> pitch (pulse) -> batter -> contact -> shot -> result -> settle
     ball.setAttribute("opacity", "1");
@@ -326,26 +332,32 @@ FOC.oval = (function () {
             finish(620);
           });
         } else {
-          shatter(); flashPop("OUT", pop, "#a3242b"); foSnd("W");
-          finish(620);
+          // an edge with no man posted at the line: it carried behind to the
+          // keeper (caught behind / c&b), NOT bowled — the ball must travel
+          var kx = (trueA != null) ? 200 + Math.cos(trueA) * 26 : 200;
+          var ky = 70;
+          slide(ball, 200, 94, kx, ky, sp(240), function () {
+            flashPop("OUT", pop, "#a3242b"); pop2("CAUGHT" + (n.fld ? " · " + n.fld : " behind")); foSnd("W");
+            finish(620);
+          });
         }
         return;
       }
       if (sym === "·" || sym === "+") {
-        if (sym === "·" && spot) {
-          // defended or driven straight to the named fielder
-          slide(ball, 200, 94, spot.x, spot.y, sp(300), function () {
-            pulseDot(spot.g);
-            finish(180);
-          });
-        } else {
-          setTimeout(function () { ball.setAttribute("opacity", "0"); if (sym === "+") flashPop("extra", pop, "#5b6472"); done(); }, sp(160));
-        }
+        if (sym === "+") { setTimeout(function () { ball.setAttribute("opacity", "0"); flashPop("extra", pop, "#5b6472"); done(); }, sp(160)); return; }
+        // a dot still went SOMEWHERE — draw it to the fielder / line the engine
+        // recorded, so even defended balls read as real deliveries on the map
+        var dtx = spot ? spot.x : (trueA != null ? 200 + Math.cos(trueA) * 186 * 0.4 : 200);
+        var dty = spot ? spot.y : (trueA != null ? 130 + Math.sin(trueA) * 116 * 0.4 : 138);
+        slide(ball, 200, 94, dtx, dty, sp(300), function () {
+          if (spot) pulseDot(spot.g);
+          finish(180);
+        });
         return;
       }
-      // a scoring shot: real direction when the line names a position,
-      // seeded decoration otherwise
-      var a = spot ? Math.atan2(spot.y - 130, spot.x - 200) : (dirDeg != null ? dirDeg * Math.PI / 180 : angleFor(ballIx, sym));
+      // a scoring shot: always the engine's true line — the fielder it reached,
+      // or its recorded landing angle. Never a decorative guess.
+      var a = (trueA != null) ? trueA : 0;
       var dist = sym === "6" ? 1.1 : sym === "4" ? 0.97 : 0.45 + ((ballIx % 3) * 0.1);
       var tx = 200 + Math.cos(a) * 186 * dist;
       var ty = 130 + Math.sin(a) * 116 * dist;
@@ -523,6 +535,11 @@ FOC.oval = (function () {
           if (s) queue.push({ sym: s, ix: seenLogLen - i,
             lbl: (fresh[i].ev && fresh[i].ev.pos) || null,
             dir: (fresh[i].ev && fresh[i].ev.dir != null) ? fresh[i].ev.dir : null,
+            // the engine's OWN landing coordinates for this ball — the map is
+            // drawn to these, never to a decorative guess
+            ex: (fresh[i].ev && fresh[i].ev.x != null) ? fresh[i].ev.x : null,
+            ey: (fresh[i].ev && fresh[i].ev.y != null) ? fresh[i].ev.y : null,
+            fld: (fresh[i].ev && fresh[i].ev.fldNm) || null,
             wk: s === "W" ? fresh[i].out : null,
             no: fresh[i].no || "",
             reg: (fresh[i].ev && fresh[i].ev.region) || "" });
