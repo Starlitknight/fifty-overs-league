@@ -10504,7 +10504,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260723-0131-e28c5f";
+  var FO_BUILD = "20260723-0139-86d9b8";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18610,6 +18610,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foThSetSpeed(m) {
     try {
       window.__foThMult = m;
+      try {
+        var sc = document.getElementById("fo-mob-spdchip");
+        if (sc) sc.textContent = m + "\u00d7";
+        document.body.classList.remove("fo-spd-open");
+        clearTimeout(window.__foSpdT);
+      } catch (eSc) {}
       if (typeof UI !== "undefined") UI.apMs = foThMs();
       if (window.__ap) { clearInterval(window.__ap); window.__ap = null; }
       if (typeof foEnsureAutoplay === "function" && typeof M !== "undefined" && M && !M.done) foEnsureAutoplay();
@@ -18706,8 +18712,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     if (!on) {
       ["fo-th", "fo-thd", "fo-th-ov0", "fo-th-gfon", "fo-th-pin"].forEach(function (c) { document.body.classList.remove(c); });
       document.body.removeAttribute("data-thtab");
-      ["fo-th-rail", "fo-thd-x", "fo-th-gf", "fo-th-cut", "fo-th-gauge", "fo-mob-sheet", "fo-mob-nav", "fo-mstage"].forEach(function (id) { var e9 = document.getElementById(id); if (e9) e9.remove(); });
+      ["fo-th-rail", "fo-thd-x", "fo-th-gf", "fo-th-cut", "fo-th-gauge", "fo-mob-sheet", "fo-mob-nav", "fo-mob-spdchip", "fo-mstage"].forEach(function (id) { var e9 = document.getElementById(id); if (e9) e9.remove(); });
       document.body.removeAttribute("data-mobsheet");
+      document.body.classList.remove("fo-spd-open");
       return;
     }
     foThCss();
@@ -18769,6 +18776,16 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         var k9 = b9.getAttribute("data-mob");
         var cur9 = document.body.getAttribute("data-mobsheet") || "live";
         foMobSheet(k9 === cur9 && k9 !== "live" ? "live" : k9);
+      });
+      var sc9 = document.createElement("button");
+      sc9.id = "fo-mob-spdchip"; sc9.type = "button"; sc9.title = "Playback speed";
+      sc9.textContent = (window.__foThMult || 1) + "\u00d7";
+      document.body.appendChild(sc9);
+      sc9.addEventListener("click", function () {
+        document.body.classList.toggle("fo-spd-open");
+        clearTimeout(window.__foSpdT);
+        if (document.body.classList.contains("fo-spd-open"))
+          window.__foSpdT = setTimeout(function () { try { document.body.classList.remove("fo-spd-open"); } catch (e6) {} }, 5000);
       });
       document.addEventListener("click", function (e7) {
         var a7 = e7.target && e7.target.closest ? e7.target.closest(".ftp-match-links a") : null;
@@ -19058,12 +19075,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "}" +
       // ==== phone PORTRAIT: the ground is the stage, commands rise from a
       // ==== bottom sheet. A different composition, not a shrunken desktop.
-      "#fo-mob-sheet,#fo-mob-nav,#fo-mob-flash{display:none}" +
+      "#fo-mob-sheet,#fo-mob-nav,#fo-mob-flash,#fo-mob-spdchip{display:none}" +
       ".fo-mst-wx .cty-m{display:none}" +
       "@media (max-width:767.98px) and (orientation:portrait){" +
       // shell: dynamic viewport, safe areas, nothing scrolls
       "html body.fo-th #fo-mstage{height:100dvh !important;min-height:100dvh !important;z-index:50 !important}" +
-      "#fo-mstage::after{content:'';position:absolute;left:0;right:0;bottom:0;z-index:6;height:calc(160px + env(safe-area-inset-bottom));background:rgba(7,17,33,.9);border:1px solid rgba(255,255,255,.14);border-bottom:none;border-radius:20px 20px 0 0;backdrop-filter:blur(14px);box-shadow:0 -14px 40px rgba(0,0,0,.5);transition:height .28s ease;pointer-events:none}" +
+      "#fo-mstage::after{content:'';position:absolute;left:0;right:0;bottom:0;z-index:6;height:calc(124px + env(safe-area-inset-bottom));background:rgba(7,17,33,.9);border:1px solid rgba(255,255,255,.14);border-bottom:none;border-radius:20px 20px 0 0;backdrop-filter:blur(14px);box-shadow:0 -14px 40px rgba(0,0,0,.5);transition:height .28s ease;pointer-events:none}" +
       "body.fo-th[data-mobsheet='oval'] #fo-mstage::after{height:calc(100dvh - 126px - env(safe-area-inset-top))}" +
       "body.fo-th[data-mobsheet='score'] #fo-mstage::after,body.fo-th[data-mobsheet='tactics'] #fo-mstage::after{height:calc(88dvh + env(safe-area-inset-bottom))}" +
       "@media (prefers-reduced-motion:reduce){#fo-mstage::after{transition:none}}" +
@@ -19092,7 +19109,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "body.fo-th .fo-mst-wx .cty-m::before{content:none !important}" +
       "body.fo-th .fo-mst-ctlg{position:static}" +
       // matchup strip: one compact bar, batter left, bowler right
-      "body.fo-th .fo-mst-p{position:fixed;top:auto !important;bottom:calc(178px + env(safe-area-inset-bottom)) !important;height:64px !important;max-width:none;padding:6px 10px;gap:9px;border-radius:0;background:rgba(7,18,36,.8);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px);box-shadow:0 8px 22px rgba(0,0,0,.4);z-index:50}" +
+      "body.fo-th .fo-mst-p{position:fixed;top:auto !important;bottom:calc(138px + env(safe-area-inset-bottom)) !important;height:64px !important;max-width:none;padding:6px 10px;gap:9px;border-radius:0;background:rgba(7,18,36,.8);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px);box-shadow:0 8px 22px rgba(0,0,0,.4);z-index:50}" +
       "body.fo-th .fo-mst-p.pbat{left:10px;right:calc(50vw + .5px);border-radius:15px 5px 5px 15px;border-right:none}" +
       "body.fo-th .fo-mst-p.pbowl{left:calc(50vw + .5px);right:10px;border-radius:5px 15px 15px 5px;flex-direction:row-reverse;padding:6px 10px;border-left-color:rgba(255,255,255,.1)}" +
       "body.fo-th .fo-mst-p img{width:40px;height:40px;flex:0 0 40px;border-width:1.5px;object-position:50% 12%}" +
@@ -19107,11 +19124,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "body.fo-th[data-mobsheet='oval'] .fo-mst-p{top:calc(158px + env(safe-area-inset-top)) !important;bottom:auto !important;z-index:53;background:transparent;border-color:transparent;backdrop-filter:none;box-shadow:none}" +
       "body.fo-th[data-mobsheet='oval'] .fo-mst-wx{display:none !important}" +
       // the command sheet itself: frosted navy, rounded, animated snap
-      "#fo-mob-sheet{display:block;position:fixed;left:0;right:0;bottom:0;z-index:51;background:none;border:none;box-shadow:none;height:calc(160px + env(safe-area-inset-bottom));transition:height .28s ease;touch-action:none;pointer-events:none}" +
-      "body.fo-th[data-mobsheet='live'] #fo-mstage::after{background:linear-gradient(180deg,rgba(4,10,20,0),rgba(4,10,20,.52) 34%,rgba(4,10,20,.84) 78%,rgba(4,10,20,.9));border:none;border-radius:0;box-shadow:none;backdrop-filter:none;height:calc(214px + env(safe-area-inset-bottom))}" +
+      "#fo-mob-sheet{display:block;position:fixed;left:0;right:0;bottom:0;z-index:51;background:none;border:none;box-shadow:none;height:calc(124px + env(safe-area-inset-bottom));transition:height .28s ease;touch-action:none;pointer-events:none}" +
+      "body.fo-th[data-mobsheet='live'] #fo-mstage::after{background:linear-gradient(180deg,rgba(4,10,20,0),rgba(4,10,20,.52) 34%,rgba(4,10,20,.84) 78%,rgba(4,10,20,.9));border:none;border-radius:0;box-shadow:none;backdrop-filter:none;height:calc(178px + env(safe-area-inset-bottom))}" +
       "#fo-mob-sheet .sh-grip{pointer-events:auto;width:100%;height:26px;margin:1px 0 0;display:flex;align-items:center;justify-content:center;touch-action:none}" +
       "#fo-mob-sheet .sh-grip::after{content:'';width:44px;height:4.5px;border-radius:999px;background:rgba(255,255,255,.3)}" +
       "#fo-mob-tac{pointer-events:auto}" +
+      "body.fo-th.fo-spd-open[data-mobsheet='live'] #fo-mob-sheet,body.fo-th.fo-spd-open[data-mobsheet='live'] #fo-mstage::after{height:calc(216px + env(safe-area-inset-bottom))}" +
       "body.fo-th[data-mobsheet='oval'] #fo-mob-sheet{height:calc(100dvh - 126px - env(safe-area-inset-top))}" +
       "body.fo-th[data-mobsheet='score'] #fo-mob-sheet,body.fo-th[data-mobsheet='tactics'] #fo-mob-sheet{height:calc(88dvh + env(safe-area-inset-bottom))}" +
       "@media (prefers-reduced-motion:reduce){#fo-mob-sheet{transition:none}}" +
@@ -19123,7 +19141,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "html body #fo-mob-nav button.on{color:#F0B94E}" +
       "html body #fo-mob-nav button.on span{border-bottom:2px solid #F0B94E;padding-bottom:1px}" +
       // latest delivery: chip + line, result as a small badge on the right
-      "body.fo-th .fo-mst-moment{top:auto;left:50%;transform:translateX(-50%);bottom:calc(114px + env(safe-area-inset-bottom));width:calc(100vw - 30px);background:none;border:none;padding:0;backdrop-filter:none;display:flex;flex-direction:row-reverse;align-items:center;gap:8px;z-index:53}" +
+      "body.fo-th .fo-mst-moment{top:auto;left:14px;right:66px;transform:none;bottom:calc(70px + env(safe-area-inset-bottom));width:auto;background:none;border:none;padding:0;backdrop-filter:none;display:flex;flex-direction:row-reverse;align-items:center;gap:8px;z-index:53;transition:bottom .25s ease}" +
+      "body.fo-th.fo-spd-open[data-mobsheet='live'] .fo-mst-moment{bottom:calc(112px + env(safe-area-inset-bottom))}" +
+      "body.fo-th:has(#fo-mst-done) .fo-mst-moment{bottom:calc(126px + env(safe-area-inset-bottom))}" +
       "body.fo-th .fo-mst-moment .t{height:auto;min-height:0;font-size:10px;letter-spacing:1.8px;padding:4px 10px;border:1px solid rgba(255,255,255,.24);border-radius:999px;background:rgba(6,14,26,.62);flex:0 0 auto;text-shadow:none;animation:none !important}" +
       "body.fo-th .fo-mst-moment .rib{flex:1;min-width:0;min-height:0;justify-content:flex-start;background:none;border:none;padding:0;backdrop-filter:none}" +
       "body.fo-th .fo-mst-moment .rib p{font-size:12.5px;letter-spacing:.2px;text-transform:none;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#F5EFDC;text-shadow:0 1px 6px rgba(0,0,0,.7)}" +
@@ -19133,8 +19153,13 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // the tempo row: the thumb target where NEXT BALL used to live
       "html body.fo-th #fo-mstage .fo-mst-next{position:fixed;left:14px;right:14px;top:auto;transform:none;width:auto;min-height:50px;z-index:57;bottom:calc(64px + env(safe-area-inset-bottom));font-size:15px;letter-spacing:2.8px;padding:14px !important;text-align:center;border-radius:14px}" +
       "html body.fo-th #fo-mstage .fo-mst-next:active{transform:translateY(1px)}" +
-      "body.fo-th #fo-mst-spd{position:fixed;left:50%;right:auto;top:auto;transform:translateX(-50%);width:auto;gap:7px;z-index:57;bottom:calc(66px + env(safe-area-inset-bottom))}" +
+      "body.fo-th #fo-mst-spd{display:none;position:fixed;left:50%;right:auto;top:auto;transform:translateX(-50%);width:auto;gap:7px;z-index:57;bottom:calc(62px + env(safe-area-inset-bottom))}" +
+      "body.fo-th.fo-spd-open #fo-mst-spd{display:flex}" +
       "html body.fo-th #fo-mst-spd button{flex:0 0 auto;min-width:58px;min-height:34px;font-size:12px;letter-spacing:1px;padding:7px 0;border-radius:9px}" +
+      "html body #fo-mob-spdchip{display:flex;align-items:center;justify-content:center;position:fixed;right:12px;bottom:calc(66px + env(safe-area-inset-bottom));z-index:57;min-width:44px;min-height:32px;padding:5px 10px;border-radius:999px;font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:12px;letter-spacing:1px;background:rgba(5,20,40,.6) !important;border:1.5px solid rgba(255,255,255,.3) !important;color:rgba(255,255,255,.88) !important;cursor:pointer;box-shadow:none !important;transition:bottom .25s ease}" +
+      "body.fo-spd-open #fo-mob-spdchip{border-color:#F0B94E !important;color:#F0B94E !important}" +
+      "body.fo-th[data-mobsheet='score'] #fo-mob-spdchip,body.fo-th[data-mobsheet='tactics'] #fo-mob-spdchip,body.fo-th.fo-thd #fo-mob-spdchip{display:none}" +
+      "body.fo-th:has(#fo-mst-done) #fo-mob-spdchip{display:none}" +
       // the LIVE BALL pane docks INSIDE the oval sheet - never a separate page
       "body.fo-th[data-mobsheet]:not([data-mobsheet='oval']) #fo-oval{display:none !important}" +
       "html body.fo-th[data-mobsheet='oval'] #fo-oval{display:block !important;position:fixed !important;left:6px !important;right:6px !important;top:calc(258px + env(safe-area-inset-top)) !important;bottom:calc(112px + env(safe-area-inset-bottom)) !important;transform:none;width:auto !important;max-width:none !important;max-height:none;z-index:54;background:transparent;border:none;border-radius:0 !important;box-shadow:none;backdrop-filter:none;overflow:visible}" +
