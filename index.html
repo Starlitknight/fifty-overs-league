@@ -10505,7 +10505,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260723-2303-d5baeb";
+  var FO_BUILD = "20260723-2313-f7599c";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -25600,6 +25600,26 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     } catch (e) { return []; }
   }
   try { window.foRegionSides = foRegionSides; } catch (eRs) {}
+  // ---- conquest-ladder art, reused for the domestic clubs ---------------
+  // the boss keeps its commissioned crest; every city club wears its Circuit
+  // ground portrait, falling back to the nation's map if that ground has no
+  // painting yet. This is the same art the conquest ladder used.
+  function foLgArtFallback(nation) { var hit = foRegionById(nation); var r = hit && hit.r; return FO_ART + "circuit/" + ((r && r.bg) || (nation + ".webp")); }
+  function foLgClubArt(nation, side) {
+    if (!side) return foLgArtFallback(nation);
+    if (side.boss) return FO_ART + "circuit/boss-" + nation + ".webp";
+    return FO_ART + "cities/" + foCitySlug(side.city) + "-ground.webp";
+  }
+  function foLgClubCrest(nation, side) {
+    if (side && side.boss) { var b = foCxBossInfo(nation); if (b) return FO_ART + "crests/" + b.crest + ".webp"; }
+    var hit = foRegionById(nation); var arch = (hit && hit.r && hit.r.arch) || "rock";
+    return FO_ART + "crests/" + arch + ".png";
+  }
+  // an <img> that tries the club art then the nation map, never a broken icon
+  function foLgArtImg(nation, side, cls) {
+    var a = foLgClubArt(nation, side), fb = foLgArtFallback(nation);
+    return "<img class='" + (cls || "") + "' src='" + a + "' alt='' loading='lazy' onerror=\"this.onerror=null;this.src='" + fb + "'\">";
+  }
   // nations whose youth academies you've unlocked by conquering their region
   function foCxAcademyNats() {
     var st = foCxState(), out = [];
@@ -27934,9 +27954,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
 
       var ac = r.ac || "#3a6ea5";
       var flag = "<img class='fo-boss-flag' src='" + FO_ART + "flags/" + (FO_FLAG_FILE[r.id] || r.id) + ".svg' alt='' onerror=\"this.style.display='none'\">";
-      var bgart = FO_ART + "circuit/" + (r.bg || (r.id + ".webp"));
+      var bgart = foLgClubArt(rid, side), bgfb = foLgArtFallback(rid);
       var pct = Math.max(18, Math.min(94, Math.round((side.pts / 28) * 100)));
-      var monogram = foJCrest(ac, 150, foJInitials(side.city + " CC"));
+      var crestEmblem = foLgClubCrest(rid, side);
 
       // dedicated XI
       var squadHTML = "<div class='fo-boss-squad-empty'>Squad sheet loading&hellip;</div>";
@@ -27959,7 +27979,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
 
       page.innerHTML =
         "<div class='fo-boss fo-side' style='--bac:" + ac + "'>" +
-        "<div class='fo-boss-bgart' style='background-image:url(" + bgart + ")'></div>" +
+        "<div class='fo-boss-bgart' style='background-image:url(" + bgfb + ")'></div>" +
         "<div class='fo-boss-scrim'></div>" +
         "<div class='fo-boss-in'>" +
         "<div class='fo-boss-nav'>" +
@@ -27968,10 +27988,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<a href='#/world'>World map</a>" +
         "</div>" +
         "<header class='fo-boss-hero'>" +
-        "<div class='fo-boss-portrait fo-side-mono'>" + monogram + "</div>" +
+        "<div class='fo-boss-portrait'>" + foLgArtImg(rid, side, "") + "</div>" +
         "<div class='fo-boss-id'>" +
         "<div class='fo-boss-eb'>" + E(r.nm) + " League &middot; Domestic side</div>" +
         "<div class='fo-boss-lockup'>" +
+        "<img class='fo-boss-crest' src='" + crestEmblem + "' alt='' onerror=\"this.style.display='none'\">" +
         "<div class='fo-boss-names'>" +
         "<h1>" + E(side.club) + "</h1>" +
         "<div class='fo-boss-lead'>" + flag + "<b>" + E(side.city) + "</b><span>" + E(side.worldName) + "</span></div>" +
@@ -28075,8 +28096,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   try {
     var siCss = document.createElement("style"); siCss.id = "fo-side-css";
     siCss.textContent = [
-      ".fo-side-mono{display:flex;align-items:center;justify-content:center;background:radial-gradient(120% 120% at 50% 20%,rgba(255,255,255,.06),rgba(8,13,24,.9))}",
-      ".fo-side-mono svg{width:66%;height:66%;filter:drop-shadow(0 10px 22px rgba(0,0,0,.5))}",
+      ".fo-side-badge{position:absolute;right:12px;bottom:12px;width:58px;height:58px;object-fit:contain;z-index:3;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}",
+      "@media(max-width:760px){.fo-side-badge{width:46px;height:46px;right:8px;bottom:8px}}",
       "html body #page .fo-side-explore{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;font-size:12px;color:#0d1524;background:var(--bac);border-radius:10px;padding:12px 20px;text-decoration:none;display:inline-block;filter:brightness(1.06)}",
       "html body #page .fo-side-explore:hover{filter:brightness(1.18)}",
       ".fo-thorne-crown{position:absolute;left:14px;top:10px;z-index:2;font-size:30px;color:#F3D37A;text-shadow:0 3px 10px rgba(0,0,0,.6)}"
@@ -28159,7 +28180,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
   function foLgAdvance(round) { var s = foLgEnsure(); s.round = Math.min(14, (round || 0) + 1); foLgSave(s); }
   function foLgTable(L, res) {
-    var T = L.map(function (x) { return { name: x.name, isMe: x.isMe, boss: x.boss, city: x.city, wid: x.wid, P: 0, W: 0, L: 0, T: 0, pts: 0, rf: 0, ra: 0 }; });
+    var T = L.map(function (x) { return { name: x.name, isMe: x.isMe, boss: x.boss, city: x.city, wid: x.wid, sideObj: x.sideObj, P: 0, W: 0, L: 0, T: 0, pts: 0, rf: 0, ra: 0 }; });
     Object.keys(res || {}).forEach(function (k) {
       var p = k.split(":"), i = +p[1], j = +p[2], m = res[k];
       if (!T[i] || !T[j]) return;
@@ -28254,9 +28275,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
 
       var tableRows = table.map(function (x, i) {
         var q = i < 4;
+        var av = x.isMe
+          ? "<span class='av me'><img src='" + foLgArtFallback(nation) + "' alt=''></span>"
+          : "<span class='av'>" + (x.boss ? "<img src='" + foLgClubCrest(nation, x.sideObj) + "' class='crest' alt='' onerror=\"this.onerror=null;this.src='" + foLgClubArt(nation, x.sideObj) + "'\">" : foLgArtImg(nation, x.sideObj)) + "</span>";
         return "<a class='fo-lg-row" + (x.name === meNm ? " me" : "") + (x.boss ? " boss" : "") + (q ? " q" : "") + "'" +
           (x.wid && x.wid !== "me" ? " href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'" : "") + ">" +
-          "<span class='rk'>" + (i + 1) + "</span>" +
+          "<span class='rk'>" + (i + 1) + "</span>" + av +
           "<span class='nm'>" + E(x.name) + (x.isMe ? " <em class='you'>YOU</em>" : (x.boss ? " <em class='bs'>BOSS</em>" : "")) + "<i>" + E(x.city) + "</i></span>" +
           "<span class='c'>" + x.P + "</span><span class='c'>" + x.W + "</span><span class='c'>" + x.L + "</span>" +
           "<span class='c nrr'>" + (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2) + "</span>" +
@@ -28305,7 +28329,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         " &middot; <a href='#/cup'>Champions Cup &rsaquo;</a></div>" +
         "</div>" +
         "<div class='fo-lg-grid'>" +
-        "<div class='fo-lg-tablewrap'><div class='fo-lg-thead'><span class='rk'>#</span><span class='nm'>Club</span><span class='c'>P</span><span class='c'>W</span><span class='c'>L</span><span class='c'>NRR</span><span class='c'>Pts</span></div>" +
+        "<div class='fo-lg-tablewrap'><div class='fo-lg-thead'><span class='rk'>#</span><span class='av'></span><span class='nm'>Club</span><span class='c'>P</span><span class='c'>W</span><span class='c'>L</span><span class='c'>NRR</span><span class='c'>Pts</span></div>" +
         tableRows + "<div class='fo-lg-qnote'>Top 4 qualify for the Champions Cup</div></div>" +
         "<div class='fo-lg-side'>" +
         "<div class='fo-lg-panel'><h3>" + (done ? "Final table" : "Round " + (round + 1) + " fixtures") + "</h3>" + (fxHTML || "<div class='fo-lg-fxempty'>Season complete.</div>") + "</div>" +
@@ -28374,7 +28398,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-lg-hd .sub{margin-top:8px;font-size:13px;color:#9fb0cc}.fo-lg-hd .sub a{color:#EBC271;text-decoration:none}",
       ".fo-lg-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;align-items:start}",
       ".fo-lg-tablewrap{background:rgba(14,21,36,.72);border:1px solid rgba(150,180,225,.16);border-radius:14px;overflow:hidden;backdrop-filter:blur(4px)}",
-      ".fo-lg-thead,.fo-lg-row{display:grid;grid-template-columns:30px 1fr 30px 30px 30px 58px 40px;gap:6px;align-items:center;padding:9px 14px}",
+      ".fo-lg-thead,.fo-lg-row{display:grid;grid-template-columns:26px 40px 1fr 28px 28px 28px 54px 38px;gap:6px;align-items:center;padding:8px 14px}",
+      ".fo-lg-row .av{width:36px;height:36px;border-radius:9px;overflow:hidden;background:#0b1424;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}",
+      ".fo-lg-row .av img{width:100%;height:100%;object-fit:cover;display:block}",
+      ".fo-lg-row .av img.crest{object-fit:contain;padding:3px}",
+      ".fo-lg-row .av.me{box-shadow:inset 0 0 0 1px rgba(235,194,113,.55)}",
       ".fo-lg-thead{background:rgba(255,255,255,.05);font-family:Oswald,sans-serif;letter-spacing:1.2px;text-transform:uppercase;font-size:10px;color:#8ea3c4}",
       ".fo-lg-thead .c{text-align:right}",
       ".fo-lg-row{border-top:1px solid rgba(150,180,225,.08);text-decoration:none;color:#dbe4f2;transition:background .12s}",
