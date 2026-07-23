@@ -2219,10 +2219,10 @@
       "body.fo-th .mc-cards{display:none !important}" +
       // ---- top chrome: venue chip / scorebug / compact controls ----
       "body.fo-th .fo-mst-top{top:54px;left:18px;right:74px;align-items:flex-start}" +
-      "body.fo-th .fo-mst-score{top:8px;left:50%;right:auto;transform:translateX(-50%);width:auto;min-width:330px;padding:13px 38px 14px;background:rgba(5,20,40,.74);border:1px solid rgba(255,255,255,.2);border-radius:16px;backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:61}" +
-      "body.fo-th .fo-mst-score .tm{display:inline-block;font-family:Oswald,sans-serif;font-weight:600;font-size:22px;letter-spacing:1px;color:#fff;margin-right:12px;vertical-align:baseline}" +
-      "body.fo-th .fo-mst-score b{display:inline-block;font-size:44px;vertical-align:baseline}" +
-      "body.fo-th .fo-mst-score .ovs{display:block;font-family:Oswald,sans-serif;font-size:14px;letter-spacing:3px;text-transform:uppercase;color:#F3D37A;margin-top:4px}" +
+      "body.fo-th .fo-mst-score{top:8px;left:50%;right:auto;transform:translateX(-50%);width:auto;min-width:230px;padding:9px 24px 10px;background:rgba(5,20,40,.74);border:1px solid rgba(255,255,255,.2);border-radius:13px;backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:61}" +
+      "body.fo-th .fo-mst-score .tm{display:inline-block;font-family:Oswald,sans-serif;font-weight:600;font-size:15px;letter-spacing:1px;color:#fff;margin-right:9px;vertical-align:baseline}" +
+      "body.fo-th .fo-mst-score b{display:inline-block;font-size:30px;vertical-align:baseline}" +
+      "body.fo-th .fo-mst-score .ovs{display:block;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:#F3D37A;margin-top:3px}" +
       "body.fo-th .fo-mst-score i{display:block;color:rgba(255,255,255,.8);font-size:11px;margin-top:3px}" +
       "body.fo-th .fo-mst-score i.tossl{color:rgba(255,255,255,.62);font-size:10px;letter-spacing:1.2px}" +
       "body.fo-th .fo-mst-ctlg{position:relative}" +
@@ -2260,9 +2260,17 @@
       "body.fo-th .fo-mst-moment .rib:not(:has(p)):not(:has(.chip)){display:none}" +
       "body.fo-th .fo-mst-moment .rib .chip{border:none;background:none;padding:0;color:#F3D37A;backdrop-filter:none;font-size:12.5px}" +
       "body.fo-th .fo-mst-moment .rib .kph{font-family:Oswald,sans-serif;font-size:12.5px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:#22D3E0;white-space:nowrap}" +
-      "body.fo-th .fo-mst-moment .rib p{margin:0;font-family:Oswald,sans-serif;font-size:15.5px;font-weight:500;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.96);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:680px}" +
-      "body.fo-th .fo-mst-score .mbs{display:flex;gap:7px;justify-content:center;margin-top:9px;min-height:30px}" +
-      "body.fo-th .fo-mst-score .mb{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-family:Oswald,sans-serif;font-weight:600;font-size:13.5px;color:#fff;background:rgba(255,255,255,.13);border:1.5px solid rgba(255,255,255,.24)}" +
+      "body.fo-th .fo-mst-moment .rib p{margin:0;font-family:Oswald,sans-serif;font-size:12px;font-weight:500;letter-spacing:.9px;text-transform:uppercase;color:rgba(255,255,255,.96);white-space:normal;overflow:visible;text-overflow:clip;max-width:none;text-align:center;line-height:1.35}" +
+      "body.fo-th .fo-mst-score .mbs{display:flex;gap:5px;justify-content:center;margin-top:7px;min-height:20px}" +
+      "body.fo-th .fo-mst-score .mb{width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-family:Oswald,sans-serif;font-weight:600;font-size:10px;color:#fff;background:rgba(255,255,255,.13);border:1.5px solid rgba(255,255,255,.24)}" +
+      // the speedometer is retired — the delivery speed reads in the ribbon
+      "body.fo-th #fo-th-gauge{display:none !important}" +
+      // hover a player chip -> their full trading-card blows up, centred
+      "#fo-mst-bigcard{position:fixed;left:50%;top:50%;transform:translate(-50%,-47%) scale(.97);z-index:90;opacity:0;pointer-events:none;transition:opacity .16s ease,transform .16s ease}" +
+      "#fo-mst-bigcard.show{opacity:1;transform:translate(-50%,-50%) scale(1)}" +
+      "#fo-mst-bigcard::before{content:'';position:fixed;inset:0;background:rgba(3,8,16,.6);z-index:-1;backdrop-filter:blur(3px)}" +
+      "#fo-mst-bigcard .pk{width:330px;max-width:90vw}" +
+      "@media(max-height:820px){#fo-mst-bigcard .pk{width:290px}}" +
       "body.fo-th .fo-mst-score .mb.b4{background:#f3c254;border-color:#f3c254;color:#2f2109}" +
       "body.fo-th .fo-mst-score .mb.bw{background:#d8504b;border-color:#d8504b;color:#fff}" +
       "body.fo-th .fo-mst-score .mb.bx{background:#9db7d4;border-color:#9db7d4;color:#0f2036}" +
@@ -2572,29 +2580,21 @@
       if (!foMstAuto() || window.__foMstHold) foMstKillAp();
       // team talk lives in the centre theatre now: field calls when bowling,
       // batting intent when batting - wired straight into the live orders
+      // In-match intent / field / bowling changes are retired: everything is
+      // locked before the toss. The pane's only control is the broadcast tempo
+      // (1x/2x/4x), docked INSIDE the LIVE BALL pane under the field map.
       try {
-        if (oval && !M.done) {
-          var tb2 = document.getElementById("fo-mst-talk");
-          if (!tb2) {
-            tb2 = document.createElement("div"); tb2.id = "fo-mst-talk";
-            var sv2 = oval.querySelector(".ov-svg");
-            if (sv2 && sv2.parentNode === oval) oval.insertBefore(tb2, sv2.nextSibling); else oval.appendChild(tb2);
-          }
-          var ov3 = Math.floor(inn.legal / 6), ph3 = ov3 < 10 ? "pp" : (ov3 >= 40 ? "death" : "mid");
-          var h3;
-          if (userBatNow) {
-            var cur3 = (App.orders.phaseIntent && App.orders.phaseIntent[ph3] !== undefined) ? App.orders.phaseIntent[ph3] : 0;
-            h3 = "<span class='tl'>Batting</span>" + [[-1, "Defensive"], [0, "Steady"], [1, "Aggressive"], [2, "Launch"]].map(function (o3) {
-              return "<button type='button' class='tb" + (cur3 === o3[0] ? " on" : "") + "' onclick=\"foTeamTalk('bat','" + ph3 + "'," + o3[0] + ")\">" + o3[1] + "</button>";
+        var oldTalk = document.getElementById("fo-mst-talk"); if (oldTalk) oldTalk.remove();
+        var ctl = oval && oval.querySelector("#ov-ctl");
+        if (ctl) {
+          if (!M.done) {
+            var spdNow0 = window.__foThMult || 1;
+            var h3 = [1, 2, 4].map(function (m9) {
+              return "<button type='button' onclick='foThSetSpeed(" + m9 + ")'" + (spdNow0 === m9 ? " class='on'" : "") + ">" + m9 + "&times;</button>";
             }).join("");
-          } else {
-            var cf3 = (App.orders.fieldPlan && App.orders.fieldPlan[ph3]) || "bal";
-            h3 = "<span class='tl'>Field</span>" + [["att", "Attack"], ["bal", "Balanced"], ["def", "Defence"]].map(function (o4) {
-              return "<button type='button' class='tb" + (cf3 === o4[0] ? " on" : "") + "' onclick=\"foTeamTalk('field','" + ph3 + "','" + o4[0] + "')\">" + o4[1] + "</button>";
-            }).join("") + "<button type='button' class='tb tbc' onclick='foThBowlAsk()'>Bowling change &#9654;</button>";
-          }
-          if (tb2.__h !== h3) { tb2.__h = h3; tb2.innerHTML = h3; }
-        } else if (M.done) { var tbx = document.getElementById("fo-mst-talk"); if (tbx) tbx.remove(); }
+            if (ctl.__h !== h3) { ctl.__h = h3; ctl.innerHTML = h3; }
+          } else if (ctl.__h) { ctl.__h = ""; ctl.innerHTML = ""; }
+        }
       } catch (eT) {}
       // rebuild only when the broadcast moved on (or the theatre re-homed us)
       var old = document.getElementById("fo-mstage");
@@ -2688,11 +2688,9 @@
       } catch (eTs) {}
       // the broadcast never stops: the only control is its tempo
       var spdNow = window.__foThMult || 1;
-      var ctlBtns = (!M.done ?
-        "<div class='fo-mst-spd' id='fo-mst-spd'>" + [1, 2, 4].map(function (m9) {
-          return "<button type='button' data-spd='" + m9 + "'" + (spdNow === m9 ? " class='on'" : "") + ">" + m9 + "&times;</button>";
-        }).join("") + "</div>"
-        : "<button type='button' class='fo-mst-next' id='fo-mst-done'>Continue &#9654;</button>");
+      // tempo control now lives inside the LIVE BALL pane (#ov-ctl); the top
+      // chrome only carries the end-of-match Continue button
+      var ctlBtns = (M.done ? "<button type='button' class='fo-mst-next' id='fo-mst-done'>Continue &#9654;</button>" : "");
       var pArt = function (p) { try { return FO_ART + foPkArt(p); } catch (e) { return ""; } };
       // the who-card stars now live HERE - same math as the theatre's
       var FS = window.foStarsFor, batStars = "", bowlStars = "";
@@ -2803,9 +2801,18 @@
       } catch (eTh) {}
       var db = el.querySelector("#fo-mst-done");
       if (db) db.addEventListener("click", function () { location.hash = "#/circuit"; if (typeof window.route === "function") window.route(); });
-      el.querySelectorAll("#fo-mst-spd [data-spd]").forEach(function (sb9) {
-        sb9.addEventListener("click", function () { foThSetSpeed(+sb9.getAttribute("data-spd")); });
-      });
+      try { window.foThSetSpeed = foThSetSpeed; } catch (eGs) {}
+      // hover a batsman/bowler chip -> blow up their full player card
+      try {
+        var big = document.getElementById("fo-mst-bigcard");
+        if (!big) { big = document.createElement("div"); big.id = "fo-mst-bigcard"; document.body.appendChild(big); }
+        var showBig = function (pp) { if (!pp) return; try { big.innerHTML = foPkCard(pp); big.classList.add("show"); } catch (eBc) {} };
+        var hideBig = function () { big.classList.remove("show"); };
+        var pbEl = el.querySelector(".fo-mst-p.pbat");
+        if (pbEl && s1 && s1.p) { pbEl.addEventListener("mouseenter", function () { showBig(s1.p); }); pbEl.addEventListener("mouseleave", hideBig); }
+        var pwEl = el.querySelector(".fo-mst-p.pbowl");
+        if (pwEl && bw) { pwEl.addEventListener("mouseenter", function () { showBig(bw); }); pwEl.addEventListener("mouseleave", hideBig); }
+      } catch (eHB) {}
       var nb = el.querySelector("#fo-mst-next");
       if (nb) nb.addEventListener("click", function () {
         try { if (window.__foMstHold && !document.getElementById("fo-mst-ask") && !window.__foMstAskT) window.__foMstHold = false; } catch (eH) {}

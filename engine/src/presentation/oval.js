@@ -67,7 +67,7 @@ FOC.oval = (function () {
       "<circle id='ov-ball' cx='200' cy='190' r='3.2' fill='#a3242b' stroke='#fff' stroke-width='.8' opacity='0'/>" +
       "<text id='ov-pop' x='200' y='128' text-anchor='middle' class='ov-pop'></text>" +
       "<text id='ov-pop2' x='200' y='150' text-anchor='middle' class='ov-pop2'></text>" +
-      "</svg><div class='ov-note'><button type='button' id='ov-snd' class='ov-snd' title='Match sound'>&#128263;</button><span>theatre · live directions · real fielders at real posts</span></div></div>";
+      "</svg><div class='ov-ctl' id='ov-ctl'></div><div class='ov-note'><span>theatre · live directions · real fielders at real posts</span></div></div>";
   }
 
   // ---- sound: tiny synthesized crowd + bat, no assets, off by default ------
@@ -163,7 +163,7 @@ FOC.oval = (function () {
       for (var i = 0; i < 9; i++) {
         h += "<g class='ov-f' style='transition:transform .9s ease' transform='translate(200,130)'>" +
           "<circle r='4' fill='#1f4d3a' stroke='#fff' stroke-width='1.2'/>" +
-          "<text y='12' class='ov-flbl'></text><text y='21' class='ov-fplr'></text></g>";
+          "<text y='11' class='ov-flbl'></text><text y='22' class='ov-fplr'></text></g>";
       }
       g.innerHTML = h;
     }
@@ -648,8 +648,8 @@ FOC.oval = (function () {
       ".ov-strip .b4{background:#C9A24B;color:#14213D}.ov-strip .b6{background:#C8674A;color:#fff}" +
       ".ov-strip .bw{background:#a3242b;color:#fff}.ov-strip .bd{opacity:.75}" +
       ".ov-svg{display:block;width:100%;height:auto;background:#0F1A2E}" +
-      ".ov-flbl{font:600 7px Inter,-apple-system,sans-serif;fill:rgba(241,234,218,.78);letter-spacing:.05em;text-anchor:middle;text-transform:uppercase}" +
-      ".ov-fplr{font:600 6.5px Inter,-apple-system,sans-serif;fill:rgba(241,234,218,.5);text-anchor:middle}" +
+      ".ov-flbl{font:600 5px Inter,-apple-system,sans-serif;fill:rgba(241,234,218,.55);letter-spacing:.04em;text-anchor:middle;text-transform:uppercase}" +
+      ".ov-fplr{font:700 8px Inter,-apple-system,sans-serif;fill:rgba(245,239,221,.95);text-anchor:middle}" +
       ".ov-f.f-hi circle{fill:#C9A24B}.ov-f.f-hi .ov-fplr{fill:#F3D37A}" +
       ".ov-f.f-ok circle{fill:#1F6E74}.ov-f.f-ok .ov-fplr{fill:#7fd7de}" +
       ".ov-f.f-lo circle{fill:#7B3B2E}.ov-f.f-lo .ov-fplr{fill:#e0937f}" +
@@ -671,7 +671,13 @@ FOC.oval = (function () {
       ".ov-lbw{stroke:#e04b3a;stroke-width:1.6;stroke-dasharray:3 3;animation:ovLbw .7s ease forwards}" +
       "@keyframes ovLbw{0%{opacity:0}30%{opacity:1}100%{opacity:0}}" +
       "@media(prefers-reduced-motion:reduce){.ov-pit,.ov-rip,.ov-lbw{animation:none;opacity:0}}" +
-      ".ov-note{display:flex;align-items:center;justify-content:flex-end;gap:8px;text-align:right;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#5b6a85;padding:3px 10px 5px}" +
+      ".ov-note{display:flex;align-items:center;justify-content:center;gap:8px;text-align:center;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#5b6a85;padding:3px 10px 6px}" +
+      // the broadcast tempo control lives INSIDE the pane, under the field map
+      ".ov-ctl{display:flex;justify-content:center;gap:8px;padding:9px 12px 3px}" +
+      ".ov-ctl:empty{display:none}" +
+      ".ov-ctl button{font-family:Oswald,sans-serif;font-weight:600;font-size:13px;letter-spacing:1px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.26);color:rgba(255,255,255,.82);border-radius:9px;padding:6px 18px;cursor:pointer;transition:.12s}" +
+      ".ov-ctl button:hover{border-color:#F3D37A;color:#F3D37A}" +
+      ".ov-ctl button.on{background:linear-gradient(180deg,#F0B94E,#C9A24B);border-color:#F0B94E;color:#101B2D}" +
       ".ov-snd{background:none;border:1px solid #24334f;border-radius:7px;color:#8fa0bd;font-size:12px;line-height:1;padding:3px 7px;cursor:pointer;margin-right:auto}" +
       ".ov-need{font-family:Oswald,sans-serif;font-size:13px;letter-spacing:1.5px;color:#fff;background:#a3242b;border-radius:8px;padding:3px 10px;display:none}" +
       ".ov-need.on{display:inline-block;animation:ovNeed 1.1s ease infinite}" +
