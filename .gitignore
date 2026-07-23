@@ -1,13 +1,26 @@
-# node
-# secrets — never commit
+# === secrets — never commit ===
 *.local
 *.secret
 .env
 .env.*
-node_modules/
-package-lock.json
-resolver/_*.png
 secrets/
 supabase/.env
 supabase/deploy/.env
+
+# === dependencies & build output ===
+node_modules/
+package-lock.json
 .build/
+
+# === source art (NOT shipped) ===
+# Raw art uploads + extracted "master" folders. The GAME only needs the
+# derived client/art/*.webp, which ARE tracked. These originals are kept
+# on disk as working backups and remain recoverable from git history
+# (they were tracked up to the repo-cleanup commit) — but they are no
+# longer carried in the working tree, so uploads never bloat the repo.
+art-packs/
+
+# === scratch / throwaway probes ===
+# One-off Playwright verification scripts + their screenshots. Disposable.
+resolver/_*.mjs
+resolver/_*.png

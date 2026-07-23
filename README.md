@@ -55,16 +55,72 @@ headless resolver running the *real* engine.
   league; the resolver aborts if its build ≠ the pin, and the client blocks
   actions if its build ≠ the pin.
 
-## Layout
+## Repository structure
+
+The tree is grouped by role. A few paths are **pinned** — GitHub Pages serves
+the committed root files directly, and CI/automation hardcode certain paths —
+so they cannot move without breaking the live site or the season resolver.
+Those are flagged below.
+
+```
+fifty-overs-league/
+├── index.html            🔒 DEPLOYED — the live page (built; Pages entry point)
+├── version.json          🔒 DEPLOYED — build stamp; the game polls it to offer updates
+├── build.sh              🔒 assembler: engine/src → index.html + client/game.html
+├── client/               🔒 DEPLOYED
+│   ├── game.html            second stable entry (identical to index.html)
+│   └── art/                 all shipped webp — players, grounds, cities, flags, crests
+│
+├── engine/               ★ SOURCE OF TRUTH — the whole game lives here
+│   ├── shell.html           page skeleton with one marker per engine block
+│   └── src/
+│       ├── 00..12-*.js      core simulation + base UI (manifest.txt = order)
+│       ├── league/          domain layer, one closure: auth, club-home, sync,
+│       │                    onboarding, training, market, orders, matchday-centre,
+│       │                    squad-matchlab, office, chronicle, scorecard-analysis
+│       ├── presentation/    oval stage, smooth renderer, boot (one IIFE)
+│       └── skin/            login / modal / brand CSS
+│
+├── test/                 🔒 golden-master replays — the built page must reproduce
+│                            recorded ball-by-ball logs bit-for-bit (CI gate)
+├── tools/                re-bless masters (record-masters.mjs) + balance gate (engine-bench.mjs)
+│
+├── resolver/             🔒 backend: headless real-engine match resolver
+│                            (round.mjs is the scheduled season worker)
+├── supabase/             🔒 backend: Postgres schema, RLS, Edge Functions, tests
+│
+├── docs/                 engine-tuning notes, build prompt
+├── finance-config.json   reference source-of-truth for the finance constants
+│                            (values are embedded into the engine at authoring time)
+│
+├── art-packs/            🚫 git-ignored — RAW art uploads + "master" folders.
+│                            NOT shipped; the game only loads the derived
+│                            client/art/*.webp. Recoverable from git history.
+└── .github/workflows/    ci-pages.yml (build+test+deploy) · round-resolver.yml (season)
+```
+
+🔒 pinned (Pages/CI/automation depend on the path)  ·  ★ edit here  ·  🚫 not tracked
+
+### Multiplayer backend map (same engine, server-owned)
 | path | what |
 |---|---|
-| `engine/shell.html` + `engine/src/*.js` | the whole game, as ONE source tree: core sim blocks, `20-league.js` (skin, multiplayer, Circuit), `presentation/` (oval stage, smooth render). Gameplay guarded by golden-master replays. |
 | `resolver/resolve-harness.js` | additive `window.__resolveMatch` entry point (no engine-logic edits) |
 | `resolver/resolve.mjs` | headless engine caller (hash-pin check, resolve, `verifyResult`) |
-| `resolver/worker.mjs` / `server.mjs` / `Dockerfile` | the resolver container |
+| `resolver/worker.mjs` / `server.mjs` / `round.mjs` / `Dockerfile` | the resolver container + scheduled season worker |
 | `supabase/migrations/*.sql` | schema, identity, actions, friendly, official, founder tools |
 | `supabase/functions/` | Edge Functions + shared draft/schedule/identity |
 | `client/mp.js` / `league.html` | dashboard + client-side hash-pin guard |
+
+## Working on it
+
+```bash
+./build.sh                      # engine/src → index.html + client/game.html
+node --test test/*.test.mjs     # golden-master replays (gameplay must stay bit-identical)
+```
+
+Never edit `index.html` / `client/game.html` by hand — they are generated. Change
+`engine/src/**`, then rebuild. Art: drop a source pack in `art-packs/` (ignored),
+convert to `client/art/*.webp`, and register it in the engine source.
 
 ## Build phases (all checkpoints reached)
 | phase | what | status |
