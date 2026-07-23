@@ -2586,6 +2586,12 @@
       ".fo-cx-trophycard img{position:absolute;left:0;right:0;top:9px;bottom:31px;margin:auto;max-width:88%;max-height:calc(100% - 42px);width:auto;height:auto;filter:drop-shadow(0 5px 10px rgba(16,27,45,.28))}" +
       ".fo-cx-trophycard .tnm{position:absolute;left:8px;right:8px;bottom:7px}" +
       ".fo-cx-trophycard .tnm{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;font-size:10.5px;color:#8a7b4f;text-align:center}" +
+      // full-bleed trophies (art ships with its own backdrop): the painting
+      // fills the whole card, no drawn plinth, name as a captioned overlay
+      ".fo-cx-trophycard.tfull{padding:0}" +
+      ".fo-cx-trophycard.tfull::before{display:none}" +
+      ".fo-cx-trophycard.tfull img{position:absolute;inset:0;top:0;bottom:0;margin:0;width:100%;height:100%;max-width:none;max-height:none;object-fit:cover;filter:none}" +
+      ".fo-cx-trophycard.tfull .tnm{left:0;right:0;bottom:0;padding:16px 8px 7px;background:linear-gradient(180deg,rgba(255,253,247,0),rgba(255,253,247,.92) 62%);color:#6f5f39}" +
       ".fo-cx-stage .fo-cx-map .mapin{aspect-ratio:1/1;flex:0 0 auto}" +
       ".fo-cx-stage .fo-cx-map .mapin img{width:100%;height:100%;object-fit:cover}" +
       ".fo-cx-bosscard{flex:1.5;min-height:0;background:#FFFEFC;border:2px solid #C9A24B;border-radius:14px;padding:8px;box-shadow:0 4px 0 rgba(16,27,45,.28);display:flex;flex-direction:column}" +
@@ -2987,7 +2993,7 @@
               "<div class='bnm'>" + E(bc.leader) + "</div>" +
               "<div class='bcl'>" + E(bc.nm) + " · " + E(bc.city) + "</div></div>" +
               "</div>" +
-              "<div class='fo-cx-trophycard'>" +
+              "<div class='fo-cx-trophycard" + (FO_CX_TROPHY_FULL[r.id] ? " tfull" : "") + "'>" +
               "<img src='" + FO_ART + (r.art || ("circuit/trophy-" + r.id + ".webp")) + "' alt='" + E(r.trophy) + "' onerror=\"this.style.display='none'\">" +
               "<div class='tnm'>" + E(r.trophy) + "</div>" +
               "</div>" +
@@ -3159,6 +3165,10 @@
   // night per match; the city page always shows the day painting.
   // (Night canvases retire as the real painted-from-life stadiums arrive.)
   var FO_CITY_NIGHT = { Durban:1, Perth:1, Auckland:1, Christchurch:1 };
+  // Regions whose trophy art ships WITH its own painted backdrop (a full 1:1
+  // canvas) rather than a transparent cut-out. Those render full-bleed in the
+  // card; the older cut-out trophies keep the drawn plinth.
+  var FO_CX_TROPHY_FULL = { bgd: 1, nep: 1, sco: 1, wal: 1, ken: 1, usa: 1, can: 1 };
   function foCitySlug(c) { return String(c || "").toLowerCase().replace(/\s+/g, "-"); }
   function foCityClub(city) {
     for (var ri = 0; ri < FO_CX_REGIONS.length; ri++) {
