@@ -431,9 +431,14 @@ FOC.oval = (function () {
     // the LIVE BALL pane header reads the delivery + region as it plays
     try {
       var hs = document.getElementById("fo-ovhd-sub");
-      if (hs) hs.textContent = (next.no ? next.no + " · " : "") + (next.reg || (next.sym === "W" ? "wicket" : ""));
+      // no outcome words up front - the region alone, like a camera cut
+      if (hs) hs.textContent = (next.no ? next.no + " · " : "") + (next.reg || "");
     } catch (eH) {}
-    animate(next, function () { animating = false; board(); pump(); });
+    animate(next, function () {
+      animating = false;
+      try { if (window.__foOvalBallDone) window.__foOvalBallDone(); } catch (eD) {}
+      board(); pump();
+    });
   }
 
   function ee(s9) { return String(s9 == null ? "" : s9).replace(/[&<>]/g, function (c9) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c9]; }); }

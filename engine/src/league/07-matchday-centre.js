@@ -1937,6 +1937,17 @@
       if (typeof renderMatch === "function") renderMatch();
     } catch (e) {}
   }
+  // in the oval view the ball itself tells the story: the outcome text is
+  // parked here until oval.js reports the delivery animation has landed
+  window.__foOvalBallDone = function () {
+    try {
+      document.body.classList.remove("fo-ov-wait");
+      clearTimeout(window.__foMobFlashPT);
+      var f9 = window.__foMobFlashPend;
+      window.__foMobFlashPend = null;
+      if (f9) f9();
+    } catch (eOd) {}
+  };
   // moment cut-in: full character art earns the screen for ~2.5s, then leaves
   function foThCut(img, big, name) {
     try {
@@ -2464,7 +2475,9 @@
       "body.fo-th .fo-mst-moment .rib p{font-size:12.5px;letter-spacing:.2px;text-transform:none;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#F5EFDC;text-shadow:0 1px 6px rgba(0,0,0,.7)}" +
       "body.fo-th .fo-mst-moment .rib .kph{display:none}" +
       "body.fo-th[data-mobsheet='score'] .fo-mst-moment,body.fo-th[data-mobsheet='tactics'] .fo-mst-moment{display:none !important}" +
-      "body.fo-th[data-mobsheet='oval'] .fo-mst-moment{top:calc(230px + env(safe-area-inset-top));bottom:auto}" +
+      "body.fo-th[data-mobsheet='oval'] .fo-mst-moment{top:calc(230px + env(safe-area-inset-top));bottom:auto;transition:opacity .2s ease}" +
+      // the commentary line + result pill wait for the animated ball to land
+      "body.fo-th.fo-ov-wait[data-mobsheet='oval'] .fo-mst-moment{opacity:0}" +
       // the tempo row: the thumb target where NEXT BALL used to live
       "html body.fo-th #fo-mstage .fo-mst-next{position:fixed;left:14px;right:14px;top:auto;transform:none;width:auto;min-height:50px;z-index:57;bottom:calc(64px + env(safe-area-inset-bottom));font-size:15px;letter-spacing:2.8px;padding:14px !important;text-align:center;border-radius:14px}" +
       "html body.fo-th #fo-mstage .fo-mst-next:active{transform:translateY(1px)}" +
@@ -2741,11 +2754,26 @@
             oF === "4" ? "FOUR!" : oF === "6" ? "SIX!" : oF === "wide" ? "WIDE" : oF === "noball" ? "NO BALL" :
             (typeof isWkt === "function" && isWkt(oF)) ? "OUT!" : "";
           if (flashTx && (ms9 === "live" || ms9 === "oval")) {
-            var fl9 = document.getElementById("fo-mob-flash"); if (fl9) fl9.remove();
-            fl9 = document.createElement("div"); fl9.id = "fo-mob-flash"; fl9.className = "k-" + kind;
-            fl9.textContent = flashTx;
-            document.body.appendChild(fl9);
-            setTimeout(function () { try { fl9.remove(); } catch (e9) {} }, 1600);
+            var kind9 = kind;
+            var spawnFl = function () {
+              var msN = document.body.getAttribute("data-mobsheet");
+              if (msN !== "live" && msN !== "oval") return;
+              var fl9 = document.getElementById("fo-mob-flash"); if (fl9) fl9.remove();
+              fl9 = document.createElement("div"); fl9.id = "fo-mob-flash"; fl9.className = "k-" + kind9;
+              fl9.textContent = flashTx;
+              document.body.appendChild(fl9);
+              setTimeout(function () { try { fl9.remove(); } catch (e9) {} }, 1600);
+            };
+            if (ms9 === "oval") {
+              // hold the reveal until the animated ball lands - text first
+              // would spoil the delivery. A timer backstops a missed hook.
+              window.__foMobFlashPend = spawnFl;
+              document.body.classList.add("fo-ov-wait");
+              clearTimeout(window.__foMobFlashPT);
+              window.__foMobFlashPT = setTimeout(function () {
+                try { if (window.__foOvalBallDone) window.__foOvalBallDone(); } catch (eT9) {}
+              }, 2600);
+            } else spawnFl();
           }
         }
       } catch (eFl) {}

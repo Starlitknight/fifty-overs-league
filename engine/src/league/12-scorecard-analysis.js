@@ -2409,6 +2409,10 @@
       ".fo-cx{max-width:760px;margin:0 auto;padding:6px 2px 30px}" +
       ".fo-hg2{position:relative;width:100vw;margin:0 0 0 calc(50% - 50vw);height:100vh;min-height:540px;overflow:hidden;background:#0B1322}" +
       // the header dissolves into the painting while the wallpaper is up
+      // art pages own the whole canvas: any sliver the painting misses (iOS
+      // toolbar collapse, rubber-band overscroll) must read as night, never
+      // as the cream document background
+      "html body.fo-home-on,html body.ftpskin.fo-home-on{background:#0B1322 !important}" +
       "html body.fo-home-on #topbar,html body.ftpskin.fo-home-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(4,10,20,.6),rgba(4,10,20,.24) 60%,transparent) !important;border-bottom:none !important;box-shadow:none !important}" +
       "body.fo-home-on #fo-top-status{display:none}" +
       // #page clips x-overflow for ordinary pages - the wallpaper must paint
@@ -2928,7 +2932,10 @@
       el.style.marginTop = "0px"; el.style.marginBottom = "0px";
       var top = el.getBoundingClientRect().top + window.scrollY;
       el.style.marginTop = (-top) + "px";
+      // dvh tracks the iOS toolbar as it collapses/expands - a px snapshot
+      // of innerHeight goes stale mid-drag and exposes the canvas below
       el.style.height = window.innerHeight + "px";
+      el.style.height = "100dvh";
       var over = document.documentElement.scrollHeight - window.innerHeight;
       if (over > 0) el.style.marginBottom = (-over) + "px";
     } catch (e) {}
@@ -3405,9 +3412,11 @@
       el.style.marginTop = "0px";
       var top = el.getBoundingClientRect().top + window.scrollY;
       if (document.body.classList.contains("fo-home-on")) {
-        // the header floats transparent above - the art runs to y=0
+        // the header floats transparent above - the art runs to y=0.
+        // dvh (where supported) rides the iOS toolbar so no cream shows
         el.style.marginTop = (-top) + "px";
         el.style.height = window.innerHeight + "px";
+        el.style.height = "100dvh";
       } else el.style.height = Math.max(440, window.innerHeight - top) + "px";
       var mapEl = el.querySelector(".fo-tour-map");
       if (mapEl) {

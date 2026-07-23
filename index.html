@@ -1,7 +1,8 @@
 <!DOCTYPE html><html lang="en"><head><style id="fo-boot">html{background:#0B1322}html>body{visibility:hidden;animation:fo-boot-reveal .01s 4s forwards}@keyframes fo-boot-reveal{to{visibility:visible}}</style><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Fifty Overs - Club Manager v11.6</title><style>:root{--ftp-blue:#2d6a8f;--ftp-blue-dark:#1d4a66;--ftp-border:#cfc8b8;--ftp-bg:#f5f1e6;
 --ftp-panel:#ffffff;--ftp-link:#1a5276;--ftp-bar:#3f9e3f;--ftp-text:#22302a;--ftp-warn:#a33}
 *{box-sizing:border-box}
-body{margin:0;background:var(--ftp-bg);color:var(--ftp-text);font:12px Verdana,Geneva,Tahoma,sans-serif;line-height:1.45}
+html{background:#0B1322}
+body{margin:0;min-height:100vh;min-height:100dvh;background:var(--ftp-bg);color:var(--ftp-text);font:12px Verdana,Geneva,Tahoma,sans-serif;line-height:1.45}
 a{color:var(--ftp-link);text-decoration:none}a:hover{text-decoration:underline}
 #topbar{background:linear-gradient(180deg,#173f2b,#1d4a66 140%);color:#fff;border-bottom:3px solid #2c7a2c;padding:0 10px;display:flex;align-items:center;gap:2px;flex-wrap:wrap}
 #topbar .brand{font-weight:bold;font-size:13px;padding:7px 10px 7px 2px;color:#dce9f2}
@@ -10504,7 +10505,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260723-0139-86d9b8";
+  var FO_BUILD = "20260723-0152-89ead4";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18622,6 +18623,17 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       if (typeof renderMatch === "function") renderMatch();
     } catch (e) {}
   }
+  // in the oval view the ball itself tells the story: the outcome text is
+  // parked here until oval.js reports the delivery animation has landed
+  window.__foOvalBallDone = function () {
+    try {
+      document.body.classList.remove("fo-ov-wait");
+      clearTimeout(window.__foMobFlashPT);
+      var f9 = window.__foMobFlashPend;
+      window.__foMobFlashPend = null;
+      if (f9) f9();
+    } catch (eOd) {}
+  };
   // moment cut-in: full character art earns the screen for ~2.5s, then leaves
   function foThCut(img, big, name) {
     try {
@@ -19149,7 +19161,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "body.fo-th .fo-mst-moment .rib p{font-size:12.5px;letter-spacing:.2px;text-transform:none;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#F5EFDC;text-shadow:0 1px 6px rgba(0,0,0,.7)}" +
       "body.fo-th .fo-mst-moment .rib .kph{display:none}" +
       "body.fo-th[data-mobsheet='score'] .fo-mst-moment,body.fo-th[data-mobsheet='tactics'] .fo-mst-moment{display:none !important}" +
-      "body.fo-th[data-mobsheet='oval'] .fo-mst-moment{top:calc(230px + env(safe-area-inset-top));bottom:auto}" +
+      "body.fo-th[data-mobsheet='oval'] .fo-mst-moment{top:calc(230px + env(safe-area-inset-top));bottom:auto;transition:opacity .2s ease}" +
+      // the commentary line + result pill wait for the animated ball to land
+      "body.fo-th.fo-ov-wait[data-mobsheet='oval'] .fo-mst-moment{opacity:0}" +
       // the tempo row: the thumb target where NEXT BALL used to live
       "html body.fo-th #fo-mstage .fo-mst-next{position:fixed;left:14px;right:14px;top:auto;transform:none;width:auto;min-height:50px;z-index:57;bottom:calc(64px + env(safe-area-inset-bottom));font-size:15px;letter-spacing:2.8px;padding:14px !important;text-align:center;border-radius:14px}" +
       "html body.fo-th #fo-mstage .fo-mst-next:active{transform:translateY(1px)}" +
@@ -19426,11 +19440,26 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
             oF === "4" ? "FOUR!" : oF === "6" ? "SIX!" : oF === "wide" ? "WIDE" : oF === "noball" ? "NO BALL" :
             (typeof isWkt === "function" && isWkt(oF)) ? "OUT!" : "";
           if (flashTx && (ms9 === "live" || ms9 === "oval")) {
-            var fl9 = document.getElementById("fo-mob-flash"); if (fl9) fl9.remove();
-            fl9 = document.createElement("div"); fl9.id = "fo-mob-flash"; fl9.className = "k-" + kind;
-            fl9.textContent = flashTx;
-            document.body.appendChild(fl9);
-            setTimeout(function () { try { fl9.remove(); } catch (e9) {} }, 1600);
+            var kind9 = kind;
+            var spawnFl = function () {
+              var msN = document.body.getAttribute("data-mobsheet");
+              if (msN !== "live" && msN !== "oval") return;
+              var fl9 = document.getElementById("fo-mob-flash"); if (fl9) fl9.remove();
+              fl9 = document.createElement("div"); fl9.id = "fo-mob-flash"; fl9.className = "k-" + kind9;
+              fl9.textContent = flashTx;
+              document.body.appendChild(fl9);
+              setTimeout(function () { try { fl9.remove(); } catch (e9) {} }, 1600);
+            };
+            if (ms9 === "oval") {
+              // hold the reveal until the animated ball lands - text first
+              // would spoil the delivery. A timer backstops a missed hook.
+              window.__foMobFlashPend = spawnFl;
+              document.body.classList.add("fo-ov-wait");
+              clearTimeout(window.__foMobFlashPT);
+              window.__foMobFlashPT = setTimeout(function () {
+                try { if (window.__foOvalBallDone) window.__foOvalBallDone(); } catch (eT9) {}
+              }, 2600);
+            } else spawnFl();
           }
         }
       } catch (eFl) {}
@@ -26053,6 +26082,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-cx{max-width:760px;margin:0 auto;padding:6px 2px 30px}" +
       ".fo-hg2{position:relative;width:100vw;margin:0 0 0 calc(50% - 50vw);height:100vh;min-height:540px;overflow:hidden;background:#0B1322}" +
       // the header dissolves into the painting while the wallpaper is up
+      // art pages own the whole canvas: any sliver the painting misses (iOS
+      // toolbar collapse, rubber-band overscroll) must read as night, never
+      // as the cream document background
+      "html body.fo-home-on,html body.ftpskin.fo-home-on{background:#0B1322 !important}" +
       "html body.fo-home-on #topbar,html body.ftpskin.fo-home-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(4,10,20,.6),rgba(4,10,20,.24) 60%,transparent) !important;border-bottom:none !important;box-shadow:none !important}" +
       "body.fo-home-on #fo-top-status{display:none}" +
       // #page clips x-overflow for ordinary pages - the wallpaper must paint
@@ -26572,7 +26605,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       el.style.marginTop = "0px"; el.style.marginBottom = "0px";
       var top = el.getBoundingClientRect().top + window.scrollY;
       el.style.marginTop = (-top) + "px";
+      // dvh tracks the iOS toolbar as it collapses/expands - a px snapshot
+      // of innerHeight goes stale mid-drag and exposes the canvas below
       el.style.height = window.innerHeight + "px";
+      el.style.height = "100dvh";
       var over = document.documentElement.scrollHeight - window.innerHeight;
       if (over > 0) el.style.marginBottom = (-over) + "px";
     } catch (e) {}
@@ -27049,9 +27085,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       el.style.marginTop = "0px";
       var top = el.getBoundingClientRect().top + window.scrollY;
       if (document.body.classList.contains("fo-home-on")) {
-        // the header floats transparent above - the art runs to y=0
+        // the header floats transparent above - the art runs to y=0.
+        // dvh (where supported) rides the iOS toolbar so no cream shows
         el.style.marginTop = (-top) + "px";
         el.style.height = window.innerHeight + "px";
+        el.style.height = "100dvh";
       } else el.style.height = Math.max(440, window.innerHeight - top) + "px";
       var mapEl = el.querySelector(".fo-tour-map");
       if (mapEl) {
@@ -28553,9 +28591,14 @@ FOC.oval = (function () {
     // the LIVE BALL pane header reads the delivery + region as it plays
     try {
       var hs = document.getElementById("fo-ovhd-sub");
-      if (hs) hs.textContent = (next.no ? next.no + " · " : "") + (next.reg || (next.sym === "W" ? "wicket" : ""));
+      // no outcome words up front - the region alone, like a camera cut
+      if (hs) hs.textContent = (next.no ? next.no + " · " : "") + (next.reg || "");
     } catch (eH) {}
-    animate(next, function () { animating = false; board(); pump(); });
+    animate(next, function () {
+      animating = false;
+      try { if (window.__foOvalBallDone) window.__foOvalBallDone(); } catch (eD) {}
+      board(); pump();
+    });
   }
 
   function ee(s9) { return String(s9 == null ? "" : s9).replace(/[&<>]/g, function (c9) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c9]; }); }
