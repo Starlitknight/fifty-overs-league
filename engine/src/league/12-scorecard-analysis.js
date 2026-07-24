@@ -2827,11 +2827,13 @@
       // the nation record book lives under the League pill
       if ((location.hash || "").split("?")[0] === "#/nation") lg.classList.add("on");
       var cp = mkPill("fo-cup-nav", "Cup", "#/cup");
+      var jn = mkPill("fo-lore-nav", "Journal", "#/lore");
       var anchor = wrap.querySelector("a[data-nav='club'], a[data-nav='home']");
       var want = anchor ? anchor.nextSibling : wrap.firstChild;
       if (hm.parentNode !== wrap) wrap.insertBefore(hm, want);
       if (lg.parentNode !== wrap) wrap.insertBefore(lg, hm.nextSibling);
       if (cp.parentNode !== wrap) wrap.insertBefore(cp, lg.nextSibling);
+      if (jn.parentNode !== wrap) wrap.insertBefore(jn, cp.nextSibling);
     } catch (e) {}
   }
   var foCxView = null;   // region the chapter strip is looking at (defaults to live one)
@@ -3982,6 +3984,165 @@
     for (var k = 1; k <= 5; k++) out += "<em class='" + (hs >= k * 2 ? "f" : hs === k * 2 - 1 ? "h" : "e") + "'>&#9733;</em>";
     return out;
   }
+  // ---- the Journal (#/lore): who these people are and why they play this way --
+  // Published features get the full spread; everyone else gets their file. All of
+  // it reads from the same region data the rest of the game plays against, so a
+  // boss's story and the side you face never drift apart.
+  var FO_LORE_FEATURE = {
+    eng: {
+      art: "lore/journal-eng.webp", artM: "lore/journal-eng-m.webp",
+      issue: "Vol. 01 &middot; Issue 19", byline: "Eleanor March",
+      head: "The man who turned England's patience into a competitive edge.",
+      standfirst: "Canterbury made him: wet outfields, slow pitches, and long county afternoons that taught him English conditions reward judgment over impulse. He asks the whole domestic game for the same thing."
+    }
+  };
+  function foLoreCast() {
+    var out = [];
+    FO_CX_REGIONS.forEach(function (r) {
+      var bc = (r.clubs || []).filter(function (c) { return c.boss; })[0];
+      if (!bc) return;
+      out.push({ id: r.id, nm: r.nm, ac: r.ac || "#3a6ea5", type: r.type || "", final: !!r.final,
+        leader: bc.leader || bc.nm, club: bc.nm, city: bc.city || "",
+        note: bc.note || "", taunt: bc.taunt || "",
+        nug: (bc.nug || "").replace(/^[^:]*:\s*/, ""),
+        arrive: String(r.arrive || "").replace(/\bboss\b[.,]?/i, "").trim() });
+    });
+    return out;
+  }
+  function foRenderLore() {
+    try {
+      try { foCxNav(); } catch (eN) {}
+      if ((location.hash || "").split("?")[0] !== "#/lore") return;
+      var page = document.getElementById("page"); if (!page) return;
+      var cast = foLoreCast();
+      var sig = "lore|" + cast.length;
+      if (page.__foLoreSig === sig && page.querySelector(".fo-lore")) return;
+      page.__foLoreSig = sig;
+      var mob = false; try { mob = window.innerWidth < 760; } catch (eW) {}
+      var feat = cast.filter(function (c) { return FO_LORE_FEATURE[c.id]; });
+      var rest = cast.filter(function (c) { return !FO_LORE_FEATURE[c.id] && !c.final; });
+      var final = cast.filter(function (c) { return c.final; });
+
+      var featHTML = feat.map(function (c) {
+        var F = FO_LORE_FEATURE[c.id];
+        var src = FO_ART + (mob && F.artM ? F.artM : F.art);
+        return "<article class='fo-lore-feature' style='--lac:" + c.ac + "'>" +
+          "<div class='fo-lore-fmeta'>" +
+          "<div class='fo-lore-kicker'>The Feature &middot; " + E(c.nm) + "</div>" +
+          "<h2 class='fo-lore-fname'>" + E(c.leader) + "</h2>" +
+          "<p class='fo-lore-fhead'>" + F.head + "</p>" +
+          "<p class='fo-lore-fstand'>" + F.standfirst + "</p>" +
+          "<div class='fo-lore-fby'>" + F.issue + " &middot; by " + E(F.byline) + "</div>" +
+          "</div>" +
+          "<a class='fo-lore-fart' href='" + src + "' data-lore-open='" + src + "' aria-label='Read the full feature on " + E(c.leader) + "'>" +
+          "<img src='" + src + "' alt='Fifty Overs Journal feature on " + E(c.leader) + "' loading='lazy' decoding='async'>" +
+          "<span class='fo-lore-zoom'>Read the full page &#9654;</span></a>" +
+          "</article>";
+      }).join("");
+
+      var card = function (c) {
+        var cut = FO_ART + "circuit/boss-" + c.id + "-cutout.webp";
+        var art = FO_ART + "circuit/boss-" + c.id + ".webp";
+        return "<a class='fo-lore-card' href='#/boss?r=" + encodeURIComponent(c.id) + "' style='--lac:" + c.ac + "'>" +
+          "<span class='fo-lore-pic'><img src='" + cut + "' alt='" + E(c.leader) + "' loading='lazy' decoding='async' onerror=\"this.onerror=null;this.src='" + art + "'\"></span>" +
+          "<span class='fo-lore-body'>" +
+          "<span class='fo-lore-nat'>" + E(c.nm) + (c.type ? " &middot; " + E(c.type) : "") + "</span>" +
+          "<b class='fo-lore-name'>" + E(c.leader) + "</b>" +
+          "<i class='fo-lore-club'>" + E(c.club) + (c.city ? " &middot; " + E(c.city) : "") + "</i>" +
+          (c.note ? "<span class='fo-lore-note'>" + E(c.note.charAt(0).toUpperCase() + c.note.slice(1)) + ".</span>" : "") +
+          (c.nug ? "<span class='fo-lore-nug'>" + E(c.nug) + "</span>" : "") +
+          (c.taunt ? "<q class='fo-lore-taunt'>" + E(c.taunt) + "</q>" : "") +
+          "</span></a>";
+      };
+
+      page.innerHTML =
+        "<div class='fo-lore'>" +
+        "<div class='fo-lore-bg' aria-hidden='true'></div>" +
+        "<header class='fo-lore-mast'>" +
+        "<div class='fo-lore-eyebrow'>The Fifty Overs Journal</div>" +
+        "<h1 class='fo-lore-title'>The Book of the League</h1>" +
+        "<p class='fo-lore-intro'>Nineteen nations, nineteen league bosses, and one old man at Marylebone who keeps the whole thing honest. This is who they are, where they learned it, and what they will do to you if you turn up unprepared.</p>" +
+        "</header>" +
+        (featHTML ? "<section class='fo-lore-sec'>" + featHTML + "</section>" : "") +
+        "<section class='fo-lore-sec'><h2 class='fo-lore-h2'>The League Bosses</h2>" +
+        "<p class='fo-lore-sub'>One per nation. Beat the ladder and their door opens.</p>" +
+        "<div class='fo-lore-grid'>" + rest.map(card).join("") + "</div></section>" +
+        (final.length ? "<section class='fo-lore-sec'><h2 class='fo-lore-h2'>The World Final</h2>" +
+          "<p class='fo-lore-sub'>Nineteen doors, then his.</p>" +
+          "<div class='fo-lore-grid one'>" + final.map(card).join("") + "</div></section>" : "") +
+        "<div class='fo-lore-foot'><a class='fo-lore-back' href='#/world'>&#8592; World map</a>" +
+        "<a class='fo-lore-back' href='#/league'>Your league</a></div>" +
+        "</div>";
+      // the feature opens as a full page you can actually read
+      page.querySelectorAll("[data-lore-open]").forEach(function (a) {
+        a.addEventListener("click", function (e) {
+          e.preventDefault();
+          var src = a.getAttribute("data-lore-open");
+          var ov = document.createElement("div"); ov.className = "fo-lore-lb";
+          ov.innerHTML = "<img src='" + src + "' alt=''><button type='button' class='fo-lore-x' aria-label='Close'>&times;</button>";
+          var shut = function () { try { ov.remove(); } catch (e2) {} document.removeEventListener("keydown", esc); };
+          var esc = function (ev) { if (ev.key === "Escape") shut(); };
+          ov.addEventListener("click", shut); document.addEventListener("keydown", esc);
+          document.body.appendChild(ov);
+        });
+      });
+      try { document.body.classList.remove("fo-ov-on"); } catch (eB) {}
+    } catch (e) { try { console.warn("foRenderLore", e); } catch (e2) {} }
+  }
+  try { window.foRenderLore = foRenderLore; } catch (eLw) {}
+  setInterval(foRenderLore, 1100);
+  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] === "#/lore") setTimeout(foRenderLore, 40); });
+  try {
+    var loCss = document.createElement("style"); loCss.id = "fo-lore-css";
+    loCss.textContent = [
+      // the Journal reads on its own dark press-room ground, not the cream shell
+      ".fo-lore{--gold:#E6B15E;position:relative;max-width:1180px;margin:0 auto;padding:26px 18px 70px;color:#e9eefa}",
+      ".fo-lore-bg{position:fixed;inset:0;z-index:0;background:radial-gradient(1100px 640px at 22% -12%,#17253f 0%,#0b1424 58%,#070d18 100%)}",
+      ".fo-lore>*:not(.fo-lore-bg){position:relative;z-index:1}",
+      ".fo-lore-mast{text-align:center;padding:14px 0 8px;border-bottom:1px solid rgba(150,180,225,.16)}",
+      ".fo-lore-eyebrow{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:5px;font-size:11px;font-weight:600;color:var(--gold)}",
+      ".fo-lore-title{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;font-size:clamp(34px,6vw,64px);line-height:.94;margin:8px 0 10px;color:#f6f1e6}",
+      ".fo-lore-intro{max-width:680px;margin:0 auto 16px;font-size:14.5px;line-height:1.66;color:#b9c6dd}",
+      ".fo-lore-sec{margin-top:34px}",
+      ".fo-lore-h2{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:2.4px;font-size:15px;color:#dbe4f2;margin:0 0 4px;padding-bottom:8px;border-bottom:1px solid rgba(150,180,225,.14)}",
+      ".fo-lore-sub{font-size:12.5px;color:#8ea3c4;margin:8px 0 16px;font-style:italic}",
+      // the published feature
+      ".fo-lore-feature{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:22px;align-items:center;background:linear-gradient(180deg,rgba(16,26,44,.82),rgba(10,17,30,.9));border:1px solid rgba(235,194,113,.28);border-radius:16px;padding:20px;box-shadow:0 18px 44px rgba(0,0,0,.4)}",
+      ".fo-lore-kicker{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:3px;font-size:10.5px;font-weight:600;color:var(--gold)}",
+      ".fo-lore-fname{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:clamp(26px,3.4vw,40px);line-height:1;margin:7px 0 9px;color:#f6f1e6}",
+      ".fo-lore-fhead{font-size:15px;line-height:1.5;color:#e2d9c4;font-style:italic;margin:0 0 10px}",
+      ".fo-lore-fstand{font-size:13.5px;line-height:1.68;color:#aebbd2;margin:0 0 12px}",
+      ".fo-lore-fby{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2px;font-size:10px;color:#8ea3c4}",
+      "html body #page a.fo-lore-fart{position:relative;display:block;border-radius:12px;overflow:hidden;border:1px solid rgba(150,180,225,.2);text-decoration:none !important;line-height:0}",
+      ".fo-lore-fart img{width:100%;height:auto;display:block;transition:transform .5s ease}",
+      ".fo-lore-fart:hover img{transform:scale(1.02)}",
+      ".fo-lore-zoom{position:absolute;left:12px;bottom:12px;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.8px;font-size:10.5px;font-weight:600;color:#101B2D;background:linear-gradient(180deg,#F0B94E,#C9A24B);border-radius:999px;padding:8px 15px;line-height:1;box-shadow:0 4px 12px rgba(0,0,0,.45)}",
+      // the cast
+      ".fo-lore-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}",
+      ".fo-lore-grid.one{grid-template-columns:minmax(0,520px)}",
+      "html body #page a.fo-lore-card{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:start;background:rgba(13,21,37,.72);border:1px solid rgba(150,180,225,.14);border-left:3px solid var(--lac);border-radius:13px;padding:12px;text-decoration:none !important;color:#e9eefa !important;transition:border-color .16s,transform .16s,background .16s}",
+      "html body #page a.fo-lore-card:hover{background:rgba(20,31,52,.9);border-color:rgba(235,194,113,.5);transform:translateY(-2px)}",
+      ".fo-lore-pic{display:block;width:96px;height:112px;border-radius:9px;overflow:hidden;background:radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--lac) 42%,#0b1424),#0b1424)}",
+      ".fo-lore-pic img{width:100%;height:100%;object-fit:cover;object-position:center 12%}",
+      ".fo-lore-body{display:block;min-width:0}",
+      ".fo-lore-nat{display:block;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2.2px;font-size:9.5px;font-weight:600;color:var(--gold)}",
+      ".fo-lore-name{display:block;font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.6px;font-size:19px;line-height:1.1;margin:3px 0 2px;color:#f6f1e6}",
+      ".fo-lore-club{display:block;font-style:normal;font-size:11.5px;color:#8ea3c4;margin-bottom:7px}",
+      ".fo-lore-note{display:block;font-size:12.5px;line-height:1.5;color:#cfd8e8}",
+      ".fo-lore-nug{display:block;font-size:12px;line-height:1.58;color:#9fb0cb;margin-top:6px}",
+      ".fo-lore-taunt{display:block;font-size:12.5px;line-height:1.5;color:#e2d9c4;font-style:italic;margin-top:8px;padding-left:9px;border-left:2px solid rgba(235,194,113,.45)}",
+      ".fo-lore-foot{display:flex;gap:10px;justify-content:center;margin-top:34px}",
+      "html body #page a.fo-lore-back{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2px;font-size:10.5px;font-weight:600;color:#F5EFDC !important;text-decoration:none !important;background:rgba(12,20,36,.6);border:1.5px solid rgba(235,194,113,.42);border-radius:999px;padding:10px 17px}",
+      "html body #page a.fo-lore-back:hover{color:#F3D37A !important;border-color:var(--gold)}",
+      // the full page, opened
+      ".fo-lore-lb{position:fixed;inset:0;z-index:9000;background:rgba(4,8,16,.94);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto;cursor:zoom-out}",
+      ".fo-lore-lb img{max-width:100%;max-height:100%;width:auto;height:auto;border-radius:8px;box-shadow:0 24px 60px rgba(0,0,0,.7)}",
+      "html body .fo-lore-lb .fo-lore-x{position:fixed;top:14px;right:16px;font-size:26px;line-height:1;color:#F5EFDC !important;background:rgba(12,20,36,.8) !important;border:1.5px solid rgba(235,194,113,.5) !important;border-radius:999px;width:42px;height:42px;cursor:pointer}",
+      "@media(max-width:860px){.fo-lore-feature{grid-template-columns:1fr;gap:16px}.fo-lore-feature .fo-lore-fart{order:-1}}",
+      "@media(max-width:520px){.fo-lore{padding:18px 12px 60px}html body #page a.fo-lore-card{grid-template-columns:74px minmax(0,1fr)}.fo-lore-pic{width:74px;height:88px}}"
+    ].join("");
+    document.head.appendChild(loCss);
+  } catch (eLc) {}
   function foRenderBoss() {
     try {
       if ((location.hash || "").split("?")[0] !== "#/boss") return;
