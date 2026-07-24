@@ -4155,17 +4155,24 @@
           }
         }
       } catch (eR) {}
-      try { document.body.classList.remove("fo-ov-on"); } catch (eB) {}
+      try { document.body.classList.remove("fo-ov-on"); document.body.classList.add("fo-lore-on"); } catch (eB) {}
     } catch (e) { try { console.warn("foRenderLore", e); } catch (e2) {} }
   }
   try { window.foRenderLore = foRenderLore; } catch (eLw) {}
   setInterval(foRenderLore, 1100);
-  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] === "#/lore") setTimeout(foRenderLore, 40); });
+  window.addEventListener("hashchange", function () {
+    var h = (location.hash || "").split("?")[0];
+    if (h === "#/lore") setTimeout(foRenderLore, 40);
+    else try { document.body.classList.remove("fo-lore-on"); } catch (eLr) {}
+  });
   try {
     var loCss = document.createElement("style"); loCss.id = "fo-lore-css";
     loCss.textContent = [
       // ---------- ground: an ink-and-gold press room, not a flat panel ----------
       ".fo-lx{--gold:#E6B15E;--paper:#F4EFE4;--ink:#070C16;position:relative;width:100vw;margin-left:calc(50% - 50vw);color:#e9eefa;overflow-x:clip;font-synthesis-weight:none}",
+      "html body.fo-lore-on #topbar,html body.ftpskin.fo-lore-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:transparent !important;border-bottom:0 !important;box-shadow:none !important;padding-top:env(safe-area-inset-top)}",
+      "html body.fo-lore-on #topbar .brand,html body.fo-lore-on #topbar a{text-shadow:0 1px 10px rgba(0,0,0,.85)}",
+      "html body.fo-lore-on #page{padding-top:0 !important;margin-top:0 !important}",
       ".fo-lx-bg{position:fixed;inset:0;z-index:0;background:radial-gradient(120% 80% at 78% -10%,#1d3050 0%,#0e1a2e 42%,#070c16 78%),linear-gradient(180deg,#070c16,#050912)}",
       ".fo-lx-grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.16;mix-blend-mode:overlay;background-image:url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='.55'/></svg>\")}",
       ".fo-lx>*:not(.fo-lx-bg):not(.fo-lx-grain){position:relative;z-index:2}",
@@ -5589,7 +5596,9 @@
       // compact mobile typography so the ticket clears the dock at 430x932
       "@media(max-width:979px){",
       // run the map full-bleed behind the tab rail (reclaim ~90px of height)
-      "#page .fo-ov .fo-ov-subnav{position:absolute;top:0;left:0;right:0;z-index:20;padding:12px 16px 18px;border-bottom:0;background:linear-gradient(180deg,rgba(4,10,20,.82) 0%,rgba(4,10,20,.32) 62%,transparent 100%)}",
+      // no scrim band under the header: it only ever drew a hard seam across the
+      // art. The country pill carries its own backdrop, so the bleed stays whole.
+      "#page .fo-ov .fo-ov-subnav{position:absolute;top:0;left:0;right:0;z-index:20;padding:12px 16px 18px;border-bottom:0;background:none}",
       ".fo-ov-panel[data-panel=nation]{padding-top:104px}",
       // mobile standings: full names, drop W/L + city subtitles, taller rows
       "#page .fo-ov .fo-lg-thead,#page .fo-ov .fo-lg-row{grid-template-columns:24px 40px 1fr 28px 50px 40px;padding:11px 12px}",
