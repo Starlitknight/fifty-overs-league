@@ -10526,7 +10526,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260724-2225-6956af";
+  var FO_BUILD = "20260724-2231-fd5323";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -25641,6 +25641,49 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   function foCxBossInfo(id) { return FO_CX_BOSS[id] || null; }
   function foCxCrestSrc(id) { var b = FO_CX_BOSS[id]; return b ? (FO_ART + "crests/" + b.crest + ".webp") : ""; }
   // a crest <img> with a graceful fade-out if the asset is ever missing
+  // real coordinates, so every league's cities sit where they actually are.
+  // Projected per nation (longitude cosine-corrected, aspect preserved) rather
+  // than hand-placed, so the pins keep their true bearings on the painted maps.
+  var FO_CITY_GEO = {
+    eng: { London: [51.51, -0.13], Leeds: [53.80, -1.55], Nottingham: [52.95, -1.15], Manchester: [53.48, -2.24], Canterbury: [51.28, 1.08], Birmingham: [52.49, -1.89], Bristol: [51.45, -2.59], Durham: [54.78, -1.57] },
+    ire: { Cork: [51.90, -8.47], Dublin: [53.35, -6.26], Belfast: [54.60, -5.93], Galway: [53.27, -9.05], Limerick: [52.66, -8.63], Waterford: [52.26, -7.11], Derry: [54.99, -7.31], Kilkenny: [52.65, -7.25] },
+    ned: { Utrecht: [52.09, 5.12], Amsterdam: [52.37, 4.90], Rotterdam: [51.92, 4.48], "The Hague": [52.08, 4.31], Eindhoven: [51.44, 5.48], Groningen: [53.22, 6.57], Deventer: [52.25, 6.16], Haarlem: [52.38, 4.64] },
+    win: { "Port of Spain": [10.65, -61.52], Bridgetown: [13.11, -59.62], Kingston: [17.97, -76.79], Georgetown: [6.80, -58.16], "Gros Islet": [14.07, -60.95], "St John's": [17.12, -61.85], Roseau: [15.30, -61.39], Basseterre: [17.30, -62.72] },
+    rsa: { Durban: [-29.86, 31.02], Johannesburg: [-26.20, 28.05], "Cape Town": [-33.92, 18.42], Pretoria: [-25.75, 28.19], Gqeberha: [-33.96, 25.60], Bloemfontein: [-29.09, 26.16], Paarl: [-33.73, 18.97], Kimberley: [-28.74, 24.77] },
+    zim: { Harare: [-17.83, 31.05], Bulawayo: [-20.15, 28.58], "Victoria Falls": [-17.93, 25.84], Mutare: [-18.97, 32.67], Kwekwe: [-18.93, 29.81], Gweru: [-19.46, 29.82], Masvingo: [-20.07, 30.83], Kadoma: [-18.36, 29.91] },
+    aus: { Melbourne: [-37.81, 144.96], Perth: [-31.95, 115.86], Sydney: [-33.87, 151.21], Brisbane: [-27.47, 153.03], Adelaide: [-34.93, 138.60], Hobart: [-42.88, 147.33], Canberra: [-35.28, 149.13], Geelong: [-38.15, 144.36] },
+    nzl: { Auckland: [-36.85, 174.76], Christchurch: [-43.53, 172.64], Wellington: [-41.29, 174.78], Hamilton: [-37.79, 175.28], Dunedin: [-45.87, 170.50], Napier: [-39.49, 176.92], Tauranga: [-37.69, 176.17], Nelson: [-41.27, 173.28] },
+    slk: { Kandy: [7.29, 80.64], Colombo: [6.93, 79.86], Galle: [6.05, 80.22], Dambulla: [7.86, 80.65], Pallekele: [7.28, 80.70], Hambantota: [6.12, 81.12], Kurunegala: [7.49, 80.36], Matara: [5.95, 80.54] },
+    sub: { Nagpur: [21.15, 79.09], Mumbai: [19.08, 72.88], Kolkata: [22.57, 88.36], Chennai: [13.08, 80.27], Delhi: [28.61, 77.21], Bengaluru: [12.97, 77.59], Dharamshala: [32.22, 76.32], Ahmedabad: [23.02, 72.57] },
+    pak: { Lahore: [31.55, 74.34], Karachi: [24.86, 67.01], Peshawar: [34.02, 71.58], Multan: [30.20, 71.47], Rawalpindi: [33.60, 73.04], Faisalabad: [31.42, 73.08], Sialkot: [32.49, 74.53], Hyderabad: [25.40, 68.37] },
+    afg: { Kandahar: [31.61, 65.71], Kabul: [34.56, 69.21], Jalalabad: [34.43, 70.45], Herat: [34.35, 62.20], "Mazar-i-Sharif": [36.71, 67.11], Khost: [33.34, 69.92], Ghazni: [33.55, 68.42], Kunduz: [36.73, 68.86] },
+    bgd: { Sylhet: [24.90, 91.87], Dhaka: [23.81, 90.41], Chittagong: [22.36, 91.78], Khulna: [22.85, 89.54], Rajshahi: [24.37, 88.60], Barisal: [22.70, 90.35], Rangpur: [25.75, 89.24], Comilla: [23.46, 91.18] },
+    nep: { Kathmandu: [27.72, 85.32], Pokhara: [28.21, 83.99], Bhairahawa: [27.50, 83.45], Biratnagar: [26.45, 87.28], Chitwan: [27.53, 84.35], Lalitpur: [27.67, 85.32], Dharan: [26.81, 87.28], Birgunj: [27.01, 84.88] },
+    sco: { Edinburgh: [55.95, -3.19], Glasgow: [55.86, -4.25], Aberdeen: [57.15, -2.09], Dundee: [56.46, -2.97], Stirling: [56.12, -3.94], Perth: [56.40, -3.44], Inverness: [57.48, -4.22], Ayr: [55.46, -4.63] },
+    wal: { Cardiff: [51.48, -3.18], Swansea: [51.62, -3.94], Newport: [51.58, -2.99], Wrexham: [53.05, -2.99], Bangor: [53.23, -4.13], Aberystwyth: [52.41, -4.08], "Colwyn Bay": [53.29, -3.73], Neath: [51.66, -3.81] },
+    ken: { Nairobi: [-1.29, 36.82], Mombasa: [-4.04, 39.67], Kisumu: [-0.09, 34.77], Nakuru: [-0.30, 36.08], Eldoret: [0.51, 35.27], Thika: [-1.03, 37.07], Nyeri: [-0.42, 36.95], Machakos: [-1.52, 37.26] },
+    usa: { "Grand Prairie": [32.75, -97.00], Dallas: [32.78, -96.80], "New York": [40.71, -74.01], Lauderhill: [26.14, -80.21], Morrisville: [35.82, -78.83], Houston: [29.76, -95.37], "San Jose": [37.34, -121.89], Chicago: [41.88, -87.63] },
+    can: { "King City": [43.93, -79.53], Toronto: [43.65, -79.38], Vancouver: [49.28, -123.12], Brampton: [43.68, -79.76], Edmonton: [53.55, -113.49], Calgary: [51.05, -114.07], Ottawa: [45.42, -75.70], Winnipeg: [49.90, -97.14] }
+  };
+  // fit a nation's cities into the map frame, keeping their true shape
+  function foNationPins(rid, box) {
+    var g = FO_CITY_GEO[rid]; if (!g) return [];
+    var names = (FO_CX_CITY[rid] || []).filter(function (c) { return g[c]; });
+    if (!names.length) return [];
+    var mLat = 0; names.forEach(function (c) { mLat += g[c][0]; }); mLat /= names.length;
+    var k = Math.cos(mLat * Math.PI / 180);
+    var pts = names.map(function (c) { return { city: c, X: g[c][1] * k, Y: -g[c][0] }; });
+    var xs = pts.map(function (p) { return p.X; }), ys = pts.map(function (p) { return p.Y; });
+    var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+    var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+    var sx = (x1 - x0) || 1e-6, sy = (y1 - y0) || 1e-6;
+    var bw = box.x1 - box.x0, bh = box.y1 - box.y0;
+    var sc = Math.min(bw / sx, bh / sy);                     // one scale keeps the shape true
+    var ox = box.x0 + (bw - sx * sc) / 2, oy = box.y0 + (bh - sy * sc) / 2;
+    return pts.map(function (p) {
+      return { city: p.city, px: +(ox + (p.X - x0) * sc).toFixed(2), py: +(oy + (p.Y - y0) * sc).toFixed(2) };
+    });
+  }
   function foCxCrestImg(id, cls) {
     var src = foCxCrestSrc(id); if (!src) return "";
     return "<img class='" + (cls || "fo-crest") + "' src='" + src + "' alt='' loading='lazy' onerror=\"this.style.display='none'\">";
@@ -28979,14 +29022,27 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // editorial route: two field cities + the boss city. Their true east-coast
       // positions sit under Sir Giles, so map x into a clean left band (16-56%) —
       // an editorial abstraction that keeps the route clear of the boss on every map.
-      var rc = (region.clubs || []).filter(function (c) { return typeof c.mx === "number"; });
-      var wp = rc.filter(function (c) { return !c.boss; }).slice(0, 2).concat(rc.filter(function (c) { return c.boss; }).slice(0, 1));
-      wp = wp.map(function (c) { return { city: c.city, px: Math.round(16 + (c.mx || 50) * 0.4), py: Math.max(14, Math.min(82, c.my || 50)) }; }).sort(function (a, b) { return a.py - b.py; });
+      // every club city in the league, placed by real geography (the phone keeps
+      // the pins in the left band so the boss never stands on them)
+      var pinBox = ovMob ? { x0: 7, y0: 13, x1: 60, y1: 80 } : { x0: 13, y0: 15, x1: 86, y1: 85 };
+      var wp = foNationPins(nation, pinBox);
       var cityWid = {}; table.forEach(function (x) { if (x.city && x.wid && x.wid !== "me") cityWid[x.city] = x.wid; });
+      var routeOrder = wp.slice().sort(function (a, b) { return a.py - b.py; });   // north to south
       var routeD = "";
-      if (wp.length >= 2) { routeD = "M" + wp[0].px + " " + wp[0].py; for (var wi = 1; wi < wp.length; wi++) { var a2 = wp[wi - 1], b2 = wp[wi], mY = (a2.py + b2.py) / 2; routeD += " C" + a2.px + " " + mY + " " + b2.px + " " + mY + " " + b2.px + " " + b2.py; } }
+      if (routeOrder.length >= 2) {
+        routeD = "M" + routeOrder[0].px + " " + routeOrder[0].py;
+        for (var wi = 1; wi < routeOrder.length; wi++) {
+          var a2 = routeOrder[wi - 1], b2 = routeOrder[wi], mY = (a2.py + b2.py) / 2;
+          routeD += " C" + a2.px + " " + mY + " " + b2.px + " " + mY + " " + b2.px + " " + b2.py;
+        }
+      }
       var routeSVG = routeD ? "<svg class='fo-ov-route' viewBox='0 0 100 100' preserveAspectRatio='none' aria-hidden='true'><path d='" + routeD + "'/></svg>" : "";
-      var pinsHTML = wp.map(function (c) { var wid = cityWid[c.city]; var href = wid ? ("#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(wid)) : "#/world"; return "<a class='fo-ov-pin lbl-r' style='left:" + c.px + "%;top:" + c.py + "%' href='" + href + "' aria-label='Explore " + E(c.city) + "'><span class='dot' aria-hidden='true'></span><span class='nm'>" + E(c.city) + "</span></a>"; }).join("");
+      var pinsHTML = wp.map(function (c) {
+        var wid = cityWid[c.city];
+        var href = wid ? ("#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(wid)) : "#/world";
+        // labels flip to the left half so they never run off the frame
+        return "<a class='fo-ov-pin " + (c.px > 62 ? "lbl-l" : "lbl-r") + "' style='left:" + c.px + "%;top:" + c.py + "%' href='" + href + "' aria-label='Explore " + E(c.city) + "'><span class='dot' aria-hidden='true'></span><span class='nm'>" + E(c.city) + "</span></a>";
+      }).join("");
       // bottom dock (mobile) - line icons, WORLD active on this route
       var dockItems = [["#/home", "Home", "M3 10.8 12 3l9 7.8V21h-6v-6H9v6H3z", 0], ["#/squad", "Squad", "M9 10.4a3.1 3.1 0 100-6.2 3.1 3.1 0 000 6.2zM2.6 20a6.4 6.4 0 0112.8 0M16 10.2a3 3 0 000-6M21.4 20a6.3 6.3 0 00-4.6-6.1", 0], ["#/orders", "Match", "M12 3a9 9 0 100 18 9 9 0 000-18zM6.6 5.1C10 8 11.6 13 10.6 18.9", 0], ["#/world", "World", "M12 3a9 9 0 100 18 9 9 0 000-18zM3 12h18M12 3c3.2 3 3.2 15 0 18M12 3c-3.2 3-3.2 15 0 18", 1], ["#/home", "Club", "M12 3l7 2.6v6.2C19 17 15.6 19.4 12 21 8.4 19.4 5 17 5 11.8V5.6z", 0]];
       var dockHTML = "<nav class='fo-ov-dock' aria-label='Sections'>" + dockItems.map(function (d) { return "<a class='fo-ov-dk" + (d[3] ? " on" : "") + "' href='" + d[0] + "'" + (d[3] ? " aria-current='page'" : "") + "><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='" + d[2] + "'/></svg><span>" + d[1] + "</span></a>"; }).join("") + "</nav>";
