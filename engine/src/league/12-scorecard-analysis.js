@@ -3518,7 +3518,7 @@
       ".fo-city-full{position:relative;width:100vw;margin-left:calc(50% - 50vw);height:calc(100vh - 96px);min-height:520px;overflow:hidden;background:#0B1322}" +
       ".fo-ctv{position:absolute;inset:0;opacity:0;transition:opacity .55s ease;pointer-events:none}" +
       ".fo-ctv.on{opacity:1;pointer-events:auto}" +
-      ".fo-ctv>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 38%}" +
+      ".fo-ctv>img:not(.fo-ct-crest){position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 38%}" +
       ".fo-ctv-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,16,32,.18) 0%,rgba(7,16,32,0) 34%,rgba(7,16,32,.06) 58%,rgba(7,16,32,.86) 100%)}" +
       ".fo-ctv-cap{position:absolute;left:0;right:0;bottom:86px;padding:0 30px;color:#F5EFDC;max-width:760px;text-shadow:0 2px 10px rgba(0,0,0,.55)}" +
       ".fo-ct-eyebrow{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:3.6px;text-transform:uppercase;color:#F3D37A;font-weight:600}" +
