@@ -2186,7 +2186,9 @@ function foOrdersHardWarns(){ // illegal (blocking) problems only - under-covera
   }catch(e){return []}
 }
 function pgMatch(){
-  if(!App.pending&&!M){$('#page').innerHTML=crumb('Match centre')+'<div class="panel"><div class="pad">No fixture pending. Create one on the <a href="#/matches">Matches</a> page.</div></div>';return}
+  // no live or pending match: never leave the user on a dead "Match centre" -
+  // send them to the match-prep hub (today's fixture + Gaffer's plan / lineup).
+  if(!App.pending&&!M){location.hash='#/orders';if(typeof route==='function')route();return}
   if((!M||M.done)&&App.pending){
     const hard=foOrdersHardWarns();
     if(hard.length){

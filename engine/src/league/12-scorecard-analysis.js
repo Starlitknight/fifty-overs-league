@@ -4783,22 +4783,19 @@
         "<div class='fo-ov-figtag' aria-hidden='true'>" + E(bossName) + "<i>League Boss</i></div>" +
         "</div>" +
         "<div class='fo-ov-left'>" +
-        (emblem ? "<img class='fo-ov-crest' src='" + emblem + "' alt='' aria-hidden='true' onerror=\"this.style.display='none'\">" : "") +
         "<div class='fo-ov-eb'>" + ebText + "</div>" +
-        "<h1 class='fo-ov-title'>" + E(region.nm) + "</h1>" +
+        "<div class='fo-ov-titlerow'>" +
+        (emblem ? "<img class='fo-ov-crest-lg' src='" + emblem + "' alt='' aria-hidden='true' onerror=\"this.style.display='none'\">" : "") +
+        "<h1 class='fo-ov-title'>" + E(region.nm) + "</h1></div>" +
         "<div class='fo-ov-sub'>" + E(subtitle) + "</div>" +
         "<div class='fo-ov-bossid'>" + bossId + "</div>" +
         (tagline ? "<p class='fo-ov-quote'>&ldquo;" + E(tagline) + "&rdquo;</p>" : "") +
         styleRow +
-        "<div class='fo-ov-pstrip'>" + pulseStats + "</div>" +
-        matchCard + "</div>" +
+        (groundCards ? "<div class='fo-ov-grounds fo-ov-grounds-left'><div class='fo-ov-gh'>Explore the Grounds</div><div class='fo-ov-gstrip'>" + groundCards + "</div></div>" : "") +
+        "</div>" +
         "<div class='fo-ov-rail'>" +
-        "<div class='fo-ov-pulse'><div class='fo-ov-ph'>League Pulse</div>" +
-        "<div class='fo-ov-pstats'>" + pulseStats + "</div>" +
-        "<div class='fo-ov-chase'><div class='fo-ov-ch'><span class='n'>The Chase</span><span class='p'>Pts</span><span class='nr'>NRR</span></div>" + chaseRows + "</div>" +
-        "<button type='button' class='fo-ov-full' data-ovtab='table'>View full table &#8250;</button></div>" +
-        (groundCards ? "<div class='fo-ov-grounds'><div class='fo-ov-gh'>Explore the Grounds</div><div class='fo-ov-gstrip'>" + groundCards + "</div></div>" : "") +
         "<div class='fo-ov-ticker'><b>Around " + E(region.nm) + "</b><div class='fo-ov-tick'>" + tickerItems + "</div></div>" +
+        "</div>" +
         "</section>" +
         // ===== TABLE panel =====
         pOpen("table") + "<div class='fo-ov-sec'><h2>" + E(region.nm) + " &middot; Table</h2><p class='fo-ov-sublabel'>Top 4 reach the Champions Cup</p>" +
@@ -5048,6 +5045,10 @@
       // left identity column
       ".fo-ov-left{position:relative;z-index:3;padding:14px 18px 8px}",
       ".fo-ov-crest{width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 3px 8px rgba(0,0,0,.6));margin-bottom:6px}",
+      // crest sits inline beside the nation name, sized to match the display type
+      ".fo-ov-titlerow{display:flex;align-items:center;gap:clamp(12px,2vw,22px);margin-top:2px}",
+      ".fo-ov-crest-lg{height:clamp(54px,10vw,102px);width:auto;object-fit:contain;filter:drop-shadow(0 5px 14px rgba(0,0,0,.6));flex:none}",
+      ".fo-ov-grounds-left{margin-top:16px}",
       ".fo-ov-eb{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:3px;font-size:11px;font-weight:600;color:var(--gold)}",
       ".fo-ov-title{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:clamp(46px,15vw,116px);line-height:.84;margin:4px 0 0;color:#f4efe6;text-shadow:0 3px 26px rgba(0,0,0,.55),0 0 50px color-mix(in srgb,var(--lac) 40%,transparent)}",
       ".fo-ov-sub{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:4px;font-size:clamp(16px,4.5vw,26px);color:var(--gold);margin-top:4px}",
