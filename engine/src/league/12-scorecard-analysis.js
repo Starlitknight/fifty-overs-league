@@ -4006,6 +4006,12 @@
       issue: "Vol. 01 &middot; Issue 19", byline: "Eleanor March",
       head: "South Africa's pace-first architect.",
       standfirst: "He came through hard surfaces and fast conditions where hesitation gets punished and intent matters. He built his name hitting the deck hard and refusing to let batters settle, and he now asks every South African side for the same edge: attack with the ball, stay athletic, make every over feel uncomfortable."
+    },
+    sub: {
+      art: "lore/journal-sub.webp", artM: "lore/journal-sub-m.webp",
+      issue: "Vol. 01 &middot; Issue 19", byline: "Eleanor March",
+      head: "India's master of pressure and spin.",
+      standfirst: "He built his cricket on reading chaos faster than everyone else - a middle-order batter and part-time off-spinner who thrived when matches turned loud and tight. He wants Indian sides to do more than entertain: squeeze the middle overs, force bad decisions, and turn crowd energy into an advantage."
     }
   };
   function foLoreCast() {
