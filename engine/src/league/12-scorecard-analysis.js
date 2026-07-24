@@ -4494,7 +4494,7 @@
         btn("fo-hm-wd", "WORLD MAP", "WORLD") +
         btn("fo-hm-cp", "CHAMPIONS CUP", "CUP") +
         "</div></div>";
-      try { document.body.classList.add("fo-home-on"); document.body.classList.remove("fo-boss-on"); } catch (eBc) {}
+      try { document.body.classList.add("fo-home-on"); document.body.classList.remove("fo-boss-on"); document.body.classList.remove("fo-ov-on"); } catch (eBc) {}
       try { foHgFit(page.querySelector(".fo-hg2")); } catch (eF) {}
       var go = function (id, hash) { var b = page.querySelector("#" + id); if (b) b.addEventListener("click", function () { location.hash = hash; if (typeof window.route === "function") window.route(); }); };
       go("fo-hm-lg", "#/league"); go("fo-hm-sq", "#/squad"); go("fo-hm-wd", "#/world"); go("fo-hm-cp", "#/cup");
@@ -4632,7 +4632,7 @@
           "<div class='fo-ov-mid'><span class='vs'>VS</span><span class='t'>19:30</span></div>" +
           "<div class='fo-ov-team a'><span class='av'>" + entAv(L[myFx[1]]) + "</span><b>" + E(L[myFx[1]].name) + "</b></div>" +
           "</div>" +
-          "<button type='button' class='fo-ov-cta' id='fo-lg-play'>Set my XI &#9654;</button>" +
+          "<button type='button' class='fo-ov-cta fo-lg-play'>Set my XI &#9654;</button>" +
           "<button type='button' class='fo-ov-fx' data-ovtab='fixtures'>View fixtures &#8250;</button></div>")
           : "<div class='fo-ov-match'><div class='fo-ov-mh'>Season complete</div></div>";
       } else {
@@ -4687,6 +4687,49 @@
       }).join("");
       var pOpen = function (name) { return "<section class='fo-ov-panel' id='fo-ovp-" + name + "' data-panel='" + name + "' role='tabpanel'" + (name === actTab ? "" : " hidden") + ">"; };
 
+      // ---- rich Fixtures panel (own): your match up top, the round below, sim last ----
+      var fixturesPanel;
+      if (own) {
+        var myF = (sched[round] || []).filter(function (f) { return f[0] === 0 || f[1] === 0; })[0];
+        var others = (sched[round] || []).filter(function (f) { return f[0] !== 0 && f[1] !== 0; });
+        var stOf = function (f) { return (s.res || {})[round + ":" + f[0] + ":" + f[1]]; };
+        var fxHero = "";
+        if (!done && myF) {
+          var hnm = L[myF[0]].name, anm = L[myF[1]].name, st0 = stOf(myF);
+          fxHero = "<div class='fo-fx-hero'><div class='fo-fx-eb'>Round " + (round + 1) + " &middot; Your match</div>" +
+            "<div class='fo-fx-teams'><div class='t'><span class='av'>" + entAv(L[myF[0]]) + "</span><b>" + E(hnm) + "</b></div>" +
+            (st0 ? "<span class='sc'>" + st0.hr + " &ndash; " + st0.ar + "</span>" : "<span class='vs'>v</span>") +
+            "<div class='t a'><span class='av'>" + entAv(L[myF[1]]) + "</span><b>" + E(anm) + "</b></div></div>" +
+            (st0 ? "<div class='fo-fx-final'>" + (st0.w >= 0 ? E(st0.w === myF[0] ? hnm : anm) + " won" : "Tied") + "</div>"
+              : "<button type='button' class='fo-ov-cta fo-lg-play'>Set my XI &#9654;</button>") + "</div>";
+        }
+        var fxList = others.map(function (f) {
+          var st = stOf(f), hn2 = L[f[0]].name, an2 = L[f[1]].name;
+          var stat = st ? "Final" : "Upcoming";
+          return "<div class='fo-fx-row'><span class='h'>" + E(hn2) + "</span>" +
+            (st ? "<span class='sc'>" + st.hr + " &ndash; " + st.ar + "</span>" : "<span class='vs'>v</span>") +
+            "<span class='a'>" + E(an2) + "</span><span class='st" + (st ? " done" : "") + "'>" + stat + "</span></div>";
+        }).join("");
+        var simBlock = done ? "" : "<div class='fo-fx-sim'><button type='button' class='fo-lg-btn fo-lg-sim'>Sim the round</button><p>Resolves your fixture and the rest of Round " + (round + 1) + " at once.</p></div>";
+        fixturesPanel = fxHero + (fxList ? "<div class='fo-fx-list'><div class='fo-fx-lh'>The rest of Round " + (round + 1) + "</div>" + fxList + "</div>" : "") + simBlock;
+      } else {
+        fixturesPanel = sideHTML;
+      }
+      // ---- art-led Grounds panel: a hero venue then venue strips ----
+      var clubByCity = {}; (region.clubs || []).forEach(function (c) { clubByCity[c.city] = c; });
+      var groundsG = table.filter(function (x) { return !x.isMe && x.sideObj; });
+      var groundCard = function (x, hero) {
+        var c = clubByCity[x.city] || {};
+        var desc = c.note ? (String(c.note).charAt(0).toUpperCase() + String(c.note).slice(1)) : "";
+        return "<a class='fo-gr-card" + (hero ? " hero" : "") + "' href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'>" +
+          safeGround(x, "") +
+          "<div class='fo-gr-meta'><div class='fo-gr-nm'>" + E(x.city) + (x.boss ? " <em>Boss</em>" : "") + "</div>" +
+          (desc ? "<div class='fo-gr-desc'>" + E(desc) + "</div>" : "") +
+          "<div class='fo-gr-tags'><span>&#10086; " + E(foPitchName(region.pitch)) + "</span>" + (region.wx ? "<span>&#9729; " + E(region.wx) + "</span>" : "") + "</div></div></a>";
+      };
+      var groundsPanel = "<div class='fo-gr-hd'><h2>The Grounds of " + E(region.nm) + "</h2><span class='fo-gr-count'>" + groundsG.length + " grounds</span></div>" +
+        (groundsG.length ? "<div class='fo-gr-list'>" + groundsG.map(function (x, i) { return groundCard(x, i === 0); }).join("") + "</div>" : "<p class='fo-ov-sublabel'>Ground artwork coming soon.</p>");
+
       page.innerHTML =
         "<div class='fo-lg fo-ov" + (own ? "" : " ro") + "' data-tab='" + actTab + "' style='--lac:" + ac + "'>" +
         "<div class='fo-lg-bg' style='background-image:url(" + mapSrc + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
@@ -4724,12 +4767,12 @@
         "<div class='fo-lg-tablewrap'><div class='fo-lg-thead'><span class='rk'>#</span><span class='av'></span><span class='nm'>Club</span><span class='c'>P</span><span class='c'>W</span><span class='c'>L</span><span class='c'>NRR</span><span class='c'>Pts</span></div>" +
         tableRows + "<div class='fo-lg-qnote'>Top 4 qualify for the Champions Cup</div></div></div></section>" +
         // ===== FIXTURES / WIRE panel =====
-        pOpen("fixtures") + "<div class='fo-ov-sec'><h2>" + sec2Title + "</h2><div class='fo-lg-side'>" + sideHTML + "</div></div></section>" +
+        pOpen("fixtures") + "<div class='fo-ov-sec'><h2>" + sec2Title + "</h2><div class='" + (own ? "fo-fx-wrap" : "fo-lg-side") + "'>" + fixturesPanel + "</div></div></section>" +
         // ===== GROUNDS panel =====
-        pOpen("grounds") + "<div class='fo-ov-sec'><h2>The Grounds of " + E(region.nm) + "</h2>" + (grounds ? "<div class='fo-lg-grounds'>" + grounds + "</div>" : "<p class='fo-ov-sublabel'>Ground artwork coming soon.</p>") + "</div></section>" +
+        pOpen("grounds") + "<div class='fo-ov-sec fo-gr'>" + groundsPanel + "</div></section>" +
         dockHTML +
         "</div>";
-      try { document.body.classList.add("fo-boss-on"); } catch (eBc) {}
+      try { document.body.classList.add("fo-boss-on"); document.body.classList.add("fo-ov-on"); } catch (eBc) {}
       // tab wiring: swap panels in place (no route refresh), persist tab in the hash query
       try {
         var ovRoot = page.querySelector(".fo-ov");
@@ -4756,10 +4799,8 @@
           });
         }
       } catch (eTab) {}
-      var pb = page.querySelector("#fo-lg-play");
-      if (pb) pb.addEventListener("click", function () { foLgPlay(nation, round, false); });
-      var sb = page.querySelector("#fo-lg-sim");
-      if (sb) sb.addEventListener("click", function () { foLgPlay(nation, round, true); page.__foLgSig = null; foRenderLeague(); });
+      page.querySelectorAll(".fo-lg-play").forEach(function (pb) { pb.addEventListener("click", function () { foLgPlay(nation, round, false); }); });
+      page.querySelectorAll(".fo-lg-sim").forEach(function (sb) { sb.addEventListener("click", function () { if (!window.confirm("Sim your fixture and the rest of Round " + (round + 1) + " automatically?")) return; foLgPlay(nation, round, true); page.__foLgSig = null; foRenderLeague(); }); });
       var nb = page.querySelector("#fo-lg-new");
       if (nb) nb.addEventListener("click", function () { var st = foLgEnsure(); st.round = 0; st.res = {}; st.season = (st.season || 1) + 1; foLgSave(st); page.__foLgSig = null; foRenderLeague(); });
       try { if (window.__foLive) window.__foLive.mask(); } catch (eM) {}
@@ -4808,6 +4849,7 @@
   setInterval(foRenderLeague, 900); setInterval(foRenderCup, 1200);
   window.addEventListener("hashchange", function () {
     var h = (location.hash || "").split("?")[0];
+    if (h !== "#/league") { try { document.body.classList.remove("fo-ov-on"); } catch (eOv) {} }
     if (h === "#/league") setTimeout(foRenderLeague, 40);
     else if (h === "#/cup") setTimeout(foRenderCup, 40);
     else if (!foBossFamily()) document.body.classList.remove("fo-boss-on");
@@ -5079,7 +5121,45 @@
       ".fo-ov-gph{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:9px;background:linear-gradient(180deg,#0A1728,#061223);z-index:1}",
       ".fo-ov-gph img{width:38px;height:38px;object-fit:contain;opacity:.92}",
       ".fo-ov-gph span{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.4px;font-size:9px;color:var(--fo-country-muted,#A8B1BF)}",
-      ".fo-lg-ground.noart .fo-ov-gph,.fo-ov-gcard.noart .fo-ov-gph{display:flex}",
+      ".fo-lg-ground.noart .fo-ov-gph,.fo-ov-gcard.noart .fo-ov-gph,.fo-gr-card.noart .fo-ov-gph{display:flex}",
+      // rich Fixtures panel
+      ".fo-fx-wrap{display:flex;flex-direction:column;gap:16px}",
+      ".fo-fx-hero{background:linear-gradient(180deg,rgba(13,20,34,.82),rgba(9,14,26,.9));border:1px solid rgba(235,194,113,.42);border-radius:16px;padding:16px;backdrop-filter:blur(10px)}",
+      ".fo-fx-eb{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2px;font-size:11px;color:var(--fo-country-gold,#EBC271);text-align:center}",
+      ".fo-fx-teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin:14px 0}",
+      ".fo-fx-teams .t{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;min-width:0}",
+      ".fo-fx-teams .av{width:54px;height:54px;border-radius:12px;overflow:hidden;background:#0b1424;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}",
+      ".fo-fx-teams .av img{width:100%;height:100%;object-fit:cover}.fo-fx-teams .av img.crest{object-fit:contain;padding:4px}",
+      ".fo-fx-teams .t b{font-family:Oswald,sans-serif;font-weight:600;font-size:14px;color:#fff;line-height:1.1}",
+      ".fo-fx-teams .vs{font-family:Oswald,sans-serif;font-weight:700;color:#7f90ac}",
+      ".fo-fx-teams .sc{font-family:Oswald,sans-serif;font-weight:700;font-size:18px;color:#fff}",
+      ".fo-fx-final{text-align:center;font-family:Oswald,sans-serif;letter-spacing:1px;text-transform:uppercase;font-size:12px;color:var(--fo-country-teal,#4DA6A2);margin-bottom:2px}",
+      "html body #page .fo-fx-hero .fo-ov-cta{max-width:320px;margin:2px auto 0}",
+      ".fo-fx-list{background:rgba(12,19,33,.6);border:1px solid rgba(150,180,225,.14);border-radius:14px;overflow:hidden}",
+      ".fo-fx-lh{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.6px;font-size:11px;color:#8ea3c4;padding:12px 14px 6px}",
+      ".fo-fx-row{display:grid;grid-template-columns:1fr auto 1fr 62px;align-items:center;gap:8px;padding:11px 14px;border-top:1px solid rgba(150,180,225,.08);font-size:13px}",
+      ".fo-fx-row .h{text-align:right;color:#dbe4f2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fo-fx-row .a{color:#dbe4f2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-fx-row .vs{color:#63748f;font-size:11px}.fo-fx-row .sc{font-family:Oswald,sans-serif;font-weight:700;color:#fff}",
+      ".fo-fx-row .st{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.8px;font-size:9px;color:#8ea3c4;text-align:right}",
+      ".fo-fx-row .st.done{color:var(--fo-country-teal,#4DA6A2)}",
+      ".fo-fx-sim{text-align:center;margin-top:2px}",
+      ".fo-fx-sim p{font-size:11.5px;color:#8ea3c4;margin:8px 0 0}",
+      // art-led Grounds panel
+      ".fo-gr-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid rgba(150,180,225,.14)}",
+      ".fo-gr .fo-gr-hd h2{margin:0;border:0;padding:0}",
+      ".fo-gr-count{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.4px;font-size:10px;color:var(--fo-country-gold,#EBC271);white-space:nowrap}",
+      ".fo-gr-list{display:flex;flex-direction:column;gap:12px}",
+      ".fo-gr-card{position:relative;display:block;border-radius:14px;overflow:hidden;text-decoration:none;aspect-ratio:16/7;box-shadow:0 8px 20px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08)}",
+      ".fo-gr-card.hero{aspect-ratio:16/10}",
+      ".fo-gr-card>img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease}",
+      ".fo-gr-card:hover>img{transform:scale(1.04)}",
+      ".fo-gr-card:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 28%,rgba(5,11,20,.92));z-index:1}",
+      ".fo-gr-meta{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:14px 16px}",
+      ".fo-gr-nm{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:1px;font-size:18px;color:#fff}",
+      ".fo-gr-nm em{font-style:normal;font-size:9px;letter-spacing:1.4px;color:#0d1524;background:var(--fo-country-gold,#EBC271);border-radius:4px;padding:2px 6px;vertical-align:middle;margin-left:6px}",
+      ".fo-gr-desc{font-size:12.5px;color:#cfd8e6;margin-top:3px}",
+      ".fo-gr-tags{display:flex;gap:14px;margin-top:8px;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.2px;font-size:10px;color:var(--fo-country-gold,#EBC271)}",
+      "@media(min-width:760px){.fo-gr-list{display:grid;grid-template-columns:1fr 1fr;gap:14px}.fo-gr-card.hero{grid-column:1/-1}}",
       // mobile composition rules
       "#page .fo-ov .fo-ov-hero{position:relative;height:auto;overflow:visible}",
       ".fo-ov .fo-ov-rail,.fo-ov .fo-ov-style,.fo-ov .fo-ov-figtag,.fo-ov .fo-ov-ticker{display:none}",
@@ -5108,6 +5188,14 @@
       "#page .fo-ov .fo-ov-pstrip{margin:14px 0 2px}",
       "#page .fo-ov .fo-ov-match{margin-top:13px;max-width:none}",
       "#page .fo-ov .fo-ov-crest{width:44px;height:44px;margin-bottom:2px}",
+      "}",
+      // phone: the global header floats transparent over the map (like the home hub)
+      "@media(max-width:759px){",
+      "html body.fo-ov-on{margin:0;padding:0}",
+      "html body.fo-ov-on #topbar,html body.ftpskin.fo-ov-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(4,10,20,.92) 0%,rgba(4,10,20,.5) 66%,transparent 100%) !important;border-bottom:0 !important;box-shadow:none !important;padding-top:env(safe-area-inset-top)}",
+      "html body.fo-ov-on #page{padding-top:0 !important;margin-top:0 !important}",
+      "#page .fo-ov .fo-ov-subnav{top:calc(50px + env(safe-area-inset-top))}",
+      ".fo-ov-panel[data-panel=table],.fo-ov-panel[data-panel=fixtures],.fo-ov-panel[data-panel=grounds]{padding-top:calc(150px + env(safe-area-inset-top))}",
       "}",
       // desktop: restore the magazine spread, dock off
       "@media(min-width:980px){",
