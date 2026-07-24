@@ -10507,7 +10507,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260724-0213-708907";
+  var FO_BUILD = "20260724-0425-78e433";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -28465,121 +28465,107 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         : "A rival league &middot; " + E(table[0] ? table[0].name : "") + " lead";
 
       var mapSrc = FO_ART + "circuit/" + (region.bg || (nation + ".webp"));
-      if (own) {
-        // ===================== the magazine Overview =====================
-        var FO_LG_SUB = { eng: "The Old Game", aus: "No Quarter Given", sub: "A Billion Eyes", pak: "Raw Pace, Raw Nerve", rsa: "The Long Summer", win: "Calypso & Thunder", nzl: "The Long White Cloud", slk: "Spin & Sorcery", ned: "The Low Country", ire: "Green & Defiant", zim: "The Flame Lilies", afg: "Mountain Fire", bgd: "The Tigers Roar", nep: "Roof of the World", sco: "Highland Steel", wal: "Dragons at the Crease", ken: "The Rift Valley", usa: "The New Frontier", can: "True North" };
-        var bossClub = (region.clubs || []).filter(function (c) { return c.boss; })[0] || (region.clubs || [])[(region.clubs || []).length - 1] || {};
-        var bossName = bossClub.leader || bossClub.nm || "The League Boss";
-        var bossArt = FO_ART + "circuit/boss-" + nation + ".webp";
-        var emblem = ""; try { emblem = foCxCrestSrc(nation) || ""; } catch (eEm) {}
-        var subtitle = FO_LG_SUB[nation] || region.type || "The League";
-        var idx19 = FO_CX_REGIONS.filter(function (r) { return !r.final; }).findIndex(function (r) { return r.id === nation; }) + 1;
-        var lineAv = function (idx) { var e = L[idx]; if (!e) return ""; if (e.isMe) return "<img src='" + foLgArtFallback(nation) + "' alt=''>"; if (e.boss) return "<img class='crest' src='" + foLgClubCrest(nation, e.sideObj) + "' alt='' onerror=\"this.onerror=null;this.src='" + foLgClubArt(nation, e.sideObj) + "'\">"; return foLgArtImg(nation, e.sideObj); };
+      // ===================== the magazine Overview (every nation) =====================
+      var FO_LG_SUB = { eng: "The Old Game", aus: "No Quarter Given", sub: "A Billion Eyes", pak: "Raw Pace, Raw Nerve", rsa: "The Long Summer", win: "Calypso & Thunder", nzl: "The Long White Cloud", slk: "Spin & Sorcery", ned: "The Low Country", ire: "Green & Defiant", zim: "The Flame Lilies", afg: "Mountain Fire", bgd: "The Tigers Roar", nep: "Roof of the World", sco: "Highland Steel", wal: "Dragons at the Crease", ken: "The Rift Valley", usa: "The New Frontier", can: "True North" };
+      var bossClub = (region.clubs || []).filter(function (c) { return c.boss; })[0] || (region.clubs || [])[(region.clubs || []).length - 1] || {};
+      var bossName = bossClub.leader || bossClub.nm || "The League Boss";
+      var bossArt = FO_ART + "circuit/boss-" + nation + ".webp";
+      var emblem = ""; try { emblem = foCxCrestSrc(nation) || ""; } catch (eEm) {}
+      var subtitle = FO_LG_SUB[nation] || region.type || "The League";
+      var idx19 = FO_CX_REGIONS.filter(function (r) { return !r.final; }).findIndex(function (r) { return r.id === nation; }) + 1;
+      var entAv = function (e) { if (!e) return ""; if (e.isMe) return "<img src='" + foLgArtFallback(nation) + "' alt=''>"; if (e.boss) return "<img class='crest' src='" + foLgClubCrest(nation, e.sideObj) + "' alt='' onerror=\"this.onerror=null;this.src='" + foLgClubArt(nation, e.sideObj) + "'\">"; return foLgArtImg(nation, e.sideObj); };
+      // the identity card: own -> your fixture / champion; rival -> the leaders + meet the boss
+      var matchCard;
+      if (own && done) {
+        matchCard = "<div class='fo-ov-match done'>" +
+          "<div class='fo-ov-champ'>&#127942; <b>" + E(champ ? champ.name : "") + "</b> take the crown</div>" +
+          "<div class='fo-ov-finish'>You finished <b>" + foOrdinal(mePos) + "</b> of 8" + (mePos <= 4 ? " &mdash; into the Champions Cup" : "") + "</div>" +
+          "<a class='fo-ov-cta' href='#/cup'>Champions Cup &#9654;</a>" +
+          "<button type='button' class='fo-ov-fx' id='fo-lg-new'>Start a new season</button></div>";
+      } else if (own) {
         var myFx = (sched[round] || []).filter(function (f) { return f[0] === 0 || f[1] === 0; })[0] || null;
-        // the identity match card (or, at season's end, the champion + reset)
-        var matchCard;
-        if (done) {
-          matchCard = "<div class='fo-ov-match done'>" +
-            "<div class='fo-ov-champ'>&#127942; <b>" + E(champ ? champ.name : "") + "</b> take the crown</div>" +
-            "<div class='fo-ov-finish'>You finished <b>" + foOrdinal(mePos) + "</b> of 8" + (mePos <= 4 ? " &mdash; into the Champions Cup" : "") + "</div>" +
-            "<a class='fo-ov-cta' href='#/cup'>Champions Cup &#9654;</a>" +
-            "<button type='button' class='fo-ov-fx' id='fo-lg-new'>Start a new season</button></div>";
-        } else if (myFx) {
-          matchCard = "<div class='fo-ov-match'>" +
-            "<div class='fo-ov-mh'>Round " + (round + 1) + " &middot; Your fixture</div>" +
-            "<div class='fo-ov-mrow'>" +
-            "<div class='fo-ov-team'><span class='av'>" + lineAv(myFx[0]) + "</span><b>" + E(L[myFx[0]].name) + "</b></div>" +
-            "<div class='fo-ov-mid'><span class='vs'>VS</span><span class='t'>19:30</span></div>" +
-            "<div class='fo-ov-team a'><span class='av'>" + lineAv(myFx[1]) + "</span><b>" + E(L[myFx[1]].name) + "</b></div>" +
-            "</div>" +
-            "<button type='button' class='fo-ov-cta' id='fo-lg-play'>Set my XI &#9654;</button>" +
-            "<button type='button' class='fo-ov-fx' data-ovtab='fixtures'>View fixtures &#8250;</button></div>";
-        } else {
-          matchCard = "<div class='fo-ov-match'><div class='fo-ov-mh'>Season complete</div></div>";
-        }
-        var chaseRows = table.slice(0, 4).map(function (x, i) {
-          return "<div class='fo-ov-crow" + (x.isMe ? " me" : "") + "'><span class='r'>" + (i + 1) + "</span><span class='n'>" + E(x.name) + "</span><span class='p'>" + x.pts + "</span><span class='nr'>" + (x.nrr == null ? "&middot;" : (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2)) + "</span></div>";
-        }).join("");
-        var groundCards = table.filter(function (x) { return !x.isMe && x.sideObj; }).map(function (x) {
-          return "<a class='fo-ov-gcard' href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'>" + foLgArtImg(nation, x.sideObj, "") + "<span class='cap'>" + E(x.city) + "</span></a>";
-        }).join("");
-        var wireA = foLgWireFor(region);
-        var tickerItems = (wireA.length ? wireA : [{ headline: "The season is young &mdash; every club still dreaming of the Cup." }]).slice(0, 4).map(function (h) { return "<span class='ti'>" + E(h.headline) + "</span>"; }).join("<span class='dot'>&middot;</span>");
-        var styleRow = "<div class='fo-ov-style'>" +
-          (region.type ? "<span>&#9672; " + E(region.type) + "</span>" : "") +
-          "<span>&#10086; " + E(foPitchName(region.pitch)) + " pitches</span>" +
-          (region.wx ? "<span>&#9729; " + E(region.wx) + "</span>" : "") + "</div>";
-
-        page.innerHTML =
-          "<div class='fo-lg fo-ov' style='--lac:" + ac + "'>" +
-          "<div class='fo-lg-bg' style='background-image:url(" + mapSrc + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
-          "<div class='fo-ov-hero'>" +
-          "<img class='fo-ov-map' src='" + mapSrc + "' alt=''>" +
-          "<div class='fo-ov-vig'></div>" +
-          "<img class='fo-ov-fig' src='" + bossArt + "' alt='' onerror=\"this.style.display='none'\">" +
-          "<div class='fo-ov-figtag'>" + E(bossName) + "<i>League Boss</i></div>" +
-          // sub navigation
-          "<div class='fo-ov-subnav'><div class='fo-ov-tabs'>" +
-          "<button type='button' class='on' data-ovtab='top'>Overview</button>" +
-          "<button type='button' data-ovtab='table'>Table</button>" +
-          "<button type='button' data-ovtab='fixtures'>Fixtures</button>" +
-          "<button type='button' data-ovtab='grounds'>Grounds</button></div>" +
-          "<a class='fo-ov-sel' href='#/world'>" + E(region.nm) + " &middot; " + (idx19 || 1) + "/" + FO_CX_NATIONS + " &#9662;</a></div>" +
-          // left identity column
-          "<div class='fo-ov-left'>" +
-          (emblem ? "<img class='fo-ov-crest' src='" + emblem + "' alt='' onerror=\"this.style.display='none'\">" : "") +
-          "<div class='fo-ov-eb'>Your Domestic League &middot; Season " + (s.season || 1) + "</div>" +
-          "<h1 class='fo-ov-title'>" + E(region.nm) + "</h1>" +
-          "<div class='fo-ov-sub'>" + E(subtitle) + "</div>" +
-          (tagline ? "<p class='fo-ov-quote'>&ldquo;" + E(tagline) + "&rdquo;</p>" : "") +
-          styleRow + matchCard + "</div>" +
-          // right rail
-          "<div class='fo-ov-rail'>" +
-          "<div class='fo-ov-pulse'><div class='fo-ov-ph'>League Pulse</div>" +
-          "<div class='fo-ov-pstats'><div><i>You</i><b>" + foOrdinal(mePos || 8) + "</b></div><div><i>Top 4</i><b>Qualify</b></div><div><i>" + (14 - round) + "</i><b>Rounds left</b></div></div>" +
-          "<div class='fo-ov-chase'><div class='fo-ov-ch'><span class='n'>The Chase</span><span class='p'>Pts</span><span class='nr'>NRR</span></div>" + chaseRows + "</div>" +
-          "<button type='button' class='fo-ov-full' data-ovtab='table'>View full table &#8250;</button></div>" +
-          (groundCards ? "<div class='fo-ov-grounds'><div class='fo-ov-gh'>Explore the Grounds</div><div class='fo-ov-gstrip'>" + groundCards + "</div></div>" : "") +
+        matchCard = myFx ? ("<div class='fo-ov-match'>" +
+          "<div class='fo-ov-mh'>Round " + (round + 1) + " &middot; Your fixture</div>" +
+          "<div class='fo-ov-mrow'>" +
+          "<div class='fo-ov-team'><span class='av'>" + entAv(L[myFx[0]]) + "</span><b>" + E(L[myFx[0]].name) + "</b></div>" +
+          "<div class='fo-ov-mid'><span class='vs'>VS</span><span class='t'>19:30</span></div>" +
+          "<div class='fo-ov-team a'><span class='av'>" + entAv(L[myFx[1]]) + "</span><b>" + E(L[myFx[1]].name) + "</b></div>" +
           "</div>" +
-          // ticker
-          "<div class='fo-ov-ticker'><b>Around " + E(region.nm) + "</b><div class='fo-ov-tick'>" + tickerItems + "</div></div>" +
-          "</div>" +
-          // ---- full detail sections the sub-tabs scroll to ----
-          "<div class='fo-ov-more'>" +
-          "<section id='fo-ov-table' class='fo-ov-sec'><h2>The Table</h2>" +
-          "<div class='fo-lg-tablewrap'><div class='fo-lg-thead'><span class='rk'>#</span><span class='av'></span><span class='nm'>Club</span><span class='c'>P</span><span class='c'>W</span><span class='c'>L</span><span class='c'>NRR</span><span class='c'>Pts</span></div>" +
-          tableRows + "<div class='fo-lg-qnote'>Top 4 qualify for the Champions Cup</div></div></section>" +
-          "<section id='fo-ov-fixtures' class='fo-ov-sec'><h2>Round " + (round + 1) + " Fixtures</h2><div class='fo-lg-side'>" + sideHTML + "</div></section>" +
-          (grounds ? "<section id='fo-ov-grounds' class='fo-ov-sec'><h2>The Grounds of " + E(region.nm) + "</h2><div class='fo-lg-grounds'>" + grounds + "</div></section>" : "") +
-          "</div>" +
-          "</div>";
+          "<button type='button' class='fo-ov-cta' id='fo-lg-play'>Set my XI &#9654;</button>" +
+          "<button type='button' class='fo-ov-fx' data-ovtab='fixtures'>View fixtures &#8250;</button></div>")
+          : "<div class='fo-ov-match'><div class='fo-ov-mh'>Season complete</div></div>";
       } else {
+        var ldr = table[0] || null;
+        matchCard = "<div class='fo-ov-match'>" +
+          "<div class='fo-ov-mh'>The Grand Tour &middot; " + E(region.type || "Rival League") + "</div>" +
+          "<div class='fo-ov-mrow' style='grid-template-columns:1fr'>" +
+          "<div class='fo-ov-team'><span class='av'>" + (ldr ? entAv(ldr) : "") + "</span><b>" + E(ldr ? ldr.name : "&mdash;") + "</b></div></div>" +
+          "<div class='fo-ov-finish' style='margin-top:0'>lead the " + E(region.nm) + " league" + (ldr && ldr.pts ? " on <b>" + ldr.pts + "</b> pts" : "") + "</div>" +
+          "<a class='fo-ov-cta' href='#/boss?r=" + encodeURIComponent(nation) + "'>Meet " + E(bossName) + " &#9654;</a>" +
+          "<a class='fo-ov-fx' href='#/league'>Back to your league &#8250;</a></div>";
+      }
+      var chaseRows = table.slice(0, 4).map(function (x, i) {
+        return "<div class='fo-ov-crow" + (x.isMe ? " me" : "") + (x.boss ? " boss" : "") + "'><span class='r'>" + (i + 1) + "</span><span class='n'>" + E(x.name) + "</span><span class='p'>" + x.pts + "</span><span class='nr'>" + (x.nrr == null ? "&middot;" : (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2)) + "</span></div>";
+      }).join("");
+      var groundCards = table.filter(function (x) { return !x.isMe && x.sideObj; }).map(function (x) {
+        return "<a class='fo-ov-gcard' href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'>" + foLgArtImg(nation, x.sideObj, "") + "<span class='cap'>" + E(x.city) + "</span></a>";
+      }).join("");
+      var wireA = foLgWireFor(region);
+      var tickerItems = (wireA.length ? wireA : [{ headline: "The season is young &mdash; every club still dreaming of the Cup." }]).slice(0, 4).map(function (h) { return "<span class='ti'>" + E(h.headline) + "</span>"; }).join("<span class='dot'>&middot;</span>");
+      var styleRow = "<div class='fo-ov-style'>" +
+        (region.type ? "<span>&#9672; " + E(region.type) + "</span>" : "") +
+        "<span>&#10086; " + E(foPitchName(region.pitch)) + " pitches</span>" +
+        (region.wx ? "<span>&#9729; " + E(region.wx) + "</span>" : "") + "</div>";
+      var ebText = own ? ("Your Domestic League &middot; Season " + ((s && s.season) || 1)) : "The Grand Tour &middot; Rival League";
+      var pulseStats = own
+        ? "<div><i>You</i><b>" + foOrdinal(mePos || 8) + "</b></div><div><i>Top 4</i><b>Qualify</b></div><div><i>" + (14 - round) + "</i><b>Rounds left</b></div>"
+        : "<div><i>Format</i><b>50 ov</b></div><div><i>Top 4</i><b>Qualify</b></div><div><i>Clubs</i><b>8</b></div>";
+      var tab3 = own ? "Fixtures" : "Wire";
+      var sec2Title = own ? ("Round " + (round + 1) + " Fixtures") : ("From the " + E(region.nm) + " Wire");
+
       page.innerHTML =
-        "<div class='fo-lg fo-lg-cinemode ro' style='--lac:" + ac + "'>" +
+        "<div class='fo-lg fo-ov" + (own ? "" : " ro") + "' style='--lac:" + ac + "'>" +
         "<div class='fo-lg-bg' style='background-image:url(" + mapSrc + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
-        // ---- the establishing shot: the nation's map, full-bleed, at golden hour
-        "<section class='fo-lg-cine'>" +
-        "<img class='fo-lg-cimg' src='" + mapSrc + "' alt=''>" +
-        "<div class='fo-lg-csky'></div><div class='fo-lg-cbloom'></div><div class='fo-lg-cstars'></div><div class='fo-lg-cgrain'></div>" +
-        "<div class='fo-lg-cnav'><a href='#/home'>&#8962; Club</a><a href='#/world'>&#127760; World</a><a href='#/league'>Your league</a></div>" +
-        "<a class='fo-lg-cflag' href='#/world' title='World map'>" + flag + "</a>" +
-        "<div class='fo-lg-ctitle'>" +
-        "<div class='eb'>The Grand Tour &middot; Rival League</div>" +
-        "<h1>" + E(region.nm) + "</h1>" +
-        "<div class='fo-lg-style'>" + (region.type ? "<span class='pill'>" + E(region.type) + "</span>" : "") + "<span class='pill ghost'>" + E(foPitchName(region.pitch)) + " pitches</span><span class='pill ghost'>" + E(region.wx || "") + "</span></div>" +
-        (tagline ? "<p class='fo-lg-tag'>&ldquo;" + E(tagline) + "&rdquo;</p>" : "") +
-        "<div class='fo-lg-status'>" + statusLine + "</div>" +
-        "</div></section>" +
-        "<div class='fo-lg-body'>" +
-        "<div class='fo-lg-grid'>" +
-        "<div class='fo-lg-tablewrap'><div class='fo-lg-thead'><span class='rk'>#</span><span class='av'></span><span class='nm'>Club</span><span class='c'>P</span><span class='c'>W</span><span class='c'>L</span><span class='c'>NRR</span><span class='c'>Pts</span></div>" +
-        tableRows + "<div class='fo-lg-qnote'>Top 4 qualify for the Champions Cup</div></div>" +
-        "<div class='fo-lg-side'>" + sideHTML + "</div>" +
+        "<div class='fo-ov-hero'>" +
+        "<img class='fo-ov-map' src='" + mapSrc + "' alt=''>" +
+        "<div class='fo-ov-vig'></div>" +
+        "<img class='fo-ov-fig' src='" + bossArt + "' alt='' onerror=\"this.style.display='none'\">" +
+        "<div class='fo-ov-figtag'>" + E(bossName) + "<i>League Boss</i></div>" +
+        // sub navigation
+        "<div class='fo-ov-subnav'><div class='fo-ov-tabs'>" +
+        "<button type='button' class='on' data-ovtab='top'>Overview</button>" +
+        "<button type='button' data-ovtab='table'>Table</button>" +
+        "<button type='button' data-ovtab='fixtures'>" + tab3 + "</button>" +
+        "<button type='button' data-ovtab='grounds'>Grounds</button></div>" +
+        "<a class='fo-ov-sel' href='#/world'>" + E(region.nm) + " &middot; " + (idx19 || 1) + "/" + FO_CX_NATIONS + " &#9662;</a></div>" +
+        // left identity column
+        "<div class='fo-ov-left'>" +
+        (emblem ? "<img class='fo-ov-crest' src='" + emblem + "' alt='' onerror=\"this.style.display='none'\">" : "") +
+        "<div class='fo-ov-eb'>" + ebText + "</div>" +
+        "<h1 class='fo-ov-title'>" + E(region.nm) + "</h1>" +
+        "<div class='fo-ov-sub'>" + E(subtitle) + "</div>" +
+        (tagline ? "<p class='fo-ov-quote'>&ldquo;" + E(tagline) + "&rdquo;</p>" : "") +
+        styleRow + matchCard + "</div>" +
+        // right rail
+        "<div class='fo-ov-rail'>" +
+        "<div class='fo-ov-pulse'><div class='fo-ov-ph'>League Pulse</div>" +
+        "<div class='fo-ov-pstats'>" + pulseStats + "</div>" +
+        "<div class='fo-ov-chase'><div class='fo-ov-ch'><span class='n'>The Chase</span><span class='p'>Pts</span><span class='nr'>NRR</span></div>" + chaseRows + "</div>" +
+        "<button type='button' class='fo-ov-full' data-ovtab='table'>View full table &#8250;</button></div>" +
+        (groundCards ? "<div class='fo-ov-grounds'><div class='fo-ov-gh'>Explore the Grounds</div><div class='fo-ov-gstrip'>" + groundCards + "</div></div>" : "") +
         "</div>" +
-        (grounds ? "<div class='fo-lg-groundsec'><div class='fo-lg-grhd'><i></i><b>THE GROUNDS OF " + E(String(region.nm).toUpperCase()) + "</b><i></i></div><div class='fo-lg-grounds'>" + grounds + "</div></div>" : "") +
+        // ticker
+        "<div class='fo-ov-ticker'><b>Around " + E(region.nm) + "</b><div class='fo-ov-tick'>" + tickerItems + "</div></div>" +
+        "</div>" +
+        // ---- full detail sections the sub-tabs scroll to ----
+        "<div class='fo-ov-more'>" +
+        "<section id='fo-ov-table' class='fo-ov-sec'><h2>The Table</h2>" +
+        "<div class='fo-lg-tablewrap'><div class='fo-lg-thead'><span class='rk'>#</span><span class='av'></span><span class='nm'>Club</span><span class='c'>P</span><span class='c'>W</span><span class='c'>L</span><span class='c'>NRR</span><span class='c'>Pts</span></div>" +
+        tableRows + "<div class='fo-lg-qnote'>Top 4 qualify for the Champions Cup</div></div></section>" +
+        "<section id='fo-ov-fixtures' class='fo-ov-sec'><h2>" + sec2Title + "</h2><div class='fo-lg-side'>" + sideHTML + "</div></section>" +
+        (grounds ? "<section id='fo-ov-grounds' class='fo-ov-sec'><h2>The Grounds of " + E(region.nm) + "</h2><div class='fo-lg-grounds'>" + grounds + "</div></section>" : "") +
         "</div>" +
         "</div>";
-      }
       try { document.body.classList.add("fo-boss-on"); } catch (eBc) {}
       // sub-tab scroll wiring
       try {
