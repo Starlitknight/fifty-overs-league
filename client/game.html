@@ -10507,7 +10507,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260724-0131-0064ab";
+  var FO_BUILD = "20260724-0213-708907";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -28465,17 +28465,106 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         : "A rival league &middot; " + E(table[0] ? table[0].name : "") + " lead";
 
       var mapSrc = FO_ART + "circuit/" + (region.bg || (nation + ".webp"));
+      if (own) {
+        // ===================== the magazine Overview =====================
+        var FO_LG_SUB = { eng: "The Old Game", aus: "No Quarter Given", sub: "A Billion Eyes", pak: "Raw Pace, Raw Nerve", rsa: "The Long Summer", win: "Calypso & Thunder", nzl: "The Long White Cloud", slk: "Spin & Sorcery", ned: "The Low Country", ire: "Green & Defiant", zim: "The Flame Lilies", afg: "Mountain Fire", bgd: "The Tigers Roar", nep: "Roof of the World", sco: "Highland Steel", wal: "Dragons at the Crease", ken: "The Rift Valley", usa: "The New Frontier", can: "True North" };
+        var bossClub = (region.clubs || []).filter(function (c) { return c.boss; })[0] || (region.clubs || [])[(region.clubs || []).length - 1] || {};
+        var bossName = bossClub.leader || bossClub.nm || "The League Boss";
+        var bossArt = FO_ART + "circuit/boss-" + nation + ".webp";
+        var emblem = ""; try { emblem = foCxCrestSrc(nation) || ""; } catch (eEm) {}
+        var subtitle = FO_LG_SUB[nation] || region.type || "The League";
+        var idx19 = FO_CX_REGIONS.filter(function (r) { return !r.final; }).findIndex(function (r) { return r.id === nation; }) + 1;
+        var lineAv = function (idx) { var e = L[idx]; if (!e) return ""; if (e.isMe) return "<img src='" + foLgArtFallback(nation) + "' alt=''>"; if (e.boss) return "<img class='crest' src='" + foLgClubCrest(nation, e.sideObj) + "' alt='' onerror=\"this.onerror=null;this.src='" + foLgClubArt(nation, e.sideObj) + "'\">"; return foLgArtImg(nation, e.sideObj); };
+        var myFx = (sched[round] || []).filter(function (f) { return f[0] === 0 || f[1] === 0; })[0] || null;
+        // the identity match card (or, at season's end, the champion + reset)
+        var matchCard;
+        if (done) {
+          matchCard = "<div class='fo-ov-match done'>" +
+            "<div class='fo-ov-champ'>&#127942; <b>" + E(champ ? champ.name : "") + "</b> take the crown</div>" +
+            "<div class='fo-ov-finish'>You finished <b>" + foOrdinal(mePos) + "</b> of 8" + (mePos <= 4 ? " &mdash; into the Champions Cup" : "") + "</div>" +
+            "<a class='fo-ov-cta' href='#/cup'>Champions Cup &#9654;</a>" +
+            "<button type='button' class='fo-ov-fx' id='fo-lg-new'>Start a new season</button></div>";
+        } else if (myFx) {
+          matchCard = "<div class='fo-ov-match'>" +
+            "<div class='fo-ov-mh'>Round " + (round + 1) + " &middot; Your fixture</div>" +
+            "<div class='fo-ov-mrow'>" +
+            "<div class='fo-ov-team'><span class='av'>" + lineAv(myFx[0]) + "</span><b>" + E(L[myFx[0]].name) + "</b></div>" +
+            "<div class='fo-ov-mid'><span class='vs'>VS</span><span class='t'>19:30</span></div>" +
+            "<div class='fo-ov-team a'><span class='av'>" + lineAv(myFx[1]) + "</span><b>" + E(L[myFx[1]].name) + "</b></div>" +
+            "</div>" +
+            "<button type='button' class='fo-ov-cta' id='fo-lg-play'>Set my XI &#9654;</button>" +
+            "<button type='button' class='fo-ov-fx' data-ovtab='fixtures'>View fixtures &#8250;</button></div>";
+        } else {
+          matchCard = "<div class='fo-ov-match'><div class='fo-ov-mh'>Season complete</div></div>";
+        }
+        var chaseRows = table.slice(0, 4).map(function (x, i) {
+          return "<div class='fo-ov-crow" + (x.isMe ? " me" : "") + "'><span class='r'>" + (i + 1) + "</span><span class='n'>" + E(x.name) + "</span><span class='p'>" + x.pts + "</span><span class='nr'>" + (x.nrr == null ? "&middot;" : (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2)) + "</span></div>";
+        }).join("");
+        var groundCards = table.filter(function (x) { return !x.isMe && x.sideObj; }).map(function (x) {
+          return "<a class='fo-ov-gcard' href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'>" + foLgArtImg(nation, x.sideObj, "") + "<span class='cap'>" + E(x.city) + "</span></a>";
+        }).join("");
+        var wireA = foLgWireFor(region);
+        var tickerItems = (wireA.length ? wireA : [{ headline: "The season is young &mdash; every club still dreaming of the Cup." }]).slice(0, 4).map(function (h) { return "<span class='ti'>" + E(h.headline) + "</span>"; }).join("<span class='dot'>&middot;</span>");
+        var styleRow = "<div class='fo-ov-style'>" +
+          (region.type ? "<span>&#9672; " + E(region.type) + "</span>" : "") +
+          "<span>&#10086; " + E(foPitchName(region.pitch)) + " pitches</span>" +
+          (region.wx ? "<span>&#9729; " + E(region.wx) + "</span>" : "") + "</div>";
+
+        page.innerHTML =
+          "<div class='fo-lg fo-ov' style='--lac:" + ac + "'>" +
+          "<div class='fo-lg-bg' style='background-image:url(" + mapSrc + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
+          "<div class='fo-ov-hero'>" +
+          "<img class='fo-ov-map' src='" + mapSrc + "' alt=''>" +
+          "<div class='fo-ov-vig'></div>" +
+          "<img class='fo-ov-fig' src='" + bossArt + "' alt='' onerror=\"this.style.display='none'\">" +
+          "<div class='fo-ov-figtag'>" + E(bossName) + "<i>League Boss</i></div>" +
+          // sub navigation
+          "<div class='fo-ov-subnav'><div class='fo-ov-tabs'>" +
+          "<button type='button' class='on' data-ovtab='top'>Overview</button>" +
+          "<button type='button' data-ovtab='table'>Table</button>" +
+          "<button type='button' data-ovtab='fixtures'>Fixtures</button>" +
+          "<button type='button' data-ovtab='grounds'>Grounds</button></div>" +
+          "<a class='fo-ov-sel' href='#/world'>" + E(region.nm) + " &middot; " + (idx19 || 1) + "/" + FO_CX_NATIONS + " &#9662;</a></div>" +
+          // left identity column
+          "<div class='fo-ov-left'>" +
+          (emblem ? "<img class='fo-ov-crest' src='" + emblem + "' alt='' onerror=\"this.style.display='none'\">" : "") +
+          "<div class='fo-ov-eb'>Your Domestic League &middot; Season " + (s.season || 1) + "</div>" +
+          "<h1 class='fo-ov-title'>" + E(region.nm) + "</h1>" +
+          "<div class='fo-ov-sub'>" + E(subtitle) + "</div>" +
+          (tagline ? "<p class='fo-ov-quote'>&ldquo;" + E(tagline) + "&rdquo;</p>" : "") +
+          styleRow + matchCard + "</div>" +
+          // right rail
+          "<div class='fo-ov-rail'>" +
+          "<div class='fo-ov-pulse'><div class='fo-ov-ph'>League Pulse</div>" +
+          "<div class='fo-ov-pstats'><div><i>You</i><b>" + foOrdinal(mePos || 8) + "</b></div><div><i>Top 4</i><b>Qualify</b></div><div><i>" + (14 - round) + "</i><b>Rounds left</b></div></div>" +
+          "<div class='fo-ov-chase'><div class='fo-ov-ch'><span class='n'>The Chase</span><span class='p'>Pts</span><span class='nr'>NRR</span></div>" + chaseRows + "</div>" +
+          "<button type='button' class='fo-ov-full' data-ovtab='table'>View full table &#8250;</button></div>" +
+          (groundCards ? "<div class='fo-ov-grounds'><div class='fo-ov-gh'>Explore the Grounds</div><div class='fo-ov-gstrip'>" + groundCards + "</div></div>" : "") +
+          "</div>" +
+          // ticker
+          "<div class='fo-ov-ticker'><b>Around " + E(region.nm) + "</b><div class='fo-ov-tick'>" + tickerItems + "</div></div>" +
+          "</div>" +
+          // ---- full detail sections the sub-tabs scroll to ----
+          "<div class='fo-ov-more'>" +
+          "<section id='fo-ov-table' class='fo-ov-sec'><h2>The Table</h2>" +
+          "<div class='fo-lg-tablewrap'><div class='fo-lg-thead'><span class='rk'>#</span><span class='av'></span><span class='nm'>Club</span><span class='c'>P</span><span class='c'>W</span><span class='c'>L</span><span class='c'>NRR</span><span class='c'>Pts</span></div>" +
+          tableRows + "<div class='fo-lg-qnote'>Top 4 qualify for the Champions Cup</div></div></section>" +
+          "<section id='fo-ov-fixtures' class='fo-ov-sec'><h2>Round " + (round + 1) + " Fixtures</h2><div class='fo-lg-side'>" + sideHTML + "</div></section>" +
+          (grounds ? "<section id='fo-ov-grounds' class='fo-ov-sec'><h2>The Grounds of " + E(region.nm) + "</h2><div class='fo-lg-grounds'>" + grounds + "</div></section>" : "") +
+          "</div>" +
+          "</div>";
+      } else {
       page.innerHTML =
-        "<div class='fo-lg fo-lg-cinemode" + (own ? "" : " ro") + "' style='--lac:" + ac + "'>" +
+        "<div class='fo-lg fo-lg-cinemode ro' style='--lac:" + ac + "'>" +
         "<div class='fo-lg-bg' style='background-image:url(" + mapSrc + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
         // ---- the establishing shot: the nation's map, full-bleed, at golden hour
         "<section class='fo-lg-cine'>" +
         "<img class='fo-lg-cimg' src='" + mapSrc + "' alt=''>" +
         "<div class='fo-lg-csky'></div><div class='fo-lg-cbloom'></div><div class='fo-lg-cstars'></div><div class='fo-lg-cgrain'></div>" +
-        "<div class='fo-lg-cnav'><a href='#/home'>&#8962; Club</a><a href='#/world'>&#127760; World</a>" + (own ? "<a href='#/cup'>&#9818; Cup</a>" : "<a href='#/league'>Your league</a>") + "</div>" +
+        "<div class='fo-lg-cnav'><a href='#/home'>&#8962; Club</a><a href='#/world'>&#127760; World</a><a href='#/league'>Your league</a></div>" +
         "<a class='fo-lg-cflag' href='#/world' title='World map'>" + flag + "</a>" +
         "<div class='fo-lg-ctitle'>" +
-        "<div class='eb'>" + (own ? "Your Domestic League &middot; Season " + (s.season || 1) : "The Grand Tour &middot; Rival League") + "</div>" +
+        "<div class='eb'>The Grand Tour &middot; Rival League</div>" +
         "<h1>" + E(region.nm) + "</h1>" +
         "<div class='fo-lg-style'>" + (region.type ? "<span class='pill'>" + E(region.type) + "</span>" : "") + "<span class='pill ghost'>" + E(foPitchName(region.pitch)) + " pitches</span><span class='pill ghost'>" + E(region.wx || "") + "</span></div>" +
         (tagline ? "<p class='fo-lg-tag'>&ldquo;" + E(tagline) + "&rdquo;</p>" : "") +
@@ -28490,7 +28579,20 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         (grounds ? "<div class='fo-lg-groundsec'><div class='fo-lg-grhd'><i></i><b>THE GROUNDS OF " + E(String(region.nm).toUpperCase()) + "</b><i></i></div><div class='fo-lg-grounds'>" + grounds + "</div></div>" : "") +
         "</div>" +
         "</div>";
+      }
       try { document.body.classList.add("fo-boss-on"); } catch (eBc) {}
+      // sub-tab scroll wiring
+      try {
+        page.querySelectorAll("[data-ovtab]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var t = btn.getAttribute("data-ovtab");
+            page.querySelectorAll(".fo-ov-tabs button").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-ovtab") === t); });
+            if (t === "top") { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+            var sec = page.querySelector("#fo-ov-" + t);
+            if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        });
+      } catch (eTab) {}
       var pb = page.querySelector("#fo-lg-play");
       if (pb) pb.addEventListener("click", function () { foLgPlay(nation, round, false); });
       var sb = page.querySelector("#fo-lg-sim");
@@ -28675,6 +28777,106 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-lg-champ{font-family:Oswald,sans-serif;font-size:16px;color:#f3e6c8;background:rgba(235,194,113,.12);border:1px solid rgba(235,194,113,.3);border-radius:12px;padding:14px 16px;text-align:center}",
       ".fo-lg-finish{text-align:center;font-size:13px;color:#b9c6dd}",
       ".fo-lg-fxempty{color:#8ea3c4;font-size:12px}",
+      // ================= the magazine Overview (#/league own) =================
+      ".fo-ov{--gold:#E6B15E;position:relative;min-height:100vh;color:#eef3fb}",
+      ".fo-ov-hero{position:relative;z-index:1;overflow:hidden}",
+      // the crisp nation map + figure form the establishing scene
+      ".fo-ov-map{display:block;width:100%;height:42vh;object-fit:cover;object-position:50% 40%;animation:foLgcIn 1.2s ease-out}",
+      ".fo-ov-vig{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(6,11,22,.5) 0%,transparent 22%,transparent 52%,rgba(6,11,22,.85) 100%),linear-gradient(90deg,rgba(6,11,22,.82) 0%,rgba(6,11,22,.2) 34%,transparent 60%)}",
+      // the boss, painted into the scene: feather the parchment edges to nothing
+      ".fo-ov-fig{position:absolute;right:-9%;top:0;height:44vh;width:auto;object-fit:contain;object-position:top;filter:drop-shadow(0 16px 34px rgba(0,0,0,.6)) saturate(1.06) brightness(.96);-webkit-mask-image:radial-gradient(66% 84% at 54% 40%,#000 38%,transparent 76%);mask-image:radial-gradient(66% 84% at 54% 40%,#000 38%,transparent 76%);z-index:2;pointer-events:none;opacity:.96}",
+      ".fo-ov-figtag{position:absolute;z-index:3;display:none;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2px;font-size:11px;color:var(--gold);text-shadow:0 1px 8px rgba(0,0,0,.8)}",
+      ".fo-ov-figtag i{display:block;font-style:normal;font-size:9px;letter-spacing:2.4px;color:#b7c4da;margin-top:2px}",
+      // sub-nav
+      ".fo-ov-subnav{position:relative;z-index:4;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.07)}",
+      ".fo-ov-tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}",
+      ".fo-ov-tabs::-webkit-scrollbar{display:none}",
+      "html body #page .fo-ov-tabs button{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:12px;color:#8ea3c4 !important;background:transparent !important;border:0 !important;padding:6px 10px 8px;cursor:pointer;position:relative;white-space:nowrap;transition:color .14s}",
+      "html body #page .fo-ov-tabs button.on{color:#fff !important}",
+      "html body #page .fo-ov-tabs button.on:after{content:'';position:absolute;left:10px;right:10px;bottom:0;height:2px;background:var(--gold);border-radius:2px}",
+      "html body #page .fo-ov-tabs button:hover{color:#dbe4f2 !important}",
+      "html body #page .fo-ov-sel{font-family:Oswald,sans-serif;letter-spacing:1.6px;text-transform:uppercase;font-size:12px;font-weight:600;color:#dbe4f2;text-decoration:none;background:rgba(12,20,36,.5);border:1px solid rgba(150,180,225,.2);border-radius:999px;padding:8px 15px;backdrop-filter:blur(8px)}",
+      "html body #page .fo-ov-sel:hover{color:#fff;border-color:var(--gold)}",
+      // left identity column
+      ".fo-ov-left{position:relative;z-index:3;padding:14px 18px 8px}",
+      ".fo-ov-crest{width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 3px 8px rgba(0,0,0,.6));margin-bottom:6px}",
+      ".fo-ov-eb{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:3px;font-size:11px;font-weight:600;color:var(--gold)}",
+      ".fo-ov-title{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:clamp(46px,15vw,116px);line-height:.84;margin:4px 0 0;color:#f4efe6;text-shadow:0 3px 26px rgba(0,0,0,.55),0 0 50px color-mix(in srgb,var(--lac) 40%,transparent)}",
+      ".fo-ov-sub{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:4px;font-size:clamp(16px,4.5vw,26px);color:var(--gold);margin-top:4px}",
+      ".fo-ov-quote{font-style:italic;font-size:14.5px;line-height:1.5;color:#dbe4f2;max-width:30em;margin:14px 0 0;text-shadow:0 1px 8px rgba(0,0,0,.6)}",
+      ".fo-ov-style{display:flex;gap:16px;flex-wrap:wrap;margin:14px 0 0;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.4px;font-size:11px;color:#b7c4da}",
+      ".fo-ov-style span{display:inline-flex;align-items:center;gap:6px}",
+      // the identity match card
+      ".fo-ov-match{margin:18px 0 6px;max-width:440px;background:linear-gradient(180deg,rgba(13,20,34,.82),rgba(9,14,26,.9));border:1px solid color-mix(in srgb,var(--gold) 26%,rgba(150,180,225,.16));border-radius:16px;padding:14px 16px 16px;backdrop-filter:blur(10px);box-shadow:0 18px 40px rgba(0,0,0,.4)}",
+      ".fo-ov-mh{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2px;font-size:11px;color:var(--gold);text-align:center}",
+      ".fo-ov-mrow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:12px 0 14px}",
+      ".fo-ov-team{display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;min-width:0}",
+      ".fo-ov-team .av{width:52px;height:52px;border-radius:12px;overflow:hidden;background:#0b1424;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}",
+      ".fo-ov-team .av img{width:100%;height:100%;object-fit:cover}.fo-ov-team .av img.crest{object-fit:contain;padding:4px}",
+      ".fo-ov-team b{font-family:Oswald,sans-serif;font-weight:600;font-size:12.5px;letter-spacing:.3px;color:#fff;line-height:1.05}",
+      ".fo-ov-mid{display:flex;flex-direction:column;align-items:center;gap:2px}",
+      ".fo-ov-mid .vs{font-family:Oswald,sans-serif;font-weight:700;font-size:16px;color:#7f90ac}.fo-ov-mid .t{font-family:Oswald,sans-serif;font-size:12px;color:var(--gold)}",
+      "html body #page .fo-ov-cta{display:block;width:100%;text-align:center;font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:2px;text-transform:uppercase;font-size:14px;color:#170d07 !important;background:linear-gradient(180deg,#E8894A,#C8542F) !important;border:0 !important;border-radius:12px;padding:15px;cursor:pointer;text-decoration:none;box-shadow:0 10px 26px rgba(200,84,47,.34),inset 0 1px 0 rgba(255,255,255,.3)}",
+      "html body #page .fo-ov-cta:hover{filter:brightness(1.07);transform:translateY(-1px)}",
+      "html body #page .fo-ov-fx{display:block;width:100%;text-align:center;margin-top:9px;font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:2px;text-transform:uppercase;font-size:12px;color:var(--gold) !important;background:transparent !important;border:0 !important;cursor:pointer;text-decoration:none}",
+      "html body #page .fo-ov-fx:hover{color:#fff !important}",
+      ".fo-ov-champ{font-family:Oswald,sans-serif;font-size:15px;color:#f3e6c8;text-align:center}.fo-ov-champ b{color:var(--gold)}",
+      ".fo-ov-finish{text-align:center;font-size:12.5px;color:#b9c6dd;margin:6px 0 12px}",
+      // right rail
+      ".fo-ov-rail{position:relative;z-index:3;padding:6px 18px 8px;display:flex;flex-direction:column;gap:14px}",
+      ".fo-ov-pulse,.fo-ov-grounds{background:linear-gradient(180deg,rgba(13,20,34,.72),rgba(9,14,26,.82));border:1px solid rgba(150,180,225,.14);border-radius:16px;backdrop-filter:blur(10px);overflow:hidden}",
+      ".fo-ov-pulse{padding:14px 16px 16px}",
+      ".fo-ov-ph,.fo-ov-gh{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2.4px;font-size:12px;font-weight:600;color:var(--gold);text-align:center}",
+      ".fo-ov-pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0 14px;text-align:center}",
+      ".fo-ov-pstats i{display:block;font-style:normal;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.4px;font-size:9.5px;color:#8ea3c4}",
+      ".fo-ov-pstats b{display:block;font-family:Oswald,sans-serif;font-weight:700;font-size:19px;color:#fff;margin-top:3px;line-height:1}",
+      ".fo-ov-chase{border-top:1px solid rgba(150,180,225,.12);padding-top:6px}",
+      ".fo-ov-ch,.fo-ov-crow{display:grid;grid-template-columns:22px 1fr 34px 46px;align-items:center;gap:6px;padding:7px 2px}",
+      ".fo-ov-ch{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.2px;font-size:9.5px;color:#8ea3c4}.fo-ov-ch .p,.fo-ov-ch .nr{text-align:right}",
+      ".fo-ov-crow{border-top:1px solid rgba(150,180,225,.08)}",
+      ".fo-ov-crow .r{font-family:Oswald,sans-serif;font-weight:700;color:#7f90ac;text-align:center}",
+      ".fo-ov-crow .n{font-family:Oswald,sans-serif;font-weight:600;font-size:13.5px;color:#eaf0fb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-ov-crow .p{text-align:right;font-family:Oswald,sans-serif;font-weight:700;font-size:15px;color:#fff}",
+      ".fo-ov-crow .nr{text-align:right;font-size:11px;color:#8ea3c4;font-variant-numeric:tabular-nums}",
+      ".fo-ov-crow.me{background:color-mix(in srgb,var(--gold) 15%,transparent);border-radius:8px;box-shadow:inset 3px 0 0 var(--gold)}",
+      ".fo-ov-crow.me .r{color:var(--gold)}",
+      "html body #page .fo-ov-full{display:block;width:100%;text-align:center;margin-top:8px;font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.6px;text-transform:uppercase;font-size:11px;color:var(--gold) !important;background:transparent !important;border:0 !important;cursor:pointer}",
+      "html body #page .fo-ov-full:hover{color:#fff !important}",
+      // grounds carousel
+      ".fo-ov-grounds{padding:14px 0 4px}.fo-ov-gh{padding:0 16px}",
+      ".fo-ov-gstrip{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:12px 16px 14px;scrollbar-width:none}",
+      ".fo-ov-gstrip::-webkit-scrollbar{display:none}",
+      ".fo-ov-gcard{position:relative;flex:0 0 78%;max-width:260px;scroll-snap-align:start;border-radius:12px;overflow:hidden;aspect-ratio:16/10;text-decoration:none;box-shadow:0 8px 20px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08)}",
+      ".fo-ov-gcard img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease}",
+      ".fo-ov-gcard:hover img{transform:scale(1.06)}",
+      ".fo-ov-gcard:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 42%,rgba(6,11,22,.85))}",
+      ".fo-ov-gcard .cap{position:absolute;left:12px;bottom:10px;z-index:2;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1px;text-transform:uppercase;font-size:14px;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.8)}",
+      // ticker
+      ".fo-ov-ticker{position:relative;z-index:3;display:flex;align-items:center;gap:14px;padding:12px 18px 16px;border-top:1px solid rgba(255,255,255,.06);margin-top:6px;font-size:12.5px;color:#b7c4da;overflow:hidden}",
+      ".fo-ov-ticker>b{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2px;font-size:11px;color:var(--gold);white-space:nowrap;flex:none}",
+      ".fo-ov-tick{display:flex;gap:12px;align-items:center;overflow-x:auto;scrollbar-width:none;white-space:nowrap}.fo-ov-tick::-webkit-scrollbar{display:none}",
+      ".fo-ov-tick .dot{color:#546686}.fo-ov-tick .ti{white-space:nowrap}",
+      // full detail sections beneath the hero
+      ".fo-ov-more{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:8px 16px 60px}",
+      ".fo-ov-sec{margin-top:30px;scroll-margin-top:14px}",
+      ".fo-ov-sec>h2{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:2px;font-size:15px;color:#cdd9ee;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(150,180,225,.14)}",
+      ".fo-ov-sec .fo-lg-grounds{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}",
+      // ---------- desktop: the true magazine spread ----------
+      "@media(min-width:980px){",
+      ".fo-ov-hero{height:100vh;min-height:680px}",
+      ".fo-ov-map{position:absolute;inset:0;width:100%;height:100%;object-position:38% 42%}",
+      ".fo-ov-vig{background:linear-gradient(90deg,rgba(6,11,22,.94) 0%,rgba(6,11,22,.55) 26%,transparent 48%,transparent 62%,rgba(6,11,22,.5) 100%),linear-gradient(180deg,rgba(6,11,22,.55) 0%,transparent 20%,transparent 60%,rgba(6,11,22,.9) 100%)}",
+      ".fo-ov-fig{height:98%;right:19%;top:auto;bottom:0;object-position:bottom;-webkit-mask-image:radial-gradient(58% 90% at 56% 47%,#000 38%,transparent 76%);mask-image:radial-gradient(58% 90% at 56% 47%,#000 38%,transparent 76%)}",
+      ".fo-ov-figtag{display:block;left:46%;right:auto;bottom:24%;top:auto;text-align:left}",
+      ".fo-ov-subnav{position:absolute;top:0;left:0;right:0;border-bottom:0;padding:16px 34px}",
+      ".fo-ov-left{position:absolute;left:0;top:96px;bottom:64px;width:min(460px,36vw);padding:0 0 0 40px;display:flex;flex-direction:column;justify-content:center}",
+      ".fo-ov-title{font-size:clamp(64px,7vw,120px)}",
+      ".fo-ov-rail{position:absolute;right:0;top:96px;width:min(370px,28vw);padding:0 34px 0 0;max-height:calc(100vh - 150px);overflow-y:auto;scrollbar-width:none}",
+      ".fo-ov-rail::-webkit-scrollbar{display:none}",
+      ".fo-ov-gcard{flex-basis:88%}",
+      ".fo-ov-ticker{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,transparent,rgba(6,11,22,.75) 40%);border-top:0;padding:24px 40px 16px}",
+      "}",
+      "@media(min-width:1280px){.fo-ov-left{padding-left:56px}.fo-ov-rail{padding-right:48px}.fo-ov-ticker{padding-left:56px}}",
       // cup
       ".fo-cup-note{color:#b9c6dd;font-size:13px;margin:4px 0 18px;font-style:italic}",
       ".fo-cup-bracket{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}",
