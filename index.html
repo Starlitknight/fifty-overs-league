@@ -10526,7 +10526,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260724-1921-44e25a";
+  var FO_BUILD = "20260724-1933-ce45b1";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -28729,7 +28729,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<div class='fo-lg fo-ov" + (own ? "" : " ro") + "' data-tab='" + actTab + "' style='--lac:" + ac + "'>" +
         "<div class='fo-lg-bg' style='background-image:url(" + mapSrc + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
         // persistent tab rail
-        "<div class='fo-ov-subnav'><div class='fo-ov-navleft'><a class='fo-ov-back' href='#/home'>&#8249; Club</a><div class='fo-ov-tabs' role='tablist' aria-label='" + E(region.nm) + " league'>" + tabBtns + "</div></div>" +
+        "<div class='fo-ov-subnav'><div class='fo-ov-tabs' role='tablist' aria-label='" + E(region.nm) + " league'>" + tabBtns + "</div>" +
         "<div class='fo-ov-selwrap'><span class='fo-ov-sel'>" + E(region.nm) + " &middot; " + (idx19 || 1) + "/" + FO_CX_NATIONS + " &#9662;</span><select class='fo-ov-selnat' aria-label='Jump to another nation league'>" + natOpts + "</select></div></div>" +
         // ===== OVERVIEW panel =====
         pOpen("overview") +
@@ -28741,14 +28741,12 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "</div>" +
         "<div class='fo-ov-left'>" +
         "<div class='fo-ov-eb'>" + ebText + "</div>" +
-        "<div class='fo-ov-titlerow'>" +
-        (emblem ? "<img class='fo-ov-crest-lg' src='" + emblem + "' alt='' aria-hidden='true' onerror=\"this.style.display='none'\">" : "") +
-        "<h1 class='fo-ov-title'>" + E(region.nm) + "</h1></div>" +
+        "<h1 class='fo-ov-title'>" + E(region.nm) + "</h1>" +
         "<div class='fo-ov-sub'>" + E(subtitle) + "</div>" +
         "<div class='fo-ov-bossid'>" + bossId + "</div>" +
         (tagline ? "<p class='fo-ov-quote'>&ldquo;" + E(tagline) + "&rdquo;</p>" : "") +
         styleRow +
-        (groundCards ? "<div class='fo-ov-grounds fo-ov-grounds-left'><div class='fo-ov-gh'>Explore the Grounds</div><div class='fo-ov-gstrip'>" + groundCards + "</div></div>" : "") +
+        (groundCards ? "<div class='fo-ov-grounds fo-ov-grounds-left'><div class='fo-ov-gh'>Explore the Grounds</div><div class='fo-ov-gwrap'><button type='button' class='fo-ov-garrow prev' aria-label='Scroll grounds left'>&#8249;</button><div class='fo-ov-gstrip'>" + groundCards + "</div><button type='button' class='fo-ov-garrow next' aria-label='Scroll grounds right'>&#8250;</button></div></div>" : "") +
         "</div>" +
         "<div class='fo-ov-rail'>" +
         "<div class='fo-ov-ticker'><b>Around " + E(region.nm) + "</b><div class='fo-ov-tick'>" + tickerItems + "</div></div>" +
@@ -28782,13 +28780,19 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         // country navigator: pick a nation from the dropdown and jump straight to its league
         var selNat = page.querySelector(".fo-ov-selnat");
         if (selNat) selNat.addEventListener("change", function () { var v = selNat.value; if (v && v !== nation) { location.hash = "#/league?n=" + encodeURIComponent(v); if (typeof window.route === "function") window.route(); } });
-        // grounds strip: click-drag to scroll through every ground (a drag never opens a ground)
-        page.querySelectorAll(".fo-ov-gstrip").forEach(function (strip) {
+        // grounds strip: arrows + click-drag + wheel to scroll through every ground (a drag never opens a ground)
+        page.querySelectorAll(".fo-ov-gwrap").forEach(function (wrap) {
+          var strip = wrap.querySelector(".fo-ov-gstrip"); if (!strip) return;
+          var step = function () { var c = strip.querySelector(".fo-ov-gcard"); return c ? (c.getBoundingClientRect().width + 10) : 240; };
+          var pv = wrap.querySelector(".fo-ov-garrow.prev"), nx = wrap.querySelector(".fo-ov-garrow.next");
+          if (pv) pv.addEventListener("click", function () { strip.scrollBy({ left: -step(), behavior: "smooth" }); });
+          if (nx) nx.addEventListener("click", function () { strip.scrollBy({ left: step(), behavior: "smooth" }); });
+          strip.addEventListener("wheel", function (e) { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { strip.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
           var down = false, sx = 0, sl = 0, moved = false;
           strip.addEventListener("pointerdown", function (e) { down = true; moved = false; sx = e.clientX; sl = strip.scrollLeft; try { strip.setPointerCapture(e.pointerId); } catch (e2) {} });
           strip.addEventListener("pointermove", function (e) { if (!down) return; var dx = e.clientX - sx; if (Math.abs(dx) > 4) moved = true; strip.scrollLeft = sl - dx; });
           var up = function () { down = false; };
-          strip.addEventListener("pointerup", up); strip.addEventListener("pointercancel", up);
+          strip.addEventListener("pointerup", up); strip.addEventListener("pointercancel", up); strip.addEventListener("pointerleave", up);
           strip.addEventListener("click", function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); } }, true);
         });
         if (!window.__foOvPop) {
@@ -29070,6 +29074,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // grounds carousel
       ".fo-ov-grounds{padding:14px 0 4px}.fo-ov-gh{padding:0 16px}",
       ".fo-ov-gstrip{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x;padding:12px 16px 14px;scrollbar-width:none;cursor:grab}",
+      ".fo-ov-gwrap{position:relative}",
+      "html body #page .fo-ov-garrow{position:absolute;top:calc(50% - 4px);transform:translateY(-50%);z-index:5;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(8,14,24,.78) !important;border:1px solid rgba(235,194,113,.45) !important;color:#EBC271 !important;font-size:20px;line-height:0;padding:0 0 3px;cursor:pointer;backdrop-filter:blur(6px);box-shadow:0 4px 14px rgba(0,0,0,.5)}",
+      "html body #page .fo-ov-garrow.prev{left:3px}html body #page .fo-ov-garrow.next{right:3px}",
+      "html body #page .fo-ov-garrow:hover{background:rgba(235,194,113,.92) !important;color:#0c1524 !important}",
       ".fo-ov-gstrip::-webkit-scrollbar{display:none}",
       ".fo-ov-gcard{position:relative;flex:0 0 78%;max-width:260px;scroll-snap-align:start;border-radius:12px;overflow:hidden;aspect-ratio:16/10;text-decoration:none;box-shadow:0 8px 20px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08)}",
       ".fo-ov-gcard img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease}",
@@ -29105,7 +29113,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-ov-vig{background:linear-gradient(90deg,rgba(6,11,22,.94) 0%,rgba(6,11,22,.55) 26%,transparent 48%,transparent 62%,rgba(6,11,22,.5) 100%),linear-gradient(180deg,rgba(6,11,22,.55) 0%,transparent 20%,transparent 60%,rgba(6,11,22,.9) 100%)}",
       ".fo-ov-fig{height:98%;right:-5%;left:auto;top:auto;bottom:0;transform:translateX(62%);object-position:bottom;-webkit-mask-image:radial-gradient(58% 90% at 56% 47%,#000 40%,transparent 78%);mask-image:radial-gradient(58% 90% at 56% 47%,#000 40%,transparent 78%)}",
       ".fo-ov-figtag{display:block;right:7%;left:auto;bottom:22%;top:auto;text-align:right}",
-      ".fo-ov-subnav{position:absolute;top:0;left:0;right:0;border-bottom:0;padding:16px 34px}",
+      // the nation dropdown + slim tab switcher float flush with the global header (top-right), no second menu band
+      "#page .fo-ov .fo-ov-subnav{position:fixed;top:7px;right:28px;left:auto;bottom:auto;width:auto;z-index:61;display:flex;align-items:center;gap:14px;padding:0;background:none;border:0}",
+      "#page .fo-ov .fo-ov-subnav .fo-ov-tabs{gap:2px}",
+      "html body #page .fo-ov .fo-ov-subnav .fo-ov-tabs button{font-size:11px;letter-spacing:1.4px;padding:6px 8px}",
       ".fo-ov-left{position:absolute;left:0;top:96px;bottom:64px;width:min(460px,36vw);padding:0 0 0 40px;display:flex;flex-direction:column;justify-content:center}",
       ".fo-ov-title{font-size:clamp(64px,7vw,120px)}",
       ".fo-ov-rail{position:absolute;right:0;top:96px;width:min(370px,28vw);padding:0 34px 0 0;max-height:calc(100vh - 150px);overflow-y:auto;scrollbar-width:none}",
@@ -29236,8 +29247,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-ov-dock{display:none}",
       ".fo-ov .fo-ov-pstrip,.fo-ov .fo-ov-bossid{display:none}",
       ".fo-ov .fo-ov-rail{display:flex}.fo-ov .fo-ov-style{display:flex}.fo-ov .fo-ov-figtag{display:block}.fo-ov .fo-ov-ticker{display:flex}",
-      // float the sub-nav over the cinematic hero (clearing the transparent topbar) so the art bleeds to the very top - no dead band
-      "#page .fo-ov .fo-ov-subnav{position:absolute;top:0;left:0;right:0;z-index:50;padding:70px 34px 12px;background:linear-gradient(180deg,rgba(4,10,20,.34),transparent);border-bottom:0}",
+      // dropdown + slim tab switcher float flush with the global header (top-right); no second menu band
+      "#page .fo-ov .fo-ov-subnav{position:fixed;top:7px;right:28px;left:auto;bottom:auto;width:auto;justify-content:flex-end;z-index:61;gap:16px;padding:0;background:none;border:0}",
       ".fo-ov-panel[data-panel=overview]{position:relative;height:100vh;min-height:680px;padding-bottom:0}",
       "#page .fo-ov .fo-ov-hero{position:absolute;inset:0;height:100%}",
       ".fo-ov-mapwrap{position:absolute;inset:0;width:100%;height:100%;max-height:none}",
