@@ -2490,8 +2490,9 @@
       // art pages own the whole canvas: any sliver the painting misses (iOS
       // toolbar collapse, rubber-band overscroll) must read as night, never
       // as the cream document background
-      "html body.fo-home-on,html body.ftpskin.fo-home-on{background:#0B1322 !important}" +
-      "html body.fo-home-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}" +
+      "html body.fo-home-on,html body.ftpskin.fo-home-on{background:#0B1322 !important;margin:0 !important;padding:0 !important;overflow-x:hidden !important}" +
+      "html body.fo-home-on .wrap,html body.ftpskin.fo-home-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important;border:0 !important}" +
+      "html body.fo-home-on #page{padding:0 !important;margin:0 !important;background:transparent !important}" +
       "html body.fo-home-on #topbar,html body.ftpskin.fo-home-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(4,10,20,.6),rgba(4,10,20,.24) 60%,transparent) !important;border-bottom:none !important;box-shadow:none !important}" +
       "body.fo-home-on #fo-top-status{display:none}" +
       // #page clips x-overflow for ordinary pages - the wallpaper must paint
@@ -3034,7 +3035,7 @@
   function foArtChrome() {
     try {
       var full = (location.hash || "").split("?")[0];
-      var artful = full === "#/world" ||
+      var artful = full === "#/home" || full === "#/world" ||
         (full === "#/circuit" && !/[?&]m=1/.test(location.hash || "")) ||
                    full === "#/city" || full === "#/tour";
       document.body.classList.toggle("fo-home-on", artful);
