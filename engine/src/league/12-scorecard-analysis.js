@@ -5069,7 +5069,10 @@
       // an editorial abstraction that keeps the route clear of the boss on every map.
       // every club city in the league, placed by real geography (the phone keeps
       // the pins in the left band so the boss never stands on them)
-      var pinBox = ovMob ? { x0: 7, y0: 13, x1: 60, y1: 80 } : { x0: 13, y0: 15, x1: 86, y1: 85 };
+      // the pin field stops short of where the boss stands and labels turn inward
+      // on its right side, so a wide nation (Perth to Brisbane) still clears the art
+      var pinBox = ovMob ? { x0: 9, y0: 13, x1: 34, y1: 78 } : { x0: 12, y0: 15, x1: 55, y1: 85 };
+      var lblFlip = ovMob ? 22 : 42;
       var wp = foNationPins(nation, pinBox);
       var cityWid = {}; table.forEach(function (x) { if (x.city && x.wid && x.wid !== "me") cityWid[x.city] = x.wid; });
       var routeOrder = wp.slice().sort(function (a, b) { return a.py - b.py; });   // north to south
@@ -5086,7 +5089,7 @@
         var wid = cityWid[c.city];
         var href = wid ? ("#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(wid)) : "#/world";
         // labels flip to the left half so they never run off the frame
-        return "<a class='fo-ov-pin " + (c.px > 62 ? "lbl-l" : "lbl-r") + "' style='left:" + c.px + "%;top:" + c.py + "%' href='" + href + "' aria-label='Explore " + E(c.city) + "'><span class='dot' aria-hidden='true'></span><span class='nm'>" + E(c.city) + "</span></a>";
+        return "<a class='fo-ov-pin " + (c.px > lblFlip ? "lbl-l" : "lbl-r") + "' style='left:" + c.px + "%;top:" + c.py + "%' href='" + href + "' aria-label='Explore " + E(c.city) + "'><span class='dot' aria-hidden='true'></span><span class='nm'>" + E(c.city) + "</span></a>";
       }).join("");
       // bottom dock (mobile) - line icons, WORLD active on this route
       var dockItems = [["#/home", "Home", "M3 10.8 12 3l9 7.8V21h-6v-6H9v6H3z", 0], ["#/squad", "Squad", "M9 10.4a3.1 3.1 0 100-6.2 3.1 3.1 0 000 6.2zM2.6 20a6.4 6.4 0 0112.8 0M16 10.2a3 3 0 000-6M21.4 20a6.3 6.3 0 00-4.6-6.1", 0], ["#/orders", "Match", "M12 3a9 9 0 100 18 9 9 0 000-18zM6.6 5.1C10 8 11.6 13 10.6 18.9", 0], ["#/world", "World", "M12 3a9 9 0 100 18 9 9 0 000-18zM3 12h18M12 3c3.2 3 3.2 15 0 18M12 3c-3.2 3-3.2 15 0 18", 1], ["#/home", "Club", "M12 3l7 2.6v6.2C19 17 15.6 19.4 12 21 8.4 19.4 5 17 5 11.8V5.6z", 0]];
