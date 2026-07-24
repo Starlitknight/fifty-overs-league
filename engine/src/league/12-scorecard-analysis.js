@@ -5066,7 +5066,7 @@
       ".fo-ov-crest{width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 3px 8px rgba(0,0,0,.6));margin-bottom:6px}",
       // crest sits inline beside the nation name, sized to match the display type
       ".fo-ov-titlerow{display:flex;align-items:center;gap:clamp(12px,2vw,22px);margin-top:2px}",
-      ".fo-ov-crest-lg{height:clamp(54px,10vw,102px);width:auto;object-fit:contain;filter:drop-shadow(0 5px 14px rgba(0,0,0,.6));flex:none}",
+      ".fo-ov-crest-lg{height:clamp(76px,14vw,150px);width:auto;object-fit:contain;filter:drop-shadow(0 6px 18px rgba(0,0,0,.6));flex:none}",
       ".fo-ov-grounds-left{margin-top:16px}",
       ".fo-ov-eb{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:3px;font-size:11px;font-weight:600;color:var(--gold)}",
       ".fo-ov-title{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:clamp(46px,15vw,116px);line-height:.84;margin:4px 0 0;color:#f4efe6;text-shadow:0 3px 26px rgba(0,0,0,.55),0 0 50px color-mix(in srgb,var(--lac) 40%,transparent)}",
