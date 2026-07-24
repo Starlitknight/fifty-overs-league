@@ -317,6 +317,8 @@
       // the backdrop is ABSOLUTE inside .fo-sqx (not fixed) so it covers the full
       // content height on a tall stacked mobile page, not just the first viewport
       ".fo-sqx-bg{position:absolute;inset:0;background-size:cover;background-position:center 22%;z-index:0;filter:blur(3px) brightness(.66) saturate(1.24) contrast(1.02);transform:scale(1.06)}",
+      ".fo-sqx .fo-sqx-bg,.fo-sqx .fo-sqx-card{transition:opacity .22s ease,filter .2s ease,zoom .2s ease}",
+      ".fo-sqx:not(.art-ready) .fo-sqx-bg{opacity:.72}",
       // an art-forward veil over the nation map: cinematic golden-hour top glow,
       // deepening toward the card so the holo cards read but the world stays present
       ".fo-sqx-veil{position:absolute;inset:0;background:radial-gradient(120% 70% at 50% -6%,rgba(120,150,190,.16),transparent 52%),linear-gradient(180deg,rgba(7,12,22,.5) 0%,rgba(7,11,20,.42) 30%,rgba(6,10,18,.6) 66%,rgba(5,9,16,.86) 100%);z-index:0}",
@@ -463,6 +465,16 @@
     (document.head || document.documentElement).appendChild(s);
   }
 
+  function foSqxPreloadAssets(srcs) {
+    var page = document.getElementById("page"), root = page && page.querySelector(".fo-sqx");
+    if (!root) return;
+    var seen = {}, list = (srcs || []).filter(function (s2) { if (!s2 || seen[s2]) return false; seen[s2] = 1; return true; });
+    if (!list.length) { root.classList.add("art-ready"); return; }
+    var left = list.length, done = function () { if (--left <= 0 && root.parentNode) root.classList.add("art-ready"); };
+    list.forEach(function (src) { var im = new Image(); im.onload = done; im.onerror = done; im.src = src; });
+    setTimeout(function () { if (root.parentNode) root.classList.add("art-ready"); }, 900);
+  }
+
   // the selected-player detail rail (real career data + live form)
   function foSqxRail(p, inXi) {
     var tot = (typeof foClubTotals === "function") ? foClubTotals(p.name) : { runs: 0, wkts: 0, matches: 0, hs: 0 };
@@ -583,6 +595,9 @@
       document.body.classList.add("fo-sqx-on");
       // set the squad over the player's own nation map, so it belongs to the same world as the league
       var sqxBg = FO_ART + "home/hgm-dressing-room.webp";
+      var artPreload = [sqxBg];
+      pool.slice(0, 8).forEach(function (p) { artPreload.push(FO_ART + foPkArt(p)); });
+      if (sel) artPreload.push(FO_ART + foPkArt(sel));
       page.innerHTML =
         "<div class='fo-sqx fo-sqx-room'><div class='fo-sqx-bg' style='background-image:url(" + sqxBg + ")'></div><div class='fo-sqx-veil'></div><div class='fo-sqx-atmo'></div><div class='fo-sqx-in'>" +
         "<header class='fo-sqx-hd'>" +
@@ -602,6 +617,7 @@
         "</div>" +
         "<footer class='fo-sqx-foot'>" + balHtml + "</footer>" +
         "</div></div>";
+      foSqxPreloadAssets(artPreload);
 
       page.querySelectorAll(".fo-sqx-tab").forEach(function (b) { b.addEventListener("click", function () { sv.tab = b.getAttribute("data-tab"); pgSquad(); }); });
       var so = page.querySelector("#fo-sqx-sort"); if (so) so.addEventListener("change", function () { sv.sortK = so.value; pgSquad(); });
@@ -897,4 +913,3 @@
       });
     } catch (e) { console.warn("pgNets lab", e); }
   };
-
