@@ -3994,6 +3994,12 @@
       issue: "Vol. 01 &middot; Issue 19", byline: "Eleanor March",
       head: "The man who turned England's patience into a competitive edge.",
       standfirst: "Canterbury made him: wet outfields, slow pitches, and long county afternoons that taught him English conditions reward judgment over impulse. He asks the whole domestic game for the same thing."
+    },
+    aus: {
+      art: "lore/journal-aus.webp", artM: "lore/journal-aus-m.webp",
+      issue: "Vol. 01 &middot; Issue 19", byline: "Eleanor March",
+      head: "The man who turned Australia's aggression into a system.",
+      standfirst: "Hard wickets and fast outfields taught him that hesitation costs matches. He made his name as an uncompromising opener who took control early and set the tempo, and he wants every Australian side to play the same way: direct, assertive, always forcing the opposition to react."
     }
   };
   function foLoreCast() {
@@ -4108,6 +4114,7 @@
       ".fo-lore-sub{font-size:12.5px;color:#8ea3c4;margin:8px 0 16px;font-style:italic}",
       // the published feature
       ".fo-lore-feature{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:22px;align-items:center;background:linear-gradient(180deg,rgba(16,26,44,.82),rgba(10,17,30,.9));border:1px solid rgba(235,194,113,.28);border-radius:16px;padding:20px;box-shadow:0 18px 44px rgba(0,0,0,.4)}",
+      ".fo-lore-feature+.fo-lore-feature{margin-top:18px}",
       ".fo-lore-kicker{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:3px;font-size:10.5px;font-weight:600;color:var(--gold)}",
       ".fo-lore-fname{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:clamp(26px,3.4vw,40px);line-height:1;margin:7px 0 9px;color:#f6f1e6}",
       ".fo-lore-fhead{font-size:15px;line-height:1.5;color:#e2d9c4;font-style:italic;margin:0 0 10px}",
