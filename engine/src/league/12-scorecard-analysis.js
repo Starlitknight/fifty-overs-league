@@ -3588,6 +3588,7 @@
   }
   window.addEventListener("resize", function () {
     foFullBleedFit(document.querySelector(".fo-tour") || document.querySelector(".fo-city-full"));
+    try { var wm = document.querySelector("#fo-world-map"); if (wm && wm.__fit) { wm.__z = 1; wm.__dx = 0; wm.__dy = 0; wm.__fit(); wm.style.transform = "translate(-50%,-50%) scale(1)"; wm.style.setProperty("--wz", 1); } } catch (eWR) {}
   });
   function foRenderTour() {
     try {
@@ -3780,9 +3781,9 @@
       }).join("");
       page.innerHTML =
         "<div class='fo-world'>" +
-        "<div class='fo-world-map' id='fo-world-map'><img src='" + FO_ART + "circuit/world.webp' alt=''>" + pins + "</div>" +
+        "<div class='fo-world-map' id='fo-world-map'><img src='" + FO_ART + "circuit/world.webp' alt='' style='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none'>" + pins + "</div>" +
         "<div class='fo-world-hd'><div class='eb'>The Leagues of the World</div><h1>The World</h1><div class='ty'>" + FO_CX_NATIONS + " national leagues &middot; one Champions Cup</div></div>" +
-        "<a class='fo-world-back' href='#/circuit'>&#8249; Club</a>" +
+        "<a class='fo-world-back' href='#/home'>&#8249; Club</a>" +
         "<div class='fo-world-zoom'><button type='button' id='fo-wz-in'>+</button><button type='button' id='fo-wz-out'>&#8722;</button></div>" +
         "<div class='fo-world-hint' id='fo-world-hint'>Drag to roam &middot; scroll to zoom &middot; tap a nation to see its league</div>" +
         "<div class='fo-world-card' id='fo-world-card'></div>" +
@@ -3862,8 +3863,25 @@
         mapEl.__z = nz;
         panW(dx, dy);
       };
+      // Size the 16:9 map in real pixels from the host. On a tall/portrait
+      // viewport, cover-cropping shows only the map's centre (open ocean, no
+      // nations), so fit the WHOLE world to the host width; on landscape keep the
+      // cover look. Inline px sizing sidesteps a mobile vw-unit quirk.
+      var fitMap = function () {
+        var hw = host.clientWidth, hh = host.clientHeight, AR = 16 / 9;
+        var w, h;
+        if (hw >= hh) { w = Math.max(hw, hh * AR); h = Math.max(hh, hw / AR); }   // landscape: cover
+        else { w = hw; h = hw / AR; }                                             // portrait: whole world, fit width
+        mapEl.style.width = Math.round(w) + "px";
+        mapEl.style.height = Math.round(h) + "px";
+      };
+      fitMap();
       mapEl.__z = 1;
       panW(0, 0);
+      mapEl.__fit = fitMap;
+      // on a tall viewport the fit-to-width map is short; open a little zoomed in
+      // so it fills the screen and the clustered European pins have room to breathe
+      if (host.clientWidth < host.clientHeight) { try { zoomW(1.7); } catch (eZ0) {} }
       host.addEventListener("wheel", function (ev) {
         ev.preventDefault();
         var r0 = host.getBoundingClientRect();
@@ -4800,6 +4818,7 @@
     (document.head || document.documentElement).appendChild(lgCss);
   } catch (eLgCss) {}
   try {
+    var woCss = document.createElement("style"); woCss.id = "fo-world-css";
     woCss.textContent =
       ".fo-world{position:relative;width:100vw;margin-left:calc(50% - 50vw);height:calc(100vh - 96px);min-height:520px;overflow:hidden;background:#071527}" +
       // the painting: cover the viewport at 16:9, centred, draggable
