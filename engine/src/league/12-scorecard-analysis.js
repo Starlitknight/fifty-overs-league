@@ -1773,6 +1773,42 @@
     if (side.boss) return FO_ART + "circuit/boss-" + nation + ".webp";
     return FO_ART + "cities/" + foCitySlug(side.city) + "-ground.webp";
   }
+  // tapping a ground opens its stadium painting full-bleed (not the club page)
+  window.foGroundView = function (city, nationId, wid, regionNm, groundNm) {
+    try {
+      var exG = document.getElementById("fo-gv"); if (exG) exG.remove();
+      var art = FO_ART + "cities/" + foCitySlug(city) + "-ground.webp";
+      var fb = foLgArtFallback(nationId);
+      var d = document.createElement("div"); d.id = "fo-gv"; d.className = "fo-gv";
+      d.innerHTML =
+        "<img class='fo-gv-img' src='" + art + "' alt='" + E(city) + " ground' onerror=\"this.onerror=null;this.src='" + fb + "'\">" +
+        "<div class='fo-gv-scrim'></div>" +
+        "<button class='fo-gv-x' aria-label='Close'>&#10005;</button>" +
+        "<div class='fo-gv-meta'>" +
+        (regionNm ? "<div class='fo-gv-eb'>Around " + E(regionNm) + "</div>" : "") +
+        "<h2 class='fo-gv-city'>" + E(city) + "</h2>" +
+        (groundNm ? "<div class='fo-gv-nm'>" + E(groundNm) + "</div>" : "") +
+        (wid ? "<a class='fo-gv-club' href='#/side?r=" + encodeURIComponent(nationId) + "&c=" + encodeURIComponent(wid) + "'>View the club &rsaquo;</a>" : "") +
+        "</div>";
+      document.body.appendChild(d);
+      requestAnimationFrame(function () { d.classList.add("on"); });
+      var onKey = function (e) { if (e.key === "Escape") close(); };
+      function close() { d.classList.remove("on"); document.removeEventListener("keydown", onKey); setTimeout(function () { if (d.parentNode) d.remove(); }, 240); }
+      d.querySelector(".fo-gv-x").addEventListener("click", close);
+      d.addEventListener("click", function (e) { if (e.target === d || (e.target.classList && (e.target.classList.contains("fo-gv-scrim") || e.target.classList.contains("fo-gv-img")))) close(); });
+      var cl = d.querySelector(".fo-gv-club"); if (cl) cl.addEventListener("click", close);
+      document.addEventListener("keydown", onKey);
+    } catch (e) {}
+  };
+  if (!window.__foGvWired) {
+    window.__foGvWired = 1;
+    document.addEventListener("click", function (e) {
+      var a = (e.target && e.target.closest) ? e.target.closest("[data-ground]") : null;
+      if (!a) return;
+      e.preventDefault();
+      window.foGroundView(a.getAttribute("data-ground"), a.getAttribute("data-nat"), a.getAttribute("data-wid"), a.getAttribute("data-reg"), a.getAttribute("data-gnm"));
+    });
+  }
   function foLgClubCrest(nation, side) {
     if (side && side.boss) { var b = foCxBossInfo(nation); if (b) return FO_ART + "crests/" + b.crest + ".webp"; }
     var hit = foRegionById(nation); var arch = (hit && hit.r && hit.r.arch) || "rock";
@@ -4651,7 +4687,7 @@
         return "<" + tag + " class='fo-ov-crow" + (x.isMe ? " me" : "") + (x.boss ? " boss" : "") + "'" + href + "><span class='r'>" + (i + 1) + "</span><span class='n'>" + E(x.name) + "</span><span class='p'>" + x.pts + "</span><span class='nr'>" + (x.nrr == null ? "&middot;" : (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2)) + "</span></" + tag + ">";
       }).join("");
       var groundCards = table.filter(function (x) { return !x.isMe && x.sideObj; }).map(function (x) {
-        return "<a class='fo-ov-gcard' href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'>" + safeGround(x, "") + "<span class='cap'>" + E(x.city) + "</span></a>";
+        return "<a class='fo-ov-gcard' href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "' data-ground='" + E(x.city) + "' data-nat='" + E(nation) + "' data-wid='" + E(x.wid) + "' data-reg='" + E(region.nm) + "'>" + safeGround(x, "") + "<span class='cap'>" + E(x.city) + "</span></a>";
       }).join("");
       var wireA = foLgWireFor(region);
       var tickerItems = (wireA.length ? wireA : [{ headline: "The season is young &mdash; every club still dreaming of the Cup." }]).slice(0, 4).map(function (h) { return "<span class='ti'>" + E(h.headline) + "</span>"; }).join("<span class='dot'>&middot;</span>");
@@ -4723,7 +4759,7 @@
       var groundCard = function (x, hero) {
         var c = clubByCity[x.city] || {};
         var desc = c.note ? (String(c.note).charAt(0).toUpperCase() + String(c.note).slice(1)) : "";
-        return "<a class='fo-gr-card" + (hero ? " hero" : "") + "' href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'>" +
+        return "<a class='fo-gr-card" + (hero ? " hero" : "") + "' href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "' data-ground='" + E(x.city) + "' data-nat='" + E(nation) + "' data-wid='" + E(x.wid) + "' data-reg='" + E(region.nm) + "'>" +
           safeGround(x, "") +
           "<div class='fo-gr-meta'><div class='fo-gr-nm'>" + E(x.city) + (x.boss ? " <em>Boss</em>" : "") + "</div>" +
           (desc ? "<div class='fo-gr-desc'>" + E(desc) + "</div>" : "") +
@@ -5065,6 +5101,18 @@
       ".fo-ov-gcard:hover img{transform:scale(1.06)}",
       ".fo-ov-gcard:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 42%,rgba(6,11,22,.85))}",
       ".fo-ov-gcard .cap{position:absolute;left:12px;bottom:10px;z-index:2;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1px;text-transform:uppercase;font-size:14px;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.8)}",
+      ".fo-ov-gcard,.fo-gr-card{cursor:pointer}",
+      // full-bleed stadium viewer (opened when a ground is tapped)
+      ".fo-gv{position:fixed;inset:0;z-index:4000;display:flex;align-items:flex-end;background:#05090f;opacity:0;transition:opacity .24s ease}",
+      ".fo-gv.on{opacity:1}",
+      ".fo-gv-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.02)}",
+      ".fo-gv-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,9,15,.35) 0%,transparent 30%,transparent 52%,rgba(5,9,15,.9) 100%)}",
+      "html body #page .fo-gv-x,.fo-gv-x{position:absolute;top:calc(16px + env(safe-area-inset-top));right:16px;z-index:3;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.3) !important;background:rgba(8,14,24,.6) !important;color:#fff !important;font-size:18px;cursor:pointer;backdrop-filter:blur(6px)}",
+      ".fo-gv-meta{position:relative;z-index:2;padding:0 clamp(20px,5vw,64px) clamp(28px,6vh,64px);max-width:820px}",
+      ".fo-gv-eb{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:3px;font-size:12px;font-weight:600;color:var(--gold,#EBC271)}",
+      ".fo-gv-city{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1px;font-weight:700;font-size:clamp(38px,8vw,74px);line-height:.92;margin:6px 0 0;color:#fff;text-shadow:0 3px 24px rgba(0,0,0,.6)}",
+      ".fo-gv-nm{font-family:Oswald,sans-serif;letter-spacing:1px;text-transform:uppercase;font-size:14px;color:#cdd7e8;margin-top:8px}",
+      "html body #page .fo-gv-club,.fo-gv-club{display:inline-block;margin-top:18px;font-family:Oswald,sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-size:12px;font-weight:600;color:#fff !important;text-decoration:none;background:rgba(235,194,113,.16);border:1px solid rgba(235,194,113,.5);border-radius:999px;padding:10px 20px}",
       // ticker
       ".fo-ov-ticker{position:relative;z-index:3;display:flex;align-items:center;gap:14px;padding:12px 18px 16px;border-top:1px solid rgba(255,255,255,.06);margin-top:6px;font-size:12.5px;color:#b7c4da;overflow:hidden}",
       ".fo-ov-ticker>b{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2px;font-size:11px;color:var(--gold);white-space:nowrap;flex:none}",

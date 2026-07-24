@@ -1981,12 +1981,20 @@
   function foPlayerHero() {
     try {
       var ex = document.getElementById("fo-phero");
-      if (foHashPath() !== "#/player") { if (ex) ex.remove(); return; }
+      if (foHashPath() !== "#/player") { if (ex) ex.remove(); try { document.body.classList.remove("fo-pl-on"); } catch (eR) {} return; }
       var page = document.getElementById("page"); if (!page) return;
       var mH = /[?&]n=([^&]+)/.exec(location.hash || ""); if (!mH) return;
       var nm = decodeURIComponent(mH[1]);
-      if (ex && ex.getAttribute("data-nm") === nm && page.contains(ex)) return;
       var hit = (typeof findPlayer === "function") ? findPlayer(nm) : null; if (!hit || !hit.p) return;
+      // full-bleed dark backdrop, keyed to the player's own card art
+      try {
+        document.body.classList.add("fo-pl-on");
+        var plbg = document.getElementById("fo-pl-bg");
+        if (!plbg) { plbg = document.createElement("div"); plbg.id = "fo-pl-bg"; document.body.appendChild(plbg); }
+        var plArt = (typeof foPkArt === "function") ? (FO_ART + foPkArt(hit.p)) : "";
+        if (plArt && plbg.getAttribute("data-nm") !== nm) { plbg.style.backgroundImage = "url(" + plArt + ")"; plbg.setAttribute("data-nm", nm); }
+      } catch (eBg) {}
+      if (ex && ex.getAttribute("data-nm") === nm && page.contains(ex)) return;
       if (ex) ex.remove();
       var built = foHoloCardHTML(hit.p, (hit.team || {}).name || "");
       var el = document.createElement("div");
@@ -2146,7 +2154,14 @@
       ".fo-pd-hmoney b{color:#FFFEFC;font-size:14.5px;font-family:Oswald,sans-serif;font-weight:600}" +
       ".fo-pd-holo .fo-pd-act{margin-top:12px;padding:0 2px}" +
       // ==== the dossier stage: the whole player page goes card-dark ==========
-      "#fo-pstage{display:grid;grid-template-columns:minmax(0,458px) minmax(0,1fr);gap:20px;align-items:start;background:radial-gradient(130% 90% at 50% 0%,#1b2a4a 0%,#101B2D 55%,#0B1322 100%);border:1.5px solid rgba(201,162,75,.35);border-radius:22px;padding:20px;margin:6px 0 24px;box-shadow:0 18px 44px rgba(10,16,30,.38)}" +
+      // full-bleed dark backdrop behind the whole player dossier (keyed to the player's art)
+      "html body.fo-pl-on{background:#0a1220 !important}" +
+      "html body.fo-pl-on .wrap,html body.ftpskin.fo-pl-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important;border:0 !important}" +
+      "html body.fo-pl-on #page{background:transparent !important;position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:80px 20px 48px}" +
+      "body.fo-pl-on #fo-pl-bg,#fo-pl-bg{position:fixed;inset:0;z-index:0;background-size:cover;background-position:50% 16%;filter:blur(30px) brightness(.4) saturate(1.15);transform:scale(1.12);pointer-events:none}" +
+      "#fo-pl-bg:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,12,22,.6) 0%,rgba(5,10,18,.82) 70%,rgba(4,8,15,.92) 100%)}" +
+      "body:not(.fo-pl-on) #fo-pl-bg{display:none}" +
+      "#fo-pstage{display:grid;grid-template-columns:minmax(0,458px) minmax(0,1fr);gap:20px;align-items:start;background:radial-gradient(130% 90% at 50% 0%,rgba(27,42,74,.92) 0%,rgba(16,27,45,.94) 55%,rgba(11,19,34,.96) 100%);border:1.5px solid rgba(201,162,75,.35);border-radius:22px;padding:20px;margin:6px 0 24px;box-shadow:0 18px 44px rgba(10,16,30,.5)}" +
       "#fo-pstage .fo-ps-l,#fo-pstage .fo-ps-r{min-width:0}" +
       "#fo-pstage .fo-ps-l{position:sticky;top:70px}" +
       "#fo-pstage #fo-phero{margin:0}" +
