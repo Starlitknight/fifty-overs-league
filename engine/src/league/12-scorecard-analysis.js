@@ -4833,12 +4833,14 @@
           if (pv) pv.addEventListener("click", function () { strip.scrollBy({ left: -step(), behavior: "smooth" }); });
           if (nx) nx.addEventListener("click", function () { strip.scrollBy({ left: step(), behavior: "smooth" }); });
           strip.addEventListener("wheel", function (e) { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { strip.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+          // drag-to-scroll WITHOUT swallowing a plain click (no pointer capture; only
+          // treat it as a drag past an 8px threshold, so tapping a ground still opens it)
           var down = false, sx = 0, sl = 0, moved = false;
-          strip.addEventListener("pointerdown", function (e) { down = true; moved = false; sx = e.clientX; sl = strip.scrollLeft; try { strip.setPointerCapture(e.pointerId); } catch (e2) {} });
-          strip.addEventListener("pointermove", function (e) { if (!down) return; var dx = e.clientX - sx; if (Math.abs(dx) > 4) moved = true; strip.scrollLeft = sl - dx; });
+          strip.addEventListener("pointerdown", function (e) { if (e.button && e.button !== 0) return; down = true; moved = false; sx = e.clientX; sl = strip.scrollLeft; });
+          strip.addEventListener("pointermove", function (e) { if (!down) return; var dx = e.clientX - sx; if (!moved && Math.abs(dx) < 8) return; moved = true; strip.scrollLeft = sl - dx; });
           var up = function () { down = false; };
           strip.addEventListener("pointerup", up); strip.addEventListener("pointercancel", up); strip.addEventListener("pointerleave", up);
-          strip.addEventListener("click", function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); } }, true);
+          strip.addEventListener("click", function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
         });
         if (!window.__foOvPop) {
           window.__foOvPop = 1;
