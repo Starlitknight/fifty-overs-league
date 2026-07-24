@@ -312,10 +312,13 @@
       "#page .fo-sqx *{box-sizing:border-box}",
       // the backdrop is ABSOLUTE inside .fo-sqx (not fixed) so it covers the full
       // content height on a tall stacked mobile page, not just the first viewport
-      ".fo-sqx-bg{position:absolute;inset:0;background-size:cover;background-position:center;z-index:0;filter:brightness(1.28) saturate(1.08) contrast(1.02)}",
-      // lighter, art-forward veil: just enough scrim top & bottom to hold the
-      // header and footer copy legible while the dressing-room art shows through
-      ".fo-sqx-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,12,22,.58) 0%,rgba(7,11,20,.30) 26%,rgba(7,11,20,.26) 60%,rgba(6,10,18,.66) 100%);z-index:0}",
+      ".fo-sqx-bg{position:absolute;inset:0;background-size:cover;background-position:center 22%;z-index:0;filter:blur(3px) brightness(.66) saturate(1.24) contrast(1.02);transform:scale(1.06)}",
+      // an art-forward veil over the nation map: cinematic golden-hour top glow,
+      // deepening toward the card so the holo cards read but the world stays present
+      ".fo-sqx-veil{position:absolute;inset:0;background:radial-gradient(120% 70% at 50% -6%,rgba(120,150,190,.16),transparent 52%),linear-gradient(180deg,rgba(7,12,22,.5) 0%,rgba(7,11,20,.42) 30%,rgba(6,10,18,.6) 66%,rgba(5,9,16,.86) 100%);z-index:0}",
+      ".fo-sqx-atmo{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.4;background-image:radial-gradient(1.5px 1.5px at 18% 24%,rgba(255,240,205,.9),transparent),radial-gradient(1.2px 1.2px at 72% 16%,rgba(255,255,255,.7),transparent),radial-gradient(1.6px 1.6px at 86% 52%,rgba(255,236,190,.8),transparent),radial-gradient(1.1px 1.1px at 38% 74%,rgba(255,255,255,.55),transparent),radial-gradient(1.3px 1.3px at 56% 40%,rgba(255,246,214,.7),transparent);animation:foSqxMote 12s ease-in-out infinite alternate}",
+      "@keyframes foSqxMote{from{opacity:.24;transform:translateY(0)}to{opacity:.5;transform:translateY(-10px)}}",
+      "@media(prefers-reduced-motion:reduce){.fo-sqx-atmo{animation:none}}",
       ".fo-sqx-in{position:relative;z-index:1;max-width:1520px;margin:0 auto;padding:10px 22px 14px;min-height:calc(100vh - 58px);display:flex;flex-direction:column}",
       // header
       ".fo-sqx-hd{display:flex;align-items:flex-end;gap:20px;margin:4px 0 14px;flex-wrap:wrap}",
@@ -323,11 +326,11 @@
       ".fo-sqx-sub{font-family:Oswald,sans-serif;letter-spacing:2px;text-transform:uppercase;font-size:12px;color:#8ea3c4;margin-top:6px}",
       ".fo-sqx-sub i{color:#586a86;font-style:normal;margin:0 3px}",
       ".fo-sqx-tabs{display:flex;gap:6px;margin-left:8px}",
-      ".fo-sqx-tab{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.5px;font-size:12px;color:#93a4c0;background:rgba(255,255,255,.04);border:1px solid rgba(126,158,208,.16);border-radius:999px;padding:7px 16px;cursor:pointer;transition:.14s}",
-      ".fo-sqx-tab:hover{color:#eaf0fb}",
-      ".fo-sqx-tab.on{background:#EBC271;color:#101b2d;border-color:#EBC271}",
-      ".fo-sqx-sort{margin-left:auto;font-family:Oswald,sans-serif;letter-spacing:1.5px;font-size:11px;color:#8ea3c4}",
-      ".fo-sqx-sort select{font-family:Oswald,sans-serif;letter-spacing:1px;font-size:12px;background:rgba(255,255,255,.06);color:#eaf0fb;border:1px solid rgba(126,158,208,.22);border-radius:8px;padding:5px 8px;margin-left:4px}",
+      "html body #page .fo-sqx-tab{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.5px;font-size:12px;color:#c6d3e8 !important;background:rgba(12,20,36,.55) !important;border:1px solid rgba(126,158,208,.24) !important;border-radius:999px;padding:8px 16px;cursor:pointer;backdrop-filter:blur(8px);transition:.14s}",
+      "html body #page .fo-sqx-tab:hover{color:#fff !important;background:rgba(20,30,50,.7) !important}",
+      "html body #page .fo-sqx-tab.on{background:#EBC271 !important;color:#101b2d !important;border-color:#EBC271 !important}",
+      ".fo-sqx-sort{margin-left:auto;font-family:Oswald,sans-serif;letter-spacing:1.5px;font-size:11px;color:#c6d3e8}",
+      "html body #page .fo-sqx-sort select{font-family:Oswald,sans-serif !important;letter-spacing:1px;font-size:12px;background:rgba(12,20,36,.65) !important;color:#eaf0fb !important;border:1px solid rgba(126,158,208,.28) !important;border-radius:8px;padding:6px 10px;margin-left:4px;backdrop-filter:blur(8px)}",
       // body: gallery + rail
       ".fo-sqx-body{position:relative;display:block;flex:1;min-height:0}",
       // an arrow-driven carousel: the focused card is large & glowing, the rest
@@ -350,7 +353,7 @@
       ".fo-sqx-card.inxi::after{content:'XI';position:absolute;top:16px;left:16px;z-index:5;font-family:Oswald,sans-serif;font-size:17px;font-weight:700;letter-spacing:1px;color:#101b2d;background:#EBC271;border-radius:7px;padding:3px 11px;box-shadow:0 3px 8px rgba(0,0,0,.45)}",
       ".fo-sqx-card.inxi .phc-role{padding-left:46px}",
       // carousel arrows
-      ".fo-sqx-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:6;width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(10,18,32,.82);border:1.5px solid rgba(235,194,113,.45);color:#EBC271;font-size:30px;line-height:0;padding-bottom:4px;cursor:pointer;backdrop-filter:blur(6px);box-shadow:0 8px 24px rgba(0,0,0,.5);transition:.14s}",
+      "html body #page .fo-sqx-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:6;width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(10,18,32,.82) !important;border:1.5px solid rgba(235,194,113,.45) !important;color:#EBC271 !important;font-size:30px;line-height:0;padding-bottom:4px;cursor:pointer;backdrop-filter:blur(6px);box-shadow:0 8px 24px rgba(0,0,0,.5);transition:.14s}",
       ".fo-sqx-arrow:hover{background:#EBC271;color:#101b2d;border-color:#EBC271}",
       ".fo-sqx-arrow.prev{left:12px}.fo-sqx-arrow.next{right:12px}",
       ".fo-sqx-empty{color:#8ea3c4;padding:60px 20px;font-size:14px}",
@@ -397,9 +400,9 @@
       // footer filter bar + balance
       ".fo-sqx-foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 4px 4px;border-top:1px solid rgba(126,158,208,.14);margin-top:6px}",
       ".fo-sqx-rars{display:flex;gap:6px;flex-wrap:wrap}",
-      ".fo-sqx-rar{font-family:Oswald,sans-serif;letter-spacing:1px;font-size:10.5px;color:#8ea3c4;background:rgba(255,255,255,.04);border:1px solid rgba(126,158,208,.16);border-radius:999px;padding:5px 12px;cursor:pointer;transition:.14s}",
-      ".fo-sqx-rar:hover{color:#eaf0fb}",
-      ".fo-sqx-rar.on{background:#EBC271;color:#101b2d;border-color:#EBC271}",
+      "html body #page .fo-sqx-rar{font-family:Oswald,sans-serif !important;letter-spacing:1px;font-size:10.5px;color:#b9c6dd !important;background:rgba(12,20,36,.5) !important;border:1px solid rgba(126,158,208,.2) !important;border-radius:999px;padding:6px 12px;cursor:pointer;backdrop-filter:blur(6px);transition:.14s}",
+      "html body #page .fo-sqx-rar:hover{color:#fff !important}",
+      "html body #page .fo-sqx-rar.on{background:#EBC271 !important;color:#101b2d !important;border-color:#EBC271 !important}",
       ".fo-sqx-bal{margin-left:auto;font-family:Oswald,sans-serif;letter-spacing:1px;font-size:13px;color:#eaf0fb;display:flex;align-items:center;gap:7px}",
       ".fo-sqx-bal .lbl{font-size:10px;letter-spacing:2px;color:#8ea3c4;margin-right:4px}",
       ".fo-sqx-bal b{color:#EBC271}.fo-sqx-bal i{color:#586a86;font-style:normal}",
@@ -536,8 +539,11 @@
 
       var page = document.getElementById("page"); if (!page) return;
       document.body.classList.add("fo-sqx-on");
+      // set the squad over the player's own nation map, so it belongs to the same world as the league
+      var sqxNation = "eng"; try { if (typeof foLgNation === "function") sqxNation = foLgNation() || "eng"; } catch (eNat) {}
+      var sqxBg = FO_ART + "circuit/" + sqxNation + ".webp";
       page.innerHTML =
-        "<div class='fo-sqx'><div class='fo-sqx-bg' style='background-image:url(" + FO_ART + "orders-room.webp)'></div><div class='fo-sqx-veil'></div><div class='fo-sqx-in'>" +
+        "<div class='fo-sqx'><div class='fo-sqx-bg' style='background-image:url(" + sqxBg + ")' onerror=\"\"></div><div class='fo-sqx-veil'></div><div class='fo-sqx-atmo'></div><div class='fo-sqx-in'>" +
         "<header class='fo-sqx-hd'>" +
         "<div class='fo-sqx-title'><h1>Your Squad</h1><div class='fo-sqx-sub'>" + seniors.length + " players <i>&middot;</i> " + sv.xi.length + " selected</div></div>" +
         "<div class='fo-sqx-tabs'>" + tabs + "</div>" + sortSel +

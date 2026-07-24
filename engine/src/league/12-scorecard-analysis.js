@@ -4579,7 +4579,7 @@
       var mapSrc = FO_ART + "circuit/" + (region.bg || (nation + ".webp"));
       page.innerHTML =
         "<div class='fo-lg fo-lg-cinemode" + (own ? "" : " ro") + "' style='--lac:" + ac + "'>" +
-        "<div class='fo-lg-bg' style='background-image:url(" + mapSrc + ")'></div><div class='fo-lg-scrim'></div>" +
+        "<div class='fo-lg-bg' style='background-image:url(" + mapSrc + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
         // ---- the establishing shot: the nation's map, full-bleed, at golden hour
         "<section class='fo-lg-cine'>" +
         "<img class='fo-lg-cimg' src='" + mapSrc + "' alt=''>" +
@@ -4627,12 +4627,21 @@
       var tieRow = function (t) { if (!t) return ""; return "<div class='fo-cup-tie'><span class='w'>" + E(t.win) + "</span><span class='l'>" + E(t.lose) + "</span>" + (t.winScore ? "<span class='sc'>" + E(t.winScore) + " v " + E(t.loseScore) + "</span>" : "") + "</div>"; };
       var stageCol = function (title, ties) { return "<div class='fo-cup-col'><h4>" + title + "</h4>" + (ties || []).map(tieRow).join("") + "</div>"; };
       var champBanner = cup ? "<div class='fo-lg-champ'>&#9818; <b>" + E(cup.champion) + "</b> hold the Champions Cup &middot; runners-up " + E(cup.runnerUp || "") + "</div>" : "";
+      var cupArt = FO_ART + "home/arches-blue-hour-cup.webp";
       page.innerHTML =
-        "<div class='fo-lg fo-cup' style='--lac:#C8674A'>" +
-        "<div class='fo-lg-bg' style='background-image:url(" + FO_ART + "circuit/world.webp)'></div><div class='fo-lg-scrim'></div>" +
-        "<div class='fo-lg-in'>" +
-        "<div class='fo-lg-hd'><div class='eb'>The World &middot; Knockout</div><h1>The Champions Cup</h1>" +
-        "<div class='sub'>The champions of all 19 national leagues meet &middot; <a href='#/league'>&lsaquo; Your league</a></div></div>" +
+        "<div class='fo-lg fo-lg-cinemode fo-cup' style='--lac:#E0A34A'>" +
+        "<div class='fo-lg-bg' style='background-image:url(" + cupArt + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
+        "<section class='fo-lg-cine'>" +
+        "<img class='fo-lg-cimg' src='" + cupArt + "' alt='' onerror=\"this.src='" + FO_ART + "circuit/world.webp'\">" +
+        "<div class='fo-lg-csky'></div><div class='fo-lg-cbloom'></div><div class='fo-lg-cstars'></div><div class='fo-lg-cgrain'></div>" +
+        "<div class='fo-lg-cnav'><a href='#/home'>&#8962; Club</a><a href='#/league'>&#9862; Your league</a><a href='#/world'>&#127760; World</a></div>" +
+        "<div class='fo-lg-ctitle'>" +
+        "<div class='eb'>The World &middot; Knockout</div>" +
+        "<h1>The Champions Cup</h1>" +
+        "<div class='fo-lg-style'><span class='pill'>19 Champions</span><span class='pill ghost'>Single knockout</span><span class='pill ghost'>One trophy</span></div>" +
+        "<p class='fo-lg-tag'>&ldquo;The champions of all nineteen national leagues meet under one sky. Win yours &mdash; and take your place here.&rdquo;</p>" +
+        "</div></section>" +
+        "<div class='fo-lg-body'>" +
         champBanner +
         "<div class='fo-cup-note'>Win your national league to earn a place in next season's Champions Cup.</div>" +
         "<div class='fo-cup-bracket'>" +
@@ -4656,8 +4665,15 @@
       "html body.fo-boss-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
       "#page .fo-lg{position:relative;min-height:100vh;color:#eef3fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#080d18;--lac:#3a6ea5}",
       "#page .fo-lg *{box-sizing:border-box}",
-      ".fo-lg-bg{position:fixed;inset:0;background-size:cover;background-position:center;filter:blur(30px) brightness(.42) saturate(1.05);transform:scale(1.12);z-index:0}",
-      ".fo-lg-scrim{position:fixed;inset:0;background:radial-gradient(120% 90% at 50% 0%,color-mix(in srgb,var(--lac) 22%,rgba(8,13,24,.55)),rgba(8,13,24,.9) 58%,rgba(6,10,18,.98));z-index:0}",
+      ".fo-lg-bg{position:fixed;inset:0;background-size:cover;background-position:center;filter:blur(16px) brightness(.6) saturate(1.22);transform:scale(1.12);z-index:0;animation:foLgBgDrift 60s ease-in-out infinite alternate}",
+      "@keyframes foLgBgDrift{from{transform:scale(1.12) translate3d(0,0,0)}to{transform:scale(1.2) translate3d(-2%,-2.4%,0)}}",
+      "@media(prefers-reduced-motion:reduce){.fo-lg-bg{animation:none}}",
+      // a bottom-weighted scrim: keep the art alive up high, darken toward the reading column
+      ".fo-lg-scrim{position:fixed;inset:0;background:radial-gradient(130% 80% at 50% -10%,color-mix(in srgb,var(--lac) 20%,transparent),transparent 46%),linear-gradient(to bottom,rgba(6,11,22,.28) 0%,rgba(6,11,22,.52) 34%,rgba(6,10,18,.82) 70%,rgba(5,9,16,.96) 100%);z-index:0}",
+      // motes + grain drifting over the whole page, not just the hero
+      ".fo-lg-atmo{position:fixed;inset:0;z-index:0;pointer-events:none}",
+      ".fo-lg-atmo:before{content:'';position:absolute;inset:0;opacity:.42;background-image:radial-gradient(1.5px 1.5px at 18% 24%,rgba(255,240,205,.9),transparent),radial-gradient(1.2px 1.2px at 72% 16%,rgba(255,255,255,.7),transparent),radial-gradient(1.6px 1.6px at 86% 52%,rgba(255,236,190,.8),transparent),radial-gradient(1.1px 1.1px at 38% 70%,rgba(255,255,255,.55),transparent),radial-gradient(1.3px 1.3px at 56% 40%,rgba(255,246,214,.7),transparent),radial-gradient(1.2px 1.2px at 24% 86%,rgba(255,240,205,.6),transparent);animation:foLgMote 11s ease-in-out infinite alternate}",
+      ".fo-lg-atmo:after{content:'';position:absolute;inset:0;opacity:.05;mix-blend-mode:overlay;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E\")}",
       ".fo-lg-in{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:16px 20px 60px}",
       // ===== the cinematic, full-bleed league: a Shinkai establishing shot =====
       ".fo-lg-cinemode{overflow-x:hidden}",
@@ -4687,8 +4703,8 @@
       ".fo-lg-cinemode .fo-lg-status{margin-top:12px;text-shadow:0 1px 8px rgba(0,0,0,.6)}",
       // the content beneath the shot, held in a comfortable column over the ambience
       ".fo-lg-body{position:relative;z-index:1;max-width:1160px;margin:0 auto;padding:26px clamp(16px,3.5vw,30px) 64px}",
-      // lift the ambient blur so it reads as continuous atmosphere, not a flat wall
-      ".fo-lg-cinemode .fo-lg-bg{filter:blur(34px) brightness(.5) saturate(1.12)}",
+      // the hero already carries a crisp map; below it the same art stays as a soft, living wash
+      ".fo-lg-cinemode .fo-lg-bg{filter:blur(18px) brightness(.56) saturate(1.2)}",
       // top nav
       ".fo-lg-nav{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 16px}",
       "html body #page .fo-lg-nav a{font-family:Oswald,sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-size:11px;font-weight:600;color:#dbe4f2;text-decoration:none;background:color-mix(in srgb,var(--lac) 14%,rgba(255,255,255,.05));border:1px solid color-mix(in srgb,var(--lac) 40%,rgba(150,180,225,.18));border-radius:999px;padding:8px 16px;transition:.14s}",
@@ -4763,9 +4779,9 @@
       ".fo-lg-fx.mine{background:rgba(235,194,113,.08);border-radius:8px;padding:8px 10px;margin:2px -6px}",
       ".fo-lg-fx.mine .h,.fo-lg-fx.mine .a{color:#fff;font-weight:600}",
       ".fo-lg-cta{display:flex;flex-direction:column;gap:9px}",
-      "html body #page .fo-lg-btn{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;font-size:13px;color:#dbe4f2;background:rgba(255,255,255,.07);border:1px solid rgba(150,180,225,.2);border-radius:11px;padding:14px 20px;cursor:pointer;text-align:center;text-decoration:none;transition:.14s}",
-      "html body #page .fo-lg-btn:hover{background:rgba(255,255,255,.13);color:#fff}",
-      "html body #page .fo-lg-btn.gold{background:linear-gradient(180deg,#F0B94E,#C9A24B);color:#101b2d;border:0;box-shadow:0 8px 22px rgba(201,162,75,.28)}",
+      "html body #page .fo-lg-btn{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.5px;text-transform:uppercase;font-size:13px;color:#e7eefb !important;background:color-mix(in srgb,var(--lac) 16%,rgba(18,26,44,.6)) !important;border:1px solid color-mix(in srgb,var(--lac) 40%,rgba(150,180,225,.24)) !important;border-radius:12px;padding:15px 20px;cursor:pointer;text-align:center;text-decoration:none;backdrop-filter:blur(8px);transition:.14s}",
+      "html body #page .fo-lg-btn:hover{background:color-mix(in srgb,var(--lac) 30%,rgba(18,26,44,.6)) !important;color:#fff !important}",
+      "html body #page .fo-lg-btn.gold{background:linear-gradient(180deg,#F3C060,#C9A24B) !important;color:#141b0a !important;border:0 !important;box-shadow:0 10px 26px rgba(201,162,75,.34),inset 0 1px 0 rgba(255,255,255,.35)}",
       "html body #page .fo-lg-btn.gold:hover{filter:brightness(1.08);transform:translateY(-1px)}",
       ".fo-lg-done{display:flex;flex-direction:column;gap:10px}",
       ".fo-lg-champ{font-family:Oswald,sans-serif;font-size:16px;color:#f3e6c8;background:rgba(235,194,113,.12);border:1px solid rgba(235,194,113,.3);border-radius:12px;padding:14px 16px;text-align:center}",
