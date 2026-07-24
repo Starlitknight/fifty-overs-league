@@ -414,7 +414,6 @@
       // ------- mobile: a poster-like, single-hero reimagining -------
       "@media(max-width:600px){",
       "  #page .fo-sqx{background:#070c16}",
-      "  .fo-sqx-veil{background:linear-gradient(180deg,rgba(7,12,22,.72) 0%,rgba(7,11,20,.34) 26%,rgba(7,11,20,.30) 58%,rgba(6,10,18,.82)) !important}",
       "  .fo-sqx-in{padding:8px 10px 12px}",
       "  .fo-sqx-hd{flex-direction:column;align-items:center;gap:10px;margin:2px 0 6px;text-align:center}",
       "  .fo-sqx-title h1{font-size:34px;letter-spacing:2px;text-shadow:0 2px 18px rgba(0,0,0,.6)}",
@@ -431,8 +430,9 @@
       "  .fo-sqx-foot{justify-content:center;border-top:0;padding:6px 4px 2px}",
       "}",
       // ===== dressing-room stage + selected-player inspector / drawer =====
-      ".fo-sqx-room .fo-sqx-bg{filter:brightness(.6) saturate(1.04) contrast(1.05);transform:scale(1.04);background-position:50% 42%}",
-      ".fo-sqx-room .fo-sqx-veil{background:linear-gradient(90deg,rgba(3,9,18,.8) 0%,rgba(3,9,18,.16) 43%,rgba(3,9,18,.18) 68%,rgba(3,9,18,.84) 100%),linear-gradient(180deg,rgba(3,9,18,.2) 0%,rgba(3,9,18,.36) 60%,rgba(3,9,18,.74) 100%)}",
+      ".fo-sqx-room .fo-sqx-bg{filter:brightness(.5) saturate(.9) contrast(1.02);transform:scale(1.04);background-position:50% 42%}",
+      // one veil at every width: a flat-floored vertical wash (never fully clear, so the photo's hot windows can't punch through) plus an even radial vignette that darkens all four corners equally instead of a left-right band
+      ".fo-sqx-room .fo-sqx-veil{background:linear-gradient(180deg,rgba(4,11,22,.6) 0%,rgba(4,10,20,.5) 34%,rgba(3,9,18,.64) 72%,rgba(2,7,15,.9) 100%),radial-gradient(140% 120% at 50% 32%,rgba(3,9,18,0) 0%,rgba(3,9,18,.16) 60%,rgba(3,9,18,.42) 100%)}",
       "@media(max-width:600px){.fo-sqx-room .fo-sqx-bg{background-position:50% 32%}}",
       ".fo-sqx-stage{display:block}",
       "@media(min-width:1024px){.fo-sqx-stage{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px;align-items:start}.fo-sqx-deckwrap{min-width:0}}",
