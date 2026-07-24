@@ -4000,6 +4000,12 @@
       issue: "Vol. 01 &middot; Issue 19", byline: "Eleanor March",
       head: "The man who turned Australia's aggression into a system.",
       standfirst: "Hard wickets and fast outfields taught him that hesitation costs matches. He made his name as an uncompromising opener who took control early and set the tempo, and he wants every Australian side to play the same way: direct, assertive, always forcing the opposition to react."
+    },
+    rsa: {
+      art: "lore/journal-rsa.webp", artM: "lore/journal-rsa-m.webp",
+      issue: "Vol. 01 &middot; Issue 19", byline: "Eleanor March",
+      head: "South Africa's pace-first architect.",
+      standfirst: "He came through hard surfaces and fast conditions where hesitation gets punished and intent matters. He built his name hitting the deck hard and refusing to let batters settle, and he now asks every South African side for the same edge: attack with the ball, stay athletic, make every over feel uncomfortable."
     }
   };
   function foLoreCast() {
@@ -4021,65 +4027,94 @@
       if ((location.hash || "").split("?")[0] !== "#/lore") return;
       var page = document.getElementById("page"); if (!page) return;
       var cast = foLoreCast();
-      var sig = "lore|" + cast.length;
+      var mob = false; try { mob = window.innerWidth < 760; } catch (eW) {}
+      var sig = "lore|" + cast.length + "|" + (mob ? "m" : "d");
       if (page.__foLoreSig === sig && page.querySelector(".fo-lore")) return;
       page.__foLoreSig = sig;
-      var mob = false; try { mob = window.innerWidth < 760; } catch (eW) {}
       var feat = cast.filter(function (c) { return FO_LORE_FEATURE[c.id]; });
       var rest = cast.filter(function (c) { return !FO_LORE_FEATURE[c.id] && !c.final; });
-      var final = cast.filter(function (c) { return c.final; });
+      var fin = cast.filter(function (c) { return c.final; })[0] || null;
+      var cutOf = function (id) { return FO_ART + "circuit/boss-" + id + "-cutout.webp"; };
+      var artOf = function (id) { return FO_ART + "circuit/boss-" + id + ".webp"; };
 
-      var featHTML = feat.map(function (c) {
+      // the cover: a collage of the faces the league is made of
+      var collage = ["eng", "aus", "rsa", "sub", "win"].filter(function (id) {
+        return cast.some(function (c) { return c.id === id; });
+      }).slice(0, 5).map(function (id, i) {
+        return "<img class='fo-lx-face f" + i + "' src='" + cutOf(id) + "' alt='' aria-hidden='true' loading='eager' decoding='async' onerror=\"this.onerror=null;this.src='" + artOf(id) + "'\">";
+      }).join("");
+
+      var featHTML = feat.map(function (c, i) {
         var F = FO_LORE_FEATURE[c.id];
         var src = FO_ART + (mob && F.artM ? F.artM : F.art);
-        return "<article class='fo-lore-feature' style='--lac:" + c.ac + "'>" +
-          "<div class='fo-lore-fmeta'>" +
-          "<div class='fo-lore-kicker'>The Feature &middot; " + E(c.nm) + "</div>" +
-          "<h2 class='fo-lore-fname'>" + E(c.leader) + "</h2>" +
-          "<p class='fo-lore-fhead'>" + F.head + "</p>" +
-          "<p class='fo-lore-fstand'>" + F.standfirst + "</p>" +
-          "<div class='fo-lore-fby'>" + F.issue + " &middot; by " + E(F.byline) + "</div>" +
+        return "<article class='fo-lx-feat" + (i % 2 ? " alt" : "") + " reveal' style='--lac:" + c.ac + "'>" +
+          "<div class='fo-lx-glow' aria-hidden='true'></div>" +
+          "<div class='fo-lx-ftext'>" +
+          "<div class='fo-lx-num' aria-hidden='true'>" + (i + 1 < 10 ? "0" : "") + (i + 1) + "</div>" +
+          "<div class='fo-lx-kick'>" + E(c.nm) + " &middot; The Feature</div>" +
+          "<h3 class='fo-lx-fname'>" + E(c.leader) + "</h3>" +
+          "<p class='fo-lx-fhead'>" + F.head + "</p>" +
+          "<p class='fo-lx-fstand'>" + F.standfirst + "</p>" +
+          (c.taunt ? "<blockquote class='fo-lx-quote'>&ldquo;" + E(c.taunt) + "&rdquo;</blockquote>" : "") +
+          "<div class='fo-lx-by'>" + F.issue + " &middot; words by " + E(F.byline) + "</div>" +
+          "<a class='fo-lx-go' href='#/boss?r=" + encodeURIComponent(c.id) + "'>The full dossier &#8250;</a>" +
           "</div>" +
-          "<a class='fo-lore-fart' href='" + src + "' data-lore-open='" + src + "' aria-label='Read the full feature on " + E(c.leader) + "'>" +
+          "<a class='fo-lx-plate' href='" + src + "' data-lore-open='" + src + "' aria-label='Read the full page on " + E(c.leader) + "'>" +
           "<img src='" + src + "' alt='Fifty Overs Journal feature on " + E(c.leader) + "' loading='lazy' decoding='async'>" +
-          "<span class='fo-lore-zoom'>Read the full page &#9654;</span></a>" +
+          "<span class='fo-lx-read'>Read the full page</span></a>" +
           "</article>";
       }).join("");
 
-      var card = function (c) {
-        var cut = FO_ART + "circuit/boss-" + c.id + "-cutout.webp";
-        var art = FO_ART + "circuit/boss-" + c.id + ".webp";
-        return "<a class='fo-lore-card' href='#/boss?r=" + encodeURIComponent(c.id) + "' style='--lac:" + c.ac + "'>" +
-          "<span class='fo-lore-pic'><img src='" + cut + "' alt='" + E(c.leader) + "' loading='lazy' decoding='async' onerror=\"this.onerror=null;this.src='" + art + "'\"></span>" +
-          "<span class='fo-lore-body'>" +
-          "<span class='fo-lore-nat'>" + E(c.nm) + (c.type ? " &middot; " + E(c.type) : "") + "</span>" +
-          "<b class='fo-lore-name'>" + E(c.leader) + "</b>" +
-          "<i class='fo-lore-club'>" + E(c.club) + (c.city ? " &middot; " + E(c.city) : "") + "</i>" +
-          (c.note ? "<span class='fo-lore-note'>" + E(c.note.charAt(0).toUpperCase() + c.note.slice(1)) + ".</span>" : "") +
-          (c.nug ? "<span class='fo-lore-nug'>" + E(c.nug) + "</span>" : "") +
-          (c.taunt ? "<q class='fo-lore-taunt'>" + E(c.taunt) + "</q>" : "") +
+      var poster = function (c) {
+        return "<a class='fo-lx-card reveal' href='#/boss?r=" + encodeURIComponent(c.id) + "' style='--lac:" + c.ac + "'>" +
+          "<span class='fo-lx-cpic'><img src='" + cutOf(c.id) + "' alt='" + E(c.leader) + "' loading='lazy' decoding='async' onerror=\"this.onerror=null;this.src='" + artOf(c.id) + "'\"></span>" +
+          "<span class='fo-lx-cveil' aria-hidden='true'></span>" +
+          "<span class='fo-lx-cmeta'>" +
+          "<span class='fo-lx-cnat'>" + E(c.nm) + "</span>" +
+          "<b class='fo-lx-cname'>" + E(c.leader) + "</b>" +
+          "<i class='fo-lx-cclub'>" + E(c.club) + "</i>" +
+          (c.note ? "<span class='fo-lx-cnote'>" + E(c.note.charAt(0).toUpperCase() + c.note.slice(1)) + ".</span>" : "") +
+          (c.taunt ? "<span class='fo-lx-ctaunt'>&ldquo;" + E(c.taunt) + "&rdquo;</span>" : "") +
           "</span></a>";
       };
 
       page.innerHTML =
-        "<div class='fo-lore'>" +
-        "<div class='fo-lore-bg' aria-hidden='true'></div>" +
-        "<header class='fo-lore-mast'>" +
-        "<div class='fo-lore-eyebrow'>The Fifty Overs Journal</div>" +
-        "<h1 class='fo-lore-title'>The Book of the League</h1>" +
-        "<p class='fo-lore-intro'>Nineteen nations, nineteen league bosses, and one old man at Marylebone who keeps the whole thing honest. This is who they are, where they learned it, and what they will do to you if you turn up unprepared.</p>" +
+        "<div class='fo-lore fo-lx'>" +
+        "<div class='fo-lx-bg' aria-hidden='true'></div><div class='fo-lx-grain' aria-hidden='true'></div>" +
+        // ---- the cover ----
+        "<header class='fo-lx-cover'>" +
+        "<div class='fo-lx-collage' aria-hidden='true'>" + collage + "</div>" +
+        "<div class='fo-lx-covertext'>" +
+        "<div class='fo-lx-mast'>The Fifty Overs Journal</div>" +
+        "<h1 class='fo-lx-title'><span>The Book</span><span>of the</span><em>League</em></h1>" +
+        "<p class='fo-lx-lede'>Nineteen nations. Nineteen league bosses. One old man at Marylebone who keeps the whole thing honest. This is who they are, where they learned it, and exactly what they will do to you if you turn up unprepared.</p>" +
+        "<div class='fo-lx-stats'>" +
+        "<div><b>19</b><i>Nations</i></div><div><b>19</b><i>Bosses</i></div><div><b>" + feat.length + "</b><i>Features</i></div><div><b>1</b><i>World Final</i></div>" +
+        "</div></div>" +
+        "<div class='fo-lx-scroll' aria-hidden='true'><span></span>Read on</div>" +
         "</header>" +
-        (featHTML ? "<section class='fo-lore-sec'>" + featHTML + "</section>" : "") +
-        "<section class='fo-lore-sec'><h2 class='fo-lore-h2'>The League Bosses</h2>" +
-        "<p class='fo-lore-sub'>One per nation. Beat the ladder and their door opens.</p>" +
-        "<div class='fo-lore-grid'>" + rest.map(card).join("") + "</div></section>" +
-        (final.length ? "<section class='fo-lore-sec'><h2 class='fo-lore-h2'>The World Final</h2>" +
-          "<p class='fo-lore-sub'>Nineteen doors, then his.</p>" +
-          "<div class='fo-lore-grid one'>" + final.map(card).join("") + "</div></section>" : "") +
-        "<div class='fo-lore-foot'><a class='fo-lore-back' href='#/world'>&#8592; World map</a>" +
-        "<a class='fo-lore-back' href='#/league'>Your league</a></div>" +
+        // ---- the features ----
+        (featHTML ? "<section class='fo-lx-sec'>" +
+          "<div class='fo-lx-rule reveal'><span>Published Features</span></div>" + featHTML + "</section>" : "") +
+        // ---- the cast ----
+        "<section class='fo-lx-sec'>" +
+        "<div class='fo-lx-rule reveal'><span>The League Bosses</span></div>" +
+        "<p class='fo-lx-secsub reveal'>One to a nation. Beat the ladder and their door opens.</p>" +
+        "<div class='fo-lx-grid'>" + rest.map(poster).join("") + "</div></section>" +
+        // ---- the final ----
+        (fin ? "<section class='fo-lx-final reveal' style='--lac:" + fin.ac + "'>" +
+          "<img class='fo-lx-finart' src='" + cutOf(fin.id) + "' alt='' aria-hidden='true' loading='lazy' onerror=\"this.onerror=null;this.src='" + artOf(fin.id) + "'\">" +
+          "<div class='fo-lx-fintext'>" +
+          "<div class='fo-lx-kick'>The World Final</div>" +
+          "<h3 class='fo-lx-fname'>" + E(fin.leader) + "</h3>" +
+          "<p class='fo-lx-fstand'>" + E(fin.nug || fin.note) + "</p>" +
+          (fin.taunt ? "<blockquote class='fo-lx-quote'>&ldquo;" + E(fin.taunt) + "&rdquo;</blockquote>" : "") +
+          "<a class='fo-lx-go' href='#/boss?r=" + encodeURIComponent(fin.id) + "'>His dossier &#8250;</a>" +
+          "</div></section>" : "") +
+        "<footer class='fo-lx-foot'><a class='fo-lore-back' href='#/world'>&#8592; World map</a><a class='fo-lore-back' href='#/league'>Your league</a></footer>" +
         "</div>";
-      // the feature opens as a full page you can actually read
+
+      // the plate opens as a page you can actually read
       page.querySelectorAll("[data-lore-open]").forEach(function (a) {
         a.addEventListener("click", function (e) {
           e.preventDefault();
@@ -4092,6 +4127,28 @@
           document.body.appendChild(ov);
         });
       });
+      // reveal on scroll, and a slow parallax drift on the cover faces
+      try {
+        var slow = false;
+        try { slow = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (eM) {}
+        var rv = page.querySelectorAll(".reveal");
+        if (slow || !("IntersectionObserver" in window)) {
+          rv.forEach(function (el) { el.classList.add("on"); });
+        } else {
+          var io = new IntersectionObserver(function (es) {
+            es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add("on"); io.unobserve(en.target); } });
+          }, { rootMargin: "0px 0px -8% 0px", threshold: 0.06 });
+          rv.forEach(function (el, i) { el.style.transitionDelay = (Math.min(i, 6) * 55) + "ms"; io.observe(el); });
+          var faces = page.querySelectorAll(".fo-lx-face");
+          if (faces.length) {
+            var tick = function () {
+              var y = window.scrollY || 0;
+              faces.forEach(function (f, i) { f.style.transform = "translate3d(0," + (y * (0.06 + i * 0.022)).toFixed(1) + "px,0)"; });
+            };
+            window.addEventListener("scroll", tick, { passive: true }); tick();
+          }
+        }
+      } catch (eR) {}
       try { document.body.classList.remove("fo-ov-on"); } catch (eB) {}
     } catch (e) { try { console.warn("foRenderLore", e); } catch (e2) {} }
   }
@@ -4101,52 +4158,99 @@
   try {
     var loCss = document.createElement("style"); loCss.id = "fo-lore-css";
     loCss.textContent = [
-      // the Journal reads on its own dark press-room ground, not the cream shell
-      ".fo-lore{--gold:#E6B15E;position:relative;max-width:1180px;margin:0 auto;padding:26px 18px 70px;color:#e9eefa}",
-      ".fo-lore-bg{position:fixed;inset:0;z-index:0;background:radial-gradient(1100px 640px at 22% -12%,#17253f 0%,#0b1424 58%,#070d18 100%)}",
-      ".fo-lore>*:not(.fo-lore-bg){position:relative;z-index:1}",
-      ".fo-lore-mast{text-align:center;padding:14px 0 8px;border-bottom:1px solid rgba(150,180,225,.16)}",
-      ".fo-lore-eyebrow{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:5px;font-size:11px;font-weight:600;color:var(--gold)}",
-      ".fo-lore-title{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;font-size:clamp(34px,6vw,64px);line-height:.94;margin:8px 0 10px;color:#f6f1e6}",
-      ".fo-lore-intro{max-width:680px;margin:0 auto 16px;font-size:14.5px;line-height:1.66;color:#b9c6dd}",
-      ".fo-lore-sec{margin-top:34px}",
-      ".fo-lore-h2{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:2.4px;font-size:15px;color:#dbe4f2;margin:0 0 4px;padding-bottom:8px;border-bottom:1px solid rgba(150,180,225,.14)}",
-      ".fo-lore-sub{font-size:12.5px;color:#8ea3c4;margin:8px 0 16px;font-style:italic}",
-      // the published feature
-      ".fo-lore-feature{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:22px;align-items:center;background:linear-gradient(180deg,rgba(16,26,44,.82),rgba(10,17,30,.9));border:1px solid rgba(235,194,113,.28);border-radius:16px;padding:20px;box-shadow:0 18px 44px rgba(0,0,0,.4)}",
-      ".fo-lore-feature+.fo-lore-feature{margin-top:18px}",
-      ".fo-lore-kicker{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:3px;font-size:10.5px;font-weight:600;color:var(--gold)}",
-      ".fo-lore-fname{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:clamp(26px,3.4vw,40px);line-height:1;margin:7px 0 9px;color:#f6f1e6}",
-      ".fo-lore-fhead{font-size:15px;line-height:1.5;color:#e2d9c4;font-style:italic;margin:0 0 10px}",
-      ".fo-lore-fstand{font-size:13.5px;line-height:1.68;color:#aebbd2;margin:0 0 12px}",
-      ".fo-lore-fby{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2px;font-size:10px;color:#8ea3c4}",
-      "html body #page a.fo-lore-fart{position:relative;display:block;border-radius:12px;overflow:hidden;border:1px solid rgba(150,180,225,.2);text-decoration:none !important;line-height:0}",
-      ".fo-lore-fart img{width:100%;height:auto;display:block;transition:transform .5s ease}",
-      ".fo-lore-fart:hover img{transform:scale(1.02)}",
-      ".fo-lore-zoom{position:absolute;left:12px;bottom:12px;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.8px;font-size:10.5px;font-weight:600;color:#101B2D;background:linear-gradient(180deg,#F0B94E,#C9A24B);border-radius:999px;padding:8px 15px;line-height:1;box-shadow:0 4px 12px rgba(0,0,0,.45)}",
-      // the cast
-      ".fo-lore-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}",
-      ".fo-lore-grid.one{grid-template-columns:minmax(0,520px)}",
-      "html body #page a.fo-lore-card{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:start;background:rgba(13,21,37,.72);border:1px solid rgba(150,180,225,.14);border-left:3px solid var(--lac);border-radius:13px;padding:12px;text-decoration:none !important;color:#e9eefa !important;transition:border-color .16s,transform .16s,background .16s}",
-      "html body #page a.fo-lore-card:hover{background:rgba(20,31,52,.9);border-color:rgba(235,194,113,.5);transform:translateY(-2px)}",
-      ".fo-lore-pic{display:block;width:96px;height:112px;border-radius:9px;overflow:hidden;background:radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--lac) 42%,#0b1424),#0b1424)}",
-      ".fo-lore-pic img{width:100%;height:100%;object-fit:cover;object-position:center 12%}",
-      ".fo-lore-body{display:block;min-width:0}",
-      ".fo-lore-nat{display:block;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2.2px;font-size:9.5px;font-weight:600;color:var(--gold)}",
-      ".fo-lore-name{display:block;font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.6px;font-size:19px;line-height:1.1;margin:3px 0 2px;color:#f6f1e6}",
-      ".fo-lore-club{display:block;font-style:normal;font-size:11.5px;color:#8ea3c4;margin-bottom:7px}",
-      ".fo-lore-note{display:block;font-size:12.5px;line-height:1.5;color:#cfd8e8}",
-      ".fo-lore-nug{display:block;font-size:12px;line-height:1.58;color:#9fb0cb;margin-top:6px}",
-      ".fo-lore-taunt{display:block;font-size:12.5px;line-height:1.5;color:#e2d9c4;font-style:italic;margin-top:8px;padding-left:9px;border-left:2px solid rgba(235,194,113,.45)}",
-      ".fo-lore-foot{display:flex;gap:10px;justify-content:center;margin-top:34px}",
-      "html body #page a.fo-lore-back{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2px;font-size:10.5px;font-weight:600;color:#F5EFDC !important;text-decoration:none !important;background:rgba(12,20,36,.6);border:1.5px solid rgba(235,194,113,.42);border-radius:999px;padding:10px 17px}",
+      // ---------- ground: an ink-and-gold press room, not a flat panel ----------
+      ".fo-lx{--gold:#E6B15E;--paper:#F4EFE4;--ink:#070C16;position:relative;width:100vw;margin-left:calc(50% - 50vw);color:#e9eefa;overflow-x:clip;font-synthesis-weight:none}",
+      ".fo-lx-bg{position:fixed;inset:0;z-index:0;background:radial-gradient(120% 80% at 78% -10%,#1d3050 0%,#0e1a2e 42%,#070c16 78%),linear-gradient(180deg,#070c16,#050912)}",
+      ".fo-lx-grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.16;mix-blend-mode:overlay;background-image:url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='.55'/></svg>\")}",
+      ".fo-lx>*:not(.fo-lx-bg):not(.fo-lx-grain){position:relative;z-index:2}",
+      ".fo-lx .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}",
+      ".fo-lx .reveal.on{opacity:1;transform:none}",
+      "@media(prefers-reduced-motion:reduce){.fo-lx .reveal{opacity:1;transform:none;transition:none}}",
+      // ---------- the cover ----------
+      ".fo-lx-cover{position:relative;min-height:min(100vh,860px);display:grid;grid-template-columns:minmax(0,1fr);align-items:center;padding:clamp(70px,11vh,140px) clamp(20px,5vw,84px) clamp(50px,8vh,90px);overflow:hidden}",
+      ".fo-lx-collage{position:absolute;inset:0;pointer-events:none}",
+      ".fo-lx-face{position:absolute;bottom:-4%;height:clamp(300px,72vh,720px);width:auto;object-fit:contain;filter:saturate(.72) contrast(1.03);will-change:transform}",
+      ".fo-lx-face.f0{right:2%;height:clamp(330px,80vh,780px);opacity:.96;z-index:5;filter:drop-shadow(0 30px 60px rgba(0,0,0,.6))}",
+      ".fo-lx-face.f1{right:20%;opacity:.5;z-index:4;filter:saturate(.5) brightness(.8)}",
+      ".fo-lx-face.f2{right:34%;opacity:.3;z-index:3;filter:saturate(.35) brightness(.62)}",
+      ".fo-lx-face.f3{right:47%;opacity:.17;z-index:2;filter:saturate(.2) brightness(.5)}",
+      ".fo-lx-face.f4{right:58%;opacity:.1;z-index:1;filter:saturate(.15) brightness(.42)}",
+      ".fo-lx-cover:after{content:'';position:absolute;inset:0;z-index:6;pointer-events:none;background:linear-gradient(90deg,#070c16 6%,rgba(7,12,22,.86) 34%,rgba(7,12,22,.1) 62%,transparent 78%),linear-gradient(0deg,#070c16 1%,transparent 26%)}",
+      ".fo-lx-covertext{position:relative;z-index:7;max-width:min(660px,64vw)}",
+      ".fo-lx-mast{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.42em;font-size:clamp(9.5px,1.05vw,12px);font-weight:600;color:var(--gold);padding-bottom:14px;border-bottom:1px solid rgba(230,177,94,.32);display:inline-block}",
+      ".fo-lx-title{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;line-height:.82;letter-spacing:-.01em;margin:22px 0 20px;font-size:clamp(52px,8.6vw,132px);color:var(--paper);text-shadow:0 8px 40px rgba(0,0,0,.55)}",
+      ".fo-lx-title span,.fo-lx-title em{display:block;font-style:normal}",
+      ".fo-lx-title span:nth-of-type(2){padding-left:.09em;color:#b9c6dd;font-weight:400}",
+      ".fo-lx-title em{color:var(--gold);text-shadow:0 8px 46px rgba(230,177,94,.28)}",
+      ".fo-lx-lede{font-family:Georgia,'Times New Roman',serif;font-size:clamp(14.5px,1.35vw,18px);line-height:1.72;color:#c2cfe4;max-width:56ch;margin:0 0 26px}",
+      ".fo-lx-stats{display:flex;flex-wrap:wrap;gap:clamp(16px,3vw,40px)}",
+      ".fo-lx-stats div{display:flex;flex-direction:column;gap:2px}",
+      ".fo-lx-stats b{font-family:Oswald,sans-serif;font-weight:700;font-size:clamp(26px,3vw,38px);line-height:1;color:var(--paper)}",
+      ".fo-lx-stats i{font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.2em;font-size:9.5px;color:#8ea3c4}",
+      ".fo-lx-scroll{position:absolute;left:clamp(20px,5vw,84px);bottom:26px;z-index:7;display:flex;align-items:center;gap:9px;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.24em;font-size:9.5px;color:#8ea3c4}",
+      ".fo-lx-scroll span{width:34px;height:1px;background:linear-gradient(90deg,var(--gold),transparent);animation:foLxPulse 2.4s ease-in-out infinite}",
+      "@keyframes foLxPulse{0%,100%{opacity:.3;transform:scaleX(.6);transform-origin:left}50%{opacity:1;transform:scaleX(1);transform-origin:left}}",
+      // ---------- section rules ----------
+      ".fo-lx-sec{max-width:1240px;margin:0 auto;padding:clamp(40px,7vh,90px) clamp(18px,4vw,44px) 0}",
+      ".fo-lx-rule{display:flex;align-items:center;gap:16px;margin-bottom:10px}",
+      ".fo-lx-rule:before,.fo-lx-rule:after{content:'';height:1px;background:linear-gradient(90deg,transparent,rgba(230,177,94,.4));flex:0 0 46px}",
+      ".fo-lx-rule:after{flex:1;background:linear-gradient(90deg,rgba(230,177,94,.4),transparent)}",
+      ".fo-lx-rule span{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.34em;font-size:11px;font-weight:600;color:var(--gold);white-space:nowrap}",
+      ".fo-lx-secsub{font-family:Georgia,serif;font-style:italic;color:#8ea3c4;font-size:14px;margin:0 0 26px;text-align:center}",
+      // ---------- feature spreads ----------
+      ".fo-lx-feat{position:relative;display:grid;grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr);gap:clamp(22px,4vw,58px);align-items:center;padding:clamp(30px,5vw,60px) 0;border-bottom:1px solid rgba(150,180,225,.1)}",
+      ".fo-lx-feat.alt{grid-template-columns:minmax(0,1.14fr) minmax(0,.86fr)}",
+      ".fo-lx-feat.alt .fo-lx-ftext{order:2}",
+      ".fo-lx-glow{position:absolute;inset:-6% -14%;z-index:-1;background:radial-gradient(52% 62% at 76% 50%,color-mix(in srgb,var(--lac) 26%,transparent),transparent 72%);filter:blur(18px);pointer-events:none}",
+      ".fo-lx-feat.alt .fo-lx-glow{background:radial-gradient(52% 62% at 24% 50%,color-mix(in srgb,var(--lac) 26%,transparent),transparent 72%)}",
+      ".fo-lx-num{font-family:Oswald,sans-serif;font-weight:700;font-size:clamp(46px,6vw,86px);line-height:.8;color:transparent;-webkit-text-stroke:1px rgba(230,177,94,.42);margin-bottom:6px}",
+      ".fo-lx-kick{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.28em;font-size:10px;font-weight:600;color:var(--gold)}",
+      ".fo-lx-fname{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:-.005em;line-height:.92;font-size:clamp(32px,4.4vw,60px);margin:8px 0 12px;color:var(--paper)}",
+      ".fo-lx-fhead{font-family:Georgia,serif;font-style:italic;font-size:clamp(15px,1.5vw,20px);line-height:1.44;color:#e6dcc6;margin:0 0 14px}",
+      ".fo-lx-fstand{font-family:Georgia,serif;font-size:14.5px;line-height:1.78;color:#aebbd2;margin:0 0 18px;max-width:52ch}",
+      ".fo-lx-quote{position:relative;margin:0 0 18px;padding-left:20px;border-left:2px solid var(--lac);font-family:Oswald,sans-serif;font-weight:500;text-transform:uppercase;letter-spacing:.01em;line-height:1.24;font-size:clamp(15px,1.7vw,21px);color:#f2ead9}",
+      ".fo-lx-by{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:9.5px;color:#7d8fad;margin-bottom:16px}",
+      "html body #page a.fo-lx-go{display:inline-block;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:10.5px;font-weight:600;color:#0d1526 !important;text-decoration:none !important;background:linear-gradient(180deg,#F0B94E,#C9A24B);border-radius:999px;padding:11px 22px;box-shadow:0 6px 20px rgba(230,177,94,.22);transition:transform .16s,box-shadow .16s}",
+      "html body #page a.fo-lx-go:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(230,177,94,.34)}",
+      // the plate: a real sheet of newsprint on the desk
+      "html body #page a.fo-lx-plate{position:relative;display:block;line-height:0;text-decoration:none !important;border-radius:6px;overflow:hidden;transform:rotate(-1.1deg);transition:transform .45s cubic-bezier(.2,.7,.2,1),box-shadow .45s;box-shadow:0 26px 60px rgba(0,0,0,.62),0 2px 0 rgba(255,255,255,.09) inset;outline:1px solid rgba(244,239,228,.14)}",
+      ".fo-lx-feat.alt .fo-lx-plate{transform:rotate(1.1deg)}",
+      "html body #page a.fo-lx-plate:hover{transform:rotate(0deg) scale(1.014);box-shadow:0 34px 74px rgba(0,0,0,.7)}",
+      ".fo-lx-plate img{width:100%;height:auto;display:block}",
+      ".fo-lx-read{position:absolute;left:0;right:0;bottom:0;padding:34px 16px 13px;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.22em;font-size:10px;font-weight:600;color:var(--paper);background:linear-gradient(0deg,rgba(6,11,20,.92),transparent);opacity:0;transition:opacity .3s}",
+      "html body #page a.fo-lx-plate:hover .fo-lx-read{opacity:1}",
+      // ---------- the cast: a wall of posters ----------
+      ".fo-lx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:14px;padding-bottom:10px}",
+      "html body #page a.fo-lx-card{position:relative;display:block;aspect-ratio:3/4.15;border-radius:14px;overflow:hidden;text-decoration:none !important;color:#eef3fb !important;background:linear-gradient(165deg,color-mix(in srgb,var(--lac) 34%,#0c1626),#080e1a 68%);outline:1px solid rgba(150,180,225,.13);transition:transform .4s cubic-bezier(.2,.7,.2,1),outline-color .3s,box-shadow .4s}",
+      "html body #page a.fo-lx-card:hover{transform:translateY(-6px);outline-color:color-mix(in srgb,var(--lac) 70%,transparent);box-shadow:0 22px 44px rgba(0,0,0,.5)}",
+      ".fo-lx-cpic{position:absolute;inset:0;display:block;overflow:hidden}",
+      ".fo-lx-cpic img{width:100%;height:100%;object-fit:cover;object-position:center 8%;transition:transform .6s cubic-bezier(.2,.7,.2,1)}",
+      "html body #page a.fo-lx-card:hover .fo-lx-cpic img{transform:scale(1.055)}",
+      ".fo-lx-cveil{position:absolute;inset:0;background:linear-gradient(0deg,#070d18 12%,rgba(7,13,24,.72) 38%,rgba(7,13,24,.08) 66%,transparent)}",
+      ".fo-lx-cmeta{position:absolute;left:0;right:0;bottom:0;display:block;padding:14px 14px 15px}",
+      ".fo-lx-cnat{display:block;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.26em;font-size:9px;font-weight:600;color:var(--lac);filter:brightness(1.5)}",
+      ".fo-lx-cname{display:block;font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:19px;line-height:1.06;margin:4px 0 2px;color:var(--paper)}",
+      ".fo-lx-cclub{display:block;font-style:normal;font-family:Oswald,sans-serif;letter-spacing:.1em;font-size:10px;color:#93a5c2;text-transform:uppercase}",
+      ".fo-lx-cnote{display:block;font-family:Georgia,serif;font-size:12.5px;line-height:1.5;color:#cbd6e8;margin-top:8px;max-height:0;opacity:0;overflow:hidden;transition:max-height .42s ease,opacity .32s ease,margin .42s ease}",
+      ".fo-lx-ctaunt{display:block;font-family:Georgia,serif;font-style:italic;font-size:12px;line-height:1.5;color:#e6dcc6;margin-top:0;padding-left:9px;border-left:2px solid var(--lac);max-height:0;opacity:0;overflow:hidden;transition:max-height .42s ease,opacity .32s ease,margin .42s ease}",
+      "html body #page a.fo-lx-card:hover .fo-lx-cnote{max-height:120px;opacity:1}",
+      "html body #page a.fo-lx-card:hover .fo-lx-ctaunt{max-height:120px;opacity:1;margin-top:9px}",
+      "@media(hover:none){.fo-lx-cnote{max-height:120px;opacity:1}}",
+      // ---------- the world final ----------
+      ".fo-lx-final{position:relative;max-width:1240px;margin:clamp(46px,7vh,90px) auto 0;padding:clamp(30px,5vw,58px) clamp(18px,4vw,44px);display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:clamp(20px,4vw,52px);align-items:center;border-top:1px solid rgba(230,177,94,.28)}",
+      ".fo-lx-finart{width:100%;height:auto;filter:drop-shadow(0 26px 50px rgba(0,0,0,.6))}",
+      ".fo-lx-fintext{max-width:60ch}",
+      ".fo-lx-foot{display:flex;gap:10px;justify-content:center;padding:clamp(34px,6vh,64px) 18px clamp(50px,8vh,86px)}",
+      "html body #page a.fo-lore-back{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:10.5px;font-weight:600;color:#F5EFDC !important;text-decoration:none !important;background:rgba(12,20,36,.6);border:1.5px solid rgba(235,194,113,.42);border-radius:999px;padding:11px 19px;transition:.16s}",
       "html body #page a.fo-lore-back:hover{color:#F3D37A !important;border-color:var(--gold)}",
-      // the full page, opened
-      ".fo-lore-lb{position:fixed;inset:0;z-index:9000;background:rgba(4,8,16,.94);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto;cursor:zoom-out}",
-      ".fo-lore-lb img{max-width:100%;max-height:100%;width:auto;height:auto;border-radius:8px;box-shadow:0 24px 60px rgba(0,0,0,.7)}",
-      "html body .fo-lore-lb .fo-lore-x{position:fixed;top:14px;right:16px;font-size:26px;line-height:1;color:#F5EFDC !important;background:rgba(12,20,36,.8) !important;border:1.5px solid rgba(235,194,113,.5) !important;border-radius:999px;width:42px;height:42px;cursor:pointer}",
-      "@media(max-width:860px){.fo-lore-feature{grid-template-columns:1fr;gap:16px}.fo-lore-feature .fo-lore-fart{order:-1}}",
-      "@media(max-width:520px){.fo-lore{padding:18px 12px 60px}html body #page a.fo-lore-card{grid-template-columns:74px minmax(0,1fr)}.fo-lore-pic{width:74px;height:88px}}"
+      // ---------- the plate, opened ----------
+      ".fo-lore-lb{position:fixed;inset:0;z-index:9000;background:rgba(4,8,16,.95);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto;cursor:zoom-out;animation:foLxIn .22s ease}",
+      "@keyframes foLxIn{from{opacity:0}to{opacity:1}}",
+      ".fo-lore-lb img{max-width:100%;max-height:100%;width:auto;height:auto;border-radius:6px;box-shadow:0 30px 80px rgba(0,0,0,.8)}",
+      "html body .fo-lore-lb .fo-lore-x{position:fixed;top:14px;right:16px;font-size:26px;line-height:1;color:#F5EFDC !important;background:rgba(12,20,36,.85) !important;border:1.5px solid rgba(235,194,113,.5) !important;border-radius:999px;width:42px;height:42px;cursor:pointer}",
+      // ---------- narrower ----------
+      "@media(max-width:1000px){.fo-lx-feat,.fo-lx-feat.alt{grid-template-columns:1fr;gap:22px}.fo-lx-feat .fo-lx-ftext,.fo-lx-feat.alt .fo-lx-ftext{order:2}.fo-lx-plate,.fo-lx-feat.alt .fo-lx-plate{transform:none}.fo-lx-final{grid-template-columns:1fr}.fo-lx-finart{max-width:260px;margin:0 auto}}",
+      "@media(max-width:760px){.fo-lx-covertext{max-width:none}.fo-lx-face.f0{right:-16%;height:52vh;opacity:.42}.fo-lx-face.f1,.fo-lx-face.f2,.fo-lx-face.f3,.fo-lx-face.f4{display:none}.fo-lx-cover:after{background:linear-gradient(180deg,rgba(7,12,22,.5),rgba(7,12,22,.86) 46%,#070c16 92%)}.fo-lx-cover{min-height:auto;padding-top:clamp(48px,9vh,90px)}.fo-lx-grid{grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:10px}.fo-lx-cnote{display:none}}"
     ].join("");
     document.head.appendChild(loCss);
   } catch (eLc) {}
