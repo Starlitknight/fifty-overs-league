@@ -2083,7 +2083,7 @@
         // as a comfortable-but-honest favourite, second 0.90 makes you work,
         // boss 0.97 is a real fight. A slow world-tour ramp on top.
         var tier = (c.boss ? 0.905 : (ci === 0 ? 0.875 : 0.89)) + ri * 0.005 + (((c.mult || 0.9) - 0.9) * 0.1) + (c.tadj || 0);
-        for (var pass = 0; pass < 5; pass++) {
+        for (var pass = 0; pass < 12; pass++) {
           var theirXI = null;
           try { theirXI = pickXI({ name: c.nm, players: players }); } catch (eX2) {}
           var pool9 = (theirXI && theirXI.length) ? theirXI : players;
@@ -5071,8 +5071,8 @@
       // the pins in the left band so the boss never stands on them)
       // the pin field stops short of where the boss stands and labels turn inward
       // on its right side, so a wide nation (Perth to Brisbane) still clears the art
-      var pinBox = ovMob ? { x0: 8, y0: 13, x1: 35, y1: 78 } : { x0: 10, y0: 14, x1: 66, y1: 86 };
-      var lblFlip = ovMob ? 23 : 52;
+      var pinBox = ovMob ? { x0: 6, y0: 12, x1: 57, y1: 74 } : { x0: 10, y0: 14, x1: 66, y1: 86 };
+      var lblFlip = ovMob ? 29 : 52;
       var wp = foNationPins(nation, pinBox);
       var cityWid = {}; table.forEach(function (x) { if (x.city && x.wid && x.wid !== "me") cityWid[x.city] = x.wid; });
       var routeOrder = wp.slice().sort(function (a, b) { return a.py - b.py; });   // north to south
@@ -5235,6 +5235,27 @@
           strip.addEventListener("click", function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
         });
       } catch (eTab) {}
+      // Cities that really are neighbours - Kathmandu and Lalitpur, the Toronto
+      // cluster, Kandy and Pallekele - print their labels on top of each other.
+      // Stack them downward instead: sorted by height, each label drops just far
+      // enough to clear the ones above it that share its column. Only ever pushing
+      // down means the layout settles in one pass, and every dot stays exactly
+      // where its coordinates put it.
+      try {
+        var lbl = [].slice.call(page.querySelectorAll(".fo-ov-pin .nm")).map(function (el) {
+          var r = el.getBoundingClientRect();
+          return { el: el, l: r.left, r: r.right, t: r.top, h: r.height, dy: 0 };
+        }).sort(function (a, b) { return a.t - b.t; });
+        var placed = [];
+        lbl.forEach(function (q) {
+          var top = q.t;
+          placed.forEach(function (o) {
+            if (q.l < o.r && o.l < q.r && top < o.t + o.h + 3) top = o.t + o.h + 3;
+          });
+          if (top > q.t) { q.dy = top - q.t; q.el.style.transform = "translateY(" + q.dy.toFixed(1) + "px)"; }
+          q.t = top; placed.push(q);
+        });
+      } catch (eDg) {}
       page.querySelectorAll(".fo-lg-play").forEach(function (pb) { pb.addEventListener("click", function () { foLgPlay(nation, round, false); }); });
       page.querySelectorAll(".fo-lg-sim").forEach(function (sb) { sb.addEventListener("click", function () { if (!window.confirm("Sim your fixture and the rest of Round " + (round + 1) + " automatically?")) return; foLgPlay(nation, round, true); page.__foLgSig = null; foRenderLeague(); }); });
       var nb = page.querySelector("#fo-lg-new");
@@ -5670,7 +5691,7 @@
       // phones: the boss holds the right half and the map keeps the left, so the
       // country and its pins are never under him. Cutouts carry their own alpha,
       // so no mask is needed to blend the figure into the map.
-      "#page .fo-ov .fo-ov-fig{top:auto;bottom:0;right:0;left:auto;height:auto;width:auto;max-height:62vh;max-width:54%;object-fit:contain;object-position:right bottom;-webkit-mask-image:none;mask-image:none;opacity:1;filter:drop-shadow(-10px 14px 30px rgba(0,0,0,.62)) saturate(1.04)}",
+      "#page .fo-ov .fo-ov-fig{top:auto;bottom:0;right:0;left:auto;height:auto;width:auto;max-height:54vh;max-width:42%;object-fit:contain;object-position:right bottom;-webkit-mask-image:none;mask-image:none;opacity:1;filter:drop-shadow(-10px 14px 30px rgba(0,0,0,.62)) saturate(1.04)}",
       "#page .fo-ov .fo-ov-map{object-position:34% 42%}",
       // a pin label that grazes the figure still has to read
       "#page .fo-ov .fo-ov-pin .nm{font-size:9.5px;letter-spacing:1.4px;text-shadow:0 1px 5px #000,0 0 11px rgba(0,0,0,.95)}",
