@@ -4583,9 +4583,20 @@
       }
 
       // a strip of the league's home grounds - the nation, city by city
+      // real ground art only: <city>-ground[-m].webp. Never the map, never boss art.
+      // A genuinely missing ground shows a navy placeholder + that club's crest.
+      var ovMob = false; try { ovMob = window.innerWidth < 980; } catch (eW2) {}
+      var safeGround = function (x, cls) {
+        var slug = foCitySlug(x.city);
+        var gm = FO_ART + "cities/" + slug + "-ground-m.webp", gd = FO_ART + "cities/" + slug + "-ground.webp";
+        var g1 = ovMob ? gm : gd, g2 = ovMob ? gd : gm;
+        var crest = foLgClubCrest(nation, x.sideObj);
+        return "<img class='" + (cls || "") + "' src='" + g1 + "' alt='" + E(x.city) + " ground' loading='lazy' decoding='async' onerror=\"if(!this.dataset.f){this.dataset.f=1;this.src='" + g2 + "'}else{this.style.display='none';this.parentElement.classList.add('noart')}\">" +
+          "<div class='fo-ov-gph' aria-hidden='true'><img src='" + crest + "' alt='' onerror=\"this.style.display='none'\"><span>Ground artwork coming soon</span></div>";
+      };
       var grounds = table.filter(function (x) { return !x.isMe && x.sideObj; }).slice(0, 7).map(function (x) {
         return "<a class='fo-lg-ground' href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'>" +
-          foLgArtImg(nation, x.sideObj, "") + "<span class='cap'>" + E(x.city) + "</span></a>";
+          safeGround(x, "") + "<span class='cap'>" + E(x.city) + "</span></a>";
       }).join("");
 
       var flag = "<img class='fo-lg-flag' src='" + FO_ART + "flags/" + (FO_FLAG_FILE[nation] || nation) + ".svg' alt='' onerror=\"this.style.display='none'\">";
@@ -4638,7 +4649,7 @@
         return "<div class='fo-ov-crow" + (x.isMe ? " me" : "") + (x.boss ? " boss" : "") + "'><span class='r'>" + (i + 1) + "</span><span class='n'>" + E(x.name) + "</span><span class='p'>" + x.pts + "</span><span class='nr'>" + (x.nrr == null ? "&middot;" : (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2)) + "</span></div>";
       }).join("");
       var groundCards = table.filter(function (x) { return !x.isMe && x.sideObj; }).map(function (x) {
-        return "<a class='fo-ov-gcard' href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'>" + foLgArtImg(nation, x.sideObj, "") + "<span class='cap'>" + E(x.city) + "</span></a>";
+        return "<a class='fo-ov-gcard' href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'>" + safeGround(x, "") + "<span class='cap'>" + E(x.city) + "</span></a>";
       }).join("");
       var wireA = foLgWireFor(region);
       var tickerItems = (wireA.length ? wireA : [{ headline: "The season is young &mdash; every club still dreaming of the Cup." }]).slice(0, 4).map(function (h) { return "<span class='ti'>" + E(h.headline) + "</span>"; }).join("<span class='dot'>&middot;</span>");
@@ -4652,62 +4663,98 @@
         : "<div><i>Format</i><b>50 ov</b></div><div><i>Top 4</i><b>Qualify</b></div><div><i>Clubs</i><b>8</b></div>";
       var tab3 = own ? "Fixtures" : "Wire";
       var sec2Title = own ? ("Round " + (round + 1) + " Fixtures") : ("From the " + E(region.nm) + " Wire");
+      var bossCut = FO_ART + "circuit/boss-" + nation + "-cutout.webp";
+      var bossId = E(bossName) + " &middot; League Boss";
+      // editorial route: two field cities + the boss city. Their true east-coast
+      // positions sit under Sir Giles, so map x into a clean left band (16-56%) —
+      // an editorial abstraction that keeps the route clear of the boss on every map.
+      var rc = (region.clubs || []).filter(function (c) { return typeof c.mx === "number"; });
+      var wp = rc.filter(function (c) { return !c.boss; }).slice(0, 2).concat(rc.filter(function (c) { return c.boss; }).slice(0, 1));
+      wp = wp.map(function (c) { return { city: c.city, px: Math.round(16 + (c.mx || 50) * 0.4), py: Math.max(14, Math.min(82, c.my || 50)) }; }).sort(function (a, b) { return a.py - b.py; });
+      var cityWid = {}; table.forEach(function (x) { if (x.city && x.wid && x.wid !== "me") cityWid[x.city] = x.wid; });
+      var routeD = "";
+      if (wp.length >= 2) { routeD = "M" + wp[0].px + " " + wp[0].py; for (var wi = 1; wi < wp.length; wi++) { var a2 = wp[wi - 1], b2 = wp[wi], mY = (a2.py + b2.py) / 2; routeD += " C" + a2.px + " " + mY + " " + b2.px + " " + mY + " " + b2.px + " " + b2.py; } }
+      var routeSVG = routeD ? "<svg class='fo-ov-route' viewBox='0 0 100 100' preserveAspectRatio='none' aria-hidden='true'><path d='" + routeD + "'/></svg>" : "";
+      var pinsHTML = wp.map(function (c) { var wid = cityWid[c.city]; var href = wid ? ("#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(wid)) : "#/world"; return "<a class='fo-ov-pin lbl-r' style='left:" + c.px + "%;top:" + c.py + "%' href='" + href + "' aria-label='Explore " + E(c.city) + "'><span class='dot' aria-hidden='true'></span><span class='nm'>" + E(c.city) + "</span></a>"; }).join("");
+      // bottom dock (mobile) - line icons, WORLD active on this route
+      var dockItems = [["#/home", "Home", "M3 10.8 12 3l9 7.8V21h-6v-6H9v6H3z", 0], ["#/squad", "Squad", "M9 10.4a3.1 3.1 0 100-6.2 3.1 3.1 0 000 6.2zM2.6 20a6.4 6.4 0 0112.8 0M16 10.2a3 3 0 000-6M21.4 20a6.3 6.3 0 00-4.6-6.1", 0], ["#/orders", "Match", "M12 3a9 9 0 100 18 9 9 0 000-18zM6.6 5.1C10 8 11.6 13 10.6 18.9", 0], ["#/world", "World", "M12 3a9 9 0 100 18 9 9 0 000-18zM3 12h18M12 3c3.2 3 3.2 15 0 18M12 3c-3.2 3-3.2 15 0 18", 1], ["#/home", "Club", "M12 3l7 2.6v6.2C19 17 15.6 19.4 12 21 8.4 19.4 5 17 5 11.8V5.6z", 0]];
+      var dockHTML = "<nav class='fo-ov-dock' aria-label='Sections'>" + dockItems.map(function (d) { return "<a class='fo-ov-dk" + (d[3] ? " on" : "") + "' href='" + d[0] + "'" + (d[3] ? " aria-current='page'" : "") + "><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='" + d[2] + "'/></svg><span>" + d[1] + "</span></a>"; }).join("") + "</nav>";
+      // active tab (persisted in the hash query so refresh / back-forward restore it)
+      var mTab = /[?&]tab=([a-z]+)/.exec(location.hash || "");
+      var actTab = (mTab && ["overview", "table", "fixtures", "grounds"].indexOf(mTab[1]) >= 0) ? mTab[1] : "overview";
+      var tabBtns = [["overview", "Overview"], ["table", "Table"], ["fixtures", tab3], ["grounds", "Grounds"]].map(function (tb) {
+        var on = tb[0] === actTab; return "<button type='button' role='tab' class='" + (on ? "on" : "") + "' data-ovtab='" + tb[0] + "' aria-selected='" + (on ? "true" : "false") + "' aria-controls='fo-ovp-" + tb[0] + "'>" + tb[1] + "</button>";
+      }).join("");
+      var pOpen = function (name) { return "<section class='fo-ov-panel' id='fo-ovp-" + name + "' data-panel='" + name + "' role='tabpanel'" + (name === actTab ? "" : " hidden") + ">"; };
 
       page.innerHTML =
-        "<div class='fo-lg fo-ov" + (own ? "" : " ro") + "' style='--lac:" + ac + "'>" +
+        "<div class='fo-lg fo-ov" + (own ? "" : " ro") + "' data-tab='" + actTab + "' style='--lac:" + ac + "'>" +
         "<div class='fo-lg-bg' style='background-image:url(" + mapSrc + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
-        "<div class='fo-ov-hero'>" +
-        "<img class='fo-ov-map' src='" + mapSrc + "' alt=''>" +
-        "<div class='fo-ov-vig'></div>" +
-        "<img class='fo-ov-fig' src='" + bossArt + "' alt='' onerror=\"this.style.display='none'\">" +
-        "<div class='fo-ov-figtag'>" + E(bossName) + "<i>League Boss</i></div>" +
-        // sub navigation
-        "<div class='fo-ov-subnav'><div class='fo-ov-tabs'>" +
-        "<button type='button' class='on' data-ovtab='top'>Overview</button>" +
-        "<button type='button' data-ovtab='table'>Table</button>" +
-        "<button type='button' data-ovtab='fixtures'>" + tab3 + "</button>" +
-        "<button type='button' data-ovtab='grounds'>Grounds</button></div>" +
+        // persistent tab rail
+        "<div class='fo-ov-subnav'><div class='fo-ov-tabs' role='tablist' aria-label='" + E(region.nm) + " league'>" + tabBtns + "</div>" +
         "<a class='fo-ov-sel' href='#/world'>" + E(region.nm) + " &middot; " + (idx19 || 1) + "/" + FO_CX_NATIONS + " &#9662;</a></div>" +
-        // left identity column
+        // ===== OVERVIEW panel =====
+        pOpen("overview") +
+        "<div class='fo-ov-hero'>" +
+        "<div class='fo-ov-mapwrap'><img class='fo-ov-map' src='" + mapSrc + "' alt='Illustrated map of " + E(region.nm) + "' decoding='async' fetchpriority='high'>" + routeSVG + pinsHTML + "</div>" +
+        "<div class='fo-ov-vig' aria-hidden='true'></div>" +
+        "<img class='fo-ov-fig' src='" + bossCut + "' alt='" + E(bossName) + "' decoding='async' onerror=\"this.onerror=null;this.src='" + bossArt + "'\">" +
+        "<div class='fo-ov-figtag' aria-hidden='true'>" + E(bossName) + "<i>League Boss</i></div>" +
+        "</div>" +
         "<div class='fo-ov-left'>" +
-        (emblem ? "<img class='fo-ov-crest' src='" + emblem + "' alt='' onerror=\"this.style.display='none'\">" : "") +
+        (emblem ? "<img class='fo-ov-crest' src='" + emblem + "' alt='' aria-hidden='true' onerror=\"this.style.display='none'\">" : "") +
         "<div class='fo-ov-eb'>" + ebText + "</div>" +
         "<h1 class='fo-ov-title'>" + E(region.nm) + "</h1>" +
         "<div class='fo-ov-sub'>" + E(subtitle) + "</div>" +
+        "<div class='fo-ov-bossid'>" + bossId + "</div>" +
         (tagline ? "<p class='fo-ov-quote'>&ldquo;" + E(tagline) + "&rdquo;</p>" : "") +
-        styleRow + matchCard + "</div>" +
-        // right rail
+        styleRow +
+        "<div class='fo-ov-pstrip'>" + pulseStats + "</div>" +
+        matchCard + "</div>" +
         "<div class='fo-ov-rail'>" +
         "<div class='fo-ov-pulse'><div class='fo-ov-ph'>League Pulse</div>" +
         "<div class='fo-ov-pstats'>" + pulseStats + "</div>" +
         "<div class='fo-ov-chase'><div class='fo-ov-ch'><span class='n'>The Chase</span><span class='p'>Pts</span><span class='nr'>NRR</span></div>" + chaseRows + "</div>" +
         "<button type='button' class='fo-ov-full' data-ovtab='table'>View full table &#8250;</button></div>" +
         (groundCards ? "<div class='fo-ov-grounds'><div class='fo-ov-gh'>Explore the Grounds</div><div class='fo-ov-gstrip'>" + groundCards + "</div></div>" : "") +
-        "</div>" +
-        // ticker
         "<div class='fo-ov-ticker'><b>Around " + E(region.nm) + "</b><div class='fo-ov-tick'>" + tickerItems + "</div></div>" +
-        "</div>" +
-        // ---- full detail sections the sub-tabs scroll to ----
-        "<div class='fo-ov-more'>" +
-        "<section id='fo-ov-table' class='fo-ov-sec'><h2>The Table</h2>" +
+        "</section>" +
+        // ===== TABLE panel =====
+        pOpen("table") + "<div class='fo-ov-sec'><h2>" + E(region.nm) + " &middot; Table</h2><p class='fo-ov-sublabel'>Top 4 reach the Champions Cup</p>" +
         "<div class='fo-lg-tablewrap'><div class='fo-lg-thead'><span class='rk'>#</span><span class='av'></span><span class='nm'>Club</span><span class='c'>P</span><span class='c'>W</span><span class='c'>L</span><span class='c'>NRR</span><span class='c'>Pts</span></div>" +
-        tableRows + "<div class='fo-lg-qnote'>Top 4 qualify for the Champions Cup</div></div></section>" +
-        "<section id='fo-ov-fixtures' class='fo-ov-sec'><h2>" + sec2Title + "</h2><div class='fo-lg-side'>" + sideHTML + "</div></section>" +
-        (grounds ? "<section id='fo-ov-grounds' class='fo-ov-sec'><h2>The Grounds of " + E(region.nm) + "</h2><div class='fo-lg-grounds'>" + grounds + "</div></section>" : "") +
-        "</div>" +
+        tableRows + "<div class='fo-lg-qnote'>Top 4 qualify for the Champions Cup</div></div></div></section>" +
+        // ===== FIXTURES / WIRE panel =====
+        pOpen("fixtures") + "<div class='fo-ov-sec'><h2>" + sec2Title + "</h2><div class='fo-lg-side'>" + sideHTML + "</div></div></section>" +
+        // ===== GROUNDS panel =====
+        pOpen("grounds") + "<div class='fo-ov-sec'><h2>The Grounds of " + E(region.nm) + "</h2>" + (grounds ? "<div class='fo-lg-grounds'>" + grounds + "</div>" : "<p class='fo-ov-sublabel'>Ground artwork coming soon.</p>") + "</div></section>" +
+        dockHTML +
         "</div>";
       try { document.body.classList.add("fo-boss-on"); } catch (eBc) {}
-      // sub-tab scroll wiring
+      // tab wiring: swap panels in place (no route refresh), persist tab in the hash query
       try {
+        var ovRoot = page.querySelector(".fo-ov");
+        var ovSetTab = function (t, push) {
+          if (["overview", "table", "fixtures", "grounds"].indexOf(t) < 0) t = "overview";
+          if (ovRoot) ovRoot.setAttribute("data-tab", t);
+          page.querySelectorAll(".fo-ov-tabs button").forEach(function (b) { var on = b.getAttribute("data-ovtab") === t; b.classList.toggle("on", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
+          page.querySelectorAll(".fo-ov-panel").forEach(function (p) { p.hidden = p.getAttribute("data-panel") !== t; });
+          try { window.scrollTo(0, 0); } catch (eS) {}
+          if (push) { var base = (location.hash || "#/league").split("?")[0]; var mn = /[?&]n=([^&]+)/.exec(location.hash || ""); var q = "?" + (mn ? "n=" + mn[1] + "&" : "") + "tab=" + t; try { history.pushState({ ovtab: t }, "", base + q); } catch (eH) {} }
+        };
         page.querySelectorAll("[data-ovtab]").forEach(function (btn) {
-          btn.addEventListener("click", function () {
-            var t = btn.getAttribute("data-ovtab");
-            page.querySelectorAll(".fo-ov-tabs button").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-ovtab") === t); });
-            if (t === "top") { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
-            var sec = page.querySelector("#fo-ov-" + t);
-            if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
-          });
+          btn.addEventListener("click", function () { ovSetTab(btn.getAttribute("data-ovtab"), true); });
         });
+        if (!window.__foOvPop) {
+          window.__foOvPop = 1;
+          window.addEventListener("popstate", function () {
+            if ((location.hash || "").split("?")[0] !== "#/league") return;
+            var mt = /[?&]tab=([a-z]+)/.exec(location.hash || "");
+            var pg = document.getElementById("page"); if (!pg || !pg.querySelector(".fo-ov")) return;
+            var t = (mt && ["overview", "table", "fixtures", "grounds"].indexOf(mt[1]) >= 0) ? mt[1] : "overview";
+            pg.querySelectorAll(".fo-ov-tabs button").forEach(function (b) { var on = b.getAttribute("data-ovtab") === t; b.classList.toggle("on", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
+            pg.querySelectorAll(".fo-ov-panel").forEach(function (p) { p.hidden = p.getAttribute("data-panel") !== t; });
+          });
+        }
       } catch (eTab) {}
       var pb = page.querySelector("#fo-lg-play");
       if (pb) pb.addEventListener("click", function () { foLgPlay(nation, round, false); });
@@ -4993,6 +5040,88 @@
       ".fo-ov-ticker{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,transparent,rgba(6,11,22,.75) 40%);border-top:0;padding:24px 40px 16px}",
       "}",
       "@media(min-width:1280px){.fo-ov-left{padding-left:56px}.fo-ov-rail{padding-right:48px}.fo-ov-ticker{padding-left:56px}}",
+      // ============ mobile national hub: tabs, route, pins, pulse strip, dock ============
+      ".fo-ov{--fo-country-muted:#A8B1BF;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}",
+      ".fo-ov-panel{position:relative}",
+      ".fo-ov-panel[hidden]{display:none}",
+      // map plane + crisp map
+      ".fo-ov-mapwrap{position:relative;width:100%;height:41vh;min-height:264px;max-height:460px;overflow:hidden}",
+      "#page .fo-ov .fo-ov-map{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 40%;transform:scale(1.05);filter:saturate(.92) contrast(1.05) brightness(.74);animation:foLgcIn .9s ease-out}",
+      // the gold editorial route
+      ".fo-ov-route{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;overflow:visible}",
+      ".fo-ov-route path{fill:none;stroke:var(--fo-country-gold,#EBC271);stroke-width:.55;opacity:.82;stroke-linecap:round;filter:drop-shadow(0 0 2.5px color-mix(in srgb,#EBC271 70%,transparent));stroke-dasharray:240;stroke-dashoffset:240;animation:foOvRoute 1.7s ease-out .5s forwards}",
+      "@keyframes foOvRoute{to{stroke-dashoffset:0}}",
+      // city pins
+      ".fo-ov-pin{position:absolute;z-index:3;width:44px;height:44px;margin:-22px 0 0 -22px;display:flex;align-items:center;justify-content:center;text-decoration:none}",
+      ".fo-ov-pin .dot{position:relative;width:13px;height:13px;border-radius:50%;background:var(--fo-country-gold,#EBC271);box-shadow:0 0 0 3px rgba(235,194,113,.26),0 0 10px 2px color-mix(in srgb,#EBC271 60%,transparent)}",
+      ".fo-ov-pin .dot:before{content:'';position:absolute;inset:-5px;border-radius:50%;border:1.5px solid var(--fo-country-gold,#EBC271);opacity:.6;animation:foOvPin 2.6s ease-out infinite}",
+      "@keyframes foOvPin{0%{transform:scale(.55);opacity:.7}100%{transform:scale(1.6);opacity:0}}",
+      ".fo-ov-pin .nm{position:absolute;font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--fo-country-gold,#EBC271);white-space:nowrap;text-shadow:0 1px 7px rgba(0,0,0,.95)}",
+      ".fo-ov-pin.lbl-r .nm{left:24px}.fo-ov-pin.lbl-l .nm{right:24px}",
+      "@media(prefers-reduced-motion:reduce){.fo-ov-route path{animation:none;stroke-dashoffset:0}.fo-ov-pin .dot:before{animation:none}}",
+      // boss identity line + unboxed pulse strip (mobile)
+      ".fo-ov-bossid{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.5px;font-size:10px;font-weight:600;color:var(--fo-country-muted);margin-top:9px}",
+      ".fo-ov-pstrip{display:grid;grid-template-columns:repeat(3,1fr);margin:18px 0 6px}",
+      ".fo-ov-pstrip>div{text-align:center;padding:4px;border-left:1px solid rgba(235,194,113,.2)}",
+      ".fo-ov-pstrip>div:first-child{border-left:0}",
+      ".fo-ov-pstrip i{display:block;font-style:normal;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.6px;font-size:9px;color:var(--fo-country-muted)}",
+      ".fo-ov-pstrip b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:19px;letter-spacing:.5px;color:#F5F0E6;margin-top:4px;font-variant-numeric:tabular-nums}",
+      ".fo-ov-sublabel{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.6px;font-size:10px;color:var(--fo-country-gold,#EBC271);margin:-2px 0 14px}",
+      // bottom dock (mobile only)
+      ".fo-ov-dock{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;height:calc(66px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:linear-gradient(180deg,rgba(7,16,30,.85),rgba(4,10,20,.97));border-top:1px solid rgba(235,194,113,.2);backdrop-filter:blur(12px)}",
+      "html body #page .fo-ov-dk,html body.ftpskin #page .fo-ov-dk{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;color:rgba(245,240,230,.56) !important;min-height:44px;position:relative;background:none;border:0}",
+      ".fo-ov-dk svg{width:22px;height:22px}",
+      ".fo-ov-dk span{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1px;font-size:9px;font-weight:600}",
+      "html body #page .fo-ov-dk.on,html body.ftpskin #page .fo-ov-dk.on{color:var(--fo-country-gold,#EBC271) !important}",
+      ".fo-ov-dk.on:after{content:'';position:absolute;bottom:6px;width:15px;height:2px;border-radius:2px;background:var(--fo-country-gold,#EBC271)}",
+      "@media(min-width:760px){.fo-ov-dock{display:none}.fo-ov-panel[data-panel=overview]{padding-bottom:24px}}",
+      // missing-ground placeholder (never map or boss art)
+      ".fo-ov-gph{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:9px;background:linear-gradient(180deg,#0A1728,#061223);z-index:1}",
+      ".fo-ov-gph img{width:38px;height:38px;object-fit:contain;opacity:.92}",
+      ".fo-ov-gph span{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.4px;font-size:9px;color:var(--fo-country-muted,#A8B1BF)}",
+      ".fo-lg-ground.noart .fo-ov-gph,.fo-ov-gcard.noart .fo-ov-gph{display:flex}",
+      // mobile composition rules
+      "#page .fo-ov .fo-ov-hero{position:relative;height:auto;overflow:visible}",
+      ".fo-ov .fo-ov-rail,.fo-ov .fo-ov-style,.fo-ov .fo-ov-figtag,.fo-ov .fo-ov-ticker{display:none}",
+      "#page .fo-ov .fo-ov-fig{top:8px;right:-8%;height:44vh;bottom:auto;object-position:top}",
+      "#page .fo-ov .fo-ov-left{position:relative;left:auto;top:auto;bottom:auto;width:auto;padding:16px 22px 0;display:block}",
+      ".fo-ov-panel[data-panel=overview]{padding-bottom:calc(84px + env(safe-area-inset-bottom))}",
+      ".fo-ov-panel[data-panel=table],.fo-ov-panel[data-panel=fixtures],.fo-ov-panel[data-panel=grounds]{padding:6px 16px calc(92px + env(safe-area-inset-bottom));max-width:1120px;margin:0 auto}",
+      ".fo-ov-panel .fo-ov-sec{margin-top:6px}",
+      // compact mobile typography so the ticket clears the dock at 430x932
+      "@media(max-width:979px){",
+      // run the map full-bleed behind the tab rail (reclaim ~90px of height)
+      "#page .fo-ov .fo-ov-subnav{position:absolute;top:0;left:0;right:0;z-index:20;padding:12px 16px 18px;border-bottom:0;background:linear-gradient(180deg,rgba(4,10,20,.82) 0%,rgba(4,10,20,.32) 62%,transparent 100%)}",
+      ".fo-ov-panel[data-panel=table],.fo-ov-panel[data-panel=fixtures],.fo-ov-panel[data-panel=grounds]{padding-top:104px}",
+      // mobile standings: full names, drop W/L + city subtitles, taller rows
+      "#page .fo-ov .fo-lg-thead,#page .fo-ov .fo-lg-row{grid-template-columns:24px 40px 1fr 28px 50px 40px;padding:11px 12px}",
+      "#page .fo-ov .fo-lg-thead .c:nth-child(5),#page .fo-ov .fo-lg-thead .c:nth-child(6),#page .fo-ov .fo-lg-row .c:nth-child(5),#page .fo-ov .fo-lg-row .c:nth-child(6){display:none}",
+      "#page .fo-ov .fo-lg-row .nm{white-space:normal;line-height:1.12;font-size:14.5px}",
+      "#page .fo-ov .fo-lg-row .nm i{display:none}",
+      "#page .fo-ov .fo-lg-row.q{background:rgba(235,194,113,.055)}",
+      "#page .fo-ov .fo-lg-row.q:hover{background:rgba(235,194,113,.09)}",
+      "#page .fo-ov .fo-ov-mapwrap{height:38vh;min-height:248px}",
+      "#page .fo-ov .fo-ov-title{font-size:clamp(44px,13vw,56px);margin-top:4px}",
+      "#page .fo-ov .fo-ov-sub{font-size:clamp(18px,5.6vw,24px);letter-spacing:2px}",
+      "#page .fo-ov .fo-ov-quote{margin-top:11px;font-size:14px;line-height:1.45;max-width:none}",
+      "#page .fo-ov .fo-ov-bossid{margin-top:7px}",
+      "#page .fo-ov .fo-ov-pstrip{margin:14px 0 2px}",
+      "#page .fo-ov .fo-ov-match{margin-top:13px;max-width:none}",
+      "#page .fo-ov .fo-ov-crest{width:44px;height:44px;margin-bottom:2px}",
+      "}",
+      // desktop: restore the magazine spread, dock off
+      "@media(min-width:980px){",
+      ".fo-ov-dock{display:none}",
+      ".fo-ov .fo-ov-pstrip,.fo-ov .fo-ov-bossid{display:none}",
+      ".fo-ov .fo-ov-rail{display:flex}.fo-ov .fo-ov-style{display:flex}.fo-ov .fo-ov-figtag{display:block}.fo-ov .fo-ov-ticker{display:flex}",
+      ".fo-ov-panel[data-panel=overview]{position:relative;height:100vh;min-height:680px;padding-bottom:0}",
+      "#page .fo-ov .fo-ov-hero{position:absolute;inset:0;height:100%}",
+      ".fo-ov-mapwrap{position:absolute;inset:0;width:100%;height:100%;max-height:none}",
+      "#page .fo-ov .fo-ov-map{object-position:38% 42%}",
+      "#page .fo-ov .fo-ov-fig{top:auto;bottom:0;right:19%;height:98%;object-position:bottom}",
+      "#page .fo-ov .fo-ov-left{position:absolute;left:0;top:96px;bottom:64px;width:min(460px,36vw);padding:0 0 0 40px;display:flex;flex-direction:column;justify-content:center}",
+      ".fo-ov-panel[data-panel=table],.fo-ov-panel[data-panel=fixtures],.fo-ov-panel[data-panel=grounds]{padding:20px 34px 60px}",
+      "}",
       // cup
       ".fo-cup-note{color:#b9c6dd;font-size:13px;margin:4px 0 18px;font-style:italic}",
       ".fo-cup-bracket{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}",
