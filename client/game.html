@@ -10526,7 +10526,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260724-1947-0b9e21";
+  var FO_BUILD = "20260724-2006-b32da2";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -25761,7 +25761,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var a = (e.target && e.target.closest) ? e.target.closest("[data-ground]") : null;
       if (!a) return;
       e.preventDefault();
-      window.foGroundView(a.getAttribute("data-ground"), a.getAttribute("data-nat"), a.getAttribute("data-wid"), a.getAttribute("data-reg"), a.getAttribute("data-gnm"));
+      // open the full-bleed stadium page (stadium name, description, pitch/weather, challenge)
+      var city = a.getAttribute("data-ground"), nat = a.getAttribute("data-nat") || "", wid = a.getAttribute("data-wid") || "";
+      location.hash = "#/city?c=" + encodeURIComponent(city) + "&r=" + encodeURIComponent(nat) + "&w=" + encodeURIComponent(wid);
+      if (typeof window.route === "function") window.route();
     });
   }
   function foLgClubCrest(nation, side) {
@@ -27360,8 +27363,20 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   }
   // Nagpur's own painting - the city after the monsoon
   FO_CITY.Nagpur = FO_CITY.Nagpur || { art: "cities/nagpur.webp" };
-  function foCityLore(city) {
-    var hit = foCityClub(city); if (!hit) return null;
+  function foCityLore(city, hintNat, hintWid) {
+    var hit = foCityClub(city), fallback = false;
+    if (!hit && hintNat) {
+      // a league ground whose city isn't in the curated Circuit set: build the
+      // same page context from the region + the league side so it still renders
+      var rr = (foRegionById(hintNat) || {}).r;
+      if (rr) {
+        var side = null;
+        try { var sides = foRegionSides(hintNat) || []; for (var si = 0; si < sides.length; si++) { if ((hintWid && sides[si].wid === hintWid) || sides[si].city === city) { side = sides[si]; break; } } } catch (eS) {}
+        var cc = { city: city, nm: (side && (side.nm || side.name)) || (city + " CC"), boss: false, note: (side && side.note) || "", nug: (side && side.nug) || "", taunt: (side && side.taunt) || "" };
+        hit = { r: rr, ri: -1, c: cc, ci: -1 }; fallback = true;
+      }
+    }
+    if (!hit) return null;
     var L = FO_CITY[city] || {};
     var r = hit.r, c = hit.c;
     var nugBody = c.nug ? c.nug.replace(/^[^:]*:\s*/, "") : "";
@@ -27384,7 +27399,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       phil: L.phil || nugBody || r.cond,
       ground: L.ground || (r.cond + (c.note ? " The locals are known for " + c.note + "." : "")),
       wxPool: (FO_CX_WX[r.id] || [r.wx]).filter(function (x, i, a) { return a.indexOf(x) === i; }),
-      pitch: r.pitch
+      pitch: r.pitch,
+      fallback: fallback, wid: hintWid || ""
     };
   }
   // Show, don't tell: the city is a full-screen painting with a one-line
@@ -27396,18 +27412,27 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var page = document.getElementById("page"); if (!page) return;
       var m = /[?&]c=([^&]+)/.exec(location.hash); if (!m) return;
       var city = decodeURIComponent(m[1]);
-      if (page.__foCitySig === city && page.querySelector(".fo-city")) return;
-      var Lc = foCityLore(city); if (!Lc) { page.__foCitySig = null; return; }
-      page.__foCitySig = city;
+      var mR = /[?&]r=([^&]+)/.exec(location.hash), mW = /[?&]w=([^&]+)/.exec(location.hash);
+      var hintNat = mR ? decodeURIComponent(mR[1]) : null, hintWid = mW ? decodeURIComponent(mW[1]) : null;
+      var citySig = city + "|" + (hintNat || "") + "|" + (hintWid || "");
+      if (page.__foCitySig === citySig && page.querySelector(".fo-city")) return;
+      var Lc = foCityLore(city, hintNat, hintWid); if (!Lc) { page.__foCitySig = null; return; }
+      page.__foCitySig = citySig;
       var st = foCxState();
-      var done = foCxBeaten(st, Lc.r.id, Lc.ci);
-      var open = foCxClubOpen(st, Lc.ri, Lc.ci);
+      var done = Lc.fallback ? false : foCxBeaten(st, Lc.r.id, Lc.ci);
+      var open = Lc.fallback ? true : foCxClubOpen(st, Lc.ri, Lc.ci);
       var wxNow = foCxWeather(Lc.r, Lc.ci);
-      var chBtn = done
-        ? "<span class='fo-ct-won'>&#10003; Beaten</span> <button type='button' class='fo-ct-ch' data-ct-ch>Play again &#9654;</button>"
-        : open
-          ? "<button type='button' class='fo-ct-ch' data-ct-ch>Challenge " + E(Lc.c.nm) + " &#9654;</button>"
-          : "<span class='fo-ct-lock'>&#128274; " + E(Lc.r.nm) + "'s ladder opens this door</span>";
+      // arriving from the league's "Explore the Grounds" always carries a league
+      // side (wid): that ground opens a league fixture directly, no ladder gate.
+      // the Circuit ladder gate only applies when you reach a ground through the
+      // world-map progression (no wid on the hash).
+      var chBtn = Lc.wid
+        ? "<a class='fo-ct-ch' href='#/side?r=" + encodeURIComponent(Lc.r.id) + "&c=" + encodeURIComponent(Lc.wid) + "'>Challenge " + E(Lc.c.nm) + " &#9654;</a>"
+        : done
+          ? "<span class='fo-ct-won'>&#10003; Beaten</span> <button type='button' class='fo-ct-ch' data-ct-ch>Play again &#9654;</button>"
+          : open
+            ? "<button type='button' class='fo-ct-ch' data-ct-ch>Challenge " + E(Lc.c.nm) + " &#9654;</button>"
+            : "<span class='fo-ct-lock'>&#128274; " + E(Lc.r.nm) + "'s ladder opens this door</span>";
       // one view only: the city IS its ground - you arrive at the gate
       var views = [];
       views.push({ id: "ground", img: Lc.groundArt || Lc.art, eyebrow: "The Circuit &middot; " + E(Lc.r.nm) + " &middot; " + E(city) + (Lc.c.boss ? " &middot; the boss's ground" : ""), title: E(Lc.groundNm), sub: E(Lc.tag), line: E(foCtLine(Lc.ground) || foCtLine(Lc.city)),
@@ -27432,7 +27457,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var railEl = page.querySelector("#fo-ctv-rail");
       railEl.innerHTML = chBtn +
         (Lc.c.boss && !Lc.r.final ? "<a class='fo-ct-back fo-ct-doss' href='#/boss?r=" + encodeURIComponent(Lc.r.id) + "'>&#9733; Boss dossier</a>" : "") +
-        "<a class='fo-ct-back' href='#/tour?r=" + encodeURIComponent(Lc.r.id) + "'>&#8592; Tour " + E(Lc.r.nm) + "</a>" +
+        "<a class='fo-ct-back' href='#/league?n=" + encodeURIComponent(Lc.r.id) + "'>&#8592; " + E(Lc.r.nm) + "</a>" +
         "<a class='fo-ct-back' href='#/world'>World map</a>";
       var ch = railEl.querySelector("[data-ct-ch]");
       if (ch) ch.addEventListener("click", function () { foCxChallenge(Lc.ri, Lc.ci); });
@@ -27463,14 +27488,14 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "html body #page .fo-ctv-b,html body.ftpskin #page .fo-ctv-b{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.7px;text-transform:uppercase;font-size:11.5px;background:rgba(10,18,32,.72) !important;color:#F5EFDC !important;border:1.5px solid rgba(228,196,99,.55) !important;border-radius:999px;padding:10px 20px;cursor:pointer;backdrop-filter:blur(4px);box-shadow:0 4px 14px rgba(0,0,0,.35) !important}" +
       "html body #page .fo-ctv-b:hover{border-color:#F3D37A !important;color:#F3D37A !important}" +
       "html body #page .fo-ctv-b.ghost,html body.ftpskin #page .fo-ctv-b.ghost{border-color:rgba(255,255,255,.4) !important}" +
-      "html body #page .fo-ct-ch,html body.ftpskin #page .fo-ct-ch{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:12.5px;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:11px 24px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.35) !important}" +
+      "html body #page .fo-ct-ch,html body.ftpskin #page .fo-ct-ch{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:12.5px;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:999px;padding:11px 24px;cursor:pointer;text-decoration:none !important;box-shadow:0 4px 0 rgba(16,27,45,.35) !important}" +
       ".fo-ct-won{font-family:Oswald,sans-serif;font-size:11.5px;letter-spacing:1.6px;color:#8fe3a4;font-weight:600;background:rgba(10,18,32,.72);border:1.5px solid rgba(143,227,164,.5);border-radius:999px;padding:10px 18px;backdrop-filter:blur(4px)}" +
       ".fo-ct-lock{font-size:12px;color:#cdd5e3;background:rgba(10,18,32,.72);border:1.5px solid rgba(255,255,255,.28);border-radius:999px;padding:10px 18px;backdrop-filter:blur(4px)}" +
-      ".fo-ct-back{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:#F5EFDC;background:rgba(10,18,32,.55);border:1.5px solid rgba(255,255,255,.3);border-radius:999px;padding:10px 16px;text-decoration:none;backdrop-filter:blur(4px)}" +
-      ".fo-ct-doss{color:#101B2D;background:rgba(235,194,113,.92);border-color:rgba(235,194,113,.92)}" +
+      "html body #page .fo-ct-back,html body.ftpskin #page .fo-ct-back{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:#F5EFDC !important;background:rgba(10,18,32,.55);border:1.5px solid rgba(235,194,113,.45);border-radius:999px;padding:10px 16px;text-decoration:none;backdrop-filter:blur(4px)}" +
+      "html body #page .fo-ct-doss{color:#101B2D !important;background:rgba(235,194,113,.92);border-color:rgba(235,194,113,.92)}" +
       ".fo-ct-crest{position:absolute;right:24px;top:22px;width:clamp(72px,9vw,128px);height:auto;z-index:6;filter:drop-shadow(0 8px 16px rgba(0,0,0,.6))}" +
       "@media(max-width:640px){.fo-ct-crest{right:14px;top:14px;width:62px}}" +
-      ".fo-ct-back:hover{color:#F3D37A}" +
+      "html body #page .fo-ct-back:hover{color:#F3D37A !important;border-color:rgba(235,194,113,.8)}" +
       ".fo-city-full .fo-ct-h1{font-weight:500;letter-spacing:2.5px;opacity:.97}" +
       ".fo-city-full .fo-ctv-cap .fo-ctv-line{opacity:.85}" +
       // phones read the painting, not a data sheet: one gold chip, no caption
