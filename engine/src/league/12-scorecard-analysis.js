@@ -5071,8 +5071,8 @@
       // the pins in the left band so the boss never stands on them)
       // the pin field stops short of where the boss stands and labels turn inward
       // on its right side, so a wide nation (Perth to Brisbane) still clears the art
-      var pinBox = ovMob ? { x0: 9, y0: 13, x1: 34, y1: 78 } : { x0: 12, y0: 15, x1: 55, y1: 85 };
-      var lblFlip = ovMob ? 22 : 42;
+      var pinBox = ovMob ? { x0: 8, y0: 13, x1: 35, y1: 78 } : { x0: 10, y0: 14, x1: 66, y1: 86 };
+      var lblFlip = ovMob ? 23 : 52;
       var wp = foNationPins(nation, pinBox);
       var cityWid = {}; table.forEach(function (x) { if (x.city && x.wid && x.wid !== "me") cityWid[x.city] = x.wid; });
       var routeOrder = wp.slice().sort(function (a, b) { return a.py - b.py; });   // north to south
@@ -5702,7 +5702,7 @@
       "#page .fo-ov .fo-ov-hero{position:absolute;inset:0;height:100%}",
       ".fo-ov-mapwrap{position:absolute;inset:0;width:100%;height:100%;max-height:none}",
       "#page .fo-ov .fo-ov-map{object-position:38% 42%}",
-      "#page .fo-ov .fo-ov-fig{top:auto;bottom:0;right:19%;height:98%;object-position:bottom}",
+      "#page .fo-ov .fo-ov-fig{top:auto;bottom:0;right:9%;height:86%;object-position:bottom}",
       "#page .fo-ov .fo-ov-left{position:absolute;left:0;top:96px;bottom:64px;width:min(460px,36vw);padding:0 0 0 40px;display:flex;flex-direction:column;justify-content:center}",
       ".fo-ov-panel[data-panel=nation]{padding:128px 34px 60px}",
       "}",
