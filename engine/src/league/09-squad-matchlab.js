@@ -342,7 +342,7 @@
       // an arrow-driven carousel: the focused card is large & glowing, the rest
       // shrink and dim on either side. Scrollbar hidden — the arrows drive it
       // (touch swipe still works).
-      ".fo-sqx-gallery{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:12px calc(50% - 152px);align-items:center;scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none}",
+      ".fo-sqx-gallery{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:12px calc(50% - 152px);align-items:center;scroll-behavior:auto;scrollbar-width:none;-ms-overflow-style:none}",
       ".fo-sqx-gallery::-webkit-scrollbar{display:none;height:0;width:0}",
       // the phc renders at a comfortable native size (so its internal layout
       // never breaks) and the whole card is zoomed; the ART flexes so every card
@@ -420,6 +420,8 @@
       // ------- mobile: a poster-like, single-hero reimagining -------
       "@media(max-width:600px){",
       "  #page .fo-sqx{background:#070c16}",
+      "  html body.fo-sqx-on #topbar,html body.ftpskin.fo-sqx-on #topbar{background:transparent !important}",
+      "  html body.fo-sqx-on #topbar .brand,html body.fo-sqx-on #topbar a{text-shadow:0 1px 10px rgba(0,0,0,.85)}",
       "  .fo-sqx-in{padding:60px 10px 12px}",
       "  .fo-sqx-hd{flex-direction:column;align-items:center;gap:10px;margin:2px 0 6px;text-align:center}",
       "  .fo-sqx-title h1{font-size:34px;letter-spacing:2px;text-shadow:0 2px 18px rgba(0,0,0,.6)}",

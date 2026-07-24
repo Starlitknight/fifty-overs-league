@@ -4402,16 +4402,14 @@ completeRound=function(){
   if(saved!==null&&saved!==undefined&&GD.teams[+saved])App.teamIx=+saved;
   if(!store('fo_welcomed'))location.hash='#/welcome';
 })();
-route();
-
-
-// Engine patch 2026-balanced: pace/spin balance, real Rocket Arm/Lightning Hands hooks, stronger fatigue, contextual chase pressure, death power, and ground-fielding run impact.
 
 // ---- Circuit-only era: the retired engine pages render NOTHING. Their
 // routes redirect to the Circuit, and the pages that live on (squad) are
 // re-rendered by the league overlay, which replaces these globals as it
 // loads. Emptying the originals guarantees the old engine UI can never
-// paint, not even for the boot frame before the overlay arrives.
+// paint, not even for the boot frame before the overlay arrives. These
+// MUST run before the boot route() below, otherwise the very first paint
+// on a #/squad (etc.) refresh briefly shows the old dense table.
 pgSquad=function(){};
 pgOffice=function(){};
 pgMatches=function(){};
@@ -4419,6 +4417,10 @@ pgStats=function(){};
 pgNets=function(){};
 pgReports=function(){};
 pgCal=function(){};
+
+route();
+
+// Engine patch 2026-balanced: pace/spin balance, real Rocket Arm/Lightning Hands hooks, stronger fatigue, contextual chase pressure, death power, and ground-fielding run impact.
 pgEditor=function(){};
 pgCommentary=function(){};
 pgWelcome=function(){};
