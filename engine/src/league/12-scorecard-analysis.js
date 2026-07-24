@@ -4646,7 +4646,9 @@
           "<a class='fo-ov-fx' href='#/league'>Back to your league &#8250;</a></div>";
       }
       var chaseRows = table.slice(0, 4).map(function (x, i) {
-        return "<div class='fo-ov-crow" + (x.isMe ? " me" : "") + (x.boss ? " boss" : "") + "'><span class='r'>" + (i + 1) + "</span><span class='n'>" + E(x.name) + "</span><span class='p'>" + x.pts + "</span><span class='nr'>" + (x.nrr == null ? "&middot;" : (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2)) + "</span></div>";
+        var tag = "div", href = "";
+        if (x.wid && x.wid !== "me") { tag = "a"; href = " href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'"; }
+        return "<" + tag + " class='fo-ov-crow" + (x.isMe ? " me" : "") + (x.boss ? " boss" : "") + "'" + href + "><span class='r'>" + (i + 1) + "</span><span class='n'>" + E(x.name) + "</span><span class='p'>" + x.pts + "</span><span class='nr'>" + (x.nrr == null ? "&middot;" : (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2)) + "</span></" + tag + ">";
       }).join("");
       var groundCards = table.filter(function (x) { return !x.isMe && x.sideObj; }).map(function (x) {
         return "<a class='fo-ov-gcard' href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'>" + safeGround(x, "") + "<span class='cap'>" + E(x.city) + "</span></a>";
@@ -4734,7 +4736,7 @@
         "<div class='fo-lg fo-ov" + (own ? "" : " ro") + "' data-tab='" + actTab + "' style='--lac:" + ac + "'>" +
         "<div class='fo-lg-bg' style='background-image:url(" + mapSrc + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
         // persistent tab rail
-        "<div class='fo-ov-subnav'><div class='fo-ov-tabs' role='tablist' aria-label='" + E(region.nm) + " league'>" + tabBtns + "</div>" +
+        "<div class='fo-ov-subnav'><div class='fo-ov-navleft'><a class='fo-ov-back' href='#/home'>&#8249; Club</a><div class='fo-ov-tabs' role='tablist' aria-label='" + E(region.nm) + " league'>" + tabBtns + "</div></div>" +
         "<a class='fo-ov-sel' href='#/world'>" + E(region.nm) + " &middot; " + (idx19 || 1) + "/" + FO_CX_NATIONS + " &#9662;</a></div>" +
         // ===== OVERVIEW panel =====
         pOpen("overview") +
@@ -4900,10 +4902,8 @@
       ".fo-lg-body{position:relative;z-index:1;max-width:1160px;margin:0 auto;padding:26px clamp(16px,3.5vw,30px) 64px}",
       // the hero already carries a crisp map; below it the same art stays as a soft, living wash
       ".fo-lg-cinemode .fo-lg-bg{filter:blur(18px) brightness(.56) saturate(1.2)}",
-      // top nav
-      ".fo-lg-nav{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 16px}",
-      "html body #page .fo-lg-nav a{font-family:Oswald,sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-size:11px;font-weight:600;color:#dbe4f2;text-decoration:none;background:color-mix(in srgb,var(--lac) 14%,rgba(255,255,255,.05));border:1px solid color-mix(in srgb,var(--lac) 40%,rgba(150,180,225,.18));border-radius:999px;padding:8px 16px;transition:.14s}",
-      "html body #page .fo-lg-nav a:hover{background:color-mix(in srgb,var(--lac) 30%,rgba(255,255,255,.08));color:#fff}",
+      // (removed dead .fo-lg-nav rules: the class collided with the topbar
+      //  "League" pill, whose margin bleed pushed it out of line with the rest)
       // hero: the nation map painting + identity
       ".fo-lg-hero{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:28px;align-items:center;margin:2px 0 26px}",
       ".fo-lg-map{position:relative;display:block;border-radius:16px;overflow:hidden;aspect-ratio:4/3;box-shadow:0 24px 60px rgba(0,0,0,.55),inset 0 0 0 2px color-mix(in srgb,var(--lac) 55%,rgba(255,255,255,.14));background:#0a1220;text-decoration:none}",
@@ -4993,15 +4993,22 @@
       ".fo-ov-figtag{position:absolute;z-index:3;display:none;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2px;font-size:11px;color:var(--gold);text-shadow:0 1px 8px rgba(0,0,0,.8)}",
       ".fo-ov-figtag i{display:block;font-style:normal;font-size:9px;letter-spacing:2.4px;color:#b7c4da;margin-top:2px}",
       // sub-nav
-      ".fo-ov-subnav{position:relative;z-index:4;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.07)}",
+      ".fo-ov-subnav{position:relative;z-index:4;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;flex-wrap:wrap}",
+      ".fo-ov-navleft{display:flex;align-items:center;gap:12px;min-width:0;flex-wrap:wrap}",
+      // the global header floats transparent over the art at every width (part of the bleed, no solid bar)
+      "html body.fo-ov-on #topbar,html body.ftpskin.fo-ov-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(4,10,20,.72),rgba(4,10,20,.3) 58%,transparent) !important;border-bottom:none !important;box-shadow:none !important}",
+      "html body.fo-ov-on #page{padding-top:0 !important;margin-top:0 !important}",
       ".fo-ov-tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}",
       ".fo-ov-tabs::-webkit-scrollbar{display:none}",
       "html body #page .fo-ov-tabs button{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:12px;color:#8ea3c4 !important;background:transparent !important;border:0 !important;padding:6px 10px 8px;cursor:pointer;position:relative;white-space:nowrap;transition:color .14s}",
       "html body #page .fo-ov-tabs button.on{color:#fff !important}",
       "html body #page .fo-ov-tabs button.on:after{content:'';position:absolute;left:10px;right:10px;bottom:0;height:2px;background:var(--gold);border-radius:2px}",
       "html body #page .fo-ov-tabs button:hover{color:#dbe4f2 !important}",
-      "html body #page .fo-ov-sel{font-family:Oswald,sans-serif;letter-spacing:1.6px;text-transform:uppercase;font-size:12px;font-weight:600;color:#dbe4f2;text-decoration:none;background:rgba(12,20,36,.5);border:1px solid rgba(150,180,225,.2);border-radius:999px;padding:8px 15px;backdrop-filter:blur(8px)}",
-      "html body #page .fo-ov-sel:hover{color:#fff;border-color:var(--gold)}",
+      "html body #page .fo-ov-sel{font-family:Oswald,sans-serif;letter-spacing:1.6px;text-transform:uppercase;font-size:12px;font-weight:600;color:#e7edf7 !important;text-decoration:none;background:rgba(12,20,36,.5);border:1px solid rgba(150,180,225,.2);border-radius:999px;padding:8px 15px;backdrop-filter:blur(8px)}",
+      "html body #page .fo-ov-sel:hover{color:#fff !important;border-color:var(--gold)}",
+      // back-to-club chip on the far left of the sub-nav
+      "html body #page .fo-ov-back{display:inline-flex;align-items:center;gap:6px;font-family:Oswald,sans-serif;letter-spacing:1.6px;text-transform:uppercase;font-size:12px;font-weight:600;color:#e7edf7 !important;text-decoration:none;background:rgba(12,20,36,.5);border:1px solid rgba(150,180,225,.2);border-radius:999px;padding:8px 14px;backdrop-filter:blur(8px);margin-right:4px;transition:.14s}",
+      "html body #page .fo-ov-back:hover{color:#fff !important;border-color:var(--gold)}",
       // left identity column
       ".fo-ov-left{position:relative;z-index:3;padding:14px 18px 8px}",
       ".fo-ov-crest{width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 3px 8px rgba(0,0,0,.6));margin-bottom:6px}",
@@ -5039,6 +5046,8 @@
       ".fo-ov-ch,.fo-ov-crow{display:grid;grid-template-columns:22px 1fr 34px 46px;align-items:center;gap:6px;padding:7px 2px}",
       ".fo-ov-ch{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.2px;font-size:9.5px;color:#8ea3c4}.fo-ov-ch .p,.fo-ov-ch .nr{text-align:right}",
       ".fo-ov-crow{border-top:1px solid rgba(150,180,225,.08)}",
+      "html body #page a.fo-ov-crow{text-decoration:none;color:inherit !important;cursor:pointer;transition:background .14s}",
+      "html body #page a.fo-ov-crow:hover{background:rgba(235,194,113,.09);border-radius:8px}",
       ".fo-ov-crow .r{font-family:Oswald,sans-serif;font-weight:700;color:#7f90ac;text-align:center}",
       ".fo-ov-crow .n{font-family:Oswald,sans-serif;font-weight:600;font-size:13.5px;color:#eaf0fb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-ov-crow .p{text-align:right;font-family:Oswald,sans-serif;font-weight:700;font-size:15px;color:#fff}",
@@ -5202,13 +5211,15 @@
       ".fo-ov-dock{display:none}",
       ".fo-ov .fo-ov-pstrip,.fo-ov .fo-ov-bossid{display:none}",
       ".fo-ov .fo-ov-rail{display:flex}.fo-ov .fo-ov-style{display:flex}.fo-ov .fo-ov-figtag{display:block}.fo-ov .fo-ov-ticker{display:flex}",
+      // float the sub-nav over the cinematic hero (clearing the transparent topbar) so the art bleeds to the very top - no dead band
+      "#page .fo-ov .fo-ov-subnav{position:absolute;top:0;left:0;right:0;z-index:50;padding:70px 34px 12px;background:linear-gradient(180deg,rgba(4,10,20,.34),transparent);border-bottom:0}",
       ".fo-ov-panel[data-panel=overview]{position:relative;height:100vh;min-height:680px;padding-bottom:0}",
       "#page .fo-ov .fo-ov-hero{position:absolute;inset:0;height:100%}",
       ".fo-ov-mapwrap{position:absolute;inset:0;width:100%;height:100%;max-height:none}",
       "#page .fo-ov .fo-ov-map{object-position:38% 42%}",
       "#page .fo-ov .fo-ov-fig{top:auto;bottom:0;right:19%;height:98%;object-position:bottom}",
       "#page .fo-ov .fo-ov-left{position:absolute;left:0;top:96px;bottom:64px;width:min(460px,36vw);padding:0 0 0 40px;display:flex;flex-direction:column;justify-content:center}",
-      ".fo-ov-panel[data-panel=table],.fo-ov-panel[data-panel=fixtures],.fo-ov-panel[data-panel=grounds]{padding:20px 34px 60px}",
+      ".fo-ov-panel[data-panel=table],.fo-ov-panel[data-panel=fixtures],.fo-ov-panel[data-panel=grounds]{padding:128px 34px 60px}",
       "}",
       // cup
       ".fo-cup-note{color:#b9c6dd;font-size:13px;margin:4px 0 18px;font-style:italic}",

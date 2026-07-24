@@ -308,6 +308,10 @@
     s.textContent = [
       // full-bleed dark stage (widen the app's padded .wrap while mounted)
       "html body.fo-sqx-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
+      // the global header floats transparent over the dressing-room art (part of the bleed, no solid bar / no second shade)
+      "html body.fo-sqx-on #topbar,html body.ftpskin.fo-sqx-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(4,10,20,.72),rgba(4,10,20,.28) 58%,transparent) !important;border-bottom:none !important;box-shadow:none !important}",
+      "html body.fo-sqx-on #page{padding-top:0 !important;margin-top:0 !important}",
+      "html body.fo-sqx-on #fo-top-status{display:none}",
       "#page .fo-sqx{position:relative;min-height:100vh;background:#0a1220;color:#eaf0fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}",
       "#page .fo-sqx *{box-sizing:border-box}",
       // the backdrop is ABSOLUTE inside .fo-sqx (not fixed) so it covers the full
@@ -319,7 +323,7 @@
       ".fo-sqx-atmo{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.4;background-image:radial-gradient(1.5px 1.5px at 18% 24%,rgba(255,240,205,.9),transparent),radial-gradient(1.2px 1.2px at 72% 16%,rgba(255,255,255,.7),transparent),radial-gradient(1.6px 1.6px at 86% 52%,rgba(255,236,190,.8),transparent),radial-gradient(1.1px 1.1px at 38% 74%,rgba(255,255,255,.55),transparent),radial-gradient(1.3px 1.3px at 56% 40%,rgba(255,246,214,.7),transparent);animation:foSqxMote 12s ease-in-out infinite alternate}",
       "@keyframes foSqxMote{from{opacity:.24;transform:translateY(0)}to{opacity:.5;transform:translateY(-10px)}}",
       "@media(prefers-reduced-motion:reduce){.fo-sqx-atmo{animation:none}}",
-      ".fo-sqx-in{position:relative;z-index:1;max-width:1520px;margin:0 auto;padding:10px 22px 14px;min-height:calc(100vh - 58px);display:flex;flex-direction:column}",
+      ".fo-sqx-in{position:relative;z-index:1;max-width:1520px;margin:0 auto;padding:70px 22px 14px;min-height:100vh;display:flex;flex-direction:column}",
       // header
       ".fo-sqx-hd{display:flex;align-items:flex-end;gap:20px;margin:4px 0 14px;flex-wrap:wrap}",
       ".fo-sqx-title h1{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:clamp(30px,4vw,50px);line-height:.9;margin:0;color:#fff}",
@@ -414,7 +418,7 @@
       // ------- mobile: a poster-like, single-hero reimagining -------
       "@media(max-width:600px){",
       "  #page .fo-sqx{background:#070c16}",
-      "  .fo-sqx-in{padding:8px 10px 12px}",
+      "  .fo-sqx-in{padding:60px 10px 12px}",
       "  .fo-sqx-hd{flex-direction:column;align-items:center;gap:10px;margin:2px 0 6px;text-align:center}",
       "  .fo-sqx-title h1{font-size:34px;letter-spacing:2px;text-shadow:0 2px 18px rgba(0,0,0,.6)}",
       "  .fo-sqx-sub{margin-top:3px;letter-spacing:2.5px}",
@@ -430,9 +434,9 @@
       "  .fo-sqx-foot{justify-content:center;border-top:0;padding:6px 4px 2px}",
       "}",
       // ===== dressing-room stage + selected-player inspector / drawer =====
-      ".fo-sqx-room .fo-sqx-bg{filter:brightness(.5) saturate(.9) contrast(1.02);transform:scale(1.04);background-position:50% 42%}",
-      // one veil at every width: a flat-floored vertical wash (never fully clear, so the photo's hot windows can't punch through) plus an even radial vignette that darkens all four corners equally instead of a left-right band
-      ".fo-sqx-room .fo-sqx-veil{background:linear-gradient(180deg,rgba(4,11,22,.6) 0%,rgba(4,10,20,.5) 34%,rgba(3,9,18,.64) 72%,rgba(2,7,15,.9) 100%),radial-gradient(140% 120% at 50% 32%,rgba(3,9,18,0) 0%,rgba(3,9,18,.16) 60%,rgba(3,9,18,.42) 100%)}",
+      ".fo-sqx-room .fo-sqx-bg{filter:brightness(.78) saturate(.98) contrast(1.02);transform:scale(1.04);background-position:50% 42%}",
+      // one veil at every width: a gentle flat-floored vertical wash (never fully clear, so the photo's hot windows can't punch through) plus a soft even radial vignette that darkens all four corners equally instead of a left-right band - kept light so the brighter art reads through
+      ".fo-sqx-room .fo-sqx-veil{background:linear-gradient(180deg,rgba(4,11,22,.42) 0%,rgba(4,10,20,.32) 34%,rgba(3,9,18,.5) 72%,rgba(2,7,15,.82) 100%),radial-gradient(140% 120% at 50% 34%,rgba(3,9,18,0) 0%,rgba(3,9,18,.12) 62%,rgba(3,9,18,.36) 100%)}",
       "@media(max-width:600px){.fo-sqx-room .fo-sqx-bg{background-position:50% 32%}}",
       ".fo-sqx-stage{display:block}",
       "@media(min-width:1024px){.fo-sqx-stage{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px;align-items:start}.fo-sqx-deckwrap{min-width:0}}",
@@ -450,9 +454,10 @@
       ".fo-sqx-italents{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}",
       ".fo-sqx-itag{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1px;font-size:9.5px;color:#0d1524;background:linear-gradient(180deg,#F3C060,#C9A24B);border-radius:6px;padding:4px 8px}",
       ".fo-sqx-iact{display:flex;gap:9px;margin-top:14px}",
-      "html body #page .fo-sqx-ib{flex:1;min-height:46px;font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.4px;text-transform:uppercase;font-size:12.5px;border-radius:9px;cursor:pointer;border:0}",
-      "html body #page .fo-sqx-ib.view{background:transparent !important;color:#F5EFDC;border:1px solid rgba(235,194,113,.5)}",
-      "html body #page .fo-sqx-ib.edit{background:linear-gradient(180deg,#EF653F,#D94728) !important;color:#FFF8EE}",
+      "html body #page .fo-sqx-ib{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:46px;font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:.6px;text-transform:uppercase;font-size:13px;line-height:1;border-radius:9px;cursor:pointer;border:0;-webkit-font-smoothing:antialiased}",
+      "html body #page .fo-sqx-ib.view{background:transparent !important;color:#EBC271 !important;border:1px solid rgba(235,194,113,.55)}",
+      "html body #page .fo-sqx-ib.view:hover{background:rgba(235,194,113,.1) !important}",
+      "html body #page .fo-sqx-ib.edit{background:linear-gradient(180deg,#EF653F,#D94728) !important;color:#fff !important}",
       "@media(max-width:600px){.fo-sqx-insp{max-width:none;margin-top:6px;border-radius:14px}.fo-sqx-iname{font-size:19px}}"
     ].join("");
     (document.head || document.documentElement).appendChild(s);

@@ -10507,7 +10507,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260724-1445-faa0ea";
+  var FO_BUILD = "20260724-1542-7f346a";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21478,6 +21478,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     s.textContent = [
       // full-bleed dark stage (widen the app's padded .wrap while mounted)
       "html body.fo-sqx-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
+      // the global header floats transparent over the dressing-room art (part of the bleed, no solid bar / no second shade)
+      "html body.fo-sqx-on #topbar,html body.ftpskin.fo-sqx-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(4,10,20,.72),rgba(4,10,20,.28) 58%,transparent) !important;border-bottom:none !important;box-shadow:none !important}",
+      "html body.fo-sqx-on #page{padding-top:0 !important;margin-top:0 !important}",
+      "html body.fo-sqx-on #fo-top-status{display:none}",
       "#page .fo-sqx{position:relative;min-height:100vh;background:#0a1220;color:#eaf0fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}",
       "#page .fo-sqx *{box-sizing:border-box}",
       // the backdrop is ABSOLUTE inside .fo-sqx (not fixed) so it covers the full
@@ -21489,7 +21493,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-sqx-atmo{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.4;background-image:radial-gradient(1.5px 1.5px at 18% 24%,rgba(255,240,205,.9),transparent),radial-gradient(1.2px 1.2px at 72% 16%,rgba(255,255,255,.7),transparent),radial-gradient(1.6px 1.6px at 86% 52%,rgba(255,236,190,.8),transparent),radial-gradient(1.1px 1.1px at 38% 74%,rgba(255,255,255,.55),transparent),radial-gradient(1.3px 1.3px at 56% 40%,rgba(255,246,214,.7),transparent);animation:foSqxMote 12s ease-in-out infinite alternate}",
       "@keyframes foSqxMote{from{opacity:.24;transform:translateY(0)}to{opacity:.5;transform:translateY(-10px)}}",
       "@media(prefers-reduced-motion:reduce){.fo-sqx-atmo{animation:none}}",
-      ".fo-sqx-in{position:relative;z-index:1;max-width:1520px;margin:0 auto;padding:10px 22px 14px;min-height:calc(100vh - 58px);display:flex;flex-direction:column}",
+      ".fo-sqx-in{position:relative;z-index:1;max-width:1520px;margin:0 auto;padding:70px 22px 14px;min-height:100vh;display:flex;flex-direction:column}",
       // header
       ".fo-sqx-hd{display:flex;align-items:flex-end;gap:20px;margin:4px 0 14px;flex-wrap:wrap}",
       ".fo-sqx-title h1{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:clamp(30px,4vw,50px);line-height:.9;margin:0;color:#fff}",
@@ -21584,7 +21588,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       // ------- mobile: a poster-like, single-hero reimagining -------
       "@media(max-width:600px){",
       "  #page .fo-sqx{background:#070c16}",
-      "  .fo-sqx-in{padding:8px 10px 12px}",
+      "  .fo-sqx-in{padding:60px 10px 12px}",
       "  .fo-sqx-hd{flex-direction:column;align-items:center;gap:10px;margin:2px 0 6px;text-align:center}",
       "  .fo-sqx-title h1{font-size:34px;letter-spacing:2px;text-shadow:0 2px 18px rgba(0,0,0,.6)}",
       "  .fo-sqx-sub{margin-top:3px;letter-spacing:2.5px}",
@@ -21600,9 +21604,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "  .fo-sqx-foot{justify-content:center;border-top:0;padding:6px 4px 2px}",
       "}",
       // ===== dressing-room stage + selected-player inspector / drawer =====
-      ".fo-sqx-room .fo-sqx-bg{filter:brightness(.5) saturate(.9) contrast(1.02);transform:scale(1.04);background-position:50% 42%}",
-      // one veil at every width: a flat-floored vertical wash (never fully clear, so the photo's hot windows can't punch through) plus an even radial vignette that darkens all four corners equally instead of a left-right band
-      ".fo-sqx-room .fo-sqx-veil{background:linear-gradient(180deg,rgba(4,11,22,.6) 0%,rgba(4,10,20,.5) 34%,rgba(3,9,18,.64) 72%,rgba(2,7,15,.9) 100%),radial-gradient(140% 120% at 50% 32%,rgba(3,9,18,0) 0%,rgba(3,9,18,.16) 60%,rgba(3,9,18,.42) 100%)}",
+      ".fo-sqx-room .fo-sqx-bg{filter:brightness(.78) saturate(.98) contrast(1.02);transform:scale(1.04);background-position:50% 42%}",
+      // one veil at every width: a gentle flat-floored vertical wash (never fully clear, so the photo's hot windows can't punch through) plus a soft even radial vignette that darkens all four corners equally instead of a left-right band - kept light so the brighter art reads through
+      ".fo-sqx-room .fo-sqx-veil{background:linear-gradient(180deg,rgba(4,11,22,.42) 0%,rgba(4,10,20,.32) 34%,rgba(3,9,18,.5) 72%,rgba(2,7,15,.82) 100%),radial-gradient(140% 120% at 50% 34%,rgba(3,9,18,0) 0%,rgba(3,9,18,.12) 62%,rgba(3,9,18,.36) 100%)}",
       "@media(max-width:600px){.fo-sqx-room .fo-sqx-bg{background-position:50% 32%}}",
       ".fo-sqx-stage{display:block}",
       "@media(min-width:1024px){.fo-sqx-stage{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px;align-items:start}.fo-sqx-deckwrap{min-width:0}}",
@@ -21620,9 +21624,10 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-sqx-italents{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}",
       ".fo-sqx-itag{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1px;font-size:9.5px;color:#0d1524;background:linear-gradient(180deg,#F3C060,#C9A24B);border-radius:6px;padding:4px 8px}",
       ".fo-sqx-iact{display:flex;gap:9px;margin-top:14px}",
-      "html body #page .fo-sqx-ib{flex:1;min-height:46px;font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.4px;text-transform:uppercase;font-size:12.5px;border-radius:9px;cursor:pointer;border:0}",
-      "html body #page .fo-sqx-ib.view{background:transparent !important;color:#F5EFDC;border:1px solid rgba(235,194,113,.5)}",
-      "html body #page .fo-sqx-ib.edit{background:linear-gradient(180deg,#EF653F,#D94728) !important;color:#FFF8EE}",
+      "html body #page .fo-sqx-ib{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:46px;font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:.6px;text-transform:uppercase;font-size:13px;line-height:1;border-radius:9px;cursor:pointer;border:0;-webkit-font-smoothing:antialiased}",
+      "html body #page .fo-sqx-ib.view{background:transparent !important;color:#EBC271 !important;border:1px solid rgba(235,194,113,.55)}",
+      "html body #page .fo-sqx-ib.view:hover{background:rgba(235,194,113,.1) !important}",
+      "html body #page .fo-sqx-ib.edit{background:linear-gradient(180deg,#EF653F,#D94728) !important;color:#fff !important}",
       "@media(max-width:600px){.fo-sqx-insp{max-width:none;margin-top:6px;border-radius:14px}.fo-sqx-iname{font-size:19px}}"
     ].join("");
     (document.head || document.documentElement).appendChild(s);
@@ -28560,7 +28565,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           "<a class='fo-ov-fx' href='#/league'>Back to your league &#8250;</a></div>";
       }
       var chaseRows = table.slice(0, 4).map(function (x, i) {
-        return "<div class='fo-ov-crow" + (x.isMe ? " me" : "") + (x.boss ? " boss" : "") + "'><span class='r'>" + (i + 1) + "</span><span class='n'>" + E(x.name) + "</span><span class='p'>" + x.pts + "</span><span class='nr'>" + (x.nrr == null ? "&middot;" : (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2)) + "</span></div>";
+        var tag = "div", href = "";
+        if (x.wid && x.wid !== "me") { tag = "a"; href = " href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'"; }
+        return "<" + tag + " class='fo-ov-crow" + (x.isMe ? " me" : "") + (x.boss ? " boss" : "") + "'" + href + "><span class='r'>" + (i + 1) + "</span><span class='n'>" + E(x.name) + "</span><span class='p'>" + x.pts + "</span><span class='nr'>" + (x.nrr == null ? "&middot;" : (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2)) + "</span></" + tag + ">";
       }).join("");
       var groundCards = table.filter(function (x) { return !x.isMe && x.sideObj; }).map(function (x) {
         return "<a class='fo-ov-gcard' href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'>" + safeGround(x, "") + "<span class='cap'>" + E(x.city) + "</span></a>";
@@ -28648,7 +28655,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<div class='fo-lg fo-ov" + (own ? "" : " ro") + "' data-tab='" + actTab + "' style='--lac:" + ac + "'>" +
         "<div class='fo-lg-bg' style='background-image:url(" + mapSrc + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
         // persistent tab rail
-        "<div class='fo-ov-subnav'><div class='fo-ov-tabs' role='tablist' aria-label='" + E(region.nm) + " league'>" + tabBtns + "</div>" +
+        "<div class='fo-ov-subnav'><div class='fo-ov-navleft'><a class='fo-ov-back' href='#/home'>&#8249; Club</a><div class='fo-ov-tabs' role='tablist' aria-label='" + E(region.nm) + " league'>" + tabBtns + "</div></div>" +
         "<a class='fo-ov-sel' href='#/world'>" + E(region.nm) + " &middot; " + (idx19 || 1) + "/" + FO_CX_NATIONS + " &#9662;</a></div>" +
         // ===== OVERVIEW panel =====
         pOpen("overview") +
@@ -28814,10 +28821,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-lg-body{position:relative;z-index:1;max-width:1160px;margin:0 auto;padding:26px clamp(16px,3.5vw,30px) 64px}",
       // the hero already carries a crisp map; below it the same art stays as a soft, living wash
       ".fo-lg-cinemode .fo-lg-bg{filter:blur(18px) brightness(.56) saturate(1.2)}",
-      // top nav
-      ".fo-lg-nav{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 16px}",
-      "html body #page .fo-lg-nav a{font-family:Oswald,sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-size:11px;font-weight:600;color:#dbe4f2;text-decoration:none;background:color-mix(in srgb,var(--lac) 14%,rgba(255,255,255,.05));border:1px solid color-mix(in srgb,var(--lac) 40%,rgba(150,180,225,.18));border-radius:999px;padding:8px 16px;transition:.14s}",
-      "html body #page .fo-lg-nav a:hover{background:color-mix(in srgb,var(--lac) 30%,rgba(255,255,255,.08));color:#fff}",
+      // (removed dead .fo-lg-nav rules: the class collided with the topbar
+      //  "League" pill, whose margin bleed pushed it out of line with the rest)
       // hero: the nation map painting + identity
       ".fo-lg-hero{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:28px;align-items:center;margin:2px 0 26px}",
       ".fo-lg-map{position:relative;display:block;border-radius:16px;overflow:hidden;aspect-ratio:4/3;box-shadow:0 24px 60px rgba(0,0,0,.55),inset 0 0 0 2px color-mix(in srgb,var(--lac) 55%,rgba(255,255,255,.14));background:#0a1220;text-decoration:none}",
@@ -28907,15 +28912,22 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-ov-figtag{position:absolute;z-index:3;display:none;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2px;font-size:11px;color:var(--gold);text-shadow:0 1px 8px rgba(0,0,0,.8)}",
       ".fo-ov-figtag i{display:block;font-style:normal;font-size:9px;letter-spacing:2.4px;color:#b7c4da;margin-top:2px}",
       // sub-nav
-      ".fo-ov-subnav{position:relative;z-index:4;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.07)}",
+      ".fo-ov-subnav{position:relative;z-index:4;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;flex-wrap:wrap}",
+      ".fo-ov-navleft{display:flex;align-items:center;gap:12px;min-width:0;flex-wrap:wrap}",
+      // the global header floats transparent over the art at every width (part of the bleed, no solid bar)
+      "html body.fo-ov-on #topbar,html body.ftpskin.fo-ov-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(4,10,20,.72),rgba(4,10,20,.3) 58%,transparent) !important;border-bottom:none !important;box-shadow:none !important}",
+      "html body.fo-ov-on #page{padding-top:0 !important;margin-top:0 !important}",
       ".fo-ov-tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}",
       ".fo-ov-tabs::-webkit-scrollbar{display:none}",
       "html body #page .fo-ov-tabs button{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:12px;color:#8ea3c4 !important;background:transparent !important;border:0 !important;padding:6px 10px 8px;cursor:pointer;position:relative;white-space:nowrap;transition:color .14s}",
       "html body #page .fo-ov-tabs button.on{color:#fff !important}",
       "html body #page .fo-ov-tabs button.on:after{content:'';position:absolute;left:10px;right:10px;bottom:0;height:2px;background:var(--gold);border-radius:2px}",
       "html body #page .fo-ov-tabs button:hover{color:#dbe4f2 !important}",
-      "html body #page .fo-ov-sel{font-family:Oswald,sans-serif;letter-spacing:1.6px;text-transform:uppercase;font-size:12px;font-weight:600;color:#dbe4f2;text-decoration:none;background:rgba(12,20,36,.5);border:1px solid rgba(150,180,225,.2);border-radius:999px;padding:8px 15px;backdrop-filter:blur(8px)}",
-      "html body #page .fo-ov-sel:hover{color:#fff;border-color:var(--gold)}",
+      "html body #page .fo-ov-sel{font-family:Oswald,sans-serif;letter-spacing:1.6px;text-transform:uppercase;font-size:12px;font-weight:600;color:#e7edf7 !important;text-decoration:none;background:rgba(12,20,36,.5);border:1px solid rgba(150,180,225,.2);border-radius:999px;padding:8px 15px;backdrop-filter:blur(8px)}",
+      "html body #page .fo-ov-sel:hover{color:#fff !important;border-color:var(--gold)}",
+      // back-to-club chip on the far left of the sub-nav
+      "html body #page .fo-ov-back{display:inline-flex;align-items:center;gap:6px;font-family:Oswald,sans-serif;letter-spacing:1.6px;text-transform:uppercase;font-size:12px;font-weight:600;color:#e7edf7 !important;text-decoration:none;background:rgba(12,20,36,.5);border:1px solid rgba(150,180,225,.2);border-radius:999px;padding:8px 14px;backdrop-filter:blur(8px);margin-right:4px;transition:.14s}",
+      "html body #page .fo-ov-back:hover{color:#fff !important;border-color:var(--gold)}",
       // left identity column
       ".fo-ov-left{position:relative;z-index:3;padding:14px 18px 8px}",
       ".fo-ov-crest{width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 3px 8px rgba(0,0,0,.6));margin-bottom:6px}",
@@ -28953,6 +28965,8 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-ov-ch,.fo-ov-crow{display:grid;grid-template-columns:22px 1fr 34px 46px;align-items:center;gap:6px;padding:7px 2px}",
       ".fo-ov-ch{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.2px;font-size:9.5px;color:#8ea3c4}.fo-ov-ch .p,.fo-ov-ch .nr{text-align:right}",
       ".fo-ov-crow{border-top:1px solid rgba(150,180,225,.08)}",
+      "html body #page a.fo-ov-crow{text-decoration:none;color:inherit !important;cursor:pointer;transition:background .14s}",
+      "html body #page a.fo-ov-crow:hover{background:rgba(235,194,113,.09);border-radius:8px}",
       ".fo-ov-crow .r{font-family:Oswald,sans-serif;font-weight:700;color:#7f90ac;text-align:center}",
       ".fo-ov-crow .n{font-family:Oswald,sans-serif;font-weight:600;font-size:13.5px;color:#eaf0fb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-ov-crow .p{text-align:right;font-family:Oswald,sans-serif;font-weight:700;font-size:15px;color:#fff}",
@@ -29116,13 +29130,15 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-ov-dock{display:none}",
       ".fo-ov .fo-ov-pstrip,.fo-ov .fo-ov-bossid{display:none}",
       ".fo-ov .fo-ov-rail{display:flex}.fo-ov .fo-ov-style{display:flex}.fo-ov .fo-ov-figtag{display:block}.fo-ov .fo-ov-ticker{display:flex}",
+      // float the sub-nav over the cinematic hero (clearing the transparent topbar) so the art bleeds to the very top - no dead band
+      "#page .fo-ov .fo-ov-subnav{position:absolute;top:0;left:0;right:0;z-index:50;padding:70px 34px 12px;background:linear-gradient(180deg,rgba(4,10,20,.34),transparent);border-bottom:0}",
       ".fo-ov-panel[data-panel=overview]{position:relative;height:100vh;min-height:680px;padding-bottom:0}",
       "#page .fo-ov .fo-ov-hero{position:absolute;inset:0;height:100%}",
       ".fo-ov-mapwrap{position:absolute;inset:0;width:100%;height:100%;max-height:none}",
       "#page .fo-ov .fo-ov-map{object-position:38% 42%}",
       "#page .fo-ov .fo-ov-fig{top:auto;bottom:0;right:19%;height:98%;object-position:bottom}",
       "#page .fo-ov .fo-ov-left{position:absolute;left:0;top:96px;bottom:64px;width:min(460px,36vw);padding:0 0 0 40px;display:flex;flex-direction:column;justify-content:center}",
-      ".fo-ov-panel[data-panel=table],.fo-ov-panel[data-panel=fixtures],.fo-ov-panel[data-panel=grounds]{padding:20px 34px 60px}",
+      ".fo-ov-panel[data-panel=table],.fo-ov-panel[data-panel=fixtures],.fo-ov-panel[data-panel=grounds]{padding:128px 34px 60px}",
       "}",
       // cup
       ".fo-cup-note{color:#b9c6dd;font-size:13px;margin:4px 0 18px;font-style:italic}",
