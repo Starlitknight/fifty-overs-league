@@ -10526,7 +10526,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260724-1855-a7ff72";
+  var FO_BUILD = "20260724-1908-174f7a";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -28604,7 +28604,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var bossArt = FO_ART + "circuit/boss-" + nation + ".webp";
       var emblem = ""; try { emblem = foCxCrestSrc(nation) || ""; } catch (eEm) {}
       var subtitle = FO_LG_SUB[nation] || region.type || "The League";
-      var idx19 = FO_CX_REGIONS.filter(function (r) { return !r.final; }).findIndex(function (r) { return r.id === nation; }) + 1;
+      var natList19 = FO_CX_REGIONS.filter(function (r) { return !r.final; });
+      var idx19 = natList19.findIndex(function (r) { return r.id === nation; }) + 1;
+      var natOpts = natList19.map(function (r9, ii) { return "<option value='" + E(r9.id) + "'" + (r9.id === nation ? " selected" : "") + ">" + E(r9.nm) + " · " + (ii + 1) + "/" + FO_CX_NATIONS + "</option>"; }).join("");
       var entAv = function (e) { if (!e) return ""; if (e.isMe) return "<img src='" + foLgArtFallback(nation) + "' alt=''>"; if (e.boss) return "<img class='crest' src='" + foLgClubCrest(nation, e.sideObj) + "' alt='' onerror=\"this.onerror=null;this.src='" + foLgClubArt(nation, e.sideObj) + "'\">"; return foLgArtImg(nation, e.sideObj); };
       // the identity card: own -> your fixture / champion; rival -> the leaders + meet the boss
       var matchCard;
@@ -28728,7 +28730,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<div class='fo-lg-bg' style='background-image:url(" + mapSrc + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
         // persistent tab rail
         "<div class='fo-ov-subnav'><div class='fo-ov-navleft'><a class='fo-ov-back' href='#/home'>&#8249; Club</a><div class='fo-ov-tabs' role='tablist' aria-label='" + E(region.nm) + " league'>" + tabBtns + "</div></div>" +
-        "<a class='fo-ov-sel' href='#/world'>" + E(region.nm) + " &middot; " + (idx19 || 1) + "/" + FO_CX_NATIONS + " &#9662;</a></div>" +
+        "<div class='fo-ov-selwrap'><span class='fo-ov-sel'>" + E(region.nm) + " &middot; " + (idx19 || 1) + "/" + FO_CX_NATIONS + " &#9662;</span><select class='fo-ov-selnat' aria-label='Jump to another nation league'>" + natOpts + "</select></div></div>" +
         // ===== OVERVIEW panel =====
         pOpen("overview") +
         "<div class='fo-ov-hero'>" +
@@ -28776,6 +28778,18 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         };
         page.querySelectorAll("[data-ovtab]").forEach(function (btn) {
           btn.addEventListener("click", function () { ovSetTab(btn.getAttribute("data-ovtab"), true); });
+        });
+        // country navigator: pick a nation from the dropdown and jump straight to its league
+        var selNat = page.querySelector(".fo-ov-selnat");
+        if (selNat) selNat.addEventListener("change", function () { var v = selNat.value; if (v && v !== nation) { location.hash = "#/league?n=" + encodeURIComponent(v); if (typeof window.route === "function") window.route(); } });
+        // grounds strip: click-drag to scroll through every ground (a drag never opens a ground)
+        page.querySelectorAll(".fo-ov-gstrip").forEach(function (strip) {
+          var down = false, sx = 0, sl = 0, moved = false;
+          strip.addEventListener("pointerdown", function (e) { down = true; moved = false; sx = e.clientX; sl = strip.scrollLeft; try { strip.setPointerCapture(e.pointerId); } catch (e2) {} });
+          strip.addEventListener("pointermove", function (e) { if (!down) return; var dx = e.clientX - sx; if (Math.abs(dx) > 4) moved = true; strip.scrollLeft = sl - dx; });
+          var up = function () { down = false; };
+          strip.addEventListener("pointerup", up); strip.addEventListener("pointercancel", up);
+          strip.addEventListener("click", function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); } }, true);
         });
         if (!window.__foOvPop) {
           window.__foOvPop = 1;
@@ -28994,6 +29008,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "html body #page .fo-ov-tabs button:hover{color:#dbe4f2 !important}",
       "html body #page .fo-ov-sel{font-family:Oswald,sans-serif;letter-spacing:1.6px;text-transform:uppercase;font-size:12px;font-weight:600;color:#e7edf7 !important;text-decoration:none;background:rgba(12,20,36,.5);border:1px solid rgba(150,180,225,.2);border-radius:999px;padding:8px 15px;backdrop-filter:blur(8px)}",
       "html body #page .fo-ov-sel:hover{color:#fff !important;border-color:var(--gold)}",
+      // the pill is now a real dropdown: a native select sits invisibly on top
+      ".fo-ov-selwrap{position:relative;display:inline-block}",
+      ".fo-ov-selwrap:hover .fo-ov-sel{color:#fff;border-color:var(--gold)}",
+      "html body #page .fo-ov-selnat{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px;-webkit-appearance:none;appearance:none;border:0;background:transparent}",
+      "html body #page .fo-ov-selnat option{color:#0c1524;background:#f4efe6}",
       // back-to-club chip on the far left of the sub-nav
       "html body #page .fo-ov-back{display:inline-flex;align-items:center;gap:6px;font-family:Oswald,sans-serif;letter-spacing:1.6px;text-transform:uppercase;font-size:12px;font-weight:600;color:#e7edf7 !important;text-decoration:none;background:rgba(12,20,36,.5);border:1px solid rgba(150,180,225,.2);border-radius:999px;padding:8px 14px;backdrop-filter:blur(8px);margin-right:4px;transition:.14s}",
       "html body #page .fo-ov-back:hover{color:#fff !important;border-color:var(--gold)}",
@@ -29050,7 +29069,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "html body #page .fo-ov-full:hover{color:#fff !important}",
       // grounds carousel
       ".fo-ov-grounds{padding:14px 0 4px}.fo-ov-gh{padding:0 16px}",
-      ".fo-ov-gstrip{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:12px 16px 14px;scrollbar-width:none}",
+      ".fo-ov-gstrip{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x;padding:12px 16px 14px;scrollbar-width:none;cursor:grab}",
       ".fo-ov-gstrip::-webkit-scrollbar{display:none}",
       ".fo-ov-gcard{position:relative;flex:0 0 78%;max-width:260px;scroll-snap-align:start;border-radius:12px;overflow:hidden;aspect-ratio:16/10;text-decoration:none;box-shadow:0 8px 20px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08)}",
       ".fo-ov-gcard img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease}",
@@ -29084,7 +29103,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-ov-hero{height:100vh;min-height:680px}",
       ".fo-ov-map{position:absolute;inset:0;width:100%;height:100%;object-position:38% 42%}",
       ".fo-ov-vig{background:linear-gradient(90deg,rgba(6,11,22,.94) 0%,rgba(6,11,22,.55) 26%,transparent 48%,transparent 62%,rgba(6,11,22,.5) 100%),linear-gradient(180deg,rgba(6,11,22,.55) 0%,transparent 20%,transparent 60%,rgba(6,11,22,.9) 100%)}",
-      ".fo-ov-fig{height:98%;right:19%;top:auto;bottom:0;object-position:bottom;-webkit-mask-image:radial-gradient(58% 90% at 56% 47%,#000 38%,transparent 76%);mask-image:radial-gradient(58% 90% at 56% 47%,#000 38%,transparent 76%)}",
+      ".fo-ov-fig{height:98%;right:0;left:auto;top:auto;bottom:0;object-position:right bottom;-webkit-mask-image:radial-gradient(58% 90% at 62% 47%,#000 40%,transparent 78%);mask-image:radial-gradient(58% 90% at 62% 47%,#000 40%,transparent 78%)}",
       ".fo-ov-figtag{display:block;left:46%;right:auto;bottom:24%;top:auto;text-align:left}",
       ".fo-ov-subnav{position:absolute;top:0;left:0;right:0;border-bottom:0;padding:16px 34px}",
       ".fo-ov-left{position:absolute;left:0;top:96px;bottom:64px;width:min(460px,36vw);padding:0 0 0 40px;display:flex;flex-direction:column;justify-content:center}",
