@@ -5608,7 +5608,13 @@
       "#page .fo-ov .fo-lg-row.q{background:rgba(235,194,113,.055)}",
       "#page .fo-ov .fo-lg-row.q:hover{background:rgba(235,194,113,.09)}",
       "#page .fo-ov .fo-ov-mapwrap{height:74vh;min-height:520px}",
-      "#page .fo-ov .fo-ov-fig{height:72vh;right:-6%}",
+      // phones: the boss holds the right half and the map keeps the left, so the
+      // country and its pins are never under him. Cutouts carry their own alpha,
+      // so no mask is needed to blend the figure into the map.
+      "#page .fo-ov .fo-ov-fig{top:auto;bottom:0;right:0;left:auto;height:auto;width:auto;max-height:62vh;max-width:54%;object-fit:contain;object-position:right bottom;-webkit-mask-image:none;mask-image:none;opacity:1;filter:drop-shadow(-10px 14px 30px rgba(0,0,0,.62)) saturate(1.04)}",
+      "#page .fo-ov .fo-ov-map{object-position:34% 42%}",
+      // a pin label that grazes the figure still has to read
+      "#page .fo-ov .fo-ov-pin .nm{font-size:9.5px;letter-spacing:1.4px;text-shadow:0 1px 5px #000,0 0 11px rgba(0,0,0,.95)}",
       "#page .fo-ov .fo-ov-title{font-size:clamp(44px,13vw,56px);margin-top:4px}",
       "#page .fo-ov .fo-ov-sub{font-size:clamp(18px,5.6vw,24px);letter-spacing:2px}",
       "#page .fo-ov .fo-ov-quote{margin-top:11px;font-size:14px;line-height:1.45;max-width:none}",
