@@ -10507,7 +10507,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260724-1407-5a5eea";
+  var FO_BUILD = "20260724-1439-db00cf";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21599,7 +21599,31 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "  .fo-sqx-arrow{width:40px;height:40px;font-size:22px;background:rgba(10,18,32,.6);border-color:rgba(235,194,113,.35)}",
       "  .fo-sqx-arrow.prev{left:2px}.fo-sqx-arrow.next{right:2px}",
       "  .fo-sqx-foot{justify-content:center;border-top:0;padding:6px 4px 2px}",
-      "}"
+      "}",
+      // ===== dressing-room stage + selected-player inspector / drawer =====
+      ".fo-sqx-room .fo-sqx-bg{filter:brightness(.6) saturate(1.04) contrast(1.05);transform:scale(1.04);background-position:50% 42%}",
+      ".fo-sqx-room .fo-sqx-veil{background:linear-gradient(90deg,rgba(3,9,18,.8) 0%,rgba(3,9,18,.16) 43%,rgba(3,9,18,.18) 68%,rgba(3,9,18,.84) 100%),linear-gradient(180deg,rgba(3,9,18,.2) 0%,rgba(3,9,18,.36) 60%,rgba(3,9,18,.74) 100%)}",
+      "@media(max-width:600px){.fo-sqx-room .fo-sqx-bg{background-position:50% 32%}}",
+      ".fo-sqx-stage{display:block}",
+      "@media(min-width:1024px){.fo-sqx-stage{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px;align-items:start}.fo-sqx-deckwrap{min-width:0}}",
+      ".fo-sqx-insp{margin:10px auto 0;max-width:520px;background:linear-gradient(180deg,rgba(11,25,48,.86),rgba(5,13,24,.9));border:1px solid rgba(235,194,113,.5);border-radius:16px;padding:15px 16px;backdrop-filter:blur(12px);box-shadow:0 16px 40px rgba(0,0,0,.4)}",
+      "@media(min-width:1024px){.fo-sqx-insp{margin:0;max-width:none;position:sticky;top:8px}}",
+      ".fo-sqx-ihd{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}",
+      ".fo-sqx-irole{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2px;font-size:10px;color:#EBC271}",
+      ".fo-sqx-iname{font-family:Oswald,sans-serif;font-weight:600;font-size:22px;color:#F5EFDC;line-height:1.05;margin-top:2px}",
+      ".fo-sqx-iovr{text-align:center;flex:none}.fo-sqx-iovr small{display:block;font-family:Oswald,sans-serif;font-size:9px;letter-spacing:2px;color:#9AA9BD}.fo-sqx-iovr b{font-family:Oswald,sans-serif;font-weight:700;font-size:26px;color:#fff;line-height:1}",
+      ".fo-sqx-istat{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 10px;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1px;font-size:11px}",
+      ".fo-sqx-istat .xi{color:#24D3D8}.fo-sqx-istat .bench{color:#9AA9BD}.fo-sqx-istat .ok{color:#4DA6A2}.fo-sqx-istat .lo{color:#E6532F}",
+      ".fo-sqx-ifl{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.4px;font-size:10px;color:#9AA9BD;display:flex;align-items:baseline;gap:8px}.fo-sqx-ifl b{color:#F5EFDC;font-size:14px}.fo-sqx-ifl i{font-style:normal;color:#EBC271;margin-left:auto}",
+      ".fo-sqx-imeter{height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:6px}",
+      ".fo-sqx-imeter i{display:block;height:100%;background:linear-gradient(90deg,#E4AD35,#EBC271)}",
+      ".fo-sqx-italents{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}",
+      ".fo-sqx-itag{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1px;font-size:9.5px;color:#0d1524;background:linear-gradient(180deg,#F3C060,#C9A24B);border-radius:6px;padding:4px 8px}",
+      ".fo-sqx-iact{display:flex;gap:9px;margin-top:14px}",
+      "html body #page .fo-sqx-ib{flex:1;min-height:46px;font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.4px;text-transform:uppercase;font-size:12.5px;border-radius:9px;cursor:pointer;border:0}",
+      "html body #page .fo-sqx-ib.view{background:transparent !important;color:#F5EFDC;border:1px solid rgba(235,194,113,.5)}",
+      "html body #page .fo-sqx-ib.edit{background:linear-gradient(180deg,#EF653F,#D94728) !important;color:#FFF8EE}",
+      "@media(max-width:600px){.fo-sqx-insp{max-width:none;margin-top:6px;border-radius:14px}.fo-sqx-iname{font-size:19px}}"
     ].join("");
     (document.head || document.documentElement).appendChild(s);
   }
@@ -21698,9 +21722,22 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           "' data-n='" + E(p.name) + "' style='--tc:" + hc.ac[0] + ";--tcD:" + hc.ac[1] + "'>" + hc.html + "</div>";
       }).join("") || "<div class='fo-sqx-empty'>No players in this view.</div>";
 
-      var tabs = [["xi", "XI"], ["bat", "BAT"], ["bowl", "BOWL"], ["keep", "KEEP"], ["youth", "YOUTH"]].map(function (tb) {
+      var tabs = [["xi", "XI"], ["all", "ALL"], ["bat", "BAT"], ["bowl", "BOWL"], ["keep", "KEEP"], ["youth", "YOUTH"]].map(function (tb) {
         return "<button class='fo-sqx-tab" + (sv.tab === tb[0] ? " on" : "") + "' data-tab='" + tb[0] + "'>" + tb[1] + "</button>";
       }).join("");
+      // selected-player inspector / action drawer, from live values
+      var inspHTML = "";
+      if (sel) {
+        var iEn = foEnergyOf(sel), iRole = foPkRoleLbl(sel), iOvr = foPkOvr(sel), inXi = !!xiSet[sel.name];
+        var iTal = (sel.talents || []).slice(0, 2).map(function (t2) { return "<span class='fo-sqx-itag'>" + E(ptal(t2)) + "</span>"; }).join("");
+        inspHTML = "<aside class='fo-sqx-insp'>" +
+          "<div class='fo-sqx-ihd'><div class='fo-sqx-iid'><div class='fo-sqx-irole'>" + E(iRole) + "</div><div class='fo-sqx-iname'>" + E(sel.name) + "</div></div><div class='fo-sqx-iovr'><small>OVR</small><b>" + iOvr + "</b></div></div>" +
+          "<div class='fo-sqx-istat'><span class='" + (inXi ? "xi" : "bench") + "'>" + (inXi ? "&#10003; In tonight's XI" : "On the bench") + "</span><span class='" + (iEn.tired ? "lo" : "ok") + "'>" + (iEn.tired ? "Low fitness" : "Match ready") + "</span></div>" +
+          "<div class='fo-sqx-ifit'><div class='fo-sqx-ifl'>Fitness <b>" + iEn.pct + "%</b><i>" + E(iEn.word) + "</i></div><div class='fo-sqx-imeter'><i style='width:" + iEn.pct + "%'></i></div></div>" +
+          (iTal ? "<div class='fo-sqx-italents'>" + iTal + "</div>" : "") +
+          "<div class='fo-sqx-iact'><button type='button' class='fo-sqx-ib view'>View player</button><button type='button' class='fo-sqx-ib edit'>Edit XI &#8594;</button></div>" +
+          "</aside>";
+      }
       var sortSel = "<div class='fo-sqx-sort'>SORT: <select id='fo-sqx-sort'>" + ["OVR", "BAT", "BOWL", "AGE", "FORM"].map(function (o) { return "<option" + (sv.sortK === o ? " selected" : "") + ">" + o + "</option>"; }).join("") + "</select></div>";
       var rar = [["all", "ALL"], ["elite", "ELITE"], ["rare", "RARE"], ["uncommon", "UNCOMMON"], ["common", "COMMON"], ["bat", "BATTER"], ["bowl", "BOWLER"], ["wk", "KEEPER"], ["ar", "ALL-ROUNDER"], ["spin", "SPINNER"], ["fast", "FAST"]].map(function (r9) {
         return "<button class='fo-sqx-rar" + (sv.rarity === r9[0] ? " on" : "") + "' data-r='" + r9[0] + "'>" + r9[1] + "</button>";
@@ -21710,20 +21747,24 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var page = document.getElementById("page"); if (!page) return;
       document.body.classList.add("fo-sqx-on");
       // set the squad over the player's own nation map, so it belongs to the same world as the league
-      var sqxNation = "eng"; try { if (typeof foLgNation === "function") sqxNation = foLgNation() || "eng"; } catch (eNat) {}
-      var sqxBg = FO_ART + "circuit/" + sqxNation + ".webp";
+      var sqxBg = FO_ART + "home/hgm-dressing-room.webp";
       page.innerHTML =
-        "<div class='fo-sqx'><div class='fo-sqx-bg' style='background-image:url(" + sqxBg + ")' onerror=\"\"></div><div class='fo-sqx-veil'></div><div class='fo-sqx-atmo'></div><div class='fo-sqx-in'>" +
+        "<div class='fo-sqx fo-sqx-room'><div class='fo-sqx-bg' style='background-image:url(" + sqxBg + ")'></div><div class='fo-sqx-veil'></div><div class='fo-sqx-atmo'></div><div class='fo-sqx-in'>" +
         "<header class='fo-sqx-hd'>" +
-        "<div class='fo-sqx-title'><h1>Your Squad</h1><div class='fo-sqx-sub'>" + seniors.length + " players <i>&middot;</i> " + sv.xi.length + " selected</div></div>" +
+        "<div class='fo-sqx-title'><h1>Your Squad</h1><div class='fo-sqx-sub'>" + seniors.length + " players <i>&middot;</i> " + sv.xi.length + " selected <i>&middot;</i> Energy " + enAvg + "%</div></div>" +
         "<div class='fo-sqx-tabs'>" + tabs + "</div>" + sortSel +
         "</header>" +
+        "<div class='fo-sqx-stage'>" +
+        "<div class='fo-sqx-deckwrap'>" +
         "<div class='fo-sqx-body'>" +
         "<button type='button' class='fo-sqx-arrow prev' aria-label='Previous player'>&#8249;</button>" +
         "<div class='fo-sqx-gallery'>" + cards + "</div>" +
         "<button type='button' class='fo-sqx-arrow next' aria-label='Next player'>&#8250;</button>" +
         "</div>" +
         "<div class='fo-sqx-count' id='fo-sqx-count'></div>" +
+        "</div>" +
+        inspHTML +
+        "</div>" +
         "<footer class='fo-sqx-foot'>" + balHtml + "</footer>" +
         "</div></div>";
 
@@ -21743,6 +21784,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           else { sv.sel = n; pgSquad(); }
         });
       });
+      // inspector actions: reuse the real player + lineup routes
+      var iv = page.querySelector(".fo-sqx-ib.view"); if (iv) iv.addEventListener("click", function () { if (sv.sel) location.hash = "#/player?n=" + encodeURIComponent(sv.sel); });
+      var ie = page.querySelector(".fo-sqx-ib.edit"); if (ie) ie.addEventListener("click", function () { location.hash = "#/orders"; });
       // centre the focused card in the rail (no page scroll)
       (function () { try { var g = page.querySelector(".fo-sqx-gallery"), s2 = page.querySelector(".fo-sqx-card.sel"); if (g && s2) { var gr = g.getBoundingClientRect(), sr = s2.getBoundingClientRect(); g.scrollLeft += (sr.left + sr.width / 2) - (gr.left + gr.width / 2); } } catch (e) {} })();
     } catch (e) { console.warn("pgSquad", e); }
