@@ -5127,10 +5127,22 @@
       var v = foHgVariant();
       var me = null; try { me = userTeam(); } catch (e) {}
       var nation = foLgNation(), region = (foRegionById(nation) || {}).r || { nm: "your nation", ac: "#EBC271" };
-      var s = null, pos = 0, round = 0, done = false;
+      var s = null, pos = 0, round = 0, done = false, totalR = 14;
       try { s = foLgEnsure(); var tbl = foLgTable(foLgLineup(nation), s.res || {}); pos = tbl.findIndex(function (x) { return x.name === (foLgMyTeam().name); }) + 1; round = Math.min(14, s.round || 0); done = round >= 14; } catch (eS) {}
+      // the season you actually play is the truth: when the club season is
+      // live, its clock and its table outrank the nation-league flavour clock
+      try {
+        if (App.season && App.season.schedule && App.season.schedule.length) {
+          totalR = App.season.schedule.length;
+          round = Math.min(totalR, App.season.round || 0);
+          done = round >= totalR;
+          var rowsC = (typeof leagueRows === "function") ? leagueRows() : [];
+          var pC = rowsC.findIndex(function (x) { return x.nm === (me && me.name); }) + 1;
+          if (pC > 0) pos = pC;
+        }
+      } catch (eC) {}
       var beads = foHomeForm() || "<span class='hg-nf'>the season awaits</span>";
-      var posLine = done ? "Season complete &middot; you finished " + foOrdinal(pos || 8) : (pos ? foOrdinal(pos) + " in the " + region.nm + " League &middot; Round " + (round + 1) + " of 14" : region.nm + " League");
+      var posLine = done ? "Season complete &middot; you finished " + foOrdinal(pos || 8) : (pos ? foOrdinal(pos) + " in the " + region.nm + " League &middot; Round " + (round + 1) + " of " + totalR : region.nm + " League");
       var sig = "home|" + v + "|" + ((me && me.name) || "") + "|" + pos + "|" + round;
       if (page.__foHomeSig === sig && page.querySelector(".fo-home2")) return;
       page.__foHomeSig = sig;
