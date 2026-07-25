@@ -10526,7 +10526,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260725-1340-12b067";
+  var FO_BUILD = "20260725-1434-d1d862";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -28006,32 +28006,94 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // Published features get the full spread; everyone else gets their file. All of
   // it reads from the same region data the rest of the game plays against, so a
   // boss's story and the side you face never drift apart.
+  // The Journal's published run. Every line here is taken off the printed page
+  // it sits beside, so the web edition and the plate never disagree: dek, issue
+  // and date off the folio, the standfirst condensed from the article, and the
+  // pull quote exactly as it was set.
   var FO_LORE_FEATURE = {
-    eng: {
-      art: "lore/journal-eng.webp", artM: "lore/journal-eng-m.webp",
-      issue: "Vol. 01 &middot; Issue 19", byline: "Eleanor March",
-      head: "The man who turned England's patience into a competitive edge.",
-      standfirst: "Canterbury made him: wet outfields, slow pitches, and long county afternoons that taught him English conditions reward judgment over impulse. He asks the whole domestic game for the same thing."
-    },
-    aus: {
-      art: "lore/journal-aus.webp", artM: "lore/journal-aus-m.webp",
-      issue: "Vol. 01 &middot; Issue 19", byline: "Eleanor March",
-      head: "The man who turned Australia's aggression into a system.",
-      standfirst: "Hard wickets and fast outfields taught him that hesitation costs matches. He made his name as an uncompromising opener who took control early and set the tempo, and he wants every Australian side to play the same way: direct, assertive, always forcing the opposition to react."
-    },
-    rsa: {
-      art: "lore/journal-rsa.webp", artM: "lore/journal-rsa-m.webp",
-      issue: "Vol. 01 &middot; Issue 19", byline: "Eleanor March",
-      head: "South Africa's pace-first architect.",
-      standfirst: "He came through hard surfaces and fast conditions where hesitation gets punished and intent matters. He built his name hitting the deck hard and refusing to let batters settle, and he now asks every South African side for the same edge: attack with the ball, stay athletic, make every over feel uncomfortable."
-    },
-    sub: {
-      art: "lore/journal-sub.webp", artM: "lore/journal-sub-m.webp",
-      issue: "Vol. 01 &middot; Issue 19", byline: "Eleanor March",
-      head: "India's master of pressure and spin.",
-      standfirst: "He built his cricket on reading chaos faster than everyone else - a middle-order batter and part-time off-spinner who thrived when matches turned loud and tight. He wants Indian sides to do more than entertain: squeeze the middle overs, force bad decisions, and turn crowd energy into an advantage."
-    }
+    eng: { iss: 19, date: "12 Aug 2026",
+      dek: "The man who turned England's patience into a competitive edge.",
+      stand: "Canterbury made him: wet outfields, slow pitches, and long county afternoons that taught him English conditions reward judgment over impulse. He was never the loudest figure in the room, but he became one of the most respected, and he asks the whole domestic game for the same thing.",
+      pull: "Good cricket is simple. Read the surface early, stay patient, and make the game move at your pace." },
+    aus: { iss: 19, date: "12 Aug 2026",
+      dek: "The man who turned Australia's aggression into a system.",
+      stand: "Hard wickets and fast outfields taught him that hesitation costs matches. He made his name as an uncompromising opener who took control early and set the tempo, and he wants every Australian side to play the same way: direct, assertive, always forcing the opposition to react.",
+      pull: "On good wickets, the worst thing you can do is wait. Set the tempo early, own the middle overs, and make the chase happen on your terms." },
+    sub: { iss: 19, date: "12 Aug 2026",
+      dek: "India's master of pressure and spin.",
+      stand: "A high-class middle-order batter and part-time off-spinner who thrived when matches became loud, tight and emotionally charged. As India's league boss he wants domestic sides to do more than entertain: squeeze the middle overs, force bad decisions, and turn crowd energy into an advantage.",
+      pull: "In India, pressure never leaves. So don't fight it. Slow the game down, own the middle overs, and make the noise work for you." },
+    rsa: { iss: 19, date: "12 Aug 2026",
+      dek: "South Africa's pace-first architect.",
+      stand: "He came through the hard surfaces and fast conditions where hesitation gets punished, a sharp quick bowler known for hitting the deck hard and refusing to let batters settle. He now asks every South African side for the same edge: attack with the ball, stay athletic in the field, make every over feel uncomfortable.",
+      pull: "If the batter gets comfortable, you've already lost the over. Hit your length, hold your fields, and keep the pressure moving forward." },
+    nzl: { iss: 20, date: "18 Aug 2026",
+      dek: "New Zealand's quiet engineer of pressure.",
+      stand: "On the practice ground at Wellington a crosswind once shoved the training cones into the covers; while everyone else cursed the weather, Whitcombe put on the gloves and told the bowlers the wind was useful. As a wicketkeeper-batter he made his name tidying matches other players complicated, and he treats every half-chance as an investment.",
+      pull: "Flashy teams give you chances. Tidy teams take them away. Take the catch, cut off the single, and stay boring long enough - eventually the other side blinks." },
+    win: { iss: 21, date: "19 Aug 2026",
+      dek: "West Indies' master of short chases and loud afternoons.",
+      stand: "His favourite story is a chase in Port of Spain: 87 needed from seven overs, his partner asking whether they should target the shorter side, and Emmanuel saying no - he wanted the better bowler first. Two overs later the problem had changed shape, the crowd was on its feet, and the chase was effectively over. The style is joyful. The strategy is ruthless.",
+      pull: "Don't swing at everything. Swing at the over that changes the match." },
+    ned: { iss: 22, date: "20 Aug 2026",
+      dek: "The Dutch planner who made chaos play by schedule.",
+      stand: "He once delayed a team meeting because the groundsman was still rolling the square - he wanted his batters to hear the roller before they heard him. It sounded ridiculous until his side won a 241 chase with 14 balls to spare, never once asking the game to move faster than it wanted to.",
+      pull: "Good cricket looks simple when the plan is working. Our job is to make simple feel inevitable." },
+    ire: { iss: 23, date: "21 Aug 2026",
+      dek: "Ireland's polite specialist in ruining afternoons.",
+      stand: "In Cork he once spent ten minutes telling a visiting opener where to find the best coffee near the ground, then nicked him off second over and asked, as the batter walked past, whether oat milk was still the right choice. Nobody on the circuit quite trusts kindness delivered in an Irish accent anymore.",
+      pull: "You don't have to win the morning. Just keep asking good questions until somebody nicks the wrong answer." },
+    slk: { iss: 24, date: "22 Aug 2026",
+      dek: "Sri Lanka's smiling teacher of bad decisions.",
+      stand: "He bowls like he is telling a joke he already knows the ending to. In Kandy he once dismissed the same hitter three times in a week with deliveries that all began in the same place and landed in three different versions of regret. A master finger-spinner famous for slowing matches without ever making them feel static.",
+      pull: "If a batter thinks he has time, I've already won half the over." },
+    usa: { iss: 25, date: "23 Aug 2026",
+      dek: "America's launch-angle evangelist.",
+      stand: "He treats a cricket ground the way some men treat a launchpad. At a Texas exhibition years ago he parked a tablet beside the dugout, explained to a local reporter that straight midwicket was 'a growth market', then made 88 off 34 before the fireworks crew could find its cue. Under the sunglasses, there is a real cricket brain at work.",
+      pull: "If the ground is small, that's not a gimmick. That's a tactic. Use it before the other guy does." },
+    sco: { iss: 26, date: "24 Aug 2026",
+      dek: "Scotland's keeper of the hard day.",
+      stand: "He once bowled ten overs into a Stirling gale, took two wickets, and complained only that lunch was late. He then opened the batting in the same sweater, made 67 on a pitch behaving like wet masonry, and spent the walk back telling his non-striker that nobody ever lost a cricket match by being harder to remove than expected. In Scotland, that passes for romance.",
+      pull: "In a headwind, style is optional. Balance isn't. Hold your line long enough and most sides give up something." },
+    zim: { iss: 19, date: "25 Aug 2026",
+      dek: "Zimbabwe's young captain who refuses to let a match die.",
+      stand: "During a Harare power cut, training stopped and everyone started packing. Gumbo asked for eight car keys; ten minutes later the boundary was ringed with headlights and Zimbabwe's best fielders were taking high catches out of the dark. He kept the session going until the batteries complained.",
+      pull: "A scoreboard only tells you what has happened. Keep one fielder saving the single, make them finish the chase properly, and give panic enough time to change sides." },
+    pak: { iss: 19, date: "Sept 2026",
+      dek: "Pakistan's fast bowler who taught an old ball new tricks.",
+      stand: "He first made his name as a tearaway quick, but the art is in the twilight of an innings. In a tight chase in Lahore he waved away the new ball, asked his captain to save him for the twenty-sixth over, and returned to end the game with reverse swing and three straight yorkers. That was the night everyone realised he doesn't just bowl spells, he builds endings.",
+      pull: "If they're five down and the ball is still shining, I've started too early. Give me one side rough and one side honest, and the batter starts playing memory instead of line." },
+    afg: { iss: 19, date: "Sept 2026",
+      dek: "Afghanistan's mystery spinner who enjoys being doubted.",
+      stand: "He learned on hard ground, broken matting, and any strip of concrete that would grip, and captains kept giving him the ball because no two deliveries seemed to arrive the same way. During a sand-laced Kandahar windstorm the batting group wanted to go inside; Rashid planted a single stump back in the dirt and kept bowling until the squad followed him.",
+      pull: "You don't beat mystery by trying to solve every ball. I only need one wrong guess in the over." },
+    bgd: { iss: 19, date: "Sept 2026",
+      dek: "Bangladesh's left-arm spinner who strangles the middle overs politely.",
+      stand: "A stylish school opener with wrists like calligraphy and a habit of timing the ball late, until a shoulder problem at nineteen nudged him toward left-arm spin. In a Sylhet semi-final he moved short midwicket by a single step three overs in a row, kept the same teasing pace, and watched an impatient right-hander hit exactly where the trap had been prepared. No fist pump.",
+      pull: "Dots aren't quiet. Four in a row and the batter starts inventing a shot for me." },
+    nep: { iss: 19, date: "Sept 2026",
+      dek: "Nepal's young leg-spinner who turns noise into advantage.",
+      stand: "He came through as a local prodigy, but his real education was school courtyards, taped-ball evenings and dust pitches where he bowled until dark and then stayed to hit into the hills. In a match slipping away he slowed everything down, moved long-on ten yards squarer, and rubbed the ball until it was whispering in his fingers. The next over: flight, dip, beat the sweep, stumps cartwheeling.",
+      pull: "Leg-spin is a dare. If they're sweeping hard, good. Now their front leg is working for me." },
+    ken: { iss: 19, date: "Sept 2026",
+      dek: "Kenya's finisher who treats the last ten overs like a sprint.",
+      stand: "A school sprinter before he became Kenya's most feared finisher, he still measures chases by rhythm rather than panic, talking about cadence the way sprinters talk about stride length. In a Nairobi chase this season, with the asking rate nudging past ten an over, he wore a simple wristband marked with target ranges and simply waited for the big swing.",
+      pull: "At altitude, mishits travel. That's why I wait. By the time the fifth bowler thinks he's safe, the chase belongs to me." },
+    wal: { iss: 19, date: "Sept 2026",
+      dek: "Wales's swing bowler who reads weather like a scorecard.",
+      stand: "He built his reputation through county spells under low cloud, second new balls on damp mornings, and long days learning which batters hate being made to wait. At Sophia Gardens he kept his slip cordon patient through six overs without a chance because he had noticed the breeze shift half a point toward the river; two balls later he held the seam a fraction wider and found the edge he had been forecasting.",
+      pull: "If the cloud stays low, I want three slips and patience. Outswing gets the nick. Inswing gets the doubt." },
+    can: { iss: 19, date: "Sept 2026",
+      dek: "Canada's keeper-captain who turns neat cricket into a weapon.",
+      stand: "A junior ice-hockey goalie before cricket found him, and you can still see it in his game: the low stance, the explosive first step, the soft hands that make sharp moments look unhurried. In a King City match last summer he completed a stumping, apologised to the batter on instinct, then spent the next five overs moving point and cover by half-steps until the same false drive arrived exactly where he wanted it.",
+      pull: "If we give away extras, we're donating overs. Start by keeping the ball in play and the striker on strike longer than he wants." }
   };
+  // two features went to press with only one of the two plates cut
+  var FO_LORE_ONLY = { ken: "", zim: "-m" };
+  function foLorePlate(id, mob) {
+    var only = FO_LORE_ONLY[id];
+    return FO_ART + "lore/journal-" + id + (only !== undefined ? only : (mob ? "-m" : "")) + ".webp";
+  }
   function foLoreCast() {
     var out = [];
     FO_CX_REGIONS.forEach(function (r) {
@@ -28058,8 +28120,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       var feat = cast.filter(function (c) { return FO_LORE_FEATURE[c.id]; });
       var rest = cast.filter(function (c) { return !FO_LORE_FEATURE[c.id] && !c.final; });
       var fin = cast.filter(function (c) { return c.final; })[0] || null;
-      var cutOf = function (id) { return FO_ART + "circuit/boss-" + id + "-cutout.webp"; };
-      var artOf = function (id) { return FO_ART + "circuit/boss-" + id + ".webp"; };
+      // Thorne was never cut as a circuit boss - he has his own plate
+      var cutOf = function (id) { return id === "gt" ? FO_ART + "thorne.png" : FO_ART + "circuit/boss-" + id + "-cutout.webp"; };
+      var artOf = function (id) { return id === "gt" ? FO_ART + "thorne.png" : FO_ART + "circuit/boss-" + id + ".webp"; };
+      var no = function (i) { return (i + 1 < 10 ? "0" : "") + (i + 1); };
+      var issues = {}; feat.forEach(function (c) { issues[FO_LORE_FEATURE[c.id].iss] = 1; });
 
       // the cover: a collage of the faces the league is made of
       var collage = ["eng", "aus", "rsa", "sub", "win"].filter(function (id) {
@@ -28068,26 +28133,48 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         return "<img class='fo-lx-face f" + i + "' src='" + cutOf(id) + "' alt='' aria-hidden='true' loading='eager' decoding='async' onerror=\"this.onerror=null;this.src='" + artOf(id) + "'\">";
       }).join("");
 
-      var featHTML = feat.map(function (c, i) {
+      // ---- the contents page: nineteen features is a long read, so the issue
+      // opens the way a magazine does, with somewhere to jump from ----------
+      var tocHTML = feat.map(function (c, i) {
         var F = FO_LORE_FEATURE[c.id];
-        var src = FO_ART + (mob && F.artM ? F.artM : F.art);
-        return "<article class='fo-lx-feat" + (i % 2 ? " alt" : "") + " reveal' style='--lac:" + c.ac + "'>" +
-          "<div class='fo-lx-glow' aria-hidden='true'></div>" +
-          "<div class='fo-lx-ftext'>" +
-          "<div class='fo-lx-num' aria-hidden='true'>" + (i + 1 < 10 ? "0" : "") + (i + 1) + "</div>" +
-          "<div class='fo-lx-kick'>" + E(c.nm) + " &middot; The Feature</div>" +
-          "<h3 class='fo-lx-fname'>" + E(c.leader) + "</h3>" +
-          "<p class='fo-lx-fhead'>" + F.head + "</p>" +
-          "<p class='fo-lx-fstand'>" + F.standfirst + "</p>" +
-          (c.taunt ? "<blockquote class='fo-lx-quote'>&ldquo;" + E(c.taunt) + "&rdquo;</blockquote>" : "") +
-          "<div class='fo-lx-by'>" + F.issue + " &middot; words by " + E(F.byline) + "</div>" +
-          "<a class='fo-lx-go' href='#/boss?r=" + encodeURIComponent(c.id) + "'>The full dossier &#8250;</a>" +
-          "</div>" +
-          "<a class='fo-lx-plate' href='" + src + "' data-lore-open='" + src + "' aria-label='Read the full page on " + E(c.leader) + "'>" +
-          "<img src='" + src + "' alt='Fifty Overs Journal feature on " + E(c.leader) + "' loading='lazy' decoding='async'>" +
-          "<span class='fo-lx-read'>Read the full page</span></a>" +
-          "</article>";
+        return "<button type='button' class='fo-lx-toc' data-lx-jump='" + c.id + "' style='--lac:" + c.ac + "'>" +
+          "<i class='fo-lx-tno'>" + no(i) + "</i>" +
+          "<span class='fo-lx-tmain'>" +
+          "<b class='fo-lx-tname'>" + E(c.leader) + "</b>" +
+          "<span class='fo-lx-tdek'>" + F.dek + "</span></span>" +
+          "<span class='fo-lx-tnat'>" + E(c.nm) + "<em>Iss. " + F.iss + "</em></span>" +
+          "</button>";
       }).join("");
+
+      var featHTML = function (list, from) {
+        return list.map(function (c, k) {
+          var i = from + k, F = FO_LORE_FEATURE[c.id], src = foLorePlate(c.id, mob);
+          // the plates load lazily, so state their shape up front - without it the
+          // page grows under you mid-scroll and a contents jump lands nowhere near
+          var por = FO_LORE_ONLY[c.id] !== undefined ? FO_LORE_ONLY[c.id] === "-m" : mob;
+          var dim = por ? "width='941' height='1672'" : "width='1672' height='941'";
+          return "<article id='lx-" + c.id + "' class='fo-lx-feat" + (i % 2 ? " alt" : "") + " reveal' style='--lac:" + c.ac + "'>" +
+            "<div class='fo-lx-glow' aria-hidden='true'></div>" +
+            "<div class='fo-lx-ftext'>" +
+            "<div class='fo-lx-folio'><span class='fo-lx-num' aria-hidden='true'>" + no(i) + "</span>" +
+            "<span class='fo-lx-folmeta'>Vol. 01<em>Issue " + F.iss + " &middot; " + F.date + "</em></span></div>" +
+            "<div class='fo-lx-kick'>" + E(c.nm) + " &middot; The Feature</div>" +
+            "<h3 class='fo-lx-fname'>" + E(c.leader) + "</h3>" +
+            "<p class='fo-lx-fhead'>" + F.dek + "</p>" +
+            "<p class='fo-lx-fstand'>" + F.stand + "</p>" +
+            "<blockquote class='fo-lx-quote'>&ldquo;" + (F.pull || E(c.taunt)) + "&rdquo;<cite>" + E(c.leader) + "</cite></blockquote>" +
+            "<div class='fo-lx-by'>Words by Eleanor March &middot; " + E(c.club) + "</div>" +
+            "<div class='fo-lx-acts'>" +
+            "<button type='button' class='fo-lx-go' data-lore-open='" + c.id + "'>Read the printed page</button>" +
+            "<a class='fo-lx-ghost' href='#/boss?r=" + encodeURIComponent(c.id) + "'>The full dossier &#8250;</a>" +
+            "</div></div>" +
+            "<button type='button' class='fo-lx-plate' data-lore-open='" + c.id + "' aria-label='Read the printed page on " + E(c.leader) + "'>" +
+            "<img src='" + src + "' " + dim + " alt='Fifty Overs Journal feature on " + E(c.leader) + "' loading='lazy' decoding='async'>" +
+            "<span class='fo-lx-read'>Read the printed page</span></button>" +
+            "</article>";
+        }).join("");
+      };
+      var half = Math.ceil(feat.length / 2);
 
       var poster = function (c) {
         return "<a class='fo-lx-card reveal' href='#/boss?r=" + encodeURIComponent(c.id) + "' style='--lac:" + c.ac + "'>" +
@@ -28102,9 +28189,17 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           "</span></a>";
       };
 
+      // ---- the roll-call, dropped in halfway as a breath between features ----
+      var ladder = feat.map(function (c, i) {
+        return "<a class='fo-lx-rung' href='#/boss?r=" + encodeURIComponent(c.id) + "' style='--lac:" + c.ac + "'>" +
+          "<img src='" + cutOf(c.id) + "' alt='' aria-hidden='true' loading='lazy' decoding='async' onerror=\"this.onerror=null;this.src='" + artOf(c.id) + "'\">" +
+          "<b>" + no(i) + "</b><i>" + E(c.nm) + "</i><span>" + E(c.leader) + "</span></a>";
+      }).join("");
+
       page.innerHTML =
         "<div class='fo-lore fo-lx'>" +
         "<div class='fo-lx-bg' aria-hidden='true'></div><div class='fo-lx-grain' aria-hidden='true'></div>" +
+        "<div class='fo-lx-prog' aria-hidden='true'><i></i></div>" +
         // ---- the cover ----
         "<header class='fo-lx-cover'>" +
         "<div class='fo-lx-collage' aria-hidden='true'>" + collage + "</div>" +
@@ -28113,18 +28208,30 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
         "<h1 class='fo-lx-title'><span>The Book</span><span>of the</span><em>League</em></h1>" +
         "<p class='fo-lx-lede'>Nineteen nations. Nineteen league bosses. One old man at Marylebone who keeps the whole thing honest. This is who they are, where they learned it, and exactly what they will do to you if you turn up unprepared.</p>" +
         "<div class='fo-lx-stats'>" +
-        "<div><b>19</b><i>Nations</i></div><div><b>19</b><i>Bosses</i></div><div><b>" + feat.length + "</b><i>Features</i></div><div><b>1</b><i>World Final</i></div>" +
+        "<div><b>" + feat.length + "</b><i>Features</i></div>" +
+        "<div><b>" + Object.keys(issues).length + "</b><i>Issues</i></div>" +
+        "<div><b>19</b><i>Nations</i></div>" +
+        "<div><b>1</b><i>World Final</i></div>" +
         "</div></div>" +
         "<div class='fo-lx-scroll' aria-hidden='true'><span></span>Read on</div>" +
         "</header>" +
-        // ---- the features ----
-        (featHTML ? "<section class='fo-lx-sec'>" +
-          "<div class='fo-lx-rule reveal'><span>Published Features</span></div>" + featHTML + "</section>" : "") +
-        // ---- the cast ----
-        "<section class='fo-lx-sec'>" +
-        "<div class='fo-lx-rule reveal'><span>The League Bosses</span></div>" +
-        "<p class='fo-lx-secsub reveal'>One to a nation. Beat the ladder and their door opens.</p>" +
-        "<div class='fo-lx-grid'>" + rest.map(poster).join("") + "</div></section>" +
+        // ---- contents ----
+        (feat.length ? "<section class='fo-lx-sec fo-lx-contents'>" +
+          "<div class='fo-lx-rule reveal'><span>In this issue</span></div>" +
+          "<p class='fo-lx-secsub reveal'>Season one, cover to cover. Pick a name and the page opens.</p>" +
+          "<div class='fo-lx-toclist reveal'>" + tocHTML + "</div></section>" : "") +
+        // ---- the features, in the order you meet them ----
+        (feat.length ? "<section class='fo-lx-sec'>" +
+          "<div class='fo-lx-rule reveal'><span>The Features</span></div>" +
+          featHTML(feat.slice(0, half), 0) + "</section>" +
+          "<section class='fo-lx-ladder reveal'>" +
+          "<div class='fo-lx-lhead'><b>The Ladder</b><span>Nineteen doors, in the order you meet them.</span></div>" +
+          "<div class='fo-lx-rungs'>" + ladder + "</div></section>" +
+          "<section class='fo-lx-sec'>" + featHTML(feat.slice(half), half) + "</section>" : "") +
+        // ---- anyone still unpublished ----
+        (rest.length ? "<section class='fo-lx-sec'>" +
+          "<div class='fo-lx-rule reveal'><span>Still to be written</span></div>" +
+          "<div class='fo-lx-grid'>" + rest.map(poster).join("") + "</div></section>" : "") +
         // ---- the final ----
         (fin ? "<section class='fo-lx-final reveal' style='--lac:" + fin.ac + "'>" +
           "<img class='fo-lx-finart' src='" + cutOf(fin.id) + "' alt='' aria-hidden='true' loading='lazy' onerror=\"this.onerror=null;this.src='" + artOf(fin.id) + "'\">" +
@@ -28132,25 +28239,77 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           "<div class='fo-lx-kick'>The World Final</div>" +
           "<h3 class='fo-lx-fname'>" + E(fin.leader) + "</h3>" +
           "<p class='fo-lx-fstand'>" + E(fin.nug || fin.note) + "</p>" +
-          (fin.taunt ? "<blockquote class='fo-lx-quote'>&ldquo;" + E(fin.taunt) + "&rdquo;</blockquote>" : "") +
-          "<a class='fo-lx-go' href='#/boss?r=" + encodeURIComponent(fin.id) + "'>His dossier &#8250;</a>" +
+          (fin.taunt ? "<blockquote class='fo-lx-quote'>&ldquo;" + E(fin.taunt) + "&rdquo;<cite>" + E(fin.leader) + "</cite></blockquote>" : "") +
+          "<a class='fo-lx-ghost' href='#/boss?r=" + encodeURIComponent(fin.id) + "'>His dossier &#8250;</a>" +
           "</div></section>" : "") +
-        "<footer class='fo-lx-foot'><a class='fo-lore-back' href='#/world'>&#8592; World map</a><a class='fo-lore-back' href='#/league'>Your league</a></footer>" +
+        "<footer class='fo-lx-foot'>" +
+        "<div class='fo-lx-colophon'><b>The Fifty Overs Journal</b>" +
+        "<span>Vol. 01 &middot; Season One &middot; " + feat.length + " features &middot; words by Eleanor March</span></div>" +
+        "<div class='fo-lx-footlinks'><a class='fo-lore-back' href='#/world'>&#8592; World map</a><a class='fo-lore-back' href='#/league'>Your league</a></div>" +
+        "</footer>" +
         "</div>";
 
-      // the plate opens as a page you can actually read
+      // ---- contents jumps to the spread without touching the router hash ----
+      page.querySelectorAll("[data-lx-jump]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          var t = page.querySelector("#lx-" + b.getAttribute("data-lx-jump"));
+          if (!t) return;
+          t.classList.add("on");
+          try { t.scrollIntoView({ behavior: "smooth", block: "start" }); }
+          catch (e2) { t.scrollIntoView(); }
+        });
+      });
+
+      // ---- the reader: the plates page like the magazine they came from ----
+      var pages = feat.map(function (c, i) {
+        return { src: foLorePlate(c.id, mob), nm: c.leader, nat: c.nm, n: no(i), iss: FO_LORE_FEATURE[c.id].iss };
+      });
+      var byId = {}; feat.forEach(function (c, i) { byId[c.id] = i; });
       page.querySelectorAll("[data-lore-open]").forEach(function (a) {
         a.addEventListener("click", function (e) {
           e.preventDefault();
-          var src = a.getAttribute("data-lore-open");
+          var at = byId[a.getAttribute("data-lore-open")] || 0;
           var ov = document.createElement("div"); ov.className = "fo-lore-lb";
-          ov.innerHTML = "<img src='" + src + "' alt=''><button type='button' class='fo-lore-x' aria-label='Close'>&times;</button>";
-          var shut = function () { try { ov.remove(); } catch (e2) {} document.removeEventListener("keydown", esc); };
-          var esc = function (ev) { if (ev.key === "Escape") shut(); };
-          ov.addEventListener("click", shut); document.addEventListener("keydown", esc);
-          document.body.appendChild(ov);
+          ov.innerHTML =
+            "<figure class='fo-lb-fig'><img src='' alt=''>" +
+            "<figcaption class='fo-lb-cap'><b></b><i></i></figcaption></figure>" +
+            "<button type='button' class='fo-lb-nav prev' aria-label='Previous feature'>&#8249;</button>" +
+            "<button type='button' class='fo-lb-nav next' aria-label='Next feature'>&#8250;</button>" +
+            "<button type='button' class='fo-lore-x' aria-label='Close'>&times;</button>";
+          var img = ov.querySelector("img"), cap = ov.querySelector(".fo-lb-cap");
+          var draw = function () {
+            var p = pages[at]; if (!p) return;
+            img.src = p.src; img.alt = "Fifty Overs Journal feature on " + p.nm;
+            cap.querySelector("b").textContent = p.nm;
+            cap.querySelector("i").textContent = p.nat + " · Issue " + p.iss + " · " + p.n + " of " + no(pages.length - 1);
+          };
+          var step = function (d) { at = (at + d + pages.length) % pages.length; draw(); };
+          var shut = function () { try { ov.remove(); } catch (e2) {} document.removeEventListener("keydown", key); };
+          var key = function (ev) {
+            if (ev.key === "Escape") shut();
+            else if (ev.key === "ArrowRight") step(1);
+            else if (ev.key === "ArrowLeft") step(-1);
+          };
+          ov.querySelector(".prev").addEventListener("click", function (ev) { ev.stopPropagation(); step(-1); });
+          ov.querySelector(".next").addEventListener("click", function (ev) { ev.stopPropagation(); step(1); });
+          ov.querySelector(".fo-lb-fig").addEventListener("click", function (ev) { ev.stopPropagation(); });
+          ov.addEventListener("click", shut); document.addEventListener("keydown", key);
+          draw(); document.body.appendChild(ov);
         });
       });
+
+      // ---- how far through the issue you are ----
+      try {
+        var bar = page.querySelector(".fo-lx-prog i");
+        if (bar) {
+          var pt = function () {
+            var h = document.documentElement.scrollHeight - window.innerHeight;
+            bar.style.transform = "scaleX(" + (h > 0 ? Math.min(1, (window.scrollY || 0) / h) : 0).toFixed(4) + ")";
+          };
+          window.addEventListener("scroll", pt, { passive: true });
+          window.addEventListener("resize", pt); pt();
+        }
+      } catch (ePb) {}
       // reveal on scroll, and a slow parallax drift on the cover faces
       try {
         var slow = false;
@@ -28234,22 +28393,54 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-lx-feat.alt .fo-lx-ftext{order:2}",
       ".fo-lx-glow{position:absolute;inset:-6% -14%;z-index:-1;background:radial-gradient(52% 62% at 76% 50%,color-mix(in srgb,var(--lac) 26%,transparent),transparent 72%);filter:blur(18px);pointer-events:none}",
       ".fo-lx-feat.alt .fo-lx-glow{background:radial-gradient(52% 62% at 24% 50%,color-mix(in srgb,var(--lac) 26%,transparent),transparent 72%)}",
-      ".fo-lx-num{font-family:Oswald,sans-serif;font-weight:700;font-size:clamp(46px,6vw,86px);line-height:.8;color:transparent;-webkit-text-stroke:1px rgba(230,177,94,.42);margin-bottom:6px}",
+      ".fo-lx-folio{display:flex;align-items:baseline;gap:14px;margin-bottom:6px}",
+      ".fo-lx-num{font-family:Oswald,sans-serif;font-weight:700;font-size:clamp(46px,6vw,86px);line-height:.8;color:transparent;-webkit-text-stroke:1px rgba(230,177,94,.42)}",
+      ".fo-lx-folmeta{display:flex;flex-direction:column;gap:2px;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.22em;font-size:9px;color:#6f819e;padding-bottom:5px;border-bottom:1px solid rgba(150,180,225,.16);flex:1}",
+      ".fo-lx-folmeta em{font-style:normal;letter-spacing:.16em;color:#93a5c2}",
       ".fo-lx-kick{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.28em;font-size:10px;font-weight:600;color:var(--gold)}",
       ".fo-lx-fname{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:-.005em;line-height:.92;font-size:clamp(32px,4.4vw,60px);margin:8px 0 12px;color:var(--paper)}",
       ".fo-lx-fhead{font-family:Georgia,serif;font-style:italic;font-size:clamp(15px,1.5vw,20px);line-height:1.44;color:#e6dcc6;margin:0 0 14px}",
       ".fo-lx-fstand{font-family:Georgia,serif;font-size:14.5px;line-height:1.78;color:#aebbd2;margin:0 0 18px;max-width:52ch}",
-      ".fo-lx-quote{position:relative;margin:0 0 18px;padding-left:20px;border-left:2px solid var(--lac);font-family:Oswald,sans-serif;font-weight:500;text-transform:uppercase;letter-spacing:.01em;line-height:1.24;font-size:clamp(15px,1.7vw,21px);color:#f2ead9}",
+      ".fo-lx-quote{position:relative;margin:0 0 16px;padding-left:20px;border-left:2px solid var(--lac);font-family:Oswald,sans-serif;font-weight:500;text-transform:uppercase;letter-spacing:.01em;line-height:1.24;font-size:clamp(15px,1.7vw,21px);color:#f2ead9}",
+      ".fo-lx-quote cite{display:block;margin-top:9px;font-family:Georgia,serif;font-style:italic;text-transform:none;letter-spacing:0;font-size:12.5px;color:var(--lac);filter:brightness(1.45)}",
       ".fo-lx-by{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:9.5px;color:#7d8fad;margin-bottom:16px}",
-      "html body #page a.fo-lx-go{display:inline-block;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:10.5px;font-weight:600;color:#0d1526 !important;text-decoration:none !important;background:linear-gradient(180deg,#F0B94E,#C9A24B);border-radius:999px;padding:11px 22px;box-shadow:0 6px 20px rgba(230,177,94,.22);transition:transform .16s,box-shadow .16s}",
-      "html body #page a.fo-lx-go:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(230,177,94,.34)}",
+      ".fo-lx-acts{display:flex;flex-wrap:wrap;align-items:center;gap:10px}",
+      "html body #page .fo-lx-go{display:inline-block;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:10.5px;font-weight:600;color:#0d1526 !important;text-decoration:none !important;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;border:0;border-radius:999px;padding:11px 22px;cursor:pointer;box-shadow:0 6px 20px rgba(230,177,94,.22);transition:transform .16s,box-shadow .16s}",
+      "html body #page .fo-lx-go:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(230,177,94,.34)}",
+      "html body #page a.fo-lx-ghost{display:inline-block;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:10.5px;font-weight:600;color:#E6D9BC !important;text-decoration:none !important;background:transparent;border:1.5px solid rgba(230,177,94,.4);border-radius:999px;padding:10px 20px;transition:.16s}",
+      "html body #page a.fo-lx-ghost:hover{color:#F6E7C2 !important;border-color:var(--gold);background:rgba(230,177,94,.08)}",
       // the plate: a real sheet of newsprint on the desk
-      "html body #page a.fo-lx-plate{position:relative;display:block;line-height:0;text-decoration:none !important;border-radius:6px;overflow:hidden;transform:rotate(-1.1deg);transition:transform .45s cubic-bezier(.2,.7,.2,1),box-shadow .45s;box-shadow:0 26px 60px rgba(0,0,0,.62),0 2px 0 rgba(255,255,255,.09) inset;outline:1px solid rgba(244,239,228,.14)}",
+      "html body #page button.fo-lx-plate{position:relative;display:block;width:100%;padding:0;line-height:0;cursor:zoom-in;border:0;background:transparent !important;border-radius:6px;overflow:hidden;transform:rotate(-1.1deg);transition:transform .45s cubic-bezier(.2,.7,.2,1),box-shadow .45s;box-shadow:0 26px 60px rgba(0,0,0,.62),0 2px 0 rgba(255,255,255,.09) inset;outline:1px solid rgba(244,239,228,.14)}",
       ".fo-lx-feat.alt .fo-lx-plate{transform:rotate(1.1deg)}",
-      "html body #page a.fo-lx-plate:hover{transform:rotate(0deg) scale(1.014);box-shadow:0 34px 74px rgba(0,0,0,.7)}",
+      "html body #page button.fo-lx-plate:hover{transform:rotate(0deg) scale(1.014);box-shadow:0 34px 74px rgba(0,0,0,.7)}",
       ".fo-lx-plate img{width:100%;height:auto;display:block}",
       ".fo-lx-read{position:absolute;left:0;right:0;bottom:0;padding:34px 16px 13px;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.22em;font-size:10px;font-weight:600;color:var(--paper);background:linear-gradient(0deg,rgba(6,11,20,.92),transparent);opacity:0;transition:opacity .3s}",
-      "html body #page a.fo-lx-plate:hover .fo-lx-read{opacity:1}",
+      "html body #page button.fo-lx-plate:hover .fo-lx-read{opacity:1}",
+      // ---------- how far through the issue you are ----------
+      ".fo-lx-prog{position:fixed;top:0;left:0;right:0;height:2px;z-index:62;background:rgba(230,177,94,.1);pointer-events:none}",
+      ".fo-lx-prog i{display:block;height:100%;background:linear-gradient(90deg,#C9A24B,var(--gold),#F6E7C2);transform:scaleX(0);transform-origin:left;will-change:transform}",
+      // ---------- the contents page ----------
+      ".fo-lx-toclist{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:2px 30px;margin-top:6px}",
+      "html body #page button.fo-lx-toc{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:baseline;gap:14px;width:100%;text-align:left;padding:13px 6px;cursor:pointer;border:0;border-bottom:1px solid rgba(150,180,225,.11);background:transparent !important;transition:background .2s,padding .2s}",
+      "html body #page button.fo-lx-toc:hover{background:linear-gradient(90deg,color-mix(in srgb,var(--lac) 16%,transparent),transparent) !important;padding-left:12px}",
+      ".fo-lx-tno{font-family:Oswald,sans-serif;font-style:normal;font-weight:700;font-size:13px;color:var(--lac);filter:brightness(1.5);min-width:22px}",
+      ".fo-lx-tmain{display:block;min-width:0}",
+      ".fo-lx-tname{display:block;font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.02em;font-size:15px;color:var(--paper);line-height:1.15}",
+      ".fo-lx-tdek{display:block;font-family:Georgia,serif;font-style:italic;font-size:12.5px;line-height:1.45;color:#8ea3c4;margin-top:2px}",
+      ".fo-lx-tnat{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.16em;font-size:9px;color:#7d8fad;white-space:nowrap}",
+      ".fo-lx-tnat em{font-style:normal;color:#5f7392;letter-spacing:.1em}",
+      // ---------- the roll-call band ----------
+      ".fo-lx-ladder{position:relative;margin:clamp(40px,7vh,86px) 0 0;padding:clamp(26px,4vw,44px) 0;border-top:1px solid rgba(230,177,94,.2);border-bottom:1px solid rgba(230,177,94,.2);background:linear-gradient(180deg,rgba(13,22,40,.7),rgba(7,12,22,.2))}",
+      ".fo-lx-lhead{max-width:1240px;margin:0 auto 18px;padding:0 clamp(18px,4vw,44px);display:flex;flex-wrap:wrap;align-items:baseline;gap:14px}",
+      ".fo-lx-lhead b{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.3em;font-size:12px;color:var(--gold)}",
+      ".fo-lx-lhead span{font-family:Georgia,serif;font-style:italic;font-size:13.5px;color:#8ea3c4}",
+      ".fo-lx-rungs{display:flex;gap:10px;overflow-x:auto;padding:4px clamp(18px,4vw,44px) 12px;scrollbar-width:thin}",
+      "html body #page a.fo-lx-rung{position:relative;flex:0 0 108px;display:block;text-decoration:none !important;color:#e7eefb !important;border-radius:11px;overflow:hidden;background:linear-gradient(170deg,color-mix(in srgb,var(--lac) 30%,#0d1626),#080e1a 70%);outline:1px solid rgba(150,180,225,.12);padding:0 0 9px;transition:transform .3s,outline-color .3s}",
+      "html body #page a.fo-lx-rung:hover{transform:translateY(-4px);outline-color:color-mix(in srgb,var(--lac) 75%,transparent)}",
+      ".fo-lx-rung img{display:block;width:100%;height:106px;object-fit:cover;object-position:center 6%}",
+      ".fo-lx-rung b{position:absolute;top:6px;left:7px;font-family:Oswald,sans-serif;font-size:10px;font-weight:700;color:#0d1526;background:var(--gold);border-radius:4px;padding:1px 5px}",
+      ".fo-lx-rung i{display:block;font-style:normal;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.14em;font-size:8px;color:var(--lac);filter:brightness(1.6);padding:8px 8px 0}",
+      ".fo-lx-rung span{display:block;font-family:Oswald,sans-serif;text-transform:uppercase;font-size:11px;line-height:1.15;padding:2px 8px 0;color:var(--paper)}",
       // ---------- the cast: a wall of posters ----------
       ".fo-lx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:14px;padding-bottom:10px}",
       "html body #page a.fo-lx-card{position:relative;display:block;aspect-ratio:3/4.15;border-radius:14px;overflow:hidden;text-decoration:none !important;color:#eef3fb !important;background:linear-gradient(165deg,color-mix(in srgb,var(--lac) 34%,#0c1626),#080e1a 68%);outline:1px solid rgba(150,180,225,.13);transition:transform .4s cubic-bezier(.2,.7,.2,1),outline-color .3s,box-shadow .4s}",
@@ -28271,17 +28462,36 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       ".fo-lx-final{position:relative;max-width:1240px;margin:clamp(46px,7vh,90px) auto 0;padding:clamp(30px,5vw,58px) clamp(18px,4vw,44px);display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:clamp(20px,4vw,52px);align-items:center;border-top:1px solid rgba(230,177,94,.28)}",
       ".fo-lx-finart{width:100%;height:auto;filter:drop-shadow(0 26px 50px rgba(0,0,0,.6))}",
       ".fo-lx-fintext{max-width:60ch}",
-      ".fo-lx-foot{display:flex;gap:10px;justify-content:center;padding:clamp(34px,6vh,64px) 18px clamp(50px,8vh,86px)}",
+      ".fo-lx-foot{display:flex;flex-direction:column;align-items:center;gap:18px;padding:clamp(34px,6vh,64px) 18px clamp(50px,8vh,86px)}",
+      ".fo-lx-colophon{text-align:center;display:flex;flex-direction:column;gap:6px}",
+      ".fo-lx-colophon b{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.34em;font-size:11px;font-weight:600;color:var(--gold)}",
+      ".fo-lx-colophon span{font-family:Georgia,serif;font-style:italic;font-size:13px;color:#7d8fad}",
+      ".fo-lx-footlinks{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}",
       "html body #page a.fo-lore-back{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:10.5px;font-weight:600;color:#F5EFDC !important;text-decoration:none !important;background:rgba(12,20,36,.6);border:1.5px solid rgba(235,194,113,.42);border-radius:999px;padding:11px 19px;transition:.16s}",
       "html body #page a.fo-lore-back:hover{color:#F3D37A !important;border-color:var(--gold)}",
-      // ---------- the plate, opened ----------
-      ".fo-lore-lb{position:fixed;inset:0;z-index:9000;background:rgba(4,8,16,.95);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto;cursor:zoom-out;animation:foLxIn .22s ease}",
+      // ---------- the plates, opened as a magazine you can page through ----------
+      ".fo-lore-lb{position:fixed;inset:0;z-index:9000;background:rgba(4,8,16,.96);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto;cursor:zoom-out;animation:foLxIn .22s ease}",
       "@keyframes foLxIn{from{opacity:0}to{opacity:1}}",
-      ".fo-lore-lb img{max-width:100%;max-height:100%;width:auto;height:auto;border-radius:6px;box-shadow:0 30px 80px rgba(0,0,0,.8)}",
+      ".fo-lb-fig{margin:0;max-width:min(1500px,94vw);cursor:default;display:flex;flex-direction:column;gap:12px;align-items:center}",
+      ".fo-lore-lb img{max-width:100%;max-height:82vh;width:auto;height:auto;border-radius:6px;box-shadow:0 30px 80px rgba(0,0,0,.8)}",
+      ".fo-lb-cap{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}",
+      ".fo-lb-cap b{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.14em;font-size:15px;color:#F5EFDC}",
+      ".fo-lb-cap i{font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.24em;font-size:9.5px;color:var(--gold)}",
+      "html body .fo-lore-lb .fo-lb-nav{position:fixed;top:50%;transform:translateY(-50%);font-size:30px;line-height:1;color:#F5EFDC !important;background:rgba(12,20,36,.8) !important;border:1.5px solid rgba(235,194,113,.42) !important;border-radius:999px;width:48px;height:48px;cursor:pointer;transition:.16s}",
+      "html body .fo-lore-lb .fo-lb-nav:hover{border-color:var(--gold) !important;background:rgba(20,32,54,.95) !important}",
+      "html body .fo-lore-lb .fo-lb-nav.prev{left:14px}html body .fo-lore-lb .fo-lb-nav.next{right:14px}",
       "html body .fo-lore-lb .fo-lore-x{position:fixed;top:14px;right:16px;font-size:26px;line-height:1;color:#F5EFDC !important;background:rgba(12,20,36,.85) !important;border:1.5px solid rgba(235,194,113,.5) !important;border-radius:999px;width:42px;height:42px;cursor:pointer}",
       // ---------- narrower ----------
-      "@media(max-width:1000px){.fo-lx-feat,.fo-lx-feat.alt{grid-template-columns:1fr;gap:22px}.fo-lx-feat .fo-lx-ftext,.fo-lx-feat.alt .fo-lx-ftext{order:2}.fo-lx-plate,.fo-lx-feat.alt .fo-lx-plate{transform:none}.fo-lx-final{grid-template-columns:1fr}.fo-lx-finart{max-width:260px;margin:0 auto}}",
-      "@media(max-width:760px){.fo-lx-covertext{max-width:none}.fo-lx-face.f0{right:-16%;height:52vh;opacity:.42}.fo-lx-face.f1,.fo-lx-face.f2,.fo-lx-face.f3,.fo-lx-face.f4{display:none}.fo-lx-cover:after{background:linear-gradient(180deg,rgba(7,12,22,.5),rgba(7,12,22,.86) 46%,#070c16 92%)}.fo-lx-cover{min-height:auto;padding-top:clamp(48px,9vh,90px)}.fo-lx-grid{grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:10px}.fo-lx-cnote{display:none}}"
+      // stacked, the story reads first and the printed page is the payoff at the
+      // end of it - the plate carries its own headline, so leading with it twice
+      // just says the same thing to you two ways
+      "@media(max-width:1000px){.fo-lx-feat,.fo-lx-feat.alt{grid-template-columns:1fr;gap:22px}.fo-lx-feat .fo-lx-ftext,.fo-lx-feat.alt .fo-lx-ftext{order:1}.fo-lx-plate,.fo-lx-feat.alt .fo-lx-plate{transform:none;order:2}.fo-lx-final{grid-template-columns:1fr}.fo-lx-finart{max-width:260px;margin:0 auto}.fo-lx-toclist{grid-template-columns:1fr}}",
+      "@media(max-width:760px){.fo-lx-covertext{max-width:none}.fo-lx-face.f0{right:-16%;height:52vh;opacity:.42}.fo-lx-face.f1,.fo-lx-face.f2,.fo-lx-face.f3,.fo-lx-face.f4{display:none}.fo-lx-cover:after{background:linear-gradient(180deg,rgba(7,12,22,.5),rgba(7,12,22,.86) 46%,#070c16 92%)}.fo-lx-cover{min-height:auto;padding-top:clamp(48px,9vh,90px)}.fo-lx-grid{grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:10px}.fo-lx-cnote{display:none}" +
+        ".fo-lx-tdek{display:none}.fo-lx-tname{font-size:14px}html body #page button.fo-lx-toc{padding:11px 4px;gap:11px}" +
+        ".fo-lx-folio{gap:10px}.fo-lx-folmeta{font-size:8px;letter-spacing:.16em}" +
+        ".fo-lx-rungs{gap:8px}html body #page a.fo-lx-rung{flex:0 0 92px}.fo-lx-rung img{height:88px}" +
+        ".fo-lore-lb{padding:8px}.fo-lore-lb img{max-height:74vh}html body .fo-lore-lb .fo-lb-nav{width:40px;height:40px;font-size:24px;top:auto;bottom:14px;transform:none}" +
+        "html body .fo-lore-lb .fo-lb-nav.prev{left:10px}html body .fo-lore-lb .fo-lb-nav.next{right:10px}}"
     ].join("");
     document.head.appendChild(loCss);
   } catch (eLc) {}
