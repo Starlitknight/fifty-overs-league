@@ -2114,11 +2114,11 @@
       ".phc-in{background:radial-gradient(140% 100% at 50% 0%,#1b2a4a 0%,#101B2D 58%,#0B1322 100%);border-radius:15px;padding:13px 15px 11px;color:#F5EFDC;position:relative;overflow:hidden}" +
       ".phc-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:9px}" +
       ".phc-role{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:#C9A24B;font-weight:600}" +
-      ".phc-nm{font-family:Archivo,Oswald,sans-serif;font-weight:800;font-size:25px;line-height:1.06;color:#FFFEFC;margin-top:2px}" +
+      ".phc-nm{font-family:Oswald,sans-serif;font-weight:800;font-size:25px;line-height:1.06;color:#FFFEFC;margin-top:2px}" +
       ".phc-fl img{width:24px;vertical-align:-2px}" +
       ".phc-ovr{flex:0 0 auto;text-align:center;background:rgba(255,255,255,.08);border:1.5px solid rgba(201,162,75,.55);border-radius:12px;padding:4px 11px;line-height:1}" +
-      ".phc-ovr b{font-family:Oswald;font-size:30px;font-weight:600;color:#F0B94E;display:block}" +
-      ".phc-ovr i{font-style:normal;font-family:Oswald;font-size:8.5px;letter-spacing:2px;color:#b9c2d4}" +
+      ".phc-ovr b{font-family:Oswald,sans-serif;font-size:30px;font-weight:600;color:#F0B94E;display:block}" +
+      ".phc-ovr i{font-style:normal;font-family:Oswald,sans-serif;font-size:8.5px;letter-spacing:2px;color:#b9c2d4}" +
       ".phc-art{height:min(52vh,352px);border-radius:12px;overflow:hidden;position:relative;box-shadow:inset 0 0 0 2px rgba(255,255,255,.14),0 4px 14px rgba(0,0,0,.35)}" +
       ".phc-art img{width:100%;height:100%;object-fit:cover;object-position:50% 14%;display:block}" +
       // the sheen: a prismatic band that slides with the cursor (holo tiers),
@@ -2128,21 +2128,21 @@
       ".phc-glare{position:absolute;inset:0;pointer-events:none;background:radial-gradient(340px 240px at calc(var(--mx,.5)*100%) calc(var(--my,.35)*100%),rgba(255,255,255,.22),transparent 62%);mix-blend-mode:overlay}" +
       ".phc-stars{display:flex;flex-direction:column;gap:5px;margin:11px 1px 2px}" +
       ".phr{display:flex;align-items:center;gap:9px}" +
-      ".phr i{font-style:normal;font-family:Oswald;font-size:10.5px;letter-spacing:1.8px;color:#b9c2d4;font-weight:600;flex:0 0 72px}" +
+      ".phr i{font-style:normal;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:1.8px;color:#b9c2d4;font-weight:600;flex:0 0 72px}" +
       ".phr .st{text-decoration:none;font-size:15px;letter-spacing:1.6px;line-height:1}" +
       ".phr .st em{font-style:normal;color:#2c3a55}" +
       ".phr-b .st em.f{color:#F0B94E}.phr-b .st em.h{background:linear-gradient(90deg,#F0B94E 50%,#2c3a55 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       ".phr-w .st em.f{color:#22D3E0}.phr-w .st em.h{background:linear-gradient(90deg,#22D3E0 50%,#2c3a55 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       ".phr em.n{margin-left:auto}" +
-      ".phr > em{font-style:normal;font-family:Oswald;font-weight:600;font-size:16px;color:#FFFEFC;margin-left:auto}" +
+      ".phr > em{font-style:normal;font-family:Oswald,sans-serif;font-weight:600;font-size:16px;color:#FFFEFC;margin-left:auto}" +
       ".phc-tals{display:flex;flex-direction:column;gap:6px;margin:10px 0 2px}" +
       ".pht{display:flex;gap:9px;align-items:flex-start;background:rgba(255,255,255,.06);border:1px solid rgba(201,162,75,.35);border-radius:10px;padding:7px 10px}" +
-      ".pht-k{flex:0 0 auto;font-family:Oswald;font-size:8.5px;letter-spacing:1.6px;color:#0B1322;background:#C9A24B;border-radius:6px;padding:2.5px 7px;font-weight:600;margin-top:1px}" +
+      ".pht-k{flex:0 0 auto;font-family:Oswald,sans-serif;font-size:8.5px;letter-spacing:1.6px;color:#0B1322;background:#C9A24B;border-radius:6px;padding:2.5px 7px;font-weight:600;margin-top:1px}" +
       ".pht b{font-size:13px;color:#FFFEFC}.pht p{margin:1px 0 0;font-size:11.5px;line-height:1.45;color:#b9c2d4}" +
       ".phc-meta{display:flex;gap:7px;justify-content:center;align-items:center;flex-wrap:wrap;font-style:italic;font-size:12px;color:#c7cede;margin-top:10px}" +
       ".phc-meta.phc-m2{margin-top:2px;font-size:11px;color:#a7b1c6}" +
       ".phc-meta s{text-decoration:none;color:#C9A24B}" +
-      ".phc-ft{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12);font-family:Oswald;font-size:9px;letter-spacing:1.6px;color:#8a93a3}" +
+      ".phc-ft{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12);font-family:Oswald,sans-serif;font-size:9px;letter-spacing:1.6px;color:#8a93a3}" +
       ".phc-ft .rr{color:#F0B94E;font-size:12px;letter-spacing:0}" +
       "@media(max-width:520px){.phc-nm{font-size:21px}.phc-art{height:min(46vh,300px)}}" +
       // the signing modal: the holo card on the dark backdrop, money + Sign under it

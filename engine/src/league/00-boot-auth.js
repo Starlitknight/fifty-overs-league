@@ -253,14 +253,22 @@
   //  placed at the end of <body> so it stays the last stylesheet)
   // The game injects its own theme stylesheets into <body> at render time, after
   // ours. Keep our brand sheet the LAST stylesheet so it always wins.
-  // Modern type: Inter (with the platform's own UI face as fallback) across
-  // the whole app. Loaded once; GitHub Pages allows the font CDN.
+  // The game's two voices, self-hosted so they arrive on every device and
+  // every network: Oswald (variable, 200-700) carries the display type and
+  // labels; Inter (variable, 100-900) carries the UI. The old Google Fonts
+  // link died silently offline and on blocked networks, leaving letter-spaced
+  // condensed layouts rendered in a default sans - the whole page went weird.
   try {
     if (!document.getElementById("fo-font")) {
-      var fl = document.createElement("link");
-      fl.id = "fo-font"; fl.rel = "stylesheet";
-      fl.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oswald:wght@400;500;600;700&family=Spline+Sans:wght@400;500;600&family=Archivo:wght@700;800&display=swap";
-      document.head.appendChild(fl);
+      var fbase = (location.pathname.indexOf("/client/") !== -1) ? "fonts/" : "client/fonts/";
+      var ff = document.createElement("style");
+      ff.id = "fo-font";
+      ff.textContent =
+        "@font-face{font-family:'Oswald';font-style:normal;font-weight:200 700;font-display:swap;src:url(" + fbase + "oswald-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}" +
+        "@font-face{font-family:'Oswald';font-style:normal;font-weight:200 700;font-display:swap;src:url(" + fbase + "oswald-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}" +
+        "@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url(" + fbase + "inter-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}" +
+        "@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url(" + fbase + "inter-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}";
+      document.head.appendChild(ff);
     }
   } catch (e) {}
   function bumpBrand() { try { var b3 = document.getElementById("fo-brand"); if (b3 && (b3.parentNode !== document.body || document.body.lastChild !== b3)) document.body.appendChild(b3); } catch (e) {} }

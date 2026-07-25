@@ -239,7 +239,7 @@
       "html body.fo-wd-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
       "#page .fo-wd{position:relative;width:100%;min-height:100vh;",
       "  background:radial-gradient(130% 90% at 18% -5%,#13233f 0%,#0c1526 46%,#080d18 100%);color:#e9eefa;",
-      "  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased}",
+      "  font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased}",
       "#page .fo-wd *{box-sizing:border-box}",
       ".fo-wd-in{max-width:1520px;margin:0 auto;padding:14px 22px 60px}",
       // grid/flex children default to min-width:auto and would let long rows

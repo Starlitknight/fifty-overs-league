@@ -449,7 +449,7 @@
       "html body.fo-sqx-on #topbar,html body.ftpskin.fo-sqx-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(4,10,20,.82),rgba(4,10,20,.34) 62%,transparent) !important;border-bottom:none !important;box-shadow:none !important}",
       "html body.fo-sqx-on #page{padding-top:0 !important;margin-top:0 !important}",
       "html body.fo-sqx-on #fo-top-status{display:none}",
-      "#page .fo-sqx{--gold:#EBC271;--ink:#070d18;position:relative;min-height:100vh;background:#070d18;color:#eaf0fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}",
+      "#page .fo-sqx{--gold:#EBC271;--ink:#070d18;position:relative;min-height:100vh;background:#070d18;color:#eaf0fb;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}",
       "#page .fo-sqx *{box-sizing:border-box}",
       "#page .fo-sqx button{font-family:Oswald,sans-serif}",
       // ---- the two-column stage: the park on the left, the man on the right ----
