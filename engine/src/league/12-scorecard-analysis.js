@@ -5576,6 +5576,7 @@
               d3 += " C" + A3.x + " " + md + " " + B3.x + " " + md + " " + B3.x + " " + B3.y;
             }
             svgP.setAttribute("d", d3);
+            try { if (page.__foRouteDash) page.__foRouteDash(); } catch (eRD) {}
           }
           try { if (page.__foPinPost) page.__foPinPost(); } catch (ePP) {}
           return true;
@@ -5591,6 +5592,27 @@
       // where its coordinates put it.
       // A pin the boss is standing on is dropped rather than drawn through him, so
       // both passes have to run again whenever the map re-aims and moves the pins.
+      // The route draws itself on with a dash as long as the whole line. It has
+      // to be measured: a fixed dash simply stops wherever the pattern runs out,
+      // which is what left Australia's line hanging at Adelaide. Wide screens
+      // never re-aim the map, so this cannot live inside aim().
+      try {
+        page.__foRouteDash = function () {
+          var sp = page.querySelector(".fo-ov-route path");
+          if (!sp || !sp.getAttribute("d")) return;
+          var len = sp.getTotalLength(); if (!(len > 0)) return;
+          var slow = false;
+          try { slow = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (eM3) {}
+          sp.style.strokeDasharray = len.toFixed(2);
+          sp.style.strokeDashoffset = slow ? "0" : len.toFixed(2);
+          if (slow) return;
+          sp.style.animation = "none";
+          void sp.getBoundingClientRect();   // reflow, so the draw-on restarts
+          sp.style.animation = "";
+        };
+        page.__foRouteDash();
+      } catch (eRD2) {}
+
       try {
         var fg9 = page.querySelector(".fo-ov-fig");
         page.__foPinPost = function () {
