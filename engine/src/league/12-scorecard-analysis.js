@@ -5287,19 +5287,55 @@
           if (!narrow) return true;   // wide screens keep the placement that is live today
           var wr = wrapEl.getBoundingClientRect();
           var fb = figEl ? figEl.getBoundingClientRect() : null;
-          // wide screens keep the boss out of the field; phones only avoid his corner
-          var rightWall = (!narrow && fb) ? (fb.left - wr.left) : cw;   // phones: boss sits below the map
-          var padX = narrow ? 26 : Math.min(96, cw * 0.16);
+          var padX = narrow ? 18 : Math.min(96, cw * 0.16);
           var padY = narrow ? 30 : Math.min(64, chh * 0.12);
-          var loX = padX, hiX = Math.max(loX + 10, rightWall - padX);
-          var loY = padY, hiY = chh - padY;
+          // phones hang the country pill over the top-left of the map, so nothing
+          // is aimed into that strip
+          var loY = narrow ? 52 : padY, hiY = chh - (narrow ? 26 : padY);
           var fit = function (a0, a1, lo, hi, drawn, box) {
             var need = (a1 - a0) * drawn, room = hi - lo, off;
             off = (need <= room) ? lo - a0 * drawn + (room - need) / 2
                                  : lo - a0 * drawn - (need - room) / 2;
             return Math.max(Math.min(off, 0), box - drawn);
           };
-          var ox = fit(fx0, fx1, loX, hiX, dw, cw), oy = fit(fy0, fy1, loY, hiY, dh, chh);
+          // Wide countries can't be centred without throwing half their cities
+          // under the boss or off the frame, so instead of centring blindly we try
+          // every crop that would pin some city to an edge, on both touchlines, and
+          // keep whichever leaves the most cities on screen and clear of him. He
+          // only covers a corner, not a column, so a nation whose cities sit high
+          // (Wales) keeps the full width. When everything fits, the roomiest
+          // placement wins the tie, which is still the centred crop.
+          var loX = padX, hiX = cw - padX;
+          var occ = fb && fb.width
+            ? Math.max(0, Math.min(fb.right - wr.left, cw) - Math.max(fb.left - wr.left, 0)) : 0;
+          var bossTop = fb && fb.width ? fb.top - wr.top : chh;
+          var crops = function (vals, lo, hi, drawn, box) {
+            var lim = function (o) { return Math.max(Math.min(o, 0), box - drawn); };
+            var c = [fit(Math.min.apply(null, vals), Math.max.apply(null, vals), lo, hi, drawn, box)];
+            vals.forEach(function (v) { c.push(lim(lo - v * drawn), lim(hi - v * drawn)); });
+            return c;
+          };
+          var cropX = crops(cities.map(function (c) { return c.fx; }), loX, hiX, dw, cw);
+          var cropY = crops(cities.map(function (c) { return c.fy; }), loY, hiY, dh, chh);
+          var pick = null;
+          (occ ? [0, 1] : [0]).forEach(function (s) {
+            var b0 = s ? -8 : cw - occ - 6, b1 = s ? occ + 6 : cw + 8;
+            cropX.forEach(function (px) {
+              cropY.forEach(function (py) {
+                var n = 0, m = 0;
+                cities.forEach(function (c) {
+                  var x = px + c.fx * dw, y = py + c.fy * dh;
+                  if (x < loX || x > hiX || y < loY || y > hiY) return;
+                  if (occ && x > b0 && x < b1 && y > bossTop - 6) return;
+                  n++; m += Math.min(x - loX, hiX - x) + Math.min(y - loY, hiY - y);
+                });
+                if (!pick || n > pick.n || (n === pick.n && m > pick.m)) pick = { n: n, m: m, x: px, y: py, s: s };
+              });
+            });
+          });
+          if (figEl) figEl.classList.toggle("on-left", pick.s === 1);
+          var rightWall = pick.s === 1 ? cw : cw - occ - 12, leftWall = pick.s === 1 ? occ + 12 : 0;
+          var ox = pick.x, oy = pick.y;
           mapEl.style.objectFit = "cover";
           mapEl.style.objectPosition = (dw > cw ? (ox / (cw - dw)) * 100 : 50).toFixed(2) + "% " +
                                        (dh > chh ? (oy / (chh - dh)) * 100 : 50).toFixed(2) + "%";
@@ -5315,7 +5351,7 @@
             c.el.classList.add("lbl-r"); c.el.classList.remove("lbl-l");
             if (nm.getBoundingClientRect().right - wr.left > Math.min(cw - 4, rightWall - 2)) {
               c.el.classList.remove("lbl-r"); c.el.classList.add("lbl-l");
-              if (nm.getBoundingClientRect().left - wr.left < 2) {
+              if (nm.getBoundingClientRect().left - wr.left < leftWall + 2) {
                 c.el.classList.remove("lbl-l"); c.el.classList.add("lbl-r");
               }
             }
@@ -5331,6 +5367,7 @@
             }
             svgP.setAttribute("d", d3);
           }
+          try { if (page.__foPinPost) page.__foPinPost(); } catch (ePP) {}
           return true;
         };
         if (!aim() && mapEl) mapEl.addEventListener("load", aim);
@@ -5342,21 +5379,92 @@
       // enough to clear the ones above it that share its column. Only ever pushing
       // down means the layout settles in one pass, and every dot stays exactly
       // where its coordinates put it.
+      // A pin the boss is standing on is dropped rather than drawn through him, so
+      // both passes have to run again whenever the map re-aims and moves the pins.
       try {
-        var lbl = [].slice.call(page.querySelectorAll(".fo-ov-pin .nm")).map(function (el) {
-          var r = el.getBoundingClientRect();
-          return { el: el, l: r.left, r: r.right, t: r.top, h: r.height, dy: 0 };
-        }).sort(function (a, b) { return a.t - b.t; });
-        var placed = [];
-        lbl.forEach(function (q) {
-          var top = q.t;
-          placed.forEach(function (o) {
-            if (q.l < o.r && o.l < q.r && top < o.t + o.h + 3) top = o.t + o.h + 3;
+        var fg9 = page.querySelector(".fo-ov-fig");
+        page.__foPinPost = function () {
+          var pins = [].slice.call(page.querySelectorAll(".fo-ov-pin"));
+          pins.forEach(function (a) { a.style.display = ""; a.querySelector(".nm").style.transform = ""; });
+          var wp9 = page.querySelector(".fo-ov-mapwrap");
+          var wb9 = wp9 ? wp9.getBoundingClientRect() : null;
+          var fr0 = fg9 ? fg9.getBoundingClientRect() : null;
+          // A name that would run onto the boss prints on the pin's other side
+          // first. Only a city he is genuinely standing on gets dropped, and that
+          // has to be settled before the stack runs so it stacks the real columns.
+          if (fr0 && fr0.width && wb9) {
+            pins.forEach(function (a) {
+              var n9 = a.querySelector(".nm");
+              var bad = function () {
+                var r = n9.getBoundingClientRect();
+                return r.width && ((r.left < fr0.right - 2 && fr0.left + 2 < r.right) ||
+                                   r.left < wb9.left + 2 || r.right > wb9.right - 2);
+              };
+              if (!bad()) return;
+              var wasR = a.classList.contains("lbl-r");
+              a.classList.toggle("lbl-r", !wasR); a.classList.toggle("lbl-l", wasR);
+              if (bad()) { a.classList.toggle("lbl-r", wasR); a.classList.toggle("lbl-l", !wasR); }
+            });
+          }
+          var lbl = pins.map(function (a) {
+            var el = a.querySelector(".nm"), r = el.getBoundingClientRect();
+            return { el: el, l: r.left, r: r.right, t: r.top, h: r.height };
+          }).sort(function (a, b) { return a.t - b.t; });
+          var placed = [];
+          lbl.forEach(function (q) {
+            var top = q.t;
+            placed.forEach(function (o) {
+              if (q.l < o.r && o.l < q.r && top < o.t + o.h + 3) top = o.t + o.h + 3;
+            });
+            if (top > q.t) q.el.style.transform = "translateY(" + (top - q.t).toFixed(1) + "px)";
+            q.t = top; placed.push(q);
           });
-          if (top > q.t) { q.dy = top - q.t; q.el.style.transform = "translateY(" + q.dy.toFixed(1) + "px)"; }
-          q.t = top; placed.push(q);
-        });
-      } catch (eDg) {}
+          var fr9 = fg9 ? fg9.getBoundingClientRect() : null;
+          if (!fr9 || !fr9.width) return;
+          pins.forEach(function (a) {
+            var d9 = a.querySelector(".dot"), n9 = a.querySelector(".nm");
+            var on = function (r) { return r && r.width && r.left < fr9.right - 2 && fr9.left + 2 < r.right && r.top < fr9.bottom - 2 && fr9.top + 2 < r.bottom; };
+            // the dot is the city; a name that still can't clear him takes it with it
+            if (on(d9 && d9.getBoundingClientRect()) || on(n9 && n9.getBoundingClientRect())) a.style.display = "none";
+          });
+          // one more stack now that sides moved, so nothing prints on a neighbour
+          var seen9 = [];
+          pins.filter(function (a) { return a.style.display !== "none"; })
+            .map(function (a) {
+              var el = a.querySelector(".nm"), r = el.getBoundingClientRect();
+              return { el: el, l: r.left, r: r.right, t: r.top, h: r.height, dy: parseFloat(el.style.transform.replace(/[^-\d.]/g, "")) || 0 };
+            })
+            .sort(function (a, b) { return a.t - b.t; })
+            .forEach(function (q) {
+              var top = q.t;
+              seen9.forEach(function (o) {
+                if (q.l < o.r && o.l < q.r && top < o.t + o.h + 3) top = o.t + o.h + 3;
+              });
+              if (top > q.t) q.el.style.transform = "translateY(" + (q.dy + top - q.t).toFixed(1) + "px)";
+              q.t = top; seen9.push(q);
+            });
+        };
+        page.__foPinPost();
+        if (fg9) fg9.addEventListener("load", page.__foPinPost);
+        setTimeout(page.__foPinPost, 140); setTimeout(page.__foPinPost, 480);
+      } catch (eHb) {}
+      // NETHERLANDS and AFGHANISTAN are single words too long to wrap and too long
+      // for a phone column, so the headline is scaled to whatever room it has
+      // rather than picked to suit the longest name in the game.
+      try {
+        var ttl = page.querySelector(".fo-ov-title");
+        var fitTitle = function () {
+          if (!ttl || !ttl.firstChild) return;
+          ttl.style.fontSize = "";
+          var avail = ttl.clientWidth; if (!avail) return;
+          var rg = document.createRange(); rg.selectNodeContents(ttl.firstChild);
+          var w = rg.getBoundingClientRect().width;
+          if (w > avail) ttl.style.fontSize = (parseFloat(getComputedStyle(ttl).fontSize) * (avail / w) * 0.99).toFixed(1) + "px";
+        };
+        fitTitle();
+        setTimeout(fitTitle, 160);
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTitle);
+      } catch (eFt) {}
       page.querySelectorAll(".fo-lg-play").forEach(function (pb) { pb.addEventListener("click", function () { foLgPlay(nation, round, false); }); });
       page.querySelectorAll(".fo-lg-sim").forEach(function (sb) { sb.addEventListener("click", function () { if (!window.confirm("Sim your fixture and the rest of Round " + (round + 1) + " automatically?")) return; foLgPlay(nation, round, true); page.__foLgSig = null; foRenderLeague(); }); });
       var nb = page.querySelector("#fo-lg-new");
@@ -5788,15 +5896,22 @@
       "#page .fo-ov .fo-lg-row .nm i{display:none}",
       "#page .fo-ov .fo-lg-row.q{background:rgba(235,194,113,.055)}",
       "#page .fo-ov .fo-lg-row.q:hover{background:rgba(235,194,113,.09)}",
-      "#page .fo-ov .fo-ov-mapwrap{height:min(52vh,104vw);min-height:300px}",
-      // phones: the boss holds the right half and the map keeps the left, so the
-      // country and its pins are never under him. Cutouts carry their own alpha,
-      // so no mask is needed to blend the figure into the map.
-      "#page .fo-ov .fo-ov-fig{top:min(52vh,104vw);bottom:auto;right:0;left:auto;height:auto;width:auto;max-height:26vh;max-width:44%;object-fit:contain;object-position:right top;-webkit-mask-image:none;mask-image:none;opacity:1;filter:drop-shadow(-8px 10px 26px rgba(0,0,0,.6)) saturate(1.04)}",
-      "#page .fo-ov .fo-ov-map{object-position:34% 42%}",
+      // one height drives both the map window and the figure standing in it
+      // one height drives the map window and the figure standing in it, so the
+      // desktop max-height cap has to come off or he overhangs into the text
+      "#page .fo-ov .fo-ov-hero{--fomh:min(62vh,118vw,520px)}",
+      "#page .fo-ov .fo-ov-mapwrap{height:var(--fomh);min-height:340px;max-height:none}",
+      // phones: the boss stands in the map itself, planted on its bottom-right
+      // corner, and any city he covers is dropped rather than drawn through him.
+      // Nothing of his overlaps the identity block below, so its text runs full
+      // width again. Cutouts carry their own alpha, so no mask is needed.
+      "#page .fo-ov .fo-ov-fig{top:calc(var(--fomh) * .24);bottom:auto;right:-3%;left:auto;height:calc(var(--fomh) * .76);width:auto;max-width:34%;object-fit:contain;object-position:right bottom;-webkit-mask-image:none;mask-image:none;opacity:1;filter:drop-shadow(-10px 12px 30px rgba(0,0,0,.62)) saturate(1.04)}",
+      // he swaps touchlines for the nations whose cities all sit on one side
+      "#page .fo-ov .fo-ov-fig.on-left{right:auto;left:-3%;object-position:left bottom;filter:drop-shadow(10px 12px 30px rgba(0,0,0,.62)) saturate(1.04)}",
+      "#page .fo-ov .fo-ov-map{object-position:38% 42%}",
       // a pin label that grazes the figure still has to read
       "#page .fo-ov .fo-ov-pin .nm{font-size:9.5px;letter-spacing:1.4px;text-shadow:0 1px 5px #000,0 0 11px rgba(0,0,0,.95)}",
-      "#page .fo-ov .fo-ov-title{font-size:clamp(44px,13vw,56px);margin-top:4px}",
+      "#page .fo-ov .fo-ov-title{font-size:clamp(30px,9.4vw,46px);line-height:.94;margin-top:4px}",
       "#page .fo-ov .fo-ov-sub{font-size:clamp(18px,5.6vw,24px);letter-spacing:2px}",
       "#page .fo-ov .fo-ov-quote{margin-top:11px;font-size:14px;line-height:1.45;max-width:none}",
       "#page .fo-ov .fo-ov-bossid{margin-top:7px}",
