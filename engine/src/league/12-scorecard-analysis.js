@@ -4152,6 +4152,32 @@
     });
     return out;
   }
+  // The season writes its own pages. Every finished match already has a report
+  // waiting to be read, so the issue opens with the latest of them rather than
+  // pretending the Journal is only ever about the nineteen bosses.
+  function foLoreReports() {
+    try {
+      var res = (typeof App !== "undefined" && App.results) || [];
+      if (!res.length) return "";
+      var recent = res.slice(-4).reverse();
+      var rows = recent.map(function (r) {
+        var head = "";
+        try {
+          var f = window.foMatchFacts && window.foMatchFacts(r);
+          if (f && window.foMatchHeadline) head = window.foMatchHeadline(f).head;
+        } catch (eH) {}
+        if (!head) head = (r.result && r.result.text) || (r.home + " v " + r.away);
+        return "<a class='fo-lx-rep' href='#/report?i=" + r.ix + "'>" +
+          "<i class='fo-lx-repd'>" + E(r.date || "") + "</i>" +
+          "<b class='fo-lx-reph'>" + E(head) + "</b>" +
+          "<span class='fo-lx-repm'>" + E(r.home) + " v " + E(r.away) + "</span></a>";
+      }).join("");
+      return "<section class='fo-lx-sec'>" +
+        "<div class='fo-lx-rule reveal'><span>From the season</span></div>" +
+        "<p class='fo-lx-secsub reveal'>Match reports, written off the ball-by-ball record as each game finishes.</p>" +
+        "<div class='fo-lx-reps reveal'>" + rows + "</div></section>";
+    } catch (e) { return ""; }
+  }
   function foRenderLore() {
     try {
       try { foCxNav(); } catch (eN) {}
@@ -4260,6 +4286,8 @@
         "</div></div>" +
         "<div class='fo-lx-scroll' aria-hidden='true'><span></span>Read on</div>" +
         "</header>" +
+        // ---- the season's own pages, written as the matches finish ----
+        foLoreReports() +
         // ---- contents ----
         (feat.length ? "<section class='fo-lx-sec fo-lx-contents'>" +
           "<div class='fo-lx-rule reveal'><span>In this issue</span></div>" +
@@ -4464,6 +4492,13 @@
       // ---------- how far through the issue you are ----------
       ".fo-lx-prog{position:fixed;top:0;left:0;right:0;height:2px;z-index:62;background:rgba(230,177,94,.1);pointer-events:none}",
       ".fo-lx-prog i{display:block;height:100%;background:linear-gradient(90deg,#C9A24B,var(--gold),#F6E7C2);transform:scaleX(0);transform-origin:left;will-change:transform}",
+      // ---------- the season's own reports ----------
+      ".fo-lx-reps{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}",
+      "html body #page a.fo-lx-rep{display:block;padding:15px 16px;border-radius:12px;text-decoration:none !important;color:#e9eefa !important;background:linear-gradient(180deg,rgba(16,27,50,.62),rgba(8,14,26,.72));border:1px solid rgba(150,180,225,.16);transition:transform .22s cubic-bezier(.2,.7,.2,1),border-color .22s}",
+      "html body #page a.fo-lx-rep:hover{transform:translateY(-3px);border-color:rgba(230,177,94,.6)}",
+      ".fo-lx-repd{display:block;font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.2em;font-size:9px;color:var(--gold)}",
+      ".fo-lx-reph{display:block;font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:17px;line-height:1.08;margin:6px 0 5px;color:var(--paper)}",
+      ".fo-lx-repm{display:block;font-family:Georgia,serif;font-style:italic;font-size:12.5px;color:#8ea3c4}",
       // ---------- the contents page ----------
       ".fo-lx-toclist{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:2px 30px;margin-top:6px}",
       "html body #page button.fo-lx-toc{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:baseline;gap:14px;width:100%;text-align:left;padding:13px 6px;cursor:pointer;border:0;border-bottom:1px solid rgba(150,180,225,.11);background:transparent !important;transition:background .2s,padding .2s}",

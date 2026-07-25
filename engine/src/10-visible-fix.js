@@ -10,7 +10,12 @@
   function esc11(s){return (typeof esc==='function'?esc(String(s==null?'':s)):String(s==null?'':s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}));}
   function allPlayers(){var out=[];try{(GD.teams||[]).forEach(function(t){out=out.concat(t.players||[],t.youth||[]);});}catch(e){}return out;}
   function nameMap(){var m={};allPlayers().forEach(function(p){m[p.name]=shortName(p);});return m;}
-  function decorateConditions(root){root=root||document.getElementById('page')||document.body;if(!root)return;var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null);var n;while(n=w.nextNode()){var old=n.nodeValue,nu=titleCase(old);if(nu!==old)n.nodeValue=nu;}}
+  // Title-casing conditions is right for a scorecard label and wrong for a
+  // sentence: it was turning "overcast and a green pitch" into "Overcast and a
+  // Green pitch" inside the Journal's prose. Written copy opts out by living
+  // under .fo-prose (the match report and the Journal both do).
+  function foProseExempt(n){try{var e=n.parentElement;return !!(e&&e.closest&&e.closest('.fo-prose,.fo-mr,.fo-lx'));}catch(e2){return false;}}
+  function decorateConditions(root){root=root||document.getElementById('page')||document.body;if(!root)return;var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null);var n;while(n=w.nextNode()){if(foProseExempt(n))continue;var old=n.nodeValue,nu=titleCase(old);if(nu!==old)n.nodeValue=nu;}}
   function shortenScorecardNames(){if(!/^#\/(scorecard|match|commentary)/.test(location.hash))return;var m=nameMap();document.querySelectorAll('.ftp-scorecard a,.ftp-bowling a,table a').forEach(function(a){var t=a.textContent.trim();if(m[t])a.textContent=m[t];});document.querySelectorAll('.ftp-scorecard td,.ftp-bowling td').forEach(function(td){var txt=td.textContent.trim();Object.keys(m).forEach(function(full){if(txt.indexOf(full)>=0)td.textContent=td.textContent.replaceAll(full,m[full]);});});
     // dismissal columns ("c X b Y", "c & b Y", "st †X b Y", "run out (X)") + fall-of-wickets in the fo-* scorecard
     document.querySelectorAll('.fo-scorecard td.fo-out').forEach(function(td){var txt=td.textContent;Object.keys(m).forEach(function(full){if(txt.indexOf(full)>=0)txt=txt.replaceAll(full,m[full]);});if(txt!==td.textContent)td.textContent=txt;});
