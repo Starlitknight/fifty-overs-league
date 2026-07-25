@@ -1355,7 +1355,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={home:'foRenderHome',league:'foRenderLeague',nation:'foRenderNation',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport'}[App.page];
+  const OV={home:'foRenderHome',league:'foRenderLeague',nation:'foRenderNation',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk'}[App.page];
   if(P[App.page])P[App.page](q);
   else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){}}
   else if(OV){/* overlay not parsed yet: leave the page blank, its interval paints */}
@@ -2274,7 +2274,8 @@ function onMatchEnd(){saveMatch(M)}
 function saveMatch(m){
   const r={ix:App.results.length,date:m.meta?m.meta.date:simDate(),home:m.meta.home,away:m.meta.away,
     ground:m.meta.ground,pitch:m.pitch,weather:m.meta.weather,seed:m.seed,result:m.result,
-    innings:m.innings,worm:m.worm,log:m.log,comp:m.meta.comp||'friendly',round:m.meta.round??null};
+    innings:m.innings,worm:m.worm,log:m.log,comp:m.meta.comp||'friendly',round:m.meta.round??null,
+    seasonNo:App.seasonNo||1};
   App.results.push(r);
   if(r.comp==='league'&&App.season)App.season.played[r.round+':'+r.home+':'+r.away]=r.ix;
   if(m.isUserMatch){App.pending=null;App.orders.saved=false}
@@ -3349,20 +3350,52 @@ function foSlimInns(inn){
   if(!inn||inn.__slim)return inn;
   const c={...inn,__slim:1};
   delete c.xi;delete c.bxi;delete c.__foRecent;
+  // live-match runtime state; measured at 14+ KB per innings, and no archived
+  // scorecard, report or analysis view reads any of it
+  for(const k of ['_fassign','_ovStartR','_ovStartW','faced','since','striker','nonstriker',
+    'nextBat','lastBowler','curBowlerName','captBat','captBowl','ph_r','ph_b','pshipR','pshipB'])delete c[k];
   c.bat=(inn.bat||[]).map(b=>({...b,p:foSlimPlayer(b.p)}));
   const bw={};for(const k in (inn.bowlers||{})){const r0=inn.bowlers[k];bw[k]={...r0,p:foSlimPlayer(r0.p)}}
   c.bowlers=bw;
   return c;
 }
+// archived worms drop to over-level resolution (plus every wicket point):
+// the report's worm chart and phase analysis read over boundaries, not balls
+function foSlimWorm(worm){
+  if(!Array.isArray(worm))return worm;
+  return worm.map(track=>{
+    if(!Array.isArray(track)||track.length<80)return track;
+    const keep=[];let lastOv=-1,lastW=-1;
+    for(let i=0;i<track.length;i++){const pt=track[i];if(!pt)continue;
+      const ov=Math.floor(pt[0]),w=pt[2]|0;
+      if(ov!==lastOv||w!==lastW||i===track.length-1){keep.push(pt);lastOv=ov;lastW=w;}}
+    return keep;
+  });
+}
 function snapshot(full){
   econInit();
+  // full logs only for the last 2 results: the report + scorecard of anything
+  // older read the slimmed innings, and each retained log costs ~½ MB of the
+  // ~5 MB quota. Two logs keeps "replay my last match" alive on both clubs.
+  // three tiers of history: the last 2 results keep everything (replay +
+  // full report), the current season keeps slim innings + an over-level worm,
+  // finished seasons keep just the scorecard numbers the record book reads
   const res=App.results.map((r,i)=>{
-    const keep=full||i>=App.results.length-5;
-    const c={...r};if(!keep){delete c.log;try{c.innings=(r.innings||[]).map(foSlimInns)}catch(e){}}return c;});
+    const keep=full||i>=App.results.length-2;
+    const c={...r};if(!keep){delete c.log;try{
+      c.innings=(r.innings||[]).map(foSlimInns);
+      if((r.seasonNo||App.seasonNo)<App.seasonNo){delete c.worm;
+        c.innings=c.innings.map(inn=>{if(!inn)return inn;const s={...inn};delete s.fielding;
+          s.bat=(inn.bat||[]).map(b=>({...b,p:b.p?{name:b.p.name,role:b.p.role,hand:b.p.hand,bowlTypeFull:b.p.bowlTypeFull}:b.p}));
+          const bw={};for(const k in (inn.bowlers||{})){const q=inn.bowlers[k];bw[k]={...q,p:q.p?{name:q.p.name,bowlTypeFull:q.p.bowlTypeFull}:q.p}}
+          s.bowlers=bw;return s;});}
+      else c.worm=foSlimWorm(r.worm);
+    }catch(e){}}return c;});
   return {v:2,seasonNo:App.seasonNo,teamIx:App.teamIx,teams:GD.teams,
     fin:App.fin,market:App.market,cup:App.cup,news:App.news||[],history:App.history,
     season:App.season,round:App.round,results:res,playerHist:App.playerHist,
-    fieldStats:App.fieldStats||{},orders:App.orders,defaults:App.defaults,mp:App.mp||null,mergeQueue:App.mergeQueue||null};
+    fieldStats:App.fieldStats||{},orders:App.orders,defaults:App.defaults,mp:App.mp||null,mergeQueue:App.mergeQueue||null,
+    ls:App.ls||null};
 }
 function saveGame(tell){
   try{const s=JSON.stringify(snapshot(false));localStorage.setItem('fo_save_v11_3_pace_tuned',s);
@@ -3384,6 +3417,7 @@ function restoreFrom(d){
   App.season=d.season;App.round=d.round||1;App.results=d.results||[];
   App.playerHist=d.playerHist||{};App.fieldStats=d.fieldStats||{};
   if(d.orders)App.orders=d.orders;if(d.defaults)App.defaults=d.defaults;if(d.mp)App.mp=d.mp;if(d.mergeQueue)App.mergeQueue=d.mergeQueue;
+  if(d.ls)App.ls=d.ls;
   return true;
 }
 function loadGame(){

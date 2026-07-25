@@ -361,12 +361,22 @@
     return "rgb(201,162,75)";
   }
   // the list view: every player, every column sortable, each row a door to his page
+  // form 0-6 (engine FORMW ladder) as a glance-able trend mark: arrows above
+  // and below "steady", coloured off the same ramp as every rating on the page
+  function foSqFormGlyph(p) {
+    var ix = p.formIx == null ? 3 : p.formIx;
+    var w = (typeof FORMW !== "undefined" && FORMW[ix]) || "steady";
+    var g = ix >= 5 ? "&#9650;" : ix === 4 ? "&#9652;" : ix === 3 ? "&#8212;" : ix === 2 ? "&#9662;" : "&#9660;";
+    var c = ix >= 5 ? "#7BD3A6" : ix === 4 ? "#9ec9ae" : ix === 3 ? "#7d8fad" : ix === 2 ? "#c99a75" : "#e0704f";
+    return "<span class='fo-sqt-frm' title='Form: " + E(w) + "'><b style='color:" + c + "'>" + g + "</b><span class='w' style='color:" + c + "'>" + E(w) + "</span></span>";
+  }
   var FO_SQ_COLS = [
     { k: "pos", l: "#", s: "#", v: function (p, x) { return x.xiIx(p) < 0 ? 99 : x.xiIx(p); }, num: 1 },
     { k: "name", l: "Player", s: "Player", v: function (p) { return p.name; } },
     { k: "role", l: "Role", s: "Role", v: function (p) { return foSqClass(p); } },
     { k: "age", l: "Age", s: "Age", v: function (p) { return p.age | 0; }, num: 1 },
     { k: "ovr", l: "OVR", s: "OVR", v: function (p) { return foPkOvr(p); }, num: 1 },
+    { k: "form", l: "Form", s: "Frm", v: function (p) { return p.formIx == null ? 3 : p.formIx; }, num: 1 },
     { k: "bat", l: "Batting", s: "Bat", v: function (p) { return Math.round(aggBat(p)); }, num: 1 },
     { k: "bowl", l: "Bowling", s: "Bowl", v: function (p) { return p.bowlType ? Math.round(aggBowl(p)) : -1; }, num: 1 },
     { k: "field", l: "Fielding", s: "Fld", v: function (p) { return Math.round(aggField(p)); }, num: 1 },
@@ -410,6 +420,7 @@
         "<td class='c-role'><span class='fo-sqt-role " + cls + "'>" + lbl + "</span></td>" +
         "<td class='n c-age'>" + (p.age | 0) + "</td>" +
         "<td class='n c-ovr'><b style='color:" + foSqQCol(ovr) + "'>" + ovr + "</b></td>" +
+        "<td class='n c-form'>" + foSqFormGlyph(p) + "</td>" +
         "<td class='c-bat'>" + bar(aggBat(p)) + "</td>" +
         "<td class='c-bowl'>" + bar(p.bowlType ? aggBowl(p) : 0, !p.bowlType) + "</td>" +
         "<td class='c-field'>" + bar(aggField(p)) + "</td>" +
@@ -466,6 +477,12 @@
       ".fo-sqx-man .pic{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:50% 12%;border-radius:11px 11px 0 0;background:#0d1626}",
       ".fo-sqx-man .no{position:absolute;top:5px;left:5px;font-family:Oswald,sans-serif;font-weight:700;font-size:11px;line-height:1;color:#0d1526;background:rgba(235,194,113,.95);border-radius:5px;padding:2px 5px}",
       ".fo-sqx-man .cap{position:absolute;top:4px;right:4px;width:19px;height:19px;border-radius:50%;background:var(--gold);color:#0d1526;font-family:Oswald,sans-serif;font-weight:700;font-size:11px;line-height:19px;text-align:center}",
+      // hot and cold streaks read from the park itself: a small trend mark on
+      // the shoulder, and an amber outline on anyone playing on empty legs
+      ".fo-sqx-man .frm{position:absolute;top:25px;left:6px;font-size:10px;line-height:1;text-shadow:0 1px 4px rgba(0,0,0,.85)}",
+      ".fo-sqx-man .frm.hi{color:#7BD3A6}.fo-sqx-man .frm.lo{color:#e0704f}",
+      "html body #page button.fo-sqx-man.wkn{outline-color:rgba(224,164,79,.65)}",
+      ".fo-sqx-dfrm{font-style:normal;margin-left:8px}",
       ".fo-sqx-man .nm{display:block;font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.02em;font-size:clamp(9px,.85vw,11.5px);line-height:1.1;color:#f2f6ff;padding:6px 4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-sqx-man .rl{display:block;font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.12em;font-size:8.5px;padding-top:2px}",
       ".fo-sqx-man .rl.bat{color:#F0BF6A}.fo-sqx-man .rl.ar{color:#5BD0A6}.fo-sqx-man .rl.bowl{color:#6FB4F5}.fo-sqx-man .rl.wk{color:#C79BF0}",
@@ -606,12 +623,17 @@
       "#page .fo-sqx.listing .fo-sqx-in{grid-template-columns:minmax(0,1fr)}",
       // phones: the bars are what make the row wide, so the numbers carry the
       // colour instead and every column fits without a sideways scroll
+      // the form cell: arrow always, word only where there is room
+      ".fo-sqt-frm{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}",
+      ".fo-sqt-frm b{font-size:11px;line-height:1}",
+      ".fo-sqt-frm .w{font-family:Oswald,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.1em}",
       "@media(max-width:760px){.fo-sqt{min-width:0}.fo-sqt-cap{font-size:12px}",
       ".fo-sqt td,html body.ftpskin #page th.fo-sqt-h,html body #page th.fo-sqt-h{padding:9px 6px}",
       ".fo-sqt td{font-size:12.5px}",
       ".fo-sqt-bar{min-width:0;gap:0;justify-content:flex-end}.fo-sqt-bar u{display:none}",
       ".fo-sqt-bar b{font-size:12.5px;min-width:24px}",
       ".fo-sqt .c-age,.fo-sqt .c-field,.fo-sqt .c-fit{display:none}",
+      ".fo-sqt-frm .w{display:none}",
       ".fo-sqt-nm .lg{display:none}.fo-sqt-nm .sm{display:inline}",
       ".fo-sqt-h .lg{display:none}.fo-sqt-h .sm{display:inline}",
       "html body.ftpskin #page th.fo-sqt-h,html body #page th.fo-sqt-h{letter-spacing:.08em;font-size:8.5px}",
@@ -683,8 +705,10 @@
         else if (sv.mode === "cond") { sub = en.pct + "% " + en.word.toUpperCase(); extra = "<span class='en" + (en.tired ? " lo" : "") + "'><i style='width:" + en.pct + "%'></i></span>"; }
         else if (sv.mode === "bal") sub = (cls === "bowl" || cls === "ar") ? "BOWLS" : cls === "wk" ? "GLOVES" : "BATS ONLY";
         var swap = sv.arm && ((xiSet[p.name] && !xiSet[sv.arm]) || (!xiSet[p.name] && xiSet[sv.arm])) && p.name !== sv.arm && !p.__y;
-        return "<button type='button' class='fo-sqx-man" + (p.name === sv.sel ? " sel" : "") + (swap ? " tgt" : "") + "' data-n='" + E(p.name) + "'>" +
+        var fIx = p.formIx == null ? 3 : p.formIx;
+        return "<button type='button' class='fo-sqx-man" + (p.name === sv.sel ? " sel" : "") + (swap ? " tgt" : "") + (en.tired ? " wkn" : "") + "' data-n='" + E(p.name) + "'>" +
           (n ? "<span class='no'>" + n + "</span>" : "") +
+          (fIx >= 5 ? "<span class='frm hi' title='In form'>&#9650;</span>" : fIx <= 2 ? "<span class='frm lo' title='Out of form'>&#9660;</span>" : "") +
           (p.name === capt ? "<span class='cap'>C</span>" : "") +
           "<img class='pic' src='" + FO_ART + foPkArt(p) + "' alt='' loading='lazy' decoding='async'>" + extra +
           "<span class='nm'>" + E(foSqShortName(p.name)) + "</span>" +
@@ -745,7 +769,8 @@
         var ring = "<div class='fo-sqx-cond'><div class='fo-sqx-ring'><svg width='66' height='66'>" +
           "<circle class='bg' cx='33' cy='33' r='28'></circle>" +
           "<circle class='fg" + (en2.tired ? " lo" : "") + "' cx='33' cy='33' r='28' stroke-dasharray='" + (C * en2.pct / 100).toFixed(1) + " " + C.toFixed(1) + "'></circle>" +
-          "</svg><b>" + en2.pct + "%</b></div><span>" + (en2.tired ? "Needs a rest" : "Match fit") + "</span></div>";
+          "</svg><b>" + en2.pct + "%</b></div><span>" + (en2.tired ? "Needs a rest" : "Match fit") +
+          " <em class='fo-sqx-dfrm'>" + foSqFormGlyph(sel) + "</em></span></div>";
 
         dos = "<aside class='fo-sqx-dos'>" +
           "<div class='fo-sqx-dhero'>" +
