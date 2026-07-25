@@ -10526,7 +10526,7 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260724-2306-45fd04";
+  var FO_BUILD = "20260725-0501-333dda";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -25677,6 +25677,9 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
     nep: [26.3, 30.5, 80.0, 88.2], sco: [54.6, 58.7, -7.6, -0.7], wal: [51.3, 53.5, -5.3, -2.6],
     ken: [-4.7, 5.5, 33.9, 41.9], usa: [24.5, 49.4, -125.0, -66.9], can: [41.7, 60.0, -141.0, -52.6]
   };
+  // Where each nation's coastline sits inside its painting, found by flooding the
+  // ocean in from the frame and keeping the landmass it cannot reach.
+  var FO_MAP_LAND = { eng: [0.021, 0.023, 0.946, 0.91], ire: [0.075, 0.056, 0.858, 0.896], ned: [0.008, 0.008, 0.99, 0.99], win: [0.008, 0.01, 0.99, 0.99], rsa: [0.008, 0.008, 0.99, 0.99], zim: [0.008, 0.008, 0.99, 0.99], aus: [0.04, 0.104, 0.931, 0.942], nzl: [0.05, 0.05, 0.921, 0.927], slk: [0.135, 0.04, 0.9, 0.937], sub: [0.023, 0.008, 0.99, 0.977], pak: [0.008, 0.008, 0.99, 0.99], afg: [0.008, 0.008, 0.99, 0.99], bgd: [0.062, 0.083, 0.99, 0.9], nep: [0.019, 0.167, 0.956, 0.852], sco: [0.185, 0.092, 0.933, 0.965], wal: [0.04, 0.06, 0.99, 0.99], ken: [0.008, 0.008, 0.99, 0.971], usa: [0.038, 0.008, 0.99, 0.89], can: [0.008, 0.008, 0.99, 0.971] };
   // fit a nation's cities into the map frame, keeping their true shape
   function foNationPins(rid, box) {
     var g = FO_CITY_GEO[rid]; if (!g) return [];
@@ -29207,6 +29210,87 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
           strip.addEventListener("click", function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
         });
       } catch (eTab) {}
+      // Put every city on the coast it belongs to. The map is drawn with cover, so
+      // only a slice is on screen - aim that slice at this nation's cities, then
+      // place the pins inside it. On phones the boss now sits low in the corner,
+      // so the cities get the whole width and only the bottom corner is reserved.
+      try {
+        var LB = FO_MAP_LAND[nation], GG = FO_CITY_GEO[nation], NB = FO_NATION_BOX[nation];
+        var mapEl = page.querySelector(".fo-ov-map"), wrapEl = page.querySelector(".fo-ov-mapwrap");
+        var figEl = page.querySelector(".fo-ov-fig");
+        var aim = function () {
+          if (!LB || !GG || !NB || !mapEl || !wrapEl || !mapEl.naturalWidth) return false;
+          var cw = wrapEl.clientWidth, chh = wrapEl.clientHeight;
+          if (!cw || !chh) return false;
+          var iw = mapEl.naturalWidth, ih = mapEl.naturalHeight;
+          var sc = Math.max(cw / iw, chh / ih), dw = iw * sc, dh = ih * sc;
+          var latSpan = NB[1] - NB[0], lonSpan = NB[3] - NB[2];
+          var cities = [];
+          page.querySelectorAll(".fo-ov-pin").forEach(function (a) {
+            var nm = a.querySelector(".nm"); if (!nm) return;
+            var g = GG[nm.textContent]; if (!g) return;
+            cities.push({ el: a,
+              fx: LB[0] + ((g[1] - NB[2]) / lonSpan) * (LB[2] - LB[0]),
+              fy: LB[1] + ((NB[1] - g[0]) / latSpan) * (LB[3] - LB[1]) });
+          });
+          if (!cities.length) return false;
+          var fx0 = Math.min.apply(null, cities.map(function (c) { return c.fx; }));
+          var fx1 = Math.max.apply(null, cities.map(function (c) { return c.fx; }));
+          var fy0 = Math.min.apply(null, cities.map(function (c) { return c.fy; }));
+          var fy1 = Math.max.apply(null, cities.map(function (c) { return c.fy; }));
+          var narrow = cw < 620;
+          if (!narrow) return true;   // wide screens keep the placement that is live today
+          var wr = wrapEl.getBoundingClientRect();
+          var fb = figEl ? figEl.getBoundingClientRect() : null;
+          // wide screens keep the boss out of the field; phones only avoid his corner
+          var rightWall = (!narrow && fb) ? (fb.left - wr.left) : cw;   // phones: boss sits below the map
+          var padX = narrow ? 26 : Math.min(96, cw * 0.16);
+          var padY = narrow ? 30 : Math.min(64, chh * 0.12);
+          var loX = padX, hiX = Math.max(loX + 10, rightWall - padX);
+          var loY = padY, hiY = chh - padY;
+          var fit = function (a0, a1, lo, hi, drawn, box) {
+            var need = (a1 - a0) * drawn, room = hi - lo, off;
+            off = (need <= room) ? lo - a0 * drawn + (room - need) / 2
+                                 : lo - a0 * drawn - (need - room) / 2;
+            return Math.max(Math.min(off, 0), box - drawn);
+          };
+          var ox = fit(fx0, fx1, loX, hiX, dw, cw), oy = fit(fy0, fy1, loY, hiY, dh, chh);
+          mapEl.style.objectFit = "cover";
+          mapEl.style.objectPosition = (dw > cw ? (ox / (cw - dw)) * 100 : 50).toFixed(2) + "% " +
+                                       (dh > chh ? (oy / (chh - dh)) * 100 : 50).toFixed(2) + "%";
+          mapEl.style.transform = "none";
+          cities.forEach(function (c) {
+            c.el.style.left = (((ox + c.fx * dw) / cw) * 100).toFixed(2) + "%";
+            c.el.style.top = (((oy + c.fy * dh) / chh) * 100).toFixed(2) + "%";
+          });
+          // side each label by measuring it: inward near the right edge, back out
+          // again if flipping would push it off the left
+          cities.forEach(function (c) {
+            var nm = c.el.querySelector(".nm"); if (!nm) return;
+            c.el.classList.add("lbl-r"); c.el.classList.remove("lbl-l");
+            if (nm.getBoundingClientRect().right - wr.left > Math.min(cw - 4, rightWall - 2)) {
+              c.el.classList.remove("lbl-r"); c.el.classList.add("lbl-l");
+              if (nm.getBoundingClientRect().left - wr.left < 2) {
+                c.el.classList.remove("lbl-l"); c.el.classList.add("lbl-r");
+              }
+            }
+          });
+          var pts = cities.map(function (c) { return { x: parseFloat(c.el.style.left), y: parseFloat(c.el.style.top) }; })
+            .sort(function (m3, n3) { return m3.y - n3.y; });
+          var svgP = page.querySelector(".fo-ov-route path");
+          if (svgP && pts.length > 1) {
+            var d3 = "M" + pts[0].x + " " + pts[0].y;
+            for (var q3 = 1; q3 < pts.length; q3++) {
+              var A3 = pts[q3 - 1], B3 = pts[q3], md = (A3.y + B3.y) / 2;
+              d3 += " C" + A3.x + " " + md + " " + B3.x + " " + md + " " + B3.x + " " + B3.y;
+            }
+            svgP.setAttribute("d", d3);
+          }
+          return true;
+        };
+        if (!aim() && mapEl) mapEl.addEventListener("load", aim);
+      } catch (eReg) {}
+
       // Cities that really are neighbours - Kathmandu and Lalitpur, the Toronto
       // cluster, Kandy and Pallekele - print their labels on top of each other.
       // Stack them downward instead: sorted by height, each label drops just far
@@ -29659,11 +29743,11 @@ window.FO_CLUBIMG="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAYAAAD
       "#page .fo-ov .fo-lg-row .nm i{display:none}",
       "#page .fo-ov .fo-lg-row.q{background:rgba(235,194,113,.055)}",
       "#page .fo-ov .fo-lg-row.q:hover{background:rgba(235,194,113,.09)}",
-      "#page .fo-ov .fo-ov-mapwrap{height:74vh;min-height:520px}",
+      "#page .fo-ov .fo-ov-mapwrap{height:min(52vh,104vw);min-height:300px}",
       // phones: the boss holds the right half and the map keeps the left, so the
       // country and its pins are never under him. Cutouts carry their own alpha,
       // so no mask is needed to blend the figure into the map.
-      "#page .fo-ov .fo-ov-fig{top:auto;bottom:0;right:0;left:auto;height:auto;width:auto;max-height:54vh;max-width:42%;object-fit:contain;object-position:right bottom;-webkit-mask-image:none;mask-image:none;opacity:1;filter:drop-shadow(-10px 14px 30px rgba(0,0,0,.62)) saturate(1.04)}",
+      "#page .fo-ov .fo-ov-fig{top:min(52vh,104vw);bottom:auto;right:0;left:auto;height:auto;width:auto;max-height:26vh;max-width:44%;object-fit:contain;object-position:right top;-webkit-mask-image:none;mask-image:none;opacity:1;filter:drop-shadow(-8px 10px 26px rgba(0,0,0,.6)) saturate(1.04)}",
       "#page .fo-ov .fo-ov-map{object-position:34% 42%}",
       // a pin label that grazes the figure still has to read
       "#page .fo-ov .fo-ov-pin .nm{font-size:9.5px;letter-spacing:1.4px;text-shadow:0 1px 5px #000,0 0 11px rgba(0,0,0,.95)}",
