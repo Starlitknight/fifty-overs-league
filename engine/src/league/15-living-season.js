@@ -315,7 +315,7 @@
     var move = (old.pos && pos && old.pos !== pos)
       ? (pos < old.pos ? "Up to <b>" + ordinal(pos) + "</b> from " + ordinal(old.pos) + "." : "Slipped to <b>" + ordinal(pos) + "</b> from " + ordinal(old.pos) + ".")
       : (pos ? "Holding <b>" + ordinal(pos) + "</b>." : "");
-    _digHtml = "<div class='fo-card fo-ls-card fo-ls-digest'><div class='fo-card-h2row'><div class='fo-card-h2'>While you were away</div><span class='fo-ls-k'>R" + (old.r + 1) + (curR > old.r + 1 ? "&ndash;" + curR : "") + "</span></div><div class='fo-card-b'>" +
+    _digHtml = "<div class='fo-card fo-ls-card fo-ls-digest pap tele'><div class='fo-card-h2row'><div class='fo-card-h2'>Club telegraph</div><span class='fo-ls-k'>R" + (old.r + 1) + (curR > old.r + 1 ? "&ndash;" + curR : "") + "</span></div><div class='fo-tele-sub'>While you were away</div><div class='fo-card-b'>" +
       lines.slice(0, 4).map(function (l) { return "<div class='fo-ls-line'>" + l + "</div>"; }).join("") +
       (move ? "<div class='fo-ls-line fo-ls-move'>" + move + "</div>" : "") + "</div></div>";
     return _digHtml;
@@ -334,7 +334,8 @@
       if ((h === me && a === rv) || (h === rv && a === me)) next = { round: r, home: h };
     });
     var lastLine = hh.last ? ("Last meeting: " + E(hh.last.result.text)) : "You have never met. Yet.";
-    return "<div class='fo-card fo-ls-card fo-ls-rival'><div class='fo-card-h2row'><div class='fo-card-h2'>The rivalry &middot; " + E(rv) + "</div><span class='fo-ls-k'>&#9876;</span></div><div class='fo-card-b'>" +
+    return "<div class='fo-card fo-ls-card fo-ls-rival poster'><div class='fo-card-h2row'><div class='fo-card-h2'>The rivalry</div><span class='fo-ls-k'>grudge fixture</span></div><div class='fo-card-b'>" +
+      "<div class='fo-pos-names'><b>" + E(me) + "</b><i>v</i><b>" + E(rv) + "</b></div>" +
       "<div class='fo-ls-h2h'><b>" + hh.all.w + "</b><span>you</span><i>&ndash;</i><b>" + hh.all.l + "</b><span>them</span></div>" +
       "<div class='fo-ls-line'>" + lastLine + "</div>" +
       (next ? "<div class='fo-ls-line'>Next: <b>R" + (next.round + 1) + "</b> at " + E(next.home === me ? "your place" : "theirs") + ". Circle it.</div>" : "<div class='fo-ls-line'>No more meetings this season.</div>") +
@@ -342,9 +343,11 @@
   }
   function goalsCard() {
     var gs = goals(); if (!gs.length) return "";
-    return "<div class='fo-card fo-ls-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Board expectations</div><span class='fo-ls-k'>" + gs.filter(function (g) { return g.ok; }).length + "/" + gs.length + "</span></div><div class='fo-card-b'>" +
+    return "<div class='fo-card fo-ls-card pap letter'><div class='fo-let-head'><i>" + E(myName() || "The Club") + " C.C.</i><b>From the office of the Board</b></div>" +
+      "<div class='fo-card-h2row'><div class='fo-card-h2'>Expectations, season " + (App.seasonNo || 1) + "</div><span class='fo-ls-k'>" + gs.filter(function (g) { return g.ok; }).length + "/" + gs.length + "</span></div><div class='fo-card-b'>" +
       gs.map(function (g) { return "<div class='fo-ls-goal" + (g.ok ? " ok" : "") + "'><i>" + (g.ok ? "&#10003;" : "&#9675;") + "</i><div><b>" + E(g.txt) + "</b><span>" + E(g.live) + "</span></div></div>"; }).join("") +
-      "<div class='fo-ls-line fo-ls-fine'>Settled on awards night. The board remembers.</div></div></div>";
+      "<div class='fo-ls-line fo-ls-fine'>Settled on awards night. The board remembers.</div>" +
+      "<div class='fo-let-sign'>&mdash; The Board</div></div></div>";
   }
   function wagerCard() {
     var bag = LSbag(), led = repLedger();
@@ -364,7 +367,7 @@
       body += "<div class='fo-ls-line fo-ls-fine'>Wager accepted for R" + (offer.round + 1) + ". Play the match.</div>";
     }
     if (!body) body = "<div class='fo-ls-line fo-ls-fine'>The promoter has nothing for you this week.</div>";
-    return "<div class='fo-card fo-ls-card'><div class='fo-card-h2row'><div class='fo-card-h2'>The promoter&rsquo;s wager</div><span class='fo-ls-k'>Rep <b>" + led.rep + "</b>" + (led.streak > 1 ? " &middot; " + led.streak + " straight" : "") + "</span></div><div class='fo-card-b'>" + body + "</div></div>";
+    return "<div class='fo-card fo-ls-card tick'><div class='fo-card-h2row'><div class='fo-card-h2'>The promoter&rsquo;s wager</div><span class='fo-ls-k'>Rep <b>" + led.rep + "</b>" + (led.streak > 1 ? " &middot; " + led.streak + " straight" : "") + "</span></div><div class='fo-card-b'>" + body + "</div><div class='fo-tick-stub'>FIFTY OVERS &middot; PROMOTIONS &middot; HONOURED WHEREVER CRICKET IS PLAYED</div></div>";
   }
   function pressCard() {
     var r = latestUserResult(); if (!r) return "";
@@ -372,10 +375,10 @@
     var bag = LSbag(), ans = bag.press[pq.key];
     if (ans) {
       var chosen = ans.a === 1 ? pq.a1 : pq.a2;
-      return "<div class='fo-card fo-ls-card'><div class='fo-card-h2row'><div class='fo-card-h2'>From the presser</div><span class='fo-ls-k'>&#128240;</span></div><div class='fo-card-b'>" +
-        "<div class='fo-ls-line fo-ls-quote'>" + E(chosen[1]) + "</div><div class='fo-ls-line fo-ls-fine'>&mdash; you, after the " + (pq.won ? "win over " : "defeat to ") + E(pq.opp) + "</div></div></div>";
+      return "<div class='fo-card fo-ls-card pap news'><div class='fo-card-h2row'><div class='fo-card-h2'>The Sporting Gazette</div><span class='fo-ls-k'>as printed</span></div><div class='fo-card-b'>" +
+        "<div class='fo-ls-line fo-ls-quote'>" + E(chosen[1]) + "</div><div class='fo-ls-line fo-ls-fine'>&mdash; the " + E(myName() || "club") + " manager, after the " + (pq.won ? "win over " : "defeat to ") + E(pq.opp) + "</div></div></div>";
     }
-    return "<div class='fo-card fo-ls-card'><div class='fo-card-h2row'><div class='fo-card-h2'>The press room</div><span class='fo-ls-k'>&#128240;</span></div><div class='fo-card-b'>" +
+    return "<div class='fo-card fo-ls-card pap news'><div class='fo-card-h2row'><div class='fo-card-h2'>The Sporting Gazette</div><span class='fo-ls-k'>press room</span></div><div class='fo-card-b'>" +
       "<div class='fo-ls-line fo-ls-q'>&ldquo;" + E(pq.q) + "&rdquo;</div>" +
       "<div class='fo-ls-pressbtns'>" +
       "<button type='button' class='fo-ls-btn ghost' data-ls-press='" + E(pq.key) + "' data-a='1'>" + E(pq.a1[0]) + "</button>" +
@@ -390,7 +393,7 @@
     var rows = mine.map(function (x) { return "<div class='fo-ls-line'><b>" + E(x.n) + "</b> &mdash; " + E(x.txt) + " <span>R" + ((x.rd | 0) + 1) + "</span></div>"; })
       .concat(others.map(function (x) { return "<div class='fo-ls-line fo-ls-dim'>" + E(x.n) + " (" + E(x.team) + ") &mdash; " + E(x.txt) + "</div>"; }));
     if (!rows.length) return "";
-    return "<div class='fo-card fo-ls-card'><div class='fo-card-h2row'><div class='fo-card-h2'>Season diary</div><a class='fo-morelink' href='#/ceremony'>The season so far &rsaquo;</a></div><div class='fo-card-b'>" + rows.join("") + "</div></div>";
+    return "<div class='fo-card fo-ls-card pap alma'><div class='fo-card-h2row'><div class='fo-card-h2'>The club almanack</div><a class='fo-morelink' href='#/ceremony'>The season so far &rsaquo;</a></div><div class='fo-alma-sub'>Notable performances, recorded in order</div><div class='fo-card-b'>" + rows.join("") + "</div></div>";
   }
 
   // ---------------------------------------------------------------------------
@@ -433,12 +436,23 @@
     var showStored = bag.cer && bag.cer.done && bag.cer.s === (App.seasonNo || 1) - 1 && !((App.season && App.season.round) > 0);
     var cer = showStored ? bag.cer : computeCeremony(App.seasonNo || 1);
     var live = !showStored;
+    var pic = function (nm) {
+      try { var fp = (typeof findPlayer === "function") ? findPlayer(nm) : null;
+        if (fp && fp.p && typeof foPkArt === "function") return lsArt() + foPkArt(fp.p); } catch (e) {}
+      return "";
+    };
     var aw = function (icon, ttl, o, line) {
       if (!o) return "";
-      return "<div class='fo-cer-aw'><i>" + icon + "</i><div><span>" + ttl + "</span><b>" + E(o.n || o) + "</b><em>" + line + "</em></div></div>";
+      var art = pic(o.n);
+      return "<div class='fo-cer-aw'>" +
+        (art ? "<u class='fo-cer-face'><img src='" + art + "' alt='' loading='lazy' onerror=\"this.parentNode.style.display='none'\"></u>" : "<i>" + icon + "</i>") +
+        "<div><span>" + ttl + "</span><b>" + E(o.n || o) + "</b><em>" + line + "</em></div></div>";
     };
     var st = function (o) { return o ? (o.runs + " runs" + (o.wk ? " · " + o.wk + " wkts" : "") + " · " + E(o.team)) : ""; };
+    var cbg = lsArt() + "home/" + (window.innerWidth < 760 ? "hgm-blue-hour" : "arches-blue-hour-cup") + ".webp";
     page.innerHTML = "<div class='fo-cer'>" +
+      "<img class='fo-cer-bg' src='" + cbg + "' alt='' onerror=\"this.style.display='none'\">" +
+      "<div class='fo-cer-veil'></div>" +
       "<div class='fo-cer-in'>" +
       "<div class='fo-cer-eyebrow'>" + (live ? "Season " + cer.s + " · the story so far" : "Season " + cer.s + " · awards night") + "</div>" +
       "<h1>" + (live ? "The Season<br>So Far" : "Awards<br>Night") + "</h1>" +
@@ -505,6 +519,7 @@
       });
     });
   }
+  function lsArt() { return (typeof FO_ART !== "undefined") ? FO_ART : "client/art/"; }
   window.foRenderDesk = function () {
     var page = document.getElementById("page"); if (!page) return;
     foLsCss();
@@ -513,11 +528,15 @@
     var rows = (typeof leagueRows === "function") ? leagueRows() : [];
     var pos = rows.findIndex(function (x) { return x.nm === (me && me.name); }) + 1;
     var sub = pos ? ordinal(pos) + " in the league &middot; season " + (App.seasonNo || 1) : "Season " + (App.seasonNo || 1);
-    page.innerHTML = "<div class='fo-desk'><div class='fo-desk-in'>" +
+    var bg = lsArt() + "home/" + (window.innerWidth < 760 ? "hgm" : "hgd") + "-office.webp";
+    page.innerHTML = "<div class='fo-desk'>" +
+      "<img class='fo-desk-bg' src='" + bg + "' alt='' onerror=\"this.style.display='none'\">" +
+      "<div class='fo-desk-veil'></div>" +
+      "<div class='fo-desk-in'>" +
       "<div class='fo-cer-eyebrow'>" + E((me && me.name) || "Your club") + " &middot; " + sub + "</div>" +
       "<h1 class='fo-desk-h1'>The Desk</h1>" +
-      "<p class='fo-desk-tag'>Everything the club wants from you this week, on one desk.</p>" +
-      (stripHTML() || "<div class='fo-ls-card fo-card'><div class='fo-card-b'>The desk is quiet. Found a club and the paperwork begins.</div></div>") +
+      "<p class='fo-desk-tag'>The morning&rsquo;s post, laid out in the club office.</p>" +
+      (stripHTML() || "<div class='fo-ls-card fo-card pap'><div class='fo-card-b'>The desk is quiet. Found a club and the paperwork begins.</div></div>") +
       "<div class='fo-cer-actions'><a class='fo-ls-btn ghost' href='#/home'>&lsaquo; Home ground</a>" +
       "<a class='fo-ls-btn ghost' href='#/ceremony'>The season so far &rsaquo;</a></div>" +
       "</div></div>";
@@ -599,29 +618,32 @@
     if (document.getElementById("fo-ls-css")) return;
     var s = document.createElement("style"); s.id = "fo-ls-css";
     s.textContent = [
-      // ---- the desk: full-bleed dark stage in the world's own language ----
-      "html body.fo-desk-on{background:#070d18 !important}",
+      // ---- the desk: the morning's post in the club office ----
+      "html body.fo-desk-on{background:#0d0a06 !important}",
       "html body.fo-desk-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
-      ".fo-desk{min-height:100vh;background:radial-gradient(90% 60% at 50% -8%,#16304F 0%,rgba(22,48,79,0) 58%),#070d18;color:#eaf0fb;padding:72px 18px 40px}",
+      "html body.fo-desk-on #page{padding:0 !important;margin:0 !important;background:#0d0a06 !important}",
+      "html body.fo-cer-on #page{padding:0 !important;margin:0 !important;background:#070d18 !important}",
+      ".fo-desk{position:relative;min-height:100vh;color:#eaf0fb;padding:72px 18px 40px;isolation:isolate}",
+      ".fo-desk-bg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 38%;z-index:-2}",
+      ".fo-desk-veil{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(13,9,4,.84),rgba(15,11,6,.62) 34%,rgba(13,9,5,.7) 68%,rgba(9,6,3,.88))}",
       ".fo-desk-in{max-width:1120px;margin:0 auto}",
-      ".fo-desk-h1{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(40px,6.4vw,72px);line-height:.9;margin:0 0 8px;color:#fff}",
-      ".fo-desk-tag{font-family:Georgia,serif;font-style:italic;font-size:14.5px;color:#93a5c2;margin:0 0 22px}",
+      ".fo-desk-h1{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(40px,6.4vw,72px);line-height:.9;margin:0 0 8px;color:#fff;text-shadow:0 4px 26px rgba(0,0,0,.7)}",
+      ".fo-desk-tag{font-family:Georgia,serif;font-style:italic;font-size:14.5px;color:#d8c9a6;margin:0 0 22px;text-shadow:0 2px 10px rgba(0,0,0,.7)}",
       ".fo-desk-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#C95532;box-shadow:0 0 8px rgba(201,85,50,.9);vertical-align:2px}",
-      ".fo-ls-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:14px 0 22px}",
+      ".fo-ls-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:14px 0 24px;align-items:start}",
       "@media(max-width:1080px){.fo-ls-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}",
       "@media(max-width:700px){.fo-ls-strip{grid-template-columns:minmax(0,1fr)}}",
-      // cards share the awards-night material: navy glass, gold eyebrows
-      ".fo-ls-card.fo-ls-card{background:rgba(14,26,48,.62);border:1px solid rgba(126,158,208,.2);border-radius:14px;padding:0;box-shadow:0 10px 30px rgba(4,9,18,.35)}",
-      ".fo-ls-card .fo-card-h2row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 15px 0}",
+      ".fo-ls-card{border-radius:14px;padding:0}",
+      ".fo-ls-card .fo-card-h2row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 16px 0}",
       ".fo-ls-card .fo-card-h2{font-family:Oswald,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.18em;color:#EBC271}",
-      ".fo-ls-card .fo-card-b{font-size:12.5px;line-height:1.55;padding:10px 15px 14px}",
+      ".fo-ls-card .fo-card-b{font-size:12.5px;line-height:1.55;padding:10px 16px 15px}",
       ".fo-ls-card .fo-morelink{font-size:11px;color:#EBC271 !important;text-decoration:none}",
       ".fo-ls-k{font-family:Oswald,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:#7d8fad}.fo-ls-k b{color:#EBC271}",
       ".fo-ls-line{margin:0 0 7px;color:#cfdaec}.fo-ls-line:last-child{margin-bottom:0}",
       ".fo-ls-line b{color:#f2f6ff}.fo-ls-line span{color:#7d8fad;font-size:11px}.fo-ls-line i{font-style:normal;margin-right:4px}",
       ".fo-ls-dim{color:#7d8fad}.fo-ls-move b{color:#EBC271}",
       ".fo-ls-fine{font-size:11px;color:#7d8fad}",
-      ".fo-ls-quote,.fo-ls-q{font-family:Georgia,serif;font-style:italic;font-size:13.5px;line-height:1.5;color:#e7eefb}",
+      ".fo-ls-quote,.fo-ls-q{font-family:Georgia,serif;font-style:italic;font-size:14.5px;line-height:1.55;color:#e7eefb}",
       ".fo-ls-h2h{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}",
       ".fo-ls-h2h b{font-family:Oswald,sans-serif;font-size:26px;color:#EBC271}.fo-ls-h2h span{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:#7d8fad}.fo-ls-h2h i{color:#42536e;font-style:normal}",
       ".fo-ls-goal{display:flex;gap:9px;align-items:flex-start;margin-bottom:8px}",
@@ -630,6 +652,63 @@
       ".fo-ls-goal b{display:block;font-size:12.5px;color:#f2f6ff}.fo-ls-goal span{font-size:11px;color:#7d8fad}",
       ".fo-ls-wwon i{color:#5BD0A6}.fo-ls-wlost i{color:#e0704f}.fo-ls-wwon b{color:#5BD0A6}.fo-ls-wlost b{color:#e0704f}",
       ".fo-ls-offer{margin-top:9px;padding:10px 12px;border:1px dashed rgba(235,194,113,.4);border-radius:10px;background:rgba(235,194,113,.06)}",
+      // ---- paper: everything the post brought is a physical thing ----
+      ".fo-ls-card.pap{background:linear-gradient(172deg,#f8f1de,#f0e6cb 55%,#e9ddbe);color:#3a3020;border:0;border-radius:3px;box-shadow:0 16px 34px rgba(0,0,0,.55),0 2px 7px rgba(0,0,0,.35)}",
+      ".fo-ls-strip>.pap:nth-child(odd){transform:rotate(-.5deg)}",
+      ".fo-ls-strip>.pap:nth-child(even){transform:rotate(.45deg)}",
+      ".fo-ls-strip>.fo-ls-card{transition:transform .22s ease,box-shadow .22s ease}",
+      ".fo-ls-strip>.fo-ls-card:hover{transform:rotate(0) translateY(-3px);box-shadow:0 22px 44px rgba(0,0,0,.6),0 3px 9px rgba(0,0,0,.35)}",
+      ".pap .fo-card-h2{color:#7c5f1d}.pap .fo-ls-k{color:#93835c}.pap .fo-ls-k b{color:#7c5f1d}",
+      ".pap .fo-ls-line{color:#453a22}.pap .fo-ls-line b{color:#241d0e}.pap .fo-ls-line span{color:#93835c}",
+      ".pap .fo-ls-dim{color:#93835c}.pap .fo-ls-fine{color:#93835c}.pap .fo-ls-move b{color:#8a4a21}",
+      ".pap .fo-ls-quote,.pap .fo-ls-q{color:#241d0e}",
+      ".pap .fo-ls-goal i{border-color:#b7a878;color:#93835c}.pap .fo-ls-goal.ok i{background:#2f7a52;border-color:#2f7a52;color:#f8f1de}",
+      ".pap .fo-ls-goal b{color:#241d0e}.pap .fo-ls-goal span{color:#93835c}",
+      ".pap .fo-ls-wwon i,.pap .fo-ls-wwon b{color:#1f7a52}.pap .fo-ls-wlost i,.pap .fo-ls-wlost b{color:#a13a20}",
+      ".pap .fo-morelink{color:#8a4a21 !important}",
+      "html body .pap .fo-ls-btn.ghost{color:#8a4a21 !important;box-shadow:inset 0 0 0 1.5px #b56a3f}",
+      "html body .pap .fo-ls-btn.ghost:hover{background:rgba(181,106,63,.12) !important}",
+      // the telegram: rules above and below, spaced capitals, a wire stamp
+      ".tele .fo-card-h2row{border-bottom:2px solid #241d0e;padding-bottom:8px}",
+      ".tele .fo-card-h2{color:#241d0e;font-size:11px;letter-spacing:.3em}",
+      ".fo-tele-sub{font-family:Oswald,sans-serif;font-size:8.5px;text-transform:uppercase;letter-spacing:.24em;color:#93835c;padding:7px 16px 0}",
+      ".tele .fo-card-b{border-top:1px solid rgba(36,29,14,.25);margin-top:7px}",
+      // the newspaper clipping: torn top edge, masthead serif, a big pull quote
+      ".news{clip-path:polygon(0 7px,3% 2px,7% 8px,12% 1px,18% 7px,24% 2px,31% 8px,38% 3px,45% 7px,52% 1px,59% 8px,66% 2px,73% 7px,80% 3px,87% 8px,93% 2px,97% 7px,100% 3px,100% 100%,0 100%)}",
+      ".news .fo-card-h2{font-family:Georgia,serif;font-size:15px;font-weight:700;text-transform:none;letter-spacing:.02em;color:#241d0e;padding-top:4px}",
+      ".news .fo-card-h2row{border-bottom:1px solid #241d0e;padding-bottom:6px;box-shadow:0 3px 0 -1px rgba(36,29,14,.35)}",
+      ".news .fo-ls-q{position:relative;padding-left:20px;font-size:15px}",
+      ".news .fo-ls-q:before{content:'\\201C';position:absolute;left:0;top:-4px;font-family:Georgia,serif;font-size:34px;color:#b7a878}",
+      // the board letter: letterhead, minutes, a signature and the seal
+      ".fo-let-head{text-align:center;padding:15px 16px 0}",
+      ".fo-let-head i{display:block;font-family:Georgia,serif;font-style:italic;font-size:15px;color:#241d0e}",
+      ".fo-let-head b{display:block;font-family:Oswald,sans-serif;font-size:8.5px;font-weight:600;text-transform:uppercase;letter-spacing:.26em;color:#93835c;margin-top:3px;padding-bottom:8px;border-bottom:1px solid rgba(36,29,14,.3)}",
+      ".letter{position:relative}",
+      ".letter .fo-card-h2row{padding-top:9px}",
+      ".fo-let-sign{font-family:Georgia,serif;font-style:italic;font-size:14px;color:#241d0e;text-align:right;margin-top:10px;padding-right:36px}",
+      ".letter:after{content:'';position:absolute;right:12px;bottom:13px;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#c4573a,#8e2f18 70%);box-shadow:0 1px 3px rgba(0,0,0,.4);opacity:.9}",
+      // the almanack page: italic sub-head, dotted rules between entries
+      ".fo-alma-sub{font-family:Georgia,serif;font-style:italic;font-size:11.5px;color:#93835c;padding:3px 16px 0}",
+      ".alma .fo-ls-line{border-bottom:1px dotted rgba(36,29,14,.3);padding-bottom:6px}",
+      ".alma .fo-ls-line:last-child{border-bottom:0;padding-bottom:0}",
+      // the fixture poster: dark bill among the papers, gold frame, big names
+      ".fo-ls-card.poster{background:linear-gradient(168deg,#131a2b,#0d1322 65%);color:#e7eefb;border:1px solid rgba(235,194,113,.5);outline:1px solid rgba(235,194,113,.22);outline-offset:-6px;border-radius:4px;box-shadow:0 16px 34px rgba(0,0,0,.55)}",
+      ".poster .fo-card-h2row{justify-content:center;gap:8px}",
+      ".poster .fo-card-h2{letter-spacing:.3em}",
+      ".poster .fo-ls-k{color:#8fa1bf}",
+      ".fo-pos-names{text-align:center;font-family:Georgia,serif;font-size:16px;color:#f2f6ff;margin:6px 0 4px}",
+      ".fo-pos-names b{display:block;font-size:17px;letter-spacing:.02em}",
+      ".fo-pos-names i{display:block;font-style:italic;color:#EBC271;font-size:13px;margin:2px 0}",
+      ".poster .fo-ls-h2h{justify-content:center}",
+      ".poster .fo-ls-line{text-align:center;color:#b9c6dd}.poster .fo-ls-line b{color:#EBC271}",
+      // the promoter's ticket: dark stock, gold foil, a perforated stub
+      ".fo-ls-card.tick{position:relative;background:linear-gradient(170deg,#221a0e,#171008 70%);color:#f0e6cb;border:1px solid rgba(235,194,113,.55);border-radius:6px;box-shadow:0 16px 34px rgba(0,0,0,.55)}",
+      ".tick:before,.tick:after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#0d0a06;top:50%;margin-top:-8px;box-shadow:inset 0 0 0 1px rgba(235,194,113,.35)}",
+      ".tick:before{left:-8px}.tick:after{right:-8px}",
+      ".tick .fo-card-h2{color:#EBC271;letter-spacing:.26em}",
+      ".tick .fo-ls-line{color:#e2d5b2}.tick .fo-ls-line b{color:#F5C566}.tick .fo-ls-line span{color:#a5946b}",
+      ".tick .fo-ls-fine{color:#a5946b}",
+      ".fo-tick-stub{border-top:1px dashed rgba(235,194,113,.45);margin:0 10px;padding:8px 6px 10px;text-align:center;font-family:Oswald,sans-serif;font-size:7.5px;letter-spacing:.3em;text-transform:uppercase;color:#a5946b}",
       "html body.ftpskin .fo-ls-btn,html body .fo-ls-btn{display:inline-block;margin-top:8px;border:0 !important;border-radius:999px !important;padding:8px 18px !important;background:#C95532 !important;color:#FFFEFC !important;font:600 11px Oswald,sans-serif !important;text-transform:uppercase;letter-spacing:.14em;cursor:pointer;text-decoration:none}",
       "html body .fo-ls-btn:hover{background:#A64426 !important;color:#FFFEFC !important}",
       "html body .fo-ls-btn.ghost,html body #page .fo-ls-btn.ghost{background:transparent !important;color:#EBC271 !important;box-shadow:inset 0 0 0 1.5px rgba(235,194,113,.55)}",
@@ -644,22 +723,27 @@
       ".fo-ls-ck b{font-size:15px;color:#f2f6ff;font-variant-numeric:tabular-nums}",
       ".fo-ls-mile{margin-top:10px;border-top:1px solid rgba(126,158,208,.18);padding-top:9px}",
       ".fo-ls-mh{display:block;font-family:Oswald,sans-serif;font-size:9.5px;text-transform:uppercase;letter-spacing:.14em;color:#7d8fad;margin-bottom:6px}",
-      // awards night: a dark stage, gold type, no chrome
+      // awards night: floodlights over the arches, gold type, no chrome
       "html body.fo-cer-on{background:#070d18 !important}",
       "html body.fo-cer-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
-      ".fo-cer{min-height:100vh;background:radial-gradient(90% 60% at 50% -8%,#1B3A5F 0%,rgba(27,58,95,0) 58%),#070d18;color:#eaf0fb;padding:74px 18px 40px}",
+      ".fo-cer{position:relative;min-height:100vh;color:#eaf0fb;padding:74px 18px 40px;isolation:isolate}",
+      ".fo-cer-bg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 30%;z-index:-2}",
+      ".fo-cer-veil{position:fixed;inset:0;z-index:-1;background:radial-gradient(80% 50% at 50% 0%,rgba(235,194,113,.14),transparent 60%),linear-gradient(180deg,rgba(6,10,20,.82),rgba(7,12,24,.58) 36%,rgba(5,9,18,.78) 72%,rgba(4,7,14,.92))}",
       ".fo-cer-in{max-width:760px;margin:0 auto}",
+      ".fo-cer-face{display:block;width:54px;height:54px;border-radius:50%;overflow:hidden;flex:none;border:2px solid rgba(235,194,113,.7);box-shadow:0 5px 16px rgba(0,0,0,.55);background:#0d1526}",
+      ".fo-cer-face img{width:100%;height:100%;object-fit:cover;object-position:50% 12%}",
       ".fo-cer-eyebrow{font-family:Oswald,sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.3em;color:#EBC271;margin-bottom:10px}",
       ".fo-cer h1{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(44px,8vw,84px);line-height:.9;margin:0 0 26px;color:#fff}",
       ".fo-cer-podium{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:28px}",
-      ".fo-cer-step{background:rgba(14,26,48,.75);border:1px solid rgba(126,158,208,.22);border-radius:12px;padding:12px 16px;min-width:150px}",
+      ".fo-cer-step{position:relative;background:rgba(10,19,36,.82);border:1px solid rgba(126,158,208,.22);border-top:3px solid #7d8fad;border-radius:12px;padding:12px 16px;min-width:150px;backdrop-filter:blur(3px)}",
       ".fo-cer-step b{display:block;font-family:Oswald,sans-serif;font-size:22px;color:#EBC271}",
       ".fo-cer-step span{display:block;font-weight:700;margin:2px 0}.fo-cer-step em{font-style:normal;font-size:11px;color:#93a5c2}",
-      ".fo-cer-step.s1{border-color:rgba(235,194,113,.6);box-shadow:0 8px 30px rgba(235,194,113,.12)}",
+      ".fo-cer-step.s1{border-top-color:#EBC271;border-color:rgba(235,194,113,.6);box-shadow:0 8px 30px rgba(235,194,113,.16)}",
+      ".fo-cer-step.s2{border-top-color:#c8d0dc}.fo-cer-step.s3{border-top-color:#c98a5a}",
       ".fo-cer-step.me{outline:2px solid #C95532}",
       ".fo-cer-mypos{align-self:center;font-family:Georgia,serif;font-style:italic;color:#93a5c2}",
       ".fo-cer-aws{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:26px}",
-      ".fo-cer-aw{display:flex;gap:12px;align-items:center;background:rgba(14,26,48,.55);border:1px solid rgba(126,158,208,.18);border-radius:12px;padding:13px 15px}",
+      ".fo-cer-aw{display:flex;gap:12px;align-items:center;background:rgba(10,19,36,.78);border:1px solid rgba(126,158,208,.18);border-radius:12px;padding:13px 15px;backdrop-filter:blur(3px)}",
       ".fo-cer-aw i{font-style:normal;font-size:24px;flex:none}",
       ".fo-cer-aw span{display:block;font-family:Oswald,sans-serif;font-size:9.5px;text-transform:uppercase;letter-spacing:.16em;color:#EBC271}",
       ".fo-cer-aw b{display:block;font-size:16px;margin:1px 0}.fo-cer-aw em{font-style:normal;font-size:11.5px;color:#93a5c2}",

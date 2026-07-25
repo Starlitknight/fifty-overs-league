@@ -2745,6 +2745,9 @@
     }
     return "players/" + (rv === "arspin" && !FO_PK_ARSPIN[n] ? "ar" : rv === "arspin" ? "arspin" : r) + "_" + n + ".webp";
   }
+  // the one canonical card-art resolver: exported so other modules (player
+  // hero, living-season awards) reuse it instead of cloning its hashing
+  try { window.foPkArt = foPkArt; } catch (ePkX) {}
   var FO_PK_TIPS = {
     BATTING: "Run-scoring ability with the bat - how reliably he builds and converts innings.",
     BOWLING: "Wicket-taking threat and the ability to keep runs down with the ball.",
