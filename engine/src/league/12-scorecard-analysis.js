@@ -2889,8 +2889,9 @@
       };
       var hm = mkPill("fo-home-nav", "Club", "#/home");
       var lg = mkPill("fo-lg-nav", "League", "#/league");
-      // the nation record book lives under the League pill
-      if ((location.hash || "").split("?")[0] === "#/nation") lg.classList.add("on");
+      // the nation record book and atlas portrait live under the League pill
+      var lgH = (location.hash || "").split("?")[0];
+      if (lgH === "#/nation" || lgH === "#/atlas") lg.classList.add("on");
       var cp = mkPill("fo-cup-nav", "Cup", "#/cup");
       var jn = mkPill("fo-lore-nav", "Journal", "#/lore");
       var anchor = wrap.querySelector("a[data-nav='club'], a[data-nav='home']");
@@ -5241,9 +5242,11 @@
       var hashPath = (location.hash || "").split("?")[0];
       var natPage = (hashPath === "#/nation");
       // #/league now belongs to the real standings page (module 25); the
-      // painted portrait keeps its #/nation door
-      if (!natPage && window.__foLeagueTable) return;
-      if (hashPath !== "#/league" && !natPage) return;
+      // painted portrait (map + boss art) answers at #/atlas, the record
+      // book at #/nation
+      var atlasPage = (hashPath === "#/atlas");
+      if (!natPage && !atlasPage && window.__foLeagueTable) return;
+      if (hashPath !== "#/league" && !natPage && !atlasPage) return;
       var page = document.getElementById("page"); if (!page) return;
       var mN = /[?&]n=([^&]+)/.exec(location.hash || "");
       var myNation = foLgNation();
@@ -5307,7 +5310,7 @@
           ? wire.map(function (h) { return "<div class='fo-lg-wire'>" + E(h.headline) + "</div>"; }).join("")
           : "<div class='fo-lg-fxempty'>A quiet week in the " + E(region.nm) + " league.</div>";
         sideHTML = "<div class='fo-lg-panel'><h3>From the " + E(region.nm) + " wire</h3>" + wireHTML + "</div>" +
-          "<div class='fo-lg-cta'><a class='fo-lg-btn gold' href='#/league'>Back to your league &#9654;</a><a class='fo-lg-btn' href='#/world'>World map</a></div>";
+          "<div class='fo-lg-cta'><a class='fo-lg-btn gold' href='#/atlas'>Back to your league &#9654;</a><a class='fo-lg-btn' href='#/world'>World map</a></div>";
       }
 
       // a strip of the league's home grounds - the nation, city by city
@@ -5373,7 +5376,7 @@
           "<div class='fo-ov-team'><span class='av'>" + (ldr ? entAv(ldr) : "") + "</span><b>" + E(ldr ? ldr.name : "&mdash;") + "</b></div></div>" +
           "<div class='fo-ov-finish' style='margin-top:0'>lead the " + E(region.nm) + " league" + (ldr && ldr.pts ? " on <b>" + ldr.pts + "</b> pts" : "") + "</div>" +
           "<a class='fo-ov-cta' href='#/boss?r=" + encodeURIComponent(nation) + "'>Meet " + E(bossName) + " &#9654;</a>" +
-          "<a class='fo-ov-fx' href='#/league'>Back to your league &#8250;</a></div>";
+          "<a class='fo-ov-fx' href='#/atlas'>Back to your league &#8250;</a></div>";
       }
       var chaseRows = table.slice(0, 4).map(function (x, i) {
         var tag = "div", href = "";
@@ -5509,7 +5512,7 @@
         ? shellOpen +
           "<section class='fo-ov-panel fo-nt-panel' data-panel='nation'>" +
           "<header class='fo-nt-head'>" +
-          "<a class='fo-nt-back' href='#/league?n=" + encodeURIComponent(nation) + "'>&#8592; " + E(region.nm) + "</a>" +
+          "<a class='fo-nt-back' href='#/atlas?n=" + encodeURIComponent(nation) + "'>&#8592; " + E(region.nm) + "</a>" +
           "<div class='fo-nt-eb'>" + ebText + "</div>" +
           "<h1 class='fo-nt-title'>" + E(region.nm) + "</h1>" +
           "<div class='fo-ov-sub'>" + E(subtitle) + "</div>" +
@@ -5549,7 +5552,7 @@
         // country navigator: pick a nation and jump straight to it, staying on
         // whichever door you're standing in (portrait or record book)
         var selNat = page.querySelector(".fo-ov-selnat");
-        if (selNat) selNat.addEventListener("change", function () { var v = selNat.value; if (v && v !== nation) { location.hash = (natPage ? "#/nation?n=" : "#/league?n=") + encodeURIComponent(v); if (typeof window.route === "function") window.route(); } });
+        if (selNat) selNat.addEventListener("change", function () { var v = selNat.value; if (v && v !== nation) { location.hash = (natPage ? "#/nation?n=" : "#/atlas?n=") + encodeURIComponent(v); if (typeof window.route === "function") window.route(); } });
         // grounds strip: arrows + click-drag + wheel to scroll through every ground (a drag never opens a ground)
         page.querySelectorAll(".fo-ov-gwrap").forEach(function (wrap) {
           var strip = wrap.querySelector(".fo-ov-gstrip"); if (!strip) return;
@@ -5856,8 +5859,8 @@
   setInterval(foRenderLeague, 900); setInterval(foRenderCup, 1200);
   window.addEventListener("hashchange", function () {
     var h = (location.hash || "").split("?")[0];
-    if (h !== "#/league" && h !== "#/nation") { try { document.body.classList.remove("fo-ov-on"); } catch (eOv) {} }
-    if (h === "#/league" || h === "#/nation") setTimeout(foRenderLeague, 40);
+    if (h !== "#/league" && h !== "#/nation" && h !== "#/atlas") { try { document.body.classList.remove("fo-ov-on"); } catch (eOv) {} }
+    if (h === "#/league" || h === "#/nation" || h === "#/atlas") setTimeout(foRenderLeague, 40);
     else if (h === "#/cup") setTimeout(foRenderCup, 40);
     else if (!foBossFamily()) document.body.classList.remove("fo-boss-on");
   });

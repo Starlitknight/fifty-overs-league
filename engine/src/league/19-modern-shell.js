@@ -22,7 +22,7 @@
   // which dock lamp lights up for which route
   var DOCK_MAP = {
     club: ["club", "home"],
-    league: ["league", "nation", "cup", "world", "city", "side", "boss", "tour", "fixtures"],
+    league: ["league", "nation", "atlas", "cup", "world", "city", "side", "boss", "tour", "fixtures"],
     squad: ["squad", "player", "matchlab"],
     nets: ["training"],
     desk: ["desk", "ledger", "journal", "report", "ceremony", "wire", "lore", "dossier", "milestones", "whatif"]
