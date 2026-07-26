@@ -10592,7 +10592,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260726-1245-e24032";
+  var FO_BUILD = "20260726-1255-739bee";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10994,7 +10994,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       if (nm && typeof GD !== "undefined" && GD.teams && GD.teams[0]) GD.teams[0].name = nm;
       try { if (typeof saveGame === "function") saveGame(false); } catch (e3) {}
       openWrap(false);
-      location.hash = "#/circuit";
+      // the Circuit is retired: a new manager walks into their own club
+      location.hash = "#/home";
       if (typeof window.route === "function") window.route();
     } catch (e) { say(e); }
   }
@@ -22232,10 +22233,10 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   function foSqNextMatch(t) {
     var opp = "", ground = (t && t.ground) || "", wx = "";
     try {
-      var fx = (typeof nextFixture === "function") ? nextFixture() : null;
+      var fx = (typeof window.foNextFixture === "function") ? window.foNextFixture() : null;
       if (fx) {
         opp = (fx.opp && fx.opp.name) || "";
-        ground = fx.venue || ground;
+        ground = fx.ground || ground;
         wx = fx.weather || "";
         if (!fx.isHome && opp) opp = opp + " (away)";
       }
@@ -27074,6 +27075,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       ".fo-hg2 .hg-bar{position:absolute;z-index:4;left:0;right:0;bottom:0;display:flex;gap:10px;align-items:center;justify-content:center;padding:11px 14px 13px;background:linear-gradient(to top,rgba(4,10,20,.92),rgba(4,10,20,.5) 70%,transparent)}" +
       "html body #page .fo-hg2 .hg-bar button{font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:10px;letter-spacing:2.2px;color:#EDE7D4 !important;background:rgba(255,255,255,.07) !important;border:1.5px solid rgba(255,255,255,.28) !important;border-radius:999px;padding:9px 17px;white-space:nowrap;cursor:pointer;box-shadow:none !important}" +
       "html body #page .fo-hg2 .hg-bar button:hover{border-color:#F3D37A !important;color:#F3D37A !important}" +
+      "html body #page .fo-hg2 .hg-bar button.hg-cta{background:#C95532 !important;border-color:#C95532 !important;color:#FFFEFC !important;font-weight:700 !important;box-shadow:0 6px 20px rgba(201,85,50,.45) !important}" +
+      "html body #page .fo-hg2 .hg-bar button.hg-cta:hover{background:#A64426 !important;color:#FFFEFC !important;transform:translateY(-1px)}" +
       ".fo-hg2 .hg-bar .hg-ls{display:none}" +
       "@media(max-width:760px){.fo-hg2 .hg-bar .hg-lf{display:none}.fo-hg2 .hg-bar .hg-ls{display:inline}}" +
       // ---- the club home, elevated: golden-hour bloom, luminous depth ----
@@ -29610,6 +29613,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         "<span class='hg-sub'>" + posLine + "</span>" +
         "<span class='hg-form'><u>FORM</u>" + beads + "</span></div>" +
         "<div class='hg-bar'>" +
+        btn("fo-hm-nx", "NEXT MATCH \u25B8", "PLAY \u25B8") +
         btn("fo-hm-lg", "YOUR LEAGUE", "LEAGUE") +
         btn("fo-hm-sq", "THE SQUAD", "SQUAD") +
         btn("fo-hm-wd", "WORLD MAP", "WORLD") +
@@ -29619,6 +29623,36 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       try { foHgFit(page.querySelector(".fo-hg2")); } catch (eF) {}
       var go = function (id, hash) { var b = page.querySelector("#" + id); if (b) b.addEventListener("click", function () { location.hash = hash; if (typeof window.route === "function") window.route(); }); };
       go("fo-hm-lg", "#/league"); go("fo-hm-sq", "#/squad"); go("fo-hm-wd", "#/world"); go("fo-hm-cp", "#/cup");
+      // the golden path: one button that always knows the next step
+      try {
+        var nxB = page.querySelector("#fo-hm-nx");
+        if (nxB) {
+          var mp = false; try { mp = !!(SYNC && SYNC.started && !SYNC.practice); } catch (eMp) {}
+          var fx2 = null; try { fx2 = (typeof window.foNextFixture === "function") ? window.foNextFixture() : null; } catch (eFx) {}
+          if (!fx2) { nxB.style.display = "none"; }
+          else {
+            var planned = false; try { planned = !!(App.orders && App.orders.saved && App.pending); } catch (eP) {}
+            var lf = nxB.querySelector(".hg-lf"), ls = nxB.querySelector(".hg-ls");
+            if (planned && !mp) { if (lf) lf.textContent = "PLAY THE ROUND \u25B8"; if (ls) ls.textContent = "PLAY \u25B8"; }
+            else { if (lf) lf.textContent = (planned ? "MATCH PLANNED" : "NEXT MATCH") + " \u00B7 v " + ((fx2.opp && fx2.opp.name) || "").toUpperCase(); }
+            nxB.classList.add("hg-cta");
+            nxB.addEventListener("click", function () {
+              try {
+                if (planned && !mp) {
+                  completeRound();
+                  var my = null; try { my = userTeam().name; } catch (eU) {}
+                  var rec = null;
+                  for (var i = App.results.length - 1; i >= 0; i--) { var rr = App.results[i]; if (rr && (rr.home === my || rr.away === my)) { rec = rr; break; } }
+                  location.hash = rec ? "#/report?i=" + rec.ix : "#/home";
+                } else {
+                  startLeagueMatch(fx2.f, fx2.r);
+                }
+                if (typeof window.route === "function") window.route();
+              } catch (eGo) {}
+            });
+          }
+        }
+      } catch (eNx) {}
       try { if (window.__foLive) window.__foLive.mask(); } catch (eM) {}
     } catch (e) { try { console.warn("foRenderHome", e); } catch (e2) {} }
   }
@@ -33826,7 +33860,32 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   }
 
   // ---- wiring ---------------------------------------------------------------
-  function afterRoute() { ensureDock(); matchCentre(); }
+  function tidyNav() {
+    try {
+      var wrap = document.querySelector("#topbar .fo-nav-scroll"); if (!wrap) return;
+      var out = wrap.querySelector("a.fo-logout");
+      if (out && wrap.lastElementChild !== out) wrap.appendChild(out);
+    } catch (e) {}
+  }
+  // the dressing room has no door: give the plan a "done" that walks back out
+  function ordersDoor() {
+    try {
+      var on = (location.hash || "").split("?")[0] === "#/orders";
+      var el = document.getElementById("fo-ord-door");
+      if (!on) { if (el) el.remove(); return; }
+      if (el) return;
+      el = document.createElement("a");
+      el.id = "fo-ord-door"; el.href = "#/home";
+      el.innerHTML = "Plan set &middot; back to the club &#9656;";
+      el.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        try { App.orders.saved = true; if (typeof saveGame === "function") saveGame(false); } catch (e2) {}
+        location.hash = "#/home"; if (typeof window.route === "function") window.route();
+      });
+      document.body.appendChild(el);
+    } catch (e) {}
+  }
+  function afterRoute() { ensureDock(); matchCentre(); tidyNav(); ordersDoor(); }
   function wireRoute() {
     try {
       if (typeof window.route === "function" && !window.route.__foMs) {
@@ -33880,8 +33939,13 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     "body.fo-dock-on #page{padding-bottom:88px}",
     // full-bleed heroes pin a quick-link bar to the viewport floor; the dock
     // covers those destinations, so the old bar retires on phones
-    "body.fo-dock-on .fo-home2 .hg-bar{display:none}",
+    "body.fo-dock-on .fo-home2 .hg-bar button:not(.hg-cta){display:none}",
+    "body.fo-dock-on .fo-home2 .hg-bar{bottom:86px;background:none;padding-bottom:0}",
     "}",
+    // == the dressing-room door ================================================
+    "#fo-ord-door{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:350;background:#C95532;color:#FFFEFC;font:700 12.5px/1 Inter,sans-serif;letter-spacing:.03em;border-radius:999px;padding:13px 20px;text-decoration:none;box-shadow:0 10px 28px rgba(201,85,50,.5)}",
+    "#fo-ord-door:hover{background:#A64426;text-decoration:none;color:#FFFEFC}",
+    "@media(max-width:820px){#fo-ord-door{right:12px;bottom:calc(88px + env(safe-area-inset-bottom,0px))}}",
     // == motion ================================================================
     "@media (prefers-reduced-motion:no-preference){",
     "#page.fo-page-in{animation:foMsPageIn .22s ease-out}",
@@ -34160,9 +34224,12 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       if (!me) return;
       var nx = nextFixture();
       document.body.classList.remove("fo-scb-on", "fo-drs-on");
+      document.body.classList.add("fo-sdx-on");
+      var artBase = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
+      var sdBg = "<img class='fo-sd-bg' src='" + artBase + "home/" + (window.innerWidth < 760 ? "hgm" : "hgd") + "-veranda-rain.webp' alt=''><div class='fo-sd-veil'></div>";
 
       if (!nx) {
-        page.innerHTML = "<div class='fo-sd'><div class='fo-sd-hero'><div class='fo-sd-kick'>" + E(me.name) + " &middot; the war room</div>" +
+        page.innerHTML = sdBg + "<div class='fo-sd'><div class='fo-sd-hero'><div class='fo-sd-kick'>" + E(me.name) + " &middot; the war room</div>" +
           "<h1>The Scout&rsquo;s Dossier</h1><p>No fixture ahead. The season is done - the scout is at the beach, and the groundsman is re-seeding the square for spring.</p>" +
           "<div class='fo-sd-foot'><a href='#/desk'>&#8592; The desk</a><a href='#/ceremony'>Awards night &rsaquo;</a></div></div></div>";
         return;
@@ -34203,7 +34270,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         }
       } catch (eNH) {}
 
-      page.innerHTML =
+      page.innerHTML = sdBg +
         "<div class='fo-sd'>" +
         "<div class='fo-sd-hero'>" +
         "<div class='fo-sd-kick'>Round " + (nx.r + 1) + " &middot; " + (nx.isHome ? "at " + E(nx.ground) : "away at " + E(nx.ground)) + "</div>" +
@@ -34298,10 +34365,20 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       a.classList.toggle("on", (location.hash || "").split("?")[0] === "#/dossier");
     } catch (e) {}
   }
-  window.addEventListener("hashchange", function () { setTimeout(function () { ensureNavLink(); ensureDoctrines(); }, 80); });
+  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] !== "#/dossier") document.body.classList.remove("fo-sdx-on"); setTimeout(function () { ensureNavLink(); ensureDoctrines(); }, 80); });
 
   // ---- sheet -----------------------------------------------------------------
   var CSS = [
+    "html body.fo-sdx-on{background:#3A3F41 !important;isolation:isolate}",
+    ".fo-sd-bg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 40%;z-index:-2}",
+    ".fo-sd-veil{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(20,24,26,.30),rgba(20,24,26,.12) 34%,rgba(20,24,26,.16) 66%,rgba(14,17,19,.42))}",
+    "body.fo-sdx-on #page .fo-sd-hero{background:transparent !important;border:none !important;box-shadow:none !important;padding:10px 4px 18px}",
+    "body.fo-sdx-on #page .fo-sd-hero h1{color:#fff !important;text-shadow:0 3px 24px rgba(0,0,0,.7),0 1px 3px rgba(0,0,0,.55)}",
+    "body.fo-sdx-on #page .fo-sd-kick{color:#FFD9C4 !important;text-shadow:0 2px 10px rgba(0,0,0,.6)}",
+    "body.fo-sdx-on #page .fo-sd-hero p{color:rgba(255,255,255,.88) !important;text-shadow:0 2px 12px rgba(0,0,0,.6)}",
+    "body.fo-sdx-on #page .fo-sd-tale span{background:rgba(253,252,249,.92);box-shadow:0 6px 18px rgba(0,0,0,.3)}",
+    "body.fo-sdx-on #page .fo-sd-card{background:rgba(253,252,249,.93);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 14px 34px rgba(10,14,16,.35)}",
+    "body.fo-sdx-on #page .fo-sd-foot a{background:rgba(253,252,249,.92);box-shadow:0 8px 20px rgba(10,14,16,.3)}",
     "html body #page .fo-sd{max-width:880px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
     "html body #page .fo-sd-hero{background:linear-gradient(150deg,#FFFEFB,#F7F3E9 70%,#F0EADA) !important;border:1px solid rgba(20,28,40,.09);border-radius:22px;padding:28px 30px 24px;box-shadow:0 22px 50px rgba(30,38,52,.13)}",
     "html body #page .fo-sd-kick,html body #page .fo-sd-k{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#B44A22}",
@@ -34370,6 +34447,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(mount, 0); });
   else setTimeout(mount, 0);
 
+  window.foNextFixture = nextFixture;
   window.foRenderScoutPage = foRenderScoutPage;
   window.foScoutCard = foScoutCard;
   window.__foStrategy = 1;
@@ -34586,7 +34664,10 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var me = null; try { me = userTeam(); } catch (e) {}
       if (!me) return;
       document.body.classList.remove("fo-scb-on", "fo-drs-on");
+      document.body.classList.add("fo-hbx-on");
       settleBonuses();
+      var artBase = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
+      var hbBg = "<img class='fo-hb-bg' src='" + artBase + "home/" + (window.innerWidth < 760 ? "hgm-clubroom" : "hgd-heart-of-club") + ".webp' alt=''><div class='fo-hb-veil'></div>";
       var club = viewClub || me.name;
       if (!GD.teams.some(function (t) { return t.name === club; })) club = me.name;
       var mine = club === me.name;
@@ -34628,7 +34709,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
              : "<span class='open'>unclaimed</span><i>the race is on</i>") + "</div>";
       }).join("");
 
-      page.innerHTML =
+      page.innerHTML = hbBg +
         "<div class='fo-hb'>" +
         "<div class='fo-hb-mast'>" +
         "<div class='fo-hb-kick'>" + E(club) + " &middot; the pavilion wall</div>" +
@@ -34639,7 +34720,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         "<div class='fo-hb-tally'><b>" + done.length + "</b> of " + board.length + " plaques</div>" +
         "</div>" +
         "<div class='fo-hb-chips'>" + chips + "</div>" +
-        "<div class='fo-hb-grid'>" + plaques + "</div>" +
+        "<div class='fo-hb-oak'><div class='fo-hb-grid'>" + plaques + "</div></div>" +
         "<section class='fo-hb-sec'><div class='fo-hb-k'>First on the board</div>" +
         "<p class='fo-hb-say'>An honour can be won by every club - but only one name goes down as the league&rsquo;s first.</p>" +
         "<div class='fo-hb-races'>" + race + "</div></section>" +
@@ -34654,6 +34735,22 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
 
   // ---- sheet -----------------------------------------------------------------
   var CSS = [
+    "html body.fo-hbx-on{background:#2E2418 !important;isolation:isolate}",
+    ".fo-hb-bg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 45%;z-index:-2}",
+    ".fo-hb-veil{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(24,18,10,.30),rgba(24,18,10,.12) 32%,rgba(24,18,10,.18) 64%,rgba(18,13,7,.46))}",
+    "body.fo-hbx-on #page .fo-hb-mast{background:transparent !important;border:none !important;box-shadow:none !important;padding:10px 4px 16px}",
+    "body.fo-hbx-on #page .fo-hb-mast:after{display:none}",
+    "body.fo-hbx-on #page .fo-hb-mast h1{color:#fff !important;text-shadow:0 3px 26px rgba(0,0,0,.75),0 1px 3px rgba(0,0,0,.55)}",
+    "body.fo-hbx-on #page .fo-hb-kick{color:#F3D9A0 !important;text-shadow:0 2px 10px rgba(0,0,0,.65)}",
+    "body.fo-hbx-on #page .fo-hb-mast p{color:rgba(255,255,255,.9) !important;text-shadow:0 2px 12px rgba(0,0,0,.6)}",
+    "body.fo-hbx-on #page .fo-hb-tally{box-shadow:0 8px 20px rgba(0,0,0,.35)}",
+    // the oak itself: deep wood, a gold pinstripe, plaques screwed to it
+    "html body #page .fo-hb-oak{background:linear-gradient(168deg,#5A4326,#43301A 55%,#33240F);border:1px solid rgba(230,190,110,.35);outline:1px solid rgba(230,190,110,.28);outline-offset:-8px;border-radius:16px;padding:16px;box-shadow:0 26px 60px rgba(10,7,3,.55),inset 0 1px 0 rgba(255,235,190,.18);margin-top:12px}",
+    "body.fo-hbx-on #page .fo-hb-plq{background:rgba(250,245,232,.94)}",
+    "body.fo-hbx-on #page .fo-hb-chips{padding-top:10px}",
+    "body.fo-hbx-on #page button.fo-hb-chip{box-shadow:0 6px 16px rgba(0,0,0,.3)}",
+    "body.fo-hbx-on #page .fo-hb-sec{background:rgba(253,252,249,.94);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 14px 34px rgba(10,7,3,.4)}",
+    "body.fo-hbx-on #page .fo-hb-foot a{background:rgba(253,252,249,.92);box-shadow:0 8px 20px rgba(10,7,3,.35)}",
     "html body #page .fo-hb{max-width:960px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
     "html body #page .fo-hb-mast{background:linear-gradient(150deg,#FFFEFB,#F6F1E4 70%,#F0E9D6) !important;border:1px solid rgba(20,28,40,.1);border-radius:22px;padding:28px 30px 24px;box-shadow:0 22px 50px rgba(30,38,52,.12);position:relative;overflow:hidden}",
     "html body #page .fo-hb-mast:after{content:'';position:absolute;inset:8px;border:1px solid rgba(176,132,9,.25);border-radius:16px;pointer-events:none}",
@@ -34721,7 +34818,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(mount, 0); });
   else setTimeout(mount, 0);
-  window.addEventListener("hashchange", function () { setTimeout(settleBonuses, 120); });
+  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] !== "#/milestones") document.body.classList.remove("fo-hbx-on"); setTimeout(settleBonuses, 120); });
 
   window.foRenderHonoursPage = foRenderHonoursPage;
   window.foHonoursCard = foHonoursCard;

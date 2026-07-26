@@ -2641,6 +2641,8 @@
       ".fo-hg2 .hg-bar{position:absolute;z-index:4;left:0;right:0;bottom:0;display:flex;gap:10px;align-items:center;justify-content:center;padding:11px 14px 13px;background:linear-gradient(to top,rgba(4,10,20,.92),rgba(4,10,20,.5) 70%,transparent)}" +
       "html body #page .fo-hg2 .hg-bar button{font-family:Oswald,sans-serif !important;font-weight:600 !important;font-size:10px;letter-spacing:2.2px;color:#EDE7D4 !important;background:rgba(255,255,255,.07) !important;border:1.5px solid rgba(255,255,255,.28) !important;border-radius:999px;padding:9px 17px;white-space:nowrap;cursor:pointer;box-shadow:none !important}" +
       "html body #page .fo-hg2 .hg-bar button:hover{border-color:#F3D37A !important;color:#F3D37A !important}" +
+      "html body #page .fo-hg2 .hg-bar button.hg-cta{background:#C95532 !important;border-color:#C95532 !important;color:#FFFEFC !important;font-weight:700 !important;box-shadow:0 6px 20px rgba(201,85,50,.45) !important}" +
+      "html body #page .fo-hg2 .hg-bar button.hg-cta:hover{background:#A64426 !important;color:#FFFEFC !important;transform:translateY(-1px)}" +
       ".fo-hg2 .hg-bar .hg-ls{display:none}" +
       "@media(max-width:760px){.fo-hg2 .hg-bar .hg-lf{display:none}.fo-hg2 .hg-bar .hg-ls{display:inline}}" +
       // ---- the club home, elevated: golden-hour bloom, luminous depth ----
@@ -5177,6 +5179,7 @@
         "<span class='hg-sub'>" + posLine + "</span>" +
         "<span class='hg-form'><u>FORM</u>" + beads + "</span></div>" +
         "<div class='hg-bar'>" +
+        btn("fo-hm-nx", "NEXT MATCH \u25B8", "PLAY \u25B8") +
         btn("fo-hm-lg", "YOUR LEAGUE", "LEAGUE") +
         btn("fo-hm-sq", "THE SQUAD", "SQUAD") +
         btn("fo-hm-wd", "WORLD MAP", "WORLD") +
@@ -5186,6 +5189,36 @@
       try { foHgFit(page.querySelector(".fo-hg2")); } catch (eF) {}
       var go = function (id, hash) { var b = page.querySelector("#" + id); if (b) b.addEventListener("click", function () { location.hash = hash; if (typeof window.route === "function") window.route(); }); };
       go("fo-hm-lg", "#/league"); go("fo-hm-sq", "#/squad"); go("fo-hm-wd", "#/world"); go("fo-hm-cp", "#/cup");
+      // the golden path: one button that always knows the next step
+      try {
+        var nxB = page.querySelector("#fo-hm-nx");
+        if (nxB) {
+          var mp = false; try { mp = !!(SYNC && SYNC.started && !SYNC.practice); } catch (eMp) {}
+          var fx2 = null; try { fx2 = (typeof window.foNextFixture === "function") ? window.foNextFixture() : null; } catch (eFx) {}
+          if (!fx2) { nxB.style.display = "none"; }
+          else {
+            var planned = false; try { planned = !!(App.orders && App.orders.saved && App.pending); } catch (eP) {}
+            var lf = nxB.querySelector(".hg-lf"), ls = nxB.querySelector(".hg-ls");
+            if (planned && !mp) { if (lf) lf.textContent = "PLAY THE ROUND \u25B8"; if (ls) ls.textContent = "PLAY \u25B8"; }
+            else { if (lf) lf.textContent = (planned ? "MATCH PLANNED" : "NEXT MATCH") + " \u00B7 v " + ((fx2.opp && fx2.opp.name) || "").toUpperCase(); }
+            nxB.classList.add("hg-cta");
+            nxB.addEventListener("click", function () {
+              try {
+                if (planned && !mp) {
+                  completeRound();
+                  var my = null; try { my = userTeam().name; } catch (eU) {}
+                  var rec = null;
+                  for (var i = App.results.length - 1; i >= 0; i--) { var rr = App.results[i]; if (rr && (rr.home === my || rr.away === my)) { rec = rr; break; } }
+                  location.hash = rec ? "#/report?i=" + rec.ix : "#/home";
+                } else {
+                  startLeagueMatch(fx2.f, fx2.r);
+                }
+                if (typeof window.route === "function") window.route();
+              } catch (eGo) {}
+            });
+          }
+        }
+      } catch (eNx) {}
       try { if (window.__foLive) window.__foLive.mask(); } catch (eM) {}
     } catch (e) { try { console.warn("foRenderHome", e); } catch (e2) {} }
   }

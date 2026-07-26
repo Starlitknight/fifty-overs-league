@@ -210,7 +210,10 @@
       var me = null; try { me = userTeam(); } catch (e) {}
       if (!me) return;
       document.body.classList.remove("fo-scb-on", "fo-drs-on");
+      document.body.classList.add("fo-hbx-on");
       settleBonuses();
+      var artBase = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
+      var hbBg = "<img class='fo-hb-bg' src='" + artBase + "home/" + (window.innerWidth < 760 ? "hgm-clubroom" : "hgd-heart-of-club") + ".webp' alt=''><div class='fo-hb-veil'></div>";
       var club = viewClub || me.name;
       if (!GD.teams.some(function (t) { return t.name === club; })) club = me.name;
       var mine = club === me.name;
@@ -252,7 +255,7 @@
              : "<span class='open'>unclaimed</span><i>the race is on</i>") + "</div>";
       }).join("");
 
-      page.innerHTML =
+      page.innerHTML = hbBg +
         "<div class='fo-hb'>" +
         "<div class='fo-hb-mast'>" +
         "<div class='fo-hb-kick'>" + E(club) + " &middot; the pavilion wall</div>" +
@@ -263,7 +266,7 @@
         "<div class='fo-hb-tally'><b>" + done.length + "</b> of " + board.length + " plaques</div>" +
         "</div>" +
         "<div class='fo-hb-chips'>" + chips + "</div>" +
-        "<div class='fo-hb-grid'>" + plaques + "</div>" +
+        "<div class='fo-hb-oak'><div class='fo-hb-grid'>" + plaques + "</div></div>" +
         "<section class='fo-hb-sec'><div class='fo-hb-k'>First on the board</div>" +
         "<p class='fo-hb-say'>An honour can be won by every club - but only one name goes down as the league&rsquo;s first.</p>" +
         "<div class='fo-hb-races'>" + race + "</div></section>" +
@@ -278,6 +281,22 @@
 
   // ---- sheet -----------------------------------------------------------------
   var CSS = [
+    "html body.fo-hbx-on{background:#2E2418 !important;isolation:isolate}",
+    ".fo-hb-bg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 45%;z-index:-2}",
+    ".fo-hb-veil{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(24,18,10,.30),rgba(24,18,10,.12) 32%,rgba(24,18,10,.18) 64%,rgba(18,13,7,.46))}",
+    "body.fo-hbx-on #page .fo-hb-mast{background:transparent !important;border:none !important;box-shadow:none !important;padding:10px 4px 16px}",
+    "body.fo-hbx-on #page .fo-hb-mast:after{display:none}",
+    "body.fo-hbx-on #page .fo-hb-mast h1{color:#fff !important;text-shadow:0 3px 26px rgba(0,0,0,.75),0 1px 3px rgba(0,0,0,.55)}",
+    "body.fo-hbx-on #page .fo-hb-kick{color:#F3D9A0 !important;text-shadow:0 2px 10px rgba(0,0,0,.65)}",
+    "body.fo-hbx-on #page .fo-hb-mast p{color:rgba(255,255,255,.9) !important;text-shadow:0 2px 12px rgba(0,0,0,.6)}",
+    "body.fo-hbx-on #page .fo-hb-tally{box-shadow:0 8px 20px rgba(0,0,0,.35)}",
+    // the oak itself: deep wood, a gold pinstripe, plaques screwed to it
+    "html body #page .fo-hb-oak{background:linear-gradient(168deg,#5A4326,#43301A 55%,#33240F);border:1px solid rgba(230,190,110,.35);outline:1px solid rgba(230,190,110,.28);outline-offset:-8px;border-radius:16px;padding:16px;box-shadow:0 26px 60px rgba(10,7,3,.55),inset 0 1px 0 rgba(255,235,190,.18);margin-top:12px}",
+    "body.fo-hbx-on #page .fo-hb-plq{background:rgba(250,245,232,.94)}",
+    "body.fo-hbx-on #page .fo-hb-chips{padding-top:10px}",
+    "body.fo-hbx-on #page button.fo-hb-chip{box-shadow:0 6px 16px rgba(0,0,0,.3)}",
+    "body.fo-hbx-on #page .fo-hb-sec{background:rgba(253,252,249,.94);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 14px 34px rgba(10,7,3,.4)}",
+    "body.fo-hbx-on #page .fo-hb-foot a{background:rgba(253,252,249,.92);box-shadow:0 8px 20px rgba(10,7,3,.35)}",
     "html body #page .fo-hb{max-width:960px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
     "html body #page .fo-hb-mast{background:linear-gradient(150deg,#FFFEFB,#F6F1E4 70%,#F0E9D6) !important;border:1px solid rgba(20,28,40,.1);border-radius:22px;padding:28px 30px 24px;box-shadow:0 22px 50px rgba(30,38,52,.12);position:relative;overflow:hidden}",
     "html body #page .fo-hb-mast:after{content:'';position:absolute;inset:8px;border:1px solid rgba(176,132,9,.25);border-radius:16px;pointer-events:none}",
@@ -345,7 +364,7 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(mount, 0); });
   else setTimeout(mount, 0);
-  window.addEventListener("hashchange", function () { setTimeout(settleBonuses, 120); });
+  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] !== "#/milestones") document.body.classList.remove("fo-hbx-on"); setTimeout(settleBonuses, 120); });
 
   window.foRenderHonoursPage = foRenderHonoursPage;
   window.foHonoursCard = foHonoursCard;

@@ -3038,7 +3038,8 @@
       if (nm && typeof GD !== "undefined" && GD.teams && GD.teams[0]) GD.teams[0].name = nm;
       try { if (typeof saveGame === "function") saveGame(false); } catch (e3) {}
       openWrap(false);
-      location.hash = "#/circuit";
+      // the Circuit is retired: a new manager walks into their own club
+      location.hash = "#/home";
       if (typeof window.route === "function") window.route();
     } catch (e) { say(e); }
   }

@@ -970,10 +970,10 @@
   function foSqNextMatch(t) {
     var opp = "", ground = (t && t.ground) || "", wx = "";
     try {
-      var fx = (typeof nextFixture === "function") ? nextFixture() : null;
+      var fx = (typeof window.foNextFixture === "function") ? window.foNextFixture() : null;
       if (fx) {
         opp = (fx.opp && fx.opp.name) || "";
-        ground = fx.venue || ground;
+        ground = fx.ground || ground;
         wx = fx.weather || "";
         if (!fx.isHome && opp) opp = opp + " (away)";
       }

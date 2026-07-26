@@ -227,9 +227,12 @@
       if (!me) return;
       var nx = nextFixture();
       document.body.classList.remove("fo-scb-on", "fo-drs-on");
+      document.body.classList.add("fo-sdx-on");
+      var artBase = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
+      var sdBg = "<img class='fo-sd-bg' src='" + artBase + "home/" + (window.innerWidth < 760 ? "hgm" : "hgd") + "-veranda-rain.webp' alt=''><div class='fo-sd-veil'></div>";
 
       if (!nx) {
-        page.innerHTML = "<div class='fo-sd'><div class='fo-sd-hero'><div class='fo-sd-kick'>" + E(me.name) + " &middot; the war room</div>" +
+        page.innerHTML = sdBg + "<div class='fo-sd'><div class='fo-sd-hero'><div class='fo-sd-kick'>" + E(me.name) + " &middot; the war room</div>" +
           "<h1>The Scout&rsquo;s Dossier</h1><p>No fixture ahead. The season is done - the scout is at the beach, and the groundsman is re-seeding the square for spring.</p>" +
           "<div class='fo-sd-foot'><a href='#/desk'>&#8592; The desk</a><a href='#/ceremony'>Awards night &rsaquo;</a></div></div></div>";
         return;
@@ -270,7 +273,7 @@
         }
       } catch (eNH) {}
 
-      page.innerHTML =
+      page.innerHTML = sdBg +
         "<div class='fo-sd'>" +
         "<div class='fo-sd-hero'>" +
         "<div class='fo-sd-kick'>Round " + (nx.r + 1) + " &middot; " + (nx.isHome ? "at " + E(nx.ground) : "away at " + E(nx.ground)) + "</div>" +
@@ -365,10 +368,20 @@
       a.classList.toggle("on", (location.hash || "").split("?")[0] === "#/dossier");
     } catch (e) {}
   }
-  window.addEventListener("hashchange", function () { setTimeout(function () { ensureNavLink(); ensureDoctrines(); }, 80); });
+  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] !== "#/dossier") document.body.classList.remove("fo-sdx-on"); setTimeout(function () { ensureNavLink(); ensureDoctrines(); }, 80); });
 
   // ---- sheet -----------------------------------------------------------------
   var CSS = [
+    "html body.fo-sdx-on{background:#3A3F41 !important;isolation:isolate}",
+    ".fo-sd-bg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 40%;z-index:-2}",
+    ".fo-sd-veil{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(20,24,26,.30),rgba(20,24,26,.12) 34%,rgba(20,24,26,.16) 66%,rgba(14,17,19,.42))}",
+    "body.fo-sdx-on #page .fo-sd-hero{background:transparent !important;border:none !important;box-shadow:none !important;padding:10px 4px 18px}",
+    "body.fo-sdx-on #page .fo-sd-hero h1{color:#fff !important;text-shadow:0 3px 24px rgba(0,0,0,.7),0 1px 3px rgba(0,0,0,.55)}",
+    "body.fo-sdx-on #page .fo-sd-kick{color:#FFD9C4 !important;text-shadow:0 2px 10px rgba(0,0,0,.6)}",
+    "body.fo-sdx-on #page .fo-sd-hero p{color:rgba(255,255,255,.88) !important;text-shadow:0 2px 12px rgba(0,0,0,.6)}",
+    "body.fo-sdx-on #page .fo-sd-tale span{background:rgba(253,252,249,.92);box-shadow:0 6px 18px rgba(0,0,0,.3)}",
+    "body.fo-sdx-on #page .fo-sd-card{background:rgba(253,252,249,.93);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 14px 34px rgba(10,14,16,.35)}",
+    "body.fo-sdx-on #page .fo-sd-foot a{background:rgba(253,252,249,.92);box-shadow:0 8px 20px rgba(10,14,16,.3)}",
     "html body #page .fo-sd{max-width:880px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
     "html body #page .fo-sd-hero{background:linear-gradient(150deg,#FFFEFB,#F7F3E9 70%,#F0EADA) !important;border:1px solid rgba(20,28,40,.09);border-radius:22px;padding:28px 30px 24px;box-shadow:0 22px 50px rgba(30,38,52,.13)}",
     "html body #page .fo-sd-kick,html body #page .fo-sd-k{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#B44A22}",
@@ -437,6 +450,7 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(mount, 0); });
   else setTimeout(mount, 0);
 
+  window.foNextFixture = nextFixture;
   window.foRenderScoutPage = foRenderScoutPage;
   window.foScoutCard = foScoutCard;
   window.__foStrategy = 1;

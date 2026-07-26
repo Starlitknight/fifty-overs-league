@@ -112,7 +112,32 @@
   }
 
   // ---- wiring ---------------------------------------------------------------
-  function afterRoute() { ensureDock(); matchCentre(); }
+  function tidyNav() {
+    try {
+      var wrap = document.querySelector("#topbar .fo-nav-scroll"); if (!wrap) return;
+      var out = wrap.querySelector("a.fo-logout");
+      if (out && wrap.lastElementChild !== out) wrap.appendChild(out);
+    } catch (e) {}
+  }
+  // the dressing room has no door: give the plan a "done" that walks back out
+  function ordersDoor() {
+    try {
+      var on = (location.hash || "").split("?")[0] === "#/orders";
+      var el = document.getElementById("fo-ord-door");
+      if (!on) { if (el) el.remove(); return; }
+      if (el) return;
+      el = document.createElement("a");
+      el.id = "fo-ord-door"; el.href = "#/home";
+      el.innerHTML = "Plan set &middot; back to the club &#9656;";
+      el.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        try { App.orders.saved = true; if (typeof saveGame === "function") saveGame(false); } catch (e2) {}
+        location.hash = "#/home"; if (typeof window.route === "function") window.route();
+      });
+      document.body.appendChild(el);
+    } catch (e) {}
+  }
+  function afterRoute() { ensureDock(); matchCentre(); tidyNav(); ordersDoor(); }
   function wireRoute() {
     try {
       if (typeof window.route === "function" && !window.route.__foMs) {
@@ -166,8 +191,13 @@
     "body.fo-dock-on #page{padding-bottom:88px}",
     // full-bleed heroes pin a quick-link bar to the viewport floor; the dock
     // covers those destinations, so the old bar retires on phones
-    "body.fo-dock-on .fo-home2 .hg-bar{display:none}",
+    "body.fo-dock-on .fo-home2 .hg-bar button:not(.hg-cta){display:none}",
+    "body.fo-dock-on .fo-home2 .hg-bar{bottom:86px;background:none;padding-bottom:0}",
     "}",
+    // == the dressing-room door ================================================
+    "#fo-ord-door{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:350;background:#C95532;color:#FFFEFC;font:700 12.5px/1 Inter,sans-serif;letter-spacing:.03em;border-radius:999px;padding:13px 20px;text-decoration:none;box-shadow:0 10px 28px rgba(201,85,50,.5)}",
+    "#fo-ord-door:hover{background:#A64426;text-decoration:none;color:#FFFEFC}",
+    "@media(max-width:820px){#fo-ord-door{right:12px;bottom:calc(88px + env(safe-area-inset-bottom,0px))}}",
     // == motion ================================================================
     "@media (prefers-reduced-motion:no-preference){",
     "#page.fo-page-in{animation:foMsPageIn .22s ease-out}",
