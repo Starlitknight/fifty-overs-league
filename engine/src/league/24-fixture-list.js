@@ -8,6 +8,19 @@
   function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
   function ready() { return typeof App !== "undefined" && App && typeof GD !== "undefined" && GD && GD.teams && typeof userTeam === "function"; }
   var PITCH_NM = { balanced: "True", flat: "Flat", green: "Green", dry: "Dry", slow: "Slow", cracked: "Cracked", twoPaced: "Two-paced" };
+  // older saves recorded results before seasonNo existed on the record; a
+  // stampless result belongs to this season exactly when the season's own
+  // played-map points at its index
+  function thisSeasonHas(r) {
+    var cur = (App.seasonNo || 1);
+    if (r.seasonNo != null) return r.seasonNo === cur;
+    try {
+      var P = (App.season && App.season.played) || {};
+      for (var k in P) if (P[k] === r.ix) return true;
+    } catch (e) {}
+    return false;
+  }
+
 
   function foRenderFixturesPage() {
     try {
@@ -22,7 +35,7 @@
 
       // ---- what has been played ----
       var played = (App.results || []).filter(function (r) {
-        return r && r.comp === "league" && r.result && (r.home === my || r.away === my) && r.seasonNo === (App.seasonNo || 1);
+        return r && r.comp === "league" && r.result && (r.home === my || r.away === my) && thisSeasonHas(r);
       }).sort(function (a, b) { return (a.round || 0) - (b.round || 0); });
       var w = 0, l = 0, t = 0;
       played.forEach(function (r) {

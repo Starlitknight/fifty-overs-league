@@ -9,11 +9,24 @@
   function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
   function ready() { return typeof App !== "undefined" && App && typeof GD !== "undefined" && GD && GD.teams && typeof userTeam === "function"; }
 
+  // older saves recorded results before seasonNo existed on the record; a
+  // stampless result belongs to this season exactly when the season's own
+  // played-map points at its index
+  function thisSeasonHas(r) {
+    var cur = (App.seasonNo || 1);
+    if (r.seasonNo != null) return r.seasonNo === cur;
+    try {
+      var P = (App.season && App.season.played) || {};
+      for (var k in P) if (P[k] === r.ix) return true;
+    } catch (e) {}
+    return false;
+  }
+
   function formBeads(name) {
     try {
       var seq = (App.results || []).filter(function (r) {
         return r && r.comp === "league" && r.result && r.result.winner !== undefined &&
-          r.seasonNo === (App.seasonNo || 1) && (r.home === name || r.away === name);
+          thisSeasonHas(r) && (r.home === name || r.away === name);
       }).slice(-5).map(function (r) {
         return r.result.winner === name ? "w" : r.result.winner === null ? "t" : "l";
       });
