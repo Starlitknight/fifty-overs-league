@@ -5240,6 +5240,9 @@
       // #/nation is that country's record book - table, fixtures, results, grounds
       var hashPath = (location.hash || "").split("?")[0];
       var natPage = (hashPath === "#/nation");
+      // #/league now belongs to the real standings page (module 25); the
+      // painted portrait keeps its #/nation door
+      if (!natPage && window.__foLeagueTable) return;
       if (hashPath !== "#/league" && !natPage) return;
       var page = document.getElementById("page"); if (!page) return;
       var mN = /[?&]n=([^&]+)/.exec(location.hash || "");

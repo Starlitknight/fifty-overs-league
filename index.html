@@ -1641,7 +1641,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={home:'foRenderHome',league:'foRenderLeague',nation:'foRenderNation',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage'}[App.page];
+  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage'}[App.page];
   if(P[App.page])P[App.page](q);
   else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){}}
   else if(OV){/* overlay not parsed yet: leave the page blank, its interval paints */}
@@ -10592,7 +10592,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260726-1606-c728a4";
+  var FO_BUILD = "20260726-1617-75c9a0";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -29743,6 +29743,9 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       // #/nation is that country's record book - table, fixtures, results, grounds
       var hashPath = (location.hash || "").split("?")[0];
       var natPage = (hashPath === "#/nation");
+      // #/league now belongs to the real standings page (module 25); the
+      // painted portrait keeps its #/nation door
+      if (!natPage && window.__foLeagueTable) return;
       if (hashPath !== "#/league" && !natPage) return;
       var page = document.getElementById("page"); if (!page) return;
       var mN = /[?&]n=([^&]+)/.exec(location.hash || "");
@@ -35577,6 +35580,117 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
 
   window.foRenderFixturesPage = foRenderFixturesPage;
   window.__foFixtureList = 1;
+})();
+// ---- 25-league-table.js — The League, the real one ---------------------------
+// The League page used to open on a painted atlas of fictional sides while the
+// fixtures were played against the actual clubs of the save - two worlds that
+// never matched, and managers noticed. #/league now shows THE league: the real
+// table of the ten clubs you actually play, straight from the engine's own
+// standings. The painted nation atlas lives on at #/nation, one link away.
+(function () {
+  "use strict";
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function ready() { return typeof App !== "undefined" && App && typeof GD !== "undefined" && GD && GD.teams && typeof userTeam === "function"; }
+
+  function formBeads(name) {
+    try {
+      var seq = (App.results || []).filter(function (r) {
+        return r && r.comp === "league" && r.result && r.result.winner !== undefined &&
+          r.seasonNo === (App.seasonNo || 1) && (r.home === name || r.away === name);
+      }).slice(-5).map(function (r) {
+        return r.result.winner === name ? "w" : r.result.winner === null ? "t" : "l";
+      });
+      return seq.map(function (k) {
+        return "<i class='" + k + "'>" + k.toUpperCase() + "</i>";
+      }).join("") || "<span class='none'>&mdash;</span>";
+    } catch (e) { return ""; }
+  }
+
+  function foRenderLeagueTablePage() {
+    try {
+      if (!ready()) return;
+      var page = document.getElementById("page"); if (!page) return;
+      var me = null; try { me = userTeam(); } catch (e) {}
+      if (!me) return;
+      document.body.classList.remove("fo-scb-on", "fo-drs-on");
+      var rows = [];
+      try { rows = leagueRows(); } catch (eL) {}
+      var myPos = 0;
+      rows.forEach(function (r, i) { if (r.nm === me.name) myPos = i + 1; });
+      var ord = function (n) { return n + (n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"); };
+
+      var body = rows.map(function (r, i) {
+        var mine = r.nm === me.name;
+        return "<a class='fo-lt-row" + (mine ? " mine" : "") + "' href='#/milestones?c=" + encodeURIComponent(r.nm) + "'>" +
+          "<i>" + (i + 1) + "</i>" +
+          "<span class='fo-lt-nm'><b>" + E(r.nm) + (mine ? " <u>you</u>" : "") + "</b>" +
+          "<span class='fo-lt-beads'>" + formBeads(r.nm) + "</span></span>" +
+          "<em>" + (r.p | 0) + "</em><em class='w'>" + (r.w | 0) + "</em><em>" + (r.l | 0) + "</em>" +
+          "<em class='nrr'>" + ((r.nrr >= 0 ? "+" : "") + (+r.nrr || 0).toFixed(2)) + "</em>" +
+          "<b class='pts'>" + (r.pts | 0) + "</b></a>";
+      }).join("");
+
+      page.innerHTML =
+        "<div class='fo-lt'>" +
+        "<div class='fo-lt-mast'>" +
+        "<div class='fo-lt-kick'>Season " + (App.seasonNo || 1) + " &middot; " + E(me.name) + (myPos ? " &middot; " + ord(myPos) : "") + "</div>" +
+        "<h1>The League</h1>" +
+        "<p>Ten clubs, eighteen rounds, one pennant. Two points a win, net run rate to break hearts. Every club opens onto its honours board.</p>" +
+        "</div>" +
+        "<div class='fo-lt-head'><i>#</i><span>Club &middot; form</span><em>P</em><em>W</em><em>L</em><em>NRR</em><b>Pts</b></div>" +
+        "<div class='fo-lt-list'>" + body + "</div>" +
+        "<div class='fo-lt-foot'><a href='#/fixtures'>My fixtures &rsaquo;</a><a href='#/cup'>The cup &rsaquo;</a><a href='#/nation'>The nation atlas &rsaquo;</a></div>" +
+        "</div>";
+    } catch (e) { try { console.warn("foRenderLeagueTablePage", e); } catch (e2) {} }
+  }
+
+  var CSS = [
+    "html body #page .fo-lt{max-width:680px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
+    "html body #page .fo-lt-mast{background:linear-gradient(150deg,#FFFEFB,#F6F1E4 70%,#F0E9D6) !important;border:1px solid rgba(20,28,40,.1);border-radius:22px;padding:26px 28px 22px;box-shadow:0 22px 50px rgba(30,38,52,.12)}",
+    "html body #page .fo-lt-kick{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:#B44A22}",
+    "html body #page .fo-lt-kick:after{content:'';display:block;width:34px;border-top:2px solid #C95532;margin-top:7px}",
+    "html body #page .fo-lt-mast h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:38px;letter-spacing:-.015em;margin:8px 0 8px;color:#141C28;line-height:1.02}",
+    "html body #page .fo-lt-mast p{font:italic 420 13.5px/1.6 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);margin:0;max-width:52ch}",
+    "html body #page .fo-lt-head{display:grid;grid-template-columns:24px minmax(0,1fr) 28px 28px 28px 52px 34px;gap:8px;align-items:baseline;padding:14px 16px 6px;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.45)}",
+    "html body #page .fo-lt-head em,html body #page .fo-lt-head b{text-align:right;font-style:normal}",
+    "html body #page .fo-lt-list{display:flex;flex-direction:column;gap:6px}",
+    "html body #page .fo-lt-row{display:grid;grid-template-columns:24px minmax(0,1fr) 28px 28px 28px 52px 34px;gap:8px;align-items:center;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:13px;padding:10px 16px;text-decoration:none;color:#141C28;box-shadow:0 4px 14px rgba(30,38,52,.06);transition:border-color .15s ease,transform .12s ease}",
+    "html body #page .fo-lt-row:hover{border-color:rgba(217,85,42,.5);transform:translateY(-1px);text-decoration:none}",
+    "html body #page .fo-lt-row.mine{border-left:3px solid #C95532}",
+    "html body #page .fo-lt-row>i{font:700 12px/1 Inter,sans-serif;color:rgba(20,28,40,.45);font-style:normal;font-variant-numeric:tabular-nums}",
+    "html body #page .fo-lt-nm{min-width:0}",
+    "html body #page .fo-lt-nm b{display:block;font:600 13.5px/1.25 Inter,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    "html body #page .fo-lt-nm b u{text-decoration:none;font:700 8.5px/1 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#B44A22;margin-left:5px;vertical-align:1px}",
+    "html body #page .fo-lt-beads{display:flex;gap:3px;margin-top:4px}",
+    "html body #page .fo-lt-beads i{width:15px;height:15px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font:800 8.5px/1 Inter,sans-serif;font-style:normal}",
+    "html body #page .fo-lt-beads i.w{background:rgba(31,158,114,.14);color:#177A57}",
+    "html body #page .fo-lt-beads i.l{background:rgba(200,60,58,.1);color:#B23230}",
+    "html body #page .fo-lt-beads i.t{background:rgba(20,28,40,.07);color:rgba(20,28,40,.55)}",
+    "html body #page .fo-lt-beads .none{font-size:10px;color:rgba(20,28,40,.35)}",
+    "html body #page .fo-lt-row em{font:500 12.5px/1 Inter,sans-serif;color:rgba(20,28,40,.6);text-align:right;font-style:normal;font-variant-numeric:tabular-nums}",
+    "html body #page .fo-lt-row em.w{color:#177A57;font-weight:700}",
+    "html body #page .fo-lt-row em.nrr{font-size:11.5px}",
+    "html body #page .fo-lt-row b.pts{font-family:Oswald,sans-serif;font-weight:700;font-size:16px;text-align:right;font-variant-numeric:tabular-nums;color:#141C28}",
+    "html body #page .fo-lt-foot{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}",
+    "html body #page .fo-lt-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
+    "html body #page .fo-lt-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5);text-decoration:none}",
+    "@media(max-width:520px){html body #page .fo-lt-mast h1{font-size:30px}",
+    "html body #page .fo-lt-head,html body #page .fo-lt-row{grid-template-columns:20px minmax(0,1fr) 24px 44px 30px}",
+    "html body #page .fo-lt-head em:nth-of-type(2),html body #page .fo-lt-row em:nth-of-type(2),html body #page .fo-lt-head em:nth-of-type(3),html body #page .fo-lt-row em:nth-of-type(3){display:none}}"
+  ].join("\n");
+
+  function mount() {
+    try {
+      var s = document.getElementById("fo-lt-css");
+      if (!s) { s = document.createElement("style"); s.id = "fo-lt-css"; s.textContent = CSS; }
+      document.body.appendChild(s);
+    } catch (e) {}
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(mount, 0); });
+  else setTimeout(mount, 0);
+
+  window.foRenderLeagueTablePage = foRenderLeagueTablePage;
+  window.__foLeagueTable = 1;
 })();
 
 </script>
