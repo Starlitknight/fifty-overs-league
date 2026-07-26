@@ -498,7 +498,8 @@
   function stripHTML() {
     if (!ready() || !App.season) return "";
     try {
-      return "<div class='fo-ls-strip'>" + digestCard() + pressCard() + wagerCard() + rivalCard() + goalsCard() + diaryCard() + "</div>";
+      var ledCard = ""; try { if (typeof window.foLedgerCard === "function") ledCard = window.foLedgerCard(); } catch (eLc) {}
+      return "<div class='fo-ls-strip'>" + digestCard() + pressCard() + wagerCard() + ledCard + rivalCard() + goalsCard() + diaryCard() + "</div>";
     } catch (e) { window.__foLsErr = String((e && e.stack) || e); return ""; }
   }
   function wireStrip(root) {
