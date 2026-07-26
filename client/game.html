@@ -1641,7 +1641,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderNation',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage'}[App.page];
+  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderNation',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage'}[App.page];
   if(P[App.page])P[App.page](q);
   else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){}}
   else if(OV){/* overlay not parsed yet: leave the page blank, its interval paints */}
@@ -10592,7 +10592,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260726-1851-fff37a";
+  var FO_BUILD = "20260726-1904-ed025d";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -33849,7 +33849,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // which dock lamp lights up for which route
   var DOCK_MAP = {
     club: ["club", "home"],
-    league: ["league", "nation", "atlas", "planet", "almanack", "cup", "world", "city", "side", "boss", "tour", "fixtures"],
+    league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "fixtures"],
     squad: ["squad", "player", "matchlab"],
     nets: ["training"],
     desk: ["desk", "ledger", "journal", "report", "ceremony", "wire", "lore", "dossier", "milestones", "whatif"]
@@ -36236,14 +36236,17 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           }
           var done = si < stagesDone;
           return "<div class='fo-pl-stage'><i>" + stageName(sg.stage) + (liveNow && !done ? " <b class='lv'>LIVE</b>" : "") + "</i>" +
-            sg.matches.map(function (m) {
+            sg.matches.map(function (m, gi2) {
               var mineM = m.a.rid === my || m.b.rid === my;
-              return "<div class='fo-pl-cm" + (mineM ? " mine" : "") + "'>" +
+              // a finished tie opens its own match page
+              var tag = done ? "a" : "div";
+              var href = done ? " href='#/wcmatch?s=" + p.season + "&st=" + sg.stage + "&g=" + gi2 + "'" : "";
+              return "<" + tag + " class='fo-pl-cm" + (mineM ? " mine" : "") + "'" + href + ">" +
                 "<img src='" + flagOf(m.a.rid) + "' alt=''><span class='" + (done && m.winner === m.a ? "w" : "") + "'>" + E(m.a.nm) + "</span>" +
                 "<u>v</u>" +
                 "<span class='" + (done && m.winner === m.b ? "w" : "") + "'>" + E(m.b.nm) + "</span><img src='" + flagOf(m.b.rid) + "' alt=''>" +
                 (done ? "<em>" + E(m.winner.nm) + " through &middot; " + m.hs + " v " + m.as + "</em>" : "") +
-                "</div>";
+                "</" + tag + ">";
             }).join("") + "</div>";
         }).join("");
         var champLine = stagesDone >= 4 ? "<div class='fo-pl-crown'>&#127942; <b>" + E(wcChampion(p.season).nm) + "</b> are champions of the world</div>" : "";
@@ -36339,7 +36342,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     "html body #page .fo-pl-stage.dim span{font:400 11px/1 Inter,sans-serif}",
     "html body #page .fo-pl-stage>i{display:block;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.5);font-style:normal;margin-bottom:6px}",
     "html body #page .fo-pl-stage>i b.lv{color:#B23230}",
-    "html body #page .fo-pl-cm{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font:500 12.5px/1.3 Inter,sans-serif;padding:6px 0;border-top:1px solid rgba(20,28,40,.06)}",
+    "html body #page .fo-pl-cm{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font:500 12.5px/1.3 Inter,sans-serif;padding:6px 0;border-top:1px solid rgba(20,28,40,.06);color:#141C28;text-decoration:none}",
+    "html body #page a.fo-pl-cm:hover span{color:#B44A22}",
     "html body #page .fo-pl-cm.mine{background:rgba(217,85,42,.06);border-radius:8px;padding:6px 8px}",
     "html body #page .fo-pl-cm img{width:20px;height:14px;object-fit:cover;border-radius:2px}",
     "html body #page .fo-pl-cm span.w{font-weight:700}",
@@ -36515,7 +36519,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     var pl = P(); if (!pl) return null;
     var p = pl.phaseOf(now), my = myNation();
     var rd = pl.roundsDone(now, p.season);
-    var sig = p.season + "|" + rd + "|" + my;
+    var sig = p.season + "|" + rd + "|" + my + "|" + ((App && App.results && App.results.length) || 0);
     if (CACHE.sig === sig) return CACHE.v;
     var bySeason = {}, rec = {
       total: null, margin: null, chase: null, indBat: null, indBowl: null
@@ -36534,8 +36538,10 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
             var pfx = perf(r.id, s, rr, m);
             [["h", m.home], ["a", m.away]].forEach(function (side) {
               var x = pfx[side[0]];
-              if (x.bat) note(agg(s).runs, x.bat.n, x.bat.r, { club: side[1].name, nat: r.nm });
-              if (x.bowl) note(agg(s).wkts, x.bowl.n, x.bowl.w, { club: side[1].name, nat: r.nm });
+              // keyed by player AND club, so two same-named men in different
+              // dressing rooms never pool their tallies
+              if (x.bat) note(agg(s).runs, x.bat.n + "|" + r.id + "|" + side[1].slot, x.bat.r, { club: side[1].name, nat: r.nm, rid: r.id, slot: side[1].slot, nm: x.bat.n });
+              if (x.bowl) note(agg(s).wkts, x.bowl.n + "|" + r.id + "|" + side[1].slot, x.bowl.w, { club: side[1].name, nat: r.nm, rid: r.id, slot: side[1].slot, nm: x.bowl.n });
               if (x.bat && (!rec.indBat || x.bat.r > rec.indBat.v)) rec.indBat = { v: x.bat.r, line: x.bat.n + " " + x.bat.r + " for " + side[1].name, where: r.nm + ", season " + s };
               if (x.bowl && (!rec.indBowl || x.bowl.w > rec.indBowl.v || (x.bowl.w === rec.indBowl.v && x.bowl.rc < rec.indBowl.rc))) rec.indBowl = { v: x.bowl.w, rc: x.bowl.rc, line: x.bowl.n + " " + x.bowl.w + "/" + x.bowl.rc + " for " + side[1].name, where: r.nm + ", season " + s };
             });
@@ -36544,7 +36550,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       });
     }
     var top = function (map) {
-      return Object.keys(map).map(function (k) { return { n: k, v: map[k].n, meta: map[k].meta }; })
+      return Object.keys(map).map(function (k) { return { n: (map[k].meta && map[k].meta.nm) || k, v: map[k].n, meta: map[k].meta }; })
         .sort(function (a, b) { return b.v - a.v; }).slice(0, 6);
     };
     var roll = [];
@@ -36555,6 +36561,29 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var wcDone = s2 < p.season || pl.wcStagesDone(now, s2) >= 4;
       roll.push({ season: s2, wc: wcDone ? pl.wcChampion(s2) : null, champs: champs, live: s2 === p.season && !done });
     }
+    // YOUR league is the twentieth nation: when one of your real matches
+    // outdoes the planet, the record book bows to it - marked in gold
+    try {
+      var myReg = regionById(my);
+      var myLeague = ((myReg && myReg.nm) || "Your nation") + " · your league";
+      (typeof App !== "undefined" && App && App.results ? App.results : []).forEach(function (r0) {
+        if (!r0 || r0.comp !== "league" || !r0.innings) return;
+        var sn = r0.seasonNo != null ? ", season " + r0.seasonNo : "";
+        r0.innings.forEach(function (inn) {
+          if (!inn) return;
+          if (rec.total && (inn.runs | 0) > rec.total.v) rec.total = { v: inn.runs | 0, line: inn.batTeam + " " + inn.runs + (inn.wkts >= 10 ? " all out" : "/" + inn.wkts) + " v " + (inn.bowlTeam || ""), where: myLeague + sn, mine: true };
+          (inn.bat || []).forEach(function (b2) {
+            if (rec.indBat && (+b2.r || 0) > rec.indBat.v) rec.indBat = { v: +b2.r, line: b2.p + " " + b2.r + " for " + inn.batTeam, where: myLeague + sn, mine: true };
+          });
+          var bw = inn.bowlers || {};
+          Object.keys(bw).forEach(function (nm2) {
+            var e2 = bw[nm2] || {}, w2 = +e2.w || 0;
+            if (rec.indBowl && (w2 > rec.indBowl.v || (w2 === rec.indBowl.v && (+e2.r || 999) < rec.indBowl.rc))) rec.indBowl = { v: w2, rc: +e2.r || 0, line: nm2 + " " + w2 + "/" + (+e2.r || 0) + " for " + inn.bowlTeam, where: myLeague + sn, mine: true };
+          });
+        });
+      });
+    } catch (eMy) {}
+
     // the World XI of a completed season: six batters and five bowlers who
     // owned it, picked purely from the season's own aggregates
     var xiOf = function (s3) {
@@ -36627,16 +36656,19 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var natRid = {}; regionList().forEach(function (r) { natRid[r.nm] = r.id; });
 
       var recRow = function (label, r) {
-        return r ? "<div class='fo-al-rec'><i>" + label + "</i><b>" + E(r.line) + "</b><span>" + E(r.where) + "</span></div>" : "";
+        return r ? "<div class='fo-al-rec" + (r.mine ? " mine" : "") + "'><i>" + label + (r.mine ? " &middot; yours" : "") + "</i><b>" + E(r.line) + "</b><span>" + E(r.where) + "</span></div>" : "";
       };
       var recHTML = recRow("Highest total", v.rec.total) + recRow("Biggest win", v.rec.margin) +
         recRow("Greatest chase", v.rec.chase) + recRow("Highest score", v.rec.indBat) + recRow("Best bowling", v.rec.indBowl);
 
-      var ldr = function (list, unit) {
+      var ldr = function (list, unit, seasonQ) {
         return list.map(function (x, i) {
-          return "<div class='fo-al-ld'><i>" + (i + 1) + "</i>" +
+          var href = (x.meta && x.meta.rid != null)
+            ? " href='#/star?r=" + encodeURIComponent(x.meta.rid) + "&sl=" + (x.meta.slot | 0) + "&s=" + seasonQ + "&n=" + encodeURIComponent(x.n) + "'" : "";
+          var tag = href ? "a" : "div";
+          return "<" + tag + " class='fo-al-ld'" + href + "><i>" + (i + 1) + "</i>" +
             (natRid[x.meta.nat] ? "<img src='" + flagOf(natRid[x.meta.nat]) + "' alt=''>" : "") +
-            "<span><b>" + E(x.n) + "</b><em>" + E(x.meta.club) + " &middot; " + E(x.meta.nat) + "</em></span><u>" + x.v + unit + "</u></div>";
+            "<span><b>" + E(x.n) + "</b><em>" + E(x.meta.club) + " &middot; " + E(x.meta.nat) + "</em></span><u>" + x.v + unit + "</u></" + tag + ">";
         }).join("") || "<p class='fo-al-none'>The season's first ball is yet to be bowled.</p>";
       };
 
@@ -36684,11 +36716,11 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         "<p>Everything the planet's cricket has done, written down. Records that stand until someone breaks them, champions season by season, and the names behind this season's runs and wickets.</p>" +
         "</div>" +
         "<div class='fo-al-sec'><h2>All-time records</h2>" + recHTML + "</div>" +
-        "<div class='fo-al-sec cols'><div><h2>Most runs this season</h2>" + ldr(v.runs, "") + "</div>" +
-        "<div><h2>Most wickets</h2>" + ldr(v.wkts, "") + "</div></div>" +
+        "<div class='fo-al-sec cols'><div><h2>Most runs this season</h2>" + ldr(v.runs, "", p.season) + "</div>" +
+        "<div><h2>Most wickets</h2>" + ldr(v.wkts, "", p.season) + "</div></div>" +
         (v.xi ? "<div class='fo-al-sec'><h2>World XI of Season " + v.xi.season + "</h2>" +
           "<p class='fo-al-sub'>The eleven the season itself picked - six with the bat, five with the ball.</p>" +
-          ldr(v.xi.bats, " runs") + ldr(v.xi.bowls, " wkts") + "</div>" : "") +
+          ldr(v.xi.bats, " runs", v.xi.season) + ldr(v.xi.bowls, " wkts", v.xi.season) + "</div>" : "") +
         mktHTML +
         "<div class='fo-al-sec'><h2>The roll of champions</h2>" + rollHTML + "</div>" +
         "<div class='fo-al-foot'><a href='#/planet'>World cricket today &rsaquo;</a><a href='#/league'>My league &rsaquo;</a><a href='#/milestones'>My honours &rsaquo;</a></div>" +
@@ -36712,6 +36744,10 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     "html body #page .fo-al-sec.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}",
     "@media(max-width:560px){html body #page .fo-al-sec.cols{grid-template-columns:1fr}}",
     "html body #page .fo-al-rec{padding:8px 0;border-top:1px solid rgba(20,28,40,.06)}",
+    "html body #page .fo-al-rec.mine{background:linear-gradient(90deg,rgba(176,132,9,.1),rgba(176,132,9,0));border-radius:10px;padding:8px 10px}",
+    "html body #page .fo-al-rec.mine i{color:#B08409}",
+    "html body #page a.fo-al-ld{text-decoration:none;color:#141C28}",
+    "html body #page a.fo-al-ld:hover b{color:#B44A22}",
     "html body #page .fo-al-rec i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#B44A22;font-style:normal}",
     "html body #page .fo-al-rec b{display:block;font:600 13px/1.35 Inter,sans-serif;margin-top:3px}",
     "html body #page .fo-al-rec span{display:block;font:italic 400 11px/1.3 'Fraunces',Georgia,serif;color:rgba(20,28,40,.5);margin-top:2px}",
@@ -36759,6 +36795,285 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
 
   window.foRenderAlmanackPage = foRenderAlmanackPage;
   window.__foStars = { squadOf: squadOf, perf: perf, suffix: suffix, sweep: sweep, marketOf: marketOf, signStar: signStar, retirees: retirees, eraOf: eraOf };
+})();
+// ---- 29-star-pages.js — every name on the planet opens ------------------------
+// Two pages that make the world's people and its biggest days tappable:
+//
+//   THE STAR PAGE (#/star?r=&sl=&s=&n=) - a world cricketer's career, told from
+//     the era they belong to: season-by-season runs and wickets, best score
+//     and best figures, their club's pennants while they wore the shirt, and
+//     any world record still standing in their name. Reached from the
+//     almanack's leader boards and the World XI.
+//
+//   THE CUP MATCH PAGE (#/wcmatch?s=&st=&g=) - a World Cup tie in full: the
+//     two nations, the innings as they unfolded (checkpoint by checkpoint),
+//     and the named performances that decided it - national XIs drawn from
+//     the best of each country's clubs. Reached from the bracket.
+//
+// Both are, as ever, pure functions of the world calendar and its seeds.
+(function () {
+  "use strict";
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function h32(s) { var h = 2166136261 >>> 0; s = String(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
+  function rnd01(s) { return h32(s) / 4294967296; }
+  function P() { return window.__foPlanet || null; }
+  function S() { return window.__foStars || null; }
+  function cx() { return window.__foCxAPI || null; }
+  function artBase() {
+    if (typeof FO_ART !== "undefined") return FO_ART;
+    return (location.pathname.indexOf("/client/") !== -1) ? "art/" : "client/art/";
+  }
+  function flagOf(rid) { return artBase() + "flags/" + cx().flagFile(rid) + ".svg"; }
+  function q(name) { var m = new RegExp("[?&]" + name + "=([^&]+)").exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : null; }
+  function regionList() { var c = cx(); return c ? (c.regions() || []).filter(function (r) { return !r.final; }) : []; }
+  function regionById(rid) { var L = regionList(); for (var i = 0; i < L.length; i++) if (L[i].id === rid) return L[i]; return null; }
+  function ovrOf(p) { try { if (typeof foPkOvr === "function") return foPkOvr(p); } catch (e) {} return (p && p.rating ? Math.round(p.rating / 1000) : 50); }
+  function roleName(p) {
+    if (!p) return "";
+    if (p.keeper || p.role === "wicketkeeper") return "Wicketkeeper";
+    if (p.role === "allRounder") return "All-rounder";
+    if (p.bowlType) return /spin|break|SLA|LB|OB/i.test(String(p.bowlTypeFull || p.bowlType)) ? "Spin bowler" : "Pace bowler";
+    return "Batsman";
+  }
+  function stageName(st) { return { r16: "The Last Sixteen", qf: "Quarter-final", sf: "Semi-final", final: "The World Cup Final" }[st] || st; }
+  function parseScore(s) {
+    var m = /^(\d+)(?:\/(\d+))?( all out)?/.exec(String(s || ""));
+    if (!m) return { runs: 0, wkts: 10 };
+    return { runs: +m[1], wkts: m[3] ? 10 : (m[2] != null ? +m[2] : 10) };
+  }
+
+  // ============================ THE STAR PAGE =================================
+  function eraSeasons(rid, sl, seenSeason, curSeason) {
+    var era = S().eraOf(rid, sl, seenSeason), out = [];
+    for (var s2 = Math.max(1, seenSeason - 4); s2 <= curSeason; s2++) if (S().eraOf(rid, sl, s2) === era) out.push(s2);
+    return out;
+  }
+  function starSeason(rid, sl, season, name, rounds) {
+    var agg = { season: season, runs: 0, wkts: 0, best: 0, bb: null, inns: 0 };
+    for (var r3 = 1; r3 <= rounds; r3++) {
+      P().fixturesOf(rid, season, r3).forEach(function (m) {
+        if (m.home.slot !== sl && m.away.slot !== sl) return;
+        var pf = S().perf(rid, season, r3, m);
+        var x = m.home.slot === sl ? pf.h : pf.a;
+        if (x.bat && x.bat.n === name) { agg.runs += x.bat.r; agg.inns++; if (x.bat.r > agg.best) agg.best = x.bat.r; }
+        if (x.bowl && x.bowl.n === name) { agg.wkts += x.bowl.w; if (!agg.bb || x.bowl.w > agg.bb.w || (x.bowl.w === agg.bb.w && x.bowl.rc < agg.bb.rc)) agg.bb = { w: x.bowl.w, rc: x.bowl.rc }; }
+      });
+    }
+    return agg;
+  }
+  function foRenderStarPage() {
+    try {
+      if ((location.hash || "").split("?")[0] !== "#/star") return;
+      if (!P() || !S() || !cx()) return;
+      var page = document.getElementById("page"); if (!page) return;
+      try { document.body.classList.remove("fo-ov-on", "fo-boss-on", "fo-scb-on", "fo-drs-on"); } catch (eB) {}
+      var rid = q("r"), sl = +(q("sl") || 0), seen = +(q("s") || 1), name = q("n");
+      var reg = regionById(rid); if (!reg || !name) { page.innerHTML = "<div class='fo-star'><p style='padding:40px 20px'>This cricketer has slipped out of the record.</p></div>"; return; }
+      var now = Date.now(), p = P().phaseOf(now);
+      var sq = S().squadOf(rid, sl, seen) || [];
+      var me = null; sq.forEach(function (pl) { if (pl.name === name) me = pl; });
+      var sides = P().sidesOf(rid); var club = sides[sl] ? sides[sl].name : reg.nm;
+      var seasons = eraSeasons(rid, sl, seen, p.season);
+      var rows = seasons.map(function (s2) {
+        var rounds = s2 < p.season ? 14 : P().roundsDone(now, p.season);
+        return starSeason(rid, sl, s2, name, rounds);
+      });
+      var tot = { runs: 0, wkts: 0, best: 0, bb: null, inns: 0 };
+      rows.forEach(function (a) {
+        tot.runs += a.runs; tot.wkts += a.wkts; tot.inns += a.inns;
+        if (a.best > tot.best) tot.best = a.best;
+        if (a.bb && (!tot.bb || a.bb.w > tot.bb.w || (a.bb.w === tot.bb.w && a.bb.rc < tot.bb.rc))) tot.bb = a.bb;
+      });
+      // pennants while they wore the shirt
+      var pennants = [];
+      seasons.forEach(function (s2) {
+        var done = s2 < p.season || p.di >= 14;
+        if (!done) return;
+        var c = P().championOf(rid, s2);
+        if (c && c.slot === sl) pennants.push(s2);
+      });
+      // records still standing in their name
+      var chips = [];
+      try {
+        var v = S().sweep(now);
+        if (v.rec.indBat && v.rec.indBat.line.indexOf(name + " ") === 0) chips.push("Holds the world record score &middot; " + v.rec.indBat.v);
+        if (v.rec.indBowl && v.rec.indBowl.line.indexOf(name + " ") === 0) chips.push("Holds the world's best bowling &middot; " + v.rec.indBowl.v + "/" + v.rec.indBowl.rc);
+        if (v.xi && (v.xi.bats.some(function (x) { return x.n === name; }) || v.xi.bowls.some(function (x) { return x.n === name; }))) chips.push("World XI of Season " + v.xi.season);
+      } catch (eC) {}
+      pennants.forEach(function (s2) { chips.push(reg.nm + " champion &middot; Season " + s2); });
+      var retired = seasons[seasons.length - 1] < p.season;
+
+      var seasonRows = rows.map(function (a) {
+        return "<div class='fo-star-row'><i>S" + a.season + "</i>" +
+          "<em>" + a.runs + " runs</em><em>best " + (a.best || "&mdash;") + "</em>" +
+          "<em>" + a.wkts + " wkts</em><em>" + (a.bb ? "best " + a.bb.w + "/" + a.bb.rc : "&mdash;") + "</em></div>";
+      }).join("");
+
+      page.innerHTML =
+        "<div class='fo-star'>" +
+        "<div class='fo-star-mast'>" +
+        "<div class='fo-star-kick'><img src='" + flagOf(rid) + "' alt=''> " + E(reg.nm) + " &middot; " + E(club) + (retired ? " &middot; retired" : "") + "</div>" +
+        "<h1>" + E(name) + "</h1>" +
+        "<p>" + E(roleName(me)) + (me && me.age ? " &middot; age " + me.age : "") + (me ? " &middot; rated " + ovrOf(me) : "") +
+        " &middot; seasons " + seasons[0] + "&ndash;" + seasons[seasons.length - 1] + "</p>" +
+        (chips.length ? "<div class='fo-star-chips'>" + chips.map(function (c) { return "<span>" + c + "</span>"; }).join("") + "</div>" : "") +
+        "</div>" +
+        "<div class='fo-star-sec'><h2>The career, season by season</h2>" +
+        "<div class='fo-star-row hd'><i></i><em>Runs</em><em>Best</em><em>Wickets</em><em>Best</em></div>" +
+        seasonRows +
+        "<div class='fo-star-row tot'><i>All</i><em>" + tot.runs + " runs</em><em>best " + (tot.best || "&mdash;") + "</em><em>" + tot.wkts + " wkts</em><em>" + (tot.bb ? "best " + tot.bb.w + "/" + tot.bb.rc : "&mdash;") + "</em></div>" +
+        "</div>" +
+        "<div class='fo-star-foot'><a href='#/almanack'>The world almanack &rsaquo;</a><a href='#/nation?n=" + encodeURIComponent(rid) + "'>" + E(reg.nm) + " &rsaquo;</a><a href='#/planet'>World cricket &rsaquo;</a></div>" +
+        "</div>";
+    } catch (e) { try { console.warn("foRenderStarPage", e); } catch (e2) {} }
+  }
+
+  // ========================== THE CUP MATCH PAGE ==============================
+  // a nation's XI for the cup: the best bats and bowls across all its clubs
+  function natPool(rid, season) {
+    var bats = [], bowls = [];
+    for (var sl = 0; sl < 8; sl++) {
+      var sq = S().squadOf(rid, sl, season) || [];
+      sq.forEach(function (pl) { (pl.bowlType ? bowls : bats).push(pl); });
+    }
+    var byOvr = function (a, b) { return ovrOf(b) - ovrOf(a); };
+    return { bats: bats.sort(byOvr).slice(0, 6), bowls: bowls.sort(byOvr).slice(0, 4) };
+  }
+  function cupPerf(season, stage, gi, natA, natB, sa, sb) {
+    var key = "wcpf|" + season + "|" + stage + "|" + gi;
+    // walk forward from the seeded index so a collision never eats a slot
+    var pickFrom = function (list, tag, used) {
+      if (!list.length) return null;
+      var ix = Math.floor(Math.pow(rnd01(key + tag), 1.4) * list.length);
+      for (var t2 = 0; t2 < list.length; t2++) {
+        var cand = list[(ix + t2) % list.length];
+        if (cand && !used[cand.name]) { used[cand.name] = 1; return cand; }
+      }
+      return null;
+    };
+    var innings = function (batNat, bowlNat, sc, tag) {
+      var pool = natPool(batNat, season), opp = natPool(bowlNat, season);
+      var shares = [0.34, 0.22, 0.14], out = [], used = {};
+      shares.forEach(function (sh, i2) {
+        var pick = pickFrom(pool.bats, tag + "b" + i2, used);
+        if (!pick) return;
+        out.push({ n: pick.name, r: Math.max(8, Math.round(sc.runs * (sh * (0.75 + rnd01(key + tag + "v" + i2) * 0.5)))) });
+      });
+      var bl = [], usedB = {};
+      [0, 1].forEach(function (i3) {
+        var pick = pickFrom(opp.bowls, tag + "w" + i3, usedB);
+        if (!pick) return;
+        bl.push({ n: pick.name, w: Math.max(1, Math.min(5, Math.floor(sc.wkts / 2) + (i3 === 0 ? 1 : 0))), rc: 22 + Math.floor(rnd01(key + tag + "c" + i3) * 40) });
+      });
+      return { bats: out.sort(function (a, b) { return b.r - a.r; }), bowls: bl };
+    };
+    return { a: innings(natA, natB, sa, "a"), b: innings(natB, natA, sb, "b") };
+  }
+  function checkpoints(key, total, wkts) {
+    var out = [], overs = [10, 20, 30, 40, 50];
+    overs.forEach(function (ov, i2) {
+      var f = ov / 50, ease = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
+      var frac = f * 0.75 + ease * 0.25 + (rnd01(key + "cp" + i2) - 0.5) * 0.05;
+      out.push({ ov: ov, r: Math.min(total, Math.max(0, Math.round(total * Math.min(1, frac)))), w: Math.min(wkts, Math.floor(f * wkts + rnd01(key + "cw" + i2) * 1.4)) });
+    });
+    out[out.length - 1] = { ov: 50, r: total, w: wkts };
+    return out;
+  }
+  function foRenderWcMatchPage() {
+    try {
+      if ((location.hash || "").split("?")[0] !== "#/wcmatch") return;
+      if (!P() || !S() || !cx()) return;
+      var page = document.getElementById("page"); if (!page) return;
+      try { document.body.classList.remove("fo-ov-on", "fo-boss-on", "fo-scb-on", "fo-drs-on"); } catch (eB) {}
+      var season = +(q("s") || 1), st = q("st") || "final", gi = +(q("g") || 0);
+      var stIx = { r16: 0, qf: 1, sf: 2, final: 3 }[st] || 0;
+      var now = Date.now();
+      if (P().wcStagesDone(now, season) <= stIx) { page.innerHTML = "<div class='fo-wm'><div class='fo-wm-mast'><h1>Not yet played</h1><p>This tie is still to come on the world calendar.</p></div></div>"; return; }
+      var stg = P().wcBracket(season)[stIx]; var m = stg.matches[gi]; if (!m) return;
+      var sa = parseScore(m.hs), sb = parseScore(m.as);
+      var pf = cupPerf(season, st, gi, m.a.rid, m.b.rid, sa, sb);
+      var key = "wcm|" + season + "|" + st + "|" + gi;
+      var innBlock = function (nat, rid2, sc, x, win) {
+        var cps = checkpoints(key + rid2, sc.runs, sc.wkts >= 10 ? 10 : sc.wkts);
+        return "<div class='fo-wm-inn" + (win ? " win" : "") + "'>" +
+          "<div class='fo-wm-innh'><img src='" + flagOf(rid2) + "' alt=''><b>" + E(nat) + "</b><u>" + sc.runs + (sc.wkts >= 10 ? " all out" : "/" + sc.wkts) + "</u></div>" +
+          "<div class='fo-wm-cps'>" + cps.map(function (c) { return "<span><i>" + c.ov + " ov</i><b>" + c.r + "/" + c.w + "</b></span>"; }).join("") + "</div>" +
+          "<div class='fo-wm-perf'>" +
+          x.bats.map(function (b2) { return "<div><b>" + E(b2.n) + "</b><u>" + b2.r + "</u></div>"; }).join("") +
+          "</div></div>";
+      };
+      var bowlBlock = function (label, bl) {
+        return bl.length ? "<div class='fo-wm-bowl'><i>" + label + "</i>" + bl.map(function (b2) { return "<span>" + E(b2.n) + " " + b2.w + "/" + b2.rc + "</span>"; }).join("") + "</div>" : "";
+      };
+      page.innerHTML =
+        "<div class='fo-wm'>" +
+        "<div class='fo-wm-mast'>" +
+        "<div class='fo-wm-kick'>Season " + season + " World Cup &middot; " + E(stageName(st)) + "</div>" +
+        "<h1>" + E(m.a.nm) + " v " + E(m.b.nm) + "</h1>" +
+        "<p>" + E(m.winner.nm) + " through &middot; " + E(m.hs) + " plays " + E(m.as) + "</p>" +
+        "</div>" +
+        innBlock(m.a.nm, m.a.rid, sa, pf.a, m.winner === m.a) +
+        bowlBlock("With the ball for " + m.b.nm, pf.a.bowls) +
+        innBlock(m.b.nm, m.b.rid, sb, pf.b, m.winner === m.b) +
+        bowlBlock("With the ball for " + m.a.nm, pf.b.bowls) +
+        "<div class='fo-wm-foot'><a href='#/planet'>The bracket &rsaquo;</a><a href='#/almanack'>The almanack &rsaquo;</a></div>" +
+        "</div>";
+    } catch (e) { try { console.warn("foRenderWcMatchPage", e); } catch (e2) {} }
+  }
+
+  var CSS = [
+    "html body #page .fo-star,html body #page .fo-wm{max-width:680px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
+    "html body #page .fo-star-mast,html body #page .fo-wm-mast{background:linear-gradient(150deg,#FFFEFB,#F6F1E4 70%,#F0E9D6) !important;border:1px solid rgba(20,28,40,.1);border-radius:22px;padding:24px 26px 20px;box-shadow:0 22px 50px rgba(30,38,52,.12)}",
+    "html body #page .fo-star-kick,html body #page .fo-wm-kick{display:flex;align-items:center;gap:7px;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#B44A22}",
+    "html body #page .fo-star-kick img{width:22px;height:15px;object-fit:cover;border-radius:2px}",
+    "html body #page .fo-star-mast h1,html body #page .fo-wm-mast h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:32px;letter-spacing:-.015em;margin:8px 0 6px;line-height:1.05}",
+    "html body #page .fo-star-mast p,html body #page .fo-wm-mast p{font:italic 420 13px/1.55 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);margin:0}",
+    "html body #page .fo-star-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}",
+    "html body #page .fo-star-chips span{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8A6606;background:rgba(176,132,9,.12);border-radius:999px;padding:7px 11px}",
+    "html body #page .fo-star-sec{margin-top:16px;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:18px;padding:16px 18px;box-shadow:0 8px 26px rgba(30,38,52,.07)}",
+    "html body #page .fo-star-sec h2{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:17px;margin:0 0 10px}",
+    "html body #page .fo-star-row{display:grid;grid-template-columns:36px 1fr 1fr 1fr 1fr;gap:6px;align-items:baseline;padding:8px 0;border-top:1px solid rgba(20,28,40,.06);font:500 12.5px/1.2 Inter,sans-serif}",
+    "html body #page .fo-star-row i{font:700 10px/1 Oswald,sans-serif;letter-spacing:.08em;color:rgba(20,28,40,.5);font-style:normal}",
+    "html body #page .fo-star-row em{font-style:normal;font-variant-numeric:tabular-nums}",
+    "html body #page .fo-star-row.hd{border-top:0;padding:0 0 2px;font:700 9px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.45)}",
+    "html body #page .fo-star-row.tot{border-top:2px solid rgba(20,28,40,.14);font-weight:700}",
+    "html body #page .fo-star-foot,html body #page .fo-wm-foot{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}",
+    "html body #page .fo-star-foot a,html body #page .fo-wm-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
+    "html body #page .fo-star-foot a:hover,html body #page .fo-wm-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5);text-decoration:none}",
+    "html body #page .fo-wm-inn{margin-top:16px;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:18px;padding:16px 18px;box-shadow:0 8px 26px rgba(30,38,52,.07)}",
+    "html body #page .fo-wm-inn.win{border-left:3px solid #C95532}",
+    "html body #page .fo-wm-innh{display:flex;align-items:center;gap:9px}",
+    "html body #page .fo-wm-innh img{width:26px;height:18px;object-fit:cover;border-radius:3px}",
+    "html body #page .fo-wm-innh b{flex:1;font:600 15px/1.2 Inter,sans-serif}",
+    "html body #page .fo-wm-innh u{text-decoration:none;font-family:Oswald,sans-serif;font-weight:700;font-size:19px;font-variant-numeric:tabular-nums}",
+    "html body #page .fo-wm-cps{display:flex;gap:6px;margin-top:12px;overflow-x:auto;padding-bottom:2px}",
+    "html body #page .fo-wm-cps span{flex:none;background:#F6F1E4;border-radius:10px;padding:7px 10px;text-align:center}",
+    "html body #page .fo-wm-cps i{display:block;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(20,28,40,.45);font-style:normal}",
+    "html body #page .fo-wm-cps b{display:block;font:700 12.5px/1 Inter,sans-serif;margin-top:4px;font-variant-numeric:tabular-nums}",
+    "html body #page .fo-wm-perf{margin-top:10px}",
+    "html body #page .fo-wm-perf div{display:flex;justify-content:space-between;font:500 12.5px/1.3 Inter,sans-serif;padding:5px 0;border-top:1px solid rgba(20,28,40,.06)}",
+    "html body #page .fo-wm-perf u{text-decoration:none;font-weight:700;font-variant-numeric:tabular-nums}",
+    "html body #page .fo-wm-bowl{margin-top:8px;padding:0 4px;font:400 11.5px/1.5 Inter,sans-serif;color:rgba(20,28,40,.6)}",
+    "html body #page .fo-wm-bowl i{font:700 9px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;font-style:normal;margin-right:8px;color:#B44A22}",
+    "html body #page .fo-wm-bowl span{margin-right:12px;white-space:nowrap}",
+    "@media(max-width:520px){html body #page .fo-star-mast h1,html body #page .fo-wm-mast h1{font-size:26px}}"
+  ].join("\n");
+  function mount() {
+    try {
+      var s = document.getElementById("fo-star-css");
+      if (!s) { s = document.createElement("style"); s.id = "fo-star-css"; s.textContent = CSS; }
+      document.body.appendChild(s);
+    } catch (e) {}
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(mount, 0); });
+  else setTimeout(mount, 0);
+  window.addEventListener("hashchange", function () {
+    var h = (location.hash || "").split("?")[0];
+    if (h === "#/star") setTimeout(foRenderStarPage, 40);
+    if (h === "#/wcmatch") setTimeout(foRenderWcMatchPage, 40);
+  });
+  window.foRenderStarPage = foRenderStarPage;
+  window.foRenderWcMatchPage = foRenderWcMatchPage;
 })();
 
 </script>

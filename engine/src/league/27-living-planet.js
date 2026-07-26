@@ -336,14 +336,17 @@
           }
           var done = si < stagesDone;
           return "<div class='fo-pl-stage'><i>" + stageName(sg.stage) + (liveNow && !done ? " <b class='lv'>LIVE</b>" : "") + "</i>" +
-            sg.matches.map(function (m) {
+            sg.matches.map(function (m, gi2) {
               var mineM = m.a.rid === my || m.b.rid === my;
-              return "<div class='fo-pl-cm" + (mineM ? " mine" : "") + "'>" +
+              // a finished tie opens its own match page
+              var tag = done ? "a" : "div";
+              var href = done ? " href='#/wcmatch?s=" + p.season + "&st=" + sg.stage + "&g=" + gi2 + "'" : "";
+              return "<" + tag + " class='fo-pl-cm" + (mineM ? " mine" : "") + "'" + href + ">" +
                 "<img src='" + flagOf(m.a.rid) + "' alt=''><span class='" + (done && m.winner === m.a ? "w" : "") + "'>" + E(m.a.nm) + "</span>" +
                 "<u>v</u>" +
                 "<span class='" + (done && m.winner === m.b ? "w" : "") + "'>" + E(m.b.nm) + "</span><img src='" + flagOf(m.b.rid) + "' alt=''>" +
                 (done ? "<em>" + E(m.winner.nm) + " through &middot; " + m.hs + " v " + m.as + "</em>" : "") +
-                "</div>";
+                "</" + tag + ">";
             }).join("") + "</div>";
         }).join("");
         var champLine = stagesDone >= 4 ? "<div class='fo-pl-crown'>&#127942; <b>" + E(wcChampion(p.season).nm) + "</b> are champions of the world</div>" : "";
@@ -439,7 +442,8 @@
     "html body #page .fo-pl-stage.dim span{font:400 11px/1 Inter,sans-serif}",
     "html body #page .fo-pl-stage>i{display:block;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.5);font-style:normal;margin-bottom:6px}",
     "html body #page .fo-pl-stage>i b.lv{color:#B23230}",
-    "html body #page .fo-pl-cm{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font:500 12.5px/1.3 Inter,sans-serif;padding:6px 0;border-top:1px solid rgba(20,28,40,.06)}",
+    "html body #page .fo-pl-cm{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font:500 12.5px/1.3 Inter,sans-serif;padding:6px 0;border-top:1px solid rgba(20,28,40,.06);color:#141C28;text-decoration:none}",
+    "html body #page a.fo-pl-cm:hover span{color:#B44A22}",
     "html body #page .fo-pl-cm.mine{background:rgba(217,85,42,.06);border-radius:8px;padding:6px 8px}",
     "html body #page .fo-pl-cm img{width:20px;height:14px;object-fit:cover;border-radius:2px}",
     "html body #page .fo-pl-cm span.w{font-weight:700}",

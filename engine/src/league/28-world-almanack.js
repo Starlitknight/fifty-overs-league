@@ -133,7 +133,7 @@
     var pl = P(); if (!pl) return null;
     var p = pl.phaseOf(now), my = myNation();
     var rd = pl.roundsDone(now, p.season);
-    var sig = p.season + "|" + rd + "|" + my;
+    var sig = p.season + "|" + rd + "|" + my + "|" + ((App && App.results && App.results.length) || 0);
     if (CACHE.sig === sig) return CACHE.v;
     var bySeason = {}, rec = {
       total: null, margin: null, chase: null, indBat: null, indBowl: null
@@ -152,8 +152,10 @@
             var pfx = perf(r.id, s, rr, m);
             [["h", m.home], ["a", m.away]].forEach(function (side) {
               var x = pfx[side[0]];
-              if (x.bat) note(agg(s).runs, x.bat.n, x.bat.r, { club: side[1].name, nat: r.nm });
-              if (x.bowl) note(agg(s).wkts, x.bowl.n, x.bowl.w, { club: side[1].name, nat: r.nm });
+              // keyed by player AND club, so two same-named men in different
+              // dressing rooms never pool their tallies
+              if (x.bat) note(agg(s).runs, x.bat.n + "|" + r.id + "|" + side[1].slot, x.bat.r, { club: side[1].name, nat: r.nm, rid: r.id, slot: side[1].slot, nm: x.bat.n });
+              if (x.bowl) note(agg(s).wkts, x.bowl.n + "|" + r.id + "|" + side[1].slot, x.bowl.w, { club: side[1].name, nat: r.nm, rid: r.id, slot: side[1].slot, nm: x.bowl.n });
               if (x.bat && (!rec.indBat || x.bat.r > rec.indBat.v)) rec.indBat = { v: x.bat.r, line: x.bat.n + " " + x.bat.r + " for " + side[1].name, where: r.nm + ", season " + s };
               if (x.bowl && (!rec.indBowl || x.bowl.w > rec.indBowl.v || (x.bowl.w === rec.indBowl.v && x.bowl.rc < rec.indBowl.rc))) rec.indBowl = { v: x.bowl.w, rc: x.bowl.rc, line: x.bowl.n + " " + x.bowl.w + "/" + x.bowl.rc + " for " + side[1].name, where: r.nm + ", season " + s };
             });
@@ -162,7 +164,7 @@
       });
     }
     var top = function (map) {
-      return Object.keys(map).map(function (k) { return { n: k, v: map[k].n, meta: map[k].meta }; })
+      return Object.keys(map).map(function (k) { return { n: (map[k].meta && map[k].meta.nm) || k, v: map[k].n, meta: map[k].meta }; })
         .sort(function (a, b) { return b.v - a.v; }).slice(0, 6);
     };
     var roll = [];
@@ -173,6 +175,29 @@
       var wcDone = s2 < p.season || pl.wcStagesDone(now, s2) >= 4;
       roll.push({ season: s2, wc: wcDone ? pl.wcChampion(s2) : null, champs: champs, live: s2 === p.season && !done });
     }
+    // YOUR league is the twentieth nation: when one of your real matches
+    // outdoes the planet, the record book bows to it - marked in gold
+    try {
+      var myReg = regionById(my);
+      var myLeague = ((myReg && myReg.nm) || "Your nation") + " · your league";
+      (typeof App !== "undefined" && App && App.results ? App.results : []).forEach(function (r0) {
+        if (!r0 || r0.comp !== "league" || !r0.innings) return;
+        var sn = r0.seasonNo != null ? ", season " + r0.seasonNo : "";
+        r0.innings.forEach(function (inn) {
+          if (!inn) return;
+          if (rec.total && (inn.runs | 0) > rec.total.v) rec.total = { v: inn.runs | 0, line: inn.batTeam + " " + inn.runs + (inn.wkts >= 10 ? " all out" : "/" + inn.wkts) + " v " + (inn.bowlTeam || ""), where: myLeague + sn, mine: true };
+          (inn.bat || []).forEach(function (b2) {
+            if (rec.indBat && (+b2.r || 0) > rec.indBat.v) rec.indBat = { v: +b2.r, line: b2.p + " " + b2.r + " for " + inn.batTeam, where: myLeague + sn, mine: true };
+          });
+          var bw = inn.bowlers || {};
+          Object.keys(bw).forEach(function (nm2) {
+            var e2 = bw[nm2] || {}, w2 = +e2.w || 0;
+            if (rec.indBowl && (w2 > rec.indBowl.v || (w2 === rec.indBowl.v && (+e2.r || 999) < rec.indBowl.rc))) rec.indBowl = { v: w2, rc: +e2.r || 0, line: nm2 + " " + w2 + "/" + (+e2.r || 0) + " for " + inn.bowlTeam, where: myLeague + sn, mine: true };
+          });
+        });
+      });
+    } catch (eMy) {}
+
     // the World XI of a completed season: six batters and five bowlers who
     // owned it, picked purely from the season's own aggregates
     var xiOf = function (s3) {
@@ -245,16 +270,19 @@
       var natRid = {}; regionList().forEach(function (r) { natRid[r.nm] = r.id; });
 
       var recRow = function (label, r) {
-        return r ? "<div class='fo-al-rec'><i>" + label + "</i><b>" + E(r.line) + "</b><span>" + E(r.where) + "</span></div>" : "";
+        return r ? "<div class='fo-al-rec" + (r.mine ? " mine" : "") + "'><i>" + label + (r.mine ? " &middot; yours" : "") + "</i><b>" + E(r.line) + "</b><span>" + E(r.where) + "</span></div>" : "";
       };
       var recHTML = recRow("Highest total", v.rec.total) + recRow("Biggest win", v.rec.margin) +
         recRow("Greatest chase", v.rec.chase) + recRow("Highest score", v.rec.indBat) + recRow("Best bowling", v.rec.indBowl);
 
-      var ldr = function (list, unit) {
+      var ldr = function (list, unit, seasonQ) {
         return list.map(function (x, i) {
-          return "<div class='fo-al-ld'><i>" + (i + 1) + "</i>" +
+          var href = (x.meta && x.meta.rid != null)
+            ? " href='#/star?r=" + encodeURIComponent(x.meta.rid) + "&sl=" + (x.meta.slot | 0) + "&s=" + seasonQ + "&n=" + encodeURIComponent(x.n) + "'" : "";
+          var tag = href ? "a" : "div";
+          return "<" + tag + " class='fo-al-ld'" + href + "><i>" + (i + 1) + "</i>" +
             (natRid[x.meta.nat] ? "<img src='" + flagOf(natRid[x.meta.nat]) + "' alt=''>" : "") +
-            "<span><b>" + E(x.n) + "</b><em>" + E(x.meta.club) + " &middot; " + E(x.meta.nat) + "</em></span><u>" + x.v + unit + "</u></div>";
+            "<span><b>" + E(x.n) + "</b><em>" + E(x.meta.club) + " &middot; " + E(x.meta.nat) + "</em></span><u>" + x.v + unit + "</u></" + tag + ">";
         }).join("") || "<p class='fo-al-none'>The season's first ball is yet to be bowled.</p>";
       };
 
@@ -302,11 +330,11 @@
         "<p>Everything the planet's cricket has done, written down. Records that stand until someone breaks them, champions season by season, and the names behind this season's runs and wickets.</p>" +
         "</div>" +
         "<div class='fo-al-sec'><h2>All-time records</h2>" + recHTML + "</div>" +
-        "<div class='fo-al-sec cols'><div><h2>Most runs this season</h2>" + ldr(v.runs, "") + "</div>" +
-        "<div><h2>Most wickets</h2>" + ldr(v.wkts, "") + "</div></div>" +
+        "<div class='fo-al-sec cols'><div><h2>Most runs this season</h2>" + ldr(v.runs, "", p.season) + "</div>" +
+        "<div><h2>Most wickets</h2>" + ldr(v.wkts, "", p.season) + "</div></div>" +
         (v.xi ? "<div class='fo-al-sec'><h2>World XI of Season " + v.xi.season + "</h2>" +
           "<p class='fo-al-sub'>The eleven the season itself picked - six with the bat, five with the ball.</p>" +
-          ldr(v.xi.bats, " runs") + ldr(v.xi.bowls, " wkts") + "</div>" : "") +
+          ldr(v.xi.bats, " runs", v.xi.season) + ldr(v.xi.bowls, " wkts", v.xi.season) + "</div>" : "") +
         mktHTML +
         "<div class='fo-al-sec'><h2>The roll of champions</h2>" + rollHTML + "</div>" +
         "<div class='fo-al-foot'><a href='#/planet'>World cricket today &rsaquo;</a><a href='#/league'>My league &rsaquo;</a><a href='#/milestones'>My honours &rsaquo;</a></div>" +
@@ -330,6 +358,10 @@
     "html body #page .fo-al-sec.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}",
     "@media(max-width:560px){html body #page .fo-al-sec.cols{grid-template-columns:1fr}}",
     "html body #page .fo-al-rec{padding:8px 0;border-top:1px solid rgba(20,28,40,.06)}",
+    "html body #page .fo-al-rec.mine{background:linear-gradient(90deg,rgba(176,132,9,.1),rgba(176,132,9,0));border-radius:10px;padding:8px 10px}",
+    "html body #page .fo-al-rec.mine i{color:#B08409}",
+    "html body #page a.fo-al-ld{text-decoration:none;color:#141C28}",
+    "html body #page a.fo-al-ld:hover b{color:#B44A22}",
     "html body #page .fo-al-rec i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#B44A22;font-style:normal}",
     "html body #page .fo-al-rec b{display:block;font:600 13px/1.35 Inter,sans-serif;margin-top:3px}",
     "html body #page .fo-al-rec span{display:block;font:italic 400 11px/1.3 'Fraunces',Georgia,serif;color:rgba(20,28,40,.5);margin-top:2px}",
