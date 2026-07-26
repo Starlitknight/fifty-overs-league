@@ -457,7 +457,9 @@
       // ---- the park ----
       ".fo-sqx-park{position:relative;border-radius:16px;overflow:hidden;isolation:isolate}",
       ".fo-sqx-bg{position:absolute;inset:0;background-size:cover;background-position:center 40%;z-index:0;transform:scale(1.04)}",
-      ".fo-sqx-veil{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(6,11,20,.72) 0%,rgba(6,11,20,.3) 26%,rgba(6,11,20,.42) 62%,rgba(5,9,16,.84) 100%)}",
+      // the ground art is a daylight painting - the veil holds the header and
+      // footer readable but lets the afternoon through in the middle
+      ".fo-sqx-veil{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(6,11,20,.58) 0%,rgba(6,11,20,.18) 26%,rgba(6,11,20,.28) 62%,rgba(5,9,16,.76) 100%)}",
       ".fo-sqx-parkin{position:relative;z-index:1;padding:22px 20px 20px}",
       // masthead over the art
       ".fo-sqx-hd{margin-bottom:14px}",

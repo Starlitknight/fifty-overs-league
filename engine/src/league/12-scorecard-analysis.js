@@ -3124,10 +3124,30 @@
       night: ["arches-quiet-night", "hgd-after-hours-rain", "hgd-nets-night", "hgd-dressing-room", "club-home-quiet-background"]
     }
   };
+  // the sky over the ground is the sky over your season: the wet/dry pick
+  // comes from the real forecast for the next fixture (the same deterministic
+  // weather the match itself will be played in), not an arbitrary day cycle
+  function foHgNextWx() {
+    try {
+      var S = App.season; if (!S || !S.schedule) return null;
+      for (var r = S.round; r < S.schedule.length; r++) {
+        var rd = S.schedule[r];
+        for (var i = 0; i < rd.length; i++) {
+          var f = rd[i];
+          if (f[0] !== App.teamIx && f[1] !== App.teamIx) continue;
+          if (S.played && S.played[r + ":" + GD.teams[f[0]].name + ":" + GD.teams[f[1]].name] !== undefined) continue;
+          return (typeof WXLIST !== "undefined") ? WXLIST[(r * 7 + f[0] * 3) % WXLIST.length] : null;
+        }
+      }
+    } catch (e) {}
+    return null;
+  }
   function foHgVariant() {
     var d = new Date(), h = d.getHours();
     var day = Math.floor(d.getTime() / 86400000);
-    var wet = (day % 3) === 1;
+    var wx = foHgNextWx();
+    try { window.__foHgWx = wx || ""; } catch (eW) {}
+    var wet = wx ? /overcast|drizzle|misty|dew/i.test(wx) : ((day % 3) === 1);
     var slot = (h >= 5 && h < 8) ? "dawn"
       : (h >= 8 && h < 15) ? (wet ? "dayWet" : "dayDry")
       : (h >= 15 && h < 20) ? (wet ? "lateWet" : "lateDry")
@@ -5151,7 +5171,7 @@
         "<div class='fo-hg2 fo-home2' style='--lac:" + (region.ac || "#EBC271") + "'>" +
         "<img class='hg-bg' src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
         "<div class='hg-grain'></div><div class='hg-scrim'></div><div class='hg-bloom'></div>" +
-        "<div class='hg-wx'><b>HOME GROUND</b><span>" + (FO_HG_WX[v] || "") + "</span></div>" +
+        "<div class='hg-wx'><b>HOME GROUND</b><span>" + (FO_HG_WX[v] || "") + (window.__foHgWx ? " &middot; forecast: " + E(window.__foHgWx) : "") + "</span></div>" +
         "<div class='hg-id'><i>YOUR CLUB &middot; THE ELEVEN ARCHES</i>" +
         "<b>" + E((me && me.name) || "Your Club") + "</b>" +
         "<span class='hg-sub'>" + posLine + "</span>" +

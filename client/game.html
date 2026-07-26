@@ -10586,7 +10586,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260725-2319-b487d7";
+  var FO_BUILD = "20260726-0044-1daa48";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21709,7 +21709,9 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       // ---- the park ----
       ".fo-sqx-park{position:relative;border-radius:16px;overflow:hidden;isolation:isolate}",
       ".fo-sqx-bg{position:absolute;inset:0;background-size:cover;background-position:center 40%;z-index:0;transform:scale(1.04)}",
-      ".fo-sqx-veil{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(6,11,20,.72) 0%,rgba(6,11,20,.3) 26%,rgba(6,11,20,.42) 62%,rgba(5,9,16,.84) 100%)}",
+      // the ground art is a daylight painting - the veil holds the header and
+      // footer readable but lets the afternoon through in the middle
+      ".fo-sqx-veil{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,rgba(6,11,20,.58) 0%,rgba(6,11,20,.18) 26%,rgba(6,11,20,.28) 62%,rgba(5,9,16,.76) 100%)}",
       ".fo-sqx-parkin{position:relative;z-index:1;padding:22px 20px 20px}",
       // masthead over the art
       ".fo-sqx-hd{margin-bottom:14px}",
@@ -27517,10 +27519,30 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       night: ["arches-quiet-night", "hgd-after-hours-rain", "hgd-nets-night", "hgd-dressing-room", "club-home-quiet-background"]
     }
   };
+  // the sky over the ground is the sky over your season: the wet/dry pick
+  // comes from the real forecast for the next fixture (the same deterministic
+  // weather the match itself will be played in), not an arbitrary day cycle
+  function foHgNextWx() {
+    try {
+      var S = App.season; if (!S || !S.schedule) return null;
+      for (var r = S.round; r < S.schedule.length; r++) {
+        var rd = S.schedule[r];
+        for (var i = 0; i < rd.length; i++) {
+          var f = rd[i];
+          if (f[0] !== App.teamIx && f[1] !== App.teamIx) continue;
+          if (S.played && S.played[r + ":" + GD.teams[f[0]].name + ":" + GD.teams[f[1]].name] !== undefined) continue;
+          return (typeof WXLIST !== "undefined") ? WXLIST[(r * 7 + f[0] * 3) % WXLIST.length] : null;
+        }
+      }
+    } catch (e) {}
+    return null;
+  }
   function foHgVariant() {
     var d = new Date(), h = d.getHours();
     var day = Math.floor(d.getTime() / 86400000);
-    var wet = (day % 3) === 1;
+    var wx = foHgNextWx();
+    try { window.__foHgWx = wx || ""; } catch (eW) {}
+    var wet = wx ? /overcast|drizzle|misty|dew/i.test(wx) : ((day % 3) === 1);
     var slot = (h >= 5 && h < 8) ? "dawn"
       : (h >= 8 && h < 15) ? (wet ? "dayWet" : "dayDry")
       : (h >= 15 && h < 20) ? (wet ? "lateWet" : "lateDry")
@@ -29544,7 +29566,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         "<div class='fo-hg2 fo-home2' style='--lac:" + (region.ac || "#EBC271") + "'>" +
         "<img class='hg-bg' src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
         "<div class='hg-grain'></div><div class='hg-scrim'></div><div class='hg-bloom'></div>" +
-        "<div class='hg-wx'><b>HOME GROUND</b><span>" + (FO_HG_WX[v] || "") + "</span></div>" +
+        "<div class='hg-wx'><b>HOME GROUND</b><span>" + (FO_HG_WX[v] || "") + (window.__foHgWx ? " &middot; forecast: " + E(window.__foHgWx) : "") + "</span></div>" +
         "<div class='hg-id'><i>YOUR CLUB &middot; THE ELEVEN ARCHES</i>" +
         "<b>" + E((me && me.name) || "Your Club") + "</b>" +
         "<span class='hg-sub'>" + posLine + "</span>" +
