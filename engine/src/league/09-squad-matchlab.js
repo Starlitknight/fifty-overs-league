@@ -566,6 +566,33 @@
       ".fo-sqx-brow{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}",
       ".fo-sqx-brow .fo-sqx-man{flex:0 0 auto}",
       ".fo-sqx-bempty{font-family:Georgia,serif;font-style:italic;font-size:13px;color:#6f819e}",
+      // ---- the roster: daylight browse list ----
+      ".fo-sqx.rostering .fo-sqx-bg,.fo-sqx.rostering .fo-sqx-veil{display:none}",
+      ".fo-sqx.rostering .fo-sqx-park{background:transparent}",
+      ".fo-sqx.rostering .fo-sqx-hd h1{color:#141C28 !important;text-shadow:none}",
+      ".fo-sqx.rostering .fo-sqx-tag{color:#B44A22 !important;text-shadow:none}",
+      "html body #page .fo-sqx.rostering .fo-sqx-next{background:#FFFEFC;border:1px solid rgba(20,28,40,.12);color:rgba(20,28,40,.75);box-shadow:0 4px 12px rgba(30,38,52,.06)}",
+      ".fo-sqx.rostering .fo-sqx-next b{color:#B44A22}.fo-sqx.rostering .fo-sqx-next span{color:rgba(20,28,40,.75)}",
+      "html body #page .fo-sqx.rostering button.fo-sqx-vb{background:#FFFEFC !important;border:1px solid rgba(20,28,40,.15) !important;color:rgba(20,28,40,.65) !important}",
+      "html body #page .fo-sqx.rostering button.fo-sqx-vb.on{background:#C95532 !important;border-color:#C95532 !important;color:#FFFEFC !important}",
+      ".fo-ros{max-width:740px;margin:10px auto 34px;display:flex;flex-direction:column;gap:20px}",
+      ".fo-ros-k{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#B44A22;margin-bottom:9px}",
+      ".fo-ros-k span{color:rgba(20,28,40,.4);margin-left:4px}",
+      ".fo-ros-k:after{content:'';display:block;width:34px;border-top:2px solid #C95532;margin-top:6px}",
+      ".fo-ros-sec{display:flex;flex-direction:column;gap:7px}",
+      "html body #page .fo-ros-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto 12px;gap:12px;align-items:center;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:14px;padding:8px 14px 8px 8px;text-decoration:none;color:#141C28;box-shadow:0 4px 14px rgba(30,38,52,.06);transition:border-color .15s ease,transform .12s ease}",
+      "html body #page .fo-ros-row:hover{border-color:rgba(217,85,42,.5);transform:translateY(-1px);text-decoration:none}",
+      ".fo-ros-pic{position:relative;width:52px;height:52px;border-radius:12px;overflow:hidden;background:#E9E4D8;flex:none;display:block}",
+      ".fo-ros-pic img{width:100%;height:100%;object-fit:cover;object-position:50% 10%}",
+      ".fo-ros-pic u{position:absolute;right:2px;bottom:2px;min-width:17px;height:17px;border-radius:6px;background:#07162E;color:#fff;font:700 9.5px/17px Inter,sans-serif;text-align:center;text-decoration:none;padding:0 2px}",
+      ".fo-ros-id{min-width:0}",
+      ".fo-ros-id b{display:block;font:600 14px/1.25 Inter,sans-serif;color:#141C28;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-ros-id>span{display:block;font:400 11.5px/1.35 Inter,sans-serif;color:rgba(20,28,40,.55);margin-top:2px}",
+      ".fo-ros-c{display:inline-block;font:700 9px/15px Oswald,sans-serif;width:15px;height:15px;border-radius:50%;background:#C89A2E;color:#2E2410;text-align:center;font-style:normal;vertical-align:2px;margin-left:4px}",
+      ".fo-ros-ovr{font-family:Oswald,sans-serif;font-weight:700;font-size:19px;font-variant-numeric:tabular-nums;min-width:30px;text-align:right}",
+      ".fo-ros-go{color:rgba(20,28,40,.35);font-size:15px}",
+      ".fo-ros .fo-sqt-frm .w{display:none}",
+      "@media(max-width:480px){.fo-ros-row{gap:9px}.fo-ros-pic{width:46px;height:46px}}",
       // ---- the dossier ----
       ".fo-sqx-dos{position:sticky;top:64px;border-radius:16px;overflow:hidden;background:linear-gradient(180deg,#FFFEFB,#F4EFE3 62%);border:1px solid rgba(20,28,40,.12);box-shadow:0 18px 44px rgba(30,38,52,.16)}",
       ".fo-sqx-dhero{position:relative;min-height:210px;padding:18px 18px 16px;overflow:hidden}",
@@ -675,7 +702,8 @@
       var sv = window.squadView;
       sv.mode = sv.mode || "xi"; sv.tab = ["ovr", "bat", "bwl", "fld", "rec"].indexOf(sv.tab) >= 0 ? sv.tab : "ovr";
       // the park picks a side; the list judges it. Two complete views, one page.
-      sv.view = sv.view === "list" ? "list" : "park";
+      sv.view = (sv.view === "list" || sv.view === "park" || sv.view === "roster") ? sv.view : "roster";
+      if (sv.view === "park" && !sv.viewSet) sv.view = "roster";
       sv.sortK = sv.sortK || "ovr"; sv.sortDir = sv.sortDir === 1 ? 1 : -1;
       var seniors = (t.players || []).map(function (p) { return Object.assign({}, p); });
       var youths = (t.youth || []).map(function (p) { return Object.assign({ __y: true }, p); });
@@ -834,6 +862,7 @@
 
       var viewSwitch =
         "<div class='fo-sqx-views' role='tablist' aria-label='Squad view'>" +
+        "<button type='button' class='fo-sqx-vb" + (sv.view === "roster" ? " on" : "") + "' data-view='roster' role='tab' aria-selected='" + (sv.view === "roster") + "'>The roster</button>" +
         "<button type='button' class='fo-sqx-vb" + (sv.view === "park" ? " on" : "") + "' data-view='park' role='tab' aria-selected='" + (sv.view === "park") + "'>The park</button>" +
         "<button type='button' class='fo-sqx-vb" + (sv.view === "list" ? " on" : "") + "' data-view='list' role='tab' aria-selected='" + (sv.view === "list") + "'>The list</button>" +
         "</div>";
@@ -851,18 +880,45 @@
                       : "<div class='fo-sqx-bempty'>Everyone at the club is in the XI.</div>") +
         "</div>";
 
+      // the roster: the club read as a clean daylight list - art chip, name,
+      // role, form and the overall number; every row a door to the man
+      var prettyType = function (t) {
+        if (!t) return "";
+        return String(t).replace(/([A-Z])/g, " $1").toLowerCase().replace(/^./, function (c) { return c.toUpperCase(); });
+      };
+      var rosterRow = function (p) {
+        var ovr = foPkOvr(p), rIx = xiIx(p), rCls = foSqClass(p);
+        var roleNm = { bat: "Batsman", ar: "All-rounder", wk: "Wicketkeeper", bowl: "Bowler" }[rCls] || "Player";
+        var det = p.bowlType ? prettyType(p.bowlType) : ({ R: "RHB", L: "LHB" }[String(p.hand || "").toUpperCase().charAt(0)] || "");
+        return "<a class='fo-ros-row' href='#/player?n=" + encodeURIComponent(p.name) + "'>" +
+          "<span class='fo-ros-pic'><img src='" + FO_ART + foPkArt(p) + "' alt='' loading='lazy' decoding='async'>" +
+          (rIx >= 0 ? "<u>" + (rIx + 1) + "</u>" : "") + "</span>" +
+          "<span class='fo-ros-id'><b>" + E(p.name) + (capt === p.name ? " <i class='fo-ros-c'>C</i>" : "") + "</b>" +
+          "<span>" + roleNm + (det ? " &middot; " + E(det) : "") + (p.age ? " &middot; " + (p.age | 0) : "") + "</span></span>" +
+          foSqFormGlyph(p) +
+          "<b class='fo-ros-ovr' style='color:" + foSqQCol(ovr) + "'>" + ovr + "</b>" +
+          "<span class='fo-ros-go'>&#8250;</span></a>";
+      };
+      var rosterBody = "<div class='fo-ros'>" + [["bat", "Batters"], ["ar", "All-rounders"], ["wk", "Wicketkeepers"], ["bowl", "Bowlers"]].map(function (sec) {
+        var men = everyone.filter(function (p) { return foSqClass(p) === sec[0]; });
+        if (!men.length) return "";
+        men = men.slice().sort(function (a2, b2) { return foPkOvr(b2) - foPkOvr(a2); });
+        return "<div class='fo-ros-sec'><div class='fo-ros-k'>" + sec[1] + " <span>" + men.length + "</span></div>" +
+          men.map(rosterRow).join("") + "</div>";
+      }).join("") + "</div>";
+
       var listBody = foSqTable(everyone, sv, capt, xiIx);
 
       page.innerHTML =
-        "<div class='fo-sqx" + (sv.view === "list" ? " listing" : "") + "'><div class='fo-sqx-in'>" +
+        "<div class='fo-sqx" + (sv.view === "list" ? " listing" : sv.view === "roster" ? " listing rostering" : "") + "'><div class='fo-sqx-in'>" +
         "<section class='fo-sqx-park'>" +
         "<div class='fo-sqx-bg' style='background-image:url(" + bg + ")'></div><div class='fo-sqx-veil'></div>" +
         "<div class='fo-sqx-parkin'>" +
         "<header class='fo-sqx-hd'><h1>Squad</h1><div class='fo-sqx-tag'>Select your XI. Shape your legacy.</div>" +
         nextLine + viewSwitch + "</header>" +
-        (sv.view === "list" ? listBody : parkBody) +
+        (sv.view === "list" ? listBody : sv.view === "roster" ? rosterBody : parkBody) +
         "</div></section>" +
-        (sv.view === "list" ? "" : dos) +
+        (sv.view === "park" ? dos : "") +
         "</div></div>";
 
       // ---- wiring ----
@@ -876,7 +932,7 @@
       })();
 
       page.querySelectorAll(".fo-sqx-vb").forEach(function (b) {
-        b.addEventListener("click", function () { sv.view = b.getAttribute("data-view"); pgSquad(); });
+        b.addEventListener("click", function () { sv.view = b.getAttribute("data-view"); sv.viewSet = 1; pgSquad(); });
       });
       // sorting: same column flips direction, a new column starts descending
       // (best first), except the name, where A-Z is what anyone expects
