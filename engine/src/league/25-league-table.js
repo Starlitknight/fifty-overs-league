@@ -48,6 +48,10 @@
       var myPos = 0;
       rows.forEach(function (r, i) { if (r.nm === me.name) myPos = i + 1; });
       var ord = function (n) { return n + (n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"); };
+      // the league is played under a nation's flag (chosen at onboarding,
+      // England by default) - say so, so nobody has to wonder where they play
+      var natNm = "";
+      try { natNm = (window.__foLgAPI && window.__foLgAPI.regionName && window.__foLgAPI.regionName()) || ""; } catch (eNat) {}
 
       var body = rows.map(function (r, i) {
         var mine = r.nm === me.name;
@@ -63,8 +67,8 @@
       page.innerHTML =
         "<div class='fo-lt'>" +
         "<div class='fo-lt-mast'>" +
-        "<div class='fo-lt-kick'>Season " + (App.seasonNo || 1) + " &middot; " + E(me.name) + (myPos ? " &middot; " + ord(myPos) : "") + "</div>" +
-        "<h1>The League</h1>" +
+        "<div class='fo-lt-kick'>" + (natNm ? E(natNm) + " &middot; " : "") + "Season " + (App.seasonNo || 1) + " &middot; " + E(me.name) + (myPos ? " &middot; " + ord(myPos) : "") + "</div>" +
+        "<h1>The " + (natNm ? E(natNm) + " " : "") + "League</h1>" +
         "<p>Ten clubs, eighteen rounds, one pennant. Two points a win, net run rate to break hearts. Every club opens onto its honours board.</p>" +
         "</div>" +
         "<div class='fo-lt-head'><i>#</i><span>Club &middot; form</span><em>P</em><em>W</em><em>L</em><em>NRR</em><b>Pts</b></div>" +

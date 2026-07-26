@@ -10592,7 +10592,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260726-1621-94fc2a";
+  var FO_BUILD = "20260726-1626-2829b4";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -29624,7 +29624,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       window.saveMatch.__foLg = 1;
     }
   } catch (eLgSm) {}
-  try { window.__foLgAPI = { state: foLgState, ensure: foLgEnsure, nation: foLgNation, table: foLgTable, lineup: foLgLineup, play: foLgPlay }; } catch (eApi) {}
+  try { window.__foLgAPI = { state: foLgState, ensure: foLgEnsure, nation: foLgNation, table: foLgTable, lineup: foLgLineup, play: foLgPlay, regionName: function () { var hit = foRegionById(foLgNation()); return (hit && hit.r && hit.r.nm) || ""; } }; } catch (eApi) {}
 
   // ---- the league hub (#/league) ---------------------------------------
   // ============ the club home: a full-bleed home-ground at golden hour =======
@@ -35644,6 +35644,10 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var myPos = 0;
       rows.forEach(function (r, i) { if (r.nm === me.name) myPos = i + 1; });
       var ord = function (n) { return n + (n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"); };
+      // the league is played under a nation's flag (chosen at onboarding,
+      // England by default) - say so, so nobody has to wonder where they play
+      var natNm = "";
+      try { natNm = (window.__foLgAPI && window.__foLgAPI.regionName && window.__foLgAPI.regionName()) || ""; } catch (eNat) {}
 
       var body = rows.map(function (r, i) {
         var mine = r.nm === me.name;
@@ -35659,8 +35663,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       page.innerHTML =
         "<div class='fo-lt'>" +
         "<div class='fo-lt-mast'>" +
-        "<div class='fo-lt-kick'>Season " + (App.seasonNo || 1) + " &middot; " + E(me.name) + (myPos ? " &middot; " + ord(myPos) : "") + "</div>" +
-        "<h1>The League</h1>" +
+        "<div class='fo-lt-kick'>" + (natNm ? E(natNm) + " &middot; " : "") + "Season " + (App.seasonNo || 1) + " &middot; " + E(me.name) + (myPos ? " &middot; " + ord(myPos) : "") + "</div>" +
+        "<h1>The " + (natNm ? E(natNm) + " " : "") + "League</h1>" +
         "<p>Ten clubs, eighteen rounds, one pennant. Two points a win, net run rate to break hearts. Every club opens onto its honours board.</p>" +
         "</div>" +
         "<div class='fo-lt-head'><i>#</i><span>Club &middot; form</span><em>P</em><em>W</em><em>L</em><em>NRR</em><b>Pts</b></div>" +

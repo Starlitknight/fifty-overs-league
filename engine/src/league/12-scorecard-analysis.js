@@ -5121,7 +5121,7 @@
       window.saveMatch.__foLg = 1;
     }
   } catch (eLgSm) {}
-  try { window.__foLgAPI = { state: foLgState, ensure: foLgEnsure, nation: foLgNation, table: foLgTable, lineup: foLgLineup, play: foLgPlay }; } catch (eApi) {}
+  try { window.__foLgAPI = { state: foLgState, ensure: foLgEnsure, nation: foLgNation, table: foLgTable, lineup: foLgLineup, play: foLgPlay, regionName: function () { var hit = foRegionById(foLgNation()); return (hit && hit.r && hit.r.nm) || ""; } }; } catch (eApi) {}
 
   // ---- the league hub (#/league) ---------------------------------------
   // ============ the club home: a full-bleed home-ground at golden hour =======
