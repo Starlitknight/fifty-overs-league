@@ -22,3 +22,4 @@
 21-honours-board.js
 22-time-machine.js
 23-almanack-type.js
+24-fixture-list.js

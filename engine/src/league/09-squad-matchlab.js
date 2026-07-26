@@ -1051,7 +1051,7 @@
     bits += opp ? "<span>vs " + E(opp) + "</span>" : "<span>No fixture scheduled</span>";
     if (ground) bits += "<i>&middot;</i><span>" + E(ground) + "</span>";
     if (wx) bits += "<i>&middot;</i><span>" + E(wx) + "</span>";
-    return "<div class='fo-sqx-next'>" + bits + "</div>";
+    return "<a class='fo-sqx-next' href='#/fixtures' style='text-decoration:none;cursor:pointer'>" + bits + "</a>";
   }
   // one tab's worth of the man, all of it read off his real skills
   function foSqPane(tab, p, ovr) {
