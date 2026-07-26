@@ -999,8 +999,23 @@
     return parts.length > 1 ? (parts[0].charAt(0) + ". " + parts[parts.length - 1]) : (parts[0] || "");
   }
   function foSqNatId(nat) {
-    var m = { ENG: "eng", AUS: "aus", IND: "sub", RSA: "rsa", SA: "rsa", NZL: "nzl", NZ: "nzl", WIN: "win", WI: "win", IRE: "ire", IRL: "ire", NED: "ned", NL: "ned", PAK: "pak", SLK: "slk", SL: "slk", AFG: "afg", ZIM: "zim", BAN: "bgd", BGD: "bgd", NEP: "nep", SCO: "sco", WAL: "wal", KEN: "ken", USA: "usa", CAN: "can" };
-    return m[String(nat || "").toUpperCase()] || String(nat || "").toLowerCase();
+    // players carry either a 3-letter code (NED) or a full country name
+    // ("Netherlands"), depending on which generator signed them; the value
+    // returned here is the actual flag FILENAME in client/art/flags/
+    var m = {
+      ENG: "eng", AUS: "aus", IND: "ind", RSA: "saf", SA: "saf", NZL: "nz", NZ: "nz",
+      WIN: "wi", WI: "wi", IRE: "ire", IRL: "ire", NED: "ned", NL: "ned", PAK: "pak",
+      SLK: "sri", SL: "sri", AFG: "afg", ZIM: "zim", BAN: "ban", BGD: "ban", NEP: "nep",
+      SCO: "sco", WAL: "wal", KEN: "ken", USA: "usa", CAN: "can", NAM: "nam", OMA: "oma", UAE: "uae",
+      "ENGLAND": "eng", "AUSTRALIA": "aus", "INDIA": "ind", "SOUTH AFRICA": "saf",
+      "NEW ZEALAND": "nz", "WEST INDIES": "wi", "IRELAND": "ire", "NETHERLANDS": "ned",
+      "PAKISTAN": "pak", "SRI LANKA": "sri", "AFGHANISTAN": "afg", "ZIMBABWE": "zim",
+      "BANGLADESH": "ban", "NEPAL": "nep", "SCOTLAND": "sco", "WALES": "wal", "KENYA": "ken",
+      "UNITED STATES": "usa", "USA": "usa", "CANADA": "can", "NAMIBIA": "nam", "OMAN": "oma",
+      "UNITED ARAB EMIRATES": "uae", "TRINIDAD & TOBAGO": "wi", "TRINIDAD AND TOBAGO": "wi"
+    };
+    var k = String(nat || "").trim().toUpperCase();
+    return m[k] || String(nat || "").trim().toLowerCase();
   }
   // The home ground, painted. Seven of the ten grounds have their own city art;
   // the other three borrow the nearest ground in the same country rather than
