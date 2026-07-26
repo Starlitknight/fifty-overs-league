@@ -327,7 +327,9 @@
     "html body #page .fo-hb-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5);text-decoration:none}",
     "@media(max-width:640px){html body #page .fo-hb-mast h1{font-size:28px}html body #page .fo-hb-grid{grid-template-columns:1fr 1fr}}",
     // desk card bits
-    ".fo-hb-card{display:block;text-decoration:none}",
+    ".fo-hb-card{display:block;text-decoration:none;background:linear-gradient(172deg,#FDF9EE,#F6EFDA);border:1px solid rgba(140,104,20,.35);border-radius:6px;padding:14px 16px;box-shadow:0 10px 22px rgba(40,30,10,.18);color:#141C28 !important}"
+    ,".fo-hb-card .fo-ls-kick{color:#8A6A1F}"
+    ,".fo-hb-card .fo-ls-go{color:#B44A22}",
     ".fo-hb-line{font:600 13.5px/1.4 Inter,sans-serif}",
     ".fo-hb-sub{font:italic 400 12px/1.45 Georgia,serif;opacity:.75;margin-top:3px}",
     ".fo-hb-new{font:700 8.5px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;font-style:normal;background:#C95532;color:#FFFEFC;border-radius:999px;padding:3px 7px;margin-left:6px;vertical-align:1px}"
