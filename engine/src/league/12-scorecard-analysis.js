@@ -2892,13 +2892,15 @@
       // the nation record book and atlas portrait live under the League pill
       var lgH = (location.hash || "").split("?")[0];
       if (lgH === "#/nation" || lgH === "#/atlas") lg.classList.add("on");
+      var pl = mkPill("fo-planet-nav", "World", "#/planet");
       var cp = mkPill("fo-cup-nav", "Cup", "#/cup");
       var jn = mkPill("fo-lore-nav", "Journal", "#/lore");
       var anchor = wrap.querySelector("a[data-nav='club'], a[data-nav='home']");
       var want = anchor ? anchor.nextSibling : wrap.firstChild;
       if (hm.parentNode !== wrap) wrap.insertBefore(hm, want);
       if (lg.parentNode !== wrap) wrap.insertBefore(lg, hm.nextSibling);
-      if (cp.parentNode !== wrap) wrap.insertBefore(cp, lg.nextSibling);
+      if (pl.parentNode !== wrap) wrap.insertBefore(pl, lg.nextSibling);
+      if (cp.parentNode !== wrap) wrap.insertBefore(cp, pl.nextSibling);
       if (jn.parentNode !== wrap) wrap.insertBefore(jn, cp.nextSibling);
     } catch (e) {}
   }
@@ -5123,6 +5125,8 @@
     }
   } catch (eLgSm) {}
   try { window.__foLgAPI = { state: foLgState, ensure: foLgEnsure, nation: foLgNation, table: foLgTable, lineup: foLgLineup, play: foLgPlay, regionName: function () { var hit = foRegionById(foLgNation()); return (hit && hit.r && hit.r.nm) || ""; } }; } catch (eApi) {}
+  // the world's geography, read-only, for the living-planet clock (module 27)
+  try { window.__foCxAPI = { regions: function () { return FO_CX_REGIONS; }, cities: function (rid) { return FO_CX_CITY[rid] || []; }, flagFile: function (rid) { return FO_FLAG_FILE[rid] || rid; }, crest: function (rid) { try { return foCxCrestSrc(rid); } catch (e) { return ""; } } }; } catch (eCx) {}
 
   // ---- the league hub (#/league) ---------------------------------------
   // ============ the club home: a full-bleed home-ground at golden hour =======

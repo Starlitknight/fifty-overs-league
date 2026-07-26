@@ -25,3 +25,4 @@
 24-fixture-list.js
 25-league-table.js
 26-nation-clubs.js
+27-living-planet.js

@@ -88,7 +88,7 @@
         "<div class='fo-lt-head'><i>#</i><span>Club &middot; form</span><em>P</em><em>W</em><em>L</em><em>NRR</em><b>Pts</b></div>" +
         "<div class='fo-lt-list'>" + body + "</div>" +
         atlasCard +
-        "<div class='fo-lt-foot'><a href='#/fixtures'>My fixtures &rsaquo;</a><a href='#/cup'>The cup &rsaquo;</a><a class='atlas' href='#/atlas'>" + (natNm ? "The " + E(natNm) + " atlas" : "The nation atlas") + " &rsaquo;</a></div>" +
+        "<div class='fo-lt-foot'><a href='#/fixtures'>My fixtures &rsaquo;</a><a href='#/planet'>World cricket &rsaquo;</a><a class='atlas' href='#/atlas'>" + (natNm ? "The " + E(natNm) + " atlas" : "The nation atlas") + " &rsaquo;</a></div>" +
         "</div>";
     } catch (e) { try { console.warn("foRenderLeagueTablePage", e); } catch (e2) {} }
   }
