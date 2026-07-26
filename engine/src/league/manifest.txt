@@ -24,3 +24,4 @@
 23-almanack-type.js
 24-fixture-list.js
 25-league-table.js
+26-nation-clubs.js
