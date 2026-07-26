@@ -210,6 +210,12 @@
         var c = championOf(r.id, p.season);
         if (c) out.push({ day: p.day, season: p.season, dayInSeason: p.di, phase: "league", category: "title", importance: 90, headline: r.nm + " have their champions: " + c.name + " take the season " + p.season + " pennant" });
       });
+      // the off-season farewells: eras end, and the wire says goodbye properly
+      try {
+        if (window.__foStars) window.__foStars.retirees(p.season).forEach(function (rt) {
+          out.push({ day: p.day, season: p.season, dayInSeason: p.di, phase: "league", category: "retire", importance: 72, headline: "A farewell at " + rt.club + ": " + rt.name + " (" + rt.nat + ") walks off for the last time" });
+        });
+      } catch (eRt) {}
     }
     return out.sort(function (a, b) { return b.importance - a.importance; }).slice(0, 24);
   }
@@ -311,8 +317,17 @@
       if (p.di >= 15) {
         var stagesDone = wcStagesDone(now, p.season);
         var bracket = wcBracket(p.season);
-        var myIn = wcEntrants(p.season).some(function (e) { return e.rid === my; });
+        var ents = wcEntrants(p.season);
+        var myIn = ents.some(function (e) { return e.rid === my; });
         var ups = callUps(myRegion);
+        // YOUR dressing room at the cup: any player of yours - homegrown or a
+        // winter-window signing - whose nation made the sixteen gets the call
+        var abroad = [];
+        ents.forEach(function (e2) {
+          if (e2.rid === my) return;
+          var reg2 = regionById(e2.rid); if (!reg2) return;
+          callUps(reg2).forEach(function (n2) { abroad.push(n2 + " (" + reg2.nm + ")"); });
+        });
         var stageRows = bracket.map(function (sg, si) {
           var visible = si < stagesDone || (p.kind === "cup" && ["r16", "qf", "sf", "final"][si] === p.stage);
           var liveNow = p.kind === "cup" && ["r16", "qf", "sf", "final"][si] === p.stage && st.key === "live";
@@ -334,6 +349,7 @@
         var champLine = stagesDone >= 4 ? "<div class='fo-pl-crown'>&#127942; <b>" + E(wcChampion(p.season).nm) + "</b> are champions of the world</div>" : "";
         cupHTML = "<div class='fo-pl-cup'><div class='fo-pl-cuph'><i>Season " + p.season + " World Cup</i>" +
           (myIn ? "<span class='in'>" + E(myRegion.nm) + " are in" + (ups.length ? " &middot; called up: " + ups.map(E).join(", ") : "") + "</span>" : "<span class='in'>" + E(myRegion.nm) + " missed the cut this season</span>") +
+          (abroad.length ? "<span class='in'>Your dressing room at the cup: " + abroad.map(E).join(", ") + "</span>" : "") +
           "</div>" + champLine + stageRows + "</div>";
       }
 

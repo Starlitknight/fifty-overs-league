@@ -32,20 +32,30 @@
   function genFn() { try { if (typeof window.__foGenArchetypeSquad === "function") return window.__foGenArchetypeSquad; } catch (e) {} try { if (typeof foGenArchetypeSquad === "function") return foGenArchetypeSquad; } catch (e2) {} return null; }
   function ovrOf(p) { try { if (typeof foPkOvr === "function") return foPkOvr(p); } catch (e) {} return (p && p.rating ? Math.round(p.rating / 1000) : 50); }
 
-  // ---- every world club, fully peopled (generated once, cached) --------------
+  // ---- every world club, fully peopled - in GENERATIONS ----------------------
+  // A world career lasts one era (three seasons). Each club's clock is
+  // staggered, so every off-season a third of the planet's dressing rooms
+  // turn over: the almanack's leaders retire, and new names rise. Past
+  // seasons keep their past people - a record set in season 2 belongs to
+  // season 2's generation forever.
+  var ERA_LEN = 3;
+  function eraOf(rid, slot, season) { return Math.floor((Math.max(1, season) - 1 + (h32("stag|" + rid + "|" + slot) % ERA_LEN)) / ERA_LEN); }
   var SQ = {};
-  function squadOf(rid, slot) {
-    var k = rid + "|" + slot;
+  function squadOf(rid, slot, season) {
+    var era = eraOf(rid, slot, season || 1);
+    var k = rid + "|" + slot + "|e" + era;
     if (SQ[k]) return SQ[k];
     var r = regionById(rid); if (!r) return (SQ[k] = null);
     var out = null;
+    var yearsIn = (Math.max(1, season || 1) - 1 + (h32("stag|" + rid + "|" + slot) % ERA_LEN)) % ERA_LEN;
     try {
       var GEN = genFn();
       if (GEN) {
-        var g = GEN("ws1|" + rid + "|" + slot, r.cty || r.nm, r.arch || "engine", "general");
+        var g = GEN("ws2|" + rid + "|" + slot + "|e" + era, r.cty || r.nm, r.arch || "engine", "general");
         out = (g && g.players || []).map(function (p0) {
           var p = JSON.parse(JSON.stringify(p0)); delete p.fee;
           p.fatigue = "rested"; p.formIx = 3;
+          if (p.age) p.age = Math.min(40, p.age + yearsIn);
           try { if (typeof jsDerive === "function") jsDerive(p); } catch (eD) {}
           return p;
         });
@@ -55,7 +65,7 @@
       // name-only fallback: still nation-true names, still deterministic
       out = [];
       try {
-        var seed = h32("wsf|" + rid + "|" + slot), used = new Set();
+        var seed = h32("wsf|" + rid + "|" + slot + "|e" + era), used = new Set();
         var rr = function () { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
         for (var i = 0; i < 8; i++) {
           var nm = (typeof natName === "function") ? natName(r.cty || "England", rr, used) : (r.nm + " Player " + (i + 1));
@@ -66,13 +76,27 @@
     }
     return (SQ[k] = out);
   }
-  function batsOf(rid, slot) {
-    var s = squadOf(rid, slot) || [];
+  function batsOf(rid, slot, season) {
+    var s = squadOf(rid, slot, season) || [];
     return s.slice().sort(function (a, b) { return ovrOf(b) - ovrOf(a); }).slice(0, 5);
   }
-  function bowlsOf(rid, slot) {
-    var s = (squadOf(rid, slot) || []).filter(function (p) { return p.bowlType; });
+  function bowlsOf(rid, slot, season) {
+    var s = (squadOf(rid, slot, season) || []).filter(function (p) { return p.bowlType; });
     return s.slice().sort(function (a, b) { return ovrOf(b) - ovrOf(a); }).slice(0, 5);
+  }
+  // the off-season's farewells: clubs whose era turns over lose their best
+  function retirees(season) {
+    var out = [], my = myNation();
+    regionList().forEach(function (r) {
+      if (r.id === my) return;
+      for (var slot = 0; slot < 8; slot++) {
+        if (eraOf(r.id, slot, season + 1) === eraOf(r.id, slot, season)) continue;
+        var best = batsOf(r.id, slot, season)[0];
+        var sides = P() ? P().sidesOf(r.id) : [];
+        if (best && sides[slot]) out.push({ name: best.name, club: sides[slot].name, nat: r.nm, h: h32("ret|" + season + "|" + best.name) });
+      }
+    });
+    return out.sort(function (a, b) { return a.h - b.h; }).slice(0, 5);
   }
 
   // ---- who did it: deterministic performances for any world match ------------
@@ -80,8 +104,8 @@
     var key = "pf|" + rid + "|" + season + "|" + round + "|" + m.home.slot + "|" + m.away.slot;
     var pick = function (list, tag) { return list.length ? list[Math.floor(Math.pow(rnd01(key + tag), 1.6) * list.length)] : null; };
     var mk = function (batSide, bowlSide, total, wkts, tag) {
-      var bat = pick(batsOf(rid, batSide.slot), tag + "b");
-      var bowl = pick(bowlsOf(rid, bowlSide.slot), tag + "w");
+      var bat = pick(batsOf(rid, batSide.slot, season), tag + "b");
+      var bowl = pick(bowlsOf(rid, bowlSide.slot, season), tag + "w");
       var runs = Math.max(16, Math.min(186, Math.round(total * (0.24 + rnd01(key + tag + "r") * 0.27))));
       if (runs > total) runs = Math.max(10, total - 4);
       var w = Math.max(1, Math.min(wkts >= 10 ? 6 : Math.max(1, wkts - 1), 2 + Math.floor(rnd01(key + tag + "k") * 4)));
@@ -111,9 +135,10 @@
     var rd = pl.roundsDone(now, p.season);
     var sig = p.season + "|" + rd + "|" + my;
     if (CACHE.sig === sig) return CACHE.v;
-    var runs = {}, wkts = {}, rec = {
+    var bySeason = {}, rec = {
       total: null, margin: null, chase: null, indBat: null, indBowl: null
     };
+    var agg = function (s) { return bySeason[s] || (bySeason[s] = { runs: {}, wkts: {} }); };
     var note = function (map, k, add, meta) { var e = map[k] || (map[k] = { n: 0, meta: meta }); e.n += add; };
     for (var s = 1; s <= p.season; s++) {
       var upto = s < p.season ? 14 : rd;
@@ -127,10 +152,8 @@
             var pfx = perf(r.id, s, rr, m);
             [["h", m.home], ["a", m.away]].forEach(function (side) {
               var x = pfx[side[0]];
-              if (s === p.season) {
-                if (x.bat) note(runs, x.bat.n, x.bat.r, { club: side[1].name, nat: r.nm });
-                if (x.bowl) note(wkts, x.bowl.n, x.bowl.w, { club: side[1].name, nat: r.nm });
-              }
+              if (x.bat) note(agg(s).runs, x.bat.n, x.bat.r, { club: side[1].name, nat: r.nm });
+              if (x.bowl) note(agg(s).wkts, x.bowl.n, x.bowl.w, { club: side[1].name, nat: r.nm });
               if (x.bat && (!rec.indBat || x.bat.r > rec.indBat.v)) rec.indBat = { v: x.bat.r, line: x.bat.n + " " + x.bat.r + " for " + side[1].name, where: r.nm + ", season " + s };
               if (x.bowl && (!rec.indBowl || x.bowl.w > rec.indBowl.v || (x.bowl.w === rec.indBowl.v && x.bowl.rc < rec.indBowl.rc))) rec.indBowl = { v: x.bowl.w, rc: x.bowl.rc, line: x.bowl.n + " " + x.bowl.w + "/" + x.bowl.rc + " for " + side[1].name, where: r.nm + ", season " + s };
             });
@@ -150,7 +173,17 @@
       var wcDone = s2 < p.season || pl.wcStagesDone(now, s2) >= 4;
       roll.push({ season: s2, wc: wcDone ? pl.wcChampion(s2) : null, champs: champs, live: s2 === p.season && !done });
     }
-    var v = { phase: p, rd: rd, runs: top(runs), wkts: top(wkts), rec: rec, roll: roll.reverse() };
+    // the World XI of a completed season: six batters and five bowlers who
+    // owned it, picked purely from the season's own aggregates
+    var xiOf = function (s3) {
+      var a = bySeason[s3]; if (!a) return null;
+      var bats = top(a.runs), bowls = top(a.wkts).slice(0, 5);
+      if (bats.length < 4 || bowls.length < 3) return null;
+      return { season: s3, bats: bats.slice(0, 6), bowls: bowls };
+    };
+    var xiSeason = (p.di >= 14 ? p.season : p.season - 1);
+    var cur = agg(p.season);
+    var v = { phase: p, rd: rd, runs: top(cur.runs), wkts: top(cur.wkts), rec: rec, roll: roll.reverse(), xi: xiSeason >= 1 ? xiOf(xiSeason) : null };
     CACHE.sig = sig; CACHE.v = v;
     return v;
   }
@@ -164,7 +197,7 @@
     rids.slice(0, 6).forEach(function (rid, i) {
       var slot = h32("mktslot|" + season + "|" + rid) % 8;
       var sides = P().sidesOf(rid); if (!sides.length) return;
-      var sq = squadOf(rid, slot); if (!sq || !sq.length) return;
+      var sq = squadOf(rid, slot, season); if (!sq || !sq.length) return;
       var star = sq.slice().sort(function (a, b) { return ovrOf(b) - ovrOf(a); })[0];
       var ovr = ovrOf(star);
       out.push({ rid: rid, nat: (regionById(rid) || {}).nm, club: sides[slot].name, p: star, ovr: ovr, fee: 6000 + ovr * 380 });
@@ -249,7 +282,7 @@
             "<button type='button' class='fo-al-sign' data-i='" + i + "'>Sign &middot; " + fmtMoney(it.fee) + "</button>";
           return "<div class='fo-al-mk" + (mine ? " mine" : "") + "'>" +
             "<img src='" + flagOf(it.rid) + "' alt=''>" +
-            "<span><b>" + E(it.p.name) + "</b><em>" + E(it.club) + " &middot; " + E(it.nat) + " &middot; rated " + it.ovr + "</em></span>" + btn + "</div>";
+            "<span><b>" + E(it.p.name) + "</b><em>" + E(it.club) + " &middot; " + E(it.nat) + " &middot; rated " + it.ovr + (it.p.age ? " &middot; age " + it.p.age : "") + "</em></span>" + btn + "</div>";
         }).join("");
         mktHTML = "<div class='fo-al-sec'><h2>The Winter Window</h2>" +
           "<p class='fo-al-sub'>" + (open ? "Open until the new season. One overseas signing per season - choose with care." :
@@ -271,6 +304,9 @@
         "<div class='fo-al-sec'><h2>All-time records</h2>" + recHTML + "</div>" +
         "<div class='fo-al-sec cols'><div><h2>Most runs this season</h2>" + ldr(v.runs, "") + "</div>" +
         "<div><h2>Most wickets</h2>" + ldr(v.wkts, "") + "</div></div>" +
+        (v.xi ? "<div class='fo-al-sec'><h2>World XI of Season " + v.xi.season + "</h2>" +
+          "<p class='fo-al-sub'>The eleven the season itself picked - six with the bat, five with the ball.</p>" +
+          ldr(v.xi.bats, " runs") + ldr(v.xi.bowls, " wkts") + "</div>" : "") +
         mktHTML +
         "<div class='fo-al-sec'><h2>The roll of champions</h2>" + rollHTML + "</div>" +
         "<div class='fo-al-foot'><a href='#/planet'>World cricket today &rsaquo;</a><a href='#/league'>My league &rsaquo;</a><a href='#/milestones'>My honours &rsaquo;</a></div>" +
@@ -340,5 +376,5 @@
   });
 
   window.foRenderAlmanackPage = foRenderAlmanackPage;
-  window.__foStars = { squadOf: squadOf, perf: perf, suffix: suffix, sweep: sweep, marketOf: marketOf, signStar: signStar };
+  window.__foStars = { squadOf: squadOf, perf: perf, suffix: suffix, sweep: sweep, marketOf: marketOf, signStar: signStar, retirees: retirees, eraOf: eraOf };
 })();
