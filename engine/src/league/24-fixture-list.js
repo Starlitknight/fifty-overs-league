@@ -78,14 +78,14 @@
           // on the world calendar (England plays at 14:00 UTC)
           var when = "";
           try { if (typeof window.foRoundTimeTxt === "function") when = window.foRoundTimeTxt(u.r) || ""; } catch (eW) {}
-          return "<div class='fo-fl-row up" + (i === 0 ? " next" : "") + "'>" +
+          return "<a class='fo-fl-row up" + (i === 0 ? " next" : "") + "' href='#/matchday?r=" + u.r + "'>" +
             "<i>R" + (u.r + 1) + "</i>" +
             "<u class='n'>" + (u.isHome ? "H" : "A") + "</u>" +
             "<span class='fo-fl-who'><b>" + (u.isHome ? "v " : "at ") + E(u.opp.name) +
             (when ? " <em class='fo-fl-when'>" + E(when) + "</em>" : "") + "</b>" +
             "<span>" + E(u.ground) + " &middot; " + E(PITCH_NM[u.pitch] || u.pitch) + " pitch &middot; " + E(u.wx) + "</span></span>" +
-            (i === 0 ? "<a class='fo-fl-act' href='#/dossier'>Dossier &rsaquo;</a>" : "<em></em>") +
-            "</div>";
+            "<em class='fo-fl-act'>Matchday &rsaquo;</em>" +
+            "</a>";
         }).join("");
         if (!ups.length) upRows = "<div class='fo-fl-none'>The season is played out. Awards night awaits.</div>";
       }

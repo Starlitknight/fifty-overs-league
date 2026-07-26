@@ -21,14 +21,14 @@
   ];
   // which dock lamp lights up for which route
   var DOCK_MAP = {
-    club: ["club", "home"],
+    club: ["club", "home", "matchday"],
     league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "fixtures"],
     squad: ["squad", "player", "matchlab"],
     nets: ["training"],
     desk: ["desk", "ledger", "journal", "report", "ceremony", "wire", "lore", "dossier", "milestones", "whatif"]
   };
   // immersive rooms keep the whole stage: no dock over the broadcast
-  var DOCK_HIDE = { match: 1, matchday: 1, friendly: 1, welcome: 1, create: 1, scorecard: 1, orders: 1 };
+  var DOCK_HIDE = { match: 1, friendly: 1, welcome: 1, create: 1, scorecard: 1, orders: 1 };
 
   function curRoute() { return ((location.hash || "#/club").split("?")[0] || "").replace("#/", ""); }
 
