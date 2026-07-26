@@ -483,7 +483,7 @@
       "#page .fo-mr{--gold:#E6B15E;--paper:#F4EFE4;position:relative;min-height:100vh;background:#070c16;color:#e9eefa;overflow-x:clip}",
       "#page .fo-mr *{box-sizing:border-box}",
       ".fo-mr-bg{position:absolute;top:0;left:0;right:0;height:min(62vh,560px);background-size:cover;background-position:center 42%;z-index:0;filter:saturate(.9)}",
-      ".fo-mr-veil{position:absolute;top:0;left:0;right:0;height:min(62vh,560px);z-index:0;background:linear-gradient(180deg,rgba(7,12,22,.72) 0%,rgba(7,12,22,.5) 34%,rgba(7,12,22,.88) 78%,#070c16 100%)}",
+      ".fo-mr-veil{position:absolute;top:0;left:0;right:0;height:min(62vh,560px);z-index:0;background:linear-gradient(180deg,rgba(7,12,22,.26) 0%,rgba(7,12,22,.16) 34%,rgba(7,12,22,.40) 78%,#E9E4D8 100%)}",
       ".fo-mr-in{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:78px clamp(16px,4vw,44px) 60px}",
       ".fo-mr-mast{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.4em;font-size:clamp(9px,1vw,11.5px);font-weight:600;color:var(--gold)}",
       ".fo-mr-mast em{font-style:normal;color:#8ea3c4;letter-spacing:.28em}",

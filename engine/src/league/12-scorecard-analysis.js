@@ -2610,8 +2610,8 @@
       ".fo-hg2 .hg-bar{animation:foHgUp .6s .72s both}" +
       ".fo-hg2 .hg-wx{animation:foHgUp .6s .55s both}" +
       "@media (prefers-reduced-motion:reduce){.fo-hg2 .hg-bg,.fo-hg2 .hg-id,.fo-hg2 .hg-gaff,.fo-hg2 .hg-next,.fo-hg2 .hg-bar,.fo-hg2 .hg-wx{animation:none !important}}" +
-      ".fo-hg2 .hg-grain{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.05;mix-blend-mode:overlay;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E\")}" +
-      ".fo-hg2 .hg-scrim{position:absolute;inset:0;background:linear-gradient(to top,rgba(5,12,24,.9),rgba(5,12,24,.22) 40%,rgba(5,12,24,.08) 70%),linear-gradient(105deg,rgba(5,12,24,.5),transparent 45%)}" +
+      ".fo-hg2 .hg-grain{display:none;position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;mix-blend-mode:overlay;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E\")}" +
+      ".fo-hg2 .hg-scrim{position:absolute;inset:0;background:linear-gradient(to top,rgba(9,14,24,.42),rgba(9,14,24,.08) 30%,transparent 55%)}" +
       ".fo-hg2 .hg-wx{position:absolute;z-index:3;top:60px;left:16px;background:rgba(7,18,36,.72);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px);border-radius:11px;padding:7px 12px 8px;color:#fff}" +
       ".fo-hg2 .hg-wx b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:8.5px;letter-spacing:2.4px;color:#F3D37A}" +
       ".fo-hg2 .hg-wx span{font-size:11px;color:rgba(255,255,255,.88)}" +
@@ -2647,8 +2647,8 @@
       ".fo-home2 .hg-bg{animation:foHgIn 1.4s ease-out,foHgDrift 34s ease-in-out 1.4s infinite alternate;object-position:50% 46%}" +
       "@keyframes foHgDrift{from{transform:scale(1.06) translate3d(0,0,0)}to{transform:scale(1.13) translate3d(-2.2%,-1.4%,0)}}" +
       "@media(prefers-reduced-motion:reduce){.fo-home2 .hg-bg{animation:foHgIn .9s ease-out !important}}" +
-      ".fo-home2 .hg-scrim{background:linear-gradient(to top,rgba(5,10,22,.95),rgba(6,13,28,.24) 44%,rgba(126,166,255,.06) 74%),linear-gradient(118deg,rgba(5,10,22,.5),transparent 46%)}" +
-      ".fo-home2 .hg-bloom{position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:screen;opacity:.82;background:radial-gradient(58% 42% at 76% 4%,color-mix(in srgb,#ffe0a0 55%,transparent),transparent 60%),radial-gradient(70% 46% at 12% 108%,color-mix(in srgb,var(--lac,#EBC271) 34%,transparent),transparent 62%)}" +
+      ".fo-home2 .hg-scrim{background:linear-gradient(to top,rgba(9,14,24,.44),rgba(9,14,24,.09) 32%,transparent 58%)}" +
+      ".fo-home2 .hg-bloom{position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:screen;opacity:0;background:radial-gradient(58% 42% at 76% 4%,color-mix(in srgb,#ffe0a0 55%,transparent),transparent 60%),radial-gradient(70% 46% at 12% 108%,color-mix(in srgb,var(--lac,#EBC271) 34%,transparent),transparent 62%)}" +
       ".fo-home2 .hg-id{left:34px;bottom:96px;max-width:64%}" +
       ".fo-home2 .hg-id i{color:color-mix(in srgb,var(--lac,#EBC271) 55%,#F6DFA6);letter-spacing:3.4px}" +
       ".fo-home2 .hg-id b{font-size:clamp(40px,6.2vw,78px);text-shadow:0 2px 26px rgba(0,0,0,.6),0 0 42px color-mix(in srgb,var(--lac,#EBC271) 40%,transparent)}" +
@@ -2679,7 +2679,7 @@
       // wallpaper mode on phones: barely-there text, the art is the page
       ".fo-cx-wall .hg-wx{display:none}" +
       ".fo-cx-wall .hg-gaff{display:none}" +
-      ".fo-cx-wall .hg-scrim{background:linear-gradient(to top,rgba(5,12,24,.62),transparent 34%)}" +
+      ".fo-cx-wall .hg-scrim{background:linear-gradient(to top,rgba(9,14,24,.34),transparent 30%)}" +
       ".fo-cx-wall .hg-id{text-align:center}" +
       ".fo-cx-wall .hg-id i{font-size:8px;letter-spacing:3.6px;color:rgba(243,211,122,.8)}" +
       ".fo-cx-wall .hg-id b{font-size:26px;font-weight:500;letter-spacing:3px;margin:5px 0 2px;opacity:.96;text-shadow:0 1px 10px rgba(0,0,0,.55)}" +
