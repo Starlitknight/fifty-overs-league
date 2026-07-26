@@ -5562,6 +5562,11 @@
           var fy1 = Math.max.apply(null, cities.map(function (c) { return c.fy; }));
           var narrow = cw < 620;
           if (!narrow) return true;   // wide screens keep the placement that is live today
+          // the country paintings carry their own gilt frame at the very edge;
+          // zoom past it and never let an image edge inside the box, so the
+          // map runs truly full bleed with no border showing
+          sc *= 1.115; dw = iw * sc; dh = ih * sc;
+          var mx = dw * 0.05, my = dh * 0.05;
           var wr = wrapEl.getBoundingClientRect();
           var fb = figEl ? figEl.getBoundingClientRect() : null;
           var padX = narrow ? 18 : Math.min(96, cw * 0.16);
@@ -5569,11 +5574,11 @@
           // phones hang the country pill over the top-left of the map, so nothing
           // is aimed into that strip
           var loY = narrow ? 52 : padY, hiY = chh - (narrow ? 26 : padY);
-          var fit = function (a0, a1, lo, hi, drawn, box) {
+          var fit = function (a0, a1, lo, hi, drawn, box, m) {
             var need = (a1 - a0) * drawn, room = hi - lo, off;
             off = (need <= room) ? lo - a0 * drawn + (room - need) / 2
                                  : lo - a0 * drawn - (need - room) / 2;
-            return Math.max(Math.min(off, 0), box - drawn);
+            return Math.max(Math.min(off, -m), box - drawn + m);
           };
           // Wide countries can't be centred without throwing half their cities
           // under the boss or off the frame, so instead of centring blindly we try
@@ -5586,14 +5591,14 @@
           var occ = fb && fb.width
             ? Math.max(0, Math.min(fb.right - wr.left, cw) - Math.max(fb.left - wr.left, 0)) : 0;
           var bossTop = fb && fb.width ? fb.top - wr.top : chh;
-          var crops = function (vals, lo, hi, drawn, box) {
-            var lim = function (o) { return Math.max(Math.min(o, 0), box - drawn); };
-            var c = [fit(Math.min.apply(null, vals), Math.max.apply(null, vals), lo, hi, drawn, box)];
+          var crops = function (vals, lo, hi, drawn, box, m) {
+            var lim = function (o) { return Math.max(Math.min(o, -m), box - drawn + m); };
+            var c = [fit(Math.min.apply(null, vals), Math.max.apply(null, vals), lo, hi, drawn, box, m)];
             vals.forEach(function (v) { c.push(lim(lo - v * drawn), lim(hi - v * drawn)); });
             return c;
           };
-          var cropX = crops(cities.map(function (c) { return c.fx; }), loX, hiX, dw, cw);
-          var cropY = crops(cities.map(function (c) { return c.fy; }), loY, hiY, dh, chh);
+          var cropX = crops(cities.map(function (c) { return c.fx; }), loX, hiX, dw, cw, mx);
+          var cropY = crops(cities.map(function (c) { return c.fy; }), loY, hiY, dh, chh, my);
           var pick = null;
           (occ ? [0, 1] : [0]).forEach(function (s) {
             var b0 = s ? -8 : cw - occ - 6, b1 = s ? occ + 6 : cw + 8;
