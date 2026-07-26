@@ -17,6 +17,8 @@
   function ready() { return typeof App !== "undefined" && App && typeof GD !== "undefined" && GD && GD.teams; }
 
   var TIER = { b: { nm: "Bronze", prize: 6000 }, s: { nm: "Silver", prize: 12000 }, g: { nm: "Gold", prize: 25000 } };
+  function hashS(x) { var h = 2166136261; x = String(x); for (var i = 0; i < x.length; i++) { h ^= x.charCodeAt(i); h = (h * 16777619) >>> 0; } return h; }
+  function q(name) { var m = new RegExp("[?&]" + name + "=([^&]+)").exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : null; }
 
   // ---- one sweep of the shared record ---------------------------------------
   var _sig = null, _cache = null;
@@ -31,7 +33,9 @@
         wins: 0, firstWin: null, bestTotal: 0, bestTotalAt: null, meanest: null, meanestAt: null,
         streak: 0, bestStreak: 0, bestStreakAt: null, cent: null, five: null, thrill: null,
         seasonWins: {}, bestSeasonWins: 0, bestSeasonAt: null,
-        home: {}, dbl: null, vs: {}, titles: [], summer: null
+        home: {}, dbl: null, vs: {}, titles: [], summer: null,
+        beat: {}, dblVs: {}, awayWin: {}, homeBest: 0, homeBestAt: null,
+        centN: 0, fiveHome: null, hstk: 0, bestHstk: 0, bestHstkAt: null
       });
     };
     var ordered = res.slice().sort(function (a, b) {
@@ -60,6 +64,13 @@
       w.vs[s] = w.vs[s] || {};
       w.vs[s][L] = (w.vs[s][L] || 0) + 1;
       if (w.vs[s][L] >= 2 && !w.dbl) w.dbl = { s: s, r: rd, ix: r.ix, opp: L };
+      // charter facts: first blood over each club, the double over each club,
+      // the away conquest, the home winning run
+      if (!w.beat[L]) w.beat[L] = when;
+      if (w.vs[s][L] >= 2 && !w.dblVs[L]) w.dblVs[L] = when;
+      if (W === r.away && !w.awayWin[L]) w.awayWin[L] = when;
+      if (W === r.home) { hT.hstk = (hT.hstk || 0) + 1; if (hT.hstk > hT.bestHstk) { hT.bestHstk = hT.hstk; hT.bestHstkAt = when; } }
+      else hT.hstk = 0;
       // thrillers
       var m1 = /win by (\d+) runs?/.exec(r.result.text || "");
       var m2 = /win by 1 wickets?/.exec(r.result.text || "");
@@ -72,12 +83,19 @@
         if ((inn.wkts || 0) >= 10) {
           if (bw.meanest == null || (inn.runs || 0) < bw.meanest) { bw.meanest = inn.runs || 0; bw.meanestAt = when; }
         }
+        if (inn.batTeam === r.home && (inn.runs || 0) > bt.homeBest) { bt.homeBest = inn.runs || 0; bt.homeBestAt = when; }
         (inn.bat || []).forEach(function (b) {
-          if (b && b.p && b.p.name && (b.r || 0) >= 100 && !bt.cent) bt.cent = { s: s, r: rd, ix: r.ix, who: b.p.name, runs: b.r };
+          if (b && b.p && b.p.name && (b.r || 0) >= 100) {
+            bt.centN++;
+            if (!bt.cent) bt.cent = { s: s, r: rd, ix: r.ix, who: b.p.name, runs: b.r };
+          }
         });
         if (inn.bowlers) Object.keys(inn.bowlers).forEach(function (nm) {
           var v = inn.bowlers[nm];
-          if (v && (v.w || 0) >= 5 && !bw.five) bw.five = { s: s, r: rd, ix: r.ix, who: nm, w: v.w, conc: v.r };
+          if (v && (v.w || 0) >= 5) {
+            if (!bw.five) bw.five = { s: s, r: rd, ix: r.ix, who: nm, w: v.w, conc: v.r };
+            if (inn.bowlTeam === r.home && !bw.fiveHome) bw.fiveHome = { s: s, r: rd, ix: r.ix, who: nm, w: v.w, conc: v.r };
+          }
         });
       });
     });
@@ -132,6 +150,49 @@
   ];
   var BLANK = { wins: 0, firstWin: null, bestTotal: 0, meanest: null, streak: 0, bestStreak: 0, cent: null, five: null, thrill: null, seasonWins: {}, bestSeasonWins: 0, home: {}, dbl: null, vs: {}, titles: [], summer: null };
 
+  // Every club also keeps a charter of its own: six pursuits written from the
+  // club's identity - its appointed rival, its fortress, its bowling character,
+  // the weight of history it has set itself. All parameters derive from stable
+  // facts (name hash, team order, bowlType counts), so every client writes the
+  // identical charter for every club, forever.
+  function charterFor(name) {
+    var T = sweep(); var t = T[name] || BLANK;
+    var ix = -1, team = null;
+    GD.teams.forEach(function (tt, i) { if (tt.name === name) { ix = i; team = tt; } });
+    if (!team) return [];
+    var n = GD.teams.length, h = hashS(name);
+    var rival = GD.teams[(ix + 1 + (h % (n - 1))) % n] || GD.teams[(ix + 1) % n];
+    var rNm = rival.name, rGr = rival.ground || (rNm + "'s ground");
+    var spin = 0, pace = 0;
+    (team.players || []).forEach(function (pp) { if (!pp.bowlType) return; try { (typeClass(pp.bowlType) === "spin" ? spin++ : pace++); } catch (e) { pace++; } });
+    var fortGoal = 300 + ((h >> 3) % 3) * 20;
+    var bookGoal = 20 + ((h >> 5) % 3) * 15;
+    var items = [
+      { k: "c_beat", tier: "b", nm: "Take Down " + rNm, sub: "the club the fixture list gave you - beat them once",
+        r: t.beat[rNm] ? { at: t.beat[rNm] } : { prog: 0, goal: 1, note: "not yet - circle the fixture" } },
+      { k: "c_dbl", tier: "s", nm: "The Double Over " + rNm, sub: "beat them home AND away in one season",
+        r: t.dblVs[rNm] ? { at: t.dblVs[rNm] } : { prog: 0, goal: 1, note: "half done at best" } },
+      { k: "c_away", tier: "s", nm: "Storm " + rGr, sub: "win at their place, in front of their people",
+        r: t.awayWin[rNm] ? { at: t.awayWin[rNm] } : { prog: 0, goal: 1, note: "their ground still holds" } },
+      { k: "c_fort", tier: "s", nm: fortGoal + " at " + (team.ground || "Home"), sub: "a fortress total in front of the members",
+        r: t.homeBest >= fortGoal ? { at: t.homeBestAt, note: "best at home: " + t.homeBest } : { prog: t.homeBest, goal: fortGoal, note: "best at home: " + t.homeBest } },
+      (spin >= pace ?
+        { k: "c_craft", tier: "s", nm: "Spin Them Out at Home", sub: "a five-wicket haul at your own ground",
+          r: t.fiveHome ? { at: t.fiveHome, note: E(t.fiveHome.who) + " - " + t.fiveHome.w + "/" + t.fiveHome.conc } : { prog: 0, goal: 1, note: "the pitch is willing; the bowler must come" } }
+        : (pace >= spin + 3 ?
+          { k: "c_craft", tier: "s", nm: "Rattle the Sightscreen", sub: "a home five-for from your quicks",
+            r: t.fiveHome ? { at: t.fiveHome, note: E(t.fiveHome.who) + " - " + t.fiveHome.w + "/" + t.fiveHome.conc } : { prog: 0, goal: 1, note: "keep the grass on and wait" } }
+          : { k: "c_craft", tier: "s", nm: "Three Hundreds in Club Colours", sub: "three individual centuries, any players, any seasons",
+            r: t.centN >= 3 ? { at: null, note: t.centN + " raised so far" } : { prog: t.centN, goal: 3, note: t.centN + " of 3 raised" } })),
+      { k: "c_book", tier: "g", nm: "The " + bookGoal + "-Win Book", sub: "a body of work: " + bookGoal + " league wins, all-time",
+        r: t.wins >= bookGoal ? { at: null, note: t.wins + " and counting" } : { prog: t.wins, goal: bookGoal, note: t.wins + " of " + bookGoal } }
+    ];
+    return items.map(function (it) {
+      var r = it.r || {};
+      return { k: it.k, tier: it.tier, nm: it.nm, sub: it.sub, done: !("goal" in r), at: r.at || null, note: r.note || "", prog: r.prog || 0, goal: r.goal || 0, rival: rNm };
+    });
+  }
+
   function boardFor(name) {
     var T = sweep(); var t = T[name] || BLANK;
     return HONOURS.map(function (h) {
@@ -171,6 +232,11 @@
         hb.paid[p.k] = 1; changed = true;
         try { if (typeof ledger === "function") ledger("Board bonus - " + p.nm, TIER[p.tier].prize); } catch (eL) {}
       });
+      charterFor(me.name).forEach(function (p) {
+        if (!p.done || hb.paid[p.k]) return;
+        hb.paid[p.k] = 1; changed = true;
+        try { if (typeof ledger === "function") ledger("Charter sealed - " + p.nm, 9000); } catch (eC) {}
+      });
       if (changed) { try { if (typeof saveGame === "function") saveGame(false); } catch (eS) {} }
     } catch (e) {}
   }
@@ -195,7 +261,7 @@
       var fresh = done.some(function (p) { return p.at && p.at.s === latestS && p.at.r >= latestR; });
       return "<a class='fo-ls-card fo-hb-card' href='#/milestones'>" +
         "<div class='fo-ls-kick'>The honours board" + (fresh ? " <em class='fo-hb-new'>new plaque</em>" : "") + "</div>" +
-        "<div class='fo-hb-line'><b>" + done.length + " of " + board.length + "</b> plaques on the oak</div>" +
+        "<div class='fo-hb-line'><b>" + done.length + " of " + board.length + "</b> plaques &middot; <b>" + charterFor(me.name).filter(function (c) { return c.done; }).length + " of 6</b> charter seals</div>" +
         (next ? "<div class='fo-hb-sub'>Closest: " + E(next.nm) + " &middot; " + E(next.note) + "</div>" : "<div class='fo-hb-sub'>The board is full. Commission a bigger board.</div>") +
         "<span class='fo-ls-go'>Read the board &rsaquo;</span></a>";
     } catch (e) { return ""; }
@@ -214,8 +280,9 @@
       settleBonuses();
       var artBase = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
       var hbBg = "<img class='fo-hb-bg' src='" + artBase + "home/" + (window.innerWidth < 760 ? "hgm-clubroom" : "hgd-heart-of-club") + ".webp' alt=''><div class='fo-hb-veil'></div>";
-      var club = viewClub || me.name;
+      var club = q("c") || viewClub || me.name;
       if (!GD.teams.some(function (t) { return t.name === club; })) club = me.name;
+      viewClub = club;
       var mine = club === me.name;
       var board = boardFor(club);
       var done = board.filter(function (p) { return p.done; });
@@ -248,6 +315,21 @@
           E(t.name) + "<u>" + n + "</u></button>";
       }).join("");
 
+      var charter = charterFor(club);
+      var chDone = charter.filter(function (p) { return p.done; }).length;
+      var chRows = charter.map(function (p) {
+        var fresh = p.done && p.at && p.at.s === latestS && p.at.r >= latestR && mine;
+        if (p.done) {
+          return "<div class='fo-hb-ch on" + (fresh ? " new" : "") + "'><s></s>" +
+            "<b>" + p.nm + "</b><span>" + (p.note || E(p.sub)) + "</span><em>" + when(p.at) + " &middot; sealed</em></div>";
+        }
+        var pct = p.goal > 1 ? Math.max(3, Math.min(97, Math.round(100 * p.prog / p.goal))) : 0;
+        return "<div class='fo-hb-ch'>" +
+          "<b>" + p.nm + "</b><span>" + E(p.sub) + "</span>" +
+          (p.goal > 1 ? "<div class='fo-hb-m'><u style='width:" + pct + "%'></u></div>" : "") +
+          "<em class='pend'>" + p.note + "</em></div>";
+      }).join("");
+
       var race = HONOURS.map(function (h) {
         var f = F[h.k];
         return "<div class='fo-hb-race'><b>" + E(h.nm) + "</b>" +
@@ -266,6 +348,9 @@
         "<div class='fo-hb-tally'><b>" + done.length + "</b> of " + board.length + " plaques</div>" +
         "</div>" +
         "<div class='fo-hb-chips'>" + chips + "</div>" +
+        "<div class='fo-hb-shead'><b>The " + E(club) + " charter</b><span>six pursuits of their own - no other club has this page</span></div>" +
+        "<div class='fo-hb-chgrid'>" + chRows + "</div>" +
+        "<div class='fo-hb-shead'><b>The league board</b><span>the same thirteen honours for every club - " + chDone + " of 6 charter seals, " + done.length + " of " + board.length + " plaques</span></div>" +
         "<div class='fo-hb-oak'><div class='fo-hb-grid'>" + plaques + "</div></div>" +
         "<section class='fo-hb-sec'><div class='fo-hb-k'>First on the board</div>" +
         "<p class='fo-hb-say'>An honour can be won by every club - but only one name goes down as the league&rsquo;s first.</p>" +
@@ -274,7 +359,12 @@
         "</div>";
 
       page.querySelectorAll(".fo-hb-chip").forEach(function (b) {
-        b.addEventListener("click", function () { viewClub = b.getAttribute("data-club"); foRenderHonoursPage(); });
+        b.addEventListener("click", function () {
+          var nm2 = b.getAttribute("data-club");
+          viewClub = nm2;
+          try { location.hash = "#/milestones?c=" + encodeURIComponent(nm2); } catch (eH) {}
+          foRenderHonoursPage();
+        });
       });
     } catch (e) { try { console.warn("foRenderHonoursPage", e); } catch (e2) {} }
   }
@@ -290,6 +380,23 @@
     "body.fo-hbx-on #page .fo-hb-kick{color:#F3D9A0 !important;text-shadow:0 2px 10px rgba(0,0,0,.65)}",
     "body.fo-hbx-on #page .fo-hb-mast p{color:rgba(255,255,255,.9) !important;text-shadow:0 2px 12px rgba(0,0,0,.6)}",
     "body.fo-hbx-on #page .fo-hb-tally{box-shadow:0 8px 20px rgba(0,0,0,.35)}",
+    // section headings floating on the pavilion air
+    "html body #page .fo-hb-shead{margin:18px 2px 8px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}",
+    "html body #page .fo-hb-shead b{font-family:'Fraunces',Georgia,serif;font-weight:600;font-style:italic;font-size:21px;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.7)}",
+    "html body #page .fo-hb-shead span{font:italic 400 12px/1.4 Georgia,serif;color:rgba(255,255,255,.75);text-shadow:0 2px 10px rgba(0,0,0,.6)}",
+    // the charter: parchment scrolls with wax seals
+    "html body #page .fo-hb-chgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:10px}",
+    "html body #page .fo-hb-ch{position:relative;background:linear-gradient(174deg,#FBF5E3,#F3EAD0 70%);border:1px solid rgba(140,104,20,.4);border-radius:4px 14px 4px 14px;padding:13px 15px 12px;box-shadow:0 10px 24px rgba(10,7,3,.4)}",
+    "html body #page .fo-hb-ch b{display:block;font:600 14px/1.2 'Fraunces',Georgia,serif;color:#2E2410;padding-right:20px}",
+    "html body #page .fo-hb-ch span{display:block;font:italic 400 11.5px/1.45 Georgia,serif;color:rgba(46,36,16,.65);margin-top:4px}",
+    "html body #page .fo-hb-ch em{display:block;font:600 10px/1 Inter,sans-serif;color:rgba(46,36,16,.55);font-style:normal;margin-top:9px;font-variant-numeric:tabular-nums}",
+    "html body #page .fo-hb-ch em.pend{color:rgba(46,36,16,.5)}",
+    "html body #page .fo-hb-ch.on{background:linear-gradient(174deg,#FDF7E4,#F6ECCB 70%);border-color:rgba(140,104,20,.6)}",
+    "html body #page .fo-hb-ch.on em{color:#7A2B1E}",
+    // the wax seal
+    "html body #page .fo-hb-ch s{position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#B54532,#7A2B1E 65%,#5E2015);box-shadow:0 2px 6px rgba(0,0,0,.4),inset 0 1px 2px rgba(255,255,255,.25);text-decoration:none}",
+    "html body #page .fo-hb-ch s:after{content:'';position:absolute;inset:5px;border-radius:50%;border:1px solid rgba(255,220,190,.4)}",
+    "@media (prefers-reduced-motion:no-preference){html body #page .fo-hb-ch.new:after{content:'';position:absolute;inset:0;border-radius:inherit;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.7) 47%,transparent 62%);background-size:260% 100%;animation:foHbShine 2.4s ease .4s 2}}",
     // the oak itself: deep wood, a gold pinstripe, plaques screwed to it
     "html body #page .fo-hb-oak{background:linear-gradient(168deg,#5A4326,#43301A 55%,#33240F);border:1px solid rgba(230,190,110,.35);outline:1px solid rgba(230,190,110,.28);outline-offset:-8px;border-radius:16px;padding:16px;box-shadow:0 26px 60px rgba(10,7,3,.55),inset 0 1px 0 rgba(255,235,190,.18);margin-top:12px}",
     "body.fo-hbx-on #page .fo-hb-plq{background:rgba(250,245,232,.94)}",
