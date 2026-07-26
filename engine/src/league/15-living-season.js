@@ -501,7 +501,8 @@
       var ledCard = ""; try { if (typeof window.foLedgerCard === "function") ledCard = window.foLedgerCard(); } catch (eLc) {}
       var netsCard = ""; try { if (typeof window.foNetsCard === "function") netsCard = window.foNetsCard(); } catch (eNc) {}
       var scoutCard = ""; try { if (typeof window.foScoutCard === "function") scoutCard = window.foScoutCard(); } catch (eSc) {}
-      return "<div class='fo-ls-strip'>" + digestCard() + scoutCard + pressCard() + wagerCard() + ledCard + netsCard + rivalCard() + goalsCard() + diaryCard() + "</div>";
+      var hbCard = ""; try { if (typeof window.foHonoursCard === "function") hbCard = window.foHonoursCard(); } catch (eHb) {}
+      return "<div class='fo-ls-strip'>" + digestCard() + scoutCard + hbCard + pressCard() + wagerCard() + ledCard + netsCard + rivalCard() + goalsCard() + diaryCard() + "</div>";
     } catch (e) { window.__foLsErr = String((e && e.stack) || e); return ""; }
   }
   function wireStrip(root) {
