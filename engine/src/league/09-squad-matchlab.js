@@ -472,10 +472,11 @@
       // the front row overlapping the back the way bodies do on the steps
       ".fo-sqx-field{position:relative;display:flex;flex-direction:column;gap:0;padding:clamp(10px,2vh,22px) 0 clamp(6px,1.4vh,14px);min-height:clamp(340px,50vh,520px);justify-content:flex-end}",
       ".fo-sqx-row{display:flex;justify-content:center;gap:clamp(8px,1.4vw,22px);flex-wrap:nowrap}",
+      // every frame in the photograph is the same size - the rows overlap
+      // for depth, but no man is printed smaller than another
       ".fo-sqx-row.ph-back{z-index:1}",
-      ".fo-sqx-row.ph-back .fo-sqx-man{transform:scale(.9);transform-origin:bottom center;filter:brightness(.94)}",
-      ".fo-sqx-row.ph-back .fo-sqx-man:hover,.fo-sqx-row.ph-back .fo-sqx-man.sel{transform:scale(.94) translateY(-4px)}",
-      ".fo-sqx-row.ph-front{z-index:2;margin-top:clamp(-26px,-2.4vh,-12px)}",
+      ".fo-sqx-row.ph-back .fo-sqx-man:hover,.fo-sqx-row.ph-back .fo-sqx-man.sel{transform:translateY(-4px)}",
+      ".fo-sqx-row.ph-front{z-index:2;margin-top:clamp(-20px,-1.8vh,-9px)}",
       ".fo-sqx-plate{align-self:center;margin-top:clamp(10px,1.8vh,18px);padding:7px 22px;border-radius:4px;text-align:center;background:linear-gradient(180deg,#caa64e,#8f7226 85%);box-shadow:0 2px 8px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,240,200,.55);border:1px solid rgba(60,47,13,.6)}",
       ".fo-sqx-plate b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:#2e2408;text-shadow:0 1px 0 rgba(255,240,200,.4)}",
       ".fo-sqx-plate span{display:block;font-family:Georgia,serif;font-style:italic;font-size:10.5px;color:#4a3a10}",
@@ -652,11 +653,10 @@
       "html body #page button.fo-sqx-rb{flex-direction:row;width:auto;gap:7px;padding:8px 13px}.fo-sqx-rb b{font-size:13px}}",
       "@media(max-width:760px){.fo-sqx-in{padding:52px 10px 16px;gap:12px}.fo-sqx-parkin{padding:14px 10px 14px}",
       ".fo-sqx-field{min-height:0;padding:8px 0 4px}.fo-sqx-row{gap:4px}",
-      "html body #page button.fo-sqx-man{width:clamp(58px,20vw,76px)}",
-      // six standing shoulders across a phone: narrower frames, tighter row
-      ".fo-sqx-row.ph-back .fo-sqx-man{width:clamp(46px,14.8vw,60px)}",
+      // one frame size for every man on a phone - photo rows and bench alike -
+      // sized so six shoulders fit the standing row without a sideways scroll
+      "html body #page button.fo-sqx-man{width:clamp(46px,14.4vw,60px);flex:none}",
       ".fo-sqx-row.ph-front{margin-top:-8px}",
-      ".fo-sqx-row.ph-front .fo-sqx-man{width:clamp(52px,17.5vw,68px)}",
       ".fo-sqx-plate b{font-size:10px;letter-spacing:.18em}.fo-sqx-plate{padding:6px 14px}",
       ".fo-sqx-man .nm{font-size:9px;padding:5px 3px 0}.fo-sqx-man .rl{font-size:7.5px}",
       ".fo-sqx-dfacts,.fo-sqx-did{max-width:100%}.fo-sqx-dart{opacity:.45;right:-14%}",
