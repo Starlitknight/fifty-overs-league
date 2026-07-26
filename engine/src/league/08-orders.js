@@ -1359,6 +1359,8 @@
 
   function foRenderTraining() {
     if (!/^#\/training/.test(location.hash || "")) return;
+    // The Nets (league/18) owns training now; this renderer stands aside
+    if (window.__foNets && typeof window.foRenderNetsPage === "function") { try { window.foRenderNetsPage(); } catch (e) {} return; }
     try { bumpBrand(); } catch (e) {}
     try { foTrainingPage(); } catch (e) { console.warn("foTrainingPage", e); }
     try {

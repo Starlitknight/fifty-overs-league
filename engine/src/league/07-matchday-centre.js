@@ -1633,7 +1633,9 @@
   // The engine's own hashchange handler calls its INTERNAL route (bypassing the
   // window.route wrapper) and falls back to the club page for hashes it doesn't
   // know · so re-assert the training page one tick after every hash change.
-  window.addEventListener("hashchange", function () { setTimeout(foRenderTraining, 15); });
+  // The Nets (league/18) owns #/training now; this older Development centre
+  // only re-asserts itself when that module is absent.
+  window.addEventListener("hashchange", function () { if (!window.__foNets) setTimeout(foRenderTraining, 15); });
   // (a) Squad polish: value-coloured skill bars + sortable Capt column.
   try { if (typeof GRIDKEYS !== "undefined") GRIDKEYS.Capt = function (p) { return (p && p.capt) || 0; }; } catch (e) {}
   // (14) Set lineup buttons directly on my rows in the Fixtures & results table.

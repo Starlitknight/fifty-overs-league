@@ -1337,7 +1337,8 @@ function route(){
   App.page=path||'circuit';
   // Circuit-only era: the club dashboard and the league/office/training
   // surfaces are retired; any old link or bookmark lands on the Circuit.
-  const GONE={club:1,office:1,nets:1,stats:1,matches:1,matchday:1,training:1,transfers:1,story:1,friendly:1,scout:1,reports:1,commentary:1,calibration:1,editor:1,welcome:1,founder:1,create:1};
+  // training returned to life as The Nets (league/18-training-nets.js)
+  const GONE={club:1,office:1,nets:1,stats:1,matches:1,matchday:1,transfers:1,story:1,friendly:1,scout:1,reports:1,commentary:1,calibration:1,editor:1,welcome:1,founder:1,create:1};
   if(GONE[App.page]){location.hash='#/home';App.page='home';return}
   // the conquest Circuit is retired; its hub folds into the repurposed World map
   if(App.page==='circuit'||App.page==='tour'){location.hash='#/world';App.page='world';return}
@@ -1355,7 +1356,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={home:'foRenderHome',league:'foRenderLeague',nation:'foRenderNation',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger'}[App.page];
+  const OV={home:'foRenderHome',league:'foRenderLeague',nation:'foRenderNation',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage'}[App.page];
   if(P[App.page])P[App.page](q);
   else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){}}
   else if(OV){/* overlay not parsed yet: leave the page blank, its interval paints */}
