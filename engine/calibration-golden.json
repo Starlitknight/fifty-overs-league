@@ -1,0 +1,116 @@
+{
+  "engineVersion": "v1",
+  "note": "Frozen behavioural record of the shipped engine. Descriptive, not aspirational. The engine has NO T20 mode (newMatch is 50-over only); T20 calibration is intentionally absent, not omitted by error.",
+  "config": {
+    "pitch": "balanced",
+    "weather": "Sunny",
+    "tuned": true,
+    "weakFactor": 0.7,
+    "eliteFactor": 1.3,
+    "perCell": 3334,
+    "seedBase": {
+      "weak_vs_weak": 11000,
+      "weak_vs_elite": 22000,
+      "elite_vs_elite": 33000
+    },
+    "seedStep": 7
+  },
+  "formats": {
+    "fiftyOver": true,
+    "t20": "unsupported-by-engine-v1"
+  },
+  "cells": {
+    "weak_vs_weak": {
+      "n": 3334,
+      "firstInnings": {
+        "mean": 265.2,
+        "stddev": 46.9
+      },
+      "wicketsHistogram": [
+        0.0009,
+        0.0084,
+        0.0357,
+        0.108,
+        0.1362,
+        0.1356,
+        0.0867,
+        0.0825,
+        0.0702,
+        0.0498,
+        0.2861
+      ],
+      "boundaryPctPerBall": 10.36,
+      "extrasPerInnings": 2.76,
+      "runRateByPhase": {
+        "powerplay_1_10": 4.8,
+        "middle_11_40": 4.92,
+        "death_41_50": 6.95
+      },
+      "tiePct": 0.63,
+      "pctRunWinsUnder20": 9.15
+    },
+    "weak_vs_elite": {
+      "n": 3334,
+      "firstInnings": {
+        "mean": 257.1,
+        "stddev": 50.4
+      },
+      "wicketsHistogram": [
+        0,
+        0.0075,
+        0.0243,
+        0.0759,
+        0.1194,
+        0.1281,
+        0.0738,
+        0.0828,
+        0.0663,
+        0.0579,
+        0.3641
+      ],
+      "boundaryPctPerBall": 10.11,
+      "extrasPerInnings": 2.27,
+      "runRateByPhase": {
+        "powerplay_1_10": 4.76,
+        "middle_11_40": 4.86,
+        "death_41_50": 6.36
+      },
+      "tiePct": 0.78,
+      "pctRunWinsUnder20": 9.69
+    },
+    "elite_vs_elite": {
+      "n": 3334,
+      "firstInnings": {
+        "mean": 251.5,
+        "stddev": 54.2
+      },
+      "wicketsHistogram": [
+        0.0003,
+        0.0051,
+        0.0252,
+        0.0657,
+        0.0984,
+        0.1116,
+        0.0687,
+        0.0678,
+        0.0705,
+        0.0612,
+        0.4256
+      ],
+      "boundaryPctPerBall": 9.94,
+      "extrasPerInnings": 2,
+      "runRateByPhase": {
+        "powerplay_1_10": 4.77,
+        "middle_11_40": 4.8,
+        "death_41_50": 5.97
+      },
+      "tiePct": 0.66,
+      "pctRunWinsUnder20": 7.77
+    }
+  },
+  "determinism": {
+    "seed": 424242,
+    "identical": true,
+    "fingerprint": "295/5"
+  }
+}
