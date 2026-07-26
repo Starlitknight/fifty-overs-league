@@ -702,8 +702,8 @@
       var sv = window.squadView;
       sv.mode = sv.mode || "xi"; sv.tab = ["ovr", "bat", "bwl", "fld", "rec"].indexOf(sv.tab) >= 0 ? sv.tab : "ovr";
       // the park picks a side; the list judges it. Two complete views, one page.
-      sv.view = (sv.view === "list" || sv.view === "park" || sv.view === "roster") ? sv.view : "roster";
-      if (sv.view === "park" && !sv.viewSet) sv.view = "roster";
+      // the park and the list are retired: the roster IS the squad page
+      sv.view = "roster";
       sv.sortK = sv.sortK || "ovr"; sv.sortDir = sv.sortDir === 1 ? 1 : -1;
       var seniors = (t.players || []).map(function (p) { return Object.assign({}, p); });
       var youths = (t.youth || []).map(function (p) { return Object.assign({ __y: true }, p); });
@@ -860,12 +860,7 @@
       var bgFallback = FO_ART + "home/hgm-dressing-room.webp";
       var nextLine = foSqNextMatch(t);
 
-      var viewSwitch =
-        "<div class='fo-sqx-views' role='tablist' aria-label='Squad view'>" +
-        "<button type='button' class='fo-sqx-vb" + (sv.view === "roster" ? " on" : "") + "' data-view='roster' role='tab' aria-selected='" + (sv.view === "roster") + "'>The roster</button>" +
-        "<button type='button' class='fo-sqx-vb" + (sv.view === "park" ? " on" : "") + "' data-view='park' role='tab' aria-selected='" + (sv.view === "park") + "'>The park</button>" +
-        "<button type='button' class='fo-sqx-vb" + (sv.view === "list" ? " on" : "") + "' data-view='list' role='tab' aria-selected='" + (sv.view === "list") + "'>The list</button>" +
-        "</div>";
+      var viewSwitch = "";
 
       var xiIx = function (p) { return sv.xi.indexOf(p.name); };
       var everyone = seniors.concat(youths);
