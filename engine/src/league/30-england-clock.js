@@ -16,7 +16,7 @@
 (function () {
   "use strict";
   function P() { return window.__foPlanet || null; }
-  var DAY = 86400000, ENG_H = 14;
+  var DAY = 86400000, ENG_H = 14, LIVE_MS = 3 * 3600000;
   var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   function ready() {
@@ -60,7 +60,9 @@
         var r = App.season.round | 0;
         if (r >= App.season.schedule.length) break;
         var t = roundTime(r);
-        if (t == null || Date.now() < t) break;
+        // the window is sacred: from 14:00 to 17:00 the match belongs to
+        // whoever is watching - the clock only settles it after stumps
+        if (t == null || Date.now() < t + LIVE_MS) break;
         completeRound();
         played++;
         if ((App.season.round | 0) <= r) break; // safety: no progress, stop
@@ -112,7 +114,10 @@
     "#topbar#topbar #fo-wclock{display:inline-flex;align-items:center;gap:6px;margin-left:10px;text-decoration:none;background:rgba(255,254,252,.08);border:1px solid rgba(255,254,252,.14);border-radius:999px;padding:4px 10px;cursor:pointer}",
     "#topbar#topbar #fo-wclock b{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.08em;color:#E8DFCE;white-space:nowrap}",
     "#topbar#topbar #fo-wclock i{font:800 8.5px/1 Oswald,sans-serif;letter-spacing:.06em;color:#FF6B5E;font-style:normal;white-space:nowrap}",
-    "@media(max-width:560px){#topbar#topbar #fo-wclock b{font-size:8.5px}#topbar#topbar #fo-wclock{margin-left:6px;padding:4px 8px}}"
+    "@media(max-width:560px){#topbar#topbar #fo-wclock b{font-size:8.5px}#topbar#topbar #fo-wclock{margin-left:6px;padding:4px 8px}}",
+    "html body #fo-eng-live{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;z-index:1200;display:inline-flex;align-items:center;gap:8px;background:#B23230;color:#FFFEFC !important;font:800 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;border-radius:999px;padding:12px 18px;text-decoration:none;box-shadow:0 14px 34px rgba(178,50,48,.45)}",
+    "html body #fo-eng-live i{width:8px;height:8px;border-radius:50%;background:#FFFEFC;animation:foEngPulse 1.2s ease-in-out infinite}",
+    "@keyframes foEngPulse{0%,100%{opacity:1}50%{opacity:.25}}"
   ].join("\n");
   function mountCss() {
     try {
@@ -122,13 +127,43 @@
     } catch (e) {}
   }
 
-  function boot() { mountCss(); mountClock(); setTimeout(tick, 1200); }
+  // your matchday is LIVE right now - the banner that takes you to the ground
+  function liveNow() {
+    try {
+      if (!ready() || syncLive()) return false;
+      try { if (typeof M !== "undefined" && M && !M.done) return false; } catch (eM) {}
+      var r = App.season.round | 0;
+      if (r >= App.season.schedule.length) return false;
+      var t = roundTime(r); if (t == null) return false;
+      var n = Date.now();
+      return n >= t && n < t + LIVE_MS;
+    } catch (e) { return false; }
+  }
+  function mountBanner() {
+    try {
+      var on = liveNow();
+      var h = (location.hash || "").split("?")[0];
+      var hide = { "#/match": 1, "#/matchday": 1, "#/scorecard": 1, "#/orders": 1, "#/home": 1 };
+      var el = document.getElementById("fo-eng-live");
+      if (!on || hide[h]) { if (el) el.remove(); return; }
+      if (!el) {
+        el = document.createElement("a");
+        el.id = "fo-eng-live"; el.href = "#/home";
+        el.addEventListener("click", function (e) { e.preventDefault(); location.hash = "#/home"; if (typeof window.route === "function") window.route(); });
+        document.body.appendChild(el);
+      }
+      el.innerHTML = "<i></i>MATCHDAY LIVE &middot; Round " + ((App.season.round | 0) + 1) + " &mdash; take your seat &rsaquo;";
+    } catch (e) {}
+  }
+
+  function boot() { mountCss(); mountClock(); mountBanner(); setTimeout(tick, 1200); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(boot, 400); });
   else setTimeout(boot, 400);
-  setInterval(function () { mountClock(); }, 30000);
+  setInterval(function () { mountClock(); mountBanner(); }, 30000);
+  window.addEventListener("hashchange", function () { setTimeout(mountBanner, 80); });
   setInterval(tick, 60000);
 
   window.foRoundTime = roundTime;
   window.foRoundTimeTxt = roundTimeTxt;
-  window.__foEngClock = { ensureAnchor: ensureAnchor, tick: tick };
+  window.__foEngClock = { ensureAnchor: ensureAnchor, tick: tick, liveNow: liveNow };
 })();

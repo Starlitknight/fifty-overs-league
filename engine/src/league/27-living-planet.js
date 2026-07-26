@@ -311,6 +311,17 @@
       var A = artBase();
       var flagOf = function (rid) { return A + "flags/" + cx().flagFile(rid) + ".svg"; };
 
+      // the globe as a dial: nations ordered by their hour, live ones lit
+      var hNow = hourOfDay(now);
+      var band = regionList().slice().sort(function (a, b) { return natHour(a.id) - natHour(b.id) || (a.nm < b.nm ? -1 : 1); }).map(function (r) {
+        var h0 = natHour(r.id);
+        var st2 = (p.kind === "league") ? (hNow >= h0 && hNow < h0 + LIVE_LEN ? "on" : hNow >= h0 + LIVE_LEN ? "done" : "up") : "up";
+        var dest = r.id === my ? "#/league" : "#/nation?n=" + encodeURIComponent(r.id);
+        return "<a class='fo-pl-tz " + st2 + (r.id === my ? " me" : "") + "' href='" + dest + "' aria-label='" + E(r.nm) + "'>" +
+          "<img src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\"><i>" + hh(h0).slice(0, 2) + "</i></a>";
+      }).join("");
+      var bandHTML = "<div class='fo-pl-band'><i>The world by the hour &middot; UTC</i><div class='fo-pl-bandrow'>" + band + "</div></div>";
+
       var phaseLine =
         p.kind === "league" ? "Round " + p.round + " of " + ROUNDS + " across the world's leagues" :
         p.kind === "honours" ? "Honours day - champions are crowned tonight" :
@@ -418,7 +429,7 @@
         "<p>" + E(phaseLine) + ". Every league runs on the world calendar, live from 10:00 UTC — online or offline, the same world for everyone.</p>" +
         "<span class='fo-pl-chip " + st.key + "'>" + E(st.chip) + "</span>" +
         "</div>" +
-        ownCard + cupHTML +
+        bandHTML + ownCard + cupHTML +
         (natCards ? "<div class='fo-pl-grid'>" + natCards + "</div>" : "") +
         (wireItems ? "<div class='fo-pl-wire'><i>The world wire</i>" + wireItems + "</div>" : "") +
         "<div class='fo-pl-foot'><a href='#/league'>My league &rsaquo;</a><a href='#/almanack'>The world almanack &rsaquo;</a><a href='#/atlas'>The atlas &rsaquo;</a></div>" +
@@ -437,6 +448,17 @@
     "html body #page .fo-pl-chip.live{background:rgba(200,60,58,.12);color:#B23230}",
     "html body #page .fo-pl-chip.up{background:rgba(20,28,40,.07);color:rgba(20,28,40,.6)}",
     "html body #page .fo-pl-chip.fin{background:rgba(31,158,114,.13);color:#177A57}",
+    "html body #page .fo-pl-band{margin-top:14px;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:16px;padding:12px 14px}",
+    "html body #page .fo-pl-band>i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(20,28,40,.45);font-style:normal;margin-bottom:9px}",
+    "html body #page .fo-pl-bandrow{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px}",
+    "html body #page .fo-pl-tz{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none}",
+    "html body #page .fo-pl-tz img{width:30px;height:21px;object-fit:cover;border-radius:4px;border:2px solid transparent}",
+    "html body #page .fo-pl-tz.on img{border-color:#B23230;box-shadow:0 0 0 3px rgba(178,50,48,.18);animation:foTzPulse 1.6s ease-in-out infinite}",
+    "html body #page .fo-pl-tz.done img{opacity:.45}",
+    "html body #page .fo-pl-tz.me img{border-color:#C95532}",
+    "html body #page .fo-pl-tz i{font:700 8.5px/1 Oswald,sans-serif;color:rgba(20,28,40,.5);font-style:normal}",
+    "html body #page .fo-pl-tz.on i{color:#B23230}",
+    "@keyframes foTzPulse{0%,100%{box-shadow:0 0 0 3px rgba(178,50,48,.18)}50%{box-shadow:0 0 0 6px rgba(178,50,48,.08)}}",
     "html body #page .fo-pl-own{display:flex;align-items:center;gap:14px;margin-top:16px;background:#07162E;border-radius:18px;padding:16px 18px;text-decoration:none;color:#FFFEFC;box-shadow:0 16px 38px rgba(7,22,46,.35);border-bottom:2px solid #C95532}",
     "html body #page .fo-pl-own .fo-pl-flag{width:34px;height:24px;object-fit:cover;border-radius:4px}",
     "html body #page .fo-pl-ownt{flex:1;min-width:0}",

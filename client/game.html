@@ -10592,7 +10592,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260726-1933-5430fe";
+  var FO_BUILD = "20260726-1935-c6c9f9";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -36224,6 +36224,17 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var A = artBase();
       var flagOf = function (rid) { return A + "flags/" + cx().flagFile(rid) + ".svg"; };
 
+      // the globe as a dial: nations ordered by their hour, live ones lit
+      var hNow = hourOfDay(now);
+      var band = regionList().slice().sort(function (a, b) { return natHour(a.id) - natHour(b.id) || (a.nm < b.nm ? -1 : 1); }).map(function (r) {
+        var h0 = natHour(r.id);
+        var st2 = (p.kind === "league") ? (hNow >= h0 && hNow < h0 + LIVE_LEN ? "on" : hNow >= h0 + LIVE_LEN ? "done" : "up") : "up";
+        var dest = r.id === my ? "#/league" : "#/nation?n=" + encodeURIComponent(r.id);
+        return "<a class='fo-pl-tz " + st2 + (r.id === my ? " me" : "") + "' href='" + dest + "' aria-label='" + E(r.nm) + "'>" +
+          "<img src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\"><i>" + hh(h0).slice(0, 2) + "</i></a>";
+      }).join("");
+      var bandHTML = "<div class='fo-pl-band'><i>The world by the hour &middot; UTC</i><div class='fo-pl-bandrow'>" + band + "</div></div>";
+
       var phaseLine =
         p.kind === "league" ? "Round " + p.round + " of " + ROUNDS + " across the world's leagues" :
         p.kind === "honours" ? "Honours day - champions are crowned tonight" :
@@ -36331,7 +36342,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         "<p>" + E(phaseLine) + ". Every league runs on the world calendar, live from 10:00 UTC — online or offline, the same world for everyone.</p>" +
         "<span class='fo-pl-chip " + st.key + "'>" + E(st.chip) + "</span>" +
         "</div>" +
-        ownCard + cupHTML +
+        bandHTML + ownCard + cupHTML +
         (natCards ? "<div class='fo-pl-grid'>" + natCards + "</div>" : "") +
         (wireItems ? "<div class='fo-pl-wire'><i>The world wire</i>" + wireItems + "</div>" : "") +
         "<div class='fo-pl-foot'><a href='#/league'>My league &rsaquo;</a><a href='#/almanack'>The world almanack &rsaquo;</a><a href='#/atlas'>The atlas &rsaquo;</a></div>" +
@@ -36350,6 +36361,17 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     "html body #page .fo-pl-chip.live{background:rgba(200,60,58,.12);color:#B23230}",
     "html body #page .fo-pl-chip.up{background:rgba(20,28,40,.07);color:rgba(20,28,40,.6)}",
     "html body #page .fo-pl-chip.fin{background:rgba(31,158,114,.13);color:#177A57}",
+    "html body #page .fo-pl-band{margin-top:14px;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:16px;padding:12px 14px}",
+    "html body #page .fo-pl-band>i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(20,28,40,.45);font-style:normal;margin-bottom:9px}",
+    "html body #page .fo-pl-bandrow{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px}",
+    "html body #page .fo-pl-tz{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none}",
+    "html body #page .fo-pl-tz img{width:30px;height:21px;object-fit:cover;border-radius:4px;border:2px solid transparent}",
+    "html body #page .fo-pl-tz.on img{border-color:#B23230;box-shadow:0 0 0 3px rgba(178,50,48,.18);animation:foTzPulse 1.6s ease-in-out infinite}",
+    "html body #page .fo-pl-tz.done img{opacity:.45}",
+    "html body #page .fo-pl-tz.me img{border-color:#C95532}",
+    "html body #page .fo-pl-tz i{font:700 8.5px/1 Oswald,sans-serif;color:rgba(20,28,40,.5);font-style:normal}",
+    "html body #page .fo-pl-tz.on i{color:#B23230}",
+    "@keyframes foTzPulse{0%,100%{box-shadow:0 0 0 3px rgba(178,50,48,.18)}50%{box-shadow:0 0 0 6px rgba(178,50,48,.08)}}",
     "html body #page .fo-pl-own{display:flex;align-items:center;gap:14px;margin-top:16px;background:#07162E;border-radius:18px;padding:16px 18px;text-decoration:none;color:#FFFEFC;box-shadow:0 16px 38px rgba(7,22,46,.35);border-bottom:2px solid #C95532}",
     "html body #page .fo-pl-own .fo-pl-flag{width:34px;height:24px;object-fit:cover;border-radius:4px}",
     "html body #page .fo-pl-ownt{flex:1;min-width:0}",
@@ -37128,7 +37150,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
 (function () {
   "use strict";
   function P() { return window.__foPlanet || null; }
-  var DAY = 86400000, ENG_H = 14;
+  var DAY = 86400000, ENG_H = 14, LIVE_MS = 3 * 3600000;
   var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   function ready() {
@@ -37172,7 +37194,9 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         var r = App.season.round | 0;
         if (r >= App.season.schedule.length) break;
         var t = roundTime(r);
-        if (t == null || Date.now() < t) break;
+        // the window is sacred: from 14:00 to 17:00 the match belongs to
+        // whoever is watching - the clock only settles it after stumps
+        if (t == null || Date.now() < t + LIVE_MS) break;
         completeRound();
         played++;
         if ((App.season.round | 0) <= r) break; // safety: no progress, stop
@@ -37224,7 +37248,10 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     "#topbar#topbar #fo-wclock{display:inline-flex;align-items:center;gap:6px;margin-left:10px;text-decoration:none;background:rgba(255,254,252,.08);border:1px solid rgba(255,254,252,.14);border-radius:999px;padding:4px 10px;cursor:pointer}",
     "#topbar#topbar #fo-wclock b{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.08em;color:#E8DFCE;white-space:nowrap}",
     "#topbar#topbar #fo-wclock i{font:800 8.5px/1 Oswald,sans-serif;letter-spacing:.06em;color:#FF6B5E;font-style:normal;white-space:nowrap}",
-    "@media(max-width:560px){#topbar#topbar #fo-wclock b{font-size:8.5px}#topbar#topbar #fo-wclock{margin-left:6px;padding:4px 8px}}"
+    "@media(max-width:560px){#topbar#topbar #fo-wclock b{font-size:8.5px}#topbar#topbar #fo-wclock{margin-left:6px;padding:4px 8px}}",
+    "html body #fo-eng-live{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;z-index:1200;display:inline-flex;align-items:center;gap:8px;background:#B23230;color:#FFFEFC !important;font:800 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;border-radius:999px;padding:12px 18px;text-decoration:none;box-shadow:0 14px 34px rgba(178,50,48,.45)}",
+    "html body #fo-eng-live i{width:8px;height:8px;border-radius:50%;background:#FFFEFC;animation:foEngPulse 1.2s ease-in-out infinite}",
+    "@keyframes foEngPulse{0%,100%{opacity:1}50%{opacity:.25}}"
   ].join("\n");
   function mountCss() {
     try {
@@ -37234,15 +37261,45 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     } catch (e) {}
   }
 
-  function boot() { mountCss(); mountClock(); setTimeout(tick, 1200); }
+  // your matchday is LIVE right now - the banner that takes you to the ground
+  function liveNow() {
+    try {
+      if (!ready() || syncLive()) return false;
+      try { if (typeof M !== "undefined" && M && !M.done) return false; } catch (eM) {}
+      var r = App.season.round | 0;
+      if (r >= App.season.schedule.length) return false;
+      var t = roundTime(r); if (t == null) return false;
+      var n = Date.now();
+      return n >= t && n < t + LIVE_MS;
+    } catch (e) { return false; }
+  }
+  function mountBanner() {
+    try {
+      var on = liveNow();
+      var h = (location.hash || "").split("?")[0];
+      var hide = { "#/match": 1, "#/matchday": 1, "#/scorecard": 1, "#/orders": 1, "#/home": 1 };
+      var el = document.getElementById("fo-eng-live");
+      if (!on || hide[h]) { if (el) el.remove(); return; }
+      if (!el) {
+        el = document.createElement("a");
+        el.id = "fo-eng-live"; el.href = "#/home";
+        el.addEventListener("click", function (e) { e.preventDefault(); location.hash = "#/home"; if (typeof window.route === "function") window.route(); });
+        document.body.appendChild(el);
+      }
+      el.innerHTML = "<i></i>MATCHDAY LIVE &middot; Round " + ((App.season.round | 0) + 1) + " &mdash; take your seat &rsaquo;";
+    } catch (e) {}
+  }
+
+  function boot() { mountCss(); mountClock(); mountBanner(); setTimeout(tick, 1200); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(boot, 400); });
   else setTimeout(boot, 400);
-  setInterval(function () { mountClock(); }, 30000);
+  setInterval(function () { mountClock(); mountBanner(); }, 30000);
+  window.addEventListener("hashchange", function () { setTimeout(mountBanner, 80); });
   setInterval(tick, 60000);
 
   window.foRoundTime = roundTime;
   window.foRoundTimeTxt = roundTimeTxt;
-  window.__foEngClock = { ensureAnchor: ensureAnchor, tick: tick };
+  window.__foEngClock = { ensureAnchor: ensureAnchor, tick: tick, liveNow: liveNow };
 })();
 
 </script>
