@@ -1,0 +1,344 @@
+// ---- 28-world-almanack.js — the people of the planet, and its book of record --
+// The living planet (module 27) gave every nation a running league. This layer
+// gives those leagues PEOPLE: every world club carries a real, deterministic
+// squad (drawn by the same generator that builds circuit sides, so an
+// Afghan club fields Afghan names bowling Afghan cricket), and every result
+// now knows who made the runs and who took the wickets.
+//
+// On top of the people, two institutions:
+//   THE WORLD ALMANACK (#/almanack) - the planet's book of record: all-time
+//     records, the roll of champions season by season, and the current
+//     season's leading run-scorers and wicket-takers.
+//   THE WINTER WINDOW - between the last league round and the next season
+//     (days 15-21 of each cycle), six world stars are open to a cross-border
+//     move. You may sign ONE per season, for real money, into your real squad.
+//
+// Same law as the rest of the planet: performances, records, leaders and the
+// market listing are pure functions of (world calendar, seeds). Only the act
+// of SIGNING touches state - and it touches only YOUR club, like any other
+// transfer, so offline managers lose nothing.
+(function () {
+  "use strict";
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function h32(s) { var h = 2166136261 >>> 0; s = String(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
+  function rnd01(s) { return h32(s) / 4294967296; }
+  function P() { return window.__foPlanet || null; }
+  function cx() { return window.__foCxAPI || null; }
+  function fmtMoney(n) { return "$" + Math.round(n || 0).toLocaleString("en-US"); }
+  function shortName(nm) { var ps = String(nm || "").split(" "); return ps.length < 2 ? nm : ps[0].charAt(0) + ". " + ps[ps.length - 1]; }
+  function myNation() { try { return (window.__foLgAPI && window.__foLgAPI.nation()) || "eng"; } catch (e) { return "eng"; } }
+  function regionList() { var c = cx(); return c ? (c.regions() || []).filter(function (r) { return !r.final; }) : []; }
+  function regionById(rid) { var L = regionList(); for (var i = 0; i < L.length; i++) if (L[i].id === rid) return L[i]; return null; }
+  function genFn() { try { if (typeof window.__foGenArchetypeSquad === "function") return window.__foGenArchetypeSquad; } catch (e) {} try { if (typeof foGenArchetypeSquad === "function") return foGenArchetypeSquad; } catch (e2) {} return null; }
+  function ovrOf(p) { try { if (typeof foPkOvr === "function") return foPkOvr(p); } catch (e) {} return (p && p.rating ? Math.round(p.rating / 1000) : 50); }
+
+  // ---- every world club, fully peopled (generated once, cached) --------------
+  var SQ = {};
+  function squadOf(rid, slot) {
+    var k = rid + "|" + slot;
+    if (SQ[k]) return SQ[k];
+    var r = regionById(rid); if (!r) return (SQ[k] = null);
+    var out = null;
+    try {
+      var GEN = genFn();
+      if (GEN) {
+        var g = GEN("ws1|" + rid + "|" + slot, r.cty || r.nm, r.arch || "engine", "general");
+        out = (g && g.players || []).map(function (p0) {
+          var p = JSON.parse(JSON.stringify(p0)); delete p.fee;
+          p.fatigue = "rested"; p.formIx = 3;
+          try { if (typeof jsDerive === "function") jsDerive(p); } catch (eD) {}
+          return p;
+        });
+      }
+    } catch (eG) {}
+    if (!out || !out.length) {
+      // name-only fallback: still nation-true names, still deterministic
+      out = [];
+      try {
+        var seed = h32("wsf|" + rid + "|" + slot), used = new Set();
+        var rr = function () { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+        for (var i = 0; i < 8; i++) {
+          var nm = (typeof natName === "function") ? natName(r.cty || "England", rr, used) : (r.nm + " Player " + (i + 1));
+          used.add(nm);
+          out.push({ name: nm, role: i < 5 ? "topOrderBat" : "fastBowler", bowlType: i < 5 ? null : "RF", rating: 40000 + Math.floor(rr() * 30000) });
+        }
+      } catch (eF) {}
+    }
+    return (SQ[k] = out);
+  }
+  function batsOf(rid, slot) {
+    var s = squadOf(rid, slot) || [];
+    return s.slice().sort(function (a, b) { return ovrOf(b) - ovrOf(a); }).slice(0, 5);
+  }
+  function bowlsOf(rid, slot) {
+    var s = (squadOf(rid, slot) || []).filter(function (p) { return p.bowlType; });
+    return s.slice().sort(function (a, b) { return ovrOf(b) - ovrOf(a); }).slice(0, 5);
+  }
+
+  // ---- who did it: deterministic performances for any world match ------------
+  function perf(rid, season, round, m) {
+    var key = "pf|" + rid + "|" + season + "|" + round + "|" + m.home.slot + "|" + m.away.slot;
+    var pick = function (list, tag) { return list.length ? list[Math.floor(Math.pow(rnd01(key + tag), 1.6) * list.length)] : null; };
+    var mk = function (batSide, bowlSide, total, wkts, tag) {
+      var bat = pick(batsOf(rid, batSide.slot), tag + "b");
+      var bowl = pick(bowlsOf(rid, bowlSide.slot), tag + "w");
+      var runs = Math.max(16, Math.min(186, Math.round(total * (0.24 + rnd01(key + tag + "r") * 0.27))));
+      if (runs > total) runs = Math.max(10, total - 4);
+      var w = Math.max(1, Math.min(wkts >= 10 ? 6 : Math.max(1, wkts - 1), 2 + Math.floor(rnd01(key + tag + "k") * 4)));
+      var rc = 18 + Math.floor(rnd01(key + tag + "c") * 45);
+      return { bat: bat ? { n: bat.name, r: runs, p: bat } : null, bowl: bowl ? { n: bowl.name, w: w, rc: rc, p: bowl } : null };
+    };
+    return { h: mk(m.home, m.away, m.first, m.fw, "h"), a: mk(m.away, m.home, m.second, m.sw, "a") };
+  }
+  // " — H. Cole 87, T. Ashworth 4/38" for the winning side
+  function suffix(rid, season, round, m) {
+    try {
+      var pf = perf(rid, season, round, m);
+      var side = m.winner === m.away ? pf.a : pf.h, other = m.winner === m.away ? pf.h : pf.a;
+      var bits = [];
+      if (side.bat) bits.push(shortName(side.bat.n) + " " + side.bat.r);
+      if (other.bowl && m.winner) { } // the loser's bowler toiled; the winner's bowler gets the line
+      if (side.bowl) bits.push(shortName(side.bowl.n) + " " + side.bowl.w + "/" + side.bowl.rc);
+      return bits.length ? " — " + bits.join(", ") : "";
+    } catch (e) { return ""; }
+  }
+
+  // ---- the aggregates: leaders and all-time records (cached per world tick) --
+  var CACHE = {};
+  function sweep(now) {
+    var pl = P(); if (!pl) return null;
+    var p = pl.phaseOf(now), my = myNation();
+    var rd = pl.roundsDone(now, p.season);
+    var sig = p.season + "|" + rd + "|" + my;
+    if (CACHE.sig === sig) return CACHE.v;
+    var runs = {}, wkts = {}, rec = {
+      total: null, margin: null, chase: null, indBat: null, indBowl: null
+    };
+    var note = function (map, k, add, meta) { var e = map[k] || (map[k] = { n: 0, meta: meta }); e.n += add; };
+    for (var s = 1; s <= p.season; s++) {
+      var upto = s < p.season ? 14 : rd;
+      regionList().forEach(function (r) {
+        if (r.id === my) return;
+        for (var rr = 1; rr <= upto; rr++) {
+          pl.fixturesOf(r.id, s, rr).forEach(function (m) {
+            if (!rec.total || m.first > rec.total.v) rec.total = { v: m.first, line: m.home.name + " " + m.hs + " v " + m.away.name, where: r.nm + ", season " + s };
+            if (m.winner === m.home && (!rec.margin || (m.first - m.second) > rec.margin.v)) rec.margin = { v: m.first - m.second, line: m.text + " (" + m.hs + " v " + m.as + ")", where: r.nm + ", season " + s };
+            if (m.winner === m.away && (!rec.chase || m.second > rec.chase.v)) rec.chase = { v: m.second, line: m.away.name + " chase " + (m.first + 1) + " — " + m.as, where: r.nm + ", season " + s };
+            var pfx = perf(r.id, s, rr, m);
+            [["h", m.home], ["a", m.away]].forEach(function (side) {
+              var x = pfx[side[0]];
+              if (s === p.season) {
+                if (x.bat) note(runs, x.bat.n, x.bat.r, { club: side[1].name, nat: r.nm });
+                if (x.bowl) note(wkts, x.bowl.n, x.bowl.w, { club: side[1].name, nat: r.nm });
+              }
+              if (x.bat && (!rec.indBat || x.bat.r > rec.indBat.v)) rec.indBat = { v: x.bat.r, line: x.bat.n + " " + x.bat.r + " for " + side[1].name, where: r.nm + ", season " + s };
+              if (x.bowl && (!rec.indBowl || x.bowl.w > rec.indBowl.v || (x.bowl.w === rec.indBowl.v && x.bowl.rc < rec.indBowl.rc))) rec.indBowl = { v: x.bowl.w, rc: x.bowl.rc, line: x.bowl.n + " " + x.bowl.w + "/" + x.bowl.rc + " for " + side[1].name, where: r.nm + ", season " + s };
+            });
+          });
+        }
+      });
+    }
+    var top = function (map) {
+      return Object.keys(map).map(function (k) { return { n: k, v: map[k].n, meta: map[k].meta }; })
+        .sort(function (a, b) { return b.v - a.v; }).slice(0, 6);
+    };
+    var roll = [];
+    for (var s2 = 1; s2 <= p.season; s2++) {
+      var done = s2 < p.season || p.di >= 14;
+      var champs = [];
+      if (done) regionList().forEach(function (r) { if (r.id === my) return; var c = pl.championOf(r.id, s2); if (c) champs.push({ nat: r.nm, club: c.name }); });
+      var wcDone = s2 < p.season || pl.wcStagesDone(now, s2) >= 4;
+      roll.push({ season: s2, wc: wcDone ? pl.wcChampion(s2) : null, champs: champs, live: s2 === p.season && !done });
+    }
+    var v = { phase: p, rd: rd, runs: top(runs), wkts: top(wkts), rec: rec, roll: roll.reverse() };
+    CACHE.sig = sig; CACHE.v = v;
+    return v;
+  }
+
+  // ---- the winter window: six stars, one signing, your money -----------------
+  function windowOpen(p) { return p.di >= 15; }
+  function marketOf(season) {
+    var rids = regionList().map(function (r) { return r.id; }).filter(function (rid) { return rid !== myNation(); });
+    rids.sort(function (a, b) { return rnd01("mkt|" + season + "|" + a) - rnd01("mkt|" + season + "|" + b); });
+    var out = [];
+    rids.slice(0, 6).forEach(function (rid, i) {
+      var slot = h32("mktslot|" + season + "|" + rid) % 8;
+      var sides = P().sidesOf(rid); if (!sides.length) return;
+      var sq = squadOf(rid, slot); if (!sq || !sq.length) return;
+      var star = sq.slice().sort(function (a, b) { return ovrOf(b) - ovrOf(a); })[0];
+      var ovr = ovrOf(star);
+      out.push({ rid: rid, nat: (regionById(rid) || {}).nm, club: sides[slot].name, p: star, ovr: ovr, fee: 6000 + ovr * 380 });
+    });
+    return out;
+  }
+  function signedThisSeason(season) { try { return App.wmkt && App.wmkt["s" + season]; } catch (e) { return null; } }
+  function signStar(season, idx) {
+    try {
+      var p = P().phaseOf(Date.now());
+      if (p.season !== season || !windowOpen(p)) { alert("The window is closed."); return; }
+      if (signedThisSeason(season)) { alert("One overseas signing per season - you have already made yours."); return; }
+      var lst = marketOf(season), item = lst[idx]; if (!item) return;
+      var t = userTeam();
+      if (t.players.some(function (q) { return q.name === item.p.name; })) { alert(item.p.name + " is already at your club."); return; }
+      if (!App.fin || App.fin.bank < item.fee) { alert("The board will not sanction it - you need " + fmtMoney(item.fee) + "."); return; }
+      if (!window.confirm("Sign " + item.p.name + " (" + item.nat + ") from " + item.club + " for " + fmtMoney(item.fee) + "?")) return;
+      var np = JSON.parse(JSON.stringify(item.p));
+      np.fatigue = "rested"; np.formIx = 3;
+      try { if (typeof jsDerive === "function") jsDerive(np); } catch (eD) {}
+      t.players.push(np);
+      ledger("World market - signed " + np.name + " from " + item.club, -item.fee);
+      App.wmkt = App.wmkt || {}; App.wmkt["s" + season] = np.name;
+      try { saveGame(false); } catch (eS) {}
+      var pg = document.getElementById("page"); if (pg) pg.__foAlmSig = null;
+      foRenderAlmanackPage();
+    } catch (e) { try { console.warn("signStar", e); } catch (e2) {} }
+  }
+
+  // ---- the page ---------------------------------------------------------------
+  function artBase() {
+    if (typeof FO_ART !== "undefined") return FO_ART;
+    return (location.pathname.indexOf("/client/") !== -1) ? "art/" : "client/art/";
+  }
+  function foRenderAlmanackPage() {
+    try {
+      if ((location.hash || "").split("?")[0] !== "#/almanack") return;
+      if (!P() || !cx()) return;
+      var page = document.getElementById("page"); if (!page) return;
+      try { document.body.classList.remove("fo-ov-on", "fo-boss-on", "fo-scb-on", "fo-drs-on"); } catch (eB) {}
+      var now = Date.now();
+      var v = sweep(now); if (!v) return;
+      var p = v.phase;
+      var flagOf = function (rid) { return artBase() + "flags/" + cx().flagFile(rid) + ".svg"; };
+      var natRid = {}; regionList().forEach(function (r) { natRid[r.nm] = r.id; });
+
+      var recRow = function (label, r) {
+        return r ? "<div class='fo-al-rec'><i>" + label + "</i><b>" + E(r.line) + "</b><span>" + E(r.where) + "</span></div>" : "";
+      };
+      var recHTML = recRow("Highest total", v.rec.total) + recRow("Biggest win", v.rec.margin) +
+        recRow("Greatest chase", v.rec.chase) + recRow("Highest score", v.rec.indBat) + recRow("Best bowling", v.rec.indBowl);
+
+      var ldr = function (list, unit) {
+        return list.map(function (x, i) {
+          return "<div class='fo-al-ld'><i>" + (i + 1) + "</i>" +
+            (natRid[x.meta.nat] ? "<img src='" + flagOf(natRid[x.meta.nat]) + "' alt=''>" : "") +
+            "<span><b>" + E(x.n) + "</b><em>" + E(x.meta.club) + " &middot; " + E(x.meta.nat) + "</em></span><u>" + x.v + unit + "</u></div>";
+        }).join("") || "<p class='fo-al-none'>The season's first ball is yet to be bowled.</p>";
+      };
+
+      var rollHTML = v.roll.map(function (rw) {
+        var champBits = rw.champs.slice(0, 3).map(function (c) { return E(c.club) + " (" + E(c.nat) + ")"; }).join(", ");
+        return "<div class='fo-al-roll'><i>Season " + rw.season + "</i>" +
+          (rw.live ? "<b class='live'>In play &middot; round " + v.rd + " of 14</b>" :
+            "<b>" + (rw.wc ? "&#127942; " + E(rw.wc.nm) + " won the World Cup" : "World Cup to come") + "</b>") +
+          (champBits ? "<span>League pennants: " + champBits + (rw.champs.length > 3 ? " &amp; " + (rw.champs.length - 3) + " more" : "") + "</span>" : "") +
+          "</div>";
+      }).join("");
+
+      // the winter window
+      var mktHTML = "";
+      var open = windowOpen(p);
+      var signed = signedThisSeason(p.season);
+      var canGen = !!genFn();
+      if (canGen) {
+        var listings = marketOf(p.season);
+        var body = listings.map(function (it, i) {
+          var mine = signed === it.p.name;
+          var btn = mine ? "<b class='got'>Signed &#10003;</b>" :
+            !open ? "<b class='shut'>Window closed</b>" :
+            signed ? "<b class='shut'>Quota used</b>" :
+            "<button type='button' class='fo-al-sign' data-i='" + i + "'>Sign &middot; " + fmtMoney(it.fee) + "</button>";
+          return "<div class='fo-al-mk" + (mine ? " mine" : "") + "'>" +
+            "<img src='" + flagOf(it.rid) + "' alt=''>" +
+            "<span><b>" + E(it.p.name) + "</b><em>" + E(it.club) + " &middot; " + E(it.nat) + " &middot; rated " + it.ovr + "</em></span>" + btn + "</div>";
+        }).join("");
+        mktHTML = "<div class='fo-al-sec'><h2>The Winter Window</h2>" +
+          "<p class='fo-al-sub'>" + (open ? "Open until the new season. One overseas signing per season - choose with care." :
+            "Opens after round 14, when the season's pennants are settled. Six names will be on the list.") + "</p>" +
+          (open ? body : "") + "</div>";
+      }
+
+      var sig = "al|" + CACHE.sig + "|" + (signed || "") + "|" + open;
+      if (page.__foAlmSig === sig && page.querySelector(".fo-al")) return;
+      page.__foAlmSig = sig;
+
+      page.innerHTML =
+        "<div class='fo-al'>" +
+        "<div class='fo-al-mast'>" +
+        "<div class='fo-al-kick'>The book of record &middot; Season " + p.season + "</div>" +
+        "<h1>The World Almanack</h1>" +
+        "<p>Everything the planet's cricket has done, written down. Records that stand until someone breaks them, champions season by season, and the names behind this season's runs and wickets.</p>" +
+        "</div>" +
+        "<div class='fo-al-sec'><h2>All-time records</h2>" + recHTML + "</div>" +
+        "<div class='fo-al-sec cols'><div><h2>Most runs this season</h2>" + ldr(v.runs, "") + "</div>" +
+        "<div><h2>Most wickets</h2>" + ldr(v.wkts, "") + "</div></div>" +
+        mktHTML +
+        "<div class='fo-al-sec'><h2>The roll of champions</h2>" + rollHTML + "</div>" +
+        "<div class='fo-al-foot'><a href='#/planet'>World cricket today &rsaquo;</a><a href='#/league'>My league &rsaquo;</a><a href='#/milestones'>My honours &rsaquo;</a></div>" +
+        "</div>";
+
+      page.querySelectorAll(".fo-al-sign").forEach(function (b) {
+        b.addEventListener("click", function () { signStar(p.season, +b.getAttribute("data-i")); });
+      });
+    } catch (e) { try { console.warn("foRenderAlmanackPage", e); } catch (e2) {} }
+  }
+
+  var CSS = [
+    "html body #page .fo-al{max-width:680px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
+    "html body #page .fo-al-mast{background:linear-gradient(150deg,#FFFEFB,#F6F1E4 70%,#F0E9D6) !important;border:1px solid rgba(20,28,40,.1);border-radius:22px;padding:26px 28px 22px;box-shadow:0 22px 50px rgba(30,38,52,.12)}",
+    "html body #page .fo-al-kick{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:#B44A22}",
+    "html body #page .fo-al-kick:after{content:'';display:block;width:34px;border-top:2px solid #C95532;margin-top:7px}",
+    "html body #page .fo-al-mast h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:36px;letter-spacing:-.015em;margin:8px 0 8px;line-height:1.02}",
+    "html body #page .fo-al-mast p{font:italic 420 13.5px/1.6 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);margin:0;max-width:54ch}",
+    "html body #page .fo-al-sec{margin-top:16px;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:18px;padding:16px 18px;box-shadow:0 8px 26px rgba(30,38,52,.07)}",
+    "html body #page .fo-al-sec h2{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:17px;margin:0 0 10px}",
+    "html body #page .fo-al-sec.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}",
+    "@media(max-width:560px){html body #page .fo-al-sec.cols{grid-template-columns:1fr}}",
+    "html body #page .fo-al-rec{padding:8px 0;border-top:1px solid rgba(20,28,40,.06)}",
+    "html body #page .fo-al-rec i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#B44A22;font-style:normal}",
+    "html body #page .fo-al-rec b{display:block;font:600 13px/1.35 Inter,sans-serif;margin-top:3px}",
+    "html body #page .fo-al-rec span{display:block;font:italic 400 11px/1.3 'Fraunces',Georgia,serif;color:rgba(20,28,40,.5);margin-top:2px}",
+    "html body #page .fo-al-ld{display:flex;align-items:center;gap:9px;padding:7px 0;border-top:1px solid rgba(20,28,40,.06)}",
+    "html body #page .fo-al-ld i{font:700 11px/1 Inter,sans-serif;color:rgba(20,28,40,.4);font-style:normal;width:14px}",
+    "html body #page .fo-al-ld img{width:22px;height:15px;object-fit:cover;border-radius:2px}",
+    "html body #page .fo-al-ld span{flex:1;min-width:0}",
+    "html body #page .fo-al-ld b{display:block;font:600 12.5px/1.2 Inter,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    "html body #page .fo-al-ld em{display:block;font:400 10.5px/1.2 Inter,sans-serif;font-style:normal;color:rgba(20,28,40,.5)}",
+    "html body #page .fo-al-ld u{text-decoration:none;font-family:Oswald,sans-serif;font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}",
+    "html body #page .fo-al-none{font:italic 400 12px/1.4 'Fraunces',Georgia,serif;color:rgba(20,28,40,.5)}",
+    "html body #page .fo-al-roll{padding:9px 0;border-top:1px solid rgba(20,28,40,.06)}",
+    "html body #page .fo-al-roll i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(20,28,40,.45);font-style:normal}",
+    "html body #page .fo-al-roll b{display:block;font:600 13px/1.3 Inter,sans-serif;margin-top:3px}",
+    "html body #page .fo-al-roll b.live{color:#B44A22}",
+    "html body #page .fo-al-roll span{display:block;font:italic 400 11.5px/1.4 'Fraunces',Georgia,serif;color:rgba(20,28,40,.55);margin-top:2px}",
+    "html body #page .fo-al-sub{font:italic 420 12.5px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);margin:0 0 10px}",
+    "html body #page .fo-al-mk{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid rgba(20,28,40,.06)}",
+    "html body #page .fo-al-mk.mine{background:rgba(31,158,114,.07);border-radius:10px;padding:9px 10px}",
+    "html body #page .fo-al-mk img{width:24px;height:16px;object-fit:cover;border-radius:2px}",
+    "html body #page .fo-al-mk span{flex:1;min-width:0}",
+    "html body #page .fo-al-mk b{display:block;font:600 13px/1.2 Inter,sans-serif}",
+    "html body #page .fo-al-mk em{display:block;font:400 11px/1.25 Inter,sans-serif;font-style:normal;color:rgba(20,28,40,.55);margin-top:2px}",
+    "html body #page .fo-al-mk b.got{color:#177A57;font-size:11px}",
+    "html body #page .fo-al-mk b.shut{color:rgba(20,28,40,.4);font-size:11px;font-weight:600}",
+    "html body #page .fo-al-sign{font:700 11px/1 Inter,sans-serif;color:#FFFEFC;background:#C95532;border:0;border-radius:999px;padding:9px 14px;cursor:pointer}",
+    "html body #page .fo-al-sign:hover{background:#B44A22}",
+    "html body #page .fo-al-foot{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}",
+    "html body #page .fo-al-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
+    "html body #page .fo-al-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5);text-decoration:none}",
+    "@media(max-width:520px){html body #page .fo-al-mast h1{font-size:29px}}"
+  ].join("\n");
+  function mount() {
+    try {
+      var s = document.getElementById("fo-al-css");
+      if (!s) { s = document.createElement("style"); s.id = "fo-al-css"; s.textContent = CSS; }
+      document.body.appendChild(s);
+    } catch (e) {}
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(mount, 0); });
+  else setTimeout(mount, 0);
+  window.addEventListener("hashchange", function () {
+    if ((location.hash || "").split("?")[0] === "#/almanack") setTimeout(foRenderAlmanackPage, 40);
+  });
+
+  window.foRenderAlmanackPage = foRenderAlmanackPage;
+  window.__foStars = { squadOf: squadOf, perf: perf, suffix: suffix, sweep: sweep, marketOf: marketOf, signStar: signStar };
+})();

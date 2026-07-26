@@ -26,3 +26,4 @@
 25-league-table.js
 26-nation-clubs.js
 27-living-planet.js
+28-world-almanack.js

@@ -193,7 +193,9 @@
         var fx = fixturesOf(r.id, ph.season, ph.round);
         var big = fx.slice().sort(function (a, b) { return Math.abs(b.first - b.second) - Math.abs(a.first - a.second); })[0];
         if (!big) return;
-        out.push({ day: ph.day, season: ph.season, dayInSeason: ph.di, phase: "league", category: "league", importance: 40 + (h32(r.id + ph.day) % 30), headline: r.nm + ", round " + ph.round + ": " + big.text + " (" + big.hs + " v " + big.as + ")" });
+        var stars = "";
+        try { if (window.__foStars) stars = window.__foStars.suffix(r.id, ph.season, ph.round, big); } catch (eS) {}
+        out.push({ day: ph.day, season: ph.season, dayInSeason: ph.di, phase: "league", category: "league", importance: 40 + (h32(r.id + ph.day) % 30), headline: r.nm + ", round " + ph.round + ": " + big.text + stars });
       });
     };
     addLeague(p); addLeague(phaseOf(now - DAY));
@@ -344,10 +346,12 @@
           var posOf = {}; t.forEach(function (row, i2) { posOf[row.side.slot] = i2 + 1; });
           var feat = fx.slice().sort(function (a, b) { return (posOf[a.home.slot] + posOf[a.away.slot]) - (posOf[b.home.slot] + posOf[b.away.slot]); })[0];
           var lv = feat ? liveView(feat, now) : null;
+          var starLn = "";
+          try { if (feat && lv.state === "fin" && window.__foStars) starLn = window.__foStars.suffix(r.id, p.season, p.round, feat); } catch (eSt) {}
           var mid = !feat ? "" :
             lv.state === "up" ? "<em class='fx'>" + E(feat.home.name) + " v " + E(feat.away.name) + " &middot; 10:00 UTC</em>" :
             lv.state === "live" ? "<em class='fx live'><b>LIVE</b> " + E(lv.line) + "</em>" :
-            "<em class='fx'>" + E(feat.text) + "</em>";
+            "<em class='fx'>" + E(feat.text) + E(starLn) + "</em>";
           var ldr2 = t[0];
           return "<a class='fo-pl-nat' href='#/nation?n=" + encodeURIComponent(r.id) + "'>" +
             "<img class='fo-pl-flag' src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\">" +
@@ -377,7 +381,7 @@
         ownCard + cupHTML +
         (natCards ? "<div class='fo-pl-grid'>" + natCards + "</div>" : "") +
         (wireItems ? "<div class='fo-pl-wire'><i>The world wire</i>" + wireItems + "</div>" : "") +
-        "<div class='fo-pl-foot'><a href='#/league'>My league &rsaquo;</a><a href='#/atlas'>The atlas &rsaquo;</a><a href='#/fixtures'>My fixtures &rsaquo;</a></div>" +
+        "<div class='fo-pl-foot'><a href='#/league'>My league &rsaquo;</a><a href='#/almanack'>The world almanack &rsaquo;</a><a href='#/atlas'>The atlas &rsaquo;</a></div>" +
         "</div>";
     } catch (e) { try { console.warn("foRenderPlanetPage", e); } catch (e2) {} }
   }
