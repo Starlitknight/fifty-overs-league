@@ -25,7 +25,7 @@
     league: ["league", "nation", "cup", "world", "city", "side", "boss", "tour"],
     squad: ["squad", "player", "matchlab"],
     nets: ["training"],
-    desk: ["desk", "ledger", "journal", "report", "ceremony", "wire", "lore"]
+    desk: ["desk", "ledger", "journal", "report", "ceremony", "wire", "lore", "dossier"]
   };
   // immersive rooms keep the whole stage: no dock over the broadcast
   var DOCK_HIDE = { match: 1, matchday: 1, friendly: 1, welcome: 1, create: 1, scorecard: 1, orders: 1 };

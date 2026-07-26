@@ -18,3 +18,4 @@
 17-club-ledger.js
 18-training-nets.js
 19-modern-shell.js
+20-strategy-room.js
