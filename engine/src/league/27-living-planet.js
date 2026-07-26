@@ -9,18 +9,19 @@
 // World Cup bracket. That is how a shared living world satisfies the
 // human-vs-human / human-vs-bot constraint: determinism instead of sync.
 //
-// The calendar, in 21-day seasons:
-//   days 0-13   league rounds 1-14 (every nation, 8 clubs, double round robin)
-//   day  14     honours day (champions crowned)
-//   day  15     World Cup draw
-//   days 16-19  World Cup: last sixteen, quarters, semis, THE FINAL
-//   day  20     rest day - the wire catches its breath
-// Each day's play runs 10:00-14:00 UTC (live, partial scores), final at 14:00.
+// The calendar, in 25-day seasons:
+//   days 0-17   league rounds 1-18 (every nation, TEN clubs, double round robin)
+//   day  18     honours day (champions crowned)
+//   day  19     World Cup draw
+//   days 20-23  World Cup: last sixteen, quarters, then prime-time semis & FINAL
+//   day  24     rest day - the wire catches its breath
+// The globe is staggered: each nation bowls off at its own UTC hour (England
+// is the 14:00 league), each day's play running three hours, live.
 //
-// Your OWN league stays yours - your real clubs at your real pace. The clock
-// drives the other nations, and at runtime it overwrites the baked
-// FO_WORLD_SNAPSHOT's leagues and wire, so the nation record books, the atlas
-// ticker and the world desk all come alive without changing a line of them.
+// ONE ENGLAND: your real league IS your nation's league on this planet - its
+// record book routes to your standings. The clock drives the other nations,
+// and at runtime it overwrites the baked FO_WORLD_SNAPSHOT's leagues and
+// wire, so record books, atlas ticker and world desk stay alive for free.
 (function () {
   "use strict";
   function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -34,39 +35,48 @@
 
   // ---- the calendar -----------------------------------------------------------
   var EPOCH = Date.UTC(2026, 4, 16);           // 16 May 2026, day 0 of world cricket
-  var DAY = 86400000, CYCLE = 21, ROUNDS = 14;
-  var LIVE_H0 = 10, LIVE_H1 = 14;              // play runs 10:00-14:00 UTC
+  var DAY = 86400000, CYCLE = 25, ROUNDS = 18;  // ten clubs, eighteen rounds - every nation plays YOUR format
+  var LIVE_LEN = 3;                             // a day's play runs three hours
+  // the staggered globe: each nation bowls its first ball at its own UTC hour.
+  // England is the 14:00 UTC league; the rest spread around the clock so
+  // there is nearly always a match on somewhere.
+  var HOUR_SLOTS = [1, 4, 7, 10, 13, 16, 19, 22];
+  function natHour(rid) { if (rid === "eng") return 14; return HOUR_SLOTS[h32("nathour|" + rid) % HOUR_SLOTS.length]; }
   function dayIx(now) { return Math.floor((now - EPOCH) / DAY); }
   function hourOfDay(now) { var d = dayIx(now); return (now - (EPOCH + d * DAY)) / 3600000; }
   function phaseOf(now) {
     var d = dayIx(now), s = Math.floor(d / CYCLE) + 1, di = ((d % CYCLE) + CYCLE) % CYCLE;
     var p = { day: d, season: s, di: di };
     if (di < ROUNDS) { p.kind = "league"; p.round = di + 1; }
-    else if (di === 14) p.kind = "honours";
-    else if (di === 15) p.kind = "draw";
-    else if (di <= 19) { p.kind = "cup"; p.stage = ["r16", "qf", "sf", "final"][di - 16]; }
+    else if (di === 18) p.kind = "honours";
+    else if (di === 19) p.kind = "draw";
+    else if (di <= 23) { p.kind = "cup"; p.stage = ["r16", "qf", "sf", "final"][di - 20]; }
     else p.kind = "rest";
     return p;
   }
-  // how many rounds of season s are FINAL at instant `now`
-  function roundsDone(now, s) {
+  // how many rounds of season s are FINAL at `now` - per nation, since each
+  // nation's day ends at its own hour
+  function roundsDone(now, s, rid) {
     var p = phaseOf(now);
     if (s < p.season) return ROUNDS;
     if (s > p.season) return 0;
     if (p.di >= ROUNDS) return ROUNDS;
-    return p.di + (hourOfDay(now) >= LIVE_H1 ? 1 : 0);
+    var h0 = rid != null ? natHour(rid) : 14;
+    return p.di + (hourOfDay(now) >= h0 + LIVE_LEN ? 1 : 0);
   }
 
   // ---- the sides of a nation --------------------------------------------------
   function regionList() { var c = cx(); if (!c) return []; return (c.regions() || []).filter(function (r) { return !r.final; }); }
   function regionById(rid) { var L = regionList(); for (var i = 0; i < L.length; i++) if (L[i].id === rid) return L[i]; return null; }
+  // two more real cricket cities per nation, so every league seats ten clubs
+  var EXTRA_CITY = { eng: ["Taunton", "Hove"], ire: ["Sligo", "Wexford"], ned: ["Nijmegen", "Leiden"], win: ["Kingstown", "Providence"], rsa: ["East London", "Potchefstroom"], zim: ["Chinhoyi", "Marondera"], aus: ["Darwin", "Newcastle"], nzl: ["Queenstown", "Whangarei"], slk: ["Negombo", "Jaffna"], sub: ["Pune", "Lucknow"], pak: ["Quetta", "Gujranwala"], afg: ["Bamyan", "Farah"], bgd: ["Mymensingh", "Bogra"], nep: ["Butwal", "Nepalgunj"], sco: ["Paisley", "Falkirk"], wal: ["Llanelli", "Pontypridd"], ken: ["Kakamega", "Kitale"], usa: ["Seattle", "Atlanta"], can: ["Victoria", "Markham"] };
   function sidesOf(rid) {
     var r = regionById(rid); if (!r) return [];
-    var cities = (cx().cities(rid) || []);
+    var cities = (cx().cities(rid) || []).concat(EXTRA_CITY[rid] || []);
     var bc = null; (r.clubs || []).forEach(function (c) { if (c.boss) bc = c; });
     var multByCity = {}; (r.clubs || []).forEach(function (c) { if (!c.boss && c.city) multByCity[c.city] = c.mult; });
     var out = [{ slot: 0, boss: true, name: bc ? bc.nm : (r.nm + " XI"), city: (bc && bc.city) || cities[0] || r.nm, str: 1.07 }];
-    for (var s = 1; s <= 7; s++) {
+    for (var s = 1; s <= 9; s++) {
       var ct = cities[s] || (r.nm + " " + s);
       out.push({ slot: s, boss: false, name: ct + " CC", city: ct, str: multByCity[ct] || (0.86 + rnd01(rid + "|st|" + ct) * 0.1) });
     }
@@ -74,17 +84,18 @@
   }
   // double round robin by the circle method, team order reshuffled every season
   function schedOf(rid, season) {
-    var idx = [0, 1, 2, 3, 4, 5, 6, 7];
+    var N = 10, idx = [];
+    for (var z = 0; z < N; z++) idx.push(z);
     var seed = h32(rid + "|order|" + season);
-    for (var i = 7; i > 0; i--) { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; var j = seed % (i + 1); var t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
+    for (var i = N - 1; i > 0; i--) { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; var j = seed % (i + 1); var t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
     var list = idx.slice(), rounds = [];
-    for (var r = 0; r < 7; r++) {
+    for (var r = 0; r < N - 1; r++) {
       var rd = [];
-      for (var k = 0; k < 4; k++) { var a = list[k], b = list[7 - k]; rd.push(r % 2 ? [b, a] : [a, b]); }
+      for (var k = 0; k < N / 2; k++) { var a = list[k], b = list[N - 1 - k]; rd.push(r % 2 ? [b, a] : [a, b]); }
       rounds.push(rd);
-      list = [list[0], list[7]].concat(list.slice(1, 7)); // rotate all but the pivot
+      list = [list[0], list[N - 1]].concat(list.slice(1, N - 1)); // rotate all but the pivot
     }
-    for (var r2 = 0; r2 < 7; r2++) rounds.push(rounds[r2].map(function (f) { return [f[1], f[0]]; }));
+    for (var r2 = 0; r2 < N - 1; r2++) rounds.push(rounds[r2].map(function (f) { return [f[1], f[0]]; }));
     return rounds;
   }
   // one seeded, plausible fifty-over scoreline
@@ -160,19 +171,23 @@
   }
   function wcChampion(season) { var s = wcBracket(season); return s[3].matches[0].winner; }
   // stage visibility at `now`: which cup days are final
+  var WC_HOURS = [12, 12, 18, 18];             // early rounds at noon; semis and THE FINAL in prime time
   function wcStagesDone(now, season) {
     var p = phaseOf(now); if (season < p.season) return 4;
     if (season > p.season) return 0;
-    if (p.di < 16) return 0;
-    return Math.min(4, (p.di - 16) + (hourOfDay(now) >= LIVE_H1 ? 1 : 0));
+    if (p.di < 20) return 0;
+    var base = p.di - 20;
+    var doneToday = hourOfDay(now) >= WC_HOURS[Math.min(3, base)] + LIVE_LEN ? 1 : 0;
+    return Math.min(4, base + doneToday);
   }
 
   // ---- live partial scores (10:00-14:00 UTC, deterministic by the minute) ----
-  function liveView(m, now) {
-    var h = hourOfDay(now);
-    if (h < LIVE_H0) return { state: "up" };
-    if (h >= LIVE_H1) return { state: "fin", line: m.hs + " · " + m.as, text: m.text };
-    var p = (h - LIVE_H0) / (LIVE_H1 - LIVE_H0), ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+  function liveView(m, now, h0) {
+    if (h0 == null) h0 = 14;
+    var h1 = h0 + LIVE_LEN, h = hourOfDay(now);
+    if (h < h0) return { state: "up", at: h0 };
+    if (h >= h1) return { state: "fin", line: m.hs + " · " + m.as, text: m.text };
+    var p = (h - h0) / (h1 - h0), ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
     if (p < 0.52) {
       var q = p / 0.52, ov = Math.min(49, Math.floor(q * 50));
       return { state: "live", line: m.home.name + " " + Math.floor(m.first * (q * 0.85 + ease * 0.15)) + "/" + Math.min(m.fw >= 10 ? 9 : m.fw, Math.floor(q * m.fw)) + " (" + ov + " ov)" };
@@ -186,7 +201,7 @@
     var out = [], p = phaseOf(now);
     var addLeague = function (ph) {
       if (ph.kind !== "league") return;
-      var done = roundsDone(now, ph.season) >= ph.round;
+      var done = roundsDone(now, ph.season, r.id) >= ph.round;
       if (!done) return;
       regionList().forEach(function (r) {
         if (r.id === myNation()) return;
@@ -204,7 +219,7 @@
       if (st >= 4) { var ch = wcChampion(p.season); out.push({ day: p.day, season: p.season, dayInSeason: p.di, phase: "cup", category: "cup", importance: 100, headline: "CHAMPIONS OF THE WORLD: " + ch.nm + " lift the World Cup" }); }
       else if (st > 0) { var stg = wcBracket(p.season)[st - 1]; stg.matches.forEach(function (m) { out.push({ day: p.day, season: p.season, dayInSeason: p.di, phase: "cup", category: "cup", importance: 80, headline: "World Cup: " + m.winner.nm + " past " + m.loser.nm + " (" + m.hs + " v " + m.as + ")" }); }); }
     }
-    if (p.kind === "honours" || p.di === 15) {
+    if (p.kind === "honours" || p.di === 19) {
       regionList().forEach(function (r) {
         if (r.id === myNation()) return;
         var c = championOf(r.id, p.season);
@@ -231,7 +246,7 @@
       var sn = window.FO_WORLD_SNAPSHOT || (window.FO_WORLD_SNAPSHOT = {});
       var p = phaseOf(now);
       sn.leagues = regionList().map(function (r) {
-        var rd = roundsDone(now, p.season);
+        var rd = roundsDone(now, p.season, r.id);
         var t = tableOf(r.id, p.season, rd);
         return {
           regionId: r.id, name: r.nm + " League",
@@ -270,11 +285,17 @@
     var h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
     return (h ? h + "h " : "") + m + "m";
   }
+  function hh(n) { return (n < 10 ? "0" : "") + Math.floor(n) + ":00"; }
   function todayStatus(now) {
-    var h = hourOfDay(now), d = dayIx(now);
-    if (h < LIVE_H0) return { key: "up", chip: "Play begins in " + fmtCountdown(EPOCH + d * DAY + LIVE_H0 * 3600000 - now) };
-    if (h < LIVE_H1) return { key: "live", chip: "LIVE · results at 14:00 UTC" };
-    return { key: "fin", chip: "Today's play is complete" };
+    var h = hourOfDay(now), liveN = 0, nextAt = null;
+    regionList().forEach(function (r) {
+      var h0 = natHour(r.id);
+      if (h >= h0 && h < h0 + LIVE_LEN) liveN++;
+      else if (h < h0 && (nextAt == null || h0 < nextAt)) nextAt = h0;
+    });
+    if (liveN) return { key: "live", chip: "LIVE now in " + liveN + " " + (liveN === 1 ? "nation" : "nations") };
+    if (nextAt != null) return { key: "up", chip: "Next play " + hh(nextAt) + " UTC" };
+    return { key: "fin", chip: "The world's play is done for today" };
   }
   function stageName(st) { return { r16: "The Last Sixteen", qf: "Quarter-finals", sf: "Semi-finals", final: "THE WORLD CUP FINAL" }[st] || st; }
 
@@ -314,7 +335,7 @@
 
       // -- the world cup panel (draw day through rest day) --------------------
       var cupHTML = "";
-      if (p.di >= 15) {
+      if (p.di >= 19) {
         var stagesDone = wcStagesDone(now, p.season);
         var bracket = wcBracket(p.season);
         var ents = wcEntrants(p.season);
@@ -332,7 +353,7 @@
           var visible = si < stagesDone || (p.kind === "cup" && ["r16", "qf", "sf", "final"][si] === p.stage);
           var liveNow = p.kind === "cup" && ["r16", "qf", "sf", "final"][si] === p.stage && st.key === "live";
           if (!visible && si >= stagesDone) {
-            return "<div class='fo-pl-stage dim'><i>" + stageName(sg.stage) + "</i><span>" + (si === stagesDone ? "Tomorrow, 10:00 UTC" : "To come") + "</span></div>";
+            return "<div class='fo-pl-stage dim'><i>" + stageName(sg.stage) + "</i><span>" + (si === stagesDone ? "Next · " + hh(WC_HOURS[si]) + " UTC" : "To come") + "</span></div>";
           }
           var done = si < stagesDone;
           return "<div class='fo-pl-stage'><i>" + stageName(sg.stage) + (liveNow && !done ? " <b class='lv'>LIVE</b>" : "") + "</i>" +
@@ -364,11 +385,11 @@
           var t = tableOf(r.id, p.season, roundsDone(now, p.season));
           var posOf = {}; t.forEach(function (row, i2) { posOf[row.side.slot] = i2 + 1; });
           var feat = fx.slice().sort(function (a, b) { return (posOf[a.home.slot] + posOf[a.away.slot]) - (posOf[b.home.slot] + posOf[b.away.slot]); })[0];
-          var lv = feat ? liveView(feat, now) : null;
+          var lv = feat ? liveView(feat, now, natHour(r.id)) : null;
           var starLn = "";
           try { if (feat && lv.state === "fin" && window.__foStars) starLn = window.__foStars.suffix(r.id, p.season, p.round, feat); } catch (eSt) {}
           var mid = !feat ? "" :
-            lv.state === "up" ? "<em class='fx'>" + E(feat.home.name) + " v " + E(feat.away.name) + " &middot; 10:00 UTC</em>" :
+            lv.state === "up" ? "<em class='fx'>" + E(feat.home.name) + " v " + E(feat.away.name) + " &middot; " + hh(natHour(r.id)) + " UTC</em>" :
             lv.state === "live" ? "<em class='fx live'><b>LIVE</b> " + E(lv.line) + "</em>" :
             "<em class='fx'>" + E(feat.text) + E(starLn) + "</em>";
           var ldr2 = t[0];
@@ -482,5 +503,5 @@
   });
 
   window.foRenderPlanetPage = foRenderPlanetPage;
-  window.__foPlanet = { phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, fixturesOf: fixturesOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, EPOCH: EPOCH, CYCLE: CYCLE };
+  window.__foPlanet = { phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, fixturesOf: fixturesOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN };
 })();

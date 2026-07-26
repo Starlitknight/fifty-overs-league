@@ -77,7 +77,7 @@
       var sides = P().sidesOf(rid); var club = sides[sl] ? sides[sl].name : reg.nm;
       var seasons = eraSeasons(rid, sl, seen, p.season);
       var rows = seasons.map(function (s2) {
-        var rounds = s2 < p.season ? 14 : P().roundsDone(now, p.season);
+        var rounds = s2 < p.season ? (P().ROUNDS || 18) : P().roundsDone(now, p.season, rid);
         return starSeason(rid, sl, s2, name, rounds);
       });
       var tot = { runs: 0, wkts: 0, best: 0, bb: null, inns: 0 };
@@ -134,7 +134,7 @@
   // a nation's XI for the cup: the best bats and bowls across all its clubs
   function natPool(rid, season) {
     var bats = [], bowls = [];
-    for (var sl = 0; sl < 8; sl++) {
+    for (var sl = 0; sl < 10; sl++) {
       var sq = S().squadOf(rid, sl, season) || [];
       sq.forEach(function (pl) { (pl.bowlType ? bowls : bats).push(pl); });
     }

@@ -5249,6 +5249,13 @@
       // painted portrait (map + boss art) answers at #/atlas, the record
       // book at #/nation
       var atlasPage = (hashPath === "#/atlas");
+      // ONE ENGLAND: your nation's record book IS your real league - the
+      // planet has no second England. Send the door there.
+      if (natPage) {
+        var mNat0 = /[?&]n=([^&]+)/.exec(location.hash || "");
+        var natQ = mNat0 ? decodeURIComponent(mNat0[1]) : foLgNation();
+        if (natQ === foLgNation()) { location.hash = "#/league"; if (typeof window.route === "function") window.route(); return; }
+      }
       if (!natPage && !atlasPage && window.__foLeagueTable) return;
       if (hashPath !== "#/league" && !natPage && !atlasPage) return;
       var page = document.getElementById("page"); if (!page) return;
@@ -5540,7 +5547,7 @@
           "<div class='fo-ov-left'>" +
           "<div class='fo-ov-eb'>" + ebText + "</div>" +
           // the country name is the door into its record book
-          "<a class='fo-ov-title' href='#/nation?n=" + encodeURIComponent(nation) + "' aria-label='" + E(region.nm) + " table, fixtures, results and grounds'>" + E(region.nm) + "<i class='fo-ov-titlecue' aria-hidden='true'>Table &middot; Fixtures &middot; Results &middot; Grounds &#8250;</i></a>" +
+          "<a class='fo-ov-title' href='" + (own ? "#/league" : "#/nation?n=" + encodeURIComponent(nation)) + "' aria-label='" + E(region.nm) + " table, fixtures, results and grounds'>" + E(region.nm) + "<i class='fo-ov-titlecue' aria-hidden='true'>Table &middot; Fixtures &middot; Results &middot; Grounds &#8250;</i></a>" +
           "<div class='fo-ov-sub'>" + E(subtitle) + "</div>" +
           "<div class='fo-ov-bossid'>" + bossId + "</div>" +
           (tagline ? "<p class='fo-ov-quote'>&ldquo;" + E(tagline) + "&rdquo;</p>" : "") +

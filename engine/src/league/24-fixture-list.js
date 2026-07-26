@@ -74,10 +74,15 @@
           });
         }
         upRows = ups.map(function (u, i) {
+          // the fixture list carries real dates now: each round has its hour
+          // on the world calendar (England plays at 14:00 UTC)
+          var when = "";
+          try { if (typeof window.foRoundTimeTxt === "function") when = window.foRoundTimeTxt(u.r) || ""; } catch (eW) {}
           return "<div class='fo-fl-row up" + (i === 0 ? " next" : "") + "'>" +
             "<i>R" + (u.r + 1) + "</i>" +
             "<u class='n'>" + (u.isHome ? "H" : "A") + "</u>" +
-            "<span class='fo-fl-who'><b>" + (u.isHome ? "v " : "at ") + E(u.opp.name) + "</b>" +
+            "<span class='fo-fl-who'><b>" + (u.isHome ? "v " : "at ") + E(u.opp.name) +
+            (when ? " <em class='fo-fl-when'>" + E(when) + "</em>" : "") + "</b>" +
             "<span>" + E(u.ground) + " &middot; " + E(PITCH_NM[u.pitch] || u.pitch) + " pitch &middot; " + E(u.wx) + "</span></span>" +
             (i === 0 ? "<a class='fo-fl-act' href='#/dossier'>Dossier &rsaquo;</a>" : "<em></em>") +
             "</div>";
@@ -143,6 +148,7 @@
     "html body #page .fo-fl-who b{display:block;font:600 13.5px/1.25 Inter,sans-serif;color:#141C28;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     "html body #page .fo-fl-who>span{display:block;font:400 11px/1.35 Inter,sans-serif;color:rgba(20,28,40,.5);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     "html body #page .fo-fl-row em{font:italic 400 12px/1.35 Georgia,serif;color:rgba(20,28,40,.6);text-align:right;white-space:nowrap}",
+    "html body #page .fo-fl-when{display:inline-block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#B44A22;background:rgba(201,85,50,.09);border-radius:6px;padding:3px 6px;margin-left:7px;font-style:normal;vertical-align:1px}",
     "html body #page .fo-fl-row s{text-decoration:none;color:rgba(20,28,40,.35)}",
     "html body #page .fo-fl-act{font:700 11px/1 Inter,sans-serif;color:#FFFEFC;background:#C95532;border-radius:999px;padding:8px 13px;text-decoration:none;white-space:nowrap}",
     "html body #page .fo-fl-act:hover{background:#A64426;color:#FFFEFC;text-decoration:none}",

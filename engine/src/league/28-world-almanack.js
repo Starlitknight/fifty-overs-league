@@ -89,7 +89,7 @@
     var out = [], my = myNation();
     regionList().forEach(function (r) {
       if (r.id === my) return;
-      for (var slot = 0; slot < 8; slot++) {
+      for (var slot = 0; slot < 10; slot++) {
         if (eraOf(r.id, slot, season + 1) === eraOf(r.id, slot, season)) continue;
         var best = batsOf(r.id, slot, season)[0];
         var sides = P() ? P().sidesOf(r.id) : [];
@@ -141,10 +141,11 @@
     var agg = function (s) { return bySeason[s] || (bySeason[s] = { runs: {}, wkts: {} }); };
     var note = function (map, k, add, meta) { var e = map[k] || (map[k] = { n: 0, meta: meta }); e.n += add; };
     for (var s = 1; s <= p.season; s++) {
-      var upto = s < p.season ? 14 : rd;
+      var WR = pl.ROUNDS || 18;
+      var upto = s < p.season ? WR : pl.roundsDone(now, s, null);
       regionList().forEach(function (r) {
         if (r.id === my) return;
-        for (var rr = 1; rr <= upto; rr++) {
+        for (var rr = 1; rr <= (s < p.season ? WR : pl.roundsDone(now, s, r.id)); rr++) {
           pl.fixturesOf(r.id, s, rr).forEach(function (m) {
             if (!rec.total || m.first > rec.total.v) rec.total = { v: m.first, line: m.home.name + " " + m.hs + " v " + m.away.name, where: r.nm + ", season " + s };
             if (m.winner === m.home && (!rec.margin || (m.first - m.second) > rec.margin.v)) rec.margin = { v: m.first - m.second, line: m.text + " (" + m.hs + " v " + m.as + ")", where: r.nm + ", season " + s };
@@ -169,7 +170,7 @@
     };
     var roll = [];
     for (var s2 = 1; s2 <= p.season; s2++) {
-      var done = s2 < p.season || p.di >= 14;
+      var done = s2 < p.season || p.di >= (pl.ROUNDS || 18);
       var champs = [];
       if (done) regionList().forEach(function (r) { if (r.id === my) return; var c = pl.championOf(r.id, s2); if (c) champs.push({ nat: r.nm, club: c.name }); });
       var wcDone = s2 < p.season || pl.wcStagesDone(now, s2) >= 4;
@@ -206,7 +207,7 @@
       if (bats.length < 4 || bowls.length < 3) return null;
       return { season: s3, bats: bats.slice(0, 6), bowls: bowls };
     };
-    var xiSeason = (p.di >= 14 ? p.season : p.season - 1);
+    var xiSeason = (p.di >= (pl.ROUNDS || 18) ? p.season : p.season - 1);
     var cur = agg(p.season);
     var v = { phase: p, rd: rd, runs: top(cur.runs), wkts: top(cur.wkts), rec: rec, roll: roll.reverse(), xi: xiSeason >= 1 ? xiOf(xiSeason) : null };
     CACHE.sig = sig; CACHE.v = v;
@@ -214,13 +215,13 @@
   }
 
   // ---- the winter window: six stars, one signing, your money -----------------
-  function windowOpen(p) { return p.di >= 15; }
+  function windowOpen(p) { return p.di >= 19; }
   function marketOf(season) {
     var rids = regionList().map(function (r) { return r.id; }).filter(function (rid) { return rid !== myNation(); });
     rids.sort(function (a, b) { return rnd01("mkt|" + season + "|" + a) - rnd01("mkt|" + season + "|" + b); });
     var out = [];
     rids.slice(0, 6).forEach(function (rid, i) {
-      var slot = h32("mktslot|" + season + "|" + rid) % 8;
+      var slot = h32("mktslot|" + season + "|" + rid) % 10;
       var sides = P().sidesOf(rid); if (!sides.length) return;
       var sq = squadOf(rid, slot, season); if (!sq || !sq.length) return;
       var star = sq.slice().sort(function (a, b) { return ovrOf(b) - ovrOf(a); })[0];
@@ -289,7 +290,7 @@
       var rollHTML = v.roll.map(function (rw) {
         var champBits = rw.champs.slice(0, 3).map(function (c) { return E(c.club) + " (" + E(c.nat) + ")"; }).join(", ");
         return "<div class='fo-al-roll'><i>Season " + rw.season + "</i>" +
-          (rw.live ? "<b class='live'>In play &middot; round " + v.rd + " of 14</b>" :
+          (rw.live ? "<b class='live'>In play &middot; round " + v.rd + " of " + ((P() && P().ROUNDS) || 18) + "</b>" :
             "<b>" + (rw.wc ? "&#127942; " + E(rw.wc.nm) + " won the World Cup" : "World Cup to come") + "</b>") +
           (champBits ? "<span>League pennants: " + champBits + (rw.champs.length > 3 ? " &amp; " + (rw.champs.length - 3) + " more" : "") + "</span>" : "") +
           "</div>";
@@ -314,7 +315,7 @@
         }).join("");
         mktHTML = "<div class='fo-al-sec'><h2>The Winter Window</h2>" +
           "<p class='fo-al-sub'>" + (open ? "Open until the new season. One overseas signing per season - choose with care." :
-            "Opens after round 14, when the season's pennants are settled. Six names will be on the list.") + "</p>" +
+            "Opens once the season's pennants are settled. Six names will be on the list.") + "</p>" +
           (open ? body : "") + "</div>";
       }
 
