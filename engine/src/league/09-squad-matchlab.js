@@ -444,7 +444,7 @@
     s.textContent = [
       // full-bleed dark stage (widen the app's padded .wrap while mounted)
       "html body.fo-sqx-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
-      "html body.fo-sqx-on #topbar,html body.ftpskin.fo-sqx-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(253,252,249,.94),rgba(253,252,249,.6) 62%,transparent) !important;border-bottom:none !important;box-shadow:none !important}",
+      "html body.fo-sqx-on #topbar,html body.ftpskin.fo-sqx-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(7,22,46,.9),rgba(7,22,46,.4) 62%,transparent) !important;border-bottom:none !important;box-shadow:none !important}",
       "html body.fo-sqx-on #page{padding-top:0 !important;margin-top:0 !important}",
       "html body.fo-sqx-on #fo-top-status{display:none}",
       "#page .fo-sqx{--gold:#EBC271;--ink:#070d18;position:relative;min-height:100vh;background:#E9E4D8;color:#141C28;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}",

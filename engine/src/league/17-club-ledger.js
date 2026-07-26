@@ -201,7 +201,7 @@
       "html body.ftpskin.fo-led-on,html body.fo-led-on{background:linear-gradient(180deg,#f2ebd6,#ece3ca) fixed !important}",
       "html body.fo-led-on .wrap{max-width:none !important;width:100% !important;background:transparent !important;box-shadow:none !important}",
       ".fo-led{max-width:880px;margin:0 auto;padding:18px 14px 40px}",
-      ".fo-led-hero{background:linear-gradient(135deg,#FFFEFB,#F5F0E2 70%) !important;border:1px solid rgba(20,28,40,.1);border-radius:14px;padding:18px 20px;box-shadow:0 12px 28px rgba(30,38,52,.12);margin-bottom:18px}",
+      "html body #page .fo-led-hero{background:linear-gradient(135deg,#FFFEFB,#F5F0E2 70%) !important;border:1px solid rgba(20,28,40,.1);border-radius:14px;padding:18px 20px;box-shadow:0 12px 28px rgba(30,38,52,.12);margin-bottom:18px}",
       ".fo-led-tag{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:#B44A22;margin-bottom:12px}",
       ".fo-led-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}",
       ".fo-led-stat span{display:block;font-family:Oswald,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#8A8272}",
