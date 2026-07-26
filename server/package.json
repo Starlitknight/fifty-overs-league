@@ -1,0 +1,17 @@
+{
+  "name": "fo-world-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Fifty Overs World Service - owns the world clock, runs matches on schedule, persists results. See ../BLUEPRINT.md.",
+  "scripts": {
+    "migrate": "node migrate.mjs",
+    "init-world": "node init-world.mjs",
+    "tick": "node tick.mjs",
+    "api": "node api.mjs",
+    "test": "node --test tests/",
+    "backup": "bash backup.sh",
+    "restore": "bash restore.sh"
+  },
+  "dependencies": { "pg": "^8.13.1" }
+}
