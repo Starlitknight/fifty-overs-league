@@ -222,22 +222,40 @@
       M.isUserMatch = false; M.ordersMap = ordersMap || {};
       App.tossState = { stage: "x" };
       applyToss(aiTossDecision());
-      // fast-forward to the live minute (both viewers land on the same over)
+      // THE BROADCAST RUNS ON THE WORLD CLOCK. The full card is paced across
+      // the whole three-hour window - one delivery every 18 seconds, an over
+      // every couple of minutes - so a live match genuinely lasts the
+      // afternoon and every viewer on earth is watching the same ball at the
+      // same minute. Joining mid-window fast-forwards to the live ball and
+      // then holds broadcast pace; after stumps the theatre replays from the
+      // first ball at highlights pace instead.
       var pl2 = P(), nowT = Date.now();
-      var hNow3 = (nowT - (pl2.EPOCH + pl2.dayIx(nowT) * 86400000)) / 3600000;
-      var frac = (hNow3 - pl2.natHour(rid)) / (pl2.LIVE_LEN || 3);
-      var targetBalls = frac >= 1 ? 600 : frac <= 0 ? 0 : Math.floor(frac * 600);
-      var g = 0;
-      while (M && !M.done && g++ < targetBalls) { autoPick(); stepBall(); }
-      // the broadcast pace: a ball every couple of seconds from here
+      var winStart = pl2.EPOCH + pl2.dayIx(nowT) * 86400000 + pl2.natHour(rid) * 3600000;
+      var winLen = (pl2.LIVE_LEN || 3) * 3600000;
+      var BALL_MS = winLen / 600;
+      var liveBall = function (t) {
+        if (t >= winStart + winLen) return 1e9;          // window over: run to stumps
+        var n = Math.floor((t - winStart) / BALL_MS);
+        return n > 0 ? n : 0;
+      };
+      var isLive = nowT >= winStart && nowT < winStart + winLen;
+      window.__foWtBall = 0;
+      var target0 = isLive ? liveBall(nowT) : 0;         // stumps entry replays from ball one
+      while (M && !M.done && window.__foWtBall < target0) { autoPick(); stepBall(); window.__foWtBall++; }
       try { if (window.__foWtDrv) clearInterval(window.__foWtDrv); } catch (e) {}
       window.__foWtDrv = setInterval(function () {
         try {
           if ((location.hash || "").split("?")[0] !== "#/match" || !M || !M.meta || !M.meta.__spectate) { clearInterval(window.__foWtDrv); return; }
           if (M.done) { clearInterval(window.__foWtDrv); return; }
-          autoPick(); stepBall();
+          if (isLive) {
+            // hold the live minute: bowl only the deliveries the clock has reached
+            var tb = liveBall(Date.now()), guard = 0;
+            while (M && !M.done && window.__foWtBall < tb && guard++ < 650) { autoPick(); stepBall(); window.__foWtBall++; }
+          } else {
+            autoPick(); stepBall(); window.__foWtBall++;
+          }
         } catch (e) { clearInterval(window.__foWtDrv); }
-      }, 2200);
+      }, isLive ? 1000 : 2200);
       location.hash = "#/match";
       if (typeof window.route === "function") window.route();
     } catch (e) { try { console.warn("foWtSpectate", e); } catch (e2) {} }
