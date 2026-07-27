@@ -78,33 +78,71 @@
   }
 
   // ---- SPECTATE: the real broadcast theatre, oval and all -------------------
-  // Builds both XIs from the world-star squads, seeds the REAL engine with
-  // the deterministic world seed, fast-forwards to the live minute, then
-  // hands the match to the engine's own theatre (#/match). Same seed on
-  // every phone = the identical broadcast everywhere. Nothing is saved:
-  // the spectated match ends and evaporates.
-  function fullSquad(rid, slot, season) {
+  // THE GAME THAT ACTUALLY HAPPENS: the World Service banks every world
+  // match from squads seeded 'world1|rid|slot' and match seed
+  // FNV('rid:sN:rR:hHaA') - the same shipped engine this client runs,
+  // proven bit-identical by the golden master. Spectate rebuilds those
+  // exact squads locally and runs that exact seed, so the broadcast you
+  // watch IS the match the server records, ball for ball. Nothing about
+  // it is a reconstruction.
+  function regionCfg(rid) {
+    var r = (cx().regions() || []).filter(function (x) { return x.id === rid; })[0];
+    if (!r) return null;
+    var boss = (r.clubs || []).filter(function (c) { return c.boss; })[0];
+    return { nat: (r.nats && r.nats[0]) || r.nm, arch: r.arch || "rock", capt: (boss && boss.capt) || "talisman" };
+  }
+  function serverSquad(rid, slot) {
+    var cfg = regionCfg(rid); if (!cfg) return null;
     try {
-      if (window.__foStars && window.__foStars.squadOf) {
-        var sq = window.__foStars.squadOf(rid, slot, season);
-        if (sq && sq.length >= 11 && sq[0] && sq[0].skills) return sq;
-      }
-    } catch (e) {}
-    try { return __foGenArchetypeSquad("wt|" + rid + "|" + slot + "|" + season, "England", "rock").players; } catch (e2) {}
-    return null;
+      var g = __foGenArchetypeSquad("world1|" + rid + "|" + slot, cfg.nat, cfg.arch, slot === 0 ? cfg.capt : "general");
+      return (g && g.players) || null;
+    } catch (e) { return null; }
+  }
+  // the server's calendar: season/round for a world day (season 1 = day 5)
+  var WORLD_START = 5;
+  function serverCal(now) {
+    var d = P().dayIx(now), rel = d - WORLD_START;
+    return { seasonNo: Math.floor(rel / 25) + 1, round: (rel % 25) + 1, dayInSeason: rel % 25 };
+  }
+  // the server's schedule, mirrored: same circle method, same season shuffle
+  function schedMirror(rid, seasonNo) {
+    var N = 10, idx = []; for (var z = 0; z < N; z++) idx.push(z);
+    var seed = h32(rid + "|order|" + seasonNo);
+    for (var i = N - 1; i > 0; i--) { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; var j = seed % (i + 1); var t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
+    var list = idx.slice(), rounds = [];
+    for (var r = 0; r < N - 1; r++) {
+      var rd = [];
+      for (var k = 0; k < N / 2; k++) { var a = list[k], b = list[N - 1 - k]; rd.push(r % 2 ? [b, a] : [a, b]); }
+      rounds.push(rd);
+      list = [list[0], list[N - 1]].concat(list.slice(1, N - 1));
+    }
+    for (var r2 = 0; r2 < N - 1; r2++) rounds.push(rounds[r2].map(function (f) { return [f[1], f[0]]; }));
+    return rounds;
+  }
+  function serverFixtures(rid, now) {
+    var pl = P(), cal = serverCal(now);
+    if (cal.seasonNo < 1 || cal.dayInSeason < 0 || cal.dayInSeason > 17) return { cal: cal, fx: [] };
+    var sides = pl.sidesOf(rid); if (!sides || sides.length < 10) return { cal: cal, fx: [] };
+    var bySlot = {}; sides.forEach(function (s) { bySlot[s.slot] = s; });
+    var fx = schedMirror(rid, cal.seasonNo)[cal.round - 1].map(function (p2) {
+      return { home: bySlot[p2[0]], away: bySlot[p2[1]] };
+    });
+    return { cal: cal, fx: fx };
   }
   window.foWtSpectate = function (rid, season, round, fi) {
     try {
       if (typeof M !== "undefined" && M && !M.done && M.meta && !M.meta.__spectate) {
         alert("A match of yours is in progress - finish it first."); return;
       }
-      var pl = P(), fx = pl.fixturesOf(rid, season, round) || [], m = fx[fi];
+      var sv = serverFixtures(rid, Date.now()), m = sv.fx[fi];
       if (!m) return;
-      var sqH = fullSquad(rid, m.home.slot, season), sqA = fullSquad(rid, m.away.slot, season);
+      var cal = sv.cal, srvRound = cal.round;
+      var sqH = serverSquad(rid, m.home.slot), sqA = serverSquad(rid, m.away.slot);
       if (!sqH || !sqA) { alert("The squads are still warming up - try again in a moment."); return; }
       var home = { name: m.home.name, ground: (m.home.city || m.home.name) + " Ground", players: sqH };
       var away = { name: m.away.name, players: sqA };
-      var seed = h32("wtx|" + rid + "|" + season + "|" + round + "|" + m.home.slot + "|" + m.away.slot) || 1;
+      var matchId = rid + ":s" + cal.seasonNo + ":r" + srvRound + ":h" + m.home.slot + "a" + m.away.slot;
+      var seed = h32(matchId) || 1;
       window.onMatchEnd = function () {};
       M = newMatch(home, away, "balanced", seed);
       M.meta = { home: home.name, away: away.name, pitch: "balanced", weather: "Sunny", comp: "world", ground: home.ground, __spectate: 1, isUser: false };
@@ -112,13 +150,10 @@
       App.tossState = { stage: "x" };
       applyToss(aiTossDecision());
       // fast-forward to the live minute (both viewers land on the same over)
-      var lv = pl.liveView(m, Date.now(), pl.natHour(rid));
-      var targetBalls = 600;   // finished: play it all out, theatre shows stumps
-      if (lv.state === "live") {
-        var mm2 = String(lv.line || "").match(/\((\d+) ov\)/);
-        var ovNow = mm2 ? +mm2[1] : 0;
-        targetBalls = (/chasing/.test(lv.line || "") ? 300 : 0) + ovNow * 6;
-      } else if (lv.state === "up") targetBalls = 0;
+      var pl2 = P(), nowT = Date.now();
+      var hNow3 = (nowT - (pl2.EPOCH + pl2.dayIx(nowT) * 86400000)) / 3600000;
+      var frac = (hNow3 - pl2.natHour(rid)) / (pl2.LIVE_LEN || 3);
+      var targetBalls = frac >= 1 ? 600 : frac <= 0 ? 0 : Math.floor(frac * 600);
       var g = 0;
       while (M && !M.done && g++ < targetBalls) { autoPick(); stepBall(); }
       // the broadcast pace: a ball every couple of seconds from here
@@ -153,9 +188,8 @@
     }
     if (!rid) { page.innerHTML = "<div class='fo-wt'><p style='padding:80px 20px;color:#fff'>The world is quiet.</p></div>"; return; }
     var region = regions.filter(function (r) { return r.id === rid; })[0];
-    var round = p.kind === "league" ? p.round : Math.min(pl.ROUNDS, p.di >= pl.ROUNDS ? pl.ROUNDS : 1);
-    var fx = [];
-    try { fx = pl.fixturesOf(rid, p.season, round) || []; } catch (e) {}
+    var sv = serverFixtures(rid, now);
+    var round = sv.cal.round, fx = sv.fx;
     if (!fx.length) {
       page.innerHTML = "<div class='fo-wt'><div class='fo-wt-in'><p style='padding:80px 20px;color:#fff'>No fixtures today in this league - the season is between rounds.</p><a class='fo-wt-back' href='#/planet'>&lsaquo; World cricket</a></div></div>";
       return;
@@ -163,39 +197,21 @@
     var fi = Math.max(0, Math.min(fx.length - 1, parseInt(q.f || "0", 10) || 0));
     var m = fx[fi];
     var h0 = pl.natHour(rid);
-    var lv = pl.liveView(m, now, h0);
+    var hNowW = (now - (pl.EPOCH + pl.dayIx(now) * 86400000)) / 3600000;
+    var state = hNowW < h0 ? "up" : hNowW < h0 + (pl.LIVE_LEN || 3) ? "live" : "fin";
 
-    // who's out there: batting order = the star squad, wickets tell the story
-    var wkts = 0, runs = 0, ov = 0, chasing = lv.state !== "up" && /chasing/.test(lv.line || "");
-    var mLine = lv.state === "live" ? lv.line : "";
-    var mm = mLine.match(/(\d+)\/(\d+) \((\d+) ov\)/);
-    if (mm) { runs = +mm[1]; wkts = +mm[2]; ov = +mm[3]; }
-    var batSide = lv.state === "live" ? (chasing ? m.away : m.home) : m.home;
-    var bowlSide = batSide === m.home ? m.away : m.home;
-    var batNames = squadNames(rid, batSide.slot, p.season) || [];
-    var bowlNames = squadNames(rid, bowlSide.slot, p.season) || [];
-    var striker = batNames[Math.min(wkts, 9)] || "the set batter";
-    var partner = batNames[Math.min(wkts + 1, 10)] || "the new man";
-    var bowlers = bowlNames.slice(6, 11).concat(bowlNames.slice(0, 2));
-    var bowler = bowlers.length ? bowlers[(Math.floor(ov / 2)) % bowlers.length] : "the opening bowler";
-
-    var mkey = rid + "|" + p.season + "|" + round + "|" + m.home.slot + "|" + m.away.slot;
-    var ballsSoFar = lv.state === "live" ? overBalls(mkey + (chasing ? "|2" : "|1"), ov, 1 + (h32(mkey + "|min" + Math.floor(now / 60000)) % 6)) : [];
-    var comm = COMMS[h32(mkey + "|c" + ov) % COMMS.length];
-
-    var stateChip = lv.state === "live" ? "<span class='fo-wt-live'><i></i>LIVE</span>"
-      : lv.state === "up" ? "<span class='fo-wt-soon'>PLAY AT " + (h0 < 10 ? "0" : "") + h0 + ":00 UTC</span>"
+    var stateChip = state === "live" ? "<span class='fo-wt-live'><i></i>LIVE</span>"
+      : state === "up" ? "<span class='fo-wt-soon'>PLAY AT " + (h0 < 10 ? "0" : "") + h0 + ":00 UTC</span>"
       : "<span class='fo-wt-fin'>STUMPS</span>";
-    var bugLine = lv.state === "live" ? E(lv.line)
-      : lv.state === "fin" ? E(lv.line) + " &middot; " + E(m.text)
-      : E(m.home.name) + " v " + E(m.away.name);
+    var bugLine = state === "live" ? "In play now &middot; the broadcast has every ball"
+      : state === "fin" ? "Played &middot; enter the theatre to watch it back"
+      : "First ball " + (h0 < 10 ? "0" : "") + h0 + ":00 UTC";
 
     var others = fx.map(function (m2, i2) {
       if (i2 === fi) return "";
-      var lv2 = pl.liveView(m2, now, h0);
       return "<a class='fo-wt-other' href='#/watch?n=" + rid + "&f=" + i2 + "'>" +
         "<b>" + E(m2.home.name) + " v " + E(m2.away.name) + "</b>" +
-        "<span>" + (lv2.state === "live" ? "&#9679; " + E(lv2.line) : lv2.state === "fin" ? E(m2.text) : "later today") + "</span></a>";
+        "<span>" + (state === "live" ? "&#9679; in play" : state === "fin" ? "played" : "later today") + "</span></a>";
     }).join("");
 
     page.innerHTML = "<div class='fo-wt'>" +
@@ -209,12 +225,8 @@
       "<div class='fo-wt-bug'>" +
       "<div class='fo-wt-teams'><b>" + E(m.home.name) + "</b><i>v</i><b>" + E(m.away.name) + "</b></div>" +
       "<div class='fo-wt-score'>" + bugLine + "</div>" +
-      (lv.state === "live" ?
-        "<div class='fo-wt-crease'><span><u>" + E(striker) + "</u> &amp; " + E(partner) + " at the crease</span>" +
-        "<span>" + E(bowler) + " bowling</span></div>" +
-        "<div class='fo-wt-over'>" + ballsSoFar.map(function (b) { return "<i class='" + (b === "W" ? "w" : b === "4" || b === "6" ? "b" : "") + "'>" + b + "</i>"; }).join("") + "</div>" +
-        "<div class='fo-wt-comm'>" + E(comm) + "</div>" : "") +
-      (lv.state !== "up" ? "<button type='button' class='fo-wt-enter' onclick='foWtSpectate(\"" + rid + "\"," + p.season + "," + round + "," + fi + ")'>Enter the broadcast theatre &rsaquo;</button>" : "") +
+      (state !== "up" ? "<button type='button' class='fo-wt-enter' onclick='foWtSpectate(\"" + rid + "\",0,0," + fi + ")'>" +
+        (state === "live" ? "Enter the broadcast theatre &rsaquo;" : "Watch it back in the theatre &rsaquo;") + "</button>" : "") +
       "</div></div>" +
       (others ? "<div class='fo-wt-rail'><i>Also in this round</i>" + others + "</div>" : "") +
       "<div class='fo-wt-nats'>" + regions.filter(function (r) { return r.id !== my; }).sort(function (a, b) { return pl.natHour(a.id) - pl.natHour(b.id); }).map(function (r) {
