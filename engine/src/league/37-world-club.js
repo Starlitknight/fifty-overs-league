@@ -143,6 +143,20 @@
     } catch (e) {}
   };
 
+  // the Nets asks for the standing plan when it does not have it yet
+  window.__foWorldRefreshPlan = function () {
+    try {
+      if (!jwt()) return;
+      rpc("world_my_status").then(function (st) {
+        if (!st || !st.claim) return;
+        window.__foWorldPlan = st.training || {};
+        window.__foWorldClaim = st.claim;
+        adoptWorldSquad(st);
+        if ((location.hash || "").split("?")[0] === "#/training" && window.foRenderNetsPage) window.foRenderNetsPage();
+      }).catch(function () {});
+    } catch (e) {}
+  };
+
   // ---- signing up IS claiming a club ---------------------------------------
   // No hunt for a claim button: once the account is signed in and no world
   // club is held, the first free club in the manager's own country is
@@ -161,6 +175,7 @@
         if (st.claim) {
           window.__foWorldClaim = st.claim;
           try { localStorage.setItem("fo_world_claim", JSON.stringify(st.claim)); } catch (eS) {}
+          window.__foWorldPlan = st.training || {};
           adoptWorldSquad(st);
           return;
         }
@@ -205,6 +220,7 @@
       } catch (eCl) {}
       if (!st || st.signedIn === false || !jwt()) return renderSignIn(page);
       if (!st.claim) return renderBrowse(page);
+      window.__foWorldPlan = st.training || {};
       adoptWorldSquad(st);          // the world's men are your men, everywhere
       renderMyClub(page, st);
     }).catch(function (e) {
@@ -342,19 +358,8 @@
         "<h4 class='fo-wj-h4'>The counting house <span>settled by the umpire, gate less wages</span></h4>" +
         "<div class='fo-wj-money'><div><i>Treasury</i><b>" + money0(st.bank) + "</b></div>" +
         "<div><i>Weekly wages</i><b>" + money0(squad.reduce(function (a, p) { return a + (p.wage || 0); }, 0)) + "</b></div></div>" +
-        // THE NETS, on the World Service. A programme is a standing order:
-        // whatever stands when a round settles is the work that round did,
-        // done by the umpire to the men who actually play, awake or asleep.
-        "<h4 class='fo-wj-h4'>The nets <span>standing orders &middot; the umpire works them every round</span></h4>" +
-        "<div class='fo-wj-nets'>" + squad.map(function (p) {
-          var cur = (st.training || {})[p.name] || "";
-          return "<label class='fo-wj-net'><span>" + E(p.name) + "</span>" +
-            "<select class='fo-wj-prog' data-p='" + E(p.name) + "'>" +
-            "<option value=''>the coach decides</option>" +
-            PROGS().map(function (pr) {
-              return "<option value=\"" + E(pr) + "\"" + (pr === cur ? " selected" : "") + ">" + E(pr) + "</option>";
-            }).join("") + "</select></label>";
-        }).join("") + "</div>" +
+        // the nets live at #/training - one training ground, not two
+        "<a class='fo-wj-netslink' href='#/training'>&#127951; The nets &mdash; set what your men work on &rsaquo;</a>" +
         "<h4 class='fo-wj-h4'>The club's face <span>what every rival sees on your page</span></h4>" +
         "<div class='fo-wj-idrow'>" +
         "<input id='fo-wj-idcrest' maxlength='4' placeholder='YO' value='" + E((st.identity && st.identity.crest) || "") + "' aria-label='Crest mark'>" +
@@ -379,18 +384,6 @@
         "<button type='button' id='fo-wj-ren' class='fo-wj-rel'>Rename club</button>" +
         "<button type='button' id='fo-wj-rel' class='fo-wj-rel'>Release club</button></div>" +
         "<div class='fo-wj-note' id='fo-wj-msg'></div></div>");
-
-      // a programme changed is a message to the world, debounced so a manager
-      // working down the list writes once, not fifteen times
-      page.querySelectorAll(".fo-wj-prog").forEach(function (s) {
-        s.addEventListener("change", function () {
-          var plan = {};
-          page.querySelectorAll(".fo-wj-prog").forEach(function (x) {
-            if (x.value) plan[x.getAttribute("data-p")] = x.value;
-          });
-          if (window.__foWorldPushTraining) window.__foWorldPushTraining(plan);
-        });
-      });
 
       var idBtn = page.querySelector("#fo-wj-idsave");
       if (idBtn) idBtn.addEventListener("click", function () {
@@ -640,10 +633,7 @@
       "html body #page .fo-wj-man b{display:block;font:600 12px/1.2 Inter,sans-serif;color:#141C28;flex:1 1 auto;min-width:76px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       "html body #page .fo-wj-man span{flex:1 0 100%;order:3;font-size:9.5px;color:rgba(20,28,40,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}",
       "html body #page .fo-wj-form{flex:none;margin-left:auto;text-decoration:none;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:rgba(20,28,40,.45);white-space:nowrap}",
-      ".fo-wj-nets{display:grid;grid-template-columns:1fr;gap:5px;margin:2px 0 6px}",
-      ".fo-wj-net{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.8);border:1px solid rgba(20,28,40,.1);border-radius:10px;padding:6px 9px;min-width:0}",
-      ".fo-wj-net>span{flex:1 1 auto;min-width:0;font:600 12px/1.2 Inter,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
-      "html body #page .fo-wj-net select{flex:none;max-width:52%;font:500 11px/1 Inter,sans-serif;border:1px solid rgba(20,28,40,.16);border-radius:8px;padding:6px 7px;background:#fff;color:#141C28}",
+      "html body #page .fo-wj-netslink{display:block;margin:4px 0 8px;padding:11px 13px;background:rgba(250,238,230,.85) !important;border:1px solid rgba(200,84,47,.35);border-radius:12px;font:600 12px/1.3 Inter,sans-serif;color:#B44A22 !important;text-decoration:none !important}",
       ".fo-wj-money{display:flex;gap:10px;margin:2px 0 4px}",
       ".fo-wj-money>div{flex:1;background:rgba(255,255,255,.85);border:1px solid rgba(20,28,40,.12);border-radius:12px;padding:9px 11px;min-width:0}",
       ".fo-wj-money i{display:block;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.45);font-style:normal}",

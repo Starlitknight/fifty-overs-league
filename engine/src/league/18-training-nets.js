@@ -92,6 +92,10 @@
   // ---------------------------------------------------------------------------
   function foNsSettle() {
     if (!ready() || !App.season) return;
+    // ONE TRAINING GROUND: if this club plays in the served world, the umpire
+    // does its training from the plan the world holds. The local resolver
+    // would only bump skills the World Service is about to overwrite.
+    try { if (window.__foWorldClaim) return; } catch (eW) {}
     var doneR = (App.season.round || 0) - 1; if (doneR < 0) return;
     var key = "S" + (App.seasonNo || 1) + "R" + doneR;
     var t = TR();
@@ -206,6 +210,48 @@
     var hour = new Date().getHours(), night = hour >= 19 || hour < 6;
     var bg = ART() + "home/" + (window.innerWidth < 760 ? "hgm" : "hgd") + "-nets-" + (night && window.innerWidth >= 760 ? "night" : "day") + ".webp";
     var squad = (me.players || []).concat(me.youth || []);
+
+    // ---- THE NETS ARE THE WORLD'S NETS --------------------------------------
+    // One training ground. The plan a manager sets here is a standing order
+    // held by the World Service: whatever stands when a round settles is the
+    // work that round did, worked by the umpire on the men who actually play,
+    // whether or not this phone is on. The programme list and the arithmetic
+    // both belong to the shipped engine, so there is only ever one model of
+    // what a week in the nets does.
+    var world = null;
+    try { world = window.__foWorldClaim || null; } catch (eW) {}
+    var plan = {};
+    try { plan = window.__foWorldPlan || {}; } catch (eP) {}
+    var PROGS = (function () {
+      try {
+        var k = Object.keys(window.FO_TRAIN_PROGS || {});
+        if (k.length) return k.filter(function (x) { return x !== "Rest"; }).concat(["Rest"]);
+      } catch (e) {}
+      return ["Batting", "Power hitting", "Finishing", "Bowling", "New-ball seam", "Spin bowling",
+        "Death bowling", "Control bowling", "Keeping", "Fielding", "Fitness", "All-rounder", "Rest"];
+    })();
+    var planHTML = squad.map(function (p) {
+      var cur = plan[p.name] || "";
+      var prog = (p.trainProgress || {});
+      var best = "", bestPct = 0;
+      for (var k in prog) {
+        var th = 80 + ((p.skills && p.skills[k]) || 0) * 1.5;
+        var pc = Math.min(99, Math.round(100 * (prog[k] || 0) / th));
+        if (pc > bestPct) { bestPct = pc; best = k; }
+      }
+      return "<label class='fo-ns-man'>" +
+        "<span class='fo-ns-mn'><b>" + E(p.name) + "</b><i>" + (p.age | 0) + " &middot; " +
+        (bestPct ? E(foSkillLbl(best)) + " " + bestPct + "%" : "no work banked yet") + "</i></span>" +
+        "<select class='fo-ns-prog' data-p='" + E(p.name) + "'>" +
+        "<option value=''>the coach decides</option>" +
+        PROGS.map(function (pr) {
+          return "<option value=\"" + E(pr) + "\"" + (pr === cur ? " selected" : "") + ">" + E(pr) + "</option>";
+        }).join("") + "</select></label>";
+    }).join("");
+    var planPanel = "<div class='fo-ns-panel'><h3>The plan <span>" +
+      (world ? "standing orders &middot; the umpire works them every round" : "sign in to send these to the world") + "</span></h3>" +
+      "<p class='fo-ns-note'>Name the work and it is done for you, round after round, awake or asleep. Leave a man to the coach and he trains to his trade.</p>" +
+      "<div class='fo-ns-men'>" + planHTML + "</div></div>";
     var sessHTML = Object.keys(FO_NS_SESS).map(function (id) {
       var S = FO_NS_SESS[id], on = t.sessions.indexOf(id) >= 0;
       var coachOn = S.coach && t.coaches[S.coach];
@@ -239,15 +285,28 @@
       "<div class='fo-ns-in'>" +
       "<div class='fo-cer-eyebrow'>" + E(me.name) + " &middot; the training ground</div>" +
       "<h1 class='fo-ns-h1'>The Nets</h1>" +
-      "<p class='fo-ns-tag'>Three sessions a week, two projects, and whatever staff the ledger can bear. The plan runs with every round, whether you watch it or not.</p>" +
+      "<p class='fo-ns-tag'>Name what each man works on. The World Service holds the plan and the umpire runs it with every round, whether you watch it or not.</p>" +
       "<div class='fo-ns-grid'>" +
-      "<div class='fo-ns-panel'><h3>The week <span>" + t.sessions.length + "/3 sessions</span></h3><div class='fo-ns-sessgrid'>" + sessHTML + "</div></div>" +
-      "<div class='fo-ns-panel'><h3>The coach&rsquo;s projects</h3><p class='fo-ns-note'>One man, one fault, double the hours.</p>" + projHTML + "</div>" +
-      "<div class='fo-ns-panel'><h3>The staff</h3><p class='fo-ns-note'>Retainers invoice the club ledger every round.</p>" + staffHTML + "</div>" +
+      planPanel +
       "<div class='fo-ns-panel'><h3>Development report</h3>" + (rows || "<p class='fo-ns-note'>No gains recorded yet. The first week's work shows after the round.</p>") + "</div>" +
       "</div>" +
       "<div class='fo-cer-actions'><a class='fo-ls-btn ghost' href='#/desk'>&lsaquo; The desk</a><a class='fo-ls-btn ghost' href='#/squad'>The squad &rsaquo;</a></div>" +
       "</div></div>";
+    // a programme changed is a standing order sent to the world, debounced
+    page.querySelectorAll(".fo-ns-prog").forEach(function (sl) {
+      sl.addEventListener("change", function () {
+        var next = {};
+        page.querySelectorAll(".fo-ns-prog").forEach(function (x) {
+          if (x.value) next[x.getAttribute("data-p")] = x.value;
+        });
+        try { window.__foWorldPlan = next; } catch (eS) {}
+        if (window.__foWorldPushTraining) window.__foWorldPushTraining(next);
+        else { try { toast("Sign in to send the nets to the world."); } catch (eT) {} }
+      });
+    });
+    // if the world has not told us the plan yet, ask and repaint when it does
+    try { if (window.__foWorldPlan == null && window.__foWorldRefreshPlan) window.__foWorldRefreshPlan(); } catch (eR) {}
+
     var save = function () { try { saveGame(false); } catch (e) {} window.foRenderNetsPage(); };
     page.querySelectorAll("[data-ns-sess]").forEach(function (b) {
       b.addEventListener("click", function () {
@@ -312,6 +371,13 @@
       "@media(max-width:900px){.fo-ns-grid{grid-template-columns:minmax(0,1fr)}}",
       ".fo-ns-panel{background:rgba(252,251,246,.9);border:1px solid rgba(60,80,45,.16);border-radius:16px;padding:15px 17px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 14px 34px rgba(30,40,20,.18)}",
       ".fo-ns-panel h3{margin:0 0 10px;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#8A6A1F;display:flex;justify-content:space-between;align-items:baseline}",
+      ".fo-ns-men{display:grid;gap:6px;margin-top:6px}",
+      ".fo-ns-man{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:8px 10px;min-width:0}",
+      ".fo-ns-mn{flex:1 1 auto;min-width:0;display:block}",
+      ".fo-ns-mn b{display:block;font:600 12.5px/1.25 Inter,sans-serif;color:#FFFEFC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".fo-ns-mn i{display:block;font:400 10px/1.3 Inter,sans-serif;font-style:normal;color:rgba(255,254,252,.55)}",
+      "html body #page .fo-ns-prog{flex:none;max-width:50%;font:500 11px/1.1 Inter,sans-serif !important;border:1px solid rgba(20,28,40,.2) !important;border-radius:9px !important;padding:8px 8px !important;background:#FFFEFC !important;color:#141C28 !important;-webkit-appearance:menulist;appearance:menulist}",
+      "html body #page .fo-ns-prog option{color:#141C28;background:#FFFEFC}",
       ".fo-ns-panel h3 span{font-size:9.5px;color:#6E7E5A;letter-spacing:.14em}",
       ".fo-ns-note{font-family:Georgia,serif;font-style:italic;font-size:12px;color:#6E7E5A;margin:0 0 10px}",
       ".fo-ns-sessgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}",

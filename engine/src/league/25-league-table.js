@@ -67,12 +67,53 @@
         }
       } catch (eAtl) {}
 
+      // THE LEAGUE IS THE WORLD'S LEAGUE. When the World Service has served
+      // this nation's table, that is the table - the real ten clubs, their
+      // real points - and every row opens onto that club's own page. Absent
+      // the service we keep the engine's own standings, and rows still open
+      // onto the club's honours board.
+      var srvRows = null, claim = null, snapSeason = 0;
+      try { claim = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eC) {}
+      try {
+        if (natId && window.__foWorldLg) {
+          window.__foWorldLg.want(natId, function () {
+            if ((location.hash || "").split("?")[0] === "#/league") foRenderLeagueTablePage();
+          });
+          var snap = window.__foWorldLg.get(natId);
+          if (snap && snap.table && snap.table.length) {
+            snapSeason = snap.seasonNo || 0;
+            srvRows = snap.table.map(function (x) {
+              return { nm: x.name, p: x.p, w: x.w, l: x.l, t: x.t, pts: x.pts, nrr: x.nrr, slot: x.slot,
+                mine: !!(claim && claim.country === natId && claim.slot === x.slot) };
+            });
+            // form beads from the served results, newest last
+            var seq = {};
+            (snap.results || []).forEach(function (rr) {
+              [rr.home, rr.away].forEach(function (nm) {
+                if (!nm) return;
+                (seq[nm] = seq[nm] || []).push(rr.winner === null ? "t" : rr.winner === nm ? "w" : "l");
+              });
+            });
+            srvRows.forEach(function (r) {
+              var s5 = (seq[r.nm] || []).slice(-5);
+              r.beads = s5.length
+                ? s5.map(function (k) { return "<i class='" + k + "'>" + k.toUpperCase() + "</i>"; }).join("")
+                : "<span class='none'>&mdash;</span>";
+            });
+          }
+        }
+      } catch (eS) {}
+      if (srvRows) { rows = srvRows; myPos = 0; rows.forEach(function (r, i) { if (r.mine) myPos = i + 1; }); }
+
       var body = rows.map(function (r, i) {
-        var mine = r.nm === me.name;
-        return "<a class='fo-lt-row" + (mine ? " mine" : "") + "' href='#/milestones?c=" + encodeURIComponent(r.nm) + "'>" +
+        var mine = r.mine != null ? r.mine : (r.nm === me.name);
+        var href = (srvRows && r.slot != null)
+          ? "#/team?c=" + encodeURIComponent(natId) + "&s=" + r.slot
+          : "#/milestones?c=" + encodeURIComponent(r.nm);
+        return "<a class='fo-lt-row" + (mine ? " mine" : "") + "' href='" + href + "'>" +
           "<i>" + (i + 1) + "</i>" +
           "<span class='fo-lt-nm'><b>" + E(r.nm) + (mine ? " <u>you</u>" : "") + "</b>" +
-          "<span class='fo-lt-beads'>" + formBeads(r.nm) + "</span></span>" +
+          "<span class='fo-lt-beads'>" + (r.beads != null ? r.beads : formBeads(r.nm)) + "</span></span>" +
           "<em>" + (r.p | 0) + "</em><em class='w'>" + (r.w | 0) + "</em><em>" + (r.l | 0) + "</em>" +
           "<em class='nrr'>" + ((r.nrr >= 0 ? "+" : "") + (+r.nrr || 0).toFixed(2)) + "</em>" +
           "<b class='pts'>" + (r.pts | 0) + "</b></a>";
@@ -81,9 +122,9 @@
       page.innerHTML =
         "<div class='fo-lt'>" +
         "<div class='fo-lt-mast'>" +
-        "<div class='fo-lt-kick'>" + (natNm ? E(natNm) + " &middot; " : "") + "Season " + (App.seasonNo || 1) + " &middot; " + E(me.name) + (myPos ? " &middot; " + ord(myPos) : "") + "</div>" +
+        "<div class='fo-lt-kick'>" + (natNm ? E(natNm) + " &middot; " : "") + "Season " + ((srvRows && snapSeason) || App.seasonNo || 1) + " &middot; " + E((claim && claim.club) || me.name) + (myPos ? " &middot; " + ord(myPos) : "") + "</div>" +
         "<h1>The " + (natNm ? E(natNm) + " " : "") + "League</h1>" +
-        "<p>Ten clubs, eighteen rounds, one pennant. Two points a win, net run rate to break hearts. Every club opens onto its honours board.</p>" +
+        "<p>Ten clubs, eighteen rounds, one pennant. Two points a win, net run rate to break hearts. Every club opens onto its own page.</p>" +
         "</div>" +
         "<div class='fo-lt-head'><i>#</i><span>Club &middot; form</span><em>P</em><em>W</em><em>L</em><em>NRR</em><b>Pts</b></div>" +
         "<div class='fo-lt-list'>" + body + "</div>" +
