@@ -69,13 +69,31 @@
       ["Fielding", (p.keeper || p.role === "wicketkeeper") ? agg(aggKeep, p) : agg(aggField, p)]
     ];
   }
-  // the seven the club's own coaching book keeps. Batting and bowling belong on
-  // the shape too: a shape without them describes a cricketer you never picked.
-  function facets(p) {
+  // THE SHAPE IS THE JOB. Batting and bowling belong on it - a shape without
+  // them describes a cricketer you never picked - but a number nobody judges
+  // him on is noise: a spinner's batting, an opener's keeping. Each kind of
+  // cricketer shows what he is picked for, and the rest waits in the advanced
+  // engine view, where nothing is ever hidden.
+  function allFacets(p) {
     var bowls = !!(p.bowlType && !/does not bowl/i.test(p.btLabel || ""));
     return [["Batting", agg(aggBat, p)], ["Bowling", bowls ? agg(aggBowl, p) : 0],
       ["Technique", agg(aggTech, p)], ["Power", num(skills(p).power)], ["Endurance", agg(aggEnd, p)],
       ["Fielding", agg(aggField, p)], ["Keeping", agg(aggKeep, p)]];
+  }
+  function hiddenFacetNames(p) {
+    var k = kindLbl(p);
+    if (k === "Wicketkeeper") return ["Bowling"];
+    if (k === "All-rounder") return ["Keeping"];
+    if (k === "Bowler") return ["Batting", "Keeping"];
+    return ["Bowling", "Keeping"];                       // a batter, pure and simple
+  }
+  function facets(p) {
+    var drop = hiddenFacetNames(p);
+    return allFacets(p).filter(function (f) { return drop.indexOf(f[0]) < 0; });
+  }
+  function restFacets(p) {
+    var drop = hiddenFacetNames(p);
+    return allFacets(p).filter(function (f) { return drop.indexOf(f[0]) >= 0; });
   }
   // tired legs, in words the dressing room uses and a colour anyone can read
   function fatOf(word) {
@@ -354,7 +372,11 @@
       var adv = "";
       if (mine) {
         var sk = skills(p);
-        adv = "<details class='fo-pp-adv'><summary>Advanced engine view</summary><div class='fo-pp-advg'>" +
+        adv = "<details class='fo-pp-adv'><summary>Advanced engine view</summary>" +
+          "<div class='fo-pp-advg rest'>" + restFacets(p).map(function (f) {
+            return "<span><i>" + E(f[0].toLowerCase()) + "</i><b>" + num(f[1]) + "</b></span>";
+          }).join("") + "</div>" +
+          "<div class='fo-pp-advg'>" +
           ["vsPace", "vsSpin", "power", "rotation", "temperament", "wicket", "economy", "discipline", "moveTurn",
             "variation", "stamina", "fielding", "catching", "keeping", "stumping"].map(function (k) {
             return "<span><i>" + k + "</i><b>" + num(sk[k]) + "</b></span>";
@@ -732,6 +754,9 @@
     "html body #page .fo-pp-adv summary{font:600 11.5px/1 Inter,sans-serif;color:var(--nac);cursor:pointer}",
     "html body #page .fo-pp-advg{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:5px;margin-top:9px}",
     "html body #page .fo-pp-advg span{display:flex;justify-content:space-between;gap:6px;font:500 11px/1.4 Inter,sans-serif;color:rgba(20,28,40,.6);border-bottom:1px solid rgba(20,28,40,.06);padding:3px 0}",
+    "html body #page .fo-pp-advg.rest{margin:9px 0 4px}",
+    "html body #page .fo-pp-advg.rest span{color:#141C28;border-bottom-color:rgba(201,162,75,.4)}",
+    "html body #page .fo-pp-advg.rest i{color:rgba(20,28,40,.5)}",
     "html body #page .fo-pp-advg b{color:#141C28;font-variant-numeric:tabular-nums}",
     // mini career, meters, story, positions
     "html body #page .fo-pp-mini{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;text-align:center}",

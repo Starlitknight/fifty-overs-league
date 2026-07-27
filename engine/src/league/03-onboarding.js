@@ -2397,7 +2397,7 @@
     ], foJCreate);
   }
   function foJCreate() {
-    var mgr0 = FO_ONB.mgr || (SYNC && SYNC.me && SYNC.me.display_name) || "Manager";
+    var mgr0 = FO_ONB.mgr || (window.foMgrName && window.foMgrName()) || (SYNC && SYNC.me && SYNC.me.display_name) || "Manager";
     var ctyLocked = false;   // choosable until commit - create_league_team upserts name+country
     var body = "<div class='fo-j-dwrap'>" +
       "<h1 class='fo-ob-h1' style='text-align:center'>Create your club</h1>" +
@@ -2437,6 +2437,9 @@
       var nm = (cn.value || "").trim();
       if (nm.length < 3) { say("Give the club a real name - three letters or more."); return; }
       FO_ONB.clubName = nm; FO_ONB.mgr = (mn.value || "").trim() || mgr0;
+      // the name he types here is his name in the world: the table, his club
+      // page and every fixture list call him this, not "Orange Club manager"
+      try { if (FO_ONB.mgr && FO_ONB.mgr !== "Manager") localStorage.setItem("fo_mgr", FO_ONB.mgr); } catch (eMg) {}
       FO_ONB.ground = nm + " Oval";
       if (!FO_ONB.country) FO_ONB.country = NAT[0];
       try { App.founder.name = nm; App.founder.mgr = FO_ONB.mgr; } catch (e) {}

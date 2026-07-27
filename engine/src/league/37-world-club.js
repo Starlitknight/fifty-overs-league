@@ -65,6 +65,26 @@
 
   var ST = { view: null, nation: "eng", picked: [], five: [], capt: null, keep: null, toss: "bat", allRounds: false, busy: "" };
 
+  // ---- A MANAGER IS CALLED WHAT HE CALLS HIMSELF -----------------------------
+  // The name typed on the founding certificate is the name the world uses. It
+  // is kept on the device (the account's display name is the old private
+  // league's, and is usually empty here), so a claim never falls back to a
+  // placeholder like "Orange Club manager" when the man has already told us
+  // who he is.
+  window.foMgrName = function () {
+    var nm = "";
+    try { nm = (App && App.founder && App.founder.mgr) || ""; } catch (e) {}
+    if (!nm) { try { nm = localStorage.getItem("fo_mgr") || ""; } catch (e2) {} }
+    if (!nm) { try { nm = (SYNC && SYNC.me && SYNC.me.display_name) || ""; } catch (e3) {} }
+    nm = String(nm || "").trim();
+    return (nm && nm.toLowerCase() !== "manager") ? nm.slice(0, 24) : "";
+  };
+  function mgrForClaim() {
+    var nm = window.foMgrName();
+    if (nm) return nm;
+    try { return (userTeam().name || "The") + " manager"; } catch (e) { return "manager"; }
+  }
+
   // the engine's own spell template, built from YOUR ordered five: openers
   // attack with the new ball, the middle grinds, the closers defend the death
   function spellsOf(five) {
@@ -226,7 +246,7 @@
       var nat = "eng";
       try { nat = (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || "eng"; } catch (eN) {}
       var clubNm = ""; try { clubNm = userTeam().name || ""; } catch (eC) {}
-      var mgr = "manager"; try { mgr = (SYNC && SYNC.me && SYNC.me.display_name) || ((clubNm || "The") + " manager"); } catch (eM) {}
+      var mgr = mgrForClaim();
       rpc("world_my_status").then(function (st) {
         if (!st || st.signedIn === false) return;
         if (st.claim) {
@@ -325,8 +345,7 @@
       box.querySelectorAll(".fo-wj-claim").forEach(function (b) {
         b.addEventListener("click", function () {
           if (b.disabled) return; b.disabled = true; b.textContent = "Claiming…";
-          var mgr = "manager";
-          try { mgr = (SYNC && SYNC.me && SYNC.me.display_name) || (userTeam().name + " manager"); } catch (e) {}
+          var mgr = mgrForClaim();
           // christen the club: your own club name rides in as the default
           var defNm = ""; try { defNm = userTeam().name || ""; } catch (eD) {}
           var clubNm = null;
@@ -417,6 +436,11 @@
         "<div><i>Weekly wages</i><b>" + money0(squad.reduce(function (a, p) { return a + (p.wage || 0); }, 0)) + "</b></div></div>" +
         // the nets live at #/training - one training ground, not two
         "<a class='fo-wj-netslink' href='#/training'>&#127951; The nets &mdash; set what your men work on &rsaquo;</a>" +
+        // your own name: the table, your club page and every fixture list use it
+        "<h4 class='fo-wj-h4'>Your name <span>what the world calls the manager of this club</span></h4>" +
+        "<div class='fo-wj-idrow'>" +
+        "<input id='fo-wj-mgr' maxlength='24' placeholder='Your name' value='" + E(st.manager || window.foMgrName() || "") + "' aria-label='Manager name'>" +
+        "<button type='button' id='fo-wj-mgrsave'>Save</button></div>" +
         "<h4 class='fo-wj-h4'>The club's face <span>what every rival sees on your page</span></h4>" +
         "<div class='fo-wj-idrow'>" +
         "<input id='fo-wj-idcrest' maxlength='4' placeholder='YO' value='" + E((st.identity && st.identity.crest) || "") + "' aria-label='Crest mark'>" +
@@ -475,6 +499,27 @@
       page.querySelectorAll("[data-toss]").forEach(function (b) {
         b.addEventListener("click", function () { ST.toss = b.getAttribute("data-toss"); renderMyClub(page, st); });
       });
+      try {
+        var mgEl = page.querySelector("#fo-wj-mgr"), mgSv = page.querySelector("#fo-wj-mgrsave");
+        if (mgSv && mgEl) mgSv.addEventListener("click", function () {
+          var nm9 = (mgEl.value || "").trim();
+          mgSv.disabled = true; mgSv.textContent = "Saving…";
+          rpc("world_set_manager", { p_name: nm9 }).then(function (r9) {
+            mgSv.disabled = false; mgSv.textContent = "Save";
+            try { localStorage.setItem("fo_mgr", (r9 && r9.manager) || nm9); } catch (e9) {}
+            try { if (App.founder) App.founder.mgr = (r9 && r9.manager) || nm9; } catch (e8) {}
+            try { localStorage.removeItem("fo_world_mgr_" + c.country); } catch (e7) {}
+            try { if (window.__foWorldNames) window.__foWorldNames.want(c.country); } catch (e6) {}
+            // this module lives outside the toast helper's closure, so the
+            // button itself says it: a confirmation nobody can miss
+            mgSv.textContent = "Saved \u2713";
+            setTimeout(function () { try { mgSv.textContent = "Save"; } catch (e0) {} }, 2200);
+          }).catch(function (e4) {
+            mgSv.disabled = false; mgSv.textContent = "Save";
+            try { alert(String(e4.message || e4).slice(0, 160)); } catch (e3) {}
+          });
+        });
+      } catch (eMg9) {}
       var captEl = page.querySelector("#fo-wj-capt"), keepEl = page.querySelector("#fo-wj-keep"), allEl = page.querySelector("#fo-wj-all");
       if (captEl) captEl.addEventListener("change", function () { ST.capt = captEl.value; });
       if (keepEl) keepEl.addEventListener("change", function () { ST.keep = keepEl.value; });

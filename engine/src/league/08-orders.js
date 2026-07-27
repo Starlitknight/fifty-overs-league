@@ -482,7 +482,8 @@
             "<i class='fbd" + (foMfVal(nmL) ? " on" : "") + "' data-fo-mfc='" + E(nmL) + "' title='" + E(foMfTitle(nmL)) + "'>" + foMfShort(nmL) + "</i>" +
             "</span><span class='lt'>" + cellsL + "</span><u>" + (tot[nmL] || 0) + "</u></div>";
         }).join("") +
-        "<div class='fo-ord-lane lax'><span class='ln'></span><span class='lt'><em style='flex:10'>Powerplay</em><em style='flex:30'>Middle</em><em style='flex:10'>Death</em></span><u></u></div></div>";
+        "<div class='fo-ord-lane lax'><span class='ln'></span><span class='lt'><em style='flex:10'>Powerplay</em><em style='flex:30'>Middle</em><em style='flex:10'>Death</em></span><u></u></div></div>" +
+        "<div class='fo-ord-clearrow lanes'><button type='button' class='fo-ord-clearp' data-fo-clearplan>&#8709; Clear the bowling plan</button></div>";
       // each bowler as a small card: type, overs, bowling stars (ranked
       // against the club's other bowlers), stamina, and his talents
       // bowler cards mirror the batting cards: name row with OVR right,
@@ -514,6 +515,7 @@
       var inits = function (nm9) { var a9 = String(nm9).split(" "); return (a9[0].charAt(0) + (a9.length > 1 ? a9[a9.length - 1].charAt(0) : "")).toUpperCase(); };
       var mgrid = "<div class='fo-ord-mgrid'>" +
         "<div class='mg-hint'>Pick a bowler, then tap overs to hand them to him &middot; tap his over again to clear it. Top row is the powerplay, bottom row the death. Tap a bowler's badge to set his field: attacking, balanced or defensive.</div>" +
+        "<div class='fo-ord-clearrow'><button type='button' class='fo-ord-clearp' data-fo-clearplan>&#8709; Clear the bowling plan</button></div>" +
         "<div class='mg-chips'>" + bowlNames.map(function (n9) {
           // the lanes are desktop-only, so a phone gets the bowler's field
           // here: the same badge, on his own chip
@@ -631,7 +633,9 @@
         // only auto-plan an EMPTY sheet - a saved or hand-painted plan is kept
         gridState();
         var painted0 = 0; for (var oS = 1; oS <= 50; oS++) if (App.orders.grid && App.orders.grid[oS]) painted0++;
-        if (!painted0 && !App.orders.saved) { suggestOrders(); App.orders.grid = null; App.orders.gridBowlers = null; gridState(); gridToSpells(); }
+        // the Gaffer fills an EMPTY sheet - but never refills one the manager
+        // has just deliberately cleared, or the clear button undoes itself
+        if (!painted0 && !App.orders.saved && !App.orders.noAutoPlan) { suggestOrders(); App.orders.grid = null; App.orders.gridBowlers = null; gridState(); gridToSpells(); }
       } catch (eSg) {}
       // the fixture IS the occasion: a broadcast-sized matchup title, the
       // conditions in one quiet line beneath, and no conditions essay
@@ -700,6 +704,7 @@
             var br5 = window.__foOrdBrush || "";
             App.orders.grid[o5] = (!br5 || App.orders.grid[o5] === br5) ? null : br5;
             if (br5 && App.orders.gridBowlers.indexOf(br5) < 0) App.orders.gridBowlers.push(br5);
+            App.orders.noAutoPlan = 0;
             gridToSpells();
             foOrdRepaint("bowl");
             return;
@@ -759,6 +764,16 @@
           // the click fired by a just-finished drag must not read as a tap -
           // the flag self-expires so it can never swallow a LATER real click
           if (window.__foOrdDragged) return;
+          if ((el = q("[data-fo-clearplan]"))) {
+            gridState();
+            for (var oP = 1; oP <= 50; oP++) App.orders.grid[oP] = null;
+            App.orders.gridBowlers = [];
+            App.orders.noAutoPlan = 1;
+            gridToSpells();
+            foOrdersUI();
+            toast("The bowling plan is clear - paint it again, or let the AI captain improvise.");
+            return;
+          }
           if ((el = q("[data-fo-mb]"))) { foMbCycle(el.getAttribute("data-fo-mb")); foOrdersUI(); return; }
           if ((el = q("[data-fo-mfc]"))) { foMfCycle(el.getAttribute("data-fo-mfc")); foOrdersUI(); return; }
           if ((el = q("[data-fo-mkc]"))) { App.orders.captain = el.getAttribute("data-fo-mkc"); foOrdersUI(); return; }
@@ -793,6 +808,7 @@
           if ((el = q("[data-lo]"))) {
             var oT = +el.getAttribute("data-lo"), nmT = el.getAttribute("data-ln");
             gridState();
+            App.orders.noAutoPlan = 0;
             var gT = App.orders.grid;
             if (gT[oT] === nmT) gT[oT] = null;
             else {
@@ -983,6 +999,10 @@
       ".mg-chips .mgb.on u{color:#B04A2C}" +
       ".mg-chips .mgb s{text-decoration:none;font-size:9.5px;font-weight:700;letter-spacing:.03em;color:#8a93a3;border:1px solid rgba(28,36,51,.16);border-radius:6px;padding:2px 6px}" +
       ".mg-chips .mgb s.on{color:#FFFEFC;background:#0E233F;border-color:#0E233F}" +
+      ".fo-ord-clearrow{display:flex;justify-content:flex-end;margin:9px 0 2px}" +
+      ".fo-ord-clearrow.lanes{margin:7px 0 0}" +
+      "html body.ftpskin #page button.fo-ord-clearp,html body #page button.fo-ord-clearp{border:1px solid rgba(28,36,51,.16)!important;background:#FFFEFC!important;color:#5a6472!important;border-radius:999px;padding:7px 13px;font-size:11px;font-weight:700;letter-spacing:.02em;cursor:pointer}" +
+      "html body #page button.fo-ord-clearp:hover{border-color:#B04A2C!important;color:#B04A2C!important}" +
       ".mg-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}" +
       "html body #page .mg-grid button.mgc{position:relative;border:1px solid rgba(28,36,51,.16)!important;background:#F6F3EC!important;border-radius:7px;height:36px;padding:0;cursor:pointer;overflow:hidden}" +
       "html body #page .mg-grid button.mgc.pp{border-bottom:3px solid #4E7A4E!important}" +

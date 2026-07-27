@@ -10632,7 +10632,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-2221-4301be";
+  var FO_BUILD = "20260727-2230-007f95";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14380,7 +14380,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     ], foJCreate);
   }
   function foJCreate() {
-    var mgr0 = FO_ONB.mgr || (SYNC && SYNC.me && SYNC.me.display_name) || "Manager";
+    var mgr0 = FO_ONB.mgr || (window.foMgrName && window.foMgrName()) || (SYNC && SYNC.me && SYNC.me.display_name) || "Manager";
     var ctyLocked = false;   // choosable until commit - create_league_team upserts name+country
     var body = "<div class='fo-j-dwrap'>" +
       "<h1 class='fo-ob-h1' style='text-align:center'>Create your club</h1>" +
@@ -14420,6 +14420,9 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var nm = (cn.value || "").trim();
       if (nm.length < 3) { say("Give the club a real name - three letters or more."); return; }
       FO_ONB.clubName = nm; FO_ONB.mgr = (mn.value || "").trim() || mgr0;
+      // the name he types here is his name in the world: the table, his club
+      // page and every fixture list call him this, not "Orange Club manager"
+      try { if (FO_ONB.mgr && FO_ONB.mgr !== "Manager") localStorage.setItem("fo_mgr", FO_ONB.mgr); } catch (eMg) {}
       FO_ONB.ground = nm + " Oval";
       if (!FO_ONB.country) FO_ONB.country = NAT[0];
       try { App.founder.name = nm; App.founder.mgr = FO_ONB.mgr; } catch (e) {}
@@ -20434,7 +20437,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
             "<i class='fbd" + (foMfVal(nmL) ? " on" : "") + "' data-fo-mfc='" + E(nmL) + "' title='" + E(foMfTitle(nmL)) + "'>" + foMfShort(nmL) + "</i>" +
             "</span><span class='lt'>" + cellsL + "</span><u>" + (tot[nmL] || 0) + "</u></div>";
         }).join("") +
-        "<div class='fo-ord-lane lax'><span class='ln'></span><span class='lt'><em style='flex:10'>Powerplay</em><em style='flex:30'>Middle</em><em style='flex:10'>Death</em></span><u></u></div></div>";
+        "<div class='fo-ord-lane lax'><span class='ln'></span><span class='lt'><em style='flex:10'>Powerplay</em><em style='flex:30'>Middle</em><em style='flex:10'>Death</em></span><u></u></div></div>" +
+        "<div class='fo-ord-clearrow lanes'><button type='button' class='fo-ord-clearp' data-fo-clearplan>&#8709; Clear the bowling plan</button></div>";
       // each bowler as a small card: type, overs, bowling stars (ranked
       // against the club's other bowlers), stamina, and his talents
       // bowler cards mirror the batting cards: name row with OVR right,
@@ -20466,6 +20470,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var inits = function (nm9) { var a9 = String(nm9).split(" "); return (a9[0].charAt(0) + (a9.length > 1 ? a9[a9.length - 1].charAt(0) : "")).toUpperCase(); };
       var mgrid = "<div class='fo-ord-mgrid'>" +
         "<div class='mg-hint'>Pick a bowler, then tap overs to hand them to him &middot; tap his over again to clear it. Top row is the powerplay, bottom row the death. Tap a bowler's badge to set his field: attacking, balanced or defensive.</div>" +
+        "<div class='fo-ord-clearrow'><button type='button' class='fo-ord-clearp' data-fo-clearplan>&#8709; Clear the bowling plan</button></div>" +
         "<div class='mg-chips'>" + bowlNames.map(function (n9) {
           // the lanes are desktop-only, so a phone gets the bowler's field
           // here: the same badge, on his own chip
@@ -20583,7 +20588,9 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         // only auto-plan an EMPTY sheet - a saved or hand-painted plan is kept
         gridState();
         var painted0 = 0; for (var oS = 1; oS <= 50; oS++) if (App.orders.grid && App.orders.grid[oS]) painted0++;
-        if (!painted0 && !App.orders.saved) { suggestOrders(); App.orders.grid = null; App.orders.gridBowlers = null; gridState(); gridToSpells(); }
+        // the Gaffer fills an EMPTY sheet - but never refills one the manager
+        // has just deliberately cleared, or the clear button undoes itself
+        if (!painted0 && !App.orders.saved && !App.orders.noAutoPlan) { suggestOrders(); App.orders.grid = null; App.orders.gridBowlers = null; gridState(); gridToSpells(); }
       } catch (eSg) {}
       // the fixture IS the occasion: a broadcast-sized matchup title, the
       // conditions in one quiet line beneath, and no conditions essay
@@ -20652,6 +20659,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
             var br5 = window.__foOrdBrush || "";
             App.orders.grid[o5] = (!br5 || App.orders.grid[o5] === br5) ? null : br5;
             if (br5 && App.orders.gridBowlers.indexOf(br5) < 0) App.orders.gridBowlers.push(br5);
+            App.orders.noAutoPlan = 0;
             gridToSpells();
             foOrdRepaint("bowl");
             return;
@@ -20711,6 +20719,16 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           // the click fired by a just-finished drag must not read as a tap -
           // the flag self-expires so it can never swallow a LATER real click
           if (window.__foOrdDragged) return;
+          if ((el = q("[data-fo-clearplan]"))) {
+            gridState();
+            for (var oP = 1; oP <= 50; oP++) App.orders.grid[oP] = null;
+            App.orders.gridBowlers = [];
+            App.orders.noAutoPlan = 1;
+            gridToSpells();
+            foOrdersUI();
+            toast("The bowling plan is clear - paint it again, or let the AI captain improvise.");
+            return;
+          }
           if ((el = q("[data-fo-mb]"))) { foMbCycle(el.getAttribute("data-fo-mb")); foOrdersUI(); return; }
           if ((el = q("[data-fo-mfc]"))) { foMfCycle(el.getAttribute("data-fo-mfc")); foOrdersUI(); return; }
           if ((el = q("[data-fo-mkc]"))) { App.orders.captain = el.getAttribute("data-fo-mkc"); foOrdersUI(); return; }
@@ -20745,6 +20763,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           if ((el = q("[data-lo]"))) {
             var oT = +el.getAttribute("data-lo"), nmT = el.getAttribute("data-ln");
             gridState();
+            App.orders.noAutoPlan = 0;
             var gT = App.orders.grid;
             if (gT[oT] === nmT) gT[oT] = null;
             else {
@@ -20935,6 +20954,10 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       ".mg-chips .mgb.on u{color:#B04A2C}" +
       ".mg-chips .mgb s{text-decoration:none;font-size:9.5px;font-weight:700;letter-spacing:.03em;color:#8a93a3;border:1px solid rgba(28,36,51,.16);border-radius:6px;padding:2px 6px}" +
       ".mg-chips .mgb s.on{color:#FFFEFC;background:#0E233F;border-color:#0E233F}" +
+      ".fo-ord-clearrow{display:flex;justify-content:flex-end;margin:9px 0 2px}" +
+      ".fo-ord-clearrow.lanes{margin:7px 0 0}" +
+      "html body.ftpskin #page button.fo-ord-clearp,html body #page button.fo-ord-clearp{border:1px solid rgba(28,36,51,.16)!important;background:#FFFEFC!important;color:#5a6472!important;border-radius:999px;padding:7px 13px;font-size:11px;font-weight:700;letter-spacing:.02em;cursor:pointer}" +
+      "html body #page button.fo-ord-clearp:hover{border-color:#B04A2C!important;color:#B04A2C!important}" +
       ".mg-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}" +
       "html body #page .mg-grid button.mgc{position:relative;border:1px solid rgba(28,36,51,.16)!important;background:#F6F3EC!important;border-radius:7px;height:36px;padding:0;cursor:pointer;overflow:hidden}" +
       "html body #page .mg-grid button.mgc.pp{border-bottom:3px solid #4E7A4E!important}" +
@@ -39924,6 +39947,26 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
 
   var ST = { view: null, nation: "eng", picked: [], five: [], capt: null, keep: null, toss: "bat", allRounds: false, busy: "" };
 
+  // ---- A MANAGER IS CALLED WHAT HE CALLS HIMSELF -----------------------------
+  // The name typed on the founding certificate is the name the world uses. It
+  // is kept on the device (the account's display name is the old private
+  // league's, and is usually empty here), so a claim never falls back to a
+  // placeholder like "Orange Club manager" when the man has already told us
+  // who he is.
+  window.foMgrName = function () {
+    var nm = "";
+    try { nm = (App && App.founder && App.founder.mgr) || ""; } catch (e) {}
+    if (!nm) { try { nm = localStorage.getItem("fo_mgr") || ""; } catch (e2) {} }
+    if (!nm) { try { nm = (SYNC && SYNC.me && SYNC.me.display_name) || ""; } catch (e3) {} }
+    nm = String(nm || "").trim();
+    return (nm && nm.toLowerCase() !== "manager") ? nm.slice(0, 24) : "";
+  };
+  function mgrForClaim() {
+    var nm = window.foMgrName();
+    if (nm) return nm;
+    try { return (userTeam().name || "The") + " manager"; } catch (e) { return "manager"; }
+  }
+
   // the engine's own spell template, built from YOUR ordered five: openers
   // attack with the new ball, the middle grinds, the closers defend the death
   function spellsOf(five) {
@@ -40085,7 +40128,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var nat = "eng";
       try { nat = (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || "eng"; } catch (eN) {}
       var clubNm = ""; try { clubNm = userTeam().name || ""; } catch (eC) {}
-      var mgr = "manager"; try { mgr = (SYNC && SYNC.me && SYNC.me.display_name) || ((clubNm || "The") + " manager"); } catch (eM) {}
+      var mgr = mgrForClaim();
       rpc("world_my_status").then(function (st) {
         if (!st || st.signedIn === false) return;
         if (st.claim) {
@@ -40184,8 +40227,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       box.querySelectorAll(".fo-wj-claim").forEach(function (b) {
         b.addEventListener("click", function () {
           if (b.disabled) return; b.disabled = true; b.textContent = "Claiming…";
-          var mgr = "manager";
-          try { mgr = (SYNC && SYNC.me && SYNC.me.display_name) || (userTeam().name + " manager"); } catch (e) {}
+          var mgr = mgrForClaim();
           // christen the club: your own club name rides in as the default
           var defNm = ""; try { defNm = userTeam().name || ""; } catch (eD) {}
           var clubNm = null;
@@ -40276,6 +40318,11 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         "<div><i>Weekly wages</i><b>" + money0(squad.reduce(function (a, p) { return a + (p.wage || 0); }, 0)) + "</b></div></div>" +
         // the nets live at #/training - one training ground, not two
         "<a class='fo-wj-netslink' href='#/training'>&#127951; The nets &mdash; set what your men work on &rsaquo;</a>" +
+        // your own name: the table, your club page and every fixture list use it
+        "<h4 class='fo-wj-h4'>Your name <span>what the world calls the manager of this club</span></h4>" +
+        "<div class='fo-wj-idrow'>" +
+        "<input id='fo-wj-mgr' maxlength='24' placeholder='Your name' value='" + E(st.manager || window.foMgrName() || "") + "' aria-label='Manager name'>" +
+        "<button type='button' id='fo-wj-mgrsave'>Save</button></div>" +
         "<h4 class='fo-wj-h4'>The club's face <span>what every rival sees on your page</span></h4>" +
         "<div class='fo-wj-idrow'>" +
         "<input id='fo-wj-idcrest' maxlength='4' placeholder='YO' value='" + E((st.identity && st.identity.crest) || "") + "' aria-label='Crest mark'>" +
@@ -40334,6 +40381,27 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       page.querySelectorAll("[data-toss]").forEach(function (b) {
         b.addEventListener("click", function () { ST.toss = b.getAttribute("data-toss"); renderMyClub(page, st); });
       });
+      try {
+        var mgEl = page.querySelector("#fo-wj-mgr"), mgSv = page.querySelector("#fo-wj-mgrsave");
+        if (mgSv && mgEl) mgSv.addEventListener("click", function () {
+          var nm9 = (mgEl.value || "").trim();
+          mgSv.disabled = true; mgSv.textContent = "Saving…";
+          rpc("world_set_manager", { p_name: nm9 }).then(function (r9) {
+            mgSv.disabled = false; mgSv.textContent = "Save";
+            try { localStorage.setItem("fo_mgr", (r9 && r9.manager) || nm9); } catch (e9) {}
+            try { if (App.founder) App.founder.mgr = (r9 && r9.manager) || nm9; } catch (e8) {}
+            try { localStorage.removeItem("fo_world_mgr_" + c.country); } catch (e7) {}
+            try { if (window.__foWorldNames) window.__foWorldNames.want(c.country); } catch (e6) {}
+            // this module lives outside the toast helper's closure, so the
+            // button itself says it: a confirmation nobody can miss
+            mgSv.textContent = "Saved \u2713";
+            setTimeout(function () { try { mgSv.textContent = "Save"; } catch (e0) {} }, 2200);
+          }).catch(function (e4) {
+            mgSv.disabled = false; mgSv.textContent = "Save";
+            try { alert(String(e4.message || e4).slice(0, 160)); } catch (e3) {}
+          });
+        });
+      } catch (eMg9) {}
       var captEl = page.querySelector("#fo-wj-capt"), keepEl = page.querySelector("#fo-wj-keep"), allEl = page.querySelector("#fo-wj-all");
       if (captEl) captEl.addEventListener("change", function () { ST.capt = captEl.value; });
       if (keepEl) keepEl.addEventListener("change", function () { ST.keep = keepEl.value; });
@@ -41943,13 +42011,31 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       ["Fielding", (p.keeper || p.role === "wicketkeeper") ? agg(aggKeep, p) : agg(aggField, p)]
     ];
   }
-  // the seven the club's own coaching book keeps. Batting and bowling belong on
-  // the shape too: a shape without them describes a cricketer you never picked.
-  function facets(p) {
+  // THE SHAPE IS THE JOB. Batting and bowling belong on it - a shape without
+  // them describes a cricketer you never picked - but a number nobody judges
+  // him on is noise: a spinner's batting, an opener's keeping. Each kind of
+  // cricketer shows what he is picked for, and the rest waits in the advanced
+  // engine view, where nothing is ever hidden.
+  function allFacets(p) {
     var bowls = !!(p.bowlType && !/does not bowl/i.test(p.btLabel || ""));
     return [["Batting", agg(aggBat, p)], ["Bowling", bowls ? agg(aggBowl, p) : 0],
       ["Technique", agg(aggTech, p)], ["Power", num(skills(p).power)], ["Endurance", agg(aggEnd, p)],
       ["Fielding", agg(aggField, p)], ["Keeping", agg(aggKeep, p)]];
+  }
+  function hiddenFacetNames(p) {
+    var k = kindLbl(p);
+    if (k === "Wicketkeeper") return ["Bowling"];
+    if (k === "All-rounder") return ["Keeping"];
+    if (k === "Bowler") return ["Batting", "Keeping"];
+    return ["Bowling", "Keeping"];                       // a batter, pure and simple
+  }
+  function facets(p) {
+    var drop = hiddenFacetNames(p);
+    return allFacets(p).filter(function (f) { return drop.indexOf(f[0]) < 0; });
+  }
+  function restFacets(p) {
+    var drop = hiddenFacetNames(p);
+    return allFacets(p).filter(function (f) { return drop.indexOf(f[0]) >= 0; });
   }
   // tired legs, in words the dressing room uses and a colour anyone can read
   function fatOf(word) {
@@ -42228,7 +42314,11 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var adv = "";
       if (mine) {
         var sk = skills(p);
-        adv = "<details class='fo-pp-adv'><summary>Advanced engine view</summary><div class='fo-pp-advg'>" +
+        adv = "<details class='fo-pp-adv'><summary>Advanced engine view</summary>" +
+          "<div class='fo-pp-advg rest'>" + restFacets(p).map(function (f) {
+            return "<span><i>" + E(f[0].toLowerCase()) + "</i><b>" + num(f[1]) + "</b></span>";
+          }).join("") + "</div>" +
+          "<div class='fo-pp-advg'>" +
           ["vsPace", "vsSpin", "power", "rotation", "temperament", "wicket", "economy", "discipline", "moveTurn",
             "variation", "stamina", "fielding", "catching", "keeping", "stumping"].map(function (k) {
             return "<span><i>" + k + "</i><b>" + num(sk[k]) + "</b></span>";
@@ -42606,6 +42696,9 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     "html body #page .fo-pp-adv summary{font:600 11.5px/1 Inter,sans-serif;color:var(--nac);cursor:pointer}",
     "html body #page .fo-pp-advg{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:5px;margin-top:9px}",
     "html body #page .fo-pp-advg span{display:flex;justify-content:space-between;gap:6px;font:500 11px/1.4 Inter,sans-serif;color:rgba(20,28,40,.6);border-bottom:1px solid rgba(20,28,40,.06);padding:3px 0}",
+    "html body #page .fo-pp-advg.rest{margin:9px 0 4px}",
+    "html body #page .fo-pp-advg.rest span{color:#141C28;border-bottom-color:rgba(201,162,75,.4)}",
+    "html body #page .fo-pp-advg.rest i{color:rgba(20,28,40,.5)}",
     "html body #page .fo-pp-advg b{color:#141C28;font-variant-numeric:tabular-nums}",
     // mini career, meters, story, positions
     "html body #page .fo-pp-mini{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;text-align:center}",
