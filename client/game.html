@@ -10592,7 +10592,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-0503-c11f25";
+  var FO_BUILD = "20260727-0511-3a24ae";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -11636,6 +11636,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   function schedulePoll() {
     if (SYNC && SYNC.pollTimer) return;
     if (SYNC) SYNC.pollTimer = setInterval(pollOnce, 15000);
+    // coming back to the tab syncs immediately rather than waiting a tick
+    try { document.addEventListener("visibilitychange", function () { if (!document.hidden) setTimeout(pollOnce, 400); }); } catch (eV) {}
   }
   // Push the current round's packet (orders + club orders). Runs from the
   // 15s poll AND the moment Save orders is clicked, so the green states
@@ -11694,6 +11696,10 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   });
   function pollOnce() {
     if (!LG || !SYNC || SYNC.practice) return;   // practice mode is a private local game
+    // a hidden tab reads nothing: every 15s tick in a backgrounded phone or a
+    // forgotten desktop tab was paid Supabase egress. The next visible tick
+    // (or the visibilitychange below) catches the tab up instantly.
+    try { if (document.hidden) return; } catch (eH) {}
     if (SYNC.started && !SYNC.submittedLoaded) { try { foLoadSubmitted(); } catch (e) {} }
     if (SYNC.started && !SYNC.__plannedLoaded) { SYNC.__plannedLoaded = 1; try { foLoadPlanned(); } catch (e) {} }
     try { foRetryPlanned(); } catch (e) {}
@@ -37323,16 +37329,28 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     try { localStorage.setItem("fo_world_feed_cache", JSON.stringify(j)); } catch (e) {}
     paint();
   }
+  var SEEN_TS = null;
   function refresh() {
+    try { if (document.hidden) return; } catch (eH) {}
     var b = base();
     try {
       if (b) {
         // an explicitly configured service keeps the P1 JSON shape
         fetch(b + "/league/eng.json", { mode: "cors" }).then(function (r) { return r.ok ? r.json() : null; }).then(accept).catch(function () {});
       } else {
-        fetch(SB_URL + "/rest/v1/world_snapshots?key=eq." + encodeURIComponent("league/eng") + "&select=body", { headers: { apikey: SB_ANON } })
+        // egress manners: probe the tiny updated_at first and download the
+        // body only when the umpire actually wrote something new
+        var q = "/rest/v1/world_snapshots?key=eq." + encodeURIComponent("league/eng");
+        fetch(SB_URL + q + "&select=updated_at", { headers: { apikey: SB_ANON } })
           .then(function (r) { return r.ok ? r.json() : null; })
-          .then(function (rows) { accept(rows && rows[0] && rows[0].body); }).catch(function () {});
+          .then(function (rows) {
+            var ts = rows && rows[0] && rows[0].updated_at;
+            if (!ts || ts === SEEN_TS) return null;
+            SEEN_TS = ts;
+            return fetch(SB_URL + q + "&select=body", { headers: { apikey: SB_ANON } })
+              .then(function (r2) { return r2.ok ? r2.json() : null; })
+              .then(function (rows2) { accept(rows2 && rows2[0] && rows2[0].body); });
+          }).catch(function () {});
       }
     } catch (e) {}
   }
@@ -37378,7 +37396,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(mount, 0); setTimeout(refresh, 600); });
   else { setTimeout(mount, 0); setTimeout(refresh, 600); }
-  setInterval(refresh, 120000);
+  setInterval(refresh, 300000);   // rounds land once a day; five minutes is plenty
   window.addEventListener("hashchange", function () { setTimeout(paint, 200); });
   window.__foWorldFeedRefresh = refresh;
 })();

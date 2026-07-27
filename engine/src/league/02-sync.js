@@ -514,6 +514,8 @@
   function schedulePoll() {
     if (SYNC && SYNC.pollTimer) return;
     if (SYNC) SYNC.pollTimer = setInterval(pollOnce, 15000);
+    // coming back to the tab syncs immediately rather than waiting a tick
+    try { document.addEventListener("visibilitychange", function () { if (!document.hidden) setTimeout(pollOnce, 400); }); } catch (eV) {}
   }
   // Push the current round's packet (orders + club orders). Runs from the
   // 15s poll AND the moment Save orders is clicked, so the green states
@@ -572,6 +574,10 @@
   });
   function pollOnce() {
     if (!LG || !SYNC || SYNC.practice) return;   // practice mode is a private local game
+    // a hidden tab reads nothing: every 15s tick in a backgrounded phone or a
+    // forgotten desktop tab was paid Supabase egress. The next visible tick
+    // (or the visibilitychange below) catches the tab up instantly.
+    try { if (document.hidden) return; } catch (eH) {}
     if (SYNC.started && !SYNC.submittedLoaded) { try { foLoadSubmitted(); } catch (e) {} }
     if (SYNC.started && !SYNC.__plannedLoaded) { SYNC.__plannedLoaded = 1; try { foLoadPlanned(); } catch (e) {} }
     try { foRetryPlanned(); } catch (e) {}

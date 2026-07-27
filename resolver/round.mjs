@@ -31,15 +31,26 @@ function tzDateHour(d) {
 // never a different XI. If no pass lands between the lock and kickoff the
 // broadcast starts late and catches up, but the lineups still hold.
 const CH_BANK_MIN = 60;
+// a challenge older than this can never meaningfully play - a club was
+// renamed, a snapshot rolled, a sim kept failing. Without a floor, one such
+// row makes every pass re-download the multi-MB snapshot forever: that exact
+// loop burned ~10 GB of Supabase egress before this guard existed.
+const CH_MAX_AGE_MS = 48 * 3600000;
 async function playChallenges(page) {
   let due = [];
   try {
+    try { await rpc('expire_stale_challenges'); } catch (e) {}   // absent until 0003
     const horizon = encodeURIComponent(new Date(Date.now() + CH_BANK_MIN * 60000).toISOString());
-    due = await rest(`league_challenges?status=eq.accepted&result=is.null&play_at=lte.${horizon}&select=*`);
+    const floor = encodeURIComponent(new Date(Date.now() - CH_MAX_AGE_MS).toISOString());
+    due = await rest(`league_challenges?status=eq.accepted&result=is.null&play_at=lte.${horizon}&play_at=gte.${floor}&select=*`);
   } catch (e) { return; }   // table absent until 0017 is run
+  const snapCache = {};      // one snapshot download per league per pass, not per challenge
   for (const ch of due) {
     try {
-      const st = (await rest(`league_state?league_id=eq.${ch.league_id}&select=snapshot`))[0];
+      if (!(ch.league_id in snapCache)) {
+        snapCache[ch.league_id] = (await rest(`league_state?league_id=eq.${ch.league_id}&select=snapshot`))[0] || null;
+      }
+      const st = snapCache[ch.league_id];
       if (!st) continue;
       const result = await page.evaluate(({ snap, ch }) => {
         window.restoreFrom(snap);

@@ -23,16 +23,28 @@
     try { localStorage.setItem("fo_world_feed_cache", JSON.stringify(j)); } catch (e) {}
     paint();
   }
+  var SEEN_TS = null;
   function refresh() {
+    try { if (document.hidden) return; } catch (eH) {}
     var b = base();
     try {
       if (b) {
         // an explicitly configured service keeps the P1 JSON shape
         fetch(b + "/league/eng.json", { mode: "cors" }).then(function (r) { return r.ok ? r.json() : null; }).then(accept).catch(function () {});
       } else {
-        fetch(SB_URL + "/rest/v1/world_snapshots?key=eq." + encodeURIComponent("league/eng") + "&select=body", { headers: { apikey: SB_ANON } })
+        // egress manners: probe the tiny updated_at first and download the
+        // body only when the umpire actually wrote something new
+        var q = "/rest/v1/world_snapshots?key=eq." + encodeURIComponent("league/eng");
+        fetch(SB_URL + q + "&select=updated_at", { headers: { apikey: SB_ANON } })
           .then(function (r) { return r.ok ? r.json() : null; })
-          .then(function (rows) { accept(rows && rows[0] && rows[0].body); }).catch(function () {});
+          .then(function (rows) {
+            var ts = rows && rows[0] && rows[0].updated_at;
+            if (!ts || ts === SEEN_TS) return null;
+            SEEN_TS = ts;
+            return fetch(SB_URL + q + "&select=body", { headers: { apikey: SB_ANON } })
+              .then(function (r2) { return r2.ok ? r2.json() : null; })
+              .then(function (rows2) { accept(rows2 && rows2[0] && rows2[0].body); });
+          }).catch(function () {});
       }
     } catch (e) {}
   }
@@ -78,7 +90,7 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(mount, 0); setTimeout(refresh, 600); });
   else { setTimeout(mount, 0); setTimeout(refresh, 600); }
-  setInterval(refresh, 120000);
+  setInterval(refresh, 300000);   // rounds land once a day; five minutes is plenty
   window.addEventListener("hashchange", function () { setTimeout(paint, 200); });
   window.__foWorldFeedRefresh = refresh;
 })();
