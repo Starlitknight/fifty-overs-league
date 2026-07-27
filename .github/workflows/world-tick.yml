@@ -52,7 +52,8 @@ jobs:
           const cands = [];
           if (process.env.RAW_URL) cands.push(process.env.RAW_URL);
           if (process.env.DB_PASS) {
-            const ref = process.env.PROJECT_REF, reg = process.env.REGION, p = enc(process.env.DB_PASS);
+            // mobile copy-paste loves to smuggle in whitespace; trim it away
+            const ref = process.env.PROJECT_REF, reg = process.env.REGION, p = enc(process.env.DB_PASS.trim());
             // session pooler only (5432): transaction pooling would break the
             // per-connection search_path the service relies on
             for (const n of [0, 1, 2]) {
