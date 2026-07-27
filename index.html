@@ -10588,7 +10588,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-1656-bd95f2";
+  var FO_BUILD = "20260727-1701-47cc0c";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -39107,6 +39107,55 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     };
   }
 
+  // ---- ONE CLUB, ONE SQUAD -------------------------------------------------
+  // There is only one world, so there is only one set of men. The World
+  // Service owns your club's squad - it is the eleven that walks out at your
+  // nation's hour, the names that accumulate caps and form and tired legs -
+  // and this pulls them down into the club the whole game reads. Squad page,
+  // club home, player cards: all of them now show the cricketers who
+  // actually play for you, carrying the lives the season has given them.
+  //
+  // The world is the authority: whatever is here is replaced by whatever the
+  // service says. Nothing local is lost that the world would not overwrite
+  // anyway - and any saved lineup naming men who no longer wear the shirt is
+  // cleared, so you never send out a teamsheet of ghosts.
+  function adoptWorldSquad(st) {
+    try {
+      if (!st || !st.claim || !Array.isArray(st.squad) || st.squad.length < 11) return false;
+      var t = null; try { t = userTeam(); } catch (eT) { return false; }
+      if (!t) return false;
+      var names = st.squad.map(function (p) { return p && p.name; });
+      var sig = st.claim.country + ":" + st.claim.slot + ":" + names.join("|");
+      if (t.__worldSig === sig) return false;              // already these men
+      t.players = JSON.parse(JSON.stringify(st.squad));
+      if (st.claim.club) t.name = st.claim.club;
+      if (st.claim.ground) t.ground = st.claim.ground;
+      t.youth = t.youth || [];
+      t.__worldSig = sig;
+      try { if (typeof ensureTraining === "function") t.players.forEach(ensureTraining); } catch (eE) {}
+      // a lineup that names men who have gone is no lineup at all
+      try {
+        var have = {}; names.forEach(function (n) { have[n] = 1; });
+        var stale = function (o) {
+          if (!o) return false;
+          var list = (o.xi || []).concat(o.batOrder || []);
+          return list.some(function (n) { return n && !have[n]; });
+        };
+        if (stale(App.orders)) { App.orders = null; }
+        if (stale(App.defaults)) { App.defaults = null; }
+      } catch (eO) {}
+      try { if (typeof saveGame === "function") saveGame(false); } catch (eS) {}
+      // repaint whatever is on screen so the new men appear at once
+      try {
+        var pg = document.getElementById("page");
+        if (pg) pg.__foLgSig = null;
+        if (typeof window.route === "function") window.route();
+      } catch (eR) {}
+      return true;
+    } catch (e) { return false; }
+  }
+  window.__foAdoptWorldSquad = adoptWorldSquad;
+
   // ---- signing up IS claiming a club ---------------------------------------
   // No hunt for a claim button: once the account is signed in and no world
   // club is held, the first free club in the manager's own country is
@@ -39125,6 +39174,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         if (st.claim) {
           window.__foWorldClaim = st.claim;
           try { localStorage.setItem("fo_world_claim", JSON.stringify(st.claim)); } catch (eS) {}
+          adoptWorldSquad(st);
           return;
         }
         rpc("world_auto_claim", { p_country: nat, p_name: mgr, p_club_name: clubNm || null }).then(function (r) {
@@ -39132,6 +39182,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           var cl = { country: r.country, slot: r.slot, club: r.club, name: mgr };
           window.__foWorldClaim = cl;
           try { localStorage.setItem("fo_world_claim", JSON.stringify(cl)); localStorage.removeItem("fo_world_nm_" + r.country); } catch (eS2) {}
+          rpc("world_my_status").then(adoptWorldSquad).catch(function () {});
           try {
             if ((location.hash || "").indexOf("#/nation") === 0) {
               var pg = document.getElementById("page"); if (pg) pg.__foLgSig = null;
@@ -39167,6 +39218,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       } catch (eCl) {}
       if (!st || st.signedIn === false || !jwt()) return renderSignIn(page);
       if (!st.claim) return renderBrowse(page);
+      adoptWorldSquad(st);          // the world's men are your men, everywhere
       renderMyClub(page, st);
     }).catch(function (e) {
       page.innerHTML = shell("Your club in the served world",
