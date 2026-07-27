@@ -143,6 +143,27 @@
     } catch (e) {}
   };
 
+  // ONE CLUB, ONE NAME. The world is the naming authority, so christening
+  // has to be reachable from wherever a manager notices the mismatch - the
+  // club dossier, not just this page's rename button.
+  window.__foWorldRename = function (nm, cb) {
+    try {
+      nm = String(nm || "").trim();
+      if (!nm) { if (cb) cb(false, "no name given"); return; }
+      if (!jwt()) { if (cb) cb(false, "sign in first"); return; }
+      rpc("world_rename_club", { p_club_name: nm })
+        .then(function () {
+          try {
+            var c9 = window.__foWorldClaim;
+            if (c9) { c9.club = nm; localStorage.setItem("fo_world_claim", JSON.stringify(c9)); }
+            if (c9 && c9.country) localStorage.removeItem("fo_world_nm_" + c9.country);
+          } catch (e2) {}
+          if (cb) cb(true);
+        })
+        .catch(function (e) { if (cb) cb(false, e && e.message); });
+    } catch (e) { if (cb) cb(false, e && e.message); }
+  };
+
   // the Nets asks for the standing plan when it does not have it yet
   window.__foWorldRefreshPlan = function () {
     try {

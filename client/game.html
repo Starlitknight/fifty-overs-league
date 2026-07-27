@@ -10588,7 +10588,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-1911-5be3cd";
+  var FO_BUILD = "20260727-1926-53aede";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -35935,7 +35935,33 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     return m ? decodeURIComponent(m[1]) : "";
   }
   function regions() { try { return (window.__foCxAPI.regions() || []).filter(function (r) { return !r.final; }); } catch (e) { return []; } }
-  function natName(id) { var hit = regions().filter(function (r) { return r.id === id; })[0]; return (hit && hit.nm) || ""; }
+  function regionOf(id) { return regions().filter(function (r) { return r.id === id; })[0] || null; }
+  function natName(id) { var hit = regionOf(id); return (hit && hit.nm) || ""; }
+  function ART() { return (typeof FO_ART !== "undefined") ? FO_ART : ((location.pathname.indexOf("/client/") !== -1) ? "art/" : "client/art/"); }
+  function flagOf(id) { try { return ART() + "flags/" + window.__foCxAPI.flagFile(id) + ".svg"; } catch (e) { return ""; } }
+  // EVERY LEAGUE LOOKS LIKE ITS OWN COUNTRY. One accent, one flag, one
+  // painted horizon - the same almanack, wearing the nation's colours.
+  var NAT_LINE = {
+    eng: "The old game, played where it was written.",
+    aus: "Hard light, hard cricket, no quarter given.",
+    sub: "A billion eyes on every ball.",
+    pak: "Raw pace and rawer nerve.",
+    rsa: "The long summer and the southeaster.",
+    win: "Calypso and thunder.",
+    nzl: "Cricket under the long white cloud.",
+    slk: "Spin, sorcery and sea air.",
+    ned: "The low country, playing above itself.",
+    ire: "Green, damp and defiant.",
+    zim: "Flame lilies and hard yards.",
+    afg: "Mountain fire, learned in exile.",
+    bgd: "The tigers, and a country that roars with them.",
+    nep: "Cricket on the roof of the world.",
+    sco: "Highland steel, in a cold wind.",
+    wal: "Dragons at the crease.",
+    ken: "The rift valley game.",
+    usa: "The new frontier of an old sport.",
+    can: "True north, and a short summer to prove it."
+  };
 
   // older saves recorded results before seasonNo existed on the record; a
   // stampless result belongs to this season exactly when the season's own
@@ -36184,14 +36210,24 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var kick = (own ? "Your league" : "The world &middot; away") + " &middot; Season " + (snapSeason || (cal && cal.seasonNo > 0 ? cal.seasonNo : 1)) +
         (own && myClub ? " &middot; " + E(myClub) + (myPos ? " &middot; " + ord(myPos) : "") : (rows.length ? " &middot; " + E(rows[0].nm) + " lead" : ""));
 
+      // the nation's own colours: its accent, its flag, its painted country
+      var reg = regionOf(natId) || {};
+      var accent = reg.ac || "#C95532";
+      var natArt = ART() + "circuit/" + (reg.bg || (natId + ".webp"));
+      var line = NAT_LINE[natId] || "Ten clubs, one pennant.";
+
       page.innerHTML =
-        "<div class='fo-lt'>" +
+        "<div class='fo-lt' style='--nac:" + E(accent) + "'>" +
+        "<div class='fo-lt-rail l' style=\"background-image:url('" + natArt + "')\"></div>" +
+        "<div class='fo-lt-rail r' style=\"background-image:url('" + natArt + "')\"></div>" +
         "<div class='fo-lt-mast'>" +
-        "<div class='fo-lt-kick'>" + kick + "</div>" +
+        "<img class='fo-lt-mastart' src='" + natArt + "' alt='' loading='lazy' onerror=\"this.style.display='none'\">" +
+        "<div class='fo-lt-mastin'>" +
+        "<div class='fo-lt-kick'><img src='" + flagOf(natId) + "' alt='' onerror=\"this.style.display='none'\">" + kick + "</div>" +
         "<h1>The " + (natNm ? E(natNm) + " " : "") + "League</h1>" +
-        "<p>Ten clubs, eighteen rounds, one pennant. Two points a win, net run rate to break hearts. Every club opens onto its own page.</p>" +
+        "<p>" + E(line) + " Ten clubs, eighteen rounds, one pennant &mdash; two points a win, net run rate to break hearts.</p>" +
         hop +
-        "</div>" +
+        "</div></div>" +
         "<div class='fo-lt-head'><i>#</i><span>Club &middot; form</span><em>P</em><em>W</em><em>L</em><em>NRR</em><b>Pts</b></div>" +
         "<div class='fo-lt-list'>" + body + "</div>" +
         todayHTML +
@@ -36214,10 +36250,21 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   }
 
   var CSS = [
-    "html body #page .fo-lt{max-width:680px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
-    "html body #page .fo-lt-mast{background:linear-gradient(150deg,#FFFEFB,#F6F1E4 70%,#F0E9D6) !important;border:1px solid rgba(20,28,40,.1);border-radius:22px;padding:26px 28px 22px;box-shadow:0 22px 50px rgba(30,38,52,.12)}",
-    "html body #page .fo-lt-kick{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:#B44A22}",
-    "html body #page .fo-lt-kick:after{content:'';display:block;width:34px;border-top:2px solid #C95532;margin-top:7px}",
+    "html body #page .fo-lt{position:relative;max-width:680px;margin:26px auto 44px;padding:0 14px;color:#141C28;--nac:#C95532}",
+    // THE COUNTRY FRAMES ITS OWN LEAGUE. On a wide screen the nation's
+    // painted map stands either side of the column, quiet enough to read
+    // over; on a phone there is no room, so the masthead carries it instead.
+    "html body #page .fo-lt-rail{display:none}",
+    "@media(min-width:1180px){html body #page .fo-lt-rail{display:block;position:fixed;top:0;bottom:0;width:calc(50vw - 350px);background-size:cover;background-position:center;opacity:.3;pointer-events:none;z-index:0}",
+    "html body #page .fo-lt-rail.l{left:0;-webkit-mask-image:linear-gradient(90deg,transparent,#000 40%,transparent);mask-image:linear-gradient(90deg,transparent,#000 40%,transparent)}",
+    "html body #page .fo-lt-rail.r{right:0;-webkit-mask-image:linear-gradient(270deg,transparent,#000 40%,transparent);mask-image:linear-gradient(270deg,transparent,#000 40%,transparent)}}",
+    "html body #page .fo-lt-mast{position:relative;overflow:hidden;background:linear-gradient(150deg,#FFFEFB,#F6F1E4 70%,#F0E9D6) !important;border:1px solid rgba(20,28,40,.1);border-radius:22px;box-shadow:0 22px 50px rgba(30,38,52,.12)}",
+    "html body #page .fo-lt-mast:before{content:'';position:absolute;left:0;right:0;top:0;height:4px;background:var(--nac);z-index:2}",
+    "html body #page .fo-lt-mastart{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 34%;opacity:.3;-webkit-mask-image:linear-gradient(180deg,#000,transparent 78%);mask-image:linear-gradient(180deg,#000,transparent 78%)}",
+    "html body #page .fo-lt-mastin{position:relative;padding:26px 28px 22px}",
+    "html body #page .fo-lt-kick{display:flex;align-items:center;gap:8px;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:#8A3A1B;flex-wrap:wrap}",
+    "html body #page .fo-lt-kick img{width:22px;height:15px;object-fit:cover;border-radius:2px;box-shadow:0 1px 4px rgba(20,28,40,.3)}",
+    "html body #page .fo-lt-kick:after{content:'';display:block;width:100%;border-top:2px solid var(--nac);margin-top:5px}",
     "html body #page .fo-lt-mast h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:38px;letter-spacing:-.015em;margin:8px 0 8px;color:#141C28;line-height:1.02}",
     "html body #page .fo-lt-mast p{font:italic 420 13.5px/1.6 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);margin:0;max-width:52ch}",
     "html body #page .fo-lt-hop{display:flex;align-items:center;gap:9px;margin-top:16px;flex-wrap:wrap}",
@@ -36228,8 +36275,9 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     "html body #page .fo-lt-list{display:flex;flex-direction:column;gap:6px}",
     "html body #page .fo-lt-wait{background:#FFFEFC;border:1px dashed rgba(20,28,40,.18);border-radius:13px;padding:18px 16px;font:italic 420 13px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);text-align:center}",
     "html body #page .fo-lt-row{display:grid;grid-template-columns:24px minmax(0,1fr) 28px 28px 28px 52px 34px;gap:8px;align-items:center;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:13px;padding:10px 16px;text-decoration:none;color:#141C28;box-shadow:0 4px 14px rgba(30,38,52,.06);transition:border-color .15s ease,transform .12s ease}",
-    "html body #page .fo-lt-row:hover{border-color:rgba(217,85,42,.5);transform:translateY(-1px);text-decoration:none}",
-    "html body #page .fo-lt-row.mine{border-left:3px solid #C95532}",
+    "html body #page .fo-lt-row:hover{border-color:var(--nac);transform:translateY(-1px);text-decoration:none}",
+    "html body #page .fo-lt-row.mine{border-left:3px solid var(--nac)}",
+    "html body #page .fo-lt>*{position:relative;z-index:1}",
     "html body #page .fo-lt-row>i{font:700 12px/1 Inter,sans-serif;color:rgba(20,28,40,.45);font-style:normal;font-variant-numeric:tabular-nums}",
     "html body #page .fo-lt-nm{min-width:0}",
     "html body #page .fo-lt-nm b{display:block;font:600 13.5px/1.25 Inter,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
@@ -36253,7 +36301,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     "html body #page .fo-lt-fxlist{display:flex;flex-direction:column;gap:6px}",
     "html body #page .fo-lt-fx{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:13px;padding:11px 16px;text-decoration:none;color:#141C28;box-shadow:0 4px 14px rgba(30,38,52,.06)}",
     "html body #page .fo-lt-fx:hover{border-color:rgba(217,85,42,.5);text-decoration:none}",
-    "html body #page .fo-lt-fx.mine,html body #page .fo-lt-res.mine{border-left:3px solid #C95532}",
+    "html body #page .fo-lt-fx.mine,html body #page .fo-lt-res.mine{border-left:3px solid var(--nac)}",
     "html body #page .fo-lt-fxt{display:flex;align-items:center;gap:7px;min-width:0;flex-wrap:wrap}",
     "html body #page .fo-lt-fxt b{font:600 13px/1.3 Inter,sans-serif}",
     "html body #page .fo-lt-fxt i{font:italic 400 11.5px/1 'Fraunces',Georgia,serif;color:rgba(20,28,40,.4)}",
@@ -39500,6 +39548,27 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     } catch (e) {}
   };
 
+  // ONE CLUB, ONE NAME. The world is the naming authority, so christening
+  // has to be reachable from wherever a manager notices the mismatch - the
+  // club dossier, not just this page's rename button.
+  window.__foWorldRename = function (nm, cb) {
+    try {
+      nm = String(nm || "").trim();
+      if (!nm) { if (cb) cb(false, "no name given"); return; }
+      if (!jwt()) { if (cb) cb(false, "sign in first"); return; }
+      rpc("world_rename_club", { p_club_name: nm })
+        .then(function () {
+          try {
+            var c9 = window.__foWorldClaim;
+            if (c9) { c9.club = nm; localStorage.setItem("fo_world_claim", JSON.stringify(c9)); }
+            if (c9 && c9.country) localStorage.removeItem("fo_world_nm_" + c9.country);
+          } catch (e2) {}
+          if (cb) cb(true);
+        })
+        .catch(function (e) { if (cb) cb(false, e && e.message); });
+    } catch (e) { if (cb) cb(false, e && e.message); }
+  };
+
   // the Nets asks for the standing plan when it does not have it yet
   window.__foWorldRefreshPlan = function () {
     try {
@@ -40732,13 +40801,17 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   }
 })();
 /* ============================================================================
-   THE CLUB CARD (#/team?c={country}&s={slot}) — every club's public face.
+   THE CLUB DOSSIER (#/team?c={country}&s={slot}) — every club's public face.
 
-   What a rival is ALLOWED to know: who they are, where they play, who runs
-   them, where they stand - world rank and rating, league position and
-   record, recent form, the trophies on their shelf, and the names their
-   season has made famous. What stays hidden: the squad and its strengths.
-   Scouting is earned at the teamsheet hour, never handed out on a page.
+   A league of blanks has no strategy in it: you cannot fear a side you know
+   nothing about, or plan a season against one. So this page tells you what a
+   county's own handbook would - who plays for them, how old, what they cost,
+   which hand, what they bowl, what the game has made of them, their careers,
+   their form, their remaining fixtures and the trophies on the shelf.
+
+   What stays private is the coaching sheet: the fifteen raw skill numbers,
+   the training plan, the progress toward the next jump. You can see a man is
+   a fine fast bowler; you cannot read his exact economy over the fence.
    ========================================================================== */
 (function () {
   "use strict";
@@ -40748,13 +40821,11 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
   function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
   function cx() { return window.__foCxAPI || null; }
-  function flagOf(rid) {
-    var base = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
-    try { return base + "flags/" + cx().flagFile(rid) + ".svg"; } catch (e) { return ""; }
-  }
-  function natName(rid) {
-    try { var r = (cx().regions() || []).filter(function (x) { return x.id === rid; })[0]; return (r && r.nm) || rid; } catch (e) { return rid; }
-  }
+  function ART() { return (typeof FO_ART !== "undefined") ? FO_ART : "client/art/"; }
+  function flagOf(rid) { try { return ART() + "flags/" + cx().flagFile(rid) + ".svg"; } catch (e) { return ""; } }
+  function region(rid) { try { return (cx().regions() || []).filter(function (x) { return x.id === rid; })[0] || null; } catch (e) { return null; } }
+  function natName(rid) { var r = region(rid); return (r && r.nm) || rid; }
+  function accentOf(rid) { var r = region(rid); return (r && r.ac) || "#B44A22"; }
   function qs() {
     var q = {}, m = (location.hash || "").split("?")[1] || "";
     m.split("&").forEach(function (kv) { var p = kv.split("="); if (p[0]) q[p[0]] = decodeURIComponent(p[1] || ""); });
@@ -40763,41 +40834,72 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   function claim() {
     try { return window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (e) { return null; }
   }
-  var CLUB_CACHE = {};
+  function money(n) {
+    n = Math.round(+n || 0);
+    if (Math.abs(n) >= 1000000) return "$" + (n / 1000000).toFixed(n % 1000000 ? 2 : 0) + "m";
+    if (Math.abs(n) >= 1000) return "$" + (n / 1000).toFixed(0) + "k";
+    return "$" + n;
+  }
+  function num(n) { return String(Math.round(+n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+
+  // the served pieces, each cached and each repainting the page as it lands
+  var CLUB_CACHE = {}, SQ_CACHE = {}, HON_CACHE = null;
+  function grab(url, cb) {
+    fetch(SB_URL + url, { headers: { apikey: SB_ANON } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (rows) { cb(rows && rows[0] ? rows[0] : null); })
+      .catch(function () { cb(null); });
+  }
   function fetchClub(cid, slot, cb) {
     var k = cid + ":" + slot;
     if (CLUB_CACHE[k]) { cb(CLUB_CACHE[k]); return; }
-    fetch(SB_URL + "/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(cid) + "&slot=eq." + slot + "&select=name,ground,is_boss,manager", { headers: { apikey: SB_ANON } })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (rows) { var row = rows && rows[0]; if (row) CLUB_CACHE[k] = row; cb(row || null); })
-      .catch(function () { cb(null); });
+    grab("/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(cid) + "&slot=eq." + slot + "&select=name,ground,is_boss,manager,identity",
+      function (row) { if (row) CLUB_CACHE[k] = row; cb(row); });
   }
-  var HON_CACHE = null;
+  function fetchSquad(cid, slot, cb) {
+    var k = cid + ":" + slot;
+    if (SQ_CACHE[k]) { cb(SQ_CACHE[k]); return; }
+    grab("/rest/v1/world_squads?country_id=eq." + encodeURIComponent(cid) + "&slot=eq." + slot + "&select=players,wage_bill",
+      function (row) { if (row) SQ_CACHE[k] = row; cb(row); });
+  }
   function fetchHonours(cb) {
     if (HON_CACHE) { cb(HON_CACHE); return; }
-    fetch(SB_URL + "/rest/v1/world_snapshots?key=eq.honours&select=body", { headers: { apikey: SB_ANON } })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (rows) { HON_CACHE = (rows && rows[0] && rows[0].body) || { seasons: {} }; cb(HON_CACHE); })
-      .catch(function () { cb(null); });
+    grab("/rest/v1/world_snapshots?key=eq.honours&select=body",
+      function (row) { HON_CACHE = (row && row.body) || { seasons: {} }; cb(HON_CACHE); });
   }
+
+  // ROLE, in the language of a scorecard rather than a database
+  var ROLE_WORD = { opener: "Opener", top: "Top order", middle: "Middle order", finisher: "Finisher",
+    allrounder: "All-rounder", keeper: "Wicketkeeper", seamer: "Seam bowler", pace: "Fast bowler",
+    spinner: "Spinner", bowler: "Bowler", tail: "Lower order" };
+  var TALENT_WORD = { anchor: "Anchor", safeHands: "Safe hands", bigHitter: "Big hitter", deathBowler: "Death bowler",
+    newBall: "New ball", partnership: "Partnership builder", closer: "Closer", enforcer: "Enforcer",
+    gun: "Gun fielder", nightwatch: "Nightwatchman", spinKing: "Spin king", swingKing: "Swing king",
+    powerplay: "Powerplay specialist", clutch: "Clutch", ironman: "Iron man" };
+  function roleWord(r) { return ROLE_WORD[r] || (r ? String(r).charAt(0).toUpperCase() + String(r).slice(1) : "Cricketer"); }
+  function talentWord(t) { return TALENT_WORD[t] || String(t || "").replace(/([A-Z])/g, " $1").replace(/^./, function (c) { return c.toUpperCase(); }); }
+  // a rival's nationality flag, by the nation names the generator uses
+  var NAT_ID = { England: "eng", Australia: "aus", India: "sub", Pakistan: "pak", "South Africa": "rsa",
+    "New Zealand": "nzl", "Sri Lanka": "slk", "West Indies": "win", Ireland: "ire", Netherlands: "ned",
+    Zimbabwe: "zim", Afghanistan: "afg", Bangladesh: "bgd", Nepal: "nep", Scotland: "sco", Wales: "wal",
+    Kenya: "ken", "United States": "usa", USA: "usa", Canada: "can" };
+  function natFlag(n) { var id = NAT_ID[n]; return id ? flagOf(id) : ""; }
 
   window.foRenderClubPage = function () {
     var page = document.getElementById("page"); if (!page) return;
     foClubCss();
-    try { document.body.classList.remove("fo-ov-on", "fo-boss-on", "fo-scb-on", "fo-drs-on", "fo-wt-on"); } catch (e) {}
+    try { document.body.classList.remove("fo-ov-on", "fo-boss-on", "fo-scb-on", "fo-drs-on", "fo-wt-on", "fo-lore-on"); } catch (e) {}
     var q = qs(), cid = q.c || "eng", slot = parseInt(q.s || "0", 10) || 0;
     var cl = claim();
     var isMine = !!(cl && cl.country === cid && cl.slot === slot);
+    var tab = q.t || "squad";
 
-    // the pieces arrive as they arrive; the page repaints once each lands
     var lg = null; try { lg = window.__foWorldLg ? window.__foWorldLg.get(cid) : null; } catch (e) {}
     try { if (window.__foWorldLg) window.__foWorldLg.want(cid, function () { if ((location.hash || "").indexOf("#/team") === 0) window.foRenderClubPage(); }); } catch (e) {}
     var rk = null; try { rk = JSON.parse(localStorage.getItem("fo_world_rk") || "null"); } catch (e) {}
 
-    var paint = function (info, hon) {
-      // the club's name, from the best source that has answered: the world's
-      // own row, then the served table, then the nation's own ten - a club
-      // should never be nameless just because the service is slow
+    var paint = function (info, sq, hon) {
+      var ac = accentOf(cid);
       var name = (info && info.name) || (lg && (lg.table || []).filter(function (t) { return t.slot === slot; })[0] || {}).name;
       if (!name) { try { name = ((window.__foWorldNames && window.__foWorldNames.get(cid)) || {})[slot]; } catch (eN) {} }
       if (!name) {
@@ -40809,94 +40911,288 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       if (!name) name = "A world club";
       var boss = !!(info && info.is_boss);
       var mgr = info && info.manager;
+      var ident = (info && info.identity) || {};
+      if (ident && ident.colour) ac = ident.colour;
+      var players = (sq && sq.players) || [];
+      var bill = (sq && +sq.wage_bill) || 0;
+
       var rkRow = rk && rk.clubs ? rk.clubs.filter(function (x) { return x.country === cid && x.slot === slot; })[0] : null;
       var tRow = lg && lg.table ? (lg.table.filter(function (t) { return t.slot === slot; })[0] || null) : null;
       var pos = tRow && lg.table ? lg.table.indexOf(tRow) + 1 : 0;
       var ordn = function (n) { return n + (["th", "st", "nd", "rd"][(n % 100 > 10 && n % 100 < 14) ? 0 : Math.min(n % 10, 4)] || "th"); };
-      // recent form from the served results, newest first
-      var form = "";
+
+      // ---- form and the record, from the served results --------------------
+      var form = "", played = [];
       if (lg && lg.results && name) {
-        var mine = lg.results.filter(function (r) { return r.home === name || r.away === name; }).slice(-5).reverse();
-        form = mine.map(function (r) {
+        played = lg.results.filter(function (r) { return r.home === name || r.away === name; });
+        form = played.slice(-5).reverse().map(function (r) {
           var w = r.winner === null ? "T" : r.winner === name ? "W" : "L";
           return "<i class='" + w.toLowerCase() + "'>" + w + "</i>";
         }).join("");
       }
-      // the names this season has made famous (public honours, never skills)
+
+      // ---- the fixtures still to come, off the same schedule the umpire uses
+      var fixtures = [];
+      try {
+        var wt = window.__foWT, pl = window.__foPlanet;
+        if (wt && wt.schedMirror && pl) {
+          var cal = wt.serverCal(Date.now());
+          var nmOv = (window.__foWorldNames && window.__foWorldNames.get(cid)) || {};
+          var nameAt = function (s2) {
+            if (nmOv[s2]) return nmOv[s2];
+            var row = lg && lg.table ? lg.table.filter(function (t) { return t.slot === s2; })[0] : null;
+            if (row) return row.name;
+            try { return (pl.sidesOf(cid) || []).filter(function (x) { return x.slot === s2; })[0].name; } catch (e3) { return "?"; }
+          };
+          var rounds = wt.schedMirror(cid, Math.max(1, cal.seasonNo));
+          for (var ri = Math.max(0, cal.round - 1); ri < rounds.length && fixtures.length < 5; ri++) {
+            for (var fi = 0; fi < rounds[ri].length; fi++) {
+              var pr = rounds[ri][fi];
+              if (pr[0] !== slot && pr[1] !== slot) continue;
+              var home = pr[0] === slot;
+              fixtures.push({ round: ri + 1, home: home, foe: nameAt(home ? pr[1] : pr[0]),
+                foeSlot: home ? pr[1] : pr[0], now: (ri + 1) === cal.round });
+            }
+          }
+        }
+      } catch (eFx) {}
+
+      // ---- the names this season has made ----------------------------------
       var noted = [];
       if (lg && lg.stats) {
-        (lg.stats.bat || []).forEach(function (x) { if (x.club === name && noted.length < 2) noted.push(E(x.name) + " &middot; " + x.runs + " runs"); });
-        (lg.stats.bowl || []).forEach(function (x) { if (x.club === name && noted.length < 4) noted.push(E(x.name) + " &middot; " + x.wkts + " wickets"); });
+        (lg.stats.bat || []).forEach(function (x) { if (x.club === name) noted.push({ n: x.name, w: num(x.runs) + " runs", d: "at " + x.sr + " per hundred balls" }); });
+        (lg.stats.bowl || []).forEach(function (x) { if (x.club === name) noted.push({ n: x.name, w: x.wkts + " wickets", d: "at " + x.econ + " an over" }); });
       }
       var shelf = [];
       if (hon && hon.seasons) Object.keys(hon.seasons).sort().forEach(function (sk) {
         var s5 = hon.seasons[sk], sn = sk.slice(1);
-        if (s5.league && s5.league[cid] === name) shelf.push("&#127942; League champions &middot; Season " + sn);
+        if (s5.league && s5.league[cid] === name) shelf.push("&#127942; " + E(natName(cid)) + " champions &middot; Season " + sn);
         if (s5.championsCup === name) shelf.push("&#127942; CHAMPIONS CUP &middot; Season " + sn);
       });
+
+      // ---- squad arithmetic a manager actually reads ------------------------
+      var ages = players.map(function (p) { return +p.age || 0; }).filter(Boolean);
+      var avgAge = ages.length ? (ages.reduce(function (a, b) { return a + b; }, 0) / ages.length).toFixed(1) : "—";
+      var topRating = players.length ? players[0].rating : 0;
+      var seam = players.filter(function (p) { return /pace|seam|medium|fast/i.test(p.type || p.bowl || ""); }).length;
+      var spin = players.filter(function (p) { return /spin/i.test(p.type || p.bowl || ""); }).length;
+
+      var hero = ART() + "circuit/" + cid + ".webp";
+      var crest = ""; try { if (boss) crest = cx().crest(cid) || ""; } catch (eC2) {}
+
       var mgrLine = mgr
         ? "<span class='fo-cp-mgr human'>&#9733; Managed by " + E(mgr) + "</span>"
         : boss ? "<span class='fo-cp-mgr'>The league's flagship &mdash; never for hire</span>"
         : "<span class='fo-cp-mgr'>Unmanaged &mdash; a steady club of the shires</span>";
+
       var statCells =
-        "<div class='c'><i>World rank</i><b>" + (rkRow ? "#" + rkRow.rank : "&mdash;") + "</b><u>" + (rkRow ? rkRow.rating + " rating" : "") + "</u></div>" +
-        "<div class='c'><i>League</i><b>" + (pos ? ordn(pos) : "&mdash;") + "</b><u>" + (tRow ? tRow.pts + " pts &middot; " + tRow.p + " played" : "") + "</u></div>" +
-        "<div class='c'><i>Record</i><b>" + (rkRow ? rkRow.w + "-" + rkRow.l + (rkRow.t ? "-" + rkRow.t : "") : "&mdash;") + "</b><u>all competitions</u></div>";
-      page.innerHTML = "<div class='fo-cp'><div class='fo-cp-in'>" +
+        "<div class='c'><i>World rank</i><b>" + (rkRow ? "#" + rkRow.rank : "&mdash;") + "</b><u>" + (rkRow ? num(rkRow.rating) + " rating" : "unrated") + "</u></div>" +
+        "<div class='c'><i>League</i><b>" + (pos ? ordn(pos) : "&mdash;") + "</b><u>" + (tRow ? tRow.pts + " pts &middot; " + tRow.p + " played" : "not yet played") + "</u></div>" +
+        "<div class='c'><i>Squad</i><b>" + (players.length || "&mdash;") + "</b><u>" + (ages.length ? "average " + avgAge : "") + "</u></div>" +
+        "<div class='c'><i>Wage bill</i><b>" + (bill ? money(bill) : "&mdash;") + "</b><u>a round</u></div>";
+
+      // ---- the roster, the part a rival came for ---------------------------
+      var rosterRows = players.map(function (p, i) {
+        var fl = natFlag(p.nat);
+        var car = p.career || {};
+        var line = [];
+        if (car.runs) line.push(num(car.runs) + " runs" + (car.hs ? " &middot; best " + car.hs : ""));
+        if (car.wkts) line.push(car.wkts + " wickets" + (car.bb ? " &middot; best " + car.bb.w + "-" + car.bb.r : ""));
+        if (!line.length) line.push(car.m ? car.m + " matches, still writing his first line" : "Yet to play a first-class ball");
+        var tags = (p.talents || []).slice(0, 2).map(function (t) { return "<em>" + E(talentWord(t)) + "</em>"; }).join("");
+        return "<div class='fo-cp-p" + (i === 0 ? " star" : "") + "'>" +
+          "<div class='fo-cp-pn'>" +
+          (fl ? "<img src='" + fl + "' alt='' onerror=\"this.style.display='none'\">" : "") +
+          "<b>" + E(p.name) + "</b>" + (p.keeper ? "<s>wk</s>" : "") + "</div>" +
+          "<div class='fo-cp-pm'>" + (+p.age || "?") + " &middot; " + E(roleWord(p.role)) +
+          " &middot; " + (p.hand === "L" ? "left hand" : "right hand") +
+          (p.bowl && p.bowl !== "Does not bowl" ? " &middot; " + E(p.bowl).toLowerCase() : "") + "</div>" +
+          "<div class='fo-cp-pc'>" + line.join(" &nbsp;&middot;&nbsp; ") + "</div>" +
+          "<div class='fo-cp-pw'>" + E(p.exp || "") + " &middot; " + E(p.form || "") + " form &middot; " + E(p.fatigue || "") + "</div>" +
+          (tags ? "<div class='fo-cp-pt'>" + tags + "</div>" : "") +
+          "<div class='fo-cp-pr'><b>" + num(p.rating) + "</b><u>" + money(p.wage) + " a round</u>" +
+          (p.value ? "<u>valued " + money(p.value) + "</u>" : "") + "</div>" +
+          "</div>";
+      }).join("");
+
+      var resultRows = played.slice(-8).reverse().map(function (r) {
+        var w = r.winner === null ? "t" : r.winner === name ? "w" : "l";
+        var foe = r.home === name ? r.away : r.home;
+        return "<div class='fo-cp-r " + w + "'><i>R" + r.round + "</i>" +
+          "<b>" + (r.home === name ? "h" : "a") + " v " + E(foe) + "</b>" +
+          "<span>" + E(r.text || "") + "</span></div>";
+      }).join("");
+
+      var fxRows = fixtures.map(function (f) {
+        return "<a class='fo-cp-r fx' href='#/team?c=" + encodeURIComponent(cid) + "&s=" + f.foeSlot + "'>" +
+          "<i>R" + f.round + "</i><b>" + (f.home ? "home" : "away") + " v " + E(f.foe) + "</b>" +
+          "<span>" + (f.now ? "today" : "to come") + "</span></a>";
+      }).join("");
+
+      var TABS = [["squad", "The squad"], ["record", "Record"], ["shelf", "Honours"]];
+      var tabBar = "<div class='fo-cp-tabs'>" + TABS.map(function (t) {
+        return "<a class='" + (tab === t[0] ? "on" : "") + "' href='#/team?c=" + encodeURIComponent(cid) + "&s=" + slot + "&t=" + t[0] + "'>" + t[1] + "</a>";
+      }).join("") + "</div>";
+
+      var bodyHTML;
+      if (tab === "record") {
+        bodyHTML =
+          (form ? "<div class='fo-cp-card'><h3>Form <span>latest first</span></h3><div class='fo-cp-form'>" + form + "</div></div>" : "") +
+          "<div class='fo-cp-card'><h3>Results</h3>" + (resultRows || "<div class='fo-cp-note dim'>No cricket played yet this season.</div>") + "</div>" +
+          "<div class='fo-cp-card'><h3>Fixtures</h3>" + (fxRows || "<div class='fo-cp-note dim'>The season's fixtures are not out yet.</div>") + "</div>" +
+          (noted.length ? "<div class='fo-cp-card'><h3>Names the season made</h3>" + noted.map(function (n) {
+            return "<div class='fo-cp-note'><b>" + E(n.n) + "</b> &mdash; " + n.w + " <u>" + n.d + "</u></div>"; }).join("") + "</div>" : "");
+      } else if (tab === "shelf") {
+        bodyHTML = "<div class='fo-cp-card'><h3>The trophy shelf</h3>" +
+          (shelf.length ? shelf.map(function (s) { return "<div class='fo-cp-note'>" + s + "</div>"; }).join("")
+            : "<div class='fo-cp-note dim'>Bare, for now. Every season writes the next line.</div>") + "</div>" +
+          "<div class='fo-cp-card'><h3>The ground</h3><div class='fo-cp-note'>" + E((info && info.ground) || "A ground of their own") + "</div>" +
+          "<div class='fo-cp-note dim'>Home advantage is real: their groundsman prepares the strip.</div></div>" +
+          (ident && ident.motto ? "<div class='fo-cp-card'><h3>The motto</h3><div class='fo-cp-note'>&ldquo;" + E(ident.motto) + "&rdquo;</div></div>" : "");
+      } else {
+        bodyHTML =
+          "<div class='fo-cp-card'><h3>The squad <span>" + players.length + " men &middot; strongest first</span></h3>" +
+          (rosterRows || "<div class='fo-cp-note dim'>The squad list is on its way from the World Service&hellip;</div>") +
+          "</div>" +
+          (players.length ? "<div class='fo-cp-card'><h3>How they are built</h3>" +
+            "<div class='fo-cp-note'>Top man rated <b>" + num(topRating) + "</b> &middot; average age <b>" + avgAge + "</b></div>" +
+            "<div class='fo-cp-note'><b>" + seam + "</b> seam &middot; <b>" + spin + "</b> spin &middot; <b>" +
+            players.filter(function (p) { return p.keeper; }).length + "</b> keeper</div>" +
+            "<div class='fo-cp-note dim'>Their raw skills stay in their own coaching book. Teamsheets go public an hour before every match &mdash; that is your scouting window.</div>" +
+            "</div>" : "");
+      }
+
+      page.innerHTML = "<div class='fo-cp' style='--cac:" + E(ac) + "'>" +
+        "<div class='fo-cp-band'><img src='" + hero + "' alt='' loading='lazy' onerror=\"this.style.display='none'\"><span></span></div>" +
+        "<div class='fo-cp-in'>" +
         "<a class='fo-cp-back' href='#/nation?n=" + encodeURIComponent(cid) + "'>&lsaquo; " + E(natName(cid)) + " league</a>" +
         "<div class='fo-cp-hero'>" +
-        "<img class='fo-cp-flag' src='" + flagOf(cid) + "' alt='' onerror=\"this.style.display='none'\">" +
-        "<div class='fo-cp-id'><div class='fo-cp-k'>" + E(natName(cid)) + " &middot; the served world" + (boss ? " &middot; THE FLAGSHIP" : "") + (isMine ? " &middot; YOUR CLUB" : "") + "</div>" +
+        (crest ? "<img class='fo-cp-crest' src='" + crest + "' alt='' onerror=\"this.style.display='none'\">"
+               : "<img class='fo-cp-flag' src='" + flagOf(cid) + "' alt='' onerror=\"this.style.display='none'\">") +
+        "<div class='fo-cp-id'><div class='fo-cp-k'>" + E(natName(cid)) + (boss ? " &middot; THE FLAGSHIP" : "") + (isMine ? " &middot; YOUR CLUB" : "") + "</div>" +
         "<h1>" + E(name) + "</h1>" +
         "<p>" + E((info && info.ground) || "") + "</p>" + mgrLine + "</div></div>" +
+        (isMine ? "<div id='fo-cp-mine'></div>" : "") +
         "<div class='fo-cp-stats'>" + statCells + "</div>" +
-        (form ? "<div class='fo-cp-card'><h3>Form <span>latest first</span></h3><div class='fo-cp-form'>" + form + "</div></div>" : "") +
-        (noted.length ? "<div class='fo-cp-card'><h3>Names the season made</h3>" + noted.map(function (n) { return "<div class='fo-cp-note'>" + n + "</div>"; }).join("") + "</div>" : "") +
-        "<div class='fo-cp-card'><h3>The trophy shelf</h3>" +
-        (shelf.length ? shelf.map(function (s) { return "<div class='fo-cp-note'>" + s + "</div>"; }).join("")
-          : "<div class='fo-cp-note dim'>Bare, for now. Every season writes the next line.</div>") + "</div>" +
-        "<div class='fo-cp-card dimc'><h3>The squad</h3><div class='fo-cp-note dim'>Their strengths are their business. Teamsheets go public an hour before every match &mdash; that is your scouting window.</div></div>" +
+        tabBar + bodyHTML +
         (!isMine && cl ? "<a class='fo-cp-cta' href='#/worldclub'>&#9876; Challenge " + E(name) + " to a friendly &rsaquo;</a>" : "") +
-        "<div class='fo-cp-foot'><a href='#/rankings'>The world rankings &rsaquo;</a></div>" +
+        "<div class='fo-cp-foot'><a href='#/rankings'>The world rankings &rsaquo;</a><a href='#/nation?n=" + encodeURIComponent(cid) + "'>The league table &rsaquo;</a></div>" +
         "</div></div>";
+
+      // YOUR OWN CLUB WEARS THE NAME YOU GAVE IT. The world is the authority,
+      // so when this device calls the club something else, say so plainly and
+      // let one tap settle it either way.
+      if (isMine) {
+        try {
+          var localNm = ""; try { localNm = (userTeam() || {}).name || ""; } catch (eU) {}
+          var host = document.getElementById("fo-cp-mine");
+          if (host && localNm && name && localNm !== name) {
+            host.className = "fo-cp-warn";
+            host.innerHTML = "<b>Two names, one club.</b> The world calls you <u>" + E(name) +
+              "</u>; this device calls you <u>" + E(localNm) + "</u>." +
+              "<div class='fo-cp-warnb'><button type='button' id='fo-cp-push'>Christen it " + E(localNm) + "</button>" +
+              "<button type='button' class='ghost' id='fo-cp-pull'>Keep " + E(name) + "</button></div>";
+            var push = document.getElementById("fo-cp-push");
+            if (push) push.addEventListener("click", function () {
+              push.disabled = true; push.textContent = "Telling the world…";
+              if (window.__foWorldRename) window.__foWorldRename(localNm, function (ok, err) {
+                if (!ok) { push.disabled = false; push.textContent = "Rename failed: " + String(err || "").slice(0, 40); return; }
+                delete CLUB_CACHE[cid + ":" + slot];
+                window.foRenderClubPage();
+              });
+            });
+            var pull = document.getElementById("fo-cp-pull");
+            if (pull) pull.addEventListener("click", function () {
+              try {
+                var t = userTeam(); if (t) { t.name = name; if (typeof saveGame === "function") saveGame(false); }
+              } catch (eT) {}
+              window.foRenderClubPage();
+            });
+          } else if (host) {
+            host.className = "fo-cp-mineact";
+            host.innerHTML = "<a href='#/training'>The nets &rsaquo;</a><a href='#/worldclub'>Club office &rsaquo;</a><a href='#/squad'>Your squad &rsaquo;</a>";
+          }
+        } catch (eMine) {}
+      }
     };
-    paint(null, null);
-    fetchClub(cid, slot, function (info) {
-      fetchHonours(function (hon) { paint(info, hon); });
-    });
+
+    paint(null, null, null);
+    fetchClub(cid, slot, function (info) { paint(info, SQ_CACHE[cid + ":" + slot], HON_CACHE); });
+    fetchSquad(cid, slot, function (sq) { paint(CLUB_CACHE[cid + ":" + slot], sq, HON_CACHE); });
+    fetchHonours(function (hon) { paint(CLUB_CACHE[cid + ":" + slot], SQ_CACHE[cid + ":" + slot], hon); });
   };
 
   function foClubCss() {
     if (document.getElementById("fo-cp-css")) return;
     var s = document.createElement("style"); s.id = "fo-cp-css";
     s.textContent = [
-      ".fo-cp{min-height:70vh}",
-      ".fo-cp-in{max-width:640px;margin:0 auto;padding:16px 14px 80px}",
+      ".fo-cp{min-height:70vh;--cac:#B44A22}",
+      // a bright band of the country: flavour without a dark theme
+      ".fo-cp-band{position:relative;height:120px;overflow:hidden;border-radius:0 0 20px 20px;margin-bottom:-58px}",
+      ".fo-cp-band img{width:100%;height:100%;object-fit:cover;object-position:center 32%}",
+      ".fo-cp-band span{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,254,252,.1),rgba(255,254,252,.86))}",
+      ".fo-cp-in{position:relative;max-width:680px;margin:0 auto;padding:12px 14px 80px}",
       "html body #page .fo-cp-back{display:inline-block;font:600 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22 !important;text-decoration:none !important;margin-bottom:10px}",
-      ".fo-cp-hero{display:flex;gap:14px;align-items:flex-start;background:#0E1A2F;border-radius:18px;border-bottom:2px solid #C95532;padding:18px 16px;margin-bottom:12px}",
+      ".fo-cp-hero{display:flex;gap:14px;align-items:flex-start;background:#0E1A2F;border-radius:18px;border-bottom:3px solid var(--cac);padding:18px 16px;margin-bottom:12px;box-shadow:0 18px 40px rgba(14,26,47,.22)}",
       ".fo-cp-flag{width:44px;height:30px;object-fit:cover;border-radius:4px;flex:none;margin-top:4px}",
+      ".fo-cp-crest{width:52px;height:52px;object-fit:contain;flex:none}",
       ".fo-cp-k{font:700 9.5px/1.5 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#E8894A}",
-      ".fo-cp-id h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(26px,6.4vw,34px);color:#FFFEFC;margin:4px 0 2px}",
+      ".fo-cp-id h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(26px,6.4vw,34px);color:#FFFEFC;margin:4px 0 2px;line-height:1.05}",
       ".fo-cp-id p{font:italic 400 12.5px/1.4 'Fraunces',Georgia,serif;color:rgba(255,254,252,.65);margin:0 0 7px}",
       ".fo-cp-mgr{display:inline-block;font:600 10.5px/1.4 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,254,252,.55)}",
       ".fo-cp-mgr.human{color:#F3D37A}",
-      ".fo-cp-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}",
-      ".fo-cp-stats .c{background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:14px;padding:11px 12px;text-align:center}",
-      ".fo-cp-stats .c i{display:block;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.45);font-style:normal}",
-      ".fo-cp-stats .c b{display:block;font:700 20px/1.2 Oswald,sans-serif;color:#141C28;margin-top:4px;font-variant-numeric:tabular-nums}",
-      ".fo-cp-stats .c u{display:block;text-decoration:none;font:400 9.5px/1.4 Inter,sans-serif;color:rgba(20,28,40,.5)}",
+      // the two-names notice
+      ".fo-cp-warn{background:#FFF6E8;border:1px solid rgba(200,84,47,.35);border-radius:14px;padding:12px 14px;margin-bottom:10px;font:500 12.5px/1.6 Inter,sans-serif;color:#141C28}",
+      ".fo-cp-warn u{text-decoration:none;font-weight:700}",
+      ".fo-cp-warnb{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}",
+      ".fo-cp-warnb button{font:700 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#FFFEFC;background:linear-gradient(180deg,#E8894A,#C8542F);border:0;border-radius:10px;padding:11px 14px;cursor:pointer}",
+      ".fo-cp-warnb button.ghost{background:#FFFEFC;color:#141C28;border:1px solid rgba(20,28,40,.2)}",
+      ".fo-cp-mineact{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}",
+      "html body #page .fo-cp-mineact a{font:600 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#B44A22 !important;background:#FFFEFC;border:1px solid rgba(20,28,40,.14);border-radius:999px;padding:9px 14px;text-decoration:none !important}",
+      ".fo-cp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}",
+      ".fo-cp-stats .c{background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:14px;padding:11px 8px;text-align:center}",
+      ".fo-cp-stats .c i{display:block;font:700 8px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.45);font-style:normal}",
+      ".fo-cp-stats .c b{display:block;font:700 19px/1.2 Oswald,sans-serif;color:#141C28;margin-top:4px;font-variant-numeric:tabular-nums}",
+      ".fo-cp-stats .c u{display:block;text-decoration:none;font:400 9px/1.3 Inter,sans-serif;color:rgba(20,28,40,.5);margin-top:2px}",
+      ".fo-cp-tabs{display:flex;gap:6px;margin-bottom:10px}",
+      "html body #page .fo-cp-tabs a{flex:1;text-align:center;font:700 10.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(20,28,40,.6) !important;background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:11px 6px;text-decoration:none !important}",
+      "html body #page .fo-cp-tabs a.on{color:#FFFEFC !important;background:var(--cac);border-color:transparent}",
       ".fo-cp-card{background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:14px;padding:12px 14px;margin-bottom:10px}",
-      ".fo-cp-card.dimc{background:rgba(255,254,252,.6)}",
-      ".fo-cp-card h3{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:14.5px;color:#141C28;margin:0 0 8px}",
-      ".fo-cp-card h3 span{font:600 9px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.4);margin-left:6px}",
+      ".fo-cp-card h3{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:15px;color:#141C28;margin:0 0 9px}",
+      ".fo-cp-card h3 span{font:600 9px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(20,28,40,.4);margin-left:6px}",
+      // the roster line: a man, what he is, what he has done, what he costs
+      ".fo-cp-p{position:relative;padding:10px 92px 10px 0;border-top:1px solid rgba(20,28,40,.08)}",
+      ".fo-cp-p:first-of-type{border-top:0}",
+      ".fo-cp-p.star .fo-cp-pn b{color:#B44A22}",
+      ".fo-cp-pn{display:flex;align-items:center;gap:6px}",
+      ".fo-cp-pn img{width:17px;height:12px;object-fit:cover;border-radius:2px;flex:none}",
+      ".fo-cp-pn b{font:600 13.5px/1.3 Inter,sans-serif;color:#141C28}",
+      ".fo-cp-pn s{text-decoration:none;font:700 8px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#FFFEFC;background:#4A6C8C;border-radius:4px;padding:3px 4px}",
+      ".fo-cp-pm{font:500 11.5px/1.5 Inter,sans-serif;color:rgba(20,28,40,.62);margin-top:2px}",
+      ".fo-cp-pc{font:italic 420 11.5px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.72);margin-top:2px}",
+      ".fo-cp-pw{font:600 9.5px/1.4 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(20,28,40,.45);margin-top:3px}",
+      ".fo-cp-pt{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}",
+      ".fo-cp-pt em{font-style:normal;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--cac);background:rgba(180,74,34,.09);border-radius:5px;padding:4px 6px}",
+      ".fo-cp-pr{position:absolute;top:10px;right:0;width:86px;text-align:right}",
+      ".fo-cp-pr b{display:block;font:700 15px/1 Oswald,sans-serif;color:#141C28;font-variant-numeric:tabular-nums}",
+      ".fo-cp-pr u{display:block;text-decoration:none;font:400 9px/1.35 Inter,sans-serif;color:rgba(20,28,40,.5);margin-top:2px}",
       ".fo-cp-form{display:flex;gap:6px}",
       ".fo-cp-form i{font-style:normal;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;font:700 12px/1 Oswald,sans-serif;color:#FFFEFC}",
       ".fo-cp-form i.w{background:#177A57}.fo-cp-form i.l{background:#B23230}.fo-cp-form i.t{background:#8a6d3b}",
+      ".fo-cp-r{display:grid;grid-template-columns:34px minmax(0,1fr);gap:2px 8px;padding:8px 0;border-top:1px solid rgba(20,28,40,.08);text-decoration:none;color:#141C28}",
+      ".fo-cp-r:first-of-type{border-top:0}",
+      ".fo-cp-r i{grid-row:span 2;font:700 10px/1 Oswald,sans-serif;letter-spacing:.06em;color:rgba(20,28,40,.4);font-style:normal;padding-top:2px}",
+      ".fo-cp-r b{font:600 12.5px/1.4 Inter,sans-serif}",
+      ".fo-cp-r span{font:italic 420 11.5px/1.4 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6)}",
+      ".fo-cp-r.w b{color:#177A57}.fo-cp-r.l b{color:#B23230}",
+      "html body #page a.fo-cp-r.fx:hover b{color:#B44A22}",
       ".fo-cp-note{font:500 12.5px/1.6 Inter,sans-serif;color:#141C28;padding:2px 0}",
+      ".fo-cp-note u{text-decoration:none;font:italic 420 11.5px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.55)}",
       ".fo-cp-note.dim{font-style:italic;font-family:'Fraunces',Georgia,serif;color:rgba(20,28,40,.55)}",
       "html body #page .fo-cp-cta{display:block;text-align:center;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:linear-gradient(180deg,#E8894A,#C8542F);border-radius:12px;padding:14px;text-decoration:none !important;box-shadow:0 10px 26px rgba(200,84,47,.3);margin:4px 0 10px}",
-      ".fo-cp-foot{text-align:right;padding:2px 4px}",
-      "html body #page .fo-cp-foot a{font:600 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22 !important;text-decoration:none !important}"
+      ".fo-cp-foot{display:flex;justify-content:space-between;gap:10px;padding:2px 4px}",
+      "html body #page .fo-cp-foot a{font:600 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22 !important;text-decoration:none !important}",
+      "@media(max-width:420px){.fo-cp-stats{grid-template-columns:1fr 1fr}}"
     ].join("\n");
     document.head.appendChild(s);
   }

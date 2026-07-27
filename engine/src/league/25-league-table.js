@@ -15,7 +15,33 @@
     return m ? decodeURIComponent(m[1]) : "";
   }
   function regions() { try { return (window.__foCxAPI.regions() || []).filter(function (r) { return !r.final; }); } catch (e) { return []; } }
-  function natName(id) { var hit = regions().filter(function (r) { return r.id === id; })[0]; return (hit && hit.nm) || ""; }
+  function regionOf(id) { return regions().filter(function (r) { return r.id === id; })[0] || null; }
+  function natName(id) { var hit = regionOf(id); return (hit && hit.nm) || ""; }
+  function ART() { return (typeof FO_ART !== "undefined") ? FO_ART : ((location.pathname.indexOf("/client/") !== -1) ? "art/" : "client/art/"); }
+  function flagOf(id) { try { return ART() + "flags/" + window.__foCxAPI.flagFile(id) + ".svg"; } catch (e) { return ""; } }
+  // EVERY LEAGUE LOOKS LIKE ITS OWN COUNTRY. One accent, one flag, one
+  // painted horizon - the same almanack, wearing the nation's colours.
+  var NAT_LINE = {
+    eng: "The old game, played where it was written.",
+    aus: "Hard light, hard cricket, no quarter given.",
+    sub: "A billion eyes on every ball.",
+    pak: "Raw pace and rawer nerve.",
+    rsa: "The long summer and the southeaster.",
+    win: "Calypso and thunder.",
+    nzl: "Cricket under the long white cloud.",
+    slk: "Spin, sorcery and sea air.",
+    ned: "The low country, playing above itself.",
+    ire: "Green, damp and defiant.",
+    zim: "Flame lilies and hard yards.",
+    afg: "Mountain fire, learned in exile.",
+    bgd: "The tigers, and a country that roars with them.",
+    nep: "Cricket on the roof of the world.",
+    sco: "Highland steel, in a cold wind.",
+    wal: "Dragons at the crease.",
+    ken: "The rift valley game.",
+    usa: "The new frontier of an old sport.",
+    can: "True north, and a short summer to prove it."
+  };
 
   // older saves recorded results before seasonNo existed on the record; a
   // stampless result belongs to this season exactly when the season's own
@@ -264,14 +290,24 @@
       var kick = (own ? "Your league" : "The world &middot; away") + " &middot; Season " + (snapSeason || (cal && cal.seasonNo > 0 ? cal.seasonNo : 1)) +
         (own && myClub ? " &middot; " + E(myClub) + (myPos ? " &middot; " + ord(myPos) : "") : (rows.length ? " &middot; " + E(rows[0].nm) + " lead" : ""));
 
+      // the nation's own colours: its accent, its flag, its painted country
+      var reg = regionOf(natId) || {};
+      var accent = reg.ac || "#C95532";
+      var natArt = ART() + "circuit/" + (reg.bg || (natId + ".webp"));
+      var line = NAT_LINE[natId] || "Ten clubs, one pennant.";
+
       page.innerHTML =
-        "<div class='fo-lt'>" +
+        "<div class='fo-lt' style='--nac:" + E(accent) + "'>" +
+        "<div class='fo-lt-rail l' style=\"background-image:url('" + natArt + "')\"></div>" +
+        "<div class='fo-lt-rail r' style=\"background-image:url('" + natArt + "')\"></div>" +
         "<div class='fo-lt-mast'>" +
-        "<div class='fo-lt-kick'>" + kick + "</div>" +
+        "<img class='fo-lt-mastart' src='" + natArt + "' alt='' loading='lazy' onerror=\"this.style.display='none'\">" +
+        "<div class='fo-lt-mastin'>" +
+        "<div class='fo-lt-kick'><img src='" + flagOf(natId) + "' alt='' onerror=\"this.style.display='none'\">" + kick + "</div>" +
         "<h1>The " + (natNm ? E(natNm) + " " : "") + "League</h1>" +
-        "<p>Ten clubs, eighteen rounds, one pennant. Two points a win, net run rate to break hearts. Every club opens onto its own page.</p>" +
+        "<p>" + E(line) + " Ten clubs, eighteen rounds, one pennant &mdash; two points a win, net run rate to break hearts.</p>" +
         hop +
-        "</div>" +
+        "</div></div>" +
         "<div class='fo-lt-head'><i>#</i><span>Club &middot; form</span><em>P</em><em>W</em><em>L</em><em>NRR</em><b>Pts</b></div>" +
         "<div class='fo-lt-list'>" + body + "</div>" +
         todayHTML +
@@ -294,10 +330,21 @@
   }
 
   var CSS = [
-    "html body #page .fo-lt{max-width:680px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
-    "html body #page .fo-lt-mast{background:linear-gradient(150deg,#FFFEFB,#F6F1E4 70%,#F0E9D6) !important;border:1px solid rgba(20,28,40,.1);border-radius:22px;padding:26px 28px 22px;box-shadow:0 22px 50px rgba(30,38,52,.12)}",
-    "html body #page .fo-lt-kick{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:#B44A22}",
-    "html body #page .fo-lt-kick:after{content:'';display:block;width:34px;border-top:2px solid #C95532;margin-top:7px}",
+    "html body #page .fo-lt{position:relative;max-width:680px;margin:26px auto 44px;padding:0 14px;color:#141C28;--nac:#C95532}",
+    // THE COUNTRY FRAMES ITS OWN LEAGUE. On a wide screen the nation's
+    // painted map stands either side of the column, quiet enough to read
+    // over; on a phone there is no room, so the masthead carries it instead.
+    "html body #page .fo-lt-rail{display:none}",
+    "@media(min-width:1180px){html body #page .fo-lt-rail{display:block;position:fixed;top:0;bottom:0;width:calc(50vw - 350px);background-size:cover;background-position:center;opacity:.3;pointer-events:none;z-index:0}",
+    "html body #page .fo-lt-rail.l{left:0;-webkit-mask-image:linear-gradient(90deg,transparent,#000 40%,transparent);mask-image:linear-gradient(90deg,transparent,#000 40%,transparent)}",
+    "html body #page .fo-lt-rail.r{right:0;-webkit-mask-image:linear-gradient(270deg,transparent,#000 40%,transparent);mask-image:linear-gradient(270deg,transparent,#000 40%,transparent)}}",
+    "html body #page .fo-lt-mast{position:relative;overflow:hidden;background:linear-gradient(150deg,#FFFEFB,#F6F1E4 70%,#F0E9D6) !important;border:1px solid rgba(20,28,40,.1);border-radius:22px;box-shadow:0 22px 50px rgba(30,38,52,.12)}",
+    "html body #page .fo-lt-mast:before{content:'';position:absolute;left:0;right:0;top:0;height:4px;background:var(--nac);z-index:2}",
+    "html body #page .fo-lt-mastart{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 34%;opacity:.3;-webkit-mask-image:linear-gradient(180deg,#000,transparent 78%);mask-image:linear-gradient(180deg,#000,transparent 78%)}",
+    "html body #page .fo-lt-mastin{position:relative;padding:26px 28px 22px}",
+    "html body #page .fo-lt-kick{display:flex;align-items:center;gap:8px;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:#8A3A1B;flex-wrap:wrap}",
+    "html body #page .fo-lt-kick img{width:22px;height:15px;object-fit:cover;border-radius:2px;box-shadow:0 1px 4px rgba(20,28,40,.3)}",
+    "html body #page .fo-lt-kick:after{content:'';display:block;width:100%;border-top:2px solid var(--nac);margin-top:5px}",
     "html body #page .fo-lt-mast h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:38px;letter-spacing:-.015em;margin:8px 0 8px;color:#141C28;line-height:1.02}",
     "html body #page .fo-lt-mast p{font:italic 420 13.5px/1.6 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);margin:0;max-width:52ch}",
     "html body #page .fo-lt-hop{display:flex;align-items:center;gap:9px;margin-top:16px;flex-wrap:wrap}",
@@ -308,8 +355,9 @@
     "html body #page .fo-lt-list{display:flex;flex-direction:column;gap:6px}",
     "html body #page .fo-lt-wait{background:#FFFEFC;border:1px dashed rgba(20,28,40,.18);border-radius:13px;padding:18px 16px;font:italic 420 13px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);text-align:center}",
     "html body #page .fo-lt-row{display:grid;grid-template-columns:24px minmax(0,1fr) 28px 28px 28px 52px 34px;gap:8px;align-items:center;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:13px;padding:10px 16px;text-decoration:none;color:#141C28;box-shadow:0 4px 14px rgba(30,38,52,.06);transition:border-color .15s ease,transform .12s ease}",
-    "html body #page .fo-lt-row:hover{border-color:rgba(217,85,42,.5);transform:translateY(-1px);text-decoration:none}",
-    "html body #page .fo-lt-row.mine{border-left:3px solid #C95532}",
+    "html body #page .fo-lt-row:hover{border-color:var(--nac);transform:translateY(-1px);text-decoration:none}",
+    "html body #page .fo-lt-row.mine{border-left:3px solid var(--nac)}",
+    "html body #page .fo-lt>*{position:relative;z-index:1}",
     "html body #page .fo-lt-row>i{font:700 12px/1 Inter,sans-serif;color:rgba(20,28,40,.45);font-style:normal;font-variant-numeric:tabular-nums}",
     "html body #page .fo-lt-nm{min-width:0}",
     "html body #page .fo-lt-nm b{display:block;font:600 13.5px/1.25 Inter,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
@@ -333,7 +381,7 @@
     "html body #page .fo-lt-fxlist{display:flex;flex-direction:column;gap:6px}",
     "html body #page .fo-lt-fx{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:13px;padding:11px 16px;text-decoration:none;color:#141C28;box-shadow:0 4px 14px rgba(30,38,52,.06)}",
     "html body #page .fo-lt-fx:hover{border-color:rgba(217,85,42,.5);text-decoration:none}",
-    "html body #page .fo-lt-fx.mine,html body #page .fo-lt-res.mine{border-left:3px solid #C95532}",
+    "html body #page .fo-lt-fx.mine,html body #page .fo-lt-res.mine{border-left:3px solid var(--nac)}",
     "html body #page .fo-lt-fxt{display:flex;align-items:center;gap:7px;min-width:0;flex-wrap:wrap}",
     "html body #page .fo-lt-fxt b{font:600 13px/1.3 Inter,sans-serif}",
     "html body #page .fo-lt-fxt i{font:italic 400 11.5px/1 'Fraunces',Georgia,serif;color:rgba(20,28,40,.4)}",
