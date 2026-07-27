@@ -293,6 +293,20 @@
   }
   function hh(n) { return (n < 10 ? "0" : "") + Math.floor(n) + ":00"; }
   function todayStatus(now) {
+    // no round scheduled today means no LIVE, whatever the clock says -
+    // the chip only lights when a league round is genuinely in progress
+    var p = phaseOf(now);
+    if (p.kind !== "league") {
+      if (p.preseason) {
+        var toGo = WORLD_START - dayIx(now);
+        return { key: "up", liveIds: [], chip: "Season 1 opens " + (toGo === 1 ? "tomorrow" : "in " + toGo + " days") };
+      }
+      return { key: "fin", liveIds: [],
+        chip: p.kind === "cup" ? "World Cup week - " + stageName(p.stage) :
+              p.kind === "honours" ? "Honours night - no league play today" :
+              p.kind === "draw" ? "World Cup draw day - no league play" :
+              "Rest day - the new season starts tomorrow" };
+    }
     var h = hourOfDay(now), liveIds = [], nextAt = null;
     regionList().forEach(function (r) {
       var h0 = natHour(r.id);
@@ -330,6 +344,7 @@
       var bandHTML = "<div class='fo-pl-band'><i>The world by the hour &middot; UTC</i><div class='fo-pl-bandrow'>" + band + "</div></div>";
 
       var phaseLine =
+        p.preseason ? "The world is founded and the squads are named - season 1 " + ((WORLD_START - dayIx(now)) === 1 ? "begins tomorrow" : "begins in " + (WORLD_START - dayIx(now)) + " days") :
         p.kind === "league" ? "Round " + p.round + " of " + ROUNDS + " across the world's leagues" :
         p.kind === "honours" ? "Honours day - champions are crowned tonight" :
         p.kind === "draw" ? "World Cup draw day - sixteen nations learn their fate" :

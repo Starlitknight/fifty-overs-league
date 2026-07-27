@@ -10588,7 +10588,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-1247-02e71a";
+  var FO_BUILD = "20260727-1254-502fec";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -30088,9 +30088,16 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           }).join("");
         } else {
           var nextDay = srv.cal.seasonNo < 1 ? 5 : srv.cal.dayInSeason > 17 ? 5 + srv.cal.seasonNo * 25 : null;
+          var ndDate = "";
+          try {
+            if (nextDay != null) {
+              var dt0 = new Date(srv.pl.EPOCH + nextDay * 86400000);
+              ndDate = " &middot; first ball " + ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dt0.getUTCDay()] + " " + dt0.getUTCDate() + " " + ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dt0.getUTCMonth()] + " at " + hhFmt(srv.hour);
+            }
+          } catch (eNd) {}
           mdRows = "<div class='fo-nt-quiet'>No league round today" +
             (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason > 17 ? " &mdash; the cup window is on" : "") +
-            (nextDay != null ? ". The league returns on world day " + nextDay + "." : ".") + "</div>";
+            (nextDay != null ? ". The league returns" + ndDate + "." : ".") + "</div>";
         }
         var stateWord = srv.state === "live" ? "&#9679; Round " + srv.cal.round + " &mdash; in play now"
           : srv.state === "up" ? "Round " + srv.cal.round + " &middot; " + (teamsInP ? "teamsheets in &middot; " : "") + "first ball " + hhFmt(srv.hour)
@@ -36358,6 +36365,20 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   }
   function hh(n) { return (n < 10 ? "0" : "") + Math.floor(n) + ":00"; }
   function todayStatus(now) {
+    // no round scheduled today means no LIVE, whatever the clock says -
+    // the chip only lights when a league round is genuinely in progress
+    var p = phaseOf(now);
+    if (p.kind !== "league") {
+      if (p.preseason) {
+        var toGo = WORLD_START - dayIx(now);
+        return { key: "up", liveIds: [], chip: "Season 1 opens " + (toGo === 1 ? "tomorrow" : "in " + toGo + " days") };
+      }
+      return { key: "fin", liveIds: [],
+        chip: p.kind === "cup" ? "World Cup week - " + stageName(p.stage) :
+              p.kind === "honours" ? "Honours night - no league play today" :
+              p.kind === "draw" ? "World Cup draw day - no league play" :
+              "Rest day - the new season starts tomorrow" };
+    }
     var h = hourOfDay(now), liveIds = [], nextAt = null;
     regionList().forEach(function (r) {
       var h0 = natHour(r.id);
@@ -36395,6 +36416,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var bandHTML = "<div class='fo-pl-band'><i>The world by the hour &middot; UTC</i><div class='fo-pl-bandrow'>" + band + "</div></div>";
 
       var phaseLine =
+        p.preseason ? "The world is founded and the squads are named - season 1 " + ((WORLD_START - dayIx(now)) === 1 ? "begins tomorrow" : "begins in " + (WORLD_START - dayIx(now)) + " days") :
         p.kind === "league" ? "Round " + p.round + " of " + ROUNDS + " across the world's leagues" :
         p.kind === "honours" ? "Honours day - champions are crowned tonight" :
         p.kind === "draw" ? "World Cup draw day - sixteen nations learn their fate" :

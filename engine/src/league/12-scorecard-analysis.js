@@ -5583,9 +5583,16 @@
           }).join("");
         } else {
           var nextDay = srv.cal.seasonNo < 1 ? 5 : srv.cal.dayInSeason > 17 ? 5 + srv.cal.seasonNo * 25 : null;
+          var ndDate = "";
+          try {
+            if (nextDay != null) {
+              var dt0 = new Date(srv.pl.EPOCH + nextDay * 86400000);
+              ndDate = " &middot; first ball " + ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dt0.getUTCDay()] + " " + dt0.getUTCDate() + " " + ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dt0.getUTCMonth()] + " at " + hhFmt(srv.hour);
+            }
+          } catch (eNd) {}
           mdRows = "<div class='fo-nt-quiet'>No league round today" +
             (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason > 17 ? " &mdash; the cup window is on" : "") +
-            (nextDay != null ? ". The league returns on world day " + nextDay + "." : ".") + "</div>";
+            (nextDay != null ? ". The league returns" + ndDate + "." : ".") + "</div>";
         }
         var stateWord = srv.state === "live" ? "&#9679; Round " + srv.cal.round + " &mdash; in play now"
           : srv.state === "up" ? "Round " + srv.cal.round + " &middot; " + (teamsInP ? "teamsheets in &middot; " : "") + "first ball " + hhFmt(srv.hour)
