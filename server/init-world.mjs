@@ -9,8 +9,34 @@ import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
 import { EPOCH, CYCLE, ROUNDS, dayIx, scheduleOf, natHour } from './clock.mjs';
 
+// EVERY LEAGUE IS ANCHORED BY A REAL CLUB. Slot 0 is the country's most
+// storied side - the name a supporter there would give you first - with its
+// real home. It is the one club no manager may take over: the league's
+// standing measure, the game everyone else is trying to beat.
+export const FLAGSHIPS = {
+  eng: { name: 'Essex', ground: 'Chelmsford' },
+  ire: { name: 'Leinster Lightning', ground: 'Malahide' },
+  ned: { name: 'VOC Rotterdam', ground: 'Hazelaarweg' },
+  win: { name: 'Barbados', ground: 'Kensington Oval' },
+  rsa: { name: 'Western Province', ground: 'Newlands' },
+  zim: { name: 'Mashonaland Eagles', ground: 'Harare Sports Club' },
+  aus: { name: 'New South Wales', ground: 'The Sydney Cricket Ground' },
+  nzl: { name: 'Canterbury', ground: 'Hagley Oval' },
+  slk: { name: 'Sinhalese Sports Club', ground: 'The SSC Ground' },
+  sub: { name: 'Cricket Club of India', ground: 'Brabourne Stadium' },
+  pak: { name: 'Karachi Whites', ground: 'National Stadium' },
+  afg: { name: 'Band-e-Amir Dragons', ground: 'Kabul International' },
+  bgd: { name: 'Abahani Limited', ground: 'Sher-e-Bangla Stadium' },
+  nep: { name: 'Tribhuvan Army Club', ground: 'The TU Ground' },
+  sco: { name: 'The Grange', ground: 'Raeburn Place' },
+  wal: { name: 'Glamorgan', ground: 'Sophia Gardens' },
+  ken: { name: 'Nairobi Gymkhana', ground: 'The Gymkhana Ground' },
+  usa: { name: 'Philadelphia Cricket Club', ground: "St Martin's" },
+  can: { name: 'Ontario', ground: 'Maple Leaf Ground' }
+};
+
 export const ENG_CLUBS = [
-  { slot: 0, name: "Sir Giles Pemberley's XI", ground: "The Pemberley Oval", boss: true, arch: 'rock' },
+  { slot: 0, name: FLAGSHIPS.eng.name, ground: FLAGSHIPS.eng.ground, boss: true, arch: 'rock' },
   { slot: 1, name: 'Yorkshire', ground: 'Headingley', arch: 'rock' },
   { slot: 2, name: 'Lancashire', ground: 'Old Trafford', arch: 'rock' },
   { slot: 3, name: 'Surrey', ground: 'The Oval', arch: 'rock' },
@@ -32,7 +58,9 @@ export function countryConfigs(host) {
       }
     : {
         id: r.id, name: r.name, nat: r.nat, arch: r.arch, capt: r.capt, hour: r.hour,
-        clubs: r.sides.map(s => ({ slot: s.slot, name: s.name, ground: s.city + ' Ground', boss: !!s.boss }))
+        clubs: r.sides.map(s => (s.boss && FLAGSHIPS[r.id])
+          ? { slot: s.slot, name: FLAGSHIPS[r.id].name, ground: FLAGSHIPS[r.id].ground, boss: true }
+          : { slot: s.slot, name: s.name, ground: s.city + ' Ground', boss: !!s.boss })
       });
 }
 

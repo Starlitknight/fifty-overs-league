@@ -10588,7 +10588,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-1815-ceaf83";
+  var FO_BUILD = "20260727-1823-827e98";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -29858,7 +29858,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           (x.srv ? " href='#/team?c=" + encodeURIComponent(nation) + "&s=" + x.slot + "'"
             : x.wid && x.wid !== "me" ? " href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'" : "") + ">" +
           "<span class='rk'>" + (i + 1) + "</span>" + av +
-          "<span class='nm'>" + E(x.name) + (x.isMe ? " <em class='you'>YOU</em>" : (x.boss ? " <em class='bs'>BOSS</em>" : "")) + "<i>" + E(x.city) + "</i></span>" +
+          "<span class='nm'>" + E(x.name) + (x.isMe ? " <em class='you'>YOU</em>" : (x.boss ? " <em class='bs'>FLAGSHIP</em>" : "")) + "<i>" + E(x.city) + "</i></span>" +
           "<span class='c'>" + x.P + "</span><span class='c'>" + x.W + "</span><span class='c'>" + x.L + "</span>" +
           "<span class='c nrr'>" + (x.nrr == null ? "&middot;" : (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2)) + "</span>" +
           "<span class='c pt'>" + x.pts + "</span></a>";
@@ -40496,7 +40496,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         return "<a class='fo-rk-row" + (isMine ? " mine" : "") + (c.boss ? " boss" : "") + "' href='#/team?c=" + encodeURIComponent(c.country) + "&s=" + c.slot + "'>" +
           "<i>" + c.rank + "</i>" +
           "<img src='" + flagOf(c.country) + "' alt='' onerror=\"this.style.display='none'\">" +
-          "<b>" + E(c.name) + (isMine ? " <em>YOU</em>" : (c.boss ? " <em class='bs'>BOSS</em>" : "")) + "</b>" +
+          "<b>" + E(c.name) + (isMine ? " <em>YOU</em>" : (c.boss ? " <em class='bs'>FLAGSHIP</em>" : "")) + "</b>" +
           "<u>" + E(natName(c.country)) + "</u>" +
           "<span class='rec'>" + c.w + "-" + c.l + (c.t ? "-" + c.t : "") + "</span>" +
           "<span class='pts'>" + c.rating + "</span></a>";
@@ -40668,7 +40668,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       });
       var mgrLine = mgr
         ? "<span class='fo-cp-mgr human'>&#9733; Managed by " + E(mgr) + "</span>"
-        : boss ? "<span class='fo-cp-mgr'>The league's boss club &mdash; never for hire</span>"
+        : boss ? "<span class='fo-cp-mgr'>The league's flagship &mdash; never for hire</span>"
         : "<span class='fo-cp-mgr'>Unmanaged &mdash; a steady club of the shires</span>";
       var statCells =
         "<div class='c'><i>World rank</i><b>" + (rkRow ? "#" + rkRow.rank : "&mdash;") + "</b><u>" + (rkRow ? rkRow.rating + " rating" : "") + "</u></div>" +
@@ -40678,7 +40678,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         "<a class='fo-cp-back' href='#/nation?n=" + encodeURIComponent(cid) + "'>&lsaquo; " + E(natName(cid)) + " league</a>" +
         "<div class='fo-cp-hero'>" +
         "<img class='fo-cp-flag' src='" + flagOf(cid) + "' alt='' onerror=\"this.style.display='none'\">" +
-        "<div class='fo-cp-id'><div class='fo-cp-k'>" + E(natName(cid)) + " &middot; the served world" + (boss ? " &middot; BOSS" : "") + (isMine ? " &middot; YOUR CLUB" : "") + "</div>" +
+        "<div class='fo-cp-id'><div class='fo-cp-k'>" + E(natName(cid)) + " &middot; the served world" + (boss ? " &middot; THE FLAGSHIP" : "") + (isMine ? " &middot; YOUR CLUB" : "") + "</div>" +
         "<h1>" + E(name) + "</h1>" +
         "<p>" + E((info && info.ground) || "") + "</p>" + mgrLine + "</div></div>" +
         "<div class='fo-cp-stats'>" + statCells + "</div>" +

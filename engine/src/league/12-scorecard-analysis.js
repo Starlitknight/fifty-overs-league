@@ -5336,7 +5336,7 @@
           (x.srv ? " href='#/team?c=" + encodeURIComponent(nation) + "&s=" + x.slot + "'"
             : x.wid && x.wid !== "me" ? " href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'" : "") + ">" +
           "<span class='rk'>" + (i + 1) + "</span>" + av +
-          "<span class='nm'>" + E(x.name) + (x.isMe ? " <em class='you'>YOU</em>" : (x.boss ? " <em class='bs'>BOSS</em>" : "")) + "<i>" + E(x.city) + "</i></span>" +
+          "<span class='nm'>" + E(x.name) + (x.isMe ? " <em class='you'>YOU</em>" : (x.boss ? " <em class='bs'>FLAGSHIP</em>" : "")) + "<i>" + E(x.city) + "</i></span>" +
           "<span class='c'>" + x.P + "</span><span class='c'>" + x.W + "</span><span class='c'>" + x.L + "</span>" +
           "<span class='c nrr'>" + (x.nrr == null ? "&middot;" : (x.nrr >= 0 ? "+" : "") + x.nrr.toFixed(2)) + "</span>" +
           "<span class='c pt'>" + x.pts + "</span></a>";

@@ -103,7 +103,7 @@
       });
       var mgrLine = mgr
         ? "<span class='fo-cp-mgr human'>&#9733; Managed by " + E(mgr) + "</span>"
-        : boss ? "<span class='fo-cp-mgr'>The league's boss club &mdash; never for hire</span>"
+        : boss ? "<span class='fo-cp-mgr'>The league's flagship &mdash; never for hire</span>"
         : "<span class='fo-cp-mgr'>Unmanaged &mdash; a steady club of the shires</span>";
       var statCells =
         "<div class='c'><i>World rank</i><b>" + (rkRow ? "#" + rkRow.rank : "&mdash;") + "</b><u>" + (rkRow ? rkRow.rating + " rating" : "") + "</u></div>" +
@@ -113,7 +113,7 @@
         "<a class='fo-cp-back' href='#/nation?n=" + encodeURIComponent(cid) + "'>&lsaquo; " + E(natName(cid)) + " league</a>" +
         "<div class='fo-cp-hero'>" +
         "<img class='fo-cp-flag' src='" + flagOf(cid) + "' alt='' onerror=\"this.style.display='none'\">" +
-        "<div class='fo-cp-id'><div class='fo-cp-k'>" + E(natName(cid)) + " &middot; the served world" + (boss ? " &middot; BOSS" : "") + (isMine ? " &middot; YOUR CLUB" : "") + "</div>" +
+        "<div class='fo-cp-id'><div class='fo-cp-k'>" + E(natName(cid)) + " &middot; the served world" + (boss ? " &middot; THE FLAGSHIP" : "") + (isMine ? " &middot; YOUR CLUB" : "") + "</div>" +
         "<h1>" + E(name) + "</h1>" +
         "<p>" + E((info && info.ground) || "") + "</p>" + mgrLine + "</div></div>" +
         "<div class='fo-cp-stats'>" + statCells + "</div>" +

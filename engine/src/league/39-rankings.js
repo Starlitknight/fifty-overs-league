@@ -77,7 +77,7 @@
         return "<a class='fo-rk-row" + (isMine ? " mine" : "") + (c.boss ? " boss" : "") + "' href='#/team?c=" + encodeURIComponent(c.country) + "&s=" + c.slot + "'>" +
           "<i>" + c.rank + "</i>" +
           "<img src='" + flagOf(c.country) + "' alt='' onerror=\"this.style.display='none'\">" +
-          "<b>" + E(c.name) + (isMine ? " <em>YOU</em>" : (c.boss ? " <em class='bs'>BOSS</em>" : "")) + "</b>" +
+          "<b>" + E(c.name) + (isMine ? " <em>YOU</em>" : (c.boss ? " <em class='bs'>FLAGSHIP</em>" : "")) + "</b>" +
           "<u>" + E(natName(c.country)) + "</u>" +
           "<span class='rec'>" + c.w + "-" + c.l + (c.t ? "-" + c.t : "") + "</span>" +
           "<span class='pts'>" + c.rating + "</span></a>";
