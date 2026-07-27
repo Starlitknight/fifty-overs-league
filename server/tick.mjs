@@ -367,6 +367,23 @@ export async function runFriendlies(pool, host, opts = {}) {
   return played;
 }
 
+// A LEAGUE EXISTS BEFORE IT PLAYS. Snapshots used to appear only when a
+// round settled, so between founding and the first ball every nation served
+// nothing and every device fell back to painted placeholder sides - wrong
+// names, wrong clubs, sometimes the same club three times. A league that has
+// not played is still a league: ten real clubs, all on nought. Publish it.
+export async function ensureSnapshots(pool, { now = Date.now() } = {}) {
+  const cs = (await pool.query('SELECT id FROM countries ORDER BY id')).rows;
+  const filled = [];
+  for (const c of cs) {
+    const have = await pool.query(`SELECT 1 FROM snapshots WHERE key=$1`, ['league/' + c.id]);
+    if (have.rowCount) continue;
+    await rebuildSnapshots(pool, c.id, now);
+    filled.push(c.id);
+  }
+  return filled;
+}
+
 export async function runAllDue(pool, host, opts = {}) {
   const cs = await pool.query('SELECT id FROM countries ORDER BY id');
   const out = {};
@@ -567,6 +584,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const pool = makePool();
   const host = makeHost();
   (async () => {
+    // a founded league is a league even before its first ball
+    try {
+      const filled = await ensureSnapshots(pool);
+      if (filled.length) console.error('published first tables for: ' + filled.join(', '));
+    } catch (eS) { console.error('snapshots: ' + eS.message); }
     const all = await runAllDue(pool, host);
     const lines = [];
     for (const [country, r] of Object.entries(all)) {
