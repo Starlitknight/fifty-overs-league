@@ -5644,6 +5644,28 @@
         srvLiveFirst = (srv.state === "live");
         if (srv.snap) ebText = (ownNat ? "Your world league" : "The World Service") + " &middot; Season " + srv.cal.seasonNo;
       }
+      // ---- SEASON HONOURS: real leaders from the banked scorecards ---------
+      var ntSecLeaders = "";
+      if (srv && srv.snap && srv.snap.stats) {
+        var stt = srv.snap.stats;
+        var champLn = srv.snap.champion
+          ? "<div class='fo-nt-crown'>&#127942; <b>" + E(srv.snap.champion) + "</b> are the Season " + srv.snap.seasonNo + " champions</div>" : "";
+        var ldRow = function (x, i, val) {
+          var mine = !!(wclm && wclm.country === nation && x.club === wclm.club);
+          return "<div class='fo-nt-ld" + (mine ? " mine" : "") + "'><i>" + (i + 1) + "</i><b>" + E(x.name) + "</b><u>" + E(x.club) + "</u><span>" + val + "</span></div>";
+        };
+        var batCol = (stt.bat || []).length
+          ? "<div class='c'><em>Most runs</em>" + stt.bat.map(function (x, i) { return ldRow(x, i, x.runs + " <s>@ " + x.sr + "</s>"); }).join("") + "</div>" : "";
+        var bowlCol = (stt.bowl || []).length
+          ? "<div class='c'><em>Most wickets</em>" + stt.bowl.map(function (x, i) { return ldRow(x, i, x.wkts + "w <s>" + x.econ + "/ov</s>"); }).join("") + "</div>" : "";
+        var extras = "";
+        if ((stt.sr || []).length) extras += "<div class='fo-nt-ldx'>Fastest blade: <b>" + E(stt.sr[0].name) + "</b> &middot; strike rate " + stt.sr[0].sr + "</div>";
+        if ((stt.econ || []).length) extras += "<div class='fo-nt-ldx'>Tightest arm: <b>" + E(stt.econ[0].name) + "</b> &middot; " + stt.econ[0].econ + " an over</div>";
+        if (champLn || batCol || bowlCol) {
+          ntSecLeaders = "<div class='fo-ov-sec'><h2>Season honours</h2>" + champLn +
+            (batCol || bowlCol ? "<div class='fo-nt-ldcols'>" + batCol + bowlCol + "</div>" : "") + extras + "</div>";
+        }
+      }
 
       var shellOpen =
         "<div class='fo-lg fo-ov" + (own ? "" : " ro") + (natPage ? " fo-nt" : "") + "' data-tab='" + actTab + "' style='--lac:" + ac + "'>" +
@@ -5680,6 +5702,7 @@
           ntClaimBar +
           // a round in play is the loudest thing on the page: it leads
           (srvLiveFirst ? ntSecMatch + ntSecTable : ntSecTable + ntSecMatch) +
+          ntSecLeaders +
           ntSecResults +
           "<div class='fo-ov-sec fo-gr'>" + groundsPanel + "</div>" +
           "</section>" + dockHTML + "</div>"
@@ -6231,6 +6254,21 @@
       ".fo-nt-uround i{display:block;font-style:normal;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.8px;font-size:10px;font-weight:600;color:var(--gold);margin-bottom:5px}",
       ".fo-nt-uround span{display:block;font-size:12px;color:#c9d6ea;padding:2.5px 0}",
       ".fo-nt-rrow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;padding:8px 12px;border-radius:10px;background:rgba(12,20,36,.42);border:1px solid rgba(150,180,225,.13);margin-bottom:5px}",
+      // season honours: the crown and the leader boards
+      ".fo-nt-crown{font-family:'Fraunces',Georgia,serif;font-size:15px;color:#F3D37A;background:rgba(30,26,16,.55);border:1px solid rgba(235,194,113,.5);border-radius:12px;padding:12px 14px;margin-bottom:10px}",
+      ".fo-nt-ldcols{display:grid;grid-template-columns:1fr 1fr;gap:12px}",
+      "@media(max-width:560px){.fo-nt-ldcols{grid-template-columns:1fr}}",
+      ".fo-nt-ldcols .c{background:rgba(12,20,36,.42);border:1px solid rgba(150,180,225,.13);border-radius:14px;padding:10px 12px}",
+      ".fo-nt-ldcols .c>em{display:block;font-style:normal;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2px;font-size:10.5px;font-weight:600;color:var(--gold);margin-bottom:7px}",
+      ".fo-nt-ld{display:flex;align-items:baseline;gap:7px;padding:4px 0;font-size:12.5px;color:#dfe7f4}",
+      ".fo-nt-ld.mine b{color:#F3D37A}",
+      ".fo-nt-ld i{font-style:normal;font:700 10px/1 Oswald,sans-serif;color:rgba(223,231,244,.4);width:14px;text-align:right}",
+      ".fo-nt-ld b{font-weight:600;color:#fff}",
+      ".fo-nt-ld u{text-decoration:none;font-size:10.5px;color:#8a9bb8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".fo-nt-ld span{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:.4px;color:#E8B96A;white-space:nowrap}",
+      ".fo-nt-ld span s{text-decoration:none;font-size:10px;color:#8a9bb8}",
+      ".fo-nt-ldx{font-style:italic;font-size:12px;color:#9fb0cb;margin-top:8px}",
+      ".fo-nt-ldx b{color:#dfe7f4}",
       "html body #page .fo-nt-claim{display:block;text-align:center;margin:14px 0 2px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;font-size:12px;color:#170d07 !important;background:linear-gradient(180deg,#E8894A,#C8542F);border-radius:12px;padding:14px;text-decoration:none !important;box-shadow:0 10px 26px rgba(200,84,47,.34)}",
       "html body #page .fo-nt-claim.held{background:rgba(12,20,36,.42);color:#F3D37A !important;border:1px solid rgba(235,194,113,.45);box-shadow:none}",
       ".fo-nt-mx.mine{border-color:rgba(235,194,113,.55);background:rgba(30,26,16,.5)}",

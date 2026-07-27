@@ -91,7 +91,74 @@ export async function computeLeague(pool, country, seasonNo, now) {
   }
   const table = Object.values(T).map(x => ({ ...x, nrr: x.of && x.oa ? +(x.rf / x.of - x.ra / x.oa).toFixed(3) : 0 }))
     .sort((a, b) => b.pts - a.pts || b.nrr - a.nrr || a.slot - b.slot);
-  return { country, seasonNo: season.season_no, startDay: season.start_day, rounds: ROUNDS, roundsPlayed: ms.length ? Math.max(...ms.map(m => m.round)) : 0, table, results, generatedAtDay: dayIx(now) };
+  // SEASON HONOURS: leaders straight from the banked scorecards - every run
+  // and every wicket in the snapshot is one that genuinely happened
+  const PS = {};
+  const pAt = (nm, slot) => PS[nm] = PS[nm] || { name: nm, club: bySlot[slot].name, runs: 0, balls: 0, outs: 0, hs: 0, wkts: 0, conc: 0, bballs: 0, bb: null };
+  for (const m of ms) {
+    const r = m.result;
+    const hN = m.home_name || bySlot[m.home_slot].name, aN = m.away_name || bySlot[m.away_slot].name;
+    const slotOf = nm => nm === hN ? m.home_slot : nm === aN ? m.away_slot : clubs.find(c => c.name === nm)?.slot;
+    for (const inn of r.innings) {
+      if (!inn) continue;
+      const bs = slotOf(inn.batTeam), os = slotOf(inn.bowlTeam);
+      if (bs != null) for (const b of (inn.bat || [])) {
+        const nm = (b.p && b.p.name) || b.p; if (!nm) continue;
+        const e = pAt(nm, bs);
+        e.runs += b.r || 0; e.balls += b.b || 0;
+        if (b.out && b.out !== 'not out') e.outs++;
+        if ((b.r || 0) > e.hs) e.hs = b.r || 0;
+      }
+      if (os != null) for (const nm of Object.keys(inn.bowlers || {})) {
+        const bw = inn.bowlers[nm], e = pAt(nm, os);
+        e.wkts += bw.w || 0; e.conc += bw.r || 0; e.bballs += bw.b || 0;
+        if (!e.bb || (bw.w || 0) > e.bb.w || ((bw.w || 0) === e.bb.w && (bw.r || 0) < e.bb.r)) e.bb = { w: bw.w || 0, r: bw.r || 0 };
+      }
+    }
+  }
+  const ppl = Object.values(PS);
+  const stats = {
+    bat: ppl.filter(x => x.runs > 0).sort((a, b) => b.runs - a.runs || b.hs - a.hs).slice(0, 5)
+      .map(x => ({ name: x.name, club: x.club, runs: x.runs, hs: x.hs, sr: x.balls ? +(100 * x.runs / x.balls).toFixed(1) : 0 })),
+    bowl: ppl.filter(x => x.wkts > 0).sort((a, b) => b.wkts - a.wkts || a.conc - b.conc).slice(0, 5)
+      .map(x => ({ name: x.name, club: x.club, wkts: x.wkts, econ: x.bballs ? +(6 * x.conc / x.bballs).toFixed(2) : 0, bb: x.bb })),
+    sr: ppl.filter(x => x.balls >= 60).sort((a, b) => (b.runs / b.balls) - (a.runs / a.balls)).slice(0, 3)
+      .map(x => ({ name: x.name, club: x.club, sr: +(100 * x.runs / x.balls).toFixed(1), runs: x.runs })),
+    econ: ppl.filter(x => x.bballs >= 60).sort((a, b) => (a.conc / a.bballs) - (b.conc / b.bballs)).slice(0, 3)
+      .map(x => ({ name: x.name, club: x.club, econ: +(6 * x.conc / x.bballs).toFixed(2), wkts: x.wkts }))
+  };
+  const roundsPlayed = ms.length ? Math.max(...ms.map(m => m.round)) : 0;
+  const champion = roundsPlayed >= ROUNDS && table[0] ? table[0].name : null;
+  return { country, seasonNo: season.season_no, startDay: season.start_day, rounds: ROUNDS, roundsPlayed, table, results, stats, champion, generatedAtDay: dayIx(now) };
+}
+
+// the honours book: an append-only memory of every crown. League snapshots
+// only ever hold the LATEST season, so finished honours are merged in here
+// the moment they exist and never lost. Idempotent by construction.
+export async function rebuildHonours(pool) {
+  const cur = (await pool.query(`SELECT body FROM snapshots WHERE key='honours'`)).rows[0];
+  const H = (cur && cur.body) || { seasons: {} };
+  const leagues = await pool.query(`SELECT body FROM snapshots WHERE key LIKE 'league/%'`);
+  for (const r of leagues.rows) {
+    const b = r.body;
+    if (b && b.roundsPlayed >= ROUNDS && b.champion) {
+      const sk = 's' + b.seasonNo;
+      H.seasons[sk] = H.seasons[sk] || {};
+      H.seasons[sk].league = H.seasons[sk].league || {};
+      H.seasons[sk].league[b.country] = b.champion;
+    }
+  }
+  const cups = await pool.query(`SELECT key, body FROM snapshots WHERE key LIKE 'cup/%' OR key LIKE 'worldcup/%'`);
+  for (const r of cups.rows) {
+    const m = /^(cup|worldcup)\/s(\d+)$/.exec(r.key);
+    if (!m || !r.body || !r.body.champion) continue;
+    const sk = 's' + m[2];
+    H.seasons[sk] = H.seasons[sk] || {};
+    H.seasons[sk][m[1] === 'cup' ? 'championsCup' : 'worldCup'] = r.body.champion;
+  }
+  await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ('honours', $1, now())
+    ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`, [JSON.stringify(H)]);
+  return H;
 }
 
 // the write side: latest season's league snapshot + the world summary
@@ -101,6 +168,7 @@ export async function rebuildSnapshots(pool, country, now) {
   await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ($1,$2,now())
     ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`, ['league/' + country, JSON.stringify(league)]);
   await rebuildWorldToday(pool, now);
+  await rebuildHonours(pool);
   return league;
 }
 

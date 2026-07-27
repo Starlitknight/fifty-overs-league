@@ -17,7 +17,7 @@ import { makePool } from '../db.mjs';
 import { migrate } from '../migrate.mjs';
 import { initWorld } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
-import { runAllDue, runCupWindow, rollSeasons, runTick, computeLeague } from '../tick.mjs';
+import { runAllDue, runCupWindow, rollSeasons, runTick, computeLeague, rebuildHonours } from '../tick.mjs';
 import { EPOCH, DAY } from '../clock.mjs';
 
 const DBNAME = 'foworld_p3_test';
@@ -125,6 +125,12 @@ test('P4+P5: a full planet season, then the cup window crowns two champions', as
   assert.ok(again.s1.wcl.every(x => x.skipped) && again.s1.wc.every(x => x.skipped), 'cup re-run is a no-op');
   const cm2 = await pool.query('SELECT count(*)::int AS n FROM cup_matches');
   assert.equal(cm2.rows[0].n, 33);
+
+  // the honours book remembers season 1 forever
+  const H = await rebuildHonours(pool);
+  assert.equal(Object.keys(H.seasons.s1.league).length, 19, 'nineteen league champions in the book');
+  assert.ok(H.seasons.s1.championsCup, 'the Champions Cup winner is in the book');
+  assert.ok(H.seasons.s1.worldCup, 'the World Cup winner is in the book');
 });
 
 test('seasons roll: season 2 begins at start_day + 25 everywhere', async () => {
@@ -233,4 +239,17 @@ test('008: signing up auto-claims the first free club; a full country says so', 
   const el = await as('44444444-4444-4444-8444-444444444444', `SELECT public.world_auto_claim('ire', 'Late', 'Latecomer CC') AS r`);
   assert.equal(el.rows[0].r.ok, true);
   assert.equal(el.rows[0].r.club, 'Latecomer CC');
+});
+
+test('009: season leaders come straight from the banked scorecards', async () => {
+  const lg = await computeLeague(pool, 'eng', 1, EPOCH + 102 * DAY);
+  assert.ok(lg.stats.bat.length >= 3, 'batting leaders exist after round 1');
+  assert.ok(lg.stats.bat[0].runs >= lg.stats.bat[1].runs, 'sorted by runs');
+  assert.ok(lg.stats.bowl.length >= 3, 'bowling leaders exist');
+  assert.ok(lg.stats.bowl[0].wkts >= lg.stats.bowl[1].wkts, 'sorted by wickets');
+  const clubNames = new Set((await pool.query(`SELECT name FROM clubs WHERE country_id='eng'`)).rows.map(r => r.name));
+  lg.stats.bat.concat(lg.stats.bowl).forEach(x => assert.ok(clubNames.has(x.club), x.club + ' is a real club'));
+  assert.equal(lg.champion, null, 'no champion until 18 rounds');
+  const H = await rebuildHonours(pool);
+  assert.deepEqual(H.seasons, {}, 'the honours book stays empty until a season completes');
 });

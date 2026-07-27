@@ -237,6 +237,7 @@
         "<div class='fo-wj-card fo-wj-mine'><h3>" + E(c.club) + " <span>" + E(c.country.toUpperCase()) + (pos ? " · " + pos : "") + "</span></h3>" +
         "<p class='fo-wj-p'>Submitted orders " +
         ((st.orders || []).length ? "on file for round" + ((st.orders || []).length > 1 ? "s" : "") + " " + (st.orders || []).map(function (o) { return o.round; }).join(", ") : "none yet") + ".</p>" +
+        "<div id='fo-wj-cab' class='fo-wj-note'>Opening the trophy cabinet&hellip;</div>" +
         "<h4 class='fo-wj-h4'>The eleven, in batting order</h4>" +
         "<div class='fo-wj-sq'>" + men + "</div>" +
         "<h4 class='fo-wj-h4'>The bowling five, in spell order <span>openers attack &middot; middle grinds &middot; closers defend</span></h4>" +
@@ -291,6 +292,20 @@
         chain.then(function () { msg("Orders on file for round" + (rounds.length > 1 ? "s " + rounds[0] + "-" + rounds[rounds.length - 1] : " " + rounds[0]) + ". The umpire has them."); })
           .catch(function (e) { msg("Failed: " + String(e.message).slice(0, 120)); });
       });
+      // the cabinet: every crown this club has ever worn, from the honours book
+      sel("world_snapshots?key=eq.honours&select=body").then(function (rows) {
+        var el = page.querySelector("#fo-wj-cab"); if (!el) return;
+        var H = rows && rows[0] && rows[0].body, lines = [];
+        if (H && H.seasons) Object.keys(H.seasons).sort().forEach(function (sk) {
+          var s5 = H.seasons[sk], sn = sk.slice(1);
+          if (s5.league && s5.league[c.country] === c.club) lines.push("&#127942; League champions &middot; Season " + sn);
+          if (s5.championsCup === c.club) lines.push("&#127942; CHAMPIONS CUP WINNERS &middot; Season " + sn);
+        });
+        el.innerHTML = lines.length
+          ? "<b>The trophy cabinet</b><br>" + lines.join("<br>")
+          : "The trophy cabinet stands empty &mdash; win the league and it will never forget.";
+      }).catch(function () { var el = page.querySelector("#fo-wj-cab"); if (el) el.textContent = ""; });
+
       page.querySelector("#fo-wj-ren").addEventListener("click", function () {
         var nn = null;
         try { nn = prompt("Rename your club (2-28 characters - the whole world will see it):", c.club || ""); } catch (ePr) {}
