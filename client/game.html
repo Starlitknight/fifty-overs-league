@@ -10588,7 +10588,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-1942-bf5c06";
+  var FO_BUILD = "20260727-1954-0f702e";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -27147,6 +27147,13 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       ".fo-hg2 .hg-id .hg-form em.hg-w{background:#2E7A3C;color:#fff}" +
       ".fo-hg2 .hg-id .hg-form em.hg-l{background:#B23A2E;color:#fff}" +
       ".fo-hg2 .hg-id .hg-form .hg-nf{font-size:11.5px;color:rgba(255,255,255,.6);font-style:italic}" +
+      // one club, two names: the hero says which one the world uses and lets
+      // a manager settle it here rather than hunting for a rename screen
+      ".fo-hg2 .hg-id .hg-two{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;max-width:520px;font-size:12.5px;color:rgba(255,255,255,.82)}" +
+      ".fo-hg2 .hg-id .hg-two u{text-decoration:none;font-weight:700;color:#F3D37A}" +
+      "html body #page .fo-hg2 .hg-id .hg-two button{font-family:Oswald,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:#0E1A2F !important;background:#F3D37A !important;border:0;border-radius:9px;padding:9px 12px;cursor:pointer}" +
+      "html body #page .fo-hg2 .hg-id .hg-two button.ghost{background:rgba(255,255,255,.12) !important;color:#fff !important;border:1px solid rgba(255,255,255,.34)}" +
+      ".fo-hg2 .hg-id .hg-two button:disabled{opacity:.7;cursor:default}" +
       ".fo-hg2 .hg-next{position:absolute;z-index:3;right:22px;bottom:74px;width:min(315px,88vw);background:rgba(7,18,36,.84);border:1px solid rgba(243,211,122,.42);border-top:2px solid #F3D37A;border-radius:14px;padding:13px 16px 15px;color:#fff;backdrop-filter:blur(10px)}" +
       ".fo-hg2 .hg-next i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:8.5px;font-weight:600;letter-spacing:2.4px;color:rgba(255,255,255,.6)}" +
       ".fo-hg2 .hg-next em{position:absolute;top:13px;right:14px;font-style:normal;font-family:Oswald,sans-serif;font-size:8.5px;font-weight:600;letter-spacing:1.8px;color:#F3D37A}" +
@@ -29694,7 +29701,62 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       } catch (eC) {}
       var beads = foHomeForm() || "<span class='hg-nf'>the season awaits</span>";
       var posLine = done ? "Season complete &middot; you finished " + foOrdinal(pos || 8) : (pos ? foOrdinal(pos) + " in the " + region.nm + " League &middot; Round " + (round + 1) + " of " + totalR : region.nm + " League");
-      var sig = "home|" + v + "|" + ((me && me.name) || "") + "|" + pos + "|" + round;
+
+      // ---- YOUR FRONT DOOR SPEAKS THE WORLD --------------------------------
+      // The club home used to read this device's own save: its club name, its
+      // own standings, its own round. The league page reads the World Service.
+      // One club cannot have two names and two positions, so when a world club
+      // is claimed the served record wins here too - and if this device still
+      // calls the club something else, the hero says so and offers the font.
+      var wClaim = null, wName = "", localNm = (me && me.name) || "";
+      try { wClaim = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eWc0) {}
+      if (wClaim) {
+        var repaintHome = function () {
+          try { var pg0 = document.getElementById("page"); if (pg0) pg0.__foHomeSig = null; foRenderHome(); } catch (eR0) {}
+        };
+        try {
+          var nmMap = null;
+          if (window.__foWorldNames) {
+            nmMap = window.__foWorldNames.get(wClaim.country);
+            window.__foWorldNames.want(wClaim.country, repaintHome);
+          }
+          wName = (nmMap && nmMap[wClaim.slot]) || wClaim.club || "";
+        } catch (eWn) {}
+        try {
+          var wSnap = null;
+          if (window.__foWorldLg) {
+            wSnap = window.__foWorldLg.get(wClaim.country);
+            window.__foWorldLg.want(wClaim.country, repaintHome);
+          }
+          var wCal = null;
+          try { wCal = window.__foWT && window.__foWT.serverCal ? window.__foWT.serverCal(Date.now()) : null; } catch (eWc) {}
+          var wPos = 0, wTot = (wSnap && wSnap.rounds) || 18;
+          if (wSnap && wSnap.table) {
+            for (var wi = 0; wi < wSnap.table.length; wi++) if (wSnap.table[wi].slot === wClaim.slot) wPos = wi + 1;
+            // form beads off the served results, newest last
+            var wSeq = (wSnap.results || []).filter(function (r0) {
+              return r0.home === wName || r0.away === wName || r0.home === wClaim.club || r0.away === wClaim.club;
+            }).slice(-5).map(function (r0) {
+              var mine0 = (r0.home === wName || r0.home === wClaim.club) ? r0.home : r0.away;
+              return r0.winner === null ? "t" : r0.winner === mine0 ? "w" : "l";
+            });
+            if (wSeq.length) beads = wSeq.map(function (k0) { return "<i class='" + k0 + "'>" + k0.toUpperCase() + "</i>"; }).join("");
+          }
+          if (wCal && wCal.seasonNo >= 1 && wCal.round >= 1 && wCal.round <= wTot) {
+            posLine = (wPos ? foOrdinal(wPos) + " in the " + region.nm + " League &middot; " : region.nm + " League &middot; ") +
+              "Round " + wCal.round + " of " + wTot;
+          } else if (wCal && wCal.dayInSeason < 0) {
+            var toGo = -wCal.dayInSeason;
+            posLine = region.nm + " League &middot; the season opens in " + toGo + " day" + (toGo === 1 ? "" : "s");
+          } else if (wPos) {
+            posLine = foOrdinal(wPos) + " in the " + region.nm + " League";
+          }
+        } catch (eWs) {}
+      }
+      var heroName = wName || localNm || "Your Club";
+      var twoNames = !!(wName && localNm && wName !== localNm);
+
+      var sig = "home|" + v + "|" + heroName + "|" + localNm + "|" + pos + "|" + round + "|" + posLine + "|" + (twoNames ? 1 : 0);
       if (page.__foHomeSig === sig && page.querySelector(".fo-home2")) return;
       page.__foHomeSig = sig;
       var btn = function (id, lf, ls) { return "<button type='button' id='" + id + "'><span class='hg-lf'>" + lf + "</span><span class='hg-ls'>" + ls + "</span></button>"; };
@@ -29704,9 +29766,15 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         "<div class='hg-grain'></div><div class='hg-scrim'></div><div class='hg-bloom'></div>" +
         "<div class='hg-wx'><b>HOME GROUND</b><span>" + (FO_HG_WX[v] || "") + (window.__foHgWx ? " &middot; forecast: " + E(window.__foHgWx) : "") + "</span></div>" +
         "<div class='hg-id'><i>YOUR CLUB &middot; THE ELEVEN ARCHES</i>" +
-        "<b>" + E((me && me.name) || "Your Club") + "</b>" +
+        "<b>" + E(heroName) + "</b>" +
         "<span class='hg-sub'>" + posLine + "</span>" +
-        "<span class='hg-form'><u>FORM</u>" + beads + "</span></div>" +
+        "<span class='hg-form'><u>FORM</u>" + beads + "</span>" +
+        (twoNames
+          ? "<span class='hg-two'>This device still calls you <u>" + E(localNm) + "</u>." +
+            "<button type='button' id='fo-hm-ren'>Christen the club " + E(localNm) + "</button>" +
+            "<button type='button' class='ghost' id='fo-hm-keep'>Keep " + E(wName) + "</button></span>"
+          : "") +
+        "</div>" +
         "<div class='hg-bar'>" +
         btn("fo-hm-nx", "NEXT MATCH \u25B8", "PLAY \u25B8") +
         btn("fo-hm-lg", "YOUR LEAGUE", "LEAGUE") +
@@ -29718,6 +29786,26 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       try { foHgFit(page.querySelector(".fo-hg2")); } catch (eF) {}
       var go = function (id, hash) { var b = page.querySelector("#" + id); if (b) b.addEventListener("click", function () { location.hash = hash; if (typeof window.route === "function") window.route(); }); };
       go("fo-hm-lg", "#/league"); go("fo-hm-sq", "#/squad"); go("fo-hm-wd", "#/world"); go("fo-hm-cp", "#/cup");
+      // settle the two names, either way, without leaving the front door
+      try {
+        var renB = page.querySelector("#fo-hm-ren");
+        if (renB) renB.addEventListener("click", function () {
+          renB.disabled = true; renB.textContent = "Telling the world…";
+          if (!window.__foWorldRename) { renB.textContent = "Sign in to rename"; return; }
+          window.__foWorldRename(localNm, function (ok, err) {
+            if (!ok) { renB.disabled = false; renB.textContent = "Rename failed: " + String(err || "").slice(0, 36); return; }
+            page.__foHomeSig = null; foRenderHome();
+          });
+        });
+        var keepB = page.querySelector("#fo-hm-keep");
+        if (keepB) keepB.addEventListener("click", function () {
+          try {
+            var t9 = userTeam();
+            if (t9) { t9.name = wName; if (typeof saveGame === "function") saveGame(false); }
+          } catch (eK) {}
+          page.__foHomeSig = null; foRenderHome();
+        });
+      } catch (eRen) {}
       // the golden path: one button that always knows the next step
       try {
         var nxB = page.querySelector("#fo-hm-nx");
