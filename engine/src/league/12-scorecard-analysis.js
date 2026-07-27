@@ -2632,6 +2632,7 @@
       "html body #page .fo-hg2 .hg-id .hg-two button{font-family:Oswald,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:#0E1A2F !important;background:#F3D37A !important;border:0;border-radius:9px;padding:9px 12px;cursor:pointer}" +
       "html body #page .fo-hg2 .hg-id .hg-two button.ghost{background:rgba(255,255,255,.12) !important;color:#fff !important;border:1px solid rgba(255,255,255,.34)}" +
       ".fo-hg2 .hg-id .hg-two button:disabled{opacity:.7;cursor:default}" +
+      ".fo-hg2 .hg-id .hg-two .hg-why{flex-basis:100%;font-style:italic;font-size:12px;color:#F3D37A}" +
       ".fo-hg2 .hg-next{position:absolute;z-index:3;right:22px;bottom:74px;width:min(315px,88vw);background:rgba(7,18,36,.84);border:1px solid rgba(243,211,122,.42);border-top:2px solid #F3D37A;border-radius:14px;padding:13px 16px 15px;color:#fff;backdrop-filter:blur(10px)}" +
       ".fo-hg2 .hg-next i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:8.5px;font-weight:600;letter-spacing:2.4px;color:rgba(255,255,255,.6)}" +
       ".fo-hg2 .hg-next em{position:absolute;top:13px;right:14px;font-style:normal;font-family:Oswald,sans-serif;font-size:8.5px;font-weight:600;letter-spacing:1.8px;color:#F3D37A}" +
@@ -5271,7 +5272,17 @@
           renB.disabled = true; renB.textContent = "Telling the world…";
           if (!window.__foWorldRename) { renB.textContent = "Sign in to rename"; return; }
           window.__foWorldRename(localNm, function (ok, err) {
-            if (!ok) { renB.disabled = false; renB.textContent = "Rename failed: " + String(err || "").slice(0, 36); return; }
+            if (!ok) {
+              // the world refuses a name for a reason - say the reason, in
+              // full, instead of a truncated one on a button nobody can read
+              renB.disabled = false; renB.textContent = "Christen the club " + localNm;
+              try {
+                var host9 = renB.parentElement, note9 = host9.querySelector(".hg-why");
+                if (!note9) { note9 = document.createElement("i"); note9.className = "hg-why"; host9.appendChild(note9); }
+                note9.textContent = String(err || "the world would not take that name");
+              } catch (eW9) {}
+              return;
+            }
             page.__foHomeSig = null; foRenderHome();
           });
         });

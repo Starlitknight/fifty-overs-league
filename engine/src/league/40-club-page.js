@@ -293,7 +293,15 @@
             if (push) push.addEventListener("click", function () {
               push.disabled = true; push.textContent = "Telling the world…";
               if (window.__foWorldRename) window.__foWorldRename(localNm, function (ok, err) {
-                if (!ok) { push.disabled = false; push.textContent = "Rename failed: " + String(err || "").slice(0, 40); return; }
+                if (!ok) {
+                  push.disabled = false; push.textContent = "Christen it " + localNm;
+                  try {
+                    var why = host.querySelector(".fo-cp-why");
+                    if (!why) { why = document.createElement("div"); why.className = "fo-cp-why"; host.appendChild(why); }
+                    why.textContent = String(err || "the world would not take that name");
+                  } catch (eW) {}
+                  return;
+                }
                 delete CLUB_CACHE[cid + ":" + slot];
                 window.foRenderClubPage();
               });
@@ -342,6 +350,7 @@
       ".fo-cp-warnb{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}",
       ".fo-cp-warnb button{font:700 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#FFFEFC;background:linear-gradient(180deg,#E8894A,#C8542F);border:0;border-radius:10px;padding:11px 14px;cursor:pointer}",
       ".fo-cp-warnb button.ghost{background:#FFFEFC;color:#141C28;border:1px solid rgba(20,28,40,.2)}",
+      ".fo-cp-why{margin-top:8px;font:italic 420 12.5px/1.5 'Fraunces',Georgia,serif;color:#B23230}",
       ".fo-cp-mineact{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}",
       "html body #page .fo-cp-mineact a{font:600 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#B44A22 !important;background:#FFFEFC;border:1px solid rgba(20,28,40,.14);border-radius:999px;padding:9px 14px;text-decoration:none !important}",
       ".fo-cp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}",

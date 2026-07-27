@@ -89,11 +89,21 @@
   // bots keep county names). Ten tiny rows per nation from the world_clubs
   // view, cached with a courtesy TTL, so fixtures/orders/spectate all speak
   // the CURRENT names.
-  var NM_BODY = {}, NM_AT = {}, NM_BUSY = {};
+  // The same ten rows also say WHO RUNS EACH CLUB. In a world where humans and
+  // bots share a league, that is the most useful fact on the page: a manager
+  // wants to know which of the nine opponents has somebody behind it. It costs
+  // one more column on a request the game already makes.
+  var NM_BODY = {}, NM_MGR = {}, NM_AT = {}, NM_BUSY = {};
   window.__foWorldNames = {
     get: function (rid) {
       if (NM_BODY[rid]) return NM_BODY[rid];
       try { var c3 = localStorage.getItem("fo_world_nm_" + rid); if (c3) { NM_BODY[rid] = JSON.parse(c3); return NM_BODY[rid]; } } catch (e) {}
+      return null;
+    },
+    // slot -> manager display name, for the clubs a human has claimed
+    mgr: function (rid) {
+      if (NM_MGR[rid]) return NM_MGR[rid];
+      try { var c4 = localStorage.getItem("fo_world_mgr_" + rid); if (c4) { NM_MGR[rid] = JSON.parse(c4); return NM_MGR[rid]; } } catch (e) {}
       return null;
     },
     want: function (rid, cb) {
@@ -102,14 +112,19 @@
         if (NM_AT[rid] && Date.now() - NM_AT[rid] < 60000) return;
         NM_BUSY[rid] = 1;
         var done = function () { NM_BUSY[rid] = 0; NM_AT[rid] = Date.now(); };
-        fetch(SB_URL + "/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(rid) + "&select=slot,name", { headers: { apikey: SB_ANON } })
+        fetch(SB_URL + "/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(rid) + "&select=slot,name,manager", { headers: { apikey: SB_ANON } })
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (rows) {
             if (rows && rows.length) {
-              var m = {}; rows.forEach(function (r2) { m[r2.slot] = r2.name; });
-              var changed = JSON.stringify(m) !== JSON.stringify(NM_BODY[rid] || null);
-              NM_BODY[rid] = m;
-              try { localStorage.setItem("fo_world_nm_" + rid, JSON.stringify(m)); } catch (e) {}
+              var m = {}, g = {};
+              rows.forEach(function (r2) { m[r2.slot] = r2.name; if (r2.manager) g[r2.slot] = r2.manager; });
+              var changed = JSON.stringify(m) !== JSON.stringify(NM_BODY[rid] || null) ||
+                            JSON.stringify(g) !== JSON.stringify(NM_MGR[rid] || null);
+              NM_BODY[rid] = m; NM_MGR[rid] = g;
+              try {
+                localStorage.setItem("fo_world_nm_" + rid, JSON.stringify(m));
+                localStorage.setItem("fo_world_mgr_" + rid, JSON.stringify(g));
+              } catch (e) {}
               if (changed) { try { if (cb) cb(m); } catch (e) {} }
             }
             done();

@@ -10588,7 +10588,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-1954-0f702e";
+  var FO_BUILD = "20260727-2006-9381d6";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -27154,6 +27154,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       "html body #page .fo-hg2 .hg-id .hg-two button{font-family:Oswald,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:#0E1A2F !important;background:#F3D37A !important;border:0;border-radius:9px;padding:9px 12px;cursor:pointer}" +
       "html body #page .fo-hg2 .hg-id .hg-two button.ghost{background:rgba(255,255,255,.12) !important;color:#fff !important;border:1px solid rgba(255,255,255,.34)}" +
       ".fo-hg2 .hg-id .hg-two button:disabled{opacity:.7;cursor:default}" +
+      ".fo-hg2 .hg-id .hg-two .hg-why{flex-basis:100%;font-style:italic;font-size:12px;color:#F3D37A}" +
       ".fo-hg2 .hg-next{position:absolute;z-index:3;right:22px;bottom:74px;width:min(315px,88vw);background:rgba(7,18,36,.84);border:1px solid rgba(243,211,122,.42);border-top:2px solid #F3D37A;border-radius:14px;padding:13px 16px 15px;color:#fff;backdrop-filter:blur(10px)}" +
       ".fo-hg2 .hg-next i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:8.5px;font-weight:600;letter-spacing:2.4px;color:rgba(255,255,255,.6)}" +
       ".fo-hg2 .hg-next em{position:absolute;top:13px;right:14px;font-style:normal;font-family:Oswald,sans-serif;font-size:8.5px;font-weight:600;letter-spacing:1.8px;color:#F3D37A}" +
@@ -29793,7 +29794,17 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           renB.disabled = true; renB.textContent = "Telling the world…";
           if (!window.__foWorldRename) { renB.textContent = "Sign in to rename"; return; }
           window.__foWorldRename(localNm, function (ok, err) {
-            if (!ok) { renB.disabled = false; renB.textContent = "Rename failed: " + String(err || "").slice(0, 36); return; }
+            if (!ok) {
+              // the world refuses a name for a reason - say the reason, in
+              // full, instead of a truncated one on a button nobody can read
+              renB.disabled = false; renB.textContent = "Christen the club " + localNm;
+              try {
+                var host9 = renB.parentElement, note9 = host9.querySelector(".hg-why");
+                if (!note9) { note9 = document.createElement("i"); note9.className = "hg-why"; host9.appendChild(note9); }
+                note9.textContent = String(err || "the world would not take that name");
+              } catch (eW9) {}
+              return;
+            }
             page.__foHomeSig = null; foRenderHome();
           });
         });
@@ -36154,10 +36165,11 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       // THE CLUBS TABLE IS THE NAMING AUTHORITY. A snapshot is only rebuilt
       // when a round settles, so a club christened this morning would wear its
       // old name until tonight's cricket. These ten little rows are current.
-      var nmBySlot = null;
+      var nmBySlot = null, mgrBySlot = null;
       try {
         if (window.__foWorldNames) {
           nmBySlot = window.__foWorldNames.get(natId);
+          if (window.__foWorldNames.mgr) mgrBySlot = window.__foWorldNames.mgr(natId);
           window.__foWorldNames.want(natId, function () { if (onPage()) foRenderLeagueTablePage(); });
         }
       } catch (eN0) {}
@@ -36220,12 +36232,15 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var body = rows.map(function (r, i) {
         var mine = r.mine != null ? r.mine : (r.nm === me.name);
         var slot = r.slot != null ? r.slot : slotOf[r.nm];
+        // a human behind a club is the most useful fact on the page
+        var human = (!mine && mgrBySlot && slot != null) ? mgrBySlot[slot] : "";
         var href = (natId && slot != null)
           ? "#/team?c=" + encodeURIComponent(natId) + "&s=" + slot
           : "#/milestones?c=" + encodeURIComponent(r.nm);
         return "<a class='fo-lt-row" + (mine ? " mine" : "") + "' href='" + href + "'>" +
           "<i>" + (i + 1) + "</i>" +
-          "<span class='fo-lt-nm'><b>" + E(r.nm) + (mine ? " <u>you</u>" : (r.boss ? " <s>flagship</s>" : "")) + "</b>" +
+          "<span class='fo-lt-nm'><b>" + E(r.nm) +
+          (mine ? " <u>you</u>" : (r.boss ? " <s>flagship</s>" : (human ? " <s class='hum'>&#9733; " + E(human) + "</s>" : ""))) + "</b>" +
           "<span class='fo-lt-beads'>" + (r.beads != null ? r.beads : formBeads(r.nm)) + "</span></span>" +
           "<em>" + (r.p | 0) + "</em><em class='w'>" + (r.w | 0) + "</em><em>" + (r.l | 0) + "</em>" +
           "<em class='nrr'>" + ((r.nrr >= 0 ? "+" : "") + (+r.nrr || 0).toFixed(2)) + "</em>" +
@@ -36424,6 +36439,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     "html body #page .fo-lt-nm b{display:block;font:600 13.5px/1.25 Inter,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     "html body #page .fo-lt-nm b u{text-decoration:none;font:700 8.5px/1 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#B44A22;margin-left:5px;vertical-align:1px}",
     "html body #page .fo-lt-nm b s{text-decoration:none;font:700 8.5px/1 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:rgba(20,28,40,.38);margin-left:5px;vertical-align:1px}",
+    "html body #page .fo-lt-nm b s.hum{color:#1F6F4A;background:rgba(31,111,74,.1);border-radius:5px;padding:3px 5px}",
     "html body #page .fo-lt-beads{display:flex;gap:3px;margin-top:4px}",
     "html body #page .fo-lt-beads i{width:15px;height:15px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font:800 8.5px/1 Inter,sans-serif;font-style:normal}",
     "html body #page .fo-lt-beads i.w{background:rgba(31,158,114,.14);color:#177A57}",
@@ -38230,11 +38246,21 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // bots keep county names). Ten tiny rows per nation from the world_clubs
   // view, cached with a courtesy TTL, so fixtures/orders/spectate all speak
   // the CURRENT names.
-  var NM_BODY = {}, NM_AT = {}, NM_BUSY = {};
+  // The same ten rows also say WHO RUNS EACH CLUB. In a world where humans and
+  // bots share a league, that is the most useful fact on the page: a manager
+  // wants to know which of the nine opponents has somebody behind it. It costs
+  // one more column on a request the game already makes.
+  var NM_BODY = {}, NM_MGR = {}, NM_AT = {}, NM_BUSY = {};
   window.__foWorldNames = {
     get: function (rid) {
       if (NM_BODY[rid]) return NM_BODY[rid];
       try { var c3 = localStorage.getItem("fo_world_nm_" + rid); if (c3) { NM_BODY[rid] = JSON.parse(c3); return NM_BODY[rid]; } } catch (e) {}
+      return null;
+    },
+    // slot -> manager display name, for the clubs a human has claimed
+    mgr: function (rid) {
+      if (NM_MGR[rid]) return NM_MGR[rid];
+      try { var c4 = localStorage.getItem("fo_world_mgr_" + rid); if (c4) { NM_MGR[rid] = JSON.parse(c4); return NM_MGR[rid]; } } catch (e) {}
       return null;
     },
     want: function (rid, cb) {
@@ -38243,14 +38269,19 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         if (NM_AT[rid] && Date.now() - NM_AT[rid] < 60000) return;
         NM_BUSY[rid] = 1;
         var done = function () { NM_BUSY[rid] = 0; NM_AT[rid] = Date.now(); };
-        fetch(SB_URL + "/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(rid) + "&select=slot,name", { headers: { apikey: SB_ANON } })
+        fetch(SB_URL + "/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(rid) + "&select=slot,name,manager", { headers: { apikey: SB_ANON } })
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (rows) {
             if (rows && rows.length) {
-              var m = {}; rows.forEach(function (r2) { m[r2.slot] = r2.name; });
-              var changed = JSON.stringify(m) !== JSON.stringify(NM_BODY[rid] || null);
-              NM_BODY[rid] = m;
-              try { localStorage.setItem("fo_world_nm_" + rid, JSON.stringify(m)); } catch (e) {}
+              var m = {}, g = {};
+              rows.forEach(function (r2) { m[r2.slot] = r2.name; if (r2.manager) g[r2.slot] = r2.manager; });
+              var changed = JSON.stringify(m) !== JSON.stringify(NM_BODY[rid] || null) ||
+                            JSON.stringify(g) !== JSON.stringify(NM_MGR[rid] || null);
+              NM_BODY[rid] = m; NM_MGR[rid] = g;
+              try {
+                localStorage.setItem("fo_world_nm_" + rid, JSON.stringify(m));
+                localStorage.setItem("fo_world_mgr_" + rid, JSON.stringify(g));
+              } catch (e) {}
               if (changed) { try { if (cb) cb(m); } catch (e) {} }
             }
             done();
@@ -41236,7 +41267,15 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
             if (push) push.addEventListener("click", function () {
               push.disabled = true; push.textContent = "Telling the world…";
               if (window.__foWorldRename) window.__foWorldRename(localNm, function (ok, err) {
-                if (!ok) { push.disabled = false; push.textContent = "Rename failed: " + String(err || "").slice(0, 40); return; }
+                if (!ok) {
+                  push.disabled = false; push.textContent = "Christen it " + localNm;
+                  try {
+                    var why = host.querySelector(".fo-cp-why");
+                    if (!why) { why = document.createElement("div"); why.className = "fo-cp-why"; host.appendChild(why); }
+                    why.textContent = String(err || "the world would not take that name");
+                  } catch (eW) {}
+                  return;
+                }
                 delete CLUB_CACHE[cid + ":" + slot];
                 window.foRenderClubPage();
               });
@@ -41285,6 +41324,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       ".fo-cp-warnb{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}",
       ".fo-cp-warnb button{font:700 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#FFFEFC;background:linear-gradient(180deg,#E8894A,#C8542F);border:0;border-radius:10px;padding:11px 14px;cursor:pointer}",
       ".fo-cp-warnb button.ghost{background:#FFFEFC;color:#141C28;border:1px solid rgba(20,28,40,.2)}",
+      ".fo-cp-why{margin-top:8px;font:italic 420 12.5px/1.5 'Fraunces',Georgia,serif;color:#B23230}",
       ".fo-cp-mineact{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}",
       "html body #page .fo-cp-mineact a{font:600 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#B44A22 !important;background:#FFFEFC;border:1px solid rgba(20,28,40,.14);border-radius:999px;padding:9px 14px;text-decoration:none !important}",
       ".fo-cp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}",

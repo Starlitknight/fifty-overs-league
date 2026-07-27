@@ -146,10 +146,11 @@
       // THE CLUBS TABLE IS THE NAMING AUTHORITY. A snapshot is only rebuilt
       // when a round settles, so a club christened this morning would wear its
       // old name until tonight's cricket. These ten little rows are current.
-      var nmBySlot = null;
+      var nmBySlot = null, mgrBySlot = null;
       try {
         if (window.__foWorldNames) {
           nmBySlot = window.__foWorldNames.get(natId);
+          if (window.__foWorldNames.mgr) mgrBySlot = window.__foWorldNames.mgr(natId);
           window.__foWorldNames.want(natId, function () { if (onPage()) foRenderLeagueTablePage(); });
         }
       } catch (eN0) {}
@@ -212,12 +213,15 @@
       var body = rows.map(function (r, i) {
         var mine = r.mine != null ? r.mine : (r.nm === me.name);
         var slot = r.slot != null ? r.slot : slotOf[r.nm];
+        // a human behind a club is the most useful fact on the page
+        var human = (!mine && mgrBySlot && slot != null) ? mgrBySlot[slot] : "";
         var href = (natId && slot != null)
           ? "#/team?c=" + encodeURIComponent(natId) + "&s=" + slot
           : "#/milestones?c=" + encodeURIComponent(r.nm);
         return "<a class='fo-lt-row" + (mine ? " mine" : "") + "' href='" + href + "'>" +
           "<i>" + (i + 1) + "</i>" +
-          "<span class='fo-lt-nm'><b>" + E(r.nm) + (mine ? " <u>you</u>" : (r.boss ? " <s>flagship</s>" : "")) + "</b>" +
+          "<span class='fo-lt-nm'><b>" + E(r.nm) +
+          (mine ? " <u>you</u>" : (r.boss ? " <s>flagship</s>" : (human ? " <s class='hum'>&#9733; " + E(human) + "</s>" : ""))) + "</b>" +
           "<span class='fo-lt-beads'>" + (r.beads != null ? r.beads : formBeads(r.nm)) + "</span></span>" +
           "<em>" + (r.p | 0) + "</em><em class='w'>" + (r.w | 0) + "</em><em>" + (r.l | 0) + "</em>" +
           "<em class='nrr'>" + ((r.nrr >= 0 ? "+" : "") + (+r.nrr || 0).toFixed(2)) + "</em>" +
@@ -416,6 +420,7 @@
     "html body #page .fo-lt-nm b{display:block;font:600 13.5px/1.25 Inter,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     "html body #page .fo-lt-nm b u{text-decoration:none;font:700 8.5px/1 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#B44A22;margin-left:5px;vertical-align:1px}",
     "html body #page .fo-lt-nm b s{text-decoration:none;font:700 8.5px/1 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:rgba(20,28,40,.38);margin-left:5px;vertical-align:1px}",
+    "html body #page .fo-lt-nm b s.hum{color:#1F6F4A;background:rgba(31,111,74,.1);border-radius:5px;padding:3px 5px}",
     "html body #page .fo-lt-beads{display:flex;gap:3px;margin-top:4px}",
     "html body #page .fo-lt-beads i{width:15px;height:15px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font:800 8.5px/1 Inter,sans-serif;font-style:normal}",
     "html body #page .fo-lt-beads i.w{background:rgba(31,158,114,.14);color:#177A57}",
