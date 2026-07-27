@@ -284,15 +284,17 @@ test('010: the world rankings ladder moves with results, zero-sum, rename-proof'
 });
 
 test('011: friendlies - challenge, accept, and the umpire plays the real match', async () => {
-  // your own club is not an opponent
-  await assert.rejects(as(U1, `SELECT public.world_friendly_challenge('eng', 1)`), /your own club/);
-  // a bot club accepts on the spot
-  const bot = await as(U1, `SELECT public.world_friendly_challenge('ire', 3) AS r`);
+  const PLAY = Date.now() + 3 * 3600000;
+  // your own club is not an opponent, and lineups need their window
+  await assert.rejects(as(U1, `SELECT public.world_friendly_challenge('eng', 1, $1)`, [PLAY]), /your own club/);
+  await assert.rejects(as(U1, `SELECT public.world_friendly_challenge('ire', 3, $1)`, [Date.now() + 30 * 60000]), /90 minutes/);
+  // a bot club accepts on the spot, at the challenger's chosen time
+  const bot = await as(U1, `SELECT public.world_friendly_challenge('ire', 3, $1) AS r`, [PLAY]);
   assert.equal(bot.rows[0].r.status, 'accepted');
-  assert.ok(bot.rows[0].r.playAtMs > 0, 'scheduled at the next hour');
+  assert.equal(bot.rows[0].r.playAtMs, PLAY, 'plays at the chosen time');
   assert.equal(bot.rows[0].r.humanOpponent, false);
   // a human must answer for themselves: U2 (Orange Club, eng slot 2)
-  const hum = await as(U1, `SELECT public.world_friendly_challenge('eng', 2) AS r`);
+  const hum = await as(U1, `SELECT public.world_friendly_challenge('eng', 2, $1) AS r`, [PLAY]);
   assert.equal(hum.rows[0].r.status, 'offered');
   assert.equal(hum.rows[0].r.humanOpponent, true);
   await assert.rejects(as(U1, `SELECT public.world_friendly_respond($1, true)`, [hum.rows[0].r.id]), /not yours to answer/);
@@ -300,7 +302,7 @@ test('011: friendlies - challenge, accept, and the umpire plays the real match',
   assert.equal(acc.rows[0].r.status, 'accepted');
   await assert.rejects(as(U2, `SELECT public.world_friendly_respond($1, true)`, [hum.rows[0].r.id]), /already accepted/);
   // the umpire plays both when their hour strikes - real engine, real result
-  const played = await runFriendlies(pool, host, { now: Date.now() + 3 * 3600000 });
+  const played = await runFriendlies(pool, host, { now: PLAY + 1 });
   assert.equal(played.length, 2, 'both friendlies played');
   const fr = (await pool.query(`SELECT * FROM friendlies WHERE status='played' ORDER BY id`)).rows;
   assert.equal(fr.length, 2);
@@ -317,7 +319,7 @@ test('011: friendlies - challenge, accept, and the umpire plays the real match',
     assert.ok(openers.includes(latest.xi[0]), 'the manager\'s chosen opener opened the friendly');
   }
   // declines are final; the ledger shows everything
-  const again = await as(U1, `SELECT public.world_friendly_challenge('eng', 2) AS r`);
+  const again = await as(U1, `SELECT public.world_friendly_challenge('eng', 2, $1) AS r`, [Date.now() + 4 * 3600000]);
   const dec = await as(U2, `SELECT public.world_friendly_respond($1, false) AS r`, [again.rows[0].r.id]);
   assert.equal(dec.rows[0].r.status, 'declined');
   const mine = await as(U1, `SELECT public.world_my_friendlies() AS f`);
@@ -328,4 +330,49 @@ test('011: friendlies - challenge, accept, and the umpire plays the real match',
   // friendlies never touch the league record
   const lg = await computeLeague(pool, 'eng', 1, EPOCH + 102 * DAY);
   assert.equal(lg.roundsPlayed, 1, 'league untouched by friendlies');
+});
+
+test('012: friendly lineups - set, tweak, lock at T-1h; unanswered offers die at T-1h', async () => {
+  async function pinned(nowMs, user, fn) {
+    const c = await pool.connect();
+    try {
+      await c.query('BEGIN');
+      if (user) await c.query(`SELECT set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ sub: user })]);
+      await c.query(`SELECT set_config('world.now_ms', $1, true)`, [String(nowMs)]);
+      const r = await fn(c);
+      await c.query('COMMIT');
+      return r;
+    } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e; } finally { c.release(); }
+  }
+  const T = Date.now() + 4 * 3600000;
+  const fr = await as(U1, `SELECT public.world_friendly_challenge('ire', 4, $1) AS r`, [T]);
+  const fid = fr.rows[0].r.id;
+  // a lineup just for this friendly: natural order, a different opener than league orders
+  const squad = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  const xi2 = squad.map(p => p.name).slice(0, 11);
+  const setO = await as(U1, `SELECT public.world_friendly_orders($1, $2::jsonb) AS r`, [fid, JSON.stringify({ xi: xi2, bat: xi2 })]);
+  assert.equal(setO.rows[0].r.ok, true);
+  // only the two managers may touch it
+  await assert.rejects(as(U2, `SELECT public.world_friendly_orders($1, '{}'::jsonb)`, [fid]), /not yours/);
+  // tweakable before the hour, locked inside it
+  const okTweak = await pinned(T - 2 * 3600000, U1, c => c.query(`SELECT public.world_friendly_orders($1, $2::jsonb) AS r`, [fid, JSON.stringify({ xi: xi2, bat: xi2 })]));
+  assert.equal(okTweak.rows[0].r.ok, true);
+  await assert.rejects(
+    pinned(T - 30 * 60000, U1, c => c.query(`SELECT public.world_friendly_orders($1, $2::jsonb)`, [fid, JSON.stringify({ xi: xi2 })])),
+    /lock an hour before/);
+  // the umpire plays it with the friendly lineup, not the league one
+  const played = await runFriendlies(pool, host, { now: T + 1 });
+  assert.ok(played.map(Number).includes(Number(fid)));
+  const f = (await pool.query(`SELECT * FROM friendlies WHERE id=$1`, [fid])).rows[0];
+  const inn = f.result.innings.find(i => i.batTeam === f.c_name);
+  const openers = inn.bat.slice(0, 2).map(b => (b.p && b.p.name) || b.p);
+  assert.ok(openers.includes(xi2[0]), 'the friendly-specific opener opened: ' + openers.join(', '));
+  // an offer nobody answers dies an hour before the match and is never played
+  const T2 = Date.now() + 2 * 3600000;
+  const off = await as(U1, `SELECT public.world_friendly_challenge('eng', 3, $1) AS r`, [T2]);
+  await runFriendlies(pool, host, { now: T2 - 30 * 60000 });
+  const dead = (await pool.query(`SELECT status FROM friendlies WHERE id=$1`, [off.rows[0].r.id])).rows[0];
+  assert.equal(dead.status, 'expired', 'unaccepted at T-1h: expired');
+  const after = await runFriendlies(pool, host, { now: T2 + 3600000 });
+  assert.ok(!after.map(Number).includes(Number(off.rows[0].r.id)), 'an expired offer is never played');
 });

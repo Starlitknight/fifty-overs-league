@@ -10588,7 +10588,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-1439-7d39a6";
+  var FO_BUILD = "20260727-1449-a39be4";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -39289,7 +39289,9 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         "<div id='fo-wj-frlist' class='fo-wj-note'>Checking the post&hellip;</div>" +
         "<div class='fo-wj-frnew'><select id='fo-wj-frnat' aria-label='Nation'></select>" +
         "<select id='fo-wj-frclub' aria-label='Club'><option>Pick a nation&hellip;</option></select>" +
+        "<input type='datetime-local' id='fo-wj-frwhen' aria-label='Match date and time'>" +
         "<button type='button' id='fo-wj-frgo' class='fo-wj-frbtn'>&#9876; Challenge</button></div>" +
+        "<div class='fo-wj-note'>You name the date and hour. Both managers can set a lineup for the friendly until <b>one hour before</b> play, when teamsheets lock; an unanswered challenge dies at the same moment and is never played.</div>" +
         "<h4 class='fo-wj-h4'>The eleven, in batting order</h4>" +
         "<div class='fo-wj-sq'>" + men + "</div>" +
         "<h4 class='fo-wj-h4'>The bowling five, in spell order <span>openers attack &middot; middle grinds &middot; closers defend</span></h4>" +
@@ -39345,21 +39347,43 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           .catch(function (e) { msg("Failed: " + String(e.message).slice(0, 120)); });
       });
       // ---- friendlies: the post, the fixtures, the results ----------------
+      var frWhen = function (ms) {
+        try {
+          var d9 = new Date(ms), DW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MO = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          var mm = d9.getMinutes();
+          return DW[d9.getDay()] + " " + d9.getDate() + " " + MO[d9.getMonth()] + " &middot; " + (d9.getHours() < 10 ? "0" : "") + d9.getHours() + ":" + (mm < 10 ? "0" : "") + mm;
+        } catch (e9) { return ""; }
+      };
+      var frLineupBtn = function (f) {
+        if (Date.now() >= (f.playAtMs || 0) - 3600000) return "";
+        return "<button type='button' class='fo-wj-frbtn ghost fo-wj-frlu' data-id='" + f.id + "'>" +
+          (f.myOrders ? "Lineup set &#10003; &middot; update" : "Use sheet as lineup") + "</button>";
+      };
       var frPaint = function () {
         rpc("world_my_friendlies").then(function (list) {
           var el = page.querySelector("#fo-wj-frlist"); if (!el) return;
           if (!list || !list.length) { el.innerHTML = "No friendlies yet &mdash; challenge any club on earth below."; return; }
           el.innerHTML = list.map(function (f) {
-            var when = "";
-            try { if (f.playAtMs) { var d9 = new Date(f.playAtMs); when = (d9.getUTCHours() < 10 ? "0" : "") + d9.getUTCHours() + ":00 UTC"; } } catch (e9) {}
-            if (f.incoming) return "<div class='fo-wj-frrow in'><b>" + E(f.home) + "</b> challenge you to a friendly" +
+            var when = f.playAtMs ? frWhen(f.playAtMs) : "";
+            if (f.incoming) return "<div class='fo-wj-frrow in'><b>" + E(f.home) + "</b> challenge you &middot; " + when +
               "<span><button type='button' class='fo-wj-frbtn fo-wj-fracc' data-id='" + f.id + "'>Accept</button>" +
               "<button type='button' class='fo-wj-frbtn ghost fo-wj-frdec' data-id='" + f.id + "'>Decline</button></span></div>";
-            if (f.status === "offered") return "<div class='fo-wj-frrow'><b>" + E(f.away) + "</b><i>challenged &middot; awaiting their reply</i></div>";
-            if (f.status === "accepted") return "<div class='fo-wj-frrow on'><b>" + E(f.home) + " v " + E(f.away) + "</b><i>plays at " + when + " &middot; the umpire will bank it</i></div>";
+            if (f.status === "offered") return "<div class='fo-wj-frrow'><b>" + E(f.away) + "</b><i>" + when + " &middot; awaiting their reply</i><span>" + frLineupBtn(f) + "</span></div>";
+            if (f.status === "accepted") return "<div class='fo-wj-frrow on'><b>" + E(f.home) + " v " + E(f.away) + "</b><i>" + when + " &middot; lineups lock an hour before</i><span>" + frLineupBtn(f) + "</span></div>";
             if (f.status === "played") return "<div class='fo-wj-frrow done'><b>" + E(f.home) + " v " + E(f.away) + "</b><i>" + E(f.text || "played") + "</i></div>";
             return "<div class='fo-wj-frrow dim'><b>" + E(f.home) + " v " + E(f.away) + "</b><i>" + f.status + "</i></div>";
           }).join("");
+          el.querySelectorAll(".fo-wj-frlu").forEach(function (b9) {
+            b9.addEventListener("click", function () {
+              if (ST.picked.length !== 11) { msg("Pick exactly eleven on the sheet above first."); return; }
+              if (ST.five.length !== 5) { msg("Order exactly five bowlers on the sheet above first."); return; }
+              var pay9 = { xi: ST.picked, batOrder: ST.picked, bat: ST.picked, captain: ST.capt, keeper: ST.keep,
+                tossDecision: ST.toss, spells: spellsOf(ST.five), fieldPlan: { pp: "att", mid: "bal", death: "def" } };
+              rpc("world_friendly_orders", { p_id: +b9.getAttribute("data-id"), p_orders: pay9 })
+                .then(function () { msg("Friendly lineup on file."); frPaint(); })
+                .catch(function (e9) { msg(String(e9.message).slice(0, 120)); });
+            });
+          });
           el.querySelectorAll(".fo-wj-fracc").forEach(function (b9) {
             b9.addEventListener("click", function () { rpc("world_friendly_respond", { p_id: +b9.getAttribute("data-id"), p_accept: true }).then(frPaint).catch(function (e9) { msg(String(e9.message).slice(0, 100)); }); });
           });
@@ -39381,10 +39405,21 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         };
         natSel.addEventListener("change", loadClubs);
         loadClubs();
+        // default kick-off: three hours from now, on the hour, in local time
+        var whenEl = page.querySelector("#fo-wj-frwhen");
+        try {
+          var dDef = new Date(Date.now() + 3 * 3600000); dDef.setMinutes(0, 0, 0);
+          var p2 = function (n9) { return (n9 < 10 ? "0" : "") + n9; };
+          whenEl.value = dDef.getFullYear() + "-" + p2(dDef.getMonth() + 1) + "-" + p2(dDef.getDate()) + "T" + p2(dDef.getHours()) + ":00";
+        } catch (eDef) {}
         page.querySelector("#fo-wj-frgo").addEventListener("click", function () {
-          rpc("world_friendly_challenge", { p_country: natSel.value, p_slot: +clubSel.value })
+          var whenMs = NaN;
+          try { whenMs = new Date(whenEl.value).getTime(); } catch (eW9) {}
+          if (!(whenMs > 0)) { msg("Pick a date and time for the match."); return; }
+          if (whenMs < Date.now() + 90 * 60000) { msg("Pick a time at least 90 minutes from now - lineups need their window."); return; }
+          rpc("world_friendly_challenge", { p_country: natSel.value, p_slot: +clubSel.value, p_play_at_ms: whenMs })
             .then(function (r9) {
-              msg(r9.humanOpponent ? "Challenge sent - their manager decides." : "The bot accepts on the spot - the umpire plays it within the hour.");
+              msg(r9.humanOpponent ? "Challenge sent - their manager has until an hour before the match to accept." : "The bot accepts on the spot - set your lineup any time up to an hour before play.");
               frPaint();
             })
             .catch(function (e9) { msg(String(e9.message).slice(0, 120)); });

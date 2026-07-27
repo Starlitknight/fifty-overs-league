@@ -292,8 +292,9 @@ export async function runDue(pool, host, country, { now = Date.now(), failAfter 
 // lapse. League tables, rankings and honours never see these matches.
 export async function runFriendlies(pool, host, opts = {}) {
   const now = opts.now ?? Date.now();
+  // an offer nobody answered dies an hour before its match - never played
   await pool.query(`UPDATE friendlies SET status='expired'
-    WHERE status='offered' AND created_at < now() - interval '48 hours'`);
+    WHERE status='offered' AND play_at_ms - 3600000 <= $1`, [now]);
   const due = (await pool.query(
     `SELECT * FROM friendlies WHERE status='accepted' AND play_at_ms <= $1 ORDER BY id`, [now])).rows;
   const played = [];
@@ -301,8 +302,11 @@ export async function runFriendlies(pool, host, opts = {}) {
     const hc = (await pool.query('SELECT name, squad FROM clubs WHERE country_id=$1 AND slot=$2', [f.c_country, f.c_slot])).rows[0];
     const ac = (await pool.query('SELECT name, squad FROM clubs WHERE country_id=$1 AND slot=$2', [f.o_country, f.o_slot])).rows[0];
     if (!hc || !ac) { await pool.query(`UPDATE friendlies SET status='expired' WHERE id=$1`, [f.id]); continue; }
+    // the lineup set FOR this friendly wins; the manager's latest league
+    // orders stand in; the engine picks for anyone silent
     const ordersMap = {};
-    for (const [uid, clubName] of [[f.challenger, hc.name], [f.opponent, ac.name]]) {
+    for (const [uid, fOrders, clubName] of [[f.challenger, f.c_orders, hc.name], [f.opponent, f.o_orders, ac.name]]) {
+      if (fOrders) { ordersMap[clubName] = fOrders; continue; }
       if (!uid) continue;
       const o = (await pool.query(
         'SELECT orders FROM orders WHERE user_id=$1 ORDER BY submitted_at DESC LIMIT 1', [uid])).rows[0];
