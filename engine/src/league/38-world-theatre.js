@@ -153,15 +153,17 @@
     try {
       var apiBase = "";
       try { apiBase = (localStorage.getItem("fo_world_api") || window.FO_WORLD_API || ""); } catch (eB) {}
-      if (apiBase) p = Promise.resolve({});    // the plain-JSON service has no RPC surface
+      // LIV_VAL: an object (even an empty one) means the world answered and we
+      // hold the living state; null means it did not, and we must not pretend
+      if (apiBase) { LIV_VAL[key] = {}; p = Promise.resolve({}); }   // that service has no living state to carry
       else p = fetch(SB_URL + "/rest/v1/rpc/world_round_orders", {
         method: "POST",
         headers: { apikey: SB_ANON, Authorization: "Bearer " + SB_ANON, "content-type": "application/json" },
         body: JSON.stringify({ p_country: rid, p_round: roundNo })
       }).then(function (r) { return r.ok ? r.json() : null; })
         .then(function (j) { LIV_VAL[key] = (j && j.living) || null; return (j && j.orders) || {}; });
-    } catch (e) { p = Promise.resolve({}); }
-    p = p.catch(function () { return {}; }).then(function (v) { ORD_VAL[key] = v; return v; });
+    } catch (e) { LIV_VAL[key] = null; p = Promise.resolve({}); }
+    p = p.catch(function () { LIV_VAL[key] = null; return {}; }).then(function (v) { ORD_VAL[key] = v; return v; });
     ORD_CACHE[key] = p;
     return p;
   }
@@ -235,13 +237,23 @@
         alert("The first ball is at " + (h0G < 10 ? "0" : "") + h0G + ":00 UTC - the broadcast opens then.");
         return;
       }
-      // fetch the round's revealed orders first (fast, cached); a slow or
-      // failed service never blocks the broadcast - after 2.5s we go with
-      // bot orders, which is exact whenever no club in the league is claimed
-      var started = false;
-      var begin = function (om) { if (started) return; started = true; foWtBegin(rid, sv, fi, om || {}); };
-      var fallbackT = setTimeout(function () { begin({}); }, 2500);
-      roundOrders(rid, srvRound).then(function (om) { clearTimeout(fallbackT); begin(om); });
+      // The round's revealed orders AND the living state of the men playing it
+      // both come from the World Service, and the broadcast is only the match
+      // on record if we have them. So we wait for the world rather than
+      // guessing: an unreachable service means no broadcast, not a wrong one.
+      var started = false, key = rid + ":" + srvRound;
+      var noWorld = function () {
+        if (started) return; started = true;
+        alert("The World Service can't be reached just now. Rather than show you a match that isn't the one on record, the broadcast waits - try again in a moment.");
+      };
+      var giveUp = setTimeout(noWorld, 9000);
+      roundOrders(rid, srvRound).then(function (om) {
+        clearTimeout(giveUp);
+        if (started) return;
+        if (!LIV_VAL[key]) return noWorld();
+        started = true;
+        foWtBegin(rid, sv, fi, om || {});
+      });
     } catch (e) { try { console.warn("foWtSpectate", e); } catch (e2) {} }
   };
   function foWtBegin(rid, sv, fi, ordersMap) {
