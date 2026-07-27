@@ -129,6 +129,33 @@
     });
     return { cal: cal, fx: fx };
   }
+  // claimed clubs' orders, revealed at the first ball: the World Service's
+  // world_round_orders RPC hands back every submitted sheet for a round
+  // already in play, keyed by club name - exactly what the umpire feeds the
+  // engine. Cached per round; on any failure spectate proceeds with bot
+  // orders (with no claims in the league that is already exact).
+  var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
+  var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+  var ORD_CACHE = {};
+  function roundOrders(rid, roundNo) {
+    var key = rid + ":" + roundNo;
+    if (ORD_CACHE[key]) return ORD_CACHE[key];
+    var p;
+    try {
+      var apiBase = "";
+      try { apiBase = (localStorage.getItem("fo_world_api") || window.FO_WORLD_API || ""); } catch (eB) {}
+      if (apiBase) p = Promise.resolve({});    // the plain-JSON service has no RPC surface
+      else p = fetch(SB_URL + "/rest/v1/rpc/world_round_orders", {
+        method: "POST",
+        headers: { apikey: SB_ANON, Authorization: "Bearer " + SB_ANON, "content-type": "application/json" },
+        body: JSON.stringify({ p_country: rid, p_round: roundNo })
+      }).then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { return (j && j.orders) || {}; });
+    } catch (e) { p = Promise.resolve({}); }
+    p = p.catch(function () { return {}; });
+    ORD_CACHE[key] = p;
+    return p;
+  }
   window.foWtSpectate = function (rid, season, round, fi) {
     try {
       if (typeof M !== "undefined" && M && !M.done && M.meta && !M.meta.__spectate) {
@@ -137,6 +164,18 @@
       var sv = serverFixtures(rid, Date.now()), m = sv.fx[fi];
       if (!m) return;
       var cal = sv.cal, srvRound = cal.round;
+      // fetch the round's revealed orders first (fast, cached); a slow or
+      // failed service never blocks the broadcast - after 2.5s we go with
+      // bot orders, which is exact whenever no club in the league is claimed
+      var started = false;
+      var begin = function (om) { if (started) return; started = true; foWtBegin(rid, sv, fi, om || {}); };
+      var fallbackT = setTimeout(function () { begin({}); }, 2500);
+      roundOrders(rid, srvRound).then(function (om) { clearTimeout(fallbackT); begin(om); });
+    } catch (e) { try { console.warn("foWtSpectate", e); } catch (e2) {} }
+  };
+  function foWtBegin(rid, sv, fi, ordersMap) {
+    try {
+      var m = sv.fx[fi], cal = sv.cal, srvRound = cal.round;
       var sqH = serverSquad(rid, m.home.slot), sqA = serverSquad(rid, m.away.slot);
       if (!sqH || !sqA) { alert("The squads are still warming up - try again in a moment."); return; }
       var home = { name: m.home.name, ground: (m.home.city || m.home.name) + " Ground", players: sqH };
@@ -146,7 +185,7 @@
       window.onMatchEnd = function () {};
       M = newMatch(home, away, "balanced", seed);
       M.meta = { home: home.name, away: away.name, pitch: "balanced", weather: "Sunny", comp: "world", ground: home.ground, __spectate: 1, isUser: false };
-      M.isUserMatch = false; M.ordersMap = {};
+      M.isUserMatch = false; M.ordersMap = ordersMap || {};
       App.tossState = { stage: "x" };
       applyToss(aiTossDecision());
       // fast-forward to the live minute (both viewers land on the same over)

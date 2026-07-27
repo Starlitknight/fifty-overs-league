@@ -140,3 +140,42 @@ test('seasons roll: season 2 begins at start_day + 25 everywhere', async () => {
   const s2b = await pool.query('SELECT count(*)::int AS n FROM seasons WHERE season_no=2');
   assert.equal(s2b.rows[0].n, 19);
 });
+
+test('005: orders lock at the first ball and reveal to spectators', async () => {
+  // the latest England season, whatever tests ran before us
+  const s = (await pool.query(`SELECT * FROM seasons WHERE country_id='eng' ORDER BY season_no DESC LIMIT 1`)).rows[0];
+  const hour = (await pool.query(`SELECT play_hour_utc FROM countries WHERE id='eng'`)).rows[0].play_hour_utc;
+  const TEST_ROUND = 9;   // untouched by the season tests either way
+  const playMs = EPOCH + (s.start_day + TEST_ROUND - 1) * DAY + hour * 3600000;
+
+  async function inTxn(nowMs, user, fn) {
+    const c = await pool.connect();
+    try {
+      await c.query('BEGIN');
+      if (user) await c.query(`SELECT set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ sub: user })]);
+      await c.query(`SELECT set_config('world.now_ms', $1, true)`, [String(nowMs)]);
+      const r = await fn(c);
+      await c.query('COMMIT');
+      return r;
+    } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e; } finally { c.release(); }
+  }
+
+  // before the window: orders go on file, but nobody can read them
+  const ok = await inTxn(playMs - 3600000, U1, c =>
+    c.query(`SELECT public.world_submit_orders($1, '{"tossDecision":"bat","captain":"Test Captain"}'::jsonb) AS r`, [TEST_ROUND]));
+  assert.equal(ok.rows[0].r.ok, true);
+  await assert.rejects(
+    inTxn(playMs - 3600000, null, c => c.query(`SELECT public.world_round_orders('eng', $1)`, [TEST_ROUND])),
+    /sealed until the first ball/);
+
+  // after the first ball: submissions bounce, the sheet is public
+  await assert.rejects(
+    inTxn(playMs + 30 * 60000, U1, c => c.query(`SELECT public.world_submit_orders($1, '{"tossDecision":"bowl"}'::jsonb) AS r`, [TEST_ROUND])),
+    /orders lock at the first ball/);
+  const rev = await inTxn(playMs + 30 * 60000, null, c =>
+    c.query(`SELECT public.world_round_orders('eng', $1) AS r`, [TEST_ROUND]));
+  const body = rev.rows[0].r;
+  assert.equal(body.round, TEST_ROUND);
+  assert.ok(body.orders.Yorkshire, 'the claimed club\'s sheet is revealed by club name');
+  assert.equal(body.orders.Yorkshire.tossDecision, 'bat', 'the locked orders, not the bounced update');
+});
