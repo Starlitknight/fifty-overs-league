@@ -3972,7 +3972,9 @@
             ? "<a class='wc-tour' href='#/cup'>The Champions Cup &#9654;</a><a class='wc-dossier' href='#/side?r=gt'>Thorne dossier &#8250;</a>"
             : ((r.id === foLgNation()
               ? "<a class='wc-tour' href='#/league'>Your league &#9654;</a>"
-              : "<a class='wc-tour' href='#/league?n=" + encodeURIComponent(r.id) + "'>View " + E(r.nm) + " league &#9654;</a>") +
+              // a foreign flag opens THAT nation's league page - #/league is
+              // always the user's own league and ignores any ?n= param
+              : "<a class='wc-tour' href='#/nation?n=" + encodeURIComponent(r.id) + "'>View " + E(r.nm) + " league &#9654;</a>") +
               "<a class='wc-dossier' href='#/boss?r=" + encodeURIComponent(r.id) + "'>Boss dossier &#8250;</a>")) +
           "</div></div>";
         cardEl.classList.add("on");

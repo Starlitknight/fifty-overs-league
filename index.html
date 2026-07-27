@@ -10594,7 +10594,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-1155-d9c95f";
+  var FO_BUILD = "20260727-1157-9bc321";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -28483,7 +28483,9 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
             ? "<a class='wc-tour' href='#/cup'>The Champions Cup &#9654;</a><a class='wc-dossier' href='#/side?r=gt'>Thorne dossier &#8250;</a>"
             : ((r.id === foLgNation()
               ? "<a class='wc-tour' href='#/league'>Your league &#9654;</a>"
-              : "<a class='wc-tour' href='#/league?n=" + encodeURIComponent(r.id) + "'>View " + E(r.nm) + " league &#9654;</a>") +
+              // a foreign flag opens THAT nation's league page - #/league is
+              // always the user's own league and ignores any ?n= param
+              : "<a class='wc-tour' href='#/nation?n=" + encodeURIComponent(r.id) + "'>View " + E(r.nm) + " league &#9654;</a>") +
               "<a class='wc-dossier' href='#/boss?r=" + encodeURIComponent(r.id) + "'>Boss dossier &#8250;</a>")) +
           "</div></div>";
         cardEl.classList.add("on");
