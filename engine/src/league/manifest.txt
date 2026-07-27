@@ -37,3 +37,4 @@
 36-champions-cup.js
 37-world-club.js
 38-world-theatre.js
+39-rankings.js

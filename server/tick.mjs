@@ -132,6 +132,70 @@ export async function computeLeague(pool, country, seasonNo, now) {
   return { country, seasonNo: season.season_no, startDay: season.start_day, rounds: ROUNDS, roundsPlayed, table, results, stats, champion, generatedAtDay: dayIx(now) };
 }
 
+// THE WORLD RANKINGS: rolling Elo over every banked match, recomputed from
+// genesis each time - a pure function of the record, so it can never drift
+// and a club rename never loses a point (ratings key by country:slot).
+// League matches move 24 points' worth, Champions Cup ties 40; national XIs
+// keep their own ladder from World Cup matches. Deterministic order: league
+// by (season, round, country, home slot), cups by (season, stage, tie).
+export async function computeRankings(pool, now) {
+  const clubs = (await pool.query('SELECT country_id, slot, name, is_boss FROM clubs ORDER BY country_id, slot')).rows;
+  const key = (c, s) => c + ':' + s;
+  const R = {};
+  clubs.forEach(c => R[key(c.country_id, c.slot)] = { country: c.country_id, slot: c.slot, name: c.name, boss: c.is_boss, rating: 1000, p: 0, w: 0, l: 0, t: 0 });
+  const upd = (a, b, sa, K) => {
+    const ea = 1 / (1 + Math.pow(10, (b.rating - a.rating) / 400));
+    const d = K * (sa - ea);
+    a.rating += d; b.rating -= d;
+    a.p++; b.p++;
+    if (sa === 0.5) { a.t++; b.t++; } else if (sa === 1) { a.w++; b.l++; } else { b.w++; a.l++; }
+  };
+  const ms = (await pool.query(
+    'SELECT country_id, home_slot, away_slot, home_name, result FROM matches ORDER BY season_no, round, country_id, home_slot')).rows;
+  for (const m of ms) {
+    const a = R[key(m.country_id, m.home_slot)], b = R[key(m.country_id, m.away_slot)];
+    if (!a || !b) continue;
+    const hN = m.home_name || a.name, w = m.result.winner;
+    upd(a, b, w === null ? 0.5 : w === hN ? 1 : 0, 24);
+  }
+  const wclm = (await pool.query(
+    `SELECT a, b, result FROM cup_matches WHERE comp='wcl'
+      ORDER BY season_no, CASE stage WHEN 'pi' THEN 0 WHEN 'r16' THEN 1 WHEN 'qf' THEN 2 WHEN 'sf' THEN 3 ELSE 4 END, gi`)).rows;
+  for (const m of wclm) {
+    if (m.a.slot == null || m.b.slot == null) continue;
+    const a = R[key(m.a.country, m.a.slot)], b = R[key(m.b.country, m.b.slot)];
+    if (!a || !b) continue;
+    const w = m.result.winner;
+    upd(a, b, w === null ? 0.5 : w === m.a.name ? 1 : 0, 40);
+  }
+  const countryRows = (await pool.query('SELECT id, name FROM countries')).rows;
+  const N = {};
+  countryRows.forEach(c => N[c.id] = { rating: 1000, p: 0, w: 0, l: 0, t: 0 });
+  const wcm = (await pool.query(
+    `SELECT a, b, result FROM cup_matches WHERE comp='wc'
+      ORDER BY season_no, CASE stage WHEN 'r16' THEN 0 WHEN 'qf' THEN 1 WHEN 'sf' THEN 2 ELSE 3 END, gi`)).rows;
+  for (const m of wcm) {
+    const a = N[m.a.country], b = N[m.b.country];
+    if (!a || !b) continue;
+    const w = m.result.winner;
+    const sa = w === null ? 0.5 : w === m.a.name ? 1 : 0;
+    const ea = 1 / (1 + Math.pow(10, (b.rating - a.rating) / 400));
+    const d = 40 * (sa - ea);
+    a.rating += d; b.rating -= d;
+    a.p++; b.p++;
+    if (sa === 0.5) { a.t++; b.t++; } else if (sa === 1) { a.w++; b.l++; } else { b.w++; a.l++; }
+  }
+  const clubList = Object.values(R).sort((x, y) => y.rating - x.rating || x.country.localeCompare(y.country) || x.slot - y.slot)
+    .map((x, i) => ({ rank: i + 1, country: x.country, slot: x.slot, name: x.name, boss: x.boss, rating: Math.round(x.rating), p: x.p, w: x.w, l: x.l, t: x.t }));
+  const countries = countryRows.map(c => {
+    const mine = Object.values(R).filter(x => x.country === c.id);
+    const avg = mine.reduce((s, x) => s + x.rating, 0) / (mine.length || 1);
+    return { id: c.id, name: c.name, clubRating: Math.round(avg), natRating: Math.round(N[c.id].rating), natP: N[c.id].p };
+  }).sort((a, b) => b.clubRating - a.clubRating || b.natRating - a.natRating || a.id.localeCompare(b.id))
+    .map((c, i) => ({ rank: i + 1, ...c }));
+  return { clubs: clubList, countries, generatedAtDay: dayIx(now) };
+}
+
 // the honours book: an append-only memory of every crown. League snapshots
 // only ever hold the LATEST season, so finished honours are merged in here
 // the moment they exist and never lost. Idempotent by construction.
@@ -169,6 +233,9 @@ export async function rebuildSnapshots(pool, country, now) {
     ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`, ['league/' + country, JSON.stringify(league)]);
   await rebuildWorldToday(pool, now);
   await rebuildHonours(pool);
+  const rk = await computeRankings(pool, now);
+  await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ('rankings', $1, now())
+    ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`, [JSON.stringify(rk)]);
   return league;
 }
 

@@ -17,7 +17,7 @@ import { makePool } from '../db.mjs';
 import { migrate } from '../migrate.mjs';
 import { initWorld } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
-import { runAllDue, runCupWindow, rollSeasons, runTick, computeLeague, rebuildHonours } from '../tick.mjs';
+import { runAllDue, runCupWindow, rollSeasons, runTick, computeLeague, rebuildHonours, computeRankings } from '../tick.mjs';
 import { EPOCH, DAY } from '../clock.mjs';
 
 const DBNAME = 'foworld_p3_test';
@@ -252,4 +252,33 @@ test('009: season leaders come straight from the banked scorecards', async () =>
   assert.equal(lg.champion, null, 'no champion until 18 rounds');
   const H = await rebuildHonours(pool);
   assert.deepEqual(H.seasons, {}, 'the honours book stays empty until a season completes');
+});
+
+test('010: the world rankings ladder moves with results, zero-sum, rename-proof', async () => {
+  const rk = await computeRankings(pool, EPOCH + 102 * DAY);
+  assert.equal(rk.clubs.length, 190, 'every club in the world is ranked');
+  assert.equal(rk.countries.length, 19, 'every country is ranked');
+  // only England's round 1 is banked in this run: exactly ten clubs have played
+  const played = rk.clubs.filter(c => c.p > 0);
+  assert.equal(played.length, 10);
+  played.forEach(c => assert.equal(c.country, 'eng'));
+  // winners rose, losers fell, ties held
+  played.forEach(c => {
+    if (c.w === 1 && c.l === 0 && c.t === 0) assert.ok(c.rating > 1000, c.name + ' won and rose');
+    if (c.l === 1 && c.w === 0 && c.t === 0) assert.ok(c.rating < 1000, c.name + ' lost and fell');
+  });
+  // Elo is zero-sum: the world's points are conserved
+  const total = rk.clubs.reduce((s, c) => s + c.rating, 0);
+  assert.ok(Math.abs(total - 190000) <= 190, 'points conserved (rounding aside): ' + total);
+  // ranks are 1..190 and sorted by rating
+  assert.equal(rk.clubs[0].rank, 1);
+  assert.ok(rk.clubs[0].rating >= rk.clubs[189].rating);
+  // ratings key by slot: a rename moves the name, never the points
+  const before7 = rk.clubs.find(c => c.country === 'eng' && c.slot === 7);
+  await pool.query(`UPDATE clubs SET name='Renamed CC' WHERE country_id='eng' AND slot=7`);
+  const rk2 = await computeRankings(pool, EPOCH + 102 * DAY);
+  const after7 = rk2.clubs.find(c => c.country === 'eng' && c.slot === 7);
+  assert.equal(after7.rating, before7.rating, 'the rating survived the rename');
+  assert.equal(after7.name, 'Renamed CC', 'the ladder speaks the current name');
+  await pool.query(`UPDATE clubs SET name=default_name WHERE country_id='eng' AND slot=7`);
 });

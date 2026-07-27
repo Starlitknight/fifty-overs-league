@@ -150,7 +150,7 @@
   // engine's own autosaves (debounced); the pull runs once per sign-in and
   // ASKS before replacing this device's progress - it never clobbers quietly. ----
   var CLOUD_TS = "fo_cloud_ts";                 // updated_at of the copy this device last wrote/loaded
-  var FO_CLOUD_SKIP = { fol_session: 1, fo_cloud_ts: 1, fo_bldseen: 1, fo_world_feed_cache: 1 };   // device-local, never synced
+  var FO_CLOUD_SKIP = { fol_session: 1, fo_cloud_ts: 1, fo_bldseen: 1, fo_world_feed_cache: 1, fo_world_rk: 1 };   // device-local, never synced
   function foCloudKeys() {
     var out = {};
     try {
