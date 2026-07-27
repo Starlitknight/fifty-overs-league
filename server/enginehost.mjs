@@ -78,6 +78,15 @@ globalThis.__svcDerive = function (playersJson) {
   ps.forEach(function (p) { try { jsDerive(p); } catch (e) {} });
   return JSON.stringify(ps);
 };
+// the card's overall rating, straight from the shipped engine - the served
+// club pages compute this in SQL (migration 016) and the tests hold the two
+// to the same answer
+globalThis.__svcOvr = function (playersJson) {
+  var ps = JSON.parse(playersJson);
+  return JSON.stringify(ps.map(function (p) {
+    try { return window.foPkOvr(p); } catch (e) { return null; }
+  }));
+};
 globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson) {
   var home = JSON.parse(homeJson), away = JSON.parse(awayJson);
   onMatchEnd = function () {};
@@ -128,12 +137,15 @@ globalThis.__svcWorldCfg = function () {
   const cfg = vm.runInContext('__svcWorldCfg', eng.ctx);
   const train = vm.runInContext('__svcTrain', eng.ctx);
   const der = vm.runInContext('__svcDerive', eng.ctx);
+  const ovr = vm.runInContext('__svcOvr', eng.ctx);
   return {
     genSquad(seed, country, arch, capt) { return JSON.parse(gen(seed, country, arch, capt)); },
     // one round in the nets for a whole squad, by the shipped engine's numbers
     trainRound(players, plan) { return JSON.parse(train(JSON.stringify(players), JSON.stringify(plan || {}))); },
     // recompute bat/threat/control/rating/wage from skills, engine's own map
     derive(players) { return JSON.parse(der(JSON.stringify(players))); },
+    // the 0-99 card rating the club pages show, per player
+    pkOvr(players) { return JSON.parse(ovr(JSON.stringify(players))); },
     // returns the canonical result JSON STRING — stored verbatim, compared verbatim
     runMatch(homeTeam, awayTeam, pitch, seed, ordersMap) {
       return run(JSON.stringify(homeTeam), JSON.stringify(awayTeam), pitch, seed,

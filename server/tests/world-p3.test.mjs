@@ -612,3 +612,41 @@ test('016: the nets, the face and the money all belong to the world', async () =
   assert.equal(s.identity.crest, 'YO');
   assert.ok(Number(s.bank) > 0);
 });
+
+// 017: WHAT A RIVAL MAY READ. The club pages show a scout's summary - one
+// overall rating a man, his batting, his bowling, his fielding, and the three
+// team strengths - computed in SQL so a page costs one small request. Those
+// formulas are the ENGINE'S, mirrored; this holds the mirror to the original
+// and refuses to let the coaching book through the same door.
+test('017: the served club card matches the engine, and hides the coaching book', async () => {
+  const squad = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+
+  const fromEngine = host.pkOvr(squad);
+  const fromSql = (await pool.query(
+    `SELECT (world_pk_num(x)->>'ovr')::int AS o FROM jsonb_array_elements($1::jsonb) x`,
+    [JSON.stringify(squad)])).rows.map(r => r.o);
+  assert.deepEqual(fromSql, fromEngine, 'every card rating is the engine\'s own number');
+
+  const card = (await pool.query(
+    `SELECT * FROM public.world_squads WHERE country_id='eng' AND slot=1`)).rows[0];
+  assert.equal(card.players.length, squad.length);
+  assert.ok(Number(card.team_batting) > 0 && Number(card.team_bowling) > 0 && Number(card.team_fielding) > 0,
+    'a side has a batting, an attack and a pair of hands');
+
+  // strongest first, so a page can lead with the best man
+  const ovrs = card.players.map(p => p.ovr);
+  assert.deepEqual(ovrs, ovrs.slice().sort((a, b) => b - a), 'the roster arrives strongest first');
+  assert.deepEqual(ovrs.slice().sort((a, b) => b - a), fromEngine.slice().sort((a, b) => b - a),
+    'the same fifteen men, no more and no fewer');
+
+  // THE LINE: summaries yes, the fifteen raw skills never
+  const leak = JSON.stringify(card.players);
+  for (const secret of ['skills', 'baseSkills', 'trainProgress', 'vsPace', 'vsSpin', 'wicket', 'economy',
+    'discipline', 'moveTurn', 'variation', 'stamina', 'temperament', 'rotation', 'catching', 'stumping']) {
+    assert.ok(leak.indexOf('"' + secret + '"') === -1, secret + ' must not cross the boundary');
+  }
+  for (const shown of ['ovr', 'batting', 'bowling', 'fielding', 'form', 'fatigue', 'career', 'wage']) {
+    assert.ok(leak.indexOf('"' + shown + '"') !== -1, shown + ' is what a scout is allowed');
+  }
+});

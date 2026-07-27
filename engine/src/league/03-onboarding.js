@@ -2748,6 +2748,10 @@
   // the one canonical card-art resolver: exported so other modules (player
   // hero, living-season awards) reuse it instead of cloning its hashing
   try { window.foPkArt = foPkArt; } catch (ePkX) {}
+  // the card's overall rating is mirrored in SQL for the served club
+  // pages (migration 016); export it so the tests can hold the two to
+  // the same answer rather than trusting they stayed in step
+  try { window.foPkOvr = foPkOvr; } catch (ePkO) {}
   var FO_PK_TIPS = {
     BATTING: "Run-scoring ability with the bat - how reliably he builds and converts innings.",
     BOWLING: "Wicket-taking threat and the ability to keep runs down with the ball.",
