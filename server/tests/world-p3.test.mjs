@@ -15,9 +15,10 @@ import assert from 'node:assert';
 import { execSync } from 'node:child_process';
 import { makePool } from '../db.mjs';
 import { migrate } from '../migrate.mjs';
-import { initWorld } from '../init-world.mjs';
+import { initWorld, countryConfigs } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { runAllDue, runCupWindow, rollSeasons, runTick, computeLeague, rebuildHonours, computeRankings, runFriendlies } from '../tick.mjs';
+import { evolveCountry, applyLiving, livingPatch } from '../living.mjs';
 import { EPOCH, DAY } from '../clock.mjs';
 
 const DBNAME = 'foworld_p3_test';
@@ -422,4 +423,97 @@ test('013: the friendly fixture card - sealed to the hour, then public for the t
   const off = await as(U1, `SELECT public.world_friendly_challenge('eng', 2, $1) AS r`, [Date.now() + 6 * 3600000]);
   await assert.rejects(pool.query(`SELECT public.world_friendly_detail($1)`, [off.rows[0].r.id]), /this friendly is offered/);
   await assert.rejects(pool.query(`SELECT public.world_friendly_detail(999999)`), /no such friendly/);
+});
+
+test('014: the living player - careers, form, tired legs, all from the record', async () => {
+  const sq = () => pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`).then(r => r.rows[0].squad);
+  const before = await sq();
+  assert.ok(before.length >= 11);
+  // rounds have been played above, so the men have lives by now
+  await evolveCountry(pool, 'eng', EPOCH + 130 * DAY);
+  const after = await sq();
+  const capped = after.filter(p => p.career && p.career.m > 0);
+  assert.ok(capped.length >= 11, 'at least an XI have caps: ' + capped.length);
+  const scorer = capped.filter(p => p.career.runs > 0).sort((a, b) => b.career.runs - a.career.runs)[0];
+  assert.ok(scorer, 'somebody has scored runs');
+  assert.ok(scorer.career.hs > 0 && scorer.career.hs <= scorer.career.runs, 'a best score inside the total');
+  const taker = capped.filter(p => p.career.wkts > 0)[0];
+  assert.ok(taker && taker.career.bb, 'a wicket-taker carries best figures');
+  // experience is earned, never lost, and the baseline is remembered
+  const grew = after.filter(p => p.career && p.exp > p.baseExp);
+  assert.ok(grew.length > 0, 'playing made somebody wiser');
+  after.forEach(p => { assert.ok(p.exp <= 99 && p.exp >= 0, 'exp in range'); });
+  // form and fatigue words agree with their numbers, and the whole squad
+  // carries the fields the engine actually reads
+  after.forEach(p => {
+    assert.ok(p.formIx >= 0 && p.formIx <= 6, p.name + ' formIx');
+    assert.ok(typeof p.fatWord === 'string' && p.fatigue === p.fatWord, p.name + ' fatigue word');
+    assert.ok(p.fatN >= 0 && p.fatN <= 99, p.name + ' fatN');
+  });
+  // nobody is broken by a season of cricket: rotation is an edge, not a cliff
+  assert.ok(after.every(p => p.fatN < 90), 'no one is shattered by league cricket');
+  // and it NEVER DRIFTS: recomputing from the same record changes nothing
+  await evolveCountry(pool, 'eng', EPOCH + 130 * DAY);
+  const twice = await sq();
+  assert.deepEqual(twice, after, 'evolution is a pure function of the record');
+  // skills are untouched - a life changes form and legs, never the craft
+  const bySeed = Object.fromEntries(before.map(p => [p.name, p]));
+  after.forEach(p => assert.deepEqual(p.skills, bySeed[p.name].skills, p.name + ' skills untouched'));
+});
+
+test('015: watched IS recorded - the banked living patch replays the same match', async () => {
+  // give England a few more rounds so the season has genuinely worn the men
+  // (already-settled days are no-ops - the umpire never replays a round)
+  for (const day of [102, 103, 104]) {
+    await runTick(pool, host, 'eng', day, { now: EPOCH + day * DAY + 18 * 3600000 });
+  }
+  // a LATE match, played by men a whole season of cricket had already worn
+  const m = (await pool.query(
+    `SELECT id, seed, round, home_name, away_name, home_slot, away_slot, orders, living, result_canonical
+       FROM matches WHERE country_id='eng' AND season_no=1 AND living IS NOT NULL
+       ORDER BY round DESC, home_slot LIMIT 1`)).rows[0];
+  assert.ok(m, 'a banked match with its living patch');
+  assert.ok(m.round >= 3, 'late enough that the season has left a mark: round ' + m.round);
+  assert.ok(m.living[m.home_name] && m.living[m.away_name], 'both squads are in it');
+  const anyMan = Object.values(m.living[m.home_name])[0];
+  assert.ok(anyMan && anyMan.e != null && anyMan.f != null && anyMan.n != null, 'exp, form and legs');
+  // by then the men were genuinely no longer their generated selves
+  const moved = Object.values(m.living[m.home_name]).filter(L => L.f !== 3 || L.n > 0);
+  assert.ok(moved.length > 0, 'the XI carried real form and real tiredness into it');
+
+  // THE MATCH, not the paperwork: the canonical blob embeds whole player
+  // objects, so its bytes carry harmless noise (a database reorders JSON
+  // keys; a career rides along). What must agree is every ball of cricket.
+  const facts = j => {
+    const o = JSON.parse(j);
+    return JSON.stringify({ w: o.winner, t: o.text, m: o.mom,
+      i: (o.innings || []).map(inn => inn && ({ bt: inn.batTeam, r: inn.runs, w: inn.wkts, l: inn.legal,
+        bat: (inn.bat || []).map(b => [(b.p && b.p.name) || b.p, b.r, b.b, b.out]),
+        bowl: Object.entries(inn.bowlers || {}).map(([k, v]) => [k, v.w, v.r, v.b]).sort() })) });
+  };
+
+  // a spectator does exactly what the phone does: regenerate the squads from
+  // the world seed, lay the banked patch over them, run the same seed
+  const cfg = countryConfigs(host).filter(c => c.id === 'eng')[0];
+  const bossSlot = cfg.clubs.filter(c => c.boss)[0].slot;
+  const squadOf = slot => host.genSquad('world1|eng|' + slot, cfg.nat, cfg.arch, slot === bossSlot ? cfg.capt : 'general');
+  const replay = host.runMatch(
+    { name: m.home_name, players: applyLiving(squadOf(m.home_slot), m.living[m.home_name]) },
+    { name: m.away_name, players: applyLiving(squadOf(m.away_slot), m.living[m.away_name]) },
+    'balanced', Number(m.seed), m.orders);
+  assert.equal(facts(replay), facts(m.result_canonical), 'the broadcast is the match the world recorded');
+
+  // and the patch is what makes it so: the pristine generated squads, same
+  // seed, same orders, play a DIFFERENT match
+  const naive = host.runMatch({ name: m.home_name, players: squadOf(m.home_slot) },
+    { name: m.away_name, players: squadOf(m.away_slot) }, 'balanced', Number(m.seed), m.orders);
+  assert.notEqual(facts(naive), facts(m.result_canonical), 'without the living state it is not the same game');
+
+  // nor would today's squads do: the men have travelled on, the record has not
+  const sq = Object.fromEntries((await pool.query(
+    `SELECT slot, squad FROM clubs WHERE country_id='eng'`)).rows.map(r => [r.slot, r.squad]));
+  const today = host.runMatch({ name: m.home_name, players: sq[m.home_slot] },
+    { name: m.away_name, players: sq[m.away_slot] }, 'balanced', Number(m.seed), m.orders);
+  assert.notEqual(facts(today), facts(m.result_canonical), 'today\'s men would have played it differently');
+  assert.notDeepEqual(livingPatch(sq[m.home_slot]), m.living[m.home_name], 'today\'s men are not that day\'s men');
 });

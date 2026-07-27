@@ -145,7 +145,7 @@
   // orders (with no claims in the league that is already exact).
   var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
   var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
-  var ORD_CACHE = {}, ORD_VAL = {};
+  var ORD_CACHE = {}, ORD_VAL = {}, LIV_VAL = {};
   function roundOrders(rid, roundNo) {
     var key = rid + ":" + roundNo;
     if (ORD_CACHE[key]) return ORD_CACHE[key];
@@ -159,11 +159,39 @@
         headers: { apikey: SB_ANON, Authorization: "Bearer " + SB_ANON, "content-type": "application/json" },
         body: JSON.stringify({ p_country: rid, p_round: roundNo })
       }).then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { return (j && j.orders) || {}; });
+        .then(function (j) { LIV_VAL[key] = (j && j.living) || null; return (j && j.orders) || {}; });
     } catch (e) { p = Promise.resolve({}); }
     p = p.catch(function () { return {}; }).then(function (v) { ORD_VAL[key] = v; return v; });
     ORD_CACHE[key] = p;
     return p;
+  }
+
+  // THE LIVING STATE, LAID BACK OVER THE GENERATED MEN.
+  // The World Service owns each cricketer's life - the experience the season
+  // gave him, the form of his last five, the tiredness in his arm - and banks
+  // the exact state every match was played with. We regenerate the squad from
+  // the world seed (as always) and lay that state over it, so the broadcast
+  // runs the same eleven the umpire ran. Without this the match on your
+  // screen would drift from the match in the book the moment players live.
+  var FORMW = ["abysmal", "poor", "shaky", "steady", "good", "strong", "excellent"];
+  var EXPLAD = ["atrocious", "dreadful", "poor", "ordinary", "average", "reasonable",
+    "capable", "reliable", "accomplished", "expert", "spectacular", "elite"];
+  function fatWordOf(n) {
+    n = +n || 0;
+    return n >= 96 ? "clinically dead" : n >= 88 ? "shattered" : n >= 78 ? "exhausted"
+      : n >= 68 ? "listless" : n >= 56 ? "weary" : n >= 44 ? "moderate"
+      : n >= 34 ? "satisfactory" : n >= 24 ? "passable" : n >= 14 ? "energetic"
+      : n >= 5 ? "revived" : "rested";
+  }
+  function applyLiving(players, patch) {
+    if (!players || !patch) return players;
+    players.forEach(function (p) {
+      var L = p && patch[p.name]; if (!L) return;
+      if (L.e != null) { p.exp = L.e; p.expWord = EXPLAD[Math.max(0, Math.min(11, Math.floor(L.e / 9)))]; }
+      if (L.f != null) { p.formIx = L.f; p.formWord = FORMW[L.f] || "steady"; }
+      if (L.n != null) { p.fatN = L.n; p.fatWord = fatWordOf(L.n); p.fatigue = p.fatWord; }
+    });
+    return players;
   }
   // the eleven a club actually fields: revealed orders when a manager has
   // spoken (mirroring the engine's validity rules), else the engine's own
@@ -221,6 +249,8 @@
       var m = sv.fx[fi], cal = sv.cal, srvRound = cal.round;
       var sqH = serverSquad(rid, m.home.slot), sqA = serverSquad(rid, m.away.slot);
       if (!sqH || !sqA) { alert("The squads are still warming up - try again in a moment."); return; }
+      var liv = LIV_VAL[rid + ":" + srvRound];
+      if (liv) { applyLiving(sqH, liv[m.home.name]); applyLiving(sqA, liv[m.away.name]); }
       var home = { name: m.home.name, ground: (m.home.city || m.home.name) + " Ground", players: sqH };
       var away = { name: m.away.name, players: sqA };
       var matchId = rid + ":s" + cal.seasonNo + ":r" + srvRound + ":h" + m.home.slot + "a" + m.away.slot;
@@ -296,6 +326,7 @@
           }
           var sqH = serverSquad(d.home.country, d.home.slot), sqA = serverSquad(d.away.country, d.away.slot);
           if (!sqH || !sqA) { alert("The squads are still warming up - try again in a moment."); return; }
+          if (d.living) { applyLiving(sqH, d.living[d.home.name]); applyLiving(sqA, d.living[d.away.name]); }
           var home = { name: d.home.name, ground: d.home.name + "'s ground", players: sqH };
           var away = { name: d.away.name, players: sqA };
           var seed = h32("friendly:" + d.id) || 1;
@@ -443,7 +474,8 @@
 
   // the server mirror, exported: nation pages list the same fixtures, the
   // same calendar and the same live states the theatre plays from
-  window.__foWT = { serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror, serverSquad: serverSquad };
+  window.__foWT = { serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror,
+    serverSquad: serverSquad, applyLiving: applyLiving };
 
   function foWtCss() {
     if (document.getElementById("fo-wt-css")) return;

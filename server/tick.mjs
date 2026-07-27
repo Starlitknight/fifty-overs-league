@@ -16,6 +16,7 @@
 import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
 import { EPOCH, dayIx, daySettled, seedOf, natHour, scheduleOf, ROUNDS } from './clock.mjs';
+import { livingPatch, evolveCountry } from './living.mjs';
 
 export function matchId(country, seasonNo, round, h, a) {
   return country + ':s' + seasonNo + ':r' + round + ':h' + h + 'a' + a;
@@ -52,10 +53,14 @@ async function playRound(pool, host, country, season, round, opts) {
     if (ordersMap[away.name]) tieOrders[away.name] = ordersMap[away.name];
     const resultJson = host.runMatch({ name: home.name, players: home.squad }, { name: away.name, players: away.squad }, 'balanced', seed, tieOrders);
     if (!resultJson) throw new Error('engine failed to complete ' + id);
+    // the living state these men carried into the match, banked with it:
+    // the theatre lays it back over the generated squads and replays the
+    // identical game, however far the players travel afterwards
+    const living = { [home.name]: livingPatch(home.squad), [away.name]: livingPatch(away.squad) };
     await pool.query(
-      `INSERT INTO matches(id, country_id, season_no, round, home_slot, away_slot, seed, engine_version, pitch, orders, result, result_canonical, home_name, away_name)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,$12::text,$13,$14) ON CONFLICT (id) DO NOTHING`,
-      [id, country, season.season_no, round, hs, as, seed, ENGINE_VERSION, 'balanced', JSON.stringify(tieOrders), resultJson, resultJson, home.name, away.name]);
+      `INSERT INTO matches(id, country_id, season_no, round, home_slot, away_slot, seed, engine_version, pitch, orders, result, result_canonical, home_name, away_name, living)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,$12::text,$13,$14,$15::jsonb) ON CONFLICT (id) DO NOTHING`,
+      [id, country, season.season_no, round, hs, as, seed, ENGINE_VERSION, 'balanced', JSON.stringify(tieOrders), resultJson, resultJson, home.name, away.name, JSON.stringify(living)]);
     played++;
   }
   return played;
@@ -266,6 +271,9 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
   const round = day - season.start_day + 1;
   let played = 0;
   if (round >= 1 && round <= ROUNDS) played = await playRound(pool, host, country, season, round, { failAfter });
+  // the day's cricket changes the men who played it: careers, form, tired
+  // legs. A pure function of the record, so re-running settles the same.
+  await evolveCountry(pool, country, now);
   await rebuildSnapshots(pool, country, now);
   await pool.query(`UPDATE ticks SET status='done', finished_at=now(), detail=$2 WHERE key=$1`,
     [key, JSON.stringify({ round: round >= 1 && round <= ROUNDS ? round : null, played })]);
@@ -315,8 +323,9 @@ export async function runFriendlies(pool, host, opts = {}) {
     const seed = seedOf('friendly:' + f.id);
     const resultJson = host.runMatch({ name: hc.name, players: hc.squad }, { name: ac.name, players: ac.squad }, 'balanced', seed, ordersMap);
     if (!resultJson) throw new Error('engine failed friendly ' + f.id);
-    await pool.query(`UPDATE friendlies SET status='played', result=$2::jsonb, engine_version=$3 WHERE id=$1`,
-      [f.id, resultJson, ENGINE_VERSION]);
+    const living = { [hc.name]: livingPatch(hc.squad), [ac.name]: livingPatch(ac.squad) };
+    await pool.query(`UPDATE friendlies SET status='played', result=$2::jsonb, engine_version=$3, living=$4::jsonb WHERE id=$1`,
+      [f.id, resultJson, ENGINE_VERSION, JSON.stringify(living)]);
     played.push(f.id);
   }
   return played;
@@ -403,10 +412,11 @@ async function playStage(pool, host, comp, seasonNo, stage, pairs) {
     const sqA = await squadFor(pool, comp, seasonNo, A), sqB = await squadFor(pool, comp, seasonNo, B);
     const resultJson = host.runMatch({ name: A.name, players: sqA }, { name: B.name, players: sqB }, 'balanced', seed);
     if (!resultJson) throw new Error('engine failed cup match ' + comp + ':' + stage + ':' + gi);
+    const living = { [A.name]: livingPatch(sqA), [B.name]: livingPatch(sqB) };
     await pool.query(
-      `INSERT INTO cup_matches(comp, season_no, stage, gi, a, b, seed, engine_version, result, result_canonical)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::text) ON CONFLICT (comp, season_no, stage, gi) DO NOTHING`,
-      [comp, seasonNo, stage, gi, JSON.stringify(A), JSON.stringify(B), seed, ENGINE_VERSION, resultJson, resultJson]);
+      `INSERT INTO cup_matches(comp, season_no, stage, gi, a, b, seed, engine_version, result, result_canonical, living)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::text,$11::jsonb) ON CONFLICT (comp, season_no, stage, gi) DO NOTHING`,
+      [comp, seasonNo, stage, gi, JSON.stringify(A), JSON.stringify(B), seed, ENGINE_VERSION, resultJson, resultJson, JSON.stringify(living)]);
     const w = JSON.parse(resultJson).winner;
     winners.push(w === A.name ? A : B);
   }

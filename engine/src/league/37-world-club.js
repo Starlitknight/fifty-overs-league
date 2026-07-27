@@ -213,11 +213,23 @@
       if (!ST.keep || ST.picked.indexOf(ST.keep) < 0) ST.keep = (ST.picked.filter(function (nm) { return byName[nm] && byName[nm].keeper; })[0]) || ST.picked[0];
       if (!ST.capt || ST.picked.indexOf(ST.capt) < 0) ST.capt = ST.picked[0];
 
+      // THE LIVING SQUAD: the World Service carries every man's form, his
+      // tired legs and his caps, and the sheet shows them - because who is
+      // fresh and who is flying is the whole of team selection.
+      var FORMW = ["abysmal", "poor", "shaky", "steady", "good", "strong", "excellent"];
       var men = squad.map(function (p) {
         var ix2 = ST.picked.indexOf(p.name);
+        var fi = p.formIx == null ? 3 : p.formIx;
+        var fat = +p.fatN || 0;
+        var tired = fat >= 44 ? " tired" : "";
+        var caps = (p.career && p.career.m) || 0;
+        var line = (p.bowlType && p.bowlType !== "none" ? "bowls" : p.keeper ? "keeper" : "bats") +
+          " &middot; " + (p.rating || "") + (caps ? " &middot; " + caps + " cap" + (caps === 1 ? "" : "s") : "");
         return "<button type='button' class='fo-wj-man" + (ix2 >= 0 ? " on" : "") + "' data-nm='" + E(p.name) + "'>" +
           "<i>" + (ix2 >= 0 ? (ix2 + 1) : "&middot;") + "</i><b>" + E(p.name) + "</b>" +
-          "<span>" + (p.bowlType && p.bowlType !== "none" ? "bowls" : p.keeper ? "keeper" : "bats") + " &middot; " + (p.rating || "") + "</span></button>";
+          "<span>" + line + "</span>" +
+          "<u class='fo-wj-form f" + fi + (tired ? " t" : "") + "'>" + E(FORMW[fi] || "steady") +
+          (tired ? " &middot; " + E(p.fatWord || "tired") : "") + "</u></button>";
       }).join("");
       var fiveBtns = ST.picked.filter(isBowler).map(function (nm) {
         var fx = ST.five.indexOf(nm);
@@ -483,11 +495,17 @@
       "html body #page .fo-wj-club u.taken{color:#177A57}",
       "html body #page .fo-wj-claim{font:700 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#FFFEFC !important;background:#C95532 !important;border:none !important;border-radius:999px !important;padding:8px 15px !important;cursor:pointer}",
       "html body #page .fo-wj-sq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}",
-      "html body #page .fo-wj-man{display:flex;align-items:center;gap:8px;text-align:left;background:rgba(255,255,255,.85) !important;border:1px solid rgba(20,28,40,.14) !important;border-radius:10px !important;padding:8px 10px !important;cursor:pointer;font:inherit !important}",
+      "html body #page .fo-wj-man{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;text-align:left;background:rgba(255,255,255,.85) !important;border:1px solid rgba(20,28,40,.14) !important;border-radius:10px !important;padding:8px 10px !important;cursor:pointer;font:inherit !important;min-width:0;overflow:hidden}",
       "html body #page .fo-wj-man.on{border-color:#C95532 !important;background:rgba(250,238,230,.9) !important}",
       "html body #page .fo-wj-man i{font-style:normal;font:700 11px/1 Oswald,sans-serif;color:#C95532;width:16px;text-align:center}",
-      "html body #page .fo-wj-man b{display:block;font:600 12px/1.2 Inter,sans-serif;color:#141C28;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      "html body #page .fo-wj-man span{font-size:9.5px;color:rgba(20,28,40,.5);white-space:nowrap}",
+      "html body #page .fo-wj-man b{display:block;font:600 12px/1.2 Inter,sans-serif;color:#141C28;flex:1 1 auto;min-width:76px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      "html body #page .fo-wj-man span{flex:1 0 100%;order:3;font-size:9.5px;color:rgba(20,28,40,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}",
+      "html body #page .fo-wj-form{flex:none;margin-left:auto;text-decoration:none;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:rgba(20,28,40,.45);white-space:nowrap}",
+      "html body #page .fo-wj-form.f0,html body #page .fo-wj-form.f1{color:#B23230}",
+      "html body #page .fo-wj-form.f2{color:#8a6d3b}",
+      "html body #page .fo-wj-form.f4{color:#177A57}",
+      "html body #page .fo-wj-form.f5,html body #page .fo-wj-form.f6{color:#0E6B4C;font-weight:700}",
+      "html body #page .fo-wj-form.t{color:#B23230}",
       "html body #page .fo-wj-h4{margin:14px 0 8px;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(20,28,40,.55);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}",
       "html body #page .fo-wj-h4 span{font-size:8.5px;color:rgba(20,28,40,.4);letter-spacing:.1em}",
       "html body #page .fo-wj-fiverow{display:flex;flex-wrap:wrap;gap:6px}",

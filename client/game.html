@@ -10588,7 +10588,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-1500-b275c4";
+  var FO_BUILD = "20260727-1555-abf564";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -39261,11 +39261,23 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       if (!ST.keep || ST.picked.indexOf(ST.keep) < 0) ST.keep = (ST.picked.filter(function (nm) { return byName[nm] && byName[nm].keeper; })[0]) || ST.picked[0];
       if (!ST.capt || ST.picked.indexOf(ST.capt) < 0) ST.capt = ST.picked[0];
 
+      // THE LIVING SQUAD: the World Service carries every man's form, his
+      // tired legs and his caps, and the sheet shows them - because who is
+      // fresh and who is flying is the whole of team selection.
+      var FORMW = ["abysmal", "poor", "shaky", "steady", "good", "strong", "excellent"];
       var men = squad.map(function (p) {
         var ix2 = ST.picked.indexOf(p.name);
+        var fi = p.formIx == null ? 3 : p.formIx;
+        var fat = +p.fatN || 0;
+        var tired = fat >= 44 ? " tired" : "";
+        var caps = (p.career && p.career.m) || 0;
+        var line = (p.bowlType && p.bowlType !== "none" ? "bowls" : p.keeper ? "keeper" : "bats") +
+          " &middot; " + (p.rating || "") + (caps ? " &middot; " + caps + " cap" + (caps === 1 ? "" : "s") : "");
         return "<button type='button' class='fo-wj-man" + (ix2 >= 0 ? " on" : "") + "' data-nm='" + E(p.name) + "'>" +
           "<i>" + (ix2 >= 0 ? (ix2 + 1) : "&middot;") + "</i><b>" + E(p.name) + "</b>" +
-          "<span>" + (p.bowlType && p.bowlType !== "none" ? "bowls" : p.keeper ? "keeper" : "bats") + " &middot; " + (p.rating || "") + "</span></button>";
+          "<span>" + line + "</span>" +
+          "<u class='fo-wj-form f" + fi + (tired ? " t" : "") + "'>" + E(FORMW[fi] || "steady") +
+          (tired ? " &middot; " + E(p.fatWord || "tired") : "") + "</u></button>";
       }).join("");
       var fiveBtns = ST.picked.filter(isBowler).map(function (nm) {
         var fx = ST.five.indexOf(nm);
@@ -39531,11 +39543,17 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       "html body #page .fo-wj-club u.taken{color:#177A57}",
       "html body #page .fo-wj-claim{font:700 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#FFFEFC !important;background:#C95532 !important;border:none !important;border-radius:999px !important;padding:8px 15px !important;cursor:pointer}",
       "html body #page .fo-wj-sq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}",
-      "html body #page .fo-wj-man{display:flex;align-items:center;gap:8px;text-align:left;background:rgba(255,255,255,.85) !important;border:1px solid rgba(20,28,40,.14) !important;border-radius:10px !important;padding:8px 10px !important;cursor:pointer;font:inherit !important}",
+      "html body #page .fo-wj-man{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;text-align:left;background:rgba(255,255,255,.85) !important;border:1px solid rgba(20,28,40,.14) !important;border-radius:10px !important;padding:8px 10px !important;cursor:pointer;font:inherit !important;min-width:0;overflow:hidden}",
       "html body #page .fo-wj-man.on{border-color:#C95532 !important;background:rgba(250,238,230,.9) !important}",
       "html body #page .fo-wj-man i{font-style:normal;font:700 11px/1 Oswald,sans-serif;color:#C95532;width:16px;text-align:center}",
-      "html body #page .fo-wj-man b{display:block;font:600 12px/1.2 Inter,sans-serif;color:#141C28;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      "html body #page .fo-wj-man span{font-size:9.5px;color:rgba(20,28,40,.5);white-space:nowrap}",
+      "html body #page .fo-wj-man b{display:block;font:600 12px/1.2 Inter,sans-serif;color:#141C28;flex:1 1 auto;min-width:76px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      "html body #page .fo-wj-man span{flex:1 0 100%;order:3;font-size:9.5px;color:rgba(20,28,40,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}",
+      "html body #page .fo-wj-form{flex:none;margin-left:auto;text-decoration:none;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:rgba(20,28,40,.45);white-space:nowrap}",
+      "html body #page .fo-wj-form.f0,html body #page .fo-wj-form.f1{color:#B23230}",
+      "html body #page .fo-wj-form.f2{color:#8a6d3b}",
+      "html body #page .fo-wj-form.f4{color:#177A57}",
+      "html body #page .fo-wj-form.f5,html body #page .fo-wj-form.f6{color:#0E6B4C;font-weight:700}",
+      "html body #page .fo-wj-form.t{color:#B23230}",
       "html body #page .fo-wj-h4{margin:14px 0 8px;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(20,28,40,.55);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}",
       "html body #page .fo-wj-h4 span{font-size:8.5px;color:rgba(20,28,40,.4);letter-spacing:.1em}",
       "html body #page .fo-wj-fiverow{display:flex;flex-wrap:wrap;gap:6px}",
@@ -39707,7 +39725,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // orders (with no claims in the league that is already exact).
   var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
   var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
-  var ORD_CACHE = {}, ORD_VAL = {};
+  var ORD_CACHE = {}, ORD_VAL = {}, LIV_VAL = {};
   function roundOrders(rid, roundNo) {
     var key = rid + ":" + roundNo;
     if (ORD_CACHE[key]) return ORD_CACHE[key];
@@ -39721,11 +39739,39 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         headers: { apikey: SB_ANON, Authorization: "Bearer " + SB_ANON, "content-type": "application/json" },
         body: JSON.stringify({ p_country: rid, p_round: roundNo })
       }).then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { return (j && j.orders) || {}; });
+        .then(function (j) { LIV_VAL[key] = (j && j.living) || null; return (j && j.orders) || {}; });
     } catch (e) { p = Promise.resolve({}); }
     p = p.catch(function () { return {}; }).then(function (v) { ORD_VAL[key] = v; return v; });
     ORD_CACHE[key] = p;
     return p;
+  }
+
+  // THE LIVING STATE, LAID BACK OVER THE GENERATED MEN.
+  // The World Service owns each cricketer's life - the experience the season
+  // gave him, the form of his last five, the tiredness in his arm - and banks
+  // the exact state every match was played with. We regenerate the squad from
+  // the world seed (as always) and lay that state over it, so the broadcast
+  // runs the same eleven the umpire ran. Without this the match on your
+  // screen would drift from the match in the book the moment players live.
+  var FORMW = ["abysmal", "poor", "shaky", "steady", "good", "strong", "excellent"];
+  var EXPLAD = ["atrocious", "dreadful", "poor", "ordinary", "average", "reasonable",
+    "capable", "reliable", "accomplished", "expert", "spectacular", "elite"];
+  function fatWordOf(n) {
+    n = +n || 0;
+    return n >= 96 ? "clinically dead" : n >= 88 ? "shattered" : n >= 78 ? "exhausted"
+      : n >= 68 ? "listless" : n >= 56 ? "weary" : n >= 44 ? "moderate"
+      : n >= 34 ? "satisfactory" : n >= 24 ? "passable" : n >= 14 ? "energetic"
+      : n >= 5 ? "revived" : "rested";
+  }
+  function applyLiving(players, patch) {
+    if (!players || !patch) return players;
+    players.forEach(function (p) {
+      var L = p && patch[p.name]; if (!L) return;
+      if (L.e != null) { p.exp = L.e; p.expWord = EXPLAD[Math.max(0, Math.min(11, Math.floor(L.e / 9)))]; }
+      if (L.f != null) { p.formIx = L.f; p.formWord = FORMW[L.f] || "steady"; }
+      if (L.n != null) { p.fatN = L.n; p.fatWord = fatWordOf(L.n); p.fatigue = p.fatWord; }
+    });
+    return players;
   }
   // the eleven a club actually fields: revealed orders when a manager has
   // spoken (mirroring the engine's validity rules), else the engine's own
@@ -39783,6 +39829,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var m = sv.fx[fi], cal = sv.cal, srvRound = cal.round;
       var sqH = serverSquad(rid, m.home.slot), sqA = serverSquad(rid, m.away.slot);
       if (!sqH || !sqA) { alert("The squads are still warming up - try again in a moment."); return; }
+      var liv = LIV_VAL[rid + ":" + srvRound];
+      if (liv) { applyLiving(sqH, liv[m.home.name]); applyLiving(sqA, liv[m.away.name]); }
       var home = { name: m.home.name, ground: (m.home.city || m.home.name) + " Ground", players: sqH };
       var away = { name: m.away.name, players: sqA };
       var matchId = rid + ":s" + cal.seasonNo + ":r" + srvRound + ":h" + m.home.slot + "a" + m.away.slot;
@@ -39858,6 +39906,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           }
           var sqH = serverSquad(d.home.country, d.home.slot), sqA = serverSquad(d.away.country, d.away.slot);
           if (!sqH || !sqA) { alert("The squads are still warming up - try again in a moment."); return; }
+          if (d.living) { applyLiving(sqH, d.living[d.home.name]); applyLiving(sqA, d.living[d.away.name]); }
           var home = { name: d.home.name, ground: d.home.name + "'s ground", players: sqH };
           var away = { name: d.away.name, players: sqA };
           var seed = h32("friendly:" + d.id) || 1;
@@ -40005,7 +40054,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
 
   // the server mirror, exported: nation pages list the same fixtures, the
   // same calendar and the same live states the theatre plays from
-  window.__foWT = { serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror, serverSquad: serverSquad };
+  window.__foWT = { serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror,
+    serverSquad: serverSquad, applyLiving: applyLiving };
 
   function foWtCss() {
     if (document.getElementById("fo-wt-css")) return;
