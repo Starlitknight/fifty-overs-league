@@ -31,3 +31,4 @@
 30-england-clock.js
 31-world-feed.js
 32-matchday.js
+33-training-pops.js
