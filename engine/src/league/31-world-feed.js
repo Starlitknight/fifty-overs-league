@@ -100,7 +100,7 @@
       try { var c3 = localStorage.getItem("fo_world_nm_" + rid); if (c3) { NM_BODY[rid] = JSON.parse(c3); return NM_BODY[rid]; } } catch (e) {}
       return null;
     },
-    // slot -> manager display name, for the clubs a human has claimed
+    // slot -> manager display name for claimed clubs, and "g"+slot -> ground
     mgr: function (rid) {
       if (NM_MGR[rid]) return NM_MGR[rid];
       try { var c4 = localStorage.getItem("fo_world_mgr_" + rid); if (c4) { NM_MGR[rid] = JSON.parse(c4); return NM_MGR[rid]; } } catch (e) {}
@@ -112,12 +112,16 @@
         if (NM_AT[rid] && Date.now() - NM_AT[rid] < 60000) return;
         NM_BUSY[rid] = 1;
         var done = function () { NM_BUSY[rid] = 0; NM_AT[rid] = Date.now(); };
-        fetch(SB_URL + "/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(rid) + "&select=slot,name,manager", { headers: { apikey: SB_ANON } })
+        fetch(SB_URL + "/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(rid) + "&select=slot,name,manager,ground", { headers: { apikey: SB_ANON } })
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (rows) {
             if (rows && rows.length) {
               var m = {}, g = {};
-              rows.forEach(function (r2) { m[r2.slot] = r2.name; if (r2.manager) g[r2.slot] = r2.manager; });
+              rows.forEach(function (r2) {
+                m[r2.slot] = r2.name;
+                if (r2.manager) g[r2.slot] = r2.manager;
+                if (r2.ground) g["g" + r2.slot] = r2.ground;
+              });
               var changed = JSON.stringify(m) !== JSON.stringify(NM_BODY[rid] || null) ||
                             JSON.stringify(g) !== JSON.stringify(NM_MGR[rid] || null);
               NM_BODY[rid] = m; NM_MGR[rid] = g;

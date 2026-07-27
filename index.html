@@ -10588,7 +10588,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-2024-aa7432";
+  var FO_BUILD = "20260727-2053-d5b8be";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -36023,10 +36023,14 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
 })();
 // ---- 25-league-table.js — The League, the real one ---------------------------
 // One design for every league in the world. #/league is your nation's table and
-// #/nation?n=<id> is anybody else's - the SAME page, the same daylight almanack
-// type, the same served data. There is no second-class league: the world runs
-// nineteen of them under one set of rules, and they should read that way.
-// The painted country portrait (map, art, boss) lives on at #/atlas.
+// #/nation?n=<id> is anybody else's - the SAME page, the same four rooms, the
+// same served data. There is no second-class league: the world runs nineteen of
+// them under one set of rules, and they should read that way.
+//
+// The page is a club programme: a navy plate with the country painted behind
+// it and the pennant on it, the round pips counting out the season, then four
+// rooms - the pennant race, the fixtures, the results and the season's numbers
+// - each with a rail of the things a manager checks on the way past.
 (function () {
   "use strict";
   function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -36042,76 +36046,46 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   function natName(id) { var hit = regionOf(id); return (hit && hit.nm) || ""; }
   function ART() { return (typeof FO_ART !== "undefined") ? FO_ART : ((location.pathname.indexOf("/client/") !== -1) ? "art/" : "client/art/"); }
   function flagOf(id) { try { return ART() + "flags/" + window.__foCxAPI.flagFile(id) + ".svg"; } catch (e) { return ""; } }
-  // EVERY LEAGUE LOOKS LIKE ITS OWN COUNTRY. One accent, one flag, one
-  // painted horizon - the same almanack, wearing the nation's colours.
+  function hh(h) { return (h < 10 ? "0" : "") + h + ":00"; }
+  function h32(s) { var h = 2166136261 >>> 0; s = String(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
   var NAT_LINE = {
-    eng: "The old game, played where it was written.",
-    aus: "Hard light, hard cricket, no quarter given.",
-    sub: "A billion eyes on every ball.",
-    pak: "Raw pace and rawer nerve.",
-    rsa: "The long summer and the southeaster.",
-    win: "Calypso and thunder.",
-    nzl: "Cricket under the long white cloud.",
-    slk: "Spin, sorcery and sea air.",
-    ned: "The low country, playing above itself.",
-    ire: "Green, damp and defiant.",
-    zim: "Flame lilies and hard yards.",
-    afg: "Mountain fire, learned in exile.",
-    bgd: "The tigers, and a country that roars with them.",
-    nep: "Cricket on the roof of the world.",
-    sco: "Highland steel, in a cold wind.",
-    wal: "Dragons at the crease.",
-    ken: "The rift valley game.",
-    usa: "The new frontier of an old sport.",
+    eng: "The old game, played where it was written.", aus: "Hard light, hard cricket, no quarter given.",
+    sub: "A billion eyes on every ball.", pak: "Raw pace and rawer nerve.",
+    rsa: "The long summer and the southeaster.", win: "Calypso and thunder.",
+    nzl: "Cricket under the long white cloud.", slk: "Spin, sorcery and sea air.",
+    ned: "The low country, playing above itself.", ire: "Green, damp and defiant.",
+    zim: "Flame lilies and hard yards.", afg: "Mountain fire, learned in exile.",
+    bgd: "The tigers, and a country that roars with them.", nep: "Cricket on the roof of the world.",
+    sco: "Highland steel, in a cold wind.", wal: "Dragons at the crease.",
+    ken: "The rift valley game.", usa: "The new frontier of an old sport.",
     can: "True north, and a short summer to prove it."
   };
-
-  // older saves recorded results before seasonNo existed on the record; a
-  // stampless result belongs to this season exactly when the season's own
-  // played-map points at its index
-  function thisSeasonHas(r) {
-    var cur = (App.seasonNo || 1);
-    if (r.seasonNo != null) return r.seasonNo === cur;
-    try {
-      var P = (App.season && App.season.played) || {};
-      for (var k in P) if (P[k] === r.ix) return true;
-    } catch (e) {}
-    return false;
+  // EVERY CLUB WEARS A SHIELD. The flagship has a painted crest; the rest get
+  // a monogram in the colours their own name draws - stable, distinct, and
+  // never a blank square where a badge should be.
+  var SH_COL = ["#8C2B2B", "#1D3F6E", "#1F6F4A", "#6B3E8F", "#A8571C", "#2B6E7A", "#7A2E52", "#3E5C1E", "#3D3A6B", "#8A6A1F"];
+  function shield(name, isBoss, cid) {
+    if (isBoss) {
+      var c = ""; try { c = window.__foCxAPI.crest(cid) || ""; } catch (e) {}
+      if (c) return "<img class='fo-lgx-cr' src='" + c + "' alt='' onerror=\"this.style.display='none'\">";
+    }
+    var ini = String(name || "?").replace(/[^A-Za-z ]/g, "").split(/\s+/).filter(Boolean)
+      .map(function (w) { return w.charAt(0).toUpperCase(); }).slice(0, 2).join("");
+    var col = SH_COL[h32(name || "") % SH_COL.length];
+    return "<span class='fo-lgx-sh' style='--sc:" + col + "'>" + E(ini || "?") + "</span>";
   }
 
-  function formBeads(name) {
-    try {
-      var seq = (App.results || []).filter(function (r) {
-        return r && r.comp === "league" && r.result && r.result.winner !== undefined &&
-          thisSeasonHas(r) && (r.home === name || r.away === name);
-      }).slice(-5).map(function (r) {
-        return r.result.winner === name ? "w" : r.result.winner === null ? "t" : "l";
-      });
-      return seq.map(function (k) {
-        return "<i class='" + k + "'>" + k.toUpperCase() + "</i>";
-      }).join("") || "<span class='none'>&mdash;</span>";
-    } catch (e) { return ""; }
-  }
-
-  function hh(h) { return (h < 10 ? "0" : "") + h + ":00 UTC"; }
-
-  // ---- THE MARGINS ARE THE COUNTRY --------------------------------------
-  // A reading column on a wide screen leaves two empty gutters, and art
-  // stretched behind a headline only makes the headline harder to read. So
-  // the art moves out into the margins and becomes furniture: the nation's
-  // painted map hangs as a framed plate on the left (a door to its atlas),
-  // its own cricketer stands on the right. The header goes back to clean
-  // paper, and a phone - which has no margins - sees neither.
+  // ---- the margins are the country (shared with the club dossier) ---------
   var ART_FOR = "", ART_KEY = "";
   function sideArt(natId) {
     try {
+      try { document.body.classList.remove("fo-lgx-page"); } catch (eLg) {}
       var host = document.getElementById("fo-sideart");
       if (!host) {
         host = document.createElement("div");
         host.id = "fo-sideart";
         host.innerHTML =
-          "<a class='fo-sa-map' href='#/atlas'><img alt='' loading='lazy' onerror=\"this.parentElement.style.display='none'\">" +
-          "<span></span></a>" +
+          "<a class='fo-sa-map' href='#/atlas'><img alt='' loading='lazy' onerror=\"this.parentElement.style.display='none'\"><span></span></a>" +
           "<div class='fo-sa-fig'><img alt='' loading='lazy' onerror=\"this.parentElement.style.display='none'\"></div>";
         document.body.appendChild(host);
       }
@@ -36131,18 +36105,16 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         fig.querySelector("img").src = ART() + "circuit/boss-" + natId + "-cutout.webp";
       }
       host.classList.add("on");
-      // the page column has to sit ABOVE the art: <html> carries a dark
-      // background of its own, so body paints its cream over anything at a
-      // negative z-index. The margins ride at 0 and the column at 1.
       try { document.body.classList.add("fo-sa-on"); } catch (eB3) {}
       ART_FOR = location.hash || "";
     } catch (e) {}
   }
   window.__foSideArt = sideArt;
-  // any page that does not claim the margins gets them back
   window.addEventListener("hashchange", function () {
     setTimeout(function () { if (ART_FOR !== (location.hash || "")) sideArt(null); }, 80);
   });
+
+  var TABS = [["table", "Standings"], ["fixtures", "Fixtures"], ["results", "Results"], ["stats", "Stats"]];
 
   function foRenderLeagueTablePage() {
     try {
@@ -36151,24 +36123,21 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var page = document.getElementById("page"); if (!page) return;
       var me = null; try { me = userTeam(); } catch (e) {}
       if (!me) return;
-      // the atlas and the boss shrines paint themselves full-bleed and dark;
-      // the almanack is daylight, so shed their marks on the way in
       try { document.body.classList.remove("fo-scb-on", "fo-drs-on", "fo-boss-on", "fo-ov-on", "fo-lore-on"); } catch (eB) {}
 
       var myNat = "";
       try { myNat = (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || ""; } catch (eNid) {}
       var natId = qparam("n") || myNat;
       if (!natName(natId)) natId = myNat;
-      var own = (natId === myNat);
-      var natNm = natName(natId) || "";
+      var own = (natId === myNat), natNm = natName(natId) || "";
+      var tab = qparam("t") || "table";
+      var reg = regionOf(natId) || {};
 
       var claim = null;
       try { claim = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eC) {}
-      var myClub = (claim && claim.country === natId && claim.club) || (own ? me.name : "");
+      var mySlot = (claim && claim.country === natId) ? claim.slot : -1;
 
-      // THE CLUBS TABLE IS THE NAMING AUTHORITY. A snapshot is only rebuilt
-      // when a round settles, so a club christened this morning would wear its
-      // old name until tonight's cricket. These ten little rows are current.
+      // the naming authority, the managers and the grounds - one small request
       var nmBySlot = null, mgrBySlot = null;
       try {
         if (window.__foWorldNames) {
@@ -36177,234 +36146,343 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           window.__foWorldNames.want(natId, function () { if (onPage()) foRenderLeagueTablePage(); });
         }
       } catch (eN0) {}
+      var groundOf = function (s) { return (mgrBySlot && mgrBySlot["g" + s]) || ""; };
+      var mgrOf = function (s) { return (mgrBySlot && mgrBySlot[s]) || ""; };
 
-      // THE LEAGUE IS THE WORLD'S LEAGUE. The served snapshot is the table -
-      // the real ten clubs and their real points. Absent the service we keep
-      // the engine's own standings for your own nation so nothing breaks
-      // offline; a rival nation simply waits for the wire.
-      var rows = [], srvRows = null, snap = null, snapSeason = 0;
+      var snap = null;
       try {
         if (window.__foWorldLg) {
           window.__foWorldLg.want(natId, function () { if (onPage()) foRenderLeagueTablePage(); });
           snap = window.__foWorldLg.get(natId);
         }
       } catch (eS) {}
+
+      var rows = [];
       if (snap && snap.table && snap.table.length) {
-        snapSeason = snap.seasonNo || 0;
-        srvRows = snap.table.map(function (x) {
-          var live = (nmBySlot && x.slot != null && nmBySlot[x.slot]) || x.name;
-          // the record speaks the snapshot's name; the page speaks the current one
-          return { nm: live, recNm: x.name, p: x.p, w: x.w, l: x.l, t: x.t, pts: x.pts, nrr: x.nrr, slot: x.slot, boss: !!x.boss,
-            mine: !!(claim && claim.country === natId && claim.slot === x.slot) };
-        });
-        // form beads from the served results, newest last
-        var seq = {};
-        (snap.results || []).forEach(function (rr) {
-          [rr.home, rr.away].forEach(function (nm) {
-            if (!nm) return;
-            (seq[nm] = seq[nm] || []).push(rr.winner === null ? "t" : rr.winner === nm ? "w" : "l");
-          });
-        });
-        srvRows.forEach(function (r) {
-          var s5 = (seq[r.recNm] || []).slice(-5);
-          r.beads = s5.length
-            ? s5.map(function (k) { return "<i class='" + k + "'>" + k.toUpperCase() + "</i>"; }).join("")
-            : "<span class='none'>&mdash;</span>";
+        rows = snap.table.map(function (x) {
+          return { nm: (nmBySlot && nmBySlot[x.slot]) || x.name, recNm: x.name, p: x.p, w: x.w, l: x.l, t: x.t,
+            pts: x.pts, nrr: x.nrr, slot: x.slot, boss: !!x.boss, mine: x.slot === mySlot };
         });
       }
-      if (srvRows) rows = srvRows;
-      else if (own) { try { rows = leagueRows(); } catch (eL) { rows = []; } }
-
-      var myPos = 0;
-      rows.forEach(function (r, i) {
-        if (r.mine != null ? r.mine : (r.nm === me.name)) myPos = i + 1;
-      });
-      var ord = function (n) { return n + (n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"); };
-
-      // EVERY ROW IS A DOOR, snapshot or no snapshot. The served table names
-      // its slots outright; without it we still know which seat a club sits
-      // in - from the names the world has published, and failing that from
-      // the nation's own ten - so the club page is always one tap away.
-      var slotOf = {};
-      try { if (nmBySlot) for (var s0 in nmBySlot) slotOf[nmBySlot[s0]] = +s0; } catch (eN) {}
+      var myClub = "";
+      rows.forEach(function (r) { if (r.mine) myClub = r.nm; });
+      if (!myClub && own) myClub = me.name;
+      var liveOf = {};
+      rows.forEach(function (r) { if (r.recNm && r.recNm !== r.nm) liveOf[r.recNm] = r.nm; });
+      var say = function (n) { return liveOf[n] || n; };
+      var sayRe = null;
       try {
-        var sides = window.__foPlanet && window.__foPlanet.sidesOf(natId);
-        (sides || []).forEach(function (sd) { if (slotOf[sd.name] == null) slotOf[sd.name] = sd.slot; });
-      } catch (eSd) {}
-      try { if (claim && claim.country === natId && claim.club) slotOf[claim.club] = claim.slot; } catch (eCl) {}
+        var keys = Object.keys(liveOf).sort(function (a, b) { return b.length - a.length; });
+        if (keys.length) sayRe = new RegExp(keys.map(function (k) { return k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }).join("|"), "g");
+      } catch (eRe) {}
+      var sayLine = function (t) {
+        var o = String(t || "");
+        return sayRe ? o.replace(sayRe, function (m) { return liveOf[m] || m; }) : o;
+      };
 
-      var body = rows.map(function (r, i) {
-        var mine = r.mine != null ? r.mine : (r.nm === me.name);
-        var slot = r.slot != null ? r.slot : slotOf[r.nm];
-        // a human behind a club is the most useful fact on the page
-        var human = (!mine && mgrBySlot && slot != null) ? mgrBySlot[slot] : "";
-        var href = (natId && slot != null)
-          ? "#/team?c=" + encodeURIComponent(natId) + "&s=" + slot
-          : "#/milestones?c=" + encodeURIComponent(r.nm);
-        return "<a class='fo-lt-row" + (mine ? " mine" : "") + "' href='" + href + "'>" +
-          "<i>" + (i + 1) + "</i>" +
-          "<span class='fo-lt-nm'><b>" + E(r.nm) +
-          (mine ? " <u>you</u>" : (r.boss ? " <s>flagship</s>" : (human ? " <s class='hum'>&#9733; " + E(human) + "</s>" : ""))) + "</b>" +
-          "<span class='fo-lt-beads'>" + (r.beads != null ? r.beads : formBeads(r.nm)) + "</span></span>" +
-          "<em>" + (r.p | 0) + "</em><em class='w'>" + (r.w | 0) + "</em><em>" + (r.l | 0) + "</em>" +
-          "<em class='nrr'>" + ((r.nrr >= 0 ? "+" : "") + (+r.nrr || 0).toFixed(2)) + "</em>" +
-          "<b class='pts'>" + (r.pts | 0) + "</b></a>";
-      }).join("");
-      if (!body) {
-        body = "<div class='fo-lt-wait'>The " + (natNm ? E(natNm) + " " : "") + "table is on its way from the World Service&hellip;</div>";
-      }
+      // form beads, newest last, off the served results
+      var seq = {};
+      (snap && snap.results || []).forEach(function (rr) {
+        [rr.home, rr.away].forEach(function (nm) {
+          if (!nm) return;
+          (seq[nm] = seq[nm] || []).push(rr.winner === null ? "t" : rr.winner === nm ? "w" : "l");
+        });
+      });
 
-      // ---- the day's cricket, straight off the world clock -----------------
-      // Every nation plays at its own hour. The round in play, its five
-      // fixtures, and - once the wire has them - the results they settled on.
-      var pl = null, wt = null, cal = null, fx = [], hour = 0, state = "none", preDays = 0;
+      // the world clock: which round is in play, and at what hour
+      var pl = null, wt = null, cal = null, fx = [], hour = 13, state = "none", preDays = 0, rounds = (snap && snap.rounds) || 18;
       try { pl = window.__foPlanet || null; wt = (window.__foWT && window.__foWT.serverFixtures) ? window.__foWT : null; } catch (eP) {}
       if (pl && wt) {
         try {
           var now = Date.now(), sv = wt.serverFixtures(natId, now);
-          cal = sv.cal; fx = sv.fx || [];
-          hour = pl.natHour(natId);
+          cal = sv.cal; fx = sv.fx || []; hour = pl.natHour(natId);
           var hNow = (now - (pl.EPOCH + pl.dayIx(now) * 86400000)) / 3600000;
           if (cal.seasonNo < 1 || cal.dayInSeason < 0) { state = "pre"; preDays = Math.max(1, -cal.dayInSeason); }
           else if (!fx.length) state = "none";
           else state = hNow < hour ? "up" : hNow < hour + (pl.LIVE_LEN || 3) ? "live" : "fin";
         } catch (eC2) { cal = null; }
       }
-      // ONE NAME PER CLUB. The fixture mirror names its sides from the painted
-      // world; the served table is the naming authority. Bind the fixtures to
-      // the table by slot so a club never appears under two names on one page.
-      var nameAt = function (side) {
-        if (!side) return "";
-        if (srvRows && side.slot != null) {
-          for (var i2 = 0; i2 < srvRows.length; i2++) if (srvRows[i2].slot === side.slot) return srvRows[i2].nm;
-        }
-        return side.name;
-      };
-      // a result was banked under the name the club wore that day; the page
-      // speaks its name today, so translate the record on the way out
-      var liveOf = {};
-      (srvRows || []).forEach(function (r) { if (r.recNm && r.recNm !== r.nm) liveOf[r.recNm] = r.nm; });
-      var say = function (nm) { return liveOf[nm] || nm; };
-      // one pass, longest name first: a club renamed to another club's old name
-      // must not be renamed twice on its way through the line
-      var sayRe = null;
-      try {
-        var keys = Object.keys(liveOf).sort(function (a, b) { return b.length - a.length; });
-        if (keys.length) sayRe = new RegExp(keys.map(function (k) { return k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }).join("|"), "g");
-      } catch (eRe) { sayRe = null; }
-      var sayLine = function (t) {
-        var out = String(t || "");
-        return sayRe ? out.replace(sayRe, function (m) { return liveOf[m] || m; }) : out;
-      };
-      // the round's own results, if the umpire has already banked them
-      var roundRes = {};
-      if (snap && cal) (snap.results || []).forEach(function (rr) {
-        if (rr.round === cal.round) roundRes[say(rr.home) + "|" + say(rr.away)] = rr;
-      });
+      var playedRounds = (snap && snap.roundsPlayed) || 0;
+      var curRound = cal && cal.round >= 1 ? Math.min(cal.round, rounds) : Math.min(playedRounds + 1, rounds);
 
-      var todayHTML = "";
-      if (state === "pre") {
-        todayHTML = "<div class='fo-lt-note'>The season opens in " + preDays + " day" + (preDays === 1 ? "" : "s") +
-          ". Ten clubs, all on nought, first ball at " + hh(hour) + ".</div>";
-      } else if (fx.length) {
-        var lab = state === "live" ? "Playing now" : state === "fin" ? "Today's results" : "Today's fixtures";
-        todayHTML = "<div class='fo-lt-sec'><h2>" + lab + "</h2><span>Round " + cal.round + " &middot; " + hh(hour) + "</span></div>" +
-          "<div class='fo-lt-fxlist'>" + fx.map(function (m, i) {
-            var hN = nameAt(m.home), aN = nameAt(m.away);
-            var got = roundRes[hN + "|" + aN];
-            var mineFx = myClub && (hN === myClub || aN === myClub);
-            var tail = got
-              ? "<span class='fo-lt-fxres'>" + E(sayLine(got.text)) + "</span>"
-              : "<span class='fo-lt-fxst" + (state === "live" ? " live" : "") + "'>" + (state === "live" ? "LIVE" : state === "fin" ? "Awaiting the wire" : hh(hour)) + "</span>";
-            return "<a class='fo-lt-fx" + (mineFx ? " mine" : "") + "' href='#/watch?n=" + encodeURIComponent(natId) + "&f=" + i + "'>" +
-              "<span class='fo-lt-fxt'><b>" + E(hN) + "</b><i>v</i><b>" + E(aN) + "</b></span>" +
-              tail + "</a>";
-          }).join("") + "</div>";
-      } else if (cal) {
-        todayHTML = "<div class='fo-lt-note'>No league cricket in " + (natNm ? E(natNm) : "this nation") + " today &mdash; the season is between rounds.</div>";
-      }
-
-      // ---- the record: every result already banked, newest first -----------
-      var resHTML = "";
-      if (snap && (snap.results || []).length) {
-        var byRound = {};
-        snap.results.forEach(function (rr) { (byRound[rr.round] = byRound[rr.round] || []).push(rr); });
-        var rnds = Object.keys(byRound).map(Number).sort(function (a, b) { return b - a; }).slice(0, 3);
-        resHTML = "<div class='fo-lt-sec'><h2>Results</h2><span>" + snap.roundsPlayed + " of " + (snap.rounds || 18) + " rounds played</span></div>" +
-          rnds.map(function (rn) {
-            return "<div class='fo-lt-rnd'><div class='fo-lt-rndh'>Round " + rn + "</div>" +
-              byRound[rn].map(function (rr) {
-                var hR = say(rr.home), aR = say(rr.away);
-                var mineR = myClub && (hR === myClub || aR === myClub);
-                return "<div class='fo-lt-res" + (mineR ? " mine" : "") + "'>" +
-                  "<span class='fo-lt-fxt'><b>" + E(hR) + "</b><i>v</i><b>" + E(aR) + "</b></span>" +
-                  "<span class='fo-lt-resv'>" + E(sayLine(rr.text) || (rr.winner ? say(rr.winner) + " won" : "Tied")) + "</span></div>";
-              }).join("") + "</div>";
-          }).join("");
-      }
-
-      // the painted country atlas (map + league boss) rides below the record
-      var atlasCard = "";
-      try {
-        var artBase = (typeof FO_ART !== "undefined") ? FO_ART :
-          ((location.pathname.indexOf("/client/") !== -1) ? "art/" : "client/art/");
-        if (natId) {
-          atlasCard = "<a class='fo-lt-atl' href='#/atlas?n=" + encodeURIComponent(natId) + "'>" +
-            "<img src='" + artBase + "circuit/" + natId + ".webp' alt='' loading='lazy' onerror=\"this.style.display='none'\">" +
-            "<span class='fo-lt-atlv'></span>" +
-            "<span class='fo-lt-atlt'><i>The Grand Tour</i><b>The " + (natNm ? E(natNm) + " " : "") + "Atlas</b>" +
-            "<em>The painted map, the grounds, the country &rsaquo;</em></span></a>";
-        }
-      } catch (eAtl) {}
-
-      // one league is nineteen leagues: hop to any of them from here
-      var hop = "<label class='fo-lt-hop'><span>Another league</span><select id='fo-lt-nat'>" +
-        regions().map(function (r) {
-          return "<option value='" + E(r.id) + "'" + (r.id === natId ? " selected" : "") + ">" + E(r.nm) + "</option>";
-        }).join("") + "</select></label>";
-
-      var kick = (own ? "Your league" : "The world &middot; away") + " &middot; Season " + (snapSeason || (cal && cal.seasonNo > 0 ? cal.seasonNo : 1)) +
-        (own && myClub ? " &middot; " + E(myClub) + (myPos ? " &middot; " + ord(myPos) : "") : (rows.length ? " &middot; " + E(rows[0].nm) + " lead" : ""));
-
-      // the nation's own colours: its accent, its flag, its painted country
-      var reg = regionOf(natId) || {};
-      var accent = reg.ac || "#C95532";
-      var natArt = ART() + "circuit/" + (reg.bg || (natId + ".webp"));
-      var line = NAT_LINE[natId] || "Ten clubs, one pennant.";
-
+      // ---- the plate ------------------------------------------------------
       sideArt(natId);
-      page.innerHTML =
-        "<div class='fo-lt' style='--nac:" + E(accent) + "'>" +
-        "<div class='fo-lt-mast'>" +
-        "<div class='fo-lt-mastin'>" +
-        "<div class='fo-lt-kick'><img src='" + flagOf(natId) + "' alt='' onerror=\"this.style.display='none'\">" + kick + "</div>" +
-        "<h1>The " + (natNm ? E(natNm) + " " : "") + "League</h1>" +
-        "<p>" + E(line) + " Ten clubs, eighteen rounds, one pennant &mdash; two points a win, net run rate to break hearts.</p>" +
-        hop +
+      // the league reads two columns wide on a desk, so its margins are narrower
+      try { document.body.classList.add("fo-lgx-page"); } catch (eLp) {}
+      var pips = "";
+      for (var i = 1; i <= rounds; i++) {
+        var cls = i <= playedRounds ? "done" : (i === curRound ? "now" : "");
+        pips += "<i class='" + cls + "'>" + (i <= playedRounds ? "&#10003;" : i) + "</i>";
+      }
+      var hop = regions().map(function (r) {
+        return "<option value='" + E(r.id) + "'" + (r.id === natId ? " selected" : "") + ">" + E(r.nm) + "</option>";
+      }).join("");
+
+      var plate =
+        "<div class='fo-lgx-plate'>" +
+        "<img class='fo-lgx-map' src='" + ART() + "circuit/" + (reg.bg || (natId + ".webp")) + "' alt='' onerror=\"this.style.display='none'\">" +
+        "<div class='fo-lgx-plin'>" +
+        "<div class='fo-lgx-mark'>" +
+        "<span class='fo-lgx-pennant'><img src='" + flagOf(natId) + "' alt='' onerror=\"this.style.display='none'\"></span>" +
+        "<div class='fo-lgx-titles'>" +
+        "<div class='fo-lgx-k'>" + E(natNm) + " &middot; Season " + ((snap && snap.seasonNo) || (cal && cal.seasonNo > 0 ? cal.seasonNo : 1)) + "</div>" +
+        "<h1>The " + E(natNm) + " League</h1>" +
+        "<p>Ten clubs. Eighteen rounds. One pennant.</p>" +
         "</div></div>" +
-        "<div class='fo-lt-head'><i>#</i><span>Club &middot; form</span><em>P</em><em>W</em><em>L</em><em>NRR</em><b>Pts</b></div>" +
-        "<div class='fo-lt-list'>" + body + "</div>" +
-        todayHTML +
-        resHTML +
-        atlasCard +
-        "<div class='fo-lt-foot'>" +
+        "<div class='fo-lgx-clock'>" +
+        "<div class='fo-lgx-rk'>Round " + curRound + " of " + rounds + "</div>" +
+        "<div class='fo-lgx-pips'>" + pips + "</div>" +
+        "<label class='fo-lgx-hop'><span>Change league</span><select id='fo-lt-nat'>" + hop + "</select></label>" +
+        "</div></div></div>";
+
+      var tabBar = "<div class='fo-lgx-tabs'>" + TABS.map(function (t) {
+        var href = (own ? "#/league?" : "#/nation?n=" + encodeURIComponent(natId) + "&") + "t=" + t[0];
+        return "<a class='" + (tab === t[0] ? "on" : "") + "' href='" + href + "'>" + t[1] + "</a>";
+      }).join("") + "</div>";
+
+      // ---- the rooms ------------------------------------------------------
+      var main = "", rail = "";
+
+      if (tab === "fixtures") {
+        var rd = parseInt(qparam("r") || "", 10);
+        if (!rd || rd < 1 || rd > rounds) rd = curRound;
+        var sched = null;
+        try { if (wt && wt.schedMirror) sched = wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1)); } catch (eSc) {}
+        var nameAt = function (s2) {
+          if (nmBySlot && nmBySlot[s2]) return nmBySlot[s2];
+          var row = rows.filter(function (r) { return r.slot === s2; })[0];
+          if (row) return row.nm;
+          try { return (pl.sidesOf(natId) || []).filter(function (x) { return x.slot === s2; })[0].name; } catch (e3) { return "?"; }
+        };
+        var bossAt = function (s2) { var r = rows.filter(function (x) { return x.slot === s2; })[0]; return r ? r.boss : (s2 === 0); };
+        var pairs = (sched && sched[rd - 1]) || [];
+        var stepper = function (r2, lbl) {
+          var href = (own ? "#/league?" : "#/nation?n=" + encodeURIComponent(natId) + "&") + "t=fixtures&r=" + r2;
+          return "<a class='fo-lgx-step' href='" + href + "'>" + lbl + "</a>";
+        };
+        main = "<div class='fo-lgx-panel'>" +
+          "<div class='fo-lgx-ph'><h2>Season fixtures</h2>" +
+          "<span class='fo-lgx-rdnav'>" +
+          (rd > 1 ? stepper(rd - 1, "&lsaquo;") : "<span class='fo-lgx-step off'>&lsaquo;</span>") +
+          "<b>Round " + rd + "</b>" +
+          (rd < rounds ? stepper(rd + 1, "&rsaquo;") : "<span class='fo-lgx-step off'>&rsaquo;</span>") +
+          "</span></div>" +
+          (pairs.length ? pairs.map(function (pr) {
+            var hs = pr[0], as = pr[1], mine = (hs === mySlot || as === mySlot);
+            return "<div class='fo-lgx-fx" + (mine ? " mine" : "") + "'>" +
+              (mine ? "<span class='fo-lgx-yours'>Your match</span>" : "") +
+              "<span class='fo-lgx-side'>" + shield(nameAt(hs), bossAt(hs), natId) + "<b>" + E(nameAt(hs)) + "</b></span>" +
+              "<span class='fo-lgx-vs'><i>v</i><u>" + hh(hour) + "</u>" + (groundOf(hs) ? "<em>" + E(groundOf(hs)) + "</em>" : "") + "</span>" +
+              "<span class='fo-lgx-side a'><b>" + E(nameAt(as)) + "</b>" + shield(nameAt(as), bossAt(as), natId) + "</span>" +
+              "</div>";
+          }).join("") : "<p class='fo-lgx-dim'>No fixtures for this round yet.</p>") +
+          "</div>";
+
+        // the run-in: your next five, home or away
+        var runIn = [];
+        if (sched && mySlot >= 0) {
+          for (var ri = curRound - 1; ri < sched.length && runIn.length < 5; ri++) {
+            (sched[ri] || []).forEach(function (pr2) {
+              if (runIn.length >= 5) return;
+              if (pr2[0] !== mySlot && pr2[1] !== mySlot) return;
+              var h2 = pr2[0] === mySlot;
+              runIn.push({ r: ri + 1, foe: nameAt(h2 ? pr2[1] : pr2[0]), foeSlot: h2 ? pr2[1] : pr2[0], home: h2 });
+            });
+          }
+        }
+        rail = (runIn.length ? "<div class='fo-lgx-card dark'><h3>Your run-in</h3>" +
+          runIn.map(function (x) {
+            return "<a class='fo-lgx-run' href='#/team?c=" + encodeURIComponent(natId) + "&s=" + x.foeSlot + "'>" +
+              "<i>R" + x.r + "</i>" + shield(x.foe, bossAt(x.foeSlot), natId) + "<b>" + E(x.foe) + "</b>" +
+              "<u class='" + (x.home ? "h" : "a") + "'>" + (x.home ? "H" : "A") + "</u></a>";
+          }).join("") + "</div>" : "") +
+          "<div class='fo-lgx-card'><h3>Round at a glance</h3><div class='fo-lgx-glance'>" +
+          "<div><b>" + (pairs.length || 5) + "</b><i>Matches</i></div>" +
+          "<div><b>" + (rows.length || 10) + "</b><i>Clubs</i></div>" +
+          "<div><b>" + hh(hour) + "</b><i>First ball</i></div></div></div>";
+
+      } else if (tab === "results") {
+        var all = (snap && snap.results) || [];
+        var byRound = {};
+        all.forEach(function (rr) { (byRound[rr.round] = byRound[rr.round] || []).push(rr); });
+        var have = Object.keys(byRound).map(Number).sort(function (a, b) { return b - a; });
+        var rdR = parseInt(qparam("r") || "", 10);
+        if (!rdR || !byRound[rdR]) rdR = have[0] || 0;
+        var list = byRound[rdR] || [];
+        var stepR = function (r2, lbl, cls) {
+          var href = (own ? "#/league?" : "#/nation?n=" + encodeURIComponent(natId) + "&") + "t=results&r=" + r2;
+          return "<a class='fo-lgx-step " + (cls || "") + "' href='" + href + "'>" + lbl + "</a>";
+        };
+        var sc = function (s) { return s ? (s.r + (s.w >= 10 ? "" : "/" + s.w)) : ""; };
+        main = "<div class='fo-lgx-panel'>" +
+          "<div class='fo-lgx-ph'><h2>" + (rdR ? "Round " + rdR + " results" : "Results") + "</h2>" +
+          "<span class='fo-lgx-rdnav'>" +
+          (byRound[rdR - 1] ? stepR(rdR - 1, "&lsaquo; Prev") : "<span class='fo-lgx-step off'>&lsaquo; Prev</span>") +
+          (byRound[rdR + 1] ? stepR(rdR + 1, "Next &rsaquo;") : "<span class='fo-lgx-step off'>Next &rsaquo;</span>") +
+          "</span></div>" +
+          (list.length ? list.map(function (rr) {
+            var hN = say(rr.home), aN = say(rr.away);
+            var mine = myClub && (hN === myClub || aN === myClub);
+            var won = rr.winner === null ? null : say(rr.winner) === myClub;
+            return "<div class='fo-lgx-res" + (mine ? " mine" : "") + "'>" +
+              "<span class='fo-lgx-side'>" + shield(hN, false, natId) + "<b>" + E(hN) + "</b>" +
+              (rr.hs ? "<u>" + sc(rr.hs) + "</u>" : "") + "</span>" +
+              "<span class='fo-lgx-vs'><i>v</i>" + (rr.hs && rr.hs.ov ? "<em>" + rr.hs.ov + " ov</em>" : "") + "</span>" +
+              "<span class='fo-lgx-side a'>" + (rr.as ? "<u>" + sc(rr.as) + "</u>" : "") +
+              "<b>" + E(aN) + "</b>" + shield(aN, false, natId) + "</span>" +
+              "<span class='fo-lgx-verdict" + (mine ? (won ? " w" : won === false ? " l" : "") : "") + "'>" + E(sayLine(rr.text)) + "</span>" +
+              "</div>";
+          }).join("") : "<p class='fo-lgx-dim'>No cricket has been played yet. The first round settles at " + hh(hour) + " UTC.</p>") +
+          "</div>";
+
+        // match of the round: the narrowest margin the round produced
+        var margin = function (t) {
+          var m = /by (\d+) (run|wicket)/i.exec(t || "");
+          if (!m) return 1e6;
+          return (m[2].toLowerCase() === "wicket" ? +m[1] * 12 : +m[1]);
+        };
+        var best = list.slice().sort(function (a, b) { return margin(a.text) - margin(b.text); })[0];
+        var myRow = rows.filter(function (r) { return r.mine; })[0];
+        var myPos = 0; rows.forEach(function (r, ix) { if (r.mine) myPos = ix + 1; });
+        rail = (best ? "<div class='fo-lgx-card dark'><h3>Match of the round</h3>" +
+          "<div class='fo-lgx-mor'><b>" + (best.hs ? sc(best.hs) : "") + "</b><i>&mdash;</i><b>" + (best.as ? sc(best.as) : "") + "</b></div>" +
+          "<p>" + E(sayLine(best.text)) + "</p>" +
+          "<div class='fo-lgx-morf'><span>" + E(say(best.home)) + "</span><span>" + E(say(best.away)) + "</span></div></div>" : "") +
+          (myRow ? "<div class='fo-lgx-card'><h3>Your season</h3><div class='fo-lgx-glance'>" +
+            "<div><b>" + myRow.pts + "</b><i>Pts</i></div>" +
+            "<div><b>" + ((myRow.nrr >= 0 ? "+" : "") + (+myRow.nrr || 0).toFixed(2)) + "</b><i>NRR</i></div>" +
+            "<div><b>" + (myPos ? myPos : "&mdash;") + "</b><i>Table</i></div></div></div>" : "");
+
+      } else if (tab === "stats") {
+        var st = (snap && snap.stats) || { bat: [], bowl: [], sr: [], econ: [] };
+        var lead = function (title, row, big, unit, sub) {
+          if (!row) return "";
+          return "<div class='fo-lgx-lead'><i>" + title + "</i>" +
+            "<b>" + E(say(row.name)) + "</b><u>" + E(say(row.club)) + "</u>" +
+            "<span class='fo-lgx-big'>" + big + "<em>" + unit + "</em></span>" +
+            "<span class='fo-lgx-leadsub'>" + sub + "</span></div>";
+        };
+        var bat0 = (st.bat || [])[0], bowl0 = (st.bowl || [])[0], sr0 = (st.sr || [])[0];
+        main = "<div class='fo-lgx-panel'>" +
+          "<div class='fo-lgx-ph'><h2>League leaders</h2><span class='fo-lgx-sub'>Season " +
+          ((snap && snap.seasonNo) || 1) + " &middot; after round " + playedRounds + "</span></div>" +
+          ((bat0 || bowl0) ? "<div class='fo-lgx-leads'>" +
+            lead("Most runs", bat0, bat0 ? bat0.runs : "", "runs", bat0 ? ("best " + bat0.hs + " &middot; SR " + bat0.sr) : "") +
+            lead("Most wickets", bowl0, bowl0 ? bowl0.wkts : "", "wkts", bowl0 ? ("econ " + bowl0.econ + (bowl0.bb ? " &middot; best " + bowl0.bb.w + "-" + bowl0.bb.r : "")) : "") +
+            lead("Fastest scoring", sr0, sr0 ? sr0.sr : "", "SR", sr0 ? (sr0.runs + " runs") : "") +
+            "</div>" : "<p class='fo-lgx-dim'>Nobody has faced a ball yet. The numbers begin at " + hh(hour) + " UTC.</p>") +
+          ((st.bat || []).length ? "<div class='fo-lgx-sub2'>Batting leaders</div>" +
+            "<div class='fo-lgx-cols5'><span>#</span><span>Player</span><span>Club</span><span>Runs</span><span>SR</span></div>" +
+            st.bat.map(function (x, ix) {
+              var top = st.bat[0].runs || 1;
+              return "<div class='fo-lgx-statrow'><span class='rk'>" + (ix + 1) + "</span>" +
+                "<span class='nm'>" + E(say(x.name)) + "</span>" +
+                "<span class='cl'>" + E(say(x.club)) + "</span>" +
+                "<span class='vv'>" + x.runs + "<u style='width:" + Math.round(100 * x.runs / top) + "%'></u></span>" +
+                "<span class='sr'>" + x.sr + "</span></div>";
+            }).join("") : "") +
+          ((st.bowl || []).length ? "<div class='fo-lgx-sub2'>Bowling leaders</div>" +
+            "<div class='fo-lgx-cols5'><span>#</span><span>Player</span><span>Club</span><span>Wkts</span><span>Econ</span></div>" +
+            st.bowl.map(function (x, ix) {
+              var topW = st.bowl[0].wkts || 1;
+              return "<div class='fo-lgx-statrow'><span class='rk'>" + (ix + 1) + "</span>" +
+                "<span class='nm'>" + E(say(x.name)) + "</span>" +
+                "<span class='cl'>" + E(say(x.club)) + "</span>" +
+                "<span class='vv'>" + x.wkts + "<u style='width:" + Math.round(100 * x.wkts / topW) + "%'></u></span>" +
+                "<span class='sr'>" + x.econ + "</span></div>";
+            }).join("") : "") +
+          "</div>";
+        rail = "<div class='fo-lgx-card dark'><h3>Milestones</h3>" +
+          "<div class='fo-lgx-mile'><i>Highest score</i><b>" + (bat0 ? bat0.hs : "&mdash;") + "</b></div>" +
+          "<div class='fo-lgx-mile'><i>Best bowling</i><b>" + (bowl0 && bowl0.bb ? bowl0.bb.w + "/" + bowl0.bb.r : "&mdash;") + "</b></div>" +
+          "<div class='fo-lgx-mile'><i>Rounds played</i><b>" + playedRounds + " of " + rounds + "</b></div></div>" +
+          "<div class='fo-lgx-card'><h3>The book</h3><p class='fo-lgx-dim'>Every run and every wicket here was scored in a match the umpire played and banked. Nothing is estimated.</p>" +
+          "<a class='fo-lgx-more' href='#/records'>The record book &rsaquo;</a></div>";
+
+      } else {
+        // ---- the pennant race ---------------------------------------------
+        var body = rows.map(function (r, ix) {
+          var s5 = (seq[r.recNm] || []).slice(-5);
+          var beads = s5.length ? s5.map(function (k) { return "<i class='" + k + "'>" + k.toUpperCase() + "</i>"; }).join("")
+            : "<span class='none'>&mdash;</span>";
+          var chip = r.mine ? "<em class='you'>You</em>"
+            : r.boss ? "<em class='fl'>Flagship</em>"
+            : mgrOf(r.slot) ? "<em class='hu'>" + E(mgrOf(r.slot)) + "</em>" : "";
+          return "<a class='fo-lgx-row" + (r.mine ? " mine" : "") + (ix < 4 ? " q" : "") + "' href='#/team?c=" +
+            encodeURIComponent(natId) + "&s=" + r.slot + "'>" +
+            "<span class='rk'>" + (ix + 1) + "</span>" +
+            "<span class='cb'>" + shield(r.nm, r.boss, natId) + "</span>" +
+            "<span class='nm'><b>" + E(r.nm) + "</b>" + chip + "</span>" +
+            "<span class='fm'>" + beads + "</span>" +
+            "<span class='n'>" + (r.p | 0) + "</span><span class='n'>" + (r.w | 0) + "</span><span class='n'>" + (r.l | 0) + "</span>" +
+            "<span class='n nrr'>" + ((r.nrr >= 0 ? "+" : "") + (+r.nrr || 0).toFixed(2)) + "</span>" +
+            "<span class='pt'>" + (r.pts | 0) + "</span></a>";
+        }).join("");
+        main = "<div class='fo-lgx-panel'>" +
+          "<div class='fo-lgx-ph'><h2>The pennant race</h2>" +
+          "<span class='fo-lgx-sub'>" + (playedRounds ? "Standings after round " + playedRounds : "Before a ball is bowled") + "</span></div>" +
+          (rows.length ? "<div class='fo-lgx-cols'><span>#</span><span></span><span>Club</span><span>Form</span>" +
+            "<span>P</span><span>W</span><span>L</span><span>NRR</span><span>Pts</span></div>" + body
+            : "<p class='fo-lgx-dim'>The " + E(natNm) + " table is on its way from the World Service&hellip;</p>") +
+          "</div>";
+
+        // next round, the chase, and a line about the league
+        var nextPairs = [];
+        try {
+          var sc2 = wt && wt.schedMirror ? wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1)) : null;
+          nextPairs = (sc2 && sc2[curRound - 1]) || [];
+        } catch (eNp) {}
+        var nmA = function (s2) {
+          if (nmBySlot && nmBySlot[s2]) return nmBySlot[s2];
+          var row = rows.filter(function (r) { return r.slot === s2; })[0];
+          return row ? row.nm : "?";
+        };
+        var lead0 = rows[0] ? rows[0].pts : 0;
+        rail =
+          (nextPairs.length ? "<div class='fo-lgx-card'><h3>Next round<span>" + hh(hour) + " UTC</span></h3>" +
+            nextPairs.map(function (pr) {
+              var mine = (pr[0] === mySlot || pr[1] === mySlot);
+              return "<div class='fo-lgx-nx" + (mine ? " mine" : "") + "'>" +
+                "<span>" + shield(nmA(pr[0]), pr[0] === 0, natId) + "<b>" + E(nmA(pr[0])) + "</b></span>" +
+                "<i>v</i>" +
+                "<span class='a'><b>" + E(nmA(pr[1])) + "</b>" + shield(nmA(pr[1]), pr[1] === 0, natId) + "</span>" +
+                (mine ? "<u>Your match</u>" : "") + "</div>";
+            }).join("") + "</div>" : "") +
+          (rows.length ? "<div class='fo-lgx-card dark'><h3>The chase</h3>" +
+            rows.slice(0, 3).map(function (r) {
+              var pc = lead0 ? Math.round(100 * r.pts / lead0) : 0;
+              return "<div class='fo-lgx-chase'><span>" + E(r.nm) + "</span>" +
+                "<u><i style='width:" + Math.max(4, pc) + "%'></i></u><b>" + r.pts + "</b></div>";
+            }).join("") + "</div>" : "") +
+          "<div class='fo-lgx-card note'><h3>League note</h3><p>" +
+          (state === "pre" ? "The season opens in " + preDays + " day" + (preDays === 1 ? "" : "s") + ". Ten clubs, all on nought."
+            : rows.length > 1 ? (rows[0].pts - rows[1].pts) + " point" + ((rows[0].pts - rows[1].pts) === 1 ? "" : "s") + " separate the leading pack."
+            : E(NAT_LINE[natId] || "Ten clubs, one pennant.")) + "</p></div>";
+      }
+
+      page.innerHTML = "<div class='fo-lgx' style='--nac:" + E(reg.ac || "#C95532") + "'>" +
+        plate + tabBar +
+        "<div class='fo-lgx-body'><div class='fo-lgx-main'>" + main + "</div>" +
+        "<div class='fo-lgx-rail'>" + rail + "</div></div>" +
+        "<div class='fo-lgx-foot'>" +
         (own ? "<a href='#/fixtures'>My fixtures &rsaquo;</a>" : "<a href='#/league'>My own league &rsaquo;</a>") +
-        "<a href='#/records'>The record book &rsaquo;</a><a href='#/planet'>World cricket &rsaquo;</a>" +
-        "<a class='atlas' href='#/atlas?n=" + encodeURIComponent(natId) + "'>" + (natNm ? "The " + E(natNm) + " atlas" : "The nation atlas") + " &rsaquo;</a></div>" +
+        "<a href='#/planet'>World cricket &rsaquo;</a>" +
+        "<a href='#/atlas?n=" + encodeURIComponent(natId) + "'>The " + E(natNm) + " atlas &rsaquo;</a></div>" +
         "</div>";
 
       try {
         var sel = document.getElementById("fo-lt-nat");
         if (sel) sel.addEventListener("change", function () {
           var v = sel.value; if (!v) return;
-          location.hash = (v === myNat) ? "#/league" : ("#/nation?n=" + encodeURIComponent(v));
+          location.hash = (v === myNat) ? ("#/league?t=" + tab) : ("#/nation?n=" + encodeURIComponent(v) + "&t=" + tab);
         });
       } catch (eSel) {}
     } catch (e) { try { console.warn("foRenderLeagueTablePage", e); } catch (e2) {} }
   }
 
   var CSS = [
-    "html body #page .fo-lt{position:relative;max-width:680px;margin:26px auto 44px;padding:0 14px;color:#141C28;--nac:#C95532}",
+    "html body #page .fo-lgx{position:relative;max-width:680px;margin:20px auto 44px;padding:0 12px;color:#141C28;--nac:#C95532;--ink:#0C1B33;--gold:#E8B96A}",
+    "html body #page .fo-lgx>*{position:relative;z-index:1}",
     // THE MARGINS ARE THE COUNTRY. Not wallpaper - furniture: the nation's
     // painted map hangs like a framed plate on one side and the country's own
     // cricketer stands on the other, both clear of the reading column. Below
@@ -36419,82 +36497,191 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     "#fo-sideart .fo-sa-fig{position:fixed;right:0;bottom:0;width:calc(50vw - 344px);display:flex;justify-content:center;align-items:flex-end}",
     "#fo-sideart .fo-sa-fig img{height:min(66vh,690px);width:auto;max-width:98%;object-fit:contain;object-position:bottom;filter:drop-shadow(0 18px 34px rgba(20,28,40,.28));-webkit-mask-image:linear-gradient(180deg,#000 82%,transparent);mask-image:linear-gradient(180deg,#000 82%,transparent)}",
     "@media(max-width:1300px){#fo-sideart .fo-sa-fig img{height:min(54vh,520px)}}}",
-    "html body #page .fo-lt-mast{position:relative;overflow:hidden;background:linear-gradient(150deg,#FFFEFB,#F6F1E4 70%,#F0E9D6) !important;border:1px solid rgba(20,28,40,.1);border-radius:22px;box-shadow:0 22px 50px rgba(30,38,52,.12)}",
-    "html body #page .fo-lt-mast:before{content:'';position:absolute;left:0;right:0;top:0;height:4px;background:var(--nac);z-index:2}",
-    "html body #page .fo-lt-mastin{position:relative;padding:26px 28px 22px}",
-    "html body #page .fo-lt-kick{display:flex;align-items:center;gap:8px;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:#8A3A1B;flex-wrap:wrap}",
-    "html body #page .fo-lt-kick img{width:22px;height:15px;object-fit:cover;border-radius:2px;box-shadow:0 1px 4px rgba(20,28,40,.3)}",
-    "html body #page .fo-lt-kick:after{content:'';display:block;width:100%;border-top:2px solid var(--nac);margin-top:5px}",
-    "html body #page .fo-lt-mast h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:38px;letter-spacing:-.015em;margin:8px 0 8px;color:#141C28;line-height:1.02}",
-    "html body #page .fo-lt-mast p{font:italic 420 13.5px/1.6 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);margin:0;max-width:52ch}",
-    "html body #page .fo-lt-hop{display:flex;align-items:center;gap:9px;margin-top:16px;flex-wrap:wrap}",
-    "html body #page .fo-lt-hop span{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(20,28,40,.5)}",
-    "html body #page .fo-lt-hop select{background:#FFFEFC !important;color:#141C28 !important;border:1px solid rgba(20,28,40,.18);border-radius:999px;padding:7px 12px;font:600 12px/1 Inter,sans-serif;-webkit-appearance:menulist;appearance:menulist}",
-    "html body #page .fo-lt-head{display:grid;grid-template-columns:24px minmax(0,1fr) 28px 28px 28px 52px 34px;gap:8px;align-items:baseline;padding:14px 16px 6px;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.45)}",
-    "html body #page .fo-lt-head em,html body #page .fo-lt-head b{text-align:right;font-style:normal}",
-    "html body #page .fo-lt-list{display:flex;flex-direction:column;gap:6px}",
-    "html body #page .fo-lt-wait{background:#FFFEFC;border:1px dashed rgba(20,28,40,.18);border-radius:13px;padding:18px 16px;font:italic 420 13px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);text-align:center}",
-    "html body #page .fo-lt-row{display:grid;grid-template-columns:24px minmax(0,1fr) 28px 28px 28px 52px 34px;gap:8px;align-items:center;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:13px;padding:10px 16px;text-decoration:none;color:#141C28;box-shadow:0 4px 14px rgba(30,38,52,.06);transition:border-color .15s ease,transform .12s ease}",
-    "html body #page .fo-lt-row:hover{border-color:var(--nac);transform:translateY(-1px);text-decoration:none}",
-    "html body #page .fo-lt-row.mine{border-left:3px solid var(--nac)}",
-    "html body #page .fo-lt>*{position:relative;z-index:1}",
-    "html body #page .fo-lt-row>i{font:700 12px/1 Inter,sans-serif;color:rgba(20,28,40,.45);font-style:normal;font-variant-numeric:tabular-nums}",
-    "html body #page .fo-lt-nm{min-width:0}",
-    "html body #page .fo-lt-nm b{display:block;font:600 13.5px/1.25 Inter,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-    "html body #page .fo-lt-nm b u{text-decoration:none;font:700 8.5px/1 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#B44A22;margin-left:5px;vertical-align:1px}",
-    "html body #page .fo-lt-nm b s{text-decoration:none;font:700 8.5px/1 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:rgba(20,28,40,.38);margin-left:5px;vertical-align:1px}",
-    "html body #page .fo-lt-nm b s.hum{color:#1F6F4A;background:rgba(31,111,74,.1);border-radius:5px;padding:3px 5px}",
-    "html body #page .fo-lt-beads{display:flex;gap:3px;margin-top:4px}",
-    "html body #page .fo-lt-beads i{width:15px;height:15px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font:800 8.5px/1 Inter,sans-serif;font-style:normal}",
-    "html body #page .fo-lt-beads i.w{background:rgba(31,158,114,.14);color:#177A57}",
-    "html body #page .fo-lt-beads i.l{background:rgba(200,60,58,.1);color:#B23230}",
-    "html body #page .fo-lt-beads i.t{background:rgba(20,28,40,.07);color:rgba(20,28,40,.55)}",
-    "html body #page .fo-lt-beads .none{font-size:10px;color:rgba(20,28,40,.35)}",
-    "html body #page .fo-lt-row em{font:500 12.5px/1 Inter,sans-serif;color:rgba(20,28,40,.6);text-align:right;font-style:normal;font-variant-numeric:tabular-nums}",
-    "html body #page .fo-lt-row em.w{color:#177A57;font-weight:700}",
-    "html body #page .fo-lt-row em.nrr{font-size:11.5px}",
-    "html body #page .fo-lt-row b.pts{font-family:Oswald,sans-serif;font-weight:700;font-size:16px;text-align:right;font-variant-numeric:tabular-nums;color:#141C28}",
-    // --- the day's cricket + the record, same daylight almanack ------------
-    "html body #page .fo-lt-sec{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:26px 0 10px;padding:0 4px;flex-wrap:wrap}",
-    "html body #page .fo-lt-sec h2{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:20px;margin:0;color:#141C28}",
-    "html body #page .fo-lt-sec span{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.45)}",
-    "html body #page .fo-lt-note{margin-top:20px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:13px;padding:15px 18px;font:italic 420 13.5px/1.55 'Fraunces',Georgia,serif;color:rgba(20,28,40,.65)}",
-    "html body #page .fo-lt-fxlist{display:flex;flex-direction:column;gap:6px}",
-    "html body #page .fo-lt-fx{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:13px;padding:11px 16px;text-decoration:none;color:#141C28;box-shadow:0 4px 14px rgba(30,38,52,.06)}",
-    "html body #page .fo-lt-fx:hover{border-color:rgba(217,85,42,.5);text-decoration:none}",
-    "html body #page .fo-lt-fx.mine,html body #page .fo-lt-res.mine{border-left:3px solid var(--nac)}",
-    "html body #page .fo-lt-fxt{display:flex;align-items:center;gap:7px;min-width:0;flex-wrap:wrap}",
-    "html body #page .fo-lt-fxt b{font:600 13px/1.3 Inter,sans-serif}",
-    "html body #page .fo-lt-fxt i{font:italic 400 11.5px/1 'Fraunces',Georgia,serif;color:rgba(20,28,40,.4)}",
-    "html body #page .fo-lt-fxst{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.45);white-space:nowrap}",
-    "html body #page .fo-lt-fxst.live{color:#B23230}",
-    "html body #page .fo-lt-fxres{font:italic 420 12px/1.4 'Fraunces',Georgia,serif;color:rgba(20,28,40,.62);text-align:right}",
-    "html body #page .fo-lt-rnd{margin-bottom:12px}",
-    "html body #page .fo-lt-rndh{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.4);padding:0 4px 6px}",
-    "html body #page .fo-lt-res{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#FFFEFC;border:1px solid rgba(20,28,40,.08);border-radius:11px;padding:9px 16px;margin-bottom:5px}",
-    "html body #page .fo-lt-resv{font:italic 420 12px/1.4 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);text-align:right}",
-    "html body #page .fo-lt-atl{position:relative;display:block;margin-top:22px;border-radius:18px;overflow:hidden;min-height:120px;border:1px solid rgba(20,28,40,.16);box-shadow:0 16px 38px rgba(30,38,52,.16);text-decoration:none}",
-    "html body #page .fo-lt-atl img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%}",
-    "html body #page .fo-lt-atlv{position:absolute;inset:0;background:linear-gradient(92deg,rgba(7,22,46,.82) 0%,rgba(7,22,46,.5) 46%,rgba(7,22,46,.08) 100%)}",
-    "html body #page .fo-lt-atlt{position:relative;display:block;padding:20px 22px 18px;max-width:34ch}",
-    "html body #page .fo-lt-atlt i{display:block;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#E8B96A;font-style:normal}",
-    "html body #page .fo-lt-atlt b{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:21px;color:#FFFEFC;margin-top:6px;line-height:1.1}",
-    "html body #page .fo-lt-atlt em{display:block;font:italic 420 12.5px/1.45 'Fraunces',Georgia,serif;color:rgba(255,254,252,.82);margin-top:5px}",
-    "html body #page .fo-lt-atl:hover{border-color:rgba(217,85,42,.55)}",
-    "html body #page .fo-lt-foot{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}",
-    "html body #page .fo-lt-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
-    "html body #page .fo-lt-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5);text-decoration:none}",
-    "@media(max-width:520px){html body #page .fo-lt-mast h1{font-size:30px}",
-    "html body #page .fo-lt-head,html body #page .fo-lt-row{grid-template-columns:20px minmax(0,1fr) 24px 44px 30px}",
-    "html body #page .fo-lt-fx,html body #page .fo-lt-res{flex-direction:column;align-items:flex-start;gap:5px}",
-    "html body #page .fo-lt-fxres,html body #page .fo-lt-resv{text-align:left}",
-    "html body #page .fo-lt-head em:nth-of-type(2),html body #page .fo-lt-row em:nth-of-type(2),html body #page .fo-lt-head em:nth-of-type(3),html body #page .fo-lt-row em:nth-of-type(3){display:none}}"
+
+    // ---- the plate: the country behind the name of its league --------------
+    "html body #page .fo-lgx-plate{position:relative;overflow:hidden;border-radius:20px;background:linear-gradient(135deg,#0C1B33,#173257 62%,#0E2140);box-shadow:0 22px 50px rgba(12,27,51,.26)}",
+    "html body #page .fo-lgx-map{position:absolute;right:-4%;top:-12%;width:62%;height:134%;object-fit:cover;opacity:.26;-webkit-mask-image:linear-gradient(90deg,transparent,#000 55%);mask-image:linear-gradient(90deg,transparent,#000 55%)}",
+    "html body #page .fo-lgx-plate:after{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--gold)}",
+    "html body #page .fo-lgx-plin{position:relative;padding:20px 22px 18px;display:flex;flex-direction:column;gap:15px}",
+    "html body #page .fo-lgx-mark{display:flex;gap:14px;align-items:flex-start}",
+    "html body #page .fo-lgx-pennant{flex:0 0 auto;width:46px;height:46px;border-radius:11px;background:rgba(255,254,252,.07);border:1px solid rgba(232,185,106,.42);display:flex;align-items:center;justify-content:center}",
+    "html body #page .fo-lgx-pennant img{width:30px;height:21px;object-fit:cover;border-radius:2px;box-shadow:0 1px 5px rgba(0,0,0,.45)}",
+    "html body #page .fo-lgx-k{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:var(--gold)}",
+    "html body #page .fo-lgx-titles h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:29px;line-height:1.04;margin:8px 0 5px;color:#FFFEFC;letter-spacing:-.012em}",
+    "html body #page .fo-lgx-titles p{margin:0;font:italic 420 12.5px/1.5 'Fraunces',Georgia,serif;color:rgba(255,254,252,.6)}",
+    "html body #page .fo-lgx-clock{border-top:1px solid rgba(255,254,252,.13);padding-top:13px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}",
+    "html body #page .fo-lgx-rk{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,254,252,.72)}",
+    "html body #page .fo-lgx-pips{display:flex;gap:3px;flex:1 1 210px;flex-wrap:wrap}",
+    "html body #page .fo-lgx-pips i{width:17px;height:17px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font:700 8.5px/1 Inter,sans-serif;font-style:normal;background:rgba(255,254,252,.08);color:rgba(255,254,252,.4)}",
+    "html body #page .fo-lgx-pips i.done{background:rgba(232,185,106,.92);color:#0C1B33}",
+    "html body #page .fo-lgx-pips i.now{background:transparent;box-shadow:inset 0 0 0 1px var(--gold);color:var(--gold)}",
+    "html body #page .fo-lgx-hop{display:flex;align-items:center;gap:8px}",
+    "html body #page .fo-lgx-hop span{font:700 9px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,254,252,.48)}",
+    "html body #page .fo-lgx-hop select{background:rgba(255,254,252,.1) !important;color:#FFFEFC !important;border:1px solid rgba(255,254,252,.22);border-radius:999px;padding:6px 10px;font:600 11.5px/1 Inter,sans-serif;-webkit-appearance:menulist;appearance:menulist}",
+    "html body #page .fo-lgx-hop select option{color:#141C28;background:#FFFEFC}",
+
+    // ---- the four rooms ----------------------------------------------------
+    "html body #page .fo-lgx-tabs{display:flex;gap:2px;margin:15px 0 14px;border-bottom:1px solid rgba(20,28,40,.12);overflow-x:auto;-webkit-overflow-scrolling:touch}",
+    "html body #page .fo-lgx-tabs a{flex:0 0 auto;padding:9px 14px 10px;font:700 10px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.46);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px}",
+    "html body #page .fo-lgx-tabs a.on{color:#141C28;border-bottom-color:var(--nac)}",
+    "html body #page .fo-lgx-tabs a:hover{color:#141C28;text-decoration:none}",
+    "html body #page .fo-lgx-body{display:block}",
+    "html body #page .fo-lgx-rail{margin-top:14px}",
+    "html body #page .fo-lgx-panel{background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:16px;padding:14px 14px 16px;box-shadow:0 8px 24px rgba(30,38,52,.06)}",
+    "html body #page .fo-lgx-ph{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}",
+    "html body #page .fo-lgx-ph h2{margin:0;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:19px;color:#141C28}",
+    "html body #page .fo-lgx-sub{font:700 9px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.42)}",
+    "html body #page .fo-lgx-sub2{margin:16px 0 4px;padding-top:12px;border-top:1px solid rgba(20,28,40,.08);font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(20,28,40,.5)}",
+    "html body #page .fo-lgx-rdnav{display:flex;align-items:center;gap:6px}",
+    "html body #page .fo-lgx-rdnav b{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.6)}",
+    "html body #page .fo-lgx-step{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 9px;border-radius:999px;border:1px solid rgba(20,28,40,.14);background:#FFFEFC;font:700 10.5px/1 Inter,sans-serif;color:rgba(20,28,40,.65);text-decoration:none}",
+    "html body #page .fo-lgx-step:hover{border-color:var(--nac);color:var(--nac);text-decoration:none}",
+    "html body #page .fo-lgx-step.off{opacity:.32}",
+    "html body #page .fo-lgx-dim{margin:0;font:italic 420 12.5px/1.55 'Fraunces',Georgia,serif;color:rgba(20,28,40,.55)}",
+
+    // every club wears a shield
+    "html body #page .fo-lgx-cr{width:22px;height:22px;object-fit:contain;flex:0 0 auto}",
+    "html body #page .fo-lgx-sh{width:22px;height:22px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font:800 8.5px/1 Inter,sans-serif;color:#FFFEFC;background:var(--sc,#1D3F6E);flex:0 0 auto}",
+
+    // ---- the pennant race --------------------------------------------------
+    "html body #page .fo-lgx-cols,html body #page .fo-lgx-row{display:grid;grid-template-columns:22px 26px minmax(0,1fr) 86px 26px 26px 26px 46px 32px;gap:6px;align-items:center}",
+    "html body #page .fo-lgx-cols{padding:4px 8px 7px;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(20,28,40,.4)}",
+    "html body #page .fo-lgx-cols span:nth-child(n+5){text-align:right}",
+    "html body #page .fo-lgx-row{padding:8px;border-radius:10px;text-decoration:none;color:#141C28;border-bottom:1px solid rgba(20,28,40,.07)}",
+    "html body #page .fo-lgx-row:hover{background:rgba(20,28,40,.03);text-decoration:none}",
+    "html body #page .fo-lgx-row.q .rk{color:#177A57}",
+    "html body #page .fo-lgx-row.mine{background:rgba(201,85,50,.06);border-bottom-color:transparent;box-shadow:inset 3px 0 0 var(--nac)}",
+    "html body #page .fo-lgx-row .rk{font:700 12px/1 Oswald,sans-serif;color:rgba(20,28,40,.45);font-variant-numeric:tabular-nums}",
+    "html body #page .fo-lgx-row .cb{display:flex;align-items:center;justify-content:center}",
+    "html body #page .fo-lgx-row .nm{min-width:0}",
+    "html body #page .fo-lgx-row .nm b{display:block;font:600 12.5px/1.25 Inter,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    "html body #page .fo-lgx-row .nm em{display:block;margin-top:3px;font:700 8px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;font-style:normal;color:rgba(20,28,40,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    "html body #page .fo-lgx-row .nm em.you{color:var(--nac)}",
+    "html body #page .fo-lgx-row .nm em.fl{color:#8A6A1F}",
+    "html body #page .fo-lgx-row .nm em.hu{color:#177A57}",
+    "html body #page .fo-lgx-row .fm{display:flex;gap:3px}",
+    "html body #page .fo-lgx-row .fm i{width:14px;height:14px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font:800 8px/1 Inter,sans-serif;font-style:normal}",
+    "html body #page .fo-lgx-row .fm i.w{background:rgba(31,158,114,.16);color:#177A57}",
+    "html body #page .fo-lgx-row .fm i.l{background:rgba(200,60,58,.12);color:#B23230}",
+    "html body #page .fo-lgx-row .fm i.t{background:rgba(20,28,40,.08);color:rgba(20,28,40,.5)}",
+    "html body #page .fo-lgx-row .fm .none{font:600 10px/1 Inter,sans-serif;color:rgba(20,28,40,.3)}",
+    "html body #page .fo-lgx-row .n{text-align:right;font:500 12px/1 Inter,sans-serif;color:rgba(20,28,40,.6);font-variant-numeric:tabular-nums}",
+    "html body #page .fo-lgx-row .n.nrr{font-size:11px}",
+    "html body #page .fo-lgx-row .pt{text-align:right;font:700 15px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums;color:#141C28}",
+
+    // ---- fixtures and results ---------------------------------------------
+    "html body #page .fo-lgx-fx,html body #page .fo-lgx-res{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:7px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:12px;padding:11px 12px;margin-bottom:6px;box-shadow:0 4px 14px rgba(30,38,52,.05)}",
+    "html body #page .fo-lgx-fx.mine,html body #page .fo-lgx-res.mine{border-color:rgba(201,85,50,.42);box-shadow:0 6px 18px rgba(201,85,50,.09)}",
+    "html body #page .fo-lgx-yours{grid-column:1/-1;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--nac)}",
+    "html body #page .fo-lgx-side{display:flex;align-items:center;gap:7px;min-width:0}",
+    "html body #page .fo-lgx-side.a{justify-content:flex-end}",
+    "html body #page .fo-lgx-side b{font:600 12.5px/1.25 Inter,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    "html body #page .fo-lgx-side u{text-decoration:none;font:700 12.5px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums;color:#141C28;flex:0 0 auto}",
+    "html body #page .fo-lgx-vs{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:54px}",
+    "html body #page .fo-lgx-vs i{font:italic 400 11px/1 'Fraunces',Georgia,serif;color:rgba(20,28,40,.38)}",
+    "html body #page .fo-lgx-vs u,html body #page .fo-lgx-vs em{text-decoration:none;font:600 9px/1.25 Inter,sans-serif;color:rgba(20,28,40,.42);font-style:normal;text-align:center}",
+    "html body #page .fo-lgx-verdict{grid-column:1/-1;margin-top:2px;padding-top:7px;border-top:1px dashed rgba(20,28,40,.1);font:italic 420 11.5px/1.45 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6)}",
+    "html body #page .fo-lgx-verdict.w{color:#177A57}",
+    "html body #page .fo-lgx-verdict.l{color:#B23230}",
+
+    // ---- the season's numbers ---------------------------------------------
+    "html body #page .fo-lgx-leads{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:6px}",
+    "html body #page .fo-lgx-lead{background:linear-gradient(150deg,#0C1B33,#16304F);border-radius:12px;padding:13px 14px;color:#FFFEFC}",
+    "html body #page .fo-lgx-lead i{display:block;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-style:normal}",
+    "html body #page .fo-lgx-lead b{display:block;margin-top:7px;font:600 13.5px/1.25 Inter,sans-serif}",
+    "html body #page .fo-lgx-lead u{display:block;margin-top:2px;text-decoration:none;font:500 10.5px/1.3 Inter,sans-serif;color:rgba(255,254,252,.55)}",
+    "html body #page .fo-lgx-big{display:block;margin-top:8px;font:700 26px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums}",
+    "html body #page .fo-lgx-big em{margin-left:5px;font:600 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,254,252,.5);font-style:normal}",
+    "html body #page .fo-lgx-leadsub{display:block;margin-top:4px;font:italic 420 10.5px/1.4 'Fraunces',Georgia,serif;color:rgba(255,254,252,.6)}",
+    "html body #page .fo-lgx-cols5,html body #page .fo-lgx-statrow{display:grid;grid-template-columns:20px minmax(0,1.15fr) minmax(0,1fr) 70px 42px;gap:8px;align-items:center}",
+    "html body #page .fo-lgx-cols5{padding:4px 8px;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.4)}",
+    "html body #page .fo-lgx-cols5 span:nth-child(4),html body #page .fo-lgx-cols5 span:nth-child(5){text-align:right}",
+    "html body #page .fo-lgx-statrow{padding:8px;border-bottom:1px solid rgba(20,28,40,.07)}",
+    "html body #page .fo-lgx-statrow:last-child{border-bottom:0}",
+    "html body #page .fo-lgx-statrow .rk{font:700 11px/1 Oswald,sans-serif;color:rgba(20,28,40,.4)}",
+    "html body #page .fo-lgx-statrow .nm{font:600 12px/1.25 Inter,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    "html body #page .fo-lgx-statrow .cl{font:500 11px/1.25 Inter,sans-serif;color:rgba(20,28,40,.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    "html body #page .fo-lgx-statrow .vv{position:relative;text-align:right;padding-bottom:7px;font:700 12.5px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums}",
+    "html body #page .fo-lgx-statrow .vv u{position:absolute;left:0;bottom:0;height:3px;border-radius:2px;background:var(--nac);opacity:.5;text-decoration:none;display:block}",
+    "html body #page .fo-lgx-statrow .sr{text-align:right;font:500 11.5px/1 Inter,sans-serif;color:rgba(20,28,40,.55);font-variant-numeric:tabular-nums}",
+
+    // ---- the rail ----------------------------------------------------------
+    "html body #page .fo-lgx-card{background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:14px;padding:14px 15px;margin-bottom:12px;box-shadow:0 5px 16px rgba(30,38,52,.05)}",
+    "html body #page .fo-lgx-card h3{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 10px;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(20,28,40,.5)}",
+    "html body #page .fo-lgx-card h3 span{font:600 9px/1 Inter,sans-serif;letter-spacing:.06em;color:rgba(20,28,40,.4)}",
+    "html body #page .fo-lgx-card p{margin:0;font:italic 420 12.5px/1.55 'Fraunces',Georgia,serif;color:rgba(20,28,40,.62)}",
+    "html body #page .fo-lgx-card.note{border-left:3px solid var(--nac)}",
+    "html body #page .fo-lgx-card.dark{background:linear-gradient(150deg,#0C1B33,#16304F);border-color:rgba(12,27,51,.35);color:#FFFEFC;box-shadow:0 10px 26px rgba(12,27,51,.2)}",
+    "html body #page .fo-lgx-card.dark h3{color:var(--gold)}",
+    "html body #page .fo-lgx-card.dark h3 span{color:rgba(255,254,252,.5)}",
+    "html body #page .fo-lgx-card.dark p{color:rgba(255,254,252,.72)}",
+    "html body #page .fo-lgx-run{display:flex;align-items:center;gap:8px;padding:7px 0;text-decoration:none;color:#FFFEFC;border-bottom:1px solid rgba(255,254,252,.08)}",
+    "html body #page .fo-lgx-run:last-child{border-bottom:0}",
+    "html body #page .fo-lgx-run:hover{text-decoration:none}",
+    "html body #page .fo-lgx-run i{width:22px;font:700 9px/1 Oswald,sans-serif;color:var(--gold);font-style:normal}",
+    "html body #page .fo-lgx-run b{flex:1;min-width:0;font:600 12px/1.25 Inter,sans-serif;color:#FFFEFC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    "html body #page .fo-lgx-run u{flex:0 0 auto;width:18px;height:18px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font:800 9px/1 Inter,sans-serif;background:rgba(255,254,252,.12);color:rgba(255,254,252,.8)}",
+    "html body #page .fo-lgx-run u.h{background:rgba(232,185,106,.9);color:#0C1B33}",
+    "html body #page .fo-lgx-glance{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}",
+    "html body #page .fo-lgx-glance div{padding:5px 2px}",
+    "html body #page .fo-lgx-glance b{display:block;font:700 19px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums;color:#141C28}",
+    "html body #page .fo-lgx-glance i{display:block;margin-top:5px;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.45);font-style:normal}",
+    "html body #page .fo-lgx-mor{display:flex;align-items:center;justify-content:center;gap:10px;font:700 22px/1 Oswald,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums}",
+    "html body #page .fo-lgx-mor i{font:400 14px/1 Inter,sans-serif;color:rgba(255,254,252,.4);font-style:normal}",
+    "html body #page .fo-lgx-card.dark .fo-lgx-mor+p{margin-top:8px;text-align:center}",
+    "html body #page .fo-lgx-morf{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font:600 10px/1.3 Inter,sans-serif;color:rgba(255,254,252,.58)}",
+    "html body #page .fo-lgx-morf span:last-child{text-align:right}",
+    "html body #page .fo-lgx-mile{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,254,252,.08)}",
+    "html body #page .fo-lgx-mile:last-child{border-bottom:0}",
+    "html body #page .fo-lgx-mile i{font:500 11px/1 Inter,sans-serif;color:rgba(255,254,252,.6);font-style:normal}",
+    "html body #page .fo-lgx-mile b{font:700 13px/1 Oswald,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums}",
+    "html body #page .fo-lgx-more{display:inline-block;margin-top:9px;font:600 11.5px/1 Inter,sans-serif;color:var(--nac);text-decoration:none}",
+    "html body #page .fo-lgx-nx{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid rgba(20,28,40,.07)}",
+    "html body #page .fo-lgx-nx:last-child{border-bottom:0}",
+    "html body #page .fo-lgx-nx span{display:flex;align-items:center;gap:6px;min-width:0}",
+    "html body #page .fo-lgx-nx span.a{justify-content:flex-end}",
+    "html body #page .fo-lgx-nx b{font:600 11.5px/1.2 Inter,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    "html body #page .fo-lgx-nx i{font:italic 400 10px/1 'Fraunces',Georgia,serif;color:rgba(20,28,40,.35)}",
+    "html body #page .fo-lgx-nx u{grid-column:1/-1;text-decoration:none;font:700 8px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--nac)}",
+    "html body #page .fo-lgx-nx.mine{background:rgba(201,85,50,.06);border-radius:9px;padding:7px 7px}",
+    "html body #page .fo-lgx-chase{display:grid;grid-template-columns:minmax(0,92px) minmax(0,1fr) 26px;align-items:center;gap:8px;padding:5px 0}",
+    "html body #page .fo-lgx-chase span{font:600 11px/1.2 Inter,sans-serif;color:rgba(255,254,252,.85);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    "html body #page .fo-lgx-chase u{display:block;height:7px;border-radius:999px;background:rgba(255,254,252,.12);overflow:hidden;text-decoration:none}",
+    "html body #page .fo-lgx-chase u i{display:block;height:100%;background:var(--gold);font-style:normal}",
+    "html body #page .fo-lgx-chase b{text-align:right;font:700 12px/1 Oswald,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums}",
+
+    "html body #page .fo-lgx-foot{display:flex;gap:8px;justify-content:space-between;margin-top:16px;flex-wrap:wrap}",
+    "html body #page .fo-lgx-foot a{font:600 11.5px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 15px;text-decoration:none}",
+    "html body #page .fo-lgx-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5);text-decoration:none}",
+
+    // ---- the phone: the same league, one column ---------------------------
+    "@media(max-width:560px){html body #page .fo-lgx-titles h1{font-size:25px}",
+    "html body #page .fo-lgx{padding:0 9px}",
+    "html body #page .fo-lgx-plin{padding:17px 15px 15px}",
+    "html body #page .fo-lgx-panel{padding:12px 10px 14px}",
+    "html body #page .fo-lgx-cols{padding:4px 5px 7px}",
+    "html body #page .fo-lgx-row{padding:8px 5px}",
+    "html body #page .fo-lgx-row .fm{gap:2px}",
+    "html body #page .fo-lgx-row .fm i{width:12px;height:12px;border-radius:3px;font-size:7.5px}",
+    "html body #page .fo-lgx-cols,html body #page .fo-lgx-row{grid-template-columns:20px 24px minmax(0,1fr) 66px 24px 24px 32px}",
+    "html body #page .fo-lgx-cols span:nth-child(7),html body #page .fo-lgx-cols span:nth-child(8),html body #page .fo-lgx-row .n:nth-child(7),html body #page .fo-lgx-row .n.nrr{display:none}",
+    "html body #page .fo-lgx-cols5,html body #page .fo-lgx-statrow{grid-template-columns:18px minmax(0,1fr) 62px 40px}",
+    "html body #page .fo-lgx-cols5 span:nth-child(3),html body #page .fo-lgx-statrow .cl{display:none}",
+    "html body #page .fo-lgx-vs{min-width:46px}",
+    "html body #page .fo-lgx-foot a{flex:1 1 auto;text-align:center}}",
+
+    // ---- the desk: the rail comes alongside -------------------------------
+    "@media(min-width:1440px){html body #page .fo-lgx{max-width:1000px}",
+    "html body #page .fo-lgx .fo-lgx-body{display:grid;grid-template-columns:minmax(0,1fr) 292px;gap:18px;align-items:start}",
+    "html body #page .fo-lgx .fo-lgx-rail{margin-top:0}",
+    "html body.fo-lgx-page #fo-sideart .fo-sa-map,html body.fo-lgx-page #fo-sideart .fo-sa-fig{width:calc(50vw - 524px)}}"
   ].join("\n");
 
   function mount() {
     try {
       var s = document.getElementById("fo-lt-css");
       if (!s) { s = document.createElement("style"); s.id = "fo-lt-css"; s.textContent = CSS; }
+      else s.textContent = CSS;
       document.body.appendChild(s);
     } catch (e) {}
   }
@@ -36502,7 +36689,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   else setTimeout(mount, 0);
 
   window.foRenderLeagueTablePage = foRenderLeagueTablePage;
-  // #/nation is the same almanack through its second door - any nation's league
+  // #/nation is the same league through its second door - anybody else's season
   window.foRenderNation = foRenderLeagueTablePage;
   window.__foLeagueTable = 1;
 })();
@@ -38261,7 +38448,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       try { var c3 = localStorage.getItem("fo_world_nm_" + rid); if (c3) { NM_BODY[rid] = JSON.parse(c3); return NM_BODY[rid]; } } catch (e) {}
       return null;
     },
-    // slot -> manager display name, for the clubs a human has claimed
+    // slot -> manager display name for claimed clubs, and "g"+slot -> ground
     mgr: function (rid) {
       if (NM_MGR[rid]) return NM_MGR[rid];
       try { var c4 = localStorage.getItem("fo_world_mgr_" + rid); if (c4) { NM_MGR[rid] = JSON.parse(c4); return NM_MGR[rid]; } } catch (e) {}
@@ -38273,12 +38460,16 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         if (NM_AT[rid] && Date.now() - NM_AT[rid] < 60000) return;
         NM_BUSY[rid] = 1;
         var done = function () { NM_BUSY[rid] = 0; NM_AT[rid] = Date.now(); };
-        fetch(SB_URL + "/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(rid) + "&select=slot,name,manager", { headers: { apikey: SB_ANON } })
+        fetch(SB_URL + "/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(rid) + "&select=slot,name,manager,ground", { headers: { apikey: SB_ANON } })
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (rows) {
             if (rows && rows.length) {
               var m = {}, g = {};
-              rows.forEach(function (r2) { m[r2.slot] = r2.name; if (r2.manager) g[r2.slot] = r2.manager; });
+              rows.forEach(function (r2) {
+                m[r2.slot] = r2.name;
+                if (r2.manager) g[r2.slot] = r2.manager;
+                if (r2.ground) g["g" + r2.slot] = r2.ground;
+              });
               var changed = JSON.stringify(m) !== JSON.stringify(NM_BODY[rid] || null) ||
                             JSON.stringify(g) !== JSON.stringify(NM_MGR[rid] || null);
               NM_BODY[rid] = m; NM_MGR[rid] = g;
@@ -41479,10 +41670,21 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       ".fo-cp-map{max-width:62%;opacity:.4}",
       ".fo-cp-plin{padding:22px 14px 34px}",
       ".fo-cp-title{gap:11px}.fo-cp-crest{width:56px;height:56px}.fo-cp-shield{width:44px;height:54px}",
-      ".fo-cp-ticket{margin:-16px 10px 0;padding:12px 8px;gap:2px;justify-content:space-between}",
-      ".fo-cp-m,.fo-cp-c{padding:2px 5px;gap:6px}.fo-cp-m .ic,.fo-cp-c .ic{font-size:16px}",
-      ".fo-cp-m .bar{width:52px}",
-      ".fo-cp-m .mv b{font-size:19px}.fo-cp-c .mv b{font-size:16px}.fo-cp-div{display:none}",
+      // THE TICKET ON A PHONE: two rows of three, every cell the same width,
+      // labels on one baseline and figures on the next - a scoreboard, not a
+      // squeezed line of odds and ends
+      ".fo-cp-ticket{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:-16px 10px 0;padding:0;border-radius:8px;clip-path:none;overflow:hidden}",
+      ".fo-cp-m,.fo-cp-c{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:5px;padding:12px 4px 11px;border-right:1px solid rgba(12,27,51,.09);border-bottom:1px solid rgba(12,27,51,.09)}",
+      ".fo-cp-m:nth-child(3n),.fo-cp-c:nth-child(3n){border-right:0}",
+      ".fo-cp-c{border-bottom:0}",
+      ".fo-cp-m .ic{width:22px;height:24px}",
+      ".fo-cp-m .mv,.fo-cp-c .mv{width:100%;text-align:center}",
+      ".fo-cp-m .mv i,.fo-cp-c .mv i{font-size:8.5px;letter-spacing:.14em}",
+      ".fo-cp-m .mv b,.fo-cp-c .mv b{font-size:23px;line-height:1.05;margin-top:3px}",
+      ".fo-cp-m .bar{width:64px;margin:6px auto 0}",
+      // the three facts sit under the three strengths, on their own baseline
+      ".fo-cp-c .mv{padding-top:26px}",
+      ".fo-cp-div{display:none}",
       "html body #page .fo-cp-tabs a{flex:1;text-align:center;padding:12px 4px;letter-spacing:.08em}",
       ".fo-cp-panel{padding:15px 12px 20px;border-radius:0 10px 10px 10px}",
       ".fo-cp-ph h2{font-size:20px}.fo-cp-tools{margin-left:0;width:100%}",

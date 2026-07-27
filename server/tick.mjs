@@ -91,7 +91,16 @@ export async function computeLeague(pool, country, seasonNo, now) {
     if (r.winner === null) { T[m.home_slot].t++; T[m.away_slot].t++; T[m.home_slot].pts++; T[m.away_slot].pts++; }
     else { const ws = slotOf(r.winner); if (ws != null) { T[ws].w++; T[ws].pts += 2; T[ws === m.home_slot ? m.away_slot : m.home_slot].l++; } }
     const wSlot = r.winner === null ? null : slotOf(r.winner);
+    // the card as a scoreboard reads it: each side's runs, wickets and overs,
+    // so a results page can print 267/8 (49.5) rather than only a sentence
+    const sideOf = s2 => {
+      const inn = [i1, i2].find(x => x && slotOf(x.batTeam) === s2);
+      if (!inn) return null;
+      const ov = inn.wkts >= 10 ? null : Math.floor(inn.legal / 6) + '.' + (inn.legal % 6);
+      return { r: inn.runs, w: inn.wkts, ov: inn.wkts >= 10 ? Math.floor(inn.legal / 6) + '.' + (inn.legal % 6) : ov };
+    };
     results.push({ id: m.id, round: m.round, home: bySlot[m.home_slot].name, away: bySlot[m.away_slot].name,
+      hs: sideOf(m.home_slot), as: sideOf(m.away_slot),
       winner: wSlot == null ? r.winner : bySlot[wSlot].name, text: r.text, seed: String(m.seed), engineVersion: m.engine_version });
   }
   const table = Object.values(T).map(x => ({ ...x, nrr: x.of && x.oa ? +(x.rf / x.of - x.ra / x.oa).toFixed(3) : 0 }))
