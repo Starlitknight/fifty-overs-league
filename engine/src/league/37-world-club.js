@@ -125,6 +125,42 @@
   }
   window.__foAdoptWorldSquad = adoptWorldSquad;
 
+  // ---- THE SHEET YOU SET IS THE SHEET THE UMPIRE PLAYS -----------------------
+  // The orders page is the manager's voice. Saving it files that exact sheet
+  // with the World Service for every round still to come this season, so the
+  // resolver plays HIS plan - the order, the instructions, the spells, the
+  // fields, the toss - whether or not he is awake at his nation's hour. Only
+  // the parts the engine reads are sent; the page's own scratch state stays
+  // on the device.
+  function trimOrders(o) {
+    if (!o) return null;
+    var out = {};
+    ["xi", "batOrder", "captain", "keeper", "tossCall", "tossDecision",
+      "phaseIntent", "fieldPlan", "spells", "manBat", "manBowl"].forEach(function (k) {
+      if (o[k] != null) out[k] = o[k];
+    });
+    return out;
+  }
+  window.__foWorldPushOrders = function (orders, cb) {
+    try {
+      if (!jwt() || !window.__foWorldClaim) return false;
+      var body = trimOrders(orders);
+      if (!body || !(body.batOrder || body.xi)) return false;
+      var from = 1;
+      try {
+        var cal = window.__foWT && window.__foWT.serverCal ? window.__foWT.serverCal(Date.now()) : null;
+        if (cal && cal.round >= 1) from = Math.min(18, cal.round);
+      } catch (eC) {}
+      var chain = Promise.resolve(), sent = 0;
+      for (var r = from; r <= 18; r++) {
+        (function (r2) { chain = chain.then(function () { sent++; return rpc("world_submit_orders", { p_round: r2, p_orders: body }); }); })(r);
+      }
+      chain.then(function () { try { if (cb) cb(null, sent); } catch (e) {} })
+        .catch(function (e) { try { if (cb) cb(e); } catch (e2) {} });
+      return true;
+    } catch (e) { return false; }
+  };
+
   // the nets hand their plan to the World Service, debounced - a manager
   // flicking through programmes should not write once per flick
   var TR_T = null, TR_LAST = "";

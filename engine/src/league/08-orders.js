@@ -39,6 +39,66 @@
     foOrdPool(true).forEach(function (p, i) { map[p.name] = FO_ORD_COLS[i % FO_ORD_COLS.length]; });
     return map;
   }
+  // ---- WHAT EACH MAN IS TOLD -------------------------------------------------
+  // The phase plan is the innings; a man's own instruction is his licence
+  // within it. Defend/Normal/Attack/Launch shift the plan by -1/0/+1/+2 when
+  // he is on strike, and the engine reads it from the saved sheet - so the
+  // umpire plays your instruction whether you watch or not.
+  var MB_W = [["-1", "D", "Defend", "d"], ["0", "N", "Normal", ""], ["1", "A", "Attack", "a"], ["2", "L", "Launch", "l"]];
+  function foMbVal(nm) {
+    var m = App.orders && App.orders.manBat; if (!m) return 0;
+    var v = +m[nm]; return isFinite(v) ? Math.max(-1, Math.min(2, v)) : 0;
+  }
+  function foMbRow(nm) { var v = foMbVal(nm); return MB_W.filter(function (x) { return +x[0] === v; })[0] || MB_W[1]; }
+  function foMbLetter(nm) { return foMbRow(nm)[1]; }
+  function foMbCls(nm) { var c = foMbRow(nm)[3]; return c ? "mb-" + c : ""; }
+  function foMbTitle(nm) {
+    var w = foMbRow(nm)[2];
+    return w + " - tap to change how " + foOrdSurname(nm) + " bats within the plan";
+  }
+  function foMbCycle(nm) {
+    if (!App.orders.manBat) App.orders.manBat = {};
+    var v = foMbVal(nm), ix = 0;
+    MB_W.forEach(function (x, i) { if (+x[0] === v) ix = i; });
+    var nv = +MB_W[(ix + 1) % MB_W.length][0];
+    if (nv === 0) delete App.orders.manBat[nm]; else App.orders.manBat[nm] = nv;
+  }
+  // a bowler's own field: how HE is set when he has the ball
+  var MF_W = [["", "Plan"], ["att", "Attack"], ["bal", "Balanced"], ["def", "Defend"]];
+  function foMfVal(nm) {
+    var m = App.orders && App.orders.manBowl; var v = m ? m[nm] : "";
+    return (v === "att" || v === "bal" || v === "def") ? v : "";
+  }
+  function foMfSet(nm, v) {
+    if (!App.orders.manBowl) App.orders.manBowl = {};
+    if (!v) delete App.orders.manBowl[nm]; else App.orders.manBowl[nm] = v;
+  }
+  function foMfShort(nm) {
+    var v = foMfVal(nm);
+    return v === "att" ? "Att" : v === "def" ? "Def" : v === "bal" ? "Bal" : "Plan";
+  }
+  function foMfTitle(nm) {
+    var v = foMfVal(nm);
+    return (v === "att" ? "Attacking field" : v === "def" ? "Defensive field" : v === "bal" ? "Balanced field" : "Follows the phase plan") +
+      " - tap to change how " + foOrdSurname(nm) + " is set";
+  }
+  function foMfCycle(nm) {
+    var order = ["", "att", "bal", "def"], v = foMfVal(nm);
+    foMfSet(nm, order[(order.indexOf(v) + 1) % order.length]);
+  }
+  function foOrdFieldRows() {
+    var tot = foOrdTotals();
+    var pool = foOrdPool(true).filter(function (p) { return (tot[p.name] || 0) > 0; });
+    if (!pool.length) return "";
+    return "<div class='fo-og-fh'>How they are set</div><div class='fo-og-fields'>" + pool.map(function (p) {
+      var cur = foMfVal(p.name);
+      return "<div class='fo-og-frow'><b>" + E(foOrdSurname(p.name)) + "</b><span>" +
+        MF_W.map(function (x) {
+          return "<button class='fo-og-f" + (cur === x[0] ? " on" : "") + "' data-fo-mf='" + E(p.name) + "' data-fo-mfv='" + x[0] + "'>" + x[1] + "</button>";
+        }).join("") + "</span></div>";
+    }).join("") + "</div>";
+  }
+
   function foOrdBatRows() {
     var t = userTeam(), xi = foOrdXI();
     var byName = {}; xi.forEach(function (p) { byName[p.name] = p; });
@@ -54,6 +114,7 @@
       return "<div class='fo-ob-row'>" +
         "<span class='fo-ob-n" + (i < 3 ? " top" : "") + "'>" + (i + 1) + "</span>" +
         "<div class='fo-ob-who'><b>" + E(nm) + (p.keeper ? " <s title='wicketkeeper'>&dagger;</s>" : "") + tals + "</b><span class='small'>" + E(prole(p.role || "")) + " · bat <b style='color:" + bc + "'>" + bv + "</b>" + (p.bowlType ? " · " + E(shortBT(p)) : "") + "</span></div>" +
+        "<button class='fo-ob-chip fo-ob-mb " + foMbCls(nm) + "' data-fo-mb='" + E(nm) + "' title='" + E(foMbTitle(nm)) + "'>" + foMbLetter(nm) + "</button>" +
         "<button class='fo-ob-chip" + (isC ? " on" : "") + "' data-fo-capt='" + E(nm) + "' title='captain'>C</button>" +
         "<button class='fo-ob-chip" + (isW ? " on" : "") + "' data-fo-wk='" + E(nm) + "' title='wicketkeeper'>WK</button>" +
         "<span class='fo-ob-mv'><button data-fo-up='" + i + "' " + (i === 0 ? "disabled" : "") + ">&#9650;</button><button data-fo-dn='" + i + "' " + (i === 10 ? "disabled" : "") + ">&#9660;</button><button class='fo-ob-swap' data-fo-swap='" + E(nm) + "' title='swap with a bench player'>&#8644;</button></span>" +
@@ -96,7 +157,7 @@
     }).join("");
     var covered = v.covered || 0;
     var bad = (v.warns || []).filter(function (w) { return /double-booked|consecutive|max 10|not a/.test(w); });
-    return "<div class='fo-og-pal'>" + chips + "</div>" + rows +
+    return "<div class='fo-og-pal'>" + chips + "</div>" + rows + foOrdFieldRows() +
       "<div class='fo-os-tot'>" + tchips + "<span class='fo-os-cov'>" + covered + "/50 overs planned" + (covered < 50 ? " · the AI captain covers the rest" : "") + "</span></div>" +
       (bad.length ? "<div class='fo-os-warn'>&#9888; " + bad.map(E).join(" · ") + "</div>" : "");
   }
@@ -381,6 +442,7 @@
         // everyone eligible - one tap moves the armband
         var isC = App.orders.captain === nm, isK = App.orders.keeper === nm;
         var tag = dim ? "" :
+          "<i class='bdg bdg-mb " + foMbCls(nm) + "' data-fo-mb='" + E(nm) + "' title='" + E(foMbTitle(nm)) + "'>" + foMbLetter(nm) + "</i>" +
           "<i class='bdg" + (isC ? " on" : "") + "' data-fo-mkc='" + E(nm) + "' title='" + (isC ? "Captain" : "Make captain") + "'>C</i>" +
           (p.keeper ? "<i class='bdg" + (isK ? " on" : "") + "' data-fo-mkk='" + E(nm) + "' title='" + (isK ? "Wicket-keeper" : "Give him the gloves") + "'>WK</i>" : "");
         var role = p.bowlType && p.bowlType !== "none" ? (/spin/i.test(p.bowlTypeFull || p.bowlType) ? "spin" : "pace") : (p.keeper ? "wk" : "bat");
@@ -396,7 +458,7 @@
       var xiNames = bo.slice(0, 11);
       var benchNames = ((t && t.players) || []).map(function (p9) { return p9.name; }).filter(function (nm) { return xiNames.indexOf(nm) < 0; });
       // vertical, editable: the XI as a draggable list, the bench beside it
-      var xiCol = "<div class='pv-xi'><div class='fo-ord-vzh' style='margin-top:2px'>Batting order <span>&middot; drag to reorder</span></div><div class='fo-ord-xis' id='fo-ord-xi-list'>" + xiNames.map(function (nm, i) { return chip(nm, i, false); }).join("") + "</div></div>";
+      var xiCol = "<div class='pv-xi'><div class='fo-ord-vzh' style='margin-top:2px'>Batting order <span>&middot; drag to reorder &middot; tap a man's letter to tell him how to bat: N normal, A attack, L launch, D defend</span></div><div class='fo-ord-xis' id='fo-ord-xi-list'>" + xiNames.map(function (nm, i) { return chip(nm, i, false); }).join("") + "</div></div>";
       var benchCol = "<div class='pv-bench'><div class='fo-ord-vzh' style='margin-top:2px'>Bench</div><div class='fo-ord-xis' id='fo-ord-bench-list'>" + benchNames.map(function (nm) { return chip(nm, null, true); }).join("") + "</div></div>";
       // one lane per bowling option (even the unused sixth): filled blocks
       // are his overs, and every cell is a BUTTON - tap an empty over to
@@ -416,7 +478,9 @@
           var cellsL = "";
           for (var oL = 1; oL <= 50; oL++)
             cellsL += "<i class='" + (g[oL] === nmL ? "f" : "") + (oL <= 10 ? " pp" : oL >= 41 ? " dth" : "") + "' data-lo='" + oL + "' data-ln='" + E(nmL) + "' title='Over " + oL + " &rarr; " + E(dispNm(nmL)) + "'></i>";
-          return "<div class='fo-ord-lane'><span class='ln'>" + E(dispNm(nmL)) + "</span><span class='lt'>" + cellsL + "</span><u>" + (tot[nmL] || 0) + "</u></div>";
+          return "<div class='fo-ord-lane'><span class='ln'>" + E(dispNm(nmL)) +
+            "<i class='fbd" + (foMfVal(nmL) ? " on" : "") + "' data-fo-mfc='" + E(nmL) + "' title='" + E(foMfTitle(nmL)) + "'>" + foMfShort(nmL) + "</i>" +
+            "</span><span class='lt'>" + cellsL + "</span><u>" + (tot[nmL] || 0) + "</u></div>";
         }).join("") +
         "<div class='fo-ord-lane lax'><span class='ln'></span><span class='lt'><em style='flex:10'>Powerplay</em><em style='flex:30'>Middle</em><em style='flex:10'>Death</em></span><u></u></div></div>";
       // each bowler as a small card: type, overs, bowling stars (ranked
@@ -449,7 +513,7 @@
       var colorIx = {}; bowlNames.forEach(function (n9, i9) { colorIx[n9] = i9 % 6; });
       var inits = function (nm9) { var a9 = String(nm9).split(" "); return (a9[0].charAt(0) + (a9.length > 1 ? a9[a9.length - 1].charAt(0) : "")).toUpperCase(); };
       var mgrid = "<div class='fo-ord-mgrid'>" +
-        "<div class='mg-hint'>Pick a bowler, then tap overs to hand them to him &middot; tap his over again to clear it. Top row is the powerplay, bottom row the death.</div>" +
+        "<div class='mg-hint'>Pick a bowler, then tap overs to hand them to him &middot; tap his over again to clear it. Top row is the powerplay, bottom row the death. Tap a bowler's badge on his lane above to set his field: attacking, balanced or defensive.</div>" +
         "<div class='mg-chips'>" + bowlNames.map(function (n9) {
           return "<button type='button' class='mgb mgb-c" + colorIx[n9] + (n9 === armNm ? " on" : "") + "' data-fo-arm='" + E(n9) + "'><i></i>" + E(dispNm(n9)) + "<u>" + (tot[n9] || 0) + "</u></button>";
         }).join("") + "</div>" +
@@ -586,7 +650,7 @@
     page.innerHTML = cond +
       "<div class='fo-ord-cols'>" +
       "<div class='panel fo-keep'><h4>Batting order</h4><div class='pad'>" +
-      "<div class='small' style='margin-bottom:6px'>Arrows move a batter · tap <b>C</b> for captain, <b>WK</b> for the gloves.</div>" +
+      "<div class='small' style='margin-bottom:6px'>Arrows move a batter · tap <b>C</b> for captain, <b>WK</b> for the gloves · tap the letter to tell a man how to bat: <b>N</b>ormal, <b>A</b>ttack, <b>L</b>aunch, <b>D</b>efend.</div>" +
       "<div id='fo-bat-rows'>" + foOrdBatRows() + "</div>" + tac + "</div></div>" +
       "<div class='panel fo-keep'><h4>Bowling plan</h4><div class='pad'>" +
       "<div class='fo-og-hint'>Pick a bowler &middot; tap overs to paint his spells &middot; tap again to clear. Ten overs each, never two in a row.</div>" +
@@ -614,6 +678,8 @@
           if ((el = q("[data-fo-up]"))) { var i1 = +el.getAttribute("data-fo-up"); var a1 = App.orders.batOrder; var tmp1 = a1[i1 - 1]; a1[i1 - 1] = a1[i1]; a1[i1] = tmp1; foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-dn]"))) { var i2 = +el.getAttribute("data-fo-dn"); var a2 = App.orders.batOrder; var tmp2 = a2[i2 + 1]; a2[i2 + 1] = a2[i2]; a2[i2] = tmp2; foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-swap]"))) { foOrdBenchSheet(el.getAttribute("data-fo-swap")); return; }
+          if ((el = q("[data-fo-mb]"))) { foMbCycle(el.getAttribute("data-fo-mb")); foOrdRepaint("bat"); return; }
+          if ((el = q("[data-fo-mf]"))) { foMfSet(el.getAttribute("data-fo-mf"), el.getAttribute("data-fo-mfv") || ""); foOrdRepaint("bowl"); return; }
           if ((el = q("[data-fo-capt]"))) { App.orders.captain = el.getAttribute("data-fo-capt"); foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-wk]"))) { App.orders.keeper = el.getAttribute("data-fo-wk"); foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-clearall]"))) {
@@ -673,13 +739,24 @@
             } catch (eLk) {}
             App.orders.saved = true;
             App.defaults = JSON.parse(JSON.stringify(App.orders));
+            // file it with the World Service too: this sheet IS the club's
+            // plan for every round still to play, played by the umpire at the
+            // nation's hour whether the manager is there or not
+            var filed = false;
+            try {
+              filed = !!(window.__foWorldPushOrders && window.__foWorldPushOrders(App.orders, function (err) {
+                try { if (err) toast("Saved here, but the world did not take it: " + String(err.message || err).slice(0, 70)); } catch (e9) {}
+              }));
+            } catch (eW9) {}
             if (App.pending) { location.hash = "#/match"; if (typeof window.route === "function") window.route(); }
-            else { toast("Orders saved."); }
+            else { toast(filed ? "Orders saved \u00b7 the umpire has your sheet." : "Orders saved."); }
             return;
           }
           // the click fired by a just-finished drag must not read as a tap -
           // the flag self-expires so it can never swallow a LATER real click
           if (window.__foOrdDragged) return;
+          if ((el = q("[data-fo-mb]"))) { foMbCycle(el.getAttribute("data-fo-mb")); foOrdersUI(); return; }
+          if ((el = q("[data-fo-mfc]"))) { foMfCycle(el.getAttribute("data-fo-mfc")); foOrdersUI(); return; }
           if ((el = q("[data-fo-mkc]"))) { App.orders.captain = el.getAttribute("data-fo-mkc"); foOrdersUI(); return; }
           if ((el = q("[data-fo-mkk]"))) { App.orders.keeper = el.getAttribute("data-fo-mkk"); foOrdersUI(); return; }
           if ((el = q("[data-fo-toss]"))) {
@@ -960,6 +1037,14 @@
       ".fo-ord-xis .xc u{width:17px;height:17px;background:#EEF2F7;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:9px;font-weight:800;color:#41577a;flex:0 0 auto}" +
       ".fo-ord-xis .xc i{font-style:normal;font-size:8px;background:#0E233F;color:#FFFEFC;border-radius:4px;padding:1px 4px;font-weight:800;flex:0 0 auto}" +
       ".fo-ord-xis .xc i.bdg{background:transparent;color:#c3c9d2;border:1px solid rgba(28,36,51,.16);cursor:pointer}" +
+      // the instruction badge: N is quiet, the rest carry the colour of the risk
+      ".fo-ord-xis .xc i.bdg-mb{color:#8a93a3}" +
+      ".fo-ord-xis .xc i.bdg-mb.mb-d{background:#EAF1F8;color:#1D4E89;border-color:rgba(29,78,137,.4)}" +
+      ".fo-ord-xis .xc i.bdg-mb.mb-a{background:#FDF1E4;color:#B0631A;border-color:rgba(176,99,26,.45)}" +
+      ".fo-ord-xis .xc i.bdg-mb.mb-l{background:#FBE9E6;color:#B23230;border-color:rgba(178,50,48,.5)}" +
+      // and a bowler's field, on his own lane
+      ".fo-ord-lane .ln i.fbd{display:inline-block;margin-left:5px;font-style:normal;font-size:8.5px;font-weight:700;letter-spacing:.04em;color:#8a93a3;background:transparent;border:1px solid rgba(28,36,51,.16);border-radius:5px;padding:1px 4px;cursor:pointer;vertical-align:1px}" +
+      ".fo-ord-lane .ln i.fbd.on{color:#FFFEFC;background:#0E233F;border-color:#0E233F}" +
       ".fo-ord-xis .xc i.bdg:hover{border-color:#B04A2C;color:#B04A2C}" +
       ".fo-ord-xis .xc i.bdg.on{background:#0E233F;color:#FFFEFC;border-color:#0E233F}" +
       ".fo-ord-xis .xc .r2{display:flex;align-items:center;gap:6px;width:100%}" +
@@ -988,7 +1073,7 @@
       "@media(max-width:480px){.fo-ord-ph3{grid-template-columns:repeat(3,minmax(0,1fr))}.fo-ord-ph3 span{font-size:11px}}" +
       ".fo-ord-lanes{display:flex;flex-direction:column;gap:3px;background:#FBFAF7;border:1px solid rgba(28,36,51,.08);border-radius:10px;padding:9px 10px}" +
       ".fo-ord-lane{display:flex;align-items:center;gap:8px}" +
-      ".fo-ord-lane .ln{flex:0 0 78px;font-size:10.5px;font-weight:800;color:#243244;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}" +
+      ".fo-ord-lane .ln{flex:0 0 116px;font-size:10.5px;font-weight:800;color:#243244;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}" +
       ".fo-ord-lane .lt{flex:1;display:flex;gap:1px;height:13px;min-width:0}" +
       ".fo-ord-lane .lt i{flex:1;min-width:0;background:rgba(28,36,51,.05);border-radius:1px;cursor:pointer}" +
       ".fo-ord-lane .lt i:hover{outline:1px solid #B04A2C}" +
@@ -1006,7 +1091,7 @@
       "html body #page .fo-ord-hero .h-v{font-family:Oswald,sans-serif;font-size:13px;color:#B04A2C !important;font-weight:600;text-transform:uppercase;letter-spacing:2px}" +
       "html body #page .fo-ord-herosub,html body.ftpskin #page .fo-ord-herosub{text-align:center;font-family:Oswald,sans-serif;letter-spacing:2px;text-transform:uppercase;font-size:13px;font-weight:600;color:#33415e !important;margin:0 0 10px;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +
       "@media(max-width:600px){.fo-ord-hero .h-t{font-size:21px}.fo-ord-hero{gap:9px}}" +
-      "@media(max-width:480px){.fo-ord-lane .ln{flex-basis:62px;font-size:9.5px}.fo-ord-lane.lax em{font-size:6.5px}.fo-ord-lane .lt.lnum em{font-size:6.5px}}" +
+      "@media(max-width:480px){.fo-ord-lane .ln{flex-basis:96px;font-size:9.5px}.fo-ord-lane.lax em{font-size:6.5px}.fo-ord-lane .lt.lnum em{font-size:6.5px}}" +
       ".fo-ord-tp{display:inline;background:none;border:none;padding:0;color:#b3bac4;font-size:7.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}" +
       ".fo-ord-tp + .fo-ord-tp:before{content:'· ';color:#d3d8de}" +
       ".fo-ord-xis .xc .r2{justify-content:space-between}" +
@@ -1032,6 +1117,19 @@
       ".fo-ob-who b s{text-decoration:none;color:#B04A2C;font-weight:800}" +
       ".fo-ob-who{flex:1;min-width:0}.fo-ob-who>b{display:block;font-size:13px;color:#0E233F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fo-ob-who .small{font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}" +
       "html body.ftpskin #page button.fo-ob-chip,html body #page button.fo-ob-chip{flex:0 0 auto;border:1px solid rgba(28,36,51,.2) !important;background:#FFFEFC !important;color:#8a93a3 !important;border-radius:6px;padding:2px 7px;font-size:10px;font-weight:800;cursor:pointer}" +
+      // a man's own instruction: the letter carries the colour of the risk
+      "html body #page button.fo-ob-chip.fo-ob-mb{min-width:22px}" +
+      "html body #page button.fo-ob-chip.mb-d{background:#EAF1F8 !important;color:#1D4E89 !important;border-color:rgba(29,78,137,.35) !important}" +
+      "html body #page button.fo-ob-chip.mb-a{background:#FDF1E4 !important;color:#B0631A !important;border-color:rgba(176,99,26,.4) !important}" +
+      "html body #page button.fo-ob-chip.mb-l{background:#FBE9E6 !important;color:#B23230 !important;border-color:rgba(178,50,48,.45) !important}" +
+      // how each bowler is set when he has the ball
+      ".fo-og-fh{font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(28,36,51,.45);margin:12px 0 6px}" +
+      ".fo-og-fields{display:flex;flex-direction:column;gap:5px}" +
+      ".fo-og-frow{display:flex;align-items:center;gap:9px;flex-wrap:wrap}" +
+      ".fo-og-frow>b{flex:1 1 90px;min-width:0;font-size:12.5px;color:#0E233F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+      ".fo-og-frow>span{display:flex;gap:3px;flex:0 0 auto}" +
+      "html body.ftpskin #page button.fo-og-f,html body #page button.fo-og-f{border:1px solid rgba(28,36,51,.16) !important;background:#FFFEFC !important;color:#5a6472 !important;border-radius:999px;padding:4px 9px;font-size:10.5px;font-weight:700;cursor:pointer}" +
+      "html body #page button.fo-og-f.on{background:#0E233F !important;color:#FFFEFC !important;border-color:#0E233F !important}" +
       "html body.ftpskin #page button.fo-ob-chip.on,html body #page button.fo-ob-chip.on{background:#0E233F !important;color:#FFFEFC !important;border-color:#0E233F !important}" +
       ".fo-ob-mv{display:flex;gap:3px}" +
       "html body.ftpskin #page .fo-ob-mv button,html body #page .fo-ob-mv button{border:1px solid rgba(28,36,51,.14) !important;background:#FBFAF7 !important;color:#5a6472 !important;border-radius:6px;font-size:9px;line-height:1;padding:6px 8px;cursor:pointer}" +

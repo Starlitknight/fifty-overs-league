@@ -31,7 +31,10 @@ The owner's spec, in their words, refined by the FTP manual:
    compensation; national squads feed the World Cup.
 4. MATCH ORDER DEPTH (FTP parity): per-player batting/bowling
    aggression (N/D/A), bowling spells, captain choice, toss call, default
-   orders per match type.
+   orders per match type. [BUILT — per-man batting instructions and per-bowler
+   fields on the orders page; the resolver reads BOTH clubs' saved sheets
+   (phase plan, man instruction, bowler field, toss decision); saving files
+   the sheet with the World Service for every remaining round.]
 5. PLAYER MODEL: experience (grows by matches, division-weighted),
    energy in-match from endurance+fatigue, triggered talents visible in
    commentary, weekly aging, wage loyalty discounts.

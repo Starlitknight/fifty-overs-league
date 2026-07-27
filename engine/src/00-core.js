@@ -236,7 +236,7 @@ function foSpinOn(inn){
   }catch(e){}
   return false;
 }
-function foFieldSetting(inn){
+function foFieldSetting(inn,bowlerName){
   try{
     const ov=Math.floor((inn.legal||0)/6)+1;
     const userBowling=M.isUserMatch&&inn.bowlTeam===M.user.name;
@@ -244,6 +244,11 @@ function foFieldSetting(inn){
     if(O){
       const sp=[].concat((O.spells||{}).north||[],(O.spells||{}).south||[]);
       for(const x of sp)if(x&&x.field&&ov>=x.first&&ov<x.first+(x.n||0))return x.field;
+      // a bowler's own instruction: how HE is set when he has the ball, unless
+      // the manager painted a field over these particular overs
+      const nm0=bowlerName||inn.curBowlerName;
+      const mb=(O.manBowl&&nm0)?O.manBowl[nm0]:'';
+      if(mb==='att'||mb==='bal'||mb==='def')return mb;
       if(O.fieldPlan){const ph2=ov<=10?'pp':(ov>40?'death':'mid');return O.fieldPlan[ph2]||'bal'}
     }
     if(typeof aiField==='function')return aiField(inn);
@@ -511,6 +516,28 @@ function aiPickBowler(inn,over){
     return v;};
   av.sort((a,b)=>sc(b)-sc(a));return av[0];
 }
+// ---- THE ORDERS ARE THE ORDERS ---------------------------------------------
+// A saved sheet is a manager's whole voice in a match he will not attend, so
+// the resolver reads it for BOTH clubs, not just the one whose client is
+// running: the phase plan, the batter's own instruction, his bowler's field
+// and the toss call. A club that saved nothing keeps exactly the captain it
+// always had - absence still costs nothing.
+function foManBat(O,nm){
+  const m=O&&O.manBat;if(!m||!nm)return 0;
+  const v=+m[nm];return isFinite(v)?Math.max(-1,Math.min(2,v)):0;
+}
+function foHasPlan(O){return !!(O&&(O.phaseIntent||O.manBat));}
+function foPlanIntent(inn,O,strikerName){
+  const over=Math.floor(inn.legal/6);const ph=over<10?'pp':(over>=40?'death':'mid');
+  const PI=(O&&O.phaseIntent)||{pp:0,mid:0,death:1};
+  let base=PI[ph]!==undefined?PI[ph]:0;
+  base=Math.max(-1,Math.min(2,base+foManBat(O,strikerName)));
+  // the captain still reads the scoreboard: a chase overrides the sheet
+  if(M.target){const remBalls=foBallCap()-inn.legal,rem=remBalls/6;const req=(M.target-inn.runs)/Math.max(0.5,rem);
+    if(req>9.2&&base<2)base=2;else if((req>7.2||req>6.4&&remBalls<90)&&base<1)base=Math.min(1,base+1);
+    else if(req<4.2&&inn.wkts<5&&base>-1)base=base-1;}
+  return base;
+}
 // AI intent policy while AI bats
 function userPhaseIntent(inn){
   const over=Math.floor(inn.legal/6);const ph=over<10?'pp':(over>=40?'death':'mid');
@@ -667,8 +694,9 @@ function stepBall(){
   const sb=inn.bat[inn.striker];const batP=sb.p;
   let rrDef=0;
   if(M.target&&inn.legal>0){const rem=(foBallCap()-inn.legal)/6;const req=(M.target-inn.runs)/Math.max(0.5,rem);rrDef=(req-inn.runs/(inn.legal/6))/6}
-  const intent=userBat?userPhaseIntent(inn):aiIntent(inn);
-  const field=(M.isUserMatch&&inn.bowlTeam===M.user.name)?(function(){const _fp=(typeof App!=='undefined'&&App.orders&&App.orders.fieldPlan)||{pp:'bal',mid:'bal',death:'bal'};const _ov=Math.floor(inn.legal/6);const _ph=_ov<10?'pp':(_ov>=40?'death':'mid');return _fp[_ph]||'bal'})():aiField(inn);
+  const _OB=(typeof ordersFor==='function')?ordersFor(inn.batTeam):null;
+  const intent=foHasPlan(_OB)?foPlanIntent(inn,_OB,batP.name):(userBat?userPhaseIntent(inn):aiIntent(inn));
+  const field=foFieldSetting(inn,inn.curBowlerName);
   const faced=inn.faced[batP.name]||0;
   if(inn.legal%6===0&&brec._spellCheckedOver!==over){if(brec.lastSpellOver!==over-2)brec.spellB=0;brec._spellCheckedOver=over;}
   const fieldAvg=inn.bxi.reduce((a,p)=>a+((p.field||((p.skills&&p.skills.fielding)||50))),0)/Math.max(1,inn.bxi.length);
@@ -2221,7 +2249,15 @@ function startPendingIfNeeded(){
   App.tossState={stage:'call'};
   if(App.orders.tossCall){resolveToss(App.orders.tossCall)}
 }
-function aiTossDecision(){return M.pitch==='green'?(M.rand()<0.35):(M.rand()<0.6)}
+function aiTossDecision(){
+  // the coin is drawn first either way, so the random stream never shifts
+  const r=M.pitch==='green'?(M.rand()<0.35):(M.rand()<0.6);
+  try{
+    const O=(typeof ordersFor==='function')?ordersFor(M.user.name):null;
+    if(O&&(O.tossDecision==='bat'||O.tossDecision==='bowl'))return O.tossDecision==='bat';
+  }catch(e){}
+  return r;
+}
 function startFlip(call){
   App.tossState={stage:'flip',call};
   renderMatch();
@@ -2861,6 +2897,8 @@ const MANUAL_HTML=`<h2>Game Manual</h2>
 <p>The Live Match Viewer lets you follow the match ball by ball. You can play hands-on, simulate one ball, simulate a whole over, simulate an innings, or simulate the full match.</p>
 <h4>Batting</h4>
 <p>Batting intent is set before the match on the Orders page, phase by phase. More aggressive batting increases scoring potential but also increases risk. Defensive batting protects wickets but can leave too much work for later. Normal intent balances both.</p>
+<p>Each man can also be told how to bat within that plan. Tap the letter on his card: <strong>N</strong>ormal follows the phase plan, <strong>A</strong>ttack goes a step harder, <strong>L</strong>aunch two, and <strong>D</strong>efend a step softer. Your opener can hold an end while your finisher swings from the first ball he faces. In the same way, each bowler can be given his own field — attacking, balanced or defensive — which applies whenever he has the ball, unless you have painted a field over those particular overs.</p>
+<p>These are not decorations. The sheet you save is filed with the World Service and the umpire plays it at your nation's hour, whether you are watching or asleep: the order, the instructions, the spells, the fields and the toss call. A club that saves nothing is captained by the engine, exactly as before — being absent still costs nothing.</p>
 <p>The match situation can soften your orders. A batter told to attack at 40/4 may still show some survival instinct. A defensive batter at 250/4 in the 42nd over may understand that now is not the time to admire forward defensives.</p>
 <h4>Bowling</h4>
 <p>Bowler spells and field settings are planned before the match. Attacking fields increase wicket-taking chances but can leak runs. Defensive fields restrict scoring but may reduce dismissal pressure. The right choice depends on batter, over, target, pitch, weather and fatigue.</p>

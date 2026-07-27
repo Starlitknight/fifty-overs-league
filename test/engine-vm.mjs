@@ -155,9 +155,10 @@ export function makeEngine() {
       var sq = f(seed, country, archId, captId);
       return sq ? JSON.stringify(sq) : null;
     }
-    function __vmSim(taJson, tbJson, pitch, weather, seed){
+    function __vmSim(taJson, tbJson, pitch, weather, seed, ordersJson){
       var g = window.__foGame; if(!g || !g.simWorld) return null;
-      var r = g.simWorld(JSON.parse(taJson), JSON.parse(tbJson), pitch, weather, seed);
+      var r = g.simWorld(JSON.parse(taJson), JSON.parse(tbJson), pitch, weather, seed,
+        ordersJson ? JSON.parse(ordersJson) : null);
       return r ? JSON.stringify(r) : null;
     }
     return { gen: __vmGen, sim: __vmSim };
@@ -178,8 +179,11 @@ export function makeEngine() {
       return s ? JSON.parse(s) : null;
     },
     // Living World: play two team objects ({name, players}) -> real result
-    sim: (tA, tB, pitch, weather, seed) => {
-      const r = worldFns.sim(JSON.stringify(tA), JSON.stringify(tB), pitch || 'balanced', weather || 'Sunny', (seed >>> 0) || 1);
+    // ordersMap is the saved sheets, keyed by club name - the same channel
+    // the World Service uses to hand a manager's plan to the resolver
+    sim: (tA, tB, pitch, weather, seed, ordersMap) => {
+      const r = worldFns.sim(JSON.stringify(tA), JSON.stringify(tB), pitch || 'balanced', weather || 'Sunny',
+        (seed >>> 0) || 1, ordersMap ? JSON.stringify(ordersMap) : null);
       return r ? JSON.parse(r) : null;
     }
   };
