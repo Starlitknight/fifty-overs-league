@@ -40,14 +40,34 @@ globalThis.__svcRun = function (homeJson, awayJson, pitch, seed) {
     innings: [slim(M.innings[0]), slim(M.innings[1])],
     worm: M.worm
   });
+};
+globalThis.__svcWorldCfg = function () {
+  // the world's shape read from the SHIPPED build itself — regions, club
+  // names and national hours come from the same code the phones run, so the
+  // served world and the client planet can never drift apart
+  var regions = (window.__foCxAPI.regions() || []).filter(function (r) { return !r.final; });
+  return JSON.stringify(regions.map(function (r) {
+    var boss = null; (r.clubs || []).forEach(function (c) { if (c.boss) boss = c; });
+    return {
+      id: r.id, name: r.nm, nat: (r.nats && r.nats[0]) || r.nm,
+      arch: r.arch || 'rock', capt: (boss && boss.capt) || 'talisman',
+      hour: window.__foPlanet.natHour(r.id),
+      sides: window.__foPlanet.sidesOf(r.id).map(function (s) {
+        return { slot: s.slot, name: s.name, city: s.city, boss: !!s.boss };
+      })
+    };
+  }));
 };`, eng.ctx);
   const gen = vm.runInContext('__svcGenSquad', eng.ctx);
   const run = vm.runInContext('__svcRun', eng.ctx);
+  const cfg = vm.runInContext('__svcWorldCfg', eng.ctx);
   return {
     genSquad(seed, country, arch, capt) { return JSON.parse(gen(seed, country, arch, capt)); },
     // returns the canonical result JSON STRING — stored verbatim, compared verbatim
     runMatch(homeTeam, awayTeam, pitch, seed) {
       return run(JSON.stringify(homeTeam), JSON.stringify(awayTeam), pitch, seed);
-    }
+    },
+    // the 19 nations as the shipped client defines them
+    worldConfig() { return JSON.parse(cfg()); }
   };
 }

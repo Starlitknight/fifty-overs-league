@@ -15,7 +15,7 @@
 //     next invocation, however late.
 import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
-import { dayIx, daySettled, seedOf, ROUNDS } from './clock.mjs';
+import { dayIx, daySettled, seedOf, natHour, ROUNDS } from './clock.mjs';
 
 export function matchId(country, seasonNo, round, h, a) {
   return country + ':s' + seasonNo + ':r' + round + ':h' + h + 'a' + a;
@@ -74,10 +74,24 @@ export async function rebuildSnapshots(pool, country, now) {
   const league = { country, seasonNo: season.season_no, startDay: season.start_day, rounds: ROUNDS, roundsPlayed: ms.length ? Math.max(...ms.map(m => m.round)) : 0, table, results, generatedAtDay: dayIx(now) };
   await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ($1,$2,now())
     ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`, ['league/' + country, JSON.stringify(league)]);
-  const today = { day: dayIx(now), engineVersion: ENGINE_VERSION, countries: [{ id: country, seasonNo: season.season_no, roundsPlayed: league.roundsPlayed, leader: table[0] ? table[0].name : null }] };
+  await rebuildWorldToday(pool, now);
+  return league;
+}
+
+// world/today aggregates EVERY league snapshot — one summary row per country,
+// with its play hour so a client can render the staggered globe
+export async function rebuildWorldToday(pool, now) {
+  const leagues = await pool.query(`SELECT body FROM snapshots WHERE key LIKE 'league/%' ORDER BY key`);
+  const today = {
+    day: dayIx(now), engineVersion: ENGINE_VERSION,
+    countries: leagues.rows.map(r => {
+      const b = r.body;
+      return { id: b.country, seasonNo: b.seasonNo, roundsPlayed: b.roundsPlayed, hourUtc: natHour(b.country), leader: b.table[0] ? b.table[0].name : null };
+    })
+  };
   await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ('world/today',$1,now())
     ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`, [JSON.stringify(today)]);
-  return league;
+  return today;
 }
 
 export async function runTick(pool, host, country, day, { now = Date.now(), failAfter = null } = {}) {
@@ -110,10 +124,23 @@ export async function runDue(pool, host, country, { now = Date.now(), failAfter 
   return out;
 }
 
+// every country in the database, in id order — the whole planet, one call
+export async function runAllDue(pool, host, opts = {}) {
+  const cs = await pool.query('SELECT id FROM countries ORDER BY id');
+  const out = {};
+  for (const row of cs.rows) out[row.id] = await runDue(pool, host, row.id, opts);
+  return out;
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   const pool = makePool();
-  runDue(pool, makeHost(), 'eng').then(r => {
-    console.error(r.length ? r.map(x => 'day ' + x.day + (x.skipped ? ' (already done)' : ' round ' + x.round + ': ' + x.played + ' played')).join('\n') : 'nothing due');
+  runAllDue(pool, makeHost()).then(all => {
+    const lines = [];
+    for (const [country, r] of Object.entries(all)) {
+      const fresh = r.filter(x => !x.skipped);
+      if (fresh.length) lines.push(country + ': ' + fresh.map(x => 'day ' + x.day + ' round ' + x.round + ' (' + x.played + ' played)').join(', '));
+    }
+    console.error(lines.length ? lines.join('\n') : 'nothing due anywhere');
     return pool.end();
   }).catch(e => { console.error(e); process.exit(1); });
 }

@@ -6,7 +6,18 @@ export const DAY = 86400000;
 export const CYCLE = 25;
 export const ROUNDS = 18;
 export const LIVE_HOURS = 3;
-export function natHour(countryId) { return countryId === 'eng' ? 14 : 10; } // P1: England only
+// the staggered globe, same formula as the client planet: England is the
+// 14:00 UTC league; every other nation hashes onto one of eight slots.
+// Parity with the shipped build is asserted by tests/world-p2.test.mjs.
+const HOUR_SLOTS = [1, 4, 7, 10, 13, 16, 19, 22];
+function h32(s) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h >>> 0;
+}
+export function natHour(countryId) {
+  return countryId === 'eng' ? 14 : HOUR_SLOTS[h32('nathour|' + countryId) % HOUR_SLOTS.length];
+}
 export function dayIx(nowMs) { return Math.floor((nowMs - EPOCH) / DAY); }
 export function phaseOf(nowMs) {
   const d = dayIx(nowMs), season = Math.floor(d / CYCLE) + 1, di = ((d % CYCLE) + CYCLE) % CYCLE;

@@ -1,23 +1,35 @@
-# World Service — Ops Runbook (P1)
+# World Service — Ops Runbook (P2: the whole planet)
 
 One Node process family, one Postgres. The engine is the shipped build
 (`../index.html` via `test/engine-vm.mjs`) — build the client first.
+All 19 national leagues run here; their names, sides and play hours are
+read from the shipped build itself (host.worldConfig()), so the served
+world can never drift from what the phones compute.
 
 ## Deploy (any box with Node 22 + Postgres 16)
     cd server && npm install
     createdb foworld
     node migrate.mjs                 # idempotent, transactional
-    node init-world.mjs              # founds England (no-op if founded)
+    node init-world.mjs              # founds ALL 19 leagues (no-op if complete)
     node api.mjs                     # read API on :8787 (PORT to change)
-    # the umpire: run every hour from cron — it settles everything due
+    # the umpire: run every hour from cron — it settles everything due,
+    # every nation, at that nation's own hour (staggered globe)
     17 * * * *  cd /path/server && node tick.mjs >> tick.log 2>&1
 DATABASE_URL overrides the default local-socket connection everywhere.
 
+## Upgrading a P1 (England-only) database
+Run `node init-world.mjs` once. The world exists, so it calls
+expandWorld(): every missing country is founded in its own transaction
+with position-stable squad seeds; England's clubs, season and matches
+are untouched. Their season 1 begins on the next world day.
+
 ## Inspect the world
     psql foworld -c "SELECT key,status,detail FROM ticks ORDER BY started_at DESC LIMIT 5;"
-    psql foworld -c "SELECT round,count(*) FROM matches GROUP BY 1 ORDER BY 1;"
-    curl -s localhost:8787/world/today.json
+    psql foworld -c "SELECT country_id,round,count(*) FROM matches GROUP BY 1,2 ORDER BY 1,2;"
+    curl -s localhost:8787/world/today.json        # all 19: rounds, leaders, play hours
     curl -s localhost:8787/league/eng.json | python3 -m json.tool | head -40
+Country ids: afg aus bgd can eng ire ken ned nep nzl pak rsa sco slk
+sub usa wal win zim. A full planet-day is ~95 engine matches (~15s).
 
 ## Re-run a failed tick
 Nothing special: run `node tick.mjs` again. A tick killed mid-round left
