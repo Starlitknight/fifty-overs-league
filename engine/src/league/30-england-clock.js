@@ -81,6 +81,8 @@
     var n = new Date();
     var t = DOW[n.getUTCDay()] + " " + n.getUTCDate() + " " + MON[n.getUTCMonth()] +
       " · " + (n.getUTCHours() < 10 ? "0" : "") + n.getUTCHours() + ":" + (n.getUTCMinutes() < 10 ? "0" : "") + n.getUTCMinutes() + " UTC";
+    var dayLn = "";
+    try { var ph = P().phaseOf(Date.now()); dayLn = "DAY " + ph.day + " · SEASON " + ph.season; } catch (eD) {}
     var live = 0;
     try {
       var pl = P();
@@ -93,7 +95,7 @@
         });
       }
     } catch (e) {}
-    return { t: t, live: live };
+    return { t: t, live: live, day: dayLn };
   }
   function mountClock() {
     try {
@@ -108,15 +110,20 @@
         else tb.appendChild(el);
       }
       var c = clockTxt();
-      el.innerHTML = "<b>" + c.t + "</b>" + (c.live ? "<i>" + c.live + " LIVE</i>" : "");
+      el.innerHTML = "<b>" + (c.day || "WORLD CRICKET") + (c.live ? " <i>&#9679; " + c.live + " LIVE</i>" : "") + "</b>" +
+        "<span>" + c.t + "</span>";
     } catch (e) {}
   }
 
   var CSS = [
-    "#topbar#topbar #fo-wclock{display:inline-flex;align-items:center;gap:6px;margin-left:10px;text-decoration:none;background:rgba(255,254,252,.08);border:1px solid rgba(255,254,252,.14);border-radius:999px;padding:4px 10px;cursor:pointer}",
-    "#topbar#topbar #fo-wclock b{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.08em;color:#E8DFCE;white-space:nowrap}",
-    "#topbar#topbar #fo-wclock i{font:800 8.5px/1 Oswald,sans-serif;letter-spacing:.06em;color:#FF6B5E;font-style:normal;white-space:nowrap}",
-    "@media(max-width:560px){#topbar#topbar #fo-wclock b{font-size:8.5px}#topbar#topbar #fo-wclock{margin-left:6px;padding:4px 8px}}",
+    // the world clock owns the header's top-right corner on every screen:
+    // world day + season above, real date and UTC time below; tap for the planet
+    "#topbar#topbar{position:sticky}",
+    "#topbar#topbar #fo-wclock{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-decoration:none;background:rgba(255,254,252,.08);border:1px solid rgba(255,254,252,.16);border-radius:11px;padding:5px 10px;cursor:pointer;z-index:5}",
+    "#topbar#topbar #fo-wclock b{font:700 9px/1 Oswald,sans-serif;letter-spacing:.12em;color:#E8B96A;white-space:nowrap}",
+    "#topbar#topbar #fo-wclock span{font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.08em;color:#E8DFCE;white-space:nowrap}",
+    "#topbar#topbar #fo-wclock i{font:800 8.5px/1 Oswald,sans-serif;letter-spacing:.04em;color:#FF6B5E;font-style:normal;white-space:nowrap}",
+    "@media(max-width:400px){#topbar#topbar #fo-wclock{padding:4px 8px}#topbar#topbar #fo-wclock b{font-size:8px}#topbar#topbar #fo-wclock span{font-size:7.5px}}",
     "html body #fo-eng-live{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;z-index:1200;display:inline-flex;align-items:center;gap:8px;background:#B23230;color:#FFFEFC !important;font:800 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;border-radius:999px;padding:12px 18px;text-decoration:none;box-shadow:0 14px 34px rgba(178,50,48,.45)}",
     "html body #fo-eng-live i{width:8px;height:8px;border-radius:50%;background:#FFFEFC;animation:foEngPulse 1.2s ease-in-out infinite}",
     "@keyframes foEngPulse{0%,100%{opacity:1}50%{opacity:.25}}"
