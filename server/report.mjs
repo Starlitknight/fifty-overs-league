@@ -33,8 +33,11 @@ for (const c of cs) {
     const served = inTable[k.slot];
     const flag = served === undefined ? '  MISSING FROM TABLE'
       : served !== k.name ? '  TABLE SAYS "' + served + '"' : '';
+    // the founding name matters too: it is what a club falls back to when a
+    // manager releases it, and the name validator guards against it as well
+    const born = k.default_name && k.default_name !== k.name ? '  (founded as "' + k.default_name + '")' : '';
     console.log('  ' + k.slot + '  ' + k.name.padEnd(28) +
-      (k.is_boss ? ' [flagship]' : mgr ? ' [' + mgr + ']' : ' [bot]') + flag);
+      (k.is_boss ? ' [flagship]' : mgr ? ' [' + mgr + ']' : ' [bot]') + born + flag);
   }
   const extra = Object.keys(inTable).filter(s => !clubs.some(k => String(k.slot) === String(s)));
   if (extra.length) console.log('  !! table carries slots with no club row: ' + extra.join(', '));
