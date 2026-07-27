@@ -126,15 +126,16 @@
     var sent = {}; (st.orders || []).forEach(function (o) { sent[o.round] = 1; });
     snapshot("league/" + c.country).then(function (lg) {
       var nextRound = lg ? Math.min(18, (lg.roundsPlayed || 0) + 1) : 1;
-      // orders LOCK at the first ball (the umpire enforces it server-side):
-      // once today's window has opened, the next orderable round is tomorrow's
+      // teamsheets go in an hour before the first ball (the umpire enforces
+      // it server-side): inside that hour, the next orderable round is
+      // tomorrow's
       try {
         var wt9 = window.__foWT, pl9 = window.__foPlanet;
         if (wt9 && wt9.serverCal && pl9) {
           var now9 = Date.now(), cal9 = wt9.serverCal(now9);
           if (cal9.seasonNo >= 1 && cal9.dayInSeason >= 0 && cal9.dayInSeason <= 17) {
             var hN9 = (now9 - (pl9.EPOCH + pl9.dayIx(now9) * 86400000)) / 3600000;
-            var minOpen = cal9.round + (hN9 >= pl9.natHour(c.country) ? 1 : 0);
+            var minOpen = cal9.round + (hN9 >= pl9.natHour(c.country) - 1 ? 1 : 0);
             nextRound = Math.min(18, Math.max(nextRound, minOpen));
           }
         }

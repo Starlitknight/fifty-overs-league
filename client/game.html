@@ -10588,7 +10588,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-1237-6f58e4";
+  var FO_BUILD = "20260727-1247-02e71a";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -30066,6 +30066,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         var resByRound = {};
         resAll.forEach(function (r5) { (resByRound[r5.round] = resByRound[r5.round] || []).push(r5); });
         var snapSeasonOk = !!(srv.snap && srv.snap.seasonNo === srv.cal.seasonNo);
+        var hNowP = (Date.now() - (srv.pl.EPOCH + srv.pl.dayIx(Date.now()) * 86400000)) / 3600000;
+        var teamsInP = srv.state === "up" && (srv.hour - hNowP) <= 1;   // final hour: XIs are public
         // -- today
         var mdRows;
         if (srv.fx.length) {
@@ -30077,6 +30079,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
             else if (srv.state === "fin") tail = rec
               ? "<span class='res'>" + E(rec.text) + "</span><button type='button' class='fo-nt-watch ghost' onclick='foWtSpectate(\"" + nation + "\",0,0," + i5 + ")'>Watch it back &rsaquo;</button>"
               : "<span class='res dim'>Stumps &middot; the umpire files the scorecard on the hour</span>";
+            else if (teamsInP) tail = "<span class='res'>Teamsheets in &middot; first ball " + hhFmt(srv.hour) + "</span><a class='fo-nt-watch ghost' href='#/watch?n=" + encodeURIComponent(nation) + "&f=" + i5 + "'>See the XIs &rsaquo;</a>";
             else tail = "<span class='res dim'>First ball " + hhFmt(srv.hour) + "</span>";
             return "<div class='fo-nt-mx" + (srv.state === "live" ? " live" : "") + "'>" +
               "<div class='t'><b>" + E(f5.home.name) + "</b><i>v</i><b>" + E(f5.away.name) + "</b>" +
@@ -30090,7 +30093,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
             (nextDay != null ? ". The league returns on world day " + nextDay + "." : ".") + "</div>";
         }
         var stateWord = srv.state === "live" ? "&#9679; Round " + srv.cal.round + " &mdash; in play now"
-          : srv.state === "up" ? "Round " + srv.cal.round + " &middot; today, first ball " + hhFmt(srv.hour)
+          : srv.state === "up" ? "Round " + srv.cal.round + " &middot; " + (teamsInP ? "teamsheets in &middot; " : "") + "first ball " + hhFmt(srv.hour)
           : srv.state === "fin" ? "Round " + srv.cal.round + " &middot; played today"
           : "Matchday";
         // -- still to come
@@ -36106,8 +36109,14 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   function natHour(rid) { if (rid === "eng") return 14; return HOUR_SLOTS[h32("nathour|" + rid) % HOUR_SLOTS.length]; }
   function dayIx(now) { return Math.floor((now - EPOCH) / DAY); }
   function hourOfDay(now) { var d = dayIx(now); return (now - (EPOCH + d * DAY)) / 3600000; }
+  // the served world's season 1 begins world day 5 (28 July) - the planet's
+  // phase runs on the SAME season clock as the umpire, so "round N" here is
+  // the round the server actually plays today
+  var WORLD_START = 5;
   function phaseOf(now) {
-    var d = dayIx(now), s = Math.floor(d / CYCLE) + 1, di = ((d % CYCLE) + CYCLE) % CYCLE;
+    var d = dayIx(now), rel = d - WORLD_START;
+    if (rel < 0) return { day: d, season: 1, di: -1, kind: "rest", preseason: true };
+    var s = Math.floor(rel / CYCLE) + 1, di = rel % CYCLE;
     var p = { day: d, season: s, di: di };
     if (di < ROUNDS) { p.kind = "league"; p.round = di + 1; }
     else if (di === 18) p.kind = "honours";
@@ -36349,15 +36358,15 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   }
   function hh(n) { return (n < 10 ? "0" : "") + Math.floor(n) + ":00"; }
   function todayStatus(now) {
-    var h = hourOfDay(now), liveN = 0, nextAt = null;
+    var h = hourOfDay(now), liveIds = [], nextAt = null;
     regionList().forEach(function (r) {
       var h0 = natHour(r.id);
-      if (h >= h0 && h < h0 + LIVE_LEN) liveN++;
+      if (h >= h0 && h < h0 + LIVE_LEN) liveIds.push(r.id);
       else if (h < h0 && (nextAt == null || h0 < nextAt)) nextAt = h0;
     });
-    if (liveN) return { key: "live", chip: "LIVE now in " + liveN + " " + (liveN === 1 ? "nation" : "nations") };
-    if (nextAt != null) return { key: "up", chip: "Next play " + hh(nextAt) + " UTC" };
-    return { key: "fin", chip: "The world's play is done for today" };
+    if (liveIds.length) return { key: "live", liveIds: liveIds, chip: "LIVE now in " + liveIds.length + " " + (liveIds.length === 1 ? "nation" : "nations") };
+    if (nextAt != null) return { key: "up", liveIds: [], chip: "Next play " + hh(nextAt) + " UTC" };
+    return { key: "fin", liveIds: [], chip: "The world's play is done for today" };
   }
   function stageName(st) { return { r16: "The Last Sixteen", qf: "Quarter-finals", sf: "Semi-finals", final: "THE WORLD CUP FINAL" }[st] || st; }
 
@@ -36460,18 +36469,32 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           var posOf = {}; t.forEach(function (row, i2) { posOf[row.side.slot] = i2 + 1; });
           var feat = fx.slice().sort(function (a, b) { return (posOf[a.home.slot] + posOf[a.away.slot]) - (posOf[b.home.slot] + posOf[b.away.slot]); })[0];
           var lv = feat ? liveView(feat, now, natHour(r.id)) : null;
-          var starLn = "";
-          try { if (feat && lv.state === "fin" && window.__foStars) starLn = window.__foStars.suffix(r.id, p.season, p.round, feat); } catch (eSt) {}
+          // the card tells the truth: fixture names come from the server's
+          // own schedule (same round, same circle method); a finished match
+          // shows the RECORDED result when the served snapshot is in hand,
+          // and never an invented scoreline
+          var finTxt = null;
+          try {
+            var snb = window.__foWorldLg && window.__foWorldLg.get(r.id);
+            if (feat && snb && snb.seasonNo === p.season) {
+              var rr = (snb.results || []).filter(function (x) { return x.round === p.round && x.home === feat.home.name && x.away === feat.away.name; })[0];
+              if (rr) finTxt = rr.text;
+            }
+          } catch (eF) {}
           var mid = !feat ? "" :
             lv.state === "up" ? "<em class='fx'>" + E(feat.home.name) + " v " + E(feat.away.name) + " &middot; " + hh(natHour(r.id)) + " UTC</em>" :
-            lv.state === "live" ? "<em class='fx live'><b>LIVE</b> " + E(lv.line) + "</em>" :
-            "<em class='fx'>" + E(feat.text) + E(starLn) + "</em>";
+            lv.state === "live" ? "<em class='fx live'><b>LIVE</b> " + E(feat.home.name) + " v " + E(feat.away.name) + " &middot; in play now</em>" :
+            "<em class='fx'>" + (finTxt ? E(finTxt) : E(feat.home.name) + " v " + E(feat.away.name) + " &middot; played &middot; tap for the result") + "</em>";
           var ldr2 = t[0];
-          return "<a class='fo-pl-nat' href='#/nation?n=" + encodeURIComponent(r.id) + "'>" +
+          // a nation in its live window wears an unmissable red LIVE button;
+          // the card opens its matchday, where every live match has a
+          // watch-in-the-theatre door
+          var natLive = hNow >= natHour(r.id) && hNow < natHour(r.id) + LIVE_LEN;
+          return "<a class='fo-pl-nat" + (natLive ? " live" : "") + "' href='#/nation?n=" + encodeURIComponent(r.id) + "'>" +
             "<img class='fo-pl-flag' src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\">" +
             "<span class='fo-pl-natt'><b>" + E(r.nm) + "</b>" + mid +
             "<u>" + (ldr2 ? E(ldr2.side.name) + " lead &middot; " + ldr2.pts + " pts" : "") + "</u></span>" +
-            "<i>&rsaquo;</i></a>";
+            (natLive ? "<span class='fo-pl-livebtn'><i></i>LIVE</span>" : "<i>&rsaquo;</i>") + "</a>";
         }).join("");
       } else if (p.kind === "honours") {
         natCards = regionList().filter(function (r) { return r.id !== my; }).map(function (r) {
@@ -36490,7 +36513,14 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         "<div class='fo-pl-kick'>World cricket &middot; Season " + p.season + " &middot; Day " + (p.di + 1) + " of " + CYCLE + "</div>" +
         "<h1>The Planet Plays Today</h1>" +
         "<p>" + E(phaseLine) + ". Every league runs on the world calendar, live from 10:00 UTC — online or offline, the same world for everyone.</p>" +
-        "<span class='fo-pl-chip " + st.key + "'>" + E(st.chip) + "</span>" +
+        // LIVE is a door, not a label: one live nation opens that nation's
+        // matchday (every live match, watch buttons and all); several open
+        // the theatre hub
+        (st.key === "live"
+          ? "<a class='fo-pl-chip live islink' href='" + (st.liveIds.length === 1
+              ? (st.liveIds[0] === my ? "#/league" : "#/nation?n=" + encodeURIComponent(st.liveIds[0]))
+              : "#/watch") + "'>&#9679; " + E(st.chip) + " &mdash; watch &rsaquo;</a>"
+          : "<span class='fo-pl-chip " + st.key + "'>" + E(st.chip) + "</span>") +
         "</div>" +
         bandHTML + ownCard + cupHTML +
         (natCards ? "<div class='fo-pl-grid'>" + natCards + "</div>" : "") +
@@ -36509,6 +36539,13 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     "html body #page .fo-pl-mast p{font:italic 420 13.5px/1.6 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);margin:0 0 12px;max-width:52ch}",
     "html body #page .fo-pl-chip{display:inline-block;font:700 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;border-radius:999px;padding:7px 13px}",
     "html body #page .fo-pl-chip.live{background:rgba(200,60,58,.12);color:#B23230}",
+    // LIVE, loud: the chip becomes a solid red button when it is a door
+    "html body #page a.fo-pl-chip.islink{background:#C83C3A !important;color:#FFFEFC !important;text-decoration:none !important;padding:11px 18px;font-size:11.5px;box-shadow:0 8px 22px rgba(200,60,58,.35);animation:foPlLivePulse 1.6s ease-in-out infinite}",
+    "@keyframes foPlLivePulse{0%,100%{box-shadow:0 8px 22px rgba(200,60,58,.35)}50%{box-shadow:0 8px 30px rgba(200,60,58,.6)}}",
+    "html body #page .fo-pl-nat.live{border-color:rgba(200,60,58,.55);box-shadow:0 4px 18px rgba(200,60,58,.18)}",
+    "html body #page .fo-pl-livebtn{flex:none;display:inline-flex;align-items:center;gap:6px;font:800 11px/1 Oswald,sans-serif;letter-spacing:.14em;color:#FFFEFC;background:#C83C3A;border-radius:999px;padding:9px 14px;box-shadow:0 6px 16px rgba(200,60,58,.35)}",
+    "html body #page .fo-pl-livebtn i{width:8px;height:8px;border-radius:50%;background:#FFFEFC;animation:foPlDot 1.2s ease-in-out infinite}",
+    "@keyframes foPlDot{0%,100%{opacity:1}50%{opacity:.3}}",
     "html body #page .fo-pl-chip.up{background:rgba(20,28,40,.07);color:rgba(20,28,40,.6)}",
     "html body #page .fo-pl-chip.fin{background:rgba(31,158,114,.13);color:#177A57}",
     "html body #page .fo-pl-band{margin-top:14px;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:16px;padding:12px 14px}",
@@ -36588,7 +36625,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   });
 
   window.foRenderPlanetPage = foRenderPlanetPage;
-  window.__foPlanet = { phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, fixturesOf: fixturesOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN };
+  window.__foPlanet = { phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, fixturesOf: fixturesOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();
 // ---- 28-world-almanack.js — the people of the planet, and its book of record --
 // The living planet (module 27) gave every nation a running league. This layer
@@ -37646,7 +37683,9 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     "I have seen {dog} ruin better sides than this for fun. Watch the first ten overs."
   ];
 
-  // probable XI: saved orders if the coach has spoken, else the eleven best
+  // the ACTUAL XI: saved orders if the coach has spoken, else the very
+  // eleven the engine will field - keeper, the five best bowlers, best
+  // bats, in match order. No "probable" guesswork: this is the teamsheet.
   function probableXI(team, mine) {
     try {
       if (mine && App.orders && App.orders.saved && App.orders.batOrder && App.orders.batOrder.length >= 11) {
@@ -37655,8 +37694,18 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         if (xi.length === 11) return { xi: xi, fromOrders: true };
       }
     } catch (e) {}
-    var sorted = (team.players || []).slice().sort(function (a, b) { return ovrOf(b) - ovrOf(a); });
-    return { xi: sorted.slice(0, 11), fromOrders: false };
+    var P = (team.players || []).slice();
+    if (!P.length) return { xi: [], fromOrders: false };
+    var kps = P.filter(function (p) { return p.keeper; }).sort(function (a, b) { return b.bat - a.bat; });
+    var keeper = kps[0] || P.slice().sort(function (a, b) { return b.bat - a.bat; })[0];
+    var bowlers = P.filter(function (p) { return p.bowlType && p.key !== keeper; }).sort(function (a, b) { return (b.threat + b.control) - (a.threat + a.control); });
+    var chosen = {}; chosen[keeper.name] = 1;
+    bowlers.slice(0, 5).forEach(function (b) { chosen[b.name] = 1; });
+    var rest = P.filter(function (p) { return !chosen[p.name]; }).sort(function (a, b) { return b.bat - a.bat; });
+    for (var i = 0; i < rest.length; i++) { if (Object.keys(chosen).length >= 11) break; chosen[rest[i].name] = 1; }
+    var xi2 = P.filter(function (p) { return chosen[p.name]; });
+    xi2.sort(function (a, b) { return (a.mpos - b.mpos) || (b.bat - a.bat); });
+    return { xi: xi2.slice(0, 11), fromOrders: false };
   }
   function xiStrength(xi) { return xi.length ? xi.reduce(function (s, p) { return s + ovrOf(p); }, 0) / xi.length : 50; }
 
@@ -37723,7 +37772,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         .replace("{dogStar}", dogStar).replace("{pitch}", pitch);
 
       var xiCol = function (team, prob, label) {
-        return "<div class='fo-md-xi'><i>" + E(label) + (prob.fromOrders ? " &middot; your card" : " &middot; probable") + "</i>" +
+        return "<div class='fo-md-xi'><i>" + E(label) + (prob.fromOrders ? " &middot; your card" : " &middot; the XI") + "</i>" +
           prob.xi.map(function (p, k) {
             return "<div class='p'><u>" + (k + 1) + "</u><b>" + E(p.name) + "</b>" +
               (p.keeper || p.role === "wicketkeeper" ? "<em>&dagger;</em>" : p.bowlType ? "<em>&#9679;</em>" : "") + "</div>";
@@ -38947,15 +38996,16 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     var sent = {}; (st.orders || []).forEach(function (o) { sent[o.round] = 1; });
     snapshot("league/" + c.country).then(function (lg) {
       var nextRound = lg ? Math.min(18, (lg.roundsPlayed || 0) + 1) : 1;
-      // orders LOCK at the first ball (the umpire enforces it server-side):
-      // once today's window has opened, the next orderable round is tomorrow's
+      // teamsheets go in an hour before the first ball (the umpire enforces
+      // it server-side): inside that hour, the next orderable round is
+      // tomorrow's
       try {
         var wt9 = window.__foWT, pl9 = window.__foPlanet;
         if (wt9 && wt9.serverCal && pl9) {
           var now9 = Date.now(), cal9 = wt9.serverCal(now9);
           if (cal9.seasonNo >= 1 && cal9.dayInSeason >= 0 && cal9.dayInSeason <= 17) {
             var hN9 = (now9 - (pl9.EPOCH + pl9.dayIx(now9) * 86400000)) / 3600000;
-            var minOpen = cal9.round + (hN9 >= pl9.natHour(c.country) ? 1 : 0);
+            var minOpen = cal9.round + (hN9 >= pl9.natHour(c.country) - 1 ? 1 : 0);
             nextRound = Math.min(18, Math.max(nextRound, minOpen));
           }
         }
@@ -39283,7 +39333,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // orders (with no claims in the league that is already exact).
   var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
   var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
-  var ORD_CACHE = {};
+  var ORD_CACHE = {}, ORD_VAL = {};
   function roundOrders(rid, roundNo) {
     var key = rid + ":" + roundNo;
     if (ORD_CACHE[key]) return ORD_CACHE[key];
@@ -39299,9 +39349,34 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       }).then(function (r) { return r.ok ? r.json() : null; })
         .then(function (j) { return (j && j.orders) || {}; });
     } catch (e) { p = Promise.resolve({}); }
-    p = p.catch(function () { return {}; });
+    p = p.catch(function () { return {}; }).then(function (v) { ORD_VAL[key] = v; return v; });
     ORD_CACHE[key] = p;
     return p;
+  }
+  // the eleven a club actually fields: revealed orders when a manager has
+  // spoken (mirroring the engine's validity rules), else the engine's own
+  // deterministic pick - keeper, the five best bowlers, best bats, mpos order
+  function actualXI(players, orders) {
+    try {
+      var xiN = orders && orders.xi;
+      if (xiN && xiN.length === 11) {
+        var by = {}; players.forEach(function (p) { by[p.name] = p; });
+        var picked = [], seen = {};
+        xiN.forEach(function (nm) { if (by[nm] && !seen[nm]) { seen[nm] = 1; picked.push(by[nm]); } });
+        if (picked.length === 11 && picked.filter(function (p) { return p.bowlType; }).length >= 5) return picked;
+      }
+    } catch (e) {}
+    var P2 = players.slice();
+    var kps = P2.filter(function (p) { return p.keeper; }).sort(function (a, b) { return b.bat - a.bat; });
+    var keeper = kps[0] || P2.slice().sort(function (a, b) { return b.bat - a.bat; })[0];
+    var bowlers = P2.filter(function (p) { return p.bowlType && p.key !== keeper; }).sort(function (a, b) { return (b.threat + b.control) - (a.threat + a.control); });
+    var five = bowlers.slice(0, 5);
+    var chosen = {}; chosen[keeper.name] = 1; five.forEach(function (b) { chosen[b.name] = 1; });
+    var rest = P2.filter(function (p) { return !chosen[p.name]; }).sort(function (a, b) { return b.bat - a.bat; });
+    for (var i = 0; i < rest.length; i++) { if (Object.keys(chosen).length >= 11) break; chosen[rest[i].name] = 1; }
+    var xi = P2.filter(function (p) { return chosen[p.name]; });
+    xi.sort(function (a, b) { return (a.mpos - b.mpos) || (b.bat - a.bat); });
+    return xi;
   }
   window.foWtSpectate = function (rid, season, round, fi) {
     try {
@@ -39311,6 +39386,15 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var sv = serverFixtures(rid, Date.now()), m = sv.fx[fi];
       if (!m) return;
       var cal = sv.cal, srvRound = cal.round;
+      // no early broadcasts: bot or human, a match cannot be watched (and its
+      // result cannot be learned) before its scheduled first ball
+      var plG = P(), nowG = Date.now();
+      var hNowG = (nowG - (plG.EPOCH + plG.dayIx(nowG) * 86400000)) / 3600000;
+      var h0G = plG.natHour(rid);
+      if (hNowG < h0G) {
+        alert("The first ball is at " + (h0G < 10 ? "0" : "") + h0G + ":00 UTC - the broadcast opens then.");
+        return;
+      }
       // fetch the round's revealed orders first (fast, cached); a slow or
       // failed service never blocks the broadcast - after 2.5s we go with
       // bot orders, which is exact whenever no club in the league is claimed
@@ -39386,12 +39470,36 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     var hNowW = (now - (pl.EPOCH + pl.dayIx(now) * 86400000)) / 3600000;
     var state = hNowW < h0 ? "up" : hNowW < h0 + (pl.LIVE_LEN || 3) ? "live" : "fin";
 
+    var hh0 = (h0 < 10 ? "0" : "") + h0 + ":00 UTC";
+    // T-minus one hour: the teamsheets are public - show the ACTUAL elevens,
+    // a claimed manager's named XI and the engine's own pick for the bots
+    var teamsIn = state === "up" && (h0 - hNowW) <= 1;
     var stateChip = state === "live" ? "<span class='fo-wt-live'><i></i>LIVE</span>"
-      : state === "up" ? "<span class='fo-wt-soon'>PLAY AT " + (h0 < 10 ? "0" : "") + h0 + ":00 UTC</span>"
+      : state === "up" ? "<span class='fo-wt-soon'>" + (teamsIn ? "TEAMS IN &middot; " : "") + "PLAY AT " + hh0 + "</span>"
       : "<span class='fo-wt-fin'>STUMPS</span>";
     var bugLine = state === "live" ? "In play now &middot; the broadcast has every ball"
       : state === "fin" ? "Played &middot; enter the theatre to watch it back"
-      : "First ball " + (h0 < 10 ? "0" : "") + h0 + ":00 UTC";
+      : teamsIn ? "The teamsheets are in &middot; first ball " + hh0
+      : "First ball " + hh0;
+    var xiHTML = "";
+    if (teamsIn) {
+      var keyTI = rid + ":" + round, ov = ORD_VAL[keyTI];
+      if (ov === undefined) {
+        roundOrders(rid, round).then(function () {
+          try { if ((location.hash || "").split("?")[0] === "#/watch") window.foRenderWatchPage(); } catch (eTi) {}
+        });
+        xiHTML = "<div class='fo-wt-teamsin'><span class='ld'>Fetching the named elevens&hellip;</span></div>";
+      } else {
+        var sqHt = serverSquad(rid, m.home.slot) || [], sqAt = serverSquad(rid, m.away.slot) || [];
+        var xiCol = function (nm, sq, ord) {
+          var xi = actualXI(sq, ord);
+          return "<div class='c'><b>" + E(nm) + "</b>" + (ord ? "<u>manager's named XI</u>" : "<u>the engine's pick</u>") +
+            xi.map(function (p, k) { return "<span><i>" + (k + 1) + "</i>" + E(p.name) + (p.keeper ? " &dagger;" : p.bowlType ? " &#9679;" : "") + "</span>"; }).join("") + "</div>";
+        };
+        xiHTML = "<div class='fo-wt-teamsin'><div class='cols'>" +
+          xiCol(m.home.name, sqHt, ov[m.home.name]) + xiCol(m.away.name, sqAt, ov[m.away.name]) + "</div></div>";
+      }
+    }
 
     var others = fx.map(function (m2, i2) {
       if (i2 === fi) return "";
@@ -39411,6 +39519,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       "<div class='fo-wt-bug'>" +
       "<div class='fo-wt-teams'><b>" + E(m.home.name) + "</b><i>v</i><b>" + E(m.away.name) + "</b></div>" +
       "<div class='fo-wt-score'>" + bugLine + "</div>" +
+      xiHTML +
       (state !== "up" ? "<button type='button' class='fo-wt-enter' onclick='foWtSpectate(\"" + rid + "\",0,0," + fi + ")'>" +
         (state === "live" ? "Enter the broadcast theatre &rsaquo;" : "Watch it back in the theatre &rsaquo;") + "</button>" : "") +
       "</div></div>" +
@@ -39475,6 +39584,14 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       ".fo-wt-over i.w{background:rgba(255,107,94,.22);border-color:#FF6B5E;color:#FF6B5E}",
       ".fo-wt-comm{font:italic 400 12px/1.5 'Fraunces',Georgia,serif;color:rgba(255,254,252,.65);margin-top:9px}",
       ".fo-wt-enter{display:block;width:100%;margin-top:12px;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:#C95532 !important;border:none !important;border-radius:999px !important;padding:13px 16px !important;cursor:pointer}",
+      ".fo-wt-teamsin{margin-top:12px;border-top:1px solid rgba(255,254,252,.14);padding-top:11px}",
+      ".fo-wt-teamsin .ld{font:italic 400 12px/1.4 'Fraunces',Georgia,serif;color:rgba(255,254,252,.65)}",
+      ".fo-wt-teamsin .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}",
+      ".fo-wt-teamsin .c b{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:13px;margin-bottom:2px}",
+      ".fo-wt-teamsin .c u{display:block;text-decoration:none;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#E8B96A;margin-bottom:6px}",
+      ".fo-wt-teamsin .c span{display:flex;align-items:baseline;gap:6px;font:400 11.5px/1.55 Inter,sans-serif;color:rgba(255,254,252,.85)}",
+      ".fo-wt-teamsin .c span i{font-style:normal;font:700 9px/1 Oswald,sans-serif;color:rgba(255,254,252,.4);width:12px;text-align:right}",
+      "@media(max-width:430px){.fo-wt-teamsin .cols{grid-template-columns:1fr}}",
       ".fo-wt-rail{margin-top:14px}",
       ".fo-wt-rail>i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,254,252,.5);font-style:normal;margin-bottom:7px}",
       ".fo-wt-other{display:flex;justify-content:space-between;gap:10px;align-items:baseline;background:rgba(6,13,26,.6);border:1px solid rgba(255,254,252,.1);border-radius:11px;padding:9px 13px;margin-bottom:7px;text-decoration:none;color:#FFFEFC}",

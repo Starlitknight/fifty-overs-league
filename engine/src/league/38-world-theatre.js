@@ -136,7 +136,7 @@
   // orders (with no claims in the league that is already exact).
   var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
   var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
-  var ORD_CACHE = {};
+  var ORD_CACHE = {}, ORD_VAL = {};
   function roundOrders(rid, roundNo) {
     var key = rid + ":" + roundNo;
     if (ORD_CACHE[key]) return ORD_CACHE[key];
@@ -152,9 +152,34 @@
       }).then(function (r) { return r.ok ? r.json() : null; })
         .then(function (j) { return (j && j.orders) || {}; });
     } catch (e) { p = Promise.resolve({}); }
-    p = p.catch(function () { return {}; });
+    p = p.catch(function () { return {}; }).then(function (v) { ORD_VAL[key] = v; return v; });
     ORD_CACHE[key] = p;
     return p;
+  }
+  // the eleven a club actually fields: revealed orders when a manager has
+  // spoken (mirroring the engine's validity rules), else the engine's own
+  // deterministic pick - keeper, the five best bowlers, best bats, mpos order
+  function actualXI(players, orders) {
+    try {
+      var xiN = orders && orders.xi;
+      if (xiN && xiN.length === 11) {
+        var by = {}; players.forEach(function (p) { by[p.name] = p; });
+        var picked = [], seen = {};
+        xiN.forEach(function (nm) { if (by[nm] && !seen[nm]) { seen[nm] = 1; picked.push(by[nm]); } });
+        if (picked.length === 11 && picked.filter(function (p) { return p.bowlType; }).length >= 5) return picked;
+      }
+    } catch (e) {}
+    var P2 = players.slice();
+    var kps = P2.filter(function (p) { return p.keeper; }).sort(function (a, b) { return b.bat - a.bat; });
+    var keeper = kps[0] || P2.slice().sort(function (a, b) { return b.bat - a.bat; })[0];
+    var bowlers = P2.filter(function (p) { return p.bowlType && p.key !== keeper; }).sort(function (a, b) { return (b.threat + b.control) - (a.threat + a.control); });
+    var five = bowlers.slice(0, 5);
+    var chosen = {}; chosen[keeper.name] = 1; five.forEach(function (b) { chosen[b.name] = 1; });
+    var rest = P2.filter(function (p) { return !chosen[p.name]; }).sort(function (a, b) { return b.bat - a.bat; });
+    for (var i = 0; i < rest.length; i++) { if (Object.keys(chosen).length >= 11) break; chosen[rest[i].name] = 1; }
+    var xi = P2.filter(function (p) { return chosen[p.name]; });
+    xi.sort(function (a, b) { return (a.mpos - b.mpos) || (b.bat - a.bat); });
+    return xi;
   }
   window.foWtSpectate = function (rid, season, round, fi) {
     try {
@@ -164,6 +189,15 @@
       var sv = serverFixtures(rid, Date.now()), m = sv.fx[fi];
       if (!m) return;
       var cal = sv.cal, srvRound = cal.round;
+      // no early broadcasts: bot or human, a match cannot be watched (and its
+      // result cannot be learned) before its scheduled first ball
+      var plG = P(), nowG = Date.now();
+      var hNowG = (nowG - (plG.EPOCH + plG.dayIx(nowG) * 86400000)) / 3600000;
+      var h0G = plG.natHour(rid);
+      if (hNowG < h0G) {
+        alert("The first ball is at " + (h0G < 10 ? "0" : "") + h0G + ":00 UTC - the broadcast opens then.");
+        return;
+      }
       // fetch the round's revealed orders first (fast, cached); a slow or
       // failed service never blocks the broadcast - after 2.5s we go with
       // bot orders, which is exact whenever no club in the league is claimed
@@ -239,12 +273,36 @@
     var hNowW = (now - (pl.EPOCH + pl.dayIx(now) * 86400000)) / 3600000;
     var state = hNowW < h0 ? "up" : hNowW < h0 + (pl.LIVE_LEN || 3) ? "live" : "fin";
 
+    var hh0 = (h0 < 10 ? "0" : "") + h0 + ":00 UTC";
+    // T-minus one hour: the teamsheets are public - show the ACTUAL elevens,
+    // a claimed manager's named XI and the engine's own pick for the bots
+    var teamsIn = state === "up" && (h0 - hNowW) <= 1;
     var stateChip = state === "live" ? "<span class='fo-wt-live'><i></i>LIVE</span>"
-      : state === "up" ? "<span class='fo-wt-soon'>PLAY AT " + (h0 < 10 ? "0" : "") + h0 + ":00 UTC</span>"
+      : state === "up" ? "<span class='fo-wt-soon'>" + (teamsIn ? "TEAMS IN &middot; " : "") + "PLAY AT " + hh0 + "</span>"
       : "<span class='fo-wt-fin'>STUMPS</span>";
     var bugLine = state === "live" ? "In play now &middot; the broadcast has every ball"
       : state === "fin" ? "Played &middot; enter the theatre to watch it back"
-      : "First ball " + (h0 < 10 ? "0" : "") + h0 + ":00 UTC";
+      : teamsIn ? "The teamsheets are in &middot; first ball " + hh0
+      : "First ball " + hh0;
+    var xiHTML = "";
+    if (teamsIn) {
+      var keyTI = rid + ":" + round, ov = ORD_VAL[keyTI];
+      if (ov === undefined) {
+        roundOrders(rid, round).then(function () {
+          try { if ((location.hash || "").split("?")[0] === "#/watch") window.foRenderWatchPage(); } catch (eTi) {}
+        });
+        xiHTML = "<div class='fo-wt-teamsin'><span class='ld'>Fetching the named elevens&hellip;</span></div>";
+      } else {
+        var sqHt = serverSquad(rid, m.home.slot) || [], sqAt = serverSquad(rid, m.away.slot) || [];
+        var xiCol = function (nm, sq, ord) {
+          var xi = actualXI(sq, ord);
+          return "<div class='c'><b>" + E(nm) + "</b>" + (ord ? "<u>manager's named XI</u>" : "<u>the engine's pick</u>") +
+            xi.map(function (p, k) { return "<span><i>" + (k + 1) + "</i>" + E(p.name) + (p.keeper ? " &dagger;" : p.bowlType ? " &#9679;" : "") + "</span>"; }).join("") + "</div>";
+        };
+        xiHTML = "<div class='fo-wt-teamsin'><div class='cols'>" +
+          xiCol(m.home.name, sqHt, ov[m.home.name]) + xiCol(m.away.name, sqAt, ov[m.away.name]) + "</div></div>";
+      }
+    }
 
     var others = fx.map(function (m2, i2) {
       if (i2 === fi) return "";
@@ -264,6 +322,7 @@
       "<div class='fo-wt-bug'>" +
       "<div class='fo-wt-teams'><b>" + E(m.home.name) + "</b><i>v</i><b>" + E(m.away.name) + "</b></div>" +
       "<div class='fo-wt-score'>" + bugLine + "</div>" +
+      xiHTML +
       (state !== "up" ? "<button type='button' class='fo-wt-enter' onclick='foWtSpectate(\"" + rid + "\",0,0," + fi + ")'>" +
         (state === "live" ? "Enter the broadcast theatre &rsaquo;" : "Watch it back in the theatre &rsaquo;") + "</button>" : "") +
       "</div></div>" +
@@ -328,6 +387,14 @@
       ".fo-wt-over i.w{background:rgba(255,107,94,.22);border-color:#FF6B5E;color:#FF6B5E}",
       ".fo-wt-comm{font:italic 400 12px/1.5 'Fraunces',Georgia,serif;color:rgba(255,254,252,.65);margin-top:9px}",
       ".fo-wt-enter{display:block;width:100%;margin-top:12px;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:#C95532 !important;border:none !important;border-radius:999px !important;padding:13px 16px !important;cursor:pointer}",
+      ".fo-wt-teamsin{margin-top:12px;border-top:1px solid rgba(255,254,252,.14);padding-top:11px}",
+      ".fo-wt-teamsin .ld{font:italic 400 12px/1.4 'Fraunces',Georgia,serif;color:rgba(255,254,252,.65)}",
+      ".fo-wt-teamsin .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}",
+      ".fo-wt-teamsin .c b{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:13px;margin-bottom:2px}",
+      ".fo-wt-teamsin .c u{display:block;text-decoration:none;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#E8B96A;margin-bottom:6px}",
+      ".fo-wt-teamsin .c span{display:flex;align-items:baseline;gap:6px;font:400 11.5px/1.55 Inter,sans-serif;color:rgba(255,254,252,.85)}",
+      ".fo-wt-teamsin .c span i{font-style:normal;font:700 9px/1 Oswald,sans-serif;color:rgba(255,254,252,.4);width:12px;text-align:right}",
+      "@media(max-width:430px){.fo-wt-teamsin .cols{grid-template-columns:1fr}}",
       ".fo-wt-rail{margin-top:14px}",
       ".fo-wt-rail>i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,254,252,.5);font-style:normal;margin-bottom:7px}",
       ".fo-wt-other{display:flex;justify-content:space-between;gap:10px;align-items:baseline;background:rgba(6,13,26,.6);border:1px solid rgba(255,254,252,.1);border-radius:11px;padding:9px 13px;margin-bottom:7px;text-decoration:none;color:#FFFEFC}",

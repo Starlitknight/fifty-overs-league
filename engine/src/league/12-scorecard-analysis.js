@@ -5561,6 +5561,8 @@
         var resByRound = {};
         resAll.forEach(function (r5) { (resByRound[r5.round] = resByRound[r5.round] || []).push(r5); });
         var snapSeasonOk = !!(srv.snap && srv.snap.seasonNo === srv.cal.seasonNo);
+        var hNowP = (Date.now() - (srv.pl.EPOCH + srv.pl.dayIx(Date.now()) * 86400000)) / 3600000;
+        var teamsInP = srv.state === "up" && (srv.hour - hNowP) <= 1;   // final hour: XIs are public
         // -- today
         var mdRows;
         if (srv.fx.length) {
@@ -5572,6 +5574,7 @@
             else if (srv.state === "fin") tail = rec
               ? "<span class='res'>" + E(rec.text) + "</span><button type='button' class='fo-nt-watch ghost' onclick='foWtSpectate(\"" + nation + "\",0,0," + i5 + ")'>Watch it back &rsaquo;</button>"
               : "<span class='res dim'>Stumps &middot; the umpire files the scorecard on the hour</span>";
+            else if (teamsInP) tail = "<span class='res'>Teamsheets in &middot; first ball " + hhFmt(srv.hour) + "</span><a class='fo-nt-watch ghost' href='#/watch?n=" + encodeURIComponent(nation) + "&f=" + i5 + "'>See the XIs &rsaquo;</a>";
             else tail = "<span class='res dim'>First ball " + hhFmt(srv.hour) + "</span>";
             return "<div class='fo-nt-mx" + (srv.state === "live" ? " live" : "") + "'>" +
               "<div class='t'><b>" + E(f5.home.name) + "</b><i>v</i><b>" + E(f5.away.name) + "</b>" +
@@ -5585,7 +5588,7 @@
             (nextDay != null ? ". The league returns on world day " + nextDay + "." : ".") + "</div>";
         }
         var stateWord = srv.state === "live" ? "&#9679; Round " + srv.cal.round + " &mdash; in play now"
-          : srv.state === "up" ? "Round " + srv.cal.round + " &middot; today, first ball " + hhFmt(srv.hour)
+          : srv.state === "up" ? "Round " + srv.cal.round + " &middot; " + (teamsInP ? "teamsheets in &middot; " : "") + "first ball " + hhFmt(srv.hour)
           : srv.state === "fin" ? "Round " + srv.cal.round + " &middot; played today"
           : "Matchday";
         // -- still to come

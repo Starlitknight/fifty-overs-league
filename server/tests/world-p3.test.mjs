@@ -160,19 +160,19 @@ test('005: orders lock at the first ball and reveal to spectators', async () => 
     } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e; } finally { c.release(); }
   }
 
-  // before the window: orders go on file, but nobody can read them
-  const ok = await inTxn(playMs - 3600000, U1, c =>
+  // more than an hour out: orders go on file, but nobody can read them
+  const ok = await inTxn(playMs - 2 * 3600000, U1, c =>
     c.query(`SELECT public.world_submit_orders($1, '{"tossDecision":"bat","captain":"Test Captain"}'::jsonb) AS r`, [TEST_ROUND]));
   assert.equal(ok.rows[0].r.ok, true);
   await assert.rejects(
-    inTxn(playMs - 3600000, null, c => c.query(`SELECT public.world_round_orders('eng', $1)`, [TEST_ROUND])),
-    /sealed until the first ball/);
+    inTxn(playMs - 2 * 3600000, null, c => c.query(`SELECT public.world_round_orders('eng', $1)`, [TEST_ROUND])),
+    /sealed until an hour before the first ball/);
 
-  // after the first ball: submissions bounce, the sheet is public
+  // inside the final hour: submissions bounce, the teamsheet is public
   await assert.rejects(
-    inTxn(playMs + 30 * 60000, U1, c => c.query(`SELECT public.world_submit_orders($1, '{"tossDecision":"bowl"}'::jsonb) AS r`, [TEST_ROUND])),
-    /orders lock at the first ball/);
-  const rev = await inTxn(playMs + 30 * 60000, null, c =>
+    inTxn(playMs - 30 * 60000, U1, c => c.query(`SELECT public.world_submit_orders($1, '{"tossDecision":"bowl"}'::jsonb) AS r`, [TEST_ROUND])),
+    /orders lock an hour before the first ball/);
+  const rev = await inTxn(playMs - 30 * 60000, null, c =>
     c.query(`SELECT public.world_round_orders('eng', $1) AS r`, [TEST_ROUND]));
   const body = rev.rows[0].r;
   assert.equal(body.round, TEST_ROUND);

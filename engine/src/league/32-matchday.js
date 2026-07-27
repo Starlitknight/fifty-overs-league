@@ -45,7 +45,9 @@
     "I have seen {dog} ruin better sides than this for fun. Watch the first ten overs."
   ];
 
-  // probable XI: saved orders if the coach has spoken, else the eleven best
+  // the ACTUAL XI: saved orders if the coach has spoken, else the very
+  // eleven the engine will field - keeper, the five best bowlers, best
+  // bats, in match order. No "probable" guesswork: this is the teamsheet.
   function probableXI(team, mine) {
     try {
       if (mine && App.orders && App.orders.saved && App.orders.batOrder && App.orders.batOrder.length >= 11) {
@@ -54,8 +56,18 @@
         if (xi.length === 11) return { xi: xi, fromOrders: true };
       }
     } catch (e) {}
-    var sorted = (team.players || []).slice().sort(function (a, b) { return ovrOf(b) - ovrOf(a); });
-    return { xi: sorted.slice(0, 11), fromOrders: false };
+    var P = (team.players || []).slice();
+    if (!P.length) return { xi: [], fromOrders: false };
+    var kps = P.filter(function (p) { return p.keeper; }).sort(function (a, b) { return b.bat - a.bat; });
+    var keeper = kps[0] || P.slice().sort(function (a, b) { return b.bat - a.bat; })[0];
+    var bowlers = P.filter(function (p) { return p.bowlType && p.key !== keeper; }).sort(function (a, b) { return (b.threat + b.control) - (a.threat + a.control); });
+    var chosen = {}; chosen[keeper.name] = 1;
+    bowlers.slice(0, 5).forEach(function (b) { chosen[b.name] = 1; });
+    var rest = P.filter(function (p) { return !chosen[p.name]; }).sort(function (a, b) { return b.bat - a.bat; });
+    for (var i = 0; i < rest.length; i++) { if (Object.keys(chosen).length >= 11) break; chosen[rest[i].name] = 1; }
+    var xi2 = P.filter(function (p) { return chosen[p.name]; });
+    xi2.sort(function (a, b) { return (a.mpos - b.mpos) || (b.bat - a.bat); });
+    return { xi: xi2.slice(0, 11), fromOrders: false };
   }
   function xiStrength(xi) { return xi.length ? xi.reduce(function (s, p) { return s + ovrOf(p); }, 0) / xi.length : 50; }
 
@@ -122,7 +134,7 @@
         .replace("{dogStar}", dogStar).replace("{pitch}", pitch);
 
       var xiCol = function (team, prob, label) {
-        return "<div class='fo-md-xi'><i>" + E(label) + (prob.fromOrders ? " &middot; your card" : " &middot; probable") + "</i>" +
+        return "<div class='fo-md-xi'><i>" + E(label) + (prob.fromOrders ? " &middot; your card" : " &middot; the XI") + "</i>" +
           prob.xi.map(function (p, k) {
             return "<div class='p'><u>" + (k + 1) + "</u><b>" + E(p.name) + "</b>" +
               (p.keeper || p.role === "wicketkeeper" ? "<em>&dagger;</em>" : p.bowlType ? "<em>&#9679;</em>" : "") + "</div>";

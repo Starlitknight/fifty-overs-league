@@ -44,8 +44,14 @@
   function natHour(rid) { if (rid === "eng") return 14; return HOUR_SLOTS[h32("nathour|" + rid) % HOUR_SLOTS.length]; }
   function dayIx(now) { return Math.floor((now - EPOCH) / DAY); }
   function hourOfDay(now) { var d = dayIx(now); return (now - (EPOCH + d * DAY)) / 3600000; }
+  // the served world's season 1 begins world day 5 (28 July) - the planet's
+  // phase runs on the SAME season clock as the umpire, so "round N" here is
+  // the round the server actually plays today
+  var WORLD_START = 5;
   function phaseOf(now) {
-    var d = dayIx(now), s = Math.floor(d / CYCLE) + 1, di = ((d % CYCLE) + CYCLE) % CYCLE;
+    var d = dayIx(now), rel = d - WORLD_START;
+    if (rel < 0) return { day: d, season: 1, di: -1, kind: "rest", preseason: true };
+    var s = Math.floor(rel / CYCLE) + 1, di = rel % CYCLE;
     var p = { day: d, season: s, di: di };
     if (di < ROUNDS) { p.kind = "league"; p.round = di + 1; }
     else if (di === 18) p.kind = "honours";
@@ -287,15 +293,15 @@
   }
   function hh(n) { return (n < 10 ? "0" : "") + Math.floor(n) + ":00"; }
   function todayStatus(now) {
-    var h = hourOfDay(now), liveN = 0, nextAt = null;
+    var h = hourOfDay(now), liveIds = [], nextAt = null;
     regionList().forEach(function (r) {
       var h0 = natHour(r.id);
-      if (h >= h0 && h < h0 + LIVE_LEN) liveN++;
+      if (h >= h0 && h < h0 + LIVE_LEN) liveIds.push(r.id);
       else if (h < h0 && (nextAt == null || h0 < nextAt)) nextAt = h0;
     });
-    if (liveN) return { key: "live", chip: "LIVE now in " + liveN + " " + (liveN === 1 ? "nation" : "nations") };
-    if (nextAt != null) return { key: "up", chip: "Next play " + hh(nextAt) + " UTC" };
-    return { key: "fin", chip: "The world's play is done for today" };
+    if (liveIds.length) return { key: "live", liveIds: liveIds, chip: "LIVE now in " + liveIds.length + " " + (liveIds.length === 1 ? "nation" : "nations") };
+    if (nextAt != null) return { key: "up", liveIds: [], chip: "Next play " + hh(nextAt) + " UTC" };
+    return { key: "fin", liveIds: [], chip: "The world's play is done for today" };
   }
   function stageName(st) { return { r16: "The Last Sixteen", qf: "Quarter-finals", sf: "Semi-finals", final: "THE WORLD CUP FINAL" }[st] || st; }
 
@@ -398,18 +404,32 @@
           var posOf = {}; t.forEach(function (row, i2) { posOf[row.side.slot] = i2 + 1; });
           var feat = fx.slice().sort(function (a, b) { return (posOf[a.home.slot] + posOf[a.away.slot]) - (posOf[b.home.slot] + posOf[b.away.slot]); })[0];
           var lv = feat ? liveView(feat, now, natHour(r.id)) : null;
-          var starLn = "";
-          try { if (feat && lv.state === "fin" && window.__foStars) starLn = window.__foStars.suffix(r.id, p.season, p.round, feat); } catch (eSt) {}
+          // the card tells the truth: fixture names come from the server's
+          // own schedule (same round, same circle method); a finished match
+          // shows the RECORDED result when the served snapshot is in hand,
+          // and never an invented scoreline
+          var finTxt = null;
+          try {
+            var snb = window.__foWorldLg && window.__foWorldLg.get(r.id);
+            if (feat && snb && snb.seasonNo === p.season) {
+              var rr = (snb.results || []).filter(function (x) { return x.round === p.round && x.home === feat.home.name && x.away === feat.away.name; })[0];
+              if (rr) finTxt = rr.text;
+            }
+          } catch (eF) {}
           var mid = !feat ? "" :
             lv.state === "up" ? "<em class='fx'>" + E(feat.home.name) + " v " + E(feat.away.name) + " &middot; " + hh(natHour(r.id)) + " UTC</em>" :
-            lv.state === "live" ? "<em class='fx live'><b>LIVE</b> " + E(lv.line) + "</em>" :
-            "<em class='fx'>" + E(feat.text) + E(starLn) + "</em>";
+            lv.state === "live" ? "<em class='fx live'><b>LIVE</b> " + E(feat.home.name) + " v " + E(feat.away.name) + " &middot; in play now</em>" :
+            "<em class='fx'>" + (finTxt ? E(finTxt) : E(feat.home.name) + " v " + E(feat.away.name) + " &middot; played &middot; tap for the result") + "</em>";
           var ldr2 = t[0];
-          return "<a class='fo-pl-nat' href='#/nation?n=" + encodeURIComponent(r.id) + "'>" +
+          // a nation in its live window wears an unmissable red LIVE button;
+          // the card opens its matchday, where every live match has a
+          // watch-in-the-theatre door
+          var natLive = hNow >= natHour(r.id) && hNow < natHour(r.id) + LIVE_LEN;
+          return "<a class='fo-pl-nat" + (natLive ? " live" : "") + "' href='#/nation?n=" + encodeURIComponent(r.id) + "'>" +
             "<img class='fo-pl-flag' src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\">" +
             "<span class='fo-pl-natt'><b>" + E(r.nm) + "</b>" + mid +
             "<u>" + (ldr2 ? E(ldr2.side.name) + " lead &middot; " + ldr2.pts + " pts" : "") + "</u></span>" +
-            "<i>&rsaquo;</i></a>";
+            (natLive ? "<span class='fo-pl-livebtn'><i></i>LIVE</span>" : "<i>&rsaquo;</i>") + "</a>";
         }).join("");
       } else if (p.kind === "honours") {
         natCards = regionList().filter(function (r) { return r.id !== my; }).map(function (r) {
@@ -428,7 +448,14 @@
         "<div class='fo-pl-kick'>World cricket &middot; Season " + p.season + " &middot; Day " + (p.di + 1) + " of " + CYCLE + "</div>" +
         "<h1>The Planet Plays Today</h1>" +
         "<p>" + E(phaseLine) + ". Every league runs on the world calendar, live from 10:00 UTC — online or offline, the same world for everyone.</p>" +
-        "<span class='fo-pl-chip " + st.key + "'>" + E(st.chip) + "</span>" +
+        // LIVE is a door, not a label: one live nation opens that nation's
+        // matchday (every live match, watch buttons and all); several open
+        // the theatre hub
+        (st.key === "live"
+          ? "<a class='fo-pl-chip live islink' href='" + (st.liveIds.length === 1
+              ? (st.liveIds[0] === my ? "#/league" : "#/nation?n=" + encodeURIComponent(st.liveIds[0]))
+              : "#/watch") + "'>&#9679; " + E(st.chip) + " &mdash; watch &rsaquo;</a>"
+          : "<span class='fo-pl-chip " + st.key + "'>" + E(st.chip) + "</span>") +
         "</div>" +
         bandHTML + ownCard + cupHTML +
         (natCards ? "<div class='fo-pl-grid'>" + natCards + "</div>" : "") +
@@ -447,6 +474,13 @@
     "html body #page .fo-pl-mast p{font:italic 420 13.5px/1.6 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);margin:0 0 12px;max-width:52ch}",
     "html body #page .fo-pl-chip{display:inline-block;font:700 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;border-radius:999px;padding:7px 13px}",
     "html body #page .fo-pl-chip.live{background:rgba(200,60,58,.12);color:#B23230}",
+    // LIVE, loud: the chip becomes a solid red button when it is a door
+    "html body #page a.fo-pl-chip.islink{background:#C83C3A !important;color:#FFFEFC !important;text-decoration:none !important;padding:11px 18px;font-size:11.5px;box-shadow:0 8px 22px rgba(200,60,58,.35);animation:foPlLivePulse 1.6s ease-in-out infinite}",
+    "@keyframes foPlLivePulse{0%,100%{box-shadow:0 8px 22px rgba(200,60,58,.35)}50%{box-shadow:0 8px 30px rgba(200,60,58,.6)}}",
+    "html body #page .fo-pl-nat.live{border-color:rgba(200,60,58,.55);box-shadow:0 4px 18px rgba(200,60,58,.18)}",
+    "html body #page .fo-pl-livebtn{flex:none;display:inline-flex;align-items:center;gap:6px;font:800 11px/1 Oswald,sans-serif;letter-spacing:.14em;color:#FFFEFC;background:#C83C3A;border-radius:999px;padding:9px 14px;box-shadow:0 6px 16px rgba(200,60,58,.35)}",
+    "html body #page .fo-pl-livebtn i{width:8px;height:8px;border-radius:50%;background:#FFFEFC;animation:foPlDot 1.2s ease-in-out infinite}",
+    "@keyframes foPlDot{0%,100%{opacity:1}50%{opacity:.3}}",
     "html body #page .fo-pl-chip.up{background:rgba(20,28,40,.07);color:rgba(20,28,40,.6)}",
     "html body #page .fo-pl-chip.fin{background:rgba(31,158,114,.13);color:#177A57}",
     "html body #page .fo-pl-band{margin-top:14px;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:16px;padding:12px 14px}",
@@ -526,5 +560,5 @@
   });
 
   window.foRenderPlanetPage = foRenderPlanetPage;
-  window.__foPlanet = { phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, fixturesOf: fixturesOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN };
+  window.__foPlanet = { phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, fixturesOf: fixturesOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();
