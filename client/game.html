@@ -10588,7 +10588,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-1325-15852b";
+  var FO_BUILD = "20260727-1330-8c9255";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -39027,6 +39027,52 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     };
   }
 
+  // ---- signing up IS claiming a club ---------------------------------------
+  // No hunt for a claim button: once the account is signed in and no world
+  // club is held, the first free club in the manager's own country is
+  // claimed automatically, christened with their club name. If the country
+  // is full, say so and open the nation picker.
+  function autoClaim() {
+    try {
+      if (!jwt()) return;
+      if (localStorage.getItem("fo_world_claim")) return;    // already seated
+      var nat = "eng";
+      try { nat = (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || "eng"; } catch (eN) {}
+      var clubNm = ""; try { clubNm = userTeam().name || ""; } catch (eC) {}
+      var mgr = "manager"; try { mgr = (SYNC && SYNC.me && SYNC.me.display_name) || ((clubNm || "The") + " manager"); } catch (eM) {}
+      rpc("world_my_status").then(function (st) {
+        if (!st || st.signedIn === false) return;
+        if (st.claim) {
+          window.__foWorldClaim = st.claim;
+          try { localStorage.setItem("fo_world_claim", JSON.stringify(st.claim)); } catch (eS) {}
+          return;
+        }
+        rpc("world_auto_claim", { p_country: nat, p_name: mgr, p_club_name: clubNm || null }).then(function (r) {
+          if (!r || !r.ok) return;
+          var cl = { country: r.country, slot: r.slot, club: r.club, name: mgr };
+          window.__foWorldClaim = cl;
+          try { localStorage.setItem("fo_world_claim", JSON.stringify(cl)); localStorage.removeItem("fo_world_nm_" + r.country); } catch (eS2) {}
+          try {
+            if ((location.hash || "").indexOf("#/nation") === 0) {
+              var pg = document.getElementById("page"); if (pg) pg.__foLgSig = null;
+              if (window.foRenderNation) window.foRenderNation();
+            }
+          } catch (eR) {}
+        }).catch(function (e) {
+          if (/full/i.test(String(e.message || ""))) {
+            try {
+              alert(String(e.message).slice(0, 200));
+              ST.view = null; location.hash = "#/worldclub";
+              if (typeof window.route === "function") window.route();
+            } catch (eA) {}
+          }
+        });
+      }).catch(function () {});
+    } catch (e) {}
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(autoClaim, 3000); });
+  else setTimeout(autoClaim, 3000);
+
   // ---- #/worldclub ----------------------------------------------------------
   window.foRenderWorldClubPage = function () {
     var page = document.getElementById("page"); if (!page) return;
@@ -39076,7 +39122,9 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     sel("world_clubs?country_id=eq." + ST.nation + "&select=slot,name,ground,is_boss,manager&order=slot").then(function (rows) {
       var box = page.querySelector("#fo-wj-clubs"); if (!box) return;
       if (!rows || !rows.length) { box.innerHTML = "<h3>The clubs</h3><div class='fo-wj-note'>The served world hasn't founded this league yet.</div>"; return; }
-      box.innerHTML = "<h3>The clubs</h3>" + rows.map(function (c) {
+      var fullNote = rows.filter(function (c) { return !c.is_boss && !c.manager; }).length === 0
+        ? "<div class='fo-wj-note'><b>This country is full</b> - every club already has a manager. Pick another nation above; the umpire plays your orders at that nation's hour wherever you settle.</div>" : "";
+      box.innerHTML = "<h3>The clubs</h3>" + fullNote + rows.map(function (c) {
         var state = c.is_boss ? "<u class='boss'>THE BOSS</u>"
           : c.manager ? "<u class='taken'>" + E(c.manager) + "</u>"
           : "<button type='button' class='fo-wj-claim' data-slot='" + c.slot + "' data-club='" + E(c.name) + "'>Claim</button>";

@@ -206,3 +206,31 @@ test('007: humans christen their clubs, bots keep the counties, records survive 
   await as(U2, `SELECT public.world_release_club()`);
   assert.equal((await pool.query(`SELECT name FROM clubs WHERE country_id='eng' AND slot=7`)).rows[0].name, 'Kent');
 });
+
+test('008: signing up auto-claims the first free club; a full country says so', async () => {
+  // U2 (released earlier) lands automatically in the first free slot, christened
+  const r1 = await as(U2, `SELECT public.world_auto_claim('eng', 'R2', 'Orange Club') AS r`);
+  assert.equal(r1.rows[0].r.ok, true);
+  assert.equal(r1.rows[0].r.slot, 2);
+  assert.equal(r1.rows[0].r.club, 'Orange Club');
+  // calling again (any country) hands back the same seat - idempotent
+  const r2 = await as(U2, `SELECT public.world_auto_claim('ire', 'R2', 'Second Club') AS r`);
+  assert.equal(r2.rows[0].r.existing, true);
+  assert.equal(r2.rows[0].r.slot, 2);
+  // seven more sign-ups fill England; a clashing name never blocks the seat
+  for (let i = 3; i <= 9; i++) {
+    const uu = '33333333-3333-4333-8333-3333333333' + String(i).padStart(2, '0');
+    const rr = await as(uu, `SELECT public.world_auto_claim('eng', 'M${i}', 'Orange Club') AS r`);
+    assert.equal(rr.rows[0].r.ok, true);
+    assert.equal(rr.rows[0].r.slot, i);
+    assert.notEqual(rr.rows[0].r.club, 'Orange Club', 'a taken name falls back to the county');
+  }
+  // the tenth manager is told the country is full...
+  await assert.rejects(
+    as('44444444-4444-4444-8444-444444444444', `SELECT public.world_auto_claim('eng', 'Late', 'Latecomer CC')`),
+    /full - every club there already has a manager/);
+  // ...and can settle anywhere else
+  const el = await as('44444444-4444-4444-8444-444444444444', `SELECT public.world_auto_claim('ire', 'Late', 'Latecomer CC') AS r`);
+  assert.equal(el.rows[0].r.ok, true);
+  assert.equal(el.rows[0].r.club, 'Latecomer CC');
+});
