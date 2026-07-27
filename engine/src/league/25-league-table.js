@@ -197,7 +197,8 @@
 
       var plate =
         "<div class='fo-lgx-plate'>" +
-        "<img class='fo-lgx-map' src='" + ART() + "circuit/" + (reg.bg || (natId + ".webp")) + "' alt='' onerror=\"this.style.display='none'\">" +
+        "<span class='fo-lgx-glow'></span>" +
+        "<img class='fo-lgx-cup' src='" + ART() + "circuit/trophy-" + E(natId) + ".webp' alt='' onerror=\"this.style.display='none'\">" +
         "<div class='fo-lgx-plin'>" +
         "<div class='fo-lgx-mark'>" +
         "<span class='fo-lgx-pennant'><img src='" + flagOf(natId) + "' alt='' onerror=\"this.style.display='none'\"></span>" +
@@ -477,9 +478,12 @@
 
     // ---- the plate: the country behind the name of its league --------------
     "html body #page .fo-lgx-plate{position:relative;overflow:hidden;border-radius:20px;background:linear-gradient(135deg,#0C1B33,#173257 62%,#0E2140);box-shadow:0 22px 50px rgba(12,27,51,.26)}",
-    "html body #page .fo-lgx-map{position:absolute;right:-4%;top:-12%;width:62%;height:134%;object-fit:cover;opacity:.26;-webkit-mask-image:linear-gradient(90deg,transparent,#000 55%);mask-image:linear-gradient(90deg,transparent,#000 55%)}",
+    // THE PENNANT IS A CUP. Every nation's league plays for its own trophy -
+    // the nineteen painted cups, standing in the plate where the map used to be
+    "html body #page .fo-lgx-cup{position:absolute;right:20px;bottom:4px;height:calc(100% - 12px);width:auto;max-width:30%;object-fit:contain;object-position:bottom right;filter:drop-shadow(0 14px 26px rgba(0,0,0,.45))}",
+    "html body #page .fo-lgx-glow{position:absolute;right:0;top:-30%;width:44%;height:160%;background:radial-gradient(closest-side,rgba(232,185,106,.22),transparent 72%);pointer-events:none}",
     "html body #page .fo-lgx-plate:after{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--gold)}",
-    "html body #page .fo-lgx-plin{position:relative;padding:20px 22px 18px;display:flex;flex-direction:column;gap:15px}",
+    "html body #page .fo-lgx-plin{position:relative;padding:20px 22px 18px;padding-right:clamp(118px,24%,210px);display:flex;flex-direction:column;gap:15px}",
     "html body #page .fo-lgx-mark{display:flex;gap:14px;align-items:flex-start}",
     "html body #page .fo-lgx-pennant{flex:0 0 auto;width:46px;height:46px;border-radius:11px;background:rgba(255,254,252,.07);border:1px solid rgba(232,185,106,.42);display:flex;align-items:center;justify-content:center}",
     "html body #page .fo-lgx-pennant img{width:30px;height:21px;object-fit:cover;border-radius:2px;box-shadow:0 1px 5px rgba(0,0,0,.45)}",
@@ -635,6 +639,8 @@
     "@media(max-width:560px){html body #page .fo-lgx-titles h1{font-size:25px}",
     "html body #page .fo-lgx{padding:0 9px}",
     "html body #page .fo-lgx-plin{padding:17px 15px 15px}",
+    "html body #page .fo-lgx-plin{padding-right:88px}",
+    "html body #page .fo-lgx-cup{right:7px;bottom:10px;height:auto;width:72px;max-width:72px}",
     "html body #page .fo-lgx-panel{padding:12px 10px 14px}",
     "html body #page .fo-lgx-cols{padding:4px 5px 7px}",
     "html body #page .fo-lgx-row{padding:8px 5px}",

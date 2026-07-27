@@ -123,6 +123,38 @@
 
   var SORTS = [["ovr", "Strongest first"], ["age", "Youngest first"], ["wage", "Best paid"], ["name", "By name"]];
 
+  // ---- your own men, in the shape the public view uses ----------------------
+  // The world's squad is already the game's squad (league/37 adopts it), so for
+  // your own club the local side IS the served side - read it here and the two
+  // pages cannot drift, even before the world has been reached this session.
+  function ownSquad() {
+    try {
+      var t = userTeam(); if (!t || !(t.players || []).length) return null;
+      var ag = function (fn, p) { try { return Math.round(fn(p) || 0); } catch (e) { return 0; } };
+      var list = t.players.map(function (p) {
+        var bowls = !!(p.bowlType && !/does not bowl/i.test(p.btLabel || ""));
+        return { name: p.name, nat: p.nat, age: p.age, role: p.role, hand: p.hand,
+          bowl: p.btLabel, type: p.bowlTypeFull, keeper: !!p.keeper, rating: p.rating,
+          ovr: (window.foPkOvr ? window.foPkOvr(p) : Math.round((p.rating || 0) / 1000)),
+          batting: ag(aggBat, p), bowling: bowls ? ag(aggBowl, p) : 0,
+          fielding: (p.keeper ? ag(aggKeep, p) : ag(aggField, p)),
+          wage: p.wage, value: p.fee, talents: p.talents || [],
+          exp: p.expWord, form: p.formWord, fatigue: p.fatWord || p.fatigue, career: p.career || {} };
+      });
+      list.sort(function (a, b) { return (b.ovr || 0) - (a.ovr || 0); });
+      var mean = function (arr) { return arr.length ? Math.round(arr.reduce(function (a, b) { return a + b; }, 0) / arr.length) : 0; };
+      var byBat = list.slice().sort(function (a, b) { return b.batting - a.batting; }).slice(0, 7).map(function (x) { return x.batting; });
+      var byBowl = list.slice().sort(function (a, b) { return b.bowling - a.bowling; }).slice(0, 5).map(function (x) { return x.bowling; });
+      return { players: list, bill: list.reduce(function (a, p) { return a + (+p.wage || 0); }, 0),
+        tBat: mean(byBat), tBowl: mean(byBowl), tFld: mean(list.map(function (x) { return x.fielding; })) };
+    } catch (e) { return null; }
+  }
+  // your men open their full dossier; a rival's opens his card
+  function playerHref(cid, slot, mine, nm) {
+    return mine ? "#/player?n=" + encodeURIComponent(nm)
+      : "#/player?c=" + encodeURIComponent(cid) + "&s=" + slot + "&n=" + encodeURIComponent(nm);
+  }
+
   window.foRenderClubPage = function () {
     var page = document.getElementById("page"); if (!page) return;
     foClubCss();
@@ -154,6 +186,16 @@
       var players = (sq && sq.players) || [];
       var bill = (sq && +sq.wage_bill) || 0;
       var tBat = (sq && +sq.team_batting) || 0, tBowl = (sq && +sq.team_bowling) || 0, tFld = (sq && +sq.team_fielding) || 0;
+      // ONE CLUB, ONE SQUAD. For your own club the game already holds the
+      // world's men in full - read them, not the public view, so this page and
+      // the squad page can never show two different sides.
+      if (isMine) {
+        var ownSq = ownSquad();
+        if (ownSq && ownSq.players.length) {
+          players = ownSq.players; bill = ownSq.bill;
+          tBat = ownSq.tBat; tBowl = ownSq.tBowl; tFld = ownSq.tFld;
+        }
+      }
 
       var rkRow = rk && rk.clubs ? rk.clubs.filter(function (x) { return x.country === cid && x.slot === slot; })[0] : null;
       var tRow = lg && lg.table ? (lg.table.filter(function (t) { return t.slot === slot; })[0] || null) : null;
@@ -234,7 +276,7 @@
       else if (sortKey === "name") sorted.sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
 
       var star = sorted[0];
-      var starCard = star ? "<div class='fo-cp-star'>" +
+      var starCard = star ? "<a class='fo-cp-star' href='" + playerHref(cid, slot, isMine, star.name) + "'>" +
         "<img class='fo-cp-face' src='" + faceOf(star) + "' alt='' onerror=\"this.style.display='none'\">" +
         "<div class='fo-cp-starin'>" +
         "<div class='fo-cp-starn'>" + (natFlag(star.nat) ? "<img src='" + natFlag(star.nat) + "' alt='' onerror=\"this.style.display='none'\">" : "") +
@@ -247,10 +289,10 @@
         "<div class='fo-cp-starnums'>" +
         "<div class='fo-cp-starovr'><i>OVR</i><b>" + (star.ovr || "&mdash;") + "</b></div>" +
         "<div class='fo-cp-starval'><i>Value</i><b>" + money(star.value) + "</b></div>" +
-        "</div></div>" : "";
+        "</div></a>" : "";
 
       var rosterRows = sorted.slice(1).map(function (p, i) {
-        return "<div class='fo-cp-row'>" +
+        return "<a class='fo-cp-row' href='" + playerHref(cid, slot, isMine, p.name) + "'>" +
           "<span class='rk'>" + (i + 2) + "</span>" +
           "<span class='rl' title='" + E(roleWord(p.role)) + "'>" + roleGlyph(p) + "</span>" +
           "<span class='nm'><b>" + E(p.name) + "</b><i>" + E(p.bowl && p.bowl !== "Does not bowl" ? p.bowl : roleWord(p.role)) + "</i></span>" +
@@ -258,7 +300,7 @@
           "<span class='fm'>" + formDots(p.form) + "</span>" +
           "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
           "<span class='wg'>" + money(p.wage) + "</span>" +
-          "</div>";
+          "</a>";
       }).join("");
 
       var sortSel = "<select id='fo-cp-sort'>" + SORTS.map(function (s) {
@@ -460,7 +502,11 @@
       ".fo-cp-cols,.fo-cp-row{display:grid;grid-template-columns:30px 34px minmax(0,1fr) 54px 78px 54px 70px;gap:10px;align-items:center}",
       ".fo-cp-cols{padding:0 12px 8px;font:600 9px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(12,27,51,.42);text-align:center}",
       ".fo-cp-cols span:nth-child(3){text-align:left}",
-      ".fo-cp-row{background:#FFFDF7;border:1px solid rgba(12,27,51,.09);border-radius:10px;padding:11px 12px;margin-bottom:6px}",
+      ".fo-cp-row{background:#FFFDF7;border:1px solid rgba(12,27,51,.09);border-radius:10px;padding:11px 12px;margin-bottom:6px;text-decoration:none;color:inherit;transition:border-color .14s ease,transform .12s ease}",
+      "html body #page a.fo-cp-row{color:#0C1B33;text-decoration:none}",
+      "html body #page a.fo-cp-row:hover{border-color:rgba(201,162,75,.7);transform:translateY(-1px);text-decoration:none}",
+      "html body #page a.fo-cp-star{text-decoration:none;color:inherit}",
+      "html body #page a.fo-cp-star:hover{text-decoration:none}",
       ".fo-cp-row .rk{font:600 12px/1 Oswald,sans-serif;color:rgba(12,27,51,.4);text-align:center}",
       ".fo-cp-row .rl{width:30px;height:30px;border-radius:50%;background:rgba(31,111,74,.1);display:flex;align-items:center;justify-content:center}",
       ".fo-cp-row .nm{min-width:0}",

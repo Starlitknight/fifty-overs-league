@@ -69,10 +69,20 @@
       ["Fielding", (p.keeper || p.role === "wicketkeeper") ? agg(aggKeep, p) : agg(aggField, p)]
     ];
   }
-  // the five the club's own coaching book keeps
+  // the seven the club's own coaching book keeps. Batting and bowling belong on
+  // the shape too: a shape without them describes a cricketer you never picked.
   function facets(p) {
-    return [["Technique", agg(aggTech, p)], ["Power", num(skills(p).power)], ["Endurance", agg(aggEnd, p)],
+    var bowls = !!(p.bowlType && !/does not bowl/i.test(p.btLabel || ""));
+    return [["Batting", agg(aggBat, p)], ["Bowling", bowls ? agg(aggBowl, p) : 0],
+      ["Technique", agg(aggTech, p)], ["Power", num(skills(p).power)], ["Endurance", agg(aggEnd, p)],
       ["Fielding", agg(aggField, p)], ["Keeping", agg(aggKeep, p)]];
+  }
+  // tired legs, in words the dressing room uses and a colour anyone can read
+  function fatOf(word) {
+    var w = String(word || "fresh");
+    var pct = /shatter|exhaust|spent/i.test(w) ? 82 : /tired|weary|heavy/i.test(w) ? 46
+      : /little/i.test(w) ? 22 : 8;
+    return { word: w, pct: pct, tone: pct >= 60 ? "hot" : pct >= 30 ? "warm" : "cool" };
   }
 
   // ---- the pentagon ---------------------------------------------------------
@@ -205,12 +215,16 @@
   // ---- the shell -------------------------------------------------------------
   var TABS = [["overview", "Overview"], ["career", "Career"], ["matches", "Matches"], ["dev", "Development"]];
   var TAB = "overview";
+  function qp(k) { var m = new RegExp("[?&]" + k + "=([^&]*)").exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : ""; }
 
   function build() {
     if (!onPage()) return;
     var page = document.getElementById("page"); if (!page) return;
     var name = qName(); if (!name) return;
     var hit = null; try { hit = findPlayer(name); } catch (e) {}
+    var cidQ = qp("c");
+    // a man from another club: the world serves his card, and only his card
+    if (cidQ && !isMine(name)) { buildCard(cidQ, parseInt(qp("s"), 10) || 0, name); return; }
     if (!hit || !hit.p) return;
     var p = hit.p, team = hit.team || {}, mine = isMine(p.name);
     // the dark dossier stage is retired; make sure its backdrop goes with it
@@ -222,6 +236,7 @@
     var flag = ""; try { flag = window.foFlag ? window.foFlag(p.nat) : ""; } catch (eF) {}
     var pv = provLine(p, team);
     var cond = condition(p);
+    var fat0 = fatOf(p.fatWord || p.fatigue);
     var sc = scoutRow(p);
 
     var talents = (p.talents || []).slice(0, 3).map(function (t) {
@@ -246,9 +261,10 @@
       "<div><b>" + E(cap(p.expWord || "")) + "</b><i>Experience</i></div>" +
       "<div><b>" + E(team.name || "") + "</b><i>Club</i></div>" +
       "</div>" +
-      "<div class='fo-pp-strip two'>" +
+      "<div class='fo-pp-strip three'>" +
       "<div><b>" + money(wageOf(p)) + "</b><i>Wage</i></div>" +
       "<div><b>" + E(cap((typeof word === "function" ? word(p.capt || 30) : "steady"))) + "</b><i>Leadership</i></div>" +
+      "<div><b class='fo-pp-fat " + fat0.tone + "'><s></s>" + E(cap(fat0.word)) + "</b><i>Fatigue</i></div>" +
       "</div>" +
       "<div class='fo-pp-sc'>" + sc.map(function (x) {
         return "<div class='fo-pp-scv'><i>" + E(x[0].toUpperCase()) + "</i><em>" + x[1] + "</em><u><b style='width:" + num(x[1]) + "%'></b></u></div>";
@@ -273,6 +289,7 @@
       try { if (App.orders && App.orders.captain === p.name) idChips.push(["Captain", "&#128081;"]); } catch (eCp) {}
       room =
         "<div class='fo-pp-col'>" +
+        "<div class='fo-pp-slot' data-slot='record'></div>" +
         "<div class='fo-pp-slot' data-slot='career'></div>" +
         "<div class='fo-pp-card'><h3>Club history</h3>" +
         "<div class='fo-pp-hist'><span class='se'>Season " + (App.seasonNo || 1) + "</span>" +
@@ -413,6 +430,147 @@
     harvest();
   }
 
+  // ---- THE SCOUT'S CARD: a rival's player page -------------------------------
+  // Another manager's cricketer is not yours to read. What the world serves is
+  // what a scout sees over the fence: who he is, what he is worth with bat,
+  // ball and in the field, and the record he has actually put together. No raw
+  // skills, no coaching book, no training ground.
+  var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
+  var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+  var SQ_CACHE = {}, SQ_BUSY = {};
+  function servedSquad(cid, slot, cb) {
+    var k = cid + ":" + slot;
+    if (SQ_CACHE[k]) return SQ_CACHE[k];
+    if (SQ_BUSY[k]) return null;
+    SQ_BUSY[k] = 1;
+    try {
+      fetch(SB_URL + "/rest/v1/world_squads?country_id=eq." + encodeURIComponent(cid) + "&slot=eq." + slot +
+        "&select=name,players", { headers: { apikey: SB_ANON } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (rows) {
+          SQ_BUSY[k] = 0;
+          if (rows && rows[0]) { SQ_CACHE[k] = rows[0]; try { if (cb) cb(); } catch (e) {} }
+        }, function () { SQ_BUSY[k] = 0; });
+    } catch (e) { SQ_BUSY[k] = 0; }
+    return null;
+  }
+  function servedFace(sp) {
+    try {
+      if (window.foPkArt) return ART() + window.foPkArt({
+        name: sp.name, nat: sp.nat, role: sp.role, keeper: sp.keeper,
+        bowlTypeFull: sp.type, bowlType: (sp.type && sp.type !== "none") ? sp.type : null });
+    } catch (e) {}
+    return "";
+  }
+  var CARD_TAB = "overview";
+  function buildCard(cid, slot, name) {
+    try {
+      var page = document.getElementById("page"); if (!page) return;
+      try { document.body.classList.remove("fo-pl-on"); var bg0 = document.getElementById("fo-pl-bg"); if (bg0) bg0.remove(); } catch (eB) {}
+      var row = servedSquad(cid, slot, function () { if (onPage()) buildCard(cid, slot, name); });
+      var sp = row && (row.players || []).filter(function (x) { return x && x.name === name; })[0];
+      if (!sp) {
+        page.innerHTML = "<div class='fo-pp'><a class='fo-pp-back' href='#/team?c=" + E(cid) + "&s=" + slot + "'>&lsaquo; The club</a>" +
+          "<div class='fo-pp-card'><h3>" + E(name) + "</h3><p class='fo-pp-dim'>" +
+          (row ? "He is not on that club's teamsheet any more." : "Reaching the world for his card&hellip;") + "</p></div></div>";
+        return;
+      }
+      var clubNm = (row && row.name) || "";
+      try { var nmO = window.__foWorldNames && window.__foWorldNames.get(cid); if (nmO && nmO[slot]) clubNm = nmO[slot]; } catch (eN) {}
+      var no = ("00" + (h32("cardno|" + sp.name) % 199 + 1)).slice(-3);
+      var flag = ""; try { flag = window.foFlag ? window.foFlag(sp.nat) : ""; } catch (eF) {}
+      var fat = fatOf(sp.fatigue);
+      var bowls = !!(sp.bowl && !/does not bowl/i.test(sp.bowl));
+      var kind = (sp.keeper || sp.role === "wicketkeeper") ? "Wicketkeeper"
+        : (sp.role === "allRounder" || sp.role === "allrounder") ? "All-rounder" : bowls ? "Bowler" : "Batsman";
+      var sc = [["Batting", +sp.batting || 0], ["Bowling", bowls ? (+sp.bowling || 0) : 0], ["Fielding", +sp.fielding || 0]];
+      var tals = (sp.talents || []).slice(0, 3).map(function (t) {
+        var nm2 = t, tip = "";
+        try { nm2 = (typeof TALN !== "undefined" && TALN[t]) || t; } catch (e1) {}
+        try { tip = (typeof TALTIPS !== "undefined" && TALTIPS[t]) || ""; } catch (e2) {}
+        return "<div class='fo-pp-tal'><span class='fo-pp-talk'>Talent</span><div><b>" + E(nm2) + "</b>" +
+          (tip ? "<p>" + E(tip) + "</p>" : "") + "</div></div>";
+      }).join("");
+      var art = servedFace(sp);
+      var plate =
+        "<div class='fo-pp-plate'>" +
+        "<div class='fo-pp-cardart'>" + (art ? "<img src='" + E(art) + "' alt='' onerror=\"this.style.display='none'\">" : "") +
+        "<span class='fo-pp-no'>No. " + no + "/199</span></div>" +
+        "<div class='fo-pp-id'>" +
+        "<div class='fo-pp-k'>" + E(kind.toUpperCase()) + " &middot; " + (sp.hand === "L" ? "LHB" : "RHB") + " &middot; " + E(String(sp.nat || "").toUpperCase()) + "</div>" +
+        "<h1>" + E(sp.name) + (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
+        "<p class='fo-pp-prov'>Scouted from the boundary &middot; " + E(clubNm || "a world club") + "</p>" +
+        "<div class='fo-pp-strip'>" +
+        "<div><b>" + (sp.age | 0) + "</b><i>Age</i></div>" +
+        "<div><b>" + E(cap(sp.form || "steady")) + "</b><i>Form</i></div>" +
+        "<div><b>" + E(cap(sp.exp || "")) + "</b><i>Experience</i></div>" +
+        "<div><b>" + E(clubNm) + "</b><i>Club</i></div>" +
+        "</div>" +
+        "<div class='fo-pp-strip three'>" +
+        "<div><b>" + money(sp.wage) + "</b><i>Wage</i></div>" +
+        "<div><b>" + money(sp.value) + "</b><i>Value</i></div>" +
+        "<div><b class='fo-pp-fat " + fat.tone + "'><s></s>" + E(cap(fat.word)) + "</b><i>Fatigue</i></div>" +
+        "</div>" +
+        "<div class='fo-pp-sc'>" + sc.map(function (x) {
+          return "<div class='fo-pp-scv'><i>" + E(x[0].toUpperCase()) + "</i><em>" + x[1] + "</em><u><b style='width:" + num(x[1]) + "%'></b></u></div>";
+        }).join("") + "</div>" +
+        (tals ? "<div class='fo-pp-tals'>" + tals + "</div>" : "") +
+        "</div>" +
+        "<div class='fo-pp-ovr'><b>" + (sp.ovr || "&mdash;") + "</b><i>OVR</i></div>" +
+        "</div>";
+
+      var c = sp.career || {};
+      var caps = +c.m || 0;
+      var sr = c.balls ? (100 * (c.runs || 0) / c.balls).toFixed(1) : "&mdash;";
+      var econ = c.ovb ? ((c.conc || 0) / (c.ovb / 6)).toFixed(2) : "&mdash;";
+      var kv = function (k, v) { return "<div><b>" + v + "</b><i>" + k + "</i></div>"; };
+      var room;
+      if (CARD_TAB === "career") {
+        room = "<div class='fo-pp-col'><div class='fo-pp-card'><h3>Career record<span>All league cricket</span></h3>" +
+          (caps ? "<div class='fo-pp-mini wide'>" + kv("Matches", caps) + kv("Runs", c.runs || 0) +
+            kv("Best", c.hs || 0) + kv("Strike rate", sr) +
+            kv("Wickets", c.wkts || 0) + kv("Best bowling", c.bb ? c.bb.w + "/" + c.bb.r : "&mdash;") +
+            kv("Economy", econ) + kv("Overs", c.ovb ? Math.floor(c.ovb / 6) : 0) + "</div>"
+            : "<p class='fo-pp-dim'>He has not played a league match yet. The record starts the day he is picked.</p>") +
+          "</div></div>" +
+          "<div class='fo-pp-rail'><div class='fo-pp-card dark'><h3>The book is public</h3>" +
+          "<p>Every run and wicket here was scored in a match the umpire played and banked. It is the same record his own manager reads.</p>" +
+          "<a class='fo-pp-more' href='#/records'>The record book &rsaquo;</a></div></div>";
+      } else {
+        room = "<div class='fo-pp-col'>" +
+          "<div class='fo-pp-card'><h3>The scout's read</h3>" + bars(sc) +
+          "<p class='fo-pp-dim'>His raw skills stay in his own club's coaching book, and where he bats stays his manager's business until the teamsheet goes public, an hour before the match.</p></div>" +
+          "<div class='fo-pp-card'><h3>Career record</h3><div class='fo-pp-mini'>" +
+          kv("Matches", caps) + kv("Runs", c.runs || 0) + kv("Best", c.hs || 0) + kv("Wickets", c.wkts || 0) +
+          (caps ? "" : "<p class='fo-pp-dim'>The record starts the day he is picked.</p>") + "</div></div>" +
+          "</div>" +
+          "<div class='fo-pp-rail'>" +
+          "<div class='fo-pp-card'><h3>Role</h3>" +
+          "<div class='fo-pp-role'><img src='" + ART() + iconOf({ role: sp.role, keeper: sp.keeper, bowlType: sp.type, btLabel: sp.bowl }) + "' alt='' onerror=\"this.style.display='none'\">" +
+          "<div><b>" + E(kind) + "</b><i>" + (sp.hand === "L" ? "Left-hand bat" : "Right-hand bat") + "</i>" +
+          "<i>" + E(bowls ? sp.bowl : "Does not bowl") + "</i></div></div></div>" +
+          "<div class='fo-pp-card'><h3>His club</h3><p>He plays for " + E(clubNm || "a world club") + ".</p>" +
+          "<a class='fo-pp-more' href='#/team?c=" + E(cid) + "&s=" + slot + "'>The club dossier &rsaquo;</a></div>" +
+          "</div>";
+      }
+
+      var wrap = document.createElement("div");
+      wrap.className = "fo-pp fo-pp-scout";
+      wrap.innerHTML = "<a class='fo-pp-back' href='#/team?c=" + E(cid) + "&s=" + slot + "'>&lsaquo; " + E(clubNm || "The club") + "</a>" +
+        plate +
+        "<div class='fo-pp-tabs'>" +
+        [["overview", "Overview"], ["career", "Career"]].map(function (t) {
+          return "<a class='" + (CARD_TAB === t[0] ? "on" : "") + "' data-t='" + t[0] + "' href='javascript:void 0'>" + t[1] + "</a>";
+        }).join("") + "</div>" +
+        "<div class='fo-pp-body'>" + room + "</div>";
+      page.innerHTML = "";
+      page.appendChild(wrap);
+      wrap.querySelectorAll(".fo-pp-tabs a").forEach(function (a) {
+        a.addEventListener("click", function (ev) { ev.preventDefault(); CARD_TAB = a.getAttribute("data-t"); buildCard(cid, slot, name); });
+      });
+    } catch (e) { try { console.warn("foPlayerCard", e); } catch (e2) {} }
+  }
+
   // ---- what the engine keeps: the career in four numbers ---------------------
   function miniCareer(p) {
     var h = [];
@@ -457,7 +615,8 @@
     try {
       if (!onPage()) return;
       var wrap = document.querySelector("#page .fo-pp"); if (!wrap) return;
-      var want = { career: document.getElementById("fo-career"), recent: pick(/^Recent matches/i), dev: document.querySelector("#page .fo-pop-dev") };
+      var want = { career: document.getElementById("fo-career"), recent: pick(/^Recent matches/i),
+        dev: document.querySelector("#page .fo-pop-dev"), record: document.querySelector("#page .fo-ls-career") };
       wrap.querySelectorAll(".fo-pp-slot").forEach(function (slot) {
         var node = want[slot.getAttribute("data-slot")];
         if (node && node.parentNode !== slot) slot.appendChild(node);
@@ -513,6 +672,13 @@
     "html body #page .fo-pp-prov{margin:0;font:italic 420 12.5px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6)}",
     "html body #page .fo-pp-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:13px 0 0;border-top:1px solid rgba(20,28,40,.1);border-bottom:1px solid rgba(20,28,40,.1)}",
     "html body #page .fo-pp-strip.two{grid-template-columns:repeat(2,minmax(0,1fr));border-top:0}",
+    "html body #page .fo-pp-strip.three{grid-template-columns:repeat(3,minmax(0,1fr));border-top:0}",
+    "html body #page .fo-pp-strip b.fo-pp-fat{display:inline-flex;align-items:center;gap:6px;justify-content:center}",
+    "html body #page .fo-pp-fat s{display:inline-block;width:9px;height:9px;border-radius:50%;text-decoration:none;flex:0 0 auto;vertical-align:0}",
+    "html body #page .fo-pp-fat.cool s{background:#177A57}",
+    "html body #page .fo-pp-fat.warm s{background:#D08A1E}",
+    "html body #page .fo-pp-fat.hot s{background:#B23230}",
+    "html body #page .fo-pp-mini.wide{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:14px}",
     "html body #page .fo-pp-strip>div{padding:9px 10px;text-align:center;border-right:1px solid rgba(20,28,40,.08);min-width:0}",
     "html body #page .fo-pp-strip>div:last-child{border-right:0}",
     "html body #page .fo-pp-strip b{display:block;font:600 13px/1.25 Inter,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
@@ -655,7 +821,10 @@
     "html body #page .fo-pp-strip>div:nth-child(-n+2){border-bottom:1px solid rgba(20,28,40,.08)}",
     "html body #page .fo-pp-shape{grid-template-columns:minmax(0,1fr)}",
     "html body #page .fo-pp-radar{max-width:210px;margin:0 auto}",
-    "html body #page .fo-pp-mini{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 6px}}"
+    "html body #page .fo-pp-mini,html body #page .fo-pp-mini.wide{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 6px}",
+    "html body #page .fo-pp-strip.three{grid-template-columns:repeat(3,minmax(0,1fr))}",
+    "html body #page .fo-pp-strip.three>div{border-bottom:0}",
+    "html body #page .fo-pp-strip.three>div:nth-child(3){border-right:0}}"
   ].join("\n");
 
   function mount() {

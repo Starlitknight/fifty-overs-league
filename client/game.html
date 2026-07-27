@@ -10593,7 +10593,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-2123-604f9d";
+  var FO_BUILD = "20260727-2151-2ea538";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -36225,7 +36225,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
 
       var plate =
         "<div class='fo-lgx-plate'>" +
-        "<img class='fo-lgx-map' src='" + ART() + "circuit/" + (reg.bg || (natId + ".webp")) + "' alt='' onerror=\"this.style.display='none'\">" +
+        "<span class='fo-lgx-glow'></span>" +
+        "<img class='fo-lgx-cup' src='" + ART() + "circuit/trophy-" + E(natId) + ".webp' alt='' onerror=\"this.style.display='none'\">" +
         "<div class='fo-lgx-plin'>" +
         "<div class='fo-lgx-mark'>" +
         "<span class='fo-lgx-pennant'><img src='" + flagOf(natId) + "' alt='' onerror=\"this.style.display='none'\"></span>" +
@@ -36505,9 +36506,12 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
 
     // ---- the plate: the country behind the name of its league --------------
     "html body #page .fo-lgx-plate{position:relative;overflow:hidden;border-radius:20px;background:linear-gradient(135deg,#0C1B33,#173257 62%,#0E2140);box-shadow:0 22px 50px rgba(12,27,51,.26)}",
-    "html body #page .fo-lgx-map{position:absolute;right:-4%;top:-12%;width:62%;height:134%;object-fit:cover;opacity:.26;-webkit-mask-image:linear-gradient(90deg,transparent,#000 55%);mask-image:linear-gradient(90deg,transparent,#000 55%)}",
+    // THE PENNANT IS A CUP. Every nation's league plays for its own trophy -
+    // the nineteen painted cups, standing in the plate where the map used to be
+    "html body #page .fo-lgx-cup{position:absolute;right:20px;bottom:4px;height:calc(100% - 12px);width:auto;max-width:30%;object-fit:contain;object-position:bottom right;filter:drop-shadow(0 14px 26px rgba(0,0,0,.45))}",
+    "html body #page .fo-lgx-glow{position:absolute;right:0;top:-30%;width:44%;height:160%;background:radial-gradient(closest-side,rgba(232,185,106,.22),transparent 72%);pointer-events:none}",
     "html body #page .fo-lgx-plate:after{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--gold)}",
-    "html body #page .fo-lgx-plin{position:relative;padding:20px 22px 18px;display:flex;flex-direction:column;gap:15px}",
+    "html body #page .fo-lgx-plin{position:relative;padding:20px 22px 18px;padding-right:clamp(118px,24%,210px);display:flex;flex-direction:column;gap:15px}",
     "html body #page .fo-lgx-mark{display:flex;gap:14px;align-items:flex-start}",
     "html body #page .fo-lgx-pennant{flex:0 0 auto;width:46px;height:46px;border-radius:11px;background:rgba(255,254,252,.07);border:1px solid rgba(232,185,106,.42);display:flex;align-items:center;justify-content:center}",
     "html body #page .fo-lgx-pennant img{width:30px;height:21px;object-fit:cover;border-radius:2px;box-shadow:0 1px 5px rgba(0,0,0,.45)}",
@@ -36663,6 +36667,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     "@media(max-width:560px){html body #page .fo-lgx-titles h1{font-size:25px}",
     "html body #page .fo-lgx{padding:0 9px}",
     "html body #page .fo-lgx-plin{padding:17px 15px 15px}",
+    "html body #page .fo-lgx-plin{padding-right:88px}",
+    "html body #page .fo-lgx-cup{right:7px;bottom:10px;height:auto;width:72px;max-width:72px}",
     "html body #page .fo-lgx-panel{padding:12px 10px 14px}",
     "html body #page .fo-lgx-cols{padding:4px 5px 7px}",
     "html body #page .fo-lgx-row{padding:8px 5px}",
@@ -41297,6 +41303,38 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
 
   var SORTS = [["ovr", "Strongest first"], ["age", "Youngest first"], ["wage", "Best paid"], ["name", "By name"]];
 
+  // ---- your own men, in the shape the public view uses ----------------------
+  // The world's squad is already the game's squad (league/37 adopts it), so for
+  // your own club the local side IS the served side - read it here and the two
+  // pages cannot drift, even before the world has been reached this session.
+  function ownSquad() {
+    try {
+      var t = userTeam(); if (!t || !(t.players || []).length) return null;
+      var ag = function (fn, p) { try { return Math.round(fn(p) || 0); } catch (e) { return 0; } };
+      var list = t.players.map(function (p) {
+        var bowls = !!(p.bowlType && !/does not bowl/i.test(p.btLabel || ""));
+        return { name: p.name, nat: p.nat, age: p.age, role: p.role, hand: p.hand,
+          bowl: p.btLabel, type: p.bowlTypeFull, keeper: !!p.keeper, rating: p.rating,
+          ovr: (window.foPkOvr ? window.foPkOvr(p) : Math.round((p.rating || 0) / 1000)),
+          batting: ag(aggBat, p), bowling: bowls ? ag(aggBowl, p) : 0,
+          fielding: (p.keeper ? ag(aggKeep, p) : ag(aggField, p)),
+          wage: p.wage, value: p.fee, talents: p.talents || [],
+          exp: p.expWord, form: p.formWord, fatigue: p.fatWord || p.fatigue, career: p.career || {} };
+      });
+      list.sort(function (a, b) { return (b.ovr || 0) - (a.ovr || 0); });
+      var mean = function (arr) { return arr.length ? Math.round(arr.reduce(function (a, b) { return a + b; }, 0) / arr.length) : 0; };
+      var byBat = list.slice().sort(function (a, b) { return b.batting - a.batting; }).slice(0, 7).map(function (x) { return x.batting; });
+      var byBowl = list.slice().sort(function (a, b) { return b.bowling - a.bowling; }).slice(0, 5).map(function (x) { return x.bowling; });
+      return { players: list, bill: list.reduce(function (a, p) { return a + (+p.wage || 0); }, 0),
+        tBat: mean(byBat), tBowl: mean(byBowl), tFld: mean(list.map(function (x) { return x.fielding; })) };
+    } catch (e) { return null; }
+  }
+  // your men open their full dossier; a rival's opens his card
+  function playerHref(cid, slot, mine, nm) {
+    return mine ? "#/player?n=" + encodeURIComponent(nm)
+      : "#/player?c=" + encodeURIComponent(cid) + "&s=" + slot + "&n=" + encodeURIComponent(nm);
+  }
+
   window.foRenderClubPage = function () {
     var page = document.getElementById("page"); if (!page) return;
     foClubCss();
@@ -41328,6 +41366,16 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var players = (sq && sq.players) || [];
       var bill = (sq && +sq.wage_bill) || 0;
       var tBat = (sq && +sq.team_batting) || 0, tBowl = (sq && +sq.team_bowling) || 0, tFld = (sq && +sq.team_fielding) || 0;
+      // ONE CLUB, ONE SQUAD. For your own club the game already holds the
+      // world's men in full - read them, not the public view, so this page and
+      // the squad page can never show two different sides.
+      if (isMine) {
+        var ownSq = ownSquad();
+        if (ownSq && ownSq.players.length) {
+          players = ownSq.players; bill = ownSq.bill;
+          tBat = ownSq.tBat; tBowl = ownSq.tBowl; tFld = ownSq.tFld;
+        }
+      }
 
       var rkRow = rk && rk.clubs ? rk.clubs.filter(function (x) { return x.country === cid && x.slot === slot; })[0] : null;
       var tRow = lg && lg.table ? (lg.table.filter(function (t) { return t.slot === slot; })[0] || null) : null;
@@ -41408,7 +41456,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       else if (sortKey === "name") sorted.sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
 
       var star = sorted[0];
-      var starCard = star ? "<div class='fo-cp-star'>" +
+      var starCard = star ? "<a class='fo-cp-star' href='" + playerHref(cid, slot, isMine, star.name) + "'>" +
         "<img class='fo-cp-face' src='" + faceOf(star) + "' alt='' onerror=\"this.style.display='none'\">" +
         "<div class='fo-cp-starin'>" +
         "<div class='fo-cp-starn'>" + (natFlag(star.nat) ? "<img src='" + natFlag(star.nat) + "' alt='' onerror=\"this.style.display='none'\">" : "") +
@@ -41421,10 +41469,10 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         "<div class='fo-cp-starnums'>" +
         "<div class='fo-cp-starovr'><i>OVR</i><b>" + (star.ovr || "&mdash;") + "</b></div>" +
         "<div class='fo-cp-starval'><i>Value</i><b>" + money(star.value) + "</b></div>" +
-        "</div></div>" : "";
+        "</div></a>" : "";
 
       var rosterRows = sorted.slice(1).map(function (p, i) {
-        return "<div class='fo-cp-row'>" +
+        return "<a class='fo-cp-row' href='" + playerHref(cid, slot, isMine, p.name) + "'>" +
           "<span class='rk'>" + (i + 2) + "</span>" +
           "<span class='rl' title='" + E(roleWord(p.role)) + "'>" + roleGlyph(p) + "</span>" +
           "<span class='nm'><b>" + E(p.name) + "</b><i>" + E(p.bowl && p.bowl !== "Does not bowl" ? p.bowl : roleWord(p.role)) + "</i></span>" +
@@ -41432,7 +41480,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           "<span class='fm'>" + formDots(p.form) + "</span>" +
           "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
           "<span class='wg'>" + money(p.wage) + "</span>" +
-          "</div>";
+          "</a>";
       }).join("");
 
       var sortSel = "<select id='fo-cp-sort'>" + SORTS.map(function (s) {
@@ -41634,7 +41682,11 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       ".fo-cp-cols,.fo-cp-row{display:grid;grid-template-columns:30px 34px minmax(0,1fr) 54px 78px 54px 70px;gap:10px;align-items:center}",
       ".fo-cp-cols{padding:0 12px 8px;font:600 9px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(12,27,51,.42);text-align:center}",
       ".fo-cp-cols span:nth-child(3){text-align:left}",
-      ".fo-cp-row{background:#FFFDF7;border:1px solid rgba(12,27,51,.09);border-radius:10px;padding:11px 12px;margin-bottom:6px}",
+      ".fo-cp-row{background:#FFFDF7;border:1px solid rgba(12,27,51,.09);border-radius:10px;padding:11px 12px;margin-bottom:6px;text-decoration:none;color:inherit;transition:border-color .14s ease,transform .12s ease}",
+      "html body #page a.fo-cp-row{color:#0C1B33;text-decoration:none}",
+      "html body #page a.fo-cp-row:hover{border-color:rgba(201,162,75,.7);transform:translateY(-1px);text-decoration:none}",
+      "html body #page a.fo-cp-star{text-decoration:none;color:inherit}",
+      "html body #page a.fo-cp-star:hover{text-decoration:none}",
       ".fo-cp-row .rk{font:600 12px/1 Oswald,sans-serif;color:rgba(12,27,51,.4);text-align:center}",
       ".fo-cp-row .rl{width:30px;height:30px;border-radius:50%;background:rgba(31,111,74,.1);display:flex;align-items:center;justify-content:center}",
       ".fo-cp-row .nm{min-width:0}",
@@ -41779,10 +41831,20 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       ["Fielding", (p.keeper || p.role === "wicketkeeper") ? agg(aggKeep, p) : agg(aggField, p)]
     ];
   }
-  // the five the club's own coaching book keeps
+  // the seven the club's own coaching book keeps. Batting and bowling belong on
+  // the shape too: a shape without them describes a cricketer you never picked.
   function facets(p) {
-    return [["Technique", agg(aggTech, p)], ["Power", num(skills(p).power)], ["Endurance", agg(aggEnd, p)],
+    var bowls = !!(p.bowlType && !/does not bowl/i.test(p.btLabel || ""));
+    return [["Batting", agg(aggBat, p)], ["Bowling", bowls ? agg(aggBowl, p) : 0],
+      ["Technique", agg(aggTech, p)], ["Power", num(skills(p).power)], ["Endurance", agg(aggEnd, p)],
       ["Fielding", agg(aggField, p)], ["Keeping", agg(aggKeep, p)]];
+  }
+  // tired legs, in words the dressing room uses and a colour anyone can read
+  function fatOf(word) {
+    var w = String(word || "fresh");
+    var pct = /shatter|exhaust|spent/i.test(w) ? 82 : /tired|weary|heavy/i.test(w) ? 46
+      : /little/i.test(w) ? 22 : 8;
+    return { word: w, pct: pct, tone: pct >= 60 ? "hot" : pct >= 30 ? "warm" : "cool" };
   }
 
   // ---- the pentagon ---------------------------------------------------------
@@ -41915,12 +41977,16 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // ---- the shell -------------------------------------------------------------
   var TABS = [["overview", "Overview"], ["career", "Career"], ["matches", "Matches"], ["dev", "Development"]];
   var TAB = "overview";
+  function qp(k) { var m = new RegExp("[?&]" + k + "=([^&]*)").exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : ""; }
 
   function build() {
     if (!onPage()) return;
     var page = document.getElementById("page"); if (!page) return;
     var name = qName(); if (!name) return;
     var hit = null; try { hit = findPlayer(name); } catch (e) {}
+    var cidQ = qp("c");
+    // a man from another club: the world serves his card, and only his card
+    if (cidQ && !isMine(name)) { buildCard(cidQ, parseInt(qp("s"), 10) || 0, name); return; }
     if (!hit || !hit.p) return;
     var p = hit.p, team = hit.team || {}, mine = isMine(p.name);
     // the dark dossier stage is retired; make sure its backdrop goes with it
@@ -41932,6 +41998,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     var flag = ""; try { flag = window.foFlag ? window.foFlag(p.nat) : ""; } catch (eF) {}
     var pv = provLine(p, team);
     var cond = condition(p);
+    var fat0 = fatOf(p.fatWord || p.fatigue);
     var sc = scoutRow(p);
 
     var talents = (p.talents || []).slice(0, 3).map(function (t) {
@@ -41956,9 +42023,10 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       "<div><b>" + E(cap(p.expWord || "")) + "</b><i>Experience</i></div>" +
       "<div><b>" + E(team.name || "") + "</b><i>Club</i></div>" +
       "</div>" +
-      "<div class='fo-pp-strip two'>" +
+      "<div class='fo-pp-strip three'>" +
       "<div><b>" + money(wageOf(p)) + "</b><i>Wage</i></div>" +
       "<div><b>" + E(cap((typeof word === "function" ? word(p.capt || 30) : "steady"))) + "</b><i>Leadership</i></div>" +
+      "<div><b class='fo-pp-fat " + fat0.tone + "'><s></s>" + E(cap(fat0.word)) + "</b><i>Fatigue</i></div>" +
       "</div>" +
       "<div class='fo-pp-sc'>" + sc.map(function (x) {
         return "<div class='fo-pp-scv'><i>" + E(x[0].toUpperCase()) + "</i><em>" + x[1] + "</em><u><b style='width:" + num(x[1]) + "%'></b></u></div>";
@@ -41983,6 +42051,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       try { if (App.orders && App.orders.captain === p.name) idChips.push(["Captain", "&#128081;"]); } catch (eCp) {}
       room =
         "<div class='fo-pp-col'>" +
+        "<div class='fo-pp-slot' data-slot='record'></div>" +
         "<div class='fo-pp-slot' data-slot='career'></div>" +
         "<div class='fo-pp-card'><h3>Club history</h3>" +
         "<div class='fo-pp-hist'><span class='se'>Season " + (App.seasonNo || 1) + "</span>" +
@@ -42123,6 +42192,147 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     harvest();
   }
 
+  // ---- THE SCOUT'S CARD: a rival's player page -------------------------------
+  // Another manager's cricketer is not yours to read. What the world serves is
+  // what a scout sees over the fence: who he is, what he is worth with bat,
+  // ball and in the field, and the record he has actually put together. No raw
+  // skills, no coaching book, no training ground.
+  var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
+  var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+  var SQ_CACHE = {}, SQ_BUSY = {};
+  function servedSquad(cid, slot, cb) {
+    var k = cid + ":" + slot;
+    if (SQ_CACHE[k]) return SQ_CACHE[k];
+    if (SQ_BUSY[k]) return null;
+    SQ_BUSY[k] = 1;
+    try {
+      fetch(SB_URL + "/rest/v1/world_squads?country_id=eq." + encodeURIComponent(cid) + "&slot=eq." + slot +
+        "&select=name,players", { headers: { apikey: SB_ANON } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (rows) {
+          SQ_BUSY[k] = 0;
+          if (rows && rows[0]) { SQ_CACHE[k] = rows[0]; try { if (cb) cb(); } catch (e) {} }
+        }, function () { SQ_BUSY[k] = 0; });
+    } catch (e) { SQ_BUSY[k] = 0; }
+    return null;
+  }
+  function servedFace(sp) {
+    try {
+      if (window.foPkArt) return ART() + window.foPkArt({
+        name: sp.name, nat: sp.nat, role: sp.role, keeper: sp.keeper,
+        bowlTypeFull: sp.type, bowlType: (sp.type && sp.type !== "none") ? sp.type : null });
+    } catch (e) {}
+    return "";
+  }
+  var CARD_TAB = "overview";
+  function buildCard(cid, slot, name) {
+    try {
+      var page = document.getElementById("page"); if (!page) return;
+      try { document.body.classList.remove("fo-pl-on"); var bg0 = document.getElementById("fo-pl-bg"); if (bg0) bg0.remove(); } catch (eB) {}
+      var row = servedSquad(cid, slot, function () { if (onPage()) buildCard(cid, slot, name); });
+      var sp = row && (row.players || []).filter(function (x) { return x && x.name === name; })[0];
+      if (!sp) {
+        page.innerHTML = "<div class='fo-pp'><a class='fo-pp-back' href='#/team?c=" + E(cid) + "&s=" + slot + "'>&lsaquo; The club</a>" +
+          "<div class='fo-pp-card'><h3>" + E(name) + "</h3><p class='fo-pp-dim'>" +
+          (row ? "He is not on that club's teamsheet any more." : "Reaching the world for his card&hellip;") + "</p></div></div>";
+        return;
+      }
+      var clubNm = (row && row.name) || "";
+      try { var nmO = window.__foWorldNames && window.__foWorldNames.get(cid); if (nmO && nmO[slot]) clubNm = nmO[slot]; } catch (eN) {}
+      var no = ("00" + (h32("cardno|" + sp.name) % 199 + 1)).slice(-3);
+      var flag = ""; try { flag = window.foFlag ? window.foFlag(sp.nat) : ""; } catch (eF) {}
+      var fat = fatOf(sp.fatigue);
+      var bowls = !!(sp.bowl && !/does not bowl/i.test(sp.bowl));
+      var kind = (sp.keeper || sp.role === "wicketkeeper") ? "Wicketkeeper"
+        : (sp.role === "allRounder" || sp.role === "allrounder") ? "All-rounder" : bowls ? "Bowler" : "Batsman";
+      var sc = [["Batting", +sp.batting || 0], ["Bowling", bowls ? (+sp.bowling || 0) : 0], ["Fielding", +sp.fielding || 0]];
+      var tals = (sp.talents || []).slice(0, 3).map(function (t) {
+        var nm2 = t, tip = "";
+        try { nm2 = (typeof TALN !== "undefined" && TALN[t]) || t; } catch (e1) {}
+        try { tip = (typeof TALTIPS !== "undefined" && TALTIPS[t]) || ""; } catch (e2) {}
+        return "<div class='fo-pp-tal'><span class='fo-pp-talk'>Talent</span><div><b>" + E(nm2) + "</b>" +
+          (tip ? "<p>" + E(tip) + "</p>" : "") + "</div></div>";
+      }).join("");
+      var art = servedFace(sp);
+      var plate =
+        "<div class='fo-pp-plate'>" +
+        "<div class='fo-pp-cardart'>" + (art ? "<img src='" + E(art) + "' alt='' onerror=\"this.style.display='none'\">" : "") +
+        "<span class='fo-pp-no'>No. " + no + "/199</span></div>" +
+        "<div class='fo-pp-id'>" +
+        "<div class='fo-pp-k'>" + E(kind.toUpperCase()) + " &middot; " + (sp.hand === "L" ? "LHB" : "RHB") + " &middot; " + E(String(sp.nat || "").toUpperCase()) + "</div>" +
+        "<h1>" + E(sp.name) + (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
+        "<p class='fo-pp-prov'>Scouted from the boundary &middot; " + E(clubNm || "a world club") + "</p>" +
+        "<div class='fo-pp-strip'>" +
+        "<div><b>" + (sp.age | 0) + "</b><i>Age</i></div>" +
+        "<div><b>" + E(cap(sp.form || "steady")) + "</b><i>Form</i></div>" +
+        "<div><b>" + E(cap(sp.exp || "")) + "</b><i>Experience</i></div>" +
+        "<div><b>" + E(clubNm) + "</b><i>Club</i></div>" +
+        "</div>" +
+        "<div class='fo-pp-strip three'>" +
+        "<div><b>" + money(sp.wage) + "</b><i>Wage</i></div>" +
+        "<div><b>" + money(sp.value) + "</b><i>Value</i></div>" +
+        "<div><b class='fo-pp-fat " + fat.tone + "'><s></s>" + E(cap(fat.word)) + "</b><i>Fatigue</i></div>" +
+        "</div>" +
+        "<div class='fo-pp-sc'>" + sc.map(function (x) {
+          return "<div class='fo-pp-scv'><i>" + E(x[0].toUpperCase()) + "</i><em>" + x[1] + "</em><u><b style='width:" + num(x[1]) + "%'></b></u></div>";
+        }).join("") + "</div>" +
+        (tals ? "<div class='fo-pp-tals'>" + tals + "</div>" : "") +
+        "</div>" +
+        "<div class='fo-pp-ovr'><b>" + (sp.ovr || "&mdash;") + "</b><i>OVR</i></div>" +
+        "</div>";
+
+      var c = sp.career || {};
+      var caps = +c.m || 0;
+      var sr = c.balls ? (100 * (c.runs || 0) / c.balls).toFixed(1) : "&mdash;";
+      var econ = c.ovb ? ((c.conc || 0) / (c.ovb / 6)).toFixed(2) : "&mdash;";
+      var kv = function (k, v) { return "<div><b>" + v + "</b><i>" + k + "</i></div>"; };
+      var room;
+      if (CARD_TAB === "career") {
+        room = "<div class='fo-pp-col'><div class='fo-pp-card'><h3>Career record<span>All league cricket</span></h3>" +
+          (caps ? "<div class='fo-pp-mini wide'>" + kv("Matches", caps) + kv("Runs", c.runs || 0) +
+            kv("Best", c.hs || 0) + kv("Strike rate", sr) +
+            kv("Wickets", c.wkts || 0) + kv("Best bowling", c.bb ? c.bb.w + "/" + c.bb.r : "&mdash;") +
+            kv("Economy", econ) + kv("Overs", c.ovb ? Math.floor(c.ovb / 6) : 0) + "</div>"
+            : "<p class='fo-pp-dim'>He has not played a league match yet. The record starts the day he is picked.</p>") +
+          "</div></div>" +
+          "<div class='fo-pp-rail'><div class='fo-pp-card dark'><h3>The book is public</h3>" +
+          "<p>Every run and wicket here was scored in a match the umpire played and banked. It is the same record his own manager reads.</p>" +
+          "<a class='fo-pp-more' href='#/records'>The record book &rsaquo;</a></div></div>";
+      } else {
+        room = "<div class='fo-pp-col'>" +
+          "<div class='fo-pp-card'><h3>The scout's read</h3>" + bars(sc) +
+          "<p class='fo-pp-dim'>His raw skills stay in his own club's coaching book, and where he bats stays his manager's business until the teamsheet goes public, an hour before the match.</p></div>" +
+          "<div class='fo-pp-card'><h3>Career record</h3><div class='fo-pp-mini'>" +
+          kv("Matches", caps) + kv("Runs", c.runs || 0) + kv("Best", c.hs || 0) + kv("Wickets", c.wkts || 0) +
+          (caps ? "" : "<p class='fo-pp-dim'>The record starts the day he is picked.</p>") + "</div></div>" +
+          "</div>" +
+          "<div class='fo-pp-rail'>" +
+          "<div class='fo-pp-card'><h3>Role</h3>" +
+          "<div class='fo-pp-role'><img src='" + ART() + iconOf({ role: sp.role, keeper: sp.keeper, bowlType: sp.type, btLabel: sp.bowl }) + "' alt='' onerror=\"this.style.display='none'\">" +
+          "<div><b>" + E(kind) + "</b><i>" + (sp.hand === "L" ? "Left-hand bat" : "Right-hand bat") + "</i>" +
+          "<i>" + E(bowls ? sp.bowl : "Does not bowl") + "</i></div></div></div>" +
+          "<div class='fo-pp-card'><h3>His club</h3><p>He plays for " + E(clubNm || "a world club") + ".</p>" +
+          "<a class='fo-pp-more' href='#/team?c=" + E(cid) + "&s=" + slot + "'>The club dossier &rsaquo;</a></div>" +
+          "</div>";
+      }
+
+      var wrap = document.createElement("div");
+      wrap.className = "fo-pp fo-pp-scout";
+      wrap.innerHTML = "<a class='fo-pp-back' href='#/team?c=" + E(cid) + "&s=" + slot + "'>&lsaquo; " + E(clubNm || "The club") + "</a>" +
+        plate +
+        "<div class='fo-pp-tabs'>" +
+        [["overview", "Overview"], ["career", "Career"]].map(function (t) {
+          return "<a class='" + (CARD_TAB === t[0] ? "on" : "") + "' data-t='" + t[0] + "' href='javascript:void 0'>" + t[1] + "</a>";
+        }).join("") + "</div>" +
+        "<div class='fo-pp-body'>" + room + "</div>";
+      page.innerHTML = "";
+      page.appendChild(wrap);
+      wrap.querySelectorAll(".fo-pp-tabs a").forEach(function (a) {
+        a.addEventListener("click", function (ev) { ev.preventDefault(); CARD_TAB = a.getAttribute("data-t"); buildCard(cid, slot, name); });
+      });
+    } catch (e) { try { console.warn("foPlayerCard", e); } catch (e2) {} }
+  }
+
   // ---- what the engine keeps: the career in four numbers ---------------------
   function miniCareer(p) {
     var h = [];
@@ -42167,7 +42377,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     try {
       if (!onPage()) return;
       var wrap = document.querySelector("#page .fo-pp"); if (!wrap) return;
-      var want = { career: document.getElementById("fo-career"), recent: pick(/^Recent matches/i), dev: document.querySelector("#page .fo-pop-dev") };
+      var want = { career: document.getElementById("fo-career"), recent: pick(/^Recent matches/i),
+        dev: document.querySelector("#page .fo-pop-dev"), record: document.querySelector("#page .fo-ls-career") };
       wrap.querySelectorAll(".fo-pp-slot").forEach(function (slot) {
         var node = want[slot.getAttribute("data-slot")];
         if (node && node.parentNode !== slot) slot.appendChild(node);
@@ -42223,6 +42434,13 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     "html body #page .fo-pp-prov{margin:0;font:italic 420 12.5px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6)}",
     "html body #page .fo-pp-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:13px 0 0;border-top:1px solid rgba(20,28,40,.1);border-bottom:1px solid rgba(20,28,40,.1)}",
     "html body #page .fo-pp-strip.two{grid-template-columns:repeat(2,minmax(0,1fr));border-top:0}",
+    "html body #page .fo-pp-strip.three{grid-template-columns:repeat(3,minmax(0,1fr));border-top:0}",
+    "html body #page .fo-pp-strip b.fo-pp-fat{display:inline-flex;align-items:center;gap:6px;justify-content:center}",
+    "html body #page .fo-pp-fat s{display:inline-block;width:9px;height:9px;border-radius:50%;text-decoration:none;flex:0 0 auto;vertical-align:0}",
+    "html body #page .fo-pp-fat.cool s{background:#177A57}",
+    "html body #page .fo-pp-fat.warm s{background:#D08A1E}",
+    "html body #page .fo-pp-fat.hot s{background:#B23230}",
+    "html body #page .fo-pp-mini.wide{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:14px}",
     "html body #page .fo-pp-strip>div{padding:9px 10px;text-align:center;border-right:1px solid rgba(20,28,40,.08);min-width:0}",
     "html body #page .fo-pp-strip>div:last-child{border-right:0}",
     "html body #page .fo-pp-strip b{display:block;font:600 13px/1.25 Inter,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
@@ -42365,7 +42583,10 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     "html body #page .fo-pp-strip>div:nth-child(-n+2){border-bottom:1px solid rgba(20,28,40,.08)}",
     "html body #page .fo-pp-shape{grid-template-columns:minmax(0,1fr)}",
     "html body #page .fo-pp-radar{max-width:210px;margin:0 auto}",
-    "html body #page .fo-pp-mini{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 6px}}"
+    "html body #page .fo-pp-mini,html body #page .fo-pp-mini.wide{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 6px}",
+    "html body #page .fo-pp-strip.three{grid-template-columns:repeat(3,minmax(0,1fr))}",
+    "html body #page .fo-pp-strip.three>div{border-bottom:0}",
+    "html body #page .fo-pp-strip.three>div:nth-child(3){border-right:0}}"
   ].join("\n");
 
   function mount() {
