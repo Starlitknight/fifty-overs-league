@@ -1,0 +1,54 @@
+name: world-tick
+# The umpire, hosted free: every hour this settles all 19 national leagues
+# on the World Service schema inside the game's existing Supabase project.
+# Design guarantees that make cron throttling harmless (BLUEPRINT law 4):
+# runDue heals every missed day, done ticks are no-ops, and each match
+# insert is idempotent - a late, doubled or killed run cannot corrupt the
+# world. The engine is the committed shipped build (index.html) run
+# headless via test/engine-vm.mjs; a full planet-day is ~95 matches (~15s).
+on:
+  schedule:
+    # off-peak minute: GitHub delays/drops popular quarter-hour marks
+    - cron: '23 * * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: world-tick
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL || secrets.SUPABASE_DB_URL || secrets.POSTGRES_URL }}
+      WORLD_SCHEMA: world
+    steps:
+      - name: Preflight — which database secret exists
+        env:
+          HAS_DATABASE_URL: ${{ secrets.DATABASE_URL != '' }}
+          HAS_SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL != '' }}
+          HAS_POSTGRES_URL: ${{ secrets.POSTGRES_URL != '' }}
+        run: |
+          echo "DATABASE_URL secret present:    $HAS_DATABASE_URL"
+          echo "SUPABASE_DB_URL secret present: $HAS_SUPABASE_DB_URL"
+          echo "POSTGRES_URL secret present:    $HAS_POSTGRES_URL"
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::No database secret found. Add DATABASE_URL in Settings → Secrets and variables → Actions — use the Supabase SESSION POOLER connection string (Project Settings → Database → Connection string → URI, the pooler.supabase.com one; GitHub runners are IPv4-only so the direct db.*.supabase.co host will not connect)."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Install service deps (pg)
+        working-directory: server
+        run: npm install --omit=dev --no-audit --no-fund
+      - name: Migrate
+        working-directory: server
+        run: node migrate.mjs
+      - name: Found or expand the world (idempotent)
+        working-directory: server
+        run: node init-world.mjs
+      - name: Settle everything due, every nation
+        working-directory: server
+        run: node tick.mjs

@@ -7,23 +7,36 @@
 // static game never breaks because a server is down.
 (function () {
   "use strict";
+  // the game's own Supabase project doubles as the default World Service:
+  // the world-tick workflow writes snapshots there and PostgREST serves the
+  // read-only world_snapshots view to this (public-by-design) anon key
+  var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
+  var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
   function base() {
     try { return (localStorage.getItem("fo_world_api") || window.FO_WORLD_API || "").replace(/\/$/, ""); } catch (e) { return ""; }
   }
   function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
   var FEED = null;
+  function accept(j) {
+    if (!j || !j.table) return;
+    FEED = j; window.__foWorldFeed = j;
+    try { localStorage.setItem("fo_world_feed_cache", JSON.stringify(j)); } catch (e) {}
+    paint();
+  }
   function refresh() {
-    var b = base(); if (!b) return;
+    var b = base();
     try {
-      fetch(b + "/league/eng.json", { mode: "cors" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
-        if (!j || !j.table) return;
-        FEED = j; window.__foWorldFeed = j;
-        try { localStorage.setItem("fo_world_feed_cache", JSON.stringify(j)); } catch (e) {}
-        paint();
-      }).catch(function () {});
+      if (b) {
+        // an explicitly configured service keeps the P1 JSON shape
+        fetch(b + "/league/eng.json", { mode: "cors" }).then(function (r) { return r.ok ? r.json() : null; }).then(accept).catch(function () {});
+      } else {
+        fetch(SB_URL + "/rest/v1/world_snapshots?key=eq." + encodeURIComponent("league/eng") + "&select=body", { headers: { apikey: SB_ANON } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (rows) { accept(rows && rows[0] && rows[0].body); }).catch(function () {});
+      }
     } catch (e) {}
   }
-  try { var c = localStorage.getItem("fo_world_feed_cache"); if (c && base()) { FEED = JSON.parse(c); window.__foWorldFeed = FEED; } } catch (e) {}
+  try { var c = localStorage.getItem("fo_world_feed_cache"); if (c) { FEED = JSON.parse(c); window.__foWorldFeed = FEED; } } catch (e) {}
 
   // the served-world card on the planet page: the SERVER's England league
   function paint() {
