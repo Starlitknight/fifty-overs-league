@@ -24,6 +24,32 @@
   }
   function syncLive() { try { return !!(SYNC && SYNC.started && !SYNC.practice); } catch (e) { return false; } }
 
+  // ---- ONE WORLD, DAY ONE: wipe the retired private league's leftovers ------
+  // The world reset to Opening Day, but a save founded earlier still carries
+  // played rounds of the old solo league (tables, results, "next: v Surrey").
+  // Once per save, roll that season back to round zero and drop its old
+  // league results, so nothing anywhere claims matches that no longer exist.
+  function freshStartOnce() {
+    try {
+      if (localStorage.getItem("fo_fresh_d1") === "1") return true;
+      if (!ready()) return false;
+      App.season.round = 0;
+      App.season.played = {};
+      try { if (App.season.res) App.season.res = {}; } catch (e1) {}
+      try { App.wcal = null; } catch (e2) {}
+      try { if (Array.isArray(App.results)) App.results = App.results.filter(function (r) { return !(r && r.comp === "league"); }); } catch (e3) {}
+      try {
+        var k = "fo_lg_" + ((typeof SYNC !== "undefined" && SYNC && SYNC.myMid) || "solo");
+        var v = JSON.parse(localStorage.getItem(k) || "null");
+        if (v) { v.round = 0; v.res = {}; v.season = 1; localStorage.setItem(k, JSON.stringify(v)); }
+      } catch (e4) {}
+      try { if (typeof saveGame === "function") saveGame(); } catch (e5) {}
+      localStorage.setItem("fo_fresh_d1", "1");
+      return true;
+    } catch (e) { return false; }
+  }
+  var fsTimer = setInterval(function () { if (freshStartOnce()) clearInterval(fsTimer); }, 1500);
+
   // ---- the season's anchor: round r plays on world day (d0 + r - r0) ---------
   function ensureAnchor() {
     try {

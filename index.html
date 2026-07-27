@@ -10588,7 +10588,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-1346-3a4c81";
+  var FO_BUILD = "20260727-1351-b8cce7";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -36502,19 +36502,34 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         p.kind === "cup" ? "World Cup - " + stageName(p.stage) :
         "Rest day - the season " + (p.season + 1) + " calendar begins tomorrow";
 
-      // -- your own league card: the real one, your clubs, your pace ---------
+      // -- your own league card: the WORLD's league, your claimed club -------
+      // one world: this card speaks only served data - your claim, the served
+      // standings, today's served fixture - never the retired private league
       var ownCard = "";
       try {
-        var me = userTeam(), rows = leagueRows();
-        var pos = rows.findIndex(function (x) { return x.nm === me.name; }) + 1;
-        var ldr = rows[0];
-        var nxt = (typeof window.foNextFixture === "function") ? window.foNextFixture() : null;
+        var wclP = null; try { wclP = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eW) {}
+        var svP = null; try { svP = window.__foWorldLg ? window.__foWorldLg.get(my) : null; } catch (eL) {}
+        try { if (window.__foWorldLg) window.__foWorldLg.want(my); } catch (eL2) {}
+        var meNm2 = (wclP && wclP.country === my) ? wclP.club : null;
+        var posTxt = "";
+        if (meNm2 && svP && svP.table) {
+          var ix2 = svP.table.findIndex(function (t2) { return t2.name === meNm2; });
+          if (ix2 >= 0) { var pn = ix2 + 1; posTxt = " &middot; " + pn + (["th", "st", "nd", "rd"][(pn % 100 > 10 && pn % 100 < 14) ? 0 : Math.min(pn % 10, 4)] || "th"); }
+        }
+        var ldr3 = svP && svP.table && svP.table[0];
+        var nxTxt = "";
+        try {
+          if (meNm2 && window.__foWT && window.__foWT.serverFixtures) {
+            var svF2 = window.__foWT.serverFixtures(my, now);
+            var f2 = (svF2.fx || []).filter(function (x2) { return x2.home.name === meNm2 || x2.away.name === meNm2; })[0];
+            if (f2) nxTxt = " &middot; today: v " + E(f2.home.name === meNm2 ? f2.away.name : f2.home.name);
+          }
+        } catch (eF2) {}
         ownCard = "<a class='fo-pl-own' href='#/nation?n=" + encodeURIComponent(my) + "'>" +
           "<img class='fo-pl-flag' src='" + flagOf(my) + "' alt='' onerror=\"this.style.display='none'\">" +
-          "<span class='fo-pl-ownt'><i>Your league &middot; " + E(myRegion.nm) + "</i>" +
-          "<b>" + E(me.name) + (pos ? " &middot; " + pos + (pos === 1 ? "st" : pos === 2 ? "nd" : pos === 3 ? "rd" : "th") : "") + "</b>" +
-          "<em>" + (ldr ? E(ldr.nm) + " lead on " + (ldr.pts | 0) + " pts" : "The season awaits") +
-          (nxt && nxt.opp ? " &middot; next: v " + E(nxt.opp.name) : "") + "</em></span><u>&rsaquo;</u></a>";
+          "<span class='fo-pl-ownt'><i>Your world league &middot; " + E(myRegion.nm) + "</i>" +
+          "<b>" + E(meNm2 || "Your club awaits its claim") + posTxt + "</b>" +
+          "<em>" + (ldr3 && (ldr3.pts | 0) > 0 ? E(ldr3.name) + " lead on " + (ldr3.pts | 0) + " pts" : "Season 1 of the served world") + nxTxt + "</em></span><u>&rsaquo;</u></a>";
       } catch (eOwn) {}
 
       // -- the world cup panel (draw day through rest day) --------------------
@@ -37445,6 +37460,32 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     return typeof App !== "undefined" && App && App.season && App.season.schedule && typeof completeRound === "function";
   }
   function syncLive() { try { return !!(SYNC && SYNC.started && !SYNC.practice); } catch (e) { return false; } }
+
+  // ---- ONE WORLD, DAY ONE: wipe the retired private league's leftovers ------
+  // The world reset to Opening Day, but a save founded earlier still carries
+  // played rounds of the old solo league (tables, results, "next: v Surrey").
+  // Once per save, roll that season back to round zero and drop its old
+  // league results, so nothing anywhere claims matches that no longer exist.
+  function freshStartOnce() {
+    try {
+      if (localStorage.getItem("fo_fresh_d1") === "1") return true;
+      if (!ready()) return false;
+      App.season.round = 0;
+      App.season.played = {};
+      try { if (App.season.res) App.season.res = {}; } catch (e1) {}
+      try { App.wcal = null; } catch (e2) {}
+      try { if (Array.isArray(App.results)) App.results = App.results.filter(function (r) { return !(r && r.comp === "league"); }); } catch (e3) {}
+      try {
+        var k = "fo_lg_" + ((typeof SYNC !== "undefined" && SYNC && SYNC.myMid) || "solo");
+        var v = JSON.parse(localStorage.getItem(k) || "null");
+        if (v) { v.round = 0; v.res = {}; v.season = 1; localStorage.setItem(k, JSON.stringify(v)); }
+      } catch (e4) {}
+      try { if (typeof saveGame === "function") saveGame(); } catch (e5) {}
+      localStorage.setItem("fo_fresh_d1", "1");
+      return true;
+    } catch (e) { return false; }
+  }
+  var fsTimer = setInterval(function () { if (freshStartOnce()) clearInterval(fsTimer); }, 1500);
 
   // ---- the season's anchor: round r plays on world day (d0 + r - r0) ---------
   function ensureAnchor() {

@@ -367,19 +367,34 @@
         p.kind === "cup" ? "World Cup - " + stageName(p.stage) :
         "Rest day - the season " + (p.season + 1) + " calendar begins tomorrow";
 
-      // -- your own league card: the real one, your clubs, your pace ---------
+      // -- your own league card: the WORLD's league, your claimed club -------
+      // one world: this card speaks only served data - your claim, the served
+      // standings, today's served fixture - never the retired private league
       var ownCard = "";
       try {
-        var me = userTeam(), rows = leagueRows();
-        var pos = rows.findIndex(function (x) { return x.nm === me.name; }) + 1;
-        var ldr = rows[0];
-        var nxt = (typeof window.foNextFixture === "function") ? window.foNextFixture() : null;
+        var wclP = null; try { wclP = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eW) {}
+        var svP = null; try { svP = window.__foWorldLg ? window.__foWorldLg.get(my) : null; } catch (eL) {}
+        try { if (window.__foWorldLg) window.__foWorldLg.want(my); } catch (eL2) {}
+        var meNm2 = (wclP && wclP.country === my) ? wclP.club : null;
+        var posTxt = "";
+        if (meNm2 && svP && svP.table) {
+          var ix2 = svP.table.findIndex(function (t2) { return t2.name === meNm2; });
+          if (ix2 >= 0) { var pn = ix2 + 1; posTxt = " &middot; " + pn + (["th", "st", "nd", "rd"][(pn % 100 > 10 && pn % 100 < 14) ? 0 : Math.min(pn % 10, 4)] || "th"); }
+        }
+        var ldr3 = svP && svP.table && svP.table[0];
+        var nxTxt = "";
+        try {
+          if (meNm2 && window.__foWT && window.__foWT.serverFixtures) {
+            var svF2 = window.__foWT.serverFixtures(my, now);
+            var f2 = (svF2.fx || []).filter(function (x2) { return x2.home.name === meNm2 || x2.away.name === meNm2; })[0];
+            if (f2) nxTxt = " &middot; today: v " + E(f2.home.name === meNm2 ? f2.away.name : f2.home.name);
+          }
+        } catch (eF2) {}
         ownCard = "<a class='fo-pl-own' href='#/nation?n=" + encodeURIComponent(my) + "'>" +
           "<img class='fo-pl-flag' src='" + flagOf(my) + "' alt='' onerror=\"this.style.display='none'\">" +
-          "<span class='fo-pl-ownt'><i>Your league &middot; " + E(myRegion.nm) + "</i>" +
-          "<b>" + E(me.name) + (pos ? " &middot; " + pos + (pos === 1 ? "st" : pos === 2 ? "nd" : pos === 3 ? "rd" : "th") : "") + "</b>" +
-          "<em>" + (ldr ? E(ldr.nm) + " lead on " + (ldr.pts | 0) + " pts" : "The season awaits") +
-          (nxt && nxt.opp ? " &middot; next: v " + E(nxt.opp.name) : "") + "</em></span><u>&rsaquo;</u></a>";
+          "<span class='fo-pl-ownt'><i>Your world league &middot; " + E(myRegion.nm) + "</i>" +
+          "<b>" + E(meNm2 || "Your club awaits its claim") + posTxt + "</b>" +
+          "<em>" + (ldr3 && (ldr3.pts | 0) > 0 ? E(ldr3.name) + " lead on " + (ldr3.pts | 0) + " pts" : "Season 1 of the served world") + nxTxt + "</em></span><u>&rsaquo;</u></a>";
       } catch (eOwn) {}
 
       // -- the world cup panel (draw day through rest day) --------------------
