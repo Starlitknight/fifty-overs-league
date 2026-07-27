@@ -136,7 +136,7 @@
       var host = page.querySelector(".fo-pl"); if (!host) return;
       var ex = page.querySelector("#fo-wsvc"); if (ex) ex.remove();
       var top3 = FEED.table.slice(0, 3).map(function (r, i) {
-        return "<div class='r'><i>" + (i + 1) + "</i><b>" + E(r.name) + (r.boss ? " <u>BOSS</u>" : "") + "</b><em>" + r.pts + " pts</em></div>";
+        return "<div class='r'><i>" + (i + 1) + "</i><b>" + E(r.name) + (r.boss ? " <u>FLAGSHIP</u>" : "") + "</b><em>" + r.pts + " pts</em></div>";
       }).join("");
       var el = document.createElement("div");
       el.id = "fo-wsvc";

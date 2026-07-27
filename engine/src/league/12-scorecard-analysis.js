@@ -3227,7 +3227,7 @@
       var rows = sides.map(function (s) {
         return "<a class='fo-cxl-row" + (s.boss ? " boss" : "") + "' href='" + hrefOf(s) + "'>" +
           "<span class='rk'>" + s.rank + "</span>" +
-          "<span class='nm'>" + E(s.club) + (s.boss ? " <em>BOSS</em>" : "") + "<i>" + E(s.city) + "</i></span>" +
+          "<span class='nm'>" + E(s.club) + (s.boss ? " <em>FLAGSHIP</em>" : "") + "<i>" + E(s.city) + "</i></span>" +
           "<span class='wl'>" + s.W + "&ndash;" + s.L + (s.T ? "&ndash;" + s.T : "") + "</span>" +
           "<span class='pt'>" + s.pts + "</span></a>";
       }).join("");
@@ -4711,7 +4711,7 @@
   setInterval(foRenderBoss, 900);
   // the dark full-bleed family all share fo-boss-on; only strip it when
   // leaving the family entirely (else these listeners fight each other)
-  function foBossFamily() { return ["#/boss", "#/side", "#/league", "#/cup"].indexOf((location.hash || "").split("?")[0]) >= 0; }
+  function foBossFamily() { return ["#/boss", "#/side", "#/atlas", "#/cup"].indexOf((location.hash || "").split("?")[0]) >= 0; }
   window.addEventListener("hashchange", function () {
     if ((location.hash || "").split("?")[0] === "#/boss") setTimeout(foRenderBoss, 40);
     else if (!foBossFamily()) document.body.classList.remove("fo-boss-on");
@@ -5240,16 +5240,14 @@
       // one renderer, two doors: #/league is the cinematic country portrait,
       // #/nation is that country's record book - table, fixtures, results, grounds
       var hashPath = (location.hash || "").split("?")[0];
-      var natPage = (hashPath === "#/nation");
-      // #/league now belongs to the real standings page (module 25); the
-      // painted portrait (map + boss art) answers at #/atlas, the record
-      // book at #/nation
+      // ONE DESIGN FOR NINETEEN LEAGUES. #/league and #/nation are both the
+      // daylight almanack table now (module 25) - your league and anybody
+      // else's read exactly alike, off the same served world. What survives
+      // here is the painted country portrait, and it answers only at #/atlas.
       var atlasPage = (hashPath === "#/atlas");
-      // ONE WORLD: every nation's record book - yours included - is the
-      // SERVED league. There is no separate England; your club lives in the
-      // same world as everyone else's.
-      if (!natPage && !atlasPage && window.__foLeagueTable) return;
-      if (hashPath !== "#/league" && !natPage && !atlasPage) return;
+      var natPage = false;
+      if (!atlasPage && window.__foLeagueTable) return;
+      if (hashPath !== "#/league" && hashPath !== "#/nation" && !atlasPage) return;
       var page = document.getElementById("page"); if (!page) return;
       var mN = /[?&]n=([^&]+)/.exec(location.hash || "");
       var myNation = foLgNation();
@@ -5283,14 +5281,14 @@
       //      every recorded result. Absent either, the page keeps its old
       //      painted-world data - nothing breaks offline.
       var srv = null;
-      if (!own && natPage) {
+      if (!own) {
         try {
           var wtM = (window.__foWT && window.__foWT.serverFixtures) ? window.__foWT : null;
           var plW = window.__foPlanet || null;
           var snapLg = window.__foWorldLg ? window.__foWorldLg.get(nation) : null;
           var refreshNat = function () {
             try {
-              if ((location.hash || "").indexOf("#/nation") !== 0) return;
+              if ((location.hash || "").indexOf("#/atlas") !== 0) return;
               var pg9 = document.getElementById("page"); if (pg9) pg9.__foLgSig = null;
               foRenderLeague();
             } catch (e9) {}
@@ -5367,7 +5365,7 @@
           ? wire.map(function (h) { return "<div class='fo-lg-wire'>" + E(h.headline) + "</div>"; }).join("")
           : "<div class='fo-lg-fxempty'>A quiet week in the " + E(region.nm) + " league.</div>";
         sideHTML = "<div class='fo-lg-panel'><h3>From the " + E(region.nm) + " wire</h3>" + wireHTML + "</div>" +
-          "<div class='fo-lg-cta'><a class='fo-lg-btn gold' href='#/atlas'>Back to your league &#9654;</a><a class='fo-lg-btn' href='#/world'>World map</a></div>";
+          "<div class='fo-lg-cta'><a class='fo-lg-btn gold' href='#/league'>Back to your league &#9654;</a><a class='fo-lg-btn' href='#/world'>World map</a></div>";
       }
 
       // a strip of the league's home grounds - the nation, city by city
@@ -5433,7 +5431,7 @@
           "<div class='fo-ov-team'><span class='av'>" + (ldr ? entAv(ldr) : "") + "</span><b>" + E(ldr ? ldr.name : "&mdash;") + "</b></div></div>" +
           "<div class='fo-ov-finish' style='margin-top:0'>lead the " + E(region.nm) + " league" + (ldr && ldr.pts ? " on <b>" + ldr.pts + "</b> pts" : "") + "</div>" +
           "<a class='fo-ov-cta' href='#/boss?r=" + encodeURIComponent(nation) + "'>Meet " + E(bossName) + " &#9654;</a>" +
-          "<a class='fo-ov-fx' href='#/atlas'>Back to your league &#8250;</a></div>";
+          "<a class='fo-ov-fx' href='#/league'>Back to your league &#8250;</a></div>";
       }
       var chaseRows = table.slice(0, 4).map(function (x, i) {
         var tag = "div", href = "";
@@ -6042,7 +6040,7 @@
   setInterval(foRenderLeague, 900); setInterval(foRenderCup, 1200);
   window.addEventListener("hashchange", function () {
     var h = (location.hash || "").split("?")[0];
-    if (h !== "#/league" && h !== "#/nation" && h !== "#/atlas") { try { document.body.classList.remove("fo-ov-on"); } catch (eOv) {} }
+    if (h !== "#/atlas") { try { document.body.classList.remove("fo-ov-on"); } catch (eOv) {} }
     if (h === "#/league" || h === "#/nation" || h === "#/atlas") setTimeout(foRenderLeague, 40);
     else if (h === "#/cup") setTimeout(foRenderCup, 40);
     else if (!foBossFamily()) document.body.classList.remove("fo-boss-on");
