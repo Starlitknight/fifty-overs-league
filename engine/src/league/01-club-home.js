@@ -1895,6 +1895,7 @@
   // and skills-summary are hidden · only your own players reveal their skills.
   function foHidePlayerSkills() {
     try {
+      if (window.__foPP2) return;          // the dossier itself keeps rivals' books shut
       if (foHashPath() !== "#/player") return;
       var page = document.getElementById("page"); if (!page) return;
       var m = /[?&]n=([^&]+)/.exec(location.hash); if (!m) return;
@@ -1980,6 +1981,9 @@
   }
   function foPlayerHero() {
     try {
+      // the player page is its own dossier now (league/41-player-page.js);
+      // the dark holo stage stays for whoever still opens the pack elsewhere
+      if (window.__foPP2) { var exH = document.getElementById("fo-phero"); if (exH) exH.remove(); return; }
       var ex = document.getElementById("fo-phero");
       if (foHashPath() !== "#/player") { if (ex) ex.remove(); try { document.body.classList.remove("fo-pl-on"); } catch (eR) {} return; }
       var page = document.getElementById("page"); if (!page) return;
@@ -2035,6 +2039,7 @@
   // move is guarded so settled DOM is never churned.
   function foPsArrange() {
     try {
+      if (window.__foPP2) return;
       if (foHashPath() !== "#/player") return;
       var psr = document.querySelector("#fo-pstage .fo-ps-r"); if (!psr) return;
       var find = function (re) {
