@@ -10594,7 +10594,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-1148-8e8393";
+  var FO_BUILD = "20260727-1155-d9c95f";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -39022,6 +39022,64 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     return null;
   }
 
+  // ---- SPECTATE: the real broadcast theatre, oval and all -------------------
+  // Builds both XIs from the world-star squads, seeds the REAL engine with
+  // the deterministic world seed, fast-forwards to the live minute, then
+  // hands the match to the engine's own theatre (#/match). Same seed on
+  // every phone = the identical broadcast everywhere. Nothing is saved:
+  // the spectated match ends and evaporates.
+  function fullSquad(rid, slot, season) {
+    try {
+      if (window.__foStars && window.__foStars.squadOf) {
+        var sq = window.__foStars.squadOf(rid, slot, season);
+        if (sq && sq.length >= 11 && sq[0] && sq[0].skills) return sq;
+      }
+    } catch (e) {}
+    try { return __foGenArchetypeSquad("wt|" + rid + "|" + slot + "|" + season, "England", "rock").players; } catch (e2) {}
+    return null;
+  }
+  window.foWtSpectate = function (rid, season, round, fi) {
+    try {
+      if (typeof M !== "undefined" && M && !M.done && M.meta && !M.meta.__spectate) {
+        alert("A match of yours is in progress - finish it first."); return;
+      }
+      var pl = P(), fx = pl.fixturesOf(rid, season, round) || [], m = fx[fi];
+      if (!m) return;
+      var sqH = fullSquad(rid, m.home.slot, season), sqA = fullSquad(rid, m.away.slot, season);
+      if (!sqH || !sqA) { alert("The squads are still warming up - try again in a moment."); return; }
+      var home = { name: m.home.name, ground: (m.home.city || m.home.name) + " Ground", players: sqH };
+      var away = { name: m.away.name, players: sqA };
+      var seed = h32("wtx|" + rid + "|" + season + "|" + round + "|" + m.home.slot + "|" + m.away.slot) || 1;
+      window.onMatchEnd = function () {};
+      M = newMatch(home, away, "balanced", seed);
+      M.meta = { home: home.name, away: away.name, pitch: "balanced", weather: "Sunny", comp: "world", ground: home.ground, __spectate: 1, isUser: false };
+      M.isUserMatch = false; M.ordersMap = {};
+      App.tossState = { stage: "x" };
+      applyToss(aiTossDecision());
+      // fast-forward to the live minute (both viewers land on the same over)
+      var lv = pl.liveView(m, Date.now(), pl.natHour(rid));
+      var targetBalls = 600;   // finished: play it all out, theatre shows stumps
+      if (lv.state === "live") {
+        var mm2 = String(lv.line || "").match(/\((\d+) ov\)/);
+        var ovNow = mm2 ? +mm2[1] : 0;
+        targetBalls = (/chasing/.test(lv.line || "") ? 300 : 0) + ovNow * 6;
+      } else if (lv.state === "up") targetBalls = 0;
+      var g = 0;
+      while (M && !M.done && g++ < targetBalls) { autoPick(); stepBall(); }
+      // the broadcast pace: a ball every couple of seconds from here
+      try { if (window.__foWtDrv) clearInterval(window.__foWtDrv); } catch (e) {}
+      window.__foWtDrv = setInterval(function () {
+        try {
+          if ((location.hash || "").split("?")[0] !== "#/match" || !M || !M.meta || !M.meta.__spectate) { clearInterval(window.__foWtDrv); return; }
+          if (M.done) { clearInterval(window.__foWtDrv); return; }
+          autoPick(); stepBall();
+        } catch (e) { clearInterval(window.__foWtDrv); }
+      }, 2200);
+      location.hash = "#/match";
+      if (typeof window.route === "function") window.route();
+    } catch (e) { try { console.warn("foWtSpectate", e); } catch (e2) {} }
+  };
+
   window.foRenderWatchPage = function () {
     var page = document.getElementById("page"); if (!page || !P() || !cx()) return;
     foWtCss();
@@ -39101,6 +39159,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         "<span>" + E(bowler) + " bowling</span></div>" +
         "<div class='fo-wt-over'>" + ballsSoFar.map(function (b) { return "<i class='" + (b === "W" ? "w" : b === "4" || b === "6" ? "b" : "") + "'>" + b + "</i>"; }).join("") + "</div>" +
         "<div class='fo-wt-comm'>" + E(comm) + "</div>" : "") +
+      (lv.state !== "up" ? "<button type='button' class='fo-wt-enter' onclick='foWtSpectate(\"" + rid + "\"," + p.season + "," + round + "," + fi + ")'>Enter the broadcast theatre &rsaquo;</button>" : "") +
       "</div></div>" +
       (others ? "<div class='fo-wt-rail'><i>Also in this round</i>" + others + "</div>" : "") +
       "<div class='fo-wt-nats'>" + regions.filter(function (r) { return r.id !== my; }).sort(function (a, b) { return pl.natHour(a.id) - pl.natHour(b.id); }).map(function (r) {
@@ -39158,6 +39217,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       ".fo-wt-over i.b{background:rgba(232,185,106,.2);border-color:#E8B96A;color:#E8B96A}",
       ".fo-wt-over i.w{background:rgba(255,107,94,.22);border-color:#FF6B5E;color:#FF6B5E}",
       ".fo-wt-comm{font:italic 400 12px/1.5 'Fraunces',Georgia,serif;color:rgba(255,254,252,.65);margin-top:9px}",
+      ".fo-wt-enter{display:block;width:100%;margin-top:12px;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:#C95532 !important;border:none !important;border-radius:999px !important;padding:13px 16px !important;cursor:pointer}",
       ".fo-wt-rail{margin-top:14px}",
       ".fo-wt-rail>i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,254,252,.5);font-style:normal;margin-bottom:7px}",
       ".fo-wt-other{display:flex;justify-content:space-between;gap:10px;align-items:baseline;background:rgba(6,13,26,.6);border:1px solid rgba(255,254,252,.1);border-radius:11px;padding:9px 13px;margin-bottom:7px;text-decoration:none;color:#FFFEFC}",
