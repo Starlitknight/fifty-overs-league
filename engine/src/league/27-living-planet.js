@@ -201,10 +201,10 @@
     var out = [], p = phaseOf(now);
     var addLeague = function (ph) {
       if (ph.kind !== "league") return;
-      var done = roundsDone(now, ph.season, r.id) >= ph.round;
-      if (!done) return;
       regionList().forEach(function (r) {
         if (r.id === myNation()) return;
+        // settled-per-region: each nation's round closes at its own hour
+        if (roundsDone(now, ph.season, r.id) < ph.round) return;
         var fx = fixturesOf(r.id, ph.season, ph.round);
         var big = fx.slice().sort(function (a, b) { return Math.abs(b.first - b.second) - Math.abs(a.first - a.second); })[0];
         if (!big) return;

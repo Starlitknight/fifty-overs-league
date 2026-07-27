@@ -33,3 +33,4 @@
 32-matchday.js
 33-training-pops.js
 34-record-book.js
+35-gazette.js
