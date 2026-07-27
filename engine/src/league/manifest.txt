@@ -34,3 +34,4 @@
 33-training-pops.js
 34-record-book.js
 35-gazette.js
+36-champions-cup.js
