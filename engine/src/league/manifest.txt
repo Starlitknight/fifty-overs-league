@@ -32,3 +32,4 @@
 31-world-feed.js
 32-matchday.js
 33-training-pops.js
+34-record-book.js
