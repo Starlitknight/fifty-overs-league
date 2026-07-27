@@ -41,6 +41,22 @@ The owner's spec, in their words, refined by the FTP manual:
 6. YOUTH SYSTEM: youth squad (U21) with its own weekly competition, academy
    levels affecting training speed & recruit quality, weekly youth recruit,
    auto-promotion at 21.
+   [BUILT (the academy) — every club in all 19 leagues runs one, bot or human.
+   Levels 1-5 held on the club, bought with world_set_academy (60k x the level
+   you leave, remembered as academy_paid so the treasury still recomputes from
+   genesis) and charged 900/level/round in upkeep. Capacity is 2+level; the
+   umpire brings one colt in per intake window (server/youth.mjs ensureYouth,
+   seeded 'youth|country|slot|season|round' off the shipped generator, so a
+   re-run makes the same boy), ages every colt at the rollover and hands a
+   21-year-old a senior shirt with nobody watching (ageYouth). A better academy
+   turns boys out closer to finished. A manager may promote early or release
+   (world_colt); a graduate carries a 'joined' round so living.mjs never works
+   nets into him that he wasn't there for. Room at #/academy; rivals read the
+   LEVEL on the club page, never the boys. Migration 018 (which also corrects
+   017's write to a clubs.manager column that never existed).
+   STILL TO BUILD: the youth side's own weekly competition, and academy level
+   affecting TRAINING SPEED (the nets rate lives in the shipped engine's
+   trainRound, so it needs a banked per-round academy level to stay replayable).]
 7. ECONOMY: attendance from supporters+mood+division+weather, gate takings
    split 2/3-1/3, sponsorship tied to results, stadium expansion (+$ per
    seat), supporter mood ladder, debt rules, finance cap.

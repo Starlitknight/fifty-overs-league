@@ -12,6 +12,10 @@ import { EPOCH, DAY, dayIx, seedOf } from '../clock.mjs';
 
 const DBNAME = 'foworld_test';
 let pool, host;
+// the eleven that actually walked out in round 1. A season CHANGES men -
+// careers, form, tired legs, the work they did in the nets - so a replay has
+// to be handed the cricketers of that day, not the cricketers they became.
+let genesisSquads;
 // the fake clock: world founded the day before season start; time is OURS
 const T0 = EPOCH + 100 * DAY + 12 * 3600000;          // day 100, 12:00 UTC
 const afterPlay = d => EPOCH + d * DAY + 18 * 3600000; // 18:00 — window closed
@@ -26,6 +30,7 @@ before(async () => {
   const r = await initWorld(pool, { now: T0, host });
   assert.equal(r.created, true);
   assert.equal(r.startDay, 101);
+  genesisSquads = (await pool.query('SELECT slot, name, squad FROM clubs')).rows;
 });
 after(async () => { await pool.end(); });
 
@@ -74,8 +79,8 @@ test('runDue heals a tick that never fired at all', async () => {
 
 test('GOLDEN MASTER: server-persisted result is byte-identical to a re-sim from seed + squads', async () => {
   const m = (await pool.query("SELECT * FROM matches WHERE round=1 ORDER BY id LIMIT 1")).rows[0];
-  const clubs = (await pool.query('SELECT slot, name, squad FROM clubs')).rows;
-  const home = clubs.find(c => c.slot === m.home_slot), away = clubs.find(c => c.slot === m.away_slot);
+  const home = genesisSquads.find(c => c.slot === m.home_slot);
+  const away = genesisSquads.find(c => c.slot === m.away_slot);
   const fresh = makeHost();  // a brand-new engine VM, as a client would boot
   const resim = fresh.runMatch({ name: home.name, players: home.squad }, { name: away.name, players: away.squad }, m.pitch, Number(m.seed));
   assert.equal(resim, m.result_canonical, 'byte-identical replay of the canonical string');

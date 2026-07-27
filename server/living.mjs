@@ -133,13 +133,28 @@ function baseline(p) {
   delete q.trainProgress;
   return q;
 }
+// a man works the rounds he was at the club for and no others: a boy who comes
+// up out of the academy in season three is not handed three seasons of other
+// men's nets. Everyone the world made at the founding has no joining round and
+// so has been there all along.
+function wasHere(p, r) {
+  const j = p.joined;
+  if (!j) return true;
+  return r.season_no > j.s || (r.season_no === j.s && r.round >= j.r);
+}
 async function trainedSquad(pool, host, country, slot, squad) {
   if (!host || !host.trainRound) return squad;
   const rounds = (await pool.query(
-    `SELECT plan FROM training_rounds WHERE country_id=$1 AND slot=$2 ORDER BY season_no, round`,
-    [country, slot])).rows;
+    `SELECT season_no, round, plan FROM training_rounds WHERE country_id=$1 AND slot=$2
+      ORDER BY season_no, round`, [country, slot])).rows;
   let men = (squad || []).map(baseline);
-  for (const r of rounds) men = host.trainRound(men, r.plan || {}).players;
+  for (const r of rounds) {
+    const here = [];
+    men.forEach((p, i) => { if (wasHere(p, r)) here.push(i); });
+    if (!here.length) continue;
+    const worked = host.trainRound(here.map(i => men[i]), r.plan || {}).players;
+    here.forEach((i, k) => { men[i] = worked[k]; });
+  }
   return men;
 }
 

@@ -19,6 +19,7 @@ import { initWorld, countryConfigs } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { runAllDue, runCupWindow, rollSeasons, runTick, computeLeague, rebuildHonours, computeRankings, runFriendlies, settleMoney } from '../tick.mjs';
 import { evolveCountry, applyLiving, livingPatch } from '../living.mjs';
+import { CAP, UPKEEP_PER_ROUND, makeColt, ensureYouth, ageYouth } from '../youth.mjs';
 import { EPOCH, DAY } from '../clock.mjs';
 
 const DBNAME = 'foworld_p3_test';
@@ -649,4 +650,153 @@ test('017: the served club card matches the engine, and hides the coaching book'
   for (const shown of ['ovr', 'batting', 'bowling', 'fielding', 'form', 'fatigue', 'career', 'wage']) {
     assert.ok(leak.indexOf('"' + shown + '"') !== -1, shown + ' is what a scout is allowed');
   }
+});
+
+// 018: THE ACADEMY. Every club runs one and the umpire works it: a boy arrives
+// when there is room, every colt ages at the rollover, and a twenty-one-year-old
+// gets a senior shirt whether his manager logged in or not. What a manager may
+// do is pay for a better academy and decide, early, which boys are ready. All
+// of it still settles from genesis - the boys are a pure function of their seed
+// and the money is a pure function of the record.
+test('018: the academy brings boys through, paid for and recomputable', async () => {
+  // A BOY IS HIS SEED. The same seed makes the same cricketer, always.
+  const a = makeColt(host, 'England', 'rock', 'youth|eng|1|s1|r1', 2);
+  const b = makeColt(host, 'England', 'rock', 'youth|eng|1|s1|r1', 2);
+  assert.deepEqual(a, b, 'the same seed turns out the same young cricketer');
+  assert.ok(a.age >= 17 && a.age <= 20, 'a colt is a colt');
+  assert.equal(a.colt, true);
+  const strong = makeColt(host, 'England', 'rock', 'youth|eng|1|s1|r1', 5);
+  assert.ok(strong.promise > a.promise, 'a better academy turns them out closer to ready');
+
+  // THE INTAKE. Every club in the country, bot or human, has boys on its books.
+  const clubs = (await pool.query(
+    `SELECT slot, academy, youth FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows;
+  assert.equal(clubs.length, 10);
+  for (const c of clubs) {
+    assert.equal(c.academy, 2, 'every club opens with a level-two academy');
+    assert.ok(c.youth.length > 0, 'club ' + c.slot + ' has brought boys in');
+    assert.ok(c.youth.length <= CAP(c.academy), 'and never more than the academy holds');
+    for (const y of c.youth) {
+      assert.equal(y.colt, true);
+      assert.ok(y.age >= 17 && y.age <= 20, 'a colt on the books is under twenty-one');
+      assert.ok(!y.career, 'a boy has no first-class record yet');
+    }
+  }
+
+  // an intake window that has already been worked never doubles up
+  const seas = (await pool.query(
+    `SELECT season_no FROM seasons WHERE country_id='eng' ORDER BY season_no DESC LIMIT 1`)).rows[0];
+  const win = { seasonNo: seas.season_no, round: 90 };            // a window never yet worked
+  const first = await ensureYouth(pool, host, 'eng', win);
+  const again = await ensureYouth(pool, host, 'eng', win);
+  assert.equal(again, 0, 'the same window brings in the same boy, so nobody is signed twice');
+  assert.ok(first >= 0);
+
+  // and the cap holds: a level-two academy stops at four however many windows pass
+  for (let r = 91; r < 100; r++) await ensureYouth(pool, host, 'eng', { seasonNo: seas.season_no, round: r });
+  const full = (await pool.query(
+    `SELECT slot, academy, youth FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows;
+  full.forEach(c => assert.equal(c.youth.length, CAP(c.academy), 'club ' + c.slot + ' filled to its capacity and stopped'));
+
+  // THE MONEY. An upgrade is a spent fact, so the treasury still recomputes.
+  await settleMoney(pool, 'eng');
+  const bank0 = Number((await pool.query(`SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank);
+  const rounds = Number((await pool.query(
+    `SELECT count(*) AS n FROM matches WHERE country_id='eng' AND (home_slot=1 OR away_slot=1)`)).rows[0].n);
+  assert.ok(bank0 > 300000, 'a season of gate money covers an academy');
+
+  await assert.rejects(pool.query(`SELECT public.world_set_academy(3)`), /sign in/);
+  await assert.rejects(as(U1, `SELECT public.world_set_academy(9)`), /1 to 5/);
+  await assert.rejects(as(U1, `SELECT public.world_set_academy(1)`), /never sold back/);
+  const up = await as(U1, `SELECT public.world_set_academy(4) AS r`);
+  assert.equal(up.rows[0].r.academy, 4);
+  assert.equal(Number(up.rows[0].r.cost), 2 * 60000 + 3 * 60000, 'each step up costs sixty thousand a level');
+  const paid = (await pool.query(
+    `SELECT academy, academy_paid, bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
+  assert.equal(paid.academy, 4);
+  assert.equal(Number(paid.academy_paid), 300000, 'what was spent is remembered');
+  assert.equal(Number(paid.bank), bank0 - 300000, 'and it came straight out of the treasury');
+
+  await settleMoney(pool, 'eng');
+  const bank1 = Number((await pool.query(`SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank);
+  assert.equal(bank1, bank0 - 300000 - rounds * 2 * UPKEEP_PER_ROUND,
+    'settling from genesis charges the upgrade once and the bigger academy every round');
+  await settleMoney(pool, 'eng');
+  assert.equal(Number((await pool.query(
+    `SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank), bank1, 'settling twice settles the same figure');
+
+  // a bigger academy holds more boys, and the umpire fills it
+  await ensureYouth(pool, host, 'eng', { seasonNo: seas.season_no, round: 101 });
+  const mine = (await pool.query(`SELECT academy, youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
+  assert.equal(CAP(mine.academy), 6);
+  assert.equal(mine.youth.length, 5, 'one more boy through the door, one window at a time');
+
+  // THE MANAGER'S TWO CALLS: bring a boy up early, or let him go.
+  await assert.rejects(pool.query(`SELECT public.world_colt('anyone','promote')`), /sign in/);
+  await assert.rejects(as(U1, `SELECT public.world_colt('Nobody At All','promote')`), /no colt of that name/);
+  await assert.rejects(as(U1, `SELECT public.world_colt($1,'sell')`, [mine.youth[0].name]), /promote or release/);
+
+  const squadWas = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad.length;
+  const lad = mine.youth[0].name, gone = mine.youth[1].name;
+  assert.equal((await as(U1, `SELECT public.world_colt($1,'promote') AS r`, [lad])).rows[0].r.ok, true);
+  assert.equal((await as(U1, `SELECT public.world_colt($1,'release') AS r`, [gone])).rows[0].r.ok, true);
+  const after = (await pool.query(`SELECT squad, youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
+  assert.equal(after.squad.length, squadWas + 1, 'the boy who was brought up is a senior');
+  assert.ok(after.squad.some(p => p.name === lad && !p.colt), 'and he wears a senior shirt, not a colt\'s');
+  assert.equal(after.youth.length, 3, 'one promoted, one released');
+  assert.ok(!after.youth.some(y => y.name === lad || y.name === gone));
+
+  // and he is handed no nets he was never at: the round he came up is
+  // remembered, so a season of another man's training is not worked into him
+  const shirt = after.squad.find(p => p.name === lad);
+  assert.ok(shirt.joined && shirt.joined.s >= 1 && shirt.joined.r >= 1, 'the world remembers when he came up');
+  await evolveCountry(pool, 'eng', EPOCH + 130 * DAY, host);
+  const post = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad.find(p => p.name === lad);
+  assert.deepEqual(post.skills, shirt.baseSkills, 'he starts from the cricketer the academy turned out');
+
+  // THE ROLLOVER. A year on every colt and a shirt for the twenty-one-year-old,
+  // with nobody watching. Keyed by season, so a re-run never ages a boy twice.
+  await pool.query(`UPDATE clubs SET youth=$1::jsonb WHERE country_id='eng' AND slot=3`,
+    [JSON.stringify([{ name: 'Ready Lad', age: 20, wage: 400, colt: true, promise: 71 },
+                     { name: 'Green Lad', age: 18, wage: 300, colt: true, promise: 58 }])]);
+  const seniorWas = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=3`)).rows[0].squad.length;
+  const rolled = await ageYouth(pool, 'eng', 4242);
+  assert.equal(rolled.skipped, false);
+  assert.ok(rolled.promoted >= 1);
+  const bot = (await pool.query(`SELECT squad, youth FROM clubs WHERE country_id='eng' AND slot=3`)).rows[0];
+  assert.equal(bot.squad.length, seniorWas + 1, 'twenty-one is twenty-one, watched or not');
+  assert.ok(bot.squad.some(p => p.name === 'Ready Lad' && p.age === 21 && !p.colt));
+  assert.equal(bot.youth.length, 1);
+  assert.equal(bot.youth[0].name, 'Green Lad');
+  assert.equal(bot.youth[0].age, 19, 'a year on the ones who stay');
+  const twice = await ageYouth(pool, 'eng', 4242);
+  assert.equal(twice.skipped, true, 'a rollover already worked is never worked again');
+  assert.equal((await pool.query(
+    `SELECT youth FROM clubs WHERE country_id='eng' AND slot=3`)).rows[0].youth[0].age, 19);
+
+  // THE LINE. A rival sees the building, never the boys inside it.
+  const seen = (await pool.query(`SELECT * FROM public.world_clubs WHERE country_id='eng' AND slot=1`)).rows[0];
+  assert.equal(seen.academy, 4, 'an academy is a building, and buildings are visible');
+  assert.ok(!('youth' in seen), 'who is in it is nobody else\'s business');
+  assert.ok(JSON.stringify(seen).indexOf('Green Lad') === -1);
+
+  // A MANAGER IS CALLED WHAT HE CALLS HIMSELF - and the name lives on the claim.
+  await assert.rejects(as(U1, `SELECT public.world_set_manager('x')`), /two letters/);
+  await assert.rejects(as(U1, `SELECT public.world_set_manager($1)`, ['x'.repeat(25)]), /24 characters/);
+  await assert.rejects(as(U1, `SELECT public.world_set_manager('<script>')`), /letters, numbers/);
+  const named = await as(U1, `SELECT public.world_set_manager('  Santosh   K  ') AS r`);
+  assert.equal(named.rows[0].r.manager, 'Santosh K', 'the spacing is tidied, the name is his');
+  assert.equal((await pool.query(
+    `SELECT manager FROM public.world_clubs WHERE country_id='eng' AND slot=1`)).rows[0].manager, 'Santosh K',
+    'and the whole world reads it');
+
+  // your own status carries the academy home
+  const st = (await as(U1, `SELECT public.world_my_status() AS s`)).rows[0].s;
+  assert.equal(st.manager, 'Santosh K');
+  assert.equal(st.academy, 4);
+  assert.equal(st.youth.length, (await pool.query(
+    `SELECT youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].youth.length,
+    'the boys on his books are the boys the world has');
+  assert.equal(st.claim.name, 'Santosh K');
 });

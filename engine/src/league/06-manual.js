@@ -115,6 +115,17 @@
         "<tr><td>Anyone shattered</td><td><b>Rest</b></td><td>A week of progress traded for legs that work on matchday.</td></tr></table>",
         "<div class='fo-man-tip'><b>Two honest warnings:</b> skill gains raise wages automatically, so improvement is never free. And academy level, squad age and rest discipline compound: none shows much in a single week; over a season the difference is significant.</div>"
       ].join("")],
+      ["academy", "The academy and the colts", [
+        "<p>Your club in the served world runs an <b>academy</b>, and so does every other club in all nineteen leagues - the ones with managers and the ones without. It is the one part of the game that works entirely on its own: a boy arrives when there is a bed for him, every colt gets a year older at the turn of the season, and any colt who reaches <b>twenty-one</b> is handed a senior shirt automatically. Nothing about it can be missed by being asleep, which is the point.</p>",
+        "<p>Open it at <b>The academy</b> from your club office. What you see is your level, the beds taken, what the place costs to run, and every boy on the books with a bar showing how far along he is.</p>",
+        "<ul><li><b>The level runs 1 to 5.</b> A better academy holds more colts and turns out better ones - a level-five boy arrives a good deal closer to the cricketer he will eventually be. Each step up costs sixty thousand times the level you are leaving, comes straight out of the treasury, and an academy is never sold back.</li>",
+        "<li><b>Upkeep is charged every round</b> at nine hundred a level, whether the boys play or not. That is the trade: a bigger academy is a permanent line on the wage bill.</li>",
+        "<li><b>A colt costs nothing in wages.</b> The upkeep covers him. He starts earning the day he takes a senior shirt.</li>",
+        "<li><b>You may bring a boy up early or let him go</b> to make room for the next intake. Everything else the umpire handles.</li>",
+        "<li><b>What he learned in the academy he keeps; nets he was never at, he never gets.</b> A boy who comes up in your third season does not inherit two seasons of the first team&rsquo;s training - he starts from the cricketer the academy turned out and builds from there.</li>",
+        "<li><b>Rivals can see your level</b> on your club page - a building is a building - but never who is inside it.</li></ul>",
+        "<div class='fo-man-tip'><b>Where the compounding is:</b> a colt is the cheapest young player you will ever hold, and young players are what the nets multiply. Raising the academy early buys better raw material for every season after it.</div>"
+      ].join("")],
       ["youth", "Youth scouting", [
         "<p>Your scout brings <b>three local prospects, aged 18 to 20</b>, to the Training page every matchday, new faces each round. Click a name for the full workup: skills, talents, and the scout&rsquo;s read on potential.</p>",
         "<ul><li>Youth signings are <b>free</b>: the lottery is quality. Most finds are raw local kids; a <b>Promising</b> one appears most trips, a <b>&#9733; Gifted</b> one is genuinely rare, and a <b>&#9670; Once in a generation</b> talent might bless your club once every few seasons. The tier is stamped on the card when the scout reports back.</li>",
@@ -228,7 +239,7 @@
       ["Getting started", "The league, the daily rhythm, and habits that win.", ["basics", "day", "tips"]],
       ["Players & squad", "Reading player cards: skills, form, fatigue, talents, age.", ["players"]],
       ["Matches & tactics", "Orders, conditions, the match centre and the table.", ["orders", "conditions", "matchcentre", "scouting", "practice", "league"]],
-      ["Development", "Training programs and the youth pipeline.", ["training", "youth"]],
+      ["Development", "Training programs, the academy and the youth pipeline.", ["training", "academy", "youth"]],
       ["Club operations", "Money, sponsors and the transfer market.", ["money", "sponsors", "market"]],
       ["Reference", "Glossaries, the living league, and quick answers.", ["attributes", "talents", "world", "faq"]]
     ].map(function (c) { return { name: c[0], desc: c[1], arts: c[2].filter(function (id) { return byId[id]; }) }; });

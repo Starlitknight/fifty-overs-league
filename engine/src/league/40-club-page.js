@@ -54,7 +54,7 @@
   function fetchClub(cid, slot, cb) {
     var k = cid + ":" + slot;
     if (CLUB_CACHE[k]) { cb(CLUB_CACHE[k]); return; }
-    grab("/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(cid) + "&slot=eq." + slot + "&select=name,ground,is_boss,manager,identity",
+    grab("/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(cid) + "&slot=eq." + slot + "&select=name,ground,is_boss,manager,identity,academy",
       function (row) { if (row) CLUB_CACHE[k] = row; cb(row); });
   }
   function fetchSquad(cid, slot, cb) {
@@ -335,6 +335,11 @@
           "<div class='fo-cp-sub'>The ground</div>" +
           "<div class='fo-cp-note'><b>" + E((info && info.ground) || "A ground of their own") + "</b></div>" +
           "<p class='fo-cp-dim'>Home advantage is real: their groundsman prepares the strip.</p>" +
+          // an academy is a building, and buildings are visible - the level a
+          // club pays for is public; who is inside it never is
+          "<div class='fo-cp-sub'>The academy</div>" +
+          "<div class='fo-cp-note'><b>Level " + Math.max(1, Math.min(5, +(info && info.academy) || 2)) + "</b> of five</div>" +
+          "<p class='fo-cp-dim'>What they spend on bringing boys through. Who is in there is their business.</p>" +
           (ident && ident.motto ? "<div class='fo-cp-sub'>The motto</div><div class='fo-cp-note'>&ldquo;" + E(ident.motto) + "&rdquo;</div>" : "") +
           "<div class='fo-cp-sub'>Standing</div>" +
           "<div class='fo-cp-note'>World rank <b>" + (rkRow ? "#" + rkRow.rank : "unrated") + "</b>" +
@@ -427,7 +432,7 @@
             });
           } else if (host) {
             host.className = "fo-cp-mineact";
-            host.innerHTML = "<a href='#/training'>The nets &rsaquo;</a><a href='#/worldclub'>Club office &rsaquo;</a><a href='#/squad'>Your squad &rsaquo;</a>";
+            host.innerHTML = "<a href='#/training'>The nets &rsaquo;</a><a href='#/academy'>The academy &rsaquo;</a><a href='#/worldclub'>Club office &rsaquo;</a><a href='#/squad'>Your squad &rsaquo;</a>";
           }
         } catch (eMine) {}
       }

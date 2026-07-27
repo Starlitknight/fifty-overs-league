@@ -17,6 +17,7 @@ import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
 import { EPOCH, dayIx, daySettled, seedOf, natHour, scheduleOf, ROUNDS } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
+import { ensureYouth, ageYouth, UPKEEP_PER_ROUND } from './youth.mjs';
 
 export function matchId(country, seasonNo, round, h, a) {
   return country + ':s' + seasonNo + ':r' + round + ':h' + h + 'a' + a;
@@ -280,7 +281,7 @@ export async function rebuildWorldToday(pool, now) {
 const FOUNDING_BANK = 2500000, HOME_GATE = 240000, AWAY_SHARE = 60000;
 export async function settleMoney(pool, country) {
   const clubs = (await pool.query(
-    'SELECT slot, squad FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
+    'SELECT slot, squad, academy, academy_paid FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
   const ms = (await pool.query(
     'SELECT home_slot, away_slot FROM matches WHERE country_id=$1', [country])).rows;
   const home = {}, away = {};
@@ -288,7 +289,11 @@ export async function settleMoney(pool, country) {
   for (const c of clubs) {
     const wages = (c.squad || []).reduce((s, p) => s + (p.wage || 0), 0);
     const rounds = (home[c.slot] || 0) + (away[c.slot] || 0);
-    const bank = FOUNDING_BANK + (home[c.slot] || 0) * HOME_GATE + (away[c.slot] || 0) * AWAY_SHARE - rounds * wages;
+    // the academy is a standing cost and its upgrades are a spent fact, so the
+    // bank is still a pure function of the record
+    const academy = rounds * (c.academy || 2) * UPKEEP_PER_ROUND + (+c.academy_paid || 0);
+    const bank = FOUNDING_BANK + (home[c.slot] || 0) * HOME_GATE + (away[c.slot] || 0) * AWAY_SHARE
+      - rounds * wages - academy;
     await pool.query('UPDATE clubs SET bank=$3 WHERE country_id=$1 AND slot=$2', [country, c.slot, Math.round(bank)]);
   }
   return clubs.length;
@@ -318,6 +323,10 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
   // legs, and the work they did in the nets. A pure function of the record,
   // so re-running settles the same.
   await evolveCountry(pool, country, now, host);
+  // the academy brings a boy in when there is room - the same boy on every
+  // re-run, because his seed is the club, the season and the round
+  try { await ensureYouth(pool, host, country, { seasonNo: season.season_no, round }); }
+  catch (eY) { console.error('academy intake failed for ' + country + ' day ' + day + ':', eY.message); }
   await settleMoney(pool, country);
   await rebuildSnapshots(pool, country, now);
   await pool.query(`UPDATE ticks SET status='done', finished_at=now(), detail=$2 WHERE key=$1`,
@@ -593,6 +602,9 @@ export async function rollSeasons(pool, { now = Date.now() } = {}) {
       `INSERT INTO seasons(country_id, season_no, start_day, schedule) VALUES ($1,$2,$3,$4)
        ON CONFLICT DO NOTHING`,
       [r.country_id, r.season_no + 1, r.start_day + 25, JSON.stringify(scheduleOf(r.country_id, r.season_no + 1))]);
+    // a year on every colt, and a senior shirt for anyone who has reached 21
+    try { await ageYouth(pool, r.country_id, r.season_no); }
+    catch (eA) { console.error('academy rollover failed for ' + r.country_id + ':', eA.message); }
     rolled.push(r.country_id + ':s' + (r.season_no + 1));
   }
   return rolled;

@@ -436,6 +436,9 @@
         "<div><i>Weekly wages</i><b>" + money0(squad.reduce(function (a, p) { return a + (p.wage || 0); }, 0)) + "</b></div></div>" +
         // the nets live at #/training - one training ground, not two
         "<a class='fo-wj-netslink' href='#/training'>&#127951; The nets &mdash; set what your men work on &rsaquo;</a>" +
+        // the academy is the club's other standing decision: what you pay to
+        // bring boys through, and which of them is ready early
+        "<a class='fo-wj-netslink' href='#/academy'>&#127775; The academy &mdash; the colts on your books &rsaquo;</a>" +
         // your own name: the table, your club page and every fixture list use it
         "<h4 class='fo-wj-h4'>Your name <span>what the world calls the manager of this club</span></h4>" +
         "<div class='fo-wj-idrow'>" +
