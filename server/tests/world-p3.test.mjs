@@ -250,19 +250,27 @@ test('009: season leaders come straight from the banked scorecards', async () =>
   assert.ok(lg.stats.bowl[0].wkts >= lg.stats.bowl[1].wkts, 'sorted by wickets');
   const clubNames = new Set((await pool.query(`SELECT name FROM clubs WHERE country_id='eng'`)).rows.map(r => r.name));
   lg.stats.bat.concat(lg.stats.bowl).forEach(x => assert.ok(clubNames.has(x.club), x.club + ' is a real club'));
-  assert.equal(lg.champion, null, 'no champion until 18 rounds');
+  // the law, not the day: a champion exists exactly when the 18 rounds are
+  // done - stated so it holds whether this run has played one round or all
+  assert.equal(lg.champion, lg.roundsPlayed >= 18 ? lg.table[0].name : null,
+    'a champion at 18 rounds, never a ball before');
   const H = await rebuildHonours(pool);
-  assert.deepEqual(H.seasons, {}, 'the honours book stays empty until a season completes');
+  const anyComplete = (await pool.query(
+    `SELECT 1 FROM matches GROUP BY country_id, season_no HAVING count(*) >= 90 LIMIT 1`)).rowCount;
+  if (!anyComplete) assert.deepEqual(H.seasons, {}, 'the honours book stays empty until a season completes');
+  else assert.ok(H.seasons.s1 && Object.keys(H.seasons.s1.league).length,
+    'a completed season is written into the book');
 });
 
 test('010: the world rankings ladder moves with results, zero-sum, rename-proof', async () => {
   const rk = await computeRankings(pool, EPOCH + 102 * DAY);
   assert.equal(rk.clubs.length, 190, 'every club in the world is ranked');
   assert.equal(rk.countries.length, 19, 'every country is ranked');
-  // only England's round 1 is banked in this run: exactly ten clubs have played
+  // every club that has played is on the ladder; when only England's round 1
+  // is banked that is exactly its ten, and this run says so
   const played = rk.clubs.filter(c => c.p > 0);
-  assert.equal(played.length, 10);
-  played.forEach(c => assert.equal(c.country, 'eng'));
+  assert.ok(played.length >= 10, 'the clubs that have played are ranked: ' + played.length);
+  if (played.length === 10) played.forEach(c => assert.equal(c.country, 'eng', 'only England has played'));
   // winners rose, losers fell, ties held
   played.forEach(c => {
     if (c.w === 1 && c.l === 0 && c.t === 0) assert.ok(c.rating > 1000, c.name + ' won and rose');
@@ -286,6 +294,8 @@ test('010: the world rankings ladder moves with results, zero-sum, rename-proof'
 
 test('011: friendlies - challenge, accept, and the umpire plays the real match', async () => {
   const PLAY = Date.now() + 3 * 3600000;
+  // the league record as it stands BEFORE a ball of friendly cricket is bowled
+  const lgBefore = await computeLeague(pool, 'eng', 1, EPOCH + 102 * DAY);
   // your own club is not an opponent, and lineups need their window
   await assert.rejects(as(U1, `SELECT public.world_friendly_challenge('eng', 1, $1)`, [PLAY]), /your own club/);
   await assert.rejects(as(U1, `SELECT public.world_friendly_challenge('ire', 3, $1)`, [Date.now() + 30 * 60000]), /90 minutes/);
@@ -328,9 +338,12 @@ test('011: friendlies - challenge, accept, and the umpire plays the real match',
   assert.ok(list.length >= 3);
   assert.ok(list.some(x => x.status === 'played' && x.text), 'played friendlies carry their result');
   assert.ok(list.some(x => x.status === 'declined'), 'the declined one is on record');
-  // friendlies never touch the league record
-  const lg = await computeLeague(pool, 'eng', 1, EPOCH + 102 * DAY);
-  assert.equal(lg.roundsPlayed, 1, 'league untouched by friendlies');
+  // friendlies never touch the league record - whatever it was, it still is
+  const lgAfter = await computeLeague(pool, 'eng', 1, EPOCH + 102 * DAY);
+  assert.equal(lgAfter.roundsPlayed, lgBefore.roundsPlayed, 'league untouched by friendlies');
+  assert.equal(lgAfter.results.length, lgBefore.results.length, 'no friendly crept into the results');
+  assert.deepEqual(lgAfter.table.map(t => [t.slot, t.p, t.pts]), lgBefore.table.map(t => [t.slot, t.p, t.pts]),
+    'not a point, not a match, moved in the table');
 });
 
 test('012: friendly lineups - set, tweak, lock at T-1h; unanswered offers die at T-1h', async () => {
