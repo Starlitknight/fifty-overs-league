@@ -65,6 +65,12 @@
     foWjCss();
     page.innerHTML = shell("Your club in the served world", "<div class='fo-wj-note'>Reaching the world&hellip;</div>");
     rpc("world_my_status").then(function (st) {
+      // the whole game wants to know which world club is yours - cache it
+      try {
+        window.__foWorldClaim = (st && st.claim) || null;
+        if (st && st.claim) localStorage.setItem("fo_world_claim", JSON.stringify(st.claim));
+        else localStorage.removeItem("fo_world_claim");
+      } catch (eCl) {}
       if (!st || st.signedIn === false || !jwt()) return renderSignIn(page);
       if (!st.claim) return renderBrowse(page);
       renderMyClub(page, st);

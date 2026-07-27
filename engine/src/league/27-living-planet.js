@@ -76,7 +76,23 @@
   function regionById(rid) { var L = regionList(); for (var i = 0; i < L.length; i++) if (L[i].id === rid) return L[i]; return null; }
   // two more real cricket cities per nation, so every league seats ten clubs
   var EXTRA_CITY = { eng: ["Taunton", "Hove"], ire: ["Sligo", "Wexford"], ned: ["Nijmegen", "Leiden"], win: ["Kingstown", "Providence"], rsa: ["East London", "Potchefstroom"], zim: ["Chinhoyi", "Marondera"], aus: ["Darwin", "Newcastle"], nzl: ["Queenstown", "Whangarei"], slk: ["Negombo", "Jaffna"], sub: ["Pune", "Lucknow"], pak: ["Quetta", "Gujranwala"], afg: ["Bamyan", "Farah"], bgd: ["Mymensingh", "Bogra"], nep: ["Butwal", "Nepalgunj"], sco: ["Paisley", "Falkirk"], wal: ["Llanelli", "Pontypridd"], ken: ["Kakamega", "Kitale"], usa: ["Seattle", "Atlanta"], can: ["Victoria", "Markham"] };
+  // England is hand-named on the server (Sir Giles and the counties) - the
+  // mirror MUST carry the same names, or orders keyed by club name would
+  // miss and the claim highlight would never find you
+  var ENG_SIDES = [
+    { slot: 0, boss: true, name: "Sir Giles Pemberley's XI", city: "London" },
+    { slot: 1, name: "Yorkshire", city: "Leeds" },
+    { slot: 2, name: "Lancashire", city: "Manchester" },
+    { slot: 3, name: "Surrey", city: "London" },
+    { slot: 4, name: "Middlesex", city: "London" },
+    { slot: 5, name: "Warwickshire", city: "Birmingham" },
+    { slot: 6, name: "Nottinghamshire", city: "Nottingham" },
+    { slot: 7, name: "Kent", city: "Canterbury" },
+    { slot: 8, name: "Durham", city: "Durham" },
+    { slot: 9, name: "Somerset", city: "Taunton" }
+  ];
   function sidesOf(rid) {
+    if (rid === "eng") return ENG_SIDES.map(function (s0) { return { slot: s0.slot, boss: !!s0.boss, name: s0.name, city: s0.city, str: s0.boss ? 1.07 : 0.9 }; });
     var r = regionById(rid); if (!r) return [];
     var cities = (cx().cities(rid) || []).concat(EXTRA_CITY[rid] || []);
     var bc = null; (r.clubs || []).forEach(function (c) { if (c.boss) bc = c; });
@@ -337,7 +353,7 @@
         var h0 = natHour(r.id);
         var st2 = (p.kind === "league") ? (hNow >= h0 && hNow < h0 + LIVE_LEN ? "on" : hNow >= h0 + LIVE_LEN ? "done" : "up") : "up";
         // a live nation's flag is a door to the world theatre; the rest open the nation page
-        var dest = r.id === my ? "#/league" : (st2 === "on" ? "#/watch?n=" + encodeURIComponent(r.id) : "#/nation?n=" + encodeURIComponent(r.id));
+        var dest = st2 === "on" ? "#/watch?n=" + encodeURIComponent(r.id) : "#/nation?n=" + encodeURIComponent(r.id);
         return "<a class='fo-pl-tz " + st2 + (r.id === my ? " me" : "") + "' href='" + dest + "' aria-label='" + E(r.nm) + "'>" +
           "<img src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\"><i>" + hh(h0).slice(0, 2) + "</i></a>";
       }).join("");
@@ -358,7 +374,7 @@
         var pos = rows.findIndex(function (x) { return x.nm === me.name; }) + 1;
         var ldr = rows[0];
         var nxt = (typeof window.foNextFixture === "function") ? window.foNextFixture() : null;
-        ownCard = "<a class='fo-pl-own' href='#/league'>" +
+        ownCard = "<a class='fo-pl-own' href='#/nation?n=" + encodeURIComponent(my) + "'>" +
           "<img class='fo-pl-flag' src='" + flagOf(my) + "' alt='' onerror=\"this.style.display='none'\">" +
           "<span class='fo-pl-ownt'><i>Your league &middot; " + E(myRegion.nm) + "</i>" +
           "<b>" + E(me.name) + (pos ? " &middot; " + pos + (pos === 1 ? "st" : pos === 2 ? "nd" : pos === 3 ? "rd" : "th") : "") + "</b>" +
@@ -475,7 +491,7 @@
         bandHTML + ownCard + cupHTML +
         (natCards ? "<div class='fo-pl-grid'>" + natCards + "</div>" : "") +
         (wireItems ? "<div class='fo-pl-wire'><i>The world wire</i>" + wireItems + "</div>" : "") +
-        "<div class='fo-pl-foot'><a href='#/worldclub'>Join the world &rsaquo;</a><a href='#/world'>The world map &rsaquo;</a><a href='#/champions'>The Champions Cup &rsaquo;</a><a href='#/natteams'>National teams &rsaquo;</a><a href='#/league'>My league &rsaquo;</a><a href='#/almanack'>The world almanack &rsaquo;</a><a href='#/atlas'>The atlas &rsaquo;</a></div>" +
+        "<div class='fo-pl-foot'><a href='#/worldclub'>Join the world &rsaquo;</a><a href='#/world'>The world map &rsaquo;</a><a href='#/champions'>The Champions Cup &rsaquo;</a><a href='#/natteams'>National teams &rsaquo;</a><a href='#/nation'>My league &rsaquo;</a><a href='#/almanack'>The world almanack &rsaquo;</a><a href='#/atlas'>The atlas &rsaquo;</a></div>" +
         "</div>";
     } catch (e) { try { console.warn("foRenderPlanetPage", e); } catch (e2) {} }
   }

@@ -3971,7 +3971,7 @@
           (r.final
             ? "<a class='wc-tour' href='#/cup'>The Champions Cup &#9654;</a><a class='wc-dossier' href='#/side?r=gt'>Thorne dossier &#8250;</a>"
             : ((r.id === foLgNation()
-              ? "<a class='wc-tour' href='#/league'>Your league &#9654;</a>"
+              ? "<a class='wc-tour' href='#/nation'>Your league &#9654;</a>"
               // a foreign flag opens THAT nation's league page - #/league is
               // always the user's own league and ignores any ?n= param
               : "<a class='wc-tour' href='#/nation?n=" + encodeURIComponent(r.id) + "'>View " + E(r.nm) + " league &#9654;</a>") +
@@ -5245,13 +5245,9 @@
       // painted portrait (map + boss art) answers at #/atlas, the record
       // book at #/nation
       var atlasPage = (hashPath === "#/atlas");
-      // ONE ENGLAND: your nation's record book IS your real league - the
-      // planet has no second England. Send the door there.
-      if (natPage) {
-        var mNat0 = /[?&]n=([^&]+)/.exec(location.hash || "");
-        var natQ = mNat0 ? decodeURIComponent(mNat0[1]) : foLgNation();
-        if (natQ === foLgNation()) { location.hash = "#/league"; if (typeof window.route === "function") window.route(); return; }
-      }
+      // ONE WORLD: every nation's record book - yours included - is the
+      // SERVED league. There is no separate England; your club lives in the
+      // same world as everyone else's.
       if (!natPage && !atlasPage && window.__foLeagueTable) return;
       if (hashPath !== "#/league" && !natPage && !atlasPage) return;
       var page = document.getElementById("page"); if (!page) return;
@@ -5261,6 +5257,12 @@
       var own = (nation === myNation);
       var region = (foRegionById(nation) || {}).r;
       if (!region) { nation = myNation; own = true; region = (foRegionById(nation) || {}).r || { nm: "League", ac: "#3a6ea5", bg: "eng.webp", pitch: "balanced", type: "", cond: "", arrive: "" }; }
+      // the record book always shows the world's league, so the data path is
+      // the served one even for your own nation; ownNat keeps the labels warm
+      var ownNat = own;
+      if (natPage) own = false;
+      var wclm = null;
+      try { wclm = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eWc) { wclm = null; }
       var ac = region.ac || "#3a6ea5";
       var meNm = foLgMyTeam().name;
 
@@ -5311,12 +5313,14 @@
         try { srv.pl.sidesOf(nation).forEach(function (s8) { pSides[s8.slot] = s8; }); } catch (eP8) {}
         table = srv.snap.table.map(function (row8, i8) {
           var sd8 = pSides[row8.slot] || {};
+          var mine8 = !!(wclm && wclm.country === nation && row8.name === wclm.club);
           return { rank: i8 + 1, name: row8.name, city: sd8.city || "", P: row8.p, W: row8.w, L: row8.l, T: row8.t, pts: row8.pts,
-            nrr: (typeof row8.nrr === "number") ? row8.nrr : null, wid: null, boss: !!row8.boss, sideObj: null, isMe: false, srv: true };
+            nrr: (typeof row8.nrr === "number") ? row8.nrr : null, wid: null, boss: !!row8.boss, sideObj: null, isMe: mine8, srv: true };
         });
       }
       var sig = (natPage ? "nt|" : "lg|") + nation + "|" + own + "|" + (own ? (round + "|" + Object.keys(s.res || {}).length + "|" + meNm) : "ro") +
-        (srv ? "|sv" + srv.state + "." + srv.cal.round + "." + (srv.snap ? (srv.snap.seasonNo + "." + srv.snap.roundsPlayed + "." + (srv.snap.results || []).length) : "-") : "");
+        (srv ? "|sv" + srv.state + "." + srv.cal.round + "." + (srv.snap ? (srv.snap.seasonNo + "." + srv.snap.roundsPlayed + "." + (srv.snap.results || []).length) : "-") : "") +
+        (wclm ? "|cl" + wclm.country + "." + wclm.slot : "");
       if (page.__foLgSig === sig && page.querySelector(".fo-lg")) return;
       page.__foLgSig = sig;
 
@@ -5576,8 +5580,10 @@
               : "<span class='res dim'>Stumps &middot; the umpire files the scorecard on the hour</span>";
             else if (teamsInP) tail = "<span class='res'>Teamsheets in &middot; first ball " + hhFmt(srv.hour) + "</span><a class='fo-nt-watch ghost' href='#/watch?n=" + encodeURIComponent(nation) + "&f=" + i5 + "'>See the XIs &rsaquo;</a>";
             else tail = "<span class='res dim'>First ball " + hhFmt(srv.hour) + "</span>";
-            return "<div class='fo-nt-mx" + (srv.state === "live" ? " live" : "") + "'>" +
+            var mineFx = !!(wclm && wclm.country === nation && (f5.home.name === wclm.club || f5.away.name === wclm.club));
+            return "<div class='fo-nt-mx" + (srv.state === "live" ? " live" : "") + (mineFx ? " mine" : "") + "'>" +
               "<div class='t'><b>" + E(f5.home.name) + "</b><i>v</i><b>" + E(f5.away.name) + "</b>" +
+              (mineFx ? "<em class='yourm'>YOUR MATCH</em>" : "") +
               (srv.state === "live" ? "<em class='lv'><u></u>LIVE</em>" : "") + "</div>" +
               "<div class='r'>" + tail + "</div></div>";
           }).join("");
@@ -5630,7 +5636,7 @@
           ? "<p class='fo-ov-sublabel'>No matches banked yet &mdash; the season is about to begin.</p>"
           : "<p class='fo-ov-sublabel'>Reaching the World Service for the season record&hellip;</p>");
         srvLiveFirst = (srv.state === "live");
-        if (srv.snap) ebText = "The World Service &middot; Season " + srv.cal.seasonNo;
+        if (srv.snap) ebText = (ownNat ? "Your world league" : "The World Service") + " &middot; Season " + srv.cal.seasonNo;
       }
 
       var shellOpen =
@@ -5647,6 +5653,13 @@
         "<div class='fo-lg-tablewrap'><div class='fo-lg-thead'><span class='rk'>#</span><span class='av'></span><span class='nm'>Club</span><span class='c'>P</span><span class='c'>W</span><span class='c'>L</span><span class='c'>NRR</span><span class='c'>Pts</span></div>" +
         tableRows + "<div class='fo-lg-qnote'>" + ntTableNote + "</div></div></div>";
       var ntSecMatch = "<div class='fo-ov-sec'><h2>" + sec2Title + "</h2><div class='" + (own ? "fo-fx-wrap" : "fo-lg-side") + "'>" + fixturesPanel + "</div></div>";
+      // your place in the one world: claim a club, or manage the one you hold
+      var ntClaimBar = "";
+      if (natPage && ownNat) {
+        ntClaimBar = wclm && wclm.country === nation
+          ? "<a class='fo-nt-claim held' href='#/worldclub'>You manage <b>" + E(wclm.club) + "</b> &middot; set your orders &rsaquo;</a>"
+          : "<a class='fo-nt-claim' href='#/worldclub'>Claim a club &mdash; take your place in the world &rsaquo;</a>";
+      }
       var ntSecResults = "<div class='fo-ov-sec'><h2>Results</h2><div class='fo-rs-wrap'>" + resultsPanel + "</div></div>";
       page.innerHTML = natPage
         // ===================== the record book: table, fixtures, results, grounds =====================
@@ -5658,6 +5671,7 @@
           "<h1 class='fo-nt-title'>" + E(region.nm) + "</h1>" +
           "<div class='fo-ov-sub'>" + E(subtitle) + "</div>" +
           "</header>" +
+          ntClaimBar +
           // a round in play is the loudest thing on the page: it leads
           (srvLiveFirst ? ntSecMatch + ntSecTable : ntSecTable + ntSecMatch) +
           ntSecResults +
@@ -6211,6 +6225,10 @@
       ".fo-nt-uround i{display:block;font-style:normal;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.8px;font-size:10px;font-weight:600;color:var(--gold);margin-bottom:5px}",
       ".fo-nt-uround span{display:block;font-size:12px;color:#c9d6ea;padding:2.5px 0}",
       ".fo-nt-rrow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;padding:8px 12px;border-radius:10px;background:rgba(12,20,36,.42);border:1px solid rgba(150,180,225,.13);margin-bottom:5px}",
+      "html body #page .fo-nt-claim{display:block;text-align:center;margin:14px 0 2px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;font-size:12px;color:#170d07 !important;background:linear-gradient(180deg,#E8894A,#C8542F);border-radius:12px;padding:14px;text-decoration:none !important;box-shadow:0 10px 26px rgba(200,84,47,.34)}",
+      "html body #page .fo-nt-claim.held{background:rgba(12,20,36,.42);color:#F3D37A !important;border:1px solid rgba(235,194,113,.45);box-shadow:none}",
+      ".fo-nt-mx.mine{border-color:rgba(235,194,113,.55);background:rgba(30,26,16,.5)}",
+      ".fo-nt-mx .t em.yourm{display:inline-flex;font-style:normal;font-family:Oswald,sans-serif;font-weight:700;font-size:8.5px;letter-spacing:1.4px;color:#F3D37A;border:1px solid rgba(235,194,113,.5);border-radius:999px;padding:3px 8px}",
       ".fo-nt-rrow .t{font-size:12.5px;font-weight:600;color:#fff}",
       ".fo-nt-rrow .res{font-size:11px;letter-spacing:.3px;color:#9fb0cb}",
       ".fo-ov-sub{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:4px;font-size:clamp(16px,4.5vw,26px);color:var(--gold);margin-top:4px}",
