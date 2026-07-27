@@ -74,7 +74,7 @@
         : "";
       var rowOf = function (c) {
         var isMine = !!(cl && c.country === cl.country && c.slot === cl.slot);
-        return "<a class='fo-rk-row" + (isMine ? " mine" : "") + (c.boss ? " boss" : "") + "' href='#/nation?n=" + encodeURIComponent(c.country) + "'>" +
+        return "<a class='fo-rk-row" + (isMine ? " mine" : "") + (c.boss ? " boss" : "") + "' href='#/team?c=" + encodeURIComponent(c.country) + "&s=" + c.slot + "'>" +
           "<i>" + c.rank + "</i>" +
           "<img src='" + flagOf(c.country) + "' alt='' onerror=\"this.style.display='none'\">" +
           "<b>" + E(c.name) + (isMine ? " <em>YOU</em>" : (c.boss ? " <em class='bs'>BOSS</em>" : "")) + "</b>" +

@@ -322,8 +322,12 @@
               "<span><button type='button' class='fo-wj-frbtn fo-wj-fracc' data-id='" + f.id + "'>Accept</button>" +
               "<button type='button' class='fo-wj-frbtn ghost fo-wj-frdec' data-id='" + f.id + "'>Decline</button></span></div>";
             if (f.status === "offered") return "<div class='fo-wj-frrow'><b>" + E(f.away) + "</b><i>" + when + " &middot; awaiting their reply</i><span>" + frLineupBtn(f) + "</span></div>";
-            if (f.status === "accepted") return "<div class='fo-wj-frrow on'><b>" + E(f.home) + " v " + E(f.away) + "</b><i>" + when + " &middot; lineups lock an hour before</i><span>" + frLineupBtn(f) + "</span></div>";
-            if (f.status === "played") return "<div class='fo-wj-frrow done'><b>" + E(f.home) + " v " + E(f.away) + "</b><i>" + E(f.text || "played") + "</i></div>";
+            if (f.status === "accepted") {
+              var liveNow = Date.now() >= (f.playAtMs || 0);
+              return "<div class='fo-wj-frrow on'><b>" + E(f.home) + " v " + E(f.away) + "</b><i>" + when + " &middot; " + (liveNow ? "in play" : "lineups lock an hour before") + "</i><span>" +
+                (liveNow ? "<button type='button' class='fo-wj-frbtn fo-wj-frth' data-id='" + f.id + "'>&#127916; Watch LIVE</button>" : frLineupBtn(f)) + "</span></div>";
+            }
+            if (f.status === "played") return "<div class='fo-wj-frrow done'><b>" + E(f.home) + " v " + E(f.away) + "</b><i>" + E(f.text || "played") + "</i><span><button type='button' class='fo-wj-frbtn ghost fo-wj-frth' data-id='" + f.id + "'>Watch it back &rsaquo;</button></span></div>";
             return "<div class='fo-wj-frrow dim'><b>" + E(f.home) + " v " + E(f.away) + "</b><i>" + f.status + "</i></div>";
           }).join("");
           el.querySelectorAll(".fo-wj-frlu").forEach(function (b9) {
@@ -336,6 +340,9 @@
                 .then(function () { msg("Friendly lineup on file."); frPaint(); })
                 .catch(function (e9) { msg(String(e9.message).slice(0, 120)); });
             });
+          });
+          el.querySelectorAll(".fo-wj-frth").forEach(function (b9) {
+            b9.addEventListener("click", function () { try { window.foWtFriendly(+b9.getAttribute("data-id")); } catch (e9) {} });
           });
           el.querySelectorAll(".fo-wj-fracc").forEach(function (b9) {
             b9.addEventListener("click", function () { rpc("world_friendly_respond", { p_id: +b9.getAttribute("data-id"), p_accept: true }).then(frPaint).catch(function (e9) { msg(String(e9.message).slice(0, 100)); }); });

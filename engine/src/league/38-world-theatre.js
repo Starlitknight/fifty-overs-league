@@ -270,6 +270,71 @@
     } catch (e) { try { console.warn("foWtSpectate", e); } catch (e2) {} }
   };
 
+  // ---- FRIENDLIES IN THE THEATRE: watched == recorded, no stakes attached --
+  // From the first ball, a friendly is a broadcast like any league match:
+  // the detail RPC hands over both clubs (current names), the sealed
+  // lineups exactly as the umpire uses them, and the kick-off; the seed is
+  // FNV('friendly:'+id) on both hosts. Live it paces on the world clock
+  // across a three-hour window; after stumps it replays from ball one.
+  window.foWtFriendly = function (fid) {
+    try {
+      if (typeof M !== "undefined" && M && !M.done && M.meta && !M.meta.__spectate) {
+        alert("A match of yours is in progress - finish it first."); return;
+      }
+      fetch(SB_URL + "/rest/v1/rpc/world_friendly_detail", {
+        method: "POST",
+        headers: { apikey: SB_ANON, Authorization: "Bearer " + SB_ANON, "content-type": "application/json" },
+        body: JSON.stringify({ p_id: +fid })
+      }).then(function (r) { return r.text().then(function (t) { var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {} if (!r.ok) throw new Error((j && j.message) || "HTTP " + r.status); return j; }); })
+        .then(function (d) {
+          if (!d || !d.home) return;
+          var nowT = Date.now();
+          if (nowT < d.playAtMs) {
+            var dD = new Date(d.playAtMs), p2 = function (n) { return (n < 10 ? "0" : "") + n; };
+            alert("The first ball is at " + p2(dD.getHours()) + ":" + p2(dD.getMinutes()) + " - the broadcast opens then.");
+            return;
+          }
+          var sqH = serverSquad(d.home.country, d.home.slot), sqA = serverSquad(d.away.country, d.away.slot);
+          if (!sqH || !sqA) { alert("The squads are still warming up - try again in a moment."); return; }
+          var home = { name: d.home.name, ground: d.home.name + "'s ground", players: sqH };
+          var away = { name: d.away.name, players: sqA };
+          var seed = h32("friendly:" + d.id) || 1;
+          window.onMatchEnd = function () {};
+          M = newMatch(home, away, "balanced", seed);
+          M.meta = { home: home.name, away: away.name, pitch: "balanced", weather: "Sunny", comp: "friendly", ground: home.ground, __spectate: 1, isUser: false };
+          M.isUserMatch = false; M.ordersMap = d.orders || {};
+          App.tossState = { stage: "x" };
+          applyToss(aiTossDecision());
+          var winStart = d.playAtMs, winLen = 3 * 3600000, BALL_MS = winLen / 600;
+          var liveBall = function (t) {
+            if (t >= winStart + winLen) return 1e9;
+            var n = Math.floor((t - winStart) / BALL_MS);
+            return n > 0 ? n : 0;
+          };
+          var isLive = nowT >= winStart && nowT < winStart + winLen;
+          window.__foWtBall = 0;
+          var target0 = isLive ? liveBall(nowT) : 0;
+          while (M && !M.done && window.__foWtBall < target0) { autoPick(); stepBall(); window.__foWtBall++; }
+          try { if (window.__foWtDrv) clearInterval(window.__foWtDrv); } catch (e) {}
+          window.__foWtDrv = setInterval(function () {
+            try {
+              if ((location.hash || "").split("?")[0] !== "#/match" || !M || !M.meta || !M.meta.__spectate) { clearInterval(window.__foWtDrv); return; }
+              if (M.done) { clearInterval(window.__foWtDrv); return; }
+              if (isLive) {
+                var tb = liveBall(Date.now()), guard = 0;
+                while (M && !M.done && window.__foWtBall < tb && guard++ < 650) { autoPick(); stepBall(); window.__foWtBall++; }
+              } else {
+                autoPick(); stepBall(); window.__foWtBall++;
+              }
+            } catch (e) { clearInterval(window.__foWtDrv); }
+          }, isLive ? 1000 : 2200);
+          location.hash = "#/match";
+          if (typeof window.route === "function") window.route();
+        })
+        .catch(function (e) { alert(String(e.message || "The world could not be reached.").slice(0, 140)); });
+    } catch (e) { try { console.warn("foWtFriendly", e); } catch (e2) {} }
+  };
+
   window.foRenderWatchPage = function () {
     var page = document.getElementById("page"); if (!page || !P() || !cx()) return;
     foWtCss();

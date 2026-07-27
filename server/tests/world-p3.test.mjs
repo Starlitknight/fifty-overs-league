@@ -376,3 +376,50 @@ test('012: friendly lineups - set, tweak, lock at T-1h; unanswered offers die at
   const after = await runFriendlies(pool, host, { now: T2 + 3600000 });
   assert.ok(!after.map(Number).includes(Number(off.rows[0].r.id)), 'an expired offer is never played');
 });
+
+test('013: the friendly fixture card - sealed to the hour, then public for the theatre', async () => {
+  async function pinned(nowMs, user, fn) {
+    const c = await pool.connect();
+    try {
+      await c.query('BEGIN');
+      if (user) await c.query(`SELECT set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ sub: user })]);
+      await c.query(`SELECT set_config('world.now_ms', $1, true)`, [String(nowMs)]);
+      const r = await fn(c);
+      await c.query('COMMIT');
+      return r;
+    } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e; } finally { c.release(); }
+  }
+  // a bot accepts on the spot; the card stays sealed until an hour out
+  const T = Date.now() + 6 * 3600000;
+  const fr = await as(U1, `SELECT public.world_friendly_challenge('ire', 5, $1) AS r`, [T]);
+  const fid = fr.rows[0].r.id;
+  await assert.rejects(
+    pinned(T - 2 * 3600000, null, c => c.query(`SELECT public.world_friendly_detail($1)`, [fid])),
+    /sealed until an hour before/);
+  // the challenger seals a friendly-specific lineup
+  const squad = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  const xi = squad.map(p => p.name).slice(0, 11);
+  await as(U1, `SELECT public.world_friendly_orders($1, $2::jsonb)`, [fid, JSON.stringify({ xi: xi, bat: xi })]);
+  // from T-1h anyone - no sign-in required - reads the card the theatre replays from
+  const open = await pinned(T - 30 * 60000, null, c => c.query(`SELECT public.world_friendly_detail($1) AS d`, [fid]));
+  const d = open.rows[0].d;
+  assert.equal(Number(d.id), Number(fid));
+  assert.equal(Number(d.playAtMs), T);
+  assert.equal(d.home.country, 'eng');
+  assert.equal(d.home.slot, 1);
+  assert.equal(d.home.name, 'Yorkshire', 'the CURRENT club name keys the card');
+  assert.equal(d.away.country, 'ire');
+  assert.deepEqual(d.orders[d.home.name].xi, xi, 'the sealed friendly lineup rides under the club name');
+  // with no bespoke sheet, the manager's latest league orders ride in - same as the umpire
+  const T2 = Date.now() + 7 * 3600000;
+  const fr2 = await as(U1, `SELECT public.world_friendly_challenge('ire', 6, $1) AS r`, [T2]);
+  const latest = (await pool.query(
+    `SELECT orders FROM orders WHERE user_id=$1 ORDER BY submitted_at DESC LIMIT 1`, [U1])).rows[0].orders;
+  const open2 = await pinned(T2 - 10 * 60000, null, c => c.query(`SELECT public.world_friendly_detail($1) AS d`, [fr2.rows[0].r.id]));
+  const d2 = open2.rows[0].d;
+  assert.deepEqual(d2.orders[d2.home.name], latest, 'league orders are the fallback, exactly as played');
+  // an unanswered offer has no card, and neither does a ghost
+  const off = await as(U1, `SELECT public.world_friendly_challenge('eng', 2, $1) AS r`, [Date.now() + 6 * 3600000]);
+  await assert.rejects(pool.query(`SELECT public.world_friendly_detail($1)`, [off.rows[0].r.id]), /this friendly is offered/);
+  await assert.rejects(pool.query(`SELECT public.world_friendly_detail(999999)`), /no such friendly/);
+});

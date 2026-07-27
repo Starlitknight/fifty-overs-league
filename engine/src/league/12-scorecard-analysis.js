@@ -5315,7 +5315,7 @@
           var sd8 = pSides[row8.slot] || {};
           var mine8 = !!(wclm && wclm.country === nation && row8.name === wclm.club);
           return { rank: i8 + 1, name: row8.name, city: sd8.city || "", P: row8.p, W: row8.w, L: row8.l, T: row8.t, pts: row8.pts,
-            nrr: (typeof row8.nrr === "number") ? row8.nrr : null, wid: null, boss: !!row8.boss, sideObj: null, isMe: mine8, srv: true };
+            nrr: (typeof row8.nrr === "number") ? row8.nrr : null, wid: null, boss: !!row8.boss, sideObj: null, isMe: mine8, srv: true, slot: row8.slot };
         });
       }
       var sig = (natPage ? "nt|" : "lg|") + nation + "|" + own + "|" + (own ? (round + "|" + Object.keys(s.res || {}).length + "|" + meNm) : "ro") +
@@ -5333,7 +5333,8 @@
           ? "<span class='av me'><img src='" + foLgArtFallback(nation) + "' alt=''></span>"
           : "<span class='av'>" + (x.boss ? "<img src='" + foLgClubCrest(nation, x.sideObj) + "' class='crest' alt='' onerror=\"this.onerror=null;this.src='" + foLgClubArt(nation, x.sideObj) + "'\">" : foLgArtImg(nation, x.sideObj)) + "</span>";
         return "<a class='fo-lg-row" + (x.isMe ? " me" : "") + (x.boss ? " boss" : "") + (q ? " q" : "") + "'" +
-          (x.wid && x.wid !== "me" ? " href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'" : "") + ">" +
+          (x.srv ? " href='#/team?c=" + encodeURIComponent(nation) + "&s=" + x.slot + "'"
+            : x.wid && x.wid !== "me" ? " href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'" : "") + ">" +
           "<span class='rk'>" + (i + 1) + "</span>" + av +
           "<span class='nm'>" + E(x.name) + (x.isMe ? " <em class='you'>YOU</em>" : (x.boss ? " <em class='bs'>BOSS</em>" : "")) + "<i>" + E(x.city) + "</i></span>" +
           "<span class='c'>" + x.P + "</span><span class='c'>" + x.W + "</span><span class='c'>" + x.L + "</span>" +
