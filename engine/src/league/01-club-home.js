@@ -1858,12 +1858,13 @@
         return;
       }
       var page = document.getElementById("page"); if (!page) return;
-      // the changing-room backdrop: a fixed layer behind the transparent wrap.
-      // --fo-ord-bg carries the art URL so it resolves from either shell.
+      // The changing-room backdrop is retired: the orders page reads in the
+      // game's own daylight now, like every other page. Strip the layer
+      // wherever an older session left it standing.
       try {
-        document.body.style.setProperty("--fo-ord-bg", "url('" + FO_ART + "orders-room.webp')");
-        document.body.classList.add("fo-ord-room");
-        if (!document.getElementById("fo-ord-bg")) { var bgd = document.createElement("div"); bgd.id = "fo-ord-bg"; document.body.insertBefore(bgd, document.body.firstChild); }
+        document.body.classList.remove("fo-ord-room");
+        var bgOld = document.getElementById("fo-ord-bg"); if (bgOld) bgOld.remove();
+        if (0) { var bgd = document.createElement("div"); bgd.id = "fo-ord-bg"; document.body.insertBefore(bgd, document.body.firstChild); }
       } catch (eBg) {}
       // heat advisory: in draining weather a sixth bowling option is worth
       // real overs (the old auto-pick/status bar is gone - the rebuilt page

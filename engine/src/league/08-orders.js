@@ -513,9 +513,13 @@
       var colorIx = {}; bowlNames.forEach(function (n9, i9) { colorIx[n9] = i9 % 6; });
       var inits = function (nm9) { var a9 = String(nm9).split(" "); return (a9[0].charAt(0) + (a9.length > 1 ? a9[a9.length - 1].charAt(0) : "")).toUpperCase(); };
       var mgrid = "<div class='fo-ord-mgrid'>" +
-        "<div class='mg-hint'>Pick a bowler, then tap overs to hand them to him &middot; tap his over again to clear it. Top row is the powerplay, bottom row the death. Tap a bowler's badge on his lane above to set his field: attacking, balanced or defensive.</div>" +
+        "<div class='mg-hint'>Pick a bowler, then tap overs to hand them to him &middot; tap his over again to clear it. Top row is the powerplay, bottom row the death. Tap a bowler's badge to set his field: attacking, balanced or defensive.</div>" +
         "<div class='mg-chips'>" + bowlNames.map(function (n9) {
-          return "<button type='button' class='mgb mgb-c" + colorIx[n9] + (n9 === armNm ? " on" : "") + "' data-fo-arm='" + E(n9) + "'><i></i>" + E(dispNm(n9)) + "<u>" + (tot[n9] || 0) + "</u></button>";
+          // the lanes are desktop-only, so a phone gets the bowler's field
+          // here: the same badge, on his own chip
+          return "<button type='button' class='mgb mgb-c" + colorIx[n9] + (n9 === armNm ? " on" : "") + "' data-fo-arm='" + E(n9) + "'><i></i>" + E(dispNm(n9)) +
+            "<u>" + (tot[n9] || 0) + "</u>" +
+            "<s class='fbd" + (foMfVal(n9) ? " on" : "") + "' data-fo-mfc='" + E(n9) + "' title='" + E(foMfTitle(n9)) + "'>" + foMfShort(n9) + "</s></button>";
         }).join("") + "</div>" +
         "<div class='mg-grid'>" + (function () {
           var h9 = "";
@@ -977,6 +981,8 @@
       ".mg-chips .mgb i{width:11px;height:11px;border-radius:50%;flex:0 0 auto}" +
       ".mg-chips .mgb u{text-decoration:none;font-size:11px;color:#8a93a3;font-weight:800}" +
       ".mg-chips .mgb.on u{color:#B04A2C}" +
+      ".mg-chips .mgb s{text-decoration:none;font-size:9.5px;font-weight:700;letter-spacing:.03em;color:#8a93a3;border:1px solid rgba(28,36,51,.16);border-radius:6px;padding:2px 6px}" +
+      ".mg-chips .mgb s.on{color:#FFFEFC;background:#0E233F;border-color:#0E233F}" +
       ".mg-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}" +
       "html body #page .mg-grid button.mgc{position:relative;border:1px solid rgba(28,36,51,.16)!important;background:#F6F3EC!important;border-radius:7px;height:36px;padding:0;cursor:pointer;overflow:hidden}" +
       "html body #page .mg-grid button.mgc.pp{border-bottom:3px solid #4E7A4E!important}" +

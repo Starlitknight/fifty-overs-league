@@ -7,11 +7,9 @@
    book: ruled paper, dismissals in ink italic, margin boxes, and a red
    FULL TIME stamp pressed onto the page at stumps.
 
-   THE DRESSING ROOM (#/orders): the plan is made where plans are made. The
-   dressing-room painting sits behind everything, panels turn to dark glass,
-   the bowling lanes become the Gaffer's chalkboard, and the toss call is a
-   worn gold coin. All the existing drag/tap interactions are untouched —
-   this module only ever adds paint.
+   THE DRESSING ROOM (#/orders) is retired: the orders page reads in the
+   game's own daylight now, like every other page. Its own sheet (league/
+   08-orders.js) carries the cream cards, so nothing here paints it any more.
    ========================================================================== */
 (function () {
   "use strict";
@@ -19,16 +17,6 @@
 
   function ART() { return (typeof FO_ART !== "undefined") ? FO_ART : "client/art/"; }
 
-  function ensureRoom() {
-    if (!document.body.classList.contains("fo-drs-on")) return;
-    if (document.getElementById("fo-drs-bg")) return;
-    var img = document.createElement("img");
-    img.id = "fo-drs-bg"; img.alt = "";
-    img.src = ART() + "home/" + (window.innerWidth < 760 ? "hgm" : "hgd") + "-dressing-room.webp";
-    img.onerror = function () { img.remove(); };
-    var veil = document.createElement("div"); veil.id = "fo-drs-veil";
-    document.body.appendChild(img); document.body.appendChild(veil);
-  }
   function ensureStamp() {
     if (!document.body.classList.contains("fo-scb-on")) return;
     var page = document.getElementById("page"); if (!page) return;
@@ -44,8 +32,12 @@
   function apply() {
     var h = (location.hash || "").split("?")[0];
     document.body.classList.toggle("fo-scb-on", h === "#/scorecard");
-    document.body.classList.toggle("fo-drs-on", h === "#/orders");
-    if (h === "#/orders") ensureRoom();
+    // the dark room is gone: strip it wherever an older session left it on
+    try {
+      document.body.classList.remove("fo-drs-on");
+      var b0 = document.getElementById("fo-drs-bg"); if (b0) b0.remove();
+      var v0 = document.getElementById("fo-drs-veil"); if (v0) v0.remove();
+    } catch (eD) {}
     if (h === "#/scorecard") ensureStamp();
   }
   window.addEventListener("hashchange", function () { setTimeout(apply, 60); });
@@ -95,66 +87,7 @@
     "html body.ftpskin.fo-scb-on #page .panel h4,html body.fo-scb-on #page .panel h4{background:transparent !important;color:#241d0e !important;border-top:3px double #241d0e;border-bottom:1px solid rgba(36,29,14,.65);font-family:Georgia,serif;padding:9px 4px}",
     // the stamp, pressed slightly askew at the top of the first innings page
     ".fo-scb-stamp{position:absolute;top:52px;right:16px;z-index:2;transform:rotate(-7deg);font-family:Oswald,sans-serif;font-weight:700;font-size:15px;letter-spacing:.26em;color:#c23b25;border:3px solid #c23b25;border-radius:5px;padding:5px 12px 4px;opacity:.72;pointer-events:none;mix-blend-mode:multiply}",
-    "@media(max-width:760px){.fo-scb-stamp{font-size:12px;top:46px;right:6px}}",
-
-    // ======================= THE DRESSING ROOM ==============================
-    "#fo-drs-bg,#fo-drs-veil{display:none}",
-    "body.fo-drs-on #fo-drs-bg{display:block;position:fixed;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 42%;z-index:-2}",
-    "body.fo-drs-on #fo-drs-veil{display:block;position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(9,8,6,.66),rgba(11,10,8,.38) 30%,rgba(9,8,6,.5) 66%,rgba(6,5,4,.78))}",
-    // isolation makes body a stacking context, so the negative-z backdrop
-    // paints above the body background instead of vanishing behind it
-    "html body.ftpskin.fo-drs-on,html body.fo-drs-on{background:#0b0a07 !important;isolation:isolate}",
-    "html body.fo-drs-on .wrap{background:transparent !important;box-shadow:none !important}",
-    "html body.fo-drs-on #page{background:transparent !important}",
-    // the fixture title hangs in the room's air (the skin paints it as navy
-    // gradient text via background-clip, so the fill colour must be forced)
-    "html body.fo-drs-on #page .fo-ord-hero .h-t{color:#fff !important;-webkit-text-fill-color:#fff !important;background:none !important;text-shadow:0 4px 22px rgba(0,0,0,.75)}",
-    "html body.fo-drs-on #page .fo-ord-hero .h-v{color:#EBC271 !important;-webkit-text-fill-color:#EBC271 !important;background:none !important}",
-    "html body.fo-drs-on #page .fo-ord-herosub,html body.fo-drs-on #page .fo-ord-herosub *{color:#d8c9a6 !important;-webkit-text-fill-color:#d8c9a6 !important;text-shadow:0 2px 10px rgba(0,0,0,.7)}",
-    // panels become dark glass hanging in the room
-    "html body.ftpskin.fo-drs-on #page .panel,html body.fo-drs-on #page .panel{background:rgba(9,14,24,.68) !important;border:1px solid rgba(126,158,208,.2) !important;border-radius:14px;box-shadow:0 14px 34px rgba(0,0,0,.5);color:#dbe4f4;backdrop-filter:blur(3px)}",
-    "html body.fo-drs-on #page .fo-ord-planv,html body.fo-drs-on #page .pv-xi,html body.fo-drs-on #page .pv-bench,html body.fo-drs-on #page .pv-toss,html body.fo-drs-on #page .fo-ord-cols,html body.fo-drs-on #page .fo-ord-mgrid,html body.fo-drs-on #page .fo-ord-cond{background:transparent !important;box-shadow:none !important}",
-    "html body.ftpskin.fo-drs-on #page .panel h4,html body.fo-drs-on #page .panel h4{background:transparent !important;color:#EBC271 !important;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;border-bottom:1px solid rgba(126,158,208,.18)}",
-    "html body.ftpskin.fo-drs-on #page .panel .pad,html body.fo-drs-on #page .panel .pad{background:transparent !important;color:#c6d2e6}",
-    "html body.fo-drs-on #page .fo-j-gbox{background:rgba(7,13,24,.55) !important}",
-    "body.fo-drs-on #page .small{color:#93a5c2 !important}",
-    "body.fo-drs-on #page .fo-ord-vzh{color:#EBC271 !important}body.fo-drs-on #page .fo-ord-vzh span{color:#93a5c2 !important}",
-    // batting order and bench: kit cards in the low light. The chips carry
-    // heavyweight skin rules, so these are deliberately over-specified.
-    "html body.ftpskin.fo-drs-on #page button.xc,html body.fo-drs-on #page button.xc{background:linear-gradient(180deg,rgba(22,32,52,.95),rgba(13,21,37,.95)) !important;border:1px solid rgba(126,158,208,.24) !important;color:#e7eefb !important;box-shadow:0 4px 12px rgba(0,0,0,.4)}",
-    "html body.ftpskin.fo-drs-on #page button.xc .r1 b,html body.fo-drs-on #page button.xc .r1 b{color:#f2f6ff !important;-webkit-text-fill-color:#f2f6ff !important}",
-    "html body.fo-drs-on #page button.xc .r1 u{color:#0d1526 !important;background:#EBC271 !important}",
-    "html body.fo-drs-on #page button.xc .hd{color:#93a5c2 !important}",
-    "html body.fo-drs-on #page button.xc .ov b{color:#EBC271 !important;-webkit-text-fill-color:#EBC271 !important}",
-    "html body.fo-drs-on #page button.xc .fo-ord-tp{color:#d8c9a6 !important;background:rgba(235,194,113,.1) !important;border-color:rgba(235,194,113,.28) !important}",
-    "html body.fo-drs-on #page button.xc.xc-dim{opacity:.72}",
-    "html body.fo-drs-on #page button.xc .dh{color:#5a6d8d !important}",
-    // the chalkboard: the Gaffer's fifty overs in chalk on slate green
-    "html body.fo-drs-on #page .fo-ord-lanes{background:linear-gradient(178deg,#17251e,#101b15 70%) !important;border:7px solid #3d2e1e !important;border-radius:8px;padding:13px 12px;box-shadow:inset 0 0 40px rgba(0,0,0,.5),0 12px 30px rgba(0,0,0,.5)}",
-    "body.fo-drs-on .fo-ord-lane .ln{color:#e6e9dd !important;font-family:Georgia,serif;font-style:italic}",
-    "body.fo-drs-on .fo-ord-lane u{color:#e6e9dd !important}",
-    "body.fo-drs-on .fo-ord-lane .lt i{background:rgba(230,233,221,.08) !important;border-color:rgba(230,233,221,.1) !important}",
-    "body.fo-drs-on .fo-ord-lane .lt i.f{background:#e6e9dd !important;box-shadow:0 0 5px rgba(230,233,221,.4)}",
-    "body.fo-drs-on .fo-ord-lane .lt i.pp{border-bottom:2px solid rgba(123,211,166,.4)}",
-    "body.fo-drs-on .fo-ord-lane .lt i.dth{border-bottom:2px solid rgba(224,112,79,.45)}",
-    "body.fo-drs-on .fo-ord-lane.lax em{color:#9aa895 !important;font-family:Oswald,sans-serif;letter-spacing:.16em}",
-    // phone over-grid joins the board
-    "html body.fo-drs-on #page .fo-ord-mgrid .mgc{background:rgba(230,233,221,.07) !important;border-color:rgba(230,233,221,.14) !important;color:#c9d2c4 !important}",
-    "body.fo-drs-on #page .fo-ord-mgrid .mg-hint{color:#9aa895 !important}",
-    // the toss: a worn gold coin for the call, brass plates for the choice
-    "html body.fo-drs-on #page button[data-fo-toss^='call']{width:58px;height:58px;border-radius:50% !important;border:0 !important;background:radial-gradient(circle at 35% 28%,#f6dd8d,#caa34e 55%,#8a6d22 95%) !important;color:#3c2f0d !important;font:700 10px Oswald,sans-serif !important;text-transform:uppercase;letter-spacing:.08em;box-shadow:inset 0 -3px 7px rgba(0,0,0,.35),inset 0 2px 3px rgba(255,255,255,.5),0 5px 12px rgba(0,0,0,.55);opacity:.55;transition:.15s}",
-    "html body.ftpskin.fo-drs-on #page button[data-fo-toss^='call'].on,html body.fo-drs-on #page button[data-fo-toss^='call'].on{opacity:1;outline:2px solid #EBC271;outline-offset:3px;transform:scale(1.06);background:radial-gradient(circle at 35% 28%,#f6dd8d,#caa34e 55%,#8a6d22 95%) !important;color:#3c2f0d !important}",
-    "html body.fo-drs-on #page button[data-fo-toss^='dec']{border:1px solid rgba(235,194,113,.5) !important;border-radius:8px !important;background:linear-gradient(180deg,rgba(58,46,26,.9),rgba(40,32,18,.9)) !important;color:#EBC271 !important;font:600 10.5px Oswald,sans-serif !important;text-transform:uppercase;letter-spacing:.12em;padding:10px 16px !important;opacity:.55}",
-    "html body.ftpskin.fo-drs-on #page button[data-fo-toss^='dec'].on,html body.fo-drs-on #page button[data-fo-toss^='dec'].on{opacity:1;box-shadow:0 0 0 2px rgba(235,194,113,.35),0 4px 10px rgba(0,0,0,.4);background:linear-gradient(180deg,rgba(74,58,30,.95),rgba(52,40,20,.95)) !important;color:#F5C566 !important}",
-    "body.fo-drs-on .fo-ord-toss .tl{color:#93a5c2 !important;font-family:Oswald,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase}",
-    // bowler cards under the board
-    "html body.ftpskin.fo-drs-on #page .fo-ord-bws button.bw,html body.fo-drs-on #page .fo-ord-bws button.bw{background:rgba(16,26,44,.92) !important;border:1px solid rgba(126,158,208,.22) !important;color:#e7eefb !important}",
-    "html body.fo-drs-on #page .fo-ord-bws button.bw b{color:#f2f6ff !important;-webkit-text-fill-color:#f2f6ff !important}",
-    "html body.fo-drs-on #page .fo-ord-bws button.bw .bt{color:#93a5c2 !important}",
-    "html body.fo-drs-on #page .fo-ord-bws button.bw .ov b{color:#EBC271 !important;-webkit-text-fill-color:#EBC271 !important}",
-    // tables inside orders panels lose the skin's white stripes
-    "html body.ftpskin.fo-drs-on #page tr:nth-child(even) td{background:transparent !important}",
-    "html body.fo-drs-on #page td,html body.fo-drs-on #page th{color:#c6d2e6}"
+    "@media(max-width:760px){.fo-scb-stamp{font-size:12px;top:46px;right:6px}}"
   ].join("\n");
   // the skin's stylesheet is inlined after the scripts, so equal-specificity
   // ties would go against us from <head>. Living at the end of <body> makes
