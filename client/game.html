@@ -1641,7 +1641,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderNation',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',records:'foRenderRecordsPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',worldclub:'foRenderWorldClubPage',natteams:'foRenderNatTeamsPage'}[App.page];
+  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderNation',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',records:'foRenderRecordsPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',worldclub:'foRenderWorldClubPage',natteams:'foRenderNatTeamsPage',watch:'foRenderWatchPage'}[App.page];
   if(P[App.page])P[App.page](q);
   else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){}}
   else if(OV){/* overlay not parsed yet: leave the page blank, its interval paints */}
@@ -10594,7 +10594,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-1128-61629c";
+  var FO_BUILD = "20260727-1148-8e8393";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -33859,7 +33859,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // which dock lamp lights up for which route
   var DOCK_MAP = {
     club: ["club", "home", "matchday"],
-    league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "fixtures", "records", "champions", "worldclub", "natteams"],
+    league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "fixtures", "records", "champions", "worldclub", "natteams", "watch"],
     squad: ["squad", "player", "matchlab"],
     nets: ["training"],
     desk: ["desk", "ledger", "journal", "report", "ceremony", "wire", "lore", "dossier", "milestones", "whatif", "paper"]
@@ -36232,7 +36232,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       var band = regionList().slice().sort(function (a, b) { return natHour(a.id) - natHour(b.id) || (a.nm < b.nm ? -1 : 1); }).map(function (r) {
         var h0 = natHour(r.id);
         var st2 = (p.kind === "league") ? (hNow >= h0 && hNow < h0 + LIVE_LEN ? "on" : hNow >= h0 + LIVE_LEN ? "done" : "up") : "up";
-        var dest = r.id === my ? "#/league" : "#/nation?n=" + encodeURIComponent(r.id);
+        // a live nation's flag is a door to the world theatre; the rest open the nation page
+        var dest = r.id === my ? "#/league" : (st2 === "on" ? "#/watch?n=" + encodeURIComponent(r.id) : "#/nation?n=" + encodeURIComponent(r.id));
         return "<a class='fo-pl-tz " + st2 + (r.id === my ? " me" : "") + "' href='" + dest + "' aria-label='" + E(r.nm) + "'>" +
           "<img src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\"><i>" + hh(h0).slice(0, 2) + "</i></a>";
       }).join("");
@@ -38938,6 +38939,237 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       "html body #page .fo-wj-foot{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}",
       "html body #page .fo-wj-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
       "html body #page .fo-wj-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5)}"
+    ].join("\n");
+    document.head.appendChild(s);
+  }
+})();
+/* ============================================================================
+   THE WORLD THEATRE (#/watch?n=rid) — watch ANY nation's live match.
+
+   During a nation's three-hour window its round is genuinely in progress -
+   the deterministic clock says exactly where every match stands at this
+   minute. This page puts that on a stage: the HOME TEAM'S OWN GROUND as
+   the backdrop (each city has painted ground art; where a city has none,
+   the nation's landscape art stands in, and the arches at home cover the
+   last resort), a broadcast scorebug ticking minute by minute, the
+   batters at the crease and the bowler by name from the world's star
+   squads, an over ticker, and the round's other matches one tap away.
+
+   Deterministic throughout: every device watching the same match at the
+   same minute sees the identical score, the identical over, the identical
+   names. No server, no sync - the constraint, kept.
+   ========================================================================== */
+(function () {
+  "use strict";
+  if (window.__foWT) return; window.__foWT = 1;
+
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function h32(s) { var h = 2166136261 >>> 0; s = String(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
+  function P() { return window.__foPlanet || null; }
+  function cx() { return window.__foCxAPI || null; }
+  function ART() { return (typeof FO_ART !== "undefined") ? FO_ART : "client/art/"; }
+  function qs() {
+    var q = {}, m = (location.hash || "").split("?")[1] || "";
+    m.split("&").forEach(function (kv) { var p2 = kv.split("="); if (p2[0]) q[p2[0]] = decodeURIComponent(p2[1] || ""); });
+    return q;
+  }
+  function flagOf(rid) { try { return ART() + "flags/" + cx().flagFile(rid) + ".svg"; } catch (e) { return ""; } }
+
+  // the home ground: the city's own painted ground, else the nation's
+  // landscape, else the arches - probed in order, phone variants first
+  function groundChain(city, rid) {
+    var A = ART(), slug = String(city || "").toLowerCase().replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
+    var out = [];
+    if (slug) {
+      if (window.innerWidth < 760) out.push(A + "cities/" + slug + "-ground-m.webp");
+      out.push(A + "cities/" + slug + "-ground.webp");
+    }
+    out.push(A + "circuit/" + rid + ".webp");
+    out.push(A + "home/arches-summer-noon.webp");
+    return out;
+  }
+  function mountGround(el, chain, i) {
+    if (!el || i >= chain.length) return;
+    var probe = new Image();
+    probe.onload = function () { el.style.backgroundImage = "url('" + chain[i] + "')"; };
+    probe.onerror = function () { mountGround(el, chain, i + 1); };
+    probe.src = chain[i];
+  }
+
+  // deterministic over ticker: the current over's deliveries, seeded on the
+  // match and over - ambience under the authoritative scorebug
+  var BALL_POOL = ["&middot;", "1", "&middot;", "2", "1", "4", "&middot;", "1", "6", "&middot;", "W", "1", "4", "&middot;", "2", "1"];
+  function overBalls(key, ov, upto) {
+    var out = [];
+    for (var b = 0; b < (upto == null ? 6 : upto); b++) out.push(BALL_POOL[h32(key + "|ov" + ov + "|b" + b) % BALL_POOL.length]);
+    return out;
+  }
+  var COMMS = [
+    "pushed into the covers, they scamper", "beaten outside off - a gasp round the ground",
+    "clipped off the pads, easy running", "short, pulled hard in front of square",
+    "full and straight, dug out late", "drifting in, worked to leg with soft hands",
+    "up the hill into the wind, no risk taken", "flighted, driven inside-out - pretty",
+    "the field creeps in, the crowd leans forward", "a single to keep the good end"
+  ];
+
+  function squadNames(rid, slot, season) {
+    try {
+      if (window.__foStars && window.__foStars.squadOf) {
+        var sq = window.__foStars.squadOf(rid, slot, season);
+        if (sq && sq.length) return sq.map(function (p) { return p.name || p; });
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  window.foRenderWatchPage = function () {
+    var page = document.getElementById("page"); if (!page || !P() || !cx()) return;
+    foWtCss();
+    document.body.classList.add("fo-wt-on");
+    var pl = P(), now = Date.now(), p = pl.phaseOf(now);
+    var q = qs();
+    var regions = (cx().regions() || []).filter(function (r) { return !r.final; });
+    var my = null; try { my = (window.__foLgAPI && __foLgAPI.nation && __foLgAPI.nation()) || "eng"; } catch (e) { my = "eng"; }
+    var rid = q.n && regions.some(function (r) { return r.id === q.n; }) ? q.n : null;
+    if (!rid) {
+      // no nation asked for: the loudest live one, else the next to play
+      var live = regions.filter(function (r) { return r.id !== my; }).sort(function (a, b) { return pl.natHour(a.id) - pl.natHour(b.id); });
+      var hNow = (now - (pl.EPOCH + pl.dayIx(now) * 86400000)) / 3600000;
+      rid = (live.filter(function (r) { var h0 = pl.natHour(r.id); return hNow >= h0 && hNow < h0 + (pl.LIVE_LEN || 3); })[0] ||
+             live.filter(function (r) { return pl.natHour(r.id) > hNow; })[0] || live[0] || {}).id;
+    }
+    if (!rid) { page.innerHTML = "<div class='fo-wt'><p style='padding:80px 20px;color:#fff'>The world is quiet.</p></div>"; return; }
+    var region = regions.filter(function (r) { return r.id === rid; })[0];
+    var round = p.kind === "league" ? p.round : Math.min(pl.ROUNDS, p.di >= pl.ROUNDS ? pl.ROUNDS : 1);
+    var fx = [];
+    try { fx = pl.fixturesOf(rid, p.season, round) || []; } catch (e) {}
+    if (!fx.length) {
+      page.innerHTML = "<div class='fo-wt'><div class='fo-wt-in'><p style='padding:80px 20px;color:#fff'>No fixtures today in this league - the season is between rounds.</p><a class='fo-wt-back' href='#/planet'>&lsaquo; World cricket</a></div></div>";
+      return;
+    }
+    var fi = Math.max(0, Math.min(fx.length - 1, parseInt(q.f || "0", 10) || 0));
+    var m = fx[fi];
+    var h0 = pl.natHour(rid);
+    var lv = pl.liveView(m, now, h0);
+
+    // who's out there: batting order = the star squad, wickets tell the story
+    var wkts = 0, runs = 0, ov = 0, chasing = lv.state !== "up" && /chasing/.test(lv.line || "");
+    var mLine = lv.state === "live" ? lv.line : "";
+    var mm = mLine.match(/(\d+)\/(\d+) \((\d+) ov\)/);
+    if (mm) { runs = +mm[1]; wkts = +mm[2]; ov = +mm[3]; }
+    var batSide = lv.state === "live" ? (chasing ? m.away : m.home) : m.home;
+    var bowlSide = batSide === m.home ? m.away : m.home;
+    var batNames = squadNames(rid, batSide.slot, p.season) || [];
+    var bowlNames = squadNames(rid, bowlSide.slot, p.season) || [];
+    var striker = batNames[Math.min(wkts, 9)] || "the set batter";
+    var partner = batNames[Math.min(wkts + 1, 10)] || "the new man";
+    var bowlers = bowlNames.slice(6, 11).concat(bowlNames.slice(0, 2));
+    var bowler = bowlers.length ? bowlers[(Math.floor(ov / 2)) % bowlers.length] : "the opening bowler";
+
+    var mkey = rid + "|" + p.season + "|" + round + "|" + m.home.slot + "|" + m.away.slot;
+    var ballsSoFar = lv.state === "live" ? overBalls(mkey + (chasing ? "|2" : "|1"), ov, 1 + (h32(mkey + "|min" + Math.floor(now / 60000)) % 6)) : [];
+    var comm = COMMS[h32(mkey + "|c" + ov) % COMMS.length];
+
+    var stateChip = lv.state === "live" ? "<span class='fo-wt-live'><i></i>LIVE</span>"
+      : lv.state === "up" ? "<span class='fo-wt-soon'>PLAY AT " + (h0 < 10 ? "0" : "") + h0 + ":00 UTC</span>"
+      : "<span class='fo-wt-fin'>STUMPS</span>";
+    var bugLine = lv.state === "live" ? E(lv.line)
+      : lv.state === "fin" ? E(lv.line) + " &middot; " + E(m.text)
+      : E(m.home.name) + " v " + E(m.away.name);
+
+    var others = fx.map(function (m2, i2) {
+      if (i2 === fi) return "";
+      var lv2 = pl.liveView(m2, now, h0);
+      return "<a class='fo-wt-other' href='#/watch?n=" + rid + "&f=" + i2 + "'>" +
+        "<b>" + E(m2.home.name) + " v " + E(m2.away.name) + "</b>" +
+        "<span>" + (lv2.state === "live" ? "&#9679; " + E(lv2.line) : lv2.state === "fin" ? E(m2.text) : "later today") + "</span></a>";
+    }).join("");
+
+    page.innerHTML = "<div class='fo-wt'>" +
+      "<div class='fo-wt-bg' id='fo-wt-bg'></div><div class='fo-wt-veil'></div>" +
+      "<div class='fo-wt-in'>" +
+      "<div class='fo-wt-top'><a class='fo-wt-back' href='#/planet'>&lsaquo; World</a>" +
+      "<img class='fo-wt-flag' src='" + flagOf(rid) + "' alt=''>" +
+      "<span class='fo-wt-league'>" + E(region ? region.nm : rid) + " &middot; round " + round + "</span>" + stateChip + "</div>" +
+      "<div class='fo-wt-stage'>" +
+      "<div class='fo-wt-ground'>" + E(m.home.name) + "&rsquo;s ground &middot; " + E(m.home.city || "") + "</div>" +
+      "<div class='fo-wt-bug'>" +
+      "<div class='fo-wt-teams'><b>" + E(m.home.name) + "</b><i>v</i><b>" + E(m.away.name) + "</b></div>" +
+      "<div class='fo-wt-score'>" + bugLine + "</div>" +
+      (lv.state === "live" ?
+        "<div class='fo-wt-crease'><span><u>" + E(striker) + "</u> &amp; " + E(partner) + " at the crease</span>" +
+        "<span>" + E(bowler) + " bowling</span></div>" +
+        "<div class='fo-wt-over'>" + ballsSoFar.map(function (b) { return "<i class='" + (b === "W" ? "w" : b === "4" || b === "6" ? "b" : "") + "'>" + b + "</i>"; }).join("") + "</div>" +
+        "<div class='fo-wt-comm'>" + E(comm) + "</div>" : "") +
+      "</div></div>" +
+      (others ? "<div class='fo-wt-rail'><i>Also in this round</i>" + others + "</div>" : "") +
+      "<div class='fo-wt-nats'>" + regions.filter(function (r) { return r.id !== my; }).sort(function (a, b) { return pl.natHour(a.id) - pl.natHour(b.id); }).map(function (r) {
+        var hh2 = pl.natHour(r.id);
+        var hNow2 = (now - (pl.EPOCH + pl.dayIx(now) * 86400000)) / 3600000;
+        var on = p.kind === "league" && hNow2 >= hh2 && hNow2 < hh2 + (pl.LIVE_LEN || 3);
+        return "<a class='fo-wt-nat" + (r.id === rid ? " sel" : "") + (on ? " on" : "") + "' href='#/watch?n=" + r.id + "'>" +
+          "<img src='" + flagOf(r.id) + "' alt=''><i>" + (hh2 < 10 ? "0" : "") + hh2 + "</i></a>";
+      }).join("") + "</div>" +
+      "</div></div>";
+
+    mountGround(document.getElementById("fo-wt-bg"), groundChain(m.home.city, rid), 0);
+
+    // the broadcast breathes: refresh while watching, stop when we leave
+    try { if (window.__foWtTimer) clearInterval(window.__foWtTimer); } catch (e) {}
+    window.__foWtTimer = setInterval(function () {
+      if ((location.hash || "").split("?")[0] !== "#/watch") { clearInterval(window.__foWtTimer); return; }
+      try { window.foRenderWatchPage(); } catch (e) {}
+    }, 25000);
+  };
+  window.addEventListener("hashchange", function () {
+    if ((location.hash || "").split("?")[0] !== "#/watch") document.body.classList.remove("fo-wt-on");
+  });
+
+  function foWtCss() {
+    if (document.getElementById("fo-wt-css")) return;
+    var s = document.createElement("style"); s.id = "fo-wt-css";
+    s.textContent = [
+      "html body.ftpskin.fo-wt-on,html body.fo-wt-on{background:#07101E !important}",
+      "html body.fo-wt-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
+      "html body.fo-wt-on #page{padding:0 !important;margin:0 !important;background:transparent !important}",
+      ".fo-wt{position:relative;min-height:100vh;color:#FFFEFC;isolation:isolate}",
+      ".fo-wt-bg{position:fixed;inset:0;background-size:cover;background-position:50% 40%;z-index:-2;transition:background-image .4s ease}",
+      ".fo-wt-veil{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(7,16,30,.72),rgba(7,16,30,.25) 30%,rgba(7,16,30,.3) 62%,rgba(7,16,30,.88))}",
+      ".fo-wt-in{max-width:680px;margin:0 auto;padding:64px 16px 90px;display:flex;flex-direction:column;min-height:100vh}",
+      ".fo-wt-top{display:flex;align-items:center;gap:9px;flex-wrap:wrap}",
+      ".fo-wt-back{font:600 12px/1 Inter,sans-serif;color:rgba(255,254,252,.8);text-decoration:none;border:1px solid rgba(255,254,252,.25);border-radius:999px;padding:7px 13px}",
+      ".fo-wt-flag{width:26px;height:18px;object-fit:cover;border-radius:3px}",
+      ".fo-wt-league{font:700 10.5px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#E8DFCE}",
+      ".fo-wt-live{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:800 10px/1 Oswald,sans-serif;letter-spacing:.14em;color:#FF6B5E}",
+      ".fo-wt-live i{width:8px;height:8px;border-radius:50%;background:#FF6B5E;animation:foWtPulse 1.2s ease-in-out infinite}",
+      "@keyframes foWtPulse{0%,100%{opacity:1}50%{opacity:.25}}",
+      ".fo-wt-soon,.fo-wt-fin{margin-left:auto;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;color:rgba(255,254,252,.65)}",
+      ".fo-wt-stage{flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:40px 0 12px}",
+      ".fo-wt-ground{font:italic 400 12.5px/1.4 'Fraunces',Georgia,serif;color:rgba(255,254,252,.75);text-shadow:0 2px 10px rgba(0,0,0,.6);margin-bottom:8px}",
+      ".fo-wt-bug{background:rgba(6,13,26,.82);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(255,254,252,.14);border-left:3px solid #C95532;border-radius:16px;padding:15px 17px;box-shadow:0 18px 44px rgba(0,0,0,.5)}",
+      ".fo-wt-teams{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}",
+      ".fo-wt-teams b{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:18px}",
+      ".fo-wt-teams i{font-style:italic;font-size:11px;color:rgba(255,254,252,.5)}",
+      ".fo-wt-score{font:700 15px/1.3 Oswald,sans-serif;letter-spacing:.04em;color:#E8B96A;margin-top:7px}",
+      ".fo-wt-crease{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font:400 11.5px/1.5 Inter,sans-serif;color:rgba(255,254,252,.8);flex-wrap:wrap}",
+      ".fo-wt-crease u{text-decoration:none;color:#FFFEFC;font-weight:600}",
+      ".fo-wt-over{display:flex;gap:6px;margin-top:10px}",
+      ".fo-wt-over i{font-style:normal;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,254,252,.1);border:1px solid rgba(255,254,252,.18);font:700 11px/1 Oswald,sans-serif;color:#E8DFCE}",
+      ".fo-wt-over i.b{background:rgba(232,185,106,.2);border-color:#E8B96A;color:#E8B96A}",
+      ".fo-wt-over i.w{background:rgba(255,107,94,.22);border-color:#FF6B5E;color:#FF6B5E}",
+      ".fo-wt-comm{font:italic 400 12px/1.5 'Fraunces',Georgia,serif;color:rgba(255,254,252,.65);margin-top:9px}",
+      ".fo-wt-rail{margin-top:14px}",
+      ".fo-wt-rail>i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,254,252,.5);font-style:normal;margin-bottom:7px}",
+      ".fo-wt-other{display:flex;justify-content:space-between;gap:10px;align-items:baseline;background:rgba(6,13,26,.6);border:1px solid rgba(255,254,252,.1);border-radius:11px;padding:9px 13px;margin-bottom:7px;text-decoration:none;color:#FFFEFC}",
+      ".fo-wt-other b{font:600 12px/1.3 Inter,sans-serif}",
+      ".fo-wt-other span{font:400 11px/1.3 Inter,sans-serif;color:rgba(255,254,252,.6);white-space:nowrap}",
+      ".fo-wt-nats{display:flex;gap:7px;overflow-x:auto;margin-top:14px;padding-bottom:4px}",
+      ".fo-wt-nat{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;opacity:.75}",
+      ".fo-wt-nat img{width:28px;height:20px;object-fit:cover;border-radius:4px;border:2px solid transparent}",
+      ".fo-wt-nat.sel img{border-color:#C95532}",
+      ".fo-wt-nat.on img{border-color:#FF6B5E;box-shadow:0 0 0 3px rgba(255,107,94,.25)}",
+      ".fo-wt-nat.on{opacity:1}",
+      ".fo-wt-nat i{font:700 8.5px/1 Oswald,sans-serif;color:rgba(255,254,252,.6);font-style:normal}"
     ].join("\n");
     document.head.appendChild(s);
   }
