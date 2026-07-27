@@ -21,28 +21,66 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL || secrets.SUPABASE_DB_URL || secrets.POSTGRES_URL }}
       WORLD_SCHEMA: world
     steps:
-      - name: Preflight — which database secret exists
-        env:
-          HAS_DATABASE_URL: ${{ secrets.DATABASE_URL != '' }}
-          HAS_SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL != '' }}
-          HAS_POSTGRES_URL: ${{ secrets.POSTGRES_URL != '' }}
-        run: |
-          echo "DATABASE_URL secret present:    $HAS_DATABASE_URL"
-          echo "SUPABASE_DB_URL secret present: $HAS_SUPABASE_DB_URL"
-          echo "POSTGRES_URL secret present:    $HAS_POSTGRES_URL"
-          if [ -z "$DATABASE_URL" ]; then
-            echo "::error::No database secret found. Add DATABASE_URL in Settings → Secrets and variables → Actions — use the Supabase SESSION POOLER connection string (Project Settings → Database → Connection string → URI, the pooler.supabase.com one; GitHub runners are IPv4-only so the direct db.*.supabase.co host will not connect)."
-            exit 1
-          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
       - name: Install service deps (pg)
         working-directory: server
         run: npm install --omit=dev --no-audit --no-fund
+      # Two ways in, easiest first:
+      #   SUPABASE_DB_PASSWORD — just the database password; the connection
+      #     string is constructed here (project ref + region are public) and
+      #     the session-pooler host is probed automatically.
+      #   DATABASE_URL — a full connection string, used verbatim if present.
+      - name: Resolve database connection
+        working-directory: server
+        env:
+          RAW_URL: ${{ secrets.DATABASE_URL || secrets.SUPABASE_DB_URL || secrets.POSTGRES_URL }}
+          DB_PASS: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PROJECT_REF: egaipdksvztqqgouriyc
+          REGION: us-east-1
+        run: |
+          if [ -z "$RAW_URL" ] && [ -z "$DB_PASS" ]; then
+            echo "::error::No database secret found. Easiest fix: add a secret named SUPABASE_DB_PASSWORD containing just the database password (Supabase → Project Settings → Database → Reset database password). Alternatively add DATABASE_URL with the full session-pooler connection string."
+            exit 1
+          fi
+          node - <<'EOF'
+          const pg = require('pg');
+          const enc = encodeURIComponent;
+          const cands = [];
+          if (process.env.RAW_URL) cands.push(process.env.RAW_URL);
+          if (process.env.DB_PASS) {
+            const ref = process.env.PROJECT_REF, reg = process.env.REGION, p = enc(process.env.DB_PASS);
+            // session pooler only (5432): transaction pooling would break the
+            // per-connection search_path the service relies on
+            for (const n of [0, 1, 2]) {
+              cands.push(`postgresql://postgres.${ref}:${p}@aws-${n}-${reg}.pooler.supabase.com:5432/postgres`);
+            }
+          }
+          (async () => {
+            for (const url of cands) {
+              const pool = new pg.Pool({ connectionString: url, max: 1, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 8000 });
+              try {
+                const r = await pool.query('SELECT 1 AS ok');
+                if (r.rows[0].ok === 1) {
+                  const fs = require('fs');
+                  fs.appendFileSync(process.env.GITHUB_ENV, 'DATABASE_URL=' + url + '\n');
+                  console.log('::add-mask::' + url);
+                  console.log('connected via', url.replace(/:[^@:]*@/, ':***@'));
+                  await pool.end();
+                  process.exit(0);
+                }
+              } catch (e) {
+                console.log('candidate failed:', url.replace(/:[^@:]*@/, ':***@'), '-', String(e.message).slice(0, 80));
+              }
+              await pool.end().catch(() => {});
+            }
+            console.log('::error::Could not connect with any candidate. If you added SUPABASE_DB_PASSWORD, make sure it is the DATABASE password (Project Settings → Database → Reset database password), not an API key.');
+            process.exit(1);
+          })();
+          EOF
       - name: Migrate
         working-directory: server
         run: node migrate.mjs
