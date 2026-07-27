@@ -72,6 +72,55 @@
 
   function hh(h) { return (h < 10 ? "0" : "") + h + ":00 UTC"; }
 
+  // ---- THE MARGINS ARE THE COUNTRY --------------------------------------
+  // A reading column on a wide screen leaves two empty gutters, and art
+  // stretched behind a headline only makes the headline harder to read. So
+  // the art moves out into the margins and becomes furniture: the nation's
+  // painted map hangs as a framed plate on the left (a door to its atlas),
+  // its own cricketer stands on the right. The header goes back to clean
+  // paper, and a phone - which has no margins - sees neither.
+  var ART_FOR = "", ART_KEY = "";
+  function sideArt(natId) {
+    try {
+      var host = document.getElementById("fo-sideart");
+      if (!host) {
+        host = document.createElement("div");
+        host.id = "fo-sideart";
+        host.innerHTML =
+          "<a class='fo-sa-map' href='#/atlas'><img alt='' loading='lazy' onerror=\"this.parentElement.style.display='none'\">" +
+          "<span></span></a>" +
+          "<div class='fo-sa-fig'><img alt='' loading='lazy' onerror=\"this.parentElement.style.display='none'\"></div>";
+        document.body.appendChild(host);
+      }
+      if (!natId) {
+        host.classList.remove("on");
+        try { document.body.classList.remove("fo-sa-on"); } catch (eB2) {}
+        ART_FOR = ""; return;
+      }
+      if (natId !== ART_KEY) {
+        ART_KEY = natId;
+        var map = host.querySelector(".fo-sa-map"), fig = host.querySelector(".fo-sa-fig");
+        var reg = regionOf(natId) || {};
+        map.style.display = ""; fig.style.display = "";
+        map.href = "#/atlas?n=" + encodeURIComponent(natId);
+        map.querySelector("img").src = ART() + "circuit/" + (reg.bg || (natId + ".webp"));
+        map.querySelector("span").textContent = (reg.nm || "") + " ›";
+        fig.querySelector("img").src = ART() + "circuit/boss-" + natId + "-cutout.webp";
+      }
+      host.classList.add("on");
+      // the page column has to sit ABOVE the art: <html> carries a dark
+      // background of its own, so body paints its cream over anything at a
+      // negative z-index. The margins ride at 0 and the column at 1.
+      try { document.body.classList.add("fo-sa-on"); } catch (eB3) {}
+      ART_FOR = location.hash || "";
+    } catch (e) {}
+  }
+  window.__foSideArt = sideArt;
+  // any page that does not claim the margins gets them back
+  window.addEventListener("hashchange", function () {
+    setTimeout(function () { if (ART_FOR !== (location.hash || "")) sideArt(null); }, 80);
+  });
+
   function foRenderLeagueTablePage() {
     try {
       if (!ready()) return;
@@ -296,12 +345,10 @@
       var natArt = ART() + "circuit/" + (reg.bg || (natId + ".webp"));
       var line = NAT_LINE[natId] || "Ten clubs, one pennant.";
 
+      sideArt(natId);
       page.innerHTML =
         "<div class='fo-lt' style='--nac:" + E(accent) + "'>" +
-        "<div class='fo-lt-rail l' style=\"background-image:url('" + natArt + "')\"></div>" +
-        "<div class='fo-lt-rail r' style=\"background-image:url('" + natArt + "')\"></div>" +
         "<div class='fo-lt-mast'>" +
-        "<img class='fo-lt-mastart' src='" + natArt + "' alt='' loading='lazy' onerror=\"this.style.display='none'\">" +
         "<div class='fo-lt-mastin'>" +
         "<div class='fo-lt-kick'><img src='" + flagOf(natId) + "' alt='' onerror=\"this.style.display='none'\">" + kick + "</div>" +
         "<h1>The " + (natNm ? E(natNm) + " " : "") + "League</h1>" +
@@ -331,16 +378,22 @@
 
   var CSS = [
     "html body #page .fo-lt{position:relative;max-width:680px;margin:26px auto 44px;padding:0 14px;color:#141C28;--nac:#C95532}",
-    // THE COUNTRY FRAMES ITS OWN LEAGUE. On a wide screen the nation's
-    // painted map stands either side of the column, quiet enough to read
-    // over; on a phone there is no room, so the masthead carries it instead.
-    "html body #page .fo-lt-rail{display:none}",
-    "@media(min-width:1180px){html body #page .fo-lt-rail{display:block;position:fixed;top:0;bottom:0;width:calc(50vw - 350px);background-size:cover;background-position:center;opacity:.3;pointer-events:none;z-index:0}",
-    "html body #page .fo-lt-rail.l{left:0;-webkit-mask-image:linear-gradient(90deg,transparent,#000 40%,transparent);mask-image:linear-gradient(90deg,transparent,#000 40%,transparent)}",
-    "html body #page .fo-lt-rail.r{right:0;-webkit-mask-image:linear-gradient(270deg,transparent,#000 40%,transparent);mask-image:linear-gradient(270deg,transparent,#000 40%,transparent)}}",
+    // THE MARGINS ARE THE COUNTRY. Not wallpaper - furniture: the nation's
+    // painted map hangs like a framed plate on one side and the country's own
+    // cricketer stands on the other, both clear of the reading column. Below
+    // 1080px there are no margins to fill, so neither is there.
+    "#fo-sideart{display:none}",
+    "@media(min-width:1080px){#fo-sideart.on{display:block;position:fixed;inset:0;z-index:0;pointer-events:none}",
+    "html body.fo-sa-on .wrap{position:relative;z-index:1;box-shadow:none !important}",
+    "#fo-sideart .fo-sa-map{position:fixed;top:92px;left:0;width:calc(50vw - 344px);display:flex;flex-direction:column;align-items:center;gap:9px;text-decoration:none;pointer-events:auto}",
+    "#fo-sideart .fo-sa-map img{width:min(84%,300px);border-radius:10px;box-shadow:0 18px 44px rgba(20,28,40,.22);opacity:.95;transition:opacity .2s ease,transform .2s ease}",
+    "#fo-sideart .fo-sa-map:hover img{opacity:1;transform:translateY(-2px)}",
+    "html body #page a.fo-sa-map span,#fo-sideart .fo-sa-map span{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:rgba(20,28,40,.42)}",
+    "#fo-sideart .fo-sa-fig{position:fixed;right:0;bottom:0;width:calc(50vw - 344px);display:flex;justify-content:center;align-items:flex-end}",
+    "#fo-sideart .fo-sa-fig img{height:min(66vh,690px);width:auto;max-width:98%;object-fit:contain;object-position:bottom;filter:drop-shadow(0 18px 34px rgba(20,28,40,.28));-webkit-mask-image:linear-gradient(180deg,#000 82%,transparent);mask-image:linear-gradient(180deg,#000 82%,transparent)}",
+    "@media(max-width:1300px){#fo-sideart .fo-sa-fig img{height:min(54vh,520px)}}}",
     "html body #page .fo-lt-mast{position:relative;overflow:hidden;background:linear-gradient(150deg,#FFFEFB,#F6F1E4 70%,#F0E9D6) !important;border:1px solid rgba(20,28,40,.1);border-radius:22px;box-shadow:0 22px 50px rgba(30,38,52,.12)}",
     "html body #page .fo-lt-mast:before{content:'';position:absolute;left:0;right:0;top:0;height:4px;background:var(--nac);z-index:2}",
-    "html body #page .fo-lt-mastart{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 34%;opacity:.3;-webkit-mask-image:linear-gradient(180deg,#000,transparent 78%);mask-image:linear-gradient(180deg,#000,transparent 78%)}",
     "html body #page .fo-lt-mastin{position:relative;padding:26px 28px 22px}",
     "html body #page .fo-lt-kick{display:flex;align-items:center;gap:8px;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:#8A3A1B;flex-wrap:wrap}",
     "html body #page .fo-lt-kick img{width:22px;height:15px;object-fit:cover;border-radius:2px;box-shadow:0 1px 4px rgba(20,28,40,.3)}",

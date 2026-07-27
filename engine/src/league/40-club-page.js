@@ -175,7 +175,6 @@
       var seam = players.filter(function (p) { return /pace|seam|medium|fast/i.test(p.type || p.bowl || ""); }).length;
       var spin = players.filter(function (p) { return /spin/i.test(p.type || p.bowl || ""); }).length;
 
-      var hero = ART() + "circuit/" + cid + ".webp";
       var crest = ""; try { if (boss) crest = cx().crest(cid) || ""; } catch (eC2) {}
 
       var mgrLine = mgr
@@ -260,8 +259,8 @@
             "</div>" : "");
       }
 
+      if (window.__foSideArt) window.__foSideArt(cid);
       page.innerHTML = "<div class='fo-cp' style='--cac:" + E(ac) + "'>" +
-        "<div class='fo-cp-band'><img src='" + hero + "' alt='' loading='lazy' onerror=\"this.style.display='none'\"><span></span></div>" +
         "<div class='fo-cp-in'>" +
         "<a class='fo-cp-back' href='#/nation?n=" + encodeURIComponent(cid) + "'>&lsaquo; " + E(natName(cid)) + " league</a>" +
         "<div class='fo-cp-hero'>" +
@@ -325,11 +324,9 @@
     var s = document.createElement("style"); s.id = "fo-cp-css";
     s.textContent = [
       ".fo-cp{min-height:70vh;--cac:#B44A22}",
-      // a bright band of the country: flavour without a dark theme
-      ".fo-cp-band{position:relative;height:120px;overflow:hidden;border-radius:0 0 20px 20px;margin-bottom:-58px}",
-      ".fo-cp-band img{width:100%;height:100%;object-fit:cover;object-position:center 32%}",
-      ".fo-cp-band span{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,254,252,.1),rgba(255,254,252,.86))}",
-      ".fo-cp-in{position:relative;max-width:680px;margin:0 auto;padding:12px 14px 80px}",
+      // the country stands in the page margins (see __foSideArt); the page
+      // itself is clean paper
+      ".fo-cp-in{position:relative;max-width:680px;margin:0 auto;padding:20px 14px 80px}",
       "html body #page .fo-cp-back{display:inline-block;font:600 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22 !important;text-decoration:none !important;margin-bottom:10px}",
       ".fo-cp-hero{display:flex;gap:14px;align-items:flex-start;background:#0E1A2F;border-radius:18px;border-bottom:3px solid var(--cac);padding:18px 16px;margin-bottom:12px;box-shadow:0 18px 40px rgba(14,26,47,.22)}",
       ".fo-cp-flag{width:44px;height:30px;object-fit:cover;border-radius:4px;flex:none;margin-top:4px}",
