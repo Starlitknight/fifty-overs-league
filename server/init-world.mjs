@@ -42,8 +42,9 @@ async function foundCountry(c, cfg, host, startDay) {
   for (const club of cfg.clubs) {
     // squad seeds are position-stable: the same world, the same eleven, forever
     const players = host.genSquad('world1|' + cfg.id + '|' + club.slot, cfg.nat, cfg.arch, club.boss ? cfg.capt : 'general');
+    // default_name is the club's birth name - a human rename never loses it
     await c.query(
-      'INSERT INTO clubs(country_id, slot, name, ground, is_boss, squad) VALUES ($1,$2,$3,$4,$5,$6)',
+      'INSERT INTO clubs(country_id, slot, name, default_name, ground, is_boss, squad) VALUES ($1,$2,$3,$3,$4,$5,$6)',
       [cfg.id, club.slot, club.name, club.ground, !!club.boss, JSON.stringify(players)]);
   }
   await c.query('INSERT INTO seasons(country_id, season_no, start_day, schedule) VALUES ($1,$2,$3,$4)',

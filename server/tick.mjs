@@ -53,9 +53,9 @@ async function playRound(pool, host, country, season, round, opts) {
     const resultJson = host.runMatch({ name: home.name, players: home.squad }, { name: away.name, players: away.squad }, 'balanced', seed, tieOrders);
     if (!resultJson) throw new Error('engine failed to complete ' + id);
     await pool.query(
-      `INSERT INTO matches(id, country_id, season_no, round, home_slot, away_slot, seed, engine_version, pitch, orders, result, result_canonical)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,$12::text) ON CONFLICT (id) DO NOTHING`,
-      [id, country, season.season_no, round, hs, as, seed, ENGINE_VERSION, 'balanced', JSON.stringify(tieOrders), resultJson, resultJson]);
+      `INSERT INTO matches(id, country_id, season_no, round, home_slot, away_slot, seed, engine_version, pitch, orders, result, result_canonical, home_name, away_name)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,$12::text,$13,$14) ON CONFLICT (id) DO NOTHING`,
+      [id, country, season.season_no, round, hs, as, seed, ENGINE_VERSION, 'balanced', JSON.stringify(tieOrders), resultJson, resultJson, home.name, away.name]);
     played++;
   }
   return played;
@@ -66,24 +66,28 @@ export async function computeLeague(pool, country, seasonNo, now) {
   const season = (await pool.query('SELECT * FROM seasons WHERE country_id=$1 AND season_no=$2', [country, seasonNo])).rows[0];
   const clubs = (await pool.query('SELECT slot, name, ground, is_boss FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
   const ms = (await pool.query('SELECT * FROM matches WHERE country_id=$1 AND season_no=$2 ORDER BY round, id', [country, season.season_no])).rows;
+  const bySlot = Object.fromEntries(clubs.map(c => [c.slot, c]));
   const T = Object.fromEntries(clubs.map(c => [c.slot, { slot: c.slot, name: c.name, boss: c.is_boss, p: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0, of: 0, oa: 0 }]));
   const results = [];
   for (const m of ms) {
     const r = m.result, i1 = r.innings[0], i2 = r.innings[1];
-    const bySlot = { [m.home_slot]: null, [m.away_slot]: null };
-    const slotOf = nm => clubs.find(c => c.name === nm)?.slot;
+    // names AS PLAYED map every innings to its slot, so a club renamed after
+    // the fact keeps its whole record; snapshots then speak the CURRENT name
+    const hN = m.home_name || bySlot[m.home_slot].name, aN = m.away_name || bySlot[m.away_slot].name;
+    const slotOf = nm => nm === hN ? m.home_slot : nm === aN ? m.away_slot : clubs.find(c => c.name === nm)?.slot;
     for (const inn of [i1, i2]) {
       if (!inn) continue;
       const bs = slotOf(inn.batTeam), os = slotOf(inn.bowlTeam);
       if (bs == null || os == null) continue;
-      T[bs].p += 0; // played counted once below
       T[bs].rf += inn.runs; T[bs].of += inn.wkts >= 10 ? 50 : inn.legal / 6;
       T[os].ra += inn.runs; T[os].oa += inn.wkts >= 10 ? 50 : inn.legal / 6;
     }
     for (const s of [m.home_slot, m.away_slot]) T[s].p++;
     if (r.winner === null) { T[m.home_slot].t++; T[m.away_slot].t++; T[m.home_slot].pts++; T[m.away_slot].pts++; }
     else { const ws = slotOf(r.winner); if (ws != null) { T[ws].w++; T[ws].pts += 2; T[ws === m.home_slot ? m.away_slot : m.home_slot].l++; } }
-    results.push({ id: m.id, round: m.round, home: clubs.find(c => c.slot === m.home_slot).name, away: clubs.find(c => c.slot === m.away_slot).name, winner: r.winner, text: r.text, seed: String(m.seed), engineVersion: m.engine_version });
+    const wSlot = r.winner === null ? null : slotOf(r.winner);
+    results.push({ id: m.id, round: m.round, home: bySlot[m.home_slot].name, away: bySlot[m.away_slot].name,
+      winner: wSlot == null ? r.winner : bySlot[wSlot].name, text: r.text, seed: String(m.seed), engineVersion: m.engine_version });
   }
   const table = Object.values(T).map(x => ({ ...x, nrr: x.of && x.oa ? +(x.rf / x.of - x.ra / x.oa).toFixed(3) : 0 }))
     .sort((a, b) => b.pts - a.pts || b.nrr - a.nrr || a.slot - b.slot);

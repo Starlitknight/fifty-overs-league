@@ -7347,7 +7347,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       for (var i = 0; i < window.localStorage.length; i++) {
         var k = window.localStorage.key(i);
         if (!k || (k.indexOf("fo_") !== 0 && k.indexOf("fol_") !== 0)) continue;
-        if (FO_CLOUD_SKIP[k] || k.indexOf("fol_clubmeta_") === 0 || k.indexOf("fo_world_lg_") === 0) continue;
+        if (FO_CLOUD_SKIP[k] || k.indexOf("fol_clubmeta_") === 0 || k.indexOf("fo_world_lg_") === 0 || k.indexOf("fo_world_nm_") === 0) continue;
         out[k] = window.localStorage.getItem(k);
       }
     } catch (e) {}
@@ -10588,7 +10588,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-1313-99cbef";
+  var FO_BUILD = "20260727-1325-15852b";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -29793,15 +29793,15 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           var wtM = (window.__foWT && window.__foWT.serverFixtures) ? window.__foWT : null;
           var plW = window.__foPlanet || null;
           var snapLg = window.__foWorldLg ? window.__foWorldLg.get(nation) : null;
-          if (window.__foWorldLg) {
-            window.__foWorldLg.want(nation, function () {
-              try {
-                if ((location.hash || "").indexOf("#/nation") !== 0) return;
-                var pg9 = document.getElementById("page"); if (pg9) pg9.__foLgSig = null;
-                foRenderLeague();
-              } catch (e9) {}
-            });
-          }
+          var refreshNat = function () {
+            try {
+              if ((location.hash || "").indexOf("#/nation") !== 0) return;
+              var pg9 = document.getElementById("page"); if (pg9) pg9.__foLgSig = null;
+              foRenderLeague();
+            } catch (e9) {}
+          };
+          if (window.__foWorldLg) window.__foWorldLg.want(nation, refreshNat);
+          if (window.__foWorldNames) window.__foWorldNames.want(nation, refreshNat);
           if (wtM && plW) {
             var nowSrv = Date.now();
             var svF = wtM.serverFixtures(nation, nowSrv);
@@ -30113,7 +30113,13 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         // -- still to come
         var upHTML = "";
         if (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason >= 0 && srv.cal.dayInSeason < 17) {
-          var sidesBy = {}; try { srv.pl.sidesOf(nation).forEach(function (s9) { sidesBy[s9.slot] = s9; }); } catch (e9b) {}
+          var sidesBy = {};
+          try {
+            var nmOv9 = window.__foWorldNames ? window.__foWorldNames.get(nation) : null;
+            srv.pl.sidesOf(nation).forEach(function (s9) {
+              sidesBy[s9.slot] = (nmOv9 && nmOv9[s9.slot]) ? { slot: s9.slot, name: nmOv9[s9.slot] } : s9;
+            });
+          } catch (e9b) {}
           var schedA = srv.wt.schedMirror(nation, srv.cal.seasonNo);
           var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
           var ups = [];
@@ -37641,6 +37647,40 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         }, done).catch(done);
     } catch (e) { done(); }
   }
+  // ---- served club names: humans christen their clubs -----------------------
+  // The clubs table is the naming authority (a claimed club may be renamed;
+  // bots keep county names). Ten tiny rows per nation from the world_clubs
+  // view, cached with a courtesy TTL, so fixtures/orders/spectate all speak
+  // the CURRENT names.
+  var NM_BODY = {}, NM_AT = {}, NM_BUSY = {};
+  window.__foWorldNames = {
+    get: function (rid) {
+      if (NM_BODY[rid]) return NM_BODY[rid];
+      try { var c3 = localStorage.getItem("fo_world_nm_" + rid); if (c3) { NM_BODY[rid] = JSON.parse(c3); return NM_BODY[rid]; } } catch (e) {}
+      return null;
+    },
+    want: function (rid, cb) {
+      try {
+        if (!rid || NM_BUSY[rid]) return;
+        if (NM_AT[rid] && Date.now() - NM_AT[rid] < 60000) return;
+        NM_BUSY[rid] = 1;
+        var done = function () { NM_BUSY[rid] = 0; NM_AT[rid] = Date.now(); };
+        fetch(SB_URL + "/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(rid) + "&select=slot,name", { headers: { apikey: SB_ANON } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (rows) {
+            if (rows && rows.length) {
+              var m = {}; rows.forEach(function (r2) { m[r2.slot] = r2.name; });
+              var changed = JSON.stringify(m) !== JSON.stringify(NM_BODY[rid] || null);
+              NM_BODY[rid] = m;
+              try { localStorage.setItem("fo_world_nm_" + rid, JSON.stringify(m)); } catch (e) {}
+              if (changed) { try { if (cb) cb(m); } catch (e) {} }
+            }
+            done();
+          }, done).catch(done);
+      } catch (e) { NM_BUSY[rid] = 0; }
+    }
+  };
+
   window.__foWorldLg = {
     get: function (rid) {
       if (LG_BODY[rid]) return LG_BODY[rid];
@@ -39047,8 +39087,13 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           if (b.disabled) return; b.disabled = true; b.textContent = "Claiming…";
           var mgr = "manager";
           try { mgr = (SYNC && SYNC.me && SYNC.me.display_name) || (userTeam().name + " manager"); } catch (e) {}
-          rpc("world_claim_club", { p_country: ST.nation, p_slot: +b.getAttribute("data-slot"), p_name: mgr })
-            .then(function () { window.foRenderWorldClubPage(); })
+          // christen the club: your own club name rides in as the default
+          var defNm = ""; try { defNm = userTeam().name || ""; } catch (eD) {}
+          var clubNm = null;
+          try { clubNm = prompt("Name your club (the whole world will see it):", defNm || b.getAttribute("data-club") || ""); } catch (ePr) {}
+          if (clubNm === null) { b.disabled = false; b.textContent = "Claim"; return; }
+          rpc("world_claim_club", { p_country: ST.nation, p_slot: +b.getAttribute("data-slot"), p_name: mgr, p_club_name: String(clubNm).trim() || null })
+            .then(function () { try { localStorage.removeItem("fo_world_nm_" + ST.nation); } catch (e) {} window.foRenderWorldClubPage(); })
             .catch(function (e) { b.disabled = false; b.textContent = "Claim"; alert(String(e.message).slice(0, 140)); });
         });
       });
@@ -39120,6 +39165,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         "<div class='fo-wj-row'><label>Win the toss</label>" + tossBtns + "</div>" +
         "<label class='fo-wj-chk'><input type='checkbox' id='fo-wj-all'" + (ST.allRounds ? " checked" : "") + "> Use these orders for every remaining round</label>" +
         "<div class='fo-wj-act'><button type='button' id='fo-wj-send' class='fo-wj-send'>" + (sent[nextRound] ? "Update" : "Submit") + " orders &middot; R" + nextRound + " (" + ST.picked.length + "/11 &middot; " + ST.five.length + "/5)</button>" +
+        "<button type='button' id='fo-wj-ren' class='fo-wj-rel'>Rename club</button>" +
         "<button type='button' id='fo-wj-rel' class='fo-wj-rel'>Release club</button></div>" +
         "<div class='fo-wj-note' id='fo-wj-msg'></div></div>");
 
@@ -39164,6 +39210,14 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         });
         chain.then(function () { msg("Orders on file for round" + (rounds.length > 1 ? "s " + rounds[0] + "-" + rounds[rounds.length - 1] : " " + rounds[0]) + ". The umpire has them."); })
           .catch(function (e) { msg("Failed: " + String(e.message).slice(0, 120)); });
+      });
+      page.querySelector("#fo-wj-ren").addEventListener("click", function () {
+        var nn = null;
+        try { nn = prompt("Rename your club (2-28 characters - the whole world will see it):", c.club || ""); } catch (ePr) {}
+        if (nn === null || !String(nn).trim()) return;
+        rpc("world_rename_club", { p_club_name: String(nn).trim() })
+          .then(function () { try { localStorage.removeItem("fo_world_nm_" + c.country); } catch (e) {} window.foRenderWorldClubPage(); })
+          .catch(function (e) { msg("Rename failed: " + String(e.message).slice(0, 120)); });
       });
       page.querySelector("#fo-wj-rel").addEventListener("click", function () {
         if (!confirm("Release " + c.club + "? Another manager can claim it immediately.")) return;
@@ -39384,7 +39438,16 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     var pl = P(), cal = serverCal(now);
     if (cal.seasonNo < 1 || cal.dayInSeason < 0 || cal.dayInSeason > 17) return { cal: cal, fx: [] };
     var sides = pl.sidesOf(rid); if (!sides || sides.length < 10) return { cal: cal, fx: [] };
-    var bySlot = {}; sides.forEach(function (s) { bySlot[s.slot] = s; });
+    // the clubs table is the naming authority - a claimed club wears its
+    // manager's chosen name, and orders key by it
+    var nmOv = null;
+    try { if (window.__foWorldNames) { nmOv = window.__foWorldNames.get(rid); window.__foWorldNames.want(rid); } } catch (eNm) {}
+    var bySlot = {};
+    sides.forEach(function (s) {
+      bySlot[s.slot] = (nmOv && nmOv[s.slot] && nmOv[s.slot] !== s.name)
+        ? { slot: s.slot, boss: s.boss, name: nmOv[s.slot], city: s.city, str: s.str }
+        : s;
+    });
     var fx = schedMirror(rid, cal.seasonNo)[cal.round - 1].map(function (p2) {
       return { home: bySlot[p2[0]], away: bySlot[p2[1]] };
     });

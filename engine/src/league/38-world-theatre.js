@@ -123,7 +123,16 @@
     var pl = P(), cal = serverCal(now);
     if (cal.seasonNo < 1 || cal.dayInSeason < 0 || cal.dayInSeason > 17) return { cal: cal, fx: [] };
     var sides = pl.sidesOf(rid); if (!sides || sides.length < 10) return { cal: cal, fx: [] };
-    var bySlot = {}; sides.forEach(function (s) { bySlot[s.slot] = s; });
+    // the clubs table is the naming authority - a claimed club wears its
+    // manager's chosen name, and orders key by it
+    var nmOv = null;
+    try { if (window.__foWorldNames) { nmOv = window.__foWorldNames.get(rid); window.__foWorldNames.want(rid); } } catch (eNm) {}
+    var bySlot = {};
+    sides.forEach(function (s) {
+      bySlot[s.slot] = (nmOv && nmOv[s.slot] && nmOv[s.slot] !== s.name)
+        ? { slot: s.slot, boss: s.boss, name: nmOv[s.slot], city: s.city, str: s.str }
+        : s;
+    });
     var fx = schedMirror(rid, cal.seasonNo)[cal.round - 1].map(function (p2) {
       return { home: bySlot[p2[0]], away: bySlot[p2[1]] };
     });

@@ -84,6 +84,40 @@
         }, done).catch(done);
     } catch (e) { done(); }
   }
+  // ---- served club names: humans christen their clubs -----------------------
+  // The clubs table is the naming authority (a claimed club may be renamed;
+  // bots keep county names). Ten tiny rows per nation from the world_clubs
+  // view, cached with a courtesy TTL, so fixtures/orders/spectate all speak
+  // the CURRENT names.
+  var NM_BODY = {}, NM_AT = {}, NM_BUSY = {};
+  window.__foWorldNames = {
+    get: function (rid) {
+      if (NM_BODY[rid]) return NM_BODY[rid];
+      try { var c3 = localStorage.getItem("fo_world_nm_" + rid); if (c3) { NM_BODY[rid] = JSON.parse(c3); return NM_BODY[rid]; } } catch (e) {}
+      return null;
+    },
+    want: function (rid, cb) {
+      try {
+        if (!rid || NM_BUSY[rid]) return;
+        if (NM_AT[rid] && Date.now() - NM_AT[rid] < 60000) return;
+        NM_BUSY[rid] = 1;
+        var done = function () { NM_BUSY[rid] = 0; NM_AT[rid] = Date.now(); };
+        fetch(SB_URL + "/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(rid) + "&select=slot,name", { headers: { apikey: SB_ANON } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (rows) {
+            if (rows && rows.length) {
+              var m = {}; rows.forEach(function (r2) { m[r2.slot] = r2.name; });
+              var changed = JSON.stringify(m) !== JSON.stringify(NM_BODY[rid] || null);
+              NM_BODY[rid] = m;
+              try { localStorage.setItem("fo_world_nm_" + rid, JSON.stringify(m)); } catch (e) {}
+              if (changed) { try { if (cb) cb(m); } catch (e) {} }
+            }
+            done();
+          }, done).catch(done);
+      } catch (e) { NM_BUSY[rid] = 0; }
+    }
+  };
+
   window.__foWorldLg = {
     get: function (rid) {
       if (LG_BODY[rid]) return LG_BODY[rid];

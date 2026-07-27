@@ -119,8 +119,13 @@
           if (b.disabled) return; b.disabled = true; b.textContent = "Claiming…";
           var mgr = "manager";
           try { mgr = (SYNC && SYNC.me && SYNC.me.display_name) || (userTeam().name + " manager"); } catch (e) {}
-          rpc("world_claim_club", { p_country: ST.nation, p_slot: +b.getAttribute("data-slot"), p_name: mgr })
-            .then(function () { window.foRenderWorldClubPage(); })
+          // christen the club: your own club name rides in as the default
+          var defNm = ""; try { defNm = userTeam().name || ""; } catch (eD) {}
+          var clubNm = null;
+          try { clubNm = prompt("Name your club (the whole world will see it):", defNm || b.getAttribute("data-club") || ""); } catch (ePr) {}
+          if (clubNm === null) { b.disabled = false; b.textContent = "Claim"; return; }
+          rpc("world_claim_club", { p_country: ST.nation, p_slot: +b.getAttribute("data-slot"), p_name: mgr, p_club_name: String(clubNm).trim() || null })
+            .then(function () { try { localStorage.removeItem("fo_world_nm_" + ST.nation); } catch (e) {} window.foRenderWorldClubPage(); })
             .catch(function (e) { b.disabled = false; b.textContent = "Claim"; alert(String(e.message).slice(0, 140)); });
         });
       });
@@ -192,6 +197,7 @@
         "<div class='fo-wj-row'><label>Win the toss</label>" + tossBtns + "</div>" +
         "<label class='fo-wj-chk'><input type='checkbox' id='fo-wj-all'" + (ST.allRounds ? " checked" : "") + "> Use these orders for every remaining round</label>" +
         "<div class='fo-wj-act'><button type='button' id='fo-wj-send' class='fo-wj-send'>" + (sent[nextRound] ? "Update" : "Submit") + " orders &middot; R" + nextRound + " (" + ST.picked.length + "/11 &middot; " + ST.five.length + "/5)</button>" +
+        "<button type='button' id='fo-wj-ren' class='fo-wj-rel'>Rename club</button>" +
         "<button type='button' id='fo-wj-rel' class='fo-wj-rel'>Release club</button></div>" +
         "<div class='fo-wj-note' id='fo-wj-msg'></div></div>");
 
@@ -236,6 +242,14 @@
         });
         chain.then(function () { msg("Orders on file for round" + (rounds.length > 1 ? "s " + rounds[0] + "-" + rounds[rounds.length - 1] : " " + rounds[0]) + ". The umpire has them."); })
           .catch(function (e) { msg("Failed: " + String(e.message).slice(0, 120)); });
+      });
+      page.querySelector("#fo-wj-ren").addEventListener("click", function () {
+        var nn = null;
+        try { nn = prompt("Rename your club (2-28 characters - the whole world will see it):", c.club || ""); } catch (ePr) {}
+        if (nn === null || !String(nn).trim()) return;
+        rpc("world_rename_club", { p_club_name: String(nn).trim() })
+          .then(function () { try { localStorage.removeItem("fo_world_nm_" + c.country); } catch (e) {} window.foRenderWorldClubPage(); })
+          .catch(function (e) { msg("Rename failed: " + String(e.message).slice(0, 120)); });
       });
       page.querySelector("#fo-wj-rel").addEventListener("click", function () {
         if (!confirm("Release " + c.club + "? Another manager can claim it immediately.")) return;

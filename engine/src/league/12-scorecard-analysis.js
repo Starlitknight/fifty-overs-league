@@ -5288,15 +5288,15 @@
           var wtM = (window.__foWT && window.__foWT.serverFixtures) ? window.__foWT : null;
           var plW = window.__foPlanet || null;
           var snapLg = window.__foWorldLg ? window.__foWorldLg.get(nation) : null;
-          if (window.__foWorldLg) {
-            window.__foWorldLg.want(nation, function () {
-              try {
-                if ((location.hash || "").indexOf("#/nation") !== 0) return;
-                var pg9 = document.getElementById("page"); if (pg9) pg9.__foLgSig = null;
-                foRenderLeague();
-              } catch (e9) {}
-            });
-          }
+          var refreshNat = function () {
+            try {
+              if ((location.hash || "").indexOf("#/nation") !== 0) return;
+              var pg9 = document.getElementById("page"); if (pg9) pg9.__foLgSig = null;
+              foRenderLeague();
+            } catch (e9) {}
+          };
+          if (window.__foWorldLg) window.__foWorldLg.want(nation, refreshNat);
+          if (window.__foWorldNames) window.__foWorldNames.want(nation, refreshNat);
           if (wtM && plW) {
             var nowSrv = Date.now();
             var svF = wtM.serverFixtures(nation, nowSrv);
@@ -5608,7 +5608,13 @@
         // -- still to come
         var upHTML = "";
         if (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason >= 0 && srv.cal.dayInSeason < 17) {
-          var sidesBy = {}; try { srv.pl.sidesOf(nation).forEach(function (s9) { sidesBy[s9.slot] = s9; }); } catch (e9b) {}
+          var sidesBy = {};
+          try {
+            var nmOv9 = window.__foWorldNames ? window.__foWorldNames.get(nation) : null;
+            srv.pl.sidesOf(nation).forEach(function (s9) {
+              sidesBy[s9.slot] = (nmOv9 && nmOv9[s9.slot]) ? { slot: s9.slot, name: nmOv9[s9.slot] } : s9;
+            });
+          } catch (e9b) {}
           var schedA = srv.wt.schedMirror(nation, srv.cal.seasonNo);
           var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
           var ups = [];

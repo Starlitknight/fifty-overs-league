@@ -17,7 +17,7 @@ import { makePool } from '../db.mjs';
 import { migrate } from '../migrate.mjs';
 import { initWorld } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
-import { runAllDue, runCupWindow, rollSeasons, runTick } from '../tick.mjs';
+import { runAllDue, runCupWindow, rollSeasons, runTick, computeLeague } from '../tick.mjs';
 import { EPOCH, DAY } from '../clock.mjs';
 
 const DBNAME = 'foworld_p3_test';
@@ -178,4 +178,31 @@ test('005: orders lock at the first ball and reveal to spectators', async () => 
   assert.equal(body.round, TEST_ROUND);
   assert.ok(body.orders.Yorkshire, 'the claimed club\'s sheet is revealed by club name');
   assert.equal(body.orders.Yorkshire.tossDecision, 'bat', 'the locked orders, not the bounced update');
+});
+
+test('007: humans christen their clubs, bots keep the counties, records survive renames', async () => {
+  // U2 claims Kent (eng slot 7) and names it after their own club
+  const ok = await as(U2, `SELECT public.world_claim_club('eng', 7, 'Rival', 'Orange Club') AS r`);
+  assert.equal(ok.rows[0].r.club, 'Orange Club');
+  const names = (await pool.query(`SELECT slot, name, default_name FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows;
+  assert.equal(names.find(n => n.slot === 7).name, 'Orange Club');
+  assert.equal(names.find(n => n.slot === 7).default_name, 'Kent');
+  assert.equal(names.find(n => n.slot === 3).name, 'Surrey', 'bots keep the counties');
+  // taken names bounce, case-insensitively, defaults included
+  await assert.rejects(as(U2, `SELECT public.world_rename_club('surrey')`), /already taken/);
+  await assert.rejects(as(U2, `SELECT public.world_rename_club('middlesex')`), /already taken/);
+  // the record survives any rename: per-slot standings identical before and after
+  const before = await computeLeague(pool, 'eng', 1, EPOCH + 130 * DAY);
+  await as(U2, `SELECT public.world_rename_club('Tangerine CC')`);
+  const after = await computeLeague(pool, 'eng', 1, EPOCH + 130 * DAY);
+  const bySlotB = Object.fromEntries(before.table.map(t => [t.slot, t]));
+  after.table.forEach(t => {
+    assert.equal(t.p, bySlotB[t.slot].p, 'played, slot ' + t.slot);
+    assert.equal(t.pts, bySlotB[t.slot].pts, 'points, slot ' + t.slot);
+    assert.equal(t.w, bySlotB[t.slot].w, 'wins, slot ' + t.slot);
+  });
+  assert.equal(after.table.find(t => t.slot === 7).name, 'Tangerine CC', 'the snapshot speaks the current name');
+  // releasing the club hands Kent its name back
+  await as(U2, `SELECT public.world_release_club()`);
+  assert.equal((await pool.query(`SELECT name FROM clubs WHERE country_id='eng' AND slot=7`)).rows[0].name, 'Kent');
 });

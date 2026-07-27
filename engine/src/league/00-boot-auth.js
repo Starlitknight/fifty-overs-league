@@ -157,7 +157,7 @@
       for (var i = 0; i < window.localStorage.length; i++) {
         var k = window.localStorage.key(i);
         if (!k || (k.indexOf("fo_") !== 0 && k.indexOf("fol_") !== 0)) continue;
-        if (FO_CLOUD_SKIP[k] || k.indexOf("fol_clubmeta_") === 0 || k.indexOf("fo_world_lg_") === 0) continue;
+        if (FO_CLOUD_SKIP[k] || k.indexOf("fol_clubmeta_") === 0 || k.indexOf("fo_world_lg_") === 0 || k.indexOf("fo_world_nm_") === 0) continue;
         out[k] = window.localStorage.getItem(k);
       }
     } catch (e) {}
