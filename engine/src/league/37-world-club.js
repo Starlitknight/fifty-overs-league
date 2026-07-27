@@ -238,6 +238,11 @@
         "<p class='fo-wj-p'>Submitted orders " +
         ((st.orders || []).length ? "on file for round" + ((st.orders || []).length > 1 ? "s" : "") + " " + (st.orders || []).map(function (o) { return o.round; }).join(", ") : "none yet") + ".</p>" +
         "<div id='fo-wj-cab' class='fo-wj-note'>Opening the trophy cabinet&hellip;</div>" +
+        "<h4 class='fo-wj-h4'>Friendlies <span>manager v manager &middot; no stakes, just cricket</span></h4>" +
+        "<div id='fo-wj-frlist' class='fo-wj-note'>Checking the post&hellip;</div>" +
+        "<div class='fo-wj-frnew'><select id='fo-wj-frnat' aria-label='Nation'></select>" +
+        "<select id='fo-wj-frclub' aria-label='Club'><option>Pick a nation&hellip;</option></select>" +
+        "<button type='button' id='fo-wj-frgo' class='fo-wj-frbtn'>&#9876; Challenge</button></div>" +
         "<h4 class='fo-wj-h4'>The eleven, in batting order</h4>" +
         "<div class='fo-wj-sq'>" + men + "</div>" +
         "<h4 class='fo-wj-h4'>The bowling five, in spell order <span>openers attack &middot; middle grinds &middot; closers defend</span></h4>" +
@@ -292,6 +297,53 @@
         chain.then(function () { msg("Orders on file for round" + (rounds.length > 1 ? "s " + rounds[0] + "-" + rounds[rounds.length - 1] : " " + rounds[0]) + ". The umpire has them."); })
           .catch(function (e) { msg("Failed: " + String(e.message).slice(0, 120)); });
       });
+      // ---- friendlies: the post, the fixtures, the results ----------------
+      var frPaint = function () {
+        rpc("world_my_friendlies").then(function (list) {
+          var el = page.querySelector("#fo-wj-frlist"); if (!el) return;
+          if (!list || !list.length) { el.innerHTML = "No friendlies yet &mdash; challenge any club on earth below."; return; }
+          el.innerHTML = list.map(function (f) {
+            var when = "";
+            try { if (f.playAtMs) { var d9 = new Date(f.playAtMs); when = (d9.getUTCHours() < 10 ? "0" : "") + d9.getUTCHours() + ":00 UTC"; } } catch (e9) {}
+            if (f.incoming) return "<div class='fo-wj-frrow in'><b>" + E(f.home) + "</b> challenge you to a friendly" +
+              "<span><button type='button' class='fo-wj-frbtn fo-wj-fracc' data-id='" + f.id + "'>Accept</button>" +
+              "<button type='button' class='fo-wj-frbtn ghost fo-wj-frdec' data-id='" + f.id + "'>Decline</button></span></div>";
+            if (f.status === "offered") return "<div class='fo-wj-frrow'><b>" + E(f.away) + "</b><i>challenged &middot; awaiting their reply</i></div>";
+            if (f.status === "accepted") return "<div class='fo-wj-frrow on'><b>" + E(f.home) + " v " + E(f.away) + "</b><i>plays at " + when + " &middot; the umpire will bank it</i></div>";
+            if (f.status === "played") return "<div class='fo-wj-frrow done'><b>" + E(f.home) + " v " + E(f.away) + "</b><i>" + E(f.text || "played") + "</i></div>";
+            return "<div class='fo-wj-frrow dim'><b>" + E(f.home) + " v " + E(f.away) + "</b><i>" + f.status + "</i></div>";
+          }).join("");
+          el.querySelectorAll(".fo-wj-fracc").forEach(function (b9) {
+            b9.addEventListener("click", function () { rpc("world_friendly_respond", { p_id: +b9.getAttribute("data-id"), p_accept: true }).then(frPaint).catch(function (e9) { msg(String(e9.message).slice(0, 100)); }); });
+          });
+          el.querySelectorAll(".fo-wj-frdec").forEach(function (b9) {
+            b9.addEventListener("click", function () { rpc("world_friendly_respond", { p_id: +b9.getAttribute("data-id"), p_accept: false }).then(frPaint).catch(function (e9) { msg(String(e9.message).slice(0, 100)); }); });
+          });
+        }).catch(function () { var el = page.querySelector("#fo-wj-frlist"); if (el) el.textContent = "The post could not be reached - try again in a minute."; });
+      };
+      frPaint();
+      try {
+        var natSel = page.querySelector("#fo-wj-frnat"), clubSel = page.querySelector("#fo-wj-frclub");
+        var regs = (cx() && cx().regions() || []).filter(function (r9) { return !r9.final; });
+        natSel.innerHTML = regs.map(function (r9) { return "<option value='" + E(r9.id) + "'" + (r9.id === c.country ? " selected" : "") + ">" + E(r9.nm) + "</option>"; }).join("");
+        var loadClubs = function () {
+          sel("world_clubs?country_id=eq." + natSel.value + "&select=slot,name,manager&order=slot").then(function (rows9) {
+            clubSel.innerHTML = (rows9 || []).filter(function (x9) { return !(natSel.value === c.country && x9.slot === c.slot); })
+              .map(function (x9) { return "<option value='" + x9.slot + "'>" + E(x9.name) + (x9.manager ? " · " + E(x9.manager) : "") + "</option>"; }).join("");
+          }).catch(function () {});
+        };
+        natSel.addEventListener("change", loadClubs);
+        loadClubs();
+        page.querySelector("#fo-wj-frgo").addEventListener("click", function () {
+          rpc("world_friendly_challenge", { p_country: natSel.value, p_slot: +clubSel.value })
+            .then(function (r9) {
+              msg(r9.humanOpponent ? "Challenge sent - their manager decides." : "The bot accepts on the spot - the umpire plays it within the hour.");
+              frPaint();
+            })
+            .catch(function (e9) { msg(String(e9.message).slice(0, 120)); });
+        });
+      } catch (eFr) {}
+
       // the cabinet: every crown this club has ever worn, from the honours book
       sel("world_snapshots?key=eq.honours&select=body").then(function (rows) {
         var el = page.querySelector("#fo-wj-cab"); if (!el) return;
@@ -366,6 +418,16 @@
       "html body #page .fo-wj-p{font:400 13px/1.6 Inter,sans-serif;color:rgba(20,28,40,.72);margin:0 0 10px}",
       "html body #page .fo-wj-note{font:italic 400 12.5px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.55);margin-top:8px}",
       "html body #page .fo-wj-natrow{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px}",
+      ".fo-wj-frrow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid rgba(20,28,40,.07);padding:8px 2px;font:500 12.5px/1.4 Inter,sans-serif;color:#141C28}",
+      ".fo-wj-frrow i{font-style:normal;font-size:11px;color:rgba(20,28,40,.5)}",
+      ".fo-wj-frrow.in{background:rgba(217,85,42,.06);border-radius:10px;padding:9px 10px}",
+      ".fo-wj-frrow.on i{color:#177A57}",
+      ".fo-wj-frrow.dim{opacity:.55}",
+      ".fo-wj-frrow span{display:inline-flex;gap:6px}",
+      ".fo-wj-frnew{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}",
+      ".fo-wj-frnew select{flex:1;min-width:110px;font:500 12px/1.2 Inter,sans-serif;padding:9px 10px;border:1px solid rgba(20,28,40,.18);border-radius:10px;background:#FFFEFC;color:#141C28}",
+      "html body #page .fo-wj-frbtn{font:700 10.5px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#FFFEFC !important;background:linear-gradient(180deg,#E8894A,#C8542F) !important;border:0 !important;border-radius:999px;padding:9px 14px;cursor:pointer}",
+      "html body #page .fo-wj-frbtn.ghost{background:transparent !important;border:1px solid rgba(20,28,40,.25) !important;color:rgba(20,28,40,.6) !important}",
       "html body #page .fo-wj-nat{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;background:transparent !important;border:none !important;cursor:pointer;padding:4px 2px !important}",
       "html body #page .fo-wj-nat img{width:30px;height:21px;object-fit:cover;border-radius:4px;border:2px solid transparent}",
       "html body #page .fo-wj-nat.on img{border-color:#C95532;box-shadow:0 0 0 3px rgba(201,85,50,.2)}",

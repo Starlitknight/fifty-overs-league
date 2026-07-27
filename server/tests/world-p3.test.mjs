@@ -17,7 +17,7 @@ import { makePool } from '../db.mjs';
 import { migrate } from '../migrate.mjs';
 import { initWorld } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
-import { runAllDue, runCupWindow, rollSeasons, runTick, computeLeague, rebuildHonours, computeRankings } from '../tick.mjs';
+import { runAllDue, runCupWindow, rollSeasons, runTick, computeLeague, rebuildHonours, computeRankings, runFriendlies } from '../tick.mjs';
 import { EPOCH, DAY } from '../clock.mjs';
 
 const DBNAME = 'foworld_p3_test';
@@ -281,4 +281,51 @@ test('010: the world rankings ladder moves with results, zero-sum, rename-proof'
   assert.equal(after7.rating, before7.rating, 'the rating survived the rename');
   assert.equal(after7.name, 'Renamed CC', 'the ladder speaks the current name');
   await pool.query(`UPDATE clubs SET name=default_name WHERE country_id='eng' AND slot=7`);
+});
+
+test('011: friendlies - challenge, accept, and the umpire plays the real match', async () => {
+  // your own club is not an opponent
+  await assert.rejects(as(U1, `SELECT public.world_friendly_challenge('eng', 1)`), /your own club/);
+  // a bot club accepts on the spot
+  const bot = await as(U1, `SELECT public.world_friendly_challenge('ire', 3) AS r`);
+  assert.equal(bot.rows[0].r.status, 'accepted');
+  assert.ok(bot.rows[0].r.playAtMs > 0, 'scheduled at the next hour');
+  assert.equal(bot.rows[0].r.humanOpponent, false);
+  // a human must answer for themselves: U2 (Orange Club, eng slot 2)
+  const hum = await as(U1, `SELECT public.world_friendly_challenge('eng', 2) AS r`);
+  assert.equal(hum.rows[0].r.status, 'offered');
+  assert.equal(hum.rows[0].r.humanOpponent, true);
+  await assert.rejects(as(U1, `SELECT public.world_friendly_respond($1, true)`, [hum.rows[0].r.id]), /not yours to answer/);
+  const acc = await as(U2, `SELECT public.world_friendly_respond($1, true) AS r`, [hum.rows[0].r.id]);
+  assert.equal(acc.rows[0].r.status, 'accepted');
+  await assert.rejects(as(U2, `SELECT public.world_friendly_respond($1, true)`, [hum.rows[0].r.id]), /already accepted/);
+  // the umpire plays both when their hour strikes - real engine, real result
+  const played = await runFriendlies(pool, host, { now: Date.now() + 3 * 3600000 });
+  assert.equal(played.length, 2, 'both friendlies played');
+  const fr = (await pool.query(`SELECT * FROM friendlies WHERE status='played' ORDER BY id`)).rows;
+  assert.equal(fr.length, 2);
+  fr.forEach(f => {
+    assert.ok(f.result.text, 'a real result: ' + f.result.text);
+    assert.ok([f.c_name, f.o_name, null].includes(f.result.winner));
+  });
+  // the challenger's latest orders rode into the friendly (reversed-XI opener)
+  const latest = (await pool.query(
+    `SELECT orders FROM orders WHERE user_id=$1 ORDER BY submitted_at DESC LIMIT 1`, [U1])).rows[0].orders;
+  const yInn = fr[0].result.innings.find(i => i.batTeam === fr[0].c_name);
+  if (yInn && latest.xi) {
+    const openers = yInn.bat.slice(0, 2).map(b => (b.p && b.p.name) || b.p);
+    assert.ok(openers.includes(latest.xi[0]), 'the manager\'s chosen opener opened the friendly');
+  }
+  // declines are final; the ledger shows everything
+  const again = await as(U1, `SELECT public.world_friendly_challenge('eng', 2) AS r`);
+  const dec = await as(U2, `SELECT public.world_friendly_respond($1, false) AS r`, [again.rows[0].r.id]);
+  assert.equal(dec.rows[0].r.status, 'declined');
+  const mine = await as(U1, `SELECT public.world_my_friendlies() AS f`);
+  const list = mine.rows[0].f;
+  assert.ok(list.length >= 3);
+  assert.ok(list.some(x => x.status === 'played' && x.text), 'played friendlies carry their result');
+  assert.ok(list.some(x => x.status === 'declined'), 'the declined one is on record');
+  // friendlies never touch the league record
+  const lg = await computeLeague(pool, 'eng', 1, EPOCH + 102 * DAY);
+  assert.equal(lg.roundsPlayed, 1, 'league untouched by friendlies');
 });

@@ -286,6 +286,38 @@ export async function runDue(pool, host, country, { now = Date.now(), failAfter 
 }
 
 // every country in the database, in id order — the whole planet, one call
+// FRIENDLIES: manager v manager, one match, no stakes. The umpire plays every
+// accepted friendly whose hour has struck - real squads, each manager's
+// latest orders, seed from the friendly's own id - and lets stale offers
+// lapse. League tables, rankings and honours never see these matches.
+export async function runFriendlies(pool, host, opts = {}) {
+  const now = opts.now ?? Date.now();
+  await pool.query(`UPDATE friendlies SET status='expired'
+    WHERE status='offered' AND created_at < now() - interval '48 hours'`);
+  const due = (await pool.query(
+    `SELECT * FROM friendlies WHERE status='accepted' AND play_at_ms <= $1 ORDER BY id`, [now])).rows;
+  const played = [];
+  for (const f of due) {
+    const hc = (await pool.query('SELECT name, squad FROM clubs WHERE country_id=$1 AND slot=$2', [f.c_country, f.c_slot])).rows[0];
+    const ac = (await pool.query('SELECT name, squad FROM clubs WHERE country_id=$1 AND slot=$2', [f.o_country, f.o_slot])).rows[0];
+    if (!hc || !ac) { await pool.query(`UPDATE friendlies SET status='expired' WHERE id=$1`, [f.id]); continue; }
+    const ordersMap = {};
+    for (const [uid, clubName] of [[f.challenger, hc.name], [f.opponent, ac.name]]) {
+      if (!uid) continue;
+      const o = (await pool.query(
+        'SELECT orders FROM orders WHERE user_id=$1 ORDER BY submitted_at DESC LIMIT 1', [uid])).rows[0];
+      if (o) ordersMap[clubName] = o.orders;
+    }
+    const seed = seedOf('friendly:' + f.id);
+    const resultJson = host.runMatch({ name: hc.name, players: hc.squad }, { name: ac.name, players: ac.squad }, 'balanced', seed, ordersMap);
+    if (!resultJson) throw new Error('engine failed friendly ' + f.id);
+    await pool.query(`UPDATE friendlies SET status='played', result=$2::jsonb, engine_version=$3 WHERE id=$1`,
+      [f.id, resultJson, ENGINE_VERSION]);
+    played.push(f.id);
+  }
+  return played;
+}
+
 export async function runAllDue(pool, host, opts = {}) {
   const cs = await pool.query('SELECT id FROM countries ORDER BY id');
   const out = {};
@@ -500,6 +532,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
     const rolled = await rollSeasons(pool);
     if (rolled.length) lines.push('seasons rolled: ' + rolled.length);
+    try {
+      const fr = await runFriendlies(pool, host);
+      if (fr.length) lines.push('friendlies played: ' + fr.length);
+    } catch (eF) { lines.push('friendlies: ' + eF.message); }
     console.error(lines.length ? lines.join('\n') : 'nothing due anywhere');
     await pool.end();
   })().catch(e => { console.error(e); process.exit(1); });
