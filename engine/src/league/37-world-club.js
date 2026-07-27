@@ -260,7 +260,7 @@
       var fullNote = rows.filter(function (c) { return !c.is_boss && !c.manager; }).length === 0
         ? "<div class='fo-wj-note'><b>This country is full</b> - every club already has a manager. Pick another nation above; the umpire plays your orders at that nation's hour wherever you settle.</div>" : "";
       box.innerHTML = "<h3>The clubs</h3>" + fullNote + rows.map(function (c) {
-        var state = c.is_boss ? "<u class='boss'>THE BOSS</u>"
+        var state = c.is_boss ? "<u class='boss'>THE FLAGSHIP</u>"
           : c.manager ? "<u class='taken'>" + E(c.manager) + "</u>"
           : "<button type='button' class='fo-wj-claim' data-slot='" + c.slot + "' data-club='" + E(c.name) + "'>Claim</button>";
         return "<div class='fo-wj-club'><b>" + E(c.name) + "</b><span>" + E(c.ground || "") + "</span>" + state + "</div>";

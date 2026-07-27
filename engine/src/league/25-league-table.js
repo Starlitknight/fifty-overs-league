@@ -68,6 +68,17 @@
       try { claim = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eC) {}
       var myClub = (claim && claim.country === natId && claim.club) || (own ? me.name : "");
 
+      // THE CLUBS TABLE IS THE NAMING AUTHORITY. A snapshot is only rebuilt
+      // when a round settles, so a club christened this morning would wear its
+      // old name until tonight's cricket. These ten little rows are current.
+      var nmBySlot = null;
+      try {
+        if (window.__foWorldNames) {
+          nmBySlot = window.__foWorldNames.get(natId);
+          window.__foWorldNames.want(natId, function () { if (onPage()) foRenderLeagueTablePage(); });
+        }
+      } catch (eN0) {}
+
       // THE LEAGUE IS THE WORLD'S LEAGUE. The served snapshot is the table -
       // the real ten clubs and their real points. Absent the service we keep
       // the engine's own standings for your own nation so nothing breaks
@@ -82,7 +93,9 @@
       if (snap && snap.table && snap.table.length) {
         snapSeason = snap.seasonNo || 0;
         srvRows = snap.table.map(function (x) {
-          return { nm: x.name, p: x.p, w: x.w, l: x.l, t: x.t, pts: x.pts, nrr: x.nrr, slot: x.slot, boss: !!x.boss,
+          var live = (nmBySlot && x.slot != null && nmBySlot[x.slot]) || x.name;
+          // the record speaks the snapshot's name; the page speaks the current one
+          return { nm: live, recNm: x.name, p: x.p, w: x.w, l: x.l, t: x.t, pts: x.pts, nrr: x.nrr, slot: x.slot, boss: !!x.boss,
             mine: !!(claim && claim.country === natId && claim.slot === x.slot) };
         });
         // form beads from the served results, newest last
@@ -94,7 +107,7 @@
           });
         });
         srvRows.forEach(function (r) {
-          var s5 = (seq[r.nm] || []).slice(-5);
+          var s5 = (seq[r.recNm] || []).slice(-5);
           r.beads = s5.length
             ? s5.map(function (k) { return "<i class='" + k + "'>" + k.toUpperCase() + "</i>"; }).join("")
             : "<span class='none'>&mdash;</span>";
@@ -114,11 +127,7 @@
       // in - from the names the world has published, and failing that from
       // the nation's own ten - so the club page is always one tap away.
       var slotOf = {};
-      try {
-        var nmOv = window.__foWorldNames && window.__foWorldNames.get(natId);
-        if (nmOv) for (var s0 in nmOv) slotOf[nmOv[s0]] = +s0;
-        if (window.__foWorldNames) window.__foWorldNames.want(natId, function () { if (onPage()) foRenderLeagueTablePage(); });
-      } catch (eN) {}
+      try { if (nmBySlot) for (var s0 in nmBySlot) slotOf[nmBySlot[s0]] = +s0; } catch (eN) {}
       try {
         var sides = window.__foPlanet && window.__foPlanet.sidesOf(natId);
         (sides || []).forEach(function (sd) { if (slotOf[sd.name] == null) slotOf[sd.name] = sd.slot; });
@@ -169,10 +178,26 @@
         }
         return side.name;
       };
+      // a result was banked under the name the club wore that day; the page
+      // speaks its name today, so translate the record on the way out
+      var liveOf = {};
+      (srvRows || []).forEach(function (r) { if (r.recNm && r.recNm !== r.nm) liveOf[r.recNm] = r.nm; });
+      var say = function (nm) { return liveOf[nm] || nm; };
+      // one pass, longest name first: a club renamed to another club's old name
+      // must not be renamed twice on its way through the line
+      var sayRe = null;
+      try {
+        var keys = Object.keys(liveOf).sort(function (a, b) { return b.length - a.length; });
+        if (keys.length) sayRe = new RegExp(keys.map(function (k) { return k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }).join("|"), "g");
+      } catch (eRe) { sayRe = null; }
+      var sayLine = function (t) {
+        var out = String(t || "");
+        return sayRe ? out.replace(sayRe, function (m) { return liveOf[m] || m; }) : out;
+      };
       // the round's own results, if the umpire has already banked them
       var roundRes = {};
       if (snap && cal) (snap.results || []).forEach(function (rr) {
-        if (rr.round === cal.round) roundRes[rr.home + "|" + rr.away] = rr;
+        if (rr.round === cal.round) roundRes[say(rr.home) + "|" + say(rr.away)] = rr;
       });
 
       var todayHTML = "";
@@ -187,7 +212,7 @@
             var got = roundRes[hN + "|" + aN];
             var mineFx = myClub && (hN === myClub || aN === myClub);
             var tail = got
-              ? "<span class='fo-lt-fxres'>" + E(got.text || "") + "</span>"
+              ? "<span class='fo-lt-fxres'>" + E(sayLine(got.text)) + "</span>"
               : "<span class='fo-lt-fxst" + (state === "live" ? " live" : "") + "'>" + (state === "live" ? "LIVE" : state === "fin" ? "Awaiting the wire" : hh(hour)) + "</span>";
             return "<a class='fo-lt-fx" + (mineFx ? " mine" : "") + "' href='#/watch?n=" + encodeURIComponent(natId) + "&f=" + i + "'>" +
               "<span class='fo-lt-fxt'><b>" + E(hN) + "</b><i>v</i><b>" + E(aN) + "</b></span>" +
@@ -207,10 +232,11 @@
           rnds.map(function (rn) {
             return "<div class='fo-lt-rnd'><div class='fo-lt-rndh'>Round " + rn + "</div>" +
               byRound[rn].map(function (rr) {
-                var mineR = myClub && (rr.home === myClub || rr.away === myClub);
+                var hR = say(rr.home), aR = say(rr.away);
+                var mineR = myClub && (hR === myClub || aR === myClub);
                 return "<div class='fo-lt-res" + (mineR ? " mine" : "") + "'>" +
-                  "<span class='fo-lt-fxt'><b>" + E(rr.home) + "</b><i>v</i><b>" + E(rr.away) + "</b></span>" +
-                  "<span class='fo-lt-resv'>" + E(rr.text || (rr.winner ? rr.winner + " won" : "Tied")) + "</span></div>";
+                  "<span class='fo-lt-fxt'><b>" + E(hR) + "</b><i>v</i><b>" + E(aR) + "</b></span>" +
+                  "<span class='fo-lt-resv'>" + E(sayLine(rr.text) || (rr.winner ? say(rr.winner) + " won" : "Tied")) + "</span></div>";
               }).join("") + "</div>";
           }).join("");
       }

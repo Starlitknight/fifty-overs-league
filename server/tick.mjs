@@ -372,12 +372,21 @@ export async function runFriendlies(pool, host, opts = {}) {
 // nothing and every device fell back to painted placeholder sides - wrong
 // names, wrong clubs, sometimes the same club three times. A league that has
 // not played is still a league: ten real clubs, all on nought. Publish it.
+// A published table must also never outlive a name. A snapshot is otherwise
+// only rebuilt when a round settles, so a club christened by its manager -
+// or an anchor renamed by a migration - would keep its old name on every
+// device until that night's cricket. Republish whenever the names drift.
 export async function ensureSnapshots(pool, { now = Date.now() } = {}) {
   const cs = (await pool.query('SELECT id FROM countries ORDER BY id')).rows;
   const filled = [];
   for (const c of cs) {
-    const have = await pool.query(`SELECT 1 FROM snapshots WHERE key=$1`, ['league/' + c.id]);
-    if (have.rowCount) continue;
+    const have = await pool.query(`SELECT body FROM snapshots WHERE key=$1`, ['league/' + c.id]);
+    if (have.rowCount) {
+      const named = {};
+      for (const r of (have.rows[0].body.table || [])) named[r.slot] = r.name;
+      const live = (await pool.query('SELECT slot, name FROM clubs WHERE country_id=$1', [c.id])).rows;
+      if (live.every(r => named[r.slot] === r.name)) continue;
+    }
     await rebuildSnapshots(pool, c.id, now);
     filled.push(c.id);
   }
@@ -587,7 +596,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     // a founded league is a league even before its first ball
     try {
       const filled = await ensureSnapshots(pool);
-      if (filled.length) console.error('published first tables for: ' + filled.join(', '));
+      if (filled.length) console.error('published tables for: ' + filled.join(', '));
     } catch (eS) { console.error('snapshots: ' + eS.message); }
     const all = await runAllDue(pool, host);
     const lines = [];
