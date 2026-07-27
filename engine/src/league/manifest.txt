@@ -35,3 +35,4 @@
 34-record-book.js
 35-gazette.js
 36-champions-cup.js
+37-world-club.js

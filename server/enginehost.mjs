@@ -15,12 +15,14 @@ globalThis.__svcGenSquad = function (seed, country, arch, capt) {
   var g = __foGenArchetypeSquad(seed, country, arch, capt || 'general');
   return JSON.stringify((g && g.players) || []);
 };
-globalThis.__svcRun = function (homeJson, awayJson, pitch, seed) {
+globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson) {
   var home = JSON.parse(homeJson), away = JSON.parse(awayJson);
   onMatchEnd = function () {};
   M = newMatch(home, away, pitch, (seed >>> 0) || 1);
   M.meta = { home: home.name, away: away.name, pitch: pitch, weather: 'Sunny', comp: 'world', isUser: false };
-  M.isUserMatch = false; M.ordersMap = {};
+  // a claimed club's submitted orders ride in keyed by club name; the
+  // engine's ordersFor/pickXI consult M.ordersMap before anything else
+  M.isUserMatch = false; M.ordersMap = ordersJson ? JSON.parse(ordersJson) : {};
   App.tossState = { stage: 'x' };
   applyToss(aiTossDecision());
   var g = 0;
@@ -64,8 +66,9 @@ globalThis.__svcWorldCfg = function () {
   return {
     genSquad(seed, country, arch, capt) { return JSON.parse(gen(seed, country, arch, capt)); },
     // returns the canonical result JSON STRING — stored verbatim, compared verbatim
-    runMatch(homeTeam, awayTeam, pitch, seed) {
-      return run(JSON.stringify(homeTeam), JSON.stringify(awayTeam), pitch, seed);
+    runMatch(homeTeam, awayTeam, pitch, seed, ordersMap) {
+      return run(JSON.stringify(homeTeam), JSON.stringify(awayTeam), pitch, seed,
+        ordersMap ? JSON.stringify(ordersMap) : null);
     },
     // the 19 nations as the shipped client defines them
     worldConfig() { return JSON.parse(cfg()); }

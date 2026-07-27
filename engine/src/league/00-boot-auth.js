@@ -239,6 +239,8 @@
     } catch (e) {}
   }
   try { window.__foCloud = { keys: foCloudKeys, push: foCloudPush, load: foCloudLoad, boot: foCloudBoot }; } catch (eCw) {}
+  // the joinable world (module 37) needs the caller's identity for its RPCs
+  try { window.__foJWT = function () { return JWT || ""; }; } catch (eJw) {}
 
   // ---- styles + shell ----
   // (login skin is static now: engine/src/skin/10-login.css -> <style id="fo-skin-login">)

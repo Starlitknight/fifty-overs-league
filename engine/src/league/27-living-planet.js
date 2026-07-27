@@ -432,7 +432,7 @@
         bandHTML + ownCard + cupHTML +
         (natCards ? "<div class='fo-pl-grid'>" + natCards + "</div>" : "") +
         (wireItems ? "<div class='fo-pl-wire'><i>The world wire</i>" + wireItems + "</div>" : "") +
-        "<div class='fo-pl-foot'><a href='#/world'>The world map &rsaquo;</a><a href='#/champions'>The Champions Cup &rsaquo;</a><a href='#/league'>My league &rsaquo;</a><a href='#/almanack'>The world almanack &rsaquo;</a><a href='#/atlas'>The atlas &rsaquo;</a></div>" +
+        "<div class='fo-pl-foot'><a href='#/worldclub'>Join the world &rsaquo;</a><a href='#/world'>The world map &rsaquo;</a><a href='#/champions'>The Champions Cup &rsaquo;</a><a href='#/natteams'>National teams &rsaquo;</a><a href='#/league'>My league &rsaquo;</a><a href='#/almanack'>The world almanack &rsaquo;</a><a href='#/atlas'>The atlas &rsaquo;</a></div>" +
         "</div>";
     } catch (e) { try { console.warn("foRenderPlanetPage", e); } catch (e2) {} }
   }
