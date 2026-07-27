@@ -192,6 +192,12 @@
       if (L.e != null) { p.exp = L.e; p.expWord = EXPLAD[Math.max(0, Math.min(11, Math.floor(L.e / 9)))]; }
       if (L.f != null) { p.formIx = L.f; p.formWord = FORMW[L.f] || "steady"; }
       if (L.n != null) { p.fatN = L.n; p.fatWord = fatWordOf(L.n); p.fatigue = p.fatWord; }
+      // the nets moved him: take the skills and remake every rating built on
+      // them, by the engine's own mapping
+      if (L.s && p.skills) {
+        for (var k in L.s) p.skills[k] = L.s[k];
+        try { if (typeof jsDerive === "function") jsDerive(p); } catch (e) {}
+      }
     });
     return players;
   }

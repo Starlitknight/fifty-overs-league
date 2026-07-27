@@ -184,6 +184,22 @@
     }
     return { skill: bestSk, pct: Math.min(99, Math.round(best)) };
   }
+  // THE NETS BELONG TO THE WORLD NOW. A programme is a standing instruction
+  // to the World Service: whatever plan stands when a round settles is the
+  // work that round did, applied by the umpire to the men who actually play,
+  // whether or not this phone is switched on. The local copy is kept only so
+  // the page redraws at once.
+  function foPushTraining() {
+    try {
+      var t = foMyClub(); if (!t || !window.__foWorldPushTraining) return;
+      var plan = {};
+      (t.players || []).forEach(function (p) {
+        var pr = p.training && p.training.program;
+        if (pr) plan[p.name] = pr;
+      });
+      window.__foWorldPushTraining(plan);
+    } catch (e) {}
+  }
   function foSetTraining(name, field, value) {
     var st = foTrainState();
     st.training[name] = st.training[name] || {};
@@ -199,6 +215,7 @@
         if (typeof window.saveGame === "function") window.saveGame(false);
       }
     } catch (e) {}
+    foPushTraining();     // and the world is told, because the world does the work
   }
   // Reapply my saved choices whenever a fresh snapshot lands (the snapshot only
   // carries choices the resolver has already seen).

@@ -15,6 +15,69 @@ globalThis.__svcGenSquad = function (seed, country, arch, capt) {
   var g = __foGenArchetypeSquad(seed, country, arch, capt || 'general');
   return JSON.stringify((g && g.players) || []);
 };
+// ONE ROUND IN THE NETS, run by the SHIPPED engine's own numbers.
+// The programme weights, the threshold curve and jsDerive all live in the
+// build the phones run, so the umpire's training and the training a manager
+// reads about can never be two different games. Deterministic: no dice, only
+// the plan, the man's age, his ceiling and how tired he is.
+globalThis.__svcTrain = function (playersJson, planJson) {
+  var players = JSON.parse(playersJson), plan = JSON.parse(planJson || '{}');
+  var PROGS = (typeof FO_TRAIN_PROGS !== 'undefined' && FO_TRAIN_PROGS) || (window && window.FO_TRAIN_PROGS) || {};
+  var LADDER = ['rested','revived','energetic','passable','satisfactory','moderate','weary','listless','exhausted','shattered','clinically dead'];
+  var FATF = [0.35,0.45,0.55,0.68,0.78,0.86,0.93,0.97,1.00,1.02,1.04];
+  var paceT = { seamFast:1, seamFastMedium:1, seamMedium:1, partTimeSeam:1 };
+  var spinT = { wristSpin:1, fingerSpin:1, partTimeSpin:1 };
+  var defaultProg = function (p) {
+    if (p.keeper || p.role === 'wicketkeeper') return 'Keeping';
+    if (p.role === 'allRounder') return 'All-rounder';
+    if (paceT[p.bowlTypeFull]) return 'New-ball seam';
+    if (spinT[p.bowlTypeFull]) return 'Spin bowling';
+    return p.role === 'middleOrderBat' ? 'Finishing' : 'Batting';
+  };
+  var potFactor = function (p) {
+    var v = ((p.talent === 'gifted' || (p.talents || []).length >= 2) ? 2 : 0)
+          + (p.age <= 20 ? 2 : p.age <= 24 ? 1 : 0) + ((p.rating > 3600) ? 1 : 0);
+    return v >= 4 ? 1.30 : v >= 3 ? 1.15 : v >= 1 ? 1 : 0.80;
+  };
+  var ageFactor = function (a) { return a <= 20 ? 1.35 : a <= 24 ? 1.15 : a <= 29 ? 0.90 : a <= 32 ? 0.55 : 0.25; };
+  var fresh = function (p) {
+    var w = String((p.fatWord || p.fatigue || 'rested')).toLowerCase();
+    var ix = LADDER.indexOf(w); if (ix < 0) ix = 0;
+    return FATF[Math.max(0, Math.min(10, 10 - ix))];
+  };
+  var thresh = function (v) { return 80 + (+v || 0) * 1.5; };
+  var gains = [];
+  players.forEach(function (p) {
+    var prog = plan[p.name] || defaultProg(p);
+    if (prog === 'Rest' || !PROGS[prog]) return;
+    var pts = 24 * ageFactor(p.age || 27) * potFactor(p) * fresh(p);
+    if (prog === 'All-rounder') pts *= 0.85;
+    var w = PROGS[prog], total = 0;
+    for (var k in w) total += w[k];
+    if (!total) return;
+    p.trainProgress = p.trainProgress || {};
+    for (var sk in w) {
+      if (!p.skills || p.skills[sk] === undefined) continue;
+      p.trainProgress[sk] = (p.trainProgress[sk] || 0) + pts * w[sk] / total;
+      var th = thresh(p.skills[sk]);
+      while (p.trainProgress[sk] >= th && p.skills[sk] < 96) {
+        p.trainProgress[sk] -= th;
+        p.skills[sk]++;
+        jsDerive(p);
+        gains.push({ name: p.name, skill: sk, to: p.skills[sk] });
+        th = thresh(p.skills[sk]);
+      }
+    }
+  });
+  return JSON.stringify({ players: players, gains: gains });
+};
+// refresh every derived rating from the skills beneath them, by the shipped
+// engine's own mapping - the one place bat, threat, control and wage are made
+globalThis.__svcDerive = function (playersJson) {
+  var ps = JSON.parse(playersJson);
+  ps.forEach(function (p) { try { jsDerive(p); } catch (e) {} });
+  return JSON.stringify(ps);
+};
 globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson) {
   var home = JSON.parse(homeJson), away = JSON.parse(awayJson);
   onMatchEnd = function () {};
@@ -63,8 +126,14 @@ globalThis.__svcWorldCfg = function () {
   const gen = vm.runInContext('__svcGenSquad', eng.ctx);
   const run = vm.runInContext('__svcRun', eng.ctx);
   const cfg = vm.runInContext('__svcWorldCfg', eng.ctx);
+  const train = vm.runInContext('__svcTrain', eng.ctx);
+  const der = vm.runInContext('__svcDerive', eng.ctx);
   return {
     genSquad(seed, country, arch, capt) { return JSON.parse(gen(seed, country, arch, capt)); },
+    // one round in the nets for a whole squad, by the shipped engine's numbers
+    trainRound(players, plan) { return JSON.parse(train(JSON.stringify(players), JSON.stringify(plan || {}))); },
+    // recompute bat/threat/control/rating/wage from skills, engine's own map
+    derive(players) { return JSON.parse(der(JSON.stringify(players))); },
     // returns the canonical result JSON STRING — stored verbatim, compared verbatim
     runMatch(homeTeam, awayTeam, pitch, seed, ordersMap) {
       return run(JSON.stringify(homeTeam), JSON.stringify(awayTeam), pitch, seed,

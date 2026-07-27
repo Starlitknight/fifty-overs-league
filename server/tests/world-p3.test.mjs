@@ -17,7 +17,7 @@ import { makePool } from '../db.mjs';
 import { migrate } from '../migrate.mjs';
 import { initWorld, countryConfigs } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
-import { runAllDue, runCupWindow, rollSeasons, runTick, computeLeague, rebuildHonours, computeRankings, runFriendlies } from '../tick.mjs';
+import { runAllDue, runCupWindow, rollSeasons, runTick, computeLeague, rebuildHonours, computeRankings, runFriendlies, settleMoney } from '../tick.mjs';
 import { evolveCountry, applyLiving, livingPatch } from '../living.mjs';
 import { EPOCH, DAY } from '../clock.mjs';
 
@@ -466,12 +466,17 @@ test('014: the living player - careers, form, tired legs, all from the record', 
   // nobody is broken by a season of cricket: rotation is an edge, not a cliff
   assert.ok(after.every(p => p.fatN < 90), 'no one is shattered by league cricket');
   // and it NEVER DRIFTS: recomputing from the same record changes nothing
-  await evolveCountry(pool, 'eng', EPOCH + 130 * DAY);
+  await evolveCountry(pool, 'eng', EPOCH + 130 * DAY, host);
   const twice = await sq();
   assert.deepEqual(twice, after, 'evolution is a pure function of the record');
-  // skills are untouched - a life changes form and legs, never the craft
-  const bySeed = Object.fromEntries(before.map(p => [p.name, p]));
-  after.forEach(p => assert.deepEqual(p.skills, bySeed[p.name].skills, p.name + ' skills untouched'));
+  // a life changes a man's form and his legs; only the nets change his craft,
+  // and the nets only ever add - his generated baseline is never lost
+  after.forEach(p => {
+    assert.ok(p.baseSkills, p.name + ' remembers the cricketer he was made');
+    for (const k in p.baseSkills) {
+      assert.ok(p.skills[k] >= p.baseSkills[k], p.name + ' never got worse at ' + k);
+    }
+  });
 });
 
 test('015: watched IS recorded - the banked living patch replays the same match', async () => {
@@ -511,8 +516,8 @@ test('015: watched IS recorded - the banked living patch replays the same match'
   const bossSlot = cfg.clubs.filter(c => c.boss)[0].slot;
   const squadOf = slot => host.genSquad('world1|eng|' + slot, cfg.nat, cfg.arch, slot === bossSlot ? cfg.capt : 'general');
   const replay = host.runMatch(
-    { name: m.home_name, players: applyLiving(squadOf(m.home_slot), m.living[m.home_name]) },
-    { name: m.away_name, players: applyLiving(squadOf(m.away_slot), m.living[m.away_name]) },
+    { name: m.home_name, players: applyLiving(squadOf(m.home_slot), m.living[m.home_name], host) },
+    { name: m.away_name, players: applyLiving(squadOf(m.away_slot), m.living[m.away_name], host) },
     'balanced', Number(m.seed), m.orders);
   assert.equal(facts(replay), facts(m.result_canonical), 'the broadcast is the match the world recorded');
 
@@ -529,4 +534,81 @@ test('015: watched IS recorded - the banked living patch replays the same match'
     { name: m.away_name, players: sq[m.away_slot] }, 'balanced', Number(m.seed), m.orders);
   assert.notEqual(facts(today), facts(m.result_canonical), 'today\'s men would have played it differently');
   assert.notDeepEqual(livingPatch(sq[m.home_slot]), m.living[m.home_name], 'today\'s men are not that day\'s men');
+});
+
+test('016: the nets, the face and the money all belong to the world', async () => {
+  // THE NETS. A manager sets what their men work on; the umpire banks the
+  // plan in force each round and the squad's craft follows from it.
+  const squad = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  const pupil = squad.filter(p => (p.age || 30) <= 24)[0] || squad[0];
+  const plan = {}; plan[pupil.name] = 'Power hitting';
+  const setT = await as(U1, `SELECT public.world_set_training($1::jsonb) AS r`, [JSON.stringify(plan)]);
+  assert.equal(setT.rows[0].r.ok, true);
+  await assert.rejects(pool.query(`SELECT public.world_set_training('{}'::jsonb)`), /sign in/);
+  await assert.rejects(as(U1, `SELECT public.world_set_training('"nonsense"'::jsonb)`), /an object/);
+  assert.deepEqual((await pool.query(
+    `SELECT training FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].training, plan);
+
+  // play whatever rounds are genuinely still to come - however much cricket
+  // this run has behind it - and the plan in force is captured, round by round
+  const seas = (await pool.query(
+    `SELECT season_no, start_day FROM seasons WHERE country_id='eng' ORDER BY season_no DESC LIMIT 1`)).rows[0];
+  const settled = [];
+  for (let i = 0; i < 4; i++) {
+    const done = Number((await pool.query(
+      `SELECT coalesce(max(round),0) AS r FROM matches WHERE country_id=$1 AND season_no=$2`,
+      ['eng', seas.season_no])).rows[0].r);
+    const next = done + 1;
+    if (next > 18) break;
+    const day = seas.start_day + next - 1;
+    await runTick(pool, host, 'eng', day, { now: EPOCH + day * DAY + 18 * 3600000 });
+    settled.push(next);
+  }
+  assert.ok(settled.length, 'there was cricket left to play');
+  for (const r of settled) {
+    const row = (await pool.query(
+      `SELECT plan FROM training_rounds WHERE country_id='eng' AND slot=1 AND season_no=$1 AND round=$2`,
+      [seas.season_no, r])).rows[0];
+    assert.ok(row, 'round ' + r + ' banked the plan in force');
+    assert.deepEqual(row.plan, plan, 'the plan in force is what was banked');
+  }
+
+  // the work shows: power was trained, so power is what grew
+  const now2 = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  const after = now2.find(p => p.name === pupil.name);
+  assert.ok(after.baseSkills, 'his generated baseline is remembered');
+  assert.ok(after.skills.power >= after.baseSkills.power, 'the nets never made him worse');
+  assert.ok(after.trainProgress && after.trainProgress.power > 0, 'he has genuinely been working on it');
+  // and it never drifts: the same plans replay to the same cricketer
+  await evolveCountry(pool, 'eng', EPOCH + 130 * DAY, host);
+  const again = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  assert.deepEqual(again.find(p => p.name === pupil.name).skills, after.skills, 'training is a pure function of the plans worked');
+
+  // THE FACE. Colours and a motto the world reads, validated by the world.
+  const idOk = await as(U1, `SELECT public.world_set_identity('{"colour":"#1E88C7","motto":"Nothing without work","crest":"YO"}'::jsonb) AS r`);
+  assert.equal(idOk.rows[0].r.identity.colour, '#1E88C7');
+  await assert.rejects(as(U1, `SELECT public.world_set_identity('{"colour":"blue"}'::jsonb)`), /hex/);
+  await assert.rejects(as(U1, `SELECT public.world_set_identity($1::jsonb)`,
+    [JSON.stringify({ colour: '#123456', motto: 'x'.repeat(61) })]), /60 characters/);
+  const seen = (await pool.query(`SELECT identity FROM public.world_clubs WHERE country_id='eng' AND slot=1`)).rows[0];
+  assert.equal(seen.identity.motto, 'Nothing without work', 'the whole world can read it');
+
+  // THE MONEY. A treasury the umpire settles and no device can write.
+  const money = (await pool.query(
+    `SELECT slot, bank FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows;
+  assert.equal(money.length, 10);
+  money.forEach(m => assert.ok(Number.isFinite(Number(m.bank)), 'club ' + m.slot + ' has a treasury'));
+  assert.ok(money.every(m => Number(m.bank) > 0), 'nobody has been bankrupted by a fortnight of cricket');
+  const beforeBank = Number(money.find(m => m.slot === 1).bank);
+  await settleMoney(pool, 'eng');
+  const afterBank = Number((await pool.query(
+    `SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank);
+  assert.equal(afterBank, beforeBank, 'settling twice settles the same figure');
+
+  // your own status carries all three home
+  const st = await as(U1, `SELECT public.world_my_status() AS s`);
+  const s = st.rows[0].s;
+  assert.deepEqual(s.training, plan);
+  assert.equal(s.identity.crest, 'YO');
+  assert.ok(Number(s.bank) > 0);
 });

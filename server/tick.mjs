@@ -260,6 +260,31 @@ export async function rebuildWorldToday(pool, now) {
   return today;
 }
 
+// THE TREASURY, settled by the umpire and by nobody else. A club's money is
+// a pure function of its whole record - what it was founded with, the gate it
+// has taken at home, the share it has drawn away, and the wages it has paid
+// its men, every round it has ever played, across every season. No device
+// writes it, and re-running settles the same figure.
+// One honest simplification: wages are charged at the bill as it stands
+// today, so a squad that trains itself upward revises its own history
+// slightly. Nothing spends money yet, and it keeps the figure recomputable.
+const FOUNDING_BANK = 2500000, HOME_GATE = 240000, AWAY_SHARE = 60000;
+export async function settleMoney(pool, country) {
+  const clubs = (await pool.query(
+    'SELECT slot, squad FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
+  const ms = (await pool.query(
+    'SELECT home_slot, away_slot FROM matches WHERE country_id=$1', [country])).rows;
+  const home = {}, away = {};
+  for (const m of ms) { home[m.home_slot] = (home[m.home_slot] || 0) + 1; away[m.away_slot] = (away[m.away_slot] || 0) + 1; }
+  for (const c of clubs) {
+    const wages = (c.squad || []).reduce((s, p) => s + (p.wage || 0), 0);
+    const rounds = (home[c.slot] || 0) + (away[c.slot] || 0);
+    const bank = FOUNDING_BANK + (home[c.slot] || 0) * HOME_GATE + (away[c.slot] || 0) * AWAY_SHARE - rounds * wages;
+    await pool.query('UPDATE clubs SET bank=$3 WHERE country_id=$1 AND slot=$2', [country, c.slot, Math.round(bank)]);
+  }
+  return clubs.length;
+}
+
 export async function runTick(pool, host, country, day, { now = Date.now(), failAfter = null } = {}) {
   const key = country + ':day:' + day;
   const claim = await pool.query(
@@ -270,10 +295,21 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
   if (!season) throw new Error('no season for ' + country);
   const round = day - season.start_day + 1;
   let played = 0;
-  if (round >= 1 && round <= ROUNDS) played = await playRound(pool, host, country, season, round, { failAfter });
+  if (round >= 1 && round <= ROUNDS) {
+    played = await playRound(pool, host, country, season, round, { failAfter });
+    // the nets: whatever plan stands when a round settles is the work that
+    // round did, banked so the squad's skills stay recomputable from genesis
+    await pool.query(
+      `INSERT INTO training_rounds(country_id, slot, season_no, round, plan)
+       SELECT country_id, slot, $2, $3, coalesce(training, '{}'::jsonb) FROM clubs WHERE country_id=$1
+       ON CONFLICT (country_id, slot, season_no, round) DO NOTHING`,
+      [country, season.season_no, round]);
+  }
   // the day's cricket changes the men who played it: careers, form, tired
-  // legs. A pure function of the record, so re-running settles the same.
-  await evolveCountry(pool, country, now);
+  // legs, and the work they did in the nets. A pure function of the record,
+  // so re-running settles the same.
+  await evolveCountry(pool, country, now, host);
+  await settleMoney(pool, country);
   await rebuildSnapshots(pool, country, now);
   await pool.query(`UPDATE ticks SET status='done', finished_at=now(), detail=$2 WHERE key=$1`,
     [key, JSON.stringify({ round: round >= 1 && round <= ROUNDS ? round : null, played })]);

@@ -55,21 +55,38 @@ export function livingPatch(squad) {
   const o = {};
   (squad || []).forEach(p => {
     if (!p || !p.name) return;
-    o[p.name] = { e: Math.round(p.exp ?? 55), f: p.formIx ?? 3, n: Math.round(p.fatN ?? 0) };
+    const rec = { e: Math.round(p.exp ?? 55), f: p.formIx ?? 3, n: Math.round(p.fatN ?? 0) };
+    // the nets change what a man IS, so any skill that has moved off its
+    // generated baseline rides in the patch too - otherwise a broadcast
+    // would field the untrained version of a trained cricketer
+    if (p.baseSkills && p.skills) {
+      const s = {};
+      for (const k in p.skills) if (p.skills[k] !== p.baseSkills[k]) s[k] = p.skills[k];
+      if (Object.keys(s).length) rec.s = s;
+    }
+    o[p.name] = rec;
   });
   return o;
 }
 
 // lay a recorded patch back over a generated squad — the client does exactly
-// this before replaying a broadcast, so both sides run the identical men
-export function applyLiving(squad, patch) {
+// this before replaying a broadcast, so both sides run the identical men.
+// Pass the host when skills may have moved: every rating derived from them
+// has to be remade by the engine's own mapping.
+export function applyLiving(squad, patch, host) {
   if (!squad || !patch) return squad;
+  let skilled = false;
   squad.forEach(p => {
     const L = patch[p && p.name]; if (!L) return;
     if (L.e != null) { p.exp = L.e; p.expWord = expWordOf(L.e); }
     if (L.f != null) { p.formIx = L.f; p.formWord = FORMW[L.f] || 'steady'; }
     if (L.n != null) { p.fatN = L.n; p.fatWord = fatWordOf(L.n); p.fatigue = p.fatWord; }
+    if (L.s) { skilled = true; for (const k in L.s) if (p.skills) p.skills[k] = L.s[k]; }
   });
+  if (skilled && host && host.derive) {
+    const out = host.derive(squad);
+    out.forEach((q, i) => Object.assign(squad[i], q));
+  }
   return squad;
 }
 
@@ -103,8 +120,31 @@ function expGain(age, caps) {
   return Math.min(25, caps * per);
 }
 
+// THE NETS, RUN FROM THE RECORD OF PLANS ACTUALLY WORKED.
+// A club's skills are its generated baseline plus every round of training it
+// has genuinely done - the plan in force each round is banked by the umpire,
+// so this is recomputable from genesis like everything else. The arithmetic
+// itself belongs to the shipped engine (host.trainRound), so the nets a
+// manager reads about and the nets the umpire runs are the same nets.
+function baseline(p) {
+  const q = { ...p };
+  q.baseSkills = q.baseSkills || JSON.parse(JSON.stringify(q.skills || {}));
+  q.skills = JSON.parse(JSON.stringify(q.baseSkills));
+  delete q.trainProgress;
+  return q;
+}
+async function trainedSquad(pool, host, country, slot, squad) {
+  if (!host || !host.trainRound) return squad;
+  const rounds = (await pool.query(
+    `SELECT plan FROM training_rounds WHERE country_id=$1 AND slot=$2 ORDER BY season_no, round`,
+    [country, slot])).rows;
+  let men = (squad || []).map(baseline);
+  for (const r of rounds) men = host.trainRound(men, r.plan || {}).players;
+  return men;
+}
+
 // EVERY MAN'S LIFE, RECOMPUTED FROM THE WHOLE RECORD OF ONE COUNTRY.
-export async function evolveCountry(pool, country, now = Date.now()) {
+export async function evolveCountry(pool, country, now = Date.now(), host = null) {
   const clubs = (await pool.query(
     'SELECT slot, name, squad FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
   if (!clubs.length) return 0;
@@ -180,7 +220,10 @@ export async function evolveCountry(pool, country, now = Date.now()) {
   let touched = 0;
   for (const club of clubs) {
     const men = book.get(club.slot) || new Map();
-    const squad = (club.squad || []).map(p => {
+    // the nets first: skills are the baseline plus every round genuinely
+    // worked, so what the man is comes before what the season did to him
+    const trained = await trainedSquad(pool, host, country, club.slot, club.squad);
+    const squad = trained.map(p => {
       const q = { ...p };
       const base = q.baseExp == null ? (q.exp ?? 55) : q.baseExp;
       q.baseExp = base;

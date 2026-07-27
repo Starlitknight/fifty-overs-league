@@ -21,6 +21,23 @@
   var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
   function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
   function jwt() { try { return (window.__foJWT && window.__foJWT()) || ""; } catch (e) { return ""; } }
+  // the programmes the shipped engine actually knows how to work
+  function PROGS() {
+    try {
+      var k = Object.keys(window.FO_TRAIN_PROGS || {});
+      if (k.length) return k.filter(function (x) { return x !== "Rest"; }).concat(["Rest"]);
+    } catch (e) {}
+    return ["Batting", "Power hitting", "Finishing", "Bowling", "New-ball seam",
+      "Spin bowling", "Death bowling", "Control bowling", "Keeping", "Fielding", "Fitness", "All-rounder", "Rest"];
+  }
+  function money0(v) {
+    var n = Number(v);
+    if (!isFinite(n)) return "&mdash;";
+    var neg = n < 0; n = Math.abs(n);
+    var s = n >= 1000000 ? (n / 1000000).toFixed(n >= 10000000 ? 0 : 1) + "m"
+          : n >= 1000 ? Math.round(n / 1000) + "k" : String(Math.round(n));
+    return (neg ? "-$" : "$") + s;
+  }
   function cx() { return window.__foCxAPI || null; }
   function flagOf(rid) {
     var base = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
@@ -107,6 +124,24 @@
     } catch (e) { return false; }
   }
   window.__foAdoptWorldSquad = adoptWorldSquad;
+
+  // the nets hand their plan to the World Service, debounced - a manager
+  // flicking through programmes should not write once per flick
+  var TR_T = null, TR_LAST = "";
+  window.__foWorldPushTraining = function (plan) {
+    try {
+      if (!jwt() || !window.__foWorldClaim) return;
+      var body = JSON.stringify(plan || {});
+      if (body === TR_LAST) return;
+      if (TR_T) clearTimeout(TR_T);
+      TR_T = setTimeout(function () {
+        TR_LAST = body;
+        rpc("world_set_training", { p_plan: plan || {} })
+          .then(function () { try { toast("The nets are set - the umpire takes it from here."); } catch (e) {} })
+          .catch(function () { TR_LAST = ""; });
+      }, 900);
+    } catch (e) {}
+  };
 
   // ---- signing up IS claiming a club ---------------------------------------
   // No hunt for a claim button: once the account is signed in and no world
@@ -302,6 +337,30 @@
         "<p class='fo-wj-p'>Submitted orders " +
         ((st.orders || []).length ? "on file for round" + ((st.orders || []).length > 1 ? "s" : "") + " " + (st.orders || []).map(function (o) { return o.round; }).join(", ") : "none yet") + ".</p>" +
         "<div id='fo-wj-cab' class='fo-wj-note'>Opening the trophy cabinet&hellip;</div>" +
+        // THE COUNTING HOUSE: a treasury the umpire settles from gate takings
+        // and the wage bill, and a face the rest of the world reads
+        "<h4 class='fo-wj-h4'>The counting house <span>settled by the umpire, gate less wages</span></h4>" +
+        "<div class='fo-wj-money'><div><i>Treasury</i><b>" + money0(st.bank) + "</b></div>" +
+        "<div><i>Weekly wages</i><b>" + money0(squad.reduce(function (a, p) { return a + (p.wage || 0); }, 0)) + "</b></div></div>" +
+        // THE NETS, on the World Service. A programme is a standing order:
+        // whatever stands when a round settles is the work that round did,
+        // done by the umpire to the men who actually play, awake or asleep.
+        "<h4 class='fo-wj-h4'>The nets <span>standing orders &middot; the umpire works them every round</span></h4>" +
+        "<div class='fo-wj-nets'>" + squad.map(function (p) {
+          var cur = (st.training || {})[p.name] || "";
+          return "<label class='fo-wj-net'><span>" + E(p.name) + "</span>" +
+            "<select class='fo-wj-prog' data-p='" + E(p.name) + "'>" +
+            "<option value=''>the coach decides</option>" +
+            PROGS().map(function (pr) {
+              return "<option value=\"" + E(pr) + "\"" + (pr === cur ? " selected" : "") + ">" + E(pr) + "</option>";
+            }).join("") + "</select></label>";
+        }).join("") + "</div>" +
+        "<h4 class='fo-wj-h4'>The club's face <span>what every rival sees on your page</span></h4>" +
+        "<div class='fo-wj-idrow'>" +
+        "<input id='fo-wj-idcrest' maxlength='4' placeholder='YO' value='" + E((st.identity && st.identity.crest) || "") + "' aria-label='Crest mark'>" +
+        "<input id='fo-wj-idcol' type='color' value='" + E((st.identity && st.identity.colour) || "#C8542F") + "' aria-label='Club colour'>" +
+        "<input id='fo-wj-idmotto' maxlength='60' placeholder='A motto for the shirt' value='" + E((st.identity && st.identity.motto) || "") + "' aria-label='Motto'>" +
+        "<button type='button' id='fo-wj-idsave'>Save</button></div>" +
         "<h4 class='fo-wj-h4'>Friendlies <span>manager v manager &middot; no stakes, just cricket</span></h4>" +
         "<div id='fo-wj-frlist' class='fo-wj-note'>Checking the post&hellip;</div>" +
         "<div class='fo-wj-frnew'><select id='fo-wj-frnat' aria-label='Nation'></select>" +
@@ -320,6 +379,34 @@
         "<button type='button' id='fo-wj-ren' class='fo-wj-rel'>Rename club</button>" +
         "<button type='button' id='fo-wj-rel' class='fo-wj-rel'>Release club</button></div>" +
         "<div class='fo-wj-note' id='fo-wj-msg'></div></div>");
+
+      // a programme changed is a message to the world, debounced so a manager
+      // working down the list writes once, not fifteen times
+      page.querySelectorAll(".fo-wj-prog").forEach(function (s) {
+        s.addEventListener("change", function () {
+          var plan = {};
+          page.querySelectorAll(".fo-wj-prog").forEach(function (x) {
+            if (x.value) plan[x.getAttribute("data-p")] = x.value;
+          });
+          if (window.__foWorldPushTraining) window.__foWorldPushTraining(plan);
+        });
+      });
+
+      var idBtn = page.querySelector("#fo-wj-idsave");
+      if (idBtn) idBtn.addEventListener("click", function () {
+        idBtn.disabled = true;
+        rpc("world_set_identity", { p_identity: {
+          crest: (page.querySelector("#fo-wj-idcrest") || {}).value || "",
+          colour: (page.querySelector("#fo-wj-idcol") || {}).value || "#C8542F",
+          motto: (page.querySelector("#fo-wj-idmotto") || {}).value || ""
+        } }).then(function () {
+          idBtn.disabled = false;
+          try { toast("Your colours are up - the whole world can see them."); } catch (e) {}
+        }).catch(function (e) {
+          idBtn.disabled = false;
+          alert(String(e.message || "The world could not be reached.").slice(0, 140));
+        });
+      });
 
       page.querySelectorAll(".fo-wj-man").forEach(function (b) {
         b.addEventListener("click", function () {
@@ -553,6 +640,20 @@
       "html body #page .fo-wj-man b{display:block;font:600 12px/1.2 Inter,sans-serif;color:#141C28;flex:1 1 auto;min-width:76px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       "html body #page .fo-wj-man span{flex:1 0 100%;order:3;font-size:9.5px;color:rgba(20,28,40,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}",
       "html body #page .fo-wj-form{flex:none;margin-left:auto;text-decoration:none;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:rgba(20,28,40,.45);white-space:nowrap}",
+      ".fo-wj-nets{display:grid;grid-template-columns:1fr;gap:5px;margin:2px 0 6px}",
+      ".fo-wj-net{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.8);border:1px solid rgba(20,28,40,.1);border-radius:10px;padding:6px 9px;min-width:0}",
+      ".fo-wj-net>span{flex:1 1 auto;min-width:0;font:600 12px/1.2 Inter,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      "html body #page .fo-wj-net select{flex:none;max-width:52%;font:500 11px/1 Inter,sans-serif;border:1px solid rgba(20,28,40,.16);border-radius:8px;padding:6px 7px;background:#fff;color:#141C28}",
+      ".fo-wj-money{display:flex;gap:10px;margin:2px 0 4px}",
+      ".fo-wj-money>div{flex:1;background:rgba(255,255,255,.85);border:1px solid rgba(20,28,40,.12);border-radius:12px;padding:9px 11px;min-width:0}",
+      ".fo-wj-money i{display:block;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.45);font-style:normal}",
+      ".fo-wj-money b{display:block;font:700 17px/1.2 Oswald,sans-serif;color:#141C28;margin-top:4px;font-variant-numeric:tabular-nums}",
+      ".fo-wj-idrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 6px}",
+      "html body #page .fo-wj-idrow input{font:500 12px/1 Inter,sans-serif;border:1px solid rgba(20,28,40,.16);border-radius:9px;padding:8px 9px;background:#fff;color:#141C28;min-width:0}",
+      "html body #page .fo-wj-idrow input#fo-wj-idcrest{width:52px;text-align:center;text-transform:uppercase}",
+      "html body #page .fo-wj-idrow input#fo-wj-idcol{width:44px;padding:3px;height:34px}",
+      "html body #page .fo-wj-idrow input#fo-wj-idmotto{flex:1 1 140px}",
+      "html body #page .fo-wj-idrow button{font:600 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;background:#141C28 !important;color:#FFFEFC !important;border:0 !important;border-radius:9px !important;padding:10px 14px !important;cursor:pointer}",
       "html body #page .fo-wj-form.f0,html body #page .fo-wj-form.f1{color:#B23230}",
       "html body #page .fo-wj-form.f2{color:#8a6d3b}",
       "html body #page .fo-wj-form.f4{color:#177A57}",
