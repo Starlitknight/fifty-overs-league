@@ -10588,7 +10588,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-1259-e862ee";
+  var FO_BUILD = "20260727-1304-345eba";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -30087,7 +30087,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
               "<div class='r'>" + tail + "</div></div>";
           }).join("");
         } else {
-          var nextDay = srv.cal.seasonNo < 1 ? 5 : srv.cal.dayInSeason > 17 ? 5 + srv.cal.seasonNo * 25 : null;
+          var ws0 = srv.pl.WORLD_START || 0;
+          var nextDay = srv.cal.seasonNo < 1 ? ws0 : srv.cal.dayInSeason > 17 ? ws0 + srv.cal.seasonNo * 25 : null;
           var ndDate = "";
           try {
             if (nextDay != null) {
@@ -30111,7 +30112,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
           var ups = [];
           for (var ur = srv.cal.round + 1; ur <= 18; ur++) {
-            var dayU = 5 + (srv.cal.seasonNo - 1) * 25 + (ur - 1);
+            var dayU = (srv.pl.WORLD_START || 0) + (srv.cal.seasonNo - 1) * 25 + (ur - 1);
             var dt9 = new Date(srv.pl.EPOCH + dayU * 86400000);
             ups.push("<div class='fo-nt-uround'><i>Round " + ur + " &middot; " + DOW[dt9.getUTCDay()] + " " + dt9.getUTCDate() + " " + MON[dt9.getUTCMonth()] + " &middot; " + hhFmt(srv.hour) + "</i>" +
               schedA[ur - 1].map(function (p9) { return "<span>" + E((sidesBy[p9[0]] || {}).name || "") + " v " + E((sidesBy[p9[1]] || {}).name || "") + "</span>"; }).join("") + "</div>");
@@ -36106,7 +36107,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   }
 
   // ---- the calendar -----------------------------------------------------------
-  var EPOCH = Date.UTC(2026, 6, 23);           // 23 July 2026, day 0 - the fresh-start calendar (was 16 May)
+  var EPOCH = Date.UTC(2026, 6, 28);           // 28 July 2026, day 0 - OPENING DAY: round 1 everywhere
   var DAY = 86400000, CYCLE = 25, ROUNDS = 18;  // ten clubs, eighteen rounds - every nation plays YOUR format
   var LIVE_LEN = 3;                             // a day's play runs three hours
   // the staggered globe: each nation bowls its first ball at its own UTC hour.
@@ -36116,10 +36117,10 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   function natHour(rid) { if (rid === "eng") return 14; return HOUR_SLOTS[h32("nathour|" + rid) % HOUR_SLOTS.length]; }
   function dayIx(now) { return Math.floor((now - EPOCH) / DAY); }
   function hourOfDay(now) { var d = dayIx(now); return (now - (EPOCH + d * DAY)) / 3600000; }
-  // the served world's season 1 begins world day 5 (28 July) - the planet's
-  // phase runs on the SAME season clock as the umpire, so "round N" here is
-  // the round the server actually plays today
-  var WORLD_START = 5;
+  // the served world's season 1 begins on day 0 itself (28 July = Day 1,
+  // Round 1) - the planet's phase runs on the SAME season clock as the
+  // umpire, so "round N" here is the round the server actually plays today
+  var WORLD_START = 0;
   function phaseOf(now) {
     var d = dayIx(now), rel = d - WORLD_START;
     if (rel < 0) return { day: d, season: 1, di: -1, kind: "rest", preseason: true };
@@ -37425,11 +37426,12 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     var t = DOW[n.getUTCDay()] + " " + n.getUTCDate() + " " + MON[n.getUTCMonth()] +
       " · " + (n.getUTCHours() < 10 ? "0" : "") + n.getUTCHours() + ":" + (n.getUTCMinutes() < 10 ? "0" : "") + n.getUTCMinutes() + " UTC";
     var dayLn = "";
-    try { var ph = P().phaseOf(Date.now()); dayLn = "DAY " + ph.day + " · SEASON " + ph.season; } catch (eD) {}
+    try { var ph = P().phaseOf(Date.now()); dayLn = "DAY " + (ph.day + 1) + " · SEASON " + ph.season; } catch (eD) {}
     var live = 0;
     try {
       var pl = P();
-      if (pl) {
+      // only a league day has live matches - the clock alone is not enough
+      if (pl && pl.phaseOf(Date.now()).kind === "league") {
         var h = (Date.now() - (pl.EPOCH + pl.dayIx(Date.now()) * DAY)) / 3600000;
         (window.__foCxAPI ? window.__foCxAPI.regions() : []).forEach(function (r) {
           if (r.final) return;
@@ -39318,7 +39320,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     } catch (e) { return null; }
   }
   // the server's calendar: season/round for a world day (season 1 = day 5)
-  var WORLD_START = 5;
+  var WORLD_START = 0;
   function serverCal(now) {
     var d = P().dayIx(now), rel = d - WORLD_START;
     return { seasonNo: Math.floor(rel / 25) + 1, round: (rel % 25) + 1, dayInSeason: rel % 25 };

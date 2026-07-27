@@ -5582,7 +5582,8 @@
               "<div class='r'>" + tail + "</div></div>";
           }).join("");
         } else {
-          var nextDay = srv.cal.seasonNo < 1 ? 5 : srv.cal.dayInSeason > 17 ? 5 + srv.cal.seasonNo * 25 : null;
+          var ws0 = srv.pl.WORLD_START || 0;
+          var nextDay = srv.cal.seasonNo < 1 ? ws0 : srv.cal.dayInSeason > 17 ? ws0 + srv.cal.seasonNo * 25 : null;
           var ndDate = "";
           try {
             if (nextDay != null) {
@@ -5606,7 +5607,7 @@
           var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
           var ups = [];
           for (var ur = srv.cal.round + 1; ur <= 18; ur++) {
-            var dayU = 5 + (srv.cal.seasonNo - 1) * 25 + (ur - 1);
+            var dayU = (srv.pl.WORLD_START || 0) + (srv.cal.seasonNo - 1) * 25 + (ur - 1);
             var dt9 = new Date(srv.pl.EPOCH + dayU * 86400000);
             ups.push("<div class='fo-nt-uround'><i>Round " + ur + " &middot; " + DOW[dt9.getUTCDay()] + " " + dt9.getUTCDate() + " " + MON[dt9.getUTCMonth()] + " &middot; " + hhFmt(srv.hour) + "</i>" +
               schedA[ur - 1].map(function (p9) { return "<span>" + E((sidesBy[p9[0]] || {}).name || "") + " v " + E((sidesBy[p9[1]] || {}).name || "") + "</span>"; }).join("") + "</div>");

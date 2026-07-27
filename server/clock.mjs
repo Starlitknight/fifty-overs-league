@@ -1,7 +1,7 @@
 // clock.mjs — the world calendar, server-side, injectable time throughout.
 // Mirrors the shipped client calendar (engine/src/league/27-living-planet.js):
 // same epoch, same 25-day cycle, same 18 rounds, same national hours.
-export const EPOCH = Date.UTC(2026, 6, 23);   // 23 July 2026 = world day 0 (the fresh-start calendar)
+export const EPOCH = Date.UTC(2026, 6, 28);   // 28 July 2026 = world day 0, OPENING DAY (round 1 everywhere)
 export const DAY = 86400000;
 export const CYCLE = 25;
 export const ROUNDS = 18;

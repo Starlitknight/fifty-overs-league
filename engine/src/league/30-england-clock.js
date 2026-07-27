@@ -82,11 +82,12 @@
     var t = DOW[n.getUTCDay()] + " " + n.getUTCDate() + " " + MON[n.getUTCMonth()] +
       " · " + (n.getUTCHours() < 10 ? "0" : "") + n.getUTCHours() + ":" + (n.getUTCMinutes() < 10 ? "0" : "") + n.getUTCMinutes() + " UTC";
     var dayLn = "";
-    try { var ph = P().phaseOf(Date.now()); dayLn = "DAY " + ph.day + " · SEASON " + ph.season; } catch (eD) {}
+    try { var ph = P().phaseOf(Date.now()); dayLn = "DAY " + (ph.day + 1) + " · SEASON " + ph.season; } catch (eD) {}
     var live = 0;
     try {
       var pl = P();
-      if (pl) {
+      // only a league day has live matches - the clock alone is not enough
+      if (pl && pl.phaseOf(Date.now()).kind === "league") {
         var h = (Date.now() - (pl.EPOCH + pl.dayIx(Date.now()) * DAY)) / 3600000;
         (window.__foCxAPI ? window.__foCxAPI.regions() : []).forEach(function (r) {
           if (r.final) return;

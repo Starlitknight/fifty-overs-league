@@ -34,7 +34,7 @@
   }
 
   // ---- the calendar -----------------------------------------------------------
-  var EPOCH = Date.UTC(2026, 6, 23);           // 23 July 2026, day 0 - the fresh-start calendar (was 16 May)
+  var EPOCH = Date.UTC(2026, 6, 28);           // 28 July 2026, day 0 - OPENING DAY: round 1 everywhere
   var DAY = 86400000, CYCLE = 25, ROUNDS = 18;  // ten clubs, eighteen rounds - every nation plays YOUR format
   var LIVE_LEN = 3;                             // a day's play runs three hours
   // the staggered globe: each nation bowls its first ball at its own UTC hour.
@@ -44,10 +44,10 @@
   function natHour(rid) { if (rid === "eng") return 14; return HOUR_SLOTS[h32("nathour|" + rid) % HOUR_SLOTS.length]; }
   function dayIx(now) { return Math.floor((now - EPOCH) / DAY); }
   function hourOfDay(now) { var d = dayIx(now); return (now - (EPOCH + d * DAY)) / 3600000; }
-  // the served world's season 1 begins world day 5 (28 July) - the planet's
-  // phase runs on the SAME season clock as the umpire, so "round N" here is
-  // the round the server actually plays today
-  var WORLD_START = 5;
+  // the served world's season 1 begins on day 0 itself (28 July = Day 1,
+  // Round 1) - the planet's phase runs on the SAME season clock as the
+  // umpire, so "round N" here is the round the server actually plays today
+  var WORLD_START = 0;
   function phaseOf(now) {
     var d = dayIx(now), rel = d - WORLD_START;
     if (rel < 0) return { day: d, season: 1, di: -1, kind: "rest", preseason: true };

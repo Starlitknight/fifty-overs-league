@@ -99,7 +99,7 @@
     } catch (e) { return null; }
   }
   // the server's calendar: season/round for a world day (season 1 = day 5)
-  var WORLD_START = 5;
+  var WORLD_START = 0;
   function serverCal(now) {
     var d = P().dayIx(now), rel = d - WORLD_START;
     return { seasonNo: Math.floor(rel / 25) + 1, round: (rel % 25) + 1, dayInSeason: rel % 25 };
