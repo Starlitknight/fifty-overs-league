@@ -150,14 +150,14 @@
   // engine's own autosaves (debounced); the pull runs once per sign-in and
   // ASKS before replacing this device's progress - it never clobbers quietly. ----
   var CLOUD_TS = "fo_cloud_ts";                 // updated_at of the copy this device last wrote/loaded
-  var FO_CLOUD_SKIP = { fol_session: 1, fo_cloud_ts: 1, fo_bldseen: 1 };   // device-local, never synced
+  var FO_CLOUD_SKIP = { fol_session: 1, fo_cloud_ts: 1, fo_bldseen: 1, fo_world_feed_cache: 1 };   // device-local, never synced
   function foCloudKeys() {
     var out = {};
     try {
       for (var i = 0; i < window.localStorage.length; i++) {
         var k = window.localStorage.key(i);
         if (!k || (k.indexOf("fo_") !== 0 && k.indexOf("fol_") !== 0)) continue;
-        if (FO_CLOUD_SKIP[k] || k.indexOf("fol_clubmeta_") === 0) continue;
+        if (FO_CLOUD_SKIP[k] || k.indexOf("fol_clubmeta_") === 0 || k.indexOf("fo_world_lg_") === 0) continue;
         out[k] = window.localStorage.getItem(k);
       }
     } catch (e) {}
@@ -214,15 +214,9 @@
         var row = rows && rows[0];
         if (!row || !row.data || !row.data.ls) { foCloudPush(true); return; }   // first device: seed the cloud
         if (lsGet(CLOUD_TS) === row.updated_at) return;                          // already carrying this copy
-        var when = ""; try { when = new Date(row.updated_at).toLocaleString(); } catch (e) {}
-        foConfirm({
-          title: "Load your save from another device?",
-          body: "This account has cloud progress saved " + (when ? "on " + when + " " : "") + "from another device. Load it here to continue that career? (Keep playing here instead and this device's progress becomes the cloud copy.)",
-          confirm: "Load cloud save", cancel: "Keep this device"
-        }).then(function (ok) {
-          if (ok) foCloudLoad(row);
-          else { lsSet(CLOUD_TS, row.updated_at || ""); foCloudPush(true); }
-        });
+        // the cloud career IS the career: whichever device signs in picks it
+        // up, no prompt - the newest cloud copy always wins
+        foCloudLoad(row);
       }).catch(function () {});
       // pushes ride the engine's autosave, plus a safety net on tab-hide
       setTimeout(function () {

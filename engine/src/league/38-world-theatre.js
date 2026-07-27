@@ -251,6 +251,10 @@
     if ((location.hash || "").split("?")[0] !== "#/watch") document.body.classList.remove("fo-wt-on");
   });
 
+  // the server mirror, exported: nation pages list the same fixtures, the
+  // same calendar and the same live states the theatre plays from
+  window.__foWT = { serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror, serverSquad: serverSquad };
+
   function foWtCss() {
     if (document.getElementById("fo-wt-css")) return;
     var s = document.createElement("style"); s.id = "fo-wt-css";

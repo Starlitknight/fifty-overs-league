@@ -5274,13 +5274,58 @@
       } else {
         table = foRegionSides(nation).map(function (sd, i) { return { rank: i + 1, name: sd.club, city: sd.city, P: sd.P, W: sd.W, L: sd.L, T: sd.T, pts: sd.pts, nrr: null, wid: sd.wid, boss: sd.boss, sideObj: sd, isMe: false }; });
       }
-      var sig = (natPage ? "nt|" : "lg|") + nation + "|" + own + "|" + (own ? (round + "|" + Object.keys(s.res || {}).length + "|" + meNm) : "ro");
+      // ---- the SERVED world: a rival nation's record book runs on the World
+      //      Service - the real banked matches, the real standings, and the
+      //      round genuinely in play right now. The theatre's server mirror
+      //      (module 38) supplies today's fixtures; the snapshot supplies
+      //      every recorded result. Absent either, the page keeps its old
+      //      painted-world data - nothing breaks offline.
+      var srv = null;
+      if (!own && natPage) {
+        try {
+          var wtM = (window.__foWT && window.__foWT.serverFixtures) ? window.__foWT : null;
+          var plW = window.__foPlanet || null;
+          var snapLg = window.__foWorldLg ? window.__foWorldLg.get(nation) : null;
+          if (window.__foWorldLg) {
+            window.__foWorldLg.want(nation, function () {
+              try {
+                if ((location.hash || "").indexOf("#/nation") !== 0) return;
+                var pg9 = document.getElementById("page"); if (pg9) pg9.__foLgSig = null;
+                foRenderLeague();
+              } catch (e9) {}
+            });
+          }
+          if (wtM && plW) {
+            var nowSrv = Date.now();
+            var svF = wtM.serverFixtures(nation, nowSrv);
+            var h0S = plW.natHour(nation);
+            var hNowS = (nowSrv - (plW.EPOCH + plW.dayIx(nowSrv) * 86400000)) / 3600000;
+            var stS = !svF.fx.length ? "none" : hNowS < h0S ? "up" : hNowS < h0S + (plW.LIVE_LEN || 3) ? "live" : "fin";
+            srv = { cal: svF.cal, fx: svF.fx, state: stS, hour: h0S, snap: snapLg, wt: wtM, pl: plW };
+          }
+        } catch (eSrv) { srv = null; }
+      }
+      if (srv && srv.snap && srv.snap.table && srv.snap.table.length) {
+        srv.artTable = table;   // the painted-world sides keep feeding the grounds strip
+        var pSides = {};
+        try { srv.pl.sidesOf(nation).forEach(function (s8) { pSides[s8.slot] = s8; }); } catch (eP8) {}
+        table = srv.snap.table.map(function (row8, i8) {
+          var sd8 = pSides[row8.slot] || {};
+          return { rank: i8 + 1, name: row8.name, city: sd8.city || "", P: row8.p, W: row8.w, L: row8.l, T: row8.t, pts: row8.pts,
+            nrr: (typeof row8.nrr === "number") ? row8.nrr : null, wid: null, boss: !!row8.boss, sideObj: null, isMe: false, srv: true };
+        });
+      }
+      var sig = (natPage ? "nt|" : "lg|") + nation + "|" + own + "|" + (own ? (round + "|" + Object.keys(s.res || {}).length + "|" + meNm) : "ro") +
+        (srv ? "|sv" + srv.state + "." + srv.cal.round + "." + (srv.snap ? (srv.snap.seasonNo + "." + srv.snap.roundsPlayed + "." + (srv.snap.results || []).length) : "-") : "");
       if (page.__foLgSig === sig && page.querySelector(".fo-lg")) return;
       page.__foLgSig = sig;
 
+      var srvCrest = ""; try { if (srv) srvCrest = foCxCrestSrc(nation) || ""; } catch (eSc) {}
       var tableRows = table.map(function (x, i) {
         var q = i < 4;
-        var av = x.isMe
+        var av = x.srv
+          ? "<span class='av'>" + (x.boss && srvCrest ? "<img src='" + srvCrest + "' class='crest' alt='' onerror=\"this.style.display='none'\">" : "<span class='fo-nt-ini'>" + E(String(x.name || "?").charAt(0)) + "</span>") + "</span>"
+          : x.isMe
           ? "<span class='av me'><img src='" + foLgArtFallback(nation) + "' alt=''></span>"
           : "<span class='av'>" + (x.boss ? "<img src='" + foLgClubCrest(nation, x.sideObj) + "' class='crest' alt='' onerror=\"this.onerror=null;this.src='" + foLgClubArt(nation, x.sideObj) + "'\">" : foLgArtImg(nation, x.sideObj)) + "</span>";
         return "<a class='fo-lg-row" + (x.isMe ? " me" : "") + (x.boss ? " boss" : "") + (q ? " q" : "") + "'" +
@@ -5332,7 +5377,7 @@
         return "<img class='" + (cls || "") + "' src='" + g1 + "' alt='" + E(x.city) + " ground' loading='lazy' decoding='async' onerror=\"if(!this.dataset.f){this.dataset.f=1;this.src='" + g2 + "'}else{this.style.display='none';this.parentElement.classList.add('noart')}\">" +
           "<div class='fo-ov-gph' aria-hidden='true'><img src='" + crest + "' alt='' onerror=\"this.style.display='none'\"><span>Ground artwork coming soon</span></div>";
       };
-      var grounds = table.filter(function (x) { return !x.isMe && x.sideObj; }).slice(0, 7).map(function (x) {
+      var grounds = (srv && srv.artTable ? srv.artTable : table).filter(function (x) { return !x.isMe && x.sideObj; }).slice(0, 7).map(function (x) {
         return "<a class='fo-lg-ground' href='#/side?r=" + encodeURIComponent(nation) + "&c=" + encodeURIComponent(x.wid) + "'>" +
           safeGround(x, "") + "<span class='cap'>" + E(x.city) + "</span></a>";
       }).join("");
@@ -5469,7 +5514,7 @@
       }
       // ---- art-led Grounds panel: a hero venue then venue strips ----
       var clubByCity = {}; (region.clubs || []).forEach(function (c) { clubByCity[c.city] = c; });
-      var groundsG = table.filter(function (x) { return !x.isMe && x.sideObj; });
+      var groundsG = (srv && srv.artTable ? srv.artTable : table).filter(function (x) { return !x.isMe && x.sideObj; });
       var groundCard = function (x, hero) {
         var c = clubByCity[x.city] || {};
         var desc = c.note ? (String(c.note).charAt(0).toUpperCase() + String(c.note).slice(1)) : "";
@@ -5507,6 +5552,76 @@
           : "<p class='fo-ov-sublabel'>A quiet week in the " + E(region.nm) + " league.</p>";
       }
 
+      // ---- the served record book: today's round (LIVE matches loudest),
+      //      every banked result, and every fixture still to come -----------
+      var srvLiveFirst = false;
+      if (srv) {
+        var hhFmt = function (h9) { return (h9 < 10 ? "0" : "") + h9 + ":00 UTC"; };
+        var resAll = (srv.snap && srv.snap.results) || [];
+        var resByRound = {};
+        resAll.forEach(function (r5) { (resByRound[r5.round] = resByRound[r5.round] || []).push(r5); });
+        var snapSeasonOk = !!(srv.snap && srv.snap.seasonNo === srv.cal.seasonNo);
+        // -- today
+        var mdRows;
+        if (srv.fx.length) {
+          mdRows = srv.fx.map(function (f5, i5) {
+            var rec = null;
+            if (snapSeasonOk) rec = (resByRound[srv.cal.round] || []).filter(function (r6) { return r6.home === f5.home.name && r6.away === f5.away.name; })[0];
+            var tail;
+            if (srv.state === "live") tail = "<button type='button' class='fo-nt-watch' onclick='foWtSpectate(\"" + nation + "\",0,0," + i5 + ")'>&#9679; Watch LIVE</button>";
+            else if (srv.state === "fin") tail = rec
+              ? "<span class='res'>" + E(rec.text) + "</span><button type='button' class='fo-nt-watch ghost' onclick='foWtSpectate(\"" + nation + "\",0,0," + i5 + ")'>Watch it back &rsaquo;</button>"
+              : "<span class='res dim'>Stumps &middot; the umpire files the scorecard on the hour</span>";
+            else tail = "<span class='res dim'>First ball " + hhFmt(srv.hour) + "</span>";
+            return "<div class='fo-nt-mx" + (srv.state === "live" ? " live" : "") + "'>" +
+              "<div class='t'><b>" + E(f5.home.name) + "</b><i>v</i><b>" + E(f5.away.name) + "</b>" +
+              (srv.state === "live" ? "<em class='lv'><u></u>LIVE</em>" : "") + "</div>" +
+              "<div class='r'>" + tail + "</div></div>";
+          }).join("");
+        } else {
+          var nextDay = srv.cal.seasonNo < 1 ? 5 : srv.cal.dayInSeason > 17 ? 5 + srv.cal.seasonNo * 25 : null;
+          mdRows = "<div class='fo-nt-quiet'>No league round today" +
+            (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason > 17 ? " &mdash; the cup window is on" : "") +
+            (nextDay != null ? ". The league returns on world day " + nextDay + "." : ".") + "</div>";
+        }
+        var stateWord = srv.state === "live" ? "&#9679; Round " + srv.cal.round + " &mdash; in play now"
+          : srv.state === "up" ? "Round " + srv.cal.round + " &middot; today, first ball " + hhFmt(srv.hour)
+          : srv.state === "fin" ? "Round " + srv.cal.round + " &middot; played today"
+          : "Matchday";
+        // -- still to come
+        var upHTML = "";
+        if (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason >= 0 && srv.cal.dayInSeason < 17) {
+          var sidesBy = {}; try { srv.pl.sidesOf(nation).forEach(function (s9) { sidesBy[s9.slot] = s9; }); } catch (e9b) {}
+          var schedA = srv.wt.schedMirror(nation, srv.cal.seasonNo);
+          var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          var ups = [];
+          for (var ur = srv.cal.round + 1; ur <= 18; ur++) {
+            var dayU = 5 + (srv.cal.seasonNo - 1) * 25 + (ur - 1);
+            var dt9 = new Date(srv.pl.EPOCH + dayU * 86400000);
+            ups.push("<div class='fo-nt-uround'><i>Round " + ur + " &middot; " + DOW[dt9.getUTCDay()] + " " + dt9.getUTCDate() + " " + MON[dt9.getUTCMonth()] + " &middot; " + hhFmt(srv.hour) + "</i>" +
+              schedA[ur - 1].map(function (p9) { return "<span>" + E((sidesBy[p9[0]] || {}).name || "") + " v " + E((sidesBy[p9[1]] || {}).name || "") + "</span>"; }).join("") + "</div>");
+          }
+          if (ups.length) upHTML = "<details class='fo-nt-up'><summary>Still to play &middot; rounds " + (srv.cal.round + 1) + "&ndash;18</summary>" + ups.join("") + "</details>";
+        }
+        sec2Title = "Matchday";
+        fixturesPanel = "<div class='fo-nt-md" + (srv.state === "live" ? " live" : "") + "'>" +
+          "<div class='fo-nt-st'>" + stateWord + "</div>" + mdRows +
+          (srv.state === "live" ? "<a class='fo-nt-theatre' href='#/watch?n=" + encodeURIComponent(nation) + "'>Open the broadcast theatre &rsaquo;</a>" : "") +
+          "</div>" + upHTML;
+        // -- everything already banked, newest round first
+        var rKeys = Object.keys(resByRound).map(Number).sort(function (a9, b9) { return b9 - a9; });
+        resultsPanel = rKeys.length ? rKeys.map(function (rn) {
+          return "<div class='fo-rs-round'><div class='fo-rs-rh'>" + (snapSeasonOk ? "" : "Season " + srv.snap.seasonNo + " &middot; ") + "Round " + rn + "</div>" +
+            resByRound[rn].map(function (r7) {
+              return "<div class='fo-nt-rrow'><span class='t'>" + E(r7.home) + " v " + E(r7.away) + "</span><span class='res'>" + E(r7.text) + "</span></div>";
+            }).join("") + "</div>";
+        }).join("") : (srv.snap
+          ? "<p class='fo-ov-sublabel'>No matches banked yet &mdash; the season is about to begin.</p>"
+          : "<p class='fo-ov-sublabel'>Reaching the World Service for the season record&hellip;</p>");
+        srvLiveFirst = (srv.state === "live");
+        if (srv.snap) ebText = "The World Service &middot; Season " + srv.cal.seasonNo;
+      }
+
       var shellOpen =
         "<div class='fo-lg fo-ov" + (own ? "" : " ro") + (natPage ? " fo-nt" : "") + "' data-tab='" + actTab + "' style='--lac:" + ac + "'>" +
         "<div class='fo-lg-bg' style='background-image:url(" + mapSrc + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
@@ -5514,6 +5629,14 @@
         "<div class='fo-ov-subnav'>" +
         "<div class='fo-ov-selwrap'><span class='fo-ov-sel'>" + E(region.nm) + " &middot; " + (idx19 || 1) + "/" + FO_CX_NATIONS + " &#9662;</span><select class='fo-ov-selnat' aria-label='Jump to another nation league'>" + natOpts + "</select></div></div>";
 
+      var ntTableNote = srv && srv.snap
+        ? "The served world &middot; the champions reach the Champions Cup"
+        : "Top 4 reach the Champions Cup";
+      var ntSecTable = "<div class='fo-ov-sec'><h2>Table</h2><p class='fo-ov-sublabel'>" + ntTableNote + "</p>" +
+        "<div class='fo-lg-tablewrap'><div class='fo-lg-thead'><span class='rk'>#</span><span class='av'></span><span class='nm'>Club</span><span class='c'>P</span><span class='c'>W</span><span class='c'>L</span><span class='c'>NRR</span><span class='c'>Pts</span></div>" +
+        tableRows + "<div class='fo-lg-qnote'>" + ntTableNote + "</div></div></div>";
+      var ntSecMatch = "<div class='fo-ov-sec'><h2>" + sec2Title + "</h2><div class='" + (own ? "fo-fx-wrap" : "fo-lg-side") + "'>" + fixturesPanel + "</div></div>";
+      var ntSecResults = "<div class='fo-ov-sec'><h2>Results</h2><div class='fo-rs-wrap'>" + resultsPanel + "</div></div>";
       page.innerHTML = natPage
         // ===================== the record book: table, fixtures, results, grounds =====================
         ? shellOpen +
@@ -5524,11 +5647,9 @@
           "<h1 class='fo-nt-title'>" + E(region.nm) + "</h1>" +
           "<div class='fo-ov-sub'>" + E(subtitle) + "</div>" +
           "</header>" +
-          "<div class='fo-ov-sec'><h2>Table</h2><p class='fo-ov-sublabel'>Top 4 reach the Champions Cup</p>" +
-          "<div class='fo-lg-tablewrap'><div class='fo-lg-thead'><span class='rk'>#</span><span class='av'></span><span class='nm'>Club</span><span class='c'>P</span><span class='c'>W</span><span class='c'>L</span><span class='c'>NRR</span><span class='c'>Pts</span></div>" +
-          tableRows + "<div class='fo-lg-qnote'>Top 4 qualify for the Champions Cup</div></div></div>" +
-          "<div class='fo-ov-sec'><h2>" + sec2Title + "</h2><div class='" + (own ? "fo-fx-wrap" : "fo-lg-side") + "'>" + fixturesPanel + "</div></div>" +
-          "<div class='fo-ov-sec'><h2>Results</h2><div class='fo-rs-wrap'>" + resultsPanel + "</div></div>" +
+          // a round in play is the loudest thing on the page: it leads
+          (srvLiveFirst ? ntSecMatch + ntSecTable : ntSecTable + ntSecMatch) +
+          ntSecResults +
           "<div class='fo-ov-sec fo-gr'>" + groundsPanel + "</div>" +
           "</section>" + dockHTML + "</div>"
         // ===================== the country portrait: one cinematic overview =====================
@@ -6052,6 +6173,35 @@
       ".fo-rs-row .sc{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:.6px;color:#fff;white-space:nowrap}",
       ".fo-rs-row .res{font-size:11px;letter-spacing:.4px;color:#9fb0cb;text-align:right;white-space:nowrap}",
       "@media(max-width:620px){.fo-rs-row{grid-template-columns:1fr auto 1fr;font-size:12px}.fo-rs-row .res{grid-column:1/-1;text-align:center;padding-top:2px}}",
+      // ---- the served record book: matchday, LIVE highlights, banked results ----
+      ".fo-nt-ini{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-family:Oswald,sans-serif;font-weight:700;font-size:15px;color:#e7edf7;background:rgba(150,180,225,.14);border-radius:inherit}",
+      ".fo-nt-md{background:rgba(12,20,36,.42);border:1px solid rgba(150,180,225,.13);border-radius:14px;padding:13px 14px}",
+      ".fo-nt-md.live{border-color:rgba(255,107,94,.55);box-shadow:0 0 0 1px rgba(255,107,94,.2),0 14px 34px rgba(0,0,0,.35)}",
+      ".fo-nt-st{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2.2px;font-size:11px;font-weight:600;color:var(--gold);margin-bottom:9px}",
+      ".fo-nt-md.live .fo-nt-st{color:#FF6B5E}",
+      ".fo-nt-mx{padding:9px 10px;border-radius:10px;background:rgba(9,14,26,.5);border:1px solid rgba(150,180,225,.1);margin-bottom:6px}",
+      ".fo-nt-mx.live{border-color:rgba(255,107,94,.4)}",
+      ".fo-nt-mx .t{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:#fff}",
+      ".fo-nt-mx .t b{font-weight:600}",
+      ".fo-nt-mx .t i{font-style:italic;font-size:11px;color:#7f90ac}",
+      ".fo-nt-mx .t em.lv{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-style:normal;font-family:Oswald,sans-serif;font-weight:700;font-size:9.5px;letter-spacing:1.6px;color:#FF6B5E}",
+      ".fo-nt-mx .t em.lv u{width:7px;height:7px;border-radius:50%;background:#FF6B5E;animation:foNtPulse 1.2s ease-in-out infinite}",
+      "@keyframes foNtPulse{0%,100%{opacity:1}50%{opacity:.25}}",
+      ".fo-nt-mx .r{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}",
+      ".fo-nt-mx .res{font-size:11.5px;letter-spacing:.3px;color:#c9d6ea}",
+      ".fo-nt-mx .res.dim{color:#8a9bb8}",
+      "html body #page .fo-nt-watch{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.6px;text-transform:uppercase;font-size:10.5px;color:#fff !important;background:linear-gradient(180deg,#E8894A,#C8542F) !important;border:0 !important;border-radius:999px;padding:8px 14px;cursor:pointer}",
+      "html body #page .fo-nt-watch.ghost{background:transparent !important;border:1px solid rgba(235,194,113,.45) !important;color:#F3D37A !important}",
+      "html body #page .fo-nt-theatre{display:block;text-align:center;margin-top:9px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;font-size:11px;color:#FF9C90 !important;text-decoration:none !important;border:1px solid rgba(255,107,94,.4);border-radius:999px;padding:10px 14px}",
+      ".fo-nt-quiet{font-style:italic;font-size:13px;color:#9fb0cb;padding:6px 2px}",
+      ".fo-nt-up{margin-top:12px;background:rgba(12,20,36,.42);border:1px solid rgba(150,180,225,.13);border-radius:14px;padding:4px 14px 10px}",
+      ".fo-nt-up summary{cursor:pointer;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:2px;font-size:10.5px;font-weight:600;color:#b7c4da;padding:9px 0}",
+      ".fo-nt-uround{margin:8px 0 12px}",
+      ".fo-nt-uround i{display:block;font-style:normal;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.8px;font-size:10px;font-weight:600;color:var(--gold);margin-bottom:5px}",
+      ".fo-nt-uround span{display:block;font-size:12px;color:#c9d6ea;padding:2.5px 0}",
+      ".fo-nt-rrow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;padding:8px 12px;border-radius:10px;background:rgba(12,20,36,.42);border:1px solid rgba(150,180,225,.13);margin-bottom:5px}",
+      ".fo-nt-rrow .t{font-size:12.5px;font-weight:600;color:#fff}",
+      ".fo-nt-rrow .res{font-size:11px;letter-spacing:.3px;color:#9fb0cb}",
       ".fo-ov-sub{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:4px;font-size:clamp(16px,4.5vw,26px);color:var(--gold);margin-top:4px}",
       ".fo-ov-quote{font-style:italic;font-size:14.5px;line-height:1.5;color:#dbe4f2;max-width:30em;margin:14px 0 0;text-shadow:0 1px 8px rgba(0,0,0,.6)}",
       ".fo-ov-style{display:flex;gap:16px;flex-wrap:wrap;margin:14px 0 0;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:1.4px;font-size:11px;color:#b7c4da}",

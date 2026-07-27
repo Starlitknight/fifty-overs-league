@@ -50,6 +50,49 @@
   }
   try { var c = localStorage.getItem("fo_world_feed_cache"); if (c) { FEED = JSON.parse(c); window.__foWorldFeed = FEED; } } catch (e) {}
 
+  // ---- any nation's served league record, fetched on demand ----------------
+  // Nation pages want the REAL season - the matches the umpire banked - for
+  // any of the 19 leagues. Same egress manners as the England feed: probe the
+  // tiny updated_at, download the body only when the umpire wrote something
+  // new, and keep the last copy in localStorage so the page paints instantly.
+  var LG_BODY = {}, LG_TS = {}, LG_BUSY = {};
+  function lgFetch(rid, cb) {
+    if (!rid || LG_BUSY[rid]) return;
+    LG_BUSY[rid] = 1;
+    var done = function () { LG_BUSY[rid] = 0; };
+    var take = function (body) {
+      if (body && body.results) {
+        LG_BODY[rid] = body;
+        try { localStorage.setItem("fo_world_lg_" + rid, JSON.stringify(body)); } catch (e) {}
+        try { if (cb) cb(body); } catch (e) {}
+      }
+      done();
+    };
+    var b = base();
+    try {
+      if (b) { fetch(b + "/league/" + rid + ".json", { mode: "cors" }).then(function (r) { return r.ok ? r.json() : null; }).then(take, done); return; }
+      var q = "/rest/v1/world_snapshots?key=eq." + encodeURIComponent("league/" + rid);
+      fetch(SB_URL + q + "&select=updated_at", { headers: { apikey: SB_ANON } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (rows) {
+          var ts = rows && rows[0] && rows[0].updated_at;
+          if (!ts || ts === LG_TS[rid]) { done(); return; }
+          LG_TS[rid] = ts;
+          fetch(SB_URL + q + "&select=body", { headers: { apikey: SB_ANON } })
+            .then(function (r2) { return r2.ok ? r2.json() : null; })
+            .then(function (rows2) { take(rows2 && rows2[0] && rows2[0].body); }, done);
+        }, done).catch(done);
+    } catch (e) { done(); }
+  }
+  window.__foWorldLg = {
+    get: function (rid) {
+      if (LG_BODY[rid]) return LG_BODY[rid];
+      try { var c2 = localStorage.getItem("fo_world_lg_" + rid); if (c2) { LG_BODY[rid] = JSON.parse(c2); return LG_BODY[rid]; } } catch (e) {}
+      return null;
+    },
+    want: function (rid, cb) { try { lgFetch(rid, cb); } catch (e) {} }
+  };
+
   // the served-world card on the planet page: the SERVER's England league
   function paint() {
     try {
