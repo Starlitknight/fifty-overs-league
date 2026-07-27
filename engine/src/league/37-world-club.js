@@ -46,7 +46,18 @@
       .then(function (rows) { return rows && rows[0] && rows[0].body; });
   }
 
-  var ST = { view: null, nation: "eng", picked: [], busy: "" };
+  var ST = { view: null, nation: "eng", picked: [], five: [], capt: null, keep: null, toss: "bat", allRounds: false, busy: "" };
+
+  // the engine's own spell template, built from YOUR ordered five: openers
+  // attack with the new ball, the middle grinds, the closers defend the death
+  function spellsOf(five) {
+    if (five.length < 5) return { north: [], south: [] };
+    var b1 = five[0], b2 = five[1], b3 = five[2], b4 = five[3], b5 = five[4];
+    return {
+      north: [{ bowler: b1, first: 1, n: 5, field: "att" }, { bowler: b3, first: 11, n: 10, field: "bal" }, { bowler: b5, first: 31, n: 5, field: "bal" }, { bowler: b1, first: 41, n: 5, field: "def" }],
+      south: [{ bowler: b2, first: 2, n: 5, field: "att" }, { bowler: b4, first: 12, n: 10, field: "bal" }, { bowler: b2, first: 32, n: 5, field: "bal" }, { bowler: b5, first: 42, n: 5, field: "def" }]
+    };
+  }
 
   // ---- #/worldclub ----------------------------------------------------------
   window.foRenderWorldClubPage = function () {
@@ -120,21 +131,50 @@
         var ix = lg.table.findIndex(function (t) { return t.name === c.club; });
         if (ix >= 0) pos = (ix + 1) + (["th", "st", "nd", "rd"][((ix + 1) % 100 > 10 && (ix + 1) % 100 < 14) ? 0 : Math.min((ix + 1) % 10, 4)] || "th") + " · " + lg.table[ix].pts + " pts";
       }
+      var byName = {}; squad.forEach(function (p) { byName[p.name] = p; });
+      var isBowler = function (nm) { var p = byName[nm]; return p && p.bowlType && p.bowlType !== "none"; };
       if (!ST.picked.length) ST.picked = squad.slice(0, 11).map(function (p) { return p.name; });
+      // keep the five/captain/keeper coherent with the XI
+      ST.five = ST.five.filter(function (nm) { return ST.picked.indexOf(nm) >= 0 && isBowler(nm); });
+      if (ST.five.length < 5) ST.picked.forEach(function (nm) { if (ST.five.length < 5 && isBowler(nm) && ST.five.indexOf(nm) < 0) ST.five.push(nm); });
+      if (!ST.keep || ST.picked.indexOf(ST.keep) < 0) ST.keep = (ST.picked.filter(function (nm) { return byName[nm] && byName[nm].keeper; })[0]) || ST.picked[0];
+      if (!ST.capt || ST.picked.indexOf(ST.capt) < 0) ST.capt = ST.picked[0];
+
       var men = squad.map(function (p) {
         var ix2 = ST.picked.indexOf(p.name);
         return "<button type='button' class='fo-wj-man" + (ix2 >= 0 ? " on" : "") + "' data-nm='" + E(p.name) + "'>" +
           "<i>" + (ix2 >= 0 ? (ix2 + 1) : "&middot;") + "</i><b>" + E(p.name) + "</b>" +
           "<span>" + (p.bowlType && p.bowlType !== "none" ? "bowls" : p.keeper ? "keeper" : "bats") + " &middot; " + (p.rating || "") + "</span></button>";
       }).join("");
+      var fiveBtns = ST.picked.filter(isBowler).map(function (nm) {
+        var fx = ST.five.indexOf(nm);
+        return "<button type='button' class='fo-wj-five" + (fx >= 0 ? " on" : "") + "' data-bw='" + E(nm) + "'>" +
+          "<i>" + (fx >= 0 ? (fx + 1) : "&middot;") + "</i>" + E(nm) + "</button>";
+      }).join("");
+      var selOf = function (id, cur) {
+        return "<select id='" + id + "' class='fo-wj-sel'>" + ST.picked.map(function (nm) {
+          return "<option value=\"" + E(nm) + "\"" + (nm === cur ? " selected" : "") + ">" + E(nm) + "</option>";
+        }).join("") + "</select>";
+      };
+      var tossBtns = ["bat", "bowl"].map(function (t) {
+        return "<button type='button' class='fo-wj-toss" + (ST.toss === t ? " on" : "") + "' data-toss='" + t + "'>" + (t === "bat" ? "Bat first" : "Bowl first") + "</button>";
+      }).join("");
+
       page.innerHTML = shell("Round " + nextRound + " of the " + c.country.toUpperCase() + " league awaits your orders",
         "<div class='fo-wj-card fo-wj-mine'><h3>" + E(c.club) + " <span>" + E(c.country.toUpperCase()) + (pos ? " · " + pos : "") + "</span></h3>" +
-        "<p class='fo-wj-p'>Tap eleven in batting order. The umpire plays them at the nation's hour - submitted orders " +
+        "<p class='fo-wj-p'>Submitted orders " +
         ((st.orders || []).length ? "on file for round" + ((st.orders || []).length > 1 ? "s" : "") + " " + (st.orders || []).map(function (o) { return o.round; }).join(", ") : "none yet") + ".</p>" +
+        "<h4 class='fo-wj-h4'>The eleven, in batting order</h4>" +
         "<div class='fo-wj-sq'>" + men + "</div>" +
-        "<div class='fo-wj-act'><button type='button' id='fo-wj-send' class='fo-wj-send'>" + (sent[nextRound] ? "Update" : "Submit") + " orders for round " + nextRound + " (" + ST.picked.length + "/11)</button>" +
+        "<h4 class='fo-wj-h4'>The bowling five, in spell order <span>openers attack &middot; middle grinds &middot; closers defend</span></h4>" +
+        "<div class='fo-wj-fiverow'>" + (fiveBtns || "<span class='fo-wj-note'>Pick bowlers into the XI first.</span>") + "</div>" +
+        "<div class='fo-wj-row'><label>Captain</label>" + selOf("fo-wj-capt", ST.capt) + "<label>Keeper</label>" + selOf("fo-wj-keep", ST.keep) + "</div>" +
+        "<div class='fo-wj-row'><label>Win the toss</label>" + tossBtns + "</div>" +
+        "<label class='fo-wj-chk'><input type='checkbox' id='fo-wj-all'" + (ST.allRounds ? " checked" : "") + "> Use these orders for every remaining round</label>" +
+        "<div class='fo-wj-act'><button type='button' id='fo-wj-send' class='fo-wj-send'>" + (sent[nextRound] ? "Update" : "Submit") + " orders &middot; R" + nextRound + " (" + ST.picked.length + "/11 &middot; " + ST.five.length + "/5)</button>" +
         "<button type='button' id='fo-wj-rel' class='fo-wj-rel'>Release club</button></div>" +
         "<div class='fo-wj-note' id='fo-wj-msg'></div></div>");
+
       page.querySelectorAll(".fo-wj-man").forEach(function (b) {
         b.addEventListener("click", function () {
           var nm = b.getAttribute("data-nm"), ix3 = ST.picked.indexOf(nm);
@@ -142,17 +182,44 @@
           renderMyClub(page, st);
         });
       });
+      page.querySelectorAll(".fo-wj-five").forEach(function (b) {
+        b.addEventListener("click", function () {
+          var nm = b.getAttribute("data-bw"), fx = ST.five.indexOf(nm);
+          if (fx >= 0) ST.five.splice(fx, 1); else if (ST.five.length < 5) ST.five.push(nm);
+          renderMyClub(page, st);
+        });
+      });
+      page.querySelectorAll("[data-toss]").forEach(function (b) {
+        b.addEventListener("click", function () { ST.toss = b.getAttribute("data-toss"); renderMyClub(page, st); });
+      });
+      var captEl = page.querySelector("#fo-wj-capt"), keepEl = page.querySelector("#fo-wj-keep"), allEl = page.querySelector("#fo-wj-all");
+      if (captEl) captEl.addEventListener("change", function () { ST.capt = captEl.value; });
+      if (keepEl) keepEl.addEventListener("change", function () { ST.keep = keepEl.value; });
+      if (allEl) allEl.addEventListener("change", function () { ST.allRounds = allEl.checked; });
+
       var msg = function (t) { var el = page.querySelector("#fo-wj-msg"); if (el) el.textContent = t; };
       page.querySelector("#fo-wj-send").addEventListener("click", function () {
         if (ST.picked.length !== 11) { msg("Pick exactly eleven."); return; }
+        if (ST.five.length !== 5) { msg("Order exactly five bowlers."); return; }
+        var payload = {
+          xi: ST.picked, batOrder: ST.picked, bat: ST.picked,
+          captain: ST.capt, keeper: ST.keep,
+          tossDecision: ST.toss, spells: spellsOf(ST.five),
+          fieldPlan: { pp: "att", mid: "bal", death: "def" }
+        };
+        var rounds = ST.allRounds ? [] : [nextRound];
+        if (ST.allRounds) for (var r = nextRound; r <= 18; r++) rounds.push(r);
         msg("Submitting…");
-        rpc("world_submit_orders", { p_round: nextRound, p_orders: { xi: ST.picked, bat: ST.picked } })
-          .then(function () { msg("Orders on file. The umpire has them."); })
+        var chain = Promise.resolve();
+        rounds.forEach(function (r2) {
+          chain = chain.then(function () { return rpc("world_submit_orders", { p_round: r2, p_orders: payload }); });
+        });
+        chain.then(function () { msg("Orders on file for round" + (rounds.length > 1 ? "s " + rounds[0] + "-" + rounds[rounds.length - 1] : " " + rounds[0]) + ". The umpire has them."); })
           .catch(function (e) { msg("Failed: " + String(e.message).slice(0, 120)); });
       });
       page.querySelector("#fo-wj-rel").addEventListener("click", function () {
         if (!confirm("Release " + c.club + "? Another manager can claim it immediately.")) return;
-        rpc("world_release_club").then(function () { ST.picked = []; window.foRenderWorldClubPage(); }).catch(function () {});
+        rpc("world_release_club").then(function () { ST.picked = []; ST.five = []; window.foRenderWorldClubPage(); }).catch(function () {});
       });
     });
   }
@@ -220,6 +287,18 @@
       "html body #page .fo-wj-man i{font-style:normal;font:700 11px/1 Oswald,sans-serif;color:#C95532;width:16px;text-align:center}",
       "html body #page .fo-wj-man b{display:block;font:600 12px/1.2 Inter,sans-serif;color:#141C28;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       "html body #page .fo-wj-man span{font-size:9.5px;color:rgba(20,28,40,.5);white-space:nowrap}",
+      "html body #page .fo-wj-h4{margin:14px 0 8px;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(20,28,40,.55);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}",
+      "html body #page .fo-wj-h4 span{font-size:8.5px;color:rgba(20,28,40,.4);letter-spacing:.1em}",
+      "html body #page .fo-wj-fiverow{display:flex;flex-wrap:wrap;gap:6px}",
+      "html body #page .fo-wj-five{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.85) !important;border:1px solid rgba(20,28,40,.14) !important;border-radius:999px !important;padding:7px 11px !important;cursor:pointer;font:600 11.5px/1 Inter,sans-serif !important;color:#141C28 !important}",
+      "html body #page .fo-wj-five.on{border-color:#177A57 !important;background:rgba(235,249,242,.95) !important}",
+      "html body #page .fo-wj-five i{font-style:normal;font:700 10px/1 Oswald,sans-serif;color:#177A57}",
+      "html body #page .fo-wj-row{display:flex;align-items:center;gap:8px;margin-top:11px;flex-wrap:wrap}",
+      "html body #page .fo-wj-row label{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.5)}",
+      "html body #page .fo-wj-sel{flex:1;min-width:120px;background:#FFFEFC !important;color:#141C28 !important;border:1px solid rgba(20,28,40,.2) !important;border-radius:8px;padding:8px 9px;font:500 12px Inter,sans-serif}",
+      "html body #page .fo-wj-toss{font:700 10.5px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(20,28,40,.6) !important;background:rgba(255,255,255,.85) !important;border:1px solid rgba(20,28,40,.16) !important;border-radius:999px !important;padding:9px 14px !important;cursor:pointer}",
+      "html body #page .fo-wj-toss.on{color:#FFFEFC !important;background:#C95532 !important;border-color:#C95532 !important}",
+      "html body #page .fo-wj-chk{display:flex;align-items:center;gap:8px;margin-top:12px;font:500 12px/1.4 Inter,sans-serif;color:rgba(20,28,40,.7)}",
       "html body #page .fo-wj-act{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}",
       "html body #page .fo-wj-send{flex:1;font:700 12px/1 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#FFFEFC !important;background:#0B1D3A !important;border:none !important;border-radius:999px !important;padding:12px 16px !important;cursor:pointer}",
       "html body #page .fo-wj-rel{font:600 11px/1 Inter,sans-serif;color:rgba(20,28,40,.55) !important;background:transparent !important;border:1px solid rgba(20,28,40,.18) !important;border-radius:999px !important;padding:10px 14px !important;cursor:pointer}",
