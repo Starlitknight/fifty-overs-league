@@ -105,10 +105,27 @@
       } catch (eS) {}
       if (srvRows) { rows = srvRows; myPos = 0; rows.forEach(function (r, i) { if (r.mine) myPos = i + 1; }); }
 
+      // EVERY ROW IS A DOOR, snapshot or no snapshot. The served table names
+      // its slots outright; without it we still know which seat a club sits
+      // in - from the names the world has published, and failing that from
+      // the nation's own ten - so the club page is always one tap away.
+      var slotOf = {};
+      try {
+        var nmOv = window.__foWorldNames && window.__foWorldNames.get(natId);
+        if (nmOv) for (var s0 in nmOv) slotOf[nmOv[s0]] = +s0;
+        if (window.__foWorldNames) window.__foWorldNames.want(natId);
+      } catch (eN) {}
+      try {
+        var sides = window.__foPlanet && window.__foPlanet.sidesOf(natId);
+        (sides || []).forEach(function (sd) { if (slotOf[sd.name] == null) slotOf[sd.name] = sd.slot; });
+      } catch (eSd) {}
+      try { if (claim && claim.country === natId && claim.club) slotOf[claim.club] = claim.slot; } catch (eCl) {}
+
       var body = rows.map(function (r, i) {
         var mine = r.mine != null ? r.mine : (r.nm === me.name);
-        var href = (srvRows && r.slot != null)
-          ? "#/team?c=" + encodeURIComponent(natId) + "&s=" + r.slot
+        var slot = r.slot != null ? r.slot : slotOf[r.nm];
+        var href = (natId && slot != null)
+          ? "#/team?c=" + encodeURIComponent(natId) + "&s=" + slot
           : "#/milestones?c=" + encodeURIComponent(r.nm);
         return "<a class='fo-lt-row" + (mine ? " mine" : "") + "' href='" + href + "'>" +
           "<i>" + (i + 1) + "</i>" +

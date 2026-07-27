@@ -62,7 +62,18 @@
     var rk = null; try { rk = JSON.parse(localStorage.getItem("fo_world_rk") || "null"); } catch (e) {}
 
     var paint = function (info, hon) {
-      var name = (info && info.name) || (lg && (lg.table || []).filter(function (t) { return t.slot === slot; })[0] || {}).name || "A world club";
+      // the club's name, from the best source that has answered: the world's
+      // own row, then the served table, then the nation's own ten - a club
+      // should never be nameless just because the service is slow
+      var name = (info && info.name) || (lg && (lg.table || []).filter(function (t) { return t.slot === slot; })[0] || {}).name;
+      if (!name) { try { name = ((window.__foWorldNames && window.__foWorldNames.get(cid)) || {})[slot]; } catch (eN) {} }
+      if (!name) {
+        try {
+          var sd = (window.__foPlanet && window.__foPlanet.sidesOf(cid) || []).filter(function (x) { return x.slot === slot; })[0];
+          if (sd) name = sd.name;
+        } catch (eS) {}
+      }
+      if (!name) name = "A world club";
       var boss = !!(info && info.is_boss);
       var mgr = info && info.manager;
       var rkRow = rk && rk.clubs ? rk.clubs.filter(function (x) { return x.country === cid && x.slot === slot; })[0] : null;
