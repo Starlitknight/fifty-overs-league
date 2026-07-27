@@ -10,7 +10,12 @@ on:
   schedule:
     # off-peak minute: GitHub delays/drops popular quarter-hour marks
     - cron: '23 * * * *'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      reset_world:
+        description: "Type YES-RESET to drop the world schema and refound from scratch (owner-only, destructive)"
+        required: false
+        default: 'no'
 
 concurrency:
   group: world-tick
@@ -82,6 +87,17 @@ jobs:
             process.exit(1);
           })();
           EOF
+      - name: Reset the world (only on explicit YES-RESET dispatch)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.reset_world == 'YES-RESET' }}
+        working-directory: server
+        run: |
+          node -e "
+          import('pg').then(async ({ default: pg }) => {
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 1, ssl: { rejectUnauthorized: false } });
+            await pool.query('DROP SCHEMA IF EXISTS world CASCADE');
+            console.log('world schema dropped - the next steps refound from scratch');
+            await pool.end();
+          }).catch(e => { console.error(e); process.exit(1); });"
       - name: Migrate
         working-directory: server
         run: node migrate.mjs

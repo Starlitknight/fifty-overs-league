@@ -34,7 +34,7 @@
   }
 
   // ---- the calendar -----------------------------------------------------------
-  var EPOCH = Date.UTC(2026, 4, 16);           // 16 May 2026, day 0 of world cricket
+  var EPOCH = Date.UTC(2026, 6, 23);           // 23 July 2026, day 0 - the fresh-start calendar (was 16 May)
   var DAY = 86400000, CYCLE = 25, ROUNDS = 18;  // ten clubs, eighteen rounds - every nation plays YOUR format
   var LIVE_LEN = 3;                             // a day's play runs three hours
   // the staggered globe: each nation bowls its first ball at its own UTC hour.

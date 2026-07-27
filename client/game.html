@@ -10592,7 +10592,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260727-0258-02af51";
+  var FO_BUILD = "20260727-0503-c11f25";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -35942,7 +35942,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   }
 
   // ---- the calendar -----------------------------------------------------------
-  var EPOCH = Date.UTC(2026, 4, 16);           // 16 May 2026, day 0 of world cricket
+  var EPOCH = Date.UTC(2026, 6, 23);           // 23 July 2026, day 0 - the fresh-start calendar (was 16 May)
   var DAY = 86400000, CYCLE = 25, ROUNDS = 18;  // ten clubs, eighteen rounds - every nation plays YOUR format
   var LIVE_LEN = 3;                             // a day's play runs three hours
   // the staggered globe: each nation bowls its first ball at its own UTC hour.
@@ -37158,8 +37158,10 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     try {
       if (!ready() || !P()) return null;
       var d = P().dayIx(Date.now());
-      if (!App.wcal || App.wcal.season !== (App.seasonNo || 1) || !(App.wcal.d0 > 0)) {
-        App.wcal = { season: App.seasonNo || 1, d0: d + 1, r0: App.season.round | 0 };
+      // anchors store absolute world days, so an epoch change (the fresh-start
+      // calendar) must re-anchor: stamp the epoch and rebuild when it moves
+      if (!App.wcal || App.wcal.season !== (App.seasonNo || 1) || !(App.wcal.d0 > 0) || App.wcal.e !== P().EPOCH) {
+        App.wcal = { season: App.seasonNo || 1, d0: d + 1, r0: App.season.round | 0, e: P().EPOCH };
         try { saveGame(false); } catch (eS) {}
       }
       return App.wcal;

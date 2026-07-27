@@ -29,8 +29,10 @@
     try {
       if (!ready() || !P()) return null;
       var d = P().dayIx(Date.now());
-      if (!App.wcal || App.wcal.season !== (App.seasonNo || 1) || !(App.wcal.d0 > 0)) {
-        App.wcal = { season: App.seasonNo || 1, d0: d + 1, r0: App.season.round | 0 };
+      // anchors store absolute world days, so an epoch change (the fresh-start
+      // calendar) must re-anchor: stamp the epoch and rebuild when it moves
+      if (!App.wcal || App.wcal.season !== (App.seasonNo || 1) || !(App.wcal.d0 > 0) || App.wcal.e !== P().EPOCH) {
+        App.wcal = { season: App.seasonNo || 1, d0: d + 1, r0: App.season.round | 0, e: P().EPOCH };
         try { saveGame(false); } catch (eS) {}
       }
       return App.wcal;
