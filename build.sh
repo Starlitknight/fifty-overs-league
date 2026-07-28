@@ -108,6 +108,11 @@ import glob
 assets = sorted(glob.glob('assets/fo-*.js'))
 for old in assets[:-5]:
     os.remove(old)
+
+# headless tooling (the resolver harness, the draft-pool proof) loads ONE
+# self-contained page over file:// - keep emitting it for them; it never ships
+open('.build/page.html', 'w', encoding='utf-8').write(
+    page.replace('__FO_SCRIPT__', '<script>\n' + bundle + '\n</script>\n'))
 PYASM
 
 printf '{"build":"%s"}\n' "$BUILD_ID" > version.json
