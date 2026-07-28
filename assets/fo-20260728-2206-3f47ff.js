@@ -1423,7 +1423,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',records:'foRenderRecordsPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',worldclub:'foRenderWorldClubPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',guide:'foRenderManualPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',comps:'foRenderCompsPage',market:'foRenderMarketPage',table:'foRenderStandingsPage'}[App.page];
+  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',records:'foRenderRecordsPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',worldclub:'foRenderWorldClubPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',guide:'foRenderManualPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',comps:'foRenderCompsPage',market:'foRenderMarketPage',table:'foRenderStandingsPage',today:'foRenderTodayPage'}[App.page];
   if(P[App.page])P[App.page](q);
   // A RENDERER THAT THROWS USED TO VANISH. This catch was empty, so a page
   // whose painter hit an error left the topbar, the clock and the nav in place
@@ -10112,7 +10112,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260728-2028-079ddb";
+  var FO_BUILD = "20260728-2206-3f47ff";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -27591,6 +27591,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // and its orientation. Phones draw from the portrait set, desktops from
   // the landscape set; the pick is seeded by the DAY so it never shuffles
   // mid-session, and a different painting greets each new day.
+  // the captions are shared with the Almanack's Today plate (module 61),
+  // which lives in its own closure and cannot see this one
   var FO_HG_WX = {
     "arches-dawn-mist": "Dawn mist · ground staff at work",
     "arches-summer-noon": "High summer · perfect for batting",
@@ -27625,6 +27627,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "hgd-heart-of-club": "The pavilion · the heart of the club",
     "club-home-quiet-background": "The ground at rest"
   };
+  try { window.FO_HG_WX = FO_HG_WX; } catch (eWx) {}
   var FO_HG_POOLS = {
     m: {
       dawn: ["hgm-arch-dawn"],
@@ -27677,6 +27680,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var pool = FO_HG_POOLS[m ? "m" : "d"][slot];
     return pool[day % pool.length];
   }
+  // the Almanack's Today plate (module 61) is its own closure and cannot
+  // see this one; the painting of the hour is shared, not duplicated
+  try { window.foHgVariant = foHgVariant; } catch (eHv) {}
   // one rule for every full-art page (wallpaper, city, tour): the header
   // dissolves into the art and the stage owns the whole screen
   function foArtChrome() {
@@ -44984,7 +44990,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-tbl h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(30px,5vw,46px);line-height:1.05;margin:0 0 8px;text-wrap:balance}" +
       ".fo-tbl .sub{color:#5A6472;line-height:1.55;margin:0 0 20px;max-width:56ch}" +
       ".fo-tbl-wrap{overflow-x:auto;border:1px solid rgba(11,19,34,.12);border-radius:14px;background:#fff}" +
-      ".fo-tbl table{width:100%;border-collapse:collapse;font-size:14px;min-width:540px}" +
+      ".fo-tbl table{width:100%;border-collapse:collapse;font-size:14px}" +
       ".fo-tbl th{font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#7A8595;text-align:right;padding:12px 10px;border-bottom:1px solid rgba(11,19,34,.12);white-space:nowrap}" +
       ".fo-tbl th.l,.fo-tbl td.l{text-align:left}" +
       ".fo-tbl td{padding:11px 10px;text-align:right;border-bottom:1px solid rgba(11,19,34,.06);font-variant-numeric:tabular-nums;white-space:nowrap}" +
@@ -44997,7 +45003,19 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-tbl .src{margin-top:14px;font:500 12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:#7A8595}" +
       ".fo-tbl .src b{color:#3E7A55;font-weight:600}" +
       ".fo-tbl .src i{color:#8A6A3B;font-style:normal;font-weight:600}" +
-      "@media (prefers-color-scheme:dark){}";
+      // POINTS MUST NEVER BE THE COLUMN THAT FALLS OFF. A league table read on
+      // a phone is read for two things: who is top, and how many points they
+      // have. Eight columns do not fit in 390px, and a table that merely
+      // scrolls sideways puts the most important number behind a swipe nobody
+      // makes. So the narrow layout spends its width on what the table is FOR
+      // - position, club, played, won, net run rate, points - and drops lost
+      // and tied, which a reader can derive and which the wider layout keeps.
+      "@media (max-width:560px){" +
+      ".fo-tbl{padding:20px 10px 56px}" +
+      ".fo-tbl table{font-size:13px}" +
+      ".fo-tbl th,.fo-tbl td{padding:10px 6px}" +
+      ".fo-tbl .c-l,.fo-tbl .c-t{display:none}" +
+      "}";
     document.head.appendChild(s);
   }
 
@@ -45053,14 +45071,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return "<tr" + (r.club === mine ? " class='me'" : "") + ">" +
         "<td class='pos'>" + (i + 1) + "</td>" +
         "<td class='l club'>" + E(r.club) + "</td>" +
-        "<td>" + (r.p | 0) + "</td><td>" + (r.w | 0) + "</td><td>" + (r.l | 0) + "</td><td>" + (r.t | 0) + "</td>" +
+        "<td>" + (r.p | 0) + "</td><td>" + (r.w | 0) + "</td>" +
+        "<td class='c-l'>" + (r.l | 0) + "</td><td class='c-t'>" + (r.t | 0) + "</td>" +
         "<td>" + nrr(r.nrr) + "</td><td class='pts'>" + (r.pts | 0) + "</td></tr>";
     }).join("");
     page.innerHTML = shell(
       "<p class='sub'>Season " + (data.season | 0) + " &middot; " + data.rows.length + " clubs. " +
       "Two points a win, one a tie; net run rate splits the level.</p>" +
       "<div class='fo-tbl-wrap'><table><thead><tr>" +
-      "<th></th><th class='l'>Club</th><th>P</th><th>W</th><th>L</th><th>T</th><th>NRR</th><th>Pts</th>" +
+      "<th></th><th class='l'>Club</th><th>P</th><th>W</th>" +
+      "<th class='c-l'>L</th><th class='c-t'>T</th><th>NRR</th><th>Pts</th>" +
       "</tr></thead><tbody>" + body + "</tbody></table></div>" +
       "<div class='src'>" + (served
         ? "<b>&#9679; served</b> &middot; read from the league database, not from your saved season"
@@ -45091,6 +45111,421 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       render(null);
     });
   };
+})();
+/* ============================================================================
+   THE LIVING ALMANACK — the global shell.
+
+   Phase 1 of the redesign. This module owns the frame every redesigned screen
+   lives inside: the navy header with the round countdown, the five-section
+   navigation, and the helpers that build a page in the order the brief
+   demands - masthead, decision strip, evidence, archive.
+
+   IT DOES NOT TOUCH THE GAME. No engine state is written here; the screens
+   read App/GD exactly as the old ones did and call the same actions. The
+   redesign replaces composition and CSS, not logic.
+
+   Routes are taken over one at a time (the brief is explicit: establish the
+   language on a few screens first). A route in AL_OWNS renders in this shell;
+   every other route still renders the way it does today, and the shell stays
+   out of its way entirely.
+   ========================================================================== */
+(function () {
+  "use strict";
+  if (window.__foAl) return; window.__foAl = 1;
+
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function path() { return (location.hash || "").split("?")[0]; }
+  function lg() { try { return window.__foLeague ? window.__foLeague() : null; } catch (e) { return null; } }
+  function team() { try { return userTeam() || null; } catch (e) { return null; } }
+
+  // ---- the five sections ---------------------------------------------------
+  // Every route in the game belongs to exactly one of them. The dock shows
+  // where you are even on routes this redesign has not reached yet, so the
+  // navigation is coherent from the first commit.
+  var SECTIONS = [
+    { id: "today",  label: "Today",  home: "#/today",  routes: ["today", "home", "desk", "matchday", "watch", "match"] },
+    { id: "team",   label: "Team",   home: "#/team",   routes: ["team", "squad", "orders", "training", "academy", "player", "dossier"] },
+    { id: "league", label: "League", home: "#/table",  routes: ["table", "league", "fixtures", "records", "planet", "world", "rankings", "cup", "comps", "nations", "nation", "atlas", "scorecard", "reports"] },
+    { id: "market", label: "Market", home: "#/market", routes: ["market", "team-page"] },
+    { id: "club",   label: "Club",   home: "#/club-h", routes: ["club-h", "finance", "milestones", "lore", "paper", "wire", "guide", "ledger", "almanack"] },
+  ];
+  // routes this redesign currently OWNS. Everything else keeps its old page.
+  var AL_OWNS = { today: 1, team: 1, matchday: 1 };
+
+  var ICON = {
+    today:  '<path d="M4 5h16v15H4z"/><path d="M4 9h16"/><path d="M8 3v4M16 3v4"/>',
+    team:   '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M17 11a2.5 2.5 0 1 0 0-5"/><path d="M18 20c0-2.2-.9-4.2-2.3-5.6"/>',
+    league: '<path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/><path d="M12 13v4M9 20h6"/>',
+    market: '<path d="M4 8h16l-1 12H5z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+    club:   '<path d="M4 20V9l8-5 8 5v11z"/><path d="M10 20v-6h4v6"/>',
+  };
+  function svg(id) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ' +
+      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[id] || "") + "</svg>";
+  }
+
+  function sectionOf(p) {
+    var r = (p || path()).replace("#/", "");
+    for (var i = 0; i < SECTIONS.length; i++) if (SECTIONS[i].routes.indexOf(r) >= 0) return SECTIONS[i];
+    return SECTIONS[0];
+  }
+  window.__foAlSection = sectionOf;
+
+  // ---- the round clock -----------------------------------------------------
+  // A daily game's most useful readout is not the time, it is how long is
+  // left. Rounds resolve at 9:00 AM New York; this is that, in the header,
+  // on every screen.
+  function nextRoundMs() {
+    try {
+      var now = new Date();
+      var f = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hour12: false });
+      var p = Object.fromEntries(f.formatToParts(now).map(function (x) { return [x.type, x.value]; }));
+      var mins = (parseInt(p.hour, 10) * 60 + parseInt(p.minute, 10));
+      var left = (9 * 60) - mins; if (left <= 0) left += 24 * 60;
+      return left * 60000;
+    } catch (e) { return 0; }
+  }
+  function clockText() {
+    var ms = nextRoundMs(), h = Math.floor(ms / 3600000), m = Math.round((ms % 3600000) / 60000);
+    if (m === 60) { h += 1; m = 0; }
+    var rd = 0; try { rd = ((App.season && App.season.round) | 0) + 1; } catch (e) {}
+    return { top: (h ? h + "H " : "") + m + "M", sub: rd ? "ROUND " + rd : "NEXT ROUND" };
+  }
+  window.__foAlClock = clockText;
+
+  // ---- the shell -----------------------------------------------------------
+  function ensure() {
+    var head = document.getElementById("al-head");
+    if (!head) {
+      head = document.createElement("header");
+      head.id = "al-head"; head.className = "al-head";
+      document.body.insertBefore(head, document.body.firstChild);
+    }
+    var dock = document.getElementById("al-dock");
+    if (!dock) {
+      dock = document.createElement("nav");
+      dock.id = "al-dock"; dock.className = "al-dock";
+      dock.setAttribute("aria-label", "Sections");
+      dock.innerHTML = SECTIONS.map(function (s) {
+        return '<a href="' + s.home + '" data-al-sec="' + s.id + '">' + svg(s.id) + "<span>" + s.label + "</span></a>";
+      }).join("");
+      document.body.appendChild(dock);
+      dock.addEventListener("click", function (e) {
+        var a = e.target.closest ? e.target.closest("a[data-al-sec]") : null;
+        if (!a) return;
+        e.preventDefault();
+        location.hash = a.getAttribute("href").slice(1);
+        if (typeof window.route === "function") window.route();
+      });
+    }
+    return { head: head, dock: dock };
+  }
+
+  function paintShell() {
+    try {
+      var el = ensure(), sec = sectionOf(), c = clockText(), t = team();
+      var club = (t && t.name) || "Fifty Overs";
+      var nav = SECTIONS.map(function (s) {
+        return '<a href="' + s.home + '" data-al-sec="' + s.id + '"' +
+          (s.id === sec.id ? ' aria-current="page"' : "") + ">" + E(s.label) + "</a>";
+      }).join("");
+      el.head.innerHTML =
+        '<div class="al-head__mark">FO</div>' +
+        '<div class="al-head__where"><i>' + E(sec.label) + "</i><b>" + E(club) + "</b></div>" +
+        '<div class="al-head__spacer"></div>' +
+        '<div class="al-head__nav">' + nav + "</div>" +
+        '<div class="al-head__clock"><span>' + E(c.sub) + "</span><b>" + E(c.top) + "</b></div>";
+      var links = el.dock.querySelectorAll("a[data-al-sec]");
+      for (var i = 0; i < links.length; i++) {
+        if (links[i].getAttribute("data-al-sec") === sec.id) links[i].setAttribute("aria-current", "page");
+        else links[i].removeAttribute("aria-current");
+      }
+      if (!el.head.__wired) {
+        el.head.__wired = 1;
+        el.head.addEventListener("click", function (e) {
+          var a = e.target.closest ? e.target.closest("a[data-al-sec]") : null;
+          if (!a) return;
+          e.preventDefault(); location.hash = a.getAttribute("href").slice(1);
+          if (typeof window.route === "function") window.route();
+        });
+      }
+    } catch (e) {}
+  }
+
+  // The shell is only worn on routes the redesign owns; elsewhere the old
+  // chrome stays, unchanged and unbroken, until its screen is rebuilt.
+  function owns() { return !!AL_OWNS[path().replace("#/", "")]; }
+  window.__foAlOwns = owns;
+
+  function apply() {
+    try {
+      var on = owns();
+      document.body.classList.toggle("al-on", on);
+      var head = document.getElementById("al-head"), dock = document.getElementById("al-dock");
+      if (!on) { if (head) head.style.display = "none"; if (dock) dock.style.display = "none"; return; }
+      ensure();
+      document.getElementById("al-head").style.display = "";
+      document.getElementById("al-dock").style.display = "";
+      paintShell();
+    } catch (e) {}
+  }
+  window.__foAlApply = apply;
+
+  // ---- page builders -------------------------------------------------------
+  // Every redesigned screen is assembled from these, in this order, so the
+  // publication reads the same way on every route.
+  var AL = {
+    page: function (parts) {
+      return '<div class="al-page' + (parts.acting ? " al-page--acting" : "") + '"><div class="al-page__in">' +
+        (parts.body || "") + "</div></div>" + (parts.sticky || "");
+    },
+    mast: function (eyebrow, title, line) {
+      return '<div class="al-mast">' +
+        (eyebrow ? '<div class="al-mast__eyebrow">' + E(eyebrow) + "</div>" : "") +
+        "<h1>" + E(title) + "</h1>" +
+        (line ? "<p>" + E(line) + "</p>" : "") + "</div>";
+    },
+    // Artwork is a plate: natural ratio, full brightness, nothing over it.
+    plate: function (src, caption) {
+      if (!src) return "";
+      return '<figure class="al-plate">' +
+        (caption ? "<figcaption>" + E(caption) + "</figcaption>" : "") +
+        '<img src="' + E(src) + '" alt="" loading="lazy">' + "</figure>";
+    },
+    decide: function (o) {
+      var kind = o.kind === "act" ? " al-decide--act" : (o.kind === "done" ? " al-decide--done" : "");
+      return '<div class="al-decide' + kind + '"><div class="al-decide__txt"><b>' + E(o.title) + "</b>" +
+        (o.note ? "<i>" + E(o.note) + "</i>" : "") + "</div>" +
+        (o.action ? '<a class="al-btn ' + (o.primary ? "al-btn--primary" : "") + '" href="' + E(o.action.href) + '">' + E(o.action.label) + "</a>" : "") +
+        "</div>";
+    },
+    sec: function (title, inner, link) {
+      return '<section class="al-sec"><div class="al-sec__head"><h2>' + E(title) + "</h2>" +
+        (link ? '<a href="' + E(link.href) + '">' + E(link.label) + " &rsaquo;</a>" : "") +
+        "</div>" + inner + "</section>";
+    },
+    ledger: function (rows) {
+      return '<div class="al-ledger">' + rows.map(function (r) {
+        return '<div><span class="k">' + E(r[0]) + '</span><span class="v' + (r[2] ? " v--" + r[2] : "") + '">' + E(r[1]) + "</span></div>";
+      }).join("") + "</div>";
+    },
+    sticky: function (note, label, act) {
+      return '<div class="al-sticky"><div class="al-sticky__in">' +
+        '<div class="al-sticky__note">' + E(note) + "</div>" +
+        '<button class="al-btn al-btn--primary" data-al-act="' + E(act) + '">' + E(label) + "</button>" +
+        "</div></div>";
+    },
+    tag: function (text, kind) { return '<span class="al-tag' + (kind ? " al-tag--" + kind : "") + '">' + E(text) + "</span>"; },
+    empty: function (title, line) { return '<div class="al-empty"><h3>' + E(title) + "</h3><p>" + E(line) + "</p></div>"; },
+    E: E, section: sectionOf, clock: clockText, league: lg, team: team,
+  };
+  window.AL = AL;
+
+  // keep the header honest: the countdown moves, so it repaints on the minute
+  setInterval(function () { try { if (owns()) paintShell(); } catch (e) {} }, 30000);
+  window.addEventListener("hashchange", apply);
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", apply);
+  else apply();
+})();
+/* ============================================================================
+   TODAY (#/today) — the morning edition.
+
+   The first screen of the day. It answers, in this order and within the first
+   phone viewport: which club is this, what is the next match, and what does
+   the manager have to do before nine o'clock.
+
+   Three states, because a daily game has three: BEFORE the round resolves
+   (readiness and deadline), DURING (score and match state), AFTER (what
+   happened and its consequences). The state is read from the game, never
+   guessed - a round with a played result behind it and a fixture ahead of it
+   is "after" until the next deadline approaches.
+
+   Not a dashboard. No metric tiles. The artwork is a plate above the fold at
+   full brightness with nothing laid over it, and the required action sits in
+   the first screenful, not below a hero.
+   ========================================================================== */
+(function () {
+  "use strict";
+  if (window.__foToday) return; window.__foToday = 1;
+
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function on() { return (location.hash || "").split("?")[0] === "#/today"; }
+  function A() { return window.AL || null; }
+
+  function art() {
+    // The club-home paintings the game already ships. foHgVariant() picks the
+    // one that suits the hour, the weather and the screen and returns its KEY;
+    // the file and its caption are looked up here. Shown at natural ratio,
+    // full brightness, nothing over it - it is a plate, not a background.
+    try {
+      var vf = window.foHgVariant || (typeof foHgVariant === "function" ? foHgVariant : null);
+      if (!vf) return null;
+      var v = vf(); if (!v) return null;
+      var base = (typeof FO_ART !== "undefined") ? FO_ART
+        : (location.pathname.indexOf("/client/") !== -1 ? "art/" : "client/art/");
+      var cap = "";
+      try { cap = (window.FO_HG_WX && window.FO_HG_WX[v]) || ""; } catch (eC) {}
+      if (!cap) { try { cap = String(window.__foHgWx || ""); } catch (eC2) {} }
+      return { src: base + "home/" + v + ".webp", mood: cap || "The home ground" };
+    } catch (e) { return null; }
+  }
+  function nextFixture() {
+    try { return (typeof window.foNextFixture === "function") ? window.foNextFixture() : null; } catch (e) { return null; }
+  }
+  function myTeam() { try { return userTeam() || null; } catch (e) { return null; } }
+  function lastResult() {
+    try {
+      var r = App.results || [];
+      for (var i = r.length - 1; i >= 0; i--) {
+        var x = r[i];
+        if (!x || x.comp === "friendly") continue;
+        var me = (myTeam() || {}).name;
+        if (x.home === me || x.away === me) return { r: x, ix: i };
+      }
+    } catch (e) {}
+    return null;
+  }
+  function tablePos() {
+    try {
+      var rows = (typeof leagueRows === "function") ? leagueRows() : [];
+      var me = (myTeam() || {}).name;
+      var i = rows.findIndex(function (x) { return x.nm === me; });
+      return i >= 0 ? { pos: i + 1, row: rows[i], of: rows.length } : null;
+    } catch (e) { return null; }
+  }
+  function ordinal(n) {
+    var s = ["th", "st", "nd", "rd"], v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+  function xiState() {
+    // how many of the eleven are chosen, and whether the plan is saved
+    try {
+      var o = App.orders || {}, bo = (o.batOrder || []).filter(Boolean);
+      return { picked: Math.min(11, bo.length), saved: !!o.saved, captain: o.captain || "", keeper: o.keeper || "" };
+    } catch (e) { return { picked: 0, saved: false, captain: "", keeper: "" }; }
+  }
+  function liveMatch() {
+    try { return (typeof M !== "undefined" && M && !M.done) ? M : null; } catch (e) { return null; }
+  }
+
+  function stateNow() {
+    if (liveMatch()) return "live";
+    var xi = xiState();
+    if (!xi.saved || xi.picked < 11) return "before";
+    return "after";
+  }
+
+  window.foRenderTodayPage = function () {
+    if (!on()) return;
+    var page = document.getElementById("page"); if (!page) return;
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
+
+    var t = myTeam(), club = (t && t.name) || "Your club", ground = (t && t.ground) || "";
+    var clock = al.clock(), st = stateNow();
+    var fx = nextFixture(), pos = tablePos(), xi = xiState(), last = lastResult();
+    var v = art();
+    var when = (function () {
+      try {
+        return new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+      } catch (e) { return ""; }
+    })();
+
+    // ---- masthead: the date and the round, not a wall of copy ---------------
+    var body = al.mast(when + " · " + clock.sub.toLowerCase(), club, ground ? "Home ground: " + ground : "");
+
+    // ---- the decision, stated ---------------------------------------------
+    // THE BRIEF'S TWO ARTWORK RULES PULL AGAINST EACH OTHER ON A PHONE. It
+    // asks for the plate second AND for the required action inside the first
+    // viewport - but the phone paintings are portrait, and at 390px wide an
+    // uncropped one is over 500px tall, which puts the action below the fold.
+    // Cropping it to fit is forbidden and would be the wrong trade anyway. So
+    // the hard rule wins ("do not push the main task below a large hero") and
+    // the plate follows the decision: identity, then what you must do, then
+    // the painting - still full width, full brightness, uncropped.
+    var opp = fx && fx.opp ? (fx.opp.name || "") : "";
+    if (st === "before") {
+      var need = 11 - xi.picked;
+      body += al.decide({
+        kind: "act",
+        title: need > 0 ? "Playing XI incomplete · " + xi.picked + " of 11 selected"
+                        : "Match plan not yet submitted",
+        note: "Orders close at 9:00 AM New York · " + clock.top + " left",
+        action: { href: "#/team", label: need > 0 ? "Pick the XI" : "Review plan" },
+        primary: true,
+      });
+    } else if (st === "live") {
+      body += al.decide({ kind: "act", title: "Your match is under way",
+        note: opp ? "against " + opp : "", action: { href: "#/matchday", label: "Match centre" }, primary: true });
+    } else {
+      body += al.decide({ kind: "done", title: "Nothing needs your decision",
+        note: "The plan is filed. The round resolves at 9:00 AM New York.",
+        action: { href: "#/matchday", label: "Match centre" } });
+    }
+
+    // ---- the plate, directly under the decision it must not displace -------
+    if (v && v.src) body += al.plate(v.src, v.mood || "The home ground");
+
+    // ---- the next match ----------------------------------------------------
+    if (fx) {
+      var rows = [
+        ["Opponent", opp || "—"],
+        [fx.home ? "Ground (home)" : "Ground (away)", (fx.ground || (fx.home ? ground : "away")) || "—"],
+        ["Resolves", "9:00 AM ET"],
+        ["Countdown", clock.top],
+      ];
+      if (fx.pitch) rows.push(["Pitch", String(fx.pitch)]);
+      if (fx.weather) rows.push(["Weather", String(fx.weather)]);
+      body += al.sec("The next match", al.ledger(rows), { href: "#/matchday", label: "Match centre" });
+    } else {
+      body += al.sec("The next match", al.empty("No fixture scheduled",
+        "When the next round is drawn it will appear here with its ground, conditions and deadline."));
+    }
+
+    // ---- where the club stands --------------------------------------------
+    if (pos) {
+      var r = pos.row;
+      body += al.sec("Where you stand", al.ledger([
+        ["Position", ordinal(pos.pos) + " of " + pos.of],
+        ["Played", String(r.p | 0)],
+        ["Points", String(r.pts | 0), r.pts > 0 ? "pos" : ""],
+        ["Net run rate", (r.nrr >= 0 ? "+" : "") + Number(r.nrr || 0).toFixed(3)],
+      ]), { href: "#/table", label: "The table" });
+    }
+
+    // ---- yesterday's consequences -----------------------------------------
+    if (last && last.r && last.r.result) {
+      var lr = last.r, txt = (lr.result && lr.result.text) || "";
+      body += al.sec("What happened last round",
+        '<p class="al-lede">' + E(txt) + "</p>" +
+        '<p class="al-read">' + E(lr.home) + " v " + E(lr.away) + (lr.ground ? " · " + E(lr.ground) : "") + "</p>" +
+        '<a class="al-btn" href="#/scorecard?i=' + last.ix + '">Full scorecard</a>');
+    }
+
+    body += '<p class="al-read" style="margin-top:32px">' + E("build " + ((window.FO_BUILD || "").slice(0, 20))) + "</p>";
+
+    var acting = st === "before";
+    page.innerHTML = al.page({
+      body: body,
+      acting: acting,
+      sticky: acting ? al.sticky("Orders close 9:00 AM ET · " + clock.top + " left",
+        xi.picked < 11 ? "Pick the XI" : "Review plan", "toTeam") : "",
+    });
+
+    var b = page.parentNode ? page.parentNode.querySelector('[data-al-act="toTeam"]') : null;
+    if (!b) b = document.querySelector('[data-al-act="toTeam"]');
+    if (b && !b.__w) {
+      b.__w = 1;
+      b.addEventListener("click", function () { location.hash = "#/team"; if (typeof window.route === "function") window.route(); });
+    }
+  };
+
+  // the sticky bar is appended outside #page, so it must be cleaned up when
+  // the manager leaves - otherwise it would hang over another screen
+  window.addEventListener("hashchange", function () {
+    if (on()) return;
+    var s = document.querySelector(".al-sticky"); if (s && s.parentNode) s.parentNode.removeChild(s);
+  });
 })();
 
 ;

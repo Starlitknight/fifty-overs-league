@@ -50,3 +50,5 @@
 49-market.js
 50-match-archive.js
 52-standings.js
+60-almanack-shell.js
+61-today.js

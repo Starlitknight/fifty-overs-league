@@ -832,5 +832,412 @@ html body.fo-home-on,html body.fo-lore-on,html body.fo-ov-on,html body.fo-boss-o
    this quietly replaces the engine's platform-default body font. */
 body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
 </style>
-<script src="assets/fo-20260728-2045-a6aa28.js"></script>
+<style id="fo-almanack">/* ============================================================================
+   THE LIVING ALMANACK — design tokens and components.
+
+   A county-cricket publication that became interactive. Warm, literary,
+   authoritative, tactile; fast and usable at 390px first.
+
+   Every page answers, in this order: what happened, what needs deciding, what
+   happens next and when. The components below exist to carry that sequence -
+   masthead, decision strip, evidence, archive - and nothing here is a generic
+   Card. A component's name is its job.
+
+   Hand-written CSS. No framework, no library, no glass, no gradients on
+   interface surfaces, no shadows doing structural work.
+   ========================================================================== */
+
+:root {
+  /* ---- ink and paper ---------------------------------------------------- */
+  --al-navy: #0a2342;
+  --al-navy-deep: #07162E;
+  --al-paper: #f7f4ec;          /* the page */
+  --al-paper-2: #ece7da;        /* recessed bands, table stripes */
+  --al-paper-hi: #FFFEFC;       /* raised reading surfaces */
+  --al-ink: #111827;
+  --al-muted: #667085;
+  --al-muted-2: #9a9484;
+  --al-rule: #DDD8CF;
+
+  /* ---- one accent, one secondary, one positive -------------------------- */
+  --al-accent: #C95532;
+  --al-accent-ink: #FFFEFC;
+  --al-teal: #2b6b68;
+  --al-pos: #15803D;
+
+  /* ---- type ------------------------------------------------------------- */
+  --al-display: Fraunces, Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --al-ui: Inter, ui-sans-serif, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --al-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* ---- the spacing scale. Nothing between these steps. ------------------ */
+  --al-1: 4px;  --al-2: 8px;  --al-3: 12px; --al-4: 16px;
+  --al-5: 24px; --al-6: 32px; --al-7: 48px;
+
+  --al-gutter: 16px;
+  --al-head: 56px;              /* phone header */
+  --al-dock: 60px;              /* phone bottom navigation */
+  --al-tap: 48px;               /* minimum interactive row */
+  --al-max: 1240px;
+}
+
+/* ============================================================================
+   1. APP HEADER — navy, fixed, the only dark surface in the game
+   ========================================================================== */
+.al-head {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+  height: var(--al-head);
+  background: var(--al-navy); color: var(--al-paper-hi);
+  display: flex; align-items: center; gap: var(--al-3);
+  padding: 0 var(--al-4);
+  padding-top: env(safe-area-inset-top);
+  box-sizing: content-box;
+}
+.al-head__mark {
+  width: 28px; height: 28px; flex: 0 0 28px;
+  display: grid; place-items: center;
+  border: 1px solid rgba(255, 254, 252, .28);
+  font: 700 11px/1 var(--al-mono); letter-spacing: .04em;
+  color: var(--al-paper-hi);
+}
+/* the desktop section nav is a DESKTOP element; on a phone the dock is the
+   navigation and this must not exist at all - unhidden it ran the five labels
+   together across the header and squeezed the club name to an ellipsis */
+.al-head__nav, .al-head__spacer { display: none; }
+.al-head__where { min-width: 0; flex: 1 1 auto; }
+.al-head__where b {
+  display: block; font: 600 15px/1.2 var(--al-display);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.al-head__where i {
+  display: block; font: 600 10px/1.4 var(--al-ui); font-style: normal;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: rgba(255, 254, 252, .62);
+}
+.al-head__clock {
+  flex: 0 0 auto; text-align: right;
+  font: 500 12px/1.35 var(--al-mono); font-variant-numeric: tabular-nums;
+  color: rgba(255, 254, 252, .84); white-space: nowrap;
+}
+.al-head__clock b { display: block; font-weight: 700; letter-spacing: .02em; }
+.al-head__clock span {
+  display: block; font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(255, 254, 252, .55);
+}
+
+/* ============================================================================
+   2. BOTTOM NAVIGATION — five sections, never more
+   ========================================================================== */
+.al-dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  background: var(--al-navy);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.al-dock a {
+  min-height: var(--al-dock);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; text-decoration: none;
+  color: rgba(255, 254, 252, .62);
+  font: 600 10px/1 var(--al-ui); letter-spacing: .09em; text-transform: uppercase;
+  border-top: 2px solid transparent;
+  -webkit-tap-highlight-color: transparent;
+}
+.al-dock a svg { width: 20px; height: 20px; display: block; }
+.al-dock a[aria-current="page"] { color: var(--al-paper-hi); border-top-color: var(--al-accent); }
+.al-dock a .al-dot {
+  position: absolute; margin: -16px 0 0 14px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--al-accent);
+}
+
+/* ============================================================================
+   3. PAGE GRID — paper below the header, clear of both fixed bars
+   ========================================================================== */
+body.al-on { background: var(--al-paper); color: var(--al-ink); font-family: var(--al-ui); }
+body.al-on #topbar { display: none !important; }
+.al-page {
+  max-width: var(--al-max); margin: 0 auto;
+  padding: calc(var(--al-head) + env(safe-area-inset-top)) 0 0;
+}
+.al-page__in { padding: 0 var(--al-gutter) calc(var(--al-dock) + var(--al-7)); }
+/* a screen with a sticky action bar owes it room as well */
+.al-page--acting .al-page__in { padding-bottom: calc(var(--al-dock) + 68px + var(--al-7)); }
+
+/* ============================================================================
+   4. PAGE MASTHEAD — eyebrow, title, one sentence. Never a hero.
+   ========================================================================== */
+.al-mast { padding: var(--al-5) 0 var(--al-4); }
+.al-mast__eyebrow {
+  font: 600 11px/1.4 var(--al-ui); letter-spacing: .14em; text-transform: uppercase;
+  color: var(--al-accent); margin: 0 0 var(--al-2);
+}
+.al-mast h1 {
+  font: 600 32px/35px var(--al-display); margin: 0; color: var(--al-ink);
+  text-wrap: balance; letter-spacing: -.01em;
+}
+.al-mast p {
+  margin: var(--al-2) 0 0; font: 400 15px/23px var(--al-ui);
+  color: var(--al-muted); max-width: 62ch;
+}
+
+/* ============================================================================
+   5. ARTWORK PLATE — a printed plate. Never a background, never covered.
+   ========================================================================== */
+.al-plate { margin: 0 calc(var(--al-gutter) * -1) var(--al-4); background: var(--al-paper-2); }
+.al-plate img { display: block; width: 100%; height: auto; }
+.al-plate figcaption {
+  padding: var(--al-2) var(--al-gutter);
+  font: 600 11px/1.5 var(--al-ui); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--al-muted-2); border-bottom: 1px solid var(--al-rule);
+}
+
+/* ============================================================================
+   6. DECISION STRIP — what this page is asking of the manager, stated
+   ========================================================================== */
+.al-decide {
+  display: flex; align-items: center; gap: var(--al-3);
+  padding: var(--al-3) var(--al-4);
+  background: var(--al-paper-hi);
+  border: 1px solid var(--al-rule); border-left: 3px solid var(--al-muted-2);
+  border-radius: 0 3px 3px 0;
+  margin: 0 0 var(--al-4);
+}
+.al-decide--act { border-left-color: var(--al-accent); }
+.al-decide--done { border-left-color: var(--al-pos); }
+.al-decide { flex-wrap: wrap; }
+.al-decide__txt { flex: 1 1 180px; min-width: 0; }
+.al-decide .al-btn { margin-left: auto; }
+.al-decide__txt b {
+  display: block; font: 600 14px/20px var(--al-ui); color: var(--al-ink);
+}
+.al-decide__txt i {
+  display: block; font-style: normal; margin-top: 2px;
+  font: 400 13px/18px var(--al-ui); color: var(--al-muted);
+}
+
+/* ============================================================================
+   7. BUTTONS — one orange primary per screen, at most
+   ========================================================================== */
+.al-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--al-2);
+  min-height: var(--al-tap); padding: 0 var(--al-4);
+  font: 600 14px/1 var(--al-ui); letter-spacing: .02em;
+  border: 1px solid var(--al-rule); border-radius: 6px;
+  background: var(--al-paper-hi); color: var(--al-ink);
+  text-decoration: none; cursor: pointer; -webkit-appearance: none;
+  white-space: nowrap; flex: 0 0 auto;
+}
+.al-btn:hover { border-color: var(--al-muted-2); }
+.al-btn--primary,
+body.al-on button.al-btn--primary,
+body.al-on a.al-btn--primary,
+.al-sticky button.al-btn--primary {
+  background: var(--al-accent); border-color: var(--al-accent); color: var(--al-accent-ink);
+  font-weight: 600;
+}
+.al-btn--primary:hover, body.al-on button.al-btn--primary:hover { background: #b8492a; border-color: #b8492a; }
+body.al-on .al-btn { font-family: var(--al-ui); }
+.al-btn--quiet { background: transparent; border-color: transparent; color: var(--al-teal); }
+.al-btn--block { display: flex; width: 100%; }
+.al-btn[disabled] { opacity: .5; pointer-events: none; }
+
+/* ============================================================================
+   8. STICKY ACTION BAR — only when one primary action is unresolved
+   ========================================================================== */
+.al-sticky {
+  position: fixed; left: 0; right: 0; z-index: 55;
+  bottom: calc(var(--al-dock) + env(safe-area-inset-bottom));
+  background: var(--al-paper-hi); border-top: 1px solid var(--al-rule);
+  padding: var(--al-2) var(--al-gutter);
+  display: flex; align-items: center; gap: var(--al-3);
+}
+.al-sticky__note { flex: 1 1 auto; min-width: 0; font: 400 12px/16px var(--al-ui); color: var(--al-muted); }
+.al-sticky .al-btn { flex: 0 0 auto; }
+
+/* ============================================================================
+   9. EDITORIAL SECTION — a band of paper with a ruled heading
+   ========================================================================== */
+.al-sec { margin: 0 0 var(--al-5); }
+.al-sec__head {
+  display: flex; align-items: baseline; gap: var(--al-3);
+  border-bottom: 1px solid var(--al-rule); padding-bottom: var(--al-2); margin-bottom: var(--al-3);
+}
+.al-sec__head h2 { margin: 0; font: 600 20px/25px var(--al-display); color: var(--al-ink); flex: 1 1 auto; }
+.al-sec__head a { font: 600 12px/1 var(--al-ui); color: var(--al-teal); text-decoration: none; white-space: nowrap; }
+.al-sec p { margin: 0 0 var(--al-3); font: 400 15px/23px var(--al-ui); color: var(--al-ink); }
+.al-sec p.al-lede { font: 400 16px/25px var(--al-display); color: var(--al-ink); }
+
+/* ============================================================================
+   10. DATA LEDGER — label/value rows with tabular figures
+   ========================================================================== */
+.al-ledger { border-top: 1px solid var(--al-rule); }
+.al-ledger div {
+  display: flex; align-items: center; gap: var(--al-3);
+  min-height: var(--al-tap); padding: var(--al-2) 0;
+  border-bottom: 1px solid var(--al-rule);
+}
+.al-ledger dt, .al-ledger .k {
+  flex: 1 1 auto; font: 600 13px/18px var(--al-ui); color: var(--al-muted);
+}
+.al-ledger dd, .al-ledger .v {
+  margin: 0; flex: 0 0 auto;
+  font: 500 14px/18px var(--al-mono); font-variant-numeric: tabular-nums; color: var(--al-ink);
+}
+.al-ledger .v--pos { color: var(--al-pos); }
+.al-ledger .v--warn { color: var(--al-accent); }
+
+/* ============================================================================
+   11. COMPACT PLAYER ROW — the roster interface. Never a collectible card.
+   ========================================================================== */
+.al-players { border-top: 1px solid var(--al-rule); }
+.al-prow {
+  display: grid; grid-template-columns: 34px 1fr auto; align-items: center;
+  gap: var(--al-3); min-height: var(--al-tap); padding: var(--al-2) 0;
+  border-bottom: 1px solid var(--al-rule);
+  background: none; border-left: 0; border-right: 0; border-top: 0;
+  width: 100%; text-align: left; cursor: pointer; font: inherit; color: inherit;
+}
+.al-prow__no {
+  font: 600 12px/1 var(--al-mono); font-variant-numeric: tabular-nums;
+  color: var(--al-muted-2); text-align: center;
+}
+.al-prow--picked .al-prow__no { color: var(--al-accent); }
+.al-prow__who { min-width: 0; }
+.al-prow__who b { display: block; font: 600 15px/20px var(--al-ui); color: var(--al-ink); }
+.al-prow__who i {
+  display: block; font-style: normal; font: 400 12px/17px var(--al-ui); color: var(--al-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.al-prow__rate {
+  font: 500 15px/1 var(--al-mono); font-variant-numeric: tabular-nums; color: var(--al-ink);
+}
+
+/* ============================================================================
+   12. COMPACT FIXTURE ROW
+   ========================================================================== */
+.al-fix {
+  display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: var(--al-3);
+  min-height: var(--al-tap); padding: var(--al-2) 0; border-bottom: 1px solid var(--al-rule);
+}
+.al-fix__r { font: 600 11px/1 var(--al-mono); color: var(--al-muted-2); }
+.al-fix__t b { display: block; font: 600 14px/19px var(--al-ui); }
+.al-fix__t i { display: block; font-style: normal; font: 400 12px/16px var(--al-ui); color: var(--al-muted); }
+.al-fix__o { font: 500 13px/1 var(--al-mono); color: var(--al-muted); }
+
+/* ============================================================================
+   13. TABLE SHELL — position and points never leave the screen
+   ========================================================================== */
+.al-tbl { width: 100%; border-collapse: collapse; }
+.al-tbl th {
+  font: 600 10px/1 var(--al-ui); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--al-muted); text-align: right; padding: var(--al-2) var(--al-1);
+  border-bottom: 1px solid var(--al-rule); white-space: nowrap;
+}
+.al-tbl th.l, .al-tbl td.l { text-align: left; }
+.al-tbl td {
+  padding: var(--al-2) var(--al-1); text-align: right;
+  border-bottom: 1px solid var(--al-rule);
+  font: 400 14px/20px var(--al-ui); font-variant-numeric: tabular-nums;
+}
+.al-tbl td.al-pos { font: 500 13px/20px var(--al-mono); color: var(--al-muted-2); width: 26px; }
+.al-tbl td.al-club { font-weight: 500; }
+.al-tbl td.al-pts { font: 600 15px/20px var(--al-mono); }
+.al-tbl tr.al-you td { background: var(--al-paper-hi); }
+.al-tbl tr.al-you td.al-pos { box-shadow: inset 3px 0 0 var(--al-accent); }
+.al-tbl tr.al-you td.al-club { font-weight: 700; }
+.al-you__tag {
+  display: inline-block; margin-left: var(--al-2);
+  font: 700 9px/1 var(--al-ui); letter-spacing: .1em;
+  color: var(--al-accent); vertical-align: 1px;
+}
+
+/* ============================================================================
+   14. STATUS LABEL and MONOSPACE READOUT
+   ========================================================================== */
+.al-tag {
+  display: inline-block; padding: 3px var(--al-2);
+  font: 600 10px/1.4 var(--al-ui); letter-spacing: .1em; text-transform: uppercase;
+  border: 1px solid var(--al-rule); color: var(--al-muted); background: var(--al-paper-hi);
+}
+.al-tag--act { color: var(--al-accent); border-color: var(--al-accent); }
+.al-tag--ok { color: var(--al-pos); border-color: var(--al-pos); }
+.al-tag--info { color: var(--al-teal); border-color: var(--al-teal); }
+.al-read {
+  font: 500 12px/17px var(--al-mono); font-variant-numeric: tabular-nums; color: var(--al-muted);
+}
+
+/* ============================================================================
+   15. EMPTY and ERROR STATES — never a raw stack trace
+   ========================================================================== */
+.al-empty, .al-error {
+  padding: var(--al-6) var(--al-4); text-align: center;
+  border: 1px solid var(--al-rule); background: var(--al-paper-hi);
+}
+.al-empty h3, .al-error h3 { margin: 0 0 var(--al-2); font: 600 20px/25px var(--al-display); }
+.al-empty p, .al-error p { margin: 0 auto var(--al-4); max-width: 46ch; font: 400 15px/23px var(--al-ui); color: var(--al-muted); }
+.al-error { border-left: 3px solid var(--al-accent); text-align: left; }
+
+/* ============================================================================
+   16. BOTTOM SHEET — player folio and other detail, on phones
+   ========================================================================== */
+.al-sheet {
+  position: fixed; inset: 0; z-index: 70; display: flex; align-items: flex-end;
+  background: rgba(10, 35, 66, .38);
+}
+.al-sheet__panel {
+  width: 100%; max-height: 88vh; overflow-y: auto;
+  background: var(--al-paper); border-radius: 12px 12px 0 0;
+  padding-bottom: calc(env(safe-area-inset-bottom) + var(--al-5));
+}
+.al-sheet__grip {
+  position: sticky; top: 0; z-index: 1; background: var(--al-paper);
+  display: flex; align-items: center; gap: var(--al-3);
+  padding: var(--al-3) var(--al-gutter); border-bottom: 1px solid var(--al-rule);
+}
+.al-sheet__grip b { flex: 1 1 auto; font: 600 18px/23px var(--al-display); }
+.al-sheet__body { padding: var(--al-4) var(--al-gutter) 0; }
+
+/* ============================================================================
+   17. DESKTOP — a publication with a measure, not a stretched phone
+   ========================================================================== */
+@media (min-width: 900px) {
+  :root { --al-head: 64px; --al-gutter: 32px; }
+  .al-dock { display: none; }
+  .al-head__nav { display: flex; gap: var(--al-1); flex: 0 0 auto; }
+  .al-head__nav a {
+    padding: 0 var(--al-3); height: 40px; display: flex; align-items: center;
+    font: 600 12px/1 var(--al-ui); letter-spacing: .1em; text-transform: uppercase;
+    color: rgba(255, 254, 252, .68); text-decoration: none; border-bottom: 2px solid transparent;
+  }
+  .al-head__nav a[aria-current="page"] { color: var(--al-paper-hi); border-bottom-color: var(--al-accent); }
+  .al-head__where { flex: 0 0 auto; }
+  .al-head__spacer { flex: 1 1 auto; }
+  /* the dock is gone on desktop, but the sticky bar is not: a screen with an
+     unresolved action still owes its last control room to sit above the bar */
+  .al-page__in { padding-bottom: var(--al-7); }
+  .al-page--acting .al-page__in { padding-bottom: calc(84px + var(--al-7)); }
+  .al-sticky { bottom: 0; }
+  .al-sticky__in { max-width: var(--al-max); margin: 0 auto; display: flex; align-items: center; gap: var(--al-3); width: 100%; }
+  .al-mast h1 { font-size: 44px; line-height: 48px; }
+  .al-plate { margin-left: 0; margin-right: 0; }
+
+  /* editorial spread: story left, standing data right */
+  .al-spread { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--al-6); align-items: start; }
+  /* list and detail: roster left, folio right */
+  .al-listdetail { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: var(--al-6); align-items: start; }
+  /* selection workspace: roster · XI · validation */
+  .al-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 300px; gap: var(--al-5); align-items: start; }
+  .al-rail { position: sticky; top: calc(var(--al-head) + var(--al-4)); }
+  .al-reading { max-width: 68ch; }
+}
+
+/* the sheet becomes a side panel where there is room for one */
+@media (min-width: 900px) {
+  .al-sheet { align-items: stretch; justify-content: flex-end; }
+  .al-sheet__panel { max-width: 460px; max-height: none; border-radius: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+<script src="assets/fo-20260728-2207-0e9fce.js"></script>
 </body></html>
