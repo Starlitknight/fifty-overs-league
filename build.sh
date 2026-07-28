@@ -10,11 +10,22 @@
 #   engine/src/presentation/*    the presentation modules (oval stage, smooth
 #                                renderer, boot), one IIFE, manifest order
 #
-# The assembler splices everything into a single self-contained page. Gameplay
-# is guarded by the golden-master replay suite (test/replay.test.mjs), balance
-# by tools/engine-bench.mjs. Emits two identical entry points:
-#   index.html        -> https://<user>.github.io/<repo>/            (clean URL)
-#   client/game.html  -> .../client/game.html                        (kept stable)
+# PHASE 0 DELIVERY SHAPE — the page and the program are separate files now.
+# One 4 MB self-contained page meant every deploy was an all-or-nothing 4 MB
+# refetch, every CDN cache hit was a chance to serve a stale GAME, and nobody
+# could say which build a stuck screen was running. Now:
+#
+#   index.html / client/game.html   small, served with Cache-Control: no-cache
+#                                   (see _headers) — every load asks the origin
+#   assets/fo-<BUILD_ID>.js         ALL the JavaScript, in one fingerprinted
+#                                   file — cached forever, safely, because a
+#                                   new build has a new name
+#
+# The last few asset files are kept so an HTML copy cached for a few minutes
+# by a lagging CDN node still finds the exact program it names. Gameplay is
+# guarded by the golden-master replay suite (test/replay.test.mjs, which loads
+# the built page THROUGH the same tags a browser follows), balance by
+# tools/engine-bench.mjs.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -27,54 +38,79 @@ BOOT='<style id="fo-boot">html{background:#0B1322}html>body{visibility:hidden;an
 # polls version.json to offer one-tap updates when a newer build is deployed.
 BUILD_ID="$(date -u +%Y%m%d-%H%M)-$(cat engine/src/league/*.js engine/src/presentation/*.js engine/src/skin/*.css | sha256sum | cut -c1-6)"
 
-mkdir -p .build
+mkdir -p .build assets
 FO_BUILD_ID="$BUILD_ID" FO_BOOT="$BOOT" python3 - <<'PYASM'
-import os
+import os, re
 build_id = os.environ['FO_BUILD_ID']
 boot = os.environ['FO_BOOT']
 
 shell = open('engine/shell.html', encoding='utf-8').read()
 names = [n for n in open('engine/src/manifest.txt').read().split('\n') if n]
+
+# ---- the program: every script, in exactly the order the page ran them ----
+js = []
 for i, n in enumerate(names):
-    shell = shell.replace('/*FO_ENGINE_BLOCK_' + str(i) + '*/',
-                          open('engine/src/' + n + '.js', encoding='utf-8').read(), 1)
+    js.append('/* ==== engine:%s ==== */\n' % n +
+              open('engine/src/' + n + '.js', encoding='utf-8').read())
+    # the marker script tag leaves the page entirely; the code now lives in
+    # the bundle at the same relative position
+    tag = re.compile(r'<script[^>]*>/\*FO_ENGINE_BLOCK_' + str(i) + r'\*/</script>')
+    assert tag.search(shell), 'missing marker %d' % i
+    shell = tag.sub('', shell, count=1)
+
+# The Living World snapshot (a real, engine-played season) is baked in as a
+# global so the World Desk renders instantly with no fetch (works on file://
+# and any static host alike). Regenerate with tools/build-world-snapshot.mjs.
+try:
+    world_snapshot = open('world-snapshot.json', encoding='utf-8').read().strip() or '{}'
+except Exception:
+    world_snapshot = '{}'
+js.append('/* ==== world snapshot ==== */\nwindow.FO_WORLD_SNAPSHOT=' + world_snapshot + ';')
 
 league_names = [n for n in open('engine/src/league/manifest.txt').read().split('\n') if n]
-league = ''.join(open('engine/src/league/' + n, encoding='utf-8').read() for n in league_names)
+js.append('/* ==== league layer ==== */\n' +
+          ''.join(open('engine/src/league/' + n, encoding='utf-8').read() for n in league_names))
+
 pres_names = [n for n in open('engine/src/presentation/manifest.txt').read().split('\n') if n]
 pres = '(function(){\n"use strict";\n'
 for n in pres_names:
     pres += '\n/* ---- presentation:%s ---- */\n' % n
     pres += open('engine/src/presentation/' + n, encoding='utf-8').read()
 pres += '\n})();\n'
+js.append(pres)
 
-# The Living World snapshot (a real, engine-played season) is baked in as a
-# global so the World Desk renders instantly with no fetch (works on file://
-# and GitHub Pages alike). Regenerate with tools/build-world-snapshot.mjs.
-try:
-    world_snapshot = open('world-snapshot.json', encoding='utf-8').read().strip() or '{}'
-except Exception:
-    world_snapshot = '{}'
+# the blocks were separate <script> elements sharing the global scope; joined
+# into one file the semantics are the same, and the ';' guards the seams
+bundle = '\n;\n'.join(js).replace('__FO_BUILD__', build_id)
+asset = 'assets/fo-%s.js' % build_id
+open(asset, 'w', encoding='utf-8').write(bundle)
 
+# ---- the page: markup + styles, no JavaScript of its own -------------------
 skin = lambda f: open('engine/src/skin/' + f, encoding='utf-8').read()
 head_css = ('<style id="fo-skin-login">' + skin('10-login.css') + '</style>' +
             '<style id="fo-skin-modal">' + skin('20-modal.css') + '</style>')
-tail = ('\n<style id="fo-brand">' + skin('30-brand.css') + '</style>\n' +
-        '<script id="fo-world-snapshot">window.FO_WORLD_SNAPSHOT=' + world_snapshot + ';</script>\n' +
-        '<script id="fo-league">\n' + league + '\n</script>\n' +
-        '<script id="fo-presentation">\n' + pres + '\n</script>\n')
+tail = '\n<style id="fo-brand">' + skin('30-brand.css') + '</style>\n'
 assert shell.count('</body></html>') == 1
-page = shell.replace('</body></html>', tail + '</body></html>')
+page = shell.replace('</body></html>', tail + '__FO_SCRIPT__</body></html>')
 page = page.replace('<head>', '<head>' + boot, 1)
 page = page.replace('</head>', head_css + '</head>', 1)
 page = page.replace('__FO_BUILD__', build_id)
 
-open('.build/page.html', 'w', encoding='utf-8').write(page)
+# index.html sits at the root; client/game.html one level down
+open('index.html', 'w', encoding='utf-8').write(
+    page.replace('__FO_SCRIPT__', '<script src="' + asset + '"></script>\n'))
+open('client/game.html', 'w', encoding='utf-8').write(
+    page.replace('__FO_SCRIPT__', '<script src="../' + asset + '"></script>\n'))
+
+# keep the last few program files so an HTML copy a lagging cache holds for a
+# few more minutes still finds the exact program it names; prune the rest
+import glob
+assets = sorted(glob.glob('assets/fo-*.js'))
+for old in assets[:-5]:
+    os.remove(old)
 PYASM
 
-cp .build/page.html index.html
-cp .build/page.html client/game.html
 printf '{"build":"%s"}\n' "$BUILD_ID" > version.json
 
-echo "built index.html + client/game.html ($(wc -c < index.html) bytes)"
+echo "built index.html ($(wc -c < index.html) bytes) + assets/fo-$BUILD_ID.js ($(wc -c < assets/fo-$BUILD_ID.js) bytes)"
 echo "build id: $BUILD_ID"

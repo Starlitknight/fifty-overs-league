@@ -44,10 +44,17 @@ function dummyEl() {
 export function makeEngine() {
   const html = readFileSync(BUILT, 'utf8');
   const scripts = [];
-  const re = /<script[^>]*>([\s\S]*?)<\/script>/g;
+  // the page's JavaScript moved into fingerprinted files (Phase 0 delivery
+  // split) - follow every <script> the way a browser would, in document
+  // order: src tags load their file, inline tags keep their body
+  const re = /<script([^>]*)>([\s\S]*?)<\/script>/g;
   let m;
-  while ((m = re.exec(html))) if (m[1].trim()) scripts.push(m[1]);
-  if (scripts.length < 3) throw new Error('engine-vm: run ./build.sh first (index.html has no scripts)');
+  while ((m = re.exec(html))) {
+    const src = /src\s*=\s*["']([^"']+)["']/.exec(m[1]);
+    if (src) scripts.push(readFileSync(path.join(root, src[1]), 'utf8'));
+    else if (m[2].trim()) scripts.push(m[2]);
+  }
+  if (!scripts.length) throw new Error('engine-vm: run ./build.sh first (index.html has no scripts)');
 
   const el = dummyEl();
   const store = new Map();
