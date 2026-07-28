@@ -10636,7 +10636,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260728-0442-3b76a2";
+  var FO_BUILD = "20260728-0451-db0628";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -41044,6 +41044,13 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       if (liv) { sqH = applyLiving(sqH, liv[m.home.name]); sqA = applyLiving(sqA, liv[m.away.name]); }
       var home = { name: m.home.name, ground: (m.home.city || m.home.name) + " Ground", players: sqH };
       var away = { name: m.away.name, players: sqA };
+      // WHOSE MEN THESE ARE. Every name on a broadcast scorecard is a link,
+      // and a link needs to know which club in which nation to ask about. The
+      // engine's own playerLink can only write the name, so the theatre leaves
+      // the match's two clubs here for the player page to read.
+      window.__foWtCtx = { rid: rid, sides: [
+        { country: rid, slot: m.home.slot, name: m.home.name },
+        { country: rid, slot: m.away.slot, name: m.away.name }] };
       var matchId = rid + ":s" + cal.seasonNo + ":r" + srvRound + ":h" + m.home.slot + "a" + m.away.slot;
       var seed = h32(matchId) || 1;
       window.onMatchEnd = function () {};
@@ -41120,6 +41127,9 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           if (d.living) { sqH = applyLiving(sqH, d.living[d.home.name]); sqA = applyLiving(sqA, d.living[d.away.name]); }
           var home = { name: d.home.name, ground: d.home.name + "'s ground", players: sqH };
           var away = { name: d.away.name, players: sqA };
+          window.__foWtCtx = { rid: d.home.country, sides: [
+            { country: d.home.country, slot: d.home.slot, name: d.home.name },
+            { country: d.away.country, slot: d.away.slot, name: d.away.name }] };
           var seed = h32("friendly:" + d.id) || 1;
           window.onMatchEnd = function () {};
           M = newMatch(home, away, "balanced", seed);
@@ -42296,6 +42306,64 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   var TAB = "overview";
   function qp(k) { var m = new RegExp("[?&]" + k + "=([^&]*)").exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : ""; }
 
+  // THE MATCH ON SCREEN KNOWS WHOSE MEN THESE ARE. The theatre records the
+  // two clubs it is broadcasting; if the name belongs to either of them, the
+  // world serves his card exactly as it would from a club page. Deep-linking
+  // #/player?n=X into a cold tab still cannot know, which is what the ?c=/?s=
+  // form is for - so this is a rescue, not a replacement.
+  function fromTheatre(name) {
+    var ctx = null; try { ctx = window.__foWtCtx; } catch (e) {}
+    if (!ctx || !ctx.sides || !ctx.sides.length) return false;
+    for (var i = 0; i < ctx.sides.length; i++) {
+      var s = ctx.sides[i];
+      var row = servedSquad(s.country, s.slot, function () { if (onPage()) build(); });
+      if (row && (row.players || []).some(function (x) { return x && x.name === name; })) {
+        buildCard(s.country, s.slot, name);
+        return true;
+      }
+    }
+    // still fetching: hold the page rather than printing a lie about him
+    var pending = ctx.sides.some(function (s) {
+      return !servedSquadFailed(s.country, s.slot) && !servedSquad(s.country, s.slot, function () { if (onPage()) build(); });
+    });
+    if (pending) {
+      var pg = document.getElementById("page");
+      if (pg) pg.innerHTML = "<div class='fo-pp'><div class='fo-pp-card'><h3>" + E(name) +
+        "</h3><p class='fo-pp-dim'>Sending for his card&hellip;</p></div></div>";
+      return true;
+    }
+    // THE WORLD IS OUT OF REACH, but the broadcast regenerates both squads
+    // from their world seeds, so we still know exactly who he is and who he
+    // plays for. Say that much rather than pretending he does not exist -
+    // and do not invent a card, because his record lives with the service.
+    for (var j = 0; j < ctx.sides.length; j++) {
+      var side = ctx.sides[j], gen = null;
+      try { gen = window.__foWT && window.__foWT.serverSquad(side.country, side.slot); } catch (eG) {}
+      if (!gen || !gen.some(function (x) { return x && x.name === name; })) continue;
+      var pg2 = document.getElementById("page"); if (!pg2) return true;
+      var nat = String(side.country || "").toUpperCase();
+      try {
+        var reg = (window.__foCxAPI.regions() || []).filter(function (x) { return x.id === side.country; })[0];
+        if (reg && reg.nm) nat = reg.nm;
+      } catch (eN) {}
+      pg2.innerHTML = "<div class='fo-pp'><a class='fo-pp-back' href='#/watch?n=" + E(side.country) + "'>&lsaquo; The match</a>" +
+        "<div class='fo-pp-card'><h3>" + E(name) + "</h3>" +
+        "<p class='fo-pp-dim'>He plays for <b>" + E(side.name || ("club " + side.slot)) + "</b> in the " + E(nat) +
+        " league. His card &mdash; the numbers, the form, the record &mdash; is kept by the World Service, " +
+        "which cannot be reached just now. Try him again in a minute.</p></div></div>";
+      return true;
+    }
+    return false;
+  }
+  // and when nobody on earth has heard of him, say so like a cricket book
+  function notInRecord(name) {
+    var pg = document.getElementById("page"); if (!pg) return;
+    pg.innerHTML = "<div class='fo-pp'><a class='fo-pp-back' href='#/squad'>&lsaquo; The squad</a>" +
+      "<div class='fo-pp-card'><h3>" + E(name || "This cricketer") + "</h3>" +
+      "<p class='fo-pp-dim'>No club on the books carries that name. If you followed him out of a broadcast, " +
+      "open the match again and tap him from the card &mdash; the world will send his page down with him.</p></div></div>";
+  }
+
   function build() {
     if (!onPage()) return;
     var page = document.getElementById("page"); if (!page) return;
@@ -42304,7 +42372,14 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     var cidQ = qp("c");
     // a man from another club: the world serves his card, and only his card
     if (cidQ && !isMine(name)) { buildCard(cidQ, parseInt(qp("s"), 10) || 0, name); return; }
-    if (!hit || !hit.p) return;
+    // A NAME OFF A BROADCAST. Every name on a scorecard is a link, but the
+    // engine's own playerLink can only write the name - so a South African or
+    // an Indian watched from the world theatre arrived here as a bare ?n=,
+    // matched nobody in the local league, and the engine printed "Player not
+    // found." at a cricketer who plays every week. The theatre leaves the
+    // match's two clubs behind it; ask them who he is.
+    if (!hit || !hit.p) { if (fromTheatre(name)) return; }
+    if (!hit || !hit.p) { notInRecord(name); return; }
     var p = hit.p, team = hit.team || {}, mine = isMine(p.name);
     // the dark dossier stage is retired; make sure its backdrop goes with it
     try { document.body.classList.remove("fo-pl-on"); var bg = document.getElementById("fo-pl-bg"); if (bg) bg.remove(); } catch (eB) {}
@@ -42520,21 +42595,25 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // skills, no coaching book, no training ground.
   var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
   var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
-  var SQ_CACHE = {}, SQ_BUSY = {};
+  var SQ_CACHE = {}, SQ_BUSY = {}, SQ_DEAD = {};
+  // SQ_DEAD: a squad the world refused to send. Without it a page waiting on
+  // a fetch that will never land sits on "sending for his card" forever
+  // instead of admitting the world is out of reach.
+  function servedSquadFailed(cid, slot) { return !!SQ_DEAD[cid + ":" + slot]; }
   function servedSquad(cid, slot, cb) {
     var k = cid + ":" + slot;
     if (SQ_CACHE[k]) return SQ_CACHE[k];
     if (SQ_BUSY[k]) return null;
     SQ_BUSY[k] = 1;
+    var done = function (ok) { SQ_BUSY[k] = 0; if (!ok) SQ_DEAD[k] = 1; try { if (cb) cb(); } catch (e) {} };
     try {
       fetch(SB_URL + "/rest/v1/world_squads?country_id=eq." + encodeURIComponent(cid) + "&slot=eq." + slot +
         "&select=name,players", { headers: { apikey: SB_ANON } })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (rows) {
-          SQ_BUSY[k] = 0;
-          if (rows && rows[0]) { SQ_CACHE[k] = rows[0]; try { if (cb) cb(); } catch (e) {} }
-        }, function () { SQ_BUSY[k] = 0; });
-    } catch (e) { SQ_BUSY[k] = 0; }
+          if (rows && rows[0]) { SQ_CACHE[k] = rows[0]; done(true); } else done(false);
+        }, function () { done(false); });
+    } catch (e) { done(false); }
     return null;
   }
   // THE OTHER CAREER. A man who has played for his country has a second book

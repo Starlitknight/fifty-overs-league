@@ -278,6 +278,13 @@
       if (liv) { sqH = applyLiving(sqH, liv[m.home.name]); sqA = applyLiving(sqA, liv[m.away.name]); }
       var home = { name: m.home.name, ground: (m.home.city || m.home.name) + " Ground", players: sqH };
       var away = { name: m.away.name, players: sqA };
+      // WHOSE MEN THESE ARE. Every name on a broadcast scorecard is a link,
+      // and a link needs to know which club in which nation to ask about. The
+      // engine's own playerLink can only write the name, so the theatre leaves
+      // the match's two clubs here for the player page to read.
+      window.__foWtCtx = { rid: rid, sides: [
+        { country: rid, slot: m.home.slot, name: m.home.name },
+        { country: rid, slot: m.away.slot, name: m.away.name }] };
       var matchId = rid + ":s" + cal.seasonNo + ":r" + srvRound + ":h" + m.home.slot + "a" + m.away.slot;
       var seed = h32(matchId) || 1;
       window.onMatchEnd = function () {};
@@ -354,6 +361,9 @@
           if (d.living) { sqH = applyLiving(sqH, d.living[d.home.name]); sqA = applyLiving(sqA, d.living[d.away.name]); }
           var home = { name: d.home.name, ground: d.home.name + "'s ground", players: sqH };
           var away = { name: d.away.name, players: sqA };
+          window.__foWtCtx = { rid: d.home.country, sides: [
+            { country: d.home.country, slot: d.home.slot, name: d.home.name },
+            { country: d.away.country, slot: d.away.slot, name: d.away.name }] };
           var seed = h32("friendly:" + d.id) || 1;
           window.onMatchEnd = function () {};
           M = newMatch(home, away, "balanced", seed);
