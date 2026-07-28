@@ -325,19 +325,42 @@
       // is exactly the thing we cannot trust here · one application per tab
       try { if ((window.name || "").indexOf(RELOADED) >= 0) return; } catch (eN) {}
       if (!lsSet(CLOUD_TS, row.updated_at || "")) { foCloudNoRoom(); return; }
-      // write the career first: a half-applied save is worse than an old one,
-      // so nothing is deleted until every key is down
-      var k2, wrote = [];
-      for (k2 in ls) {
-        if (!lsSet(k2, ls[k2])) {
-          wrote.forEach(function (k) { lsDel(k); });   // leave no half-save behind
+      // MAKE ROOM BEFORE MEASURING IT. The old copy of this very save is the
+      // biggest thing in the drawer; clearing the keys the cloud is about to
+      // replace frees their space for the incoming versions. Only fo_*/fol_*
+      // keys the cloud carries are touched - the session survives untouched.
+      try { for (var kP in ls) { if (kP.indexOf("fo_") === 0 || kP.indexOf("fol_") === 0) lsDel(kP); } } catch (ePre) {}
+      // THE CAREER OUTRANKS EVERYTHING ELSE IN THE DRAWER. All-or-nothing was
+      // safe but cruel: one oversized side key locked a manager out of their
+      // whole career on the phone. Now the keys are written biggest-first with
+      // the career at the front of the queue, and a lesser key that will not
+      // fit is simply skipped - it lives on the server and regenerates. Only
+      // when the CAREER ITSELF cannot fit does the device keep what it had
+      // and say so.
+      var names = []; for (var k2 in ls) names.push(k2);
+      names.sort(function (a, b) {
+        var ca = a === "fo_save_v11_3_pace_tuned" ? 0 : 1, cb = b === "fo_save_v11_3_pace_tuned" ? 0 : 1;
+        if (ca !== cb) return ca - cb;
+        return String(ls[b] || "").length - String(ls[a] || "").length;
+      });
+      var skipped = [];
+      for (var n2 = 0; n2 < names.length; n2++) {
+        var key = names[n2];
+        if (lsSet(key, ls[key])) continue;
+        if (key === "fo_save_v11_3_pace_tuned") {   // the career would not fit: keep what this device had
+          names.slice(0, n2).forEach(function (k) { lsDel(k); });
           lsDel(CLOUD_TS);
           foCloudNoRoom(); return;
         }
-        wrote.push(k2);
+        skipped.push(key);
+      }
+      if (skipped.length) {
+        try { console.warn("Fifty Overs: no room for " + skipped.length + " side key(s), kept on the server:", skipped.join(", ")); } catch (eSk) {}
       }
       // stale local fo_* keys from another save would blend into the loaded
-      // one - clear anything the cloud copy does not carry (session survives)
+      // one - clear anything the cloud copy does not carry (session survives).
+      // The pre-clear above only removed keys the cloud was replacing; this
+      // sweeps the ones it does not know about at all.
       var kill = [];
       try {
         for (var i = 0; i < window.localStorage.length; i++) {
@@ -357,7 +380,7 @@
     try {
       if (foCloudNoRoom.__said) return; foCloudNoRoom.__said = 1;
       foCloudPush.__blocked = 1;   // never overwrite the cloud copy from here
-      say("This browser has no room to store your saved career, so it is being left on the server untouched. Private browsing is the usual cause — open the game in a normal window and sign in again.");
+      say("This browser cannot hold your career's offline copy. Nothing is lost — your club lives on the server and plays on. If this is a private/incognito window, a normal one will fix it.");
     } catch (e) {}
   }
   function foCloudBoot() {

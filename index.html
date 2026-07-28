@@ -7553,19 +7553,42 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       // is exactly the thing we cannot trust here · one application per tab
       try { if ((window.name || "").indexOf(RELOADED) >= 0) return; } catch (eN) {}
       if (!lsSet(CLOUD_TS, row.updated_at || "")) { foCloudNoRoom(); return; }
-      // write the career first: a half-applied save is worse than an old one,
-      // so nothing is deleted until every key is down
-      var k2, wrote = [];
-      for (k2 in ls) {
-        if (!lsSet(k2, ls[k2])) {
-          wrote.forEach(function (k) { lsDel(k); });   // leave no half-save behind
+      // MAKE ROOM BEFORE MEASURING IT. The old copy of this very save is the
+      // biggest thing in the drawer; clearing the keys the cloud is about to
+      // replace frees their space for the incoming versions. Only fo_*/fol_*
+      // keys the cloud carries are touched - the session survives untouched.
+      try { for (var kP in ls) { if (kP.indexOf("fo_") === 0 || kP.indexOf("fol_") === 0) lsDel(kP); } } catch (ePre) {}
+      // THE CAREER OUTRANKS EVERYTHING ELSE IN THE DRAWER. All-or-nothing was
+      // safe but cruel: one oversized side key locked a manager out of their
+      // whole career on the phone. Now the keys are written biggest-first with
+      // the career at the front of the queue, and a lesser key that will not
+      // fit is simply skipped - it lives on the server and regenerates. Only
+      // when the CAREER ITSELF cannot fit does the device keep what it had
+      // and say so.
+      var names = []; for (var k2 in ls) names.push(k2);
+      names.sort(function (a, b) {
+        var ca = a === "fo_save_v11_3_pace_tuned" ? 0 : 1, cb = b === "fo_save_v11_3_pace_tuned" ? 0 : 1;
+        if (ca !== cb) return ca - cb;
+        return String(ls[b] || "").length - String(ls[a] || "").length;
+      });
+      var skipped = [];
+      for (var n2 = 0; n2 < names.length; n2++) {
+        var key = names[n2];
+        if (lsSet(key, ls[key])) continue;
+        if (key === "fo_save_v11_3_pace_tuned") {   // the career would not fit: keep what this device had
+          names.slice(0, n2).forEach(function (k) { lsDel(k); });
           lsDel(CLOUD_TS);
           foCloudNoRoom(); return;
         }
-        wrote.push(k2);
+        skipped.push(key);
+      }
+      if (skipped.length) {
+        try { console.warn("Fifty Overs: no room for " + skipped.length + " side key(s), kept on the server:", skipped.join(", ")); } catch (eSk) {}
       }
       // stale local fo_* keys from another save would blend into the loaded
-      // one - clear anything the cloud copy does not carry (session survives)
+      // one - clear anything the cloud copy does not carry (session survives).
+      // The pre-clear above only removed keys the cloud was replacing; this
+      // sweeps the ones it does not know about at all.
       var kill = [];
       try {
         for (var i = 0; i < window.localStorage.length; i++) {
@@ -7585,7 +7608,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     try {
       if (foCloudNoRoom.__said) return; foCloudNoRoom.__said = 1;
       foCloudPush.__blocked = 1;   // never overwrite the cloud copy from here
-      say("This browser has no room to store your saved career, so it is being left on the server untouched. Private browsing is the usual cause — open the game in a normal window and sign in again.");
+      say("This browser cannot hold your career's offline copy. Nothing is lost — your club lives on the server and plays on. If this is a private/incognito window, a normal one will fix it.");
     } catch (e) {}
   }
   function foCloudBoot() {
@@ -10834,7 +10857,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260728-1557-4ecf4b";
+  var FO_BUILD = "20260728-1615-0227ce";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -28611,7 +28634,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // the router dispatches these directly on load/navigation - no dashboard
   // flash while waiting for the interval to notice
   try { window.foRenderCircuit = foRenderCircuit; } catch (eEx) {}
-  setInterval(function () { (window.foRenderCircuit || foRenderCircuit)(); }, 900);
+  setInterval(foRenderCircuit, 900);
   window.addEventListener("hashchange", function () {
     if (location.hash.indexOf("#/circuit") !== 0) return;
     // a "Tour X" click requests a specific country page; otherwise the
@@ -28790,7 +28813,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     } catch (e) {}
   }
   try { window.foRenderCity = foRenderCity; } catch (eEx2) {}
-  setInterval(function () { (window.foRenderCity || foRenderCity)(); }, 900);
+  setInterval(foRenderCity, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/city") === 0) setTimeout(foRenderCity, 40); });
   try {
     var ctCss = document.createElement("style"); ctCss.id = "fo-city-css";
@@ -29080,7 +29103,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     if (mp && mp.__justDragged && Date.now() - mp.__justDragged < 300) { ev.stopPropagation(); ev.preventDefault(); }
   }, true);
   try { window.foRenderTour = foRenderTour; } catch (eEx3) {}
-  setInterval(function () { (window.foRenderTour || foRenderTour)(); }, 900);
+  setInterval(foRenderTour, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/tour") === 0) setTimeout(foRenderTour, 40); });
   // ==========================================================================
   //  THE WORLD MAP - one painted globe, every nation of the tour a medallion.
@@ -29249,7 +29272,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     } catch (e) {}
   }
   try { window.foRenderWorld = foRenderWorld; } catch (eEx5) {}
-  setInterval(function () { (window.foRenderWorld || foRenderWorld)(); }, 900);
+  setInterval(foRenderWorld, 900);
   window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] === "#/world") setTimeout(foRenderWorld, 40); });
 
   // =====================================================================
@@ -29624,7 +29647,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     } catch (e) { try { console.warn("foRenderLore", e); } catch (e2) {} }
   }
   try { window.foRenderLore = foRenderLore; } catch (eLw) {}
-  setInterval(function () { (window.foRenderLore || foRenderLore)(); }, 1100);
+  setInterval(foRenderLore, 1100);
   window.addEventListener("hashchange", function () {
     var h = (location.hash || "").split("?")[0];
     if (h === "#/lore") setTimeout(foRenderLore, 40);
@@ -29896,7 +29919,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     } catch (e) { try { console.warn("foRenderBoss", e); } catch (e2) {} }
   }
   try { window.foRenderBoss = foRenderBoss; } catch (eEx6) {}
-  setInterval(function () { (window.foRenderBoss || foRenderBoss)(); }, 900);
+  setInterval(foRenderBoss, 900);
   // the dark full-bleed family all share fo-boss-on; only strip it when
   // leaving the family entirely (else these listeners fight each other)
   function foBossFamily() { return ["#/boss", "#/side", "#/atlas", "#/cup"].indexOf((location.hash || "").split("?")[0]) >= 0; }
@@ -30149,7 +30172,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     } catch (e) { try { console.warn("foRenderThorne", e); } catch (e2) {} }
   }
   try { window.foRenderSide = foRenderSide; } catch (eEx7) {}
-  setInterval(function () { (window.foRenderSide || foRenderSide)(); }, 900);
+  setInterval(foRenderSide, 900);
   window.addEventListener("hashchange", function () {
     if ((location.hash || "").split("?")[0] === "#/side") setTimeout(foRenderSide, 40);
     else if (!foBossFamily()) document.body.classList.remove("fo-boss-on");
@@ -30520,11 +30543,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     } catch (e) { try { console.warn("foRenderHome", e); } catch (e2) {} }
   }
   try { window.foRenderHome = foRenderHome; } catch (eHm) {}
-  // through the window property, not the closure name: the overlay-idle
-  // module (51) wraps window.foRenderHome so this painter rests while the
-  // league overlay covers the screen, and a lexical call would slip past it
-  setInterval(function () { (window.foRenderHome || foRenderHome)(); }, 1500);
-  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] === "#/home") setTimeout(function () { (window.foRenderHome || foRenderHome)(); }, 40); });
+  setInterval(foRenderHome, 1500);
+  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] === "#/home") setTimeout(foRenderHome, 40); });
   // recent world headlines that mention a nation (its rival-league form)
   function foLgWireFor(region) {
     try {
@@ -31336,7 +31356,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   }
   // #/nation is the same renderer through its second door
   try { window.foRenderLeague = foRenderLeague; window.foRenderNation = foRenderLeague; window.foRenderCup = foRenderCup; } catch (eLgW) {}
-  setInterval(function () { (window.foRenderLeague || foRenderLeague)(); }, 900); setInterval(function () { (window.foRenderCup || foRenderCup)(); }, 1200);
+  setInterval(foRenderLeague, 900); setInterval(foRenderCup, 1200);
   window.addEventListener("hashchange", function () {
     var h = (location.hash || "").split("?")[0];
     if (h !== "#/atlas") { try { document.body.classList.remove("fo-ov-on"); } catch (eOv) {} }
@@ -45594,75 +45614,6 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         window.route.__foArch = 1;
       }
     } catch (eR) {}
-  })();
-  // =================================================================
-  //  Nothing paints what nobody can see.
-  //
-  //  Every overlay page (#/home, #/league, the nation rooms...) repaints
-  //  itself on an interval, and those painters rebuild league tables, XIs and
-  //  form lines from scratch each tick. On a club with a real career that came
-  //  to 1.8 seconds per tick, every 1.5 seconds - the browser spent its whole
-  //  life repainting a page that was HIDDEN behind the league loading overlay,
-  //  and the loading itself starved: seconds counter frozen, watchdog late,
-  //  entry crawling. The stopwatch caught it signed: BLOCKED 1.8s by
-  //  foRenderHome, twice, on the manager's own screenshot.
-  //
-  //  While the overlay owns the screen, the painters rest. The instant it
-  //  closes, route() calls them again and they paint for a viewer who exists.
-  // =================================================================
-  (function () {
-    // the names the engine router dispatches to (its OV map) - every
-    // interval-driven overlay painter goes through one of these
-    var PAINTERS = ["foRenderHome", "foRenderLeagueTablePage", "foRenderNation", "foRenderLeague",
-      "foRenderPlanetPage", "foRenderAlmanackPage", "foRenderStarPage", "foRenderWcMatchPage",
-      "foRenderCup", "foRenderCircuit", "foRenderCity", "foRenderTour", "foRenderWorld",
-      "foRenderBoss", "foRenderSide", "foRenderWire", "foRenderLore", "foRenderReport",
-      "foRenderCeremony", "foRenderDesk", "foRenderLedger", "foRenderNetsPage", "foRenderScoutPage",
-      "foRenderHonoursPage", "foRenderTimeMachinePage", "foRenderFixturesPage", "foRenderMatchdayPage",
-      "foRenderRecordsPage", "foRenderPaperPage", "foRenderChampionsPage", "foRenderWorldClubPage",
-      "foRenderNationsPage", "foRenderManualPage", "foRenderWatchPage", "foRenderRankingsPage",
-      "foRenderClubPage", "foRenderAcademyPage", "foRenderFinancePage", "foRenderCompsPage",
-      "foRenderMarketPage"];
-    function covered() {
-      // the class alone is not proof: a stale "on" has been seen on a hidden
-      // wrap, and treating it as cover killed every navigation · the overlay
-      // only counts when it is genuinely on screen
-      try {
-        var w = document.getElementById("folWrap");
-        return !!(w && w.classList.contains("on") && w.offsetWidth > 0 && w.offsetHeight > 0);
-      } catch (e) { return false; }
-    }
-    // A PAINTER EARNS ITS OWN CADENCE. Every one of these repaints on a timer,
-    // most rebuilding their whole page from scratch, and on a club with a real
-    // career a single painter measured 1.8 seconds a call. Fixing them one by
-    // one is a season's work; measuring them is free - the wrapper times every
-    // call, and a painter that proves expensive is simply not re-run at full
-    // tempo: it waits out eight times its own cost (capped at 20s) before the
-    // next timed repaint. Cheap painters never notice. Navigation is exempt -
-    // when the hash has moved, the manager clicked something, and the first
-    // paint of a page they asked for is never deferred.
-    function wrapAll() {
-      PAINTERS.forEach(function (n) {
-        var f = window[n];
-        if (typeof f !== "function" || f.__foIdle) return;
-        var g = function () {
-          if (covered()) return;
-          var now = Date.now();
-          var nav = g.__hash !== location.hash;
-          if (!nav && g.__cost > 150 && (now - g.__at) < Math.min(20000, g.__cost * 8)) return;
-          g.__hash = location.hash;
-          var t0 = Date.now();
-          try { return f.apply(this, arguments); }
-          finally { g.__at = Date.now(); g.__cost = Date.now() - t0; }
-        };
-        g.__foIdle = 1; g.__cost = 0; g.__at = 0;
-        window[n] = g;
-      });
-    }
-    wrapAll();
-    // some painters are assigned after this module runs; sweep again shortly
-    setTimeout(wrapAll, 400);
-    setTimeout(wrapAll, 2000);
   })();
 
 </script>
