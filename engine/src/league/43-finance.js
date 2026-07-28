@@ -104,6 +104,19 @@
   function render(page, st) {
     var f = st.finance || {}, bank = Number(st.bank || 0);
     var seats = +st.seats || +f.seats || 15000;
+    // BEFORE A BALL IS BOWLED there is nothing to derive from, and a page of
+    // zeroes would read like a bankrupt club rather than a new one
+    if (!f.rounds) {
+      page.innerHTML = shell(
+        "<div class='fo-ac-card'><h3>" + E(st.claim.club || "Your club") + "<span>" + E(st.claim.ground || "") + "</span></h3>" +
+          "<div class='fo-fin-bank'><b>" + money(bank || 2500000) + "</b><i>to start with</i></div></div>" +
+        "<div class='fo-ac-card'><h3>The ground<span>" + num(seats) + " seats</span></h3>" +
+          "<p class='fo-ac-p'>Fifteen thousand, and a following waiting to see whether you are worth the walk.</p>" +
+          "<div class='fo-ac-note'>The books open when your first round settles: what the crowd was, what they paid at " +
+          money(26) + " a ticket, what the sponsor made of the table and what your men cost. The home club keeps two thirds of a gate and the visitors take one third.</div>" +
+        "</div>");
+      return;
+    }
     var att = +f.lastAttendance || 0, avg = +f.avgAttendance || 0;
     var full = seats ? Math.max(2, Math.min(100, Math.round(att / seats * 100))) : 0;
     var inTotal = (+f.gate || 0) + (+f.awayCut || 0) + (+f.sponsor || 0);
