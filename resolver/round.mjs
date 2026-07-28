@@ -128,7 +128,7 @@ async function advanceOne(page, st) {
       // the engine pays the snapshot club's prize through its ledger (App.fin);
       // mirror it onto the club record so every manager's fair books agree
       try { var me = userTeam(); if (App.fin && me && App.fin.bank !== me.bank) me.bank = App.fin.bank; } catch (e) {}
-      return window.snapshot(true);
+      return window.snapshot(false);
     }, { snap });
     rolled.__foAdvDate = now.date;
     await rpc('push_league_state', { p_league_id: lid, p_snapshot: rolled, p_round: 0 });
@@ -174,7 +174,13 @@ async function advanceOne(page, st) {
       }
     }
     window.completeRound();
-    return window.snapshot(true);
+    // SLIM, NOT FULL. snapshot(true) keeps the ball-by-ball log of EVERY match
+    // ever played; snapshot(false) keeps the last two and slims the rest to the
+    // scorecard the reports actually read. This object is the whole shared
+    // league, downloaded by every member each time they open the game, and the
+    // full form grows about 3.5 MB a round: 3 MB after round one, 20 MB by
+    // round six, 44 MB by round twelve. Slimmed it stays flat near 2 MB.
+    return window.snapshot(false);
   }, { snap, pkts: packets.map(r => r.packet) });
 
   newSnap.__foAdvDate = now.date;
