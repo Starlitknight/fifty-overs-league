@@ -7,8 +7,12 @@
 // engine-played season, that the rows it emits make the SQL standings view
 // agree with the engine's own league table to the run.
 
-/** One game.results row from an engine result record. */
-export function resultRow(leagueId, r) {
+/**
+ * One game.results row from an engine result record.
+ * `seasonFallback` is used only for records old enough to predate the engine
+ * stamping seasonNo on every result.
+ */
+export function resultRow(leagueId, r, seasonFallback = 1) {
   const i1 = r.innings && r.innings[0], i2 = r.innings && r.innings[1];
   if (!i1 || !i2) return null;                       // abandoned / malformed
   const side = {};
@@ -19,6 +23,7 @@ export function resultRow(leagueId, r) {
   return {
     league_id: leagueId,
     comp: r.comp || 'league',
+    season_no: typeof r.seasonNo === 'number' ? r.seasonNo : seasonFallback,
     round: typeof r.round === 'number' ? r.round : -1,
     home: r.home, away: r.away,
     winner: (r.result && r.result.winner) || null,

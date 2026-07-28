@@ -7,6 +7,7 @@
 import { openEngine } from './resolve.mjs';
 import { assertEnv, rpc, rest } from './sbrest.mjs';
 import { archiveHeavy } from './archive.mjs';
+import { publishRows } from './publish.mjs';
 
 // League matches play once per day at 09:00 New York time. (Friendlies are played
 // in-game whenever a manager likes — the resolver only advances league rounds.)
@@ -86,17 +87,33 @@ export async function advanceLeagues() {
   // gates have passed (most passes exit at the gates without it).
   const states = await rest('league_state?select=league_id,version,round,updated_at');
   if (!states.length) { console.log('no leagues to advance'); return; }
+  // names are only for the relational rows; a failure there must not stop play
+  const names = {};
+  try { for (const l of await rest('leagues?select=id,name')) names[l.id] = l.name; } catch (e) {}
   const { page, close } = await openEngine();
   try {
     for (const st of states) {
-      try { await advanceOne(page, st); }
+      try { await advanceOne(page, st, names[st.league_id]); }
       catch (e) { console.log('league', st.league_id, 'error:', e.message); }
     }
     await playChallenges(page);
   } finally { await close(); }
 }
 
-async function advanceOne(page, st) {
+// PHASE 1 dual write: the same world, written down as rows. It runs BEFORE
+// archiveHeavy, which lifts the ball-by-ball out of the snapshot — game.match_logs
+// wants exactly those logs. Nothing about it may cost a round, so every failure
+// is reported and swallowed; the rows are upserts on identity, so the next pass
+// simply writes what this one missed.
+async function publishSafe(lid, name, snap) {
+  try {
+    const r = await publishRows(lid, name, snap);
+    if (r) console.log(lid, `rows: ${r.clubs} clubs, ${r.players} players, +${r.results} results, +${r.logs} logs (season ${r.season}, round ${r.round})`);
+    else console.log(lid, 'relational spine unavailable (0024/0025 not run, or `game` not exposed to the API) — snapshot only');
+  } catch (e) { console.log(lid, 'relational write skipped:', e.message); }
+}
+
+async function advanceOne(page, st, leagueName) {
   const lid = st.league_id, round = st.round;
 
   // Gate to one ROUND per day at 09:00 New York time. The snapshot carries the
@@ -132,6 +149,7 @@ async function advanceOne(page, st) {
       return window.snapshot(false);
     }, { snap });
     rolled.__foAdvDate = now.date;
+    await publishSafe(lid, leagueName, rolled);
     // the commentary goes to its own table first; only then is the league
     // published without it, so nobody can open a match whose log is not stored
     const aR = await archiveHeavy(lid, rolled);
@@ -190,6 +208,7 @@ async function advanceOne(page, st) {
 
   newSnap.__foAdvDate = now.date;
   const newRound = (newSnap.season && typeof newSnap.season.round === 'number') ? newSnap.season.round : round + 1;
+  await publishSafe(lid, leagueName, newSnap);
   const aN = await archiveHeavy(lid, newSnap);
   if (aN.split) console.log(lid, `archived ${aN.split} log(s), snapshot ${Math.round(aN.saved / 1024)} KB lighter`);
   await rpc('push_league_state', { p_league_id: lid, p_snapshot: newSnap, p_round: newRound });

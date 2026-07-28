@@ -26,7 +26,8 @@ console.log('migrations applied OK\n');
 const UID = { founder: '11111111-1111-1111-1111-111111111111',
               alice:   '22222222-2222-2222-2222-222222222222',
               bob:     '33333333-3333-3333-3333-333333333333',
-              carol:   '44444444-4444-4444-4444-444444444444' };
+              carol:   '44444444-4444-4444-4444-444444444444',
+              dave:    '55555555-5555-5555-5555-555555555555' };
 const auth   = (uid) => db.query(`select set_config('request.jwt.claim.sub', $1, false)`, [uid ?? '']);
 const logout = () => auth('');
 const one    = async (sql, args=[]) => (await db.query(sql, args)).rows[0];
@@ -78,15 +79,32 @@ ok(await val(`select role::text from app.members where id=$1`, [aliceMid]) === '
    'redeemed member has role=manager');
 ok(await val(`select count(*)::int from app.teams where manager_id=$1`, [aliceMid]) === 1,
    'redeeming created Alice a team');
-ok(await val(`select redeemed_by from app.invites where code='JOIN-ALICE'`) === aliceMid,
-   'invite is bound to the redeeming manager');
+// create_invite mints the SHAREABLE league code (max_uses null, migration
+// 0016): one code the founder gives to everybody, so it counts uses and is
+// never bound to the first person through the door.
+ok(await val(`select uses from app.invites where code='JOIN-ALICE'`) === 1 &&
+   await val(`select redeemed_by from app.invites where code='JOIN-ALICE'`) === null,
+   'the shareable league code counts a use and stays unbound');
 
 // redeem guards
 await auth(UID.carol);
-await throws(() => db.query(`select app.redeem_invite('JOIN-ALICE','Carol C')`),
-  /already redeemed/, 'a used invite cannot be redeemed again');
+const carolMid = await val(`select app.redeem_invite('JOIN-ALICE','Carol C','Carol XI')`);
+ok(!!carolMid && carolMid !== aliceMid,
+  'a second friend can join on the same league code');
 await throws(() => db.query(`select app.redeem_invite('NOPE','Carol C')`),
   /invalid invite/, 'an unknown code is rejected');
+
+// a single-use invite is still single-use, and still names its redeemer
+await auth(UID.founder);
+await db.query(`insert into app.invites(league_id, code, role, max_uses, created_by)
+                values ($1,'ONE-SHOT','manager',1,$2)`, [lg.id, founderMid]);
+await auth(UID.bob);
+const bobMid = await val(`select app.redeem_invite('ONE-SHOT','Bob B','Bob XI')`);
+ok(await val(`select redeemed_by from app.invites where code='ONE-SHOT'`) === bobMid,
+   'a single-use invite is bound to the redeeming manager');
+await auth(UID.dave);
+await throws(() => db.query(`select app.redeem_invite('ONE-SHOT','Dave D')`),
+  /already redeemed/, 'a used single-use invite cannot be redeemed again');
 await auth(UID.alice);
 await throws(() => db.query(`select app.redeem_invite('JOIN-ALICE','Alice again')`),
   /already redeemed|already a member/, 'redeeming twice as the same user is rejected');

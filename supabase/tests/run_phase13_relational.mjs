@@ -43,7 +43,8 @@ ok(world.results.length > 20, `engine played a season: ${world.results.length} r
 // ---- 2. rows into real Postgres ---------------------------------------
 const db = new PGlite();
 const files = await applyAllMigrations(db);
-ok(files.includes('0024_relational_league.sql'), `migrations applied (${files.length}, incl. 0024)`);
+ok(files.includes('0024_relational_league.sql') && files.includes('0025_league_seasons.sql'),
+  `migrations applied (${files.length}, incl. 0024 + 0025)`);
 
 const lg = (await db.query(`insert into game.leagues (name) values ('Test League') returning id`)).rows[0].id;
 
@@ -58,27 +59,33 @@ for (const c of clubRows(lg, world.teams)) {
   }
 }
 
+const insertResult = (row) => db.query(
+  `insert into game.results (league_id, comp, season_no, round, home, away, winner,
+     home_runs, home_wkts, home_balls, away_runs, away_wkts, away_balls, summary, seed, scorecard)
+   values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+  [row.league_id, row.comp, row.season_no, row.round, row.home, row.away, row.winner,
+   row.home_runs, row.home_wkts, row.home_balls, row.away_runs, row.away_wkts, row.away_balls,
+   row.summary, row.seed, JSON.stringify(row.scorecard)]);
+
 let inserted = 0, skipped = 0;
+const rows = [];
 for (const r of world.results) {
   const row = resultRow(lg, r);
   if (!row) { skipped++; continue; }
-  await db.query(
-    `insert into game.results (league_id, comp, round, home, away, winner,
-       home_runs, home_wkts, home_balls, away_runs, away_wkts, away_balls, summary, seed, scorecard)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
-    [row.league_id, row.comp, row.round, row.home, row.away, row.winner,
-     row.home_runs, row.home_wkts, row.home_balls, row.away_runs, row.away_wkts, row.away_balls,
-     row.summary, row.seed, JSON.stringify(row.scorecard)]);
+  await insertResult(row);
+  rows.push(row);
   inserted++;
 }
 ok(inserted === world.results.length && skipped === 0, `every result decomposed cleanly (${inserted} inserted, ${skipped} skipped)`);
+ok(rows.every((r) => r.season_no === 1), 'every result carries the season it was played in');
 
 const nPlayers = (await db.query(`select count(*)::int n from game.players`)).rows[0].n;
 ok(nPlayers >= world.teams.length * 11, `players stored as rows (${nPlayers})`);
 
 // ---- 3. the view must agree with the engine ----------------------------
 const sql = (await db.query(
-  `select club, p, w, l, t, pts, nrr from game.standings where league_id = $1
+  `select club, p, w, l, t, pts, nrr from game.standings
+    where league_id = $1 and season_no = 1
     order by pts desc, nrr desc, club`, [lg])).rows;
 
 // the engine sorts pts then nrr; make club name the tiebreak on both sides so
@@ -99,7 +106,25 @@ for (let i = 0; i < eng.length; i++) {
 }
 ok(agree, 'game.standings matches the engine leagueRows exactly (P/W/L/T/pts, nrr to 1e-6)');
 
-// ---- 4. what a standings page would actually transfer ------------------
+// ---- 4. a new season starts from zero ----------------------------------
+// Replay the same season's matches as season 2. Nothing about season 1's table
+// may move, and season 2 must read exactly the same - which is only true if the
+// view separates seasons rather than summing every result ever played.
+for (const row of rows) await insertResult(Object.assign({}, row, { season_no: 2 }));
+await db.query(`update game.leagues set season_no = 2 where id = $1`, [lg]);
+
+const again = (await db.query(
+  `select club, p, w, l, t, pts, nrr from game.standings
+    where league_id = $1 and season_no = 1 order by pts desc, nrr desc, club`, [lg])).rows;
+ok(JSON.stringify(again) === JSON.stringify(sql), "season 1's table is untouched by season 2's results");
+
+const s2 = (await db.query(
+  `select club, p, w, l, t, pts from game.standings
+    where league_id = $1 and season_no = 2 order by pts desc, nrr desc, club`, [lg])).rows;
+ok(s2.length === sql.length && s2.every((r, i) => r.p === sql[i].p && r.pts === sql[i].pts),
+  `season 2 has its own table of ${s2.length} clubs`);
+
+// ---- 5. what a standings page would actually transfer ------------------
 const bytes = JSON.stringify(sql).length;
 ok(bytes < 4096, `the standings payload is ${bytes} bytes (the snapshot was ~900,000)`);
 

@@ -137,6 +137,13 @@ fifty-overs-league/
 node --test test/*.test.mjs         # 41 — engine, replays, rain, orders, world
 cd server && node --test tests/     # the World Service against a local Postgres
 node tools/calibration-check.mjs    # the engine-freeze gate CI runs
+
+# the friends-league database, on real Postgres in-process (PGlite):
+cd supabase && NODE_PATH=/opt/node22/lib/node_modules node tests/run.mjs
+#   ... and the relational spine — the SQL league table against the engine's own,
+#       and the umpire's dual write against a real played season:
+node tests/run_phase13_relational.mjs   # game.standings == leagueRows()
+node tests/run_phase1b_publish.mjs      # resolver/publish.mjs, round by round
 ```
 
 Never edit `index.html` or `client/game.html` by hand — they are generated from
