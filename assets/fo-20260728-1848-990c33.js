@@ -1355,6 +1355,44 @@ function playerMini(p){return `<span class="player-hoverable" title="${esc(playe
 function playerLink(p){return `<a href="#/player?n=${encodeURIComponent(p.name)}" title="${esc(playerTip(p))}">${esc(p.name)}</a>`}
 
 // ---------- router ----------
+// A BLANK PAGE IS NOT AN OUTCOME. Whatever goes wrong - a renderer that
+// throws, a renderer that runs and paints nothing - the manager must be told
+// and must be given somewhere to go. Silence here reads as "the game is
+// broken" and leaves no way to find out otherwise.
+function foPageFailed(where,err,why){
+  try{
+    const el=document.getElementById('page'); if(!el)return;
+    if(el.querySelector('.fo-page-failed'))return;              // already saying it
+    const detail=err?String((err&&err.message)||err).slice(0,300):'';
+    el.innerHTML='<div class="fo-page-failed" style="max-width:560px;margin:52px auto;padding:22px 24px;border:1px solid rgba(0,0,0,.14);border-radius:14px;background:rgba(255,255,255,.92)">'+
+      '<h3 style="margin:0 0 10px">This page did not draw</h3>'+
+      '<p style="margin:0 0 14px;line-height:1.55">'+esc(why||'Something went wrong drawing this page.')+
+      ' Nothing is lost — your club and everything it has done are safe on the server. Try another page, or reload.</p>'+
+      (detail?'<pre style="margin:0 0 14px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,.05);font-size:11px;line-height:1.5;white-space:pre-wrap;overflow-x:auto">'+esc(detail)+'</pre>':'')+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button onclick="location.hash=\'#/squad\'">Squad</button>'+
+      '<button onclick="location.hash=\'#/fixtures\'">Fixtures</button>'+
+      '<button class="primary" onclick="location.reload()">Reload</button></div></div>';
+  }catch(e){}
+}
+// Some renderers paint on their own interval rather than during route(), so a
+// page that is empty for an instant is normal. One that is STILL empty seconds
+// later, with the route unchanged, is not.
+let foBlankT=null;
+function foBlankWatch(where){
+  try{
+    clearTimeout(foBlankT);
+    foBlankT=setTimeout(function(){
+      try{
+        const el=document.getElementById('page');
+        if(!el||App.page!==where)return;                        // moved on; not our business
+        if(el.firstElementChild)return;                         // something drew
+        console.error('route drew nothing on '+where);
+        foPageFailed(where,null,'The '+where+' page finished loading but drew nothing.');
+      }catch(e){}
+    },5000);
+  }catch(e){}
+}
 function route(){
   try{
   // an empty hash becomes a real #/circuit hash (not just a default) so the
@@ -1387,12 +1425,22 @@ function route(){
   // never flashes the retired club dashboard while their interval spins up
   const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',records:'foRenderRecordsPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',worldclub:'foRenderWorldClubPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',guide:'foRenderManualPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',comps:'foRenderCompsPage',market:'foRenderMarketPage'}[App.page];
   if(P[App.page])P[App.page](q);
-  else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){}}
+  // A RENDERER THAT THROWS USED TO VANISH. This catch was empty, so a page
+  // whose painter hit an error left the topbar, the clock and the nav in place
+  // over an entirely blank body - no message, no console line anyone would
+  // think to look for, no way out. Report it, and put something on the screen
+  // that says what happened and offers somewhere else to go.
+  else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){
+    try{console.error('route renderer failed on '+App.page,eOv)}catch(e3){}
+    foPageFailed(App.page,eOv,'The '+App.page+' page hit an error while drawing.');
+  }}
   else if(OV){/* overlay not parsed yet: leave the page blank, its interval paints */}
   else{location.hash='#/home';return}
+  foBlankWatch(App.page);
   }catch(eRoute){
     // a broken page renderer must not freeze navigation for the whole session
     try{console.error('route failed on '+(App&&App.page),eRoute)}catch(e2){}
+    try{foPageFailed(App&&App.page,eRoute,'This page could not be opened.')}catch(e4){}
   }finally{
     // first-class post-route hook: the league layer decorates the page here
     if(typeof window!=='undefined'&&typeof window.foAfterRoute==='function'){try{window.foAfterRoute()}catch(eAR){}}
@@ -10064,10 +10112,41 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260728-1642-956a35";
+  var FO_BUILD = "20260728-1848-990c33";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
+  }
+  // NEVER LEAP BLIND. Taking an update means a document navigation, and a
+  // navigation that fails to land does not error - the browser keeps showing
+  // this page, spins the tab, AND SWALLOWS EVERY CLICK while it waits. The
+  // manager sees a game that looks perfectly alive with a menu that has simply
+  // died - measured here: the page stops answering even the test driver. So
+  // the new page is fetched FIRST, as data. Only when the origin has actually
+  // answered with it does the real navigation start - and then it lands out of
+  // cache, instantly. If the fetch fails or takes too long, no navigation ever
+  // starts: the game stays fully alive and the pill offers the update instead.
+  function foPull(build) {
+    var dest = location.pathname + "?v=" + encodeURIComponent(build);
+    if (foPull.__busy) return; foPull.__busy = 1;
+    var done = false;
+    var giveUp = setTimeout(function () { if (!done) { done = true; foPull.__busy = 0; foUpdatePill(build, false); } }, 8000);
+    fetch(dest, { cache: "no-store" }).then(function (r) {
+      if (done) return; done = true; clearTimeout(giveUp); foPull.__busy = 0;
+      if (r.ok) location.replace(dest + location.hash);
+      else foUpdatePill(build, false);
+    }, function () {
+      if (done) return; done = true; clearTimeout(giveUp); foPull.__busy = 0;
+      foUpdatePill(build, false);
+    });
+  }
+  function foUpdatePill(build, live) {
+    var el = document.createElement("div");
+    el.id = "fo-update-pill";
+    el.innerHTML = "A new version is ready &middot; <b>tap to update</b>" + (live ? " (your live match resumes at the right over)" : "");
+    el.addEventListener("click", function () { foPull(build); });
+    var old = document.getElementById("fo-update-pill"); if (old) old.remove();
+    document.body.appendChild(el);
   }
   function foCheckUpdate() {
     try {
@@ -10077,28 +10156,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         if (foCheckUpdate._seen === v.build) return;
         foCheckUpdate._seen = v.build;
         var live = false; try { live = (typeof M !== "undefined") && M && !M.done; } catch (e) {}
-        // Nothing on air: pull the new build in automatically. The old guard
-        // burned ONE attempt per build (a localStorage flag) - if that single
-        // pull was itself served stale by a lagging CDN node, the flag was
-        // spent and the player was stranded on the old build for good, staring
-        // at bugs fixed hours earlier. The URL is the honest attempt marker:
-        // if this page is NOT already the landing of a pull for exactly this
-        // build, pull. If it IS - we asked for that build and did not get it -
-        // show the pill instead of looping, and every fresh page load gets to
-        // try again. Mid-match the pill still asks first.
+        // Nothing on air: pull the new build in automatically - through the
+        // verified pull above, never a bare navigation. The URL is the honest
+        // attempt marker: if this page IS already the landing of a pull for
+        // exactly this build and still runs the old one, a lagging cache node
+        // served it - show the pill instead of looping. Mid-match the pill
+        // always asks first.
         var tried = location.search.indexOf("v=" + encodeURIComponent(v.build)) >= 0;
-        if (!live && !tried) {
-          location.replace(location.pathname + "?v=" + encodeURIComponent(v.build) + location.hash);
-          return;
-        }
-        var el = document.createElement("div");
-        el.id = "fo-update-pill";
-        el.innerHTML = "A new version is ready &middot; <b>tap to update</b>" + (live ? " (your live match resumes at the right over)" : "");
-        el.addEventListener("click", function () {
-          location.replace(location.pathname + "?v=" + encodeURIComponent(v.build) + location.hash);
-        });
-        var old = document.getElementById("fo-update-pill"); if (old) old.remove();
-        document.body.appendChild(el);
+        if (!live && !tried) { foPull(v.build); return; }
+        foUpdatePill(v.build, live);
       }).catch(function () {});
     } catch (e) {}
   }
@@ -10375,11 +10441,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     // the overlay over a game that was already being played. From there the
     // painters' covered-screen check held every navigation hostage: the menu
     // died exactly one watchdog-interval after victory.
-    if (!on) {
-      try { clearTimeout(LOAD_TIMER); } catch (e1) {}
-      try { clearInterval(LOAD_PULSE); } catch (e2) {}
-      try { var tok0 = main.querySelector("[data-fo-loading]"); if (tok0) tok0.removeAttribute("data-fo-loading"); } catch (e3) {}
-    }
+    // Nothing to disarm here: the loading heartbeat runs for the life of the
+    // page and decides for itself whether there is anything to do (see foBeat).
   }
 
   btn.addEventListener("click", openLeagueMenu);
@@ -10434,45 +10497,63 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // card for good, with no error, no button and nothing to try. So the card
   // arms a watchdog: if it is still the thing on screen after a patient wait,
   // it turns itself into real choices.
-  var LOAD_TIMER = null, LOAD_PULSE = null;
+  // ONE HEARTBEAT, OWNED BY NOBODY - IT SIMPLY ALWAYS RUNS.
+  //
+  // The counter and the rescue used to belong to the individual loading card
+  // that armed them, identified by a token written into its markup. Closing the
+  // overlay stripped that token (so a successful entry could not be ambushed by
+  // its own watchdog twenty seconds later) but LEFT THE CARD IN THE PAGE. Any
+  // path that then reopened the overlay without successfully repainting showed
+  // that same card again - now with no token at all. Its heartbeat had already
+  // cancelled itself the moment the token vanished, and its watchdog could
+  // never match a token that was gone. The result is a "Loading…" card that
+  // covers the game forever: the counter frozen at 0s, no rescue, nothing
+  // waiting on the wire. Both screenshots of this bug look exactly like that.
+  //
+  // So neither one belongs to anything that can go away. There is ONE interval,
+  // started once and never stopped, and every second it asks the page two
+  // questions: is the overlay covering the game, and is a loading card the
+  // thing it is covering it with? Only then does it tick, and only then can it
+  // decide that a load has gone on too long. No code path arms it, so no code
+  // path can fail to arm it - which is the entire class of bug above, gone.
+  // The cost is two DOM checks a second, against a home painter that already
+  // runs every 1.5.
+  var LOAD_AT = 0, LOAD_MSG = "";
+  var LOAD_PATIENCE = 20000;
+  function foBeat() {
+    try {
+      // the manager is in the game: nothing to tick, nothing to rescue
+      if (!wrap.classList.contains("on")) return;
+      // some other overlay screen is up (welcome, login, lobby, the stuck card
+      // itself) - those are places to BE, not loads to time out. Stand down,
+      // and pick up again the next time a loading card paints.
+      var el = main.querySelector("[data-fo-pulse]");
+      if (!el) return;
+      // A SCREENSHOT MUST DIAGNOSE ITSELF. The counter ticks on this timer and
+      // the lines under it are the last requests with their timings. A photo of
+      // this card separates the kinds of stuck at a glance: counter frozen =
+      // the page's own code has locked the browser; counter running with a
+      // request "still waiting" = the network; counter running with everything
+      // done = the code after them wedged. The build id answers "which version
+      // am I even on?", and a card WITHOUT that line is itself the diagnosis.
+      var lines = [];
+      try { lines = foNetReport().slice(-4); } catch (e1) {}
+      try { lines = lines.concat(foSlowReport()); } catch (e2) {}
+      el.textContent = "build " + ((window.FO_BUILD || "?").slice(0, 20)) + " · " +
+        Math.round((Date.now() - LOAD_AT) / 1000) + "s\n" + lines.join("\n");
+      if (Date.now() - LOAD_AT > LOAD_PATIENCE) foStuck(LOAD_MSG);
+    } catch (e) {}
+  }
   function foLoading(msg) {
     setNavy(false);
-    var tok = "L" + Date.now() + Math.random().toString(36).slice(2, 7);
-    main.innerHTML = '<div class="folbody"><div class="folcard"><div class="folpad" data-fo-loading="' + tok +
-      '" style="text-align:center;padding:28px 12px"><div class="folsmall">' + E(msg || "Loading…") + "</div>" +
-      // A SCREENSHOT MUST DIAGNOSE ITSELF. The counter ticks on a timer and the
-      // lines under it are the last requests with their timings. A photo of
-      // this card now separates the three kinds of stuck at a glance: counter
-      // frozen = the page's own code has locked the browser; counter running,
-      // a request "still waiting" = the network; counter running, all requests
-      // done = the code after them wedged. No more guessing from a still image.
+    LOAD_AT = Date.now(); LOAD_MSG = msg || "Loading";
+    main.innerHTML = '<div class="folbody"><div class="folcard"><div class="folpad" style="text-align:center;padding:28px 12px">' +
+      '<div class="folsmall">' + E(msg || "Loading…") + "</div>" +
       '<div data-fo-pulse style="margin-top:10px;font:600 10px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;opacity:.55;white-space:pre-line"></div>' +
       "</div></div></div>";
-    try { clearTimeout(LOAD_TIMER); } catch (e) {}
-    try { clearInterval(LOAD_PULSE); } catch (e) {}
-    var t0 = Date.now();
-    // the first line answers "which build am I even on?" from the very first
-    // frame - a stuck screenshot then identifies itself, and a card WITHOUT
-    // this line is itself the diagnosis: an old build, however it got here
-    var pulse = function () {
-      try {
-        var el = main.querySelector('[data-fo-loading="' + tok + '"] [data-fo-pulse]');
-        if (!el) { clearInterval(LOAD_PULSE); return; }
-        var lines = [];
-        try { lines = foNetReport(); } catch (e2) {}
-        try { lines = lines.slice(-4).concat(foSlowReport()); } catch (e3) { lines = lines.slice(-4); }
-        el.textContent = "build " + ((window.FO_BUILD || "?").slice(0, 20)) + " · " + Math.round((Date.now() - t0) / 1000) + "s\n" + lines.join("\n");
-      } catch (e) {}
-    };
-    LOAD_PULSE = setInterval(pulse, 1000);
-    try { pulse(); } catch (e0) {}
-    LOAD_TIMER = setTimeout(function () {
-      // fire only while the loading is still THE thing on screen: the token
-      // must survive AND the overlay must still be open - a closed overlay
-      // means the manager is in the game and there is nothing to rescue
-      try { if (main.querySelector('[data-fo-loading="' + tok + '"]') && wrap.classList.contains("on")) foStuck(msg); } catch (e) {}
-    }, 20000);
+    try { foBeat(); } catch (e0) {}
   }
+  setInterval(foBeat, 1000);
   // The way out of a wedged load. Everything here is reachable without the
   // league having finished loading, and none of it touches the server copy of
   // the club - a manager who cannot get in has lost nothing.

@@ -2661,6 +2661,37 @@
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
   }
+  // NEVER LEAP BLIND. Taking an update means a document navigation, and a
+  // navigation that fails to land does not error - the browser keeps showing
+  // this page, spins the tab, AND SWALLOWS EVERY CLICK while it waits. The
+  // manager sees a game that looks perfectly alive with a menu that has simply
+  // died - measured here: the page stops answering even the test driver. So
+  // the new page is fetched FIRST, as data. Only when the origin has actually
+  // answered with it does the real navigation start - and then it lands out of
+  // cache, instantly. If the fetch fails or takes too long, no navigation ever
+  // starts: the game stays fully alive and the pill offers the update instead.
+  function foPull(build) {
+    var dest = location.pathname + "?v=" + encodeURIComponent(build);
+    if (foPull.__busy) return; foPull.__busy = 1;
+    var done = false;
+    var giveUp = setTimeout(function () { if (!done) { done = true; foPull.__busy = 0; foUpdatePill(build, false); } }, 8000);
+    fetch(dest, { cache: "no-store" }).then(function (r) {
+      if (done) return; done = true; clearTimeout(giveUp); foPull.__busy = 0;
+      if (r.ok) location.replace(dest + location.hash);
+      else foUpdatePill(build, false);
+    }, function () {
+      if (done) return; done = true; clearTimeout(giveUp); foPull.__busy = 0;
+      foUpdatePill(build, false);
+    });
+  }
+  function foUpdatePill(build, live) {
+    var el = document.createElement("div");
+    el.id = "fo-update-pill";
+    el.innerHTML = "A new version is ready &middot; <b>tap to update</b>" + (live ? " (your live match resumes at the right over)" : "");
+    el.addEventListener("click", function () { foPull(build); });
+    var old = document.getElementById("fo-update-pill"); if (old) old.remove();
+    document.body.appendChild(el);
+  }
   function foCheckUpdate() {
     try {
       if (/^file:/.test(location.protocol) || FO_BUILD.indexOf("__") === 0) return;
@@ -2669,28 +2700,15 @@
         if (foCheckUpdate._seen === v.build) return;
         foCheckUpdate._seen = v.build;
         var live = false; try { live = (typeof M !== "undefined") && M && !M.done; } catch (e) {}
-        // Nothing on air: pull the new build in automatically. The old guard
-        // burned ONE attempt per build (a localStorage flag) - if that single
-        // pull was itself served stale by a lagging CDN node, the flag was
-        // spent and the player was stranded on the old build for good, staring
-        // at bugs fixed hours earlier. The URL is the honest attempt marker:
-        // if this page is NOT already the landing of a pull for exactly this
-        // build, pull. If it IS - we asked for that build and did not get it -
-        // show the pill instead of looping, and every fresh page load gets to
-        // try again. Mid-match the pill still asks first.
+        // Nothing on air: pull the new build in automatically - through the
+        // verified pull above, never a bare navigation. The URL is the honest
+        // attempt marker: if this page IS already the landing of a pull for
+        // exactly this build and still runs the old one, a lagging cache node
+        // served it - show the pill instead of looping. Mid-match the pill
+        // always asks first.
         var tried = location.search.indexOf("v=" + encodeURIComponent(v.build)) >= 0;
-        if (!live && !tried) {
-          location.replace(location.pathname + "?v=" + encodeURIComponent(v.build) + location.hash);
-          return;
-        }
-        var el = document.createElement("div");
-        el.id = "fo-update-pill";
-        el.innerHTML = "A new version is ready &middot; <b>tap to update</b>" + (live ? " (your live match resumes at the right over)" : "");
-        el.addEventListener("click", function () {
-          location.replace(location.pathname + "?v=" + encodeURIComponent(v.build) + location.hash);
-        });
-        var old = document.getElementById("fo-update-pill"); if (old) old.remove();
-        document.body.appendChild(el);
+        if (!live && !tried) { foPull(v.build); return; }
+        foUpdatePill(v.build, live);
       }).catch(function () {});
     } catch (e) {}
   }
