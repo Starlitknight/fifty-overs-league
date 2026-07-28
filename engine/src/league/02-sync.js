@@ -4,6 +4,49 @@
   //  pull the shared league snapshot, push your own orders packet, and
   //  let the game's own table/fixtures/match screens do the rest.
   // =================================================================
+  // THE SEASON YOU ALREADY HAVE IS NOT WORTH DOWNLOADING AGAIN.
+  // The shared snapshot is the whole league - every club, every squad, every
+  // result - and it only changes when the umpire advances a round, which is
+  // once a day. Re-downloading it every time you open the game is the single
+  // most expensive thing the client does, and almost always for a copy of
+  // something this device already had. So it is kept here, stamped with the
+  // version it came from, and a season whose version still matches the
+  // server's is opened without touching the wire at all.
+  // IndexedDB rather than localStorage: megabytes belong nowhere near the
+  // five-megabyte drawer the career save already lives in.
+  var IDB_NAME = "fifty-overs", IDB_STORE = "snap";
+  function idbOpen() {
+    return new Promise(function (res, rej) {
+      try {
+        var rq = window.indexedDB.open(IDB_NAME, 1);
+        rq.onupgradeneeded = function () { try { rq.result.createObjectStore(IDB_STORE); } catch (e) {} };
+        rq.onsuccess = function () { res(rq.result); };
+        rq.onerror = function () { rej(rq.error); };
+        rq.onblocked = function () { rej(new Error("blocked")); };
+      } catch (e) { rej(e); }
+    });
+  }
+  function foSnapGet(leagueId) {
+    return idbOpen().then(function (db) {
+      return new Promise(function (res, rej) {
+        var rq = db.transaction(IDB_STORE, "readonly").objectStore(IDB_STORE).get("snap:" + leagueId);
+        rq.onsuccess = function () { res(rq.result || null); };
+        rq.onerror = function () { rej(rq.error); };
+      });
+    }).then(function (v) {
+      return (v && typeof v.version === "number" && v.snapshot) ? v : null;
+    }).catch(function () { return null; });
+  }
+  // one row per league, overwritten each round · the store cannot grow
+  function foSnapPut(leagueId, st) {
+    try {
+      if (!st || typeof st.version !== "number" || !st.snapshot) return;
+      idbOpen().then(function (db) {
+        try { db.transaction(IDB_STORE, "readwrite").objectStore(IDB_STORE).put({ version: st.version, round: st.round, snapshot: st.snapshot }, "snap:" + leagueId); } catch (e) {}
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
   function enterGame(league) {
     LG = league;
     // NAME THE STEP, NOT JUST THE LEAGUE. Entry is four requests, one of them
@@ -12,12 +55,22 @@
     // can anyone they show it to. Each stage says what it is waiting for, so a
     // stall points at the request that caused it.
     foLoading("Loading " + (league.name || "your league") + " · finding your club…");
+    // ALL OF IT AT ONCE. Which club is yours and what the season looks like are
+    // independent questions, and asking the second only after the first came
+    // back made entry the sum of two waits instead of the longer of them. The
+    // version probe is a few bytes and rides alongside the club lookup, so by
+    // the time we know who you are we already know whether the season this
+    // device is holding is still the current one.
+    var stateP = sel("league_state", "league_id=eq." + LG.id + "&select=version,round")
+      .then(function (a) { return { ok: a }; }, function (e) { return { err: e }; });
+    var cacheP = foSnapGet(LG.id);
     return Promise.all([
       sel("teams", "league_id=eq." + LG.id + "&select=id,name,country,draft_seed,manager_id"),
       sel("members", "league_id=eq." + LG.id + "&select=id,role,display_name"),
-      rpc("resolve_manager_id", { p_league_id: LG.id })
+      rpc("resolve_manager_id", { p_league_id: LG.id }),
+      stateP, cacheP
     ]).then(function (r) {
-      var teams = r[0], mem = r[1], myMid = r[2];
+      var teams = r[0], mem = r[1], myMid = r[2], state = r[3], cached = r[4];
       SYNC = {
         myMid: myMid,
         me: mem.filter(function (m) { return m.id === myMid; })[0] || null,
@@ -26,6 +79,15 @@
       };
       SYNC.isFounder = !!(SYNC.me && SYNC.me.role === "founder");
       if (LG.build_hash && LG.build_hash !== BUILD_HASH) console.warn("Fifty Overs: your game build differs from this league's pinned engine.");
+      // the probe failed · fall back to the old single request, whose own error
+      // handling knows the difference between a missing table and a bad line
+      if (state.err) { foLoading("Loading " + (league.name || "your league") + " · downloading the season…"); return syncTick(true); }
+      var st = state.ok && state.ok[0];
+      if (!st) return syncTick(true, []);                       // no season pushed yet
+      if (cached && cached.version === st.version) {            // already have this exact season
+        foLoading("Loading " + (league.name || "your league") + " · opening the season…");
+        return syncTick(true, [{ snapshot: cached.snapshot, version: st.version, round: st.round }]);
+      }
       foLoading("Loading " + (league.name || "your league") + " · downloading the season…");
       return syncTick(true);
     }).catch(function (e) { foFatal("Could not load the league (" + ((e && e.message) || e) + "). Check your connection and reload."); });
@@ -51,9 +113,15 @@
       return !!(snap && snap.teams && snap.teams.some(function (t) { return t && t.name === SYNC.myTeam.name; }));
     } catch (e) { return false; }
   }
-  function syncTick(first) {
+  // `pre` lets entry hand in a season it already has - from this device's copy,
+  // or from a probe that has just proved the copy current - so the common case
+  // opens without the megabytes. Everything downstream is unchanged.
+  function syncTick(first, pre) {
     if (!LG) return Promise.resolve();
-    return sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version,round").then(function (a) {
+    return (pre ? Promise.resolve(pre) : sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version,round").then(function (a) {
+      try { if (a && a[0]) foSnapPut(LG.id, a[0]); } catch (e) {}
+      return a;
+    })).then(function (a) {
       var st = a[0];
       if (st) {
         if (!myClubInSnap(st.snapshot)) {
@@ -614,6 +682,7 @@
       return sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version,round");
     }).then(function (a) {
       var st = a && a[0]; if (!st || st.version <= SYNC.lastVersion) return;
+      try { foSnapPut(LG.id, st); } catch (eC) {}                  // keep it, so tomorrow's first load is instant
       if (document.getElementById("fo-onb")) return;               // never yank the draft room away mid-pick
       SYNC.lastVersion = st.version;
       // auto-enter once a rebuild includes us; if we were parked in the lobby, land on the club page
