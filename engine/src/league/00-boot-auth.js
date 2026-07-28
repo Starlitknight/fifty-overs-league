@@ -94,8 +94,11 @@
     var timer = null;
     var kill = new Promise(function (_, reject) {
       timer = setTimeout(function () {
+        // reject BEFORE aborting · the other way round the browser's own
+        // "signal is aborted without reason" wins the race and that is what
+        // the manager reads on the error card
+        reject(new Error("the server did not answer in time"));
         try { if (ctl) ctl.abort(); } catch (e2) {}
-        reject(new Error("The server did not answer in time. Check your connection and try again."));
       }, NET_TIMEOUT);
     });
     return Promise.race([fetch(url, o), kill]).then(
@@ -108,7 +111,9 @@
   // small localStorage wrapper (private mode / disabled storage safe)
   var PEND = "fol_pending_invite";
   function lsGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
-  function lsSet(k, v) { try { window.localStorage.setItem(k, v); } catch (e) { } }
+  // reports whether the write actually stuck · a phone in private browsing, or
+  // one whose storage is full, accepts the call and keeps nothing
+  function lsSet(k, v) { try { window.localStorage.setItem(k, v); return window.localStorage.getItem(k) === v; } catch (e) { return false; } }
   function lsDel(k) { try { window.localStorage.removeItem(k); } catch (e) { } }
 
   // ---- stay logged in across refreshes: persist + restore the Supabase session ----
@@ -191,7 +196,7 @@
   var foCloudBusy = false, foCloudSent = "", foCloudTimer = null;
   function foCloudPush(force) {
     try {
-      if (!JWT || foCloudBusy) return;
+      if (!JWT || foCloudBusy || foCloudPush.__blocked) return;
       var body = JSON.stringify([{ data: { ls: foCloudKeys() } }]);
       var h = foCloudHash(body);
       if (!force && h === foCloudSent) return;    // nothing changed since the last push
@@ -211,9 +216,37 @@
     if (foCloudTimer) clearTimeout(foCloudTimer);
     foCloudTimer = setTimeout(function () { foCloudTimer = null; foCloudPush(false); }, 12000);
   }
+  // A DEVICE THAT CANNOT KEEP THE SAVE MUST NOT RELOAD.
+  // Taking the cloud career ends in location.reload(), so the engine boots on
+  // the restored save rather than the one already in memory. That is fine right
+  // up until the writes do not stick - private browsing, a full quota, a phone
+  // that has quietly run out of room. Then the next boot sees the same cloud
+  // copy it has "already" taken, applies it again, reloads again, and the
+  // manager watches "Signing you in…" forever while the tab reloads several
+  // times a second. Measured: 132 reloads in fifteen seconds.
+  // So: prove the store accepts a write before touching anything, write the
+  // career before deleting what it replaces, and only reload once everything
+  // is safely down. A device that cannot hold the save keeps the one it has
+  // and is told why, which is worth far more than a spinner.
+  var RELOADED = "foCloudApplied";
   function foCloudLoad(row) {
     try {
       var ls = row && row.data && row.data.ls; if (!ls) return;
+      // window.name survives a same-tab reload without needing storage, which
+      // is exactly the thing we cannot trust here · one application per tab
+      try { if ((window.name || "").indexOf(RELOADED) >= 0) return; } catch (eN) {}
+      if (!lsSet(CLOUD_TS, row.updated_at || "")) { foCloudNoRoom(); return; }
+      // write the career first: a half-applied save is worse than an old one,
+      // so nothing is deleted until every key is down
+      var k2, wrote = [];
+      for (k2 in ls) {
+        if (!lsSet(k2, ls[k2])) {
+          wrote.forEach(function (k) { lsDel(k); });   // leave no half-save behind
+          lsDel(CLOUD_TS);
+          foCloudNoRoom(); return;
+        }
+        wrote.push(k2);
+      }
       // stale local fo_* keys from another save would blend into the loaded
       // one - clear anything the cloud copy does not carry (session survives)
       var kill = [];
@@ -226,10 +259,17 @@
         }
       } catch (e) {}
       kill.forEach(function (k) { lsDel(k); });
-      for (var k2 in ls) lsSet(k2, ls[k2]);
-      lsSet(CLOUD_TS, row.updated_at || "");
+      try { window.name = (window.name || "") + RELOADED; } catch (eN2) {}
       location.reload();
     } catch (e) { say(e); }
+  }
+  // Said once, and only on the device that has the problem.
+  function foCloudNoRoom() {
+    try {
+      if (foCloudNoRoom.__said) return; foCloudNoRoom.__said = 1;
+      foCloudPush.__blocked = 1;   // never overwrite the cloud copy from here
+      say("This browser has no room to store your saved career, so it is being left on the server untouched. Private browsing is the usual cause — open the game in a normal window and sign in again.");
+    } catch (e) {}
   }
   function foCloudBoot() {
     try {

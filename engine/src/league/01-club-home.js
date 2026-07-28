@@ -3037,9 +3037,16 @@
   function foFatal(msg) {
     openWrap(true); setNavy(false);
     main.innerHTML = '<div class="folbody"><div class="folcard"><h4>Something went wrong</h4><div class="folpad">' +
-      '<div class="folsmall" style="line-height:1.5;margin-bottom:10px">' + E(msg) + "</div>" +
-      '<button class="mini" data-act="reload">&#8635; Reload</button> <button class="mini" data-act="logout">log out</button>' +
-      "</div></div></div>";
+      '<div class="folsmall" style="line-height:1.55;margin-bottom:12px">' + E(msg) + "</div>" +
+      // the same ways out as the watchdog card · a failure that lands here is
+      // the same predicament, and "Reload" alone is no help when reloading is
+      // exactly what has already been tried
+      '<div style="display:flex;flex-direction:column;gap:8px;align-items:stretch">' +
+      '<button class="p" data-act="reload">&#8635; Try again</button>' +
+      '<button class="mini" data-act="lobby">Open the league lobby</button>' +
+      '<button class="mini" data-act="practice">Play a practice game meanwhile</button>' +
+      '<button class="mini" data-act="logout">Log out</button>' +
+      "</div></div></div></div>";
   }
 
   // ---- auth (Fifty Overs brand login) ----
