@@ -66,7 +66,23 @@ The owner's spec, in their words, refined by the FTP manual:
    youth_matches, the table and card in the snapshot colts/<country>, and each
    boy's own Colts record back onto the boy (coltRecords). Youth cricket never
    touches a senior first-class career. Shown on #/academy.]
-7. ECONOMY: attendance from supporters+mood+division+weather, gate takings
+7. [BUILT — migration 020 + server/economy.mjs. The treasury stopped being four
+   flat numbers: settleMoney now WALKS every round a country has ever played
+   and derives the lot. Supporters drift toward what mood + position deserve
+   (4k-60k); mood is a reading of the last five results and the table
+   (mutinous..ecstatic), never a counter; attendance = following x mood x who
+   is visiting (flagship/top three draw) x the weather, capped by seats;
+   weather is a pure function of the fixture seed, so nobody stores it and it
+   moves the turnstiles, not the cricket. The gate splits two thirds home, one
+   third away. The sponsor pays by the round off the standings. Out go wages,
+   academy upkeep, and 3% a round on an overdraft. The one decision is the
+   ground: world_set_stadium buys seats a thousand at a time (dearer each
+   block, cost mirrored in SQL as world_seat_cost and held to the server's
+   answer by test 020), never sold back, no borrowing to build; what was spent
+   is carried from the founding so it cannot hide in an overdraft. Room at
+   #/finance. NOT built: division tiers (one league a nation), a supporter-mood
+   ladder with mechanical effects beyond the gate, and a hard finance cap.]
+   ECONOMY: attendance from supporters+mood+division+weather, gate takings
    split 2/3-1/3, sponsorship tied to results, stadium expansion (+$ per
    seat), supporter mood ladder, debt rules, finance cap.
 8. SEASON HONOURS (FTP trophy categories): league position, cup, most

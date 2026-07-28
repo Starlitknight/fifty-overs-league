@@ -19,8 +19,9 @@
 import { countryConfigs } from './init-world.mjs';
 
 export const CAP = lv => 2 + Math.max(1, Math.min(5, lv || 2));
-export const UPKEEP_PER_ROUND = 900;        // what an academy level costs a round
 const PROMOTE_AT = 21;
+// what a level costs a round is the books' business, not the academy's
+export { ACADEMY_UPKEEP } from './economy.mjs';
 
 // the same 32-bit hash the client and the world generator use
 function h32(s) {

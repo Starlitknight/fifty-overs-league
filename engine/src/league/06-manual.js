@@ -115,6 +115,17 @@
         "<tr><td>Anyone shattered</td><td><b>Rest</b></td><td>A week of progress traded for legs that work on matchday.</td></tr></table>",
         "<div class='fo-man-tip'><b>Two honest warnings:</b> skill gains raise wages automatically, so improvement is never free. And academy level, squad age and rest discipline compound: none shows much in a single week; over a season the difference is significant.</div>"
       ].join("")],
+      ["books", "The books: the crowd, the gate and the ground", [
+        "<p>Nobody credits your account. The umpire walks every round your club has ever played and works out what your money is: what the crowd was, what they paid, what the sponsor thought and what your men cost. Open it at <b>The books</b> from your club office.</p>",
+        "<ul><li><b>The crowd.</b> Every club carries a following. It grows when you win and where you finish, and it drifts away when you don't - slowly in both directions, which is the point. A good season builds you a following; a bad one costs you one before you have noticed.</li>",
+        "<li><b>The mood</b> is a reading, not a counter: your last five results and your position in the table. It runs from <i>mutinous</i> to <i>ecstatic</i>, and it decides how many of your supporters actually turn up.</li>",
+        "<li><b>The gate.</b> Attendance is your following, adjusted for the mood, who is visiting (the flagship and the leaders draw a crowd) and the weather that day - and it can never exceed the seats you have built. Tickets are a fixed price; the <b>home club keeps two thirds and the visitors take one third</b>, so a full house pays you twice: once at your ground and again at theirs.</li>",
+        "<li><b>The sponsor</b> pays by the round and reads the table before he signs. Finish higher, earn more.</li>",
+        "<li><b>Out</b> go wages every round, academy upkeep by the level, and whatever you have spent on your ground and your academy.</li>",
+        "<li><b>An overdraft costs.</b> Go below nothing and the bank takes three per cent of what you owe every round until you are level. Nothing stops you playing - but it compounds, and winning is the only way out.</li></ul>",
+        "<p><b>The one decision is the ground.</b> Seats come a thousand at a time, they are never sold back, and the treasury has to hold the money on the day - no borrowing to build. Each further thousand costs more per seat than the last, and empty seats earn nothing, so build into a crowd you already have rather than one you are hoping for.</p>",
+        "<div class='fo-man-tip'><b>Why it can be trusted:</b> every line is derived from the record rather than added to a running total. Settle the same season a hundred times and the same figure comes back - which is also why nobody can quietly credit anybody.</div>"
+      ].join("")],
       ["academy", "The academy and the colts", [
         "<p>Your club in the served world runs an <b>academy</b>, and so does every other club in all nineteen leagues - the ones with managers and the ones without. It is the one part of the game that works entirely on its own: a boy arrives when there is a bed for him, every colt gets a year older at the turn of the season, and any colt who reaches <b>twenty-one</b> is handed a senior shirt automatically. Nothing about it can be missed by being asleep, which is the point.</p>",
         "<p>Open it at <b>The academy</b> from your club office. What you see is your level, the beds taken, what the place costs to run, and every boy on the books with a bar showing how far along he is.</p>",
@@ -245,7 +256,7 @@
       ["Players & squad", "Reading player cards: skills, form, fatigue, talents, age.", ["players"]],
       ["Matches & tactics", "Orders, conditions, the match centre and the table.", ["orders", "conditions", "matchcentre", "scouting", "practice", "league"]],
       ["Development", "Training programs, the academy and the youth pipeline.", ["training", "academy", "youth"]],
-      ["Club operations", "Money, sponsors and the transfer market.", ["money", "sponsors", "market"]],
+      ["Club operations", "The books, the ground, sponsors and the transfer market.", ["books", "money", "sponsors", "market"]],
       ["Reference", "Glossaries, the living league, and quick answers.", ["attributes", "talents", "world", "faq"]]
     ].map(function (c) { return { name: c[0], desc: c[1], arts: c[2].filter(function (id) { return byId[id]; }) }; });
     var flat = []; cats.forEach(function (c) { c.arts.forEach(function (id) { flat.push(id); }); });

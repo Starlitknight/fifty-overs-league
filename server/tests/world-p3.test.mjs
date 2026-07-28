@@ -19,9 +19,10 @@ import { initWorld, countryConfigs } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { runAllDue, runCupWindow, rollSeasons, runTick, computeLeague, rebuildHonours, computeRankings, runFriendlies, settleMoney } from '../tick.mjs';
 import { evolveCountry, applyLiving, livingPatch } from '../living.mjs';
-import { CAP, UPKEEP_PER_ROUND, makeColt, ensureYouth, ageYouth,
+import { CAP, makeColt, ensureYouth, ageYouth,
   coltsRoundOf, coltsSquad, playColtsRound, coltRecords } from '../youth.mjs';
 import { academyRate } from '../living.mjs';
+import { ACADEMY_UPKEEP, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance } from '../economy.mjs';
 import { EPOCH, DAY, seedOf } from '../clock.mjs';
 
 const DBNAME = 'foworld_p3_test';
@@ -721,7 +722,7 @@ test('018: the academy brings boys through, paid for and recomputable', async ()
 
   await settleMoney(pool, 'eng');
   const bank1 = Number((await pool.query(`SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank);
-  assert.equal(bank1, bank0 - 300000 - rounds * 2 * UPKEEP_PER_ROUND,
+  assert.equal(bank1, bank0 - 300000 - rounds * 2 * ACADEMY_UPKEEP,
     'settling from genesis charges the upgrade once and the bigger academy every round');
   await settleMoney(pool, 'eng');
   assert.equal(Number((await pool.query(
@@ -896,4 +897,130 @@ test('019: the Colts Cup plays itself, and the academy sets the rate in the nets
     `SELECT DISTINCT academy FROM training_rounds WHERE country_id='eng' AND slot=1`)).rows;
   assert.ok(banked.length && banked.every(r => r.academy >= 1 && r.academy <= 5),
     'every round remembers the academy that worked it');
+});
+
+// 020: THE BOOKS. A club's money stops being four flat numbers and becomes a
+// ledger the umpire walks from the founding - a crowd that grows on winning,
+// a mood that reads the last five results and the table, a gate split two
+// thirds and one third, a sponsor who checks the standings, wages and upkeep
+// by the round, and interest on an overdraft. Every line derived; nothing
+// incremented; settle it twice and it settles the same.
+test('020: the books are a ledger, and they recompute from the record', async () => {
+  // THE DAY AT THE GROUND is a pure function of the fixture - nobody stores it
+  assert.deepEqual(weatherOf('eng:s1:r1:h1a2'), weatherOf('eng:s1:r1:h1a2'));
+  assert.ok(weatherOf(0).word && weatherOf(0).mult > 0);
+  const words = new Set(); for (let i = 0; i < 40; i++) words.add(weatherOf(i).word);
+  assert.ok(words.size > 1, 'the weather is not always the same day');
+
+  // WHAT THE SUPPORTERS THINK is a reading, not a counter
+  assert.equal(moodOf([2, 2, 2, 2, 2], 1, 10), 6, 'winning everything from the top is ecstatic');
+  assert.equal(moodOf([0, 0, 0, 0, 0], 10, 10), 0, 'losing everything from the bottom is mutinous');
+  assert.ok(moodOf([2, 0, 2, 0, 1], 5, 10) > 0 && moodOf([2, 0, 2, 0, 1], 5, 10) < 6);
+
+  // THE LEDGER ITSELF
+  await settleMoney(pool, 'eng');
+  const rows = (await pool.query(
+    `SELECT slot, bank, seats, finance FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows;
+  assert.equal(rows.length, 10);
+  for (const r of rows) {
+    const f = r.finance;
+    assert.ok(f && f.rounds > 0, 'club ' + r.slot + ' has played and been paid');
+    assert.ok(f.supporters >= 4000 && f.supporters <= 60000, 'a believable following');
+    assert.ok(f.mood >= 0 && f.mood <= 6 && MOOD_WORD[f.mood] === f.moodWord);
+    assert.ok(f.lastAttendance > 0 && f.lastAttendance <= r.seats, 'nobody sold more seats than they built');
+    assert.ok(f.gate > 0 && f.awayCut > 0, 'money came through the gate at home and away');
+    assert.ok(f.sponsor > 0 && f.wages > 0 && f.upkeep > 0);
+    assert.equal(f.ticket, TICKET);
+  }
+  // the bank IS the ledger: founded, plus what came in, less what went out
+  for (const r of rows) {
+    const f = r.finance;
+    const expect = f.founded + f.gate + f.awayCut + f.sponsor
+      - f.wages - f.upkeep - f.interest - f.academyPaid - f.seatsPaid;
+    assert.equal(Number(r.bank), Math.round(expect), 'club ' + r.slot + ': the books add up');
+  }
+  // and settling twice settles the same figure
+  const before = rows.map(r => Number(r.bank));
+  await settleMoney(pool, 'eng');
+  const after = (await pool.query(
+    `SELECT bank FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows.map(r => Number(r.bank));
+  assert.deepEqual(after, before, 'the ledger never drifts');
+
+  // WINNING PAYS. The club at the top of the table draws a bigger crowd, is in
+  // a better mood and is richer than the club at the bottom.
+  const lg = (await pool.query(`SELECT body FROM snapshots WHERE key='league/eng'`)).rows[0].body;
+  const top = rows.find(r => r.slot === lg.table[0].slot), bot = rows.find(r => r.slot === lg.table[9].slot);
+  assert.ok(top.finance.supporters > bot.finance.supporters,
+    'the champions have the bigger following (' + top.finance.supporters + ' v ' + bot.finance.supporters + ')');
+  assert.ok(top.finance.mood >= bot.finance.mood, 'and the happier one');
+
+  // THE GATE SPLIT: two thirds to the home club, one third to the visitors
+  const cash = await computeFinance(pool, 'eng');
+  const totalGate = cash.reduce((s, c) => s + c.finance.gate + c.finance.awayCut, 0);
+  const homeShare = cash.reduce((s, c) => s + c.finance.gate, 0);
+  assert.ok(Math.abs(homeShare / totalGate - HOME_CUT) < 0.01,
+    'the home clubs took two thirds of everything through the turnstiles');
+
+  // BUILDING THE GROUND. The cost curve in SQL is the cost curve in the server.
+  for (const [a, b] of [[15000, 16000], [15000, 20000], [20000, 25000], [15000, 45000]]) {
+    const sql = Number((await pool.query('SELECT public.world_seat_cost($1,$2) AS c', [a, b])).rows[0].c);
+    assert.equal(sql, stadiumCost(a, b), 'seat cost ' + a + '->' + b + ' agrees');
+  }
+  assert.ok(seatBlockPrice(25000) > seatBlockPrice(15000), 'building gets dearer the bigger you are');
+
+  await assert.rejects(pool.query(`SELECT public.world_set_stadium(16000)`), /sign in/);
+  await assert.rejects(as(U1, `SELECT public.world_set_stadium(15500)`), /a thousand at a time/);
+  await assert.rejects(as(U1, `SELECT public.world_set_stadium(15000)`), /never taken down/);
+  await assert.rejects(as(U1, `SELECT public.world_set_stadium(50000)`), /forty-five thousand/);
+  const bank9 = Number((await pool.query(`SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank);
+  const build = await as(U1, `SELECT public.world_set_stadium(18000) AS r`);
+  assert.equal(build.rows[0].r.seats, 18000);
+  assert.equal(Number(build.rows[0].r.cost), stadiumCost(15000, 18000));
+  const built = (await pool.query(
+    `SELECT seats, seats_paid, bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
+  assert.equal(built.seats, 18000);
+  assert.equal(Number(built.seats_paid), stadiumCost(15000, 18000), 'what was spent is remembered');
+  assert.equal(Number(built.bank), bank9 - stadiumCost(15000, 18000));
+  await settleMoney(pool, 'eng');
+  const settled = (await pool.query(
+    `SELECT bank, finance FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
+  assert.equal(Number(settled.finance.seatsPaid), stadiumCost(15000, 18000),
+    'the ledger carries the stand from the founding, so it cannot be hidden');
+  assert.equal(settled.finance.nextSeats, 19000);
+  assert.equal(Number(settled.finance.nextSeatsCost), seatBlockPrice(18000));
+  await assert.rejects(as(U1, `SELECT public.world_set_stadium(45000)`), /that costs/,
+    'no borrowing to build');
+
+  // A GROUND IS A BUILDING, and buildings are visible
+  const seen = (await pool.query(
+    `SELECT * FROM public.world_clubs WHERE country_id='eng' AND slot=1`)).rows[0];
+  assert.equal(seen.seats, 18000);
+  assert.ok(!('finance' in seen), 'the books are not');
+
+  // AN OVERDRAFT COSTS. Put an unpayable wage bill on a bot club and the
+  // umpire charges it interest, round after round, from the record.
+  const solvent = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=9`)).rows[0].squad;
+  const ruinous = solvent.map(p => Object.assign({}, p, { wage: 600000 }));
+  await pool.query(`UPDATE clubs SET squad=$1::jsonb WHERE country_id='eng' AND slot=9`,
+    [JSON.stringify(ruinous)]);
+  await settleMoney(pool, 'eng');
+  const broke = (await pool.query(
+    `SELECT bank, finance FROM clubs WHERE country_id='eng' AND slot=9`)).rows[0];
+  assert.ok(Number(broke.bank) < 0, 'a club that cannot pay its men is in the red');
+  assert.ok(broke.finance.interest > 0, 'and the bank charges it for the privilege');
+  const red = Number(broke.bank);
+  await settleMoney(pool, 'eng');
+  assert.equal(Number((await pool.query(
+    `SELECT bank FROM clubs WHERE country_id='eng' AND slot=9`)).rows[0].bank), red,
+    'even ruin recomputes to the same figure');
+  await pool.query(`UPDATE clubs SET squad=$1::jsonb WHERE country_id='eng' AND slot=9`,
+    [JSON.stringify(solvent)]);
+  await settleMoney(pool, 'eng');
+
+  // your own status carries the books home
+  const st = (await as(U1, `SELECT public.world_my_status() AS s`)).rows[0].s;
+  assert.equal(st.seats, 18000);
+  assert.ok(st.finance && st.finance.supporters > 0 && st.finance.moodWord);
+  assert.equal(Number(st.bank), Number((await pool.query(
+    `SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank));
 });

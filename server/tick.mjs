@@ -17,7 +17,8 @@ import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
 import { EPOCH, dayIx, daySettled, seedOf, natHour, scheduleOf, ROUNDS } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
-import { ensureYouth, ageYouth, playColtsRound, computeColts, coltRecords, UPKEEP_PER_ROUND } from './youth.mjs';
+import { ensureYouth, ageYouth, playColtsRound, computeColts, coltRecords } from './youth.mjs';
+import { settleMoney } from './economy.mjs';
 
 export function matchId(country, seasonNo, round, h, a) {
   return country + ':s' + seasonNo + ':r' + round + ':h' + h + 'a' + a;
@@ -276,34 +277,16 @@ export async function rebuildWorldToday(pool, now) {
   return today;
 }
 
-// THE TREASURY, settled by the umpire and by nobody else. A club's money is
-// a pure function of its whole record - what it was founded with, the gate it
-// has taken at home, the share it has drawn away, and the wages it has paid
-// its men, every round it has ever played, across every season. No device
-// writes it, and re-running settles the same figure.
-// One honest simplification: wages are charged at the bill as it stands
-// today, so a squad that trains itself upward revises its own history
-// slightly. Nothing spends money yet, and it keeps the figure recomputable.
-const FOUNDING_BANK = 2500000, HOME_GATE = 240000, AWAY_SHARE = 60000;
-export async function settleMoney(pool, country) {
-  const clubs = (await pool.query(
-    'SELECT slot, squad, academy, academy_paid FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
-  const ms = (await pool.query(
-    'SELECT home_slot, away_slot FROM matches WHERE country_id=$1', [country])).rows;
-  const home = {}, away = {};
-  for (const m of ms) { home[m.home_slot] = (home[m.home_slot] || 0) + 1; away[m.away_slot] = (away[m.away_slot] || 0) + 1; }
-  for (const c of clubs) {
-    const wages = (c.squad || []).reduce((s, p) => s + (p.wage || 0), 0);
-    const rounds = (home[c.slot] || 0) + (away[c.slot] || 0);
-    // the academy is a standing cost and its upgrades are a spent fact, so the
-    // bank is still a pure function of the record
-    const academy = rounds * (c.academy || 2) * UPKEEP_PER_ROUND + (+c.academy_paid || 0);
-    const bank = FOUNDING_BANK + (home[c.slot] || 0) * HOME_GATE + (away[c.slot] || 0) * AWAY_SHARE
-      - rounds * wages - academy;
-    await pool.query('UPDATE clubs SET bank=$3 WHERE country_id=$1 AND slot=$2', [country, c.slot, Math.round(bank)]);
-  }
-  return clubs.length;
-}
+// THE TREASURY, settled by the umpire and by nobody else - now a ledger
+// rather than four flat numbers. economy.mjs walks every round this country
+// has ever played and derives the crowd, the mood, the gate, the sponsor, the
+// wages, the upkeep and the interest from the record alone. Re-running still
+// settles the same figure.
+// The one honest simplification survives: wages are charged at the bill as it
+// stands today, so a squad that trains itself upward revises its own history
+// slightly - and what a manager has spent on his academy or his ground is
+// carried from the founding, so nobody can hide a purchase in an overdraft.
+export { settleMoney } from './economy.mjs';
 
 export async function runTick(pool, host, country, day, { now = Date.now(), failAfter = null } = {}) {
   const key = country + ':day:' + day;

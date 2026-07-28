@@ -115,7 +115,7 @@
       "<h1>The Colts</h1>" +
       "<p>Boys arrive on their own, age on their own, and walk into your first team at twenty-one whether you were watching or not. What you decide is how good a place they learn in.</p></div>" +
       body +
-      "<div class='fo-ac-foot'><a href='#/worldclub'>&lsaquo; Your world club</a><a href='#/training'>The nets &rsaquo;</a></div>" +
+      "<div class='fo-ac-foot'><a href='#/worldclub'>&lsaquo; Your world club</a><a href='#/finance'>The books &rsaquo;</a></div>" +
       "</div></div>";
   }
 
@@ -236,6 +236,10 @@
       "</div></div>";
   }
 
+  // The academy was the first of the world rooms, and its plate-and-cards
+  // became the house style for the rest of them. Other rooms call this and
+  // add only what is their own, so there is one stylesheet, not five.
+  window.__foRoomCss = function () { css(); };
   function css() {
     if (document.getElementById("fo-ac-css")) return;
     var s = document.createElement("style"); s.id = "fo-ac-css";
