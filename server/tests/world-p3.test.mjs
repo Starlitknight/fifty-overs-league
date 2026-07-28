@@ -22,6 +22,7 @@ import { evolveCountry, applyLiving, livingPatch } from '../living.mjs';
 import { CAP, makeColt, ensureYouth, ageYouth,
   coltsRoundOf, coltsSquad, playColtsRound, coltRecords } from '../youth.mjs';
 import { academyRate } from '../living.mjs';
+import { fantasyPoints, unitRatings, matchRatings } from '../ratings.mjs';
 import { roundRobin, bracket, roundsOf, closeEnrolment, playComps, computeComp, rebuildComps } from '../comps.mjs';
 import { ACADEMY_UPKEEP, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, DEBT_LIMIT, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance } from '../economy.mjs';
 import { EPOCH, DAY, seedOf } from '../clock.mjs';
@@ -1162,4 +1163,72 @@ test('021: a manager founds a competition and the umpire plays it out', async ()
   await rebuildComps(pool);
   const snap = (await pool.query(`SELECT body FROM snapshots WHERE key='comps'`)).rows[0].body;
   assert.ok(snap.comps.some(c => Number(c.id) === cid && c.champion), 'the shelf carries the finished card');
+});
+
+// 022: MATCH RATINGS, and the points that move a man's form. Both are derived
+// from a banked scorecard and nothing else - and they are the SAME points, so
+// the ratings page and a player's form can never tell two different stories.
+test('022: a card marks itself, and those marks are what move form', async () => {
+  const m = (await pool.query(
+    `SELECT result FROM matches WHERE country_id='eng' ORDER BY season_no DESC, round DESC LIMIT 1`)).rows[0];
+  const innings = m.result.innings.filter(Boolean);
+  assert.equal(innings.length, 2);
+
+  // ONE FORMULA, TWO HOSTS: the server's port and the shipped client's own
+  // arithmetic agree, line for line, on real innings
+  assert.deepEqual(fantasyPoints(innings), host.fantasy(innings),
+    'the umpire and the phone score the same day the same way');
+  // and on a hand-built card that exercises every clause
+  const made = [{ batTeam: 'A', bowlTeam: 'B',
+    bat: [{ p: { name: 'Ton' }, r: 104, b: 88, f4: 11, f6: 3, out: 'b Quick' },
+          { p: { name: 'Duck' }, r: 0, b: 3, f4: 0, f6: 0, out: 'lbw b Quick' },
+          { p: { name: 'Block' }, r: 14, b: 52, f4: 1, f6: 0, out: null }],
+    bowlers: { Quick: { w: 5, r: 41, b: 60 }, Dear: { w: 0, r: 78, b: 48 } },
+    fielding: { Gloves: { ct: 3, st: 1, ro: 0 } } }];
+  assert.deepEqual(fantasyPoints(made), host.fantasy(made), 'and on the awkward cases too');
+  const byName = Object.fromEntries(fantasyPoints(made).map(p => [p.n, p.pts]));
+  assert.ok(byName.Ton > byName.Block, 'a hundred beats a crawl');
+  assert.ok(byName.Duck < 0, 'a duck costs you');
+  assert.ok(byName.Quick > byName.Dear, 'five-for beats nought for seventy-eight');
+  assert.ok(byName.Gloves > 0, 'the keeper is paid for his hands');
+
+  // THE MARKS, out of ten, for both sides of a real match
+  const rat = matchRatings(m.result);
+  const sides = Object.keys(rat.sides);
+  assert.equal(sides.length, 2);
+  for (const nm of sides) {
+    const s = rat.sides[nm];
+    assert.ok(s.overall > 0 && s.overall <= 10, nm + ' has an overall mark: ' + s.overall);
+    ['top', 'middle', 'seam', 'field'].forEach(k => {
+      if (s[k] != null) assert.ok(s[k] >= 0 && s[k] <= 10, nm + ' ' + k + ' is out of ten');
+    });
+  }
+  // the side that batted carries batting marks, the side that bowled carries bowling
+  const first = m.result.innings[0];
+  assert.ok(rat.sides[first.batTeam].top != null, 'the batting side is marked on its batting');
+  assert.ok(rat.sides[first.bowlTeam].seam != null || rat.sides[first.bowlTeam].spin != null,
+    'the bowling side on its bowling');
+  // a great card outmarks a poor one
+  const good = unitRatings({ bat: [{ p: {}, r: 120, b: 90 }, { p: {}, r: 80, b: 70 }, { p: {}, r: 40, b: 30 }],
+    bowlers: {}, fielding: {}, wkts: 2 });
+  const bad = unitRatings({ bat: [{ p: {}, r: 4, b: 20 }, { p: {}, r: 1, b: 9 }, { p: {}, r: 0, b: 2, out: 'b X' }],
+    bowlers: {}, fielding: {}, wkts: 9 });
+  assert.ok(good.top > bad.top, 'runs are marked above no runs (' + good.top + ' v ' + bad.top + ')');
+  assert.ok(good.top <= 10 && bad.top >= 0);
+
+  // FORM IS FED BY THOSE POINTS. Recompute the living layer and a man who has
+  // had a good run is in better nick than one who has had a bad one.
+  await evolveCountry(pool, 'eng', EPOCH + 130 * DAY, host);
+  const squad = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  const capped = squad.filter(p => p.career && p.career.m > 0);
+  assert.ok(capped.length >= 11);
+  capped.forEach(p => assert.ok(p.formIx >= 0 && p.formIx <= 6, p.name + ' has a form reading'));
+  assert.ok(new Set(capped.map(p => p.formIx)).size > 1,
+    'the squad is not all in identical nick - the points genuinely separate them');
+  // and it still never drifts
+  const before = squad.map(p => p.formIx);
+  await evolveCountry(pool, 'eng', EPOCH + 130 * DAY, host);
+  const after = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad.map(p => p.formIx);
+  assert.deepEqual(after, before, 'form is still a pure function of the record');
 });

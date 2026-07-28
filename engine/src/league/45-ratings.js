@@ -1,0 +1,193 @@
+/* ============================================================================
+   MATCH RATINGS — the card read as a coach reads it.
+
+   Every scorecard in the game now carries a ratings panel: each side's top
+   order, middle, tail, seam, spin and hands, out of ten, plus the day's
+   fantasy points. Both are derived from the innings and nothing else, so a
+   result from any season - league, cup, invitational, friendly - can be
+   marked without anybody having stored a mark.
+
+   And the points are not decoration. They are the SAME points the World
+   Service scores a man's FORM on (server/ratings.mjs is a port of
+   window.foFantasyPoints, and the tests hold the two to one answer). So when
+   a manager reads that his opener had a poor day, he is reading the reason
+   the opener's form dropped - not a second opinion about it.
+   ========================================================================== */
+(function () {
+  "use strict";
+  if (window.__foRat) return; window.__foRat = 1;
+
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  var clamp10 = function (v) { return Math.max(0, Math.min(10, +v.toFixed(1))); };
+
+  // THE UNITS. Mirrors server/ratings.mjs line for line.
+  window.foUnitRatings = function (inn) {
+    if (!inn) return null;
+    var bat = (inn.bat || []).filter(function (b) { return b && (b.b > 0 || b.out); });
+    var sum = function (xs, f) { return xs.reduce(function (s, x) { return s + (f(x) || 0); }, 0); };
+    var batUnit = function (xs, par) {
+      if (!xs.length) return null;
+      var runs = sum(xs, function (x) { return x.r; }), balls = sum(xs, function (x) { return x.b; });
+      var sr = balls ? 100 * runs / balls : 0;
+      return clamp10(3 + 6 * Math.min(1.6, runs / par) + (sr >= 100 ? 1 : sr >= 85 ? 0.5 : sr < 60 ? -1 : 0));
+    };
+    var bowlUnit = function (list) {
+      if (!list.length) return null;
+      var w = sum(list, function (x) { return x.w; }), balls = sum(list, function (x) { return x.b; }),
+          conc = sum(list, function (x) { return x.r; });
+      if (balls < 12) return null;
+      var ov = balls / 6, ec = conc / ov, per10 = w / (ov / 10);
+      return clamp10(3.2 + 1.9 * Math.min(3, per10) + (ec <= 4 ? 1.8 : ec <= 5 ? 1 : ec <= 6 ? 0 : ec <= 7 ? -1 : -2.2));
+    };
+    var bowlers = Object.keys(inn.bowlers || {}).map(function (k) {
+      var o = {}; for (var p in inn.bowlers[k]) o[p] = inn.bowlers[k][p]; o.name = k; return o;
+    });
+    var isSpin = function (b) {
+      var t = String((b.p && (b.p.bowlTypeFull || b.p.bowlType)) || "").toLowerCase();
+      return /spin|orthodox|legbreak|offbreak|wrist|finger/.test(t);
+    };
+    var fld = inn.fielding || {}, ks = Object.keys(fld);
+    var g = function (k) { return ks.reduce(function (s, n) { return s + (fld[n][k] || 0); }, 0); };
+    var ct = g("ct"), st = g("st"), ro = g("ro");
+    var units = {
+      top: batUnit(bat.slice(0, 3), 110), middle: batUnit(bat.slice(3, 6), 110), tail: batUnit(bat.slice(6), 45),
+      seam: bowlUnit(bowlers.filter(function (b) { return !isSpin(b); })),
+      spin: bowlUnit(bowlers.filter(isSpin)),
+      // the hands are marked on CHANCES, not on a count
+      field: (function () {
+        var outs = inn.wkts || 0, held = ct + st + ro;
+        return clamp10(3.6 + 5.6 * (outs ? Math.min(1, held / outs) : 0) + 0.6 * st + 0.7 * ro);
+      })()
+    };
+    var got = Object.keys(units).filter(function (k) { return units[k] != null; });
+    units.overall = got.length ? clamp10(got.reduce(function (s, k) { return s + units[k]; }, 0) / got.length) : null;
+    return units;
+  };
+
+  window.foMatchRatings = function (innings) {
+    var by = {}, at = function (nm) { return by[nm] || (by[nm] = { club: nm }); };
+    (innings || []).filter(Boolean).forEach(function (inn) {
+      var u = window.foUnitRatings(inn); if (!u) return;
+      var b = at(inn.batTeam); b.top = u.top; b.middle = u.middle; b.tail = u.tail;
+      var o = at(inn.bowlTeam); o.seam = u.seam; o.spin = u.spin; o.field = u.field;
+    });
+    Object.keys(by).forEach(function (nm) {
+      var x = by[nm], got = ["top", "middle", "tail", "seam", "spin", "field"].filter(function (k) { return x[k] != null; });
+      x.overall = got.length ? clamp10(got.reduce(function (s, k) { return s + x[k]; }, 0) / got.length) : null;
+    });
+    return by;
+  };
+
+  var LABEL = { top: "Top order", middle: "Middle order", tail: "The tail",
+    seam: "Seam", spin: "Spin", field: "In the field" };
+  var band = function (v) { return v >= 8 ? "hot" : v >= 6.5 ? "good" : v >= 4.5 ? "ok" : "poor"; };
+  var word = function (v) {
+    return v >= 8.5 ? "outstanding" : v >= 7.5 ? "very good" : v >= 6.5 ? "good"
+      : v >= 5.5 ? "adequate" : v >= 4 ? "below par" : "poor";
+  };
+
+  window.foRatingsPanelHTML = function (innings) {
+    var sides = window.foMatchRatings(innings);
+    var names = Object.keys(sides);
+    if (!names.length) return "";
+    var pts = [];
+    try { pts = (window.foFantasyPoints && window.foFantasyPoints(innings)) || []; } catch (e) {}
+    var side = function (nm) {
+      var x = sides[nm];
+      var rows = ["top", "middle", "tail", "seam", "spin", "field"].filter(function (k) { return x[k] != null; })
+        .map(function (k) {
+          return "<div class='fo-rat-r'><span>" + LABEL[k] + "</span>" +
+            "<s class='fo-rat-bar'><u class='" + band(x[k]) + "' style='width:" + (x[k] * 10) + "%'></u></s>" +
+            "<b class='" + band(x[k]) + "'>" + x[k].toFixed(1) + "</b></div>";
+        }).join("");
+      return "<div class='fo-rat-side'><div class='fo-rat-h'><b>" + E(nm) + "</b>" +
+        (x.overall != null ? "<em class='" + band(x.overall) + "'>" + x.overall.toFixed(1) + "</em>" : "") + "</div>" +
+        rows + (x.overall != null ? "<div class='fo-rat-w'>" + word(x.overall) + " all round</div>" : "") + "</div>";
+    };
+    var best = pts.slice(0, 5).map(function (p, i) {
+      return "<div class='fo-rat-p'><i>" + (i + 1) + "</i><b>" + E(p.n) + "</b><span>" + E(p.team) + "</span>" +
+        "<u>" + p.pts + "</u></div>";
+    }).join("");
+    return "<div class='panel fo-rat'><h4>Match ratings</h4><div class='pad'>" +
+      "<div class='fo-rat-grid'>" + names.map(side).join("") + "</div>" +
+      (best ? "<div class='fo-rat-sub'>The day&rsquo;s points</div>" + best : "") +
+      "<div class='fo-rat-note'>Every mark is worked out from this scorecard alone. The points are the same ones the world scores form on &mdash; a bad day here is why a man is out of nick tomorrow.</div>" +
+      "</div></div>";
+  };
+
+  function css() {
+    if (document.getElementById("fo-rat-css")) return;
+    var s = document.createElement("style"); s.id = "fo-rat-css";
+    s.textContent = [
+      ".fo-rat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}",
+      ".fo-rat-side{min-width:0}",
+      ".fo-rat-h{display:flex;align-items:baseline;gap:8px;padding-bottom:7px;border-bottom:1px solid rgba(12,27,51,.12);margin-bottom:7px}",
+      ".fo-rat-h b{flex:1;min-width:0;font:600 13.5px/1.2 Inter,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-rat-h em{font-style:normal;font:700 19px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums}",
+      ".fo-rat-r{display:flex;align-items:center;gap:8px;padding:4px 0;font:500 11.5px/1.3 Inter,sans-serif}",
+      ".fo-rat-r span{flex:0 0 84px;color:rgba(12,27,51,.6)}",
+      ".fo-rat-bar{flex:1;min-width:40px;height:6px;border-radius:999px;background:rgba(12,27,51,.1);overflow:hidden;text-decoration:none}",
+      ".fo-rat-bar u{display:block;height:100%;text-decoration:none;background:#2E8B5E}",
+      ".fo-rat-r b{flex:0 0 30px;text-align:right;font:700 12.5px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums}",
+      ".fo-rat .hot{color:#0E6B4C}.fo-rat .good{color:#177A57}.fo-rat .ok{color:#8a6d3b}.fo-rat .poor{color:#B23230}",
+      ".fo-rat-bar u.hot{background:#0E6B4C}.fo-rat-bar u.good{background:#2E8B5E}",
+      ".fo-rat-bar u.ok{background:#C9A24B}.fo-rat-bar u.poor{background:#B23230}",
+      ".fo-rat-w{margin-top:5px;font:italic 400 11.5px/1.4 'Fraunces',Georgia,serif;color:rgba(12,27,51,.5)}",
+      ".fo-rat-sub{margin:15px 0 5px;font:700 9px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(12,27,51,.4)}",
+      ".fo-rat-p{display:flex;align-items:baseline;gap:8px;padding:5px 0;border-top:1px solid rgba(12,27,51,.07);font:500 12px/1.3 Inter,sans-serif}",
+      ".fo-rat-p i{font-style:normal;font:700 10px/1 Oswald,sans-serif;color:rgba(12,27,51,.35);width:12px}",
+      ".fo-rat-p b{font-weight:600}",
+      ".fo-rat-p span{flex:1;min-width:0;font-size:10.5px;color:rgba(12,27,51,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-rat-p u{text-decoration:none;font:700 13px/1 Oswald,sans-serif;color:#0C1B33;font-variant-numeric:tabular-nums}",
+      ".fo-rat-note{margin-top:12px;font:italic 400 11.5px/1.5 'Fraunces',Georgia,serif;color:rgba(12,27,51,.5)}"
+    ].join("\n");
+    document.head.appendChild(s);
+  }
+
+  // EVERY SCORECARD GETS ONE. The page is wrapped rather than watched: the
+  // innings it was built from are in hand at the moment it paints, which the
+  // live match state is not a second later.
+  function append(innings) {
+    try {
+      var page = document.getElementById("page"); if (!page) return;
+      if (page.querySelector(".fo-rat")) return;
+      if (!innings || !innings[1]) return;            // one innings is no match to mark
+      css();
+      var html = window.foRatingsPanelHTML(innings);
+      if (!html) return;
+      var wrap = document.createElement("div");
+      wrap.innerHTML = html;
+      page.appendChild(wrap.firstChild);
+    } catch (e) {}
+  }
+  function inningsFor(q) {
+    try {
+      if (q && q.i !== undefined && App.results[+q.i]) return App.results[+q.i].innings;
+      if (window.M && M.innings) return M.innings;
+      var last = (App.results || [])[(App.results || []).length - 1];
+      return last && last.innings;
+    } catch (e) { return null; }
+  }
+  function hook() {
+    if (typeof window.pgScorecard !== "function" || window.pgScorecard.__foRat) return;
+    var prev = window.pgScorecard;
+    window.pgScorecard = function (q) {
+      var out = prev.apply(this, arguments);
+      try { window.__foRatLast = inningsFor(q); append(window.__foRatLast); } catch (e) {}
+      return out;
+    };
+    window.pgScorecard.__foRat = 1;
+  }
+  hook();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", hook);
+  // a backstop for the paint that beat the hook: the innings the card was
+  // built from are remembered, so a late pass never needs the live match
+  setInterval(function () {
+    hook();
+    try {
+      if ((location.hash || "").split("?")[0] !== "#/scorecard") return;
+      if (document.querySelector("#page .fo-rat")) return;
+      append(window.__foRatLast || inningsFor(null));
+    } catch (e) {}
+  }, 1200);
+})();

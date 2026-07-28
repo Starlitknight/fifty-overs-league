@@ -75,6 +75,13 @@ globalThis.__svcTrain = function (playersJson, planJson, rate) {
   });
   return JSON.stringify({ players: players, gains: gains });
 };
+// WHAT A DAY WAS WORTH, by the shipped client's own arithmetic. server/
+// ratings.mjs carries a port of this because the living layer needs it
+// without a VM; the tests hold the two to the same answer on real innings,
+// so a manager's form and his ratings page can never tell two stories.
+globalThis.__svcFantasy = function (inningsJson) {
+  return JSON.stringify(window.foFantasyPoints(JSON.parse(inningsJson)));
+};
 // refresh every derived rating from the skills beneath them, by the shipped
 // engine's own mapping - the one place bat, threat, control and wage are made
 globalThis.__svcDerive = function (playersJson) {
@@ -104,11 +111,16 @@ globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson) {
   var g = 0;
   while (M && !M.done && g++ < 4000) { autoPick(); stepBall(); }
   if (!M || !M.done) return null;
+  // the card as it is banked. Boundaries and the hands ride along because the
+  // ratings page and a player's FORM are both scored off them - a match played
+  // before this carried them simply rates without them, which is honest.
   var slim = function (inn) {
     if (!inn) return null;
     return { batTeam: inn.batTeam, bowlTeam: inn.bowlTeam, runs: inn.runs, wkts: inn.wkts, legal: inn.legal,
-      bat: (inn.bat || []).map(function (b) { return { p: b.p, r: b.r, b: b.b, out: b.out }; }),
-      bowlers: inn.bowlers };
+      bat: (inn.bat || []).map(function (b) {
+        return { p: b.p, r: b.r, b: b.b, f4: b.f4 || 0, f6: b.f6 || 0, out: b.out };
+      }),
+      bowlers: inn.bowlers, fielding: inn.fielding || {} };
   };
   // canonical result: fixed key order, no floats beyond engine output
   return JSON.stringify({
@@ -142,6 +154,7 @@ globalThis.__svcWorldCfg = function () {
   const train = vm.runInContext('__svcTrain', eng.ctx);
   const der = vm.runInContext('__svcDerive', eng.ctx);
   const ovr = vm.runInContext('__svcOvr', eng.ctx);
+  const fan = vm.runInContext('__svcFantasy', eng.ctx);
   return {
     genSquad(seed, country, arch, capt) { return JSON.parse(gen(seed, country, arch, capt)); },
     // one round in the nets for a whole squad, by the shipped engine's numbers,
@@ -151,6 +164,8 @@ globalThis.__svcWorldCfg = function () {
     derive(players) { return JSON.parse(der(JSON.stringify(players))); },
     // the 0-99 card rating the club pages show, per player
     pkOvr(players) { return JSON.parse(ovr(JSON.stringify(players))); },
+    // the client's own fantasy points for a set of innings
+    fantasy(innings) { return JSON.parse(fan(JSON.stringify(innings))); },
     // returns the canonical result JSON STRING — stored verbatim, compared verbatim
     runMatch(homeTeam, awayTeam, pitch, seed, ordersMap) {
       return run(JSON.stringify(homeTeam), JSON.stringify(awayTeam), pitch, seed,

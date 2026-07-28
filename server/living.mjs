@@ -22,6 +22,7 @@
 // re-derive the generated squad, lay the patch over it, and replay the
 // identical match forever after.
 import { dayIx } from './clock.mjs';
+import { fantasyPoints, ratePoints } from './ratings.mjs';
 
 const FORMW = ['abysmal', 'poor', 'shaky', 'steady', 'good', 'strong', 'excellent'];
 const EXPLAD = ['atrocious', 'dreadful', 'poor', 'ordinary', 'average', 'reasonable',
@@ -90,30 +91,33 @@ export function applyLiving(squad, patch, host) {
   return squad;
 }
 
-// what one man did in one match, scored as a performance: roughly 0 (did
-// nothing) to 4 (a match-winning day). Only innings he was actually part of
-// count - a specialist batsman is never marked down for not bowling.
+// WHAT ONE MAN'S DAY WAS WORTH - the fantasy points a phone shows him on the
+// ratings page, scored onto the scale form has always used. The two can never
+// disagree, because there is only one number: a manager reading why his
+// batsman is out of nick is reading the same arithmetic that put him there.
+// Only innings he was actually part of count, so a specialist batsman is never
+// marked down for not bowling.
 function ratePerformance(a) {
-  let pts = 0, touched = false;
-  if (a.balls >= 8) {
+  const line = { bat: [], bowlers: {}, fielding: {} };
+  let touched = false;
+  if (a.balls >= 8 || a.out) {
     touched = true;
-    pts += Math.min(2.4, a.runs / 25);
-    if (a.runs >= 50) pts += 0.4;
-    if (a.runs < 8) pts -= 0.5;
+    line.bat.push({ p: { name: a.name }, r: a.runs, b: a.balls, f4: a.f4 || 0, f6: a.f6 || 0, out: a.out || null });
   }
-  if (a.ovb >= 12) {
-    touched = true;
-    const econ = 6 * a.conc / a.ovb;
-    pts += a.wkts * 0.8 + (econ <= 4.5 ? 0.6 : econ >= 7.5 ? -0.5 : 0);
-  }
-  return touched ? Math.max(-0.5, pts) : 0.6;   // played, never got a chance
+  if (a.ovb >= 12) { touched = true; line.bowlers[a.name] = { w: a.wkts, r: a.conc, b: a.ovb }; }
+  if (a.ct || a.st || a.ro) { touched = true; line.fielding[a.name] = { ct: a.ct, st: a.st, ro: a.ro }; }
+  if (!touched) return ratePoints(0, false);
+  // one man alone on a card: every point scored here is his own
+  const got = fantasyPoints([{ batTeam: 'x', bowlTeam: 'y', bat: line.bat, bowlers: line.bowlers, fielding: line.fielding }]);
+  const mine = got.filter(g => g.n === a.name)[0];
+  return ratePoints(mine ? mine.pts : 0, true);
 }
 function formIxOf(apps) {
   if (!apps.length) return 3;
   const last = apps.slice(-5);
   const avg = last.reduce((s, a) => s + a.pts, 0) / last.length;
   return avg < 0.12 ? 0 : avg < 0.35 ? 1 : avg < 0.7 ? 2 : avg < 1.3 ? 3
-    : avg < 2.1 ? 4 : avg < 3.0 ? 5 : 6;
+    : avg < 2.1 ? 4 : avg < 3.0 ? 5 : 6;   // the scale ratePoints maps onto
 }
 function expGain(age, caps) {
   const per = age < 24 ? 0.5 : age < 30 ? 0.35 : 0.2;
@@ -187,7 +191,9 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
       LATERAL jsonb_array_elements(m.result->'innings') inn`;
   const bats = (await pool.query(
     `SELECT m.season_no, m.round, ${teamSlot('batTeam')} AS slot, b->'p'->>'name' AS name,
-            coalesce((b->>'r')::int, 0) AS runs, coalesce((b->>'b')::int, 0) AS balls
+            coalesce((b->>'r')::int, 0) AS runs, coalesce((b->>'b')::int, 0) AS balls,
+            coalesce((b->>'f4')::int, 0) AS f4, coalesce((b->>'f6')::int, 0) AS f6,
+            b->>'out' AS out
        ${from}, LATERAL jsonb_array_elements(inn->'bat') b
       WHERE m.country_id = $1 AND m.result IS NOT NULL AND b->'p'->>'name' IS NOT NULL`, args)).rows;
   const bowls = (await pool.query(
@@ -196,6 +202,13 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
             coalesce((bw.value->>'r')::int, 0) AS conc,
             coalesce((bw.value->>'b')::int, 0) AS ovb
        ${from}, LATERAL jsonb_each(inn->'bowlers') bw
+      WHERE m.country_id = $1 AND m.result IS NOT NULL`, args)).rows;
+  const fields = (await pool.query(
+    `SELECT m.season_no, m.round, ${teamSlot('bowlTeam')} AS slot, fd.key AS name,
+            coalesce((fd.value->>'ct')::int, 0) AS ct,
+            coalesce((fd.value->>'st')::int, 0) AS st,
+            coalesce((fd.value->>'ro')::int, 0) AS ro
+       ${from}, LATERAL jsonb_each(coalesce(inn->'fielding', '{}'::jsonb)) fd
       WHERE m.country_id = $1 AND m.result IS NOT NULL`, args)).rows;
   const today = dayIx(now);
 
@@ -215,13 +228,20 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     if (r.slot == null || !r.name) return null;
     const k = r.season_no + '|' + r.round + '|' + r.slot + '|' + r.name;
     if (!lines.has(k)) lines.set(k, { season: r.season_no, round: r.round, slot: r.slot, name: r.name,
-      runs: 0, balls: 0, hs: 0, wkts: 0, conc: 0, ovb: 0 });
+      runs: 0, balls: 0, hs: 0, wkts: 0, conc: 0, ovb: 0,
+      f4: 0, f6: 0, out: null, ct: 0, st: 0, ro: 0 });
     return Object.assign(lines.get(k), extra);
   };
   for (const r of bats) {
     const L = at(r); if (!L) continue;
     L.runs += r.runs; L.balls += r.balls;
+    L.f4 += r.f4 || 0; L.f6 += r.f6 || 0;
+    if (r.out) L.out = r.out;
     if (r.runs > L.hs) L.hs = r.runs;
+  }
+  for (const r of fields) {
+    const L = at(r); if (!L) continue;
+    L.ct += r.ct || 0; L.st += r.st || 0; L.ro += r.ro || 0;
   }
   for (const r of bowls) {
     const L = at(r); if (!L) continue;

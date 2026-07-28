@@ -109,9 +109,25 @@ The owner's spec, in their words, refined by the FTP manual:
     open, and the founder leaving folds it. Room at #/comps.]
     FRIENDLY COMPETITIONS: manager-created leagues/cups with local rules
     (we have challenges; missing organised comps).
-11. MATCH RATINGS page per match (top/middle/tail batting, seam/spin,
+11. [BUILT — engine/src/league/45-ratings.js + server/ratings.mjs. Every
+    scorecard now carries a MATCH RATINGS panel: each side marked out of ten on
+    top order, middle, tail, seam, spin and the field, plus an overall. Batting
+    units are marked on runs against the job's par and the rate; bowling units
+    on wickets per ten overs actually bowled and then economy; the field on
+    catches HELD AGAINST CHANCES rather than a raw count, so it stops pegging at
+    ten. Derived from the innings alone - it marks a league round, a cup tie, an
+    invitational or a friendly without anything being stored.]
+    MATCH RATINGS page per match (top/middle/tail batting, seam/spin,
     fielding, overall) post-match.
-12. FANTASY POINTS per match feeding form (we have partial).
+12. [BUILT — the client's window.foFantasyPoints is now ported into
+    server/ratings.mjs and living.mjs scores FORM on it: a man's last five
+    matches, each worth its fantasy points, is his nick. One formula, two hosts,
+    held to a single answer by test 022 against the shipped build in the VM. The
+    banked card was widened (enginehost slim()) to carry boundaries and the
+    fielding book, because both feed the points; matches played before that
+    simply rate without them. So the ratings page a manager reads IS the reason
+    his batsman is out of form, not a second opinion about it.]
+    FANTASY POINTS per match feeding form (we have partial).
 
 ## Already built (keep)
 Deterministic world clock (25-day cycle, staggered hours, live windows),

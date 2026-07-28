@@ -115,6 +115,14 @@
         "<tr><td>Anyone shattered</td><td><b>Rest</b></td><td>A week of progress traded for legs that work on matchday.</td></tr></table>",
         "<div class='fo-man-tip'><b>Two honest warnings:</b> skill gains raise wages automatically, so improvement is never free. And academy level, squad age and rest discipline compound: none shows much in a single week; over a season the difference is significant.</div>"
       ].join("")],
+      ["ratings", "Match ratings, and why a player is out of nick", [
+        "<p>Every scorecard in the game carries a <b>Match ratings</b> panel underneath it. Each side is marked out of ten on the six things a coach actually judges: the <b>top order</b>, the <b>middle order</b>, <b>the tail</b>, the <b>seam</b>, the <b>spin</b> and <b>the hands in the field</b>, with an overall beneath them.</p>",
+        "<ul><li><b>Batting units</b> are marked on runs against what that job is worth in a fifty-over innings, nudged by the rate they came at. The top three are expected to lay a foundation; the tail is judged far more kindly, because forty from the last four is a good day.</li>",
+        "<li><b>Bowling units</b> are marked on wickets against the overs they actually sent down - three in ten is a spell, three in thirty is a shift - and then on economy. A unit that bowled fewer than two overs isn't marked at all.</li>",
+        "<li><b>The field</b> is marked on <b>chances</b>, not on a count. Five catches is ordinary if ten men were dismissed and outstanding if six were. Stumpings and run-outs are worth a shade more, because somebody had to make them happen.</li></ul>",
+        "<p>Below the marks are <b>the day's points</b> - the fantasy score for every man who did anything. And these are not a separate opinion: <b>they are the same points the world scores form on</b>. A century, a five-for, a sharp day in the field, a duck, a crawl at a strike rate of thirty: each is worth exactly what it is worth here, and the running average of a man's last five is his form.</p>",
+        "<div class='fo-man-tip'><b>Use it this way:</b> when a batter's form drops, open his last match and look at the points. The number that moved him is right there - and it will tell you whether he is genuinely out of nick or simply keeps being left forty not out with nobody to bat with.</div>"
+      ].join("")],
       ["invitationals", "The invitationals: competitions of your own", [
         "<p>Beyond the league there is cricket you organise yourself. Open <b>The invitationals</b> from your club office, give a competition a name, choose a <b>knockout cup</b> or a <b>round robin</b> at four clubs or eight, and put it on. Every manager in the world can see it and join.</p>",
         "<ul><li><b>Entries stay open for three world days.</b> When that window shuts, the umpire fills any empty seats with clubs nobody manages - so a competition that only you and one friend joined still gets played, properly, against real sides. Nothing dies for want of numbers.</li>",
@@ -263,7 +271,7 @@
     var cats = [
       ["Getting started", "The league, the daily rhythm, and habits that win.", ["basics", "day", "tips"]],
       ["Players & squad", "Reading player cards: skills, form, fatigue, talents, age.", ["players"]],
-      ["Matches & tactics", "Orders, conditions, the match centre, the table and cricket you organise yourself.", ["orders", "conditions", "matchcentre", "scouting", "practice", "league", "invitationals"]],
+      ["Matches & tactics", "Orders, conditions, the match centre, the table and cricket you organise yourself.", ["orders", "conditions", "matchcentre", "ratings", "scouting", "practice", "league", "invitationals"]],
       ["Development", "Training programs, the academy and the youth pipeline.", ["training", "academy", "youth"]],
       ["Club operations", "The books, the ground, sponsors and the transfer market.", ["books", "money", "sponsors", "market"]],
       ["Reference", "Glossaries, the living league, and quick answers.", ["attributes", "talents", "world", "faq"]]
