@@ -111,6 +111,40 @@
   // request. So every call keeps its name and its timing, and the stuck card
   // prints the last handful: one photograph then says which request has not
   // come back, and how long the rest took.
+  // NAME THE FUNCTION THAT FROZE THE PAGE. A desktop sat a full minute on the
+  // loading card with its own seconds counter stopped at 2 - meaning some
+  // callback held the main thread the whole time, and a still image cannot say
+  // which. So every timer callback registered from here on runs through a
+  // stopwatch: anything that keeps the thread longer than 800ms is recorded
+  // with its source, and the loading and stuck cards print the worst of it.
+  // The culprit signs its own confession on the next screenshot.
+  var SLOW_LOG = [];
+  function foSlowWrap(fn) {
+    if (typeof fn !== "function") return fn;
+    return function () {
+      var t0 = Date.now();
+      try { return fn.apply(this, arguments); }
+      finally {
+        var dt = Date.now() - t0;
+        if (dt > 800) {
+          try {
+            SLOW_LOG.push({ ms: dt, src: String(fn).replace(/\s+/g, " ").slice(0, 110) });
+            if (SLOW_LOG.length > 5) SLOW_LOG.shift();
+          } catch (eS) {}
+        }
+      }
+    };
+  }
+  function foSlowReport() {
+    return SLOW_LOG.slice().sort(function (a, b) { return b.ms - a.ms; }).slice(0, 2)
+      .map(function (s) { return "BLOCKED " + (s.ms / 1000).toFixed(1) + "s by: " + s.src; });
+  }
+  try {
+    var _fST = window.setTimeout, _fSI = window.setInterval;
+    window.setTimeout = function (fn, ms) { var a = [].slice.call(arguments); a[0] = foSlowWrap(fn); return _fST.apply(window, a); };
+    window.setInterval = function (fn, ms) { var a = [].slice.call(arguments); a[0] = foSlowWrap(fn); return _fSI.apply(window, a); };
+  } catch (eW) {}
+
   var NET_LOG = [];
   function netRec(name) {
     var r = { n: name, t0: Date.now(), ms: 0, ok: null };

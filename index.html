@@ -7339,6 +7339,40 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // request. So every call keeps its name and its timing, and the stuck card
   // prints the last handful: one photograph then says which request has not
   // come back, and how long the rest took.
+  // NAME THE FUNCTION THAT FROZE THE PAGE. A desktop sat a full minute on the
+  // loading card with its own seconds counter stopped at 2 - meaning some
+  // callback held the main thread the whole time, and a still image cannot say
+  // which. So every timer callback registered from here on runs through a
+  // stopwatch: anything that keeps the thread longer than 800ms is recorded
+  // with its source, and the loading and stuck cards print the worst of it.
+  // The culprit signs its own confession on the next screenshot.
+  var SLOW_LOG = [];
+  function foSlowWrap(fn) {
+    if (typeof fn !== "function") return fn;
+    return function () {
+      var t0 = Date.now();
+      try { return fn.apply(this, arguments); }
+      finally {
+        var dt = Date.now() - t0;
+        if (dt > 800) {
+          try {
+            SLOW_LOG.push({ ms: dt, src: String(fn).replace(/\s+/g, " ").slice(0, 110) });
+            if (SLOW_LOG.length > 5) SLOW_LOG.shift();
+          } catch (eS) {}
+        }
+      }
+    };
+  }
+  function foSlowReport() {
+    return SLOW_LOG.slice().sort(function (a, b) { return b.ms - a.ms; }).slice(0, 2)
+      .map(function (s) { return "BLOCKED " + (s.ms / 1000).toFixed(1) + "s by: " + s.src; });
+  }
+  try {
+    var _fST = window.setTimeout, _fSI = window.setInterval;
+    window.setTimeout = function (fn, ms) { var a = [].slice.call(arguments); a[0] = foSlowWrap(fn); return _fST.apply(window, a); };
+    window.setInterval = function (fn, ms) { var a = [].slice.call(arguments); a[0] = foSlowWrap(fn); return _fSI.apply(window, a); };
+  } catch (eW) {}
+
   var NET_LOG = [];
   function netRec(name) {
     var r = { n: name, t0: Date.now(), ms: 0, ok: null };
@@ -10792,7 +10826,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260728-1505-d5cfda";
+  var FO_BUILD = "20260728-1518-c53d20";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -11166,7 +11200,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         if (!el) { clearInterval(LOAD_PULSE); return; }
         var lines = [];
         try { lines = foNetReport(); } catch (e2) {}
-        el.textContent = Math.round((Date.now() - t0) / 1000) + "s\n" + lines.slice(-4).join("\n");
+        try { lines = lines.slice(-4).concat(foSlowReport()); } catch (e3) { lines = lines.slice(-4); }
+        el.textContent = Math.round((Date.now() - t0) / 1000) + "s\n" + lines.join("\n");
       } catch (e) {}
     }, 1000);
     LOAD_TIMER = setTimeout(function () {
@@ -11196,6 +11231,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   function foNetPanel() {
     var lines = [];
     try { lines = foNetReport(); } catch (e) {}
+    try { lines = lines.concat(foSlowReport()); } catch (e2) {}
     if (!lines.length) return "";
     return '<div class="folsmall" style="margin:0 0 12px;padding:8px 10px;border:1px solid rgba(0,0,0,.12);border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.7;opacity:.8;overflow-x:auto">' +
       lines.map(E).join("<br>") + "</div>";
@@ -38938,17 +38974,29 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       if (!ready() || syncLive()) return;
       try { if (typeof M !== "undefined" && M && !M.done) return; } catch (eM) {}
       var a = ensureAnchor(); if (!a) return;
+      // ONE ROUND PER WAKING. Catch-up used to play every overdue round in a
+      // single synchronous loop - up to twenty rounds, a hundred simulated
+      // matches, with the browser locked for the whole of it. A manager back
+      // from a week away paid for the week in one frozen minute, staring at
+      // whatever screen happened to be up. Now each pass settles one round and,
+      // if more are owed, books another pass for the next breath - same
+      // deterministic result, spread across moments the player can live
+      // through. The block is bounded by one round, not by absence.
       var played = 0;
-      while (played < 20) {
-        var r = App.season.round | 0;
-        if (r >= App.season.schedule.length) break;
+      var r = App.season.round | 0;
+      if (r < App.season.schedule.length) {
         var t = roundTime(r);
         // the window is sacred: from 14:00 to 17:00 the match belongs to
         // whoever is watching - the clock only settles it after stumps
-        if (t == null || Date.now() < t + LIVE_MS) break;
-        completeRound();
-        played++;
-        if ((App.season.round | 0) <= r) break; // safety: no progress, stop
+        if (t != null && Date.now() >= t + LIVE_MS) {
+          completeRound();
+          if ((App.season.round | 0) > r) {
+            played = 1;
+            var r2 = App.season.round | 0;
+            var t2 = (r2 < App.season.schedule.length) ? roundTime(r2) : null;
+            if (t2 != null && Date.now() >= t2 + LIVE_MS) setTimeout(tick, 150);
+          }
+        }
       }
       if (played) {
         try { var pg = document.getElementById("page"); if (pg) { pg.__foHomeSig = null; pg.__foLgSig = null; } } catch (eP) {}

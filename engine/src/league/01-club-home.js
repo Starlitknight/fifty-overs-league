@@ -3030,7 +3030,8 @@
         if (!el) { clearInterval(LOAD_PULSE); return; }
         var lines = [];
         try { lines = foNetReport(); } catch (e2) {}
-        el.textContent = Math.round((Date.now() - t0) / 1000) + "s\n" + lines.slice(-4).join("\n");
+        try { lines = lines.slice(-4).concat(foSlowReport()); } catch (e3) { lines = lines.slice(-4); }
+        el.textContent = Math.round((Date.now() - t0) / 1000) + "s\n" + lines.join("\n");
       } catch (e) {}
     }, 1000);
     LOAD_TIMER = setTimeout(function () {
@@ -3060,6 +3061,7 @@
   function foNetPanel() {
     var lines = [];
     try { lines = foNetReport(); } catch (e) {}
+    try { lines = lines.concat(foSlowReport()); } catch (e2) {}
     if (!lines.length) return "";
     return '<div class="folsmall" style="margin:0 0 12px;padding:8px 10px;border:1px solid rgba(0,0,0,.12);border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.7;opacity:.8;overflow-x:auto">' +
       lines.map(E).join("<br>") + "</div>";

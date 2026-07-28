@@ -97,17 +97,29 @@
       if (!ready() || syncLive()) return;
       try { if (typeof M !== "undefined" && M && !M.done) return; } catch (eM) {}
       var a = ensureAnchor(); if (!a) return;
+      // ONE ROUND PER WAKING. Catch-up used to play every overdue round in a
+      // single synchronous loop - up to twenty rounds, a hundred simulated
+      // matches, with the browser locked for the whole of it. A manager back
+      // from a week away paid for the week in one frozen minute, staring at
+      // whatever screen happened to be up. Now each pass settles one round and,
+      // if more are owed, books another pass for the next breath - same
+      // deterministic result, spread across moments the player can live
+      // through. The block is bounded by one round, not by absence.
       var played = 0;
-      while (played < 20) {
-        var r = App.season.round | 0;
-        if (r >= App.season.schedule.length) break;
+      var r = App.season.round | 0;
+      if (r < App.season.schedule.length) {
         var t = roundTime(r);
         // the window is sacred: from 14:00 to 17:00 the match belongs to
         // whoever is watching - the clock only settles it after stumps
-        if (t == null || Date.now() < t + LIVE_MS) break;
-        completeRound();
-        played++;
-        if ((App.season.round | 0) <= r) break; // safety: no progress, stop
+        if (t != null && Date.now() >= t + LIVE_MS) {
+          completeRound();
+          if ((App.season.round | 0) > r) {
+            played = 1;
+            var r2 = App.season.round | 0;
+            var t2 = (r2 < App.season.schedule.length) ? roundTime(r2) : null;
+            if (t2 != null && Date.now() >= t2 + LIVE_MS) setTimeout(tick, 150);
+          }
+        }
       }
       if (played) {
         try { var pg = document.getElementById("page"); if (pg) { pg.__foHomeSig = null; pg.__foLgSig = null; } } catch (eP) {}
