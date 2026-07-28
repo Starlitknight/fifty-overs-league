@@ -10112,7 +10112,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260728-2220-999bc3";
+  var FO_BUILD = "20260728-2245-7b4838";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -16777,6 +16777,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (liveT != null && FO_MD.t <= 100) run();       // live window: rolling by itself
   }
   function foRenderMatchday() {
+    // #/matchday belongs to the Living Almanack's Match Centre (module 63).
+    // This painter has its own hashchange hook and fired 15ms after the
+    // route, wiping the captain's sheet - it must stand down where the
+    // redesign owns the route.
+    try { if (window.__foAlOwns && window.__foAlOwns()) return; } catch (eAl) {}
     try {
       if (/^#\/matchday/.test(location.hash || "")) {
         var pgM = document.getElementById("page");
@@ -35937,6 +35942,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   function foRenderFixturesPage() {
     try {
+      // the Almanack owns #/fixtures now (module 65). This card stays in the
+      // tree for the routes that still link to it, but it must never paint
+      // over the redesigned page.
+      try { if (window.__foAlOwns && window.__foAlOwns()) return; } catch (eAl) {}
       if (!ready()) return;
       var page = document.getElementById("page"); if (!page) return;
       var me = null; try { me = userTeam(); } catch (e) {}
@@ -44478,6 +44487,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   function paint() {
     try {
+      // The Almanack's screens are paper, not rooms. They state their artwork
+      // as a plate at full brightness; a veiled painting behind the text is
+      // the language they replaced, and it showed through their backgrounds.
+      try {
+        if (window.__foAlOwns && window.__foAlOwns()) {
+          var off = document.getElementById("fo-roomart");
+          if (off) { off.classList.remove("on"); off.__k = ""; }
+          document.body.classList.remove("fo-roomart-on");
+          return;
+        }
+      } catch (eAl) {}
       css();
       var r = room(), art = ROOM[r];
       var el = document.getElementById("fo-roomart");
@@ -44948,176 +44968,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     } catch (eR) {}
   })();
 /* ============================================================================
-   THE TABLE (#/table) — PHASE 1c: the first page that reads the database.
-
-   Every other screen in this game is drawn from one JSON document: the league
-   snapshot, roughly two megabytes, downloaded whole and parsed whole before
-   anything can be shown. That is the architecture that has been breaking all
-   week, and it is not how Battrick or From the Pavilion work. Their pages ask
-   the database for what the page shows, and nothing else.
-
-   This is that, for one page. The umpire writes game.results after every round
-   (resolver/publish.mjs); game.standings derives the table from those rows in
-   SQL - two points a win, one a tie, net run rate by overs faced and bowled -
-   and the test suite proves that view agrees with the engine's own leagueRows()
-   to the run, on a real played season. So the table on this page is not a
-   summary of the snapshot. It is a query, and it weighs about eight hundred
-   bytes.
-
-   It therefore paints without the snapshot: no career restore, no megabytes,
-   no waiting. Reads are public, so it works the moment you are in a league.
-
-   UNTIL THE UMPIRE HAS RUN, THERE ARE NO ROWS. A league whose first round has
-   not yet resolved has nothing in game.results, and a manager must not be
-   shown an empty table and left to wonder. So when the query comes back empty
-   - or the schema is not exposed, or the request fails - the page falls back
-   to the engine's own table from whatever this device has already loaded, and
-   says which of the two it is showing. One page, two sources, never blank.
-   ========================================================================== */
-(function () {
-  "use strict";
-  if (window.__foTbl) return; window.__foTbl = 1;
-
-  var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
-  var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
-  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
-  function lg() { try { return window.__foLeague ? window.__foLeague() : null; } catch (e) { return null; } }
-  function myClub() { try { return (userTeam() || {}).name || ""; } catch (e) { return ""; } }
-  function onPage() { return (location.hash || "").split("?")[0] === "#/table"; }
-  function nrr(n) { var v = Number(n) || 0; return (v >= 0 ? "+" : "") + v.toFixed(3); }
-
-  function css() {
-    if (document.getElementById("fo-tbl-css")) return;
-    var s = document.createElement("style"); s.id = "fo-tbl-css";
-    s.textContent =
-      ".fo-tbl{max-width:860px;margin:0 auto;padding:28px 16px 64px}" +
-      ".fo-tbl .eyebrow{font:600 11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:#B4533A;margin-bottom:6px}" +
-      ".fo-tbl h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(30px,5vw,46px);line-height:1.05;margin:0 0 8px;text-wrap:balance}" +
-      ".fo-tbl .sub{color:#5A6472;line-height:1.55;margin:0 0 20px;max-width:56ch}" +
-      ".fo-tbl-wrap{overflow-x:auto;border:1px solid rgba(11,19,34,.12);border-radius:14px;background:#fff}" +
-      ".fo-tbl table{width:100%;border-collapse:collapse;font-size:14px}" +
-      ".fo-tbl th{font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#7A8595;text-align:right;padding:12px 10px;border-bottom:1px solid rgba(11,19,34,.12);white-space:nowrap}" +
-      ".fo-tbl th.l,.fo-tbl td.l{text-align:left}" +
-      ".fo-tbl td{padding:11px 10px;text-align:right;border-bottom:1px solid rgba(11,19,34,.06);font-variant-numeric:tabular-nums;white-space:nowrap}" +
-      ".fo-tbl tr:last-child td{border-bottom:0}" +
-      ".fo-tbl td.club{font-weight:600}" +
-      ".fo-tbl td.pos{color:#7A8595;width:34px}" +
-      ".fo-tbl tr.me{background:#FBF3EF}" +
-      ".fo-tbl tr.me td.club{color:#B4533A}" +
-      ".fo-tbl td.pts{font-weight:700}" +
-      ".fo-tbl .src{margin-top:14px;font:500 12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:#7A8595}" +
-      ".fo-tbl .src b{color:#3E7A55;font-weight:600}" +
-      ".fo-tbl .src i{color:#8A6A3B;font-style:normal;font-weight:600}" +
-      // POINTS MUST NEVER BE THE COLUMN THAT FALLS OFF. A league table read on
-      // a phone is read for two things: who is top, and how many points they
-      // have. Eight columns do not fit in 390px, and a table that merely
-      // scrolls sideways puts the most important number behind a swipe nobody
-      // makes. So the narrow layout spends its width on what the table is FOR
-      // - position, club, played, won, net run rate, points - and drops lost
-      // and tied, which a reader can derive and which the wider layout keeps.
-      "@media (max-width:560px){" +
-      ".fo-tbl{padding:20px 10px 56px}" +
-      ".fo-tbl table{font-size:13px}" +
-      ".fo-tbl th,.fo-tbl td{padding:10px 6px}" +
-      ".fo-tbl .c-l,.fo-tbl .c-t{display:none}" +
-      "}";
-    document.head.appendChild(s);
-  }
-
-  function shell(inner) {
-    return "<div class='fo-tbl'><div class='eyebrow'>The League &middot; Standings</div>" +
-      "<h1>The Table</h1>" + inner + "</div>";
-  }
-
-  /** Rows straight from SQL. Resolves to null when the spine has nothing. */
-  function fromDatabase(leagueId) {
-    return fetch(SB_URL + "/rest/v1/standings?league_id=eq." + encodeURIComponent(leagueId) +
-      "&select=club,season_no,p,w,l,t,pts,rf,ra,nrr", { headers: { apikey: SB_ANON, "Accept-Profile": "game" } })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (rows) {
-        if (!rows || !rows.length) return null;
-        // the league may have played several seasons; this page is the one
-        // being played now, which is the highest season number present
-        var top = 0;
-        rows.forEach(function (r0) { if ((r0.season_no | 0) > top) top = r0.season_no | 0; });
-        var live = rows.filter(function (r0) { return (r0.season_no | 0) === top; });
-        if (!live.length) return null;
-        live.sort(function (a, b) { return b.pts - a.pts || Number(b.nrr) - Number(a.nrr) || String(a.club).localeCompare(String(b.club)); });
-        return { season: top, rows: live };
-      })
-      .catch(function () { return null; });
-  }
-
-  /** The engine's own table, from whatever this device already holds. */
-  function fromEngine() {
-    try {
-      if (typeof leagueRows !== "function") return null;
-      var rows = leagueRows() || [];
-      if (!rows.length) return null;
-      return {
-        season: (typeof App !== "undefined" && App && App.seasonNo) || 1,
-        rows: rows.map(function (x) {
-          return { club: x.nm, p: x.p, w: x.w, l: x.l, t: x.t, pts: x.pts, rf: x.rf, ra: x.ra, nrr: x.nrr };
-        }),
-      };
-    } catch (e) { return null; }
-  }
-
-  function render(data, served, note) {
-    var page = document.getElementById("page"); if (!page) return;
-    css();
-    if (!data) {
-      page.innerHTML = shell("<p class='sub'>This league has not played a round yet. " +
-        "The table appears the moment the first round is resolved.</p>");
-      return;
-    }
-    var mine = myClub();
-    var body = data.rows.map(function (r, i) {
-      return "<tr" + (r.club === mine ? " class='me'" : "") + ">" +
-        "<td class='pos'>" + (i + 1) + "</td>" +
-        "<td class='l club'>" + E(r.club) + "</td>" +
-        "<td>" + (r.p | 0) + "</td><td>" + (r.w | 0) + "</td>" +
-        "<td class='c-l'>" + (r.l | 0) + "</td><td class='c-t'>" + (r.t | 0) + "</td>" +
-        "<td>" + nrr(r.nrr) + "</td><td class='pts'>" + (r.pts | 0) + "</td></tr>";
-    }).join("");
-    page.innerHTML = shell(
-      "<p class='sub'>Season " + (data.season | 0) + " &middot; " + data.rows.length + " clubs. " +
-      "Two points a win, one a tie; net run rate splits the level.</p>" +
-      "<div class='fo-tbl-wrap'><table><thead><tr>" +
-      "<th></th><th class='l'>Club</th><th>P</th><th>W</th>" +
-      "<th class='c-l'>L</th><th class='c-t'>T</th><th>NRR</th><th>Pts</th>" +
-      "</tr></thead><tbody>" + body + "</tbody></table></div>" +
-      "<div class='src'>" + (served
-        ? "<b>&#9679; served</b> &middot; read from the league database, not from your saved season"
-        : "<i>&#9679; local</i> &middot; " + E(note || "read from this device's copy of the season")) +
-      "</div>");
-  }
-
-  window.foRenderStandingsPage = function () {
-    if (!onPage()) return;
-    var page = document.getElementById("page"); if (!page) return;
-    css();
-    // paint what this device already knows FIRST, so the page is never blank,
-    // then let the served table replace it when it lands (typically ~200ms)
-    var local = fromEngine();
-    if (local) render(local, false, "waiting for the league database");
-    else page.innerHTML = shell("<p class='sub'>Reading the table&hellip;</p>");
-
-    var L = lg();
-    if (!L || !L.id) {
-      if (!local) render(null);
-      else render(local, false, "solo career &middot; this table is your own season");
-      return;
-    }
-    fromDatabase(L.id).then(function (served) {
-      if (!onPage()) return;                       // the manager moved on
-      if (served) { render(served, true); return; }
-      if (local) { render(local, false, "the league database has no rounds yet"); return; }
-      render(null);
-    });
-  };
-})();
-/* ============================================================================
    THE LIVING ALMANACK — the global shell.
 
    Phase 1 of the redesign. This module owns the frame every redesigned screen
@@ -45155,7 +45005,19 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     { id: "club",   label: "Club",   home: "#/club-h", routes: ["club-h", "finance", "milestones", "lore", "paper", "wire", "guide", "ledger", "almanack"] },
   ];
   // routes this redesign currently OWNS. Everything else keeps its old page.
-  var AL_OWNS = { today: 1, team: 1, matchday: 1 };
+  var AL_OWNS = { today: 1, team: 1, matchday: 1, table: 1, fixtures: 1 };
+
+  // A section is bigger than one screen, and the dock only has five slots. The
+  // rest of a section's rooms hang off a rule under the masthead - the same
+  // place a newspaper puts the rest of its section.
+  var SUB = {
+    league: [
+      { id: "table", label: "Table", href: "#/table" },
+      { id: "fixtures", label: "Fixtures", href: "#/fixtures" },
+      { id: "records", label: "Record book", href: "#/records" },
+      { id: "planet", label: "World", href: "#/planet" },
+    ],
+  };
 
   var ICON = {
     today:  '<path d="M4 5h16v15H4z"/><path d="M4 9h16"/><path d="M8 3v4M16 3v4"/>',
@@ -45319,6 +45181,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         '<div class="al-sticky__note">' + E(note) + "</div>" +
         '<button class="al-btn al-btn--primary" data-al-act="' + E(act) + '">' + E(label) + "</button>" +
         "</div></div>";
+    },
+    subnav: function (cur) {
+      var items = SUB[sectionOf().id]; if (!items) return "";
+      return '<nav class="al-subnav" aria-label="Section">' + items.map(function (x) {
+        return '<a href="' + x.href + '"' + (x.id === cur ? ' aria-current="page"' : "") + ">" + E(x.label) + "</a>";
+      }).join("") + "</nav>";
     },
     tag: function (text, kind) { return '<span class="al-tag' + (kind ? " al-tag--" + kind : "") + '">' + E(text) + "</span>"; },
     empty: function (title, line) { return '<div class="al-empty"><h3>' + E(title) + "</h3><p>" + E(line) + "</p></div>"; },
@@ -45527,10 +45395,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   // the sticky bar is appended outside #page, so it must be cleaned up when
   // the manager leaves - otherwise it would hang over another screen
-  window.addEventListener("hashchange", function () {
-    if (on()) return;
-    var s = document.querySelector(".al-sticky"); if (s && s.parentNode) s.parentNode.removeChild(s);
-  });
+  // NOTHING TO SWEEP HERE. The sticky bar lives inside #page, which every
+  // route replaces wholesale; a hashchange handler that removed it also ran
+  // AFTER a sibling screen had painted its own, and deleted that one.
 })();
 /* ============================================================================
    TEAM (#/team) — choosing and ordering the eleven.
@@ -45641,7 +45508,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     body += al.sec("Playing XI", xiHtml + tools);
 
     // ---- reserves ---------------------------------------------------------
-    body += al.sec("Reserves &middot; " + reserves.length,
+    body += al.sec("Reserves · " + reserves.length,
       reserves.length
         ? '<div class="al-players">' + reserves.map(function (p) { return row(p, 0, false); }).join("") + "</div>"
         : al.empty("Everyone is playing", "There is nobody left on the sidelines."));
@@ -45745,9 +45612,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     }
   }
 
+  // NOTHING TO SWEEP HERE. The sticky bar lives inside #page, which every
+  // route replaces wholesale; a hashchange handler that removed it also ran
+  // AFTER a sibling screen had painted its own, and deleted that one.
   window.addEventListener("hashchange", function () {
     if (on()) return;
-    var s = document.querySelector(".al-sticky"); if (s && s.parentNode) s.parentNode.removeChild(s);
     var sh = document.querySelector(".al-sheet"); if (sh && sh.parentNode) sh.parentNode.removeChild(sh);
   });
 })();
@@ -45973,10 +45842,438 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     }
   }
 
-  window.addEventListener("hashchange", function () {
-    if (on()) return;
-    var s = document.querySelector(".al-sticky"); if (s && s.parentNode) s.parentNode.removeChild(s);
-  });
+  // NOTHING TO SWEEP HERE. The sticky bar lives inside #page, which every
+  // route replaces wholesale; a hashchange handler that removed it also ran
+  // AFTER a sibling screen had painted its own, and deleted that one.
+})();
+/* ============================================================================
+   THE TABLE (#/table) — the league's standing record, read from the database.
+
+   Every other screen in this game is drawn from one JSON document: the league
+   snapshot, roughly two megabytes, downloaded whole and parsed whole before
+   anything can be shown. That is the architecture that has been breaking all
+   week, and it is not how Battrick or From the Pavilion work. Their pages ask
+   the database for what the page shows, and nothing else.
+
+   This is that, for one page. The umpire writes game.results after every round
+   (resolver/publish.mjs); game.standings derives the table from those rows in
+   SQL - two points a win, one a tie, net run rate by overs faced and bowled -
+   and the test suite proves that view agrees with the engine's own leagueRows()
+   to the run, on a real played season. So the table on this page is not a
+   summary of the snapshot. It is a query, and it weighs about eight hundred
+   bytes.
+
+   It therefore paints without the snapshot: no career restore, no megabytes,
+   no waiting. Reads are public, so it works the moment you are in a league.
+
+   UNTIL THE UMPIRE HAS RUN, THERE ARE NO ROWS. A league whose first round has
+   not yet resolved has nothing in game.results, and a manager must not be
+   shown an empty table and left to wonder. So when the query comes back empty
+   - or the schema is not exposed, or the request fails - the page falls back
+   to the engine's own table from whatever this device has already loaded, and
+   says which of the two it is showing. One page, two sources, never blank.
+
+   PHASE 2 OF THE ALMANACK. The page now wears the shell, and states its own
+   headline above the grid: a table is read for one thing before all others -
+   where am I, and what is the gap - and that sentence should not have to be
+   assembled by eye out of eight columns of figures.
+   ========================================================================== */
+(function () {
+  "use strict";
+  if (window.__foTbl) return; window.__foTbl = 1;
+
+  var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
+  var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function lg() { try { return window.__foLeague ? window.__foLeague() : null; } catch (e) { return null; } }
+  function myClub() { try { return (userTeam() || {}).name || ""; } catch (e) { return ""; } }
+  function onPage() { return (location.hash || "").split("?")[0] === "#/table"; }
+  function A() { return window.AL || null; }
+  function nrr(n) { var v = Number(n) || 0; return (v >= 0 ? "+" : "") + v.toFixed(3); }
+  function ordinal(n) {
+    var s = ["th", "st", "nd", "rd"], v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+  function points(n) { return n + (n === 1 ? " point" : " points"); }
+
+  /** Rows straight from SQL. Resolves to null when the spine has nothing. */
+  function fromDatabase(leagueId) {
+    return fetch(SB_URL + "/rest/v1/standings?league_id=eq." + encodeURIComponent(leagueId) +
+      "&select=club,season_no,p,w,l,t,pts,rf,ra,nrr", { headers: { apikey: SB_ANON, "Accept-Profile": "game" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (rows) {
+        if (!rows || !rows.length) return null;
+        // the league may have played several seasons; this page is the one
+        // being played now, which is the highest season number present
+        var top = 0;
+        rows.forEach(function (r0) { if ((r0.season_no | 0) > top) top = r0.season_no | 0; });
+        var live = rows.filter(function (r0) { return (r0.season_no | 0) === top; });
+        if (!live.length) return null;
+        live.sort(function (a, b) { return b.pts - a.pts || Number(b.nrr) - Number(a.nrr) || String(a.club).localeCompare(String(b.club)); });
+        return { season: top, rows: live };
+      })
+      .catch(function () { return null; });
+  }
+
+  /** The engine's own table, from whatever this device already holds. */
+  function fromEngine() {
+    try {
+      if (typeof leagueRows !== "function") return null;
+      var rows = leagueRows() || [];
+      if (!rows.length) return null;
+      return {
+        season: (typeof App !== "undefined" && App && App.seasonNo) || 1,
+        rows: rows.map(function (x) {
+          return { club: x.nm, p: x.p, w: x.w, l: x.l, t: x.t, pts: x.pts, rf: x.rf, ra: x.ra, nrr: x.nrr };
+        }),
+      };
+    } catch (e) { return null; }
+  }
+
+  // ---- the sentence the table is actually read for -------------------------
+  function standing(data, mine) {
+    var i = -1;
+    for (var k = 0; k < data.rows.length; k++) if (data.rows[k].club === mine) i = k;
+    if (i < 0) return null;
+    var me = data.rows[i], above = i > 0 ? data.rows[i - 1] : null, below = data.rows[i + 1] || null;
+    var notes = [];
+    if (above) {
+      var gap = (above.pts | 0) - (me.pts | 0);
+      notes.push(gap === 0 ? "level with " + above.club + " on points" : points(gap) + " behind " + above.club);
+    } else notes.push(below ? "top of the table" : "the only club on the card");
+    if (below) {
+      var lead = (me.pts | 0) - (below.pts | 0);
+      notes.push(lead === 0 ? "level with " + below.club + " below" : points(lead) + " clear of " + below.club);
+    }
+    return {
+      title: ordinal(i + 1) + " of " + data.rows.length + " · " + points(me.pts | 0) +
+        " from " + (me.p | 0) + (me.p === 1 ? " match" : " matches"),
+      note: notes.join(" · "),
+      top: i === 0,
+    };
+  }
+
+  // ---- the grid ------------------------------------------------------------
+  // POINTS MUST NEVER BE THE COLUMN THAT FALLS OFF. A league table read on a
+  // phone is read for two things: who is top, and how many points they have.
+  // Eight columns do not fit in 390px, and a table that merely scrolls
+  // sideways puts the most important number behind a swipe nobody makes. So
+  // the narrow layout spends its width on what the table is FOR - position,
+  // club, played, won, net run rate, points - and drops lost and tied, which a
+  // reader can derive and which the wider layout keeps.
+  function grid(data, mine) {
+    var body = data.rows.map(function (r, i) {
+      var me = r.club === mine;
+      return "<tr" + (me ? " class='al-you'" : "") + ">" +
+        "<td class='al-pos'>" + (i + 1) + "</td>" +
+        "<td class='l al-club'>" + E(r.club) + (me ? "<span class='al-you__tag'>YOU</span>" : "") + "</td>" +
+        "<td>" + (r.p | 0) + "</td><td>" + (r.w | 0) + "</td>" +
+        "<td class='al-c-l'>" + (r.l | 0) + "</td><td class='al-c-t'>" + (r.t | 0) + "</td>" +
+        "<td>" + nrr(r.nrr) + "</td><td class='al-pts'>" + (r.pts | 0) + "</td></tr>";
+    }).join("");
+    return "<div class='al-tblwrap'><table class='al-tbl'><thead><tr>" +
+      "<th></th><th class='l'>Club</th><th>P</th><th>W</th>" +
+      "<th class='al-c-l'>L</th><th class='al-c-t'>T</th><th>NRR</th><th>Pts</th>" +
+      "</tr></thead><tbody>" + body + "</tbody></table></div>";
+  }
+
+  function render(data, served, note) {
+    if (!onPage()) return;
+    var page = document.getElementById("page"); if (!page) return;
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
+
+    var body = al.mast("The League · standings", "The Table",
+      data ? "Two points a win, one a tie; net run rate splits the level."
+           : "The season's record, from the morning the first round resolves.");
+    body += al.subnav("table");
+
+    if (!data) {
+      page.innerHTML = al.page({ body: body + al.empty("No rounds played yet",
+        "This league has not resolved a round. The table appears the morning after the first one does.") });
+      return;
+    }
+
+    var mine = myClub(), st = standing(data, mine);
+    if (st) body += al.decide({ kind: st.top ? "done" : "", title: "You are " + st.title, note: st.note });
+
+    body += al.sec("Season " + (data.season | 0) + " · " + data.rows.length + " clubs",
+      grid(data, mine), { href: "#/fixtures", label: "Fixtures" });
+    body += "<p class='al-read'>" + (served
+      ? "&#9679; served &middot; read from the league database, not from your saved season"
+      : "&#9679; local &middot; " + E(note || "read from this device's copy of the season")) + "</p>";
+
+    page.innerHTML = al.page({ body: body });
+  }
+
+  window.foRenderStandingsPage = function () {
+    if (!onPage()) return;
+    if (!document.getElementById("page")) return;
+    // paint what this device already knows FIRST, so the page is never blank,
+    // then let the served table replace it when it lands (typically ~200ms)
+    var local = fromEngine();
+    render(local, false, "waiting for the league database");
+
+    var L = lg();
+    if (!L || !L.id) { render(local, false, "solo career · this table is your own season"); return; }
+    fromDatabase(L.id).then(function (served) {
+      if (!onPage()) return;                       // the manager moved on
+      if (served) { render(served, true); return; }
+      render(local, false, "the league database has no rounds yet");
+    });
+  };
+})();
+/* ============================================================================
+   FIXTURES (#/fixtures) — the season as a ledger.
+
+   The old card was two lists side by side: everything played, then everything
+   still to come. That reads as two separate documents and hides the one thing
+   a manager opens this page for - which match is next, and what are its
+   conditions. A season is one continuous record, so this is one column, in
+   round order, from the first match of the summer to the last.
+
+   ONLY THE NEXT FIXTURE IS EXPANDED. Every other round is one line: round,
+   home or away, the opponent, the outcome. The next one opens in place, with
+   the ground, the square, the sky, the hour it resolves and the way into the
+   Match Centre. Nothing else on the page competes with it.
+
+   TWO SOURCES, ONE CARD. Where the club is held in the served world the card
+   is built from the umpire's own record - its results and its schedule - so a
+   manager is never shown a fixture that will not be played. A device that has
+   never claimed a club falls back to the local season it holds. The shape
+   below is the same either way; only where the rows come from differs.
+   ========================================================================== */
+(function () {
+  "use strict";
+  if (window.__foAlFix) return; window.__foAlFix = 1;
+
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function on() { return (location.hash || "").split("?")[0] === "#/fixtures"; }
+  function A() { return window.AL || null; }
+  var PITCH = { balanced: "true", flat: "flat", green: "green", dry: "dry", slow: "slow", cracked: "cracked", twoPaced: "two-paced" };
+
+  function worldClaim() {
+    try { return window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); }
+    catch (e) { return null; }
+  }
+  function repaint() { try { if (on()) window.foRenderFixturesPage(); } catch (e) {} }
+
+  // older saves recorded results before seasonNo existed on the record; a
+  // stampless result belongs to this season exactly when the season's own
+  // played-map points at its index
+  function thisSeasonHas(r, ix) {
+    var cur = (App.seasonNo || 1);
+    if (r.seasonNo != null) return r.seasonNo === cur;
+    try {
+      var P = (App.season && App.season.played) || {};
+      for (var k in P) if (P[k] === (r.ix != null ? r.ix : ix)) return true;
+    } catch (e) {}
+    return false;
+  }
+
+  // ---- the served card: the umpire's own record ---------------------------
+  function servedCard(claim) {
+    var snap = null, names = null, mgr = null;
+    try {
+      if (window.__foWorldLg) { window.__foWorldLg.want(claim.country, repaint); snap = window.__foWorldLg.get(claim.country); }
+      if (window.__foWorldNames) { window.__foWorldNames.want(claim.country, repaint); names = window.__foWorldNames.get(claim.country); mgr = window.__foWorldNames.mgr(claim.country); }
+    } catch (e) {}
+    if (!snap || !snap.table || !snap.table.length) return null;
+
+    var bySlot = {}, slotOf = {};
+    snap.table.forEach(function (r) {
+      var nm = (names && names[r.slot]) || r.name;
+      bySlot[r.slot] = nm; slotOf[nm] = r.slot;
+    });
+    var my = bySlot[claim.slot] || claim.club;
+    var groundOf = function (slot) { return (mgr && mgr["g" + slot]) || ((bySlot[slot] || "the ground") + "'s ground"); };
+
+    var rows = {};
+    (snap.results || []).forEach(function (r) {
+      if (r.home !== my && r.away !== my) return;
+      var isHome = r.home === my, opp = isHome ? r.away : r.home;
+      var won = r.winner === my, tie = r.winner === null;
+      var sc = isHome ? r.hs : r.as, oc = isHome ? r.as : r.hs;
+      rows[(r.round | 0) - 1] = {
+        kind: "done", round: r.round | 0, isHome: isHome, opp: opp,
+        ground: groundOf(isHome ? claim.slot : slotOf[opp]),
+        mark: tie ? "T" : won ? "W" : "L",
+        line: sc && oc ? (sc.r + "/" + sc.w + " v " + oc.r + "/" + oc.w) : (r.text || ""),
+        text: (r.text || "").replace(/\s*\(.*\)$/, ""),
+        href: "#/league?t=results&r=" + (r.round | 0),
+      };
+    });
+
+    var rounds = snap.rounds || 18;
+    try {
+      var wt = window.__foWT, pl = window.__foPlanet;
+      if (wt && wt.schedMirror) {
+        var sched = wt.schedMirror(claim.country, snap.seasonNo || 1) || [];
+        var hour = pl ? pl.natHour(claim.country) : null;
+        for (var i = 0; i < sched.length; i++) {
+          if (rows[i]) continue;
+          /* jshint loopfunc:true */
+          (function (ri) {
+            (sched[ri] || []).forEach(function (f) {
+              if (f[0] !== claim.slot && f[1] !== claim.slot) return;
+              var isHome = f[0] === claim.slot;
+              rows[ri] = {
+                kind: "todo", round: ri + 1, isHome: isHome,
+                opp: bySlot[isHome ? f[1] : f[0]] || "a club",
+                ground: groundOf(f[0]),
+                when: hour != null ? ((hour < 10 ? "0" : "") + hour + ":00 UTC") : "",
+                href: "#/matchday",
+              };
+            });
+          })(i);
+        }
+        if (sched.length > rounds) rounds = sched.length;
+      }
+    } catch (eU) {}
+    return { season: snap.seasonNo || 1, club: my, rounds: rounds, rows: rows, served: true };
+  }
+
+  // ---- the local card: the season this device holds ------------------------
+  function localCard() {
+    try { if (typeof seasonInit === "function") seasonInit(); } catch (e) {}
+    var me = null; try { me = userTeam(); } catch (e2) {}
+    if (!me) return null;
+    var my = me.name, S = App.season, rows = {};
+
+    (App.results || []).forEach(function (r, i) {
+      if (!r || r.comp !== "league" || !r.result) return;
+      if (r.home !== my && r.away !== my) return;
+      if (!thisSeasonHas(r, i)) return;
+      var isHome = r.home === my, opp = isHome ? r.away : r.home;
+      var live = /LIVE/.test(r.result.text || "") || r.result.winner === undefined;
+      var won = r.result.winner === my, tie = r.result.winner === null;
+      rows[r.round | 0] = {
+        kind: "done", round: (r.round | 0) + 1, isHome: isHome, opp: opp,
+        ground: r.ground || "", live: live,
+        mark: live ? "&#9679;" : tie ? "T" : won ? "W" : "L",
+        text: (r.result.text || "").replace(/\s*\(.*\)$/, ""),
+        href: "#/report?i=" + (r.ix != null ? r.ix : i),
+      };
+    });
+
+    if (S && S.schedule) {
+      for (var k = 0; k < S.schedule.length; k++) {
+        if (rows[k]) continue;
+        /* jshint loopfunc:true */
+        (function (ri) {
+          (S.schedule[ri] || []).forEach(function (f) {
+            if (f[0] !== App.teamIx && f[1] !== App.teamIx) return;
+            try { if (S.played && S.played[fixtureKey(ri, f)] !== undefined) return; } catch (eK) {}
+            var isHome = f[0] === App.teamIx, home = GD.teams[f[0]], away = GD.teams[f[1]];
+            var when = "";
+            try { if (typeof window.foRoundTimeTxt === "function") when = window.foRoundTimeTxt(ri) || ""; } catch (eW) {}
+            rows[ri] = {
+              kind: "todo", round: ri + 1, isHome: isHome, opp: (isHome ? away : home).name,
+              ground: home.ground,
+              pitch: (typeof groundPitch === "function") ? groundPitch(home.ground) : "",
+              wx: (typeof WXLIST !== "undefined") ? WXLIST[(ri * 7 + f[0] * 3) % WXLIST.length] : "",
+              when: when, href: "#/matchday?r=" + ri,
+            };
+          });
+        })(k);
+      }
+    }
+    return {
+      season: App.seasonNo || 1, club: my, rows: rows,
+      rounds: (S && S.schedule) ? S.schedule.length : 18, served: false,
+    };
+  }
+
+  // ---- rows ----------------------------------------------------------------
+  function line(f, next) {
+    var cls = "al-fix" + (next ? " al-fix--next" : "");
+    var mark = f.kind === "done" ? f.mark : (f.isHome ? "H" : "A");
+    var kind = f.kind === "done" ? (f.live ? "lv" : f.mark === "W" ? "w" : f.mark === "L" ? "l" : "t") : "n";
+    var under = f.kind === "done"
+      ? (f.text || f.line || "")
+      : [f.ground, f.when].filter(Boolean).join(" · ");
+    return "<a class='" + cls + "' href='" + E(f.href) + "'>" +
+      "<span class='al-fix__r'>R" + (f.round | 0) + "</span>" +
+      "<span class='al-fix__w " + kind + "'>" + mark + "</span>" +
+      "<span class='al-fix__t'><b>" + (f.isHome ? "v " : "at ") + E(f.opp) + "</b><i>" + E(under) + "</i></span>" +
+      "<span class='al-fix__o'>" + (f.kind === "done" ? "&rsaquo;" : next ? "NEXT" : "&rsaquo;") + "</span>" +
+      "</a>";
+  }
+
+  /** The next fixture, opened in place: conditions, hour, and the way in. */
+  function opened(al, f) {
+    var rows = [["Opponent", f.opp], [f.isHome ? "Ground (home)" : "Ground (away)", f.ground || "—"]];
+    if (f.pitch) rows.push(["Pitch", (PITCH[f.pitch] || f.pitch) + " square"]);
+    if (f.wx) rows.push(["Forecast", String(f.wx)]);
+    rows.push(["Resolves", f.when || "9:00 AM ET"]);
+    try { rows.push(["Countdown", al.clock().top]); } catch (e) {}
+    return "<div class='al-fix__open'>" + al.ledger(rows) +
+      "<div class='al-fix__go'><a class='al-btn al-btn--primary' href='#/matchday'>Match centre</a>" +
+      "<a class='al-btn' href='#/team'>The eleven</a></div></div>";
+  }
+
+  window.foRenderFixturesPage = function () {
+    if (!on()) return;
+    var page = document.getElementById("page"); if (!page) return;
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
+
+    var cl = worldClaim(), card = null;
+    if (cl && cl.country && cl.slot != null) card = servedCard(cl);
+    if (!card) card = localCard();
+
+    var body = al.mast("The League · season " + ((card && card.season) || 1), "Fixtures",
+      "Every match of the summer in one column. The next one is open; the rest are a line each.");
+    body += al.subnav("fixtures");
+
+    if (!card) {
+      page.innerHTML = al.page({ body: body + al.empty("The card is not out",
+        "Your fixture list appears the moment the season is drawn.") });
+      return;
+    }
+
+    // in round order, with the first unplayed match marked as next
+    var keys = Object.keys(card.rows).map(Number).sort(function (a, b) { return a - b; });
+    var nextKey = -1;
+    for (var i = 0; i < keys.length; i++) if (card.rows[keys[i]].kind === "todo") { nextKey = keys[i]; break; }
+
+    var w = 0, l = 0, t = 0, played = 0;
+    keys.forEach(function (k) {
+      var f = card.rows[k];
+      if (f.kind !== "done" || f.live) return;
+      played++; if (f.mark === "W") w++; else if (f.mark === "L") l++; else t++;
+    });
+
+    if (nextKey >= 0) {
+      var nf = card.rows[nextKey];
+      body += al.decide({
+        kind: "act",
+        title: "Round " + (nf.round | 0) + " · " + (nf.isHome ? "v " : "at ") + nf.opp,
+        note: (nf.ground ? nf.ground + " · " : "") + "resolves " + (nf.when || "9:00 AM ET"),
+        action: { href: "#/matchday", label: "Match centre" }, primary: true,
+      });
+    } else {
+      body += al.decide({ kind: "done", title: "The season is played out",
+        note: "Every fixture on the card has been resolved.", action: { href: "#/table", label: "The table" } });
+    }
+
+    var list = keys.map(function (k) {
+      var f = card.rows[k];
+      return line(f, k === nextKey) + (k === nextKey ? opened(al, f) : "");
+    }).join("");
+
+    body += al.sec("The season · " + w + "W " + l + "L" + (t ? " " + t + "T" : "") +
+      " · " + played + " of " + (card.rounds | 0) + " played",
+      list ? "<div class='al-fixlist'>" + list + "</div>"
+           : al.empty("No fixtures yet", "The card is drawn when the season starts."),
+      { href: "#/table", label: "The table" });
+
+    body += "<p class='al-read'>" + (card.served
+      ? "&#9679; served &middot; the umpire's own card for " + E(card.club)
+      : "&#9679; local &middot; this device's copy of the season") + "</p>";
+
+    page.innerHTML = al.page({ body: body });
+  };
 })();
 
 ;

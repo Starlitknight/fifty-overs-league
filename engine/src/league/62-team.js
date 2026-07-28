@@ -54,14 +54,12 @@
     return { xi: xi, n: xi.length, overs: overs, faults: faults, captain: o.captain || "", keeper: o.keeper || "", saved: !!o.saved };
   }
 
-  function formWord(p) {
-    try {
-      var f = (p && p.form) || "";
-      if (typeof f === "number") return f > 60 ? "Good form" : f < 40 ? "Out of form" : "Steady";
-      return String(f || "").replace(/^\w/, function (c) { return c.toUpperCase(); }) || "Steady";
-    } catch (e) { return "Steady"; }
-  }
-  function roleWord(p) { return String((p && (p.roleFull || p.role)) || "Player"); }
+  // the shared player vocabulary lives on the shell, so the Team page, the
+  // Match Centre and every roster after them describe a player the same way
+  function cap(x) { var a = A(); return a ? a.cap(x) : String(x == null ? "" : x); }
+  function formWord(p) { var a = A(); return a ? a.form(p) : "Steady"; }
+  function roleWord(p) { var a = A(); return a ? a.role(p) : "Player"; }
+  function ovr(p) { var a = A(); return a ? a.ovr(p) : 0; }
 
   function row(p, pos, inXI) {
     if (!p) return "";
@@ -69,7 +67,7 @@
     return '<button class="al-prow' + (inXI ? " al-prow--picked" : "") + '" data-al-p="' + n + '">' +
       '<span class="al-prow__no">' + (inXI ? ("0" + pos).slice(-2) : "+") + "</span>" +
       '<span class="al-prow__who"><b>' + n + "</b><i>" + E(roleWord(p)) + " &middot; " + E(formWord(p)) + "</i></span>" +
-      '<span class="al-prow__rate">' + ((p.rating | 0) || "&mdash;") + "</span>" +
+      '<span class="al-prow__rate">' + (ovr(p) || "&mdash;") + "</span>" +
       "</button>";
   }
 
@@ -107,7 +105,7 @@
     body += al.sec("Playing XI", xiHtml + tools);
 
     // ---- reserves ---------------------------------------------------------
-    body += al.sec("Reserves &middot; " + reserves.length,
+    body += al.sec("Reserves · " + reserves.length,
       reserves.length
         ? '<div class="al-players">' + reserves.map(function (p) { return row(p, 0, false); }).join("") + "</div>"
         : al.empty("Everyone is playing", "There is nobody left on the sidelines."));
@@ -131,10 +129,10 @@
       ["Role", roleWord(p)],
       ["Age", String(p.age || "—")],
       ["Nationality", String(p.nat || p.country || "—")],
-      ["Rating", String(p.rating | 0)],
+      ["Overall", String(ovr(p))],
       ["Form", formWord(p)],
-      ["Fitness", String(p.fatigue || "rested")],
-      ["Experience", String(p.exp != null ? p.exp : "—")],
+      ["Fitness", cap(String(p.fatWord || p.fatigue || "rested"))],
+      ["Experience", cap(String(p.expWord || (p.exp != null ? p.exp : "—")))],
       ["Wage", p.wage != null ? "$" + Number(p.wage).toLocaleString() : "—"],
     ];
     var el = document.createElement("div");

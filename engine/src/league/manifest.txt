@@ -49,8 +49,9 @@
 48-room-art.js
 49-market.js
 50-match-archive.js
-52-standings.js
 60-almanack-shell.js
 61-today.js
 62-team.js
 63-match-centre.js
+64-table.js
+65-fixtures.js

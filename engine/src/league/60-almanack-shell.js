@@ -36,7 +36,19 @@
     { id: "club",   label: "Club",   home: "#/club-h", routes: ["club-h", "finance", "milestones", "lore", "paper", "wire", "guide", "ledger", "almanack"] },
   ];
   // routes this redesign currently OWNS. Everything else keeps its old page.
-  var AL_OWNS = { today: 1, team: 1, matchday: 1 };
+  var AL_OWNS = { today: 1, team: 1, matchday: 1, table: 1, fixtures: 1 };
+
+  // A section is bigger than one screen, and the dock only has five slots. The
+  // rest of a section's rooms hang off a rule under the masthead - the same
+  // place a newspaper puts the rest of its section.
+  var SUB = {
+    league: [
+      { id: "table", label: "Table", href: "#/table" },
+      { id: "fixtures", label: "Fixtures", href: "#/fixtures" },
+      { id: "records", label: "Record book", href: "#/records" },
+      { id: "planet", label: "World", href: "#/planet" },
+    ],
+  };
 
   var ICON = {
     today:  '<path d="M4 5h16v15H4z"/><path d="M4 9h16"/><path d="M8 3v4M16 3v4"/>',
@@ -157,6 +169,35 @@
   }
   window.__foAlApply = apply;
 
+  // ---- the words a player is described in ----------------------------------
+  // Every roster surface in the Almanack prints the same three things about a
+  // player, so they are said once, here. Two of them were being got wrong:
+  // `p.rating` is the engine's internal points value (five figures), not the
+  // overall a manager reads; and a player has no `form` field at all - the
+  // word is `formWord`, which the rest of the game has always printed.
+  var ROLE = {
+    opener: "Opener", topOrderBat: "Top order", topOrder: "Top order",
+    middleOrderBat: "Middle order", middleOrder: "Middle order", middle: "Middle order",
+    finisher: "Finisher", allRounder: "All-rounder", wicketkeeper: "Wicketkeeper",
+    keeper: "Wicketkeeper", seamFast: "Fast bowler", seamMedium: "Medium pacer",
+    seam: "Seamer", spinOff: "Off spinner", spinLeg: "Leg spinner", spin: "Spinner",
+  };
+  function cap(x) { return String(x == null ? "" : x).replace(/^\w/, function (c) { return c.toUpperCase(); }); }
+  function roleWord(p) {
+    if (!p) return "Player";
+    var k = p.role || p.roleFull || "";
+    return ROLE[k] || cap(String(k).replace(/([A-Z])/g, " $1").trim()) || "Player";
+  }
+  function formWord(p) {
+    var f = (p && (p.formWord || p.form)) || "";
+    if (typeof f === "number") return f > 60 ? "Good form" : f < 40 ? "Out of form" : "Steady";
+    return cap(f) || "Steady";
+  }
+  function ovr(p) {
+    try { if (typeof window.foPkOvr === "function") return window.foPkOvr(p) | 0; } catch (e) {}
+    return Math.round(((p && p.rating) || 0) / 1000);
+  }
+
   // ---- page builders -------------------------------------------------------
   // Every redesigned screen is assembled from these, in this order, so the
   // publication reads the same way on every route.
@@ -201,9 +242,16 @@
         '<button class="al-btn al-btn--primary" data-al-act="' + E(act) + '">' + E(label) + "</button>" +
         "</div></div>";
     },
+    subnav: function (cur) {
+      var items = SUB[sectionOf().id]; if (!items) return "";
+      return '<nav class="al-subnav" aria-label="Section">' + items.map(function (x) {
+        return '<a href="' + x.href + '"' + (x.id === cur ? ' aria-current="page"' : "") + ">" + E(x.label) + "</a>";
+      }).join("") + "</nav>";
+    },
     tag: function (text, kind) { return '<span class="al-tag' + (kind ? " al-tag--" + kind : "") + '">' + E(text) + "</span>"; },
     empty: function (title, line) { return '<div class="al-empty"><h3>' + E(title) + "</h3><p>" + E(line) + "</p></div>"; },
     E: E, section: sectionOf, clock: clockText, league: lg, team: team,
+    role: roleWord, form: formWord, ovr: ovr, cap: cap,
   };
   window.AL = AL;
 

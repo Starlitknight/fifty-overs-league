@@ -882,6 +882,41 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
 }
 
 /* ============================================================================
+   0. LIFTING THE OLD SKIN
+
+   The retired stylesheet paints EVERY anchor in the document with
+   `body.ftpskin a { color: … !important }`. That one declaration was quietly
+   winning against every component in this file - the dock labels, the section
+   links, even the white word on the orange button were all coming out link
+   coloured - and no ordinary selector can outrank an !important.
+
+   (There are two of them: `body.ftpskin a` and `#page a, .panel a`, the second
+   carrying an id, so the selector below has to carry one too.)
+
+   So it is lifted once, here, through a variable rather than an arms race:
+   every anchor inside the Almanack takes `--al-a`, and each component states
+   its own. This is the ONLY !important in the file.
+
+   IF YOU COLOUR AN ANCHOR BELOW, SET --al-a, NOT color. A plain `color` on an
+   <a> will be overruled by the line beneath this comment and silently ignored.
+   ========================================================================== */
+html body.al-on a, html body.al-on #page a { color: var(--al-a, inherit) !important; }
+
+/* The same is true of buttons: `body.ftpskin button` hands every button in the
+   document a grey face, a grey border and a 4px radius, all !important, which
+   is why the roster rows came out as little grey cards and the orange primary
+   came out grey. Four variables, one reset, and each component states its own
+   face below. A component that needs a rule on ONE side draws it with an inset
+   box-shadow - the blanket sets the `border` shorthand, so a single-side
+   border cannot survive it. */
+html body.al-on button, html body.al-on #page button {
+  background: var(--al-bg, transparent) !important;
+  border: var(--al-bd, 0) !important;
+  border-radius: var(--al-br, 0) !important;
+  color: var(--al-fg, inherit) !important;
+}
+
+/* ============================================================================
    1. APP HEADER — navy, fixed, the only dark surface in the game
    ========================================================================== */
 .al-head {
@@ -938,13 +973,13 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   min-height: var(--al-dock);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 3px; text-decoration: none;
-  color: rgba(255, 254, 252, .62);
+  --al-a: rgba(255, 254, 252, .62); color: rgba(255, 254, 252, .62);
   font: 600 10px/1 var(--al-ui); letter-spacing: .09em; text-transform: uppercase;
   border-top: 2px solid transparent;
   -webkit-tap-highlight-color: transparent;
 }
 .al-dock a svg { width: 20px; height: 20px; display: block; }
-.al-dock a[aria-current="page"] { color: var(--al-paper-hi); border-top-color: var(--al-accent); }
+.al-dock a[aria-current="page"] { --al-a: var(--al-paper-hi); color: var(--al-paper-hi); border-top-color: var(--al-accent); }
 .al-dock a .al-dot {
   position: absolute; margin: -16px 0 0 14px;
   width: 6px; height: 6px; border-radius: 50%; background: var(--al-accent);
@@ -955,6 +990,14 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
    ========================================================================== */
 body.al-on { background: var(--al-paper); color: var(--al-ink); font-family: var(--al-ui); }
 body.al-on #topbar { display: none !important; }
+/* #page carries the old skin's own gutter and measure. Inside the Almanack
+   that is a SECOND gutter around this one: it was costing 36px of a 390px
+   phone, which is what pushed the Points column off the league table. The
+   Almanack states its own width; the container states none. */
+html body.al-on #page {
+  padding: 0 !important; margin: 0 !important;
+  max-width: none !important; width: auto !important;
+}
 .al-page {
   max-width: var(--al-max); margin: 0 auto;
   padding: calc(var(--al-head) + env(safe-area-inset-top)) 0 0;
@@ -1024,20 +1067,31 @@ body.al-on #topbar { display: none !important; }
   font: 600 14px/1 var(--al-ui); letter-spacing: .02em;
   border: 1px solid var(--al-rule); border-radius: 6px;
   background: var(--al-paper-hi); color: var(--al-ink);
+  --al-a: var(--al-ink); --al-fg: var(--al-ink);
+  --al-bg: var(--al-paper-hi); --al-bd: 1px solid var(--al-rule); --al-br: 6px;
   text-decoration: none; cursor: pointer; -webkit-appearance: none;
   white-space: nowrap; flex: 0 0 auto;
 }
-.al-btn:hover { border-color: var(--al-muted-2); }
+.al-btn:hover { border-color: var(--al-muted-2); --al-bd: 1px solid var(--al-muted-2); }
 .al-btn--primary,
 body.al-on button.al-btn--primary,
 body.al-on a.al-btn--primary,
 .al-sticky button.al-btn--primary {
-  background: var(--al-accent); border-color: var(--al-accent); color: var(--al-accent-ink);
-  font-weight: 600;
+  background: var(--al-accent); border-color: var(--al-accent);
+  color: var(--al-accent-ink); font-weight: 600;
+  --al-a: var(--al-accent-ink); --al-fg: var(--al-accent-ink);
+  --al-bg: var(--al-accent); --al-bd: 1px solid var(--al-accent);
 }
-.al-btn--primary:hover, body.al-on button.al-btn--primary:hover { background: #b8492a; border-color: #b8492a; }
+.al-btn--primary:hover, body.al-on button.al-btn--primary:hover {
+  background: #b8492a; border-color: #b8492a;
+  --al-bg: #b8492a; --al-bd: 1px solid #b8492a;
+}
 body.al-on .al-btn { font-family: var(--al-ui); }
-.al-btn--quiet { background: transparent; border-color: transparent; color: var(--al-teal); }
+.al-btn--quiet {
+  background: transparent; border-color: transparent; color: var(--al-teal);
+  --al-a: var(--al-teal); --al-fg: var(--al-teal);
+  --al-bg: transparent; --al-bd: 1px solid transparent;
+}
 .al-btn--block { display: flex; width: 100%; }
 .al-btn[disabled] { opacity: .5; pointer-events: none; }
 
@@ -1063,7 +1117,7 @@ body.al-on .al-btn { font-family: var(--al-ui); }
   border-bottom: 1px solid var(--al-rule); padding-bottom: var(--al-2); margin-bottom: var(--al-3);
 }
 .al-sec__head h2 { margin: 0; font: 600 20px/25px var(--al-display); color: var(--al-ink); flex: 1 1 auto; }
-.al-sec__head a { font: 600 12px/1 var(--al-ui); color: var(--al-teal); text-decoration: none; white-space: nowrap; }
+.al-sec__head a { font: 600 12px/1 var(--al-ui); --al-a: var(--al-teal); text-decoration: none; white-space: nowrap; }
 .al-sec p { margin: 0 0 var(--al-3); font: 400 15px/23px var(--al-ui); color: var(--al-ink); }
 .al-sec p.al-lede { font: 400 16px/25px var(--al-display); color: var(--al-ink); }
 
@@ -1093,9 +1147,10 @@ body.al-on .al-btn { font-family: var(--al-ui); }
 .al-prow {
   display: grid; grid-template-columns: 34px 1fr auto; align-items: center;
   gap: var(--al-3); min-height: var(--al-tap); padding: var(--al-2) 0;
-  border-bottom: 1px solid var(--al-rule);
-  background: none; border-left: 0; border-right: 0; border-top: 0;
-  width: 100%; text-align: left; cursor: pointer; font: inherit; color: inherit;
+  background: none; border: 0; border-radius: 0;
+  box-shadow: inset 0 -1px 0 var(--al-rule);
+  --al-bg: transparent; --al-bd: 0; --al-br: 0; --al-fg: var(--al-ink);
+  width: 100%; text-align: left; cursor: pointer; font: inherit; color: var(--al-ink);
 }
 .al-prow__no {
   font: 600 12px/1 var(--al-mono); font-variant-numeric: tabular-nums;
@@ -1113,20 +1168,66 @@ body.al-on .al-btn { font-family: var(--al-ui); }
 }
 
 /* ============================================================================
-   12. COMPACT FIXTURE ROW
+   12. SECTION NAVIGATION — the rest of the section, on a rule
    ========================================================================== */
-.al-fix {
-  display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: var(--al-3);
-  min-height: var(--al-tap); padding: var(--al-2) 0; border-bottom: 1px solid var(--al-rule);
+.al-subnav {
+  display: flex; gap: var(--al-1); overflow-x: auto;
+  border-bottom: 1px solid var(--al-rule); margin: 0 0 var(--al-4);
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
 }
-.al-fix__r { font: 600 11px/1 var(--al-mono); color: var(--al-muted-2); }
-.al-fix__t b { display: block; font: 600 14px/19px var(--al-ui); }
-.al-fix__t i { display: block; font-style: normal; font: 400 12px/16px var(--al-ui); color: var(--al-muted); }
-.al-fix__o { font: 500 13px/1 var(--al-mono); color: var(--al-muted); }
+.al-subnav::-webkit-scrollbar { display: none; }
+.al-subnav a {
+  min-height: 44px; display: inline-flex; align-items: center; padding: 0 var(--al-3);
+  font: 600 11px/1 var(--al-ui); letter-spacing: .1em; text-transform: uppercase;
+  --al-a: var(--al-muted); text-decoration: none; white-space: nowrap;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.al-subnav a[aria-current="page"] { --al-a: var(--al-ink); border-bottom-color: var(--al-accent); }
 
 /* ============================================================================
-   13. TABLE SHELL — position and points never leave the screen
+   13. FIXTURE ROW — the season as one column, only the next one open
    ========================================================================== */
+.al-fixlist { border-top: 1px solid var(--al-rule); }
+.al-fix {
+  display: grid; grid-template-columns: 30px 22px minmax(0, 1fr) auto;
+  align-items: center; gap: var(--al-3);
+  min-height: var(--al-tap); padding: var(--al-2) 0; border-bottom: 1px solid var(--al-rule);
+  text-decoration: none; --al-a: var(--al-ink); -webkit-tap-highlight-color: transparent;
+}
+.al-fix__r { font: 600 11px/1 var(--al-mono); color: var(--al-muted-2); }
+.al-fix__w {
+  text-align: center; font: 700 11px/1 var(--al-ui);
+  color: var(--al-muted-2); font-variant-numeric: tabular-nums;
+}
+.al-fix__w.w { color: var(--al-pos); }
+.al-fix__w.l { color: #B23230; }
+.al-fix__w.t { color: var(--al-muted); }
+.al-fix__w.lv { color: var(--al-accent); }
+.al-fix__t { min-width: 0; }
+.al-fix__t b { display: block; font: 600 14px/19px var(--al-ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.al-fix__t i {
+  display: block; font-style: normal; font: 400 12px/16px var(--al-ui); color: var(--al-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.al-fix__o { font: 600 10px/1 var(--al-ui); letter-spacing: .1em; color: var(--al-muted-2); }
+/* the next fixture, opened in place */
+.al-fix--next {
+  background: var(--al-paper-hi); border-bottom: 0;
+  box-shadow: inset 3px 0 0 var(--al-accent); padding-left: var(--al-3);
+}
+.al-fix--next .al-fix__o { color: var(--al-accent); }
+.al-fix__open {
+  background: var(--al-paper-hi); border-bottom: 1px solid var(--al-rule);
+  box-shadow: inset 3px 0 0 var(--al-accent);
+  padding: 0 var(--al-3) var(--al-3) var(--al-3);
+}
+.al-fix__open .al-ledger { border-top: 0; }
+.al-fix__go { display: flex; gap: var(--al-2); flex-wrap: wrap; padding-top: var(--al-3); }
+
+/* ============================================================================
+   14. TABLE SHELL — position and points never leave the screen
+   ========================================================================== */
+.al-tblwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .al-tbl { width: 100%; border-collapse: collapse; }
 .al-tbl th {
   font: 600 10px/1 var(--al-ui); letter-spacing: .1em; text-transform: uppercase;
@@ -1150,9 +1251,19 @@ body.al-on .al-btn { font-family: var(--al-ui); }
   font: 700 9px/1 var(--al-ui); letter-spacing: .1em;
   color: var(--al-accent); vertical-align: 1px;
 }
+/* POINTS MUST NEVER BE THE COLUMN THAT FALLS OFF. Eight columns do not fit in
+   390px, and a table that merely scrolls sideways puts the most important
+   number behind a swipe nobody makes. The narrow layout keeps what the table
+   is FOR - position, club, played, won, net run rate, points - and drops lost
+   and tied, which a reader can derive and which the wide layout keeps. */
+@media (max-width: 560px) {
+  .al-tbl th, .al-tbl td { padding: var(--al-2) 3px; }
+  .al-tbl td { font-size: 13px; }
+  .al-tbl .al-c-l, .al-tbl .al-c-t { display: none; }
+}
 
 /* ============================================================================
-   14. STATUS LABEL and MONOSPACE READOUT
+   15. STATUS LABEL and MONOSPACE READOUT
    ========================================================================== */
 .al-tag {
   display: inline-block; padding: 3px var(--al-2);
@@ -1167,7 +1278,7 @@ body.al-on .al-btn { font-family: var(--al-ui); }
 }
 
 /* ============================================================================
-   15. EMPTY and ERROR STATES — never a raw stack trace
+   16. EMPTY and ERROR STATES — never a raw stack trace
    ========================================================================== */
 .al-empty, .al-error {
   padding: var(--al-6) var(--al-4); text-align: center;
@@ -1178,7 +1289,7 @@ body.al-on .al-btn { font-family: var(--al-ui); }
 .al-error { border-left: 3px solid var(--al-accent); text-align: left; }
 
 /* ============================================================================
-   16. BOTTOM SHEET — player folio and other detail, on phones
+   17. BOTTOM SHEET — player folio and other detail, on phones
    ========================================================================== */
 .al-sheet {
   position: fixed; inset: 0; z-index: 70; display: flex; align-items: flex-end;
@@ -1198,7 +1309,7 @@ body.al-on .al-btn { font-family: var(--al-ui); }
 .al-sheet__body { padding: var(--al-4) var(--al-gutter) 0; }
 
 /* ============================================================================
-   17. DESKTOP — a publication with a measure, not a stretched phone
+   18. DESKTOP — a publication with a measure, not a stretched phone
    ========================================================================== */
 @media (min-width: 900px) {
   :root { --al-head: 64px; --al-gutter: 32px; }
@@ -1207,9 +1318,9 @@ body.al-on .al-btn { font-family: var(--al-ui); }
   .al-head__nav a {
     padding: 0 var(--al-3); height: 40px; display: flex; align-items: center;
     font: 600 12px/1 var(--al-ui); letter-spacing: .1em; text-transform: uppercase;
-    color: rgba(255, 254, 252, .68); text-decoration: none; border-bottom: 2px solid transparent;
+    --al-a: rgba(255, 254, 252, .68); text-decoration: none; border-bottom: 2px solid transparent;
   }
-  .al-head__nav a[aria-current="page"] { color: var(--al-paper-hi); border-bottom-color: var(--al-accent); }
+  .al-head__nav a[aria-current="page"] { --al-a: var(--al-paper-hi); border-bottom-color: var(--al-accent); }
   .al-head__where { flex: 0 0 auto; }
   .al-head__spacer { flex: 1 1 auto; }
   /* the dock is gone on desktop, but the sticky bar is not: a screen with an
@@ -1239,5 +1350,5 @@ body.al-on .al-btn { font-family: var(--al-ui); }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
-<script src="assets/fo-20260728-2226-7dbd72.js"></script>
+<script src="assets/fo-20260728-2250-a0cca0.js"></script>
 </body></html>

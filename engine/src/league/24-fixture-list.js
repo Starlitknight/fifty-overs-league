@@ -125,6 +125,10 @@
 
   function foRenderFixturesPage() {
     try {
+      // the Almanack owns #/fixtures now (module 65). This card stays in the
+      // tree for the routes that still link to it, but it must never paint
+      // over the redesigned page.
+      try { if (window.__foAlOwns && window.__foAlOwns()) return; } catch (eAl) {}
       if (!ready()) return;
       var page = document.getElementById("page"); if (!page) return;
       var me = null; try { me = userTeam(); } catch (e) {}

@@ -26,6 +26,8 @@
   function live() { try { return (typeof M !== "undefined" && M && !M.done) ? M : null; } catch (e) { return null; } }
   function fixture() { try { return (typeof window.foNextFixture === "function") ? window.foNextFixture() : null; } catch (e) { return null; } }
   function save() { try { if (typeof saveGame === "function") saveGame(false); } catch (e) {} }
+  function roleWord(p) { var a = A(); return a ? a.role(p) : "Player"; }
+  function ovr(p) { var a = A(); return a ? a.ovr(p) : 0; }
 
   function groundArt() {
     try {
@@ -87,8 +89,8 @@
           if (n === p.o.keeper) tags.push("WK");
           return '<div class="al-prow al-prow--picked"><span class="al-prow__no">' + ("0" + (i + 1)).slice(-2) + "</span>" +
             '<span class="al-prow__who"><b>' + E(n) + (tags.length ? " <em class='al-you__tag'>" + tags.join(" · ") + "</em>" : "") + "</b>" +
-            "<i>" + E((pl && (pl.roleFull || pl.role)) || "Player") + "</i></span>" +
-            '<span class="al-prow__rate">' + ((pl && pl.rating | 0) || "&mdash;") + "</span></div>";
+            "<i>" + E(roleWord(pl)) + "</i></span>" +
+            '<span class="al-prow__rate">' + (ovr(pl) || "&mdash;") + "</span></div>";
         }).join("") + "</div>"
       : al.empty("No eleven chosen", "Pick the side first; the rest of the sheet follows from it.");
     body += al.sec("1 · The eleven", xiHtml, { href: "#/team", label: "Change the side" });
