@@ -221,7 +221,7 @@
   function addNav() {
     try {
       var tb = document.getElementById("topbar"); if (!tb || document.getElementById("fo-wd-nav")) return;
-      var a = document.createElement("a"); a.id = "fo-wd-nav"; a.href = "#/wire"; a.textContent = "World"; a.className = "fo-wd-navlink"; a.dataset.nav = "wire";
+      var a = document.createElement("a"); a.id = "fo-wd-nav"; a.href = "#/wire"; a.textContent = "The Wire"; a.className = "fo-wd-navlink"; a.dataset.nav = "wire";
       var brand = tb.querySelector(".brand");
       if (brand && brand.nextSibling) tb.insertBefore(a, brand.nextSibling); else tb.appendChild(a);
     } catch (e) {}

@@ -932,15 +932,24 @@ test('020: the books are a ledger, and they recompute from the record', async ()
     assert.ok(f.lastAttendance > 0 && f.lastAttendance <= r.seats, 'nobody sold more seats than they built');
     assert.ok(f.gate > 0 && f.awayCut > 0, 'money came through the gate at home and away');
     assert.ok(f.sponsor > 0 && f.wages > 0 && f.upkeep > 0);
+    // a club that lost men to the international windows was paid for them,
+    // and one that lost none was paid nothing
+    assert.equal(f.compensation > 0, f.capsAway > 0, 'club ' + r.slot + ': caps away and money in agree');
     assert.equal(f.ticket, TICKET);
   }
-  // the bank IS the ledger: founded, plus what came in, less what went out
+  // the bank IS the ledger: founded, plus what came in, less what went out.
+  // The international windows are an income line like any other - what the
+  // board paid for the men it took, walked from genesis with the rest.
   for (const r of rows) {
     const f = r.finance;
-    const expect = f.founded + f.gate + f.awayCut + f.sponsor + f.writtenOff
-      - f.wages - f.upkeep - f.interest - f.academyPaid - f.seatsPaid;
+    const expect = f.founded + f.gate + f.awayCut + f.sponsor + (f.compensation || 0)
+      + (f.feesIn || 0) + f.writtenOff
+      - f.wages - f.upkeep - f.interest - f.academyPaid - f.seatsPaid
+      - (f.feesOut || 0) - (f.scouting || 0);
     assert.equal(Number(r.bank), Math.round(expect), 'club ' + r.slot + ': the books add up');
   }
+  assert.ok(rows.reduce((s, r) => s + (r.finance.capsAway || 0), 0) > 0,
+    'a season of international windows reached this league');
   // and settling twice settles the same figure
   const before = rows.map(r => Number(r.bank));
   await settleMoney(pool, 'eng');
@@ -1026,8 +1035,11 @@ test('020: the books are a ledger, and they recompute from the record', async ()
     'the distressed deal pays less (' + broke.finance.sponsor + ' v ' + healthy.sponsor + ')');
   // and the books still add up with the write-off in them
   assert.equal(red, Math.round(broke.finance.founded + broke.finance.gate + broke.finance.awayCut
-    + broke.finance.sponsor + broke.finance.writtenOff - broke.finance.wages - broke.finance.upkeep
-    - broke.finance.interest - broke.finance.academyPaid - broke.finance.seatsPaid),
+    + broke.finance.sponsor + (broke.finance.compensation || 0) + (broke.finance.feesIn || 0)
+    + broke.finance.writtenOff
+    - broke.finance.wages - broke.finance.upkeep
+    - broke.finance.interest - broke.finance.academyPaid - broke.finance.seatsPaid
+    - (broke.finance.feesOut || 0) - (broke.finance.scouting || 0)),
     'the ruined books add up too');
   await settleMoney(pool, 'eng');
   assert.equal(Number((await pool.query(

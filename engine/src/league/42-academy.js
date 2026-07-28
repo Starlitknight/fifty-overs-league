@@ -305,8 +305,12 @@
       "html body #page .fo-ac-res b{color:#141C28;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       "html body #page .fo-ac-res u{text-decoration:none;color:rgba(20,28,40,.55);font-variant-numeric:tabular-nums}",
       "html body #page .fo-ac-res em{font-style:normal;color:rgba(20,28,40,.35);font-size:10px}",
-      "html body #page .fo-ac-foot{display:flex;justify-content:space-between;gap:10px;margin-top:16px;font:600 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
-      "html body #page .fo-ac-foot a{color:#B04A2C !important;text-decoration:none !important}",
+      "html body #page .fo-ac-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;font:600 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
+      // a room door is a thumb target, not a caption: 44px of it, with the
+      // hit area the phone actually needs
+      "html body #page .fo-ac-foot a{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;margin:0 -14px;border-radius:12px;color:#B04A2C !important;text-decoration:none !important}",
+      "html body #page .fo-ac-foot a:hover{background:rgba(176,74,44,.09)}",
+      "html body #page .fo-ac-foot a:active{background:rgba(176,74,44,.16)}",
       "@media(max-width:480px){html body #page .fo-ac-hero h1{font-size:25px}html body #page .fo-ac-grid{grid-template-columns:1fr 1fr;gap:8px}html body #page .fo-ac-colt{padding:9px 10px}html body #page .fo-ac-ch b{font-size:12.5px}" +
         "html body #page .fo-ac-tbl td.nrr,html body #page .fo-ac-tbl th.nrr{display:none}}"
     ].join("\n");

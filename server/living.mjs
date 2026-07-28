@@ -52,11 +52,17 @@ const REST_PER_DAY = 17;
 const LOAD_BASE = 6, LOAD_PER_OVER = 1.3, LOAD_PER_BALL_FACED = 0.025;
 const FAT_CEILING = 80;
 
-export function livingPatch(squad) {
+// The patch also carries ABSENCE. A man away with his country was not in the
+// eleven the umpire picked from, and the broadcast rebuilds squads from their
+// world seeds - so unless the parcel says he was gone, a phone would field
+// him. {a:true} means he was not there; applyLiving takes him off the sheet.
+export function livingPatch(squad, absent) {
   const o = {};
+  const away = absent instanceof Set ? absent : new Set(absent || []);
   (squad || []).forEach(p => {
     if (!p || !p.name) return;
     const rec = { e: Math.round(p.exp ?? 55), f: p.formIx ?? 3, n: Math.round(p.fatN ?? 0) };
+    if (away.has(p.name)) rec.a = true;
     // the nets change what a man IS, so any skill that has moved off its
     // generated baseline rides in the patch too - otherwise a broadcast
     // would field the untrained version of a trained cricketer
@@ -77,6 +83,12 @@ export function livingPatch(squad) {
 export function applyLiving(squad, patch, host) {
   if (!squad || !patch) return squad;
   let skilled = false;
+  // anyone the patch marks as away was not available to be picked
+  const away = squad.filter(p => p && patch[p.name] && patch[p.name].a);
+  if (away.length) {
+    const gone = new Set(away.map(p => p.name));
+    squad = squad.filter(p => !gone.has(p && p.name));
+  }
   squad.forEach(p => {
     const L = patch[p && p.name]; if (!L) return;
     if (L.e != null) { p.exp = L.e; p.expWord = expWordOf(L.e); }
@@ -160,10 +172,19 @@ async function trainedSquad(pool, host, country, slot, squad) {
   // the record again.
   const latest = +(await pool.query(
     'SELECT max(season_no) AS s FROM seasons WHERE country_id=$1', [country])).rows[0].s || 1;
+  // and a man with his country did not work in his club's nets that week
+  let away = new Set();
+  try {
+    away = new Set((await pool.query(
+      `SELECT season_no, round, player FROM callups WHERE country_id=$1 AND slot=$2`, [country, slot]))
+      .rows.map(r => r.season_no + '|' + r.round + '|' + r.player));
+  } catch (eC) { away = new Set(); }             // pre-023 database: nobody has been called up
   let men = (squad || []).map(baseline);
   for (const r of rounds) {
     const here = [];
-    men.forEach((p, i) => { if (wasHere(p, r)) here.push(i); });
+    men.forEach((p, i) => {
+      if (wasHere(p, r) && !away.has(r.season_no + '|' + r.round + '|' + p.name)) here.push(i);
+    });
     if (!here.length) continue;
     const back = Math.max(0, latest - r.season_no);
     const crew = here.map(i => (back
@@ -183,6 +204,23 @@ async function trainedSquad(pool, host, country, slot, squad) {
 export function academyRate(level) {
   const lv = Math.max(1, Math.min(5, +level || 2));
   return 1 + 0.08 * (lv - 2);
+}
+
+// A CAREER FOLLOWS THE MAN. The living layer derives a cricketer's book from
+// the matches his CURRENT club has played, so a transfer would otherwise hand
+// him a blank page at his new ground - four hundred first-class runs erased
+// by a cheque. The market freezes what he had onto him as a carry when he
+// moves; this adds it back on top of whatever he does from here.
+export function withCarry(book, carry) {
+  const b = book || { m: 0, runs: 0, balls: 0, hs: 0, wkts: 0, conc: 0, ovb: 0, bb: null };
+  if (!carry || !carry.m) return b;
+  const o = { m: (b.m || 0) + (carry.m || 0), runs: (b.runs || 0) + (carry.runs || 0),
+    balls: (b.balls || 0) + (carry.balls || 0), wkts: (b.wkts || 0) + (carry.wkts || 0),
+    conc: (b.conc || 0) + (carry.conc || 0), ovb: (b.ovb || 0) + (carry.ovb || 0),
+    hs: Math.max(b.hs || 0, carry.hs || 0), bb: b.bb || null };
+  const cb = carry.bb;
+  if (cb && (!o.bb || cb.w > o.bb.w || (cb.w === o.bb.w && cb.r < o.bb.r))) o.bb = cb;
+  return o;
 }
 
 // EVERY MAN'S LIFE, RECOMPUTED FROM THE WHOLE RECORD OF ONE COUNTRY.
@@ -232,7 +270,8 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     if (!book.has(slot)) book.set(slot, new Map());
     const m = book.get(slot);
     if (!m.has(name)) m.set(name, { caps: 0, apps: [],
-      car: { m: 0, runs: 0, balls: 0, hs: 0, wkts: 0, conc: 0, ovb: 0, bb: null } });
+      car: { m: 0, runs: 0, balls: 0, hs: 0, wkts: 0, conc: 0, ovb: 0, bb: null },
+      intl: { m: 0, runs: 0, balls: 0, hs: 0, wkts: 0, conc: 0, ovb: 0, bb: null } });
     return m.get(name);
   };
 
@@ -261,13 +300,66 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     const L = at(r); if (!L) continue;
     L.wkts += r.wkts; L.conc += r.conc; L.ovb += r.ovb;
   }
+
+  // THE WEEK HE SPENT WITH HIS COUNTRY counts too. A cap is a different book
+  // from a club career - a man's county record is not swollen by a tour - but
+  // it is the same fifty overs: it tires his legs and it moves his form,
+  // which is why a manager notices when the selectors take his opener. The
+  // tours are few (nine ties a window), so they are read whole rather than
+  // unpacked in SQL like a season of league blobs. And two cricketers in one
+  // league can share a name, so a cap is credited from the CALLUP that
+  // produced it - the selectors named a slot as well as a man - and never
+  // from a guess off the name alone.
+  let natRows = [], fromSlot = new Map();
+  try {
+    natRows = (await pool.query(
+      `SELECT season_no, round, a_country, b_country, a_name, b_name, result
+         FROM nat_matches WHERE a_country=$1 OR b_country=$1 ORDER BY season_no, round, id`, [country])).rows;
+    (await pool.query(
+      `SELECT season_no, round, slot, player FROM callups WHERE country_id=$1`, [country])).rows
+      .forEach(r => fromSlot.set(r.season_no + '|' + r.round + '|' + r.player, r.slot));
+  } catch (eN) { natRows = []; }                 // pre-023 database: no tours yet
+  for (const m of natRows) {
+    const mine = m.a_country === country ? m.a_name : m.b_name;
+    const seen = new Map();
+    const iat = name => {
+      const slot = fromSlot.get(m.season_no + '|' + m.round + '|' + name);
+      if (slot == null) return null;
+      const k = m.season_no + '|' + m.round + '|' + slot + '|' + name;
+      if (!seen.has(k)) seen.set(k, { season: m.season_no, round: m.round, slot, name, intl: true,
+        runs: 0, balls: 0, hs: 0, wkts: 0, conc: 0, ovb: 0, f4: 0, f6: 0, out: null, ct: 0, st: 0, ro: 0 });
+      return seen.get(k);
+    };
+    for (const inn of ((m.result && m.result.innings) || [])) {
+      if (!inn) continue;
+      if (inn.batTeam === mine) for (const b of (inn.bat || [])) {
+        const nm = (b.p && b.p.name) || b.p; const L = nm && iat(nm); if (!L) continue;
+        L.runs += b.r || 0; L.balls += b.b || 0; L.f4 += b.f4 || 0; L.f6 += b.f6 || 0;
+        if (b.out) L.out = b.out;
+        if ((b.r || 0) > L.hs) L.hs = b.r || 0;
+      }
+      if (inn.bowlTeam === mine) {
+        for (const nm of Object.keys(inn.bowlers || {})) {
+          const bw = inn.bowlers[nm], L = iat(nm); if (!L) continue;
+          L.wkts += bw.w || 0; L.conc += bw.r || 0; L.ovb += bw.b || 0;
+        }
+        for (const nm of Object.keys(inn.fielding || {})) {
+          const fd = inn.fielding[nm], L = iat(nm); if (!L) continue;
+          L.ct += fd.ct || 0; L.st += fd.st || 0; L.ro += fd.ro || 0;
+        }
+      }
+    }
+    for (const [k, L] of seen) lines.set(k + '|i', L);
+  }
+
   const ordered = Array.from(lines.values()).sort((x, y) =>
-    x.season - y.season || x.round - y.round || x.slot - y.slot || (x.name < y.name ? -1 : 1));
+    x.season - y.season || x.round - y.round || x.slot - y.slot ||
+    (x.name < y.name ? -1 : x.name > y.name ? 1 : 0) || (x.intl ? 1 : 0) - (y.intl ? 1 : 0));
   for (const L of ordered) {
     const day = (startOf[L.season] ?? 0) + L.round - 1;
     const e = rec(L.slot, L.name);
     e.caps++;
-    const c = e.car;
+    const c = L.intl ? e.intl : e.car;
     c.m++; c.runs += L.runs; c.balls += L.balls; c.wkts += L.wkts; c.conc += L.conc; c.ovb += L.ovb;
     if (L.hs > c.hs) c.hs = L.hs;
     if (L.ovb > 0 && (!c.bb || L.wkts > c.bb.w || (L.wkts === c.bb.w && L.conc < c.bb.r))) c.bb = { w: L.wkts, r: L.conc };
@@ -290,7 +382,10 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
         q.exp = Math.round(base); q.expWord = expWordOf(q.exp);
         q.formIx = 3; q.formWord = FORMW[3];
         q.fatN = 0; q.fatWord = fatWordOf(0); q.fatigue = q.fatWord;
-        delete q.career;
+        // a man who has not played for THIS club may still have a book: he
+        // was bought, and his record travelled with him
+        if (q.carry && q.carry.m) q.career = withCarry(null, q.carry); else delete q.career;
+        if (q.carryIntl && q.carryIntl.m) q.intl = withCarry(null, q.carryIntl); else delete q.intl;
         return q;
       }
       q.exp = Math.round(clamp(base + expGain(q.age || 27, e.caps), 0, 99));
@@ -309,7 +404,9 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
       if (last != null) fat = Math.max(0, fat - REST_PER_DAY * Math.max(0, today + 1 - last));
       q.fatN = Math.round(clamp(fat, 0, FAT_CEILING));
       q.fatWord = fatWordOf(q.fatN); q.fatigue = q.fatWord;
-      q.career = e.car;
+      q.career = withCarry(e.car, q.carry);
+      const iBook = withCarry(e.intl, q.carryIntl);
+      if (iBook.m) q.intl = iBook; else delete q.intl;
       return q;
     });
     await pool.query('UPDATE clubs SET squad=$3::jsonb WHERE country_id=$1 AND slot=$2',

@@ -276,7 +276,7 @@
       ".fo-gz-sec.ads .fo-gz-ad{font-family:Georgia,serif;font-size:12px;line-height:1.5;color:#2A2519;border:1px solid rgba(34,30,22,.3);padding:8px 10px;margin:0 0 8px;text-align:center}",
       ".fo-gz-ad b{letter-spacing:.06em}",
       ".fo-gz-foot{font-family:Georgia,serif;font-style:italic;font-size:11.5px;color:rgba(34,30,22,.6);text-align:center;margin-top:6px}",
-      ".fo-gz-foot a{color:#8E2F1C;text-decoration:none}",
+      ".fo-gz-foot a{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;margin:0 -12px;border-radius:12px;color:#8E2F1C;text-decoration:none}",
       ".fo-gz-foot a:hover{text-decoration:underline}"
     ].join("\n");
     document.head.appendChild(s);

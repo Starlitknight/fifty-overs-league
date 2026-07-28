@@ -15,11 +15,13 @@
 //     next invocation, however late.
 import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
-import { EPOCH, dayIx, daySettled, seedOf, natHour, scheduleOf, ROUNDS } from './clock.mjs';
+import { EPOCH, dayIx, daySettled, seedOf, natHour, scheduleOf, ROUNDS, isWindowRound } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
 import { ensureYouth, ageYouth, playColtsRound, computeColts, coltRecords } from './youth.mjs';
 import { settleMoney } from './economy.mjs';
 import { runComps } from './comps.mjs';
+import { ensureCallups, absentBySlot, coverSheet, runWindows, rebuildNations, seasonSquad } from './nations.mjs';
+import { runMarket, settleMarket, rebuildMarket } from './market.mjs';
 
 export function matchId(country, seasonNo, round, h, a) {
   return country + ':s' + seasonNo + ':r' + round + ':h' + h + 'a' + a;
@@ -42,6 +44,13 @@ async function playRound(pool, host, country, season, round, opts) {
         WHERE c.country_id=$1`, [country, season.season_no, round]);
     or.rows.forEach(r => { ordersMap[r.club] = r.orders; });
   } catch (e) { /* pre-004 database: nobody has claimed anything */ }
+  // THE WINDOW. On rounds 5, 9 and 13 the selectors have already named their
+  // fifteen (runTick banks the squad before a ball is bowled), and those men
+  // are not at their clubs today. The side that takes the field is the squad
+  // minus whoever has gone; a sheet naming an absentee is covered rather than
+  // torn up. Absence rides into the banked living patch so the broadcast
+  // fields the same eleven the umpire did.
+  const abroad = await absentBySlot(pool, country, season.season_no, round);
   let played = 0;
   for (let i = 0; i < fixtures.length; i++) {
     if (opts && opts.failAfter != null && played >= opts.failAfter) throw new Error('injected-crash');
@@ -51,15 +60,28 @@ async function playRound(pool, host, country, season, round, opts) {
     if (exists.rowCount) continue;
     const home = bySlot[hs], away = bySlot[as];
     const seed = seedOf(id);
+    const sideOf = club => {
+      const gone = abroad.get(club.slot);
+      if (!gone || !gone.size) return { players: club.squad, gone: [] };
+      return { players: (club.squad || []).filter(p => !gone.has(p.name)),
+               gone: (club.squad || []).filter(p => gone.has(p.name)) };
+    };
+    const H = sideOf(home), A = sideOf(away);
     const tieOrders = {};
-    if (ordersMap[home.name]) tieOrders[home.name] = ordersMap[home.name];
-    if (ordersMap[away.name]) tieOrders[away.name] = ordersMap[away.name];
-    const resultJson = host.runMatch({ name: home.name, players: home.squad }, { name: away.name, players: away.squad }, 'balanced', seed, tieOrders);
+    const fileSheet = (club, side) => {
+      let o = ordersMap[club.name];
+      if (!o) return;
+      if (side.gone.length) o = coverSheet(o, side.players, side.gone);
+      if (o) tieOrders[club.name] = o;
+    };
+    fileSheet(home, H); fileSheet(away, A);
+    const resultJson = host.runMatch({ name: home.name, players: H.players }, { name: away.name, players: A.players }, 'balanced', seed, tieOrders);
     if (!resultJson) throw new Error('engine failed to complete ' + id);
     // the living state these men carried into the match, banked with it:
     // the theatre lays it back over the generated squads and replays the
     // identical game, however far the players travel afterwards
-    const living = { [home.name]: livingPatch(home.squad), [away.name]: livingPatch(away.squad) };
+    const living = { [home.name]: livingPatch(home.squad, abroad.get(home.slot)),
+                     [away.name]: livingPatch(away.squad, abroad.get(away.slot)) };
     await pool.query(
       `INSERT INTO matches(id, country_id, season_no, round, home_slot, away_slot, seed, engine_version, pitch, orders, result, result_canonical, home_name, away_name, living)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,$12::text,$13,$14,$15::jsonb) ON CONFLICT (id) DO NOTHING`,
@@ -188,6 +210,26 @@ export async function computeRankings(pool, now) {
   const countryRows = (await pool.query('SELECT id, name FROM countries')).rows;
   const N = {};
   countryRows.forEach(c => N[c.id] = { rating: 1000, p: 0, w: 0, l: 0, t: 0 });
+  const natUpd = (a, b, sa, K) => {
+    const ea = 1 / (1 + Math.pow(10, (b.rating - a.rating) / 400));
+    const d = K * (sa - ea);
+    a.rating += d; b.rating -= d;
+    a.p++; b.p++;
+    if (sa === 0.5) { a.t++; b.t++; } else if (sa === 1) { a.w++; b.l++; } else { b.w++; a.l++; }
+  };
+  // the ladder the nations climb: every tour played in an international
+  // window, then the World Cup ties, which are worth more
+  let tours = [];
+  try {
+    tours = (await pool.query(
+      `SELECT a_country, b_country, a_name, result FROM nat_matches ORDER BY world_day, id`)).rows;
+  } catch (eT) { tours = []; }                   // pre-023 database: no tours yet
+  for (const m of tours) {
+    const a = N[m.a_country], b = N[m.b_country];
+    if (!a || !b) continue;
+    const w = m.result.winner;
+    natUpd(a, b, w === null ? 0.5 : w === m.a_name ? 1 : 0, 24);
+  }
   const wcm = (await pool.query(
     `SELECT a, b, result FROM cup_matches WHERE comp='wc'
       ORDER BY season_no, CASE stage WHEN 'r16' THEN 0 WHEN 'qf' THEN 1 WHEN 'sf' THEN 2 ELSE 3 END, gi`)).rows;
@@ -195,12 +237,7 @@ export async function computeRankings(pool, now) {
     const a = N[m.a.country], b = N[m.b.country];
     if (!a || !b) continue;
     const w = m.result.winner;
-    const sa = w === null ? 0.5 : w === m.a.name ? 1 : 0;
-    const ea = 1 / (1 + Math.pow(10, (b.rating - a.rating) / 400));
-    const d = 40 * (sa - ea);
-    a.rating += d; b.rating -= d;
-    a.p++; b.p++;
-    if (sa === 0.5) { a.t++; b.t++; } else if (sa === 1) { a.w++; b.l++; } else { b.w++; a.l++; }
+    natUpd(a, b, w === null ? 0.5 : w === m.a.name ? 1 : 0, 40);
   }
   const clubList = Object.values(R).sort((x, y) => y.rating - x.rating || x.country.localeCompare(y.country) || x.slot - y.slot)
     .map((x, i) => ({ rank: i + 1, country: x.country, slot: x.slot, name: x.name, boss: x.boss, rating: Math.round(x.rating), p: x.p, w: x.w, l: x.l, t: x.t }));
@@ -300,6 +337,13 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
   const round = day - season.start_day + 1;
   let played = 0;
   if (round >= 1 && round <= ROUNDS) {
+    // THE SELECTORS MEET FIRST. On a window round the fifteen is named before
+    // a ball is bowled and banked for good, so the round that follows knows
+    // exactly who is missing and a re-run can never pick a different squad.
+    if (isWindowRound(round)) {
+      try { await ensureCallups(pool, country, season.season_no, round); }
+      catch (eC) { console.error('selectors failed for ' + country + ' round ' + round + ':', eC.message); }
+    }
     played = await playRound(pool, host, country, season, round, { failAfter });
     // the nets: whatever plan stands when a round settles is the work that
     // round did, banked so the squad's skills stay recomputable from genesis
@@ -312,6 +356,12 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
       [country, season.season_no, round]);
     // and the boys have their own fixture on every second league round
     await playColtsRound(pool, host, country, season, round, seedOf, ENGINE_VERSION);
+    // THE BOARD. A bot club sheds a man it does not need now and then, so
+    // the market is never empty in a world where most clubs have nobody
+    // behind them. Seeded on the club and the round: the same world puts up
+    // the same cricketer however often the day is settled.
+    try { await runMarket(pool, country, season.season_no, round, { now }); }
+    catch (eM) { console.error('market listings failed for ' + country + ':', eM.message); }
   }
   // the day's cricket changes the men who played it: careers, form, tired
   // legs, and the work they did in the nets. A pure function of the record,
@@ -399,16 +449,35 @@ export async function ensureSnapshots(pool, { now = Date.now() } = {}) {
       const live = (await pool.query('SELECT slot, name FROM clubs WHERE country_id=$1', [c.id])).rows;
       if (live.every(r => named[r.slot] === r.name)) continue;
     }
-    await rebuildSnapshots(pool, c.id, now);
-    filled.push(c.id);
+    // and one nation's snapshot failing must not stop the rest being published
+    try { await rebuildSnapshots(pool, c.id, now); filled.push(c.id); }
+    catch (e) { console.error('snapshot failed for ' + c.id + ':', e.message); }
   }
   return filled;
 }
 
+// ONE NATION'S BAD DAY IS NOT THE PLANET'S. This walked the countries in id
+// order and let anything thrown out of one of them abort the whole call - so
+// a single failure in, say, New Zealand silently stopped Pakistan, South
+// Africa, Scotland, Sri Lanka, India, the United States, Wales, the West
+// Indies and Zimbabwe from playing at all, while every nation alphabetically
+// ahead of it carried on as though the world were fine. The tail of the
+// alphabet simply stopped updating. Each country is now settled inside its
+// own guard: the failure is reported against that country and the rest of
+// the world plays on, and because the tick's idempotency row stays 'running'
+// the next invocation retries exactly what was missed.
 export async function runAllDue(pool, host, opts = {}) {
   const cs = await pool.query('SELECT id FROM countries ORDER BY id');
   const out = {};
-  for (const row of cs.rows) out[row.id] = await runDue(pool, host, row.id, opts);
+  for (const row of cs.rows) {
+    try {
+      out[row.id] = await runDue(pool, host, row.id, opts);
+    } catch (e) {
+      out[row.id] = [{ failed: true, error: e.message }];
+      console.error('tick failed for ' + row.id + ':', e.message);
+      if (opts && opts.failAfter != null) throw e;      // the crash tests mean it
+    }
+  }
   return out;
 }
 
@@ -445,16 +514,15 @@ async function leagueChampions(pool, seasonNo, now) {
   return out.length ? out : null;
 }
 
+// THE WORLD CUP SIDE IS THE SEASON'S SIDE. It used to be fifteen names picked
+// by raw rating the morning of the draw, which meant the men who had played
+// for their country all year could find themselves left at home by the same
+// selectors. Now it is the squad of the season's last international window -
+// the side that actually toured - looked up in the squads as they stand.
 async function buildNatSquads(pool, seasonNo) {
-  const cs = await pool.query('SELECT c.id, c.name, (SELECT jsonb_agg(squad) FROM clubs cl WHERE cl.country_id=c.id) AS squads FROM countries c ORDER BY c.id');
+  const cs = await pool.query('SELECT id, name FROM countries ORDER BY id');
   for (const c of cs.rows) {
-    const all = (c.squads || []).flat().slice().sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    const bowlers = all.filter(p => p.bowlType && p.bowlType !== 'none').slice(0, 6);
-    const keeper = all.filter(p => p.keeper)[0];
-    const picked = [], seen = new Set();
-    const take = p => { if (p && !seen.has(p.name)) { seen.add(p.name); picked.push(p); } };
-    bowlers.forEach(take); take(keeper);
-    for (const p of all) { if (picked.length >= 15) break; take(p); }
+    const picked = await seasonSquad(pool, c.id, seasonNo);
     await pool.query(
       `INSERT INTO nat_squads(country_id, season_no, squad) VALUES ($1,$2,$3)
        ON CONFLICT (country_id, season_no) DO NOTHING`,
@@ -614,11 +682,42 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       if (filled.length) console.error('published tables for: ' + filled.join(', '));
     } catch (eS) { console.error('snapshots: ' + eS.message); }
     const all = await runAllDue(pool, host);
+    // a nation that could not be settled is the loudest thing in this log
+    for (const [country, r] of Object.entries(all)) {
+      const bad = r.filter(x => x && x.failed);
+      if (bad.length) lines.push('!! ' + country + ' DID NOT PLAY: ' + bad.map(x => x.error).join('; '));
+    }
+    // THE INTERNATIONAL GAME, published once a day rather than once a nation:
+    // the squads as named, what each window cost each club, the tours as
+    // played and every cap on earth. It is one snapshot for the whole world,
+    // so rebuilding it per country would only be the same work nineteen times.
+    try { await rebuildNations(pool); }
+    catch (eN) { console.error('nations snapshot failed:', eN.message); }
     const lines = [];
     for (const [country, r] of Object.entries(all)) {
       const fresh = r.filter(x => !x.skipped);
       if (fresh.length) lines.push(country + ': ' + fresh.map(x => 'day ' + x.day + ' round ' + x.round + ' (' + x.played + ' played)').join(', '));
     }
+    // THE MARKET, world-wide and once a day: the bots do their shopping, the
+    // windows that are up have their envelopes opened, and the board is
+    // republished. Sealed bids mean the hour this runs at buys nobody
+    // anything.
+    try {
+      const mk = await settleMarket(pool);
+      const sold = mk.settled.filter(x => x.sold);
+      if (mk.bids) lines.push('market: ' + mk.bids + ' offers from bot clubs');
+      if (mk.settled.length) lines.push('market: ' + sold.length + ' sold of ' + mk.settled.length + ' windows closed');
+    } catch (eMk) { lines.push('market: ' + eMk.message); }
+    // THE INTERNATIONAL WINDOWS, at 18:00 UTC on rounds 5, 9 and 13 — after
+    // most of the planet's league cricket, and healed up to four days back
+    // if the cron was dead for one
+    try {
+      const tours = await runWindows(pool, host, ENGINE_VERSION);
+      if (tours.length) {
+        lines.push('internationals played: ' + tours.length);
+        await rebuildNations(pool);
+      }
+    } catch (eW) { lines.push('internationals: ' + eW.message); }
     const cups = await runCupWindow(pool, host);
     for (const [sk, c] of Object.entries(cups)) {
       if (c && (c.wcl || c.wc)) ['wcl', 'wc'].forEach(comp => {

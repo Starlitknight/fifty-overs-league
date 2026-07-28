@@ -235,6 +235,64 @@
   var TAB = "overview";
   function qp(k) { var m = new RegExp("[?&]" + k + "=([^&]*)").exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : ""; }
 
+  // THE MATCH ON SCREEN KNOWS WHOSE MEN THESE ARE. The theatre records the
+  // two clubs it is broadcasting; if the name belongs to either of them, the
+  // world serves his card exactly as it would from a club page. Deep-linking
+  // #/player?n=X into a cold tab still cannot know, which is what the ?c=/?s=
+  // form is for - so this is a rescue, not a replacement.
+  function fromTheatre(name) {
+    var ctx = null; try { ctx = window.__foWtCtx; } catch (e) {}
+    if (!ctx || !ctx.sides || !ctx.sides.length) return false;
+    for (var i = 0; i < ctx.sides.length; i++) {
+      var s = ctx.sides[i];
+      var row = servedSquad(s.country, s.slot, function () { if (onPage()) build(); });
+      if (row && (row.players || []).some(function (x) { return x && x.name === name; })) {
+        buildCard(s.country, s.slot, name);
+        return true;
+      }
+    }
+    // still fetching: hold the page rather than printing a lie about him
+    var pending = ctx.sides.some(function (s) {
+      return !servedSquadFailed(s.country, s.slot) && !servedSquad(s.country, s.slot, function () { if (onPage()) build(); });
+    });
+    if (pending) {
+      var pg = document.getElementById("page");
+      if (pg) pg.innerHTML = "<div class='fo-pp'><div class='fo-pp-card'><h3>" + E(name) +
+        "</h3><p class='fo-pp-dim'>Sending for his card&hellip;</p></div></div>";
+      return true;
+    }
+    // THE WORLD IS OUT OF REACH, but the broadcast regenerates both squads
+    // from their world seeds, so we still know exactly who he is and who he
+    // plays for. Say that much rather than pretending he does not exist -
+    // and do not invent a card, because his record lives with the service.
+    for (var j = 0; j < ctx.sides.length; j++) {
+      var side = ctx.sides[j], gen = null;
+      try { gen = window.__foWT && window.__foWT.serverSquad(side.country, side.slot); } catch (eG) {}
+      if (!gen || !gen.some(function (x) { return x && x.name === name; })) continue;
+      var pg2 = document.getElementById("page"); if (!pg2) return true;
+      var nat = String(side.country || "").toUpperCase();
+      try {
+        var reg = (window.__foCxAPI.regions() || []).filter(function (x) { return x.id === side.country; })[0];
+        if (reg && reg.nm) nat = reg.nm;
+      } catch (eN) {}
+      pg2.innerHTML = "<div class='fo-pp'><a class='fo-pp-back' href='#/watch?n=" + E(side.country) + "'>&lsaquo; The match</a>" +
+        "<div class='fo-pp-card'><h3>" + E(name) + "</h3>" +
+        "<p class='fo-pp-dim'>He plays for <b>" + E(side.name || ("club " + side.slot)) + "</b> in the " + E(nat) +
+        " league. His card &mdash; the numbers, the form, the record &mdash; is kept by the World Service, " +
+        "which cannot be reached just now. Try him again in a minute.</p></div></div>";
+      return true;
+    }
+    return false;
+  }
+  // and when nobody on earth has heard of him, say so like a cricket book
+  function notInRecord(name) {
+    var pg = document.getElementById("page"); if (!pg) return;
+    pg.innerHTML = "<div class='fo-pp'><a class='fo-pp-back' href='#/squad'>&lsaquo; The squad</a>" +
+      "<div class='fo-pp-card'><h3>" + E(name || "This cricketer") + "</h3>" +
+      "<p class='fo-pp-dim'>No club on the books carries that name. If you followed him out of a broadcast, " +
+      "open the match again and tap him from the card &mdash; the world will send his page down with him.</p></div></div>";
+  }
+
   function build() {
     if (!onPage()) return;
     var page = document.getElementById("page"); if (!page) return;
@@ -243,7 +301,14 @@
     var cidQ = qp("c");
     // a man from another club: the world serves his card, and only his card
     if (cidQ && !isMine(name)) { buildCard(cidQ, parseInt(qp("s"), 10) || 0, name); return; }
-    if (!hit || !hit.p) return;
+    // A NAME OFF A BROADCAST. Every name on a scorecard is a link, but the
+    // engine's own playerLink can only write the name - so a South African or
+    // an Indian watched from the world theatre arrived here as a bare ?n=,
+    // matched nobody in the local league, and the engine printed "Player not
+    // found." at a cricketer who plays every week. The theatre leaves the
+    // match's two clubs behind it; ask them who he is.
+    if (!hit || !hit.p) { if (fromTheatre(name)) return; }
+    if (!hit || !hit.p) { notInRecord(name); return; }
     var p = hit.p, team = hit.team || {}, mine = isMine(p.name);
     // the dark dossier stage is retired; make sure its backdrop goes with it
     try { document.body.classList.remove("fo-pl-on"); var bg = document.getElementById("fo-pl-bg"); if (bg) bg.remove(); } catch (eB) {}
@@ -459,22 +524,48 @@
   // skills, no coaching book, no training ground.
   var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
   var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
-  var SQ_CACHE = {}, SQ_BUSY = {};
+  var SQ_CACHE = {}, SQ_BUSY = {}, SQ_DEAD = {};
+  // SQ_DEAD: a squad the world refused to send. Without it a page waiting on
+  // a fetch that will never land sits on "sending for his card" forever
+  // instead of admitting the world is out of reach.
+  function servedSquadFailed(cid, slot) { return !!SQ_DEAD[cid + ":" + slot]; }
   function servedSquad(cid, slot, cb) {
     var k = cid + ":" + slot;
     if (SQ_CACHE[k]) return SQ_CACHE[k];
     if (SQ_BUSY[k]) return null;
     SQ_BUSY[k] = 1;
+    var done = function (ok) { SQ_BUSY[k] = 0; if (!ok) SQ_DEAD[k] = 1; try { if (cb) cb(); } catch (e) {} };
     try {
       fetch(SB_URL + "/rest/v1/world_squads?country_id=eq." + encodeURIComponent(cid) + "&slot=eq." + slot +
         "&select=name,players", { headers: { apikey: SB_ANON } })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (rows) {
-          SQ_BUSY[k] = 0;
-          if (rows && rows[0]) { SQ_CACHE[k] = rows[0]; try { if (cb) cb(); } catch (e) {} }
-        }, function () { SQ_BUSY[k] = 0; });
-    } catch (e) { SQ_BUSY[k] = 0; }
+          if (rows && rows[0]) { SQ_CACHE[k] = rows[0]; done(true); } else done(false);
+        }, function () { done(false); });
+    } catch (e) { done(false); }
     return null;
+  }
+  // THE OTHER CAREER. A man who has played for his country has a second book
+  // that his club record never touches, and this is the page people come to
+  // for it. The nations snapshot carries every capped cricketer still on a
+  // club's books, keyed by name, so one fetch answers for the whole world.
+  var NAT_SNAP = null, NAT_BUSY = 0;
+  function servedIntl(cid, name, cb) {
+    if (NAT_SNAP === null && !NAT_BUSY) {
+      NAT_BUSY = 1;
+      try {
+        fetch(SB_URL + "/rest/v1/world_snapshots?key=eq.nations&select=body", { headers: { apikey: SB_ANON } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (rows) {
+            NAT_BUSY = 0;
+            NAT_SNAP = (rows && rows[0] && rows[0].body) || false;
+            try { if (cb) cb(); } catch (e) {}
+          }, function () { NAT_BUSY = 0; NAT_SNAP = false; });
+      } catch (e) { NAT_BUSY = 0; NAT_SNAP = false; }
+    }
+    if (!NAT_SNAP || !NAT_SNAP.nations) return null;
+    var n = NAT_SNAP.nations[cid];
+    return (n && n.record && n.record[name]) || null;
   }
   function servedFace(sp) {
     try {
@@ -546,6 +637,12 @@
       var sr = c.balls ? (100 * (c.runs || 0) / c.balls).toFixed(1) : "&mdash;";
       var econ = c.ovb ? ((c.conc || 0) / (c.ovb / 6)).toFixed(2) : "&mdash;";
       var kv = function (k, v) { return "<div><b>" + v + "</b><i>" + k + "</i></div>"; };
+      var intl = servedIntl(cid, sp.name, function () { if (onPage()) buildCard(cid, slot, name); });
+      var intlCard = !intl ? "" :
+        "<div class='fo-pp-card'><h3>For his country<span>" + intl.caps + " cap" + (intl.caps === 1 ? "" : "s") + "</span></h3>" +
+        "<div class='fo-pp-mini'>" + kv("Caps", intl.caps) + kv("Runs", intl.runs || 0) +
+        kv("Best", intl.hs || 0) + kv("Wickets", intl.wkts || 0) + "</div>" +
+        "<p class='fo-pp-dim'>Played in the international windows. A cap keeps its own book &mdash; it never swells a club record.</p></div>";
       var room;
       if (CARD_TAB === "career") {
         room = "<div class='fo-pp-col'><div class='fo-pp-card'><h3>Career record<span>All league cricket</span></h3>" +
@@ -554,7 +651,7 @@
             kv("Wickets", c.wkts || 0) + kv("Best bowling", c.bb ? c.bb.w + "/" + c.bb.r : "&mdash;") +
             kv("Economy", econ) + kv("Overs", c.ovb ? Math.floor(c.ovb / 6) : 0) + "</div>"
             : "<p class='fo-pp-dim'>He has not played a league match yet. The record starts the day he is picked.</p>") +
-          "</div></div>" +
+          "</div>" + intlCard + "</div>" +
           "<div class='fo-pp-rail'><div class='fo-pp-card dark'><h3>The book is public</h3>" +
           "<p>Every run and wicket here was scored in a match the umpire played and banked. It is the same record his own manager reads.</p>" +
           "<a class='fo-pp-more' href='#/records'>The record book &rsaquo;</a></div></div>";
@@ -681,7 +778,7 @@
   var CSS = [
     "html body #page .fo-pp{position:relative;max-width:1000px;margin:14px auto 44px;padding:0 12px;color:#141C28;--navy:#0C1B33;--gold:#C9A24B;--nac:#C95532}",
     "html body #page .fo-pp-attic{display:none}",
-    "html body #page a.fo-pp-back{display:inline-block;margin:0 0 10px;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--nac);text-decoration:none}",
+    "html body #page a.fo-pp-back{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;margin:0 -12px 6px;border-radius:12px;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--nac);text-decoration:none}",
     // ---- the hero -----------------------------------------------------------
     "html body #page .fo-pp-plate{position:relative;display:grid;grid-template-columns:236px minmax(0,1fr) auto;gap:20px;align-items:start;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:18px;padding:16px 18px;box-shadow:0 10px 30px rgba(30,38,52,.07)}",
     "html body #page .fo-pp-cardart{position:relative;border-radius:12px;overflow:hidden;background:linear-gradient(160deg,#12294A,#0A1526 70%);box-shadow:inset 0 0 0 2px rgba(201,162,75,.55);aspect-ratio:4/3}",

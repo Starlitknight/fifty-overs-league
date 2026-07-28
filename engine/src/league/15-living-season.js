@@ -619,6 +619,9 @@
   // ---------------------------------------------------------------------------
   // Skin
   // ---------------------------------------------------------------------------
+  // The nets and the ledger borrow this sheet's buttons, so it has to be
+  // reachable from outside: landing straight on one of those rooms used to
+  // paint bare underlined links where the pills should be.
   function foLsCss() {
     if (document.getElementById("fo-ls-css")) return;
     var s = document.createElement("style"); s.id = "fo-ls-css";
@@ -714,7 +717,7 @@
       ".tick .fo-ls-line{color:#4A3B18}.tick .fo-ls-line b{color:#8A5A10}.tick .fo-ls-line span{color:#8A8060}",
       ".tick .fo-ls-fine{color:#8A8060}",
       ".fo-tick-stub{border-top:1px dashed rgba(176,132,9,.45);margin:0 10px;padding:8px 6px 10px;text-align:center;font-family:Oswald,sans-serif;font-size:7.5px;letter-spacing:.3em;text-transform:uppercase;color:#8A8060}",
-      "html body.ftpskin .fo-ls-btn,html body .fo-ls-btn{display:inline-block;margin-top:8px;border:0 !important;border-radius:999px !important;padding:8px 18px !important;background:#C95532 !important;color:#FFFEFC !important;font:600 11px Oswald,sans-serif !important;text-transform:uppercase;letter-spacing:.14em;cursor:pointer;text-decoration:none}",
+      "html body.ftpskin .fo-ls-btn,html body .fo-ls-btn{display:inline-flex;align-items:center;min-height:44px;margin-top:8px;border:0 !important;border-radius:999px !important;padding:0 19px !important;background:#C95532 !important;color:#FFFEFC !important;font:600 11px Oswald,sans-serif !important;text-transform:uppercase;letter-spacing:.14em;cursor:pointer;text-decoration:none}",
       "html body .fo-ls-btn:hover{background:#A64426 !important;color:#FFFEFC !important}",
       "html body .fo-ls-btn.ghost,html body #page .fo-ls-btn.ghost{background:transparent !important;color:#EBC271 !important;box-shadow:inset 0 0 0 1.5px rgba(235,194,113,.55)}",
       "html body .fo-ls-btn.ghost:hover{background:rgba(235,194,113,.1) !important}",
@@ -764,4 +767,9 @@
     ].join("");
     document.head.appendChild(s);
   }
+  // The nets and the club ledger borrow this sheet's pill buttons. Landing
+  // straight on one of those rooms - which the menu now makes easy - used to
+  // paint bare underlined links where the pills should be, because nothing
+  // had brought the sheet onto the page yet.
+  window.foLsCss = foLsCss;
 })();

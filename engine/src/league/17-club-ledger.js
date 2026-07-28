@@ -102,6 +102,7 @@
       rounds: net >= 0 ? null : Math.max(0, Math.floor((App.fin.bank || 0) / -net)) };
   }
   window.foRenderLedger = function () {
+    try { if (window.foLsCss) window.foLsCss(); } catch (eLs) {}   // this room wears the season sheet's buttons
     var page = document.getElementById("page"); if (!page || !ready()) return;
     foLedCss();
     document.body.classList.add("fo-led-on");

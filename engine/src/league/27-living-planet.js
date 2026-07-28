@@ -335,6 +335,20 @@
   }
   function stageName(st) { return { r16: "The Last Sixteen", qf: "Quarter-finals", sf: "Semi-finals", final: "THE WORLD CUP FINAL" }[st] || st; }
 
+  // one repaint for however many nations answer at once: nineteen snapshots
+  // landing in the same second must not repaint the page nineteen times
+  var repaintT = null;
+  function planetRepaint() {
+    if (repaintT) return;
+    repaintT = setTimeout(function () {
+      repaintT = null;
+      try {
+        if ((location.hash || "").split("?")[0] !== "#/planet") return;
+        foRenderPlanetPage();
+      } catch (e) {}
+    }, 260);
+  }
+
   function foRenderPlanetPage() {
     try {
       if ((location.hash || "").split("?")[0] !== "#/planet") return;
@@ -446,8 +460,25 @@
       if (p.kind === "league") {
         natCards = regionList().filter(function (r) { return r.id !== my; }).map(function (r) {
           var fx = fixturesOf(r.id, p.season, p.round);
+          // THE REAL TABLE, NOT THE PAINTED ONE. These cards used to read the
+          // local deterministic mirror for every rival nation, so South Africa
+          // and India sat on nought all season while the umpire was banking
+          // their results. Ask the world for each nation's standings - the
+          // same snapshot their own page reads - and only fall back to the
+          // mirror while it is in flight.
+          var svN = null;
+          try {
+            if (window.__foWorldLg) {
+              window.__foWorldLg.want(r.id, planetRepaint);
+              svN = window.__foWorldLg.get(r.id);
+            }
+          } catch (eSv) {}
+          if (svN && (!svN.seasonNo || svN.seasonNo !== p.season)) svN = null;
           var t = tableOf(r.id, p.season, roundsDone(now, p.season));
           var posOf = {}; t.forEach(function (row, i2) { posOf[row.side.slot] = i2 + 1; });
+          if (svN && svN.table && svN.table.length) {
+            posOf = {}; svN.table.forEach(function (row9, i9) { posOf[row9.slot] = i9 + 1; });
+          }
           var feat = fx.slice().sort(function (a, b) { return (posOf[a.home.slot] + posOf[a.away.slot]) - (posOf[b.home.slot] + posOf[b.away.slot]); })[0];
           var lv = feat ? liveView(feat, now, natHour(r.id)) : null;
           // the card tells the truth: fixture names come from the server's
@@ -466,7 +497,9 @@
             lv.state === "up" ? "<em class='fx'>" + E(feat.home.name) + " v " + E(feat.away.name) + " &middot; " + hh(natHour(r.id)) + " UTC</em>" :
             lv.state === "live" ? "<em class='fx live'><b>LIVE</b> " + E(feat.home.name) + " v " + E(feat.away.name) + " &middot; in play now</em>" :
             "<em class='fx'>" + (finTxt ? E(finTxt) : E(feat.home.name) + " v " + E(feat.away.name) + " &middot; played &middot; tap for the result") + "</em>";
-          var ldr2 = t[0];
+          var ldr2 = (svN && svN.table && svN.table.length)
+            ? { side: { name: svN.table[0].name }, pts: svN.table[0].pts, p: svN.table[0].p }
+            : t[0];
           // a nation in its live window wears an unmissable red LIVE button;
           // the card opens its matchday, where every live match has a
           // watch-in-the-theatre door
@@ -474,7 +507,8 @@
           return "<a class='fo-pl-nat" + (natLive ? " live" : "") + "' href='#/nation?n=" + encodeURIComponent(r.id) + "'>" +
             "<img class='fo-pl-flag' src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\">" +
             "<span class='fo-pl-natt'><b>" + E(r.nm) + "</b>" + mid +
-            "<u>" + (ldr2 ? E(ldr2.side.name) + " lead &middot; " + ldr2.pts + " pts" : "") + "</u></span>" +
+            "<u>" + (ldr2 ? (ldr2.p === 0 ? E(ldr2.side.name) + " &middot; no play yet"
+              : E(ldr2.side.name) + " lead &middot; " + ldr2.pts + " pts") : "") + "</u></span>" +
             (natLive ? "<span class='fo-pl-livebtn'><i></i>LIVE</span>" : "<i>&rsaquo;</i>") + "</a>";
         }).join("");
       } else if (p.kind === "honours") {
@@ -506,7 +540,7 @@
         bandHTML + ownCard + cupHTML +
         (natCards ? "<div class='fo-pl-grid'>" + natCards + "</div>" : "") +
         (wireItems ? "<div class='fo-pl-wire'><i>The world wire</i>" + wireItems + "</div>" : "") +
-        "<div class='fo-pl-foot'><a href='#/worldclub'>Join the world &rsaquo;</a><a href='#/world'>The world map &rsaquo;</a><a href='#/champions'>The Champions Cup &rsaquo;</a><a href='#/natteams'>National teams &rsaquo;</a><a href='#/rankings'>The world rankings &rsaquo;</a><a href='#/nation'>My league &rsaquo;</a><a href='#/almanack'>The world almanack &rsaquo;</a><a href='#/atlas'>The atlas &rsaquo;</a></div>" +
+        "<div class='fo-pl-foot'><a href='#/worldclub'>Join the world &rsaquo;</a><a href='#/world'>The world map &rsaquo;</a><a href='#/champions'>The Champions Cup &rsaquo;</a><a href='#/nations'>The international game &rsaquo;</a><a href='#/rankings'>The world rankings &rsaquo;</a><a href='#/nation'>My league &rsaquo;</a><a href='#/almanack'>The world almanack &rsaquo;</a><a href='#/atlas'>The atlas &rsaquo;</a></div>" +
         "</div>";
     } catch (e) { try { console.warn("foRenderPlanetPage", e); } catch (e2) {} }
   }
@@ -577,7 +611,7 @@
     "html body #page .fo-pl-wire>i{display:block;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#B44A22;font-style:normal;margin-bottom:8px}",
     "html body #page .fo-pl-wireln{font:italic 420 12.5px/1.55 'Fraunces',Georgia,serif;color:rgba(20,28,40,.72);padding:4px 0;border-top:1px solid rgba(20,28,40,.05)}",
     "html body #page .fo-pl-foot{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}",
-    "html body #page .fo-pl-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
+    "html body #page .fo-pl-foot a{display:inline-flex;align-items:center;min-height:44px;font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:0 17px;text-decoration:none}",
     "html body #page .fo-pl-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5);text-decoration:none}",
     "@media(max-width:520px){html body #page .fo-pl-mast h1{font-size:29px}}"
   ].join("\n");

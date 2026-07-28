@@ -185,8 +185,15 @@
       : n >= 34 ? "satisfactory" : n >= 24 ? "passable" : n >= 14 ? "energetic"
       : n >= 5 ? "revived" : "rested";
   }
+  // AND WHO WAS NOT THERE. On an international window round the umpire played
+  // the club's fixture without the men their country had taken; the patch
+  // marks them {a:true}, and the broadcast has to leave them out too or it
+  // would field an eleven the umpire never picked.
   function applyLiving(players, patch) {
     if (!players || !patch) return players;
+    var away = {}, gone = 0;
+    players.forEach(function (p) { if (p && patch[p.name] && patch[p.name].a) { away[p.name] = 1; gone++; } });
+    if (gone) players = players.filter(function (p) { return !(p && away[p.name]); });
     players.forEach(function (p) {
       var L = p && patch[p.name]; if (!L) return;
       if (L.e != null) { p.exp = L.e; p.expWord = EXPLAD[Math.max(0, Math.min(11, Math.floor(L.e / 9)))]; }
@@ -268,9 +275,16 @@
       var sqH = serverSquad(rid, m.home.slot), sqA = serverSquad(rid, m.away.slot);
       if (!sqH || !sqA) { alert("The squads are still warming up - try again in a moment."); return; }
       var liv = LIV_VAL[rid + ":" + srvRound];
-      if (liv) { applyLiving(sqH, liv[m.home.name]); applyLiving(sqA, liv[m.away.name]); }
+      if (liv) { sqH = applyLiving(sqH, liv[m.home.name]); sqA = applyLiving(sqA, liv[m.away.name]); }
       var home = { name: m.home.name, ground: (m.home.city || m.home.name) + " Ground", players: sqH };
       var away = { name: m.away.name, players: sqA };
+      // WHOSE MEN THESE ARE. Every name on a broadcast scorecard is a link,
+      // and a link needs to know which club in which nation to ask about. The
+      // engine's own playerLink can only write the name, so the theatre leaves
+      // the match's two clubs here for the player page to read.
+      window.__foWtCtx = { rid: rid, sides: [
+        { country: rid, slot: m.home.slot, name: m.home.name },
+        { country: rid, slot: m.away.slot, name: m.away.name }] };
       var matchId = rid + ":s" + cal.seasonNo + ":r" + srvRound + ":h" + m.home.slot + "a" + m.away.slot;
       var seed = h32(matchId) || 1;
       window.onMatchEnd = function () {};
@@ -344,9 +358,12 @@
           }
           var sqH = serverSquad(d.home.country, d.home.slot), sqA = serverSquad(d.away.country, d.away.slot);
           if (!sqH || !sqA) { alert("The squads are still warming up - try again in a moment."); return; }
-          if (d.living) { applyLiving(sqH, d.living[d.home.name]); applyLiving(sqA, d.living[d.away.name]); }
+          if (d.living) { sqH = applyLiving(sqH, d.living[d.home.name]); sqA = applyLiving(sqA, d.living[d.away.name]); }
           var home = { name: d.home.name, ground: d.home.name + "'s ground", players: sqH };
           var away = { name: d.away.name, players: sqA };
+          window.__foWtCtx = { rid: d.home.country, sides: [
+            { country: d.home.country, slot: d.home.slot, name: d.home.name },
+            { country: d.away.country, slot: d.away.slot, name: d.away.name }] };
           var seed = h32("friendly:" + d.id) || 1;
           window.onMatchEnd = function () {};
           M = newMatch(home, away, "balanced", seed);

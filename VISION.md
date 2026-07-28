@@ -26,7 +26,40 @@ The owner's spec, in their words, refined by the FTP manual:
    with the boss club seated in each league and never replaceable.
 2. CHAMPIONS LEAGUE OF CLUBS: replace/augment the nations World Cup with a
    knockout of the 19 champion CLUBS (user's club qualifies by winning).
-3. REAL NATIONAL TEAMS: selectors pick actual best players from club squads
+3. [BUILT — migration 023 + server/nations.mjs. THE INTERNATIONAL WINDOWS.
+   Three rounds a season are window days (clock.mjs WINDOWS: 5, 9, 13). THE
+   SELECTORS: on the morning of one, every nation on earth names a squad of
+   fifteen out of every club in it - the gloves first, then six bowlers,
+   then the best of the rest, ranked on a man's card lifted or dropped by
+   his form, so league nick is genuinely what gets you picked. Never more
+   than THREE from one club, which leaves every side twelve to choose from
+   and spreads the international game round a league instead of gutting its
+   best club. The squad is banked the instant it is named (callups), so a
+   re-run of the day can never pick a different fifteen. THE LOCK: those men
+   are not at their clubs that round - playRound plays the fixture without
+   them, they do not work in the club's nets that week either, and absence
+   rides into the banked living patch as {a:true} so the broadcast fields
+   the same eleven the umpire did. THE TWELFTH MAN: a sheet filed a
+   fortnight ago that names an absentee is COVERED, not torn up - the best
+   man left bats in his place and, if he can, bowls his overs (law 2:
+   absence costs nothing mechanical). THE MONEY: $50k a senior, $20k a man
+   under twenty-one, paid to the club he was taken from and walked from
+   genesis by economy.mjs like everything else in the books. THE TOURS: at
+   18:00 UTC that evening whoever is in a window that world day is paired on
+   the day's own seed and plays on the real engine (nineteen nations, nine
+   ties, one week off), banked in nat_matches. The draw is a pure function of
+   the world day, so the selectors already know it in the morning: a nation
+   with the week off calls NOBODY up - a window with no fixture leaves the
+   men at their clubs and costs the board nothing. A cap is its own book - a
+   tour never swells a club career - but it is the same fifty overs: it
+   tires the legs and moves the form. The nations' ladder in the rankings
+   now climbs on tours as well as World Cup ties, and the World Cup side IS
+   the side that toured, not a fresh fifteen picked the morning of the draw.
+   Room at #/nations; the teamsheet greys out whoever has gone.
+   The one honest simplification: the selectors read form as it stands when
+   the window settles, so a window healed days late has seen a little
+   cricket the players had not. Once named, it is fixed forever.]
+   REAL NATIONAL TEAMS: selectors pick actual best players from club squads
    each international window; players miss those club rounds; club paid
    compensation; national squads feed the World Cup.
 4. MATCH ORDER DEPTH (FTP parity): per-player batting/bowling
@@ -157,3 +190,90 @@ C. Full stats universe for own league (leaderboards, careers, club records).
 D. Daily newspaper: world round-up + lore features on bosses/stars/clubs.
 E. Then: structure waves 1-3 above (joinable world, champions league,
    real national teams).
+
+---
+
+# The owner's brief (settled 28 Jul 2026, in answer to twenty questions)
+
+The waves above were a gap analysis against FTP. This is the thing itself:
+what the game IS, in the owner's own answers. Everything built from here
+answers to this page.
+
+## The player
+- THE DAILY LOOP is deep management, not a chore list: read what happened
+  overnight, catch up with the wider world, scout young players, work out
+  the shape of the side, sell the men who do not fit, buy from the market,
+  set the nets, mind the money, read the lore, plan for the league match,
+  follow other nations, follow your own players' careers. **Extreme depth,
+  very realistic.**
+- THE ARC has two halves. At the start the fantasy is *a new club climbing
+  a ladder*. Once established it becomes *the custodian of a club with
+  immense history - which you built - and which you now have to continue*.
+  Systems should serve whichever half the manager is in.
+- THE FIRST MONTH must do three things: set the team up, get him ATTACHED
+  to his squad, his shape and his boys, and teach him how the league and
+  the wider world work.
+- IT IS A SHARED WORLD AND A GAME PLAYED WITH PEOPLE - Battrick and From
+  the Pavilion online, not a solitaire sim with other people's names in it.
+
+## The laws, as amended
+- ABSENCE HURTS OVER TIME, NOT IN THE SHORT TERM. The old law (an absent
+  manager loses nothing mechanical) now holds over days, not months: a
+  manager who checks in every few days must never be behind, and one who
+  disappears for a season must find his club the worse for it. This is what
+  makes a transfer market possible at all.
+- MONEY MUST BITE, AND A CLUB CAN GENUINELY FAIL. Bad decisions compound -
+  debt, a gutted squad, men who will not sign - and wrecking a club is a
+  thing a manager is allowed to do. There is a road back, but it is long.
+- THE WORLD GETS HARDER. Difficulty is not flat; the game should come after
+  a manager who has learned it.
+- YOUR NUMBERS ARE YOURS; THEIRS ARE A SCOUT'S OPINION. A manager reads his
+  own men exactly. A rival's man is words and ranges until somebody is paid
+  to look at him properly - which is what keeps scouting a real activity.
+- BOTH SCREENS, NO COMPROMISE. Every room is excellent on a phone and on a
+  desk, even when that costs two layouts.
+
+## The shape of the world to come
+- DIVISIONS, once there are enough managers to fill them. One league a
+  nation is a stage, not the destination.
+- A MANAGER MAY MOVE NATIONS at the end of a season, taking the club he
+  founded with him.
+- RIVAL CLUBS ARE CHARACTERS. Every boss and every club wants its own
+  story, in the way the opposing schools in Haikyuu have theirs: a
+  philosophy, an ace, a way of playing you can feel on the scorecard, and
+  an arc that continues whether or not you meet them. Lore is not garnish
+  here; it is a system.
+
+## What we are measured against
+From the Pavilion, on three counts it gets wrong: **its match engine, its
+interface, and the absence of a broader world with characters in it.** It is
+a dated game. Ours must not read as one.
+
+## The order of work
+1. [BUILT - migration 024 + server/market.mjs + engine 49-market.js.
+   THE TRANSFER MARKET. Built on a WINDOW rather than a race, which is what
+   the amended absence law makes possible. Offers are SEALED - nobody sees
+   anybody else's, ever, so refreshing the page buys nothing - and a listing
+   stands THREE WORLD DAYS, so a manager who looks in every couple of days is
+   never behind one who looks in hourly. When the window shuts the umpire
+   opens the envelopes: the highest offer at or above the seller's reserve
+   takes him, a tie goes to the seed rather than to whoever clicked first,
+   the fee leaves one bank and lands in the other, and the man walks into his
+   new dressing room. Neither club has to be awake for any of it. THE
+   SELLER'S ONLY DECISION is the reserve, made once when he lists.
+   THE SHAPE OF A SIDE decides who is surplus (roleOf/surplusRank: depth
+   beyond what the shape wants, plus age, plus wage) and what a club is short
+   of (needRank) - and the umpire uses the same reading to shed men from bot
+   clubs and to make them shop, seeded on the club and the round so a re-run
+   trades identically. A human is never the only buyer on earth.
+   MONEY BITES: nothing is bought on credit, an offer the bank cannot cover is
+   refused before it is filed, a club is never stripped below fourteen and
+   eighteen is a full staff. THE CAREER FOLLOWS THE MAN - his record is frozen
+   onto him as a carry when he moves, because the living layer derives a book
+   from the matches his CURRENT club has played and a cheque must not erase
+   four hundred first-class runs. THE SCOUT keeps the law that your numbers
+   are yours and a rival's are an opinion: a free first impression for
+   everyone, and bands and words for a manager who pays. No skill value of a
+   man you do not own leaves the database. Room at #/market.]
+2. Rival clubs as characters.
+3. Injuries and fitness; coaching staff; contracts and wages.

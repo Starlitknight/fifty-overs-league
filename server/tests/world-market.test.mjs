@@ -1,0 +1,329 @@
+// tests/world-market.test.mjs — THE TRANSFER MARKET, proved.
+//
+// The obligations, in the order a deal meets them:
+//   1. a man is worth something sane, and the shape of a side says who is
+//      surplus and what a club is short of;
+//   2. the umpire puts bot clubs' spare men up, seeded so a re-run lists the
+//      same cricketer;
+//   3. the sealed bid: an offer under the floor is refused, an offer over
+//      the bank is refused, one club has one offer, nobody can read another
+//      club's number;
+//   4. the hammer: highest at or above the reserve takes him, and a tie is
+//      broken by seed rather than by who clicked first;
+//   5. the man MOVES - out of one squad, into the other, with the round he
+//      arrived stamped on him;
+//   6. his CAREER moves with him: a cheque does not erase four hundred runs;
+//   7. the money moves, walked out of the record by the books, and settling
+//      twice pays once;
+//   8. a scout's report is words and bands - never a rival's numbers.
+import { test, before, after } from 'node:test';
+import assert from 'node:assert';
+import { execSync } from 'node:child_process';
+import { makePool } from '../db.mjs';
+import { migrate } from '../migrate.mjs';
+import { initWorld } from '../init-world.mjs';
+import { makeHost } from '../enginehost.mjs';
+import { runDue } from '../tick.mjs';
+import { computeFinance } from '../economy.mjs';
+import { evolveCountry, withCarry } from '../living.mjs';
+import {
+  WINDOW_DAYS, MIN_BID_PCT, SQUAD_FLOOR, valueOf, ageCurve, roleOf,
+  surplusRank, needRank, botBid, pickWinner, scoutReport, scoutFee, classOf,
+  openBotListings, placeBotBids, closeListings, computeMarket, rebuildMarket
+} from '../market.mjs';
+import { EPOCH, DAY } from '../clock.mjs';
+
+const DBNAME = 'foworld_market_test';
+let pool, host;
+const START = 101;
+const T0 = EPOCH + 100 * DAY + 12 * 3600000;
+const U1 = '11111111-1111-4111-8111-111111111111';
+const U2 = '22222222-2222-4222-8222-222222222222';
+const atDay = (day, hour) => EPOCH + day * DAY + hour * 3600000;
+
+async function as(user, sql, params, nowMs) {
+  const c = await pool.connect();
+  try {
+    await c.query(`SELECT set_config('request.jwt.claims', $1, false)`, [JSON.stringify({ sub: user })]);
+    if (nowMs != null) await c.query(`SELECT set_config('world.now_ms', $1, false)`, [String(nowMs)]);
+    return await c.query(sql, params);
+  } finally {
+    await c.query(`SELECT set_config('request.jwt.claims', '', false)`).catch(() => {});
+    await c.query(`SELECT set_config('world.now_ms', '', false)`).catch(() => {});
+    c.release();
+  }
+}
+
+// ---- the arithmetic, as pure functions ------------------------------------
+const man = (name, extra = {}) => ({ name, age: 27, rating: 36000, fee: 60000, wage: 1500,
+  formIx: 3, skills: { vsPace: 60, vsSpin: 58, rotation: 55, temperament: 60, power: 50,
+    wicket: 40, economy: 40, discipline: 40, moveTurn: 35, variation: 35, stamina: 45,
+    fielding: 55, catching: 55, keeping: 8, stumping: 6 }, ...extra });
+
+test('a man is worth what he can still give you', () => {
+  const prime = man('prime', { age: 27 });
+  const kid = man('kid', { age: 20 });
+  const old = man('old', { age: 34 });
+  assert.ok(valueOf(kid) > valueOf(prime), 'youth is dearer: there are years in him');
+  assert.ok(valueOf(old) < valueOf(prime), 'and a man of thirty-four is cheaper');
+  assert.ok(ageCurve(20) > ageCurve(27) && ageCurve(27) > ageCurve(34));
+  const hot = man('hot', { formIx: 6 }), cold = man('cold', { formIx: 0 });
+  assert.ok(valueOf(hot) > valueOf(cold), 'and form is money');
+  assert.ok(valueOf(man('x')) >= 5000, 'nobody is worthless');
+});
+
+test('the shape of a side says who is surplus and what it is short of', () => {
+  const squad = [];
+  for (let i = 0; i < 9; i++) squad.push(man('bat' + i, { rating: 40000 - i * 900 }));
+  for (let i = 0; i < 2; i++) squad.push(man('seam' + i, { rating: 35000, bowlType: 'seamFast', bowlTypeFull: 'seamFast' }));
+  squad.push(man('keep', { keeper: true, rating: 33000 }));
+  squad.push(man('old', { age: 35, rating: 26000, wage: 4200 }));
+  const sur = surplusRank(squad);
+  assert.equal(sur[0].p.name, 'old', 'the dear old man behind better players goes first');
+  const need = needRank(squad);
+  assert.ok(need[0].short >= 3, 'and it is badly short of somebody');
+  assert.ok(['seam', 'spin', 'allrounder'].includes(need[0].role),
+    'a side of ten batsmen wants bowlers, not another batsman');
+  assert.equal(need[need.length - 1].role, 'bat', 'batting is the last thing it needs');
+  assert.equal(roleOf(squad[10]), 'seam');
+  assert.equal(roleOf(squad[11]), 'keeper');
+});
+
+test('a bot club bids for what it needs and never past its bank', () => {
+  const thin = [man('a'), man('b', { keeper: true })];      // short of everything
+  const target = man('quick', { bowlType: 'seamFast', bowlTypeFull: 'seamFast', rating: 39000 });
+  const L = { id: 1, asking: 60000, buyerKey: 'eng:3' };
+  assert.ok(botBid(L, thin, 5000000, target) > 0, 'a club short of seamers goes after one');
+  assert.equal(botBid(L, thin, 40000, target), 0, 'but not with forty thousand in the bank');
+  const full = [];
+  for (let i = 0; i < 18; i++) full.push(man('f' + i, { rating: 44000 }));
+  assert.equal(botBid(L, full, 9000000, target), 0, 'and a full staff buys nobody');
+  // the same auction, twice: the same number
+  assert.equal(botBid(L, thin, 5000000, target), botBid(L, thin, 5000000, target));
+});
+
+test('the hammer: highest over the reserve, and a tie is not a race', () => {
+  const L = { id: 42, reserve: 50000 };
+  assert.equal(pickWinner(L, [{ country_id: 'eng', slot: 1, amount: 40000 }]), null,
+    'under the reserve he does not go');
+  const w = pickWinner(L, [
+    { country_id: 'eng', slot: 1, amount: 60000 },
+    { country_id: 'aus', slot: 4, amount: 75000 },
+    { country_id: 'ire', slot: 2, amount: 51000 }]);
+  assert.equal(w.country_id, 'aus');
+  const tied = [{ country_id: 'eng', slot: 1, amount: 70000 }, { country_id: 'zim', slot: 8, amount: 70000 }];
+  const a = pickWinner(L, tied), b = pickWinner(L, tied.slice().reverse());
+  assert.equal(a.country_id, b.country_id, 'the same tie breaks the same way, whatever the row order');
+});
+
+test('a scout gives you words and bands, never his numbers', () => {
+  const p = man('target', { talents: ['anchor', 'safeHands'], btLabel: 'Right arm fast',
+    bowlType: 'seamFast', bowlTypeFull: 'seamFast', expWord: 'reliable', fatWord: 'rested' });
+  const free = scoutReport(p, false);
+  assert.equal(free.paid, false);
+  assert.ok(free.impression && typeof free.impression === 'string');
+  assert.equal(free.batting, undefined, 'an unpaid look gets no numbers at all');
+  const paid = scoutReport(p, true);
+  assert.ok(/^\d+-\d+$/.test(paid.batting), 'a paid look gets a band');
+  assert.ok(/^\d+-\d+$/.test(paid.bowling));
+  const j = JSON.stringify(paid);
+  assert.ok(!/"vsPace"|"wicket"|"skills"/.test(j), 'and never the skill values themselves');
+  assert.ok(scoutFee(p) >= 4000);
+  assert.ok(classOf(60000).length && classOf(1000).length);
+});
+
+// ---- the world, trading ---------------------------------------------------
+before(async () => {
+  try { execSync('dropdb --if-exists ' + DBNAME); } catch {}
+  execSync('createdb ' + DBNAME);
+  process.env.PGDATABASE = DBNAME;
+  pool = makePool();
+  await migrate(pool);
+  host = makeHost();
+  assert.equal((await initWorld(pool, { now: T0, host })).created, true);
+  await runDue(pool, host, 'eng', { now: atDay(START + 1, 23) });   // two rounds of cricket
+});
+after(async () => { await pool.end(); });
+
+test('the umpire puts bot clubs spare men up, and does it the same way twice', async () => {
+  // a club sheds a man now and then, not every round, so the board fills over
+  // days rather than all at once. Walk a few and it is never empty for long.
+  const day = START + 2;
+  let first = [], round = 3;
+  for (; round <= 8 && !first.length; round++) first = await openBotListings(pool, 'eng', 1, round, atDay(day, 6));
+  round--;
+  assert.ok(first.length >= 1, 'within a few rounds somebody in England is surplus to requirements');
+  for (const L of first) {
+    assert.ok(L.asking > 0);
+    const c = (await pool.query(
+      `SELECT (cu.user_id IS NOT NULL) AS managed FROM clubs cl
+         LEFT JOIN claims cu ON cu.country_id=cl.country_id AND cu.slot=cl.slot
+        WHERE cl.country_id='eng' AND cl.slot=$1`, [L.slot])).rows[0];
+    assert.equal(c.managed, false, 'the umpire never lists a managed club\'s man');
+  }
+  // named once: running the same round again adds nobody
+  const again = await openBotListings(pool, 'eng', 1, round, atDay(day, 9));
+  assert.equal(again.length, 0, 'the same round lists the same men, which is to say none more');
+  const open = (await pool.query(`SELECT * FROM listings WHERE status='open'`)).rows;
+  assert.ok(open.length >= first.length);
+  for (const L of open) assert.equal(L.closes_day, L.opened_day + WINDOW_DAYS);
+});
+
+test('the sealed bid: the floor, the bank, and one offer a club', async () => {
+  const claim = await as(U1, `SELECT public.world_claim_club('eng', 1, 'Santosh') AS r`);
+  assert.equal(claim.rows[0].r.ok, true);
+  const L = (await pool.query(`SELECT * FROM listings WHERE status='open' ORDER BY id LIMIT 1`)).rows[0];
+  const low = Math.round(L.asking * MIN_BID_PCT) - 1000;
+  await assert.rejects(
+    as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, low], atDay(START + 2, 10)),
+    /will not be read/);
+  await assert.rejects(
+    as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, 900000000], atDay(START + 2, 10)),
+    /bank will not cover/);
+  const ok = await as(U1, `SELECT public.world_market_bid($1, $2) AS r`,
+    [L.id, L.asking + 5000], atDay(START + 2, 10));
+  assert.equal(ok.rows[0].r.ok, true);
+  // raising replaces rather than stacks
+  await as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, L.asking + 9000], atDay(START + 2, 11));
+  const mine = (await pool.query('SELECT * FROM bids WHERE listing_id=$1', [L.id])).rows;
+  assert.equal(mine.length, 1);
+  assert.equal(mine[0].amount, L.asking + 9000);
+  // and the public board never carries a number anybody offered
+  const board = (await pool.query('SELECT * FROM world_listings WHERE id=$1', [L.id])).rows[0];
+  assert.equal(board.offers, 1);
+  assert.equal(board.reserve, undefined, 'the reserve is the seller\'s business');
+  assert.equal(JSON.stringify(board).indexOf(String(L.asking + 9000)), -1, 'and the offer is nobody\'s');
+});
+
+test('a manager lists his own man, and cannot gut his own club', async () => {
+  const squad = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  const nm = squad[squad.length - 1].name;
+  const r = await as(U1, `SELECT public.world_market_list($1, $2) AS r`, [nm, 30000], atDay(START + 2, 12));
+  assert.equal(r.rows[0].r.ok, true);
+  assert.equal(r.rows[0].r.closes, START + 2 + WINDOW_DAYS);
+  await assert.rejects(as(U1, `SELECT public.world_market_list($1, $2)`, ['Nobody At All', 30000]),
+    /does not play for you/);
+  // he may take him back while nobody wants him
+  const lid = r.rows[0].r.id;
+  const w = await as(U1, `SELECT public.world_market_withdraw($1) AS r`, [lid], atDay(START + 2, 13));
+  assert.equal(w.rows[0].r.ok, true);
+  assert.equal((await pool.query('SELECT status FROM listings WHERE id=$1', [lid])).rows[0].status, 'withdrawn');
+});
+
+test('the hammer falls: the man moves, his book moves, the money moves', async () => {
+  const L = (await pool.query(`SELECT * FROM listings WHERE status='open' ORDER BY id LIMIT 1`)).rows[0];
+  const sellerBefore = (await pool.query(
+    'SELECT squad FROM clubs WHERE country_id=$1 AND slot=$2', [L.country_id, L.slot])).rows[0].squad;
+  const buyerBefore = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  // give him a record worth carrying
+  await evolveCountry(pool, 'eng', atDay(START + 2, 12), host);
+  const withBook = (await pool.query(
+    'SELECT squad FROM clubs WHERE country_id=$1 AND slot=$2', [L.country_id, L.slot])).rows[0].squad;
+  const before = withBook.find(p => p.name === L.player);
+  const priorRuns = (before && before.career && before.career.runs) || 0;
+
+  const closeDay = L.closes_day;
+  const out = await closeListings(pool, { now: atDay(closeDay, 6) });
+  const mine = out.find(x => x.id === L.id);
+  assert.ok(mine && mine.sold, 'the window shut and he was sold');
+  assert.equal(mine.to, 'eng:1', 'to the only manager bidding');
+
+  const sellerAfter = (await pool.query(
+    'SELECT squad FROM clubs WHERE country_id=$1 AND slot=$2', [L.country_id, L.slot])).rows[0].squad;
+  const buyerAfter = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  assert.equal(sellerAfter.length, sellerBefore.length - 1, 'one out');
+  assert.equal(buyerAfter.length, buyerBefore.length + 1, 'and one in');
+  assert.ok(!sellerAfter.some(p => p.name === L.player));
+  const moved = buyerAfter.find(p => p.name === L.player);
+  assert.ok(moved, 'he is on his new club\'s books');
+  assert.ok(moved.joined && moved.joined.r > 0, 'stamped with the round he arrived');
+  assert.equal(moved.from.slot, L.slot, 'and where he came from');
+  if (priorRuns > 0) assert.equal(moved.carry.runs, priorRuns, 'his runs travelled with him');
+
+  // and the living layer hands them back on top of whatever he does next
+  await evolveCountry(pool, 'eng', atDay(closeDay, 7), host);
+  const after = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad.find(p => p.name === L.player);
+  assert.equal((after.career || {}).runs || 0, priorRuns, 'the book is his, at the new ground');
+});
+
+test('the books walk the deal, and settling twice pays once', async () => {
+  const deal = (await pool.query(
+    `SELECT * FROM listings WHERE status='sold' ORDER BY id LIMIT 1`)).rows[0];
+  assert.ok(deal, 'there is a deal to account for');
+  const fin = await computeFinance(pool, 'eng');
+  const buyer = fin.find(f => f.slot === 1);
+  const seller = fin.find(f => f.slot === deal.slot);
+  assert.equal(buyer.finance.feesOut, deal.fee, 'the buyer paid exactly the fee');
+  assert.equal(buyer.finance.bought, 1);
+  assert.equal(seller.finance.feesIn, deal.fee, 'and the seller banked exactly the fee');
+  assert.equal(seller.finance.sold, 1);
+  // the ledger identity still closes with the market in it
+  for (const f of fin) {
+    const x = f.finance;
+    const expect = x.founded + x.gate + x.awayCut + x.sponsor + (x.compensation || 0)
+      + (x.feesIn || 0) + x.writtenOff
+      - x.wages - x.upkeep - x.interest - x.academyPaid - x.seatsPaid
+      - (x.feesOut || 0) - (x.scouting || 0);
+    assert.equal(Number(f.bank), Math.round(expect), 'club ' + f.slot + ': the books add up');
+  }
+  const again = await computeFinance(pool, 'eng');
+  assert.deepEqual(again.map(f => f.bank), fin.map(f => f.bank), 'and they never drift');
+});
+
+test('a scout is paid for, and the report is only for the club that paid', async () => {
+  const L = (await pool.query(`SELECT * FROM listings WHERE status='open' ORDER BY id LIMIT 1`)).rows[0]
+    || (await openBotListings(pool, 'eng', 1, 5, atDay(START + 4, 6)),
+        (await pool.query(`SELECT * FROM listings WHERE status='open' ORDER BY id LIMIT 1`)).rows[0]);
+  assert.ok(L, 'there is somebody to look at');
+  const r = await as(U1, `SELECT public.world_market_scout($1) AS r`, [L.id], atDay(START + 4, 7));
+  assert.equal(r.rows[0].r.paid, true);
+  assert.ok(r.rows[0].r.fee >= 4000);
+  const paid = (await pool.query('SELECT * FROM scouted WHERE listing_id=$1', [L.id])).rows;
+  assert.equal(paid.length, 1);
+  // a second look is free - you already have the report
+  const r2 = await as(U1, `SELECT public.world_market_scout($1) AS r`, [L.id], atDay(START + 4, 8));
+  assert.equal(r2.rows[0].r.again, true);
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM scouted WHERE listing_id=$1', [L.id])).rows[0].n, 1);
+  // and it is on the manager's own page, not on the board
+  const mine = (await as(U1, `SELECT public.world_market_mine() AS m`)).rows[0].m;
+  assert.ok((mine.reports || []).some(x => x.id === Number(L.id)));
+  const board = await computeMarket(pool);
+  const onBoard = board.listings.find(x => Number(x.id) === Number(L.id));
+  assert.ok(onBoard && onBoard.scout && onBoard.scout.paid === false, 'the board shows the free impression only');
+});
+
+test('bot clubs shop, so a manager is not the only buyer on earth', async () => {
+  await openBotListings(pool, 'eng', 1, 6, atDay(START + 5, 6));
+  const placed = await placeBotBids(pool, atDay(START + 5, 7));
+  assert.ok(placed.length >= 1, 'somebody in the league fancied somebody');
+  for (const b of placed) assert.ok(b.amount > 0);
+  // and they do not bid twice
+  const again = await placeBotBids(pool, atDay(START + 5, 8));
+  assert.equal(again.length, 0);
+});
+
+test('the board is publishable, and carries no reserve and no offer', async () => {
+  const body = await rebuildMarket(pool);
+  assert.ok(body.listings.length >= 0 && Array.isArray(body.deals));
+  assert.equal(body.windowDays, WINDOW_DAYS);
+  const j = JSON.stringify(body);
+  assert.ok(!/"reserve"/.test(j), 'the reserve never leaves the database');
+  assert.ok(!/"skills"/.test(j), 'and neither do a rival\'s skills');
+  const snap = (await pool.query(`SELECT body FROM snapshots WHERE key='market'`)).rows[0];
+  assert.ok(snap && snap.body.listings);
+});
+
+test('a career carried is a career added, not replaced', () => {
+  const carry = { m: 4, runs: 300, balls: 280, hs: 120, wkts: 2, conc: 90, ovb: 60, bb: { w: 2, r: 30 } };
+  const here = { m: 2, runs: 50, balls: 60, hs: 40, wkts: 3, conc: 70, ovb: 72, bb: { w: 3, r: 40 } };
+  const all = withCarry(here, carry);
+  assert.equal(all.m, 6);
+  assert.equal(all.runs, 350);
+  assert.equal(all.hs, 120, 'his best stays his best');
+  assert.equal(all.bb.w, 3, 'and so do his best figures');
+  assert.deepEqual(withCarry(here, null), here);
+  assert.equal(withCarry(null, carry).runs, 300);
+});

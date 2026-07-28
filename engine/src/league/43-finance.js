@@ -119,7 +119,7 @@
     }
     var att = +f.lastAttendance || 0, avg = +f.avgAttendance || 0;
     var full = seats ? Math.max(2, Math.min(100, Math.round(att / seats * 100))) : 0;
-    var inTotal = (+f.gate || 0) + (+f.awayCut || 0) + (+f.sponsor || 0);
+    var inTotal = (+f.gate || 0) + (+f.awayCut || 0) + (+f.sponsor || 0) + (+f.compensation || 0);
     var outTotal = (+f.wages || 0) + (+f.upkeep || 0) + (+f.interest || 0) + (+f.academyPaid || 0) + (+f.seatsPaid || 0);
 
     var build = seats >= MAX_SEATS
@@ -171,6 +171,10 @@
           row("Gate, at home", "two thirds of the house, every match at your ground", f.gate || 0, "in") +
           row("Gate, away", "one third of theirs", f.awayCut || 0, "in") +
           row("Sponsor", "by the round, and he reads the table", f.sponsor || 0, "in") +
+          (f.compensation ? row("International windows",
+            (f.capsAway || 0) + " man-week" + ((f.capsAway || 0) === 1 ? "" : "s") +
+            " with their country &mdash; $50,000 a senior, $20,000 a boy",
+            f.compensation || 0, "in") : "") +
           row("Wages", "the bill as it stands, every round played", -(f.wages || 0), "out") +
           row("Academy upkeep", "by the level, by the round", -(f.upkeep || 0), "out") +
           (f.academyPaid ? row("The academy", "what you built", -(f.academyPaid || 0), "out") : "") +
