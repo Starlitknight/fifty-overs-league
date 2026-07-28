@@ -145,17 +145,26 @@ function wasHere(p, r) {
 async function trainedSquad(pool, host, country, slot, squad) {
   if (!host || !host.trainRound) return squad;
   const rounds = (await pool.query(
-    `SELECT season_no, round, plan FROM training_rounds WHERE country_id=$1 AND slot=$2
+    `SELECT season_no, round, plan, academy FROM training_rounds WHERE country_id=$1 AND slot=$2
       ORDER BY season_no, round`, [country, slot])).rows;
   let men = (squad || []).map(baseline);
   for (const r of rounds) {
     const here = [];
     men.forEach((p, i) => { if (wasHere(p, r)) here.push(i); });
     if (!here.length) continue;
-    const worked = host.trainRound(here.map(i => men[i]), r.plan || {}).players;
+    const worked = host.trainRound(here.map(i => men[i]), r.plan || {}, academyRate(r.academy)).players;
     here.forEach((i, k) => { men[i] = worked[k]; });
   }
   return men;
+}
+// WHAT THE ACADEMY BUYS IN THE NETS. Level two is the rate the world was
+// founded at, so it is the unit; every level either side is eight per cent.
+// The level in force is banked with the plan in force, round by round, which
+// is the only reason a building can change training and the squad still be a
+// pure function of the record.
+export function academyRate(level) {
+  const lv = Math.max(1, Math.min(5, +level || 2));
+  return 1 + 0.08 * (lv - 2);
 }
 
 // EVERY MAN'S LIFE, RECOMPUTED FROM THE WHOLE RECORD OF ONE COUNTRY.

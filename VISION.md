@@ -54,9 +54,18 @@ The owner's spec, in their words, refined by the FTP manual:
    nets into him that he wasn't there for. Room at #/academy; rivals read the
    LEVEL on the club page, never the boys. Migration 018 (which also corrects
    017's write to a clubs.manager column that never existed).
-   STILL TO BUILD: the youth side's own weekly competition, and academy level
-   affecting TRAINING SPEED (the nets rate lives in the shipped engine's
-   trainRound, so it needs a banked per-round academy level to stay replayable).]
+   [BUILT (the Colts Cup + the nets rate) — migration 019. THE RATE: the
+   academy level in force is now banked beside the plan in force in
+   training_rounds, and living.mjs feeds it to host.trainRound as a multiplier
+   (academyRate: level 2 = 1, eight per cent a level either side). Rounds
+   already banked default to 2, so no settled history moves. THE CUP: nine
+   fixtures, Colts round k played on league round 2k off the league's own first
+   single round robin, so the boys meet every club once and there is no second
+   schedule to keep honest. The side picks itself - colts plus the youngest
+   seniors (coltsSquad) - so an offline manager cannot lose it; results land in
+   youth_matches, the table and card in the snapshot colts/<country>, and each
+   boy's own Colts record back onto the boy (coltRecords). Youth cricket never
+   touches a senior first-class career. Shown on #/academy.]
 7. ECONOMY: attendance from supporters+mood+division+weather, gate takings
    split 2/3-1/3, sponsorship tied to results, stadium expansion (+$ per
    seat), supporter mood ladder, debt rules, finance cap.

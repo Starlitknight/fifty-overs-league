@@ -19,8 +19,10 @@ import { initWorld, countryConfigs } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { runAllDue, runCupWindow, rollSeasons, runTick, computeLeague, rebuildHonours, computeRankings, runFriendlies, settleMoney } from '../tick.mjs';
 import { evolveCountry, applyLiving, livingPatch } from '../living.mjs';
-import { CAP, UPKEEP_PER_ROUND, makeColt, ensureYouth, ageYouth } from '../youth.mjs';
-import { EPOCH, DAY } from '../clock.mjs';
+import { CAP, UPKEEP_PER_ROUND, makeColt, ensureYouth, ageYouth,
+  coltsRoundOf, coltsSquad, playColtsRound, coltRecords } from '../youth.mjs';
+import { academyRate } from '../living.mjs';
+import { EPOCH, DAY, seedOf } from '../clock.mjs';
 
 const DBNAME = 'foworld_p3_test';
 let pool, host;
@@ -799,4 +801,99 @@ test('018: the academy brings boys through, paid for and recomputable', async ()
     `SELECT youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].youth.length,
     'the boys on his books are the boys the world has');
   assert.equal(st.claim.name, 'Santosh K');
+});
+
+// 019: THE COLTS CUP, and what an academy buys in the nets. Nine fixtures on
+// every second league round, played by the umpire from a side nobody picks -
+// the boys plus the youngest professionals - so an offline manager cannot
+// lose it. Its own table, its own champion, and not one line of it touching a
+// senior first-class record.
+test('019: the Colts Cup plays itself, and the academy sets the rate in the nets', async () => {
+  const seas = (await pool.query(
+    `SELECT season_no FROM seasons WHERE country_id='eng' ORDER BY season_no DESC LIMIT 1`)).rows[0].season_no;
+
+  // the draw: Colts round k is played on league round 2k, up to nine
+  assert.equal(coltsRoundOf(2), 1);
+  assert.equal(coltsRoundOf(18), 9);
+  assert.equal(coltsRoundOf(3), 0, 'odd league rounds have no youth fixture');
+  assert.equal(coltsRoundOf(20), 0, 'the cup is nine rounds and stops');
+
+  // a season of league cricket has left a season of youth cricket behind it
+  const played = (await pool.query(
+    `SELECT season_no, round, count(*)::int AS n FROM youth_matches WHERE country_id='eng'
+      GROUP BY season_no, round ORDER BY season_no, round`)).rows;
+  assert.ok(played.filter(r => r.season_no === 1).length >= 5,
+    'the boys have had a season of fixtures: ' + played.length + ' rounds');
+  played.forEach(r => assert.equal(r.n, 5,
+    'Colts s' + r.season_no + ' round ' + r.round + ' is a full five fixtures'));
+  const lr = (await pool.query(
+    `SELECT DISTINCT league_round, round FROM youth_matches WHERE country_id='eng'`)).rows;
+  lr.forEach(r => assert.equal(r.league_round, r.round * 2, 'every youth round rode on its league round'));
+
+  // THE SIDE NOBODY PICKS: the boys first, then the youngest men on the staff
+  const club = (await pool.query(
+    `SELECT slot, name, squad, youth FROM clubs WHERE country_id='eng' AND slot=4`)).rows[0];
+  const side = coltsSquad(club);
+  assert.ok(side.length >= 11, 'there is always an eleven');
+  (club.youth || []).forEach(y => assert.ok(side.some(p => p.name === y.name), 'every colt is in it'));
+  const avgSide = side.reduce((s, p) => s + (p.age || 30), 0) / side.length;
+  const avgSquad = club.squad.reduce((s, p) => s + (p.age || 30), 0) / club.squad.length;
+  assert.ok(avgSide < avgSquad, 'it is a young side (' + avgSide.toFixed(1) + ' v ' + avgSquad.toFixed(1) + ')');
+  assert.deepEqual(coltsSquad(club).map(p => p.name), side.map(p => p.name), 'and the same side on every replay');
+
+  // playing the same youth round again plays nothing
+  const season = (await pool.query(
+    `SELECT * FROM seasons WHERE country_id='eng' AND season_no=$1`, [seas])).rows[0];
+  assert.equal(await playColtsRound(pool, host, 'eng', season, 2, seedOf, 'v1'), 0,
+    'a youth round already played is never replayed');
+
+  // THE TABLE, from the banked cards alone
+  const cup = (await pool.query(`SELECT body FROM snapshots WHERE key='colts/eng'`)).rows[0].body;
+  assert.equal(cup.table.length, 10);
+  const games = cup.table.reduce((s, r) => s + r.p, 0);
+  assert.equal(games, cup.results.length * 2, 'every club-entry in the table is a match somebody played');
+  cup.table.forEach(r => assert.equal(r.pts, r.w * 2 + r.t, 'two for a win, one for a tie'));
+  assert.ok(cup.runs.length && cup.runs[0].runs > 0, 'somebody is leading the run-scoring');
+  assert.deepEqual(cup.table.map(r => r.pts), cup.table.map(r => r.pts).slice().sort((a, b) => b - a),
+    'the table is in order');
+
+  // A BOY'S OWN RECORD goes back onto the boy, and stays out of the seniors'
+  const withRec = (await pool.query(
+    `SELECT youth FROM clubs WHERE country_id='eng'`)).rows
+    .flatMap(r => r.youth || []).filter(y => y.colts && y.colts.m > 0);
+  assert.ok(withRec.length, 'colts carry what they did in the cup');
+  withRec.forEach(y => { assert.ok(y.colts.runs >= 0 && y.colts.hs <= y.colts.runs); });
+  // a man who came up out of the academy keeps what he did for the Colts -
+  // but it is never mistaken for a first-class career, which the senior
+  // record builds from senior matches and nothing else
+  const seniors = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng'`)).rows.flatMap(r => r.squad);
+  seniors.forEach(p => assert.ok(!p.colts || p.joined,
+    p.name + ' carries a Colts record without ever having been a colt'));
+  const graduate = seniors.find(p => p.colts && p.colts.m > 0 && p.joined);
+  if (graduate) assert.ok(!graduate.career,
+    'youth cricket is not first-class cricket: ' + graduate.name + ' has no senior record yet');
+  await coltRecords(pool, 'eng', seas);
+  const again = (await pool.query(
+    `SELECT youth FROM clubs WHERE country_id='eng'`)).rows.flatMap(r => r.youth || []).filter(y => y.colts);
+  assert.equal(again.length, withRec.length, 'recomputing the records writes the same records');
+
+  // WHAT THE ACADEMY BUYS IN THE NETS: level two is the unit, eight per cent a level
+  assert.equal(academyRate(2), 1);
+  assert.ok(academyRate(5) > academyRate(2) && academyRate(1) < academyRate(2));
+  const pupil = JSON.parse(JSON.stringify(club.squad.filter(p => (p.age || 30) <= 24)[0] || club.squad[0]));
+  const plan = {}; plan[pupil.name] = 'Fitness';
+  const slow = host.trainRound([JSON.parse(JSON.stringify(pupil))], plan, academyRate(1)).players[0];
+  const fast = host.trainRound([JSON.parse(JSON.stringify(pupil))], plan, academyRate(5)).players[0];
+  const sum = p => Object.keys(p.trainProgress || {}).reduce((s, k) => s + p.trainProgress[k], 0)
+                 + Object.keys(p.skills).reduce((s, k) => s + p.skills[k], 0) * 1000;
+  assert.ok(sum(fast) > sum(slow), 'a better academy works the same man harder');
+  const same = host.trainRound([JSON.parse(JSON.stringify(pupil))], plan).players[0];
+  assert.deepEqual(host.trainRound([JSON.parse(JSON.stringify(pupil))], plan, 1).players[0], same,
+    'no rate at all is the rate the world was founded at');
+
+  // and the level in force is BANKED with the plan in force, so it replays
+  const banked = (await pool.query(
+    `SELECT DISTINCT academy FROM training_rounds WHERE country_id='eng' AND slot=1`)).rows;
+  assert.ok(banked.length && banked.every(r => r.academy >= 1 && r.academy <= 5),
+    'every round remembers the academy that worked it');
 });

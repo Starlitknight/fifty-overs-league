@@ -20,8 +20,12 @@ globalThis.__svcGenSquad = function (seed, country, arch, capt) {
 // build the phones run, so the umpire's training and the training a manager
 // reads about can never be two different games. Deterministic: no dice, only
 // the plan, the man's age, his ceiling and how tired he is.
-globalThis.__svcTrain = function (playersJson, planJson) {
+// The RATE is the one thing outside the engine that moves the needle: a
+// club's academy, which is a building the manager paid for. It arrives as a
+// plain multiplier so the arithmetic below stays the shipped engine's own.
+globalThis.__svcTrain = function (playersJson, planJson, rate) {
   var players = JSON.parse(playersJson), plan = JSON.parse(planJson || '{}');
+  var RATE = (typeof rate === 'number' && isFinite(rate) && rate > 0) ? rate : 1;
   var PROGS = (typeof FO_TRAIN_PROGS !== 'undefined' && FO_TRAIN_PROGS) || (window && window.FO_TRAIN_PROGS) || {};
   var LADDER = ['rested','revived','energetic','passable','satisfactory','moderate','weary','listless','exhausted','shattered','clinically dead'];
   var FATF = [0.35,0.45,0.55,0.68,0.78,0.86,0.93,0.97,1.00,1.02,1.04];
@@ -50,7 +54,7 @@ globalThis.__svcTrain = function (playersJson, planJson) {
   players.forEach(function (p) {
     var prog = plan[p.name] || defaultProg(p);
     if (prog === 'Rest' || !PROGS[prog]) return;
-    var pts = 24 * ageFactor(p.age || 27) * potFactor(p) * fresh(p);
+    var pts = 24 * ageFactor(p.age || 27) * potFactor(p) * fresh(p) * RATE;
     if (prog === 'All-rounder') pts *= 0.85;
     var w = PROGS[prog], total = 0;
     for (var k in w) total += w[k];
@@ -140,8 +144,9 @@ globalThis.__svcWorldCfg = function () {
   const ovr = vm.runInContext('__svcOvr', eng.ctx);
   return {
     genSquad(seed, country, arch, capt) { return JSON.parse(gen(seed, country, arch, capt)); },
-    // one round in the nets for a whole squad, by the shipped engine's numbers
-    trainRound(players, plan) { return JSON.parse(train(JSON.stringify(players), JSON.stringify(plan || {}))); },
+    // one round in the nets for a whole squad, by the shipped engine's numbers,
+    // at the rate the club's academy buys (1 = a level-two academy)
+    trainRound(players, plan, rate) { return JSON.parse(train(JSON.stringify(players), JSON.stringify(plan || {}), rate)); },
     // recompute bat/threat/control/rating/wage from skills, engine's own map
     derive(players) { return JSON.parse(der(JSON.stringify(players))); },
     // the 0-99 card rating the club pages show, per player

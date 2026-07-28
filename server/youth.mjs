@@ -127,3 +127,185 @@ export async function ageYouth(pool, country, seasonNo) {
   await pool.query(`UPDATE ticks SET status='done', finished_at=now() WHERE key=$1`, [key]);
   return { skipped: false, promoted };
 }
+
+// ===========================================================================
+// THE COLTS CUP
+//
+// Nine fixtures, one on every second league round, played by the umpire on
+// the real engine. Nobody picks the side and nobody submits anything: it is
+// the colts plus the youngest men on the senior staff, which is what a
+// Seconds side has always been. That is deliberate - a competition an
+// offline manager cannot lose by being offline.
+//
+// The draw is the league's own first single round robin: the Colts round k
+// is league round k's fixture list, played on league round 2k. So the boys
+// meet every other club in the country exactly once, and there is no second
+// schedule to keep honest.
+//
+// Nothing here touches a senior first-class record. Youth cricket is youth
+// cricket; what it leaves behind is the table, the champion, and each boy's
+// own Colts record, all recomputed from the banked scorecards.
+// ===========================================================================
+export const COLTS_ROUNDS = 9;
+const COLTS_SQUAD = 13;                    // the boys, then the youngest men
+
+export function coltsRoundOf(leagueRound) {
+  return (leagueRound % 2 === 0 && leagueRound / 2 <= COLTS_ROUNDS) ? leagueRound / 2 : 0;
+}
+export function youthMatchId(country, seasonNo, round, h, a) {
+  return country + ':s' + seasonNo + ':y' + round + ':h' + h + 'a' + a;
+}
+
+// THE SIDE, picked by nobody. Colts first - it is their competition - then
+// the youngest senior professionals until there are enough men to field an
+// eleven with something in reserve. Sorted so the engine's own autopick has
+// the same thirteen in the same order on every replay.
+export function coltsSquad(club) {
+  const byAge = (a, b) => (a.age || 30) - (b.age || 30) || (a.name < b.name ? -1 : 1);
+  const colts = (Array.isArray(club.youth) ? club.youth : []).slice().sort(byAge);
+  const seniors = (club.squad || []).slice().sort(byAge);
+  // an academy holds at most seven, so there is always room for the youngest
+  // professionals to make the number up
+  return colts.concat(seniors.slice(0, Math.max(0, COLTS_SQUAD - colts.length)));
+}
+
+// one Colts round, if this league round has one. Idempotent per fixture.
+export async function playColtsRound(pool, host, country, season, leagueRound, seedOf, engineVersion) {
+  const round = coltsRoundOf(leagueRound);
+  if (!round) return 0;
+  const fixtures = season.schedule[round - 1] || [];
+  const clubs = (await pool.query(
+    'SELECT slot, name, squad, youth FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
+  const bySlot = Object.fromEntries(clubs.map(c => [c.slot, c]));
+  let played = 0;
+  for (const [hs, as] of fixtures) {
+    const id = youthMatchId(country, season.season_no, round, hs, as);
+    if ((await pool.query('SELECT 1 FROM youth_matches WHERE id=$1', [id])).rowCount) continue;
+    const home = bySlot[hs], away = bySlot[as];
+    if (!home || !away) continue;
+    const hSide = coltsSquad(home), aSide = coltsSquad(away);
+    if (hSide.length < 11 || aSide.length < 11) continue;   // no side, no fixture
+    const seed = seedOf(id);
+    const resultJson = host.runMatch(
+      { name: home.name + ' Colts', players: hSide }, { name: away.name + ' Colts', players: aSide },
+      'balanced', seed, null);
+    if (!resultJson) throw new Error('engine failed to complete ' + id);
+    await pool.query(
+      `INSERT INTO youth_matches(id, country_id, season_no, round, league_round, home_slot, away_slot,
+                                 home_name, away_name, seed, engine_version, result, result_canonical)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13::text) ON CONFLICT (id) DO NOTHING`,
+      [id, country, season.season_no, round, leagueRound, hs, as,
+       home.name + ' Colts', away.name + ' Colts', seed, engineVersion, resultJson, resultJson]);
+    played++;
+  }
+  return played;
+}
+
+// THE TABLE AND THE CARD, derived purely from the banked youth scorecards -
+// re-runnable, never drifting, and speaking the clubs' CURRENT names.
+export async function computeColts(pool, country, seasonNo) {
+  const clubs = (await pool.query(
+    'SELECT slot, name, is_boss FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
+  const ms = (await pool.query(
+    'SELECT * FROM youth_matches WHERE country_id=$1 AND season_no=$2 ORDER BY round, id',
+    [country, seasonNo])).rows;
+  const bySlot = Object.fromEntries(clubs.map(c => [c.slot, c]));
+  const T = Object.fromEntries(clubs.map(c => [c.slot,
+    { slot: c.slot, name: c.name, p: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0, of: 0, oa: 0 }]));
+  const results = [], PS = {};
+  for (const m of ms) {
+    const r = m.result;
+    const slotOf = nm => nm === m.home_name ? m.home_slot : nm === m.away_name ? m.away_slot : null;
+    for (const inn of (r.innings || [])) {
+      if (!inn) continue;
+      const bs = slotOf(inn.batTeam), os = slotOf(inn.bowlTeam);
+      if (bs == null || os == null) continue;
+      T[bs].rf += inn.runs; T[bs].of += inn.wkts >= 10 ? 50 : inn.legal / 6;
+      T[os].ra += inn.runs; T[os].oa += inn.wkts >= 10 ? 50 : inn.legal / 6;
+      for (const b of (inn.bat || [])) {
+        const nm = b.p && b.p.name; if (!nm) continue;
+        const e = PS[nm] = PS[nm] || { name: nm, club: bySlot[bs].name, runs: 0, hs: 0, wkts: 0, conc: 0 };
+        e.runs += (b.r || 0); if ((b.r || 0) > e.hs) e.hs = b.r || 0;
+      }
+      for (const nm in (inn.bowlers || {})) {
+        const bw = inn.bowlers[nm];
+        const e = PS[nm] = PS[nm] || { name: nm, club: bySlot[os].name, runs: 0, hs: 0, wkts: 0, conc: 0 };
+        e.wkts += (bw.w || 0); e.conc += (bw.r || 0);
+      }
+    }
+    for (const s of [m.home_slot, m.away_slot]) T[s].p++;
+    const wSlot = r.winner == null ? null : slotOf(r.winner);
+    if (wSlot == null) { T[m.home_slot].t++; T[m.away_slot].t++; T[m.home_slot].pts++; T[m.away_slot].pts++; }
+    else { T[wSlot].w++; T[wSlot].pts += 2; T[wSlot === m.home_slot ? m.away_slot : m.home_slot].l++; }
+    const sideOf = s2 => {
+      const inn = (r.innings || []).find(x => x && slotOf(x.batTeam) === s2);
+      if (!inn) return null;
+      return { r: inn.runs, w: inn.wkts, ov: Math.floor(inn.legal / 6) + '.' + (inn.legal % 6) };
+    };
+    results.push({ id: m.id, round: m.round, leagueRound: m.league_round,
+      home: bySlot[m.home_slot].name, away: bySlot[m.away_slot].name,
+      hs: sideOf(m.home_slot), as: sideOf(m.away_slot),
+      winner: wSlot == null ? null : bySlot[wSlot].name, text: r.text });
+  }
+  const table = Object.values(T).map(x => ({ ...x, nrr: x.of && x.oa ? +(x.rf / x.of - x.ra / x.oa).toFixed(3) : 0 }))
+    .sort((a, b) => b.pts - a.pts || b.nrr - a.nrr || a.slot - b.slot);
+  const players = Object.values(PS);
+  return {
+    country, seasonNo, rounds: COLTS_ROUNDS,
+    roundsPlayed: ms.length ? Math.max(...ms.map(m => m.round)) : 0,
+    table, results,
+    runs: players.filter(p => p.runs > 0).sort((a, b) => b.runs - a.runs).slice(0, 5),
+    wickets: players.filter(p => p.wkts > 0).sort((a, b) => b.wkts - a.wkts || a.conc - b.conc).slice(0, 5),
+    champion: table[0] && table[0].p ? table[0].name : null
+  };
+}
+
+// EVERY BOY'S OWN RECORD, recomputed from the same banked cards and written
+// back onto the colt so his card can show what he has actually done. Pure
+// function of the youth matches; running it twice writes the same numbers.
+export async function coltRecords(pool, country, seasonNo) {
+  const ms = (await pool.query(
+    'SELECT home_slot, away_slot, home_name, away_name, result FROM youth_matches WHERE country_id=$1 AND season_no=$2',
+    [country, seasonNo])).rows;
+  const book = new Map();                                     // slot -> name -> record
+  const rec = (slot, name) => {
+    if (!book.has(slot)) book.set(slot, new Map());
+    const m = book.get(slot);
+    if (!m.has(name)) m.set(name, { m: 0, runs: 0, hs: 0, wkts: 0, conc: 0 });
+    return m.get(name);
+  };
+  for (const mt of ms) {
+    const slotOf = nm => nm === mt.home_name ? mt.home_slot : nm === mt.away_name ? mt.away_slot : null;
+    const capped = new Set();                       // one cap a man a match, however many innings
+    for (const inn of ((mt.result || {}).innings || [])) {
+      if (!inn) continue;
+      const bs = slotOf(inn.batTeam), os = slotOf(inn.bowlTeam);
+      for (const b of (inn.bat || [])) {
+        const nm = b.p && b.p.name; if (!nm || bs == null) continue;
+        const e = rec(bs, nm); e.runs += (b.r || 0); if ((b.r || 0) > e.hs) e.hs = b.r || 0;
+        capped.add(bs + '|' + nm);
+      }
+      for (const nm in (inn.bowlers || {})) {
+        if (os == null) continue;
+        const e = rec(os, nm); e.wkts += (inn.bowlers[nm].w || 0); e.conc += (inn.bowlers[nm].r || 0);
+        capped.add(os + '|' + nm);
+      }
+    }
+    for (const k of capped) { const ix = k.indexOf('|'); rec(+k.slice(0, ix), k.slice(ix + 1)).m++; }
+  }
+  const clubs = (await pool.query(
+    'SELECT slot, youth FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
+  let touched = 0;
+  for (const c of clubs) {
+    const men = book.get(c.slot) || new Map();
+    const youth = (Array.isArray(c.youth) ? c.youth : []).map(y => {
+      const q = Object.assign({}, y), r = men.get(y.name);
+      if (r && r.m) q.colts = r; else delete q.colts;
+      return q;
+    });
+    await pool.query('UPDATE clubs SET youth=$3::jsonb WHERE country_id=$1 AND slot=$2',
+      [country, c.slot, JSON.stringify(youth)]);
+    touched++;
+  }
+  return touched;
+}

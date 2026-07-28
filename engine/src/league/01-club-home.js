@@ -1451,6 +1451,10 @@
         tb.querySelectorAll("th").forEach(function (th) { var t = th.textContent.trim().toLowerCase(); if (t === "club") clubIx = th.cellIndex; if (t === "pts") ptsIx = th.cellIndex; });
         if (clubIx < 0 || ptsIx < 0) return;                    // only the standings table
         if (tb.closest && tb.closest(".fo-ch")) return;         // premium Club renders its own standings
+        // any page that keeps its own table says so and is left alone - this
+        // decorator knows the LOCAL club, which is the wrong club on a page
+        // about the served world
+        if (tb.closest && tb.closest("[data-fo-owntable]")) return;
         tb.classList.add("fo-standings");
         var di = 0;
         tb.querySelectorAll("tr").forEach(function (tr) {

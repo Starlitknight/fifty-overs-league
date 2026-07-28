@@ -124,6 +124,11 @@
         "<li><b>You may bring a boy up early or let him go</b> to make room for the next intake. Everything else the umpire handles.</li>",
         "<li><b>What he learned in the academy he keeps; nets he was never at, he never gets.</b> A boy who comes up in your third season does not inherit two seasons of the first team&rsquo;s training - he starts from the cricketer the academy turned out and builds from there.</li>",
         "<li><b>Rivals can see your level</b> on your club page - a building is a building - but never who is inside it.</li></ul>",
+        "<p><b>The academy also sets the pace in the nets.</b> Level two is the standard rate the world was founded at; every level either side is worth eight per cent on every training gain your whole senior squad makes, every round, for as long as you own it. It is the only building in the game that compounds.</p>",
+        "<p><b>The Colts Cup.</b> Your boys have their own competition: nine fixtures, one on every second round of the league season, every academy in the country playing every other one exactly once. There is a table, and there is a champion.</p>",
+        "<ul><li><b>The side picks itself</b> - your colts plus the youngest men on the senior staff. There is no teamsheet to file and no deadline to miss; the umpire plays it on the real engine whether you are there or not.</li>",
+        "<li>Youth cricket is <b>not first-class cricket</b>. What a boy does in the cup goes on his own record and shows on his card, and it never touches a senior career.</li>",
+        "<li>It is the best look you will get at which colt is ready. A boy making runs against the country's other academies is a boy worth a senior shirt.</li></ul>",
         "<div class='fo-man-tip'><b>Where the compounding is:</b> a colt is the cheapest young player you will ever hold, and young players are what the nets multiply. Raising the academy early buys better raw material for every season after it.</div>"
       ].join("")],
       ["youth", "Youth scouting", [

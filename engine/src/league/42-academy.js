@@ -33,6 +33,15 @@
       return d;
     }); });
   }
+  function sel(path) {
+    return fetch(SB_URL + "/rest/v1/" + path, { headers: { apikey: SB_ANON } })
+      .then(function (r) { return r.ok ? r.json() : null; });
+  }
+  function snapshot(key) {
+    return sel("world_snapshots?key=eq." + encodeURIComponent(key) + "&select=body")
+      .then(function (rows) { return rows && rows[0] && rows[0].body; })
+      .catch(function () { return null; });
+  }
   function money(v) {
     var n = Number(v);
     if (!isFinite(n)) return "&mdash;";
@@ -87,6 +96,11 @@
         return;
       }
       render(page, st);
+      // the Colts Cup arrives a beat later; the room does not wait for it
+      snapshot("colts/" + st.claim.country).then(function (cup) {
+        var box = document.getElementById("fo-ac-cup");
+        if (box) box.innerHTML = cupHTML(cup, st.claim.club);
+      });
     }).catch(function (e) {
       page.innerHTML = shell("<div class='fo-ac-note'>The world could not be reached (" + E(String(e.message).slice(0, 90)) +
         "). The boys are training regardless - try again in a minute.</div>");
@@ -94,7 +108,9 @@
   };
 
   function shell(body) {
-    return "<div class='fo-ac'><div class='fo-ac-in'>" +
+    // the room keeps its own table: the club that matters here is the one in
+    // the served world, not whatever the device calls home
+    return "<div class='fo-ac' data-fo-owntable><div class='fo-ac-in'>" +
       "<div class='fo-ac-hero'><div class='fo-ac-k'>The academy</div>" +
       "<h1>The Colts</h1>" +
       "<p>Boys arrive on their own, age on their own, and walk into your first team at twenty-one whether you were watching or not. What you decide is how good a place they learn in.</p></div>" +
@@ -139,6 +155,8 @@
       "<div class='fo-ac-card'><h3>On the books<span>" + colts.length + "</span></h3>" + list +
         "<div class='fo-ac-note'>A colt costs you nothing in wages - the academy's upkeep covers him. He starts earning the day he takes a senior shirt.</div>" +
       "</div>" +
+      "<div class='fo-ac-card' id='fo-ac-cup'><h3>The Colts Cup</h3>" +
+        "<div class='fo-ac-note'>Reading the boys&rsquo; table&hellip;</div></div>" +
       "<div class='fo-ac-card'><h3>How it works</h3>" +
         "<p class='fo-ac-p'>The umpire runs the academy on the same clock as the cricket. A boy joins when there is a bed free. At the turn of the season every colt gets a year older, and any who reach <b>twenty-one</b> are handed a senior shirt automatically - no button, no deadline, nothing to miss while you're asleep.</p>" +
         "<p class='fo-ac-p'>Bring one up early if you want him, or let him go to make room. Whatever he learned in the academy he keeps; what he never keeps is the nets he was never at, so a boy who comes up in your third season doesn't inherit two seasons of somebody else's work.</p>" +
@@ -170,6 +188,36 @@
     });
   }
 
+  // THE COLTS CUP: nine fixtures, one on every second league round, played by
+  // the umpire from a side nobody picks. Nothing to submit, nothing to miss.
+  function cupHTML(cup, myClub) {
+    var head = "<h3>The Colts Cup<span>" + (cup && cup.roundsPlayed ? cup.roundsPlayed + " of " + cup.rounds : "not started") + "</span></h3>";
+    if (!cup || !cup.results || !cup.results.length) {
+      return head + "<div class='fo-ac-note'>The boys' first fixture comes on the second round of the league season. Nine matches, one every other round, and the whole country's academies in it.</div>";
+    }
+    var rows = cup.table.map(function (t, i) {
+      return "<tr" + (t.name === myClub ? " class='me'" : "") + "><td>" + (i + 1) + "</td><td class='nm'>" + E(t.name) + "</td>" +
+        "<td>" + t.p + "</td><td>" + t.w + "</td><td>" + t.l + "</td><td class='pt'>" + t.pts + "</td>" +
+        "<td class='nrr'>" + (t.nrr > 0 ? "+" : "") + t.nrr.toFixed(2) + "</td></tr>";
+    }).join("");
+    var mine = cup.results.filter(function (r) { return r.home === myClub || r.away === myClub; }).slice(-4).reverse();
+    var card = mine.map(function (r) {
+      var won = r.winner === myClub, tied = r.winner === null;
+      var sc = function (s) { return s ? s.r + "/" + s.w : "&mdash;"; };
+      return "<div class='fo-ac-res'><i class='" + (tied ? "t" : won ? "w" : "l") + "'>" + (tied ? "T" : won ? "W" : "L") + "</i>" +
+        "<b>" + E(r.home) + "</b><u>" + sc(r.hs) + "</u><em>v</em><b>" + E(r.away) + "</b><u>" + sc(r.as) + "</u></div>";
+    }).join("");
+    var lead = (cup.runs && cup.runs[0])
+      ? "<div class='fo-ac-note'>Leading the cup: <b>" + E(cup.runs[0].name) + "</b> " + cup.runs[0].runs + " runs" +
+        (cup.wickets && cup.wickets[0] ? ", <b>" + E(cup.wickets[0].name) + "</b> " + cup.wickets[0].wkts + " wickets" : "") + ".</div>"
+      : "";
+    return head +
+      "<div class='fo-ac-tw'><table class='fo-ac-tbl'><thead><tr><th></th><th class='nm'>Club</th><th>P</th><th>W</th><th>L</th><th class='pt'>Pts</th><th class='nrr'>NRR</th></tr></thead><tbody>" +
+        rows + "</tbody></table></div>" +
+      (card ? "<div class='fo-ac-sub'>Your boys, lately</div>" + card : "") + lead +
+      "<div class='fo-ac-note'>The side picks itself &mdash; your colts and the youngest men on the staff &mdash; so there is no teamsheet to file and nothing to lose by being asleep.</div>";
+  }
+
   function coltCard(p) {
     var pr = Math.max(0, Math.min(100, Math.round(+p.promise || 0)));
     var o = ovrOf(p);
@@ -178,6 +226,10 @@
       "<div class='fo-ac-cm'>" + E(roleOf(p)) + " &middot; " + E(p.age || 18) + ", " + E(ageWord(+p.age || 18)) + "</div>" +
       "<div class='fo-ac-bar'><s style='width:" + pr + "%'></s></div>" +
       "<div class='fo-ac-cm'><em>" + E(promiseWord(pr)) + "</em> &middot; " + pr + "% of the cricketer he'll be</div>" +
+      // what he has actually done in the Colts Cup, if he has done anything
+      (p.colts && p.colts.m ? "<div class='fo-ac-cm cup'>" + p.colts.m + (p.colts.m === 1 ? " cap" : " caps") +
+        " &middot; " + p.colts.runs + " runs" + (p.colts.hs ? " (" + p.colts.hs + " best)" : "") +
+        (p.colts.wkts ? " &middot; " + p.colts.wkts + " wkts" : "") + "</div>" : "") +
       "<div class='fo-ac-cbtns'>" +
         "<button type='button' class='fo-ac-mini' data-fo-colt='" + E(p.name) + "' data-fo-act='promote'>Bring up</button>" +
         "<button type='button' class='fo-ac-mini ghost' data-fo-colt='" + E(p.name) + "' data-fo-act='release'>Release</button>" +
@@ -228,9 +280,31 @@
       "html body #page .fo-ac-cbtns{display:flex;gap:6px;margin-top:9px}",
       "html body #page .fo-ac-mini{flex:1;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;color:#FFFEFC !important;background:#141C28 !important;border:0 !important;border-radius:999px !important;padding:9px 4px !important;cursor:pointer}",
       "html body #page .fo-ac-mini.ghost{background:transparent !important;border:1px solid rgba(20,28,40,.22) !important;color:rgba(20,28,40,.6) !important}",
+      "html body #page .fo-ac-cm.cup{color:#8A6A1F;font-weight:600;margin-top:5px}",
+      "html body #page .fo-ac-sub{margin:14px 0 7px;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(20,28,40,.42)}",
+      "html body #page .fo-ac-tw{overflow-x:auto;-webkit-overflow-scrolling:touch}",
+      "html body #page .fo-ac-tbl{width:100%;border-collapse:collapse;font:500 12px/1.3 Inter,sans-serif;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-ac-tbl th{font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.42);text-align:right;padding:0 0 7px}",
+      "html body #page .fo-ac-tbl th.nm{text-align:left}",
+      "html body #page .fo-ac-tbl td{text-align:right;padding:6px 0;border-top:1px solid rgba(20,28,40,.07);color:rgba(20,28,40,.7);white-space:nowrap}",
+      "html body #page .fo-ac-tbl td.nm{text-align:left;width:99%;padding-right:12px;color:#141C28;white-space:nowrap}",
+      "html body #page .fo-ac-tbl tr{border:0 !important;box-shadow:none !important;background:transparent}",
+      "html body #page .fo-ac-tbl td,html body #page .fo-ac-tbl th{border-left:0 !important;border-right:0 !important}",
+      "html body #page .fo-ac-tbl td.pt{font-weight:700;color:#141C28;padding-left:10px}",
+      "html body #page .fo-ac-tbl td.nrr,html body #page .fo-ac-tbl th.nrr{padding-left:10px;color:rgba(20,28,40,.45)}",
+      "html body #page .fo-ac-tbl tr.me td{background:rgba(232,185,106,.16)}",
+      "html body #page .fo-ac-tbl tr.me td.nm{font-weight:700}",
+      "html body #page .fo-ac-res{display:flex;align-items:center;gap:6px;padding:6px 0;border-top:1px solid rgba(20,28,40,.07);font:500 11.5px/1.3 Inter,sans-serif;flex-wrap:wrap}",
+      "html body #page .fo-ac-res i{flex:none;font-style:normal;font:700 9px/1 Oswald,sans-serif;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;border-radius:5px;color:#FFFEFC;background:#B23230}",
+      "html body #page .fo-ac-res i.w{background:#177A57}",
+      "html body #page .fo-ac-res i.t{background:#8a6d3b}",
+      "html body #page .fo-ac-res b{color:#141C28;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      "html body #page .fo-ac-res u{text-decoration:none;color:rgba(20,28,40,.55);font-variant-numeric:tabular-nums}",
+      "html body #page .fo-ac-res em{font-style:normal;color:rgba(20,28,40,.35);font-size:10px}",
       "html body #page .fo-ac-foot{display:flex;justify-content:space-between;gap:10px;margin-top:16px;font:600 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
       "html body #page .fo-ac-foot a{color:#B04A2C !important;text-decoration:none !important}",
-      "@media(max-width:480px){html body #page .fo-ac-hero h1{font-size:25px}html body #page .fo-ac-grid{grid-template-columns:1fr 1fr;gap:8px}html body #page .fo-ac-colt{padding:9px 10px}html body #page .fo-ac-ch b{font-size:12.5px}}"
+      "@media(max-width:480px){html body #page .fo-ac-hero h1{font-size:25px}html body #page .fo-ac-grid{grid-template-columns:1fr 1fr;gap:8px}html body #page .fo-ac-colt{padding:9px 10px}html body #page .fo-ac-ch b{font-size:12.5px}" +
+        "html body #page .fo-ac-tbl td.nrr,html body #page .fo-ac-tbl th.nrr{display:none}}"
     ].join("\n");
     document.head.appendChild(s);
   }

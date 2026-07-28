@@ -17,7 +17,7 @@ import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
 import { EPOCH, dayIx, daySettled, seedOf, natHour, scheduleOf, ROUNDS } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
-import { ensureYouth, ageYouth, UPKEEP_PER_ROUND } from './youth.mjs';
+import { ensureYouth, ageYouth, playColtsRound, computeColts, coltRecords, UPKEEP_PER_ROUND } from './youth.mjs';
 
 export function matchId(country, seasonNo, round, h, a) {
   return country + ':s' + seasonNo + ':r' + round + ':h' + h + 'a' + a;
@@ -246,6 +246,12 @@ export async function rebuildSnapshots(pool, country, now) {
   const league = await computeLeague(pool, country, season.season_no, now);
   await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ($1,$2,now())
     ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`, ['league/' + country, JSON.stringify(league)]);
+  // the Colts Cup keeps its own table, and every boy's own record goes back
+  // onto the boy - both derived from the banked youth cards, never incremented
+  const colts = await computeColts(pool, country, season.season_no);
+  await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ($1,$2,now())
+    ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`, ['colts/' + country, JSON.stringify(colts)]);
+  await coltRecords(pool, country, season.season_no);
   await rebuildWorldToday(pool, now);
   await rebuildHonours(pool);
   const rk = await computeRankings(pool, now);
@@ -313,11 +319,15 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
     played = await playRound(pool, host, country, season, round, { failAfter });
     // the nets: whatever plan stands when a round settles is the work that
     // round did, banked so the squad's skills stay recomputable from genesis
+    // the plan in force AND the academy in force: a building that changes the
+    // rate has to be part of the record, or the squad stops being replayable
     await pool.query(
-      `INSERT INTO training_rounds(country_id, slot, season_no, round, plan)
-       SELECT country_id, slot, $2, $3, coalesce(training, '{}'::jsonb) FROM clubs WHERE country_id=$1
+      `INSERT INTO training_rounds(country_id, slot, season_no, round, plan, academy)
+       SELECT country_id, slot, $2, $3, coalesce(training, '{}'::jsonb), academy FROM clubs WHERE country_id=$1
        ON CONFLICT (country_id, slot, season_no, round) DO NOTHING`,
       [country, season.season_no, round]);
+    // and the boys have their own fixture on every second league round
+    await playColtsRound(pool, host, country, season, round, seedOf, ENGINE_VERSION);
   }
   // the day's cricket changes the men who played it: careers, form, tired
   // legs, and the work they did in the nets. A pure function of the record,
