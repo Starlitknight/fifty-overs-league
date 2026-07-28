@@ -55,10 +55,15 @@
   // any of the 19 leagues. Same egress manners as the England feed: probe the
   // tiny updated_at, download the body only when the umpire wrote something
   // new, and keep the last copy in localStorage so the page paints instantly.
-  var LG_BODY = {}, LG_TS = {}, LG_BUSY = {};
+  var LG_BODY = {}, LG_TS = {}, LG_BUSY = {}, LG_AT = {};
+  var LG_TTL = 45000;                 // a nation's standings, at most this often
   function lgFetch(rid, cb) {
     if (!rid || LG_BUSY[rid]) return;
-    LG_BUSY[rid] = 1;
+    // THE WHOLE PLANET AT ONCE. The world page now asks for all nineteen
+    // nations' standings, so without a courtesy window a repaint would put
+    // nineteen probes on the wire every time it painted.
+    if (LG_AT[rid] && Date.now() - LG_AT[rid] < LG_TTL) return;
+    LG_BUSY[rid] = 1; LG_AT[rid] = Date.now();
     var done = function () { LG_BUSY[rid] = 0; };
     var take = function (body) {
       if (body && body.results) {

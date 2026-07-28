@@ -442,16 +442,35 @@ export async function ensureSnapshots(pool, { now = Date.now() } = {}) {
       const live = (await pool.query('SELECT slot, name FROM clubs WHERE country_id=$1', [c.id])).rows;
       if (live.every(r => named[r.slot] === r.name)) continue;
     }
-    await rebuildSnapshots(pool, c.id, now);
-    filled.push(c.id);
+    // and one nation's snapshot failing must not stop the rest being published
+    try { await rebuildSnapshots(pool, c.id, now); filled.push(c.id); }
+    catch (e) { console.error('snapshot failed for ' + c.id + ':', e.message); }
   }
   return filled;
 }
 
+// ONE NATION'S BAD DAY IS NOT THE PLANET'S. This walked the countries in id
+// order and let anything thrown out of one of them abort the whole call - so
+// a single failure in, say, New Zealand silently stopped Pakistan, South
+// Africa, Scotland, Sri Lanka, India, the United States, Wales, the West
+// Indies and Zimbabwe from playing at all, while every nation alphabetically
+// ahead of it carried on as though the world were fine. The tail of the
+// alphabet simply stopped updating. Each country is now settled inside its
+// own guard: the failure is reported against that country and the rest of
+// the world plays on, and because the tick's idempotency row stays 'running'
+// the next invocation retries exactly what was missed.
 export async function runAllDue(pool, host, opts = {}) {
   const cs = await pool.query('SELECT id FROM countries ORDER BY id');
   const out = {};
-  for (const row of cs.rows) out[row.id] = await runDue(pool, host, row.id, opts);
+  for (const row of cs.rows) {
+    try {
+      out[row.id] = await runDue(pool, host, row.id, opts);
+    } catch (e) {
+      out[row.id] = [{ failed: true, error: e.message }];
+      console.error('tick failed for ' + row.id + ':', e.message);
+      if (opts && opts.failAfter != null) throw e;      // the crash tests mean it
+    }
+  }
   return out;
 }
 
@@ -656,6 +675,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       if (filled.length) console.error('published tables for: ' + filled.join(', '));
     } catch (eS) { console.error('snapshots: ' + eS.message); }
     const all = await runAllDue(pool, host);
+    // a nation that could not be settled is the loudest thing in this log
+    for (const [country, r] of Object.entries(all)) {
+      const bad = r.filter(x => x && x.failed);
+      if (bad.length) lines.push('!! ' + country + ' DID NOT PLAY: ' + bad.map(x => x.error).join('; '));
+    }
     // THE INTERNATIONAL GAME, published once a day rather than once a nation:
     // the squads as named, what each window cost each club, the tours as
     // played and every cap on earth. It is one snapshot for the whole world,

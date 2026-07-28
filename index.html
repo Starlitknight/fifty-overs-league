@@ -10636,7 +10636,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260728-0451-db0628";
+  var FO_BUILD = "20260728-0455-933609";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -37378,6 +37378,20 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   }
   function stageName(st) { return { r16: "The Last Sixteen", qf: "Quarter-finals", sf: "Semi-finals", final: "THE WORLD CUP FINAL" }[st] || st; }
 
+  // one repaint for however many nations answer at once: nineteen snapshots
+  // landing in the same second must not repaint the page nineteen times
+  var repaintT = null;
+  function planetRepaint() {
+    if (repaintT) return;
+    repaintT = setTimeout(function () {
+      repaintT = null;
+      try {
+        if ((location.hash || "").split("?")[0] !== "#/planet") return;
+        foRenderPlanetPage();
+      } catch (e) {}
+    }, 260);
+  }
+
   function foRenderPlanetPage() {
     try {
       if ((location.hash || "").split("?")[0] !== "#/planet") return;
@@ -37489,8 +37503,25 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       if (p.kind === "league") {
         natCards = regionList().filter(function (r) { return r.id !== my; }).map(function (r) {
           var fx = fixturesOf(r.id, p.season, p.round);
+          // THE REAL TABLE, NOT THE PAINTED ONE. These cards used to read the
+          // local deterministic mirror for every rival nation, so South Africa
+          // and India sat on nought all season while the umpire was banking
+          // their results. Ask the world for each nation's standings - the
+          // same snapshot their own page reads - and only fall back to the
+          // mirror while it is in flight.
+          var svN = null;
+          try {
+            if (window.__foWorldLg) {
+              window.__foWorldLg.want(r.id, planetRepaint);
+              svN = window.__foWorldLg.get(r.id);
+            }
+          } catch (eSv) {}
+          if (svN && (!svN.seasonNo || svN.seasonNo !== p.season)) svN = null;
           var t = tableOf(r.id, p.season, roundsDone(now, p.season));
           var posOf = {}; t.forEach(function (row, i2) { posOf[row.side.slot] = i2 + 1; });
+          if (svN && svN.table && svN.table.length) {
+            posOf = {}; svN.table.forEach(function (row9, i9) { posOf[row9.slot] = i9 + 1; });
+          }
           var feat = fx.slice().sort(function (a, b) { return (posOf[a.home.slot] + posOf[a.away.slot]) - (posOf[b.home.slot] + posOf[b.away.slot]); })[0];
           var lv = feat ? liveView(feat, now, natHour(r.id)) : null;
           // the card tells the truth: fixture names come from the server's
@@ -37509,7 +37540,9 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
             lv.state === "up" ? "<em class='fx'>" + E(feat.home.name) + " v " + E(feat.away.name) + " &middot; " + hh(natHour(r.id)) + " UTC</em>" :
             lv.state === "live" ? "<em class='fx live'><b>LIVE</b> " + E(feat.home.name) + " v " + E(feat.away.name) + " &middot; in play now</em>" :
             "<em class='fx'>" + (finTxt ? E(finTxt) : E(feat.home.name) + " v " + E(feat.away.name) + " &middot; played &middot; tap for the result") + "</em>";
-          var ldr2 = t[0];
+          var ldr2 = (svN && svN.table && svN.table.length)
+            ? { side: { name: svN.table[0].name }, pts: svN.table[0].pts, p: svN.table[0].p }
+            : t[0];
           // a nation in its live window wears an unmissable red LIVE button;
           // the card opens its matchday, where every live match has a
           // watch-in-the-theatre door
@@ -37517,7 +37550,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           return "<a class='fo-pl-nat" + (natLive ? " live" : "") + "' href='#/nation?n=" + encodeURIComponent(r.id) + "'>" +
             "<img class='fo-pl-flag' src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\">" +
             "<span class='fo-pl-natt'><b>" + E(r.nm) + "</b>" + mid +
-            "<u>" + (ldr2 ? E(ldr2.side.name) + " lead &middot; " + ldr2.pts + " pts" : "") + "</u></span>" +
+            "<u>" + (ldr2 ? (ldr2.p === 0 ? E(ldr2.side.name) + " &middot; no play yet"
+              : E(ldr2.side.name) + " lead &middot; " + ldr2.pts + " pts") : "") + "</u></span>" +
             (natLive ? "<span class='fo-pl-livebtn'><i></i>LIVE</span>" : "<i>&rsaquo;</i>") + "</a>";
         }).join("");
       } else if (p.kind === "honours") {
@@ -38605,10 +38639,15 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // any of the 19 leagues. Same egress manners as the England feed: probe the
   // tiny updated_at, download the body only when the umpire wrote something
   // new, and keep the last copy in localStorage so the page paints instantly.
-  var LG_BODY = {}, LG_TS = {}, LG_BUSY = {};
+  var LG_BODY = {}, LG_TS = {}, LG_BUSY = {}, LG_AT = {};
+  var LG_TTL = 45000;                 // a nation's standings, at most this often
   function lgFetch(rid, cb) {
     if (!rid || LG_BUSY[rid]) return;
-    LG_BUSY[rid] = 1;
+    // THE WHOLE PLANET AT ONCE. The world page now asks for all nineteen
+    // nations' standings, so without a courtesy window a repaint would put
+    // nineteen probes on the wire every time it painted.
+    if (LG_AT[rid] && Date.now() - LG_AT[rid] < LG_TTL) return;
+    LG_BUSY[rid] = 1; LG_AT[rid] = Date.now();
     var done = function () { LG_BUSY[rid] = 0; };
     var take = function (body) {
       if (body && body.results) {

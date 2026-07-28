@@ -114,3 +114,38 @@ test('a second runAllDue is a planet-wide no-op', async () => {
   const n = await pool.query('SELECT count(*)::int AS n FROM matches');
   assert.equal(n.rows[0].n, 95, 'no new matches anywhere');
 });
+
+// ONE NATION'S BAD DAY IS NOT THE PLANET'S. A failure settling one country
+// used to abort runAllDue outright, so every nation after it in id order
+// silently stopped playing - the tail of the alphabet (rsa, sub, usa, wal,
+// win, zim) simply never updated while England carried on.
+test('a country that fails to settle does not stop the rest of the world', async () => {
+  const now = EPOCH + 103 * DAY + 2 * 3600000;   // day 103's windows are all shut
+  // a host that refuses to play for one nation only: 'ned' sits fourth in id
+  // order, so nine nations come after it
+  let broke = 0;
+  const flaky = {
+    ...host,
+    runMatch(home, away, pitch, seed, orders) {
+      if (/Haarlem|Amsterdam|Utrecht|Rotterdam|Deventer|Voorburg|Groningen|Eindhoven|Delft|VOC/.test(home.name + away.name)) {
+        broke++; throw new Error('injected: the Dutch could not take the field');
+      }
+      return host.runMatch(home, away, pitch, seed, orders);
+    }
+  };
+  const out = await runAllDue(pool, flaky, { now });
+  assert.ok(broke > 0, 'the injected failure genuinely fired');
+  assert.ok(out.ned.some(x => x && x.failed), 'the Netherlands is reported as failed');
+  const after = ['nzl', 'pak', 'rsa', 'sub', 'zim'];
+  for (const c of after) {
+    assert.ok(!(out[c] || []).some(x => x && x.failed), c + ' played on regardless');
+    const n = (await pool.query(
+      'SELECT count(*)::int AS n FROM matches WHERE country_id=$1', [c])).rows[0].n;
+    assert.ok(n > 0, c + ' has banked cricket');
+  }
+  // and the world heals: a good host settles what the bad one missed
+  await runAllDue(pool, host, { now });
+  const ned = (await pool.query(
+    `SELECT count(*)::int AS n FROM matches WHERE country_id='ned'`)).rows[0].n;
+  assert.ok(ned > 0, 'the Netherlands played once the trouble passed');
+});
