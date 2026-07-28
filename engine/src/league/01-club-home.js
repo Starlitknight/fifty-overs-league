@@ -3043,16 +3043,21 @@
     try { clearTimeout(LOAD_TIMER); } catch (e) {}
     try { clearInterval(LOAD_PULSE); } catch (e) {}
     var t0 = Date.now();
-    LOAD_PULSE = setInterval(function () {
+    // the first line answers "which build am I even on?" from the very first
+    // frame - a stuck screenshot then identifies itself, and a card WITHOUT
+    // this line is itself the diagnosis: an old build, however it got here
+    var pulse = function () {
       try {
         var el = main.querySelector('[data-fo-loading="' + tok + '"] [data-fo-pulse]');
         if (!el) { clearInterval(LOAD_PULSE); return; }
         var lines = [];
         try { lines = foNetReport(); } catch (e2) {}
         try { lines = lines.slice(-4).concat(foSlowReport()); } catch (e3) { lines = lines.slice(-4); }
-        el.textContent = Math.round((Date.now() - t0) / 1000) + "s\n" + lines.join("\n");
+        el.textContent = "build " + ((window.FO_BUILD || "?").slice(0, 20)) + " · " + Math.round((Date.now() - t0) / 1000) + "s\n" + lines.join("\n");
       } catch (e) {}
-    }, 1000);
+    };
+    LOAD_PULSE = setInterval(pulse, 1000);
+    try { pulse(); } catch (e0) {}
     LOAD_TIMER = setTimeout(function () {
       // fire only while the loading is still THE thing on screen: the token
       // must survive AND the overlay must still be open - a closed overlay
