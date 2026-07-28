@@ -1,0 +1,24 @@
+// Cloudflare deploy configuration.
+//
+// The repository is both the source tree AND the published site: the built
+// page and its fingerprinted program sit at the root next to engine/,
+// supabase/, resolver/ and the rest. Cloudflare's importer cannot guess that,
+// and its Deploy button does nothing at all when it cannot — so this file says
+// it plainly: publish this directory, minus everything .assetsignore lists.
+//
+// No build command runs here. ./build.sh is run by a developer and its output
+// is committed, so a deploy is a pure file upload — nothing to break at deploy
+// time, and the exact bytes we tested are the bytes that ship.
+//
+// Cache behaviour lives in _headers (page: no-cache, assets/*: immutable),
+// which Workers static assets honours.
+{
+  "name": "fifty-overs-league",
+  "compatibility_date": "2026-07-28",
+  "assets": {
+    "directory": "./",
+    // an unknown path is a mistake, not a route: hand back the 404 rather than
+    // silently serving the game page under a wrong URL
+    "not_found_handling": "none"
+  }
+}

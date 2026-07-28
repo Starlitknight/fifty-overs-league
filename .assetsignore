@@ -1,0 +1,34 @@
+# What NOT to publish. The repository holds the source tree and the built site
+# side by side; only the built site belongs on the web.
+#
+# Nothing secret lives in these paths (secrets are gitignored and never
+# committed) - this is about weight and tidiness: without it every deploy
+# uploads ~200 MB of engine source, migrations, design mock-ups and art
+# masters that no player ever requests.
+
+# --- source and tooling: built into assets/fo-*.js, never fetched directly ---
+engine/
+test/
+tools/
+resolver/
+server/
+supabase/
+docs/
+.build/
+.github/
+node_modules/
+art-packs/
+
+# --- design masters and mock-ups: not referenced by the running game --------
+client/art/mockups/
+client/art/src/
+
+# --- repo furniture --------------------------------------------------------
+.git/
+.gitignore
+build.sh
+README.md
+package.json
+package-lock.json
+wrangler.jsonc
+.assetsignore
