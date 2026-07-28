@@ -79,8 +79,32 @@
     });
   }
   function headers() { return { apikey: ANON, Authorization: "Bearer " + (JWT || ANON), "content-type": "application/json", "Accept-Profile": "app", "Content-Profile": "app" }; }
-  function rpc(fn, args) { return fetch(URL + "/rest/v1/rpc/" + fn, { method: "POST", headers: headers(), body: JSON.stringify(args || {}) }).then(function (r) { return r.text().then(function (t) { if (!r.ok) throw new Error(t || ("HTTP " + r.status)); return t ? JSON.parse(t) : null; }); }); }
-  function sel(table, q) { return fetch(URL + "/rest/v1/" + table + "?" + (q || ""), { headers: headers() }).then(function (r) { return r.text().then(function (t) { if (!r.ok) throw new Error(t); return JSON.parse(t); }); }); }
+  // NO REQUEST MAY HANG THE GAME FOREVER. Every screen that talks to the server
+  // handles a rejection - it shows an error, a lobby, a front door. None of them
+  // handle a promise that simply never settles, and on a phone that is exactly
+  // what a stalled connection produces: no error, no timeout, no next event.
+  // That is how a manager ends up staring at "Signing you in…" indefinitely.
+  // A request that has not answered in this long is treated as a failure, which
+  // every caller already knows how to recover from.
+  var NET_TIMEOUT = 25000;
+  function foFetch(url, opt) {
+    var o = opt || {};
+    var ctl = null;
+    try { ctl = new AbortController(); o = Object.assign({}, o, { signal: ctl.signal }); } catch (e) { ctl = null; }
+    var timer = null;
+    var kill = new Promise(function (_, reject) {
+      timer = setTimeout(function () {
+        try { if (ctl) ctl.abort(); } catch (e2) {}
+        reject(new Error("The server did not answer in time. Check your connection and try again."));
+      }, NET_TIMEOUT);
+    });
+    return Promise.race([fetch(url, o), kill]).then(
+      function (r) { clearTimeout(timer); return r; },
+      function (e) { clearTimeout(timer); throw e; }
+    );
+  }
+  function rpc(fn, args) { return foFetch(URL + "/rest/v1/rpc/" + fn, { method: "POST", headers: headers(), body: JSON.stringify(args || {}) }).then(function (r) { return r.text().then(function (t) { if (!r.ok) throw new Error(t || ("HTTP " + r.status)); return t ? JSON.parse(t) : null; }); }); }
+  function sel(table, q) { return foFetch(URL + "/rest/v1/" + table + "?" + (q || ""), { headers: headers() }).then(function (r) { return r.text().then(function (t) { if (!r.ok) throw new Error(t); return JSON.parse(t); }); }); }
   // small localStorage wrapper (private mode / disabled storage safe)
   var PEND = "fol_pending_invite";
   function lsGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }

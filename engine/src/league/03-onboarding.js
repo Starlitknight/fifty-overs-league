@@ -3902,6 +3902,19 @@
   var _authRedirect = null;
   try { _authRedirect = foConsumeAuthHash(); } catch (eAH) {}
   openWrap(true);
+  // THE BREAK-GLASS. ?signout=1 drops the stored session and goes straight to
+  // the front door. It runs before a single request is made, so it is the one
+  // way back that still works when the network is what is broken - the answer
+  // to "I am stuck on Signing you in and there is no button". It signs this
+  // device out; it touches nothing on the server, so the club is untouched.
+  try {
+    if (/[?&]signout=1\b/.test(location.search)) {
+      clearSession(); JWT = ""; LG = null; SYNC = null;
+      try { history.replaceState(null, "", location.pathname + location.hash); } catch (eH) {}
+      foFrontDoor();
+      return;
+    }
+  } catch (eSO) {}
   if (_authRedirect === "ok") { foLoading("Signing you in…"); enterApp(); }
   else if (_authRedirect === "error") { renderLogin(); setTimeout(function () { say("That email link expired or was already used. Log in with your email and password below."); }, 60); }
   else restoreSession().then(function () { if (JWT) { foLoading("Signing you in…"); enterApp(); } else foFrontDoor(); }).catch(function () { foFrontDoor(); });
