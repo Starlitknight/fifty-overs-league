@@ -7358,6 +7358,14 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           try {
             SLOW_LOG.push({ ms: dt, src: String(fn).replace(/\s+/g, " ").slice(0, 110) });
             if (SLOW_LOG.length > 5) SLOW_LOG.shift();
+            // a block the manager can FEEL is named on screen as it happens -
+            // "glitchy" stops being a mystery word when the culprit signs the
+            // toast. Throttled so a repeat offender nags once, not constantly.
+            if (dt > 2500 && Date.now() - (foSlowWrap.__toastAt || 0) > 30000) {
+              foSlowWrap.__toastAt = Date.now();
+              var nm = (String(fn).match(/function\s+([A-Za-z0-9_$]+)/) || [])[1] || "an unnamed callback";
+              toast("Slow spell: " + nm + " held the page for " + (dt / 1000).toFixed(1) + "s", "error");
+            }
           } catch (eS) {}
         }
       }
@@ -10826,7 +10834,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260728-1544-3e32a6";
+  var FO_BUILD = "20260728-1557-4ecf4b";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -28603,7 +28611,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // the router dispatches these directly on load/navigation - no dashboard
   // flash while waiting for the interval to notice
   try { window.foRenderCircuit = foRenderCircuit; } catch (eEx) {}
-  setInterval(foRenderCircuit, 900);
+  setInterval(function () { (window.foRenderCircuit || foRenderCircuit)(); }, 900);
   window.addEventListener("hashchange", function () {
     if (location.hash.indexOf("#/circuit") !== 0) return;
     // a "Tour X" click requests a specific country page; otherwise the
@@ -28782,7 +28790,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     } catch (e) {}
   }
   try { window.foRenderCity = foRenderCity; } catch (eEx2) {}
-  setInterval(foRenderCity, 900);
+  setInterval(function () { (window.foRenderCity || foRenderCity)(); }, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/city") === 0) setTimeout(foRenderCity, 40); });
   try {
     var ctCss = document.createElement("style"); ctCss.id = "fo-city-css";
@@ -29072,7 +29080,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     if (mp && mp.__justDragged && Date.now() - mp.__justDragged < 300) { ev.stopPropagation(); ev.preventDefault(); }
   }, true);
   try { window.foRenderTour = foRenderTour; } catch (eEx3) {}
-  setInterval(foRenderTour, 900);
+  setInterval(function () { (window.foRenderTour || foRenderTour)(); }, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/tour") === 0) setTimeout(foRenderTour, 40); });
   // ==========================================================================
   //  THE WORLD MAP - one painted globe, every nation of the tour a medallion.
@@ -29241,7 +29249,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     } catch (e) {}
   }
   try { window.foRenderWorld = foRenderWorld; } catch (eEx5) {}
-  setInterval(foRenderWorld, 900);
+  setInterval(function () { (window.foRenderWorld || foRenderWorld)(); }, 900);
   window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] === "#/world") setTimeout(foRenderWorld, 40); });
 
   // =====================================================================
@@ -29616,7 +29624,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     } catch (e) { try { console.warn("foRenderLore", e); } catch (e2) {} }
   }
   try { window.foRenderLore = foRenderLore; } catch (eLw) {}
-  setInterval(foRenderLore, 1100);
+  setInterval(function () { (window.foRenderLore || foRenderLore)(); }, 1100);
   window.addEventListener("hashchange", function () {
     var h = (location.hash || "").split("?")[0];
     if (h === "#/lore") setTimeout(foRenderLore, 40);
@@ -29888,7 +29896,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     } catch (e) { try { console.warn("foRenderBoss", e); } catch (e2) {} }
   }
   try { window.foRenderBoss = foRenderBoss; } catch (eEx6) {}
-  setInterval(foRenderBoss, 900);
+  setInterval(function () { (window.foRenderBoss || foRenderBoss)(); }, 900);
   // the dark full-bleed family all share fo-boss-on; only strip it when
   // leaving the family entirely (else these listeners fight each other)
   function foBossFamily() { return ["#/boss", "#/side", "#/atlas", "#/cup"].indexOf((location.hash || "").split("?")[0]) >= 0; }
@@ -30141,7 +30149,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     } catch (e) { try { console.warn("foRenderThorne", e); } catch (e2) {} }
   }
   try { window.foRenderSide = foRenderSide; } catch (eEx7) {}
-  setInterval(foRenderSide, 900);
+  setInterval(function () { (window.foRenderSide || foRenderSide)(); }, 900);
   window.addEventListener("hashchange", function () {
     if ((location.hash || "").split("?")[0] === "#/side") setTimeout(foRenderSide, 40);
     else if (!foBossFamily()) document.body.classList.remove("fo-boss-on");
@@ -31328,7 +31336,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   }
   // #/nation is the same renderer through its second door
   try { window.foRenderLeague = foRenderLeague; window.foRenderNation = foRenderLeague; window.foRenderCup = foRenderCup; } catch (eLgW) {}
-  setInterval(foRenderLeague, 900); setInterval(foRenderCup, 1200);
+  setInterval(function () { (window.foRenderLeague || foRenderLeague)(); }, 900); setInterval(function () { (window.foRenderCup || foRenderCup)(); }, 1200);
   window.addEventListener("hashchange", function () {
     var h = (location.hash || "").split("?")[0];
     if (h !== "#/atlas") { try { document.body.classList.remove("fo-ov-on"); } catch (eOv) {} }
@@ -45624,12 +45632,30 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         return !!(w && w.classList.contains("on") && w.offsetWidth > 0 && w.offsetHeight > 0);
       } catch (e) { return false; }
     }
+    // A PAINTER EARNS ITS OWN CADENCE. Every one of these repaints on a timer,
+    // most rebuilding their whole page from scratch, and on a club with a real
+    // career a single painter measured 1.8 seconds a call. Fixing them one by
+    // one is a season's work; measuring them is free - the wrapper times every
+    // call, and a painter that proves expensive is simply not re-run at full
+    // tempo: it waits out eight times its own cost (capped at 20s) before the
+    // next timed repaint. Cheap painters never notice. Navigation is exempt -
+    // when the hash has moved, the manager clicked something, and the first
+    // paint of a page they asked for is never deferred.
     function wrapAll() {
       PAINTERS.forEach(function (n) {
         var f = window[n];
         if (typeof f !== "function" || f.__foIdle) return;
-        var g = function () { if (covered()) return; return f.apply(this, arguments); };
-        g.__foIdle = 1;
+        var g = function () {
+          if (covered()) return;
+          var now = Date.now();
+          var nav = g.__hash !== location.hash;
+          if (!nav && g.__cost > 150 && (now - g.__at) < Math.min(20000, g.__cost * 8)) return;
+          g.__hash = location.hash;
+          var t0 = Date.now();
+          try { return f.apply(this, arguments); }
+          finally { g.__at = Date.now(); g.__cost = Date.now() - t0; }
+        };
+        g.__foIdle = 1; g.__cost = 0; g.__at = 0;
         window[n] = g;
       });
     }

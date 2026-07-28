@@ -35,12 +35,30 @@
         return !!(w && w.classList.contains("on") && w.offsetWidth > 0 && w.offsetHeight > 0);
       } catch (e) { return false; }
     }
+    // A PAINTER EARNS ITS OWN CADENCE. Every one of these repaints on a timer,
+    // most rebuilding their whole page from scratch, and on a club with a real
+    // career a single painter measured 1.8 seconds a call. Fixing them one by
+    // one is a season's work; measuring them is free - the wrapper times every
+    // call, and a painter that proves expensive is simply not re-run at full
+    // tempo: it waits out eight times its own cost (capped at 20s) before the
+    // next timed repaint. Cheap painters never notice. Navigation is exempt -
+    // when the hash has moved, the manager clicked something, and the first
+    // paint of a page they asked for is never deferred.
     function wrapAll() {
       PAINTERS.forEach(function (n) {
         var f = window[n];
         if (typeof f !== "function" || f.__foIdle) return;
-        var g = function () { if (covered()) return; return f.apply(this, arguments); };
-        g.__foIdle = 1;
+        var g = function () {
+          if (covered()) return;
+          var now = Date.now();
+          var nav = g.__hash !== location.hash;
+          if (!nav && g.__cost > 150 && (now - g.__at) < Math.min(20000, g.__cost * 8)) return;
+          g.__hash = location.hash;
+          var t0 = Date.now();
+          try { return f.apply(this, arguments); }
+          finally { g.__at = Date.now(); g.__cost = Date.now() - t0; }
+        };
+        g.__foIdle = 1; g.__cost = 0; g.__at = 0;
         window[n] = g;
       });
     }

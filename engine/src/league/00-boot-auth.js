@@ -130,6 +130,14 @@
           try {
             SLOW_LOG.push({ ms: dt, src: String(fn).replace(/\s+/g, " ").slice(0, 110) });
             if (SLOW_LOG.length > 5) SLOW_LOG.shift();
+            // a block the manager can FEEL is named on screen as it happens -
+            // "glitchy" stops being a mystery word when the culprit signs the
+            // toast. Throttled so a repeat offender nags once, not constantly.
+            if (dt > 2500 && Date.now() - (foSlowWrap.__toastAt || 0) > 30000) {
+              foSlowWrap.__toastAt = Date.now();
+              var nm = (String(fn).match(/function\s+([A-Za-z0-9_$]+)/) || [])[1] || "an unnamed callback";
+              toast("Slow spell: " + nm + " held the page for " + (dt / 1000).toFixed(1) + "s", "error");
+            }
           } catch (eS) {}
         }
       }

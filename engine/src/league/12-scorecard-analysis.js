@@ -3438,7 +3438,7 @@
   // the router dispatches these directly on load/navigation - no dashboard
   // flash while waiting for the interval to notice
   try { window.foRenderCircuit = foRenderCircuit; } catch (eEx) {}
-  setInterval(foRenderCircuit, 900);
+  setInterval(function () { (window.foRenderCircuit || foRenderCircuit)(); }, 900);
   window.addEventListener("hashchange", function () {
     if (location.hash.indexOf("#/circuit") !== 0) return;
     // a "Tour X" click requests a specific country page; otherwise the
@@ -3617,7 +3617,7 @@
     } catch (e) {}
   }
   try { window.foRenderCity = foRenderCity; } catch (eEx2) {}
-  setInterval(foRenderCity, 900);
+  setInterval(function () { (window.foRenderCity || foRenderCity)(); }, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/city") === 0) setTimeout(foRenderCity, 40); });
   try {
     var ctCss = document.createElement("style"); ctCss.id = "fo-city-css";
@@ -3907,7 +3907,7 @@
     if (mp && mp.__justDragged && Date.now() - mp.__justDragged < 300) { ev.stopPropagation(); ev.preventDefault(); }
   }, true);
   try { window.foRenderTour = foRenderTour; } catch (eEx3) {}
-  setInterval(foRenderTour, 900);
+  setInterval(function () { (window.foRenderTour || foRenderTour)(); }, 900);
   window.addEventListener("hashchange", function () { if (location.hash.indexOf("#/tour") === 0) setTimeout(foRenderTour, 40); });
   // ==========================================================================
   //  THE WORLD MAP - one painted globe, every nation of the tour a medallion.
@@ -4076,7 +4076,7 @@
     } catch (e) {}
   }
   try { window.foRenderWorld = foRenderWorld; } catch (eEx5) {}
-  setInterval(foRenderWorld, 900);
+  setInterval(function () { (window.foRenderWorld || foRenderWorld)(); }, 900);
   window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] === "#/world") setTimeout(foRenderWorld, 40); });
 
   // =====================================================================
@@ -4451,7 +4451,7 @@
     } catch (e) { try { console.warn("foRenderLore", e); } catch (e2) {} }
   }
   try { window.foRenderLore = foRenderLore; } catch (eLw) {}
-  setInterval(foRenderLore, 1100);
+  setInterval(function () { (window.foRenderLore || foRenderLore)(); }, 1100);
   window.addEventListener("hashchange", function () {
     var h = (location.hash || "").split("?")[0];
     if (h === "#/lore") setTimeout(foRenderLore, 40);
@@ -4723,7 +4723,7 @@
     } catch (e) { try { console.warn("foRenderBoss", e); } catch (e2) {} }
   }
   try { window.foRenderBoss = foRenderBoss; } catch (eEx6) {}
-  setInterval(foRenderBoss, 900);
+  setInterval(function () { (window.foRenderBoss || foRenderBoss)(); }, 900);
   // the dark full-bleed family all share fo-boss-on; only strip it when
   // leaving the family entirely (else these listeners fight each other)
   function foBossFamily() { return ["#/boss", "#/side", "#/atlas", "#/cup"].indexOf((location.hash || "").split("?")[0]) >= 0; }
@@ -4976,7 +4976,7 @@
     } catch (e) { try { console.warn("foRenderThorne", e); } catch (e2) {} }
   }
   try { window.foRenderSide = foRenderSide; } catch (eEx7) {}
-  setInterval(foRenderSide, 900);
+  setInterval(function () { (window.foRenderSide || foRenderSide)(); }, 900);
   window.addEventListener("hashchange", function () {
     if ((location.hash || "").split("?")[0] === "#/side") setTimeout(foRenderSide, 40);
     else if (!foBossFamily()) document.body.classList.remove("fo-boss-on");
@@ -6163,7 +6163,7 @@
   }
   // #/nation is the same renderer through its second door
   try { window.foRenderLeague = foRenderLeague; window.foRenderNation = foRenderLeague; window.foRenderCup = foRenderCup; } catch (eLgW) {}
-  setInterval(foRenderLeague, 900); setInterval(foRenderCup, 1200);
+  setInterval(function () { (window.foRenderLeague || foRenderLeague)(); }, 900); setInterval(function () { (window.foRenderCup || foRenderCup)(); }, 1200);
   window.addEventListener("hashchange", function () {
     var h = (location.hash || "").split("?")[0];
     if (h !== "#/atlas") { try { document.body.classList.remove("fo-ov-on"); } catch (eOv) {} }
