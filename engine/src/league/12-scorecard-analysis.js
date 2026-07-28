@@ -5168,6 +5168,23 @@
       // re-fit the wallpaper to the viewport on every tick (the first fit can
       // run before layout settles and leave the CTA bar below the fold)
       try { var ex0 = page.querySelector(".fo-hg2"); if (ex0) foHgFit(ex0); } catch (eF0) {}
+      // THE EXPENSIVE PART ONLY RUNS WHEN ITS INPUTS MOVED. Everything below -
+      // the flavour-league table, the XI strength, the form beads - is rebuilt
+      // from scratch, and on a club with a real career that measured 1.8s per
+      // call, every 1.5s, forever. The signature further down cannot help: it
+      // is COMPUTED FROM the expensive work, so the bill was paid before the
+      // guard was consulted. This token is made of the cheap facts that feed
+      // that work; while none of them move, the tick costs a string compare.
+      // Anything that changes the page some other way (the world names or the
+      // world table arriving, a rename) already clears __foHomeSig, which is
+      // honoured here too.
+      try {
+        var tk0 = ((App.results && App.results.length) || 0) + "|" + ((App.season && App.season.round) | 0) + "|" +
+          (((foLgState() || {}).round) | 0) + "|" + ((App.season && App.season.schedule && App.season.schedule.length) | 0) + "|" +
+          (lsGet("fo_world_claim") || "").length;
+        if (page.__foHomeSig != null && page.__foHomeTk === tk0 && page.querySelector(".fo-home2")) return;
+        page.__foHomeTk = tk0;
+      } catch (eTk) {}
       var v = foHgVariant();
       var me = null; try { me = userTeam(); } catch (e) {}
       var nation = foLgNation(), region = (foRegionById(nation) || {}).r || { nm: "your nation", ac: "#EBC271" };
@@ -5330,8 +5347,11 @@
     } catch (e) { try { console.warn("foRenderHome", e); } catch (e2) {} }
   }
   try { window.foRenderHome = foRenderHome; } catch (eHm) {}
-  setInterval(foRenderHome, 1500);
-  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] === "#/home") setTimeout(foRenderHome, 40); });
+  // through the window property, not the closure name: the overlay-idle
+  // module (51) wraps window.foRenderHome so this painter rests while the
+  // league overlay covers the screen, and a lexical call would slip past it
+  setInterval(function () { (window.foRenderHome || foRenderHome)(); }, 1500);
+  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] === "#/home") setTimeout(function () { (window.foRenderHome || foRenderHome)(); }, 40); });
   // recent world headlines that mention a nation (its rival-league form)
   function foLgWireFor(region) {
     try {
