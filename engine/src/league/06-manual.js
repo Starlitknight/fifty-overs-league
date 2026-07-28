@@ -400,6 +400,20 @@
     try { window.scrollTo(0, 0); } catch (eSc) {}
     foMobileTables();
   }
+  // THE MANUAL IS A ROOM LIKE ANY OTHER. It used to paint itself on a timer
+  // after every hash change, which meant the engine's router - reaching
+  // #/guide, finding no page of that name and sending the browser home -
+  // won the race and the whole manual became unreachable from its own pill.
+  // It is now a routed page (00-core's OV map calls this), and the old
+  // hashchange hook stays as a belt for deep links.
+  window.foRenderManualPage = function () {
+    try { bumpBrand(); } catch (e) {}
+    try { foManualPage(); } catch (e) { console.warn("foManualPage", e); }
+    try {
+      var tb = document.getElementById("topbar");
+      tb && tb.querySelectorAll("a").forEach(function (a) { a.classList.toggle("on", a.classList.contains("fo-guide")); });
+    } catch (e) {}
+  };
   function foRenderManual() {
     if (!/^#\/guide/.test(location.hash || "")) return;
     try { bumpBrand(); } catch (e) {}

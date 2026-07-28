@@ -1669,7 +1669,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',records:'foRenderRecordsPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',worldclub:'foRenderWorldClubPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',comps:'foRenderCompsPage'}[App.page];
+  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',records:'foRenderRecordsPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',worldclub:'foRenderWorldClubPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',guide:'foRenderManualPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',comps:'foRenderCompsPage'}[App.page];
   if(P[App.page])P[App.page](q);
   else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){}}
   else if(OV){/* overlay not parsed yet: leave the page blank, its interval paints */}
@@ -10636,7 +10636,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260728-0406-9e3246";
+  var FO_BUILD = "20260728-0442-3b76a2";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -16872,6 +16872,20 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     try { window.scrollTo(0, 0); } catch (eSc) {}
     foMobileTables();
   }
+  // THE MANUAL IS A ROOM LIKE ANY OTHER. It used to paint itself on a timer
+  // after every hash change, which meant the engine's router - reaching
+  // #/guide, finding no page of that name and sending the browser home -
+  // won the race and the whole manual became unreachable from its own pill.
+  // It is now a routed page (00-core's OV map calls this), and the old
+  // hashchange hook stays as a belt for deep links.
+  window.foRenderManualPage = function () {
+    try { bumpBrand(); } catch (e) {}
+    try { foManualPage(); } catch (e) { console.warn("foManualPage", e); }
+    try {
+      var tb = document.getElementById("topbar");
+      tb && tb.querySelectorAll("a").forEach(function (a) { a.classList.toggle("on", a.classList.contains("fo-guide")); });
+    } catch (e) {}
+  };
   function foRenderManual() {
     if (!/^#\/guide/.test(location.hash || "")) return;
     try { bumpBrand(); } catch (e) {}
@@ -26576,10 +26590,17 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // ground portrait, falling back to the nation's map if that ground has no
   // painting yet. This is the same art the conquest ladder used.
   function foLgArtFallback(nation) { var hit = foRegionById(nation); var r = hit && hit.r; return FO_ART + "circuit/" + ((r && r.bg) || (nation + ".webp")); }
+  // A CITY WITHOUT A PAINTING IS NOT A BROKEN IMAGE. Only some grounds have
+  // been painted; the rest wear their nation's landscape, which is the same
+  // rule the matchday centre follows. Asking for art that was never made left
+  // a torn-image icon in the atlas, on the club cards and anywhere else this
+  // was trusted.
   function foLgClubArt(nation, side) {
     if (!side) return foLgArtFallback(nation);
     if (side.boss) return FO_ART + "circuit/boss-" + nation + ".webp";
-    return FO_ART + "cities/" + foCitySlug(side.city) + "-ground.webp";
+    var painted = false;
+    try { painted = !!(typeof FO_CITY_GROUNDS !== "undefined" && FO_CITY_GROUNDS[side.city]); } catch (e) {}
+    return painted ? FO_ART + "cities/" + foCitySlug(side.city) + "-ground.webp" : foLgArtFallback(nation);
   }
   // tapping a ground opens its stadium painting full-bleed (not the club page)
   window.foGroundView = function (city, nationId, wid, regionNm, groundNm) {
@@ -32156,7 +32177,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   function addNav() {
     try {
       var tb = document.getElementById("topbar"); if (!tb || document.getElementById("fo-wd-nav")) return;
-      var a = document.createElement("a"); a.id = "fo-wd-nav"; a.href = "#/wire"; a.textContent = "World"; a.className = "fo-wd-navlink"; a.dataset.nav = "wire";
+      var a = document.createElement("a"); a.id = "fo-wd-nav"; a.href = "#/wire"; a.textContent = "The Wire"; a.className = "fo-wd-navlink"; a.dataset.nav = "wire";
       var brand = tb.querySelector(".brand");
       if (brand && brand.nextSibling) tb.insertBefore(a, brand.nextSibling); else tb.appendChild(a);
     } catch (e) {}
@@ -33507,6 +33528,9 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // ---------------------------------------------------------------------------
   // Skin
   // ---------------------------------------------------------------------------
+  // The nets and the ledger borrow this sheet's buttons, so it has to be
+  // reachable from outside: landing straight on one of those rooms used to
+  // paint bare underlined links where the pills should be.
   function foLsCss() {
     if (document.getElementById("fo-ls-css")) return;
     var s = document.createElement("style"); s.id = "fo-ls-css";
@@ -33602,7 +33626,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       ".tick .fo-ls-line{color:#4A3B18}.tick .fo-ls-line b{color:#8A5A10}.tick .fo-ls-line span{color:#8A8060}",
       ".tick .fo-ls-fine{color:#8A8060}",
       ".fo-tick-stub{border-top:1px dashed rgba(176,132,9,.45);margin:0 10px;padding:8px 6px 10px;text-align:center;font-family:Oswald,sans-serif;font-size:7.5px;letter-spacing:.3em;text-transform:uppercase;color:#8A8060}",
-      "html body.ftpskin .fo-ls-btn,html body .fo-ls-btn{display:inline-block;margin-top:8px;border:0 !important;border-radius:999px !important;padding:8px 18px !important;background:#C95532 !important;color:#FFFEFC !important;font:600 11px Oswald,sans-serif !important;text-transform:uppercase;letter-spacing:.14em;cursor:pointer;text-decoration:none}",
+      "html body.ftpskin .fo-ls-btn,html body .fo-ls-btn{display:inline-flex;align-items:center;min-height:44px;margin-top:8px;border:0 !important;border-radius:999px !important;padding:0 19px !important;background:#C95532 !important;color:#FFFEFC !important;font:600 11px Oswald,sans-serif !important;text-transform:uppercase;letter-spacing:.14em;cursor:pointer;text-decoration:none}",
       "html body .fo-ls-btn:hover{background:#A64426 !important;color:#FFFEFC !important}",
       "html body .fo-ls-btn.ghost,html body #page .fo-ls-btn.ghost{background:transparent !important;color:#EBC271 !important;box-shadow:inset 0 0 0 1.5px rgba(235,194,113,.55)}",
       "html body .fo-ls-btn.ghost:hover{background:rgba(235,194,113,.1) !important}",
@@ -33652,6 +33676,11 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     ].join("");
     document.head.appendChild(s);
   }
+  // The nets and the club ledger borrow this sheet's pill buttons. Landing
+  // straight on one of those rooms - which the menu now makes easy - used to
+  // paint bare underlined links where the pills should be, because nothing
+  // had brought the sheet onto the page yet.
+  window.foLsCss = foLsCss;
 })();
 /* ============================================================================
    MATCHDAY DRESS — two rooms the club walks through on match day, reskinned
@@ -33855,6 +33884,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       rounds: net >= 0 ? null : Math.max(0, Math.floor((App.fin.bank || 0) / -net)) };
   }
   window.foRenderLedger = function () {
+    try { if (window.foLsCss) window.foLsCss(); } catch (eLs) {}   // this room wears the season sheet's buttons
     var page = document.getElementById("page"); if (!page || !ready()) return;
     foLedCss();
     document.body.classList.add("fo-led-on");
@@ -34194,6 +34224,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       fielding: "ground fielding", catching: "catching", keeping: "keeping", stumping: "stumping" })[k] || k;
   }
   window.foRenderNetsPage = function () {
+    try { if (window.foLsCss) window.foLsCss(); } catch (eLs) {}   // this room wears the season sheet's buttons
     var page = document.getElementById("page"); if (!page || !ready()) return;
     foNsCss();
     document.body.classList.add("fo-nets-on");
@@ -34413,12 +34444,16 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     { k: "desk", label: "Desk", hash: "#/desk", ic: "<path d='M20.8 12.4v6a1 1 0 0 1-1 1H4.2a1 1 0 0 1-1-1v-6'/><path d='M3.2 12.4 6 5.6a1 1 0 0 1 .9-.6h10.2a1 1 0 0 1 .9.6l2.8 6.8'/><path d='M3.2 12.4h5.4l1.5 2.6h3.8l1.5-2.6h5.4'/>" }
   ];
   // which dock lamp lights up for which route
+  // Every room belongs to exactly one lamp. A room missing from this map lit
+  // nothing at all, which is how the academy, the books and the invitationals
+  // spent their first weeks: reachable, but with the dock going dark the
+  // moment you arrived.
   var DOCK_MAP = {
-    club: ["club", "home", "matchday"],
-    league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "fixtures", "records", "champions", "worldclub", "natteams", "nations", "watch", "rankings", "team"],
+    club: ["club", "home", "matchday", "fixtures", "finance", "ledger", "worldclub"],
+    league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "records", "champions", "natteams", "nations", "comps", "watch", "rankings", "team"],
     squad: ["squad", "player", "matchlab"],
-    nets: ["training"],
-    desk: ["desk", "ledger", "journal", "report", "ceremony", "wire", "lore", "dossier", "milestones", "whatif", "paper"]
+    nets: ["training", "academy"],
+    desk: ["desk", "journal", "report", "ceremony", "wire", "lore", "dossier", "milestones", "whatif", "paper"]
   };
   // immersive rooms keep the whole stage: no dock over the broadcast
   var DOCK_HIDE = { match: 1, friendly: 1, welcome: 1, create: 1, scorecard: 1, orders: 1 };
@@ -35247,7 +35282,16 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     { k: "fifty", tier: "g", nm: "The Fifty Club", sub: "fifty league wins, all-time",
       ev: function (t) { return t.wins >= 50 ? { at: null, note: t.wins + " and counting" } : { prog: t.wins, goal: 50, note: t.wins + " of 50 wins" }; } }
   ];
-  var BLANK = { wins: 0, firstWin: null, bestTotal: 0, meanest: null, streak: 0, bestStreak: 0, cent: null, five: null, thrill: null, seasonWins: {}, bestSeasonWins: 0, home: {}, dbl: null, vs: {}, titles: [], summer: null };
+  // THE EMPTY RECORD. A club the sweep has never seen - which is every club
+  // on the morning it is founded - falls back to this, so it has to carry
+  // every field the boards read or the honours room dies on its own opening
+  // day. It mirrors the shape sweep() builds, field for field.
+  var BLANK = { wins: 0, firstWin: null, bestTotal: 0, bestTotalAt: null, meanest: null, meanestAt: null,
+    streak: 0, bestStreak: 0, bestStreakAt: null, cent: null, five: null, thrill: null,
+    seasonWins: {}, bestSeasonWins: 0, bestSeasonAt: null,
+    home: {}, dbl: null, vs: {}, titles: [], summer: null,
+    beat: {}, dblVs: {}, awayWin: {}, homeBest: 0, homeBestAt: null,
+    centN: 0, fiveHome: null, hstk: 0, bestHstk: 0, bestHstkAt: null };
 
   // Every club also keeps a charter of its own: six pursuits written from the
   // club's identity - its appointed rival, its fortress, its bowling character,
@@ -37576,7 +37620,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     "html body #page .fo-pl-wire>i{display:block;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#B44A22;font-style:normal;margin-bottom:8px}",
     "html body #page .fo-pl-wireln{font:italic 420 12.5px/1.55 'Fraunces',Georgia,serif;color:rgba(20,28,40,.72);padding:4px 0;border-top:1px solid rgba(20,28,40,.05)}",
     "html body #page .fo-pl-foot{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}",
-    "html body #page .fo-pl-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
+    "html body #page .fo-pl-foot a{display:inline-flex;align-items:center;min-height:44px;font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:0 17px;text-decoration:none}",
     "html body #page .fo-pl-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5);text-decoration:none}",
     "@media(max-width:520px){html body #page .fo-pl-mast h1{font-size:29px}}"
   ].join("\n");
@@ -39618,7 +39662,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       ".fo-gz-sec.ads .fo-gz-ad{font-family:Georgia,serif;font-size:12px;line-height:1.5;color:#2A2519;border:1px solid rgba(34,30,22,.3);padding:8px 10px;margin:0 0 8px;text-align:center}",
       ".fo-gz-ad b{letter-spacing:.06em}",
       ".fo-gz-foot{font-family:Georgia,serif;font-style:italic;font-size:11.5px;color:rgba(34,30,22,.6);text-align:center;margin-top:6px}",
-      ".fo-gz-foot a{color:#8E2F1C;text-decoration:none}",
+      ".fo-gz-foot a{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;margin:0 -12px;border-radius:12px;color:#8E2F1C;text-decoration:none}",
       ".fo-gz-foot a:hover{text-decoration:underline}"
     ].join("\n");
     document.head.appendChild(s);
@@ -40714,7 +40758,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       "html body #page .fo-wj-natsq{display:flex;flex-wrap:wrap;gap:6px}",
       "html body #page .fo-wj-natsq span{font:500 11.5px/1 Inter,sans-serif;color:#26301F;background:rgba(20,28,40,.05);border-radius:999px;padding:6px 10px}",
       "html body #page .fo-wj-foot{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}",
-      "html body #page .fo-wj-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
+      "html body #page .fo-wj-foot a{display:inline-flex;align-items:center;min-height:44px;font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:0 17px;text-decoration:none}",
       "html body #page .fo-wj-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5)}"
     ].join("\n");
     document.head.appendChild(s);
@@ -41423,7 +41467,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       ".fo-rk-row.mine .pts{color:#B44A22}",
       ".fo-rk-gap{text-align:center;color:rgba(20,28,40,.35);font:700 12px/1 Oswald,sans-serif;padding:4px 0}",
       ".fo-rk-foot{display:flex;justify-content:space-between;padding:4px 6px}",
-      "html body #page .fo-rk-foot a{font:600 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22 !important;text-decoration:none !important}"
+      "html body #page .fo-rk-foot a{display:inline-flex;align-items:center;min-height:44px;padding:0 13px;margin:0 -13px;border-radius:12px;font:600 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22 !important;text-decoration:none !important}"
     ].join("\n");
     document.head.appendChild(s);
   }
@@ -41904,7 +41948,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       ".fo-cp-m .bar u{display:block;height:100%;background:linear-gradient(90deg,#2E8B5E,#1F6F4A);text-decoration:none}",
       ".fo-cp-div{width:1px;align-self:stretch;background:repeating-linear-gradient(180deg,rgba(12,27,51,.22) 0 3px,transparent 3px 7px)}",
       ".fo-cp-in{position:relative;max-width:1080px;margin:0 auto;padding:16px 14px 80px}",
-      "html body #page .fo-cp-back{display:inline-block;font:600 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22 !important;text-decoration:none !important;margin:6px 0 12px}",
+      "html body #page .fo-cp-back{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;border-radius:12px;font:600 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22 !important;text-decoration:none !important;margin:2px -12px 6px}",
       ".fo-cp-tabs{display:flex;gap:8px;margin-bottom:-1px}",
       "html body #page .fo-cp-tabs a{font:700 11.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(12,27,51,.6) !important;background:#EFE9DA;border:1px solid rgba(12,27,51,.14);border-bottom:0;border-radius:10px 10px 0 0;padding:13px 26px;text-decoration:none !important}",
       "html body #page .fo-cp-tabs a.on{color:#FFFDF7 !important;background:var(--grn);border-color:var(--grn)}",
@@ -41976,7 +42020,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       "html body #page .fo-cp-mineact a{font:600 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#B44A22 !important;background:#FFFDF7;border:1px solid rgba(12,27,51,.14);border-radius:999px;padding:9px 14px;text-decoration:none !important}",
       "html body #page .fo-cp-cta{display:block;text-align:center;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFDF7 !important;background:linear-gradient(180deg,#E8894A,#C8542F);border-radius:12px;padding:14px;text-decoration:none !important;box-shadow:0 10px 26px rgba(200,84,47,.3);margin:14px 0 10px}",
       ".fo-cp-foot{display:flex;justify-content:space-between;gap:10px;padding:8px 4px}",
-      "html body #page .fo-cp-foot a{font:600 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22 !important;text-decoration:none !important}",
+      "html body #page .fo-cp-foot a{display:inline-flex;align-items:center;min-height:44px;padding:0 13px;margin:0 -13px;border-radius:12px;font:600 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22 !important;text-decoration:none !important}",
       "@media(max-width:760px){.fo-cp-plate{min-height:215px}",
       ".fo-cp-fig{height:86%;opacity:.55}",
       ".fo-cp-map{max-width:62%;opacity:.4}",
@@ -42726,7 +42770,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   var CSS = [
     "html body #page .fo-pp{position:relative;max-width:1000px;margin:14px auto 44px;padding:0 12px;color:#141C28;--navy:#0C1B33;--gold:#C9A24B;--nac:#C95532}",
     "html body #page .fo-pp-attic{display:none}",
-    "html body #page a.fo-pp-back{display:inline-block;margin:0 0 10px;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--nac);text-decoration:none}",
+    "html body #page a.fo-pp-back{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;margin:0 -12px 6px;border-radius:12px;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--nac);text-decoration:none}",
     // ---- the hero -----------------------------------------------------------
     "html body #page .fo-pp-plate{position:relative;display:grid;grid-template-columns:236px minmax(0,1fr) auto;gap:20px;align-items:start;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:18px;padding:16px 18px;box-shadow:0 10px 30px rgba(30,38,52,.07)}",
     "html body #page .fo-pp-cardart{position:relative;border-radius:12px;overflow:hidden;background:linear-gradient(160deg,#12294A,#0A1526 70%);box-shadow:inset 0 0 0 2px rgba(201,162,75,.55);aspect-ratio:4/3}",
@@ -43215,8 +43259,12 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       "html body #page .fo-ac-res b{color:#141C28;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       "html body #page .fo-ac-res u{text-decoration:none;color:rgba(20,28,40,.55);font-variant-numeric:tabular-nums}",
       "html body #page .fo-ac-res em{font-style:normal;color:rgba(20,28,40,.35);font-size:10px}",
-      "html body #page .fo-ac-foot{display:flex;justify-content:space-between;gap:10px;margin-top:16px;font:600 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
-      "html body #page .fo-ac-foot a{color:#B04A2C !important;text-decoration:none !important}",
+      "html body #page .fo-ac-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;font:600 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
+      // a room door is a thumb target, not a caption: 44px of it, with the
+      // hit area the phone actually needs
+      "html body #page .fo-ac-foot a{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;margin:0 -14px;border-radius:12px;color:#B04A2C !important;text-decoration:none !important}",
+      "html body #page .fo-ac-foot a:hover{background:rgba(176,74,44,.09)}",
+      "html body #page .fo-ac-foot a:active{background:rgba(176,74,44,.16)}",
       "@media(max-width:480px){html body #page .fo-ac-hero h1{font-size:25px}html body #page .fo-ac-grid{grid-template-columns:1fr 1fr;gap:8px}html body #page .fo-ac-colt{padding:9px 10px}html body #page .fo-ac-ch b{font-size:12.5px}" +
         "html body #page .fo-ac-tbl td.nrr,html body #page .fo-ac-tbl th.nrr{display:none}}"
     ].join("\n");
@@ -44048,6 +44096,344 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       "<p class='fo-ac-p'>Nothing here needs anybody awake. The squad is named by the umpire, the tour is played by the umpire, and the cheque is in the books the next time you look at them.</p>" +
       "</div>";
   }
+})();
+/* ============================================================================
+   THE MENU (every room, one door) — the navigation pass.
+
+   The game grew room by room: the nets, the academy, the books, the
+   invitationals, the international game, the record book, the gazette. Each
+   arrived with a link from wherever it happened to be born - the academy off
+   the world club page, the books off the academy, the gazette off the desk -
+   and nothing anywhere listed the building. A manager who had not been shown
+   a room could not find it.
+
+   This is the building's index. One panel, opened from the masthead on every
+   screen size, grouping every room the game has: what it is called, what it
+   is for, and whether you are standing in it. It proxies the engine's own
+   pills (Manual, Admin, Log out) at the foot, so nothing that used to be in
+   the old drawer is lost.
+
+   Pure overlay: it adds a panel and reads window.location. No page changes
+   its markup for this.
+   ========================================================================== */
+(function () {
+  "use strict";
+  if (window.__foMenu) return; window.__foMenu = 1;
+
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+
+  // ONE HAND DREW ALL OF THESE. Thin-stroke line glyphs in the dock's own
+  // idiom rather than a grid of colour emoji, because a painted cricket
+  // almanack should not look like a phone's app drawer.
+  var G = {
+    house: "<path d='M3.6 10.4 12 3.6l8.4 6.8'/><path d='M5.6 9.2V20a.6.6 0 0 0 .6.6h11.6a.6.6 0 0 0 .6-.6V9.2'/><path d='M9.8 20.6V15h4.4v5.6'/>",
+    people: "<circle cx='9.4' cy='8' r='3.2'/><path d='M3.8 20c0-3 2.5-5 5.6-5s5.6 2 5.6 5'/><path d='M15.6 5.2a3.2 3.2 0 0 1 0 5.6'/><path d='M17 15.4c2.2.5 3.7 2.2 3.7 4.6'/>",
+    net: "<rect x='3.6' y='5.2' width='16.8' height='13.6' rx='1.6'/><path d='M9.2 5.4v13.2M14.8 5.4v13.2'/><path d='M3.8 9.6h16.4M3.8 14.4h16.4'/>",
+    star: "<path d='m12 3.6 2.5 5.4 5.9.7-4.4 4 1.2 5.8L12 16.6 6.8 19.5 8 13.7l-4.4-4 5.9-.7z'/>",
+    sheet: "<path d='M6.4 3.6h7.2l4 4v12.8a.6.6 0 0 1-.6.6H6.4a.6.6 0 0 1-.6-.6V4.2a.6.6 0 0 1 .6-.6z'/><path d='M13.4 3.8v4h4'/><path d='M8.8 12.4h6.4M8.8 16h4.4'/>",
+    coin: "<ellipse cx='12' cy='6.6' rx='7' ry='2.8'/><path d='M5 6.6v10.8c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6.6'/><path d='M5 12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8'/>",
+    receipt: "<path d='M6.4 3.6h11.2v16.8l-2.2-1.4-2.3 1.4-2.3-1.4-2.2 1.4-2.2-1.4z'/><path d='M9 8.4h6M9 12h6'/>",
+    cal: "<rect x='3.8' y='5.4' width='16.4' height='14.8' rx='2'/><path d='M3.8 10h16.4'/><path d='M8.4 3.6v3.6M15.6 3.6v3.6'/>",
+    pitch: "<ellipse cx='12' cy='12' rx='8.8' ry='6.6'/><rect x='10.3' y='7.2' width='3.4' height='9.6' rx='1'/>",
+    glass: "<circle cx='10.8' cy='10.8' r='6.2'/><path d='m15.4 15.4 5 5'/>",
+    medal: "<circle cx='12' cy='14.8' r='5.2'/><path d='M8.4 10 6 3.8h12L15.6 10'/>",
+    case: "<rect x='3.4' y='7.4' width='17.2' height='12.4' rx='2'/><path d='M9 7.2V5.4a1.4 1.4 0 0 1 1.4-1.4h3.2A1.4 1.4 0 0 1 15 5.4v1.8'/><path d='M3.6 12.6h16.8'/>",
+    globe: "<circle cx='12' cy='12' r='8.4'/><path d='M3.7 12h16.6'/><path d='M12 3.6c2.2 2.4 3.3 5.3 3.3 8.4s-1.1 6-3.3 8.4c-2.2-2.4-3.3-5.3-3.3-8.4s1.1-6 3.3-8.4z'/>",
+    table: "<rect x='3.6' y='4.6' width='16.8' height='14.8' rx='1.8'/><path d='M3.8 9.4h16.4M3.8 14.6h16.4'/><path d='M9 4.8v14.4'/>",
+    plane: "<path d='M20.4 4.2 3.6 11.4l5.6 2.2 2.2 5.6z'/><path d='m9.2 13.6 5.4-5.4'/>",
+    crown: "<path d='M3.8 7.2 7.4 12l4.6-6.2L16.6 12l3.6-4.8-1.5 11.2H5.3z'/><path d='M5.6 19.8h12.8'/>",
+    flag: "<path d='M6 21V3.6'/><path d='M6 4.6h11.6l-2.2 3.6 2.2 3.6H6'/>",
+    chart: "<path d='M3.8 20.2h16.4'/><path d='M7 20V13M12 20V6.6M17 20v-9'/>",
+    map: "<path d='m3.8 6.6 5.2-2.2 6 2.4 5.2-2.2v12.8l-5.2 2.2-6-2.4-5.2 2.2z'/><path d='M9 4.6v12.6M15 6.8v12.6'/>",
+    book: "<path d='M4.2 4.6h6a3 3 0 0 1 3 3v11.8a2.4 2.4 0 0 0-2.4-2.4H4.2z'/><path d='M19.8 4.6h-6a3 3 0 0 0-3 3v11.8a2.4 2.4 0 0 1 2.4-2.4h6.6z'/>",
+    shield: "<path d='M12 3.6 5 6.2v5.4c0 4.2 2.9 7.4 7 8.8 4.1-1.4 7-4.6 7-8.8V6.2z'/>",
+    news: "<path d='M4.2 5.6h12.4v13.2a1.4 1.4 0 0 1-1.4 1.4H5.6a1.4 1.4 0 0 1-1.4-1.4z'/><path d='M16.6 8.6h2.2a1.4 1.4 0 0 1 1.4 1.4v8.8a1.4 1.4 0 0 1-2.8 0'/><path d='M7 9h6.6M7 12.6h6.6M7 16h4'/>",
+    wire: "<path d='M12 13.6a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'/><path d='M7.6 7.2a6.2 6.2 0 0 0 0 8.8M16.4 16a6.2 6.2 0 0 0 0-8.8'/><path d='M4.6 4.2a10.4 10.4 0 0 0 0 14.8M19.4 19a10.4 10.4 0 0 0 0-14.8'/>",
+    cup: "<path d='M7.4 4h9.2v4.6a4.6 4.6 0 0 1-9.2 0z'/><path d='M7.4 5.4H4.8v1.7a2.9 2.9 0 0 0 2.9 2.9M16.6 5.4h2.6v1.7a2.9 2.9 0 0 1-2.9 2.9'/><path d='M12 13.4v3.8M8.4 20.4h7.2'/>",
+    clock: "<circle cx='12' cy='12' r='8.4'/><path d='M12 6.8V12l3.6 2.2'/>",
+    manual: "<path d='M5 4.6h9.4a2.6 2.6 0 0 1 2.6 2.6v12.2H7.6A2.6 2.6 0 0 1 5 16.8z'/><path d='M17 4.6h2v14.8h-2'/><path d='M8.4 8.6h5.2M8.4 12h5.2'/>"
+  };
+  function glyph(k) {
+    return "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.55' stroke-linecap='round' stroke-linejoin='round'>" +
+      (G[k] || G.house) + "</svg>";
+  }
+
+  // THE BUILDING, room by room. Order is the order a manager meets them.
+  var MAP = [
+    { k: "Your club", rooms: [
+      ["club", "house", "Home ground", "The day, the weather and your next match"],
+      ["squad", "people", "The squad", "Every man on the books, and the eleven you pick"],
+      ["training", "net", "The nets", "What each man works on, week by week"],
+      ["academy", "star", "The academy", "The colts coming through, and what a level buys"],
+      ["worldclub", "sheet", "Your world club", "The teamsheet the umpire plays, and your club's face"],
+      ["finance", "coin", "The books", "The crowd, the gate, the sponsor and the ground"],
+      ["ledger", "receipt", "The club ledger", "The season's account as the office keeps it"],
+      ["fixtures", "cal", "The fixture list", "Every match of the summer, dated"],
+      ["matchday", "pitch", "Matchday", "The pitch, the head-to-head and the probable XIs"],
+      ["dossier", "glass", "The dossier", "What the scout made of the next opponent"],
+      ["milestones", "medal", "The honours board", "The plaques won, and the ones still open"],
+      ["desk", "case", "The desk", "The morning's post, laid out in the office"]
+    ] },
+    { k: "The world", rooms: [
+      ["planet", "globe", "World cricket", "Every nation's round, live on the world clock"],
+      ["league", "table", "My league", "The table, the results and who is chasing whom"],
+      ["nations", "plane", "The international game", "The windows, the squads, the tours and the caps"],
+      ["champions", "crown", "The Champions Cup", "The champion club of every nation, one knockout"],
+      ["comps", "flag", "The invitationals", "Competitions managers put on themselves"],
+      ["rankings", "chart", "The world rankings", "One ladder for every club on earth"],
+      ["world", "map", "The world map", "The globe, nation by nation"],
+      ["atlas", "book", "The atlas", "Every league, every club, every ground"],
+      ["team", "shield", "Club dossiers", "A rival read properly, squad and all"]
+    ] },
+    { k: "The record", rooms: [
+      ["records", "book", "The record book", "Every run and wicket this save has produced"],
+      ["almanack", "globe", "The world almanack", "The book of record for the whole planet"],
+      ["paper", "news", "The gazette", "One front page a day, the same on every phone"],
+      ["wire", "wire", "The wire", "What moved while you were living your life"],
+      ["lore", "book", "The journal", "The book of the league, and the people in it"],
+      ["ceremony", "cup", "The season so far", "Your year, told as a story"],
+      ["whatif", "clock", "The time machine", "Replay any match that was ever played"],
+      ["guide", "manual", "The manual", "How every part of the game actually works"]
+    ] }
+  ];
+
+  function curRoom() { return ((location.hash || "#/club").split("?")[0] || "").replace("#/", "") || "club"; }
+  // rooms that are really the same door, so the lamp lights in one place
+  var ALIAS = { home: "club", nation: "league", natteams: "nations", circuit: "world", tour: "world",
+    player: "squad", matchlab: "squad", star: "squad", city: "atlas", side: "atlas", boss: "atlas",
+    report: "records", journal: "lore", scorecard: "records" };
+
+  function css() {
+    if (document.getElementById("fo-menu-css")) return;
+    var s = document.createElement("style"); s.id = "fo-menu-css";
+    s.textContent = [
+      // the masthead button is no longer a phone-only affordance
+      "html body #fo-mnav-btn,html body.ftpskin #fo-mnav-btn{display:inline-flex !important}",
+      "#fo-menu{position:fixed;inset:0;z-index:420;display:none}",
+      "#fo-menu.open{display:block}",
+      "#fo-menu .fo-mu-k{position:absolute;inset:0;background:rgba(6,16,32,.62);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:fo-mu-fade .18s ease}",
+      "@keyframes fo-mu-fade{from{opacity:0}to{opacity:1}}",
+      "@keyframes fo-mu-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}",
+      "#fo-menu .fo-mu-p{position:absolute;left:0;right:0;bottom:0;top:0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(168deg,#0B1D3A,#07162E 62%);color:#FFFEFC;animation:fo-mu-rise .22s cubic-bezier(.2,.7,.3,1)}",
+      "@media(min-width:821px){#fo-menu .fo-mu-p{top:50%;left:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);width:min(940px,92vw);max-height:86vh;border-radius:22px;box-shadow:0 40px 90px rgba(4,12,26,.5);border-bottom:3px solid #C95532}",
+      "@keyframes fo-mu-rise{from{opacity:0;transform:translate(-50%,-46%)}to{opacity:1;transform:translate(-50%,-50%)}}}",
+      "#fo-menu .fo-mu-in{padding:0 16px 26px;max-width:940px;margin:0 auto}",
+      "#fo-menu .fo-mu-h{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;height:64px;margin:0 -16px 6px;padding:0 16px;background:linear-gradient(180deg,rgba(11,29,58,.98),rgba(11,29,58,.86));border-bottom:1px solid rgba(255,255,255,.1)}",
+      "#fo-menu .fo-mu-h>div{display:flex;flex-direction:column;gap:5px;min-width:0}",
+      "#fo-menu .fo-mu-h b{display:block;font:600 18px/1.05 'Fraunces',Georgia,serif;letter-spacing:-.015em}",
+      "#fo-menu .fo-mu-h i{display:block;font:500 9px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#E8B96A;font-style:normal}",
+      "html body #fo-menu .fo-mu-x{margin-left:auto;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08) !important;border:0 !important;color:#FFFEFC !important;font:400 19px/1 inherit !important;border-radius:12px;cursor:pointer;padding:0 !important;box-shadow:none !important}",
+      "html body #fo-menu .fo-mu-x:hover{background:rgba(255,255,255,.16) !important}",
+      "#fo-menu .fo-mu-sec{margin:16px 0 8px;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#E8B96A}",
+      "#fo-menu .fo-mu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}",
+      "html body #fo-menu a.fo-mu-r{display:flex;align-items:center;gap:12px;min-height:58px;padding:9px 13px;border-radius:14px;background:rgba(255,255,255,.045) !important;border:1px solid rgba(255,255,255,.075);color:#FFFEFC !important;text-decoration:none !important;transition:background .14s,border-color .14s,transform .14s}",
+      "html body #fo-menu a.fo-mu-r:hover{background:rgba(255,255,255,.1) !important;border-color:rgba(232,185,106,.42);transform:translateY(-1px)}",
+      "html body #fo-menu a.fo-mu-r.on{background:rgba(201,85,50,.2) !important;border-color:rgba(232,185,106,.6)}",
+      "#fo-menu a.fo-mu-r em{flex:none;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:11px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:#E8B96A;font-style:normal}",
+      "#fo-menu a.fo-mu-r em svg{width:19px;height:19px;display:block}",
+      "html body #fo-menu a.fo-mu-r:hover em{background:rgba(232,185,106,.16);border-color:rgba(232,185,106,.4)}",
+      "#fo-menu a.fo-mu-r.on em{background:rgba(232,185,106,.24);border-color:rgba(232,185,106,.55);color:#FFE7BE}",
+      "#fo-menu a.fo-mu-r div{min-width:0}",
+      "#fo-menu a.fo-mu-r b{display:block;font:600 14px/1.2 Inter,sans-serif;color:#FFFEFC}",
+      "#fo-menu a.fo-mu-r i{display:block;margin-top:2px;font:400 11px/1.35 Inter,sans-serif;font-style:normal;color:rgba(255,254,252,.56);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}",
+      "#fo-menu .fo-mu-foot{margin-top:20px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);display:flex;flex-wrap:wrap;gap:8px}",
+      "html body #fo-menu .fo-mu-foot a{font:600 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,254,252,.72) !important;background:rgba(255,255,255,.06) !important;border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:11px 16px;text-decoration:none !important;cursor:pointer}",
+      "html body #fo-menu .fo-mu-foot a:hover{background:rgba(255,255,255,.13) !important;color:#FFFEFC !important}",
+      "body.fo-mnav-lock{overflow:hidden !important}"
+    ].join("\n");
+    document.head.appendChild(s);
+  }
+
+  function close() {
+    try {
+      var d = document.getElementById("fo-menu");
+      if (d) d.classList.remove("open");
+      document.body.classList.remove("fo-mnav-lock");
+    } catch (e) {}
+  }
+
+  // The engine's own controls - Manual, Admin, Log out - keep working from
+  // here, so the menu replaces the old drawer without losing anything it
+  // carried. Only those three: every other pill is a room the index already
+  // lists properly, and the status chips are not links at all.
+  var KEEP = ["fo-guide", "fo-league", "fo-logout"];
+  function engineLinks(foot) {
+    try {
+      var tb = document.getElementById("topbar"); if (!tb) return;
+      KEEP.forEach(function (cls) {
+        var a = tb.querySelector("a." + cls);
+        if (!a || (a.style && a.style.display === "none")) return;
+        var label = (a.textContent || "").trim();
+        if (!label) return;
+        var row = document.createElement("a");
+        row.href = a.getAttribute("href") || "#";
+        row.textContent = label;
+        row.addEventListener("click", function (ev) { ev.preventDefault(); close(); a.click(); });
+        foot.appendChild(row);
+      });
+    } catch (e) {}
+  }
+
+  window.foSiteMenu = function () {
+    css();
+    var d = document.getElementById("fo-menu");
+    if (d && d.classList.contains("open")) { close(); return; }
+    if (!d) {
+      d = document.createElement("div"); d.id = "fo-menu";
+      document.body.appendChild(d);
+      window.addEventListener("hashchange", close);
+      window.addEventListener("keydown", function (ev) { if (ev.key === "Escape") close(); });
+    }
+    var here = curRoom(); here = ALIAS[here] || here;
+    d.innerHTML = "<div class='fo-mu-k'></div><div class='fo-mu-p'><div class='fo-mu-in'>" +
+      "<div class='fo-mu-h'><div><i>Fifty Overs</i><b>Every room in the club</b></div>" +
+      "<button class='fo-mu-x' aria-label='Close menu'>&#10005;</button></div>" +
+      MAP.map(function (g) {
+        return "<div class='fo-mu-sec'>" + E(g.k) + "</div><div class='fo-mu-grid'>" +
+          g.rooms.map(function (r) {
+            return "<a class='fo-mu-r" + (r[0] === here ? " on" : "") + "' href='#/" + r[0] + "'>" +
+              "<em>" + glyph(r[1]) + "</em><div><b>" + E(r[2]) + "</b><i>" + E(r[3]) + "</i></div></a>";
+          }).join("") + "</div>";
+      }).join("") +
+      "<div class='fo-mu-foot'></div></div></div>";
+    d.querySelector(".fo-mu-k").addEventListener("click", close);
+    d.querySelector(".fo-mu-x").addEventListener("click", close);
+    engineLinks(d.querySelector(".fo-mu-foot"));
+    d.querySelectorAll("a.fo-mu-r").forEach(function (a) {
+      a.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        close();
+        location.hash = a.getAttribute("href");
+        try { if (typeof window.route === "function") window.route(); } catch (e) {}
+      });
+    });
+    d.classList.add("open");
+    document.body.classList.add("fo-mnav-lock");
+  };
+
+  // the masthead button exists before this module loads; make sure it opens
+  // the index rather than the old pill proxy, however it was wired
+  function adopt() {
+    try {
+      css();                                   // the button is ours at every width, from the first paint
+      var b = document.getElementById("fo-mnav-btn");
+      if (!b || b.__foMenu) return;
+      b.__foMenu = 1;
+      b.setAttribute("aria-label", "Every room");
+      b.addEventListener("click", function (ev) {
+        ev.preventDefault(); ev.stopPropagation();
+        window.foSiteMenu();
+      }, true);
+    } catch (e) {}
+  }
+  try { setInterval(adopt, 1200); } catch (e) {}
+  window.addEventListener("hashchange", function () { setTimeout(adopt, 60); });
+  setTimeout(adopt, 400);
+  setTimeout(adopt, 1500);
+})();
+/* ============================================================================
+   THE ROOMS GET THEIR LIGHT BACK (art pass).
+
+   The painted rooms of this game - the desk, the honours board, the club home
+   - all sit on a photograph of somewhere real: a clubroom, an office, the
+   nets at dusk. The rooms built later were laid out on bare cream. On a full
+   page nobody notices; on a short one - the time machine before you have
+   played a match, the academy before you have signed in - you get a single
+   card floating in an empty field, which reads as unfinished rather than
+   quiet.
+
+   This hangs the same paintings behind those rooms. One fixed backdrop per
+   room, chosen to suit it, washed back under a cream veil so every word on
+   top keeps its contrast, and swapped for the phone-cut art on a phone. It
+   changes no room's markup: the backdrop is a sibling of #page and the rooms
+   never know it is there.
+   ========================================================================== */
+(function () {
+  "use strict";
+  if (window.__foRoomArt) return; window.__foRoomArt = 1;
+
+  function ART() { return (typeof FO_ART !== "undefined") ? FO_ART : "client/art/"; }
+  // [phone cut, desktop cut] — the room's own weather
+  var ROOM = {
+    whatif:     ["hgm-nostalgic", "hgd-clubroom"],
+    academy:    ["hgm-nets-day", "hgd-nets-day"],
+    training:   ["hgm-nets-day", "hgd-nets-day"],
+    finance:    ["hgm-office", "hgd-office"],
+    ledger:     ["hgm-office", "hgd-office"],
+    comps:      ["hgm-blue-hour", "hgd-heart-of-club"],
+    nations:    ["hgm-arch-dawn", "hgd-veranda-rain"],
+    natteams:   ["hgm-arch-dawn", "hgd-veranda-rain"],
+    worldclub:  ["hgm-clubroom", "hgd-clubroom"],
+    rankings:   ["hgm-late-afternoon", "hgd-heart-of-club"],
+    records:    ["hgm-clubroom", "hgd-clubroom"],
+    milestones: ["hgm-clubroom", "hgd-heart-of-club"],
+    fixtures:   ["hgm-sunlit-day", "hgd-veranda-rain"],
+    team:       ["hgm-late-afternoon", "hgd-heart-of-club"],
+    guide:      ["hgm-clubroom", "hgd-workshop"]
+  };
+
+  function css() {
+    if (document.getElementById("fo-roomart-css")) return;
+    var s = document.createElement("style"); s.id = "fo-roomart-css";
+    s.textContent = [
+      "#fo-roomart{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity .5s ease}",
+      "#fo-roomart.on{opacity:1}",
+      "#fo-roomart i{position:absolute;inset:0;background-position:center;background-size:cover;filter:saturate(.82)}",
+      // the veil: enough cream to keep body text at full contrast, thinner at
+      // the foot so the painting is genuinely visible where the page runs out
+      "#fo-roomart u{position:absolute;inset:0;background:linear-gradient(180deg,rgba(238,234,225,.93) 0%,rgba(238,234,225,.9) 42%,rgba(238,234,225,.78) 78%,rgba(238,234,225,.66) 100%)}",
+      "body.fo-roomart-on #page{position:relative;z-index:1}",
+      "@media(prefers-reduced-motion:reduce){#fo-roomart{transition:none}}"
+    ].join("\n");
+    document.head.appendChild(s);
+  }
+
+  function room() { return ((location.hash || "#/club").split("?")[0] || "").replace("#/", "") || "club"; }
+
+  function paint() {
+    try {
+      css();
+      var r = room(), art = ROOM[r];
+      var el = document.getElementById("fo-roomart");
+      if (!art) {
+        if (el) { el.classList.remove("on"); el.__k = ""; }
+        document.body.classList.remove("fo-roomart-on");
+        return;
+      }
+      if (!el) {
+        el = document.createElement("div"); el.id = "fo-roomart";
+        el.innerHTML = "<i></i><u></u>";
+        // behind the page, never over it
+        document.body.insertBefore(el, document.body.firstChild);
+      }
+      var file = (window.innerWidth < 760 ? art[0] : art[1]);
+      if (el.__k !== file) {
+        el.__k = file;
+        var src = ART() + "home/" + file + ".webp";
+        // only reveal a painting that actually loaded: a missing file leaves
+        // the room exactly as it was rather than flashing an empty box
+        var probe = new Image();
+        probe.onload = function () {
+          try {
+            el.querySelector("i").style.backgroundImage = "url('" + src + "')";
+            el.classList.add("on");
+            document.body.classList.add("fo-roomart-on");
+          } catch (e) {}
+        };
+        probe.onerror = function () { el.classList.remove("on"); document.body.classList.remove("fo-roomart-on"); };
+        probe.src = src;
+      } else {
+        el.classList.add("on");
+        document.body.classList.add("fo-roomart-on");
+      }
+    } catch (e) {}
+  }
+
+  window.addEventListener("hashchange", function () { setTimeout(paint, 30); });
+  window.addEventListener("resize", function () { setTimeout(paint, 200); });
+  setTimeout(paint, 500);
+  setTimeout(paint, 1600);
+  try { setInterval(paint, 2500); } catch (e) {}
 })();
 
 </script>

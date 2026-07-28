@@ -148,7 +148,16 @@
     { k: "fifty", tier: "g", nm: "The Fifty Club", sub: "fifty league wins, all-time",
       ev: function (t) { return t.wins >= 50 ? { at: null, note: t.wins + " and counting" } : { prog: t.wins, goal: 50, note: t.wins + " of 50 wins" }; } }
   ];
-  var BLANK = { wins: 0, firstWin: null, bestTotal: 0, meanest: null, streak: 0, bestStreak: 0, cent: null, five: null, thrill: null, seasonWins: {}, bestSeasonWins: 0, home: {}, dbl: null, vs: {}, titles: [], summer: null };
+  // THE EMPTY RECORD. A club the sweep has never seen - which is every club
+  // on the morning it is founded - falls back to this, so it has to carry
+  // every field the boards read or the honours room dies on its own opening
+  // day. It mirrors the shape sweep() builds, field for field.
+  var BLANK = { wins: 0, firstWin: null, bestTotal: 0, bestTotalAt: null, meanest: null, meanestAt: null,
+    streak: 0, bestStreak: 0, bestStreakAt: null, cent: null, five: null, thrill: null,
+    seasonWins: {}, bestSeasonWins: 0, bestSeasonAt: null,
+    home: {}, dbl: null, vs: {}, titles: [], summer: null,
+    beat: {}, dblVs: {}, awayWin: {}, homeBest: 0, homeBestAt: null,
+    centN: 0, fiveHome: null, hstk: 0, bestHstk: 0, bestHstkAt: null };
 
   // Every club also keeps a charter of its own: six pursuits written from the
   // club's identity - its appointed rival, its fortress, its bowling character,

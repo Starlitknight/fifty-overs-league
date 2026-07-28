@@ -784,7 +784,7 @@
       "html body #page .fo-wj-natsq{display:flex;flex-wrap:wrap;gap:6px}",
       "html body #page .fo-wj-natsq span{font:500 11.5px/1 Inter,sans-serif;color:#26301F;background:rgba(20,28,40,.05);border-radius:999px;padding:6px 10px}",
       "html body #page .fo-wj-foot{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}",
-      "html body #page .fo-wj-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
+      "html body #page .fo-wj-foot a{display:inline-flex;align-items:center;min-height:44px;font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:0 17px;text-decoration:none}",
       "html body #page .fo-wj-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5)}"
     ].join("\n");
     document.head.appendChild(s);

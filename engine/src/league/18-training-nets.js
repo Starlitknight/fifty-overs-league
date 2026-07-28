@@ -203,6 +203,7 @@
       fielding: "ground fielding", catching: "catching", keeping: "keeping", stumping: "stumping" })[k] || k;
   }
   window.foRenderNetsPage = function () {
+    try { if (window.foLsCss) window.foLsCss(); } catch (eLs) {}   // this room wears the season sheet's buttons
     var page = document.getElementById("page"); if (!page || !ready()) return;
     foNsCss();
     document.body.classList.add("fo-nets-on");

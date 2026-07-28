@@ -139,7 +139,7 @@
       ".fo-rk-row.mine .pts{color:#B44A22}",
       ".fo-rk-gap{text-align:center;color:rgba(20,28,40,.35);font:700 12px/1 Oswald,sans-serif;padding:4px 0}",
       ".fo-rk-foot{display:flex;justify-content:space-between;padding:4px 6px}",
-      "html body #page .fo-rk-foot a{font:600 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22 !important;text-decoration:none !important}"
+      "html body #page .fo-rk-foot a{display:inline-flex;align-items:center;min-height:44px;padding:0 13px;margin:0 -13px;border-radius:12px;font:600 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22 !important;text-decoration:none !important}"
     ].join("\n");
     document.head.appendChild(s);
   }

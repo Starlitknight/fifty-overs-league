@@ -20,12 +20,16 @@
     { k: "desk", label: "Desk", hash: "#/desk", ic: "<path d='M20.8 12.4v6a1 1 0 0 1-1 1H4.2a1 1 0 0 1-1-1v-6'/><path d='M3.2 12.4 6 5.6a1 1 0 0 1 .9-.6h10.2a1 1 0 0 1 .9.6l2.8 6.8'/><path d='M3.2 12.4h5.4l1.5 2.6h3.8l1.5-2.6h5.4'/>" }
   ];
   // which dock lamp lights up for which route
+  // Every room belongs to exactly one lamp. A room missing from this map lit
+  // nothing at all, which is how the academy, the books and the invitationals
+  // spent their first weeks: reachable, but with the dock going dark the
+  // moment you arrived.
   var DOCK_MAP = {
-    club: ["club", "home", "matchday"],
-    league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "fixtures", "records", "champions", "worldclub", "natteams", "nations", "watch", "rankings", "team"],
+    club: ["club", "home", "matchday", "fixtures", "finance", "ledger", "worldclub"],
+    league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "records", "champions", "natteams", "nations", "comps", "watch", "rankings", "team"],
     squad: ["squad", "player", "matchlab"],
-    nets: ["training"],
-    desk: ["desk", "ledger", "journal", "report", "ceremony", "wire", "lore", "dossier", "milestones", "whatif", "paper"]
+    nets: ["training", "academy"],
+    desk: ["desk", "journal", "report", "ceremony", "wire", "lore", "dossier", "milestones", "whatif", "paper"]
   };
   // immersive rooms keep the whole stage: no dock over the broadcast
   var DOCK_HIDE = { match: 1, friendly: 1, welcome: 1, create: 1, scorecard: 1, orders: 1 };

@@ -1831,10 +1831,17 @@
   // ground portrait, falling back to the nation's map if that ground has no
   // painting yet. This is the same art the conquest ladder used.
   function foLgArtFallback(nation) { var hit = foRegionById(nation); var r = hit && hit.r; return FO_ART + "circuit/" + ((r && r.bg) || (nation + ".webp")); }
+  // A CITY WITHOUT A PAINTING IS NOT A BROKEN IMAGE. Only some grounds have
+  // been painted; the rest wear their nation's landscape, which is the same
+  // rule the matchday centre follows. Asking for art that was never made left
+  // a torn-image icon in the atlas, on the club cards and anywhere else this
+  // was trusted.
   function foLgClubArt(nation, side) {
     if (!side) return foLgArtFallback(nation);
     if (side.boss) return FO_ART + "circuit/boss-" + nation + ".webp";
-    return FO_ART + "cities/" + foCitySlug(side.city) + "-ground.webp";
+    var painted = false;
+    try { painted = !!(typeof FO_CITY_GROUNDS !== "undefined" && FO_CITY_GROUNDS[side.city]); } catch (e) {}
+    return painted ? FO_ART + "cities/" + foCitySlug(side.city) + "-ground.webp" : foLgArtFallback(nation);
   }
   // tapping a ground opens its stadium painting full-bleed (not the club page)
   window.foGroundView = function (city, nationId, wid, regionNm, groundNm) {
