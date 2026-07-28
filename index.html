@@ -7334,8 +7334,36 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       function (e) { clearTimeout(timer); throw e; }
     );
   }
-  function rpc(fn, args) { return foFetch(URL + "/rest/v1/rpc/" + fn, { method: "POST", headers: headers(), body: JSON.stringify(args || {}) }).then(function (r) { return r.text().then(function (t) { if (!r.ok) throw new Error(t || ("HTTP " + r.status)); return t ? JSON.parse(t) : null; }); }); }
-  function sel(table, q) { return foFetch(URL + "/rest/v1/" + table + "?" + (q || ""), { headers: headers() }).then(function (r) { return r.text().then(function (t) { if (!r.ok) throw new Error(t); return JSON.parse(t); }); }); }
+  // WHAT THE WIRE IS ACTUALLY DOING. A manager stuck on a loading line can tell
+  // me the words on it and nothing else, and the words name a stage, not a
+  // request. So every call keeps its name and its timing, and the stuck card
+  // prints the last handful: one photograph then says which request has not
+  // come back, and how long the rest took.
+  var NET_LOG = [];
+  function netRec(name) {
+    var r = { n: name, t0: Date.now(), ms: 0, ok: null };
+    NET_LOG.push(r); if (NET_LOG.length > 14) NET_LOG.shift();
+    return r;
+  }
+  function netDone(r, ok) { r.ms = Date.now() - r.t0; r.ok = !!ok; }
+  function foNetReport() {
+    return NET_LOG.slice(-8).map(function (r) {
+      if (r.ok === null) return r.n + " · still waiting, " + Math.round((Date.now() - r.t0) / 1000) + "s";
+      return r.n + " · " + (r.ok ? "" : "failed after ") + (r.ms / 1000).toFixed(1) + "s";
+    });
+  }
+  function rpc(fn, args) {
+    var rec = netRec(fn);
+    return foFetch(URL + "/rest/v1/rpc/" + fn, { method: "POST", headers: headers(), body: JSON.stringify(args || {}) }).then(function (r) {
+      return r.text().then(function (t) { netDone(rec, r.ok); if (!r.ok) throw new Error(t || ("HTTP " + r.status)); return t ? JSON.parse(t) : null; });
+    }, function (e) { netDone(rec, false); throw e; });
+  }
+  function sel(table, q) {
+    var rec = netRec(table);
+    return foFetch(URL + "/rest/v1/" + table + "?" + (q || ""), { headers: headers() }).then(function (r) {
+      return r.text().then(function (t) { netDone(rec, r.ok); if (!r.ok) throw new Error(t); return JSON.parse(t); });
+    }, function (e) { netDone(rec, false); throw e; });
+  }
   // small localStorage wrapper (private mode / disabled storage safe)
   var PEND = "fol_pending_invite";
   function lsGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
@@ -7439,6 +7467,17 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         }, function () { foCloudBusy = false; });
     } catch (e) { foCloudBusy = false; }
   }
+  // Seeding the cloud means uploading the whole career, and a phone's uplink is
+  // narrower than its downlink · it waits until the league is actually open, or
+  // half a minute, whichever comes first.
+  function foCloudLater(fn) {
+    var n = 0;
+    var t = setInterval(function () {
+      var open = false;
+      try { open = !!(SYNC && SYNC.started); } catch (e) {}
+      if (open || ++n > 30) { clearInterval(t); try { fn(); } catch (e2) {} }
+    }, 1000);
+  }
   function foCloudQueue() {
     if (!JWT) return;
     if (foCloudTimer) clearTimeout(foCloudTimer);
@@ -7502,13 +7541,25 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   function foCloudBoot() {
     try {
       if (!JWT || foCloudBoot.__ran) return; foCloudBoot.__ran = 1;
-      sel("player_saves", "select=data,updated_at&limit=1").then(function (rows) {
+      // ASK FOR THE STAMP, NOT THE CAREER.
+      // This runs the moment you sign in, alongside the four small requests
+      // that open the league - and it used to download the whole save every
+      // time, several megabytes of it, whether or not this device already had
+      // that copy. On a phone that is the widest thing on a narrow pipe, and
+      // everything else queues behind it. The stamp is a few bytes and answers
+      // the only question there is: am I already carrying this? The career
+      // itself is fetched in the one case that needs it.
+      sel("player_saves", "select=updated_at&limit=1").then(function (rows) {
         var row = rows && rows[0];
-        if (!row || !row.data || !row.data.ls) { foCloudPush(true); return; }   // first device: seed the cloud
+        if (!row) { foCloudLater(function () { foCloudPush(true); }); return; }  // first device: seed the cloud
         if (lsGet(CLOUD_TS) === row.updated_at) return;                          // already carrying this copy
         // the cloud career IS the career: whichever device signs in picks it
         // up, no prompt - the newest cloud copy always wins
-        foCloudLoad(row);
+        return sel("player_saves", "select=data,updated_at&limit=1").then(function (full) {
+          var r2 = full && full[0];
+          if (r2 && r2.data && r2.data.ls) foCloudLoad(r2);
+          else foCloudLater(function () { foCloudPush(true); });   // a row with nothing in it
+        });
       }).catch(function () {});
       // pushes ride the engine's autosave, plus a safety net on tab-hide
       setTimeout(function () {
@@ -10717,7 +10768,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260728-1342-e101da";
+  var FO_BUILD = "20260728-1349-583880";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -11088,6 +11139,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     main.innerHTML = '<div class="folbody"><div class="folcard"><h4>This is taking too long</h4><div class="folpad">' +
       '<div class="folsmall" style="line-height:1.55;margin-bottom:12px">' + E(msg || "Loading") +
       ' has not come back. Your club and everything it has done are safe on the server — it is only this device that cannot get in. Try one of these:</div>' +
+      foNetPanel() +
       '<div style="display:flex;flex-direction:column;gap:8px;align-items:stretch">' +
       '<button class="p" data-act="reload">&#8635; Try again</button>' +
       '<button class="mini" data-act="lobby">Open the league lobby</button>' +
@@ -11095,10 +11147,21 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       '<button class="mini" data-act="logout">Log out</button>' +
       "</div></div></div></div>";
   }
+  // The last few requests and what they did. Small, quiet, and photographable ·
+  // it turns "it is stuck" into "resolve_manager_id has been waiting 41 seconds
+  // and the other two came back in half of one".
+  function foNetPanel() {
+    var lines = [];
+    try { lines = foNetReport(); } catch (e) {}
+    if (!lines.length) return "";
+    return '<div class="folsmall" style="margin:0 0 12px;padding:8px 10px;border:1px solid rgba(0,0,0,.12);border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.7;opacity:.8;overflow-x:auto">' +
+      lines.map(E).join("<br>") + "</div>";
+  }
   function foFatal(msg) {
     openWrap(true); setNavy(false);
     main.innerHTML = '<div class="folbody"><div class="folcard"><h4>Something went wrong</h4><div class="folpad">' +
       '<div class="folsmall" style="line-height:1.55;margin-bottom:12px">' + E(msg) + "</div>" +
+      foNetPanel() +
       // the same ways out as the watchdog card · a failure that lands here is
       // the same predicament, and "Reload" alone is no help when reloading is
       // exactly what has already been tried

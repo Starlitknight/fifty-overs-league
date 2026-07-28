@@ -3027,6 +3027,7 @@
     main.innerHTML = '<div class="folbody"><div class="folcard"><h4>This is taking too long</h4><div class="folpad">' +
       '<div class="folsmall" style="line-height:1.55;margin-bottom:12px">' + E(msg || "Loading") +
       ' has not come back. Your club and everything it has done are safe on the server — it is only this device that cannot get in. Try one of these:</div>' +
+      foNetPanel() +
       '<div style="display:flex;flex-direction:column;gap:8px;align-items:stretch">' +
       '<button class="p" data-act="reload">&#8635; Try again</button>' +
       '<button class="mini" data-act="lobby">Open the league lobby</button>' +
@@ -3034,10 +3035,21 @@
       '<button class="mini" data-act="logout">Log out</button>' +
       "</div></div></div></div>";
   }
+  // The last few requests and what they did. Small, quiet, and photographable ·
+  // it turns "it is stuck" into "resolve_manager_id has been waiting 41 seconds
+  // and the other two came back in half of one".
+  function foNetPanel() {
+    var lines = [];
+    try { lines = foNetReport(); } catch (e) {}
+    if (!lines.length) return "";
+    return '<div class="folsmall" style="margin:0 0 12px;padding:8px 10px;border:1px solid rgba(0,0,0,.12);border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.7;opacity:.8;overflow-x:auto">' +
+      lines.map(E).join("<br>") + "</div>";
+  }
   function foFatal(msg) {
     openWrap(true); setNavy(false);
     main.innerHTML = '<div class="folbody"><div class="folcard"><h4>Something went wrong</h4><div class="folpad">' +
       '<div class="folsmall" style="line-height:1.55;margin-bottom:12px">' + E(msg) + "</div>" +
+      foNetPanel() +
       // the same ways out as the watchdog card · a failure that lands here is
       // the same predicament, and "Reload" alone is no help when reloading is
       // exactly what has already been tried
