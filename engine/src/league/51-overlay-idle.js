@@ -27,7 +27,13 @@
       "foRenderClubPage", "foRenderAcademyPage", "foRenderFinancePage", "foRenderCompsPage",
       "foRenderMarketPage"];
     function covered() {
-      try { var w = document.getElementById("folWrap"); return !!(w && w.classList.contains("on")); } catch (e) { return false; }
+      // the class alone is not proof: a stale "on" has been seen on a hidden
+      // wrap, and treating it as cover killed every navigation · the overlay
+      // only counts when it is genuinely on screen
+      try {
+        var w = document.getElementById("folWrap");
+        return !!(w && w.classList.contains("on") && w.offsetWidth > 0 && w.offsetHeight > 0);
+      } catch (e) { return false; }
     }
     function wrapAll() {
       PAINTERS.forEach(function (n) {

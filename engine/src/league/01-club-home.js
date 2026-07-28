@@ -2953,6 +2953,19 @@
     wrap.classList.toggle("on", !!on);
     document.documentElement.style.overflow = on ? "hidden" : "";
     document.body.style.overflow = on ? "hidden" : "";
+    // CLOSING THE OVERLAY ENDS THE LOADING, so it must also end the loading's
+    // machinery. The watchdog was armed when the loading card painted, and a
+    // successful entry closes the overlay WITHOUT repainting that card - so
+    // twenty seconds after a perfectly good sign-in, the watchdog found its
+    // token still in the hidden panel, declared the load stuck, and reopened
+    // the overlay over a game that was already being played. From there the
+    // painters' covered-screen check held every navigation hostage: the menu
+    // died exactly one watchdog-interval after victory.
+    if (!on) {
+      try { clearTimeout(LOAD_TIMER); } catch (e1) {}
+      try { clearInterval(LOAD_PULSE); } catch (e2) {}
+      try { var tok0 = main.querySelector("[data-fo-loading]"); if (tok0) tok0.removeAttribute("data-fo-loading"); } catch (e3) {}
+    }
   }
 
   btn.addEventListener("click", openLeagueMenu);
@@ -3035,8 +3048,10 @@
       } catch (e) {}
     }, 1000);
     LOAD_TIMER = setTimeout(function () {
-      // if anything else has painted since, this token is gone and we say nothing
-      try { if (main.querySelector('[data-fo-loading="' + tok + '"]')) foStuck(msg); } catch (e) {}
+      // fire only while the loading is still THE thing on screen: the token
+      // must survive AND the overlay must still be open - a closed overlay
+      // means the manager is in the game and there is nothing to rescue
+      try { if (main.querySelector('[data-fo-loading="' + tok + '"]') && wrap.classList.contains("on")) foStuck(msg); } catch (e) {}
     }, 20000);
   }
   // The way out of a wedged load. Everything here is reachable without the
