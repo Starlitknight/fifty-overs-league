@@ -8,6 +8,11 @@
    before he signs, wages and academy upkeep by the round, and interest on an
    overdraft. This room reads what the world settled and offers the one
    decision the manager actually has - how big a ground to build.
+
+   PHASE 3 OF THE ALMANACK. A set of books is a ledger, and the shell already
+   has one, so the room is now what it always was on paper: the balance and
+   its verdict first, then the crowd, the ground, and every line the umpire
+   derived, in a column of label and figure.
    ========================================================================== */
 (function () {
   "use strict";
@@ -31,161 +36,137 @@
   }
   function money(v) {
     var n = Number(v);
-    if (!isFinite(n)) return "&mdash;";
+    // PLAIN TEXT, NOT ENTITIES. Most of these figures now go through the
+    // Almanack's ledger, which escapes what it is given, so an &mdash; here
+    // would print as five literal characters.
+    if (!isFinite(n)) return "\u2014";
     var neg = n < 0; n = Math.abs(n);
     var s = n >= 1000000 ? (n / 1000000).toFixed(n >= 10000000 ? 0 : 2) + "m"
           : n >= 1000 ? Math.round(n / 1000) + "k" : String(Math.round(n));
-    return (neg ? "&minus;$" : "$") + s;
+    return (neg ? "\u2212$" : "$") + s;
   }
   function num(v) { return String(Math.round(+v || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
-  function css() {
-    try { if (window.__foRoomCss) window.__foRoomCss(); } catch (e) {}
-    if (document.getElementById("fo-fin-css")) return;
-    var s = document.createElement("style"); s.id = "fo-fin-css";
-    s.textContent = [
-      "html body #page .fo-fin-bank{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}",
-      "html body #page .fo-fin-bank b{font:700 34px/1 Oswald,sans-serif;color:#177A57;font-variant-numeric:tabular-nums;letter-spacing:-.01em}",
-      "html body #page .fo-fin-bank.red b{color:#B23230}",
-      "html body #page .fo-fin-bank i{font-style:normal;font:500 12px/1.4 Inter,sans-serif;color:rgba(20,28,40,.55)}",
-      "html body #page .fo-fin-crowd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:9px}",
-      "html body #page .fo-fin-crowd b{font:700 22px/1 Oswald,sans-serif;color:#141C28;font-variant-numeric:tabular-nums}",
-      "html body #page .fo-fin-crowd em{font-style:normal;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#FFFEFC;background:#8A6A1F;border-radius:999px;padding:5px 9px}",
-      "html body #page .fo-fin-fill{height:10px;border-radius:999px;background:rgba(20,28,40,.09);overflow:hidden;margin:4px 0 5px}",
-      "html body #page .fo-fin-fill s{display:block;height:100%;text-decoration:none;background:linear-gradient(90deg,#2E8B5E,#177A57)}",
-      "html body #page .fo-fin-led{width:100%;border-collapse:collapse;font:500 12.5px/1.4 Inter,sans-serif;font-variant-numeric:tabular-nums}",
-      "html body #page .fo-fin-led td{padding:7px 0;border-top:1px solid rgba(20,28,40,.07);color:rgba(20,28,40,.72)}",
-      "html body #page .fo-fin-led td.v{text-align:right;white-space:nowrap;color:#141C28;font-weight:600;padding-left:12px}",
-      "html body #page .fo-fin-led td.v.in{color:#177A57}",
-      "html body #page .fo-fin-led td.v.out{color:#B23230}",
-      "html body #page .fo-fin-led tr.tot td{border-top:2px solid rgba(20,28,40,.18);font-weight:700;color:#141C28;font-size:13.5px}",
-      "html body #page .fo-fin-led tr:first-child td{border-top:0}",
-      "html body #page .fo-fin-led td small{display:block;font-size:10.5px;color:rgba(20,28,40,.45);font-weight:400}",
-      "html body #page .fo-fin-warn{margin-top:12px;padding:11px 13px;background:rgba(178,50,48,.08);border:1px solid rgba(178,50,48,.3);border-radius:12px;font:500 12.5px/1.5 Inter,sans-serif;color:#8E2724}"
-    ].join("\n");
-    document.head.appendChild(s);
+  function A() { return window.AL || null; }
+  function on() { return (location.hash || "").split("?")[0] === "#/finance"; }
+  function mast(al) {
+    return al.mast("The books", "Gate & Ground",
+      "Nobody credits your account. The umpire walks every round you have played and works out what the crowd was, " +
+      "what they paid, what the sponsor thought and what your men cost.");
+  }
+  function fail(page, al, title, line, href, label) {
+    page.innerHTML = al.page({ body: mast(al) + al.empty(title, line) +
+      (href ? '<p style="margin-top:16px"><a class="al-btn al-btn--primary" href="' + href + '">' + label + "</a></p>" : "") });
   }
 
   window.foRenderFinancePage = function () {
+    if (!on()) return;
     var page = document.getElementById("page"); if (!page) return;
-    css();
-    page.innerHTML = shell("<div class='fo-ac-note'>Opening the books&hellip;</div>");
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
+    page.innerHTML = al.page({ body: mast(al) + al.empty("Opening the books", "Reading what the world settled.") });
     if (!jwt()) {
-      page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>The books belong to your club in the served world. Sign in to the account that holds it.</p>" +
-        "<a class='fo-ac-btn' href='#/worldclub'>Your world club &rsaquo;</a></div>");
+      fail(page, al, "The books belong to your club",
+        "Sign in to the account that holds it in the served world.", "#/worldclub", "Your world club");
       return;
     }
     rpc("world_my_status").then(function (st) {
+      if (!on()) return;
       if (!st || st.signedIn === false) {
-        page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>Sign in first &mdash; the books are your club's, and the world keeps them.</p></div>");
-        return;
+        fail(page, al, "Sign in first", "The books are your club's, and the world keeps them."); return;
       }
       if (!st.claim) {
-        page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>You don't hold a club in the served world yet. Claim one and it comes with a ground, a following and a set of books.</p>" +
-          "<a class='fo-ac-btn' href='#/worldclub'>Claim a club &rsaquo;</a></div>");
+        fail(page, al, "You don't hold a club yet",
+          "Claim one and it comes with a ground, a following and a set of books.", "#/worldclub", "Claim a club");
         return;
       }
       render(page, st);
     }).catch(function (e) {
-      page.innerHTML = shell("<div class='fo-ac-note'>The world could not be reached (" + E(String(e.message).slice(0, 90)) +
-        "). The turnstiles keep turning regardless &mdash; try again in a minute.</div>");
+      if (!on()) return;
+      fail(page, al, "The world could not be reached",
+        String((e && e.message) || e).slice(0, 120) + ". The turnstiles keep turning regardless — try again in a minute.");
     });
   };
 
-  function shell(body) {
-    return "<div class='fo-ac' data-fo-owntable><div class='fo-ac-in'>" +
-      "<div class='fo-ac-hero'><div class='fo-ac-k'>The books</div>" +
-      "<h1>Gate &amp; Ground</h1>" +
-      "<p>Nobody credits your account. The umpire walks every round you have ever played and works out what the crowd was, what they paid, what the sponsor thought and what your men cost &mdash; and that is your money.</p></div>" +
-      body +
-      "<div class='fo-ac-foot'><a href='#/worldclub'>&lsaquo; Your world club</a><a href='#/academy'>The academy &rsaquo;</a></div>" +
-      "</div></div>";
-  }
-
   function render(page, st) {
+    var al = A(); if (!al || !on()) return;
     var f = st.finance || {}, bank = Number(st.bank || 0);
     var seats = +st.seats || +f.seats || 15000;
+    var body = mast(al) + al.subnav("finance");
+
     // BEFORE A BALL IS BOWLED there is nothing to derive from, and a page of
     // zeroes would read like a bankrupt club rather than a new one
     if (!f.rounds) {
-      page.innerHTML = shell(
-        "<div class='fo-ac-card'><h3>" + E(st.claim.club || "Your club") + "<span>" + E(st.claim.ground || "") + "</span></h3>" +
-          "<div class='fo-fin-bank'><b>" + money(bank || 2500000) + "</b><i>to start with</i></div></div>" +
-        "<div class='fo-ac-card'><h3>The ground<span>" + num(seats) + " seats</span></h3>" +
-          "<p class='fo-ac-p'>Fifteen thousand, and a following waiting to see whether you are worth the walk.</p>" +
-          "<div class='fo-ac-note'>The books open when your first round settles: what the crowd was, what they paid at " +
-          money(26) + " a ticket, what the sponsor made of the table and what your men cost. The home club keeps two thirds of a gate and the visitors take one third.</div>" +
-        "</div>");
+      body += al.decide({ kind: "done", title: money(bank || 2500000) + " to start with",
+        note: (st.claim.club || "Your club") + (st.claim.ground ? " · " + st.claim.ground : "") });
+      body += al.sec("The ground · " + num(seats) + " seats",
+        "<p>Fifteen thousand, and a following waiting to see whether you are worth the walk.</p>" +
+        '<p class="al-read">The books open when your first round settles: what the crowd was, what they paid at ' +
+        money(26) + " a ticket, what the sponsor made of the table and what your men cost. The home club keeps two " +
+        "thirds of a gate and the visitors take one third.</p>");
+      page.innerHTML = al.page({ body: body });
       return;
     }
+
+    // ---- the balance, and the verdict on it --------------------------------
+    var verdict = f.administration
+      ? { kind: "act", note: "The club is in administration. You have hit the floor at " + money(f.debtLimit || 2500000) +
+          " and " + money(f.writtenOff || 0) + " has been written off. The sponsor pays half and you build nothing until you climb back over the line." }
+      : bank < 0
+      ? { kind: "act", note: "You are overdrawn. The bank takes three per cent of what you owe every round, and nothing " +
+          "gets built until you are level. The floor is " + money(f.debtLimit || 2500000) + "." }
+      : { kind: "done", note: "after " + (f.rounds || 0) + " round" + (f.rounds === 1 ? "" : "s") + " of cricket · " +
+          (st.claim.club || "your club") + (st.claim.ground ? " · " + st.claim.ground : "") };
+    body += al.decide({ kind: verdict.kind, title: money(bank) + " in the bank", note: verdict.note });
+
+    // ---- the crowd ----------------------------------------------------------
     var att = +f.lastAttendance || 0, avg = +f.avgAttendance || 0;
     var full = seats ? Math.max(2, Math.min(100, Math.round(att / seats * 100))) : 0;
-    var inTotal = (+f.gate || 0) + (+f.awayCut || 0) + (+f.sponsor || 0) + (+f.compensation || 0);
-    var outTotal = (+f.wages || 0) + (+f.upkeep || 0) + (+f.interest || 0) + (+f.academyPaid || 0) + (+f.seatsPaid || 0);
+    body += al.sec("The crowd" + (f.moodWord ? " · " + f.moodWord : ""),
+      al.ledger([
+        ["Following the club", num(f.supporters || 0)],
+        ["Through the gate last time", num(att) + (f.lastWeather ? " · " + f.lastWeather + " day" : "")],
+        ["On average", num(avg)],
+        ["The house", full + "% of " + num(seats)],
+      ]) + al.meter(full) +
+      '<p class="al-read">Support follows the table and the last five results. It moves slowly in both directions, ' +
+      "which is the point: a good season builds you a following, and a bad one costs you one before you have noticed.</p>");
 
-    var build = seats >= MAX_SEATS
-      ? "<div class='fo-ac-note'>Forty-five thousand. There is nowhere left to put a stand.</div>"
-      : (function () {
-          var cost = +f.nextSeatsCost || 0, can = bank >= cost;
-          return "<div class='fo-ac-uprow'>" +
-            "<div><b>" + num(f.nextSeats || seats + 1000) + " seats</b><i>The next thousand. Building gets dearer the bigger the ground &mdash; and empty seats earn nothing, so build into a crowd you already have.</i></div>" +
-            "<button type='button' class='fo-ac-btn" + (can ? "" : " off") + "' data-fo-seats='" + (f.nextSeats || seats + 1000) + "'" + (can ? "" : " disabled") + ">" +
-              (can ? "Build it &middot; " + money(cost) : "Needs " + money(cost)) + "</button></div>";
-        })();
+    // ---- the ground, and the only decision in the room ---------------------
+    var build;
+    if (seats >= MAX_SEATS) {
+      build = '<p class="al-read">Forty-five thousand. There is nowhere left to put a stand.</p>';
+    } else {
+      var cost = +f.nextSeatsCost || 0, can = bank >= cost, next = f.nextSeats || seats + 1000;
+      build = "<p>The next thousand seats take the ground to <b>" + num(next) + "</b>. Building gets dearer the bigger " +
+        "the ground — and empty seats earn nothing, so build into a crowd you already have.</p>" +
+        '<p><button type="button" class="al-btn ' + (can ? "al-btn--primary" : "") + '" data-fo-seats="' + next + '"' +
+        (can ? "" : " disabled") + ">" + (can ? "Build it · " + money(cost) : "Needs " + money(cost)) + "</button></p>";
+    }
+    body += al.sec("The ground · " + num(seats) + " seats", build +
+      '<p class="al-read">Tickets are ' + money(f.ticket || 26) + ". The home club keeps two thirds of the gate and the " +
+      "visitors take one third, so a full house pays you twice — once at your ground and again at theirs.</p>");
 
-    var row = function (label, sub, v, cls) {
-      return "<tr><td>" + label + (sub ? "<small>" + sub + "</small>" : "") + "</td><td class='v " + (cls || "") + "'>" + money(v) + "</td></tr>";
-    };
+    // ---- every line the umpire derived --------------------------------------
+    var lines = [
+      ["Founded with", money(f.founded || 0), "pos"],
+      ["Gate, at home", money(f.gate || 0), "pos"],
+      ["Gate, away", money(f.awayCut || 0), "pos"],
+      ["Sponsor", money(f.sponsor || 0), "pos"],
+    ];
+    if (f.compensation) lines.push(["International windows", money(f.compensation), "pos"]);
+    lines.push(["Wages", money(-(f.wages || 0)), "neg"]);
+    lines.push(["Academy upkeep", money(-(f.upkeep || 0)), "neg"]);
+    if (f.academyPaid) lines.push(["The academy", money(-f.academyPaid), "neg"]);
+    if (f.seatsPaid) lines.push(["The ground", money(-f.seatsPaid), "neg"]);
+    if (f.interest) lines.push(["Interest", money(-f.interest), "neg"]);
+    if (f.writtenOff) lines.push(["Written off", money(f.writtenOff), "pos"]);
+    lines.push(["In the bank", money(bank), bank < 0 ? "neg" : "pos"]);
 
-    page.innerHTML = shell(
-      "<div class='fo-ac-card'><h3>" + E(st.claim.club || "Your club") + "<span>" + E(st.claim.ground || "") + "</span></h3>" +
-        "<div class='fo-fin-bank" + (bank < 0 ? " red" : "") + "'><b>" + money(bank) + "</b>" +
-          "<i>in the bank after " + (f.rounds || 0) + " round" + (f.rounds === 1 ? "" : "s") + " of cricket</i></div>" +
-        (f.administration
-          ? "<div class='fo-fin-warn'><b>The club is in administration.</b> You have hit the floor at " +
-            money(f.debtLimit || 2500000) + " &mdash; nothing sinks past what the club was founded with, and " +
-            money(f.writtenOff || 0) + " has been written off. While you are under, the sponsor pays half and you build nothing. " +
-            "Win, fill the ground, and climb back over the line.</div>"
-          : bank < 0
-          ? "<div class='fo-fin-warn'><b>You are overdrawn.</b> The bank takes three per cent of what you owe every round, and nothing gets built until you are level. The floor is " +
-            money(f.debtLimit || 2500000) + "; below that the club goes into administration and the sponsor halves his cheque. Winning brings a crowd, and a crowd is the way out.</div>"
-          : "") +
-      "</div>" +
+    body += al.sec("The ledger · since the founding", al.ledger(lines) +
+      '<p class="al-read">Every line is derived from the record, not from a running total — which is why the same figure ' +
+      "comes back however many times the umpire settles it, and why nobody can quietly credit anybody.</p>");
 
-      "<div class='fo-ac-card'><h3>The crowd<span>" + E(f.moodWord || "") + "</span></h3>" +
-        "<div class='fo-fin-crowd'><b>" + num(f.supporters || 0) + "</b><i class='fo-ac-cm'>following the club</i>" +
-          (f.moodWord ? "<em>" + E(f.moodWord) + "</em>" : "") + "</div>" +
-        "<div class='fo-fin-fill'><s style='width:" + full + "%'></s></div>" +
-        "<div class='fo-ac-cm'><b>" + num(att) + "</b> through the gate last time" +
-          (f.lastWeather ? " on a " + E(f.lastWeather) + " day" : "") +
-          " &middot; " + full + "% of " + num(seats) + " seats &middot; " + num(avg) + " on average</div>" +
-        "<div class='fo-ac-note'>Support follows the table and the last five results. It moves slowly in both directions, which is the point: a good season builds you a following, and a bad one costs you one before you have noticed.</div>" +
-      "</div>" +
-
-      "<div class='fo-ac-card'><h3>The ground<span>" + num(seats) + " seats</span></h3>" + build +
-        "<div class='fo-ac-note'>Tickets are " + money(f.ticket || 26) + ". The home club keeps two thirds of the gate and the visitors take one third, so a full house pays you twice &mdash; once at your ground and again at theirs.</div>" +
-      "</div>" +
-
-      "<div class='fo-ac-card'><h3>The ledger<span>since the founding</span></h3>" +
-        "<table class='fo-fin-led'><tbody>" +
-          row("Founded with", null, f.founded || 0, "in") +
-          row("Gate, at home", "two thirds of the house, every match at your ground", f.gate || 0, "in") +
-          row("Gate, away", "one third of theirs", f.awayCut || 0, "in") +
-          row("Sponsor", "by the round, and he reads the table", f.sponsor || 0, "in") +
-          (f.compensation ? row("International windows",
-            (f.capsAway || 0) + " man-week" + ((f.capsAway || 0) === 1 ? "" : "s") +
-            " with their country &mdash; $50,000 a senior, $20,000 a boy",
-            f.compensation || 0, "in") : "") +
-          row("Wages", "the bill as it stands, every round played", -(f.wages || 0), "out") +
-          row("Academy upkeep", "by the level, by the round", -(f.upkeep || 0), "out") +
-          (f.academyPaid ? row("The academy", "what you built", -(f.academyPaid || 0), "out") : "") +
-          (f.seatsPaid ? row("The ground", "what the stands cost", -(f.seatsPaid || 0), "out") : "") +
-          (f.interest ? row("Interest", "the price of an overdraft", -(f.interest || 0), "out") : "") +
-          (f.writtenOff ? row("Written off", "what fell below the floor, and stayed there", f.writtenOff || 0, "in") : "") +
-          "<tr class='tot'><td>In the bank</td><td class='v'>" + money(bank) + "</td></tr>" +
-        "</tbody></table>" +
-        "<div class='fo-ac-note'>Every line is derived from the record, not from a running total &mdash; which is why the same figure comes back however many times the umpire settles it, and why nobody can quietly credit anybody.</div>" +
-      "</div>" +
-      "<div class='fo-ac-note'>In: " + money(inTotal) + " &middot; Out: " + money(outTotal) + "</div>");
+    page.innerHTML = al.page({ body: body });
 
     var b = page.querySelector("[data-fo-seats]");
     if (b) b.addEventListener("click", function () {

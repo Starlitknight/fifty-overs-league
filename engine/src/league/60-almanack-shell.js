@@ -36,12 +36,24 @@
     { id: "club",   label: "Club",   home: "#/club-h", routes: ["club-h", "finance", "milestones", "lore", "paper", "wire", "guide", "ledger", "almanack"] },
   ];
   // routes this redesign currently OWNS. Everything else keeps its old page.
-  var AL_OWNS = { today: 1, team: 1, matchday: 1, table: 1, fixtures: 1 };
+  var AL_OWNS = { today: 1, team: 1, matchday: 1, table: 1, fixtures: 1, market: 1, finance: 1, academy: 1, training: 1 };
 
   // A section is bigger than one screen, and the dock only has five slots. The
   // rest of a section's rooms hang off a rule under the masthead - the same
   // place a newspaper puts the rest of its section.
   var SUB = {
+    team: [
+      { id: "team", label: "The eleven", href: "#/team" },
+      { id: "training", label: "Nets", href: "#/training" },
+      { id: "academy", label: "Academy", href: "#/academy" },
+      { id: "dossier", label: "Scout", href: "#/dossier" },
+    ],
+    club: [
+      { id: "club-h", label: "The club", href: "#/club-h" },
+      { id: "finance", label: "The books", href: "#/finance" },
+      { id: "milestones", label: "Honours", href: "#/milestones" },
+      { id: "paper", label: "Gazette", href: "#/paper" },
+    ],
     league: [
       { id: "table", label: "Table", href: "#/table" },
       { id: "fixtures", label: "Fixtures", href: "#/fixtures" },
@@ -248,6 +260,21 @@
         return '<a href="' + x.href + '"' + (x.id === cur ? ' aria-current="page"' : "") + ">" + E(x.label) + "</a>";
       }).join("") + "</nav>";
     },
+    // in-page tabs wear the section navigation's dress: same rule, same
+    // measure, so a reader never has to learn two ways of switching view
+    tabs: function (items, cur) {
+      return '<nav class="al-subnav al-subnav--tabs" aria-label="View">' + items.map(function (x) {
+        return '<button type="button" data-al-tab="' + E(x.id) + '"' +
+          (x.id === cur ? ' aria-current="page"' : "") + ">" + E(x.label) +
+          (x.count ? ' <b>' + E(x.count) + "</b>" : "") + "</button>";
+      }).join("") + "</nav>";
+    },
+    meter: function (pct, kind) {
+      var v = Math.max(0, Math.min(100, Math.round(pct || 0)));
+      return '<div class="al-meter' + (kind ? " al-meter--" + kind : "") +
+        '" role="img" aria-label="' + v + ' per cent"><s style="width:' + v + '%"></s></div>';
+    },
+    msg: function (id) { return '<p class="al-msg" id="' + E(id) + '"></p>'; },
     tag: function (text, kind) { return '<span class="al-tag' + (kind ? " al-tag--" + kind : "") + '">' + E(text) + "</span>"; },
     empty: function (title, line) { return '<div class="al-empty"><h3>' + E(title) + "</h3><p>" + E(line) + "</p></div>"; },
     E: E, section: sectionOf, clock: clockText, league: lg, team: team,

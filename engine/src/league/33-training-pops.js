@@ -56,7 +56,9 @@
   // The Nets: the noticeboard strip
   // ---------------------------------------------------------------------------
   function foPopsNetsStrip() {
-    var pane = document.querySelector(".fo-ns-grid"); if (!pane) return;
+    // the nets wear the Almanack now; the strip goes above its first band
+    var pane = document.querySelector(".al-page__in .al-sec") || document.querySelector(".fo-ns-grid");
+    if (!pane) return;
     if (document.querySelector(".fo-pop-board")) return;
     var fresh = foPopsRecent().filter(function (l) { return l.r >= 0; });
     if (!fresh.length) return;

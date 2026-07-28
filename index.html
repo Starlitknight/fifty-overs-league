@@ -1139,6 +1139,7 @@ body.al-on .al-btn { font-family: var(--al-ui); }
 }
 .al-ledger .v--pos { color: var(--al-pos); }
 .al-ledger .v--warn { color: var(--al-accent); }
+.al-ledger .v--neg { color: #B23230; }
 
 /* ============================================================================
    11. COMPACT PLAYER ROW — the roster interface. Never a collectible card.
@@ -1166,6 +1167,21 @@ body.al-on .al-btn { font-family: var(--al-ui); }
 .al-prow__rate {
   font: 500 15px/1 var(--al-mono); font-variant-numeric: tabular-nums; color: var(--al-ink);
 }
+/* a row that is READ rather than tapped, and carries its own controls: the
+   colts, the training plan. The controls take the whole width beneath the
+   name, because two buttons and a name do not fit across 390px. */
+.al-prow--static { cursor: default; padding-bottom: var(--al-3); }
+.al-prow--static .al-prow__act {
+  grid-column: 1 / -1; display: flex; gap: var(--al-2); flex-wrap: wrap;
+  padding: var(--al-2) 0 0 calc(34px + var(--al-3));
+}
+.al-prow--static .al-prow__act .al-btn { min-height: 44px; padding: 0 var(--al-3); }
+.al-prow--static .al-prow__act .al-field { flex: 1 1 180px; }
+/* a row whose control is a single choice keeps it on the man's own line -
+   stacked, sixteen men ran to four screens of scrolling */
+.al-prow--pick .al-prow__act { grid-column: auto; padding: 0; }
+.al-prow--pick .al-prow__act .al-field { flex: 0 0 auto; width: 148px; max-width: 42vw; font-size: 13px; }
+.al-prow__who .al-meter { margin: var(--al-1) 0 0; max-width: 220px; }
 
 /* ============================================================================
    12. SECTION NAVIGATION — the rest of the section, on a rule
@@ -1263,6 +1279,64 @@ body.al-on .al-btn { font-family: var(--al-ui); }
 }
 
 /* ============================================================================
+   14b. THE ROOMS — a lot on the board, a proportion, a control, a reply
+   ========================================================================== */
+/* an auction lot: one cricketer on the transfer board */
+.al-lots { display: grid; grid-template-columns: 1fr; gap: var(--al-3); }
+.al-lot {
+  border: 1px solid var(--al-rule); border-left: 3px solid var(--al-muted-2);
+  background: var(--al-paper-hi); padding: var(--al-3) var(--al-4);
+}
+.al-lot--mine { border-left-color: var(--al-accent); }
+.al-lot__h { display: flex; align-items: baseline; gap: var(--al-2); flex-wrap: wrap; }
+.al-lot__h b { font: 600 17px/22px var(--al-display); color: var(--al-ink); }
+.al-lot__h i { font-style: normal; font: 600 10px/1.4 var(--al-ui); letter-spacing: .1em; text-transform: uppercase; color: var(--al-teal); }
+.al-lot__clock {
+  margin-left: auto; font: 600 10px/1.4 var(--al-ui); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--al-muted-2); white-space: nowrap;
+}
+.al-lot__clock--soon { color: var(--al-accent); }
+.al-lot__line { margin: var(--al-2) 0 0; font: 400 13px/19px var(--al-ui); color: var(--al-muted); }
+.al-lot__line b { color: var(--al-ink); font-weight: 600; }
+.al-lot__act { display: flex; gap: var(--al-2); flex-wrap: wrap; align-items: center; margin-top: var(--al-3); }
+
+/* a proportion, stated as a bar: seats filled, how far a colt has come */
+.al-meter { height: 8px; background: var(--al-paper-2); overflow: hidden; margin: var(--al-2) 0; }
+.al-meter s { display: block; height: 100%; text-decoration: none; background: var(--al-teal); }
+.al-meter--warm s { background: var(--al-accent); }
+
+/* a control the manager types into */
+.al-field, html body.al-on #page input.al-field, html body.al-on #page select.al-field {
+  min-height: var(--al-tap); padding: 0 var(--al-3);
+  font: 500 15px/1 var(--al-ui); color: var(--al-ink);
+  background: var(--al-paper-hi); border: 1px solid var(--al-rule); border-radius: 6px;
+  -webkit-appearance: none; appearance: none; min-width: 0;
+}
+select.al-field { padding-right: var(--al-5); background-image: none; }
+.al-field--grow { flex: 1 1 120px; }
+.al-field--block { display: block; width: 100%; }
+
+/* what the room says back after a control is used */
+.al-msg { margin: var(--al-2) 0 0; font: 500 12px/17px var(--al-ui); color: var(--al-accent); min-height: 0; }
+.al-msg:empty { margin: 0; }
+.al-msg--ok { color: var(--al-pos); }
+
+/* the tab dress of the section navigation, for in-page views */
+.al-subnav--tabs button {
+  min-height: 44px; display: inline-flex; align-items: center; gap: var(--al-2);
+  padding: 0 var(--al-3); white-space: nowrap; cursor: pointer;
+  font: 600 11px/1 var(--al-ui); letter-spacing: .1em; text-transform: uppercase;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  --al-bg: transparent; --al-bd: 0; --al-br: 0; --al-fg: var(--al-muted);
+  background: transparent; border: 0; color: var(--al-muted);
+}
+.al-subnav--tabs button[aria-current="page"] {
+  border-bottom: 2px solid var(--al-accent);
+  --al-fg: var(--al-ink); color: var(--al-ink);
+}
+.al-subnav--tabs button b { font-weight: 700; color: var(--al-accent); }
+
+/* ============================================================================
    15. STATUS LABEL and MONOSPACE READOUT
    ========================================================================== */
 .al-tag {
@@ -1350,5 +1424,5 @@ body.al-on .al-btn { font-family: var(--al-ui); }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
-<script src="assets/fo-20260728-2250-a0cca0.js"></script>
+<script src="assets/fo-20260728-2305-45b16a.js"></script>
 </body></html>

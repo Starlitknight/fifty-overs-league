@@ -44,7 +44,7 @@
   }
   function money(v) {
     var n = Number(v);
-    if (!isFinite(n)) return "&mdash;";
+    if (!isFinite(n)) return "\u2014";   // plain text: the ledger escapes what it prints
     var neg = n < 0; n = Math.abs(n);
     var s = n >= 1000000 ? (n / 1000000).toFixed(n >= 10000000 ? 0 : 1) + "m"
           : n >= 1000 ? Math.round(n / 1000) + "k" : String(Math.round(n));
@@ -55,7 +55,8 @@
   function stepCost(lv) { return lv * 60000; }
 
   function ovrOf(p) {
-    try { if (typeof window.foPkOvr === "function") return window.foPkOvr(p); } catch (e) {}
+    try { if (window.AL) return window.AL.ovr(p); } catch (e) {}
+    try { if (typeof window.foPkOvr === "function") return window.foPkOvr(p); } catch (e2) {}
     return null;
   }
   function roleOf(p) {
@@ -75,93 +76,99 @@
     return a <= 17 ? "still at school" : a === 18 ? "first year" : a === 19 ? "second year" : "final year";
   }
 
-  // --------------------------------------------------------------------------
+  function A() { return window.AL || null; }
+  function on() { return (location.hash || "").split("?")[0] === "#/academy"; }
+  function mast(al) {
+    return al.mast("The academy", "The Colts",
+      "Boys arrive on their own, age on their own, and walk into your first team at twenty-one whether you were " +
+      "watching or not. What you decide is how good a place they learn in.");
+  }
+  function fail(page, al, title, line, href, label) {
+    page.innerHTML = al.page({ body: mast(al) + al.empty(title, line) +
+      (href ? '<p style="margin-top:16px"><a class="al-btn al-btn--primary" href="' + href + '">' + label + "</a></p>" : "") });
+  }
+
   window.foRenderAcademyPage = function () {
+    if (!on()) return;
     var page = document.getElementById("page"); if (!page) return;
-    css();
-    page.innerHTML = shell("<div class='fo-ac-note'>Walking down to the academy&hellip;</div>");
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
+    page.innerHTML = al.page({ body: mast(al) + al.empty("Walking down to the academy", "Reading the books.") });
     if (!jwt()) {
-      page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>Your academy belongs to your club in the served world. Sign in to the account that holds it and the colts will be here waiting.</p>" +
-        "<a class='fo-ac-btn' href='#/worldclub'>Your world club &rsaquo;</a></div>");
+      fail(page, al, "Your academy belongs to your club",
+        "Sign in to the account that holds it and the colts will be here waiting.", "#/worldclub", "Your world club");
       return;
     }
     rpc("world_my_status").then(function (st) {
-      if (!st || st.signedIn === false) {
-        page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>Sign in first - the academy is your club's, and the world keeps it.</p></div>");
-        return;
-      }
+      if (!on()) return;
+      if (!st || st.signedIn === false) { fail(page, al, "Sign in first", "The academy is your club's, and the world keeps it."); return; }
       if (!st.claim) {
-        page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>You don't hold a club in the served world yet. Claim one and its academy comes with it, boys and all.</p>" +
-          "<a class='fo-ac-btn' href='#/worldclub'>Claim a club &rsaquo;</a></div>");
+        fail(page, al, "You don't hold a club yet", "Claim one and its academy comes with it, boys and all.",
+          "#/worldclub", "Claim a club");
         return;
       }
       render(page, st);
       // the Colts Cup arrives a beat later; the room does not wait for it
       snapshot("colts/" + st.claim.country).then(function (cup) {
         var box = document.getElementById("fo-ac-cup");
-        if (box) box.innerHTML = cupHTML(cup, st.claim.club);
+        if (box && on()) box.innerHTML = cupHTML(A(), cup, st.claim.club);
       });
     }).catch(function (e) {
-      page.innerHTML = shell("<div class='fo-ac-note'>The world could not be reached (" + E(String(e.message).slice(0, 90)) +
-        "). The boys are training regardless - try again in a minute.</div>");
+      if (!on()) return;
+      fail(page, al, "The world could not be reached",
+        String((e && e.message) || e).slice(0, 120) + ". The boys are training regardless — try again in a minute.");
     });
   };
 
-  function shell(body) {
-    // the room keeps its own table: the club that matters here is the one in
-    // the served world, not whatever the device calls home
-    return "<div class='fo-ac' data-fo-owntable><div class='fo-ac-in'>" +
-      "<div class='fo-ac-hero'><div class='fo-ac-k'>The academy</div>" +
-      "<h1>The Colts</h1>" +
-      "<p>Boys arrive on their own, age on their own, and walk into your first team at twenty-one whether you were watching or not. What you decide is how good a place they learn in.</p></div>" +
-      body +
-      "<div class='fo-ac-foot'><a href='#/worldclub'>&lsaquo; Your world club</a><a href='#/finance'>The books &rsaquo;</a></div>" +
-      "</div></div>";
-  }
-
   function render(page, st) {
+    var al = A(); if (!al || !on()) return;
     var lv = Math.max(1, Math.min(5, +st.academy || 2));
     var colts = st.youth || [];
     var room = cap(lv), spare = Math.max(0, room - colts.length);
     var bank = Number(st.bank || 0);
-    var pips = "";
-    for (var i = 1; i <= 5; i++) pips += "<s class='fo-ac-pip" + (i <= lv ? " on" : "") + "'></s>";
+    var body = mast(al) + al.subnav("academy");
 
-    var up = lv >= 5
-      ? "<div class='fo-ac-note'>Level five. There is nowhere further to go; the county sends people to look at yours now.</div>"
-      : (function () {
-          var cost = stepCost(lv), can = bank >= cost;
-          return "<div class='fo-ac-uprow'>" +
-            "<div><b>Level " + (lv + 1) + "</b><i>Room for " + cap(lv + 1) + " boys &middot; better cricketers through the door &middot; " +
-              money((lv + 1) * UPKEEP) + " a round to run</i></div>" +
-            "<button type='button' class='fo-ac-btn" + (can ? "" : " off") + "' data-fo-acup='" + (lv + 1) + "'" + (can ? "" : " disabled") + ">" +
-              (can ? "Build it &middot; " + money(cost) : "Needs " + money(cost)) + "</button></div>";
-        })();
+    // ---- the one decision: how good a place they learn in ------------------
+    var canUp = lv < 5 && bank >= stepCost(lv);
+    body += al.decide({
+      kind: lv < 5 ? "act" : "done",
+      title: "Level " + lv + " · " + colts.length + " of " + room + " beds taken" + (spare ? " · " + spare + " free" : " · full"),
+      note: lv >= 5
+        ? "Level five. There is nowhere further to go; the county sends people to look at yours now."
+        : money(lv * UPKEEP) + " a round to run · level " + (lv + 1) + " costs " + money(stepCost(lv)) +
+          " and sleeps " + cap(lv + 1),
+    });
 
-    var list = colts.length
-      ? "<div class='fo-ac-grid'>" + colts.map(coltCard).join("") + "</div>"
-      : "<div class='fo-ac-note'>Nobody on the books this minute. The academy takes a boy in as soon as there is a bed for him - come back after the next round.</div>";
+    if (lv < 5) {
+      body += al.sec("Build it up",
+        "<p>Level " + (lv + 1) + " gives room for " + cap(lv + 1) + " boys, better cricketers through the door, and " +
+        money((lv + 1) * UPKEEP) + " a round to run.</p>" +
+        '<p><button type="button" class="al-btn ' + (canUp ? "al-btn--primary" : "") + '" data-fo-acup="' + (lv + 1) + '"' +
+        (canUp ? "" : " disabled") + ">" + (canUp ? "Build it · " + money(stepCost(lv)) : "Needs " + money(stepCost(lv))) +
+        "</button></p>" +
+        al.ledger([["Upkeep now", money(lv * UPKEEP) + " a round"], ["In the bank", money(bank)]]));
+    }
 
-    page.innerHTML = shell(
-      "<div class='fo-ac-card'><h3>" + E(st.claim.club || "Your club") + "<span>" + E(st.claim.country || "") + "</span></h3>" +
-        "<div class='fo-ac-lvl'><div class='fo-ac-pips'>" + pips + "</div>" +
-          "<div class='fo-ac-lvt'><b>Level " + lv + "</b><i>" + colts.length + " of " + room + " beds taken" +
-          (spare ? " &middot; " + spare + " free" : " &middot; full") + "</i></div></div>" +
-        "<div class='fo-ac-money'>" +
-          "<div><i>Upkeep</i><b>" + money(lv * UPKEEP) + "</b><u>a round</u></div>" +
-          "<div><i>Treasury</i><b>" + money(bank) + "</b><u>at the bank</u></div>" +
-        "</div>" + up +
-      "</div>" +
-      "<div class='fo-ac-card'><h3>On the books<span>" + colts.length + "</span></h3>" + list +
-        "<div class='fo-ac-note'>A colt costs you nothing in wages - the academy's upkeep covers him. He starts earning the day he takes a senior shirt.</div>" +
-      "</div>" +
-      "<div class='fo-ac-card' id='fo-ac-cup'><h3>The Colts Cup</h3>" +
-        "<div class='fo-ac-note'>Reading the boys&rsquo; table&hellip;</div></div>" +
-      "<div class='fo-ac-card'><h3>How it works</h3>" +
-        "<p class='fo-ac-p'>The umpire runs the academy on the same clock as the cricket. A boy joins when there is a bed free. At the turn of the season every colt gets a year older, and any who reach <b>twenty-one</b> are handed a senior shirt automatically - no button, no deadline, nothing to miss while you're asleep.</p>" +
-        "<p class='fo-ac-p'>Bring one up early if you want him, or let him go to make room. Whatever he learned in the academy he keeps; what he never keeps is the nets he was never at, so a boy who comes up in your third season doesn't inherit two seasons of somebody else's work.</p>" +
-        "<p class='fo-ac-p'>Rivals can see what level your academy is - a building is a building - but never who is inside it.</p>" +
-      "</div>");
+    // ---- the boys -----------------------------------------------------------
+    body += al.sec("On the books · " + colts.length, colts.length
+      ? '<div class="al-players">' + colts.map(function (p) { return colt(al, p); }).join("") + "</div>" +
+        '<p class="al-read">A colt costs you nothing in wages — the upkeep covers him. He starts earning the day he ' +
+        "takes a senior shirt.</p>"
+      : al.empty("Nobody on the books this minute",
+          "The academy takes a boy in as soon as there is a bed for him. Come back after the next round."));
+
+    body += '<section class="al-sec" id="fo-ac-cup"><div class="al-sec__head"><h2>The Colts Cup</h2></div>' +
+      '<p class="al-read">Reading the boys&rsquo; table&hellip;</p></section>';
+
+    body += al.sec("How it works",
+      "<p>The umpire runs the academy on the same clock as the cricket. A boy joins when there is a bed free. At the turn " +
+      "of the season every colt gets a year older, and any who reach <b>twenty-one</b> are handed a senior shirt " +
+      "automatically — no button, no deadline, nothing to miss while you're asleep.</p>" +
+      "<p>Bring one up early if you want him, or let him go to make room. Whatever he learned in the academy he keeps; " +
+      "what he never keeps is the nets he was never at.</p>" +
+      "<p>Rivals can see what level your academy is — a building is a building — but never who is inside it.</p>");
+
+    page.innerHTML = al.page({ body: body });
 
     var upBtn = page.querySelector("[data-fo-acup]");
     if (upBtn) upBtn.addEventListener("click", function () {
@@ -188,52 +195,59 @@
     });
   }
 
-  // THE COLTS CUP: nine fixtures, one on every second league round, played by
-  // the umpire from a side nobody picks. Nothing to submit, nothing to miss.
-  function cupHTML(cup, myClub) {
-    var head = "<h3>The Colts Cup<span>" + (cup && cup.roundsPlayed ? cup.roundsPlayed + " of " + cup.rounds : "not started") + "</span></h3>";
-    if (!cup || !cup.results || !cup.results.length) {
-      return head + "<div class='fo-ac-note'>The boys' first fixture comes on the second round of the league season. Nine matches, one every other round, and the whole country's academies in it.</div>";
-    }
-    var rows = cup.table.map(function (t, i) {
-      return "<tr" + (t.name === myClub ? " class='me'" : "") + "><td>" + (i + 1) + "</td><td class='nm'>" + E(t.name) + "</td>" +
-        "<td>" + t.p + "</td><td>" + t.w + "</td><td>" + t.l + "</td><td class='pt'>" + t.pts + "</td>" +
-        "<td class='nrr'>" + (t.nrr > 0 ? "+" : "") + t.nrr.toFixed(2) + "</td></tr>";
-    }).join("");
-    var mine = cup.results.filter(function (r) { return r.home === myClub || r.away === myClub; }).slice(-4).reverse();
-    var card = mine.map(function (r) {
-      var won = r.winner === myClub, tied = r.winner === null;
-      var sc = function (s) { return s ? s.r + "/" + s.w : "&mdash;"; };
-      return "<div class='fo-ac-res'><i class='" + (tied ? "t" : won ? "w" : "l") + "'>" + (tied ? "T" : won ? "W" : "L") + "</i>" +
-        "<b>" + E(r.home) + "</b><u>" + sc(r.hs) + "</u><em>v</em><b>" + E(r.away) + "</b><u>" + sc(r.as) + "</u></div>";
-    }).join("");
-    var lead = (cup.runs && cup.runs[0])
-      ? "<div class='fo-ac-note'>Leading the cup: <b>" + E(cup.runs[0].name) + "</b> " + cup.runs[0].runs + " runs" +
-        (cup.wickets && cup.wickets[0] ? ", <b>" + E(cup.wickets[0].name) + "</b> " + cup.wickets[0].wkts + " wickets" : "") + ".</div>"
-      : "";
-    return head +
-      "<div class='fo-ac-tw'><table class='fo-ac-tbl'><thead><tr><th></th><th class='nm'>Club</th><th>P</th><th>W</th><th>L</th><th class='pt'>Pts</th><th class='nrr'>NRR</th></tr></thead><tbody>" +
-        rows + "</tbody></table></div>" +
-      (card ? "<div class='fo-ac-sub'>Your boys, lately</div>" + card : "") + lead +
-      "<div class='fo-ac-note'>The side picks itself &mdash; your colts and the youngest men on the staff &mdash; so there is no teamsheet to file and nothing to lose by being asleep.</div>";
-  }
-
-  function coltCard(p) {
+  // a colt is a row: who he is, how far along he is, and the two calls a
+  // manager can make about him
+  function colt(al, p) {
     var pr = Math.max(0, Math.min(100, Math.round(+p.promise || 0)));
     var o = ovrOf(p);
-    return "<div class='fo-ac-colt'>" +
-      "<div class='fo-ac-ch'><b>" + E(p.name) + "</b>" + (o == null ? "" : "<u>" + o + "</u>") + "</div>" +
-      "<div class='fo-ac-cm'>" + E(roleOf(p)) + " &middot; " + E(p.age || 18) + ", " + E(ageWord(+p.age || 18)) + "</div>" +
-      "<div class='fo-ac-bar'><s style='width:" + pr + "%'></s></div>" +
-      "<div class='fo-ac-cm'><em>" + E(promiseWord(pr)) + "</em> &middot; " + pr + "% of the cricketer he'll be</div>" +
-      // what he has actually done in the Colts Cup, if he has done anything
-      (p.colts && p.colts.m ? "<div class='fo-ac-cm cup'>" + p.colts.m + (p.colts.m === 1 ? " cap" : " caps") +
-        " &middot; " + p.colts.runs + " runs" + (p.colts.hs ? " (" + p.colts.hs + " best)" : "") +
-        (p.colts.wkts ? " &middot; " + p.colts.wkts + " wkts" : "") + "</div>" : "") +
-      "<div class='fo-ac-cbtns'>" +
-        "<button type='button' class='fo-ac-mini' data-fo-colt='" + E(p.name) + "' data-fo-act='promote'>Bring up</button>" +
-        "<button type='button' class='fo-ac-mini ghost' data-fo-colt='" + E(p.name) + "' data-fo-act='release'>Release</button>" +
-      "</div></div>";
+    var caps = (p.colts && p.colts.m)
+      ? " · " + p.colts.m + (p.colts.m === 1 ? " cap" : " caps") + ", " + p.colts.runs + " runs" +
+        (p.colts.wkts ? ", " + p.colts.wkts + " wkts" : "")
+      : "";
+    return '<div class="al-prow al-prow--static">' +
+      '<span class="al-prow__no">' + (p.age || 18) + "</span>" +
+      '<span class="al-prow__who"><b>' + E(p.name) + "</b><i>" + E(roleOf(p)) + " · " + E(ageWord(+p.age || 18)) +
+        " · " + E(promiseWord(pr)) + caps + "</i>" + al.meter(pr, "warm") + "</span>" +
+      '<span class="al-prow__rate">' + (o == null ? "&mdash;" : o) + "</span>" +
+      '<span class="al-prow__act">' +
+        '<button type="button" class="al-btn" data-fo-colt="' + E(p.name) + '" data-fo-act="promote">Bring up</button>' +
+        '<button type="button" class="al-btn" data-fo-colt="' + E(p.name) + '" data-fo-act="release">Release</button>' +
+      "</span></div>";
+  }
+
+  // THE COLTS CUP: nine fixtures, one on every second league round, played by
+  // the umpire from a side nobody picks. Nothing to submit, nothing to miss.
+  function cupHTML(al, cup, myClub) {
+    var head = '<div class="al-sec__head"><h2>The Colts Cup</h2><a href="#/academy">' +
+      (cup && cup.roundsPlayed ? cup.roundsPlayed + " of " + cup.rounds : "not started") + "</a></div>";
+    if (!al) return head;
+    if (!cup || !cup.results || !cup.results.length) {
+      return head + al.empty("The boys have not started",
+        "Their first fixture comes on the second round of the league season. Nine matches, one every other round, and " +
+        "the whole country's academies in it.");
+    }
+    var rows = cup.table.map(function (t, i) {
+      return "<tr" + (t.name === myClub ? " class='al-you'" : "") + "><td class='al-pos'>" + (i + 1) + "</td>" +
+        "<td class='l al-club'>" + E(t.name) + (t.name === myClub ? "<span class='al-you__tag'>YOU</span>" : "") + "</td>" +
+        "<td>" + t.p + "</td><td>" + t.w + "</td><td class='al-c-l'>" + t.l + "</td>" +
+        "<td>" + (t.nrr > 0 ? "+" : "") + t.nrr.toFixed(2) + "</td><td class='al-pts'>" + t.pts + "</td></tr>";
+    }).join("");
+    var mine = cup.results.filter(function (r) { return r.home === myClub || r.away === myClub; }).slice(-4).reverse();
+    var sc = function (x) { return x ? x.r + "/" + x.w : "—"; };
+    var recent = mine.length ? al.ledger(mine.map(function (r) {
+      var won = r.winner === myClub, tied = r.winner === null;
+      return [r.home + " v " + r.away, sc(r.hs) + " · " + sc(r.as), tied ? "" : won ? "pos" : "neg"];
+    })) : "";
+    var lead = (cup.runs && cup.runs[0])
+      ? '<p class="al-read">Leading the cup: ' + E(cup.runs[0].name) + " " + cup.runs[0].runs + " runs" +
+        (cup.wickets && cup.wickets[0] ? " · " + E(cup.wickets[0].name) + " " + cup.wickets[0].wkts + " wickets" : "") + "</p>"
+      : "";
+    return head +
+      "<div class='al-tblwrap'><table class='al-tbl'><thead><tr><th></th><th class='l'>Club</th>" +
+      "<th>P</th><th>W</th><th class='al-c-l'>L</th><th>NRR</th><th>Pts</th></tr></thead><tbody>" +
+      rows + "</tbody></table></div>" + recent + lead +
+      '<p class="al-read">The side picks itself — your colts and the youngest men on the staff — so there is no ' +
+      "teamsheet to file and nothing to lose by being asleep.</p>";
   }
 
   // The academy was the first of the world rooms, and its plate-and-cards
