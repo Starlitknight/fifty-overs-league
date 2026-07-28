@@ -80,8 +80,13 @@ The owner's spec, in their words, refined by the FTP manual:
    block, cost mirrored in SQL as world_seat_cost and held to the server's
    answer by test 020), never sold back, no borrowing to build; what was spent
    is carried from the founding so it cannot hide in an overdraft. Room at
-   #/finance. NOT built: division tiers (one league a nation), a supporter-mood
-   ladder with mechanical effects beyond the gate, and a hard finance cap.]
+   #/finance. THE HARD CAP (migration 021): a club cannot sink past the money
+   it was founded with - reach that floor and it is in administration, the
+   losses below the line written off because there is no deeper hole, but the
+   sponsor pays half while it is under and the write surface refuses to build
+   anything at all while the bank is red. NOT built: division tiers (one league
+   a nation), and a supporter-mood ladder with mechanical effects beyond the
+   gate.]
    ECONOMY: attendance from supporters+mood+division+weather, gate takings
    split 2/3-1/3, sponsorship tied to results, stadium expansion (+$ per
    seat), supporter mood ladder, debt rules, finance cap.

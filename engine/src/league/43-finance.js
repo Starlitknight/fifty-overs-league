@@ -140,8 +140,14 @@
       "<div class='fo-ac-card'><h3>" + E(st.claim.club || "Your club") + "<span>" + E(st.claim.ground || "") + "</span></h3>" +
         "<div class='fo-fin-bank" + (bank < 0 ? " red" : "") + "'><b>" + money(bank) + "</b>" +
           "<i>in the bank after " + (f.rounds || 0) + " round" + (f.rounds === 1 ? "" : "s") + " of cricket</i></div>" +
-        (bank < 0
-          ? "<div class='fo-fin-warn'><b>You are overdrawn.</b> The bank takes three per cent of what you owe every round until you are level. Winning brings a crowd, and a crowd is the way out.</div>"
+        (f.administration
+          ? "<div class='fo-fin-warn'><b>The club is in administration.</b> You have hit the floor at " +
+            money(f.debtLimit || 2500000) + " &mdash; nothing sinks past what the club was founded with, and " +
+            money(f.writtenOff || 0) + " has been written off. While you are under, the sponsor pays half and you build nothing. " +
+            "Win, fill the ground, and climb back over the line.</div>"
+          : bank < 0
+          ? "<div class='fo-fin-warn'><b>You are overdrawn.</b> The bank takes three per cent of what you owe every round, and nothing gets built until you are level. The floor is " +
+            money(f.debtLimit || 2500000) + "; below that the club goes into administration and the sponsor halves his cheque. Winning brings a crowd, and a crowd is the way out.</div>"
           : "") +
       "</div>" +
 
@@ -170,6 +176,7 @@
           (f.academyPaid ? row("The academy", "what you built", -(f.academyPaid || 0), "out") : "") +
           (f.seatsPaid ? row("The ground", "what the stands cost", -(f.seatsPaid || 0), "out") : "") +
           (f.interest ? row("Interest", "the price of an overdraft", -(f.interest || 0), "out") : "") +
+          (f.writtenOff ? row("Written off", "what fell below the floor, and stayed there", f.writtenOff || 0, "in") : "") +
           "<tr class='tot'><td>In the bank</td><td class='v'>" + money(bank) + "</td></tr>" +
         "</tbody></table>" +
         "<div class='fo-ac-note'>Every line is derived from the record, not from a running total &mdash; which is why the same figure comes back however many times the umpire settles it, and why nobody can quietly credit anybody.</div>" +

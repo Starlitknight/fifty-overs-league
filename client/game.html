@@ -10636,7 +10636,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260728-0132-eec3da";
+  var FO_BUILD = "20260728-0143-46ccd6";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -16594,7 +16594,8 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
         "<li><b>The gate.</b> Attendance is your following, adjusted for the mood, who is visiting (the flagship and the leaders draw a crowd) and the weather that day - and it can never exceed the seats you have built. Tickets are a fixed price; the <b>home club keeps two thirds and the visitors take one third</b>, so a full house pays you twice: once at your ground and again at theirs.</li>",
         "<li><b>The sponsor</b> pays by the round and reads the table before he signs. Finish higher, earn more.</li>",
         "<li><b>Out</b> go wages every round, academy upkeep by the level, and whatever you have spent on your ground and your academy.</li>",
-        "<li><b>An overdraft costs.</b> Go below nothing and the bank takes three per cent of what you owe every round until you are level. Nothing stops you playing - but it compounds, and winning is the only way out.</li></ul>",
+        "<li><b>An overdraft costs.</b> Go below nothing and the bank takes three per cent of what you owe every round, and <b>nothing gets built until you are level</b>. Nothing stops you playing - but it compounds.</li>",
+        "<li><b>There is a floor.</b> A club cannot sink further than the money it was founded with. Reach it and the club is in <b>administration</b>: the losses below the line are written off, because there is no deeper hole to dig - but while you are under, <b>the sponsor pays half</b>. It is a floor with a price, not a rescue. Win, fill the ground, and climb back over the line.</li></ul>",
         "<p><b>The one decision is the ground.</b> Seats come a thousand at a time, they are never sold back, and the treasury has to hold the money on the day - no borrowing to build. Each further thousand costs more per seat than the last, and empty seats earn nothing, so build into a crowd you already have rather than one you are hoping for.</p>",
         "<div class='fo-man-tip'><b>Why it can be trusted:</b> every line is derived from the record rather than added to a running total. Settle the same season a hundred times and the same figure comes back - which is also why nobody can quietly credit anybody.</div>"
       ].join("")],
@@ -43303,8 +43304,14 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       "<div class='fo-ac-card'><h3>" + E(st.claim.club || "Your club") + "<span>" + E(st.claim.ground || "") + "</span></h3>" +
         "<div class='fo-fin-bank" + (bank < 0 ? " red" : "") + "'><b>" + money(bank) + "</b>" +
           "<i>in the bank after " + (f.rounds || 0) + " round" + (f.rounds === 1 ? "" : "s") + " of cricket</i></div>" +
-        (bank < 0
-          ? "<div class='fo-fin-warn'><b>You are overdrawn.</b> The bank takes three per cent of what you owe every round until you are level. Winning brings a crowd, and a crowd is the way out.</div>"
+        (f.administration
+          ? "<div class='fo-fin-warn'><b>The club is in administration.</b> You have hit the floor at " +
+            money(f.debtLimit || 2500000) + " &mdash; nothing sinks past what the club was founded with, and " +
+            money(f.writtenOff || 0) + " has been written off. While you are under, the sponsor pays half and you build nothing. " +
+            "Win, fill the ground, and climb back over the line.</div>"
+          : bank < 0
+          ? "<div class='fo-fin-warn'><b>You are overdrawn.</b> The bank takes three per cent of what you owe every round, and nothing gets built until you are level. The floor is " +
+            money(f.debtLimit || 2500000) + "; below that the club goes into administration and the sponsor halves his cheque. Winning brings a crowd, and a crowd is the way out.</div>"
           : "") +
       "</div>" +
 
@@ -43333,6 +43340,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
           (f.academyPaid ? row("The academy", "what you built", -(f.academyPaid || 0), "out") : "") +
           (f.seatsPaid ? row("The ground", "what the stands cost", -(f.seatsPaid || 0), "out") : "") +
           (f.interest ? row("Interest", "the price of an overdraft", -(f.interest || 0), "out") : "") +
+          (f.writtenOff ? row("Written off", "what fell below the floor, and stayed there", f.writtenOff || 0, "in") : "") +
           "<tr class='tot'><td>In the bank</td><td class='v'>" + money(bank) + "</td></tr>" +
         "</tbody></table>" +
         "<div class='fo-ac-note'>Every line is derived from the record, not from a running total &mdash; which is why the same figure comes back however many times the umpire settles it, and why nobody can quietly credit anybody.</div>" +

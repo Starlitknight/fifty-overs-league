@@ -22,7 +22,7 @@ import { evolveCountry, applyLiving, livingPatch } from '../living.mjs';
 import { CAP, makeColt, ensureYouth, ageYouth,
   coltsRoundOf, coltsSquad, playColtsRound, coltRecords } from '../youth.mjs';
 import { academyRate } from '../living.mjs';
-import { ACADEMY_UPKEEP, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance } from '../economy.mjs';
+import { ACADEMY_UPKEEP, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, DEBT_LIMIT, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance } from '../economy.mjs';
 import { EPOCH, DAY, seedOf } from '../clock.mjs';
 
 const DBNAME = 'foworld_p3_test';
@@ -935,7 +935,7 @@ test('020: the books are a ledger, and they recompute from the record', async ()
   // the bank IS the ledger: founded, plus what came in, less what went out
   for (const r of rows) {
     const f = r.finance;
-    const expect = f.founded + f.gate + f.awayCut + f.sponsor
+    const expect = f.founded + f.gate + f.awayCut + f.sponsor + f.writtenOff
       - f.wages - f.upkeep - f.interest - f.academyPaid - f.seatsPaid;
     assert.equal(Number(r.bank), Math.round(expect), 'club ' + r.slot + ': the books add up');
   }
@@ -1009,12 +1009,36 @@ test('020: the books are a ledger, and they recompute from the record', async ()
   assert.ok(Number(broke.bank) < 0, 'a club that cannot pay its men is in the red');
   assert.ok(broke.finance.interest > 0, 'and the bank charges it for the privilege');
   const red = Number(broke.bank);
+
+  // THE FLOOR. Nothing sinks past what the club was founded with. Below the
+  // line the losses are written off - there is no deeper hole - but the club
+  // is under, the sponsor halves his cheque, and it builds nothing.
+  assert.equal(red, -DEBT_LIMIT, 'the hole stops at the founding money and no further');
+  assert.equal(broke.finance.administration, true, 'and the club is in administration');
+  assert.ok(broke.finance.writtenOff > 0, 'what fell below the floor was written off');
+  assert.ok(broke.finance.adminRounds > 0);
+  const healthy = (await pool.query(
+    `SELECT finance FROM clubs WHERE country_id='eng' AND slot=8`)).rows[0].finance;
+  assert.equal(healthy.administration, false, 'a solvent club is not');
+  assert.ok(broke.finance.sponsor < healthy.sponsor,
+    'the distressed deal pays less (' + broke.finance.sponsor + ' v ' + healthy.sponsor + ')');
+  // and the books still add up with the write-off in them
+  assert.equal(red, Math.round(broke.finance.founded + broke.finance.gate + broke.finance.awayCut
+    + broke.finance.sponsor + broke.finance.writtenOff - broke.finance.wages - broke.finance.upkeep
+    - broke.finance.interest - broke.finance.academyPaid - broke.finance.seatsPaid),
+    'the ruined books add up too');
   await settleMoney(pool, 'eng');
   assert.equal(Number((await pool.query(
     `SELECT bank FROM clubs WHERE country_id='eng' AND slot=9`)).rows[0].bank), red,
     'even ruin recomputes to the same figure');
   await pool.query(`UPDATE clubs SET squad=$1::jsonb WHERE country_id='eng' AND slot=9`,
     [JSON.stringify(solvent)]);
+  await settleMoney(pool, 'eng');
+
+  // A CLUB IN THE RED BUILDS NOTHING, and is told so in English
+  await pool.query(`UPDATE clubs SET bank=-40000 WHERE country_id='eng' AND slot=1`);
+  await assert.rejects(as(U1, `SELECT public.world_set_stadium(19000)`), /builds nothing/);
+  await assert.rejects(as(U1, `SELECT public.world_set_academy(5)`), /builds nothing/);
   await settleMoney(pool, 'eng');
 
   // your own status carries the books home

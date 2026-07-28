@@ -26,6 +26,13 @@ export const MAX_SEATS = 45000;
 export const TICKET = 26;                    // what a seat costs at the gate
 export const HOME_CUT = 2 / 3;               // the old two-thirds, one-third split
 export const DEBT_ROUND = 0.03;              // what an overdraft costs a round
+// THE HARD CAP. A club may not sink further than the money it was founded
+// with. Reach that floor and it is in ADMINISTRATION: the losses below the
+// line are written off - there is no deeper hole to dig - but the sponsor
+// halves his cheque while the club is under, and nothing gets built. It is a
+// floor with a price, not a forgiveness.
+export const DEBT_LIMIT = 2500000;
+export const ADMIN_SPONSOR = 0.5;
 export const ACADEMY_UPKEEP = 900;           // a level, a round
 export const MOOD_WORD = ['mutinous', 'restless', 'patient', 'settled', 'pleased', 'delighted', 'ecstatic'];
 
@@ -113,6 +120,7 @@ export async function computeFinance(pool, country) {
       bank: FOUNDING_BANK - (+c.academy_paid || 0) - (+c.seats_paid || 0),
       sup: FOUNDING_SUPPORT, mood: 3, pts: 0, played: 0, form: [],
       gate: 0, awayCut: 0, sponsor: 0, wagesPaid: 0, upkeep: 0, interest: 0,
+      writtenOff: 0, admin: false, adminRounds: 0,
       atts: [], rounds: 0
     };
   }
@@ -153,11 +161,18 @@ export async function computeFinance(pool, country) {
     for (const m of R.ms) { playing.add(m.home_slot); playing.add(m.away_slot); }
     for (const slot of playing) {
       const c = S[slot];
-      const sp = sponsorOf(pos[slot], c.mood, N);
+      // a club already under administration signs a distressed deal: the
+      // sponsor stays, but for half of what he would otherwise pay
+      const sp = Math.round(sponsorOf(pos[slot], c.mood, N) * (c.admin ? ADMIN_SPONSOR : 1));
       const up = c.academy * ACADEMY_UPKEEP;
       c.sponsor += sp; c.wagesPaid += c.wages; c.upkeep += up; c.rounds++;
+      if (c.admin) c.adminRounds++;
       c.bank += takings[slot] + sp - c.wages - up;
       if (c.bank < 0) { const i = Math.round(-c.bank * DEBT_ROUND); c.interest += i; c.bank -= i; }
+      // THE FLOOR. Nothing sinks past what the club was founded with; what
+      // would have gone deeper is written off, and the club is under.
+      if (c.bank < -DEBT_LIMIT) { c.writtenOff += (-DEBT_LIMIT) - c.bank; c.bank = -DEBT_LIMIT; }
+      c.admin = c.bank <= -DEBT_LIMIT;
     }
     // the result, and what it does to the mood and the crowd
     for (const m of R.ms) {
@@ -192,6 +207,8 @@ export async function computeFinance(pool, country) {
         gate: s.gate, awayCut: s.awayCut, sponsor: s.sponsor,
         wages: s.wagesPaid, wageBill: s.wages, upkeep: s.upkeep, interest: s.interest,
         academyPaid: +c.academy_paid || 0, seatsPaid: +c.seats_paid || 0,
+        writtenOff: s.writtenOff, administration: s.admin, adminRounds: s.adminRounds,
+        debtLimit: DEBT_LIMIT,
         founded: FOUNDING_BANK, rounds: s.rounds,
         nextSeats: s.seats < MAX_SEATS ? s.seats + 1000 : null,
         nextSeatsCost: s.seats < MAX_SEATS ? seatBlockPrice(s.seats) : null
