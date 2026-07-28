@@ -1,0 +1,51 @@
+name: league-compact
+# ONE-SHOT REPAIR. Rewrites each league's stored snapshot in its slimmed form.
+# The snapshot used to be published with the ball-by-ball log of every match
+# ever played, so it grew ~3.5 MB a round and members eventually could not
+# download it at all. round.mjs now publishes slim, but only from the next
+# round on; this fixes what is already stored, without playing any cricket.
+# Safe to run repeatedly: an already-slim league is left alone.
+on:
+  workflow_dispatch:
+    inputs:
+      league_id:
+        description: "One league id, or blank for every league"
+        required: false
+        default: ''
+
+concurrency:
+  group: round-resolver          # never run while the umpire is mid-round
+  cancel-in-progress: false
+
+jobs:
+  compact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install resolver deps
+        working-directory: resolver
+        run: npm install playwright@1.56.1
+      - name: Cache Chromium
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-1.56.1-${{ runner.os }}
+      - name: Install Chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        working-directory: resolver
+        run: npx playwright install --with-deps chromium
+      - name: Install Chromium system deps (cached browser)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        working-directory: resolver
+        run: npx playwright install-deps chromium
+      - name: Compact the stored snapshots
+        working-directory: resolver
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node compact.mjs ${{ inputs.league_id }}
