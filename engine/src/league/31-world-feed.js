@@ -65,20 +65,35 @@
   // localStorage at that instant and was never told the body had landed. That
   // is how the home page could show a defeat the table had not heard about.
   // Waiters are queued instead, and flushed together when the fetch settles.
+  // A WAITER IS TOLD LATER, NEVER DURING THE ASK. Every callback handed to
+  // want()/lgFetch is some page's "repaint me when the data lands" - and that
+  // repaint calls want() again. Answering a callback SYNCHRONOUSLY therefore
+  // re-enters the very function that is mid-answer: repaint -> want -> repaint
+  // -> want, forever. With a cold cache the loop never ignites (no body, no
+  // callback), which is why no local test ever saw it - but on the live
+  // backend the cache warms on the first fetch, and from then on every visit
+  // to the home, league or fixtures page recursed until the stack blew, then
+  // did it again on the next tick until the page froze solid. Measured live:
+  // "RangeError: Maximum call stack size exceeded" in foRenderHome, then a
+  // renderer pinned at 106% CPU with every menu dead.
+  // So: flushes are deferred to their own task, and a warm cache answers
+  // NOBODY - the caller already holds the data (it called get() first; that
+  // is the contract every caller follows), so there is nothing to announce.
   function lgFlush(rid) {
     var ws = LG_WAIT[rid] || []; LG_WAIT[rid] = [];
-    for (var i = 0; i < ws.length; i++) { try { ws[i](LG_BODY[rid] || null); } catch (e) {} }
+    if (!ws.length) return;
+    setTimeout(function () {
+      for (var i = 0; i < ws.length; i++) { try { ws[i](LG_BODY[rid] || null); } catch (e) {} }
+    }, 0);
   }
   function lgFetch(rid, cb) {
     if (!rid) return;
     // THE WHOLE PLANET AT ONCE. The world page now asks for all nineteen
     // nations' standings, so without a courtesy window a repaint would put
     // nineteen probes on the wire every time it painted. Inside that window
-    // we answer from the copy already in hand rather than going quiet.
-    if (!LG_BUSY[rid] && LG_AT[rid] && Date.now() - LG_AT[rid] < LG_TTL) {
-      if (cb && LG_BODY[rid]) { try { cb(LG_BODY[rid]); } catch (e) {} }
-      return;
-    }
+    // the copy already in hand IS the answer - the caller has it from get() -
+    // and no callback fires (see the note above lgFlush).
+    if (!LG_BUSY[rid] && LG_AT[rid] && Date.now() - LG_AT[rid] < LG_TTL) return;
     if (cb) (LG_WAIT[rid] = LG_WAIT[rid] || []).push(cb);
     if (LG_BUSY[rid]) return;                    // in flight: the flush will reach us
     LG_BUSY[rid] = 1; LG_AT[rid] = Date.now();
@@ -128,23 +143,24 @@
       try { var c4 = localStorage.getItem("fo_world_mgr_" + rid); if (c4) { NM_MGR[rid] = JSON.parse(c4); return NM_MGR[rid]; } } catch (e) {}
       return null;
     },
-    // same waiting-room as the standings above: a second screen asking inside
-    // the courtesy window is answered from the names already held, and one
-    // asking mid-flight is queued rather than ignored
+    // same waiting-room as the standings above: a caller asking mid-flight is
+    // queued rather than ignored, and told in a task of its own - see the
+    // recursion note above lgFlush; inside the courtesy window the names the
+    // caller already read via get() ARE the answer, and no callback fires
     want: function (rid, cb) {
       try {
         if (!rid) return;
-        if (!NM_BUSY[rid] && NM_AT[rid] && Date.now() - NM_AT[rid] < 60000) {
-          if (cb && NM_BODY[rid]) { try { cb(NM_BODY[rid]); } catch (e) {} }
-          return;
-        }
+        if (!NM_BUSY[rid] && NM_AT[rid] && Date.now() - NM_AT[rid] < 60000) return;
         if (cb) (NM_WAIT[rid] = NM_WAIT[rid] || []).push(cb);
         if (NM_BUSY[rid]) return;
         NM_BUSY[rid] = 1;
         var done = function () {
           NM_BUSY[rid] = 0; NM_AT[rid] = Date.now();
           var ws = NM_WAIT[rid] || []; NM_WAIT[rid] = [];
-          for (var i = 0; i < ws.length; i++) { try { ws[i](NM_BODY[rid] || null); } catch (e) {} }
+          if (!ws.length) return;
+          setTimeout(function () {
+            for (var i = 0; i < ws.length; i++) { try { ws[i](NM_BODY[rid] || null); } catch (e) {} }
+          }, 0);
         };
         fetch(SB_URL + "/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(rid) + "&select=slot,name,manager,ground", { headers: { apikey: SB_ANON } })
           .then(function (r) { return r.ok ? r.json() : null; })
