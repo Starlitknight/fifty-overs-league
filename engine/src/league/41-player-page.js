@@ -476,6 +476,28 @@
     } catch (e) { SQ_BUSY[k] = 0; }
     return null;
   }
+  // THE OTHER CAREER. A man who has played for his country has a second book
+  // that his club record never touches, and this is the page people come to
+  // for it. The nations snapshot carries every capped cricketer still on a
+  // club's books, keyed by name, so one fetch answers for the whole world.
+  var NAT_SNAP = null, NAT_BUSY = 0;
+  function servedIntl(cid, name, cb) {
+    if (NAT_SNAP === null && !NAT_BUSY) {
+      NAT_BUSY = 1;
+      try {
+        fetch(SB_URL + "/rest/v1/world_snapshots?key=eq.nations&select=body", { headers: { apikey: SB_ANON } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (rows) {
+            NAT_BUSY = 0;
+            NAT_SNAP = (rows && rows[0] && rows[0].body) || false;
+            try { if (cb) cb(); } catch (e) {}
+          }, function () { NAT_BUSY = 0; NAT_SNAP = false; });
+      } catch (e) { NAT_BUSY = 0; NAT_SNAP = false; }
+    }
+    if (!NAT_SNAP || !NAT_SNAP.nations) return null;
+    var n = NAT_SNAP.nations[cid];
+    return (n && n.record && n.record[name]) || null;
+  }
   function servedFace(sp) {
     try {
       if (window.foPkArt) return ART() + window.foPkArt({
@@ -546,6 +568,12 @@
       var sr = c.balls ? (100 * (c.runs || 0) / c.balls).toFixed(1) : "&mdash;";
       var econ = c.ovb ? ((c.conc || 0) / (c.ovb / 6)).toFixed(2) : "&mdash;";
       var kv = function (k, v) { return "<div><b>" + v + "</b><i>" + k + "</i></div>"; };
+      var intl = servedIntl(cid, sp.name, function () { if (onPage()) buildCard(cid, slot, name); });
+      var intlCard = !intl ? "" :
+        "<div class='fo-pp-card'><h3>For his country<span>" + intl.caps + " cap" + (intl.caps === 1 ? "" : "s") + "</span></h3>" +
+        "<div class='fo-pp-mini'>" + kv("Caps", intl.caps) + kv("Runs", intl.runs || 0) +
+        kv("Best", intl.hs || 0) + kv("Wickets", intl.wkts || 0) + "</div>" +
+        "<p class='fo-pp-dim'>Played in the international windows. A cap keeps its own book &mdash; it never swells a club record.</p></div>";
       var room;
       if (CARD_TAB === "career") {
         room = "<div class='fo-pp-col'><div class='fo-pp-card'><h3>Career record<span>All league cricket</span></h3>" +
@@ -554,7 +582,7 @@
             kv("Wickets", c.wkts || 0) + kv("Best bowling", c.bb ? c.bb.w + "/" + c.bb.r : "&mdash;") +
             kv("Economy", econ) + kv("Overs", c.ovb ? Math.floor(c.ovb / 6) : 0) + "</div>"
             : "<p class='fo-pp-dim'>He has not played a league match yet. The record starts the day he is picked.</p>") +
-          "</div></div>" +
+          "</div>" + intlCard + "</div>" +
           "<div class='fo-pp-rail'><div class='fo-pp-card dark'><h3>The book is public</h3>" +
           "<p>Every run and wicket here was scored in a match the umpire played and banked. It is the same record his own manager reads.</p>" +
           "<a class='fo-pp-more' href='#/records'>The record book &rsaquo;</a></div></div>";

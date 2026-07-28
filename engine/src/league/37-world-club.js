@@ -1,5 +1,5 @@
 /* ============================================================================
-   JOIN THE WORLD (#/worldclub) + NATIONAL TEAMS (#/natteams) — P3/P5 client.
+   JOIN THE WORLD (#/worldclub) — the P3 client of the served world.
 
    The served world became joinable: any signed-in manager can claim a bot
    club in any of the 19 nations (never the boss) and submit orders; the
@@ -9,9 +9,11 @@
    client trust"): this page could lie all it wants and the server would
    shrug.
 
-   #/natteams reads the season's national squads - the 15 best REAL
-   players of each nation's league, assembled server-side for the World
-   Cup - and marks any that play for YOUR world club.
+   The international game itself - the windows, the squads, the tours and
+   the caps - has its own room now (module 46, #/nations). What lives here
+   is the part a MANAGER meets: on a window round the sheet knows which of
+   his men his country has taken, greys them out, and tells him what the
+   board is paying him for the week.
    ========================================================================== */
 (function () {
   "use strict";
@@ -311,7 +313,7 @@
       "<div class='fo-wj-hero'><div class='fo-wj-k'>The joinable world</div>" +
       "<h1>A Club of Your Own, Anywhere</h1>" +
       "<p>" + E(sub) + "</p></div>" + body +
-      "<div class='fo-wj-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/natteams'>National teams &rsaquo;</a></div>" +
+      "<div class='fo-wj-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/nations'>The international game &rsaquo;</a></div>" +
       "</div></div>";
   }
   function renderSignIn(page) {
@@ -385,7 +387,20 @@
       }
       var byName = {}; squad.forEach(function (p) { byName[p.name] = p; });
       var isBowler = function (nm) { var p = byName[nm]; return p && p.bowlType && p.bowlType !== "none"; };
-      if (!ST.picked.length) ST.picked = squad.slice(0, 11).map(function (p) { return p.name; });
+      // THE INTERNATIONAL WINDOW. Three rounds a season your country takes
+      // its best men and pays you for the week. They are not available for
+      // this round - so the sheet greys them out rather than letting you pick
+      // an eleven that cannot take the field.
+      var away = {}, awayFee = 0, awayMen = [];
+      var windows = st.windows || [5, 9, 13];
+      var isWindow = windows.indexOf(+nextRound) >= 0;
+      (st.callups || []).forEach(function (cu) {
+        if (+cu.round !== +nextRound) return;
+        away[cu.player] = 1; awayFee += (+cu.fee || 0); awayMen.push(cu.player);
+      });
+      var here = squad.filter(function (p) { return !away[p.name]; });
+      if (!ST.picked.length) ST.picked = here.slice(0, 11).map(function (p) { return p.name; });
+      ST.picked = ST.picked.filter(function (nm) { return !away[nm]; });
       // keep the five/captain/keeper coherent with the XI
       ST.five = ST.five.filter(function (nm) { return ST.picked.indexOf(nm) >= 0 && isBowler(nm); });
       if (ST.five.length < 5) ST.picked.forEach(function (nm) { if (ST.five.length < 5 && isBowler(nm) && ST.five.indexOf(nm) < 0) ST.five.push(nm); });
@@ -402,14 +417,28 @@
         var fat = +p.fatN || 0;
         var tired = fat >= 44 ? " tired" : "";
         var caps = (p.career && p.career.m) || 0;
+        var intl = (p.intl && p.intl.m) || 0;
         var line = (p.bowlType && p.bowlType !== "none" ? "bowls" : p.keeper ? "keeper" : "bats") +
-          " &middot; " + (p.rating || "") + (caps ? " &middot; " + caps + " cap" + (caps === 1 ? "" : "s") : "");
+          " &middot; " + (p.rating || "") + (caps ? " &middot; " + caps + " cap" + (caps === 1 ? "" : "s") : "") +
+          (intl ? " &middot; " + intl + " for his country" : "");
+        if (away[p.name]) return "<button type='button' class='fo-wj-man gone' disabled>" +
+          "<i>&#9992;</i><b>" + E(p.name) + "</b><span>" + line + "</span>" +
+          "<u class='fo-wj-form t'>away with his country</u></button>";
         return "<button type='button' class='fo-wj-man" + (ix2 >= 0 ? " on" : "") + "' data-nm='" + E(p.name) + "'>" +
           "<i>" + (ix2 >= 0 ? (ix2 + 1) : "&middot;") + "</i><b>" + E(p.name) + "</b>" +
           "<span>" + line + "</span>" +
           "<u class='fo-wj-form f" + fi + (tired ? " t" : "") + "'>" + E(FORMW[fi] || "steady") +
           (tired ? " &middot; " + E(p.fatWord || "tired") : "") + "</u></button>";
       }).join("");
+      var windowNote = !isWindow ? ""
+        : "<div class='fo-wj-window'><b>&#9992; International window &middot; round " + nextRound + "</b>" +
+          (awayMen.length
+            ? "<i>" + awayMen.length + " of your men " + (awayMen.length === 1 ? "is" : "are") +
+              " with their country: " + E(awayMen.join(", ")) + ". The board pays you $" +
+              awayFee.toLocaleString() + " for the week. Pick around them &mdash; and if an old sheet still names one, " +
+              "the umpire sends out the best man left rather than tearing it up.</i>"
+            : "<i>The selectors meet on the morning of this round. If they want your men you will be told here, and paid for them.</i>") +
+          "</div>";
       var fiveBtns = ST.picked.filter(isBowler).map(function (nm) {
         var fx = ST.five.indexOf(nm);
         return "<button type='button' class='fo-wj-five" + (fx >= 0 ? " on" : "") + "' data-bw='" + E(nm) + "'>" +
@@ -443,6 +472,9 @@
         "<a class='fo-wj-netslink' href='#/finance'>&#128176; The books &mdash; the gate, the crowd and the ground &rsaquo;</a>" +
         // and cricket you organise yourself, outside the league
         "<a class='fo-wj-netslink' href='#/comps'>&#127942; The invitationals &mdash; put on a competition of your own &rsaquo;</a>" +
+        // and the game above the club game: who your country has taken, and
+        // what it pays you for them
+        "<a class='fo-wj-netslink' href='#/nations'>&#9992; The international game &mdash; the windows, the squads and the caps &rsaquo;</a>" +
         // your own name: the table, your club page and every fixture list use it
         "<h4 class='fo-wj-h4'>Your name <span>what the world calls the manager of this club</span></h4>" +
         "<div class='fo-wj-idrow'>" +
@@ -462,6 +494,7 @@
         "<button type='button' id='fo-wj-frgo' class='fo-wj-frbtn'>&#9876; Challenge</button></div>" +
         "<div class='fo-wj-note'>You name the date and hour. Both managers can set a lineup for the friendly until <b>one hour before</b> play, when teamsheets lock; an unanswered challenge dies at the same moment and is never played.</div>" +
         "<h4 class='fo-wj-h4'>The eleven, in batting order</h4>" +
+        windowNote +
         "<div class='fo-wj-sq'>" + men + "</div>" +
         "<h4 class='fo-wj-h4'>The bowling five, in spell order <span>openers attack &middot; middle grinds &middot; closers defend</span></h4>" +
         "<div class='fo-wj-fiverow'>" + (fiveBtns || "<span class='fo-wj-note'>Pick bowlers into the XI first.</span>") + "</div>" +
@@ -668,35 +701,6 @@
     });
   }
 
-  // ---- #/natteams -----------------------------------------------------------
-  window.foRenderNatTeamsPage = function () {
-    var page = document.getElementById("page"); if (!page) return;
-    foWjCss();
-    page.innerHTML = "<div class='fo-wj'><div class='fo-wj-in'>" +
-      "<div class='fo-wj-hero'><div class='fo-wj-k'>The international game</div>" +
-      "<h1>The National Squads</h1>" +
-      "<p>Each nation's fifteen best real players, selected from its league's clubs for the World Cup window. Wear your league form well and the selectors notice.</p></div>" +
-      "<div id='fo-wj-nats'><div class='fo-wj-note'>Asking the selectors&hellip;</div></div>" +
-      "<div class='fo-wj-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/worldclub'>Your world club &rsaquo;</a></div>" +
-      "</div></div>";
-    snapshot("world/today").then(function (today) {
-      var sN = (today && today.countries && today.countries[0] && today.countries[0].seasonNo) || 1;
-      return snapshot("nats/s" + sN).then(function (nats) { return { nats: nats, sN: sN }; });
-    }).then(function (d) {
-      var box = document.getElementById("fo-wj-nats"); if (!box) return;
-      if (!d || !d.nats) {
-        box.innerHTML = "<div class='fo-wj-card'><p class='fo-wj-p'>The selectors meet when the season's leagues are done - squads are announced at the cup window, then the World Cup plays on the real engine. Check back after day 18 of the season.</p></div>";
-        return;
-      }
-      var ids = Object.keys(d.nats).sort();
-      box.innerHTML = ids.map(function (rid) {
-        var n = d.nats[rid];
-        return "<div class='fo-wj-card'><h3><img class='fo-wj-fl' src='" + flagOf(rid) + "' alt=''> " + E(n.nation) + " <span>season " + d.sN + "</span></h3>" +
-          "<div class='fo-wj-natsq'>" + (n.squad || []).map(function (nm) { return "<span>" + E(nm) + "</span>"; }).join("") + "</div></div>";
-      }).join("");
-    }).catch(function () {});
-  };
-
   function foWjCss() {
     if (document.getElementById("fo-wj-css")) return;
     var s = document.createElement("style"); s.id = "fo-wj-css";
@@ -738,6 +742,10 @@
       "html body #page .fo-wj-sq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}",
       "html body #page .fo-wj-man{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;text-align:left;background:rgba(255,255,255,.85) !important;border:1px solid rgba(20,28,40,.14) !important;border-radius:10px !important;padding:8px 10px !important;cursor:pointer;font:inherit !important;min-width:0;overflow:hidden}",
       "html body #page .fo-wj-man.on{border-color:#C95532 !important;background:rgba(250,238,230,.9) !important}",
+      "html body #page .fo-wj-man.gone{opacity:.5;cursor:default;background:rgba(20,28,40,.05) !important;border-style:dashed !important}",
+      "html body #page .fo-wj-window{margin:2px 0 10px;padding:11px 13px;background:rgba(11,29,58,.05);border:1px solid rgba(11,29,58,.2);border-left:3px solid #0B1D3A;border-radius:12px}",
+      "html body #page .fo-wj-window b{display:block;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#0B1D3A}",
+      "html body #page .fo-wj-window i{display:block;margin-top:6px;font:italic 400 12px/1.55 'Fraunces',Georgia,serif;color:rgba(20,28,40,.72)}",
       "html body #page .fo-wj-man i{font-style:normal;font:700 11px/1 Oswald,sans-serif;color:#C95532;width:16px;text-align:center}",
       "html body #page .fo-wj-man b{display:block;font:600 12px/1.2 Inter,sans-serif;color:#141C28;flex:1 1 auto;min-width:76px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       "html body #page .fo-wj-man span{flex:1 0 100%;order:3;font-size:9.5px;color:rgba(20,28,40,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}",

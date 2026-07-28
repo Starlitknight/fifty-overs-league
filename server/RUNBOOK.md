@@ -23,6 +23,20 @@ expandWorld(): every missing country is founded in its own transaction
 with position-stable squad seeds; England's clubs, season and matches
 are untouched. Their season 1 begins on the next world day.
 
+## The international windows
+Rounds 5, 9 and 13 of every season are window days. The umpire names each
+nation's fifteen on the morning of one (banked in `callups` — named once,
+never re-picked), plays every club fixture without those men, and at
+**18:00 UTC** pairs whoever is in a window that world day and plays the
+tours on the real engine (`nat_matches`). Nineteen nations make nine ties;
+the nation drawn out calls nobody up that window. One idempotency key a day
+(`nat:day:<n>`); a dead cron is healed for four days back by the next
+invocation. Compensation is never written to a balance — `economy.mjs`
+walks the callups from genesis with the rest of the books.
+
+    psql foworld -c "SELECT country_id,round,count(*),sum(fee) FROM callups GROUP BY 1,2 ORDER BY 1,2;"
+    psql foworld -c "SELECT id,a_name,b_name,result->>'text' FROM nat_matches ORDER BY world_day DESC LIMIT 9;"
+
 ## Inspect the world
     psql foworld -c "SELECT key,status,detail FROM ticks ORDER BY started_at DESC LIMIT 5;"
     psql foworld -c "SELECT country_id,round,count(*) FROM matches GROUP BY 1,2 ORDER BY 1,2;"

@@ -89,10 +89,16 @@ Champion-club knockout on cup days; end-of-season trophy categories
 (runs/wickets/averages/SR/dismissals), trophy cabinet, hall of fame;
 club + global rankings from rolling ratings.
 
-**P5 — National teams + World Cup** (1–2 sessions)
+**P5 — National teams + World Cup** (1–2 sessions) — BUILT
 AI selection, availability locks, compensation, tours in windows,
 off-season nations World Cup wired to real national squads (the owner's
-players genuinely selected).
+players genuinely selected). Shipped as migration 023 + `server/nations.mjs`:
+windows on rounds 5/9/13, a banked fifteen a nation a window (never more
+than three from a club), the men locked out of that club round and its
+nets, sheets covered by a twelfth man rather than discarded, $50k/$20k
+compensation walked from genesis in the books, tours on the real engine at
+18:00 UTC, caps in their own career book, and the World Cup field taken
+from the season's last window squad. Room at `#/nations`.
 
 **P6 — FTP-parity depth** (ongoing waves)
 Per-player N/D/A batting & bowling tactics + spells + toss + captain +

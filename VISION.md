@@ -26,7 +26,40 @@ The owner's spec, in their words, refined by the FTP manual:
    with the boss club seated in each league and never replaceable.
 2. CHAMPIONS LEAGUE OF CLUBS: replace/augment the nations World Cup with a
    knockout of the 19 champion CLUBS (user's club qualifies by winning).
-3. REAL NATIONAL TEAMS: selectors pick actual best players from club squads
+3. [BUILT — migration 023 + server/nations.mjs. THE INTERNATIONAL WINDOWS.
+   Three rounds a season are window days (clock.mjs WINDOWS: 5, 9, 13). THE
+   SELECTORS: on the morning of one, every nation on earth names a squad of
+   fifteen out of every club in it - the gloves first, then six bowlers,
+   then the best of the rest, ranked on a man's card lifted or dropped by
+   his form, so league nick is genuinely what gets you picked. Never more
+   than THREE from one club, which leaves every side twelve to choose from
+   and spreads the international game round a league instead of gutting its
+   best club. The squad is banked the instant it is named (callups), so a
+   re-run of the day can never pick a different fifteen. THE LOCK: those men
+   are not at their clubs that round - playRound plays the fixture without
+   them, they do not work in the club's nets that week either, and absence
+   rides into the banked living patch as {a:true} so the broadcast fields
+   the same eleven the umpire did. THE TWELFTH MAN: a sheet filed a
+   fortnight ago that names an absentee is COVERED, not torn up - the best
+   man left bats in his place and, if he can, bowls his overs (law 2:
+   absence costs nothing mechanical). THE MONEY: $50k a senior, $20k a man
+   under twenty-one, paid to the club he was taken from and walked from
+   genesis by economy.mjs like everything else in the books. THE TOURS: at
+   18:00 UTC that evening whoever is in a window that world day is paired on
+   the day's own seed and plays on the real engine (nineteen nations, nine
+   ties, one week off), banked in nat_matches. The draw is a pure function of
+   the world day, so the selectors already know it in the morning: a nation
+   with the week off calls NOBODY up - a window with no fixture leaves the
+   men at their clubs and costs the board nothing. A cap is its own book - a
+   tour never swells a club career - but it is the same fifty overs: it
+   tires the legs and moves the form. The nations' ladder in the rankings
+   now climbs on tours as well as World Cup ties, and the World Cup side IS
+   the side that toured, not a fresh fifteen picked the morning of the draw.
+   Room at #/nations; the teamsheet greys out whoever has gone.
+   The one honest simplification: the selectors read form as it stands when
+   the window settles, so a window healed days late has seen a little
+   cricket the players had not. Once named, it is fixed forever.]
+   REAL NATIONAL TEAMS: selectors pick actual best players from club squads
    each international window; players miss those club rounds; club paid
    compensation; national squads feed the World Cup.
 4. MATCH ORDER DEPTH (FTP parity): per-player batting/bowling

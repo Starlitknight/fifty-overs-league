@@ -6,6 +6,13 @@ export const DAY = 86400000;
 export const CYCLE = 25;
 export const ROUNDS = 18;
 export const LIVE_HOURS = 3;
+// THE INTERNATIONAL WINDOWS. Three rounds a season are also window days: the
+// selectors name a squad in the morning, those men miss their clubs' round,
+// and their countries play each other in the evening. BLUEPRINT's FTP-style
+// weeks 5/8/11 pattern, on our daily calendar: rounds 5, 9 and 13.
+export const WINDOWS = [5, 9, 13];
+export const INTL_HOUR = 18;                  // every tour starts at 18:00 UTC
+export function isWindowRound(round) { return WINDOWS.indexOf(round) >= 0; }
 // the staggered globe, same formula as the client planet: England is the
 // 14:00 UTC league; every other nation hashes onto one of eight slots.
 // Parity with the shipped build is asserted by tests/world-p2.test.mjs.
@@ -32,6 +39,10 @@ export function phaseOf(nowMs) {
 // a day's play is settled once its window has closed
 export function daySettled(nowMs, day, countryId) {
   return nowMs >= EPOCH + day * DAY + (natHour(countryId) + LIVE_HOURS) * 3600000;
+}
+// and any fixture on the global clock the same way — the tours keep 18:00 UTC
+export function hourSettled(nowMs, day, hour) {
+  return nowMs >= EPOCH + day * DAY + (hour + LIVE_HOURS) * 3600000;
 }
 // FNV-1a of the match id — THE seed derivation, same law as the client
 export function seedOf(matchId) {

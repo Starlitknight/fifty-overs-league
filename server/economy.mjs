@@ -107,6 +107,19 @@ export async function computeFinance(pool, country) {
     `SELECT id, season_no, round, home_slot, away_slot, home_name, away_name, seed,
             result->>'winner' AS winner
        FROM matches WHERE country_id=$1 ORDER BY season_no, round, home_slot`, [country])).rows;
+  // WHAT THE BOARD PAYS FOR A MAN'S WEEK. An international window takes a
+  // club's best men and pays for them by the head - fifty thousand a senior,
+  // twenty for a boy under twenty-one. Derived from the squads as named, so
+  // the cheque is walked from genesis with everything else and re-settling
+  // can never pay it twice.
+  let fees = [];
+  try {
+    fees = (await pool.query(
+      `SELECT season_no, round, slot, sum(fee)::int AS paid, count(*)::int AS men
+         FROM callups WHERE country_id=$1 GROUP BY season_no, round, slot`, [country])).rows;
+  } catch (eF) { fees = []; }                    // pre-023 database: no windows yet
+  const feeAt = {};
+  for (const f of fees) feeAt[f.season_no + ':' + f.round + ':' + f.slot] = f;
 
   const N = clubs.length;
   const S = {};
@@ -120,6 +133,7 @@ export async function computeFinance(pool, country) {
       bank: FOUNDING_BANK - (+c.academy_paid || 0) - (+c.seats_paid || 0),
       sup: FOUNDING_SUPPORT, mood: 3, pts: 0, played: 0, form: [],
       gate: 0, awayCut: 0, sponsor: 0, wagesPaid: 0, upkeep: 0, interest: 0,
+      compensation: 0, capsAway: 0,
       writtenOff: 0, admin: false, adminRounds: 0,
       atts: [], rounds: 0
     };
@@ -165,9 +179,12 @@ export async function computeFinance(pool, country) {
       // sponsor stays, but for half of what he would otherwise pay
       const sp = Math.round(sponsorOf(pos[slot], c.mood, N) * (c.admin ? ADMIN_SPONSOR : 1));
       const up = c.academy * ACADEMY_UPKEEP;
+      const f = feeAt[R.ms[0].season_no + ':' + R.ms[0].round + ':' + slot];
+      const comp = f ? f.paid : 0;
       c.sponsor += sp; c.wagesPaid += c.wages; c.upkeep += up; c.rounds++;
+      c.compensation += comp; c.capsAway += f ? f.men : 0;
       if (c.admin) c.adminRounds++;
-      c.bank += takings[slot] + sp - c.wages - up;
+      c.bank += takings[slot] + sp + comp - c.wages - up;
       if (c.bank < 0) { const i = Math.round(-c.bank * DEBT_ROUND); c.interest += i; c.bank -= i; }
       // THE FLOOR. Nothing sinks past what the club was founded with; what
       // would have gone deeper is written off, and the club is under.
@@ -205,6 +222,7 @@ export async function computeFinance(pool, country) {
         seats: s.seats, lastAttendance: s.lastAtt || 0, lastWeather: s.lastWeather || null,
         avgAttendance: avg, ticket: TICKET,
         gate: s.gate, awayCut: s.awayCut, sponsor: s.sponsor,
+        compensation: s.compensation, capsAway: s.capsAway,
         wages: s.wagesPaid, wageBill: s.wages, upkeep: s.upkeep, interest: s.interest,
         academyPaid: +c.academy_paid || 0, seatsPaid: +c.seats_paid || 0,
         writtenOff: s.writtenOff, administration: s.admin, adminRounds: s.adminRounds,
