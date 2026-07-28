@@ -10792,7 +10792,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260728-1430-a8ea8b";
+  var FO_BUILD = "20260728-1505-d5cfda";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -11143,13 +11143,32 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // card for good, with no error, no button and nothing to try. So the card
   // arms a watchdog: if it is still the thing on screen after a patient wait,
   // it turns itself into real choices.
-  var LOAD_TIMER = null;
+  var LOAD_TIMER = null, LOAD_PULSE = null;
   function foLoading(msg) {
     setNavy(false);
     var tok = "L" + Date.now() + Math.random().toString(36).slice(2, 7);
     main.innerHTML = '<div class="folbody"><div class="folcard"><div class="folpad" data-fo-loading="' + tok +
-      '" style="text-align:center;padding:28px 12px"><div class="folsmall">' + E(msg || "Loading…") + "</div></div></div></div>";
+      '" style="text-align:center;padding:28px 12px"><div class="folsmall">' + E(msg || "Loading…") + "</div>" +
+      // A SCREENSHOT MUST DIAGNOSE ITSELF. The counter ticks on a timer and the
+      // lines under it are the last requests with their timings. A photo of
+      // this card now separates the three kinds of stuck at a glance: counter
+      // frozen = the page's own code has locked the browser; counter running,
+      // a request "still waiting" = the network; counter running, all requests
+      // done = the code after them wedged. No more guessing from a still image.
+      '<div data-fo-pulse style="margin-top:10px;font:600 10px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;opacity:.55;white-space:pre-line"></div>' +
+      "</div></div></div>";
     try { clearTimeout(LOAD_TIMER); } catch (e) {}
+    try { clearInterval(LOAD_PULSE); } catch (e) {}
+    var t0 = Date.now();
+    LOAD_PULSE = setInterval(function () {
+      try {
+        var el = main.querySelector('[data-fo-loading="' + tok + '"] [data-fo-pulse]');
+        if (!el) { clearInterval(LOAD_PULSE); return; }
+        var lines = [];
+        try { lines = foNetReport(); } catch (e2) {}
+        el.textContent = Math.round((Date.now() - t0) / 1000) + "s\n" + lines.slice(-4).join("\n");
+      } catch (e) {}
+    }, 1000);
     LOAD_TIMER = setTimeout(function () {
       // if anything else has painted since, this token is gone and we say nothing
       try { if (main.querySelector('[data-fo-loading="' + tok + '"]')) foStuck(msg); } catch (e) {}
@@ -11400,8 +11419,14 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       } catch (e) { rej(e); }
     });
   }
+  // THE CACHE MAY NEVER HOLD THE DOOR. This read sits on the entry's critical
+  // path, and IndexedDB - unlike a network request - has no timeout of its own:
+  // a browser profile in a bad mood can leave open() pending forever, and every
+  // callback above it waits politely. Three seconds is more than a healthy disk
+  // needs; after that entry proceeds as if there were no cache, which is merely
+  // the old behaviour.
   function foSnapGet(leagueId) {
-    return idbOpen().then(function (db) {
+    var read = idbOpen().then(function (db) {
       return new Promise(function (res, rej) {
         var rq = db.transaction(IDB_STORE, "readonly").objectStore(IDB_STORE).get("snap:" + leagueId);
         rq.onsuccess = function () { res(rq.result || null); };
@@ -11409,7 +11434,9 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
       });
     }).then(function (v) {
       return (v && typeof v.version === "number" && v.snapshot) ? v : null;
-    }).catch(function () { return null; });
+    });
+    var late = new Promise(function (res) { setTimeout(function () { res(null); }, 3000); });
+    return Promise.race([read, late]).catch(function () { return null; });
   }
   // one row per league, overwritten each round · the store cannot grow
   // NEVER WHILE THE SEASON IS BEING OPENED. Storing it copies the whole thing

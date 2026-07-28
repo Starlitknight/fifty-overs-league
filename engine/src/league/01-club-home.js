@@ -3007,13 +3007,32 @@
   // card for good, with no error, no button and nothing to try. So the card
   // arms a watchdog: if it is still the thing on screen after a patient wait,
   // it turns itself into real choices.
-  var LOAD_TIMER = null;
+  var LOAD_TIMER = null, LOAD_PULSE = null;
   function foLoading(msg) {
     setNavy(false);
     var tok = "L" + Date.now() + Math.random().toString(36).slice(2, 7);
     main.innerHTML = '<div class="folbody"><div class="folcard"><div class="folpad" data-fo-loading="' + tok +
-      '" style="text-align:center;padding:28px 12px"><div class="folsmall">' + E(msg || "Loading…") + "</div></div></div></div>";
+      '" style="text-align:center;padding:28px 12px"><div class="folsmall">' + E(msg || "Loading…") + "</div>" +
+      // A SCREENSHOT MUST DIAGNOSE ITSELF. The counter ticks on a timer and the
+      // lines under it are the last requests with their timings. A photo of
+      // this card now separates the three kinds of stuck at a glance: counter
+      // frozen = the page's own code has locked the browser; counter running,
+      // a request "still waiting" = the network; counter running, all requests
+      // done = the code after them wedged. No more guessing from a still image.
+      '<div data-fo-pulse style="margin-top:10px;font:600 10px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;opacity:.55;white-space:pre-line"></div>' +
+      "</div></div></div>";
     try { clearTimeout(LOAD_TIMER); } catch (e) {}
+    try { clearInterval(LOAD_PULSE); } catch (e) {}
+    var t0 = Date.now();
+    LOAD_PULSE = setInterval(function () {
+      try {
+        var el = main.querySelector('[data-fo-loading="' + tok + '"] [data-fo-pulse]');
+        if (!el) { clearInterval(LOAD_PULSE); return; }
+        var lines = [];
+        try { lines = foNetReport(); } catch (e2) {}
+        el.textContent = Math.round((Date.now() - t0) / 1000) + "s\n" + lines.slice(-4).join("\n");
+      } catch (e) {}
+    }, 1000);
     LOAD_TIMER = setTimeout(function () {
       // if anything else has painted since, this token is gone and we say nothing
       try { if (main.querySelector('[data-fo-loading="' + tok + '"]')) foStuck(msg); } catch (e) {}

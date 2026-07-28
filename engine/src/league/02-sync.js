@@ -26,8 +26,14 @@
       } catch (e) { rej(e); }
     });
   }
+  // THE CACHE MAY NEVER HOLD THE DOOR. This read sits on the entry's critical
+  // path, and IndexedDB - unlike a network request - has no timeout of its own:
+  // a browser profile in a bad mood can leave open() pending forever, and every
+  // callback above it waits politely. Three seconds is more than a healthy disk
+  // needs; after that entry proceeds as if there were no cache, which is merely
+  // the old behaviour.
   function foSnapGet(leagueId) {
-    return idbOpen().then(function (db) {
+    var read = idbOpen().then(function (db) {
       return new Promise(function (res, rej) {
         var rq = db.transaction(IDB_STORE, "readonly").objectStore(IDB_STORE).get("snap:" + leagueId);
         rq.onsuccess = function () { res(rq.result || null); };
@@ -35,7 +41,9 @@
       });
     }).then(function (v) {
       return (v && typeof v.version === "number" && v.snapshot) ? v : null;
-    }).catch(function () { return null; });
+    });
+    var late = new Promise(function (res) { setTimeout(function () { res(null); }, 3000); });
+    return Promise.race([read, late]).catch(function () { return null; });
   }
   // one row per league, overwritten each round · the store cannot grow
   // NEVER WHILE THE SEASON IS BEING OPENED. Storing it copies the whole thing
