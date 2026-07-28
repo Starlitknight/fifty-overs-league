@@ -34,15 +34,30 @@ cd "$(dirname "$0")"
 # The league layer removes the veil; a 4s CSS failsafe reveals regardless.
 BOOT='<style id="fo-boot">html{background:#0B1322}html>body{visibility:hidden;animation:fo-boot-reveal .01s 4s forwards}@keyframes fo-boot-reveal{to{visibility:visible}}</style>'
 
+# ONE GAME, ONE ADDRESS. The site is published twice - GitHub Pages, which
+# still serves the old bookmarks, and the host below, which is the real one.
+# Two live origins is not a spare tyre, it is a split brain: a browser keeps
+# localStorage PER ORIGIN, so the same manager on the two links has two
+# device sessions, two cached careers and two cloud-save pulls, and every
+# link they share sends friends to whichever one they happened to copy.
+#
+# So the old address forwards to the new one, before the program is even
+# fetched: this runs in <head>, so a redirected visit never downloads the
+# four-megabyte bundle twice. The decision is a pure function so it can be
+# tested; the hostname guard is what makes a loop impossible, since the
+# destination host contains no "github.io" and returns the empty string.
+REDIR='<script>window.__foHome=function(h,p,s,x){try{if(String(h).indexOf("github.io")<0)return"";return"https://fifty-overs-league.s-rananaware.workers.dev/"+String(p).replace(/^\/[^\/]*\//,"")+(s||"")+(x||"")}catch(e){return""}};(function(){try{var u=window.__foHome(location.hostname,location.pathname,location.search,location.hash);if(u)location.replace(u)}catch(e){}})();</script>'
+
 # Unique build stamp (UTC time + source hash). The league layer shows it and
 # polls version.json to offer one-tap updates when a newer build is deployed.
 BUILD_ID="$(date -u +%Y%m%d-%H%M)-$(cat engine/src/league/*.js engine/src/presentation/*.js engine/src/skin/*.css | sha256sum | cut -c1-6)"
 
 mkdir -p .build assets
-FO_BUILD_ID="$BUILD_ID" FO_BOOT="$BOOT" python3 - <<'PYASM'
+FO_BUILD_ID="$BUILD_ID" FO_BOOT="$BOOT" FO_REDIR="$REDIR" python3 - <<'PYASM'
 import os, re
 build_id = os.environ['FO_BUILD_ID']
 boot = os.environ['FO_BOOT']
+redir = os.environ['FO_REDIR']
 
 shell = open('engine/shell.html', encoding='utf-8').read()
 names = [n for n in open('engine/src/manifest.txt').read().split('\n') if n]
@@ -92,7 +107,7 @@ head_css = ('<style id="fo-skin-login">' + skin('10-login.css') + '</style>' +
 tail = '\n<style id="fo-brand">' + skin('30-brand.css') + '</style>\n'
 assert shell.count('</body></html>') == 1
 page = shell.replace('</body></html>', tail + '__FO_SCRIPT__</body></html>')
-page = page.replace('<head>', '<head>' + boot, 1)
+page = page.replace('<head>', '<head>' + redir + boot, 1)
 page = page.replace('</head>', head_css + '</head>', 1)
 page = page.replace('__FO_BUILD__', build_id)
 
