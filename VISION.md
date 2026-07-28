@@ -178,3 +178,67 @@ C. Full stats universe for own league (leaderboards, careers, club records).
 D. Daily newspaper: world round-up + lore features on bosses/stars/clubs.
 E. Then: structure waves 1-3 above (joinable world, champions league,
    real national teams).
+
+---
+
+# The owner's brief (settled 28 Jul 2026, in answer to twenty questions)
+
+The waves above were a gap analysis against FTP. This is the thing itself:
+what the game IS, in the owner's own answers. Everything built from here
+answers to this page.
+
+## The player
+- THE DAILY LOOP is deep management, not a chore list: read what happened
+  overnight, catch up with the wider world, scout young players, work out
+  the shape of the side, sell the men who do not fit, buy from the market,
+  set the nets, mind the money, read the lore, plan for the league match,
+  follow other nations, follow your own players' careers. **Extreme depth,
+  very realistic.**
+- THE ARC has two halves. At the start the fantasy is *a new club climbing
+  a ladder*. Once established it becomes *the custodian of a club with
+  immense history - which you built - and which you now have to continue*.
+  Systems should serve whichever half the manager is in.
+- THE FIRST MONTH must do three things: set the team up, get him ATTACHED
+  to his squad, his shape and his boys, and teach him how the league and
+  the wider world work.
+- IT IS A SHARED WORLD AND A GAME PLAYED WITH PEOPLE - Battrick and From
+  the Pavilion online, not a solitaire sim with other people's names in it.
+
+## The laws, as amended
+- ABSENCE HURTS OVER TIME, NOT IN THE SHORT TERM. The old law (an absent
+  manager loses nothing mechanical) now holds over days, not months: a
+  manager who checks in every few days must never be behind, and one who
+  disappears for a season must find his club the worse for it. This is what
+  makes a transfer market possible at all.
+- MONEY MUST BITE, AND A CLUB CAN GENUINELY FAIL. Bad decisions compound -
+  debt, a gutted squad, men who will not sign - and wrecking a club is a
+  thing a manager is allowed to do. There is a road back, but it is long.
+- THE WORLD GETS HARDER. Difficulty is not flat; the game should come after
+  a manager who has learned it.
+- YOUR NUMBERS ARE YOURS; THEIRS ARE A SCOUT'S OPINION. A manager reads his
+  own men exactly. A rival's man is words and ranges until somebody is paid
+  to look at him properly - which is what keeps scouting a real activity.
+- BOTH SCREENS, NO COMPROMISE. Every room is excellent on a phone and on a
+  desk, even when that costs two layouts.
+
+## The shape of the world to come
+- DIVISIONS, once there are enough managers to fill them. One league a
+  nation is a stage, not the destination.
+- A MANAGER MAY MOVE NATIONS at the end of a season, taking the club he
+  founded with him.
+- RIVAL CLUBS ARE CHARACTERS. Every boss and every club wants its own
+  story, in the way the opposing schools in Haikyuu have theirs: a
+  philosophy, an ace, a way of playing you can feel on the scorecard, and
+  an arc that continues whether or not you meet them. Lore is not garnish
+  here; it is a system.
+
+## What we are measured against
+From the Pavilion, on three counts it gets wrong: **its match engine, its
+interface, and the absence of a broader world with characters in it.** It is
+a dated game. Ours must not read as one.
+
+## The order of work
+1. THE TRANSFER MARKET AND SCOUTING - the biggest single thing in the daily
+   loop, and now unblocked by the amended absence law.
+2. Rival clubs as characters.
+3. Injuries and fitness; coaching staff; contracts and wages.
