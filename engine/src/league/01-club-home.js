@@ -2981,6 +2981,9 @@
       delTeam: function () { delTeam(t.getAttribute("data-id"), t.getAttribute("data-name")); },
       draftMine: draftMine, practice: practice,
       reload: function () { location.reload(); },
+      // the wedged-load escape: go where a member who has not loaded belongs -
+      // the lobby, which paints from the small tables rather than the snapshot
+      lobby: function () { try { preStart(); } catch (e) { location.reload(); } },
       backToGame: function () { openWrap(false); if (typeof window.route === "function") window.route(); }
     };
     if (acts[a]) acts[a]();
@@ -2997,9 +3000,39 @@
 
   // Never leave the panel blank: show progress while we talk to the server, and a
   // recoverable error card (instead of silence) when something goes wrong.
+  // A SPINNER MUST NEVER BE THE LAST WORD. Several paths through the sync
+  // engine hand off to an async request and return without painting — the
+  // rejoin and relaunch checks both do — and if that request fails, its catch
+  // clears a flag and draws nothing at all. The manager is then left on this
+  // card for good, with no error, no button and nothing to try. So the card
+  // arms a watchdog: if it is still the thing on screen after a patient wait,
+  // it turns itself into real choices.
+  var LOAD_TIMER = null;
   function foLoading(msg) {
     setNavy(false);
-    main.innerHTML = '<div class="folbody"><div class="folcard"><div class="folpad" style="text-align:center;padding:28px 12px"><div class="folsmall">' + E(msg || "Loading…") + "</div></div></div></div>";
+    var tok = "L" + Date.now() + Math.random().toString(36).slice(2, 7);
+    main.innerHTML = '<div class="folbody"><div class="folcard"><div class="folpad" data-fo-loading="' + tok +
+      '" style="text-align:center;padding:28px 12px"><div class="folsmall">' + E(msg || "Loading…") + "</div></div></div></div>";
+    try { clearTimeout(LOAD_TIMER); } catch (e) {}
+    LOAD_TIMER = setTimeout(function () {
+      // if anything else has painted since, this token is gone and we say nothing
+      try { if (main.querySelector('[data-fo-loading="' + tok + '"]')) foStuck(msg); } catch (e) {}
+    }, 20000);
+  }
+  // The way out of a wedged load. Everything here is reachable without the
+  // league having finished loading, and none of it touches the server copy of
+  // the club - a manager who cannot get in has lost nothing.
+  function foStuck(msg) {
+    openWrap(true); setNavy(false);
+    main.innerHTML = '<div class="folbody"><div class="folcard"><h4>This is taking too long</h4><div class="folpad">' +
+      '<div class="folsmall" style="line-height:1.55;margin-bottom:12px">' + E(msg || "Loading") +
+      ' has not come back. Your club and everything it has done are safe on the server — it is only this device that cannot get in. Try one of these:</div>' +
+      '<div style="display:flex;flex-direction:column;gap:8px;align-items:stretch">' +
+      '<button class="p" data-act="reload">&#8635; Try again</button>' +
+      '<button class="mini" data-act="lobby">Open the league lobby</button>' +
+      '<button class="mini" data-act="practice">Play a practice game meanwhile</button>' +
+      '<button class="mini" data-act="logout">Log out</button>' +
+      "</div></div></div></div>";
   }
   function foFatal(msg) {
     openWrap(true); setNavy(false);
