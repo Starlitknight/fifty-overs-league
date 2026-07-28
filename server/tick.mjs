@@ -19,6 +19,7 @@ import { EPOCH, dayIx, daySettled, seedOf, natHour, scheduleOf, ROUNDS } from '.
 import { livingPatch, evolveCountry } from './living.mjs';
 import { ensureYouth, ageYouth, playColtsRound, computeColts, coltRecords } from './youth.mjs';
 import { settleMoney } from './economy.mjs';
+import { runComps } from './comps.mjs';
 
 export function matchId(country, seasonNo, round, h, a) {
   return country + ':s' + seasonNo + ':r' + round + ':h' + h + 'a' + a;
@@ -631,6 +632,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       const fr = await runFriendlies(pool, host);
       if (fr.length) lines.push('friendlies played: ' + fr.length);
     } catch (eF) { lines.push('friendlies: ' + eF.message); }
+    try {
+      const iv = await runComps(pool, host, ENGINE_VERSION);
+      if (iv.started.length) lines.push('invitationals started: ' + iv.started.join(', '));
+      if (iv.played.length) lines.push('invitational matches: ' + iv.played.length);
+    } catch (eI) { lines.push('invitationals: ' + eI.message); }
     console.error(lines.length ? lines.join('\n') : 'nothing due anywhere');
     await pool.end();
   })().catch(e => { console.error(e); process.exit(1); });

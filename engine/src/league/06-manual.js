@@ -115,6 +115,14 @@
         "<tr><td>Anyone shattered</td><td><b>Rest</b></td><td>A week of progress traded for legs that work on matchday.</td></tr></table>",
         "<div class='fo-man-tip'><b>Two honest warnings:</b> skill gains raise wages automatically, so improvement is never free. And academy level, squad age and rest discipline compound: none shows much in a single week; over a season the difference is significant.</div>"
       ].join("")],
+      ["invitationals", "The invitationals: competitions of your own", [
+        "<p>Beyond the league there is cricket you organise yourself. Open <b>The invitationals</b> from your club office, give a competition a name, choose a <b>knockout cup</b> or a <b>round robin</b> at four clubs or eight, and put it on. Every manager in the world can see it and join.</p>",
+        "<ul><li><b>Entries stay open for three world days.</b> When that window shuts, the umpire fills any empty seats with clubs nobody manages - so a competition that only you and one friend joined still gets played, properly, against real sides. Nothing dies for want of numbers.</li>",
+        "<li><b>Then it plays itself</b>, a round a day, on the same engine as the leagues. Each side is picked from the squad as it stands, exactly as an absent manager's is. There is no teamsheet to file and no deadline to miss.</li>",
+        "<li><b>A cup</b> pairs the top seat against the bottom and halves until one club is holding it; a tie in a knockout goes to the higher seat. <b>A round robin</b> plays everyone once and the table decides.</li>",
+        "<li>You may run <b>two at a time</b>, and you may pull out of one that hasn't started. Once it has, you play it out.</li></ul>",
+        "<div class='fo-man-tip'><b>Why bother:</b> your league is fixed - the same nine opponents, twice. An invitational is how you get your club in front of sides from other countries, and how a group of friends in different nations end up playing each other for something.</div>"
+      ].join("")],
       ["books", "The books: the crowd, the gate and the ground", [
         "<p>Nobody credits your account. The umpire walks every round your club has ever played and works out what your money is: what the crowd was, what they paid, what the sponsor thought and what your men cost. Open it at <b>The books</b> from your club office.</p>",
         "<ul><li><b>The crowd.</b> Every club carries a following. It grows when you win and where you finish, and it drifts away when you don't - slowly in both directions, which is the point. A good season builds you a following; a bad one costs you one before you have noticed.</li>",
@@ -255,7 +263,7 @@
     var cats = [
       ["Getting started", "The league, the daily rhythm, and habits that win.", ["basics", "day", "tips"]],
       ["Players & squad", "Reading player cards: skills, form, fatigue, talents, age.", ["players"]],
-      ["Matches & tactics", "Orders, conditions, the match centre and the table.", ["orders", "conditions", "matchcentre", "scouting", "practice", "league"]],
+      ["Matches & tactics", "Orders, conditions, the match centre, the table and cricket you organise yourself.", ["orders", "conditions", "matchcentre", "scouting", "practice", "league", "invitationals"]],
       ["Development", "Training programs, the academy and the youth pipeline.", ["training", "academy", "youth"]],
       ["Club operations", "The books, the ground, sponsors and the transfer market.", ["books", "money", "sponsors", "market"]],
       ["Reference", "Glossaries, the living league, and quick answers.", ["attributes", "talents", "world", "faq"]]

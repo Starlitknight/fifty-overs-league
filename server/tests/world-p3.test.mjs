@@ -22,6 +22,7 @@ import { evolveCountry, applyLiving, livingPatch } from '../living.mjs';
 import { CAP, makeColt, ensureYouth, ageYouth,
   coltsRoundOf, coltsSquad, playColtsRound, coltRecords } from '../youth.mjs';
 import { academyRate } from '../living.mjs';
+import { roundRobin, bracket, roundsOf, closeEnrolment, playComps, computeComp, rebuildComps } from '../comps.mjs';
 import { ACADEMY_UPKEEP, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, DEBT_LIMIT, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance } from '../economy.mjs';
 import { EPOCH, DAY, seedOf } from '../clock.mjs';
 
@@ -1047,4 +1048,118 @@ test('020: the books are a ledger, and they recompute from the record', async ()
   assert.ok(st.finance && st.finance.supporters > 0 && st.finance.moodWord);
   assert.equal(Number(st.bank), Number((await pool.query(
     `SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank));
+});
+
+// 021: THE INVITATIONALS. Competitions managers make themselves - a name, a
+// shape, and other managers joining. The law holds: once enrolment closes,
+// nobody needs to be awake. Empty seats are filled with bot clubs so a half-
+// subscribed competition still gets played, a round settles a day on the real
+// engine from the squads as they stand, and the umpire crowns it.
+test('021: a manager founds a competition and the umpire plays it out', async () => {
+  // THE DRAW is arithmetic: a round robin meets everyone once, a bracket halves
+  const rr = roundRobin(4);
+  assert.equal(rr.length, 3, 'four clubs is three rounds');
+  rr.forEach(r => assert.equal(r.length, 2));
+  const met = new Set();
+  rr.flat().forEach(([a, b]) => met.add(Math.min(a, b) + '-' + Math.max(a, b)));
+  assert.equal(met.size, 6, 'every pair exactly once');
+  assert.deepEqual(bracket(4), [[0, 3], [1, 2]], 'top seat plays bottom seat inward');
+  assert.equal(roundsOf('cup', 8), 3);
+  assert.equal(roundsOf('league', 8), 7);
+
+  // FOUNDING ONE
+  await assert.rejects(pool.query(`SELECT public.world_comp_found('X','cup',4)`), /sign in/);
+  await assert.rejects(as(U1, `SELECT public.world_comp_found('no','cup',4)`), /three letters/);
+  await assert.rejects(as(U1, `SELECT public.world_comp_found('The Cup','tournament',4)`), /cup or a round robin/);
+  await assert.rejects(as(U1, `SELECT public.world_comp_found('The Cup','cup',6)`), /four clubs or eight/);
+  const made = (await as(U1, `SELECT public.world_comp_found('  The   Potato Bowl ','cup',4) AS r`)).rows[0].r;
+  assert.equal(made.ok, true);
+  assert.equal((await pool.query('SELECT name FROM comps WHERE id=$1', [made.id])).rows[0].name,
+    'The Potato Bowl', 'the spacing is tidied');
+  const cid = Number(made.id);
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM comp_clubs WHERE comp_id=$1', [cid])).rows[0].n, 1,
+    'the founder takes the first seat');
+
+  // JOINING, and the rules of the door
+  await assert.rejects(as(U1, `SELECT public.world_comp_join($1)`, [cid]), /already in it/);
+  await assert.rejects(as(U1, `SELECT public.world_comp_join(999999)`), /no such competition/);
+  await assert.rejects(pool.query(`SELECT public.world_comp_join($1)`, [cid]), /sign in/);
+  // a second manager takes a seat, which is the whole point of the thing
+  assert.equal((await as(U2, `SELECT public.world_comp_join($1) AS r`, [cid])).rows[0].r.seat, 1);
+
+  // ENROLMENT CLOSES and the umpire makes the numbers up
+  const day = (await pool.query('SELECT open_until_day FROM comps WHERE id=$1', [cid])).rows[0].open_until_day;
+  const closeAt = EPOCH + day * DAY + 6 * 3600000;
+  const started = await closeEnrolment(pool, closeAt);
+  assert.ok(started.map(Number).includes(cid), 'it started when its window shut');
+  const field = (await pool.query(
+    'SELECT * FROM comp_clubs WHERE comp_id=$1 ORDER BY seat', [cid])).rows;
+  assert.equal(field.length, 4, 'four seats, filled');
+  assert.equal(field.filter(f => f.user_id).length, 2, 'two managed clubs and two made up the numbers');
+  assert.equal(new Set(field.map(f => f.country_id + ':' + f.slot)).size, 4, 'and no club twice');
+  const cp = (await pool.query('SELECT * FROM comps WHERE id=$1', [cid])).rows[0];
+  assert.equal(cp.status, 'running');
+  assert.equal(cp.rounds, 2, 'four clubs in a cup is semis and a final');
+  // closing again changes nothing
+  assert.deepEqual(await closeEnrolment(pool, closeAt), []);
+  const again = (await pool.query(
+    'SELECT country_id, slot FROM comp_clubs WHERE comp_id=$1 ORDER BY seat', [cid])).rows;
+  assert.deepEqual(again, field.map(f => ({ country_id: f.country_id, slot: f.slot })),
+    'the same seats to the same clubs on a re-run');
+
+  // AND IT IS PLAYED, a round a day, on the real engine
+  const d1 = EPOCH + cp.start_day * DAY + 20 * 3600000;
+  const r1 = await playComps(pool, host, 'v1', d1);
+  assert.equal(r1.length, 2, 'the semi-finals');
+  assert.equal((await playComps(pool, host, 'v1', d1)).length, 0, 'a round already played is never replayed');
+  const d2 = EPOCH + (cp.start_day + 1) * DAY + 20 * 3600000;
+  const r2 = await playComps(pool, host, 'v1', d2);
+  assert.equal(r2.length, 1, 'the final');
+
+  const card = await computeComp(pool, cid);
+  assert.equal(card.name, 'The Potato Bowl');
+  assert.equal(card.results.length, 3);
+  assert.ok(card.champion, 'somebody is holding it: ' + card.champion);
+  assert.ok(card.clubs.some(c => c.name === card.champion), 'and it is one of the four');
+  const semis = card.results.filter(r => r.round === 1).map(r => r.winner).filter(Boolean);
+  const fin = card.results.find(r => r.round === 2);
+  assert.ok(semis.includes(fin.a) && semis.includes(fin.b),
+    'the final is between the two who won their semi-finals');
+  assert.equal((await pool.query('SELECT status, champion FROM comps WHERE id=$1', [cid])).rows[0].status, 'done');
+
+  // A ROUND ROBIN keeps a table instead of a bracket
+  const lg = (await as(U1, `SELECT public.world_comp_found('The Spud League','league',4) AS r`)).rows[0].r;
+  const lid = Number(lg.id);
+  const lday = (await pool.query('SELECT open_until_day FROM comps WHERE id=$1', [lid])).rows[0].open_until_day;
+  await closeEnrolment(pool, EPOCH + lday * DAY + 6 * 3600000);
+  const lcp = (await pool.query('SELECT * FROM comps WHERE id=$1', [lid])).rows[0];
+  assert.equal(lcp.rounds, 3);
+  await playComps(pool, host, 'v1', EPOCH + (lcp.start_day + 2) * DAY + 20 * 3600000);
+  const lcard = await computeComp(pool, lid);
+  assert.equal(lcard.results.length, 6, 'three rounds of two');
+  assert.equal(lcard.table.reduce((s, t) => s + t.p, 0), 12, 'every club played three');
+  lcard.table.forEach(t => assert.equal(t.pts, t.w * 2 + t.t));
+  assert.deepEqual(lcard.table.map(t => t.pts), lcard.table.map(t => t.pts).slice().sort((a, b) => b - a));
+  assert.equal(lcard.champion, lcard.table[0].name, 'the table decides a league');
+
+  // TWO ON THE GO IS THE LIMIT - a manager runs what he starts. (The two
+  // above are finished and done, so they no longer count against him.)
+  const gone = (await as(U1, `SELECT public.world_comp_found('The Fold','cup',8) AS r`)).rows[0].r;
+  await as(U1, `SELECT public.world_comp_found('The Other Fold','cup',4)`);
+  await assert.rejects(as(U1, `SELECT public.world_comp_found('One Too Many','cup',4)`), /before founding another/);
+
+  // LEAVING, while it is still open; the founder leaving folds it
+  await assert.rejects(as(U1, `SELECT public.world_comp_leave($1)`, [cid]), /you play it out/);
+  assert.equal((await as(U1, `SELECT public.world_comp_leave($1) AS r`, [Number(gone.id)])).rows[0].r.folded, true);
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM comps WHERE id=$1', [Number(gone.id)])).rows[0].n, 0);
+
+  // WHAT THE WORLD MAY READ
+  const seen = (await pool.query(`SELECT * FROM public.world_comps WHERE id=$1`, [cid])).rows[0];
+  assert.equal(seen.name, 'The Potato Bowl');
+  assert.equal(Number(seen.entered), 4);
+  assert.equal(Number(seen.managed), 2);
+  assert.ok(!('founder' in seen), 'who founded it is not a public fact about a person');
+  await rebuildComps(pool);
+  const snap = (await pool.query(`SELECT body FROM snapshots WHERE key='comps'`)).rows[0].body;
+  assert.ok(snap.comps.some(c => Number(c.id) === cid && c.champion), 'the shelf carries the finished card');
 });

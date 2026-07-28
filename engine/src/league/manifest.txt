@@ -42,3 +42,4 @@
 41-player-page.js
 42-academy.js
 43-finance.js
+44-invitationals.js

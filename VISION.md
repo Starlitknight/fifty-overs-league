@@ -95,7 +95,19 @@ The owner's spec, in their words, refined by the FTP manual:
    trophy cabinet + hall of fame.
 9. RANKINGS: country + global club rankings from rolling match ratings;
    used to seed cups.
-10. FRIENDLY COMPETITIONS: manager-created leagues/cups with local rules
+10. [BUILT — migration 022 + server/comps.mjs. THE INVITATIONALS: a manager
+    founds one (name, cup or round robin, four clubs or eight), takes the first
+    seat, and any manager in any nation may join while entries are open. Three
+    world days later closeEnrolment fills the empty seats with unmanaged clubs
+    - seeded on the competition id, so a re-run seats the same field - and it
+    starts; a half-subscribed competition still gets played. playComps settles
+    a round a day on the real engine from the squads as they stand, autopicked
+    exactly as an absent manager's XI is: nothing to submit, nothing to miss.
+    Cup = bracket, top seat inward, a tie to the higher seat; league = the
+    circle-method round robin. The card, the table and the champion are derived
+    (computeComp) into the snapshot 'comps'. Two live per manager; leave while
+    open, and the founder leaving folds it. Room at #/comps.]
+    FRIENDLY COMPETITIONS: manager-created leagues/cups with local rules
     (we have challenges; missing organised comps).
 11. MATCH RATINGS page per match (top/middle/tail batting, seam/spin,
     fielding, overall) post-match.
