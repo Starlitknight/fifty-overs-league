@@ -25,7 +25,7 @@
   // spent their first weeks: reachable, but with the dock going dark the
   // moment you arrived.
   var DOCK_MAP = {
-    club: ["club", "home", "matchday", "fixtures", "finance", "ledger", "worldclub"],
+    club: ["club", "home", "matchday", "fixtures", "finance", "ledger", "worldclub", "market"],
     league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "records", "champions", "natteams", "nations", "comps", "watch", "rankings", "team"],
     squad: ["squad", "player", "matchlab"],
     nets: ["training", "academy"],

@@ -238,7 +238,30 @@ interface, and the absence of a broader world with characters in it.** It is
 a dated game. Ours must not read as one.
 
 ## The order of work
-1. THE TRANSFER MARKET AND SCOUTING - the biggest single thing in the daily
-   loop, and now unblocked by the amended absence law.
+1. [BUILT - migration 024 + server/market.mjs + engine 49-market.js.
+   THE TRANSFER MARKET. Built on a WINDOW rather than a race, which is what
+   the amended absence law makes possible. Offers are SEALED - nobody sees
+   anybody else's, ever, so refreshing the page buys nothing - and a listing
+   stands THREE WORLD DAYS, so a manager who looks in every couple of days is
+   never behind one who looks in hourly. When the window shuts the umpire
+   opens the envelopes: the highest offer at or above the seller's reserve
+   takes him, a tie goes to the seed rather than to whoever clicked first,
+   the fee leaves one bank and lands in the other, and the man walks into his
+   new dressing room. Neither club has to be awake for any of it. THE
+   SELLER'S ONLY DECISION is the reserve, made once when he lists.
+   THE SHAPE OF A SIDE decides who is surplus (roleOf/surplusRank: depth
+   beyond what the shape wants, plus age, plus wage) and what a club is short
+   of (needRank) - and the umpire uses the same reading to shed men from bot
+   clubs and to make them shop, seeded on the club and the round so a re-run
+   trades identically. A human is never the only buyer on earth.
+   MONEY BITES: nothing is bought on credit, an offer the bank cannot cover is
+   refused before it is filed, a club is never stripped below fourteen and
+   eighteen is a full staff. THE CAREER FOLLOWS THE MAN - his record is frozen
+   onto him as a carry when he moves, because the living layer derives a book
+   from the matches his CURRENT club has played and a cheque must not erase
+   four hundred first-class runs. THE SCOUT keeps the law that your numbers
+   are yours and a rival's are an opinion: a free first impression for
+   everyone, and bands and words for a manager who pays. No skill value of a
+   man you do not own leaves the database. Room at #/market.]
 2. Rival clubs as characters.
 3. Injuries and fitness; coaching staff; contracts and wages.

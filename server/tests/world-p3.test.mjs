@@ -942,8 +942,10 @@ test('020: the books are a ledger, and they recompute from the record', async ()
   // board paid for the men it took, walked from genesis with the rest.
   for (const r of rows) {
     const f = r.finance;
-    const expect = f.founded + f.gate + f.awayCut + f.sponsor + (f.compensation || 0) + f.writtenOff
-      - f.wages - f.upkeep - f.interest - f.academyPaid - f.seatsPaid;
+    const expect = f.founded + f.gate + f.awayCut + f.sponsor + (f.compensation || 0)
+      + (f.feesIn || 0) + f.writtenOff
+      - f.wages - f.upkeep - f.interest - f.academyPaid - f.seatsPaid
+      - (f.feesOut || 0) - (f.scouting || 0);
     assert.equal(Number(r.bank), Math.round(expect), 'club ' + r.slot + ': the books add up');
   }
   assert.ok(rows.reduce((s, r) => s + (r.finance.capsAway || 0), 0) > 0,
@@ -1033,9 +1035,11 @@ test('020: the books are a ledger, and they recompute from the record', async ()
     'the distressed deal pays less (' + broke.finance.sponsor + ' v ' + healthy.sponsor + ')');
   // and the books still add up with the write-off in them
   assert.equal(red, Math.round(broke.finance.founded + broke.finance.gate + broke.finance.awayCut
-    + broke.finance.sponsor + (broke.finance.compensation || 0) + broke.finance.writtenOff
+    + broke.finance.sponsor + (broke.finance.compensation || 0) + (broke.finance.feesIn || 0)
+    + broke.finance.writtenOff
     - broke.finance.wages - broke.finance.upkeep
-    - broke.finance.interest - broke.finance.academyPaid - broke.finance.seatsPaid),
+    - broke.finance.interest - broke.finance.academyPaid - broke.finance.seatsPaid
+    - (broke.finance.feesOut || 0) - (broke.finance.scouting || 0)),
     'the ruined books add up too');
   await settleMoney(pool, 'eng');
   assert.equal(Number((await pool.query(

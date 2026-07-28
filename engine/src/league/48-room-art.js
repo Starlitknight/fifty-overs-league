@@ -31,6 +31,7 @@
     nations:    ["hgm-arch-dawn", "hgd-veranda-rain"],
     natteams:   ["hgm-arch-dawn", "hgd-veranda-rain"],
     worldclub:  ["hgm-clubroom", "hgd-clubroom"],
+    market:     ["hgm-late-afternoon", "hgd-workshop"],
     rankings:   ["hgm-late-afternoon", "hgd-heart-of-club"],
     records:    ["hgm-clubroom", "hgd-clubroom"],
     milestones: ["hgm-clubroom", "hgd-heart-of-club"],

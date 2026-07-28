@@ -21,6 +21,7 @@ import { ensureYouth, ageYouth, playColtsRound, computeColts, coltRecords } from
 import { settleMoney } from './economy.mjs';
 import { runComps } from './comps.mjs';
 import { ensureCallups, absentBySlot, coverSheet, runWindows, rebuildNations, seasonSquad } from './nations.mjs';
+import { runMarket, settleMarket, rebuildMarket } from './market.mjs';
 
 export function matchId(country, seasonNo, round, h, a) {
   return country + ':s' + seasonNo + ':r' + round + ':h' + h + 'a' + a;
@@ -355,6 +356,12 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
       [country, season.season_no, round]);
     // and the boys have their own fixture on every second league round
     await playColtsRound(pool, host, country, season, round, seedOf, ENGINE_VERSION);
+    // THE BOARD. A bot club sheds a man it does not need now and then, so
+    // the market is never empty in a world where most clubs have nobody
+    // behind them. Seeded on the club and the round: the same world puts up
+    // the same cricketer however often the day is settled.
+    try { await runMarket(pool, country, season.season_no, round, { now }); }
+    catch (eM) { console.error('market listings failed for ' + country + ':', eM.message); }
   }
   // the day's cricket changes the men who played it: careers, form, tired
   // legs, and the work they did in the nets. A pure function of the record,
@@ -691,6 +698,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       const fresh = r.filter(x => !x.skipped);
       if (fresh.length) lines.push(country + ': ' + fresh.map(x => 'day ' + x.day + ' round ' + x.round + ' (' + x.played + ' played)').join(', '));
     }
+    // THE MARKET, world-wide and once a day: the bots do their shopping, the
+    // windows that are up have their envelopes opened, and the board is
+    // republished. Sealed bids mean the hour this runs at buys nobody
+    // anything.
+    try {
+      const mk = await settleMarket(pool);
+      const sold = mk.settled.filter(x => x.sold);
+      if (mk.bids) lines.push('market: ' + mk.bids + ' offers from bot clubs');
+      if (mk.settled.length) lines.push('market: ' + sold.length + ' sold of ' + mk.settled.length + ' windows closed');
+    } catch (eMk) { lines.push('market: ' + eMk.message); }
     // THE INTERNATIONAL WINDOWS, at 18:00 UTC on rounds 5, 9 and 13 — after
     // most of the planet's league cricket, and healed up to four days back
     // if the cron was dead for one

@@ -52,7 +52,8 @@
     wire: "<path d='M12 13.6a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'/><path d='M7.6 7.2a6.2 6.2 0 0 0 0 8.8M16.4 16a6.2 6.2 0 0 0 0-8.8'/><path d='M4.6 4.2a10.4 10.4 0 0 0 0 14.8M19.4 19a10.4 10.4 0 0 0 0-14.8'/>",
     cup: "<path d='M7.4 4h9.2v4.6a4.6 4.6 0 0 1-9.2 0z'/><path d='M7.4 5.4H4.8v1.7a2.9 2.9 0 0 0 2.9 2.9M16.6 5.4h2.6v1.7a2.9 2.9 0 0 1-2.9 2.9'/><path d='M12 13.4v3.8M8.4 20.4h7.2'/>",
     clock: "<circle cx='12' cy='12' r='8.4'/><path d='M12 6.8V12l3.6 2.2'/>",
-    manual: "<path d='M5 4.6h9.4a2.6 2.6 0 0 1 2.6 2.6v12.2H7.6A2.6 2.6 0 0 1 5 16.8z'/><path d='M17 4.6h2v14.8h-2'/><path d='M8.4 8.6h5.2M8.4 12h5.2'/>"
+    manual: "<path d='M5 4.6h9.4a2.6 2.6 0 0 1 2.6 2.6v12.2H7.6A2.6 2.6 0 0 1 5 16.8z'/><path d='M17 4.6h2v14.8h-2'/><path d='M8.4 8.6h5.2M8.4 12h5.2'/>",
+    swap: "<path d='M4.4 8.2h13.2l-3.2-3.4M19.6 15.8H6.4l3.2 3.4'/>"
   };
   function glyph(k) {
     return "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.55' stroke-linecap='round' stroke-linejoin='round'>" +
@@ -67,6 +68,7 @@
       ["training", "net", "The nets", "What each man works on, week by week"],
       ["academy", "star", "The academy", "The colts coming through, and what a level buys"],
       ["worldclub", "sheet", "Your world club", "The teamsheet the umpire plays, and your club's face"],
+      ["market", "swap", "The transfer market", "Scout, buy and sell - sealed offers, three-day windows"],
       ["finance", "coin", "The books", "The crowd, the gate, the sponsor and the ground"],
       ["ledger", "receipt", "The club ledger", "The season's account as the office keeps it"],
       ["fixtures", "cal", "The fixture list", "Every match of the summer, dated"],

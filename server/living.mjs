@@ -192,6 +192,23 @@ export function academyRate(level) {
   return 1 + 0.08 * (lv - 2);
 }
 
+// A CAREER FOLLOWS THE MAN. The living layer derives a cricketer's book from
+// the matches his CURRENT club has played, so a transfer would otherwise hand
+// him a blank page at his new ground - four hundred first-class runs erased
+// by a cheque. The market freezes what he had onto him as a carry when he
+// moves; this adds it back on top of whatever he does from here.
+export function withCarry(book, carry) {
+  const b = book || { m: 0, runs: 0, balls: 0, hs: 0, wkts: 0, conc: 0, ovb: 0, bb: null };
+  if (!carry || !carry.m) return b;
+  const o = { m: (b.m || 0) + (carry.m || 0), runs: (b.runs || 0) + (carry.runs || 0),
+    balls: (b.balls || 0) + (carry.balls || 0), wkts: (b.wkts || 0) + (carry.wkts || 0),
+    conc: (b.conc || 0) + (carry.conc || 0), ovb: (b.ovb || 0) + (carry.ovb || 0),
+    hs: Math.max(b.hs || 0, carry.hs || 0), bb: b.bb || null };
+  const cb = carry.bb;
+  if (cb && (!o.bb || cb.w > o.bb.w || (cb.w === o.bb.w && cb.r < o.bb.r))) o.bb = cb;
+  return o;
+}
+
 // EVERY MAN'S LIFE, RECOMPUTED FROM THE WHOLE RECORD OF ONE COUNTRY.
 export async function evolveCountry(pool, country, now = Date.now(), host = null) {
   const clubs = (await pool.query(
@@ -351,7 +368,10 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
         q.exp = Math.round(base); q.expWord = expWordOf(q.exp);
         q.formIx = 3; q.formWord = FORMW[3];
         q.fatN = 0; q.fatWord = fatWordOf(0); q.fatigue = q.fatWord;
-        delete q.career; delete q.intl;
+        // a man who has not played for THIS club may still have a book: he
+        // was bought, and his record travelled with him
+        if (q.carry && q.carry.m) q.career = withCarry(null, q.carry); else delete q.career;
+        if (q.carryIntl && q.carryIntl.m) q.intl = withCarry(null, q.carryIntl); else delete q.intl;
         return q;
       }
       q.exp = Math.round(clamp(base + expGain(q.age || 27, e.caps), 0, 99));
@@ -370,8 +390,9 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
       if (last != null) fat = Math.max(0, fat - REST_PER_DAY * Math.max(0, today + 1 - last));
       q.fatN = Math.round(clamp(fat, 0, FAT_CEILING));
       q.fatWord = fatWordOf(q.fatN); q.fatigue = q.fatWord;
-      q.career = e.car;
-      if (e.intl.m) q.intl = e.intl; else delete q.intl;
+      q.career = withCarry(e.car, q.carry);
+      const iBook = withCarry(e.intl, q.carryIntl);
+      if (iBook.m) q.intl = iBook; else delete q.intl;
       return q;
     });
     await pool.query('UPDATE clubs SET squad=$3::jsonb WHERE country_id=$1 AND slot=$2',

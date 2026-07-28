@@ -120,6 +120,44 @@ export async function computeFinance(pool, country) {
   } catch (eF) { fees = []; }                    // pre-023 database: no windows yet
   const feeAt = {};
   for (const f of fees) feeAt[f.season_no + ':' + f.round + ':' + f.slot] = f;
+  // WHAT THE MARKET DID TO THE BANK. A transfer is two clubs' money: the fee
+  // out of the buyer, the fee into the seller, on the world day the umpire
+  // opened the envelopes - plus what a manager paid his scouts to look. All
+  // of it walked out of the record, so re-settling can never pay it twice.
+  let deals = [], scouts = [];
+  try {
+    deals = (await pool.query(
+      `SELECT settled_day, country_id AS s_country, slot AS s_slot,
+              buyer_country AS b_country, buyer_slot AS b_slot, fee
+         FROM listings WHERE status='sold' AND (country_id=$1 OR buyer_country=$1)`, [country])).rows;
+    scouts = (await pool.query(
+      `SELECT day, slot, sum(paid)::int AS paid FROM scouted WHERE country_id=$1 GROUP BY day, slot`,
+      [country])).rows;
+  } catch (eD) { deals = []; scouts = []; }      // pre-024 database: no market yet
+  const dayMoney = {};                            // 'day:slot' -> { in, out, scout, sold, bought }
+  const atDay = (d, slot) => {
+    const k = d + ':' + slot;
+    return dayMoney[k] = dayMoney[k] || { in: 0, out: 0, scout: 0, sold: 0, bought: 0 };
+  };
+  for (const d of deals) {
+    if (d.settled_day == null) continue;
+    if (d.s_country === country) { const e = atDay(d.settled_day, d.s_slot); e.in += +d.fee || 0; e.sold++; }
+    if (d.b_country === country) { const e = atDay(d.settled_day, d.b_slot); e.out += +d.fee || 0; e.bought++; }
+  }
+  for (const s2 of scouts) atDay(s2.day, s2.slot).scout += +s2.paid || 0;
+
+  // a transfer settles on a WORLD DAY; the books walk in ROUNDS. The season
+  // table is what turns one into the other.
+  let starts = [];
+  try {
+    starts = (await pool.query(
+      'SELECT season_no, start_day FROM seasons WHERE country_id=$1', [country])).rows;
+  } catch (eS0) { starts = []; }
+  const startOf = Object.fromEntries(starts.map(x => [x.season_no, x.start_day]));
+  const marketDays = Object.keys(dayMoney)
+    .map(k => ({ day: +k.split(':')[0], slot: +k.split(':')[1], ...dayMoney[k] }))
+    .sort((a, b) => a.day - b.day || a.slot - b.slot);
+  let mIx = 0;
 
   const N = clubs.length;
   const S = {};
@@ -134,6 +172,7 @@ export async function computeFinance(pool, country) {
       sup: FOUNDING_SUPPORT, mood: 3, pts: 0, played: 0, form: [],
       gate: 0, awayCut: 0, sponsor: 0, wagesPaid: 0, upkeep: 0, interest: 0,
       compensation: 0, capsAway: 0,
+      feesIn: 0, feesOut: 0, scouting: 0, soldN: 0, boughtN: 0,
       writtenOff: 0, admin: false, adminRounds: 0,
       atts: [], rounds: 0
     };
@@ -154,8 +193,23 @@ export async function computeFinance(pool, country) {
     if (last && last.k === k) last.ms.push(m); else byRound.push({ k, ms: [m] });
   }
 
+  const drainMarket = upto => {
+    while (mIx < marketDays.length && marketDays[mIx].day <= upto) {
+      const m = marketDays[mIx++];
+      const c = S[m.slot]; if (!c) continue;
+      c.feesIn += m.in; c.feesOut += m.out; c.scouting += m.scout;
+      c.soldN += m.sold; c.boughtN += m.bought;
+      c.bank += m.in - m.out - m.scout;
+      if (c.bank < -DEBT_LIMIT) { c.writtenOff += (-DEBT_LIMIT) - c.bank; c.bank = -DEBT_LIMIT; }
+      c.admin = c.bank <= -DEBT_LIMIT;
+    }
+  };
+
   for (const R of byRound) {
     const pos = posMap();
+    // every deal that closed on or before this round's day has already moved
+    // the money by the time the gate is counted
+    if (R.ms.length) drainMarket((startOf[R.ms[0].season_no] ?? 0) + R.ms[0].round - 1);
     const takings = {};                                   // slot -> money this round
     for (const c of clubs) takings[c.slot] = 0;
     for (const m of R.ms) {
@@ -212,6 +266,8 @@ export async function computeFinance(pool, country) {
     }
   }
 
+  drainMarket(Infinity);        // deals closed since the last round still count
+
   return clubs.map(c => {
     const s = S[c.slot];
     const avg = s.atts.length ? Math.round(s.atts.reduce((a, b) => a + b, 0) / s.atts.length) : 0;
@@ -223,6 +279,8 @@ export async function computeFinance(pool, country) {
         avgAttendance: avg, ticket: TICKET,
         gate: s.gate, awayCut: s.awayCut, sponsor: s.sponsor,
         compensation: s.compensation, capsAway: s.capsAway,
+        feesIn: s.feesIn, feesOut: s.feesOut, scouting: s.scouting,
+        sold: s.soldN, bought: s.boughtN,
         wages: s.wagesPaid, wageBill: s.wages, upkeep: s.upkeep, interest: s.interest,
         academyPaid: +c.academy_paid || 0, seatsPaid: +c.seats_paid || 0,
         writtenOff: s.writtenOff, administration: s.admin, adminRounds: s.adminRounds,

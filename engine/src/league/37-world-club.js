@@ -471,6 +471,7 @@
         // and the books: the crowd, the gate and how big a ground to build
         "<a class='fo-wj-netslink' href='#/finance'>&#128176; The books &mdash; the gate, the crowd and the ground &rsaquo;</a>" +
         // and cricket you organise yourself, outside the league
+        "<a class='fo-wj-netslink' href='#/market'>&#8646; The transfer market &mdash; scout, buy and sell &rsaquo;</a>" +
         "<a class='fo-wj-netslink' href='#/comps'>&#127942; The invitationals &mdash; put on a competition of your own &rsaquo;</a>" +
         // and the game above the club game: who your country has taken, and
         // what it pays you for them
