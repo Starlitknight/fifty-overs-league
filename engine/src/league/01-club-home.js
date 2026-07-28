@@ -2669,11 +2669,17 @@
         if (foCheckUpdate._seen === v.build) return;
         foCheckUpdate._seen = v.build;
         var live = false; try { live = (typeof M !== "undefined") && M && !M.done; } catch (e) {}
-        // Nothing on air: pull the new build in automatically, once per build
-        // (the guard stops a reload loop if a stale CDN node keeps serving the
-        // old page). Mid-match the pill still asks first.
-        if (!live && lsGet("fo_bldseen") !== v.build) {
-          lsSet("fo_bldseen", v.build);
+        // Nothing on air: pull the new build in automatically. The old guard
+        // burned ONE attempt per build (a localStorage flag) - if that single
+        // pull was itself served stale by a lagging CDN node, the flag was
+        // spent and the player was stranded on the old build for good, staring
+        // at bugs fixed hours earlier. The URL is the honest attempt marker:
+        // if this page is NOT already the landing of a pull for exactly this
+        // build, pull. If it IS - we asked for that build and did not get it -
+        // show the pill instead of looping, and every fresh page load gets to
+        // try again. Mid-match the pill still asks first.
+        var tried = location.search.indexOf("v=" + encodeURIComponent(v.build)) >= 0;
+        if (!live && !tried) {
           location.replace(location.pathname + "?v=" + encodeURIComponent(v.build) + location.hash);
           return;
         }
