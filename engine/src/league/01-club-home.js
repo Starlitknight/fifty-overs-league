@@ -2967,11 +2967,8 @@
     // the overlay over a game that was already being played. From there the
     // painters' covered-screen check held every navigation hostage: the menu
     // died exactly one watchdog-interval after victory.
-    if (!on) {
-      try { clearTimeout(LOAD_TIMER); } catch (e1) {}
-      try { clearInterval(LOAD_PULSE); } catch (e2) {}
-      try { var tok0 = main.querySelector("[data-fo-loading]"); if (tok0) tok0.removeAttribute("data-fo-loading"); } catch (e3) {}
-    }
+    // Nothing to disarm here: the loading heartbeat runs for the life of the
+    // page and decides for itself whether there is anything to do (see foBeat).
   }
 
   btn.addEventListener("click", openLeagueMenu);
@@ -3026,45 +3023,63 @@
   // card for good, with no error, no button and nothing to try. So the card
   // arms a watchdog: if it is still the thing on screen after a patient wait,
   // it turns itself into real choices.
-  var LOAD_TIMER = null, LOAD_PULSE = null;
+  // ONE HEARTBEAT, OWNED BY NOBODY - IT SIMPLY ALWAYS RUNS.
+  //
+  // The counter and the rescue used to belong to the individual loading card
+  // that armed them, identified by a token written into its markup. Closing the
+  // overlay stripped that token (so a successful entry could not be ambushed by
+  // its own watchdog twenty seconds later) but LEFT THE CARD IN THE PAGE. Any
+  // path that then reopened the overlay without successfully repainting showed
+  // that same card again - now with no token at all. Its heartbeat had already
+  // cancelled itself the moment the token vanished, and its watchdog could
+  // never match a token that was gone. The result is a "Loading…" card that
+  // covers the game forever: the counter frozen at 0s, no rescue, nothing
+  // waiting on the wire. Both screenshots of this bug look exactly like that.
+  //
+  // So neither one belongs to anything that can go away. There is ONE interval,
+  // started once and never stopped, and every second it asks the page two
+  // questions: is the overlay covering the game, and is a loading card the
+  // thing it is covering it with? Only then does it tick, and only then can it
+  // decide that a load has gone on too long. No code path arms it, so no code
+  // path can fail to arm it - which is the entire class of bug above, gone.
+  // The cost is two DOM checks a second, against a home painter that already
+  // runs every 1.5.
+  var LOAD_AT = 0, LOAD_MSG = "";
+  var LOAD_PATIENCE = 20000;
+  function foBeat() {
+    try {
+      // the manager is in the game: nothing to tick, nothing to rescue
+      if (!wrap.classList.contains("on")) return;
+      // some other overlay screen is up (welcome, login, lobby, the stuck card
+      // itself) - those are places to BE, not loads to time out. Stand down,
+      // and pick up again the next time a loading card paints.
+      var el = main.querySelector("[data-fo-pulse]");
+      if (!el) return;
+      // A SCREENSHOT MUST DIAGNOSE ITSELF. The counter ticks on this timer and
+      // the lines under it are the last requests with their timings. A photo of
+      // this card separates the kinds of stuck at a glance: counter frozen =
+      // the page's own code has locked the browser; counter running with a
+      // request "still waiting" = the network; counter running with everything
+      // done = the code after them wedged. The build id answers "which version
+      // am I even on?", and a card WITHOUT that line is itself the diagnosis.
+      var lines = [];
+      try { lines = foNetReport().slice(-4); } catch (e1) {}
+      try { lines = lines.concat(foSlowReport()); } catch (e2) {}
+      el.textContent = "build " + ((window.FO_BUILD || "?").slice(0, 20)) + " · " +
+        Math.round((Date.now() - LOAD_AT) / 1000) + "s\n" + lines.join("\n");
+      if (Date.now() - LOAD_AT > LOAD_PATIENCE) foStuck(LOAD_MSG);
+    } catch (e) {}
+  }
   function foLoading(msg) {
     setNavy(false);
-    var tok = "L" + Date.now() + Math.random().toString(36).slice(2, 7);
-    main.innerHTML = '<div class="folbody"><div class="folcard"><div class="folpad" data-fo-loading="' + tok +
-      '" style="text-align:center;padding:28px 12px"><div class="folsmall">' + E(msg || "Loading…") + "</div>" +
-      // A SCREENSHOT MUST DIAGNOSE ITSELF. The counter ticks on a timer and the
-      // lines under it are the last requests with their timings. A photo of
-      // this card now separates the three kinds of stuck at a glance: counter
-      // frozen = the page's own code has locked the browser; counter running,
-      // a request "still waiting" = the network; counter running, all requests
-      // done = the code after them wedged. No more guessing from a still image.
+    LOAD_AT = Date.now(); LOAD_MSG = msg || "Loading";
+    main.innerHTML = '<div class="folbody"><div class="folcard"><div class="folpad" style="text-align:center;padding:28px 12px">' +
+      '<div class="folsmall">' + E(msg || "Loading…") + "</div>" +
       '<div data-fo-pulse style="margin-top:10px;font:600 10px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;opacity:.55;white-space:pre-line"></div>' +
       "</div></div></div>";
-    try { clearTimeout(LOAD_TIMER); } catch (e) {}
-    try { clearInterval(LOAD_PULSE); } catch (e) {}
-    var t0 = Date.now();
-    // the first line answers "which build am I even on?" from the very first
-    // frame - a stuck screenshot then identifies itself, and a card WITHOUT
-    // this line is itself the diagnosis: an old build, however it got here
-    var pulse = function () {
-      try {
-        var el = main.querySelector('[data-fo-loading="' + tok + '"] [data-fo-pulse]');
-        if (!el) { clearInterval(LOAD_PULSE); return; }
-        var lines = [];
-        try { lines = foNetReport(); } catch (e2) {}
-        try { lines = lines.slice(-4).concat(foSlowReport()); } catch (e3) { lines = lines.slice(-4); }
-        el.textContent = "build " + ((window.FO_BUILD || "?").slice(0, 20)) + " · " + Math.round((Date.now() - t0) / 1000) + "s\n" + lines.join("\n");
-      } catch (e) {}
-    };
-    LOAD_PULSE = setInterval(pulse, 1000);
-    try { pulse(); } catch (e0) {}
-    LOAD_TIMER = setTimeout(function () {
-      // fire only while the loading is still THE thing on screen: the token
-      // must survive AND the overlay must still be open - a closed overlay
-      // means the manager is in the game and there is nothing to rescue
-      try { if (main.querySelector('[data-fo-loading="' + tok + '"]') && wrap.classList.contains("on")) foStuck(msg); } catch (e) {}
-    }, 20000);
+    try { foBeat(); } catch (e0) {}
   }
+  setInterval(foBeat, 1000);
   // The way out of a wedged load. Everything here is reachable without the
   // league having finished loading, and none of it touches the server copy of
   // the club - a manager who cannot get in has lost nothing.
