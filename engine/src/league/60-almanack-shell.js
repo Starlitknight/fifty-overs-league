@@ -36,7 +36,10 @@
     { id: "club",   label: "Club",   home: "#/club-h", routes: ["club-h", "finance", "milestones", "lore", "paper", "wire", "guide", "ledger", "almanack"] },
   ];
   // routes this redesign currently OWNS. Everything else keeps its old page.
-  var AL_OWNS = { today: 1, team: 1, matchday: 1, table: 1, fixtures: 1, market: 1, finance: 1, academy: 1, training: 1 };
+  var AL_OWNS = {
+    today: 1, team: 1, matchday: 1, table: 1, fixtures: 1,
+    market: 1, finance: 1, academy: 1, training: 1, dossier: 1, desk: 1,
+  };
 
   // A section is bigger than one screen, and the dock only has five slots. The
   // rest of a section's rooms hang off a rule under the masthead - the same

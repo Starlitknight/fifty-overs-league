@@ -67,6 +67,14 @@
    <a> will be overruled by the line beneath this comment and silently ignored.
    ========================================================================== */
 html body.al-on a, html body.al-on #page a { color: var(--al-a, inherit) !important; }
+/* the old sheet underlines every anchor on hover. A button, a dock label
+   and a whole tappable row are not prose and must not sprout a rule under
+   them; a link inside a paragraph still does, because there it is a link. */
+html body.al-on .al-btn:hover, html body.al-on .al-fix:hover,
+html body.al-on .al-subnav a:hover, html body.al-on .al-dock a:hover,
+html body.al-on .al-head__nav a:hover, html body.al-on .al-sec__head a:hover {
+  text-decoration: none;
+}
 
 /* The same is true of buttons: `body.ftpskin button` hands every button in the
    document a grey face, a grey border and a 4px radius, all !important, which
@@ -501,6 +509,48 @@ select.al-field { padding-right: var(--al-5); background-image: none; }
   --al-fg: var(--al-ink); color: var(--al-ink);
 }
 .al-subnav--tabs button b { font-weight: 700; color: var(--al-accent); }
+
+/* ============================================================================
+   14c. THE REPORT — form beads, a numbered recommendation, a standing choice
+   ========================================================================== */
+/* five results, as a scout would draw them in a margin */
+.al-formrow {
+  display: flex; align-items: center; gap: var(--al-3);
+  min-height: var(--al-tap); padding: var(--al-2) 0; border-bottom: 1px solid var(--al-rule);
+  font: 600 13px/18px var(--al-ui); color: var(--al-ink);
+}
+.al-formrow > span:first-child { flex: 1 1 auto; min-width: 0; }
+.al-beads { display: flex; gap: var(--al-1); flex: 0 0 auto; }
+.al-beads i {
+  width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
+  font: 700 11px/1 var(--al-ui); font-style: normal;
+  border: 1px solid var(--al-rule); color: var(--al-muted);
+}
+.al-beads i.w { color: var(--al-pos); border-color: var(--al-pos); }
+.al-beads i.l { color: #B23230; border-color: #B23230; }
+
+/* what the scout would actually write down, numbered because it is a list of
+   instructions and the order is the priority */
+.al-recs { margin: 0; padding-left: var(--al-5); display: grid; gap: var(--al-3); }
+.al-recs li { font: 400 15px/23px var(--al-ui); color: var(--al-ink); }
+.al-recs b { font-weight: 600; }
+
+/* one standing instruction, chosen from a set: the groundsman, the presser */
+.al-picks { display: grid; grid-template-columns: 1fr; gap: var(--al-2); }
+.al-pick {
+  text-align: left; min-height: var(--al-tap); padding: var(--al-3) var(--al-4); cursor: pointer;
+  background: var(--al-paper-hi); border: 1px solid var(--al-rule); border-radius: 0;
+  --al-bg: var(--al-paper-hi); --al-bd: 1px solid var(--al-rule); --al-br: 0; --al-fg: var(--al-ink);
+}
+.al-pick b { display: block; font: 600 14px/19px var(--al-ui); color: var(--al-ink); }
+.al-pick i { display: block; font-style: normal; font: 400 13px/18px var(--al-ui); color: var(--al-muted); margin-top: 2px; }
+.al-pick[aria-pressed="true"] { box-shadow: inset 3px 0 0 var(--al-accent); }
+.al-pick[aria-pressed="true"] b { color: var(--al-accent); }
+
+/* a door to another room, in the fixture row's dress */
+.al-fix--room { grid-template-columns: minmax(0, 1fr) auto; }
+
+@media (min-width: 700px) { .al-picks { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 /* ============================================================================
    15. STATUS LABEL and MONOSPACE READOUT

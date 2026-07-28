@@ -291,35 +291,7 @@
   // so the watermark advances on the FIRST render of a world state and the
   // built card is cached for every render after it — otherwise render two
   // reads its own watermark and the digest vanishes before it is ever seen
-  var _digHtml = "", _digSig = "";
-  function digestCard() {
-    if (!ready() || !App.season) return "";
-    var S = App.season, curS = App.seasonNo || 1, curR = S.round || 0;
-    var sig = curS + ":" + curR;
-    if (_digSig === sig) return _digHtml;
-    var rows = (typeof leagueRows === "function") ? leagueRows() : [];
-    var pos = rows.findIndex(function (x) { return x.nm === myName(); }) + 1;
-    var old = seenGet();
-    _digSig = sig; _digHtml = "";
-    seenSet({ s: curS, r: curR, pos: pos });
-    if (!old || old.s !== curS || old.r >= curR) return "";
-    var me = myName(), rv = rivalName(), lines = [];
-    (App.results || []).forEach(function (r) {
-      if (r.comp !== "league" || seasonNoOf(r) !== curS || r.round == null || r.round < old.r || r.round >= curR) return;
-      if (!r.result || !r.result.text || /LIVE/.test(r.result.text)) return;
-      if (!r.result.winner && !/tie/i.test(r.result.text)) return;
-      if (r.home === me || r.away === me) lines.unshift("<b>" + E(r.result.text) + "</b> <span>(R" + (r.round + 1) + " v " + E(r.home === me ? r.away : r.home) + ")</span>");
-      else if (rv && (r.home === rv || r.away === rv)) lines.push(E(rv) + ": " + E(r.result.text) + " <span>(R" + (r.round + 1) + ")</span>");
-    });
-    if (!lines.length) return "";
-    var move = (old.pos && pos && old.pos !== pos)
-      ? (pos < old.pos ? "Up to <b>" + ordinal(pos) + "</b> from " + ordinal(old.pos) + "." : "Slipped to <b>" + ordinal(pos) + "</b> from " + ordinal(old.pos) + ".")
-      : (pos ? "Holding <b>" + ordinal(pos) + "</b>." : "");
-    _digHtml = "<div class='fo-card fo-ls-card fo-ls-digest pap tele'><div class='fo-card-h2row'><div class='fo-card-h2'>Club telegraph</div><span class='fo-ls-k'>R" + (old.r + 1) + (curR > old.r + 1 ? "&ndash;" + curR : "") + "</span></div><div class='fo-tele-sub'>While you were away</div><div class='fo-card-b'>" +
-      lines.slice(0, 4).map(function (l) { return "<div class='fo-ls-line'>" + l + "</div>"; }).join("") +
-      (move ? "<div class='fo-ls-line fo-ls-move'>" + move + "</div>" : "") + "</div></div>";
-    return _digHtml;
-  }
+  var _digLines = [], _digSig = "";
 
   // ---------------------------------------------------------------------------
   // Cards for the club page
@@ -495,59 +467,165 @@
   // the promoter, the board, the rivalry and the record book — one dark page
   // in the world's own cinematic language.
   // ---------------------------------------------------------------------------
-  function stripHTML() {
-    if (!ready() || !App.season) return "";
-    try {
-      var paperCard = ""; try { if (typeof window.foPaperCard === "function") paperCard = window.foPaperCard(); } catch (ePc) {}
-      var ledCard = ""; try { if (typeof window.foLedgerCard === "function") ledCard = window.foLedgerCard(); } catch (eLc) {}
-      var netsCard = ""; try { if (typeof window.foNetsCard === "function") netsCard = window.foNetsCard(); } catch (eNc) {}
-      var scoutCard = ""; try { if (typeof window.foScoutCard === "function") scoutCard = window.foScoutCard(); } catch (eSc) {}
-      var hbCard = ""; try { if (typeof window.foHonoursCard === "function") hbCard = window.foHonoursCard(); } catch (eHb) {}
-      return "<div class='fo-ls-strip'>" + paperCard + digestCard() + scoutCard + hbCard + pressCard() + wagerCard() + ledCard + netsCard + rivalCard() + goalsCard() + diaryCard() + "</div>";
-    } catch (e) { window.__foLsErr = String((e && e.stack) || e); return ""; }
-  }
-  function wireStrip(root) {
-    root.querySelectorAll("[data-ls-wager]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var fx = nextFixture(), offer = fx ? wagerFor(fx) : null;
-        if (!offer || offer.key !== b.getAttribute("data-ls-wager")) return;
-        LSbag().wag[offer.key] = { t: offer.t, line: offer.line, rep: offer.rep };
-        try { saveGame(false); } catch (e) {}
-        window.foRenderDesk();
-      });
+  // ---------------------------------------------------------------------------
+  // THE DESK (#/desk) — the morning's post.
+  //
+  // PHASE 3 OF THE ALMANACK. The desk used to be a photograph of an office
+  // with eleven cards floating on it, each one built by a different module in
+  // its own dress. Two of those cards were the only things on the page a
+  // manager could ACT on - the press question and the promoter's wager - and
+  // they were the fourth and fifth things down.
+  //
+  // So the room is now what it is for: what needs answering, then what
+  // happened while you were away, then the way through to the rooms that hold
+  // the rest. The inlined summaries from the Gazette, the ledger, the nets and
+  // the honours board come back when those rooms are rebuilt in phase 4 and
+  // can each supply a line in this language rather than their own.
+  // ---------------------------------------------------------------------------
+  function A() { return window.AL || null; }
+  function onDesk() { return (location.hash || "").split("?")[0] === "#/desk"; }
+
+  // the digest, as lines rather than a card
+  function digestLines() {
+    if (!ready() || !App.season) return [];
+    var S = App.season, curS = App.seasonNo || 1, curR = S.round || 0;
+    var sig = curS + ":" + curR;
+    if (_digSig === sig) return _digLines;
+    var rows = (typeof leagueRows === "function") ? leagueRows() : [];
+    var pos = rows.findIndex(function (x) { return x.nm === myName(); }) + 1;
+    var old = seenGet();
+    _digSig = sig; _digLines = [];
+    seenSet({ s: curS, r: curR, pos: pos });
+    if (!old || old.s !== curS || old.r >= curR) return _digLines;
+    var me = myName(), rv = rivalName(), lines = [];
+    (App.results || []).forEach(function (r) {
+      if (r.comp !== "league" || seasonNoOf(r) !== curS || r.round == null || r.round < old.r || r.round >= curR) return;
+      if (!r.result || !r.result.text || /LIVE/.test(r.result.text)) return;
+      if (!r.result.winner && !/tie/i.test(r.result.text)) return;
+      if (r.home === me || r.away === me) lines.unshift(["R" + (r.round + 1) + " v " + (r.home === me ? r.away : r.home), r.result.text]);
+      else if (rv && (r.home === rv || r.away === rv)) lines.push(["R" + (r.round + 1) + " · " + rv, r.result.text]);
     });
-    root.querySelectorAll("[data-ls-press]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        LSbag().press[b.getAttribute("data-ls-press")] = { a: +b.getAttribute("data-a") || 1 };
-        try { saveGame(false); } catch (e) {}
-        window.foRenderDesk();
-      });
-    });
+    if (!lines.length) return _digLines;
+    if (old.pos && pos && old.pos !== pos) {
+      lines.push(["Your position", (pos < old.pos ? "up to " : "slipped to ") + ordinal(pos) + " from " + ordinal(old.pos)]);
+    } else if (pos) lines.push(["Your position", "holding " + ordinal(pos)]);
+    _digLines = lines.slice(0, 5);
+    return _digLines;
   }
-  function lsArt() { return (typeof FO_ART !== "undefined") ? FO_ART : "client/art/"; }
+
+  var ROOMS = [
+    { href: "#/paper", nm: "The Gazette", why: "this round's report, written from the scorecards" },
+    { href: "#/dossier", nm: "The scout's dossier", why: "who you play next, and how to beat them" },
+    { href: "#/training", nm: "The nets", why: "standing orders for what each man works on" },
+    { href: "#/ledger", nm: "The club ledger", why: "the running record of the season" },
+    { href: "#/milestones", nm: "The honours board", why: "what the club has won and is chasing" },
+    { href: "#/ceremony", nm: "The season so far", why: "awards night, when the summer is done" },
+  ];
+
   window.foRenderDesk = function () {
+    if (!onDesk()) return;
     var page = document.getElementById("page"); if (!page) return;
-    foLsCss();
-    document.body.classList.add("fo-desk-on");
-    var me = null; try { me = userTeam(); } catch (e) {}
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
+
+    var me = null; try { me = userTeam(); } catch (e2) {}
     var rows = (typeof leagueRows === "function") ? leagueRows() : [];
     var pos = rows.findIndex(function (x) { return x.nm === (me && me.name); }) + 1;
-    var sub = pos ? ordinal(pos) + " in the league &middot; season " + (App.seasonNo || 1) : "Season " + (App.seasonNo || 1);
-    var bg = lsArt() + "home/" + (window.innerWidth < 760 ? "hgm" : "hgd") + "-office.webp";
-    page.innerHTML = "<div class='fo-desk'>" +
-      "<img class='fo-desk-bg' src='" + bg + "' alt='' onerror=\"this.style.display='none'\">" +
-      "<div class='fo-desk-veil'></div>" +
-      "<div class='fo-desk-in'>" +
-      "<div class='fo-cer-eyebrow'>" + E((me && me.name) || "Your club") + " &middot; " + sub + "</div>" +
-      "<h1 class='fo-desk-h1'>The Desk</h1>" +
-      "<p class='fo-desk-tag'>The morning&rsquo;s post, laid out in the club office.</p>" +
-      (stripHTML() || "<div class='fo-ls-card fo-card pap'><div class='fo-card-b'>The desk is quiet. Found a club and the paperwork begins.</div></div>") +
-      "<div class='fo-cer-actions'><a class='fo-ls-btn ghost' href='#/home'>&lsaquo; Home ground</a>" +
-      "<a class='fo-ls-btn ghost' href='#/ceremony'>The season so far &rsaquo;</a></div>" +
-      "</div></div>";
-    wireStrip(page);
+    var bag = LSbag();
+    var r = latestUserResult(), pq = r ? pressFor(r) : null;
+    var answered = pq && bag.press[pq.key];
+    var fx = nextFixture(), offer = fx ? wagerFor(fx) : null;
+    var led = repLedger();
+    var openOffer = offer && !bag.wag[offer.key];
+
+    var body = al.mast((pos ? ordinal(pos) + " in the league · " : "") + "season " + (App.seasonNo || 1),
+      "The Desk", "The morning's post, laid out in the club office.");
+
+    // ---- what is actually waiting ------------------------------------------
+    var waiting = [];
+    if (pq && !answered) waiting.push("the press room");
+    if (openOffer) waiting.push("the promoter");
+    body += al.decide({
+      kind: waiting.length ? "act" : "done",
+      title: waiting.length ? "Waiting on you: " + waiting.join(" and ")
+                            : "Nothing on the desk needs answering",
+      note: waiting.length
+        ? "Neither one has a deadline. Silence is an answer, and it costs nothing."
+        : "Reputation " + led.rep + (led.streak > 1 ? " · " + led.streak + " wagers straight" : ""),
+    });
+
+    // ---- the press room -----------------------------------------------------
+    if (pq) {
+      if (answered) {
+        var chosen = answered.a === 1 ? pq.a1 : pq.a2;
+        body += al.sec("The Sporting Gazette · as printed",
+          '<p class="al-lede">&ldquo;' + E(chosen[1]) + "&rdquo;</p>" +
+          '<p class="al-read">— the ' + E(myName() || "club") + " manager, after the " +
+          (pq.won ? "win over " : "defeat to ") + E(pq.opp) + "</p>");
+      } else {
+        body += al.sec("The Sporting Gazette · press room",
+          '<p class="al-lede">&ldquo;' + E(pq.q) + "&rdquo;</p>" +
+          '<div class="al-picks">' +
+          '<button type="button" class="al-pick" data-ls-press="' + E(pq.key) + '" data-a="1"><b>' +
+            E(pq.a1[0]) + "</b><i>" + E(pq.a1[1]) + "</i></button>" +
+          '<button type="button" class="al-pick" data-ls-press="' + E(pq.key) + '" data-a="2"><b>' +
+            E(pq.a2[0]) + "</b><i>" + E(pq.a2[1]) + "</i></button>" +
+          "</div>" +
+          '<p class="al-read">Or say nothing. Silence is also an answer.</p>');
+      }
+    }
+
+    // ---- the promoter -------------------------------------------------------
+    var wagerBody = "";
+    var settled = led.items.filter(function (x) { return x.state === "won" || x.state === "lost"; }).slice(-3);
+    var open = led.items.filter(function (x) { return x.state === "open"; });
+    if (openOffer) {
+      wagerBody += '<p class="al-lede">&ldquo;' + E(offer.line) + "&rdquo;</p>" +
+        '<p class="al-read">R' + (offer.round + 1) + " v " + E(offer.opp) + " · win it for +" + offer.rep +
+        " reputation, miss for &minus;1</p>" +
+        '<p><button type="button" class="al-btn al-btn--primary" data-ls-wager="' + E(offer.key) + '">Shake on it</button></p>';
+    } else if (offer && bag.wag[offer.key] && !open.length) {
+      wagerBody += '<p class="al-read">Wager accepted for R' + (offer.round + 1) + ". Play the match.</p>";
+    }
+    if (open.length || settled.length) {
+      wagerBody += al.ledger(open.map(function (x) { return [x.line, "settles at stumps"]; })
+        .concat(settled.map(function (x) {
+          return [x.line, (x.rep > 0 ? "+" + x.rep : x.rep) + " rep", x.state === "won" ? "pos" : "neg"];
+        })));
+    }
+    if (!wagerBody) wagerBody = '<p class="al-read">The promoter has nothing for you this week.</p>';
+    body += al.sec("The promoter's wager · reputation " + led.rep, wagerBody);
+
+    // ---- what moved while you were away -------------------------------------
+    var dig = digestLines();
+    if (dig.length) body += al.sec("Club telegraph · while you were away", al.ledger(dig));
+
+    // ---- the rest of the post ------------------------------------------------
+    body += al.sec("The rest of the post",
+      '<div class="al-fixlist">' + ROOMS.map(function (x) {
+        return '<a class="al-fix al-fix--room" href="' + x.href + '">' +
+          '<span class="al-fix__t"><b>' + E(x.nm) + "</b><i>" + E(x.why) + "</i></span>" +
+          '<span class="al-fix__o">&rsaquo;</span></a>';
+      }).join("") + "</div>");
+
+    page.innerHTML = al.page({ body: body });
+
+    page.querySelectorAll("[data-ls-wager]").forEach(function (b2) {
+      b2.addEventListener("click", function () {
+        LSbag().wag[b2.getAttribute("data-ls-wager")] = { t: offer.t, line: offer.line, rep: offer.rep };
+        try { saveGame(false); } catch (e3) {}
+        window.foRenderDesk();
+      });
+    });
+    page.querySelectorAll("[data-ls-press]").forEach(function (b2) {
+      b2.addEventListener("click", function () {
+        LSbag().press[b2.getAttribute("data-ls-press")] = { a: +b2.getAttribute("data-a") || 1 };
+        try { saveGame(false); } catch (e3) {}
+        window.foRenderDesk();
+      });
+    });
   };
-  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] !== "#/desk") document.body.classList.remove("fo-desk-on"); });
+
 
   // The home hub rebuilds itself on a timer with a signature check, so a
   // one-shot injection gets wiped. An observer keeps the Desk button (and its

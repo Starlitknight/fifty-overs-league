@@ -10112,7 +10112,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260728-2245-7b4838";
+  var FO_BUILD = "20260728-2311-675469";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -32970,35 +32970,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // so the watermark advances on the FIRST render of a world state and the
   // built card is cached for every render after it — otherwise render two
   // reads its own watermark and the digest vanishes before it is ever seen
-  var _digHtml = "", _digSig = "";
-  function digestCard() {
-    if (!ready() || !App.season) return "";
-    var S = App.season, curS = App.seasonNo || 1, curR = S.round || 0;
-    var sig = curS + ":" + curR;
-    if (_digSig === sig) return _digHtml;
-    var rows = (typeof leagueRows === "function") ? leagueRows() : [];
-    var pos = rows.findIndex(function (x) { return x.nm === myName(); }) + 1;
-    var old = seenGet();
-    _digSig = sig; _digHtml = "";
-    seenSet({ s: curS, r: curR, pos: pos });
-    if (!old || old.s !== curS || old.r >= curR) return "";
-    var me = myName(), rv = rivalName(), lines = [];
-    (App.results || []).forEach(function (r) {
-      if (r.comp !== "league" || seasonNoOf(r) !== curS || r.round == null || r.round < old.r || r.round >= curR) return;
-      if (!r.result || !r.result.text || /LIVE/.test(r.result.text)) return;
-      if (!r.result.winner && !/tie/i.test(r.result.text)) return;
-      if (r.home === me || r.away === me) lines.unshift("<b>" + E(r.result.text) + "</b> <span>(R" + (r.round + 1) + " v " + E(r.home === me ? r.away : r.home) + ")</span>");
-      else if (rv && (r.home === rv || r.away === rv)) lines.push(E(rv) + ": " + E(r.result.text) + " <span>(R" + (r.round + 1) + ")</span>");
-    });
-    if (!lines.length) return "";
-    var move = (old.pos && pos && old.pos !== pos)
-      ? (pos < old.pos ? "Up to <b>" + ordinal(pos) + "</b> from " + ordinal(old.pos) + "." : "Slipped to <b>" + ordinal(pos) + "</b> from " + ordinal(old.pos) + ".")
-      : (pos ? "Holding <b>" + ordinal(pos) + "</b>." : "");
-    _digHtml = "<div class='fo-card fo-ls-card fo-ls-digest pap tele'><div class='fo-card-h2row'><div class='fo-card-h2'>Club telegraph</div><span class='fo-ls-k'>R" + (old.r + 1) + (curR > old.r + 1 ? "&ndash;" + curR : "") + "</span></div><div class='fo-tele-sub'>While you were away</div><div class='fo-card-b'>" +
-      lines.slice(0, 4).map(function (l) { return "<div class='fo-ls-line'>" + l + "</div>"; }).join("") +
-      (move ? "<div class='fo-ls-line fo-ls-move'>" + move + "</div>" : "") + "</div></div>";
-    return _digHtml;
-  }
+  var _digLines = [], _digSig = "";
 
   // ---------------------------------------------------------------------------
   // Cards for the club page
@@ -33174,59 +33146,165 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // the promoter, the board, the rivalry and the record book — one dark page
   // in the world's own cinematic language.
   // ---------------------------------------------------------------------------
-  function stripHTML() {
-    if (!ready() || !App.season) return "";
-    try {
-      var paperCard = ""; try { if (typeof window.foPaperCard === "function") paperCard = window.foPaperCard(); } catch (ePc) {}
-      var ledCard = ""; try { if (typeof window.foLedgerCard === "function") ledCard = window.foLedgerCard(); } catch (eLc) {}
-      var netsCard = ""; try { if (typeof window.foNetsCard === "function") netsCard = window.foNetsCard(); } catch (eNc) {}
-      var scoutCard = ""; try { if (typeof window.foScoutCard === "function") scoutCard = window.foScoutCard(); } catch (eSc) {}
-      var hbCard = ""; try { if (typeof window.foHonoursCard === "function") hbCard = window.foHonoursCard(); } catch (eHb) {}
-      return "<div class='fo-ls-strip'>" + paperCard + digestCard() + scoutCard + hbCard + pressCard() + wagerCard() + ledCard + netsCard + rivalCard() + goalsCard() + diaryCard() + "</div>";
-    } catch (e) { window.__foLsErr = String((e && e.stack) || e); return ""; }
-  }
-  function wireStrip(root) {
-    root.querySelectorAll("[data-ls-wager]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var fx = nextFixture(), offer = fx ? wagerFor(fx) : null;
-        if (!offer || offer.key !== b.getAttribute("data-ls-wager")) return;
-        LSbag().wag[offer.key] = { t: offer.t, line: offer.line, rep: offer.rep };
-        try { saveGame(false); } catch (e) {}
-        window.foRenderDesk();
-      });
+  // ---------------------------------------------------------------------------
+  // THE DESK (#/desk) — the morning's post.
+  //
+  // PHASE 3 OF THE ALMANACK. The desk used to be a photograph of an office
+  // with eleven cards floating on it, each one built by a different module in
+  // its own dress. Two of those cards were the only things on the page a
+  // manager could ACT on - the press question and the promoter's wager - and
+  // they were the fourth and fifth things down.
+  //
+  // So the room is now what it is for: what needs answering, then what
+  // happened while you were away, then the way through to the rooms that hold
+  // the rest. The inlined summaries from the Gazette, the ledger, the nets and
+  // the honours board come back when those rooms are rebuilt in phase 4 and
+  // can each supply a line in this language rather than their own.
+  // ---------------------------------------------------------------------------
+  function A() { return window.AL || null; }
+  function onDesk() { return (location.hash || "").split("?")[0] === "#/desk"; }
+
+  // the digest, as lines rather than a card
+  function digestLines() {
+    if (!ready() || !App.season) return [];
+    var S = App.season, curS = App.seasonNo || 1, curR = S.round || 0;
+    var sig = curS + ":" + curR;
+    if (_digSig === sig) return _digLines;
+    var rows = (typeof leagueRows === "function") ? leagueRows() : [];
+    var pos = rows.findIndex(function (x) { return x.nm === myName(); }) + 1;
+    var old = seenGet();
+    _digSig = sig; _digLines = [];
+    seenSet({ s: curS, r: curR, pos: pos });
+    if (!old || old.s !== curS || old.r >= curR) return _digLines;
+    var me = myName(), rv = rivalName(), lines = [];
+    (App.results || []).forEach(function (r) {
+      if (r.comp !== "league" || seasonNoOf(r) !== curS || r.round == null || r.round < old.r || r.round >= curR) return;
+      if (!r.result || !r.result.text || /LIVE/.test(r.result.text)) return;
+      if (!r.result.winner && !/tie/i.test(r.result.text)) return;
+      if (r.home === me || r.away === me) lines.unshift(["R" + (r.round + 1) + " v " + (r.home === me ? r.away : r.home), r.result.text]);
+      else if (rv && (r.home === rv || r.away === rv)) lines.push(["R" + (r.round + 1) + " · " + rv, r.result.text]);
     });
-    root.querySelectorAll("[data-ls-press]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        LSbag().press[b.getAttribute("data-ls-press")] = { a: +b.getAttribute("data-a") || 1 };
-        try { saveGame(false); } catch (e) {}
-        window.foRenderDesk();
-      });
-    });
+    if (!lines.length) return _digLines;
+    if (old.pos && pos && old.pos !== pos) {
+      lines.push(["Your position", (pos < old.pos ? "up to " : "slipped to ") + ordinal(pos) + " from " + ordinal(old.pos)]);
+    } else if (pos) lines.push(["Your position", "holding " + ordinal(pos)]);
+    _digLines = lines.slice(0, 5);
+    return _digLines;
   }
-  function lsArt() { return (typeof FO_ART !== "undefined") ? FO_ART : "client/art/"; }
+
+  var ROOMS = [
+    { href: "#/paper", nm: "The Gazette", why: "this round's report, written from the scorecards" },
+    { href: "#/dossier", nm: "The scout's dossier", why: "who you play next, and how to beat them" },
+    { href: "#/training", nm: "The nets", why: "standing orders for what each man works on" },
+    { href: "#/ledger", nm: "The club ledger", why: "the running record of the season" },
+    { href: "#/milestones", nm: "The honours board", why: "what the club has won and is chasing" },
+    { href: "#/ceremony", nm: "The season so far", why: "awards night, when the summer is done" },
+  ];
+
   window.foRenderDesk = function () {
+    if (!onDesk()) return;
     var page = document.getElementById("page"); if (!page) return;
-    foLsCss();
-    document.body.classList.add("fo-desk-on");
-    var me = null; try { me = userTeam(); } catch (e) {}
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
+
+    var me = null; try { me = userTeam(); } catch (e2) {}
     var rows = (typeof leagueRows === "function") ? leagueRows() : [];
     var pos = rows.findIndex(function (x) { return x.nm === (me && me.name); }) + 1;
-    var sub = pos ? ordinal(pos) + " in the league &middot; season " + (App.seasonNo || 1) : "Season " + (App.seasonNo || 1);
-    var bg = lsArt() + "home/" + (window.innerWidth < 760 ? "hgm" : "hgd") + "-office.webp";
-    page.innerHTML = "<div class='fo-desk'>" +
-      "<img class='fo-desk-bg' src='" + bg + "' alt='' onerror=\"this.style.display='none'\">" +
-      "<div class='fo-desk-veil'></div>" +
-      "<div class='fo-desk-in'>" +
-      "<div class='fo-cer-eyebrow'>" + E((me && me.name) || "Your club") + " &middot; " + sub + "</div>" +
-      "<h1 class='fo-desk-h1'>The Desk</h1>" +
-      "<p class='fo-desk-tag'>The morning&rsquo;s post, laid out in the club office.</p>" +
-      (stripHTML() || "<div class='fo-ls-card fo-card pap'><div class='fo-card-b'>The desk is quiet. Found a club and the paperwork begins.</div></div>") +
-      "<div class='fo-cer-actions'><a class='fo-ls-btn ghost' href='#/home'>&lsaquo; Home ground</a>" +
-      "<a class='fo-ls-btn ghost' href='#/ceremony'>The season so far &rsaquo;</a></div>" +
-      "</div></div>";
-    wireStrip(page);
+    var bag = LSbag();
+    var r = latestUserResult(), pq = r ? pressFor(r) : null;
+    var answered = pq && bag.press[pq.key];
+    var fx = nextFixture(), offer = fx ? wagerFor(fx) : null;
+    var led = repLedger();
+    var openOffer = offer && !bag.wag[offer.key];
+
+    var body = al.mast((pos ? ordinal(pos) + " in the league · " : "") + "season " + (App.seasonNo || 1),
+      "The Desk", "The morning's post, laid out in the club office.");
+
+    // ---- what is actually waiting ------------------------------------------
+    var waiting = [];
+    if (pq && !answered) waiting.push("the press room");
+    if (openOffer) waiting.push("the promoter");
+    body += al.decide({
+      kind: waiting.length ? "act" : "done",
+      title: waiting.length ? "Waiting on you: " + waiting.join(" and ")
+                            : "Nothing on the desk needs answering",
+      note: waiting.length
+        ? "Neither one has a deadline. Silence is an answer, and it costs nothing."
+        : "Reputation " + led.rep + (led.streak > 1 ? " · " + led.streak + " wagers straight" : ""),
+    });
+
+    // ---- the press room -----------------------------------------------------
+    if (pq) {
+      if (answered) {
+        var chosen = answered.a === 1 ? pq.a1 : pq.a2;
+        body += al.sec("The Sporting Gazette · as printed",
+          '<p class="al-lede">&ldquo;' + E(chosen[1]) + "&rdquo;</p>" +
+          '<p class="al-read">— the ' + E(myName() || "club") + " manager, after the " +
+          (pq.won ? "win over " : "defeat to ") + E(pq.opp) + "</p>");
+      } else {
+        body += al.sec("The Sporting Gazette · press room",
+          '<p class="al-lede">&ldquo;' + E(pq.q) + "&rdquo;</p>" +
+          '<div class="al-picks">' +
+          '<button type="button" class="al-pick" data-ls-press="' + E(pq.key) + '" data-a="1"><b>' +
+            E(pq.a1[0]) + "</b><i>" + E(pq.a1[1]) + "</i></button>" +
+          '<button type="button" class="al-pick" data-ls-press="' + E(pq.key) + '" data-a="2"><b>' +
+            E(pq.a2[0]) + "</b><i>" + E(pq.a2[1]) + "</i></button>" +
+          "</div>" +
+          '<p class="al-read">Or say nothing. Silence is also an answer.</p>');
+      }
+    }
+
+    // ---- the promoter -------------------------------------------------------
+    var wagerBody = "";
+    var settled = led.items.filter(function (x) { return x.state === "won" || x.state === "lost"; }).slice(-3);
+    var open = led.items.filter(function (x) { return x.state === "open"; });
+    if (openOffer) {
+      wagerBody += '<p class="al-lede">&ldquo;' + E(offer.line) + "&rdquo;</p>" +
+        '<p class="al-read">R' + (offer.round + 1) + " v " + E(offer.opp) + " · win it for +" + offer.rep +
+        " reputation, miss for &minus;1</p>" +
+        '<p><button type="button" class="al-btn al-btn--primary" data-ls-wager="' + E(offer.key) + '">Shake on it</button></p>';
+    } else if (offer && bag.wag[offer.key] && !open.length) {
+      wagerBody += '<p class="al-read">Wager accepted for R' + (offer.round + 1) + ". Play the match.</p>";
+    }
+    if (open.length || settled.length) {
+      wagerBody += al.ledger(open.map(function (x) { return [x.line, "settles at stumps"]; })
+        .concat(settled.map(function (x) {
+          return [x.line, (x.rep > 0 ? "+" + x.rep : x.rep) + " rep", x.state === "won" ? "pos" : "neg"];
+        })));
+    }
+    if (!wagerBody) wagerBody = '<p class="al-read">The promoter has nothing for you this week.</p>';
+    body += al.sec("The promoter's wager · reputation " + led.rep, wagerBody);
+
+    // ---- what moved while you were away -------------------------------------
+    var dig = digestLines();
+    if (dig.length) body += al.sec("Club telegraph · while you were away", al.ledger(dig));
+
+    // ---- the rest of the post ------------------------------------------------
+    body += al.sec("The rest of the post",
+      '<div class="al-fixlist">' + ROOMS.map(function (x) {
+        return '<a class="al-fix al-fix--room" href="' + x.href + '">' +
+          '<span class="al-fix__t"><b>' + E(x.nm) + "</b><i>" + E(x.why) + "</i></span>" +
+          '<span class="al-fix__o">&rsaquo;</span></a>';
+      }).join("") + "</div>");
+
+    page.innerHTML = al.page({ body: body });
+
+    page.querySelectorAll("[data-ls-wager]").forEach(function (b2) {
+      b2.addEventListener("click", function () {
+        LSbag().wag[b2.getAttribute("data-ls-wager")] = { t: offer.t, line: offer.line, rep: offer.rep };
+        try { saveGame(false); } catch (e3) {}
+        window.foRenderDesk();
+      });
+    });
+    page.querySelectorAll("[data-ls-press]").forEach(function (b2) {
+      b2.addEventListener("click", function () {
+        LSbag().press[b2.getAttribute("data-ls-press")] = { a: +b2.getAttribute("data-a") || 1 };
+        try { saveGame(false); } catch (e3) {}
+        window.foRenderDesk();
+      });
+    });
   };
-  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] !== "#/desk") document.body.classList.remove("fo-desk-on"); });
+
 
   // The home hub rebuilds itself on a timer with a signature check, so a
   // one-shot injection gets wiped. An observer keeps the Desk button (and its
@@ -33993,98 +34071,99 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       wicket: "wicket threat", economy: "economy", discipline: "discipline", variation: "variation", stamina: "stamina",
       fielding: "ground fielding", catching: "catching", keeping: "keeping", stumping: "stumping" })[k] || k;
   }
-  window.foRenderNetsPage = function () {
-    try { if (window.foLsCss) window.foLsCss(); } catch (eLs) {}   // this room wears the season sheet's buttons
-    var page = document.getElementById("page"); if (!page || !ready()) return;
-    foNsCss();
-    document.body.classList.add("fo-nets-on");
-    var t = TR(), me = userTeam();
-    var hour = new Date().getHours(), night = hour >= 19 || hour < 6;
-    var bg = ART() + "home/" + (window.innerWidth < 760 ? "hgm" : "hgd") + "-nets-" + (night && window.innerWidth >= 760 ? "night" : "day") + ".webp";
-    var squad = (me.players || []).concat(me.youth || []);
+  function A() { return window.AL || null; }
+  function onNets() { return (location.hash || "").split("?")[0] === "#/training"; }
 
-    // ---- THE NETS ARE THE WORLD'S NETS --------------------------------------
-    // One training ground. The plan a manager sets here is a standing order
-    // held by the World Service: whatever stands when a round settles is the
-    // work that round did, worked by the umpire on the men who actually play,
-    // whether or not this phone is on. The programme list and the arithmetic
-    // both belong to the shipped engine, so there is only ever one model of
-    // what a week in the nets does.
-    var world = null;
-    try { world = window.__foWorldClaim || null; } catch (eW) {}
-    var plan = {};
-    try { plan = window.__foWorldPlan || {}; } catch (eP) {}
-    var PROGS = (function () {
-      try {
-        var k = Object.keys(window.FO_TRAIN_PROGS || {});
-        if (k.length) return k.filter(function (x) { return x !== "Rest"; }).concat(["Rest"]);
-      } catch (e) {}
-      return ["Batting", "Power hitting", "Finishing", "Bowling", "New-ball seam", "Spin bowling",
-        "Death bowling", "Control bowling", "Keeping", "Fielding", "Fitness", "All-rounder", "Rest"];
-    })();
-    var planHTML = squad.map(function (p) {
-      var cur = plan[p.name] || "";
-      var prog = (p.trainProgress || {});
-      var best = "", bestPct = 0;
-      for (var k in prog) {
-        var th = 80 + ((p.skills && p.skills[k]) || 0) * 1.5;
-        var pc = Math.min(99, Math.round(100 * (prog[k] || 0) / th));
-        if (pc > bestPct) { bestPct = pc; best = k; }
-      }
-      return "<label class='fo-ns-man'>" +
-        "<span class='fo-ns-mn'><b>" + E(p.name) + "</b><i>" + (p.age | 0) + " &middot; " +
-        (bestPct ? E(foSkillLbl(best)) + " " + bestPct + "%" : "no work banked yet") + "</i></span>" +
-        "<select class='fo-ns-prog' data-p='" + E(p.name) + "'>" +
-        "<option value=''>the coach decides</option>" +
+  // ---------------------------------------------------------------------------
+  // THE NETS ARE THE WORLD'S NETS. The plan a manager sets here is a standing
+  // order held by the World Service: whatever stands when a round settles is
+  // the work that round did, worked by the umpire on the men who actually
+  // play, whether or not this phone is on. The programme list and the
+  // arithmetic both belong to the shipped engine, so there is only ever one
+  // model of what a week in the nets does.
+  //
+  // PHASE 3 OF THE ALMANACK. The room used to compute a week of sessions,
+  // coach's projects and hired staff, and then not render any of it - three
+  // panels of dead code and a stylesheet for a screen nobody could see. What
+  // it actually is, and all it ever was after the world took the nets over,
+  // is one standing order per man and the report of what that work bought.
+  // ---------------------------------------------------------------------------
+  function progs() {
+    try {
+      var k = Object.keys(window.FO_TRAIN_PROGS || {});
+      if (k.length) return k.filter(function (x) { return x !== "Rest"; }).concat(["Rest"]);
+    } catch (e) {}
+    return ["Batting", "Power hitting", "Finishing", "Bowling", "New-ball seam", "Spin bowling",
+      "Death bowling", "Control bowling", "Keeping", "Fielding", "Fitness", "All-rounder", "Rest"];
+  }
+  // how far a man is through his current piece of work, in his own best area
+  function banked(p) {
+    var prog = p.trainProgress || {}, best = "", pct = 0;
+    for (var k in prog) {
+      var th = 80 + ((p.skills && p.skills[k]) || 0) * 1.5;
+      var v = Math.min(99, Math.round(100 * (prog[k] || 0) / th));
+      if (v > pct) { pct = v; best = k; }
+    }
+    return { skill: best, pct: pct };
+  }
+
+  window.foRenderNetsPage = function () {
+    if (!onNets()) return;
+    var page = document.getElementById("page"); if (!page || !ready()) return;
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
+
+    var t = TR(), me = userTeam();
+    var squad = (me.players || []).concat(me.youth || []);
+    var world = null; try { world = window.__foWorldClaim || null; } catch (eW) {}
+    var plan = {}; try { plan = window.__foWorldPlan || {}; } catch (eP) {}
+    var PROGS = progs();
+    var named = squad.filter(function (p) { return plan[p.name]; }).length;
+
+    var body = al.mast("The training ground", "The Nets",
+      "Name what each man works on. The World Service holds the plan and the umpire runs it with every round, " +
+      "whether you watch it or not.") + al.subnav("training");
+
+    body += al.decide({
+      kind: world ? (named ? "done" : "act") : "act",
+      title: world
+        ? named + " of " + squad.length + " men have a programme"
+        : "The plan is not going anywhere yet",
+      note: world
+        ? "Standing orders. The umpire works them every round, awake or asleep — the rest train to their trade."
+        : "Sign in to the account that holds your club and these become standing orders in the served world.",
+    });
+
+    // ---- one standing order per man ----------------------------------------
+    var rows = squad.map(function (p) {
+      var b = banked(p), cur = plan[p.name] || "";
+      return '<label class="al-prow al-prow--static al-prow--pick">' +
+        '<span class="al-prow__no">' + (p.age | 0) + "</span>" +
+        '<span class="al-prow__who"><b>' + E(p.name) + "</b><i>" +
+          (b.pct ? E(foSkillLbl(b.skill)) + " " + b.pct + "% of the way" : "no work banked yet") + "</i>" +
+          (b.pct ? al.meter(b.pct, "warm") : "") + "</span>" +
+        '<span class="al-prow__act"><select class="al-field fo-ns-prog" data-p="' + E(p.name) + '" aria-label="Programme for ' + E(p.name) + '">' +
+        '<option value="">the coach decides</option>' +
         PROGS.map(function (pr) {
-          return "<option value=\"" + E(pr) + "\"" + (pr === cur ? " selected" : "") + ">" + E(pr) + "</option>";
-        }).join("") + "</select></label>";
+          return '<option value="' + E(pr) + '"' + (pr === cur ? " selected" : "") + ">" + E(pr) + "</option>";
+        }).join("") + "</select></span></label>";
     }).join("");
-    var planPanel = "<div class='fo-ns-panel'><h3>The plan <span>" +
-      (world ? "standing orders &middot; the umpire works them every round" : "sign in to send these to the world") + "</span></h3>" +
-      "<p class='fo-ns-note'>Name the work and it is done for you, round after round, awake or asleep. Leave a man to the coach and he trains to his trade.</p>" +
-      "<div class='fo-ns-men'>" + planHTML + "</div></div>";
-    var sessHTML = Object.keys(FO_NS_SESS).map(function (id) {
-      var S = FO_NS_SESS[id], on = t.sessions.indexOf(id) >= 0;
-      var coachOn = S.coach && t.coaches[S.coach];
-      return "<button type='button' class='fo-ns-sess" + (on ? " on" : "") + "' data-ns-sess='" + id + "'>" +
-        "<i>" + S.ic + "</i><b>" + S.nm + (coachOn ? " <u title='Coach on staff'>+</u>" : "") + "</b><span>" + S.sub + "</span></button>";
-    }).join("");
-    var projHTML = [0, 1].map(function (i) {
-      var pr = t.projects[i] || {};
-      var pOpts = "<option value=''>&mdash; pick a player &mdash;</option>" + squad.map(function (p) {
-        return "<option value=\"" + E(p.name) + "\"" + (pr.n === p.name ? " selected" : "") + ">" + E(p.name) + " (" + (p.age | 0) + ")</option>";
-      }).join("");
-      var kOpts = "<option value=''>&mdash; the fault &mdash;</option>" + FO_NS_PROJ_SK.map(function (k) {
-        return "<option value='" + k + "'" + (pr.k === k ? " selected" : "") + ">" + E(foSkillLbl(k)) + "</option>";
-      }).join("");
-      return "<div class='fo-ns-proj'><em>Project " + (i + 1) + "</em>" +
-        "<select data-ns-pn='" + i + "'>" + pOpts + "</select>" +
-        "<select data-ns-pk='" + i + "'>" + kOpts + "</select></div>";
-    }).join("");
-    var staffHTML = Object.keys(FO_NS_COACH).map(function (c) {
-      var C = FO_NS_COACH[c], on = !!t.coaches[c];
-      return "<button type='button' class='fo-ns-coach" + (on ? " on" : "") + "' data-ns-coach='" + c + "'>" +
-        "<b>" + C.nm + "</b><span>" + (on ? "on staff &middot; $" + C.fee.toLocaleString() + " a round" : "hire &middot; $" + C.fee.toLocaleString() + " a round") + "</span></button>";
-    }).join("");
-    var gains = {}, rows = (t.log || []).slice(0, 14).map(function (l) {
-      gains[l.n] = (gains[l.n] || 0) + 1;
-      return "<div class='fo-ns-line'><b>" + E(l.n) + "</b> " + (l.r >= 0 ? "+1 " + E(foSkillLbl(l.k)) : E(l.why)) +
-        " <span>" + (l.r >= 0 ? E(l.why) + " &middot; R" + (l.r + 1) : "season " + l.s) + "</span></div>";
-    }).join("");
-    page.innerHTML = "<div class='fo-ns'>" +
-      "<img class='fo-ns-bg' src='" + bg + "' alt='' onerror=\"this.style.display='none'\"><div class='fo-ns-veil'></div>" +
-      "<div class='fo-ns-in'>" +
-      "<div class='fo-cer-eyebrow'>" + E(me.name) + " &middot; the training ground</div>" +
-      "<h1 class='fo-ns-h1'>The Nets</h1>" +
-      "<p class='fo-ns-tag'>Name what each man works on. The World Service holds the plan and the umpire runs it with every round, whether you watch it or not.</p>" +
-      "<div class='fo-ns-grid'>" +
-      planPanel +
-      "<div class='fo-ns-panel'><h3>Development report</h3>" + (rows || "<p class='fo-ns-note'>No gains recorded yet. The first week's work shows after the round.</p>") + "</div>" +
-      "</div>" +
-      "<div class='fo-cer-actions'><a class='fo-ls-btn ghost' href='#/desk'>&lsaquo; The desk</a><a class='fo-ls-btn ghost' href='#/squad'>The squad &rsaquo;</a></div>" +
-      "</div></div>";
-    // a programme changed is a standing order sent to the world, debounced
+    body += al.sec("The plan · " + squad.length + " men",
+      squad.length ? '<div class="al-players">' + rows + "</div>"
+                   : al.empty("No squad yet", "Your men arrive with your club."));
+
+    // ---- what the work bought ----------------------------------------------
+    var log = (t.log || []).slice(0, 14);
+    body += al.sec("Development report", log.length
+      ? al.ledger(log.map(function (l) {
+          return [l.n + " · " + (l.r >= 0 ? l.why + " · R" + (l.r + 1) : "season " + l.s),
+            l.r >= 0 ? "+1 " + foSkillLbl(l.k) : l.why, l.r >= 0 ? "pos" : "neg"];
+        }))
+      : al.empty("Nothing banked yet", "The first week's work shows after the round settles."));
+
+    page.innerHTML = al.page({ body: body });
+
+    // a programme changed is a standing order sent to the world
     page.querySelectorAll(".fo-ns-prog").forEach(function (sl) {
       sl.addEventListener("change", function () {
         var next = {};
@@ -34098,37 +34177,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     });
     // if the world has not told us the plan yet, ask and repaint when it does
     try { if (window.__foWorldPlan == null && window.__foWorldRefreshPlan) window.__foWorldRefreshPlan(); } catch (eR) {}
-
-    var save = function () { try { saveGame(false); } catch (e) {} window.foRenderNetsPage(); };
-    page.querySelectorAll("[data-ns-sess]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var id = b.getAttribute("data-ns-sess"), ix = t.sessions.indexOf(id);
-        if (ix >= 0) t.sessions.splice(ix, 1);
-        else { t.sessions.push(id); while (t.sessions.length > 3) t.sessions.shift(); }
-        if (!t.sessions.length) t.sessions = ["bat"];
-        save();
-      });
-    });
-    page.querySelectorAll("select[data-ns-pn]").forEach(function (s) {
-      s.addEventListener("change", function () {
-        var i = +s.getAttribute("data-ns-pn"); t.projects[i] = t.projects[i] || {};
-        t.projects[i].n = s.value || null; save();
-      });
-    });
-    page.querySelectorAll("select[data-ns-pk]").forEach(function (s) {
-      s.addEventListener("change", function () {
-        var i = +s.getAttribute("data-ns-pk"); t.projects[i] = t.projects[i] || {};
-        t.projects[i].k = s.value || null; save();
-      });
-    });
-    page.querySelectorAll("[data-ns-coach]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var c = b.getAttribute("data-ns-coach");
-        t.coaches[c] = !t.coaches[c]; save();
-      });
-    });
   };
-  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] !== "#/training") document.body.classList.remove("fo-nets-on"); });
 
   // the desk hears about the week
   window.foNetsCard = function () {
@@ -34145,55 +34194,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "<a class='fo-ls-btn ghost' href='#/training'>Set the week &rsaquo;</a></div></div>";
   };
 
-  function foNsCss() {
-    if (document.getElementById("fo-ns-css")) return;
-    var s = document.createElement("style"); s.id = "fo-ns-css";
-    s.textContent = [
-      "html body.ftpskin.fo-nets-on,html body.fo-nets-on{background:#E9E4D8 !important;isolation:isolate}",
-      "html body.fo-nets-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
-      "html body.fo-nets-on #page{padding:0 !important;margin:0 !important;background:transparent !important}",
-      ".fo-ns{position:relative;min-height:100vh;color:#26301F;padding:72px 18px 40px;isolation:isolate}",
-      ".fo-ns-bg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 45%;z-index:-2}",
-      ".fo-ns-veil{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(7,10,6,.22),rgba(8,11,7,.10) 32%,rgba(7,10,6,.14) 66%,rgba(5,7,4,.34))}",
-      ".fo-ns-in{max-width:1120px;margin:0 auto}",
-      ".fo-ns-h1{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(40px,6.4vw,72px);line-height:.9;margin:0 0 8px;color:#fff;text-shadow:0 3px 22px rgba(0,0,0,.6),0 1px 3px rgba(0,0,0,.5)}",
-      ".fo-ns .fo-cer-eyebrow{color:#fff !important;text-shadow:0 2px 10px rgba(0,0,0,.65)}",
-      ".fo-ns-tag{font-family:Georgia,serif;font-style:italic;font-size:14.5px;color:#fff;margin:0 0 22px;max-width:60ch;text-shadow:0 2px 12px rgba(0,0,0,.65)}",
-      ".fo-ns-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:22px}",
-      "@media(max-width:900px){.fo-ns-grid{grid-template-columns:minmax(0,1fr)}}",
-      ".fo-ns-panel{background:rgba(252,251,246,.9);border:1px solid rgba(60,80,45,.16);border-radius:16px;padding:15px 17px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 14px 34px rgba(30,40,20,.18)}",
-      ".fo-ns-panel h3{margin:0 0 10px;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#8A6A1F;display:flex;justify-content:space-between;align-items:baseline}",
-      ".fo-ns-men{display:grid;gap:6px;margin-top:6px}",
-      // the man rows sit INSIDE the light .fo-ns-panel, so they carry the same
-      // ink as .fo-ns-sess below - white-on-cream left a squad list you could
-      // not read at all
-      ".fo-ns-man{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.85);border:1px solid rgba(60,80,45,.22);border-radius:11px;padding:8px 10px;min-width:0}",
-      ".fo-ns-mn{flex:1 1 auto;min-width:0;display:block}",
-      ".fo-ns-mn b{display:block;font:600 12.5px/1.25 Inter,sans-serif;color:#26301F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
-      ".fo-ns-mn i{display:block;font:400 10px/1.3 Inter,sans-serif;font-style:normal;color:#6E7E5A}",
-      "html body #page .fo-ns-prog{flex:none;max-width:50%;font:500 11px/1.1 Inter,sans-serif !important;border:1px solid rgba(20,28,40,.2) !important;border-radius:9px !important;padding:8px 8px !important;background:#FFFEFC !important;color:#141C28 !important;-webkit-appearance:menulist;appearance:menulist}",
-      "html body #page .fo-ns-prog option{color:#141C28;background:#FFFEFC}",
-      ".fo-ns-panel h3 span{font-size:9.5px;color:#6E7E5A;letter-spacing:.14em}",
-      ".fo-ns-note{font-family:Georgia,serif;font-style:italic;font-size:12px;color:#6E7E5A;margin:0 0 10px}",
-      ".fo-ns-sessgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}",
-      "html body #page .fo-ns-sess{text-align:left;border:1px solid rgba(60,80,45,.22) !important;border-radius:11px !important;background:rgba(255,255,255,.85) !important;color:#33402a !important;padding:11px 12px !important;cursor:pointer;transition:.15s;font:inherit !important}",
-      "html body #page .fo-ns-sess.on{border-color:#C89A2E !important;background:rgba(250,242,218,.95) !important;box-shadow:0 0 0 1px rgba(200,154,46,.4),0 6px 16px rgba(30,40,20,.18)}",
-      ".fo-ns-sess i{font-style:normal;font-size:15px;margin-right:6px}",
-      ".fo-ns-sess b{font-family:Oswald,sans-serif;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#26301F}",
-      ".fo-ns-sess b u{text-decoration:none;color:#8A6A1F}",
-      ".fo-ns-sess span{display:block;font-family:Georgia,serif;font-style:italic;font-size:11px;color:#6E7E5A;margin-top:3px;line-height:1.4}",
-      ".fo-ns-proj{display:flex;gap:8px;align-items:center;margin-bottom:9px;flex-wrap:wrap}",
-      ".fo-ns-proj em{font-family:Oswald,sans-serif;font-style:normal;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:#6E7E5A;width:70px}",
-      "html body #page .fo-ns-proj select{flex:1;min-width:130px;background:#FFFEFC !important;color:#26301F !important;border:1px solid rgba(60,80,45,.3) !important;border-radius:8px;padding:8px 9px;font:500 12.5px Inter,sans-serif}",
-      "html body #page .fo-ns-coach{display:flex;justify-content:space-between;align-items:baseline;width:100%;text-align:left;border:1px solid rgba(60,80,45,.22) !important;border-radius:10px !important;background:rgba(255,255,255,.85) !important;color:#33402a !important;padding:10px 12px !important;margin-bottom:8px;cursor:pointer;font:inherit !important;transition:.15s}",
-      "html body #page .fo-ns-coach.on{border-color:#1F9E72 !important;background:rgba(235,249,242,.95) !important;box-shadow:0 0 0 1px rgba(31,158,114,.35)}",
-      ".fo-ns-coach b{font-family:Oswald,sans-serif;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#26301F}",
-      ".fo-ns-coach span{font-size:11px;color:#6E7E5A}",
-      ".fo-ns-coach.on span{color:#1F9E72}",
-      ".fo-ns-line{margin:0 0 7px;font-size:12.5px;color:#3d4a30}.fo-ns-line b{color:#1d2417}.fo-ns-line span{color:#75845F;font-size:11px}"
-    ].join("\n");
-    document.head.appendChild(s);
-  }
 })();
 // ---- 19-modern-shell.js — the modern app shell -------------------------------
 // The game's pages got art; the chrome around them stayed 2012. This module is
@@ -34665,131 +34665,119 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   // ---- the page --------------------------------------------------------------
-  function bead(f) { return "<i class='fo-sd-bead " + (f.w ? "w" : "l") + "' title='" + E(f.txt) + "'>" + (f.w ? "W" : "L") + "</i>"; }
-  function gchip(v) { var g = gradeOf(v); return "<em class='fo-sd-g' style='color:" + GRADE_C[g] + ";border-color:" + GRADE_C[g] + "55'>" + g + "</em>"; }
-  function meter(v) { var w = Math.max(8, Math.min(96, Math.round(v))); return "<span class='fo-sd-m'><u style='width:" + w + "%'></u></span>"; }
+  // PHASE 3 OF THE ALMANACK. The dossier was a rain-veranda photograph with
+  // frosted cards floating on it. What a dossier IS is a filed report: a
+  // verdict at the top, the evidence it was drawn from beneath, and the one
+  // standing instruction the manager can actually give at the end. Nothing
+  // about the analysis changed - the grades, the splits and the
+  // recommendations are the same functions, derived from the shared record, so
+  // every client still files the identical report.
+  function A() { return window.AL || null; }
+  function onDossier() { return (location.hash || "").split("?")[0] === "#/dossier"; }
+  function beadRow(name, form) {
+    var b = form.length
+      ? '<span class="al-beads">' + form.slice(-5).map(function (f) {
+          return '<i class="' + (f.w ? "w" : "l") + '" title="' + E(f.txt) + '">' + (f.w ? "W" : "L") + "</i>";
+        }).join("") + "</span>"
+      : '<span class="al-read">no cricket yet</span>';
+    return '<div class="al-formrow"><span>' + E(name) + "</span>" + b + "</div>";
+  }
 
   function foRenderScoutPage() {
     try {
+      if (!onDossier()) return;
       ensureDoctrines();
       var page = document.getElementById("page"); if (!page) return;
+      var al = A(); if (!al) return;
+      try { window.__foAlApply && window.__foAlApply(); } catch (eA) {}
       var me = null; try { me = userTeam(); } catch (eU) {}
       if (!me) return;
       var nx = nextFixture();
-      document.body.classList.remove("fo-scb-on", "fo-drs-on");
-      document.body.classList.add("fo-sdx-on");
-      var artBase = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
-      var sdBg = "<img class='fo-sd-bg' src='" + artBase + "home/" + (window.innerWidth < 760 ? "hgm" : "hgd") + "-veranda-rain.webp' alt=''><div class='fo-sd-veil'></div>";
 
       if (!nx) {
-        page.innerHTML = sdBg + "<div class='fo-sd'><div class='fo-sd-hero'><div class='fo-sd-kick'>" + E(me.name) + " &middot; the war room</div>" +
-          "<h1>The Scout&rsquo;s Dossier</h1><p>No fixture ahead. The season is done - the scout is at the beach, and the groundsman is re-seeding the square for spring.</p>" +
-          "<div class='fo-sd-foot'><a href='#/desk'>&#8592; The desk</a><a href='#/ceremony'>Awards night &rsaquo;</a></div></div></div>";
+        page.innerHTML = al.page({ body:
+          al.mast("The war room", "The Scout's Dossier", "") + al.subnav("dossier") +
+          al.empty("No fixture ahead",
+            "The season is done. The scout is at the beach and the groundsman is re-seeding the square for spring.") });
         return;
       }
 
-      var opp = nx.opp;
-      var hm = humanMap();
-      var oppHuman = !!(hm && hm[opp.name]);
+      var opp = nx.opp, hm = humanMap(), oppHuman = !!(hm && hm[opp.name]);
       var oppSeas = teamSeason(opp.name), mySeas = teamSeason(me.name);
       var oppSplits = batSplits(opp), mySplits = batSplits(me);
       var oppAtk = attackShape(opp, oppSeas);
-      var rows = [];
-      try { rows = leagueRows(); } catch (eL) {}
-      var posOf = function (nm) { for (var i = 0; i < rows.length; i++) if (rows[i].nm === nm) return { pos: i + 1, pts: rows[i].pts, nrr: rows[i].nrr }; return null; };
+      var rows = []; try { rows = leagueRows(); } catch (eL) {}
+      var posOf = function (nm) { for (var i = 0; i < rows.length; i++) if (rows[i].nm === nm) return { pos: i + 1, pts: rows[i].pts }; return null; };
       var meP = posOf(me.name), opP = posOf(opp.name);
       var ord = function (n) { return n + (n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"); };
-
-      // head-to-head this season
       var h2h = (App.results || []).filter(function (rec) {
         return rec && rec.result && ((rec.home === me.name && rec.away === opp.name) || (rec.home === opp.name && rec.away === me.name));
       }).slice(-3);
-
-      var scorers = topN(oppSeas.bat, function (s) { return s.r; }, 4);
-      var wickets = topN(oppSeas.bowl, function (s) { return s.w; }, 3);
-
+      var scorers = topN(oppSeas.bat, function (x) { return x.r; }, 4);
+      var wickets = topN(oppSeas.bowl, function (x) { return x.w; }, 3);
       var recs = recommend(nx, me, opp, oppSeas, mySplits, oppSplits, oppAtk);
       var doctrine = me.homePitch || "";
-      var nextHome = null;
-      try {
-        var S = App.season;
-        for (var r2 = S.round; r2 < S.schedule.length && !nextHome; r2++) {
-          (S.schedule[r2] || []).forEach(function (f2) {
-            if (nextHome) return;
-            if (f2[0] !== App.teamIx) return;
-            try { if (S.played && S.played[fixtureKey(r2, f2)] !== undefined) return; } catch (eK2) {}
-            nextHome = { r: r2, opp: GD.teams[f2[1]] };
-          });
-        }
-      } catch (eNH) {}
 
-      page.innerHTML = sdBg +
-        "<div class='fo-sd'>" +
-        "<div class='fo-sd-hero'>" +
-        "<div class='fo-sd-kick'>Round " + (nx.r + 1) + " &middot; " + (nx.isHome ? "at " + E(nx.ground) : "away at " + E(nx.ground)) + "</div>" +
-        "<h1>v " + E(opp.name) + "</h1>" +
-        "<p>" + (oppHuman ? "A human hand on their tiller - expect the unexpected. " : "") +
-        "The scout has been to their nets, read their scorecards, and filed this before breakfast.</p>" +
-        (opP && meP ? "<div class='fo-sd-tale'><span>" + E(me.name) + " &middot; " + ord(meP.pos) + " &middot; " + meP.pts + " pts</span><b>v</b><span>" + E(opp.name) + " &middot; " + ord(opP.pos) + " &middot; " + opP.pts + " pts</span></div>" : "") +
-        "</div>" +
+      var body = al.mast("Round " + (nx.r + 1) + " · " + (nx.isHome ? "at " : "away at ") + nx.ground,
+        "v " + opp.name,
+        (oppHuman ? "A human hand on their tiller — expect the unexpected. " : "") +
+        "The scout has been to their nets, read their scorecards, and filed this before breakfast.");
+      body += al.subnav("dossier");
 
-        "<div class='fo-sd-grid'>" +
+      // ---- the verdict: what to do if you win the toss ----------------------
+      body += al.decide({
+        kind: "act",
+        title: tossHint(nx.pitch, nx.weather),
+        note: (PITCH_NM[nx.pitch] || nx.pitch) + " · " + nx.weather + " · " + (PITCH_LINE[nx.pitch] || ""),
+        action: { href: "#/team", label: "Pick the side" },
+        primary: true,
+      });
 
-        // form
-        "<section class='fo-sd-card'><div class='fo-sd-k'>Recent form</div>" +
-        "<div class='fo-sd-formrow'><span>" + E(opp.name) + "</span><span class='fo-sd-beads'>" + (oppSeas.form.slice(-5).map(bead).join("") || "<i class='fo-sd-none'>no cricket yet</i>") + "</span></div>" +
-        "<div class='fo-sd-formrow'><span>" + E(me.name) + "</span><span class='fo-sd-beads'>" + (mySeas.form.slice(-5).map(bead).join("") || "<i class='fo-sd-none'>no cricket yet</i>") + "</span></div>" +
-        (h2h.length ? "<div class='fo-sd-h2h'>" + h2h.map(function (rec) { return "<a href='#/report?i=" + rec.ix + "'>" + E((rec.result && rec.result.text) || "") + " &rsaquo;</a>"; }).join("") + "</div>" : "") +
-        "</section>" +
+      if (meP && opP) {
+        body += al.sec("The two of you", al.ledger([
+          [me.name, ord(meP.pos) + " · " + meP.pts + " pts"],
+          [opp.name, ord(opP.pos) + " · " + opP.pts + " pts"],
+        ]), { href: "#/table", label: "The table" });
+      }
 
-        // their batting
-        "<section class='fo-sd-card'><div class='fo-sd-k'>Their batting</div>" +
-        "<div class='fo-sd-split'><span>vs pace</span>" + meter(oppSplits.vsPace) + gchip(oppSplits.vsPace) + "</div>" +
-        "<div class='fo-sd-split'><span>vs spin</span>" + meter(oppSplits.vsSpin) + gchip(oppSplits.vsSpin) + "</div>" +
-        (scorers.length ? "<div class='fo-sd-men'>" + scorers.map(function (o) {
+      body += al.sec("Recent form",
+        beadRow(opp.name, oppSeas.form) + beadRow(me.name, mySeas.form) +
+        (h2h.length ? '<p class="al-read">' + h2h.map(function (rec) {
+          return '<a href="#/report?i=' + rec.ix + '">' + E((rec.result && rec.result.text) || "") + "</a>";
+        }).join(" · ") + "</p>" : ""));
+
+      // GRADES, NEVER RAW NUMBERS. A rival's skill values are nobody's
+      // business; a letter and a bar are what a scout would actually file.
+      body += al.sec("Their batting",
+        al.ledger([["Against pace", gradeOf(oppSplits.vsPace)], ["Against spin", gradeOf(oppSplits.vsSpin)]]) +
+        (scorers.length ? al.ledger(scorers.map(function (o) {
           var sr = o.s.b ? Math.round(100 * o.s.r / o.s.b) : 0;
-          return "<div class='fo-sd-man'><b>" + E(o.nm) + "</b><span>" + o.s.r + " runs &middot; best " + o.s.best + (sr ? " &middot; SR " + sr : "") + "</span></div>";
-        }).join("") + "</div>" : "<div class='fo-sd-none2'>No innings on record - the scout is guessing from the nets.</div>") +
-        "</section>" +
+          return [o.nm, o.s.r + " runs · best " + o.s.best + (sr ? " · SR " + sr : "")];
+        })) : '<p class="al-read">No innings on record — the scout is guessing from the nets.</p>'));
 
-        // their bowling
-        "<section class='fo-sd-card'><div class='fo-sd-k'>Their attack</div>" +
-        "<div class='fo-sd-mix'><u style='width:" + oppAtk.pacePct + "%'></u></div>" +
-        "<div class='fo-sd-mixlbl'><span>pace " + oppAtk.pacePct + "%</span><span>spin " + (100 - oppAtk.pacePct) + "%</span></div>" +
-        (wickets.length ? "<div class='fo-sd-men'>" + wickets.map(function (o) {
+      body += al.sec("Their attack",
+        al.ledger([["Pace", oppAtk.pacePct + "%"], ["Spin", (100 - oppAtk.pacePct) + "%"]]) +
+        al.meter(oppAtk.pacePct) +
+        (wickets.length ? al.ledger(wickets.map(function (o) {
           var ov = o.s.b ? (o.s.b / 6) : 0, ec = ov ? (o.s.r / ov) : 0;
-          return "<div class='fo-sd-man'><b>" + E(o.nm) + "</b><span>" + o.s.w + " wkts" + (ec ? " &middot; " + ec.toFixed(1) + " rpo" : "") + "</span></div>";
-        }).join("") + "</div>" : "<div class='fo-sd-none2'>No bowling record yet this season.</div>") +
-        "</section>" +
+          return [o.nm, o.s.w + " wkts" + (ec ? " · " + ec.toFixed(1) + " rpo" : "")];
+        })) : '<p class="al-read">No bowling record yet this season.</p>'));
 
-        // conditions
-        "<section class='fo-sd-card'><div class='fo-sd-k'>The conditions</div>" +
-        "<div class='fo-sd-cond'><b>" + E(nx.ground) + "</b><span>" + E(PITCH_NM[nx.pitch] || nx.pitch) + " &middot; " + E(nx.weather) + "</span></div>" +
-        "<p class='fo-sd-say'>" + E(PITCH_LINE[nx.pitch] || "") + ".</p>" +
-        "<p class='fo-sd-toss'><b>The toss:</b> " + E(tossHint(nx.pitch, nx.weather)) + "</p>" +
-        "</section>" +
+      body += al.sec("The scout recommends",
+        '<ol class="al-recs">' + recs.map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ol>");
 
-        // recommendations
-        "<section class='fo-sd-card fo-sd-wide'><div class='fo-sd-k'>The scout recommends</div>" +
-        "<ol class='fo-sd-recs'>" + recs.map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ol>" +
-        "</section>" +
-
-        // groundsman
-        "<section class='fo-sd-card fo-sd-wide'><div class='fo-sd-k'>The groundsman</div>" +
-        "<p class='fo-sd-say'>A standing instruction for how " + E(me.ground || "your ground") + " is prepared. It holds until you change it, and applies to every home fixture still to be played" +
-        (nextHome ? " - next: <b>R" + (nextHome.r + 1) + " v " + E(nextHome.opp.name) + "</b>" : "") + ".</p>" +
-        "<div class='fo-sd-docs'>" + DOCTRINES.map(function (d) {
+      body += al.sec("The groundsman",
+        "<p>A standing instruction for how " + E(me.ground || "your ground") + " is prepared. It holds until you " +
+        "change it, and applies to every home fixture still to be played.</p>" +
+        '<div class="al-picks">' + DOCTRINES.map(function (d) {
           var on = (doctrine || "") === d.k;
-          return "<button class='fo-sd-doc" + (on ? " on" : "") + "' data-doc='" + d.k + "'><b>" + E(d.nm) + "</b><span>" + E(d.why) + "</span></button>";
-        }).join("") + "</div>" +
-        "</section>" +
+          return '<button type="button" class="al-pick" data-doc="' + d.k + '" aria-pressed="' + (on ? "true" : "false") + '">' +
+            "<b>" + E(d.nm) + "</b><i>" + E(d.why) + "</i></button>";
+        }).join("") + "</div>");
 
-        "</div>" +
-        "<div class='fo-sd-foot'><a href='#/desk'>&#8592; The desk</a><a href='#/orders'>Set the orders &rsaquo;</a><a href='#/training'>The nets &rsaquo;</a></div>" +
-        "</div>";
+      page.innerHTML = al.page({ body: body });
 
-      // groundsman wiring
-      page.querySelectorAll(".fo-sd-doc").forEach(function (b) {
+      page.querySelectorAll(".al-pick").forEach(function (b) {
         b.addEventListener("click", function () {
           try {
             var k = b.getAttribute("data-doc") || "";
@@ -34801,7 +34789,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       });
     } catch (e) { try { console.warn("foRenderScoutPage", e); } catch (e2) {} }
   }
-
   // ---- topbar link -----------------------------------------------------------
   function ensureNavLink() {
     try {
@@ -39054,7 +39041,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // The Nets: the noticeboard strip
   // ---------------------------------------------------------------------------
   function foPopsNetsStrip() {
-    var pane = document.querySelector(".fo-ns-grid"); if (!pane) return;
+    // the nets wear the Almanack now; the strip goes above its first band
+    var pane = document.querySelector(".al-page__in .al-sec") || document.querySelector(".fo-ns-grid");
+    if (!pane) return;
     if (document.querySelector(".fo-pop-board")) return;
     var fresh = foPopsRecent().filter(function (l) { return l.r >= 0; });
     if (!fresh.length) return;
@@ -43090,7 +43079,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
   function money(v) {
     var n = Number(v);
-    if (!isFinite(n)) return "&mdash;";
+    if (!isFinite(n)) return "\u2014";   // plain text: the ledger escapes what it prints
     var neg = n < 0; n = Math.abs(n);
     var s = n >= 1000000 ? (n / 1000000).toFixed(n >= 10000000 ? 0 : 1) + "m"
           : n >= 1000 ? Math.round(n / 1000) + "k" : String(Math.round(n));
@@ -43101,7 +43090,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function stepCost(lv) { return lv * 60000; }
 
   function ovrOf(p) {
-    try { if (typeof window.foPkOvr === "function") return window.foPkOvr(p); } catch (e) {}
+    try { if (window.AL) return window.AL.ovr(p); } catch (e) {}
+    try { if (typeof window.foPkOvr === "function") return window.foPkOvr(p); } catch (e2) {}
     return null;
   }
   function roleOf(p) {
@@ -43121,93 +43111,99 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return a <= 17 ? "still at school" : a === 18 ? "first year" : a === 19 ? "second year" : "final year";
   }
 
-  // --------------------------------------------------------------------------
+  function A() { return window.AL || null; }
+  function on() { return (location.hash || "").split("?")[0] === "#/academy"; }
+  function mast(al) {
+    return al.mast("The academy", "The Colts",
+      "Boys arrive on their own, age on their own, and walk into your first team at twenty-one whether you were " +
+      "watching or not. What you decide is how good a place they learn in.");
+  }
+  function fail(page, al, title, line, href, label) {
+    page.innerHTML = al.page({ body: mast(al) + al.empty(title, line) +
+      (href ? '<p style="margin-top:16px"><a class="al-btn al-btn--primary" href="' + href + '">' + label + "</a></p>" : "") });
+  }
+
   window.foRenderAcademyPage = function () {
+    if (!on()) return;
     var page = document.getElementById("page"); if (!page) return;
-    css();
-    page.innerHTML = shell("<div class='fo-ac-note'>Walking down to the academy&hellip;</div>");
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
+    page.innerHTML = al.page({ body: mast(al) + al.empty("Walking down to the academy", "Reading the books.") });
     if (!jwt()) {
-      page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>Your academy belongs to your club in the served world. Sign in to the account that holds it and the colts will be here waiting.</p>" +
-        "<a class='fo-ac-btn' href='#/worldclub'>Your world club &rsaquo;</a></div>");
+      fail(page, al, "Your academy belongs to your club",
+        "Sign in to the account that holds it and the colts will be here waiting.", "#/worldclub", "Your world club");
       return;
     }
     rpc("world_my_status").then(function (st) {
-      if (!st || st.signedIn === false) {
-        page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>Sign in first - the academy is your club's, and the world keeps it.</p></div>");
-        return;
-      }
+      if (!on()) return;
+      if (!st || st.signedIn === false) { fail(page, al, "Sign in first", "The academy is your club's, and the world keeps it."); return; }
       if (!st.claim) {
-        page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>You don't hold a club in the served world yet. Claim one and its academy comes with it, boys and all.</p>" +
-          "<a class='fo-ac-btn' href='#/worldclub'>Claim a club &rsaquo;</a></div>");
+        fail(page, al, "You don't hold a club yet", "Claim one and its academy comes with it, boys and all.",
+          "#/worldclub", "Claim a club");
         return;
       }
       render(page, st);
       // the Colts Cup arrives a beat later; the room does not wait for it
       snapshot("colts/" + st.claim.country).then(function (cup) {
         var box = document.getElementById("fo-ac-cup");
-        if (box) box.innerHTML = cupHTML(cup, st.claim.club);
+        if (box && on()) box.innerHTML = cupHTML(A(), cup, st.claim.club);
       });
     }).catch(function (e) {
-      page.innerHTML = shell("<div class='fo-ac-note'>The world could not be reached (" + E(String(e.message).slice(0, 90)) +
-        "). The boys are training regardless - try again in a minute.</div>");
+      if (!on()) return;
+      fail(page, al, "The world could not be reached",
+        String((e && e.message) || e).slice(0, 120) + ". The boys are training regardless — try again in a minute.");
     });
   };
 
-  function shell(body) {
-    // the room keeps its own table: the club that matters here is the one in
-    // the served world, not whatever the device calls home
-    return "<div class='fo-ac' data-fo-owntable><div class='fo-ac-in'>" +
-      "<div class='fo-ac-hero'><div class='fo-ac-k'>The academy</div>" +
-      "<h1>The Colts</h1>" +
-      "<p>Boys arrive on their own, age on their own, and walk into your first team at twenty-one whether you were watching or not. What you decide is how good a place they learn in.</p></div>" +
-      body +
-      "<div class='fo-ac-foot'><a href='#/worldclub'>&lsaquo; Your world club</a><a href='#/finance'>The books &rsaquo;</a></div>" +
-      "</div></div>";
-  }
-
   function render(page, st) {
+    var al = A(); if (!al || !on()) return;
     var lv = Math.max(1, Math.min(5, +st.academy || 2));
     var colts = st.youth || [];
     var room = cap(lv), spare = Math.max(0, room - colts.length);
     var bank = Number(st.bank || 0);
-    var pips = "";
-    for (var i = 1; i <= 5; i++) pips += "<s class='fo-ac-pip" + (i <= lv ? " on" : "") + "'></s>";
+    var body = mast(al) + al.subnav("academy");
 
-    var up = lv >= 5
-      ? "<div class='fo-ac-note'>Level five. There is nowhere further to go; the county sends people to look at yours now.</div>"
-      : (function () {
-          var cost = stepCost(lv), can = bank >= cost;
-          return "<div class='fo-ac-uprow'>" +
-            "<div><b>Level " + (lv + 1) + "</b><i>Room for " + cap(lv + 1) + " boys &middot; better cricketers through the door &middot; " +
-              money((lv + 1) * UPKEEP) + " a round to run</i></div>" +
-            "<button type='button' class='fo-ac-btn" + (can ? "" : " off") + "' data-fo-acup='" + (lv + 1) + "'" + (can ? "" : " disabled") + ">" +
-              (can ? "Build it &middot; " + money(cost) : "Needs " + money(cost)) + "</button></div>";
-        })();
+    // ---- the one decision: how good a place they learn in ------------------
+    var canUp = lv < 5 && bank >= stepCost(lv);
+    body += al.decide({
+      kind: lv < 5 ? "act" : "done",
+      title: "Level " + lv + " · " + colts.length + " of " + room + " beds taken" + (spare ? " · " + spare + " free" : " · full"),
+      note: lv >= 5
+        ? "Level five. There is nowhere further to go; the county sends people to look at yours now."
+        : money(lv * UPKEEP) + " a round to run · level " + (lv + 1) + " costs " + money(stepCost(lv)) +
+          " and sleeps " + cap(lv + 1),
+    });
 
-    var list = colts.length
-      ? "<div class='fo-ac-grid'>" + colts.map(coltCard).join("") + "</div>"
-      : "<div class='fo-ac-note'>Nobody on the books this minute. The academy takes a boy in as soon as there is a bed for him - come back after the next round.</div>";
+    if (lv < 5) {
+      body += al.sec("Build it up",
+        "<p>Level " + (lv + 1) + " gives room for " + cap(lv + 1) + " boys, better cricketers through the door, and " +
+        money((lv + 1) * UPKEEP) + " a round to run.</p>" +
+        '<p><button type="button" class="al-btn ' + (canUp ? "al-btn--primary" : "") + '" data-fo-acup="' + (lv + 1) + '"' +
+        (canUp ? "" : " disabled") + ">" + (canUp ? "Build it · " + money(stepCost(lv)) : "Needs " + money(stepCost(lv))) +
+        "</button></p>" +
+        al.ledger([["Upkeep now", money(lv * UPKEEP) + " a round"], ["In the bank", money(bank)]]));
+    }
 
-    page.innerHTML = shell(
-      "<div class='fo-ac-card'><h3>" + E(st.claim.club || "Your club") + "<span>" + E(st.claim.country || "") + "</span></h3>" +
-        "<div class='fo-ac-lvl'><div class='fo-ac-pips'>" + pips + "</div>" +
-          "<div class='fo-ac-lvt'><b>Level " + lv + "</b><i>" + colts.length + " of " + room + " beds taken" +
-          (spare ? " &middot; " + spare + " free" : " &middot; full") + "</i></div></div>" +
-        "<div class='fo-ac-money'>" +
-          "<div><i>Upkeep</i><b>" + money(lv * UPKEEP) + "</b><u>a round</u></div>" +
-          "<div><i>Treasury</i><b>" + money(bank) + "</b><u>at the bank</u></div>" +
-        "</div>" + up +
-      "</div>" +
-      "<div class='fo-ac-card'><h3>On the books<span>" + colts.length + "</span></h3>" + list +
-        "<div class='fo-ac-note'>A colt costs you nothing in wages - the academy's upkeep covers him. He starts earning the day he takes a senior shirt.</div>" +
-      "</div>" +
-      "<div class='fo-ac-card' id='fo-ac-cup'><h3>The Colts Cup</h3>" +
-        "<div class='fo-ac-note'>Reading the boys&rsquo; table&hellip;</div></div>" +
-      "<div class='fo-ac-card'><h3>How it works</h3>" +
-        "<p class='fo-ac-p'>The umpire runs the academy on the same clock as the cricket. A boy joins when there is a bed free. At the turn of the season every colt gets a year older, and any who reach <b>twenty-one</b> are handed a senior shirt automatically - no button, no deadline, nothing to miss while you're asleep.</p>" +
-        "<p class='fo-ac-p'>Bring one up early if you want him, or let him go to make room. Whatever he learned in the academy he keeps; what he never keeps is the nets he was never at, so a boy who comes up in your third season doesn't inherit two seasons of somebody else's work.</p>" +
-        "<p class='fo-ac-p'>Rivals can see what level your academy is - a building is a building - but never who is inside it.</p>" +
-      "</div>");
+    // ---- the boys -----------------------------------------------------------
+    body += al.sec("On the books · " + colts.length, colts.length
+      ? '<div class="al-players">' + colts.map(function (p) { return colt(al, p); }).join("") + "</div>" +
+        '<p class="al-read">A colt costs you nothing in wages — the upkeep covers him. He starts earning the day he ' +
+        "takes a senior shirt.</p>"
+      : al.empty("Nobody on the books this minute",
+          "The academy takes a boy in as soon as there is a bed for him. Come back after the next round."));
+
+    body += '<section class="al-sec" id="fo-ac-cup"><div class="al-sec__head"><h2>The Colts Cup</h2></div>' +
+      '<p class="al-read">Reading the boys&rsquo; table&hellip;</p></section>';
+
+    body += al.sec("How it works",
+      "<p>The umpire runs the academy on the same clock as the cricket. A boy joins when there is a bed free. At the turn " +
+      "of the season every colt gets a year older, and any who reach <b>twenty-one</b> are handed a senior shirt " +
+      "automatically — no button, no deadline, nothing to miss while you're asleep.</p>" +
+      "<p>Bring one up early if you want him, or let him go to make room. Whatever he learned in the academy he keeps; " +
+      "what he never keeps is the nets he was never at.</p>" +
+      "<p>Rivals can see what level your academy is — a building is a building — but never who is inside it.</p>");
+
+    page.innerHTML = al.page({ body: body });
 
     var upBtn = page.querySelector("[data-fo-acup]");
     if (upBtn) upBtn.addEventListener("click", function () {
@@ -43234,52 +43230,59 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     });
   }
 
-  // THE COLTS CUP: nine fixtures, one on every second league round, played by
-  // the umpire from a side nobody picks. Nothing to submit, nothing to miss.
-  function cupHTML(cup, myClub) {
-    var head = "<h3>The Colts Cup<span>" + (cup && cup.roundsPlayed ? cup.roundsPlayed + " of " + cup.rounds : "not started") + "</span></h3>";
-    if (!cup || !cup.results || !cup.results.length) {
-      return head + "<div class='fo-ac-note'>The boys' first fixture comes on the second round of the league season. Nine matches, one every other round, and the whole country's academies in it.</div>";
-    }
-    var rows = cup.table.map(function (t, i) {
-      return "<tr" + (t.name === myClub ? " class='me'" : "") + "><td>" + (i + 1) + "</td><td class='nm'>" + E(t.name) + "</td>" +
-        "<td>" + t.p + "</td><td>" + t.w + "</td><td>" + t.l + "</td><td class='pt'>" + t.pts + "</td>" +
-        "<td class='nrr'>" + (t.nrr > 0 ? "+" : "") + t.nrr.toFixed(2) + "</td></tr>";
-    }).join("");
-    var mine = cup.results.filter(function (r) { return r.home === myClub || r.away === myClub; }).slice(-4).reverse();
-    var card = mine.map(function (r) {
-      var won = r.winner === myClub, tied = r.winner === null;
-      var sc = function (s) { return s ? s.r + "/" + s.w : "&mdash;"; };
-      return "<div class='fo-ac-res'><i class='" + (tied ? "t" : won ? "w" : "l") + "'>" + (tied ? "T" : won ? "W" : "L") + "</i>" +
-        "<b>" + E(r.home) + "</b><u>" + sc(r.hs) + "</u><em>v</em><b>" + E(r.away) + "</b><u>" + sc(r.as) + "</u></div>";
-    }).join("");
-    var lead = (cup.runs && cup.runs[0])
-      ? "<div class='fo-ac-note'>Leading the cup: <b>" + E(cup.runs[0].name) + "</b> " + cup.runs[0].runs + " runs" +
-        (cup.wickets && cup.wickets[0] ? ", <b>" + E(cup.wickets[0].name) + "</b> " + cup.wickets[0].wkts + " wickets" : "") + ".</div>"
-      : "";
-    return head +
-      "<div class='fo-ac-tw'><table class='fo-ac-tbl'><thead><tr><th></th><th class='nm'>Club</th><th>P</th><th>W</th><th>L</th><th class='pt'>Pts</th><th class='nrr'>NRR</th></tr></thead><tbody>" +
-        rows + "</tbody></table></div>" +
-      (card ? "<div class='fo-ac-sub'>Your boys, lately</div>" + card : "") + lead +
-      "<div class='fo-ac-note'>The side picks itself &mdash; your colts and the youngest men on the staff &mdash; so there is no teamsheet to file and nothing to lose by being asleep.</div>";
-  }
-
-  function coltCard(p) {
+  // a colt is a row: who he is, how far along he is, and the two calls a
+  // manager can make about him
+  function colt(al, p) {
     var pr = Math.max(0, Math.min(100, Math.round(+p.promise || 0)));
     var o = ovrOf(p);
-    return "<div class='fo-ac-colt'>" +
-      "<div class='fo-ac-ch'><b>" + E(p.name) + "</b>" + (o == null ? "" : "<u>" + o + "</u>") + "</div>" +
-      "<div class='fo-ac-cm'>" + E(roleOf(p)) + " &middot; " + E(p.age || 18) + ", " + E(ageWord(+p.age || 18)) + "</div>" +
-      "<div class='fo-ac-bar'><s style='width:" + pr + "%'></s></div>" +
-      "<div class='fo-ac-cm'><em>" + E(promiseWord(pr)) + "</em> &middot; " + pr + "% of the cricketer he'll be</div>" +
-      // what he has actually done in the Colts Cup, if he has done anything
-      (p.colts && p.colts.m ? "<div class='fo-ac-cm cup'>" + p.colts.m + (p.colts.m === 1 ? " cap" : " caps") +
-        " &middot; " + p.colts.runs + " runs" + (p.colts.hs ? " (" + p.colts.hs + " best)" : "") +
-        (p.colts.wkts ? " &middot; " + p.colts.wkts + " wkts" : "") + "</div>" : "") +
-      "<div class='fo-ac-cbtns'>" +
-        "<button type='button' class='fo-ac-mini' data-fo-colt='" + E(p.name) + "' data-fo-act='promote'>Bring up</button>" +
-        "<button type='button' class='fo-ac-mini ghost' data-fo-colt='" + E(p.name) + "' data-fo-act='release'>Release</button>" +
-      "</div></div>";
+    var caps = (p.colts && p.colts.m)
+      ? " · " + p.colts.m + (p.colts.m === 1 ? " cap" : " caps") + ", " + p.colts.runs + " runs" +
+        (p.colts.wkts ? ", " + p.colts.wkts + " wkts" : "")
+      : "";
+    return '<div class="al-prow al-prow--static">' +
+      '<span class="al-prow__no">' + (p.age || 18) + "</span>" +
+      '<span class="al-prow__who"><b>' + E(p.name) + "</b><i>" + E(roleOf(p)) + " · " + E(ageWord(+p.age || 18)) +
+        " · " + E(promiseWord(pr)) + caps + "</i>" + al.meter(pr, "warm") + "</span>" +
+      '<span class="al-prow__rate">' + (o == null ? "&mdash;" : o) + "</span>" +
+      '<span class="al-prow__act">' +
+        '<button type="button" class="al-btn" data-fo-colt="' + E(p.name) + '" data-fo-act="promote">Bring up</button>' +
+        '<button type="button" class="al-btn" data-fo-colt="' + E(p.name) + '" data-fo-act="release">Release</button>' +
+      "</span></div>";
+  }
+
+  // THE COLTS CUP: nine fixtures, one on every second league round, played by
+  // the umpire from a side nobody picks. Nothing to submit, nothing to miss.
+  function cupHTML(al, cup, myClub) {
+    var head = '<div class="al-sec__head"><h2>The Colts Cup</h2><a href="#/academy">' +
+      (cup && cup.roundsPlayed ? cup.roundsPlayed + " of " + cup.rounds : "not started") + "</a></div>";
+    if (!al) return head;
+    if (!cup || !cup.results || !cup.results.length) {
+      return head + al.empty("The boys have not started",
+        "Their first fixture comes on the second round of the league season. Nine matches, one every other round, and " +
+        "the whole country's academies in it.");
+    }
+    var rows = cup.table.map(function (t, i) {
+      return "<tr" + (t.name === myClub ? " class='al-you'" : "") + "><td class='al-pos'>" + (i + 1) + "</td>" +
+        "<td class='l al-club'>" + E(t.name) + (t.name === myClub ? "<span class='al-you__tag'>YOU</span>" : "") + "</td>" +
+        "<td>" + t.p + "</td><td>" + t.w + "</td><td class='al-c-l'>" + t.l + "</td>" +
+        "<td>" + (t.nrr > 0 ? "+" : "") + t.nrr.toFixed(2) + "</td><td class='al-pts'>" + t.pts + "</td></tr>";
+    }).join("");
+    var mine = cup.results.filter(function (r) { return r.home === myClub || r.away === myClub; }).slice(-4).reverse();
+    var sc = function (x) { return x ? x.r + "/" + x.w : "—"; };
+    var recent = mine.length ? al.ledger(mine.map(function (r) {
+      var won = r.winner === myClub, tied = r.winner === null;
+      return [r.home + " v " + r.away, sc(r.hs) + " · " + sc(r.as), tied ? "" : won ? "pos" : "neg"];
+    })) : "";
+    var lead = (cup.runs && cup.runs[0])
+      ? '<p class="al-read">Leading the cup: ' + E(cup.runs[0].name) + " " + cup.runs[0].runs + " runs" +
+        (cup.wickets && cup.wickets[0] ? " · " + E(cup.wickets[0].name) + " " + cup.wickets[0].wkts + " wickets" : "") + "</p>"
+      : "";
+    return head +
+      "<div class='al-tblwrap'><table class='al-tbl'><thead><tr><th></th><th class='l'>Club</th>" +
+      "<th>P</th><th>W</th><th class='al-c-l'>L</th><th>NRR</th><th>Pts</th></tr></thead><tbody>" +
+      rows + "</tbody></table></div>" + recent + lead +
+      '<p class="al-read">The side picks itself — your colts and the youngest men on the staff — so there is no ' +
+      "teamsheet to file and nothing to lose by being asleep.</p>";
   }
 
   // The academy was the first of the world rooms, and its plate-and-cards
@@ -43373,6 +43376,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
    before he signs, wages and academy upkeep by the round, and interest on an
    overdraft. This room reads what the world settled and offers the one
    decision the manager actually has - how big a ground to build.
+
+   PHASE 3 OF THE ALMANACK. A set of books is a ledger, and the shell already
+   has one, so the room is now what it always was on paper: the balance and
+   its verdict first, then the crowd, the ground, and every line the umpire
+   derived, in a column of label and figure.
    ========================================================================== */
 (function () {
   "use strict";
@@ -43396,161 +43404,137 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
   function money(v) {
     var n = Number(v);
-    if (!isFinite(n)) return "&mdash;";
+    // PLAIN TEXT, NOT ENTITIES. Most of these figures now go through the
+    // Almanack's ledger, which escapes what it is given, so an &mdash; here
+    // would print as five literal characters.
+    if (!isFinite(n)) return "\u2014";
     var neg = n < 0; n = Math.abs(n);
     var s = n >= 1000000 ? (n / 1000000).toFixed(n >= 10000000 ? 0 : 2) + "m"
           : n >= 1000 ? Math.round(n / 1000) + "k" : String(Math.round(n));
-    return (neg ? "&minus;$" : "$") + s;
+    return (neg ? "\u2212$" : "$") + s;
   }
   function num(v) { return String(Math.round(+v || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
-  function css() {
-    try { if (window.__foRoomCss) window.__foRoomCss(); } catch (e) {}
-    if (document.getElementById("fo-fin-css")) return;
-    var s = document.createElement("style"); s.id = "fo-fin-css";
-    s.textContent = [
-      "html body #page .fo-fin-bank{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}",
-      "html body #page .fo-fin-bank b{font:700 34px/1 Oswald,sans-serif;color:#177A57;font-variant-numeric:tabular-nums;letter-spacing:-.01em}",
-      "html body #page .fo-fin-bank.red b{color:#B23230}",
-      "html body #page .fo-fin-bank i{font-style:normal;font:500 12px/1.4 Inter,sans-serif;color:rgba(20,28,40,.55)}",
-      "html body #page .fo-fin-crowd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:9px}",
-      "html body #page .fo-fin-crowd b{font:700 22px/1 Oswald,sans-serif;color:#141C28;font-variant-numeric:tabular-nums}",
-      "html body #page .fo-fin-crowd em{font-style:normal;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#FFFEFC;background:#8A6A1F;border-radius:999px;padding:5px 9px}",
-      "html body #page .fo-fin-fill{height:10px;border-radius:999px;background:rgba(20,28,40,.09);overflow:hidden;margin:4px 0 5px}",
-      "html body #page .fo-fin-fill s{display:block;height:100%;text-decoration:none;background:linear-gradient(90deg,#2E8B5E,#177A57)}",
-      "html body #page .fo-fin-led{width:100%;border-collapse:collapse;font:500 12.5px/1.4 Inter,sans-serif;font-variant-numeric:tabular-nums}",
-      "html body #page .fo-fin-led td{padding:7px 0;border-top:1px solid rgba(20,28,40,.07);color:rgba(20,28,40,.72)}",
-      "html body #page .fo-fin-led td.v{text-align:right;white-space:nowrap;color:#141C28;font-weight:600;padding-left:12px}",
-      "html body #page .fo-fin-led td.v.in{color:#177A57}",
-      "html body #page .fo-fin-led td.v.out{color:#B23230}",
-      "html body #page .fo-fin-led tr.tot td{border-top:2px solid rgba(20,28,40,.18);font-weight:700;color:#141C28;font-size:13.5px}",
-      "html body #page .fo-fin-led tr:first-child td{border-top:0}",
-      "html body #page .fo-fin-led td small{display:block;font-size:10.5px;color:rgba(20,28,40,.45);font-weight:400}",
-      "html body #page .fo-fin-warn{margin-top:12px;padding:11px 13px;background:rgba(178,50,48,.08);border:1px solid rgba(178,50,48,.3);border-radius:12px;font:500 12.5px/1.5 Inter,sans-serif;color:#8E2724}"
-    ].join("\n");
-    document.head.appendChild(s);
+  function A() { return window.AL || null; }
+  function on() { return (location.hash || "").split("?")[0] === "#/finance"; }
+  function mast(al) {
+    return al.mast("The books", "Gate & Ground",
+      "Nobody credits your account. The umpire walks every round you have played and works out what the crowd was, " +
+      "what they paid, what the sponsor thought and what your men cost.");
+  }
+  function fail(page, al, title, line, href, label) {
+    page.innerHTML = al.page({ body: mast(al) + al.empty(title, line) +
+      (href ? '<p style="margin-top:16px"><a class="al-btn al-btn--primary" href="' + href + '">' + label + "</a></p>" : "") });
   }
 
   window.foRenderFinancePage = function () {
+    if (!on()) return;
     var page = document.getElementById("page"); if (!page) return;
-    css();
-    page.innerHTML = shell("<div class='fo-ac-note'>Opening the books&hellip;</div>");
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
+    page.innerHTML = al.page({ body: mast(al) + al.empty("Opening the books", "Reading what the world settled.") });
     if (!jwt()) {
-      page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>The books belong to your club in the served world. Sign in to the account that holds it.</p>" +
-        "<a class='fo-ac-btn' href='#/worldclub'>Your world club &rsaquo;</a></div>");
+      fail(page, al, "The books belong to your club",
+        "Sign in to the account that holds it in the served world.", "#/worldclub", "Your world club");
       return;
     }
     rpc("world_my_status").then(function (st) {
+      if (!on()) return;
       if (!st || st.signedIn === false) {
-        page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>Sign in first &mdash; the books are your club's, and the world keeps them.</p></div>");
-        return;
+        fail(page, al, "Sign in first", "The books are your club's, and the world keeps them."); return;
       }
       if (!st.claim) {
-        page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>You don't hold a club in the served world yet. Claim one and it comes with a ground, a following and a set of books.</p>" +
-          "<a class='fo-ac-btn' href='#/worldclub'>Claim a club &rsaquo;</a></div>");
+        fail(page, al, "You don't hold a club yet",
+          "Claim one and it comes with a ground, a following and a set of books.", "#/worldclub", "Claim a club");
         return;
       }
       render(page, st);
     }).catch(function (e) {
-      page.innerHTML = shell("<div class='fo-ac-note'>The world could not be reached (" + E(String(e.message).slice(0, 90)) +
-        "). The turnstiles keep turning regardless &mdash; try again in a minute.</div>");
+      if (!on()) return;
+      fail(page, al, "The world could not be reached",
+        String((e && e.message) || e).slice(0, 120) + ". The turnstiles keep turning regardless — try again in a minute.");
     });
   };
 
-  function shell(body) {
-    return "<div class='fo-ac' data-fo-owntable><div class='fo-ac-in'>" +
-      "<div class='fo-ac-hero'><div class='fo-ac-k'>The books</div>" +
-      "<h1>Gate &amp; Ground</h1>" +
-      "<p>Nobody credits your account. The umpire walks every round you have ever played and works out what the crowd was, what they paid, what the sponsor thought and what your men cost &mdash; and that is your money.</p></div>" +
-      body +
-      "<div class='fo-ac-foot'><a href='#/worldclub'>&lsaquo; Your world club</a><a href='#/academy'>The academy &rsaquo;</a></div>" +
-      "</div></div>";
-  }
-
   function render(page, st) {
+    var al = A(); if (!al || !on()) return;
     var f = st.finance || {}, bank = Number(st.bank || 0);
     var seats = +st.seats || +f.seats || 15000;
+    var body = mast(al) + al.subnav("finance");
+
     // BEFORE A BALL IS BOWLED there is nothing to derive from, and a page of
     // zeroes would read like a bankrupt club rather than a new one
     if (!f.rounds) {
-      page.innerHTML = shell(
-        "<div class='fo-ac-card'><h3>" + E(st.claim.club || "Your club") + "<span>" + E(st.claim.ground || "") + "</span></h3>" +
-          "<div class='fo-fin-bank'><b>" + money(bank || 2500000) + "</b><i>to start with</i></div></div>" +
-        "<div class='fo-ac-card'><h3>The ground<span>" + num(seats) + " seats</span></h3>" +
-          "<p class='fo-ac-p'>Fifteen thousand, and a following waiting to see whether you are worth the walk.</p>" +
-          "<div class='fo-ac-note'>The books open when your first round settles: what the crowd was, what they paid at " +
-          money(26) + " a ticket, what the sponsor made of the table and what your men cost. The home club keeps two thirds of a gate and the visitors take one third.</div>" +
-        "</div>");
+      body += al.decide({ kind: "done", title: money(bank || 2500000) + " to start with",
+        note: (st.claim.club || "Your club") + (st.claim.ground ? " · " + st.claim.ground : "") });
+      body += al.sec("The ground · " + num(seats) + " seats",
+        "<p>Fifteen thousand, and a following waiting to see whether you are worth the walk.</p>" +
+        '<p class="al-read">The books open when your first round settles: what the crowd was, what they paid at ' +
+        money(26) + " a ticket, what the sponsor made of the table and what your men cost. The home club keeps two " +
+        "thirds of a gate and the visitors take one third.</p>");
+      page.innerHTML = al.page({ body: body });
       return;
     }
+
+    // ---- the balance, and the verdict on it --------------------------------
+    var verdict = f.administration
+      ? { kind: "act", note: "The club is in administration. You have hit the floor at " + money(f.debtLimit || 2500000) +
+          " and " + money(f.writtenOff || 0) + " has been written off. The sponsor pays half and you build nothing until you climb back over the line." }
+      : bank < 0
+      ? { kind: "act", note: "You are overdrawn. The bank takes three per cent of what you owe every round, and nothing " +
+          "gets built until you are level. The floor is " + money(f.debtLimit || 2500000) + "." }
+      : { kind: "done", note: "after " + (f.rounds || 0) + " round" + (f.rounds === 1 ? "" : "s") + " of cricket · " +
+          (st.claim.club || "your club") + (st.claim.ground ? " · " + st.claim.ground : "") };
+    body += al.decide({ kind: verdict.kind, title: money(bank) + " in the bank", note: verdict.note });
+
+    // ---- the crowd ----------------------------------------------------------
     var att = +f.lastAttendance || 0, avg = +f.avgAttendance || 0;
     var full = seats ? Math.max(2, Math.min(100, Math.round(att / seats * 100))) : 0;
-    var inTotal = (+f.gate || 0) + (+f.awayCut || 0) + (+f.sponsor || 0) + (+f.compensation || 0);
-    var outTotal = (+f.wages || 0) + (+f.upkeep || 0) + (+f.interest || 0) + (+f.academyPaid || 0) + (+f.seatsPaid || 0);
+    body += al.sec("The crowd" + (f.moodWord ? " · " + f.moodWord : ""),
+      al.ledger([
+        ["Following the club", num(f.supporters || 0)],
+        ["Through the gate last time", num(att) + (f.lastWeather ? " · " + f.lastWeather + " day" : "")],
+        ["On average", num(avg)],
+        ["The house", full + "% of " + num(seats)],
+      ]) + al.meter(full) +
+      '<p class="al-read">Support follows the table and the last five results. It moves slowly in both directions, ' +
+      "which is the point: a good season builds you a following, and a bad one costs you one before you have noticed.</p>");
 
-    var build = seats >= MAX_SEATS
-      ? "<div class='fo-ac-note'>Forty-five thousand. There is nowhere left to put a stand.</div>"
-      : (function () {
-          var cost = +f.nextSeatsCost || 0, can = bank >= cost;
-          return "<div class='fo-ac-uprow'>" +
-            "<div><b>" + num(f.nextSeats || seats + 1000) + " seats</b><i>The next thousand. Building gets dearer the bigger the ground &mdash; and empty seats earn nothing, so build into a crowd you already have.</i></div>" +
-            "<button type='button' class='fo-ac-btn" + (can ? "" : " off") + "' data-fo-seats='" + (f.nextSeats || seats + 1000) + "'" + (can ? "" : " disabled") + ">" +
-              (can ? "Build it &middot; " + money(cost) : "Needs " + money(cost)) + "</button></div>";
-        })();
+    // ---- the ground, and the only decision in the room ---------------------
+    var build;
+    if (seats >= MAX_SEATS) {
+      build = '<p class="al-read">Forty-five thousand. There is nowhere left to put a stand.</p>';
+    } else {
+      var cost = +f.nextSeatsCost || 0, can = bank >= cost, next = f.nextSeats || seats + 1000;
+      build = "<p>The next thousand seats take the ground to <b>" + num(next) + "</b>. Building gets dearer the bigger " +
+        "the ground — and empty seats earn nothing, so build into a crowd you already have.</p>" +
+        '<p><button type="button" class="al-btn ' + (can ? "al-btn--primary" : "") + '" data-fo-seats="' + next + '"' +
+        (can ? "" : " disabled") + ">" + (can ? "Build it · " + money(cost) : "Needs " + money(cost)) + "</button></p>";
+    }
+    body += al.sec("The ground · " + num(seats) + " seats", build +
+      '<p class="al-read">Tickets are ' + money(f.ticket || 26) + ". The home club keeps two thirds of the gate and the " +
+      "visitors take one third, so a full house pays you twice — once at your ground and again at theirs.</p>");
 
-    var row = function (label, sub, v, cls) {
-      return "<tr><td>" + label + (sub ? "<small>" + sub + "</small>" : "") + "</td><td class='v " + (cls || "") + "'>" + money(v) + "</td></tr>";
-    };
+    // ---- every line the umpire derived --------------------------------------
+    var lines = [
+      ["Founded with", money(f.founded || 0), "pos"],
+      ["Gate, at home", money(f.gate || 0), "pos"],
+      ["Gate, away", money(f.awayCut || 0), "pos"],
+      ["Sponsor", money(f.sponsor || 0), "pos"],
+    ];
+    if (f.compensation) lines.push(["International windows", money(f.compensation), "pos"]);
+    lines.push(["Wages", money(-(f.wages || 0)), "neg"]);
+    lines.push(["Academy upkeep", money(-(f.upkeep || 0)), "neg"]);
+    if (f.academyPaid) lines.push(["The academy", money(-f.academyPaid), "neg"]);
+    if (f.seatsPaid) lines.push(["The ground", money(-f.seatsPaid), "neg"]);
+    if (f.interest) lines.push(["Interest", money(-f.interest), "neg"]);
+    if (f.writtenOff) lines.push(["Written off", money(f.writtenOff), "pos"]);
+    lines.push(["In the bank", money(bank), bank < 0 ? "neg" : "pos"]);
 
-    page.innerHTML = shell(
-      "<div class='fo-ac-card'><h3>" + E(st.claim.club || "Your club") + "<span>" + E(st.claim.ground || "") + "</span></h3>" +
-        "<div class='fo-fin-bank" + (bank < 0 ? " red" : "") + "'><b>" + money(bank) + "</b>" +
-          "<i>in the bank after " + (f.rounds || 0) + " round" + (f.rounds === 1 ? "" : "s") + " of cricket</i></div>" +
-        (f.administration
-          ? "<div class='fo-fin-warn'><b>The club is in administration.</b> You have hit the floor at " +
-            money(f.debtLimit || 2500000) + " &mdash; nothing sinks past what the club was founded with, and " +
-            money(f.writtenOff || 0) + " has been written off. While you are under, the sponsor pays half and you build nothing. " +
-            "Win, fill the ground, and climb back over the line.</div>"
-          : bank < 0
-          ? "<div class='fo-fin-warn'><b>You are overdrawn.</b> The bank takes three per cent of what you owe every round, and nothing gets built until you are level. The floor is " +
-            money(f.debtLimit || 2500000) + "; below that the club goes into administration and the sponsor halves his cheque. Winning brings a crowd, and a crowd is the way out.</div>"
-          : "") +
-      "</div>" +
+    body += al.sec("The ledger · since the founding", al.ledger(lines) +
+      '<p class="al-read">Every line is derived from the record, not from a running total — which is why the same figure ' +
+      "comes back however many times the umpire settles it, and why nobody can quietly credit anybody.</p>");
 
-      "<div class='fo-ac-card'><h3>The crowd<span>" + E(f.moodWord || "") + "</span></h3>" +
-        "<div class='fo-fin-crowd'><b>" + num(f.supporters || 0) + "</b><i class='fo-ac-cm'>following the club</i>" +
-          (f.moodWord ? "<em>" + E(f.moodWord) + "</em>" : "") + "</div>" +
-        "<div class='fo-fin-fill'><s style='width:" + full + "%'></s></div>" +
-        "<div class='fo-ac-cm'><b>" + num(att) + "</b> through the gate last time" +
-          (f.lastWeather ? " on a " + E(f.lastWeather) + " day" : "") +
-          " &middot; " + full + "% of " + num(seats) + " seats &middot; " + num(avg) + " on average</div>" +
-        "<div class='fo-ac-note'>Support follows the table and the last five results. It moves slowly in both directions, which is the point: a good season builds you a following, and a bad one costs you one before you have noticed.</div>" +
-      "</div>" +
-
-      "<div class='fo-ac-card'><h3>The ground<span>" + num(seats) + " seats</span></h3>" + build +
-        "<div class='fo-ac-note'>Tickets are " + money(f.ticket || 26) + ". The home club keeps two thirds of the gate and the visitors take one third, so a full house pays you twice &mdash; once at your ground and again at theirs.</div>" +
-      "</div>" +
-
-      "<div class='fo-ac-card'><h3>The ledger<span>since the founding</span></h3>" +
-        "<table class='fo-fin-led'><tbody>" +
-          row("Founded with", null, f.founded || 0, "in") +
-          row("Gate, at home", "two thirds of the house, every match at your ground", f.gate || 0, "in") +
-          row("Gate, away", "one third of theirs", f.awayCut || 0, "in") +
-          row("Sponsor", "by the round, and he reads the table", f.sponsor || 0, "in") +
-          (f.compensation ? row("International windows",
-            (f.capsAway || 0) + " man-week" + ((f.capsAway || 0) === 1 ? "" : "s") +
-            " with their country &mdash; $50,000 a senior, $20,000 a boy",
-            f.compensation || 0, "in") : "") +
-          row("Wages", "the bill as it stands, every round played", -(f.wages || 0), "out") +
-          row("Academy upkeep", "by the level, by the round", -(f.upkeep || 0), "out") +
-          (f.academyPaid ? row("The academy", "what you built", -(f.academyPaid || 0), "out") : "") +
-          (f.seatsPaid ? row("The ground", "what the stands cost", -(f.seatsPaid || 0), "out") : "") +
-          (f.interest ? row("Interest", "the price of an overdraft", -(f.interest || 0), "out") : "") +
-          (f.writtenOff ? row("Written off", "what fell below the floor, and stayed there", f.writtenOff || 0, "in") : "") +
-          "<tr class='tot'><td>In the bank</td><td class='v'>" + money(bank) + "</td></tr>" +
-        "</tbody></table>" +
-        "<div class='fo-ac-note'>Every line is derived from the record, not from a running total &mdash; which is why the same figure comes back however many times the umpire settles it, and why nobody can quietly credit anybody.</div>" +
-      "</div>" +
-      "<div class='fo-ac-note'>In: " + money(inTotal) + " &middot; Out: " + money(outTotal) + "</div>");
+    page.innerHTML = al.page({ body: body });
 
     var b = page.querySelector("[data-fo-seats]");
     if (b) b.addEventListener("click", function () {
@@ -44555,8 +44539,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
    to go and watch him, and then he is bands and words. Nobody ever gets a
    rival's skill values, on this page or anywhere else.
 
-   Both screens, no compromise: one column of proper cards on a phone, three
-   across on a desk, and every control a thumb can hit.
+   PHASE 3 OF THE ALMANACK. The room wears the shell now: the four views are
+   the section's own tabs, a lot on the board is a lot and not a Card, and the
+   bank sits in the decision strip where it belongs - an offer you cannot
+   cover is refused, so the figure that governs every control on the page
+   should be stated before the controls, not under them.
    ========================================================================== */
 (function () {
   "use strict";
@@ -44596,73 +44583,33 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   var ST = { tab: "board", busy: 0 };
 
-  function css() {
-    try { if (window.__foRoomCss) window.__foRoomCss(); } catch (e) {}
-    if (document.getElementById("fo-mk-css")) return;
-    var s = document.createElement("style"); s.id = "fo-mk-css";
-    s.textContent = [
-      "@media(min-width:900px){html body #page .fo-ac.fo-mk-wide{max-width:1080px}}",
-      "html body #page .fo-mk-seg{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 10px}",
-      "html body #page .fo-mk-seg button{font:700 10px/1 Oswald,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(20,28,40,.6) !important;background:transparent !important;border:1px solid rgba(20,28,40,.2) !important;border-radius:999px !important;padding:0 15px !important;min-height:44px;display:inline-flex;align-items:center;cursor:pointer}",
-      "html body #page .fo-mk-seg button.on{color:#FFFEFC !important;background:#141C28 !important;border-color:#141C28 !important}",
-      "html body #page .fo-mk-grid{display:grid;grid-template-columns:1fr;gap:10px}",
-      "@media(min-width:700px){html body #page .fo-mk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}",
-      "@media(min-width:1000px){html body #page .fo-mk-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}",
-      "html body #page .fo-mk-card{display:flex;flex-direction:column;gap:8px;background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:16px;padding:13px 14px;box-shadow:0 6px 18px rgba(20,28,40,.05)}",
-      "html body #page .fo-mk-card.mine{border-color:rgba(176,74,44,.45);background:rgba(250,238,230,.7)}",
-      "html body #page .fo-mk-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}",
-      "html body #page .fo-mk-h b{font:600 16px/1.15 'Fraunces',Georgia,serif;color:#141C28}",
-      "html body #page .fo-mk-h u{text-decoration:none;font:600 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#8A6A1F}",
-      "html body #page .fo-mk-sub{font:500 11.5px/1.45 Inter,sans-serif;color:rgba(20,28,40,.6)}",
-      "html body #page .fo-mk-sub b{color:rgba(20,28,40,.85)}",
-      "html body #page .fo-mk-rep{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:2px}",
-      "html body #page .fo-mk-rep div{background:rgba(20,28,40,.045);border-radius:9px;padding:7px 9px}",
-      "html body #page .fo-mk-rep i{display:block;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.45);font-style:normal}",
-      "html body #page .fo-mk-rep b{display:block;font:600 13px/1.2 Inter,sans-serif;color:#141C28;margin-top:3px}",
-      "html body #page .fo-mk-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:2px}",
-      "html body #page .fo-mk-row input{flex:1 1 110px;min-width:0;font:600 13px/1 Inter,sans-serif;border:1px solid rgba(20,28,40,.2);border-radius:11px;padding:0 12px;min-height:44px;background:#fff;color:#141C28}",
-      "html body #page .fo-mk-btn{font:700 10.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:linear-gradient(180deg,#E8894A,#C8542F) !important;border:0 !important;border-radius:999px !important;padding:0 17px !important;min-height:44px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}",
-      "html body #page .fo-mk-btn.ghost{background:transparent !important;border:1px solid rgba(20,28,40,.25) !important;color:rgba(20,28,40,.65) !important}",
-      "html body #page .fo-mk-btn[disabled]{opacity:.45;cursor:default}",
-      "html body #page .fo-mk-clock{font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B04A2C;margin-left:auto}",
-      "html body #page .fo-mk-clock.soon{color:#B23230}",
-      "html body #page .fo-mk-deal{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 2px;border-top:1px solid rgba(20,28,40,.07);font:500 12.5px/1.4 Inter,sans-serif}",
-      "html body #page .fo-mk-deal b{color:#141C28;font-weight:600}",
-      "html body #page .fo-mk-deal em{font-style:normal;color:rgba(20,28,40,.45)}",
-      "html body #page .fo-mk-deal u{text-decoration:none;margin-left:auto;font-variant-numeric:tabular-nums;color:#177A57;font-weight:700}",
-      "html body #page .fo-mk-msg{font:500 12px/1.45 Inter,sans-serif;color:#B23230;margin-top:4px}",
-      "html body #page .fo-mk-msg.ok{color:#177A57}"
-    ].join("\n");
-    document.head.appendChild(s);
-  }
-
-  function shell(body) {
-    // the board wants width on a desk - three men across rather than two in a
-    // column half the screen wide - and exactly the same room on a phone
-    return "<div class='fo-ac fo-mk-wide' data-fo-owntable><div class='fo-ac-in'>" +
-      "<div class='fo-ac-hero'><div class='fo-ac-k'>The transfer market</div>" +
-      "<h1>Buying &amp; Selling</h1>" +
-      "<p>Offers are sealed and windows last three days &mdash; nobody can outbid you by being awake at the right minute. Pay a scout to see a man properly; when the window shuts the umpire opens the envelopes.</p></div>" +
-      body +
-      "<div class='fo-ac-foot'><a href='#/worldclub'>&lsaquo; Your world club</a><a href='#/finance'>The books &rsaquo;</a></div>" +
-      "</div></div>";
-  }
+  function A() { return window.AL || null; }
+  function on() { return (location.hash || "").split("?")[0] === "#/market"; }
 
   window.foRenderMarketPage = function () {
+    if (!on()) return;
     var page = document.getElementById("page"); if (!page) return;
-    css();
-    page.innerHTML = shell("<div class='fo-ac-note'>Walking down to the market&hellip;</div>");
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
+    page.innerHTML = al.page({ body: mast(al) + al.empty("Walking down to the market", "Reading the board.") });
     Promise.all([
       snapshot("market"),
       jwt() ? rpc("world_market_mine").catch(function () { return null; }) : Promise.resolve(null),
       jwt() ? rpc("world_my_status").catch(function () { return null; }) : Promise.resolve(null)
     ]).then(function (d) {
+      if (!on()) return;
       render(page, d[0] || { listings: [], deals: [] }, d[1], d[2]);
     }).catch(function (e) {
-      page.innerHTML = shell("<div class='fo-ac-note'>The market could not be reached (" +
-        E(String(e && e.message).slice(0, 90)) + "). Try again in a minute.</div>");
+      if (!on()) return;
+      page.innerHTML = al.page({ body: mast(al) + al.empty("The market could not be reached",
+        String((e && e.message) || e).slice(0, 120) + ". The envelopes stay sealed either way - try again in a minute.") });
     });
   };
+
+  function mast(al) {
+    return al.mast("The transfer market", "Buying & Selling",
+      "Offers are sealed and windows last three days. Nobody can outbid you by being awake at the right minute.");
+  }
 
   function closesIn(d) {
     var left = (d | 0) - today();
@@ -44671,126 +44618,154 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   function render(page, snap, mine, st) {
+    var al = A(); if (!al || !on()) return;
     var claim = (st && st.claim) || (mine && mine.claim) || null;
     var myKey = claim ? claim.country + ":" + claim.slot : null;
     var bank = st ? Number(st.bank || 0) : null;
     var bidBy = {}; ((mine && mine.bids) || []).forEach(function (b) { bidBy[b.id] = b; });
     var repBy = {}; ((mine && mine.reports) || []).forEach(function (r) { repBy[r.id] = r.player; });
-
     var listings = (snap.listings || []).filter(function (L) { return !myKey || (L.country + ":" + L.slot) !== myKey; });
-    var seg = [["board", "The board"], ["bids", "Your offers"], ["sell", "Selling"], ["deals", "Done deals"]]
-      .map(function (t) {
-        return "<button type='button' data-mk-tab='" + t[0] + "' class='" + (ST.tab === t[0] ? "on" : "") + "'>" +
-          E(t[1]) + (t[0] === "bids" && (mine && mine.bids || []).length ? " &middot; " + mine.bids.length : "") + "</button>";
-      }).join("");
+    var bids = (mine && mine.bids) || [];
 
-    var body;
+    var body = mast(al);
+
     if (!claim) {
-      body = "<div class='fo-ac-card'><h3>You need a club</h3>" +
-        "<p class='fo-ac-p'>The market is between clubs in the served world. Claim one and you can buy, sell and send a scout out.</p>" +
-        "<a class='fo-ac-btn' href='#/worldclub'>Claim a club &rsaquo;</a></div>" + howItWorks();
-    } else if (ST.tab === "deals") {
-      body = "<div class='fo-ac-card'><h3>Done deals<span>the last forty</span></h3>" +
-        ((snap.deals || []).length ? snap.deals.map(function (d) {
-          return "<div class='fo-mk-deal'><b>" + E(d.player) + "</b><em>" + E(d.from || "?") +
-            " &rarr; " + E(d.to || "?") + "</em><u>" + money(d.fee) + "</u></div>";
-        }).join("") : "<div class='fo-ac-note'>No cricketer has changed clubs yet. The first one will be remembered.</div>") +
-        "</div>" + howItWorks();
-    } else if (ST.tab === "sell") {
-      body = sellCard(st, mine) + howItWorks();
-    } else if (ST.tab === "bids") {
-      var open = (mine && mine.bids) || [];
-      body = "<div class='fo-ac-card'><h3>Your offers<span>sealed until the window shuts</span></h3>" +
-        (open.length ? open.map(function (b) {
-          var c = closesIn(b.closes);
-          return "<div class='fo-mk-deal'><b>" + E(b.player) + "</b><em>your offer</em><u>" + money(b.amount) + "</u>" +
-            "<span class='fo-mk-clock" + (c.soon ? " soon" : "") + "'>" + c.txt + "</span></div>";
-        }).join("") : "<div class='fo-ac-note'>You have nothing on the table. Nobody can see that either.</div>") +
-        "</div>" + howItWorks();
-    } else {
-      body = "<div class='fo-ac-card'><h3>On the board<span>" + listings.length + "</span></h3>" +
-        (bank != null ? "<div class='fo-ac-note'>In the bank: <b>" + money(bank) + "</b>. Nothing is bought on credit &mdash; an offer you cannot cover is refused.</div>" : "") +
-        (listings.length
-          ? "<div class='fo-mk-grid'>" + listings.map(function (L) { return card(L, bidBy[L.id], repBy[L.id], bank); }).join("") + "</div>"
-          : "<div class='fo-ac-note'>Nothing on the board this minute. Clubs put men up as their shape changes &mdash; look in tomorrow.</div>") +
-        "</div>" + howItWorks();
+      body += al.empty("You need a club",
+        "The market is between clubs in the served world. Claim one and you can buy, sell and send a scout out.") +
+        '<p style="margin-top:16px"><a class="al-btn al-btn--primary" href="#/worldclub">Claim a club</a></p>' +
+        howItWorks(al);
+      page.innerHTML = al.page({ body: body });
+      return;
     }
 
-    page.innerHTML = shell("<div class='fo-mk-seg'>" + seg + "</div>" + body);
+    body += al.tabs([
+      { id: "board", label: "The board", count: listings.length || "" },
+      { id: "bids", label: "Your offers", count: bids.length || "" },
+      { id: "sell", label: "Selling" },
+      { id: "deals", label: "Done deals" },
+    ], ST.tab);
+
+    // THE BANK GOVERNS EVERY CONTROL ON THE PAGE, so it is stated before them.
+    if (bank != null) {
+      body += al.decide({
+        kind: bank > 0 ? "done" : "act",
+        title: "In the bank: " + money(bank),
+        note: bids.length
+          ? bids.length + " sealed offer" + (bids.length === 1 ? "" : "s") + " on the table · nothing is bought on credit"
+          : "Nothing is bought on credit — an offer you cannot cover is refused before it is filed.",
+      });
+    }
+
+    if (ST.tab === "deals") {
+      var deals = snap.deals || [];
+      body += al.sec("Done deals · the last forty", deals.length
+        ? al.ledger(deals.map(function (d) {
+            return [d.player + " · " + (d.from || "?") + " → " + (d.to || "?"), money(d.fee), "pos"];
+          }))
+        : al.empty("Nothing has changed hands", "No cricketer has moved yet. The first one will be remembered."));
+    } else if (ST.tab === "sell") {
+      body += sellSec(al, st, mine);
+    } else if (ST.tab === "bids") {
+      body += al.sec("Your offers · sealed until the window shuts", bids.length
+        ? al.ledger(bids.map(function (b) {
+            return [b.player + " · " + closesIn(b.closes).txt, money(b.amount)];
+          }))
+        : al.empty("Nothing on the table", "You have made no offers. Nobody can see that either."));
+    } else {
+      body += al.sec("On the board · " + listings.length, listings.length
+        ? '<div class="al-lots">' + listings.map(function (L) { return lot(al, L, bidBy[L.id], repBy[L.id]); }).join("") + "</div>"
+        : al.empty("Nothing on the board this minute",
+            "Clubs put men up as their shape changes. Look in tomorrow."));
+    }
+
+    body += howItWorks(al);
+    page.innerHTML = al.page({ body: body });
     wire(page, snap, mine, st);
   }
 
-  function card(L, myBid, report, bank) {
+  function lot(al, L, myBid, report) {
     var s = L.scout || {}, c = closesIn(L.closes);
-    var head = "<div class='fo-mk-h'><b>" + E(s.name || L.player || "A cricketer") + "</b>" +
-      "<u>" + E(s.impression || "") + "</u>" +
-      "<span class='fo-mk-clock" + (c.soon ? " soon" : "") + "'>" + c.txt + "</span></div>";
-    var line = "<div class='fo-mk-sub'>" + E(s.role || "cricketer") + " &middot; age " + (s.age || "?") +
-      " &middot; " + E(s.hand || "") + (s.bowl ? " &middot; " + E(s.bowl) : "") +
-      "<br>From <b>" + E(L.club || "a club") + "</b> &middot; asking <b>" + money(L.asking) + "</b>" +
-      " &middot; " + L.bids + " offer" + (L.bids === 1 ? "" : "s") + " in</div>";
-    var rep = "";
+    var floor = Math.ceil(L.asking * 0.55);
+    var out = '<div class="al-lot' + (myBid ? " al-lot--mine" : "") + '">' +
+      '<div class="al-lot__h"><b>' + E(s.name || L.player || "A cricketer") + "</b>" +
+      (s.impression ? "<i>" + E(s.impression) + "</i>" : "") +
+      '<span class="al-lot__clock' + (c.soon ? " al-lot__clock--soon" : "") + '">' + c.txt + "</span></div>" +
+      '<p class="al-lot__line">' + E(s.role || "cricketer") + " · age " + (s.age || "?") +
+      (s.hand ? " · " + E(s.hand) : "") + (s.bowl ? " · " + E(s.bowl) : "") + "<br>" +
+      "From <b>" + E(L.club || "a club") + "</b> · asking <b>" + money(L.asking) + "</b> · " +
+      L.bids + " offer" + (L.bids === 1 ? "" : "s") + " in</p>";
+
+    // A MAN YOU DO NOT OWN IS A FIRST IMPRESSION until you pay for a report;
+    // then he is bands and words, never a rival's numbers.
     if (report) {
       var r = window.foMktReport ? window.foMktReport(report) : null;
-      if (r) rep = "<div class='fo-mk-rep'>" +
-        "<div><i>Batting</i><b>" + E(r.batting) + "</b></div>" +
-        (r.bowling ? "<div><i>Bowling</i><b>" + E(r.bowling) + "</b></div>" : "") +
-        "<div><i>Fielding</i><b>" + E(r.fielding) + "</b></div>" +
-        "<div><i>Form</i><b>" + E(r.form) + "</b></div>" +
-        "<div><i>Legs</i><b>" + E(r.legs) + "</b></div>" +
-        "<div><i>Wage</i><b>" + money(r.wage) + "</b></div>" +
-        (r.talentNames && r.talentNames.length ? "<div style='grid-column:1/-1'><i>Talents</i><b>" + E(r.talentNames.join(", ")) + "</b></div>" : "") +
-        "</div>";
+      if (r) {
+        var rows = [["Batting", r.batting]];
+        if (r.bowling) rows.push(["Bowling", r.bowling]);
+        rows.push(["Fielding", r.fielding], ["Form", r.form], ["Legs", r.legs], ["Wage", money(r.wage)]);
+        if (r.talentNames && r.talentNames.length) rows.push(["Talents", r.talentNames.join(", ")]);
+        out += al.ledger(rows);
+      }
     }
-    var floor = Math.ceil(L.asking * 0.55);
-    var act = "<div class='fo-mk-row'>" +
-      (report ? "" : "<button type='button' class='fo-mk-btn ghost' data-mk-scout='" + L.id + "'>Scout &middot; " + money(L.fee) + "</button>") +
-      "<input type='number' inputmode='numeric' id='fo-mk-bid-" + L.id + "' placeholder='" + floor + "+' value='" + (myBid ? myBid.amount : "") + "' aria-label='Your sealed offer'>" +
-      "<button type='button' class='fo-mk-btn' data-mk-bid='" + L.id + "'>" + (myBid ? "Change offer" : "Offer") + "</button>" +
-      (myBid ? "<button type='button' class='fo-mk-btn ghost' data-mk-unbid='" + L.id + "'>Withdraw</button>" : "") +
+
+    out += '<div class="al-lot__act">' +
+      (report ? "" : '<button type="button" class="al-btn" data-mk-scout="' + L.id + '">Scout · ' + money(L.fee) + "</button>") +
+      '<input class="al-field al-field--grow" type="number" inputmode="numeric" id="fo-mk-bid-' + L.id +
+        '" placeholder="' + floor + '+" value="' + (myBid ? myBid.amount : "") + '" aria-label="Your sealed offer">' +
+      '<button type="button" class="al-btn al-btn--primary" data-mk-bid="' + L.id + '">' +
+        (myBid ? "Change offer" : "Offer") + "</button>" +
+      (myBid ? '<button type="button" class="al-btn" data-mk-unbid="' + L.id + '">Withdraw</button>' : "") +
       "</div>" +
-      (myBid ? "<div class='fo-mk-sub'>Your sealed offer: <b>" + money(myBid.amount) + "</b>. Nobody else can see it.</div>" : "") +
-      "<div class='fo-mk-msg' id='fo-mk-m-" + L.id + "'></div>";
-    return "<div class='fo-mk-card" + (myBid ? " mine" : "") + "'>" + head + line + rep + act + "</div>";
+      (myBid ? '<p class="al-lot__line">Your sealed offer: <b>' + money(myBid.amount) + "</b>. Nobody else can see it.</p>" : "") +
+      al.msg("fo-mk-m-" + L.id) + "</div>";
+    return out;
   }
 
-  function sellCard(st, mine) {
+  function sellSec(al, st, mine) {
     var squad = (st && st.squad) || [];
     var sales = (mine && mine.sales) || [];
-    var opts = squad.map(function (p) {
-      return "<option value=\"" + E(p.name) + "\">" + E(p.name) + " &middot; " + (p.age || "?") +
-        " &middot; " + money(p.fee || 0) + "</option>";
-    }).join("");
-    return "<div class='fo-ac-card'><h3>Put a man up</h3>" +
-      "<p class='fo-ac-p'>Name a reserve and walk away. The window runs three days; if the best sealed offer reaches your reserve he goes, and if it does not he stays. You never have to be here for any of it.</p>" +
-      (squad.length
-        ? "<div class='fo-mk-row'><select id='fo-mk-who' class='fo-wj-sel' aria-label='Player'>" + opts + "</select></div>" +
-          "<div class='fo-mk-row'><input type='number' inputmode='numeric' id='fo-mk-res' placeholder='Your reserve' aria-label='Reserve'>" +
-          "<button type='button' class='fo-mk-btn' id='fo-mk-list'>Put him up</button></div>" +
-          "<div class='fo-mk-msg' id='fo-mk-mlist'></div>"
-        : "<div class='fo-ac-note'>Your squad has not come down from the world yet.</div>") +
-      "<div class='fo-ac-note'>You may have three on the board at once, and you can never sell below a squad of fourteen.</div>" +
-      "</div>" +
-      "<div class='fo-ac-card'><h3>Your sales</h3>" +
-      (sales.length ? sales.map(function (s2) {
-        var c = closesIn(s2.closes);
-        return "<div class='fo-mk-deal'><b>" + E(s2.player) + "</b>" +
-          "<em>" + (s2.status === "sold" ? "sold" : s2.status === "unsold" ? "nobody met the reserve" :
-            s2.bids + " offer" + (s2.bids === 1 ? "" : "s") + " &middot; " + c.txt) + "</em>" +
-          "<u>" + money(s2.status === "sold" ? s2.fee : s2.reserve) + "</u>" +
-          (s2.status === "open" && !s2.bids ? "<button type='button' class='fo-mk-btn ghost' data-mk-pull='" + s2.id + "'>Take him back</button>" : "") +
-          "</div>";
-      }).join("") : "<div class='fo-ac-note'>Nobody of yours is on the board.</div>") +
-      "</div>";
+    var put = squad.length
+      ? '<select class="al-field al-field--block" id="fo-mk-who" aria-label="Player">' +
+          squad.map(function (p) {
+            return '<option value="' + E(p.name) + '">' + E(p.name) + " · " + (p.age || "?") + " · " + money(p.fee || 0) + "</option>";
+          }).join("") + "</select>" +
+        '<div class="al-lot__act">' +
+          '<input class="al-field al-field--grow" type="number" inputmode="numeric" id="fo-mk-res" placeholder="Your reserve" aria-label="Reserve">' +
+          '<button type="button" class="al-btn al-btn--primary" id="fo-mk-list">Put him up</button></div>' +
+        al.msg("fo-mk-mlist") +
+        '<p class="al-read">Three on the board at once, and never below a squad of fourteen.</p>'
+      : al.empty("Your squad is not down from the world yet", "Look in again in a minute.");
+
+    return al.sec("Put a man up",
+      "<p>Name a reserve and walk away. The window runs three days; if the best sealed offer reaches your reserve he goes, " +
+      "and if it does not he stays. You never have to be here for any of it.</p>" + put) +
+      al.sec("Your sales", sales.length
+        ? '<div class="al-lots">' + sales.map(function (s2) {
+            var c = closesIn(s2.closes);
+            var state = s2.status === "sold" ? "sold" : s2.status === "unsold" ? "nobody met the reserve"
+              : s2.bids + " offer" + (s2.bids === 1 ? "" : "s") + " · " + c.txt;
+            return '<div class="al-lot"><div class="al-lot__h"><b>' + E(s2.player) + "</b>" +
+              '<span class="al-lot__clock">' + money(s2.status === "sold" ? s2.fee : s2.reserve) + "</span></div>" +
+              '<p class="al-lot__line">' + E(state) + "</p>" +
+              (s2.status === "open" && !s2.bids
+                ? '<div class="al-lot__act"><button type="button" class="al-btn" data-mk-pull="' + s2.id + '">Take him back</button></div>'
+                : "") + "</div>";
+          }).join("") + "</div>"
+        : al.empty("Nobody of yours is on the board", "Your squad is intact."));
   }
 
-  function howItWorks() {
-    return "<div class='fo-ac-card'><h3>How the market works</h3>" +
-      "<p class='fo-ac-p'>Every offer is <b>sealed</b>. You cannot see anybody else's and nobody can see yours &mdash; not the seller, not the other bidders &mdash; until the umpire opens them all at once. There is nothing to be gained by watching this page, which is the entire point.</p>" +
-      "<p class='fo-ac-p'>A listing stands <b>three world days</b>. When it shuts, the highest offer at or above the seller's reserve takes him: the fee leaves one bank and lands in the other, the man walks into his new dressing room with his record intact, and neither club had to be awake. Miss a day and you have missed nothing. Miss a fortnight and you will find the market has moved without you.</p>" +
-      "<p class='fo-ac-p'>You read <b>your own</b> men exactly. Somebody else's is a first impression until you pay a scout, and then he is bands and words &mdash; his form, his legs, what he earns, what he is worth. Nobody, ever, gets a rival's numbers.</p>" +
-      "<p class='fo-ac-p'>Nothing is bought on credit: an offer your bank cannot cover is refused before it is filed. A club is never stripped below fourteen men, and eighteen is a full staff &mdash; sell before you buy.</p>" +
-      "</div>";
+  function howItWorks(al) {
+    return al.sec("How the market works",
+      "<p>Every offer is <b>sealed</b>. You cannot see anybody else's and nobody can see yours — not the seller, not the " +
+      "other bidders — until the umpire opens them all at once. There is nothing to be gained by watching this page, which " +
+      "is the entire point.</p>" +
+      "<p>A listing stands <b>three world days</b>. When it shuts, the highest offer at or above the seller's reserve takes " +
+      "him: the fee leaves one bank and lands in the other, the man walks into his new dressing room with his record intact, " +
+      "and neither club had to be awake.</p>" +
+      "<p>You read <b>your own</b> men exactly. Somebody else's is a first impression until you pay a scout, and then he is " +
+      "bands and words — his form, his legs, what he earns. Nobody, ever, gets a rival's numbers.</p>" +
+      "<p>Nothing is bought on credit. A club is never stripped below fourteen men, and eighteen is a full staff — sell " +
+      "before you buy.</p>");
   }
 
   // the paid report, rendered from the man's own card - the same arithmetic
@@ -44813,12 +44788,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   };
 
   function wire(page, snap, mine, st) {
-    page.querySelectorAll("[data-mk-tab]").forEach(function (b) {
-      b.addEventListener("click", function () { ST.tab = b.getAttribute("data-mk-tab"); render(page, snap, mine, st); });
+    page.querySelectorAll("[data-al-tab]").forEach(function (b) {
+      b.addEventListener("click", function () { ST.tab = b.getAttribute("data-al-tab"); render(page, snap, mine, st); });
     });
     var say = function (id, txt, ok) {
       var el = document.getElementById(id); if (!el) return;
-      el.textContent = txt; el.className = "fo-mk-msg" + (ok ? " ok" : "");
+      el.textContent = txt; el.className = "al-msg" + (ok ? " al-msg--ok" : "");
     };
     var go = function (attr, fn, args, msgId) {
       page.querySelectorAll("[" + attr + "]").forEach(function (b) {
@@ -45005,12 +44980,27 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     { id: "club",   label: "Club",   home: "#/club-h", routes: ["club-h", "finance", "milestones", "lore", "paper", "wire", "guide", "ledger", "almanack"] },
   ];
   // routes this redesign currently OWNS. Everything else keeps its old page.
-  var AL_OWNS = { today: 1, team: 1, matchday: 1, table: 1, fixtures: 1 };
+  var AL_OWNS = {
+    today: 1, team: 1, matchday: 1, table: 1, fixtures: 1,
+    market: 1, finance: 1, academy: 1, training: 1, dossier: 1, desk: 1,
+  };
 
   // A section is bigger than one screen, and the dock only has five slots. The
   // rest of a section's rooms hang off a rule under the masthead - the same
   // place a newspaper puts the rest of its section.
   var SUB = {
+    team: [
+      { id: "team", label: "The eleven", href: "#/team" },
+      { id: "training", label: "Nets", href: "#/training" },
+      { id: "academy", label: "Academy", href: "#/academy" },
+      { id: "dossier", label: "Scout", href: "#/dossier" },
+    ],
+    club: [
+      { id: "club-h", label: "The club", href: "#/club-h" },
+      { id: "finance", label: "The books", href: "#/finance" },
+      { id: "milestones", label: "Honours", href: "#/milestones" },
+      { id: "paper", label: "Gazette", href: "#/paper" },
+    ],
     league: [
       { id: "table", label: "Table", href: "#/table" },
       { id: "fixtures", label: "Fixtures", href: "#/fixtures" },
@@ -45138,6 +45128,35 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
   window.__foAlApply = apply;
 
+  // ---- the words a player is described in ----------------------------------
+  // Every roster surface in the Almanack prints the same three things about a
+  // player, so they are said once, here. Two of them were being got wrong:
+  // `p.rating` is the engine's internal points value (five figures), not the
+  // overall a manager reads; and a player has no `form` field at all - the
+  // word is `formWord`, which the rest of the game has always printed.
+  var ROLE = {
+    opener: "Opener", topOrderBat: "Top order", topOrder: "Top order",
+    middleOrderBat: "Middle order", middleOrder: "Middle order", middle: "Middle order",
+    finisher: "Finisher", allRounder: "All-rounder", wicketkeeper: "Wicketkeeper",
+    keeper: "Wicketkeeper", seamFast: "Fast bowler", seamMedium: "Medium pacer",
+    seam: "Seamer", spinOff: "Off spinner", spinLeg: "Leg spinner", spin: "Spinner",
+  };
+  function cap(x) { return String(x == null ? "" : x).replace(/^\w/, function (c) { return c.toUpperCase(); }); }
+  function roleWord(p) {
+    if (!p) return "Player";
+    var k = p.role || p.roleFull || "";
+    return ROLE[k] || cap(String(k).replace(/([A-Z])/g, " $1").trim()) || "Player";
+  }
+  function formWord(p) {
+    var f = (p && (p.formWord || p.form)) || "";
+    if (typeof f === "number") return f > 60 ? "Good form" : f < 40 ? "Out of form" : "Steady";
+    return cap(f) || "Steady";
+  }
+  function ovr(p) {
+    try { if (typeof window.foPkOvr === "function") return window.foPkOvr(p) | 0; } catch (e) {}
+    return Math.round(((p && p.rating) || 0) / 1000);
+  }
+
   // ---- page builders -------------------------------------------------------
   // Every redesigned screen is assembled from these, in this order, so the
   // publication reads the same way on every route.
@@ -45188,9 +45207,25 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         return '<a href="' + x.href + '"' + (x.id === cur ? ' aria-current="page"' : "") + ">" + E(x.label) + "</a>";
       }).join("") + "</nav>";
     },
+    // in-page tabs wear the section navigation's dress: same rule, same
+    // measure, so a reader never has to learn two ways of switching view
+    tabs: function (items, cur) {
+      return '<nav class="al-subnav al-subnav--tabs" aria-label="View">' + items.map(function (x) {
+        return '<button type="button" data-al-tab="' + E(x.id) + '"' +
+          (x.id === cur ? ' aria-current="page"' : "") + ">" + E(x.label) +
+          (x.count ? ' <b>' + E(x.count) + "</b>" : "") + "</button>";
+      }).join("") + "</nav>";
+    },
+    meter: function (pct, kind) {
+      var v = Math.max(0, Math.min(100, Math.round(pct || 0)));
+      return '<div class="al-meter' + (kind ? " al-meter--" + kind : "") +
+        '" role="img" aria-label="' + v + ' per cent"><s style="width:' + v + '%"></s></div>';
+    },
+    msg: function (id) { return '<p class="al-msg" id="' + E(id) + '"></p>'; },
     tag: function (text, kind) { return '<span class="al-tag' + (kind ? " al-tag--" + kind : "") + '">' + E(text) + "</span>"; },
     empty: function (title, line) { return '<div class="al-empty"><h3>' + E(title) + "</h3><p>" + E(line) + "</p></div>"; },
     E: E, section: sectionOf, clock: clockText, league: lg, team: team,
+    role: roleWord, form: formWord, ovr: ovr, cap: cap,
   };
   window.AL = AL;
 
@@ -45455,14 +45490,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return { xi: xi, n: xi.length, overs: overs, faults: faults, captain: o.captain || "", keeper: o.keeper || "", saved: !!o.saved };
   }
 
-  function formWord(p) {
-    try {
-      var f = (p && p.form) || "";
-      if (typeof f === "number") return f > 60 ? "Good form" : f < 40 ? "Out of form" : "Steady";
-      return String(f || "").replace(/^\w/, function (c) { return c.toUpperCase(); }) || "Steady";
-    } catch (e) { return "Steady"; }
-  }
-  function roleWord(p) { return String((p && (p.roleFull || p.role)) || "Player"); }
+  // the shared player vocabulary lives on the shell, so the Team page, the
+  // Match Centre and every roster after them describe a player the same way
+  function cap(x) { var a = A(); return a ? a.cap(x) : String(x == null ? "" : x); }
+  function formWord(p) { var a = A(); return a ? a.form(p) : "Steady"; }
+  function roleWord(p) { var a = A(); return a ? a.role(p) : "Player"; }
+  function ovr(p) { var a = A(); return a ? a.ovr(p) : 0; }
 
   function row(p, pos, inXI) {
     if (!p) return "";
@@ -45470,7 +45503,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return '<button class="al-prow' + (inXI ? " al-prow--picked" : "") + '" data-al-p="' + n + '">' +
       '<span class="al-prow__no">' + (inXI ? ("0" + pos).slice(-2) : "+") + "</span>" +
       '<span class="al-prow__who"><b>' + n + "</b><i>" + E(roleWord(p)) + " &middot; " + E(formWord(p)) + "</i></span>" +
-      '<span class="al-prow__rate">' + ((p.rating | 0) || "&mdash;") + "</span>" +
+      '<span class="al-prow__rate">' + (ovr(p) || "&mdash;") + "</span>" +
       "</button>";
   }
 
@@ -45532,10 +45565,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ["Role", roleWord(p)],
       ["Age", String(p.age || "—")],
       ["Nationality", String(p.nat || p.country || "—")],
-      ["Rating", String(p.rating | 0)],
+      ["Overall", String(ovr(p))],
       ["Form", formWord(p)],
-      ["Fitness", String(p.fatigue || "rested")],
-      ["Experience", String(p.exp != null ? p.exp : "—")],
+      ["Fitness", cap(String(p.fatWord || p.fatigue || "rested"))],
+      ["Experience", cap(String(p.expWord || (p.exp != null ? p.exp : "—")))],
       ["Wage", p.wage != null ? "$" + Number(p.wage).toLocaleString() : "—"],
     ];
     var el = document.createElement("div");
@@ -45648,6 +45681,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function live() { try { return (typeof M !== "undefined" && M && !M.done) ? M : null; } catch (e) { return null; } }
   function fixture() { try { return (typeof window.foNextFixture === "function") ? window.foNextFixture() : null; } catch (e) { return null; } }
   function save() { try { if (typeof saveGame === "function") saveGame(false); } catch (e) {} }
+  function roleWord(p) { var a = A(); return a ? a.role(p) : "Player"; }
+  function ovr(p) { var a = A(); return a ? a.ovr(p) : 0; }
 
   function groundArt() {
     try {
@@ -45709,8 +45744,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           if (n === p.o.keeper) tags.push("WK");
           return '<div class="al-prow al-prow--picked"><span class="al-prow__no">' + ("0" + (i + 1)).slice(-2) + "</span>" +
             '<span class="al-prow__who"><b>' + E(n) + (tags.length ? " <em class='al-you__tag'>" + tags.join(" · ") + "</em>" : "") + "</b>" +
-            "<i>" + E((pl && (pl.roleFull || pl.role)) || "Player") + "</i></span>" +
-            '<span class="al-prow__rate">' + ((pl && pl.rating | 0) || "&mdash;") + "</span></div>";
+            "<i>" + E(roleWord(pl)) + "</i></span>" +
+            '<span class="al-prow__rate">' + (ovr(pl) || "&mdash;") + "</span></div>";
         }).join("") + "</div>"
       : al.empty("No eleven chosen", "Pick the side first; the rest of the sheet follows from it.");
     body += al.sec("1 · The eleven", xiHtml, { href: "#/team", label: "Change the side" });
