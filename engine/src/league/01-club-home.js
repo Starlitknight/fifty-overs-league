@@ -1378,6 +1378,16 @@
         wrap.className = "fo-scrollx";
         tb.parentNode.insertBefore(wrap, tb);
         wrap.appendChild(tb);
+        // A seventeen-column grid ending at the screen edge reads as broken
+        // rather than as scrollable, so say so - and stop saying it the
+        // moment they swipe.
+        var hint = document.createElement("div");
+        hint.className = "fo-scrollhint";
+        hint.textContent = "swipe the table sideways for the rest of the columns";
+        wrap.parentNode.insertBefore(hint, wrap);      // above it: a long table puts "after" off-screen
+        wrap.addEventListener("scroll", function drop() {
+          hint.remove(); wrap.removeEventListener("scroll", drop);
+        }, { passive: true });
       });
     } catch (e) {}
   }

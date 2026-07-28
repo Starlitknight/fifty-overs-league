@@ -29,16 +29,37 @@ world's schedule.
    rankings, honours, money, careers and training are all recomputed from the
    stored record, from genesis, rather than re-simulated.
 
-## How the world runs
+## Two worlds, one page
+
+The same page is the client for **two independent backends**. They share the
+Supabase project and the match engine and nothing else. Retiring or changing
+either means checking the `rpc("…")` and `sel("…")` call sites in
+`engine/src/league/**` first — the game speaks to both.
 
 ```
-   your phone                     Supabase (Postgres)              GitHub Actions
-┌──────────────┐   world_* RPC  ┌─────────────────────┐   hourly  ┌──────────────┐
-│  index.html  │ ─────────────▶ │  world schema       │ ◀──────── │ world-tick   │
-│  (the game)  │ ◀───────────── │  clubs · matches    │           │ server/*.mjs │
-└──────────────┘   snapshots    │  snapshots · money  │           │ + the engine │
-                                └─────────────────────┘           └──────────────┘
+                    ┌──────────────┐
+                    │  index.html  │   the game — client for both
+                    └──┬────────┬──┘
+        world_* RPC ───┘        └─── app.* RPC + league_* reads
+                 │                                │
+   ┌─────────────▼───────────┐      ┌─────────────▼────────────┐
+   │  THE WORLD SERVICE      │      │  FRIENDS LEAGUES         │
+   │  world schema           │      │  app schema              │
+   │  19 national leagues    │      │  private invite leagues  │
+   │  server/*.mjs           │      │  resolver/round.mjs      │
+   │  world-tick.yml, hourly │      │  round-resolver.yml      │
+   └─────────────────────────┘      └──────────────────────────┘
 ```
+
+- **The World Service** is the persistent planet: claim a club through
+  `#/worldclub` and it plays on a schedule with everyone else's.
+- **Friends leagues** are the "play with friends" door on the landing screen:
+  create a league, share an invite code, play your own season. Its umpire is
+  `resolver/round.mjs` — it advances rounds and resolves human-vs-human
+  challenge friendlies. Turn that workflow off and a friends league silently
+  stops advancing.
+
+### How the World Service runs
 
 - **`server/`** is the umpire. `tick.mjs` settles everything that is due, for
   every nation, at that nation's own local hour — league rounds, cups, youth,
@@ -91,15 +112,18 @@ fifty-overs-league/
 ├── test/                 🔒 golden-master replays — the built page must reproduce
 │                            recorded ball-by-ball logs bit-for-bit (CI gate)
 ├── tools/                re-bless masters · balance gate · calibration · snapshot
-├── supabase/             the retired first backend; only app.player_saves (cloud
-│                            saves) is still live — see supabase/README.md
+├── resolver/             friends-league umpire: headless real-engine round
+│                            resolver + challenge friendlies (round.mjs)
+├── supabase/             the app schema behind friends leagues + cloud saves
+│                            — see supabase/README.md
 ├── docs/                 engine tuning notes + historical design prompts
 │
 ├── art-packs/            🚫 git-ignored — RAW art uploads and "master" folders.
 │                            NOT shipped; the game loads only the derived
 │                            client/art/*.webp.
 └── .github/workflows/    ci-pages.yml (build + test + deploy) ·
-                          world-tick.yml (the hourly umpire) ·
+                          world-tick.yml (World Service umpire, hourly) ·
+                          round-resolver.yml (friends-league umpire) ·
                           calibration.yml (engine freeze gate) ·
                           world-admin.yml / world-report.yml (owner tools)
 ```
