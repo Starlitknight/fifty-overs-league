@@ -6,6 +6,7 @@
 // game's own table/fixtures/results screens update on every client that pulls it.
 import { openEngine } from './resolve.mjs';
 import { assertEnv, rpc, rest } from './sbrest.mjs';
+import { archiveHeavy } from './archive.mjs';
 
 // League matches play once per day at 09:00 New York time. (Friendlies are played
 // in-game whenever a manager likes — the resolver only advances league rounds.)
@@ -131,6 +132,10 @@ async function advanceOne(page, st) {
       return window.snapshot(false);
     }, { snap });
     rolled.__foAdvDate = now.date;
+    // the commentary goes to its own table first; only then is the league
+    // published without it, so nobody can open a match whose log is not stored
+    const aR = await archiveHeavy(lid, rolled);
+    if (aR.split) console.log(lid, `archived ${aR.split} log(s), snapshot ${Math.round(aR.saved / 1024)} KB lighter`);
     await rpc('push_league_state', { p_league_id: lid, p_snapshot: rolled, p_round: 0 });
     console.log(lid, `season rolled over -> season ${rolled.seasonNo || '?'} round 0`);
     return;
@@ -185,6 +190,8 @@ async function advanceOne(page, st) {
 
   newSnap.__foAdvDate = now.date;
   const newRound = (newSnap.season && typeof newSnap.season.round === 'number') ? newSnap.season.round : round + 1;
+  const aN = await archiveHeavy(lid, newSnap);
+  if (aN.split) console.log(lid, `archived ${aN.split} log(s), snapshot ${Math.round(aN.saved / 1024)} KB lighter`);
   await rpc('push_league_state', { p_league_id: lid, p_snapshot: newSnap, p_round: newRound });
   console.log(lid, `advanced round ${round} -> ${newRound}`);
 }

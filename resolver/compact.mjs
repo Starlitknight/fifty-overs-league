@@ -17,6 +17,7 @@
 //   node compact.mjs <id>       one league
 import { openEngine } from './resolve.mjs';
 import { assertEnv, rpc, rest } from './sbrest.mjs';
+import { archiveHeavy } from './archive.mjs';
 
 const kb = n => Math.round(n / 1024).toLocaleString() + ' KB';
 
@@ -35,6 +36,11 @@ async function compactOne(page, lg) {
   // carry forward the stamp the client uses to date rounds truthfully
   try { if (st.snapshot.__foAdvDate) slim.__foAdvDate = st.snapshot.__foAdvDate; } catch (e) {}
 
+  // and lift the ball-by-ball out to app.league_archive, which is where the
+  // remaining bulk is: the two logs the engine's own history keeps are around
+  // 1.1 MB between them, sixty per cent of the whole document
+  const arch = await archiveHeavy(lg.id, slim);
+
   const afterBytes = JSON.stringify(slim).length;
   const before = st.snapshot.results ? st.snapshot.results.length : 0;
   const after = slim.results ? slim.results.length : 0;
@@ -46,7 +52,7 @@ async function compactOne(page, lg) {
     console.error(`${lg.id}  ${lg.name}: REFUSED — results ${before} -> ${after}`);
     return;
   }
-  if (afterBytes >= beforeBytes) {
+  if (afterBytes >= beforeBytes && !arch.split) {
     console.log(`${lg.id}  ${lg.name}: already slim (${kb(beforeBytes)}), left alone`);
     return;
   }
@@ -57,7 +63,8 @@ async function compactOne(page, lg) {
     p_round: (slim.season && typeof slim.season.round === 'number') ? slim.season.round : (st.round | 0)
   });
   console.log(`${lg.id}  ${lg.name}: ${kb(beforeBytes)} -> ${kb(afterBytes)} ` +
-              `(${Math.round(100 * (beforeBytes - afterBytes) / beforeBytes)}% smaller, ${after} results kept)`);
+              `(${Math.round(100 * (beforeBytes - afterBytes) / beforeBytes)}% smaller, ${after} results kept` +
+              (arch.split ? `, ${arch.split} log(s) archived` : '') + ')');
 }
 
 (async () => {

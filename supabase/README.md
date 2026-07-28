@@ -20,6 +20,15 @@ human-vs-human challenge friendlies (`challenge_record_result`) and clears
 stale ones (`expire_stale_challenges`). **Without it, a friends league stops
 advancing.**
 
+`migrations/0023_match_archive.sql` takes the ball-by-ball out of the shared
+league state. The snapshot in `league_state` is downloaded in full by every
+member on every load; measured on a real league (10 clubs, 27 matches) it was
+1,897 KB, of which 1,090 KB was the commentary log of two matches. Those logs
+now live in `app.league_archive`, one row per match, and the client fetches a
+row only when a manager opens that match's commentary tab. **Run this migration
+or nothing changes** — `resolver/archive.mjs` checks for the table and, if it
+is not there, publishes the snapshot whole exactly as before.
+
 `migrations/0022_player_saves.sql` is separate from the league system:
 `app.player_saves` is the cross-device cloud save, one row per signed-in
 account, owner-only via RLS on `auth.uid()`, written by

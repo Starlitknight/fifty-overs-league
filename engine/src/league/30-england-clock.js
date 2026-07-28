@@ -22,7 +22,11 @@
   function ready() {
     return typeof App !== "undefined" && App && App.season && App.season.schedule && typeof completeRound === "function";
   }
-  function syncLive() { try { return !!(SYNC && SYNC.started && !SYNC.practice); } catch (e) { return false; } }
+  // SYNC lives in the league core's closure, which this file is NOT inside ·
+  // reaching for it threw ReferenceError on every call, so this read false
+  // forever and the clock below happily played league rounds on top of a
+  // served season
+  function syncLive() { try { return !!(window.__foLeague && window.__foLeague().live); } catch (e) { return false; } }
 
   // ---- ONE WORLD, DAY ONE: wipe the retired private league's leftovers ------
   // The world reset to Opening Day, but a save founded earlier still carries
@@ -33,13 +37,23 @@
     try {
       if (localStorage.getItem("fo_fresh_d1") === "1") return true;
       if (!ready()) return false;
+      // NOT SOMEBODY ELSE'S SEASON. This clears the retired SOLO league off a
+      // save that predates the world - but it fires on any device that has not
+      // run it yet, and a friends-league member signing in on a new phone gets
+      // the shared season applied a second before this timer wakes up. It then
+      // deletes every league result and puts the round back to zero, and since
+      // the version has not moved the client will not re-apply the snapshot:
+      // the manager is left staring at a league that has apparently never
+      // played a match. Seen in a browser, 1.4 seconds after entry, 27 results
+      // down to 2. A device showing a served season has nothing to clean up.
+      if (syncLive()) { try { localStorage.setItem("fo_fresh_d1", "1"); } catch (eS) {} return true; }
       App.season.round = 0;
       App.season.played = {};
       try { if (App.season.res) App.season.res = {}; } catch (e1) {}
       try { App.wcal = null; } catch (e2) {}
       try { if (Array.isArray(App.results)) App.results = App.results.filter(function (r) { return !(r && r.comp === "league"); }); } catch (e3) {}
       try {
-        var k = "fo_lg_" + ((typeof SYNC !== "undefined" && SYNC && SYNC.myMid) || "solo");
+        var k = "fo_lg_solo";
         var v = JSON.parse(localStorage.getItem(k) || "null");
         if (v) { v.round = 0; v.res = {}; v.season = 1; localStorage.setItem(k, JSON.stringify(v)); }
       } catch (e4) {}

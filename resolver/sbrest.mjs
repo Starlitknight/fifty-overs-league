@@ -35,6 +35,27 @@ export async function rest(path) {
   return res.json();
 }
 
+/** Upsert rows into an app table. Returns false if the table is not there yet. */
+export async function upsert(table, rows, onConflict) {
+  if (!rows || !rows.length) return true;
+  const q = onConflict ? `?on_conflict=${onConflict}` : "";
+  const res = await fetch(`${URL}/rest/v1/${table}${q}`, {
+    method: "POST",
+    headers: {
+      apikey: KEY, Authorization: `Bearer ${KEY}`,
+      "content-type": "application/json",
+      "Content-Profile": "app", "Accept-Profile": "app",
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    },
+    body: JSON.stringify(rows),
+  });
+  if (res.ok) return true;
+  const txt = await res.text();
+  // the migration has not been run in this project yet — the caller carries on
+  if (/PGRST205|does not exist|schema cache/i.test(txt)) return false;
+  throw new Error(`upsert ${table} ${res.status}: ${txt}`);
+}
+
 /** A league's pinned engine build hash. */
 export async function leaguePin(leagueId) {
   const [row] = await rest(`leagues?id=eq.${leagueId}&select=build_hash`);

@@ -77,7 +77,7 @@
     var nm = "";
     try { nm = (App && App.founder && App.founder.mgr) || ""; } catch (e) {}
     if (!nm) { try { nm = localStorage.getItem("fo_mgr") || ""; } catch (e2) {} }
-    if (!nm) { try { nm = (SYNC && SYNC.me && SYNC.me.display_name) || ""; } catch (e3) {} }
+    if (!nm) { try { var L = window.__foLeague && window.__foLeague(); nm = (L && L.me && L.me.display_name) || ""; } catch (e3) {} }
     nm = String(nm || "").trim();
     return (nm && nm.toLowerCase() !== "manager") ? nm.slice(0, 24) : "";
   };

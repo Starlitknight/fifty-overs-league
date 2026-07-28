@@ -54,3 +54,20 @@ NODE_PATH=/opt/node22/lib/node_modules node prove.mjs
 `e558745ede94e2502d5cccaa829feb42818cbcb1e779664c4b784a851b3f00ff`
 
 This will be recomputed over the final baked build and pinned per-league in Phase 4.
+
+## archive.mjs — the ball-by-ball, kept out of everyone's way
+
+`round.mjs` calls `archiveHeavy()` before every publish. It lifts each result's
+commentary log into `app.league_archive` (keyed by the result's POSITION in
+`results[]`, which is what the client looks matches up by) and publishes a
+snapshot without it — measured at 1,897 KB down to 807 KB on a real league.
+
+Each row carries a signature of `comp|round|season|seed`. Deliberately not the
+club names: the client renames bot clubs to suit its league's nation and
+rewrites its own result history to match, so home and away disagree with what
+the umpire stored. The client checks the signature before splicing a log in, so
+a league that has been relaunched — and whose row 12 is now a different match —
+shows no commentary rather than the wrong one.
+
+If migration 0023 has not been run, the write fails harmlessly, the logs are
+put back, and the snapshot goes out whole.

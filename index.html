@@ -7586,6 +7586,22 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   try { window.__foCloud = { keys: foCloudKeys, push: foCloudPush, load: foCloudLoad, boot: foCloudBoot }; } catch (eCw) {}
   // the joinable world (module 37) needs the caller's identity for its RPCs
   try { window.__foJWT = function () { return JWT || ""; }; } catch (eJw) {}
+  // THE BRIDGE OUT OF THIS CLOSURE.
+  // The league core is one IIFE spanning modules 00 to 12. Everything numbered
+  // 13 and up is a separate IIFE, so LG, SYNC, sel and rpc are simply not in
+  // scope there - a bare `SYNC` throws ReferenceError, and a try/catch around
+  // it quietly turns "am I in a served league?" into "no". That is how the
+  // world clock came to believe every device was playing solo. Anything
+  // outside the core asks here instead.
+  try {
+    window.__foLeague = function () {
+      var live = false, id = "", mine = null;
+      try { live = !!(SYNC && SYNC.started && !SYNC.practice); } catch (e1) {}
+      try { id = (LG && LG.id) || ""; } catch (e2) {}
+      try { mine = (SYNC && SYNC.me) || null; } catch (e3) {}
+      return { id: id, live: live, me: mine, sel: sel, rpc: rpc };
+    };
+  } catch (eLg) {}
 
   // ---- styles + shell ----
   // (login skin is static now: engine/src/skin/10-login.css -> <style id="fo-skin-login">)
@@ -10776,7 +10792,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260728-1402-28aea4";
+  var FO_BUILD = "20260728-1430-a8ea8b";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -38820,7 +38836,11 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
   function ready() {
     return typeof App !== "undefined" && App && App.season && App.season.schedule && typeof completeRound === "function";
   }
-  function syncLive() { try { return !!(SYNC && SYNC.started && !SYNC.practice); } catch (e) { return false; } }
+  // SYNC lives in the league core's closure, which this file is NOT inside ·
+  // reaching for it threw ReferenceError on every call, so this read false
+  // forever and the clock below happily played league rounds on top of a
+  // served season
+  function syncLive() { try { return !!(window.__foLeague && window.__foLeague().live); } catch (e) { return false; } }
 
   // ---- ONE WORLD, DAY ONE: wipe the retired private league's leftovers ------
   // The world reset to Opening Day, but a save founded earlier still carries
@@ -38831,13 +38851,23 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     try {
       if (localStorage.getItem("fo_fresh_d1") === "1") return true;
       if (!ready()) return false;
+      // NOT SOMEBODY ELSE'S SEASON. This clears the retired SOLO league off a
+      // save that predates the world - but it fires on any device that has not
+      // run it yet, and a friends-league member signing in on a new phone gets
+      // the shared season applied a second before this timer wakes up. It then
+      // deletes every league result and puts the round back to zero, and since
+      // the version has not moved the client will not re-apply the snapshot:
+      // the manager is left staring at a league that has apparently never
+      // played a match. Seen in a browser, 1.4 seconds after entry, 27 results
+      // down to 2. A device showing a served season has nothing to clean up.
+      if (syncLive()) { try { localStorage.setItem("fo_fresh_d1", "1"); } catch (eS) {} return true; }
       App.season.round = 0;
       App.season.played = {};
       try { if (App.season.res) App.season.res = {}; } catch (e1) {}
       try { App.wcal = null; } catch (e2) {}
       try { if (Array.isArray(App.results)) App.results = App.results.filter(function (r) { return !(r && r.comp === "league"); }); } catch (e3) {}
       try {
-        var k = "fo_lg_" + ((typeof SYNC !== "undefined" && SYNC && SYNC.myMid) || "solo");
+        var k = "fo_lg_solo";
         var v = JSON.parse(localStorage.getItem(k) || "null");
         if (v) { v.round = 0; v.res = {}; v.season = 1; localStorage.setItem(k, JSON.stringify(v)); }
       } catch (e4) {}
@@ -40554,7 +40584,7 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     var nm = "";
     try { nm = (App && App.founder && App.founder.mgr) || ""; } catch (e) {}
     if (!nm) { try { nm = localStorage.getItem("fo_mgr") || ""; } catch (e2) {} }
-    if (!nm) { try { nm = (SYNC && SYNC.me && SYNC.me.display_name) || ""; } catch (e3) {} }
+    if (!nm) { try { var L = window.__foLeague && window.__foLeague(); nm = (L && L.me && L.me.display_name) || ""; } catch (e3) {} }
     nm = String(nm || "").trim();
     return (nm && nm.toLowerCase() !== "manager") ? nm.slice(0, 24) : "";
   };
@@ -45342,6 +45372,111 @@ body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystem
     });
   }
 })();
+  // =================================================================
+  //  The ball-by-ball, fetched only when someone asks to read it.
+  //
+  //  The league snapshot is one document holding the whole league, and every
+  //  member's device downloads all of it whenever the round moves. Measured on
+  //  a real league - 10 clubs, 27 matches - it came to 1,897 KB, of which
+  //  1,090 KB was the ball-by-ball commentary of the two most recent matches.
+  //  Sixty per cent of what everyone downloads, on every load, to draw screens
+  //  that never look at it. A phone with two dozen other tabs open would
+  //  rather not, and had started refusing.
+  //
+  //  The umpire now writes the log to app.league_archive instead, one row per
+  //  match, and this fetches that row the moment - and only the moment - a
+  //  manager opens the commentary tab of that match's scorecard. Which is the
+  //  only place in the shipped game that reads a stored log: #/commentary is a
+  //  retired route (see GONE in the engine's router), and the scorecard's
+  //  bowling-order tidy-up already returns silently without one.
+  //
+  //  A league whose umpire has not archived anything yet still carries its
+  //  logs inline, and those render exactly as before: nothing here runs unless
+  //  a log is genuinely absent.
+  // =================================================================
+  (function () {
+    // This file is NOT inside the league core's closure (that is modules 00-12,
+    // one IIFE). LG, SYNC and sel are invisible here, so everything the league
+    // knows comes through the bridge the core publishes on window.
+    function foLg() { try { return (window.__foLeague && window.__foLeague()) || null; } catch (e) { return null; } }
+
+    // Proof the stored row is this match. results[] is append-only in normal
+    // play, so its position is a stable name - but a relaunch rebuilds it, and
+    // then row 12 is a different game. Must match resolver/archive.mjs exactly.
+    // Deliberately NOT the club names: module 26 renames bot clubs to suit the
+    // league's nation and rewrites this device's result history to match, so
+    // home and away disagree with the umpire's copy. The seed, round and
+    // season identify the match exactly and survive the renaming.
+    function foArchSig(r) {
+      if (!r) return "";
+      return [r.comp || "",
+        r.round == null ? "" : r.round,
+        r.seasonNo == null ? "" : r.seasonNo,
+        r.seed == null ? "" : r.seed].join("|");
+    }
+
+    // App is a top-level `const`, so it lives in the global LEXICAL scope and
+    // never appears on `window` · reach it by bare name or not at all
+    function foResults() {
+      try { return (typeof App !== "undefined" && App && App.results) || null; } catch (e) { return null; }
+    }
+
+    // true when a fetch is now in flight and the caller should say so
+    function foArchNeed(ix, then) {
+      var all = foResults();
+      var r = all ? all[ix] : null;
+      if (!r) return false;
+      if (r.log && r.log.length) return false;   // already here
+      if (r.__archNone || r.__archBusy) return false;
+      var L = foLg();
+      if (!L || !L.id || !L.sel) return false;   // solo play has no archive
+      r.__archBusy = 1;
+      L.sel("league_archive", "league_id=eq." + L.id + "&ix=eq." + ix + "&select=sig,heavy").then(function (rows) {
+        r.__archBusy = 0;
+        var row = rows && rows[0];
+        if (row && row.sig === foArchSig(r) && row.heavy && row.heavy.log && row.heavy.log.length) r.log = row.heavy.log;
+        else r.__archNone = 1;                   // nothing stored, or stored for a match that is no longer here
+        try { then(); } catch (e) {}
+      }).catch(function () {
+        // a project that has not run the 0023 migration answers 404 · that is
+        // not an error, it just means this league keeps its logs inline
+        r.__archBusy = 0; r.__archNone = 1;
+        try { then(); } catch (e) {}
+      });
+      return true;
+    }
+
+    // The tab renders "No commentary stored for this match." on its own when
+    // there is no log. While one is on its way, that sentence is untrue.
+    function foArchNote() {
+      try {
+        var p = document.getElementById("page"); if (!p) return;
+        [].forEach.call(p.querySelectorAll("div,span,p"), function (el) {
+          if (el.children.length) return;
+          if (/^\s*No commentary stored for this match\.?\s*$/i.test(el.textContent || "")) el.textContent = "Fetching the ball-by-ball…";
+        });
+      } catch (e) {}
+    }
+
+    try {
+      if (typeof window.route === "function" && !window.route.__foArch) {
+        var _route = window.route;
+        window.route = function () {
+          var pending = false;
+          try {
+            var m = /^#\/scorecard\?i=(\d+)/.exec(location.hash || "");
+            if (m && typeof App !== "undefined" && App._scTab === "comm") {
+              pending = foArchNeed(+m[1], function () { try { _route.call(window); } catch (e) {} });
+            }
+          } catch (e) {}
+          var out = _route.apply(this, arguments);
+          if (pending) foArchNote();
+          return out;
+        };
+        window.route.__foArch = 1;
+      }
+    } catch (eR) {}
+  })();
 
 </script>
 <script id="fo-presentation">

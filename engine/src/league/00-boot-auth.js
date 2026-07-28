@@ -358,6 +358,22 @@
   try { window.__foCloud = { keys: foCloudKeys, push: foCloudPush, load: foCloudLoad, boot: foCloudBoot }; } catch (eCw) {}
   // the joinable world (module 37) needs the caller's identity for its RPCs
   try { window.__foJWT = function () { return JWT || ""; }; } catch (eJw) {}
+  // THE BRIDGE OUT OF THIS CLOSURE.
+  // The league core is one IIFE spanning modules 00 to 12. Everything numbered
+  // 13 and up is a separate IIFE, so LG, SYNC, sel and rpc are simply not in
+  // scope there - a bare `SYNC` throws ReferenceError, and a try/catch around
+  // it quietly turns "am I in a served league?" into "no". That is how the
+  // world clock came to believe every device was playing solo. Anything
+  // outside the core asks here instead.
+  try {
+    window.__foLeague = function () {
+      var live = false, id = "", mine = null;
+      try { live = !!(SYNC && SYNC.started && !SYNC.practice); } catch (e1) {}
+      try { id = (LG && LG.id) || ""; } catch (e2) {}
+      try { mine = (SYNC && SYNC.me) || null; } catch (e3) {}
+      return { id: id, live: live, me: mine, sel: sel, rpc: rpc };
+    };
+  } catch (eLg) {}
 
   // ---- styles + shell ----
   // (login skin is static now: engine/src/skin/10-login.css -> <style id="fo-skin-login">)
