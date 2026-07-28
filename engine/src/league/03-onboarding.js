@@ -490,14 +490,19 @@
   //  8 branded screens that teach the finance model through choices + a live
   //  forecast, then hand the drafted squad to the engine's founderConfirm().
   // ===========================================================================
-  // The forecast's own model, stated once here:
-  //   income  = sponsor base (+ win bonus) + home gate (attendance x ticket)
+  // These are the numbers for the game THIS flow founds a club in: a solo
+  // career or a friends league, both settled in the browser by the engine in
+  // 00-core.js. Every constant below is that engine's, not a parallel guess:
+  //   income  = sponsor base (+ win bonus) + home gate (attendance x $9)
   //   costs   = wage bill + stadium ($1/seat) + senior academy upkeep
-  //   prizes  = engine PRIZES by final position at season end
-  // Crowds follow the engine's attendance() = supporters x (0.55 + 0.13 x mood).
-  // NOTE: these are the SOLO-career figures. A club founded on the World
-  // Service is settled by server/economy.mjs, whose constants (founding bank,
-  // ticket price, academy upkeep, seat count) are larger — see VISION.md.
+  //   prizes  = PRIZES[finish], the engine's own array
+  // and crowds follow its attendance() = supporters x (0.55 + 0.13 x mood),
+  // capped by seats. Change one here and you must change it there.
+  //
+  // The World Service is a SEPARATE economy - server/economy.mjs, founding
+  // bank 2.5m, ticket 26, academy upkeep by the round - and a club is founded
+  // there through #/worldclub, which never comes past this screen. The two
+  // sets of figures are meant to differ; neither is a stale copy of the other.
   var FO_FIN = {
     seasonLength: 18, homeMatches: 9, startingBank: 1000000, ticketPrice: 9,
     stadiumCost: 9000, academyCost: 8000,
