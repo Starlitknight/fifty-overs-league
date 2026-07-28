@@ -46,7 +46,7 @@
       ".fo-tbl h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(30px,5vw,46px);line-height:1.05;margin:0 0 8px;text-wrap:balance}" +
       ".fo-tbl .sub{color:#5A6472;line-height:1.55;margin:0 0 20px;max-width:56ch}" +
       ".fo-tbl-wrap{overflow-x:auto;border:1px solid rgba(11,19,34,.12);border-radius:14px;background:#fff}" +
-      ".fo-tbl table{width:100%;border-collapse:collapse;font-size:14px;min-width:540px}" +
+      ".fo-tbl table{width:100%;border-collapse:collapse;font-size:14px}" +
       ".fo-tbl th{font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#7A8595;text-align:right;padding:12px 10px;border-bottom:1px solid rgba(11,19,34,.12);white-space:nowrap}" +
       ".fo-tbl th.l,.fo-tbl td.l{text-align:left}" +
       ".fo-tbl td{padding:11px 10px;text-align:right;border-bottom:1px solid rgba(11,19,34,.06);font-variant-numeric:tabular-nums;white-space:nowrap}" +
@@ -59,7 +59,19 @@
       ".fo-tbl .src{margin-top:14px;font:500 12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:#7A8595}" +
       ".fo-tbl .src b{color:#3E7A55;font-weight:600}" +
       ".fo-tbl .src i{color:#8A6A3B;font-style:normal;font-weight:600}" +
-      "@media (prefers-color-scheme:dark){}";
+      // POINTS MUST NEVER BE THE COLUMN THAT FALLS OFF. A league table read on
+      // a phone is read for two things: who is top, and how many points they
+      // have. Eight columns do not fit in 390px, and a table that merely
+      // scrolls sideways puts the most important number behind a swipe nobody
+      // makes. So the narrow layout spends its width on what the table is FOR
+      // - position, club, played, won, net run rate, points - and drops lost
+      // and tied, which a reader can derive and which the wider layout keeps.
+      "@media (max-width:560px){" +
+      ".fo-tbl{padding:20px 10px 56px}" +
+      ".fo-tbl table{font-size:13px}" +
+      ".fo-tbl th,.fo-tbl td{padding:10px 6px}" +
+      ".fo-tbl .c-l,.fo-tbl .c-t{display:none}" +
+      "}";
     document.head.appendChild(s);
   }
 
@@ -115,14 +127,16 @@
       return "<tr" + (r.club === mine ? " class='me'" : "") + ">" +
         "<td class='pos'>" + (i + 1) + "</td>" +
         "<td class='l club'>" + E(r.club) + "</td>" +
-        "<td>" + (r.p | 0) + "</td><td>" + (r.w | 0) + "</td><td>" + (r.l | 0) + "</td><td>" + (r.t | 0) + "</td>" +
+        "<td>" + (r.p | 0) + "</td><td>" + (r.w | 0) + "</td>" +
+        "<td class='c-l'>" + (r.l | 0) + "</td><td class='c-t'>" + (r.t | 0) + "</td>" +
         "<td>" + nrr(r.nrr) + "</td><td class='pts'>" + (r.pts | 0) + "</td></tr>";
     }).join("");
     page.innerHTML = shell(
       "<p class='sub'>Season " + (data.season | 0) + " &middot; " + data.rows.length + " clubs. " +
       "Two points a win, one a tie; net run rate splits the level.</p>" +
       "<div class='fo-tbl-wrap'><table><thead><tr>" +
-      "<th></th><th class='l'>Club</th><th>P</th><th>W</th><th>L</th><th>T</th><th>NRR</th><th>Pts</th>" +
+      "<th></th><th class='l'>Club</th><th>P</th><th>W</th>" +
+      "<th class='c-l'>L</th><th class='c-t'>T</th><th>NRR</th><th>Pts</th>" +
       "</tr></thead><tbody>" + body + "</tbody></table></div>" +
       "<div class='src'>" + (served
         ? "<b>&#9679; served</b> &middot; read from the league database, not from your saved season"

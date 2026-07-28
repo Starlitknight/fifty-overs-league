@@ -1423,7 +1423,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',records:'foRenderRecordsPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',worldclub:'foRenderWorldClubPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',guide:'foRenderManualPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',comps:'foRenderCompsPage',market:'foRenderMarketPage'}[App.page];
+  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',records:'foRenderRecordsPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',worldclub:'foRenderWorldClubPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',guide:'foRenderManualPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',comps:'foRenderCompsPage',market:'foRenderMarketPage',table:'foRenderStandingsPage'}[App.page];
   if(P[App.page])P[App.page](q);
   // A RENDERER THAT THROWS USED TO VANISH. This catch was empty, so a page
   // whose painter hit an error left the topbar, the clock and the nav in place
@@ -10112,10 +10112,41 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260728-1830-c4b2b9";
+  var FO_BUILD = "20260728-2045-a6aa28";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
+  }
+  // NEVER LEAP BLIND. Taking an update means a document navigation, and a
+  // navigation that fails to land does not error - the browser keeps showing
+  // this page, spins the tab, AND SWALLOWS EVERY CLICK while it waits. The
+  // manager sees a game that looks perfectly alive with a menu that has simply
+  // died - measured here: the page stops answering even the test driver. So
+  // the new page is fetched FIRST, as data. Only when the origin has actually
+  // answered with it does the real navigation start - and then it lands out of
+  // cache, instantly. If the fetch fails or takes too long, no navigation ever
+  // starts: the game stays fully alive and the pill offers the update instead.
+  function foPull(build) {
+    var dest = location.pathname + "?v=" + encodeURIComponent(build);
+    if (foPull.__busy) return; foPull.__busy = 1;
+    var done = false;
+    var giveUp = setTimeout(function () { if (!done) { done = true; foPull.__busy = 0; foUpdatePill(build, false); } }, 8000);
+    fetch(dest, { cache: "no-store" }).then(function (r) {
+      if (done) return; done = true; clearTimeout(giveUp); foPull.__busy = 0;
+      if (r.ok) location.replace(dest + location.hash);
+      else foUpdatePill(build, false);
+    }, function () {
+      if (done) return; done = true; clearTimeout(giveUp); foPull.__busy = 0;
+      foUpdatePill(build, false);
+    });
+  }
+  function foUpdatePill(build, live) {
+    var el = document.createElement("div");
+    el.id = "fo-update-pill";
+    el.innerHTML = "A new version is ready &middot; <b>tap to update</b>" + (live ? " (your live match resumes at the right over)" : "");
+    el.addEventListener("click", function () { foPull(build); });
+    var old = document.getElementById("fo-update-pill"); if (old) old.remove();
+    document.body.appendChild(el);
   }
   function foCheckUpdate() {
     try {
@@ -10125,28 +10156,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         if (foCheckUpdate._seen === v.build) return;
         foCheckUpdate._seen = v.build;
         var live = false; try { live = (typeof M !== "undefined") && M && !M.done; } catch (e) {}
-        // Nothing on air: pull the new build in automatically. The old guard
-        // burned ONE attempt per build (a localStorage flag) - if that single
-        // pull was itself served stale by a lagging CDN node, the flag was
-        // spent and the player was stranded on the old build for good, staring
-        // at bugs fixed hours earlier. The URL is the honest attempt marker:
-        // if this page is NOT already the landing of a pull for exactly this
-        // build, pull. If it IS - we asked for that build and did not get it -
-        // show the pill instead of looping, and every fresh page load gets to
-        // try again. Mid-match the pill still asks first.
+        // Nothing on air: pull the new build in automatically - through the
+        // verified pull above, never a bare navigation. The URL is the honest
+        // attempt marker: if this page IS already the landing of a pull for
+        // exactly this build and still runs the old one, a lagging cache node
+        // served it - show the pill instead of looping. Mid-match the pill
+        // always asks first.
         var tried = location.search.indexOf("v=" + encodeURIComponent(v.build)) >= 0;
-        if (!live && !tried) {
-          location.replace(location.pathname + "?v=" + encodeURIComponent(v.build) + location.hash);
-          return;
-        }
-        var el = document.createElement("div");
-        el.id = "fo-update-pill";
-        el.innerHTML = "A new version is ready &middot; <b>tap to update</b>" + (live ? " (your live match resumes at the right over)" : "");
-        el.addEventListener("click", function () {
-          location.replace(location.pathname + "?v=" + encodeURIComponent(v.build) + location.hash);
-        });
-        var old = document.getElementById("fo-update-pill"); if (old) old.remove();
-        document.body.appendChild(el);
+        if (!live && !tried) { foPull(v.build); return; }
+        foUpdatePill(v.build, live);
       }).catch(function () {});
     } catch (e) {}
   }
@@ -27384,6 +27402,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // the nation record book and atlas portrait live under the League pill
       var lgH = (location.hash || "").split("?")[0];
       if (lgH === "#/nation" || lgH === "#/atlas") lg.classList.add("on");
+      // The Table reads the league database rather than the saved season, so it
+      // only means anything to a manager who is IN a served league; a solo
+      // career has no served table to read and should not be offered one.
+      var tb2 = null;
+      try { if (window.__foLeague && window.__foLeague().id) tb2 = mkPill("fo-table-nav", "Table", "#/table"); } catch (eTb) {}
       var pl = mkPill("fo-planet-nav", "World", "#/planet");
       var cp = mkPill("fo-cup-nav", "Cup", "#/cup");
       var jn = mkPill("fo-lore-nav", "Journal", "#/lore");
@@ -27391,7 +27414,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var want = anchor ? anchor.nextSibling : wrap.firstChild;
       if (hm.parentNode !== wrap) wrap.insertBefore(hm, want);
       if (lg.parentNode !== wrap) wrap.insertBefore(lg, hm.nextSibling);
-      if (pl.parentNode !== wrap) wrap.insertBefore(pl, lg.nextSibling);
+      if (tb2 && tb2.parentNode !== wrap) wrap.insertBefore(tb2, lg.nextSibling);
+      if (pl.parentNode !== wrap) wrap.insertBefore(pl, (tb2 && tb2.parentNode === wrap ? tb2 : lg).nextSibling);
       if (cp.parentNode !== wrap) wrap.insertBefore(cp, pl.nextSibling);
       if (jn.parentNode !== wrap) wrap.insertBefore(jn, cp.nextSibling);
     } catch (e) {}
@@ -38533,20 +38557,35 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // localStorage at that instant and was never told the body had landed. That
   // is how the home page could show a defeat the table had not heard about.
   // Waiters are queued instead, and flushed together when the fetch settles.
+  // A WAITER IS TOLD LATER, NEVER DURING THE ASK. Every callback handed to
+  // want()/lgFetch is some page's "repaint me when the data lands" - and that
+  // repaint calls want() again. Answering a callback SYNCHRONOUSLY therefore
+  // re-enters the very function that is mid-answer: repaint -> want -> repaint
+  // -> want, forever. With a cold cache the loop never ignites (no body, no
+  // callback), which is why no local test ever saw it - but on the live
+  // backend the cache warms on the first fetch, and from then on every visit
+  // to the home, league or fixtures page recursed until the stack blew, then
+  // did it again on the next tick until the page froze solid. Measured live:
+  // "RangeError: Maximum call stack size exceeded" in foRenderHome, then a
+  // renderer pinned at 106% CPU with every menu dead.
+  // So: flushes are deferred to their own task, and a warm cache answers
+  // NOBODY - the caller already holds the data (it called get() first; that
+  // is the contract every caller follows), so there is nothing to announce.
   function lgFlush(rid) {
     var ws = LG_WAIT[rid] || []; LG_WAIT[rid] = [];
-    for (var i = 0; i < ws.length; i++) { try { ws[i](LG_BODY[rid] || null); } catch (e) {} }
+    if (!ws.length) return;
+    setTimeout(function () {
+      for (var i = 0; i < ws.length; i++) { try { ws[i](LG_BODY[rid] || null); } catch (e) {} }
+    }, 0);
   }
   function lgFetch(rid, cb) {
     if (!rid) return;
     // THE WHOLE PLANET AT ONCE. The world page now asks for all nineteen
     // nations' standings, so without a courtesy window a repaint would put
     // nineteen probes on the wire every time it painted. Inside that window
-    // we answer from the copy already in hand rather than going quiet.
-    if (!LG_BUSY[rid] && LG_AT[rid] && Date.now() - LG_AT[rid] < LG_TTL) {
-      if (cb && LG_BODY[rid]) { try { cb(LG_BODY[rid]); } catch (e) {} }
-      return;
-    }
+    // the copy already in hand IS the answer - the caller has it from get() -
+    // and no callback fires (see the note above lgFlush).
+    if (!LG_BUSY[rid] && LG_AT[rid] && Date.now() - LG_AT[rid] < LG_TTL) return;
     if (cb) (LG_WAIT[rid] = LG_WAIT[rid] || []).push(cb);
     if (LG_BUSY[rid]) return;                    // in flight: the flush will reach us
     LG_BUSY[rid] = 1; LG_AT[rid] = Date.now();
@@ -38596,23 +38635,24 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       try { var c4 = localStorage.getItem("fo_world_mgr_" + rid); if (c4) { NM_MGR[rid] = JSON.parse(c4); return NM_MGR[rid]; } } catch (e) {}
       return null;
     },
-    // same waiting-room as the standings above: a second screen asking inside
-    // the courtesy window is answered from the names already held, and one
-    // asking mid-flight is queued rather than ignored
+    // same waiting-room as the standings above: a caller asking mid-flight is
+    // queued rather than ignored, and told in a task of its own - see the
+    // recursion note above lgFlush; inside the courtesy window the names the
+    // caller already read via get() ARE the answer, and no callback fires
     want: function (rid, cb) {
       try {
         if (!rid) return;
-        if (!NM_BUSY[rid] && NM_AT[rid] && Date.now() - NM_AT[rid] < 60000) {
-          if (cb && NM_BODY[rid]) { try { cb(NM_BODY[rid]); } catch (e) {} }
-          return;
-        }
+        if (!NM_BUSY[rid] && NM_AT[rid] && Date.now() - NM_AT[rid] < 60000) return;
         if (cb) (NM_WAIT[rid] = NM_WAIT[rid] || []).push(cb);
         if (NM_BUSY[rid]) return;
         NM_BUSY[rid] = 1;
         var done = function () {
           NM_BUSY[rid] = 0; NM_AT[rid] = Date.now();
           var ws = NM_WAIT[rid] || []; NM_WAIT[rid] = [];
-          for (var i = 0; i < ws.length; i++) { try { ws[i](NM_BODY[rid] || null); } catch (e) {} }
+          if (!ws.length) return;
+          setTimeout(function () {
+            for (var i = 0; i < ws.length; i++) { try { ws[i](NM_BODY[rid] || null); } catch (e) {} }
+          }, 0);
         };
         fetch(SB_URL + "/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(rid) + "&select=slot,name,manager,ground", { headers: { apikey: SB_ANON } })
           .then(function (r) { return r.ok ? r.json() : null; })
@@ -44896,6 +44936,176 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       }
     } catch (eR) {}
   })();
+/* ============================================================================
+   THE TABLE (#/table) — PHASE 1c: the first page that reads the database.
+
+   Every other screen in this game is drawn from one JSON document: the league
+   snapshot, roughly two megabytes, downloaded whole and parsed whole before
+   anything can be shown. That is the architecture that has been breaking all
+   week, and it is not how Battrick or From the Pavilion work. Their pages ask
+   the database for what the page shows, and nothing else.
+
+   This is that, for one page. The umpire writes game.results after every round
+   (resolver/publish.mjs); game.standings derives the table from those rows in
+   SQL - two points a win, one a tie, net run rate by overs faced and bowled -
+   and the test suite proves that view agrees with the engine's own leagueRows()
+   to the run, on a real played season. So the table on this page is not a
+   summary of the snapshot. It is a query, and it weighs about eight hundred
+   bytes.
+
+   It therefore paints without the snapshot: no career restore, no megabytes,
+   no waiting. Reads are public, so it works the moment you are in a league.
+
+   UNTIL THE UMPIRE HAS RUN, THERE ARE NO ROWS. A league whose first round has
+   not yet resolved has nothing in game.results, and a manager must not be
+   shown an empty table and left to wonder. So when the query comes back empty
+   - or the schema is not exposed, or the request fails - the page falls back
+   to the engine's own table from whatever this device has already loaded, and
+   says which of the two it is showing. One page, two sources, never blank.
+   ========================================================================== */
+(function () {
+  "use strict";
+  if (window.__foTbl) return; window.__foTbl = 1;
+
+  var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
+  var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function lg() { try { return window.__foLeague ? window.__foLeague() : null; } catch (e) { return null; } }
+  function myClub() { try { return (userTeam() || {}).name || ""; } catch (e) { return ""; } }
+  function onPage() { return (location.hash || "").split("?")[0] === "#/table"; }
+  function nrr(n) { var v = Number(n) || 0; return (v >= 0 ? "+" : "") + v.toFixed(3); }
+
+  function css() {
+    if (document.getElementById("fo-tbl-css")) return;
+    var s = document.createElement("style"); s.id = "fo-tbl-css";
+    s.textContent =
+      ".fo-tbl{max-width:860px;margin:0 auto;padding:28px 16px 64px}" +
+      ".fo-tbl .eyebrow{font:600 11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:#B4533A;margin-bottom:6px}" +
+      ".fo-tbl h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(30px,5vw,46px);line-height:1.05;margin:0 0 8px;text-wrap:balance}" +
+      ".fo-tbl .sub{color:#5A6472;line-height:1.55;margin:0 0 20px;max-width:56ch}" +
+      ".fo-tbl-wrap{overflow-x:auto;border:1px solid rgba(11,19,34,.12);border-radius:14px;background:#fff}" +
+      ".fo-tbl table{width:100%;border-collapse:collapse;font-size:14px}" +
+      ".fo-tbl th{font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#7A8595;text-align:right;padding:12px 10px;border-bottom:1px solid rgba(11,19,34,.12);white-space:nowrap}" +
+      ".fo-tbl th.l,.fo-tbl td.l{text-align:left}" +
+      ".fo-tbl td{padding:11px 10px;text-align:right;border-bottom:1px solid rgba(11,19,34,.06);font-variant-numeric:tabular-nums;white-space:nowrap}" +
+      ".fo-tbl tr:last-child td{border-bottom:0}" +
+      ".fo-tbl td.club{font-weight:600}" +
+      ".fo-tbl td.pos{color:#7A8595;width:34px}" +
+      ".fo-tbl tr.me{background:#FBF3EF}" +
+      ".fo-tbl tr.me td.club{color:#B4533A}" +
+      ".fo-tbl td.pts{font-weight:700}" +
+      ".fo-tbl .src{margin-top:14px;font:500 12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:#7A8595}" +
+      ".fo-tbl .src b{color:#3E7A55;font-weight:600}" +
+      ".fo-tbl .src i{color:#8A6A3B;font-style:normal;font-weight:600}" +
+      // POINTS MUST NEVER BE THE COLUMN THAT FALLS OFF. A league table read on
+      // a phone is read for two things: who is top, and how many points they
+      // have. Eight columns do not fit in 390px, and a table that merely
+      // scrolls sideways puts the most important number behind a swipe nobody
+      // makes. So the narrow layout spends its width on what the table is FOR
+      // - position, club, played, won, net run rate, points - and drops lost
+      // and tied, which a reader can derive and which the wider layout keeps.
+      "@media (max-width:560px){" +
+      ".fo-tbl{padding:20px 10px 56px}" +
+      ".fo-tbl table{font-size:13px}" +
+      ".fo-tbl th,.fo-tbl td{padding:10px 6px}" +
+      ".fo-tbl .c-l,.fo-tbl .c-t{display:none}" +
+      "}";
+    document.head.appendChild(s);
+  }
+
+  function shell(inner) {
+    return "<div class='fo-tbl'><div class='eyebrow'>The League &middot; Standings</div>" +
+      "<h1>The Table</h1>" + inner + "</div>";
+  }
+
+  /** Rows straight from SQL. Resolves to null when the spine has nothing. */
+  function fromDatabase(leagueId) {
+    return fetch(SB_URL + "/rest/v1/standings?league_id=eq." + encodeURIComponent(leagueId) +
+      "&select=club,season_no,p,w,l,t,pts,rf,ra,nrr", { headers: { apikey: SB_ANON, "Accept-Profile": "game" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (rows) {
+        if (!rows || !rows.length) return null;
+        // the league may have played several seasons; this page is the one
+        // being played now, which is the highest season number present
+        var top = 0;
+        rows.forEach(function (r0) { if ((r0.season_no | 0) > top) top = r0.season_no | 0; });
+        var live = rows.filter(function (r0) { return (r0.season_no | 0) === top; });
+        if (!live.length) return null;
+        live.sort(function (a, b) { return b.pts - a.pts || Number(b.nrr) - Number(a.nrr) || String(a.club).localeCompare(String(b.club)); });
+        return { season: top, rows: live };
+      })
+      .catch(function () { return null; });
+  }
+
+  /** The engine's own table, from whatever this device already holds. */
+  function fromEngine() {
+    try {
+      if (typeof leagueRows !== "function") return null;
+      var rows = leagueRows() || [];
+      if (!rows.length) return null;
+      return {
+        season: (typeof App !== "undefined" && App && App.seasonNo) || 1,
+        rows: rows.map(function (x) {
+          return { club: x.nm, p: x.p, w: x.w, l: x.l, t: x.t, pts: x.pts, rf: x.rf, ra: x.ra, nrr: x.nrr };
+        }),
+      };
+    } catch (e) { return null; }
+  }
+
+  function render(data, served, note) {
+    var page = document.getElementById("page"); if (!page) return;
+    css();
+    if (!data) {
+      page.innerHTML = shell("<p class='sub'>This league has not played a round yet. " +
+        "The table appears the moment the first round is resolved.</p>");
+      return;
+    }
+    var mine = myClub();
+    var body = data.rows.map(function (r, i) {
+      return "<tr" + (r.club === mine ? " class='me'" : "") + ">" +
+        "<td class='pos'>" + (i + 1) + "</td>" +
+        "<td class='l club'>" + E(r.club) + "</td>" +
+        "<td>" + (r.p | 0) + "</td><td>" + (r.w | 0) + "</td>" +
+        "<td class='c-l'>" + (r.l | 0) + "</td><td class='c-t'>" + (r.t | 0) + "</td>" +
+        "<td>" + nrr(r.nrr) + "</td><td class='pts'>" + (r.pts | 0) + "</td></tr>";
+    }).join("");
+    page.innerHTML = shell(
+      "<p class='sub'>Season " + (data.season | 0) + " &middot; " + data.rows.length + " clubs. " +
+      "Two points a win, one a tie; net run rate splits the level.</p>" +
+      "<div class='fo-tbl-wrap'><table><thead><tr>" +
+      "<th></th><th class='l'>Club</th><th>P</th><th>W</th>" +
+      "<th class='c-l'>L</th><th class='c-t'>T</th><th>NRR</th><th>Pts</th>" +
+      "</tr></thead><tbody>" + body + "</tbody></table></div>" +
+      "<div class='src'>" + (served
+        ? "<b>&#9679; served</b> &middot; read from the league database, not from your saved season"
+        : "<i>&#9679; local</i> &middot; " + E(note || "read from this device's copy of the season")) +
+      "</div>");
+  }
+
+  window.foRenderStandingsPage = function () {
+    if (!onPage()) return;
+    var page = document.getElementById("page"); if (!page) return;
+    css();
+    // paint what this device already knows FIRST, so the page is never blank,
+    // then let the served table replace it when it lands (typically ~200ms)
+    var local = fromEngine();
+    if (local) render(local, false, "waiting for the league database");
+    else page.innerHTML = shell("<p class='sub'>Reading the table&hellip;</p>");
+
+    var L = lg();
+    if (!L || !L.id) {
+      if (!local) render(null);
+      else render(local, false, "solo career &middot; this table is your own season");
+      return;
+    }
+    fromDatabase(L.id).then(function (served) {
+      if (!onPage()) return;                       // the manager moved on
+      if (served) { render(served, true); return; }
+      if (local) { render(local, false, "the league database has no rounds yet"); return; }
+      render(null);
+    });
+  };
+})();
 
 ;
 (function(){
