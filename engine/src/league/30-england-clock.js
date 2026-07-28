@@ -132,8 +132,18 @@
         el = document.createElement("a");
         el.id = "fo-wclock"; el.href = "#/planet";
         el.addEventListener("click", function (e) { e.preventDefault(); location.hash = "#/planet"; if (typeof window.route === "function") window.route(); });
+      }
+      // SELF-HEALING. The clock is an <a> so it can be tapped through to the
+      // planet, and the topbar has more than one decorator that rounds up
+      // anchors and files them elsewhere - one of them sweeps them into the
+      // nav strip, which phones hide outright. Rather than trusting every
+      // such pass to know about this element, check on each mount that the
+      // clock is still a DIRECT child of the header, and put it back if it
+      // is not. Costs a parent comparison; survives decorators not yet
+      // written.
+      if (el.parentNode !== tb) {
         var brand = tb.querySelector(".brand");
-        if (brand && brand.parentNode) brand.parentNode.insertBefore(el, brand.nextSibling);
+        if (brand && brand.parentNode === tb) tb.insertBefore(el, brand.nextSibling);
         else tb.appendChild(el);
       }
       var c = clockTxt();
@@ -196,7 +206,13 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(boot, 400); });
   else setTimeout(boot, 400);
   setInterval(function () { mountClock(); mountBanner(); }, 30000);
-  window.addEventListener("hashchange", function () { setTimeout(mountBanner, 80); });
+  // Changing page is exactly when the header's decorators run, so re-assert
+  // the clock right after them rather than waiting up to half a minute for
+  // the next interval. Twice, because they do not all run on the same tick.
+  window.addEventListener("hashchange", function () {
+    setTimeout(mountBanner, 80);
+    setTimeout(mountClock, 90); setTimeout(mountClock, 400);
+  });
   setInterval(tick, 60000);
 
   window.foRoundTime = roundTime;
