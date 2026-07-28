@@ -3,7 +3,7 @@
   //  A new manager makes exactly three decisions - club name, home pitch, one
   //  franchise player - and a full squad is generated around that player with
   //  the archetype's flavour. Every bias below is REAL: it changes numbers the
-  //  match engine actually reads, and the balance harness (resolver/balance.mjs)
+  //  match engine actually reads, and the balance harness (tools/engine-bench.mjs)
   //  proves all ten squads land in a 40-60% win-rate band on neutral pitches.
   //  The full draft (foOnbStart) stays in the codebase behind league config.
   // ===========================================================================
@@ -488,16 +488,16 @@
   // ===========================================================================
   //  FIRST-LOGIN ONBOARDING + DRAFT FINANCE FLOW
   //  8 branded screens that teach the finance model through choices + a live
-  //  forecast, then hand the drafted squad to the engine's founderConfirm(). All
-  //  finance constants come from finance-config.json (embedded below).
+  //  forecast, then hand the drafted squad to the engine's founderConfirm().
   // ===========================================================================
-  // Finance model calibrated to the ENGINE's real weekly economy tick:
-  //   income  = sponsor base (+ win bonus) + home gate (attendance x $9)
-  //   costs   = wage bill + stadium ($1/seat on 9,000 seats) + senior academy
-  //             ($8k at lvl 2 - the resolver's fair settle bills senior only,
-  //             resolve-harness FO_ACAD[2]; there is no youth league)
+  // The forecast's own model, stated once here:
+  //   income  = sponsor base (+ win bonus) + home gate (attendance x ticket)
+  //   costs   = wage bill + stadium ($1/seat) + senior academy upkeep
   //   prizes  = engine PRIZES by final position at season end
   // Crowds follow the engine's attendance() = supporters x (0.55 + 0.13 x mood).
+  // NOTE: these are the SOLO-career figures. A club founded on the World
+  // Service is settled by server/economy.mjs, whose constants (founding bank,
+  // ticket price, academy upkeep, seat count) are larger — see VISION.md.
   var FO_FIN = {
     seasonLength: 18, homeMatches: 9, startingBank: 1000000, ticketPrice: 9,
     stadiumCost: 9000, academyCost: 8000,

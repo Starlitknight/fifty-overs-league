@@ -11,7 +11,9 @@ world can never drift from what the phones compute.
     createdb foworld
     node migrate.mjs                 # idempotent, transactional
     node init-world.mjs              # founds ALL 19 leagues (no-op if complete)
-    node api.mjs                     # read API on :8787 (PORT to change)
+    # phones read the world through Supabase PostgREST (the world_* views and
+    # SECURITY DEFINER functions the migrations define) — there is no separate
+    # read process to run.
     # the umpire: run every hour from cron — it settles everything due,
     # every nation, at that nation's own hour (staggered globe)
     17 * * * *  cd /path/server && node tick.mjs >> tick.log 2>&1

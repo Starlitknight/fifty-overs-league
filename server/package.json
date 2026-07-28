@@ -8,8 +8,7 @@
     "migrate": "node migrate.mjs",
     "init-world": "node init-world.mjs",
     "tick": "node tick.mjs",
-    "api": "node api.mjs",
-    "test": "node --test tests/",
+    "test": "node --test tests/*.test.mjs",
     "backup": "bash backup.sh",
     "restore": "bash restore.sh"
   },

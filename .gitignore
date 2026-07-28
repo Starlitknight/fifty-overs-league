@@ -20,7 +20,6 @@ package-lock.json
 # longer carried in the working tree, so uploads never bloat the repo.
 art-packs/
 
-# === scratch / throwaway probes ===
-# One-off Playwright verification scripts + their screenshots. Disposable.
-resolver/_*.mjs
-resolver/_*.png
+# === working databases ===
+# Local pg_dump snapshots taken by server/backup.sh before a risky migration.
+server/backups/

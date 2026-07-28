@@ -415,10 +415,3 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
   }
   return touched;
 }
-
-export async function evolveWorld(pool, now = Date.now()) {
-  const cs = (await pool.query('SELECT id FROM countries ORDER BY id')).rows;
-  let n = 0;
-  for (const c of cs) n += await evolveCountry(pool, c.id, now);
-  return n;
-}

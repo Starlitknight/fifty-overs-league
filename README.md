@@ -1,166 +1,127 @@
 # Fifty Overs — a narrative cricket-management game
 
-**Found a club. Play a career. Bring your friends.**
+**Found a club. Play a career. Share a world.**
 
-Fifty Overs is a solo-first cricket management game set in a persistent,
-seeded England: ten clubs with named managers who select, scheme, trade and
-get sacked; a real league and knockout cups where defeat is permanent;
-promises, rivalries and a recurring cast (the Gaffer, Reggie Thorne, Priya
-Raman, the club secretary, the local reporter) whose stories are built from
-your actual scorecards. Every match — yours live in the match centre,
-everyone else's headlessly — runs through the same deterministic engine.
+Fifty Overs is a cricket management game set in a persistent planet of nineteen
+national leagues. You manage one club: you name it, pick its ground, train it,
+sign and sell, build a stand, run an academy, and send out an XI. Everyone
+else's matches — every club in every nation, every day — are played by the same
+deterministic engine on a schedule, whether or not anybody is watching.
 
-**Play now:** https://starlitknight.github.io/fifty-overs-league/ — click
-*Start a Solo Career*. No account needed; the career runs entirely in your
-browser. Share your world seed with a friend and they start in the same
-world; your decisions will still diverge.
+**Play:** https://starlitknight.github.io/fifty-overs-league/
 
-Docs: `docs/emergent-world.md` (the career world), `docs/first-summer.md`
-(the guided prologue and Lineup Room).
+The whole game is one self-contained page. There is nothing to install and no
+account needed to look around; signing in claims a club and puts you on the
+world's schedule.
 
-## Multiplayer (the bonus built on the same engine)
+## The two rules everything else follows
 
-An invite-only multiplayer league built on top of the deterministic single-file
-cricket sim (now maintained as source modules in `engine/src/`, assembled by
-the build), **without rewriting the
-game engine**. The server owns every outcome-determining fact; the client is a
-view + an action submitter; official match results come only from a server-side
-headless resolver running the *real* engine.
+1. **One engine.** The match simulator exists once, in `engine/src/`. The
+   browser runs it to show you your match; the World Service runs the *same
+   shipped build* headlessly (`server/enginehost.mjs` loads `index.html` in a
+   Node VM) to settle everyone else's. A served result and a played result can
+   never disagree, because there is only one implementation.
+
+2. **Nothing depends on being online.** Managers are human at times and bots at
+   others, in every timezone. So every outcome is decided by state that was
+   already banked — orders submitted before the lock, a training plan, an
+   academy level — and never by who happened to have the game open. Standings,
+   rankings, honours, money, careers and training are all recomputed from the
+   stored record, from genesis, rather than re-simulated.
+
+## How the world runs
 
 ```
-┌────────────┐   validated actions    ┌──────────────────────┐
-│  client    │ ─────────────────────▶ │ Supabase (Postgres)  │
-│ league.html│                        │  identity seam        │
-│  mp.js     │ ◀───────────────────── │  RLS + app.* funcs    │
-└────────────┘   server-owned state   │  standings view       │
-      ▲                               └───────────┬──────────┘
-      │ deterministic replay                      │ due matches
-      │ (local re-resolve)                        ▼
-      │                              ┌──────────────────────────┐
-      └──────────────────────────── │ resolver container        │
-        pinned engine (BUILD_HASH)  │ Playwright + real engine  │
-                                    │ __resolveMatch (headless) │
-                                    └──────────────────────────┘
+   your phone                     Supabase (Postgres)              GitHub Actions
+┌──────────────┐   world_* RPC  ┌─────────────────────┐   hourly  ┌──────────────┐
+│  index.html  │ ─────────────▶ │  world schema       │ ◀──────── │ world-tick   │
+│  (the game)  │ ◀───────────── │  clubs · matches    │           │ server/*.mjs │
+└──────────────┘   snapshots    │  snapshots · money  │           │ + the engine │
+                                └─────────────────────┘           └──────────────┘
 ```
 
-## The trust boundary
-- **Server owns**: squad state, match results, lock timing, standings, the draft.
-- **Client submits** only validated actions (`sign_player`, `submit_orders`,
-  `issue_challenge`, …). It never writes a result, its own ratings, or lock state.
-- **Determinism is the anti-cheat**: a result is a pure function of
-  `(homeSquad, awaySquad, homeOrders, awayOrders, {pitch, weather, seed})`. The
-  engine has **no `Math.random`/`Date`** in the match path (verified). The client
-  verifies any stored result by re-resolving from the same server inputs.
-- **Engine-version pinning**: `BUILD_HASH = sha256(game file)` is stored on the
-  league; the resolver aborts if its build ≠ the pin, and the client blocks
-  actions if its build ≠ the pin.
+- **`server/`** is the umpire. `tick.mjs` settles everything that is due, for
+  every nation, at that nation's own local hour — league rounds, cups, youth,
+  training, wages and gate money, invitationals, international windows, the
+  transfer market. It is idempotent: a late, doubled or killed run cannot
+  corrupt the world, so cron throttling is harmless.
+- **`server/migrations/*.sql`** define the `world_*` views and `SECURITY
+  DEFINER` functions that the page reads and writes through. Migrations apply
+  themselves on the next tick. **A file that has already been applied must never
+  be edited** — its checksum is recorded, and a change is a hard error.
+  Corrections ship as a new file.
+- **`.github/workflows/world-tick.yml`** runs the tick every hour.
+
+Ops detail lives in `server/RUNBOOK.md`; the design laws in `BLUEPRINT.md`; the
+roadmap and what has been built in `VISION.md`.
 
 ## Repository structure
 
-The tree is grouped by role. A few paths are **pinned** — GitHub Pages serves
-the committed root files directly, and CI/automation hardcode certain paths —
-so they cannot move without breaking the live site or the season resolver.
-Those are flagged below.
+GitHub Pages serves the committed root files directly, so a few paths are
+**pinned** — they cannot move without taking the live site down.
 
 ```
 fifty-overs-league/
-├── index.html            🔒 DEPLOYED — the live page (built; Pages entry point)
+├── index.html            🔒 DEPLOYED — the live page (generated; Pages entry point)
 ├── version.json          🔒 DEPLOYED — build stamp; the game polls it to offer updates
 ├── build.sh              🔒 assembler: engine/src → index.html + client/game.html
 ├── client/               🔒 DEPLOYED
-│   ├── game.html            second stable entry (identical to index.html)
-│   └── art/                 all shipped webp — players, grounds, cities, flags, crests
+│   ├── game.html            second stable entry (byte-identical to index.html)
+│   ├── art/                 every shipped webp — players, grounds, cities, flags, crests
+│   └── fonts/               the woff2 faces the page inlines
 │
 ├── engine/               ★ SOURCE OF TRUTH — the whole game lives here
 │   ├── shell.html           page skeleton with one marker per engine block
+│   ├── calibration-golden.json  the frozen behaviour the engine must reproduce
 │   └── src/
-│       ├── 00..12-*.js      core simulation + base UI (manifest.txt = order)
-│       ├── league/          domain layer, one closure: auth, club-home, sync,
-│       │                    onboarding, training, market, orders, matchday-centre,
-│       │                    squad-matchlab, office, chronicle, scorecard-analysis
+│       ├── 00..12-*.js      core simulation + base UI (manifest.txt sets the order)
+│       ├── league/          domain layer, one closure: auth, club home, sync,
+│       │                    onboarding, orders, matchday, squad, academy,
+│       │                    finance, market, nations, invitationals, ratings
 │       ├── presentation/    oval stage, smooth renderer, boot (one IIFE)
-│       └── skin/            login / modal / brand CSS
+│       ├── skin/            login / modal / brand CSS
+│       └── world/           the baked living-world snapshot generator
+│
+├── server/               the World Service — the umpire and its schema
+│   ├── tick.mjs             settles everything due, every nation
+│   ├── enginehost.mjs       runs the shipped index.html headlessly in a Node VM
+│   ├── migrations/*.sql     the world schema + the world_* API
+│   └── tests/               node --test tests/
 │
 ├── test/                 🔒 golden-master replays — the built page must reproduce
 │                            recorded ball-by-ball logs bit-for-bit (CI gate)
-├── tools/                re-bless masters (record-masters.mjs) + balance gate (engine-bench.mjs)
+├── tools/                re-bless masters · balance gate · calibration · snapshot
+├── supabase/             the retired first backend; only app.player_saves (cloud
+│                            saves) is still live — see supabase/README.md
+├── docs/                 engine tuning notes + historical design prompts
 │
-├── resolver/             🔒 backend: headless real-engine match resolver
-│                            (round.mjs is the scheduled season worker)
-├── supabase/             🔒 backend: Postgres schema, RLS, Edge Functions, tests
-│
-├── docs/                 engine-tuning notes, build prompt
-├── finance-config.json   reference source-of-truth for the finance constants
-│                            (values are embedded into the engine at authoring time)
-│
-├── art-packs/            🚫 git-ignored — RAW art uploads + "master" folders.
-│                            NOT shipped; the game only loads the derived
-│                            client/art/*.webp. Recoverable from git history.
-└── .github/workflows/    ci-pages.yml (build+test+deploy) · round-resolver.yml (season)
+├── art-packs/            🚫 git-ignored — RAW art uploads and "master" folders.
+│                            NOT shipped; the game loads only the derived
+│                            client/art/*.webp.
+└── .github/workflows/    ci-pages.yml (build + test + deploy) ·
+                          world-tick.yml (the hourly umpire) ·
+                          calibration.yml (engine freeze gate) ·
+                          world-admin.yml / world-report.yml (owner tools)
 ```
 
-🔒 pinned (Pages/CI/automation depend on the path)  ·  ★ edit here  ·  🚫 not tracked
-
-### Multiplayer backend map (same engine, server-owned)
-| path | what |
-|---|---|
-| `resolver/resolve-harness.js` | additive `window.__resolveMatch` entry point (no engine-logic edits) |
-| `resolver/resolve.mjs` | headless engine caller (hash-pin check, resolve, `verifyResult`) |
-| `resolver/worker.mjs` / `server.mjs` / `round.mjs` / `Dockerfile` | the resolver container + scheduled season worker |
-| `supabase/migrations/*.sql` | schema, identity, actions, friendly, official, founder tools |
-| `supabase/functions/` | Edge Functions + shared draft/schedule/identity |
-| `client/mp.js` / `league.html` | dashboard + client-side hash-pin guard |
+🔒 pinned (Pages/CI depend on the path) · ★ edit here · 🚫 not tracked
 
 ## Working on it
 
 ```bash
-./build.sh                      # engine/src → index.html + client/game.html
-node --test test/*.test.mjs     # golden-master replays (gameplay must stay bit-identical)
+./build.sh                          # engine/src → index.html + client/game.html
+node --test test/*.test.mjs         # 41 — engine, replays, rain, orders, world
+cd server && node --test tests/     # the World Service against a local Postgres
+node tools/calibration-check.mjs    # the engine-freeze gate CI runs
 ```
 
-Never edit `index.html` / `client/game.html` by hand — they are generated. Change
-`engine/src/**`, then rebuild. Art: drop a source pack in `art-packs/` (ignored),
-convert to `client/art/*.webp`, and register it in the engine source.
+Never edit `index.html` or `client/game.html` by hand — they are generated from
+`engine/src/**` by `build.sh`, which must be run from the repository root. Art:
+drop a source pack in `art-packs/` (ignored), convert to `client/art/*.webp`,
+and register it in the engine source.
 
-## Build phases (all checkpoints reached)
-| phase | what | status |
-|---|---|---|
-| 0 | feasibility + determinism proof | ✅ engine extractable as a pure fn; byte-identical replays |
-| 1 | schema + identity boundary + invite/founder + RLS | ✅ 24 tests |
-| 2 | constrained-action API + snake-deal draft | ✅ 23 tests |
-| 3 | friendly loop end-to-end (alpha gate) | ✅ 15 e2e |
-| 4 | official double round-robin + resolver container + consequences + locks | ✅ 31 e2e |
-| 5 | founder tools + standings UI + client hash-pin | ✅ 8 + 14 tests |
-
-## Run everything
-```bash
-# DB + action logic (PGlite = real Postgres, no server needed)
-cd supabase && npm install && npm test            # phases 1,2,5
-npm run test:client                                # client render + hash guard
-
-# end-to-end with the real engine (headless Chromium)
-cd resolver && npm link playwright
-cd ../supabase
-npm run test:e2e                                   # phase 3 friendly
-npm run test:official                              # phase 4 official
-NODE_PATH=/opt/node22/lib/node_modules node ../resolver/proof/prove.mjs   # phase 0 determinism
-```
-
-### Follow-ups (done)
-- **Season rollover**: `resolver/resolve.mjs → ageSquad` runs the engine's exact
-  `seasonEnd` aging (age++, 31+ decline via `jsDerive`, retirement at 35+/32+),
-  and `app.founder_advance_season` persists the aged rosters and bumps the season.
-- **Timezone-correct fixtures**: `resolve_at` is computed server-side in
-  `write_fixtures` from the league's `match_time` in its `tz` (verified: 17:00
-  `America/New_York` → 21:00 UTC).
-
-## What is NOT yet live-tested
-The Edge Function TS and the resolver container runtime need a running Supabase +
-deployed container to exercise end-to-end; their enforcement cores (the `app.*`
-SQL and the resolve/store path) are fully tested here. See `supabase/README.md`
-and `resolver/README.md` for details.
-
-## Test totals
-138 checks green: 24 identity/RLS · 23 actions/draft · 15 friendly e2e · 31
-official e2e · 13 season/tz e2e · 8 founder/views · 14 client · 6 determinism · 4
-real-pool deal.
+Two safety nets guard gameplay. `test/replay.test.mjs` holds the built page to
+recorded ball-by-ball logs bit-for-bit, and `tools/calibration-check.mjs` fails
+if the engine's aggregate behaviour drifts from `engine/calibration-golden.json`.
+If you meant to change the engine, re-bless them deliberately; if you did not,
+they have caught something.
