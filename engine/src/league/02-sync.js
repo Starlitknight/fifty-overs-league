@@ -6,7 +6,12 @@
   // =================================================================
   function enterGame(league) {
     LG = league;
-    foLoading("Loading " + (league.name || "your league") + "…");
+    // NAME THE STEP, NOT JUST THE LEAGUE. Entry is four requests, one of them
+    // a couple of megabytes, and a manager watching a card that only ever says
+    // "Loading" cannot tell a slow season from a dead connection - and neither
+    // can anyone they show it to. Each stage says what it is waiting for, so a
+    // stall points at the request that caused it.
+    foLoading("Loading " + (league.name || "your league") + " · finding your club…");
     return Promise.all([
       sel("teams", "league_id=eq." + LG.id + "&select=id,name,country,draft_seed,manager_id"),
       sel("members", "league_id=eq." + LG.id + "&select=id,role,display_name"),
@@ -21,6 +26,7 @@
       };
       SYNC.isFounder = !!(SYNC.me && SYNC.me.role === "founder");
       if (LG.build_hash && LG.build_hash !== BUILD_HASH) console.warn("Fifty Overs: your game build differs from this league's pinned engine.");
+      foLoading("Loading " + (league.name || "your league") + " · downloading the season…");
       return syncTick(true);
     }).catch(function (e) { foFatal("Could not load the league (" + ((e && e.message) || e) + "). Check your connection and reload."); });
   }
@@ -79,7 +85,13 @@
           if (window.__foRejoin === "busy") return;
           return preStart();
         }
-        if (st.version > SYNC.lastVersion) { SYNC.lastVersion = st.version; applySnapshot(st.snapshot, first); }
+        if (st.version > SYNC.lastVersion) {
+          SYNC.lastVersion = st.version;
+          // the download is done; what follows is this device's own work, and
+          // on a phone with little memory to spare it is the slow part
+          if (first) foLoading("Loading " + ((LG && LG.name) || "your league") + " · opening the season…");
+          applySnapshot(st.snapshot, first);
+        }
         else openWrap(false);
         schedulePoll();
       } else {
