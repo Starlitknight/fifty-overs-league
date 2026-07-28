@@ -12,6 +12,10 @@ on:
         description: "One league id, or blank for every league"
         required: false
         default: ''
+      mode:
+        description: "compact (rewrite the snapshot) or diagnose (read-only)"
+        required: false
+        default: 'compact'
 
 concurrency:
   group: round-resolver          # never run while the umpire is mid-round
@@ -44,8 +48,16 @@ jobs:
         working-directory: resolver
         run: npx playwright install-deps chromium
       - name: Compact the stored snapshots
+        if: ${{ inputs.mode != 'diagnose' }}
         working-directory: resolver
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node compact.mjs ${{ inputs.league_id }}
+      - name: Diagnose a stuck league (read-only)
+        if: ${{ inputs.mode == 'diagnose' }}
+        working-directory: resolver
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node diagnose.mjs ${{ inputs.league_id }}
