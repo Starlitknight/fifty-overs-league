@@ -55,21 +55,38 @@
   // any of the 19 leagues. Same egress manners as the England feed: probe the
   // tiny updated_at, download the body only when the umpire wrote something
   // new, and keep the last copy in localStorage so the page paints instantly.
-  var LG_BODY = {}, LG_TS = {}, LG_BUSY = {}, LG_AT = {};
+  var LG_BODY = {}, LG_TS = {}, LG_BUSY = {}, LG_AT = {}, LG_WAIT = {};
   var LG_TTL = 45000;                 // a nation's standings, at most this often
+  // EVERY CALLER GETS ITS ANSWER. Two screens ask for the same nation - the
+  // club home wants your form and your position, the league page wants the
+  // table - and the second one used to arrive while the first one's probe was
+  // still in the air, hit the busy flag or the courtesy window, and have its
+  // repaint dropped on the floor. It then painted from whatever was in
+  // localStorage at that instant and was never told the body had landed. That
+  // is how the home page could show a defeat the table had not heard about.
+  // Waiters are queued instead, and flushed together when the fetch settles.
+  function lgFlush(rid) {
+    var ws = LG_WAIT[rid] || []; LG_WAIT[rid] = [];
+    for (var i = 0; i < ws.length; i++) { try { ws[i](LG_BODY[rid] || null); } catch (e) {} }
+  }
   function lgFetch(rid, cb) {
-    if (!rid || LG_BUSY[rid]) return;
+    if (!rid) return;
     // THE WHOLE PLANET AT ONCE. The world page now asks for all nineteen
     // nations' standings, so without a courtesy window a repaint would put
-    // nineteen probes on the wire every time it painted.
-    if (LG_AT[rid] && Date.now() - LG_AT[rid] < LG_TTL) return;
+    // nineteen probes on the wire every time it painted. Inside that window
+    // we answer from the copy already in hand rather than going quiet.
+    if (!LG_BUSY[rid] && LG_AT[rid] && Date.now() - LG_AT[rid] < LG_TTL) {
+      if (cb && LG_BODY[rid]) { try { cb(LG_BODY[rid]); } catch (e) {} }
+      return;
+    }
+    if (cb) (LG_WAIT[rid] = LG_WAIT[rid] || []).push(cb);
+    if (LG_BUSY[rid]) return;                    // in flight: the flush will reach us
     LG_BUSY[rid] = 1; LG_AT[rid] = Date.now();
-    var done = function () { LG_BUSY[rid] = 0; };
+    var done = function () { LG_BUSY[rid] = 0; lgFlush(rid); };
     var take = function (body) {
       if (body && body.results) {
         LG_BODY[rid] = body;
         try { localStorage.setItem("fo_world_lg_" + rid, JSON.stringify(body)); } catch (e) {}
-        try { if (cb) cb(body); } catch (e) {}
       }
       done();
     };
@@ -98,7 +115,7 @@
   // bots share a league, that is the most useful fact on the page: a manager
   // wants to know which of the nine opponents has somebody behind it. It costs
   // one more column on a request the game already makes.
-  var NM_BODY = {}, NM_MGR = {}, NM_AT = {}, NM_BUSY = {};
+  var NM_BODY = {}, NM_MGR = {}, NM_AT = {}, NM_BUSY = {}, NM_WAIT = {};
   window.__foWorldNames = {
     get: function (rid) {
       if (NM_BODY[rid]) return NM_BODY[rid];
@@ -111,12 +128,24 @@
       try { var c4 = localStorage.getItem("fo_world_mgr_" + rid); if (c4) { NM_MGR[rid] = JSON.parse(c4); return NM_MGR[rid]; } } catch (e) {}
       return null;
     },
+    // same waiting-room as the standings above: a second screen asking inside
+    // the courtesy window is answered from the names already held, and one
+    // asking mid-flight is queued rather than ignored
     want: function (rid, cb) {
       try {
-        if (!rid || NM_BUSY[rid]) return;
-        if (NM_AT[rid] && Date.now() - NM_AT[rid] < 60000) return;
+        if (!rid) return;
+        if (!NM_BUSY[rid] && NM_AT[rid] && Date.now() - NM_AT[rid] < 60000) {
+          if (cb && NM_BODY[rid]) { try { cb(NM_BODY[rid]); } catch (e) {} }
+          return;
+        }
+        if (cb) (NM_WAIT[rid] = NM_WAIT[rid] || []).push(cb);
+        if (NM_BUSY[rid]) return;
         NM_BUSY[rid] = 1;
-        var done = function () { NM_BUSY[rid] = 0; NM_AT[rid] = Date.now(); };
+        var done = function () {
+          NM_BUSY[rid] = 0; NM_AT[rid] = Date.now();
+          var ws = NM_WAIT[rid] || []; NM_WAIT[rid] = [];
+          for (var i = 0; i < ws.length; i++) { try { ws[i](NM_BODY[rid] || null); } catch (e) {} }
+        };
         fetch(SB_URL + "/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(rid) + "&select=slot,name,manager,ground", { headers: { apikey: SB_ANON } })
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (rows) {
@@ -134,7 +163,7 @@
                 localStorage.setItem("fo_world_nm_" + rid, JSON.stringify(m));
                 localStorage.setItem("fo_world_mgr_" + rid, JSON.stringify(g));
               } catch (e) {}
-              if (changed) { try { if (cb) cb(m); } catch (e) {} }
+              if (!changed) { /* nothing moved; done() still answers the waiters */ }
             }
             done();
           }, done).catch(done);

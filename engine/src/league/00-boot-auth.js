@@ -390,9 +390,16 @@
         var bA = tb.querySelector(".brand");
         tb.insertBefore(wrap, bA ? bA.nextSibling : tb.firstChild);
       }
+      // Everything anchor-shaped goes into the scrolling pill row EXCEPT the
+      // two things that are header furniture rather than navigation. Both are
+      // <a> only so they can be tapped: the Live pill, and the world clock,
+      // which carries the day, the season, the live count and the UTC time.
+      // The phone stylesheet hides .fo-nav-scroll outright, so anything swept
+      // in here is invisible on a phone - which is exactly what happened to
+      // the clock on every page but the club home.
+      var KEEP_IN_HEADER = { "fo-mlive": 1, "fo-wclock": 1 };
       [].slice.call(tb.children).forEach(function (el) {
-        // the mobile Live pill stays in the header row, out of the hidden nav wrap
-        if (el.tagName === "A" && el.id !== "fo-mlive" && !/\bbrand\b/.test(el.className || "")) wrap.appendChild(el);
+        if (el.tagName === "A" && !KEEP_IN_HEADER[el.id] && !/\bbrand\b/.test(el.className || "")) wrap.appendChild(el);
       });
       // phones: the pill row is hidden and a hamburger opens a drawer that
       // proxies every nav link (originals keep their handlers and state)
