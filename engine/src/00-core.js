@@ -1354,6 +1354,44 @@ function playerMini(p){return `<span class="player-hoverable" title="${esc(playe
 function playerLink(p){return `<a href="#/player?n=${encodeURIComponent(p.name)}" title="${esc(playerTip(p))}">${esc(p.name)}</a>`}
 
 // ---------- router ----------
+// A BLANK PAGE IS NOT AN OUTCOME. Whatever goes wrong - a renderer that
+// throws, a renderer that runs and paints nothing - the manager must be told
+// and must be given somewhere to go. Silence here reads as "the game is
+// broken" and leaves no way to find out otherwise.
+function foPageFailed(where,err,why){
+  try{
+    const el=document.getElementById('page'); if(!el)return;
+    if(el.querySelector('.fo-page-failed'))return;              // already saying it
+    const detail=err?String((err&&err.message)||err).slice(0,300):'';
+    el.innerHTML='<div class="fo-page-failed" style="max-width:560px;margin:52px auto;padding:22px 24px;border:1px solid rgba(0,0,0,.14);border-radius:14px;background:rgba(255,255,255,.92)">'+
+      '<h3 style="margin:0 0 10px">This page did not draw</h3>'+
+      '<p style="margin:0 0 14px;line-height:1.55">'+esc(why||'Something went wrong drawing this page.')+
+      ' Nothing is lost — your club and everything it has done are safe on the server. Try another page, or reload.</p>'+
+      (detail?'<pre style="margin:0 0 14px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,.05);font-size:11px;line-height:1.5;white-space:pre-wrap;overflow-x:auto">'+esc(detail)+'</pre>':'')+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button onclick="location.hash=\'#/squad\'">Squad</button>'+
+      '<button onclick="location.hash=\'#/fixtures\'">Fixtures</button>'+
+      '<button class="primary" onclick="location.reload()">Reload</button></div></div>';
+  }catch(e){}
+}
+// Some renderers paint on their own interval rather than during route(), so a
+// page that is empty for an instant is normal. One that is STILL empty seconds
+// later, with the route unchanged, is not.
+let foBlankT=null;
+function foBlankWatch(where){
+  try{
+    clearTimeout(foBlankT);
+    foBlankT=setTimeout(function(){
+      try{
+        const el=document.getElementById('page');
+        if(!el||App.page!==where)return;                        // moved on; not our business
+        if(el.firstElementChild)return;                         // something drew
+        console.error('route drew nothing on '+where);
+        foPageFailed(where,null,'The '+where+' page finished loading but drew nothing.');
+      }catch(e){}
+    },5000);
+  }catch(e){}
+}
 function route(){
   try{
   // an empty hash becomes a real #/circuit hash (not just a default) so the
@@ -1386,12 +1424,22 @@ function route(){
   // never flashes the retired club dashboard while their interval spins up
   const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',records:'foRenderRecordsPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',worldclub:'foRenderWorldClubPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',guide:'foRenderManualPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',comps:'foRenderCompsPage',market:'foRenderMarketPage'}[App.page];
   if(P[App.page])P[App.page](q);
-  else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){}}
+  // A RENDERER THAT THROWS USED TO VANISH. This catch was empty, so a page
+  // whose painter hit an error left the topbar, the clock and the nav in place
+  // over an entirely blank body - no message, no console line anyone would
+  // think to look for, no way out. Report it, and put something on the screen
+  // that says what happened and offers somewhere else to go.
+  else if(OV&&typeof window[OV]==='function'){try{window[OV]()}catch(eOv){
+    try{console.error('route renderer failed on '+App.page,eOv)}catch(e3){}
+    foPageFailed(App.page,eOv,'The '+App.page+' page hit an error while drawing.');
+  }}
   else if(OV){/* overlay not parsed yet: leave the page blank, its interval paints */}
   else{location.hash='#/home';return}
+  foBlankWatch(App.page);
   }catch(eRoute){
     // a broken page renderer must not freeze navigation for the whole session
     try{console.error('route failed on '+(App&&App.page),eRoute)}catch(e2){}
+    try{foPageFailed(App&&App.page,eRoute,'This page could not be opened.')}catch(e4){}
   }finally{
     // first-class post-route hook: the league layer decorates the page here
     if(typeof window!=='undefined'&&typeof window.foAfterRoute==='function'){try{window.foAfterRoute()}catch(eAR){}}
