@@ -22,12 +22,116 @@
   }
 
 
+  // ---------------------------------------------------------------------------
+  // ONE WORLD. This card used to read App.season and App.results - the
+  // retired local sim - so a manager whose served season had played ONE round
+  // was shown four, against a mix of counties and another manager's club, at
+  // grounds called Neutral Park. Every one of those matches was a ghost.
+  // Where a club is held in the served world the card is built from the
+  // umpire's own record instead, and the local sim is only the fallback for a
+  // device that has never claimed anything.
+  // ---------------------------------------------------------------------------
+  function worldClaim() {
+    try { return window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); }
+    catch (e) { return null; }
+  }
+  function repaint() {
+    try {
+      if ((location.hash || "").split("?")[0] !== "#/fixtures") return;
+      foRenderFixturesPage();
+    } catch (e) {}
+  }
+  function servedCard(page, claim) {
+    var snap = null, names = null, mgr = null;
+    try {
+      if (window.__foWorldLg) { window.__foWorldLg.want(claim.country, repaint); snap = window.__foWorldLg.get(claim.country); }
+      if (window.__foWorldNames) { window.__foWorldNames.want(claim.country, repaint); names = window.__foWorldNames.get(claim.country); mgr = window.__foWorldNames.mgr(claim.country); }
+    } catch (e) {}
+    if (!snap || !snap.table || !snap.table.length) return false;
+    var bySlot = {}; snap.table.forEach(function (r) { bySlot[r.slot] = (names && names[r.slot]) || r.name; });
+    var myRow = snap.table.filter(function (r) { return r.slot === claim.slot; })[0];
+    var my = (myRow && ((names && names[claim.slot]) || myRow.name)) || claim.club;
+    var groundOf = function (slot) { return (mgr && mgr["g" + slot]) || ((bySlot[slot] || "the ground") + "'s ground"); };
+
+    var played = (snap.results || []).filter(function (r) { return r.home === my || r.away === my; })
+      .sort(function (a, b) { return (a.round || 0) - (b.round || 0); });
+    var w = 0, l = 0, t = 0;
+    played.forEach(function (r) {
+      if (r.winner === null) t++; else if (r.winner === my) w++; else l++;
+    });
+    var resRows = played.map(function (r) {
+      var homeGame = r.home === my, opp = homeGame ? r.away : r.home;
+      var won = r.winner === my, tie = r.winner === null;
+      var sc = homeGame ? r.hs : r.as, oc = homeGame ? r.as : r.hs;
+      var line = sc && oc ? (sc.r + "/" + sc.w + " v " + oc.r + "/" + oc.w) : (r.text || "");
+      return "<a class='fo-fl-row' href='#/league?t=results&r=" + r.round + "'>" +
+        "<i>R" + r.round + "</i>" +
+        "<u class='" + (won ? "w" : tie ? "t" : "l") + "'>" + (won ? "W" : tie ? "T" : "L") + "</u>" +
+        "<span class='fo-fl-who'><b>" + (homeGame ? "v " : "at ") + E(opp) + "</b>" +
+        "<span>" + E(line) + "</span></span>" +
+        "<em>" + E((r.text || "").replace(/\s*\(.*\)$/, "")) + "</em><s>&#8250;</s></a>";
+    }).join("");
+
+    // what is still to come, off the umpire's own schedule
+    var upRows = "", rounds = snap.rounds || 18;
+    try {
+      var wt = window.__foWT, pl = window.__foPlanet;
+      if (wt && wt.schedMirror && pl) {
+        var sched = wt.schedMirror(claim.country, snap.seasonNo || 1);
+        var hour = pl.natHour(claim.country);
+        var hh = function (h) { return (h < 10 ? "0" : "") + h + ":00 UTC"; };
+        var ups = [];
+        for (var r3 = (snap.roundsPlayed || 0); r3 < sched.length; r3++) {
+          (sched[r3] || []).forEach(function (f) {
+            if (f[0] !== claim.slot && f[1] !== claim.slot) return;
+            var isHome = f[0] === claim.slot;
+            ups.push({ r: r3 + 1, isHome: isHome, opp: bySlot[isHome ? f[1] : f[0]] || "a club",
+              ground: groundOf(f[0]) });
+          });
+        }
+        // NOTE: the coming rows point at the served fixture card, not at
+        // #/matchday - that room still reads the retired local season and
+        // would name a different opponent than the one printed here. It is
+        // the next room to be put on the world's own record.
+        upRows = ups.map(function (u, i) {
+          return "<a class='fo-fl-row up" + (i === 0 ? " next" : "") + "' href='#/league?t=fixtures'>" +
+            "<i>R" + u.r + "</i>" +
+            "<u class='n'>" + (u.isHome ? "H" : "A") + "</u>" +
+            "<span class='fo-fl-who'><b>" + (u.isHome ? "v " : "at ") + E(u.opp) +
+            " <em class='fo-fl-when'>" + hh(hour) + "</em></b>" +
+            "<span>" + E(u.ground) + "</span></span>" +
+            "<em class='fo-fl-act'>The card &rsaquo;</em></a>";
+        }).join("");
+        if (!ups.length) upRows = "<div class='fo-fl-none'>The season is played out. Awards night awaits.</div>";
+      }
+    } catch (eU) {}
+    if (!upRows) upRows = "<div class='fo-fl-none'>The rest of the card arrives with the world.</div>";
+
+    page.innerHTML =
+      "<div class='fo-fl'>" +
+      "<div class='fo-fl-mast'>" +
+      "<div class='fo-fl-kick'>" + E(my) + " &middot; season " + (snap.seasonNo || 1) + "</div>" +
+      "<h1>The Fixture List</h1>" +
+      "<p>Every match of the summer on one card - the played ones open the round they were in, the coming ones show the ground and the hour.</p>" +
+      "<div class='fo-fl-rec'><b>" + w + "</b> won" + (t ? " &middot; <b>" + t + "</b> tied" : "") +
+        " &middot; <b>" + l + "</b> lost &middot; <b>" + played.length + "</b> of " + rounds + " played</div>" +
+      "</div>" +
+      (resRows ? "<div class='fo-fl-k'>Results</div><div class='fo-fl-list'>" + resRows + "</div>" : "") +
+      "<div class='fo-fl-k'>Still to play</div><div class='fo-fl-list'>" + upRows + "</div>" +
+      "<div class='fo-fl-foot'><a href='#/home'>&#8592; The club</a><a href='#/league'>The table &rsaquo;</a><a href='#/planet'>World cricket &rsaquo;</a></div>" +
+      "</div>";
+    return true;
+  }
+
   function foRenderFixturesPage() {
     try {
       if (!ready()) return;
       var page = document.getElementById("page"); if (!page) return;
       var me = null; try { me = userTeam(); } catch (e) {}
       if (!me) return;
+      document.body.classList.remove("fo-scb-on", "fo-drs-on");
+      var cl = worldClaim();
+      if (cl && cl.country && cl.slot != null && servedCard(page, cl)) return;
       document.body.classList.remove("fo-scb-on", "fo-drs-on");
       try { if (typeof seasonInit === "function") seasonInit(); } catch (eS) {}
       var S = App.season;
