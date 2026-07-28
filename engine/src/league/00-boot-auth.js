@@ -133,7 +133,15 @@
   function sel(table, q) {
     var rec = netRec(table);
     return foFetch(URL + "/rest/v1/" + table + "?" + (q || ""), { headers: headers() }).then(function (r) {
-      return r.text().then(function (t) { netDone(rec, r.ok); if (!r.ok) throw new Error(t); return JSON.parse(t); });
+      if (!r.ok) return r.text().then(function (t) { netDone(rec, false); throw new Error(t); });
+      // PARSE FROM THE BYTES, NOT VIA A STRING. r.text() first builds a
+      // JavaScript string of the entire body, and a string is UTF-16 - so a
+      // two-megabyte season becomes four megabytes of string, held alongside
+      // the object graph it is about to be parsed into, on top of whatever the
+      // game already has in memory. r.json() reads straight from the response
+      // and never materialises the middle copy. On a phone that is the
+      // difference between opening the season and the tab being killed.
+      return r.json().then(function (v) { netDone(rec, true); return v; });
     }, function (e) { netDone(rec, false); throw e; });
   }
   // small localStorage wrapper (private mode / disabled storage safe)

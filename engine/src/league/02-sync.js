@@ -38,12 +38,32 @@
     }).catch(function () { return null; });
   }
   // one row per league, overwritten each round · the store cannot grow
+  // NEVER WHILE THE SEASON IS BEING OPENED. Storing it copies the whole thing
+  // again, and the moment it arrives is the moment the phone is already holding
+  // the response, the parsed season and the game being rebuilt from it, all at
+  // once. That is where a tab gets killed. Waiting for the browser to go idle
+  // costs nothing - the copy is just as useful a second later - and takes the
+  // write off the peak entirely.
+  // The deadline is short on purpose. restoreFrom adopts the snapshot's objects
+  // rather than copying them, so from the moment the season is applied the game
+  // is playing on the very thing we are about to store. A frame or two after
+  // the work finishes nothing has moved; a minute later it might have. The
+  // stored copy is therefore "the season as this device had it at version N",
+  // which is what the version stamp claims and what restoring it reproduces -
+  // the engine's repair passes run again on load and are idempotent.
+  function foIdle(fn) {
+    try { if (window.requestIdleCallback) { window.requestIdleCallback(fn, { timeout: 2000 }); return; } } catch (e) {}
+    setTimeout(fn, 1200);
+  }
   function foSnapPut(leagueId, st) {
     try {
       if (!st || typeof st.version !== "number" || !st.snapshot) return;
-      idbOpen().then(function (db) {
-        try { db.transaction(IDB_STORE, "readwrite").objectStore(IDB_STORE).put({ version: st.version, round: st.round, snapshot: st.snapshot }, "snap:" + leagueId); } catch (e) {}
-      }).catch(function () {});
+      var keep = { version: st.version, round: st.round, snapshot: st.snapshot };
+      foIdle(function () {
+        idbOpen().then(function (db) {
+          try { db.transaction(IDB_STORE, "readwrite").objectStore(IDB_STORE).put(keep, "snap:" + leagueId); } catch (e) {}
+        }).catch(function () {});
+      });
     } catch (e) {}
   }
 
