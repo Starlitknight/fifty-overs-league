@@ -19,7 +19,7 @@ import { initWorld, countryConfigs } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { runAllDue, runCupWindow, rollSeasons, runTick, computeLeague, rebuildHonours, computeRankings, runFriendlies, settleMoney } from '../tick.mjs';
 import { evolveCountry, applyLiving, livingPatch } from '../living.mjs';
-import { CAP, makeColt, ensureYouth, ageYouth,
+import { CAP, SQUAD_CAP, RETIRE_AT, makeColt, ensureYouth, ageYouth,
   coltsRoundOf, coltsSquad, playColtsRound, coltRecords } from '../youth.mjs';
 import { academyRate } from '../living.mjs';
 import { fantasyPoints, unitRatings, matchRatings } from '../ratings.mjs';
@@ -1231,4 +1231,68 @@ test('022: a card marks itself, and those marks are what move form', async () =>
   const after = (await pool.query(
     `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad.map(p => p.formIx);
   assert.deepEqual(after, before, 'form is still a pure function of the record');
+});
+
+// 023: THE ROLLOVER HAS A CEILING. The academy shipped with a hole in it: the
+// umpire promoted every colt who turned twenty-one straight into the senior
+// squad with no size check, while the manager doing it by hand was refused
+// past twenty - and nothing in the world ever aged or retired a professional.
+// Squads only ever grew. A year now does what a year does.
+test('023: a year ages everybody, retires the oldest, and a staff is twenty', async () => {
+  const seat = async (slot, squad, youth) => pool.query(
+    `UPDATE clubs SET squad=$2::jsonb, youth=$3::jsonb WHERE country_id='eng' AND slot=$1`,
+    [slot, JSON.stringify(squad), JSON.stringify(youth)]);
+  const man = (name, age, rating) => ({ name, age, rating, skills: { power: 40 }, wage: 900 });
+  const boy = (name, age, rating) => ({ name, age, rating, colt: true, promise: 70, skills: { power: 30 }, wage: 300 });
+
+  // A PROFESSIONAL AGES, AND AT THIRTY-EIGHT HE IS DONE
+  await seat(5, [man('Veteran', 37, 3000), man('Kid', 22, 3000), man('Middle', 30, 3000)], []);
+  const r1 = await ageYouth(pool, 'eng', 5101);
+  assert.equal(r1.skipped, false);
+  assert.ok(r1.retired >= 1, 'somebody hung them up');
+  const s5 = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=5`)).rows[0].squad;
+  assert.ok(!s5.some(p => p.name === 'Veteran'), 'the thirty-seven-year-old turned thirty-eight and retired');
+  assert.equal(s5.find(p => p.name === 'Kid').age, 23, 'and everybody else is a year older');
+  assert.equal(s5.find(p => p.name === 'Middle').age, 31);
+
+  // A STAFF IS TWENTY. A boy better than the weakest man makes room; a boy who
+  // is not is let go rather than swelling the books.
+  const full = [];
+  for (let i = 0; i < 20; i++) full.push(man('Pro' + i, 26, 2000 + i * 10));
+  await seat(6, full, [boy('Better', 20, 5000), boy('Worse', 20, 100)]);
+  const r2 = await ageYouth(pool, 'eng', 5102);
+  const s6 = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=6`)).rows[0].squad;
+  assert.equal(s6.length, 20, 'the staff is still twenty, not twenty-two');
+  assert.ok(s6.some(p => p.name === 'Better'), 'the boy worth a place got one');
+  assert.ok(!s6.some(p => p.name === 'Worse'), 'the boy who was not, did not');
+  assert.ok(!s6.some(p => p.name === 'Pro0'), 'and the weakest professional made way');
+  assert.equal(r2.madeWay, 1);
+  assert.equal(r2.released, 1);
+  assert.ok(s6.find(p => p.name === 'Better').joined, 'the graduate remembers when he came up');
+  assert.ok(!s6.find(p => p.name === 'Better').colt, 'and is not a colt any more');
+
+  // ROOM UNDER THE CAP IS SIMPLY TAKEN
+  await seat(7, [man('One', 25, 2000)], [boy('Ready', 20, 50)]);
+  const r3 = await ageYouth(pool, 'eng', 5103);
+  const s7 = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=7`)).rows[0].squad;
+  assert.equal(s7.length, 2, 'with room, even a poor boy comes up');
+  assert.equal(r3.madeWay, 0);
+  assert.equal(r3.released, 0);
+
+  // AND A ROLLOVER ALREADY WORKED IS NEVER WORKED AGAIN
+  const again = await ageYouth(pool, 'eng', 5103);
+  assert.equal(again.skipped, true);
+  const s7b = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=7`)).rows[0].squad;
+  assert.deepEqual(s7b.map(p => p.age), s7.map(p => p.age), 'nobody aged twice');
+
+  // THE WHOLE POINT: season after season, a squad does not run away
+  await seat(8, [man('A', 24, 2000), man('B', 25, 2100)], []);
+  for (let s = 0; s < 12; s++) {
+    await pool.query(`UPDATE clubs SET youth=$1::jsonb WHERE country_id='eng' AND slot=8`,
+      [JSON.stringify([boy('Colt' + s + 'a', 20, 4000), boy('Colt' + s + 'b', 20, 4000)])]);
+    await ageYouth(pool, 'eng', 5200 + s);
+  }
+  const s8 = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=8`)).rows[0].squad;
+  assert.ok(s8.length <= 20, 'twelve seasons of intake and the staff is still ' + s8.length + ', not 26');
+  assert.ok(s8.every(p => p.age < 38), 'and nobody is still playing at thirty-eight');
 });

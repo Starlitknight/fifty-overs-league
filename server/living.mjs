@@ -151,13 +151,27 @@ async function trainedSquad(pool, host, country, slot, squad) {
   const rounds = (await pool.query(
     `SELECT season_no, round, plan, academy FROM training_rounds WHERE country_id=$1 AND slot=$2
       ORDER BY season_no, round`, [country, slot])).rows;
+  // A MAN WORKS EACH ROUND AT THE AGE HE WAS THAT ROUND. The nets rate is
+  // steeply age-dependent, and a cricketer ages a year at every rollover - so
+  // replaying his whole history at today's age would quietly re-rate every
+  // session he ever did, and a squad would get weaker retroactively as it got
+  // older. Everybody ages once a season, so the age he was in season S is
+  // simply today's age less the seasons since. Training is a pure function of
+  // the record again.
+  const latest = +(await pool.query(
+    'SELECT max(season_no) AS s FROM seasons WHERE country_id=$1', [country])).rows[0].s || 1;
   let men = (squad || []).map(baseline);
   for (const r of rounds) {
     const here = [];
     men.forEach((p, i) => { if (wasHere(p, r)) here.push(i); });
     if (!here.length) continue;
-    const worked = host.trainRound(here.map(i => men[i]), r.plan || {}, academyRate(r.academy)).players;
-    here.forEach((i, k) => { men[i] = worked[k]; });
+    const back = Math.max(0, latest - r.season_no);
+    const crew = here.map(i => (back
+      ? Object.assign({}, men[i], { age: Math.max(16, (men[i].age || 27) - back) })
+      : men[i]));
+    const worked = host.trainRound(crew, r.plan || {}, academyRate(r.academy)).players;
+    // the work is his; the age he is today is still today's
+    here.forEach((i, k) => { men[i] = Object.assign({}, worked[k], { age: men[i].age }); });
   }
   return men;
 }

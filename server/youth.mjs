@@ -20,6 +20,10 @@ import { countryConfigs } from './init-world.mjs';
 
 export const CAP = lv => 2 + Math.max(1, Math.min(5, lv || 2));
 const PROMOTE_AT = 21;
+// a senior staff is twenty men, the same number world_colt refuses to exceed
+export const SQUAD_CAP = 20;
+// and a cricketer does not go on forever
+export const RETIRE_AT = 38;
 // what a level costs a round is the books' business, not the academy's
 export { ACADEMY_UPKEEP } from './economy.mjs';
 
@@ -105,28 +109,63 @@ function graduate(colt, seasonNo, round) {
   return q;
 }
 
-// THE ROLLOVER: a year on every colt, and a senior shirt for anyone who has
-// reached twenty-one. Keyed by season so a re-run never ages a boy twice.
+// THE ROLLOVER. A year on EVERYBODY - the colts and the professionals both -
+// and then the three things a year does to a staff:
+//
+//   1. a man who has reached thirty-eight hangs them up. Without this nobody
+//      ever leaves and a squad only ever grows.
+//   2. a colt who has reached twenty-one is handed a senior shirt, with
+//      nobody watching, exactly as before.
+//   3. but a staff is twenty men. If there is no room, the boy comes up only
+//      if he is better than the weakest professional on the books - who makes
+//      way for him. If he is not, the club lets him go. That is the same
+//      ceiling world_colt has always enforced on a manager doing it by hand;
+//      it was the umpire doing it automatically that had no ceiling at all,
+//      and squads grew without bound.
+//
+// Keyed by season, so a re-run never ages anybody twice.
+const byStrength = (a, b) => (b.rating || 0) - (a.rating || 0) || (a.name < b.name ? -1 : 1);
+
 export async function ageYouth(pool, country, seasonNo) {
   const key = country + ':youth:s' + seasonNo;
   const claim = await pool.query(
     `INSERT INTO ticks(key, status) VALUES ($1,'running')
      ON CONFLICT (key) DO UPDATE SET key=EXCLUDED.key RETURNING status`, [key]);
-  if (claim.rows[0].status === 'done') return { skipped: true, promoted: 0 };
+  if (claim.rows[0].status === 'done') {
+    return { skipped: true, promoted: 0, retired: 0, released: 0, madeWay: 0 };
+  }
   const clubs = (await pool.query(
     'SELECT slot, squad, youth FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
-  let promoted = 0;
+  let promoted = 0, retired = 0, released = 0, madeWay = 0;
   for (const c of clubs) {
+    // 1. a year on the professionals, and the oldest hang them up
+    const aged = (c.squad || []).map(p => Object.assign({}, p, { age: (p.age || 27) + 1 }));
+    let squad = aged.filter(p => (p.age || 0) < RETIRE_AT);
+    retired += aged.length - squad.length;
+
+    // 2. a year on the boys, and the twenty-one-year-olds come of age
     const youth = (Array.isArray(c.youth) ? c.youth : []).map(y => Object.assign({}, y, { age: (y.age || 18) + 1 }));
-    const up = youth.filter(y => y.age >= PROMOTE_AT);
+    const up = youth.filter(y => y.age >= PROMOTE_AT).slice().sort(byStrength);
     const stay = youth.filter(y => y.age < PROMOTE_AT);
-    const squad = (c.squad || []).concat(up.map(y => graduate(y, seasonNo + 1, 1)));
-    promoted += up.length;
+
+    // 3. and room has to be found for them, or made, or not
+    for (const boy of up) {
+      if (squad.length < SQUAD_CAP) { squad.push(graduate(boy, seasonNo + 1, 1)); promoted++; continue; }
+      const order = squad.slice().sort(byStrength);
+      const weakest = order[order.length - 1];
+      if (weakest && (boy.rating || 0) > (weakest.rating || 0)) {
+        squad = squad.filter(p => p.name !== weakest.name);
+        squad.push(graduate(boy, seasonNo + 1, 1));
+        promoted++; madeWay++;
+      } else {
+        released++;                       // no room, and not yet worth making any
+      }
+    }
     await pool.query('UPDATE clubs SET youth=$3::jsonb, squad=$4::jsonb WHERE country_id=$1 AND slot=$2',
       [country, c.slot, JSON.stringify(stay), JSON.stringify(squad)]);
   }
   await pool.query(`UPDATE ticks SET status='done', finished_at=now() WHERE key=$1`, [key]);
-  return { skipped: false, promoted };
+  return { skipped: false, promoted, retired, released, madeWay };
 }
 
 // ===========================================================================

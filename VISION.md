@@ -54,6 +54,18 @@ The owner's spec, in their words, refined by the FTP manual:
    nets into him that he wasn't there for. Room at #/academy; rivals read the
    LEVEL on the club page, never the boys. Migration 018 (which also corrects
    017's write to a clubs.manager column that never existed).
+   [FIXED — the rollover had no ceiling. ageYouth promoted every 21-year-old
+   into the senior squad with no size check while world_colt refused a manager
+   past twenty, and NOTHING in the world aged or retired a professional: squads
+   only ever grew. A year now falls on everybody. Seniors age; at RETIRE_AT (38)
+   they hang them up; a staff is SQUAD_CAP (20) and a boy who comes of age with
+   no room takes a place only if he is better than the weakest man, who makes
+   way, else the club lets him go. Fixing that surfaced a second one:
+   trainedSquad replayed a man's whole training history at TODAY'S age, so
+   ageing him silently re-rated every session he ever did and a squad got
+   weaker retroactively as it got older. He now works each round at the age he
+   was that round (today's age less the seasons since), so the nets are a pure
+   function of the record again.]
    [BUILT (the Colts Cup + the nets rate) — migration 019. THE RATE: the
    academy level in force is now banked beside the plan in force in
    training_rounds, and living.mjs feeds it to host.trainRound as a multiplier
