@@ -193,8 +193,7 @@
 
   // the sticky bar is appended outside #page, so it must be cleaned up when
   // the manager leaves - otherwise it would hang over another screen
-  window.addEventListener("hashchange", function () {
-    if (on()) return;
-    var s = document.querySelector(".al-sticky"); if (s && s.parentNode) s.parentNode.removeChild(s);
-  });
+  // NOTHING TO SWEEP HERE. The sticky bar lives inside #page, which every
+  // route replaces wholesale; a hashchange handler that removed it also ran
+  // AFTER a sibling screen had painted its own, and deleted that one.
 })();

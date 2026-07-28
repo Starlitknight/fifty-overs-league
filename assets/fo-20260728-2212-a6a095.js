@@ -1423,7 +1423,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',records:'foRenderRecordsPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',worldclub:'foRenderWorldClubPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',guide:'foRenderManualPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',comps:'foRenderCompsPage',market:'foRenderMarketPage',table:'foRenderStandingsPage',today:'foRenderTodayPage'}[App.page];
+  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchCentre',records:'foRenderRecordsPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',worldclub:'foRenderWorldClubPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',guide:'foRenderManualPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',comps:'foRenderCompsPage',market:'foRenderMarketPage',table:'foRenderStandingsPage',today:'foRenderTodayPage',team:'foRenderTeamPage'}[App.page];
   if(P[App.page])P[App.page](q);
   // A RENDERER THAT THROWS USED TO VANISH. This catch was empty, so a page
   // whose painter hit an error left the topbar, the clock and the nav in place
@@ -10112,7 +10112,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260728-2205-cf2374";
+  var FO_BUILD = "20260728-2212-a6a095";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -45434,10 +45434,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     // ---- masthead: the date and the round, not a wall of copy ---------------
     var body = al.mast(when + " · " + clock.sub.toLowerCase(), club, ground ? "Home ground: " + ground : "");
 
-    // ---- the plate ---------------------------------------------------------
-    if (v && v.src) body += al.plate(v.src, v.mood || "The home ground");
-
     // ---- the decision, stated ---------------------------------------------
+    // THE BRIEF'S TWO ARTWORK RULES PULL AGAINST EACH OTHER ON A PHONE. It
+    // asks for the plate second AND for the required action inside the first
+    // viewport - but the phone paintings are portrait, and at 390px wide an
+    // uncropped one is over 500px tall, which puts the action below the fold.
+    // Cropping it to fit is forbidden and would be the wrong trade anyway. So
+    // the hard rule wins ("do not push the main task below a large hero") and
+    // the plate follows the decision: identity, then what you must do, then
+    // the painting - still full width, full brightness, uncropped.
     var opp = fx && fx.opp ? (fx.opp.name || "") : "";
     if (st === "before") {
       var need = 11 - xi.picked;
@@ -45457,6 +45462,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         note: "The plan is filed. The round resolves at 9:00 AM New York.",
         action: { href: "#/matchday", label: "Match centre" } });
     }
+
+    // ---- the plate, directly under the decision it must not displace -------
+    if (v && v.src) body += al.plate(v.src, v.mood || "The home ground");
 
     // ---- the next match ----------------------------------------------------
     if (fx) {
@@ -45514,6 +45522,452 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   // the sticky bar is appended outside #page, so it must be cleaned up when
   // the manager leaves - otherwise it would hang over another screen
+  window.addEventListener("hashchange", function () {
+    if (on()) return;
+    var s = document.querySelector(".al-sticky"); if (s && s.parentNode) s.parentNode.removeChild(s);
+  });
+})();
+/* ============================================================================
+   TEAM (#/team) — choosing and ordering the eleven.
+
+   This is the game's central act, so the page is a selection workspace and
+   nothing else. A persistent summary at the top always answers the only
+   question that matters while you are here - how many of the eleven are
+   chosen, who is captain, who keeps, how many overs are covered, and what is
+   still wrong. Below it, two lists: the XI in batting order, and the reserves.
+
+   Rows, not collectible cards. A row is [position] · name · role and form ·
+   rating, on one line, at 48px, tappable along its whole length. Tapping the
+   name opens the folio; the control at the left adds, removes or moves.
+
+   It writes the SAME App.orders the old orders page writes and saves through
+   the same saveGame, so a plan made here is the plan the umpire plays. No new
+   storage, no parallel state.
+   ========================================================================== */
+(function () {
+  "use strict";
+  if (window.__foTeam) return; window.__foTeam = 1;
+
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function on() { return (location.hash || "").split("?")[0] === "#/team"; }
+  function A() { return window.AL || null; }
+  function squad() { try { return (userTeam() || {}).players || []; } catch (e) { return []; } }
+  function ord() {
+    try {
+      if (!App.orders) App.orders = {};
+      if (!Array.isArray(App.orders.batOrder)) App.orders.batOrder = [];
+      if (!App.orders.spells) App.orders.spells = { north: [], south: [] };
+      return App.orders;
+    } catch (e) { return { batOrder: [], spells: { north: [], south: [] } }; }
+  }
+  function byName(n) { var s = squad(); for (var i = 0; i < s.length; i++) if (s[i] && s[i].name === n) return s[i]; return null; }
+  function save() { try { if (typeof saveGame === "function") saveGame(false); } catch (e) {} }
+
+  // ---- what the manager needs to know at a glance -------------------------
+  function summary() {
+    var o = ord(), xi = (o.batOrder || []).filter(Boolean);
+    var overs = 0;
+    try {
+      ["north", "south"].forEach(function (end) {
+        (o.spells[end] || []).forEach(function (sp) { if (sp && sp.bowler) overs++; });
+      });
+    } catch (e) {}
+    var faults = [];
+    if (xi.length < 11) faults.push((11 - xi.length) + " still to pick");
+    if (xi.length > 11) faults.push("too many selected");
+    var seen = {}; xi.forEach(function (n) { if (seen[n]) faults.push("duplicate: " + n); seen[n] = 1; });
+    if (o.captain && xi.indexOf(o.captain) < 0) faults.push("captain is not in the XI");
+    if (o.keeper && xi.indexOf(o.keeper) < 0) faults.push("keeper is not in the XI");
+    if (xi.length === 11 && !o.keeper) faults.push("no wicketkeeper named");
+    if (xi.length === 11 && !o.captain) faults.push("no captain named");
+    return { xi: xi, n: xi.length, overs: overs, faults: faults, captain: o.captain || "", keeper: o.keeper || "", saved: !!o.saved };
+  }
+
+  function formWord(p) {
+    try {
+      var f = (p && p.form) || "";
+      if (typeof f === "number") return f > 60 ? "Good form" : f < 40 ? "Out of form" : "Steady";
+      return String(f || "").replace(/^\w/, function (c) { return c.toUpperCase(); }) || "Steady";
+    } catch (e) { return "Steady"; }
+  }
+  function roleWord(p) { return String((p && (p.roleFull || p.role)) || "Player"); }
+
+  function row(p, pos, inXI) {
+    if (!p) return "";
+    var n = E(p.name);
+    return '<button class="al-prow' + (inXI ? " al-prow--picked" : "") + '" data-al-p="' + n + '">' +
+      '<span class="al-prow__no">' + (inXI ? ("0" + pos).slice(-2) : "+") + "</span>" +
+      '<span class="al-prow__who"><b>' + n + "</b><i>" + E(roleWord(p)) + " &middot; " + E(formWord(p)) + "</i></span>" +
+      '<span class="al-prow__rate">' + ((p.rating | 0) || "&mdash;") + "</span>" +
+      "</button>";
+  }
+
+  window.foRenderTeamPage = function () {
+    if (!on()) return;
+    var page = document.getElementById("page"); if (!page) return;
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
+
+    var s = summary(), o = ord(), all = squad();
+    var picked = {}; s.xi.forEach(function (n) { picked[n] = 1; });
+    var reserves = all.filter(function (p) { return p && !picked[p.name]; });
+
+    var body = al.mast("The eleven", "Team", "Pick the eleven and set the order they bat in. Tap a name for the folio.");
+
+    // ---- the persistent summary: the page's whole job, in one strip -------
+    var ok = s.n === 11 && !s.faults.length;
+    body += al.decide({
+      kind: ok ? "done" : "act",
+      title: "Playing XI · " + s.n + "/11" +
+        (s.captain ? "  ·  C " + s.captain.split(" ").pop() : "") +
+        (s.keeper ? "  ·  WK " + s.keeper.split(" ").pop() : ""),
+      note: s.faults.length ? s.faults.join(" · ")
+        : s.overs + " of 20 bowling spells assigned · the plan is legal",
+    });
+
+    // ---- the XI, in batting order ----------------------------------------
+    var xiHtml = s.n
+      ? '<div class="al-players">' + s.xi.map(function (n, i) { return row(byName(n), i + 1, true); }).join("") + "</div>"
+      : al.empty("No one picked yet", "Choose eleven from the reserves below, or let the Gaffer suggest a side.");
+    var tools = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">' +
+      '<button class="al-btn" data-al-act="suggest">Suggest a side</button>' +
+      '<button class="al-btn" data-al-act="previous">Load last plan</button>' +
+      (s.n ? '<button class="al-btn" data-al-act="clear">Clear</button>' : "") + "</div>";
+    body += al.sec("Playing XI", xiHtml + tools);
+
+    // ---- reserves ---------------------------------------------------------
+    body += al.sec("Reserves &middot; " + reserves.length,
+      reserves.length
+        ? '<div class="al-players">' + reserves.map(function (p) { return row(p, 0, false); }).join("") + "</div>"
+        : al.empty("Everyone is playing", "There is nobody left on the sidelines."));
+
+    var acting = !ok || !s.saved;
+    page.innerHTML = al.page({
+      body: body, acting: acting,
+      sticky: acting ? al.sticky(
+        ok ? "Eleven chosen · the plan is not filed yet" : "Playing XI incomplete · " + s.n + " of 11",
+        ok ? "File the plan" : "Suggest a side", ok ? "file" : "suggest") : "",
+    });
+    wire();
+  };
+
+  // ---- the folio: everything about one player, in a sheet -----------------
+  function folio(name) {
+    var p = byName(name); if (!p) return;
+    var al = A(); if (!al) return;
+    var o = ord(), inXI = (o.batOrder || []).indexOf(name) >= 0;
+    var rows = [
+      ["Role", roleWord(p)],
+      ["Age", String(p.age || "—")],
+      ["Nationality", String(p.nat || p.country || "—")],
+      ["Rating", String(p.rating | 0)],
+      ["Form", formWord(p)],
+      ["Fitness", String(p.fatigue || "rested")],
+      ["Experience", String(p.exp != null ? p.exp : "—")],
+      ["Wage", p.wage != null ? "$" + Number(p.wage).toLocaleString() : "—"],
+    ];
+    var el = document.createElement("div");
+    el.className = "al-sheet";
+    el.innerHTML = '<div class="al-sheet__panel">' +
+      '<div class="al-sheet__grip"><b>' + E(p.name) + "</b>" +
+      '<button class="al-btn" data-al-close>Close</button></div>' +
+      '<div class="al-sheet__body">' +
+      al.ledger(rows) +
+      '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">' +
+      '<button class="al-btn ' + (inXI ? "" : "al-btn--primary") + '" data-al-toggle="' + E(name) + '">' +
+      (inXI ? "Leave out" : "Add to the XI") + "</button>" +
+      (inXI ? '<button class="al-btn" data-al-up="' + E(name) + '">Move up</button>' +
+              '<button class="al-btn" data-al-cap="' + E(name) + '">Make captain</button>' +
+              '<button class="al-btn" data-al-wk="' + E(name) + '">Make keeper</button>' : "") +
+      "</div></div></div>";
+    document.body.appendChild(el);
+    el.addEventListener("click", function (ev) {
+      var t = ev.target.closest ? ev.target : null; if (!t) return;
+      if (ev.target === el || ev.target.closest("[data-al-close]")) { el.remove(); return; }
+      var n;
+      if ((n = ev.target.closest("[data-al-toggle]"))) { toggle(n.getAttribute("data-al-toggle")); el.remove(); return; }
+      if ((n = ev.target.closest("[data-al-up]"))) { move(n.getAttribute("data-al-up"), -1); el.remove(); return; }
+      if ((n = ev.target.closest("[data-al-cap]"))) { ord().captain = n.getAttribute("data-al-cap"); ord().saved = false; save(); el.remove(); repaint(); return; }
+      if ((n = ev.target.closest("[data-al-wk]"))) { ord().keeper = n.getAttribute("data-al-wk"); ord().saved = false; save(); el.remove(); repaint(); return; }
+    });
+  }
+
+  function repaint() { try { window.foRenderTeamPage(); } catch (e) {} }
+  function toggle(name) {
+    var o = ord(), i = o.batOrder.indexOf(name);
+    if (i >= 0) o.batOrder.splice(i, 1);
+    else if (o.batOrder.filter(Boolean).length < 11) o.batOrder.push(name);
+    o.saved = false; save(); repaint();
+  }
+  function move(name, d) {
+    var o = ord(), i = o.batOrder.indexOf(name), j = i + d;
+    if (i < 0 || j < 0 || j >= o.batOrder.length) return;
+    var t = o.batOrder[i]; o.batOrder[i] = o.batOrder[j]; o.batOrder[j] = t;
+    o.saved = false; save(); repaint();
+  }
+
+  function wire() {
+    var host = document.getElementById("page"); if (!host || host.__alW) return;
+    host.__alW = 1;
+    host.addEventListener("click", function (ev) {
+      var b = ev.target.closest ? ev.target.closest("[data-al-p]") : null;
+      if (b) { folio(b.getAttribute("data-al-p")); return; }
+      var a = ev.target.closest ? ev.target.closest("[data-al-act]") : null;
+      if (a) act(a.getAttribute("data-al-act"));
+    });
+    document.addEventListener("click", function (ev) {
+      var a = ev.target.closest ? ev.target.closest(".al-sticky [data-al-act]") : null;
+      if (a && on()) act(a.getAttribute("data-al-act"));
+    });
+  }
+  function act(what) {
+    var o = ord();
+    if (what === "suggest") {
+      // the engine's own selector - the same one the old orders page used, so
+      // a suggested side here is a suggested side there
+      try { if (typeof suggestOrders === "function") suggestOrders(); } catch (e) {}
+      o.saved = false; save(); repaint(); return;
+    }
+    if (what === "previous") {
+      try { if (App.defaults) App.orders = JSON.parse(JSON.stringify(App.defaults)); } catch (e) {}
+      ord().saved = false; save(); repaint(); return;
+    }
+    if (what === "clear") { o.batOrder = []; o.saved = false; save(); repaint(); return; }
+    if (what === "file") {
+      o.saved = true;
+      try { App.defaults = JSON.parse(JSON.stringify(App.orders)); } catch (e) {}
+      save(); repaint(); return;
+    }
+  }
+
+  window.addEventListener("hashchange", function () {
+    if (on()) return;
+    var s = document.querySelector(".al-sticky"); if (s && s.parentNode) s.parentNode.removeChild(s);
+    var sh = document.querySelector(".al-sheet"); if (sh && sh.parentNode) sh.parentNode.removeChild(sh);
+  });
+})();
+/* ============================================================================
+   MATCH CENTRE (#/matchday) — the captain's sheet, and then the match.
+
+   Before the ball is bowled this is a sheet you fill in: the eleven, the
+   order they bat, the bowling plan, captain and keeper, the fielding posture,
+   the toss call. Everything the manager owes the umpire, on one page, in the
+   order a captain would think about it - and submitted without leaving.
+
+   Once it is under way the same page becomes the broadcast: a compact score
+   that stays put while the tabs change beneath it - commentary, scorecard,
+   worm, details. Commentary is monospace over-and-ball, ink body copy, and a
+   burnt-orange rule down the left of anything that mattered. No audio.
+
+   The ground is a plate at the top: full brightness, natural ratio, no text
+   over it. The conditions are stated underneath in words, where words belong.
+   ========================================================================== */
+(function () {
+  "use strict";
+  if (window.__foMC) return; window.__foMC = 1;
+
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function on() { return (location.hash || "").split("?")[0] === "#/matchday"; }
+  function A() { return window.AL || null; }
+  function ord() { try { return App.orders || {}; } catch (e) { return {}; } }
+  function me() { try { return userTeam() || null; } catch (e) { return null; } }
+  function live() { try { return (typeof M !== "undefined" && M && !M.done) ? M : null; } catch (e) { return null; } }
+  function fixture() { try { return (typeof window.foNextFixture === "function") ? window.foNextFixture() : null; } catch (e) { return null; } }
+  function save() { try { if (typeof saveGame === "function") saveGame(false); } catch (e) {} }
+
+  function groundArt() {
+    try {
+      var vf = window.foHgVariant; if (!vf) return null;
+      var v = vf(); if (!v) return null;
+      var base = (typeof FO_ART !== "undefined") ? FO_ART
+        : (location.pathname.indexOf("/client/") !== -1 ? "art/" : "client/art/");
+      var cap = ""; try { cap = (window.FO_HG_WX && window.FO_HG_WX[v]) || ""; } catch (e2) {}
+      return { src: base + "home/" + v + ".webp", mood: cap || "The ground" };
+    } catch (e) { return null; }
+  }
+
+  function planState() {
+    var o = ord(), xi = (o.batOrder || []).filter(Boolean);
+    var overs = 0;
+    try { ["north", "south"].forEach(function (end) { (o.spells[end] || []).forEach(function (sp) { if (sp && sp.bowler) overs++; }); }); } catch (e) {}
+    var missing = [];
+    if (xi.length < 11) missing.push("the XI is " + xi.length + " of 11");
+    if (!o.captain) missing.push("no captain");
+    if (!o.keeper) missing.push("no wicketkeeper");
+    return { xi: xi, overs: overs, missing: missing, saved: !!o.saved, o: o };
+  }
+
+  // ---- the sheet, before the match ---------------------------------------
+  function sheet(al) {
+    var p = planState(), fx = fixture(), t = me(), art = groundArt();
+    var opp = (fx && fx.opp && fx.opp.name) || "";
+    var body = al.mast("Round " + (((App.season && App.season.round) | 0) + 1) + " · the captain's sheet",
+      opp ? (t && t.name ? t.name + " v " + opp : "Match centre") : "Match centre",
+      "Everything the umpire needs from you, before nine o'clock.");
+
+    var ready = !p.missing.length;
+    body += al.decide({
+      kind: p.saved && ready ? "done" : "act",
+      title: p.saved && ready ? "Match plan filed" : (ready ? "Plan complete · not yet filed" : "Match plan incomplete"),
+      note: p.missing.length ? p.missing.join(" · ") : p.overs + " of 20 spells assigned · orders close 9:00 AM New York",
+    });
+
+    if (art) body += al.plate(art.src, art.mood);
+
+    // 1. conditions, in words, under the plate
+    var cond = [
+      ["Opponent", opp || "—"],
+      [fx && fx.home ? "Ground (home)" : "Ground (away)", (fx && (fx.ground || "")) || (t && t.ground) || "—"],
+      ["Round", String((((App.season && App.season.round) | 0) + 1))],
+      ["Resolves", "9:00 AM ET"],
+    ];
+    if (fx && fx.pitch) cond.push(["Pitch", String(fx.pitch)]);
+    if (fx && fx.weather) cond.push(["Weather", String(fx.weather)]);
+    cond.push(["Toss", p.o.tossCall ? (p.o.tossCall === "H" ? "Heads" : "Tails") + ", " + (p.o.tossDecision || "bat") + " if won" : "the captain will call"]);
+    body += al.sec("The match", al.ledger(cond));
+
+    // 2. the eleven, in the order they bat
+    var xiHtml = p.xi.length
+      ? '<div class="al-players">' + p.xi.map(function (n, i) {
+          var pl = null; try { pl = ((t && t.players) || []).filter(function (q) { return q && q.name === n; })[0]; } catch (e) {}
+          var tags = [];
+          if (n === p.o.captain) tags.push("C");
+          if (n === p.o.keeper) tags.push("WK");
+          return '<div class="al-prow al-prow--picked"><span class="al-prow__no">' + ("0" + (i + 1)).slice(-2) + "</span>" +
+            '<span class="al-prow__who"><b>' + E(n) + (tags.length ? " <em class='al-you__tag'>" + tags.join(" · ") + "</em>" : "") + "</b>" +
+            "<i>" + E((pl && (pl.roleFull || pl.role)) || "Player") + "</i></span>" +
+            '<span class="al-prow__rate">' + ((pl && pl.rating | 0) || "&mdash;") + "</span></div>";
+        }).join("") + "</div>"
+      : al.empty("No eleven chosen", "Pick the side first; the rest of the sheet follows from it.");
+    body += al.sec("1 · The eleven", xiHtml, { href: "#/team", label: "Change the side" });
+
+    // 3. batting intent by phase
+    var ph = (p.o.phaseIntent || {});
+    var word = function (v) { return { "-1": "Defensive", "0": "Normal", "1": "Aggressive", "2": "Launch" }[String(v | 0)] || "Normal"; };
+    body += al.sec("2 · Batting intent", al.ledger([
+      ["Powerplay · overs 1–10", word(ph.pp)],
+      ["Middle · overs 11–40", word(ph.mid)],
+      ["Death · overs 41–50", word(ph.death)],
+    ]));
+
+    // 4. the bowling plan
+    body += al.sec("3 · The bowling plan", al.ledger([
+      ["Spells assigned", p.overs + " of 20"],
+      ["Cover", p.overs >= 20 ? "complete" : "the captain covers the rest", p.overs >= 20 ? "pos" : "warn"],
+    ]) + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">' +
+      '<button class="al-btn" data-al-mc="suggest">Suggest a plan</button>' +
+      '<button class="al-btn" data-al-mc="previous">Load last plan</button></div>');
+
+    // 5. captain, keeper, posture
+    body += al.sec("4 · The armband", al.ledger([
+      ["Captain", p.o.captain || "not named"],
+      ["Wicketkeeper", p.o.keeper || "not named"],
+      ["Field", String(p.o.field || "balanced")],
+    ]), { href: "#/team", label: "Name them" });
+
+    var acting = !(p.saved && ready);
+    return {
+      body: body, acting: acting,
+      sticky: acting ? al.sticky(
+        ready ? "The plan is complete but not filed" : p.missing.join(" · "),
+        ready ? "Submit match plan" : "Finish in Team", ready ? "file" : "toTeam") : "",
+    };
+  }
+
+  // ---- the broadcast, during the match ------------------------------------
+  var TAB = "commentary";
+  function broadcast(al, m) {
+    var t = me(), art = groundArt();
+    var inn = (m.innings || []).filter(Boolean), cur = inn[inn.length - 1] || null;
+    var score = cur ? (cur.runs | 0) + "-" + (cur.wkts | 0) : "—";
+    var ovs = cur ? Math.floor((cur.legal | 0) / 6) + "." + ((cur.legal | 0) % 6) : "0.0";
+    var body = al.mast("Live · round " + (((App.season && App.season.round) | 0) + 1),
+      (m.meta && m.meta.home ? m.meta.home + " v " + m.meta.away : "Match centre"), "");
+
+    // the compact score header stays put while the tabs change beneath it
+    body += '<div class="al-decide al-decide--act"><div class="al-decide__txt">' +
+      "<b>" + E(score) + "  <span class='al-read'>(" + E(ovs) + " ov)</span></b>" +
+      "<i>" + E((cur && cur.batTeam) || "") + " batting</i></div></div>";
+    if (art) body += al.plate(art.src, art.mood);
+
+    var tabs = ["commentary", "scorecard", "worm", "details"];
+    body += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px">' +
+      tabs.map(function (k) {
+        return '<button class="al-btn" data-al-tab="' + k + '"' +
+          (k === TAB ? ' style="border-color:var(--al-accent);color:var(--al-accent)"' : "") + ">" +
+          E(k.charAt(0).toUpperCase() + k.slice(1)) + "</button>";
+      }).join("") + "</div>";
+
+    if (TAB === "commentary") {
+      var log = (m.log || []).slice(-40).reverse();
+      body += log.length
+        ? '<div class="al-ledger">' + log.map(function (l) {
+            var txt = typeof l === "string" ? l : (l && (l.text || l.t)) || "";
+            var big = /OUT|SIX|FOUR|WICKET|maiden|caught|bowled|lbw|stumped/i.test(txt);
+            return '<div style="' + (big ? "box-shadow:inset 3px 0 0 var(--al-accent);padding-left:12px" : "") + '">' +
+              '<span class="k" style="font-family:var(--al-mono);flex:0 0 52px">' +
+              E((typeof l === "object" && l && l.ov != null) ? l.ov : "") + "</span>" +
+              '<span class="k" style="font-weight:400;color:var(--al-ink)">' + E(txt) + "</span></div>";
+          }).join("") + "</div>"
+        : al.empty("No commentary yet", "The over-by-over appears here as the match is played.");
+    } else if (TAB === "scorecard") {
+      body += al.ledger((cur && cur.bat ? cur.bat : []).filter(function (b) { return b && (b.b > 0 || b.out); })
+        .map(function (b) { return [(b.p && b.p.name) || "—", (b.r | 0) + " (" + (b.b | 0) + ")"]; }));
+    } else if (TAB === "worm") {
+      body += al.sec("Run worm", al.empty("Worm", "The run worm is drawn from the over-by-over once the innings is under way."));
+    } else {
+      body += al.ledger([
+        ["Ground", (m.meta && m.meta.ground) || "—"],
+        ["Pitch", String(m.pitch || "—")],
+        ["Weather", (m.meta && m.meta.weather) || "—"],
+        ["Toss", String(m.toss || "—")],
+      ]);
+    }
+    return { body: body, acting: false, sticky: "" };
+  }
+
+  window.foRenderMatchCentre = function () {
+    if (!on()) return;
+    var page = document.getElementById("page"); if (!page) return;
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
+    var m = live();
+    var parts = m ? broadcast(al, m) : sheet(al);
+    page.innerHTML = al.page(parts);
+    wire();
+  };
+
+  function wire() {
+    var host = document.getElementById("page");
+    if (host && !host.__mcW) {
+      host.__mcW = 1;
+      host.addEventListener("click", function (ev) {
+        var t = ev.target.closest ? ev.target.closest("[data-al-tab]") : null;
+        if (t) { TAB = t.getAttribute("data-al-tab"); window.foRenderMatchCentre(); return; }
+        var a = ev.target.closest ? ev.target.closest("[data-al-mc]") : null;
+        if (a) act(a.getAttribute("data-al-mc"));
+      });
+    }
+    if (!document.__mcSticky) {
+      document.__mcSticky = 1;
+      document.addEventListener("click", function (ev) {
+        var a = ev.target.closest ? ev.target.closest(".al-sticky [data-al-act]") : null;
+        if (a && on()) act(a.getAttribute("data-al-act"));
+      });
+    }
+  }
+  function act(what) {
+    if (what === "toTeam") { location.hash = "#/team"; if (typeof window.route === "function") window.route(); return; }
+    if (what === "suggest") { try { if (typeof suggestOrders === "function") suggestOrders(); } catch (e) {} ord().saved = false; save(); window.foRenderMatchCentre(); return; }
+    if (what === "previous") { try { if (App.defaults) App.orders = JSON.parse(JSON.stringify(App.defaults)); } catch (e) {} save(); window.foRenderMatchCentre(); return; }
+    if (what === "file") {
+      // the same commit the old orders page made: mark filed, remember as the
+      // default for next round, persist. Nothing new, nowhere else.
+      try { App.orders.saved = true; App.defaults = JSON.parse(JSON.stringify(App.orders)); } catch (e) {}
+      save(); window.foRenderMatchCentre(); return;
+    }
+  }
+
   window.addEventListener("hashchange", function () {
     if (on()) return;
     var s = document.querySelector(".al-sticky"); if (s && s.parentNode) s.parentNode.removeChild(s);

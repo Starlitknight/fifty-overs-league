@@ -52,3 +52,5 @@
 52-standings.js
 60-almanack-shell.js
 61-today.js
+62-team.js
+63-match-centre.js

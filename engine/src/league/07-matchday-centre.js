@@ -141,6 +141,11 @@
     if (liveT != null && FO_MD.t <= 100) run();       // live window: rolling by itself
   }
   function foRenderMatchday() {
+    // #/matchday belongs to the Living Almanack's Match Centre (module 63).
+    // This painter has its own hashchange hook and fired 15ms after the
+    // route, wiping the captain's sheet - it must stand down where the
+    // redesign owns the route.
+    try { if (window.__foAlOwns && window.__foAlOwns()) return; } catch (eAl) {}
     try {
       if (/^#\/matchday/.test(location.hash || "")) {
         var pgM = document.getElementById("page");
