@@ -99,6 +99,37 @@
       .catch(function () { return null; });
   }
 
+  /** The served league, exactly as #/league reads it.
+   *
+   * THE TWO TABLES MUST NEVER DISAGREE. This page and the league page were
+   * reading different worlds: the league page asks the World Service for the
+   * manager's nation (ten clubs, whatever rounds the umpire has resolved),
+   * while this page fell straight through to the engine's own leagueRows() -
+   * the season sitting in this device's save, a different set of clubs with a
+   * different number of matches played. Two pages, two answers, one of them
+   * fiction. So the served nation snapshot comes first, and the device's own
+   * season is only ever the last resort for a manager with no league at all.
+   */
+  function fromWorld() {
+    try {
+      var nat = "";
+      try { nat = (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || ""; } catch (eN) {}
+      if (!nat || !window.__foWorldLg) return null;
+      var snap = window.__foWorldLg.get(nat);
+      if (!snap || !snap.table || !snap.table.length) return null;
+      // the naming authority, so a club reads the same here as it does on the
+      // league page - a slot renamed by its manager is that manager's club
+      var nm = null;
+      try { nm = window.__foWorldNames && window.__foWorldNames.get(nat); } catch (eNm) {}
+      return {
+        season: snap.seasonNo || 1,
+        rows: snap.table.map(function (x) {
+          return { club: (nm && nm[x.slot]) || x.name, p: x.p, w: x.w, l: x.l, t: x.t, pts: x.pts, nrr: x.nrr };
+        })
+      };
+    } catch (e) { return null; }
+  }
+
   /** The engine's own table, from whatever this device already holds. */
   function fromEngine() {
     try {
@@ -150,20 +181,32 @@
     css();
     // paint what this device already knows FIRST, so the page is never blank,
     // then let the served table replace it when it lands (typically ~200ms)
-    var local = fromEngine();
-    if (local) render(local, false, "waiting for the league database");
+    var L = lg();
+    // the served nation snapshot is the very table #/league draws; the
+    // device's own season is only for a manager who is in no league at all
+    var world = fromWorld();
+    var fallback = world || fromEngine();
+    var note = world ? "the world feed \u00b7 the same table the league page reads"
+             : (L && L.id) ? "waiting for the league database"
+             : "solo career \u00b7 this table is your own season";
+    if (fallback) render(fallback, false, note);
     else page.innerHTML = shell("<p class='sub'>Reading the table&hellip;</p>");
 
-    var L = lg();
-    if (!L || !L.id) {
-      if (!local) render(null);
-      else render(local, false, "solo career &middot; this table is your own season");
-      return;
-    }
+    // ask the world feed for a fresher copy and repaint if one lands. lgFetch
+    // holds a courtesy window, so the repaint's own want() answers from the
+    // copy in hand and fires nothing: this cannot become a loop.
+    try {
+      var nat0 = (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || "";
+      if (nat0 && window.__foWorldLg) window.__foWorldLg.want(nat0, function () {
+        if (onPage()) window.foRenderStandingsPage();
+      });
+    } catch (eW) {}
+
+    if (!L || !L.id) { if (!fallback) render(null); return; }
     fromDatabase(L.id).then(function (served) {
       if (!onPage()) return;                       // the manager moved on
       if (served) { render(served, true); return; }
-      if (local) { render(local, false, "the league database has no rounds yet"); return; }
+      if (fallback) { render(fallback, false, note); return; }
       render(null);
     });
   };

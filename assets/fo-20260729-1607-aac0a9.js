@@ -10217,7 +10217,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260729-1539-409fe8";
+  var FO_BUILD = "20260729-1607-aac0a9";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14023,7 +14023,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body .pk-sign .pk-cta,html body.ftpskin .pk-sign .pk-cta{font-size:14px;letter-spacing:2.2px;padding:7px;margin-top:7px;border-radius:9px}" +
       // the unboxing: a spotlit pack on a light stage, then the FULL detailed
       // player cards dealt into a grid one at a time
-      ".fo-jrv-wrap{background:radial-gradient(120% 80% at 50% 0%,#FFFDF7 0%,#F5EFE1 62%,#F1E9D8 100%);border-radius:20px;margin:6px auto 0;max-width:820px;padding:20px 16px 26px;box-shadow:inset 0 0 0 1.5px rgba(201,162,75,.4),0 12px 34px rgba(16,27,45,.14)}" +
+      ".fo-jrv-wrap{background:radial-gradient(120% 80% at 50% 0%,#FFFDF7 0%,#F5EFE1 62%,#F1E9D8 100%);border-radius:20px;margin:6px auto 0;max-width:1200px;padding:20px 16px 26px;box-shadow:inset 0 0 0 1.5px rgba(201,162,75,.4),0 12px 34px rgba(16,27,45,.14)}" +
       ".fo-jrv{text-align:center;position:relative}" +
       ".fo-jrv-spot{position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:340px;height:280px;background:radial-gradient(circle,rgba(201,162,75,.22),transparent 66%);pointer-events:none;filter:blur(4px)}" +
       ".fo-jrv-eyebrow{position:relative;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:4px;text-transform:uppercase;font-size:11px;color:#C8674A}" +
@@ -14034,34 +14034,45 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-jrv-pack img.fo-j-crimg{width:82px;height:82px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.5))}" +
       ".fo-jrv-pack .pk1{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;font-size:16px}" +
       ".fo-jrv-pack .pk2{font-family:Oswald,sans-serif;font-weight:500;letter-spacing:2px;text-transform:uppercase;font-size:10.5px;color:#E4C463;animation:foJb 1.6s infinite}" +
-      "html body #fo-onb .fo-jrv-pack.open{animation:none;transform:scale(.4) rotate(-8deg);opacity:0;pointer-events:none;position:absolute;left:50%;top:70px;margin-left:-90px}" +
+      "html body #fo-onb .fo-jrv-pack.open{animation:none;transition:none;visibility:hidden;transform:scale(.4) rotate(-8deg);opacity:0;pointer-events:none;position:absolute;left:50%;top:70px;margin-left:-90px}" +
       ".fo-jrv-burst{position:absolute;left:50%;top:44%;width:20px;height:20px;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 0 rgba(201,162,75,.7)}" +
       ".fo-jrv-pack.open .fo-jrv-burst{animation:foJrvBurst .6s ease-out}" +
       "@keyframes foJrvBurst{0%{box-shadow:0 0 0 0 rgba(201,162,75,.7)}100%{box-shadow:0 0 0 220px rgba(201,162,75,0)}}" +
       ".fo-jrv-lab{position:relative;min-height:22px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:3px;text-transform:uppercase;font-size:14px;color:#C8674A;margin:4px 0 12px}" +
       ".fo-jrv-lab.pop{animation:foJrvPop .4s ease-out}" +
       "@keyframes foJrvPop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}" +
-      ".fo-jrv-grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:10px;text-align:left}" +
-      // Phone: two to a row. The browse card turns portrait to fit - the
-      // painted figure moves off the left edge and up onto the top of the
-      // card, and the three skill bars go, because this screen is a squad
-      // roll call and not a scouting desk. Scoped to the reveal so the
-      // squad, market and scout grids keep the wide card they were drawn for.
-      "@media(max-width:560px){" +
-      ".fo-jrv-grid{grid-template-columns:1fr 1fr;gap:8px}" +
+      ".fo-jrv-grid{position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;text-align:left}" +
+      // The squad is the one screen in the journey that wants the whole
+      // desk: three across at laptop width, four on anything wider. Every
+      // other step is a paragraph of the Gaffer talking and stays narrow.
+      "html body #fo-onb .fo-ob-inner:has(.fo-jrv-wrap){max-width:1200px}" +
+      "@media(min-width:820px){.fo-jrv-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}" +
+      "@media(min-width:1120px){.fo-jrv-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}" +
+      // In a grid this tight the browse card turns portrait at every width:
+      // the painted figure comes off the left edge and onto the top of the
+      // card, and the rating sits in the corner of the painting so the name
+      // gets the full width instead of clipping to "Xavier Conno...".
+      // Scoped to the reveal - squad, market and scout keep the wide card.
       "#fo-onb .fo-jrv-cell .pkm{padding:0 0 9px}" +
       "#fo-onb .fo-jrv-cell .pkm-top{flex-wrap:wrap;align-items:flex-end;gap:0 7px}" +
-      "#fo-onb .fo-jrv-cell .pkm-art{position:relative;flex:0 0 100%;width:100%;height:128px;margin-bottom:7px}" +
+      "#fo-onb .fo-jrv-cell .pkm-art{position:relative;flex:0 0 100%;width:100%;height:158px;margin-bottom:7px}" +
       "#fo-onb .fo-jrv-cell .pkm-art:after{display:none}" +
       "#fo-onb .fo-jrv-cell .pkm-id{flex:1 1 100%;padding:0 9px}" +
       "#fo-onb .fo-jrv-cell .pkm-ovc{position:absolute;top:6px;right:6px;background:rgba(11,19,34,.82);border:1px solid rgba(201,162,75,.5);border-radius:9px;padding:3px 7px 2px}" +
-      "#fo-onb .fo-jrv-cell .pkm-ovc i{color:#cfd6e4}" +
-      "#fo-onb .fo-jrv-cell .pkm-nm{font-size:14px}" +
-      // two words of a bowling type will not fit on one narrow line, and a
-      // role clipped to \"Fast-Medium Bowler \u2026\" reads as a bug; let it wrap
-      "#fo-onb .fo-jrv-cell .pkm-sub{font-size:10.5px;white-space:normal;line-height:1.3}" +
       "#fo-onb .fo-jrv-cell .pkm-ovc b{font-size:19px;color:#F0B94E}" +
+      "#fo-onb .fo-jrv-cell .pkm-ovc i{color:#cfd6e4}" +
       "#fo-onb .fo-jrv-cell .pkm-hand{display:none}" +
+      "#fo-onb .fo-jrv-cell .pkm-bars{padding:0 9px;margin:8px 0 0}" +
+      // two words of a bowling type will not fit on one narrow line, and a
+      // role clipped to "Fast-Medium Bowler \u2026" reads as a bug; let it wrap
+      "#fo-onb .fo-jrv-cell .pkm-sub{white-space:normal;line-height:1.3}" +
+      // phone: two to a row, and the three skill bars go - this screen is a
+      // squad roll call, not a scouting desk
+      "@media(max-width:560px){" +
+      ".fo-jrv-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}" +
+      "#fo-onb .fo-jrv-cell .pkm-art{height:128px}" +
+      "#fo-onb .fo-jrv-cell .pkm-nm{font-size:14px}" +
+      "#fo-onb .fo-jrv-cell .pkm-sub{font-size:10.5px}" +
       "#fo-onb .fo-jrv-cell .pkm-bars{display:none}" +
       "}" +
       ".fo-jrv-cell{opacity:0}" +
@@ -14070,6 +14081,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "@keyframes foJrvFly{0%{opacity:0;transform:translate(var(--dx,0),var(--dy,-180px)) scale(.2) rotate(var(--rot,10deg))}60%{opacity:1}100%{opacity:1;transform:none}}" +
       "@media (prefers-reduced-motion:reduce){.fo-jrv-cell{opacity:1}.fo-jrv-cell.in{animation:none}}" +
       ".fo-jrv-cell .pkm{box-shadow:0 4px 14px rgba(16,27,45,.15)}" +
+      // a two-line role on one card and a one-line role on its neighbour left
+      // the row ragged; let the card fill the height the grid already gave it
+      ".fo-jrv-cell{display:flex}.fo-jrv-cell>.pkm{flex:1 1 auto}" +
       ".fo-jrv-foot{margin-top:16px}" +
       ".fo-jrv-skip{min-height:18px;margin-top:12px}" +
       ".fo-jrv-skip a{cursor:pointer;font-size:12.5px;color:#8a90a0;text-decoration:underline dotted}" +
@@ -44940,6 +44954,37 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       .catch(function () { return null; });
   }
 
+  /** The served league, exactly as #/league reads it.
+   *
+   * THE TWO TABLES MUST NEVER DISAGREE. This page and the league page were
+   * reading different worlds: the league page asks the World Service for the
+   * manager's nation (ten clubs, whatever rounds the umpire has resolved),
+   * while this page fell straight through to the engine's own leagueRows() -
+   * the season sitting in this device's save, a different set of clubs with a
+   * different number of matches played. Two pages, two answers, one of them
+   * fiction. So the served nation snapshot comes first, and the device's own
+   * season is only ever the last resort for a manager with no league at all.
+   */
+  function fromWorld() {
+    try {
+      var nat = "";
+      try { nat = (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || ""; } catch (eN) {}
+      if (!nat || !window.__foWorldLg) return null;
+      var snap = window.__foWorldLg.get(nat);
+      if (!snap || !snap.table || !snap.table.length) return null;
+      // the naming authority, so a club reads the same here as it does on the
+      // league page - a slot renamed by its manager is that manager's club
+      var nm = null;
+      try { nm = window.__foWorldNames && window.__foWorldNames.get(nat); } catch (eNm) {}
+      return {
+        season: snap.seasonNo || 1,
+        rows: snap.table.map(function (x) {
+          return { club: (nm && nm[x.slot]) || x.name, p: x.p, w: x.w, l: x.l, t: x.t, pts: x.pts, nrr: x.nrr };
+        })
+      };
+    } catch (e) { return null; }
+  }
+
   /** The engine's own table, from whatever this device already holds. */
   function fromEngine() {
     try {
@@ -44991,20 +45036,32 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     css();
     // paint what this device already knows FIRST, so the page is never blank,
     // then let the served table replace it when it lands (typically ~200ms)
-    var local = fromEngine();
-    if (local) render(local, false, "waiting for the league database");
+    var L = lg();
+    // the served nation snapshot is the very table #/league draws; the
+    // device's own season is only for a manager who is in no league at all
+    var world = fromWorld();
+    var fallback = world || fromEngine();
+    var note = world ? "the world feed \u00b7 the same table the league page reads"
+             : (L && L.id) ? "waiting for the league database"
+             : "solo career \u00b7 this table is your own season";
+    if (fallback) render(fallback, false, note);
     else page.innerHTML = shell("<p class='sub'>Reading the table&hellip;</p>");
 
-    var L = lg();
-    if (!L || !L.id) {
-      if (!local) render(null);
-      else render(local, false, "solo career &middot; this table is your own season");
-      return;
-    }
+    // ask the world feed for a fresher copy and repaint if one lands. lgFetch
+    // holds a courtesy window, so the repaint's own want() answers from the
+    // copy in hand and fires nothing: this cannot become a loop.
+    try {
+      var nat0 = (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || "";
+      if (nat0 && window.__foWorldLg) window.__foWorldLg.want(nat0, function () {
+        if (onPage()) window.foRenderStandingsPage();
+      });
+    } catch (eW) {}
+
+    if (!L || !L.id) { if (!fallback) render(null); return; }
     fromDatabase(L.id).then(function (served) {
       if (!onPage()) return;                       // the manager moved on
       if (served) { render(served, true); return; }
-      if (local) { render(local, false, "the league database has no rounds yet"); return; }
+      if (fallback) { render(fallback, false, note); return; }
       render(null);
     });
   };
