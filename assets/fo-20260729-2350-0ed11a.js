@@ -1503,6 +1503,11 @@ function route(){
   // umpire walks from the founding ($2.5m, gate, sponsor, wages, interest),
   // derived from the record and re-runnable. That is the money.
   if(App.page==='ledger'){location.hash='#/finance';return}
+  // ONE MANUAL. The shell carried a static Manual link to the engine's original
+  // page while the boot pill pointed at the redesigned one, so the topbar had
+  // the word twice and the two went to different rooms. The static link is
+  // gone; the old address follows it to the room that replaced it.
+  if(App.page==='manual'||App.page==='help'){location.hash='#/guide';return}
   foSyncMyIx();   // one club per device, before a single page paints
   // Circuit-only era: the club dashboard and the league/office/training
   // surfaces are retired; any old link or bookmark lands on the Circuit.
@@ -10280,7 +10285,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260729-2338-791f7e";
+  var FO_BUILD = "20260729-2350-0ed11a";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14797,12 +14802,22 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var page = document.getElementById("page"); if (!page) return;
       if (document.getElementById("fo-j-brief")) return;
       var me = userTeam(); if (!me) return;
-      var bank = (App.fin && App.fin.bank != null) ? App.fin.bank : me.bank;
+      // THE BANK THE GAFFER QUOTES IS THE UMPIRE'S OR IT IS NOT QUOTED.
+      // This read App.fin.bank - the retired local sim's money, the same
+      // figure the deleted ledger page showed - so the first thing a manager
+      // heard each morning was a number his own Books disagreed with. The
+      // served figure is cached by the world module on every load; if it has
+      // not landed yet the clause is simply left out, because a balance we are
+      // not sure of is worse than no balance at all.
+      var bank = null;
+      try { var sfB = window.__foWorldFinance && window.__foWorldFinance.get(); if (sfB) bank = sfB.bank; } catch (eB) {}
       var w = 0, l = 0;
       (App.results || []).forEach(function (r) { try { if (r && r.result && r.result.winner) { if (r.result.winner === me.name) w++; else l++; } } catch (e) {} });
       var lines = [
         "Morning, boss. Sleep well? The league table doesn't.",
-        "Round " + ((App.season && App.season.round != null ? App.season.round : 0) + 1) + ", " + (w + l > 0 ? w + " won, " + l + " lost so far" : "the season's still young") + ", " + FO$(bank || 0) + " in the bank.",
+        "Round " + ((App.season && App.season.round != null ? App.season.round : 0) + 1) + ", " +
+          (w + l > 0 ? w + " won, " + l + " lost so far" : "the season's still young") +
+          (bank == null ? "." : ", " + FO$(bank) + " in the bank."),
         "Next league match plays at 9:00 AM ET. The office is yours - I'll be by the kettle."
       ];
       var hook = "";
@@ -40101,6 +40116,32 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var base = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
     try { return base + "flags/" + cx().flagFile(rid) + ".svg"; } catch (e) { return ""; }
   }
+  // ---- THE BANK, ONE NUMBER, EVERYWHERE ------------------------------------
+  // The Office had its own money: FoFinance, the retired local sim's ledger,
+  // which is the same figure the deleted #/ledger page showed and the same
+  // reason it disagreed with the Books. Every room that says how much is in
+  // the bank must say what the umpire says. world_my_status already carries
+  // it, and this module already asks for that on every load, so the answer is
+  // cached here for anyone to read rather than fetched again per room.
+  function foWorldFinCache(st) {
+    try {
+      if (!st || st.bank == null) return;
+      window.__foWorldFin = { bank: Number(st.bank) || 0, finance: st.finance || {}, at: Date.now() };
+    } catch (e) {}
+  }
+  window.__foWorldFinance = {
+    get: function () { return window.__foWorldFin || null; },
+    // ask the world again, and tell the caller when it has answered
+    want: function (cb) {
+      try {
+        if (!jwt()) { if (cb) cb(null); return; }
+        rpc("world_my_status").then(function (st) {
+          foWorldFinCache(st);
+          if (cb) cb(window.__foWorldFin || null);
+        }).catch(function () { if (cb) cb(window.__foWorldFin || null); });
+      } catch (e) { if (cb) cb(null); }
+    }
+  };
   function rpc(fn, args) {
     return fetch(SB_URL + "/rest/v1/rpc/" + fn, {
       method: "POST",
@@ -40314,6 +40355,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       rpc("world_my_status").then(function (st) {
         if (!st || !st.claim) return;
         window.__foWorldPlan = st.training || {};
+      foWorldFinCache(st);
         window.__foWorldClaim = st.claim;
         adoptWorldSquad(st);
         if ((location.hash || "").split("?")[0] === "#/training" && window.foRenderNetsPage) window.foRenderNetsPage();
@@ -40351,6 +40393,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           window.__foWorldClaim = st.claim;
           try { localStorage.setItem("fo_world_claim", JSON.stringify(st.claim)); } catch (eS) {}
           window.__foWorldPlan = st.training || {};
+      foWorldFinCache(st);
           adoptWorldSquad(st);
           return;
         }
@@ -40399,6 +40442,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (!st || st.signedIn === false || !jwt()) return renderSignIn(page);
       if (!st.claim) return renderBrowse(page);
       window.__foWorldPlan = st.training || {};
+      foWorldFinCache(st);
       adoptWorldSquad(st);          // the world's men are your men, everywhere
       renderMyClub(page, st);
     }).catch(function (e) {

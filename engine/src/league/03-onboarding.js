@@ -2881,12 +2881,22 @@
       var page = document.getElementById("page"); if (!page) return;
       if (document.getElementById("fo-j-brief")) return;
       var me = userTeam(); if (!me) return;
-      var bank = (App.fin && App.fin.bank != null) ? App.fin.bank : me.bank;
+      // THE BANK THE GAFFER QUOTES IS THE UMPIRE'S OR IT IS NOT QUOTED.
+      // This read App.fin.bank - the retired local sim's money, the same
+      // figure the deleted ledger page showed - so the first thing a manager
+      // heard each morning was a number his own Books disagreed with. The
+      // served figure is cached by the world module on every load; if it has
+      // not landed yet the clause is simply left out, because a balance we are
+      // not sure of is worse than no balance at all.
+      var bank = null;
+      try { var sfB = window.__foWorldFinance && window.__foWorldFinance.get(); if (sfB) bank = sfB.bank; } catch (eB) {}
       var w = 0, l = 0;
       (App.results || []).forEach(function (r) { try { if (r && r.result && r.result.winner) { if (r.result.winner === me.name) w++; else l++; } } catch (e) {} });
       var lines = [
         "Morning, boss. Sleep well? The league table doesn't.",
-        "Round " + ((App.season && App.season.round != null ? App.season.round : 0) + 1) + ", " + (w + l > 0 ? w + " won, " + l + " lost so far" : "the season's still young") + ", " + FO$(bank || 0) + " in the bank.",
+        "Round " + ((App.season && App.season.round != null ? App.season.round : 0) + 1) + ", " +
+          (w + l > 0 ? w + " won, " + l + " lost so far" : "the season's still young") +
+          (bank == null ? "." : ", " + FO$(bank) + " in the bank."),
         "Next league match plays at 9:00 AM ET. The office is yours - I'll be by the kettle."
       ];
       var hook = "";

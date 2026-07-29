@@ -45,6 +45,32 @@
     var base = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
     try { return base + "flags/" + cx().flagFile(rid) + ".svg"; } catch (e) { return ""; }
   }
+  // ---- THE BANK, ONE NUMBER, EVERYWHERE ------------------------------------
+  // The Office had its own money: FoFinance, the retired local sim's ledger,
+  // which is the same figure the deleted #/ledger page showed and the same
+  // reason it disagreed with the Books. Every room that says how much is in
+  // the bank must say what the umpire says. world_my_status already carries
+  // it, and this module already asks for that on every load, so the answer is
+  // cached here for anyone to read rather than fetched again per room.
+  function foWorldFinCache(st) {
+    try {
+      if (!st || st.bank == null) return;
+      window.__foWorldFin = { bank: Number(st.bank) || 0, finance: st.finance || {}, at: Date.now() };
+    } catch (e) {}
+  }
+  window.__foWorldFinance = {
+    get: function () { return window.__foWorldFin || null; },
+    // ask the world again, and tell the caller when it has answered
+    want: function (cb) {
+      try {
+        if (!jwt()) { if (cb) cb(null); return; }
+        rpc("world_my_status").then(function (st) {
+          foWorldFinCache(st);
+          if (cb) cb(window.__foWorldFin || null);
+        }).catch(function () { if (cb) cb(window.__foWorldFin || null); });
+      } catch (e) { if (cb) cb(null); }
+    }
+  };
   function rpc(fn, args) {
     return fetch(SB_URL + "/rest/v1/rpc/" + fn, {
       method: "POST",
@@ -258,6 +284,7 @@
       rpc("world_my_status").then(function (st) {
         if (!st || !st.claim) return;
         window.__foWorldPlan = st.training || {};
+      foWorldFinCache(st);
         window.__foWorldClaim = st.claim;
         adoptWorldSquad(st);
         if ((location.hash || "").split("?")[0] === "#/training" && window.foRenderNetsPage) window.foRenderNetsPage();
@@ -295,6 +322,7 @@
           window.__foWorldClaim = st.claim;
           try { localStorage.setItem("fo_world_claim", JSON.stringify(st.claim)); } catch (eS) {}
           window.__foWorldPlan = st.training || {};
+      foWorldFinCache(st);
           adoptWorldSquad(st);
           return;
         }
@@ -343,6 +371,7 @@
       if (!st || st.signedIn === false || !jwt()) return renderSignIn(page);
       if (!st.claim) return renderBrowse(page);
       window.__foWorldPlan = st.training || {};
+      foWorldFinCache(st);
       adoptWorldSquad(st);          // the world's men are your men, everywhere
       renderMyClub(page, st);
     }).catch(function (e) {

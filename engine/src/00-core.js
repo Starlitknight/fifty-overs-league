@@ -1502,6 +1502,11 @@ function route(){
   // umpire walks from the founding ($2.5m, gate, sponsor, wages, interest),
   // derived from the record and re-runnable. That is the money.
   if(App.page==='ledger'){location.hash='#/finance';return}
+  // ONE MANUAL. The shell carried a static Manual link to the engine's original
+  // page while the boot pill pointed at the redesigned one, so the topbar had
+  // the word twice and the two went to different rooms. The static link is
+  // gone; the old address follows it to the room that replaced it.
+  if(App.page==='manual'||App.page==='help'){location.hash='#/guide';return}
   foSyncMyIx();   // one club per device, before a single page paints
   // Circuit-only era: the club dashboard and the league/office/training
   // surfaces are retired; any old link or bookmark lands on the Circuit.
