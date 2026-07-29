@@ -72,7 +72,7 @@
     fetchRk();
 
     var cl = claim();
-    var body = al.mast("World cricket · the ladder", "The World Rankings",
+    var body = al.head("World cricket · the ladder", "The World Rankings",
       "Rolling ratings over every match the umpire has ever banked. League wins move the needle; " +
       "Champions Cup nights move it harder.");
     body += al.subnav("rankings");

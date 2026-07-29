@@ -268,7 +268,7 @@
       var recs = recommend(nx, me, opp, oppSeas, mySplits, oppSplits, oppAtk);
       var doctrine = me.homePitch || "";
 
-      var body = al.mast("Round " + (nx.r + 1) + " · " + (nx.isHome ? "at " : "away at ") + nx.ground,
+      var body = al.head("Round " + (nx.r + 1) + " · " + (nx.isHome ? "at " : "away at ") + nx.ground,
         "v " + opp.name,
         (oppHuman ? "A human hand on their tiller — expect the unexpected. " : "") +
         "The scout has been to their nets, read their scorecards, and filed this before breakfast.");

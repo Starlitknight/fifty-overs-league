@@ -80,7 +80,7 @@
   };
 
   function mast(al) {
-    return al.mast("The transfer market", "Buying & Selling",
+    return al.head("The transfer market", "Buying & Selling",
       "Offers are sealed and windows last three days. Nobody can outbid you by being awake at the right minute.");
   }
 

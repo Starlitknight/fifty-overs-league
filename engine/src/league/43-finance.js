@@ -49,7 +49,7 @@
   function A() { return window.AL || null; }
   function on() { return (location.hash || "").split("?")[0] === "#/finance"; }
   function mast(al) {
-    return al.mast("The books", "Gate & Ground",
+    return al.head("The books", "Gate & Ground",
       "Nobody credits your account. The umpire walks every round you have played and works out what the crowd was, " +
       "what they paid, what the sponsor thought and what your men cost.");
   }

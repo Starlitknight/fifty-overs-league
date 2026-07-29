@@ -190,7 +190,7 @@
     else if (done < 5) { var nxt = ORDER[done]; status = STAGE_NM[nxt] + " " + (done === 4 ? "crowns the champion" : "come next") + " · " + when(nxt) + "."; chip = "Cup in progress"; }
     else { status = (br && br.champion ? br.champion.name + " are champions of the world's clubs." : "The cup is decided."); chip = "Champions crowned"; }
 
-    var body = al.mast("World cricket · season " + season + " · the clubs' crown", "The Champions Cup",
+    var body = al.head("World cricket · season " + season + " · the clubs' crown", "The Champions Cup",
       "Nineteen league champions, one knockout, and a crown nobody has to be awake for.");
     body += al.subnav("champions");
 

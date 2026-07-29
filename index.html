@@ -930,7 +930,8 @@ html body.al-on button, html body.al-on #page button {
 .al-head {
   position: fixed; top: 0; left: 0; right: 0; z-index: 60;
   height: var(--al-head);
-  background: var(--al-navy); color: var(--al-paper-hi);
+  /* --al-club is your club's own colour, set by the shell on every paint */
+  background: var(--al-club, var(--al-navy)); color: var(--al-paper-hi);
   display: flex; align-items: center; gap: var(--al-3);
   padding: 0 var(--al-4);
   padding-top: env(safe-area-inset-top);
@@ -947,6 +948,10 @@ html body.al-on button, html body.al-on #page button {
    navigation and this must not exist at all - unhidden it ran the five labels
    together across the header and squeezed the club name to an ellipsis */
 .al-head__nav, .al-head__spacer { display: none; }
+.al-head__crest {
+  width: 30px; height: 30px; flex: 0 0 30px; object-fit: contain; padding: 3px;
+  background: rgba(255, 254, 252, .14); box-sizing: border-box;
+}
 .al-head__where { min-width: 0; flex: 1 1 auto; }
 .al-head__where b {
   display: block; font: 600 15px/1.2 var(--al-display);
@@ -1035,6 +1040,21 @@ html body.al-on #page {
    5. ARTWORK PLATE — a printed plate. Never a background, never covered.
    ========================================================================== */
 .al-plate { margin: 0 calc(var(--al-gutter) * -1) var(--al-4); background: var(--al-paper-2); }
+/* THE ROOM PLATE. Every room opens with its own painting, full width, natural
+   ratio, full brightness, nothing over it and nothing cropped off it. It sits
+   ABOVE the masthead - the picture tells you where you are before the words
+   do - and it pulls up under the fixed header so the page opens on the art. */
+.al-plate--room {
+  margin: calc(var(--al-4) * -1) calc(var(--al-gutter) * -1) 0;
+  background: var(--al-navy); overflow: hidden;
+}
+.al-plate--room img { display: block; width: 100%; height: auto; }
+.al-plate--room + .al-mast { padding-top: var(--al-4); }
+/* on a phone a portrait painting can run to 500px+, which would push the
+   masthead off the fold; the plate keeps its own aspect and shows the top of
+   the picture, which is where these paintings put their sky and their arches */
+@media (max-width: 759px) { .al-plate--room { max-height: 38vh; } }
+@media (min-width: 760px) { .al-plate--room { max-height: 30vh; } }
 .al-plate img { display: block; width: 100%; height: auto; }
 .al-plate figcaption {
   padding: var(--al-2) var(--al-gutter);
@@ -1265,7 +1285,12 @@ body.al-on .al-btn { font-family: var(--al-ui); }
   font: 400 14px/20px var(--al-ui); font-variant-numeric: tabular-nums;
 }
 .al-tbl td.al-pos { font: 500 13px/20px var(--al-mono); color: var(--al-muted-2); width: 26px; }
-.al-tbl td.al-club { font-weight: 500; }
+/* a crest plus a long name plus a YOU label will wrap and double the row's
+   height; the club cell takes what width is left and ellipsises instead */
+.al-tbl td.al-club {
+  font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 42vw;
+}
 .al-tbl td.al-pts { font: 600 15px/20px var(--al-mono); }
 .al-tbl tr.al-you td { background: var(--al-paper-hi); }
 .al-tbl tr.al-you td.al-pos { box-shadow: inset 3px 0 0 var(--al-accent); }
@@ -1285,6 +1310,7 @@ body.al-on .al-btn { font-family: var(--al-ui); }
   .al-tbl th, .al-tbl td { padding: var(--al-2) 3px; }
   .al-tbl td { font-size: 13px; }
   .al-tbl .al-s { display: none; }
+  .al-tbl td.al-club .al-crest { width: 18px; height: 18px; flex-basis: 18px; padding: 2px; margin-right: 6px; }
 }
 
 /* ============================================================================
@@ -1455,6 +1481,30 @@ button.al-flag--on img { box-shadow: 0 0 0 2px var(--al-accent); }
 .al-plaque > span { display: inline-block; margin-top: var(--al-2); }
 
 /* ============================================================================
+   14f. IDENTITY — a crest for a club, a face for a cricketer
+   ========================================================================== */
+/* Ten clubs in identical type are ten identical clubs. A badge and a colour,
+   both derived from the name, make a rival recognisable at a glance. */
+.al-crest {
+  width: 22px; height: 22px; flex: 0 0 22px; object-fit: contain; padding: 3px;
+  vertical-align: -5px; margin-right: var(--al-2); box-sizing: border-box;
+}
+.al-crest--lg { width: 34px; height: 34px; flex-basis: 34px; padding: 5px; vertical-align: -10px; }
+.al-tbl td.al-club .al-crest { margin-right: var(--al-2); }
+
+/* a cricketer's own figure, at the size a list can carry */
+.al-face {
+  width: 34px; height: 34px; flex: 0 0 34px; object-fit: cover; object-position: 50% 12%;
+  background: var(--al-paper-2); box-shadow: 0 0 0 1px var(--al-rule);
+}
+.al-prow--face { grid-template-columns: 26px 34px 1fr auto; }
+.al-prow--face.al-prow--static .al-prow__act { padding-left: calc(26px + 34px + var(--al-3) * 2); }
+.al-sheet__face {
+  display: block; width: 100%; max-width: 200px; margin: 0 auto var(--al-4);
+  background: var(--al-paper-2); box-shadow: 0 0 0 1px var(--al-rule);
+}
+
+/* ============================================================================
    15. STATUS LABEL and MONOSPACE READOUT
    ========================================================================== */
 .al-tag {
@@ -1542,5 +1592,5 @@ button.al-flag--on img { box-shadow: 0 0 0 2px var(--al-accent); }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
-<script src="assets/fo-20260729-0320-352692.js"></script>
+<script src="assets/fo-20260729-0518-37948e.js"></script>
 </body></html>

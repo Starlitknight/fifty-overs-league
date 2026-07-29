@@ -170,7 +170,8 @@
     return "<a class='" + cls + "' href='" + E(f.href) + "'>" +
       "<span class='al-fix__r'>R" + (f.round | 0) + "</span>" +
       "<span class='al-fix__w " + kind + "'>" + mark + "</span>" +
-      "<span class='al-fix__t'><b>" + (f.isHome ? "v " : "at ") + E(f.opp) + "</b><i>" + E(under) + "</i></span>" +
+      "<span class='al-fix__t'><b>" + (A() ? A().crest(f.opp) : "") + (f.isHome ? "v " : "at ") +
+        E(f.opp) + "</b><i>" + E(under) + "</i></span>" +
       "<span class='al-fix__o'>" + (f.kind === "done" ? "&rsaquo;" : next ? "NEXT" : "&rsaquo;") + "</span>" +
       "</a>";
   }
@@ -197,7 +198,7 @@
     if (cl && cl.country && cl.slot != null) card = servedCard(cl);
     if (!card) card = localCard();
 
-    var body = al.mast("The League · season " + ((card && card.season) || 1), "Fixtures",
+    var body = al.head("The League · season " + ((card && card.season) || 1), "Fixtures",
       "Every match of the summer in one column. The next one is open; the rest are a line each.");
     body += al.subnav("fixtures");
 

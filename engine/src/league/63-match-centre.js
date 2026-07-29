@@ -87,7 +87,8 @@
           var tags = [];
           if (n === p.o.captain) tags.push("C");
           if (n === p.o.keeper) tags.push("WK");
-          return '<div class="al-prow al-prow--picked"><span class="al-prow__no">' + ("0" + (i + 1)).slice(-2) + "</span>" +
+          return '<div class="al-prow al-prow--face al-prow--picked"><span class="al-prow__no">' + ("0" + (i + 1)).slice(-2) + "</span>" +
+            al.face(pl) +
             '<span class="al-prow__who"><b>' + E(n) + (tags.length ? " <em class='al-you__tag'>" + tags.join(" · ") + "</em>" : "") + "</b>" +
             "<i>" + E(roleWord(pl)) + "</i></span>" +
             '<span class="al-prow__rate">' + (ovr(pl) || "&mdash;") + "</span></div>";

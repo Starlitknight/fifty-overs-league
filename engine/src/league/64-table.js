@@ -111,21 +111,26 @@
   // Eight columns do not fit in 390px, and a table that merely scrolls
   // sideways puts the most important number behind a swipe nobody makes. So
   // the narrow layout spends its width on what the table is FOR - position,
-  // club, played, won, net run rate, points - and drops lost and tied, which a
-  // reader can derive and which the wider layout keeps.
+  // club, played, won, points - and drops lost, tied and net run rate, which a
+  // reader can derive or find on the wide layout. A club's CREST is worth more
+  // of those pixels than its net run rate: ten rows of identical type are ten
+  // clubs you cannot tell apart at a glance, which is the thing the table is
+  // read for.
   function grid(data, mine) {
+    var al = A();
     var body = data.rows.map(function (r, i) {
       var me = r.club === mine;
       return "<tr" + (me ? " class='al-you'" : "") + ">" +
         "<td class='al-pos'>" + (i + 1) + "</td>" +
-        "<td class='l al-club'>" + E(r.club) + (me ? "<span class='al-you__tag'>YOU</span>" : "") + "</td>" +
+        "<td class='l al-club'>" + al.crest(r.club) + E(r.club) +
+          (me ? "<span class='al-you__tag'>YOU</span>" : "") + "</td>" +
         "<td>" + (r.p | 0) + "</td><td>" + (r.w | 0) + "</td>" +
         "<td class='al-s'>" + (r.l | 0) + "</td><td class='al-s'>" + (r.t | 0) + "</td>" +
-        "<td>" + nrr(r.nrr) + "</td><td class='al-pts'>" + (r.pts | 0) + "</td></tr>";
+        "<td class='al-s'>" + nrr(r.nrr) + "</td><td class='al-pts'>" + (r.pts | 0) + "</td></tr>";
     }).join("");
     return "<div class='al-tblwrap'><table class='al-tbl'><thead><tr>" +
       "<th></th><th class='l'>Club</th><th>P</th><th>W</th>" +
-      "<th class='al-s'>L</th><th class='al-s'>T</th><th>NRR</th><th>Pts</th>" +
+      "<th class='al-s'>L</th><th class='al-s'>T</th><th class='al-s'>NRR</th><th>Pts</th>" +
       "</tr></thead><tbody>" + body + "</tbody></table></div>";
   }
 
@@ -135,7 +140,7 @@
     var al = A(); if (!al) return;
     try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
 
-    var body = al.mast("The League · standings", "The Table",
+    var body = al.head("The League · standings", "The Table",
       data ? "Two points a win, one a tie; net run rate splits the level."
            : "The season's record, from the morning the first round resolves.");
     body += al.subnav("table");

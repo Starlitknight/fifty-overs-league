@@ -379,7 +379,7 @@
         p.kind === "cup" ? "World Cup — " + stageName(p.stage) :
         "Rest day — the season " + (p.season + 1) + " calendar begins tomorrow";
 
-      var body = al.mast("World cricket · season " + p.season + " · day " + (p.di + 1) + " of " + CYCLE,
+      var body = al.head("World cricket · season " + p.season + " · day " + (p.di + 1) + " of " + CYCLE,
         "The Planet Plays Today",
         "Every league runs on the world calendar, live from its own local hour — online or offline, the same " +
         "world for everyone.");

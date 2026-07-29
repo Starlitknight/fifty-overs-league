@@ -319,7 +319,7 @@
       var charter = charterFor(club), chDone = charter.filter(function (p) { return p.done; }).length;
       var F = firsts();
 
-      var body = al.mast(club + " · the pavilion wall", "The Honours Board",
+      var body = al.head(club + " · the pavilion wall", "The Honours Board",
         mine
           ? "Thirteen honours in gold leaf on oak, and six pursuits that belong to this club alone. The league remembers who got there first."
           : "Reading " + club + "'s board. Every club chases the same thirteen; only one name goes down as the league's first.");
@@ -337,6 +337,7 @@
       body += al.tabs(GD.teams.map(function (t) {
         return { id: t.name, label: t.name, count: boardFor(t.name).filter(function (p) { return p.done; }).length };
       }), club);
+      body += '<p class="al-read">' + al.crest(club, "al-crest--lg") + " Reading " + E(club) + "&rsquo;s wall.</p>";
 
       body += al.sec("The " + club + " charter · " + chDone + " of " + charter.length,
         '<p class="al-read">Six pursuits of their own. No other club has this page.</p>' +

@@ -10112,7 +10112,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260729-0308-e3c3d1";
+  var FO_BUILD = "20260729-0518-37948e";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -16497,116 +16497,70 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return { id: s[0], title: s[1], cat: (catOf(s[0]) || {}).name || "", text: String(s[2]).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").toLowerCase() };
     });
 
-    var searchBox = "<form id='fo-mn2-form' role='search'><input id='fo-mn2-q' type='search' placeholder='Search the manual&hellip;' aria-label='Search the manual' autocomplete='off'></form>";
-    var sideNav = cats.map(function (c) {
-      var open = !!window.__foMnOpen[c.name];
-      return "<div class='fo-mn2-cat'><button class='fo-mn2-cbtn' aria-expanded='" + open + "' data-cat='" + E(c.name) + "'>" + E(c.name) + "<i>" + (open ? "&minus;" : "+") + "</i></button>" +
-        "<div class='fo-mn2-arts'" + (open ? "" : " hidden") + ">" + c.arts.map(function (id) {
-          return "<a href='#/guide?a=" + id + "'" + (id === artId ? " class='on' aria-current='page'" : "") + ">" + byId[id][1] + "</a>";
-        }).join("") + "</div></div>";
-    }).join("");
-    var side = "<aside class='fo-mn2-side'><div class='fo-mn2-sh'><a href='#/guide'>Game manual</a><span>Complete guide to managing a winning cricket club</span></div>" +
-      searchBox + "<nav id='fo-mn2-nav'>" + sideNav + "</nav>" +
-      "<div class='fo-man-tip' style='margin-top:14px'><b>Manager tip</b><br>Every great team is built on smart decisions off the field.</div></aside>";
+    // PHASE 4 OF THE ALMANACK. The manual keeps its information architecture -
+    // categories, articles, search, previous and next - because that part was
+    // right. What it loses is a documentation-site chrome of its own: a
+    // sidebar, a mobile drawer and a second set of type. A category is a band,
+    // an article is a row, and an article page is prose with a way onward.
+    var al = window.AL; if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (eA) {}
 
-    var main;
+    var body;
     if (!artId) {
-      main = "<div class='fo-mn2-land'><div class='fo-mn2-intro'><h1>Game manual</h1>" +
-        "<p>Learn how to build, manage, and compete with your cricket club. Every explanation here is checked against the match engine.</p></div>" +
-        "<div id='fo-mn2-res'></div>" +
-        "<div class='fo-mn2-cards'>" + cats.map(function (c) {
-          return "<a class='fo-mn2-cc' href='#/guide?a=" + c.arts[0] + "'><b>" + E(c.name) + "</b><p>" + E(c.desc) + "</p><span>" + c.arts.length + " article" + (c.arts.length === 1 ? "" : "s") + " &rsaquo;</span></a>";
-        }).join("") + "</div></div>";
+      body = al.mast("The game manual", "How Everything Works",
+        "Build, manage and compete. Every explanation here is checked against the match engine.") +
+        al.subnav("guide") +
+        '<form id="fo-mn2-form" role="search"><input class="al-field al-field--block" id="fo-mn2-q" ' +
+        'type="search" placeholder="Search the manual…" aria-label="Search the manual" autocomplete="off"></form>' +
+        '<div id="fo-mn2-res"></div>' +
+        cats.map(function (c) {
+          return al.sec(c.name, "<p>" + E(c.desc) + "</p>" +
+            '<div class="al-fixlist">' + c.arts.map(function (id) {
+              return '<a class="al-fix al-fix--room" href="#/guide?a=' + id + '">' +
+                '<span class="al-fix__t"><b>' + byId[id][1] + "</b></span>" +
+                '<span class="al-fix__o">›</span></a>';
+            }).join("") + "</div>");
+        }).join("");
     } else {
       var art = byId[artId], cat2 = catOf(artId);
       var fi = flat.indexOf(artId);
       var prevA = fi > 0 ? byId[flat[fi - 1]] : null, nextA = fi < flat.length - 1 ? byId[flat[fi + 1]] : null;
-      main = "<article class='fo-mn2-art' id='man-" + artId + "'>" +
-        "<div class='fo-mn2-crumb'><a href='#/guide'>Manual</a> &rsaquo; <span>" + E(cat2 ? cat2.name : "") + "</span> &rsaquo; <b>" + art[1] + "</b></div>" +
-        "<h1>" + art[1] + "</h1>" +
-        "<div id='fo-mn2-res'></div>" +
-        "<div class='fo-man-b'>" + art[2] + "</div>" +
-        "<div class='fo-mn2-pn'>" +
-        (prevA ? "<a class='fo-mn2-prev' href='#/guide?a=" + prevA[0] + "'><span>&lsaquo; Previous</span><b>" + prevA[1] + "</b></a>" : "<span></span>") +
-        (nextA ? "<a class='fo-mn2-next' href='#/guide?a=" + nextA[0] + "'><span>Next &rsaquo;</span><b>" + nextA[1] + "</b></a>" : "<span></span>") +
-        "</div></article>";
+      body = al.mast((cat2 ? cat2.name : "The manual"), art[1], "") + al.subnav("guide") +
+        '<form id="fo-mn2-form" role="search"><input class="al-field al-field--block" id="fo-mn2-q" ' +
+        'type="search" placeholder="Search the manual…" aria-label="Search the manual" autocomplete="off"></form>' +
+        '<div id="fo-mn2-res"></div>' +
+        '<div class="al-sec al-reading fo-man-b">' + art[2] + "</div>" +
+        '<div class="al-lot__act">' +
+        (prevA ? '<a class="al-btn" href="#/guide?a=' + prevA[0] + '">‹ ' + prevA[1] + "</a>" : "") +
+        (nextA ? '<a class="al-btn" href="#/guide?a=' + nextA[0] + '">' + nextA[1] + " ›</a>" : "") +
+        '<a class="al-btn" href="#/guide">All articles</a></div>';
     }
+    page.innerHTML = al.page({ body: body });
 
-    page.innerHTML = "<div class='fo-mn2'>" +
-      "<div class='fo-mn2-mbar'>" + (artId ? "<a href='#/guide'>&lsaquo; Manual</a>" : "<b>Game manual</b>") +
-      "<button id='fo-mn2-contents' aria-label='Contents'>Contents</button></div>" +
-      side + "<main class='fo-mn2-main'>" + main + "</main></div>";
-
-    // category expand/collapse (state survives navigation within the session)
-    page.querySelectorAll(".fo-mn2-cbtn").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var nm3 = b.getAttribute("data-cat");
-        window.__foMnOpen[nm3] = !window.__foMnOpen[nm3];
-        var artsEl = b.parentNode.querySelector(".fo-mn2-arts");
-        var open2 = !!window.__foMnOpen[nm3];
-        b.setAttribute("aria-expanded", open2);
-        b.querySelector("i").innerHTML = open2 ? "&minus;" : "+";
-        if (open2) artsEl.removeAttribute("hidden"); else artsEl.setAttribute("hidden", "");
-      });
-    });
-    // search: live results over titles, bodies and glossaries; Enter opens the
-    // best hit, Escape clears. Works entirely offline.
-    var qIn = page.querySelector("#fo-mn2-q"), resEl = page.querySelector("#fo-mn2-res");
-    var doSearch = function () {
-      var q = (qIn.value || "").trim().toLowerCase();
-      if (!resEl) return;
-      if (q.length < 2) { resEl.innerHTML = ""; return; }
-      var hits = window.__foMnIx.map(function (x) {
-        var tHit = x.title.toLowerCase().indexOf(q) >= 0, bAt = x.text.indexOf(q);
-        if (!tHit && bAt < 0) return null;
-        var snip = "";
-        if (bAt >= 0) {
-          var s0 = Math.max(0, bAt - 55), s1 = Math.min(x.text.length, bAt + q.length + 55);
-          snip = (s0 > 0 ? "&hellip;" : "") + E(x.text.slice(s0, s1)).replace(new RegExp("(" + q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig"), "<mark>$1</mark>") + (s1 < x.text.length ? "&hellip;" : "");
-        }
-        var freq = 0, at2 = bAt;
-        while (at2 >= 0 && freq < 6) { freq++; at2 = x.text.indexOf(q, at2 + q.length); }
-        return { x: x, score: (tHit ? 10 : 0) + freq, snip: snip };
-      }).filter(Boolean).sort(function (a, b2) { return b2.score - a.score; }).slice(0, 8);
-      resEl.innerHTML = hits.length
-        ? "<div class='fo-mn2-hits'>" + hits.map(function (h) {
-            return "<a href='#/guide?a=" + h.x.id + "'><b>" + h.x.title + "</b><span>" + E(h.x.cat) + "</span>" + (h.snip ? "<i>" + h.snip + "</i>" : "") + "</a>";
-          }).join("") + "</div>"
-        : "<div class='fo-mn2-hits'><div class='fo-mn2-none'>No articles match &ldquo;" + E(q) + "&rdquo;.</div></div>";
-    };
-    if (qIn) {
-      qIn.addEventListener("input", doSearch);
-      qIn.addEventListener("keydown", function (ev) {
-        if (ev.key === "Escape") { qIn.value = ""; doSearch(); qIn.blur(); }
-      });
+    // search: live results over every article's title and text
+    var q = page.querySelector("#fo-mn2-q"), res = page.querySelector("#fo-mn2-res");
+    if (q && res) {
       var form = page.querySelector("#fo-mn2-form");
-      if (form) form.addEventListener("submit", function (ev) {
-        ev.preventDefault();
-        var first = resEl && resEl.querySelector("a");
-        if (first) { location.hash = first.getAttribute("href").slice(1); }
+      if (form) form.addEventListener("submit", function (ev) { ev.preventDefault(); });
+      q.addEventListener("input", function () {
+        var t = String(q.value || "").trim().toLowerCase();
+        if (t.length < 2) { res.innerHTML = ""; return; }
+        var hits = (window.__foMnIx || []).filter(function (x) {
+          return x.title.toLowerCase().indexOf(t) >= 0 || x.text.indexOf(t) >= 0;
+        }).slice(0, 8);
+        res.innerHTML = hits.length
+          ? '<div class="al-fixlist">' + hits.map(function (x) {
+              return '<a class="al-fix al-fix--room" href="#/guide?a=' + x.id + '">' +
+                '<span class="al-fix__t"><b>' + E(x.title) + "</b><i>" + E(x.cat) + "</i></span>" +
+                '<span class="al-fix__o">›</span></a>';
+            }).join("") + "</div>"
+          : '<p class="al-read">Nothing in the manual matches that.</p>';
       });
     }
-    // mobile Contents: the manual nav in the refined drawer style
-    var cBtn = page.querySelector("#fo-mn2-contents");
-    if (cBtn) cBtn.addEventListener("click", function () {
-      var d = document.getElementById("fo-mandrawer");
-      if (d) { d.remove(); return; }
-      d = document.createElement("div"); d.id = "fo-mandrawer";
-      d.innerHTML = "<div class='fo-mdk'></div><div class='fo-mdp'><div class='fo-mdh'>Game manual<button class='fo-mdx' aria-label='Close contents'>&#10005;</button></div><nav class='fo-mdn'>" +
-        cats.map(function (c) {
-          return "<div class='fo-mn2-dcat'>" + E(c.name) + "</div>" + c.arts.map(function (id) {
-            return "<a class='fo-mdl" + (id === artId ? " on" : "") + "' href='#/guide?a=" + id + "'>" + byId[id][1] + "</a>";
-          }).join("");
-        }).join("") + "</nav></div>";
-      document.body.appendChild(d);
-      d.classList.add("open"); document.body.classList.add("fo-mnav-lock");
-      var close = function () { d.remove(); document.body.classList.remove("fo-mnav-lock"); };
-      d.querySelector(".fo-mdk").addEventListener("click", close);
-      d.querySelector(".fo-mdx").addEventListener("click", close);
-      d.querySelectorAll("a.fo-mdl").forEach(function (a) { a.addEventListener("click", close); });
-    });
+    // the articles carry real tables; on a phone they get the same scroll
+    // wrapper every other table in the game gets
+    try { foMobileTables(); } catch (eT) {}
     try { window.scrollTo(0, 0); } catch (eSc) {}
-    foMobileTables();
   }
   // THE MANUAL IS A ROOM LIKE ANY OTHER. It used to paint itself on a timer
   // after every hash change, which meant the engine's router - reaching
@@ -32848,7 +32802,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var led = repLedger();
     var openOffer = offer && !bag.wag[offer.key];
 
-    var body = al.mast((pos ? ordinal(pos) + " in the league · " : "") + "season " + (App.seasonNo || 1),
+    var body = al.head((pos ? ordinal(pos) + " in the league · " : "") + "season " + (App.seasonNo || 1),
       "The Desk", "The morning's post, laid out in the club office.");
 
     // ---- what is actually waiting ------------------------------------------
@@ -33381,7 +33335,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var rw = foRunway(), deal = foDeal();
     var wages = foWages(me);
 
-    var body = al.mast("The club accounts · season " + (App.seasonNo || 1), "The Journal",
+    var body = al.head("The club accounts · season " + (App.seasonNo || 1), "The Journal",
       "Kept in the club's own hand. Every round settles the wage bill, the league's distribution arrives, " +
       "and the shirt pays what it promised.");
     body += al.subnav("ledger");
@@ -33781,7 +33735,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var PROGS = progs();
     var named = squad.filter(function (p) { return plan[p.name]; }).length;
 
-    var body = al.mast("The training ground", "The Nets",
+    var body = al.head("The training ground", "The Nets",
       "Name what each man works on. The World Service holds the plan and the umpire runs it with every round, " +
       "whether you watch it or not.") + al.subnav("training");
 
@@ -33798,8 +33752,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     // ---- one standing order per man ----------------------------------------
     var rows = squad.map(function (p) {
       var b = banked(p), cur = plan[p.name] || "";
-      return '<label class="al-prow al-prow--static al-prow--pick">' +
-        '<span class="al-prow__no">' + (p.age | 0) + "</span>" +
+      return '<label class="al-prow al-prow--static al-prow--pick al-prow--face">' +
+        '<span class="al-prow__no">' + (p.age | 0) + "</span>" + al.face(p) +
         '<span class="al-prow__who"><b>' + E(p.name) + "</b><i>" +
           (b.pct ? E(foSkillLbl(b.skill)) + " " + b.pct + "% of the way" : "no work banked yet") + "</i>" +
           (b.pct ? al.meter(b.pct, "warm") : "") + "</span>" +
@@ -34379,7 +34333,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var recs = recommend(nx, me, opp, oppSeas, mySplits, oppSplits, oppAtk);
       var doctrine = me.homePitch || "";
 
-      var body = al.mast("Round " + (nx.r + 1) + " · " + (nx.isHome ? "at " : "away at ") + nx.ground,
+      var body = al.head("Round " + (nx.r + 1) + " · " + (nx.isHome ? "at " : "away at ") + nx.ground,
         "v " + opp.name,
         (oppHuman ? "A human hand on their tiller — expect the unexpected. " : "") +
         "The scout has been to their nets, read their scorecards, and filed this before breakfast.");
@@ -34874,7 +34828,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var charter = charterFor(club), chDone = charter.filter(function (p) { return p.done; }).length;
       var F = firsts();
 
-      var body = al.mast(club + " · the pavilion wall", "The Honours Board",
+      var body = al.head(club + " · the pavilion wall", "The Honours Board",
         mine
           ? "Thirteen honours in gold leaf on oak, and six pursuits that belong to this club alone. The league remembers who got there first."
           : "Reading " + club + "'s board. Every club chases the same thirteen; only one name goes down as the league's first.");
@@ -34892,6 +34846,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       body += al.tabs(GD.teams.map(function (t) {
         return { id: t.name, label: t.name, count: boardFor(t.name).filter(function (p) { return p.done; }).length };
       }), club);
+      body += '<p class="al-read">' + al.crest(club, "al-crest--lg") + " Reading " + E(club) + "&rsquo;s wall.</p>";
 
       body += al.sec("The " + club + " charter · " + chDone + " of " + charter.length,
         '<p class="al-read">Six pursuits of their own. No other club has this page.</p>' +
@@ -36938,7 +36893,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         p.kind === "cup" ? "World Cup — " + stageName(p.stage) :
         "Rest day — the season " + (p.season + 1) + " calendar begins tomorrow";
 
-      var body = al.mast("World cricket · season " + p.season + " · day " + (p.di + 1) + " of " + CYCLE,
+      var body = al.head("World cricket · season " + p.season + " · day " + (p.di + 1) + " of " + CYCLE,
         "The Planet Plays Today",
         "Every league runs on the world calendar, live from its own local hour — online or offline, the same " +
         "world for everyone.");
@@ -38937,7 +38892,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       });
     });
 
-    var body = al.mast("The " + natNm + " League · season " + sN, "The Record Book",
+    var body = al.head("The " + natNm + " League · season " + sN, "The Record Book",
       "Every league run and wicket this world has produced, kept the way an almanack would keep it.");
     body += al.subnav("records");
 
@@ -39411,7 +39366,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     else if (done < 5) { var nxt = ORDER[done]; status = STAGE_NM[nxt] + " " + (done === 4 ? "crowns the champion" : "come next") + " · " + when(nxt) + "."; chip = "Cup in progress"; }
     else { status = (br && br.champion ? br.champion.name + " are champions of the world's clubs." : "The cup is decided."); chip = "Champions crowned"; }
 
-    var body = al.mast("World cricket · season " + season + " · the clubs' crown", "The Champions Cup",
+    var body = al.head("World cricket · season " + season + " · the clubs' crown", "The Champions Cup",
       "Nineteen league champions, one knockout, and a crown nobody has to be awake for.");
     body += al.subnav("champions");
 
@@ -40927,7 +40882,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     fetchRk();
 
     var cl = claim();
-    var body = al.mast("World cricket · the ladder", "The World Rankings",
+    var body = al.head("World cricket · the ladder", "The World Rankings",
       "Rolling ratings over every match the umpire has ever banked. League wins move the needle; " +
       "Champions Cup nights move it harder.");
     body += al.subnav("rankings");
@@ -42653,7 +42608,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function A() { return window.AL || null; }
   function on() { return (location.hash || "").split("?")[0] === "#/academy"; }
   function mast(al) {
-    return al.mast("The academy", "The Colts",
+    return al.head("The academy", "The Colts",
       "Boys arrive on their own, age on their own, and walk into your first team at twenty-one whether you were " +
       "watching or not. What you decide is how good a place they learn in.");
   }
@@ -42778,8 +42733,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ? " · " + p.colts.m + (p.colts.m === 1 ? " cap" : " caps") + ", " + p.colts.runs + " runs" +
         (p.colts.wkts ? ", " + p.colts.wkts + " wkts" : "")
       : "";
-    return '<div class="al-prow al-prow--static">' +
-      '<span class="al-prow__no">' + (p.age || 18) + "</span>" +
+    return '<div class="al-prow al-prow--static al-prow--face">' +
+      '<span class="al-prow__no">' + (p.age || 18) + "</span>" + al.face(p) +
       '<span class="al-prow__who"><b>' + E(p.name) + "</b><i>" + E(roleOf(p)) + " · " + E(ageWord(+p.age || 18)) +
         " · " + E(promiseWord(pr)) + caps + "</i>" + al.meter(pr, "warm") + "</span>" +
       '<span class="al-prow__rate">' + (o == null ? "&mdash;" : o) + "</span>" +
@@ -42956,7 +42911,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function A() { return window.AL || null; }
   function on() { return (location.hash || "").split("?")[0] === "#/finance"; }
   function mast(al) {
-    return al.mast("The books", "Gate & Ground",
+    return al.head("The books", "Gate & Ground",
       "Nobody credits your account. The umpire walks every round you have played and works out what the crowd was, " +
       "what they paid, what the sponsor thought and what your men cost.");
   }
@@ -43127,7 +43082,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function A() { return window.AL || null; }
   function onComps() { return (location.hash || "").split("?")[0] === "#/comps"; }
   function mast(al) {
-    return al.mast("The invitationals", "Competitions of Your Own",
+    return al.head("The invitationals", "Competitions of Your Own",
       "Found one, name it, and see who turns up. Three days later the umpire fills whatever seats are empty and " +
       "plays it out, a round a day, whether anybody is watching or not.");
   }
@@ -43557,7 +43512,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function A() { return window.AL || null; }
   function onNat() { var h = (location.hash || "").split("?")[0]; return h === "#/nations" || h === "#/natteams"; }
   function mast(al) {
-    return al.mast("The international game", "Playing For Your Country",
+    return al.head("The international game", "Playing For Your Country",
       "Three rounds a season the selectors take the best men in the land, wherever they play. Your club loses " +
       "them for the day and is paid for the week — and that evening the nations play each other.");
   }
@@ -44121,7 +44076,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   };
 
   function mast(al) {
-    return al.mast("The transfer market", "Buying & Selling",
+    return al.head("The transfer market", "Buying & Selling",
       "Offers are sealed and windows last three days. Nobody can outbid you by being awake at the right minute.");
   }
 
@@ -44489,7 +44444,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   var SECTIONS = [
     { id: "today",  label: "Today",  home: "#/today",  routes: ["today", "home", "desk", "matchday", "watch", "match"] },
     { id: "team",   label: "Team",   home: "#/team",   routes: ["team", "squad", "orders", "training", "academy", "player", "dossier"] },
-    { id: "league", label: "League", home: "#/table",  routes: ["table", "league", "fixtures", "records", "planet", "world", "rankings", "cup", "comps", "nations", "nation", "atlas", "scorecard", "reports"] },
+    { id: "league", label: "League", home: "#/table",  routes: ["table", "league", "fixtures", "records", "planet", "world", "rankings", "cup", "champions", "comps", "nations", "natteams", "nation", "atlas", "scorecard", "reports"] },
     { id: "market", label: "Market", home: "#/market", routes: ["market", "team-page"] },
     { id: "club",   label: "Club",   home: "#/club-h", routes: ["club-h", "finance", "milestones", "lore", "paper", "wire", "guide", "ledger", "almanack"] },
   ];
@@ -44498,6 +44453,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     today: 1, team: 1, matchday: 1, table: 1, fixtures: 1,
     market: 1, finance: 1, academy: 1, training: 1, dossier: 1, desk: 1,
     records: 1, milestones: 1, paper: 1, ledger: 1, wire: 1,
+    planet: 1, rankings: 1, champions: 1, comps: 1, nations: 1, natteams: 1, guide: 1,
   };
 
   // A section is bigger than one screen, and the dock only has five slots. The
@@ -44524,6 +44480,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       { id: "fixtures", label: "Fixtures", href: "#/fixtures" },
       { id: "records", label: "Record book", href: "#/records" },
       { id: "planet", label: "World", href: "#/planet" },
+      { id: "rankings", label: "Rankings", href: "#/rankings" },
+      { id: "champions", label: "Champions Cup", href: "#/champions" },
+      { id: "comps", label: "Invitationals", href: "#/comps" },
+      { id: "nations", label: "Nations", href: "#/nations" },
     ],
   };
 
@@ -44600,12 +44560,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     try {
       var el = ensure(), sec = sectionOf(), c = clockText(), t = team();
       var club = (t && t.name) || "Fifty Overs";
+      // the header wears YOUR club's colour, so the game is never generic navy
+      try { document.documentElement.style.setProperty("--al-club", t ? colourOf(club) : ""); } catch (eC) {}
       var nav = SECTIONS.map(function (s) {
         return '<a href="' + s.home + '" data-al-sec="' + s.id + '"' +
           (s.id === sec.id ? ' aria-current="page"' : "") + ">" + E(s.label) + "</a>";
       }).join("");
       el.head.innerHTML =
-        '<div class="al-head__mark">FO</div>' +
+        (t ? '<img class="al-head__crest" src="' + crestOf(club) + '" alt="" onerror="this.style.display=\'none\'">'
+           : '<div class="al-head__mark">FO</div>') +
         '<div class="al-head__where"><i>' + E(sec.label) + "</i><b>" + E(club) + "</b></div>" +
         '<div class="al-head__spacer"></div>' +
         '<div class="al-head__nav">' + nav + "</div>" +
@@ -44646,6 +44609,86 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
   window.__foAlApply = apply;
 
+  // ---- THE ROOMS ARE PLACES -------------------------------------------------
+  // The redesign stripped the paintings out and the game went flat: cream
+  // paper and ruled type on every screen, which reads as a document rather
+  // than a club. The art library has thirty-two ground and room paintings and
+  // they were being shown on exactly one page.
+  //
+  // Every room wears its own now, as a PLATE: full width, natural ratio, full
+  // brightness, nothing laid over it and nothing cropped off it. The masthead
+  // sits underneath, where type belongs.
+  var ROOM = {
+    team:       ["hgm-dressing-room", "hgd-dressing-room"],
+    matchday:   ["hgm-tunnel-night", "hgd-dressing-room"],
+    table:      ["arches-summer-noon", "arches-summer-noon"],
+    fixtures:   ["arches-dawn-mist", "arches-dawn-mist"],
+    records:    ["hgm-clubroom", "hgd-clubroom"],
+    milestones: ["hgm-clubroom", "hgd-heart-of-club"],
+    paper:      ["hgm-nostalgic", "hgd-clubroom"],
+    ledger:     ["hgm-office", "hgd-office"],
+    finance:    ["hgm-office", "hgd-office"],
+    desk:       ["hgm-office", "hgd-office"],
+    market:     ["hgm-workshop", "hgd-workshop"],
+    training:   ["hgm-nets-day", "hgd-nets-day"],
+    academy:    ["hgm-nets-day", "hgd-nets-night"],
+    dossier:    ["hgm-veranda-rain", "hgd-veranda-rain"],
+    wire:       ["arches-quiet-night", "arches-quiet-night"],
+    planet:     ["arches-blue-hour-cup", "arches-blue-hour-cup"],
+    rankings:   ["arches-blue-hour-cup", "arches-blue-hour-cup"],
+    champions:  ["arches-blue-hour-cup", "arches-blue-hour-cup"],
+    comps:      ["arches-sunbreak-match", "arches-sunbreak-match"],
+    nations:    ["arches-storm-front", "arches-storm-front"],
+    natteams:   ["arches-storm-front", "arches-storm-front"],
+    guide:      ["hgm-workshop", "hgd-workshop"],
+  };
+  // the rooms that are lit by an hour rather than fixed to one painting
+  var NIGHT = { training: ["hgm-nets-day", "hgd-nets-night"], matchday: ["hgm-tunnel-night", "hgd-after-hours-rain"] };
+  function artBase() {
+    try { if (typeof FO_ART !== "undefined") return FO_ART; } catch (e) {}
+    return (location.pathname.indexOf("/client/") !== -1) ? "art/" : "client/art/";
+  }
+  function roomArt(route) {
+    var r = (route || path()).replace("#/", "");
+    var wide = false; try { wide = window.innerWidth >= 760; } catch (e) {}
+    var night = false; try { var h = new Date().getHours(); night = h >= 19 || h < 6; } catch (e2) {}
+    var pair = (night && NIGHT[r]) ? NIGHT[r] : ROOM[r];
+    if (!pair) return "";
+    return artBase() + "home/" + pair[wide ? 1 : 0] + ".webp";
+  }
+
+  // ---- CLUB IDENTITY --------------------------------------------------------
+  // Every club has had a crest and a colour available all along and the game
+  // has never used either: rows of identical type, ten clubs indistinguishable.
+  // Both are a pure function of the club's NAME, so they are the same on every
+  // device, for bots and humans alike, with no new data to store or migrate.
+  var BADGES = ["rock", "engine", "express", "blade", "gloveman", "wizard"];
+  var COLOURS = [
+    "#0a2342", "#7A1F2B", "#1F5C3A", "#5B3A8C", "#8A5A12", "#12626B",
+    "#8C2F5F", "#2E4E1E", "#A0451B", "#33456B",
+  ];
+  function h32(x) {
+    var h = 2166136261; x = String(x);
+    for (var i = 0; i < x.length; i++) { h ^= x.charCodeAt(i); h = (h * 16777619) >>> 0; }
+    return h;
+  }
+  function crestOf(club) { return club ? artBase() + "crests/" + BADGES[h32("crest|" + club) % BADGES.length] + ".png" : ""; }
+  function colourOf(club) { return club ? COLOURS[h32("colour|" + club) % COLOURS.length] : "var(--al-navy)"; }
+  function crestImg(club, cls) {
+    if (!club) return "";
+    return '<img class="al-crest' + (cls ? " " + cls : "") + '" src="' + crestOf(club) +
+      '" alt="" loading="lazy" style="background:' + colourOf(club) + '" onerror="this.style.display=\'none\'">';
+  }
+  // a cricketer's own figure, from the card-art resolver the squad already uses
+  function faceOf(p) {
+    try { if (p && window.foPkArt) return artBase() + window.foPkArt(p); } catch (e) {}
+    return "";
+  }
+  function faceImg(p) {
+    var src = faceOf(p); if (!src) return "";
+    return '<img class="al-face" src="' + src + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">';
+  }
+
   // ---- the words a player is described in ----------------------------------
   // Every roster surface in the Almanack prints the same three things about a
   // player, so they are said once, here. Two of them were being got wrong:
@@ -44683,6 +44726,18 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return '<div class="al-page' + (parts.acting ? " al-page--acting" : "") + '"><div class="al-page__in">' +
         (parts.body || "") + "</div></div>" + (parts.sticky || "");
     },
+    // a room's opening: its painting, then its masthead. Screens that need to
+    // put something between the two (Today puts the day's decision there) call
+    // plate() and mast() themselves.
+    head: function (eyebrow, title, line, route) {
+      var src = roomArt(route);
+      return (src ? '<figure class="al-plate al-plate--room"><img src="' + src +
+        '" alt="" loading="eager" onerror="this.parentNode.style.display=\'none\'"></figure>' : "") +
+        AL.mast(eyebrow, title, line);
+    },
+    room: roomArt,
+    crest: crestImg, crestSrc: crestOf, colour: colourOf,
+    face: faceImg, faceSrc: faceOf,
     mast: function (eyebrow, title, line) {
       return '<div class="al-mast">' +
         (eyebrow ? '<div class="al-mast__eyebrow">' + E(eyebrow) + "</div>" : "") +
@@ -44721,6 +44776,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     },
     subnav: function (cur) {
       var items = SUB[sectionOf().id]; if (!items) return "";
+      // a section with eight rooms scrolls, and the room you are IN can sit
+      // off the right-hand edge. This is called while the page is still a
+      // string, so the scroll waits for the paint that follows it.
+      setTimeout(function () {
+        try {
+          var el = document.querySelector('.al-subnav:not(.al-subnav--tabs) a[aria-current]');
+          if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest", inline: "center" });
+        } catch (e) {}
+      }, 0);
       return '<nav class="al-subnav" aria-label="Section">' + items.map(function (x) {
         return '<a href="' + x.href + '"' + (x.id === cur ? ' aria-current="page"' : "") + ">" + E(x.label) + "</a>";
       }).join("") + "</nav>";
@@ -45018,8 +45082,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function row(p, pos, inXI) {
     if (!p) return "";
     var n = E(p.name);
-    return '<button class="al-prow' + (inXI ? " al-prow--picked" : "") + '" data-al-p="' + n + '">' +
+    var al = A();
+    return '<button class="al-prow al-prow--face' + (inXI ? " al-prow--picked" : "") + '" data-al-p="' + n + '">' +
       '<span class="al-prow__no">' + (inXI ? ("0" + pos).slice(-2) : "+") + "</span>" +
+      (al ? al.face(p) : "") +
       '<span class="al-prow__who"><b>' + n + "</b><i>" + E(roleWord(p)) + " &middot; " + E(formWord(p)) + "</i></span>" +
       '<span class="al-prow__rate">' + (ovr(p) || "&mdash;") + "</span>" +
       "</button>";
@@ -45035,7 +45101,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var picked = {}; s.xi.forEach(function (n) { picked[n] = 1; });
     var reserves = all.filter(function (p) { return p && !picked[p.name]; });
 
-    var body = al.mast("The eleven", "Team", "Pick the eleven and set the order they bat in. Tap a name for the folio.");
+    var body = al.head("The eleven", "Team", "Pick the eleven and set the order they bat in. Tap a name for the folio.");
 
     // ---- the persistent summary: the page's whole job, in one strip -------
     var ok = s.n === 11 && !s.faults.length;
@@ -45091,10 +45157,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     ];
     var el = document.createElement("div");
     el.className = "al-sheet";
+    var faceSrc = al.faceSrc(p);
     el.innerHTML = '<div class="al-sheet__panel">' +
       '<div class="al-sheet__grip"><b>' + E(p.name) + "</b>" +
       '<button class="al-btn" data-al-close>Close</button></div>' +
       '<div class="al-sheet__body">' +
+      (faceSrc ? '<img class="al-sheet__face" src="' + faceSrc + '" alt="" onerror="this.style.display=\'none\'">' : "") +
       al.ledger(rows) +
       '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">' +
       '<button class="al-btn ' + (inXI ? "" : "al-btn--primary") + '" data-al-toggle="' + E(name) + '">' +
@@ -45260,7 +45328,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           var tags = [];
           if (n === p.o.captain) tags.push("C");
           if (n === p.o.keeper) tags.push("WK");
-          return '<div class="al-prow al-prow--picked"><span class="al-prow__no">' + ("0" + (i + 1)).slice(-2) + "</span>" +
+          return '<div class="al-prow al-prow--face al-prow--picked"><span class="al-prow__no">' + ("0" + (i + 1)).slice(-2) + "</span>" +
+            al.face(pl) +
             '<span class="al-prow__who"><b>' + E(n) + (tags.length ? " <em class='al-you__tag'>" + tags.join(" · ") + "</em>" : "") + "</b>" +
             "<i>" + E(roleWord(pl)) + "</i></span>" +
             '<span class="al-prow__rate">' + (ovr(pl) || "&mdash;") + "</span></div>";
@@ -45512,21 +45581,26 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // Eight columns do not fit in 390px, and a table that merely scrolls
   // sideways puts the most important number behind a swipe nobody makes. So
   // the narrow layout spends its width on what the table is FOR - position,
-  // club, played, won, net run rate, points - and drops lost and tied, which a
-  // reader can derive and which the wider layout keeps.
+  // club, played, won, points - and drops lost, tied and net run rate, which a
+  // reader can derive or find on the wide layout. A club's CREST is worth more
+  // of those pixels than its net run rate: ten rows of identical type are ten
+  // clubs you cannot tell apart at a glance, which is the thing the table is
+  // read for.
   function grid(data, mine) {
+    var al = A();
     var body = data.rows.map(function (r, i) {
       var me = r.club === mine;
       return "<tr" + (me ? " class='al-you'" : "") + ">" +
         "<td class='al-pos'>" + (i + 1) + "</td>" +
-        "<td class='l al-club'>" + E(r.club) + (me ? "<span class='al-you__tag'>YOU</span>" : "") + "</td>" +
+        "<td class='l al-club'>" + al.crest(r.club) + E(r.club) +
+          (me ? "<span class='al-you__tag'>YOU</span>" : "") + "</td>" +
         "<td>" + (r.p | 0) + "</td><td>" + (r.w | 0) + "</td>" +
         "<td class='al-s'>" + (r.l | 0) + "</td><td class='al-s'>" + (r.t | 0) + "</td>" +
-        "<td>" + nrr(r.nrr) + "</td><td class='al-pts'>" + (r.pts | 0) + "</td></tr>";
+        "<td class='al-s'>" + nrr(r.nrr) + "</td><td class='al-pts'>" + (r.pts | 0) + "</td></tr>";
     }).join("");
     return "<div class='al-tblwrap'><table class='al-tbl'><thead><tr>" +
       "<th></th><th class='l'>Club</th><th>P</th><th>W</th>" +
-      "<th class='al-s'>L</th><th class='al-s'>T</th><th>NRR</th><th>Pts</th>" +
+      "<th class='al-s'>L</th><th class='al-s'>T</th><th class='al-s'>NRR</th><th>Pts</th>" +
       "</tr></thead><tbody>" + body + "</tbody></table></div>";
   }
 
@@ -45536,7 +45610,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var al = A(); if (!al) return;
     try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
 
-    var body = al.mast("The League · standings", "The Table",
+    var body = al.head("The League · standings", "The Table",
       data ? "Two points a win, one a tie; net run rate splits the level."
            : "The season's record, from the morning the first round resolves.");
     body += al.subnav("table");
@@ -45748,7 +45822,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return "<a class='" + cls + "' href='" + E(f.href) + "'>" +
       "<span class='al-fix__r'>R" + (f.round | 0) + "</span>" +
       "<span class='al-fix__w " + kind + "'>" + mark + "</span>" +
-      "<span class='al-fix__t'><b>" + (f.isHome ? "v " : "at ") + E(f.opp) + "</b><i>" + E(under) + "</i></span>" +
+      "<span class='al-fix__t'><b>" + (A() ? A().crest(f.opp) : "") + (f.isHome ? "v " : "at ") +
+        E(f.opp) + "</b><i>" + E(under) + "</i></span>" +
       "<span class='al-fix__o'>" + (f.kind === "done" ? "&rsaquo;" : next ? "NEXT" : "&rsaquo;") + "</span>" +
       "</a>";
   }
@@ -45775,7 +45850,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (cl && cl.country && cl.slot != null) card = servedCard(cl);
     if (!card) card = localCard();
 
-    var body = al.mast("The League · season " + ((card && card.season) || 1), "Fixtures",
+    var body = al.head("The League · season " + ((card && card.season) || 1), "Fixtures",
       "Every match of the summer in one column. The next one is open; the rest are a line each.");
     body += al.subnav("fixtures");
 
@@ -45879,7 +45954,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       }
     } catch (e2) {}
 
-    var body = al.mast("The world service" + (season != null ? " · season " + season : ""), "The Wire",
+    var body = al.head("The world service" + (season != null ? " · season " + season : ""), "The Wire",
       "Nineteen national leagues on one clock. Each round settles at its own local hour, so the wire fills " +
       "through the day whether anybody is reading it or not.");
     body += al.subnav("wire");

@@ -64,8 +64,10 @@
   function row(p, pos, inXI) {
     if (!p) return "";
     var n = E(p.name);
-    return '<button class="al-prow' + (inXI ? " al-prow--picked" : "") + '" data-al-p="' + n + '">' +
+    var al = A();
+    return '<button class="al-prow al-prow--face' + (inXI ? " al-prow--picked" : "") + '" data-al-p="' + n + '">' +
       '<span class="al-prow__no">' + (inXI ? ("0" + pos).slice(-2) : "+") + "</span>" +
+      (al ? al.face(p) : "") +
       '<span class="al-prow__who"><b>' + n + "</b><i>" + E(roleWord(p)) + " &middot; " + E(formWord(p)) + "</i></span>" +
       '<span class="al-prow__rate">' + (ovr(p) || "&mdash;") + "</span>" +
       "</button>";
@@ -81,7 +83,7 @@
     var picked = {}; s.xi.forEach(function (n) { picked[n] = 1; });
     var reserves = all.filter(function (p) { return p && !picked[p.name]; });
 
-    var body = al.mast("The eleven", "Team", "Pick the eleven and set the order they bat in. Tap a name for the folio.");
+    var body = al.head("The eleven", "Team", "Pick the eleven and set the order they bat in. Tap a name for the folio.");
 
     // ---- the persistent summary: the page's whole job, in one strip -------
     var ok = s.n === 11 && !s.faults.length;
@@ -137,10 +139,12 @@
     ];
     var el = document.createElement("div");
     el.className = "al-sheet";
+    var faceSrc = al.faceSrc(p);
     el.innerHTML = '<div class="al-sheet__panel">' +
       '<div class="al-sheet__grip"><b>' + E(p.name) + "</b>" +
       '<button class="al-btn" data-al-close>Close</button></div>' +
       '<div class="al-sheet__body">' +
+      (faceSrc ? '<img class="al-sheet__face" src="' + faceSrc + '" alt="" onerror="this.style.display=\'none\'">' : "") +
       al.ledger(rows) +
       '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">' +
       '<button class="al-btn ' + (inXI ? "" : "al-btn--primary") + '" data-al-toggle="' + E(name) + '">' +

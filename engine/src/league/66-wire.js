@@ -49,7 +49,7 @@
       }
     } catch (e2) {}
 
-    var body = al.mast("The world service" + (season != null ? " · season " + season : ""), "The Wire",
+    var body = al.head("The world service" + (season != null ? " · season " + season : ""), "The Wire",
       "Nineteen national leagues on one clock. Each round settles at its own local hour, so the wire fills " +
       "through the day whether anybody is reading it or not.");
     body += al.subnav("wire");

@@ -120,7 +120,7 @@
     var rw = foRunway(), deal = foDeal();
     var wages = foWages(me);
 
-    var body = al.mast("The club accounts · season " + (App.seasonNo || 1), "The Journal",
+    var body = al.head("The club accounts · season " + (App.seasonNo || 1), "The Journal",
       "Kept in the club's own hand. Every round settles the wage bill, the league's distribution arrives, " +
       "and the shirt pays what it promised.");
     body += al.subnav("ledger");

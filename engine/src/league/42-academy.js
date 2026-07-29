@@ -79,7 +79,7 @@
   function A() { return window.AL || null; }
   function on() { return (location.hash || "").split("?")[0] === "#/academy"; }
   function mast(al) {
-    return al.mast("The academy", "The Colts",
+    return al.head("The academy", "The Colts",
       "Boys arrive on their own, age on their own, and walk into your first team at twenty-one whether you were " +
       "watching or not. What you decide is how good a place they learn in.");
   }
@@ -204,8 +204,8 @@
       ? " · " + p.colts.m + (p.colts.m === 1 ? " cap" : " caps") + ", " + p.colts.runs + " runs" +
         (p.colts.wkts ? ", " + p.colts.wkts + " wkts" : "")
       : "";
-    return '<div class="al-prow al-prow--static">' +
-      '<span class="al-prow__no">' + (p.age || 18) + "</span>" +
+    return '<div class="al-prow al-prow--static al-prow--face">' +
+      '<span class="al-prow__no">' + (p.age || 18) + "</span>" + al.face(p) +
       '<span class="al-prow__who"><b>' + E(p.name) + "</b><i>" + E(roleOf(p)) + " · " + E(ageWord(+p.age || 18)) +
         " · " + E(promiseWord(pr)) + caps + "</i>" + al.meter(pr, "warm") + "</span>" +
       '<span class="al-prow__rate">' + (o == null ? "&mdash;" : o) + "</span>" +

@@ -147,12 +147,15 @@
     try {
       var el = ensure(), sec = sectionOf(), c = clockText(), t = team();
       var club = (t && t.name) || "Fifty Overs";
+      // the header wears YOUR club's colour, so the game is never generic navy
+      try { document.documentElement.style.setProperty("--al-club", t ? colourOf(club) : ""); } catch (eC) {}
       var nav = SECTIONS.map(function (s) {
         return '<a href="' + s.home + '" data-al-sec="' + s.id + '"' +
           (s.id === sec.id ? ' aria-current="page"' : "") + ">" + E(s.label) + "</a>";
       }).join("");
       el.head.innerHTML =
-        '<div class="al-head__mark">FO</div>' +
+        (t ? '<img class="al-head__crest" src="' + crestOf(club) + '" alt="" onerror="this.style.display=\'none\'">'
+           : '<div class="al-head__mark">FO</div>') +
         '<div class="al-head__where"><i>' + E(sec.label) + "</i><b>" + E(club) + "</b></div>" +
         '<div class="al-head__spacer"></div>' +
         '<div class="al-head__nav">' + nav + "</div>" +
@@ -193,6 +196,86 @@
   }
   window.__foAlApply = apply;
 
+  // ---- THE ROOMS ARE PLACES -------------------------------------------------
+  // The redesign stripped the paintings out and the game went flat: cream
+  // paper and ruled type on every screen, which reads as a document rather
+  // than a club. The art library has thirty-two ground and room paintings and
+  // they were being shown on exactly one page.
+  //
+  // Every room wears its own now, as a PLATE: full width, natural ratio, full
+  // brightness, nothing laid over it and nothing cropped off it. The masthead
+  // sits underneath, where type belongs.
+  var ROOM = {
+    team:       ["hgm-dressing-room", "hgd-dressing-room"],
+    matchday:   ["hgm-tunnel-night", "hgd-dressing-room"],
+    table:      ["arches-summer-noon", "arches-summer-noon"],
+    fixtures:   ["arches-dawn-mist", "arches-dawn-mist"],
+    records:    ["hgm-clubroom", "hgd-clubroom"],
+    milestones: ["hgm-clubroom", "hgd-heart-of-club"],
+    paper:      ["hgm-nostalgic", "hgd-clubroom"],
+    ledger:     ["hgm-office", "hgd-office"],
+    finance:    ["hgm-office", "hgd-office"],
+    desk:       ["hgm-office", "hgd-office"],
+    market:     ["hgm-workshop", "hgd-workshop"],
+    training:   ["hgm-nets-day", "hgd-nets-day"],
+    academy:    ["hgm-nets-day", "hgd-nets-night"],
+    dossier:    ["hgm-veranda-rain", "hgd-veranda-rain"],
+    wire:       ["arches-quiet-night", "arches-quiet-night"],
+    planet:     ["arches-blue-hour-cup", "arches-blue-hour-cup"],
+    rankings:   ["arches-blue-hour-cup", "arches-blue-hour-cup"],
+    champions:  ["arches-blue-hour-cup", "arches-blue-hour-cup"],
+    comps:      ["arches-sunbreak-match", "arches-sunbreak-match"],
+    nations:    ["arches-storm-front", "arches-storm-front"],
+    natteams:   ["arches-storm-front", "arches-storm-front"],
+    guide:      ["hgm-workshop", "hgd-workshop"],
+  };
+  // the rooms that are lit by an hour rather than fixed to one painting
+  var NIGHT = { training: ["hgm-nets-day", "hgd-nets-night"], matchday: ["hgm-tunnel-night", "hgd-after-hours-rain"] };
+  function artBase() {
+    try { if (typeof FO_ART !== "undefined") return FO_ART; } catch (e) {}
+    return (location.pathname.indexOf("/client/") !== -1) ? "art/" : "client/art/";
+  }
+  function roomArt(route) {
+    var r = (route || path()).replace("#/", "");
+    var wide = false; try { wide = window.innerWidth >= 760; } catch (e) {}
+    var night = false; try { var h = new Date().getHours(); night = h >= 19 || h < 6; } catch (e2) {}
+    var pair = (night && NIGHT[r]) ? NIGHT[r] : ROOM[r];
+    if (!pair) return "";
+    return artBase() + "home/" + pair[wide ? 1 : 0] + ".webp";
+  }
+
+  // ---- CLUB IDENTITY --------------------------------------------------------
+  // Every club has had a crest and a colour available all along and the game
+  // has never used either: rows of identical type, ten clubs indistinguishable.
+  // Both are a pure function of the club's NAME, so they are the same on every
+  // device, for bots and humans alike, with no new data to store or migrate.
+  var BADGES = ["rock", "engine", "express", "blade", "gloveman", "wizard"];
+  var COLOURS = [
+    "#0a2342", "#7A1F2B", "#1F5C3A", "#5B3A8C", "#8A5A12", "#12626B",
+    "#8C2F5F", "#2E4E1E", "#A0451B", "#33456B",
+  ];
+  function h32(x) {
+    var h = 2166136261; x = String(x);
+    for (var i = 0; i < x.length; i++) { h ^= x.charCodeAt(i); h = (h * 16777619) >>> 0; }
+    return h;
+  }
+  function crestOf(club) { return club ? artBase() + "crests/" + BADGES[h32("crest|" + club) % BADGES.length] + ".png" : ""; }
+  function colourOf(club) { return club ? COLOURS[h32("colour|" + club) % COLOURS.length] : "var(--al-navy)"; }
+  function crestImg(club, cls) {
+    if (!club) return "";
+    return '<img class="al-crest' + (cls ? " " + cls : "") + '" src="' + crestOf(club) +
+      '" alt="" loading="lazy" style="background:' + colourOf(club) + '" onerror="this.style.display=\'none\'">';
+  }
+  // a cricketer's own figure, from the card-art resolver the squad already uses
+  function faceOf(p) {
+    try { if (p && window.foPkArt) return artBase() + window.foPkArt(p); } catch (e) {}
+    return "";
+  }
+  function faceImg(p) {
+    var src = faceOf(p); if (!src) return "";
+    return '<img class="al-face" src="' + src + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">';
+  }
+
   // ---- the words a player is described in ----------------------------------
   // Every roster surface in the Almanack prints the same three things about a
   // player, so they are said once, here. Two of them were being got wrong:
@@ -230,6 +313,18 @@
       return '<div class="al-page' + (parts.acting ? " al-page--acting" : "") + '"><div class="al-page__in">' +
         (parts.body || "") + "</div></div>" + (parts.sticky || "");
     },
+    // a room's opening: its painting, then its masthead. Screens that need to
+    // put something between the two (Today puts the day's decision there) call
+    // plate() and mast() themselves.
+    head: function (eyebrow, title, line, route) {
+      var src = roomArt(route);
+      return (src ? '<figure class="al-plate al-plate--room"><img src="' + src +
+        '" alt="" loading="eager" onerror="this.parentNode.style.display=\'none\'"></figure>' : "") +
+        AL.mast(eyebrow, title, line);
+    },
+    room: roomArt,
+    crest: crestImg, crestSrc: crestOf, colour: colourOf,
+    face: faceImg, faceSrc: faceOf,
     mast: function (eyebrow, title, line) {
       return '<div class="al-mast">' +
         (eyebrow ? '<div class="al-mast__eyebrow">' + E(eyebrow) + "</div>" : "") +

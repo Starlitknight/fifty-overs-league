@@ -40,7 +40,7 @@
   function A() { return window.AL || null; }
   function onComps() { return (location.hash || "").split("?")[0] === "#/comps"; }
   function mast(al) {
-    return al.mast("The invitationals", "Competitions of Your Own",
+    return al.head("The invitationals", "Competitions of Your Own",
       "Found one, name it, and see who turns up. Three days later the umpire fills whatever seats are empty and " +
       "plays it out, a round a day, whether anybody is watching or not.");
   }

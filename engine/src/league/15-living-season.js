@@ -538,7 +538,7 @@
     var led = repLedger();
     var openOffer = offer && !bag.wag[offer.key];
 
-    var body = al.mast((pos ? ordinal(pos) + " in the league · " : "") + "season " + (App.seasonNo || 1),
+    var body = al.head((pos ? ordinal(pos) + " in the league · " : "") + "season " + (App.seasonNo || 1),
       "The Desk", "The morning's post, laid out in the club office.");
 
     // ---- what is actually waiting ------------------------------------------

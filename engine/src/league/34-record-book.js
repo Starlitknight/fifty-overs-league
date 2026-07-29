@@ -162,7 +162,7 @@
       });
     });
 
-    var body = al.mast("The " + natNm + " League · season " + sN, "The Record Book",
+    var body = al.head("The " + natNm + " League · season " + sN, "The Record Book",
       "Every league run and wicket this world has produced, kept the way an almanack would keep it.");
     body += al.subnav("records");
 

@@ -251,7 +251,7 @@
     var PROGS = progs();
     var named = squad.filter(function (p) { return plan[p.name]; }).length;
 
-    var body = al.mast("The training ground", "The Nets",
+    var body = al.head("The training ground", "The Nets",
       "Name what each man works on. The World Service holds the plan and the umpire runs it with every round, " +
       "whether you watch it or not.") + al.subnav("training");
 
@@ -268,8 +268,8 @@
     // ---- one standing order per man ----------------------------------------
     var rows = squad.map(function (p) {
       var b = banked(p), cur = plan[p.name] || "";
-      return '<label class="al-prow al-prow--static al-prow--pick">' +
-        '<span class="al-prow__no">' + (p.age | 0) + "</span>" +
+      return '<label class="al-prow al-prow--static al-prow--pick al-prow--face">' +
+        '<span class="al-prow__no">' + (p.age | 0) + "</span>" + al.face(p) +
         '<span class="al-prow__who"><b>' + E(p.name) + "</b><i>" +
           (b.pct ? E(foSkillLbl(b.skill)) + " " + b.pct + "% of the way" : "no work banked yet") + "</i>" +
           (b.pct ? al.meter(b.pct, "warm") : "") + "</span>" +

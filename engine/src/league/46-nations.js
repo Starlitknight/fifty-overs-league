@@ -56,7 +56,7 @@
   function A() { return window.AL || null; }
   function onNat() { var h = (location.hash || "").split("?")[0]; return h === "#/nations" || h === "#/natteams"; }
   function mast(al) {
-    return al.mast("The international game", "Playing For Your Country",
+    return al.head("The international game", "Playing For Your Country",
       "Three rounds a season the selectors take the best men in the land, wherever they play. Your club loses " +
       "them for the day and is paid for the week — and that evening the nations play each other.");
   }
