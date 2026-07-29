@@ -278,98 +278,85 @@
 
   // ---- the page --------------------------------------------------------------
   var viewClub = null;
+  function A() { return window.AL || null; }
+  function onHonours() { return (location.hash || "").split("?")[0] === "#/milestones"; }
+
+  // PHASE 4 OF THE ALMANACK. Thirteen plaques and six charter seals were laid
+  // out as oak-and-gold tiles over a clubroom photograph, four across, which
+  // on a phone meant a wall of two-line boxes you could not read. A plaque is
+  // a line of ruled type: what it is, what it takes, how far along, and the
+  // day it was sealed. The arithmetic below is untouched.
+  function plaque(al, p, club, first) {
+    var firstTag = first
+      ? (first.nm === club ? al.tag("League first", "ok") : al.tag("First: " + first.nm))
+      : "";
+    var when = p.at ? "season " + p.at.s + " · round " + (p.at.r + 1) : "";
+    var pct = (!p.done && p.goal > 1) ? Math.max(3, Math.min(97, Math.round(100 * p.prog / p.goal))) : 0;
+    return '<div class="al-plaque' + (p.done ? " al-plaque--won" : "") + '">' +
+      "<b>" + E(p.nm) + "</b>" +
+      "<i>" + (p.done ? (p.note || E(p.sub)) : E(p.sub)) + "</i>" +
+      (pct ? al.meter(pct, "warm") : "") +
+      "<em>" + (p.done ? "sealed · " + when : E(String(p.note || "not yet"))) +
+        " · " + E(TIER[p.tier].nm) + "</em>" +
+      (firstTag ? "<span>" + firstTag + "</span>" : "") + "</div>";
+  }
+
   function foRenderHonoursPage() {
     try {
-      if (!ready()) return;
+      if (!onHonours() || !ready()) return;
       var page = document.getElementById("page"); if (!page) return;
+      var al = A(); if (!al) return;
+      try { window.__foAlApply && window.__foAlApply(); } catch (eA) {}
       var me = null; try { me = userTeam(); } catch (e) {}
       if (!me) return;
-      document.body.classList.remove("fo-scb-on", "fo-drs-on");
-      document.body.classList.add("fo-hbx-on");
       settleBonuses();
-      var artBase = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
-      var hbBg = "<img class='fo-hb-bg' src='" + artBase + "home/" + (window.innerWidth < 760 ? "hgm-clubroom" : "hgd-heart-of-club") + ".webp' alt=''><div class='fo-hb-veil'></div>";
+
       var club = q("c") || viewClub || me.name;
       if (!GD.teams.some(function (t) { return t.name === club; })) club = me.name;
       viewClub = club;
       var mine = club === me.name;
-      var board = boardFor(club);
-      var done = board.filter(function (p) { return p.done; });
+      var board = boardFor(club), done = board.filter(function (p) { return p.done; });
+      var charter = charterFor(club), chDone = charter.filter(function (p) { return p.done; }).length;
       var F = firsts();
-      var latestS = App.seasonNo || 1, latestR = 0;
-      try { latestR = App.season ? App.season.round : 0; } catch (e2) {}
 
-      var when = function (at) { return at ? "S" + at.s + " &middot; R" + at.r : "all-time"; };
-      var plaques = board.map(function (p) {
-        var first = F[p.k];
-        var firstTag = first ? (first.nm === club ? "<u class='fo-hb-first mine'>League first</u>" :
-          "<u class='fo-hb-first'>First: " + E(first.nm) + "</u>") : "";
-        if (p.done) {
-          var fresh = p.at && p.at.s === latestS && p.at.r >= latestR && mine;
-          return "<div class='fo-hb-plq on" + (fresh ? " new" : "") + " t-" + p.tier + "'>" +
-            "<i>" + TIER[p.tier].nm + "</i><b>" + E(p.nm) + "</b>" +
-            "<span>" + (p.note || E(p.sub)) + "</span><em>" + when(p.at) + "</em>" + firstTag + "</div>";
-        }
-        var pct = p.goal > 1 ? Math.max(3, Math.min(97, Math.round(100 * p.prog / p.goal))) : 0;
-        return "<div class='fo-hb-plq t-" + p.tier + "'>" +
-          "<i>" + TIER[p.tier].nm + "</i><b>" + E(p.nm) + "</b>" +
-          "<span>" + E(p.sub) + "</span>" +
-          (p.goal > 1 ? "<div class='fo-hb-m'><u style='width:" + pct + "%'></u></div>" : "") +
-          "<em class='pend'>" + p.note + "</em>" + firstTag + "</div>";
-      }).join("");
+      var body = al.mast(club + " · the pavilion wall", "The Honours Board",
+        mine
+          ? "Thirteen honours in gold leaf on oak, and six pursuits that belong to this club alone. The league remembers who got there first."
+          : "Reading " + club + "'s board. Every club chases the same thirteen; only one name goes down as the league's first.");
+      body += al.subnav("milestones");
 
-      var chips = GD.teams.map(function (t) {
-        var n = boardFor(t.name).filter(function (p) { return p.done; }).length;
-        return "<button class='fo-hb-chip" + (t.name === club ? " on" : "") + "' data-club='" + E(t.name) + "'>" +
-          E(t.name) + "<u>" + n + "</u></button>";
-      }).join("");
+      body += al.decide({
+        kind: done.length === board.length ? "done" : "",
+        title: done.length + " of " + board.length + " plaques · " + chDone + " of " + charter.length + " charter seals",
+        note: mine && bankedTotal()
+          ? money(bankedTotal()) + " banked from the chairman for the plaques already up"
+          : "An honour can be won by every club — the first name on it is won once.",
+      });
 
-      var charter = charterFor(club);
-      var chDone = charter.filter(function (p) { return p.done; }).length;
-      var chRows = charter.map(function (p) {
-        var fresh = p.done && p.at && p.at.s === latestS && p.at.r >= latestR && mine;
-        if (p.done) {
-          return "<div class='fo-hb-ch on" + (fresh ? " new" : "") + "'><s></s>" +
-            "<b>" + p.nm + "</b><span>" + (p.note || E(p.sub)) + "</span><em>" + when(p.at) + " &middot; sealed</em></div>";
-        }
-        var pct = p.goal > 1 ? Math.max(3, Math.min(97, Math.round(100 * p.prog / p.goal))) : 0;
-        return "<div class='fo-hb-ch'>" +
-          "<b>" + p.nm + "</b><span>" + E(p.sub) + "</span>" +
-          (p.goal > 1 ? "<div class='fo-hb-m'><u style='width:" + pct + "%'></u></div>" : "") +
-          "<em class='pend'>" + p.note + "</em></div>";
-      }).join("");
+      // whose wall you are reading
+      body += al.tabs(GD.teams.map(function (t) {
+        return { id: t.name, label: t.name, count: boardFor(t.name).filter(function (p) { return p.done; }).length };
+      }), club);
 
-      var race = HONOURS.map(function (h) {
-        var f = F[h.k];
-        return "<div class='fo-hb-race'><b>" + E(h.nm) + "</b>" +
-          (f ? "<span class='" + (f.nm === me.name ? "mine" : "") + "'>" + E(f.nm) + "</span><i>" + when(f.at) + "</i>"
-             : "<span class='open'>unclaimed</span><i>the race is on</i>") + "</div>";
-      }).join("");
+      body += al.sec("The " + club + " charter · " + chDone + " of " + charter.length,
+        '<p class="al-read">Six pursuits of their own. No other club has this page.</p>' +
+        '<div class="al-plaques">' + charter.map(function (p) { return plaque(al, p, club, null); }).join("") + "</div>");
 
-      page.innerHTML = hbBg +
-        "<div class='fo-hb'>" +
-        "<div class='fo-hb-mast'>" +
-        "<div class='fo-hb-kick'>" + E(club) + " &middot; the pavilion wall</div>" +
-        "<h1>The Honours Board</h1>" +
-        "<p>" + (mine
-          ? "Thirteen honours, gold leaf on oak. The chairman pays for every new plaque" + (bankedTotal() ? " - " + money(bankedTotal()) + " banked so far" : "") + ", and the league remembers who got there first."
-          : "Reading " + E(club) + "&rsquo;s board. Every club chases the same thirteen honours; the league remembers who got there first.") + "</p>" +
-        "<div class='fo-hb-tally'><b>" + done.length + "</b> of " + board.length + " plaques</div>" +
-        "</div>" +
-        "<div class='fo-hb-chips'>" + chips + "</div>" +
-        "<div class='fo-hb-shead'><b>The " + E(club) + " charter</b><span>six pursuits of their own - no other club has this page</span></div>" +
-        "<div class='fo-hb-chgrid'>" + chRows + "</div>" +
-        "<div class='fo-hb-shead'><b>The league board</b><span>the same thirteen honours for every club - " + chDone + " of 6 charter seals, " + done.length + " of " + board.length + " plaques</span></div>" +
-        "<div class='fo-hb-oak'><div class='fo-hb-grid'>" + plaques + "</div></div>" +
-        "<section class='fo-hb-sec'><div class='fo-hb-k'>First on the board</div>" +
-        "<p class='fo-hb-say'>An honour can be won by every club - but only one name goes down as the league&rsquo;s first.</p>" +
-        "<div class='fo-hb-races'>" + race + "</div></section>" +
-        "<div class='fo-hb-foot'><a href='#/desk'>&#8592; The desk</a><a href='#/dossier'>The dossier &rsaquo;</a><a href='#/ceremony'>Awards night &rsaquo;</a></div>" +
-        "</div>";
+      body += al.sec("The league board · " + done.length + " of " + board.length,
+        '<div class="al-plaques">' + board.map(function (p) { return plaque(al, p, club, F[p.k]); }).join("") + "</div>");
 
-      page.querySelectorAll(".fo-hb-chip").forEach(function (b) {
+      body += al.sec("First on the board",
+        '<p class="al-read">An honour can be won by every club — but only one name goes down as the league&rsquo;s first.</p>' +
+        al.ledger(HONOURS.map(function (h) {
+          var f = F[h.k];
+          return [h.nm, f ? f.nm + " · S" + f.at.s : "unclaimed", f && f.nm === me.name ? "pos" : ""];
+        })));
+
+      page.innerHTML = al.page({ body: body });
+
+      page.querySelectorAll("[data-al-tab]").forEach(function (b) {
         b.addEventListener("click", function () {
-          var nm2 = b.getAttribute("data-club");
+          var nm2 = b.getAttribute("data-al-tab");
           viewClub = nm2;
           try { location.hash = "#/milestones?c=" + encodeURIComponent(nm2); } catch (eH) {}
           foRenderHonoursPage();

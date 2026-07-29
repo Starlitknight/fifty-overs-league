@@ -1279,11 +1279,12 @@ body.al-on .al-btn { font-family: var(--al-ui); }
    390px, and a table that merely scrolls sideways puts the most important
    number behind a swipe nobody makes. The narrow layout keeps what the table
    is FOR - position, club, played, won, net run rate, points - and drops lost
-   and tied, which a reader can derive and which the wide layout keeps. */
+   and tied, which a reader can derive and which the wide layout keeps.
+   Any column a phone can do without is marked .al-s, in every table. */
 @media (max-width: 560px) {
   .al-tbl th, .al-tbl td { padding: var(--al-2) 3px; }
   .al-tbl td { font-size: 13px; }
-  .al-tbl .al-c-l, .al-tbl .al-c-t { display: none; }
+  .al-tbl .al-s { display: none; }
 }
 
 /* ============================================================================
@@ -1381,10 +1382,51 @@ select.al-field { padding-right: var(--al-5); background-image: none; }
 .al-pick[aria-pressed="true"] { box-shadow: inset 3px 0 0 var(--al-accent); }
 .al-pick[aria-pressed="true"] b { color: var(--al-accent); }
 
-/* a door to another room, in the fixture row's dress */
-.al-fix--room { grid-template-columns: minmax(0, 1fr) auto; }
+/* a door to another room, in the fixture row's dress. A headline is prose,
+   not a label, so it wraps rather than trailing off in an ellipsis. */
+.al-fix--room { grid-template-columns: minmax(0, 1fr) auto; align-items: start; padding: var(--al-3) 0; }
+.al-fix--room .al-fix__t b, .al-fix--room .al-fix__t i { white-space: normal; overflow: visible; }
 
 @media (min-width: 700px) { .al-picks { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ============================================================================
+   14d. THE READING ROOMS — a masthead, a story, a plaque
+   ========================================================================== */
+/* The Gazette is the ONE screen in the game that literally is a newspaper, so
+   it is the one screen allowed a centred masthead between two rules. */
+.al-paper { text-align: center; padding: var(--al-5) 0 var(--al-4); }
+.al-paper__rule { border-top: 2px solid var(--al-ink); border-bottom: 1px solid var(--al-ink); height: 3px; }
+.al-paper h1 {
+  font: 700 clamp(26px, 7vw, 44px)/1.05 var(--al-display);
+  margin: var(--al-3) 0; color: var(--al-ink); letter-spacing: .01em;
+}
+.al-paper__date {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: var(--al-2) var(--al-4);
+  font: 600 10px/1.6 var(--al-ui); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--al-muted); margin-bottom: var(--al-3);
+}
+
+/* running prose with a drop cap: the lead story, and nothing else */
+.al-story p { margin: 0 0 var(--al-3); font: 400 16px/25px var(--al-display); color: var(--al-ink); }
+.al-story b { font-weight: 600; }
+.al-drop {
+  float: left; font: 700 44px/36px var(--al-display); color: var(--al-accent);
+  margin: 2px var(--al-2) 0 0;
+}
+
+/* an honour: what it is, what it takes, how far along, and the day it sealed */
+.al-plaques { border-top: 1px solid var(--al-rule); }
+.al-plaque { padding: var(--al-3) 0; border-bottom: 1px solid var(--al-rule); }
+.al-plaque b { display: block; font: 600 15px/20px var(--al-ui); color: var(--al-ink); }
+.al-plaque i { display: block; font-style: normal; font: 400 13px/18px var(--al-ui); color: var(--al-muted); margin-top: 2px; }
+.al-plaque em {
+  display: block; font-style: normal; margin-top: var(--al-2);
+  font: 600 10px/1.6 var(--al-ui); letter-spacing: .1em; text-transform: uppercase; color: var(--al-muted-2);
+}
+.al-plaque--won { box-shadow: inset 3px 0 0 var(--al-pos); padding-left: var(--al-3); }
+.al-plaque--won b { color: var(--al-pos); }
+.al-plaque--won em { color: var(--al-pos); }
+.al-plaque > span { display: inline-block; margin-top: var(--al-2); }
 
 /* ============================================================================
    15. STATUS LABEL and MONOSPACE READOUT
@@ -1474,5 +1516,5 @@ select.al-field { padding-right: var(--al-5); background-image: none; }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
-<script src="assets/fo-20260728-2313-109b22.js"></script>
+<script src="assets/fo-20260729-0303-c97f4e.js"></script>
 </body></html>

@@ -229,7 +229,7 @@
     var rows = cup.table.map(function (t, i) {
       return "<tr" + (t.name === myClub ? " class='al-you'" : "") + "><td class='al-pos'>" + (i + 1) + "</td>" +
         "<td class='l al-club'>" + E(t.name) + (t.name === myClub ? "<span class='al-you__tag'>YOU</span>" : "") + "</td>" +
-        "<td>" + t.p + "</td><td>" + t.w + "</td><td class='al-c-l'>" + t.l + "</td>" +
+        "<td>" + t.p + "</td><td>" + t.w + "</td><td class='al-s'>" + t.l + "</td>" +
         "<td>" + (t.nrr > 0 ? "+" : "") + t.nrr.toFixed(2) + "</td><td class='al-pts'>" + t.pts + "</td></tr>";
     }).join("");
     var mine = cup.results.filter(function (r) { return r.home === myClub || r.away === myClub; }).slice(-4).reverse();
@@ -244,7 +244,7 @@
       : "";
     return head +
       "<div class='al-tblwrap'><table class='al-tbl'><thead><tr><th></th><th class='l'>Club</th>" +
-      "<th>P</th><th>W</th><th class='al-c-l'>L</th><th>NRR</th><th>Pts</th></tr></thead><tbody>" +
+      "<th>P</th><th>W</th><th class='al-s'>L</th><th>NRR</th><th>Pts</th></tr></thead><tbody>" +
       rows + "</tbody></table></div>" + recent + lead +
       '<p class="al-read">The side picks itself — your colts and the youngest men on the staff — so there is no ' +
       "teamsheet to file and nothing to lose by being asleep.</p>";

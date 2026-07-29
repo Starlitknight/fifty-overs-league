@@ -120,12 +120,12 @@
         "<td class='al-pos'>" + (i + 1) + "</td>" +
         "<td class='l al-club'>" + E(r.club) + (me ? "<span class='al-you__tag'>YOU</span>" : "") + "</td>" +
         "<td>" + (r.p | 0) + "</td><td>" + (r.w | 0) + "</td>" +
-        "<td class='al-c-l'>" + (r.l | 0) + "</td><td class='al-c-t'>" + (r.t | 0) + "</td>" +
+        "<td class='al-s'>" + (r.l | 0) + "</td><td class='al-s'>" + (r.t | 0) + "</td>" +
         "<td>" + nrr(r.nrr) + "</td><td class='al-pts'>" + (r.pts | 0) + "</td></tr>";
     }).join("");
     return "<div class='al-tblwrap'><table class='al-tbl'><thead><tr>" +
       "<th></th><th class='l'>Club</th><th>P</th><th>W</th>" +
-      "<th class='al-c-l'>L</th><th class='al-c-t'>T</th><th>NRR</th><th>Pts</th>" +
+      "<th class='al-s'>L</th><th class='al-s'>T</th><th>NRR</th><th>Pts</th>" +
       "</tr></thead><tbody>" + body + "</tbody></table></div>";
   }
 

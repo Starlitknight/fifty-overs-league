@@ -11,7 +11,6 @@
 10-office-settings.js
 11-chronicle.js
 12-scorecard-analysis.js
-13-world-desk.js
 14-match-report.js
 15-living-season.js
 16-matchday-dress.js
@@ -55,3 +54,4 @@
 63-match-centre.js
 64-table.js
 65-fixtures.js
+66-wire.js

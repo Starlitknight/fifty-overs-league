@@ -39,6 +39,7 @@
   var AL_OWNS = {
     today: 1, team: 1, matchday: 1, table: 1, fixtures: 1,
     market: 1, finance: 1, academy: 1, training: 1, dossier: 1, desk: 1,
+    records: 1, milestones: 1, paper: 1, ledger: 1, wire: 1,
   };
 
   // A section is bigger than one screen, and the dock only has five slots. The
@@ -54,8 +55,11 @@
     club: [
       { id: "club-h", label: "The club", href: "#/club-h" },
       { id: "finance", label: "The books", href: "#/finance" },
+      { id: "ledger", label: "Journal", href: "#/ledger" },
       { id: "milestones", label: "Honours", href: "#/milestones" },
       { id: "paper", label: "Gazette", href: "#/paper" },
+      { id: "wire", label: "Wire", href: "#/wire" },
+      { id: "guide", label: "Manual", href: "#/guide" },
     ],
     league: [
       { id: "table", label: "Table", href: "#/table" },
