@@ -167,6 +167,86 @@
     return out;
   }
 
+  // ---- HOW IT SHOULD GO ------------------------------------------------------
+  // A win probability is the easiest number in a football game to invent, and
+  // the house rule here is that every figure must be traceable to something
+  // real. So this one is not modelled at all: the fixture is PLAYED, forty
+  // times, on the same engine the umpire uses, with the same two squads the
+  // world generates - and the bar is simply how often each side won.
+  //
+  // Three things follow from doing it that way rather than with a formula.
+  // Home advantage, the shape of a batting order, a thin attack on a true
+  // pitch: all of it is already in there, because the cricket is real. The
+  // seeds come from the fixture's own id, so the forty matches are the SAME
+  // forty on every device in the world and nobody sees a different number.
+  // And because it is deterministic, it can be cached and never recomputed.
+  //
+  // What it is NOT: today's form. The living state of a side - who is tired,
+  // who is in touch - is banked by the umpire an hour before the first ball
+  // and is not published before that, so a preview reads the squads as the
+  // world draws them. The note under the bar says so rather than implying more.
+  var FO_PM_WP_N = 40;              // how many times the fixture is played out
+  var FO_PM_WP_CHUNK = 4;           // per tick, so a phone never locks up
+  var FO_PM_WP = {};                // this session, by fixture id
+  function foPmWpLoad(key) {
+    if (FO_PM_WP[key]) return FO_PM_WP[key];
+    try {
+      var raw = localStorage.getItem("fo_wp_" + key);
+      if (raw) { var v = JSON.parse(raw); if (v && v.n === FO_PM_WP_N) { FO_PM_WP[key] = v; return v; } }
+    } catch (e) {}
+    return null;
+  }
+  function foPmWpSave(key, v) {
+    FO_PM_WP[key] = v;
+    try { localStorage.setItem("fo_wp_" + key, JSON.stringify(v)); } catch (e) {}
+  }
+  function foPmWpPaint(host, v, done) {
+    if (!host) return;
+    var n = v.h + v.a + v.t; if (!n) return;
+    var ph = Math.round(100 * v.h / n), pa = Math.round(100 * v.a / n);
+    var pt = Math.max(0, 100 - ph - pa);
+    var bar = host.querySelector(".fo-pm-wpbar");
+    if (bar) {
+      bar.querySelector(".h").style.width = ph + "%";
+      bar.querySelector(".t").style.width = pt + "%";
+      bar.querySelector(".a").style.width = pa + "%";
+    }
+    var hp = host.querySelector(".fo-pm-wph b"), ap = host.querySelector(".fo-pm-wpa b");
+    if (hp) hp.textContent = ph + "%";
+    if (ap) ap.textContent = pa + "%";
+    var note = host.querySelector(".fo-pm-wpnote");
+    if (note) {
+      note.innerHTML = done
+        ? "Played out " + n + " times on the match engine, with the squads as the world draws them &mdash; " +
+          "the same " + n + " matches on every device." + (v.t ? " " + v.t + " ended level." : "")
+        : "Playing it out&hellip; " + n + " of " + FO_PM_WP_N + " done.";
+    }
+    host.classList.toggle("settled", !!done);
+  }
+  function foPmWpRun(host, sig, key, natId, hSlot, aSlot, hN, aN, ground) {
+    var G = window.__foGame, WT = window.__foWT;
+    if (!G || !G.simWorld || !G.hash || !WT || !WT.serverSquad) { host.style.display = "none"; return; }
+    var sqH = WT.serverSquad(natId, hSlot), sqA = WT.serverSquad(natId, aSlot);
+    if (!sqH || !sqA) { host.style.display = "none"; return; }
+    var H = { name: hN, ground: ground, players: sqH }, A = { name: aN, players: sqA };
+    var v = { h: 0, a: 0, t: 0, n: FO_PM_WP_N }, i = 0;
+    var step = function () {
+      if (location.hash !== sig) return;                       // the reader moved on
+      for (var c = 0; c < FO_PM_WP_CHUNK && i < FO_PM_WP_N; c++, i++) {
+        var out = null;
+        try { out = G.simWorld(H, A, "balanced", "Sunny", (G.hash(key + "|wp|" + i) >>> 0) || 1, null); } catch (eS) {}
+        if (!out || !out.result) { v.t++; continue; }
+        var w = out.result.winner;
+        if (w === hN) v.h++; else if (w === aN) v.a++; else v.t++;
+      }
+      var done = i >= FO_PM_WP_N;
+      foPmWpPaint(host, v, done);
+      if (done) { foPmWpSave(key, v); return; }
+      setTimeout(step, 0);
+    };
+    step();
+  }
+
   // ---- the countdown --------------------------------------------------------
   // A fixture is a time as much as a pairing. This says how long, in the units
   // a person actually thinks in, and re-reads itself every second so the page
@@ -344,6 +424,17 @@
         "</div></header>" +
 
         "<div class='fo-pm-in fo-pm-body'>" +
+        "<section class='fo-pm-sec'><div class='fo-pm-rule'><span>" +
+        (c0.k === "soon" ? "How it should go" : "Before a ball was bowled") + "</span></div>" +
+        "<div id='fo-pm-wp' class='fo-pm-wp'>" +
+        "<div class='fo-pm-wptop'>" +
+        "<span class='fo-pm-wph'>" + foPmShield(hN, hBoss, natId) + "<u>" + foPmE(hN) + "</u><b>&mdash;</b></span>" +
+        "<span class='fo-pm-wpa'><b>&mdash;</b><u>" + foPmE(aN) + "</u>" + foPmShield(aN, aBoss, natId) + "</span>" +
+        "</div>" +
+        "<div class='fo-pm-wpbar'><span class='h'></span><span class='t'></span><span class='a'></span></div>" +
+        "<p class='fo-pm-wpnote'>Playing it out&hellip;</p>" +
+        "</div></section>" +
+
         "<section class='fo-pm-sec'><div class='fo-pm-rule'><span>The two sides</span></div>" +
         "<div class='fo-pm-clubs'>" + sideCard(hSlot, hN, hBoss, hSt, true) + sideCard(aSlot, aN, aBoss, aSt, false) + "</div>" +
         "</section>" +
@@ -360,6 +451,18 @@
 
       var host = document.getElementById("fo-pm-count");
       if (host) host.__g = g;
+
+      // the bar: served from the cache when this fixture has been played out
+      // before, otherwise played out now, a few matches at a time
+      try {
+        var wpHost = document.getElementById("fo-pm-wp");
+        if (wpHost) {
+          var wpKey = natId + ":s" + g.seasonNo + ":r" + round + ":h" + hSlot + "a" + aSlot;
+          var cached = foPmWpLoad(wpKey);
+          if (cached) foPmWpPaint(wpHost, cached, true);
+          else foPmWpRun(wpHost, location.hash, wpKey, natId, hSlot, aSlot, hN, aN, ground);
+        }
+      } catch (eWp) {}
       try { if (window.__foPmTimer) clearInterval(window.__foPmTimer); } catch (eT) {}
       window.__foPmTimer = setInterval(foPmTick, 1000);
     } catch (e) {
@@ -436,6 +539,22 @@
       ".fo-pm-rule{display:flex;align-items:center;gap:12px;margin-bottom:14px}",
       ".fo-pm-rule:after{content:'';flex:1;height:1px;background:rgba(150,180,225,.16)}",
       ".fo-pm-rule span{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.26em;font-size:9.5px;font-weight:600;color:var(--gold)}",
+      // the probability bar
+      ".fo-pm-wp{padding:16px 17px;border-radius:13px;background:linear-gradient(180deg,rgba(16,27,50,.82),rgba(8,14,26,.82));border:1px solid rgba(150,180,225,.16)}",
+      ".fo-pm-wptop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px}",
+      ".fo-pm-wph,.fo-pm-wpa{display:flex;align-items:center;gap:9px;min-width:0}",
+      ".fo-pm-wph u,.fo-pm-wpa u{text-decoration:none;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:10px;color:var(--steel);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".fo-pm-wph b,.fo-pm-wpa b{font-family:Oswald,sans-serif;font-weight:700;font-size:clamp(20px,2.4vw,28px);line-height:1;font-variant-numeric:tabular-nums;color:var(--paper)}",
+      ".fo-pm-wph b{color:var(--gold)}",
+      ".fo-pm-wpa b{color:#9fc0ee}",
+      ".fo-pm-wpbar{display:flex;height:12px;border-radius:999px;overflow:hidden;background:rgba(150,180,225,.12)}",
+      ".fo-pm-wpbar span{display:block;height:100%;width:0;transition:width .5s cubic-bezier(.2,.7,.2,1)}",
+      ".fo-pm-wpbar .h{background:linear-gradient(90deg,#C98A2A,var(--gold))}",
+      ".fo-pm-wpbar .t{background:rgba(150,180,225,.4)}",
+      ".fo-pm-wpbar .a{background:linear-gradient(90deg,#5C86C4,#9fc0ee)}",
+      ".fo-pm-wpnote{margin:10px 0 0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:12px;line-height:1.5;color:var(--steel)}",
+      ".fo-pm-wp.settled .fo-pm-wpnote{color:#c3d0e6}",
+      "@media(prefers-reduced-motion:reduce){.fo-pm-wpbar span{transition:none}}",
       ".fo-pm-clubs,.fo-pm-mengrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(10px,1.6vw,18px)}",
       "@media(max-width:700px){.fo-pm-clubs,.fo-pm-mengrid{grid-template-columns:1fr}}",
       ".fo-pm-club,.fo-pm-men{padding:16px 17px;border-radius:13px;background:linear-gradient(180deg,rgba(16,27,50,.82),rgba(8,14,26,.82));border:1px solid rgba(150,180,225,.16)}",
