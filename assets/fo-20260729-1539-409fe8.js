@@ -10217,7 +10217,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260729-1422-466065";
+  var FO_BUILD = "20260729-1539-409fe8";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -11457,7 +11457,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<h1>A new era is starting</h1>" +
         '<div class="fol-sub">The game has been rebuilt and your commissioner has relaunched the league. Old clubs are retired with honour - everyone founds a fresh club and the table starts from zero.</div>' +
         '<div class="fol-form">' +
-        '<div class="folsmall" style="line-height:1.6;margin-bottom:4px">Founding a club is a whole new experience now: the <b>Gaffer</b> walks you through naming your club, choosing its soul, spending your first million and a live warm-up friendly. League matches play at <b>9:00 AM ET</b>.</div>' +
+        '<div class="folsmall" style="line-height:1.6;margin-bottom:4px">Founding a club is a whole new experience now: the <b>Gaffer</b> walks you through naming your club and hands you the squad the board has signed for you. League matches play at <b>9:00 AM ET</b>.</div>' +
         '<button class="fol-cta" data-act="refound">Found my new club ▸</button>' +
         "</div>" +
         '<div class="fol-links"><a class="fol-mut" data-act="logout">Log out</a></div>' + FOOT);
@@ -13881,12 +13881,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
 
   // ================= The Founding Journey =====================================
-  // Gaffer-led onboarding: intro -> create -> founded -> soul -> money ->
-  // (marquee signing) -> Thorne -> newspaper -> commit -> conditions ->
-  // three calls -> REAL warm-up in the live match centre -> debrief -> club.
-  // Presentation only: squads, fees, bank, sponsor and the warm-up all run
-  // through the existing, verified plumbing (foGenArchetypeSquad, foForecast,
-  // foOnbCommit, suggestOrders, the __foTutOrders zero-trace stash).
+  // Gaffer-led onboarding, five screens end to end: intro -> create ->
+  // founded -> the squad dealt out -> club. It ran to thirty-odd screens once
+  // - a soul chooser, the books, a reserve decision, the rival, a conditions
+  // primer, three calls and a full warm-up match - and the length was the
+  // problem, so all of that is gone.
+  // Presentation only: the squad and the signing run through the existing,
+  // verified plumbing (foGenArchetypeSquad, foOnbCommit).
   (function foJCss() {
     if (document.getElementById("fo-j-css")) return;
     var st = document.createElement("style"); st.id = "fo-j-css";
@@ -14033,18 +14034,36 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-jrv-pack img.fo-j-crimg{width:82px;height:82px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.5))}" +
       ".fo-jrv-pack .pk1{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;font-size:16px}" +
       ".fo-jrv-pack .pk2{font-family:Oswald,sans-serif;font-weight:500;letter-spacing:2px;text-transform:uppercase;font-size:10.5px;color:#E4C463;animation:foJb 1.6s infinite}" +
-      ".fo-jrv-pack.open{animation:none;transform:scale(.4) rotate(-8deg);opacity:0;pointer-events:none;position:absolute;left:50%;top:70px;margin-left:-90px}" +
+      "html body #fo-onb .fo-jrv-pack.open{animation:none;transform:scale(.4) rotate(-8deg);opacity:0;pointer-events:none;position:absolute;left:50%;top:70px;margin-left:-90px}" +
       ".fo-jrv-burst{position:absolute;left:50%;top:44%;width:20px;height:20px;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 0 rgba(201,162,75,.7)}" +
       ".fo-jrv-pack.open .fo-jrv-burst{animation:foJrvBurst .6s ease-out}" +
       "@keyframes foJrvBurst{0%{box-shadow:0 0 0 0 rgba(201,162,75,.7)}100%{box-shadow:0 0 0 220px rgba(201,162,75,0)}}" +
       ".fo-jrv-lab{position:relative;min-height:22px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:3px;text-transform:uppercase;font-size:14px;color:#C8674A;margin:4px 0 12px}" +
       ".fo-jrv-lab.pop{animation:foJrvPop .4s ease-out}" +
       "@keyframes foJrvPop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}" +
-      ".fo-jrv-grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;text-align:left}" +
-      "@media(max-width:520px){.fo-jrv-grid{grid-template-columns:1fr}}" +
-      // holo mode: one FULL trading card per row, a column you scroll through
-      ".fo-jrv-grid.fo-jrv-holo{display:flex;flex-direction:column;align-items:center;gap:22px}" +
-      ".fo-jrv-holo .fo-jrv-cell{width:100%}" +
+      ".fo-jrv-grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:10px;text-align:left}" +
+      // Phone: two to a row. The browse card turns portrait to fit - the
+      // painted figure moves off the left edge and up onto the top of the
+      // card, and the three skill bars go, because this screen is a squad
+      // roll call and not a scouting desk. Scoped to the reveal so the
+      // squad, market and scout grids keep the wide card they were drawn for.
+      "@media(max-width:560px){" +
+      ".fo-jrv-grid{grid-template-columns:1fr 1fr;gap:8px}" +
+      "#fo-onb .fo-jrv-cell .pkm{padding:0 0 9px}" +
+      "#fo-onb .fo-jrv-cell .pkm-top{flex-wrap:wrap;align-items:flex-end;gap:0 7px}" +
+      "#fo-onb .fo-jrv-cell .pkm-art{position:relative;flex:0 0 100%;width:100%;height:128px;margin-bottom:7px}" +
+      "#fo-onb .fo-jrv-cell .pkm-art:after{display:none}" +
+      "#fo-onb .fo-jrv-cell .pkm-id{flex:1 1 100%;padding:0 9px}" +
+      "#fo-onb .fo-jrv-cell .pkm-ovc{position:absolute;top:6px;right:6px;background:rgba(11,19,34,.82);border:1px solid rgba(201,162,75,.5);border-radius:9px;padding:3px 7px 2px}" +
+      "#fo-onb .fo-jrv-cell .pkm-ovc i{color:#cfd6e4}" +
+      "#fo-onb .fo-jrv-cell .pkm-nm{font-size:14px}" +
+      // two words of a bowling type will not fit on one narrow line, and a
+      // role clipped to \"Fast-Medium Bowler \u2026\" reads as a bug; let it wrap
+      "#fo-onb .fo-jrv-cell .pkm-sub{font-size:10.5px;white-space:normal;line-height:1.3}" +
+      "#fo-onb .fo-jrv-cell .pkm-ovc b{font-size:19px;color:#F0B94E}" +
+      "#fo-onb .fo-jrv-cell .pkm-hand{display:none}" +
+      "#fo-onb .fo-jrv-cell .pkm-bars{display:none}" +
+      "}" +
       ".fo-jrv-cell{opacity:0}" +
       ".fo-jrv-cell.in{animation:foJrvFly .5s cubic-bezier(.16,.72,.28,1.1) forwards}" +
       ".fo-jrv-cell.in.insta{animation-duration:.01s}" +
@@ -14175,9 +14194,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     }
   } catch (eTT) {}
 
-  var FO_J_ACCENT = { express: "#D93425", blade: "#E09A19", rock: "#2F8F46", wizard: "#8B4FD8", gloveman: "#0E9E97", engine: "#2F80ED" };
-  var FO_J_SOULS = ["express", "blade", "rock", "wizard", "gloveman", "engine"];
-  var FO_J_COUNTER = { express: "rock", blade: "express", rock: "blade", wizard: "express", gloveman: "blade", engine: "express" };
   var FO_J_PREV = {
     express: { pitch: "green", bars: { Batting: 2, Bowling: 5, Fielding: 3, Nerve: 3 }, stars: "Fast bowler, seam-bowling all-rounder", prob: "Batting depth", conds: "Green and cloudy", quip: "Pace. Good. Nothing clears a Sunday crowd like broken stumps." },
     blade: { pitch: "flat", bars: { Batting: 5, Bowling: 2, Fielding: 3, Nerve: 2 }, stars: "Two attacking openers", prob: "Bowling at the death", conds: "Flat and dry", quip: "The Cavaliers. Glorious or gone by lunch, and I love them for it." },
@@ -14195,12 +14211,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "Ireland": "Ireland. Rain stops play there; the heart never did.", "Zimbabwe": "Zimbabwe. Tougher cricket people do not exist."
   };
   function foJArch(id) { return foArchById(id); }
-  function foJChapBar(ix) {
-    var L = ["Build the club", "Meet the rival", "Play the friendly"];
-    return "<div class='fo-j-chap'>" + L.map(function (l, k) {
-      return "<span class='" + (k === ix ? "on" : (k < ix ? "done" : "")) + "'>" + l + "</span>" + (k < 2 ? "<i>&rarr;</i>" : "");
-    }).join("") + "</div>";
-  }
+  // Build the club was one of three chapters; the rival and the friendly are
+  // gone, and a progress bar with a single step on it is just furniture.
+  function foJChapBar() { return ""; }
   function foJMount(ch, body) {
     var host = document.getElementById("fo-onb");
     if (!host) { host = document.createElement("div"); host.id = "fo-onb"; document.body.appendChild(host); }
@@ -14238,20 +14251,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return "<svg viewBox='0 0 120 120' width='" + sz + "' height='" + sz + "'><path d='M60 6 L108 20 L108 64 C108 92 86 108 60 116 C34 108 12 92 12 64 L12 20 Z' fill='" + accent + "' stroke='#C9A24B' stroke-width='3.5'/><path d='M60 13 L101 25 L101 63 C101 86 83 100 60 108 C37 100 19 86 19 63 L19 25 Z' fill='none' stroke='#FFF6DE' stroke-width='1.6' opacity='.55'/><text x='60' y='72' text-anchor='middle' font-size='34' font-weight='800' fill='#FDF7E3' font-family='inherit'>" + E(initials || "") + "</text></svg>";
   }
   function foJInitials(nm) { return String(nm || "CC").split(/\s+/).map(function (w) { return w[0] || ""; }).join("").slice(0, 2).toUpperCase(); }
-  function foJMiniBars(rows) {
-    return "<span class='fo-j-bars'>" + rows.map(function (r) {
-      var v = Math.max(2, Math.min(100, r[1] || 0));
-      return "<span class='fo-j-bar'>" + r[0] + "<i><b style='width:" + v + "%'></b></i><em>" + E(foWord(r[1]) || String(r[1])) + "</em></span>";
-    }).join("") + "</span>";
-  }
 
   // ---- Chapter 1 -------------------------------------------------------------
   function foJIntro() {
     FO_ONB.j = FO_ONB.j || {};
     foJDbox(0, [
-      "Ah. So you're the new manager they sent me.",
-      "Eleven players, fifty overs, and a thousand ways to lose your nerve.",
-      "You've inherited a name nobody knows, an empty dressing room, and a fixture list. Let's fix the first two."
+      "Ah. So you're the new manager they sent me."
     ], foJCreate);
   }
   function foJCreate() {
@@ -14326,64 +14331,23 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "<div class='fo-j-marq'>" + E(FO_ONB.clubName) + "</div>" +
       "<div class='fo-j-rule'><i></i><b>&#10022;</b><i></i></div>" +
       "<p class='fo-ob-lead' style='text-align:center'>Founded 2026 &middot; Managed by " + E(FO_ONB.mgr || "you") + " " + (foQsFlag(FO_ONB.country) || "") + " &middot; Home ground: " + E(FO_ONB.ground) + "</p>" +
-      "<p class='fo-ob-lead' style='text-align:center'>The name is on the door. Now give the club a soul.</p>" +
-      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-j-go'>Choose what we are</button></div></div>";
+      "<p class='fo-ob-lead' style='text-align:center'>The name is on the door. The board has already signed a squad to put behind it.</p>" +
+      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-j-go'>Meet the squad</button></div></div>";
     foJMount(0, body).querySelector("#fo-j-go").addEventListener("click", function () {
       foJDbox(0, [
-        E(FO_ONB.clubName) + ". Good name. Looks right over a doorway.",
-        "And " + E(FO_ONB.mgr || "you") + "… I'll call you boss, if it's all the same.",
-        "So that's who we are on paper. Now the real question: what are we?",
-        "Six ways to build a cricket club. Pick the one you'd pay to watch."
-      ], foJStyle);
+        E(FO_ONB.clubName) + ". Good name. Looks right over a doorway."
+      ], foJAutoSoul);
     });
   }
-  function foJStyle() {
-    var cards = FO_J_SOULS.map(function (id) {
-      var A = foJArch(id), pv = FO_J_PREV[id], ac = FO_J_ACCENT[id];
-      var bars = "<span class='fo-j-stats'>" + Object.keys(pv.bars).filter(function (k) { return k !== "Nerve"; }).map(function (k) {
-        return "<span class='fo-j-stat'><span>" + k + "</span><i><b style='width:" + (pv.bars[k] * 20) + "%;background:" + ac + "'></b></i></span>";
-      }).join("") + "</span>";
-      return "<button type='button' class='fo-j-soul" + (FO_ONB.arch === id ? " on" : "") + "' data-a='" + id + "'>" +
-        "<img class='fo-j-crimg' src='" + FO_ART + "crests/" + id + ".png' alt=''>" +
-        "<span class='nm' style='color:" + ac + "'>" + E(A.nm) + "</span>" +
-        "<span class='ln'>&ldquo;" + E(A.line) + "&rdquo;</span>" + bars + "</button>";
-    }).join("");
-    var body = "<div>" +
-      "<h1 class='fo-ob-h1' style='text-align:center'>Choose your club's identity</h1>" +
-      "<p class='fo-ob-lead' style='text-align:center;max-width:600px;margin:0 auto 6px'>Your choice here <b>decides the players your club is founded with</b>.</p>" +
-      "<div class='fo-j-souls'>" + cards + "</div><div id='fo-j-prev'>" + (FO_ONB.arch ? foJPrevHtml() : "") + "</div></div>";
-    var host = foJMount(0, body);
-    host.querySelectorAll(".fo-j-soul").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var prev = FO_ONB.arch;
-        FO_ONB.arch = b.getAttribute("data-a");
-        if (prev !== FO_ONB.arch) { FO_ONB.capt = null; FO_ONB.pool = null; FO_ONB.comp = null; FO_ONB.gen = null; FO_ONB.riskAck = false; FO_ONB.marquee = null; }
-        FO_ONB.pitch = FO_J_PREV[FO_ONB.arch].pitch;
-        host.querySelectorAll(".fo-j-soul").forEach(function (x) { x.classList.toggle("on", x === b); });
-        host.querySelector("#fo-j-prev").innerHTML = foJPrevHtml();
-        foJPrevWire(host);
-      });
-    });
-    foJPrevWire(host);
-  }
-  function foJPrevHtml() {
-    if (!FO_ONB.arch) return "";
-    var pv = FO_J_PREV[FO_ONB.arch];
-    return "<div class='fo-j-prev'>" + foJGbox(E(pv.quip)) +
-      "<div class='fo-j-pl'><i>Your strength</i><span>" + E(pv.stars) + "</span></div>" +
-      "<div class='fo-j-pl'><i>Your weakness</i><span>" + E(pv.prob) + "</span></div>" +
-      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-j-stygo'>Build this club</button></div></div>";
-  }
-  function foJPrevWire(host) {
-    var b = host.querySelector("#fo-j-stygo");
-    if (b) b.addEventListener("click", function () { foJReveal(); });
-  }
-  function foJRevealDone() {
-    foJDbox(0, [
-      "The board wired a million this morning. Don't get romantic; most of it is already spent.",
-      "Squad, wages, the ground. What's left is the reserve, and the reserve is yours.",
-      "Come and see the books."
-    ], foJMoney);
+  // The club's identity used to be a six-card choice of its own; onboarding is
+  // shorter without it, so the board picks. The all-rounder side is the one to
+  // hand a manager who has never seen this engine: six bowling options and a
+  // batting card that runs deep, so no single bad day loses the match for him.
+  var FO_J_AUTO_SOUL = "engine";
+  function foJAutoSoul() {
+    FO_ONB.arch = FO_J_AUTO_SOUL;
+    FO_ONB.pitch = FO_J_PREV[FO_ONB.arch].pitch;
+    foJReveal();
   }
   // The unboxing: the squad your DNA choice just unlocked, dealt like a pack
   // of trading cards - batsmen first, then the gloves, the all-rounders, and
@@ -14403,19 +14367,19 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function foJReveal() {
     var gen;
     try { gen = foGenArchetypeSquad(foObSeed(), FO_ONB.country, FO_ONB.arch, "talisman", foQsDefaultComp(FO_ONB.arch)); }
-    catch (e) { foJRevealDone(); return; }
+    catch (e) { foJCommitGate(); return; }
     var ordIx = { bat: 0, wk: 1, ar: 2, bowl: 3 };
     var ps = gen.players.slice().sort(function (a, b2) {
       var d = ordIx[foJrvGroup(a)] - ordIx[foJrvGroup(b2)];
       return d !== 0 ? d : (foPkOvr(b2) - foPkOvr(a));
     });
     var A = foJArch(FO_ONB.arch);
-    // v2: every card out of the pack is the FULL holo trading card, dealt into
-    // a single scrollable column - the same card the player page shows
+    // Every man out of the pack is the compact browse card - the same one the
+    // squad, market and scout grids use - tiled. A column of full hero cards
+    // read as fifteen separate screens; this reads as a squad.
     var cells = ps.map(function (p, i) {
-      var built = foHoloCardHTML(p, A.nm);
       return "<div class='fo-jrv-cell' data-i='" + i + "' data-g='" + foJrvGroup(p) + "'>" +
-        "<div class='fo-phw ph-" + built.tier + "' style='--tc:" + built.ac[0] + ";--tcD:" + built.ac[1] + "'>" + built.html + "</div></div>";
+        foPkMini(p) + "</div>";
     }).join("");
     var body = "<div class='fo-jrv-wrap'>" +
       "<div class='fo-jrv'>" +
@@ -14425,13 +14389,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "<button type='button' class='fo-jrv-pack' id='fo-jrv-pack'>" +
       "<span class='fo-jrv-burst'></span>" +
       "<img class='fo-j-crimg' src='" + FO_ART + "crests/" + FO_ONB.arch + ".png' alt=''>" +
-      "<span class='pk1'>" + E(A.nm) + "</span><span class='pk2'>Founding squad · tap to open</span></button>" +
+      "<span class='pk1'>" + E(A.nm) + "</span><span class='pk2'>Founding squad</span></button>" +
       "<div class='fo-jrv-lab' id='fo-jrv-lab'></div>" +
-      "<div class='fo-jrv-grid fo-jrv-holo' id='fo-jrv-grid'>" + cells + "</div>" +
+      "<div class='fo-jrv-grid' id='fo-jrv-grid'>" + cells + "</div>" +
       "<div class='fo-jrv-skip'><a id='fo-jrv-skip' hidden>Deal them all &#9654;</a></div>" +
       "<div class='fo-jrv-foot' id='fo-jrv-foot' hidden>" +
-      foJGbox("Every name on that sheet is yours now. In a year they'll either be a team or a story. To the books, boss.") +
-      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-jrv-go'>To the books &#9654;</button></div></div>" +
+      foJGbox("Every name on that sheet is yours now. In a year they'll either be a team or a story. Sign them, boss.") +
+      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-jrv-go'>Sign them &#9654;</button></div></div>" +
       "</div></div>";
     var host = foJMount(0, body);
     var pack = host.querySelector("#fo-jrv-pack");
@@ -14440,7 +14404,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var timers = [], dealt = 0;
     var reduce = false;
     try { reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e2) {}
-    [].forEach.call(host.querySelectorAll(".fo-jrv-cell .fo-phw"), foHoloTilt);
     // the camera follows each card as it's dealt - until the manager scrolls
     var follow = true, stopFollow = function () { follow = false; };
     window.addEventListener("wheel", stopFollow, { passive: true, once: true });
@@ -14453,7 +14416,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       skip.hidden = true; foot.hidden = false;
       try { foot.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" }); } catch (e3) {}
     };
-    host.querySelector("#fo-jrv-go").addEventListener("click", foJRevealDone);
+    host.querySelector("#fo-jrv-go").addEventListener("click", foJCommitGate);
     skip.addEventListener("click", finish);
     pack.addEventListener("click", function () {
       if (pack.__opened) return; pack.__opened = 1;
@@ -14465,7 +14428,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // strict one-by-one: each full card lands, the camera follows it, the
       // next launches - an extra beat when the role wave changes so the
       // banner registers
-      var STEP = 700, GAP = 350, t = 360, lastG = null;
+      var STEP = 300, GAP = 260, t = 300, lastG = null;
       cellsEls.forEach(function (c, i) {
         var g = c.getAttribute("data-g");
         if (g !== lastG) { if (lastG != null) t += GAP; lastG = g; (function (g2, tt) {
@@ -14483,7 +14446,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             c2.style.setProperty("--dy", dy.toFixed(0) + "px");
             c2.style.setProperty("--rot", ((foHash32(FO_ONB.arch + idx) % 40) - 20) + "deg");
             c2.classList.add("in");
-            if (follow) try { c2.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e4) {}
+            if (follow) try { c2.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e4) {}
             dealt++;
             if (dealt >= cellsEls.length) timers.push(setTimeout(finish, 500));
           }, tt));
@@ -14492,73 +14455,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       });
       if (reduce) finish();
     });
+    // the sealed pack used to wait on a tap of its own; it deals itself now
+    setTimeout(function () { try { pack.click(); } catch (ePk) {} }, 300);
   }
-  function foJTrimComp(comp) {
-    var capB = foQsBucketOf((foJArch(FO_ONB.arch).starter || {}).role || "topOrderBat");
-    comp = JSON.parse(JSON.stringify(comp));
-    for (var cut = 0; cut < 2; cut++) {
-      var ks = ["bat", "pace", "spin", "ar"].sort(function (a, b2) { return (comp[b2] || 0) - (comp[a] || 0); });
-      for (var i = 0; i < ks.length; i++) {
-        var t = {}; for (var kk in comp) t[kk] = comp[kk];
-        t[ks[i]] = (t[ks[i]] || 0) - 1;
-        if (t[ks[i]] < 0) continue;
-        if (!foObCompLegal(t, capB)) { comp = t; break; }
-      }
-    }
-    return comp;
-  }
-  function foJBaseComp() {
-    var comp = foQsDefaultComp(FO_ONB.arch);
-    if (FO_ONB.reserve === "bench") { comp = JSON.parse(JSON.stringify(comp)); comp.bat = (comp.bat || 0) + 1; comp.pace = (comp.pace || 0) + 1; }
-    else if (FO_ONB.reserve === "marquee") comp = foJTrimComp(comp);
-    return comp;
-  }
-  function foJFeesOf(comp) {
-    var g = foGenArchetypeSquad(foObSeed(), FO_ONB.country, FO_ONB.arch, "talisman", comp);
-    var f = 0; g.players.forEach(function (p) { f += p.fee || 0; });
-    return { fees: f, n: g.players.length };
-  }
-  function foJMoney() {
-    var gen, fees = 0, wages = 0, cashN = 0, benchBank = 0, benchN = 0, mqCore = 0, mqLo = 0, mqHi = 0, mqN = 0;
-    try {
-      var def = foQsDefaultComp(FO_ONB.arch);
-      gen = foGenArchetypeSquad(foObSeed(), FO_ONB.country, FO_ONB.arch, "talisman", def);
-      gen.players.forEach(function (p) { fees += p.fee || 0; wages += p.wage || 0; });
-      cashN = gen.players.length;
-      var bComp = JSON.parse(JSON.stringify(def)); bComp.bat = (bComp.bat || 0) + 1; bComp.pace = (bComp.pace || 0) + 1;
-      var bF = foJFeesOf(bComp); benchBank = 1000000 - bF.fees; benchN = bF.n;
-      var mF = foJFeesOf(foJTrimComp(def)); mqCore = mF.fees; mqN = mF.n + 1;
-      var mqFees = foJMarqueeCands().map(function (p) { return foDraftPrice(p); });
-      mqLo = 1000000 - mqCore - Math.max.apply(null, mqFees); mqHi = 1000000 - mqCore - Math.min.apply(null, mqFees);
-    } catch (e) { say(e); return; }
-    var sp = foSponsorById("community");
-    var body = "<div class='fo-j-dwrap' style='text-align:center'>" +
-      "<div class='fo-ob-eyebrow'>The books</div><h1 class='fo-ob-h1'>Your first million</h1>" +
-      "<div class='fo-j-ledger'><div class='lmast'><span>Founding account &middot; " + E(FO_ONB.clubName || "Your club") + "</span><span>Season one</span></div>" +
-      "<table class='fo-j-money'><tr class='g'><td>Founding grant</td><td>" + FO$(1000000) + "</td></tr>" +
-      "<tr><td>Core squad signings <span class='nt'>" + gen.players.length + " players</span></td><td class='neg'>&minus;" + FO$(fees) + "</td></tr>" +
-      "<tr><td>Wage bill <span class='nt'>per matchday</span></td><td class='neg'>&minus;" + FO$(wages) + "</td></tr>" +
-      "<tr><td>Sponsor income <span class='nt'>" + E(sp.name) + ", flat, no strings</span></td><td class='pos'>+" + FO$(sp.base) + "</td></tr>" +
-      "<tr class='r'><td>Bank on day one</td><td>" + FO$(1000000 - fees) + "</td></tr></table></div>" +
-      foJGbox("There's no wrong answer here. There are two wrong answers if you dither.", "wink") +
-      "<p class='fo-ob-lead' style='text-align:center;margin-top:6px'>Spend the rest of the room on:</p>" +
-      "<div class='fo-j-choice'>" +
-      "<button type='button' class='fo-j-card' data-r='bench'><h3>A deeper bench</h3><div class='fx'>Two extra squad players (" + benchN + " total). Cover for everything.</div><span class='bk'><i>Bank on day one</i><b>" + FO$(benchBank) + "</b></span></button>" +
-      "<button type='button' class='fo-j-card' data-r='marquee'><h3>A marquee signing</h3><div class='fx'>One star, two fewer core signings (" + mqN + " total). Quality over depth.</div><span class='bk'><i>Bank on day one</i><b>" + FO$(mqLo) + "&ndash;" + FO$(mqHi) + "</b></span></button>" +
-      "<button type='button' class='fo-j-card' data-r='cash'><h3>Keep the cash</h3><div class='fx'>The standard " + cashN + "-man squad, maximum flexibility.</div><span class='bk'><i>Bank on day one</i><b>" + FO$(1000000 - fees) + "</b></span></button>" +
-      "</div></div>";
-    var host = foJMount(0, body);
-    host.querySelectorAll(".fo-j-card").forEach(function (b) {
-      b.addEventListener("click", function () {
-        FO_ONB.reserve = b.getAttribute("data-r"); FO_ONB.marquee = null; FO_ONB.riskAck = false;
-        if (FO_ONB.reserve === "marquee") { foJSign(); return; }
-        foJDbox(0, FO_ONB.reserve === "bench"
-          ? ["Two more names on the sheet. Depth wins the long months; remember I said that.", "Right. Before you meet the league, there's a name you need to know."]
-          : ["Money in the bank never pulled a hamstring. Smart.", "Right. Before you meet the league, there's a name you need to know."], foJThorne);
-      });
-    });
-  }
-
   // ==== The trading-card player card ==========================================
   // One component for every surface that shows a player as a card. Role picks
   // the color and the artwork; all numbers come off the live player object.
@@ -14739,350 +14638,28 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       (foot ? "<div class=\'pkm-foot\'>" + foot + "</div>" : "") +
       "</div>";
   }
-  // Three marquee archetypes: a batter, a strike bowler shaped by the club
-  // soul, and an all-rounder - the manager plugs a real hole instead of
-  // choosing between three copies of the captain. Deterministic from the seed.
-  function foJMarqueeCands() {
-    var seed = String(foObSeed()) + "-marquee2";
-    var A = foJArch(FO_ONB.arch);
-    var bowlRole = FO_ONB.arch === "wizard" ? "wristSpin" : (FO_ONB.arch === "express" ? "seamFast" : (FO_ONB.arch === "gloveman" ? "fingerSpin" : "seamFastMedium"));
-    var specs = [
-      { role: "topOrderBat", age: 26, lbl: "Batsman" },
-      { role: bowlRole, age: 24, lbl: "Strike Bowler" },
-      { role: "allRounder", age: 29, lbl: "All-Rounder" }
-    ];
-    var firsts = {}, lasts = {};
-    return specs.map(function (s) {
-      // The three contracts must be a real choice: whatever the role, nudge the
-      // generation quality until the card's OVR lands in one shared band. The
-      // rng is reseeded per attempt, so the name stays put while skills move.
-      var fSnap = JSON.stringify(firsts), lSnap = JSON.stringify(lasts);
-      var TGT = 69, lo = 0.18, hi = 0.97, best = null;
-      for (var it = 0; it < 14; it++) {
-        var q = (lo + hi) / 2;
-        var f2 = JSON.parse(fSnap), l2 = JSON.parse(lSnap);
-        var rnd = window.rng(foHash32(seed + "|" + s.role));
-        var cand = foQsPlayer({ role: s.role, age: s.age, q: q }, FO_ONB.country, rnd, f2, l2);
-        if (foPureBowler(cand)) { cand.skills.vsPace = 31; cand.skills.vsSpin = 30; cand.skills.rotation = 27; cand.skills.temperament = 35; cand.skills.power = 29; }
-        jsDerive(cand);   // the card reads DERIVED aggregates - measure what it shows
-        var ovr = foPkOvr(cand);
-        if (!best || Math.abs(ovr - TGT) < Math.abs(best.ovr - TGT)) best = { p: cand, ovr: ovr, f: f2, l: l2 };
-        if (ovr >= TGT - 2 && ovr <= TGT + 2) break;
-        if (ovr < TGT) lo = q; else hi = q;
-      }
-      var p = best.p;
-      Object.keys(best.f).forEach(function (k) { firsts[k] = best.f[k]; });
-      Object.keys(best.l).forEach(function (k) { lasts[k] = best.l[k]; });
-      var want = (A.talents || []).slice();
-      var poolT = Object.keys(TALN).sort(function (a, b) { return foHash32(p.name + a) - foHash32(p.name + b); });
-      want.concat(poolT).forEach(function (t) { if (p.talents.length >= 2 || p.talents.indexOf(t) >= 0) return; if (foQsElig(p, t)) p.talents.push(t); });
-      jsDerive(p);
-      p.__mqLbl = s.lbl;
-      return p;
-    });
-  }
-  function foJSign() {
-    var cands;
-    try { cands = foJMarqueeCands(); }
-    catch (e) { say(e); return; }
-    var cards = cands.map(function (p, i) {
-      return foPkCard(p, { fee: foDraftPrice(p), wage: foDailyWage(p),
-        cta: "Sign " + p.name.split(" ").slice(-1)[0], ctaAttr: " data-i='" + i + "'" });
-    }).join("");
-    var body = "<div><h1 class='fo-ob-h1' style='text-align:center'>Choose the final signing</h1>" +
-      "<p class='fo-ob-lead' style='text-align:center'>Three contracts on the desk - a batter, a strike bowler, an all-rounder. Sign one.</p>" +
-      "<div class='pk-row pk-sign'>" + cards + "</div></div>";
-    var host = foJMount(0, body);
-    host.querySelectorAll(".pk-cta[data-i]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var p = cands[+b.getAttribute("data-i")];
-        FO_ONB.marquee = p;
-        var line = p.age >= 30 ? E(p.name) + ". Seasons of first-class cricket and a handshake like a bench vice. He'll hold this side together while the rest learn."
-          : (p.age <= 21 ? E(p.name) + ". " + p.age + " years old, and I still can't read him from the balcony. Patience, boss."
-          : E(p.name) + ". Runs at the top, a cool head, and he sends one invoice. Work him wisely.");
-        foJDbox(0, [line, "Right. Before you meet the league, there's a name you need to know."], foJThorne);
-      });
-    });
-  }
-
-  // ---- Chapter 2: the rival, then commit ------------------------------------
-  function foJThorne() {
-    var rid = FO_J_COUNTER[FO_ONB.arch] || "rock";
-    var R = foJArch(rid), ac = FO_J_ACCENT[rid];
-    var stage = "<div class='fo-j-rivstage'>" +
-      "<div class='fo-j-rivfig'><img class='fo-j-face' src='" + FO_ART + "thorne.png' alt=''>" +
-      "<div class='fo-j-rivnm'>Reggie Thorne</div><div class='fo-j-rivsub'>Manager</div></div>" +
-      "<div class='fo-j-vs'>v</div>" +
-      "<div class='fo-j-rivfig'><img class='fo-j-crimg lg' src='" + FO_ART + "crests/" + rid + ".png' alt=''><div class='fo-j-rivnm' style='color:" + ac + "'>" + E(R.nm) + "</div><div class='fo-j-rivsub'>&ldquo;" + E(R.line) + "&rdquo;</div></div></div>";
-    foJDbox(1, [
-      "Reggie Thorne. Runs a " + E(R.nm) + " side. Plays the exact opposite way to your lot, and rates his squad a notch above anything new.",
-      "Twenty years in this league, and he has never once lost gracefully. Sharp tongue to go with it.",
-      "He's already been talking, mind. This morning's paper proves it. Here, read it yourself."
-    ], foJWire, stage);
-  }
-  function foJWire() {
-    var rid = FO_J_COUNTER[FO_ONB.arch] || "rock";
-    var R = foJArch(rid), ac = FO_J_ACCENT[rid];
-    var body = "<div class='fo-j-dwrap'>" +
-      "<div class='fo-j-wire'><div class='mast'><span>Vol. XCII &middot; No. 214</span><span class='mh'>THE LEAGUE WIRE</span><span>Price 50c</span></div>" +
-      "<div class='dl'>PRE-SEASON EDITION &middot; NEW CLUBS REGISTERED THIS WEEK</div>" +
-      "<h3>Thorne: &ldquo;New clubs always think money is a plan.&rdquo;</h3>" +
-      "<div class='by'>By our cricket correspondent</div>" +
-      "<div class='fo-j-wfig'><img class='fo-j-wimg' src='" + FO_ART + "thorne.png' alt=''><div class='fo-j-wcap'>R. Thorne at the pavilion: &ldquo;a notch above&rdquo;, by his own arithmetic.</div></div>" +
-      "<p>" + E(R.nm) + " manager <b>Reggie Thorne</b> has questioned whether " + E(FO_ONB.clubName) + " will survive a first season. &ldquo;Money cannot buy a cricketing identity,&rdquo; Thorne told the Wire from the pavilion balcony. &ldquo;Ask me about them when they've won something.&rdquo;</p>" +
-      "<p>Asked whether the newcomers' " + E(foJArch(FO_ONB.arch).nm.replace(/^The /, "")) + " approach concerned him, Thorne laughed once, checked his watch, and closed the window.</p></div>" +
-      foJGbox("Don't read the comments, boss. Sign the papers and let's get to work.") +
-      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-j-go'>Fold the paper &middot; sign the squad</button></div></div>";
-    foJMount(1, body).querySelector("#fo-j-go").addEventListener("click", foJCommitGate);
-  }
+  // The last step: sign the squad the manager has just watched deal out, and
+  // open the club. The reserve decision that used to sit here is gone, so the
+  // squad is always the standard one the founding grant comfortably covers -
+  // there is no lever left to pull, and so nothing left to warn about.
   function foJCommitGate() {
     try {
       FO_ONB.capt = FO_ONB.capt || "talisman";
       FO_ONB.sponsor = "community";
-      FO_ONB.comp = foJBaseComp();
+      FO_ONB.comp = foQsDefaultComp(FO_ONB.arch);
       FO_ONB.gen = foGenArchetypeSquad(foObSeed(), FO_ONB.country, FO_ONB.arch, FO_ONB.capt, FO_ONB.comp);
-      var picked = FO_ONB.gen.players.slice();
-      if (FO_ONB.reserve === "marquee" && FO_ONB.marquee) {
-        var mq = FO_ONB.marquee;
-        mq.fee = foDraftPrice(mq); mq.wage = foDailyWage(mq); mq._qsPriced = 1;
-        if (!mq.origin_tag) mq.origin_tag = "Founding marquee signing - Season 1";
-        // the captain stays the talisman: trim the marquee to captain parity,
-        // exactly like every generated teammate
-        try {
-          var capP = null;
-          picked.forEach(function (q) { if (q.origin_tag && /Franchise captain/.test(q.origin_tag)) capP = q; });
-          for (var g9 = 0; capP && g9 < 12 && (mq.rating || 0) > (capP.rating || 0) * 0.96; g9++) {
-            for (var k9 in mq.skills) mq.skills[k9] = Math.max(4, Math.min(96, Math.floor(mq.skills[k9] * 0.97)));
-            if (typeof foPureBowler === "function" && foPureBowler(mq)) foApplyBowlerBat(mq); else jsDerive(mq);
-          }
-        } catch (eMq) {}
-        picked.push(mq);
-      }
-      App.founder.picked = picked;
-      var fc = foForecast(picked, FO_ONB.sponsor);
-      if (fc.bankAfter < 0) {
-        foJDbox(1, ["Hold on, boss. Those fees land the club " + FO$s(fc.bankAfter) + " on day one, and the board will not bank a minus.", "Back to the reserve. Spend lighter."], foJMoney, null, "serious");
-        return;
-      }
-      var bad = foForecast(picked, FO_ONB.sponsor, "bad");
-      if ((fc.end < 0 || bad.end < -60000) && !FO_ONB.riskAck) {
-        foJDbox(1, [
-          "One thing before the ink dries, boss. The books say this squad could end the season " + FO$s(fc.end) + " in the red.",
-          "That means forced releases, blocked signings, and a board with opinions.",
-          "Say the word and we sign anyway. Or go back and spend lighter."
-        ], function () {
-          var body = "<div class='fo-j-dwrap' style='text-align:center'><h1 class='fo-ob-h1'>Your call</h1><div class='fo-j-choice' style='grid-template-columns:1fr 1fr'>" +
-            "<button type='button' class='fo-j-card' id='fo-j-riskgo'><h3>Sign anyway</h3><div class='fx'>The Gaffer shrugs. Your club, your risk.</div></button>" +
-            "<button type='button' class='fo-j-card' id='fo-j-riskback'><h3>Spend lighter</h3><div class='fx'>Back to the reserve decision.</div></button></div></div>";
-          var host = foJMount(1, body);
-          host.querySelector("#fo-j-riskgo").addEventListener("click", function () { FO_ONB.riskAck = true; foJCommitGate(); });
-          host.querySelector("#fo-j-riskback").addEventListener("click", foJMoney);
-        }, null, "serious");
-        return;
-      }
+      App.founder.picked = FO_ONB.gen.players.slice();
       foOnbCommit();
       // commit success is recorded by the done-flag; on failure stay put so
       // nothing downstream runs against a half-built club
       var ok = false; try { ok = !!window.store("fo_onb_done"); } catch (eS) {}
       if (!ok) return;
-      setTimeout(foJCond, 80);
+      foOnbClose();
+      location.hash = "#/club";
+      if (typeof window.route === "function") window.route();
     } catch (e) { say(e); }
   }
 
-  // ---- Chapter 3: the guided friendly over the REAL engine -------------------
-  function foJOppIx() {
-    var me = userTeam(); var ix = -1;
-    (GD.teams || []).forEach(function (t, i) { if (ix < 0 && t && t.name !== me.name && !t.founded) ix = i; });
-    if (ix < 0) (GD.teams || []).forEach(function (t, i) { if (ix < 0 && t && t.name !== me.name) ix = i; });
-    return ix;
-  }
-  function foJCond() {
-    try {
-      var me = userTeam();
-      if (!me || !me.players || me.players.length < 11) { foOnbClose(); return; }
-      var ix = foJOppIx(); if (ix < 0) { foOnbClose(); return; }
-      FO_ONB.j = FO_ONB.j || {}; FO_ONB.j.oppIx = ix;
-      var opp = GD.teams[ix];
-      var pitch = me.homePitch || "balanced";
-      var pc = null; FO_PITCH_CARDS.forEach(function (c) { if (c.id === pitch) pc = c; });
-      var body = "<div class='fo-j-dwrap' style='text-align:center'>" +
-        "<div class='fo-ob-eyebrow'>Warm-up friendly &middot; vs " + E(opp.name) + " &middot; nothing counts, everything teaches</div>" +
-        "<h1 class='fo-ob-h1'>Read the conditions</h1>" +
-        foJGbox("Nets are done, so I've booked us a warm-up against " + E(opp.name) + ". The pitch picks half your team for you, if you listen to it.") +
-        "<div class='fo-j-choice' style='grid-template-columns:1fr 1fr'>" +
-        "<div class='fo-j-card' style='cursor:default'><h3>" + E(foPitchName(pitch)) + " pitch</h3><div class='fx'>" + E((pc && pc.d) || "Your groundsman prepared it for this squad.") + "</div></div>" +
-        "<div class='fo-j-card' style='cursor:default'><h3>Sunny day</h3><div class='fx'>No help in the air. Fielders stay sharp, nobody tires quickly. A fair contest.</div></div></div>" +
-        "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-j-go'>To the team sheet</button></div></div>";
-      foJMount(2, body).querySelector("#fo-j-go").addEventListener("click", foJOrders);
-    } catch (e) { say(e); foOnbClose(); }
-  }
-  function foJCandRow(p, why, bars, sel, cls, idx) {
-    return "<div class='fo-j-pick " + cls + (sel ? " sel" : "") + "' data-i='" + idx + "'><div class='fo-j-prow'>" +
-      "<span class='fo-j-pnm'>" + E(p.name) + "</span> " + (foQsFlag(p.nat) || "") +
-      "<span class='fo-j-psub'>" + E(prole(p.role)) + " &middot; age " + p.age + ((p.btLabel && !/does not bowl/i.test(p.btLabel)) ? " &middot; " + E(p.btLabel) : "") + "</span>" +
-      "<span class='fo-j-why'>" + why + "</span>" + bars + "</div></div>";
-  }
-  function foJOrders() {
-    try {
-      var me = userTeam(); var S9 = function (p) { return p.skills || {}; };
-      var capName = ""; (me.players || []).some(function (p) { if (p && p.origin_tag && /Franchise captain/.test(p.origin_tag)) { capName = p.name; return true; } return false; });
-      var bats = (me.players || []).filter(function (p) { return p && p.name !== capName && /opener|OrderBat|wicketkeeper/.test(p.role || ""); });
-      var by = function (arr, f) { return arr.slice().sort(function (a, b) { return f(b) - f(a); }); };
-      var slug = by(bats, function (p) { return S9(p).power || 0; })[0];
-      var tech = by(bats, function (p) { return (S9(p).vsPace || 0) + (S9(p).vsSpin || 0) + (S9(p).temperament || 0); }).filter(function (p) { return p !== slug; })[0];
-      var acc = by(bats, function (p) { return S9(p).rotation || 0; }).filter(function (p) { return p !== slug && p !== tech; })[0];
-      var opCands = [[slug, "The slugger. Clears the rope or holes out; powerplay chaos either way"], [tech, "The technician. Slow to start, but they will not get him out cheaply"], [acc, "The accumulator. Ticks the board over and keeps the strike moving"]].filter(function (r) { return r[0]; });
-      var seams = (me.players || []).filter(function (p) { return p && p.bowlTypeFull && /seam/i.test(p.bowlTypeFull); });
-      if (seams.length < 3) seams = (me.players || []).filter(function (p) { return p && p.bowlTypeFull && p.bowlTypeFull !== "none"; });
-      // every candidate is picked on a skill/talent the ENGINE actually reads
-      // per ball: Wicket threat, Economy, and the new-ball talent. (Move/turn
-      // and Discipline feed a bowler's overall and fee, not his live figures -
-      // so we never sell a "swing man" the match won't deliver.)
-      var hasT = function (p, t) { return ((p && p.talents) || []).indexOf(t) >= 0; };
-      var strike = by(seams, function (p) { return S9(p).wicket || 0; })[0];
-      var newb = by(seams, function (p) { return (hasT(p, "newBallSpecialist") ? 1000 : 0) + (S9(p).wicket || 0); }).filter(function (p) { return p !== strike; })[0];
-      var miser = by(seams, function (p) { return (hasT(p, "miser") ? 1000 : 0) + (S9(p).economy || 0); }).filter(function (p) { return p !== strike && p !== newb; })[0];
-      var nbCands = [[strike, "The spearhead. Highest wicket threat in the group - takes chances in his sleep, leaks on his off days"], [newb, "The enforcer. Backs the spearhead up front and keeps the wickets coming"], [miser, "The miser. Best economy of the lot - dot after dot, and pressure does his hunting"]].filter(function (r) { return r[0]; });
-      FO_ONB.j.opCands = opCands.map(function (r) { return r[0].name; });
-      FO_ONB.j.nbCandNames = nbCands.map(function (r) { return r[0].name; });
-      FO_ONB.j.opener = FO_ONB.j.opener || null; FO_ONB.j.nb = FO_ONB.j.nb || []; FO_ONB.j.intent = FO_ONB.j.intent || "build"; FO_ONB.j.toss = FO_ONB.j.toss || "bowl";
-      var batBars = function (p) { return foJMiniBars([["Batting", foAgg(p, "bat")], ["Technique", foAgg(p, "tech")], ["Power", S9(p).power || 0]]); };
-      var bowlBars = function (p) { return foJMiniBars([["Bowling", foAgg(p, "bowl")], ["Technique", foAgg(p, "tech")], ["Power", S9(p).power || 0]]); };
-      var intents = [["attack", "Attack early"], ["build", "Build, then explode"], ["squeeze", "Squeeze them out"]];
-      var body = "<div>" +
-        "<h1 class='fo-ob-h1' style='text-align:center'>Three calls before the toss</h1>" +
-        foJGbox("I've pencilled a balanced side for this pitch. The eleven picks itself today; from the next match the whole sheet is yours. Three calls are mine to give away, boss.") +
-        "<div class='fo-j-sec'><span>1 &middot; Who opens with " + (capName ? E(capName) : "the captain") + "?</span><i></i></div>" +
-        opCands.map(function (r, i) { return foJCandRow(r[0], r[1], batBars(r[0]), FO_ONB.j.opener === r[0].name, "fo-j-op", i); }).join("") +
-        "<div class='fo-j-sec'><span>2 &middot; Who takes the new ball? Pick two</span><i></i></div>" +
-        nbCands.map(function (r, i) { return foJCandRow(r[0], r[1], bowlBars(r[0]), FO_ONB.j.nb.indexOf(r[0].name) >= 0, "fo-j-nb", i); }).join("") +
-        "<div class='fo-j-sec'><span>3 &middot; How do we play it?</span><i></i></div>" +
-        "<div class='fo-j-chips'>" + intents.map(function (r) { return "<button type='button' class='fo-j-chip fo-j-int" + (FO_ONB.j.intent === r[0] ? " on" : "") + "' data-v='" + r[0] + "'>" + r[1] + "</button>"; }).join("") + "</div>" +
-        "<div class='fo-j-chips'><span class='small' style='align-self:center'>If we win the toss:</span>" +
-        "<button type='button' class='fo-j-chip fo-j-toss" + (FO_ONB.j.toss === "bat" ? " on" : "") + "' data-v='bat'>Bat first</button>" +
-        "<button type='button' class='fo-j-chip fo-j-toss" + (FO_ONB.j.toss === "bowl" ? " on" : "") + "' data-v='bowl'>Bowl first</button></div>" +
-        "<p class='small' style='text-align:center'>The assistant completes the rest of the sheet. Everything is editable from Match Orders once the season starts.</p>" +
-        "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-cta' id='fo-j-go' disabled>Walk to the toss</button></div></div>";
-      var host = foJMount(2, body);
-      var ready = function () {
-        var g = host.querySelector("#fo-j-go");
-        if (g) g.disabled = !(FO_ONB.j.opener && FO_ONB.j.nb.length === 2);
-      };
-      host.querySelectorAll(".fo-j-op").forEach(function (el) {
-        el.addEventListener("click", function () {
-          FO_ONB.j.opener = FO_ONB.j.opCands[+el.getAttribute("data-i")];
-          host.querySelectorAll(".fo-j-op").forEach(function (x) { x.classList.toggle("sel", x === el); });
-          ready();
-        });
-      });
-      host.querySelectorAll(".fo-j-nb").forEach(function (el) {
-        el.addEventListener("click", function () {
-          var nm = FO_ONB.j.nbCandNames[+el.getAttribute("data-i")];
-          var at = FO_ONB.j.nb.indexOf(nm);
-          if (at >= 0) { FO_ONB.j.nb.splice(at, 1); el.classList.remove("sel"); }
-          else { if (FO_ONB.j.nb.length >= 2) { say("Two take the new ball. Drop one first."); return; } FO_ONB.j.nb.push(nm); el.classList.add("sel"); }
-          ready();
-        });
-      });
-      host.querySelectorAll(".fo-j-int").forEach(function (el) {
-        el.addEventListener("click", function () { FO_ONB.j.intent = el.getAttribute("data-v"); host.querySelectorAll(".fo-j-int").forEach(function (x) { x.classList.toggle("on", x === el); }); });
-      });
-      host.querySelectorAll(".fo-j-toss").forEach(function (el) {
-        el.addEventListener("click", function () { FO_ONB.j.toss = el.getAttribute("data-v"); host.querySelectorAll(".fo-j-toss").forEach(function (x) { x.classList.toggle("on", x === el); }); });
-      });
-      ready();
-      host.querySelector("#fo-j-go").addEventListener("click", foJLaunch);
-    } catch (e) { say(e); foOnbClose(); }
-  }
-  function foJLaunch() {
-    try {
-      if (typeof M !== "undefined" && M && !M.done) { say("A match is already live - finish it first."); foOnbClose(); return; }
-      var me = userTeam(); var ix = FO_ONB.j.oppIx; var opp = GD.teams[ix];
-      if (!opp) { foOnbClose(); return; }
-      var pitch = me.homePitch || "balanced";
-      var PLANS = {
-        attack: { pi: { pp: 1, mid: 0, death: 2 }, fp: { pp: "att", mid: "bal", death: "def" }, nm: "Attack early" },
-        build: { pi: { pp: -1, mid: 0, death: 2 }, fp: { pp: "bal", mid: "bal", death: "def" }, nm: "Build, then explode" },
-        squeeze: { pi: { pp: 0, mid: 0, death: 1 }, fp: { pp: "bal", mid: "def", death: "def" }, nm: "Squeeze them out" }
-      };
-      var pl = PLANS[FO_ONB.j.intent] || PLANS.build;
-      App.tossState = null;
-      App.pending = { oppIx: ix, home: me.name, away: opp.name, ground: me.ground, pitch: pitch, weather: "Sunny",
-        seed: 4200 + ix, date: (typeof simDate === "function" ? simDate() : ""), comp: "friendly", __friendly: true, __tut: 1 };
-      suggestOrders();
-      // zero-trace: stash EVERYTHING the three calls overwrite; the saveMatch
-      // wrapper restores it at full time so nothing leaks into league orders
-      window.__foTutOrders = JSON.stringify({
-        pi: App.orders.phaseIntent || null, fp: App.orders.fieldPlan || null, defaults: App.defaults || null,
-        bo: (App.orders.batOrder || []).slice(), sp: JSON.parse(JSON.stringify(App.orders.spells || { north: [], south: [] })),
-        cap: App.orders.captain || null, kp: App.orders.keeper || null,
-        tc: App.orders.tossCall || "", td: App.orders.tossDecision || "bat"
-      });
-      // call 1: the chosen partner opens with the captain
-      var capName = App.orders.captain;
-      var bo = (App.orders.batOrder || []).slice();
-      var want = [capName, FO_ONB.j.opener].filter(Boolean);
-      var rest = bo.filter(function (n) { return want.indexOf(n) < 0; });
-      if (want.length === 2 && bo.indexOf(FO_ONB.j.opener) >= 0) App.orders.batOrder = want.concat(rest);
-      // call 2: the chosen pair take the new ball (swap names, overs unchanged)
-      var swapIn = function (endArr, from, to) {
-        if (!endArr || !endArr.length || from === to) return;
-        endArr.forEach(function (sp9) {
-          if (!sp9) return;
-          if (sp9.bowler === from) sp9.bowler = to;
-          else if (sp9.bowler === to) sp9.bowler = from;
-        });
-      };
-      var sp = App.orders.spells || {};
-      var xiNames = (App.orders.batOrder || []);
-      var nbOk = FO_ONB.j.nb.filter(function (n) { return xiNames.indexOf(n) >= 0; });
-      if (nbOk.length === 2 && sp.north && sp.north[0] && sp.south && sp.south[0]) {
-        var curN = sp.north[0].bowler, curS = sp.south[0].bowler;
-        if (nbOk.indexOf(curN) < 0 && nbOk.indexOf(curS) < 0) {
-          swapIn(sp.north, curN, nbOk[0]); swapIn(sp.south, curN, nbOk[0]);
-          swapIn(sp.north, curS, nbOk[1]); swapIn(sp.south, curS, nbOk[1]);
-        } else if (nbOk.indexOf(curN) < 0) {
-          var missN = nbOk[0] === curS ? nbOk[1] : nbOk[0];
-          swapIn(sp.north, curN, missN); swapIn(sp.south, curN, missN);
-        } else if (nbOk.indexOf(curS) < 0) {
-          var missS = nbOk[0] === curN ? nbOk[1] : nbOk[0];
-          swapIn(sp.north, curS, missS); swapIn(sp.south, curS, missS);
-        }
-      }
-      // call 3: intent + the toss preference
-      App.orders.phaseIntent = pl.pi; App.orders.fieldPlan = pl.fp;
-      App.orders.tossCall = "H"; App.orders.tossDecision = FO_ONB.j.toss;
-      App.orders.saved = true;
-      App.defaults = JSON.parse(JSON.stringify(App.orders));
-      FO_ONB.j.planNm = pl.nm;
-      try { lsDel("fo_qs_tut"); } catch (e9) {}
-      // the broadcast walk-out: before the match page appears, the Gaffer
-      // explains what a warm-up is, that it plays itself, and where the speed
-      // control lives. The first over should never ambush a new manager.
-      var walkOut = function () {
-        try {
-          // walking pace for the first broadcast; the debrief restores the
-          // manager's own setting
-          try { if (typeof UI !== "undefined") { window.__foTutApMs = UI.apMs || 1600; UI.apMs = 3200; } } catch (eA) {}
-          foOnbClose();
-          location.hash = "#/match"; if (typeof window.route === "function") window.route();
-          App.orders.saved = false;
-          foJWatch();
-        } catch (eW) { say(eW); foOnbClose(); }
-      };
-      foJDbox(2, [
-        "Orders are in. Before you walk out - listen, this bit matters.",
-        "This is a warm-up. Nothing out there counts: no money, no league points, no career bruises. A dress rehearsal with a crowd.",
-        "The match plays itself, ball by ball, like a broadcast. You don't press a thing - the commentary tells you the story as it happens.",
-        "I've set the broadcast to a walking pace so you can read every ball. Want it quicker, or slower still? The commentary speed control sits at the top of the match page.",
-        "I'll fetch you at full time for the debrief. Off you go, boss. The first walk-out only happens once - enjoy it."
-      ], walkOut);
-    } catch (e) { say(e); foOnbClose(); }
-  }
-  // The warm-up banner: pinned above the live match page while the tutorial
-  // friendly runs. The manager's OWN club in lights, the opponent small, and
-  // one plain sentence about what's happening. renderMatch repaints #page on
-  // every ball, so the hook below re-pins it after each repaint.
   // ---- the Gaffer's first-tie walkthrough --------------------------------
   // The front door promises "give the club a name and I'll walk you through
   // the rest". This honors it: one short dialogue at the Circuit hub, one on
@@ -15133,121 +14710,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     } catch (e) {}
   }
   setInterval(foCoachTick, 1100);
-  function foJTutBar() {
-    try {
-      var tut = (typeof M !== "undefined" && M && M.meta && M.meta.__tut);
-      var bar = document.getElementById("fo-j-tutbar");
-      if (!tut || (location.hash || "").split("?")[0] !== "#/match") { if (bar) bar.remove(); return; }
-      var page = document.getElementById("page");
-      if (!page) return;
-      var me = userTeam(); if (!me) return;
-      var opp = M.meta.home === me.name ? M.meta.away : M.meta.home;
-      if (!bar) { bar = document.createElement("div"); bar.id = "fo-j-tutbar"; }
-      if (bar.parentNode !== page || page.firstChild !== bar) page.insertBefore(bar, page.firstChild);
-      var status = M.done ? "Full time. The Gaffer is on his way over for the debrief."
-        : "This warm-up plays itself, ball by ball - nothing here counts. Adjust the commentary speed below; the Gaffer returns at full time.";
-      var html = "<div class='t1'>Warm-up friendly &middot; nothing counts</div>" +
-        "<div class='t2'>" + E(me.name) + " <span class='vs'>v " + E(opp || "") + "</span></div>" +
-        "<div class='t3'>" + status + "</div>";
-      if (bar.innerHTML !== html) bar.innerHTML = html;
-    } catch (e) {}
-  }
-  try {
-    foMatchRenderHooks.push(foJTutBar);
-  } catch (eRM) {}
-  function foJWatch() {
-    try { if (window.__foTutIv) clearInterval(window.__foTutIv); } catch (e) {}
-    var started = Date.now(), lastInns = -1, tossed = false;
-    window.__foTutIv = setInterval(function () {
-      try {
-        if (Date.now() - started > 45 * 60000) { clearInterval(window.__foTutIv); window.__foTutIv = null; return; }
-        var tut = (typeof M !== "undefined" && M && M.meta && M.meta.__tut);
-        if (!tut) {
-          if (!(typeof App !== "undefined" && App && App.pending && App.pending.__tut)) { clearInterval(window.__foTutIv); window.__foTutIv = null; }
-          return;
-        }
-        foJTutBar();
-        // no staged toasts over the broadcast - the theatre carries the state
-        if (!tossed && App.tossState && App.tossState.txt) tossed = true;
-        if (!M.done && typeof M.inns === "number" && M.inns !== lastInns) lastInns = M.inns;
-        if (!M.done) return;
-        clearInterval(window.__foTutIv); window.__foTutIv = null;
-        setTimeout(foJDebrief, 2200);
-      } catch (e) {}
-    }, 900);
-  }
-  function foJDebrief() {
-    try {
-      // hand the broadcast speed back to the manager's own setting
-      try { if (typeof UI !== "undefined" && window.__foTutApMs) { UI.apMs = window.__foTutApMs; window.__foTutApMs = null; } } catch (eS) {}
-      try { var tb = document.getElementById("fo-j-tutbar"); if (tb) tb.remove(); } catch (eT) {}
-      var me = userTeam();
-      var txt = (M && M.result && M.result.text) || "Full time.";
-      var won = new RegExp("^" + me.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(txt);
-      var inns = (M && M.innings || []).filter(Boolean);
-      var ourBat = null, ourBowl = null;
-      inns.forEach(function (x) { if (x.batTeam === me.name) ourBat = x; else ourBowl = x; });
-      var bullets = [];
-      var tossTxt = (App.tossState && App.tossState.txt) || "";
-      if (tossTxt) bullets.push(E(tossTxt));
-      bullets.push("The plan: <b>" + E(FO_ONB.j.planNm || "Build, then explode") + "</b>, set before a ball was bowled.");
-      var findBowler = function (nm) {
-        var row = null;
-        if (ourBowl && ourBowl.bowlers) Object.keys(ourBowl.bowlers).forEach(function (k) {
-          var r = ourBowl.bowlers[k];
-          if (r && r.p && r.p.name === nm) row = r;
-        });
-        return row;
-      };
-      (FO_ONB.j.nb || []).forEach(function (nm) {
-        var r = findBowler(nm);
-        if (r) bullets.push("New ball to <b>" + E(nm) + "</b>: " + (r.w || 0) + " wicket" + ((r.w || 0) === 1 ? "" : "s") + " for " + (r.r || 0) + ".");
-      });
-      var topBat = null;
-      if (ourBat && ourBat.bat) ourBat.bat.forEach(function (r) { if (r && r.p && (!topBat || (r.r || 0) > (topBat.r || 0))) topBat = r; });
-      if (topBat) bullets.push("Top score: <b>" + E(topBat.p.name) + "</b> with " + (topBat.r || 0) + ".");
-      var capName2 = ""; (me.players || []).some(function (p) { if (p && p.origin_tag && /Franchise captain/.test(p.origin_tag)) { capName2 = p.name; return true; } return false; });
-      var momCands = [];
-      if (topBat) momCands.push([topBat.p.name, "Top score with the bat"]);
-      var bestBowl = null;
-      if (ourBowl && ourBowl.bowlers) Object.keys(ourBowl.bowlers).forEach(function (k) {
-        var r = ourBowl.bowlers[k];
-        if (r && r.p && (!bestBowl || (r.w || 0) > (bestBowl.w || 0))) bestBowl = r;
-      });
-      if (bestBowl && (bestBowl.w || 0) > 0) momCands.push([bestBowl.p.name, "Best bowling of the day"]);
-      if (capName2) momCands.push([capName2, "Held the whole day together"]);
-      var seen = {}; momCands = momCands.filter(function (r) { if (!r[0] || seen[r[0]]) return false; seen[r[0]] = 1; return true; }).slice(0, 3);
-      var ex = document.getElementById("fo-tut2"); if (ex) ex.remove();
-      var m2 = document.createElement("div"); m2.id = "fo-tut2"; m2.className = "fo-modal";
-      m2.innerHTML = "<div class='fo-modal-card' style='max-width:560px'><div class='fo-modal-eyebrow'>The dressing room</div>" +
-        "<h3>" + E(txt) + "</h3>" +
-        "<div class='small' style='margin:8px 0 4px;font-weight:700;letter-spacing:1px;text-transform:uppercase'>What your calls changed</div>" +
-        bullets.map(function (b9) { return "<div class='small' style='margin:4px 0;padding:7px 10px;background:#F4FAF2;border-left:3px solid #2E9E4F;border-radius:6px;text-align:left'>" + b9 + "</div>"; }).join("") +
-        (momCands.length ? "<div class='small' style='margin:10px 0 4px;font-weight:700;letter-spacing:1px;text-transform:uppercase'>Hand the match ball</div><div id='fo-j-mom'>" +
-          momCands.map(function (r, i) { return "<button type='button' class='fo-j-chip' data-i='" + i + "' style='margin:3px'>" + E(r[0]) + " &middot; " + r[1] + "</button>"; }).join("") + "</div>" : "") +
-        "<div class='small' id='fo-j-momr' style='margin:6px 0;min-height:16px'></div>" +
-        "<div class='small' style='margin:8px 0 12px'>" + (won ? "The Gaffer: &ldquo;First blood, boss. Enjoy it for exactly one evening.&rdquo;" : "The Gaffer: &ldquo;Better to bleed in a friendly than on a matchday. We learned plenty.&rdquo;") +
-        " Nothing today counted - no fatigue, no form, no history. The league does.</div>" +
-        "<div style='text-align:center'><button class='primary' id='fo-tut2-go'>Into the season &#9654;</button></div></div>";
-      document.body.appendChild(m2);
-      m2.querySelectorAll("#fo-j-mom .fo-j-chip").forEach(function (b) {
-        b.addEventListener("click", function () {
-          m2.querySelectorAll("#fo-j-mom .fo-j-chip").forEach(function (x) { x.classList.toggle("on", x === b); });
-          var r = momCands[+b.getAttribute("data-i")];
-          var el = m2.querySelector("#fo-j-momr");
-          if (el) el.innerHTML = "You hand the match ball to <b>" + E(r[0]) + "</b>. He tries not to grin. He fails.";
-        });
-      });
-      m2.querySelector("#fo-tut2-go").addEventListener("click", function () {
-        m2.remove(); location.hash = "#/club"; if (typeof window.route === "function") window.route();
-      });
-    } catch (e) {
-      // debrief must never trap a manager: fall back to the plain full-time modal
-      try { var m3 = document.getElementById("fo-tut2"); if (m3) m3.remove(); } catch (e2) {}
-      try { location.hash = "#/club"; if (typeof window.route === "function") window.route(); } catch (e3) {}
-    }
-  }
-
   // ---- Returning managers: the Gaffer's morning briefing ---------------------
   function foJBrief() {
     try {
@@ -15289,7 +14751,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       }
     } catch (e) {}
   }, 0);
-  window.__foJ = { intro: foJIntro, cond: foJCond, orders: foJOrders, debrief: foJDebrief, brief: foJBrief, state: function () { return FO_ONB; } };
+  window.__foJ = { intro: foJIntro, reveal: foJReveal, brief: foJBrief, state: function () { return FO_ONB; } };
 
   // Player links built from stored text can carry baggage the engine's exact
   // name lookup chokes on - "Jayant Dixit 4w" from a mom string, "(123 pts)"

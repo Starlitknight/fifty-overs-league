@@ -10217,7 +10217,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260729-1527-8b1026";
+  var FO_BUILD = "20260729-1544-754d29";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -14034,24 +14034,45 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-jrv-pack img.fo-j-crimg{width:82px;height:82px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.5))}" +
       ".fo-jrv-pack .pk1{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;font-size:16px}" +
       ".fo-jrv-pack .pk2{font-family:Oswald,sans-serif;font-weight:500;letter-spacing:2px;text-transform:uppercase;font-size:10.5px;color:#E4C463;animation:foJb 1.6s infinite}" +
-      ".fo-jrv-pack.open{animation:none;transform:scale(.4) rotate(-8deg);opacity:0;pointer-events:none;position:absolute;left:50%;top:70px;margin-left:-90px}" +
+      "html body #fo-onb .fo-jrv-pack.open{animation:none;transition:none;visibility:hidden;transform:scale(.4) rotate(-8deg);opacity:0;pointer-events:none;position:absolute;left:50%;top:70px;margin-left:-90px}" +
       ".fo-jrv-burst{position:absolute;left:50%;top:44%;width:20px;height:20px;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 0 rgba(201,162,75,.7)}" +
       ".fo-jrv-pack.open .fo-jrv-burst{animation:foJrvBurst .6s ease-out}" +
       "@keyframes foJrvBurst{0%{box-shadow:0 0 0 0 rgba(201,162,75,.7)}100%{box-shadow:0 0 0 220px rgba(201,162,75,0)}}" +
       ".fo-jrv-lab{position:relative;min-height:22px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:3px;text-transform:uppercase;font-size:14px;color:#C8674A;margin:4px 0 12px}" +
       ".fo-jrv-lab.pop{animation:foJrvPop .4s ease-out}" +
       "@keyframes foJrvPop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}" +
-      ".fo-jrv-grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;text-align:left}" +
-      "@media(max-width:520px){.fo-jrv-grid{grid-template-columns:1fr}}" +
-      // holo mode: one FULL trading card per row, a column you scroll through
-      ".fo-jrv-grid.fo-jrv-holo{display:flex;flex-direction:column;align-items:center;gap:22px}" +
-      ".fo-jrv-holo .fo-jrv-cell{width:100%}" +
+      ".fo-jrv-grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:10px;text-align:left}" +
+      // Phone: two to a row. The browse card turns portrait to fit - the
+      // painted figure moves off the left edge and up onto the top of the
+      // card, and the three skill bars go, because this screen is a squad
+      // roll call and not a scouting desk. Scoped to the reveal so the
+      // squad, market and scout grids keep the wide card they were drawn for.
+      "@media(max-width:560px){" +
+      ".fo-jrv-grid{grid-template-columns:1fr 1fr;gap:8px}" +
+      "#fo-onb .fo-jrv-cell .pkm{padding:0 0 9px}" +
+      "#fo-onb .fo-jrv-cell .pkm-top{flex-wrap:wrap;align-items:flex-end;gap:0 7px}" +
+      "#fo-onb .fo-jrv-cell .pkm-art{position:relative;flex:0 0 100%;width:100%;height:128px;margin-bottom:7px}" +
+      "#fo-onb .fo-jrv-cell .pkm-art:after{display:none}" +
+      "#fo-onb .fo-jrv-cell .pkm-id{flex:1 1 100%;padding:0 9px}" +
+      "#fo-onb .fo-jrv-cell .pkm-ovc{position:absolute;top:6px;right:6px;background:rgba(11,19,34,.82);border:1px solid rgba(201,162,75,.5);border-radius:9px;padding:3px 7px 2px}" +
+      "#fo-onb .fo-jrv-cell .pkm-ovc i{color:#cfd6e4}" +
+      "#fo-onb .fo-jrv-cell .pkm-nm{font-size:14px}" +
+      // two words of a bowling type will not fit on one narrow line, and a
+      // role clipped to \"Fast-Medium Bowler \u2026\" reads as a bug; let it wrap
+      "#fo-onb .fo-jrv-cell .pkm-sub{font-size:10.5px;white-space:normal;line-height:1.3}" +
+      "#fo-onb .fo-jrv-cell .pkm-ovc b{font-size:19px;color:#F0B94E}" +
+      "#fo-onb .fo-jrv-cell .pkm-hand{display:none}" +
+      "#fo-onb .fo-jrv-cell .pkm-bars{display:none}" +
+      "}" +
       ".fo-jrv-cell{opacity:0}" +
       ".fo-jrv-cell.in{animation:foJrvFly .5s cubic-bezier(.16,.72,.28,1.1) forwards}" +
       ".fo-jrv-cell.in.insta{animation-duration:.01s}" +
       "@keyframes foJrvFly{0%{opacity:0;transform:translate(var(--dx,0),var(--dy,-180px)) scale(.2) rotate(var(--rot,10deg))}60%{opacity:1}100%{opacity:1;transform:none}}" +
       "@media (prefers-reduced-motion:reduce){.fo-jrv-cell{opacity:1}.fo-jrv-cell.in{animation:none}}" +
       ".fo-jrv-cell .pkm{box-shadow:0 4px 14px rgba(16,27,45,.15)}" +
+      // a two-line role on one card and a one-line role on its neighbour left
+      // the row ragged; let the card fill the height the grid already gave it
+      ".fo-jrv-cell{display:flex}.fo-jrv-cell>.pkm{flex:1 1 auto}" +
       ".fo-jrv-foot{margin-top:16px}" +
       ".fo-jrv-skip{min-height:18px;margin-top:12px}" +
       ".fo-jrv-skip a{cursor:pointer;font-size:12.5px;color:#8a90a0;text-decoration:underline dotted}" +
@@ -14356,12 +14377,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return d !== 0 ? d : (foPkOvr(b2) - foPkOvr(a));
     });
     var A = foJArch(FO_ONB.arch);
-    // v2: every card out of the pack is the FULL holo trading card, dealt into
-    // a single scrollable column - the same card the player page shows
+    // Every man out of the pack is the compact browse card - the same one the
+    // squad, market and scout grids use - tiled. A column of full hero cards
+    // read as fifteen separate screens; this reads as a squad.
     var cells = ps.map(function (p, i) {
-      var built = foHoloCardHTML(p, A.nm);
       return "<div class='fo-jrv-cell' data-i='" + i + "' data-g='" + foJrvGroup(p) + "'>" +
-        "<div class='fo-phw ph-" + built.tier + "' style='--tc:" + built.ac[0] + ";--tcD:" + built.ac[1] + "'>" + built.html + "</div></div>";
+        foPkMini(p) + "</div>";
     }).join("");
     var body = "<div class='fo-jrv-wrap'>" +
       "<div class='fo-jrv'>" +
@@ -14373,7 +14394,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "<img class='fo-j-crimg' src='" + FO_ART + "crests/" + FO_ONB.arch + ".png' alt=''>" +
       "<span class='pk1'>" + E(A.nm) + "</span><span class='pk2'>Founding squad</span></button>" +
       "<div class='fo-jrv-lab' id='fo-jrv-lab'></div>" +
-      "<div class='fo-jrv-grid fo-jrv-holo' id='fo-jrv-grid'>" + cells + "</div>" +
+      "<div class='fo-jrv-grid' id='fo-jrv-grid'>" + cells + "</div>" +
       "<div class='fo-jrv-skip'><a id='fo-jrv-skip' hidden>Deal them all &#9654;</a></div>" +
       "<div class='fo-jrv-foot' id='fo-jrv-foot' hidden>" +
       foJGbox("Every name on that sheet is yours now. In a year they'll either be a team or a story. Sign them, boss.") +
@@ -14386,7 +14407,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var timers = [], dealt = 0;
     var reduce = false;
     try { reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e2) {}
-    [].forEach.call(host.querySelectorAll(".fo-jrv-cell .fo-phw"), foHoloTilt);
     // the camera follows each card as it's dealt - until the manager scrolls
     var follow = true, stopFollow = function () { follow = false; };
     window.addEventListener("wheel", stopFollow, { passive: true, once: true });
@@ -14411,7 +14431,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // strict one-by-one: each full card lands, the camera follows it, the
       // next launches - an extra beat when the role wave changes so the
       // banner registers
-      var STEP = 700, GAP = 350, t = 360, lastG = null;
+      var STEP = 300, GAP = 260, t = 300, lastG = null;
       cellsEls.forEach(function (c, i) {
         var g = c.getAttribute("data-g");
         if (g !== lastG) { if (lastG != null) t += GAP; lastG = g; (function (g2, tt) {
@@ -14429,7 +14449,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             c2.style.setProperty("--dy", dy.toFixed(0) + "px");
             c2.style.setProperty("--rot", ((foHash32(FO_ONB.arch + idx) % 40) - 20) + "deg");
             c2.classList.add("in");
-            if (follow) try { c2.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e4) {}
+            if (follow) try { c2.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e4) {}
             dealt++;
             if (dealt >= cellsEls.length) timers.push(setTimeout(finish, 500));
           }, tt));

@@ -10217,7 +10217,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260729-1519-5fc864";
+  var FO_BUILD = "20260729-1533-1d2642";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -11457,7 +11457,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<h1>A new era is starting</h1>" +
         '<div class="fol-sub">The game has been rebuilt and your commissioner has relaunched the league. Old clubs are retired with honour - everyone founds a fresh club and the table starts from zero.</div>' +
         '<div class="fol-form">' +
-        '<div class="folsmall" style="line-height:1.6;margin-bottom:4px">Founding a club is a whole new experience now: the <b>Gaffer</b> walks you through naming your club, choosing its soul, spending your first million and a live warm-up friendly. League matches play at <b>9:00 AM ET</b>.</div>' +
+        '<div class="folsmall" style="line-height:1.6;margin-bottom:4px">Founding a club is a whole new experience now: the <b>Gaffer</b> walks you through naming your club and hands you the squad the board has signed for you. League matches play at <b>9:00 AM ET</b>.</div>' +
         '<button class="fol-cta" data-act="refound">Found my new club ▸</button>' +
         "</div>" +
         '<div class="fol-links"><a class="fol-mut" data-act="logout">Log out</a></div>' + FOOT);
@@ -13881,12 +13881,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
 
   // ================= The Founding Journey =====================================
-  // Gaffer-led onboarding: intro -> create -> founded -> soul -> money ->
-  // (marquee signing) -> Thorne -> newspaper -> commit -> conditions ->
-  // three calls -> REAL warm-up in the live match centre -> debrief -> club.
-  // Presentation only: squads, fees, bank, sponsor and the warm-up all run
-  // through the existing, verified plumbing (foGenArchetypeSquad, foForecast,
-  // foOnbCommit, suggestOrders, the __foTutOrders zero-trace stash).
+  // Gaffer-led onboarding, five screens end to end: intro -> create ->
+  // founded -> the squad dealt out -> club. It ran to thirty-odd screens once
+  // - a soul chooser, the books, a reserve decision, the rival, a conditions
+  // primer, three calls and a full warm-up match - and the length was the
+  // problem, so all of that is gone.
+  // Presentation only: the squad and the signing run through the existing,
+  // verified plumbing (foGenArchetypeSquad, foOnbCommit).
   (function foJCss() {
     if (document.getElementById("fo-j-css")) return;
     var st = document.createElement("style"); st.id = "fo-j-css";
@@ -14040,11 +14041,26 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-jrv-lab{position:relative;min-height:22px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:3px;text-transform:uppercase;font-size:14px;color:#C8674A;margin:4px 0 12px}" +
       ".fo-jrv-lab.pop{animation:foJrvPop .4s ease-out}" +
       "@keyframes foJrvPop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}" +
-      ".fo-jrv-grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;text-align:left}" +
-      "@media(max-width:520px){.fo-jrv-grid{grid-template-columns:1fr}}" +
-      // holo mode: one FULL trading card per row, a column you scroll through
-      ".fo-jrv-grid.fo-jrv-holo{display:flex;flex-direction:column;align-items:center;gap:22px}" +
-      ".fo-jrv-holo .fo-jrv-cell{width:100%}" +
+      ".fo-jrv-grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:10px;text-align:left}" +
+      // Phone: two to a row. The browse card turns portrait to fit - the
+      // painted figure moves off the left edge and up onto the top of the
+      // card, and the three skill bars go, because this screen is a squad
+      // roll call and not a scouting desk. Scoped to the reveal so the
+      // squad, market and scout grids keep the wide card they were drawn for.
+      "@media(max-width:560px){" +
+      ".fo-jrv-grid{grid-template-columns:1fr 1fr;gap:8px}" +
+      "#fo-onb .fo-jrv-cell .pkm{padding:0 0 9px}" +
+      "#fo-onb .fo-jrv-cell .pkm-top{flex-wrap:wrap;align-items:flex-end;gap:0}" +
+      "#fo-onb .fo-jrv-cell .pkm-art{position:relative;flex:0 0 100%;width:100%;height:128px;margin-bottom:7px}" +
+      "#fo-onb .fo-jrv-cell .pkm-art:after{display:none}" +
+      "#fo-onb .fo-jrv-cell .pkm-id{padding-left:9px}" +
+      "#fo-onb .fo-jrv-cell .pkm-ovc{padding-right:9px}" +
+      "#fo-onb .fo-jrv-cell .pkm-nm{font-size:14px}" +
+      "#fo-onb .fo-jrv-cell .pkm-sub{font-size:10.5px}" +
+      "#fo-onb .fo-jrv-cell .pkm-ovc b{font-size:21px}" +
+      "#fo-onb .fo-jrv-cell .pkm-hand{display:none}" +
+      "#fo-onb .fo-jrv-cell .pkm-bars{display:none}" +
+      "}" +
       ".fo-jrv-cell{opacity:0}" +
       ".fo-jrv-cell.in{animation:foJrvFly .5s cubic-bezier(.16,.72,.28,1.1) forwards}" +
       ".fo-jrv-cell.in.insta{animation-duration:.01s}" +
@@ -14355,12 +14371,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return d !== 0 ? d : (foPkOvr(b2) - foPkOvr(a));
     });
     var A = foJArch(FO_ONB.arch);
-    // v2: every card out of the pack is the FULL holo trading card, dealt into
-    // a single scrollable column - the same card the player page shows
+    // Every man out of the pack is the compact browse card - the same one the
+    // squad, market and scout grids use - tiled. A column of full hero cards
+    // read as fifteen separate screens; this reads as a squad.
     var cells = ps.map(function (p, i) {
-      var built = foHoloCardHTML(p, A.nm);
       return "<div class='fo-jrv-cell' data-i='" + i + "' data-g='" + foJrvGroup(p) + "'>" +
-        "<div class='fo-phw ph-" + built.tier + "' style='--tc:" + built.ac[0] + ";--tcD:" + built.ac[1] + "'>" + built.html + "</div></div>";
+        foPkMini(p) + "</div>";
     }).join("");
     var body = "<div class='fo-jrv-wrap'>" +
       "<div class='fo-jrv'>" +
@@ -14372,7 +14388,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "<img class='fo-j-crimg' src='" + FO_ART + "crests/" + FO_ONB.arch + ".png' alt=''>" +
       "<span class='pk1'>" + E(A.nm) + "</span><span class='pk2'>Founding squad</span></button>" +
       "<div class='fo-jrv-lab' id='fo-jrv-lab'></div>" +
-      "<div class='fo-jrv-grid fo-jrv-holo' id='fo-jrv-grid'>" + cells + "</div>" +
+      "<div class='fo-jrv-grid' id='fo-jrv-grid'>" + cells + "</div>" +
       "<div class='fo-jrv-skip'><a id='fo-jrv-skip' hidden>Deal them all &#9654;</a></div>" +
       "<div class='fo-jrv-foot' id='fo-jrv-foot' hidden>" +
       foJGbox("Every name on that sheet is yours now. In a year they'll either be a team or a story. Sign them, boss.") +
@@ -14385,7 +14401,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var timers = [], dealt = 0;
     var reduce = false;
     try { reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e2) {}
-    [].forEach.call(host.querySelectorAll(".fo-jrv-cell .fo-phw"), foHoloTilt);
     // the camera follows each card as it's dealt - until the manager scrolls
     var follow = true, stopFollow = function () { follow = false; };
     window.addEventListener("wheel", stopFollow, { passive: true, once: true });
@@ -14410,7 +14425,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // strict one-by-one: each full card lands, the camera follows it, the
       // next launches - an extra beat when the role wave changes so the
       // banner registers
-      var STEP = 700, GAP = 350, t = 360, lastG = null;
+      var STEP = 300, GAP = 260, t = 300, lastG = null;
       cellsEls.forEach(function (c, i) {
         var g = c.getAttribute("data-g");
         if (g !== lastG) { if (lastG != null) t += GAP; lastG = g; (function (g2, tt) {
@@ -14428,7 +14443,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             c2.style.setProperty("--dy", dy.toFixed(0) + "px");
             c2.style.setProperty("--rot", ((foHash32(FO_ONB.arch + idx) % 40) - 20) + "deg");
             c2.classList.add("in");
-            if (follow) try { c2.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e4) {}
+            if (follow) try { c2.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e4) {}
             dealt++;
             if (dealt >= cellsEls.length) timers.push(setTimeout(finish, 500));
           }, tt));
@@ -14439,6 +14454,186 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     });
     // the sealed pack used to wait on a tap of its own; it deals itself now
     setTimeout(function () { try { pack.click(); } catch (ePk) {} }, 300);
+  }
+  // ==== The trading-card player card ==========================================
+  // One component for every surface that shows a player as a card. Role picks
+  // the color and the artwork; all numbers come off the live player object.
+  var FO_PK_AC = { bat: ["#C9A227", "#a9861a"], pace: ["#2F6FBF", "#245a9e"], wspin: ["#7A4FBF", "#6a3fae"], fspin: ["#B34A7D", "#983c68"], ar: ["#6B8E23", "#5a7a1c"], wk: ["#0E9E97", "#0b837d"] };
+  // The engine doesn't distinguish opener/top/middle batting slots - they play
+  // identically - so every specialist batter is just "Batsman" on the card.
+  var FO_PK_ROLELBL = { opener: "Batsman", topOrderBat: "Batsman", middleOrderBat: "Batsman", allRounder: "All-Rounder", wicketkeeper: "Wicketkeeper", seamFast: "Fast Bowler", seamFastMedium: "Fast-Medium Bowler", seamMedium: "Medium Pacer", wristSpin: "Wrist Spinner", fingerSpin: "Finger Spinner" };
+  function foPkRoleLbl(p) { return FO_PK_ROLELBL[p.role] || "Player"; }
+  function foPkKind(p) {
+    if (p.keeper || p.role === "wicketkeeper") return "wk";
+    if (p.role === "allRounder") return "ar";
+    if (p.role === "wristSpin") return "wspin";
+    if (p.role === "fingerSpin") return "fspin";
+    if (/^seam/.test(p.role || "")) return "pace";
+    return "bat";
+  }
+  // Card art v3: full-bleed painted figures picked by ROLE x NATIONALITY
+  // (client/art/players/<role>_<nat>.webp). All TWELVE nations are painted
+  // natively now; 80+ players wear the legendary figures, and a share of
+  // everyone else wears a variant figure for squad variety.
+  var FO_PK_NAT = { England: "eng", Australia: "aus", India: "ind", "New Zealand": "nzl", "South Africa": "rsa", "West Indies": "win",
+    Pakistan: "pak", "Sri Lanka": "slk", Afghanistan: "afg", Netherlands: "ned", Ireland: "ire", Zimbabwe: "zim" };
+  // the six expansion nations ship a dedicated spin all-rounder figure
+  var FO_PK_ARSPIN = { ire: 1, ned: 1, pak: 1, slk: 1, afg: 1, zim: 1 };
+  function foPkArt(p) {
+    var k = foPkKind(p);
+    var r = k === "wk" ? "wk" : k === "ar" ? "ar"
+      : k === "wspin" ? "ws" : k === "fspin" ? "fs"
+      : k === "pace" ? (p.role === "seamFast" ? "f" : (p.role === "seamFastMedium" ? "fm" : "mp"))
+      : "bat";
+    // all-rounders split by their bowling for the variant/legend figures
+    var rv = r === "ar" ? (/spin/i.test(p.bowlTypeFull || p.bowlType || "") ? "arspin" : "ar") : r;
+    // v3: an 80+ player IS a legend, and walks in the midnight-and-gold
+    // legendary figure on every surface - matching his gold card frame
+    try { if (foPkOvr(p) >= 80) return "players/leg_" + rv + ".webp"; } catch (eLg) {}
+    // the same player always gets the same nation figure: his own nation's,
+    // or a stable stand-in for any nationality outside the twelve
+    var n = FO_PK_NAT[p.nat] || ["eng", "aus", "ind", "nzl", "rsa", "win", "ire", "ned", "pak", "slk", "afg", "zim"][foHash32("pknat|" + (p.name || "")) % 12];
+    // squad variety: ~30% of players wear a variant figure instead of the
+    // nation one - deterministic per player, complexion matched to region
+    var hV = foHash32("pkvar|" + (p.name || "")) % 10;
+    if (hV < 3) {
+      var euro = (n === "eng" || n === "aus" || n === "nzl" || n === "ire" || n === "ned") || (n === "rsa" && hV === 0);
+      return "players/" + (euro ? "vc_" : "vb_") + rv + ".webp";
+    }
+    return "players/" + (rv === "arspin" && !FO_PK_ARSPIN[n] ? "ar" : rv === "arspin" ? "arspin" : r) + "_" + n + ".webp";
+  }
+  // the one canonical card-art resolver: exported so other modules (player
+  // hero, living-season awards) reuse it instead of cloning its hashing
+  try { window.foPkArt = foPkArt; } catch (ePkX) {}
+  // the card's overall rating is mirrored in SQL for the served club
+  // pages (migration 016); export it so the tests can hold the two to
+  // the same answer rather than trusting they stayed in step
+  try { window.foPkOvr = foPkOvr; } catch (ePkO) {}
+  var FO_PK_TIPS = {
+    BATTING: "Run-scoring ability with the bat - how reliably he builds and converts innings.",
+    BOWLING: "Wicket-taking threat and the ability to keep runs down with the ball.",
+    TECHNIQUE: "Consistency and execution - how often he does exactly what he intends.",
+    POWER: "Raw strength: boundary hitting with the bat, heavy-ball impact with it.",
+    FIELDING: "Catching, ground fielding and agility in the ring or on the rope.",
+    KEEPING: "Glovework behind the stumps - takes, stumpings and standing up to spin.",
+    FORM: "Current form - hot players get a lift on everything, cold ones a dent. It moves match by match.",
+    EXPERIENCE: "Experience - matches under the belt. Seasoned players handle pressure and tough conditions better.",
+    CAPTAINCY: "Leadership and tactical nous. A strong captain lifts the whole XI on the field.",
+    STAMINA: "Energy and durability - how well he holds up over long spells and packed schedules."
+  };
+  function foPkIco(k) {
+    var I = {
+      bat: "<path d=\'M5 19 17 7m-3-2 5 5\'/>",
+      bowl: "<circle cx=\'12\' cy=\'12\' r=\'8\'/><path d=\'M8.5 6.5c2.5 3 3.5 8 3 11M15.5 6.5c-1 3.5-1 8 0 11\' stroke-width=\'1.4\'/>",
+      tech: "<circle cx=\'12\' cy=\'12\' r=\'3.2\'/><circle cx=\'12\' cy=\'12\' r=\'8\'/><path d=\'M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4\'/>",
+      pow: "<path d=\'M13 2 6 13h5l-1.5 9L18 10h-5l1.5-8z\'/>",
+      fld: "<path d=\'M7 21V11a5 5 0 0 1 10 0v10zM7 15H5a2 2 0 0 1 0-4h2m10 4h2a2 2 0 0 0 0-4h-2\'/>",
+      form: "<path d=\'M3 17l5-6 4 3 5-8 4 5\'/>",
+      exp: "<circle cx=\'12\' cy=\'8\' r=\'4\'/><path d=\'M4 21c1-4 4-6 8-6s7 2 8 6\'/>",
+      capt: "<path d=\'M12 3 4 7v5c0 5 3.4 8.4 8 9 4.6-.6 8-4 8-9V7z\'/><path d=\'M12 8v5M9.5 10.5h5\'/>",
+      fee: "<rect x=\'5\' y=\'4\' width=\'14\' height=\'17\' rx=\'2\'/><path d=\'M9 4V2.5h6V4M9 9h6M9 13h6M9 17h4\'/>",
+      wage: "<ellipse cx=\'12\' cy=\'6\' rx=\'7\' ry=\'3\'/><path d=\'M5 6v4c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 10v4c0 1.7 3.1 3 7 3s7-1.3 7-3v-4M5 14v4c0 1.7 3.1 3 7 3s7-1.3 7-3v-4\'/>",
+      sta: "<path d=\'M12 21C7 16.5 3 13.3 3 9.5 3 7 5 5 7.5 5c1.7 0 3.3.9 4.5 2.4C13.2 5.9 14.8 5 16.5 5 19 5 21 7 21 9.5c0 3.8-4 7-9 11.5z\'/><path d=\'M6 12h3l1.5-3 2.5 5 1.5-2h3.5\'/>"
+    };
+    return "<svg viewBox=\'0 0 24 24\'>" + I[k] + "</svg>";
+  }
+  function foPkStatRow(lbl, icoK, v) {
+    v = Math.round(v || 0);
+    return "<div class=\'pk-st\' data-tip=\"" + E(FO_PK_TIPS[lbl] || "") + "\"><span class=\'pk-en\'>" + foPkIco(icoK) + "</span><b>" + lbl + "</b><span class=\'pk-bar\'><i style=\'width:" + Math.max(2, Math.min(100, v)) + "%\'></i></span><em>" + v + "</em></div>";
+  }
+  // A FIFA-style 0-100 overall from the same 0-100 aggregates the card shows -
+  // p.rating is the engine's internal ranking value (x420 scaled), not an OVR.
+  function foPkOvr(p) {
+    var bat = aggBat(p) || 0, tech = aggTech(p) || 0, pow = (p.power != null ? p.power : ((p.skills && p.skills.power) || 0));
+    var batScore = 0.58 * bat + 0.24 * tech + 0.18 * pow;
+    var bowl = p.bowlType ? (aggBowl(p) || 0) : 0;
+    var fld = aggField(p) || 0;
+    var ovr;
+    // each branch is normalised onto the batter's scale (measured over the
+    // generator's whole quality range), so a 70 bowler and a 70 batter are
+    // genuinely the same class of player
+    if (p.keeper || p.role === "wicketkeeper") ovr = 1.07 * (0.46 * (aggKeep(p) || 0) + 0.40 * batScore + 0.14 * fld) - 1;
+    else if (p.role === "allRounder") { var hi = Math.max(batScore, bowl), lo = Math.min(batScore, bowl); ovr = 1.04 * (0.60 * hi + 0.28 * lo + 0.12 * fld); }
+    else if (bowl > batScore) ovr = 1.5 * (0.74 * bowl + 0.12 * tech + 0.14 * fld) - 14;
+    else ovr = 0.60 * batScore + 0.12 * bat + 0.14 * pow + 0.14 * fld;
+    return Math.max(1, Math.min(99, Math.round(ovr)));
+  }
+  // test-harness hook: lets the Playwright probes generate players and read
+  // OVRs without reaching into the closure (never used by the game itself)
+  try { window.__foTest = { gen: foQsPlayer, ovr: foPkOvr, hash: foHash32 }; } catch (eT) {}
+  function foPkCard(p, opts) {
+    opts = opts || {};
+    var k = foPkKind(p), ac = FO_PK_AC[k];
+    var roleLbl = opts.roleLbl || p.__mqLbl || FO_PK_ROLELBL[p.role] || "Player";
+    var ovr = foPkOvr(p);
+    var hand = (p.hand === "L") ? "LHB" : "RHB";
+    var tals = (p.talents || []).map(function (t) {
+      var tip = (typeof TALTIPS !== "undefined" && TALTIPS[t]) || "Special ability that triggers in matches.";
+      return "<span class=\'pk-tal\' data-tip=\"" + E(tip) + "\">" + E((typeof TALN !== "undefined" && TALN[t]) || t) + "</span>";
+    }).join("");
+    var rows = foPkStatRow("BATTING", "bat", aggBat(p)) + foPkStatRow("BOWLING", "bowl", p.bowlType ? aggBowl(p) : 8) +
+      foPkStatRow("TECHNIQUE", "tech", aggTech(p)) + foPkStatRow("POWER", "pow", p.power != null ? p.power : ((p.skills && p.skills.power) || 0)) +
+      (k === "wk" ? foPkStatRow("KEEPING", "fld", aggKeep(p)) : foPkStatRow("FIELDING", "fld", aggField(p)));
+    var metaRole = (p.btLabel && !/does not bowl/i.test(p.btLabel)) ? p.btLabel : roleLbl;
+    var meta = "<span>" + E(metaRole) + "</span><i>&bull;</i><span>Age " + (p.age | 0) + "</span><i>&bull;</i><span>" + E(p.nat || "") + "</span><span class=\'fl\'>" + (foQsFlag(p.nat) || "") + "</span>";
+    var formW = (typeof FORMW !== "undefined" && FORMW[p.formIx != null ? p.formIx : 3]) || "steady";
+    var mid = "<div class=\'pk-mid\'>" +
+      "<div class=\'pk-fc\' data-tip=\"" + E(FO_PK_TIPS.FORM) + "\">" + foPkIco("form") + "<span><i>FORM</i><b>" + E(formW) + "</b></span></div>" +
+      "<div class=\'pk-fc\' data-tip=\"" + E(FO_PK_TIPS.EXPERIENCE) + "\">" + foPkIco("exp") + "<span><i>EXPERIENCE</i><b>" + E(p.expWord || "-") + "</b></span></div>" +
+      "<div class=\'pk-fc\' data-tip=\"" + E(FO_PK_TIPS.CAPTAINCY) + "\">" + foPkIco("capt") + "<span><i>CAPTAINCY</i><b>" + (p.capt | 0) + "</b></span></div></div>";
+    var foot = "";
+    if (opts.fee != null) {
+      foot = "<div class=\'pk-foot\'>" +
+        "<div class=\'pk-fc\'>" + foPkIco("fee") + "<span><i>FEE</i><b>" + FO$(opts.fee) + "</b></span></div>" +
+        "<div class=\'pk-fc\'>" + foPkIco("wage") + "<span><i>WAGE</i><b>" + FO$(opts.wage || 0) + "/day</b></span></div>" +
+        "<div class=\'pk-fc\' data-tip=\"" + E(FO_PK_TIPS.STAMINA) + "\">" + foPkIco("sta") + "<span><i>STAMINA</i><b>" + Math.round((p.skills && p.skills.stamina) || 0) + "</b></span></div></div>";
+    }
+    var risk = opts.risk ? "<div class=\'pk-risk\'>Risk: " + E(opts.risk) + "</div>" : "";
+    var cta = opts.cta ? "<button type=\'button\' class=\'pk-cta\'" + (opts.ctaAttr || "") + ">" + E(opts.cta) + "</button>" : "";
+    return "<div class=\'pk\' style=\'--tc:" + ac[0] + ";--tcD:" + ac[1] + "\'><div class=\'pk-frame\'><span class=\'pk-notch\'></span><div class=\'pk-in\'>" +
+      "<div class=\'pk-hd\'><div class=\'pk-idc\'><div class=\'pk-role-lbl\'>" + E(roleLbl) + "</div><div class=\'pk-name\'>" + E(p.name) + "</div><span class=\'pk-flag\'>" + (foQsFlag(p.nat) || "") + "</span></div>" +
+      "<div class=\'pk-ovc\'><div class=\'pk-ovr\'><i>OVR</i><b>" + ovr + "</b></div>" +
+      "<div class=\'pk-hand\' data-tip=\"" + (hand === "LHB" ? "Bats left-handed" : "Bats right-handed") + "\">" + hand + "</div></div></div>" +
+      "<div class=\'pk-art\'><div class=\'gnd\'></div><img src=\'" + FO_ART + foPkArt(p) + "\' alt=\'\'></div>" +
+      "<div class=\'pk-meta\'>" + meta + "</div>" +
+      (tals ? "<div class=\'pk-tal-h\'><i></i>TALENTS<i></i></div><div class=\'pk-tals\'>" + tals + "</div>" : "") +
+      "<div class=\'pk-stats\'>" + rows + "</div>" + mid + foot + risk + cta +
+      "</div></div></div>";
+  }
+  // Compact card for BROWSING surfaces (squad, market, scout) where a full
+  // hero card per player would be an endless scroll. Same visual language -
+  // role-color frame, art thumbnail, OVR, RHB/LHB, three mini bars - tiled a
+  // few per row. opts: {fee, sub, action(html), tag, tone, dim}.
+  function foPkMini(p, opts) {
+    opts = opts || {};
+    var k = foPkKind(p), ac = FO_PK_AC[k];
+    var roleLbl = opts.roleLbl || FO_PK_ROLELBL[p.role] || "Player";
+    var ovr = foPkOvr(p);
+    var hand = (p.hand === "L") ? "LHB" : "RHB";
+    var bowlV = p.bowlType ? (aggBowl(p) || 0) : 0;
+    var secLbl = (k === "wk") ? "KEEP" : "BOWL", secV = (k === "wk") ? (aggKeep(p) || 0) : bowlV;
+    var bar = function (lbl, tip, v) {
+      v = Math.round(v || 0);
+      return "<span class=\'pkm-b\' data-tip=\"" + E(FO_PK_TIPS[tip] || "") + "\"><i>" + lbl + "</i><u><b style=\'width:" + Math.max(3, Math.min(100, v)) + "%\'></b></u><em>" + v + "</em></span>";
+    };
+    var bars = bar("BAT", "BATTING", aggBat(p)) + bar(secLbl, k === "wk" ? "KEEPING" : "BOWLING", secV) + bar("FLD", "FIELDING", aggField(p));
+    var tag = opts.tag ? "<span class=\'pkm-tag\'>" + opts.tag + "</span>" : "";
+    var sub = opts.sub || (E(roleLbl) + " &middot; age " + (p.age | 0));
+    var money = "";
+    if (opts.fee != null) money = "<span class=\'pkm-fee\'>Fee <b>" + FO$(opts.fee) + "</b>" + (opts.wage != null ? " &middot; " + FO$(opts.wage) + "/day" : "") + "</span>";
+    var act = opts.action || "";
+    var foot = opts.foot != null ? opts.foot : (money || act ? money + act : "");
+    return "<div class=\'pkm" + (opts.dim ? " pkm-dim" : "") + "\' style=\'--tc:" + ac[0] + ";--tcD:" + ac[1] + "\'>" +
+      "<div class=\'pkm-top\'>" +
+      "<div class=\'pkm-art\'><img src=\'" + FO_ART + foPkArt(p) + "\' alt=\'\'></div>" +
+      "<div class=\'pkm-id\'>" + tag +
+      "<div class=\'pkm-nm\'>" + (foQsFlag(p.nat) || "") + " " + E(p.name) + "</div>" +
+      "<div class=\'pkm-sub\'>" + sub + "</div></div>" +
+      "<div class=\'pkm-ovc\'><b>" + ovr + "</b><i>OVR</i><span class=\'pkm-hand\'>" + hand + "</span></div>" +
+      "</div>" +
+      "<div class=\'pkm-bars\'>" + bars + "</div>" +
+      (foot ? "<div class=\'pkm-foot\'>" + foot + "</div>" : "") +
+      "</div>";
   }
   // The last step: sign the squad the manager has just watched deal out, and
   // open the club. The reserve decision that used to sit here is gone, so the
@@ -31158,7 +31353,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         }
       }
     };
-  } catch (eXp) { try{window.__xpErr=String((eXp&&eXp.stack)||eXp)}catch(e9){} }
+  } catch (eXp) {}
 
   console.info("Fifty Overs League overlay ready.");
 })();
