@@ -1194,7 +1194,56 @@ function meter(v,lbl){const col=v>=70?'#2c7a2c':v>=45?'#c8a13a':'#a33328';
 const word=x=>WORDS[wIx(x)], abbr=x=>ABBR[wIx(x)];
 const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const $=s=>document.querySelector(s);
-const userTeam=()=>GD.teams[App.teamIx];
+// ============================================================================
+// WHICH CLUB IS MINE. Read this before changing anything below it.
+//
+// Identity used to be an INDEX: userTeam() was GD.teams[App.teamIx]. That is
+// only safe if GD.teams never changes shape, and in a league it changes shape
+// constantly - every snapshot that lands replaces the array wholesale, and the
+// snapshot carries the teamIx of WHOEVER PUSHED IT. So restoreFrom() would
+// quietly hand you the pusher's slot; a takeover splice or a watchdog
+// re-splice would do it again half an hour later. The symptom is a device that
+// shows two different squads and two different fixture lists minutes apart,
+// because between the two renders it was two different clubs.
+//
+// The NAME is the identity. It is chosen once, on this device, kept in its own
+// localStorage key, and never taken from a shared snapshot - a snapshot that
+// could rename you is a snapshot that can steal your club. The index is
+// derived from the name on every read and is now only a cache.
+//
+// If the name is not in the world (a practice world, a relaunched league, the
+// baseline data before a league has loaded) the old index behaviour stands, so
+// nothing that worked before can break.
+// ============================================================================
+let FO_MY_CLUB=null,FO_MY_CLUB_READ=false;
+function foMyClub(){
+  if(!FO_MY_CLUB_READ){FO_MY_CLUB_READ=true;try{FO_MY_CLUB=store('fo_my_club')||null}catch(e){FO_MY_CLUB=null}}
+  return FO_MY_CLUB;
+}
+function foSetMyClub(name){
+  if(!name)return;
+  FO_MY_CLUB=String(name);FO_MY_CLUB_READ=true;
+  try{store('fo_my_club',FO_MY_CLUB)}catch(e){}
+  // point the index at it straight away, so the very next read agrees
+  try{const i=foMyClubIx();if(i>=0)App.teamIx=i}catch(e2){}
+}
+/** Index of my club in the CURRENT world, or -1 if this world has no such club. */
+function foMyClubIx(teams){
+  const nm=foMyClub();if(!nm)return -1;
+  const ts=teams||(typeof GD!=='undefined'&&GD.teams)||null;if(!ts)return -1;
+  for(let i=0;i<ts.length;i++)if(ts[i]&&ts[i].name===nm)return i;
+  return -1;
+}
+const userTeam=()=>{
+  const i=foMyClubIx();
+  if(i>=0){if(App.teamIx!==i)App.teamIx=i;return GD.teams[i]}
+  return GD.teams[App.teamIx];
+};
+/** Put the index back on the pinned club. Called once before every page paints,
+ *  because plenty of screens read App.teamIx straight (the fixture list asks
+ *  "is this match mine?" by comparing slot numbers) and would otherwise draw
+ *  another club's season if a snapshot had just landed. */
+function foSyncMyIx(){try{const i=foMyClubIx();if(i>=0)App.teamIx=i}catch(e){}}
 const PITCHTIP={balanced:'Balanced surface - no strong bias to bat or ball.',flat:'Flat road - favours batters; big scores likely.',green:'Green top - seamers get movement, especially with the new ball.',dry:'Dry, dusty - spinners grip and turn from mid-innings.',slow:'Slow and low - hard to hit through the line; sixes are rare.',cracked:'Cracked - variable bounce brings edges and wickets all day.',twoPaced:'Two-paced - inconsistent pace makes timing difficult.'};
 const WXTIP={Sunny:'Clear and true - neutral conditions.',Overcast:'Cloud cover assists swing bowling.',Humid:'Humidity helps the ball swing through the air.',Hot:'Heat tires bowlers faster and aids spin later.',Scorching:'Extreme heat drains stamina quickly; spin grows sharper.',Drizzle:'Damp ball favours seam; batting is trickier.',Windy:'Wind unsettles length and can carry catches.',Chilly:'Cold, hard ball helps seamers hold their nip.',Misty:'Mist keeps the new ball dangerous longer.','Dew later':'Dew later eases batting and helps chasing sides.'};
 const wxTip=w=>WXTIP[w]||'Match-day conditions.';const pitchTip=p=>PITCHTIP[p]||'A fair surface.';
@@ -1401,6 +1450,7 @@ function route(){
   const [path,qs]=h.slice(2).split('?');
   const q={};if(qs)for(const kv of qs.split('&')){const [k,v]=kv.split('=');q[k]=decodeURIComponent(v||'')}
   App.page=path||'circuit';
+  foSyncMyIx();   // one club per device, before a single page paints
   // Circuit-only era: the club dashboard and the league/office/training
   // surfaces are retired; any old link or bookmark lands on the Circuit.
   // training returned to life as The Nets (league/18-training-nets.js)
@@ -3416,6 +3466,7 @@ function startLeagueFromMerge(){
   // ensure grounds unique-ish and required fields
   GD.teams=world;
   App.teamIx=GD.teams.findIndex(t=>t.name===mine.name);
+  foSetMyClub(mine.name);
   App.mergeQueue=[];
   App.season=null;seasonInit();App.round=1;App.seasonNo=App.seasonNo||1;
   App.cup={stage:0,alive:null,results:[],out:false};App.results=[];
@@ -3499,7 +3550,13 @@ function saveGame(tell){
 }
 function restoreFrom(d){
   if(!d||!d.teams)return false;
-  GD.teams=d.teams;App.teamIx=d.teamIx;App.seasonNo=d.seasonNo||1;
+  GD.teams=d.teams;
+  // d.teamIx BELONGS TO WHOEVER MADE THIS SNAPSHOT. In a league that is the
+  // founder, the resolver, or another manager taking over a bot - never you.
+  // Take it only when this device has no club of its own to find (a fresh
+  // install, a practice world, the baseline data).
+  {const _mine=foMyClubIx(d.teams);App.teamIx=_mine>=0?_mine:d.teamIx}
+  App.seasonNo=d.seasonNo||1;
   App.fin=d.fin;App.market=d.market;App.cup=d.cup;App.news=d.news;App.history=d.history||[];
   App.season=d.season;App.round=d.round||1;App.results=d.results||[];
   App.playerHist=d.playerHist||{};App.fieldStats=d.fieldStats||{};
@@ -3824,6 +3881,7 @@ function founderConfirm(){
   App.fin.bank=Math.max(0,F.budget-founderSpent()); // leftover cash carries into the club bank
   App.fin.ledger.unshift({wk:'Founded',label:'Sponsor grant + signings',amt:0});
   store('fo_club',String(ix));store('fo_welcomed','1');
+  foSetMyClub(t.name);   // from here on this device IS this club, by name
   App.orders.batOrder=[];
   saveGame(false);
   const n=F.picked.length,bank=App.fin.bank;
@@ -3879,12 +3937,13 @@ function pgWelcome(){
    </div></div>`;
 }
 function chooseClub(i){App.teamIx=i;App.orders.batOrder=[];store('fo_club',String(i));store('fo_welcomed','1');
+  try{foSetMyClub((GD.teams[i]||{}).name)}catch(e){}
   const t=GD.teams[i];
   $('#page').innerHTML=`<div class="crumb">Welcome to Fifty Overs</div>
    ${bertie("Fine choice. "+esc(t.name)+" it is - "+esc((t.blurb||'').split('.')[0])+". One thing before we walk the corridors: the board says you may rename the club if you like. Keep the famous name or make it yours.")}
    <div class="panel"><h4>Name your club</h4><div class="pad">
    <input id="clubnm" type="text" value="${esc(t.name)}" style="width:260px"> 
-   <button class="primary" onclick="const v=document.getElementById('clubnm').value.trim();if(v){GD.teams[${i}].name=v}window.__tour=0;runTour()">Continue</button>
+   <button class="primary" onclick="const v=document.getElementById('clubnm').value.trim();if(v){GD.teams[${i}].name=v;foSetMyClub(v)}window.__tour=0;runTour()">Continue</button>
    <div class="small" style="margin-top:4px">Renaming is only possible now, before the season starts.</div></div></div>`;}
 function runTour(){
   const step=window.__tour;
@@ -4165,7 +4224,7 @@ function runTour(){
   founderConfirm=function(){
     const F=App.founder, ix=App.teamIx||0, t=GD.teams[ix];const spent=founderSpent(), unused=F.budget-spent, bank=Math.round(150000+0.40*Math.max(0,unused));
     t.name=F.name;t.players=F.picked.map(p=>{const q=JSON.parse(JSON.stringify(p));delete q.fee;q.fatigue='rested';q.formIx=3;ensureTraining(q);return q});t.youth=[];t.founded=true;t.identity=F.identity||store('fo_identity')||'Balanced XI';
-    App.fin={bank,ledger:[],sponsorBase:25000};econInit();ledger('Founder','Founder operating bank after draft',0);t.bank=bank;store('fo_club',String(ix));store('fo_welcomed','1');App.orders.batOrder=[];saveGame(false);
+    App.fin={bank,ledger:[],sponsorBase:25000};econInit();ledger('Founder','Founder operating bank after draft',0);t.bank=bank;store('fo_club',String(ix));store('fo_welcomed','1');foSetMyClub(t.name);App.orders.batOrder=[];saveGame(false);
     const n=t.players.length,bowl=t.players.filter(p=>p.bowlTypeFull&&p.bowlTypeFull!=='none').length,wk=t.players.filter(p=>p.keeper).length,wages=wageBill(t);
     const risk=n<=12?'expensive first XI, thin depth':unused<35000?'minimal draft savings':bowl<6?'light bowling depth':'manageable';
     const verdict=(wk&&bowl>=5&&n>=14)?'Well-shaped squad with enough cover.':(n<=12?'High ceiling if the first XI fires, but injuries and fatigue will hurt.':'Legal squad with one or two obvious problems to manage.');
@@ -4521,8 +4580,13 @@ completeRound=function(){
 // boot
 (function(){
   if(loadGame()){location.hash=location.hash||'#/club';return}
-  const saved=store('fo_club');
-  if(saved!==null&&saved!==undefined&&GD.teams[+saved])App.teamIx=+saved;
+  // no save to load: fall back to the club this device pinned by name, and
+  // only then to the legacy slot number (which means nothing once the world
+  // has been replaced by a league)
+  const byName=foMyClubIx();
+  if(byName>=0)App.teamIx=byName;
+  else{const saved=store('fo_club');
+    if(saved!==null&&saved!==undefined&&GD.teams[+saved])App.teamIx=+saved;}
   if(!store('fo_welcomed'))location.hash='#/welcome';
 })();
 

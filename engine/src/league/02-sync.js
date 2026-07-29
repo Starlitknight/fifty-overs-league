@@ -106,6 +106,11 @@
         lastVersion: 0, started: false, lastOrderSig: null, pollTimer: null
       };
       SYNC.isFounder = !!(SYNC.me && SYNC.me.role === "founder");
+      // THE LEAGUE IS THE AUTHORITY ON WHO YOU ARE. The teams row carries the
+      // club this account manages; pin it by name now, before any snapshot
+      // lands, so every restore that follows finds the right club instead of
+      // inheriting the pusher's index.
+      try { if (SYNC.myTeam && SYNC.myTeam.name && typeof foSetMyClub === "function") foSetMyClub(SYNC.myTeam.name); } catch (eMc) {}
       if (LG.build_hash && LG.build_hash !== BUILD_HASH) console.warn("Fifty Overs: your game build differs from this league's pinned engine.");
       // the probe failed · fall back to the old single request, whose own error
       // handling knows the difference between a missing table and a bad line
@@ -137,8 +142,17 @@
   // else's club; send them to the draft / waiting lobby instead.
   function myClubInSnap(snap) {
     try {
-      if (!SYNC || !SYNC.myTeam || !SYNC.myTeam.name) return false;
-      return !!(snap && snap.teams && snap.teams.some(function (t) { return t && t.name === SYNC.myTeam.name; }));
+      if (!snap || !snap.teams) return false;
+      var names = [];
+      if (SYNC && SYNC.myTeam && SYNC.myTeam.name) names.push(SYNC.myTeam.name);
+      // ALSO the club this device has already pinned. The teams row and the
+      // club JSON can carry different names (the club was renamed during
+      // founding, or a takeover renamed a bot), and when they did, a manager
+      // who WAS in the snapshot was told he was not - and the rejoin that
+      // followed re-spliced him over a bot and moved his identity again.
+      try { var mine = (typeof foMyClub === "function") && foMyClub(); if (mine) names.push(mine); } catch (e2) {}
+      if (!names.length) return false;
+      return snap.teams.some(function (t) { return t && names.indexOf(t.name) >= 0; });
     } catch (e) { return false; }
   }
   // `pre` lets entry hand in a season it already has - from this device's copy,
@@ -171,7 +185,22 @@
             window.__foRejoin = "busy"; window.__foRejoinAt = Date.now();
             return sel("league_clubs", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&select=club").then(function (rows) {
               var club = rows && rows[0] && rows[0].club;
-              if (club && club.name && club.players && club.players.length) { foJoinRunningSeason(JSON.parse(JSON.stringify(club))); return; }
+              if (club && club.name && club.players && club.players.length) {
+                // THE CLUB RECORD IS THE OTHER AUTHORITY on who you are, and it
+                // is the one whose NAME appears in the snapshot. When the teams
+                // row and the club disagree - a rename during founding, a
+                // takeover that renamed a bot - this is the name to trust.
+                try { if (typeof foSetMyClub === "function") foSetMyClub(club.name); } catch (eMc) {}
+                // and if that club is in fact already in the season, we were
+                // never missing: apply it instead of re-splicing, which would
+                // push a whole snapshot back over the league for no reason
+                if (st.snapshot && (st.snapshot.teams || []).some(function (t3) { return t3 && t3.name === club.name; })) {
+                  window.__foRejoin = null;
+                  applySnapshot(st.snapshot, true);
+                  return;
+                }
+                foJoinRunningSeason(JSON.parse(JSON.stringify(club))); return;
+              }
               window.__foRejoin = "lobby";
               return preStart();
             }).catch(function () { window.__foRejoin = "lobby"; return preStart(); });
@@ -221,11 +250,20 @@
       foPurgeGhosts();
       if (!SYNC.submittedLoaded) foLoadSubmitted();
       SYNC.started = true;
+      // restoreFrom has already resolved the pinned club by name. This is the
+      // belt to that braces: the league's own teams row, then the club this
+      // device was holding a moment ago. Whatever lands, PIN IT - the whole
+      // class of "two squads on one device" comes from an identity that was
+      // re-derived on every restore and never written down.
       var myName = SYNC.myTeam ? SYNC.myTeam.name : null;
       if (typeof GD !== "undefined" && GD.teams) {
         var ix = myName ? GD.teams.findIndex(function (t) { return t.name === myName; }) : -1;
         if (ix < 0 && prevClub) ix = GD.teams.findIndex(function (t) { return t.name === prevClub; });
-        if (ix >= 0) App.teamIx = ix;
+        if (ix < 0 && typeof foMyClubIx === "function") ix = foMyClubIx(GD.teams);
+        if (ix >= 0) {
+          App.teamIx = ix;
+          try { if (typeof foSetMyClub === "function") foSetMyClub(GD.teams[ix].name); } catch (eP) {}
+        }
       }
       // keep my working line-up; if the round advanced, it needs re-saving for the new round
       var newRound = (window.App && App.season && typeof App.season.round === "number") ? App.season.round : prevRound;
@@ -335,6 +373,7 @@
       if (typeof window.econInit === "function") window.econInit();
       var mine = myName ? GD.teams.findIndex(function (t) { return t.name === myName; }) : 0;
       App.teamIx = mine >= 0 ? mine : 0;
+      try { if (typeof foSetMyClub === "function") foSetMyClub((GD.teams[App.teamIx] || {}).name); } catch (eMc) {}
       App.season = null; if (typeof window.seasonInit === "function") window.seasonInit();
       App.round = 1; App.seasonNo = App.seasonNo || 1; App.results = []; App.cup = { stage: 0, alive: null, results: [], out: false };
       if (typeof window.mpInit === "function") window.mpInit();
@@ -469,6 +508,7 @@
         var myName = SYNC.myTeam ? SYNC.myTeam.name : null;
         var mine = GD.teams.findIndex(function (t) { return t.name === myName; });
         App.teamIx = mine >= 0 ? mine : 0;
+        try { if (typeof foSetMyClub === "function") foSetMyClub((GD.teams[App.teamIx] || {}).name); } catch (eMc) {}
         balanceBots();
         App.season = null; if (typeof window.seasonInit === "function") window.seasonInit();
         App.round = 1; App.seasonNo = App.seasonNo || 1; App.results = [];
@@ -584,6 +624,10 @@
       App.news = []; App.fieldStats = {};
       if (typeof window.econInit === "function") window.econInit();
       App.teamIx = 0;
+      // a relaunch retires every club including the commissioner's: the old
+      // pinned name no longer exists, so pin the new one rather than leave a
+      // stale name that resolves to nothing
+      try { if (typeof foSetMyClub === "function") foSetMyClub((GD.teams[0] || {}).name); } catch (eMc) {}
       App.season = null; if (typeof window.seasonInit === "function") window.seasonInit();
       App.round = 1; App.seasonNo = 1; App.results = []; App.playerHist = {};
       App.cup = { stage: 0, alive: null, results: [], out: false };

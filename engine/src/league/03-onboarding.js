@@ -3508,6 +3508,9 @@
       if (lg) {
         try {
           var club = JSON.parse(JSON.stringify(GD.teams[App.teamIx]));
+          // whatever founderConfirm the build ends up using, THIS is the club
+          // that gets uploaded - so this is the name the device answers to
+          try { if (typeof foSetMyClub === "function") foSetMyClub(club.name); } catch (eMc) {}
           // the quick-start fee flag is draft-board bookkeeping; the engine just
           // deleted the fees themselves, so don't let the flag ride the club JSON
           (club.players || []).forEach(function (cp) { delete cp._qsPriced; });
@@ -3572,6 +3575,12 @@
       if (ix < 0) { if (!attempt) showWait(true); return; }
       club.founded = true;
       s2.teams[ix] = club;
+      // PIN BEFORE APPLYING. This splice renames a bot to your club's name
+      // across the whole snapshot; the snapshot's own teamIx still belongs to
+      // whoever pushed it. Without this the applySnapshot below - and every
+      // watchdog re-splice for the next ninety minutes - could hand this
+      // device a different club than the one it just joined as.
+      try { if (typeof foSetMyClub === "function") foSetMyClub(club.name); } catch (eMc) {}
       return rpc("member_push_state", { p_league_id: LG.id, p_snapshot: s2, p_round: st.round || 0 }).then(function (ver) {
         SYNC.lastVersion = typeof ver === "number" ? ver : (st.version + 1);
         SYNC.started = true;
