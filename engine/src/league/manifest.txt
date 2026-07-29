@@ -15,7 +15,6 @@
 14-match-report.js
 15-living-season.js
 16-matchday-dress.js
-17-club-ledger.js
 18-training-nets.js
 19-modern-shell.js
 20-strategy-room.js

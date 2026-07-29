@@ -1494,6 +1494,14 @@ function route(){
   // The Table was a second league table, and two tables that could disagree
   // is worse than one. The league page is the table now; old links follow.
   if(App.page==='table'){location.hash='#/league';return}
+  // TWO SETS OF BOOKS, ONE CLUB. #/ledger held the retired local sim's money:
+  // founded on $500k, credited by a client-side wrapper around completeRound,
+  // paid a flat broadcast cheque and signed sponsors the world has never heard
+  // of - and for a served manager that settlement barely fires, because the
+  // umpire advances the rounds, not the device. #/finance reads the books the
+  // umpire walks from the founding ($2.5m, gate, sponsor, wages, interest),
+  // derived from the record and re-runnable. That is the money.
+  if(App.page==='ledger'){location.hash='#/finance';return}
   foSyncMyIx();   // one club per device, before a single page paints
   // Circuit-only era: the club dashboard and the league/office/training
   // surfaces are retired; any old link or bookmark lands on the Circuit.
@@ -1516,7 +1524,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',preview:'foRenderPreviewPage',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',records:'foRenderRecordsPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',worldclub:'foRenderWorldClubPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',guide:'foRenderManualPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',comps:'foRenderCompsPage',market:'foRenderMarketPage'}[App.page];
+  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',preview:'foRenderPreviewPage',ceremony:'foRenderCeremony',desk:'foRenderDesk',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',records:'foRenderRecordsPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',worldclub:'foRenderWorldClubPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',guide:'foRenderManualPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',comps:'foRenderCompsPage',market:'foRenderMarketPage'}[App.page];
   if(P[App.page])P[App.page](q);
   // A RENDERER THAT THROWS USED TO VANISH. This catch was empty, so a page
   // whose painter hit an error left the topbar, the clock and the nav in place
