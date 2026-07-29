@@ -268,14 +268,22 @@
           "<b>Round " + rd + "</b>" +
           (rd < rounds ? stepper(rd + 1, "&rsaquo;") : "<span class='fo-lgx-step off'>&rsaquo;</span>") +
           "</span></div>" +
+          // EVERY FIXTURE IS A DOOR. A result has opened its report for a
+          // while; the match still to be played opened nothing at all, which
+          // made half the season unreadable. Each row is now the way into that
+          // match's own preview - the ground, the hour, the form, the men.
           (pairs.length ? pairs.map(function (pr) {
             var hs = pr[0], as = pr[1], mine = (hs === mySlot || as === mySlot);
-            return "<div class='fo-lgx-fx" + (mine ? " mine" : "") + "'>" +
+            var pv = ""; try { pv = window.foPreviewHref(natId, rd, hs, as); } catch (ePv) {}
+            var inner =
               (mine ? "<span class='fo-lgx-yours'>Your match</span>" : "") +
               "<span class='fo-lgx-side'>" + shield(nameAt(hs), bossAt(hs), natId) + "<b>" + E(nameAt(hs)) + "</b></span>" +
               "<span class='fo-lgx-vs'><i>v</i><u>" + hh(hour) + "</u>" + (groundOf(hs) ? "<em>" + E(groundOf(hs)) + "</em>" : "") + "</span>" +
               "<span class='fo-lgx-side a'><b>" + E(nameAt(as)) + "</b>" + shield(nameAt(as), bossAt(as), natId) + "</span>" +
-              "</div>";
+              (pv ? "<u class='fo-lgx-go'>&rsaquo;</u>" : "");
+            return pv
+              ? "<a class='fo-lgx-fx open" + (mine ? " mine" : "") + "' href='" + pv + "'>" + inner + "</a>"
+              : "<div class='fo-lgx-fx" + (mine ? " mine" : "") + "'>" + inner + "</div>";
           }).join("") : "<p class='fo-lgx-dim'>No fixtures for this round yet.</p>") +
           "</div>";
 
@@ -473,11 +481,15 @@
           (nextPairs.length ? "<div class='fo-lgx-card'><h3>" + E(nextTtl) + "<span>" + nextWhen + "</span></h3>" +
             nextPairs.map(function (pr) {
               var mine = (pr[0] === mySlot || pr[1] === mySlot);
-              return "<div class='fo-lgx-nx" + (mine ? " mine" : "") + "'>" +
+              var pv2 = ""; try { pv2 = window.foPreviewHref(natId, nextRd, pr[0], pr[1]); } catch (eP2) {}
+              var in2 =
                 "<span>" + shield(nmA(pr[0]), pr[0] === 0, natId) + "<b>" + E(nmA(pr[0])) + "</b></span>" +
                 "<i>v</i>" +
                 "<span class='a'><b>" + E(nmA(pr[1])) + "</b>" + shield(nmA(pr[1]), pr[1] === 0, natId) + "</span>" +
-                (mine ? "<u>Your match</u>" : "") + "</div>";
+                (mine ? "<u>Your match</u>" : "");
+              return pv2
+                ? "<a class='fo-lgx-nx open" + (mine ? " mine" : "") + "' href='" + pv2 + "'>" + in2 + "</a>"
+                : "<div class='fo-lgx-nx" + (mine ? " mine" : "") + "'>" + in2 + "</div>";
             }).join("") + "</div>" : "") +
           (rows.length ? "<div class='fo-lgx-card dark'><h3>The chase</h3>" +
             rows.slice(0, 3).map(function (r) {
@@ -612,6 +624,12 @@
     // ---- fixtures and results ---------------------------------------------
     "html body #page .fo-lgx-fx,html body #page .fo-lgx-res{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:7px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:12px;padding:11px 12px;margin-bottom:6px;box-shadow:0 4px 14px rgba(30,38,52,.05)}",
     "html body #page .fo-lgx-fx.mine,html body #page .fo-lgx-res.mine{border-color:rgba(201,85,50,.42);box-shadow:0 6px 18px rgba(201,85,50,.09)}",
+    // a fixture that opens its preview says so the way the results rows do
+    "html body #page .fo-lgx-fx.open{text-decoration:none;color:inherit;cursor:pointer;transition:border-color .16s ease,transform .16s ease,box-shadow .16s ease}",
+    "html body #page .fo-lgx-fx.open:hover{border-color:var(--nac);transform:translateY(-1px);box-shadow:0 8px 20px rgba(30,38,52,.1)}",
+    "html body #page .fo-lgx-nx.open{text-decoration:none;color:inherit;cursor:pointer}",
+    "html body #page .fo-lgx-nx.open:hover b{color:var(--nac)}",
+    "@media(prefers-reduced-motion:reduce){html body #page .fo-lgx-fx.open{transition:none}}",
     // a result you can open says so with a chevron and lifts under the finger;
     // it keeps the row's own type colour rather than turning link-blue
     "html body #page a.fo-lgx-res.open{text-decoration:none;color:inherit;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease}",

@@ -86,21 +86,23 @@
             if (f[0] !== claim.slot && f[1] !== claim.slot) return;
             var isHome = f[0] === claim.slot;
             ups.push({ r: r3 + 1, isHome: isHome, opp: bySlot[isHome ? f[1] : f[0]] || "a club",
-              ground: groundOf(f[0]) });
+              ground: groundOf(f[0]), hs: f[0], as: f[1] });
           });
         }
-        // NOTE: the coming rows point at the served fixture card, not at
-        // #/matchday - that room still reads the retired local season and
-        // would name a different opponent than the one printed here. It is
-        // the next room to be put on the world's own record.
+        // A COMING MATCH NOW HAS SOMEWHERE TO GO. These rows used to land on
+        // the round's fixture card - the same list, one level up, which told
+        // the reader nothing he had not just tapped. Each one opens its own
+        // match now: the ground, the hour, both sides' form, the men.
         upRows = ups.map(function (u, i) {
-          return "<a class='fo-fl-row up" + (i === 0 ? " next" : "") + "' href='#/league?t=fixtures'>" +
+          var pv = "#/league?t=fixtures";
+          try { pv = window.foPreviewHref(claim.country, u.r, u.hs, u.as) || pv; } catch (ePv) {}
+          return "<a class='fo-fl-row up" + (i === 0 ? " next" : "") + "' href='" + pv + "'>" +
             "<i>R" + u.r + "</i>" +
             "<u class='n'>" + (u.isHome ? "H" : "A") + "</u>" +
             "<span class='fo-fl-who'><b>" + (u.isHome ? "v " : "at ") + E(u.opp) +
             " <em class='fo-fl-when'>" + hh(hour) + "</em></b>" +
             "<span>" + E(u.ground) + "</span></span>" +
-            "<em class='fo-fl-act'>The card &rsaquo;</em></a>";
+            "<em class='fo-fl-act'>Preview &rsaquo;</em></a>";
         }).join("");
         if (!ups.length) upRows = "<div class='fo-fl-none'>The season is played out. Awards night awaits.</div>";
       }

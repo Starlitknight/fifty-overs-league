@@ -342,6 +342,22 @@
     var TT = { bat: "Batter", bwl: "Bowler", ar: "All-rounder", wk: "Wicket-keeper" };
     return "<span class='ric' title='" + TT[k] + "'>" + FO_RIC[k] + "</span>";
   }
+  // ONE LADDER FOR THE WHOLE GAME, PUBLISHED. These live inside the closure
+  // that modules 00-12 share, so every room built after it - the previews, the
+  // club dossiers, anything that wants to say how good a cricketer is - had no
+  // way to reach them and would have had to invent a second calibration. A
+  // second calibration is a second truth. Hand the real one out instead.
+  // NOT __foStars: that name already belongs to the world's star PLAYERS
+  // (module 28). This is the rating ladder, and it says so.
+  try {
+    window.__foStarLadder = {
+      bat: function (p) { return foOrdBatComp(p); },
+      bowl: function (p) { return foOrdBowlComp(p); },
+      stars: function (c) { return foOrdStars(c); },
+      html: function (n) { return foOrdStarHTML(n); },
+      roleIcon: function (p) { return foOrdRoleIcon(p); }
+    };
+  } catch (eSx) {}
   function foOrdStarHTML(n) {
     var full = Math.floor(n), half = (n - full) >= 0.5;
     var s = "";
