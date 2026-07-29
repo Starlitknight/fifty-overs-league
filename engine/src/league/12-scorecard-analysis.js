@@ -207,12 +207,25 @@
           if (keeperNm && pl.name === keeperNm) m2 += " <span class='fo-sci-cap'>†</span>";
           return m2;
         };
+        // A SCORECARD THAT SAYS HOW GOOD THEY WERE. The figures say what each
+        // man did on the day; the stars say what he is. Baked into the row
+        // rather than left to the async decorator - that one reads GD.teams,
+        // which holds none of the world's clubs, so a league match's card came
+        // out bare. The innings already carries the player object.
+        var stars = function (pl, bowl) {
+          try {
+            if (!pl || !pl.skills) return "";
+            var n = foOrdStars(bowl ? foOrdBowlComp(pl) : foOrdBatComp(pl));
+            if (n == null) return "";
+            return "<span class='fo-scst " + (bowl ? "fo-scst-w" : "fo-scst-b") + "'>" + foOrdStarHTML(n) + "</span>";
+          } catch (eSt) { return ""; }
+        };
         var played = {};
         var rows = (inn.bat || []).filter(function (b) { return b.b > 0 || b.out; }).map(function (b) {
           played[b.p.name] = 1;
           var sr = b.b ? (100 * b.r / b.b).toFixed(1) : "-";
           var dis = E(b.out || "not out");
-          return "<tr class='" + (b.out ? "" : "fo-sci-no") + "'><td class='fo-sci-nm'>" + playerLink(b.p) + mark(b.p) +
+          return "<tr class='" + (b.out ? "" : "fo-sci-no") + "'><td class='fo-sci-nm'>" + playerLink(b.p) + mark(b.p) + stars(b.p, false) +
             "<span class='fo-sci-dis'>" + dis + "</span></td>" +
             "<td class='fo-sci-disc'>" + dis + "</td>" +
             "<td class='n'><b>" + b.r + (b.out ? "" : "*") + "</b></td><td class='n'>" + b.b + "</td><td class='n'>" + (b.f4 || 0) + "</td><td class='n'>" + (b.f6 || 0) + "</td><td class='n'>" + sr + "</td></tr>";
@@ -226,7 +239,7 @@
           // which flickered off every ball as the live table was rebuilt)
           var bt2 = "";
           try { if (typeof foBowlCode === "function") { var cd2 = foBowlCode(rr2.p); if (cd2) bt2 = " <span class='fo-bt-tag' title='" + E((typeof foOrdBType === "function" ? foOrdBType(rr2.p) : "") || "") + "'>" + cd2 + "</span>"; } } catch (eBt2) {}
-          return "<tr><td class='fo-sci-nm'>" + playerLink(rr2.p) + bt2 + "</td><td class='n'>" + Math.floor(rr2.b / 6) + (rr2.b % 6 ? "." + rr2.b % 6 : "") + "</td><td class='n'>" + (rr2.mdn != null ? rr2.mdn : "&ndash;") + "</td><td class='n'>" + rr2.r + "</td><td class='n'><b>" + rr2.w + "</b></td><td class='n'>" + (rr2.b ? (rr2.r / (rr2.b / 6)).toFixed(2) : "-") + "</td></tr>";
+          return "<tr><td class='fo-sci-nm'>" + playerLink(rr2.p) + bt2 + stars(rr2.p, true) + "</td><td class='n'>" + Math.floor(rr2.b / 6) + (rr2.b % 6 ? "." + rr2.b % 6 : "") + "</td><td class='n'>" + (rr2.mdn != null ? rr2.mdn : "&ndash;") + "</td><td class='n'>" + rr2.r + "</td><td class='n'><b>" + rr2.w + "</b></td><td class='n'>" + (rr2.b ? (rr2.r / (rr2.b / 6)).toFixed(2) : "-") + "</td></tr>";
         }).join("");
         var ovTxt = Math.floor(inn.legal / 6) + (inn.legal % 6 ? "." + inn.legal % 6 : "");
         var tgt = "";
