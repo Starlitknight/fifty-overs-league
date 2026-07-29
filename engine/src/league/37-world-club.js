@@ -110,9 +110,8 @@
   // service says. Nothing local is lost that the world would not overwrite
   // anyway - and any saved lineup naming men who no longer wear the shirt is
   // cleared, so you never send out a teamsheet of ghosts.
-  function adoptWorldSquad(st) {
+  function applyWorldSquad(st) {
     try {
-      if (!st || !st.claim || !Array.isArray(st.squad) || st.squad.length < 11) return false;
       var t = null; try { t = userTeam(); } catch (eT) { return false; }
       if (!t) return false;
       var names = st.squad.map(function (p) { return p && p.name; });
@@ -144,6 +143,36 @@
       } catch (eR) {}
       return true;
     } catch (e) { return false; }
+  }
+
+  // A manager still mid-conversation with the chairman has no club yet - the
+  // ink is not dry, and the commit gate is about to write the squad the
+  // journey generated. Pouring the world's men in first would simply be
+  // overwritten a moment later, so hold the status while the dialogue is up
+  // and lay it down the instant the door closes.
+  function clubReady() {
+    try {
+      var t = userTeam();
+      if (!(t && Array.isArray(t.players) && t.players.length)) return false;
+      var founded = false;
+      try { founded = !!(typeof window.store === "function" ? window.store("fo_onb_done") : localStorage.getItem("fo_onb_done")); } catch (eF) {}
+      if (founded) return true;               // the club exists; later dialogues are just talk
+      var o = document.getElementById("fo-onb");
+      return !(o && o.style.display === "block");
+    } catch (e) { return false; }
+  }
+  var PEND = null, PEND_T = null, PEND_N = 0;
+  function pendStop() { if (PEND_T) clearInterval(PEND_T); PEND_T = null; PEND = null; PEND_N = 0; }
+  function adoptWorldSquad(st) {
+    if (!st || !st.claim || !Array.isArray(st.squad) || st.squad.length < 11) return false;
+    if (clubReady()) { pendStop(); return applyWorldSquad(st); }
+    PEND = st; PEND_N = 0;
+    if (!PEND_T) PEND_T = setInterval(function () {
+      if (!PEND || ++PEND_N > 200) return pendStop();     // ten minutes is patience enough
+      if (!clubReady()) return;
+      var s2 = PEND; pendStop(); applyWorldSquad(s2);
+    }, 3000);
+    return false;
   }
   window.__foAdoptWorldSquad = adoptWorldSquad;
 
@@ -244,11 +273,22 @@
   function autoClaim() {
     try {
       if (!jwt()) return;
-      if (localStorage.getItem("fo_world_claim")) return;    // already seated
       var nat = "eng";
       try { nat = (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || "eng"; } catch (eN) {}
       var clubNm = ""; try { clubNm = userTeam().name || ""; } catch (eC) {}
       var mgr = mgrForClaim();
+      // TWO SQUADS, ONE CLUB. This used to stop at the door - "already
+      // seated, nothing to do" - and go home without ever asking the world
+      // what it thinks the club's players are. So the squad the manager
+      // browsed and trained stayed the one onboarding generated for him,
+      // while the eleven the umpire actually fielded every round were the
+      // world's, generated from a different seed in a different country. He
+      // had a squad of Dutchmen and a scorecard full of Englishmen.
+      //
+      // The seat is claimed once; the squad is reconciled every time the game
+      // loads. adoptWorldSquad is idempotent - it signs its work and returns
+      // early when the men have not moved - so this costs one small request
+      // and settles the question for good.
       rpc("world_my_status").then(function (st) {
         if (!st || st.signedIn === false) return;
         if (st.claim) {
@@ -258,6 +298,9 @@
           adoptWorldSquad(st);
           return;
         }
+        // the server holds no seat for this account: a cached claim is a
+        // ghost of a reset world and must not stop a fresh one being taken
+        try { localStorage.removeItem("fo_world_claim"); window.__foWorldClaim = null; } catch (eG) {}
         rpc("world_auto_claim", { p_country: nat, p_name: mgr, p_club_name: clubNm || null }).then(function (r) {
           if (!r || !r.ok) return;
           var cl = { country: r.country, slot: r.slot, club: r.club, name: mgr };
