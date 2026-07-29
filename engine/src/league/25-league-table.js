@@ -302,14 +302,27 @@
             var hN = say(rr.home), aN = say(rr.away);
             var mine = myClub && (hN === myClub || aN === myClub);
             var won = rr.winner === null ? null : say(rr.winner) === myClub;
-            return "<div class='fo-lgx-res" + (mine ? " mine" : "") + "'>" +
+            // A ROUND OF RESULTS YOU COULD NOT OPEN. These rows are the most
+            // natural thing in the game to tap and they went nowhere. Every
+            // one this device holds a card for is now a way into the match
+            // report; the rest - other nations' cricket, which this device
+            // never played - stay as plain rows rather than dead links.
+            // the served feed counts rounds from 1 and the engine from 0, so
+            // the round has to be translated or nothing ever matches
+            var href = "";
+            try { href = foMatchHref({ home: hN, away: aN, round: (rr.round | 0) - 1 }); } catch (eH) {}
+            var body =
               "<span class='fo-lgx-side'>" + shield(hN, false, natId) + "<b>" + E(hN) + "</b>" +
               (rr.hs ? "<u>" + sc(rr.hs) + "</u>" : "") + "</span>" +
               "<span class='fo-lgx-vs'><i>v</i>" + (rr.hs && rr.hs.ov ? "<em>" + rr.hs.ov + " ov</em>" : "") + "</span>" +
               "<span class='fo-lgx-side a'>" + (rr.as ? "<u>" + sc(rr.as) + "</u>" : "") +
               "<b>" + E(aN) + "</b>" + shield(aN, false, natId) + "</span>" +
-              "<span class='fo-lgx-verdict" + (mine ? (won ? " w" : won === false ? " l" : "") : "") + "'>" + E(sayLine(rr.text)) + "</span>" +
-              "</div>";
+              "<span class='fo-lgx-verdict" + (mine ? (won ? " w" : won === false ? " l" : "") : "") + "'>" + E(sayLine(rr.text)) +
+              (href ? "<u class='fo-lgx-go'>&rsaquo;</u>" : "") + "</span>";
+            var cls = "fo-lgx-res" + (mine ? " mine" : "") + (href ? " open" : "");
+            return href
+              ? "<a class='" + cls + "' href='" + href + "'>" + body + "</a>"
+              : "<div class='" + cls + "'>" + body + "</div>";
           }).join("") : "<p class='fo-lgx-dim'>No cricket has been played yet. The first round settles at " + hh(hour) + " UTC.</p>") +
           "</div>";
 
@@ -553,6 +566,12 @@
     // ---- fixtures and results ---------------------------------------------
     "html body #page .fo-lgx-fx,html body #page .fo-lgx-res{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:7px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:12px;padding:11px 12px;margin-bottom:6px;box-shadow:0 4px 14px rgba(30,38,52,.05)}",
     "html body #page .fo-lgx-fx.mine,html body #page .fo-lgx-res.mine{border-color:rgba(201,85,50,.42);box-shadow:0 6px 18px rgba(201,85,50,.09)}",
+    // a result you can open says so with a chevron and lifts under the finger;
+    // it keeps the row's own type colour rather than turning link-blue
+    "html body #page a.fo-lgx-res.open{text-decoration:none;color:inherit;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease}",
+    "html body #page a.fo-lgx-res.open:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(30,38,52,.11)}",
+    "html body #page a.fo-lgx-res.open:focus-visible{outline:2px solid var(--nac);outline-offset:2px}",
+    "html body #page .fo-lgx-go{text-decoration:none;margin-left:6px;opacity:.5;font-weight:700}",
     "html body #page .fo-lgx-yours{grid-column:1/-1;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--nac)}",
     "html body #page .fo-lgx-side{display:flex;align-items:center;gap:7px;min-width:0}",
     "html body #page .fo-lgx-side.a{justify-content:flex-end}",

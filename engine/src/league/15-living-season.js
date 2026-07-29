@@ -333,7 +333,13 @@
       var h = GD.teams[f[0]].name, a = GD.teams[f[1]].name;
       if ((h === me && a === rv) || (h === rv && a === me)) next = { round: r, home: h };
     });
-    var lastLine = hh.last ? ("Last meeting: " + E(hh.last.result.text)) : "You have never met. Yet.";
+    // the one match on this card that has actually been played should open
+    var lastHref = ""; try { lastHref = hh.last ? foMatchHref(hh.last) : ""; } catch (eLh) {}
+    var lastLine = hh.last
+      ? ("Last meeting: " + (lastHref
+          ? "<a class='fo-ls-open' href='" + lastHref + "'>" + E(hh.last.result.text) + " &rsaquo;</a>"
+          : E(hh.last.result.text)))
+      : "You have never met. Yet.";
     return "<div class='fo-card fo-ls-card fo-ls-rival poster'><div class='fo-card-h2row'><div class='fo-card-h2'>The rivalry</div><span class='fo-ls-k'>grudge fixture</span></div><div class='fo-card-b'>" +
       "<div class='fo-pos-names'><b>" + E(me) + "</b><i>v</i><b>" + E(rv) + "</b></div>" +
       "<div class='fo-ls-h2h'><b>" + hh.all.w + "</b><span>you</span><i>&ndash;</i><b>" + hh.all.l + "</b><span>them</span></div>" +
@@ -648,6 +654,11 @@
       ".fo-ls-card .fo-morelink{font-size:11px;color:#EBC271 !important;text-decoration:none}",
       ".fo-ls-k{font-family:Oswald,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:#7d8fad}.fo-ls-k b{color:#EBC271}",
       ".fo-ls-line{margin:0 0 7px;color:#cfdaec}.fo-ls-line:last-child{margin-bottom:0}",
+      // the last meeting is a match you played; it reads as part of the line
+      // and only the chevron tells you it opens
+      ".fo-ls-line a.fo-ls-open{color:inherit;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.28)}",
+      ".fo-ls-line a.fo-ls-open:hover{border-bottom-color:currentColor}",
+      ".pap .fo-ls-line a.fo-ls-open{border-bottom-color:rgba(36,29,14,.3)}",
       ".fo-ls-line b{color:#f2f6ff}.fo-ls-line span{color:#7d8fad;font-size:11px}.fo-ls-line i{font-style:normal;margin-right:4px}",
       ".fo-ls-dim{color:#7d8fad}.fo-ls-move b{color:#EBC271}",
       ".fo-ls-fine{font-size:11px;color:#7d8fad}",

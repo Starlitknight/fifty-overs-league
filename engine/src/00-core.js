@@ -1244,6 +1244,47 @@ const userTeam=()=>{
  *  "is this match mine?" by comparing slot numbers) and would otherwise draw
  *  another club's season if a snapshot had just landed. */
 function foSyncMyIx(){try{const i=foMyClubIx();if(i>=0)App.teamIx=i}catch(e){}}
+
+// ============================================================================
+// OPENING A MATCH THAT HAS ALREADY BEEN PLAYED.
+//
+// Every screen that lists finished cricket should let you tap it and read what
+// happened. Most did not, because each one had to work out the match's index
+// for itself: there were three near-identical searches scattered about, and
+// the screens that had none simply printed dead text you could click all day.
+//
+// This is the one lookup they all share. Hand it whatever the page happens to
+// be holding - a local result, a served world row, a line out of a player's
+// career, or a bare index - and it answers with a position in App.results, or
+// -1 when this device holds no card for that match (a world fixture from
+// another nation's league, say). foMatchHref turns that into the post-match
+// page, or into "" so a caller can render plain text instead of a dead link.
+// ============================================================================
+function foMatchIx(o){
+  try{
+    if(o==null)return -1;
+    const R=(typeof App!=='undefined'&&App.results)||[];
+    if(typeof o==='number')return R[o]?o:-1;
+    if(o.ix!=null&&R[o.ix|0])return o.ix|0;
+    let home=o.home,away=o.away;
+    // "Home v Away" is how player history and headlines carry a fixture
+    if((!home||!away)&&typeof o.teams==='string'){const p=o.teams.split(' v ');home=p[0];away=p[1];}
+    if(!home||!away)return -1;
+    const rd=o.round!=null?o.round|0:null;
+    const sn=o.seasonNo!=null?o.seasonNo|0:null;
+    const dt=o.date||null;
+    for(let i=R.length-1;i>=0;i--){
+      const r=R[i];if(!r)continue;
+      if(r.home!==home||r.away!==away)continue;
+      if(rd!=null&&(r.round|0)!==rd)continue;
+      if(sn!=null&&((r.seasonNo|0)||1)!==sn)continue;
+      if(dt&&r.date!==dt)continue;
+      return i;
+    }
+    return -1;
+  }catch(e){return -1}
+}
+function foMatchHref(o){const i=foMatchIx(o);return i>=0?('#/report?i='+i):''}
 const PITCHTIP={balanced:'Balanced surface - no strong bias to bat or ball.',flat:'Flat road - favours batters; big scores likely.',green:'Green top - seamers get movement, especially with the new ball.',dry:'Dry, dusty - spinners grip and turn from mid-innings.',slow:'Slow and low - hard to hit through the line; sixes are rare.',cracked:'Cracked - variable bounce brings edges and wickets all day.',twoPaced:'Two-paced - inconsistent pace makes timing difficult.'};
 const WXTIP={Sunny:'Clear and true - neutral conditions.',Overcast:'Cloud cover assists swing bowling.',Humid:'Humidity helps the ball swing through the air.',Hot:'Heat tires bowlers faster and aids spin later.',Scorching:'Extreme heat drains stamina quickly; spin grows sharper.',Drizzle:'Damp ball favours seam; batting is trickier.',Windy:'Wind unsettles length and can carry catches.',Chilly:'Cold, hard ball helps seamers hold their nip.',Misty:'Mist keeps the new ball dangerous longer.','Dew later':'Dew later eases batting and helps chasing sides.'};
 const wxTip=w=>WXTIP[w]||'Match-day conditions.';const pitchTip=p=>PITCHTIP[p]||'A fair surface.';

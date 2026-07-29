@@ -2631,6 +2631,15 @@
       ".fo-hg2 .hg-id .hg-form em{font-style:normal;width:21px;height:21px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800}" +
       ".fo-hg2 .hg-id .hg-form em.hg-w{background:#2E7A3C;color:#fff}" +
       ".fo-hg2 .hg-id .hg-form em.hg-l{background:#B23A2E;color:#fff}" +
+      // a tie had no colour of its own and came out as an unpainted circle
+      ".fo-hg2 .hg-id .hg-form em.hg-t{background:rgba(255,255,255,.30);color:#fff}" +
+      // each bead is a real match now, so each bead opens it. The link adds
+      // nothing visible - no underline, no link colour - it only makes the
+      // circle a 44px tap target and lifts it a little under the finger.
+      ".fo-hg2 .hg-id .hg-form a.hg-fm{display:flex;align-items:center;justify-content:center;" +
+        "width:30px;height:30px;margin:-4px;text-decoration:none;-webkit-tap-highlight-color:transparent}" +
+      ".fo-hg2 .hg-id .hg-form a.hg-fm:hover em,.fo-hg2 .hg-id .hg-form a.hg-fm:focus-visible em{transform:scale(1.14)}" +
+      ".fo-hg2 .hg-id .hg-form a.hg-fm em{transition:transform .12s ease}" +
       ".fo-hg2 .hg-id .hg-form .hg-nf{font-size:11.5px;color:rgba(255,255,255,.6);font-style:italic}" +
       // one club, two names: the hero says which one the world uses and lets
       // a manager settle it here rather than hunting for a rename screen
@@ -5157,11 +5166,35 @@
   //  Makoto-Shinkai-style painting (dawn mist / sunbreak / blue hour) chosen by
   //  the time of day; the club's identity, league standing and form sit on it,
   //  and the day's routes fan out below.
+  // THE FORM BEADS ARE SIX REAL MATCHES, AND EACH ONE OPENS.
+  // They used to be drawn from the nation-league flavour state while the
+  // position beside them came from the season actually being played - two
+  // different competitions, side by side, reading as one. Now they are your
+  // last six results, so the W and the L mean what they say, and tapping one
+  // is the shortest route in the game to "what happened in that match".
+  // The flavour state is still the fallback for a device with no cricket of
+  // its own yet, where it is the only form there is.
   function foHomeForm() {
     try {
+      var mine = null; try { mine = (userTeam() || {}).name || null; } catch (e0) {}
+      var R = (typeof App !== "undefined" && App.results) || [];
+      if (mine && R.length) {
+        var out = [];
+        for (var i = R.length - 1; i >= 0 && out.length < 6; i--) {
+          var r = R[i]; if (!r || (r.home !== mine && r.away !== mine)) continue;
+          var w = r.result && r.result.winner;
+          var cls = !w ? "hg-t" : (w === mine ? "hg-w" : "hg-l");
+          var ch = !w ? "T" : (w === mine ? "W" : "L");
+          var opp = r.home === mine ? r.away : r.home;
+          var lbl = (r.result && r.result.text) || (mine + " v " + opp);
+          out.unshift("<a class='hg-fm' href='#/report?i=" + i + "' title='" + E(lbl) + "'>" +
+            "<em class='" + cls + "'>" + ch + "</em></a>");
+        }
+        if (out.length) return out.join("");
+      }
       var s = foLgState(); if (!s || !s.res) return "";
       var arr = [];
-      Object.keys(s.res).forEach(function (k) { var p = k.split(":"), i = +p[1], j = +p[2]; if (i === 0 || j === 0) arr.push({ r: +p[0], w: s.res[k].w }); });
+      Object.keys(s.res).forEach(function (k) { var p = k.split(":"), i2 = +p[1], j = +p[2]; if (i2 === 0 || j === 0) arr.push({ r: +p[0], w: s.res[k].w }); });
       arr.sort(function (a, b) { return a.r - b.r; });
       return arr.slice(-6).map(function (x) { var tie = x.w < 0, win = x.w === 0; return "<em class='" + (tie ? "hg-t" : win ? "hg-w" : "hg-l") + "'>" + (tie ? "T" : win ? "W" : "L") + "</em>"; }).join("");
     } catch (e) { return ""; }
