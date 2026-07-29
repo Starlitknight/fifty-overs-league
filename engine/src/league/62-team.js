@@ -61,15 +61,27 @@
   function roleWord(p) { var a = A(); return a ? a.role(p) : "Player"; }
   function ovr(p) { var a = A(); return a ? a.ovr(p) : 0; }
 
+  // THE THREE THINGS A MANAGER NEEDS ON A ROSTER LINE that the old one did
+  // not carry: how far along he is (the bar), whether he is walking at the end
+  // of the season (the mark), and what kind of cricketer he is (the trait).
   function row(p, pos, inXI) {
     if (!p) return "";
     var n = E(p.name);
-    var al = A();
-    return '<button class="al-prow al-prow--face' + (inXI ? " al-prow--picked" : "") + '" data-al-p="' + n + '">' +
+    var al = A(), L = window.FO_LIVE;
+    var o = L ? L.outlook(p) : null;
+    var c = L ? L.contract(p, (App && App.seasonNo) || 1) : null;
+    var tr = L ? L.traits(p) : [];
+    var note = E(roleWord(p)) + " · " + E(formWord(p)) +
+      (tr.length ? " · " + E(tr[0].nm) : "") +
+      (c && c.mood !== "content" && c.mood !== "settled" ? " · " + E(c.mood) : "");
+    return '<button class="al-prow al-prow--face' + (inXI ? " al-prow--picked" : "") +
+      (c && c.risk >= 0.35 ? " al-prow--risk" : "") + '" data-al-p="' + n + '">' +
       '<span class="al-prow__no">' + (inXI ? ("0" + pos).slice(-2) : "+") + "</span>" +
       (al ? al.face(p) : "") +
-      '<span class="al-prow__who"><b>' + n + "</b><i>" + E(roleWord(p)) + " &middot; " + E(formWord(p)) + "</i></span>" +
-      '<span class="al-prow__rate">' + (ovr(p) || "&mdash;") + "</span>" +
+      '<span class="al-prow__who"><b>' + n + "</b><i>" + note + "</i>" +
+      (o && o.room > 0 && al ? al.meter(o.pct, "warm") : "") + "</span>" +
+      '<span class="al-prow__rate">' + (ovr(p) || "&mdash;") +
+      (o && o.room > 0 ? '<em class="al-prow__ceil">' + o.ceiling + "</em>" : "") + "</span>" +
       "</button>";
   }
 
@@ -84,6 +96,10 @@
     var reserves = all.filter(function (p) { return p && !picked[p.name]; });
 
     var body = al.head("The eleven", "Team", "Pick the eleven and set the order they bat in. Tap a name for the folio.");
+    // the rest of the section on a rule, as every other room has it. Team is
+    // where a manager lands, so it is the one room that most needs to say
+    // where the nets, the academy, the scout and the development report are.
+    body += al.subnav("team");
 
     // ---- the persistent summary: the page's whole job, in one strip -------
     var ok = s.n === 11 && !s.faults.length;
@@ -127,16 +143,36 @@
     var p = byName(name); if (!p) return;
     var al = A(); if (!al) return;
     var o = ord(), inXI = (o.batOrder || []).indexOf(name) >= 0;
+    var L = window.FO_LIVE, sN = (App && App.seasonNo) || 1;
+    var look = L ? L.outlook(p) : null, deal = L ? L.contract(p, sN) : null, tr = L ? L.traits(p) : [];
     var rows = [
       ["Role", roleWord(p)],
       ["Age", String(p.age || "—")],
       ["Nationality", String(p.nat || p.country || "—")],
       ["Overall", String(ovr(p))],
-      ["Form", formWord(p)],
-      ["Fitness", cap(String(p.fatWord || p.fatigue || "rested"))],
-      ["Experience", cap(String(p.expWord || (p.exp != null ? p.exp : "—")))],
-      ["Wage", p.wage != null ? "$" + Number(p.wage).toLocaleString() : "—"],
     ];
+    // HOW GOOD HE COULD BECOME — the number a manager has never been able to
+    // see, and the one that decides whether he is worth the nets time
+    if (look) {
+      rows.push(["Ceiling", look.room > 0 ? String(look.ceiling) : "reached"]);
+      rows.push(["How far along", look.pct + "% · " + look.word]);
+    }
+    rows.push(["Form", formWord(p)]);
+    rows.push(["Fitness", cap(String(p.fatWord || p.fatigue || "rested"))]);
+    rows.push(["Experience", cap(String(p.expWord || (p.exp != null ? p.exp : "—")))]);
+    if (deal) {
+      rows.push(["Contract", deal.word]);
+      rows.push(["Wage", "$" + deal.wage.toLocaleString() + " a round"]);
+      if (deal.ask > deal.wage) rows.push(["He is asking", "$" + deal.ask.toLocaleString(), "warn"]);
+      rows.push(["Mood", deal.mood, deal.risk >= 0.35 ? "warn" : ""]);
+    } else if (p.wage != null) {
+      rows.push(["Wage", "$" + Number(p.wage).toLocaleString()]);
+    }
+    if (L) {
+      var rc = L.retireChance(p);
+      if (rc > 0) rows.push(["Retirement", rc >= 0.5 ? "likely this close-season"
+        : rc >= 0.25 ? "possible" : "not yet", rc >= 0.5 ? "warn" : ""]);
+    }
     var el = document.createElement("div");
     el.className = "al-sheet";
     var faceSrc = al.faceSrc(p);
@@ -146,6 +182,9 @@
       '<div class="al-sheet__body">' +
       (faceSrc ? '<img class="al-sheet__face" src="' + faceSrc + '" alt="" onerror="this.style.display=\'none\'">' : "") +
       al.ledger(rows) +
+      (tr.length ? '<div class="al-plaques">' + tr.map(function (t) {
+        return '<div class="al-plaque"><b>' + E(t.nm) + "</b><i>" + E(t.why) + "</i></div>";
+      }).join("") + "</div>" : "") +
       '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">' +
       '<button class="al-btn ' + (inXI ? "" : "al-btn--primary") + '" data-al-toggle="' + E(name) + '">' +
       (inXI ? "Leave out" : "Add to the XI") + "</button>" +

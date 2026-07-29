@@ -1423,7 +1423,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,help:pgManual,manual:pgManual,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchCentre',records:'foRenderRecordsPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',worldclub:'foRenderWorldClubPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',guide:'foRenderManualPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',comps:'foRenderCompsPage',market:'foRenderMarketPage',table:'foRenderStandingsPage',today:'foRenderTodayPage',team:'foRenderTeamPage'}[App.page];
+  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',wire:'foRenderWire',lore:'foRenderLore',report:'foRenderReport',ceremony:'foRenderCeremony',desk:'foRenderDesk',ledger:'foRenderLedger',training:'foRenderNetsPage',dossier:'foRenderScoutPage',milestones:'foRenderHonoursPage',whatif:'foRenderTimeMachinePage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchCentre',records:'foRenderRecordsPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',worldclub:'foRenderWorldClubPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',guide:'foRenderManualPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',comps:'foRenderCompsPage',market:'foRenderMarketPage',table:'foRenderStandingsPage',today:'foRenderTodayPage',growth:'foRenderGrowthPage',team:'foRenderTeamPage'}[App.page];
   if(P[App.page])P[App.page](q);
   // A RENDERER THAT THROWS USED TO VANISH. This catch was empty, so a page
   // whose painter hit an error left the topbar, the clock and the nav in place
@@ -10112,7 +10112,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260729-0317-7f6e1d";
+  var FO_BUILD = "20260729-1254-23d050";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -16557,6 +16557,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           : '<p class="al-read">Nothing in the manual matches that.</p>';
       });
     }
+    // the articles carry real tables; on a phone they get the same scroll
+    // wrapper every other table in the game gets
+    try { foMobileTables(); } catch (eT) {}
     try { window.scrollTo(0, 0); } catch (eSc) {}
   }
   // THE MANUAL IS A ROOM LIKE ANY OTHER. It used to paint itself on a timer
@@ -32799,7 +32802,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var led = repLedger();
     var openOffer = offer && !bag.wag[offer.key];
 
-    var body = al.mast((pos ? ordinal(pos) + " in the league · " : "") + "season " + (App.seasonNo || 1),
+    var body = al.head((pos ? ordinal(pos) + " in the league · " : "") + "season " + (App.seasonNo || 1),
       "The Desk", "The morning's post, laid out in the club office.");
 
     // ---- what is actually waiting ------------------------------------------
@@ -33332,7 +33335,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var rw = foRunway(), deal = foDeal();
     var wages = foWages(me);
 
-    var body = al.mast("The club accounts · season " + (App.seasonNo || 1), "The Journal",
+    var body = al.head("The club accounts · season " + (App.seasonNo || 1), "The Journal",
       "Kept in the club's own hand. Every round settles the wage bill, the league's distribution arrives, " +
       "and the shirt pays what it promised.");
     body += al.subnav("ledger");
@@ -33732,7 +33735,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var PROGS = progs();
     var named = squad.filter(function (p) { return plan[p.name]; }).length;
 
-    var body = al.mast("The training ground", "The Nets",
+    var body = al.head("The training ground", "The Nets",
       "Name what each man works on. The World Service holds the plan and the umpire runs it with every round, " +
       "whether you watch it or not.") + al.subnav("training");
 
@@ -33749,8 +33752,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     // ---- one standing order per man ----------------------------------------
     var rows = squad.map(function (p) {
       var b = banked(p), cur = plan[p.name] || "";
-      return '<label class="al-prow al-prow--static al-prow--pick">' +
-        '<span class="al-prow__no">' + (p.age | 0) + "</span>" +
+      return '<label class="al-prow al-prow--static al-prow--pick al-prow--face">' +
+        '<span class="al-prow__no">' + (p.age | 0) + "</span>" + al.face(p) +
         '<span class="al-prow__who"><b>' + E(p.name) + "</b><i>" +
           (b.pct ? E(foSkillLbl(b.skill)) + " " + b.pct + "% of the way" : "no work banked yet") + "</i>" +
           (b.pct ? al.meter(b.pct, "warm") : "") + "</span>" +
@@ -33836,7 +33839,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   var DOCK_MAP = {
     club: ["club", "home", "matchday", "fixtures", "finance", "ledger", "worldclub", "market"],
     league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "records", "champions", "natteams", "nations", "comps", "watch", "rankings", "team"],
-    squad: ["squad", "player", "matchlab"],
+    squad: ["squad", "player", "matchlab", "growth"],
     nets: ["training", "academy"],
     desk: ["desk", "journal", "report", "ceremony", "wire", "lore", "dossier", "milestones", "whatif", "paper"]
   };
@@ -34330,7 +34333,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var recs = recommend(nx, me, opp, oppSeas, mySplits, oppSplits, oppAtk);
       var doctrine = me.homePitch || "";
 
-      var body = al.mast("Round " + (nx.r + 1) + " · " + (nx.isHome ? "at " : "away at ") + nx.ground,
+      var body = al.head("Round " + (nx.r + 1) + " · " + (nx.isHome ? "at " : "away at ") + nx.ground,
         "v " + opp.name,
         (oppHuman ? "A human hand on their tiller — expect the unexpected. " : "") +
         "The scout has been to their nets, read their scorecards, and filed this before breakfast.");
@@ -34825,7 +34828,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var charter = charterFor(club), chDone = charter.filter(function (p) { return p.done; }).length;
       var F = firsts();
 
-      var body = al.mast(club + " · the pavilion wall", "The Honours Board",
+      var body = al.head(club + " · the pavilion wall", "The Honours Board",
         mine
           ? "Thirteen honours in gold leaf on oak, and six pursuits that belong to this club alone. The league remembers who got there first."
           : "Reading " + club + "'s board. Every club chases the same thirteen; only one name goes down as the league's first.");
@@ -34843,6 +34846,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       body += al.tabs(GD.teams.map(function (t) {
         return { id: t.name, label: t.name, count: boardFor(t.name).filter(function (p) { return p.done; }).length };
       }), club);
+      body += '<p class="al-read">' + al.crest(club, "al-crest--lg") + " Reading " + E(club) + "&rsquo;s wall.</p>";
 
       body += al.sec("The " + club + " charter · " + chDone + " of " + charter.length,
         '<p class="al-read">Six pursuits of their own. No other club has this page.</p>' +
@@ -36889,7 +36893,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         p.kind === "cup" ? "World Cup — " + stageName(p.stage) :
         "Rest day — the season " + (p.season + 1) + " calendar begins tomorrow";
 
-      var body = al.mast("World cricket · season " + p.season + " · day " + (p.di + 1) + " of " + CYCLE,
+      var body = al.head("World cricket · season " + p.season + " · day " + (p.di + 1) + " of " + CYCLE,
         "The Planet Plays Today",
         "Every league runs on the world calendar, live from its own local hour — online or offline, the same " +
         "world for everyone.");
@@ -38888,7 +38892,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       });
     });
 
-    var body = al.mast("The " + natNm + " League · season " + sN, "The Record Book",
+    var body = al.head("The " + natNm + " League · season " + sN, "The Record Book",
       "Every league run and wicket this world has produced, kept the way an almanack would keep it.");
     body += al.subnav("records");
 
@@ -39362,7 +39366,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     else if (done < 5) { var nxt = ORDER[done]; status = STAGE_NM[nxt] + " " + (done === 4 ? "crowns the champion" : "come next") + " · " + when(nxt) + "."; chip = "Cup in progress"; }
     else { status = (br && br.champion ? br.champion.name + " are champions of the world's clubs." : "The cup is decided."); chip = "Champions crowned"; }
 
-    var body = al.mast("World cricket · season " + season + " · the clubs' crown", "The Champions Cup",
+    var body = al.head("World cricket · season " + season + " · the clubs' crown", "The Champions Cup",
       "Nineteen league champions, one knockout, and a crown nobody has to be awake for.");
     body += al.subnav("champions");
 
@@ -40878,7 +40882,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     fetchRk();
 
     var cl = claim();
-    var body = al.mast("World cricket · the ladder", "The World Rankings",
+    var body = al.head("World cricket · the ladder", "The World Rankings",
       "Rolling ratings over every match the umpire has ever banked. League wins move the needle; " +
       "Champions Cup nights move it harder.");
     body += al.subnav("rankings");
@@ -42604,7 +42608,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function A() { return window.AL || null; }
   function on() { return (location.hash || "").split("?")[0] === "#/academy"; }
   function mast(al) {
-    return al.mast("The academy", "The Colts",
+    return al.head("The academy", "The Colts",
       "Boys arrive on their own, age on their own, and walk into your first team at twenty-one whether you were " +
       "watching or not. What you decide is how good a place they learn in.");
   }
@@ -42729,8 +42733,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ? " · " + p.colts.m + (p.colts.m === 1 ? " cap" : " caps") + ", " + p.colts.runs + " runs" +
         (p.colts.wkts ? ", " + p.colts.wkts + " wkts" : "")
       : "";
-    return '<div class="al-prow al-prow--static">' +
-      '<span class="al-prow__no">' + (p.age || 18) + "</span>" +
+    return '<div class="al-prow al-prow--static al-prow--face">' +
+      '<span class="al-prow__no">' + (p.age || 18) + "</span>" + al.face(p) +
       '<span class="al-prow__who"><b>' + E(p.name) + "</b><i>" + E(roleOf(p)) + " · " + E(ageWord(+p.age || 18)) +
         " · " + E(promiseWord(pr)) + caps + "</i>" + al.meter(pr, "warm") + "</span>" +
       '<span class="al-prow__rate">' + (o == null ? "&mdash;" : o) + "</span>" +
@@ -42907,7 +42911,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function A() { return window.AL || null; }
   function on() { return (location.hash || "").split("?")[0] === "#/finance"; }
   function mast(al) {
-    return al.mast("The books", "Gate & Ground",
+    return al.head("The books", "Gate & Ground",
       "Nobody credits your account. The umpire walks every round you have played and works out what the crowd was, " +
       "what they paid, what the sponsor thought and what your men cost.");
   }
@@ -43078,7 +43082,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function A() { return window.AL || null; }
   function onComps() { return (location.hash || "").split("?")[0] === "#/comps"; }
   function mast(al) {
-    return al.mast("The invitationals", "Competitions of Your Own",
+    return al.head("The invitationals", "Competitions of Your Own",
       "Found one, name it, and see who turns up. Three days later the umpire fills whatever seats are empty and " +
       "plays it out, a round a day, whether anybody is watching or not.");
   }
@@ -43508,7 +43512,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function A() { return window.AL || null; }
   function onNat() { var h = (location.hash || "").split("?")[0]; return h === "#/nations" || h === "#/natteams"; }
   function mast(al) {
-    return al.mast("The international game", "Playing For Your Country",
+    return al.head("The international game", "Playing For Your Country",
       "Three rounds a season the selectors take the best men in the land, wherever they play. Your club loses " +
       "them for the day and is paid for the week — and that evening the nations play each other.");
   }
@@ -44072,7 +44076,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   };
 
   function mast(al) {
-    return al.mast("The transfer market", "Buying & Selling",
+    return al.head("The transfer market", "Buying & Selling",
       "Offers are sealed and windows last three days. Nobody can outbid you by being awake at the right minute.");
   }
 
@@ -44439,7 +44443,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // navigation is coherent from the first commit.
   var SECTIONS = [
     { id: "today",  label: "Today",  home: "#/today",  routes: ["today", "home", "desk", "matchday", "watch", "match"] },
-    { id: "team",   label: "Team",   home: "#/team",   routes: ["team", "squad", "orders", "training", "academy", "player", "dossier"] },
+    { id: "team",   label: "Team",   home: "#/team",   routes: ["team", "squad", "orders", "training", "academy", "player", "dossier", "growth"] },
     { id: "league", label: "League", home: "#/table",  routes: ["table", "league", "fixtures", "records", "planet", "world", "rankings", "cup", "champions", "comps", "nations", "natteams", "nation", "atlas", "scorecard", "reports"] },
     { id: "market", label: "Market", home: "#/market", routes: ["market", "team-page"] },
     { id: "club",   label: "Club",   home: "#/club-h", routes: ["club-h", "finance", "milestones", "lore", "paper", "wire", "guide", "ledger", "almanack"] },
@@ -44447,7 +44451,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // routes this redesign currently OWNS. Everything else keeps its old page.
   var AL_OWNS = {
     today: 1, team: 1, matchday: 1, table: 1, fixtures: 1,
-    market: 1, finance: 1, academy: 1, training: 1, dossier: 1, desk: 1,
+    market: 1, finance: 1, academy: 1, training: 1, dossier: 1, desk: 1, growth: 1,
     records: 1, milestones: 1, paper: 1, ledger: 1, wire: 1,
     planet: 1, rankings: 1, champions: 1, comps: 1, nations: 1, natteams: 1, guide: 1,
   };
@@ -44458,6 +44462,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   var SUB = {
     team: [
       { id: "team", label: "The eleven", href: "#/team" },
+      { id: "growth", label: "Development", href: "#/growth" },
       { id: "training", label: "Nets", href: "#/training" },
       { id: "academy", label: "Academy", href: "#/academy" },
       { id: "dossier", label: "Scout", href: "#/dossier" },
@@ -44556,12 +44561,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     try {
       var el = ensure(), sec = sectionOf(), c = clockText(), t = team();
       var club = (t && t.name) || "Fifty Overs";
+      // the header wears YOUR club's colour, so the game is never generic navy
+      try { document.documentElement.style.setProperty("--al-club", t ? colourOf(club) : ""); } catch (eC) {}
       var nav = SECTIONS.map(function (s) {
         return '<a href="' + s.home + '" data-al-sec="' + s.id + '"' +
           (s.id === sec.id ? ' aria-current="page"' : "") + ">" + E(s.label) + "</a>";
       }).join("");
       el.head.innerHTML =
-        '<div class="al-head__mark">FO</div>' +
+        (t ? '<img class="al-head__crest" src="' + crestOf(club) + '" alt="" onerror="this.style.display=\'none\'">'
+           : '<div class="al-head__mark">FO</div>') +
         '<div class="al-head__where"><i>' + E(sec.label) + "</i><b>" + E(club) + "</b></div>" +
         '<div class="al-head__spacer"></div>' +
         '<div class="al-head__nav">' + nav + "</div>" +
@@ -44602,6 +44610,87 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
   window.__foAlApply = apply;
 
+  // ---- THE ROOMS ARE PLACES -------------------------------------------------
+  // The redesign stripped the paintings out and the game went flat: cream
+  // paper and ruled type on every screen, which reads as a document rather
+  // than a club. The art library has thirty-two ground and room paintings and
+  // they were being shown on exactly one page.
+  //
+  // Every room wears its own now, as a PLATE: full width, natural ratio, full
+  // brightness, nothing laid over it and nothing cropped off it. The masthead
+  // sits underneath, where type belongs.
+  var ROOM = {
+    team:       ["hgm-dressing-room", "hgd-dressing-room"],
+    matchday:   ["hgm-tunnel-night", "hgd-dressing-room"],
+    table:      ["arches-summer-noon", "arches-summer-noon"],
+    fixtures:   ["arches-dawn-mist", "arches-dawn-mist"],
+    records:    ["hgm-clubroom", "hgd-clubroom"],
+    milestones: ["hgm-clubroom", "hgd-heart-of-club"],
+    paper:      ["hgm-nostalgic", "hgd-clubroom"],
+    ledger:     ["hgm-office", "hgd-office"],
+    finance:    ["hgm-office", "hgd-office"],
+    desk:       ["hgm-office", "hgd-office"],
+    market:     ["hgm-workshop", "hgd-workshop"],
+    training:   ["hgm-nets-day", "hgd-nets-day"],
+    growth:     ["hgm-late-afternoon", "hgd-heart-of-club"],
+    academy:    ["hgm-nets-day", "hgd-nets-night"],
+    dossier:    ["hgm-veranda-rain", "hgd-veranda-rain"],
+    wire:       ["arches-quiet-night", "arches-quiet-night"],
+    planet:     ["arches-blue-hour-cup", "arches-blue-hour-cup"],
+    rankings:   ["arches-blue-hour-cup", "arches-blue-hour-cup"],
+    champions:  ["arches-blue-hour-cup", "arches-blue-hour-cup"],
+    comps:      ["arches-sunbreak-match", "arches-sunbreak-match"],
+    nations:    ["arches-storm-front", "arches-storm-front"],
+    natteams:   ["arches-storm-front", "arches-storm-front"],
+    guide:      ["hgm-workshop", "hgd-workshop"],
+  };
+  // the rooms that are lit by an hour rather than fixed to one painting
+  var NIGHT = { training: ["hgm-nets-day", "hgd-nets-night"], matchday: ["hgm-tunnel-night", "hgd-after-hours-rain"] };
+  function artBase() {
+    try { if (typeof FO_ART !== "undefined") return FO_ART; } catch (e) {}
+    return (location.pathname.indexOf("/client/") !== -1) ? "art/" : "client/art/";
+  }
+  function roomArt(route) {
+    var r = (route || path()).replace("#/", "");
+    var wide = false; try { wide = window.innerWidth >= 760; } catch (e) {}
+    var night = false; try { var h = new Date().getHours(); night = h >= 19 || h < 6; } catch (e2) {}
+    var pair = (night && NIGHT[r]) ? NIGHT[r] : ROOM[r];
+    if (!pair) return "";
+    return artBase() + "home/" + pair[wide ? 1 : 0] + ".webp";
+  }
+
+  // ---- CLUB IDENTITY --------------------------------------------------------
+  // Every club has had a crest and a colour available all along and the game
+  // has never used either: rows of identical type, ten clubs indistinguishable.
+  // Both are a pure function of the club's NAME, so they are the same on every
+  // device, for bots and humans alike, with no new data to store or migrate.
+  var BADGES = ["rock", "engine", "express", "blade", "gloveman", "wizard"];
+  var COLOURS = [
+    "#0a2342", "#7A1F2B", "#1F5C3A", "#5B3A8C", "#8A5A12", "#12626B",
+    "#8C2F5F", "#2E4E1E", "#A0451B", "#33456B",
+  ];
+  function h32(x) {
+    var h = 2166136261; x = String(x);
+    for (var i = 0; i < x.length; i++) { h ^= x.charCodeAt(i); h = (h * 16777619) >>> 0; }
+    return h;
+  }
+  function crestOf(club) { return club ? artBase() + "crests/" + BADGES[h32("crest|" + club) % BADGES.length] + ".png" : ""; }
+  function colourOf(club) { return club ? COLOURS[h32("colour|" + club) % COLOURS.length] : "var(--al-navy)"; }
+  function crestImg(club, cls) {
+    if (!club) return "";
+    return '<img class="al-crest' + (cls ? " " + cls : "") + '" src="' + crestOf(club) +
+      '" alt="" loading="lazy" style="background:' + colourOf(club) + '" onerror="this.style.display=\'none\'">';
+  }
+  // a cricketer's own figure, from the card-art resolver the squad already uses
+  function faceOf(p) {
+    try { if (p && window.foPkArt) return artBase() + window.foPkArt(p); } catch (e) {}
+    return "";
+  }
+  function faceImg(p) {
+    var src = faceOf(p); if (!src) return "";
+    return '<img class="al-face" src="' + src + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">';
+  }
+
   // ---- the words a player is described in ----------------------------------
   // Every roster surface in the Almanack prints the same three things about a
   // player, so they are said once, here. Two of them were being got wrong:
@@ -44639,6 +44728,18 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return '<div class="al-page' + (parts.acting ? " al-page--acting" : "") + '"><div class="al-page__in">' +
         (parts.body || "") + "</div></div>" + (parts.sticky || "");
     },
+    // a room's opening: its painting, then its masthead. Screens that need to
+    // put something between the two (Today puts the day's decision there) call
+    // plate() and mast() themselves.
+    head: function (eyebrow, title, line, route) {
+      var src = roomArt(route);
+      return (src ? '<figure class="al-plate al-plate--room"><img src="' + src +
+        '" alt="" loading="eager" onerror="this.parentNode.style.display=\'none\'"></figure>' : "") +
+        AL.mast(eyebrow, title, line);
+    },
+    room: roomArt,
+    crest: crestImg, crestSrc: crestOf, colour: colourOf,
+    face: faceImg, faceSrc: faceOf,
     mast: function (eyebrow, title, line) {
       return '<div class="al-mast">' +
         (eyebrow ? '<div class="al-mast__eyebrow">' + E(eyebrow) + "</div>" : "") +
@@ -44980,13 +45081,27 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function roleWord(p) { var a = A(); return a ? a.role(p) : "Player"; }
   function ovr(p) { var a = A(); return a ? a.ovr(p) : 0; }
 
+  // THE THREE THINGS A MANAGER NEEDS ON A ROSTER LINE that the old one did
+  // not carry: how far along he is (the bar), whether he is walking at the end
+  // of the season (the mark), and what kind of cricketer he is (the trait).
   function row(p, pos, inXI) {
     if (!p) return "";
     var n = E(p.name);
-    return '<button class="al-prow' + (inXI ? " al-prow--picked" : "") + '" data-al-p="' + n + '">' +
+    var al = A(), L = window.FO_LIVE;
+    var o = L ? L.outlook(p) : null;
+    var c = L ? L.contract(p, (App && App.seasonNo) || 1) : null;
+    var tr = L ? L.traits(p) : [];
+    var note = E(roleWord(p)) + " · " + E(formWord(p)) +
+      (tr.length ? " · " + E(tr[0].nm) : "") +
+      (c && c.mood !== "content" && c.mood !== "settled" ? " · " + E(c.mood) : "");
+    return '<button class="al-prow al-prow--face' + (inXI ? " al-prow--picked" : "") +
+      (c && c.risk >= 0.35 ? " al-prow--risk" : "") + '" data-al-p="' + n + '">' +
       '<span class="al-prow__no">' + (inXI ? ("0" + pos).slice(-2) : "+") + "</span>" +
-      '<span class="al-prow__who"><b>' + n + "</b><i>" + E(roleWord(p)) + " &middot; " + E(formWord(p)) + "</i></span>" +
-      '<span class="al-prow__rate">' + (ovr(p) || "&mdash;") + "</span>" +
+      (al ? al.face(p) : "") +
+      '<span class="al-prow__who"><b>' + n + "</b><i>" + note + "</i>" +
+      (o && o.room > 0 && al ? al.meter(o.pct, "warm") : "") + "</span>" +
+      '<span class="al-prow__rate">' + (ovr(p) || "&mdash;") +
+      (o && o.room > 0 ? '<em class="al-prow__ceil">' + o.ceiling + "</em>" : "") + "</span>" +
       "</button>";
   }
 
@@ -45000,7 +45115,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var picked = {}; s.xi.forEach(function (n) { picked[n] = 1; });
     var reserves = all.filter(function (p) { return p && !picked[p.name]; });
 
-    var body = al.mast("The eleven", "Team", "Pick the eleven and set the order they bat in. Tap a name for the folio.");
+    var body = al.head("The eleven", "Team", "Pick the eleven and set the order they bat in. Tap a name for the folio.");
+    // the rest of the section on a rule, as every other room has it. Team is
+    // where a manager lands, so it is the one room that most needs to say
+    // where the nets, the academy, the scout and the development report are.
+    body += al.subnav("team");
 
     // ---- the persistent summary: the page's whole job, in one strip -------
     var ok = s.n === 11 && !s.faults.length;
@@ -45044,23 +45163,48 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var p = byName(name); if (!p) return;
     var al = A(); if (!al) return;
     var o = ord(), inXI = (o.batOrder || []).indexOf(name) >= 0;
+    var L = window.FO_LIVE, sN = (App && App.seasonNo) || 1;
+    var look = L ? L.outlook(p) : null, deal = L ? L.contract(p, sN) : null, tr = L ? L.traits(p) : [];
     var rows = [
       ["Role", roleWord(p)],
       ["Age", String(p.age || "—")],
       ["Nationality", String(p.nat || p.country || "—")],
       ["Overall", String(ovr(p))],
-      ["Form", formWord(p)],
-      ["Fitness", cap(String(p.fatWord || p.fatigue || "rested"))],
-      ["Experience", cap(String(p.expWord || (p.exp != null ? p.exp : "—")))],
-      ["Wage", p.wage != null ? "$" + Number(p.wage).toLocaleString() : "—"],
     ];
+    // HOW GOOD HE COULD BECOME — the number a manager has never been able to
+    // see, and the one that decides whether he is worth the nets time
+    if (look) {
+      rows.push(["Ceiling", look.room > 0 ? String(look.ceiling) : "reached"]);
+      rows.push(["How far along", look.pct + "% · " + look.word]);
+    }
+    rows.push(["Form", formWord(p)]);
+    rows.push(["Fitness", cap(String(p.fatWord || p.fatigue || "rested"))]);
+    rows.push(["Experience", cap(String(p.expWord || (p.exp != null ? p.exp : "—")))]);
+    if (deal) {
+      rows.push(["Contract", deal.word]);
+      rows.push(["Wage", "$" + deal.wage.toLocaleString() + " a round"]);
+      if (deal.ask > deal.wage) rows.push(["He is asking", "$" + deal.ask.toLocaleString(), "warn"]);
+      rows.push(["Mood", deal.mood, deal.risk >= 0.35 ? "warn" : ""]);
+    } else if (p.wage != null) {
+      rows.push(["Wage", "$" + Number(p.wage).toLocaleString()]);
+    }
+    if (L) {
+      var rc = L.retireChance(p);
+      if (rc > 0) rows.push(["Retirement", rc >= 0.5 ? "likely this close-season"
+        : rc >= 0.25 ? "possible" : "not yet", rc >= 0.5 ? "warn" : ""]);
+    }
     var el = document.createElement("div");
     el.className = "al-sheet";
+    var faceSrc = al.faceSrc(p);
     el.innerHTML = '<div class="al-sheet__panel">' +
       '<div class="al-sheet__grip"><b>' + E(p.name) + "</b>" +
       '<button class="al-btn" data-al-close>Close</button></div>' +
       '<div class="al-sheet__body">' +
+      (faceSrc ? '<img class="al-sheet__face" src="' + faceSrc + '" alt="" onerror="this.style.display=\'none\'">' : "") +
       al.ledger(rows) +
+      (tr.length ? '<div class="al-plaques">' + tr.map(function (t) {
+        return '<div class="al-plaque"><b>' + E(t.nm) + "</b><i>" + E(t.why) + "</i></div>";
+      }).join("") + "</div>" : "") +
       '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">' +
       '<button class="al-btn ' + (inXI ? "" : "al-btn--primary") + '" data-al-toggle="' + E(name) + '">' +
       (inXI ? "Leave out" : "Add to the XI") + "</button>" +
@@ -45225,7 +45369,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           var tags = [];
           if (n === p.o.captain) tags.push("C");
           if (n === p.o.keeper) tags.push("WK");
-          return '<div class="al-prow al-prow--picked"><span class="al-prow__no">' + ("0" + (i + 1)).slice(-2) + "</span>" +
+          return '<div class="al-prow al-prow--face al-prow--picked"><span class="al-prow__no">' + ("0" + (i + 1)).slice(-2) + "</span>" +
+            al.face(pl) +
             '<span class="al-prow__who"><b>' + E(n) + (tags.length ? " <em class='al-you__tag'>" + tags.join(" · ") + "</em>" : "") + "</b>" +
             "<i>" + E(roleWord(pl)) + "</i></span>" +
             '<span class="al-prow__rate">' + (ovr(pl) || "&mdash;") + "</span></div>";
@@ -45477,21 +45622,26 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // Eight columns do not fit in 390px, and a table that merely scrolls
   // sideways puts the most important number behind a swipe nobody makes. So
   // the narrow layout spends its width on what the table is FOR - position,
-  // club, played, won, net run rate, points - and drops lost and tied, which a
-  // reader can derive and which the wider layout keeps.
+  // club, played, won, points - and drops lost, tied and net run rate, which a
+  // reader can derive or find on the wide layout. A club's CREST is worth more
+  // of those pixels than its net run rate: ten rows of identical type are ten
+  // clubs you cannot tell apart at a glance, which is the thing the table is
+  // read for.
   function grid(data, mine) {
+    var al = A();
     var body = data.rows.map(function (r, i) {
       var me = r.club === mine;
       return "<tr" + (me ? " class='al-you'" : "") + ">" +
         "<td class='al-pos'>" + (i + 1) + "</td>" +
-        "<td class='l al-club'>" + E(r.club) + (me ? "<span class='al-you__tag'>YOU</span>" : "") + "</td>" +
+        "<td class='l al-club'>" + al.crest(r.club) + E(r.club) +
+          (me ? "<span class='al-you__tag'>YOU</span>" : "") + "</td>" +
         "<td>" + (r.p | 0) + "</td><td>" + (r.w | 0) + "</td>" +
         "<td class='al-s'>" + (r.l | 0) + "</td><td class='al-s'>" + (r.t | 0) + "</td>" +
-        "<td>" + nrr(r.nrr) + "</td><td class='al-pts'>" + (r.pts | 0) + "</td></tr>";
+        "<td class='al-s'>" + nrr(r.nrr) + "</td><td class='al-pts'>" + (r.pts | 0) + "</td></tr>";
     }).join("");
     return "<div class='al-tblwrap'><table class='al-tbl'><thead><tr>" +
       "<th></th><th class='l'>Club</th><th>P</th><th>W</th>" +
-      "<th class='al-s'>L</th><th class='al-s'>T</th><th>NRR</th><th>Pts</th>" +
+      "<th class='al-s'>L</th><th class='al-s'>T</th><th class='al-s'>NRR</th><th>Pts</th>" +
       "</tr></thead><tbody>" + body + "</tbody></table></div>";
   }
 
@@ -45501,7 +45651,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var al = A(); if (!al) return;
     try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
 
-    var body = al.mast("The League · standings", "The Table",
+    var body = al.head("The League · standings", "The Table",
       data ? "Two points a win, one a tie; net run rate splits the level."
            : "The season's record, from the morning the first round resolves.");
     body += al.subnav("table");
@@ -45713,7 +45863,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return "<a class='" + cls + "' href='" + E(f.href) + "'>" +
       "<span class='al-fix__r'>R" + (f.round | 0) + "</span>" +
       "<span class='al-fix__w " + kind + "'>" + mark + "</span>" +
-      "<span class='al-fix__t'><b>" + (f.isHome ? "v " : "at ") + E(f.opp) + "</b><i>" + E(under) + "</i></span>" +
+      "<span class='al-fix__t'><b>" + (A() ? A().crest(f.opp) : "") + (f.isHome ? "v " : "at ") +
+        E(f.opp) + "</b><i>" + E(under) + "</i></span>" +
       "<span class='al-fix__o'>" + (f.kind === "done" ? "&rsaquo;" : next ? "NEXT" : "&rsaquo;") + "</span>" +
       "</a>";
   }
@@ -45740,7 +45891,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (cl && cl.country && cl.slot != null) card = servedCard(cl);
     if (!card) card = localCard();
 
-    var body = al.mast("The League · season " + ((card && card.season) || 1), "Fixtures",
+    var body = al.head("The League · season " + ((card && card.season) || 1), "Fixtures",
       "Every match of the summer in one column. The next one is open; the rest are a line each.");
     body += al.subnav("fixtures");
 
@@ -45844,7 +45995,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       }
     } catch (e2) {}
 
-    var body = al.mast("The world service" + (season != null ? " · season " + season : ""), "The Wire",
+    var body = al.head("The world service" + (season != null ? " · season " + season : ""), "The Wire",
       "Nineteen national leagues on one clock. Each round settles at its own local hour, so the wire fills " +
       "through the day whether anybody is reading it or not.");
     body += al.subnav("wire");
@@ -45880,6 +46031,595 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "on every phone in every timezone.</p>";
     page.innerHTML = al.page({ body: body });
   };
+})();
+/* ============================================================================
+   THE LIVING SQUAD — ageing, ceilings, contracts and character.
+
+   The squad is the thing a manager builds, and until now it did not change.
+   Nobody got better in a way you could see, nobody got old, nobody ever left,
+   and no two cricketers behaved differently for any reason you could name. A
+   club could be assembled once and never touched again.
+
+   This module is the rules for all four, and NOTHING ELSE. It reads a player
+   record and answers questions about him; it writes nothing, stores nothing
+   and decides nothing on its own. The close-season step (the umpire) and every
+   screen in the game call the same functions and therefore agree.
+
+   DETERMINISM IS THE WHOLE DESIGN. Every answer here is a pure function of
+   facts already on the record - his name, his age, his skills, his talent -
+   through one FNV-1a hash. There is no Math.random anywhere in this file. Two
+   clients, the umpire, and a manager who has been asleep for a fortnight all
+   derive the identical career, which is the only way an offline-fair game can
+   have a squad that lives.
+
+   A CEILING IS NOT STORED. It is derived, every time, from the man himself. So
+   is his character. There is no migration to run for a player who already
+   exists, no column that can drift out of step with the figure it describes,
+   and no way for one device to believe a different truth than another.
+   ========================================================================== */
+(function () {
+  "use strict";
+  if (window.FO_LIVE) return;
+
+  // ---- one hash, for everything ------------------------------------------
+  function h32(s) {
+    var h = 2166136261; s = String(s);
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 16777619) >>> 0; }
+    return h;
+  }
+  function roll(p, salt) { return h32((p && p.name) + "|" + salt) % 1000 / 1000; }
+  function ovrOf(p) {
+    try { if (window.foPkOvr) return window.foPkOvr(p) | 0; } catch (e) {}
+    return Math.round(((p && p.rating) || 0) / 1000);
+  }
+  function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+  // ---- HOW GOOD HE COULD BECOME -------------------------------------------
+  // The number the manager most wants and has never been able to see: is this
+  // 19-year-old on 58 worth three seasons of nets, or is he already finished?
+  //
+  // Talent is the engine's own word for it and is already on every card. A
+  // gifted boy has room; a journeyman has less. The hash spreads them so two
+  // men with the same word are not the same prospect, and the floor is his
+  // current overall - a ceiling below where a man already stands is a bug, not
+  // a story.
+  var TALENT_ROOM = { generational: 34, gifted: 26, promising: 20, steady: 14, journeyman: 9, limited: 6 };
+  function ceiling(p) {
+    if (!p) return 0;
+    var now = ovrOf(p);
+    var word = String(p.talent || "steady").toLowerCase();
+    var room = TALENT_ROOM[word] == null ? 14 : TALENT_ROOM[word];
+    // a man of 30 has already spent most of what he had
+    var age = p.age | 0;
+    var spent = age <= 20 ? 0 : age >= 32 ? 1 : (age - 20) / 12;
+    var left = Math.round(room * (1 - spent * 0.85) + roll(p, "ceil") * 8 - 3);
+    return clamp(now + Math.max(0, left), now, 96);
+  }
+  // how far along he is, and the word for it
+  function outlook(p) {
+    var now = ovrOf(p), top = ceiling(p);
+    var pct = top > 0 ? Math.round(100 * now / top) : 0;
+    var word = pct >= 99 ? "the finished article"
+      : pct >= 92 ? "close to his best"
+      : pct >= 80 ? "coming along"
+      : pct >= 68 ? "a way to go"
+      : "raw";
+    return { ovr: now, ceiling: top, pct: clamp(pct, 0, 100), word: word, room: top - now };
+  }
+
+  // ---- WHAT A YEAR DOES TO HIM --------------------------------------------
+  // The arc every cricketer walks: fast at nineteen, level at twenty-seven,
+  // downhill from thirty-one. This is also the whole answer to "what stops one
+  // club winning forever" - a great side ages together and falls off the same
+  // cliff at the same time, and no artificial handicap is needed.
+  function arcAt(age) {
+    age = age | 0;
+    if (age <= 18) return 5.0;
+    if (age <= 21) return 4.0;
+    if (age <= 24) return 2.6;
+    if (age <= 26) return 1.4;
+    if (age <= 28) return 0.5;
+    if (age <= 30) return 0.0;
+    if (age <= 32) return -1.6;
+    if (age <= 34) return -3.0;
+    if (age <= 36) return -4.5;
+    return -6.0;
+  }
+  // the swing a season actually delivers: the arc, closed against his ceiling
+  // (a man near the top of himself gains less than a boy with room), and moved
+  // by how hard he was worked
+  function seasonSwing(p, playedPct) {
+    var o = outlook(p), a = arcAt(p.age | 0);
+    var pace = roll(p, "pace" + (p.age | 0)) * 0.7 + 0.65;      // 0.65 .. 1.35
+    if (a > 0) {
+      var headroom = o.room <= 0 ? 0 : clamp(o.room / 18, 0.15, 1);
+      var used = clamp(playedPct == null ? 0.7 : playedPct, 0.2, 1);
+      return Math.round(a * pace * headroom * (0.55 + 0.45 * used) * 10) / 10;
+    }
+    // decline is slower for a man who is still playing every week
+    var kept = clamp(playedPct == null ? 0.6 : playedPct, 0, 1);
+    return Math.round(a * pace * (1 - kept * 0.35) * 10) / 10;
+  }
+
+  // ---- WHEN HE STOPS -------------------------------------------------------
+  // Retirement is what makes the academy matter. A club that never blooded a
+  // youngster finds four men gone in one close-season and no one to replace
+  // them, which is the succession problem this game did not have.
+  function retireChance(p) {
+    var age = p.age | 0, o = ovrOf(p);
+    if (age < 32) return 0;
+    var base = (age - 31) * 0.13;                    // 32 -> .13, 38 -> .91
+    if (o < 55) base += 0.18;                        // the fringe go first
+    if (o >= 78) base -= 0.12;                       // a great player hangs on
+    return clamp(base, 0, 1);
+  }
+  function willRetire(p, seasonNo) {
+    if ((p.age | 0) >= 40) return true;
+    return roll(p, "retire|" + seasonNo) < retireChance(p);
+  }
+
+  // ---- CHARACTER -----------------------------------------------------------
+  // Two men on the same numbers should not be the same cricketer. These are
+  // the words for the difference; the match engine reads them in its own
+  // stage, and until it does they are still what tells you WHY you keep him.
+  //
+  // A trait is a fact about a man, so it is derived from him and never rolled
+  // fresh: the same cricketer has the same character in every season, on every
+  // device, forever.
+  var TRAITS = [
+    { k: "bigGame", nm: "Big-game player", why: "raises it when the match matters" },
+    { k: "flatTrack", nm: "Flat-track bully", why: "feasts on a good surface, struggles on a bad one" },
+    { k: "slowStarter", nm: "Slow starter", why: "worth the wait; get him through the first twenty" },
+    { k: "nightHawk", nm: "Under lights", why: "a different bowler after tea" },
+    { k: "ironMan", nm: "Iron man", why: "never tires, never misses" },
+    { k: "glassBack", nm: "Glass back", why: "brilliant, and always one spell from the physio" },
+    { k: "streetwise", nm: "Streetwise", why: "reads a chase better than the scoreboard does" },
+    { k: "hothead", nm: "Hothead", why: "wins you sessions and loses you matches" },
+    { k: "oneClub", nm: "One-club man", why: "will not leave, whatever anybody offers" },
+    { k: "mercenary", nm: "Mercenary", why: "goes where the money and the medals are" },
+    { k: "lateBloomer", nm: "Late bloomer", why: "still improving when others have stopped" },
+    { k: "netsRat", nm: "Nets rat", why: "the first one there and the last to leave" },
+  ];
+  var TRAIT_BY_K = {}; TRAITS.forEach(function (t) { TRAIT_BY_K[t.k] = t; });
+  function traits(p) {
+    if (!p || !p.name) return [];
+    // an explicit list on the record always wins - the served world may name a
+    // man's character itself - and otherwise he is read off his own name
+    if (p.traits && p.traits.length) {
+      return p.traits.map(function (k) { return TRAIT_BY_K[k]; }).filter(Boolean);
+    }
+    var n = h32("traitn|" + p.name) % 100;
+    var count = n < 42 ? 0 : n < 88 ? 1 : 2;
+    if (!count) return [];
+    var a = TRAITS[h32("trait1|" + p.name) % TRAITS.length];
+    if (count === 1) return [a];
+    var b = TRAITS[h32("trait2|" + p.name) % TRAITS.length];
+    return b.k === a.k ? [a] : [a, b];
+  }
+  function hasTrait(p, k) {
+    var t = traits(p);
+    for (var i = 0; i < t.length; i++) if (t[i].k === k) return true;
+    return false;
+  }
+
+  // ---- WHAT HE IS OWED, AND WHETHER HE STAYS -------------------------------
+  // A squad with no contracts has no pressure on it: nobody demands, nobody
+  // leaves, and a side assembled once is a side forever. Deals run to the end
+  // of a season and are re-cut in the close-season, so the decision always
+  // lands when the manager is looking at his squad anyway.
+  //
+  // ANCHORED TO THE GAME'S OWN PAY SCALE. The engine's wage table is almost
+  // flat - a 95 is paid about 1.5x a 40 - so it never made anybody choose
+  // anything. This curve is steeper, but it is pinned at the middle of that
+  // table (a 65 asks roughly what the engine already pays a 65), which is what
+  // makes it a DECISION rather than a revolt: the fringe turn out to be on too
+  // much and can be let go, while the two or three best men in the club are
+  // quietly underpaid and will want putting right before somebody else asks.
+  // Move ANCHOR_OVR/ANCHOR_WAGE together if the engine's table ever changes.
+  var ANCHOR_OVR = 65, ANCHOR_WAGE = 2150, WAGE_CURVE = 2.2;
+  function wageAsk(p) {
+    var o = Math.max(20, ovrOf(p)), age = p.age | 0;
+    var base = ANCHOR_WAGE * Math.pow(o / ANCHOR_OVR, WAGE_CURVE);
+    var young = age <= 22 ? 0.72 : age <= 25 ? 0.9 : age <= 30 ? 1 : age <= 33 ? 0.85 : 0.6;
+    return Math.round(base * young / 50) * 50;
+  }
+  function contract(p, seasonNo) {
+    seasonNo = seasonNo | 0 || 1;
+    // A player who has never been given a deal is on one derived from himself,
+    // one to three seasons out. STAGGERED ON PURPOSE: a single default length
+    // would put an entire squad out of contract on the same morning, which is
+    // not a decision, it is a cliff.
+    var until = p.contractUntil == null
+      ? seasonNo + 1 + (h32("deal|" + (p && p.name)) % 3)
+      : (p.contractUntil | 0);
+    var years = until - seasonNo;
+    var ask = wageAsk(p), paid = (p.wage | 0) || ask;
+    var short = ask > 0 ? clamp((ask - paid) / ask, 0, 1) : 0;
+    var loyal = hasTrait(p, "oneClub"), merc = hasTrait(p, "mercenary");
+    var risk = 0;
+    if (years <= 0) risk = 0.55; else if (years === 1) risk = 0.2;
+    risk += short * 0.5;
+    if (merc) risk += 0.2;
+    if (loyal) risk = 0;
+    risk = clamp(risk, 0, 0.95);
+    var mood = loyal ? "settled"
+      : risk >= 0.6 ? "wants away"
+      : risk >= 0.35 ? "unsettled"
+      : short > 0.15 ? "underpaid"
+      : "content";
+    return {
+      until: until, yearsLeft: years, wage: paid, ask: ask, risk: risk, mood: mood,
+      expiring: years <= 0,
+      word: years <= 0 ? "out of contract"
+        : years === 1 ? "final season"
+        : years + " seasons left",
+    };
+  }
+  function willLeave(p, seasonNo) {
+    if (hasTrait(p, "oneClub")) return false;
+    return roll(p, "leave|" + seasonNo) < contract(p, seasonNo).risk;
+  }
+
+  // ---- THE CLOSE-SEASON ----------------------------------------------------
+  // One function, called once per player per rollover, by the umpire. It
+  // returns what happened; it does not apply it. The caller writes the rows,
+  // which is what keeps this file honest and testable.
+  function rollSeason(p, seasonNo, playedPct) {
+    var before = ovrOf(p), o = outlook(p);
+    var out = {
+      name: p.name, seasonNo: seasonNo, ageBefore: p.age | 0, ageAfter: (p.age | 0) + 1,
+      ovrBefore: before, ceiling: o.ceiling, events: [],
+    };
+    if (willRetire(p, seasonNo)) {
+      out.retired = true;
+      out.ovrAfter = before;
+      out.events.push({ kind: "retired", text: p.name + " retires at " + ((p.age | 0) + 1) });
+      return out;
+    }
+    var swing = seasonSwing(p, playedPct);
+    // the nets rat banks a little more of every year; the glass back a little
+    // less, because he was not there for half of it
+    if (hasTrait(p, "netsRat") && swing > 0) swing = Math.round(swing * 1.25 * 10) / 10;
+    if (hasTrait(p, "lateBloomer") && (p.age | 0) >= 29) swing = Math.max(swing, 0.4);
+    if (hasTrait(p, "glassBack")) swing = Math.round(swing * 0.8 * 10) / 10;
+    out.swing = swing;
+    out.ovrAfter = clamp(Math.round(before + swing), 1, o.ceiling);
+    if (out.ovrAfter > before) {
+      out.events.push({ kind: "grew", text: p.name + " is up to " + out.ovrAfter + " at " + out.ageAfter });
+    } else if (out.ovrAfter < before) {
+      out.events.push({ kind: "declined", text: p.name + " slips to " + out.ovrAfter + " at " + out.ageAfter });
+    }
+    var c = contract(p, seasonNo);
+    if (c.expiring) {
+      out.expiring = true;
+      out.leaving = willLeave(p, seasonNo);
+      out.events.push(out.leaving
+        ? { kind: "left", text: p.name + " leaves at the end of his deal" }
+        : { kind: "renewed", text: p.name + " signs on for " + c.ask.toLocaleString() + " a round" });
+    }
+    return out;
+  }
+
+  // ---- the whole club, in one call ----------------------------------------
+  // What the end-of-season report is: who improved, who declined, who is ready,
+  // who is finished, and who has to be talked to before he walks.
+  function clubReport(players, seasonNo, playedPct) {
+    var rows = (players || []).map(function (p) {
+      var o = outlook(p), c = contract(p, seasonNo);
+      return {
+        p: p, name: p.name, age: p.age | 0, ovr: o.ovr, ceiling: o.ceiling, pct: o.pct,
+        room: o.room, word: o.word, swing: seasonSwing(p, playedPct && playedPct[p.name]),
+        retireRisk: retireChance(p), contract: c, traits: traits(p),
+      };
+    });
+    var by = function (f) { return rows.slice().sort(function (a, b) { return f(b) - f(a); }); };
+    return {
+      rows: rows,
+      rising: by(function (r) { return r.swing; }).filter(function (r) { return r.swing > 0.3; }),
+      falling: by(function (r) { return -r.swing; }).filter(function (r) { return r.swing < -0.3; }),
+      ready: rows.filter(function (r) { return r.pct >= 92 && r.age <= 27; }),
+      finished: rows.filter(function (r) { return r.retireRisk >= 0.3; }),
+      atRisk: by(function (r) { return r.contract.risk; }).filter(function (r) { return r.contract.risk >= 0.35; }),
+      wages: rows.reduce(function (a, r) { return a + (r.contract.wage | 0); }, 0),
+      asks: rows.reduce(function (a, r) { return a + (r.contract.ask | 0); }, 0),
+    };
+  }
+
+  window.FO_LIVE = {
+    ceiling: ceiling, outlook: outlook, arcAt: arcAt, seasonSwing: seasonSwing,
+    retireChance: retireChance, willRetire: willRetire,
+    traits: traits, hasTrait: hasTrait, allTraits: TRAITS,
+    wageAsk: wageAsk, contract: contract, willLeave: willLeave,
+    rollSeason: rollSeason, clubReport: clubReport,
+    ovr: ovrOf, hash: h32,
+  };
+})();
+/* ============================================================================
+   DEVELOPMENT (#/growth) — the room where a squad stops being a list.
+
+   The whole appeal of this game is meant to be that you BUILD something: a
+   boy you blooded at nineteen who is the best player in the league at
+   twenty-six, a side that gets stronger for four seasons and then has to be
+   rebuilt. None of that was visible. Ratings changed silently overnight, no
+   one ever got old, and a manager had no reason to prefer one nineteen-year
+   -old to another.
+
+   This room answers the four questions that make a squad a project:
+
+     * how good could he become, and how far along is he
+     * what is this season doing to him - and to the side as a whole
+     * what has he actually DONE, season by season
+     * who has to be talked to before the close-season takes him away
+
+   It computes nothing itself. Every figure comes from FO_LIVE (module 70),
+   which is pure and deterministic, so this page, the umpire's close-season
+   step and a manager on another phone all read the same career. What this
+   file owns is the SENTENCE - the one line at the top that says what kind of
+   squad this is right now - and the order the evidence is presented in.
+
+   The season line is honest about what it is: while a season is running these
+   are projections, and the page says so. It becomes the end-of-season report
+   the moment the last round is played, without changing shape, because a
+   manager should recognise the room he has been reading all year.
+   ========================================================================== */
+(function () {
+  "use strict";
+  if (window.__foGrow) return; window.__foGrow = 1;
+
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function on() { return (location.hash || "").split("?")[0] === "#/growth"; }
+  function A() { return window.AL || null; }
+  function L() { return window.FO_LIVE || null; }
+  function seasonNo() { try { return (App && App.seasonNo) || 1; } catch (e) { return 1; } }
+  function squad() {
+    try { var t = userTeam() || {}; return (t.players || []).slice(); } catch (e) { return []; }
+  }
+  function colts() {
+    try { var t = userTeam() || {}; return (t.youth || []).slice(); } catch (e) { return []; }
+  }
+  function num(n) { return (Number(n) || 0).toLocaleString(); }
+  function signed(n) { var v = Math.round((Number(n) || 0) * 10) / 10; return (v > 0 ? "+" : "") + v.toFixed(1); }
+
+  var TAB = "squad";
+  var REP = null;                  // the report the page is currently showing
+
+  // ---- WHAT HE HAS ACTUALLY DONE ------------------------------------------
+  // App.playerHist is the game's own per-innings record. Folded by season it
+  // becomes the thing the manager asked for: a career you can point at.
+  function careerRows(name) {
+    var by = {}, H = [];
+    try { H = (App.playerHist || {})[name] || []; } catch (e) {}
+    for (var i = 0; i < H.length; i++) {
+      var e = H[i]; if (!e || e.fr) continue;                 // league cricket only
+      var s = e.s | 0;
+      var a = by[s] || (by[s] = { s: s, m: 0, inns: 0, runs: 0, balls: 0, outs: 0, hs: 0, w: 0, cr: 0, cb: 0 });
+      a.m++;
+      if ((e.bb || 0) > 0 || e.o) {
+        a.inns++; a.runs += e.rr || 0; a.balls += e.bb || 0; a.outs += e.o ? 1 : 0;
+        if ((e.rr || 0) > a.hs) a.hs = e.rr || 0;
+      }
+      if ((e.cb || 0) > 0) { a.w += e.w || 0; a.cr += e.cr || 0; a.cb += e.cb || 0; }
+    }
+    return Object.keys(by).map(function (k) { return by[k]; })
+      .sort(function (x, y) { return x.s - y.s; });
+  }
+  function playedThisSeason(name) {
+    var rows = careerRows(name), sN = seasonNo();
+    for (var i = 0; i < rows.length; i++) if (rows[i].s === sN) return rows[i].m;
+    return 0;
+  }
+  // HOW HARD HE WAS WORKED, as a share of the man who played most. A season's
+  // growth is banked by playing, so a reserve who never got on improves less -
+  // which is the whole reason selection matters beyond the next result.
+  function minutes(list) {
+    var top = 0, raw = {};
+    list.forEach(function (p) { var n = playedThisSeason(p.name); raw[p.name] = n; if (n > top) top = n; });
+    var out = {};
+    list.forEach(function (p) { out[p.name] = top > 0 ? raw[p.name] / top : 0.7; });
+    out.__top = top;
+    return out;
+  }
+
+  // ---- THE SENTENCE --------------------------------------------------------
+  function verdict(rep) {
+    var rise = rep.rising.length, fall = rep.falling.length;
+    var ages = rep.rows.map(function (r) { return r.age; });
+    var avg = ages.length ? ages.reduce(function (a, b) { return a + b; }, 0) / ages.length : 0;
+    var shape = avg <= 24.5 ? "a young side" : avg >= 29 ? "an old side" : "a side in its prime";
+    var head, note;
+    if (rise > fall + 1) { head = "You are building " + shape; note = rise + (rise === 1 ? " man is" : " men are") + " still improving; " + (fall ? fall + " going the other way" : "nobody is falling away yet"); }
+    else if (fall > rise) { head = "This squad is ageing out"; note = fall + (fall === 1 ? " man is" : " men are") + " past their best and " + (rise ? "only " + rise + " still improving" : "none are still improving"); }
+    else { head = "A settled squad, " + shape; note = rise + " improving, " + fall + " declining · average age " + avg.toFixed(1); }
+    if (rep.atRisk.length) note += " · " + rep.atRisk.length + " to talk to before the close-season";
+    return { title: head, note: note, top: rise > fall };
+  }
+
+  // ---- ROWS ----------------------------------------------------------------
+  function prow(r, extra) {
+    var al = A(), p = r.p;
+    var note = E(al.role(p)) + " · " + r.age +
+      (r.traits.length ? " · " + E(r.traits[0].nm) : "") +
+      (extra ? " · " + E(extra) : "");
+    return '<button class="al-prow al-prow--face' + (r.contract.risk >= 0.35 ? " al-prow--risk" : "") +
+      '" data-al-g="' + E(r.name) + '">' +
+      '<span class="al-prow__no">' + r.age + "</span>" +
+      al.face(p) +
+      '<span class="al-prow__who"><b>' + E(r.name) + "</b><i>" + note + "</i>" +
+      (r.room > 0 ? al.meter(r.pct, "warm") : "") + "</span>" +
+      '<span class="al-prow__rate">' + r.ovr +
+      (r.room > 0 ? '<em class="al-prow__ceil">' + r.ceiling + "</em>" : "") + "</span>" +
+      "</button>";
+  }
+  function list(rows, extra) {
+    if (!rows.length) return "";
+    return '<div class="al-players">' + rows.map(function (r) { return prow(r, extra && extra(r)); }).join("") + "</div>";
+  }
+
+  // ---- THE FOUR VIEWS ------------------------------------------------------
+  function viewSquad(rep) {
+    var al = A();
+    // ordered by how much of himself is still ahead of him: the prospects
+    // first, the finished articles last. That is the order a manager plans in.
+    var rows = rep.rows.slice().sort(function (a, b) { return b.room - a.room || b.ovr - a.ovr; });
+    return al.sec("Every man, and how far along he is", list(rows, function (r) { return r.word; }) ||
+      al.empty("No squad yet", "Sign a side and this page fills itself in."));
+  }
+  function viewSeason(rep, top) {
+    var al = A(), out = "";
+    var line = top > 0
+      ? "Projected from this season's cricket · " + top + (top === 1 ? " round" : " rounds") + " played"
+      : "Projected from a full season's cricket · nothing played yet";
+    out += al.sec("Coming on", rep.rising.length
+      ? list(rep.rising, function (r) { return signed(r.swing) + " this season"; })
+      : al.empty("Nobody is improving", "Every man here is at or past his ceiling. That is what the academy is for."),
+      null);
+    out += al.sec("Going the other way", rep.falling.length
+      ? list(rep.falling, function (r) { return signed(r.swing) + " this season"; })
+      : al.empty("Nobody is falling away", "No one in this squad is old enough to be declining."));
+    out += "<p class='al-read'>&#9679; " + E(line) + "</p>";
+    return out;
+  }
+  function viewFuture(rep) {
+    var al = A(), out = "";
+    out += al.sec("Ready now", rep.ready.length
+      ? list(rep.ready, function (r) { return "at " + r.pct + "% of himself"; })
+      : al.empty("Nobody has arrived yet", "A man is ready when he is within a whisker of his ceiling and still under 28."));
+    out += al.sec("Near the end", rep.finished.length
+      ? list(rep.finished, function (r) {
+          return r.retireRisk >= 0.5 ? "likely to retire" : "may retire";
+        })
+      : al.empty("No one is close to retiring", "Nobody in this squad is over 31."));
+    return out;
+  }
+  function viewDeals(rep) {
+    var al = A(), out = "";
+    out += al.sec("Talk to these men", rep.atRisk.length
+      ? list(rep.atRisk, function (r) { return r.contract.word + " · " + r.contract.mood; })
+      : al.empty("Nobody is unsettled", "Every contract here is long enough and paid enough."));
+    var gap = rep.asks - rep.wages;
+    out += al.sec("The wage bill", al.ledger([
+      ["Paid now", "$" + num(rep.wages) + " a round"],
+      ["What they are worth", "$" + num(rep.asks) + " a round"],
+      [gap > 0 ? "Short by" : "Room to spare", "$" + num(Math.abs(gap)), gap > 0 ? "warn" : "pos"],
+      ["Out of contract", String(rep.rows.filter(function (r) { return r.contract.expiring; }).length) + " players"],
+    ]));
+    return out;
+  }
+
+  // ---- ONE MAN'S CAREER ----------------------------------------------------
+  function sheet(name) {
+    var al = A(), rep = REP; if (!al || !rep) return;
+    var r = null;
+    for (var i = 0; i < rep.rows.length; i++) if (rep.rows[i].name === name) r = rep.rows[i];
+    if (!r) return;
+    var p = r.p, seasons = careerRows(name);
+    var body = "";
+    var face = al.faceSrc(p);
+    if (face) body += '<img class="al-sheet__face" src="' + face + '" alt="" onerror="this.style.display=\'none\'">';
+    body += al.ledger([
+      ["Age", String(r.age)],
+      ["Overall", String(r.ovr)],
+      ["Ceiling", r.room > 0 ? String(r.ceiling) : "reached"],
+      ["How far along", r.pct + "% · " + r.word],
+      ["This season", signed(r.swing)],
+      ["Contract", r.contract.word],
+      ["Wage", "$" + num(r.contract.wage) + " a round"],
+      ["He is asking", "$" + num(r.contract.ask), r.contract.ask > r.contract.wage ? "warn" : ""],
+      ["Mood", r.contract.mood, r.contract.risk >= 0.35 ? "warn" : ""],
+    ]);
+    if (r.room > 0) body += al.meter(r.pct, "warm");
+
+    // THE CAREER. Not a total - a row per season, because the point is the
+    // shape of it: what he was doing at 19 against what he is doing now.
+    if (seasons.length) {
+      body += "<h3 class='al-sub'>Season by season</h3>";
+      body += "<div class='al-tblwrap'><table class='al-tbl'><thead><tr>" +
+        "<th class='l'>Season</th><th>M</th><th>Runs</th><th class='al-s'>HS</th>" +
+        "<th class='al-s'>Ave</th><th>Wkts</th></tr></thead><tbody>" +
+        seasons.map(function (s) {
+          var ave = s.outs > 0 ? (s.runs / s.outs).toFixed(1) : (s.runs ? s.runs + "*" : "—");
+          return "<tr><td class='l'>" + s.s + "</td><td>" + s.m + "</td><td>" + s.runs + "</td>" +
+            "<td class='al-s'>" + (s.hs || "—") + "</td><td class='al-s'>" + ave + "</td>" +
+            "<td>" + (s.w || 0) + "</td></tr>";
+        }).join("") + "</tbody></table></div>";
+    } else {
+      body += "<h3 class='al-sub'>Season by season</h3>" +
+        "<p class='al-read'>&#9679; he has not played a league match yet</p>";
+    }
+    if (r.traits.length) {
+      body += "<h3 class='al-sub'>The kind of cricketer he is</h3>" +
+        '<div class="al-plaques">' + r.traits.map(function (t) {
+          return '<div class="al-plaque"><b>' + E(t.nm) + "</b><i>" + E(t.why) + "</i></div>";
+        }).join("") + "</div>";
+    }
+
+    var el = document.createElement("div");
+    el.className = "al-sheet";
+    el.innerHTML = '<div class="al-sheet__panel">' +
+      '<div class="al-sheet__grip"><b>' + E(name) + "</b>" +
+      '<button class="al-btn" data-al-close>Close</button></div>' +
+      '<div class="al-sheet__body">' + body + "</div></div>";
+    document.body.appendChild(el);
+    el.addEventListener("click", function (ev) {
+      if (ev.target === el || (ev.target.closest && ev.target.closest("[data-al-close]"))) el.remove();
+    });
+  }
+
+  // ---- the room ------------------------------------------------------------
+  window.foRenderGrowthPage = function () {
+    if (!on()) return;
+    var page = document.getElementById("page"); if (!page) return;
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
+
+    var live = L();
+    var body = al.head("The Team · development", "Development",
+      "How good they could become, and what this season is doing to them.", "#/growth");
+    body += al.subnav("growth");
+
+    if (!live) {
+      page.innerHTML = al.page({ body: body + al.empty("Not available",
+        "The development rules did not load. Reload the page and it will be here.") });
+      return;
+    }
+    var men = squad().concat(colts());
+    if (!men.length) {
+      page.innerHTML = al.page({ body: body + al.empty("No squad yet",
+        "Once you have a side, this room follows every man in it from his first season to his last.") });
+      return;
+    }
+
+    var mins = minutes(men), top = mins.__top | 0;
+    var rep = REP = live.clubReport(men, seasonNo(), mins);
+    var v = verdict(rep);
+    body += al.decide({ kind: v.top ? "done" : "", title: v.title, note: v.note });
+    body += al.tabs([
+      { id: "squad", label: "The squad", count: rep.rows.length },
+      { id: "season", label: "This season", count: rep.rising.length + rep.falling.length },
+      { id: "future", label: "The future", count: rep.ready.length + rep.finished.length },
+      { id: "deals", label: "Contracts", count: rep.atRisk.length },
+    ], TAB);
+    body += TAB === "season" ? viewSeason(rep, top)
+      : TAB === "future" ? viewFuture(rep)
+      : TAB === "deals" ? viewDeals(rep)
+      : viewSquad(rep);
+
+    page.innerHTML = al.page({ body: body });
+    wire(page);
+  };
+
+  // one listener for the life of the page element, not one per repaint
+  function wire(host) {
+    if (!host || host.__alGW) return;
+    host.__alGW = 1;
+    host.addEventListener("click", function (ev) {
+      if (!on()) return;
+      var t = ev.target.closest ? ev.target.closest("[data-al-tab]") : null;
+      if (t) { TAB = t.getAttribute("data-al-tab"); window.foRenderGrowthPage(); return; }
+      var n = ev.target.closest ? ev.target.closest("[data-al-g]") : null;
+      if (n) sheet(n.getAttribute("data-al-g"));
+    });
+  }
 })();
 
 ;

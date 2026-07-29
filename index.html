@@ -1505,6 +1505,35 @@ button.al-flag--on img { box-shadow: 0 0 0 2px var(--al-accent); }
 }
 
 /* ============================================================================
+   14g. THE LIVING SQUAD — what a man could become, and whether he stays
+   ========================================================================== */
+/* A rating alone says what he is. The pale second figure under it says what he
+   could be, and the two read as one number-with-a-destination rather than as
+   two competing statistics - which is why it is smaller, quieter, and set on
+   the same right-hand rail rather than in a column of its own. */
+.al-prow__rate { text-align: right; line-height: 1.15; }
+.al-prow__ceil {
+  display: block; font-style: normal;
+  font: 500 11px/1.4 var(--al-mono); font-variant-numeric: tabular-nums;
+  color: var(--al-muted-2);
+}
+.al-prow__ceil::before { content: "\2192\00a0"; }        /* -> 74 */
+
+/* A MAN WHO MAY WALK gets a mark, not a colour wash: one hairline down his
+   left edge, in the accent, so a manager scanning sixteen rows sees the three
+   he has to deal with before he reads a word. */
+.al-prow--risk { box-shadow: inset 3px 0 0 var(--al-accent), inset 0 -1px 0 var(--al-rule); }
+
+/* a heading inside a sheet: smaller than a section head, on its own rule */
+.al-sub {
+  margin: var(--al-4) 0 var(--al-2); padding-top: var(--al-3);
+  border-top: 1px solid var(--al-rule);
+  font: 600 11px/1 var(--al-ui); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--al-muted);
+}
+.al-sheet__body .al-meter { max-width: none; margin: var(--al-3) 0 0; }
+
+/* ============================================================================
    15. STATUS LABEL and MONOSPACE READOUT
    ========================================================================== */
 .al-tag {
@@ -1592,5 +1621,5 @@ button.al-flag--on img { box-shadow: 0 0 0 2px var(--al-accent); }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
-<script src="assets/fo-20260729-0518-37948e.js"></script>
+<script src="assets/fo-20260729-1254-23d050.js"></script>
 </body></html>

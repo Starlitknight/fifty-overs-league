@@ -30,7 +30,7 @@
   // navigation is coherent from the first commit.
   var SECTIONS = [
     { id: "today",  label: "Today",  home: "#/today",  routes: ["today", "home", "desk", "matchday", "watch", "match"] },
-    { id: "team",   label: "Team",   home: "#/team",   routes: ["team", "squad", "orders", "training", "academy", "player", "dossier"] },
+    { id: "team",   label: "Team",   home: "#/team",   routes: ["team", "squad", "orders", "training", "academy", "player", "dossier", "growth"] },
     { id: "league", label: "League", home: "#/table",  routes: ["table", "league", "fixtures", "records", "planet", "world", "rankings", "cup", "champions", "comps", "nations", "natteams", "nation", "atlas", "scorecard", "reports"] },
     { id: "market", label: "Market", home: "#/market", routes: ["market", "team-page"] },
     { id: "club",   label: "Club",   home: "#/club-h", routes: ["club-h", "finance", "milestones", "lore", "paper", "wire", "guide", "ledger", "almanack"] },
@@ -38,7 +38,7 @@
   // routes this redesign currently OWNS. Everything else keeps its old page.
   var AL_OWNS = {
     today: 1, team: 1, matchday: 1, table: 1, fixtures: 1,
-    market: 1, finance: 1, academy: 1, training: 1, dossier: 1, desk: 1,
+    market: 1, finance: 1, academy: 1, training: 1, dossier: 1, desk: 1, growth: 1,
     records: 1, milestones: 1, paper: 1, ledger: 1, wire: 1,
     planet: 1, rankings: 1, champions: 1, comps: 1, nations: 1, natteams: 1, guide: 1,
   };
@@ -49,6 +49,7 @@
   var SUB = {
     team: [
       { id: "team", label: "The eleven", href: "#/team" },
+      { id: "growth", label: "Development", href: "#/growth" },
       { id: "training", label: "Nets", href: "#/training" },
       { id: "academy", label: "Academy", href: "#/academy" },
       { id: "dossier", label: "Scout", href: "#/dossier" },
@@ -218,6 +219,7 @@
     desk:       ["hgm-office", "hgd-office"],
     market:     ["hgm-workshop", "hgd-workshop"],
     training:   ["hgm-nets-day", "hgd-nets-day"],
+    growth:     ["hgm-late-afternoon", "hgd-heart-of-club"],
     academy:    ["hgm-nets-day", "hgd-nets-night"],
     dossier:    ["hgm-veranda-rain", "hgd-veranda-rain"],
     wire:       ["arches-quiet-night", "arches-quiet-night"],

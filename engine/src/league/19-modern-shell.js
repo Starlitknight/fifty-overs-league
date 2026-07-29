@@ -27,7 +27,7 @@
   var DOCK_MAP = {
     club: ["club", "home", "matchday", "fixtures", "finance", "ledger", "worldclub", "market"],
     league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "records", "champions", "natteams", "nations", "comps", "watch", "rankings", "team"],
-    squad: ["squad", "player", "matchlab"],
+    squad: ["squad", "player", "matchlab", "growth"],
     nets: ["training", "academy"],
     desk: ["desk", "journal", "report", "ceremony", "wire", "lore", "dossier", "milestones", "whatif", "paper"]
   };
