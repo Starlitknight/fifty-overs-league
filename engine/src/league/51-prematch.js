@@ -181,73 +181,29 @@
   // forty on every device in the world and nobody sees a different number.
   // And because it is deterministic, it can be cached and never recomputed.
   //
-  // WHOSE ELEVEN, THOUGH? The first version of this ran both sides on the
-  // engine's own selection, which quietly overstated what it knew: a manager
-  // who has filed a sheet does not field the engine's pick, he fields HIS -
-  // his eleven, his batting order, his spells, his call at the toss - and the
-  // umpire plays that. So the bar now uses every sheet that can honestly be
-  // had, and says which ones those were:
+  // WHOSE ELEVEN? THE ENGINE'S, ALWAYS - AND DELIBERATELY.
+  // A manager who files a sheet fields his own eleven, not the engine's, so a
+  // simulation could in principle be sharpened with whatever sheets happen to
+  // be readable. It is not, on purpose. Odds that improved as sheets arrived
+  // would be a number that MOVED - different before and after you set your
+  // orders, different for the manager who looked at teatime and the one who
+  // looked at dawn, and different again the moment an opponent changed his
+  // mind. That is a worse thing to put in front of a reader than a rougher
+  // figure that never lies to him twice.
   //
-  //   * a club with no manager is picked by the engine, and that is EXACTLY
-  //     what the umpire will do with it - for a bot-against-bot fixture the
-  //     simulation is not an approximation at all.
-  //   * your own club is picked by your standing sheet, which is on this
-  //     device: saving orders files the same sheet for every remaining round.
-  //   * from an hour before the first ball the world reveals every filed
-  //     sheet AND the living state of the men - who is tired, who is in
-  //     touch - so inside that window the bar runs the real thing on both
-  //     sides. It sharpens as the match comes up, and says that it has.
+  // So both sides are always picked the way the engine picks them. The
+  // consequences are the ones worth having: the number is FIXED from the day
+  // the fixture is drawn, it is the same on every device on earth, it cannot
+  // be moved by anybody's team sheet, and it cannot break when a sheet is
+  // sealed, missing or malformed. It is an approximation and the note under
+  // the bar says so.
   //
-  // What it can never know is another manager's plan while it is still
-  // sealed. That is the point of sealing it, and the note says so plainly
-  // rather than pretending the number is better than it is.
+  // For the many fixtures where nobody manages either club it is not even an
+  // approximation: the umpire files a sheet only where one exists and lets the
+  // engine pick the rest, which is exactly what happens here.
   var FO_PM_WP_N = 40;              // how many times the fixture is played out
   var FO_PM_WP_CHUNK = 4;           // per tick, so a phone never locks up
   var FO_PM_WP = {};                // this session, by fixture id
-
-  // the sheet this device has filed, in the shape the engine reads
-  var FO_PM_SHEET_K = ["xi", "batOrder", "captain", "keeper", "tossCall", "tossDecision",
-    "phaseIntent", "fieldPlan", "spells", "manBat", "manBowl"];
-  function foPmMySheet() {
-    try {
-      var o = (typeof App !== "undefined" && App && (App.orders || App.defaults)) || null;
-      if (!o || !(o.batOrder || o.xi)) return null;
-      var out = {}; FO_PM_SHEET_K.forEach(function (k) { if (o[k] != null) out[k] = o[k]; });
-      return (out.batOrder || out.xi) ? out : null;
-    } catch (e) { return null; }
-  }
-  // everything knowable about how these two sides will be picked
-  function foPmWpPlan(natId, round, hN, aN, myClub) {
-    var WT = window.__foWT;
-    var base = { map: {}, living: null, h: "engine", a: "engine", revealed: false };
-    var mine = myClub ? foPmMySheet() : null;
-    if (mine && myClub === hN) { base.map[hN] = mine; base.h = "sheet"; }
-    if (mine && myClub === aN) { base.map[aN] = mine; base.a = "sheet"; }
-    if (!WT || !WT.roundState) return Promise.resolve(base);
-    return WT.roundState(natId, round).then(function (st) {
-      var o = (st && st.orders) || {};
-      if (o[hN]) { base.map[hN] = o[hN]; base.h = "filed"; }
-      if (o[aN]) { base.map[aN] = o[aN]; base.a = "filed"; }
-      if (st && st.living) { base.living = st.living; base.revealed = true; }
-      return base;
-    }).catch(function () { return base; });
-  }
-  // one line saying exactly what the forty matches were played with
-  function foPmWpBasis(plan, hN, aN, n, ties) {
-    var word = { engine: "as the engine picks them", sheet: "on your standing sheet", filed: "on their manager's filed sheet" };
-    var same = plan.h === plan.a;
-    var who = same
-      ? "Both sides " + word[plan.h]
-      : hN + " " + word[plan.h] + ", " + aN + " " + word[plan.a];
-    var extra = plan.h === "engine" && plan.a === "engine"
-      ? " - which is exactly how the umpire picks a club nobody manages"
-      : "";
-    var form = plan.revealed
-      ? " The men carry the form and the tired legs they will actually walk out with."
-      : " Form and fatigue are sealed until an hour before the first ball, so these are the squads as the world draws them.";
-    return "Played out " + n + " times on the match engine. " + who + extra + "." + form +
-      " The same " + n + " matches on every device." + (ties ? " " + ties + " ended level." : "");
-  }
   function foPmWpLoad(key) {
     if (FO_PM_WP[key]) return FO_PM_WP[key];
     try {
@@ -260,7 +216,7 @@
     FO_PM_WP[key] = v;
     try { localStorage.setItem("fo_wp_" + key, JSON.stringify(v)); } catch (e) {}
   }
-  function foPmWpPaint(host, v, done, basis) {
+  function foPmWpPaint(host, v, done) {
     if (!host) return;
     var n = v.h + v.a + v.t; if (!n) return;
     var ph = Math.round(100 * v.h / n), pa = Math.round(100 * v.a / n);
@@ -276,34 +232,34 @@
     if (ap) ap.textContent = pa + "%";
     var note = host.querySelector(".fo-pm-wpnote");
     if (note) {
-      note.textContent = done ? (basis || "") : ("Playing it out\u2026 " + n + " of " + FO_PM_WP_N + " done.");
+      note.textContent = done
+        ? ("A rough guide, not a forecast: " + n + " runs of this fixture on the match engine, " +
+           "both sides picked the way the engine picks them. Team sheets are not in it, so the " +
+           "number never moves - it is the same " + n + " matches on every device, from the day the " +
+           "fixture is drawn." + (v.t ? " " + v.t + " ended level." : ""))
+        : ("Playing it out\u2026 " + n + " of " + FO_PM_WP_N + " done.");
     }
     host.classList.toggle("settled", !!done);
   }
-  function foPmWpRun(host, sig, key, natId, hSlot, aSlot, hN, aN, ground, plan) {
+  function foPmWpRun(host, sig, key, natId, hSlot, aSlot, hN, aN, ground) {
     var G = window.__foGame, WT = window.__foWT;
     if (!G || !G.simWorld || !G.hash || !WT || !WT.serverSquad) { host.style.display = "none"; return; }
     var sqH = WT.serverSquad(natId, hSlot), sqA = WT.serverSquad(natId, aSlot);
     if (!sqH || !sqA) { host.style.display = "none"; return; }
-    // inside the reveal window the men are the men, not their generated selves
-    if (plan.living && WT.applyLiving) {
-      sqH = WT.applyLiving(sqH, plan.living[hN]);
-      sqA = WT.applyLiving(sqA, plan.living[aN]);
-    }
     var H = { name: hN, ground: ground, players: sqH }, A = { name: aN, players: sqA };
-    var v = { h: 0, a: 0, t: 0, n: FO_PM_WP_N, sig: plan.h + "/" + plan.a + (plan.revealed ? "+live" : "") }, i = 0;
+    var v = { h: 0, a: 0, t: 0, n: FO_PM_WP_N }, i = 0;
     var step = function () {
       if (location.hash !== sig) return;                       // the reader moved on
       for (var c = 0; c < FO_PM_WP_CHUNK && i < FO_PM_WP_N; c++, i++) {
         var out = null;
-        try { out = G.simWorld(H, A, "balanced", "Sunny", (G.hash(key + "|wp|" + i) >>> 0) || 1, plan.map); } catch (eS) {}
+        try { out = G.simWorld(H, A, "balanced", "Sunny", (G.hash(key + "|wp|" + i) >>> 0) || 1, null); } catch (eS) {}
         if (!out || !out.result) { v.t++; continue; }
         var w = out.result.winner;
         if (w === hN) v.h++; else if (w === aN) v.a++; else v.t++;
       }
       var done = i >= FO_PM_WP_N;
-      foPmWpPaint(host, v, done, done ? foPmWpBasis(plan, hN, aN, v.h + v.a + v.t, v.t) : "");
-      if (done) { v.basis = foPmWpBasis(plan, hN, aN, v.h + v.a + v.t, v.t); foPmWpSave(key, v); return; }
+      foPmWpPaint(host, v, done);
+      if (done) { foPmWpSave(key, v); return; }
       setTimeout(step, 0);
     };
     step();
@@ -519,21 +475,20 @@
       try {
         var wpHost = document.getElementById("fo-pm-wp");
         if (wpHost) {
-          var wpId = natId + ":s" + g.seasonNo + ":r" + round + ":h" + hSlot + "a" + aSlot;
-          var myClub = ""; try { myClub = (mySlot === hSlot || mySlot === aSlot) ? foPmName(g, mySlot) : ""; } catch (eMc) {}
-          var wpSig = location.hash;
-          foPmWpPlan(natId, round, hN, aN, myClub).then(function (plan) {
-            if (location.hash !== wpSig) return;
-            // the key carries WHAT WAS KNOWN, so a sheet arriving - or the
-            // world revealing both - retires the old number instead of
-            // serving a stale one that was computed with less
-            var wpKey = wpId + "|" + plan.h + plan.a + (plan.revealed ? "L" : "");
-            var cached = foPmWpLoad(wpKey);
-            if (cached) foPmWpPaint(wpHost, cached, true, cached.basis || foPmWpBasis(plan, hN, aN, cached.h + cached.a + cached.t, cached.t));
-            else foPmWpRun(wpHost, wpSig, wpKey, natId, hSlot, aSlot, hN, aN, ground, plan);
-          }).catch(function () {});
+          // the key is the fixture and nothing else: what was known can no
+          // longer change what the bar says, so a cached number is never stale
+          var wpKey = natId + ":s" + g.seasonNo + ":r" + round + ":h" + hSlot + "a" + aSlot;
+          var cached = foPmWpLoad(wpKey);
+          if (cached) foPmWpPaint(wpHost, cached, true);
+          else foPmWpRun(wpHost, location.hash, wpKey, natId, hSlot, aSlot, hN, aN, ground);
         }
-      } catch (eWp) {}
+      } catch (eWp) {
+        // an empty catch here hid a missing helper behind a bar that just said
+        // "playing it out" forever. If the odds cannot be worked out, say so
+        // where a developer will see it and take the panel off the page.
+        try { console.error("preview: win probability failed", eWp); } catch (eL) {}
+        try { var wpDead = document.getElementById("fo-pm-wp"); if (wpDead) wpDead.style.display = "none"; } catch (eD) {}
+      }
       try { if (window.__foPmTimer) clearInterval(window.__foPmTimer); } catch (eT) {}
       window.__foPmTimer = setInterval(foPmTick, 1000);
     } catch (e) {
