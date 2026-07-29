@@ -578,7 +578,7 @@
         "<h1>A new era is starting</h1>" +
         '<div class="fol-sub">The game has been rebuilt and your commissioner has relaunched the league. Old clubs are retired with honour - everyone founds a fresh club and the table starts from zero.</div>' +
         '<div class="fol-form">' +
-        '<div class="folsmall" style="line-height:1.6;margin-bottom:4px">Founding a club is a whole new experience now: the <b>Gaffer</b> walks you through naming your club, choosing its soul, spending your first million and a live warm-up friendly. League matches play at <b>9:00 AM ET</b>.</div>' +
+        '<div class="folsmall" style="line-height:1.6;margin-bottom:4px">Founding a club is a whole new experience now: the <b>Gaffer</b> walks you through naming your club and hands you the squad the board has signed for you. League matches play at <b>9:00 AM ET</b>.</div>' +
         '<button class="fol-cta" data-act="refound">Found my new club ▸</button>' +
         "</div>" +
         '<div class="fol-links"><a class="fol-mut" data-act="logout">Log out</a></div>' + FOOT);
