@@ -172,6 +172,20 @@
     "#topbar#topbar #fo-mlive .live-dot{width:7px;height:7px;border-radius:50%;background:rgba(233,238,246,.4);display:inline-block}",
     "#topbar#topbar #fo-mlive.on{background:rgba(229,57,53,.22) !important;border-color:rgba(255,110,100,.6);color:#FFD9D4 !important}",
     "#topbar#topbar #fo-mlive.on .live-dot{background:#ff5347;box-shadow:0 0 0 0 rgba(255,83,71,.55);animation:foMsPulse 1.8s infinite}",
+    // the manager's OWN match is not the same news as somebody else's: it
+    // gets the full red plate and a breathing ring, so it reads across a
+    // room and cannot be mistaken for chrome
+    "#topbar#topbar #fo-mlive.on.mine{background:#E53935 !important;border-color:#ff8b82;color:#fff !important;animation:foMlMine 1.8s ease-in-out infinite}",
+    "#topbar#topbar #fo-mlive.on.mine .live-dot{background:#fff;box-shadow:none}",
+    "@keyframes foMlMine{0%,100%{box-shadow:0 0 0 0 rgba(229,57,53,.55)}50%{box-shadow:0 0 0 7px rgba(229,57,53,0)}}",
+    "@media (prefers-reduced-motion:reduce){#topbar#topbar #fo-mlive.on.mine{animation:none}}",
+    // The pill was phone furniture: the mobile layer hides it outright and
+    // only un-hides it inside a max-width:820px query, so on a desktop it
+    // could not render at all - no amount of live cricket would have shown
+    // it. It is header furniture on every screen now.
+    "html body #topbar #fo-mlive.on{display:inline-flex !important}",
+    "@media(max-width:640px){#topbar#topbar.fo-live-on #fo-wclock{display:none}}",
+    "@media(max-width:400px){#topbar#topbar #fo-mlive.on{padding:6px 10px;font-size:10.5px}}",
     "@keyframes foMsPulse{0%{box-shadow:0 0 0 0 rgba(255,83,71,.55)}70%{box-shadow:0 0 0 7px rgba(255,83,71,0)}100%{box-shadow:0 0 0 0 rgba(255,83,71,0)}}",
     "#topbar#topbar #fo-mnav-btn{background:transparent;border:none;color:#FFFFFF;border-radius:12px;padding:6px;cursor:pointer}",
     "#topbar#topbar #fo-mnav-btn:hover{background:rgba(255,255,255,.09)}",

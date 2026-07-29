@@ -546,9 +546,40 @@
   function foMliveTick() {
     try {
       var ml = document.getElementById("fo-mlive"); if (!ml) return;
-      var go = null;
+      var go = null, mineNow = false;
       try { if (typeof M !== "undefined" && M && !M.done) go = "#/match"; } catch (e0) {}
       if (!go) { try { var em = (typeof foEmbargo === "function") ? foEmbargo() : null; if (em && em.active && !em.pre) go = "#/matchday"; } catch (e1) {} }
+      // MY CLUB'S OWN LEAGUE MATCH, which nothing above this could see.
+      // A league fixture resolves on the server, so M is null; and the
+      // embargo window is read off the last round banked on THIS device,
+      // which a manager who has not opened the matchday centre simply does
+      // not have. So the one match he actually cares about was the one match
+      // the pill stayed dark through. The world clock knows: it says which
+      // round is in play for his nation and at what hour, and the fixture
+      // list says which of those matches is his.
+      if (!go) {
+        try {
+          var wt9 = (window.__foWT && window.__foWT.serverFixtures) ? window.__foWT : null;
+          var pl9 = window.__foPlanet || null;
+          var nat9 = (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || "";
+          if (wt9 && pl9 && nat9) {
+            var now9 = Date.now(), sv9 = wt9.serverFixtures(nat9, now9), h9 = pl9.natHour(nat9);
+            var hN9 = (now9 - (pl9.EPOCH + pl9.dayIx(now9) * 86400000)) / 3600000;
+            if ((sv9.fx || []).length && hN9 >= h9 && hN9 < h9 + (pl9.LIVE_LEN || 3)) {
+              var mine9 = ""; try { mine9 = foMyClub() || (userTeam() || {}).name || ""; } catch (eM9) {}
+              var cl9 = null;
+              try { cl9 = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eC9) {}
+              var slot9 = (cl9 && cl9.country === nat9) ? cl9.slot : -1;
+              var is9 = function (sd) { return !!sd && ((slot9 >= 0 && sd.slot === slot9) || (mine9 && sd.name === mine9)); };
+              sv9.fx.forEach(function (f9, i9) {
+                if (go || !f9 || !(is9(f9.home) || is9(f9.away))) return;
+                go = "#/watch?n=" + encodeURIComponent(nat9) + "&f=" + i9;
+                mineNow = true;
+              });
+            }
+          }
+        } catch (e9) {}
+      }
       if (!go) {
         // a friendly or practice broadcast of MY club counts as on air too
         try {
@@ -560,7 +591,26 @@
           });
         } catch (e2) {}
       }
+      // "Live" alone does not tell a manager whose match is on; if it is his,
+      // say so, because that is the difference between a badge and a summons
+      var lbl = ml.querySelector(".live-txt");
+      if (!lbl) { lbl = document.createElement("span"); lbl.className = "live-txt"; ml.appendChild(lbl); }
+      var want = mineNow ? "Your match \u00b7 LIVE" : "Live";
+      if (lbl.textContent !== want) lbl.textContent = want;
+      ml.classList.toggle("mine", !!mineNow);
       if (go) { ml.setAttribute("data-go", go); ml.classList.add("on"); } else ml.classList.remove("on");
+      // the world clock is pinned to the right of the topbar and out of flow,
+      // so on a phone the pill lands underneath it and the two print on top of
+      // each other. While something is on air the pill takes that corner: the
+      // clock is ambient, this is a summons.
+      try { var tb9 = document.getElementById("topbar"); if (tb9) tb9.classList.toggle("fo-live-on", !!go); } catch (eTb9) {}
+      // on a wide screen the clock keeps its corner, so the pill has to stop
+      // short of it - measured, because the clock's width is its content
+      try {
+        var wc9 = document.getElementById("fo-wclock");
+        var wide9 = window.innerWidth > 640;
+        ml.style.marginRight = (go && wide9 && wc9 && wc9.offsetWidth) ? (wc9.offsetWidth + 20) + "px" : "";
+      } catch (eMr) {}
     } catch (e) {}
   }
   try { setInterval(foMliveTick, 20000); } catch (e) {}
@@ -617,7 +667,7 @@
       var ml = tb.querySelector("#fo-mlive");
       if (!ml) {
         ml = document.createElement("a"); ml.id = "fo-mlive"; ml.href = "#";
-        ml.innerHTML = "<span class='live-dot'></span>Live";
+        ml.innerHTML = "<span class='live-dot'></span><span class='live-txt'>Live</span>";
         tb.insertBefore(ml, tb.querySelector("#fo-top-status"));
         ml.addEventListener("click", function (e) {
           e.preventDefault();

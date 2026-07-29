@@ -2916,11 +2916,6 @@
       // the nation record book and atlas portrait live under the League pill
       var lgH = (location.hash || "").split("?")[0];
       if (lgH === "#/nation" || lgH === "#/atlas") lg.classList.add("on");
-      // The Table reads the league database rather than the saved season, so it
-      // only means anything to a manager who is IN a served league; a solo
-      // career has no served table to read and should not be offered one.
-      var tb2 = null;
-      try { if (window.__foLeague && window.__foLeague().id) tb2 = mkPill("fo-table-nav", "Table", "#/table"); } catch (eTb) {}
       var pl = mkPill("fo-planet-nav", "World", "#/planet");
       var cp = mkPill("fo-cup-nav", "Cup", "#/cup");
       var jn = mkPill("fo-lore-nav", "Journal", "#/lore");
@@ -2928,8 +2923,7 @@
       var want = anchor ? anchor.nextSibling : wrap.firstChild;
       if (hm.parentNode !== wrap) wrap.insertBefore(hm, want);
       if (lg.parentNode !== wrap) wrap.insertBefore(lg, hm.nextSibling);
-      if (tb2 && tb2.parentNode !== wrap) wrap.insertBefore(tb2, lg.nextSibling);
-      if (pl.parentNode !== wrap) wrap.insertBefore(pl, (tb2 && tb2.parentNode === wrap ? tb2 : lg).nextSibling);
+      if (pl.parentNode !== wrap) wrap.insertBefore(pl, lg.nextSibling);
       if (cp.parentNode !== wrap) wrap.insertBefore(cp, pl.nextSibling);
       if (jn.parentNode !== wrap) wrap.insertBefore(jn, cp.nextSibling);
     } catch (e) {}
