@@ -10272,7 +10272,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260729-1625-9253d9";
+  var FO_BUILD = "20260729-1639-b464a5";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -31410,7 +31410,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           var g = 0;
           while (M && !M.done && g++ < 3000) { autoPick(); stepBall(); }
           ok = !!(M && M.done && M.result);
-          return ok ? { innings: M.innings, result: M.result, batFirstTeam: M.batFirstTeam } : null;
+          // the log and the worm come back too: a match report wants the
+          // ball-by-ball and the run chart, and a replayed world match is the
+          // only place they exist for a fixture this device never played
+          return ok ? { innings: M.innings, result: M.result, batFirstTeam: M.batFirstTeam,
+            log: M.log || [], worm: M.worm || [[], []] } : null;
         } catch (eSim) { return null; }
         finally {
           try { window.onMatchEnd = prevOME; } catch (e2) {}
@@ -32284,37 +32288,147 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return "<div class='fo-mr-none'><h3>" + E(title) + "</h3><p>" + E(line) + "</p></div>";
   }
 
-  window.foRenderReport = function () {
+  // ---- A MATCH THIS DEVICE NEVER PLAYED --------------------------------------
+  // The league's results are the World Service's, and this device holds a card
+  // for none of them: they are resolved on the server and the snapshot carries
+  // the scoreline, not the ball-by-ball. So every one of those rows used to be
+  // unopenable - the report page reads App.results, found nothing, and said
+  // "nothing to report" or bounced. This is the report the world CAN tell:
+  // both sides, both scores, the margin and the round. The scorecard,
+  // commentary and fantasy views are not offered, because the ball-by-ball
+  // they read is not published for these matches.
+  function foMrServedRow(nat, id) {
     try {
-      try { if (typeof window.foCxNav === "function") window.foCxNav(); } catch (eN) {}
-      if ((location.hash || "").split("?")[0] !== "#/report") return;
-      var page = document.getElementById("page"); if (!page) return;
-      foMrCss();
-      var m = /[?&]i=(\d+)/.exec(location.hash || "");
-      var ix = m ? +m[1] : (App.results.length - 1);
-      var rec = App.results && App.results[ix];
-      var mt = /[?&]t=(\w+)/.exec(location.hash || "");
-      var tab = mt ? mt[1] : "report";
-      if (["report", "card", "comm", "fantasy"].indexOf(tab) < 0) tab = "report";
-      var commAll = /[?&]c=all\b/.test(location.hash || "");
-      var sig = "mr|" + ix + "|" + tab + "|" + (commAll ? "all" : "key") + "|" + (rec ? rec.date : "-");
-      if (page.__foMrSig === sig && page.querySelector(".fo-mr")) return;
-      page.__foMrSig = sig;
-      document.body.classList.add("fo-mr-on");
-
-      if (!rec) {
-        page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
-          "<h1 class='fo-mr-head'>Nothing to report</h1>" +
-          "<p class='fo-mr-dek'>No match has been played yet. Every finished match is written up here the moment it ends.</p>" +
-          "<div class='fo-mr-foot'><a class='fo-mr-back' href='#/club'>&#8592; Club</a></div></div></div>";
-        return;
+      var snap = window.__foWorldLg && window.__foWorldLg.get(nat);
+      if (!snap || !snap.results) return null;
+      var nm = null; try { nm = window.__foWorldNames && window.__foWorldNames.get(nat); } catch (eN) {}
+      for (var i = 0; i < snap.results.length; i++) {
+        var r = snap.results[i];
+        if (String(r.id) !== String(id)) continue;
+        return { row: r, season: snap.seasonNo || 1, names: nm };
       }
+    } catch (e) {}
+    return null;
+  }
+  function foMrServedSide(nm, sc, win) {
+    if (!sc) return "<div class='fo-mr-t'><b>" + E(nm) + "</b><u>&mdash;</u></div>";
+    return "<div class='fo-mr-t" + (win ? " won" : "") + "'><b>" + E(nm) + "</b>" +
+      "<u>" + (sc.r | 0) + (sc.w >= 10 ? "" : "/" + (sc.w | 0)) + "</u>" +
+      (sc.ov ? "<i>" + E(sc.ov) + " ov</i>" : "") + "</div>";
+  }
+  // THE MATCH THIS DEVICE NEVER PLAYED, PLAYED AGAIN. The World Service does
+  // not publish ball-by-ball - sixty per cent of the old league state was
+  // commentary nobody read, and it was taken out on purpose. But the engine is
+  // deterministic and version-stamped, the squads are generated from a seed the
+  // client can derive, and the match id is a pure function of nation, season,
+  // round and the two slots. So the report rebuilds the match from first
+  // principles, exactly as the world theatre does when it spectates one live.
+  //
+  // It is only allowed to SHOW that reconstruction if it agrees with the
+  // scoreline the server published. If a single run differs - a squad drifted,
+  // an engine version moved, a manager's orders were in play - the page falls
+  // back to the published scoreline rather than print a match that never
+  // happened.
+  function foMrReplayServed(nat, row, seasonNo) {
+    try {
+      var G = window.__foGame, WT = window.__foWT, PL = window.__foPlanet;
+      if (!G || !G.simWorld || !WT || !WT.serverSquad || !PL) return null;
+      var sides = PL.sidesOf(nat) || [];
+      var bySlot = {}, byName = {};
+      sides.forEach(function (sd) { bySlot[sd.slot] = sd; byName[sd.name] = sd; });
+      var nm = null; try { nm = window.__foWorldNames && window.__foWorldNames.get(nat); } catch (eN) {}
+      if (nm) Object.keys(nm).forEach(function (k) { if (bySlot[k]) byName[nm[k]] = bySlot[k]; });
+      var hSd = byName[row.home], aSd = byName[row.away];
+      if (!hSd || !aSd) return null;
+      var sqH = WT.serverSquad(nat, hSd.slot), sqA = WT.serverSquad(nat, aSd.slot);
+      if (!sqH || !sqA) return null;
+      var matchId = nat + ":s" + (seasonNo | 0) + ":r" + (row.round | 0) + ":h" + hSd.slot + "a" + aSd.slot;
+      var seed = (G.hash ? G.hash(matchId) : 0) || 1;
+      var ground = (hSd.city || row.home) + " Ground";
+      var out = G.simWorld({ name: row.home, ground: ground, players: sqH },
+                           { name: row.away, players: sqA }, "balanced", "Sunny", seed, null);
+      if (!out || !out.innings || !out.result) return null;
+      // the agreement check: the same verdict, to the word
+      if (String(out.result.text || "") !== String(row.text || "")) return null;
+      return { ix: -1, date: "", home: row.home, away: row.away, ground: ground,
+        pitch: "balanced", weather: "Sunny", seed: seed, result: out.result,
+        innings: out.innings, worm: out.worm, log: out.log,
+        comp: "league", round: (row.round | 0) - 1, seasonNo: seasonNo | 0 };
+    } catch (e) { return null; }
+  }
+  function foMrRenderServed(nat, id, page) {
+    var hit = foMrServedRow(nat, id);
+    if (!hit) {
+      page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
+        "<h1 class='fo-mr-head'>That match is not in the record yet</h1>" +
+        "<p class='fo-mr-dek'>The World Service has not published this round. Try again once it has settled.</p>" +
+        "<div class='fo-mr-foot'><a class='fo-mr-back' href='#/league?t=results'>&#8592; Results</a></div></div></div>";
+      return;
+    }
+    var rep = foMrReplayServed(nat, hit.row, hit.season);
+    if (rep) {
+      var mt2 = /[?&]t=(\w+)/.exec(location.hash || "");
+      var tab2 = mt2 ? mt2[1] : "report";
+      if (["report", "card", "comm", "fantasy"].indexOf(tab2) < 0) tab2 = "report";
+      var base2 = "#/report?n=" + encodeURIComponent(nat) + "&w=" + encodeURIComponent(id);
+      foMrPaint(rep, page, {
+        tab: tab2,
+        commAll: /[?&]c=all\b/.test(location.hash || ""),
+        href: function (t) { return base2 + "&t=" + t; },
+        others: [],
+        back: "#/league?t=results"
+      });
+      return;
+    }
+    var r = hit.row, nm = hit.names;
+    var say = function (n) { return n; };
+    if (nm) { /* the snapshot already speaks current names; keep as published */ }
+    var hN = say(r.home), aN = say(r.away);
+    var art = ART + "home/hgm-dressing-room.webp";
+    page.innerHTML =
+      "<div class='fo-mr'>" +
+      "<header class='fo-mr-hero'>" +
+      "<figure class='fo-mr-plate'><img src='" + art + "' alt='' onerror=\"this.parentNode.style.display='none'\"></figure>" +
+      "<div class='fo-mr-in fo-mr-in--hero'>" +
+      "<div class='fo-mr-mast'>The Fifty Overs Journal <em>&middot; Match Report</em></div>" +
+      "<div class='fo-mr-folio'>Season " + (hit.season | 0) + " &middot; Round " + (r.round | 0) + " &middot; League</div>" +
+      "<h1 class='fo-mr-head'>" + E(String(r.text || (hN + " v " + aN))) + "</h1>" +
+      "<p class='fo-mr-dek'>" + E(hN) + " against " + E(aN) + " &middot; round " + (r.round | 0) + " of the season.</p>" +
+      "<div class='fo-mr-score'>" +
+      foMrServedSide(hN, r.hs, r.winner === r.home) +
+      "<span class='fo-mr-v'>v</span>" +
+      foMrServedSide(aN, r.as, r.winner === r.away) +
+      "</div>" +
+      "</div></header>" +
+      "<div class='fo-mr-in fo-mr-in--body'>" +
+      "<div class='fo-mr-body'><article class='fo-mr-report'>" +
+      "<p class='lead'>" + E(hN) + " " + (r.hs ? (r.hs.r | 0) + (r.hs.w >= 10 ? " all out" : "/" + (r.hs.w | 0)) + (r.hs.ov ? " from " + E(r.hs.ov) + " overs" : "") : "did not bat") + ". " +
+      E(aN) + " " + (r.as ? (r.as.r | 0) + (r.as.w >= 10 ? " all out" : "/" + (r.as.w | 0)) + (r.as.ov ? " from " + E(r.as.ov) + " overs" : "") : "did not bat") + ".</p>" +
+      "<div class='fo-mr-by'>Scoreline from the World Service &middot; round " + (r.round | 0) + "</div>" +
+      "</article></div>" +
+      "<div class='fo-mr-foot'>" +
+      "<a class='fo-mr-back' href='#/league?t=results'>&#8592; Results</a>" +
+      "<a class='fo-mr-back' href='#/league'>The league</a>" +
+      "<a class='fo-mr-back' href='#/club'>Club</a>" +
+      "</div></div></div>";
+    try {
+      var tb = document.getElementById("topbar"), mr = page.querySelector(".fo-mr");
+      if (tb && mr) mr.style.paddingTop = (tb.offsetHeight || 0) + "px";
+    } catch (eTb) {}
+  }
+
+  // ONE PAINTER, TWO SOURCES. A match played on this device and a world
+  // match rebuilt from its seed produce the same record, so they get the
+  // same page - the report, the scorecard, the commentary, the run chart
+  // and the fantasy points - and only the links differ.
+  function foMrPaint(rec, page, O) {
+    var tab = O.tab, commAll = O.commAll;
       var f = foMrFacts(rec);
       if (!f) { page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><h1 class='fo-mr-head'>Report unavailable</h1>" +
         "<p class='fo-mr-dek'>That match did not finish an innings.</p></div></div>"; return; }
 
       var hd = foMrHeadline(f), paras = foMrParagraphs(f), turn = foMrTurning(f);
-      var others = (App.results || []).slice(-7).filter(function (x) { return x.ix !== ix; }).reverse();
+      var others = O.others || [];
 
       var scoreline = "<div class='fo-mr-score'>" +
         "<div class='fo-mr-t'><b>" + E(f.first.team) + "</b><u>" + f.first.runs + (f.first.allOut ? "" : "/" + f.first.wkts) + "</u><i>" + f.first.overs + " ov</i></div>" +
@@ -32345,7 +32459,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // ---- the four ways to read a finished match --------------------------
       var TABS = [["report", "Report"], ["card", "Scorecard"], ["comm", "Commentary"], ["fantasy", "Fantasy"]];
       var tabBar = "<nav class='fo-mr-tabs' aria-label='Match views'>" + TABS.map(function (t) {
-        return "<a class='fo-mr-tab" + (t[0] === tab ? " on" : "") + "' href='#/report?i=" + ix + "&t=" + t[0] + "'" +
+        return "<a class='fo-mr-tab" + (t[0] === tab ? " on" : "") + "' href='" + O.href(t[0]) + "'" +
           (t[0] === tab ? " aria-current='page'" : "") + ">" + t[1] + "</a>";
       }).join("") + "</nav>";
 
@@ -32394,9 +32508,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-mr-in fo-mr-in--body'>" +
         tabBar + main +
         "<div class='fo-mr-foot'>" +
-        (tab === "report" ? "<a class='fo-mr-back' href='#/report?i=" + ix + "&t=card'>Full scorecard</a>"
-                          : "<a class='fo-mr-back' href='#/report?i=" + ix + "&t=report'>The report</a>") +
-        "<a class='fo-mr-back' href='#/lore'>The Journal</a>" +
+        (tab === "report" ? "<a class='fo-mr-back' href='" + O.href("card") + "'>Full scorecard</a>"
+                          : "<a class='fo-mr-back' href='" + O.href("report") + "'>The report</a>") +
+        "<a class='fo-mr-back' href='" + (O.back || "#/lore") + "'>" + (O.backLbl || "The Journal") + "</a>" +
         "<a class='fo-mr-back' href='#/club'>Club</a>" +
         "</div></div></div>";
 
@@ -32408,6 +32522,49 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         var tb = document.getElementById("topbar"), mr = page.querySelector(".fo-mr");
         if (tb && mr) mr.style.paddingTop = (tb.offsetHeight || 0) + "px";
       } catch (eTb) {}
+  }
+
+  window.foRenderReport = function () {
+    try {
+      try { if (typeof window.foCxNav === "function") window.foCxNav(); } catch (eN) {}
+      if ((location.hash || "").split("?")[0] !== "#/report") return;
+      var page = document.getElementById("page"); if (!page) return;
+      foMrCss();
+      // a served match names itself by nation + the World Service's match id
+      var mw = /[?&]w=([^&]+)/.exec(location.hash || "");
+      var mn = /[?&]n=([a-z]+)/.exec(location.hash || "");
+      if (mw && mn) {
+        var sigW = "mrw|" + mn[1] + "|" + mw[1];
+        if (page.__foMrSig === sigW && page.querySelector(".fo-mr")) return;
+        page.__foMrSig = sigW;
+        document.body.classList.add("fo-mr-on");
+        foMrRenderServed(mn[1], decodeURIComponent(mw[1]), page);
+        return;
+      }
+      var m = /[?&]i=(\d+)/.exec(location.hash || "");
+      var ix = m ? +m[1] : (App.results.length - 1);
+      var rec = App.results && App.results[ix];
+      var mt = /[?&]t=(\w+)/.exec(location.hash || "");
+      var tab = mt ? mt[1] : "report";
+      if (["report", "card", "comm", "fantasy"].indexOf(tab) < 0) tab = "report";
+      var commAll = /[?&]c=all\b/.test(location.hash || "");
+      var sig = "mr|" + ix + "|" + tab + "|" + (commAll ? "all" : "key") + "|" + (rec ? rec.date : "-");
+      if (page.__foMrSig === sig && page.querySelector(".fo-mr")) return;
+      page.__foMrSig = sig;
+      document.body.classList.add("fo-mr-on");
+
+      if (!rec) {
+        page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
+          "<h1 class='fo-mr-head'>Nothing to report</h1>" +
+          "<p class='fo-mr-dek'>No match has been played yet. Every finished match is written up here the moment it ends.</p>" +
+          "<div class='fo-mr-foot'><a class='fo-mr-back' href='#/club'>&#8592; Club</a></div></div></div>";
+        return;
+      }
+      foMrPaint(rec, page, {
+        tab: tab, commAll: commAll,
+        href: function (t) { return "#/report?i=" + ix + "&t=" + t; },
+        others: (App.results || []).slice(-7).filter(function (x) { return x.ix !== ix; }).reverse()
+      });
     } catch (e) { try { console.warn("foRenderReport", e); } catch (e2) {} }
   };
 
@@ -34301,24 +34458,30 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "#topbar#topbar #fo-top-status{color:rgba(233,238,246,.6)}",
     "#topbar#topbar #fo-top-status span{border-left:1px solid rgba(255,255,255,.12);padding-left:10px}",
     // live pill: quiet glass by default, red only when something is on air
-    "#topbar#topbar #fo-mlive{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.07) !important;border:1px solid rgba(255,255,255,.14);color:rgba(233,238,246,.6) !important;font:700 11px/1 Inter,sans-serif;letter-spacing:.4px;padding:6px 12px;border-radius:999px}",
-    "#topbar#topbar #fo-mlive .live-dot{width:7px;height:7px;border-radius:50%;background:rgba(233,238,246,.4);display:inline-block}",
-    "#topbar#topbar #fo-mlive.on{background:rgba(229,57,53,.22) !important;border-color:rgba(255,110,100,.6);color:#FFD9D4 !important}",
-    "#topbar#topbar #fo-mlive.on .live-dot{background:#ff5347;box-shadow:0 0 0 0 rgba(255,83,71,.55);animation:foMsPulse 1.8s infinite}",
-    // the manager's OWN match is not the same news as somebody else's: it
-    // gets the full red plate and a breathing ring, so it reads across a
-    // room and cannot be mistaken for chrome
-    "#topbar#topbar #fo-mlive.on.mine{background:#E53935 !important;border-color:#ff8b82;color:#fff !important;animation:foMlMine 1.8s ease-in-out infinite}",
-    "#topbar#topbar #fo-mlive.on.mine .live-dot{background:#fff;box-shadow:none}",
-    "@keyframes foMlMine{0%,100%{box-shadow:0 0 0 0 rgba(229,57,53,.55)}50%{box-shadow:0 0 0 7px rgba(229,57,53,0)}}",
-    "@media (prefers-reduced-motion:reduce){#topbar#topbar #fo-mlive.on.mine{animation:none}}",
-    // The pill was phone furniture: the mobile layer hides it outright and
-    // only un-hides it inside a max-width:820px query, so on a desktop it
-    // could not render at all - no amount of live cricket would have shown
-    // it. It is header furniture on every screen now.
-    "html body #topbar #fo-mlive.on{display:inline-flex !important}",
+    // The live badge, built like a broadcaster's: a thin rectangle, not a
+    // lozenge. Square-ish corners, a hairline, one small breathing dot and
+    // the word in caps with wide tracking - it reads as a channel that is on
+    // air rather than as another nav pill.
+    // The live badge, built like a broadcaster's: a thin rectangle, not a
+    // lozenge. Square-ish corners, one small blinking dot and the word in
+    // caps with wide tracking - it reads as a channel that is on air rather
+    // than as another nav pill.
+    // EVERY RULE HERE CARRIES THE SAME THREE IDS. The dormant state has to
+    // out-rank the phone stylesheet that hides the badge outright, and the
+    // live state has to out-rank the dormant one - and !important does not
+    // decide that, specificity does. A "#topbar#topbar #fo-mlive" base beat
+    // a "html body #topbar #fo-mlive.on" override and left the badge an
+    // outline with no fill.
+    "#topbar#topbar #fo-mlive{display:none;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:4px;background:transparent !important;border:1px solid rgba(233,238,246,.22) !important;color:rgba(233,238,246,.62) !important;font:700 10.5px/1 Inter,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;text-decoration:none !important;white-space:nowrap;box-shadow:none !important;transition:transform .12s ease,box-shadow .12s ease,background .12s ease}",
+    "#topbar#topbar #fo-mlive .live-dot{width:6px;height:6px;border-radius:50%;background:rgba(233,238,246,.4);display:inline-block;flex:0 0 6px}",
+    "#topbar#topbar #fo-mlive.on{display:inline-flex !important;background:#FF0033 !important;border-color:#FF0033 !important;color:#FFFFFF !important;border-radius:4px !important;height:24px !important;padding:0 9px !important}",
+    "#topbar#topbar #fo-mlive.on .live-dot{background:#fff !important;animation:foMlBlink 1.6s steps(1,end) infinite}",
+    "@keyframes foMlBlink{0%,55%{opacity:1}56%,100%{opacity:.25}}",
+    // it is a button: it lifts a hair and warms under the pointer
+    "#topbar#topbar #fo-mlive.on:hover{background:#E4002B !important;border-color:#E4002B !important;transform:translateY(-1px);box-shadow:0 3px 10px rgba(255,0,51,.4) !important}",
+    "#topbar#topbar #fo-mlive.on:focus-visible{outline:2px solid #fff;outline-offset:2px}",
+    "@media (prefers-reduced-motion:reduce){#topbar#topbar #fo-mlive.on .live-dot{animation:none}#topbar#topbar #fo-mlive.on:hover{transform:none}}",
     "@media(max-width:640px){#topbar#topbar.fo-live-on #fo-wclock{display:none}}",
-    "@media(max-width:400px){#topbar#topbar #fo-mlive.on{padding:6px 10px;font-size:10.5px}}",
     "@keyframes foMsPulse{0%{box-shadow:0 0 0 0 rgba(255,83,71,.55)}70%{box-shadow:0 0 0 7px rgba(255,83,71,0)}100%{box-shadow:0 0 0 0 rgba(255,83,71,0)}}",
     "#topbar#topbar #fo-mnav-btn{background:transparent;border:none;color:#FFFFFF;border-radius:12px;padding:6px;cursor:pointer}",
     "#topbar#topbar #fo-mnav-btn:hover{background:rgba(255,255,255,.09)}",
@@ -36355,8 +36518,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             // never played - stay as plain rows rather than dead links.
             // the served feed counts rounds from 1 and the engine from 0, so
             // the round has to be translated or nothing ever matches
+            // The card this device holds is the richer read - scorecard,
+            // commentary, fantasy - so it wins when there is one. There almost
+            // never is: these are the World Service's matches, resolved on the
+            // server, and the device played none of them. So every row that
+            // found no card falls through to the served report, built from the
+            // scoreline the snapshot publishes. Either way the row opens; a row
+            // that opened nothing was the whole complaint.
             var href = "";
             try { href = foMatchHref({ home: hN, away: aN, round: (rr.round | 0) - 1 }); } catch (eH) {}
+            if (!href && rr.id != null) href = "#/report?n=" + encodeURIComponent(natId) + "&w=" + encodeURIComponent(rr.id);
             var body =
               "<span class='fo-lgx-side'>" + shield(hN, false, natId) + "<b>" + E(hN) + "</b>" +
               (rr.hs ? "<u>" + sc(rr.hs) + "</u>" : "") + "</span>" +

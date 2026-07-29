@@ -7226,7 +7226,11 @@
           var g = 0;
           while (M && !M.done && g++ < 3000) { autoPick(); stepBall(); }
           ok = !!(M && M.done && M.result);
-          return ok ? { innings: M.innings, result: M.result, batFirstTeam: M.batFirstTeam } : null;
+          // the log and the worm come back too: a match report wants the
+          // ball-by-ball and the run chart, and a replayed world match is the
+          // only place they exist for a fixture this device never played
+          return ok ? { innings: M.innings, result: M.result, batFirstTeam: M.batFirstTeam,
+            log: M.log || [], worm: M.worm || [[], []] } : null;
         } catch (eSim) { return null; }
         finally {
           try { window.onMatchEnd = prevOME; } catch (e2) {}

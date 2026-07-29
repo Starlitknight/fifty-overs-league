@@ -168,24 +168,30 @@
     "#topbar#topbar #fo-top-status{color:rgba(233,238,246,.6)}",
     "#topbar#topbar #fo-top-status span{border-left:1px solid rgba(255,255,255,.12);padding-left:10px}",
     // live pill: quiet glass by default, red only when something is on air
-    "#topbar#topbar #fo-mlive{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.07) !important;border:1px solid rgba(255,255,255,.14);color:rgba(233,238,246,.6) !important;font:700 11px/1 Inter,sans-serif;letter-spacing:.4px;padding:6px 12px;border-radius:999px}",
-    "#topbar#topbar #fo-mlive .live-dot{width:7px;height:7px;border-radius:50%;background:rgba(233,238,246,.4);display:inline-block}",
-    "#topbar#topbar #fo-mlive.on{background:rgba(229,57,53,.22) !important;border-color:rgba(255,110,100,.6);color:#FFD9D4 !important}",
-    "#topbar#topbar #fo-mlive.on .live-dot{background:#ff5347;box-shadow:0 0 0 0 rgba(255,83,71,.55);animation:foMsPulse 1.8s infinite}",
-    // the manager's OWN match is not the same news as somebody else's: it
-    // gets the full red plate and a breathing ring, so it reads across a
-    // room and cannot be mistaken for chrome
-    "#topbar#topbar #fo-mlive.on.mine{background:#E53935 !important;border-color:#ff8b82;color:#fff !important;animation:foMlMine 1.8s ease-in-out infinite}",
-    "#topbar#topbar #fo-mlive.on.mine .live-dot{background:#fff;box-shadow:none}",
-    "@keyframes foMlMine{0%,100%{box-shadow:0 0 0 0 rgba(229,57,53,.55)}50%{box-shadow:0 0 0 7px rgba(229,57,53,0)}}",
-    "@media (prefers-reduced-motion:reduce){#topbar#topbar #fo-mlive.on.mine{animation:none}}",
-    // The pill was phone furniture: the mobile layer hides it outright and
-    // only un-hides it inside a max-width:820px query, so on a desktop it
-    // could not render at all - no amount of live cricket would have shown
-    // it. It is header furniture on every screen now.
-    "html body #topbar #fo-mlive.on{display:inline-flex !important}",
+    // The live badge, built like a broadcaster's: a thin rectangle, not a
+    // lozenge. Square-ish corners, a hairline, one small breathing dot and
+    // the word in caps with wide tracking - it reads as a channel that is on
+    // air rather than as another nav pill.
+    // The live badge, built like a broadcaster's: a thin rectangle, not a
+    // lozenge. Square-ish corners, one small blinking dot and the word in
+    // caps with wide tracking - it reads as a channel that is on air rather
+    // than as another nav pill.
+    // EVERY RULE HERE CARRIES THE SAME THREE IDS. The dormant state has to
+    // out-rank the phone stylesheet that hides the badge outright, and the
+    // live state has to out-rank the dormant one - and !important does not
+    // decide that, specificity does. A "#topbar#topbar #fo-mlive" base beat
+    // a "html body #topbar #fo-mlive.on" override and left the badge an
+    // outline with no fill.
+    "#topbar#topbar #fo-mlive{display:none;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:4px;background:transparent !important;border:1px solid rgba(233,238,246,.22) !important;color:rgba(233,238,246,.62) !important;font:700 10.5px/1 Inter,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;text-decoration:none !important;white-space:nowrap;box-shadow:none !important;transition:transform .12s ease,box-shadow .12s ease,background .12s ease}",
+    "#topbar#topbar #fo-mlive .live-dot{width:6px;height:6px;border-radius:50%;background:rgba(233,238,246,.4);display:inline-block;flex:0 0 6px}",
+    "#topbar#topbar #fo-mlive.on{display:inline-flex !important;background:#FF0033 !important;border-color:#FF0033 !important;color:#FFFFFF !important;border-radius:4px !important;height:24px !important;padding:0 9px !important}",
+    "#topbar#topbar #fo-mlive.on .live-dot{background:#fff !important;animation:foMlBlink 1.6s steps(1,end) infinite}",
+    "@keyframes foMlBlink{0%,55%{opacity:1}56%,100%{opacity:.25}}",
+    // it is a button: it lifts a hair and warms under the pointer
+    "#topbar#topbar #fo-mlive.on:hover{background:#E4002B !important;border-color:#E4002B !important;transform:translateY(-1px);box-shadow:0 3px 10px rgba(255,0,51,.4) !important}",
+    "#topbar#topbar #fo-mlive.on:focus-visible{outline:2px solid #fff;outline-offset:2px}",
+    "@media (prefers-reduced-motion:reduce){#topbar#topbar #fo-mlive.on .live-dot{animation:none}#topbar#topbar #fo-mlive.on:hover{transform:none}}",
     "@media(max-width:640px){#topbar#topbar.fo-live-on #fo-wclock{display:none}}",
-    "@media(max-width:400px){#topbar#topbar #fo-mlive.on{padding:6px 10px;font-size:10.5px}}",
     "@keyframes foMsPulse{0%{box-shadow:0 0 0 0 rgba(255,83,71,.55)}70%{box-shadow:0 0 0 7px rgba(255,83,71,0)}100%{box-shadow:0 0 0 0 rgba(255,83,71,0)}}",
     "#topbar#topbar #fo-mnav-btn{background:transparent;border:none;color:#FFFFFF;border-radius:12px;padding:6px;cursor:pointer}",
     "#topbar#topbar #fo-mnav-btn:hover{background:rgba(255,255,255,.09)}",
