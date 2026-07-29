@@ -1,6 +1,15 @@
 /* ============================================================================
    THE LIVING SQUAD — ageing, ceilings, contracts and character.
 
+   NOT SHIPPED. This file is deliberately absent from manifest.txt, so none of
+   it reaches the browser. It was written for the Almanack redesign, which was
+   reverted; the rules survived because they are the useful half and they cost
+   nothing to keep - no UI, no storage, no engine hooks, just a set of pure
+   functions and the node test that proves them (test/living-squad.test.mjs,
+   which reads this file from source rather than from the build).
+   Migration 0026 is its database half and is likewise inert until something
+   writes to it. Add the filename back to the manifest to switch it on.
+
    The squad is the thing a manager builds, and until now it did not change.
    Nobody got better in a way you could see, nobody got old, nobody ever left,
    and no two cricketers behaved differently for any reason you could name. A

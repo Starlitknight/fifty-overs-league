@@ -11,6 +11,7 @@
 10-office-settings.js
 11-chronicle.js
 12-scorecard-analysis.js
+13-world-desk.js
 14-match-report.js
 15-living-season.js
 16-matchday-dress.js
@@ -48,12 +49,4 @@
 48-room-art.js
 49-market.js
 50-match-archive.js
-60-almanack-shell.js
-61-today.js
-62-team.js
-63-match-centre.js
-64-table.js
-65-fixtures.js
-66-wire.js
-70-living-squad.js
-71-development.js
+52-standings.js

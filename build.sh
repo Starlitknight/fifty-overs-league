@@ -104,8 +104,7 @@ open(asset, 'w', encoding='utf-8').write(bundle)
 skin = lambda f: open('engine/src/skin/' + f, encoding='utf-8').read()
 head_css = ('<style id="fo-skin-login">' + skin('10-login.css') + '</style>' +
             '<style id="fo-skin-modal">' + skin('20-modal.css') + '</style>')
-tail = ('\n<style id="fo-brand">' + skin('30-brand.css') + '</style>\n'
-        '<style id="fo-almanack">' + skin('40-almanack.css') + '</style>\n')
+tail = '\n<style id="fo-brand">' + skin('30-brand.css') + '</style>\n'
 assert shell.count('</body></html>') == 1
 page = shell.replace('</body></html>', tail + '__FO_SCRIPT__</body></html>')
 page = page.replace('<head>', '<head>' + redir + boot, 1)

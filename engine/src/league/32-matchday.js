@@ -72,11 +72,6 @@
   function xiStrength(xi) { return xi.length ? xi.reduce(function (s, p) { return s + ovrOf(p); }, 0) / xi.length : 50; }
 
   function foRenderMatchdayPage() {
-    // The Living Almanack owns #/matchday now (module 63). This painter
-    // still exists for anything that calls it directly, but it must not
-    // repaint over the new Match Centre - its hashchange hook fired 40ms
-    // after the route and wiped the captain's sheet off the page.
-    try { if (window.__foAlOwns && window.__foAlOwns()) return; } catch (eAl) {}
     try {
       if ((location.hash || "").split("?")[0] !== "#/matchday") return;
       if (!ready()) return;

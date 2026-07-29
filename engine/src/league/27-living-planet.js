@@ -349,163 +349,201 @@
     }, 260);
   }
 
-  // PHASE 4 OF THE ALMANACK. This page's job is to say what the world is doing
-  // RIGHT NOW, and the world's most useful device - the band of flags in hour
-  // order, lit while a nation is playing - is kept, because nothing else says
-  // "the planet is awake somewhere" as fast. Everything under it is ruled
-  // type: the cup as stages, the nations as rows, the wire as headlines. The
-  // clock, the schedule mirror and the served-standings reads are unchanged.
-  function AL_() { return window.AL || null; }
   function foRenderPlanetPage() {
     try {
       if ((location.hash || "").split("?")[0] !== "#/planet") return;
       if (!cx()) return;
       var page = document.getElementById("page"); if (!page) return;
-      var al = AL_(); if (!al) return;
-      try { window.__foAlApply && window.__foAlApply(); } catch (eA) {}
-
+      try { document.body.classList.remove("fo-ov-on", "fo-boss-on", "fo-scb-on", "fo-drs-on"); } catch (eB) {}
       var now = Date.now(), p = phaseOf(now), st = todayStatus(now);
       overrideSnapshot(now);
       var my = myNation(), myRegion = regionById(my) || { nm: "England" };
       var A = artBase();
       var flagOf = function (rid) { return A + "flags/" + cx().flagFile(rid) + ".svg"; };
+
+      // the globe as a dial: nations ordered by their hour, live ones lit
       var hNow = hourOfDay(now);
+      var band = regionList().slice().sort(function (a, b) { return natHour(a.id) - natHour(b.id) || (a.nm < b.nm ? -1 : 1); }).map(function (r) {
+        var h0 = natHour(r.id);
+        var st2 = (p.kind === "league") ? (hNow >= h0 && hNow < h0 + LIVE_LEN ? "on" : hNow >= h0 + LIVE_LEN ? "done" : "up") : "up";
+        // a live nation's flag is a door to the world theatre; the rest open the nation page
+        var dest = st2 === "on" ? "#/watch?n=" + encodeURIComponent(r.id) : "#/nation?n=" + encodeURIComponent(r.id);
+        return "<a class='fo-pl-tz " + st2 + (r.id === my ? " me" : "") + "' href='" + dest + "' aria-label='" + E(r.nm) + "'>" +
+          "<img src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\"><i>" + hh(h0).slice(0, 2) + "</i></a>";
+      }).join("");
+      var bandHTML = "<div class='fo-pl-band'><i>The world by the hour &middot; UTC</i><div class='fo-pl-bandrow'>" + band + "</div></div>";
 
       var phaseLine =
-        p.preseason ? "The world is founded and the squads are named — season 1 " + ((WORLD_START - dayIx(now)) === 1 ? "begins tomorrow" : "begins in " + (WORLD_START - dayIx(now)) + " days") :
+        p.preseason ? "The world is founded and the squads are named - season 1 " + ((WORLD_START - dayIx(now)) === 1 ? "begins tomorrow" : "begins in " + (WORLD_START - dayIx(now)) + " days") :
         p.kind === "league" ? "Round " + p.round + " of " + ROUNDS + " across the world's leagues" :
-        p.kind === "honours" ? "Honours day — champions are crowned tonight" :
-        p.kind === "draw" ? "World Cup draw day — sixteen nations learn their fate" :
-        p.kind === "cup" ? "World Cup — " + stageName(p.stage) :
-        "Rest day — the season " + (p.season + 1) + " calendar begins tomorrow";
+        p.kind === "honours" ? "Honours day - champions are crowned tonight" :
+        p.kind === "draw" ? "World Cup draw day - sixteen nations learn their fate" :
+        p.kind === "cup" ? "World Cup - " + stageName(p.stage) :
+        "Rest day - the season " + (p.season + 1) + " calendar begins tomorrow";
 
-      var body = al.head("World cricket · season " + p.season + " · day " + (p.di + 1) + " of " + CYCLE,
-        "The Planet Plays Today",
-        "Every league runs on the world calendar, live from its own local hour — online or offline, the same " +
-        "world for everyone.");
-      body += al.subnav("planet");
-
-      // ---- what is happening this minute, and the way in -------------------
-      var liveHref = st.liveIds && st.liveIds.length === 1
-        ? (st.liveIds[0] === my ? "#/league" : "#/nation?n=" + encodeURIComponent(st.liveIds[0]))
-        : "#/watch";
-      body += al.decide({
-        kind: st.key === "live" ? "act" : "",
-        title: st.chip,
-        note: phaseLine,
-        action: st.key === "live" ? { href: liveHref, label: "Watch" } : null,
-        primary: st.key === "live",
-      });
-
-      // ---- the world by the hour: the one device worth keeping -------------
-      var band = regionList().slice()
-        .sort(function (a, b) { return natHour(a.id) - natHour(b.id) || (a.nm < b.nm ? -1 : 1); })
-        .map(function (r) {
-          var h0 = natHour(r.id);
-          var on = (p.kind === "league") && hNow >= h0 && hNow < h0 + LIVE_LEN;
-          var dest = on ? "#/watch?n=" + encodeURIComponent(r.id) : "#/nation?n=" + encodeURIComponent(r.id);
-          return '<a class="al-flag' + (on || r.id === my ? " al-flag--on" : "") + '" href="' + dest +
-            '" aria-label="' + E(r.nm) + '"><img src="' + flagOf(r.id) + '" alt="" ' +
-            "onerror=\"this.style.display='none'\"><span>" + hh(h0).slice(0, 2) + "</span></a>";
-        }).join("");
-      body += '<div class="al-flags">' + band + "</div>" +
-        '<p class="al-read">The world by the hour, UTC. A lit flag is a nation in play.</p>';
-
-      // ---- your own league, from the served world only ---------------------
+      // -- your own league card: the WORLD's league, your claimed club -------
+      // one world: this card speaks only served data - your claim, the served
+      // standings, today's served fixture - never the retired private league
+      var ownCard = "";
       try {
         var wclP = null; try { wclP = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eW) {}
-        var svP = null;
-        try { if (window.__foWorldLg) { window.__foWorldLg.want(my, planetRepaint); svP = window.__foWorldLg.get(my); } } catch (eL) {}
+        var svP = null; try { svP = window.__foWorldLg ? window.__foWorldLg.get(my) : null; } catch (eL) {}
+        try { if (window.__foWorldLg) window.__foWorldLg.want(my); } catch (eL2) {}
         var meNm2 = (wclP && wclP.country === my) ? wclP.club : null;
-        var rows = [["Your league", myRegion.nm]];
-        if (meNm2) {
-          var posTxt = meNm2;
-          if (svP && svP.table) {
-            var ix2 = svP.table.findIndex(function (t2) { return t2.name === meNm2; });
-            if (ix2 >= 0) posTxt = meNm2 + " · " + (ix2 + 1) + ordSuf(ix2 + 1);
-          }
-          rows.push(["Your club", posTxt]);
+        var posTxt = "";
+        if (meNm2 && svP && svP.table) {
+          var ix2 = svP.table.findIndex(function (t2) { return t2.name === meNm2; });
+          if (ix2 >= 0) { var pn = ix2 + 1; posTxt = " &middot; " + pn + (["th", "st", "nd", "rd"][(pn % 100 > 10 && pn % 100 < 14) ? 0 : Math.min(pn % 10, 4)] || "th"); }
         }
         var ldr3 = svP && svP.table && svP.table[0];
-        if (ldr3 && (ldr3.pts | 0) > 0) rows.push(["Leading", ldr3.name + " · " + (ldr3.pts | 0) + " pts"]);
-        body += al.sec("Your corner of the world", al.ledger(rows),
-          { href: "#/nation?n=" + encodeURIComponent(my), label: myRegion.nm });
+        var nxTxt = "";
+        try {
+          if (meNm2 && window.__foWT && window.__foWT.serverFixtures) {
+            var svF2 = window.__foWT.serverFixtures(my, now);
+            var f2 = (svF2.fx || []).filter(function (x2) { return x2.home.name === meNm2 || x2.away.name === meNm2; })[0];
+            if (f2) nxTxt = " &middot; today: v " + E(f2.home.name === meNm2 ? f2.away.name : f2.home.name);
+          }
+        } catch (eF2) {}
+        ownCard = "<a class='fo-pl-own' href='#/nation?n=" + encodeURIComponent(my) + "'>" +
+          "<img class='fo-pl-flag' src='" + flagOf(my) + "' alt='' onerror=\"this.style.display='none'\">" +
+          "<span class='fo-pl-ownt'><i>Your world league &middot; " + E(myRegion.nm) + "</i>" +
+          "<b>" + E(meNm2 || "Your club awaits its claim") + posTxt + "</b>" +
+          "<em>" + (ldr3 && (ldr3.pts | 0) > 0 ? E(ldr3.name) + " lead on " + (ldr3.pts | 0) + " pts" : "Season 1 of the served world") + nxTxt + "</em></span><u>&rsaquo;</u></a>";
       } catch (eOwn) {}
 
-      // ---- the World Cup, once the draw is made ----------------------------
+      // -- the world cup panel (draw day through rest day) --------------------
+      var cupHTML = "";
       if (p.di >= 19) {
         var stagesDone = wcStagesDone(now, p.season);
         var bracket = wcBracket(p.season);
         var ents = wcEntrants(p.season);
-        var myIn = ents.some(function (e2) { return e2.rid === my; });
+        var myIn = ents.some(function (e) { return e.rid === my; });
         var ups = callUps(myRegion);
-        var cupBody = "";
-        if (stagesDone >= 4) {
-          cupBody += '<p class="al-lede">' + E(wcChampion(p.season).nm) + " are champions of the world.</p>";
-        }
-        cupBody += '<p class="al-read">' + (myIn
-          ? E(myRegion.nm) + " are in" + (ups.length ? " · called up: " + ups.map(E).join(", ") : "")
-          : E(myRegion.nm) + " missed the cut this season") + "</p>";
-        bracket.forEach(function (sg, si) {
+        // YOUR dressing room at the cup: any player of yours - homegrown or a
+        // winter-window signing - whose nation made the sixteen gets the call
+        var abroad = [];
+        ents.forEach(function (e2) {
+          if (e2.rid === my) return;
+          var reg2 = regionById(e2.rid); if (!reg2) return;
+          callUps(reg2).forEach(function (n2) { abroad.push(n2 + " (" + reg2.nm + ")"); });
+        });
+        var stageRows = bracket.map(function (sg, si) {
           var visible = si < stagesDone || (p.kind === "cup" && ["r16", "qf", "sf", "final"][si] === p.stage);
-          if (!visible) {
-            cupBody += '<p class="al-read">' + stageName(sg.stage) + " · " +
-              (si === stagesDone ? "next, " + hh(WC_HOURS[si]) + " UTC" : "to come") + "</p>";
-            return;
+          var liveNow = p.kind === "cup" && ["r16", "qf", "sf", "final"][si] === p.stage && st.key === "live";
+          if (!visible && si >= stagesDone) {
+            return "<div class='fo-pl-stage dim'><i>" + stageName(sg.stage) + "</i><span>" + (si === stagesDone ? "Next · " + hh(WC_HOURS[si]) + " UTC" : "To come") + "</span></div>";
           }
           var done = si < stagesDone;
-          cupBody += '<p class="al-read">' + stageName(sg.stage) + "</p>" + al.ledger(sg.matches.map(function (m) {
-            return [m.a.nm + " v " + m.b.nm,
-              done ? m.winner.nm + " · " + m.hs + " v " + m.as : "to play",
-              done && (m.winner.rid === my) ? "pos" : ""];
-          }));
-        });
-        body += al.sec("Season " + p.season + " World Cup", cupBody, { href: "#/champions", label: "The clubs' cup" });
+          return "<div class='fo-pl-stage'><i>" + stageName(sg.stage) + (liveNow && !done ? " <b class='lv'>LIVE</b>" : "") + "</i>" +
+            sg.matches.map(function (m, gi2) {
+              var mineM = m.a.rid === my || m.b.rid === my;
+              // a finished tie opens its own match page
+              var tag = done ? "a" : "div";
+              var href = done ? " href='#/wcmatch?s=" + p.season + "&st=" + sg.stage + "&g=" + gi2 + "'" : "";
+              return "<" + tag + " class='fo-pl-cm" + (mineM ? " mine" : "") + "'" + href + ">" +
+                "<img src='" + flagOf(m.a.rid) + "' alt=''><span class='" + (done && m.winner === m.a ? "w" : "") + "'>" + E(m.a.nm) + "</span>" +
+                "<u>v</u>" +
+                "<span class='" + (done && m.winner === m.b ? "w" : "") + "'>" + E(m.b.nm) + "</span><img src='" + flagOf(m.b.rid) + "' alt=''>" +
+                (done ? "<em>" + E(m.winner.nm) + " through &middot; " + m.hs + " v " + m.as + "</em>" : "") +
+                "</" + tag + ">";
+            }).join("") + "</div>";
+        }).join("");
+        var champLine = stagesDone >= 4 ? "<div class='fo-pl-crown'>&#127942; <b>" + E(wcChampion(p.season).nm) + "</b> are champions of the world</div>" : "";
+        cupHTML = "<div class='fo-pl-cup'><div class='fo-pl-cuph'><i>Season " + p.season + " World Cup</i>" +
+          (myIn ? "<span class='in'>" + E(myRegion.nm) + " are in" + (ups.length ? " &middot; called up: " + ups.map(E).join(", ") : "") + "</span>" : "<span class='in'>" + E(myRegion.nm) + " missed the cut this season</span>") +
+          (abroad.length ? "<span class='in'>Your dressing room at the cup: " + abroad.map(E).join(", ") + "</span>" : "") +
+          "</div>" + champLine + stageRows + "</div>";
       }
 
-      // ---- the rest of the world, nation by nation -------------------------
-      if (p.kind === "league" || p.kind === "honours") {
-        var natRows = regionList().filter(function (r) { return r.id !== my; }).map(function (r) {
+      // -- one card per rival nation: today's tallest fixture, the leader ----
+      var natCards = "";
+      if (p.kind === "league") {
+        natCards = regionList().filter(function (r) { return r.id !== my; }).map(function (r) {
+          var fx = fixturesOf(r.id, p.season, p.round);
+          // THE REAL TABLE, NOT THE PAINTED ONE. These cards used to read the
+          // local deterministic mirror for every rival nation, so South Africa
+          // and India sat on nought all season while the umpire was banking
+          // their results. Ask the world for each nation's standings - the
+          // same snapshot their own page reads - and only fall back to the
+          // mirror while it is in flight.
           var svN = null;
           try {
-            if (window.__foWorldLg) { window.__foWorldLg.want(r.id, planetRepaint); svN = window.__foWorldLg.get(r.id); }
+            if (window.__foWorldLg) {
+              window.__foWorldLg.want(r.id, planetRepaint);
+              svN = window.__foWorldLg.get(r.id);
+            }
           } catch (eSv) {}
           if (svN && (!svN.seasonNo || svN.seasonNo !== p.season)) svN = null;
-          var natLive = (p.kind === "league") && hNow >= natHour(r.id) && hNow < natHour(r.id) + LIVE_LEN;
-          var line;
-          if (p.kind === "honours") {
-            var c = championOf(r.id, p.season);
-            line = c ? c.name + ", champions" : "champions being decided";
-          } else if (natLive) {
-            line = "in play now · " + hh(natHour(r.id)) + " UTC";
-          } else {
-            var t = svN && svN.table && svN.table.length ? svN.table[0] : null;
-            line = t ? (t.p ? t.name + " lead · " + t.pts + " pts" : "no play yet")
-                     : "round " + p.round + " · " + hh(natHour(r.id)) + " UTC";
+          var t = tableOf(r.id, p.season, roundsDone(now, p.season));
+          var posOf = {}; t.forEach(function (row, i2) { posOf[row.side.slot] = i2 + 1; });
+          if (svN && svN.table && svN.table.length) {
+            posOf = {}; svN.table.forEach(function (row9, i9) { posOf[row9.slot] = i9 + 1; });
           }
-          return '<a class="al-fix al-fix--room' + (natLive ? " al-fix--next" : "") +
-            '" href="#/nation?n=' + encodeURIComponent(r.id) + '">' +
-            '<span class="al-fix__t"><b><img class="al-flag" src="' + flagOf(r.id) + '" alt="" ' +
-            "onerror=\"this.style.display='none'\">" + E(r.nm) + "</b><i>" + E(line) + "</i></span>" +
-            '<span class="al-fix__o">' + (natLive ? "LIVE" : "›") + "</span></a>";
+          var feat = fx.slice().sort(function (a, b) { return (posOf[a.home.slot] + posOf[a.away.slot]) - (posOf[b.home.slot] + posOf[b.away.slot]); })[0];
+          var lv = feat ? liveView(feat, now, natHour(r.id)) : null;
+          // the card tells the truth: fixture names come from the server's
+          // own schedule (same round, same circle method); a finished match
+          // shows the RECORDED result when the served snapshot is in hand,
+          // and never an invented scoreline
+          var finTxt = null;
+          try {
+            var snb = window.__foWorldLg && window.__foWorldLg.get(r.id);
+            if (feat && snb && snb.seasonNo === p.season) {
+              var rr = (snb.results || []).filter(function (x) { return x.round === p.round && x.home === feat.home.name && x.away === feat.away.name; })[0];
+              if (rr) finTxt = rr.text;
+            }
+          } catch (eF) {}
+          var mid = !feat ? "" :
+            lv.state === "up" ? "<em class='fx'>" + E(feat.home.name) + " v " + E(feat.away.name) + " &middot; " + hh(natHour(r.id)) + " UTC</em>" :
+            lv.state === "live" ? "<em class='fx live'><b>LIVE</b> " + E(feat.home.name) + " v " + E(feat.away.name) + " &middot; in play now</em>" :
+            "<em class='fx'>" + (finTxt ? E(finTxt) : E(feat.home.name) + " v " + E(feat.away.name) + " &middot; played &middot; tap for the result") + "</em>";
+          var ldr2 = (svN && svN.table && svN.table.length)
+            ? { side: { name: svN.table[0].name }, pts: svN.table[0].pts, p: svN.table[0].p }
+            : t[0];
+          // a nation in its live window wears an unmissable red LIVE button;
+          // the card opens its matchday, where every live match has a
+          // watch-in-the-theatre door
+          var natLive = hNow >= natHour(r.id) && hNow < natHour(r.id) + LIVE_LEN;
+          return "<a class='fo-pl-nat" + (natLive ? " live" : "") + "' href='#/nation?n=" + encodeURIComponent(r.id) + "'>" +
+            "<img class='fo-pl-flag' src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\">" +
+            "<span class='fo-pl-natt'><b>" + E(r.nm) + "</b>" + mid +
+            "<u>" + (ldr2 ? (ldr2.p === 0 ? E(ldr2.side.name) + " &middot; no play yet"
+              : E(ldr2.side.name) + " lead &middot; " + ldr2.pts + " pts") : "") + "</u></span>" +
+            (natLive ? "<span class='fo-pl-livebtn'><i></i>LIVE</span>" : "<i>&rsaquo;</i>") + "</a>";
         }).join("");
-        body += al.sec("The rest of the world · " + (regionList().length - 1) + " leagues",
-          '<div class="al-fixlist">' + natRows + "</div>");
+      } else if (p.kind === "honours") {
+        natCards = regionList().filter(function (r) { return r.id !== my; }).map(function (r) {
+          var c = championOf(r.id, p.season);
+          return "<a class='fo-pl-nat' href='#/nation?n=" + encodeURIComponent(r.id) + "'>" +
+            "<img class='fo-pl-flag' src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\">" +
+            "<span class='fo-pl-natt'><b>" + E(r.nm) + "</b><em class='fx'>&#127942; " + E(c ? c.name : "") + ", champions</em></span><i>&rsaquo;</i></a>";
+        }).join("");
       }
 
-      // ---- the wire -----------------------------------------------------------
-      var wireItems = genWire(now).slice(0, 6);
-      if (wireItems.length) {
-        body += al.sec("The world wire",
-          '<div class="al-fixlist">' + wireItems.map(function (w) {
-            return '<div class="al-fix al-fix--room"><span class="al-fix__t"><b>' + E(w.headline) + "</b></span></div>";
-          }).join("") + "</div>", { href: "#/wire", label: "All of it" });
-      }
+      var wireItems = genWire(now).slice(0, 6).map(function (w) { return "<div class='fo-pl-wireln'>" + E(w.headline) + "</div>"; }).join("");
 
-      page.innerHTML = al.page({ body: body });
+      page.innerHTML =
+        "<div class='fo-pl'>" +
+        "<div class='fo-pl-mast'>" +
+        "<div class='fo-pl-kick'>World cricket &middot; Season " + p.season + " &middot; Day " + (p.di + 1) + " of " + CYCLE + "</div>" +
+        "<h1>The Planet Plays Today</h1>" +
+        "<p>" + E(phaseLine) + ". Every league runs on the world calendar, live from 10:00 UTC — online or offline, the same world for everyone.</p>" +
+        // LIVE is a door, not a label: one live nation opens that nation's
+        // matchday (every live match, watch buttons and all); several open
+        // the theatre hub
+        (st.key === "live"
+          ? "<a class='fo-pl-chip live islink' href='" + (st.liveIds.length === 1
+              ? (st.liveIds[0] === my ? "#/league" : "#/nation?n=" + encodeURIComponent(st.liveIds[0]))
+              : "#/watch") + "'>&#9679; " + E(st.chip) + " &mdash; watch &rsaquo;</a>"
+          : "<span class='fo-pl-chip " + st.key + "'>" + E(st.chip) + "</span>") +
+        "</div>" +
+        bandHTML + ownCard + cupHTML +
+        (natCards ? "<div class='fo-pl-grid'>" + natCards + "</div>" : "") +
+        (wireItems ? "<div class='fo-pl-wire'><i>The world wire</i>" + wireItems + "</div>" : "") +
+        "<div class='fo-pl-foot'><a href='#/worldclub'>Join the world &rsaquo;</a><a href='#/world'>The world map &rsaquo;</a><a href='#/champions'>The Champions Cup &rsaquo;</a><a href='#/nations'>The international game &rsaquo;</a><a href='#/rankings'>The world rankings &rsaquo;</a><a href='#/nation'>My league &rsaquo;</a><a href='#/almanack'>The world almanack &rsaquo;</a><a href='#/atlas'>The atlas &rsaquo;</a></div>" +
+        "</div>";
     } catch (e) { try { console.warn("foRenderPlanetPage", e); } catch (e2) {} }
   }
-  function ordSuf(n) { return ["th", "st", "nd", "rd"][(n % 100 > 10 && n % 100 < 14) ? 0 : Math.min(n % 10, 4)] || "th"; }
 
   var CSS = [
     "html body #page .fo-pl{max-width:680px;margin:26px auto 44px;padding:0 14px;color:#141C28}",

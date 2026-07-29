@@ -60,17 +60,6 @@
 
   function paint() {
     try {
-      // The Almanack's screens are paper, not rooms. They state their artwork
-      // as a plate at full brightness; a veiled painting behind the text is
-      // the language they replaced, and it showed through their backgrounds.
-      try {
-        if (window.__foAlOwns && window.__foAlOwns()) {
-          var off = document.getElementById("fo-roomart");
-          if (off) { off.classList.remove("on"); off.__k = ""; }
-          document.body.classList.remove("fo-roomart-on");
-          return;
-        }
-      } catch (eAl) {}
       css();
       var r = room(), art = ROOM[r];
       var el = document.getElementById("fo-roomart");

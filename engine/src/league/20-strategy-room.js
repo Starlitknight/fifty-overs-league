@@ -215,119 +215,131 @@
   }
 
   // ---- the page --------------------------------------------------------------
-  // PHASE 3 OF THE ALMANACK. The dossier was a rain-veranda photograph with
-  // frosted cards floating on it. What a dossier IS is a filed report: a
-  // verdict at the top, the evidence it was drawn from beneath, and the one
-  // standing instruction the manager can actually give at the end. Nothing
-  // about the analysis changed - the grades, the splits and the
-  // recommendations are the same functions, derived from the shared record, so
-  // every client still files the identical report.
-  function A() { return window.AL || null; }
-  function onDossier() { return (location.hash || "").split("?")[0] === "#/dossier"; }
-  function beadRow(name, form) {
-    var b = form.length
-      ? '<span class="al-beads">' + form.slice(-5).map(function (f) {
-          return '<i class="' + (f.w ? "w" : "l") + '" title="' + E(f.txt) + '">' + (f.w ? "W" : "L") + "</i>";
-        }).join("") + "</span>"
-      : '<span class="al-read">no cricket yet</span>';
-    return '<div class="al-formrow"><span>' + E(name) + "</span>" + b + "</div>";
-  }
+  function bead(f) { return "<i class='fo-sd-bead " + (f.w ? "w" : "l") + "' title='" + E(f.txt) + "'>" + (f.w ? "W" : "L") + "</i>"; }
+  function gchip(v) { var g = gradeOf(v); return "<em class='fo-sd-g' style='color:" + GRADE_C[g] + ";border-color:" + GRADE_C[g] + "55'>" + g + "</em>"; }
+  function meter(v) { var w = Math.max(8, Math.min(96, Math.round(v))); return "<span class='fo-sd-m'><u style='width:" + w + "%'></u></span>"; }
 
   function foRenderScoutPage() {
     try {
-      if (!onDossier()) return;
       ensureDoctrines();
       var page = document.getElementById("page"); if (!page) return;
-      var al = A(); if (!al) return;
-      try { window.__foAlApply && window.__foAlApply(); } catch (eA) {}
       var me = null; try { me = userTeam(); } catch (eU) {}
       if (!me) return;
       var nx = nextFixture();
+      document.body.classList.remove("fo-scb-on", "fo-drs-on");
+      document.body.classList.add("fo-sdx-on");
+      var artBase = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
+      var sdBg = "<img class='fo-sd-bg' src='" + artBase + "home/" + (window.innerWidth < 760 ? "hgm" : "hgd") + "-veranda-rain.webp' alt=''><div class='fo-sd-veil'></div>";
 
       if (!nx) {
-        page.innerHTML = al.page({ body:
-          al.mast("The war room", "The Scout's Dossier", "") + al.subnav("dossier") +
-          al.empty("No fixture ahead",
-            "The season is done. The scout is at the beach and the groundsman is re-seeding the square for spring.") });
+        page.innerHTML = sdBg + "<div class='fo-sd'><div class='fo-sd-hero'><div class='fo-sd-kick'>" + E(me.name) + " &middot; the war room</div>" +
+          "<h1>The Scout&rsquo;s Dossier</h1><p>No fixture ahead. The season is done - the scout is at the beach, and the groundsman is re-seeding the square for spring.</p>" +
+          "<div class='fo-sd-foot'><a href='#/desk'>&#8592; The desk</a><a href='#/ceremony'>Awards night &rsaquo;</a></div></div></div>";
         return;
       }
 
-      var opp = nx.opp, hm = humanMap(), oppHuman = !!(hm && hm[opp.name]);
+      var opp = nx.opp;
+      var hm = humanMap();
+      var oppHuman = !!(hm && hm[opp.name]);
       var oppSeas = teamSeason(opp.name), mySeas = teamSeason(me.name);
       var oppSplits = batSplits(opp), mySplits = batSplits(me);
       var oppAtk = attackShape(opp, oppSeas);
-      var rows = []; try { rows = leagueRows(); } catch (eL) {}
-      var posOf = function (nm) { for (var i = 0; i < rows.length; i++) if (rows[i].nm === nm) return { pos: i + 1, pts: rows[i].pts }; return null; };
+      var rows = [];
+      try { rows = leagueRows(); } catch (eL) {}
+      var posOf = function (nm) { for (var i = 0; i < rows.length; i++) if (rows[i].nm === nm) return { pos: i + 1, pts: rows[i].pts, nrr: rows[i].nrr }; return null; };
       var meP = posOf(me.name), opP = posOf(opp.name);
       var ord = function (n) { return n + (n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"); };
+
+      // head-to-head this season
       var h2h = (App.results || []).filter(function (rec) {
         return rec && rec.result && ((rec.home === me.name && rec.away === opp.name) || (rec.home === opp.name && rec.away === me.name));
       }).slice(-3);
-      var scorers = topN(oppSeas.bat, function (x) { return x.r; }, 4);
-      var wickets = topN(oppSeas.bowl, function (x) { return x.w; }, 3);
+
+      var scorers = topN(oppSeas.bat, function (s) { return s.r; }, 4);
+      var wickets = topN(oppSeas.bowl, function (s) { return s.w; }, 3);
+
       var recs = recommend(nx, me, opp, oppSeas, mySplits, oppSplits, oppAtk);
       var doctrine = me.homePitch || "";
+      var nextHome = null;
+      try {
+        var S = App.season;
+        for (var r2 = S.round; r2 < S.schedule.length && !nextHome; r2++) {
+          (S.schedule[r2] || []).forEach(function (f2) {
+            if (nextHome) return;
+            if (f2[0] !== App.teamIx) return;
+            try { if (S.played && S.played[fixtureKey(r2, f2)] !== undefined) return; } catch (eK2) {}
+            nextHome = { r: r2, opp: GD.teams[f2[1]] };
+          });
+        }
+      } catch (eNH) {}
 
-      var body = al.head("Round " + (nx.r + 1) + " · " + (nx.isHome ? "at " : "away at ") + nx.ground,
-        "v " + opp.name,
-        (oppHuman ? "A human hand on their tiller — expect the unexpected. " : "") +
-        "The scout has been to their nets, read their scorecards, and filed this before breakfast.");
-      body += al.subnav("dossier");
+      page.innerHTML = sdBg +
+        "<div class='fo-sd'>" +
+        "<div class='fo-sd-hero'>" +
+        "<div class='fo-sd-kick'>Round " + (nx.r + 1) + " &middot; " + (nx.isHome ? "at " + E(nx.ground) : "away at " + E(nx.ground)) + "</div>" +
+        "<h1>v " + E(opp.name) + "</h1>" +
+        "<p>" + (oppHuman ? "A human hand on their tiller - expect the unexpected. " : "") +
+        "The scout has been to their nets, read their scorecards, and filed this before breakfast.</p>" +
+        (opP && meP ? "<div class='fo-sd-tale'><span>" + E(me.name) + " &middot; " + ord(meP.pos) + " &middot; " + meP.pts + " pts</span><b>v</b><span>" + E(opp.name) + " &middot; " + ord(opP.pos) + " &middot; " + opP.pts + " pts</span></div>" : "") +
+        "</div>" +
 
-      // ---- the verdict: what to do if you win the toss ----------------------
-      body += al.decide({
-        kind: "act",
-        title: tossHint(nx.pitch, nx.weather),
-        note: (PITCH_NM[nx.pitch] || nx.pitch) + " · " + nx.weather + " · " + (PITCH_LINE[nx.pitch] || ""),
-        action: { href: "#/team", label: "Pick the side" },
-        primary: true,
-      });
+        "<div class='fo-sd-grid'>" +
 
-      if (meP && opP) {
-        body += al.sec("The two of you", al.ledger([
-          [me.name, ord(meP.pos) + " · " + meP.pts + " pts"],
-          [opp.name, ord(opP.pos) + " · " + opP.pts + " pts"],
-        ]), { href: "#/table", label: "The table" });
-      }
+        // form
+        "<section class='fo-sd-card'><div class='fo-sd-k'>Recent form</div>" +
+        "<div class='fo-sd-formrow'><span>" + E(opp.name) + "</span><span class='fo-sd-beads'>" + (oppSeas.form.slice(-5).map(bead).join("") || "<i class='fo-sd-none'>no cricket yet</i>") + "</span></div>" +
+        "<div class='fo-sd-formrow'><span>" + E(me.name) + "</span><span class='fo-sd-beads'>" + (mySeas.form.slice(-5).map(bead).join("") || "<i class='fo-sd-none'>no cricket yet</i>") + "</span></div>" +
+        (h2h.length ? "<div class='fo-sd-h2h'>" + h2h.map(function (rec) { return "<a href='#/report?i=" + rec.ix + "'>" + E((rec.result && rec.result.text) || "") + " &rsaquo;</a>"; }).join("") + "</div>" : "") +
+        "</section>" +
 
-      body += al.sec("Recent form",
-        beadRow(opp.name, oppSeas.form) + beadRow(me.name, mySeas.form) +
-        (h2h.length ? '<p class="al-read">' + h2h.map(function (rec) {
-          return '<a href="#/report?i=' + rec.ix + '">' + E((rec.result && rec.result.text) || "") + "</a>";
-        }).join(" · ") + "</p>" : ""));
-
-      // GRADES, NEVER RAW NUMBERS. A rival's skill values are nobody's
-      // business; a letter and a bar are what a scout would actually file.
-      body += al.sec("Their batting",
-        al.ledger([["Against pace", gradeOf(oppSplits.vsPace)], ["Against spin", gradeOf(oppSplits.vsSpin)]]) +
-        (scorers.length ? al.ledger(scorers.map(function (o) {
+        // their batting
+        "<section class='fo-sd-card'><div class='fo-sd-k'>Their batting</div>" +
+        "<div class='fo-sd-split'><span>vs pace</span>" + meter(oppSplits.vsPace) + gchip(oppSplits.vsPace) + "</div>" +
+        "<div class='fo-sd-split'><span>vs spin</span>" + meter(oppSplits.vsSpin) + gchip(oppSplits.vsSpin) + "</div>" +
+        (scorers.length ? "<div class='fo-sd-men'>" + scorers.map(function (o) {
           var sr = o.s.b ? Math.round(100 * o.s.r / o.s.b) : 0;
-          return [o.nm, o.s.r + " runs · best " + o.s.best + (sr ? " · SR " + sr : "")];
-        })) : '<p class="al-read">No innings on record — the scout is guessing from the nets.</p>'));
+          return "<div class='fo-sd-man'><b>" + E(o.nm) + "</b><span>" + o.s.r + " runs &middot; best " + o.s.best + (sr ? " &middot; SR " + sr : "") + "</span></div>";
+        }).join("") + "</div>" : "<div class='fo-sd-none2'>No innings on record - the scout is guessing from the nets.</div>") +
+        "</section>" +
 
-      body += al.sec("Their attack",
-        al.ledger([["Pace", oppAtk.pacePct + "%"], ["Spin", (100 - oppAtk.pacePct) + "%"]]) +
-        al.meter(oppAtk.pacePct) +
-        (wickets.length ? al.ledger(wickets.map(function (o) {
+        // their bowling
+        "<section class='fo-sd-card'><div class='fo-sd-k'>Their attack</div>" +
+        "<div class='fo-sd-mix'><u style='width:" + oppAtk.pacePct + "%'></u></div>" +
+        "<div class='fo-sd-mixlbl'><span>pace " + oppAtk.pacePct + "%</span><span>spin " + (100 - oppAtk.pacePct) + "%</span></div>" +
+        (wickets.length ? "<div class='fo-sd-men'>" + wickets.map(function (o) {
           var ov = o.s.b ? (o.s.b / 6) : 0, ec = ov ? (o.s.r / ov) : 0;
-          return [o.nm, o.s.w + " wkts" + (ec ? " · " + ec.toFixed(1) + " rpo" : "")];
-        })) : '<p class="al-read">No bowling record yet this season.</p>'));
+          return "<div class='fo-sd-man'><b>" + E(o.nm) + "</b><span>" + o.s.w + " wkts" + (ec ? " &middot; " + ec.toFixed(1) + " rpo" : "") + "</span></div>";
+        }).join("") + "</div>" : "<div class='fo-sd-none2'>No bowling record yet this season.</div>") +
+        "</section>" +
 
-      body += al.sec("The scout recommends",
-        '<ol class="al-recs">' + recs.map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ol>");
+        // conditions
+        "<section class='fo-sd-card'><div class='fo-sd-k'>The conditions</div>" +
+        "<div class='fo-sd-cond'><b>" + E(nx.ground) + "</b><span>" + E(PITCH_NM[nx.pitch] || nx.pitch) + " &middot; " + E(nx.weather) + "</span></div>" +
+        "<p class='fo-sd-say'>" + E(PITCH_LINE[nx.pitch] || "") + ".</p>" +
+        "<p class='fo-sd-toss'><b>The toss:</b> " + E(tossHint(nx.pitch, nx.weather)) + "</p>" +
+        "</section>" +
 
-      body += al.sec("The groundsman",
-        "<p>A standing instruction for how " + E(me.ground || "your ground") + " is prepared. It holds until you " +
-        "change it, and applies to every home fixture still to be played.</p>" +
-        '<div class="al-picks">' + DOCTRINES.map(function (d) {
+        // recommendations
+        "<section class='fo-sd-card fo-sd-wide'><div class='fo-sd-k'>The scout recommends</div>" +
+        "<ol class='fo-sd-recs'>" + recs.map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ol>" +
+        "</section>" +
+
+        // groundsman
+        "<section class='fo-sd-card fo-sd-wide'><div class='fo-sd-k'>The groundsman</div>" +
+        "<p class='fo-sd-say'>A standing instruction for how " + E(me.ground || "your ground") + " is prepared. It holds until you change it, and applies to every home fixture still to be played" +
+        (nextHome ? " - next: <b>R" + (nextHome.r + 1) + " v " + E(nextHome.opp.name) + "</b>" : "") + ".</p>" +
+        "<div class='fo-sd-docs'>" + DOCTRINES.map(function (d) {
           var on = (doctrine || "") === d.k;
-          return '<button type="button" class="al-pick" data-doc="' + d.k + '" aria-pressed="' + (on ? "true" : "false") + '">' +
-            "<b>" + E(d.nm) + "</b><i>" + E(d.why) + "</i></button>";
-        }).join("") + "</div>");
+          return "<button class='fo-sd-doc" + (on ? " on" : "") + "' data-doc='" + d.k + "'><b>" + E(d.nm) + "</b><span>" + E(d.why) + "</span></button>";
+        }).join("") + "</div>" +
+        "</section>" +
 
-      page.innerHTML = al.page({ body: body });
+        "</div>" +
+        "<div class='fo-sd-foot'><a href='#/desk'>&#8592; The desk</a><a href='#/orders'>Set the orders &rsaquo;</a><a href='#/training'>The nets &rsaquo;</a></div>" +
+        "</div>";
 
-      page.querySelectorAll(".al-pick").forEach(function (b) {
+      // groundsman wiring
+      page.querySelectorAll(".fo-sd-doc").forEach(function (b) {
         b.addEventListener("click", function () {
           try {
             var k = b.getAttribute("data-doc") || "";
@@ -339,6 +351,7 @@
       });
     } catch (e) { try { console.warn("foRenderScoutPage", e); } catch (e2) {} }
   }
+
   // ---- topbar link -----------------------------------------------------------
   function ensureNavLink() {
     try {

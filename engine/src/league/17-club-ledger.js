@@ -101,94 +101,63 @@
     return { burn: burn, inc: inc, net: net, gate: att * 9,
       rounds: net >= 0 ? null : Math.max(0, Math.floor((App.fin.bank || 0) / -net)) };
   }
-  function A() { return window.AL || null; }
-  function onLedger() { return (location.hash || "").split("?")[0] === "#/ledger"; }
-
-  // PHASE 4 OF THE ALMANACK. The book was a linen account page with a stat
-  // strip on a dark hero. A ledger is what the shell does best, so the room is
-  // now: what the club is worth and what a round costs, the shirt (the one
-  // decision), the works, and the book itself. The settlement arithmetic, the
-  // sponsor offers and the capital works are untouched.
   window.foRenderLedger = function () {
-    if (!onLedger()) return;
+    try { if (window.foLsCss) window.foLsCss(); } catch (eLs) {}   // this room wears the season sheet's buttons
     var page = document.getElementById("page"); if (!page || !ready()) return;
-    var al = A(); if (!al) return;
-    try { window.__foAlApply && window.__foAlApply(); } catch (eA) {}
+    foLedCss();
+    document.body.classList.add("fo-led-on");
     try { if (typeof econInit === "function") econInit(); } catch (e0) {}
-
     var me = userTeam(), fin = App.fin || { bank: 0, ledger: [] };
     var rw = foRunway(), deal = foDeal();
-    var wages = foWages(me);
+    var stat = function (k, v, sub) { return "<div class='fo-led-stat'><span>" + k + "</span><b>" + v + "</b>" + (sub ? "<em>" + sub + "</em>" : "") + "</div>"; };
+    var hero = "<div class='fo-led-hero'>" +
+      "<div class='fo-led-tag'>The club accounts &middot; season " + (App.seasonNo || 1) + "</div>" +
+      "<div class='fo-led-stats'>" +
+      stat("Bank", M$(fin.bank)) +
+      stat("Wages / round", M$(-foWages(me)), (me.players || []).length + " professionals") +
+      stat("Next home gate", "~" + M$(rw.gate), (typeof attendance === "function" ? attendance(me).toLocaleString() : "") + " expected") +
+      stat("Round result", (rw.net >= 0 ? "+" : "") + M$(rw.net).replace("$-", "-$"), rw.rounds != null ? "covers ~" + rw.rounds + " more rounds" : "in the black") +
+      "</div></div>";
 
-    var body = al.head("The club accounts · season " + (App.seasonNo || 1), "The Journal",
-      "Kept in the club's own hand. Every round settles the wage bill, the league's distribution arrives, " +
-      "and the shirt pays what it promised.");
-    body += al.subnav("ledger");
-
-    body += al.decide({
-      kind: fin.bank < 0 ? "act" : (rw.net >= 0 ? "done" : ""),
-      title: M$(fin.bank) + " in the bank",
-      note: (rw.net >= 0 ? "+" : "") + M$(rw.net).replace("$-", "-$") + " a round" +
-        (rw.rounds != null ? " · covers about " + rw.rounds + " more rounds" : " · in the black"),
-    });
-
-    body += al.sec("Where the money goes", al.ledger([
-      ["Wages, every round", M$(-wages), "neg"],
-      ["Professionals on the staff", String((me.players || []).length)],
-      ["Next home gate", "~" + M$(rw.gate), "pos"],
-      ["Expected through the turnstiles",
-        (typeof attendance === "function" ? attendance(me).toLocaleString() : "—")],
-    ]));
-
-    // ---- the shirt: the one decision a chairman makes ---------------------
+    // the deals on the table, or the one already signed
+    var spon;
     if (deal) {
-      body += al.sec("The shirt", al.ledger([
-        [deal.name, M$(deal.flat) + " a round"],
-        ["Win bonus", deal.win ? M$(deal.win) + " every win" : "none"],
-        ["Signed", "season " + deal.season],
-      ]));
+      spon = "<div class='fo-led-sec'><h3>The shirt</h3><div class='fo-led-deal on'><b>" + E(deal.name) + "</b>" +
+        "<span>" + M$(deal.flat) + " a round" + (deal.win ? " &middot; " + M$(deal.win) + " every win" : "") + " &middot; signed for season " + deal.season + "</span></div></div>";
     } else {
-      body += al.sec("The shirt is bare",
-        "<p>Two deals on the table. Both run to the end of the season; neither waits forever, but neither " +
-        "walks away either.</p>" +
-        '<div class="al-picks">' + foOffers().map(function (o) {
-          return '<button type="button" class="al-pick" data-led-sign="' + E(o.id) + '">' +
-            "<b>" + E(o.name) + " · " + M$(o.flat) + " a round" +
-            (o.win ? " + " + M$(o.win) + " a win" : "") + "</b><i>" + E(o.blurb) + "</i></button>";
-        }).join("") + "</div>");
+      var offers = foOffers();
+      spon = "<div class='fo-led-sec'><h3>The shirt is bare</h3><p class='fo-led-note'>Two deals on the table. Both run to the end of the season; neither waits forever, but neither walks away either.</p>" +
+        offers.map(function (o) {
+          return "<div class='fo-led-deal'><b>" + E(o.name) + "</b>" +
+            "<span>" + M$(o.flat) + " a round" + (o.win ? " &middot; " + M$(o.win) + " every win" : " &middot; no strings") + "</span>" +
+            "<i>" + E(o.blurb) + "</i>" +
+            "<button type='button' class='fo-ls-btn' data-led-sign='" + E(o.id) + "'>Sign</button></div>";
+        }).join("") + "</div>";
     }
 
-    // ---- capital works ------------------------------------------------------
-    var canStand = fin.bank >= 240000;
-    var lvl = me.acadS || 2, canAcad = lvl < 5 && fin.bank >= lvl * 60000;
-    var works = '<div class="al-plaques">' +
-      '<div class="al-plaque"><b>Extend the stand</b><i>+2,000 seats · bigger gates, dearer upkeep</i>' +
-      '<em><button type="button" class="al-btn ' + (canStand ? "al-btn--primary" : "") + '" data-led-work="stand"' +
-      (canStand ? "" : " disabled") + ">" + (canStand ? "Build it · " + M$(240000) : "Needs " + M$(240000)) +
-      "</button></em></div>" +
-      (lvl < 5
-        ? '<div class="al-plaque"><b>Senior academy, level ' + (lvl + 1) + "</b><i>the professionals develop faster</i>" +
-          '<em><button type="button" class="al-btn ' + (canAcad ? "al-btn--primary" : "") + '" data-led-work="acad"' +
-          (canAcad ? "" : " disabled") + ">" + (canAcad ? "Build it · " + M$(lvl * 60000) : "Needs " + M$(lvl * 60000)) +
-          "</button></em></div>"
-        : "") + "</div>";
-    body += al.sec("Works", works);
+    // capital works: what a chairman can actually build
+    var canStand = fin.bank >= 240000, canAcad = (me.acadS || 2) < 5 && fin.bank >= (me.acadS || 2) * 60000;
+    var works = "<div class='fo-led-sec'><h3>Works</h3>" +
+      "<div class='fo-led-work'><b>Extend the stand</b><span>+2,000 seats &middot; bigger gates, dearer upkeep</span>" +
+      "<button type='button' class='fo-ls-btn" + (canStand ? "" : " off") + "' data-led-work='stand'>" + M$(-240000).replace("-", "") + "</button></div>" +
+      ((me.acadS || 2) < 5 ? "<div class='fo-led-work'><b>Senior academy, level " + ((me.acadS || 2) + 1) + "</b><span>the pros develop faster</span>" +
+        "<button type='button' class='fo-ls-btn" + (canAcad ? "" : " off") + "' data-led-work='acad'>" + M$(-(me.acadS || 2) * 60000).replace("-", "") + "</button></div>" : "") +
+      "</div>";
 
-    // ---- the book itself ----------------------------------------------------
-    var entries = (fin.ledger || []).slice(0, 60);
-    body += al.sec("The book", entries.length
-      ? "<div class='al-tblwrap'><table class='al-tbl'><thead><tr>" +
-        "<th class='l'>Round</th><th class='l'>Entry</th><th>Amount</th><th class='al-s'>Balance</th>" +
-        "</tr></thead><tbody>" + entries.map(function (l) {
-          return "<tr><td class='l al-pos'>" + E(l.wk || "") + "</td>" +
-            "<td class='l al-club'>" + E(l.label || l.item || "") + "</td>" +
-            "<td class='al-pts' style='color:" + ((l.amt || 0) < 0 ? "#B23230" : "var(--al-pos)") + "'>" + M$(l.amt) + "</td>" +
-            "<td class='al-s'>" + (l.balance != null ? M$(l.balance) : "") + "</td></tr>";
-        }).join("") + "</tbody></table></div>"
-      : al.empty("Nothing written yet", "The first round opens the book."));
+    // the book itself: red and black ink, running balance
+    var rows = (fin.ledger || []).slice(0, 60).map(function (l) {
+      return "<tr><td class='wk'>" + E(l.wk || "") + "</td><td>" + E(l.label || l.item || "") + "</td>" +
+        "<td class='n " + ((l.amt || 0) < 0 ? "out" : "in") + "'>" + M$(l.amt) + "</td>" +
+        "<td class='n bal'>" + (l.balance != null ? M$(l.balance) : "") + "</td></tr>";
+    }).join("");
+    var book = "<div class='fo-led-sec'><h3>The book</h3>" +
+      (rows ? "<table class='fo-led-book'><thead><tr><th>Round</th><th>Entry</th><th class='n'>Amount</th><th class='n'>Balance</th></tr></thead><tbody>" + rows + "</tbody></table>"
+        : "<p class='fo-led-note'>Nothing written yet. The first round opens the book.</p>") + "</div>";
 
-    body += '<p class="al-read">Prize money lands at the season&rsquo;s end; the cup pays its winners.</p>';
-    page.innerHTML = al.page({ body: body });
+    page.innerHTML = "<div class='fo-led'>" + hero +
+      "<div class='fo-led-paper'>" + spon + works + book +
+      "<div class='fo-led-foot'>Kept in the club's own hand. Prize money lands at the season's end; the cup pays its winners.</div></div>" +
+      "<div class='fo-cer-actions' style='margin-top:16px'><a class='fo-ls-btn ghost' href='#/desk'>&lsaquo; The desk</a></div></div>";
 
     page.querySelectorAll("[data-led-sign]").forEach(function (b) {
       b.addEventListener("click", function () {
@@ -210,7 +179,8 @@
       });
     });
   };
-  
+  window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] !== "#/ledger") document.body.classList.remove("fo-led-on"); });
+
   // the desk card: the week's money at a glance, and the pen if the shirt is bare
   window.foLedgerCard = function () {
     if (!ready() || !App.fin) return "";

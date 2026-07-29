@@ -57,80 +57,56 @@
     } catch (e) { done(); }
   }
 
-  function A() { return window.AL || null; }
-  function onRk() { return (location.hash || "").split("?")[0] === "#/rankings"; }
-
-  // PHASE 4 OF THE ALMANACK. A ladder is a table, and the shell has one. The
-  // flags stay - a world ranking without them reads as a spreadsheet - but the
-  // dark hero and the rounded cards are gone, and a manager's own club is
-  // marked exactly the way it is marked in the league table.
   window.foRenderRankingsPage = function () {
-    if (!onRk()) return;
     var page = document.getElementById("page"); if (!page) return;
-    var al = A(); if (!al) return;
-    try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
+    foRkCss();
+    try { document.body.classList.remove("fo-ov-on", "fo-boss-on", "fo-scb-on", "fo-drs-on", "fo-wt-on"); } catch (e) {}
     fetchRk();
-
     var cl = claim();
-    var body = al.head("World cricket · the ladder", "The World Rankings",
-      "Rolling ratings over every match the umpire has ever banked. League wins move the needle; " +
-      "Champions Cup nights move it harder.");
-    body += al.subnav("rankings");
-
+    var body;
     if (!RK || !RK.clubs || !RK.clubs.length) {
-      page.innerHTML = al.page({ body: body + al.empty("Reaching the World Service",
-        "Every club on earth starts on 1000. The ladder first moves the night the world plays.") });
-      return;
-    }
-
-    var mine = cl ? RK.clubs.filter(function (c) { return c.country === cl.country && c.slot === cl.slot; })[0] : null;
-    var moved = RK.clubs.some(function (c) { return c.p > 0; });
-
-    body += al.decide({
-      kind: mine ? "" : "",
-      title: mine
-        ? mine.name + " stand " + mine.rank + " of " + RK.clubs.length + " in the world"
-        : RK.clubs[0].name + " lead the world",
-      note: mine ? "rating " + mine.rating + " · " + mine.w + "-" + mine.l + (mine.t ? "-" + mine.t : "")
-                 : (moved ? "rating " + RK.clubs[0].rating : "Every club on earth stands level on 1000 until the world plays."),
-    });
-
-    function clubRow(c) {
-      var isMine = !!(cl && c.country === cl.country && c.slot === cl.slot);
-      return "<tr" + (isMine ? " class='al-you'" : "") + ">" +
-        "<td class='al-pos'>" + c.rank + "</td>" +
-        "<td class='l al-club'><img class='al-flag' src='" + flagOf(c.country) + "' alt='' " +
-          "onerror=\"this.style.display='none'\">" + E(c.name) +
-          (isMine ? "<span class='al-you__tag'>YOU</span>" : (c.boss ? "<span class='al-you__tag'>FLAGSHIP</span>" : "")) + "</td>" +
-        "<td class='l al-s'>" + E(natName(c.country)) + "</td>" +
-        "<td class='al-s'>" + c.w + "-" + c.l + (c.t ? "-" + c.t : "") + "</td>" +
-        "<td class='al-pts'>" + c.rating + "</td></tr>";
-    }
-    var rows = RK.clubs.slice(0, 30).map(clubRow).join("");
-    if (mine && mine.rank > 30) rows += "<tr><td colspan='5' class='l al-s'>…</td></tr>" + clubRow(mine);
-
-    body += al.sec("The club ladder · top 30 of " + RK.clubs.length,
-      "<div class='al-tblwrap'><table class='al-tbl'><thead><tr><th></th><th class='l'>Club</th>" +
-      "<th class='l al-s'>Nation</th><th class='al-s'>W-L</th><th>Rating</th></tr></thead><tbody>" +
-      rows + "</tbody></table></div>" +
-      (moved ? "" : '<p class="al-read">Every club on earth stands level on 1000. The ladder first moves the ' +
-        "night the world plays its opening round.</p>"));
-
-    body += al.sec("The nations · league strength and national XI",
-      "<div class='al-tblwrap'><table class='al-tbl'><thead><tr><th></th><th class='l'>Nation</th>" +
-      "<th class='al-s'>XI</th><th>Clubs</th></tr></thead><tbody>" +
-      (RK.countries || []).map(function (n) {
+      body = "<div class='fo-rk-card'><p class='fo-rk-note'>Reaching the World Service for the ladder&hellip; Every club on earth starts on <b>1000</b>; the rankings first move the night the world plays.</p></div>";
+    } else {
+      var moved = RK.clubs.some(function (c) { return c.p > 0; });
+      var mine = cl ? RK.clubs.filter(function (c) { return c.country === cl.country && c.slot === cl.slot; })[0] : null;
+      var mineChip = mine
+        ? "<div class='fo-rk-mine'>&#127942; <b>" + E(mine.name) + "</b> stand <u>#" + mine.rank + "</u> of " + RK.clubs.length + " in the world &middot; rating " + mine.rating + "</div>"
+        : "";
+      var rowOf = function (c) {
+        var isMine = !!(cl && c.country === cl.country && c.slot === cl.slot);
+        return "<a class='fo-rk-row" + (isMine ? " mine" : "") + (c.boss ? " boss" : "") + "' href='#/team?c=" + encodeURIComponent(c.country) + "&s=" + c.slot + "'>" +
+          "<i>" + c.rank + "</i>" +
+          "<img src='" + flagOf(c.country) + "' alt='' onerror=\"this.style.display='none'\">" +
+          "<b>" + E(c.name) + (isMine ? " <em>YOU</em>" : (c.boss ? " <em class='bs'>FLAGSHIP</em>" : "")) + "</b>" +
+          "<u>" + E(natName(c.country)) + "</u>" +
+          "<span class='rec'>" + c.w + "-" + c.l + (c.t ? "-" + c.t : "") + "</span>" +
+          "<span class='pts'>" + c.rating + "</span></a>";
+      };
+      var top = RK.clubs.slice(0, 30).map(rowOf).join("");
+      var mineExtra = (mine && mine.rank > 30)
+        ? "<div class='fo-rk-gap'>&middot;&middot;&middot;</div>" + rowOf(mine)
+        : "";
+      var natRows = (RK.countries || []).map(function (n) {
         var isMineN = !!(cl && cl.country === n.id);
-        return "<tr" + (isMineN ? " class='al-you'" : "") + "><td class='al-pos'>" + n.rank + "</td>" +
-          "<td class='l al-club'><img class='al-flag' src='" + flagOf(n.id) + "' alt='' " +
-            "onerror=\"this.style.display='none'\">" + E(n.name) +
-            (isMineN ? "<span class='al-you__tag'>YOU</span>" : "") + "</td>" +
-          "<td class='al-s'>" + n.natRating + (n.natP ? "" : "*") + "</td>" +
-          "<td class='al-pts'>" + n.clubRating + "</td></tr>";
-      }).join("") + "</tbody></table></div>" +
-      '<p class="al-read">A starred national rating is unproven — that side has not played enough yet.</p>');
-
-    page.innerHTML = al.page({ body: body });
+        return "<a class='fo-rk-row nat" + (isMineN ? " mine" : "") + "' href='#/nation?n=" + encodeURIComponent(n.id) + "'>" +
+          "<i>" + n.rank + "</i>" +
+          "<img src='" + flagOf(n.id) + "' alt='' onerror=\"this.style.display='none'\">" +
+          "<b>" + E(n.name) + "</b>" +
+          "<u>XI " + n.natRating + (n.natP ? "" : " &middot; unproven") + "</u>" +
+          "<span class='pts'>" + n.clubRating + "</span></a>";
+      }).join("");
+      body = mineChip +
+        (moved ? "" : "<div class='fo-rk-card'><p class='fo-rk-note'>Every club on earth stands level on <b>1000</b>. The ladder first moves the night the world plays its opening round.</p></div>") +
+        "<div class='fo-rk-card'><h3>The club ladder <span>top 30 of " + RK.clubs.length + " &middot; Elo, every banked match</span></h3>" + top + mineExtra + "</div>" +
+        "<div class='fo-rk-card'><h3>The nations <span>league strength &middot; national XI</span></h3>" + natRows + "</div>";
+    }
+    page.innerHTML = "<div class='fo-rk'><div class='fo-rk-in'>" +
+      "<div class='fo-rk-hero'><div class='fo-rk-k'>World cricket &middot; the ladder</div>" +
+      "<h1>The World Rankings</h1>" +
+      "<p>Rolling ratings over every match the umpire has ever banked. League wins move the needle; Champions Cup nights move it harder.</p></div>" +
+      body +
+      "<div class='fo-rk-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/records'>The record book &rsaquo;</a></div>" +
+      "</div></div>";
   };
 
   function foRkCss() {

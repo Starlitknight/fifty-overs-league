@@ -3096,8 +3096,6 @@
   // and its orientation. Phones draw from the portrait set, desktops from
   // the landscape set; the pick is seeded by the DAY so it never shuffles
   // mid-session, and a different painting greets each new day.
-  // the captions are shared with the Almanack's Today plate (module 61),
-  // which lives in its own closure and cannot see this one
   var FO_HG_WX = {
     "arches-dawn-mist": "Dawn mist · ground staff at work",
     "arches-summer-noon": "High summer · perfect for batting",
@@ -3132,7 +3130,6 @@
     "hgd-heart-of-club": "The pavilion · the heart of the club",
     "club-home-quiet-background": "The ground at rest"
   };
-  try { window.FO_HG_WX = FO_HG_WX; } catch (eWx) {}
   var FO_HG_POOLS = {
     m: {
       dawn: ["hgm-arch-dawn"],
@@ -3185,9 +3182,6 @@
     var pool = FO_HG_POOLS[m ? "m" : "d"][slot];
     return pool[day % pool.length];
   }
-  // the Almanack's Today plate (module 61) is its own closure and cannot
-  // see this one; the painting of the hour is shared, not duplicated
-  try { window.foHgVariant = foHgVariant; } catch (eHv) {}
   // one rule for every full-art page (wallpaper, city, tour): the header
   // dissolves into the art and the stage owns the whole screen
   function foArtChrome() {
