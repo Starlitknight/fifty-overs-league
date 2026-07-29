@@ -10272,7 +10272,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260729-1654-771c3f";
+  var FO_BUILD = "20260729-1842-f75c9c";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -32260,7 +32260,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // an engine version moved, a manager's orders were in play - the page falls
   // back to the published scoreline rather than print a match that never
   // happened.
-  function foMrReplayServed(nat, row, seasonNo) {
+  // REBUILD THE MATCH THAT WAS PLAYED, NOT A MATCH FROM THE SAME SEED.
+  // The umpire does not run a clean generated eleven: he runs the men as they
+  // were that day - the experience the season has given them, the form of
+  // their last five, the tiredness in the arm - and he runs whatever team
+  // sheets managers filed. `state` carries both, straight from the World
+  // Service, exactly as the broadcast takes them. Replay without it and the
+  // engine plays a different, equally valid match; the verdicts disagree, the
+  // agreement check does its job, and the reader gets a bare scoreline.
+  function foMrReplayServed(nat, row, seasonNo, state) {
     try {
       var G = window.__foGame, WT = window.__foWT, PL = window.__foPlanet;
       if (!G || !G.simWorld || !WT || !WT.serverSquad || !PL) return null;
@@ -32273,11 +32281,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (!hSd || !aSd) return null;
       var sqH = WT.serverSquad(nat, hSd.slot), sqA = WT.serverSquad(nat, aSd.slot);
       if (!sqH || !sqA) return null;
+      var liv = state && state.living;
+      if (liv && WT.applyLiving) {
+        sqH = WT.applyLiving(sqH, liv[row.home]);
+        sqA = WT.applyLiving(sqA, liv[row.away]);
+      }
       var matchId = nat + ":s" + (seasonNo | 0) + ":r" + (row.round | 0) + ":h" + hSd.slot + "a" + aSd.slot;
       var seed = (G.hash ? G.hash(matchId) : 0) || 1;
       var ground = (hSd.city || row.home) + " Ground";
       var out = G.simWorld({ name: row.home, ground: ground, players: sqH },
-                           { name: row.away, players: sqA }, "balanced", "Sunny", seed, null);
+                           { name: row.away, players: sqA }, "balanced", "Sunny", seed,
+                           (state && state.orders) || null);
       if (!out || !out.innings || !out.result) return null;
       // the agreement check: the same verdict, to the word
       if (String(out.result.text || "") !== String(row.text || "")) return null;
@@ -32287,29 +32301,89 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         comp: "league", round: (row.round | 0) - 1, seasonNo: seasonNo | 0 };
     } catch (e) { return null; }
   }
+  // A rebuilt match is fifty overs of engine work. The four tabs are four
+  // views of ONE match, so it is played once and kept; switching tabs should
+  // cost a repaint, not a re-simulation.
+  var MR_REP = {};
+  // A CLUB ANSWERS TO THE NAME ITS MANAGER GAVE IT. The snapshot publishes
+  // christened names - Mashed Potatoes, Thunder Emperor - while the squad
+  // generator only knows slots, so the replay has to translate one to the
+  // other. get() reads a cache and never fills it, so a report opened before
+  // anything else had asked the world could not place a renamed club at all,
+  // and fell back to the scoreline. Ask properly, and wait.
+  function foMrNames(nat) {
+    return new Promise(function (res) {
+      try {
+        var WN = window.__foWorldNames;
+        if (!WN || !WN.want) return res(null);
+        if (WN.get(nat)) return res(WN.get(nat));          // already in hand
+        var done = false;
+        var settle = function () { if (done) return; done = true; res(WN.get(nat)); };
+        WN.want(nat, settle);
+        setTimeout(settle, 4000);          // want() stays silent inside its courtesy window
+      } catch (e) { res(null); }
+    });
+  }
+  var MR_ASKED = {};
   function foMrRenderServed(nat, id, page) {
     var hit = foMrServedRow(nat, id);
     if (!hit) {
+      // "Not in the record" was often a lie: the round WAS settled, this
+      // device simply had not fetched the nation's book yet. get() reads a
+      // cache and never fills it, so a report opened cold - a reload, a
+      // shared link, a tap before anything else had asked - accused the
+      // World Service of not having played the match. Ask for the book.
+      var LG = window.__foWorldLg;
+      if (LG && LG.want && !MR_ASKED[nat]) {
+        MR_ASKED[nat] = 1;
+        page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
+          "<h1 class='fo-mr-head'>Sending for the book&hellip;</h1>" +
+          "<p class='fo-mr-dek'>Reaching the World Service for this round's record.</p></div></div>";
+        var again = function () {
+          if ((location.hash || "").split("?")[0] !== "#/report") return;
+          page.__foMrSig = null;
+          try { window.foRenderReport(); } catch (eR2) {}
+        };
+        LG.want(nat, again);
+        setTimeout(again, 5000);        // want() stays silent inside its courtesy window
+        return;
+      }
       page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
         "<h1 class='fo-mr-head'>That match is not in the record yet</h1>" +
         "<p class='fo-mr-dek'>The World Service has not published this round. Try again once it has settled.</p>" +
         "<div class='fo-mr-foot'><a class='fo-mr-back' href='#/league?t=results'>&#8592; Results</a></div></div></div>";
       return;
     }
-    var rep = foMrReplayServed(nat, hit.row, hit.season);
-    if (rep) {
-      var mt2 = /[?&]t=(\w+)/.exec(location.hash || "");
-      var tab2 = mt2 ? mt2[1] : "card";
-      if (["card", "comm", "chart", "fantasy"].indexOf(tab2) < 0) tab2 = "card";
-      var base2 = "#/report?n=" + encodeURIComponent(nat) + "&w=" + encodeURIComponent(id);
-      foMrPaint(rep, page, {
-        tab: tab2,
-        commAll: /[?&]c=all\b/.test(location.hash || ""),
-        href: function (t) { return base2 + "&t=" + t; },
-        others: [],
-        back: "#/league?t=results"
-      });
-      return;
+    MR_ASKED[nat] = 0;                  // the book arrived; a later gap may ask again
+    // The living state and the filed sheets come over the wire, so the full
+    // report cannot be painted in the same breath as the click. Ask the world
+    // first, paint the scoreline meanwhile, and upgrade in place when the
+    // replay agrees. If the world is unreachable the scoreline simply stays -
+    // never a report built from the wrong eleven.
+    var WTs = window.__foWT;
+    var ck = nat + "|" + id + "|" + (hit.season | 0);
+    if (WTs && WTs.roundState && hit.row && hit.row.round && MR_REP[ck] !== false) {
+      var sigOwn = location.hash;
+      var have = MR_REP[ck];
+      (have ? Promise.resolve(have) : Promise.all([foMrNames(nat), WTs.roundState(nat, hit.row.round | 0)]).then(function (both) {
+        var built = foMrReplayServed(nat, hit.row, hit.season, both[1]);
+        MR_REP[ck] = built || false;                       // false: it disagreed, do not try again
+        return built;
+      })).then(function (rep) {
+        if (!rep) return;                                  // the scoreline stands
+        if (location.hash !== sigOwn) return;              // the reader moved on
+        var mt2 = /[?&]t=(\w+)/.exec(location.hash || "");
+        var tab2 = mt2 ? mt2[1] : "card";
+        if (["card", "comm", "chart", "fantasy"].indexOf(tab2) < 0) tab2 = "card";
+        var base2 = "#/report?n=" + encodeURIComponent(nat) + "&w=" + encodeURIComponent(id);
+        foMrPaint(rep, page, {
+          tab: tab2,
+          commAll: /[?&]c=all\b/.test(location.hash || ""),
+          href: function (t) { return base2 + "&t=" + t; },
+          others: [],
+          back: "#/league?t=results"
+        });
+      }).catch(function () {});
     }
     var r = hit.row, nm = hit.names;
     var say = function (n) { return n; };
@@ -36334,6 +36408,29 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var playedRounds = (snap && snap.roundsPlayed) || 0;
       var curRound = cal && cal.round >= 1 ? Math.min(cal.round, rounds) : Math.min(playedRounds + 1, rounds);
 
+      // ---- THE STUMPS ARE DRAWN, THE BOOK IS NOT YET WRITTEN -----------------
+      // The clock and the ledger are two different things. Stumps come at a
+      // nation's own hour, and the whole game knows it at once - the live pill
+      // goes out, the match is watchable, the post-match page is there. But the
+      // TABLE is the umpire's book, and the umpire keeps his own hours: he
+      // settles the round on the World Service some time after the close.
+      //
+      // Standings that quietly sit a round behind read as broken. Say it
+      // instead: the cricket is over, the scorer is still writing it up.
+      var awaiting = 0;
+      try {
+        if (pl && pl.roundsDone && cal && cal.seasonNo >= 1) {
+          var doneByClock = Math.min(rounds, pl.roundsDone(Date.now(), cal.seasonNo, natId) | 0);
+          awaiting = Math.max(0, doneByClock - playedRounds);
+        }
+      } catch (eAw) { awaiting = 0; }
+      var scorerLine = awaiting
+        ? "Round " + Math.min(rounds, playedRounds + awaiting) + " in " + E(natNm) + " finished at " +
+          hh((hour + ((pl && pl.LIVE_LEN) || 3)) % 24) + " UTC. The umpire settles it on the World Service " +
+          "within a couple of hours of the close &mdash; until then this page still reads " +
+          (playedRounds ? "after round " + playedRounds : "the start of the season") + "."
+        : "";
+
       // ---- the plate ------------------------------------------------------
       sideArt(natId);
       // the league reads two columns wide on a desk, so its margins are narrower
@@ -36450,6 +36547,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           (byRound[rdR - 1] ? stepR(rdR - 1, "&lsaquo; Prev") : "<span class='fo-lgx-step off'>&lsaquo; Prev</span>") +
           (byRound[rdR + 1] ? stepR(rdR + 1, "Next &rsaquo;") : "<span class='fo-lgx-step off'>Next &rsaquo;</span>") +
           "</span></div>" +
+          (scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
           (list.length ? list.map(function (rr) {
             var hN = say(rr.home), aN = say(rr.away);
             var mine = myClub && (hN === myClub || aN === myClub);
@@ -36572,16 +36670,24 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         main = "<div class='fo-lgx-panel'>" +
           "<div class='fo-lgx-ph'><h2>The pennant race</h2>" +
           "<span class='fo-lgx-sub'>" + (playedRounds ? "Standings after round " + playedRounds : "Before a ball is bowled") + "</span></div>" +
+          (scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
           (rows.length ? "<div class='fo-lgx-cols'><span>#</span><span></span><span>Club</span><span>Form</span>" +
             "<span>P</span><span>W</span><span>L</span><span>NRR</span><span>Pts</span></div>" + body
             : "<p class='fo-lgx-dim'>The " + E(natNm) + " table is on its way from the World Service&hellip;</p>") +
           "</div>";
 
-        // next round, the chase, and a line about the league
+        // NEXT ROUND MEANS NEXT. Once the day's play is finished this card was
+        // still offering the round that had just ended as the one to come, at
+        // an hour already hours past. The clock knows which of the three it is
+        // - not started, in play, or done - so let it name the round honestly.
+        var nextRd = Math.min(rounds, curRound + (state === "fin" ? 1 : 0));
+        var nextTtl = state === "live" ? "Round " + curRound + ", in play"
+          : state === "fin" ? "Round " + nextRd + ", tomorrow" : "Round " + nextRd + " today";
+        var nextWhen = hh(hour) + " UTC";
         var nextPairs = [];
         try {
           var sc2 = wt && wt.schedMirror ? wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1)) : null;
-          nextPairs = (sc2 && sc2[curRound - 1]) || [];
+          nextPairs = (nextRd > curRound && state === "fin" && curRound >= rounds) ? [] : ((sc2 && sc2[nextRd - 1]) || []);
         } catch (eNp) {}
         var nmA = function (s2) {
           if (nmBySlot && nmBySlot[s2]) return nmBySlot[s2];
@@ -36590,7 +36696,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         };
         var lead0 = rows[0] ? rows[0].pts : 0;
         rail =
-          (nextPairs.length ? "<div class='fo-lgx-card'><h3>Next round<span>" + hh(hour) + " UTC</span></h3>" +
+          (nextPairs.length ? "<div class='fo-lgx-card'><h3>" + E(nextTtl) + "<span>" + nextWhen + "</span></h3>" +
             nextPairs.map(function (pr) {
               var mine = (pr[0] === mySlot || pr[1] === mySlot);
               return "<div class='fo-lgx-nx" + (mine ? " mine" : "") + "'>" +
@@ -36692,6 +36798,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body #page .fo-lgx-step:hover{border-color:var(--nac);color:var(--nac);text-decoration:none}",
     "html body #page .fo-lgx-step.off{opacity:.32}",
     "html body #page .fo-lgx-dim{margin:0;font:italic 420 12.5px/1.55 'Fraunces',Georgia,serif;color:rgba(20,28,40,.55)}",
+    // the scorer's desk: stumps drawn, the book not yet written up
+    "html body #page .fo-lgx-wait{display:flex;align-items:flex-start;gap:9px;margin:0 0 12px;padding:9px 11px;border-radius:3px;background:rgba(201,138,42,.09);border-left:3px solid #C98A2A}",
+    "html body #page .fo-lgx-wait i{flex:0 0 auto;width:7px;height:7px;margin-top:5px;border-radius:50%;background:#C98A2A;animation:foLgxPen 2.2s ease-in-out infinite}",
+    "html body #page .fo-lgx-wait span{font:italic 420 12.5px/1.55 'Fraunces',Georgia,serif;color:rgba(20,28,40,.74)}",
+    "@keyframes foLgxPen{0%,100%{opacity:1}50%{opacity:.28}}",
+    "@media(prefers-reduced-motion:reduce){html body #page .fo-lgx-wait i{animation:none}}",
 
     // every club wears a shield
     "html body #page .fo-lgx-cr{width:22px;height:22px;object-fit:contain;flex:0 0 auto}",
@@ -40170,9 +40282,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // service says. Nothing local is lost that the world would not overwrite
   // anyway - and any saved lineup naming men who no longer wear the shirt is
   // cleared, so you never send out a teamsheet of ghosts.
-  function adoptWorldSquad(st) {
+  function applyWorldSquad(st) {
     try {
-      if (!st || !st.claim || !Array.isArray(st.squad) || st.squad.length < 11) return false;
       var t = null; try { t = userTeam(); } catch (eT) { return false; }
       if (!t) return false;
       var names = st.squad.map(function (p) { return p && p.name; });
@@ -40204,6 +40315,36 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       } catch (eR) {}
       return true;
     } catch (e) { return false; }
+  }
+
+  // A manager still mid-conversation with the chairman has no club yet - the
+  // ink is not dry, and the commit gate is about to write the squad the
+  // journey generated. Pouring the world's men in first would simply be
+  // overwritten a moment later, so hold the status while the dialogue is up
+  // and lay it down the instant the door closes.
+  function clubReady() {
+    try {
+      var t = userTeam();
+      if (!(t && Array.isArray(t.players) && t.players.length)) return false;
+      var founded = false;
+      try { founded = !!(typeof window.store === "function" ? window.store("fo_onb_done") : localStorage.getItem("fo_onb_done")); } catch (eF) {}
+      if (founded) return true;               // the club exists; later dialogues are just talk
+      var o = document.getElementById("fo-onb");
+      return !(o && o.style.display === "block");
+    } catch (e) { return false; }
+  }
+  var PEND = null, PEND_T = null, PEND_N = 0;
+  function pendStop() { if (PEND_T) clearInterval(PEND_T); PEND_T = null; PEND = null; PEND_N = 0; }
+  function adoptWorldSquad(st) {
+    if (!st || !st.claim || !Array.isArray(st.squad) || st.squad.length < 11) return false;
+    if (clubReady()) { pendStop(); return applyWorldSquad(st); }
+    PEND = st; PEND_N = 0;
+    if (!PEND_T) PEND_T = setInterval(function () {
+      if (!PEND || ++PEND_N > 200) return pendStop();     // ten minutes is patience enough
+      if (!clubReady()) return;
+      var s2 = PEND; pendStop(); applyWorldSquad(s2);
+    }, 3000);
+    return false;
   }
   window.__foAdoptWorldSquad = adoptWorldSquad;
 
@@ -40304,11 +40445,22 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function autoClaim() {
     try {
       if (!jwt()) return;
-      if (localStorage.getItem("fo_world_claim")) return;    // already seated
       var nat = "eng";
       try { nat = (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || "eng"; } catch (eN) {}
       var clubNm = ""; try { clubNm = userTeam().name || ""; } catch (eC) {}
       var mgr = mgrForClaim();
+      // TWO SQUADS, ONE CLUB. This used to stop at the door - "already
+      // seated, nothing to do" - and go home without ever asking the world
+      // what it thinks the club's players are. So the squad the manager
+      // browsed and trained stayed the one onboarding generated for him,
+      // while the eleven the umpire actually fielded every round were the
+      // world's, generated from a different seed in a different country. He
+      // had a squad of Dutchmen and a scorecard full of Englishmen.
+      //
+      // The seat is claimed once; the squad is reconciled every time the game
+      // loads. adoptWorldSquad is idempotent - it signs its work and returns
+      // early when the men have not moved - so this costs one small request
+      // and settles the question for good.
       rpc("world_my_status").then(function (st) {
         if (!st || st.signedIn === false) return;
         if (st.claim) {
@@ -40318,6 +40470,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           adoptWorldSquad(st);
           return;
         }
+        // the server holds no seat for this account: a cached claim is a
+        // ghost of a reset world and must not stop a fresh one being taken
+        try { localStorage.removeItem("fo_world_claim"); window.__foWorldClaim = null; } catch (eG) {}
         rpc("world_auto_claim", { p_country: nat, p_name: mgr, p_club_name: clubNm || null }).then(function (r) {
           if (!r || !r.ok) return;
           var cl = { country: r.country, slot: r.slot, club: r.club, name: mgr };
@@ -41363,7 +41518,20 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // the server mirror, exported: nation pages list the same fixtures, the
   // same calendar and the same live states the theatre plays from
   window.__foWT = { serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror,
-    serverSquad: serverSquad, applyLiving: applyLiving };
+    serverSquad: serverSquad, applyLiving: applyLiving,
+    // THE MATCH ON RECORD IS NOT THE MATCH FROM A CLEAN SEED. The umpire plays
+    // each round with the men as they were that day - the experience, the
+    // form, the tiredness - and with whatever sheets managers filed. The
+    // broadcast has always asked the world for both before it shows you a
+    // ball. The match REPORT was rebuilding from bare generated squads and no
+    // orders, so its replay disagreed with the book and fell back to a
+    // scoreline. Same door, same cache, one promise: { orders, living }.
+    roundState: function (rid, roundNo) {
+      var key = rid + ":" + roundNo;
+      return roundOrders(rid, roundNo).then(function (om) {
+        return { orders: om || {}, living: LIV_VAL[key] || null };
+      }).catch(function () { return { orders: {}, living: null }; });
+    } };
 
   function foWtCss() {
     if (document.getElementById("fo-wt-css")) return;

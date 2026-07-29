@@ -510,7 +510,20 @@
   // the server mirror, exported: nation pages list the same fixtures, the
   // same calendar and the same live states the theatre plays from
   window.__foWT = { serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror,
-    serverSquad: serverSquad, applyLiving: applyLiving };
+    serverSquad: serverSquad, applyLiving: applyLiving,
+    // THE MATCH ON RECORD IS NOT THE MATCH FROM A CLEAN SEED. The umpire plays
+    // each round with the men as they were that day - the experience, the
+    // form, the tiredness - and with whatever sheets managers filed. The
+    // broadcast has always asked the world for both before it shows you a
+    // ball. The match REPORT was rebuilding from bare generated squads and no
+    // orders, so its replay disagreed with the book and fell back to a
+    // scoreline. Same door, same cache, one promise: { orders, living }.
+    roundState: function (rid, roundNo) {
+      var key = rid + ":" + roundNo;
+      return roundOrders(rid, roundNo).then(function (om) {
+        return { orders: om || {}, living: LIV_VAL[key] || null };
+      }).catch(function () { return { orders: {}, living: null }; });
+    } };
 
   function foWtCss() {
     if (document.getElementById("fo-wt-css")) return;

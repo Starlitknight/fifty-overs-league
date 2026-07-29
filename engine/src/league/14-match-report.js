@@ -443,7 +443,15 @@
   // an engine version moved, a manager's orders were in play - the page falls
   // back to the published scoreline rather than print a match that never
   // happened.
-  function foMrReplayServed(nat, row, seasonNo) {
+  // REBUILD THE MATCH THAT WAS PLAYED, NOT A MATCH FROM THE SAME SEED.
+  // The umpire does not run a clean generated eleven: he runs the men as they
+  // were that day - the experience the season has given them, the form of
+  // their last five, the tiredness in the arm - and he runs whatever team
+  // sheets managers filed. `state` carries both, straight from the World
+  // Service, exactly as the broadcast takes them. Replay without it and the
+  // engine plays a different, equally valid match; the verdicts disagree, the
+  // agreement check does its job, and the reader gets a bare scoreline.
+  function foMrReplayServed(nat, row, seasonNo, state) {
     try {
       var G = window.__foGame, WT = window.__foWT, PL = window.__foPlanet;
       if (!G || !G.simWorld || !WT || !WT.serverSquad || !PL) return null;
@@ -456,11 +464,17 @@
       if (!hSd || !aSd) return null;
       var sqH = WT.serverSquad(nat, hSd.slot), sqA = WT.serverSquad(nat, aSd.slot);
       if (!sqH || !sqA) return null;
+      var liv = state && state.living;
+      if (liv && WT.applyLiving) {
+        sqH = WT.applyLiving(sqH, liv[row.home]);
+        sqA = WT.applyLiving(sqA, liv[row.away]);
+      }
       var matchId = nat + ":s" + (seasonNo | 0) + ":r" + (row.round | 0) + ":h" + hSd.slot + "a" + aSd.slot;
       var seed = (G.hash ? G.hash(matchId) : 0) || 1;
       var ground = (hSd.city || row.home) + " Ground";
       var out = G.simWorld({ name: row.home, ground: ground, players: sqH },
-                           { name: row.away, players: sqA }, "balanced", "Sunny", seed, null);
+                           { name: row.away, players: sqA }, "balanced", "Sunny", seed,
+                           (state && state.orders) || null);
       if (!out || !out.innings || !out.result) return null;
       // the agreement check: the same verdict, to the word
       if (String(out.result.text || "") !== String(row.text || "")) return null;
@@ -470,29 +484,89 @@
         comp: "league", round: (row.round | 0) - 1, seasonNo: seasonNo | 0 };
     } catch (e) { return null; }
   }
+  // A rebuilt match is fifty overs of engine work. The four tabs are four
+  // views of ONE match, so it is played once and kept; switching tabs should
+  // cost a repaint, not a re-simulation.
+  var MR_REP = {};
+  // A CLUB ANSWERS TO THE NAME ITS MANAGER GAVE IT. The snapshot publishes
+  // christened names - Mashed Potatoes, Thunder Emperor - while the squad
+  // generator only knows slots, so the replay has to translate one to the
+  // other. get() reads a cache and never fills it, so a report opened before
+  // anything else had asked the world could not place a renamed club at all,
+  // and fell back to the scoreline. Ask properly, and wait.
+  function foMrNames(nat) {
+    return new Promise(function (res) {
+      try {
+        var WN = window.__foWorldNames;
+        if (!WN || !WN.want) return res(null);
+        if (WN.get(nat)) return res(WN.get(nat));          // already in hand
+        var done = false;
+        var settle = function () { if (done) return; done = true; res(WN.get(nat)); };
+        WN.want(nat, settle);
+        setTimeout(settle, 4000);          // want() stays silent inside its courtesy window
+      } catch (e) { res(null); }
+    });
+  }
+  var MR_ASKED = {};
   function foMrRenderServed(nat, id, page) {
     var hit = foMrServedRow(nat, id);
     if (!hit) {
+      // "Not in the record" was often a lie: the round WAS settled, this
+      // device simply had not fetched the nation's book yet. get() reads a
+      // cache and never fills it, so a report opened cold - a reload, a
+      // shared link, a tap before anything else had asked - accused the
+      // World Service of not having played the match. Ask for the book.
+      var LG = window.__foWorldLg;
+      if (LG && LG.want && !MR_ASKED[nat]) {
+        MR_ASKED[nat] = 1;
+        page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
+          "<h1 class='fo-mr-head'>Sending for the book&hellip;</h1>" +
+          "<p class='fo-mr-dek'>Reaching the World Service for this round's record.</p></div></div>";
+        var again = function () {
+          if ((location.hash || "").split("?")[0] !== "#/report") return;
+          page.__foMrSig = null;
+          try { window.foRenderReport(); } catch (eR2) {}
+        };
+        LG.want(nat, again);
+        setTimeout(again, 5000);        // want() stays silent inside its courtesy window
+        return;
+      }
       page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
         "<h1 class='fo-mr-head'>That match is not in the record yet</h1>" +
         "<p class='fo-mr-dek'>The World Service has not published this round. Try again once it has settled.</p>" +
         "<div class='fo-mr-foot'><a class='fo-mr-back' href='#/league?t=results'>&#8592; Results</a></div></div></div>";
       return;
     }
-    var rep = foMrReplayServed(nat, hit.row, hit.season);
-    if (rep) {
-      var mt2 = /[?&]t=(\w+)/.exec(location.hash || "");
-      var tab2 = mt2 ? mt2[1] : "card";
-      if (["card", "comm", "chart", "fantasy"].indexOf(tab2) < 0) tab2 = "card";
-      var base2 = "#/report?n=" + encodeURIComponent(nat) + "&w=" + encodeURIComponent(id);
-      foMrPaint(rep, page, {
-        tab: tab2,
-        commAll: /[?&]c=all\b/.test(location.hash || ""),
-        href: function (t) { return base2 + "&t=" + t; },
-        others: [],
-        back: "#/league?t=results"
-      });
-      return;
+    MR_ASKED[nat] = 0;                  // the book arrived; a later gap may ask again
+    // The living state and the filed sheets come over the wire, so the full
+    // report cannot be painted in the same breath as the click. Ask the world
+    // first, paint the scoreline meanwhile, and upgrade in place when the
+    // replay agrees. If the world is unreachable the scoreline simply stays -
+    // never a report built from the wrong eleven.
+    var WTs = window.__foWT;
+    var ck = nat + "|" + id + "|" + (hit.season | 0);
+    if (WTs && WTs.roundState && hit.row && hit.row.round && MR_REP[ck] !== false) {
+      var sigOwn = location.hash;
+      var have = MR_REP[ck];
+      (have ? Promise.resolve(have) : Promise.all([foMrNames(nat), WTs.roundState(nat, hit.row.round | 0)]).then(function (both) {
+        var built = foMrReplayServed(nat, hit.row, hit.season, both[1]);
+        MR_REP[ck] = built || false;                       // false: it disagreed, do not try again
+        return built;
+      })).then(function (rep) {
+        if (!rep) return;                                  // the scoreline stands
+        if (location.hash !== sigOwn) return;              // the reader moved on
+        var mt2 = /[?&]t=(\w+)/.exec(location.hash || "");
+        var tab2 = mt2 ? mt2[1] : "card";
+        if (["card", "comm", "chart", "fantasy"].indexOf(tab2) < 0) tab2 = "card";
+        var base2 = "#/report?n=" + encodeURIComponent(nat) + "&w=" + encodeURIComponent(id);
+        foMrPaint(rep, page, {
+          tab: tab2,
+          commAll: /[?&]c=all\b/.test(location.hash || ""),
+          href: function (t) { return base2 + "&t=" + t; },
+          others: [],
+          back: "#/league?t=results"
+        });
+      }).catch(function () {});
     }
     var r = hit.row, nm = hit.names;
     var say = function (n) { return n; };
