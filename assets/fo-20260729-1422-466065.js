@@ -10217,7 +10217,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260729-1355-502cdd";
+  var FO_BUILD = "20260729-1422-466065";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -32657,6 +32657,108 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return slug ? (ART + "cities/" + slug + "-ground.webp") : (ART + "home/hgm-dressing-room.webp");
   }
 
+  // ---- THE SCORECARD ---------------------------------------------------------
+  // Save-slimming throws away a lot of a finished match, but never the batting
+  // and bowling cards - so every match ever played still has one of these,
+  // however old.
+  function foMrScorecard(rec) {
+    var inn = (rec && (rec.innings || rec.scorecard)) || [];
+    inn = inn.filter(Boolean);
+    if (!inn.length) return foMrNone("No scorecard for this match", "Its innings were not recorded.");
+    var html = "";
+    try { if (typeof window.foScorecardCards === "function") html = window.foScorecardCards(inn); } catch (e) {}
+    return html || foMrNone("No scorecard for this match", "Its innings were not recorded.");
+  }
+
+  // ---- THE COMMENTARY --------------------------------------------------------
+  // The ball-by-ball log is the biggest thing a match carries and only the two
+  // most recent are kept whole; the rest are slimmed so a season's save still
+  // fits in the browser's five megabytes. So this says plainly when a log has
+  // been let go rather than showing an empty box.
+  //
+  // A fifty-over match is about seven hundred deliveries. Printed end to end
+  // that is a page ninety thousand pixels tall, which is not commentary, it is
+  // a wall. So the default is the match as you would want it retold - every
+  // wicket, every boundary, every milestone - and every ball is one tap away
+  // for anyone who wants to sit through the lot.
+  var FO_MR_MARK = { "★": 1, "⚑": 1, "▶": 1 };
+  function foMrIsKey(L) {
+    var o = String((L && L.out) || "");
+    if (o === "4" || o === "6") return true;
+    if (FO_MR_MARK[o]) return true;
+    try { if (typeof isWkt === "function" && o && isWkt(o)) return true; } catch (e) {}
+    return /^w/.test(o) && o !== "wide";
+  }
+  function foMrCommentary(rec, f, all) {
+    var log = (rec && rec.log) || null;
+    if (!log || !log.length) {
+      return foMrNone("The commentary has been let go",
+        "Only the two most recent matches keep their ball-by-ball; older ones are trimmed so a whole career still fits on your phone. " +
+        "The scorecard and the report are kept for every match, forever.");
+    }
+    // the engine writes the log newest-first, which is what a live feed wants
+    // and the opposite of what a retelling wants: a match is read from the
+    // first ball forward. Reversing keeps every marker row beside the ball it
+    // belongs to, which re-sorting by over number would not.
+    var chrono = log.slice().reverse();
+    var shown = all ? chrono : chrono.filter(foMrIsKey);
+    if (!shown.length) shown = chrono;
+    var ix = (rec && rec.ix != null) ? rec.ix : "";
+    var toggle = "<div class='fo-mr-cf'>" +
+      "<a class='" + (all ? "" : "on") + "' href='#/report?i=" + ix + "&t=comm'>Key moments</a>" +
+      "<a class='" + (all ? "on" : "") + "' href='#/report?i=" + ix + "&t=comm&c=all'>Every ball</a>" +
+      "<b>" + shown.length + " of " + log.length + "</b></div>";
+
+    // WHOSE INNINGS THIS IS, BY ORDER RATHER THAN BY NUMBER. The log's own
+    // innings field is the engine's internal index and this module has no
+    // business assuming whether it counts from nought or one. The first value
+    // that appears in a chronological read IS the first innings, whatever it
+    // is called, and the side that batted it is a better heading than a
+    // number anyway.
+    var seen = [], lastInn = null, rows = "";
+    var innName = function (inn) {
+      if (seen.indexOf(inn) < 0) seen.push(inn);
+      var nth = seen.indexOf(inn);
+      var side = nth === 0 ? (f && f.first && f.first.team) : (f && f.second && f.second.team);
+      return side ? (side + " batting") : (nth === 0 ? "First innings" : "Second innings");
+    };
+    shown.forEach(function (L) {
+      if (!L) return;
+      var inn = L.inn == null ? null : (L.inn | 0);
+      if (inn != null && inn !== lastInn) {
+        lastInn = inn;
+        rows += "<div class='fo-mr-innmark'>" + E(innName(inn)) + "</div>";
+      }
+      var o = String(L.out || "");
+      var cls = o === "4" ? "four" : o === "6" ? "six" : (foMrIsKey(L) && !FO_MR_MARK[o] && o !== "4" && o !== "6") ? "wkt" : "";
+      if (FO_MR_MARK[o]) cls = "mark";
+      return rows += "<div class='fo-mr-ball" + (cls ? " " + cls : "") + "'>" +
+        "<b>" + E(L.no || o || "") + "</b><span>" + E(L.txt || "") + "</span></div>";
+    });
+    return "<div class='fo-mr-comm'>" +
+      "<div class='fo-mr-rule'><span>Ball by ball</span></div>" + toggle +
+      "<div class='fo-mr-commlist'>" + rows + "</div>" +
+      "<div class='fo-mr-by'>" + E((f && f.text) || "") + "</div></div>";
+  }
+
+  // ---- THE FANTASY TABLE -----------------------------------------------------
+  // The same points that name the player of the match when a match is saved, so
+  // the table and the medal can never disagree.
+  function foMrFantasy(rec) {
+    var inn = (rec && (rec.innings || rec.scorecard)) || [];
+    inn = inn.filter(Boolean);
+    var html = "";
+    try { if (typeof window.foFantasyPanel === "function") html = window.foFantasyPanel(inn); } catch (e) {}
+    if (!html || /No fantasy data/.test(html)) {
+      return foMrNone("No fantasy points for this match", "Its innings were not recorded in enough detail to score.");
+    }
+    return html;
+  }
+
+  function foMrNone(title, line) {
+    return "<div class='fo-mr-none'><h3>" + E(title) + "</h3><p>" + E(line) + "</p></div>";
+  }
+
   window.foRenderReport = function () {
     try {
       try { if (typeof window.foCxNav === "function") window.foCxNav(); } catch (eN) {}
@@ -32666,7 +32768,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var m = /[?&]i=(\d+)/.exec(location.hash || "");
       var ix = m ? +m[1] : (App.results.length - 1);
       var rec = App.results && App.results[ix];
-      var sig = "mr|" + ix + "|" + (rec ? rec.date : "-");
+      var mt = /[?&]t=(\w+)/.exec(location.hash || "");
+      var tab = mt ? mt[1] : "report";
+      if (["report", "card", "comm", "fantasy"].indexOf(tab) < 0) tab = "report";
+      var commAll = /[?&]c=all\b/.test(location.hash || "");
+      var sig = "mr|" + ix + "|" + tab + "|" + (commAll ? "all" : "key") + "|" + (rec ? rec.date : "-");
       if (page.__foMrSig === sig && page.querySelector(".fo-mr")) return;
       page.__foMrSig = sig;
       document.body.classList.add("fo-mr-on");
@@ -32711,33 +32817,72 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             "<span>" + E((o.result && o.result.text) || "") + "</span></a>";
         }).join("") + "</div></section>" : "";
 
+      // ---- the four ways to read a finished match --------------------------
+      var TABS = [["report", "Report"], ["card", "Scorecard"], ["comm", "Commentary"], ["fantasy", "Fantasy"]];
+      var tabBar = "<nav class='fo-mr-tabs' aria-label='Match views'>" + TABS.map(function (t) {
+        return "<a class='fo-mr-tab" + (t[0] === tab ? " on" : "") + "' href='#/report?i=" + ix + "&t=" + t[0] + "'" +
+          (t[0] === tab ? " aria-current='page'" : "") + ">" + t[1] + "</a>";
+      }).join("") + "</nav>";
+
+      var main;
+      if (tab === "card") {
+        main = "<div class='fo-mr-panel'>" + foMrScorecard(rec) + "</div>";
+      } else if (tab === "comm") {
+        main = "<div class='fo-mr-panel'>" + foMrCommentary(rec, f, commAll) + "</div>";
+      } else if (tab === "fantasy") {
+        main = "<div class='fo-mr-panel'>" + foMrFantasy(rec) + "</div>";
+      } else {
+        main =
+          "<div class='fo-mr-body'>" +
+          "<article class='fo-mr-report'>" +
+          paras.map(function (p, i) { return "<p" + (i === 0 ? " class='lead'" : "") + ">" + E(p) + "</p>"; }).join("") +
+          "<div class='fo-mr-by'>Report by Eleanor March &middot; written from the ball-by-ball record</div>" +
+          "</article>" +
+          "<aside class='fo-mr-rail'>" +
+          turnCard + momCard +
+          "<div class='fo-mr-cards'>" + foMrCard(f.first) + foMrCard(f.second) + "</div>" +
+          "</aside>" +
+          "</div>" +
+          "<section class='fo-mr-wormsec'><div class='fo-mr-rule'><span>How it was scored</span></div>" + foMrWorm(f) + "</section>" +
+          moreHTML;
+      }
+
       page.innerHTML =
         "<div class='fo-mr'>" +
-        "<div class='fo-mr-bg' style='background-image:url(" + foMrGroundArt(f) + ")'></div><div class='fo-mr-veil'></div>" +
-        "<div class='fo-mr-in'>" +
+        // THE ARTWORK IS A HEADER, NOT A BACKGROUND. It used to be a band of
+        // fixed height hung from the top of the page, which meant that on any
+        // screen taller than the headline the story began ON TOP OF IT - the
+        // drop cap and the whole first paragraph laid over a painting. Now the
+        // art lives inside the hero and is bounded by it, so no matter the
+        // viewport the writing starts below the picture, on solid ground.
+        "<header class='fo-mr-hero'>" +
+        "<figure class='fo-mr-plate'><img src='" + foMrGroundArt(f) + "' alt='' " +
+        "onerror=\"this.parentNode.style.display='none'\"></figure>" +
+        "<div class='fo-mr-in fo-mr-in--hero'>" +
         "<div class='fo-mr-mast'>The Fifty Overs Journal <em>&middot; Match Report</em></div>" +
         "<div class='fo-mr-folio'>" + E(f.date || "") + (f.ground ? " &middot; " + E(f.ground) : "") +
         (f.comp ? " &middot; " + E(String(f.comp).charAt(0).toUpperCase() + String(f.comp).slice(1)) : "") + "</div>" +
         "<h1 class='fo-mr-head'>" + E(hd.head) + "</h1>" +
         "<p class='fo-mr-dek'>" + E(hd.dek) + "</p>" +
         scoreline +
-        "<div class='fo-mr-body'>" +
-        "<article class='fo-mr-report'>" +
-        paras.map(function (p, i) { return "<p" + (i === 0 ? " class='lead'" : "") + ">" + E(p) + "</p>"; }).join("") +
-        "<div class='fo-mr-by'>Report by Eleanor March &middot; written from the ball-by-ball record</div>" +
-        "</article>" +
-        "<aside class='fo-mr-rail'>" +
-        turnCard + momCard +
-        "<div class='fo-mr-cards'>" + foMrCard(f.first) + foMrCard(f.second) + "</div>" +
-        "</aside>" +
-        "</div>" +
-        "<section class='fo-mr-wormsec'><div class='fo-mr-rule'><span>How it was scored</span></div>" + foMrWorm(f) + "</section>" +
-        moreHTML +
+        "</div></header>" +
+        "<div class='fo-mr-in fo-mr-in--body'>" +
+        tabBar + main +
         "<div class='fo-mr-foot'>" +
-        "<a class='fo-mr-back' href='#/scorecard?i=" + ix + "'>Full scorecard</a>" +
+        (tab === "report" ? "<a class='fo-mr-back' href='#/report?i=" + ix + "&t=card'>Full scorecard</a>"
+                          : "<a class='fo-mr-back' href='#/report?i=" + ix + "&t=report'>The report</a>") +
         "<a class='fo-mr-back' href='#/lore'>The Journal</a>" +
         "<a class='fo-mr-back' href='#/club'>Club</a>" +
         "</div></div></div>";
+
+      // The topbar stays fixed so the nav is always in reach, and it is opaque
+      // now rather than a gradient - a gradient over the top of the painting
+      // is still something laid over the painting. So the page starts below
+      // it, measured rather than guessed.
+      try {
+        var tb = document.getElementById("topbar"), mr = page.querySelector(".fo-mr");
+        if (tb && mr) mr.style.paddingTop = (tb.offsetHeight || 0) + "px";
+      } catch (eTb) {}
     } catch (e) { try { console.warn("foRenderReport", e); } catch (e2) {} }
   };
 
@@ -32752,18 +32897,29 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var s = document.createElement("style"); s.id = "fo-mr-css";
     s.textContent = [
       "html body.fo-mr-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
-      "html body.fo-mr-on #topbar,html body.ftpskin.fo-mr-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(4,10,20,.86),rgba(4,10,20,.3) 62%,transparent) !important;border-bottom:0 !important;box-shadow:none !important}",
+      "html body.fo-mr-on #topbar,html body.ftpskin.fo-mr-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:#070c16 !important;border-bottom:1px solid rgba(230,177,94,.16) !important;box-shadow:none !important}",
       "html body.fo-mr-on #page{padding-top:0 !important;margin-top:0 !important}",
       "html body.fo-mr-on #fo-top-status{display:none}",
       "#page .fo-mr{--gold:#E6B15E;--paper:#F4EFE4;position:relative;min-height:100vh;background:#070c16;color:#e9eefa;overflow-x:clip}",
       "#page .fo-mr *{box-sizing:border-box}",
-      ".fo-mr-bg{position:absolute;top:0;left:0;right:0;height:min(62vh,560px);background-size:cover;background-position:center 42%;z-index:0;filter:saturate(.9)}",
-      ".fo-mr-veil{position:absolute;top:0;left:0;right:0;height:min(62vh,560px);z-index:0;background:linear-gradient(180deg,rgba(7,12,22,.26) 0%,rgba(7,12,22,.16) 34%,rgba(7,12,22,.40) 78%,#E9E4D8 100%)}",
+      // THE GROUND IS A PICTURE, NOT A BACKGROUND.
+      // It used to be a band of fixed height hung from the top of the page
+      // with the type laid over it, which meant that on any screen taller
+      // than the headline the story began ON TOP OF THE PAINTING - drop cap
+      // and all. Darkening it further would only have traded one problem for
+      // another. So the art is now a plate: its own whole 16:9 frame, at full
+      // brightness, nothing over it and nothing cropped off it. Every word of
+      // the page sits below it, on the page's own colour, where words belong.
+      ".fo-mr-hero{position:relative;background:#070c16}",
+      ".fo-mr-plate{margin:0;line-height:0;background:#0b1424}",
+      ".fo-mr-plate img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;object-position:center}",
       ".fo-mr-in{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:78px clamp(16px,4vw,44px) 60px}",
+      ".fo-mr-in--hero{width:100%;padding-top:26px;padding-bottom:22px}",
+      ".fo-mr-in--body{padding-top:0}",
       ".fo-mr-mast{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.4em;font-size:clamp(9px,1vw,11.5px);font-weight:600;color:var(--gold)}",
       ".fo-mr-mast em{font-style:normal;color:#8ea3c4;letter-spacing:.28em}",
       ".fo-mr-folio{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.22em;font-size:9.5px;color:#7d8fad;margin-top:9px;padding-bottom:12px;border-bottom:1px solid rgba(230,177,94,.28)}",
-      ".fo-mr-head{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;line-height:.86;letter-spacing:-.005em;font-size:clamp(38px,7.4vw,104px);margin:20px 0 0;color:var(--paper);text-shadow:0 6px 34px rgba(0,0,0,.6);text-wrap:balance}",
+      ".fo-mr-head{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;line-height:.86;letter-spacing:-.005em;font-size:clamp(38px,7.4vw,104px);margin:20px 0 0;color:var(--paper);text-wrap:balance}",
       ".fo-mr-dek{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:clamp(15px,1.7vw,22px);line-height:1.44;color:#e6dcc6;margin:14px 0 0;max-width:44ch}",
       // scoreline
       ".fo-mr-score{display:flex;align-items:center;gap:clamp(14px,3vw,34px);margin-top:26px;flex-wrap:wrap}",
@@ -32820,6 +32976,70 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-mr-mrow i{font-family:Oswald,sans-serif;font-style:normal;letter-spacing:.14em;font-size:9px;color:#6f819e;white-space:nowrap}",
       ".fo-mr-mrow b{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.04em;font-size:13px;color:var(--paper);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       ".fo-mr-mrow span{font-family:Georgia,serif;font-style:italic;font-size:12.5px;color:#8ea3c4;white-space:nowrap}",
+      // ---- the four views ------------------------------------------------
+      ".fo-mr-tabs{display:flex;gap:4px;overflow-x:auto;margin:0 0 22px;padding-bottom:2px;border-bottom:1px solid rgba(230,177,94,.22);scrollbar-width:none}",
+      ".fo-mr-tabs::-webkit-scrollbar{display:none}",
+      "html body #page a.fo-mr-tab{flex:0 0 auto;min-height:44px;display:inline-flex;align-items:center;padding:0 15px;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.16em;font-size:10.5px;font-weight:600;color:#8ea3c4 !important;text-decoration:none !important;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}",
+      "html body #page a.fo-mr-tab:hover{color:#d6e0f2 !important}",
+      "html body #page a.fo-mr-tab.on{color:var(--gold) !important;border-bottom-color:var(--gold)}",
+      // the scorecard and fantasy tables are the game's own panels, borrowed
+      // whole; these few lines put them on the report's dark ground rather
+      // than rebuilding a second scorecard that could disagree with the first
+      // THE DATA VIEWS KEEP THE GAME'S OWN DRESS.
+      // The scorecard and the fantasy table are the panels the rest of the
+      // game uses, borrowed whole rather than rebuilt - a second scorecard is
+      // a scorecard that can disagree with the first. They are built for a
+      // light card, and the white they carry is spread over a dozen legacy
+      // rules; the matchday centre already settled this argument by leaving
+      // such panels light on its dark page, so this does the same rather than
+      // start a specificity war it would have to keep winning forever. The
+      // Report tab is the story and stays dark; these three are the record.
+      ".fo-mr-panel{margin-top:4px}",
+      "#page .fo-mr-panel .panel{border-radius:12px;overflow:hidden;margin-bottom:12px;box-shadow:0 10px 30px rgba(0,0,0,.34)}",
+      // these cards are light, and they are sitting inside a page whose text
+      // colour is set for a dark ground - without this every figure on the
+      // scorecard is pale blue on cream
+      "#page .fo-mr-panel{color:#2a2b2e}",
+      // the fantasy table is seven columns wide and a phone is not; let it
+      // scroll inside its own card rather than lose the points column off the
+      // right-hand edge
+      "#page .fo-mr-panel .pad{overflow-x:auto;-webkit-overflow-scrolling:touch}",
+      "#page .fo-mr-panel .fo-fp{min-width:440px}",
+      // ON A PHONE, POINTS IS THE COLUMN. Seven columns do not fit in 390px
+      // and the one that fell off the right-hand edge was the total - the
+      // only number the table exists to show. The rank and the club go
+      // instead: the rank is the row order, and there are only two clubs in
+      // a match, both named at the top of the page.
+      "@media(max-width:560px){#page .fo-mr-panel .fo-fp{min-width:0}",
+      "#page .fo-mr-panel .fo-fp th:nth-child(1),#page .fo-mr-panel .fo-fp td:nth-child(1),",
+      "#page .fo-mr-panel .fo-fp th:nth-child(3),#page .fo-mr-panel .fo-fp td:nth-child(3){display:none}",
+      "}",
+      // ball by ball, on the same light card as the rest of the record
+      ".fo-mr-comm{background:#FFFDF7;border-radius:12px;padding:14px 12px 16px;box-shadow:0 10px 30px rgba(0,0,0,.34)}",
+      ".fo-mr-comm .fo-mr-rule{margin:0 0 10px}",
+      ".fo-mr-comm .fo-mr-rule span{color:#8a7a55}",
+      ".fo-mr-comm .fo-mr-rule:before,.fo-mr-comm .fo-mr-rule:after{background:rgba(20,28,40,.14)}",
+      ".fo-mr-commlist{display:flex;flex-direction:column;gap:2px}",
+      ".fo-mr-ball{display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;align-items:baseline;padding:8px 9px;border-radius:7px;background:#F6F2E6}",
+      ".fo-mr-ball b{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.06em;color:#7a7566;font-variant-numeric:tabular-nums}",
+      ".fo-mr-ball span{font-family:Georgia,serif;font-size:13.5px;line-height:1.6;color:#2a2b2e}",
+      ".fo-mr-ball.four{background:#E8F0F8}.fo-mr-ball.four b{color:#2d6a8f}",
+      ".fo-mr-ball.six{background:#FBF0D6}.fo-mr-ball.six b{color:#9a6b12}",
+      ".fo-mr-ball.wkt{background:#F8E4E0}.fo-mr-ball.wkt b{color:#A6392B}",
+      ".fo-mr-ball.mile{box-shadow:inset 3px 0 0 #C9A24B}",
+      ".fo-mr-comm .fo-mr-by{color:#7a7566;border-top:1px solid rgba(20,28,40,.12);margin-top:12px;padding-top:10px}",
+      ".fo-mr-cf{display:flex;align-items:center;gap:6px;margin:0 0 12px;flex-wrap:wrap}",
+      "html body #page .fo-mr-cf a{min-height:36px;display:inline-flex;align-items:center;padding:0 13px;border-radius:999px;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.13em;font-size:10px;font-weight:600;color:#5c5647 !important;text-decoration:none !important;background:#EFEADA !important;border:1px solid rgba(20,28,40,.10) !important}",
+      "html body #page .fo-mr-cf a.on{color:#101B2D !important;background:#F0B94E !important;border-color:#DDA83F !important}",
+      ".fo-mr-cf b{margin-left:auto;font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8a7a55;font-weight:600}",
+      ".fo-mr-innmark{margin:14px 0 6px;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:9.5px;font-weight:600;color:#8a7a55;border-bottom:1px solid rgba(20,28,40,.12);padding-bottom:5px}",
+      ".fo-mr-innmark:first-child{margin-top:0}",
+      ".fo-mr-ball.mark{background:#EDEFF3}.fo-mr-ball.mark b{color:#5b6478}",
+      ".fo-mr-ball.mark span{font-style:italic;color:#4a5568}",
+      // nothing to show, said plainly
+      ".fo-mr-none{background:rgba(12,20,36,.6);border:1px solid rgba(230,177,94,.18);border-radius:14px;padding:26px 22px;text-align:center}",
+      ".fo-mr-none h3{margin:0 0 8px;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.12em;font-size:14px;color:var(--paper)}",
+      ".fo-mr-none p{margin:0 auto;max-width:56ch;font-family:Georgia,serif;font-size:13.5px;line-height:1.7;color:#8ea3c4}",
       ".fo-mr-foot{display:flex;gap:10px;flex-wrap:wrap;margin-top:38px}",
       "html body #page a.fo-mr-back{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:10.5px;font-weight:600;color:#F5EFDC !important;text-decoration:none !important;background:rgba(12,20,36,.6);border:1.5px solid rgba(235,194,113,.42) !important;border-radius:999px !important;padding:11px 19px !important;transition:.16s}",
       "html body #page a.fo-mr-back:hover{color:#F3D37A !important;border-color:var(--gold) !important}",
