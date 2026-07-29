@@ -10272,7 +10272,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260729-1652-06d1ad";
+  var FO_BUILD = "20260729-1742-5a0d06";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -32400,8 +32400,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var main;
       if (tab === "chart") {
         main =
-          "<aside class='fo-mr-rail fo-mr-rail--wide'>" + turnCard + momCard +
-          "<div class='fo-mr-cards'>" + foMrCard(f.first) + foMrCard(f.second) + "</div></aside>" +
+          // two rows, not one grid: the moment cards are short and the innings
+          // cards are tall, and mixing them left a column-high hole
+          "<div class='fo-mr-row2'>" + turnCard + momCard + "</div>" +
+          "<div class='fo-mr-cards fo-mr-cards--row'>" + foMrCard(f.first) + foMrCard(f.second) + "</div>" +
           "<section class='fo-mr-wormsec'><div class='fo-mr-rule'><span>How it was scored</span></div>" + foMrWorm(f) + "</section>" +
           moreHTML;
       } else if (tab === "card") {
@@ -32558,8 +32560,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-mr-by{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:9.5px;color:#6f819e;margin-top:22px;padding-top:12px;border-top:1px solid rgba(150,180,225,.14)}",
       // rail
       ".fo-mr-rail{display:flex;flex-direction:column;gap:14px}",
-      // the chart room has no article beside it, so its rail spreads out
-      ".fo-mr-rail--wide{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;align-items:start;margin-bottom:18px}",
       ".fo-mr-kick{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.26em;font-size:9px;font-weight:600;color:var(--gold)}",
       ".fo-mr-turn,.fo-mr-mom{padding:16px 17px;border-radius:13px;background:linear-gradient(180deg,rgba(16,27,50,.82),rgba(8,14,26,.82));border:1px solid rgba(230,177,94,.24)}",
       ".fo-mr-turn h3,.fo-mr-mom h3{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:19px;line-height:1.1;margin:7px 0 8px;color:var(--paper)}",
@@ -32569,6 +32569,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-mr-line b{font-family:Oswald,sans-serif;font-size:14px;color:#fff;font-variant-numeric:tabular-nums}",
       ".fo-mr-line i{font-family:Oswald,sans-serif;font-style:normal;font-size:9.5px;letter-spacing:.1em;color:#6f819e}",
       ".fo-mr-cards{display:grid;gap:12px}",
+      ".fo-mr-row2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;align-items:start;margin-bottom:14px}",
+      ".fo-mr-cards--row{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:18px}",
       ".fo-mr-side{padding:14px 16px;border-radius:13px;background:rgba(9,15,28,.7);border:1px solid rgba(150,180,225,.16)}",
       ".fo-mr-sh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}",
       ".fo-mr-sh b{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:12.5px;color:var(--paper);flex:1;min-width:0}",
@@ -36332,6 +36334,29 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var playedRounds = (snap && snap.roundsPlayed) || 0;
       var curRound = cal && cal.round >= 1 ? Math.min(cal.round, rounds) : Math.min(playedRounds + 1, rounds);
 
+      // ---- THE STUMPS ARE DRAWN, THE BOOK IS NOT YET WRITTEN -----------------
+      // The clock and the ledger are two different things. Stumps come at a
+      // nation's own hour, and the whole game knows it at once - the live pill
+      // goes out, the match is watchable, the post-match page is there. But the
+      // TABLE is the umpire's book, and the umpire keeps his own hours: he
+      // settles the round on the World Service some time after the close.
+      //
+      // Standings that quietly sit a round behind read as broken. Say it
+      // instead: the cricket is over, the scorer is still writing it up.
+      var awaiting = 0;
+      try {
+        if (pl && pl.roundsDone && cal && cal.seasonNo >= 1) {
+          var doneByClock = Math.min(rounds, pl.roundsDone(Date.now(), cal.seasonNo, natId) | 0);
+          awaiting = Math.max(0, doneByClock - playedRounds);
+        }
+      } catch (eAw) { awaiting = 0; }
+      var scorerLine = awaiting
+        ? "Round " + Math.min(rounds, playedRounds + awaiting) + " in " + E(natNm) + " finished at " +
+          hh((hour + ((pl && pl.LIVE_LEN) || 3)) % 24) + " UTC. The umpire settles it on the World Service " +
+          "within a couple of hours of the close &mdash; until then this page still reads " +
+          (playedRounds ? "after round " + playedRounds : "the start of the season") + "."
+        : "";
+
       // ---- the plate ------------------------------------------------------
       sideArt(natId);
       // the league reads two columns wide on a desk, so its margins are narrower
@@ -36448,6 +36473,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           (byRound[rdR - 1] ? stepR(rdR - 1, "&lsaquo; Prev") : "<span class='fo-lgx-step off'>&lsaquo; Prev</span>") +
           (byRound[rdR + 1] ? stepR(rdR + 1, "Next &rsaquo;") : "<span class='fo-lgx-step off'>Next &rsaquo;</span>") +
           "</span></div>" +
+          (scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
           (list.length ? list.map(function (rr) {
             var hN = say(rr.home), aN = say(rr.away);
             var mine = myClub && (hN === myClub || aN === myClub);
@@ -36570,16 +36596,24 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         main = "<div class='fo-lgx-panel'>" +
           "<div class='fo-lgx-ph'><h2>The pennant race</h2>" +
           "<span class='fo-lgx-sub'>" + (playedRounds ? "Standings after round " + playedRounds : "Before a ball is bowled") + "</span></div>" +
+          (scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
           (rows.length ? "<div class='fo-lgx-cols'><span>#</span><span></span><span>Club</span><span>Form</span>" +
             "<span>P</span><span>W</span><span>L</span><span>NRR</span><span>Pts</span></div>" + body
             : "<p class='fo-lgx-dim'>The " + E(natNm) + " table is on its way from the World Service&hellip;</p>") +
           "</div>";
 
-        // next round, the chase, and a line about the league
+        // NEXT ROUND MEANS NEXT. Once the day's play is finished this card was
+        // still offering the round that had just ended as the one to come, at
+        // an hour already hours past. The clock knows which of the three it is
+        // - not started, in play, or done - so let it name the round honestly.
+        var nextRd = Math.min(rounds, curRound + (state === "fin" ? 1 : 0));
+        var nextTtl = state === "live" ? "Round " + curRound + ", in play"
+          : state === "fin" ? "Round " + nextRd + ", tomorrow" : "Round " + nextRd + " today";
+        var nextWhen = hh(hour) + " UTC";
         var nextPairs = [];
         try {
           var sc2 = wt && wt.schedMirror ? wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1)) : null;
-          nextPairs = (sc2 && sc2[curRound - 1]) || [];
+          nextPairs = (nextRd > curRound && state === "fin" && curRound >= rounds) ? [] : ((sc2 && sc2[nextRd - 1]) || []);
         } catch (eNp) {}
         var nmA = function (s2) {
           if (nmBySlot && nmBySlot[s2]) return nmBySlot[s2];
@@ -36588,7 +36622,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         };
         var lead0 = rows[0] ? rows[0].pts : 0;
         rail =
-          (nextPairs.length ? "<div class='fo-lgx-card'><h3>Next round<span>" + hh(hour) + " UTC</span></h3>" +
+          (nextPairs.length ? "<div class='fo-lgx-card'><h3>" + E(nextTtl) + "<span>" + nextWhen + "</span></h3>" +
             nextPairs.map(function (pr) {
               var mine = (pr[0] === mySlot || pr[1] === mySlot);
               return "<div class='fo-lgx-nx" + (mine ? " mine" : "") + "'>" +
@@ -36690,6 +36724,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body #page .fo-lgx-step:hover{border-color:var(--nac);color:var(--nac);text-decoration:none}",
     "html body #page .fo-lgx-step.off{opacity:.32}",
     "html body #page .fo-lgx-dim{margin:0;font:italic 420 12.5px/1.55 'Fraunces',Georgia,serif;color:rgba(20,28,40,.55)}",
+    // the scorer's desk: stumps drawn, the book not yet written up
+    "html body #page .fo-lgx-wait{display:flex;align-items:flex-start;gap:9px;margin:0 0 12px;padding:9px 11px;border-radius:3px;background:rgba(201,138,42,.09);border-left:3px solid #C98A2A}",
+    "html body #page .fo-lgx-wait i{flex:0 0 auto;width:7px;height:7px;margin-top:5px;border-radius:50%;background:#C98A2A;animation:foLgxPen 2.2s ease-in-out infinite}",
+    "html body #page .fo-lgx-wait span{font:italic 420 12.5px/1.55 'Fraunces',Georgia,serif;color:rgba(20,28,40,.74)}",
+    "@keyframes foLgxPen{0%,100%{opacity:1}50%{opacity:.28}}",
+    "@media(prefers-reduced-motion:reduce){html body #page .fo-lgx-wait i{animation:none}}",
 
     // every club wears a shield
     "html body #page .fo-lgx-cr{width:22px;height:22px;object-fit:contain;flex:0 0 auto}",
@@ -40168,9 +40208,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // service says. Nothing local is lost that the world would not overwrite
   // anyway - and any saved lineup naming men who no longer wear the shirt is
   // cleared, so you never send out a teamsheet of ghosts.
-  function adoptWorldSquad(st) {
+  function applyWorldSquad(st) {
     try {
-      if (!st || !st.claim || !Array.isArray(st.squad) || st.squad.length < 11) return false;
       var t = null; try { t = userTeam(); } catch (eT) { return false; }
       if (!t) return false;
       var names = st.squad.map(function (p) { return p && p.name; });
@@ -40202,6 +40241,36 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       } catch (eR) {}
       return true;
     } catch (e) { return false; }
+  }
+
+  // A manager still mid-conversation with the chairman has no club yet - the
+  // ink is not dry, and the commit gate is about to write the squad the
+  // journey generated. Pouring the world's men in first would simply be
+  // overwritten a moment later, so hold the status while the dialogue is up
+  // and lay it down the instant the door closes.
+  function clubReady() {
+    try {
+      var t = userTeam();
+      if (!(t && Array.isArray(t.players) && t.players.length)) return false;
+      var founded = false;
+      try { founded = !!(typeof window.store === "function" ? window.store("fo_onb_done") : localStorage.getItem("fo_onb_done")); } catch (eF) {}
+      if (founded) return true;               // the club exists; later dialogues are just talk
+      var o = document.getElementById("fo-onb");
+      return !(o && o.style.display === "block");
+    } catch (e) { return false; }
+  }
+  var PEND = null, PEND_T = null, PEND_N = 0;
+  function pendStop() { if (PEND_T) clearInterval(PEND_T); PEND_T = null; PEND = null; PEND_N = 0; }
+  function adoptWorldSquad(st) {
+    if (!st || !st.claim || !Array.isArray(st.squad) || st.squad.length < 11) return false;
+    if (clubReady()) { pendStop(); return applyWorldSquad(st); }
+    PEND = st; PEND_N = 0;
+    if (!PEND_T) PEND_T = setInterval(function () {
+      if (!PEND || ++PEND_N > 200) return pendStop();     // ten minutes is patience enough
+      if (!clubReady()) return;
+      var s2 = PEND; pendStop(); applyWorldSquad(s2);
+    }, 3000);
+    return false;
   }
   window.__foAdoptWorldSquad = adoptWorldSquad;
 
@@ -40302,11 +40371,22 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function autoClaim() {
     try {
       if (!jwt()) return;
-      if (localStorage.getItem("fo_world_claim")) return;    // already seated
       var nat = "eng";
       try { nat = (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || "eng"; } catch (eN) {}
       var clubNm = ""; try { clubNm = userTeam().name || ""; } catch (eC) {}
       var mgr = mgrForClaim();
+      // TWO SQUADS, ONE CLUB. This used to stop at the door - "already
+      // seated, nothing to do" - and go home without ever asking the world
+      // what it thinks the club's players are. So the squad the manager
+      // browsed and trained stayed the one onboarding generated for him,
+      // while the eleven the umpire actually fielded every round were the
+      // world's, generated from a different seed in a different country. He
+      // had a squad of Dutchmen and a scorecard full of Englishmen.
+      //
+      // The seat is claimed once; the squad is reconciled every time the game
+      // loads. adoptWorldSquad is idempotent - it signs its work and returns
+      // early when the men have not moved - so this costs one small request
+      // and settles the question for good.
       rpc("world_my_status").then(function (st) {
         if (!st || st.signedIn === false) return;
         if (st.claim) {
@@ -40316,6 +40396,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           adoptWorldSquad(st);
           return;
         }
+        // the server holds no seat for this account: a cached claim is a
+        // ghost of a reset world and must not stop a fresh one being taken
+        try { localStorage.removeItem("fo_world_claim"); window.__foWorldClaim = null; } catch (eG) {}
         rpc("world_auto_claim", { p_country: nat, p_name: mgr, p_club_name: clubNm || null }).then(function (r) {
           if (!r || !r.ok) return;
           var cl = { country: r.country, slot: r.slot, club: r.club, name: mgr };

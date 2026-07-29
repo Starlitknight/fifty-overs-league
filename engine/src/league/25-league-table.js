@@ -182,6 +182,29 @@
       var playedRounds = (snap && snap.roundsPlayed) || 0;
       var curRound = cal && cal.round >= 1 ? Math.min(cal.round, rounds) : Math.min(playedRounds + 1, rounds);
 
+      // ---- THE STUMPS ARE DRAWN, THE BOOK IS NOT YET WRITTEN -----------------
+      // The clock and the ledger are two different things. Stumps come at a
+      // nation's own hour, and the whole game knows it at once - the live pill
+      // goes out, the match is watchable, the post-match page is there. But the
+      // TABLE is the umpire's book, and the umpire keeps his own hours: he
+      // settles the round on the World Service some time after the close.
+      //
+      // Standings that quietly sit a round behind read as broken. Say it
+      // instead: the cricket is over, the scorer is still writing it up.
+      var awaiting = 0;
+      try {
+        if (pl && pl.roundsDone && cal && cal.seasonNo >= 1) {
+          var doneByClock = Math.min(rounds, pl.roundsDone(Date.now(), cal.seasonNo, natId) | 0);
+          awaiting = Math.max(0, doneByClock - playedRounds);
+        }
+      } catch (eAw) { awaiting = 0; }
+      var scorerLine = awaiting
+        ? "Round " + Math.min(rounds, playedRounds + awaiting) + " in " + E(natNm) + " finished at " +
+          hh((hour + ((pl && pl.LIVE_LEN) || 3)) % 24) + " UTC. The umpire settles it on the World Service " +
+          "within a couple of hours of the close &mdash; until then this page still reads " +
+          (playedRounds ? "after round " + playedRounds : "the start of the season") + "."
+        : "";
+
       // ---- the plate ------------------------------------------------------
       sideArt(natId);
       // the league reads two columns wide on a desk, so its margins are narrower
@@ -298,6 +321,7 @@
           (byRound[rdR - 1] ? stepR(rdR - 1, "&lsaquo; Prev") : "<span class='fo-lgx-step off'>&lsaquo; Prev</span>") +
           (byRound[rdR + 1] ? stepR(rdR + 1, "Next &rsaquo;") : "<span class='fo-lgx-step off'>Next &rsaquo;</span>") +
           "</span></div>" +
+          (scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
           (list.length ? list.map(function (rr) {
             var hN = say(rr.home), aN = say(rr.away);
             var mine = myClub && (hN === myClub || aN === myClub);
@@ -420,16 +444,24 @@
         main = "<div class='fo-lgx-panel'>" +
           "<div class='fo-lgx-ph'><h2>The pennant race</h2>" +
           "<span class='fo-lgx-sub'>" + (playedRounds ? "Standings after round " + playedRounds : "Before a ball is bowled") + "</span></div>" +
+          (scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
           (rows.length ? "<div class='fo-lgx-cols'><span>#</span><span></span><span>Club</span><span>Form</span>" +
             "<span>P</span><span>W</span><span>L</span><span>NRR</span><span>Pts</span></div>" + body
             : "<p class='fo-lgx-dim'>The " + E(natNm) + " table is on its way from the World Service&hellip;</p>") +
           "</div>";
 
-        // next round, the chase, and a line about the league
+        // NEXT ROUND MEANS NEXT. Once the day's play is finished this card was
+        // still offering the round that had just ended as the one to come, at
+        // an hour already hours past. The clock knows which of the three it is
+        // - not started, in play, or done - so let it name the round honestly.
+        var nextRd = Math.min(rounds, curRound + (state === "fin" ? 1 : 0));
+        var nextTtl = state === "live" ? "Round " + curRound + ", in play"
+          : state === "fin" ? "Round " + nextRd + ", tomorrow" : "Round " + nextRd + " today";
+        var nextWhen = hh(hour) + " UTC";
         var nextPairs = [];
         try {
           var sc2 = wt && wt.schedMirror ? wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1)) : null;
-          nextPairs = (sc2 && sc2[curRound - 1]) || [];
+          nextPairs = (nextRd > curRound && state === "fin" && curRound >= rounds) ? [] : ((sc2 && sc2[nextRd - 1]) || []);
         } catch (eNp) {}
         var nmA = function (s2) {
           if (nmBySlot && nmBySlot[s2]) return nmBySlot[s2];
@@ -438,7 +470,7 @@
         };
         var lead0 = rows[0] ? rows[0].pts : 0;
         rail =
-          (nextPairs.length ? "<div class='fo-lgx-card'><h3>Next round<span>" + hh(hour) + " UTC</span></h3>" +
+          (nextPairs.length ? "<div class='fo-lgx-card'><h3>" + E(nextTtl) + "<span>" + nextWhen + "</span></h3>" +
             nextPairs.map(function (pr) {
               var mine = (pr[0] === mySlot || pr[1] === mySlot);
               return "<div class='fo-lgx-nx" + (mine ? " mine" : "") + "'>" +
@@ -540,6 +572,12 @@
     "html body #page .fo-lgx-step:hover{border-color:var(--nac);color:var(--nac);text-decoration:none}",
     "html body #page .fo-lgx-step.off{opacity:.32}",
     "html body #page .fo-lgx-dim{margin:0;font:italic 420 12.5px/1.55 'Fraunces',Georgia,serif;color:rgba(20,28,40,.55)}",
+    // the scorer's desk: stumps drawn, the book not yet written up
+    "html body #page .fo-lgx-wait{display:flex;align-items:flex-start;gap:9px;margin:0 0 12px;padding:9px 11px;border-radius:3px;background:rgba(201,138,42,.09);border-left:3px solid #C98A2A}",
+    "html body #page .fo-lgx-wait i{flex:0 0 auto;width:7px;height:7px;margin-top:5px;border-radius:50%;background:#C98A2A;animation:foLgxPen 2.2s ease-in-out infinite}",
+    "html body #page .fo-lgx-wait span{font:italic 420 12.5px/1.55 'Fraunces',Georgia,serif;color:rgba(20,28,40,.74)}",
+    "@keyframes foLgxPen{0%,100%{opacity:1}50%{opacity:.28}}",
+    "@media(prefers-reduced-motion:reduce){html body #page .fo-lgx-wait i{animation:none}}",
 
     // every club wears a shield
     "html body #page .fo-lgx-cr{width:22px;height:22px;object-fit:contain;flex:0 0 auto}",
