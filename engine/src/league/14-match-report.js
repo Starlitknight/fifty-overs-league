@@ -335,6 +335,15 @@
   function foMrCommentary(rec, f, all) {
     var log = (rec && rec.log) || null;
     if (!log || !log.length) {
+      // a served match with no log is a different story from a trimmed save:
+      // the card came off the record, but this device could not re-run the
+      // match ball for ball, and inventing the balls is not on offer
+      if (rec && rec.__servedCard) {
+        return foMrNone("No ball-by-ball for this one",
+          "The World Service banks every scorecard but not the commentary - it is the largest part of a match and the cheapest to re-derive, so your device re-runs it. " +
+          "This match would not re-run exactly, most often because a club has bought or sold players since the season began. " +
+          "The scorecard, the chart and the points above are the umpire's own record and are exact.");
+      }
       return foMrNone("The commentary has been let go",
         "Only the two most recent matches keep their ball-by-ball; older ones are trimmed so a whole career still fits on your phone. " +
         "The scorecard and the report are kept for every match, forever.");
@@ -507,6 +516,67 @@
       } catch (e) { res(null); }
     });
   }
+  // ---- THE CARD THE UMPIRE WROTE ------------------------------------------
+  // Migration 025 hands over `matches.result` - the canonical card, banked the
+  // moment the match was played: both innings, every batsman as the cricketer
+  // he actually was that day, every bowler's figures, the fielding, the worm.
+  // A replay can only ever be an argument that it got the same answer; this IS
+  // the answer. It also survives what no replay can - a club whose men have
+  // been bought and sold since the season began.
+  //
+  // One thing it deliberately does not carry: the ball-by-ball. That is the
+  // largest part of a match and the cheapest to re-derive, so commentary
+  // still comes from the replay, and only when the replay agrees.
+  var MR_SB = "https://egaipdksvztqqgouriyc.supabase.co";
+  var MR_KEY = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+  var MR_CARD = {};
+  function foMrCardFetch(nat, id) {
+    var k = nat + "|" + id;
+    if (MR_CARD[k]) return MR_CARD[k];
+    var p = fetch(MR_SB + "/rest/v1/rpc/world_match_card", {
+      method: "POST",
+      headers: { apikey: MR_KEY, Authorization: "Bearer " + MR_KEY, "content-type": "application/json" },
+      body: JSON.stringify({ p_country: nat, p_match_id: id })
+    }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { return (j && j.card) ? j : null; })
+      .catch(function () { return null; });      // no RPC yet: the replay still stands
+    MR_CARD[k] = p;
+    return p;
+  }
+  // the clubs of a nation, by the name the snapshot publishes AND by the name
+  // a manager christened - the same translation the replay needs
+  function foMrSidesBy(nat) {
+    var byName = {};
+    try {
+      var PL = window.__foPlanet; if (!PL) return byName;
+      var bySlot = {};
+      (PL.sidesOf(nat) || []).forEach(function (sd) { bySlot[sd.slot] = sd; byName[sd.name] = sd; });
+      var nm = null; try { nm = window.__foWorldNames && window.__foWorldNames.get(nat); } catch (eN) {}
+      if (nm) Object.keys(nm).forEach(function (k) { if (bySlot[k]) byName[nm[k]] = bySlot[k]; });
+    } catch (e) {}
+    return byName;
+  }
+  // the banked card, dressed as the record every view already knows how to
+  // read. The log rides along only if the replay earned it.
+  function foMrRecFromCard(nat, hit, got, rep) {
+    try {
+      if (!got || !got.card || !got.card.innings) return null;
+      var c = got.card, row = hit.row;
+      var sd = foMrSidesBy(nat)[row.home];
+      return {
+        ix: -1, date: "",
+        home: row.home, away: row.away,
+        ground: (rep && rep.ground) || ((sd && sd.city ? sd.city : row.home) + " Ground"),
+        pitch: "balanced", weather: "Sunny", seed: 0,
+        result: { winner: c.winner, text: c.text, mom: c.mom },
+        innings: c.innings, worm: c.worm || [[], []],
+        log: (rep && rep.log) || [],
+        comp: "league", round: (row.round | 0) - 1, seasonNo: hit.season | 0,
+        __servedCard: 1
+      };
+    } catch (e) { return null; }
+  }
+
   var MR_ASKED = {};
   function foMrRenderServed(nat, id, page) {
     var hit = foMrServedRow(nat, id);
@@ -548,9 +618,19 @@
     if (WTs && WTs.roundState && hit.row && hit.row.round && MR_REP[ck] !== false) {
       var sigOwn = location.hash;
       var have = MR_REP[ck];
-      (have ? Promise.resolve(have) : Promise.all([foMrNames(nat), WTs.roundState(nat, hit.row.round | 0)]).then(function (both) {
-        var built = foMrReplayServed(nat, hit.row, hit.season, both[1]);
-        MR_REP[ck] = built || false;                       // false: it disagreed, do not try again
+      (have ? Promise.resolve(have) : Promise.all([
+        foMrNames(nat), WTs.roundState(nat, hit.row.round | 0), foMrCardFetch(nat, id)
+      ]).then(function (all) {
+        // WHICH OF THE TWO TO READ FROM. A replay that AGREES with the banked
+        // verdict is not a rival account of the match - it is the same match,
+        // same seed, same men, same engine - and it carries more than the
+        // canonical card does: the ball-by-ball, and the fall of wickets the
+        // turning-point analysis is read from. So an agreeing replay wins.
+        // The card is the floor, not the ceiling: it is what the reader gets
+        // whenever the replay cannot be made to agree, and it is exact.
+        var rep = foMrReplayServed(nat, hit.row, hit.season, all[1]);
+        var built = rep || foMrRecFromCard(nat, hit, all[2], null);
+        MR_REP[ck] = built || false;                       // false: neither could be had
         return built;
       })).then(function (rep) {
         if (!rep) return;                                  // the scoreline stands
