@@ -595,7 +595,7 @@
       // say so, because that is the difference between a badge and a summons
       var lbl = ml.querySelector(".live-txt");
       if (!lbl) { lbl = document.createElement("span"); lbl.className = "live-txt"; ml.appendChild(lbl); }
-      var want = mineNow ? "Your match \u00b7 LIVE" : "Live";
+      var want = mineNow ? "LIVE" : "Live";
       if (lbl.textContent !== want) lbl.textContent = want;
       ml.classList.toggle("mine", !!mineNow);
       if (go) { ml.setAttribute("data-go", go); ml.classList.add("on"); } else ml.classList.remove("on");
@@ -678,16 +678,18 @@
       foMliveTick();
       var addNav = function (cls, label, fn) {
         var a = tb.querySelector("a." + cls); if (!a) a = mk(label, cls, fn);
-        if (a.parentNode !== wrap) { if (cls === "fo-live") wrap.insertBefore(a, wrap.firstChild); else wrap.appendChild(a); }
+        if (a.parentNode !== wrap) wrap.appendChild(a);
       };
       // Circuit-only era: Training and Transfers pills are retired until
       // those systems return in their redesigned form
       ["fo-training", "fo-transfers"].forEach(function (c) { var st0 = tb.querySelector("a." + c); if (st0) st0.remove(); });
-      // Live Match appears only while a match is actually in progress
-      var liveOn = false; try { liveOn = (typeof M !== "undefined") && M && !M.done; } catch (e) {}
-      var lv = tb.querySelector("a.fo-live");
-      if (liveOn) { if (!lv) addNav("fo-live", "\u25CF Live Match", function () { location.hash = "#/match"; if (typeof window.route === "function") window.route(); }); }
-      else if (lv) lv.remove();
+      // ONE LIVE PILL. There were two: this nav-row "Live Match" link, which
+      // only ever knew about a match running in this tab and which the phone
+      // layout hides along with the whole pill row, and #fo-mlive in the
+      // header, which knows about that AND the league fixture, the broadcast
+      // window and a friendly. Two pills for one fact is one too many, and
+      // the one that could not see your league match is the one to go.
+      var lv = tb.querySelector("a.fo-live"); if (lv) lv.remove();
       // retired pills (still routable: Matches panel, Live pill, home quick links)
       ["fo-friendly", "fo-matchday"].forEach(function (c) { var st = tb.querySelector("a." + c); if (st) st.remove(); });
       addNav("fo-guide", "Manual", function () { location.hash = "#/guide"; if (typeof window.route === "function") window.route(); });
@@ -712,7 +714,7 @@
       // active-pill marking for overlay-added links (engine handles its own via data-nav)
       try {
         var route0 = (location.hash || "#/club").split("?")[0];
-        var navMap = { "fo-guide": "#/guide", "fo-live": "#/match", "fo-circuit": "#/circuit" };
+        var navMap = { "fo-guide": "#/guide", "fo-circuit": "#/circuit" };
         wrap.querySelectorAll("a").forEach(function (a) {
           for (var c in navMap) if (a.classList.contains(c)) a.classList.toggle("on", route0 === navMap[c]);
         });

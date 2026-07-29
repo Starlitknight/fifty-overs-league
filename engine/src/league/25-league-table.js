@@ -309,8 +309,16 @@
             // never played - stay as plain rows rather than dead links.
             // the served feed counts rounds from 1 and the engine from 0, so
             // the round has to be translated or nothing ever matches
+            // The card this device holds is the richer read - scorecard,
+            // commentary, fantasy - so it wins when there is one. There almost
+            // never is: these are the World Service's matches, resolved on the
+            // server, and the device played none of them. So every row that
+            // found no card falls through to the served report, built from the
+            // scoreline the snapshot publishes. Either way the row opens; a row
+            // that opened nothing was the whole complaint.
             var href = "";
             try { href = foMatchHref({ home: hN, away: aN, round: (rr.round | 0) - 1 }); } catch (eH) {}
+            if (!href && rr.id != null) href = "#/report?n=" + encodeURIComponent(natId) + "&w=" + encodeURIComponent(rr.id);
             var body =
               "<span class='fo-lgx-side'>" + shield(hN, false, natId) + "<b>" + E(hN) + "</b>" +
               (rr.hs ? "<u>" + sc(rr.hs) + "</u>" : "") + "</span>" +

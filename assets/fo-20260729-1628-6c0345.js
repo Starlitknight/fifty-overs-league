@@ -7186,10 +7186,22 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // say so, because that is the difference between a badge and a summons
       var lbl = ml.querySelector(".live-txt");
       if (!lbl) { lbl = document.createElement("span"); lbl.className = "live-txt"; ml.appendChild(lbl); }
-      var want = mineNow ? "Your match \u00b7 LIVE" : "Live";
+      var want = mineNow ? "LIVE" : "Live";
       if (lbl.textContent !== want) lbl.textContent = want;
       ml.classList.toggle("mine", !!mineNow);
       if (go) { ml.setAttribute("data-go", go); ml.classList.add("on"); } else ml.classList.remove("on");
+      // the world clock is pinned to the right of the topbar and out of flow,
+      // so on a phone the pill lands underneath it and the two print on top of
+      // each other. While something is on air the pill takes that corner: the
+      // clock is ambient, this is a summons.
+      try { var tb9 = document.getElementById("topbar"); if (tb9) tb9.classList.toggle("fo-live-on", !!go); } catch (eTb9) {}
+      // on a wide screen the clock keeps its corner, so the pill has to stop
+      // short of it - measured, because the clock's width is its content
+      try {
+        var wc9 = document.getElementById("fo-wclock");
+        var wide9 = window.innerWidth > 640;
+        ml.style.marginRight = (go && wide9 && wc9 && wc9.offsetWidth) ? (wc9.offsetWidth + 20) + "px" : "";
+      } catch (eMr) {}
     } catch (e) {}
   }
   try { setInterval(foMliveTick, 20000); } catch (e) {}
@@ -7257,16 +7269,18 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       foMliveTick();
       var addNav = function (cls, label, fn) {
         var a = tb.querySelector("a." + cls); if (!a) a = mk(label, cls, fn);
-        if (a.parentNode !== wrap) { if (cls === "fo-live") wrap.insertBefore(a, wrap.firstChild); else wrap.appendChild(a); }
+        if (a.parentNode !== wrap) wrap.appendChild(a);
       };
       // Circuit-only era: Training and Transfers pills are retired until
       // those systems return in their redesigned form
       ["fo-training", "fo-transfers"].forEach(function (c) { var st0 = tb.querySelector("a." + c); if (st0) st0.remove(); });
-      // Live Match appears only while a match is actually in progress
-      var liveOn = false; try { liveOn = (typeof M !== "undefined") && M && !M.done; } catch (e) {}
-      var lv = tb.querySelector("a.fo-live");
-      if (liveOn) { if (!lv) addNav("fo-live", "\u25CF Live Match", function () { location.hash = "#/match"; if (typeof window.route === "function") window.route(); }); }
-      else if (lv) lv.remove();
+      // ONE LIVE PILL. There were two: this nav-row "Live Match" link, which
+      // only ever knew about a match running in this tab and which the phone
+      // layout hides along with the whole pill row, and #fo-mlive in the
+      // header, which knows about that AND the league fixture, the broadcast
+      // window and a friendly. Two pills for one fact is one too many, and
+      // the one that could not see your league match is the one to go.
+      var lv = tb.querySelector("a.fo-live"); if (lv) lv.remove();
       // retired pills (still routable: Matches panel, Live pill, home quick links)
       ["fo-friendly", "fo-matchday"].forEach(function (c) { var st = tb.querySelector("a." + c); if (st) st.remove(); });
       addNav("fo-guide", "Manual", function () { location.hash = "#/guide"; if (typeof window.route === "function") window.route(); });
@@ -7291,7 +7305,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // active-pill marking for overlay-added links (engine handles its own via data-nav)
       try {
         var route0 = (location.hash || "#/club").split("?")[0];
-        var navMap = { "fo-guide": "#/guide", "fo-live": "#/match", "fo-circuit": "#/circuit" };
+        var navMap = { "fo-guide": "#/guide", "fo-circuit": "#/circuit" };
         wrap.querySelectorAll("a").forEach(function (a) {
           for (var c in navMap) if (a.classList.contains(c)) a.classList.toggle("on", route0 === navMap[c]);
         });
@@ -10258,7 +10272,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260729-1615-6bb89e";
+  var FO_BUILD = "20260729-1628-6c0345";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -32270,12 +32284,100 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return "<div class='fo-mr-none'><h3>" + E(title) + "</h3><p>" + E(line) + "</p></div>";
   }
 
+  // ---- A MATCH THIS DEVICE NEVER PLAYED --------------------------------------
+  // The league's results are the World Service's, and this device holds a card
+  // for none of them: they are resolved on the server and the snapshot carries
+  // the scoreline, not the ball-by-ball. So every one of those rows used to be
+  // unopenable - the report page reads App.results, found nothing, and said
+  // "nothing to report" or bounced. This is the report the world CAN tell:
+  // both sides, both scores, the margin and the round. The scorecard,
+  // commentary and fantasy views are not offered, because the ball-by-ball
+  // they read is not published for these matches.
+  function foMrServedRow(nat, id) {
+    try {
+      var snap = window.__foWorldLg && window.__foWorldLg.get(nat);
+      if (!snap || !snap.results) return null;
+      var nm = null; try { nm = window.__foWorldNames && window.__foWorldNames.get(nat); } catch (eN) {}
+      for (var i = 0; i < snap.results.length; i++) {
+        var r = snap.results[i];
+        if (String(r.id) !== String(id)) continue;
+        return { row: r, season: snap.seasonNo || 1, names: nm };
+      }
+    } catch (e) {}
+    return null;
+  }
+  function foMrServedSide(nm, sc, win) {
+    if (!sc) return "<div class='fo-mr-t'><b>" + E(nm) + "</b><u>&mdash;</u></div>";
+    return "<div class='fo-mr-t" + (win ? " won" : "") + "'><b>" + E(nm) + "</b>" +
+      "<u>" + (sc.r | 0) + (sc.w >= 10 ? "" : "/" + (sc.w | 0)) + "</u>" +
+      (sc.ov ? "<i>" + E(sc.ov) + " ov</i>" : "") + "</div>";
+  }
+  function foMrRenderServed(nat, id, page) {
+    var hit = foMrServedRow(nat, id);
+    if (!hit) {
+      page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
+        "<h1 class='fo-mr-head'>That match is not in the record yet</h1>" +
+        "<p class='fo-mr-dek'>The World Service has not published this round. Try again once it has settled.</p>" +
+        "<div class='fo-mr-foot'><a class='fo-mr-back' href='#/league?t=results'>&#8592; Results</a></div></div></div>";
+      return;
+    }
+    var r = hit.row, nm = hit.names;
+    var say = function (n) { return n; };
+    if (nm) { /* the snapshot already speaks current names; keep as published */ }
+    var hN = say(r.home), aN = say(r.away);
+    var drawn = r.winner === null;
+    var art = ART + "home/hgm-dressing-room.webp";
+    var head = drawn ? hN + " and " + aN + " could not be separated" : E(String(r.text || ""));
+    page.innerHTML =
+      "<div class='fo-mr'>" +
+      "<header class='fo-mr-hero'>" +
+      "<figure class='fo-mr-plate'><img src='" + art + "' alt='' onerror=\"this.parentNode.style.display='none'\"></figure>" +
+      "<div class='fo-mr-in fo-mr-in--hero'>" +
+      "<div class='fo-mr-mast'>The Fifty Overs Journal <em>&middot; Match Report</em></div>" +
+      "<div class='fo-mr-folio'>Season " + (hit.season | 0) + " &middot; Round " + (r.round | 0) + " &middot; League</div>" +
+      "<h1 class='fo-mr-head'>" + E(String(r.text || (hN + " v " + aN))) + "</h1>" +
+      "<p class='fo-mr-dek'>" + E(hN) + " against " + E(aN) + ", played out on the World Service.</p>" +
+      "<div class='fo-mr-score'>" +
+      foMrServedSide(hN, r.hs, r.winner === r.home) +
+      "<span class='fo-mr-v'>v</span>" +
+      foMrServedSide(aN, r.as, r.winner === r.away) +
+      "</div><div class='fo-mr-verdict'>" + E(String(r.text || "")) + "</div>" +
+      "</div></header>" +
+      "<div class='fo-mr-in fo-mr-in--body'>" +
+      "<div class='fo-mr-body'><article class='fo-mr-report'>" +
+      "<p class='lead'>" + E(hN) + " " + (r.hs ? (r.hs.r | 0) + (r.hs.w >= 10 ? " all out" : "/" + (r.hs.w | 0)) + (r.hs.ov ? " from " + E(r.hs.ov) + " overs" : "") : "did not bat") + ". " +
+      E(aN) + " " + (r.as ? (r.as.r | 0) + (r.as.w >= 10 ? " all out" : "/" + (r.as.w | 0)) + (r.as.ov ? " from " + E(r.as.ov) + " overs" : "") : "did not bat") + ".</p>" +
+      "<p>" + E(String(r.text || "")) + "</p>" +
+      "<div class='fo-mr-by'>Scoreline from the World Service &middot; round " + (r.round | 0) + "</div>" +
+      "</article></div>" +
+      "<div class='fo-mr-foot'>" +
+      "<a class='fo-mr-back' href='#/league?t=results'>&#8592; Results</a>" +
+      "<a class='fo-mr-back' href='#/league'>The league</a>" +
+      "<a class='fo-mr-back' href='#/club'>Club</a>" +
+      "</div></div></div>";
+    try {
+      var tb = document.getElementById("topbar"), mr = page.querySelector(".fo-mr");
+      if (tb && mr) mr.style.paddingTop = (tb.offsetHeight || 0) + "px";
+    } catch (eTb) {}
+  }
+
   window.foRenderReport = function () {
     try {
       try { if (typeof window.foCxNav === "function") window.foCxNav(); } catch (eN) {}
       if ((location.hash || "").split("?")[0] !== "#/report") return;
       var page = document.getElementById("page"); if (!page) return;
       foMrCss();
+      // a served match names itself by nation + the World Service's match id
+      var mw = /[?&]w=([^&]+)/.exec(location.hash || "");
+      var mn = /[?&]n=([a-z]+)/.exec(location.hash || "");
+      if (mw && mn) {
+        var sigW = "mrw|" + mn[1] + "|" + mw[1];
+        if (page.__foMrSig === sigW && page.querySelector(".fo-mr")) return;
+        page.__foMrSig = sigW;
+        document.body.classList.add("fo-mr-on");
+        foMrRenderServed(mn[1], decodeURIComponent(mw[1]), page);
+        return;
+      }
       var m = /[?&]i=(\d+)/.exec(location.hash || "");
       var ix = m ? +m[1] : (App.results.length - 1);
       var rec = App.results && App.results[ix];
@@ -34298,6 +34400,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "#topbar#topbar #fo-mlive.on.mine .live-dot{background:#fff;box-shadow:none}",
     "@keyframes foMlMine{0%,100%{box-shadow:0 0 0 0 rgba(229,57,53,.55)}50%{box-shadow:0 0 0 7px rgba(229,57,53,0)}}",
     "@media (prefers-reduced-motion:reduce){#topbar#topbar #fo-mlive.on.mine{animation:none}}",
+    // The pill was phone furniture: the mobile layer hides it outright and
+    // only un-hides it inside a max-width:820px query, so on a desktop it
+    // could not render at all - no amount of live cricket would have shown
+    // it. It is header furniture on every screen now.
+    "html body #topbar #fo-mlive.on{display:inline-flex !important}",
+    "@media(max-width:640px){#topbar#topbar.fo-live-on #fo-wclock{display:none}}",
+    "@media(max-width:400px){#topbar#topbar #fo-mlive.on{padding:6px 10px;font-size:10.5px}}",
     "@keyframes foMsPulse{0%{box-shadow:0 0 0 0 rgba(255,83,71,.55)}70%{box-shadow:0 0 0 7px rgba(255,83,71,0)}100%{box-shadow:0 0 0 0 rgba(255,83,71,0)}}",
     "#topbar#topbar #fo-mnav-btn{background:transparent;border:none;color:#FFFFFF;border-radius:12px;padding:6px;cursor:pointer}",
     "#topbar#topbar #fo-mnav-btn:hover{background:rgba(255,255,255,.09)}",
@@ -36334,8 +36443,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             // never played - stay as plain rows rather than dead links.
             // the served feed counts rounds from 1 and the engine from 0, so
             // the round has to be translated or nothing ever matches
+            // The card this device holds is the richer read - scorecard,
+            // commentary, fantasy - so it wins when there is one. There almost
+            // never is: these are the World Service's matches, resolved on the
+            // server, and the device played none of them. So every row that
+            // found no card falls through to the served report, built from the
+            // scoreline the snapshot publishes. Either way the row opens; a row
+            // that opened nothing was the whole complaint.
             var href = "";
             try { href = foMatchHref({ home: hN, away: aN, round: (rr.round | 0) - 1 }); } catch (eH) {}
+            if (!href && rr.id != null) href = "#/report?n=" + encodeURIComponent(natId) + "&w=" + encodeURIComponent(rr.id);
             var body =
               "<span class='fo-lgx-side'>" + shield(hN, false, natId) + "<b>" + E(hN) + "</b>" +
               (rr.hs ? "<u>" + sc(rr.hs) + "</u>" : "") + "</span>" +

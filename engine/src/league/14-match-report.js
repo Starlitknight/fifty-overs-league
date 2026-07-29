@@ -484,12 +484,97 @@
     return "<div class='fo-mr-none'><h3>" + E(title) + "</h3><p>" + E(line) + "</p></div>";
   }
 
+  // ---- A MATCH THIS DEVICE NEVER PLAYED --------------------------------------
+  // The league's results are the World Service's, and this device holds a card
+  // for none of them: they are resolved on the server and the snapshot carries
+  // the scoreline, not the ball-by-ball. So every one of those rows used to be
+  // unopenable - the report page reads App.results, found nothing, and said
+  // "nothing to report" or bounced. This is the report the world CAN tell:
+  // both sides, both scores, the margin and the round. The scorecard,
+  // commentary and fantasy views are not offered, because the ball-by-ball
+  // they read is not published for these matches.
+  function foMrServedRow(nat, id) {
+    try {
+      var snap = window.__foWorldLg && window.__foWorldLg.get(nat);
+      if (!snap || !snap.results) return null;
+      var nm = null; try { nm = window.__foWorldNames && window.__foWorldNames.get(nat); } catch (eN) {}
+      for (var i = 0; i < snap.results.length; i++) {
+        var r = snap.results[i];
+        if (String(r.id) !== String(id)) continue;
+        return { row: r, season: snap.seasonNo || 1, names: nm };
+      }
+    } catch (e) {}
+    return null;
+  }
+  function foMrServedSide(nm, sc, win) {
+    if (!sc) return "<div class='fo-mr-t'><b>" + E(nm) + "</b><u>&mdash;</u></div>";
+    return "<div class='fo-mr-t" + (win ? " won" : "") + "'><b>" + E(nm) + "</b>" +
+      "<u>" + (sc.r | 0) + (sc.w >= 10 ? "" : "/" + (sc.w | 0)) + "</u>" +
+      (sc.ov ? "<i>" + E(sc.ov) + " ov</i>" : "") + "</div>";
+  }
+  function foMrRenderServed(nat, id, page) {
+    var hit = foMrServedRow(nat, id);
+    if (!hit) {
+      page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
+        "<h1 class='fo-mr-head'>That match is not in the record yet</h1>" +
+        "<p class='fo-mr-dek'>The World Service has not published this round. Try again once it has settled.</p>" +
+        "<div class='fo-mr-foot'><a class='fo-mr-back' href='#/league?t=results'>&#8592; Results</a></div></div></div>";
+      return;
+    }
+    var r = hit.row, nm = hit.names;
+    var say = function (n) { return n; };
+    if (nm) { /* the snapshot already speaks current names; keep as published */ }
+    var hN = say(r.home), aN = say(r.away);
+    var art = ART + "home/hgm-dressing-room.webp";
+    page.innerHTML =
+      "<div class='fo-mr'>" +
+      "<header class='fo-mr-hero'>" +
+      "<figure class='fo-mr-plate'><img src='" + art + "' alt='' onerror=\"this.parentNode.style.display='none'\"></figure>" +
+      "<div class='fo-mr-in fo-mr-in--hero'>" +
+      "<div class='fo-mr-mast'>The Fifty Overs Journal <em>&middot; Match Report</em></div>" +
+      "<div class='fo-mr-folio'>Season " + (hit.season | 0) + " &middot; Round " + (r.round | 0) + " &middot; League</div>" +
+      "<h1 class='fo-mr-head'>" + E(String(r.text || (hN + " v " + aN))) + "</h1>" +
+      "<p class='fo-mr-dek'>" + E(hN) + " against " + E(aN) + " &middot; round " + (r.round | 0) + " of the season.</p>" +
+      "<div class='fo-mr-score'>" +
+      foMrServedSide(hN, r.hs, r.winner === r.home) +
+      "<span class='fo-mr-v'>v</span>" +
+      foMrServedSide(aN, r.as, r.winner === r.away) +
+      "</div>" +
+      "</div></header>" +
+      "<div class='fo-mr-in fo-mr-in--body'>" +
+      "<div class='fo-mr-body'><article class='fo-mr-report'>" +
+      "<p class='lead'>" + E(hN) + " " + (r.hs ? (r.hs.r | 0) + (r.hs.w >= 10 ? " all out" : "/" + (r.hs.w | 0)) + (r.hs.ov ? " from " + E(r.hs.ov) + " overs" : "") : "did not bat") + ". " +
+      E(aN) + " " + (r.as ? (r.as.r | 0) + (r.as.w >= 10 ? " all out" : "/" + (r.as.w | 0)) + (r.as.ov ? " from " + E(r.as.ov) + " overs" : "") : "did not bat") + ".</p>" +
+      "<div class='fo-mr-by'>Scoreline from the World Service &middot; round " + (r.round | 0) + "</div>" +
+      "</article></div>" +
+      "<div class='fo-mr-foot'>" +
+      "<a class='fo-mr-back' href='#/league?t=results'>&#8592; Results</a>" +
+      "<a class='fo-mr-back' href='#/league'>The league</a>" +
+      "<a class='fo-mr-back' href='#/club'>Club</a>" +
+      "</div></div></div>";
+    try {
+      var tb = document.getElementById("topbar"), mr = page.querySelector(".fo-mr");
+      if (tb && mr) mr.style.paddingTop = (tb.offsetHeight || 0) + "px";
+    } catch (eTb) {}
+  }
+
   window.foRenderReport = function () {
     try {
       try { if (typeof window.foCxNav === "function") window.foCxNav(); } catch (eN) {}
       if ((location.hash || "").split("?")[0] !== "#/report") return;
       var page = document.getElementById("page"); if (!page) return;
       foMrCss();
+      // a served match names itself by nation + the World Service's match id
+      var mw = /[?&]w=([^&]+)/.exec(location.hash || "");
+      var mn = /[?&]n=([a-z]+)/.exec(location.hash || "");
+      if (mw && mn) {
+        var sigW = "mrw|" + mn[1] + "|" + mw[1];
+        if (page.__foMrSig === sigW && page.querySelector(".fo-mr")) return;
+        page.__foMrSig = sigW;
+        document.body.classList.add("fo-mr-on");
+        foMrRenderServed(mn[1], decodeURIComponent(mw[1]), page);
+        return;
+      }
       var m = /[?&]i=(\d+)/.exec(location.hash || "");
       var ix = m ? +m[1] : (App.results.length - 1);
       var rec = App.results && App.results[ix];
