@@ -10272,7 +10272,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260729-2133-aaa34f";
+  var FO_BUILD = "20260729-2140-e8431c";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -45497,13 +45497,73 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // forty on every device in the world and nobody sees a different number.
   // And because it is deterministic, it can be cached and never recomputed.
   //
-  // What it is NOT: today's form. The living state of a side - who is tired,
-  // who is in touch - is banked by the umpire an hour before the first ball
-  // and is not published before that, so a preview reads the squads as the
-  // world draws them. The note under the bar says so rather than implying more.
+  // WHOSE ELEVEN, THOUGH? The first version of this ran both sides on the
+  // engine's own selection, which quietly overstated what it knew: a manager
+  // who has filed a sheet does not field the engine's pick, he fields HIS -
+  // his eleven, his batting order, his spells, his call at the toss - and the
+  // umpire plays that. So the bar now uses every sheet that can honestly be
+  // had, and says which ones those were:
+  //
+  //   * a club with no manager is picked by the engine, and that is EXACTLY
+  //     what the umpire will do with it - for a bot-against-bot fixture the
+  //     simulation is not an approximation at all.
+  //   * your own club is picked by your standing sheet, which is on this
+  //     device: saving orders files the same sheet for every remaining round.
+  //   * from an hour before the first ball the world reveals every filed
+  //     sheet AND the living state of the men - who is tired, who is in
+  //     touch - so inside that window the bar runs the real thing on both
+  //     sides. It sharpens as the match comes up, and says that it has.
+  //
+  // What it can never know is another manager's plan while it is still
+  // sealed. That is the point of sealing it, and the note says so plainly
+  // rather than pretending the number is better than it is.
   var FO_PM_WP_N = 40;              // how many times the fixture is played out
   var FO_PM_WP_CHUNK = 4;           // per tick, so a phone never locks up
   var FO_PM_WP = {};                // this session, by fixture id
+
+  // the sheet this device has filed, in the shape the engine reads
+  var FO_PM_SHEET_K = ["xi", "batOrder", "captain", "keeper", "tossCall", "tossDecision",
+    "phaseIntent", "fieldPlan", "spells", "manBat", "manBowl"];
+  function foPmMySheet() {
+    try {
+      var o = (typeof App !== "undefined" && App && (App.orders || App.defaults)) || null;
+      if (!o || !(o.batOrder || o.xi)) return null;
+      var out = {}; FO_PM_SHEET_K.forEach(function (k) { if (o[k] != null) out[k] = o[k]; });
+      return (out.batOrder || out.xi) ? out : null;
+    } catch (e) { return null; }
+  }
+  // everything knowable about how these two sides will be picked
+  function foPmWpPlan(natId, round, hN, aN, myClub) {
+    var WT = window.__foWT;
+    var base = { map: {}, living: null, h: "engine", a: "engine", revealed: false };
+    var mine = myClub ? foPmMySheet() : null;
+    if (mine && myClub === hN) { base.map[hN] = mine; base.h = "sheet"; }
+    if (mine && myClub === aN) { base.map[aN] = mine; base.a = "sheet"; }
+    if (!WT || !WT.roundState) return Promise.resolve(base);
+    return WT.roundState(natId, round).then(function (st) {
+      var o = (st && st.orders) || {};
+      if (o[hN]) { base.map[hN] = o[hN]; base.h = "filed"; }
+      if (o[aN]) { base.map[aN] = o[aN]; base.a = "filed"; }
+      if (st && st.living) { base.living = st.living; base.revealed = true; }
+      return base;
+    }).catch(function () { return base; });
+  }
+  // one line saying exactly what the forty matches were played with
+  function foPmWpBasis(plan, hN, aN, n, ties) {
+    var word = { engine: "as the engine picks them", sheet: "on your standing sheet", filed: "on their manager's filed sheet" };
+    var same = plan.h === plan.a;
+    var who = same
+      ? "Both sides " + word[plan.h]
+      : hN + " " + word[plan.h] + ", " + aN + " " + word[plan.a];
+    var extra = plan.h === "engine" && plan.a === "engine"
+      ? " - which is exactly how the umpire picks a club nobody manages"
+      : "";
+    var form = plan.revealed
+      ? " The men carry the form and the tired legs they will actually walk out with."
+      : " Form and fatigue are sealed until an hour before the first ball, so these are the squads as the world draws them.";
+    return "Played out " + n + " times on the match engine. " + who + extra + "." + form +
+      " The same " + n + " matches on every device." + (ties ? " " + ties + " ended level." : "");
+  }
   function foPmWpLoad(key) {
     if (FO_PM_WP[key]) return FO_PM_WP[key];
     try {
@@ -45516,7 +45576,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     FO_PM_WP[key] = v;
     try { localStorage.setItem("fo_wp_" + key, JSON.stringify(v)); } catch (e) {}
   }
-  function foPmWpPaint(host, v, done) {
+  function foPmWpPaint(host, v, done, basis) {
     if (!host) return;
     var n = v.h + v.a + v.t; if (!n) return;
     var ph = Math.round(100 * v.h / n), pa = Math.round(100 * v.a / n);
@@ -45532,32 +45592,34 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (ap) ap.textContent = pa + "%";
     var note = host.querySelector(".fo-pm-wpnote");
     if (note) {
-      note.innerHTML = done
-        ? "Played out " + n + " times on the match engine, with the squads as the world draws them &mdash; " +
-          "the same " + n + " matches on every device." + (v.t ? " " + v.t + " ended level." : "")
-        : "Playing it out&hellip; " + n + " of " + FO_PM_WP_N + " done.";
+      note.textContent = done ? (basis || "") : ("Playing it out\u2026 " + n + " of " + FO_PM_WP_N + " done.");
     }
     host.classList.toggle("settled", !!done);
   }
-  function foPmWpRun(host, sig, key, natId, hSlot, aSlot, hN, aN, ground) {
+  function foPmWpRun(host, sig, key, natId, hSlot, aSlot, hN, aN, ground, plan) {
     var G = window.__foGame, WT = window.__foWT;
     if (!G || !G.simWorld || !G.hash || !WT || !WT.serverSquad) { host.style.display = "none"; return; }
     var sqH = WT.serverSquad(natId, hSlot), sqA = WT.serverSquad(natId, aSlot);
     if (!sqH || !sqA) { host.style.display = "none"; return; }
+    // inside the reveal window the men are the men, not their generated selves
+    if (plan.living && WT.applyLiving) {
+      sqH = WT.applyLiving(sqH, plan.living[hN]);
+      sqA = WT.applyLiving(sqA, plan.living[aN]);
+    }
     var H = { name: hN, ground: ground, players: sqH }, A = { name: aN, players: sqA };
-    var v = { h: 0, a: 0, t: 0, n: FO_PM_WP_N }, i = 0;
+    var v = { h: 0, a: 0, t: 0, n: FO_PM_WP_N, sig: plan.h + "/" + plan.a + (plan.revealed ? "+live" : "") }, i = 0;
     var step = function () {
       if (location.hash !== sig) return;                       // the reader moved on
       for (var c = 0; c < FO_PM_WP_CHUNK && i < FO_PM_WP_N; c++, i++) {
         var out = null;
-        try { out = G.simWorld(H, A, "balanced", "Sunny", (G.hash(key + "|wp|" + i) >>> 0) || 1, null); } catch (eS) {}
+        try { out = G.simWorld(H, A, "balanced", "Sunny", (G.hash(key + "|wp|" + i) >>> 0) || 1, plan.map); } catch (eS) {}
         if (!out || !out.result) { v.t++; continue; }
         var w = out.result.winner;
         if (w === hN) v.h++; else if (w === aN) v.a++; else v.t++;
       }
       var done = i >= FO_PM_WP_N;
-      foPmWpPaint(host, v, done);
-      if (done) { foPmWpSave(key, v); return; }
+      foPmWpPaint(host, v, done, done ? foPmWpBasis(plan, hN, aN, v.h + v.a + v.t, v.t) : "");
+      if (done) { v.basis = foPmWpBasis(plan, hN, aN, v.h + v.a + v.t, v.t); foPmWpSave(key, v); return; }
       setTimeout(step, 0);
     };
     step();
@@ -45773,10 +45835,19 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       try {
         var wpHost = document.getElementById("fo-pm-wp");
         if (wpHost) {
-          var wpKey = natId + ":s" + g.seasonNo + ":r" + round + ":h" + hSlot + "a" + aSlot;
-          var cached = foPmWpLoad(wpKey);
-          if (cached) foPmWpPaint(wpHost, cached, true);
-          else foPmWpRun(wpHost, location.hash, wpKey, natId, hSlot, aSlot, hN, aN, ground);
+          var wpId = natId + ":s" + g.seasonNo + ":r" + round + ":h" + hSlot + "a" + aSlot;
+          var myClub = ""; try { myClub = (mySlot === hSlot || mySlot === aSlot) ? foPmName(g, mySlot) : ""; } catch (eMc) {}
+          var wpSig = location.hash;
+          foPmWpPlan(natId, round, hN, aN, myClub).then(function (plan) {
+            if (location.hash !== wpSig) return;
+            // the key carries WHAT WAS KNOWN, so a sheet arriving - or the
+            // world revealing both - retires the old number instead of
+            // serving a stale one that was computed with less
+            var wpKey = wpId + "|" + plan.h + plan.a + (plan.revealed ? "L" : "");
+            var cached = foPmWpLoad(wpKey);
+            if (cached) foPmWpPaint(wpHost, cached, true, cached.basis || foPmWpBasis(plan, hN, aN, cached.h + cached.a + cached.t, cached.t));
+            else foPmWpRun(wpHost, wpSig, wpKey, natId, hSlot, aSlot, hN, aN, ground, plan);
+          }).catch(function () {});
         }
       } catch (eWp) {}
       try { if (window.__foPmTimer) clearInterval(window.__foPmTimer); } catch (eT) {}
