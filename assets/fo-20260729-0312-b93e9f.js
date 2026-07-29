@@ -10112,7 +10112,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260729-0301-4999f6";
+  var FO_BUILD = "20260729-0312-b93e9f";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -16497,116 +16497,67 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return { id: s[0], title: s[1], cat: (catOf(s[0]) || {}).name || "", text: String(s[2]).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").toLowerCase() };
     });
 
-    var searchBox = "<form id='fo-mn2-form' role='search'><input id='fo-mn2-q' type='search' placeholder='Search the manual&hellip;' aria-label='Search the manual' autocomplete='off'></form>";
-    var sideNav = cats.map(function (c) {
-      var open = !!window.__foMnOpen[c.name];
-      return "<div class='fo-mn2-cat'><button class='fo-mn2-cbtn' aria-expanded='" + open + "' data-cat='" + E(c.name) + "'>" + E(c.name) + "<i>" + (open ? "&minus;" : "+") + "</i></button>" +
-        "<div class='fo-mn2-arts'" + (open ? "" : " hidden") + ">" + c.arts.map(function (id) {
-          return "<a href='#/guide?a=" + id + "'" + (id === artId ? " class='on' aria-current='page'" : "") + ">" + byId[id][1] + "</a>";
-        }).join("") + "</div></div>";
-    }).join("");
-    var side = "<aside class='fo-mn2-side'><div class='fo-mn2-sh'><a href='#/guide'>Game manual</a><span>Complete guide to managing a winning cricket club</span></div>" +
-      searchBox + "<nav id='fo-mn2-nav'>" + sideNav + "</nav>" +
-      "<div class='fo-man-tip' style='margin-top:14px'><b>Manager tip</b><br>Every great team is built on smart decisions off the field.</div></aside>";
+    // PHASE 4 OF THE ALMANACK. The manual keeps its information architecture -
+    // categories, articles, search, previous and next - because that part was
+    // right. What it loses is a documentation-site chrome of its own: a
+    // sidebar, a mobile drawer and a second set of type. A category is a band,
+    // an article is a row, and an article page is prose with a way onward.
+    var al = window.AL; if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (eA) {}
 
-    var main;
+    var body;
     if (!artId) {
-      main = "<div class='fo-mn2-land'><div class='fo-mn2-intro'><h1>Game manual</h1>" +
-        "<p>Learn how to build, manage, and compete with your cricket club. Every explanation here is checked against the match engine.</p></div>" +
-        "<div id='fo-mn2-res'></div>" +
-        "<div class='fo-mn2-cards'>" + cats.map(function (c) {
-          return "<a class='fo-mn2-cc' href='#/guide?a=" + c.arts[0] + "'><b>" + E(c.name) + "</b><p>" + E(c.desc) + "</p><span>" + c.arts.length + " article" + (c.arts.length === 1 ? "" : "s") + " &rsaquo;</span></a>";
-        }).join("") + "</div></div>";
+      body = al.mast("The game manual", "How Everything Works",
+        "Build, manage and compete. Every explanation here is checked against the match engine.") +
+        al.subnav("guide") +
+        '<form id="fo-mn2-form" role="search"><input class="al-field al-field--block" id="fo-mn2-q" ' +
+        'type="search" placeholder="Search the manual…" aria-label="Search the manual" autocomplete="off"></form>' +
+        '<div id="fo-mn2-res"></div>' +
+        cats.map(function (c) {
+          return al.sec(c.name, "<p>" + E(c.desc) + "</p>" +
+            '<div class="al-fixlist">' + c.arts.map(function (id) {
+              return '<a class="al-fix al-fix--room" href="#/guide?a=' + id + '">' +
+                '<span class="al-fix__t"><b>' + byId[id][1] + "</b></span>" +
+                '<span class="al-fix__o">›</span></a>';
+            }).join("") + "</div>");
+        }).join("");
     } else {
       var art = byId[artId], cat2 = catOf(artId);
       var fi = flat.indexOf(artId);
       var prevA = fi > 0 ? byId[flat[fi - 1]] : null, nextA = fi < flat.length - 1 ? byId[flat[fi + 1]] : null;
-      main = "<article class='fo-mn2-art' id='man-" + artId + "'>" +
-        "<div class='fo-mn2-crumb'><a href='#/guide'>Manual</a> &rsaquo; <span>" + E(cat2 ? cat2.name : "") + "</span> &rsaquo; <b>" + art[1] + "</b></div>" +
-        "<h1>" + art[1] + "</h1>" +
-        "<div id='fo-mn2-res'></div>" +
-        "<div class='fo-man-b'>" + art[2] + "</div>" +
-        "<div class='fo-mn2-pn'>" +
-        (prevA ? "<a class='fo-mn2-prev' href='#/guide?a=" + prevA[0] + "'><span>&lsaquo; Previous</span><b>" + prevA[1] + "</b></a>" : "<span></span>") +
-        (nextA ? "<a class='fo-mn2-next' href='#/guide?a=" + nextA[0] + "'><span>Next &rsaquo;</span><b>" + nextA[1] + "</b></a>" : "<span></span>") +
-        "</div></article>";
+      body = al.mast((cat2 ? cat2.name : "The manual"), art[1], "") + al.subnav("guide") +
+        '<form id="fo-mn2-form" role="search"><input class="al-field al-field--block" id="fo-mn2-q" ' +
+        'type="search" placeholder="Search the manual…" aria-label="Search the manual" autocomplete="off"></form>' +
+        '<div id="fo-mn2-res"></div>' +
+        '<div class="al-sec al-reading fo-man-b">' + art[2] + "</div>" +
+        '<div class="al-lot__act">' +
+        (prevA ? '<a class="al-btn" href="#/guide?a=' + prevA[0] + '">‹ ' + prevA[1] + "</a>" : "") +
+        (nextA ? '<a class="al-btn" href="#/guide?a=' + nextA[0] + '">' + nextA[1] + " ›</a>" : "") +
+        '<a class="al-btn" href="#/guide">All articles</a></div>';
     }
+    page.innerHTML = al.page({ body: body });
 
-    page.innerHTML = "<div class='fo-mn2'>" +
-      "<div class='fo-mn2-mbar'>" + (artId ? "<a href='#/guide'>&lsaquo; Manual</a>" : "<b>Game manual</b>") +
-      "<button id='fo-mn2-contents' aria-label='Contents'>Contents</button></div>" +
-      side + "<main class='fo-mn2-main'>" + main + "</main></div>";
-
-    // category expand/collapse (state survives navigation within the session)
-    page.querySelectorAll(".fo-mn2-cbtn").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var nm3 = b.getAttribute("data-cat");
-        window.__foMnOpen[nm3] = !window.__foMnOpen[nm3];
-        var artsEl = b.parentNode.querySelector(".fo-mn2-arts");
-        var open2 = !!window.__foMnOpen[nm3];
-        b.setAttribute("aria-expanded", open2);
-        b.querySelector("i").innerHTML = open2 ? "&minus;" : "+";
-        if (open2) artsEl.removeAttribute("hidden"); else artsEl.setAttribute("hidden", "");
-      });
-    });
-    // search: live results over titles, bodies and glossaries; Enter opens the
-    // best hit, Escape clears. Works entirely offline.
-    var qIn = page.querySelector("#fo-mn2-q"), resEl = page.querySelector("#fo-mn2-res");
-    var doSearch = function () {
-      var q = (qIn.value || "").trim().toLowerCase();
-      if (!resEl) return;
-      if (q.length < 2) { resEl.innerHTML = ""; return; }
-      var hits = window.__foMnIx.map(function (x) {
-        var tHit = x.title.toLowerCase().indexOf(q) >= 0, bAt = x.text.indexOf(q);
-        if (!tHit && bAt < 0) return null;
-        var snip = "";
-        if (bAt >= 0) {
-          var s0 = Math.max(0, bAt - 55), s1 = Math.min(x.text.length, bAt + q.length + 55);
-          snip = (s0 > 0 ? "&hellip;" : "") + E(x.text.slice(s0, s1)).replace(new RegExp("(" + q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig"), "<mark>$1</mark>") + (s1 < x.text.length ? "&hellip;" : "");
-        }
-        var freq = 0, at2 = bAt;
-        while (at2 >= 0 && freq < 6) { freq++; at2 = x.text.indexOf(q, at2 + q.length); }
-        return { x: x, score: (tHit ? 10 : 0) + freq, snip: snip };
-      }).filter(Boolean).sort(function (a, b2) { return b2.score - a.score; }).slice(0, 8);
-      resEl.innerHTML = hits.length
-        ? "<div class='fo-mn2-hits'>" + hits.map(function (h) {
-            return "<a href='#/guide?a=" + h.x.id + "'><b>" + h.x.title + "</b><span>" + E(h.x.cat) + "</span>" + (h.snip ? "<i>" + h.snip + "</i>" : "") + "</a>";
-          }).join("") + "</div>"
-        : "<div class='fo-mn2-hits'><div class='fo-mn2-none'>No articles match &ldquo;" + E(q) + "&rdquo;.</div></div>";
-    };
-    if (qIn) {
-      qIn.addEventListener("input", doSearch);
-      qIn.addEventListener("keydown", function (ev) {
-        if (ev.key === "Escape") { qIn.value = ""; doSearch(); qIn.blur(); }
-      });
+    // search: live results over every article's title and text
+    var q = page.querySelector("#fo-mn2-q"), res = page.querySelector("#fo-mn2-res");
+    if (q && res) {
       var form = page.querySelector("#fo-mn2-form");
-      if (form) form.addEventListener("submit", function (ev) {
-        ev.preventDefault();
-        var first = resEl && resEl.querySelector("a");
-        if (first) { location.hash = first.getAttribute("href").slice(1); }
+      if (form) form.addEventListener("submit", function (ev) { ev.preventDefault(); });
+      q.addEventListener("input", function () {
+        var t = String(q.value || "").trim().toLowerCase();
+        if (t.length < 2) { res.innerHTML = ""; return; }
+        var hits = (window.__foMnIx || []).filter(function (x) {
+          return x.title.toLowerCase().indexOf(t) >= 0 || x.text.indexOf(t) >= 0;
+        }).slice(0, 8);
+        res.innerHTML = hits.length
+          ? '<div class="al-fixlist">' + hits.map(function (x) {
+              return '<a class="al-fix al-fix--room" href="#/guide?a=' + x.id + '">' +
+                '<span class="al-fix__t"><b>' + E(x.title) + "</b><i>" + E(x.cat) + "</i></span>" +
+                '<span class="al-fix__o">›</span></a>';
+            }).join("") + "</div>"
+          : '<p class="al-read">Nothing in the manual matches that.</p>';
       });
     }
-    // mobile Contents: the manual nav in the refined drawer style
-    var cBtn = page.querySelector("#fo-mn2-contents");
-    if (cBtn) cBtn.addEventListener("click", function () {
-      var d = document.getElementById("fo-mandrawer");
-      if (d) { d.remove(); return; }
-      d = document.createElement("div"); d.id = "fo-mandrawer";
-      d.innerHTML = "<div class='fo-mdk'></div><div class='fo-mdp'><div class='fo-mdh'>Game manual<button class='fo-mdx' aria-label='Close contents'>&#10005;</button></div><nav class='fo-mdn'>" +
-        cats.map(function (c) {
-          return "<div class='fo-mn2-dcat'>" + E(c.name) + "</div>" + c.arts.map(function (id) {
-            return "<a class='fo-mdl" + (id === artId ? " on" : "") + "' href='#/guide?a=" + id + "'>" + byId[id][1] + "</a>";
-          }).join("");
-        }).join("") + "</nav></div>";
-      document.body.appendChild(d);
-      d.classList.add("open"); document.body.classList.add("fo-mnav-lock");
-      var close = function () { d.remove(); document.body.classList.remove("fo-mnav-lock"); };
-      d.querySelector(".fo-mdk").addEventListener("click", close);
-      d.querySelector(".fo-mdx").addEventListener("click", close);
-      d.querySelectorAll("a.fo-mdl").forEach(function (a) { a.addEventListener("click", close); });
-    });
     try { window.scrollTo(0, 0); } catch (eSc) {}
-    foMobileTables();
   }
   // THE MANUAL IS A ROOM LIKE ANY OTHER. It used to paint itself on a timer
   // after every hash change, which meant the engine's router - reaching
@@ -36908,201 +36859,163 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     }, 260);
   }
 
+  // PHASE 4 OF THE ALMANACK. This page's job is to say what the world is doing
+  // RIGHT NOW, and the world's most useful device - the band of flags in hour
+  // order, lit while a nation is playing - is kept, because nothing else says
+  // "the planet is awake somewhere" as fast. Everything under it is ruled
+  // type: the cup as stages, the nations as rows, the wire as headlines. The
+  // clock, the schedule mirror and the served-standings reads are unchanged.
+  function AL_() { return window.AL || null; }
   function foRenderPlanetPage() {
     try {
       if ((location.hash || "").split("?")[0] !== "#/planet") return;
       if (!cx()) return;
       var page = document.getElementById("page"); if (!page) return;
-      try { document.body.classList.remove("fo-ov-on", "fo-boss-on", "fo-scb-on", "fo-drs-on"); } catch (eB) {}
+      var al = AL_(); if (!al) return;
+      try { window.__foAlApply && window.__foAlApply(); } catch (eA) {}
+
       var now = Date.now(), p = phaseOf(now), st = todayStatus(now);
       overrideSnapshot(now);
       var my = myNation(), myRegion = regionById(my) || { nm: "England" };
       var A = artBase();
       var flagOf = function (rid) { return A + "flags/" + cx().flagFile(rid) + ".svg"; };
-
-      // the globe as a dial: nations ordered by their hour, live ones lit
       var hNow = hourOfDay(now);
-      var band = regionList().slice().sort(function (a, b) { return natHour(a.id) - natHour(b.id) || (a.nm < b.nm ? -1 : 1); }).map(function (r) {
-        var h0 = natHour(r.id);
-        var st2 = (p.kind === "league") ? (hNow >= h0 && hNow < h0 + LIVE_LEN ? "on" : hNow >= h0 + LIVE_LEN ? "done" : "up") : "up";
-        // a live nation's flag is a door to the world theatre; the rest open the nation page
-        var dest = st2 === "on" ? "#/watch?n=" + encodeURIComponent(r.id) : "#/nation?n=" + encodeURIComponent(r.id);
-        return "<a class='fo-pl-tz " + st2 + (r.id === my ? " me" : "") + "' href='" + dest + "' aria-label='" + E(r.nm) + "'>" +
-          "<img src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\"><i>" + hh(h0).slice(0, 2) + "</i></a>";
-      }).join("");
-      var bandHTML = "<div class='fo-pl-band'><i>The world by the hour &middot; UTC</i><div class='fo-pl-bandrow'>" + band + "</div></div>";
 
       var phaseLine =
-        p.preseason ? "The world is founded and the squads are named - season 1 " + ((WORLD_START - dayIx(now)) === 1 ? "begins tomorrow" : "begins in " + (WORLD_START - dayIx(now)) + " days") :
+        p.preseason ? "The world is founded and the squads are named — season 1 " + ((WORLD_START - dayIx(now)) === 1 ? "begins tomorrow" : "begins in " + (WORLD_START - dayIx(now)) + " days") :
         p.kind === "league" ? "Round " + p.round + " of " + ROUNDS + " across the world's leagues" :
-        p.kind === "honours" ? "Honours day - champions are crowned tonight" :
-        p.kind === "draw" ? "World Cup draw day - sixteen nations learn their fate" :
-        p.kind === "cup" ? "World Cup - " + stageName(p.stage) :
-        "Rest day - the season " + (p.season + 1) + " calendar begins tomorrow";
+        p.kind === "honours" ? "Honours day — champions are crowned tonight" :
+        p.kind === "draw" ? "World Cup draw day — sixteen nations learn their fate" :
+        p.kind === "cup" ? "World Cup — " + stageName(p.stage) :
+        "Rest day — the season " + (p.season + 1) + " calendar begins tomorrow";
 
-      // -- your own league card: the WORLD's league, your claimed club -------
-      // one world: this card speaks only served data - your claim, the served
-      // standings, today's served fixture - never the retired private league
-      var ownCard = "";
+      var body = al.mast("World cricket · season " + p.season + " · day " + (p.di + 1) + " of " + CYCLE,
+        "The Planet Plays Today",
+        "Every league runs on the world calendar, live from its own local hour — online or offline, the same " +
+        "world for everyone.");
+      body += al.subnav("planet");
+
+      // ---- what is happening this minute, and the way in -------------------
+      var liveHref = st.liveIds && st.liveIds.length === 1
+        ? (st.liveIds[0] === my ? "#/league" : "#/nation?n=" + encodeURIComponent(st.liveIds[0]))
+        : "#/watch";
+      body += al.decide({
+        kind: st.key === "live" ? "act" : "",
+        title: st.chip,
+        note: phaseLine,
+        action: st.key === "live" ? { href: liveHref, label: "Watch" } : null,
+        primary: st.key === "live",
+      });
+
+      // ---- the world by the hour: the one device worth keeping -------------
+      var band = regionList().slice()
+        .sort(function (a, b) { return natHour(a.id) - natHour(b.id) || (a.nm < b.nm ? -1 : 1); })
+        .map(function (r) {
+          var h0 = natHour(r.id);
+          var on = (p.kind === "league") && hNow >= h0 && hNow < h0 + LIVE_LEN;
+          var dest = on ? "#/watch?n=" + encodeURIComponent(r.id) : "#/nation?n=" + encodeURIComponent(r.id);
+          return '<a class="al-flag' + (on || r.id === my ? " al-flag--on" : "") + '" href="' + dest +
+            '" aria-label="' + E(r.nm) + '"><img src="' + flagOf(r.id) + '" alt="" ' +
+            "onerror=\"this.style.display='none'\"><span>" + hh(h0).slice(0, 2) + "</span></a>";
+        }).join("");
+      body += '<div class="al-flags">' + band + "</div>" +
+        '<p class="al-read">The world by the hour, UTC. A lit flag is a nation in play.</p>';
+
+      // ---- your own league, from the served world only ---------------------
       try {
         var wclP = null; try { wclP = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eW) {}
-        var svP = null; try { svP = window.__foWorldLg ? window.__foWorldLg.get(my) : null; } catch (eL) {}
-        try { if (window.__foWorldLg) window.__foWorldLg.want(my); } catch (eL2) {}
+        var svP = null;
+        try { if (window.__foWorldLg) { window.__foWorldLg.want(my, planetRepaint); svP = window.__foWorldLg.get(my); } } catch (eL) {}
         var meNm2 = (wclP && wclP.country === my) ? wclP.club : null;
-        var posTxt = "";
-        if (meNm2 && svP && svP.table) {
-          var ix2 = svP.table.findIndex(function (t2) { return t2.name === meNm2; });
-          if (ix2 >= 0) { var pn = ix2 + 1; posTxt = " &middot; " + pn + (["th", "st", "nd", "rd"][(pn % 100 > 10 && pn % 100 < 14) ? 0 : Math.min(pn % 10, 4)] || "th"); }
+        var rows = [["Your league", myRegion.nm]];
+        if (meNm2) {
+          var posTxt = meNm2;
+          if (svP && svP.table) {
+            var ix2 = svP.table.findIndex(function (t2) { return t2.name === meNm2; });
+            if (ix2 >= 0) posTxt = meNm2 + " · " + (ix2 + 1) + ordSuf(ix2 + 1);
+          }
+          rows.push(["Your club", posTxt]);
         }
         var ldr3 = svP && svP.table && svP.table[0];
-        var nxTxt = "";
-        try {
-          if (meNm2 && window.__foWT && window.__foWT.serverFixtures) {
-            var svF2 = window.__foWT.serverFixtures(my, now);
-            var f2 = (svF2.fx || []).filter(function (x2) { return x2.home.name === meNm2 || x2.away.name === meNm2; })[0];
-            if (f2) nxTxt = " &middot; today: v " + E(f2.home.name === meNm2 ? f2.away.name : f2.home.name);
-          }
-        } catch (eF2) {}
-        ownCard = "<a class='fo-pl-own' href='#/nation?n=" + encodeURIComponent(my) + "'>" +
-          "<img class='fo-pl-flag' src='" + flagOf(my) + "' alt='' onerror=\"this.style.display='none'\">" +
-          "<span class='fo-pl-ownt'><i>Your world league &middot; " + E(myRegion.nm) + "</i>" +
-          "<b>" + E(meNm2 || "Your club awaits its claim") + posTxt + "</b>" +
-          "<em>" + (ldr3 && (ldr3.pts | 0) > 0 ? E(ldr3.name) + " lead on " + (ldr3.pts | 0) + " pts" : "Season 1 of the served world") + nxTxt + "</em></span><u>&rsaquo;</u></a>";
+        if (ldr3 && (ldr3.pts | 0) > 0) rows.push(["Leading", ldr3.name + " · " + (ldr3.pts | 0) + " pts"]);
+        body += al.sec("Your corner of the world", al.ledger(rows),
+          { href: "#/nation?n=" + encodeURIComponent(my), label: myRegion.nm });
       } catch (eOwn) {}
 
-      // -- the world cup panel (draw day through rest day) --------------------
-      var cupHTML = "";
+      // ---- the World Cup, once the draw is made ----------------------------
       if (p.di >= 19) {
         var stagesDone = wcStagesDone(now, p.season);
         var bracket = wcBracket(p.season);
         var ents = wcEntrants(p.season);
-        var myIn = ents.some(function (e) { return e.rid === my; });
+        var myIn = ents.some(function (e2) { return e2.rid === my; });
         var ups = callUps(myRegion);
-        // YOUR dressing room at the cup: any player of yours - homegrown or a
-        // winter-window signing - whose nation made the sixteen gets the call
-        var abroad = [];
-        ents.forEach(function (e2) {
-          if (e2.rid === my) return;
-          var reg2 = regionById(e2.rid); if (!reg2) return;
-          callUps(reg2).forEach(function (n2) { abroad.push(n2 + " (" + reg2.nm + ")"); });
-        });
-        var stageRows = bracket.map(function (sg, si) {
+        var cupBody = "";
+        if (stagesDone >= 4) {
+          cupBody += '<p class="al-lede">' + E(wcChampion(p.season).nm) + " are champions of the world.</p>";
+        }
+        cupBody += '<p class="al-read">' + (myIn
+          ? E(myRegion.nm) + " are in" + (ups.length ? " · called up: " + ups.map(E).join(", ") : "")
+          : E(myRegion.nm) + " missed the cut this season") + "</p>";
+        bracket.forEach(function (sg, si) {
           var visible = si < stagesDone || (p.kind === "cup" && ["r16", "qf", "sf", "final"][si] === p.stage);
-          var liveNow = p.kind === "cup" && ["r16", "qf", "sf", "final"][si] === p.stage && st.key === "live";
-          if (!visible && si >= stagesDone) {
-            return "<div class='fo-pl-stage dim'><i>" + stageName(sg.stage) + "</i><span>" + (si === stagesDone ? "Next · " + hh(WC_HOURS[si]) + " UTC" : "To come") + "</span></div>";
+          if (!visible) {
+            cupBody += '<p class="al-read">' + stageName(sg.stage) + " · " +
+              (si === stagesDone ? "next, " + hh(WC_HOURS[si]) + " UTC" : "to come") + "</p>";
+            return;
           }
           var done = si < stagesDone;
-          return "<div class='fo-pl-stage'><i>" + stageName(sg.stage) + (liveNow && !done ? " <b class='lv'>LIVE</b>" : "") + "</i>" +
-            sg.matches.map(function (m, gi2) {
-              var mineM = m.a.rid === my || m.b.rid === my;
-              // a finished tie opens its own match page
-              var tag = done ? "a" : "div";
-              var href = done ? " href='#/wcmatch?s=" + p.season + "&st=" + sg.stage + "&g=" + gi2 + "'" : "";
-              return "<" + tag + " class='fo-pl-cm" + (mineM ? " mine" : "") + "'" + href + ">" +
-                "<img src='" + flagOf(m.a.rid) + "' alt=''><span class='" + (done && m.winner === m.a ? "w" : "") + "'>" + E(m.a.nm) + "</span>" +
-                "<u>v</u>" +
-                "<span class='" + (done && m.winner === m.b ? "w" : "") + "'>" + E(m.b.nm) + "</span><img src='" + flagOf(m.b.rid) + "' alt=''>" +
-                (done ? "<em>" + E(m.winner.nm) + " through &middot; " + m.hs + " v " + m.as + "</em>" : "") +
-                "</" + tag + ">";
-            }).join("") + "</div>";
-        }).join("");
-        var champLine = stagesDone >= 4 ? "<div class='fo-pl-crown'>&#127942; <b>" + E(wcChampion(p.season).nm) + "</b> are champions of the world</div>" : "";
-        cupHTML = "<div class='fo-pl-cup'><div class='fo-pl-cuph'><i>Season " + p.season + " World Cup</i>" +
-          (myIn ? "<span class='in'>" + E(myRegion.nm) + " are in" + (ups.length ? " &middot; called up: " + ups.map(E).join(", ") : "") + "</span>" : "<span class='in'>" + E(myRegion.nm) + " missed the cut this season</span>") +
-          (abroad.length ? "<span class='in'>Your dressing room at the cup: " + abroad.map(E).join(", ") + "</span>" : "") +
-          "</div>" + champLine + stageRows + "</div>";
+          cupBody += '<p class="al-read">' + stageName(sg.stage) + "</p>" + al.ledger(sg.matches.map(function (m) {
+            return [m.a.nm + " v " + m.b.nm,
+              done ? m.winner.nm + " · " + m.hs + " v " + m.as : "to play",
+              done && (m.winner.rid === my) ? "pos" : ""];
+          }));
+        });
+        body += al.sec("Season " + p.season + " World Cup", cupBody, { href: "#/champions", label: "The clubs' cup" });
       }
 
-      // -- one card per rival nation: today's tallest fixture, the leader ----
-      var natCards = "";
-      if (p.kind === "league") {
-        natCards = regionList().filter(function (r) { return r.id !== my; }).map(function (r) {
-          var fx = fixturesOf(r.id, p.season, p.round);
-          // THE REAL TABLE, NOT THE PAINTED ONE. These cards used to read the
-          // local deterministic mirror for every rival nation, so South Africa
-          // and India sat on nought all season while the umpire was banking
-          // their results. Ask the world for each nation's standings - the
-          // same snapshot their own page reads - and only fall back to the
-          // mirror while it is in flight.
+      // ---- the rest of the world, nation by nation -------------------------
+      if (p.kind === "league" || p.kind === "honours") {
+        var natRows = regionList().filter(function (r) { return r.id !== my; }).map(function (r) {
           var svN = null;
           try {
-            if (window.__foWorldLg) {
-              window.__foWorldLg.want(r.id, planetRepaint);
-              svN = window.__foWorldLg.get(r.id);
-            }
+            if (window.__foWorldLg) { window.__foWorldLg.want(r.id, planetRepaint); svN = window.__foWorldLg.get(r.id); }
           } catch (eSv) {}
           if (svN && (!svN.seasonNo || svN.seasonNo !== p.season)) svN = null;
-          var t = tableOf(r.id, p.season, roundsDone(now, p.season));
-          var posOf = {}; t.forEach(function (row, i2) { posOf[row.side.slot] = i2 + 1; });
-          if (svN && svN.table && svN.table.length) {
-            posOf = {}; svN.table.forEach(function (row9, i9) { posOf[row9.slot] = i9 + 1; });
+          var natLive = (p.kind === "league") && hNow >= natHour(r.id) && hNow < natHour(r.id) + LIVE_LEN;
+          var line;
+          if (p.kind === "honours") {
+            var c = championOf(r.id, p.season);
+            line = c ? c.name + ", champions" : "champions being decided";
+          } else if (natLive) {
+            line = "in play now · " + hh(natHour(r.id)) + " UTC";
+          } else {
+            var t = svN && svN.table && svN.table.length ? svN.table[0] : null;
+            line = t ? (t.p ? t.name + " lead · " + t.pts + " pts" : "no play yet")
+                     : "round " + p.round + " · " + hh(natHour(r.id)) + " UTC";
           }
-          var feat = fx.slice().sort(function (a, b) { return (posOf[a.home.slot] + posOf[a.away.slot]) - (posOf[b.home.slot] + posOf[b.away.slot]); })[0];
-          var lv = feat ? liveView(feat, now, natHour(r.id)) : null;
-          // the card tells the truth: fixture names come from the server's
-          // own schedule (same round, same circle method); a finished match
-          // shows the RECORDED result when the served snapshot is in hand,
-          // and never an invented scoreline
-          var finTxt = null;
-          try {
-            var snb = window.__foWorldLg && window.__foWorldLg.get(r.id);
-            if (feat && snb && snb.seasonNo === p.season) {
-              var rr = (snb.results || []).filter(function (x) { return x.round === p.round && x.home === feat.home.name && x.away === feat.away.name; })[0];
-              if (rr) finTxt = rr.text;
-            }
-          } catch (eF) {}
-          var mid = !feat ? "" :
-            lv.state === "up" ? "<em class='fx'>" + E(feat.home.name) + " v " + E(feat.away.name) + " &middot; " + hh(natHour(r.id)) + " UTC</em>" :
-            lv.state === "live" ? "<em class='fx live'><b>LIVE</b> " + E(feat.home.name) + " v " + E(feat.away.name) + " &middot; in play now</em>" :
-            "<em class='fx'>" + (finTxt ? E(finTxt) : E(feat.home.name) + " v " + E(feat.away.name) + " &middot; played &middot; tap for the result") + "</em>";
-          var ldr2 = (svN && svN.table && svN.table.length)
-            ? { side: { name: svN.table[0].name }, pts: svN.table[0].pts, p: svN.table[0].p }
-            : t[0];
-          // a nation in its live window wears an unmissable red LIVE button;
-          // the card opens its matchday, where every live match has a
-          // watch-in-the-theatre door
-          var natLive = hNow >= natHour(r.id) && hNow < natHour(r.id) + LIVE_LEN;
-          return "<a class='fo-pl-nat" + (natLive ? " live" : "") + "' href='#/nation?n=" + encodeURIComponent(r.id) + "'>" +
-            "<img class='fo-pl-flag' src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\">" +
-            "<span class='fo-pl-natt'><b>" + E(r.nm) + "</b>" + mid +
-            "<u>" + (ldr2 ? (ldr2.p === 0 ? E(ldr2.side.name) + " &middot; no play yet"
-              : E(ldr2.side.name) + " lead &middot; " + ldr2.pts + " pts") : "") + "</u></span>" +
-            (natLive ? "<span class='fo-pl-livebtn'><i></i>LIVE</span>" : "<i>&rsaquo;</i>") + "</a>";
+          return '<a class="al-fix al-fix--room' + (natLive ? " al-fix--next" : "") +
+            '" href="#/nation?n=' + encodeURIComponent(r.id) + '">' +
+            '<span class="al-fix__t"><b><img class="al-flag" src="' + flagOf(r.id) + '" alt="" ' +
+            "onerror=\"this.style.display='none'\">" + E(r.nm) + "</b><i>" + E(line) + "</i></span>" +
+            '<span class="al-fix__o">' + (natLive ? "LIVE" : "›") + "</span></a>";
         }).join("");
-      } else if (p.kind === "honours") {
-        natCards = regionList().filter(function (r) { return r.id !== my; }).map(function (r) {
-          var c = championOf(r.id, p.season);
-          return "<a class='fo-pl-nat' href='#/nation?n=" + encodeURIComponent(r.id) + "'>" +
-            "<img class='fo-pl-flag' src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\">" +
-            "<span class='fo-pl-natt'><b>" + E(r.nm) + "</b><em class='fx'>&#127942; " + E(c ? c.name : "") + ", champions</em></span><i>&rsaquo;</i></a>";
-        }).join("");
+        body += al.sec("The rest of the world · " + (regionList().length - 1) + " leagues",
+          '<div class="al-fixlist">' + natRows + "</div>");
       }
 
-      var wireItems = genWire(now).slice(0, 6).map(function (w) { return "<div class='fo-pl-wireln'>" + E(w.headline) + "</div>"; }).join("");
+      // ---- the wire -----------------------------------------------------------
+      var wireItems = genWire(now).slice(0, 6);
+      if (wireItems.length) {
+        body += al.sec("The world wire",
+          '<div class="al-fixlist">' + wireItems.map(function (w) {
+            return '<div class="al-fix al-fix--room"><span class="al-fix__t"><b>' + E(w.headline) + "</b></span></div>";
+          }).join("") + "</div>", { href: "#/wire", label: "All of it" });
+      }
 
-      page.innerHTML =
-        "<div class='fo-pl'>" +
-        "<div class='fo-pl-mast'>" +
-        "<div class='fo-pl-kick'>World cricket &middot; Season " + p.season + " &middot; Day " + (p.di + 1) + " of " + CYCLE + "</div>" +
-        "<h1>The Planet Plays Today</h1>" +
-        "<p>" + E(phaseLine) + ". Every league runs on the world calendar, live from 10:00 UTC — online or offline, the same world for everyone.</p>" +
-        // LIVE is a door, not a label: one live nation opens that nation's
-        // matchday (every live match, watch buttons and all); several open
-        // the theatre hub
-        (st.key === "live"
-          ? "<a class='fo-pl-chip live islink' href='" + (st.liveIds.length === 1
-              ? (st.liveIds[0] === my ? "#/league" : "#/nation?n=" + encodeURIComponent(st.liveIds[0]))
-              : "#/watch") + "'>&#9679; " + E(st.chip) + " &mdash; watch &rsaquo;</a>"
-          : "<span class='fo-pl-chip " + st.key + "'>" + E(st.chip) + "</span>") +
-        "</div>" +
-        bandHTML + ownCard + cupHTML +
-        (natCards ? "<div class='fo-pl-grid'>" + natCards + "</div>" : "") +
-        (wireItems ? "<div class='fo-pl-wire'><i>The world wire</i>" + wireItems + "</div>" : "") +
-        "<div class='fo-pl-foot'><a href='#/worldclub'>Join the world &rsaquo;</a><a href='#/world'>The world map &rsaquo;</a><a href='#/champions'>The Champions Cup &rsaquo;</a><a href='#/nations'>The international game &rsaquo;</a><a href='#/rankings'>The world rankings &rsaquo;</a><a href='#/nation'>My league &rsaquo;</a><a href='#/almanack'>The world almanack &rsaquo;</a><a href='#/atlas'>The atlas &rsaquo;</a></div>" +
-        "</div>";
+      page.innerHTML = al.page({ body: body });
     } catch (e) { try { console.warn("foRenderPlanetPage", e); } catch (e2) {} }
   }
+  function ordSuf(n) { return ["th", "st", "nd", "rd"][(n % 100 > 10 && n % 100 < 14) ? 0 : Math.min(n % 10, 4)] || "th"; }
 
   var CSS = [
     "html body #page .fo-pl{max-width:680px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
@@ -39416,77 +39329,88 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   window.__foChampCup = { entrants: entrants, bracket: bracket, stagesDone: stagesDone };
 
   // ---- the page -------------------------------------------------------------
+  // PHASE 4 OF THE ALMANACK. The cup's own drama - who is in it, where it has
+  // got to, and when the next night is - reads better as a stated verdict, a
+  // bracket in ruled rows and a road with the stages ticked off than it did as
+  // a dark hero over floating tie cards. The seeding, the bracket and the
+  // clock are the same pure functions of the world day.
+  function A() { return window.AL || null; }
+  function onCup() { return (location.hash || "").split("?")[0] === "#/champions"; }
+
   window.foRenderChampionsPage = function () {
+    if (!onCup()) return;
     var page = document.getElementById("page"); if (!page || !ready()) return;
-    foClCss();
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e0) {}
+
     var pl = P(), now = Date.now(), p = pl.phaseOf(now);
     var season = p.season, done = stagesDone(now, season);
     var e = entrants(season), br = bracket(season);
     var my = e.filter(function (x) { return x.mine; })[0] || null;
     var eng = e.filter(function (x) { return x.rid === myNation(); })[0] || null;
+    var provisional = p.di < 18;
 
     var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    var when = function (st) { var d = new Date(stageTime(season, st)); return d.getUTCDate() + " " + MON[d.getUTCMonth()] + " · " + HOURS[st] + ":00 UTC"; };
-
-    // status line: the race, the countdown, the rounds, or the crown
-    var status, chip;
-    if (p.di < 18) { status = "Nineteen leagues are deciding their champions. The draw is made on day 19."; chip = "THE RACE IS ON"; }
-    else if (done === 0) { status = "The nineteen are known. The play-ins open the cup at " + when("pi") + "."; chip = "THE DRAW IS MADE"; }
-    else if (done < 5) { var nxt = ORDER[done]; status = STAGE_NM[nxt] + " " + (done === 4 ? "crowns the champion" : "come next") + " · " + when(nxt) + "."; chip = "CUP IN PROGRESS"; }
-    else { status = (br && br.champion ? br.champion.name + " are champions of the world's clubs." : "The cup is decided."); chip = "CHAMPIONS CROWNED"; }
-
-    // the entrants: nineteen champions, seeded, yours in gold
-    var provisional = p.di < 18;
-    var entRows = e.map(function (x) {
-      return "<div class='fo-cl-ent" + (x.mine ? " mine" : "") + "'>" +
-        "<i>" + x.seed + "</i>" +
-        "<img src='" + flagOf(x.rid) + "' alt='' onerror=\"this.style.display='none'\">" +
-        "<b>" + E(x.name) + (x.mine ? " <u>YOU</u>" : "") + "</b>" +
-        "<span>" + E(x.nat) + (x.provisional ? " · as it stands" : "") + "</span></div>";
-    }).join("");
-
-    // the bracket: only stages whose windows have CLOSED show results
-    var tieHTML = function (m) {
-      return "<div class='fo-cl-tie" + ((m.a.mine || m.b.mine) ? " mine" : "") + "'>" +
-        "<div class='s" + (m.winner === m.a ? " won" : "") + "'><b>" + E(m.a.name) + "</b><em>" + E(m.hs) + "</em></div>" +
-        "<div class='s" + (m.winner === m.b ? " won" : "") + "'><b>" + E(m.b.name) + "</b><em>" + E(m.as) + "</em></div>" +
-        "</div>";
+    var when = function (st) {
+      var d = new Date(stageTime(season, st));
+      return d.getUTCDate() + " " + MON[d.getUTCMonth()] + " · " + HOURS[st] + ":00 UTC";
     };
-    var bracketHTML = "";
-    if (br && done > 0) {
-      bracketHTML = ORDER.slice(0, done).map(function (st) {
-        var ms = br[st]; if (!ms || !ms.length) return "";
-        return "<div class='fo-cl-stage'><h3>" + STAGE_NM[st] + " <span>" + when(st) + "</span></h3>" +
-          ms.map(tieHTML).join("") + "</div>";
-      }).join("");
-    }
-    var champHTML = "";
+
+    var status, chip;
+    if (p.di < 18) { status = "Nineteen leagues are deciding their champions. The draw is made on day 19."; chip = "The race is on"; }
+    else if (done === 0) { status = "The nineteen are known. The play-ins open the cup at " + when("pi") + "."; chip = "The draw is made"; }
+    else if (done < 5) { var nxt = ORDER[done]; status = STAGE_NM[nxt] + " " + (done === 4 ? "crowns the champion" : "come next") + " · " + when(nxt) + "."; chip = "Cup in progress"; }
+    else { status = (br && br.champion ? br.champion.name + " are champions of the world's clubs." : "The cup is decided."); chip = "Champions crowned"; }
+
+    var body = al.mast("World cricket · season " + season + " · the clubs' crown", "The Champions Cup",
+      "Nineteen league champions, one knockout, and a crown nobody has to be awake for.");
+    body += al.subnav("champions");
+
+    body += al.decide({
+      kind: (done >= 5 && br && br.champion && br.champion.mine) ? "done" : (my ? "act" : ""),
+      title: chip + " · " + status,
+      note: my
+        ? (provisional ? "You lead your league — hold the top and the cup is yours to enter."
+                       : "Your club carries its country's flag into the cup.")
+        : (eng ? eng.name + " carry your country. Win your league and this stage is yours." : ""),
+    });
+
     if (done >= 5 && br && br.champion) {
-      champHTML = "<div class='fo-cl-crown" + (br.champion.mine ? " mine" : "") + "'>" +
-        "<i>&#127942;</i><b>" + E(br.champion.name) + "</b><span>Champions of the world's clubs · season " + season + "</span>" +
-        (br.champion.mine ? "<em>YOUR club. The whole planet watched.</em>" : "") + "</div>";
+      body += al.sec("Champions of the world's clubs",
+        '<p class="al-lede">' + E(br.champion.name) + "</p>" +
+        '<p class="al-read">Season ' + season + (br.champion.mine ? " · your club. The whole planet watched." : "") + "</p>");
     }
 
-    var myLine = my
-      ? (provisional ? "You lead England - hold the top and the cup is yours to enter." : "Your club carries England's flag into the cup.")
-      : (eng ? E(eng.name) + " carry England. Win your league and this stage is yours." : "");
+    // ---- the bracket: only stages whose windows have CLOSED show results ---
+    if (br && done > 0) {
+      ORDER.slice(0, done).forEach(function (st) {
+        var ms = br[st]; if (!ms || !ms.length) return;
+        body += al.sec(STAGE_NM[st] + " · " + when(st), al.ledger(ms.map(function (m) {
+          var winner = m.winner === m.a ? m.a.name : m.winner === m.b ? m.b.name : "";
+          return [m.a.name + " v " + m.b.name, m.hs + " · " + m.as,
+            (m.a.mine || m.b.mine) ? ((winner && ((m.winner.mine)) ) ? "pos" : "neg") : ""];
+        })));
+      });
+    }
 
-    page.innerHTML = "<div class='fo-cl'><div class='fo-cl-in'>" +
-      "<div class='fo-cl-hero'>" +
-      "<div class='fo-cl-k'>World cricket &middot; season " + season + " &middot; the clubs' crown</div>" +
-      "<h1>The Champions Cup</h1>" +
-      "<p>" + E(status) + "</p>" +
-      "<span class='fo-cl-chip'>" + chip + "</span>" +
-      (myLine ? "<div class='fo-cl-my'>" + myLine + "</div>" : "") +
-      "</div>" +
-      champHTML +
-      bracketHTML +
-      "<div class='fo-cl-sec'><h3>The nineteen" + (provisional ? " <span>as the tables stand</span>" : " <span>champions all</span>") + "</h3>" + entRows + "</div>" +
-      "<div class='fo-cl-sched'><h3>The road</h3>" + ORDER.map(function (st, i) {
-        return "<div class='fo-cl-schrow" + (done > i ? " done" : done === i ? " next" : "") + "'><b>" + STAGE_NM[st] + "</b><span>" + when(st) + "</span></div>";
-      }).join("") + "</div>" +
-      "<div class='fo-cl-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/league'>My league &rsaquo;</a><a href='#/almanack'>The almanack &rsaquo;</a></div>" +
-      "</div></div>";
+    body += al.sec("The nineteen · " + (provisional ? "as the tables stand" : "champions all"),
+      "<div class='al-tblwrap'><table class='al-tbl'><thead><tr><th></th><th class='l'>Club</th>" +
+      "<th class='l al-s'>Nation</th></tr></thead><tbody>" +
+      e.map(function (x) {
+        return "<tr" + (x.mine ? " class='al-you'" : "") + "><td class='al-pos'>" + x.seed + "</td>" +
+          "<td class='l al-club'><img class='al-flag' src='" + flagOf(x.rid) + "' alt='' " +
+            "onerror=\"this.style.display='none'\">" + E(x.name) +
+            (x.mine ? "<span class='al-you__tag'>YOU</span>" : "") + "</td>" +
+          "<td class='l al-s'>" + E(x.nat) + (x.provisional ? " · as it stands" : "") + "</td></tr>";
+      }).join("") + "</tbody></table></div>");
+
+    body += al.sec("The road", '<div class="al-plaques">' + ORDER.map(function (st, i) {
+      return '<div class="al-plaque' + (done > i ? " al-plaque--won" : "") + '">' +
+        "<b>" + STAGE_NM[st] + "</b><i>" + when(st) + "</i>" +
+        "<em>" + (done > i ? "played" : done === i ? "next" : "to come") + "</em></div>";
+    }).join("") + "</div>");
+
+    page.innerHTML = al.page({ body: body });
   };
 
   // gazette + wire: the cup speaks through the world's news
@@ -39514,52 +39438,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     }
   } catch (e) {}
 
-  function foClCss() {
-    if (document.getElementById("fo-cl-css")) return;
-    var s = document.createElement("style"); s.id = "fo-cl-css";
-    s.textContent = [
-      "html body #page .fo-cl{max-width:680px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
-      "html body #page .fo-cl-hero{background:linear-gradient(150deg,#0B1D3A,#07162E 70%) !important;border-radius:22px;padding:26px 28px 24px;color:#FFFEFC;box-shadow:0 22px 50px rgba(7,22,46,.35);border-bottom:3px solid #E8B96A}",
-      "html body #page .fo-cl-k{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:#E8B96A}",
-      "html body #page .fo-cl-hero h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:36px;letter-spacing:-.015em;margin:8px 0;color:#FFFEFC;line-height:1.02}",
-      "html body #page .fo-cl-hero p{font:italic 420 13.5px/1.6 'Fraunces',Georgia,serif;color:rgba(255,254,252,.78);margin:0 0 12px;max-width:52ch}",
-      "html body #page .fo-cl-chip{display:inline-block;font:700 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;border-radius:999px;padding:7px 13px;background:rgba(232,185,106,.16);color:#E8B96A}",
-      "html body #page .fo-cl-my{margin-top:12px;font:italic 400 12.5px/1.5 'Fraunces',Georgia,serif;color:#E8B96A;border-top:1px solid rgba(232,185,106,.25);padding-top:10px}",
-      "html body #page .fo-cl-crown{margin-top:16px;background:linear-gradient(150deg,#FFF8E8,#F6ECD2);border:1px solid rgba(200,154,46,.5);border-radius:18px;padding:20px 22px;text-align:center;box-shadow:0 16px 38px rgba(140,105,30,.18)}",
-      "html body #page .fo-cl-crown i{font-style:normal;font-size:30px;display:block}",
-      "html body #page .fo-cl-crown b{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:24px;margin-top:6px;color:#1A2130}",
-      "html body #page .fo-cl-crown span{display:block;font:italic 400 12.5px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);margin-top:4px}",
-      "html body #page .fo-cl-crown em{display:block;font:700 11px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#B44A22;margin-top:10px}",
-      "html body #page .fo-cl-stage{margin-top:16px;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:16px;padding:14px 16px}",
-      "html body #page .fo-cl-stage h3,html body #page .fo-cl-sec h3,html body #page .fo-cl-sched h3{margin:0 0 10px;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#8A6A1F;display:flex;justify-content:space-between;align-items:baseline}",
-      "html body #page .fo-cl-stage h3 span,html body #page .fo-cl-sec h3 span{font-size:9px;color:rgba(20,28,40,.45);letter-spacing:.12em}",
-      "html body #page .fo-cl-tie{border:1px solid rgba(20,28,40,.09);border-radius:11px;padding:8px 11px;margin-bottom:8px}",
-      "html body #page .fo-cl-tie.mine{border-color:rgba(200,154,46,.55);background:rgba(200,154,46,.05)}",
-      "html body #page .fo-cl-tie .s{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:12.5px;color:rgba(20,28,40,.55)}",
-      "html body #page .fo-cl-tie .s.won{color:#141C28;font-weight:600}",
-      "html body #page .fo-cl-tie .s em{font-style:normal;font-variant-numeric:tabular-nums}",
-      "html body #page .fo-cl-tie .s.won em{color:#8A6A1F}",
-      "html body #page .fo-cl-sec,html body #page .fo-cl-sched{margin-top:16px;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:16px;padding:14px 16px}",
-      "html body #page .fo-cl-ent{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(20,28,40,.05)}",
-      "html body #page .fo-cl-ent:last-child{border-bottom:none}",
-      "html body #page .fo-cl-ent i{font-style:normal;font-size:10.5px;color:rgba(20,28,40,.4);width:18px;font-variant-numeric:tabular-nums}",
-      "html body #page .fo-cl-ent img{width:24px;height:17px;object-fit:cover;border-radius:3px}",
-      "html body #page .fo-cl-ent b{font:600 13px/1.2 Inter,sans-serif;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      "html body #page .fo-cl-ent b u{text-decoration:none;font:800 8px/1 Oswald,sans-serif;color:#B44A22;letter-spacing:.14em;margin-left:5px;vertical-align:1px}",
-      "html body #page .fo-cl-ent span{font-size:10.5px;color:rgba(20,28,40,.5);white-space:nowrap}",
-      "html body #page .fo-cl-ent.mine{background:rgba(200,154,46,.07);border-radius:8px;padding-left:6px;padding-right:6px}",
-      "html body #page .fo-cl-schrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid rgba(20,28,40,.05);font-size:12.5px}",
-      "html body #page .fo-cl-schrow:last-child{border-bottom:none}",
-      "html body #page .fo-cl-schrow b{font-weight:600;color:rgba(20,28,40,.75)}",
-      "html body #page .fo-cl-schrow span{color:rgba(20,28,40,.5);font-variant-numeric:tabular-nums}",
-      "html body #page .fo-cl-schrow.done b{color:rgba(20,28,40,.4);text-decoration:line-through}",
-      "html body #page .fo-cl-schrow.next b{color:#B44A22}",
-      "html body #page .fo-cl-foot{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}",
-      "html body #page .fo-cl-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
-      "html body #page .fo-cl-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5)}"
-    ].join("\n");
-    document.head.appendChild(s);
-  }
 })();
 /* ============================================================================
    JOIN THE WORLD (#/worldclub) — the P3 client of the served world.
@@ -40985,56 +40863,80 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     } catch (e) { done(); }
   }
 
+  function A() { return window.AL || null; }
+  function onRk() { return (location.hash || "").split("?")[0] === "#/rankings"; }
+
+  // PHASE 4 OF THE ALMANACK. A ladder is a table, and the shell has one. The
+  // flags stay - a world ranking without them reads as a spreadsheet - but the
+  // dark hero and the rounded cards are gone, and a manager's own club is
+  // marked exactly the way it is marked in the league table.
   window.foRenderRankingsPage = function () {
+    if (!onRk()) return;
     var page = document.getElementById("page"); if (!page) return;
-    foRkCss();
-    try { document.body.classList.remove("fo-ov-on", "fo-boss-on", "fo-scb-on", "fo-drs-on", "fo-wt-on"); } catch (e) {}
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e) {}
     fetchRk();
+
     var cl = claim();
-    var body;
+    var body = al.mast("World cricket · the ladder", "The World Rankings",
+      "Rolling ratings over every match the umpire has ever banked. League wins move the needle; " +
+      "Champions Cup nights move it harder.");
+    body += al.subnav("rankings");
+
     if (!RK || !RK.clubs || !RK.clubs.length) {
-      body = "<div class='fo-rk-card'><p class='fo-rk-note'>Reaching the World Service for the ladder&hellip; Every club on earth starts on <b>1000</b>; the rankings first move the night the world plays.</p></div>";
-    } else {
-      var moved = RK.clubs.some(function (c) { return c.p > 0; });
-      var mine = cl ? RK.clubs.filter(function (c) { return c.country === cl.country && c.slot === cl.slot; })[0] : null;
-      var mineChip = mine
-        ? "<div class='fo-rk-mine'>&#127942; <b>" + E(mine.name) + "</b> stand <u>#" + mine.rank + "</u> of " + RK.clubs.length + " in the world &middot; rating " + mine.rating + "</div>"
-        : "";
-      var rowOf = function (c) {
-        var isMine = !!(cl && c.country === cl.country && c.slot === cl.slot);
-        return "<a class='fo-rk-row" + (isMine ? " mine" : "") + (c.boss ? " boss" : "") + "' href='#/team?c=" + encodeURIComponent(c.country) + "&s=" + c.slot + "'>" +
-          "<i>" + c.rank + "</i>" +
-          "<img src='" + flagOf(c.country) + "' alt='' onerror=\"this.style.display='none'\">" +
-          "<b>" + E(c.name) + (isMine ? " <em>YOU</em>" : (c.boss ? " <em class='bs'>FLAGSHIP</em>" : "")) + "</b>" +
-          "<u>" + E(natName(c.country)) + "</u>" +
-          "<span class='rec'>" + c.w + "-" + c.l + (c.t ? "-" + c.t : "") + "</span>" +
-          "<span class='pts'>" + c.rating + "</span></a>";
-      };
-      var top = RK.clubs.slice(0, 30).map(rowOf).join("");
-      var mineExtra = (mine && mine.rank > 30)
-        ? "<div class='fo-rk-gap'>&middot;&middot;&middot;</div>" + rowOf(mine)
-        : "";
-      var natRows = (RK.countries || []).map(function (n) {
-        var isMineN = !!(cl && cl.country === n.id);
-        return "<a class='fo-rk-row nat" + (isMineN ? " mine" : "") + "' href='#/nation?n=" + encodeURIComponent(n.id) + "'>" +
-          "<i>" + n.rank + "</i>" +
-          "<img src='" + flagOf(n.id) + "' alt='' onerror=\"this.style.display='none'\">" +
-          "<b>" + E(n.name) + "</b>" +
-          "<u>XI " + n.natRating + (n.natP ? "" : " &middot; unproven") + "</u>" +
-          "<span class='pts'>" + n.clubRating + "</span></a>";
-      }).join("");
-      body = mineChip +
-        (moved ? "" : "<div class='fo-rk-card'><p class='fo-rk-note'>Every club on earth stands level on <b>1000</b>. The ladder first moves the night the world plays its opening round.</p></div>") +
-        "<div class='fo-rk-card'><h3>The club ladder <span>top 30 of " + RK.clubs.length + " &middot; Elo, every banked match</span></h3>" + top + mineExtra + "</div>" +
-        "<div class='fo-rk-card'><h3>The nations <span>league strength &middot; national XI</span></h3>" + natRows + "</div>";
+      page.innerHTML = al.page({ body: body + al.empty("Reaching the World Service",
+        "Every club on earth starts on 1000. The ladder first moves the night the world plays.") });
+      return;
     }
-    page.innerHTML = "<div class='fo-rk'><div class='fo-rk-in'>" +
-      "<div class='fo-rk-hero'><div class='fo-rk-k'>World cricket &middot; the ladder</div>" +
-      "<h1>The World Rankings</h1>" +
-      "<p>Rolling ratings over every match the umpire has ever banked. League wins move the needle; Champions Cup nights move it harder.</p></div>" +
-      body +
-      "<div class='fo-rk-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/records'>The record book &rsaquo;</a></div>" +
-      "</div></div>";
+
+    var mine = cl ? RK.clubs.filter(function (c) { return c.country === cl.country && c.slot === cl.slot; })[0] : null;
+    var moved = RK.clubs.some(function (c) { return c.p > 0; });
+
+    body += al.decide({
+      kind: mine ? "" : "",
+      title: mine
+        ? mine.name + " stand " + mine.rank + " of " + RK.clubs.length + " in the world"
+        : RK.clubs[0].name + " lead the world",
+      note: mine ? "rating " + mine.rating + " · " + mine.w + "-" + mine.l + (mine.t ? "-" + mine.t : "")
+                 : (moved ? "rating " + RK.clubs[0].rating : "Every club on earth stands level on 1000 until the world plays."),
+    });
+
+    function clubRow(c) {
+      var isMine = !!(cl && c.country === cl.country && c.slot === cl.slot);
+      return "<tr" + (isMine ? " class='al-you'" : "") + ">" +
+        "<td class='al-pos'>" + c.rank + "</td>" +
+        "<td class='l al-club'><img class='al-flag' src='" + flagOf(c.country) + "' alt='' " +
+          "onerror=\"this.style.display='none'\">" + E(c.name) +
+          (isMine ? "<span class='al-you__tag'>YOU</span>" : (c.boss ? "<span class='al-you__tag'>FLAGSHIP</span>" : "")) + "</td>" +
+        "<td class='l al-s'>" + E(natName(c.country)) + "</td>" +
+        "<td class='al-s'>" + c.w + "-" + c.l + (c.t ? "-" + c.t : "") + "</td>" +
+        "<td class='al-pts'>" + c.rating + "</td></tr>";
+    }
+    var rows = RK.clubs.slice(0, 30).map(clubRow).join("");
+    if (mine && mine.rank > 30) rows += "<tr><td colspan='5' class='l al-s'>…</td></tr>" + clubRow(mine);
+
+    body += al.sec("The club ladder · top 30 of " + RK.clubs.length,
+      "<div class='al-tblwrap'><table class='al-tbl'><thead><tr><th></th><th class='l'>Club</th>" +
+      "<th class='l al-s'>Nation</th><th class='al-s'>W-L</th><th>Rating</th></tr></thead><tbody>" +
+      rows + "</tbody></table></div>" +
+      (moved ? "" : '<p class="al-read">Every club on earth stands level on 1000. The ladder first moves the ' +
+        "night the world plays its opening round.</p>"));
+
+    body += al.sec("The nations · league strength and national XI",
+      "<div class='al-tblwrap'><table class='al-tbl'><thead><tr><th></th><th class='l'>Nation</th>" +
+      "<th class='al-s'>XI</th><th>Clubs</th></tr></thead><tbody>" +
+      (RK.countries || []).map(function (n) {
+        var isMineN = !!(cl && cl.country === n.id);
+        return "<tr" + (isMineN ? " class='al-you'" : "") + "><td class='al-pos'>" + n.rank + "</td>" +
+          "<td class='l al-club'><img class='al-flag' src='" + flagOf(n.id) + "' alt='' " +
+            "onerror=\"this.style.display='none'\">" + E(n.name) +
+            (isMineN ? "<span class='al-you__tag'>YOU</span>" : "") + "</td>" +
+          "<td class='al-s'>" + n.natRating + (n.natP ? "" : "*") + "</td>" +
+          "<td class='al-pts'>" + n.clubRating + "</td></tr>";
+      }).join("") + "</tbody></table></div>" +
+      '<p class="al-read">A starred national rating is unproven — that side has not played enough yet.</p>');
+
+    page.innerHTML = al.page({ body: body });
   };
 
   function foRkCss() {
@@ -43170,70 +43072,42 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return fetch(SB_URL + "/rest/v1/" + path, { headers: { apikey: SB_ANON } })
       .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
   }
-  function css() {
-    try { if (window.__foRoomCss) window.__foRoomCss(); } catch (e) {}
-    if (document.getElementById("fo-inv-css")) return;
-    var s = document.createElement("style"); s.id = "fo-inv-css";
-    s.textContent = [
-      "html body #page .fo-inv-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 0;border-top:1px solid rgba(20,28,40,.08)}",
-      "html body #page .fo-inv-row:first-of-type{border-top:0}",
-      "html body #page .fo-inv-row>div{flex:1 1 160px;min-width:0}",
-      "html body #page .fo-inv-row b{display:block;font:600 14px/1.25 Inter,sans-serif;color:#141C28}",
-      "html body #page .fo-inv-row i{display:block;font-style:normal;font:500 11px/1.45 Inter,sans-serif;color:rgba(20,28,40,.55);margin-top:2px}",
-      "html body #page .fo-inv-pill{flex:none;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#FFFEFC;background:#8A6A1F;border-radius:999px;padding:5px 9px}",
-      "html body #page .fo-inv-pill.run{background:#177A57}",
-      "html body #page .fo-inv-pill.done{background:#141C28}",
-      "html body #page .fo-inv-seg{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}",
-      "html body #page .fo-inv-seg button{font:700 10px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(20,28,40,.6) !important;background:transparent !important;border:1px solid rgba(20,28,40,.2) !important;border-radius:999px !important;padding:9px 14px !important;cursor:pointer}",
-      "html body #page .fo-inv-seg button.on{color:#FFFEFC !important;background:#141C28 !important;border-color:#141C28 !important}",
-      "html body #page .fo-inv-name{width:100%;font:500 13px/1.2 Inter,sans-serif;border:1px solid rgba(20,28,40,.18);border-radius:10px;padding:11px 12px;background:#fff;color:#141C28;margin-bottom:2px}",
-      "html body #page .fo-inv-field{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}",
-      "html body #page .fo-inv-field span{font:500 10.5px/1 Inter,sans-serif;color:rgba(20,28,40,.6);background:rgba(20,28,40,.06);border-radius:999px;padding:6px 9px}",
-      "html body #page .fo-inv-field span.me{background:rgba(232,185,106,.3);color:#6B520F;font-weight:700}",
-      "html body #page .fo-inv-field span.bot{opacity:.6;font-style:italic}",
-      "html body #page .fo-inv-tie{display:flex;align-items:center;gap:7px;padding:6px 0;border-top:1px solid rgba(20,28,40,.06);font:500 11.5px/1.35 Inter,sans-serif;flex-wrap:wrap}",
-      "html body #page .fo-inv-tie u{text-decoration:none;color:rgba(20,28,40,.5);font-variant-numeric:tabular-nums}",
-      "html body #page .fo-inv-tie b{color:#141C28;font-weight:600}",
-      "html body #page .fo-inv-tie b.w{color:#177A57}",
-      "html body #page .fo-inv-tie em{font-style:normal;color:rgba(20,28,40,.35);font-size:10px}",
-      "html body #page .fo-inv-champ{margin-top:9px;padding:10px 12px;background:rgba(232,185,106,.18);border:1px solid rgba(138,106,31,.35);border-radius:12px;font:600 13px/1.4 Inter,sans-serif;color:#6B520F}",
-      "html body #page .fo-ac-tbl th{white-space:nowrap}",
-      "html body #page .fo-ac-tbl th.pt{padding-left:10px}",
-      "html body #page .fo-inv-rd{margin:12px 0 4px;font:700 9px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(20,28,40,.4)}"
-    ].join("\n");
-    document.head.appendChild(s);
-  }
 
   var ST = { format: "cup", size: 4, busy: false };
 
+  function A() { return window.AL || null; }
+  function onComps() { return (location.hash || "").split("?")[0] === "#/comps"; }
+  function mast(al) {
+    return al.mast("The invitationals", "Competitions of Your Own",
+      "Found one, name it, and see who turns up. Three days later the umpire fills whatever seats are empty and " +
+      "plays it out, a round a day, whether anybody is watching or not.");
+  }
+
   window.foRenderCompsPage = function () {
+    if (!onComps()) return;
     var page = document.getElementById("page"); if (!page) return;
-    css();
-    page.innerHTML = shell("<div class='fo-ac-note'>Reading the fixture board&hellip;</div>");
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e0) {}
+    page.innerHTML = al.page({ body: mast(al) + al.empty("Reading the fixture board", "Asking who is playing what.") });
     Promise.all([
       sel("world_comps?select=*&order=id.desc&limit=40"),
       sel("world_comp_clubs?select=*&order=comp_id,seat"),
       sel("world_snapshots?key=eq.comps&select=body"),
       jwt() ? rpc("world_my_status").catch(function () { return null; }) : Promise.resolve(null)
     ]).then(function (d) {
-      render(page, d[0] || [], d[1] || [], (d[2] && d[2][0] && d[2][0].body) || { comps: [] }, d[3]);
+      if (onComps()) render(page, d[0] || [], d[1] || [], (d[2] && d[2][0] && d[2][0].body) || { comps: [] }, d[3]);
     }).catch(function (e) {
-      page.innerHTML = shell("<div class='fo-ac-note'>The world could not be reached (" +
-        E(String(e.message).slice(0, 90)) + "). Try again in a minute.</div>");
+      if (!onComps()) return;
+      page.innerHTML = al.page({ body: mast(al) + al.empty("The world could not be reached",
+        String((e && e.message) || e).slice(0, 120) + ". Try again in a minute.") });
     });
   };
 
-  function shell(body) {
-    return "<div class='fo-ac' data-fo-owntable><div class='fo-ac-in'>" +
-      "<div class='fo-ac-hero'><div class='fo-ac-k'>The invitationals</div>" +
-      "<h1>Competitions of Your Own</h1>" +
-      "<p>Found one, name it, and see who turns up. Three days later the umpire fills whatever seats are empty and plays it out, a round a day, whether anybody is watching or not.</p></div>" +
-      body +
-      "<div class='fo-ac-foot'><a href='#/worldclub'>&lsaquo; Your world club</a><a href='#/planet'>World cricket &rsaquo;</a></div>" +
-      "</div></div>";
-  }
-
+  // PHASE 4 OF THE ALMANACK. Founding a competition is the one thing on this
+  // page a manager DOES, so it leads; the boards below it are lists, and lists
+  // are ruled type. Every RPC and every rule is untouched.
   function render(page, comps, clubs, snap, st) {
+    var al = A(); if (!al || !onComps()) return;
     var mine = st && st.claim ? st.claim : null;
     var myKey = mine ? mine.country + ":" + mine.slot : null;
     var bySide = {};
@@ -43244,91 +43118,110 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var open = comps.filter(function (c) { return c.status === "open"; });
     var live = comps.filter(function (c) { return c.status === "running"; });
     var done = comps.filter(function (c) { return c.status === "done"; });
+    var inAny = open.concat(live).filter(function (c) {
+      return (bySide[c.id] || []).some(function (s2) { return s2.country_id + ":" + s2.slot === myKey; });
+    }).length;
 
-    page.innerHTML = shell(
-      (mine ? foundCard() : "<div class='fo-ac-card'><h3>Found one</h3>" +
-        "<p class='fo-ac-p'>You need a club in the served world before you can put a competition on.</p>" +
-        "<a class='fo-ac-btn' href='#/worldclub'>Claim a club &rsaquo;</a></div>") +
-      "<div class='fo-ac-card'><h3>Open for entries<span>" + open.length + "</span></h3>" +
-        (open.length ? open.map(function (c) { return openRow(c, bySide[c.id] || [], myKey); }).join("")
-          : "<div class='fo-ac-note'>Nothing taking entries. Found one and the world will see it.</div>") +
-      "</div>" +
-      (live.length ? "<div class='fo-ac-card'><h3>Being played<span>" + live.length + "</span></h3>" +
-        live.map(function (c) { return compCard(cards[c.id] || c, myKey, bySide[c.id] || []); }).join("") + "</div>" : "") +
-      (done.length ? "<div class='fo-ac-card'><h3>Finished<span>" + done.length + "</span></h3>" +
-        done.slice(0, 6).map(function (c) { return compCard(cards[c.id] || c, myKey, bySide[c.id] || []); }).join("") + "</div>" : "") +
-      "<div class='fo-ac-card'><h3>How it works</h3>" +
-        "<p class='fo-ac-p'>A competition takes entries for <b>three world days</b>. When that window shuts the umpire fills any empty seats with clubs nobody manages &mdash; so a competition that only you and one friend joined still gets played, properly, against real sides.</p>" +
-        "<p class='fo-ac-p'>From then on it settles <b>a round a day</b> on the same engine as the leagues, picking each side from the squad as it stands. There is no teamsheet to file and no deadline to miss. A cup pairs top seat against bottom and halves until somebody is holding it; a round robin plays everyone once and the table decides.</p>" +
-        "<p class='fo-ac-p'>You can run two at a time, and you can pull out of one that hasn't started. Once it has, you play it out.</p>" +
-      "</div>");
+    var body = mast(al) + al.subnav("comps");
 
+    body += al.decide({
+      kind: mine ? (inAny ? "done" : "act") : "act",
+      title: !mine ? "You need a club in the served world"
+        : inAny ? "You are in " + inAny + " competition" + (inAny === 1 ? "" : "s")
+        : open.length ? open.length + " open for entries" : "Nothing taking entries",
+      note: !mine ? "Claim one and you can found competitions and enter them."
+        : "You can run two at a time, and pull out of one that has not started.",
+      action: mine ? null : { href: "#/worldclub", label: "Claim a club" },
+      primary: !mine,
+    });
+
+    // ---- found one: the page's only decision -----------------------------
+    if (mine) {
+      var seg = function (k, v, label) {
+        return '<button type="button" class="al-btn ' + (ST[k] == v ? "al-btn--primary" : "") +
+          '" data-fo-seg="' + k + '" data-v="' + v + '">' + label + "</button>";
+      };
+      body += al.sec("Found one",
+        '<input class="al-field al-field--block" id="fo-inv-nm" maxlength="40" placeholder="Name it — The Potato Bowl">' +
+        '<div class="al-lot__act">' + seg("format", "cup", "Cup") + seg("format", "league", "Round robin") + "</div>" +
+        '<div class="al-lot__act">' + seg("size", 4, "Four clubs") + seg("size", 8, "Eight clubs") + "</div>" +
+        '<div class="al-lot__act"><button type="button" class="al-btn al-btn--primary" id="fo-inv-found">Put it on</button></div>' +
+        '<p class="al-read">Entries stay open for three days. Whoever is in when they shut is in; the umpire ' +
+        "finds the rest.</p>");
+    }
+
+    // ---- open for entries --------------------------------------------------
+    body += al.sec("Open for entries · " + open.length, open.length
+      ? '<div class="al-lots">' + open.map(function (c) {
+          var side = bySide[c.id] || [];
+          var left = Math.max(0, (c.open_until_day | 0) - today());
+          var inIt = side.some(function (s2) { return s2.country_id + ":" + s2.slot === myKey; });
+          var full = (+c.entered || 0) >= (+c.size || 0);
+          var btn = !myKey ? ""
+            : inIt ? '<button type="button" class="al-btn" data-fo-leave="' + c.id + '">Pull out</button>'
+            : full ? al.tag("Full")
+            : '<button type="button" class="al-btn al-btn--primary" data-fo-join="' + c.id + '">Join</button>';
+          return '<div class="al-lot' + (inIt ? " al-lot--mine" : "") + '">' +
+            '<div class="al-lot__h"><b>' + E(c.name) + "</b>" +
+            '<span class="al-lot__clock' + (left <= 1 ? " al-lot__clock--soon" : "") + '">' +
+              (left > 0 ? "closes in " + left + " day" + (left === 1 ? "" : "s") : "closes today") + "</span></div>" +
+            '<p class="al-lot__line">' + (c.format === "cup" ? "Knockout cup" : "Round robin") + " · " +
+              c.entered + " of " + c.size + " seats taken" +
+              (side.length ? "<br>" + side.map(function (s2) { return E(s2.name); }).join(" · ") : "") + "</p>" +
+            (btn ? '<div class="al-lot__act">' + btn + "</div>" : "") + "</div>";
+        }).join("") + "</div>"
+      : al.empty("Nothing taking entries", "Found one and the world will see it."));
+
+    // ---- being played, and finished -----------------------------------------
+    [["Being played", live], ["Finished", done.slice(0, 6)]].forEach(function (pair) {
+      if (!pair[1].length) return;
+      body += al.sec(pair[0] + " · " + pair[1].length, pair[1].map(function (c) {
+        return comp(al, cards[c.id] || c, bySide[c.id] || []);
+      }).join(""));
+    });
+
+    body += al.sec("How it works",
+      "<p>A competition takes entries for <b>three world days</b>. When that window shuts the umpire fills any " +
+      "empty seats with clubs nobody manages — so a competition that only you and one friend joined still gets " +
+      "played, properly, against real sides.</p>" +
+      "<p>From then on it settles <b>a round a day</b> on the same engine as the leagues, picking each side from " +
+      "the squad as it stands. There is no teamsheet to file and no deadline to miss. A cup pairs top seat " +
+      "against bottom and halves until somebody is holding it; a round robin plays everyone once and the table " +
+      "decides.</p>");
+
+    page.innerHTML = al.page({ body: body });
     wire(page);
   }
 
-  function foundCard() {
-    var seg = function (k, v, label) {
-      return "<button type='button' data-fo-seg='" + k + "' data-v='" + v + "' class='" + (ST[k] == v ? "on" : "") + "'>" + label + "</button>";
-    };
-    return "<div class='fo-ac-card'><h3>Found one</h3>" +
-      "<input class='fo-inv-name' id='fo-inv-nm' maxlength='40' placeholder='Name it &mdash; The Potato Bowl'>" +
-      "<div class='fo-inv-seg'>" + seg("format", "cup", "Cup") + seg("format", "league", "Round robin") + "</div>" +
-      "<div class='fo-inv-seg'>" + seg("size", 4, "Four clubs") + seg("size", 8, "Eight clubs") + "</div>" +
-      "<button type='button' class='fo-ac-btn' id='fo-inv-found'>Put it on</button>" +
-      "<div class='fo-ac-note'>Entries stay open for three days. Whoever is in when they shut is in; the umpire finds the rest.</div>" +
-      "</div>";
-  }
-
-  function openRow(c, side, myKey) {
-    var left = Math.max(0, (c.open_until_day | 0) - today());
-    var inIt = side.some(function (s) { return s.country_id + ":" + s.slot === myKey; });
-    var full = (+c.entered || 0) >= (+c.size || 0);
-    var btn = !myKey ? ""
-      : inIt ? "<button type='button' class='fo-ac-btn off' data-fo-leave='" + c.id + "'>Pull out</button>"
-      : full ? "<span class='fo-inv-pill'>Full</span>"
-      : "<button type='button' class='fo-ac-btn' data-fo-join='" + c.id + "'>Join</button>";
-    return "<div class='fo-inv-row'><div><b>" + E(c.name) + "</b><i>" +
-      (c.format === "cup" ? "Knockout cup" : "Round robin") + " &middot; " + c.entered + " of " + c.size +
-      " &middot; " + (left > 0 ? "entries close in " + left + " day" + (left === 1 ? "" : "s") : "entries close today") +
-      "</i>" + fieldChips(side, myKey) + "</div>" + btn + "</div>";
-  }
-  function fieldChips(side, myKey) {
-    if (!side.length) return "";
-    return "<div class='fo-inv-field'>" + side.map(function (s) {
-      var me = s.country_id + ":" + s.slot === myKey;
-      return "<span class='" + (me ? "me" : s.managed ? "" : "bot") + "'>" + E(s.name) + "</span>";
-    }).join("") + "</div>";
-  }
-
-  function compCard(c, myKey, side) {
-    var head = "<div class='fo-inv-row'><div><b>" + E(c.name) + "</b><i>" +
-      (c.format === "cup" ? "Knockout cup" : "Round robin") + " &middot; " + (c.size || (c.clubs || []).length) + " clubs" +
-      (c.rounds ? " &middot; round " + Math.min(c.roundsPlayed || 0, c.rounds) + " of " + c.rounds : "") +
-      "</i></div><span class='fo-inv-pill " + (c.status === "done" ? "done" : "run") + "'>" +
-      (c.status === "done" ? "Finished" : "Playing") + "</span></div>";
-    if (!c.results) return head + fieldChips(side, myKey);
+  // a competition being played, or one that has been won
+  function comp(al, c, side) {
+    var head = '<p class="al-lot__line"><b>' + E(c.name) + "</b> · " +
+      (c.format === "cup" ? "Knockout cup" : "Round robin") + " · " + (c.size || (c.clubs || []).length) + " clubs" +
+      (c.rounds ? " · round " + Math.min(c.roundsPlayed || 0, c.rounds) + " of " + c.rounds : "") + "</p>";
+    if (!c.results) {
+      return head + (side.length ? '<p class="al-read">' + side.map(function (s2) { return E(s2.name); }).join(" · ") + "</p>" : "");
+    }
     var body;
     if (c.format === "league") {
-      body = "<div class='fo-ac-tw'><table class='fo-ac-tbl'><thead><tr><th></th><th class='nm'>Club</th><th>P</th><th>W</th><th>L</th><th class='pt'>Pts</th></tr></thead><tbody>" +
-        c.table.map(function (t, i) {
-          return "<tr><td>" + (i + 1) + "</td><td class='nm'>" + E(t.name) +
-            (t.managed ? "" : " <em style='font-style:normal;opacity:.45'>&middot; bot</em>") + "</td><td>" + t.p + "</td><td>" + t.w + "</td><td>" + t.l + "</td><td class='pt'>" + t.pts + "</td></tr>";
+      body = "<div class='al-tblwrap'><table class='al-tbl'><thead><tr><th></th><th class='l'>Club</th>" +
+        "<th>P</th><th>W</th><th class='al-s'>L</th><th>Pts</th></tr></thead><tbody>" +
+        (c.table || []).map(function (t, i) {
+          return "<tr><td class='al-pos'>" + (i + 1) + "</td><td class='l al-club'>" + E(t.name) +
+            (t.managed ? "" : " ·") + "</td><td>" + t.p + "</td><td>" + t.w + "</td>" +
+            "<td class='al-s'>" + t.l + "</td><td class='al-pts'>" + t.pts + "</td></tr>";
         }).join("") + "</tbody></table></div>";
     } else {
       var by = {};
       c.results.forEach(function (r) { (by[r.round] = by[r.round] || []).push(r); });
       body = Object.keys(by).sort(function (a, b) { return a - b; }).map(function (rd) {
         var nm = +rd === (c.rounds || 0) ? "The final" : (c.rounds - rd === 1 ? "Semi-finals" : "Round " + rd);
-        return "<div class='fo-inv-rd'>" + nm + "</div>" + by[rd].map(tieRow).join("");
+        var sc = function (x) { return x ? x.r + "/" + x.w : "—"; };
+        return '<p class="al-read">' + nm + "</p>" + al.ledger(by[rd].map(function (r) {
+          return [r.a + " v " + r.b, sc(r.as) + " · " + sc(r.bs), r.winner ? "pos" : ""];
+        }));
       }).join("");
     }
-    return head + body +
-      (c.champion ? "<div class='fo-inv-champ'>&#127942; " + E(c.champion) + " hold it.</div>" : "");
-  }
-  function tieRow(r) {
-    var sc = function (s) { return s ? s.r + "/" + s.w : "&mdash;"; };
-    return "<div class='fo-inv-tie'><b class='" + (r.winner === r.a ? "w" : "") + "'>" + E(r.a) + "</b><u>" + sc(r.as) + "</u>" +
-      "<em>v</em><b class='" + (r.winner === r.b ? "w" : "") + "'>" + E(r.b) + "</b><u>" + sc(r.bs) + "</u></div>";
+    return head + body + (c.champion ? '<p class="al-read">' + E(c.champion) + " hold it.</p>" : "");
   }
 
   function wire(page) {
@@ -43611,154 +43504,138 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   var ST = { nation: null };
 
-  function css() {
-    try { if (window.__foRoomCss) window.__foRoomCss(); } catch (e) {}
-    if (document.getElementById("fo-nat-css")) return;
-    var s = document.createElement("style"); s.id = "fo-nat-css";
-    s.textContent = [
-      "html body #page .fo-nat-flags{display:flex;gap:7px;overflow-x:auto;padding:2px 0 6px;-webkit-overflow-scrolling:touch}",
-      "html body #page .fo-nat-fl{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;background:transparent !important;border:none !important;cursor:pointer;padding:4px 2px !important}",
-      "html body #page .fo-nat-fl img{width:32px;height:22px;object-fit:cover;border-radius:4px;border:2px solid transparent}",
-      "html body #page .fo-nat-fl.on img{border-color:#0B1D3A;box-shadow:0 0 0 3px rgba(11,29,58,.18)}",
-      "html body #page .fo-nat-fl span{font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.05em;color:rgba(20,28,40,.55);text-transform:uppercase}",
-      "html body #page .fo-nat-man{display:flex;align-items:baseline;gap:9px;padding:9px 2px;border-top:1px solid rgba(20,28,40,.07);font:500 13px/1.3 Inter,sans-serif}",
-      "html body #page .fo-nat-man:first-of-type{border-top:0}",
-      "html body #page .fo-nat-man i{font-style:normal;font:700 10px/1 Oswald,sans-serif;color:rgba(20,28,40,.35);width:16px}",
-      "html body #page .fo-nat-man b{font-weight:600;color:#141C28}",
-      "html body #page .fo-nat-man span{flex:1;font-size:11px;color:rgba(20,28,40,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      "html body #page .fo-nat-man u{text-decoration:none;font:700 9px/1 Oswald,sans-serif;letter-spacing:.1em;color:rgba(20,28,40,.4);white-space:nowrap}",
-      "html body #page .fo-nat-man.mine{background:rgba(232,185,106,.2);border-radius:9px;padding-left:8px;padding-right:8px}",
-      "html body #page .fo-nat-man.mine b{color:#6B520F}",
-      "html body #page .fo-nat-tie{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 2px;border-top:1px solid rgba(20,28,40,.07);font:500 12px/1.4 Inter,sans-serif}",
-      "html body #page .fo-nat-tie b{font-weight:600;color:#141C28}",
-      "html body #page .fo-nat-tie b.w{color:#177A57}",
-      "html body #page .fo-nat-tie u{text-decoration:none;color:rgba(20,28,40,.5);font-variant-numeric:tabular-nums}",
-      "html body #page .fo-nat-tie em{font-style:normal;color:rgba(20,28,40,.3);font-size:10px}",
-      "html body #page .fo-nat-tie i{flex:1 0 100%;font-style:italic;font-size:11px;color:rgba(20,28,40,.5)}",
-      "html body #page .fo-nat-pay{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}",
-      "html body #page .fo-nat-pay span{font:500 10.5px/1 Inter,sans-serif;color:rgba(20,28,40,.62);background:rgba(20,28,40,.06);border-radius:999px;padding:6px 10px}",
-      "html body #page .fo-nat-pay span.mine{background:rgba(232,185,106,.32);color:#6B520F;font-weight:700}",
-      "html body #page .fo-nat-when{margin:2px 0 8px;padding:11px 13px;background:rgba(11,29,58,.05);border:1px solid rgba(11,29,58,.18);border-left:3px solid #0B1D3A;border-radius:12px;font:500 12px/1.55 Inter,sans-serif;color:rgba(20,28,40,.75)}",
-      "html body #page .fo-nat-when b{color:#0B1D3A}"
-    ].join("\n");
-    document.head.appendChild(s);
-  }
 
-  function shell(body) {
-    return "<div class='fo-ac' data-fo-owntable><div class='fo-ac-in'>" +
-      "<div class='fo-ac-hero'><div class='fo-ac-k'>The international game</div>" +
-      "<h1>Playing For Your Country</h1>" +
-      "<p>Three rounds a season the selectors take the best men in the land, wherever they play. Your club loses them for the day and is paid for the week &mdash; and that evening the nations play each other.</p></div>" +
-      body +
-      "<div class='fo-ac-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/worldclub'>Your world club &rsaquo;</a></div>" +
-      "</div></div>";
+  function A() { return window.AL || null; }
+  function onNat() { var h = (location.hash || "").split("?")[0]; return h === "#/nations" || h === "#/natteams"; }
+  function mast(al) {
+    return al.mast("The international game", "Playing For Your Country",
+      "Three rounds a season the selectors take the best men in the land, wherever they play. Your club loses " +
+      "them for the day and is paid for the week — and that evening the nations play each other.");
   }
 
   window.foRenderNationsPage = function () {
+    if (!onNat()) return;
     var page = document.getElementById("page"); if (!page) return;
-    css();
-    page.innerHTML = shell("<div class='fo-ac-note'>Asking the selectors&hellip;</div>");
+    var al = A(); if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (e0) {}
+    page.innerHTML = al.page({ body: mast(al) + al.empty("Asking the selectors", "Reading the squads.") });
     Promise.all([
       snapshot("nations"),
       jwt() ? rpc("world_my_status") : Promise.resolve(null)
-    ]).then(function (d) {
-      render(page, d[0], d[1]);
-    }).catch(function (e) {
-      page.innerHTML = shell("<div class='fo-ac-note'>The world could not be reached (" +
-        E(String(e && e.message).slice(0, 90)) + "). Try again in a minute.</div>");
-    });
+    ]).then(function (d) { if (onNat()) render(page, d[0], d[1]); })
+      .catch(function (e) {
+        if (!onNat()) return;
+        page.innerHTML = al.page({ body: mast(al) + al.empty("The world could not be reached",
+          String((e && e.message) || e).slice(0, 120) + ". Try again in a minute.") });
+      });
   };
 
+  // PHASE 4 OF THE ALMANACK. Nineteen flags in a scroller, a fifteen, what the
+  // window paid, the tours and the caps book - all of it read-only, all of it
+  // a list, so all of it is ruled type now. The flags stay: a page about
+  // nations without them reads as a spreadsheet.
   function render(page, snap, st) {
+    var al = A(); if (!al || !onNat()) return;
     var mine = st && st.claim ? st.claim : null;
+    var body = mast(al) + al.subnav("nations");
+
     if (!snap || !snap.nations) {
-      page.innerHTML = shell(
-        "<div class='fo-ac-card'><h3>The selectors have not met yet</h3>" +
-        "<p class='fo-ac-p'>Squads are named on the morning of the first international window &mdash; <b>round 5</b> of the season &mdash; and again at rounds 9 and 13. Come back when the world has played that far and every nation on earth will have a fifteen here.</p></div>" +
-        howItWorks());
+      page.innerHTML = al.page({ body: body + al.empty("The selectors have not met yet",
+        "Squads are named on the morning of the first international window — round 5 of the season — and " +
+        "again at rounds 9 and 13.") + howItWorks(al) });
       return;
     }
+
     var ids = Object.keys(snap.nations).sort();
     if (!ST.nation || ids.indexOf(ST.nation) < 0) ST.nation = (mine && mine.country) || (ids.indexOf("eng") >= 0 ? "eng" : ids[0]);
     var n = snap.nations[ST.nation] || {};
     var myClub = mine ? mine.club : null;
-
-    var flags = "<div class='fo-nat-flags'>" + ids.map(function (rid) {
-      return "<button type='button' class='fo-nat-fl" + (rid === ST.nation ? " on" : "") + "' data-nat='" + rid + "'>" +
-        "<img src='" + flagOf(rid) + "' alt=''><span>" + E(rid) + "</span></button>";
-    }).join("") + "</div>";
-
-    var squad = (n.squad || []).map(function (m, i) {
-      var isMine = myClub && m.club === myClub;
-      return "<div class='fo-nat-man" + (isMine ? " mine" : "") + "'><i>" + (i + 1) + "</i>" +
-        "<b>" + E(m.name) + "</b><span>" + E(m.club || "") +
-        (m.age ? " &middot; " + m.age : "") + "</span>" +
-        "<u>" + (m.caps ? m.caps + " cap" + (m.caps === 1 ? "" : "s") : "uncapped") + "</u></div>";
-    }).join("");
-
-    var pay = (n.compensation || []).map(function (c) {
-      return "<span class='" + (myClub && c.club === myClub ? "mine" : "") + "'>" +
-        E(c.club || ("club " + c.slot)) + " &middot; " + money(c.paid) + "</span>";
-    }).join("");
-
-    var tours = (n.tours || []).map(tieRow).join("");
-    var caps = (n.caps || []).map(function (c, i) {
-      return "<div class='fo-nat-man'><i>" + (i + 1) + "</i><b>" + E(c.name) + "</b>" +
-        "<span>" + c.caps + " cap" + (c.caps === 1 ? "" : "s") +
-        (c.runs ? " &middot; " + c.runs + " runs" + (c.hs ? " (" + c.hs + " best)" : "") : "") +
-        (c.wkts ? " &middot; " + c.wkts + " wickets" + (c.bb ? " (" + c.bb.w + "-" + c.bb.r + ")" : "") : "") +
-        "</span></div>";
-    }).join("");
-
     var myMen = mine ? (n.squad || []).filter(function (m) { return m.club === myClub; }) : [];
 
-    page.innerHTML = shell(
-      (mine ? "<div class='fo-ac-card'><h3>Your men</h3>" +
-        (myMen.length
-          ? "<p class='fo-ac-p'>" + E(n.name) + " have taken <b>" + myMen.length + "</b> of " + E(myClub) + "'s cricketers for the latest window: " +
-            E(myMen.map(function (m) { return m.name; }).join(", ")) + ". They miss the round, and the board pays you " +
-            money(myMen.reduce(function (a, m) { return a + (m.fee || 0); }, 0)) + " for the week.</p>"
-          : "<p class='fo-ac-p'>Nobody from " + E(myClub) + " is in the latest " + E(n.name) + " squad. Form is what the selectors read &mdash; win a few and they will look again.</p>") +
-        "</div>" : "") +
-      "<div class='fo-ac-card'><h3>The nations</h3>" + flags +
-        "<div class='fo-nat-when'>Windows fall on rounds <b>" + (snap.windows || [5, 9, 13]).join(", ") +
-        "</b>. Squads are named that morning; the tours are played at <b>" +
-        (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC</b> the same evening.</div>" +
-      "</div>" +
-      "<div class='fo-ac-card'><h3>" + E(n.name || ST.nation) +
-        "<span>" + (n.window ? "named for round " + n.window : "no squad yet") + "</span></h3>" +
-        (squad || "<div class='fo-ac-note'>No squad has been named for this nation yet.</div>") +
-      "</div>" +
-      (pay ? "<div class='fo-ac-card'><h3>What the window paid<span>season " + (n.seasonNo || 1) + "</span></h3>" +
-        "<div class='fo-nat-pay'>" + pay + "</div>" +
-        "<div class='fo-ac-note'>$50,000 a senior, $20,000 a man under twenty-one &mdash; paid to the club he was taken from, every window.</div></div>" : "") +
-      (tours ? "<div class='fo-ac-card'><h3>The tours</h3>" + tours + "</div>" : "") +
-      (caps ? "<div class='fo-ac-card'><h3>The caps book<span>" + E(n.name || "") + "</span></h3>" + caps + "</div>" : "") +
-      howItWorks());
+    // what this page means to YOUR club, before what it means to the world
+    if (mine) {
+      body += al.decide({
+        kind: myMen.length ? "act" : "done",
+        title: myMen.length
+          ? (n.name || ST.nation) + " have taken " + myMen.length + " of your men"
+          : "Nobody from " + myClub + " is in the latest squad",
+        note: myMen.length
+          ? myMen.map(function (m) { return m.name; }).join(", ") + " miss the round; the board pays you " +
+            money(myMen.reduce(function (a, m) { return a + (m.fee || 0); }, 0)) + " for the week."
+          : "Form is what the selectors read — win a few and they will look again.",
+      });
+    }
+
+    body += '<div class="al-flags">' + ids.map(function (rid) {
+      return '<button type="button" class="al-flag' + (rid === ST.nation ? " al-flag--on" : "") +
+        '" data-nat="' + rid + '"><img src="' + flagOf(rid) + '" alt=""><span>' + E(rid) + "</span></button>";
+    }).join("") + "</div>";
+
+    body += al.sec("When they play", al.ledger([
+      ["Windows", "rounds " + (snap.windows || [5, 9, 13]).join(", ")],
+      ["Squads named", "the morning of the window"],
+      ["The tours", (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC that evening"],
+    ]));
+
+    body += al.sec((n.name || ST.nation) + " · " + (n.window ? "named for round " + n.window : "no squad yet"),
+      (n.squad || []).length
+        ? '<div class="al-players">' + (n.squad || []).map(function (m, i) {
+            var isMine = myClub && m.club === myClub;
+            return '<div class="al-prow al-prow--static' + (isMine ? " al-prow--picked" : "") + '">' +
+              '<span class="al-prow__no">' + (i + 1) + "</span>" +
+              '<span class="al-prow__who"><b>' + E(m.name) + "</b><i>" + E(m.club || "") +
+                (m.age ? " · " + m.age : "") + "</i></span>" +
+              '<span class="al-prow__rate">' + (m.caps ? m.caps + (m.caps === 1 ? " cap" : " caps") : "uncapped") +
+              "</span></div>";
+          }).join("") + "</div>"
+        : al.empty("No squad named", "This nation's selectors have not sat yet."));
+
+    if ((n.compensation || []).length) {
+      body += al.sec("What the window paid · season " + (n.seasonNo || 1),
+        al.ledger((n.compensation || []).map(function (c) {
+          return [c.club || ("club " + c.slot), money(c.paid), myClub && c.club === myClub ? "pos" : ""];
+        })) +
+        '<p class="al-read">$50,000 a senior, $20,000 a man under twenty-one — paid to the club he was taken ' +
+        "from, every window.</p>");
+    }
+
+    if ((n.tours || []).length) {
+      body += al.sec("The tours", al.ledger((n.tours || []).map(function (t) {
+        return [(t.home || "") + " v " + (t.away || ""), String(t.text || t.result || "—")];
+      })));
+    }
+
+    if ((n.caps || []).length) {
+      body += al.sec("The caps book · " + (n.name || ""), al.ledger((n.caps || []).map(function (c) {
+        return [c.name, c.caps + (c.caps === 1 ? " cap" : " caps") +
+          (c.runs ? " · " + c.runs + " runs" : "") + (c.wkts ? " · " + c.wkts + " wkts" : "")];
+      })));
+    }
+
+    body += howItWorks(al);
+    page.innerHTML = al.page({ body: body });
 
     page.querySelectorAll("[data-nat]").forEach(function (b) {
       b.addEventListener("click", function () {
         ST.nation = b.getAttribute("data-nat");
         render(page, snap, st);
-        try { page.scrollIntoView({ block: "start" }); } catch (e) {}
       });
     });
   }
 
-  function tieRow(t) {
-    var win = function (side) { return t.winner === side ? " w" : ""; };
-    return "<div class='fo-nat-tie'><b class='" + win(t.a) + "'>" + E(t.a) + "</b><u>" + E(t.as_ || "") + "</u>" +
-      "<em>v</em><b class='" + win(t.b) + "'>" + E(t.b) + "</b><u>" + E(t.bs_ || "") + "</u>" +
-      (t.text ? "<i>" + E(t.text) + "</i>" : "") + "</div>";
-  }
-
-  function howItWorks() {
-    return "<div class='fo-ac-card'><h3>How the window works</h3>" +
-      "<p class='fo-ac-p'>The selectors name <b>fifteen</b>: the gloves first, then six bowlers, then the best of the rest &mdash; and never more than <b>three men from any one club</b>, so a squad always leaves a side twelve to pick from. What they read is a cricketer's card and the nick he is in, which is the whole reason league form matters.</p>" +
-      "<p class='fo-ac-p'>A man who goes is <b>not available to his club</b> that round, and he does not work in its nets that week either. He comes back with a cap, tired legs, and whatever the tour did to his form. If a teamsheet you filed a fortnight ago still names him, nothing is torn up: the umpire sends out the best man left in his place, batting where he batted and bowling his overs.</p>" +
-      "<p class='fo-ac-p'>Nineteen nations make <b>nine ties and one week off</b>. The draw is settled by the world day itself, so the selectors know it before they sit down: a country with no fixture calls nobody up at all, and its clubs keep their men.</p>" +
-      "<p class='fo-ac-p'>Nothing here needs anybody awake. The squad is named by the umpire, the tour is played by the umpire, and the cheque is in the books the next time you look at them.</p>" +
-      "</div>";
+  function howItWorks(al) {
+    return al.sec("How the window works",
+      "<p>The selectors name <b>fifteen</b>: the gloves first, then six bowlers, then the best of the rest — and " +
+      "never more than <b>three men from any one club</b>, so a squad always leaves a side twelve to pick from. " +
+      "What they read is a cricketer's card and the nick he is in, which is the whole reason league form matters.</p>" +
+      "<p>A man who goes is <b>not available to his club</b> that round, and he does not work in its nets that " +
+      "week either. He comes back with a cap, tired legs, and whatever the tour did to his form. If a teamsheet " +
+      "you filed a fortnight ago still names him, nothing is torn up: the umpire sends out the best man left in " +
+      "his place, batting where he batted and bowling his overs.</p>" +
+      "<p>Nineteen nations make <b>nine ties and one week off</b>. The draw is settled by the world day itself, " +
+      "so a country with no fixture calls nobody up at all, and its clubs keep their men.</p>" +
+      "<p>Nothing here needs anybody awake. The squad is named by the umpire, the tour is played by the umpire, " +
+      "and the cheque is in the books the next time you look at them.</p>");
   }
 })();
 /* ============================================================================
@@ -44563,7 +44440,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   var SECTIONS = [
     { id: "today",  label: "Today",  home: "#/today",  routes: ["today", "home", "desk", "matchday", "watch", "match"] },
     { id: "team",   label: "Team",   home: "#/team",   routes: ["team", "squad", "orders", "training", "academy", "player", "dossier"] },
-    { id: "league", label: "League", home: "#/table",  routes: ["table", "league", "fixtures", "records", "planet", "world", "rankings", "cup", "comps", "nations", "nation", "atlas", "scorecard", "reports"] },
+    { id: "league", label: "League", home: "#/table",  routes: ["table", "league", "fixtures", "records", "planet", "world", "rankings", "cup", "champions", "comps", "nations", "natteams", "nation", "atlas", "scorecard", "reports"] },
     { id: "market", label: "Market", home: "#/market", routes: ["market", "team-page"] },
     { id: "club",   label: "Club",   home: "#/club-h", routes: ["club-h", "finance", "milestones", "lore", "paper", "wire", "guide", "ledger", "almanack"] },
   ];
@@ -44572,6 +44449,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     today: 1, team: 1, matchday: 1, table: 1, fixtures: 1,
     market: 1, finance: 1, academy: 1, training: 1, dossier: 1, desk: 1,
     records: 1, milestones: 1, paper: 1, ledger: 1, wire: 1,
+    planet: 1, rankings: 1, champions: 1, comps: 1, nations: 1, natteams: 1, guide: 1,
   };
 
   // A section is bigger than one screen, and the dock only has five slots. The
@@ -44598,6 +44476,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       { id: "fixtures", label: "Fixtures", href: "#/fixtures" },
       { id: "records", label: "Record book", href: "#/records" },
       { id: "planet", label: "World", href: "#/planet" },
+      { id: "rankings", label: "Rankings", href: "#/rankings" },
+      { id: "champions", label: "Champions Cup", href: "#/champions" },
+      { id: "comps", label: "Invitationals", href: "#/comps" },
+      { id: "nations", label: "Nations", href: "#/nations" },
     ],
   };
 

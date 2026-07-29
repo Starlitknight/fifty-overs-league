@@ -31,7 +31,7 @@
   var SECTIONS = [
     { id: "today",  label: "Today",  home: "#/today",  routes: ["today", "home", "desk", "matchday", "watch", "match"] },
     { id: "team",   label: "Team",   home: "#/team",   routes: ["team", "squad", "orders", "training", "academy", "player", "dossier"] },
-    { id: "league", label: "League", home: "#/table",  routes: ["table", "league", "fixtures", "records", "planet", "world", "rankings", "cup", "comps", "nations", "nation", "atlas", "scorecard", "reports"] },
+    { id: "league", label: "League", home: "#/table",  routes: ["table", "league", "fixtures", "records", "planet", "world", "rankings", "cup", "champions", "comps", "nations", "natteams", "nation", "atlas", "scorecard", "reports"] },
     { id: "market", label: "Market", home: "#/market", routes: ["market", "team-page"] },
     { id: "club",   label: "Club",   home: "#/club-h", routes: ["club-h", "finance", "milestones", "lore", "paper", "wire", "guide", "ledger", "almanack"] },
   ];
@@ -40,6 +40,7 @@
     today: 1, team: 1, matchday: 1, table: 1, fixtures: 1,
     market: 1, finance: 1, academy: 1, training: 1, dossier: 1, desk: 1,
     records: 1, milestones: 1, paper: 1, ledger: 1, wire: 1,
+    planet: 1, rankings: 1, champions: 1, comps: 1, nations: 1, natteams: 1, guide: 1,
   };
 
   // A section is bigger than one screen, and the dock only has five slots. The
@@ -66,6 +67,10 @@
       { id: "fixtures", label: "Fixtures", href: "#/fixtures" },
       { id: "records", label: "Record book", href: "#/records" },
       { id: "planet", label: "World", href: "#/planet" },
+      { id: "rankings", label: "Rankings", href: "#/rankings" },
+      { id: "champions", label: "Champions Cup", href: "#/champions" },
+      { id: "comps", label: "Invitationals", href: "#/comps" },
+      { id: "nations", label: "Nations", href: "#/nations" },
     ],
   };
 
@@ -263,6 +268,15 @@
     },
     subnav: function (cur) {
       var items = SUB[sectionOf().id]; if (!items) return "";
+      // a section with eight rooms scrolls, and the room you are IN can sit
+      // off the right-hand edge. This is called while the page is still a
+      // string, so the scroll waits for the paint that follows it.
+      setTimeout(function () {
+        try {
+          var el = document.querySelector('.al-subnav:not(.al-subnav--tabs) a[aria-current]');
+          if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest", inline: "center" });
+        } catch (e) {}
+      }, 0);
       return '<nav class="al-subnav" aria-label="Section">' + items.map(function (x) {
         return '<a href="' + x.href + '"' + (x.id === cur ? ' aria-current="page"' : "") + ">" + E(x.label) + "</a>";
       }).join("") + "</nav>";

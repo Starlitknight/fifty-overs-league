@@ -1386,8 +1386,34 @@ select.al-field { padding-right: var(--al-5); background-image: none; }
    not a label, so it wraps rather than trailing off in an ellipsis. */
 .al-fix--room { grid-template-columns: minmax(0, 1fr) auto; align-items: start; padding: var(--al-3) 0; }
 .al-fix--room .al-fix__t b, .al-fix--room .al-fix__t i { white-space: normal; overflow: visible; }
+/* .al-fix--room resets the padding, so the marked row has to ask for its
+   own again - without it the accent rule sits on top of the first letter */
+.al-fix--room.al-fix--next { padding-left: var(--al-3); }
 
 @media (min-width: 700px) { .al-picks { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ============================================================================
+   14e. THE WORLD — flags, because a page about nations without them is a
+   spreadsheet
+   ========================================================================== */
+.al-flag { width: 20px; height: 14px; object-fit: cover; vertical-align: -2px; margin-right: var(--al-2); }
+.al-flags {
+  display: flex; gap: var(--al-2); overflow-x: auto; padding: var(--al-2) 0 var(--al-3);
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  border-bottom: 1px solid var(--al-rule); margin-bottom: var(--al-4);
+}
+.al-flags::-webkit-scrollbar { display: none; }
+button.al-flag {
+  flex: 0 0 auto; width: auto; height: auto; margin: 0;
+  display: flex; flex-direction: column; align-items: center; gap: var(--al-1);
+  min-height: 44px; padding: var(--al-1) var(--al-2); cursor: pointer;
+  --al-bg: transparent; --al-bd: 0; --al-br: 0; --al-fg: var(--al-muted);
+  background: transparent; border: 0; color: var(--al-muted);
+}
+button.al-flag img { width: 30px; height: 20px; object-fit: cover; display: block; box-shadow: 0 0 0 1px var(--al-rule); }
+button.al-flag span { font: 600 9px/1 var(--al-ui); letter-spacing: .08em; text-transform: uppercase; }
+button.al-flag--on { --al-fg: var(--al-ink); color: var(--al-ink); }
+button.al-flag--on img { box-shadow: 0 0 0 2px var(--al-accent); }
 
 /* ============================================================================
    14d. THE READING ROOMS — a masthead, a story, a plaque
@@ -1516,5 +1542,5 @@ select.al-field { padding-right: var(--al-5); background-image: none; }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
-<script src="assets/fo-20260729-0303-c97f4e.js"></script>
+<script src="assets/fo-20260729-0320-352692.js"></script>
 </body></html>

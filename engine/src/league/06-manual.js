@@ -290,116 +290,70 @@
       return { id: s[0], title: s[1], cat: (catOf(s[0]) || {}).name || "", text: String(s[2]).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").toLowerCase() };
     });
 
-    var searchBox = "<form id='fo-mn2-form' role='search'><input id='fo-mn2-q' type='search' placeholder='Search the manual&hellip;' aria-label='Search the manual' autocomplete='off'></form>";
-    var sideNav = cats.map(function (c) {
-      var open = !!window.__foMnOpen[c.name];
-      return "<div class='fo-mn2-cat'><button class='fo-mn2-cbtn' aria-expanded='" + open + "' data-cat='" + E(c.name) + "'>" + E(c.name) + "<i>" + (open ? "&minus;" : "+") + "</i></button>" +
-        "<div class='fo-mn2-arts'" + (open ? "" : " hidden") + ">" + c.arts.map(function (id) {
-          return "<a href='#/guide?a=" + id + "'" + (id === artId ? " class='on' aria-current='page'" : "") + ">" + byId[id][1] + "</a>";
-        }).join("") + "</div></div>";
-    }).join("");
-    var side = "<aside class='fo-mn2-side'><div class='fo-mn2-sh'><a href='#/guide'>Game manual</a><span>Complete guide to managing a winning cricket club</span></div>" +
-      searchBox + "<nav id='fo-mn2-nav'>" + sideNav + "</nav>" +
-      "<div class='fo-man-tip' style='margin-top:14px'><b>Manager tip</b><br>Every great team is built on smart decisions off the field.</div></aside>";
+    // PHASE 4 OF THE ALMANACK. The manual keeps its information architecture -
+    // categories, articles, search, previous and next - because that part was
+    // right. What it loses is a documentation-site chrome of its own: a
+    // sidebar, a mobile drawer and a second set of type. A category is a band,
+    // an article is a row, and an article page is prose with a way onward.
+    var al = window.AL; if (!al) return;
+    try { window.__foAlApply && window.__foAlApply(); } catch (eA) {}
 
-    var main;
+    var body;
     if (!artId) {
-      main = "<div class='fo-mn2-land'><div class='fo-mn2-intro'><h1>Game manual</h1>" +
-        "<p>Learn how to build, manage, and compete with your cricket club. Every explanation here is checked against the match engine.</p></div>" +
-        "<div id='fo-mn2-res'></div>" +
-        "<div class='fo-mn2-cards'>" + cats.map(function (c) {
-          return "<a class='fo-mn2-cc' href='#/guide?a=" + c.arts[0] + "'><b>" + E(c.name) + "</b><p>" + E(c.desc) + "</p><span>" + c.arts.length + " article" + (c.arts.length === 1 ? "" : "s") + " &rsaquo;</span></a>";
-        }).join("") + "</div></div>";
+      body = al.mast("The game manual", "How Everything Works",
+        "Build, manage and compete. Every explanation here is checked against the match engine.") +
+        al.subnav("guide") +
+        '<form id="fo-mn2-form" role="search"><input class="al-field al-field--block" id="fo-mn2-q" ' +
+        'type="search" placeholder="Search the manual…" aria-label="Search the manual" autocomplete="off"></form>' +
+        '<div id="fo-mn2-res"></div>' +
+        cats.map(function (c) {
+          return al.sec(c.name, "<p>" + E(c.desc) + "</p>" +
+            '<div class="al-fixlist">' + c.arts.map(function (id) {
+              return '<a class="al-fix al-fix--room" href="#/guide?a=' + id + '">' +
+                '<span class="al-fix__t"><b>' + byId[id][1] + "</b></span>" +
+                '<span class="al-fix__o">›</span></a>';
+            }).join("") + "</div>");
+        }).join("");
     } else {
       var art = byId[artId], cat2 = catOf(artId);
       var fi = flat.indexOf(artId);
       var prevA = fi > 0 ? byId[flat[fi - 1]] : null, nextA = fi < flat.length - 1 ? byId[flat[fi + 1]] : null;
-      main = "<article class='fo-mn2-art' id='man-" + artId + "'>" +
-        "<div class='fo-mn2-crumb'><a href='#/guide'>Manual</a> &rsaquo; <span>" + E(cat2 ? cat2.name : "") + "</span> &rsaquo; <b>" + art[1] + "</b></div>" +
-        "<h1>" + art[1] + "</h1>" +
-        "<div id='fo-mn2-res'></div>" +
-        "<div class='fo-man-b'>" + art[2] + "</div>" +
-        "<div class='fo-mn2-pn'>" +
-        (prevA ? "<a class='fo-mn2-prev' href='#/guide?a=" + prevA[0] + "'><span>&lsaquo; Previous</span><b>" + prevA[1] + "</b></a>" : "<span></span>") +
-        (nextA ? "<a class='fo-mn2-next' href='#/guide?a=" + nextA[0] + "'><span>Next &rsaquo;</span><b>" + nextA[1] + "</b></a>" : "<span></span>") +
-        "</div></article>";
+      body = al.mast((cat2 ? cat2.name : "The manual"), art[1], "") + al.subnav("guide") +
+        '<form id="fo-mn2-form" role="search"><input class="al-field al-field--block" id="fo-mn2-q" ' +
+        'type="search" placeholder="Search the manual…" aria-label="Search the manual" autocomplete="off"></form>' +
+        '<div id="fo-mn2-res"></div>' +
+        '<div class="al-sec al-reading fo-man-b">' + art[2] + "</div>" +
+        '<div class="al-lot__act">' +
+        (prevA ? '<a class="al-btn" href="#/guide?a=' + prevA[0] + '">‹ ' + prevA[1] + "</a>" : "") +
+        (nextA ? '<a class="al-btn" href="#/guide?a=' + nextA[0] + '">' + nextA[1] + " ›</a>" : "") +
+        '<a class="al-btn" href="#/guide">All articles</a></div>';
     }
+    page.innerHTML = al.page({ body: body });
 
-    page.innerHTML = "<div class='fo-mn2'>" +
-      "<div class='fo-mn2-mbar'>" + (artId ? "<a href='#/guide'>&lsaquo; Manual</a>" : "<b>Game manual</b>") +
-      "<button id='fo-mn2-contents' aria-label='Contents'>Contents</button></div>" +
-      side + "<main class='fo-mn2-main'>" + main + "</main></div>";
-
-    // category expand/collapse (state survives navigation within the session)
-    page.querySelectorAll(".fo-mn2-cbtn").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var nm3 = b.getAttribute("data-cat");
-        window.__foMnOpen[nm3] = !window.__foMnOpen[nm3];
-        var artsEl = b.parentNode.querySelector(".fo-mn2-arts");
-        var open2 = !!window.__foMnOpen[nm3];
-        b.setAttribute("aria-expanded", open2);
-        b.querySelector("i").innerHTML = open2 ? "&minus;" : "+";
-        if (open2) artsEl.removeAttribute("hidden"); else artsEl.setAttribute("hidden", "");
-      });
-    });
-    // search: live results over titles, bodies and glossaries; Enter opens the
-    // best hit, Escape clears. Works entirely offline.
-    var qIn = page.querySelector("#fo-mn2-q"), resEl = page.querySelector("#fo-mn2-res");
-    var doSearch = function () {
-      var q = (qIn.value || "").trim().toLowerCase();
-      if (!resEl) return;
-      if (q.length < 2) { resEl.innerHTML = ""; return; }
-      var hits = window.__foMnIx.map(function (x) {
-        var tHit = x.title.toLowerCase().indexOf(q) >= 0, bAt = x.text.indexOf(q);
-        if (!tHit && bAt < 0) return null;
-        var snip = "";
-        if (bAt >= 0) {
-          var s0 = Math.max(0, bAt - 55), s1 = Math.min(x.text.length, bAt + q.length + 55);
-          snip = (s0 > 0 ? "&hellip;" : "") + E(x.text.slice(s0, s1)).replace(new RegExp("(" + q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig"), "<mark>$1</mark>") + (s1 < x.text.length ? "&hellip;" : "");
-        }
-        var freq = 0, at2 = bAt;
-        while (at2 >= 0 && freq < 6) { freq++; at2 = x.text.indexOf(q, at2 + q.length); }
-        return { x: x, score: (tHit ? 10 : 0) + freq, snip: snip };
-      }).filter(Boolean).sort(function (a, b2) { return b2.score - a.score; }).slice(0, 8);
-      resEl.innerHTML = hits.length
-        ? "<div class='fo-mn2-hits'>" + hits.map(function (h) {
-            return "<a href='#/guide?a=" + h.x.id + "'><b>" + h.x.title + "</b><span>" + E(h.x.cat) + "</span>" + (h.snip ? "<i>" + h.snip + "</i>" : "") + "</a>";
-          }).join("") + "</div>"
-        : "<div class='fo-mn2-hits'><div class='fo-mn2-none'>No articles match &ldquo;" + E(q) + "&rdquo;.</div></div>";
-    };
-    if (qIn) {
-      qIn.addEventListener("input", doSearch);
-      qIn.addEventListener("keydown", function (ev) {
-        if (ev.key === "Escape") { qIn.value = ""; doSearch(); qIn.blur(); }
-      });
+    // search: live results over every article's title and text
+    var q = page.querySelector("#fo-mn2-q"), res = page.querySelector("#fo-mn2-res");
+    if (q && res) {
       var form = page.querySelector("#fo-mn2-form");
-      if (form) form.addEventListener("submit", function (ev) {
-        ev.preventDefault();
-        var first = resEl && resEl.querySelector("a");
-        if (first) { location.hash = first.getAttribute("href").slice(1); }
+      if (form) form.addEventListener("submit", function (ev) { ev.preventDefault(); });
+      q.addEventListener("input", function () {
+        var t = String(q.value || "").trim().toLowerCase();
+        if (t.length < 2) { res.innerHTML = ""; return; }
+        var hits = (window.__foMnIx || []).filter(function (x) {
+          return x.title.toLowerCase().indexOf(t) >= 0 || x.text.indexOf(t) >= 0;
+        }).slice(0, 8);
+        res.innerHTML = hits.length
+          ? '<div class="al-fixlist">' + hits.map(function (x) {
+              return '<a class="al-fix al-fix--room" href="#/guide?a=' + x.id + '">' +
+                '<span class="al-fix__t"><b>' + E(x.title) + "</b><i>" + E(x.cat) + "</i></span>" +
+                '<span class="al-fix__o">›</span></a>';
+            }).join("") + "</div>"
+          : '<p class="al-read">Nothing in the manual matches that.</p>';
       });
     }
-    // mobile Contents: the manual nav in the refined drawer style
-    var cBtn = page.querySelector("#fo-mn2-contents");
-    if (cBtn) cBtn.addEventListener("click", function () {
-      var d = document.getElementById("fo-mandrawer");
-      if (d) { d.remove(); return; }
-      d = document.createElement("div"); d.id = "fo-mandrawer";
-      d.innerHTML = "<div class='fo-mdk'></div><div class='fo-mdp'><div class='fo-mdh'>Game manual<button class='fo-mdx' aria-label='Close contents'>&#10005;</button></div><nav class='fo-mdn'>" +
-        cats.map(function (c) {
-          return "<div class='fo-mn2-dcat'>" + E(c.name) + "</div>" + c.arts.map(function (id) {
-            return "<a class='fo-mdl" + (id === artId ? " on" : "") + "' href='#/guide?a=" + id + "'>" + byId[id][1] + "</a>";
-          }).join("");
-        }).join("") + "</nav></div>";
-      document.body.appendChild(d);
-      d.classList.add("open"); document.body.classList.add("fo-mnav-lock");
-      var close = function () { d.remove(); document.body.classList.remove("fo-mnav-lock"); };
-      d.querySelector(".fo-mdk").addEventListener("click", close);
-      d.querySelector(".fo-mdx").addEventListener("click", close);
-      d.querySelectorAll("a.fo-mdl").forEach(function (a) { a.addEventListener("click", close); });
-    });
+    // the articles carry real tables; on a phone they get the same scroll
+    // wrapper every other table in the game gets
+    try { foMobileTables(); } catch (eT) {}
     try { window.scrollTo(0, 0); } catch (eSc) {}
-    foMobileTables();
   }
   // THE MANUAL IS A ROOM LIKE ANY OTHER. It used to paint itself on a timer
   // after every hash change, which meant the engine's router - reaching
