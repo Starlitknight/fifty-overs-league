@@ -7,7 +7,7 @@
 //       idempotently - and crowns a champion in the snapshot.
 //   P5: national squads assemble from real club players and the World Cup
 //       of nations plays to a champion the same way.
-//   Seasons roll: season 2 begins at start_day + 25 in every nation.
+//   Seasons roll: season 2 begins at start_day + 30 in every nation.
 // The 18-round planet season is ~1,700 real engine matches; this file runs
 // in minutes, not seconds, and that is the point - it is the whole world.
 import { test, before, after } from 'node:test';
@@ -25,7 +25,7 @@ import { academyRate } from '../living.mjs';
 import { fantasyPoints, unitRatings, matchRatings } from '../ratings.mjs';
 import { roundRobin, bracket, roundsOf, closeEnrolment, playComps, computeComp, rebuildComps } from '../comps.mjs';
 import { ACADEMY_UPKEEP, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, DEBT_LIMIT, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance } from '../economy.mjs';
-import { EPOCH, DAY, seedOf } from '../clock.mjs';
+import { EPOCH, DAY, seedOf, dayOfRound } from '../clock.mjs';
 
 const DBNAME = 'foworld_p3_test';
 let pool, host;
@@ -161,7 +161,9 @@ test('005: orders lock at the first ball and reveal to spectators', async () => 
   const s = (await pool.query(`SELECT * FROM seasons WHERE country_id='eng' ORDER BY season_no DESC LIMIT 1`)).rows[0];
   const hour = (await pool.query(`SELECT play_hour_utc FROM countries WHERE id='eng'`)).rows[0].play_hour_utc;
   const TEST_ROUND = 9;   // untouched by the season tests either way
-  const playMs = EPOCH + (s.start_day + TEST_ROUND - 1) * DAY + hour * 3600000;
+  // the day a round is bowled is the calendar's to give: three rounds then a
+  // rest day, so round 9 is day-in-season 10, not 8
+  const playMs = EPOCH + (s.start_day + dayOfRound(TEST_ROUND)) * DAY + hour * 3600000;
 
   async function inTxn(nowMs, user, fn) {
     const c = await pool.connect();
@@ -568,7 +570,7 @@ test('016: the nets, the face and the money all belong to the world', async () =
       ['eng', seas.season_no])).rows[0].r);
     const next = done + 1;
     if (next > 18) break;
-    const day = seas.start_day + next - 1;
+    const day = seas.start_day + dayOfRound(next);
     await runTick(pool, host, 'eng', day, { now: EPOCH + day * DAY + 18 * 3600000 });
     settled.push(next);
   }
