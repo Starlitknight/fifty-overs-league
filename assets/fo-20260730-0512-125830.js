@@ -9908,7 +9908,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260730-0458-15422f";
+  var FO_BUILD = "20260730-0512-125830";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -20542,33 +20542,32 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return "rgb(201,162,75)";
   }
   // ===========================================================================
-  //  THE GRID — every man, every attribute, one screen, sortable on anything.
+  //  THE GRID — the whole club on one screen, sortable on any column.
   //
   //  The roster reads the squad as people: a face, a role, one overall number.
   //  That is the right first view and it stays the default. But a manager
-  //  deciding who opens on a green pitch, or which of two seamers has the
-  //  discipline for the death, is not browsing - he is comparing, and comparing
-  //  wants a table with the raw attributes in it.
+  //  deciding who opens on a green pitch, or which of two seamers to leave out,
+  //  is not browsing - he is comparing, and comparing wants a table.
   //
-  //  Three things this does that a plain skills table does not:
+  //  ONE SCREEN, NOT A SPREADSHEET. This deliberately does NOT print the
+  //  engine's twenty-odd raw attributes. That table was three screens wide and
+  //  nobody could read across it. What is here is the ten figures a selection
+  //  decision actually turns on - age, batting, bowling, technique, power,
+  //  fielding, experience, form, wage and the overall - narrow enough that the
+  //  whole club fits without scrolling anywhere. The deep skill breakdown
+  //  belongs to the man: his name opens his page, and it is all there.
   //
-  //    COLUMN SETS. Twenty-two attributes at once is a spreadsheet, not a
-  //    reading. Batting / Bowling / Fielding / Club each show the atoms that
-  //    matter for one decision; Everything shows the lot, grouped, for when you
-  //    genuinely want the spreadsheet.
+  //  NUMBERS AND WORDS. The engine thinks in 0-100 and the game speaks in the
+  //  ladder (ordinary ▸ capable ▸ expert ▸ elite). The grid prints the number,
+  //  colours it on the same ramp as every other rating in the game, and names
+  //  it in the tooltip - and Words swaps the two over for anyone who reads the
+  //  ladder faster than the digits.
   //
-  //    NUMBERS AND WORDS. The engine thinks in 0-100 and the game speaks in
-  //    the ladder (ordinary ▸ capable ▸ expert ▸ elite). The grid shows the
-  //    number, colours it on the same ramp as every other rating in the game,
-  //    and names it in the tooltip - and the Words toggle swaps the two over
-  //    for anyone who reads the ladder faster than the digits.
-  //
-  //    HONEST BLANKS. A batter has no bowling attributes worth reading and a
-  //    non-keeper has no glovework. Those cells are struck through rather than
-  //    filled with a misleading small number.
+  //  HONEST BLANKS. A batter has no bowling figure worth reading. That cell is
+  //  struck through rather than filled with a small number that would rank him.
   //
   //  Sorting is a pure function of the column and direction, so the same click
-  //  gives the same order on every device. Every row is a door to the man.
+  //  gives the same order on every device.
   // ===========================================================================
   // form 0-6 (engine FORMW ladder) as a glance-able trend mark: arrows above
   // and below "steady", coloured off the same ramp as every rating on the page
@@ -20579,7 +20578,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var c = ix >= 5 ? "#1E8C63" : ix === 4 ? "#4F9A76" : ix === 3 ? "#8A8272" : ix === 2 ? "#B5722F" : "#C0432C";
     return "<span class='fo-sqt-frm' title='Form: " + E(w) + "'><b style='color:" + c + "'>" + g + "</b><span class='w' style='color:" + c + "'>" + E(w) + "</span></span>";
   }
-  function foSqSk(p) { try { return p.skills || {}; } catch (e) { return {}; } }
   function foSqLad(v, k) {
     try {
       if (k === "exp" && typeof EXPLAD !== "undefined") return EXPLAD[Math.max(0, Math.min(EXPLAD.length - 1, Math.floor(v / (100 / EXPLAD.length))))];
@@ -20587,119 +20585,49 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     } catch (e) { return ""; }
   }
   function foSqAbbr(v, k) {
-    try {
-      if (k === "exp") return foSqLad(v, k).slice(0, 5);
-      return abbr(v);
-    } catch (e) { return ""; }
+    try { return k === "exp" ? foSqLad(v, k).slice(0, 5) : abbr(v); } catch (e) { return ""; }
   }
-  function foSqBowls(p) { return !!p.bowlType; }
-  function foSqKeeps(p) { return !!p.keeper; }
-  // a skill column: reads one number out of p.skills, dashed when the number
-  // would be meaningless for that man
-  function foSqAttr(k, l, s, tip, live) {
-    return { k: k, l: l, s: s, tip: tip, num: 1, skill: 1, live: live,
-      v: function (p) { return (live && !live(p)) ? -1 : Math.round(foSqSk(p)[k] || 0); } };
-  }
-  var FO_SQ_C = {
-    pos:  { k: "pos", l: "#", s: "#", tip: "Batting position in the XI", num: 1,
-            v: function (p, x) { return x.xiIx(p) < 0 ? 99 : x.xiIx(p); } },
-    name: { k: "name", l: "Player", s: "Player", tip: "Click any row to open his profile",
-            v: function (p) { return p.name; } },
-    role: { k: "role", l: "Role", s: "Role", tip: "How the club uses him",
-            v: function (p) { return foSqClass(p); } },
-    age:  { k: "age", l: "Age", s: "Age", tip: "Years old. Skills come on fastest before 24 and fade after 31", num: 1,
-            v: function (p) { return p.age | 0; } },
-    bt:   { k: "bt", l: "Type", s: "Type", tip: "Bowling type - what he sends down",
-            v: function (p) { return p.bowlType || "zzz"; } },
-    nat:  { k: "nat", l: "Nat", s: "Nat", tip: "Where he is from - and who can pick him for a country",
-            v: function (p) { return String(p.nat || "zzz"); } },
-
-    vsPace: foSqAttr("vsPace", "vs Pace", "Pace", "Batting against seam and pace"),
-    vsSpin: foSqAttr("vsSpin", "vs Spin", "Spin", "Batting against spin"),
-    power:  foSqAttr("power", "Power", "Pwr", "Six-hitting muscle"),
-    rotation: foSqAttr("rotation", "Rotation", "Rot", "Finds singles and twos, avoids dots"),
-    temper: foSqAttr("temperament", "Temper", "Tmp", "Composure under pressure - the batting core"),
-    bat:  { k: "bat", l: "BAT", s: "BAT", tip: "Batting overall: vs pace, vs spin, rotation, temperament, power", num: 1, agg: 1,
-            v: function (p) { return Math.round(aggBat(p)); } },
-
-    wicket: foSqAttr("wicket", "Threat", "Thr", "Wicket threat - how often he beats the bat", foSqBowls),
-    econ:   foSqAttr("economy", "Control", "Ctl", "Run suppression and dot-ball pressure", foSqBowls),
-    disc:   foSqAttr("discipline", "Discip", "Dis", "Avoids wides and no-balls", foSqBowls),
-    move:   foSqAttr("moveTurn", "Move", "Mv", "Seam movement, or turn for a spinner", foSqBowls),
-    vari:   foSqAttr("variation", "Variety", "Var", "Slower balls, googlies, deception", foSqBowls),
-    stam:   foSqAttr("stamina", "Stamina", "Stm", "Slows fatigue through a long spell or innings"),
-    bowl: { k: "bowl", l: "BOWL", s: "BOWL", tip: "Bowling overall: threat, control, discipline, movement, variety, stamina", num: 1, agg: 1,
-            v: function (p) { return foSqBowls(p) ? Math.round(aggBowl(p)) : -1; } },
-
-    fielding: foSqAttr("fielding", "Ground", "Grd", "Ground fielding - saves and run-out pressure"),
-    catching: foSqAttr("catching", "Catching", "Cat", "Catch conversion - sets his drop chance"),
-    keeping:  foSqAttr("keeping", "Keeping", "Kp", "Wicketkeeper reliability", foSqKeeps),
-    stumping: foSqAttr("stumping", "Stumping", "St", "Stumping conversion", foSqKeeps),
-    field: { k: "field", l: "FLD", s: "FLD", tip: "Fielding overall: ground fielding and catching", num: 1, agg: 1,
-             v: function (p) { return Math.round(aggField(p)); } },
-
-    capt: { k: "capt", l: "Captaincy", s: "Capt", tip: "Captaincy - a small team-wide effect when he leads", num: 1,
-            v: function (p) { return Math.round(p.capt || 0); } },
-    exp:  { k: "exp", l: "Exper", s: "Exp", tip: "Experience - steadies him in the death overs and tight chases", num: 1,
-            v: function (p) { return Math.round(p.exp || 0); } },
-    form: { k: "form", l: "Form", s: "Form", tip: "Current form: abysmal to excellent, worth up to 6% either way", num: 1,
-            v: function (p) { return p.formIx == null ? 3 : p.formIx; } },
-    fit:  { k: "fit", l: "Fitness", s: "Fit", tip: "How fresh he is. A tired man trains and plays below himself", num: 1,
-            v: function (p) { return foEnergyOf(p).pct; } },
-    wage: { k: "wage", l: "Wage", s: "Wage", tip: "What he costs the club a week", num: 1,
-            v: function (p) { return Math.round(p.wage || 0); } },
-    ovr:  { k: "ovr", l: "OVR", s: "OVR", tip: "Overall rating - the one number the whole game sorts by", num: 1, agg: 1,
-            v: function (p) { return foPkOvr(p); } }
-  };
-  // the sets: which columns, and which group band sits over them
-  var FO_SQ_SETS = [
-    { k: "all", l: "Everything", groups: [
-      { l: "", cols: ["pos", "name", "role", "nat", "age"] },
-      { l: "Batting", cols: ["vsPace", "vsSpin", "power", "rotation", "temper", "bat"] },
-      { l: "Bowling", cols: ["bt", "wicket", "econ", "disc", "move", "vari", "bowl"] },
-      { l: "In the field", cols: ["fielding", "catching", "keeping", "field"] },
-      { l: "The man", cols: ["stam", "capt", "exp", "form", "fit", "ovr"] }
-    ] },
-    { k: "bat", l: "Batting", groups: [
-      { l: "", cols: ["pos", "name", "role", "nat", "age"] },
-      { l: "Batting", cols: ["vsPace", "vsSpin", "power", "rotation", "temper", "bat"] },
-      { l: "The man", cols: ["form", "fit", "exp", "ovr"] }
-    ] },
-    { k: "bowl", l: "Bowling", groups: [
-      { l: "", cols: ["pos", "name", "role", "nat", "age", "bt"] },
-      { l: "Bowling", cols: ["wicket", "econ", "disc", "move", "vari", "stam", "bowl"] },
-      { l: "The man", cols: ["form", "fit", "exp", "ovr"] }
-    ] },
-    { k: "field", l: "Fielding", groups: [
-      { l: "", cols: ["pos", "name", "role", "nat", "age"] },
-      { l: "In the field", cols: ["fielding", "catching", "keeping", "stumping", "field"] },
-      { l: "The man", cols: ["form", "fit", "ovr"] }
-    ] },
-    { k: "club", l: "Club", groups: [
-      { l: "", cols: ["pos", "name", "role", "nat", "age", "bt"] },
-      { l: "The man", cols: ["capt", "exp", "form", "fit", "wage", "ovr"] },
-      { l: "Overall", cols: ["bat", "bowl", "field", "ovr"] }
-    ] }
+  // the columns, in reading order. num: right-aligned rating. agg: a headline
+  // figure, tinted so the eye finds it. live: false means the number does not
+  // apply to this man and the cell is struck through instead.
+  var FO_SQ_COLS = [
+    { k: "pos", l: "#", s: "#", tip: "Batting position in the XI", num: 1,
+      v: function (p, x) { return x.xiIx(p) < 0 ? 99 : x.xiIx(p); } },
+    { k: "name", l: "Player", s: "Player", tip: "Click any row for his full skill breakdown",
+      v: function (p) { return p.name; } },
+    { k: "role", l: "Role", s: "Role", tip: "How the club uses him",
+      v: function (p) { return foSqClass(p); } },
+    { k: "nat", l: "Nat", s: "Nat", tip: "Where he is from - and who can pick him for a country",
+      v: function (p) { return String(p.nat || "zzz"); } },
+    { k: "age", l: "Age", s: "Age", tip: "Years old. Skills come on fastest before 24 and fade after 31", num: 1,
+      v: function (p) { return p.age | 0; } },
+    { k: "bat", l: "Bat", s: "Bat", tip: "Batting: vs pace, vs spin, rotation, temperament, power", num: 1, agg: 1,
+      v: function (p) { return Math.round(aggBat(p)); } },
+    { k: "bowl", l: "Bowl", s: "Bowl", tip: "Bowling: threat, control, discipline, movement, variety, stamina", num: 1, agg: 1,
+      v: function (p) { return p.bowlType ? Math.round(aggBowl(p)) : -1; } },
+    { k: "tech", l: "Tech", s: "Tech", tip: "Technique: vs pace, vs spin and temperament - the batting core", num: 1,
+      v: function (p) { return Math.round(aggTech(p)); } },
+    { k: "power", l: "Power", s: "Pwr", tip: "Six-hitting muscle", num: 1,
+      v: function (p) { try { return Math.round((p.skills || {}).power || 0); } catch (e) { return 0; } } },
+    { k: "field", l: "Field", s: "Fld", tip: "Fielding: ground work and catching", num: 1,
+      v: function (p) { return Math.round(aggField(p)); } },
+    { k: "exp", l: "Exp", s: "Exp", tip: "Experience - steadies him in the death overs and tight chases", num: 1,
+      v: function (p) { return Math.round(p.exp || 0); } },
+    { k: "form", l: "Form", s: "Form", tip: "Current form: abysmal to excellent, worth up to 6% either way", num: 1,
+      v: function (p) { return p.formIx == null ? 3 : p.formIx; } },
+    { k: "wage", l: "Wage", s: "Wage", tip: "What he costs the club a week", num: 1,
+      v: function (p) { return Math.round(p.wage || 0); } },
+    { k: "ovr", l: "OVR", s: "OVR", tip: "Overall rating - the one number the whole game sorts by", num: 1, agg: 1,
+      v: function (p) { return foPkOvr(p); } }
   ];
-  function foSqSet(k) {
-    for (var i = 0; i < FO_SQ_SETS.length; i++) if (FO_SQ_SETS[i].k === k) return FO_SQ_SETS[i];
-    return FO_SQ_SETS[0];
-  }
-  function foSqPretty(t) {
-    if (!t) return "";
-    return String(t).replace(/([A-Z])/g, " $1").toLowerCase().replace(/^./, function (c) { return c.toUpperCase(); });
+  function foSqCol(k) {
+    for (var i = 0; i < FO_SQ_COLS.length; i++) if (FO_SQ_COLS[i].k === k) return FO_SQ_COLS[i];
+    return null;
   }
   function foSqGrid(list, sv, capt, xiIx) {
     var ctx = { xiIx: xiIx };
-    var set = foSqSet(sv.set);
-    var cols = [];
-    set.groups.forEach(function (g) { g.cols.forEach(function (ck) { if (FO_SQ_C[ck]) cols.push(FO_SQ_C[ck]); }); });
-    // A set that does not carry the sorted column falls back to OVR - and takes
-    // sv.sortK with it, so the heading that is actually doing the sorting is
-    // the one wearing the arrow.
-    var col = null;
-    cols.forEach(function (c) { if (c.k === sv.sortK) col = c; });
-    if (!col) { col = FO_SQ_C.ovr; sv.sortK = "ovr"; sv.sortDir = -1; }
+    var cols = FO_SQ_COLS;
+    var col = foSqCol(sv.sortK) || foSqCol("ovr");
     var dir = sv.sortDir === 1 ? 1 : -1;
     var rows = list.slice().sort(function (a, b) {
       var x = col.v(a, ctx), y = col.v(b, ctx);
@@ -20708,24 +20636,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return (x - y) * dir;
     });
 
-    // ---- the two header bands: groups over columns -----------------------------
-    var band = "", head = "";
-    var anyGroup = set.groups.some(function (g) { return !!g.l; });
-    set.groups.forEach(function (g) {
-      var n = g.cols.filter(function (ck) { return !!FO_SQ_C[ck]; }).length;
-      if (!n) return;
-      band += "<th class='fo-sqg-band" + (g.l ? "" : " blank") + "' colspan='" + n + "'>" + E(g.l) + "</th>";
-    });
-    cols.forEach(function (c) {
+    var head = cols.map(function (c) {
       var on = c.k === sv.sortK;
-      head += "<th class='fo-sqg-h" + (on ? " on" : "") + (c.num ? " n" : "") + (c.agg ? " agg" : "") + " c-" + c.k + "'" +
+      return "<th class='fo-sqg-h" + (on ? " on" : "") + (c.num ? " n" : "") + (c.agg ? " agg" : "") + " c-" + c.k + "'" +
         " data-sort='" + c.k + "' title='" + E(c.tip || c.l) + "'" +
         " aria-sort='" + (on ? (dir === 1 ? "ascending" : "descending") : "none") + "'>" +
         "<span class='lg'>" + E(c.l) + "</span><span class='sm'>" + E(c.s || c.l) + "</span>" +
         "<i>" + (on ? (dir === 1 ? "&#9650;" : "&#9660;") : "") + "</i></th>";
-    });
+    }).join("");
 
-    // ---- a cell -----------------------------------------------------------------
     var words = !!sv.words;
     var cell = function (c, p) {
       var v = c.v(p, ctx);
@@ -20744,33 +20663,20 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         var lbl = cls === "wk" ? "WK" : cls === "ar" ? "AR" : cls === "bowl" ? "BOWL" : "BAT";
         return "<td class='c-role'><span class='fo-sqg-role " + cls + "'>" + lbl + "</span></td>";
       }
-      if (c.k === "bt") {
-        if (!p.bowlType) return "<td class='c-bt'><span class='fo-sqg-nil' title='Does not bowl'>&ndash;</span></td>";
-        var hand = ({ R: "R", L: "L" })[String(p.hand || "").toUpperCase().charAt(0)] || "";
-        return "<td class='c-bt'><span class='fo-sqg-bt' title='" + E(foSqPretty(p.bowlType)) + "'>" +
-          E(hand + foSqPretty(p.bowlType).replace(/[^A-Z]/g, "").slice(0, 3) || foSqPretty(p.bowlType).slice(0, 4)) + "</span></td>";
-      }
+      // the flag says it: a three-letter code beside it is the same fact twice
       if (c.k === "nat") {
-        var flg = "";
+        var nat = String(p.nat || ""), flg = "";
         try { flg = FO_ART + "flags/" + ((typeof FO_FLAG_FILE !== "undefined" && FO_FLAG_FILE[foSqNatId(p.nat)]) || foSqNatId(p.nat)) + ".svg"; } catch (eFg) {}
-        return "<td class='c-nat' title='" + E(String(p.nat || "")) + "'>" +
-          (flg && p.nat ? "<span class='fo-sqg-fl'><img src='" + flg + "' alt='' loading='lazy'" +
-            " onerror=\"this.parentNode.style.display='none'\"></span>" : "") +
-          "<span class='fo-sqg-nat'>" + E(String(p.nat || "&ndash;")) + "</span></td>";
+        if (!nat) return "<td class='c-nat'><span class='fo-sqg-nil'>&ndash;</span></td>";
+        return "<td class='c-nat' title='" + E(nat) + "'>" +
+          (flg ? "<span class='fo-sqg-fl'><img src='" + flg + "' alt='" + E(nat) + "' loading='lazy'" +
+            " onerror=\"this.parentNode.outerHTML=&quot;<span class=&#39;fo-sqg-nat&#39;>" + E(nat) + "</span>&quot;\"></span>"
+               : "<span class='fo-sqg-nat'>" + E(nat) + "</span>") + "</td>";
       }
       if (c.k === "age") return "<td class='n c-age'>" + (p.age | 0) + "</td>";
       if (c.k === "wage") return "<td class='n c-wage'>" + (typeof money === "function" ? money(p.wage || 0) : "$" + (p.wage | 0)) + "</td>";
       if (c.k === "form") return "<td class='n c-form'>" + foSqFormGlyph(p) + "</td>";
-      if (c.k === "fit") {
-        var en = foEnergyOf(p);
-        return "<td class='n c-fit' title='" + E(en.word || "") + "'><span class='fo-sqg-v" + (en.tired ? " lo" : "") + "'" +
-          " style='color:" + foSqQCol(en.pct) + "'>" + en.pct + "</span></td>";
-      }
-      // every remaining column is a 0-100 rating
-      if (v < 0) {
-        return "<td class='n c-" + c.k + "'><span class='fo-sqg-nil' title='" +
-          (c.live === foSqKeeps ? "Not a wicketkeeper" : "Does not bowl") + "'>&ndash;</span></td>";
-      }
+      if (v < 0) return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "'><span class='fo-sqg-nil' title='Does not bowl'>&ndash;</span></td>";
       return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "' title='" + E(c.l + ": " + foSqLad(v, c.k) + " (" + v + ")") + "'>" +
         "<span class='fo-sqg-v' style='color:" + foSqQCol(v) + "'>" + (words ? E(foSqAbbr(v, c.k)) : v) + "</span></td>";
     };
@@ -20782,49 +20688,44 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         cols.map(function (c) { return cell(c, p); }).join("") + "</tr>";
     }).join("");
 
-    // ---- the club's own line: what the squad averages, column by column --------
+    // the club's own line: what the squad averages, column by column
     var foot = cols.map(function (c) {
       if (c.k === "name") return "<td class='c-name'><span class='fo-sqg-ft'>Squad average</span></td>";
       if (!c.num || c.k === "pos" || c.k === "form") return "<td class='c-" + c.k + "'></td>";
-      if (c.k === "nat") return "<td class='c-nat'></td>";
-      var vals = rows.map(function (p) { return c.k === "fit" ? foEnergyOf(p).pct : c.v(p, ctx); })
-        .filter(function (v) { return typeof v === "number" && v >= 0; });
+      var vals = rows.map(function (p) { return c.v(p, ctx); }).filter(function (v) { return typeof v === "number" && v >= 0; });
       if (!vals.length) return "<td class='n c-" + c.k + "'></td>";
       var av = Math.round(vals.reduce(function (a, b) { return a + b; }, 0) / vals.length);
       var txt = c.k === "wage" ? (typeof money === "function" ? money(av) : "$" + av)
               : c.k === "age" ? av
               : (words ? foSqAbbr(av, c.k) : av);
-      return "<td class='n c-" + c.k + "'><span class='fo-sqg-fv'>" + E(String(txt)) + "</span></td>";
+      return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "'><span class='fo-sqg-fv'>" + E(String(txt)) + "</span></td>";
     }).join("");
 
+    // dropdowns, not a wall of pills: two short questions, two lists
     var who = sv.who || "sen";
-    var chip = function (on, k, l, d) {
-      return "<button type='button' class='fo-sqg-chip" + (on ? " on" : "") + "' data-" + d + "='" + k + "'>" + E(l) + "</button>";
+    var pick = function (name, cur, opts) {
+      return "<label class='fo-sqg-pick'><span>" + E(name) + "</span><select data-" + name.toLowerCase().replace(/[^a-z]/g, "") + ">" +
+        opts.map(function (o) {
+          return "<option value='" + o[0] + "'" + (o[0] === cur ? " selected" : "") + ">" + E(o[1]) + "</option>";
+        }).join("") + "</select></label>";
     };
-    var controls =
-      "<div class='fo-sqg-ctl'>" +
-      "<div class='fo-sqg-grp'><span class='fo-sqg-lb'>Columns</span>" +
-      FO_SQ_SETS.map(function (s2) { return chip(s2.k === set.k, s2.k, s2.l, "set"); }).join("") + "</div>" +
-      "<div class='fo-sqg-grp'><span class='fo-sqg-lb'>Show</span>" +
-      chip(who === "sen", "sen", "Seniors", "who") + chip(who === "yth", "yth", "Youth", "who") +
-      chip(who === "all", "all", "Everyone", "who") + "</div>" +
-      "<div class='fo-sqg-grp'><span class='fo-sqg-lb'>Read as</span>" +
-      chip(!words, "0", "Numbers", "words") + chip(words, "1", "Words", "words") + "</div>" +
+    var controls = "<div class='fo-sqg-ctl'>" +
+      pick("Show", who, [["sen", "Seniors"], ["yth", "Youth"], ["all", "Everyone"]]) +
+      pick("Read", words ? "w" : "n", [["n", "Numbers"], ["w", "Words"]]) +
       "</div>";
 
     var cap = rows.length
       ? (rows.length + " " + (rows.length === 1 ? "player" : "players") +
          " &middot; sorted by <b>" + E(col.l) + "</b> " + (dir === 1 ? "lowest first" : "highest first") +
-         ". Click any heading to sort by it, click it again to turn it over. Every row opens the man." +
-         (cols.length > 13 ? " The table scrolls sideways for the columns past the edge; the player stays pinned." : ""))
+         ". Click any heading to sort by it, click it again to turn it over. A row opens the man, where every skill is broken out.")
       : (who === "yth" ? "No youth players at the club yet. The academy brings them through on its own."
                        : "Nobody to show.");
+
     return "<div class='fo-sqg-outer'>" + controls +
       "<p class='fo-sqg-cap'>" + cap + "</p>" +
       "<div class='fo-sqg-wrap'><table class='fo-sqg'>" +
-      "<thead>" + (anyGroup ? "<tr class='fo-sqg-bands'>" + band + "</tr>" : "") +
-      "<tr>" + head + "</tr></thead>" +
-      "<tbody>" + (body || "<tr><td class='fo-sqg-none' colspan='" + cols.length + "'>Nobody to show. Try another Show filter.</td></tr>") + "</tbody>" +
+      "<thead><tr>" + head + "</tr></thead>" +
+      "<tbody>" + (body || "<tr><td class='fo-sqg-none' colspan='" + cols.length + "'>Nobody to show. Try another Show setting.</td></tr>") + "</tbody>" +
       (body ? "<tfoot><tr>" + foot + "</tr></tfoot>" : "") +
       "</table></div></div>";
   }
@@ -20859,10 +20760,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-sqx-hd{margin-bottom:14px}",
       ".fo-sqx-hd h1{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.02em;font-size:clamp(34px,5vw,64px);line-height:.88;margin:0;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.6)}",
       ".fo-sqx-tag{font-family:Georgia,serif;font-style:italic;font-size:clamp(14px,1.5vw,19px);color:var(--gold);margin-top:6px;text-shadow:0 2px 12px rgba(0,0,0,.7)}",
-      ".fo-sqx-next{display:inline-flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;padding:8px 14px;border:1px solid rgba(235,194,113,.28);border-radius:10px;background:rgba(7,13,24,.5);backdrop-filter:blur(8px);font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.14em;font-size:10.5px;color:#c6d3e8}",
-      ".fo-sqx-next b{color:var(--gold);letter-spacing:.18em}",
-      ".fo-sqx-next span{display:inline-flex;align-items:center;gap:5px;color:#e7eefb}",
-      ".fo-sqx-next i{font-style:normal;color:#6f819e}",
       // the field itself
       // the team photograph: standing row behind, seated row in front,
       // the front row overlapping the back the way bodies do on the steps
@@ -20907,13 +20804,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // Paper, not glass. The roster established the daylight almanack look for
       // this page and the grid is the same club read a different way, so it
       // keeps the paper, the rule under the label and the ink.
-      ".fo-sqg-outer{position:relative;z-index:2;max-width:1320px;margin:6px auto 34px}",
-      ".fo-sqg-ctl{display:flex;flex-wrap:wrap;align-items:center;gap:7px 18px;margin-bottom:12px}",
-      ".fo-sqg-grp{display:flex;align-items:center;gap:5px;flex-wrap:wrap}",
-      ".fo-sqg-lb{font-family:Oswald,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(20,28,40,.42);margin-right:2px}",
-      "html body #page button.fo-sqg-chip{border:1px solid rgba(20,28,40,.14) !important;border-radius:999px !important;background:#FFFEFC !important;color:rgba(20,28,40,.66) !important;font:600 10px Oswald,sans-serif !important;letter-spacing:.14em;text-transform:uppercase;padding:7px 13px !important;cursor:pointer;transition:.14s;min-height:32px}",
-      "html body #page button.fo-sqg-chip:hover{border-color:rgba(217,85,42,.5) !important;color:#B44A22 !important}",
-      "html body #page button.fo-sqg-chip.on{background:#C95532 !important;border-color:#C95532 !important;color:#FFFEFC !important}",
+      ".fo-sqg-outer{position:relative;z-index:2;max-width:980px;margin:6px auto 34px}",
+      ".fo-sqg-ctl{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-bottom:11px}",
+      ".fo-sqg-pick{display:inline-flex;align-items:center;gap:7px}",
+      ".fo-sqg-pick>span{font-family:Oswald,sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(20,28,40,.42)}",
+      "html body #page .fo-sqg-pick select,html body.ftpskin #page .fo-sqg-pick select{-webkit-appearance:none;appearance:none;border:1px solid rgba(20,28,40,.16) !important;border-radius:8px !important;background:#FFFEFC url(\"data:image/svg+xml,%3Csvg xmlns=&#39;http://www.w3.org/2000/svg&#39; viewBox=&#39;0 0 10 6&#39;%3E%3Cpath d=&#39;M1 1l4 4 4-4&#39; fill=&#39;none&#39; stroke=&#39;%23141C28&#39; stroke-width=&#39;1.4&#39; stroke-linecap=&#39;round&#39;/%3E%3C/svg%3E\") no-repeat right 10px center/10px 6px !important;color:#141C28 !important;font:600 11px Oswald,sans-serif !important;letter-spacing:.1em;text-transform:uppercase;padding:7px 28px 7px 11px !important;min-height:32px;cursor:pointer}",
+      "html body #page .fo-sqg-pick select:hover{border-color:rgba(217,85,42,.5) !important}",
+      "html body #page .fo-sqg-pick select:focus-visible{outline:2px solid #C95532;outline-offset:1px}",
       ".fo-sqg-cap{margin:0 0 10px;font:italic 400 12.5px/1.5 Georgia,serif;color:rgba(20,28,40,.58)}",
       ".fo-sqg-cap b{font-style:normal;font-weight:600;color:#B44A22}",
       ".fo-sqg-wrap{position:relative;overflow:auto;max-height:calc(100vh - 210px);background:#FFFEFC;border:1px solid rgba(20,28,40,.11);border-radius:14px;box-shadow:0 10px 30px rgba(30,38,52,.09);-webkit-overflow-scrolling:touch}",
@@ -20923,15 +20820,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // body.ftpskin table{width:100%} outranks a lone class, and a 100%-wide
       // table squeezes 27 columns into a phone. Match its specificity.
       "html body #page table.fo-sqg,html body.ftpskin #page table.fo-sqg{border-collapse:separate;border-spacing:0;width:auto;min-width:100%;table-layout:auto}",
-      ".fo-sqg td.n,html body #page th.fo-sqg-h.n{min-width:46px}",
-      ".fo-sqg td.c-name,html body #page th.fo-sqg-h.c-name{min-width:172px}",
-      ".fo-sqg td.c-role,.fo-sqg td.c-bt{min-width:52px}",
+      ".fo-sqg td.n,html body #page th.fo-sqg-h.n{min-width:40px}",
+      ".fo-sqg td.c-name,html body #page th.fo-sqg-h.c-name{min-width:150px;width:150px}",
+      ".fo-sqg td.c-role{min-width:44px}",
+      ".fo-sqg td.c-pos,html body #page th.fo-sqg-h.c-pos{min-width:26px}",
+      ".fo-sqg td.c-wage,html body #page th.fo-sqg-h.c-wage{min-width:54px}",
       // the two header bands, both sticky, the group band above the columns
       // the skin styles bare th, so the band needs the same specificity to win
       "html body #page .fo-sqg-bands th,html body.ftpskin #page .fo-sqg-bands th{position:sticky;top:0;z-index:6;height:29px;background:#F4EFE3 !important;border-bottom:1px solid rgba(20,28,40,.1) !important}",
       "html body #page th.fo-sqg-band,html body.ftpskin #page th.fo-sqg-band{padding:7px 10px !important;text-align:left;white-space:nowrap;font:600 8.5px Oswald,sans-serif !important;letter-spacing:.2em;text-transform:uppercase;color:#B44A22 !important;border-left:1px solid rgba(20,28,40,.08) !important}",
       "html body #page th.fo-sqg-band.blank{border-left:0 !important}",
-      "html body #page th.fo-sqg-h,html body.ftpskin #page th.fo-sqg-h{position:sticky;top:29px;z-index:5;text-align:left;white-space:nowrap;cursor:pointer;user-select:none;padding:8px 10px !important;background:#FFFEFC !important;color:rgba(20,28,40,.5) !important;border-bottom:1px solid rgba(20,28,40,.16) !important;font:600 9px Oswald,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;transition:color .14s}",
+      "html body #page th.fo-sqg-h,html body.ftpskin #page th.fo-sqg-h{position:sticky;top:0;z-index:5;text-align:left;white-space:nowrap;cursor:pointer;user-select:none;padding:8px 7px !important;background:#FFFEFC !important;color:rgba(20,28,40,.5) !important;border-bottom:1px solid rgba(20,28,40,.16) !important;font:600 9px Oswald,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;transition:color .14s}",
       "html body #page th.fo-sqg-h:hover{color:#B44A22 !important}",
       "html body #page th.fo-sqg-h.on{color:#B44A22 !important;box-shadow:inset 0 -2px 0 #C95532}",
       "html body #page th.fo-sqg-h.n{text-align:right}",
@@ -20939,7 +20838,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-sqg-h i{font-style:normal;font-size:6.5px;margin-left:4px;vertical-align:2px}",
       ".fo-sqg-h .sm{display:none}",
       // cells
-      ".fo-sqg td{padding:0 10px;height:38px;border-bottom:1px solid rgba(20,28,40,.07);font:400 12.5px/1 Inter,sans-serif;color:#141C28;white-space:nowrap}",
+      ".fo-sqg td{padding:0 7px;height:36px;border-bottom:1px solid rgba(20,28,40,.07);font:400 12.5px/1 Inter,sans-serif;color:#141C28;white-space:nowrap}",
       ".fo-sqg td.n{text-align:right;font-variant-numeric:tabular-nums}",
       ".fo-sqg td.agg{background:rgba(244,239,227,.6)}",
       ".fo-sqg tbody tr:last-child td{border-bottom:0}",
@@ -20968,8 +20867,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-sqg-role{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.1em;font-size:8.5px}",
       ".fo-sqg-role.bat{color:#B08409}.fo-sqg-role.ar{color:#1E8C63}.fo-sqg-role.bowl{color:#2F6FB0}.fo-sqg-role.wk{color:#7A4BAF}",
       ".fo-sqg-bt{font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:rgba(20,28,40,.6)}",
-      ".fo-sqg td.c-nat{min-width:62px}",
-      ".fo-sqg-fl{display:inline-block;width:19px;height:13px;border-radius:2px;overflow:hidden;vertical-align:-1px;margin-right:6px;box-shadow:0 0 0 1px rgba(20,28,40,.12)}",
+      ".fo-sqg td.c-nat,html body #page th.fo-sqg-h.c-nat{min-width:32px;text-align:center}",
+      ".fo-sqg-fl{display:inline-block;width:20px;height:14px;border-radius:2px;overflow:hidden;vertical-align:-2px;box-shadow:0 0 0 1px rgba(20,28,40,.12)}",
       ".fo-sqg-fl img{width:100%;height:100%;object-fit:cover;display:block}",
       ".fo-sqg-nat{font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:rgba(20,28,40,.55)}",
       ".fo-sqg-v{font-family:Oswald,sans-serif;font-weight:600;font-size:12.5px;font-variant-numeric:tabular-nums}",
@@ -20986,8 +20885,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-sqx.gridding .fo-sqx-park{background:transparent}",
       ".fo-sqx.gridding .fo-sqx-hd h1{color:#141C28 !important;text-shadow:none}",
       ".fo-sqx.gridding .fo-sqx-tag{color:#B44A22 !important;text-shadow:none}",
-      "html body #page .fo-sqx.gridding .fo-sqx-next{background:#FFFEFC;border:1px solid rgba(20,28,40,.12);color:rgba(20,28,40,.75);box-shadow:0 4px 12px rgba(30,38,52,.06)}",
-      ".fo-sqx.gridding .fo-sqx-next b{color:#B44A22}.fo-sqx.gridding .fo-sqx-next span{color:rgba(20,28,40,.75)}",
       // the view switch reads as paper on both of the views it switches between
       ".fo-sqx-vsw{display:inline-flex;gap:3px;margin-top:12px;padding:3px;border-radius:999px;background:rgba(20,28,40,.05);border:1px solid rgba(20,28,40,.1)}",
       // ---- the tool rail down the left of the park ----
@@ -21015,8 +20912,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-sqx.rostering .fo-sqx-park{background:transparent}",
       ".fo-sqx.rostering .fo-sqx-hd h1{color:#141C28 !important;text-shadow:none}",
       ".fo-sqx.rostering .fo-sqx-tag{color:#B44A22 !important;text-shadow:none}",
-      "html body #page .fo-sqx.rostering .fo-sqx-next{background:#FFFEFC;border:1px solid rgba(20,28,40,.12);color:rgba(20,28,40,.75);box-shadow:0 4px 12px rgba(30,38,52,.06)}",
-      ".fo-sqx.rostering .fo-sqx-next b{color:#B44A22}.fo-sqx.rostering .fo-sqx-next span{color:rgba(20,28,40,.75)}",
       "html body #page .fo-sqx.rostering button.fo-sqx-vb{background:#FFFEFC !important;border:1px solid rgba(20,28,40,.15) !important;color:rgba(20,28,40,.65) !important}",
       "html body #page .fo-sqx.rostering button.fo-sqx-vb.on{background:#C95532 !important;border-color:#C95532 !important;color:#FFFEFC !important}",
       ".fo-ros{max-width:740px;margin:10px auto 34px;display:flex;flex-direction:column;gap:20px}",
@@ -21120,13 +21015,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-sqg-frm .w,.fo-sqt-frm .w{display:none}",
       ".fo-sqg-go{display:none}",
       ".fo-sqg-nm{font-size:12.5px;display:inline-block;max-width:112px;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}",
-      ".fo-sqg td.n,html body #page th.fo-sqg-h.n{min-width:40px}",
-      ".fo-sqg td.c-name,html body #page th.fo-sqg-h.c-name{min-width:132px}",
-      ".fo-sqg-ctl{gap:6px 10px}",
-      ".fo-sqg-grp{flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:2px;scrollbar-width:none}",
-      ".fo-sqg-grp::-webkit-scrollbar{display:none}",
-      ".fo-sqg-lb{flex:none}",
-      "html body #page button.fo-sqg-chip{padding:6px 11px !important;font-size:9.5px !important}}",
+      ".fo-sqg td.n,html body #page th.fo-sqg-h.n{min-width:36px}",
+      ".fo-sqg td.c-name,html body #page th.fo-sqg-h.c-name{min-width:124px;width:124px}",
+      ".fo-sqg-ctl{gap:8px 10px}",
+      "html body #page .fo-sqg-pick select{padding:6px 24px 6px 9px !important;font-size:10px !important}}",
       "@media(max-width:1180px){.fo-sqx-in{grid-template-columns:minmax(0,1fr);padding-top:58px}.fo-sqx-dos{position:static}",
       ".fo-sqx-rail{position:static;transform:none;flex-direction:row;flex-wrap:wrap;justify-content:center;margin:0 0 10px}",
       "html body #page button.fo-sqx-rb{flex-direction:row;width:auto;gap:7px;padding:8px 13px}.fo-sqx-rb b{font-size:13px}}",
@@ -21163,7 +21055,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         try { vSaved = localStorage.getItem("fo_sq_view"); } catch (eV) {}
         sv.view = vSaved === "grid" ? "grid" : "roster";
       }
-      sv.set = foSqSet(sv.set).k;
       sv.who = ["sen", "yth", "all"].indexOf(sv.who) >= 0 ? sv.who : "sen";
       sv.sortK = sv.sortK || "ovr"; sv.sortDir = sv.sortDir === 1 ? 1 : -1;
       var seniors = (t.players || []).map(function (p) { return Object.assign({}, p); });
@@ -21319,7 +21210,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       document.body.classList.add("fo-sqx-on");
       var bg = foSqGroundArt(t);
       var bgFallback = FO_ART + "home/hgm-dressing-room.webp";
-      var nextLine = foSqNextMatch(t);
 
       // the switch: two chips, in the masthead, on both views
       var viewSwitch = "<div class='fo-sqx-vsw'>" +
@@ -21378,7 +21268,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-sqx-bg' style='background-image:url(" + bg + ")'></div><div class='fo-sqx-veil'></div>" +
         "<div class='fo-sqx-parkin'>" +
         "<header class='fo-sqx-hd'><h1>Squad</h1><div class='fo-sqx-tag'>Select your XI. Shape your legacy.</div>" +
-        nextLine + viewSwitch + "</header>" +
+        viewSwitch + "</header>" +
         (sv.view === "grid" ? gridBody : rosterBody) +
         "</div></section>" +
         "</div></div>";
@@ -21411,14 +21301,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           pgSquad();
         });
       });
-      page.querySelectorAll("[data-set]").forEach(function (b) {
-        b.addEventListener("click", function () { sv.set = b.getAttribute("data-set"); pgSquad(); });
+      page.querySelectorAll("select[data-show]").forEach(function (sel2) {
+        sel2.addEventListener("change", function () { sv.who = sel2.value; pgSquad(); });
       });
-      page.querySelectorAll("[data-who]").forEach(function (b) {
-        b.addEventListener("click", function () { sv.who = b.getAttribute("data-who"); pgSquad(); });
-      });
-      page.querySelectorAll("[data-words]").forEach(function (b) {
-        b.addEventListener("click", function () { sv.words = b.getAttribute("data-words") === "1"; pgSquad(); });
+      page.querySelectorAll("select[data-read]").forEach(function (sel3) {
+        sel3.addEventListener("change", function () { sv.words = sel3.value === "w"; pgSquad(); });
       });
       // every row is a door to the man's full profile
       var openMan = function (n) { if (n) location.hash = "#/player?n=" + encodeURIComponent(n); };
@@ -21514,23 +21401,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     }
     return slug ? (FO_ART + "cities/" + slug + "-ground.webp") : (FO_ART + "home/hgm-dressing-room.webp");
   }
-  function foSqNextMatch(t) {
-    var opp = "", ground = (t && t.ground) || "", wx = "";
-    try {
-      var fx = (typeof window.foNextFixture === "function") ? window.foNextFixture() : null;
-      if (fx) {
-        opp = (fx.opp && fx.opp.name) || "";
-        ground = fx.ground || ground;
-        wx = fx.weather || "";
-        if (!fx.isHome && opp) opp = opp + " (away)";
-      }
-    } catch (eN) {}
-    var bits = "<b>Next match</b>";
-    bits += opp ? "<span>vs " + E(opp) + "</span>" : "<span>No fixture scheduled</span>";
-    if (ground) bits += "<i>&middot;</i><span>" + E(ground) + "</span>";
-    if (wx) bits += "<i>&middot;</i><span>" + E(wx) + "</span>";
-    return "<a class='fo-sqx-next' href='#/fixtures' style='text-decoration:none;cursor:pointer'>" + bits + "</a>";
-  }
+  // The next-match strip used to sit under the masthead here. The squad page is
+  // for judging the men, not for navigating to the fixture - the fixture list,
+  // the match centre and every preview already carry that line.
   // one tab's worth of the man, all of it read off his real skills
   function foSqPane(tab, p, ovr) {
     var s = S(p);
