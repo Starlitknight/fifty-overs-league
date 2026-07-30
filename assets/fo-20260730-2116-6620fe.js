@@ -10020,7 +10020,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260730-2113-715fc1";
+  var FO_BUILD = "20260730-2116-6620fe";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -39838,6 +39838,27 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function hashPath() { return (location.hash || "").split("?")[0]; }
   function onPage() { return hashPath() === "#/player"; }
   function qName() { var m = /[?&]n=([^&]+)/.exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : ""; }
+  // AGE IN YEARS AND DAYS, because in this world a year IS a season - thirty
+  // days - and a whole number hides most of what a manager wants to see. Two
+  // men both "29" can be most of a season apart; a colt watching his birthday
+  // come is worth looking at. The squad page has read ages this way since it
+  // was rebuilt; the page a manager opens to study one cricketer should not be
+  // the coarser of the two. __foAge is the squad module's own arithmetic - one
+  // reckoning of a birthday for the whole game.
+  function ageHTML(p) {
+    try {
+      var A = window.__foAge;
+      if (A && A.parts) {
+        var a = A.parts(p);
+        return a.y + "<span class='fo-pp-ud'>y</span> " + a.d + "<span class='fo-pp-ud'>d</span>";
+      }
+    } catch (e) {}
+    return String(p && (p.age | 0));
+  }
+  function ageTitle(p) {
+    try { var A = window.__foAge; if (A && A.long) return E(A.long(p)); } catch (e) {}
+    return "";
+  }
   function ART() { try { return FO_ART; } catch (e) { return (location.pathname.indexOf("/client/") !== -1) ? "art/" : "client/art/"; } }
   function money(n) { n = Math.round(n || 0); return "$" + (n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "K" : n); }
   function num(v) { return Math.max(0, Math.min(99, Math.round(v || 0))); }
@@ -40167,7 +40188,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "<h1>" + E(p.name) + (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
       "<p class='fo-pp-prov'>" + E(pv.how) + pv.born + "</p>" +
       "<div class='fo-pp-strip'>" +
-      "<div><b>" + (p.age | 0) + "</b><i>Age</i></div>" +
+      "<div title='" + ageTitle(p) + "'><b>" + ageHTML(p) + "</b><i>Age</i></div>" +
       "<div><b>" + E(cap(cond.formWord)) + "</b><i>Form</i></div>" +
       "<div><b>" + E(cap(p.expWord || "")) + "</b><i>Experience</i></div>" +
       "<div><b>" + E(team.name || "") + "</b><i>Club</i></div>" +
@@ -40442,7 +40463,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<h1>" + E(sp.name) + (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
         "<p class='fo-pp-prov'>Scouted from the boundary &middot; " + E(clubNm || "a world club") + "</p>" +
         "<div class='fo-pp-strip'>" +
-        "<div><b>" + (sp.age | 0) + "</b><i>Age</i></div>" +
+        "<div title='" + ageTitle(sp) + "'><b>" + ageHTML(sp) + "</b><i>Age</i></div>" +
         "<div><b>" + E(cap(sp.form || "steady")) + "</b><i>Form</i></div>" +
         "<div><b>" + E(cap(sp.exp || "")) + "</b><i>Experience</i></div>" +
         "<div><b>" + E(clubNm) + "</b><i>Club</i></div>" +
@@ -40629,6 +40650,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body #page .fo-pp-strip>div{padding:9px 10px;text-align:center;border-right:1px solid rgba(20,28,40,.08);min-width:0}",
     "html body #page .fo-pp-strip>div:last-child{border-right:0}",
     "html body #page .fo-pp-strip b{display:block;font:600 13px/1.25 Inter,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    "html body #page .fo-pp-strip b .fo-pp-ud{font-size:.68em;font-weight:600;opacity:.5;margin:0 .12em 0 .04em}",
     "html body #page .fo-pp-strip i{display:block;margin-top:4px;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.42);font-style:normal}",
     "html body #page .fo-pp-sc{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:13px 0 0}",
     "html body #page .fo-pp-scv i{font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.45);font-style:normal}",
