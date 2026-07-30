@@ -99,14 +99,31 @@
     try {
       var t = null; try { t = userTeam(); } catch (eT) { return false; }
       if (!t) return false;
+      // COMPARE AGAINST THE MEN WHO ARE ACTUALLY HERE, not against a note we
+      // left ourselves last time. This used to keep a signature of the squad it
+      // had adopted ON THE TEAM OBJECT - which saveGame then wrote into the
+      // browser, and restoreFrom read back with the rest of the blob. So a save
+      // carrying an OLD eleven could carry a signature saying that eleven was
+      // already the world's, and every login after that matched the note,
+      // skipped the adoption and painted the old squad again. The device
+      // agreed with itself forever and never once asked the men's names.
+      //
+      // The served squad is the squad. The only question worth asking is
+      // whether the eleven in front of us IS that squad, and that is answered
+      // by looking at it - so any drift, whatever caused it, corrects itself on
+      // the next status the world sends.
       var names = st.squad.map(function (p) { return p && p.name; });
-      var sig = st.claim.country + ":" + st.claim.slot + ":" + names.join("|");
-      if (t.__worldSig === sig) return false;              // already these men
+      var have = (t.players || []).map(function (p) { return p && p.name; });
+      if (names.length === have.length && names.join("|") === have.join("|")) {
+        if (t.__worldSig != null) { try { delete t.__worldSig; saveGame(false); } catch (eD) {} }
+        return false;                                      // already exactly these men
+      }
       t.players = JSON.parse(JSON.stringify(st.squad));
       if (st.claim.club) t.name = st.claim.club;
       if (st.claim.ground) t.ground = st.claim.ground;
       t.youth = t.youth || [];
-      t.__worldSig = sig;
+      // the note is retired: shed it so no old save keeps asserting anything
+      try { delete t.__worldSig; } catch (eD2) {}
       try { if (typeof ensureTraining === "function") t.players.forEach(ensureTraining); } catch (eE) {}
       // a lineup that names men who have gone is no lineup at all
       try {

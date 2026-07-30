@@ -263,3 +263,14 @@ export function strengthRating(hist) {
   if (!h.length) return RANK_BASE;
   return +(h.reduce((s, x) => s + x, 0) / h.length).toFixed(1);
 }
+
+// THE ONLY THING THE LADDER NEEDS FROM A CARD: each side's mark, and who won.
+// A few dozen bytes, worked out once when the card is banked and kept beside
+// it, so the rankings never have to pull 38 KB of ball-by-ball back out of the
+// database to re-derive a number they already had. Same function the scorecard
+// uses, so the stored figure and the printed one cannot disagree.
+export function ratingsOf(result) {
+  const r = (typeof result === 'string') ? JSON.parse(result) : result;
+  if (!r || !Array.isArray(r.innings)) return null;
+  return { r: matchRating(r), w: r.winner == null ? null : r.winner };
+}

@@ -24,7 +24,7 @@ import { runComps } from './comps.mjs';
 import { ensureCallups, absentBySlot, coverSheet, runWindows, rebuildNations, seasonSquad,
          ensureNatSquad, natSquadNow } from './nations.mjs';
 import { runMarket, settleMarket, rebuildMarket } from './market.mjs';
-import { matchRating, ladderRating, strengthRating, RANK_WINDOW, RANK_BASE } from './ratings.mjs';
+import { matchRating, ladderRating, strengthRating, ratingsOf, RANK_WINDOW, RANK_BASE } from './ratings.mjs';
 
 export function matchId(country, seasonNo, round, h, a) {
   return country + ':s' + seasonNo + ':r' + round + ':h' + h + 'a' + a;
@@ -85,10 +85,13 @@ async function playRound(pool, host, country, season, round, opts) {
     // identical game, however far the players travel afterwards
     const living = { [home.name]: livingPatch(home.squad, abroad.get(home.slot)),
                      [away.name]: livingPatch(away.squad, abroad.get(away.slot)) };
+    // the mark this card is worth, worked out here and kept with it - see
+    // ratingsOf. The ladder reads this and never opens the card again.
+    let rat = null; try { rat = ratingsOf(resultJson); } catch (eR) {}
     await pool.query(
-      `INSERT INTO matches(id, country_id, season_no, round, home_slot, away_slot, seed, engine_version, pitch, orders, result, result_canonical, home_name, away_name, living)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,$12::text,$13,$14,$15::jsonb) ON CONFLICT (id) DO NOTHING`,
-      [id, country, season.season_no, round, hs, as, seed, ENGINE_VERSION, 'balanced', JSON.stringify(tieOrders), resultJson, resultJson, home.name, away.name, JSON.stringify(living)]);
+      `INSERT INTO matches(id, country_id, season_no, round, home_slot, away_slot, seed, engine_version, pitch, orders, result, result_canonical, home_name, away_name, living, ratings)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,$12::text,$13,$14,$15::jsonb,$16::jsonb) ON CONFLICT (id) DO NOTHING`,
+      [id, country, season.season_no, round, hs, as, seed, ENGINE_VERSION, 'balanced', JSON.stringify(tieOrders), resultJson, resultJson, home.name, away.name, JSON.stringify(living), rat ? JSON.stringify(rat) : null]);
     played++;
   }
   return played;
@@ -104,7 +107,8 @@ export async function computeLeague(pool, country, seasonNo, now) {
   // is around 38 KB, so every row cost more than twice what it needed to, on a
   // read that runs for every nation on every tick and grows all season.
   const ms = (await pool.query(
-    `SELECT id, round, home_slot, away_slot, home_name, away_name, seed, engine_version, result
+    `SELECT id, round, home_slot, away_slot, home_name, away_name, seed, engine_version,
+            (result - 'worm') AS result
        FROM matches WHERE country_id=$1 AND season_no=$2 ORDER BY round, id`,
     [country, season.season_no])).rows;
   const bySlot = Object.fromEntries(clubs.map(c => [c.slot, c]));
@@ -229,14 +233,19 @@ export async function computeRankings(pool, now) {
   // `worm` - the run-rate curve a scorecard draws - which is a quarter of its
   // weight and says nothing about how a side played. Dropped in the database
   // rather than in Node, so it never crosses the wire.
+  // THE CARD IS ONLY FETCHED WHEN ITS MARK IS MISSING. The CASE is evaluated
+  // per row inside the database, so a match that already carries its rating
+  // sends back a few dozen bytes and its 38 KB of ball-by-ball never crosses
+  // the wire. A world banked before this existed is filled in by fillRatings
+  // below, a batch a tick, and then costs nothing forever.
   const ms = (await pool.query(
-    `SELECT season_no, round, country_id, home_slot, away_slot, home_name, away_name,
-            (result - 'worm') AS result FROM matches
+    `SELECT season_no, round, country_id, home_slot, away_slot, home_name, away_name, ratings,
+            CASE WHEN ratings IS NULL THEN (result - 'worm') END AS result FROM matches
       ORDER BY season_no, round, country_id, home_slot`)).rows;
   ms.forEach((m, i) => events.push({
     at: seq(m.season_no, m.round | 0), i,
     ak: key(m.country_id, m.home_slot), bk: key(m.country_id, m.away_slot),
-    an: m.home_name, bn: m.away_name, result: m.result
+    an: m.home_name, bn: m.away_name, result: m.result, rat: m.ratings
   }));
   const wclm = (await pool.query(
     `SELECT season_no, stage, gi, a, b, result FROM cup_matches WHERE comp='wcl' ORDER BY season_no, stage, gi`)).rows;
@@ -277,13 +286,14 @@ export async function computeRankings(pool, now) {
   const mark = (side, ev) => {
     const a = side[ev.ak], b = side[ev.bk];
     if (!a || !b) return;
-    const tr = matchRating(ev.result);
+    // the mark banked with the card, or the card itself when there is none
+    const tr = (ev.rat && ev.rat.r) ? ev.rat.r : matchRating(ev.result);
     const an = ev.an || a.name || '', bn = ev.bn || b.name || '';
     const ra = tr[an], rb = tr[bn];
     if (!ra || !rb) return;                      // a card whose sides we cannot name
     a.hist.push(ra.rating); b.hist.push(rb.rating);
     a.p++; b.p++;
-    const w = (ev.result && ev.result.winner) || null;
+    const w = ev.rat ? (ev.rat.w || null) : ((ev.result && ev.result.winner) || null);
     if (w == null) { a.t++; b.t++; } else if (w === an) { a.w++; b.l++; } else { b.w++; a.l++; }
   };
   // the query order breaks every tie, so the sort is total and the ladder is
@@ -368,8 +378,33 @@ export async function rebuildSnapshots(pool, country, now, opts) {
   return league;
 }
 
+// A WORLD BANKED BEFORE THE MARK WAS KEPT. Every card played before this
+// existed has no rating beside it, so the ladder still opens it - which is the
+// very cost this was meant to end. Filling them is a one-off, but doing it in
+// one go would pull the whole record at once, so it goes a batch at a time:
+// after a handful of ticks every card has its mark and the query above stops
+// fetching cards altogether. Bounded, idempotent, and safe to interrupt.
+const RATING_BACKFILL = 120;
+export async function fillRatings(pool, limit = RATING_BACKFILL) {
+  let done = 0;
+  try {
+    const rows = (await pool.query(
+      `SELECT id, (result - 'worm') AS result FROM matches
+        WHERE ratings IS NULL ORDER BY season_no, round LIMIT $1`, [limit])).rows;
+    for (const m of rows) {
+      const rat = ratingsOf(m.result);
+      if (!rat) continue;
+      await pool.query('UPDATE matches SET ratings=$2 WHERE id=$1', [m.id, JSON.stringify(rat)]);
+      done++;
+    }
+  } catch (e) { console.error('rating backfill failed:', e.message); }
+  if (done) console.log('banked the mark for ' + done + ' older cards');
+  return done;
+}
+
 // the three documents that describe the whole planet rather than one nation
 export async function rebuildWorld(pool, now) {
+  await fillRatings(pool);
   await rebuildWorldToday(pool, now);
   await rebuildHonours(pool);
   const rk = await computeRankings(pool, now);
