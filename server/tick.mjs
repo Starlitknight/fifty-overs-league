@@ -98,7 +98,15 @@ async function playRound(pool, host, country, season, round, opts) {
 export async function computeLeague(pool, country, seasonNo, now) {
   const season = (await pool.query('SELECT * FROM seasons WHERE country_id=$1 AND season_no=$2', [country, seasonNo])).rows[0];
   const clubs = (await pool.query('SELECT slot, name, ground, is_boss FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
-  const ms = (await pool.query('SELECT * FROM matches WHERE country_id=$1 AND season_no=$2 ORDER BY round, id', [country, season.season_no])).rows;
+  // ONLY THE COLUMNS THIS FUNCTION READS. `SELECT *` also dragged out
+  // result_canonical - a full TEXT COPY of the same card - plus the living
+  // patch and the filed orders, none of which a league table looks at. A card
+  // is around 38 KB, so every row cost more than twice what it needed to, on a
+  // read that runs for every nation on every tick and grows all season.
+  const ms = (await pool.query(
+    `SELECT id, round, home_slot, away_slot, home_name, away_name, seed, engine_version, result
+       FROM matches WHERE country_id=$1 AND season_no=$2 ORDER BY round, id`,
+    [country, season.season_no])).rows;
   const bySlot = Object.fromEntries(clubs.map(c => [c.slot, c]));
   const T = Object.fromEntries(clubs.map(c => [c.slot, { slot: c.slot, name: c.name, boss: c.is_boss, p: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0, of: 0, oa: 0 }]));
   const results = [];
@@ -217,8 +225,13 @@ export async function computeRankings(pool, now) {
   const seq = (season, slot) => (season | 0) * 1000 + slot;
   const STAGE = { pi: 0, r16: 1, qf: 2, sf: 3, final: 4 };
   const events = [], natEvents = [];
+  // THE LADDER IS BUILT FROM THE INNINGS AND NOTHING ELSE. A card carries a
+  // `worm` - the run-rate curve a scorecard draws - which is a quarter of its
+  // weight and says nothing about how a side played. Dropped in the database
+  // rather than in Node, so it never crosses the wire.
   const ms = (await pool.query(
-    `SELECT season_no, round, country_id, home_slot, away_slot, home_name, away_name, result FROM matches
+    `SELECT season_no, round, country_id, home_slot, away_slot, home_name, away_name,
+            (result - 'worm') AS result FROM matches
       ORDER BY season_no, round, country_id, home_slot`)).rows;
   ms.forEach((m, i) => events.push({
     at: seq(m.season_no, m.round | 0), i,
@@ -332,7 +345,7 @@ export async function rebuildHonours(pool) {
 }
 
 // the write side: latest season's league snapshot + the world summary
-export async function rebuildSnapshots(pool, country, now) {
+export async function rebuildSnapshots(pool, country, now, opts) {
   const season = (await pool.query('SELECT * FROM seasons WHERE country_id=$1 ORDER BY season_no DESC LIMIT 1', [country])).rows[0];
   const league = await computeLeague(pool, country, season.season_no, now);
   await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ($1,$2,now())
@@ -343,12 +356,26 @@ export async function rebuildSnapshots(pool, country, now) {
   await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ($1,$2,now())
     ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`, ['colts/' + country, JSON.stringify(colts)]);
   await coltRecords(pool, country, season.season_no);
+  // THE WORLD'S BOOKS ARE THE WORLD'S, NOT EACH NATION'S. Today's summary, the
+  // honours and the rankings describe the whole planet, and this runs once per
+  // country - so settling a tick rebuilt all three NINETEEN TIMES, and the
+  // rankings walk every match ever played. Nineteen full reads of the world's
+  // entire record, every hour, to write the same three documents nineteen
+  // times over. runAllDue now does the world once, after the nations; every
+  // other caller still gets the whole job by default, so a lone rebuild is
+  // still a complete one.
+  if (!opts || opts.world !== false) await rebuildWorld(pool, now);
+  return league;
+}
+
+// the three documents that describe the whole planet rather than one nation
+export async function rebuildWorld(pool, now) {
   await rebuildWorldToday(pool, now);
   await rebuildHonours(pool);
   const rk = await computeRankings(pool, now);
   await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ('rankings', $1, now())
     ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`, [JSON.stringify(rk)]);
-  return league;
+  return rk;
 }
 
 // world/today aggregates EVERY league snapshot — one summary row per country,
@@ -378,7 +405,7 @@ export async function rebuildWorldToday(pool, now) {
 // carried from the founding, so nobody can hide a purchase in an overdraft.
 export { settleMoney } from './economy.mjs';
 
-export async function runTick(pool, host, country, day, { now = Date.now(), failAfter = null } = {}) {
+export async function runTick(pool, host, country, day, { now = Date.now(), failAfter = null, world = true } = {}) {
   const key = country + ':day:' + day;
   const claim = await pool.query(
     `INSERT INTO ticks(key, status) VALUES ($1,'running')
@@ -444,21 +471,21 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
   try { await ensureYouth(pool, host, country, { seasonNo: season.season_no, round }); }
   catch (eY) { console.error('academy intake failed for ' + country + ' day ' + day + ':', eY.message); }
   await settleMoney(pool, country);
-  await rebuildSnapshots(pool, country, now);
+  await rebuildSnapshots(pool, country, now, { world: world });
   await pool.query(`UPDATE ticks SET status='done', finished_at=now(), detail=$2 WHERE key=$1`,
     [key, JSON.stringify({ round: round || null, played })]);
   return { skipped: false, round, played };
 }
 
 // heal any gap: settle every due day since the season began
-export async function runDue(pool, host, country, { now = Date.now(), failAfter = null } = {}) {
+export async function runDue(pool, host, country, { now = Date.now(), failAfter = null, world = true } = {}) {
   const season = (await pool.query('SELECT * FROM seasons WHERE country_id=$1 ORDER BY season_no DESC LIMIT 1', [country])).rows[0];
   if (!season) return [];
   const out = [];
   for (let day = season.start_day; day <= dayIx(now); day++) {
     if (!daySettled(now, day, country)) break;
     if (day - season.start_day >= LEAGUE_DAYS) break;   // the closing week is the cups' own business
-    out.push({ day, ...(await runTick(pool, host, country, day, { now, failAfter })) });
+    out.push({ day, ...(await runTick(pool, host, country, day, { now, failAfter, world })) });
   }
   // A WORLD THAT WAS ALREADY PLAYING WHEN THE SELECTORS ARRIVED. runTick names
   // a side before each round and again after it, but a day already settled
@@ -479,7 +506,7 @@ export async function runDue(pool, host, country, { now = Date.now(), failAfter 
       [country, season.season_no, stands])).rowCount;
     if (!had) {
       await ensureNatSquad(pool, country, season.season_no, stands);
-      await rebuildSnapshots(pool, country, now);        // so the side reaches the client
+      await rebuildSnapshots(pool, country, now, { world: world });   // so the side reaches the client
       out.push({ day: null, namedNatSquad: stands });
     }
   } catch (eNb) { console.error('standing squad failed for ' + country + ':', eNb.message); }
@@ -566,13 +593,20 @@ export async function runAllDue(pool, host, opts = {}) {
   const out = {};
   for (const row of cs.rows) {
     try {
-      out[row.id] = await runDue(pool, host, row.id, opts);
+      // the nations settle without touching the world's three documents...
+      out[row.id] = await runDue(pool, host, row.id, { ...opts, world: false });
     } catch (e) {
       out[row.id] = [{ failed: true, error: e.message }];
       console.error('tick failed for ' + row.id + ':', e.message);
       if (opts && opts.failAfter != null) throw e;      // the crash tests mean it
     }
   }
+  // ...and the world is written ONCE, after all of them, from the record they
+  // have just finished writing. A nation that failed does not stop it: the
+  // rankings and the honours are derived from what IS banked, so publishing
+  // them is right whatever else went wrong.
+  try { await rebuildWorld(pool, opts.now ?? Date.now()); }
+  catch (e) { console.error('world rebuild failed:', e.message); }
   return out;
 }
 
