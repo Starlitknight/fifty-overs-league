@@ -428,6 +428,17 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
   // legs, and the work they did in the nets. A pure function of the record,
   // so re-running settles the same.
   await evolveCountry(pool, country, now, host);
+  // AND THE SELECTORS MEET AGAIN, now that they have seen it. "Between
+  // matches" is meant literally: the side for the NEXT round is named here,
+  // the moment this round's cricket has been read into the players, rather
+  // than waiting for tomorrow's tick to open. So the snapshot published a few
+  // lines below already carries the side that stands going into the next
+  // round, and a manager looking on a rest day sees the current fifteen and
+  // not last week's.
+  if (round && round < ROUNDS) {
+    try { await ensureNatSquad(pool, country, season.season_no, round + 1); }
+    catch (eN2) { console.error('selectors failed for ' + country + ' round ' + (round + 1) + ':', eN2.message); }
+  }
   // the academy brings a boy in when there is room - the same boy on every
   // re-run, because his seed is the club, the season and the round
   try { await ensureYouth(pool, host, country, { seasonNo: season.season_no, round }); }
@@ -449,6 +460,29 @@ export async function runDue(pool, host, country, { now = Date.now(), failAfter 
     if (day - season.start_day >= LEAGUE_DAYS) break;   // the closing week is the cups' own business
     out.push({ day, ...(await runTick(pool, host, country, day, { now, failAfter })) });
   }
+  // A WORLD THAT WAS ALREADY PLAYING WHEN THE SELECTORS ARRIVED. runTick names
+  // a side before each round and again after it, but a day already settled
+  // short-circuits before reaching either - so a league that had banked rounds
+  // before this existed would have no side named until its next round came
+  // round, and a manager looking in between would be told his country has
+  // picked nobody. Naming it here, outside the per-day guard, means every
+  // nation always has a fifteen. Banked once per round, so on any tick that
+  // actually played cricket this finds the squad already there and does
+  // nothing; only a world that needs catching up pays for a republish.
+  try {
+    const played = (await pool.query(
+      'SELECT COALESCE(MAX(round),0) AS r FROM matches WHERE country_id=$1 AND season_no=$2',
+      [country, season.season_no])).rows[0].r | 0;
+    const stands = Math.min(played + 1, ROUNDS);
+    const had = (await pool.query(
+      'SELECT 1 FROM nat_squad WHERE country_id=$1 AND season_no=$2 AND round=$3',
+      [country, season.season_no, stands])).rowCount;
+    if (!had) {
+      await ensureNatSquad(pool, country, season.season_no, stands);
+      await rebuildSnapshots(pool, country, now);        // so the side reaches the client
+      out.push({ day: null, namedNatSquad: stands });
+    }
+  } catch (eNb) { console.error('standing squad failed for ' + country + ':', eNb.message); }
   return out;
 }
 

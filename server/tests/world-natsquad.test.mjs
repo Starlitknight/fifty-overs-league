@@ -75,7 +75,11 @@ test('every nation on earth, not just the ones with a tour', async () => {
     await runDue(pool, host, c.id, { now: atDay(dayOf(1), 23) });
     const now = await natSquadNow(pool, c.id, 1);
     assert.equal(now.squad.length, SQUAD_SIZE, c.id + ' has named a side');
-    assert.equal(now.round, 1, c.id + '\'s side stands before round one');
+    // round one has been played, so the side that STANDS is the one named for
+    // round two - the selectors met again the moment the cricket was read in
+    assert.equal(now.round, 2, c.id + '\'s side stands going into round two');
+    const first = await ensureNatSquad(pool, c.id, 1, 1);
+    assert.equal(first.length, SQUAD_SIZE, c.id + ' also named one before round one');
   }
 });
 
@@ -83,17 +87,18 @@ test('the selectors meet again before every round', async () => {
   await runDue(pool, host, 'eng', { now: atDay(dayOf(3), 23) });
   const rows = (await pool.query(
     `SELECT round FROM nat_squad WHERE country_id='eng' AND season_no=1 ORDER BY round`)).rows;
-  assert.deepEqual(rows.map(r => r.round), [1, 2, 3],
-    'one naming per round played - not one per season, and not one per window');
+  assert.deepEqual(rows.map(r => r.round), [1, 2, 3, 4],
+    'a naming for every round played, plus the one about to be played - not ' +
+    'one per season, and not one per window');
 
   // and the meeting is a real one: it reads the form the last round produced,
   // so a side can change. Whether it DOES change is the cricket's business;
   // what must hold is that the selectors were free to.
   const now = await natSquadNow(pool, 'eng', 1);
-  assert.equal(now.round, 3);
+  assert.equal(now.round, 4, 'three rounds played, so the side stands for the fourth');
   assert.equal(now.squad.length, SQUAD_SIZE);
   const r2 = (await pool.query(
-    `SELECT squad FROM nat_squad WHERE country_id='eng' AND season_no=1 AND round=2`)).rows[0].squad;
+    `SELECT squad FROM nat_squad WHERE country_id='eng' AND season_no=1 AND round=3`)).rows[0].squad;
   const was = new Set(namesOf(r2)), is = new Set(namesOf(now.squad));
   assert.deepEqual(now.in.slice().sort(), namesOf(now.squad).filter(n => !was.has(n)).sort(),
     'who came in is exactly who was not there last time');
@@ -173,4 +178,38 @@ test('the World Cup side is the side as it stands', async () => {
     'the men their selectors last named are the men who go');
   assert.ok(wc.length >= 11 && wc.some(p => p.keeper) && wc.filter(isBowler).length >= 5,
     'and it is a side that can take the field');
+});
+
+test('a world already playing when the selectors arrived is caught up', async () => {
+  // EXACTLY THE LIVE CASE. A league had banked rounds before any of this
+  // existed, so no naming was ever made for them - and runTick short-circuits
+  // on a day it has already settled, so it would never go back and make one.
+  // The league would sit there with no side named until its next round came
+  // round, telling every manager his country had picked nobody.
+  await pool.query(`DELETE FROM nat_squad WHERE country_id='eng'`);
+  const played = (await pool.query(
+    `SELECT COALESCE(MAX(round),0) AS r FROM matches WHERE country_id='eng' AND season_no=1`)).rows[0].r | 0;
+  assert.ok(played >= 1, 'England has banked rounds');
+  assert.equal(
+    (await pool.query(`SELECT 1 FROM nat_squad WHERE country_id='eng'`)).rowCount, 0,
+    'and no side named for any of them');
+
+  // a tick with no new day due - every day is already settled
+  const out = await runDue(pool, host, 'eng', { now: atDay(dayOf(played), 23) });
+  assert.ok(out.every(x => x.day == null || x.skipped),
+    'no cricket was played by this run');
+
+  const now = await natSquadNow(pool, 'eng', 1);
+  assert.equal(now.squad.length, SQUAD_SIZE, 'and yet England has a side again');
+  assert.equal(now.round, played + 1, 'named for the round it is about to play');
+
+  // and it reached the client, not just the table
+  const lg = (await pool.query(
+    `SELECT body FROM snapshots WHERE key='league/eng'`)).rows[0].body;
+  assert.equal(lg.nat.squad.length, SQUAD_SIZE, 'the published snapshot carries it');
+  assert.deepEqual(namesOf(lg.nat.squad), namesOf(now.squad));
+
+  // running again names nothing new: the catch-up is not a treadmill
+  const again = await runDue(pool, host, 'eng', { now: atDay(dayOf(played), 23) });
+  assert.ok(!again.some(x => x.namedNatSquad), 'a second run has nothing to do');
 });

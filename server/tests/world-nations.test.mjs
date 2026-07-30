@@ -27,7 +27,7 @@ import { applyLiving, livingPatch } from '../living.mjs';
 import {
   SQUAD_SIZE, CLUB_LIMIT, FEE_SENIOR, FEE_U21, U21_AGE, feeFor, isBowler,
   selectSquad, selectionScore, coverSheet, tourPairs, natMatchId,
-  ensureCallups, absentBySlot, squadPlayers, seasonSquad, runWindows,
+  ensureCallups, absentBySlot, squadPlayers, seasonSquad, runWindows, natSquadNow,
   computeNations, windowsOn, touringOn
 } from '../nations.mjs';
 import { EPOCH, DAY, WINDOWS, WINDOW_DAYS, INTL_HOUR, isWindowRound, windowDayOfRound, dayOfRound } from '../clock.mjs';
@@ -419,11 +419,27 @@ test('the ladder and the room read the international game', async () => {
     'what England paid its clubs is what its clubs were owed');
 });
 
-test('the World Cup side is the side that toured', async () => {
+test('the World Cup side is the side as it stands', async () => {
+  // IT USED TO BE THE SIDE THAT TOURED, because a squad was only ever named at
+  // a window and the last window's fifteen was the only current thing there
+  // was. The selectors sit between every round now, so by the World Cup they
+  // have met many times since the last tour - on the form the tour itself
+  // produced, among others. The side that goes is the side they last named.
   const wc = await seasonSquad(pool, 'eng', 1);
-  const named = (await squadPlayers(pool, 'eng', 1, WIN_ROUND)).map(p => p.name);
-  assert.deepEqual(wc.map(p => p.name), named,
-    'the men who played the windows are the men who go to the World Cup');
+  const now = await natSquadNow(pool, 'eng', 1);
+  assert.deepEqual(wc.map(p => p.name), now.squad.map(m => m.name),
+    'the men their selectors last named are the men who go to the World Cup');
+
+  // and it is still a REAL banked selection, not a fresh pick at draw time:
+  // every man is on a club's books and the fifteen can take the field
+  assert.equal(wc.length, SQUAD_SIZE);
+  assert.ok(wc.some(p => p.keeper), 'somebody keeps wicket');
+  assert.ok(wc.filter(isBowler).length >= 5, 'and five men can bowl');
+
+  // the tour squad is still exactly what it was - naming a side afterwards
+  // does not rewrite who actually flew
+  const toured = (await squadPlayers(pool, 'eng', 1, WIN_ROUND)).map(p => p.name);
+  assert.equal(toured.length, SQUAD_SIZE, 'the window squad is untouched');
 });
 
 test('an ordinary round takes nobody', async () => {
