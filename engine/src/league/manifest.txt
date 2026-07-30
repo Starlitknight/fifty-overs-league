@@ -4,14 +4,12 @@
 03-onboarding.js
 04-training-scouting.js
 05-transfer-market.js
-06-manual.js
 07-matchday-centre.js
 08-orders.js
 09-squad-matchlab.js
 10-office-settings.js
 11-chronicle.js
 12-scorecard-analysis.js
-13-world-desk.js
 14-match-report.js
 15-living-season.js
 16-matchday-dress.js
@@ -19,7 +17,6 @@
 19-modern-shell.js
 20-strategy-room.js
 21-honours-board.js
-22-time-machine.js
 23-almanack-type.js
 24-fixture-list.js
 25-league-table.js
@@ -31,7 +28,6 @@
 31-world-feed.js
 32-matchday.js
 33-training-pops.js
-34-record-book.js
 35-gazette.js
 36-champions-cup.js
 37-world-club.js
@@ -40,12 +36,9 @@
 40-club-page.js
 41-player-page.js
 42-academy.js
-43-finance.js
-44-invitationals.js
 45-ratings.js
 46-nations.js
 47-menu.js
 48-room-art.js
-49-market.js
 50-match-archive.js
 51-prematch.js

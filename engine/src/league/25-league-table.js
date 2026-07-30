@@ -427,8 +427,7 @@
           "<div class='fo-lgx-mile'><i>Highest score</i><b>" + (bat0 ? bat0.hs : "&mdash;") + "</b></div>" +
           "<div class='fo-lgx-mile'><i>Best bowling</i><b>" + (bowl0 && bowl0.bb ? bowl0.bb.w + "/" + bowl0.bb.r : "&mdash;") + "</b></div>" +
           "<div class='fo-lgx-mile'><i>Rounds played</i><b>" + playedRounds + " of " + rounds + "</b></div></div>" +
-          "<div class='fo-lgx-card'><h3>The book</h3><p class='fo-lgx-dim'>Every run and every wicket here was scored in a match the umpire played and banked. Nothing is estimated.</p>" +
-          "<a class='fo-lgx-more' href='#/records'>The record book &rsaquo;</a></div>";
+          "<div class='fo-lgx-card'><h3>The book</h3><p class='fo-lgx-dim'>Every run and every wicket here was scored in a match the umpire played and banked. Nothing is estimated.</p></div>";
 
       } else {
         // ---- the pennant race ---------------------------------------------

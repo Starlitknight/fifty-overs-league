@@ -654,7 +654,7 @@
           "</div>" + intlCard + "</div>" +
           "<div class='fo-pp-rail'><div class='fo-pp-card dark'><h3>The book is public</h3>" +
           "<p>Every run and wicket here was scored in a match the umpire played and banked. It is the same record his own manager reads.</p>" +
-          "<a class='fo-pp-more' href='#/records'>The record book &rsaquo;</a></div></div>";
+          "</div></div>";
       } else {
         room = "<div class='fo-pp-col'>" +
           "<div class='fo-pp-card'><h3>The scout's read</h3>" + bars(sc) +

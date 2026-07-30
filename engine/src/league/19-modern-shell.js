@@ -13,11 +13,14 @@
   // ---- the phone tab dock ----------------------------------------------------
   // Five destinations cover 90% of sessions; the hamburger keeps the rest.
   var DOCK = [
-    { k: "club", label: "Club", hash: "#/club", ic: "<path d='M3.5 10.6 12 3.4l8.5 7.2'/><path d='M5.5 9.4V20a.6.6 0 0 0 .6.6h11.8a.6.6 0 0 0 .6-.6V9.4'/><path d='M9.8 20.4v-5.6h4.4v5.6'/>" },
+    { k: "club", label: "Club", hash: "#/home", ic: "<path d='M3.5 10.6 12 3.4l8.5 7.2'/><path d='M5.5 9.4V20a.6.6 0 0 0 .6.6h11.8a.6.6 0 0 0 .6-.6V9.4'/><path d='M9.8 20.4v-5.6h4.4v5.6'/>" },
     { k: "league", label: "League", hash: "#/league", ic: "<path d='M8 21.2h8'/><path d='M12 17.4v3.8'/><path d='M7.2 3.6h9.6v4.6a4.8 4.8 0 0 1-9.6 0z'/><path d='M7.2 5H4.4v1.8a3 3 0 0 0 3 3'/><path d='M16.8 5h2.8v1.8a3 3 0 0 1-3 3'/>" },
     { k: "squad", label: "Squad", hash: "#/squad", ic: "<circle cx='9.2' cy='7.8' r='3.4'/><path d='M3.6 20.2c0-3.1 2.5-5.2 5.6-5.2s5.6 2.1 5.6 5.2'/><path d='M15.4 4.8a3.4 3.4 0 0 1 0 6'/><path d='M16.8 15.2c2.3.5 3.9 2.3 3.9 5'/>" },
     { k: "nets", label: "Nets", hash: "#/training", ic: "<circle cx='12' cy='12' r='8.4'/><circle cx='12' cy='12' r='4.4'/><circle cx='12' cy='12' r='.9' fill='currentColor' stroke='none'/>" },
-    { k: "desk", label: "Desk", hash: "#/desk", ic: "<path d='M20.8 12.4v6a1 1 0 0 1-1 1H4.2a1 1 0 0 1-1-1v-6'/><path d='M3.2 12.4 6 5.6a1 1 0 0 1 .9-.6h10.2a1 1 0 0 1 .9.6l2.8 6.8'/><path d='M3.2 12.4h5.4l1.5 2.6h3.8l1.5-2.6h5.4'/>" }
+    // The Desk held this slot until the room was retired. The fixture list took
+    // it: every upcoming match on it opens a preview, which is where a manager
+    // goes between rounds now.
+    { k: "fixtures", label: "Fixtures", hash: "#/fixtures", ic: "<rect x='3.6' y='5.4' width='16.8' height='15' rx='2'/><path d='M3.8 10.2h16.4'/><path d='M8.4 3.4v4M15.6 3.4v4'/><path d='M7.6 14h3.2M13.2 14h3.2'/>" }
   ];
   // which dock lamp lights up for which route
   // Every room belongs to exactly one lamp. A room missing from this map lit
@@ -25,11 +28,11 @@
   // spent their first weeks: reachable, but with the dock going dark the
   // moment you arrived.
   var DOCK_MAP = {
-    club: ["club", "home", "matchday", "fixtures", "finance", "ledger", "worldclub", "market"],
-    league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "records", "champions", "natteams", "nations", "comps", "watch", "rankings", "team"],
+    club: ["club", "home"],
+    league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "champions", "natteams", "nations", "watch", "rankings", "team"],
     squad: ["squad", "player", "matchlab"],
     nets: ["training", "academy"],
-    desk: ["desk", "journal", "report", "ceremony", "wire", "lore", "dossier", "milestones", "whatif", "paper"]
+    fixtures: ["fixtures", "matchday", "preview", "report", "journal", "lore", "milestones", "paper"]
   };
   // immersive rooms keep the whole stage: no dock over the broadcast
   var DOCK_HIDE = { match: 1, friendly: 1, welcome: 1, create: 1, scorecard: 1, orders: 1 };

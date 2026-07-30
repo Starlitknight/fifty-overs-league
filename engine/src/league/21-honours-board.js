@@ -364,7 +364,7 @@
         "<section class='fo-hb-sec'><div class='fo-hb-k'>First on the board</div>" +
         "<p class='fo-hb-say'>An honour can be won by every club - but only one name goes down as the league&rsquo;s first.</p>" +
         "<div class='fo-hb-races'>" + race + "</div></section>" +
-        "<div class='fo-hb-foot'><a href='#/desk'>&#8592; The desk</a><a href='#/dossier'>The dossier &rsaquo;</a><a href='#/ceremony'>Awards night &rsaquo;</a></div>" +
+        "<div class='fo-hb-foot'><a href='#/league'>&#8592; My league</a><a href='#/squad'>The squad &rsaquo;</a></div>" +
         "</div>";
 
       page.querySelectorAll(".fo-hb-chip").forEach(function (b) {

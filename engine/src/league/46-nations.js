@@ -91,7 +91,7 @@
       "<h1>Playing For Your Country</h1>" +
       "<p>Three rounds a season the selectors take the best men in the land, wherever they play. Your club loses them for the day and is paid for the week &mdash; and that evening the nations play each other.</p></div>" +
       body +
-      "<div class='fo-ac-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/worldclub'>Your world club &rsaquo;</a></div>" +
+      "<div class='fo-ac-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/rankings'>The world rankings &rsaquo;</a></div>" +
       "</div></div>";
   }
 

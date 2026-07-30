@@ -5849,12 +5849,12 @@
         "<div class='fo-lg-tablewrap'><div class='fo-lg-thead'><span class='rk'>#</span><span class='av'></span><span class='nm'>Club</span><span class='c'>P</span><span class='c'>W</span><span class='c'>L</span><span class='c'>NRR</span><span class='c'>Pts</span></div>" +
         tableRows + "<div class='fo-lg-qnote'>" + ntTableNote + "</div></div></div>";
       var ntSecMatch = "<div class='fo-ov-sec'><h2>" + sec2Title + "</h2><div class='" + (own ? "fo-fx-wrap" : "fo-lg-side") + "'>" + fixturesPanel + "</div></div>";
-      // your place in the one world: claim a club, or manage the one you hold
+      // your place in the one world. A seat is claimed for you automatically on
+      // the first load, so there is nothing to click to take one - the bar just
+      // names the club you hold and opens the room where you pick its eleven.
       var ntClaimBar = "";
-      if (natPage && ownNat) {
-        ntClaimBar = wclm && wclm.country === nation
-          ? "<a class='fo-nt-claim held' href='#/worldclub'>You manage <b>" + E(wclm.club) + "</b> &middot; set your orders &rsaquo;</a>"
-          : "<a class='fo-nt-claim' href='#/worldclub'>Claim a club &mdash; take your place in the world &rsaquo;</a>";
+      if (natPage && ownNat && wclm && wclm.country === nation) {
+        ntClaimBar = "<a class='fo-nt-claim held' href='#/orders'>You manage <b>" + E(wclm.club) + "</b> &middot; set your orders &rsaquo;</a>";
       }
       var ntSecResults = "<div class='fo-ov-sec'><h2>Results</h2><div class='fo-rs-wrap'>" + resultsPanel + "</div></div>";
       page.innerHTML = natPage

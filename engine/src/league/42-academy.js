@@ -81,8 +81,7 @@
     css();
     page.innerHTML = shell("<div class='fo-ac-note'>Walking down to the academy&hellip;</div>");
     if (!jwt()) {
-      page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>Your academy belongs to your club in the served world. Sign in to the account that holds it and the colts will be here waiting.</p>" +
-        "<a class='fo-ac-btn' href='#/worldclub'>Your world club &rsaquo;</a></div>");
+      page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>Your academy belongs to your club in the served world. Sign in to the account that holds it and the colts will be here waiting.</p></div>");
       return;
     }
     rpc("world_my_status").then(function (st) {
@@ -91,8 +90,7 @@
         return;
       }
       if (!st.claim) {
-        page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>You don't hold a club in the served world yet. Claim one and its academy comes with it, boys and all.</p>" +
-          "<a class='fo-ac-btn' href='#/worldclub'>Claim a club &rsaquo;</a></div>");
+        page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>You don&rsquo;t hold a club in the served world yet. One is claimed for you on the next load, and its academy comes with it, boys and all.</p></div>");
         return;
       }
       render(page, st);
@@ -115,7 +113,7 @@
       "<h1>The Colts</h1>" +
       "<p>Boys arrive on their own, age on their own, and walk into your first team at twenty-one whether you were watching or not. What you decide is how good a place they learn in.</p></div>" +
       body +
-      "<div class='fo-ac-foot'><a href='#/worldclub'>&lsaquo; Your world club</a><a href='#/finance'>The books &rsaquo;</a></div>" +
+      "<div class='fo-ac-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/training'>The nets &rsaquo;</a></div>" +
       "</div></div>";
   }
 

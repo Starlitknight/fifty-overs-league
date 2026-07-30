@@ -210,7 +210,7 @@
       sec("Letters to the editor", letters) +
       sec("Small advertisements", ads, "ads") +
       "</div>" +
-      "<div class='fo-gz-foot'>Printed nightly for the members of " + E(me.name) + " &middot; <a href='#/desk'>The desk</a> &middot; <a href='#/planet'>World cricket</a> &middot; <a href='#/records'>The record book</a></div>" +
+      "<div class='fo-gz-foot'>Printed nightly for the members of " + E(me.name) + " &middot; <a href='#/league'>My league</a> &middot; <a href='#/planet'>World cricket</a> &middot; <a href='#/almanack'>The world almanack</a></div>" +
       "</div></div>";
   };
   window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] !== "#/paper") document.body.classList.remove("fo-gz-on"); });

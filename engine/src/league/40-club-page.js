@@ -384,7 +384,6 @@
         "<a class='fo-cp-back' href='#/nation?n=" + encodeURIComponent(cid) + "'>&lsaquo; " + E(natName(cid)) + " league</a>" +
         (isMine ? "<div id='fo-cp-mine'></div>" : "") +
         tabBar + bodyHTML +
-        (!isMine && cl ? "<a class='fo-cp-cta' href='#/worldclub'>&#9876; Challenge " + E(name) + " to a friendly &rsaquo;</a>" : "") +
         "<div class='fo-cp-foot'><a href='#/rankings'>The world rankings &rsaquo;</a><a href='#/nation?n=" + encodeURIComponent(cid) + "'>The league table &rsaquo;</a></div>" +
         "</div></div>";
 
@@ -432,7 +431,7 @@
             });
           } else if (host) {
             host.className = "fo-cp-mineact";
-            host.innerHTML = "<a href='#/training'>The nets &rsaquo;</a><a href='#/academy'>The academy &rsaquo;</a><a href='#/worldclub'>Club office &rsaquo;</a><a href='#/squad'>Your squad &rsaquo;</a>";
+            host.innerHTML = "<a href='#/training'>The nets &rsaquo;</a><a href='#/academy'>The academy &rsaquo;</a><a href='#/orders'>The orders &rsaquo;</a><a href='#/squad'>Your squad &rsaquo;</a>";
           }
         } catch (eMine) {}
       }

@@ -154,8 +154,7 @@
         ? "<a class='fo-md-cta' href='#/report?i=" + reportIx + "'>Read the report &rsaquo;</a>"
         : (live ? "<a class='fo-md-cta hot' href='#/home'>&#9679; LIVE NOW &middot; take your seat &rsaquo;</a>" : "") +
           "<a class='fo-md-cta" + (live ? "" : " hot") + "' href='#/orders'>" +
-          ((App.orders && App.orders.saved) ? "Orders saved &#10003; &middot; change the plan" : "Set your orders") + " &rsaquo;</a>" +
-          "<a class='fo-md-cta' href='#/dossier'>The dossier &rsaquo;</a>";
+          ((App.orders && App.orders.saved) ? "Orders saved &#10003; &middot; change the plan" : "Set your orders") + " &rsaquo;</a>";
 
       page.innerHTML =
         "<div class='fo-md'>" +

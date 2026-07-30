@@ -291,7 +291,7 @@
       planPanel +
       "<div class='fo-ns-panel'><h3>Development report</h3>" + (rows || "<p class='fo-ns-note'>No gains recorded yet. The first week's work shows after the round.</p>") + "</div>" +
       "</div>" +
-      "<div class='fo-cer-actions'><a class='fo-ls-btn ghost' href='#/desk'>&lsaquo; The desk</a><a class='fo-ls-btn ghost' href='#/squad'>The squad &rsaquo;</a></div>" +
+      "<div class='fo-cer-actions'><a class='fo-ls-btn ghost' href='#/academy'>&lsaquo; The academy</a><a class='fo-ls-btn ghost' href='#/squad'>The squad &rsaquo;</a></div>" +
       "</div></div>";
     // a programme changed is a standing order sent to the world, debounced
     page.querySelectorAll(".fo-ns-prog").forEach(function (sl) {

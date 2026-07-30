@@ -11,8 +11,8 @@
    This is the building's index. One panel, opened from the masthead on every
    screen size, grouping every room the game has: what it is called, what it
    is for, and whether you are standing in it. It proxies the engine's own
-   pills (Manual, Admin, Log out) at the foot, so nothing that used to be in
-   the old drawer is lost.
+   pills (Admin, Log out) at the foot, so nothing that used to be in the old
+   drawer is lost.
 
    Pure overlay: it adds a panel and reads window.location. No page changes
    its markup for this.
@@ -32,28 +32,18 @@
     net: "<rect x='3.6' y='5.2' width='16.8' height='13.6' rx='1.6'/><path d='M9.2 5.4v13.2M14.8 5.4v13.2'/><path d='M3.8 9.6h16.4M3.8 14.4h16.4'/>",
     star: "<path d='m12 3.6 2.5 5.4 5.9.7-4.4 4 1.2 5.8L12 16.6 6.8 19.5 8 13.7l-4.4-4 5.9-.7z'/>",
     sheet: "<path d='M6.4 3.6h7.2l4 4v12.8a.6.6 0 0 1-.6.6H6.4a.6.6 0 0 1-.6-.6V4.2a.6.6 0 0 1 .6-.6z'/><path d='M13.4 3.8v4h4'/><path d='M8.8 12.4h6.4M8.8 16h4.4'/>",
-    coin: "<ellipse cx='12' cy='6.6' rx='7' ry='2.8'/><path d='M5 6.6v10.8c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6.6'/><path d='M5 12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8'/>",
-    receipt: "<path d='M6.4 3.6h11.2v16.8l-2.2-1.4-2.3 1.4-2.3-1.4-2.2 1.4-2.2-1.4z'/><path d='M9 8.4h6M9 12h6'/>",
     cal: "<rect x='3.8' y='5.4' width='16.4' height='14.8' rx='2'/><path d='M3.8 10h16.4'/><path d='M8.4 3.6v3.6M15.6 3.6v3.6'/>",
     pitch: "<ellipse cx='12' cy='12' rx='8.8' ry='6.6'/><rect x='10.3' y='7.2' width='3.4' height='9.6' rx='1'/>",
-    glass: "<circle cx='10.8' cy='10.8' r='6.2'/><path d='m15.4 15.4 5 5'/>",
     medal: "<circle cx='12' cy='14.8' r='5.2'/><path d='M8.4 10 6 3.8h12L15.6 10'/>",
-    case: "<rect x='3.4' y='7.4' width='17.2' height='12.4' rx='2'/><path d='M9 7.2V5.4a1.4 1.4 0 0 1 1.4-1.4h3.2A1.4 1.4 0 0 1 15 5.4v1.8'/><path d='M3.6 12.6h16.8'/>",
     globe: "<circle cx='12' cy='12' r='8.4'/><path d='M3.7 12h16.6'/><path d='M12 3.6c2.2 2.4 3.3 5.3 3.3 8.4s-1.1 6-3.3 8.4c-2.2-2.4-3.3-5.3-3.3-8.4s1.1-6 3.3-8.4z'/>",
     table: "<rect x='3.6' y='4.6' width='16.8' height='14.8' rx='1.8'/><path d='M3.8 9.4h16.4M3.8 14.6h16.4'/><path d='M9 4.8v14.4'/>",
     plane: "<path d='M20.4 4.2 3.6 11.4l5.6 2.2 2.2 5.6z'/><path d='m9.2 13.6 5.4-5.4'/>",
     crown: "<path d='M3.8 7.2 7.4 12l4.6-6.2L16.6 12l3.6-4.8-1.5 11.2H5.3z'/><path d='M5.6 19.8h12.8'/>",
-    flag: "<path d='M6 21V3.6'/><path d='M6 4.6h11.6l-2.2 3.6 2.2 3.6H6'/>",
     chart: "<path d='M3.8 20.2h16.4'/><path d='M7 20V13M12 20V6.6M17 20v-9'/>",
     map: "<path d='m3.8 6.6 5.2-2.2 6 2.4 5.2-2.2v12.8l-5.2 2.2-6-2.4-5.2 2.2z'/><path d='M9 4.6v12.6M15 6.8v12.6'/>",
     book: "<path d='M4.2 4.6h6a3 3 0 0 1 3 3v11.8a2.4 2.4 0 0 0-2.4-2.4H4.2z'/><path d='M19.8 4.6h-6a3 3 0 0 0-3 3v11.8a2.4 2.4 0 0 1 2.4-2.4h6.6z'/>",
     shield: "<path d='M12 3.6 5 6.2v5.4c0 4.2 2.9 7.4 7 8.8 4.1-1.4 7-4.6 7-8.8V6.2z'/>",
-    news: "<path d='M4.2 5.6h12.4v13.2a1.4 1.4 0 0 1-1.4 1.4H5.6a1.4 1.4 0 0 1-1.4-1.4z'/><path d='M16.6 8.6h2.2a1.4 1.4 0 0 1 1.4 1.4v8.8a1.4 1.4 0 0 1-2.8 0'/><path d='M7 9h6.6M7 12.6h6.6M7 16h4'/>",
-    wire: "<path d='M12 13.6a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'/><path d='M7.6 7.2a6.2 6.2 0 0 0 0 8.8M16.4 16a6.2 6.2 0 0 0 0-8.8'/><path d='M4.6 4.2a10.4 10.4 0 0 0 0 14.8M19.4 19a10.4 10.4 0 0 0 0-14.8'/>",
-    cup: "<path d='M7.4 4h9.2v4.6a4.6 4.6 0 0 1-9.2 0z'/><path d='M7.4 5.4H4.8v1.7a2.9 2.9 0 0 0 2.9 2.9M16.6 5.4h2.6v1.7a2.9 2.9 0 0 1-2.9 2.9'/><path d='M12 13.4v3.8M8.4 20.4h7.2'/>",
-    clock: "<circle cx='12' cy='12' r='8.4'/><path d='M12 6.8V12l3.6 2.2'/>",
-    manual: "<path d='M5 4.6h9.4a2.6 2.6 0 0 1 2.6 2.6v12.2H7.6A2.6 2.6 0 0 1 5 16.8z'/><path d='M17 4.6h2v14.8h-2'/><path d='M8.4 8.6h5.2M8.4 12h5.2'/>",
-    swap: "<path d='M4.4 8.2h13.2l-3.2-3.4M19.6 15.8H6.4l3.2 3.4'/>"
+    news: "<path d='M4.2 5.6h12.4v13.2a1.4 1.4 0 0 1-1.4 1.4H5.6a1.4 1.4 0 0 1-1.4-1.4z'/><path d='M16.6 8.6h2.2a1.4 1.4 0 0 1 1.4 1.4v8.8a1.4 1.4 0 0 1-2.8 0'/><path d='M7 9h6.6M7 12.6h6.6M7 16h4'/>"
   };
   function glyph(k) {
     return "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.55' stroke-linecap='round' stroke-linejoin='round'>" +
@@ -63,48 +53,36 @@
   // THE BUILDING, room by room. Order is the order a manager meets them.
   var MAP = [
     { k: "Your club", rooms: [
-      ["club", "house", "Home ground", "The day, the weather and your next match"],
+      ["home", "house", "Home ground", "The day, the weather and your next match"],
       ["squad", "people", "The squad", "Every man on the books, and the eleven you pick"],
       ["training", "net", "The nets", "What each man works on, week by week"],
       ["academy", "star", "The academy", "The colts coming through, and what a level buys"],
-      ["worldclub", "sheet", "Your world club", "The teamsheet the umpire plays, and your club's face"],
-      ["market", "swap", "The transfer market", "Scout, buy and sell - sealed offers, three-day windows"],
-      ["finance", "coin", "The books", "The crowd, the gate, the sponsor and the ground"],
-      ["ledger", "receipt", "The club ledger", "The season's account as the office keeps it"],
       ["fixtures", "cal", "The fixture list", "Every match of the summer, dated"],
       ["matchday", "pitch", "Matchday", "The pitch, the head-to-head and the probable XIs"],
-      ["dossier", "glass", "The dossier", "What the scout made of the next opponent"],
-      ["milestones", "medal", "The honours board", "The plaques won, and the ones still open"],
-      ["desk", "case", "The desk", "The morning's post, laid out in the office"]
+      ["milestones", "medal", "The honours board", "The plaques won, and the ones still open"]
     ] },
     { k: "The world", rooms: [
       ["planet", "globe", "World cricket", "Every nation's round, live on the world clock"],
       ["league", "table", "My league", "The table, the results and who is chasing whom"],
       ["nations", "plane", "The international game", "The windows, the squads, the tours and the caps"],
       ["champions", "crown", "The Champions Cup", "The champion club of every nation, one knockout"],
-      ["comps", "flag", "The invitationals", "Competitions managers put on themselves"],
       ["rankings", "chart", "The world rankings", "One ladder for every club on earth"],
       ["world", "map", "The world map", "The globe, nation by nation"],
       ["atlas", "book", "The atlas", "Every league, every club, every ground"],
       ["team", "shield", "Club dossiers", "A rival read properly, squad and all"]
     ] },
     { k: "The record", rooms: [
-      ["records", "book", "The record book", "Every run and wicket this save has produced"],
       ["almanack", "globe", "The world almanack", "The book of record for the whole planet"],
       ["paper", "news", "The gazette", "One front page a day, the same on every phone"],
-      ["wire", "wire", "The wire", "What moved while you were living your life"],
-      ["lore", "book", "The journal", "The book of the league, and the people in it"],
-      ["ceremony", "cup", "The season so far", "Your year, told as a story"],
-      ["whatif", "clock", "The time machine", "Replay any match that was ever played"],
-      ["guide", "manual", "The manual", "How every part of the game actually works"]
+      ["lore", "book", "The journal", "The book of the league, and the people in it"]
     ] }
   ];
 
-  function curRoom() { return ((location.hash || "#/club").split("?")[0] || "").replace("#/", "") || "club"; }
+  function curRoom() { return ((location.hash || "#/home").split("?")[0] || "").replace("#/", "") || "home"; }
   // rooms that are really the same door, so the lamp lights in one place
-  var ALIAS = { home: "club", nation: "league", natteams: "nations", circuit: "world", tour: "world",
+  var ALIAS = { club: "home", nation: "league", natteams: "nations", circuit: "world", tour: "world",
     player: "squad", matchlab: "squad", star: "squad", city: "atlas", side: "atlas", boss: "atlas",
-    report: "records", journal: "lore", scorecard: "records" };
+    report: "lore", journal: "lore", scorecard: "lore" };
 
   function css() {
     if (document.getElementById("fo-menu-css")) return;
@@ -155,11 +133,11 @@
     } catch (e) {}
   }
 
-  // The engine's own controls - Manual, Admin, Log out - keep working from
-  // here, so the menu replaces the old drawer without losing anything it
-  // carried. Only those three: every other pill is a room the index already
-  // lists properly, and the status chips are not links at all.
-  var KEEP = ["fo-guide", "fo-league", "fo-logout"];
+  // The engine's own controls - Admin, Log out - keep working from here, so
+  // the menu replaces the old drawer without losing anything it carried. Only
+  // those two: every other pill is a room the index already lists properly,
+  // and the status chips are not links at all.
+  var KEEP = ["fo-league", "fo-logout"];
   function engineLinks(foot) {
     try {
       var tb = document.getElementById("topbar"); if (!tb) return;

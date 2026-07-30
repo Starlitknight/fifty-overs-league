@@ -692,7 +692,9 @@
       var lv = tb.querySelector("a.fo-live"); if (lv) lv.remove();
       // retired pills (still routable: Matches panel, Live pill, home quick links)
       ["fo-friendly", "fo-matchday"].forEach(function (c) { var st = tb.querySelector("a." + c); if (st) st.remove(); });
-      addNav("fo-guide", "Manual", function () { location.hash = "#/guide"; if (typeof window.route === "function") window.route(); });
+      // The Manual is retired until a better one is written; the pill goes with
+      // the room, and any pill left over from an older build is swept away.
+      var gd0 = tb.querySelector("a.fo-guide"); if (gd0) gd0.remove();
       try { foBellWire(tb, wrap); } catch (eB) {}
       // Admin is founder-only: add it for the league founder, remove it for
       // everyone else (so a player never inherits a stale Admin link).
@@ -714,7 +716,7 @@
       // active-pill marking for overlay-added links (engine handles its own via data-nav)
       try {
         var route0 = (location.hash || "#/club").split("?")[0];
-        var navMap = { "fo-guide": "#/guide", "fo-circuit": "#/circuit" };
+        var navMap = { "fo-circuit": "#/circuit" };
         wrap.querySelectorAll("a").forEach(function (a) {
           for (var c in navMap) if (a.classList.contains(c)) a.classList.toggle("on", route0 === navMap[c]);
         });

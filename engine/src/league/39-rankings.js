@@ -105,7 +105,7 @@
       "<h1>The World Rankings</h1>" +
       "<p>Rolling ratings over every match the umpire has ever banked. League wins move the needle; Champions Cup nights move it harder.</p></div>" +
       body +
-      "<div class='fo-rk-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/records'>The record book &rsaquo;</a></div>" +
+      "<div class='fo-rk-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/almanack'>The world almanack &rsaquo;</a></div>" +
       "</div></div>";
   };
 
