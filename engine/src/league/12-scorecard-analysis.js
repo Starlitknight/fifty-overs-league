@@ -5757,7 +5757,19 @@
           }).join("");
         } else {
           var ws0 = srv.pl.WORLD_START || 0;
-          var nextDay = srv.cal.seasonNo < 1 ? ws0 : srv.cal.dayInSeason > 17 ? ws0 + srv.cal.seasonNo * 25 : null;
+          // the league returns on the next season's opening day - or on the next
+          // round's day, when today is one of the season's rest days
+          var nextDay = null;
+          try {
+            if (srv.cal.seasonNo < 1) nextDay = ws0;
+            else if (srv.cal.leagueOver) nextDay = srv.pl.dayOfSeasonRound(srv.cal.seasonNo + 1, 1);
+            else {
+              for (var nr0 = 1; nr0 <= 18 && nextDay == null; nr0++) {
+                var dr0 = srv.pl.dayOfRound(nr0);
+                if (dr0 > srv.cal.dayInSeason) nextDay = srv.pl.dayOfSeasonRound(srv.cal.seasonNo, nr0);
+              }
+            }
+          } catch (eNx) {}
           var ndDate = "";
           try {
             if (nextDay != null) {
@@ -5766,7 +5778,8 @@
             }
           } catch (eNd) {}
           mdRows = "<div class='fo-nt-quiet'>No league round today" +
-            (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason > 17 ? " &mdash; the cup window is on" : "") +
+            (srv.cal.seasonNo >= 1 && srv.cal.leagueOver ? " &mdash; the cup window is on"
+              : srv.cal.seasonNo >= 1 ? " &mdash; the league rests" : "") +
             (nextDay != null ? ". The league returns" + ndDate + "." : ".") + "</div>";
         }
         var stateWord = srv.state === "live" ? "&#9679; Round " + srv.cal.round + " &mdash; in play now"
@@ -5775,7 +5788,7 @@
           : "Matchday";
         // -- still to come
         var upHTML = "";
-        if (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason >= 0 && srv.cal.dayInSeason < 17) {
+        if (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason >= 0 && srv.cal.round && srv.cal.round < 18) {
           var sidesBy = {};
           try {
             var nmOv9 = window.__foWorldNames ? window.__foWorldNames.get(nation) : null;
@@ -5787,7 +5800,7 @@
           var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
           var ups = [];
           for (var ur = srv.cal.round + 1; ur <= 18; ur++) {
-            var dayU = (srv.pl.WORLD_START || 0) + (srv.cal.seasonNo - 1) * 25 + (ur - 1);
+            var dayU = srv.pl.dayOfSeasonRound(srv.cal.seasonNo, ur);
             var dt9 = new Date(srv.pl.EPOCH + dayU * 86400000);
             ups.push("<div class='fo-nt-uround'><i>Round " + ur + " &middot; " + DOW[dt9.getUTCDay()] + " " + dt9.getUTCDate() + " " + MON[dt9.getUTCMonth()] + " &middot; " + hhFmt(srv.hour) + "</i>" +
               schedA[ur - 1].map(function (p9) { return "<span>" + E((sidesBy[p9[0]] || {}).name || "") + " v " + E((sidesBy[p9[1]] || {}).name || "") + "</span>"; }).join("") + "</div>");

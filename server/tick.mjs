@@ -15,7 +15,8 @@
 //     next invocation, however late.
 import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
-import { EPOCH, dayIx, daySettled, seedOf, natHour, scheduleOf, ROUNDS, isWindowRound } from './clock.mjs';
+import { EPOCH, dayIx, daySettled, seedOf, natHour, scheduleOf, ROUNDS, isWindowRound,
+         CYCLE, LEAGUE_DAYS, roundOfDay, CUP_DAYS } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
 import { ensureYouth, ageYouth, playColtsRound, computeColts, coltRecords } from './youth.mjs';
 import { settleMoney } from './economy.mjs';
@@ -334,9 +335,11 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
   if (claim.rows[0].status === 'done') return { skipped: true };
   const season = (await pool.query('SELECT * FROM seasons WHERE country_id=$1 ORDER BY season_no DESC LIMIT 1', [country])).rows[0];
   if (!season) throw new Error('no season for ' + country);
-  const round = day - season.start_day + 1;
+  // WHICH ROUND IS THIS DAY? Not day+1 any more: the league runs three rounds
+  // then rests, so the mapping is the calendar's to give.
+  const round = roundOfDay(day - season.start_day);
   let played = 0;
-  if (round >= 1 && round <= ROUNDS) {
+  if (round) {
     // THE SELECTORS MEET FIRST. On a window round the fifteen is named before
     // a ball is bowled and banked for good, so the round that follows knows
     // exactly who is missing and a re-run can never pick a different squad.
@@ -374,7 +377,7 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
   await settleMoney(pool, country);
   await rebuildSnapshots(pool, country, now);
   await pool.query(`UPDATE ticks SET status='done', finished_at=now(), detail=$2 WHERE key=$1`,
-    [key, JSON.stringify({ round: round >= 1 && round <= ROUNDS ? round : null, played })]);
+    [key, JSON.stringify({ round: round || null, played })]);
   return { skipped: false, round, played };
 }
 
@@ -385,7 +388,7 @@ export async function runDue(pool, host, country, { now = Date.now(), failAfter 
   const out = [];
   for (let day = season.start_day; day <= dayIx(now); day++) {
     if (!daySettled(now, day, country)) break;
-    if (day - season.start_day + 1 > ROUNDS) break;
+    if (day - season.start_day >= LEAGUE_DAYS) break;   // the closing week is the cups' own business
     out.push({ day, ...(await runTick(pool, host, country, day, { now, failAfter })) });
   }
   return out;
@@ -482,20 +485,22 @@ export async function runAllDue(pool, host, opts = {}) {
 }
 
 // ============================================================================
-// P4/P5 — THE CUP WINDOW, on the real engine. Seasons occupy days
-// start_day..start_day+17; then five closing days:
-//   +18  Champions Cup play-ins 18:00        World Cup —
-//   +19  Champions Cup last-16 15:00         World Cup last-16 12:00
-//   +20  Champions Cup quarters 15:00        World Cup quarters 12:00
-//   +21  Champions Cup semis 20:00           World Cup semis 18:00
-//   +22  THE FINALS: World Cup 18:00, Champions Cup 21:00
+// P4/P5 — THE CUP WINDOW, on the real engine. The league block occupies days
+// start_day..start_day+23 (three rounds, a rest day, six times over); then the
+// closing week:
+//   +24  Champions Cup play-ins 18:00        World Cup —
+//   +25  Champions Cup last-16 15:00         World Cup last-16 12:00
+//   +26  Champions Cup quarters 15:00        World Cup quarters 12:00
+//   +27  Champions Cup semis 20:00           World Cup semis 18:00
+//   +28  THE FINALS: World Cup 18:00, Champions Cup 21:00
+//   +29  rest
 // A stage settles once its three-hour window closes (global UTC hours).
 // Same laws as the leagues: idempotency keys per stage, results immutable,
-// snapshots derived. Season s+1 begins at start_day + 25, forever.
+// snapshots derived. Season s+1 begins at start_day + 30, forever.
 // ============================================================================
 const CUP_STAGES = {
-  wcl: [['pi', 18, 18], ['r16', 19, 15], ['qf', 20, 15], ['sf', 21, 20], ['final', 22, 21]],
-  wc: [['r16', 19, 12], ['qf', 20, 12], ['sf', 21, 18], ['final', 22, 18]]
+  wcl: [['pi', CUP_DAYS.pi, 18], ['r16', CUP_DAYS.r16, 15], ['qf', CUP_DAYS.qf, 15], ['sf', CUP_DAYS.sf, 20], ['final', CUP_DAYS.final, 21]],
+  wc: [['r16', CUP_DAYS.r16, 12], ['qf', CUP_DAYS.qf, 12], ['sf', CUP_DAYS.sf, 18], ['final', CUP_DAYS.final, 18]]
 };
 const DAY_MS = 86400000;
 function stageClosed(now, startDay, offset, hour) {
@@ -594,7 +599,7 @@ export async function runCupWindow(pool, host, { now = Date.now() } = {}) {
   return all;
 }
 async function runCupSeason(pool, host, seasonNo, startDay, now) {
-  if (dayIx(now) < startDay + 18) return { skipped: 'league days' };
+  if (dayIx(now) < startDay + LEAGUE_DAYS) return { skipped: 'league days' };
   const out = { wcl: [], wc: [] };
   let champs = null;
 
@@ -653,17 +658,17 @@ async function runCupSeason(pool, host, seasonNo, startDay, now) {
   return out;
 }
 
-// season s+1 begins at start_day + 25 in every nation, forever
+// season s+1 begins at start_day + 30 in every nation, forever
 export async function rollSeasons(pool, { now = Date.now() } = {}) {
   const rows = await pool.query(
     `SELECT DISTINCT ON (country_id) country_id, season_no, start_day FROM seasons ORDER BY country_id, season_no DESC`);
   const rolled = [];
   for (const r of rows.rows) {
-    if (dayIx(now) < r.start_day + 25) continue;
+    if (dayIx(now) < r.start_day + CYCLE) continue;
     await pool.query(
       `INSERT INTO seasons(country_id, season_no, start_day, schedule) VALUES ($1,$2,$3,$4)
        ON CONFLICT DO NOTHING`,
-      [r.country_id, r.season_no + 1, r.start_day + 25, JSON.stringify(scheduleOf(r.country_id, r.season_no + 1))]);
+      [r.country_id, r.season_no + 1, r.start_day + CYCLE, JSON.stringify(scheduleOf(r.country_id, r.season_no + 1))]);
     // a year on every colt, and a senior shirt for anyone who has reached 21
     try { await ageYouth(pool, r.country_id, r.season_no); }
     catch (eA) { console.error('academy rollover failed for ' + r.country_id + ':', eA.message); }
@@ -708,7 +713,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       if (mk.bids) lines.push('market: ' + mk.bids + ' offers from bot clubs');
       if (mk.settled.length) lines.push('market: ' + sold.length + ' sold of ' + mk.settled.length + ' windows closed');
     } catch (eMk) { lines.push('market: ' + eMk.message); }
-    // THE INTERNATIONAL WINDOWS, at 18:00 UTC on rounds 5, 9 and 13 — after
+    // THE INTERNATIONAL WINDOWS, at 18:00 UTC on the rest days that close the
+    // first three blocks (days 3, 7 and 11) — after
     // most of the planet's league cricket, and healed up to four days back
     // if the cron was dead for one
     try {

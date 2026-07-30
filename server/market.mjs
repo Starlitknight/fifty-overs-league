@@ -23,7 +23,7 @@
 // facts, so a re-run produces the same market; the money is walked out of the
 // deals by the books like every other line; and a settled transfer is a fact
 // in a table, never a number quietly written onto a club.
-import { dayIx, seedOf } from './clock.mjs';
+import { dayIx, seedOf, nextRoundAfterDay } from './clock.mjs';
 
 export const WINDOW_DAYS = 3;              // a listing stands this many world days
 export const MIN_BID_PCT = 0.55;           // an offer below this is not an offer
@@ -280,7 +280,7 @@ async function moveMan(pool, L, win, today) {
   const season = (await pool.query(
     'SELECT season_no, start_day FROM seasons WHERE country_id=$1 ORDER BY season_no DESC LIMIT 1',
     [win.country_id])).rows[0];
-  const round = season ? Math.max(1, today - season.start_day + 2) : 1;   // he is available from the NEXT round
+  const round = season ? nextRoundAfterDay(today - season.start_day) : 1;   // he is available from the NEXT round
   const prior = man.career || null, priorI = man.intl || null;
   man.carry = addCarry(man.carry, prior);
   if (priorI) man.carryIntl = addCarry(man.carryIntl, priorI);

@@ -21,7 +21,7 @@
 // the living patch it was played with (name -> {e,f,n}), so the theatre can
 // re-derive the generated squad, lay the patch over it, and replay the
 // identical match forever after.
-import { dayIx } from './clock.mjs';
+import { dayIx, dayOfRound } from './clock.mjs';
 import { fantasyPoints, ratePoints } from './ratings.mjs';
 
 const FORMW = ['abysmal', 'poor', 'shaky', 'steady', 'good', 'strong', 'excellent'];
@@ -356,7 +356,7 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     x.season - y.season || x.round - y.round || x.slot - y.slot ||
     (x.name < y.name ? -1 : x.name > y.name ? 1 : 0) || (x.intl ? 1 : 0) - (y.intl ? 1 : 0));
   for (const L of ordered) {
-    const day = (startOf[L.season] ?? 0) + L.round - 1;
+    const day = (startOf[L.season] ?? 0) + (dayOfRound(L.round) ?? (L.round - 1));
     const e = rec(L.slot, L.name);
     e.caps++;
     const c = L.intl ? e.intl : e.car;

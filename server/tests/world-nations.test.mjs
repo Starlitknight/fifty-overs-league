@@ -30,14 +30,17 @@ import {
   ensureCallups, absentBySlot, squadPlayers, seasonSquad, runWindows,
   computeNations, windowsOn, touringOn
 } from '../nations.mjs';
-import { EPOCH, DAY, WINDOWS, INTL_HOUR, isWindowRound } from '../clock.mjs';
+import { EPOCH, DAY, WINDOWS, WINDOW_DAYS, INTL_HOUR, isWindowRound, windowDayOfRound, dayOfRound } from '../clock.mjs';
 
 const DBNAME = 'foworld_nations_test';
 let pool, host;
 const START = 101;                                   // season 1, day 101 = round 1
 const T0 = EPOCH + 100 * DAY + 12 * 3600000;
-const WIN_ROUND = WINDOWS[0];                        // round 5
-const WIN_DAY = START + WIN_ROUND - 1;               // world day 105
+// The tour is played on a REST DAY - day 3 of the season - and the men it takes
+// are missing from their clubs' NEXT round, which is round 4.
+const WIN_ROUND = WINDOWS[0];                        // round 4
+const WIN_DAY = START + WINDOW_DAYS[0];              // world day 104, the rest day
+const WIN_ROUND_DAY = START + dayOfRound(WIN_ROUND); // world day 105, when the clubs play it
 const U1 = '11111111-1111-4111-8111-111111111111';
 
 const atDay = (day, hour) => EPOCH + day * DAY + hour * 3600000;
@@ -199,9 +202,13 @@ before(async () => {
 });
 after(async () => { await pool.end(); });
 
-test('a window round is a window round, everywhere', async () => {
-  assert.deepEqual(WINDOWS, [5, 9, 13]);
+test('a window falls on a rest day, and robs the round that follows', async () => {
+  assert.deepEqual(WINDOWS, [4, 7, 10], 'the rounds the three windows rob');
+  assert.deepEqual(WINDOW_DAYS, [3, 7, 11], 'the rest days the tours are played on');
   assert.ok(isWindowRound(WIN_ROUND) && !isWindowRound(WIN_ROUND + 1));
+  // no club plays on a window day: that is the point of putting it on the rest
+  assert.equal(dayOfRound(WIN_ROUND), WINDOW_DAYS[0] + 1, 'the round is the day after the tour');
+  assert.equal(windowDayOfRound(WIN_ROUND), WINDOW_DAYS[0]);
   const w = await windowsOn(pool, WIN_DAY);
   assert.equal(w.length, 19, 'the whole planet is in the window on the same day');
   assert.ok(w.every(x => x.round === WIN_ROUND));
@@ -209,7 +216,7 @@ test('a window round is a window round, everywhere', async () => {
 });
 
 test('the window: the selectors name a squad, it is banked, and the club loses those men', async () => {
-  // four quiet rounds first, so the selectors have some form to read
+  // three quiet rounds first, so the selectors have some form to read
   await runDue(pool, host, 'eng', { now: atDay(WIN_DAY - 1, 23) });
   const first = await ensureCallups(pool, 'eng', 1, WIN_ROUND);
   assert.equal(first.length, SQUAD_SIZE);
@@ -237,7 +244,7 @@ test('the window: the selectors name a squad, it is banked, and the club loses t
     [WIN_ROUND, JSON.stringify({ xi, batOrder: xi, bat: xi, captain: xi[0] })], atDay(WIN_DAY, 1));
   assert.equal(sub.rows[0].r.ok, true);
 
-  const ran = await runDue(pool, host, 'eng', { now: atDay(WIN_DAY, 23) });
+  const ran = await runDue(pool, host, 'eng', { now: atDay(WIN_ROUND_DAY, 23) });
   assert.equal(ran[ran.length - 1].round, WIN_ROUND);
 
   // THE MEN ARE NOT THERE. Nobody the selectors took appears on his own
@@ -313,7 +320,10 @@ test('the club is paid for the men it lost, in the books own walk', async () => 
 });
 
 test('the round orders reveal who is away, per club, to any watcher', async () => {
-  const r = await as(U1, `SELECT public.world_round_orders('eng', $1) AS j`, [WIN_ROUND], atDay(WIN_DAY, 23));
+  // asked on the day the CLUBS play the window round - the day after the tour.
+  // Orders stay sealed until an hour before the first ball, and that ball is
+  // bowled a day later than it used to be.
+  const r = await as(U1, `SELECT public.world_round_orders('eng', $1) AS j`, [WIN_ROUND], atDay(WIN_ROUND_DAY, 23));
   const j = r.rows[0].j;
   assert.equal(j.window, true);
   const flat = Object.values(j.away).flatMap(o => Object.keys(o));
@@ -321,7 +331,7 @@ test('the round orders reveal who is away, per club, to any watcher', async () =
   // and the living state the theatre reads carries the same absence
   const marked = Object.values(j.living).flatMap(o => Object.entries(o).filter(([, v]) => v && v.a).map(([n]) => n));
   assert.equal(marked.length, SQUAD_SIZE);
-  const r2 = await as(U1, `SELECT public.world_round_orders('eng', $1) AS j`, [WIN_ROUND + 1], atDay(WIN_DAY + 1, 23));
+  const r2 = await as(U1, `SELECT public.world_round_orders('eng', $1) AS j`, [WIN_ROUND + 1], atDay(START + dayOfRound(WIN_ROUND + 1), 23));
   assert.equal(r2.rows[0].j.window, false, 'an ordinary round takes nobody');
   assert.deepEqual(r2.rows[0].j.away, {});
 });

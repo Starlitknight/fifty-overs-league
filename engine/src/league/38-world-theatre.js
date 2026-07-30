@@ -98,11 +98,19 @@
       return (g && g.players) || null;
     } catch (e) { return null; }
   }
-  // the server's calendar: season/round for a world day (season 1 = day 5)
+  // The server's calendar for a world day. It used to do the arithmetic itself
+  // (season = day/25, round = day%25 + 1) which was true only while every day
+  // was a match day. The planet owns the mapping now; this asks it.
+  //   round is NULL on a rest day and through the closing week.
   var WORLD_START = 0;
   function serverCal(now) {
-    var d = P().dayIx(now), rel = d - WORLD_START;
-    return { seasonNo: Math.floor(rel / 25) + 1, round: (rel % 25) + 1, dayInSeason: rel % 25 };
+    var pl = P(), d = pl.dayIx(now), rel = d - WORLD_START;
+    var cyc = pl.CYCLE || 30;
+    var seasonNo = Math.floor(rel / cyc) + 1, di = ((rel % cyc) + cyc) % cyc;
+    if (rel < 0) return { seasonNo: seasonNo, round: null, dayInSeason: rel, rest: true };
+    var round = pl.roundOfDay ? pl.roundOfDay(di) : null;
+    return { seasonNo: seasonNo, round: round, dayInSeason: di, rest: !round,
+             leagueOver: di >= (pl.LEAGUE_DAYS || 24) };
   }
   // the server's schedule, mirrored: same circle method, same season shuffle
   function schedMirror(rid, seasonNo) {
@@ -121,7 +129,7 @@
   }
   function serverFixtures(rid, now) {
     var pl = P(), cal = serverCal(now);
-    if (cal.seasonNo < 1 || cal.dayInSeason < 0 || cal.dayInSeason > 17) return { cal: cal, fx: [] };
+    if (cal.seasonNo < 1 || cal.dayInSeason < 0 || !cal.round) return { cal: cal, fx: [] };
     var sides = pl.sidesOf(rid); if (!sides || sides.length < 10) return { cal: cal, fx: [] };
     // the clubs table is the naming authority - a claimed club wears its
     // manager's chosen name, and orders key by it

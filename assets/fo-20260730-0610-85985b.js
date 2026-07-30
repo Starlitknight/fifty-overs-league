@@ -1500,13 +1500,13 @@ function route(){
   // surfaces are retired; any old link or bookmark lands on the Circuit.
   // training returned to life as The Nets (league/18-training-nets.js)
   // RETIRED ROOMS. Two waves: the Circuit-era surfaces (the club dashboard, the
-  // office, the old stats and match pages) and the eleven rooms taken out on
+  // office, the old stats and match pages) and the rooms taken out on
   // request - the time machine, the manual, the season so far, the wire, the
   // record book, the invitationals, the world-club page, the transfer market,
   // the books, the dossier and the desk. Every old address, bookmark and
   // in-game link lands on the front door rather than a blank screen.
   const GONE={club:1,office:1,nets:1,stats:1,matches:1,transfers:1,story:1,friendly:1,scout:1,reports:1,commentary:1,calibration:1,editor:1,welcome:1,founder:1,create:1,
-    whatif:1,guide:1,manual:1,help:1,ceremony:1,wire:1,records:1,comps:1,worldclub:1,market:1,finance:1,ledger:1,dossier:1,desk:1};
+    whatif:1,guide:1,manual:1,help:1,ceremony:1,wire:1,records:1,comps:1,worldclub:1,market:1,ledger:1,dossier:1,desk:1};
   if(GONE[App.page]){location.hash='#/home';App.page='home';return}
   // the conquest Circuit is retired; its hub folds into the repurposed World map
   if(App.page==='circuit'||App.page==='tour'){location.hash='#/world';App.page='world';return}
@@ -1524,7 +1524,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',lore:'foRenderLore',report:'foRenderReport',preview:'foRenderPreviewPage',training:'foRenderNetsPage',milestones:'foRenderHonoursPage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage'}[App.page];
+  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',lore:'foRenderLore',report:'foRenderReport',preview:'foRenderPreviewPage',training:'foRenderNetsPage',milestones:'foRenderHonoursPage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage'}[App.page];
   if(P[App.page])P[App.page](q);
   // A RENDERER THAT THROWS USED TO VANISH. This catch was empty, so a page
   // whose painter hit an error left the topbar, the clock and the nav in place
@@ -9908,7 +9908,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260730-0522-2c7393";
+  var FO_BUILD = "20260730-0610-85985b";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -20586,30 +20586,31 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   //  age reads 24.17 - twenty-four years and seventeen days - where a year in
   //  this world is thirty days long.
   //
-  //  The day ticks once per REAL day, off the world clock every nation's round
-  //  already runs on (module 27's epoch), so it is the same number on every
-  //  device with nobody storing anything: no save field, no drift between a
-  //  manager who logs in daily and one who comes back in a fortnight. Each man
-  //  gets a fixed offset from his own name, so a squad is not thirty men who
-  //  all share a birthday.
+  //  The day is the day of the SEASON, and a season is thirty days long - so the
+  //  day ticks once per real day, reads 1 on the season's opening morning and 30
+  //  on its last, and rolls back to 1 at the rollover. Which is the same moment
+  //  the umpire puts a year on everybody. So 20.30 becomes 21.01 exactly, and
+  //  the year is still his to give, never the client's to invent.
   //
-  //  The YEAR is not derived here - it is p.age, the figure the umpire holds and
-  //  advances by one at every season rollover. So the day runs 1 to 30 and back
-  //  to 1, and the year steps when the umpire says he is a year older.
+  //  Nothing is stored: it is a pure function of the world clock, the same on
+  //  every device, with no drift between a manager who logs in daily and one who
+  //  comes back in a fortnight.
   // ---------------------------------------------------------------------------
   var FO_AGE_DAYS = 30;
-  function foSqDayIx() {
-    try { if (window.__foPlanet && window.__foPlanet.dayIx) return window.__foPlanet.dayIx(Date.now()); } catch (e) {}
-    return Math.floor((Date.now() - Date.UTC(2026, 6, 28)) / 86400000);
-  }
-  function foSqNameOff(nm) {
-    var h = 2166136261; nm = String(nm || "");
-    for (var i = 0; i < nm.length; i++) { h ^= nm.charCodeAt(i); h = (h * 16777619) >>> 0; }
-    return h % FO_AGE_DAYS;
+  function foSqSeasonDay() {
+    try {
+      var pl = window.__foPlanet;
+      if (pl && pl.phaseOf) {
+        var di = pl.phaseOf(Date.now()).di;
+        if (di >= 0) return (di % FO_AGE_DAYS) + 1;
+      }
+      if (pl && pl.dayIx) return (((pl.dayIx(Date.now()) % FO_AGE_DAYS) + FO_AGE_DAYS) % FO_AGE_DAYS) + 1;
+    } catch (e) {}
+    var d0 = Math.floor((Date.now() - Date.UTC(2026, 6, 28)) / 86400000);
+    return (((d0 % FO_AGE_DAYS) + FO_AGE_DAYS) % FO_AGE_DAYS) + 1;
   }
   function foAgeParts(p) {
-    var y = Math.max(0, p.age | 0);
-    var d = (((foSqNameOff(p.name) + foSqDayIx()) % FO_AGE_DAYS) + FO_AGE_DAYS) % FO_AGE_DAYS + 1;   // 1..30
+    var y = Math.max(0, p.age | 0), d = foSqSeasonDay();
     return { y: y, d: d, total: y * FO_AGE_DAYS + d };
   }
   function foAgeText(p) {
@@ -20618,7 +20619,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
   function foAgeLong(p) {
     var a = foAgeParts(p);
-    return a.y + " years, " + a.d + (a.d === 1 ? " day" : " days") + " (a year here is " + FO_AGE_DAYS + " days)";
+    return a.y + " years, " + a.d + (a.d === 1 ? " day" : " days") +
+      " \u2014 a year here is one season, " + FO_AGE_DAYS + " days, and he turns " + (a.y + 1) + " at the rollover";
   }
   try { window.__foAge = { parts: foAgeParts, text: foAgeText, long: foAgeLong }; } catch (eAg) {}
 
@@ -29382,7 +29384,19 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           }).join("");
         } else {
           var ws0 = srv.pl.WORLD_START || 0;
-          var nextDay = srv.cal.seasonNo < 1 ? ws0 : srv.cal.dayInSeason > 17 ? ws0 + srv.cal.seasonNo * 25 : null;
+          // the league returns on the next season's opening day - or on the next
+          // round's day, when today is one of the season's rest days
+          var nextDay = null;
+          try {
+            if (srv.cal.seasonNo < 1) nextDay = ws0;
+            else if (srv.cal.leagueOver) nextDay = srv.pl.dayOfSeasonRound(srv.cal.seasonNo + 1, 1);
+            else {
+              for (var nr0 = 1; nr0 <= 18 && nextDay == null; nr0++) {
+                var dr0 = srv.pl.dayOfRound(nr0);
+                if (dr0 > srv.cal.dayInSeason) nextDay = srv.pl.dayOfSeasonRound(srv.cal.seasonNo, nr0);
+              }
+            }
+          } catch (eNx) {}
           var ndDate = "";
           try {
             if (nextDay != null) {
@@ -29391,7 +29405,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             }
           } catch (eNd) {}
           mdRows = "<div class='fo-nt-quiet'>No league round today" +
-            (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason > 17 ? " &mdash; the cup window is on" : "") +
+            (srv.cal.seasonNo >= 1 && srv.cal.leagueOver ? " &mdash; the cup window is on"
+              : srv.cal.seasonNo >= 1 ? " &mdash; the league rests" : "") +
             (nextDay != null ? ". The league returns" + ndDate + "." : ".") + "</div>";
         }
         var stateWord = srv.state === "live" ? "&#9679; Round " + srv.cal.round + " &mdash; in play now"
@@ -29400,7 +29415,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           : "Matchday";
         // -- still to come
         var upHTML = "";
-        if (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason >= 0 && srv.cal.dayInSeason < 17) {
+        if (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason >= 0 && srv.cal.round && srv.cal.round < 18) {
           var sidesBy = {};
           try {
             var nmOv9 = window.__foWorldNames ? window.__foWorldNames.get(nation) : null;
@@ -29412,7 +29427,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
           var ups = [];
           for (var ur = srv.cal.round + 1; ur <= 18; ur++) {
-            var dayU = (srv.pl.WORLD_START || 0) + (srv.cal.seasonNo - 1) * 25 + (ur - 1);
+            var dayU = srv.pl.dayOfSeasonRound(srv.cal.seasonNo, ur);
             var dt9 = new Date(srv.pl.EPOCH + dayU * 86400000);
             ups.push("<div class='fo-nt-uround'><i>Round " + ur + " &middot; " + DOW[dt9.getUTCDay()] + " " + dt9.getUTCDate() + " " + MON[dt9.getUTCMonth()] + " &middot; " + hhFmt(srv.hour) + "</i>" +
               schedA[ur - 1].map(function (p9) { return "<span>" + E((sidesBy[p9[0]] || {}).name || "") + " v " + E((sidesBy[p9[1]] || {}).name || "") + "</span>"; }).join("") + "</div>");
@@ -32746,7 +32761,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // spent their first weeks: reachable, but with the dock going dark the
   // moment you arrived.
   var DOCK_MAP = {
-    club: ["club", "home"],
+    club: ["club", "home", "finance"],
     league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "champions", "natteams", "nations", "watch", "rankings", "team"],
     squad: ["squad", "player", "matchlab"],
     nets: ["training", "academy"],
@@ -34370,8 +34385,18 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         // an hour already hours past. The clock knows which of the three it is
         // - not started, in play, or done - so let it name the round honestly.
         var nextRd = Math.min(rounds, curRound + (state === "fin" ? 1 : 0));
+        // WHICH DAY IS THE NEXT ROUND ON? It used to be "tomorrow", always,
+        // because every day was a match day. Three rounds then a rest day means
+        // the next round can be two days off, so ask the calendar and say so.
+        var nextDayWord = "";
+        try {
+          var dNext = pl.dayOfSeasonRound((cal && cal.seasonNo) || 1, nextRd);
+          var gap = dNext == null ? null : dNext - pl.dayIx(Date.now());
+          nextDayWord = gap === 0 ? " today" : gap === 1 ? ", tomorrow"
+            : gap > 1 ? ", in " + gap + " days" : "";
+        } catch (eNd2) {}
         var nextTtl = state === "live" ? "Round " + curRound + ", in play"
-          : state === "fin" ? "Round " + nextRd + ", tomorrow" : "Round " + nextRd + " today";
+          : "Round " + nextRd + (nextDayWord || (state === "fin" ? ", next" : " today"));
         var nextWhen = hh(hour) + " UTC";
         var nextPairs = [];
         try {
@@ -34823,12 +34848,21 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 // World Cup bracket. That is how a shared living world satisfies the
 // human-vs-human / human-vs-bot constraint: determinism instead of sync.
 //
-// The calendar, in 25-day seasons:
-//   days 0-17   league rounds 1-18 (every nation, TEN clubs, double round robin)
-//   day  18     honours day (champions crowned)
-//   day  19     World Cup draw
-//   days 20-23  World Cup: last sixteen, quarters, then prime-time semis & FINAL
-//   day  24     rest day - the wire catches its breath
+// The calendar, in 30-day seasons - THREE ROUNDS, THEN A DAY OFF, six times:
+//   days 0-2    league rounds 1-3
+//   day  3      rest · international window 1 (its call-ups rob round 4)
+//   days 4-6    rounds 4-6      day 7   rest · window 2 (robs round 7)
+//   days 8-10   rounds 7-9      day 11  rest · window 3 (robs round 10)
+//   days 12-14  rounds 10-12    day 15  rest
+//   days 16-18  rounds 13-15    day 19  rest
+//   days 20-22  rounds 16-18    day 23  rest
+//   day  24     honours day (champions crowned) · Champions Cup play-ins
+//   days 25-28  the cups: last sixteen, quarters, semis, THE FINALS
+//   day  29     rest day - the wire catches its breath
+// A cricketer's year is thirty days too, so one season is one year of his life.
+//
+// THIS FILE MUST AGREE WITH server/clock.mjs, ball for ball. The server plays
+// the cricket; this only says what day it is. tests assert the parity.
 // The globe is staggered: each nation bowls off at its own UTC hour (England
 // is the 14:00 league), each day's play running three hours, live.
 //
@@ -34849,7 +34883,21 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   // ---- the calendar -----------------------------------------------------------
   var EPOCH = Date.UTC(2026, 6, 28);           // 28 July 2026, day 0 - OPENING DAY: round 1 everywhere
-  var DAY = 86400000, CYCLE = 25, ROUNDS = 18;  // ten clubs, eighteen rounds - every nation plays YOUR format
+  var DAY = 86400000, CYCLE = 30, ROUNDS = 18;  // ten clubs, eighteen rounds - every nation plays YOUR format
+  var BLOCK = 4, LEAGUE_DAYS = 24;              // three rounds then a rest day, six times over
+  // day-in-season <-> round. NOTHING may assume round === day + 1 any more.
+  function roundOfDay(di) {
+    if (!(di >= 0) || di >= LEAGUE_DAYS) return null;
+    if (di % BLOCK === BLOCK - 1) return null;
+    return di - Math.floor(di / BLOCK) + 1;
+  }
+  function dayOfRound(round) {
+    if (!(round >= 1 && round <= ROUNDS)) return null;
+    return Math.floor((round - 1) / (BLOCK - 1)) * BLOCK + ((round - 1) % (BLOCK - 1));
+  }
+  var WINDOW_DAYS = [3, 7, 11], WINDOWS = [4, 7, 10];
+  function windowRoundOfDay(di) { var i = WINDOW_DAYS.indexOf(di); return i < 0 ? null : WINDOWS[i]; }
+  var HONOURS_DAY = 24, CUP_DAYS = { pi: 24, r16: 25, qf: 26, sf: 27, final: 28 };
   var LIVE_LEN = 3;                             // a day's play runs three hours
   // the staggered globe: each nation bowls its first ball at its own UTC hour.
   // England is the 14:00 UTC league; the rest spread around the clock so
@@ -34867,10 +34915,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (rel < 0) return { day: d, season: 1, di: -1, kind: "rest", preseason: true };
     var s = Math.floor(rel / CYCLE) + 1, di = rel % CYCLE;
     var p = { day: d, season: s, di: di };
-    if (di < ROUNDS) { p.kind = "league"; p.round = di + 1; }
-    else if (di === 18) p.kind = "honours";
-    else if (di === 19) p.kind = "draw";
-    else if (di <= 23) { p.kind = "cup"; p.stage = ["r16", "qf", "sf", "final"][di - 20]; }
+    var r = roundOfDay(di);
+    if (r) { p.kind = "league"; p.round = r; }
+    else if (di < LEAGUE_DAYS) { p.kind = "rest"; p.window = windowRoundOfDay(di); }
+    else if (di === HONOURS_DAY) p.kind = "honours";
+    else if (di <= CUP_DAYS.final) { p.kind = "cup"; p.stage = ["r16", "qf", "sf", "final"][di - CUP_DAYS.r16]; }
     else p.kind = "rest";
     return p;
   }
@@ -34880,9 +34929,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var p = phaseOf(now);
     if (s < p.season) return ROUNDS;
     if (s > p.season) return 0;
-    if (p.di >= ROUNDS) return ROUNDS;
-    var h0 = rid != null ? natHour(rid) : 14;
-    return p.di + (hourOfDay(now) >= h0 + LIVE_LEN ? 1 : 0);
+    if (p.di >= LEAGUE_DAYS) return ROUNDS;
+    var h0 = rid != null ? natHour(rid) : 14, closed = hourOfDay(now) >= h0 + LIVE_LEN;
+    // every round whose day is behind us, plus today's if its window has shut
+    var n = 0;
+    for (var r = 1; r <= ROUNDS; r++) {
+      var d = dayOfRound(r);
+      if (d < p.di || (d === p.di && closed)) n++;
+    }
+    return n;
   }
 
   // ---- the sides of a nation --------------------------------------------------
@@ -35011,8 +35066,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function wcStagesDone(now, season) {
     var p = phaseOf(now); if (season < p.season) return 4;
     if (season > p.season) return 0;
-    if (p.di < 20) return 0;
-    var base = p.di - 20;
+    if (p.di < CUP_DAYS.r16) return 0;
+    var base = p.di - CUP_DAYS.r16;
     var doneToday = hourOfDay(now) >= WC_HOURS[Math.min(3, base)] + LIVE_LEN ? 1 : 0;
     return Math.min(4, base + doneToday);
   }
@@ -35055,7 +35110,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (st >= 4) { var ch = wcChampion(p.season); out.push({ day: p.day, season: p.season, dayInSeason: p.di, phase: "cup", category: "cup", importance: 100, headline: "CHAMPIONS OF THE WORLD: " + ch.nm + " lift the World Cup" }); }
       else if (st > 0) { var stg = wcBracket(p.season)[st - 1]; stg.matches.forEach(function (m) { out.push({ day: p.day, season: p.season, dayInSeason: p.di, phase: "cup", category: "cup", importance: 80, headline: "World Cup: " + m.winner.nm + " past " + m.loser.nm + " (" + m.hs + " v " + m.as + ")" }); }); }
     }
-    if (p.kind === "honours" || p.di === 19) {
+    if (p.kind === "honours" || p.di === CUP_DAYS.r16) {
       regionList().forEach(function (r) {
         if (r.id === myNation()) return;
         var c = championOf(r.id, p.season);
@@ -35227,7 +35282,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
       // -- the world cup panel (draw day through rest day) --------------------
       var cupHTML = "";
-      if (p.di >= 19) {
+      if (p.di >= HONOURS_DAY) {
         var stagesDone = wcStagesDone(now, p.season);
         var bracket = wcBracket(p.season);
         var ents = wcEntrants(p.season);
@@ -35454,7 +35509,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   });
 
   window.foRenderPlanetPage = foRenderPlanetPage;
-  window.__foPlanet = { phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, fixturesOf: fixturesOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
+  // the absolute world day a given season's round is played on - the one
+  // answer every page that dates a fixture must ask for
+  function dayOfSeasonRound(season, round) {
+    var d = dayOfRound(round);
+    if (d == null) return null;
+    return WORLD_START + ((season | 0) - 1) * CYCLE + d;
+  }
+  window.__foPlanet = { roundOfDay: roundOfDay, dayOfRound: dayOfRound, dayOfSeasonRound: dayOfSeasonRound,
+    WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
+    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, fixturesOf: fixturesOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();
 // ---- 28-world-almanack.js — the people of the planet, and its book of record --
 // The living planet (module 27) gave every nation a running league. This layer
@@ -35673,7 +35737,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   // ---- the winter window: six stars, one signing, your money -----------------
-  function windowOpen(p) { return p.di >= 19; }
+  // the winter window opens when the league is done - the closing week
+  function windowOpen(p) { try { return p.di >= (P().LEAGUE_DAYS || 24); } catch (e) { return p.di >= 24; } }
   function marketOf(season) {
     var rids = regionList().map(function (r) { return r.id; }).filter(function (rid) { return rid !== myNation(); });
     rids.sort(function (a, b) { return rnd01("mkt|" + season + "|" + a) - rnd01("mkt|" + season + "|" + b); });
@@ -37382,7 +37447,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     try { return base + "flags/" + cx().flagFile(rid) + ".svg"; } catch (e) { return ""; }
   }
   var HOURS = { pi: 18, r16: 15, qf: 15, sf: 20, final: 21 };
-  var DAYS = { pi: 19, r16: 20, qf: 21, sf: 22, final: 23 };
+  // THE SERVER'S DAYS, not a day later: server/clock.mjs CUP_DAYS is the law,
+  // and this used to sit one day behind it on every stage.
+  var DAYS = { pi: 24, r16: 25, qf: 26, sf: 27, final: 28 };
   var STAGE_NM = { pi: "The play-ins", r16: "The last sixteen", qf: "Quarter-finals", sf: "Semi-finals", final: "The Final" };
   var ORDER = ["pi", "r16", "qf", "sf", "final"];
 
@@ -37413,7 +37480,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         mine = !!(e && e.mine);
         provisional = frozen ? false : !(e && e.settled);
         try {
-          if (!frozen && pl.phaseOf(now).di >= 19 && pl.phaseOf(now).season === season && e && e.name) {
+          if (!frozen && pl.phaseOf(now).di >= (pl.LEAGUE_DAYS || 24) && pl.phaseOf(now).season === season && e && e.name) {
             App.clEng = { season: season, name: e.name, mine: !!e.mine };
             if (typeof saveGame === "function") saveGame(false);
           }
@@ -38064,11 +38131,19 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return (g && g.players) || null;
     } catch (e) { return null; }
   }
-  // the server's calendar: season/round for a world day (season 1 = day 5)
+  // The server's calendar for a world day. It used to do the arithmetic itself
+  // (season = day/25, round = day%25 + 1) which was true only while every day
+  // was a match day. The planet owns the mapping now; this asks it.
+  //   round is NULL on a rest day and through the closing week.
   var WORLD_START = 0;
   function serverCal(now) {
-    var d = P().dayIx(now), rel = d - WORLD_START;
-    return { seasonNo: Math.floor(rel / 25) + 1, round: (rel % 25) + 1, dayInSeason: rel % 25 };
+    var pl = P(), d = pl.dayIx(now), rel = d - WORLD_START;
+    var cyc = pl.CYCLE || 30;
+    var seasonNo = Math.floor(rel / cyc) + 1, di = ((rel % cyc) + cyc) % cyc;
+    if (rel < 0) return { seasonNo: seasonNo, round: null, dayInSeason: rel, rest: true };
+    var round = pl.roundOfDay ? pl.roundOfDay(di) : null;
+    return { seasonNo: seasonNo, round: round, dayInSeason: di, rest: !round,
+             leagueOver: di >= (pl.LEAGUE_DAYS || 24) };
   }
   // the server's schedule, mirrored: same circle method, same season shuffle
   function schedMirror(rid, seasonNo) {
@@ -38087,7 +38162,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
   function serverFixtures(rid, now) {
     var pl = P(), cal = serverCal(now);
-    if (cal.seasonNo < 1 || cal.dayInSeason < 0 || cal.dayInSeason > 17) return { cal: cal, fx: [] };
+    if (cal.seasonNo < 1 || cal.dayInSeason < 0 || !cal.round) return { cal: cal, fx: [] };
     var sides = pl.sidesOf(rid); if (!sides || sides.length < 10) return { cal: cal, fx: [] };
     // the clubs table is the naming authority - a claimed club wears its
     // manager's chosen name, and orders key by it
@@ -40561,6 +40636,394 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 })();
 /* ============================================================================
+   THE BOOKS (#/finance) — where every pound came from, and where it went.
+
+   The umpire keeps a real ledger. He walks it from the day the club was founded
+   ($2.5m in the treasury), round by round, and every line of it is DERIVED from
+   the record: who played whom, who won, where the club stood that morning, how
+   many people fancied going, what the weather did, who was sold, who was called
+   up by his country. Nothing is incremented and nothing is stored that a re-run
+   could not rebuild - settle it twice and it settles the same figure, which is
+   what lets a manager who was asleep trust it.
+
+   So this page does not model anything. It READS that ledger (world_my_status
+   carries it) and lays it out the way a treasurer would:
+
+     THE BANK       what is there, against what he was founded with
+     MONEY IN       gate, away cut, sponsor, international fees, transfers in
+     MONEY OUT      wages, the academy, the ground, scouting, transfers out,
+                    interest on an overdraft
+     THE CROWD      supporters, their mood, the gate they turned into - the
+                    reason the biggest line in the ledger is the size it is
+     THE GROUND     seats, what the next stand costs, and whether he can afford
+                    it - the one place on this page money can be SPENT
+     THE WAGE BILL  what the squad costs a round, and who the earners are
+
+   Every figure has a note saying what moves it, because a number a manager
+   cannot act on is trivia. The two levers (build a stand, upgrade the academy)
+   are the club's real capital decisions, and both go through the server's own
+   RPCs, which re-check affordability - the page could lie all it liked.
+   ========================================================================== */
+(function () {
+  "use strict";
+  if (window.__foFin) return; window.__foFin = 1;
+
+  var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
+  var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function jwt() { try { return (window.__foJWT && window.__foJWT()) || ""; } catch (e) { return ""; } }
+  function rpc(fn, args) {
+    return fetch(SB_URL + "/rest/v1/rpc/" + fn, {
+      method: "POST",
+      headers: { apikey: SB_ANON, Authorization: "Bearer " + (jwt() || SB_ANON), "content-type": "application/json" },
+      body: JSON.stringify(args || {})
+    }).then(function (r) { return r.text().then(function (t) {
+      var d = null; try { d = t ? JSON.parse(t) : null; } catch (e) {}
+      if (!r.ok) throw new Error((d && (d.message || d.hint)) || t || ("HTTP " + r.status));
+      return d;
+    }); });
+  }
+  // money, three ways: the full figure, the short one, and a signed delta
+  function M(v) {
+    var n = Math.round(Number(v) || 0), neg = n < 0;
+    n = Math.abs(n);
+    var s = String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return (neg ? "-$" : "$") + s;
+  }
+  function Mk(v) {
+    var n = Number(v) || 0, neg = n < 0; n = Math.abs(n);
+    var s = n >= 1000000 ? (n / 1000000).toFixed(n >= 10000000 ? 1 : 2) + "m"
+          : n >= 1000 ? Math.round(n / 1000) + "k" : String(Math.round(n));
+    return (neg ? "-$" : "$") + s;
+  }
+  function Msign(v) { var n = Math.round(Number(v) || 0); return (n > 0 ? "+" : "") + M(n); }
+  function pct(a, b) { return b > 0 ? Math.max(0, Math.min(100, Math.round(100 * a / b))) : 0; }
+
+  var MOOD_COL = ["#B23B2C", "#C0562C", "#B58128", "#8A8272", "#4F8F63", "#2E8C5F", "#1E8C63"];
+
+  function foFinCss() {
+    if (document.getElementById("fo-fin-css")) return;
+    var s = document.createElement("style"); s.id = "fo-fin-css";
+    s.textContent = [
+      "html body.fo-fin-on{background:#E9E4D8 !important}",
+      "html body.fo-fin-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
+      "html body #page .fo-fin{--ink:#141C28;--paper:#FFFEFC;--band:#F4EFE3;--brand:#C95532;--gold:#C89A2E;--navy:#0E2246;",
+      "  max-width:1120px;margin:0 auto;padding:26px 16px 44px;color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}",
+      "#page .fo-fin *{box-sizing:border-box}",
+      // masthead
+      ".fo-fin-k{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--brand)}",
+      ".fo-fin-k:after{content:'';display:block;width:34px;border-top:2px solid var(--brand);margin-top:7px}",
+      ".fo-fin h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(30px,4vw,46px);letter-spacing:-.02em;line-height:1.02;margin:11px 0 6px}",
+      ".fo-fin-sub{font:italic 420 14px/1.55 'Fraunces',Georgia,serif;color:rgba(20,28,40,.62);margin:0 0 20px;max-width:64ch}",
+      // the bank
+      ".fo-fin-bank{background:linear-gradient(160deg,#0E2246,#0A1A34 72%);border-radius:18px;padding:22px 24px;color:#EAF0FB;box-shadow:0 18px 44px rgba(10,26,52,.28);border-bottom:3px solid var(--brand)}",
+      ".fo-fin-bank .lb{font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:#8FA8CC}",
+      // the skin colours bare b and i, so the treasury card has to out-rank it
+      // or the biggest number on the page is navy ink on a navy card
+      "html body #page .fo-fin-bank b,html body.ftpskin #page .fo-fin-bank b{display:block;font-family:Oswald,sans-serif;font-weight:700;font-size:clamp(34px,5vw,54px);line-height:1;margin:6px 0 2px;font-variant-numeric:tabular-nums;color:#FFFEFC !important}",
+      ".fo-fin-walk{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:14px;padding-top:13px;border-top:1px solid rgba(143,168,204,.22)}",
+      ".fo-fin-walk div{display:flex;flex-direction:column;gap:3px}",
+      ".fo-fin-walk span{font-family:Oswald,sans-serif;font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;color:#8FA8CC}",
+      "html body #page .fo-fin-walk i{font-style:normal;font-family:Oswald,sans-serif;font-size:15px;font-variant-numeric:tabular-nums;color:#FFFEFC !important}",
+      "html body #page .fo-fin-walk i.fo-fin-up{color:#7BD3A6 !important}html body #page .fo-fin-walk i.fo-fin-dn{color:#F0A090 !important}",
+      // the administration banner
+      ".fo-fin-admin{margin-top:14px;background:#FBE9E4;border:1px solid rgba(201,85,50,.4);border-left:4px solid var(--brand);border-radius:12px;padding:14px 16px}",
+      ".fo-fin-admin b{display:block;font-family:Oswald,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#9E3520;margin-bottom:5px}",
+      ".fo-fin-admin p{margin:0;font:400 13px/1.6 Inter,sans-serif;color:rgba(20,28,40,.8)}",
+      // the two ledgers
+      ".fo-fin-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}",
+      ".fo-fin-card{background:var(--paper);border:1px solid rgba(20,28,40,.1);border-radius:16px;padding:17px 19px;box-shadow:0 8px 24px rgba(30,38,52,.07)}",
+      ".fo-fin-card h2{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--brand);margin:0 0 3px}",
+      ".fo-fin-card .cap{font:italic 420 12.5px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.55);margin:0 0 13px}",
+      ".fo-fin-l{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:9px 0;border-bottom:1px solid rgba(20,28,40,.07)}",
+      ".fo-fin-l:last-of-type{border-bottom:0}",
+      "html body #page .fo-fin-l b{font:600 13.5px/1.3 Inter,sans-serif;color:var(--ink)}",
+      ".fo-fin-l em{grid-column:1;font:400 11.5px/1.45 Inter,sans-serif;font-style:normal;color:rgba(20,28,40,.52)}",
+      ".fo-fin-l u{grid-column:2;grid-row:1;text-decoration:none;font-family:Oswald,sans-serif;font-weight:600;font-size:15px;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}",
+      ".fo-fin-l.zero u,.fo-fin-l.zero b{color:rgba(20,28,40,.34)}",
+      ".fo-fin-tot{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:12px;padding-top:12px;border-top:2px solid rgba(20,28,40,.16)}",
+      ".fo-fin-tot span{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(20,28,40,.55)}",
+      "html body #page .fo-fin-tot b{font-family:Oswald,sans-serif;font-weight:700;font-size:22px;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-fin-in .fo-fin-tot b{color:#1E7A55 !important}html body #page .fo-fin-out .fo-fin-tot b{color:#B23B2C !important}",
+      // the net line
+      ".fo-fin-net{margin-top:16px;background:var(--band);border:1px solid rgba(20,28,40,.12);border-radius:14px;padding:15px 19px;display:flex;flex-wrap:wrap;gap:10px 26px;align-items:baseline}",
+      ".fo-fin-net .who{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgba(20,28,40,.55)}",
+      ".fo-fin-net .big{font-family:Oswald,sans-serif;font-weight:700;font-size:26px;font-variant-numeric:tabular-nums}",
+      ".fo-fin-net .note{font:italic 420 12.5px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);flex:1 1 240px;min-width:200px}",
+      // the crowd + the ground
+      ".fo-fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}",
+      ".fo-fin-stat{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid rgba(20,28,40,.07);font:400 13px/1.4 Inter,sans-serif}",
+      ".fo-fin-stat:last-child{border-bottom:0}",
+      ".fo-fin-stat span{color:rgba(20,28,40,.6)}",
+      "html body #page .fo-fin-stat b{font-family:Oswald,sans-serif;font-weight:600;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}",
+      ".fo-fin-bar{margin:12px 0 4px;height:10px;border-radius:6px;background:rgba(20,28,40,.09);overflow:hidden}",
+      ".fo-fin-bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#C95532,#E0A24A)}",
+      ".fo-fin-barlbl{display:flex;justify-content:space-between;font:600 10.5px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(20,28,40,.5)}",
+      ".fo-fin-mood{display:inline-flex;align-items:center;gap:8px;margin-top:11px;padding:6px 13px;border-radius:999px;background:rgba(20,28,40,.05);font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase}",
+      ".fo-fin-mood i{width:9px;height:9px;border-radius:50%;display:block}",
+      // the levers
+      ".fo-fin-buy{margin-top:14px;display:flex;flex-wrap:wrap;gap:9px;align-items:center}",
+      "html body #page button.fo-fin-btn{font:700 11px Oswald,sans-serif !important;letter-spacing:.14em;text-transform:uppercase;color:#FFFEFC !important;background:var(--navy) !important;border:0 !important;border-radius:999px !important;padding:11px 18px !important;cursor:pointer;min-height:42px}",
+      "html body #page button.fo-fin-btn:hover{background:#16345F !important}",
+      "html body #page button.fo-fin-btn[disabled]{background:rgba(20,28,40,.14) !important;color:rgba(20,28,40,.42) !important;cursor:not-allowed}",
+      ".fo-fin-why{font:italic 420 12px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);flex:1 1 200px}",
+      ".fo-fin-msg{margin-top:10px;font:600 12.5px/1.5 Inter,sans-serif;color:#1E7A55}",
+      ".fo-fin-msg.bad{color:#B23B2C}",
+      // the wage bill
+      ".fo-fin-wg{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px 14px;align-items:baseline;margin-top:11px}",
+      ".fo-fin-wg .nm{font:600 13px/1.3 Inter,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-fin-wg .rl{font-family:Oswald,sans-serif;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(20,28,40,.45);text-align:right}",
+      ".fo-fin-wg .wg{font-family:Oswald,sans-serif;font-weight:600;font-size:14px;font-variant-numeric:tabular-nums;text-align:right}",
+      ".fo-fin-note{margin-top:22px;font:italic 420 12.5px/1.65 'Fraunces',Georgia,serif;color:rgba(20,28,40,.55);max-width:74ch}",
+      ".fo-fin-foot{display:flex;gap:10px;justify-content:space-between;margin-top:20px;flex-wrap:wrap}",
+      ".fo-fin-foot a{display:inline-flex;align-items:center;min-height:44px;font:600 12px Inter,sans-serif;color:rgba(20,28,40,.65);background:var(--paper);border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:0 17px;text-decoration:none}",
+      ".fo-fin-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5)}",
+      "@media(max-width:780px){.fo-fin-cols,.fo-fin-grid{grid-template-columns:1fr}",
+      ".fo-fin{padding:18px 12px 40px}.fo-fin-bank{padding:18px}}"
+    ].join("\n");
+    document.head.appendChild(s);
+  }
+
+  // ---- one ledger line: figure, name, and what moves it ----------------------
+  function line(nm, v, why) {
+    var zero = !Math.round(Number(v) || 0);
+    return "<div class='fo-fin-l" + (zero ? " zero" : "") + "'><b>" + E(nm) + "</b>" +
+      "<u>" + M(v) + "</u><em>" + E(why) + "</em></div>";
+  }
+  function stat(nm, val) {
+    return "<div class='fo-fin-stat'><span>" + E(nm) + "</span><b>" + val + "</b></div>";
+  }
+
+  function shell(body) {
+    return "<div class='fo-fin'>" + body + "</div>";
+  }
+  function head(clubNm, sub) {
+    return "<div class='fo-fin-k'>The books</div>" +
+      "<h1>" + E(clubNm || "Your club") + "</h1>" +
+      "<p class='fo-fin-sub'>" + sub + "</p>";
+  }
+
+  function render(page, st) {
+    var f = (st && st.finance) || {}, bank = Number(st && st.bank) || 0;
+    var clubNm = (st.claim && st.claim.club) || "Your club";
+    var founded = Number(f.founded) || 2500000;
+    var rounds = Number(f.rounds) || 0;
+    var swing = bank - founded;
+
+    // ---- money in --------------------------------------------------------
+    var inGate = Number(f.gate) || 0, inAway = Number(f.awayCut) || 0;
+    var inSpon = Number(f.sponsor) || 0, inComp = Number(f.compensation) || 0;
+    var inFees = Number(f.feesIn) || 0;
+    var totIn = inGate + inAway + inSpon + inComp + inFees;
+
+    // ---- money out -------------------------------------------------------
+    var outWage = Number(f.wages) || 0, outUp = Number(f.upkeep) || 0;
+    var outInt = Number(f.interest) || 0, outFees = Number(f.feesOut) || 0;
+    var outScout = Number(f.scouting) || 0;
+    var outAcad = Number(f.academyPaid) || 0, outSeats = Number(f.seatsPaid) || 0;
+    var totOut = outWage + outUp + outInt + outFees + outScout + outAcad + outSeats;
+
+    var perRound = rounds ? (totIn - outWage - outUp - outInt) / rounds : 0;
+
+    var html = head(clubNm,
+      "Every figure here is the umpire's, walked from the founding cheque round by round and " +
+      "derived from the record - the matches played, the crowd that came, the men bought and sold. " +
+      "Nothing on this page is an estimate.");
+
+    // ---- the bank --------------------------------------------------------
+    html += "<div class='fo-fin-bank'><div class='lb'>In the treasury</div>" +
+      "<b>" + M(bank) + "</b>" +
+      "<div class='fo-fin-walk'>" +
+      "<div><span>Founded with</span><i>" + M(founded) + "</i></div>" +
+      "<div><span>Since then</span><i class='" + (swing >= 0 ? "fo-fin-up" : "fo-fin-dn") + "'>" + Msign(swing) + "</i></div>" +
+      "<div><span>Rounds settled</span><i>" + rounds + "</i></div>" +
+      "<div><span>A round is worth</span><i class='" + (perRound >= 0 ? "fo-fin-up" : "fo-fin-dn") + "'>" + Msign(Math.round(perRound)) + "</i></div>" +
+      "</div></div>";
+
+    if (f.administration) {
+      html += "<div class='fo-fin-admin'><b>The club is in administration</b>" +
+        "<p>The bank has reached the floor of " + M(-(Number(f.debtLimit) || 2500000)) + " - as deep as a hole gets here, so " +
+        M(Number(f.writtenOff) || 0) + " of losses below the line has been written off. While the club is under, " +
+        "the sponsor pays half his cheque and nothing gets built. " +
+        (f.adminRounds ? "That has been the case for " + f.adminRounds + " round" + (f.adminRounds === 1 ? "" : "s") + ". " : "") +
+        "Win, fill the ground, and trim the wage bill: those are the ways out.</p></div>";
+    }
+
+    // ---- the two ledgers -------------------------------------------------
+    html += "<div class='fo-fin-cols'>" +
+      "<section class='fo-fin-card fo-fin-in'><h2>Money in</h2>" +
+      "<p class='cap'>Everything the club has taken since it was founded.</p>" +
+      line("The gate", inGate, "Your two thirds of every home crowd, at " + M(f.ticket || 26) + " a seat") +
+      line("Away cut", inAway, "Your third of the gate at every ground you visit") +
+      line("Sponsor", inSpon, "Paid by the round, and worth more the higher you finish") +
+      line("International fees", inComp, "What the board pays when your country takes a man" +
+        (f.capsAway ? " - " + f.capsAway + " call-up" + (f.capsAway === 1 ? "" : "s") + " so far" : "")) +
+      line("Transfers in", inFees, "Fees banked for men sold" + (f.sold ? " - " + f.sold + " gone" : "")) +
+      "<div class='fo-fin-tot'><span>Taken</span><b>" + M(totIn) + "</b></div></section>" +
+
+      "<section class='fo-fin-card fo-fin-out'><h2>Money out</h2>" +
+      "<p class='cap'>And everything it has paid.</p>" +
+      line("Wages", outWage, "The bill as it stood each round - " + M(f.wageBill || 0) + " a round now") +
+      line("Upkeep", outUp, "The ground and the academy, by the round") +
+      line("Transfers out", outFees, "Fees paid for men signed" + (f.bought ? " - " + f.bought + " in" : "")) +
+      line("Scouting", outScout, "What you spent looking at other clubs' players") +
+      line("Building", outAcad + outSeats, "Stands and academy levels - capital, paid once") +
+      line("Interest", outInt, "3% a round on an overdraft, and only on an overdraft") +
+      "<div class='fo-fin-tot'><span>Paid</span><b>" + M(totOut) + "</b></div></section>" +
+      "</div>";
+
+    var net = totIn - totOut;
+    html += "<div class='fo-fin-net'><span class='who'>Taken less paid</span>" +
+      "<span class='big " + (net >= 0 ? "fo-fin-up" : "fo-fin-dn") + "' style='color:" + (net >= 0 ? "#1E7A55" : "#B23B2C") + "'>" + Msign(net) + "</span>" +
+      "<span class='note'>" + (net >= 0
+        ? "The club is paying for itself. What it earns above the wage bill is what pays for stands and colts."
+        : "The club is living on its founding money. That is allowed - it is what the money is for - but the sum above is how fast it is going.") +
+      "</span></div>";
+
+    // ---- the crowd + the ground ------------------------------------------
+    var sup = Number(f.supporters) || 0, seats = Number(f.seats) || 0;
+    var lastAtt = Number(f.lastAttendance) || 0, avgAtt = Number(f.avgAttendance) || 0;
+    var mood = Math.max(0, Math.min(6, Number(f.mood) || 0));
+    var full = pct(lastAtt, seats);
+
+    html += "<div class='fo-fin-grid'>" +
+      "<section class='fo-fin-card'><h2>The crowd</h2>" +
+      "<p class='cap'>The gate is the biggest line in the book, and this is what sets it.</p>" +
+      stat("Supporters on the books", sup.toLocaleString()) +
+      stat("Last home crowd", lastAtt ? lastAtt.toLocaleString() + " of " + seats.toLocaleString() : "&mdash;") +
+      stat("Average this season", avgAtt ? avgAtt.toLocaleString() : "&mdash;") +
+      stat("Ticket", M(f.ticket || 26)) +
+      (f.lastWeather ? stat("Weather last time", E(String(f.lastWeather))) : "") +
+      (lastAtt ? "<div class='fo-fin-bar'><i style='width:" + full + "%'></i></div>" +
+        "<div class='fo-fin-barlbl'><span>" + full + "% full</span><span>" + seats.toLocaleString() + " seats</span></div>" : "") +
+      "<div class='fo-fin-mood'><i style='background:" + MOOD_COL[mood] + "'></i>" +
+      "The support is " + E(String(f.moodWord || "patient")) + "</div>" +
+      "<p class='cap' style='margin:12px 0 0'>Supporters arrive on winning and drift away on losing, and their mood " +
+      "moves with recent form and where the club sits. A full ground is the ceiling on all of it.</p>" +
+      "</section>" +
+
+      "<section class='fo-fin-card'><h2>The ground</h2>" +
+      "<p class='cap'>A stand is capital: paid once, and it raises the ceiling for good.</p>" +
+      stat("Seats", seats.toLocaleString()) +
+      stat("Spent on stands", M(outSeats)) +
+      stat("Academy level", (Number(st.academy) || 1) + " of 5") +
+      stat("Spent on the academy", M(outAcad)) +
+      renderBuild(f, bank, st) +
+      "<div class='fo-fin-msg' id='fo-fin-msg'></div>" +
+      "</section></div>";
+
+    // ---- the wage bill ---------------------------------------------------
+    var squad = (st.squad || []).slice().filter(function (p) { return p && p.name; });
+    squad.sort(function (a, b) { return (Number(b.wage) || 0) - (Number(a.wage) || 0); });
+    var top = squad.slice(0, 6);
+    var billNow = squad.reduce(function (s2, p) { return s2 + (Number(p.wage) || 0); }, 0);
+    if (top.length) {
+      html += "<section class='fo-fin-card' style='margin-top:16px'><h2>The wage bill</h2>" +
+        "<p class='cap'>" + M(billNow) + " a round across " + squad.length + " professionals" +
+        (rounds ? ", and " + M(outWage) + " paid out so far" : "") + ". The highest earners:</p>" +
+        "<div class='fo-fin-wg'>" + top.map(function (p) {
+          var role = p.bowlType ? "bowls" : "bats";
+          return "<span class='nm'>" + E(p.name) + "</span>" +
+            "<span class='rl'>" + (p.age ? (p.age | 0) + " &middot; " : "") + role + "</span>" +
+            "<span class='wg'>" + M(p.wage) + "</span>";
+        }).join("") + "</div>" +
+        "<p class='cap' style='margin:13px 0 0'>A wage is a standing order: it is paid every round whether the man " +
+        "plays or not, so a squad kept deep is a squad paid for deeply.</p></section>";
+    }
+
+    html += "<p class='fo-fin-note'>The umpire settles these books after every round he plays, and rebuilds them " +
+      "from the whole record rather than adding to a running total - so they cannot drift, and they read the same " +
+      "on every device whether you were watching or asleep.</p>" +
+      "<div class='fo-fin-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/league'>My league &rsaquo;</a></div>";
+
+    page.innerHTML = shell(html);
+    wire(page, f, bank, st);
+  }
+
+  // ---- the two capital decisions ---------------------------------------------
+  function renderBuild(f, bank, st) {
+    var out = "<div class='fo-fin-buy'>";
+    var ns = Number(f.nextSeats) || 0, nc = Number(f.nextSeatsCost) || 0;
+    if (ns && nc) {
+      var can = bank >= nc && !f.administration;
+      out += "<button type='button' class='fo-fin-btn' id='fo-fin-seats'" + (can ? "" : " disabled") + ">" +
+        "Build to " + ns.toLocaleString() + " &middot; " + Mk(nc) + "</button>" +
+        "<span class='fo-fin-why'>" + (f.administration ? "Nothing gets built while the club is in administration."
+          : can ? "A thousand more seats, and the crowd has somewhere to sit."
+          : "The treasury is " + Mk(nc - bank) + " short of that.") + "</span>";
+    } else {
+      out += "<span class='fo-fin-why'>Forty-five thousand is as big as a ground gets here, and yours is there.</span>";
+    }
+    var lv = Number(st.academy) || 1;
+    if (lv < 5) {
+      var acost = lv * 60000, canA = bank >= acost && !f.administration;
+      out += "<button type='button' class='fo-fin-btn' id='fo-fin-acad'" + (canA ? "" : " disabled") + ">" +
+        "Academy level " + (lv + 1) + " &middot; " + Mk(acost) + "</button>" +
+        "<span class='fo-fin-why'>" + (f.administration ? "Not while the club is under."
+          : canA ? "Better nets for the colts: every level is eight per cent on what they learn."
+          : "That is " + Mk(acost - bank) + " more than the treasury holds.") + "</span>";
+    }
+    return out + "</div>";
+  }
+
+  function wire(page, f, bank, st) {
+    var msg = page.querySelector("#fo-fin-msg");
+    var say = function (t, bad) { if (!msg) return; msg.textContent = t; msg.className = "fo-fin-msg" + (bad ? " bad" : ""); };
+    var seats = page.querySelector("#fo-fin-seats");
+    if (seats) seats.addEventListener("click", function () {
+      var want = Number(f.nextSeats) || 0;
+      if (!confirm("Build " + want.toLocaleString() + " seats for " + M(f.nextSeatsCost) + "? A stand is never taken down again.")) return;
+      seats.disabled = true; say("Laying the concrete…");
+      rpc("world_set_stadium", { p_seats: want })
+        .then(function (r) { say("Built. The ground holds " + (r && r.seats ? Number(r.seats).toLocaleString() : want.toLocaleString()) + " now."); reload(page); })
+        .catch(function (e) { seats.disabled = false; say(String(e.message).slice(0, 160), true); });
+    });
+    var acad = page.querySelector("#fo-fin-acad");
+    if (acad) acad.addEventListener("click", function () {
+      var lv = (Number(st.academy) || 1) + 1;
+      if (!confirm("Take the academy to level " + lv + " for " + M((lv - 1) * 60000) + "?")) return;
+      acad.disabled = true; say("Signing the builders…");
+      rpc("world_set_academy", { p_level: lv })
+        .then(function () { say("The academy is level " + lv + ". The colts will feel it in the nets."); reload(page); })
+        .catch(function (e) { acad.disabled = false; say(String(e.message).slice(0, 160), true); });
+    });
+  }
+  function reload(page) {
+    setTimeout(function () { try { window.foRenderFinancePage(); } catch (e) {} }, 700);
+  }
+
+  window.foRenderFinancePage = function () {
+    var page = document.getElementById("page"); if (!page) return;
+    foFinCss();
+    document.body.classList.add("fo-fin-on");
+    page.innerHTML = shell(head("The books", "Walking down to the treasurer&rsquo;s office&hellip;"));
+    if (!jwt()) {
+      page.innerHTML = shell(head("The books",
+        "The club&rsquo;s money is the club&rsquo;s, and the world keeps it. Sign in to the account that holds your club and the ledger is here."));
+      return;
+    }
+    rpc("world_my_status").then(function (st) {
+      if (!st || st.signedIn === false) {
+        page.innerHTML = shell(head("The books", "Sign in first &mdash; these books belong to a club, and the world keeps them."));
+        return;
+      }
+      if (!st.claim) {
+        page.innerHTML = shell(head("The books",
+          "You don&rsquo;t hold a club in the served world yet. One is claimed for you on the next load, and it comes with " +
+          M(2500000) + " in the treasury."));
+        return;
+      }
+      render(page, st);
+    }).catch(function (e) {
+      page.innerHTML = shell(head("The books",
+        "The world could not be reached (" + E(String(e.message).slice(0, 90)) + "). The books are safe where they are &mdash; try again in a minute."));
+    });
+  };
+  window.addEventListener("hashchange", function () {
+    if ((location.hash || "").split("?")[0] !== "#/finance") document.body.classList.remove("fo-fin-on");
+  });
+})();
+/* ============================================================================
    MATCH RATINGS — the card read as a coach reads it.
 
    Every scorecard in the game now carries a ratings panel: each side's top
@@ -41473,7 +41936,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var hour = PL.natHour(natId);
     // THE HOUR THIS MATCH IS PLAYED, to the minute. Round R of season S falls
     // on one world day, and that day opens at the nation's own hour.
-    var day = (PL.WORLD_START | 0) + (seasonNo - 1) * (PL.CYCLE | 0) + (round - 1);
+    var day = PL.dayOfSeasonRound ? PL.dayOfSeasonRound(seasonNo, round)
+           : ((PL.WORLD_START | 0) + (seasonNo - 1) * (PL.CYCLE | 0) + (round - 1));
     var start = PL.EPOCH + day * PL.DAY + hour * 3600000;
     var stop = start + (PL.LIVE_LEN || 3) * 3600000;
     return { snap: snap, names: names, mgrs: mgrs, sides: sides, bySlot: bySlot,

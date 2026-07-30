@@ -9,12 +9,21 @@
 // World Cup bracket. That is how a shared living world satisfies the
 // human-vs-human / human-vs-bot constraint: determinism instead of sync.
 //
-// The calendar, in 25-day seasons:
-//   days 0-17   league rounds 1-18 (every nation, TEN clubs, double round robin)
-//   day  18     honours day (champions crowned)
-//   day  19     World Cup draw
-//   days 20-23  World Cup: last sixteen, quarters, then prime-time semis & FINAL
-//   day  24     rest day - the wire catches its breath
+// The calendar, in 30-day seasons - THREE ROUNDS, THEN A DAY OFF, six times:
+//   days 0-2    league rounds 1-3
+//   day  3      rest · international window 1 (its call-ups rob round 4)
+//   days 4-6    rounds 4-6      day 7   rest · window 2 (robs round 7)
+//   days 8-10   rounds 7-9      day 11  rest · window 3 (robs round 10)
+//   days 12-14  rounds 10-12    day 15  rest
+//   days 16-18  rounds 13-15    day 19  rest
+//   days 20-22  rounds 16-18    day 23  rest
+//   day  24     honours day (champions crowned) · Champions Cup play-ins
+//   days 25-28  the cups: last sixteen, quarters, semis, THE FINALS
+//   day  29     rest day - the wire catches its breath
+// A cricketer's year is thirty days too, so one season is one year of his life.
+//
+// THIS FILE MUST AGREE WITH server/clock.mjs, ball for ball. The server plays
+// the cricket; this only says what day it is. tests assert the parity.
 // The globe is staggered: each nation bowls off at its own UTC hour (England
 // is the 14:00 league), each day's play running three hours, live.
 //
@@ -35,7 +44,21 @@
 
   // ---- the calendar -----------------------------------------------------------
   var EPOCH = Date.UTC(2026, 6, 28);           // 28 July 2026, day 0 - OPENING DAY: round 1 everywhere
-  var DAY = 86400000, CYCLE = 25, ROUNDS = 18;  // ten clubs, eighteen rounds - every nation plays YOUR format
+  var DAY = 86400000, CYCLE = 30, ROUNDS = 18;  // ten clubs, eighteen rounds - every nation plays YOUR format
+  var BLOCK = 4, LEAGUE_DAYS = 24;              // three rounds then a rest day, six times over
+  // day-in-season <-> round. NOTHING may assume round === day + 1 any more.
+  function roundOfDay(di) {
+    if (!(di >= 0) || di >= LEAGUE_DAYS) return null;
+    if (di % BLOCK === BLOCK - 1) return null;
+    return di - Math.floor(di / BLOCK) + 1;
+  }
+  function dayOfRound(round) {
+    if (!(round >= 1 && round <= ROUNDS)) return null;
+    return Math.floor((round - 1) / (BLOCK - 1)) * BLOCK + ((round - 1) % (BLOCK - 1));
+  }
+  var WINDOW_DAYS = [3, 7, 11], WINDOWS = [4, 7, 10];
+  function windowRoundOfDay(di) { var i = WINDOW_DAYS.indexOf(di); return i < 0 ? null : WINDOWS[i]; }
+  var HONOURS_DAY = 24, CUP_DAYS = { pi: 24, r16: 25, qf: 26, sf: 27, final: 28 };
   var LIVE_LEN = 3;                             // a day's play runs three hours
   // the staggered globe: each nation bowls its first ball at its own UTC hour.
   // England is the 14:00 UTC league; the rest spread around the clock so
@@ -53,10 +76,11 @@
     if (rel < 0) return { day: d, season: 1, di: -1, kind: "rest", preseason: true };
     var s = Math.floor(rel / CYCLE) + 1, di = rel % CYCLE;
     var p = { day: d, season: s, di: di };
-    if (di < ROUNDS) { p.kind = "league"; p.round = di + 1; }
-    else if (di === 18) p.kind = "honours";
-    else if (di === 19) p.kind = "draw";
-    else if (di <= 23) { p.kind = "cup"; p.stage = ["r16", "qf", "sf", "final"][di - 20]; }
+    var r = roundOfDay(di);
+    if (r) { p.kind = "league"; p.round = r; }
+    else if (di < LEAGUE_DAYS) { p.kind = "rest"; p.window = windowRoundOfDay(di); }
+    else if (di === HONOURS_DAY) p.kind = "honours";
+    else if (di <= CUP_DAYS.final) { p.kind = "cup"; p.stage = ["r16", "qf", "sf", "final"][di - CUP_DAYS.r16]; }
     else p.kind = "rest";
     return p;
   }
@@ -66,9 +90,15 @@
     var p = phaseOf(now);
     if (s < p.season) return ROUNDS;
     if (s > p.season) return 0;
-    if (p.di >= ROUNDS) return ROUNDS;
-    var h0 = rid != null ? natHour(rid) : 14;
-    return p.di + (hourOfDay(now) >= h0 + LIVE_LEN ? 1 : 0);
+    if (p.di >= LEAGUE_DAYS) return ROUNDS;
+    var h0 = rid != null ? natHour(rid) : 14, closed = hourOfDay(now) >= h0 + LIVE_LEN;
+    // every round whose day is behind us, plus today's if its window has shut
+    var n = 0;
+    for (var r = 1; r <= ROUNDS; r++) {
+      var d = dayOfRound(r);
+      if (d < p.di || (d === p.di && closed)) n++;
+    }
+    return n;
   }
 
   // ---- the sides of a nation --------------------------------------------------
@@ -197,8 +227,8 @@
   function wcStagesDone(now, season) {
     var p = phaseOf(now); if (season < p.season) return 4;
     if (season > p.season) return 0;
-    if (p.di < 20) return 0;
-    var base = p.di - 20;
+    if (p.di < CUP_DAYS.r16) return 0;
+    var base = p.di - CUP_DAYS.r16;
     var doneToday = hourOfDay(now) >= WC_HOURS[Math.min(3, base)] + LIVE_LEN ? 1 : 0;
     return Math.min(4, base + doneToday);
   }
@@ -241,7 +271,7 @@
       if (st >= 4) { var ch = wcChampion(p.season); out.push({ day: p.day, season: p.season, dayInSeason: p.di, phase: "cup", category: "cup", importance: 100, headline: "CHAMPIONS OF THE WORLD: " + ch.nm + " lift the World Cup" }); }
       else if (st > 0) { var stg = wcBracket(p.season)[st - 1]; stg.matches.forEach(function (m) { out.push({ day: p.day, season: p.season, dayInSeason: p.di, phase: "cup", category: "cup", importance: 80, headline: "World Cup: " + m.winner.nm + " past " + m.loser.nm + " (" + m.hs + " v " + m.as + ")" }); }); }
     }
-    if (p.kind === "honours" || p.di === 19) {
+    if (p.kind === "honours" || p.di === CUP_DAYS.r16) {
       regionList().forEach(function (r) {
         if (r.id === myNation()) return;
         var c = championOf(r.id, p.season);
@@ -413,7 +443,7 @@
 
       // -- the world cup panel (draw day through rest day) --------------------
       var cupHTML = "";
-      if (p.di >= 19) {
+      if (p.di >= HONOURS_DAY) {
         var stagesDone = wcStagesDone(now, p.season);
         var bracket = wcBracket(p.season);
         var ents = wcEntrants(p.season);
@@ -640,5 +670,14 @@
   });
 
   window.foRenderPlanetPage = foRenderPlanetPage;
-  window.__foPlanet = { phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, fixturesOf: fixturesOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
+  // the absolute world day a given season's round is played on - the one
+  // answer every page that dates a fixture must ask for
+  function dayOfSeasonRound(season, round) {
+    var d = dayOfRound(round);
+    if (d == null) return null;
+    return WORLD_START + ((season | 0) - 1) * CYCLE + d;
+  }
+  window.__foPlanet = { roundOfDay: roundOfDay, dayOfRound: dayOfRound, dayOfSeasonRound: dayOfSeasonRound,
+    WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
+    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, fixturesOf: fixturesOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();

@@ -409,30 +409,31 @@
   //  age reads 24.17 - twenty-four years and seventeen days - where a year in
   //  this world is thirty days long.
   //
-  //  The day ticks once per REAL day, off the world clock every nation's round
-  //  already runs on (module 27's epoch), so it is the same number on every
-  //  device with nobody storing anything: no save field, no drift between a
-  //  manager who logs in daily and one who comes back in a fortnight. Each man
-  //  gets a fixed offset from his own name, so a squad is not thirty men who
-  //  all share a birthday.
+  //  The day is the day of the SEASON, and a season is thirty days long - so the
+  //  day ticks once per real day, reads 1 on the season's opening morning and 30
+  //  on its last, and rolls back to 1 at the rollover. Which is the same moment
+  //  the umpire puts a year on everybody. So 20.30 becomes 21.01 exactly, and
+  //  the year is still his to give, never the client's to invent.
   //
-  //  The YEAR is not derived here - it is p.age, the figure the umpire holds and
-  //  advances by one at every season rollover. So the day runs 1 to 30 and back
-  //  to 1, and the year steps when the umpire says he is a year older.
+  //  Nothing is stored: it is a pure function of the world clock, the same on
+  //  every device, with no drift between a manager who logs in daily and one who
+  //  comes back in a fortnight.
   // ---------------------------------------------------------------------------
   var FO_AGE_DAYS = 30;
-  function foSqDayIx() {
-    try { if (window.__foPlanet && window.__foPlanet.dayIx) return window.__foPlanet.dayIx(Date.now()); } catch (e) {}
-    return Math.floor((Date.now() - Date.UTC(2026, 6, 28)) / 86400000);
-  }
-  function foSqNameOff(nm) {
-    var h = 2166136261; nm = String(nm || "");
-    for (var i = 0; i < nm.length; i++) { h ^= nm.charCodeAt(i); h = (h * 16777619) >>> 0; }
-    return h % FO_AGE_DAYS;
+  function foSqSeasonDay() {
+    try {
+      var pl = window.__foPlanet;
+      if (pl && pl.phaseOf) {
+        var di = pl.phaseOf(Date.now()).di;
+        if (di >= 0) return (di % FO_AGE_DAYS) + 1;
+      }
+      if (pl && pl.dayIx) return (((pl.dayIx(Date.now()) % FO_AGE_DAYS) + FO_AGE_DAYS) % FO_AGE_DAYS) + 1;
+    } catch (e) {}
+    var d0 = Math.floor((Date.now() - Date.UTC(2026, 6, 28)) / 86400000);
+    return (((d0 % FO_AGE_DAYS) + FO_AGE_DAYS) % FO_AGE_DAYS) + 1;
   }
   function foAgeParts(p) {
-    var y = Math.max(0, p.age | 0);
-    var d = (((foSqNameOff(p.name) + foSqDayIx()) % FO_AGE_DAYS) + FO_AGE_DAYS) % FO_AGE_DAYS + 1;   // 1..30
+    var y = Math.max(0, p.age | 0), d = foSqSeasonDay();
     return { y: y, d: d, total: y * FO_AGE_DAYS + d };
   }
   function foAgeText(p) {
@@ -441,7 +442,8 @@
   }
   function foAgeLong(p) {
     var a = foAgeParts(p);
-    return a.y + " years, " + a.d + (a.d === 1 ? " day" : " days") + " (a year here is " + FO_AGE_DAYS + " days)";
+    return a.y + " years, " + a.d + (a.d === 1 ? " day" : " days") +
+      " \u2014 a year here is one season, " + FO_AGE_DAYS + " days, and he turns " + (a.y + 1) + " at the rollover";
   }
   try { window.__foAge = { parts: foAgeParts, text: foAgeText, long: foAgeLong }; } catch (eAg) {}
 

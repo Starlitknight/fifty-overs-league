@@ -38,7 +38,9 @@
     try { return base + "flags/" + cx().flagFile(rid) + ".svg"; } catch (e) { return ""; }
   }
   var HOURS = { pi: 18, r16: 15, qf: 15, sf: 20, final: 21 };
-  var DAYS = { pi: 19, r16: 20, qf: 21, sf: 22, final: 23 };
+  // THE SERVER'S DAYS, not a day later: server/clock.mjs CUP_DAYS is the law,
+  // and this used to sit one day behind it on every stage.
+  var DAYS = { pi: 24, r16: 25, qf: 26, sf: 27, final: 28 };
   var STAGE_NM = { pi: "The play-ins", r16: "The last sixteen", qf: "Quarter-finals", sf: "Semi-finals", final: "The Final" };
   var ORDER = ["pi", "r16", "qf", "sf", "final"];
 
@@ -69,7 +71,7 @@
         mine = !!(e && e.mine);
         provisional = frozen ? false : !(e && e.settled);
         try {
-          if (!frozen && pl.phaseOf(now).di >= 19 && pl.phaseOf(now).season === season && e && e.name) {
+          if (!frozen && pl.phaseOf(now).di >= (pl.LEAGUE_DAYS || 24) && pl.phaseOf(now).season === season && e && e.name) {
             App.clEng = { season: season, name: e.name, mine: !!e.mine };
             if (typeof saveGame === "function") saveGame(false);
           }

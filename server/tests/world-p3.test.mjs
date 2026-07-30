@@ -93,8 +93,10 @@ test("P3: a claimant's orders genuinely steer the engine", async () => {
 });
 
 test('P4+P5: a full planet season, then the cup window crowns two champions', async () => {
-  // settle all 18 rounds everywhere (round 1 for eng already played above)
-  const allDone = EPOCH + (101 + 18) * DAY + 2 * 3600000;   // day 119, 02:00 - every window closed
+  // settle all 18 rounds everywhere (round 1 for eng already played above).
+  // Eighteen rounds now take TWENTY-FOUR days: three rounds, then a rest day,
+  // six times over. The last round is day-in-season 22, so day +24 is past it.
+  const allDone = EPOCH + (101 + 24) * DAY + 2 * 3600000;   // day 125, 02:00 - every window closed
   await runAllDue(pool, host, { now: allDone });
   const n = await pool.query('SELECT count(*)::int AS n FROM matches');
   assert.equal(n.rows[0].n, 19 * 90, 'the whole season: 19 nations x 90 matches');
@@ -105,8 +107,8 @@ test('P4+P5: a full planet season, then the cup window crowns two champions', as
   const cm0 = await pool.query('SELECT count(*)::int AS n FROM cup_matches');
   assert.equal(cm0.rows[0].n, 0);
 
-  // after the final's window (start_day+22 at 24:00): everything settles in one call
-  const cupDone = EPOCH + (101 + 23) * DAY + 1 * 3600000;
+  // after the final's window (start_day+28 at 24:00): everything settles in one call
+  const cupDone = EPOCH + (101 + 29) * DAY + 1 * 3600000;
   const cups = await runCupWindow(pool, host, { now: cupDone });
   const wcl = cups.s1.wcl.filter(x => !x.skipped), wc = cups.s1.wc.filter(x => !x.skipped);
   assert.deepEqual(wcl.map(x => x.stage), ['pi', 'r16', 'qf', 'sf', 'final']);
@@ -140,15 +142,15 @@ test('P4+P5: a full planet season, then the cup window crowns two champions', as
   assert.ok(H.seasons.s1.worldCup, 'the World Cup winner is in the book');
 });
 
-test('seasons roll: season 2 begins at start_day + 25 everywhere', async () => {
-  const beforeRoll = await rollSeasons(pool, { now: EPOCH + (101 + 23) * DAY });
-  assert.equal(beforeRoll.length, 0, 'no rollover before day +25');
-  const rolled = await rollSeasons(pool, { now: EPOCH + (101 + 25) * DAY + 3600000 });
+test('seasons roll: season 2 begins at start_day + 30 everywhere', async () => {
+  const beforeRoll = await rollSeasons(pool, { now: EPOCH + (101 + 29) * DAY });
+  assert.equal(beforeRoll.length, 0, 'no rollover before day +30');
+  const rolled = await rollSeasons(pool, { now: EPOCH + (101 + 30) * DAY + 3600000 });
   assert.equal(rolled.length, 19);
   const s2 = await pool.query('SELECT count(*)::int AS n, min(start_day) AS d FROM seasons WHERE season_no=2');
   assert.equal(s2.rows[0].n, 19);
-  assert.equal(s2.rows[0].d, 126);
-  const again = await rollSeasons(pool, { now: EPOCH + (101 + 25) * DAY + 3600000 });
+  assert.equal(s2.rows[0].d, 131);
+  const again = await rollSeasons(pool, { now: EPOCH + (101 + 30) * DAY + 3600000 });
   assert.equal(again.length, 0, 'season 2 already current: nothing further rolls');
   const s2b = await pool.query('SELECT count(*)::int AS n FROM seasons WHERE season_no=2');
   assert.equal(s2b.rows[0].n, 19);

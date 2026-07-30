@@ -4,7 +4,10 @@
 // fifteen picked by rating at the cup window so the World Cup bracket had
 // somebody to run. This module gives the international game a season.
 //
-// Three rounds a year are WINDOW DAYS (clock.mjs WINDOWS: 5, 9 and 13). On a
+// Three REST DAYS a year are window days (clock.mjs WINDOW_DAYS: days 3, 7 and
+// 11 of the season, closing the first three blocks). Nobody's club plays that
+// day; the men named are away when their clubs next play, which is rounds 4, 7
+// and 10 (clock.mjs WINDOWS). On a
 // window day:
 //
 //   the morning  the selectors name a squad of fifteen for every nation, from
@@ -27,7 +30,8 @@
 // stands when the window is settled. Settle a window on the day and that is
 // exactly his form that morning; heal a window days late and the selectors
 // have seen a little cricket the players had not. Once named, it is fixed.
-import { dayIx, seedOf, isWindowRound, WINDOWS, INTL_HOUR, hourSettled, ROUNDS } from './clock.mjs';
+import { dayIx, seedOf, isWindowRound, WINDOWS, WINDOW_DAYS, windowRoundOfDay, windowDayOfRound,
+         INTL_HOUR, hourSettled, ROUNDS } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
 
 export const SQUAD_SIZE = 15;
@@ -92,13 +96,16 @@ export function selectSquad(men, { size = SQUAD_SIZE, clubLimit = CLUB_LIMIT, mi
   return picked;
 }
 
-// the world day a nation's round falls on, and whether that day's draw gave
-// it a fixture at all
+// the world day the tour that robs this round is played on, and whether that
+// day's draw gave the nation a fixture at all. The window day is the REST DAY
+// before the round - no club cricket clashes with a tour any more.
 export async function touringOn(pool, country, seasonNo, round) {
+  const wd = windowDayOfRound(round);
+  if (wd == null) return false;
   const s = (await pool.query(
     'SELECT start_day FROM seasons WHERE country_id=$1 AND season_no=$2', [country, seasonNo])).rows[0];
   if (!s) return false;
-  const day = s.start_day + round - 1;
+  const day = s.start_day + wd;
   const inWindow = await windowsOn(pool, day);
   if (inWindow.length < 2) return false;
   return tourPairs(day, inWindow.map(w => w.country)).some(p => p[0] === country || p[1] === country);
@@ -248,14 +255,23 @@ export async function seasonSquad(pool, country, seasonNo) {
   return selectSquad(await nationMen(pool, country));
 }
 
-// which nations are in a window on a given world day, and on what round
+// which nations are in a window on a given world day, and which club round each
+// one's call-ups will rob. The calendar owns the day->window mapping, so this
+// asks it rather than doing arithmetic in SQL.
 export async function windowsOn(pool, day) {
   const rows = (await pool.query(
-    `SELECT s.country_id, s.season_no, (($1::int - s.start_day) + 1) AS round, c.name
+    `SELECT s.country_id, s.season_no, s.start_day, c.name
        FROM seasons s JOIN countries c ON c.id = s.country_id
-      WHERE (($1::int - s.start_day) + 1) = ANY($2::int[])
-      ORDER BY s.country_id`, [day, WINDOWS])).rows;
-  return rows.map(r => ({ country: r.country_id, seasonNo: r.season_no, round: r.round, name: r.name }));
+      ORDER BY s.country_id, s.season_no DESC`)).rows;
+  const out = [], seen = new Set();
+  for (const r of rows) {
+    if (seen.has(r.country_id)) continue;                 // the latest season only
+    const round = windowRoundOfDay(day - r.start_day);
+    if (round == null) continue;
+    seen.add(r.country_id);
+    out.push({ country: r.country_id, seasonNo: r.season_no, round, name: r.name });
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -454,7 +470,7 @@ export async function computeNations(pool, now = Date.now()) {
     };
   }
   return {
-    day: dayIx(now), windows: WINDOWS, hourUtc: INTL_HOUR, rounds: ROUNDS,
+    day: dayIx(now), windows: WINDOWS, windowDays: WINDOW_DAYS, hourUtc: INTL_HOUR, rounds: ROUNDS,
     nations, tours: tours.slice(0, 40), generatedAtDay: dayIx(now)
   };
 }

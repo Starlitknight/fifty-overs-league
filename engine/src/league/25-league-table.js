@@ -462,8 +462,18 @@
         // an hour already hours past. The clock knows which of the three it is
         // - not started, in play, or done - so let it name the round honestly.
         var nextRd = Math.min(rounds, curRound + (state === "fin" ? 1 : 0));
+        // WHICH DAY IS THE NEXT ROUND ON? It used to be "tomorrow", always,
+        // because every day was a match day. Three rounds then a rest day means
+        // the next round can be two days off, so ask the calendar and say so.
+        var nextDayWord = "";
+        try {
+          var dNext = pl.dayOfSeasonRound((cal && cal.seasonNo) || 1, nextRd);
+          var gap = dNext == null ? null : dNext - pl.dayIx(Date.now());
+          nextDayWord = gap === 0 ? " today" : gap === 1 ? ", tomorrow"
+            : gap > 1 ? ", in " + gap + " days" : "";
+        } catch (eNd2) {}
         var nextTtl = state === "live" ? "Round " + curRound + ", in play"
-          : state === "fin" ? "Round " + nextRd + ", tomorrow" : "Round " + nextRd + " today";
+          : "Round " + nextRd + (nextDayWord || (state === "fin" ? ", next" : " today"));
         var nextWhen = hh(hour) + " UTC";
         var nextPairs = [];
         try {

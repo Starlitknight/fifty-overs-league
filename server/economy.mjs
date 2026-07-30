@@ -17,7 +17,7 @@
 // THE LAW HOLDS: nothing here is incremented imperatively and nothing is
 // stored that a re-run could not rebuild. Settle it twice and it settles the
 // same figure, which is what lets an offline manager trust it.
-import { seedOf } from './clock.mjs';
+import { seedOf, dayOfRound } from './clock.mjs';
 
 export const FOUNDING_BANK = 2500000;
 export const FOUNDING_SUPPORT = 12000;
@@ -209,7 +209,7 @@ export async function computeFinance(pool, country) {
     const pos = posMap();
     // every deal that closed on or before this round's day has already moved
     // the money by the time the gate is counted
-    if (R.ms.length) drainMarket((startOf[R.ms[0].season_no] ?? 0) + R.ms[0].round - 1);
+    if (R.ms.length) drainMarket((startOf[R.ms[0].season_no] ?? 0) + (dayOfRound(R.ms[0].round) ?? (R.ms[0].round - 1)));
     const takings = {};                                   // slot -> money this round
     for (const c of clubs) takings[c.slot] = 0;
     for (const m of R.ms) {

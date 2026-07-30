@@ -7,8 +7,13 @@ The owner's spec, in their words, refined by the FTP manual:
 - Each league contains humans and bots. One club per country is the BOSS CLUB
   (our boss characters: Sir Giles Pemberley's XI etc.). Humans joining a
   country replace a bot club, NEVER the boss.
-- Season = double round robin (18 rounds), one round per day on the world
-  clock, each nation at its own UTC hour (England 14:00).
+- Season = double round robin (18 rounds) over a 30-DAY CALENDAR: three rounds
+  then a rest day, six times over (24 days), then the honours day, the two cups
+  and a final rest day. Each nation plays at its own UTC hour (England 14:00).
+  A cricketer's year is thirty days too, so one season is one year of his life.
+- The three international windows sit on rest days (days 3, 7 and 11), so a tour
+  never clashes with club cricket - but the men called up are still away when
+  their clubs next play (rounds 4, 7 and 10).
 - Each country's champion club is invited to THE CHAMPIONS LEAGUE
   (club knockout across nations) after the season.
 - Each country also has a NATIONAL TEAM. The strongest players from any club
@@ -175,7 +180,7 @@ The owner's spec, in their words, refined by the FTP manual:
     FANTASY POINTS per match feeding form (we have partial).
 
 ## Already built (keep)
-Deterministic world clock (25-day cycle, staggered hours, live windows),
+Deterministic world clock (30-day cycle, staggered hours, live windows),
 top-bar clock, dated fixtures, auto-resolving rounds with saved orders,
 MATCHDAY LIVE window, planet/almanack/star/cup-match pages, generational
 world squads, winter window signings, records (user-beatable), county

@@ -215,7 +215,8 @@
   }
 
   // ---- the winter window: six stars, one signing, your money -----------------
-  function windowOpen(p) { return p.di >= 19; }
+  // the winter window opens when the league is done - the closing week
+  function windowOpen(p) { try { return p.di >= (P().LEAGUE_DAYS || 24); } catch (e) { return p.di >= 24; } }
   function marketOf(season) {
     var rids = regionList().map(function (r) { return r.id; }).filter(function (rid) { return rid !== myNation(); });
     rids.sort(function (a, b) { return rnd01("mkt|" + season + "|" + a) - rnd01("mkt|" + season + "|" + b); });

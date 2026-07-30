@@ -3,16 +3,73 @@
 // same epoch, same 25-day cycle, same 18 rounds, same national hours.
 export const EPOCH = Date.UTC(2026, 6, 28);   // 28 July 2026 = world day 0, OPENING DAY (round 1 everywhere)
 export const DAY = 86400000;
-export const CYCLE = 25;
-export const ROUNDS = 18;
+// ---------------------------------------------------------------------------
+//  THE 30-DAY SEASON
+//
+//  Cricket is not played every day of the week, and a season that never drew
+//  breath gave a manager no evening to think in. So the league runs in blocks:
+//  THREE ROUNDS, THEN A DAY OFF, six times over. Twenty-four days of league,
+//  then the closing week - the crowns, the two cups, and one last quiet day.
+//
+//    day-in-season   what happens
+//    0  1  2         rounds 1-3
+//    3               rest · INTERNATIONAL WINDOW 1
+//    4  5  6         rounds 4-6
+//    7               rest · INTERNATIONAL WINDOW 2
+//    8  9  10        rounds 7-9
+//    11              rest · INTERNATIONAL WINDOW 3
+//    12 13 14        rounds 10-12
+//    15              rest
+//    16 17 18        rounds 13-15
+//    19              rest
+//    20 21 22        rounds 16-18
+//    23              rest
+//    24              champions crowned · Champions Cup play-ins
+//    25 26 27 28     last sixteen, quarters, semis, THE FINALS
+//    29              rest - the wire catches its breath
+//
+//  Thirty days, and a cricketer's year is thirty days long: one season is one
+//  year of his life, and his age rolls over exactly when the umpire ages him.
+//
+//  NOTHING ANYWHERE MAY ASSUME round === day + 1. It was true when every day
+//  was a match day and it is not true now, so the two functions below are the
+//  only place the mapping lives - server and client both.
+// ---------------------------------------------------------------------------
+export const CYCLE = 30;                      // days in a season
+export const ROUNDS = 18;                     // ten clubs, double round robin
+export const BLOCK = 4;                       // three rounds then a rest day
+export const LEAGUE_DAYS = 24;                // six blocks of four
 export const LIVE_HOURS = 3;
-// THE INTERNATIONAL WINDOWS. Three rounds a season are also window days: the
-// selectors name a squad in the morning, those men miss their clubs' round,
-// and their countries play each other in the evening. BLUEPRINT's FTP-style
-// weeks 5/8/11 pattern, on our daily calendar: rounds 5, 9 and 13.
-export const WINDOWS = [5, 9, 13];
+// day-in-season -> round number, or null if no league cricket is played
+export function roundOfDay(di) {
+  if (!(di >= 0) || di >= LEAGUE_DAYS) return null;
+  if (di % BLOCK === BLOCK - 1) return null;                 // the rest day
+  return di - Math.floor(di / BLOCK) + 1;
+}
+// round number -> day-in-season. The exact inverse of roundOfDay.
+export function dayOfRound(round) {
+  if (!(round >= 1 && round <= ROUNDS)) return null;
+  return Math.floor((round - 1) / (BLOCK - 1)) * BLOCK + ((round - 1) % (BLOCK - 1));
+}
+// the first round whose day falls AFTER di - the market's "he is available from
+// the next round", which used to be `today - start_day + 2` and is not any more
+export function nextRoundAfterDay(di) {
+  for (let r = 1; r <= ROUNDS; r++) if (dayOfRound(r) > di) return r;
+  return ROUNDS + 1;                            // the league is done; he waits for next season
+}
+// THE INTERNATIONAL WINDOWS. Three rest days a season are window days: the
+// selectors name a squad in the morning, their countries play each other that
+// evening - and the men named are still away when their clubs next play, so a
+// call-up is a hole in your side, the way it is in the real game.
+export const WINDOW_DAYS = [3, 7, 11];        // days-in-season the tours are played
+export const WINDOWS = [4, 7, 10];            // the club round each one robs
 export const INTL_HOUR = 18;                  // every tour starts at 18:00 UTC
 export function isWindowRound(round) { return WINDOWS.indexOf(round) >= 0; }
+export function windowRoundOfDay(di) { const i = WINDOW_DAYS.indexOf(di); return i < 0 ? null : WINDOWS[i]; }
+export function windowDayOfRound(round) { const i = WINDOWS.indexOf(round); return i < 0 ? null : WINDOW_DAYS[i]; }
+// the closing week
+export const HONOURS_DAY = 24;
+export const CUP_DAYS = { pi: 24, r16: 25, qf: 26, sf: 27, final: 28 };
 // the staggered globe, same formula as the client planet: England is the
 // 14:00 UTC league; every other nation hashes onto one of eight slots.
 // Parity with the shipped build is asserted by tests/world-p2.test.mjs.
@@ -29,10 +86,11 @@ export function dayIx(nowMs) { return Math.floor((nowMs - EPOCH) / DAY); }
 export function phaseOf(nowMs) {
   const d = dayIx(nowMs), season = Math.floor(d / CYCLE) + 1, di = ((d % CYCLE) + CYCLE) % CYCLE;
   const p = { day: d, season, di };
-  if (di < ROUNDS) { p.kind = 'league'; p.round = di + 1; }
-  else if (di === 18) p.kind = 'honours';
-  else if (di === 19) p.kind = 'draw';
-  else if (di <= 23) p.kind = 'cup';
+  const r = roundOfDay(di);
+  if (r) { p.kind = 'league'; p.round = r; }
+  else if (di < LEAGUE_DAYS) { p.kind = 'rest'; p.window = windowRoundOfDay(di); }
+  else if (di === HONOURS_DAY) p.kind = 'honours';
+  else if (di <= CUP_DAYS.final) { p.kind = 'cup'; p.stage = ['r16', 'qf', 'sf', 'final'][di - CUP_DAYS.r16]; }
   else p.kind = 'rest';
   return p;
 }
