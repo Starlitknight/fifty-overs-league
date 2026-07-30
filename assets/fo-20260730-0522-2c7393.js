@@ -9908,7 +9908,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260730-0512-125830";
+  var FO_BUILD = "20260730-0522-2c7393";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -20578,14 +20578,55 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var c = ix >= 5 ? "#1E8C63" : ix === 4 ? "#4F9A76" : ix === 3 ? "#8A8272" : ix === 2 ? "#B5722F" : "#C0432C";
     return "<span class='fo-sqt-frm' title='Form: " + E(w) + "'><b style='color:" + c + "'>" + g + "</b><span class='w' style='color:" + c + "'>" + E(w) + "</span></span>";
   }
+  // ---------------------------------------------------------------------------
+  //  HOW OLD IS HE, TO THE DAY
+  //
+  //  A whole number was too blunt: two men both "30" can be nine months apart,
+  //  and a colt watching his birthday come is worth something to look at. So an
+  //  age reads 24.17 - twenty-four years and seventeen days - where a year in
+  //  this world is thirty days long.
+  //
+  //  The day ticks once per REAL day, off the world clock every nation's round
+  //  already runs on (module 27's epoch), so it is the same number on every
+  //  device with nobody storing anything: no save field, no drift between a
+  //  manager who logs in daily and one who comes back in a fortnight. Each man
+  //  gets a fixed offset from his own name, so a squad is not thirty men who
+  //  all share a birthday.
+  //
+  //  The YEAR is not derived here - it is p.age, the figure the umpire holds and
+  //  advances by one at every season rollover. So the day runs 1 to 30 and back
+  //  to 1, and the year steps when the umpire says he is a year older.
+  // ---------------------------------------------------------------------------
+  var FO_AGE_DAYS = 30;
+  function foSqDayIx() {
+    try { if (window.__foPlanet && window.__foPlanet.dayIx) return window.__foPlanet.dayIx(Date.now()); } catch (e) {}
+    return Math.floor((Date.now() - Date.UTC(2026, 6, 28)) / 86400000);
+  }
+  function foSqNameOff(nm) {
+    var h = 2166136261; nm = String(nm || "");
+    for (var i = 0; i < nm.length; i++) { h ^= nm.charCodeAt(i); h = (h * 16777619) >>> 0; }
+    return h % FO_AGE_DAYS;
+  }
+  function foAgeParts(p) {
+    var y = Math.max(0, p.age | 0);
+    var d = (((foSqNameOff(p.name) + foSqDayIx()) % FO_AGE_DAYS) + FO_AGE_DAYS) % FO_AGE_DAYS + 1;   // 1..30
+    return { y: y, d: d, total: y * FO_AGE_DAYS + d };
+  }
+  function foAgeText(p) {
+    var a = foAgeParts(p);
+    return a.y + "." + (a.d < 10 ? "0" : "") + a.d;
+  }
+  function foAgeLong(p) {
+    var a = foAgeParts(p);
+    return a.y + " years, " + a.d + (a.d === 1 ? " day" : " days") + " (a year here is " + FO_AGE_DAYS + " days)";
+  }
+  try { window.__foAge = { parts: foAgeParts, text: foAgeText, long: foAgeLong }; } catch (eAg) {}
+
   function foSqLad(v, k) {
     try {
       if (k === "exp" && typeof EXPLAD !== "undefined") return EXPLAD[Math.max(0, Math.min(EXPLAD.length - 1, Math.floor(v / (100 / EXPLAD.length))))];
       return word(v);
     } catch (e) { return ""; }
-  }
-  function foSqAbbr(v, k) {
-    try { return k === "exp" ? foSqLad(v, k).slice(0, 5) : abbr(v); } catch (e) { return ""; }
   }
   // the columns, in reading order. num: right-aligned rating. agg: a headline
   // figure, tinted so the eye finds it. live: false means the number does not
@@ -20599,8 +20640,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       v: function (p) { return foSqClass(p); } },
     { k: "nat", l: "Nat", s: "Nat", tip: "Where he is from - and who can pick him for a country",
       v: function (p) { return String(p.nat || "zzz"); } },
-    { k: "age", l: "Age", s: "Age", tip: "Years old. Skills come on fastest before 24 and fade after 31", num: 1,
-      v: function (p) { return p.age | 0; } },
+    { k: "age", l: "Age", s: "Age", tip: "Years and days - a year here is 30 days, and a day passes every real day", num: 1,
+      v: function (p) { return foAgeParts(p).total; } },
     { k: "bat", l: "Bat", s: "Bat", tip: "Batting: vs pace, vs spin, rotation, temperament, power", num: 1, agg: 1,
       v: function (p) { return Math.round(aggBat(p)); } },
     { k: "bowl", l: "Bowl", s: "Bowl", tip: "Bowling: threat, control, discipline, movement, variety, stamina", num: 1, agg: 1,
@@ -20645,7 +20686,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<i>" + (on ? (dir === 1 ? "&#9650;" : "&#9660;") : "") + "</i></th>";
     }).join("");
 
-    var words = !!sv.words;
     var cell = function (c, p) {
       var v = c.v(p, ctx);
       if (c.k === "name") {
@@ -20673,12 +20713,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             " onerror=\"this.parentNode.outerHTML=&quot;<span class=&#39;fo-sqg-nat&#39;>" + E(nat) + "</span>&quot;\"></span>"
                : "<span class='fo-sqg-nat'>" + E(nat) + "</span>") + "</td>";
       }
-      if (c.k === "age") return "<td class='n c-age'>" + (p.age | 0) + "</td>";
+      if (c.k === "age") return "<td class='n c-age' title='" + E(foAgeLong(p)) + "'>" + E(foAgeText(p)) + "</td>";
       if (c.k === "wage") return "<td class='n c-wage'>" + (typeof money === "function" ? money(p.wage || 0) : "$" + (p.wage | 0)) + "</td>";
       if (c.k === "form") return "<td class='n c-form'>" + foSqFormGlyph(p) + "</td>";
       if (v < 0) return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "'><span class='fo-sqg-nil' title='Does not bowl'>&ndash;</span></td>";
+      // the number is the reading; the ladder word it sits on is the tooltip
       return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "' title='" + E(c.l + ": " + foSqLad(v, c.k) + " (" + v + ")") + "'>" +
-        "<span class='fo-sqg-v' style='color:" + foSqQCol(v) + "'>" + (words ? E(foSqAbbr(v, c.k)) : v) + "</span></td>";
+        "<span class='fo-sqg-v' style='color:" + foSqQCol(v) + "'>" + v + "</span></td>";
     };
 
     var body = rows.map(function (p) {
@@ -20688,31 +20729,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         cols.map(function (c) { return cell(c, p); }).join("") + "</tr>";
     }).join("");
 
-    // the club's own line: what the squad averages, column by column
-    var foot = cols.map(function (c) {
-      if (c.k === "name") return "<td class='c-name'><span class='fo-sqg-ft'>Squad average</span></td>";
-      if (!c.num || c.k === "pos" || c.k === "form") return "<td class='c-" + c.k + "'></td>";
-      var vals = rows.map(function (p) { return c.v(p, ctx); }).filter(function (v) { return typeof v === "number" && v >= 0; });
-      if (!vals.length) return "<td class='n c-" + c.k + "'></td>";
-      var av = Math.round(vals.reduce(function (a, b) { return a + b; }, 0) / vals.length);
-      var txt = c.k === "wage" ? (typeof money === "function" ? money(av) : "$" + av)
-              : c.k === "age" ? av
-              : (words ? foSqAbbr(av, c.k) : av);
-      return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "'><span class='fo-sqg-fv'>" + E(String(txt)) + "</span></td>";
-    }).join("");
-
-    // dropdowns, not a wall of pills: two short questions, two lists
+    // one short question, one list
     var who = sv.who || "sen";
-    var pick = function (name, cur, opts) {
-      return "<label class='fo-sqg-pick'><span>" + E(name) + "</span><select data-" + name.toLowerCase().replace(/[^a-z]/g, "") + ">" +
-        opts.map(function (o) {
-          return "<option value='" + o[0] + "'" + (o[0] === cur ? " selected" : "") + ">" + E(o[1]) + "</option>";
-        }).join("") + "</select></label>";
-    };
-    var controls = "<div class='fo-sqg-ctl'>" +
-      pick("Show", who, [["sen", "Seniors"], ["yth", "Youth"], ["all", "Everyone"]]) +
-      pick("Read", words ? "w" : "n", [["n", "Numbers"], ["w", "Words"]]) +
-      "</div>";
+    var controls = "<div class='fo-sqg-ctl'><label class='fo-sqg-pick'><span>Show</span><select data-show>" +
+      [["sen", "Seniors"], ["yth", "Youth"], ["all", "Everyone"]].map(function (o) {
+        return "<option value='" + o[0] + "'" + (o[0] === who ? " selected" : "") + ">" + E(o[1]) + "</option>";
+      }).join("") + "</select></label></div>";
 
     var cap = rows.length
       ? (rows.length + " " + (rows.length === 1 ? "player" : "players") +
@@ -20726,7 +20748,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "<div class='fo-sqg-wrap'><table class='fo-sqg'>" +
       "<thead><tr>" + head + "</tr></thead>" +
       "<tbody>" + (body || "<tr><td class='fo-sqg-none' colspan='" + cols.length + "'>Nobody to show. Try another Show setting.</td></tr>") + "</tbody>" +
-      (body ? "<tfoot><tr>" + foot + "</tr></tfoot>" : "") +
       "</table></div></div>";
   }
   function foSqStars(ovr) {
@@ -20813,7 +20834,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-sqg-pick select:focus-visible{outline:2px solid #C95532;outline-offset:1px}",
       ".fo-sqg-cap{margin:0 0 10px;font:italic 400 12.5px/1.5 Georgia,serif;color:rgba(20,28,40,.58)}",
       ".fo-sqg-cap b{font-style:normal;font-weight:600;color:#B44A22}",
-      ".fo-sqg-wrap{position:relative;overflow:auto;max-height:calc(100vh - 210px);background:#FFFEFC;border:1px solid rgba(20,28,40,.11);border-radius:14px;box-shadow:0 10px 30px rgba(30,38,52,.09);-webkit-overflow-scrolling:touch}",
+      // NO SCROLLBAR OF ITS OWN. A box with its own bar inside a page with
+      // another one is two scrollbars for one list. The grid is as tall as the
+      // squad and the window scrolls it, the way the rest of the game reads.
+      // The header still pins - to the page, under the fixed topbar.
+      ".fo-sqg-wrap{position:relative;overflow:visible;background:#FFFEFC;border:1px solid rgba(20,28,40,.11);border-radius:14px;box-shadow:0 10px 30px rgba(30,38,52,.09)}",
       // width:auto, not 100%: a 27-column set must be allowed to be wider than
       // the box and scroll, rather than squeezing every number into 12px on a
       // phone. min-width keeps a narrow set (Fielding) filling the paper.
@@ -20830,11 +20855,18 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-sqg-bands th,html body.ftpskin #page .fo-sqg-bands th{position:sticky;top:0;z-index:6;height:29px;background:#F4EFE3 !important;border-bottom:1px solid rgba(20,28,40,.1) !important}",
       "html body #page th.fo-sqg-band,html body.ftpskin #page th.fo-sqg-band{padding:7px 10px !important;text-align:left;white-space:nowrap;font:600 8.5px Oswald,sans-serif !important;letter-spacing:.2em;text-transform:uppercase;color:#B44A22 !important;border-left:1px solid rgba(20,28,40,.08) !important}",
       "html body #page th.fo-sqg-band.blank{border-left:0 !important}",
-      "html body #page th.fo-sqg-h,html body.ftpskin #page th.fo-sqg-h{position:sticky;top:0;z-index:5;text-align:left;white-space:nowrap;cursor:pointer;user-select:none;padding:8px 7px !important;background:#FFFEFC !important;color:rgba(20,28,40,.5) !important;border-bottom:1px solid rgba(20,28,40,.16) !important;font:600 9px Oswald,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;transition:color .14s}",
-      "html body #page th.fo-sqg-h:hover{color:#B44A22 !important}",
-      "html body #page th.fo-sqg-h.on{color:#B44A22 !important;box-shadow:inset 0 -2px 0 #C95532}",
+      // A SCOREBOOK HEADING, NOT A SPREADSHEET ONE. Navy ink with the club's
+      // gold on it, a burnt-orange rule under the whole band, and the column
+      // being sorted lit in gold with the same rule doubled beneath it.
+      "html body #page th.fo-sqg-h,html body.ftpskin #page th.fo-sqg-h{position:sticky;top:46px;z-index:5;text-align:left;white-space:nowrap;cursor:pointer;user-select:none;padding:11px 7px !important;background:linear-gradient(180deg,#0E2246,#0A1A34) !important;color:#A9BEDD !important;border-bottom:2px solid #C95532 !important;font:600 9px Oswald,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;transition:color .14s,background .14s}",
+      "html body #page th.fo-sqg-h:first-child{border-top-left-radius:13px}",
+      "html body #page th.fo-sqg-h:last-child{border-top-right-radius:13px}",
+      "html body #page th.fo-sqg-h:hover{color:#F0D9A6 !important;background:linear-gradient(180deg,#143059,#0D2141) !important}",
+      "html body #page th.fo-sqg-h.on{color:#EBC271 !important;background:linear-gradient(180deg,#16345F,#0E2244) !important;box-shadow:inset 0 -4px 0 #C89A2E}",
       "html body #page th.fo-sqg-h.n{text-align:right}",
-      "html body #page th.fo-sqg-h.agg{background:#FBF7EE !important}",
+      "html body #page th.fo-sqg-h.agg{background:linear-gradient(180deg,#123055,#0B1E3C) !important;color:#C6D8F2 !important}",
+      "html body #page th.fo-sqg-h.agg.on{color:#EBC271 !important}",
+      ".fo-sqg-h i{color:#EBC271}",
       ".fo-sqg-h i{font-style:normal;font-size:6.5px;margin-left:4px;vertical-align:2px}",
       ".fo-sqg-h .sm{display:none}",
       // cells
@@ -20848,8 +20880,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-sqg-r:hover td,.fo-sqg-r:focus-visible td{background:rgba(201,85,50,.06);outline:none}",
       ".fo-sqg-r:hover td.agg,.fo-sqg-r:focus-visible td.agg{background:rgba(201,85,50,.1)}",
       // the name column is the anchor: pinned left, so a wide set still reads
-      ".fo-sqg td.c-name,html body #page th.fo-sqg-h.c-name{position:sticky;left:0;z-index:4;background:#FFFEFC !important;box-shadow:1px 0 0 rgba(20,28,40,.1)}",
-      "html body #page th.fo-sqg-h.c-name{z-index:7}",
+      ".fo-sqg td.c-name{position:sticky;left:0;z-index:4;background:#FFFEFC !important;box-shadow:1px 0 0 rgba(20,28,40,.1)}",
+      "html body #page th.fo-sqg-h.c-name{position:sticky;left:0;z-index:7}",
       ".fo-sqg-r:hover td.c-name,.fo-sqg-r:focus-visible td.c-name{background:#FDF4F0 !important}",
       ".fo-sqg-nm{font-weight:600;color:#141C28}",
       ".fo-sqg-r.yth .fo-sqg-nm{color:rgba(20,28,40,.72)}",
@@ -20875,14 +20907,14 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-sqg td.agg .fo-sqg-v{font-weight:700;font-size:13.5px}",
       ".fo-sqg td.c-ovr .fo-sqg-v{font-size:15px}",
       // the club's own line, under the men
-      ".fo-sqg tfoot td{position:sticky;bottom:0;z-index:3;height:34px;background:#F4EFE3;border-top:1px solid rgba(20,28,40,.16);border-bottom:0}",
-      ".fo-sqg tfoot td.c-name{z-index:5;background:#F4EFE3 !important;box-shadow:1px 0 0 rgba(20,28,40,.1)}",
-      ".fo-sqg-ft{font-family:Oswald,sans-serif;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.5)}",
-      ".fo-sqg-fv{font-family:Oswald,sans-serif;font-weight:600;font-size:11.5px;font-variant-numeric:tabular-nums;color:rgba(20,28,40,.62)}",
       ".fo-sqg-none{text-align:center;font:italic 400 13px Georgia,serif;color:rgba(20,28,40,.5);height:74px}",
       // the grid is a daylight page like the roster: no art, no veil
       ".fo-sqx.gridding .fo-sqx-bg,.fo-sqx.gridding .fo-sqx-veil{display:none}",
-      ".fo-sqx.gridding .fo-sqx-park{background:transparent}",
+      // overflow:hidden on the park (it clips the ground art) would make the
+      // park the sticky container, and a container that never scrolls cannot
+      // pin anything - the heading just slid up under the topbar with the page.
+      // No art in this view, so nothing needs clipping.
+      ".fo-sqx.gridding .fo-sqx-park{background:transparent;overflow:visible}",
       ".fo-sqx.gridding .fo-sqx-hd h1{color:#141C28 !important;text-shadow:none}",
       ".fo-sqx.gridding .fo-sqx-tag{color:#B44A22 !important;text-shadow:none}",
       // the view switch reads as paper on both of the views it switches between
@@ -21008,7 +21040,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // narrows, and the grid keeps its sideways scroll rather than dropping
       // columns - a comparison with columns missing is not a comparison
       "@media(max-width:760px){.fo-sqg-cap{font-size:12px}",
-      ".fo-sqg-wrap{max-height:calc(100vh - 250px);border-radius:12px}",
+      // a phone cannot fit fourteen columns, and the PAGE must never scroll
+      // sideways - so on a phone (only) the box keeps its own horizontal bar,
+      // and the heading gives up pinning, which a sideways scroller cannot do
+      ".fo-sqg-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px}",
+      "html body #page th.fo-sqg-h,html body.ftpskin #page th.fo-sqg-h{position:static;padding:9px 7px !important}",
+      ".fo-sqg td.c-name{position:sticky;left:0}",
       ".fo-sqg td{padding:0 8px;height:36px;font-size:12px}",
       "html body #page th.fo-sqg-h,html body.ftpskin #page th.fo-sqg-h{padding:8px !important;letter-spacing:.08em;font-size:8.5px}",
       ".fo-sqg-h .lg{display:none}.fo-sqg-h .sm{display:inline}",
@@ -21246,7 +21283,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           "<span class='fo-ros-pic'><img src='" + FO_ART + foPkArt(p) + "' alt='' loading='lazy' decoding='async'>" +
           (flg && p.nat ? "<em class='fo-ros-flag'><img src='" + flg + "' alt='" + E(p.nat) + "' onerror=\"this.parentNode.style.display='none'\"></em>" : "") + "</span>" +
           "<span class='fo-ros-id'><b>" + E(p.name) + (capt === p.name ? " <i class='fo-ros-c'>C</i>" : "") + "</b>" +
-          "<span>" + roleNm + (det ? " &middot; " + E(det) : "") + (p.age ? " &middot; " + (p.age | 0) : "") + "</span></span>" +
+          "<span>" + roleNm + (det ? " &middot; " + E(det) : "") + (p.age ? " &middot; " + E(foAgeText(p)) : "") + "</span></span>" +
           foSqFormGlyph(p) +
           "<b class='fo-ros-ovr' style='color:" + foSqQCol(ovr) + "'>" + ovr + "</b>" +
           "<span class='fo-ros-go'>&#8250;</span></a>";
@@ -21303,9 +21340,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       });
       page.querySelectorAll("select[data-show]").forEach(function (sel2) {
         sel2.addEventListener("change", function () { sv.who = sel2.value; pgSquad(); });
-      });
-      page.querySelectorAll("select[data-read]").forEach(function (sel3) {
-        sel3.addEventListener("change", function () { sv.words = sel3.value === "w"; pgSquad(); });
       });
       // every row is a door to the man's full profile
       var openMan = function (n) { if (n) location.hash = "#/player?n=" + encodeURIComponent(n); };
