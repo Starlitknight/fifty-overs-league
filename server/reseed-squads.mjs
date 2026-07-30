@@ -3,13 +3,20 @@
 // Two jobs, in this order, run from the world-reseed workflow behind a typed
 // confirmation:
 //
-//   1. EVERY BOT CLUB IS GIVEN ITS SQUAD AGAIN, by the rules the world now
-//      keeps: the identity its league describes and the standing its place in
-//      that league earns - which means every flagship comes out the strongest
-//      side in its own country. The squad comes from squadFor() in
-//      init-world.mjs, the same call that founds a club on day one, so a club
-//      reseeded today is exactly the club it would have been had the world
-//      started this morning.
+//   1. EVERY BOT CLUB IS GIVEN A NEW SQUAD, by the rules the world now keeps:
+//      the identity its league describes and the standing its place in that
+//      league earns - which means every flagship comes out the strongest side
+//      in its own country. The squad comes from squadFor() in init-world.mjs,
+//      the same call that founds a club on day one, so a club reseeded today
+//      is built exactly as a club founded today would be.
+//
+//      NEW MEN, NOT THE SAME MEN AGAIN. squadFor()'s seed carries the world's
+//      GENERATION, and this script bumps it before it deals. That is not a
+//      detail: while the seed was the constant 'world1|<country>|<slot>' this
+//      script re-derived each club from its position and handed back the very
+//      fifteen it already had, so a manager could redeal the world and watch
+//      nothing change. The generation is the difference between rebuilding a
+//      club and reprinting it.
 //
 //   2. THE SEASON GOES BACK TO ROUND ONE. Every ball anybody has bowled is
 //      cleared and the first round is re-dated to today, because a table half
@@ -74,6 +81,18 @@ const cfgs = countryConfigs(host);
 const claims = (await pool.query('SELECT country_id, slot FROM claims')).rows;
 const claimed = new Set(claims.map(c => c.country_id + ':' + c.slot));
 
+// THE WORLD MOVES TO A NEW GENERATION BEFORE A CARD IS DEALT. The squad seed
+// used to be the constant 'world1|<country>|<slot>', so this script called the
+// generator with the same arguments it was called with on day one and dealt
+// every club THE SAME FIFTEEN MEN BACK. A redeal that cannot produce a new man
+// is not a redeal. The generation goes into the seed, so bumping it here is
+// what makes the cricketers below people nobody has ever seen.
+const genFrom = (await pool.query('SELECT generation FROM worlds WHERE id=1')).rows[0];
+const gen = ((genFrom && genFrom.generation) | 0 || 1) + 1;
+if (!dry) await pool.query('UPDATE worlds SET generation=$1 WHERE id=1', [gen]);
+console.log('world generation ' + (gen - 1) + ' → ' + gen +
+  (dry ? ' (dry run: not written)' : '') + ' - every squad dealt below is new');
+
 let redealt = 0, kept = 0;
 const report = [];
 for (const cfg of cfgs) {
@@ -88,7 +107,7 @@ for (const cfg of cfgs) {
       kept++; line.push(club.slot + ':' + row.name + ' (claimed, kept)');
       continue;
     }
-    const players = squadFor(host, cfg, club);
+    const players = squadFor(host, cfg, club, gen);
     if (!dry) {
       await pool.query('UPDATE clubs SET squad=$3 WHERE country_id=$1 AND slot=$2',
         [cfg.id, club.slot, JSON.stringify(players)]);
@@ -102,6 +121,16 @@ for (const cfg of cfgs) {
 }
 report.forEach(r => { console.log('\n' + r.id); r.line.forEach(l => console.log('   ' + l)); });
 console.log('\nsquads redealt: ' + redealt + '   left alone (claimed): ' + kept);
+// SAY IT PLAINLY. A manager who reseeds the world and then finds his own eleven
+// unchanged has every reason to think the game is showing him a stale page. It
+// is not: his club was spared on purpose, and only this line says so.
+if (kept) {
+  console.log('\n' + kept + ' club' + (kept === 1 ? '' : 's') + ' kept ' +
+    (kept === 1 ? 'its' : 'their') + ' squad because a human has claimed ' +
+    (kept === 1 ? 'it' : 'them') + '. Those managers will see the SAME men as');
+  console.log('before this run - trained, bought and sold by them, and not the world\'s to take away.');
+  console.log('To redeal those too, run again with RESEED_CLAIMED=YES-INCLUDING-MINE.');
+}
 
 // ---- 2. the season ----------------------------------------------------------
 // Round one is re-dated to TODAY, so the very next hourly tick plays it. runDue

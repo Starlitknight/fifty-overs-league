@@ -267,6 +267,11 @@ test('a bare foreign name is not guessed at', () => {
  * world_squads is public, exactly like the standings. These lock the pull to
  * that road: no session in any of them, and the men it hands over are men the
  * device could not have invented.                                          */
+// the real adopter, kept so the stubs below can hand it back - a stub left
+// standing would quietly answer for every later test in this file
+const REAL_ADOPT = ctx.__foAdoptWorldSquad;
+const restoreAdopt = () => { ctx.__foAdoptWorldSquad = REAL_ADOPT; };
+
 function stubSquadFetch(rows, seenUrls) {
   ctx.fetch = (url, opts) => {
     if (seenUrls) seenUrls.push({ url, opts });
@@ -347,4 +352,113 @@ test('no claim, no ask: a solo device is not made to talk to the world', async (
   ctx.__foPullServedSquad(true);
   await new Promise(r => setImmediate(r));
   assert.equal(asked, 0);
+});
+
+/* ---- ONE DOOR, ONE SHAPE -------------------------------------------------
+ * The world describes a cricketer at two resolutions. world_my_status sends
+ * the engine's own player - fifteen skill facets, a numeric experience, a
+ * bowling type. world_squads sends the public card: batting / bowling /
+ * fielding summed up, form and experience as WORDS. Both were poured straight
+ * into team.players, and every surface in the game reads the engine shape - so
+ * a card landing there rendered NaN down the Bat column and sorted the squad
+ * alphabetically, because Math.round(undefined) is how a missing skills block
+ * announces itself.                                                        */
+const CARD = {
+  name: 'Noah Hale', nat: 'England', age: 29, batting: 47, bowling: 88, fielding: 75,
+  ovr: 99, rating: 76902, type: 'seamFast', bowl: 'Left arm fast', hand: 'L',
+  role: 'seamFast', keeper: false, exp: 'expert', form: 'shaky', fatigue: 'rested',
+  wage: 3045, value: 349000, talents: ['bouncer'], career: { m: 1 }
+};
+
+test('a public card becomes an engine player, carrying the figures the world published', () => {
+  const p = ctx.__foCardToPlayer(CARD);
+  assert.ok(p.skills, 'he has a skills block at all - without one every aggregate is NaN');
+
+  // the aggregates the whole game reads must give back the SERVED numbers, to
+  // the number. Not close: the same. These are the game's own formulas.
+  const S = p.skills;
+  assert.equal(Math.round(.25 * S.vsPace + .25 * S.vsSpin + .2 * S.rotation +
+    .15 * S.temperament + .15 * S.power), CARD.batting, 'aggBat is his published batting');
+  assert.equal(Math.round((S.wicket + S.economy + S.discipline + S.moveTurn +
+    S.variation + S.stamina) / 6), CARD.bowling, 'aggBowl is his published bowling');
+  assert.equal(Math.round((S.fielding + S.catching) / 2), CARD.fielding,
+    'aggField is his published fielding');
+  assert.equal(Math.round((S.vsPace + S.vsSpin + S.temperament) / 3), CARD.batting,
+    'and technique does not wander off on its own');
+
+  // the fields the engine shape needs, translated rather than dropped
+  assert.equal(p.bowlTypeFull, 'seamFast');
+  assert.equal(p.bowlType, 'fast', 'he bowls, so the Bowl column is a figure and not a dash');
+  assert.equal(p.btLabel, 'Left arm fast');
+  assert.equal(p.fee, 349000, 'his value is the fee the rest of the game asks for');
+  assert.equal(p.expWord, 'expert', 'the world\'s own word, kept verbatim');
+  assert.equal(p.formWord, 'shaky');
+  assert.equal(p.formIx, 2, 'and read back onto the scale the game colours by');
+  assert.ok(Number.isFinite(p.exp) && p.exp > 0, 'experience is a number, not the word NaN');
+  assert.equal(p.__card, 1, 'and he knows he is only a card');
+  assert.equal(p.__ovr, 99);
+
+  // a man who does not bowl is not given an attack
+  const bat = ctx.__foCardToPlayer(Object.assign({}, CARD,
+    { name: 'Oscar Wright', type: 'none', bowl: 'Does not bowl', bowling: 2 }));
+  assert.equal(bat.bowlType, null, 'no bowling type, so no bowling figure is claimed for him');
+  assert.equal(bat.btLabel, 'Does not bowl');
+});
+
+test('an engine player passing through the door is not touched', () => {
+  const real = { name: 'Real', skills: { vsPace: 71 }, bowlType: 'fast', exp: 64 };
+  assert.equal(ctx.__foCardToPlayer(real), real, 'the full shape is returned as it came');
+  assert.equal(ctx.__foCardToPlayer(null), null);
+  assert.equal(ctx.__foCardToPlayer({}), null, 'a nameless man is nobody');
+});
+
+test('every figure the squad page prints for a card is a real number', () => {
+  // the exact failure in the screenshot: NaN down the Bat column, and a table
+  // that claimed to be sorted by OVR sitting in alphabetical order because
+  // (NaN - NaN) is not a comparison
+  const p = ctx.__foCardToPlayer(CARD);
+  const cols = ['aggBat', 'aggBowl', 'aggTech', 'aggField', 'aggKeep', 'foPkOvr'];
+  for (const fn of cols) {
+    const v = run(fn + '(__probeMan)', ctx.__probeMan = p);
+    assert.ok(Number.isFinite(v), fn + ' returns a number for a card player, got ' + v);
+  }
+  assert.equal(run('foPkOvr(__probeMan)'), 99,
+    'and his OVR is the world\'s own, not one re-derived from a flattened block');
+});
+
+test('a card never displaces the real thing, and the real thing always displaces a card', () => {
+  // Both roads land here, unordered, whichever the network answers first.
+  // Comparing NAMES alone made them indistinguishable, so whichever arrived
+  // first won - and a card arriving first locked the full squad out for the
+  // rest of the session.
+  const men = n => Array.from({ length: 15 }, (_, i) =>
+    ({ name: 'M' + i, age: 25, role: 'opener', keeper: i === 3, rating: 100 - i, wage: 9, value: 9,
+       batting: 40, bowling: 10, fielding: 40, ovr: 50 - i, type: 'none', bowl: 'Does not bowl',
+       exp: 'average', form: 'steady', nat: n }));
+  const cards = men('England').map(ctx.__foCardToPlayer);
+  const full = cards.map(c => Object.assign({}, c, { skills: Object.assign({}, c.skills, { vsPace: 71 }) }));
+  full.forEach(p => { delete p.__card; delete p.__ovr; });
+
+  restoreAdopt();
+  ctx.localStorage.setItem('fo_world_claim', JSON.stringify({ country: 'eng', slot: 2, club: 'X' }));
+  run(`window.__foWorldClaim = { country: 'eng', slot: 2, club: 'X' };`);
+  const t = run('userTeam()');
+  const claim = { country: 'eng', slot: 2, club: t.name };
+  const apply = squad => {
+    ctx.__st = { claim, squad };
+    return run('__foAdoptWorldSquad(__st)');
+  };
+  const held = () => (run('userTeam()').players || []);
+
+  assert.equal(apply(cards), true, 'the card squad is adopted when there is nothing better');
+  assert.equal(held().length, 15);
+  assert.ok(held()[0].__card, 'and it is known to be only a card');
+
+  apply(full);
+  assert.ok(!held().some(p => p.__card), 'the full squad displaces it, same men or not');
+  assert.equal(held()[0].skills.vsPace, 71, 'and the real facets are what is held');
+
+  apply(cards);
+  assert.ok(!held().some(p => p.__card), 'the card cannot take it back');
+  assert.equal(held()[0].skills.vsPace, 71, 'not one facet is lost to it');
 });

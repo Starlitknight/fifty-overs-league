@@ -312,6 +312,63 @@
   // club's men. So the squad is fetched the way the table is, needs no login,
   // and is adopted through the existing path - which keeps the club-ready wait,
   // the stale-lineup guard and the repaint that all belong to it.
+  // ---- ONE DOOR, ONE SHAPE --------------------------------------------------
+  // The world describes a cricketer at two resolutions and they are NOT the
+  // same object. world_my_status hands back the engine's own player - a skills
+  // block of fifteen facets, a numeric experience, a bowling type. world_squads
+  // is the public card: the same man summed up as batting / bowling / fielding,
+  // with his form and experience as WORDS. Both used to be poured straight into
+  // team.players, and every surface in the game reads the engine shape - so a
+  // card landed there rendered NaN down the Bat column and sorted the squad
+  // alphabetically, because Math.round(undefined) is how a missing skills block
+  // announces itself.
+  //
+  // This is the only door a served card comes through, so this is where it
+  // becomes an engine player. The published figures are reproduced EXACTLY: the
+  // facets are set so aggBat() gives back his batting, aggBowl() his bowling
+  // and aggField() his fielding, to the number. What the card does not carry -
+  // how his batting divides between pace and spin, his temperament, his
+  // variation - is not invented from thin air; it is spread flat and the man is
+  // stamped __card, so the ranking below always prefers the real thing when the
+  // real thing arrives, and no surface has to know any of this happened.
+  var EXPW_CARD = ['atrocious', 'dreadful', 'poor', 'ordinary', 'average', 'reasonable',
+    'capable', 'reliable', 'accomplished', 'expert', 'spectacular', 'elite'];
+  var FORMW_CARD = ['abysmal', 'poor', 'shaky', 'steady', 'good', 'strong', 'excellent'];
+  var ENGT_CARD = { seamFast: "fast", seamFastMedium: "fastMedium", seamMedium: "medium",
+    wristSpin: "wristSpin", fingerSpin: "fingerSpin", partTimeSeam: "medium", partTimeSpin: "offSpin" };
+
+  function cardToPlayer(c) {
+    if (!c || !c.name) return null;
+    if (c.skills) return c;                      // already an engine player: untouched
+    var B = Math.max(0, Math.min(100, +c.batting || 0));
+    var W = Math.max(0, Math.min(100, +c.bowling || 0));
+    var F = Math.max(0, Math.min(100, +c.fielding || 0));
+    var full = c.type && c.type !== "none" ? c.type : "none";
+    var p = {
+      name: c.name, nat: c.nat, age: c.age | 0, role: c.role || "batter", hand: c.hand || "R",
+      keeper: !!c.keeper, talents: Array.isArray(c.talents) ? c.talents.slice() : [],
+      rating: +c.rating || 0, wage: +c.wage || 0, fee: +c.value || 0, value: +c.value || 0,
+      career: c.career || {}, fatigue: c.fatigue || "rested",
+      bowlTypeFull: full, bowlType: full === "none" ? null : (ENGT_CARD[full] || "medium"),
+      btLabel: c.bowl || (full === "none" ? "Does not bowl" : full),
+      // the words are the world's own, kept verbatim; the indices are those
+      // words read back onto the scale the game sorts and colours by
+      expWord: c.exp || "average", formWord: c.form || "steady",
+      formIx: Math.max(0, FORMW_CARD.indexOf(c.form || "steady")),
+      exp: Math.round((Math.max(0, EXPW_CARD.indexOf(c.exp || "average")) + 0.5) / EXPW_CARD.length * 100),
+      skills: {
+        vsPace: B, vsSpin: B, rotation: B, temperament: B, power: B,
+        wicket: W, economy: W, discipline: W, moveTurn: W, variation: W, stamina: W,
+        fielding: F, catching: F, keeping: c.keeper ? F : 0, stumping: c.keeper ? F : 0
+      },
+      __card: 1, __ovr: +c.ovr || 0
+    };
+    if (p.formIx < 0) p.formIx = 3;
+    return p;
+  }
+  window.__foCardToPlayer = cardToPlayer;
+  window.__foServed.cardToPlayer = cardToPlayer;
+
   var SQ_AT = 0, SQ_BUSY = 0;
   function pullSquad(force) {
     var c = claim(); if (!c || !c.country || c.slot == null) return;
@@ -331,6 +388,10 @@
           SQ_BUSY = 0;
           var row = rows && rows[0];
           if (!row || !Array.isArray(row.players) || row.players.length < 11) return;
+          // through the one door: cards become engine players here, never past
+          // here, so the adopter and every surface after it see one shape
+          var men = row.players.map(cardToPlayer).filter(Boolean);
+          if (men.length < 11) return;
           // hand it to the adopter in the shape it already understands, so the
           // careful parts - waiting for the club, tearing up a lineup that names
           // men who have gone, saving, repainting - are not written twice
@@ -338,7 +399,7 @@
             if (window.__foAdoptWorldSquad) {
               window.__foAdoptWorldSquad({
                 claim: { country: c.country, slot: c.slot | 0, club: row.name || c.club },
-                squad: row.players
+                squad: men
               });
             }
           } catch (eA) {}

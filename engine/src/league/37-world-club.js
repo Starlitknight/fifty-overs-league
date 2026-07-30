@@ -114,9 +114,24 @@
       // the next status the world sends.
       var names = st.squad.map(function (p) { return p && p.name; });
       var have = (t.players || []).map(function (p) { return p && p.name; });
-      if (names.length === have.length && names.join("|") === have.join("|")) {
+      // THE SAME MEN IS NOT THE SAME SQUAD. The world describes a cricketer at
+      // two resolutions - the engine player world_my_status sends, and the
+      // public card world_squads sends - and both arrive here, unordered,
+      // whichever the network answers first. Comparing NAMES alone made the two
+      // roads indistinguishable, so whichever landed first won and the other
+      // was turned away as "already exactly these men". A card landing first
+      // therefore locked the real squad out for the rest of the session, and
+      // the squad page rendered NaN down the Bat column.
+      //
+      // So the question is not only WHO but HOW WELL KNOWN: a fuller account of
+      // the same fifteen always replaces a thinner one, and never the reverse.
+      var thin = function (list) {
+        return (list || []).some(function (p) { return p && p.__card; });
+      };
+      var sameMen = names.length === have.length && names.join("|") === have.join("|");
+      if (sameMen && !(thin(t.players) && !thin(st.squad))) {
         if (t.__worldSig != null) { try { delete t.__worldSig; saveGame(false); } catch (eD) {} }
-        return false;                                      // already exactly these men
+        return false;                       // these men, known at least as well
       }
       t.players = JSON.parse(JSON.stringify(st.squad));
       if (st.claim.club) t.name = st.claim.club;

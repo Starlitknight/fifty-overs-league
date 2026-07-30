@@ -923,10 +923,29 @@
   function foRepairBowlerBatting() {
     try {
       if (typeof GD === "undefined" || !GD.teams) return 0;
+      // THE WORLD'S MEN ARE NOT THIS DEVICE'S TO REPAIR. This sweep exists for
+      // squads THIS BROWSER drafted before the bowler-batting rule was written:
+      // it re-derives a specialist's batting from his name and writes it over
+      // whatever the draft gave him. Run against a served club it is not a
+      // repair, it is a disagreement - the umpire published a bowler who bats
+      // 47, the device decided he bats 4, and every figure on the squad page
+      // then contradicted the server that actually plays his matches. (It also
+      // calls jsDerive, which recomputes rating and wage - so the published
+      // price of a man could drift too.)
+      //
+      // If this device holds a claim in the served world, its own squad comes
+      // from the world and is the world's to describe. Everybody else's teams
+      // in GD are local bot sides and still want the repair.
+      var mine = null;
+      try {
+        if (window.__foServed && window.__foServed.on() && typeof userTeam === "function") mine = userTeam();
+      } catch (eS) {}
       var n = 0;
       GD.teams.forEach(function (t) {
+        if (mine && t === mine) return;
         (t.players || []).concat(t.injured || [], t.youth || []).forEach(function (p) {
           if (!foPureBowler(p)) return;
+          if (p.__card) return;              // a public card is the world's word
           var s = p.skills || {};
           var agg = 0.25 * (s.vsPace || 0) + 0.25 * (s.vsSpin || 0) + 0.2 * (s.rotation || 0) + 0.15 * (s.temperament || 0) + 0.15 * (s.power || 0);
           // only true anomalies (above the "average" band): sane specialists stay

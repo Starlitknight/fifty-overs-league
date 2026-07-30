@@ -80,17 +80,35 @@ export function countryConfigs(host) {
 // ONE PLACE THAT SAYS WHAT SQUAD A CLUB HAS. Founding and reseeding both come
 // through here, so a club refounded today is the club it would have been on day
 // one: same seed, same identity, same standing, same eleven.
-export function squadFor(host, cfg, club) {
-  return host.genSquad('world1|' + cfg.id + '|' + club.slot, cfg.nat,
+//
+// WITHIN A GENERATION. The seed used to be a constant - a club's eleven was a
+// pure function of its position, forever - which made the world reproducible
+// and made a REDEAL impossible: reseeding called this with the same arguments
+// and necessarily dealt the same men back. The generation is what a reseed
+// moves, so position-stability holds inside a generation (an expansion founds
+// a country as it would have been on day one) and a redeal genuinely redeals.
+// Generation 1 spells 'world1', the seed every club alive today was dealt from.
+export function squadFor(host, cfg, club, gen = 1) {
+  return host.genSquad('world' + ((gen | 0) || 1) + '|' + cfg.id + '|' + club.slot, cfg.nat,
     club.arch || cfg.arch, club.boss ? cfg.capt : 'general', club.str || 1);
 }
 
-async function foundCountry(c, cfg, host, startDay) {
+// what generation this world is dealing from; 1 for a world founded before the
+// counter existed, which is the generation those clubs were in fact dealt from
+export async function worldGeneration(pool) {
+  try {
+    const r = await pool.query('SELECT generation FROM worlds WHERE id=1');
+    return (r.rows[0] && r.rows[0].generation) | 0 || 1;
+  } catch (e) { return 1; }
+}
+
+async function foundCountry(c, cfg, host, startDay, gen = 1) {
   await c.query('INSERT INTO countries(id, name, play_hour_utc) VALUES ($1,$2,$3)',
     [cfg.id, cfg.name, cfg.hour]);
   for (const club of cfg.clubs) {
-    // squad seeds are position-stable: the same world, the same eleven, forever
-    const players = squadFor(host, cfg, club);
+    // squad seeds are position-stable WITHIN A GENERATION: the same world, the
+    // same eleven, until somebody deliberately redeals the world
+    const players = squadFor(host, cfg, club, gen);
     // default_name is the club's birth name - a human rename never loses it
     await c.query(
       'INSERT INTO clubs(country_id, slot, name, default_name, ground, is_boss, squad) VALUES ($1,$2,$3,$3,$4,$5,$6)',
@@ -107,11 +125,11 @@ export async function initWorld(pool, { now = Date.now(), host = null } = {}) {
     await c.query('BEGIN');
     const w = await c.query('SELECT 1 FROM worlds WHERE id=1');
     if (w.rowCount) { await c.query('ROLLBACK'); return { created: false }; }
-    await c.query('INSERT INTO worlds(id, epoch_ms, cycle_days, league_rounds, engine_version) VALUES (1,$1,$2,$3,$4)',
+    await c.query('INSERT INTO worlds(id, epoch_ms, cycle_days, league_rounds, engine_version, generation) VALUES (1,$1,$2,$3,$4,1)',
       [EPOCH, CYCLE, ROUNDS, ENGINE_VERSION]);
     const startDay = dayIx(now) + 1;
     const cfgs = countryConfigs(h);
-    for (const cfg of cfgs) await foundCountry(c, cfg, h, startDay);
+    for (const cfg of cfgs) await foundCountry(c, cfg, h, startDay, 1);
     await c.query('COMMIT');
     return { created: true, startDay, countries: cfgs.map(x => x.id) };
   } catch (e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); }
@@ -125,12 +143,15 @@ export async function expandWorld(pool, { now = Date.now(), host = null } = {}) 
   const have = new Set((await pool.query('SELECT id FROM countries')).rows.map(r => r.id));
   const missing = countryConfigs(h).filter(cfg => !have.has(cfg.id));
   const startDay = dayIx(now) + 1;
+  // a country joining late joins THIS world, so it is dealt from the generation
+  // the rest of the world is living in - not from generation one
+  const gen = await worldGeneration(pool);
   const added = [];
   for (const cfg of missing) {
     const c = await pool.connect();
     try {
       await c.query('BEGIN');
-      await foundCountry(c, cfg, h, startDay);
+      await foundCountry(c, cfg, h, startDay, gen);
       await c.query('COMMIT');
       added.push(cfg.id);
     } catch (e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); }

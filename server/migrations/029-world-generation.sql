@@ -1,0 +1,30 @@
+-- 029-world-generation.sql — A REDEAL MUST DEAL A DIFFERENT HAND.
+--
+-- What went wrong. A manager reseeded the world to start afresh and was given
+-- back THE SAME FIFTEEN MEN. Not a stale page, not a cached save - the umpire
+-- genuinely wrote those names again, on purpose, because the squad seed was a
+-- constant:
+--
+--     genSquad('world1|' + country + '|' + slot, ...)
+--
+-- Every club's eleven was a pure function of where it sat in the world. That
+-- was written as a guarantee - "the same world, the same eleven, forever", so
+-- a club founded late is the club it would have been on day one - and for
+-- founding and expansion it is exactly right. But a RESEED calls the same
+-- function with the same arguments, so redealing was arithmetically incapable
+-- of producing anybody new. The one operation whose entire purpose is fresh
+-- cricketers was the one operation that could not deliver them.
+--
+-- The fix is to give the world a generation. The seed becomes
+--
+--     genSquad('world' + generation + '|' + country + '|' + slot, ...)
+--
+-- and a reseed bumps the generation before it deals. Inside a generation
+-- everything the old guarantee promised still holds - a country founded by a
+-- later expansion gets the squad it would have had on day one of THIS
+-- generation. Across a reseed, every club on earth gets men it has never had.
+--
+-- The default is 1, and 'world' + 1 is the string 'world1' - the seed every
+-- existing club was dealt from. So this migration changes nothing about the
+-- world running today; it only gives the next redeal somewhere new to go.
+ALTER TABLE worlds ADD COLUMN IF NOT EXISTS generation int NOT NULL DEFAULT 1;

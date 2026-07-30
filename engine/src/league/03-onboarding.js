@@ -2763,6 +2763,9 @@
   // A FIFA-style 0-100 overall from the same 0-100 aggregates the card shows -
   // p.rating is the engine's internal ranking value (x420 scaled), not an OVR.
   function foPkOvr(p) {
+    // a man known only from his public card carries the world's own overall,
+    // and that figure beats anything re-derived from a flattened skills block
+    if (p && p.__card && p.__ovr > 0) return p.__ovr | 0;
     var bat = aggBat(p) || 0, tech = aggTech(p) || 0, pow = (p.power != null ? p.power : ((p.skills && p.skills.power) || 0));
     var batScore = 0.58 * bat + 0.24 * tech + 0.18 * pow;
     var bowl = p.bowlType ? (aggBowl(p) || 0) : 0;

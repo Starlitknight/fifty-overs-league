@@ -4,7 +4,7 @@ import assert from 'node:assert';
 import { execSync } from 'node:child_process';
 import { makePool } from '../db.mjs';
 import { migrate } from '../migrate.mjs';
-import { initWorld } from '../init-world.mjs';
+import { initWorld, countryConfigs, squadFor } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { runDue } from '../tick.mjs';
 import { EPOCH, DAY, dayIx } from '../clock.mjs';
@@ -89,8 +89,24 @@ test('the reseed redeals the bots, spares a claimed club, and restarts the seaso
   const mineAfter = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=4`)).rows[0].squad;
   const botAfter = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=5`)).rows[0].squad;
   assert.deepEqual(mineAfter, mineBefore, 'a claimed club keeps the men its manager trained');
-  assert.ok(JSON.stringify(botAfter) !== JSON.stringify(botBefore) || true, 'a bot club was redealt');
+
+  // A REDEAL DEALS DIFFERENT MEN. This assertion used to end in "|| true",
+  // which is not an assertion at all - and it was written that way because it
+  // could not have passed: the squad seed was the constant 'world1|eng|5', so
+  // reseeding re-derived the club from its position and wrote back the very
+  // fifteen it already had. A manager who redealt the world to be rid of his
+  // side got his side again, and nothing in the suite said so.
+  const nm = sq => sq.map(p => p.name);
+  assert.notDeepEqual(nm(botAfter), nm(botBefore),
+    'a bot club was dealt NEW cricketers, not the same ones re-derived');
+  assert.ok(nm(botAfter).filter(n => nm(botBefore).includes(n)).length <= 2,
+    'it is a new squad, not a reshuffle - two draws from one name bank may ' +
+    'collide on a name, but not on a side');
   assert.equal(botAfter.length, botBefore.length, 'and still fields a full squad');
+  assert.equal(new Set(nm(botAfter)).size, botAfter.length, 'fifteen different men');
+  assert.equal(
+    (await pool.query('SELECT generation FROM worlds WHERE id=1')).rows[0].generation, 2,
+    'the world moved to its second generation, which is what made them new');
 
   // the record is clear and the season is back at the top
   assert.equal((await pool.query('SELECT count(*)::int n FROM matches')).rows[0].n, 0, 'no cricket in the book');
@@ -106,4 +122,58 @@ test('the reseed redeals the bots, spares a claimed club, and restarts the seaso
   assert.equal((await pool.query('SELECT count(*)::int n FROM claims')).rows[0].n, 1, 'the claim survived');
   assert.equal((await pool.query('SELECT count(*)::int n FROM clubs')).rows[0].n, 190, 'every club survived');
   assert.equal((await pool.query('SELECT count(*)::int n FROM countries')).rows[0].n, 19, 'every country survived');
+});
+
+test('a generation is stable inside itself, and never repeats across a redeal', async () => {
+  // The two halves of the promise, stated as arithmetic on the seed rather
+  // than on a database, so the property is provable rather than observed:
+  //
+  //   INSIDE a generation the deal is position-stable, which is what lets a
+  //   country founded by a later expansion be the country it would have been
+  //   on day one - and what lets a bug be reproduced a fortnight later.
+  //
+  //   ACROSS generations it is not, which is what makes a redeal a redeal.
+  const host = makeHost();
+  const cfg = countryConfigs(host).find(c => c.id === 'eng');
+  const club = cfg.clubs.find(c => c.slot === 5);
+  const names = gen => squadFor(host, cfg, club, gen).map(p => p.name);
+
+  const g1 = names(1), g1again = names(1), g2 = names(2), g3 = names(3);
+  assert.deepEqual(g1again, g1, 'ask the same generation twice, get the same eleven');
+  assert.equal(g1.length, g1again.length);
+
+  // Across generations the deal is independent, so the overlap is whatever
+  // chance gives two draws from the same name bank - a stray shared name is
+  // ordinary, a shared SQUAD is the bug. Both are stated.
+  for (const [a, b, what] of [[g1, g2, '1→2'], [g2, g3, '2→3'], [g1, g3, '1→3']]) {
+    assert.notDeepEqual(a, b, 'generation ' + what + ' is not a reprint');
+    const shared = a.filter(n => b.includes(n)).length;
+    assert.ok(shared <= 2, 'generation ' + what + ' shares at most a stray name, got ' + shared);
+  }
+
+  // and generation 1 IS the seed every club alive today was dealt from, so
+  // adding the counter did not quietly redeal the running world
+  assert.deepEqual(
+    names(1),
+    host.genSquad('world1|eng|5', cfg.nat, club.arch || cfg.arch, 'general', club.str || 1)
+      .map(p => p.name),
+    'generation one spells the old constant seed exactly');
+});
+
+test('a squad dealt from a new generation is still a squad that can play', async () => {
+  // a redeal that produced eleven keepers and no bowlers would be worse than
+  // the bug it fixes, so the shape is checked, not just the names
+  const host = makeHost();
+  for (const id of ['eng', 'sub', 'rsa']) {
+    const cfg = countryConfigs(host).find(c => c.id === id);
+    for (const club of [cfg.clubs[0], cfg.clubs[4]]) {
+      const sq = squadFor(host, cfg, club, 7);
+      assert.ok(sq.length >= 15, id + ':' + club.slot + ' has a full squad');
+      assert.ok(sq.some(p => p.keeper), id + ':' + club.slot + ' has a keeper');
+      assert.ok(sq.filter(p => p.bowlTypeFull && p.bowlTypeFull !== 'none').length >= 5,
+        id + ':' + club.slot + ' has an attack');
+      assert.ok(sq.every(p => p.name && p.rating > 0 && p.skills),
+        'every man is whole - a name, a rating and his skills');
+    }
+  }
 });
