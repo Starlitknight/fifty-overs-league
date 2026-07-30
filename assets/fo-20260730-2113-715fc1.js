@@ -1777,7 +1777,12 @@ function foSeasonLine(name){
   return bits.join(' &nbsp;·&nbsp; ');
 }
 function pgPlayer(q){
-  const hit=findPlayer(q.n||'');
+  // a man in THIS league, or - when the link says which club he plays for -
+  // any cricketer in the world, derived from the seed the umpire built him
+  // with. See foFindAnyPlayer in 52-served-truth.js.
+  const hit=(typeof window.foFindAnyPlayer==='function')
+    ?window.foFindAnyPlayer(q.n||'',q.r||null,q.s==null?null:(q.s|0))
+    :findPlayer(q.n||'');
   if(!hit){$('#page').innerHTML='<div class="panel"><div class="pad">Player not found.</div></div>';return}
   const{p,team}=hit;
   const allr=Math.round((aggBat(p)+aggBowl(p))/2*(aggBat(p)>40&&aggBowl(p)>40?1:0.4));
@@ -7480,7 +7485,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         var vs = ch.challenger_club === me ? ch.opponent_club : ch.challenger_club;
         var when = new Date(ch.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + (foTzAbbr() ? " " + foTzAbbr() : "");
         var lgChip = "";
-        try { if (App.season && typeof App.season.round === "number") lgChip = "<span class='fo-c2-nchip'>League Round " + (App.season.round + 1) + " follows &middot; 9:00 AM ET</span>"; } catch (eLc) {}
+        try {
+          var SVc = window.__foServed && window.__foServed.on() ? window.__foServed : null;
+          if (SVc) lgChip = "<span class='fo-c2-nchip'>League Round " + SVc.round() + " follows &middot; " + foDailyTime(SVc.roundsPlayed()) + "</span>";
+          else if (App.season && typeof App.season.round === "number") lgChip = "<span class='fo-c2-nchip'>League Round " + (App.season.round + 1) + " follows &middot; 9:00 AM ET</span>";
+        } catch (eLc) {}
         host2.__foFr = 1;
         if (fst.phase === "live") {
           host2.innerHTML = "<div class='fo-c2-nl'>" +
@@ -7537,7 +7546,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var d = new Date(), dateStr = d.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short" }) + ", " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
       // one computation of the page's load-bearing facts, used everywhere below
-      var totalRounds = (S && S.schedule) ? S.schedule.length : 18;
+      var totalRounds = (window.__foServed && window.__foServed.on())
+        ? window.__foServed.totalRounds()
+        : ((S && S.schedule) ? S.schedule.length : 18);
       var played = me.p || 0;
       var streak = 0;
       for (var si = form.length - 1; si >= 0 && String(form[si]).toUpperCase() === "W"; si--) streak++;
@@ -7582,7 +7593,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       }).join("");
       var ups = foUserFixtures().slice(0, 3).map(function (x) {
         var isNext = nxt && x.round === nxt.round;
-        return "<tr><td>" + x.date + "<div class='fo-t'>9:00 AM ET</div></td><td>R" + (x.round + 1) + "</td><td>" + (x.isHome ? "vs " : "@ ") + E(x.opp.name) + "</td><td>" + E(x.ground) + " " + foPitchPill(x.pitch) + "</td><td class='r'><button class='fo-setr" + (isNext ? "" : " fo-setr-later") + "' data-r='" + x.round + "'>" + (isNext ? "Set lineup" : "Plan lineup") + "</button></td></tr>";
+        return "<tr><td>" + x.date + "<div class='fo-t'>" + foDailyTime(x.round) + "</div></td><td>R" + (x.round + 1) + "</td><td>" + (x.isHome ? "vs " : "@ ") + E(x.opp.name) + "</td><td>" + E(x.ground) + " " + foPitchPill(x.pitch) + "</td><td class='r'><button class='fo-setr" + (isNext ? "" : " fo-setr-later") + "' data-r='" + x.round + "'>" + (isNext ? "Set lineup" : "Plan lineup") + "</button></td></tr>";
       }).join("");
       var upBody = (frRows || ups)
         ? "<table class='fo-tbl'><thead><tr><th>Date</th><th>Rd</th><th>Match</th><th>Ground</th><th class='r'></th></tr></thead><tbody>" + frRows + ups + "</tbody></table>"
@@ -7951,6 +7962,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var fxItems = [];
       var fxAt = function (rn) {
         try {
+          var at9 = window.__foServed && window.__foServed.on() ? window.__foServed.ballAt(rn) : null;
+          if (at9) return at9;
           var d9 = new Date(); d9.setHours(9, 0, 0, 0);
           d9.setDate(d9.getDate() + (rn - App.season.round) + (foCurAdvanced() ? 1 : 0));
           return +d9;
@@ -7959,7 +7972,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       foUserFixtures().slice(0, 5).forEach(function (x) {
         var isN = nxt && x.round === nxt.round;
         fxItems.push({ at: fxAt(x.round), html: "<div class='fo-c2-fx" + (isN ? " next" : "") + "'>" +
-          "<div class='fo-c2-fxd'><b>" + E(x.date) + "</b><span>9:00 AM</span></div>" +
+          "<div class='fo-c2-fxd'><b>" + E(x.date) + "</b><span>" + foDailyTime(x.round) + "</span></div>" +
           "<div class='fo-c2-fxm'><b>" + (x.isHome ? "vs " : "@ ") + E(x.opp.name) + "</b><span>Round " + (x.round + 1) + " &middot; " + (x.isHome ? "Home" : "Away") + (isN ? " &middot; " + E(foPitchName(x.pitch)) + " pitch" : "") + (x.weather ? " &middot; " + E(x.weather) : "") + "</span></div>" +
           (isN ? "<span class='fo-c2-fxn'>NEXT</span>" : "") + "</div>" });
       });
@@ -8062,9 +8075,33 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     } catch (e) { return false; }
   }
   function foDailyDate(r, opts) {
+    // the world dates its own fixtures - see ballAt() in 52-served-truth.js
+    try {
+      var at = window.__foServed && window.__foServed.on() ? window.__foServed.ballAt(r) : null;
+      if (at) return new Date(at).toLocaleDateString("en-GB", opts || { day: "2-digit", month: "short" });
+    } catch (eSv) {}
     var curR = (typeof App !== "undefined" && App.season) ? App.season.round : 0;
     var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + (r - curR) + (foCurAdvanced() ? 1 : 0));
     return d.toLocaleDateString("en-GB", opts || { day: "2-digit", month: "short" });
+  }
+  // the hour the first ball is bowled, in the reader's own clock. Every nation
+  // opens at its own UTC hour, so "9:00 AM ET" - the retired resolver's slot -
+  // is not the time any world match starts.
+  function foDailyTime(r) {
+    try {
+      var at = window.__foServed && window.__foServed.on() ? window.__foServed.ballAt(r) : null;
+      if (at) return new Date(at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    } catch (e) {}
+    return "9:00 AM ET";
+  }
+  // "Sat 1 Aug at 2:00 PM" for the round about to be played - the world's
+  // round, not this device's
+  function foNextRoundWhen() {
+    var r = null;
+    try { if (window.__foServed && window.__foServed.on()) r = window.__foServed.roundsPlayed(); } catch (e) {}
+    if (r == null) { try { r = App.season ? App.season.round : null; } catch (e2) {} }
+    if (r == null) return "on the next matchday";
+    return foDailyDate(r, { weekday: "short", day: "numeric", month: "short" }) + " at " + foDailyTime(r);
   }
   var foScoutIx = null, foScoutTab = "overview", foScoutSort = "rating";
   // a club's flag emoji, from its country (or its dressing room's majority)
@@ -8595,6 +8632,25 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // Recent league form per club (oldest→newest, last 5): W / L / T.
   function foFormMap() {
     var m = {};
+    // THE WORLD'S FORM, when this device plays in the world. App.results is the
+    // retired local engine's record and lives in this browser: it survived a
+    // world restart and painted six results onto a season that had bowled no
+    // balls. Served truth or nothing.
+    try {
+      if (window.__foServed && window.__foServed.on()) {
+        var b = window.__foServed.snapshot();
+        (b && b.results || []).slice()
+          .sort(function (a, c) { return (a.round | 0) - (c.round | 0); })
+          .forEach(function (r) {
+            if (!r) return;
+            [r.home, r.away].forEach(function (nm) {
+              if (!nm) return;
+              (m[nm] = m[nm] || []).push(!r.winner ? "T" : (r.winner === nm ? "W" : "L"));
+            });
+          });
+        return m;
+      }
+    } catch (eSv) {}
     try {
       // the just-banked round stays under embargo until stumps: form must not
       // reveal a result before the broadcast reaches it
@@ -9194,6 +9250,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // cursor, star lines, talents as ability boxes, and collector fine print.
   // The card itself, reusable anywhere (player page, onboarding pack rip):
   // returns the .phc markup plus the tier + role colours the wrapper needs.
+  // the red star on the card itself. The card is drawn in the founding pack
+  // rip as well as on the player page, and in a world nobody has claimed yet
+  // there is no national squad to be in - foNatStar answers "" for both.
+  function foCardStar(p) {
+    try {
+      var sv = window.__foServed;
+      if (!sv || !sv.on() || !window.foNatStar) return "";
+      return window.foNatStar(p && p.name, null, { big: true });
+    } catch (e) { return ""; }
+  }
   function foHoloCardHTML(p, teamName) {
     var k = foPkKind(p), ac = FO_PK_AC[k] || ["#C9A227", "#a9861a"];
     var ovr = foPkOvr(p);
@@ -9220,7 +9286,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var html =
       "<div class='phc'><div class='phc-in'>" +
       "<div class='phc-hd'><div class='phc-idc'><span class='phc-role'>" + E(roleLbl) + " &middot; " + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
-      "<div class='phc-nm'>" + E(p.name) + " <span class='phc-fl'>" + (foQsFlag(p.nat) || "") + "</span></div></div>" +
+      "<div class='phc-nm'>" + E(p.name) + foCardStar(p) + " <span class='phc-fl'>" + (foQsFlag(p.nat) || "") + "</span></div></div>" +
       "<div class='phc-ovr'><b>" + ovr + "</b><i>OVR</i></div></div>" +
       "<div class='phc-art'><img src='" + FO_ART + foPkArt(p) + "' alt=''><span class='phc-holo'></span><span class='phc-glare'></span></div>" +
       "<div class='phc-stars'>" +
@@ -9260,7 +9326,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var page = document.getElementById("page"); if (!page) return;
       var mH = /[?&]n=([^&]+)/.exec(location.hash || ""); if (!mH) return;
       var nm = decodeURIComponent(mH[1]);
-      var hit = (typeof findPlayer === "function") ? findPlayer(nm) : null; if (!hit || !hit.p) return;
+      // the same widened lookup the page body uses: a foreign cricketer named
+      // by his club in the link gets the same card as anybody else
+      var qR = /[?&]r=([^&]+)/.exec(location.hash || ""), qS = /[?&]s=(\d+)/.exec(location.hash || "");
+      var hit = null;
+      try {
+        hit = (typeof window.foFindAnyPlayer === "function")
+          ? window.foFindAnyPlayer(nm, qR ? decodeURIComponent(qR[1]) : null, qS ? (qS[1] | 0) : null)
+          : ((typeof findPlayer === "function") ? findPlayer(nm) : null);
+      } catch (eFa) {}
+      if (!hit || !hit.p) return;
       // full-bleed dark backdrop, keyed to the player's own card art
       try {
         document.body.classList.add("fo-pl-on");
@@ -9735,8 +9810,41 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // League packets are keyed by round, so a manager can set orders for any future
   // round now (or submit their current orders for the whole season at once). The
   // resolver picks up each round's packet when that round plays.
+  // a served fixture names its clubs; the local team objects carry the ground
+  // and the art, so match them up by name where we can
+  function foTeamByName(nm) {
+    try {
+      if (typeof GD === "undefined" || !GD.teams) return null;
+      for (var i = 0; i < GD.teams.length; i++) if (GD.teams[i].name === nm) return GD.teams[i];
+    } catch (e) {}
+    return null;
+  }
   function foUserFixtures() {
     var out = [];
+    // the world's own draw, when there is a world. App.season.schedule is the
+    // local blob's fixture list and has no relationship to the round the umpire
+    // is about to play.
+    try {
+      if (window.__foServed && window.__foServed.on()) {
+        return window.__foServed.fixtures(8).map(function (x) {
+          var oppT = foTeamByName(x.opp.name);
+          var homeT = foTeamByName(x.home.name) || { name: x.home.name, ground: x.home.name + " Ground" };
+          return {
+            round: x.round, f: [x.home.slot, x.away.slot], oppIx: -1,
+            opp: oppT || { name: x.opp.name },
+            home: homeT, away: foTeamByName(x.away.name) || { name: x.away.name },
+            // at home the groundsman's own doctrine is the pitch, exactly as
+            // foFixtureInfo reads it for a local season
+            ground: homeT.ground,
+            pitch: (x.isHome && homeT.homePitch) ? homeT.homePitch
+                 : (typeof groundPitch === "function" ? groundPitch(homeT.ground) : "balanced"),
+            weather: WXLIST[(((x.round * 7 + x.home.slot * 3) % WXLIST.length) + WXLIST.length) % WXLIST.length],
+            isHome: x.isHome, seed: 5000 + x.round * 10 + x.home.slot,
+            date: (typeof foDailyDate === "function" ? foDailyDate(x.round) : "")
+          };
+        });
+      }
+    } catch (eSf) {}
     try {
       var S = App.season; if (!S || !S.schedule) return out;
       for (var r = S.round; r < S.schedule.length; r++) {
@@ -9818,7 +9926,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (!(LG && SYNC && SYNC.started && App.orders && App.orders.saved)) return;
       if (SYNC.planRound == null) return;
       foPushRound(SYNC.planRound, App.orders);
-      toast("\u2713 Orders are in for Round " + (SYNC.planRound + 1) + " \u00b7 it plays " + foDailyDate(SYNC.planRound, { weekday: "short", day: "numeric", month: "short" }) + " at 9:00 AM ET.");
+      toast("\u2713 Orders are in for Round " + (SYNC.planRound + 1) + " \u00b7 it plays " + foDailyDate(SYNC.planRound, { weekday: "short", day: "numeric", month: "short" }) + " at " + foDailyTime(SYNC.planRound) + ".");
       // These orders belong to a FUTURE round. Un-save the working copy so the
       // current-round auto-push can't resubmit them for today's match - and so
       // a genuine current-round save later still pushes (the old signature
@@ -9912,7 +10020,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260730-1303-dac370";
+  var FO_BUILD = "20260730-2113-715fc1";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10162,7 +10270,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (foHashPath() !== "#/orders" && foHashPath() !== "#/match" && App && App.pending && App.pending.__chal) App.pending = null;
       // League games have no live viewer: bounce #/match back to the fixtures list.
       if (foHashPath() === "#/match" && foLeaguePendingOnly()) {
-        if (App.orders && App.orders.saved) say("Orders are in · your match plays " + (typeof foDailyDate === "function" && App.season ? foDailyDate(App.season.round, { weekday: "short", day: "numeric", month: "short" }) : "") + " at 9:00 AM ET. Lineups lock an hour before the start.");
+        if (App.orders && App.orders.saved) say("Orders are in · your match plays " + foNextRoundWhen() + ". Lineups lock an hour before the start.");
         location.hash = "#/matches"; foOnHash._last = "#/matches"; return;
       }
       // Saving league orders must never dump the manager into a running
@@ -10170,7 +10278,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // and the live-friendly exception above would let it through.
       if (foHashPath() === "#/match" && (foOnHash._last || "").indexOf("#/orders") === 0 &&
           SYNC && SYNC.started && !SYNC.practice && App && App.pending && App.pending.comp === "league") {
-        toast("Orders are in · your league match plays " + (App.season ? foDailyDate(App.season.round, { weekday: "short", day: "numeric", month: "short" }) + " " : "") + "at 9:00 AM ET (lineups lock an hour before). Your friendly is under Live Match.");
+        toast("Orders are in · your league match plays " + foNextRoundWhen() + " (lineups lock an hour before). Your friendly is under Live Match.");
         location.hash = "#/matches"; foOnHash._last = "#/matches"; return;
       }
       foOnHash._last = location.hash || "";
@@ -20750,7 +20858,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var cell = function (c, p) {
       var v = c.v(p, ctx);
       if (c.k === "name") {
-        return "<td class='c-name'><span class='fo-sqg-nm'>" + E(p.name) + "</span>" +
+        return "<td class='c-name'><span class='fo-sqg-nm'>" + E(p.name) + foSqStar(p) + "</span>" +
           (p.name === capt ? "<em class='fo-sqg-c' title='Captain'>C</em>" : "") +
           (p.__y ? "<em class='fo-sqg-y' title='Youth player'>U20</em>" : "") +
           "<i class='fo-sqg-go' aria-hidden='true'>&#8250;</i></td>";
@@ -21203,7 +21311,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           (fIx >= 5 ? "<span class='frm hi' title='In form'>&#9650;</span>" : fIx <= 2 ? "<span class='frm lo' title='Out of form'>&#9660;</span>" : "") +
           (p.name === capt ? "<span class='cap'>C</span>" : "") +
           "<img class='pic' src='" + FO_ART + foPkArt(p) + "' alt='' loading='lazy' decoding='async'>" + extra +
-          "<span class='nm'>" + E(foSqShortName(p.name)) + "</span>" +
+          "<span class='nm'>" + E(foSqShortName(p.name)) + foSqStar(p) + "</span>" +
           "<span class='rl " + cls + "'>" + E(sub) + "</span></button>";
       };
 
@@ -21343,7 +21451,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         return "<a class='fo-ros-row' href='#/player?n=" + encodeURIComponent(p.name) + "'>" +
           "<span class='fo-ros-pic'><img src='" + FO_ART + foPkArt(p) + "' alt='' loading='lazy' decoding='async'>" +
           (flg && p.nat ? "<em class='fo-ros-flag'><img src='" + flg + "' alt='" + E(p.nat) + "' onerror=\"this.parentNode.style.display='none'\"></em>" : "") + "</span>" +
-          "<span class='fo-ros-id'><b>" + E(p.name) + (capt === p.name ? " <i class='fo-ros-c'>C</i>" : "") + "</b>" +
+          "<span class='fo-ros-id'><b>" + E(p.name) + foSqStar(p) + (capt === p.name ? " <i class='fo-ros-c'>C</i>" : "") + "</b>" +
           "<span>" + roleNm + (det ? " &middot; " + E(det) : "") + (p.age ? " &middot; " + E(foAgeText(p)) : "") + "</span></span>" +
           foSqFormGlyph(p) +
           "<b class='fo-ros-ovr' style='color:" + foSqQCol(ovr) + "'>" + ovr + "</b>" +
@@ -21453,6 +21561,18 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (droppedName && App.orders.keeper === droppedName) App.orders.keeper = null;
       if (typeof saveGame === "function") saveGame();
     } catch (e) {}
+  }
+  // A RED STAR MEANS HE PLAYS FOR HIS COUNTRY. The mark comes from the served
+  // national squad and nowhere else, so it appears the morning the selectors
+  // first name him and goes the morning they leave him out. Every man on this
+  // page belongs to THIS club, so the exact club-and-name lookup is the one to
+  // use - two cricketers in a league can share a name and only one is capped.
+  function foSqStar(p, big) {
+    try {
+      var sv = window.__foServed;
+      if (!sv || !sv.on() || !window.foNatStar) return "";
+      return window.foNatStar(p && p.name, sv.slot(), { big: !!big });
+    } catch (e) { return ""; }
   }
   function foSqShortName(n) {
     var parts = String(n || "").trim().split(/\s+/);
@@ -28920,74 +29040,83 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var v = foHgVariant();
       var me = null; try { me = userTeam(); } catch (e) {}
       var nation = foLgNation(), region = (foRegionById(nation) || {}).r || { nm: "your nation", ac: "#EBC271" };
-      var s = null, pos = 0, round = 0, done = false, totalR = 14;
-      try { s = foLgEnsure(); var tbl = foLgTable(foLgLineup(nation), s.res || {}); pos = tbl.findIndex(function (x) { return x.name === (foLgMyTeam().name); }) + 1; round = Math.min(14, s.round || 0); done = round >= 14; } catch (eS) {}
-      // the season you actually play is the truth: when the club season is
-      // live, its clock and its table outrank the nation-league flavour clock
-      try {
-        if (App.season && App.season.schedule && App.season.schedule.length) {
-          totalR = App.season.schedule.length;
-          round = Math.min(totalR, App.season.round || 0);
-          done = round >= totalR;
-          var rowsC = (typeof leagueRows === "function") ? leagueRows() : [];
-          var pC = rowsC.findIndex(function (x) { return x.nm === (me && me.name); }) + 1;
-          if (pC > 0) pos = pC;
-        }
-      } catch (eC) {}
-      var beads = foHomeForm() || "<span class='hg-nf'>the season awaits</span>";
-      var posLine = done ? "Season complete &middot; you finished " + foOrdinal(pos || 8) : (pos ? foOrdinal(pos) + " in the " + region.nm + " League &middot; Round " + (round + 1) + " of " + totalR : region.nm + " League");
-
-      // ---- YOUR FRONT DOOR SPEAKS THE WORLD --------------------------------
-      // The club home used to read this device's own save: its club name, its
-      // own standings, its own round. The league page reads the World Service.
-      // One club cannot have two names and two positions, so when a world club
-      // is claimed the served record wins here too - and if this device still
-      // calls the club something else, the hero says so and offers the font.
+      // ---- YOUR FRONT DOOR SPEAKS THE WORLD, OR IT SPEAKS FOR ITSELF --------
+      // These four facts - where you stand, which round is next, how many
+      // rounds there are, and how the last few went - used to be worked out
+      // from this device's save and then PATCHED OVER with whatever the world
+      // had said. Patching leaks: a fact the world was silent on kept its local
+      // value, so a league restarted this morning showed six form beads and
+      // "Round 3 of 18" beside a table in which every club had played nothing.
+      //
+      // There is no patching now. Either the served world answers all four, or
+      // the local season does - never a seam down the middle. __foServed.on()
+      // is the switch: a claim in the world AND a snapshot in hand.
+      var served = null;
+      try { served = (window.__foServed && window.__foServed.on()) ? window.__foServed : null; } catch (eSv) {}
+      var repaintHome = function () {
+        try { var pg0 = document.getElementById("page"); if (pg0) pg0.__foHomeSig = null; foRenderHome(); } catch (eR0) {}
+      };
       var wClaim = null, wName = "", localNm = (me && me.name) || "";
       try { wClaim = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eWc0) {}
+      // the club's name is the clubs table's to give; a manager may have
+      // christened it, and a stale local save may still call it something else
       if (wClaim) {
-        var repaintHome = function () {
-          try { var pg0 = document.getElementById("page"); if (pg0) pg0.__foHomeSig = null; foRenderHome(); } catch (eR0) {}
-        };
         try {
           var nmMap = null;
           if (window.__foWorldNames) {
             nmMap = window.__foWorldNames.get(wClaim.country);
             window.__foWorldNames.want(wClaim.country, repaintHome);
           }
-          wName = (nmMap && nmMap[wClaim.slot]) || wClaim.club || "";
+          wName = (nmMap && nmMap[wClaim.slot]) || (served && served.name()) || wClaim.club || "";
         } catch (eWn) {}
-        try {
-          var wSnap = null;
-          if (window.__foWorldLg) {
-            wSnap = window.__foWorldLg.get(wClaim.country);
-            window.__foWorldLg.want(wClaim.country, repaintHome);
-          }
-          var wCal = null;
-          try { wCal = window.__foWT && window.__foWT.serverCal ? window.__foWT.serverCal(Date.now()) : null; } catch (eWc) {}
-          var wPos = 0, wTot = (wSnap && wSnap.rounds) || 18;
-          if (wSnap && wSnap.table) {
-            for (var wi = 0; wi < wSnap.table.length; wi++) if (wSnap.table[wi].slot === wClaim.slot) wPos = wi + 1;
-            // form beads off the served results, newest last
-            var wSeq = (wSnap.results || []).filter(function (r0) {
-              return r0.home === wName || r0.away === wName || r0.home === wClaim.club || r0.away === wClaim.club;
-            }).slice(-5).map(function (r0) {
-              var mine0 = (r0.home === wName || r0.home === wClaim.club) ? r0.home : r0.away;
-              return r0.winner === null ? "t" : r0.winner === mine0 ? "w" : "l";
-            });
-            if (wSeq.length) beads = wSeq.map(function (k0) { return "<i class='" + k0 + "'>" + k0.toUpperCase() + "</i>"; }).join("");
-          }
-          if (wCal && wCal.seasonNo >= 1 && wCal.round >= 1 && wCal.round <= wTot) {
-            posLine = (wPos ? foOrdinal(wPos) + " in the " + region.nm + " League &middot; " : region.nm + " League &middot; ") +
-              "Round " + wCal.round + " of " + wTot;
-          } else if (wCal && wCal.dayInSeason < 0) {
-            var toGo = -wCal.dayInSeason;
-            posLine = region.nm + " League &middot; the season opens in " + toGo + " day" + (toGo === 1 ? "" : "s");
-          } else if (wPos) {
-            posLine = foOrdinal(wPos) + " in the " + region.nm + " League";
-          }
-        } catch (eWs) {}
+        try { if (window.__foWorldLg) window.__foWorldLg.want(wClaim.country, repaintHome); } catch (eWq) {}
       }
+
+      var pos = 0, round = 0, done = false, totalR = 14, beads = "", posLine = "";
+      if (served) {
+        var sRows = served.rows(), sMe = served.me();
+        for (var si = 0; si < sRows.length; si++) if (sRows[si].slot === served.slot()) pos = si + 1;
+        totalR = served.totalRounds();
+        round = served.roundsPlayed();          // 0-based, as the local clock counts
+        done = served.roundsPlayed() >= totalR;
+        // Form off the banked cards and nothing else: a club that has played
+        // nothing shows nothing, which is the honest answer this page could
+        // never give while it was reading App.results. em.hg-w/hg-l/hg-t are
+        // the coloured discs this hero styles - the served path used to emit
+        // <i class='w'>, which matches no rule in the sheet, so a world club's
+        // form showed as bare letters beside a local club's discs.
+        var sf = served.formOf(wName || (sMe && sMe.name)).slice(-5);
+        beads = sf.length
+          ? sf.map(function (k0) { return "<em class='hg-" + k0.toLowerCase() + "'>" + k0 + "</em>"; }).join("")
+          : "<span class='hg-nf'>the season awaits</span>";
+        var toGo = served.opensIn();
+        posLine = toGo > 0
+          ? region.nm + " League &middot; the season opens in " + toGo + " day" + (toGo === 1 ? "" : "s")
+          : done
+          ? "Season complete &middot; you finished " + foOrdinal(pos || 10)
+          : (pos ? foOrdinal(pos) + " in the " + region.nm + " League &middot; " : region.nm + " League &middot; ") +
+            "Round " + served.round() + " of " + totalR;
+      } else {
+        var s = null;
+        try { s = foLgEnsure(); var tbl = foLgTable(foLgLineup(nation), s.res || {}); pos = tbl.findIndex(function (x) { return x.name === (foLgMyTeam().name); }) + 1; round = Math.min(14, s.round || 0); done = round >= 14; } catch (eS) {}
+        // the season you actually play is the truth: when the club season is
+        // live, its clock and its table outrank the nation-league flavour clock
+        try {
+          if (App.season && App.season.schedule && App.season.schedule.length) {
+            totalR = App.season.schedule.length;
+            round = Math.min(totalR, App.season.round || 0);
+            done = round >= totalR;
+            var rowsC = (typeof leagueRows === "function") ? leagueRows() : [];
+            var pC = rowsC.findIndex(function (x) { return x.nm === (me && me.name); }) + 1;
+            if (pC > 0) pos = pC;
+          }
+        } catch (eC) {}
+        beads = foHomeForm() || "<span class='hg-nf'>the season awaits</span>";
+        posLine = done ? "Season complete &middot; you finished " + foOrdinal(pos || 8) : (pos ? foOrdinal(pos) + " in the " + region.nm + " League &middot; Round " + (round + 1) + " of " + totalR : region.nm + " League");
+      }
+      // a claim whose world has not answered yet says so, rather than borrowing
+      // the local save's round to fill the line
+      if (wClaim && !served) posLine = region.nm + " League &middot; asking the world&hellip;";
       var heroName = wName || localNm || "Your Club";
       var twoNames = !!(wName && localNm && wName !== localNm);
 
@@ -29442,7 +29571,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
               "<div class='r'>" + tail + "</div></div>";
           }).join("");
         } else {
-          var ws0 = srv.pl.WORLD_START || 0;
+          // the day the world's own season opened, as the served snapshot
+          // reported it - never assumed from the date
+          var ws0 = srv.pl.anchorOf ? srv.pl.anchorOf().start : (srv.pl.WORLD_START || 0);
           // the league returns on the next season's opening day - or on the next
           // round's day, when today is one of the season's rest days
           var nextDay = null;
@@ -34974,14 +35105,34 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function natHour(rid) { if (rid === "eng") return 14; return HOUR_SLOTS[h32("nathour|" + rid) % HOUR_SLOTS.length]; }
   function dayIx(now) { return Math.floor((now - EPOCH) / DAY); }
   function hourOfDay(now) { var d = dayIx(now); return (now - (EPOCH + d * DAY)) / 3600000; }
-  // the served world's season 1 begins on day 0 itself (28 July = Day 1,
-  // Round 1) - the planet's phase runs on the SAME season clock as the
-  // umpire, so "round N" here is the round the server actually plays today
+  // WHEN THE SUMMER BEGAN IS THE WORLD'S TO SAY, NOT OURS TO ASSUME.
+  // Season 1 was founded on day 0 (28 July = Day 1, Round 1), and for as long
+  // as that was the only summer there had ever been, every page could work out
+  // today's round from the date alone. It is no longer true: the umpire records
+  // a start_day per season and per nation, and a world that is redealt and
+  // restarted begins its season 1 on the day it was restarted. Read from the
+  // date alone, a world restarted on day 2 says "Round 3" on the morning it has
+  // not yet bowled a ball - the front door contradicting the table beside it.
+  //
+  // So the calendar is ANCHORED by the world. WORLD_START is only the founding
+  // assumption, used until the served snapshot arrives and says otherwise;
+  // anchorWorld() is how it says otherwise, and every day/season/round mapping
+  // below runs off the anchor. One anchor, set from the snapshot in
+  // 31-world-feed.js, so no page has to remember to do this arithmetic itself.
   var WORLD_START = 0;
+  var ANCHOR = { start: WORLD_START, season: 1 };
+  function anchorWorld(startDay, seasonNo) {
+    if (startDay == null || !(seasonNo >= 1)) return ANCHOR;
+    ANCHOR = { start: startDay | 0, season: seasonNo | 0 };
+    return ANCHOR;
+  }
+  function anchorOf() { return ANCHOR; }
+  // the world day a season opens on, walked from the anchor a cycle at a time
+  function seasonStart(season) { return ANCHOR.start + ((season | 0) - ANCHOR.season) * CYCLE; }
   function phaseOf(now) {
-    var d = dayIx(now), rel = d - WORLD_START;
-    if (rel < 0) return { day: d, season: 1, di: -1, kind: "rest", preseason: true };
-    var s = Math.floor(rel / CYCLE) + 1, di = rel % CYCLE;
+    var d = dayIx(now), rel = d - ANCHOR.start;
+    if (rel < 0) return { day: d, season: ANCHOR.season, di: -1, kind: "rest", preseason: true };
+    var s = ANCHOR.season + Math.floor(rel / CYCLE), di = rel % CYCLE;
     var p = { day: d, season: s, di: di };
     var r = roundOfDay(di);
     if (r) { p.kind = "league"; p.round = r; }
@@ -35374,8 +35525,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var p = phaseOf(now);
     if (p.kind !== "league") {
       if (p.preseason) {
-        var toGo = WORLD_START - dayIx(now);
-        return { key: "up", liveIds: [], chip: "Season 1 opens " + (toGo === 1 ? "tomorrow" : "in " + toGo + " days") };
+        var toGo = ANCHOR.start - dayIx(now);
+        return { key: "up", liveIds: [], chip: "Season " + ANCHOR.season + " opens " + (toGo === 1 ? "tomorrow" : "in " + toGo + " days") };
       }
       return { key: "fin", liveIds: [],
         chip: p.kind === "cup" ? "World Cup week - " + stageName(p.stage) :
@@ -35434,7 +35585,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var bandHTML = "<div class='fo-pl-band'><i>The world by the hour &middot; UTC</i><div class='fo-pl-bandrow'>" + band + "</div></div>";
 
       var phaseLine =
-        p.preseason ? "The world is founded and the squads are named - season 1 " + ((WORLD_START - dayIx(now)) === 1 ? "begins tomorrow" : "begins in " + (WORLD_START - dayIx(now)) + " days") :
+        p.preseason ? "The world is founded and the squads are named - season " + ANCHOR.season + " " + ((ANCHOR.start - dayIx(now)) === 1 ? "begins tomorrow" : "begins in " + (ANCHOR.start - dayIx(now)) + " days") :
         p.kind === "league" ? "Round " + p.round + " of " + ROUNDS + " across the world's leagues" :
         p.kind === "honours" ? "Honours day - champions are crowned tonight" :
         p.kind === "draw" ? "World Cup draw day - sixteen nations learn their fate" :
@@ -35705,11 +35856,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function dayOfSeasonRound(season, round) {
     var d = dayOfRound(round);
     if (d == null) return null;
-    return WORLD_START + ((season | 0) - 1) * CYCLE + d;
+    return seasonStart(season) + d;
   }
   window.__foPlanet = { roundOfDay: roundOfDay, dayOfRound: dayOfRound, dayOfSeasonRound: dayOfSeasonRound,
+    anchorWorld: anchorWorld, anchorOf: anchorOf, seasonStart: seasonStart,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
-    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, fixturesOf: fixturesOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
+    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();
 // ---- 28-world-almanack.js — the people of the planet, and its book of record --
 // The living planet (module 27) gave every nation a running league. This layer
@@ -36739,6 +36891,40 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       for (var i = 0; i < ws.length; i++) { try { ws[i](LG_BODY[rid] || null); } catch (e) {} }
     }, 0);
   }
+  // ---- THE CALENDAR IS SET BY THE WORLD, NOT BY THE DATE ---------------------
+  // Every snapshot says which season it is and which world day that season
+  // opened on. The planet used to assume season 1 opened on day 0, which was
+  // true only for the world as first founded: a world restarted on day 2 then
+  // had every page counting rounds two days ahead of the umpire, so a league
+  // that had not bowled a ball was announced as round three. Handing the
+  // snapshot's own start_day to the planet the moment it lands settles that for
+  // every surface at once, including the ones that only do date arithmetic.
+  // The anchor is taken from THIS DEVICE'S NATION where there is one - a
+  // manager's own league is the calendar he lives by - and from England, the
+  // reference nation the cup schedule is cut from, where there is not.
+  // get() runs for all nineteen nations on every planet repaint, so this must
+  // not parse storage each time: the claim in memory answers for free, and the
+  // cached one is read once per page.
+  var ANCH_NAT = null, ANCH_READ = 0;
+  function anchorNation() {
+    try { if (window.__foWorldClaim && window.__foWorldClaim.country) return window.__foWorldClaim.country; } catch (e) {}
+    if (ANCH_READ) return ANCH_NAT;
+    ANCH_READ = 1; ANCH_NAT = "eng";
+    try {
+      var c = JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+      if (c && c.country) ANCH_NAT = c.country;
+    } catch (e2) {}
+    return ANCH_NAT;
+  }
+  function anchorTo(rid, body) {
+    try {
+      if (!body || body.startDay == null || !(body.seasonNo >= 1)) return;
+      if (rid !== anchorNation()) return;
+      if (window.__foPlanet && window.__foPlanet.anchorWorld) {
+        window.__foPlanet.anchorWorld(body.startDay, body.seasonNo);
+      }
+    } catch (e) {}
+  }
   function lgFetch(rid, cb) {
     if (!rid) return;
     // THE WHOLE PLANET AT ONCE. The world page now asks for all nineteen
@@ -36754,6 +36940,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var take = function (body) {
       if (body && body.results) {
         LG_BODY[rid] = body;
+        anchorTo(rid, body);
         try { localStorage.setItem("fo_world_lg_" + rid, JSON.stringify(body)); } catch (e) {}
       }
       done();
@@ -36841,9 +37028,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   };
 
   window.__foWorldLg = {
+    // the cached copy anchors the calendar too: it is something the world
+    // already said, and the first paint of a cold page happens before the
+    // fetch lands. It is overwritten by the live body the moment that arrives.
     get: function (rid) {
-      if (LG_BODY[rid]) return LG_BODY[rid];
-      try { var c2 = localStorage.getItem("fo_world_lg_" + rid); if (c2) { LG_BODY[rid] = JSON.parse(c2); return LG_BODY[rid]; } } catch (e) {}
+      if (LG_BODY[rid]) { anchorTo(rid, LG_BODY[rid]); return LG_BODY[rid]; }
+      try {
+        var c2 = localStorage.getItem("fo_world_lg_" + rid);
+        if (c2) { LG_BODY[rid] = JSON.parse(c2); anchorTo(rid, LG_BODY[rid]); return LG_BODY[rid]; }
+      } catch (e) {}
       return null;
     },
     want: function (rid, cb) { try { lgFetch(rid, cb); } catch (e) {} }
@@ -37028,10 +37221,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         .replace("{fav}", fav.name).replace("{dog}", dog.name)
         .replace("{dogStar}", dogStar).replace("{pitch}", pitch);
 
+  // the red star: this man is in his country's fifteen as it stands
+  function foNS(nm, rid) {
+    try { return (window.foNatStar && window.__foServed && window.__foServed.on())
+      ? window.foNatStar(nm, null, rid ? { rid: rid } : undefined) : ""; } catch (e) { return ""; }
+  }
       var xiCol = function (team, prob, label) {
         return "<div class='fo-md-xi'><i>" + E(label) + (prob.fromOrders ? " &middot; your card" : " &middot; the XI") + "</i>" +
           prob.xi.map(function (p, k) {
-            return "<div class='p'><u>" + (k + 1) + "</u><b>" + E(p.name) + "</b>" +
+            return "<div class='p'><u>" + (k + 1) + "</u><b>" + E(p.name) + foNS(p.name) + "</b>" +
               (p.keeper || p.role === "wicketkeeper" ? "<em>&dagger;</em>" : p.bowlType ? "<em>&#9679;</em>" : "") + "</div>";
           }).join("") + "</div>";
       };
@@ -38335,14 +38533,22 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
   // The server's calendar for a world day. It used to do the arithmetic itself
   // (season = day/25, round = day%25 + 1) which was true only while every day
-  // was a match day. The planet owns the mapping now; this asks it.
+  // was a match day. The planet owns the mapping now; this asks it - INCLUDING
+  // the day the season opened on, which the planet takes from the served
+  // snapshot. Doing that sum here against a hardcoded day 0 is what made a
+  // restarted world announce a round it had not played.
   //   round is NULL on a rest day and through the closing week.
-  var WORLD_START = 0;
+  // the red star: this man is in his country's fifteen as it stands
+  function foNS(nm, rid) {
+    try { return (window.foNatStar && window.__foServed && window.__foServed.on())
+      ? window.foNatStar(nm, null, rid ? { rid: rid } : undefined) : ""; } catch (e) { return ""; }
+  }
   function serverCal(now) {
-    var pl = P(), d = pl.dayIx(now), rel = d - WORLD_START;
-    var cyc = pl.CYCLE || 30;
-    var seasonNo = Math.floor(rel / cyc) + 1, di = ((rel % cyc) + cyc) % cyc;
-    if (rel < 0) return { seasonNo: seasonNo, round: null, dayInSeason: rel, rest: true };
+    var pl = P(), d = pl.dayIx(now);
+    var a = (pl.anchorOf && pl.anchorOf()) || { start: 0, season: 1 };
+    var cyc = pl.CYCLE || 30, rel = d - a.start;
+    if (rel < 0) return { seasonNo: a.season, round: null, dayInSeason: rel, rest: true };
+    var seasonNo = a.season + Math.floor(rel / cyc), di = rel % cyc;
     var round = pl.roundOfDay ? pl.roundOfDay(di) : null;
     return { seasonNo: seasonNo, round: round, dayInSeason: di, rest: !round,
              leagueOver: di >= (pl.LEAGUE_DAYS || 24) };
@@ -38698,7 +38904,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         var xiCol = function (nm, sq, ord) {
           var xi = actualXI(sq, ord);
           return "<div class='c'><b>" + E(nm) + "</b>" + (ord ? "<u>manager's named XI</u>" : "<u>the engine's pick</u>") +
-            xi.map(function (p, k) { return "<span><i>" + (k + 1) + "</i>" + E(p.name) + (p.keeper ? " &dagger;" : p.bowlType ? " &#9679;" : "") + "</span>"; }).join("") + "</div>";
+            xi.map(function (p, k) { return "<span><i>" + (k + 1) + "</i>" + E(p.name) + foNS(p.name, rid) + (p.keeper ? " &dagger;" : p.bowlType ? " &#9679;" : "") + "</span>"; }).join("") + "</div>";
         };
         xiHTML = "<div class='fo-wt-teamsin'><div class='cols'>" +
           xiCol(m.home.name, sqHt, ov[m.home.name]) + xiCol(m.away.name, sqAt, ov[m.away.name]) + "</div></div>";
@@ -39909,7 +40115,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (!onPage()) return;
     var page = document.getElementById("page"); if (!page) return;
     var name = qName(); if (!name) return;
-    var hit = null; try { hit = findPlayer(name); } catch (e) {}
+    // A CRICKETER THIS DEVICE EMPLOYS, or - when the link names his club -
+    // anybody in the world, derived from the seed the umpire built him with.
+    // A national squad is fifteen men from ten clubs, and a manager reading
+    // Pakistan's side wants those men to open like any other.
+    var ridQ = qp("r"), slotQ = qp("s");
+    var hit = null;
+    try {
+      hit = (typeof window.foFindAnyPlayer === "function")
+        ? window.foFindAnyPlayer(name, ridQ || null, slotQ == null || slotQ === "" ? null : (parseInt(slotQ, 10) | 0))
+        : findPlayer(name);
+    } catch (e) { try { hit = findPlayer(name); } catch (e2) {} }
     var cidQ = qp("c");
     // a man from another club: the world serves his card, and only his card
     if (cidQ && !isMine(name)) { buildCard(cidQ, parseInt(qp("s"), 10) || 0, name); return; }
@@ -41654,6 +41870,14 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-nat-man span{flex:1;font-size:11px;color:rgba(20,28,40,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       "html body #page .fo-nat-man u{text-decoration:none;font:700 9px/1 Oswald,sans-serif;letter-spacing:.1em;color:rgba(20,28,40,.4);white-space:nowrap}",
       "html body #page .fo-nat-man.mine{background:rgba(232,185,106,.2);border-radius:9px;padding-left:8px;padding-right:8px}",
+      // a row that opens a player page looks and behaves like one: it takes
+      // the pointer, lifts on hover and carries a chevron. A row with no page
+      // behind it stays flat, so the difference is visible before the click.
+      "html body #page a.fo-nat-man{color:inherit;text-decoration:none;cursor:pointer;border-radius:9px;padding-left:8px;padding-right:8px;transition:background .12s ease}",
+      "html body #page a.fo-nat-man:hover,html body #page a.fo-nat-man:focus-visible{background:rgba(20,28,40,.05)}",
+      "html body #page a.fo-nat-man.mine:hover,html body #page a.fo-nat-man.mine:focus-visible{background:rgba(232,185,106,.34)}",
+      "html body #page .fo-nat-go{font-style:normal;font-size:15px;line-height:1;color:rgba(20,28,40,.28);margin-left:2px}",
+      "html body #page a.fo-nat-man:hover .fo-nat-go{color:rgba(20,28,40,.55)}",
       "html body #page .fo-nat-man.mine b{color:#6B520F}",
       "html body #page .fo-nat-tie{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 2px;border-top:1px solid rgba(20,28,40,.07);font:500 12px/1.4 Inter,sans-serif}",
       "html body #page .fo-nat-tie b{font-weight:600;color:#141C28}",
@@ -41714,12 +41938,37 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<img src='" + flagOf(rid) + "' alt=''><span>" + E(rid) + "</span></button>";
     }).join("") + "</div>";
 
+    // A NAME IS A DOOR WHERE THERE IS A ROOM BEHIND IT. The player page is
+    // built by findPlayer, which searches the clubs THIS DEVICE holds - the
+    // ten of its own league. So a manager's countrymen all open; a man browsed
+    // from another nation's flag has no page here and is left as plain text
+    // rather than as a link that lands on an empty screen.
+    // EVERY MAN OPENS. A cricketer this device employs is found in its own
+    // league; anybody else is derived from the seed the umpire built him with,
+    // which needs to know WHICH club - so the link carries his nation and slot.
+    // A row with neither (an old caps entry naming a man no longer on any
+    // book) stays plain rather than leading to an empty page.
+    var manRow = function (cls, inner, nm, slot) {
+      var can = false;
+      try {
+        can = !!(window.foFindAnyPlayer
+          ? window.foFindAnyPlayer(nm, ST.nation, slot == null ? null : (slot | 0))
+          : (typeof findPlayer === "function" && findPlayer(nm)));
+      } catch (e) {}
+      if (!can) return "<div class='" + cls + "'>" + inner + "</div>";
+      var href = "#/player?n=" + encodeURIComponent(nm) +
+        (slot == null ? "" : "&r=" + encodeURIComponent(ST.nation) + "&s=" + (slot | 0));
+      return "<a class='" + cls + " go' href='" + href + "'>" + inner +
+        "<em class='fo-nat-go'>&#8250;</em></a>";
+    };
     var squad = (n.squad || []).map(function (m, i) {
       var isMine = myClub && m.club === myClub;
-      return "<div class='fo-nat-man" + (isMine ? " mine" : "") + "'><i>" + (i + 1) + "</i>" +
+      return manRow("fo-nat-man" + (isMine ? " mine" : ""),
+        "<i>" + (i + 1) + "</i>" +
         "<b>" + E(m.name) + "</b><span>" + E(m.club || "") +
         (m.age ? " &middot; " + m.age : "") + "</span>" +
-        "<u>" + (m.caps ? m.caps + " cap" + (m.caps === 1 ? "" : "s") : "uncapped") + "</u></div>";
+        "<u>" + (m.caps ? m.caps + " cap" + (m.caps === 1 ? "" : "s") : "uncapped") + "</u>",
+        m.name, m.slot);
     }).join("");
 
     var pay = (n.compensation || []).map(function (c) {
@@ -41729,11 +41978,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
     var tours = (n.tours || []).map(tieRow).join("");
     var caps = (n.caps || []).map(function (c, i) {
-      return "<div class='fo-nat-man'><i>" + (i + 1) + "</i><b>" + E(c.name) + "</b>" +
+      return manRow("fo-nat-man",
+        "<i>" + (i + 1) + "</i><b>" + E(c.name) + "</b>" +
         "<span>" + c.caps + " cap" + (c.caps === 1 ? "" : "s") +
         (c.runs ? " &middot; " + c.runs + " runs" + (c.hs ? " (" + c.hs + " best)" : "") : "") +
         (c.wkts ? " &middot; " + c.wkts + " wickets" + (c.bb ? " (" + c.bb.w + "-" + c.bb.r + ")" : "") : "") +
-        "</span></div>";
+        "</span>",
+        c.name, (((n.squad || []).filter(function (m2) { return m2.name === c.name; })[0]) || {}).slot);
     }).join("");
 
     var myMen = mine ? (n.squad || []).filter(function (m) { return m.club === myClub; }) : [];
@@ -42306,7 +42557,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     // THE HOUR THIS MATCH IS PLAYED, to the minute. Round R of season S falls
     // on one world day, and that day opens at the nation's own hour.
     var day = PL.dayOfSeasonRound ? PL.dayOfSeasonRound(seasonNo, round)
-           : ((PL.WORLD_START | 0) + (seasonNo - 1) * (PL.CYCLE | 0) + (round - 1));
+           : ((PL.anchorOf ? PL.anchorOf().start : 0) + (seasonNo - 1) * (PL.CYCLE | 0) + (round - 1));
     var start = PL.EPOCH + day * PL.DAY + hour * 3600000;
     var stop = start + (PL.LIVE_LEN || 3) * 3600000;
     return { snap: snap, names: names, mgrs: mgrs, sides: sides, bySlot: bySlot,
@@ -42856,6 +43107,324 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     st.id = "fo-pm-css"; st.textContent = css;
     document.head.appendChild(st);
   }
+})();
+/* ============================================================================
+   SERVED TRUTH — the league facts come from the world, or they do not come.
+
+   THE BUG THIS EXISTS TO KILL. This game grew out of a single-player engine
+   that kept everything in one localStorage blob: the fixtures, the results,
+   the table, the lot. The World Service replaced all of that - the umpire
+   plays every round on a server and publishes a snapshot - but the club home
+   went on reading the OLD blob. leagueRows() built a table from App.results;
+   foFormMap() built the form strip from App.results; foUserFixtures() read
+   App.season.schedule. So the front page could tell a manager he was third
+   after six matches in round three of eighteen, while the world he actually
+   plays in had just been restarted and had not bowled a ball. Nothing was
+   broken on the server; the page simply was not looking at it.
+
+   That class of bug cannot be fixed one page at a time, because the next
+   surface to be written will reach for the same familiar globals. So this is
+   a rule with a switch behind it:
+
+     WHEN THIS DEVICE HOLDS A CLAIM IN THE SERVED WORLD, EVERY LEAGUE FACT
+     COMES FROM THE SERVED SNAPSHOT. The local save is not consulted, not
+     preferred, not merged with, not fallen back to.
+
+   window.leagueRows is REPLACED here rather than read, so every caller in the
+   codebase - written or yet to be written - gets served rows without knowing
+   this file exists. That is the point: correctness that does not depend on
+   the next author remembering.
+
+   WHAT LOCAL STORAGE IS STILL ALLOWED TO HOLD. Three things, none of them
+   game state:
+     - who you are: the session token and the cached claim, both re-fetched;
+     - what you were looking at: view toggles, sort orders, dismissed nudges;
+     - a copy of something the server already said, used only to paint before
+       the fetch lands, and overwritten by it.
+   Anything the umpire decides - a result, a table, a fixture, a squad - is
+   read from the world every time. If the world cannot be reached, the honest
+   answer is "not yet", which every accessor here returns as null or empty.
+   ========================================================================== */
+(function () {
+  "use strict";
+  if (window.__foServedTruth) return; window.__foServedTruth = 1;
+
+  function claim() {
+    try {
+      if (window.__foWorldClaim) return window.__foWorldClaim;
+      var c = JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+      return (c && c.country != null && c.slot != null) ? c : null;
+    } catch (e) { return null; }
+  }
+  function nation() { var c = claim(); return c ? c.country : null; }
+  function planet() { try { return window.__foPlanet || null; } catch (e) { return null; } }
+
+  // the nation's league snapshot, and a nudge to refresh it. get() answers from
+  // whatever the feed last received; want() asks the world for a newer one.
+  function snap() {
+    var n = nation(); if (!n) return null;
+    try {
+      var L = window.__foWorldLg; if (!L) return null;
+      try { L.want(n, function () {}); } catch (eW) {}
+      return L.get(n) || null;
+    } catch (e) { return null; }
+  }
+  // ON means: this device plays in the served world AND the world has spoken.
+  // Both halves matter - a claim with no snapshot yet is "not yet", not "use
+  // the old blob instead".
+  function on() { return !!(nation() && snap()); }
+
+  function mySlot() { var c = claim(); return c ? (c.slot | 0) : -1; }
+  function myRow() {
+    var b = snap(); if (!b) return null;
+    var sl = mySlot();
+    var rows = b.table || [];
+    for (var i = 0; i < rows.length; i++) if ((rows[i].slot | 0) === sl) return rows[i];
+    return null;
+  }
+  function myName() { var r = myRow(); return r ? r.name : null; }
+
+  // THE TABLE, in the shape every caller in this codebase already expects from
+  // leagueRows(): nm, p, w, l, t, pts, nrr - sorted as the world sorted it.
+  function rows() {
+    var b = snap(); if (!b) return [];
+    return (b.table || []).map(function (r) {
+      return { nm: r.name, p: r.p | 0, w: r.w | 0, l: r.l | 0, t: r.t | 0,
+        pts: r.pts | 0, nrr: +r.nrr || 0, slot: r.slot | 0, boss: !!r.boss };
+    });
+  }
+
+  // FORM, oldest first, from the banked results and nothing else. A club that
+  // has played nothing has an empty strip - which is the correct answer for a
+  // season that has just restarted, and the one the old code could not give.
+  function formOf(name) {
+    var b = snap(); if (!b || !name) return [];
+    return (b.results || [])
+      .filter(function (r) { return r && (r.home === name || r.away === name); })
+      .sort(function (a, c) { return (a.round | 0) - (c.round | 0); })
+      .map(function (r) { return !r.winner ? "T" : (r.winner === name ? "W" : "L"); });
+  }
+  function form() { return formOf(myName()); }
+
+  // THE DAY THE SUMMER OPENED, as the umpire recorded it - not as the date
+  // implies. A world that is redealt and restarted opens its season 1 on the
+  // day it was restarted, and every page that counts rounds from the calendar
+  // rather than from this is a fortnight out.
+  function startDay() { var b = snap(); return (b && b.startDay != null) ? (b.startDay | 0) : null; }
+  // days until the first ball; 0 once the season is under way
+  function opensIn() {
+    var sd = startDay(); if (sd == null) return 0;
+    try { return Math.max(0, sd - window.__foPlanet.dayIx(Date.now())); } catch (e) { return 0; }
+  }
+  // ---- THE NATIONAL SIDE ----------------------------------------------------
+  // The umpire's selectors name a fifteen for every nation before every round
+  // and the naming rides in the league snapshot. So "does this man play for his
+  // country?" is a question every surface in the game can answer for free, off
+  // the document it already holds - no second request, and never a guess.
+  //
+  // Membership is keyed by CLUB SLOT AND NAME together. Two cricketers in one
+  // league can share a name; only one of them is in the squad, and starring the
+  // wrong man is worse than starring nobody. A caller who knows only the name
+  // still gets an answer (isNat), it is simply the looser one.
+  function natOf(rid) {
+    var b = rid == null ? snap() : lgOf(rid);
+    return (b && b.nat) ? b.nat : null;
+  }
+  function lgOf(rid) {
+    try { var L = window.__foWorldLg; if (!L) return null; L.want(rid, function () {}); return L.get(rid) || null; }
+    catch (e) { return null; }
+  }
+  var CAP_AT = null, CAP_KEY = null, CAP_NM = null;
+  function capSets(rid) {
+    var n = natOf(rid), key = (rid || nation()) + '|' + (n ? n.round : 'x') + '|' + (n ? n.squad.length : 0);
+    if (CAP_AT === key) return { slots: CAP_KEY, names: CAP_NM };
+    CAP_KEY = {}; CAP_NM = {}; CAP_AT = key;
+    ((n && n.squad) || []).forEach(function (m) {
+      if (!m || !m.name) return;
+      CAP_KEY[(m.slot | 0) + '|' + m.name] = 1; CAP_NM[m.name] = 1;
+    });
+    return { slots: CAP_KEY, names: CAP_NM };
+  }
+  // name alone: right whenever a league holds one man of that name, which is
+  // the ordinary case and every case the generator produces
+  function isNat(name, rid) { return !!(name && capSets(rid).names[name]); }
+  // name AND club: exact, for a surface that knows which club it is drawing
+  function isNatAt(slot, name, rid) { return !!(name && capSets(rid).slots[(slot | 0) + '|' + name]); }
+  function natSquad(rid) { var n = natOf(rid); return (n && n.squad) || []; }
+  function natRound(rid) { var n = natOf(rid); return n ? n.round : null; }
+
+  function roundsPlayed() { var b = snap(); return b ? (b.roundsPlayed | 0) : 0; }
+  function totalRounds() { var b = snap(); return (b && b.rounds) ? (b.rounds | 0) : 18; }
+  function seasonNo() { var b = snap(); return b ? (b.seasonNo | 0) || 1 : 1; }
+  // the round about to be played, 1-based, capped at the last one
+  function round() { return Math.min(roundsPlayed() + 1, totalRounds()); }
+
+  // WHEN A ROUND IS PLAYED — the one answer every surface that dates a fixture
+  // must ask for. Round index is 0-based, as the club home counts. The old
+  // answer was "today, plus however many rounds away it is" off the LOCAL
+  // season's round counter: wrong twice over, because a served round bears no
+  // relation to the local one, and because every fourth world day is a rest day
+  // so rounds are not one per day. Returns the moment of the first ball, at the
+  // nation's own hour, or null if the world has not spoken.
+  function ballAt(round0) {
+    var b = snap(), P = planet(), n = nation();
+    if (!b || !P || !P.dayOfSeasonRound || n == null) return null;
+    try {
+      var d = P.dayOfSeasonRound(seasonNo(), (round0 | 0) + 1);
+      if (d == null) return null;
+      return P.EPOCH + d * P.DAY + P.natHour(n) * 3600000;
+    } catch (e) { return null; }
+  }
+
+  // THE NEXT FIXTURE, from the world's own draw. schedOf() is the same circle
+  // method the umpire schedules with, so the opponent named here is the
+  // opponent the umpire will actually send out.
+  function fixtures(limit) {
+    var out = [], b = snap(), P = planet(), n = nation(), sl = mySlot();
+    if (!b || !P || !P.schedOf || !P.sidesOf || n == null || sl < 0) return out;
+    try {
+      var sched = P.schedOf(n, seasonNo()) || [];
+      var sides = P.sidesOf(n) || [];
+      var byName = {}; (b.table || []).forEach(function (r) { byName[r.slot | 0] = r.name; });
+      var nameOf = function (s) { return byName[s] || (sides[s] && sides[s].name) || ("Slot " + s); };
+      for (var r0 = roundsPlayed(); r0 < sched.length && out.length < (limit || 6); r0++) {
+        var rd = sched[r0] || [];
+        for (var i = 0; i < rd.length; i++) {
+          var f = rd[i];
+          if (f[0] !== sl && f[1] !== sl) continue;
+          var isHome = f[0] === sl, oppSlot = isHome ? f[1] : f[0];
+          out.push({
+            round: r0,                       // 0-based, as the club home counts
+            roundNo: r0 + 1,                 // 1-based, as a human counts
+            isHome: isHome, oppSlot: oppSlot,
+            opp: { name: nameOf(oppSlot), slot: oppSlot },
+            home: { name: nameOf(f[0]), slot: f[0] },
+            away: { name: nameOf(f[1]), slot: f[1] }
+          });
+        }
+      }
+    } catch (e) {}
+    return out;
+  }
+
+  window.__foServed = {
+    on: on, claim: claim, nation: nation, slot: mySlot, snapshot: snap,
+    rows: rows, me: myRow, name: myName, form: form, formOf: formOf,
+    round: round, roundsPlayed: roundsPlayed, totalRounds: totalRounds,
+    seasonNo: seasonNo, startDay: startDay, opensIn: opensIn,
+    ballAt: ballAt, fixtures: fixtures,
+    nat: natOf, natSquad: natSquad, natRound: natRound, isNat: isNat, isNatAt: isNatAt
+  };
+
+  // ---- THE RED STAR ---------------------------------------------------------
+  // One mark, one meaning, everywhere a cricketer's name appears: this man is
+  // in his country's fifteen as it stands today. It is drawn from the served
+  // squad and from nothing else, so it appears the morning the selectors first
+  // meet and goes the morning a man is left out - no local flag to fall stale.
+  //
+  // A global rather than a per-module helper because the surfaces that draw a
+  // player are scattered across a dozen files and the next one will be too.
+  // Callers who know the club pass its slot and get the exact answer.
+  function starCss() {
+    if (document.getElementById("fo-nat-star-css")) return;
+    var s = document.createElement("style");
+    s.id = "fo-nat-star-css";
+    s.textContent =
+      ".fo-nat{display:inline-block;color:#C8102E;font-size:.82em;line-height:1;" +
+      "margin-left:.34em;vertical-align:.06em;text-shadow:0 1px 0 rgba(0,0,0,.18);" +
+      "font-style:normal;font-weight:400;cursor:help}" +
+      ".fo-nat-lg{font-size:.9em;margin-left:.42em}";
+    (document.head || document.documentElement).appendChild(s);
+  }
+  function star(name, slot, opts) {
+    try {
+      if (!name) return "";
+      // A NAMED NATION NEEDS NO CLAIM. Drawing my own club asks whether this
+      // device plays in the served world at all; drawing somebody else's - a
+      // teamsheet on the world stage - only needs that nation to have spoken,
+      // so a spectator who has joined nothing still sees who the internationals
+      // are.
+      var rid = opts && opts.rid;
+      if (rid ? !natOf(rid) : !on()) return "";
+      var yes = (slot == null) ? isNat(name, rid) : isNatAt(slot, name, rid);
+      if (!yes) return "";
+      starCss();
+      var nm = (opts && opts.nation) || "";
+      return "<i class='fo-nat" + (opts && opts.big ? " fo-nat-lg" : "") + "'" +
+        " title='" + (nm ? nm + " " : "") + "international &middot; named in the current squad'" +
+        " aria-label='international'>&#9733;</i>";
+    } catch (e) { return ""; }
+  }
+  window.foNatStar = star;
+  window.__foServed.star = star;
+
+  // ---- ANY CRICKETER IN THE WORLD, BY NAME ----------------------------------
+  // findPlayer searches the clubs THIS DEVICE holds - the ten of its own
+  // league. That is the right scope for training, orders and the market, which
+  // may only touch a man you employ. It is the wrong scope for READING: a
+  // manager looking at Pakistan's fifteen wants to know who those men are, and
+  // being told "player not found" because they play in another country is not
+  // an answer.
+  //
+  // Every world club's squad is derivable on this device from the seed the
+  // umpire generated it with - that is how a replay fields the same eleven the
+  // server did - so a foreign cricketer can be looked up rather than fetched.
+  // The caller must say WHICH club (nation + slot); a bare name is not enough
+  // to find a man in nineteen leagues, and guessing would show the wrong one.
+  //
+  // Deliberately a separate function, not a widening of findPlayer: nothing
+  // that SPENDS money or SETS training should be able to reach a man who plays
+  // for somebody else, and a global fallback would quietly hand him over.
+  function clubNameAt(rid, slot) {
+    try {
+      var nm = null, ov = window.__foWorldNames && window.__foWorldNames.get(rid);
+      if (ov && ov[slot]) return ov[slot];
+      (planet().sidesOf(rid) || []).forEach(function (s) { if (s.slot === (slot | 0)) nm = s.name; });
+      return nm;
+    } catch (e) { return null; }
+  }
+  function findAny(name, rid, slot) {
+    if (!name) return null;
+    try {
+      // findPlayer is a top-level `const` in the engine, which makes it a
+      // global LEXICAL binding: reachable by name from any script, and not a
+      // property of window. Testing window.findPlayer finds nothing and
+      // silently skips the local lookup - which is how every cricketer,
+      // including the ones this device employs, briefly stopped opening.
+      var local = (typeof findPlayer === "function") ? findPlayer(name) : null;
+      if (local && local.p) return local;
+    } catch (e) {}
+    if (!rid || slot == null || slot < 0) return null;
+    try {
+      var sq = (window.__foWT && window.__foWT.serverSquad) ? window.__foWT.serverSquad(rid, slot | 0) : null;
+      if (!sq) return null;
+      for (var i = 0; i < sq.length; i++) {
+        if (sq[i] && sq[i].name === name) {
+          return { p: sq[i], team: { name: clubNameAt(rid, slot) || ("Club " + slot) },
+                   world: { rid: rid, slot: slot | 0 } };
+        }
+      }
+    } catch (e2) {}
+    return null;
+  }
+  window.foFindAnyPlayer = findAny;
+  window.__foServed.findAny = findAny;
+
+  // ---- THE SWITCH -----------------------------------------------------------
+  // leagueRows() is the table every surface in the game asks for. Replacing it
+  // once here means no page can accidentally show the local blob's table again,
+  // including pages nobody has written yet. The local implementation is kept
+  // for the solo and practice worlds, which have no served counterpart.
+  try {
+    if (typeof window.leagueRows === "function" && !window.leagueRows.__foServed) {
+      var local = window.leagueRows;
+      window.leagueRows = function (comp) {
+        if ((comp || "league") === "league" && on()) return rows();
+        return local.apply(this, arguments);
+      };
+      window.leagueRows.__foServed = 1;
+    }
+  } catch (e) {}
 })();
 
 ;

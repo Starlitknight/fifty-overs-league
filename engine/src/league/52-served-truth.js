@@ -248,6 +248,58 @@
   window.foNatStar = star;
   window.__foServed.star = star;
 
+  // ---- ANY CRICKETER IN THE WORLD, BY NAME ----------------------------------
+  // findPlayer searches the clubs THIS DEVICE holds - the ten of its own
+  // league. That is the right scope for training, orders and the market, which
+  // may only touch a man you employ. It is the wrong scope for READING: a
+  // manager looking at Pakistan's fifteen wants to know who those men are, and
+  // being told "player not found" because they play in another country is not
+  // an answer.
+  //
+  // Every world club's squad is derivable on this device from the seed the
+  // umpire generated it with - that is how a replay fields the same eleven the
+  // server did - so a foreign cricketer can be looked up rather than fetched.
+  // The caller must say WHICH club (nation + slot); a bare name is not enough
+  // to find a man in nineteen leagues, and guessing would show the wrong one.
+  //
+  // Deliberately a separate function, not a widening of findPlayer: nothing
+  // that SPENDS money or SETS training should be able to reach a man who plays
+  // for somebody else, and a global fallback would quietly hand him over.
+  function clubNameAt(rid, slot) {
+    try {
+      var nm = null, ov = window.__foWorldNames && window.__foWorldNames.get(rid);
+      if (ov && ov[slot]) return ov[slot];
+      (planet().sidesOf(rid) || []).forEach(function (s) { if (s.slot === (slot | 0)) nm = s.name; });
+      return nm;
+    } catch (e) { return null; }
+  }
+  function findAny(name, rid, slot) {
+    if (!name) return null;
+    try {
+      // findPlayer is a top-level `const` in the engine, which makes it a
+      // global LEXICAL binding: reachable by name from any script, and not a
+      // property of window. Testing window.findPlayer finds nothing and
+      // silently skips the local lookup - which is how every cricketer,
+      // including the ones this device employs, briefly stopped opening.
+      var local = (typeof findPlayer === "function") ? findPlayer(name) : null;
+      if (local && local.p) return local;
+    } catch (e) {}
+    if (!rid || slot == null || slot < 0) return null;
+    try {
+      var sq = (window.__foWT && window.__foWT.serverSquad) ? window.__foWT.serverSquad(rid, slot | 0) : null;
+      if (!sq) return null;
+      for (var i = 0; i < sq.length; i++) {
+        if (sq[i] && sq[i].name === name) {
+          return { p: sq[i], team: { name: clubNameAt(rid, slot) || ("Club " + slot) },
+                   world: { rid: rid, slot: slot | 0 } };
+        }
+      }
+    } catch (e2) {}
+    return null;
+  }
+  window.foFindAnyPlayer = findAny;
+  window.__foServed.findAny = findAny;
+
   // ---- THE SWITCH -----------------------------------------------------------
   // leagueRows() is the table every surface in the game asks for. Replacing it
   // once here means no page can accidentally show the local blob's table again,

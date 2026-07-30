@@ -297,7 +297,17 @@
     if (!onPage()) return;
     var page = document.getElementById("page"); if (!page) return;
     var name = qName(); if (!name) return;
-    var hit = null; try { hit = findPlayer(name); } catch (e) {}
+    // A CRICKETER THIS DEVICE EMPLOYS, or - when the link names his club -
+    // anybody in the world, derived from the seed the umpire built him with.
+    // A national squad is fifteen men from ten clubs, and a manager reading
+    // Pakistan's side wants those men to open like any other.
+    var ridQ = qp("r"), slotQ = qp("s");
+    var hit = null;
+    try {
+      hit = (typeof window.foFindAnyPlayer === "function")
+        ? window.foFindAnyPlayer(name, ridQ || null, slotQ == null || slotQ === "" ? null : (parseInt(slotQ, 10) | 0))
+        : findPlayer(name);
+    } catch (e) { try { hit = findPlayer(name); } catch (e2) {} }
     var cidQ = qp("c");
     // a man from another club: the world serves his card, and only his card
     if (cidQ && !isMine(name)) { buildCard(cidQ, parseInt(qp("s"), 10) || 0, name); return; }

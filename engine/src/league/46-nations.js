@@ -142,14 +142,23 @@
     // ten of its own league. So a manager's countrymen all open; a man browsed
     // from another nation's flag has no page here and is left as plain text
     // rather than as a link that lands on an empty screen.
-    var canOpen = function (nm) {
-      try { return !!(typeof findPlayer === "function" && findPlayer(nm)); } catch (e) { return false; }
-    };
-    var manRow = function (cls, inner, nm) {
-      return canOpen(nm)
-        ? "<a class='" + cls + " go' href='#/player?n=" + encodeURIComponent(nm) + "'>" + inner +
-          "<em class='fo-nat-go'>&#8250;</em></a>"
-        : "<div class='" + cls + "'>" + inner + "</div>";
+    // EVERY MAN OPENS. A cricketer this device employs is found in its own
+    // league; anybody else is derived from the seed the umpire built him with,
+    // which needs to know WHICH club - so the link carries his nation and slot.
+    // A row with neither (an old caps entry naming a man no longer on any
+    // book) stays plain rather than leading to an empty page.
+    var manRow = function (cls, inner, nm, slot) {
+      var can = false;
+      try {
+        can = !!(window.foFindAnyPlayer
+          ? window.foFindAnyPlayer(nm, ST.nation, slot == null ? null : (slot | 0))
+          : (typeof findPlayer === "function" && findPlayer(nm)));
+      } catch (e) {}
+      if (!can) return "<div class='" + cls + "'>" + inner + "</div>";
+      var href = "#/player?n=" + encodeURIComponent(nm) +
+        (slot == null ? "" : "&r=" + encodeURIComponent(ST.nation) + "&s=" + (slot | 0));
+      return "<a class='" + cls + " go' href='" + href + "'>" + inner +
+        "<em class='fo-nat-go'>&#8250;</em></a>";
     };
     var squad = (n.squad || []).map(function (m, i) {
       var isMine = myClub && m.club === myClub;
@@ -158,7 +167,7 @@
         "<b>" + E(m.name) + "</b><span>" + E(m.club || "") +
         (m.age ? " &middot; " + m.age : "") + "</span>" +
         "<u>" + (m.caps ? m.caps + " cap" + (m.caps === 1 ? "" : "s") : "uncapped") + "</u>",
-        m.name);
+        m.name, m.slot);
     }).join("");
 
     var pay = (n.compensation || []).map(function (c) {
@@ -174,7 +183,7 @@
         (c.runs ? " &middot; " + c.runs + " runs" + (c.hs ? " (" + c.hs + " best)" : "") : "") +
         (c.wkts ? " &middot; " + c.wkts + " wickets" + (c.bb ? " (" + c.bb.w + "-" + c.bb.r + ")" : "") : "") +
         "</span>",
-        c.name);
+        c.name, (((n.squad || []).filter(function (m2) { return m2.name === c.name; })[0]) || {}).slot);
     }).join("");
 
     var myMen = mine ? (n.squad || []).filter(function (m) { return m.club === myClub; }) : [];

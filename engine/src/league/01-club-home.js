@@ -2073,7 +2073,16 @@
       var page = document.getElementById("page"); if (!page) return;
       var mH = /[?&]n=([^&]+)/.exec(location.hash || ""); if (!mH) return;
       var nm = decodeURIComponent(mH[1]);
-      var hit = (typeof findPlayer === "function") ? findPlayer(nm) : null; if (!hit || !hit.p) return;
+      // the same widened lookup the page body uses: a foreign cricketer named
+      // by his club in the link gets the same card as anybody else
+      var qR = /[?&]r=([^&]+)/.exec(location.hash || ""), qS = /[?&]s=(\d+)/.exec(location.hash || "");
+      var hit = null;
+      try {
+        hit = (typeof window.foFindAnyPlayer === "function")
+          ? window.foFindAnyPlayer(nm, qR ? decodeURIComponent(qR[1]) : null, qS ? (qS[1] | 0) : null)
+          : ((typeof findPlayer === "function") ? findPlayer(nm) : null);
+      } catch (eFa) {}
+      if (!hit || !hit.p) return;
       // full-bleed dark backdrop, keyed to the player's own card art
       try {
         document.body.classList.add("fo-pl-on");

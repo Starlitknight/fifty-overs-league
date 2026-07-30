@@ -214,3 +214,44 @@ test('no world, no star: the solo game is unmarked', () => {
   assert.equal(ctx.foNatStar('Ada Blake', 2), '',
     'a founding squad in a world nobody has joined has no internationals to mark');
 });
+
+// ---- ANY CRICKETER IN THE WORLD -------------------------------------------
+// findPlayer searches the clubs THIS DEVICE holds, which is right for training
+// and orders and wrong for reading. A national squad is fifteen men from ten
+// clubs, and nineteen nations' squads are browsable: a foreign cricketer has
+// to open too.
+test('a cricketer this device employs opens by name alone', () => {
+  assert.equal(typeof ctx.foFindAnyPlayer, 'function');
+  const mine = run('(GD.teams[App.teamIx].players[0]||{}).name');
+  assert.ok(mine, 'this device employs somebody');
+  const hit = ctx.foFindAnyPlayer(mine);
+  assert.ok(hit && hit.p, 'found without being told which club');
+  assert.equal(hit.p.name, mine);
+});
+
+test('a foreign cricketer opens when the link names his club', () => {
+  // a real man from a real Pakistan club, derived exactly as the umpire
+  // generated him - the same call the theatre replays a match with
+  const squad = ctx.__foWT.serverSquad('pak', 4);
+  assert.ok(squad && squad.length >= 11, 'Pakistan slot 4 has a squad');
+  const him = squad[3].name;
+  assert.equal(run(`(typeof findPlayer === 'function' && findPlayer(${JSON.stringify(him)})) ? 1 : 0`), 0,
+    'and he plays in no club this device holds');
+
+  const hit = ctx.foFindAnyPlayer(him, 'pak', 4);
+  assert.ok(hit && hit.p, 'yet he opens');
+  assert.equal(hit.p.name, him);
+  assert.ok(hit.p.rating > 0 && hit.p.role, 'as a whole cricketer, not a name');
+  assert.equal(hit.world.rid, 'pak');
+  assert.equal(hit.world.slot, 4);
+  assert.ok(hit.team && hit.team.name, 'and his club is named');
+});
+
+test('a bare foreign name is not guessed at', () => {
+  const him = ctx.__foWT.serverSquad('pak', 4)[3].name;
+  assert.equal(ctx.foFindAnyPlayer(him), null,
+    'nineteen leagues hold thousands of men - without his club, showing one would be showing the wrong one');
+  assert.equal(ctx.foFindAnyPlayer(him, 'pak', 7), null, 'and he is not at that club either');
+  assert.equal(ctx.foFindAnyPlayer('', 'pak', 4), null);
+  assert.equal(ctx.foFindAnyPlayer(null), null);
+});

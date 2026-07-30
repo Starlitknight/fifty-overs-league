@@ -1776,7 +1776,12 @@ function foSeasonLine(name){
   return bits.join(' &nbsp;·&nbsp; ');
 }
 function pgPlayer(q){
-  const hit=findPlayer(q.n||'');
+  // a man in THIS league, or - when the link says which club he plays for -
+  // any cricketer in the world, derived from the seed the umpire built him
+  // with. See foFindAnyPlayer in 52-served-truth.js.
+  const hit=(typeof window.foFindAnyPlayer==='function')
+    ?window.foFindAnyPlayer(q.n||'',q.r||null,q.s==null?null:(q.s|0))
+    :findPlayer(q.n||'');
   if(!hit){$('#page').innerHTML='<div class="panel"><div class="pad">Player not found.</div></div>';return}
   const{p,team}=hit;
   const allr=Math.round((aggBat(p)+aggBowl(p))/2*(aggBat(p)>40&&aggBowl(p)>40?1:0.4));
