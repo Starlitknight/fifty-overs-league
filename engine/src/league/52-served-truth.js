@@ -106,6 +106,43 @@
     var sd = startDay(); if (sd == null) return 0;
     try { return Math.max(0, sd - window.__foPlanet.dayIx(Date.now())); } catch (e) { return 0; }
   }
+  // ---- THE NATIONAL SIDE ----------------------------------------------------
+  // The umpire's selectors name a fifteen for every nation before every round
+  // and the naming rides in the league snapshot. So "does this man play for his
+  // country?" is a question every surface in the game can answer for free, off
+  // the document it already holds - no second request, and never a guess.
+  //
+  // Membership is keyed by CLUB SLOT AND NAME together. Two cricketers in one
+  // league can share a name; only one of them is in the squad, and starring the
+  // wrong man is worse than starring nobody. A caller who knows only the name
+  // still gets an answer (isNat), it is simply the looser one.
+  function natOf(rid) {
+    var b = rid == null ? snap() : lgOf(rid);
+    return (b && b.nat) ? b.nat : null;
+  }
+  function lgOf(rid) {
+    try { var L = window.__foWorldLg; if (!L) return null; L.want(rid, function () {}); return L.get(rid) || null; }
+    catch (e) { return null; }
+  }
+  var CAP_AT = null, CAP_KEY = null, CAP_NM = null;
+  function capSets(rid) {
+    var n = natOf(rid), key = (rid || nation()) + '|' + (n ? n.round : 'x') + '|' + (n ? n.squad.length : 0);
+    if (CAP_AT === key) return { slots: CAP_KEY, names: CAP_NM };
+    CAP_KEY = {}; CAP_NM = {}; CAP_AT = key;
+    ((n && n.squad) || []).forEach(function (m) {
+      if (!m || !m.name) return;
+      CAP_KEY[(m.slot | 0) + '|' + m.name] = 1; CAP_NM[m.name] = 1;
+    });
+    return { slots: CAP_KEY, names: CAP_NM };
+  }
+  // name alone: right whenever a league holds one man of that name, which is
+  // the ordinary case and every case the generator produces
+  function isNat(name, rid) { return !!(name && capSets(rid).names[name]); }
+  // name AND club: exact, for a surface that knows which club it is drawing
+  function isNatAt(slot, name, rid) { return !!(name && capSets(rid).slots[(slot | 0) + '|' + name]); }
+  function natSquad(rid) { var n = natOf(rid); return (n && n.squad) || []; }
+  function natRound(rid) { var n = natOf(rid); return n ? n.round : null; }
+
   function roundsPlayed() { var b = snap(); return b ? (b.roundsPlayed | 0) : 0; }
   function totalRounds() { var b = snap(); return (b && b.rounds) ? (b.rounds | 0) : 18; }
   function seasonNo() { var b = snap(); return b ? (b.seasonNo | 0) || 1 : 1; }
@@ -165,8 +202,51 @@
     rows: rows, me: myRow, name: myName, form: form, formOf: formOf,
     round: round, roundsPlayed: roundsPlayed, totalRounds: totalRounds,
     seasonNo: seasonNo, startDay: startDay, opensIn: opensIn,
-    ballAt: ballAt, fixtures: fixtures
+    ballAt: ballAt, fixtures: fixtures,
+    nat: natOf, natSquad: natSquad, natRound: natRound, isNat: isNat, isNatAt: isNatAt
   };
+
+  // ---- THE RED STAR ---------------------------------------------------------
+  // One mark, one meaning, everywhere a cricketer's name appears: this man is
+  // in his country's fifteen as it stands today. It is drawn from the served
+  // squad and from nothing else, so it appears the morning the selectors first
+  // meet and goes the morning a man is left out - no local flag to fall stale.
+  //
+  // A global rather than a per-module helper because the surfaces that draw a
+  // player are scattered across a dozen files and the next one will be too.
+  // Callers who know the club pass its slot and get the exact answer.
+  function starCss() {
+    if (document.getElementById("fo-nat-star-css")) return;
+    var s = document.createElement("style");
+    s.id = "fo-nat-star-css";
+    s.textContent =
+      ".fo-nat{display:inline-block;color:#C8102E;font-size:.82em;line-height:1;" +
+      "margin-left:.34em;vertical-align:.06em;text-shadow:0 1px 0 rgba(0,0,0,.18);" +
+      "font-style:normal;font-weight:400;cursor:help}" +
+      ".fo-nat-lg{font-size:.9em;margin-left:.42em}";
+    (document.head || document.documentElement).appendChild(s);
+  }
+  function star(name, slot, opts) {
+    try {
+      if (!name) return "";
+      // A NAMED NATION NEEDS NO CLAIM. Drawing my own club asks whether this
+      // device plays in the served world at all; drawing somebody else's - a
+      // teamsheet on the world stage - only needs that nation to have spoken,
+      // so a spectator who has joined nothing still sees who the internationals
+      // are.
+      var rid = opts && opts.rid;
+      if (rid ? !natOf(rid) : !on()) return "";
+      var yes = (slot == null) ? isNat(name, rid) : isNatAt(slot, name, rid);
+      if (!yes) return "";
+      starCss();
+      var nm = (opts && opts.nation) || "";
+      return "<i class='fo-nat" + (opts && opts.big ? " fo-nat-lg" : "") + "'" +
+        " title='" + (nm ? nm + " " : "") + "international &middot; named in the current squad'" +
+        " aria-label='international'>&#9733;</i>";
+    } catch (e) { return ""; }
+  }
+  window.foNatStar = star;
+  window.__foServed.star = star;
 
   // ---- THE SWITCH -----------------------------------------------------------
   // leagueRows() is the table every surface in the game asks for. Replacing it

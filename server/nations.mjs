@@ -123,6 +123,60 @@ export async function nationMen(pool, country) {
 }
 
 // ---------------------------------------------------------------------------
+// THE STANDING SQUAD. The selectors used to meet three times a year, and only
+// for a nation the draw had given a fixture to - so for fifteen rounds out of
+// eighteen the answer to "who plays for England?" was nobody at all, and no
+// cricketer anywhere could be shown as an international.
+//
+// They sit BETWEEN EVERY MATCH now. Before round one is bowled they name a
+// fifteen from the founding squads; before every round after it they name it
+// again, having watched the cricket since - the previous day's tick evolved
+// every man who played it before it closed, so the form they read is the form
+// the round produced. A man plays his way into his country's side over a
+// season and out of it again, which is what a national side IS. Nothing else
+// changes: the same selectors, the same laws, the same three-from-a-club limit.
+//
+// NAMED ONCE, LIKE EVERYTHING ELSE IN THIS WORLD. The fifteen standing before
+// round R was decided at that moment on the form of that moment; a re-run of
+// the day reads the decision back rather than taking it again on cricket the
+// selectors could not have seen.
+export async function ensureNatSquad(pool, country, seasonNo, round) {
+  const key = [country, seasonNo, round];
+  const have = await pool.query(
+    'SELECT squad FROM nat_squad WHERE country_id=$1 AND season_no=$2 AND round=$3', key);
+  if (have.rowCount) return have.rows[0].squad;
+  const picked = selectSquad(await nationMen(pool, country)).map((p, i) => ({
+    pick: i, slot: p.slot, club: p.club || null, name: p.name,
+    age: p.age == null ? null : (p.age | 0), rating: Math.round(+p.rating || 0),
+    keeper: !!p.keeper, bowler: isBowler(p), fee: feeFor(p.age)
+  }));
+  await pool.query(
+    `INSERT INTO nat_squad(country_id, season_no, round, squad) VALUES ($1,$2,$3,$4)
+     ON CONFLICT (country_id, season_no, round) DO NOTHING`,
+    [country, seasonNo, round, JSON.stringify(picked)]);
+  return (await pool.query(
+    'SELECT squad FROM nat_squad WHERE country_id=$1 AND season_no=$2 AND round=$3', key)).rows[0].squad;
+}
+
+// The fifteen as it stands, and what the selectors did when they last met: the
+// two most recent namings, diffed. A nation whose selectors have met once has
+// changed nothing - which is the correct answer, not a missing one.
+export async function natSquadNow(pool, country, seasonNo) {
+  const rows = (await pool.query(
+    `SELECT round, squad FROM nat_squad WHERE country_id=$1 AND season_no=$2
+      ORDER BY round DESC LIMIT 2`, [country, seasonNo])).rows;
+  if (!rows.length) return { round: null, squad: [], in: [], out: [] };
+  const now = rows[0].squad || [], was = rows[1] ? (rows[1].squad || []) : null;
+  const names = list => new Set((list || []).map(m => m.name));
+  const A = names(now), B = was ? names(was) : null;
+  return {
+    round: rows[0].round, squad: now,
+    in: B ? now.filter(m => !B.has(m.name)).map(m => m.name) : [],
+    out: B ? (was || []).filter(m => !A.has(m.name)).map(m => m.name) : []
+  };
+}
+
+// ---------------------------------------------------------------------------
 // THE SQUAD IS NAMED, ONCE. Banked the first time a window round is settled
 // and read from the book every time after - a re-run of the day cannot pick
 // a different fifteen, however much cricket has happened since.
@@ -139,7 +193,11 @@ export async function ensureCallups(pool, country, seasonNo, round) {
   // the world day, so the selectors and the umpire that plays the tours that
   // evening always agree about who is playing.
   if (!(await touringOn(pool, country, seasonNo, round))) return [];
-  const squad = selectSquad(await nationMen(pool, country));
+  // THE TOURING FIFTEEN IS THE STANDING FIFTEEN. The selectors named this
+  // round's squad before the round began; calling them up is not a second
+  // selection, it is the same one taking its flights. Deriving it twice is how
+  // a nation's squad page and its teamsheet come to disagree about who is away.
+  const squad = await ensureNatSquad(pool, country, seasonNo, round);
   for (let i = 0; i < squad.length; i++) {
     const p = squad[i];
     await pool.query(
@@ -225,29 +283,45 @@ export function tourPairs(day, ids) {
   return pairs;
 }
 
-// the fifteen as men, not names: the banked squad looked up in the squads
-// they came from. A man who has since left cricket simply is not there.
-export async function squadPlayers(pool, country, seasonNo, round) {
-  const rows = (await pool.query(
-    'SELECT slot, player FROM callups WHERE country_id=$1 AND season_no=$2 AND round=$3 ORDER BY pick',
-    [country, seasonNo, round])).rows;
-  if (!rows.length) return [];
+// a banked list of {slot, player} as MEN, looked up in the squads they came
+// from. A man who has since left cricket simply is not there.
+async function menFor(pool, country, named) {
+  if (!named || !named.length) return [];
   const clubs = (await pool.query(
     'SELECT slot, squad FROM clubs WHERE country_id=$1', [country])).rows;
   const bySlot = Object.fromEntries(clubs.map(c => [c.slot, c.squad || []]));
   const out = [];
-  for (const r of rows) {
+  for (const r of named) {
     const p = (bySlot[r.slot] || []).find(x => x && x.name === r.player);
     if (p) out.push(p);
   }
   return out;
 }
 
-// THE WORLD CUP SQUAD IS THE SEASON'S SQUAD. The nations that meet in the
-// off-season knockout are the sides that played the windows, not a fresh
-// fifteen picked the morning of the draw - so a man who held his place all
-// year goes to the World Cup, which is the whole point of holding it.
+// the fifteen as men, not names: the banked squad looked up in the squads
+// they came from.
+export async function squadPlayers(pool, country, seasonNo, round) {
+  const rows = (await pool.query(
+    'SELECT slot, player FROM callups WHERE country_id=$1 AND season_no=$2 AND round=$3 ORDER BY pick',
+    [country, seasonNo, round])).rows;
+  return menFor(pool, country, rows);
+}
+
+// THE WORLD CUP SQUAD IS THE SIDE AS IT STANDS. The nations that meet in the
+// off-season knockout are the sides their selectors last named, not a fresh
+// fifteen picked the morning of the draw - so a man who played his way in over
+// the closing weeks goes, and a man who played his way out does not. Falling
+// back through the windows keeps a world whose standing squads predate this
+// answering exactly as it always did.
 export async function seasonSquad(pool, country, seasonNo) {
+  const standing = (await pool.query(
+    `SELECT squad FROM nat_squad WHERE country_id=$1 AND season_no=$2
+      ORDER BY round DESC LIMIT 1`, [country, seasonNo])).rows[0];
+  if (standing) {
+    const men = await menFor(pool, country,
+      (standing.squad || []).map(m => ({ slot: m.slot, player: m.name })));
+    if (men.length) return men;
+  }
   for (const round of WINDOWS.slice().reverse()) {
     const men = await squadPlayers(pool, country, seasonNo, round);
     if (men.length) return men;
@@ -447,10 +521,19 @@ export async function computeNations(pool, now = Date.now()) {
       `SELECT round, pick, slot, player, age, fee FROM callups
         WHERE country_id=$1 AND season_no=$2 ORDER BY round DESC, pick`, [c.id, s.season_no])).rows;
     const latest = rows.length ? rows[0].round : null;
-    const squad = rows.filter(r => r.round === latest).map(r => ({
+    const capsOf = nm => (book.get(c.id + '|' + nm) || { caps: 0 }).caps;
+    // THE SIDE AS IT STANDS - a thing that exists all season now, not only in a
+    // window. The TOUR squad rides alongside it: those are the men who actually
+    // flew, whose clubs were paid and who won caps.
+    const now = await natSquadNow(pool, c.id, s.season_no);
+    const squad = now.squad.map(m => ({
+      name: m.name, club: clubName[c.id + ':' + m.slot] || m.club || null, slot: m.slot,
+      age: m.age, fee: m.fee == null ? feeFor(m.age) : m.fee,
+      rating: m.rating, keeper: !!m.keeper, bowler: !!m.bowler, caps: capsOf(m.name)
+    }));
+    const tourSquad = rows.filter(r => r.round === latest).map(r => ({
       name: r.player, club: clubName[c.id + ':' + r.slot] || null, slot: r.slot,
-      age: r.age, fee: r.fee,
-      caps: (book.get(c.id + '|' + r.player) || { caps: 0 }).caps
+      age: r.age, fee: r.fee, caps: capsOf(r.player)
     }));
     const paid = {};
     rows.forEach(r => { paid[r.slot] = (paid[r.slot] || 0) + r.fee; });
@@ -464,6 +547,8 @@ export async function computeNations(pool, now = Date.now()) {
     mine.forEach(x => { if (here.has(x.name)) record[x.name] = slim(x); });
     nations[c.id] = {
       id: c.id, name: c.name, seasonNo: s.season_no, window: latest, squad, caps, record,
+      // when the selectors last met, and what they did when they met
+      namedBefore: now.round, changes: { in: now.in, out: now.out }, tourSquad,
       compensation: Object.keys(paid).map(slot => ({ slot: +slot, club: clubName[c.id + ':' + slot], paid: paid[slot] }))
         .sort((a, b) => b.paid - a.paid),
       tours: tours.filter(t => t.aCountry === c.id || t.bCountry === c.id).slice(0, 8)

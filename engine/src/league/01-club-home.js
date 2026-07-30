@@ -1997,6 +1997,16 @@
   // cursor, star lines, talents as ability boxes, and collector fine print.
   // The card itself, reusable anywhere (player page, onboarding pack rip):
   // returns the .phc markup plus the tier + role colours the wrapper needs.
+  // the red star on the card itself. The card is drawn in the founding pack
+  // rip as well as on the player page, and in a world nobody has claimed yet
+  // there is no national squad to be in - foNatStar answers "" for both.
+  function foCardStar(p) {
+    try {
+      var sv = window.__foServed;
+      if (!sv || !sv.on() || !window.foNatStar) return "";
+      return window.foNatStar(p && p.name, null, { big: true });
+    } catch (e) { return ""; }
+  }
   function foHoloCardHTML(p, teamName) {
     var k = foPkKind(p), ac = FO_PK_AC[k] || ["#C9A227", "#a9861a"];
     var ovr = foPkOvr(p);
@@ -2023,7 +2033,7 @@
     var html =
       "<div class='phc'><div class='phc-in'>" +
       "<div class='phc-hd'><div class='phc-idc'><span class='phc-role'>" + E(roleLbl) + " &middot; " + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
-      "<div class='phc-nm'>" + E(p.name) + " <span class='phc-fl'>" + (foQsFlag(p.nat) || "") + "</span></div></div>" +
+      "<div class='phc-nm'>" + E(p.name) + foCardStar(p) + " <span class='phc-fl'>" + (foQsFlag(p.nat) || "") + "</span></div></div>" +
       "<div class='phc-ovr'><b>" + ovr + "</b><i>OVR</i></div></div>" +
       "<div class='phc-art'><img src='" + FO_ART + foPkArt(p) + "' alt=''><span class='phc-holo'></span><span class='phc-glare'></span></div>" +
       "<div class='phc-stars'>" +

@@ -44,7 +44,7 @@ const dry = (process.env.DRY_RUN || '').trim() === 'YES';
 // loudly instead of quietly leaving half a season behind.
 const PLAY_TABLES = [
   'matches', 'cup_matches', 'nat_matches', 'youth_matches', 'comp_matches',
-  'ticks', 'orders', 'callups', 'nat_squads', 'friendlies',
+  'ticks', 'orders', 'callups', 'nat_squad', 'nat_squads', 'friendlies',
   'listings', 'bids', 'scouted', 'training_rounds', 'snapshots',
   'comps', 'comp_clubs'
 ];

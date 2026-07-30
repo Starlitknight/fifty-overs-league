@@ -116,6 +116,11 @@
   // snapshot. Doing that sum here against a hardcoded day 0 is what made a
   // restarted world announce a round it had not played.
   //   round is NULL on a rest day and through the closing week.
+  // the red star: this man is in his country's fifteen as it stands
+  function foNS(nm, rid) {
+    try { return (window.foNatStar && window.__foServed && window.__foServed.on())
+      ? window.foNatStar(nm, null, rid ? { rid: rid } : undefined) : ""; } catch (e) { return ""; }
+  }
   function serverCal(now) {
     var pl = P(), d = pl.dayIx(now);
     var a = (pl.anchorOf && pl.anchorOf()) || { start: 0, season: 1 };
@@ -477,7 +482,7 @@
         var xiCol = function (nm, sq, ord) {
           var xi = actualXI(sq, ord);
           return "<div class='c'><b>" + E(nm) + "</b>" + (ord ? "<u>manager's named XI</u>" : "<u>the engine's pick</u>") +
-            xi.map(function (p, k) { return "<span><i>" + (k + 1) + "</i>" + E(p.name) + (p.keeper ? " &dagger;" : p.bowlType ? " &#9679;" : "") + "</span>"; }).join("") + "</div>";
+            xi.map(function (p, k) { return "<span><i>" + (k + 1) + "</i>" + E(p.name) + foNS(p.name, rid) + (p.keeper ? " &dagger;" : p.bowlType ? " &#9679;" : "") + "</span>"; }).join("") + "</div>";
         };
         xiHTML = "<div class='fo-wt-teamsin'><div class='cols'>" +
           xiCol(m.home.name, sqHt, ov[m.home.name]) + xiCol(m.away.name, sqAt, ov[m.away.name]) + "</div></div>";

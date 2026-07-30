@@ -21,7 +21,8 @@ import { livingPatch, evolveCountry } from './living.mjs';
 import { ensureYouth, ageYouth, playColtsRound, computeColts, coltRecords } from './youth.mjs';
 import { settleMoney } from './economy.mjs';
 import { runComps } from './comps.mjs';
-import { ensureCallups, absentBySlot, coverSheet, runWindows, rebuildNations, seasonSquad } from './nations.mjs';
+import { ensureCallups, absentBySlot, coverSheet, runWindows, rebuildNations, seasonSquad,
+         ensureNatSquad, natSquadNow } from './nations.mjs';
 import { runMarket, settleMarket, rebuildMarket } from './market.mjs';
 import { matchRating, ladderRating, strengthRating, RANK_WINDOW, RANK_BASE } from './ratings.mjs';
 
@@ -170,7 +171,16 @@ export async function computeLeague(pool, country, seasonNo, now) {
   };
   const roundsPlayed = ms.length ? Math.max(...ms.map(m => m.round)) : 0;
   const champion = roundsPlayed >= ROUNDS && table[0] ? table[0].name : null;
-  return { country, seasonNo: season.season_no, startDay: season.start_day, rounds: ROUNDS, roundsPlayed, table, results, stats, champion, generatedAtDay: dayIx(now) };
+  // THE NATION'S SIDE RIDES WITH ITS LEAGUE. Every surface that draws a
+  // cricketer - the roster, his page, his card, a scorecard, the market - wants
+  // to know whether he plays for his country, and every one of them already
+  // holds this nation's league snapshot. Fifteen names is a cheap thing to
+  // carry and saves each of them a second request.
+  const nat = await natSquadNow(pool, country, season.season_no);
+  return { country, seasonNo: season.season_no, startDay: season.start_day, rounds: ROUNDS, roundsPlayed,
+    table, results, stats, champion,
+    nat: { round: nat.round, squad: nat.squad, in: nat.in, out: nat.out },
+    generatedAtDay: dayIx(now) };
 }
 
 // THE WORLD RANKINGS: every club on earth on one ladder, standing on the MATCH
@@ -381,9 +391,16 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
   const round = roundOfDay(day - season.start_day);
   let played = 0;
   if (round) {
-    // THE SELECTORS MEET FIRST. On a window round the fifteen is named before
-    // a ball is bowled and banked for good, so the round that follows knows
-    // exactly who is missing and a re-run can never pick a different squad.
+    // THE SELECTORS MEET BEFORE EVERY ROUND, not three times a year. Round
+    // one's fifteen is named off the founding squads before a ball is bowled,
+    // so a nation has a side from the first morning of the season; every round
+    // after it they name it again, having watched the cricket since - the
+    // previous day's tick evolved every man who played it before it closed.
+    // Banked per round, so a healed day reads the decision back rather than
+    // taking it again on form the selectors could not have known.
+    try { await ensureNatSquad(pool, country, season.season_no, round); }
+    catch (eN) { console.error('selectors failed for ' + country + ' round ' + round + ':', eN.message); }
+    // On a window round that same fifteen also takes its flights.
     if (isWindowRound(round)) {
       try { await ensureCallups(pool, country, season.season_no, round); }
       catch (eC) { console.error('selectors failed for ' + country + ' round ' + round + ':', eC.message); }

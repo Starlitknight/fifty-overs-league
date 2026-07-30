@@ -167,3 +167,50 @@ test('no claim, no served truth: the solo world keeps its own league', () => {
   assert.equal(ctx.__foServed.form().length, 0);
   assert.equal(ctx.__foServed.ballAt(0), null, 'nothing to date without a world');
 });
+
+// ---- THE RED STAR ---------------------------------------------------------
+// The umpire names a fifteen for every nation before every round and the
+// naming rides in the league snapshot. These prove the client reads it, and
+// that a man who is NOT in the squad never gets a mark.
+function withNat(nat) {
+  const s = snapshot({ nat: 'pak', startDay: 2 });
+  s.nat = nat;
+  return s;
+}
+
+test('a named international is starred; nobody else is', () => {
+  seat(withNat({
+    round: 3,
+    squad: [{ pick: 0, slot: 2, name: 'Ada Blake', age: 27, rating: 61000, keeper: true, bowler: false },
+            { pick: 1, slot: 5, name: 'Cyrus Vale', age: 24, rating: 58000, keeper: false, bowler: true }],
+    in: ['Cyrus Vale'], out: ['Otis Hall']
+  }));
+  const S = ctx.__foServed;
+  assert.equal(S.natRound(), 3);
+  assert.equal(S.natSquad().length, 2);
+  assert.equal(S.isNat('Ada Blake'), true);
+  assert.equal(S.isNat('Cyrus Vale'), true);
+  assert.equal(S.isNat('Otis Hall'), false, 'a man just dropped is no longer an international');
+  assert.equal(S.isNat(''), false);
+  assert.equal(S.isNat(null), false);
+
+  // exact by club: two men can share a name in one league and only one is capped
+  assert.equal(S.isNatAt(2, 'Ada Blake'), true);
+  assert.equal(S.isNatAt(7, 'Ada Blake'), false, 'the Ada Blake at another club is not the capped one');
+
+  const mark = ctx.foNatStar('Ada Blake', 2);
+  assert.match(mark, /fo-nat/, 'the star carries its class');
+  assert.match(mark, /9733|★/, 'and is a star');
+  assert.equal(ctx.foNatStar('Otis Hall', 2), '', 'an uncapped man gets no mark at all');
+  assert.equal(ctx.foNatStar('Ada Blake', 7), '', 'nor does the wrong club\'s namesake');
+});
+
+test('no world, no star: the solo game is unmarked', () => {
+  ctx.localStorage.removeItem('fo_world_claim');
+  run('window.__foWorldClaim = null;');
+  assert.equal(ctx.__foServed.on(), false);
+  assert.equal(ctx.__foServed.natSquad().length, 0);
+  assert.equal(ctx.__foServed.isNat('Ada Blake'), false);
+  assert.equal(ctx.foNatStar('Ada Blake', 2), '',
+    'a founding squad in a world nobody has joined has no internationals to mark');
+});

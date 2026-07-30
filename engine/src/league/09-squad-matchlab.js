@@ -514,7 +514,7 @@
     var cell = function (c, p) {
       var v = c.v(p, ctx);
       if (c.k === "name") {
-        return "<td class='c-name'><span class='fo-sqg-nm'>" + E(p.name) + "</span>" +
+        return "<td class='c-name'><span class='fo-sqg-nm'>" + E(p.name) + foSqStar(p) + "</span>" +
           (p.name === capt ? "<em class='fo-sqg-c' title='Captain'>C</em>" : "") +
           (p.__y ? "<em class='fo-sqg-y' title='Youth player'>U20</em>" : "") +
           "<i class='fo-sqg-go' aria-hidden='true'>&#8250;</i></td>";
@@ -967,7 +967,7 @@
           (fIx >= 5 ? "<span class='frm hi' title='In form'>&#9650;</span>" : fIx <= 2 ? "<span class='frm lo' title='Out of form'>&#9660;</span>" : "") +
           (p.name === capt ? "<span class='cap'>C</span>" : "") +
           "<img class='pic' src='" + FO_ART + foPkArt(p) + "' alt='' loading='lazy' decoding='async'>" + extra +
-          "<span class='nm'>" + E(foSqShortName(p.name)) + "</span>" +
+          "<span class='nm'>" + E(foSqShortName(p.name)) + foSqStar(p) + "</span>" +
           "<span class='rl " + cls + "'>" + E(sub) + "</span></button>";
       };
 
@@ -1107,7 +1107,7 @@
         return "<a class='fo-ros-row' href='#/player?n=" + encodeURIComponent(p.name) + "'>" +
           "<span class='fo-ros-pic'><img src='" + FO_ART + foPkArt(p) + "' alt='' loading='lazy' decoding='async'>" +
           (flg && p.nat ? "<em class='fo-ros-flag'><img src='" + flg + "' alt='" + E(p.nat) + "' onerror=\"this.parentNode.style.display='none'\"></em>" : "") + "</span>" +
-          "<span class='fo-ros-id'><b>" + E(p.name) + (capt === p.name ? " <i class='fo-ros-c'>C</i>" : "") + "</b>" +
+          "<span class='fo-ros-id'><b>" + E(p.name) + foSqStar(p) + (capt === p.name ? " <i class='fo-ros-c'>C</i>" : "") + "</b>" +
           "<span>" + roleNm + (det ? " &middot; " + E(det) : "") + (p.age ? " &middot; " + E(foAgeText(p)) : "") + "</span></span>" +
           foSqFormGlyph(p) +
           "<b class='fo-ros-ovr' style='color:" + foSqQCol(ovr) + "'>" + ovr + "</b>" +
@@ -1217,6 +1217,18 @@
       if (droppedName && App.orders.keeper === droppedName) App.orders.keeper = null;
       if (typeof saveGame === "function") saveGame();
     } catch (e) {}
+  }
+  // A RED STAR MEANS HE PLAYS FOR HIS COUNTRY. The mark comes from the served
+  // national squad and nowhere else, so it appears the morning the selectors
+  // first name him and goes the morning they leave him out. Every man on this
+  // page belongs to THIS club, so the exact club-and-name lookup is the one to
+  // use - two cricketers in a league can share a name and only one is capped.
+  function foSqStar(p, big) {
+    try {
+      var sv = window.__foServed;
+      if (!sv || !sv.on() || !window.foNatStar) return "";
+      return window.foNatStar(p && p.name, sv.slot(), { big: !!big });
+    } catch (e) { return ""; }
   }
   function foSqShortName(n) {
     var parts = String(n || "").trim().split(/\s+/);
