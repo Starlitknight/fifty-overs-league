@@ -2757,7 +2757,11 @@ function teamRatings(r,teamName){
     if(inn.bowlTeam===teamName){
       for(const k in inn.bowlers){const br=inn.bowlers[k];
         const t=typeClass(br.p.bowlType||'fastMedium')==='pace'?seam:spin;t[0]+=br.w;t[1]+=br.r;t[2]+=br.b;}
-      for(const k in (inn.fielding||{})){catches+=inn.fielding[k].ct;sts+=inn.fielding[k].st;ros+=inn.fielding[k].ro}}}
+      // a fielding entry is written {ct:0,st:0,ro:0} in play, so all three are
+      // always there in a live card - but one missing key made the whole
+      // Fielding/Keeping figure NaN, and the ratings tab printed the word. The
+      // world rankings read this number now, so a partial card must not poison it.
+      for(const k in (inn.fielding||{})){const fd=inn.fielding[k]||{};catches+=(fd.ct||0);sts+=(fd.st||0);ros+=(fd.ro||0)}}}
   const scale=v=>v===null?null:Math.round(70*Math.max(5,Math.min(97,v)));
   const batR=g=>{const[r0,b0]=agg[g];if(!b0)return null;
     const sr=100*r0/b0;const parSR={top:82,mid:88,tail:80}[g];
@@ -9908,7 +9912,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260730-0610-85985b";
+  var FO_BUILD = "20260730-1007-288e06";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -31303,12 +31307,21 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function foMrFantasy(rec) {
     var inn = (rec && (rec.innings || rec.scorecard)) || [];
     inn = inn.filter(Boolean);
+    // The marks come first: each side's units out of ten and, above them, the
+    // TEAM MATCH RATING out of a hundred - the number the world rankings read.
+    // The margin is half of that mark, so the result has to come along too.
+    var rat = "";
+    try {
+      if (typeof window.foRatingsPanelHTML === "function") {
+        rat = window.foRatingsPanelHTML(inn, (rec && rec.result) || null) || "";
+      }
+    } catch (eR) {}
     var html = "";
     try { if (typeof window.foFantasyPanel === "function") html = window.foFantasyPanel(inn); } catch (e) {}
     if (!html || /No fantasy data/.test(html)) {
-      return foMrNone("No fantasy points for this match", "Its innings were not recorded in enough detail to score.");
+      return rat || foMrNone("No fantasy points for this match", "Its innings were not recorded in enough detail to score.");
     }
-    return html;
+    return rat + html;
   }
 
   function foMrNone(title, line) {
@@ -38627,13 +38640,24 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 /* ============================================================================
    THE WORLD RANKINGS (#/rankings) — the ladder every club on earth stands on.
 
-   Rolling Elo over every banked match, computed by the World Service and
-   served as one snapshot: 190 clubs on one ladder (league matches move 24
-   points' worth, Champions Cup ties 40), and a country ladder beside it -
-   each nation's league strength (average club rating) with its national
-   XI's own World Cup rating. Your claimed club is picked out wherever it
-   stands. Before the first ball, every club on earth sits on 1000 - the
-   ladder first moves the night the world plays.
+   Every match in Fifty Overs is already marked at stumps - the Match ratings
+   tab on any scorecard: six units a side against real-ODI par, on the club
+   rating scale. That is the rating this page ranks on. A club's place in the
+   world is the mean of its LAST THREE match ratings, so this is a ladder of how
+   sides are playing now, and a club that goes off the boil slides down it
+   within a fortnight.
+
+   Computed by the World Service from the banked cards and served as one
+   snapshot: 190 clubs on one ladder, and a country ladder beside it. Your
+   claimed club is picked out wherever it stands. A side that has not played
+   three matches yet is presumed ordinary - 3,500, the middle of the scale - for
+   the ones it is missing.
+
+   TWO LENSES, AND THE PAGE SAYS WHICH IS WHICH. The club ladder is FORM: the
+   last three, because that is what a manager wants to know before Saturday.
+   The nations table is STRENGTH: every mark a nation's clubs have ever earned,
+   because ten clubs' form averages back to the middle of the scale and would
+   say nothing about whether one league is harder than another.
    ========================================================================== */
 (function () {
   "use strict";
@@ -38655,7 +38679,14 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   var RK = null, RK_TS = null, BUSY = false;
-  try { var c0 = localStorage.getItem("fo_world_rk"); if (c0) RK = JSON.parse(c0); } catch (e) {}
+  // A ladder cached before the rankings became match ratings is an Elo body -
+  // no marks behind the figure - and would paint a rating that means nothing on
+  // this page for a second before the fetch landed. A body that cannot name its
+  // window is from that era; drop it and wait for the world.
+  try {
+    var c0 = localStorage.getItem("fo_world_rk");
+    if (c0) { var b0 = JSON.parse(c0); if (b0 && b0.window) RK = b0; else localStorage.removeItem("fo_world_rk"); }
+  } catch (e) {}
   function fetchRk() {
     if (BUSY) return;
     BUSY = true;
@@ -38691,12 +38722,26 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var cl = claim();
     var body;
     if (!RK || !RK.clubs || !RK.clubs.length) {
-      body = "<div class='fo-rk-card'><p class='fo-rk-note'>Reaching the World Service for the ladder&hellip; Every club on earth starts on <b>1000</b>; the rankings first move the night the world plays.</p></div>";
+      body = "<div class='fo-rk-card'><p class='fo-rk-note'>Reaching the World Service for the ladder&hellip; Every club on earth is presumed ordinary &mdash; <b>3,500</b> &mdash; until it has three matches behind it.</p></div>";
     } else {
       var moved = RK.clubs.some(function (c) { return c.p > 0; });
       var mine = cl ? RK.clubs.filter(function (c) { return c.country === cl.country && c.slot === cl.slot; })[0] : null;
+      // four digits on the club rating scale, the way every other rating in the
+      // game is printed - a decimal place on a figure this size is noise
+      var fmt = function (v) { return Math.round(Number(v) || 0).toLocaleString(); };
+      // the three marks behind the figure, oldest first, so a side on the way
+      // up and a side on the way down are told apart at a glance
+      var formOf = function (c) {
+        var f = c.form || [];
+        if (!f.length) return "<span class='frm none'>no cricket yet</span>";
+        return "<span class='frm'>" + f.map(function (v) {
+          var n = Number(v);
+          return "<em class='" + (n >= 3900 ? "g" : n >= 3200 ? "m" : "b") + "'>" + fmt(n) + "</em>";
+        }).join("") + "</span>";
+      };
       var mineChip = mine
-        ? "<div class='fo-rk-mine'>&#127942; <b>" + E(mine.name) + "</b> stand <u>#" + mine.rank + "</u> of " + RK.clubs.length + " in the world &middot; rating " + mine.rating + "</div>"
+        ? "<div class='fo-rk-mine'>&#127942; <b>" + E(mine.name) + "</b> stand <u>#" + mine.rank + "</u> of " + RK.clubs.length + " in the world &middot; rated " + fmt(mine.rating) +
+          ((mine.form && mine.form.length) ? " from " + mine.form.map(fmt).join(", ") : " &mdash; no cricket played yet") + "</div>"
         : "";
       var rowOf = function (c) {
         var isMine = !!(cl && c.country === cl.country && c.slot === cl.slot);
@@ -38705,8 +38750,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           "<img src='" + flagOf(c.country) + "' alt='' onerror=\"this.style.display='none'\">" +
           "<b>" + E(c.name) + (isMine ? " <em>YOU</em>" : (c.boss ? " <em class='bs'>FLAGSHIP</em>" : "")) + "</b>" +
           "<u>" + E(natName(c.country)) + "</u>" +
+          formOf(c) +
           "<span class='rec'>" + c.w + "-" + c.l + (c.t ? "-" + c.t : "") + "</span>" +
-          "<span class='pts'>" + c.rating + "</span></a>";
+          "<span class='pts'>" + fmt(c.rating) + "</span></a>";
       };
       var top = RK.clubs.slice(0, 30).map(rowOf).join("");
       var mineExtra = (mine && mine.rank > 30)
@@ -38718,18 +38764,20 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           "<i>" + n.rank + "</i>" +
           "<img src='" + flagOf(n.id) + "' alt='' onerror=\"this.style.display='none'\">" +
           "<b>" + E(n.name) + "</b>" +
-          "<u>XI " + n.natRating + (n.natP ? "" : " &middot; unproven") + "</u>" +
-          "<span class='pts'>" + n.clubRating + "</span></a>";
+          "<u>XI " + fmt(n.natRating) + (n.natP ? "" : " &middot; unproven") + "</u>" +
+          "<span class='pts'>" + fmt(n.clubRating) + "</span></a>";
       }).join("");
       body = mineChip +
-        (moved ? "" : "<div class='fo-rk-card'><p class='fo-rk-note'>Every club on earth stands level on <b>1000</b>. The ladder first moves the night the world plays its opening round.</p></div>") +
-        "<div class='fo-rk-card'><h3>The club ladder <span>top 30 of " + RK.clubs.length + " &middot; Elo, every banked match</span></h3>" + top + mineExtra + "</div>" +
-        "<div class='fo-rk-card'><h3>The nations <span>league strength &middot; national XI</span></h3>" + natRows + "</div>";
+        (moved ? "" : "<div class='fo-rk-card'><p class='fo-rk-note'>Every club on earth stands level on <b>3,500</b>. The ladder first moves the night the world plays its opening round.</p></div>") +
+        "<div class='fo-rk-card'><h3>The club ladder <span>top 30 of " + RK.clubs.length + " &middot; last three match ratings</span></h3>" + top + mineExtra + "</div>" +
+        "<div class='fo-rk-card'><h3>The nations <span>league strength &middot; national XI</span></h3>" +
+        "<p class='fo-rk-note'>Form is the wrong lens on a whole league &mdash; ten clubs&rsquo; last three average straight back to the middle of the scale. So a nation is marked on <b>every</b> match rating its clubs have earned, and its XI on every one of its own.</p>" +
+        natRows + "</div>";
     }
     page.innerHTML = "<div class='fo-rk'><div class='fo-rk-in'>" +
       "<div class='fo-rk-hero'><div class='fo-rk-k'>World cricket &middot; the ladder</div>" +
       "<h1>The World Rankings</h1>" +
-      "<p>Rolling ratings over every match the umpire has ever banked. League wins move the needle; Champions Cup nights move it harder.</p></div>" +
+      "<p>Every match is marked at stumps &mdash; six units a side against real-ODI par, the same figures on any scorecard&rsquo;s ratings tab. Where a club stands in the world is the mean of its last three, so form is the ladder.</p></div>" +
       body +
       "<div class='fo-rk-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/almanack'>The world almanack &rsaquo;</a></div>" +
       "</div></div>";
@@ -38760,6 +38808,23 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-rk-row b em.bs{color:#8a6d3b;border-color:rgba(138,109,59,.4)}",
       ".fo-rk-row u{text-decoration:none;font:400 10.5px/1 Inter,sans-serif;color:rgba(20,28,40,.45);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}",
       ".fo-rk-row .rec{font:500 10.5px/1 Inter,sans-serif;color:rgba(20,28,40,.45);flex:none;font-variant-numeric:tabular-nums}",
+      // the three marks behind the figure - oldest on the left, as a scorebook reads
+      "html body #page .fo-rk-row .frm{display:flex;gap:3px;flex:none}",
+      "html body #page .fo-rk-row .frm em{font:600 9.5px/1 Oswald,sans-serif;font-style:normal;font-variant-numeric:tabular-nums;border-radius:4px;padding:3px 4px;min-width:26px;text-align:center;background:rgba(20,28,40,.06);color:rgba(20,28,40,.55)}",
+      "html body #page .fo-rk-row .frm em.g{background:rgba(22,140,99,.14);color:#12684A}",
+      "html body #page .fo-rk-row .frm em.b{background:rgba(176,58,42,.12);color:#9C3324}",
+      "html body #page .fo-rk-row .frm.none{font:italic 400 10px/1 'Fraunces',Georgia,serif;color:rgba(20,28,40,.35);display:block}",
+      // A phone has room for the club's NAME or for its whole record, not both -
+      // four figures on the club scale are wide. The name wins, the won-lost is on
+      // the club's own page, and the form drops to the last two marks: anything
+      // that is not one of the final two goes, so a club with a single mark keeps it.
+      "@media(max-width:620px){" +
+        "html body #page .fo-rk-row u{display:none}" +
+        "html body #page .fo-rk-row .rec{display:none}" +
+        "html body #page .fo-rk-row .frm em:not(:nth-last-child(-n+2)){display:none}" +
+        "html body #page .fo-rk-row .frm em{min-width:0;padding:3px 4px;font-size:9px}" +
+        "html body #page .fo-rk-row .pts{width:38px;font-size:13px}" +
+      "}",
       ".fo-rk-row .pts{font:700 14px/1 Oswald,sans-serif;color:#141C28;width:44px;text-align:right;flex:none;font-variant-numeric:tabular-nums}",
       ".fo-rk-row.mine{background:rgba(217,85,42,.07);border-radius:10px}",
       ".fo-rk-row.mine .pts{color:#B44A22}",
@@ -41019,9 +41084,37 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "The world could not be reached (" + E(String(e.message).slice(0, 90)) + "). The books are safe where they are &mdash; try again in a minute."));
     });
   };
+  // ---- A DOOR IN THE MASTHEAD ------------------------------------------------
+  // The books were reachable only from the hamburger index and the phone dock,
+  // which on a desktop meant they were reachable only by someone who already
+  // knew they existed. A manager looks for his money along the top of the page,
+  // beside his squad, so that is where the pill goes. The phone drawer proxies
+  // every pill in this row, so one link serves both.
+  function ensureNavLink() {
+    try {
+      var wrap = document.querySelector("#topbar .fo-nav-scroll"); if (!wrap) return;
+      var a = wrap.querySelector("a.fo-books-nav");
+      if (!a) {
+        a = document.createElement("a"); a.className = "fo-books-nav"; a.href = "#/finance"; a.textContent = "Books";
+        a.addEventListener("click", function (ev) { ev.preventDefault(); location.hash = "#/finance"; if (typeof window.route === "function") window.route(); });
+      }
+      // beside the squad, after Fixtures if that pill has already landed
+      if (a.parentNode !== wrap) {
+        var anchor = wrap.querySelector("a.fo-fixtures") || wrap.querySelector("a[data-nav='squad']");
+        if (anchor && anchor.nextSibling) wrap.insertBefore(a, anchor.nextSibling);
+        else wrap.appendChild(a);
+      }
+      a.classList.toggle("on", (location.hash || "").split("?")[0] === "#/finance");
+      // Log out is furniture and belongs last, however late a pill arrives
+      var out = wrap.querySelector("a.fo-logout");
+      if (out && wrap.lastElementChild !== out) wrap.appendChild(out);
+    } catch (e) {}
+  }
   window.addEventListener("hashchange", function () {
     if ((location.hash || "").split("?")[0] !== "#/finance") document.body.classList.remove("fo-fin-on");
+    setTimeout(ensureNavLink, 90);
   });
+  [200, 600, 1400].forEach(function (ms) { setTimeout(ensureNavLink, ms); });
 })();
 /* ============================================================================
    MATCH RATINGS — the card read as a coach reads it.
@@ -41103,6 +41196,53 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return by;
   };
 
+  // THE MATCH RATING THE GAME ALREADY WRITES, as one figure per side.
+  //
+  // Nothing here recomputes anything: window.teamRatings is the engine's own
+  // marking, the same call the Match ratings tab makes, already wearing the
+  // overlay that refuses to mark the hands of a side that never fielded. All
+  // this does is take the units BOTH sides used - the like-with-like rule the
+  // ratings table applies before it prints a total - and AVERAGE them instead
+  // of adding them.
+  //
+  // Adding is right inside one match: two columns, side by side, bigger total
+  // won the argument. Averaging is what makes the figure carry OUT of the match,
+  // because a sum over four units and a sum over six are not the same quantity,
+  // and the world rankings are nothing but a comparison across matches. The
+  // number is on the club rating scale: about 3,500 is an ordinary day.
+  window.FO_RATING_UNITS = ["Batting - Top Order", "Batting - Middle Order", "Batting - Tail",
+    "Bowling - Seam", "Bowling - Spin", "Fielding/Keeping"];
+  window.foTeamMatchRating = function (result) {
+    var out = {};
+    try {
+      if (typeof window.teamRatings !== "function") return out;
+      var innings = ((result && (result.innings || result.scorecard)) || []).filter(Boolean);
+      var names = [];
+      innings.forEach(function (inn) {
+        [inn.batTeam, inn.bowlTeam].forEach(function (n) { if (n && names.indexOf(n) < 0) names.push(n); });
+      });
+      if (names.length !== 2) return out;
+      var card = { innings: innings, home: names[0], away: names[1] };
+      var marks = names.map(function (n) {
+        var raw = window.teamRatings(card, n), flat = {};
+        for (var k in raw) flat[k] = (raw[k] && raw[k].length) ? raw[k][0] : raw[k];
+        return flat;
+      });
+      var shared = window.FO_RATING_UNITS.filter(function (u) {
+        return marks.every(function (m) { return m[u] != null; });
+      });
+      if (!shared.length) return out;
+      names.forEach(function (n, i) {
+        var m = marks[i];
+        out[n] = {
+          rating: +(shared.reduce(function (s2, u) { return s2 + m[u]; }, 0) / shared.length).toFixed(1),
+          units: m, counted: shared.slice()
+        };
+      });
+    } catch (e) {}
+    return out;
+  };
+
   var LABEL = { top: "Top order", middle: "Middle order", tail: "The tail",
     seam: "Seam", spin: "Spin", field: "In the field" };
   var band = function (v) { return v >= 8 ? "hot" : v >= 6.5 ? "good" : v >= 4.5 ? "ok" : "poor"; };
@@ -41111,10 +41251,21 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       : v >= 5.5 ? "adequate" : v >= 4 ? "below par" : "poor";
   };
 
-  window.foRatingsPanelHTML = function (innings) {
+  // The `result` argument is no longer needed for the mark - the game's own
+  // match rating is a function of the innings alone - but it is kept so callers
+  // that have the record to hand can pass it, and so the signature does not
+  // change under them.
+  window.foRatingsPanelHTML = function (innings, result) {
     var sides = window.foMatchRatings(innings);
     var names = Object.keys(sides);
     if (!names.length) return "";
+    // the panel carries its own stylesheet wherever it is asked for - it is not
+    // only the scorecard's any more, and unstyled marks are worse than none
+    try { css(); } catch (eC) {}
+    // THE MATCH RATING, the figure the world rankings read. It is the engine's
+    // own marking of this very card, so it needs nothing but the innings.
+    var team = {};
+    try { team = window.foTeamMatchRating({ innings: innings }) || {}; } catch (eT) {}
     var pts = [];
     try { pts = (window.foFantasyPoints && window.foFantasyPoints(innings)) || []; } catch (e) {}
     var side = function (nm) {
@@ -41125,9 +41276,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             "<s class='fo-rat-bar'><u class='" + band(x[k]) + "' style='width:" + (x[k] * 10) + "%'></u></s>" +
             "<b class='" + band(x[k]) + "'>" + x[k].toFixed(1) + "</b></div>";
         }).join("");
+      var tm = team[nm];
+      // the ladder figure, on the club rating scale, with the count of units it
+      // was averaged over - because "four of six" is why a figure looks odd
+      var mark = tm ? "<div class='fo-rat-tm'><span>Match rating</span><b class='" +
+        (tm.rating >= 4200 ? "hot" : tm.rating >= 3700 ? "good" : tm.rating >= 3100 ? "ok" : "poor") + "'>" +
+        Math.round(tm.rating).toLocaleString() + "</b><i>club rating scale, across the " + tm.counted.length +
+        " unit" + (tm.counted.length === 1 ? "" : "s") + " both sides used &middot; this is what the ladder reads</i></div>" : "";
       return "<div class='fo-rat-side'><div class='fo-rat-h'><b>" + E(nm) + "</b>" +
         (x.overall != null ? "<em class='" + band(x.overall) + "'>" + x.overall.toFixed(1) + "</em>" : "") + "</div>" +
-        rows + (x.overall != null ? "<div class='fo-rat-w'>" + word(x.overall) + " all round</div>" : "") + "</div>";
+        mark + rows + (x.overall != null ? "<div class='fo-rat-w'>" + word(x.overall) + " all round</div>" : "") + "</div>";
     };
     var best = pts.slice(0, 5).map(function (p, i) {
       return "<div class='fo-rat-p'><i>" + (i + 1) + "</i><b>" + E(p.n) + "</b><span>" + E(p.team) + "</span>" +
@@ -41136,7 +41294,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return "<div class='panel fo-rat'><h4>Match ratings</h4><div class='pad'>" +
       "<div class='fo-rat-grid'>" + names.map(side).join("") + "</div>" +
       (best ? "<div class='fo-rat-sub'>The day&rsquo;s points</div>" + best : "") +
-      "<div class='fo-rat-note'>Every mark is worked out from this scorecard alone. The points are the same ones the world scores form on &mdash; a bad day here is why a man is out of nick tomorrow.</div>" +
+      "<div class='fo-rat-note'>Every mark is worked out from this scorecard alone. The points are the same ones the world scores form on &mdash; a bad day here is why a man is out of nick tomorrow." +
+      (Object.keys(team).length
+        ? " The match rating above each side is the game&rsquo;s own, averaged across the units both sides used, and it is what the <a href='#/rankings'>world rankings</a> stand on: a club&rsquo;s place on earth is the mean of its last three."
+        : "") + "</div>" +
       "</div></div>";
   };
 
@@ -41146,6 +41307,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     s.textContent = [
       ".fo-rat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}",
       ".fo-rat-side{min-width:0}",
+      // the mark that goes to the world, sat above the unit marks it is built from
+      "html body #page .fo-rat-tm{border:1px solid rgba(12,27,51,.14);border-radius:10px;padding:7px 10px;margin-bottom:8px;background:rgba(12,27,51,.03)}",
+      "html body #page .fo-rat-tm span{display:block;font:600 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(12,27,51,.5)}",
+      "html body #page .fo-rat-tm b{font:700 22px/1.1 Oswald,sans-serif;font-variant-numeric:tabular-nums;display:block;margin-top:3px}",
+      "html body #page .fo-rat-tm i{display:block;font:italic 400 10.5px/1.45 'Fraunces',Georgia,serif;color:rgba(12,27,51,.55);margin-top:2px}",
       ".fo-rat-h{display:flex;align-items:baseline;gap:8px;padding-bottom:7px;border-bottom:1px solid rgba(12,27,51,.12);margin-bottom:7px}",
       ".fo-rat-h b{flex:1;min-width:0;font:600 13.5px/1.2 Inter,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-rat-h em{font-style:normal;font:700 19px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums}",
@@ -41172,13 +41338,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // EVERY SCORECARD GETS ONE. The page is wrapped rather than watched: the
   // innings it was built from are in hand at the moment it paints, which the
   // live match state is not a second later.
-  function append(innings) {
+  function append(innings, result) {
     try {
       var page = document.getElementById("page"); if (!page) return;
       if (page.querySelector(".fo-rat")) return;
       if (!innings || !innings[1]) return;            // one innings is no match to mark
       css();
-      var html = window.foRatingsPanelHTML(innings);
+      var html = window.foRatingsPanelHTML(innings, result || null);
       if (!html) return;
       var wrap = document.createElement("div");
       wrap.innerHTML = html;
@@ -41193,12 +41359,24 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return last && last.innings;
     } catch (e) { return null; }
   }
+  // the same record's result, so the mark can read the margin as well as the units
+  function resultFor(q) {
+    try {
+      if (q && q.i !== undefined && App.results[+q.i]) return App.results[+q.i].result;
+      if (window.M && M.result) return M.result;
+      var last = (App.results || [])[(App.results || []).length - 1];
+      return last && last.result;
+    } catch (e) { return null; }
+  }
   function hook() {
     if (typeof window.pgScorecard !== "function" || window.pgScorecard.__foRat) return;
     var prev = window.pgScorecard;
     window.pgScorecard = function (q) {
       var out = prev.apply(this, arguments);
-      try { window.__foRatLast = inningsFor(q); append(window.__foRatLast); } catch (e) {}
+      try {
+        window.__foRatLast = inningsFor(q); window.__foRatLastRes = resultFor(q);
+        append(window.__foRatLast, window.__foRatLastRes);
+      } catch (e) {}
       return out;
     };
     window.pgScorecard.__foRat = 1;
@@ -41212,7 +41390,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     try {
       if ((location.hash || "").split("?")[0] !== "#/scorecard") return;
       if (document.querySelector("#page .fo-rat")) return;
-      append(window.__foRatLast || inningsFor(null));
+      append(window.__foRatLast || inningsFor(null), window.__foRatLastRes || resultFor(null));
     } catch (e) {}
   }, 1200);
 })();
@@ -41465,7 +41643,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     map: "<path d='m3.8 6.6 5.2-2.2 6 2.4 5.2-2.2v12.8l-5.2 2.2-6-2.4-5.2 2.2z'/><path d='M9 4.6v12.6M15 6.8v12.6'/>",
     book: "<path d='M4.2 4.6h6a3 3 0 0 1 3 3v11.8a2.4 2.4 0 0 0-2.4-2.4H4.2z'/><path d='M19.8 4.6h-6a3 3 0 0 0-3 3v11.8a2.4 2.4 0 0 1 2.4-2.4h6.6z'/>",
     shield: "<path d='M12 3.6 5 6.2v5.4c0 4.2 2.9 7.4 7 8.8 4.1-1.4 7-4.6 7-8.8V6.2z'/>",
-    news: "<path d='M4.2 5.6h12.4v13.2a1.4 1.4 0 0 1-1.4 1.4H5.6a1.4 1.4 0 0 1-1.4-1.4z'/><path d='M16.6 8.6h2.2a1.4 1.4 0 0 1 1.4 1.4v8.8a1.4 1.4 0 0 1-2.8 0'/><path d='M7 9h6.6M7 12.6h6.6M7 16h4'/>"
+    news: "<path d='M4.2 5.6h12.4v13.2a1.4 1.4 0 0 1-1.4 1.4H5.6a1.4 1.4 0 0 1-1.4-1.4z'/><path d='M16.6 8.6h2.2a1.4 1.4 0 0 1 1.4 1.4v8.8a1.4 1.4 0 0 1-2.8 0'/><path d='M7 9h6.6M7 12.6h6.6M7 16h4'/>",
+    coin: "<circle cx='12' cy='12' r='8.4'/><path d='M14.6 9.2a3 3 0 0 0-2.6-1.2c-1.6 0-2.8.8-2.8 2 0 2.8 5.6 1.2 5.6 4 0 1.2-1.2 2-2.8 2a3 3 0 0 1-2.6-1.2'/><path d='M12 6.2v11.6'/>"
   };
   function glyph(k) {
     return "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.55' stroke-linecap='round' stroke-linejoin='round'>" +
@@ -41479,6 +41658,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ["squad", "people", "The squad", "Every man on the books, and the eleven you pick"],
       ["training", "net", "The nets", "What each man works on, week by week"],
       ["academy", "star", "The academy", "The colts coming through, and what a level buys"],
+      ["finance", "coin", "The books", "The bank, the gate, the wage bill and the ground"],
       ["fixtures", "cal", "The fixture list", "Every match of the summer, dated"],
       ["matchday", "pitch", "Matchday", "The pitch, the head-to-head and the probable XIs"],
       ["milestones", "medal", "The honours board", "The plaques won, and the ones still open"]

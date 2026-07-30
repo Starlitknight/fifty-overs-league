@@ -382,7 +382,35 @@
         "The world could not be reached (" + E(String(e.message).slice(0, 90)) + "). The books are safe where they are &mdash; try again in a minute."));
     });
   };
+  // ---- A DOOR IN THE MASTHEAD ------------------------------------------------
+  // The books were reachable only from the hamburger index and the phone dock,
+  // which on a desktop meant they were reachable only by someone who already
+  // knew they existed. A manager looks for his money along the top of the page,
+  // beside his squad, so that is where the pill goes. The phone drawer proxies
+  // every pill in this row, so one link serves both.
+  function ensureNavLink() {
+    try {
+      var wrap = document.querySelector("#topbar .fo-nav-scroll"); if (!wrap) return;
+      var a = wrap.querySelector("a.fo-books-nav");
+      if (!a) {
+        a = document.createElement("a"); a.className = "fo-books-nav"; a.href = "#/finance"; a.textContent = "Books";
+        a.addEventListener("click", function (ev) { ev.preventDefault(); location.hash = "#/finance"; if (typeof window.route === "function") window.route(); });
+      }
+      // beside the squad, after Fixtures if that pill has already landed
+      if (a.parentNode !== wrap) {
+        var anchor = wrap.querySelector("a.fo-fixtures") || wrap.querySelector("a[data-nav='squad']");
+        if (anchor && anchor.nextSibling) wrap.insertBefore(a, anchor.nextSibling);
+        else wrap.appendChild(a);
+      }
+      a.classList.toggle("on", (location.hash || "").split("?")[0] === "#/finance");
+      // Log out is furniture and belongs last, however late a pill arrives
+      var out = wrap.querySelector("a.fo-logout");
+      if (out && wrap.lastElementChild !== out) wrap.appendChild(out);
+    } catch (e) {}
+  }
   window.addEventListener("hashchange", function () {
     if ((location.hash || "").split("?")[0] !== "#/finance") document.body.classList.remove("fo-fin-on");
+    setTimeout(ensureNavLink, 90);
   });
+  [200, 600, 1400].forEach(function (ms) { setTimeout(ensureNavLink, ms); });
 })();

@@ -82,6 +82,16 @@ globalThis.__svcTrain = function (playersJson, planJson, rate) {
 globalThis.__svcFantasy = function (inningsJson) {
   return JSON.stringify(window.foFantasyPoints(JSON.parse(inningsJson)));
 };
+// the shipped game's own MATCH RATING for one side of one card - six units on
+// the club rating scale. Reached through window.teamRatings, which is the
+// PATCHED function (the overlay that refuses to mark the hands of a side that
+// never fielded), so a test comparing the server's port against this is
+// comparing it against what a manager actually reads.
+globalThis.__svcTeamRatings = function (resultJson, teamName) {
+  var r = JSON.parse(resultJson), out = window.teamRatings(r, teamName), flat = {};
+  for (var k in out) flat[k] = Array.isArray(out[k]) ? out[k][0] : out[k];
+  return JSON.stringify(flat);
+};
 // refresh every derived rating from the skills beneath them, by the shipped
 // engine's own mapping - the one place bat, threat, control and wage are made
 globalThis.__svcDerive = function (playersJson) {
@@ -155,6 +165,7 @@ globalThis.__svcWorldCfg = function () {
   const der = vm.runInContext('__svcDerive', eng.ctx);
   const ovr = vm.runInContext('__svcOvr', eng.ctx);
   const fan = vm.runInContext('__svcFantasy', eng.ctx);
+  const tmr = vm.runInContext('__svcTeamRatings', eng.ctx);
   return {
     genSquad(seed, country, arch, capt) { return JSON.parse(gen(seed, country, arch, capt)); },
     // one round in the nets for a whole squad, by the shipped engine's numbers,
@@ -166,6 +177,8 @@ globalThis.__svcWorldCfg = function () {
     pkOvr(players) { return JSON.parse(ovr(JSON.stringify(players))); },
     // the client's own fantasy points for a set of innings
     fantasy(innings) { return JSON.parse(fan(JSON.stringify(innings))); },
+    // the client's own match rating for one side of a banked card
+    teamRatings(result, teamName) { return JSON.parse(tmr(JSON.stringify(result), teamName)); },
     // returns the canonical result JSON STRING — stored verbatim, compared verbatim
     runMatch(homeTeam, awayTeam, pitch, seed, ordersMap) {
       return run(JSON.stringify(homeTeam), JSON.stringify(awayTeam), pitch, seed,

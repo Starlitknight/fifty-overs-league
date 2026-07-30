@@ -2756,7 +2756,11 @@ function teamRatings(r,teamName){
     if(inn.bowlTeam===teamName){
       for(const k in inn.bowlers){const br=inn.bowlers[k];
         const t=typeClass(br.p.bowlType||'fastMedium')==='pace'?seam:spin;t[0]+=br.w;t[1]+=br.r;t[2]+=br.b;}
-      for(const k in (inn.fielding||{})){catches+=inn.fielding[k].ct;sts+=inn.fielding[k].st;ros+=inn.fielding[k].ro}}}
+      // a fielding entry is written {ct:0,st:0,ro:0} in play, so all three are
+      // always there in a live card - but one missing key made the whole
+      // Fielding/Keeping figure NaN, and the ratings tab printed the word. The
+      // world rankings read this number now, so a partial card must not poison it.
+      for(const k in (inn.fielding||{})){const fd=inn.fielding[k]||{};catches+=(fd.ct||0);sts+=(fd.st||0);ros+=(fd.ro||0)}}}
   const scale=v=>v===null?null:Math.round(70*Math.max(5,Math.min(97,v)));
   const batR=g=>{const[r0,b0]=agg[g];if(!b0)return null;
     const sr=100*r0/b0;const parSR={top:82,mid:88,tail:80}[g];

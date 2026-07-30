@@ -78,6 +78,53 @@
     return by;
   };
 
+  // THE MATCH RATING THE GAME ALREADY WRITES, as one figure per side.
+  //
+  // Nothing here recomputes anything: window.teamRatings is the engine's own
+  // marking, the same call the Match ratings tab makes, already wearing the
+  // overlay that refuses to mark the hands of a side that never fielded. All
+  // this does is take the units BOTH sides used - the like-with-like rule the
+  // ratings table applies before it prints a total - and AVERAGE them instead
+  // of adding them.
+  //
+  // Adding is right inside one match: two columns, side by side, bigger total
+  // won the argument. Averaging is what makes the figure carry OUT of the match,
+  // because a sum over four units and a sum over six are not the same quantity,
+  // and the world rankings are nothing but a comparison across matches. The
+  // number is on the club rating scale: about 3,500 is an ordinary day.
+  window.FO_RATING_UNITS = ["Batting - Top Order", "Batting - Middle Order", "Batting - Tail",
+    "Bowling - Seam", "Bowling - Spin", "Fielding/Keeping"];
+  window.foTeamMatchRating = function (result) {
+    var out = {};
+    try {
+      if (typeof window.teamRatings !== "function") return out;
+      var innings = ((result && (result.innings || result.scorecard)) || []).filter(Boolean);
+      var names = [];
+      innings.forEach(function (inn) {
+        [inn.batTeam, inn.bowlTeam].forEach(function (n) { if (n && names.indexOf(n) < 0) names.push(n); });
+      });
+      if (names.length !== 2) return out;
+      var card = { innings: innings, home: names[0], away: names[1] };
+      var marks = names.map(function (n) {
+        var raw = window.teamRatings(card, n), flat = {};
+        for (var k in raw) flat[k] = (raw[k] && raw[k].length) ? raw[k][0] : raw[k];
+        return flat;
+      });
+      var shared = window.FO_RATING_UNITS.filter(function (u) {
+        return marks.every(function (m) { return m[u] != null; });
+      });
+      if (!shared.length) return out;
+      names.forEach(function (n, i) {
+        var m = marks[i];
+        out[n] = {
+          rating: +(shared.reduce(function (s2, u) { return s2 + m[u]; }, 0) / shared.length).toFixed(1),
+          units: m, counted: shared.slice()
+        };
+      });
+    } catch (e) {}
+    return out;
+  };
+
   var LABEL = { top: "Top order", middle: "Middle order", tail: "The tail",
     seam: "Seam", spin: "Spin", field: "In the field" };
   var band = function (v) { return v >= 8 ? "hot" : v >= 6.5 ? "good" : v >= 4.5 ? "ok" : "poor"; };
@@ -86,10 +133,21 @@
       : v >= 5.5 ? "adequate" : v >= 4 ? "below par" : "poor";
   };
 
-  window.foRatingsPanelHTML = function (innings) {
+  // The `result` argument is no longer needed for the mark - the game's own
+  // match rating is a function of the innings alone - but it is kept so callers
+  // that have the record to hand can pass it, and so the signature does not
+  // change under them.
+  window.foRatingsPanelHTML = function (innings, result) {
     var sides = window.foMatchRatings(innings);
     var names = Object.keys(sides);
     if (!names.length) return "";
+    // the panel carries its own stylesheet wherever it is asked for - it is not
+    // only the scorecard's any more, and unstyled marks are worse than none
+    try { css(); } catch (eC) {}
+    // THE MATCH RATING, the figure the world rankings read. It is the engine's
+    // own marking of this very card, so it needs nothing but the innings.
+    var team = {};
+    try { team = window.foTeamMatchRating({ innings: innings }) || {}; } catch (eT) {}
     var pts = [];
     try { pts = (window.foFantasyPoints && window.foFantasyPoints(innings)) || []; } catch (e) {}
     var side = function (nm) {
@@ -100,9 +158,16 @@
             "<s class='fo-rat-bar'><u class='" + band(x[k]) + "' style='width:" + (x[k] * 10) + "%'></u></s>" +
             "<b class='" + band(x[k]) + "'>" + x[k].toFixed(1) + "</b></div>";
         }).join("");
+      var tm = team[nm];
+      // the ladder figure, on the club rating scale, with the count of units it
+      // was averaged over - because "four of six" is why a figure looks odd
+      var mark = tm ? "<div class='fo-rat-tm'><span>Match rating</span><b class='" +
+        (tm.rating >= 4200 ? "hot" : tm.rating >= 3700 ? "good" : tm.rating >= 3100 ? "ok" : "poor") + "'>" +
+        Math.round(tm.rating).toLocaleString() + "</b><i>club rating scale, across the " + tm.counted.length +
+        " unit" + (tm.counted.length === 1 ? "" : "s") + " both sides used &middot; this is what the ladder reads</i></div>" : "";
       return "<div class='fo-rat-side'><div class='fo-rat-h'><b>" + E(nm) + "</b>" +
         (x.overall != null ? "<em class='" + band(x.overall) + "'>" + x.overall.toFixed(1) + "</em>" : "") + "</div>" +
-        rows + (x.overall != null ? "<div class='fo-rat-w'>" + word(x.overall) + " all round</div>" : "") + "</div>";
+        mark + rows + (x.overall != null ? "<div class='fo-rat-w'>" + word(x.overall) + " all round</div>" : "") + "</div>";
     };
     var best = pts.slice(0, 5).map(function (p, i) {
       return "<div class='fo-rat-p'><i>" + (i + 1) + "</i><b>" + E(p.n) + "</b><span>" + E(p.team) + "</span>" +
@@ -111,7 +176,10 @@
     return "<div class='panel fo-rat'><h4>Match ratings</h4><div class='pad'>" +
       "<div class='fo-rat-grid'>" + names.map(side).join("") + "</div>" +
       (best ? "<div class='fo-rat-sub'>The day&rsquo;s points</div>" + best : "") +
-      "<div class='fo-rat-note'>Every mark is worked out from this scorecard alone. The points are the same ones the world scores form on &mdash; a bad day here is why a man is out of nick tomorrow.</div>" +
+      "<div class='fo-rat-note'>Every mark is worked out from this scorecard alone. The points are the same ones the world scores form on &mdash; a bad day here is why a man is out of nick tomorrow." +
+      (Object.keys(team).length
+        ? " The match rating above each side is the game&rsquo;s own, averaged across the units both sides used, and it is what the <a href='#/rankings'>world rankings</a> stand on: a club&rsquo;s place on earth is the mean of its last three."
+        : "") + "</div>" +
       "</div></div>";
   };
 
@@ -121,6 +189,11 @@
     s.textContent = [
       ".fo-rat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}",
       ".fo-rat-side{min-width:0}",
+      // the mark that goes to the world, sat above the unit marks it is built from
+      "html body #page .fo-rat-tm{border:1px solid rgba(12,27,51,.14);border-radius:10px;padding:7px 10px;margin-bottom:8px;background:rgba(12,27,51,.03)}",
+      "html body #page .fo-rat-tm span{display:block;font:600 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(12,27,51,.5)}",
+      "html body #page .fo-rat-tm b{font:700 22px/1.1 Oswald,sans-serif;font-variant-numeric:tabular-nums;display:block;margin-top:3px}",
+      "html body #page .fo-rat-tm i{display:block;font:italic 400 10.5px/1.45 'Fraunces',Georgia,serif;color:rgba(12,27,51,.55);margin-top:2px}",
       ".fo-rat-h{display:flex;align-items:baseline;gap:8px;padding-bottom:7px;border-bottom:1px solid rgba(12,27,51,.12);margin-bottom:7px}",
       ".fo-rat-h b{flex:1;min-width:0;font:600 13.5px/1.2 Inter,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-rat-h em{font-style:normal;font:700 19px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums}",
@@ -147,13 +220,13 @@
   // EVERY SCORECARD GETS ONE. The page is wrapped rather than watched: the
   // innings it was built from are in hand at the moment it paints, which the
   // live match state is not a second later.
-  function append(innings) {
+  function append(innings, result) {
     try {
       var page = document.getElementById("page"); if (!page) return;
       if (page.querySelector(".fo-rat")) return;
       if (!innings || !innings[1]) return;            // one innings is no match to mark
       css();
-      var html = window.foRatingsPanelHTML(innings);
+      var html = window.foRatingsPanelHTML(innings, result || null);
       if (!html) return;
       var wrap = document.createElement("div");
       wrap.innerHTML = html;
@@ -168,12 +241,24 @@
       return last && last.innings;
     } catch (e) { return null; }
   }
+  // the same record's result, so the mark can read the margin as well as the units
+  function resultFor(q) {
+    try {
+      if (q && q.i !== undefined && App.results[+q.i]) return App.results[+q.i].result;
+      if (window.M && M.result) return M.result;
+      var last = (App.results || [])[(App.results || []).length - 1];
+      return last && last.result;
+    } catch (e) { return null; }
+  }
   function hook() {
     if (typeof window.pgScorecard !== "function" || window.pgScorecard.__foRat) return;
     var prev = window.pgScorecard;
     window.pgScorecard = function (q) {
       var out = prev.apply(this, arguments);
-      try { window.__foRatLast = inningsFor(q); append(window.__foRatLast); } catch (e) {}
+      try {
+        window.__foRatLast = inningsFor(q); window.__foRatLastRes = resultFor(q);
+        append(window.__foRatLast, window.__foRatLastRes);
+      } catch (e) {}
       return out;
     };
     window.pgScorecard.__foRat = 1;
@@ -187,7 +272,7 @@
     try {
       if ((location.hash || "").split("?")[0] !== "#/scorecard") return;
       if (document.querySelector("#page .fo-rat")) return;
-      append(window.__foRatLast || inningsFor(null));
+      append(window.__foRatLast || inningsFor(null), window.__foRatLastRes || resultFor(null));
     } catch (e) {}
   }, 1200);
 })();

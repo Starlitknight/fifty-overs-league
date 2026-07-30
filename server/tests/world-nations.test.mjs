@@ -391,7 +391,14 @@ test('the ladder and the room read the international game', async () => {
   const rk = await computeRankings(pool, Date.now());
   const played = rk.countries.filter(c => c.natP > 0);
   assert.equal(played.length, 18, 'eighteen nations toured, one had the window off');
-  assert.ok(rk.countries.some(c => c.natRating !== 1000), 'and the ladder moved');
+  // the ladder is the game's own match ratings now, not Elo: every figure is on
+  // the club rating scale, an untoured nation sits on the presumption of 3,500,
+  // and a nation with cricket behind it does not
+  assert.ok(rk.countries.every(c => c.natRating >= 350 && c.natRating <= 6790),
+    'every mark is on the club rating scale');
+  assert.ok(played.some(c => c.natRating !== 3500), 'and the ladder moved for the nations that played');
+  assert.ok(rk.countries.some(c => c.natP === 0 && c.natRating === 3500),
+    'the nation that sat the window out is still presumed ordinary');
 
   const na = await computeNations(pool, atDay(WIN_DAY, 23));
   assert.deepEqual(na.windows, WINDOWS);

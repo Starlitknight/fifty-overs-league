@@ -43,7 +43,8 @@
     map: "<path d='m3.8 6.6 5.2-2.2 6 2.4 5.2-2.2v12.8l-5.2 2.2-6-2.4-5.2 2.2z'/><path d='M9 4.6v12.6M15 6.8v12.6'/>",
     book: "<path d='M4.2 4.6h6a3 3 0 0 1 3 3v11.8a2.4 2.4 0 0 0-2.4-2.4H4.2z'/><path d='M19.8 4.6h-6a3 3 0 0 0-3 3v11.8a2.4 2.4 0 0 1 2.4-2.4h6.6z'/>",
     shield: "<path d='M12 3.6 5 6.2v5.4c0 4.2 2.9 7.4 7 8.8 4.1-1.4 7-4.6 7-8.8V6.2z'/>",
-    news: "<path d='M4.2 5.6h12.4v13.2a1.4 1.4 0 0 1-1.4 1.4H5.6a1.4 1.4 0 0 1-1.4-1.4z'/><path d='M16.6 8.6h2.2a1.4 1.4 0 0 1 1.4 1.4v8.8a1.4 1.4 0 0 1-2.8 0'/><path d='M7 9h6.6M7 12.6h6.6M7 16h4'/>"
+    news: "<path d='M4.2 5.6h12.4v13.2a1.4 1.4 0 0 1-1.4 1.4H5.6a1.4 1.4 0 0 1-1.4-1.4z'/><path d='M16.6 8.6h2.2a1.4 1.4 0 0 1 1.4 1.4v8.8a1.4 1.4 0 0 1-2.8 0'/><path d='M7 9h6.6M7 12.6h6.6M7 16h4'/>",
+    coin: "<circle cx='12' cy='12' r='8.4'/><path d='M14.6 9.2a3 3 0 0 0-2.6-1.2c-1.6 0-2.8.8-2.8 2 0 2.8 5.6 1.2 5.6 4 0 1.2-1.2 2-2.8 2a3 3 0 0 1-2.6-1.2'/><path d='M12 6.2v11.6'/>"
   };
   function glyph(k) {
     return "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.55' stroke-linecap='round' stroke-linejoin='round'>" +
@@ -57,6 +58,7 @@
       ["squad", "people", "The squad", "Every man on the books, and the eleven you pick"],
       ["training", "net", "The nets", "What each man works on, week by week"],
       ["academy", "star", "The academy", "The colts coming through, and what a level buys"],
+      ["finance", "coin", "The books", "The bank, the gate, the wage bill and the ground"],
       ["fixtures", "cal", "The fixture list", "Every match of the summer, dated"],
       ["matchday", "pitch", "Matchday", "The pitch, the head-to-head and the probable XIs"],
       ["milestones", "medal", "The honours board", "The plaques won, and the ones still open"]

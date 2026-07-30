@@ -1,13 +1,24 @@
 /* ============================================================================
    THE WORLD RANKINGS (#/rankings) — the ladder every club on earth stands on.
 
-   Rolling Elo over every banked match, computed by the World Service and
-   served as one snapshot: 190 clubs on one ladder (league matches move 24
-   points' worth, Champions Cup ties 40), and a country ladder beside it -
-   each nation's league strength (average club rating) with its national
-   XI's own World Cup rating. Your claimed club is picked out wherever it
-   stands. Before the first ball, every club on earth sits on 1000 - the
-   ladder first moves the night the world plays.
+   Every match in Fifty Overs is already marked at stumps - the Match ratings
+   tab on any scorecard: six units a side against real-ODI par, on the club
+   rating scale. That is the rating this page ranks on. A club's place in the
+   world is the mean of its LAST THREE match ratings, so this is a ladder of how
+   sides are playing now, and a club that goes off the boil slides down it
+   within a fortnight.
+
+   Computed by the World Service from the banked cards and served as one
+   snapshot: 190 clubs on one ladder, and a country ladder beside it. Your
+   claimed club is picked out wherever it stands. A side that has not played
+   three matches yet is presumed ordinary - 3,500, the middle of the scale - for
+   the ones it is missing.
+
+   TWO LENSES, AND THE PAGE SAYS WHICH IS WHICH. The club ladder is FORM: the
+   last three, because that is what a manager wants to know before Saturday.
+   The nations table is STRENGTH: every mark a nation's clubs have ever earned,
+   because ten clubs' form averages back to the middle of the scale and would
+   say nothing about whether one league is harder than another.
    ========================================================================== */
 (function () {
   "use strict";
@@ -29,7 +40,14 @@
   }
 
   var RK = null, RK_TS = null, BUSY = false;
-  try { var c0 = localStorage.getItem("fo_world_rk"); if (c0) RK = JSON.parse(c0); } catch (e) {}
+  // A ladder cached before the rankings became match ratings is an Elo body -
+  // no marks behind the figure - and would paint a rating that means nothing on
+  // this page for a second before the fetch landed. A body that cannot name its
+  // window is from that era; drop it and wait for the world.
+  try {
+    var c0 = localStorage.getItem("fo_world_rk");
+    if (c0) { var b0 = JSON.parse(c0); if (b0 && b0.window) RK = b0; else localStorage.removeItem("fo_world_rk"); }
+  } catch (e) {}
   function fetchRk() {
     if (BUSY) return;
     BUSY = true;
@@ -65,12 +83,26 @@
     var cl = claim();
     var body;
     if (!RK || !RK.clubs || !RK.clubs.length) {
-      body = "<div class='fo-rk-card'><p class='fo-rk-note'>Reaching the World Service for the ladder&hellip; Every club on earth starts on <b>1000</b>; the rankings first move the night the world plays.</p></div>";
+      body = "<div class='fo-rk-card'><p class='fo-rk-note'>Reaching the World Service for the ladder&hellip; Every club on earth is presumed ordinary &mdash; <b>3,500</b> &mdash; until it has three matches behind it.</p></div>";
     } else {
       var moved = RK.clubs.some(function (c) { return c.p > 0; });
       var mine = cl ? RK.clubs.filter(function (c) { return c.country === cl.country && c.slot === cl.slot; })[0] : null;
+      // four digits on the club rating scale, the way every other rating in the
+      // game is printed - a decimal place on a figure this size is noise
+      var fmt = function (v) { return Math.round(Number(v) || 0).toLocaleString(); };
+      // the three marks behind the figure, oldest first, so a side on the way
+      // up and a side on the way down are told apart at a glance
+      var formOf = function (c) {
+        var f = c.form || [];
+        if (!f.length) return "<span class='frm none'>no cricket yet</span>";
+        return "<span class='frm'>" + f.map(function (v) {
+          var n = Number(v);
+          return "<em class='" + (n >= 3900 ? "g" : n >= 3200 ? "m" : "b") + "'>" + fmt(n) + "</em>";
+        }).join("") + "</span>";
+      };
       var mineChip = mine
-        ? "<div class='fo-rk-mine'>&#127942; <b>" + E(mine.name) + "</b> stand <u>#" + mine.rank + "</u> of " + RK.clubs.length + " in the world &middot; rating " + mine.rating + "</div>"
+        ? "<div class='fo-rk-mine'>&#127942; <b>" + E(mine.name) + "</b> stand <u>#" + mine.rank + "</u> of " + RK.clubs.length + " in the world &middot; rated " + fmt(mine.rating) +
+          ((mine.form && mine.form.length) ? " from " + mine.form.map(fmt).join(", ") : " &mdash; no cricket played yet") + "</div>"
         : "";
       var rowOf = function (c) {
         var isMine = !!(cl && c.country === cl.country && c.slot === cl.slot);
@@ -79,8 +111,9 @@
           "<img src='" + flagOf(c.country) + "' alt='' onerror=\"this.style.display='none'\">" +
           "<b>" + E(c.name) + (isMine ? " <em>YOU</em>" : (c.boss ? " <em class='bs'>FLAGSHIP</em>" : "")) + "</b>" +
           "<u>" + E(natName(c.country)) + "</u>" +
+          formOf(c) +
           "<span class='rec'>" + c.w + "-" + c.l + (c.t ? "-" + c.t : "") + "</span>" +
-          "<span class='pts'>" + c.rating + "</span></a>";
+          "<span class='pts'>" + fmt(c.rating) + "</span></a>";
       };
       var top = RK.clubs.slice(0, 30).map(rowOf).join("");
       var mineExtra = (mine && mine.rank > 30)
@@ -92,18 +125,20 @@
           "<i>" + n.rank + "</i>" +
           "<img src='" + flagOf(n.id) + "' alt='' onerror=\"this.style.display='none'\">" +
           "<b>" + E(n.name) + "</b>" +
-          "<u>XI " + n.natRating + (n.natP ? "" : " &middot; unproven") + "</u>" +
-          "<span class='pts'>" + n.clubRating + "</span></a>";
+          "<u>XI " + fmt(n.natRating) + (n.natP ? "" : " &middot; unproven") + "</u>" +
+          "<span class='pts'>" + fmt(n.clubRating) + "</span></a>";
       }).join("");
       body = mineChip +
-        (moved ? "" : "<div class='fo-rk-card'><p class='fo-rk-note'>Every club on earth stands level on <b>1000</b>. The ladder first moves the night the world plays its opening round.</p></div>") +
-        "<div class='fo-rk-card'><h3>The club ladder <span>top 30 of " + RK.clubs.length + " &middot; Elo, every banked match</span></h3>" + top + mineExtra + "</div>" +
-        "<div class='fo-rk-card'><h3>The nations <span>league strength &middot; national XI</span></h3>" + natRows + "</div>";
+        (moved ? "" : "<div class='fo-rk-card'><p class='fo-rk-note'>Every club on earth stands level on <b>3,500</b>. The ladder first moves the night the world plays its opening round.</p></div>") +
+        "<div class='fo-rk-card'><h3>The club ladder <span>top 30 of " + RK.clubs.length + " &middot; last three match ratings</span></h3>" + top + mineExtra + "</div>" +
+        "<div class='fo-rk-card'><h3>The nations <span>league strength &middot; national XI</span></h3>" +
+        "<p class='fo-rk-note'>Form is the wrong lens on a whole league &mdash; ten clubs&rsquo; last three average straight back to the middle of the scale. So a nation is marked on <b>every</b> match rating its clubs have earned, and its XI on every one of its own.</p>" +
+        natRows + "</div>";
     }
     page.innerHTML = "<div class='fo-rk'><div class='fo-rk-in'>" +
       "<div class='fo-rk-hero'><div class='fo-rk-k'>World cricket &middot; the ladder</div>" +
       "<h1>The World Rankings</h1>" +
-      "<p>Rolling ratings over every match the umpire has ever banked. League wins move the needle; Champions Cup nights move it harder.</p></div>" +
+      "<p>Every match is marked at stumps &mdash; six units a side against real-ODI par, the same figures on any scorecard&rsquo;s ratings tab. Where a club stands in the world is the mean of its last three, so form is the ladder.</p></div>" +
       body +
       "<div class='fo-rk-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/almanack'>The world almanack &rsaquo;</a></div>" +
       "</div></div>";
@@ -134,6 +169,23 @@
       ".fo-rk-row b em.bs{color:#8a6d3b;border-color:rgba(138,109,59,.4)}",
       ".fo-rk-row u{text-decoration:none;font:400 10.5px/1 Inter,sans-serif;color:rgba(20,28,40,.45);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}",
       ".fo-rk-row .rec{font:500 10.5px/1 Inter,sans-serif;color:rgba(20,28,40,.45);flex:none;font-variant-numeric:tabular-nums}",
+      // the three marks behind the figure - oldest on the left, as a scorebook reads
+      "html body #page .fo-rk-row .frm{display:flex;gap:3px;flex:none}",
+      "html body #page .fo-rk-row .frm em{font:600 9.5px/1 Oswald,sans-serif;font-style:normal;font-variant-numeric:tabular-nums;border-radius:4px;padding:3px 4px;min-width:26px;text-align:center;background:rgba(20,28,40,.06);color:rgba(20,28,40,.55)}",
+      "html body #page .fo-rk-row .frm em.g{background:rgba(22,140,99,.14);color:#12684A}",
+      "html body #page .fo-rk-row .frm em.b{background:rgba(176,58,42,.12);color:#9C3324}",
+      "html body #page .fo-rk-row .frm.none{font:italic 400 10px/1 'Fraunces',Georgia,serif;color:rgba(20,28,40,.35);display:block}",
+      // A phone has room for the club's NAME or for its whole record, not both -
+      // four figures on the club scale are wide. The name wins, the won-lost is on
+      // the club's own page, and the form drops to the last two marks: anything
+      // that is not one of the final two goes, so a club with a single mark keeps it.
+      "@media(max-width:620px){" +
+        "html body #page .fo-rk-row u{display:none}" +
+        "html body #page .fo-rk-row .rec{display:none}" +
+        "html body #page .fo-rk-row .frm em:not(:nth-last-child(-n+2)){display:none}" +
+        "html body #page .fo-rk-row .frm em{min-width:0;padding:3px 4px;font-size:9px}" +
+        "html body #page .fo-rk-row .pts{width:38px;font-size:13px}" +
+      "}",
       ".fo-rk-row .pts{font:700 14px/1 Oswald,sans-serif;color:#141C28;width:44px;text-align:right;flex:none;font-variant-numeric:tabular-nums}",
       ".fo-rk-row.mine{background:rgba(217,85,42,.07);border-radius:10px}",
       ".fo-rk-row.mine .pts{color:#B44A22}",

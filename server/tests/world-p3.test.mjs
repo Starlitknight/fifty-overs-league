@@ -22,7 +22,8 @@ import { evolveCountry, applyLiving, livingPatch } from '../living.mjs';
 import { CAP, SQUAD_CAP, RETIRE_AT, makeColt, ensureYouth, ageYouth,
   coltsRoundOf, coltsSquad, playColtsRound, coltRecords } from '../youth.mjs';
 import { academyRate } from '../living.mjs';
-import { fantasyPoints, unitRatings, matchRatings } from '../ratings.mjs';
+import { fantasyPoints, unitRatings, matchRatings, teamRatings, matchRating,
+         ladderRating, strengthRating, RATING_UNITS, RANK_BASE } from '../ratings.mjs';
 import { roundRobin, bracket, roundsOf, closeEnrolment, playComps, computeComp, rebuildComps } from '../comps.mjs';
 import { ACADEMY_UPKEEP, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, DEBT_LIMIT, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance } from '../economy.mjs';
 import { EPOCH, DAY, seedOf, dayOfRound } from '../clock.mjs';
@@ -272,34 +273,143 @@ test('009: season leaders come straight from the banked scorecards', async () =>
     'a completed season is written into the book');
 });
 
-test('010: the world rankings ladder moves with results, zero-sum, rename-proof', async () => {
+test('010: the world rankings ladder stands on the last three match ratings', async () => {
   const rk = await computeRankings(pool, EPOCH + 102 * DAY);
   assert.equal(rk.clubs.length, 190, 'every club in the world is ranked');
   assert.equal(rk.countries.length, 19, 'every country is ranked');
+  assert.equal(rk.window, 3, 'the window is three matches');
   // every club that has played is on the ladder; when only England's round 1
   // is banked that is exactly its ten, and this run says so
   const played = rk.clubs.filter(c => c.p > 0);
   assert.ok(played.length >= 10, 'the clubs that have played are ranked: ' + played.length);
   if (played.length === 10) played.forEach(c => assert.equal(c.country, 'eng', 'only England has played'));
-  // winners rose, losers fell, ties held
-  played.forEach(c => {
-    if (c.w === 1 && c.l === 0 && c.t === 0) assert.ok(c.rating > 1000, c.name + ' won and rose');
-    if (c.l === 1 && c.w === 0 && c.t === 0) assert.ok(c.rating < 1000, c.name + ' lost and fell');
+  // a club that has not played is presumed ordinary, and says so with an empty form
+  const idle = rk.clubs.filter(c => c.p === 0);
+  idle.forEach(c => {
+    assert.equal(c.rating, RANK_BASE, c.name + ' has played nothing and stands on the middle of the scale');
+    assert.deepEqual(c.form, [], c.name + ' has no marks behind it');
   });
-  // Elo is zero-sum: the world's points are conserved
-  const total = rk.clubs.reduce((s, c) => s + c.rating, 0);
-  assert.ok(Math.abs(total - 190000) <= 190, 'points conserved (rounding aside): ' + total);
+  // the figure is exactly the mean of the marks behind it once the unplayed ones
+  // are counted as ordinary. NOTE what is deliberately NOT asserted: that a
+  // winner outranks a loser. The game's match rating marks how a side PLAYED,
+  // not whether it won, so a side can be beaten and still have had the better
+  // day - which is the point of ranking on it.
+  played.forEach(c => {
+    assert.ok(c.form.length && c.form.length <= 3, c.name + ' carries up to three marks');
+    const want = +((c.form.reduce((s, x) => s + x, 0) + (3 - c.form.length) * RANK_BASE) / 3).toFixed(1);
+    assert.equal(c.rating, want, c.name + ' stands on the mean of its last three');
+  });
+  // every mark is on the club rating scale, and every match a club played is
+  // accounted for in its won-lost-tied
+  played.forEach(c => {
+    assert.equal(c.w + c.l + c.t, c.p, c.name + ' has an outcome for every match');
+    c.form.forEach(v => assert.ok(v >= 350 && v <= 6790, c.name + ' mark on the club scale: ' + v));
+  });
   // ranks are 1..190 and sorted by rating
   assert.equal(rk.clubs[0].rank, 1);
   assert.ok(rk.clubs[0].rating >= rk.clubs[189].rating);
-  // ratings key by slot: a rename moves the name, never the points
+  assert.ok(rk.clubs[0].rating > rk.clubs[189].rating, 'the ladder has actually separated');
+  // ONLY THE LAST THREE COUNT: the ladder is a form table, so a club is judged
+  // on what it has just done and not on everything it ever did
+  const busiest = rk.clubs.slice().sort((a, b) => b.p - a.p)[0];
+  if (busiest.p > 3) assert.equal(busiest.form.length, 3, 'a long record is still read three matches deep');
+  // REBUILT FROM GENESIS, TWICE, THE SAME: nothing about the ladder is stored
+  const again = await computeRankings(pool, EPOCH + 102 * DAY);
+  assert.deepEqual(again.clubs, rk.clubs, 'the same record gives the same ladder');
+  // histories key by slot: a rename moves the name, never the marks
   const before7 = rk.clubs.find(c => c.country === 'eng' && c.slot === 7);
   await pool.query(`UPDATE clubs SET name='Renamed CC' WHERE country_id='eng' AND slot=7`);
   const rk2 = await computeRankings(pool, EPOCH + 102 * DAY);
   const after7 = rk2.clubs.find(c => c.country === 'eng' && c.slot === 7);
   assert.equal(after7.rating, before7.rating, 'the rating survived the rename');
   assert.equal(after7.name, 'Renamed CC', 'the ladder speaks the current name');
-  await pool.query(`UPDATE clubs SET name=default_name WHERE country_id='eng' AND slot=7`);
+  await pool.query(`UPDATE clubs SET name=$1 WHERE country_id='eng' AND slot=7`, [before7.name]);
+});
+
+// 010b: THE MATCH RATING ITSELF - the figure the ladder is built from, and the
+// one the game has always printed on its Match ratings tab. The important claim
+// here is not the arithmetic: it is that the server's port and the SHIPPED
+// CLIENT give the same answer, so the ladder and the scorecard can never tell a
+// manager two different stories.
+test('010b: the umpire and the phone mark a match the same way', async () => {
+  const rows = (await pool.query(
+    `SELECT home_name, away_name, result FROM matches WHERE country_id='eng' ORDER BY season_no, round LIMIT 5`)).rows;
+  assert.ok(rows.length, 'there are cards to mark');
+
+  for (const m of rows) {
+    // ONE MARKING, TWO HOSTS, on real innings
+    for (const nm of [m.home_name, m.away_name]) {
+      assert.deepEqual(teamRatings(m.result, nm), host.teamRatings(m.result, nm),
+        'the umpire and the phone mark ' + nm + ' identically');
+    }
+    const tr = matchRating(m.result);
+    const names = Object.keys(tr);
+    assert.equal(names.length, 2, 'both sides are marked');
+    names.forEach(nm => {
+      const x = tr[nm];
+      // scale(v) = 70 x clamp(5..97, v), so every unit lands in 350..6790 and so
+      // does their mean
+      assert.ok(x.rating >= 350 && x.rating <= 6790, nm + ' is on the club rating scale: ' + x.rating);
+      assert.ok(x.counted.length >= 1 && x.counted.length <= 6, nm + ' counted ' + x.counted.length + ' units');
+      x.counted.forEach(u => assert.ok(RATING_UNITS.indexOf(u) >= 0, u + ' is one of the six units'));
+    });
+    // LIKE WITH LIKE: both sides are averaged over the SAME units, which is what
+    // makes the two figures comparable at all
+    assert.deepEqual(tr[names[0]].counted, tr[names[1]].counted, 'both sides counted the same units');
+    // and the figure really is the mean of those units
+    names.forEach(nm => {
+      const x = tr[nm];
+      const want = +(x.counted.reduce((s, u) => s + x.units[u], 0) / x.counted.length).toFixed(1);
+      assert.equal(x.rating, want, nm + ' is the mean of the counted units');
+    });
+  }
+
+  // NO HANDS UNTIL YOU HAVE FIELDED: the side batting second in a card that ended
+  // in the chase never took the field, so it carries no fielding mark
+  const chase = rows.map(m => m.result).find(r => r.innings[1] && r.innings[1].batTeam);
+  if (chase) {
+    const second = chase.innings[1].batTeam;
+    const fielded = chase.innings.some(inn => inn && inn.bowlTeam === second && (inn.legal || 0) > 0);
+    if (!fielded) assert.equal(teamRatings(chase, second)['Fielding/Keeping'], null,
+      'a side that never fielded has no hands to mark');
+  }
+
+  // A BETTER DAY MARKS HIGHER. Two hand-built cards, same shape, one side
+  // batting and bowling well and the other badly.
+  const card = (aRuns, aBalls, bWkts, bRuns, bBalls) => ({
+    winner: 'A', text: 'A win',
+    innings: [
+      { batTeam: 'A', bowlTeam: 'B', runs: aRuns, wkts: 6, legal: aBalls,
+        bat: [{ p: { name: 'a1' }, r: Math.round(aRuns * 0.4), b: Math.round(aBalls * 0.3) },
+              { p: { name: 'a2' }, r: Math.round(aRuns * 0.3), b: Math.round(aBalls * 0.3) },
+              { p: { name: 'a3' }, r: Math.round(aRuns * 0.2), b: Math.round(aBalls * 0.25) },
+              { p: { name: 'a4' }, r: Math.round(aRuns * 0.1), b: Math.round(aBalls * 0.15) }],
+        bowlers: { b1: { w: 3, r: 45, b: 60, p: { bowlType: 'fast' } },
+                   s1: { w: 3, r: 40, b: 60, p: { bowlType: 'offbreak' } } },
+        fielding: { b1: { ct: 2 } } },
+      { batTeam: 'B', bowlTeam: 'A', runs: 150, wkts: 10, legal: 240,
+        bat: [{ p: { name: 'b1' }, r: 60, b: 70 }, { p: { name: 'b2' }, r: 40, b: 60 },
+              { p: { name: 'b3' }, r: 30, b: 60 }, { p: { name: 'b4' }, r: 20, b: 50 }],
+        bowlers: { a1: { w: bWkts, r: bRuns, b: bBalls, p: { bowlType: 'fast' } },
+                   a2: { w: bWkts, r: bRuns, b: bBalls, p: { bowlType: 'legbreak' } } },
+        fielding: { a1: { ct: 3 } } }
+    ]
+  });
+  const good = matchRating(card(320, 300, 5, 60, 120));
+  const poor = matchRating(card(140, 300, 1, 110, 120));
+  assert.ok(good.A.rating > poor.A.rating,
+    'runs and wickets mark above neither (' + good.A.rating + ' v ' + poor.A.rating + ')');
+
+  // THE WINDOW: three marks, and the unplayed ones are the middle of the scale
+  assert.equal(ladderRating([]), RANK_BASE);
+  assert.equal(ladderRating([4400]), +((4400 + 2 * RANK_BASE) / 3).toFixed(1));
+  assert.equal(ladderRating([1000, 2000, 3000, 4500, 3000, 3000]), 3500, 'only the last three are read');
+  // AND THE OTHER LENS: strength reads everything, and nothing is still ordinary
+  assert.equal(strengthRating([]), RANK_BASE);
+  assert.equal(strengthRating([3000, 4000]), 3500, 'strength reads the whole record');
+  assert.notEqual(strengthRating([1000, 2000, 3000, 4500, 3000, 3000]),
+                  ladderRating([1000, 2000, 3000, 4500, 3000, 3000]),
+                  'form and strength are different questions');
 });
 
 test('011: friendlies - challenge, accept, and the umpire plays the real match', async () => {

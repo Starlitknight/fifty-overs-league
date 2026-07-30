@@ -23,6 +23,7 @@ import { settleMoney } from './economy.mjs';
 import { runComps } from './comps.mjs';
 import { ensureCallups, absentBySlot, coverSheet, runWindows, rebuildNations, seasonSquad } from './nations.mjs';
 import { runMarket, settleMarket, rebuildMarket } from './market.mjs';
+import { matchRating, ladderRating, strengthRating, RANK_WINDOW, RANK_BASE } from './ratings.mjs';
 
 export function matchId(country, seasonNo, round, h, a) {
   return country + ':s' + seasonNo + ':r' + round + ':h' + h + 'a' + a;
@@ -172,83 +173,123 @@ export async function computeLeague(pool, country, seasonNo, now) {
   return { country, seasonNo: season.season_no, startDay: season.start_day, rounds: ROUNDS, roundsPlayed, table, results, stats, champion, generatedAtDay: dayIx(now) };
 }
 
-// THE WORLD RANKINGS: rolling Elo over every banked match, recomputed from
-// genesis each time - a pure function of the record, so it can never drift
-// and a club rename never loses a point (ratings key by country:slot).
-// League matches move 24 points' worth, Champions Cup ties 40; national XIs
-// keep their own ladder from World Cup matches. Deterministic order: league
-// by (season, round, country, home slot), cups by (season, stage, tie).
+// THE WORLD RANKINGS: every club on earth on one ladder, standing on the MATCH
+// RATING the game has always written for its last three matches.
+//
+// That rating is not a new invention for this page. It is the figure on the
+// Match ratings tab of every scorecard in Fifty Overs - six units a side
+// against real-ODI par, on the club rating scale - averaged across the units
+// both sides used. server/ratings.mjs holds the port and the reasoning.
+//
+// Three matches is the window, so the ladder is a record of how sides are
+// playing NOW rather than of everything they ever did. A club that has not
+// played three yet is presumed ordinary - 3,500, the middle of the scale - for
+// the rest, so one freak night cannot outrank a season's work.
+//
+// Nothing is stored. The whole ladder is rebuilt from the banked cards each
+// tick, and every match in the world is put on ONE clock first - season, then
+// round, with a season's cup ties after its last league round, which is when
+// they are played. Order matters here in a way it never did for a rolling
+// rating: "the last three" is only meaningful if the three are the right ones.
+// So it can never drift, and a club rename never costs a point - histories key
+// by country:slot.
 export async function computeRankings(pool, now) {
   const clubs = (await pool.query('SELECT country_id, slot, name, is_boss FROM clubs ORDER BY country_id, slot')).rows;
   const key = (c, s) => c + ':' + s;
   const R = {};
-  clubs.forEach(c => R[key(c.country_id, c.slot)] = { country: c.country_id, slot: c.slot, name: c.name, boss: c.is_boss, rating: 1000, p: 0, w: 0, l: 0, t: 0 });
-  const upd = (a, b, sa, K) => {
-    const ea = 1 / (1 + Math.pow(10, (b.rating - a.rating) / 400));
-    const d = K * (sa - ea);
-    a.rating += d; b.rating -= d;
-    a.p++; b.p++;
-    if (sa === 0.5) { a.t++; b.t++; } else if (sa === 1) { a.w++; b.l++; } else { b.w++; a.l++; }
-  };
+  clubs.forEach(c => R[key(c.country_id, c.slot)] = {
+    country: c.country_id, slot: c.slot, name: c.name, boss: c.is_boss, hist: [], p: 0, w: 0, l: 0, t: 0
+  });
+  // ONE CLOCK FOR THE WHOLE WORLD. A season is a thousand ticks wide: league
+  // round r sits at r, and the cup ties that close that season sit above 500,
+  // in the order they were played. Every match therefore falls in the seat it
+  // was played in, whichever competition it belonged to.
+  const seq = (season, slot) => (season | 0) * 1000 + slot;
+  const STAGE = { pi: 0, r16: 1, qf: 2, sf: 3, final: 4 };
+  const events = [], natEvents = [];
   const ms = (await pool.query(
-    'SELECT country_id, home_slot, away_slot, home_name, result FROM matches ORDER BY season_no, round, country_id, home_slot')).rows;
-  for (const m of ms) {
-    const a = R[key(m.country_id, m.home_slot)], b = R[key(m.country_id, m.away_slot)];
-    if (!a || !b) continue;
-    const hN = m.home_name || a.name, w = m.result.winner;
-    upd(a, b, w === null ? 0.5 : w === hN ? 1 : 0, 24);
-  }
+    `SELECT season_no, round, country_id, home_slot, away_slot, home_name, away_name, result FROM matches
+      ORDER BY season_no, round, country_id, home_slot`)).rows;
+  ms.forEach((m, i) => events.push({
+    at: seq(m.season_no, m.round | 0), i,
+    ak: key(m.country_id, m.home_slot), bk: key(m.country_id, m.away_slot),
+    an: m.home_name, bn: m.away_name, result: m.result
+  }));
   const wclm = (await pool.query(
-    `SELECT a, b, result FROM cup_matches WHERE comp='wcl'
-      ORDER BY season_no, CASE stage WHEN 'pi' THEN 0 WHEN 'r16' THEN 1 WHEN 'qf' THEN 2 WHEN 'sf' THEN 3 ELSE 4 END, gi`)).rows;
-  for (const m of wclm) {
-    if (m.a.slot == null || m.b.slot == null) continue;
-    const a = R[key(m.a.country, m.a.slot)], b = R[key(m.b.country, m.b.slot)];
-    if (!a || !b) continue;
-    const w = m.result.winner;
-    upd(a, b, w === null ? 0.5 : w === m.a.name ? 1 : 0, 40);
-  }
+    `SELECT season_no, stage, gi, a, b, result FROM cup_matches WHERE comp='wcl' ORDER BY season_no, stage, gi`)).rows;
+  wclm.forEach((m, i) => {
+    if (m.a.slot == null || m.b.slot == null) return;
+    events.push({
+      at: seq(m.season_no, 500 + (STAGE[m.stage] || 0) * 10), i: ms.length + i,
+      ak: key(m.a.country, m.a.slot), bk: key(m.b.country, m.b.slot),
+      an: m.a.name, bn: m.b.name, result: m.result
+    });
+  });
+  // the nations climb their own ladder, off tours and the World Cup, on the
+  // same clock and marked exactly the same way
   const countryRows = (await pool.query('SELECT id, name FROM countries')).rows;
   const N = {};
-  countryRows.forEach(c => N[c.id] = { rating: 1000, p: 0, w: 0, l: 0, t: 0 });
-  const natUpd = (a, b, sa, K) => {
-    const ea = 1 / (1 + Math.pow(10, (b.rating - a.rating) / 400));
-    const d = K * (sa - ea);
-    a.rating += d; b.rating -= d;
-    a.p++; b.p++;
-    if (sa === 0.5) { a.t++; b.t++; } else if (sa === 1) { a.w++; b.l++; } else { b.w++; a.l++; }
-  };
-  // the ladder the nations climb: every tour played in an international
-  // window, then the World Cup ties, which are worth more
+  countryRows.forEach(c => N[c.id] = { hist: [], p: 0, w: 0, l: 0, t: 0 });
   let tours = [];
   try {
     tours = (await pool.query(
-      `SELECT a_country, b_country, a_name, result FROM nat_matches ORDER BY world_day, id`)).rows;
+      `SELECT season_no, round, a_country, b_country, a_name, b_name, result FROM nat_matches
+        ORDER BY world_day, id`)).rows;
   } catch (eT) { tours = []; }                   // pre-023 database: no tours yet
-  for (const m of tours) {
-    const a = N[m.a_country], b = N[m.b_country];
-    if (!a || !b) continue;
-    const w = m.result.winner;
-    natUpd(a, b, w === null ? 0.5 : w === m.a_name ? 1 : 0, 24);
-  }
+  tours.forEach((m, i) => natEvents.push({
+    at: seq(m.season_no, m.round | 0), i,
+    ak: m.a_country, bk: m.b_country, an: m.a_name, bn: m.b_name, result: m.result
+  }));
   const wcm = (await pool.query(
-    `SELECT a, b, result FROM cup_matches WHERE comp='wc'
-      ORDER BY season_no, CASE stage WHEN 'r16' THEN 0 WHEN 'qf' THEN 1 WHEN 'sf' THEN 2 ELSE 3 END, gi`)).rows;
-  for (const m of wcm) {
-    const a = N[m.a.country], b = N[m.b.country];
-    if (!a || !b) continue;
-    const w = m.result.winner;
-    natUpd(a, b, w === null ? 0.5 : w === m.a.name ? 1 : 0, 40);
-  }
-  const clubList = Object.values(R).sort((x, y) => y.rating - x.rating || x.country.localeCompare(y.country) || x.slot - y.slot)
-    .map((x, i) => ({ rank: i + 1, country: x.country, slot: x.slot, name: x.name, boss: x.boss, rating: Math.round(x.rating), p: x.p, w: x.w, l: x.l, t: x.t }));
+    `SELECT season_no, stage, gi, a, b, result FROM cup_matches WHERE comp='wc' ORDER BY season_no, stage, gi`)).rows;
+  wcm.forEach((m, i) => natEvents.push({
+    at: seq(m.season_no, 500 + (STAGE[m.stage] || 0) * 10), i: tours.length + i,
+    ak: m.a.country, bk: m.b.country, an: m.a.name, bn: m.b.name, result: m.result
+  }));
+
+  // ONE BANKED CARD, MARKED FOR BOTH SIDES. The mark is the match rating and
+  // nothing else - it says how well a side played, not whether it won, which is
+  // what the game's own ratings tab has always said. Won-lost-tied is kept
+  // alongside because a manager wants to see it, but it does not move the mark.
+  const mark = (side, ev) => {
+    const a = side[ev.ak], b = side[ev.bk];
+    if (!a || !b) return;
+    const tr = matchRating(ev.result);
+    const an = ev.an || a.name || '', bn = ev.bn || b.name || '';
+    const ra = tr[an], rb = tr[bn];
+    if (!ra || !rb) return;                      // a card whose sides we cannot name
+    a.hist.push(ra.rating); b.hist.push(rb.rating);
+    a.p++; b.p++;
+    const w = (ev.result && ev.result.winner) || null;
+    if (w == null) { a.t++; b.t++; } else if (w === an) { a.w++; b.l++; } else { b.w++; a.l++; }
+  };
+  // the query order breaks every tie, so the sort is total and the ladder is
+  // the same figure however the rows came back
+  const byClock = (x, y) => x.at - y.at || x.i - y.i;
+  events.sort(byClock).forEach(ev => mark(R, ev));
+  natEvents.sort(byClock).forEach(ev => mark(N, ev));
+
+  const rate = x => ladderRating(x.hist);
+  const clubList = Object.values(R)
+    .map(x => Object.assign({}, x, { rating: rate(x), form: x.hist.slice(-RANK_WINDOW) }))
+    .sort((x, y) => y.rating - x.rating || y.p - x.p || x.country.localeCompare(y.country) || x.slot - y.slot)
+    .map((x, i) => ({ rank: i + 1, country: x.country, slot: x.slot, name: x.name, boss: x.boss,
+                      rating: x.rating, form: x.form, p: x.p, w: x.w, l: x.l, t: x.t }));
+  // THE NATIONS ARE COMPARED ON STRENGTH, NOT FORM. Ten clubs' three-match form
+  // averages straight back to fifty, so the club ladder's window is the wrong
+  // lens on a whole league: here every mark a nation's clubs have ever earned
+  // counts, and the same for its XI. Form for a club, a body of work for a country.
   const countries = countryRows.map(c => {
     const mine = Object.values(R).filter(x => x.country === c.id);
-    const avg = mine.reduce((s, x) => s + x.rating, 0) / (mine.length || 1);
-    return { id: c.id, name: c.name, clubRating: Math.round(avg), natRating: Math.round(N[c.id].rating), natP: N[c.id].p };
+    const marks = mine.reduce((a, x) => a.concat(x.hist), []);
+    return {
+      id: c.id, name: c.name,
+      clubRating: strengthRating(marks), clubP: marks.length,
+      natRating: strengthRating(N[c.id].hist), natP: N[c.id].p
+    };
   }).sort((a, b) => b.clubRating - a.clubRating || b.natRating - a.natRating || a.id.localeCompare(b.id))
     .map((c, i) => ({ rank: i + 1, ...c }));
-  return { clubs: clubList, countries, generatedAtDay: dayIx(now) };
+  return { clubs: clubList, countries, window: RANK_WINDOW, base: RANK_BASE, generatedAtDay: dayIx(now) };
 }
 
 // the honours book: an append-only memory of every crown. League snapshots

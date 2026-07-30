@@ -399,12 +399,21 @@
   function foMrFantasy(rec) {
     var inn = (rec && (rec.innings || rec.scorecard)) || [];
     inn = inn.filter(Boolean);
+    // The marks come first: each side's units out of ten and, above them, the
+    // TEAM MATCH RATING out of a hundred - the number the world rankings read.
+    // The margin is half of that mark, so the result has to come along too.
+    var rat = "";
+    try {
+      if (typeof window.foRatingsPanelHTML === "function") {
+        rat = window.foRatingsPanelHTML(inn, (rec && rec.result) || null) || "";
+      }
+    } catch (eR) {}
     var html = "";
     try { if (typeof window.foFantasyPanel === "function") html = window.foFantasyPanel(inn); } catch (e) {}
     if (!html || /No fantasy data/.test(html)) {
-      return foMrNone("No fantasy points for this match", "Its innings were not recorded in enough detail to score.");
+      return rat || foMrNone("No fantasy points for this match", "Its innings were not recorded in enough detail to score.");
     }
-    return html;
+    return rat + html;
   }
 
   function foMrNone(title, line) {
