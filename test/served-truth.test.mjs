@@ -255,3 +255,96 @@ test('a bare foreign name is not guessed at', () => {
   assert.equal(ctx.foFindAnyPlayer('', 'pak', 4), null);
   assert.equal(ctx.foFindAnyPlayer(null), null);
 });
+
+/* ---- THE SQUAD IS THE WORLD'S, SIGNED IN OR NOT ---------------------------
+ * The eleven a manager saw was the eleven his BROWSER made up at founding -
+ * men who play for no club on earth - and it stayed that way through every
+ * login. The served squad reached the device down one road only, world_my_
+ * status, which is an authenticated call; a browser holding a claim but no
+ * live session therefore adopted nothing, ever, and painted its own invention
+ * back at him forever.
+ *
+ * world_squads is public, exactly like the standings. These lock the pull to
+ * that road: no session in any of them, and the men it hands over are men the
+ * device could not have invented.                                          */
+function stubSquadFetch(rows, seenUrls) {
+  ctx.fetch = (url, opts) => {
+    if (seenUrls) seenUrls.push({ url, opts });
+    return Promise.resolve({ ok: true, json: () => Promise.resolve(rows) });
+  };
+}
+const XV = names => names.map((name, i) => ({
+  name, age: 25 + (i % 7), rating: 80 - i, batting: 60, bowling: 40,
+  keeper: i === 3, role: 'opener', type: 'none'
+}));
+
+test('a device with a claim and no session asks the world for its squad', async () => {
+  const seen = [];
+  stubSquadFetch([{ name: 'Mashed Potatoes', players: XV(
+    ['Noah Hale', 'Tommy Bickley', 'Oscar Wright', 'Harry Prentice', 'Alfie Marsh',
+     'George Ashby', 'Freddie Lang', 'Charlie Wood', 'Jack Fenner', 'Sam Rowntree',
+     'Ollie Deakin']) }], seen);
+  ctx.localStorage.setItem('fo_world_claim',
+    JSON.stringify({ country: 'sco', slot: 5, club: 'Mashed Potatoes' }));
+  run(`window.__foWorldClaim = { country: 'sco', slot: 5, club: 'Mashed Potatoes' };`);
+
+  const got = [];
+  run(`window.__foAdoptWorldSquad = function (st) { __adopted.push(st); return true; };`,
+      ctx.__adopted = got);
+  ctx.__foPullServedSquad(true);
+  await new Promise(r => setImmediate(r));
+
+  assert.equal(seen.length, 1, 'exactly one ask');
+  assert.match(seen[0].url, /\/rest\/v1\/world_squads\?/, 'the public squads view');
+  assert.match(seen[0].url, /country_id=eq\.sco/);
+  assert.match(seen[0].url, /slot=eq\.5/);
+  assert.ok(seen[0].opts && seen[0].opts.headers && seen[0].opts.headers.apikey,
+    'with the anon key the standings already use - and NO bearer token, ' +
+    'because being logged in is not what makes a squad public');
+  assert.equal(seen[0].opts.headers.Authorization, undefined);
+
+  assert.equal(got.length, 1, 'and it hands the men to the existing adopter');
+  assert.equal(got[0].claim.country, 'sco');
+  assert.equal(got[0].claim.slot, 5);
+  assert.equal(got[0].squad[0].name, 'Noah Hale');
+  assert.equal(got[0].squad.length, 11);
+});
+
+test('half a squad is not a squad: nothing is adopted from a short answer', async () => {
+  const got = []; run(`window.__foAdoptWorldSquad = function (st) { __adopted2.push(st); };`,
+    ctx.__adopted2 = got);
+  for (const rows of [[], null, [{ name: 'X', players: XV(['A', 'B', 'C']) }],
+                      [{ name: 'X', players: null }]]) {
+    stubSquadFetch(rows);
+    ctx.__foPullServedSquad(true);
+    await new Promise(r => setImmediate(r));
+  }
+  assert.equal(got.length, 0, 'an eleven or nothing - never a half-emptied club');
+});
+
+test('a failed ask does not cost the device the rest of its session', async () => {
+  const got = []; run(`window.__foAdoptWorldSquad = function (st) { __adopted3.push(st); };`,
+    ctx.__adopted3 = got);
+  ctx.fetch = () => { throw new Error('offline'); };
+  ctx.__foPullServedSquad(true);
+  await new Promise(r => setImmediate(r));
+  assert.equal(got.length, 0);
+
+  // the next ask must still go out: one bad minute used to wedge the in-flight
+  // flag on and silence every later attempt
+  stubSquadFetch([{ name: 'Mashed Potatoes', players: XV(
+    ['Ada', 'Bea', 'Cal', 'Dai', 'Eve', 'Fay', 'Gus', 'Hal', 'Ivy', 'Jed', 'Kit']) }]);
+  ctx.__foPullServedSquad(true);
+  await new Promise(r => setImmediate(r));
+  assert.equal(got.length, 1, 'the world is asked again');
+  assert.equal(got[0].squad.length, 11);
+});
+
+test('no claim, no ask: a solo device is not made to talk to the world', async () => {
+  ctx.localStorage.removeItem('fo_world_claim');
+  run(`window.__foWorldClaim = null;`);
+  let asked = 0; ctx.fetch = () => { asked++; return new Promise(() => {}); };
+  ctx.__foPullServedSquad(true);
+  await new Promise(r => setImmediate(r));
+  assert.equal(asked, 0);
+});

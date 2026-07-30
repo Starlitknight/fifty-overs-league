@@ -300,6 +300,59 @@
   window.foFindAnyPlayer = findAny;
   window.__foServed.findAny = findAny;
 
+  // ---- THE SQUAD IS THE WORLD'S, SIGNED IN OR NOT ---------------------------
+  // The served squad reached this device down one road only: world_my_status,
+  // which is an authenticated call. So a browser holding a claim but no live
+  // session never adopted anything, and went on showing the ELEVEN IT MADE UP
+  // AT FOUNDING - men who exist in no club on earth - for as long as it was
+  // left alone. That is the same bug as the league table reading the old blob,
+  // wearing different clothes.
+  //
+  // world_squads is public, exactly like the standings: any device may read any
+  // club's men. So the squad is fetched the way the table is, needs no login,
+  // and is adopted through the existing path - which keeps the club-ready wait,
+  // the stale-lineup guard and the repaint that all belong to it.
+  var SQ_AT = 0, SQ_BUSY = 0;
+  function pullSquad(force) {
+    var c = claim(); if (!c || !c.country || c.slot == null) return;
+    if (SQ_BUSY) return;
+    if (!force && SQ_AT && Date.now() - SQ_AT < 120000) return;
+    SQ_BUSY = 1; SQ_AT = Date.now();
+    var url = "https://egaipdksvztqqgouriyc.supabase.co/rest/v1/world_squads" +
+      "?country_id=eq." + encodeURIComponent(c.country) + "&slot=eq." + (c.slot | 0) +
+      "&select=name,players";
+    // a throw here must not wedge the flag on: a device that failed once has to
+    // be free to ask again on the next focus, or one bad minute costs it the
+    // squad for the rest of the session
+    try {
+      fetch(url, { headers: { apikey: "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc" } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (rows) {
+          SQ_BUSY = 0;
+          var row = rows && rows[0];
+          if (!row || !Array.isArray(row.players) || row.players.length < 11) return;
+          // hand it to the adopter in the shape it already understands, so the
+          // careful parts - waiting for the club, tearing up a lineup that names
+          // men who have gone, saving, repainting - are not written twice
+          try {
+            if (window.__foAdoptWorldSquad) {
+              window.__foAdoptWorldSquad({
+                claim: { country: c.country, slot: c.slot | 0, club: row.name || c.club },
+                squad: row.players
+              });
+            }
+          } catch (eA) {}
+        }, function () { SQ_BUSY = 0; })
+        .catch(function () { SQ_BUSY = 0; });
+    } catch (eF) { SQ_BUSY = 0; }
+  }
+  window.__foPullServedSquad = pullSquad;
+  try {
+    pullSquad(true);
+    // and again when the page is come back to, in case a round has been played
+    window.addEventListener("focus", function () { try { pullSquad(false); } catch (e) {} });
+  } catch (eP) {}
+
   // ---- THE SWITCH -----------------------------------------------------------
   // leagueRows() is the table every surface in the game asks for. Replacing it
   // once here means no page can accidentally show the local blob's table again,
