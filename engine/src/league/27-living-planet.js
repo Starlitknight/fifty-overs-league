@@ -121,16 +121,139 @@
     { slot: 8, name: "Durham", city: "Durham" },
     { slot: 9, name: "Somerset", city: "Taunton" }
   ];
+  // ==== WHO EACH SIDE IS, AND HOW GOOD ===================================
+  //
+  // Two facts about every club in the world, decided in ONE place because both
+  // hosts read them: the phones through sidesOf(), and the World Service
+  // through host.worldConfig() when it founds or reseeds a squad. If these ever
+  // forked, the league a manager reads and the league the umpire plays would be
+  // different leagues.
+  //
+  // THE IDENTITY is an engine archetype, and it is the one the game already
+  // describes. Every club the Circuit gave a character to keeps that character:
+  // Leeds are dour openers, so they are The Stonewall; Trent Bridge swings it,
+  // so Nottingham are The Pace Battery; Cape Town catch everything, so they are
+  // The Safe Hands. A club the game never wrote a line about takes its NATION's
+  // cricket instead, from a palette that cannot contradict it - no spin circus
+  // in South Africa, no pace battery in Sri Lanka.
+  //
+  // THE STANDING is a strength multiplier on the squad budget, and the rule the
+  // world now obeys is simple: THE FLAGSHIP IS ALWAYS THE STRONGEST SIDE IN ITS
+  // LEAGUE. It sits clear of the best of the rest, and the other nine spread
+  // down a fixed ladder - the same ladder in every nation, dealt in an order
+  // that is a pure function of the nation, so leagues have the same shape and
+  // the same standard. What separates two leagues is then how they PLAY, which
+  // is what the world rankings are for; nothing is handicapped at birth.
+  // The flagship's gap is deliberately wide, and it has to be. The budget these
+  // numbers steer is not the rating a squad ends up displaying - composition
+  // moves it a few per cent either way - so a two-point edge is inside the noise
+  // and a flagship can come out second. Fifteen per cent clear cannot. Nine
+  // rungs three to four points apart, for the same reason: an ordered league
+  // instead of ten sides in a coin-toss.
+  var FO_BOSS_STR = 1.20;
+  var FO_STR_LADDER = [1.04, 1.00, 0.97, 0.94, 0.91, 0.88, 0.85, 0.82, 0.80];
+
+  // England is named for its counties, not its cities (and three of them play
+  // in London), so its identities are seated by slot.
+  var ENG_ARCH = ["rock", "rock", "express", "blade", "greybeard", "engine", "express", "miser", "express", "blade"];
+
+  // The clubs the game gave a character to. Keyed by city, so a named side
+  // carries its identity to whichever slot its city lands in.
+  var CITY_ARCH = {
+    eng: { London: "rock", Leeds: "rock", Canterbury: "miser", Nottingham: "express", Manchester: "express" },
+    ire: { Cork: "express", Dublin: "miser", Belfast: "rock" },
+    ned: { Utrecht: "miser", Amsterdam: "engine", Rotterdam: "miser" },
+    win: { "Port of Spain": "finisher", Bridgetown: "blade", Kingston: "finisher" },
+    rsa: { Durban: "express", Johannesburg: "express", "Cape Town": "gloveman" },
+    // the boy who is afraid of nothing leads with the bat, not from the academy:
+    // The Academy archetype is the league's YOUNGEST squad and deliberately its
+    // lightest, which is no way to seat a flagship. His youth reads through his
+    // captaincy instead, and Harare play like cavaliers.
+    zim: { Harare: "blade", Bulawayo: "rock", "Victoria Falls": "blade" },
+    aus: { Melbourne: "blade", Perth: "engine", Sydney: "blade", Brisbane: "express", Adelaide: "finisher" },
+    nzl: { Auckland: "gloveman", Christchurch: "miser", Wellington: "gloveman" },
+    slk: { Kandy: "wizard", Colombo: "wizard", Galle: "blade" },
+    sub: { Nagpur: "wizard", Mumbai: "wizard", Kolkata: "gloveman", Dharamshala: "express", Chennai: "wizard" },
+    pak: { Lahore: "express", Karachi: "express", Peshawar: "express", Sharjah: "miser" },
+    afg: { Kandahar: "wizard", Kabul: "wizard", Jalalabad: "finisher" },
+    bgd: { Sylhet: "wizard" },
+    nep: { Kathmandu: "wizard" },
+    sco: { Edinburgh: "engine" },
+    wal: { Cardiff: "express" },
+    ken: { Nairobi: "finisher" },
+    usa: { "Grand Prairie": "finisher" },
+    can: { "King City": "gloveman" }
+  };
+
+  // A nation's own cricket, for the clubs nobody wrote a line about. First entry
+  // is the nation's truest style; the rest are the company it keeps.
+  var NAT_ARCH = {
+    eng: ["rock", "express", "greybeard", "miser", "engine"],
+    ire: ["engine", "miser", "rock", "express", "gloveman"],
+    ned: ["miser", "engine", "gloveman", "rock", "blade"],
+    win: ["finisher", "blade", "express", "engine", "gloveman"],
+    rsa: ["express", "gloveman", "blade", "miser", "engine"],
+    zim: ["prodigy", "engine", "rock", "blade", "miser"],
+    aus: ["blade", "express", "finisher", "engine", "gloveman"],
+    nzl: ["gloveman", "miser", "engine", "rock", "express"],
+    slk: ["wizard", "blade", "engine", "miser", "gloveman"],
+    sub: ["wizard", "gloveman", "blade", "express", "engine"],
+    pak: ["express", "miser", "wizard", "finisher", "blade"],
+    afg: ["wizard", "finisher", "express", "blade", "engine"],
+    bgd: ["wizard", "miser", "engine", "rock", "gloveman"],
+    nep: ["prodigy", "wizard", "blade", "engine", "finisher"],
+    sco: ["rock", "engine", "miser", "express", "greybeard"],
+    wal: ["engine", "express", "rock", "blade", "miser"],
+    ken: ["finisher", "engine", "blade", "gloveman", "express"],
+    usa: ["blade", "finisher", "express", "gloveman", "engine"],
+    can: ["gloveman", "engine", "miser", "rock", "blade"]
+  };
+  function archOf(rid, slot, city) {
+    // England first and by SLOT: three of its counties play in London, so a
+    // city key would hand Surrey and Middlesex the flagship's identity.
+    if (rid === "eng") return ENG_ARCH[slot] || ENG_ARCH[0];
+    var named = (CITY_ARCH[rid] || {})[city];
+    if (named) return named;
+    var pal = NAT_ARCH[rid] || ["engine"];
+    return pal[h32(rid + "|arch|" + slot) % pal.length];
+  }
+  // THE LADDER, dealt so that the sides the game has written about stand above
+  // the ones it has not. A club with a described character is one a supporter has
+  // heard of, so Mumbai and Kolkata take the high rungs and the filler CCs take
+  // the low ones; within each group the order is a pure function of the nation,
+  // so the second-best side is a different slot in every league.
+  function strOf(rid, slot) {
+    if (slot === 0) return FO_BOSS_STR;
+    var named = CITY_ARCH[rid] || {};
+    var known = {};
+    if (rid !== "eng") {
+      var cities = (cx().cities(rid) || []).concat(EXTRA_CITY[rid] || []);
+      for (var s2 = 1; s2 <= 9; s2++) if (named[cities[s2]]) known[s2] = 1;
+    }
+    var order = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(function (a, b) {
+      var ka = known[a] ? 0 : 1, kb = known[b] ? 0 : 1;
+      if (ka !== kb) return ka - kb;
+      return rnd01(rid + "|rank|" + a) - rnd01(rid + "|rank|" + b);
+    });
+    var rank = order.indexOf(slot);
+    return FO_STR_LADDER[rank < 0 ? 4 : rank];
+  }
+
   function sidesOf(rid) {
-    if (rid === "eng") return ENG_SIDES.map(function (s0) { return { slot: s0.slot, boss: !!s0.boss, name: s0.name, city: s0.city, str: s0.boss ? 1.07 : 0.9 }; });
+    if (rid === "eng") return ENG_SIDES.map(function (s0) {
+      return { slot: s0.slot, boss: !!s0.boss, name: s0.name, city: s0.city,
+        arch: archOf("eng", s0.slot, s0.city), str: strOf("eng", s0.slot) };
+    });
     var r = regionById(rid); if (!r) return [];
     var cities = (cx().cities(rid) || []).concat(EXTRA_CITY[rid] || []);
     var bc = null; (r.clubs || []).forEach(function (c) { if (c.boss) bc = c; });
-    var multByCity = {}; (r.clubs || []).forEach(function (c) { if (!c.boss && c.city) multByCity[c.city] = c.mult; });
-    var out = [{ slot: 0, boss: true, name: bc ? bc.nm : (r.nm + " XI"), city: (bc && bc.city) || cities[0] || r.nm, str: 1.07 }];
+    var bossCity = (bc && bc.city) || cities[0] || r.nm;
+    var out = [{ slot: 0, boss: true, name: bc ? bc.nm : (r.nm + " XI"), city: bossCity,
+      arch: archOf(rid, 0, bossCity), str: strOf(rid, 0) }];
     for (var s = 1; s <= 9; s++) {
       var ct = cities[s] || (r.nm + " " + s);
-      out.push({ slot: s, boss: false, name: ct + " CC", city: ct, str: multByCity[ct] || (0.86 + rnd01(rid + "|st|" + ct) * 0.1) });
+      out.push({ slot: s, boss: false, name: ct + " CC", city: ct,
+        arch: archOf(rid, s, ct), str: strOf(rid, s) });
     }
     return out;
   }

@@ -9912,7 +9912,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260730-1007-288e06";
+  var FO_BUILD = "20260730-1303-dac370";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -11831,8 +11831,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // shaped by the manager's composition (counts INCLUDE the captain).
   // Deterministic from (seed, country, archId, captId, comp) - every client
   // and the resolver agree exactly.
-  function foGenArchetypeSquad(seed, country, archId, captId, comp) {
+  // `strength` (optional, default 1) scales the squad's whole standing. A human's
+  // founding squad never passes it, so every manager still starts on the one
+  // shared budget - the balance the archetypes were tuned against. The World
+  // Service passes each bot club's standing from the planet's own table, which is
+  // how a flagship comes out the strongest side in its league.
+  function foGenArchetypeSquad(seed, country, archId, captId, comp, strength) {
     var A = foArchById(archId);
+    var STR = (typeof strength === "number" && isFinite(strength) && strength > 0)
+      ? Math.max(0.7, Math.min(1.4, strength)) : 1;
     var CF = foCaptFlavourById(captId || "general");
     var rnd = window.rng(foHash32(String(seed) + "|" + archId));
     var firsts = {}, lasts = {};
@@ -11876,6 +11883,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       firsts[(sp[0] || "").toLowerCase()] = 1;
       lasts[((sp.slice(1).join(" ") || sp[0]) + "").toLowerCase()] = 1;
     })();
+    // A STRONGER CLUB HAS A STRONGER CAPTAIN. The budget pass below deliberately
+    // leaves the captain's card alone, and the crowding rules trim any teammate
+    // who gets near him - so lifting the budget without lifting HIM would just
+    // push the squad into his ceiling and stop. He moves by less than the budget
+    // does (a good club is not one man), but he does move.
+    if (STR !== 1) {
+      var fCap = Math.pow(STR, 0.55);
+      for (var kC in starter.skills) starter.skills[kC] = Math.max(4, Math.min(96, Math.round(starter.skills[kC] * fCap)));
+      jsDerive(starter);
+    }
     players.push(starter);
     slots.forEach(function (sl) { players.push(foQsPlayer({ role: sl.role, ages: A.ages, q: sl.q }, country, rnd, firsts, lasts)); });
     var qOf = {}; qOf[starter.name] = 0.97 * (CF.q || 1); slots.forEach(function (sl, i5) { qOf[players[i5 + 1].name] = sl.q; });
@@ -11962,8 +11979,46 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         }
       });
     };
-    capTeammates();
-    var target = FO_QS_T * (A.budgetMult || 1);
+    // WHO GIVES WAY, THE SQUAD OR THE CAPTAIN. capTeammates() keeps the captain
+    // on top by trimming anyone who crowds him - right for a founding squad,
+    // where his card is the promise the manager was shown. It is wrong for a
+    // world club: the captain's FLAVOUR then decides the club's level, because
+    // every teammate is capped at his rating. That is how a flagship led by a
+    // twenty-four-year-old came out weaker than the ninth side in its league,
+    // whose thirty-year-old general rated 65,000 on his own.
+    //
+    // So when a standing is stated, the standing decides the level and the
+    // captain is lifted to the front of his own side instead of the side being
+    // dragged back to him. He still leads; he no longer caps.
+    var capLead = function () {
+      var bestR = 0, bestV = 0;
+      players.forEach(function (p) {
+        if (p === starter) return;
+        if ((p.rating || 0) > bestR) bestR = p.rating || 0;
+        var v = foSkillValue(p); if (v > bestV) bestV = v;
+      });
+      for (var gL = 0; gL < 16; gL++) {
+        if ((starter.rating || 0) >= bestR * 1.04 && foSkillValue(starter) >= bestV * 1.05) break;
+        var moved = false;
+        for (var kL in starter.skills) {
+          var was = starter.skills[kL];
+          var now = Math.max(4, Math.min(96, Math.ceil(was * 1.03)));
+          if (now !== was) moved = true;
+          starter.skills[kL] = now;
+        }
+        if (!moved) break;              // already at the ceiling; nothing more to give
+        jsDerive(starter);
+      }
+    };
+    var settleLead = (STR === 1) ? capTeammates : capLead;
+    settleLead();
+    // When a STANDING is stated, it IS the standing. The archetype's own budget
+    // dial (spin costs a little more, a stonewall a little less) is a balance
+    // knob for the one shared budget every manager founds on - so it must not
+    // also decide how good a world club is, or an all-rounder side on the fourth
+    // rung would out-rate its own flagship. It still shapes the squad; it no
+    // longer sets its level.
+    var target = FO_QS_T * (STR === 1 ? (A.budgetMult || 1) : STR);
     for (var itn = 0; target > 0 && itn < 6; itn++) {
       var S = foQsSquadStrength(players);
       var f = target / Math.max(1, S);   // metric is linear in skills
@@ -11974,7 +12029,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         for (var k2 in p.skills) p.skills[k2] = Math.max(4, Math.min(96, Math.round(p.skills[k2] * f)));
         if (foPureBowler(p)) foApplyBowlerBat(p); else jsDerive(p);
       });
-      capTeammates();
+      settleLead();
     }
     // fees: value-proportional inside the squad, on a size-priced schedule.
     // The same composition costs every archetype the same, and every extra
@@ -34973,16 +35028,139 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     { slot: 8, name: "Durham", city: "Durham" },
     { slot: 9, name: "Somerset", city: "Taunton" }
   ];
+  // ==== WHO EACH SIDE IS, AND HOW GOOD ===================================
+  //
+  // Two facts about every club in the world, decided in ONE place because both
+  // hosts read them: the phones through sidesOf(), and the World Service
+  // through host.worldConfig() when it founds or reseeds a squad. If these ever
+  // forked, the league a manager reads and the league the umpire plays would be
+  // different leagues.
+  //
+  // THE IDENTITY is an engine archetype, and it is the one the game already
+  // describes. Every club the Circuit gave a character to keeps that character:
+  // Leeds are dour openers, so they are The Stonewall; Trent Bridge swings it,
+  // so Nottingham are The Pace Battery; Cape Town catch everything, so they are
+  // The Safe Hands. A club the game never wrote a line about takes its NATION's
+  // cricket instead, from a palette that cannot contradict it - no spin circus
+  // in South Africa, no pace battery in Sri Lanka.
+  //
+  // THE STANDING is a strength multiplier on the squad budget, and the rule the
+  // world now obeys is simple: THE FLAGSHIP IS ALWAYS THE STRONGEST SIDE IN ITS
+  // LEAGUE. It sits clear of the best of the rest, and the other nine spread
+  // down a fixed ladder - the same ladder in every nation, dealt in an order
+  // that is a pure function of the nation, so leagues have the same shape and
+  // the same standard. What separates two leagues is then how they PLAY, which
+  // is what the world rankings are for; nothing is handicapped at birth.
+  // The flagship's gap is deliberately wide, and it has to be. The budget these
+  // numbers steer is not the rating a squad ends up displaying - composition
+  // moves it a few per cent either way - so a two-point edge is inside the noise
+  // and a flagship can come out second. Fifteen per cent clear cannot. Nine
+  // rungs three to four points apart, for the same reason: an ordered league
+  // instead of ten sides in a coin-toss.
+  var FO_BOSS_STR = 1.20;
+  var FO_STR_LADDER = [1.04, 1.00, 0.97, 0.94, 0.91, 0.88, 0.85, 0.82, 0.80];
+
+  // England is named for its counties, not its cities (and three of them play
+  // in London), so its identities are seated by slot.
+  var ENG_ARCH = ["rock", "rock", "express", "blade", "greybeard", "engine", "express", "miser", "express", "blade"];
+
+  // The clubs the game gave a character to. Keyed by city, so a named side
+  // carries its identity to whichever slot its city lands in.
+  var CITY_ARCH = {
+    eng: { London: "rock", Leeds: "rock", Canterbury: "miser", Nottingham: "express", Manchester: "express" },
+    ire: { Cork: "express", Dublin: "miser", Belfast: "rock" },
+    ned: { Utrecht: "miser", Amsterdam: "engine", Rotterdam: "miser" },
+    win: { "Port of Spain": "finisher", Bridgetown: "blade", Kingston: "finisher" },
+    rsa: { Durban: "express", Johannesburg: "express", "Cape Town": "gloveman" },
+    // the boy who is afraid of nothing leads with the bat, not from the academy:
+    // The Academy archetype is the league's YOUNGEST squad and deliberately its
+    // lightest, which is no way to seat a flagship. His youth reads through his
+    // captaincy instead, and Harare play like cavaliers.
+    zim: { Harare: "blade", Bulawayo: "rock", "Victoria Falls": "blade" },
+    aus: { Melbourne: "blade", Perth: "engine", Sydney: "blade", Brisbane: "express", Adelaide: "finisher" },
+    nzl: { Auckland: "gloveman", Christchurch: "miser", Wellington: "gloveman" },
+    slk: { Kandy: "wizard", Colombo: "wizard", Galle: "blade" },
+    sub: { Nagpur: "wizard", Mumbai: "wizard", Kolkata: "gloveman", Dharamshala: "express", Chennai: "wizard" },
+    pak: { Lahore: "express", Karachi: "express", Peshawar: "express", Sharjah: "miser" },
+    afg: { Kandahar: "wizard", Kabul: "wizard", Jalalabad: "finisher" },
+    bgd: { Sylhet: "wizard" },
+    nep: { Kathmandu: "wizard" },
+    sco: { Edinburgh: "engine" },
+    wal: { Cardiff: "express" },
+    ken: { Nairobi: "finisher" },
+    usa: { "Grand Prairie": "finisher" },
+    can: { "King City": "gloveman" }
+  };
+
+  // A nation's own cricket, for the clubs nobody wrote a line about. First entry
+  // is the nation's truest style; the rest are the company it keeps.
+  var NAT_ARCH = {
+    eng: ["rock", "express", "greybeard", "miser", "engine"],
+    ire: ["engine", "miser", "rock", "express", "gloveman"],
+    ned: ["miser", "engine", "gloveman", "rock", "blade"],
+    win: ["finisher", "blade", "express", "engine", "gloveman"],
+    rsa: ["express", "gloveman", "blade", "miser", "engine"],
+    zim: ["prodigy", "engine", "rock", "blade", "miser"],
+    aus: ["blade", "express", "finisher", "engine", "gloveman"],
+    nzl: ["gloveman", "miser", "engine", "rock", "express"],
+    slk: ["wizard", "blade", "engine", "miser", "gloveman"],
+    sub: ["wizard", "gloveman", "blade", "express", "engine"],
+    pak: ["express", "miser", "wizard", "finisher", "blade"],
+    afg: ["wizard", "finisher", "express", "blade", "engine"],
+    bgd: ["wizard", "miser", "engine", "rock", "gloveman"],
+    nep: ["prodigy", "wizard", "blade", "engine", "finisher"],
+    sco: ["rock", "engine", "miser", "express", "greybeard"],
+    wal: ["engine", "express", "rock", "blade", "miser"],
+    ken: ["finisher", "engine", "blade", "gloveman", "express"],
+    usa: ["blade", "finisher", "express", "gloveman", "engine"],
+    can: ["gloveman", "engine", "miser", "rock", "blade"]
+  };
+  function archOf(rid, slot, city) {
+    // England first and by SLOT: three of its counties play in London, so a
+    // city key would hand Surrey and Middlesex the flagship's identity.
+    if (rid === "eng") return ENG_ARCH[slot] || ENG_ARCH[0];
+    var named = (CITY_ARCH[rid] || {})[city];
+    if (named) return named;
+    var pal = NAT_ARCH[rid] || ["engine"];
+    return pal[h32(rid + "|arch|" + slot) % pal.length];
+  }
+  // THE LADDER, dealt so that the sides the game has written about stand above
+  // the ones it has not. A club with a described character is one a supporter has
+  // heard of, so Mumbai and Kolkata take the high rungs and the filler CCs take
+  // the low ones; within each group the order is a pure function of the nation,
+  // so the second-best side is a different slot in every league.
+  function strOf(rid, slot) {
+    if (slot === 0) return FO_BOSS_STR;
+    var named = CITY_ARCH[rid] || {};
+    var known = {};
+    if (rid !== "eng") {
+      var cities = (cx().cities(rid) || []).concat(EXTRA_CITY[rid] || []);
+      for (var s2 = 1; s2 <= 9; s2++) if (named[cities[s2]]) known[s2] = 1;
+    }
+    var order = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(function (a, b) {
+      var ka = known[a] ? 0 : 1, kb = known[b] ? 0 : 1;
+      if (ka !== kb) return ka - kb;
+      return rnd01(rid + "|rank|" + a) - rnd01(rid + "|rank|" + b);
+    });
+    var rank = order.indexOf(slot);
+    return FO_STR_LADDER[rank < 0 ? 4 : rank];
+  }
+
   function sidesOf(rid) {
-    if (rid === "eng") return ENG_SIDES.map(function (s0) { return { slot: s0.slot, boss: !!s0.boss, name: s0.name, city: s0.city, str: s0.boss ? 1.07 : 0.9 }; });
+    if (rid === "eng") return ENG_SIDES.map(function (s0) {
+      return { slot: s0.slot, boss: !!s0.boss, name: s0.name, city: s0.city,
+        arch: archOf("eng", s0.slot, s0.city), str: strOf("eng", s0.slot) };
+    });
     var r = regionById(rid); if (!r) return [];
     var cities = (cx().cities(rid) || []).concat(EXTRA_CITY[rid] || []);
     var bc = null; (r.clubs || []).forEach(function (c) { if (c.boss) bc = c; });
-    var multByCity = {}; (r.clubs || []).forEach(function (c) { if (!c.boss && c.city) multByCity[c.city] = c.mult; });
-    var out = [{ slot: 0, boss: true, name: bc ? bc.nm : (r.nm + " XI"), city: (bc && bc.city) || cities[0] || r.nm, str: 1.07 }];
+    var bossCity = (bc && bc.city) || cities[0] || r.nm;
+    var out = [{ slot: 0, boss: true, name: bc ? bc.nm : (r.nm + " XI"), city: bossCity,
+      arch: archOf(rid, 0, bossCity), str: strOf(rid, 0) }];
     for (var s = 1; s <= 9; s++) {
       var ct = cities[s] || (r.nm + " " + s);
-      out.push({ slot: s, boss: false, name: ct + " CC", city: ct, str: multByCity[ct] || (0.86 + rnd01(rid + "|st|" + ct) * 0.1) });
+      out.push({ slot: s, boss: false, name: ct + " CC", city: ct,
+        arch: archOf(rid, s, ct), str: strOf(rid, s) });
     }
     return out;
   }
@@ -38137,10 +38315,21 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var boss = (r.clubs || []).filter(function (c) { return c.boss; })[0];
     return { nat: (r.nats && r.nats[0]) || r.nm, arch: r.arch || "rock", capt: (boss && boss.capt) || "talisman" };
   }
+  // THE ELEVEN THE UMPIRE BANKED, derived again on this device. Every argument
+  // has to be the one the World Service used or the replay is a different match
+  // played by different men - which is exactly what happened when clubs stopped
+  // sharing one archetype: this asked for the NATION's identity on the shared
+  // budget while the umpire generated the club's own identity at the club's own
+  // standing. The side record from the planet's table carries both.
   function serverSquad(rid, slot) {
     var cfg = regionCfg(rid); if (!cfg) return null;
     try {
-      var g = __foGenArchetypeSquad("world1|" + rid + "|" + slot, cfg.nat, cfg.arch, slot === 0 ? cfg.capt : "general");
+      var sd = null;
+      try {
+        (window.__foPlanet.sidesOf(rid) || []).forEach(function (x) { if (x.slot === slot) sd = x; });
+      } catch (eS) {}
+      var g = __foGenArchetypeSquad("world1|" + rid + "|" + slot, cfg.nat,
+        (sd && sd.arch) || cfg.arch, slot === 0 ? cfg.capt : "general", null, (sd && sd.str) || 1);
       return (g && g.players) || null;
     } catch (e) { return null; }
   }

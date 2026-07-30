@@ -91,10 +91,21 @@
     var boss = (r.clubs || []).filter(function (c) { return c.boss; })[0];
     return { nat: (r.nats && r.nats[0]) || r.nm, arch: r.arch || "rock", capt: (boss && boss.capt) || "talisman" };
   }
+  // THE ELEVEN THE UMPIRE BANKED, derived again on this device. Every argument
+  // has to be the one the World Service used or the replay is a different match
+  // played by different men - which is exactly what happened when clubs stopped
+  // sharing one archetype: this asked for the NATION's identity on the shared
+  // budget while the umpire generated the club's own identity at the club's own
+  // standing. The side record from the planet's table carries both.
   function serverSquad(rid, slot) {
     var cfg = regionCfg(rid); if (!cfg) return null;
     try {
-      var g = __foGenArchetypeSquad("world1|" + rid + "|" + slot, cfg.nat, cfg.arch, slot === 0 ? cfg.capt : "general");
+      var sd = null;
+      try {
+        (window.__foPlanet.sidesOf(rid) || []).forEach(function (x) { if (x.slot === slot) sd = x; });
+      } catch (eS) {}
+      var g = __foGenArchetypeSquad("world1|" + rid + "|" + slot, cfg.nat,
+        (sd && sd.arch) || cfg.arch, slot === 0 ? cfg.capt : "general", null, (sd && sd.str) || 1);
       return (g && g.players) || null;
     } catch (e) { return null; }
   }

@@ -283,8 +283,15 @@
   // shaped by the manager's composition (counts INCLUDE the captain).
   // Deterministic from (seed, country, archId, captId, comp) - every client
   // and the resolver agree exactly.
-  function foGenArchetypeSquad(seed, country, archId, captId, comp) {
+  // `strength` (optional, default 1) scales the squad's whole standing. A human's
+  // founding squad never passes it, so every manager still starts on the one
+  // shared budget - the balance the archetypes were tuned against. The World
+  // Service passes each bot club's standing from the planet's own table, which is
+  // how a flagship comes out the strongest side in its league.
+  function foGenArchetypeSquad(seed, country, archId, captId, comp, strength) {
     var A = foArchById(archId);
+    var STR = (typeof strength === "number" && isFinite(strength) && strength > 0)
+      ? Math.max(0.7, Math.min(1.4, strength)) : 1;
     var CF = foCaptFlavourById(captId || "general");
     var rnd = window.rng(foHash32(String(seed) + "|" + archId));
     var firsts = {}, lasts = {};
@@ -328,6 +335,16 @@
       firsts[(sp[0] || "").toLowerCase()] = 1;
       lasts[((sp.slice(1).join(" ") || sp[0]) + "").toLowerCase()] = 1;
     })();
+    // A STRONGER CLUB HAS A STRONGER CAPTAIN. The budget pass below deliberately
+    // leaves the captain's card alone, and the crowding rules trim any teammate
+    // who gets near him - so lifting the budget without lifting HIM would just
+    // push the squad into his ceiling and stop. He moves by less than the budget
+    // does (a good club is not one man), but he does move.
+    if (STR !== 1) {
+      var fCap = Math.pow(STR, 0.55);
+      for (var kC in starter.skills) starter.skills[kC] = Math.max(4, Math.min(96, Math.round(starter.skills[kC] * fCap)));
+      jsDerive(starter);
+    }
     players.push(starter);
     slots.forEach(function (sl) { players.push(foQsPlayer({ role: sl.role, ages: A.ages, q: sl.q }, country, rnd, firsts, lasts)); });
     var qOf = {}; qOf[starter.name] = 0.97 * (CF.q || 1); slots.forEach(function (sl, i5) { qOf[players[i5 + 1].name] = sl.q; });
@@ -414,8 +431,46 @@
         }
       });
     };
-    capTeammates();
-    var target = FO_QS_T * (A.budgetMult || 1);
+    // WHO GIVES WAY, THE SQUAD OR THE CAPTAIN. capTeammates() keeps the captain
+    // on top by trimming anyone who crowds him - right for a founding squad,
+    // where his card is the promise the manager was shown. It is wrong for a
+    // world club: the captain's FLAVOUR then decides the club's level, because
+    // every teammate is capped at his rating. That is how a flagship led by a
+    // twenty-four-year-old came out weaker than the ninth side in its league,
+    // whose thirty-year-old general rated 65,000 on his own.
+    //
+    // So when a standing is stated, the standing decides the level and the
+    // captain is lifted to the front of his own side instead of the side being
+    // dragged back to him. He still leads; he no longer caps.
+    var capLead = function () {
+      var bestR = 0, bestV = 0;
+      players.forEach(function (p) {
+        if (p === starter) return;
+        if ((p.rating || 0) > bestR) bestR = p.rating || 0;
+        var v = foSkillValue(p); if (v > bestV) bestV = v;
+      });
+      for (var gL = 0; gL < 16; gL++) {
+        if ((starter.rating || 0) >= bestR * 1.04 && foSkillValue(starter) >= bestV * 1.05) break;
+        var moved = false;
+        for (var kL in starter.skills) {
+          var was = starter.skills[kL];
+          var now = Math.max(4, Math.min(96, Math.ceil(was * 1.03)));
+          if (now !== was) moved = true;
+          starter.skills[kL] = now;
+        }
+        if (!moved) break;              // already at the ceiling; nothing more to give
+        jsDerive(starter);
+      }
+    };
+    var settleLead = (STR === 1) ? capTeammates : capLead;
+    settleLead();
+    // When a STANDING is stated, it IS the standing. The archetype's own budget
+    // dial (spin costs a little more, a stonewall a little less) is a balance
+    // knob for the one shared budget every manager founds on - so it must not
+    // also decide how good a world club is, or an all-rounder side on the fourth
+    // rung would out-rate its own flagship. It still shapes the squad; it no
+    // longer sets its level.
+    var target = FO_QS_T * (STR === 1 ? (A.budgetMult || 1) : STR);
     for (var itn = 0; target > 0 && itn < 6; itn++) {
       var S = foQsSquadStrength(players);
       var f = target / Math.max(1, S);   // metric is linear in skills
@@ -426,7 +481,7 @@
         for (var k2 in p.skills) p.skills[k2] = Math.max(4, Math.min(96, Math.round(p.skills[k2] * f)));
         if (foPureBowler(p)) foApplyBowlerBat(p); else jsDerive(p);
       });
-      capTeammates();
+      settleLead();
     }
     // fees: value-proportional inside the squad, on a size-priced schedule.
     // The same composition costs every archetype the same, and every extra

@@ -1,0 +1,105 @@
+name: world-reseed
+# REDEAL THE WORLD'S CRICKETERS AND START THE SUMMER AGAIN.
+#
+# Gives every BOT club its squad again by the rules the world now keeps - the
+# identity its league describes, and the standing that makes every flagship the
+# strongest side in its own country - then puts every league back to round one,
+# dated today, so the next hourly tick bowls the first ball.
+#
+# A club a human has claimed keeps its squad and its manager: those cricketers
+# have been trained and traded by somebody. Accounts, claims and club names all
+# survive. Run it with dry_run first if you want to read the new leagues before
+# anything is written.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type YES-RESEED to redeal every bot squad and restart the season"
+        required: true
+        default: 'no'
+      dry_run:
+        description: "YES to print what would change and write nothing"
+        required: false
+        default: 'no'
+      include_claimed:
+        description: "YES-INCLUDING-MINE to redeal claimed clubs too (destroys their training and transfers)"
+        required: false
+        default: 'no'
+
+concurrency:
+  group: world-tick        # never while the umpire is settling a round
+  cancel-in-progress: false
+
+jobs:
+  reseed:
+    if: ${{ inputs.confirm == 'YES-RESEED' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      WORLD_SCHEMA: world
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Install service deps (pg)
+        working-directory: server
+        run: npm install --omit=dev --no-audit --no-fund
+      - name: Resolve database connection
+        working-directory: server
+        env:
+          RAW_URL: ${{ secrets.DATABASE_URL || secrets.SUPABASE_DB_URL || secrets.POSTGRES_URL }}
+          DB_PASS: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PROJECT_REF: egaipdksvztqqgouriyc
+          REGION: us-east-1
+        run: |
+          if [ -z "$RAW_URL" ] && [ -z "$DB_PASS" ]; then
+            echo "::error::No database secret found. Easiest fix: add a secret named SUPABASE_DB_PASSWORD containing just the database password (Supabase → Project Settings → Database → Reset database password). Alternatively add DATABASE_URL with the full session-pooler connection string."
+            exit 1
+          fi
+          node - <<'EOF'
+          const pg = require('pg');
+          const enc = encodeURIComponent;
+          const cands = [];
+          if (process.env.RAW_URL) cands.push(process.env.RAW_URL);
+          if (process.env.DB_PASS) {
+            // mobile copy-paste loves to smuggle in whitespace; trim it away
+            const ref = process.env.PROJECT_REF, reg = process.env.REGION, p = enc(process.env.DB_PASS.trim());
+            // session pooler only (5432): transaction pooling would break the
+            // per-connection search_path the service relies on
+            for (const n of [0, 1, 2]) {
+              cands.push(`postgresql://postgres.${ref}:${p}@aws-${n}-${reg}.pooler.supabase.com:5432/postgres`);
+            }
+          }
+          (async () => {
+            for (const url of cands) {
+              const pool = new pg.Pool({ connectionString: url, max: 1, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 8000 });
+              try {
+                const r = await pool.query('SELECT 1 AS ok');
+                if (r.rows[0].ok === 1) {
+                  const fs = require('fs');
+                  fs.appendFileSync(process.env.GITHUB_ENV, 'DATABASE_URL=' + url + '\n');
+                  console.log('::add-mask::' + url);
+                  console.log('connected via', url.replace(/:[^@:]*@/, ':***@'));
+                  await pool.end();
+                  process.exit(0);
+                }
+              } catch (e) {
+                console.log('candidate failed:', url.replace(/:[^@:]*@/, ':***@'), '-', String(e.message).slice(0, 80));
+              }
+              await pool.end().catch(() => {});
+            }
+            console.log('::error::Could not connect with any candidate. If you added SUPABASE_DB_PASSWORD, make sure it is the DATABASE password (Project Settings → Database → Reset database password), not an API key.');
+            process.exit(1);
+          })();
+          EOF
+      - name: Redeal the bot squads and restart the season
+        working-directory: server
+        env:
+          CONFIRM: YES-RESEED
+          DRY_RUN: ${{ inputs.dry_run == 'YES' && 'YES' || 'no' }}
+          RESEED_CLAIMED: ${{ inputs.include_claimed }}
+        run: node reseed-squads.mjs
+      - name: Publish the fresh tables
+        if: ${{ inputs.dry_run != 'YES' }}
+        working-directory: server
+        run: node tick.mjs

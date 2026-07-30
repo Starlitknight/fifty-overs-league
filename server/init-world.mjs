@@ -50,18 +50,39 @@ export const ENG_CLUBS = [
 
 // one uniform founding shape per country: England hand-named, the rest
 // exactly as the shipped client's planet seats them
+// EVERY CLUB CARRIES ITS OWN CRICKET. arch (which side they are) and str (how
+// good they are) ride in per club, read off the planet's table - not one
+// archetype for a whole nation, which is what made ten clubs feel like one club
+// ten times over. England keeps its hand-named counties; their identities and
+// standings come from the same table, seated by slot.
 export function countryConfigs(host) {
-  return host.worldConfig().map(r => r.id === 'eng'
-    ? {
-        id: 'eng', name: 'England', nat: 'England', arch: 'rock', capt: 'talisman', hour: 14,
-        clubs: ENG_CLUBS.map(c => ({ slot: c.slot, name: c.name, ground: c.ground, boss: !!c.boss }))
-      }
-    : {
-        id: r.id, name: r.name, nat: r.nat, arch: r.arch, capt: r.capt, hour: r.hour,
-        clubs: r.sides.map(s => (s.boss && FLAGSHIPS[r.id])
-          ? { slot: s.slot, name: FLAGSHIPS[r.id].name, ground: FLAGSHIPS[r.id].ground, boss: true }
-          : { slot: s.slot, name: s.name, ground: s.city + ' Ground', boss: !!s.boss })
-      });
+  return host.worldConfig().map(r => {
+    const byIx = {};
+    (r.sides || []).forEach(s => { byIx[s.slot] = s; });
+    if (r.id === 'eng') return {
+      id: 'eng', name: 'England', nat: 'England', arch: 'rock', capt: 'talisman', hour: 14,
+      clubs: ENG_CLUBS.map(c => ({
+        slot: c.slot, name: c.name, ground: c.ground, boss: !!c.boss,
+        arch: (byIx[c.slot] || {}).arch, str: (byIx[c.slot] || {}).str
+      }))
+    };
+    return {
+      id: r.id, name: r.name, nat: r.nat, arch: r.arch, capt: r.capt, hour: r.hour,
+      clubs: r.sides.map(s => Object.assign(
+        { slot: s.slot, boss: !!s.boss, arch: s.arch, str: s.str },
+        (s.boss && FLAGSHIPS[r.id])
+          ? { name: FLAGSHIPS[r.id].name, ground: FLAGSHIPS[r.id].ground }
+          : { name: s.name, ground: s.city + ' Ground' }))
+    };
+  });
+}
+
+// ONE PLACE THAT SAYS WHAT SQUAD A CLUB HAS. Founding and reseeding both come
+// through here, so a club refounded today is the club it would have been on day
+// one: same seed, same identity, same standing, same eleven.
+export function squadFor(host, cfg, club) {
+  return host.genSquad('world1|' + cfg.id + '|' + club.slot, cfg.nat,
+    club.arch || cfg.arch, club.boss ? cfg.capt : 'general', club.str || 1);
 }
 
 async function foundCountry(c, cfg, host, startDay) {
@@ -69,7 +90,7 @@ async function foundCountry(c, cfg, host, startDay) {
     [cfg.id, cfg.name, cfg.hour]);
   for (const club of cfg.clubs) {
     // squad seeds are position-stable: the same world, the same eleven, forever
-    const players = host.genSquad('world1|' + cfg.id + '|' + club.slot, cfg.nat, cfg.arch, club.boss ? cfg.capt : 'general');
+    const players = squadFor(host, cfg, club);
     // default_name is the club's birth name - a human rename never loses it
     await c.query(
       'INSERT INTO clubs(country_id, slot, name, default_name, ground, is_boss, squad) VALUES ($1,$2,$3,$3,$4,$5,$6)',

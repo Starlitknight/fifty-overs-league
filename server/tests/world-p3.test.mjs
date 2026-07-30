@@ -15,7 +15,7 @@ import assert from 'node:assert';
 import { execSync } from 'node:child_process';
 import { makePool } from '../db.mjs';
 import { migrate } from '../migrate.mjs';
-import { initWorld, countryConfigs } from '../init-world.mjs';
+import { initWorld, countryConfigs, squadFor } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { runAllDue, runCupWindow, rollSeasons, runTick, computeLeague, rebuildHonours, computeRankings, runFriendlies, settleMoney } from '../tick.mjs';
 import { evolveCountry, applyLiving, livingPatch } from '../living.mjs';
@@ -632,9 +632,12 @@ test('015: watched IS recorded - the banked living patch replays the same match'
 
   // a spectator does exactly what the phone does: regenerate the squads from
   // the world seed, lay the banked patch over them, run the same seed
+  // ...and it asks the ONE thing that says what squad a club has, rather than
+  // re-deriving it here. A copy of that call in a test is a copy that goes stale
+  // the day the world changes how it seats a club - which is precisely what it
+  // did when clubs stopped sharing one archetype and one budget.
   const cfg = countryConfigs(host).filter(c => c.id === 'eng')[0];
-  const bossSlot = cfg.clubs.filter(c => c.boss)[0].slot;
-  const squadOf = slot => host.genSquad('world1|eng|' + slot, cfg.nat, cfg.arch, slot === bossSlot ? cfg.capt : 'general');
+  const squadOf = slot => squadFor(host, cfg, cfg.clubs.filter(c => c.slot === slot)[0]);
   const replay = host.runMatch(
     { name: m.home_name, players: applyLiving(squadOf(m.home_slot), m.living[m.home_name], host) },
     { name: m.away_name, players: applyLiving(squadOf(m.away_slot), m.living[m.away_name], host) },
@@ -986,9 +989,15 @@ test('019: the Colts Cup plays itself, and the academy sets the rate in the nets
   const seniors = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng'`)).rows.flatMap(r => r.squad);
   seniors.forEach(p => assert.ok(!p.colts || p.joined,
     p.name + ' carries a Colts record without ever having been a colt'));
-  const graduate = seniors.find(p => p.colts && p.colts.m > 0 && p.joined);
-  if (graduate) assert.ok(!graduate.career,
-    'youth cricket is not first-class cricket: ' + graduate.name + ' has no senior record yet');
+  // ...and the claim in full, which does not depend on WHEN a colt came up: a
+  // boy still in the academy has no first-class record at all. Asserting
+  // instead that a graduate has not yet played a senior match only held while
+  // promotions happened to land after the rounds did.
+  const academy = (await pool.query(`SELECT youth FROM clubs WHERE country_id='eng'`)).rows
+    .flatMap(r => Array.isArray(r.youth) ? r.youth : []);
+  assert.ok(academy.length, 'there are colts on the books');
+  academy.forEach(y => assert.ok(!y.career,
+    y.name + ' is a colt and cannot carry a first-class record'));
   await coltRecords(pool, 'eng', seas);
   const again = (await pool.query(
     `SELECT youth FROM clubs WHERE country_id='eng'`)).rows.flatMap(r => r.youth || []).filter(y => y.colts);
@@ -1124,7 +1133,10 @@ test('020: the books are a ledger, and they recompute from the record', async ()
 
   // AN OVERDRAFT COSTS. Put an unpayable wage bill on a bot club and the
   // umpire charges it interest, round after round, from the record.
-  const solvent = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=9`)).rows[0].squad;
+  const before9 = (await pool.query(
+    `SELECT squad, finance FROM clubs WHERE country_id='eng' AND slot=9`)).rows[0];
+  const solvent = before9.squad;
+  const solventSponsor = Number(before9.finance.sponsor);
   const ruinous = solvent.map(p => Object.assign({}, p, { wage: 600000 }));
   await pool.query(`UPDATE clubs SET squad=$1::jsonb WHERE country_id='eng' AND slot=9`,
     [JSON.stringify(ruinous)]);
@@ -1145,8 +1157,16 @@ test('020: the books are a ledger, and they recompute from the record', async ()
   const healthy = (await pool.query(
     `SELECT finance FROM clubs WHERE country_id='eng' AND slot=8`)).rows[0].finance;
   assert.equal(healthy.administration, false, 'a solvent club is not');
-  assert.ok(broke.finance.sponsor < healthy.sponsor,
-    'the distressed deal pays less (' + broke.finance.sponsor + ' v ' + healthy.sponsor + ')');
+  // THE DISTRESSED DEAL PAYS LESS - and the only honest way to see that is on
+  // ONE club's own books. The sponsor reads the TABLE before he signs, so two
+  // different clubs earn two different amounts for reasons that have nothing to
+  // do with administration; comparing across them only ever worked while every
+  // side in the league was a copy of every other. This club's league position is
+  // fixed by cards already banked, so settling it solvent and then ruined
+  // changes exactly one thing.
+  assert.ok(broke.finance.sponsor < solventSponsor,
+    'the same club earns less in administration than it did solvent (' +
+    broke.finance.sponsor + ' v ' + solventSponsor + ')');
   // and the books still add up with the write-off in them
   assert.equal(red, Math.round(broke.finance.founded + broke.finance.gate + broke.finance.awayCut
     + broke.finance.sponsor + (broke.finance.compensation || 0) + (broke.finance.feesIn || 0)

@@ -11,8 +11,12 @@ export function makeHost() {
   const eng = makeEngine();
   eng.setTuning(true);
   vm.runInContext(`
-globalThis.__svcGenSquad = function (seed, country, arch, capt) {
-  var g = __foGenArchetypeSquad(seed, country, arch, capt || 'general');
+globalThis.__svcGenSquad = function (seed, country, arch, capt, strength) {
+  // strength is the club's standing in its league: the flagship's is the highest
+  // in the nation, and the rest spread below it. Omitted means the one shared
+  // budget every human manager founds on.
+  var g = __foGenArchetypeSquad(seed, country, arch, capt || 'general', null,
+    (typeof strength === 'number' && strength > 0) ? strength : 1);
   return JSON.stringify((g && g.players) || []);
 };
 // ONE ROUND IN THE NETS, run by the SHIPPED engine's own numbers.
@@ -152,8 +156,11 @@ globalThis.__svcWorldCfg = function () {
       id: r.id, name: r.nm, nat: (r.nats && r.nats[0]) || r.nm,
       arch: r.arch || 'rock', capt: (boss && boss.capt) || 'talisman',
       hour: window.__foPlanet.natHour(r.id),
+      // arch and str come from the planet's own table (27-living-planet.js), so
+      // the identity and the standing a phone shows and the squad the umpire
+      // generates are read off ONE source
       sides: window.__foPlanet.sidesOf(r.id).map(function (s) {
-        return { slot: s.slot, name: s.name, city: s.city, boss: !!s.boss };
+        return { slot: s.slot, name: s.name, city: s.city, boss: !!s.boss, arch: s.arch, str: s.str };
       })
     };
   }));
@@ -167,7 +174,7 @@ globalThis.__svcWorldCfg = function () {
   const fan = vm.runInContext('__svcFantasy', eng.ctx);
   const tmr = vm.runInContext('__svcTeamRatings', eng.ctx);
   return {
-    genSquad(seed, country, arch, capt) { return JSON.parse(gen(seed, country, arch, capt)); },
+    genSquad(seed, country, arch, capt, strength) { return JSON.parse(gen(seed, country, arch, capt, strength)); },
     // one round in the nets for a whole squad, by the shipped engine's numbers,
     // at the rate the club's academy buys (1 = a level-two academy)
     trainRound(players, plan, rate) { return JSON.parse(train(JSON.stringify(players), JSON.stringify(plan || {}), rate)); },
