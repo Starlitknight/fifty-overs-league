@@ -1372,6 +1372,14 @@
       if (docW > 760) return;
       document.querySelectorAll("#page table").forEach(function (tb) {
         if (tb.closest(".fo-scrollx")) return;
+        // A page that already manages its own sideways scroll must not be
+        // wrapped again: the second scroll box becomes the sticky positioning
+        // context, which strands that page's pinned header and pinned first
+        // column halfway down the table.
+        try {
+          var par = tb.parentNode, ox = par && par.nodeType === 1 ? getComputedStyle(par).overflowX : "";
+          if (ox === "auto" || ox === "scroll") return;
+        } catch (eOx) {}
         var r = tb.getBoundingClientRect();
         if (r.width <= docW - 8 && tb.scrollWidth <= tb.clientWidth + 4) return;
         var wrap = document.createElement("div");
