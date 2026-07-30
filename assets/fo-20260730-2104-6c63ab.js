@@ -10006,7 +10006,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260730-2014-1304fe";
+  var FO_BUILD = "20260730-2104-6c63ab";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -41846,6 +41846,14 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-nat-man span{flex:1;font-size:11px;color:rgba(20,28,40,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       "html body #page .fo-nat-man u{text-decoration:none;font:700 9px/1 Oswald,sans-serif;letter-spacing:.1em;color:rgba(20,28,40,.4);white-space:nowrap}",
       "html body #page .fo-nat-man.mine{background:rgba(232,185,106,.2);border-radius:9px;padding-left:8px;padding-right:8px}",
+      // a row that opens a player page looks and behaves like one: it takes
+      // the pointer, lifts on hover and carries a chevron. A row with no page
+      // behind it stays flat, so the difference is visible before the click.
+      "html body #page a.fo-nat-man{color:inherit;text-decoration:none;cursor:pointer;border-radius:9px;padding-left:8px;padding-right:8px;transition:background .12s ease}",
+      "html body #page a.fo-nat-man:hover,html body #page a.fo-nat-man:focus-visible{background:rgba(20,28,40,.05)}",
+      "html body #page a.fo-nat-man.mine:hover,html body #page a.fo-nat-man.mine:focus-visible{background:rgba(232,185,106,.34)}",
+      "html body #page .fo-nat-go{font-style:normal;font-size:15px;line-height:1;color:rgba(20,28,40,.28);margin-left:2px}",
+      "html body #page a.fo-nat-man:hover .fo-nat-go{color:rgba(20,28,40,.55)}",
       "html body #page .fo-nat-man.mine b{color:#6B520F}",
       "html body #page .fo-nat-tie{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 2px;border-top:1px solid rgba(20,28,40,.07);font:500 12px/1.4 Inter,sans-serif}",
       "html body #page .fo-nat-tie b{font-weight:600;color:#141C28}",
@@ -41906,12 +41914,28 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<img src='" + flagOf(rid) + "' alt=''><span>" + E(rid) + "</span></button>";
     }).join("") + "</div>";
 
+    // A NAME IS A DOOR WHERE THERE IS A ROOM BEHIND IT. The player page is
+    // built by findPlayer, which searches the clubs THIS DEVICE holds - the
+    // ten of its own league. So a manager's countrymen all open; a man browsed
+    // from another nation's flag has no page here and is left as plain text
+    // rather than as a link that lands on an empty screen.
+    var canOpen = function (nm) {
+      try { return !!(typeof findPlayer === "function" && findPlayer(nm)); } catch (e) { return false; }
+    };
+    var manRow = function (cls, inner, nm) {
+      return canOpen(nm)
+        ? "<a class='" + cls + " go' href='#/player?n=" + encodeURIComponent(nm) + "'>" + inner +
+          "<em class='fo-nat-go'>&#8250;</em></a>"
+        : "<div class='" + cls + "'>" + inner + "</div>";
+    };
     var squad = (n.squad || []).map(function (m, i) {
       var isMine = myClub && m.club === myClub;
-      return "<div class='fo-nat-man" + (isMine ? " mine" : "") + "'><i>" + (i + 1) + "</i>" +
+      return manRow("fo-nat-man" + (isMine ? " mine" : ""),
+        "<i>" + (i + 1) + "</i>" +
         "<b>" + E(m.name) + "</b><span>" + E(m.club || "") +
         (m.age ? " &middot; " + m.age : "") + "</span>" +
-        "<u>" + (m.caps ? m.caps + " cap" + (m.caps === 1 ? "" : "s") : "uncapped") + "</u></div>";
+        "<u>" + (m.caps ? m.caps + " cap" + (m.caps === 1 ? "" : "s") : "uncapped") + "</u>",
+        m.name);
     }).join("");
 
     var pay = (n.compensation || []).map(function (c) {
@@ -41921,11 +41945,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
     var tours = (n.tours || []).map(tieRow).join("");
     var caps = (n.caps || []).map(function (c, i) {
-      return "<div class='fo-nat-man'><i>" + (i + 1) + "</i><b>" + E(c.name) + "</b>" +
+      return manRow("fo-nat-man",
+        "<i>" + (i + 1) + "</i><b>" + E(c.name) + "</b>" +
         "<span>" + c.caps + " cap" + (c.caps === 1 ? "" : "s") +
         (c.runs ? " &middot; " + c.runs + " runs" + (c.hs ? " (" + c.hs + " best)" : "") : "") +
         (c.wkts ? " &middot; " + c.wkts + " wickets" + (c.bb ? " (" + c.bb.w + "-" + c.bb.r + ")" : "") : "") +
-        "</span></div>";
+        "</span>",
+        c.name);
     }).join("");
 
     var myMen = mine ? (n.squad || []).filter(function (m) { return m.club === myClub; }) : [];
