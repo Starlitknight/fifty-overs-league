@@ -5234,74 +5234,83 @@
       var v = foHgVariant();
       var me = null; try { me = userTeam(); } catch (e) {}
       var nation = foLgNation(), region = (foRegionById(nation) || {}).r || { nm: "your nation", ac: "#EBC271" };
-      var s = null, pos = 0, round = 0, done = false, totalR = 14;
-      try { s = foLgEnsure(); var tbl = foLgTable(foLgLineup(nation), s.res || {}); pos = tbl.findIndex(function (x) { return x.name === (foLgMyTeam().name); }) + 1; round = Math.min(14, s.round || 0); done = round >= 14; } catch (eS) {}
-      // the season you actually play is the truth: when the club season is
-      // live, its clock and its table outrank the nation-league flavour clock
-      try {
-        if (App.season && App.season.schedule && App.season.schedule.length) {
-          totalR = App.season.schedule.length;
-          round = Math.min(totalR, App.season.round || 0);
-          done = round >= totalR;
-          var rowsC = (typeof leagueRows === "function") ? leagueRows() : [];
-          var pC = rowsC.findIndex(function (x) { return x.nm === (me && me.name); }) + 1;
-          if (pC > 0) pos = pC;
-        }
-      } catch (eC) {}
-      var beads = foHomeForm() || "<span class='hg-nf'>the season awaits</span>";
-      var posLine = done ? "Season complete &middot; you finished " + foOrdinal(pos || 8) : (pos ? foOrdinal(pos) + " in the " + region.nm + " League &middot; Round " + (round + 1) + " of " + totalR : region.nm + " League");
-
-      // ---- YOUR FRONT DOOR SPEAKS THE WORLD --------------------------------
-      // The club home used to read this device's own save: its club name, its
-      // own standings, its own round. The league page reads the World Service.
-      // One club cannot have two names and two positions, so when a world club
-      // is claimed the served record wins here too - and if this device still
-      // calls the club something else, the hero says so and offers the font.
+      // ---- YOUR FRONT DOOR SPEAKS THE WORLD, OR IT SPEAKS FOR ITSELF --------
+      // These four facts - where you stand, which round is next, how many
+      // rounds there are, and how the last few went - used to be worked out
+      // from this device's save and then PATCHED OVER with whatever the world
+      // had said. Patching leaks: a fact the world was silent on kept its local
+      // value, so a league restarted this morning showed six form beads and
+      // "Round 3 of 18" beside a table in which every club had played nothing.
+      //
+      // There is no patching now. Either the served world answers all four, or
+      // the local season does - never a seam down the middle. __foServed.on()
+      // is the switch: a claim in the world AND a snapshot in hand.
+      var served = null;
+      try { served = (window.__foServed && window.__foServed.on()) ? window.__foServed : null; } catch (eSv) {}
+      var repaintHome = function () {
+        try { var pg0 = document.getElementById("page"); if (pg0) pg0.__foHomeSig = null; foRenderHome(); } catch (eR0) {}
+      };
       var wClaim = null, wName = "", localNm = (me && me.name) || "";
       try { wClaim = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eWc0) {}
+      // the club's name is the clubs table's to give; a manager may have
+      // christened it, and a stale local save may still call it something else
       if (wClaim) {
-        var repaintHome = function () {
-          try { var pg0 = document.getElementById("page"); if (pg0) pg0.__foHomeSig = null; foRenderHome(); } catch (eR0) {}
-        };
         try {
           var nmMap = null;
           if (window.__foWorldNames) {
             nmMap = window.__foWorldNames.get(wClaim.country);
             window.__foWorldNames.want(wClaim.country, repaintHome);
           }
-          wName = (nmMap && nmMap[wClaim.slot]) || wClaim.club || "";
+          wName = (nmMap && nmMap[wClaim.slot]) || (served && served.name()) || wClaim.club || "";
         } catch (eWn) {}
-        try {
-          var wSnap = null;
-          if (window.__foWorldLg) {
-            wSnap = window.__foWorldLg.get(wClaim.country);
-            window.__foWorldLg.want(wClaim.country, repaintHome);
-          }
-          var wCal = null;
-          try { wCal = window.__foWT && window.__foWT.serverCal ? window.__foWT.serverCal(Date.now()) : null; } catch (eWc) {}
-          var wPos = 0, wTot = (wSnap && wSnap.rounds) || 18;
-          if (wSnap && wSnap.table) {
-            for (var wi = 0; wi < wSnap.table.length; wi++) if (wSnap.table[wi].slot === wClaim.slot) wPos = wi + 1;
-            // form beads off the served results, newest last
-            var wSeq = (wSnap.results || []).filter(function (r0) {
-              return r0.home === wName || r0.away === wName || r0.home === wClaim.club || r0.away === wClaim.club;
-            }).slice(-5).map(function (r0) {
-              var mine0 = (r0.home === wName || r0.home === wClaim.club) ? r0.home : r0.away;
-              return r0.winner === null ? "t" : r0.winner === mine0 ? "w" : "l";
-            });
-            if (wSeq.length) beads = wSeq.map(function (k0) { return "<i class='" + k0 + "'>" + k0.toUpperCase() + "</i>"; }).join("");
-          }
-          if (wCal && wCal.seasonNo >= 1 && wCal.round >= 1 && wCal.round <= wTot) {
-            posLine = (wPos ? foOrdinal(wPos) + " in the " + region.nm + " League &middot; " : region.nm + " League &middot; ") +
-              "Round " + wCal.round + " of " + wTot;
-          } else if (wCal && wCal.dayInSeason < 0) {
-            var toGo = -wCal.dayInSeason;
-            posLine = region.nm + " League &middot; the season opens in " + toGo + " day" + (toGo === 1 ? "" : "s");
-          } else if (wPos) {
-            posLine = foOrdinal(wPos) + " in the " + region.nm + " League";
-          }
-        } catch (eWs) {}
+        try { if (window.__foWorldLg) window.__foWorldLg.want(wClaim.country, repaintHome); } catch (eWq) {}
       }
+
+      var pos = 0, round = 0, done = false, totalR = 14, beads = "", posLine = "";
+      if (served) {
+        var sRows = served.rows(), sMe = served.me();
+        for (var si = 0; si < sRows.length; si++) if (sRows[si].slot === served.slot()) pos = si + 1;
+        totalR = served.totalRounds();
+        round = served.roundsPlayed();          // 0-based, as the local clock counts
+        done = served.roundsPlayed() >= totalR;
+        // Form off the banked cards and nothing else: a club that has played
+        // nothing shows nothing, which is the honest answer this page could
+        // never give while it was reading App.results. em.hg-w/hg-l/hg-t are
+        // the coloured discs this hero styles - the served path used to emit
+        // <i class='w'>, which matches no rule in the sheet, so a world club's
+        // form showed as bare letters beside a local club's discs.
+        var sf = served.formOf(wName || (sMe && sMe.name)).slice(-5);
+        beads = sf.length
+          ? sf.map(function (k0) { return "<em class='hg-" + k0.toLowerCase() + "'>" + k0 + "</em>"; }).join("")
+          : "<span class='hg-nf'>the season awaits</span>";
+        var toGo = served.opensIn();
+        posLine = toGo > 0
+          ? region.nm + " League &middot; the season opens in " + toGo + " day" + (toGo === 1 ? "" : "s")
+          : done
+          ? "Season complete &middot; you finished " + foOrdinal(pos || 10)
+          : (pos ? foOrdinal(pos) + " in the " + region.nm + " League &middot; " : region.nm + " League &middot; ") +
+            "Round " + served.round() + " of " + totalR;
+      } else {
+        var s = null;
+        try { s = foLgEnsure(); var tbl = foLgTable(foLgLineup(nation), s.res || {}); pos = tbl.findIndex(function (x) { return x.name === (foLgMyTeam().name); }) + 1; round = Math.min(14, s.round || 0); done = round >= 14; } catch (eS) {}
+        // the season you actually play is the truth: when the club season is
+        // live, its clock and its table outrank the nation-league flavour clock
+        try {
+          if (App.season && App.season.schedule && App.season.schedule.length) {
+            totalR = App.season.schedule.length;
+            round = Math.min(totalR, App.season.round || 0);
+            done = round >= totalR;
+            var rowsC = (typeof leagueRows === "function") ? leagueRows() : [];
+            var pC = rowsC.findIndex(function (x) { return x.nm === (me && me.name); }) + 1;
+            if (pC > 0) pos = pC;
+          }
+        } catch (eC) {}
+        beads = foHomeForm() || "<span class='hg-nf'>the season awaits</span>";
+        posLine = done ? "Season complete &middot; you finished " + foOrdinal(pos || 8) : (pos ? foOrdinal(pos) + " in the " + region.nm + " League &middot; Round " + (round + 1) + " of " + totalR : region.nm + " League");
+      }
+      // a claim whose world has not answered yet says so, rather than borrowing
+      // the local save's round to fill the line
+      if (wClaim && !served) posLine = region.nm + " League &middot; asking the world&hellip;";
       var heroName = wName || localNm || "Your Club";
       var twoNames = !!(wName && localNm && wName !== localNm);
 
@@ -5756,7 +5765,9 @@
               "<div class='r'>" + tail + "</div></div>";
           }).join("");
         } else {
-          var ws0 = srv.pl.WORLD_START || 0;
+          // the day the world's own season opened, as the served snapshot
+          // reported it - never assumed from the date
+          var ws0 = srv.pl.anchorOf ? srv.pl.anchorOf().start : (srv.pl.WORLD_START || 0);
           // the league returns on the next season's opening day - or on the next
           // round's day, when today is one of the season's rest days
           var nextDay = null;

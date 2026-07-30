@@ -91,7 +91,7 @@
     // THE HOUR THIS MATCH IS PLAYED, to the minute. Round R of season S falls
     // on one world day, and that day opens at the nation's own hour.
     var day = PL.dayOfSeasonRound ? PL.dayOfSeasonRound(seasonNo, round)
-           : ((PL.WORLD_START | 0) + (seasonNo - 1) * (PL.CYCLE | 0) + (round - 1));
+           : ((PL.anchorOf ? PL.anchorOf().start : 0) + (seasonNo - 1) * (PL.CYCLE | 0) + (round - 1));
     var start = PL.EPOCH + day * PL.DAY + hour * 3600000;
     var stop = start + (PL.LIVE_LEN || 3) * 3600000;
     return { snap: snap, names: names, mgrs: mgrs, sides: sides, bySlot: bySlot,

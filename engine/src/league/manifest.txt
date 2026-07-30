@@ -43,3 +43,4 @@
 48-room-art.js
 50-match-archive.js
 51-prematch.js
+52-served-truth.js

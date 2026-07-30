@@ -86,6 +86,40 @@
       for (var i = 0; i < ws.length; i++) { try { ws[i](LG_BODY[rid] || null); } catch (e) {} }
     }, 0);
   }
+  // ---- THE CALENDAR IS SET BY THE WORLD, NOT BY THE DATE ---------------------
+  // Every snapshot says which season it is and which world day that season
+  // opened on. The planet used to assume season 1 opened on day 0, which was
+  // true only for the world as first founded: a world restarted on day 2 then
+  // had every page counting rounds two days ahead of the umpire, so a league
+  // that had not bowled a ball was announced as round three. Handing the
+  // snapshot's own start_day to the planet the moment it lands settles that for
+  // every surface at once, including the ones that only do date arithmetic.
+  // The anchor is taken from THIS DEVICE'S NATION where there is one - a
+  // manager's own league is the calendar he lives by - and from England, the
+  // reference nation the cup schedule is cut from, where there is not.
+  // get() runs for all nineteen nations on every planet repaint, so this must
+  // not parse storage each time: the claim in memory answers for free, and the
+  // cached one is read once per page.
+  var ANCH_NAT = null, ANCH_READ = 0;
+  function anchorNation() {
+    try { if (window.__foWorldClaim && window.__foWorldClaim.country) return window.__foWorldClaim.country; } catch (e) {}
+    if (ANCH_READ) return ANCH_NAT;
+    ANCH_READ = 1; ANCH_NAT = "eng";
+    try {
+      var c = JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+      if (c && c.country) ANCH_NAT = c.country;
+    } catch (e2) {}
+    return ANCH_NAT;
+  }
+  function anchorTo(rid, body) {
+    try {
+      if (!body || body.startDay == null || !(body.seasonNo >= 1)) return;
+      if (rid !== anchorNation()) return;
+      if (window.__foPlanet && window.__foPlanet.anchorWorld) {
+        window.__foPlanet.anchorWorld(body.startDay, body.seasonNo);
+      }
+    } catch (e) {}
+  }
   function lgFetch(rid, cb) {
     if (!rid) return;
     // THE WHOLE PLANET AT ONCE. The world page now asks for all nineteen
@@ -101,6 +135,7 @@
     var take = function (body) {
       if (body && body.results) {
         LG_BODY[rid] = body;
+        anchorTo(rid, body);
         try { localStorage.setItem("fo_world_lg_" + rid, JSON.stringify(body)); } catch (e) {}
       }
       done();
@@ -188,9 +223,15 @@
   };
 
   window.__foWorldLg = {
+    // the cached copy anchors the calendar too: it is something the world
+    // already said, and the first paint of a cold page happens before the
+    // fetch lands. It is overwritten by the live body the moment that arrives.
     get: function (rid) {
-      if (LG_BODY[rid]) return LG_BODY[rid];
-      try { var c2 = localStorage.getItem("fo_world_lg_" + rid); if (c2) { LG_BODY[rid] = JSON.parse(c2); return LG_BODY[rid]; } } catch (e) {}
+      if (LG_BODY[rid]) { anchorTo(rid, LG_BODY[rid]); return LG_BODY[rid]; }
+      try {
+        var c2 = localStorage.getItem("fo_world_lg_" + rid);
+        if (c2) { LG_BODY[rid] = JSON.parse(c2); anchorTo(rid, LG_BODY[rid]); return LG_BODY[rid]; }
+      } catch (e) {}
       return null;
     },
     want: function (rid, cb) { try { lgFetch(rid, cb); } catch (e) {} }

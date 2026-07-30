@@ -232,7 +232,11 @@
         var vs = ch.challenger_club === me ? ch.opponent_club : ch.challenger_club;
         var when = new Date(ch.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + (foTzAbbr() ? " " + foTzAbbr() : "");
         var lgChip = "";
-        try { if (App.season && typeof App.season.round === "number") lgChip = "<span class='fo-c2-nchip'>League Round " + (App.season.round + 1) + " follows &middot; 9:00 AM ET</span>"; } catch (eLc) {}
+        try {
+          var SVc = window.__foServed && window.__foServed.on() ? window.__foServed : null;
+          if (SVc) lgChip = "<span class='fo-c2-nchip'>League Round " + SVc.round() + " follows &middot; " + foDailyTime(SVc.roundsPlayed()) + "</span>";
+          else if (App.season && typeof App.season.round === "number") lgChip = "<span class='fo-c2-nchip'>League Round " + (App.season.round + 1) + " follows &middot; 9:00 AM ET</span>";
+        } catch (eLc) {}
         host2.__foFr = 1;
         if (fst.phase === "live") {
           host2.innerHTML = "<div class='fo-c2-nl'>" +
@@ -289,7 +293,9 @@
       var d = new Date(), dateStr = d.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short" }) + ", " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
       // one computation of the page's load-bearing facts, used everywhere below
-      var totalRounds = (S && S.schedule) ? S.schedule.length : 18;
+      var totalRounds = (window.__foServed && window.__foServed.on())
+        ? window.__foServed.totalRounds()
+        : ((S && S.schedule) ? S.schedule.length : 18);
       var played = me.p || 0;
       var streak = 0;
       for (var si = form.length - 1; si >= 0 && String(form[si]).toUpperCase() === "W"; si--) streak++;
@@ -334,7 +340,7 @@
       }).join("");
       var ups = foUserFixtures().slice(0, 3).map(function (x) {
         var isNext = nxt && x.round === nxt.round;
-        return "<tr><td>" + x.date + "<div class='fo-t'>9:00 AM ET</div></td><td>R" + (x.round + 1) + "</td><td>" + (x.isHome ? "vs " : "@ ") + E(x.opp.name) + "</td><td>" + E(x.ground) + " " + foPitchPill(x.pitch) + "</td><td class='r'><button class='fo-setr" + (isNext ? "" : " fo-setr-later") + "' data-r='" + x.round + "'>" + (isNext ? "Set lineup" : "Plan lineup") + "</button></td></tr>";
+        return "<tr><td>" + x.date + "<div class='fo-t'>" + foDailyTime(x.round) + "</div></td><td>R" + (x.round + 1) + "</td><td>" + (x.isHome ? "vs " : "@ ") + E(x.opp.name) + "</td><td>" + E(x.ground) + " " + foPitchPill(x.pitch) + "</td><td class='r'><button class='fo-setr" + (isNext ? "" : " fo-setr-later") + "' data-r='" + x.round + "'>" + (isNext ? "Set lineup" : "Plan lineup") + "</button></td></tr>";
       }).join("");
       var upBody = (frRows || ups)
         ? "<table class='fo-tbl'><thead><tr><th>Date</th><th>Rd</th><th>Match</th><th>Ground</th><th class='r'></th></tr></thead><tbody>" + frRows + ups + "</tbody></table>"
@@ -703,6 +709,8 @@
       var fxItems = [];
       var fxAt = function (rn) {
         try {
+          var at9 = window.__foServed && window.__foServed.on() ? window.__foServed.ballAt(rn) : null;
+          if (at9) return at9;
           var d9 = new Date(); d9.setHours(9, 0, 0, 0);
           d9.setDate(d9.getDate() + (rn - App.season.round) + (foCurAdvanced() ? 1 : 0));
           return +d9;
@@ -711,7 +719,7 @@
       foUserFixtures().slice(0, 5).forEach(function (x) {
         var isN = nxt && x.round === nxt.round;
         fxItems.push({ at: fxAt(x.round), html: "<div class='fo-c2-fx" + (isN ? " next" : "") + "'>" +
-          "<div class='fo-c2-fxd'><b>" + E(x.date) + "</b><span>9:00 AM</span></div>" +
+          "<div class='fo-c2-fxd'><b>" + E(x.date) + "</b><span>" + foDailyTime(x.round) + "</span></div>" +
           "<div class='fo-c2-fxm'><b>" + (x.isHome ? "vs " : "@ ") + E(x.opp.name) + "</b><span>Round " + (x.round + 1) + " &middot; " + (x.isHome ? "Home" : "Away") + (isN ? " &middot; " + E(foPitchName(x.pitch)) + " pitch" : "") + (x.weather ? " &middot; " + E(x.weather) : "") + "</span></div>" +
           (isN ? "<span class='fo-c2-fxn'>NEXT</span>" : "") + "</div>" });
       });
@@ -814,9 +822,33 @@
     } catch (e) { return false; }
   }
   function foDailyDate(r, opts) {
+    // the world dates its own fixtures - see ballAt() in 52-served-truth.js
+    try {
+      var at = window.__foServed && window.__foServed.on() ? window.__foServed.ballAt(r) : null;
+      if (at) return new Date(at).toLocaleDateString("en-GB", opts || { day: "2-digit", month: "short" });
+    } catch (eSv) {}
     var curR = (typeof App !== "undefined" && App.season) ? App.season.round : 0;
     var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + (r - curR) + (foCurAdvanced() ? 1 : 0));
     return d.toLocaleDateString("en-GB", opts || { day: "2-digit", month: "short" });
+  }
+  // the hour the first ball is bowled, in the reader's own clock. Every nation
+  // opens at its own UTC hour, so "9:00 AM ET" - the retired resolver's slot -
+  // is not the time any world match starts.
+  function foDailyTime(r) {
+    try {
+      var at = window.__foServed && window.__foServed.on() ? window.__foServed.ballAt(r) : null;
+      if (at) return new Date(at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    } catch (e) {}
+    return "9:00 AM ET";
+  }
+  // "Sat 1 Aug at 2:00 PM" for the round about to be played - the world's
+  // round, not this device's
+  function foNextRoundWhen() {
+    var r = null;
+    try { if (window.__foServed && window.__foServed.on()) r = window.__foServed.roundsPlayed(); } catch (e) {}
+    if (r == null) { try { r = App.season ? App.season.round : null; } catch (e2) {} }
+    if (r == null) return "on the next matchday";
+    return foDailyDate(r, { weekday: "short", day: "numeric", month: "short" }) + " at " + foDailyTime(r);
   }
   var foScoutIx = null, foScoutTab = "overview", foScoutSort = "rating";
   // a club's flag emoji, from its country (or its dressing room's majority)
@@ -1347,6 +1379,25 @@
   // Recent league form per club (oldest→newest, last 5): W / L / T.
   function foFormMap() {
     var m = {};
+    // THE WORLD'S FORM, when this device plays in the world. App.results is the
+    // retired local engine's record and lives in this browser: it survived a
+    // world restart and painted six results onto a season that had bowled no
+    // balls. Served truth or nothing.
+    try {
+      if (window.__foServed && window.__foServed.on()) {
+        var b = window.__foServed.snapshot();
+        (b && b.results || []).slice()
+          .sort(function (a, c) { return (a.round | 0) - (c.round | 0); })
+          .forEach(function (r) {
+            if (!r) return;
+            [r.home, r.away].forEach(function (nm) {
+              if (!nm) return;
+              (m[nm] = m[nm] || []).push(!r.winner ? "T" : (r.winner === nm ? "W" : "L"));
+            });
+          });
+        return m;
+      }
+    } catch (eSv) {}
     try {
       // the just-banked round stays under embargo until stumps: form must not
       // reveal a result before the broadcast reaches it
@@ -2487,8 +2538,41 @@
   // League packets are keyed by round, so a manager can set orders for any future
   // round now (or submit their current orders for the whole season at once). The
   // resolver picks up each round's packet when that round plays.
+  // a served fixture names its clubs; the local team objects carry the ground
+  // and the art, so match them up by name where we can
+  function foTeamByName(nm) {
+    try {
+      if (typeof GD === "undefined" || !GD.teams) return null;
+      for (var i = 0; i < GD.teams.length; i++) if (GD.teams[i].name === nm) return GD.teams[i];
+    } catch (e) {}
+    return null;
+  }
   function foUserFixtures() {
     var out = [];
+    // the world's own draw, when there is a world. App.season.schedule is the
+    // local blob's fixture list and has no relationship to the round the umpire
+    // is about to play.
+    try {
+      if (window.__foServed && window.__foServed.on()) {
+        return window.__foServed.fixtures(8).map(function (x) {
+          var oppT = foTeamByName(x.opp.name);
+          var homeT = foTeamByName(x.home.name) || { name: x.home.name, ground: x.home.name + " Ground" };
+          return {
+            round: x.round, f: [x.home.slot, x.away.slot], oppIx: -1,
+            opp: oppT || { name: x.opp.name },
+            home: homeT, away: foTeamByName(x.away.name) || { name: x.away.name },
+            // at home the groundsman's own doctrine is the pitch, exactly as
+            // foFixtureInfo reads it for a local season
+            ground: homeT.ground,
+            pitch: (x.isHome && homeT.homePitch) ? homeT.homePitch
+                 : (typeof groundPitch === "function" ? groundPitch(homeT.ground) : "balanced"),
+            weather: WXLIST[(((x.round * 7 + x.home.slot * 3) % WXLIST.length) + WXLIST.length) % WXLIST.length],
+            isHome: x.isHome, seed: 5000 + x.round * 10 + x.home.slot,
+            date: (typeof foDailyDate === "function" ? foDailyDate(x.round) : "")
+          };
+        });
+      }
+    } catch (eSf) {}
     try {
       var S = App.season; if (!S || !S.schedule) return out;
       for (var r = S.round; r < S.schedule.length; r++) {
@@ -2570,7 +2654,7 @@
       if (!(LG && SYNC && SYNC.started && App.orders && App.orders.saved)) return;
       if (SYNC.planRound == null) return;
       foPushRound(SYNC.planRound, App.orders);
-      toast("\u2713 Orders are in for Round " + (SYNC.planRound + 1) + " \u00b7 it plays " + foDailyDate(SYNC.planRound, { weekday: "short", day: "numeric", month: "short" }) + " at 9:00 AM ET.");
+      toast("\u2713 Orders are in for Round " + (SYNC.planRound + 1) + " \u00b7 it plays " + foDailyDate(SYNC.planRound, { weekday: "short", day: "numeric", month: "short" }) + " at " + foDailyTime(SYNC.planRound) + ".");
       // These orders belong to a FUTURE round. Un-save the working copy so the
       // current-round auto-push can't resubmit them for today's match - and so
       // a genuine current-round save later still pushes (the old signature
@@ -2914,7 +2998,7 @@
       if (foHashPath() !== "#/orders" && foHashPath() !== "#/match" && App && App.pending && App.pending.__chal) App.pending = null;
       // League games have no live viewer: bounce #/match back to the fixtures list.
       if (foHashPath() === "#/match" && foLeaguePendingOnly()) {
-        if (App.orders && App.orders.saved) say("Orders are in · your match plays " + (typeof foDailyDate === "function" && App.season ? foDailyDate(App.season.round, { weekday: "short", day: "numeric", month: "short" }) : "") + " at 9:00 AM ET. Lineups lock an hour before the start.");
+        if (App.orders && App.orders.saved) say("Orders are in · your match plays " + foNextRoundWhen() + ". Lineups lock an hour before the start.");
         location.hash = "#/matches"; foOnHash._last = "#/matches"; return;
       }
       // Saving league orders must never dump the manager into a running
@@ -2922,7 +3006,7 @@
       // and the live-friendly exception above would let it through.
       if (foHashPath() === "#/match" && (foOnHash._last || "").indexOf("#/orders") === 0 &&
           SYNC && SYNC.started && !SYNC.practice && App && App.pending && App.pending.comp === "league") {
-        toast("Orders are in · your league match plays " + (App.season ? foDailyDate(App.season.round, { weekday: "short", day: "numeric", month: "short" }) + " " : "") + "at 9:00 AM ET (lineups lock an hour before). Your friendly is under Live Match.");
+        toast("Orders are in · your league match plays " + foNextRoundWhen() + " (lineups lock an hour before). Your friendly is under Live Match.");
         location.hash = "#/matches"; foOnHash._last = "#/matches"; return;
       }
       foOnHash._last = location.hash || "";

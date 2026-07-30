@@ -67,14 +67,34 @@
   function natHour(rid) { if (rid === "eng") return 14; return HOUR_SLOTS[h32("nathour|" + rid) % HOUR_SLOTS.length]; }
   function dayIx(now) { return Math.floor((now - EPOCH) / DAY); }
   function hourOfDay(now) { var d = dayIx(now); return (now - (EPOCH + d * DAY)) / 3600000; }
-  // the served world's season 1 begins on day 0 itself (28 July = Day 1,
-  // Round 1) - the planet's phase runs on the SAME season clock as the
-  // umpire, so "round N" here is the round the server actually plays today
+  // WHEN THE SUMMER BEGAN IS THE WORLD'S TO SAY, NOT OURS TO ASSUME.
+  // Season 1 was founded on day 0 (28 July = Day 1, Round 1), and for as long
+  // as that was the only summer there had ever been, every page could work out
+  // today's round from the date alone. It is no longer true: the umpire records
+  // a start_day per season and per nation, and a world that is redealt and
+  // restarted begins its season 1 on the day it was restarted. Read from the
+  // date alone, a world restarted on day 2 says "Round 3" on the morning it has
+  // not yet bowled a ball - the front door contradicting the table beside it.
+  //
+  // So the calendar is ANCHORED by the world. WORLD_START is only the founding
+  // assumption, used until the served snapshot arrives and says otherwise;
+  // anchorWorld() is how it says otherwise, and every day/season/round mapping
+  // below runs off the anchor. One anchor, set from the snapshot in
+  // 31-world-feed.js, so no page has to remember to do this arithmetic itself.
   var WORLD_START = 0;
+  var ANCHOR = { start: WORLD_START, season: 1 };
+  function anchorWorld(startDay, seasonNo) {
+    if (startDay == null || !(seasonNo >= 1)) return ANCHOR;
+    ANCHOR = { start: startDay | 0, season: seasonNo | 0 };
+    return ANCHOR;
+  }
+  function anchorOf() { return ANCHOR; }
+  // the world day a season opens on, walked from the anchor a cycle at a time
+  function seasonStart(season) { return ANCHOR.start + ((season | 0) - ANCHOR.season) * CYCLE; }
   function phaseOf(now) {
-    var d = dayIx(now), rel = d - WORLD_START;
-    if (rel < 0) return { day: d, season: 1, di: -1, kind: "rest", preseason: true };
-    var s = Math.floor(rel / CYCLE) + 1, di = rel % CYCLE;
+    var d = dayIx(now), rel = d - ANCHOR.start;
+    if (rel < 0) return { day: d, season: ANCHOR.season, di: -1, kind: "rest", preseason: true };
+    var s = ANCHOR.season + Math.floor(rel / CYCLE), di = rel % CYCLE;
     var p = { day: d, season: s, di: di };
     var r = roundOfDay(di);
     if (r) { p.kind = "league"; p.round = r; }
@@ -467,8 +487,8 @@
     var p = phaseOf(now);
     if (p.kind !== "league") {
       if (p.preseason) {
-        var toGo = WORLD_START - dayIx(now);
-        return { key: "up", liveIds: [], chip: "Season 1 opens " + (toGo === 1 ? "tomorrow" : "in " + toGo + " days") };
+        var toGo = ANCHOR.start - dayIx(now);
+        return { key: "up", liveIds: [], chip: "Season " + ANCHOR.season + " opens " + (toGo === 1 ? "tomorrow" : "in " + toGo + " days") };
       }
       return { key: "fin", liveIds: [],
         chip: p.kind === "cup" ? "World Cup week - " + stageName(p.stage) :
@@ -527,7 +547,7 @@
       var bandHTML = "<div class='fo-pl-band'><i>The world by the hour &middot; UTC</i><div class='fo-pl-bandrow'>" + band + "</div></div>";
 
       var phaseLine =
-        p.preseason ? "The world is founded and the squads are named - season 1 " + ((WORLD_START - dayIx(now)) === 1 ? "begins tomorrow" : "begins in " + (WORLD_START - dayIx(now)) + " days") :
+        p.preseason ? "The world is founded and the squads are named - season " + ANCHOR.season + " " + ((ANCHOR.start - dayIx(now)) === 1 ? "begins tomorrow" : "begins in " + (ANCHOR.start - dayIx(now)) + " days") :
         p.kind === "league" ? "Round " + p.round + " of " + ROUNDS + " across the world's leagues" :
         p.kind === "honours" ? "Honours day - champions are crowned tonight" :
         p.kind === "draw" ? "World Cup draw day - sixteen nations learn their fate" :
@@ -798,9 +818,10 @@
   function dayOfSeasonRound(season, round) {
     var d = dayOfRound(round);
     if (d == null) return null;
-    return WORLD_START + ((season | 0) - 1) * CYCLE + d;
+    return seasonStart(season) + d;
   }
   window.__foPlanet = { roundOfDay: roundOfDay, dayOfRound: dayOfRound, dayOfSeasonRound: dayOfSeasonRound,
+    anchorWorld: anchorWorld, anchorOf: anchorOf, seasonStart: seasonStart,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
-    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, fixturesOf: fixturesOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
+    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();
