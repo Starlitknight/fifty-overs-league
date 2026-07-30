@@ -432,9 +432,24 @@
     var d0 = Math.floor((Date.now() - Date.UTC(2026, 6, 28)) / 86400000);
     return (((d0 % FO_AGE_DAYS) + FO_AGE_DAYS) % FO_AGE_DAYS) + 1;
   }
+  // EVERY MAN HAS HIS OWN BIRTHDAY. The day part used to be the day of the
+  // SEASON, which made it the same number for everybody: a whole dressing room
+  // reading 29y 1d, 37y 1d, 24y 1d, all ticking over together. That is a
+  // calendar, not a set of birthdays.
+  //
+  // A cricketer's birthday is now a day of the season of his own, scattered
+  // across the thirty by a hash of his name. Nothing is stored: it is the same
+  // day on every device and in every session, for as long as he is called what
+  // he is called, and it costs no bytes in the save or the snapshot.
+  function foBirthDay(p) {
+    return (foHash32("bday|" + ((p && p.name) || "")) % FO_AGE_DAYS) + 1;   // 1..30
+  }
   function foAgeParts(p) {
-    var y = Math.max(0, p.age | 0), d = foSqSeasonDay();
-    return { y: y, d: d, total: y * FO_AGE_DAYS + d };
+    var y = Math.max(0, p.age | 0), bd = foBirthDay(p), sd = foSqSeasonDay();
+    // days since HIS last birthday, wrapping the season boundary: a man born on
+    // day 28 is four days past it on day 2, not twenty-six short of it
+    var d = ((sd - bd) % FO_AGE_DAYS + FO_AGE_DAYS) % FO_AGE_DAYS;
+    return { y: y, d: d, bd: bd, total: y * FO_AGE_DAYS + d };
   }
   function foAgeText(p) {
     var a = foAgeParts(p);
@@ -443,9 +458,10 @@
   function foAgeLong(p) {
     var a = foAgeParts(p);
     return a.y + " years, " + a.d + (a.d === 1 ? " day" : " days") +
-      " \u2014 a year here is one season, " + FO_AGE_DAYS + " days, and he turns " + (a.y + 1) + " at the rollover";
+      " \u2014 his birthday falls on day " + a.bd + " of the season, and a year here is one season, " +
+      FO_AGE_DAYS + " days";
   }
-  try { window.__foAge = { parts: foAgeParts, text: foAgeText, long: foAgeLong }; } catch (eAg) {}
+  try { window.__foAge = { parts: foAgeParts, text: foAgeText, long: foAgeLong, birthday: foBirthDay }; } catch (eAg) {}
 
   function foSqLad(v, k) {
     try {
