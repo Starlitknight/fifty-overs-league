@@ -145,8 +145,81 @@
     s.textContent = CSS;
   }
 
-  window.addEventListener("hashchange", function () { setTimeout(render, 30); });
-  document.addEventListener("DOMContentLoaded", function () { setTimeout(render, 60); });
-  setTimeout(render, 120);
-  window.__foFaCup = { render: render };
+  // ---- THE CHAMPIONS CUP, AS BANKED ----------------------------------------
+  // #/cup's own module still draws the old synthetic bracket. When the World
+  // Service HAS banked the real thing - four groups of four, then quarters,
+  // semis, the final - this paints over it with the served record. Absent a
+  // snapshot (offline, old world), the synthetic page stands untouched.
+  var CC = {};
+  function wantCC(seasonNo, cb) {
+    var key = "s" + seasonNo;
+    if (CC[key] && Date.now() - CC[key].at < 120000) return cb(CC[key].body || null);
+    fetch(SB_URL + "/rest/v1/world_snapshots?key=eq." + encodeURIComponent("cup/s" + seasonNo) + "&select=body",
+      { headers: { apikey: SB_ANON } })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { CC[key] = { body: (j && j[0] && j[0].body) || null, at: Date.now() }; cb(CC[key].body); })
+      .catch(function () { CC[key] = { body: null, at: Date.now() }; cb(null); });
+  }
+  function renderCC() {
+    try {
+      if (hashPath() !== "#/cup") return;
+      var page = document.getElementById("page"); if (!page) return;
+      var seasonNo = 1;
+      try { var cal = P() && P().phaseOf ? P().phaseOf(Date.now()) : null; if (cal && cal.season >= 1) seasonNo = cal.season; } catch (e) {}
+      var key = "s" + seasonNo, body = CC[key] ? CC[key].body : undefined;
+      if (body === undefined) { wantCC(seasonNo, function () { renderCC(); }); return; }
+      if (!body || !body.stages || !body.stages.g1) return;   // nothing served: synthetic page stands
+      var html = "<div class='fo-fa-page'>" +
+        "<div class='fo-fa-hero'><span class='fo-fa-eyebrow'>The sixteen champions &middot; season " + seasonNo + "</span>" +
+        "<h1>The Champions Cup</h1>" +
+        "<p>Every nation's playoff champion, in four groups of four. Group cricket Monday to Wednesday of the " +
+        "closing week; the top two go through to Friday's quarter-finals, and the final is played on the last " +
+        "Sunday of the year.</p></div>";
+      if (body.champion) {
+        html += "<div class='fo-fa-champ'><span>&#127942;</span><div><i>Champions of the world, season " + seasonNo +
+          "</i><b>" + E(body.champion) + "</b></div></div>";
+      }
+      // the groups: ties gi 0..7 per group day, floor(gi/2) is the group
+      var groups = [[], [], [], []];
+      ["g1", "g2", "g3"].forEach(function (st) {
+        (body.stages[st] || []).forEach(function (t) { groups[Math.floor((t.gi | 0) / 2)].push(t); });
+      });
+      var GN = ["Group A", "Group B", "Group C", "Group D"];
+      groups.forEach(function (ties, gx) {
+        if (!ties.length) return;
+        html += "<div class='fo-fa-card'><h3>" + GN[gx] + "<span>Mon&ndash;Wed, closing week</span></h3>";
+        ties.forEach(function (t) {
+          var aWin = t.winner === (t.a && t.a.name), bWin = t.winner === (t.b && t.b.name);
+          html += "<div class='fo-fa-tie'>" +
+            "<span class='side" + (aWin ? " w" : "") + "'>" + E(t.a && t.a.name) + "<u>" + E(t.as_ || "") + "</u></span>" +
+            "<span class='vs'>v</span>" +
+            "<span class='side" + (bWin ? " w" : "") + "'>" + E(t.b && t.b.name) + "<u>" + E(t.bs_ || "") + "</u></span></div>";
+        });
+        html += "</div>";
+      });
+      [["qf", "Quarter-finals", "Friday"], ["sf", "Semi-finals", "Saturday"], ["final", "THE FINAL", "Sunday"]].forEach(function (sd) {
+        var ties = body.stages[sd[0]];
+        if (!ties || !ties.length) return;
+        html += "<div class='fo-fa-card'><h3>" + sd[1] + "<span>" + sd[2] + ", closing week</span></h3>";
+        ties.forEach(function (t) {
+          var aWin = t.winner === (t.a && t.a.name), bWin = t.winner === (t.b && t.b.name);
+          html += "<div class='fo-fa-tie'>" +
+            "<span class='side" + (aWin ? " w" : "") + "'>" + E(t.a && t.a.name) + "<u>" + E(t.as_ || "") + "</u></span>" +
+            "<span class='vs'>v</span>" +
+            "<span class='side" + (bWin ? " w" : "") + "'>" + E(t.b && t.b.name) + "<u>" + E(t.bs_ || "") + "</u></span></div>" +
+            (t.text ? "<p class='fo-fa-line'>" + E(t.text) + "</p>" : "");
+        });
+        html += "</div>";
+      });
+      html += "</div>";
+      page.innerHTML = html;
+      css();
+    } catch (e) { /* never take the shell down */ }
+  }
+
+  function paint() { render(); renderCC(); }
+  window.addEventListener("hashchange", function () { setTimeout(paint, 30); });
+  document.addEventListener("DOMContentLoaded", function () { setTimeout(paint, 60); });
+  setTimeout(paint, 120);
+  window.__foFaCup = { render: render, renderCC: renderCC };
 })();
