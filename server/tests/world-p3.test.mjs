@@ -792,6 +792,12 @@ test('016: the nets, the face and the money all belong to the world', async () =
   money.forEach(m => assert.ok(Number.isFinite(Number(m.bank)), 'club ' + m.slot + ' has a treasury'));
   assert.ok(money.every(m => Number(m.bank) > 0), 'nobody has been bankrupted by a fortnight of cricket');
   const beforeBank = Number(money.find(m => m.slot === 1).bank);
+  // DEBUG: where does the resettle differ? (removed once the drift is found)
+  try {
+    const { computeFinance } = await import('../economy.mjs');
+    const fin = (await computeFinance(pool, 'eng')).find(x => (x.slot | 0) === 1);
+    console.error('DBG stored bank', beforeBank, 'recomputed', JSON.stringify(fin));
+  } catch (eD) { console.error('DBG failed', eD.message); }
   await settleMoney(pool, 'eng');
   const afterBank = Number((await pool.query(
     `SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank);
