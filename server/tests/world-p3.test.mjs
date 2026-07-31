@@ -248,9 +248,9 @@ test('007: humans christen their clubs, bots keep the counties, records survive 
   await assert.rejects(as(U2, `SELECT public.world_rename_club('surrey')`), /already taken/);
   await assert.rejects(as(U2, `SELECT public.world_rename_club('middlesex')`), /already taken/);
   // the record survives any rename: per-slot standings identical before and after
-  const before = await computeLeague(pool, 'eng', 1, EPOCH + 130 * DAY);
+  const before = await computeLeague(pool, 'eng', 1, EPOCH + 165 * DAY);
   await as(U2, `SELECT public.world_rename_club('Tangerine CC')`);
-  const after = await computeLeague(pool, 'eng', 1, EPOCH + 130 * DAY);
+  const after = await computeLeague(pool, 'eng', 1, EPOCH + 165 * DAY);
   const bySlotB = Object.fromEntries(before.table.concat(before.table2).map(t => [t.slot, t]));
   after.table.concat(after.table2).forEach(t => {
     assert.equal(t.p, bySlotB[t.slot].p, 'played, slot ' + t.slot);
@@ -318,7 +318,7 @@ test('009: season leaders come straight from the banked scorecards', async () =>
 test('010: the world rankings ladder stands on the last three match ratings', async () => {
   const rk = await computeRankings(pool, EPOCH + 102 * DAY);
   assert.equal(rk.clubs.length, 256, 'every club in the world is ranked');
-  assert.equal(rk.countries.length, 19, 'every country is ranked');
+  assert.equal(rk.countries.length, 16, 'every country is ranked');
   assert.equal(rk.window, 3, 'the window is three matches');
   // every club that has played is on the ladder; when only England's round 1
   // is banked that is exactly its ten, and this run says so
@@ -545,7 +545,7 @@ test('012: friendly lineups - set, tweak, lock at T-1h; unanswered offers die at
   assert.ok(openers.includes(xi2[0]), 'the friendly-specific opener opened: ' + openers.join(', '));
   // an offer nobody answers dies an hour before the match and is never played
   const T2 = Date.now() + 2 * 3600000;
-  const off = await as(U1, `SELECT public.world_friendly_challenge('eng', 3, $1) AS r`, [T2]);
+  const off = await as(U1, `SELECT public.world_friendly_challenge('eng', 9, $1) AS r`, [T2]);
   await runFriendlies(pool, host, { now: T2 - 30 * 60000 });
   const dead = (await pool.query(`SELECT status FROM friendlies WHERE id=$1`, [off.rows[0].r.id])).rows[0];
   assert.equal(dead.status, 'expired', 'unaccepted at T-1h: expired');
@@ -605,7 +605,7 @@ test('014: the living player - careers, form, tired legs, all from the record', 
   const before = await sq();
   assert.ok(before.length >= 11);
   // rounds have been played above, so the men have lives by now
-  await evolveCountry(pool, 'eng', EPOCH + 130 * DAY);
+  await evolveCountry(pool, 'eng', EPOCH + 165 * DAY);
   const after = await sq();
   const capped = after.filter(p => p.career && p.career.m > 0);
   assert.ok(capped.length >= 11, 'at least an XI have caps: ' + capped.length);
@@ -628,7 +628,7 @@ test('014: the living player - careers, form, tired legs, all from the record', 
   // nobody is broken by a season of cricket: rotation is an edge, not a cliff
   assert.ok(after.every(p => p.fatN < 90), 'no one is shattered by league cricket');
   // and it NEVER DRIFTS: recomputing from the same record changes nothing
-  await evolveCountry(pool, 'eng', EPOCH + 130 * DAY, host);
+  await evolveCountry(pool, 'eng', EPOCH + 165 * DAY, host);
   const twice = await sq();
   assert.deepEqual(twice, after, 'evolution is a pure function of the record');
   // a life changes a man's form and his legs; only the nets change his craft,
@@ -772,7 +772,7 @@ test('016: the nets, the face and the money all belong to the world', async () =
   assert.ok(after.skills.power >= after.baseSkills.power, 'the nets never made him worse');
   assert.ok(after.trainProgress && after.trainProgress.power > 0, 'he has genuinely been working on it');
   // and it never drifts: the same plans replay to the same cricketer
-  await evolveCountry(pool, 'eng', EPOCH + 130 * DAY, host);
+  await evolveCountry(pool, 'eng', EPOCH + 165 * DAY, host);
   const again = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
   assert.deepEqual(again.find(p => p.name === pupil.name).skills, after.skills, 'training is a pure function of the plans worked');
 
@@ -941,7 +941,7 @@ test('018: the academy brings boys through, paid for and recomputable', async ()
   // remembered, so a season of another man's training is not worked into him
   const shirt = after.squad.find(p => p.name === lad);
   assert.ok(shirt.joined && shirt.joined.s >= 1 && shirt.joined.r >= 1, 'the world remembers when he came up');
-  await evolveCountry(pool, 'eng', EPOCH + 130 * DAY, host);
+  await evolveCountry(pool, 'eng', EPOCH + 165 * DAY, host);
   const post = (await pool.query(
     `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad.find(p => p.name === lad);
   assert.deepEqual(post.skills, shirt.baseSkills, 'he starts from the cricketer the academy turned out');
@@ -1152,7 +1152,7 @@ test('020: the books are a ledger, and they recompute from the record', async ()
   // WINNING PAYS. The club at the top of the table draws a bigger crowd, is in
   // a better mood and is richer than the club at the bottom.
   const lg = (await pool.query(`SELECT body FROM snapshots WHERE key='league/eng'`)).rows[0].body;
-  const top = rows.find(r => r.slot === lg.table[0].slot), bot = rows.find(r => r.slot === lg.table[9].slot);
+  const top = rows.find(r => r.slot === lg.table[0].slot), bot = rows.find(r => r.slot === lg.table[7].slot);
   assert.ok(top.finance.supporters > bot.finance.supporters,
     'the champions have the bigger following (' + top.finance.supporters + ' v ' + bot.finance.supporters + ')');
   assert.ok(top.finance.mood >= bot.finance.mood, 'and the happier one');
@@ -1433,7 +1433,7 @@ test('022: a card marks itself, and those marks are what move form', async () =>
 
   // FORM IS FED BY THOSE POINTS. Recompute the living layer and a man who has
   // had a good run is in better nick than one who has had a bad one.
-  await evolveCountry(pool, 'eng', EPOCH + 130 * DAY, host);
+  await evolveCountry(pool, 'eng', EPOCH + 165 * DAY, host);
   const squad = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
   const capped = squad.filter(p => p.career && p.career.m > 0);
   assert.ok(capped.length >= 11);
@@ -1442,7 +1442,7 @@ test('022: a card marks itself, and those marks are what move form', async () =>
     'the squad is not all in identical nick - the points genuinely separate them');
   // and it still never drifts
   const before = squad.map(p => p.formIx);
-  await evolveCountry(pool, 'eng', EPOCH + 130 * DAY, host);
+  await evolveCountry(pool, 'eng', EPOCH + 165 * DAY, host);
   const after = (await pool.query(
     `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad.map(p => p.formIx);
   assert.deepEqual(after, before, 'form is still a pure function of the record');
