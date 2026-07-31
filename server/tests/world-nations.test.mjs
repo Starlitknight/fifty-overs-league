@@ -407,8 +407,16 @@ test('the ladder and the room read the international game', async () => {
   assert.equal(e.window, WIN_ROUND);
   assert.equal(e.squad.length, SQUAD_SIZE);
   assert.ok(e.squad.every(m => m.club && m.fee > 0), 'every man names his club and his fee');
-  assert.ok(e.squad.filter(m => m.caps === 1).length >= 11,
-    'the eleven who played have a cap; a squad man who watched does not');
+  // the men who FLEW are the ones the caps book answers for. (This used to
+  // count capped men in the STANDING squad and lean on the selectors keeping
+  // most of the touring party - true when every match was played in identical
+  // conditions, but real weather and real pitches churn form and therefore
+  // selection. The tour party is the invariant: the eleven-plus who took the
+  // field are capped, and somebody who carried the drinks is not.)
+  assert.ok(e.tourSquad.filter(m => m.caps === 1).length >= 11,
+    'the eleven who played have a cap');
+  assert.ok(e.tourSquad.some(m => !m.caps),
+    'and a squad man who watched does not');
   assert.ok(e.caps.length, 'the caps book is populated');
   assert.ok(Object.keys(e.record || {}).length >= e.caps.length,
     'and the same book is keyed by name, for a page that wants one man');

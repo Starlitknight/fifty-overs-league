@@ -22,7 +22,14 @@ const N = Math.max(4, parseInt(process.env.BENCH_N || '12', 10));
 const TARGETS = {
   balanced: { par: [252, 292], wkts: [6.0, 9.5], spinShare: [0.30, 0.52] },
   dry: { par: [215, 268], wkts: [6.5, 10], spinShare: [0.44, 0.68] },
-  green: { par: [210, 282], wkts: [6.5, 10], spinShare: [0.12, 0.42] }
+  green: { par: [210, 282], wkts: [6.5, 10], spinShare: [0.12, 0.42] },
+  // the surfaces the served world now rolls out, held to their real-ODI
+  // equivalents: Caribbean/UAE slow tracks par in the 200s with spin earning
+  // its keep, cracked day-two surfaces wicket-rich, two-paced drop-ins
+  // boundary-starved but not unplayable
+  slow: { par: [195, 258], wkts: [6.5, 10.5], spinShare: [0.35, 0.65] },
+  cracked: { par: [195, 265], wkts: [6.8, 10.5], spinShare: [0.25, 0.58] },
+  twoPaced: { par: [188, 252], wkts: [6.5, 10.5], spinShare: [0.28, 0.60] }
 };
 
 import vm from 'node:vm';
@@ -63,7 +70,7 @@ const agg = list => {
     spinShare: +(sw / Math.max(0.001, sw + pw)).toFixed(3) };
 };
 const res = {};
-for (const pitch of ['balanced', 'dry', 'green']) {
+for (const pitch of ['balanced', 'dry', 'green', 'slow', 'cracked', 'twoPaced']) {
   for (const mode of ['off', 'on']) {
     eng.setTuning(mode === 'on');
     const runs = seeds.map(s => { const j = richRunner(0, 1, pitch, 'Sunny', s); return j ? JSON.parse(j) : null; }).filter(Boolean);
@@ -87,7 +94,7 @@ for (const pitch of Object.keys(TARGETS)) {
 
 const row = k => { const r = res[k]; return k.padEnd(14) + (r ? 'par ' + String(r.par).padEnd(7) + 'wkts ' + String(r.wkts).padEnd(6) + 'spinW ' + String(r.spinW).padEnd(6) + 'paceW ' + String(r.paceW).padEnd(6) + 'spinShare ' + r.spinShare : 'n/a'); };
 console.log('engine-bench  N=' + N + ' seeds per cell   (off = stock model, for comparison)');
-for (const pitch of ['balanced', 'dry', 'green']) { console.log(row(pitch + '_off')); console.log(row(pitch + '_on')); }
+for (const pitch of ['balanced', 'dry', 'green', 'slow', 'cracked', 'twoPaced']) { console.log(row(pitch + '_off')); console.log(row(pitch + '_on')); }
 console.log('deterministic: ' + res.deterministic);
 if (fail.length) { console.error('\nFAIL:\n  ' + fail.join('\n  ')); process.exit(1); }
 console.log('\nPASS — tuned model inside all target bands.');

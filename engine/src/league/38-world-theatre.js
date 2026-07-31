@@ -315,9 +315,24 @@
       var matchId = rid + ":s" + cal.seasonNo + ":r" + srvRound + ":h" + m.home.slot + "a" + m.away.slot;
       var seed = h32(matchId) || 1;
       window.onMatchEnd = function () {};
-      M = newMatch(home, away, "balanced", seed);
-      M.meta = { home: home.name, away: away.name, pitch: "balanced", weather: "Sunny", comp: "world", ground: home.ground, __spectate: 1, isUser: false };
-      M.isUserMatch = false; M.ordersMap = ordersMap || {};
+      // THE BROADCAST IS THE MATCH THE WORLD RECORDED. The umpire played this
+      // fixture on the forecast pitch, under the forecast sky, with every
+      // unmanaged club batting on its archetype's doctrine - all three read
+      // from the planet's own tables, which this build carries too. Replaying
+      // with anything else would show a different game than the banked card.
+      var cond = { pitch: "balanced", weather: "Sunny" };
+      try { cond = window.__foPlanet.condOf(rid, m.home.slot, cal.seasonNo, srvRound) || cond; } catch (eC) {}
+      var om2 = ordersMap || {};
+      try {
+        [m.home, m.away].forEach(function (side) {
+          if (om2[side.name]) return;                      // a manager's sheet stands
+          var doc = window.__foPlanet.doctrineOf(rid, side.slot);
+          if (doc) om2[side.name] = doc;
+        });
+      } catch (eD) {}
+      M = newMatch(home, away, cond.pitch, seed);
+      M.meta = { home: home.name, away: away.name, pitch: cond.pitch, weather: cond.weather, comp: "world", ground: home.ground, __spectate: 1, isUser: false };
+      M.isUserMatch = false; M.ordersMap = om2;
       App.tossState = { stage: "x" };
       applyToss(aiTossDecision());
       // THE BROADCAST RUNS ON THE WORLD CLOCK. The full card is paced across
@@ -393,8 +408,12 @@
             { country: d.away.country, slot: d.away.slot, name: d.away.name }] };
           var seed = h32("friendly:" + d.id) || 1;
           window.onMatchEnd = function () {};
-          M = newMatch(home, away, "balanced", seed);
-          M.meta = { home: home.name, away: away.name, pitch: "balanced", weather: "Sunny", comp: "friendly", ground: home.ground, __spectate: 1, isUser: false };
+          // same law as the league broadcast: the challenger's ground, its
+          // nation's weather - the identical call the umpire made
+          var fCond = { pitch: "balanced", weather: "Sunny" };
+          try { fCond = window.__foPlanet.condOf(d.home.country, d.home.slot, 0, Number(d.id) || seed % 997) || fCond; } catch (eC2) {}
+          M = newMatch(home, away, fCond.pitch, seed);
+          M.meta = { home: home.name, away: away.name, pitch: fCond.pitch, weather: fCond.weather, comp: "friendly", ground: home.ground, __spectate: 1, isUser: false };
           M.isUserMatch = false; M.ordersMap = d.orders || {};
           App.tossState = { stage: "x" };
           applyToss(aiTossDecision());

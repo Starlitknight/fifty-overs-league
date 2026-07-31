@@ -259,6 +259,112 @@
     return FO_STR_LADDER[rank < 0 ? 4 : rank];
   }
 
+  // ---- THE CONDITIONS: WHAT KIND OF CRICKET A PLACE PLAYS -------------------
+  // Until now the served world bowled every ball on a 'balanced' pitch under a
+  // default sky - six pitches and ten skies sat in the engine, dormant. Each
+  // nation now has a climate (what its grounds and weather tend to produce),
+  // and each HOME CLUB tilts its own square toward the cricket it plays, the
+  // way real groundsmen do: a pace battery's home leans green, a spin circus's
+  // leans dry. Deterministic per fixture - country, home slot, season, round -
+  // and nothing else, so the forecast is knowable before a sheet is set, the
+  // same for a manager asleep in another timezone as for one watching live,
+  // and a healed day reproduces the very match it heals.
+  var COND_DEFAULT = { p: { balanced: 45, green: 15, dry: 12, slow: 13, cracked: 5, twoPaced: 10 },
+    w: { Sunny: 55, Overcast: 15, Hot: 15, Windy: 15 } };
+  var NAT_COND = {
+    // the wet green north: seam, cloud, and the ever-present forecast
+    eng: { p: { green: 32, balanced: 38, dry: 4, slow: 6, cracked: 6, twoPaced: 14 },
+      w: { Sunny: 24, Overcast: 38, Drizzle: 12, Chilly: 12, Windy: 8, Misty: 6 } },
+    wal: { p: { green: 34, balanced: 36, dry: 4, slow: 6, cracked: 6, twoPaced: 14 },
+      w: { Sunny: 22, Overcast: 38, Drizzle: 13, Chilly: 13, Windy: 8, Misty: 6 } },
+    ire: { p: { green: 40, balanced: 32, dry: 2, slow: 8, cracked: 4, twoPaced: 14 },
+      w: { Sunny: 18, Overcast: 40, Drizzle: 15, Chilly: 12, Windy: 10, Misty: 5 } },
+    sco: { p: { green: 42, balanced: 30, dry: 2, slow: 8, cracked: 4, twoPaced: 14 },
+      w: { Sunny: 16, Overcast: 38, Drizzle: 15, Chilly: 18, Windy: 10, Misty: 3 } },
+    ned: { p: { green: 34, balanced: 38, dry: 3, slow: 8, cracked: 3, twoPaced: 14 },
+      w: { Sunny: 26, Overcast: 34, Drizzle: 10, Chilly: 10, Windy: 20 } },
+    nzl: { p: { green: 38, balanced: 34, dry: 3, slow: 7, cracked: 4, twoPaced: 14 },
+      w: { Sunny: 26, Overcast: 32, Drizzle: 10, Chilly: 12, Windy: 20 } },
+    // the true, hard grounds of the south: carry, cracks late, sun
+    aus: { p: { green: 22, balanced: 44, dry: 6, slow: 4, cracked: 14, twoPaced: 10 },
+      w: { Sunny: 44, Hot: 22, Scorching: 10, Overcast: 12, Windy: 12 } },
+    rsa: { p: { green: 28, balanced: 40, dry: 6, slow: 6, cracked: 10, twoPaced: 10 },
+      w: { Sunny: 44, Hot: 20, Overcast: 18, Windy: 12, 'Dew later': 6 } },
+    // the subcontinent: turn, heat, dew under lights
+    sub: { p: { green: 3, balanced: 20, dry: 44, slow: 20, cracked: 5, twoPaced: 8 },
+      w: { Sunny: 30, Hot: 26, Scorching: 12, Humid: 18, 'Dew later': 14 } },
+    slk: { p: { green: 3, balanced: 20, dry: 34, slow: 32, cracked: 3, twoPaced: 8 },
+      w: { Sunny: 28, Hot: 22, Humid: 34, 'Dew later': 16 } },
+    pak: { p: { green: 5, balanced: 40, dry: 34, slow: 10, cracked: 5, twoPaced: 6 },
+      w: { Sunny: 40, Hot: 28, Scorching: 14, Humid: 10, 'Dew later': 8 } },
+    afg: { p: { green: 3, balanced: 22, dry: 42, slow: 14, cracked: 13, twoPaced: 6 },
+      w: { Sunny: 44, Hot: 26, Scorching: 12, Windy: 12, Chilly: 6 } },
+    bgd: { p: { green: 2, balanced: 18, dry: 36, slow: 32, cracked: 4, twoPaced: 8 },
+      w: { Sunny: 22, Hot: 24, Humid: 36, 'Dew later': 18 } },
+    nep: { p: { green: 4, balanced: 24, dry: 38, slow: 22, cracked: 6, twoPaced: 6 },
+      w: { Sunny: 40, Hot: 16, Chilly: 16, Windy: 14, Misty: 14 } },
+    // the Caribbean and the drop-in world: slow, grippy, two-paced
+    win: { p: { green: 4, balanced: 22, dry: 12, slow: 34, cracked: 6, twoPaced: 22 },
+      w: { Sunny: 40, Hot: 26, Humid: 22, Windy: 12 } },
+    usa: { p: { green: 6, balanced: 24, dry: 8, slow: 32, cracked: 6, twoPaced: 24 },
+      w: { Sunny: 46, Hot: 22, Overcast: 16, Windy: 16 } },
+    can: { p: { green: 8, balanced: 26, dry: 6, slow: 30, cracked: 6, twoPaced: 24 },
+      w: { Sunny: 40, Overcast: 22, Chilly: 20, Windy: 18 } },
+    // African highveld-adjacent: honest surfaces slowing with wear
+    zim: { p: { green: 8, balanced: 36, dry: 16, slow: 24, cracked: 8, twoPaced: 8 },
+      w: { Sunny: 50, Hot: 22, Overcast: 14, Windy: 14 } },
+    ken: { p: { green: 8, balanced: 38, dry: 16, slow: 22, cracked: 8, twoPaced: 8 },
+      w: { Sunny: 48, Hot: 24, Overcast: 14, Windy: 14 } }
+  };
+  // the groundsman leans the home square toward the home side's cricket
+  var ARCH_TILT = {
+    express: { green: 22 }, wizard: { dry: 22 }, miser: { slow: 14 },
+    rock: { balanced: 12 }, blade: { balanced: 12 }, finisher: { balanced: 12 },
+    greybeard: { slow: 8 }, engine: { green: 8 }, gloveman: {}, prodigy: {}
+  };
+  function pickWeighted(tbl, r) {
+    var total = 0, k;
+    for (k in tbl) total += Math.max(0, tbl[k] || 0);
+    if (!(total > 0)) return null;
+    var at = r * total;
+    for (k in tbl) { at -= Math.max(0, tbl[k] || 0); if (at < 0) return k; }
+    for (k in tbl) return k;
+    return null;
+  }
+  // A BOT PLAYS ITS ARCHETYPE - and the umpire and the broadcast read the
+  // SAME doctrine, so the match the theatre replays is the match the world
+  // recorded. A claimed club's own sheet always wins; this only speaks for
+  // clubs whose manager is the archetype itself.
+  var ARCH_DOCTRINE = {
+    blade:     { phaseIntent: { pp: 1,  mid: 0, death: 1 } },
+    finisher:  { phaseIntent: { pp: 0,  mid: 0, death: 2 } },
+    rock:      { phaseIntent: { pp: -1, mid: 0, death: 1 } },
+    greybeard: { phaseIntent: { pp: -1, mid: 0, death: 0 } }
+  };
+  function doctrineOf(rid, slot) {
+    try {
+      var side = sidesOf(rid)[slot | 0];
+      var d = side && ARCH_DOCTRINE[side.arch];
+      return d ? JSON.parse(JSON.stringify(d)) : null;
+    } catch (e) { return null; }
+  }
+
+  function condOf(rid, homeSlot, seasonNo, round) {
+    var prof = NAT_COND[rid] || COND_DEFAULT;
+    var p = {}, k;
+    for (k in prof.p) p[k] = prof.p[k];
+    try {
+      var side = sidesOf(rid)[homeSlot | 0];
+      var tilt = (side && ARCH_TILT[side.arch]) || {};
+      for (k in tilt) p[k] = (p[k] || 0) + tilt[k];
+    } catch (e) {}
+    var key = "cond|" + rid + "|" + (homeSlot | 0) + "|" + (seasonNo | 0) + "|" + (round | 0);
+    return {
+      pitch: pickWeighted(p, rnd01(key + "|p")) || "balanced",
+      weather: pickWeighted(prof.w, rnd01(key + "|w")) || "Sunny"
+    };
+  }
+
   function sidesOf(rid) {
     if (rid === "eng") return ENG_SIDES.map(function (s0) {
       return { slot: s0.slot, boss: !!s0.boss, name: s0.name, city: s0.city,
@@ -823,5 +929,5 @@
   window.__foPlanet = { roundOfDay: roundOfDay, dayOfRound: dayOfRound, dayOfSeasonRound: dayOfSeasonRound,
     anchorWorld: anchorWorld, anchorOf: anchorOf, seasonStart: seasonStart,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
-    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
+    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();

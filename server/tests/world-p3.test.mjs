@@ -638,10 +638,14 @@ test('015: watched IS recorded - the banked living patch replays the same match'
   // did when clubs stopped sharing one archetype and one budget.
   const cfg = countryConfigs(host).filter(c => c.id === 'eng')[0];
   const squadOf = slot => squadFor(host, cfg, cfg.clubs.filter(c => c.slot === slot)[0]);
+  // ...and it replays THE MATCH AS PLAYED: the forecast pitch and sky from
+  // the planet's one conditions table, and the banked sheets (bot doctrines
+  // included) - exactly the inputs a phone's broadcast derives for itself
+  const cond = host.condFor('eng', m.home_slot, 1, m.round);
   const replay = host.runMatch(
     { name: m.home_name, players: applyLiving(squadOf(m.home_slot), m.living[m.home_name], host) },
     { name: m.away_name, players: applyLiving(squadOf(m.away_slot), m.living[m.away_name], host) },
-    'balanced', Number(m.seed), m.orders);
+    cond.pitch, Number(m.seed), m.orders, cond.weather);
   assert.equal(facts(replay), facts(m.result_canonical), 'the broadcast is the match the world recorded');
 
   // and the patch is what makes it so: the pristine generated squads, same

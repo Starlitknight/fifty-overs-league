@@ -110,6 +110,23 @@ export function countryConfigs(host) {
 export const STR_FALLBACK = 1;
 export const BASE_XI = 36000;                 // the old world's median XI rating
 
+// A LEAGUE IS AS STRONG AS ITS CRICKET CULTURE. Every nation's ten clubs used
+// to draw from one identical talent pool, so a Dutch mid-table side was the
+// equal of an Australian one and the World Cup was a coin toss between giants
+// and minnows. Each nation now carries a tier calibrated loosely against real
+// one-day standing: the subcontinent and the big three at the top, the
+// associates below. WITHIN a league nothing changes - the same ladder rides
+// on top of the tier, so every domestic season is exactly as competitive as
+// every other. The tier shows where leagues MEET: continental cups, the World
+// Cup windows, a friendly across borders - there an Australian club really
+// does outgun a Canadian one, and national sides inherit their true pecking
+// order from the domestic talent they are picked from.
+export const NAT_STR = {
+  sub: 1.10, aus: 1.08, eng: 1.07, pak: 1.05, rsa: 1.05, nzl: 1.04, slk: 1.02,
+  afg: 1.00, bgd: 0.98, win: 0.97, zim: 0.93, ire: 0.92, sco: 0.90, ned: 0.89,
+  wal: 0.88, ken: 0.87, usa: 0.87, nep: 0.86, can: 0.85
+};
+
 const xiOf = sq => {
   const best = sq.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 11);
   return best.reduce((s, p) => s + (p.rating || 0), 0) / Math.max(1, best.length);
@@ -136,7 +153,7 @@ export function squadFor(host, cfg, club, gen = 1) {
   const raw = host.genSquad('world' + ((gen | 0) || 1) + '|' + cfg.id + '|' + club.slot, cfg.nat,
     club.arch || cfg.arch, club.boss ? cfg.capt : 'general');
   const str = club.str || STR_FALLBACK;
-  return calibrate(host, raw, BASE_XI * str);
+  return calibrate(host, raw, BASE_XI * (NAT_STR[cfg.id] || 1) * str);
 }
 
 // what generation this world is dealing from; 1 for a world founded before the

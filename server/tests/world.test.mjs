@@ -84,11 +84,15 @@ test('GOLDEN MASTER: server-persisted result is byte-identical to a re-sim from 
   const home = genesisSquads.find(c => c.slot === m.home_slot);
   const away = genesisSquads.find(c => c.slot === m.away_slot);
   const fresh = makeHost();  // a brand-new engine VM, as a client would boot
-  const resim = fresh.runMatch({ name: home.name, players: home.squad }, { name: away.name, players: away.squad }, m.pitch, Number(m.seed));
+  // the replay reproduces THE MATCH AS PLAYED: the banked pitch, the banked
+  // sheets (a bot's doctrine included), and the forecast weather - all three
+  // deterministic from the row and the world, which is the whole guarantee
+  const wx = fresh.condFor(m.country_id, m.home_slot, m.season_no, m.round).weather;
+  const resim = fresh.runMatch({ name: home.name, players: home.squad }, { name: away.name, players: away.squad }, m.pitch, Number(m.seed), m.orders, wx);
   assert.equal(resim, m.result_canonical, 'byte-identical replay of the canonical string');
   assert.deepEqual(JSON.parse(resim), m.result, 'semantically identical to the queryable jsonb');
   assert.equal(Number(m.seed), seedOf(m.id), 'seed derives from match id');
-  assert.equal(m.engine_version, 'v1', 'engine version stamped');
+  assert.equal(m.engine_version, 'v2', 'engine version stamped');
 });
 
 test('standings snapshot derives purely from matches (re-run stable)', async () => {

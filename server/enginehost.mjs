@@ -115,11 +115,13 @@ globalThis.__svcOvr = function (playersJson) {
     try { return window.foPkOvr(p); } catch (e) { return null; }
   }));
 };
-globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson) {
+globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson, weather) {
   var home = JSON.parse(homeJson), away = JSON.parse(awayJson);
   onMatchEnd = function () {};
   M = newMatch(home, away, pitch, (seed >>> 0) || 1);
-  M.meta = { home: home.name, away: away.name, pitch: pitch, weather: 'Sunny', comp: 'world', isUser: false };
+  // weather rides into the same meta the client's own matches use - Overcast
+  // swings, Drizzle can cut overs and revise the chase by DLS, heat tires
+  M.meta = { home: home.name, away: away.name, pitch: pitch, weather: weather || 'Sunny', comp: 'world', isUser: false };
   // a claimed club's submitted orders ride in keyed by club name; the
   // engine's ordersFor/pickXI consult M.ordersMap before anything else
   M.isUserMatch = false; M.ordersMap = ordersJson ? JSON.parse(ordersJson) : {};
@@ -148,6 +150,15 @@ globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson) {
     worm: M.worm
   });
 };
+// the fixture's conditions, from the planet's ONE table - the same function a
+// phone calls to print the forecast, so the umpire can never play a different
+// pitch than the fixtures page promised
+globalThis.__svcCond = function (rid, slot, seasonNo, round) {
+  return JSON.stringify(window.__foPlanet.condOf(rid, slot, seasonNo, round));
+};
+globalThis.__svcDoctrine = function (rid, slot) {
+  return JSON.stringify(window.__foPlanet.doctrineOf(rid, slot));
+};
 globalThis.__svcWorldCfg = function () {
   // the world's shape read from the SHIPPED build itself — regions, club
   // names and national hours come from the same code the phones run, so the
@@ -171,6 +182,8 @@ globalThis.__svcWorldCfg = function () {
   const gen = vm.runInContext('__svcGenSquad', eng.ctx);
   const run = vm.runInContext('__svcRun', eng.ctx);
   const cfg = vm.runInContext('__svcWorldCfg', eng.ctx);
+  const cond = vm.runInContext('__svcCond', eng.ctx);
+  const doct = vm.runInContext('__svcDoctrine', eng.ctx);
   const train = vm.runInContext('__svcTrain', eng.ctx);
   const der = vm.runInContext('__svcDerive', eng.ctx);
   const ovr = vm.runInContext('__svcOvr', eng.ctx);
@@ -190,10 +203,16 @@ globalThis.__svcWorldCfg = function () {
     // the client's own match rating for one side of a banked card
     teamRatings(result, teamName) { return JSON.parse(tmr(JSON.stringify(result), teamName)); },
     // returns the canonical result JSON STRING — stored verbatim, compared verbatim
-    runMatch(homeTeam, awayTeam, pitch, seed, ordersMap) {
+    runMatch(homeTeam, awayTeam, pitch, seed, ordersMap, weather) {
       return run(JSON.stringify(homeTeam), JSON.stringify(awayTeam), pitch, seed,
-        ordersMap ? JSON.stringify(ordersMap) : null);
+        ordersMap ? JSON.stringify(ordersMap) : null, weather || 'Sunny');
     },
+    // what the sky and the square will do for a given fixture - deterministic,
+    // published in advance, identical on every device and on the umpire
+    condFor(rid, slot, seasonNo, round) { return JSON.parse(cond(rid, slot, seasonNo, round)); },
+    // the sheet an unmanaged club's identity writes - the theatre reads the
+    // very same table, so a replayed broadcast files the same doctrine
+    doctrineFor(rid, slot) { return JSON.parse(doct(rid, slot)); },
     // the 19 nations as the shipped client defines them
     worldConfig() { return JSON.parse(cfg()); }
   };

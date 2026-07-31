@@ -374,6 +374,49 @@
     });
     if (A.expAdj) players.forEach(function (p) { if (p === starter) return; p.exp = Math.max(2, Math.min(99, Math.round(p.exp + A.expAdj))); p.expWord = foExpWordOf(p.exp); });
     if (A.captAdj) players.forEach(function (p) { if (p === starter) return; p.capt = Math.max(5, Math.min(96, Math.round(p.capt * A.captAdj))); });
+    // ---- SAME ARCHETYPE, NATIONAL ACCENT ----------------------------------
+    // A Spin Circus is not one thing the world over: in India it is finger
+    // spin and strangling control, in Afghanistan wrist spin and chaos. Each
+    // entry reshapes HOW a nation plays an archetype - paired boosts and cuts,
+    // never a net strength change (the calibration ladder owns strength) - and
+    // may restyle the spinners' craft. Composition counts are never touched,
+    // and the captain's card stays the promise the manager tapped.
+    var FO_NAT_FLAVOR = {
+      "India|wizard":        { spinKind: "fingerSpin", bias: [["bowlers", { economy: 1.06, discipline: 1.06, variation: 0.96 }]] },
+      "Sri Lanka|wizard":    { spinKind: "fingerSpin", bias: [["bowlers", { variation: 1.06, moveTurn: 1.05, wicket: 0.96 }]] },
+      "Bangladesh|wizard":   { spinKind: "fingerSpin", bias: [["bowlers", { economy: 1.07, discipline: 1.04, wicket: 0.95 }]] },
+      "Afghanistan|wizard":  { spinKind: "wristSpin", bias: [["bowlers", { wicket: 1.07, variation: 1.10, economy: 0.94, discipline: 0.95 }]] },
+      "Nepal|wizard":        { spinKind: "wristSpin", bias: [["bowlers", { wicket: 1.05, variation: 1.06, discipline: 0.94 }]] },
+      "Pakistan|express":    { bias: [["bowlers", { moveTurn: 1.08, wicket: 1.05, discipline: 0.93 }]] },
+      "Australia|express":   { bias: [["bowlers", { discipline: 1.07, economy: 1.05, moveTurn: 0.95 }]] },
+      "England|express":     { bias: [["bowlers", { moveTurn: 1.08, economy: 0.97 }]] },
+      "South Africa|express": { bias: [["bowlers", { wicket: 1.06, stamina: 1.05, variation: 0.94 }]] },
+      "West Indies|express": { bias: [["bowlers", { wicket: 1.06, discipline: 0.95 }]] },
+      "West Indies|blade":   { bias: [["batters", { power: 1.08, rotation: 0.95 }]] },
+      "West Indies|finisher": { bias: [["batters", { power: 1.07, temperament: 0.96 }]] },
+      "India|blade":         { bias: [["batters", { rotation: 1.08, vsSpin: 1.05, power: 0.95 }]] },
+      "Australia|blade":     { bias: [["batters", { power: 1.06, vsPace: 1.04, vsSpin: 0.94 }]] },
+      "England|rock":        { bias: [["batters", { vsPace: 1.06, temperament: 1.04, vsSpin: 0.95 }]] },
+      "India|rock":          { bias: [["batters", { vsSpin: 1.08, vsPace: 0.94 }]] },
+      "New Zealand|engine":  { bias: [["all", { fielding: 1.06, catching: 1.06 }], ["bowlers", { wicket: 0.97 }]] }
+    };
+    var NF = FO_NAT_FLAVOR[country + "|" + archId];
+    if (NF) {
+      (NF.bias || []).forEach(function (rule) {
+        players.forEach(function (p) {
+          if (p === starter || !inGroup(p, rule[0])) return;
+          for (var k in rule[1]) {
+            if (p.skills[k] == null) continue;
+            if (BATSK[k] && foPureBowler(p)) continue;
+            p.skills[k] = Math.max(4, Math.min(96, Math.round(p.skills[k] * rule[1][k])));
+          }
+        });
+      });
+      if (NF.spinKind) players.forEach(function (p) {
+        if (p === starter) return;
+        if (p.bowlTypeFull === "wristSpin" || p.bowlTypeFull === "fingerSpin") p.bowlTypeFull = NF.spinKind;
+      });
+    }
     // The Engine: two batters pick up honest part-time overs - everyone chips in
     if (A.partTimers) {
       players.filter(function (p) { return p !== starter && !isBowlP(p) && !p.keeper && p.role !== "allRounder"; })

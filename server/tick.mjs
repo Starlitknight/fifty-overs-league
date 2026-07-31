@@ -54,6 +54,13 @@ async function playRound(pool, host, country, season, round, opts) {
   // torn up. Absence rides into the banked living patch so the broadcast
   // fields the same eleven the umpire did.
   const abroad = await absentBySlot(pool, country, season.season_no, round);
+  // A BOT PLAYS ITS ARCHETYPE. A club nobody manages used to bat on the
+  // engine's one default plan, so a Cavalier XI and a Stonewall XI played the
+  // same innings. Each unmanaged club now files the sheet its identity would
+  // write - the blade attacks the powerplay, the rock sees off the new ball,
+  // the finisher keeps its powder dry for the death, the old guard never
+  // panics. A CLAIMED club's own sheet always wins: the doctrine only speaks
+  // where a manager has not.
   let played = 0;
   for (let i = 0; i < fixtures.length; i++) {
     if (opts && opts.failAfter != null && played >= opts.failAfter) throw new Error('injected-crash');
@@ -78,7 +85,16 @@ async function playRound(pool, host, country, season, round, opts) {
       if (o) tieOrders[club.name] = o;
     };
     fileSheet(home, H); fileSheet(away, A);
-    const resultJson = host.runMatch({ name: home.name, players: H.players }, { name: away.name, players: A.players }, 'balanced', seed, tieOrders);
+    for (const club of [home, away]) {
+      if (tieOrders[club.name]) continue;                  // a manager's sheet stands
+      const doc = host.doctrineFor(country, club.slot);    // the planet's own table
+      if (doc) tieOrders[club.name] = doc;
+    }
+    // the fixture's conditions: the home nation's climate, tilted by the home
+    // club's own groundsman - deterministic, so the forecast a phone printed
+    // is the pitch the umpire rolls out, and a healed day replays itself
+    const cond = host.condFor(country, hs, season.season_no, round);
+    const resultJson = host.runMatch({ name: home.name, players: H.players }, { name: away.name, players: A.players }, cond.pitch, seed, tieOrders, cond.weather);
     if (!resultJson) throw new Error('engine failed to complete ' + id);
     // the living state these men carried into the match, banked with it:
     // the theatre lays it back over the generated squads and replays the
@@ -91,7 +107,7 @@ async function playRound(pool, host, country, season, round, opts) {
     await pool.query(
       `INSERT INTO matches(id, country_id, season_no, round, home_slot, away_slot, seed, engine_version, pitch, orders, result, result_canonical, home_name, away_name, living, ratings)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,$12::text,$13,$14,$15::jsonb,$16::jsonb) ON CONFLICT (id) DO NOTHING`,
-      [id, country, season.season_no, round, hs, as, seed, ENGINE_VERSION, 'balanced', JSON.stringify(tieOrders), resultJson, resultJson, home.name, away.name, JSON.stringify(living), rat ? JSON.stringify(rat) : null]);
+      [id, country, season.season_no, round, hs, as, seed, ENGINE_VERSION, cond.pitch, JSON.stringify(tieOrders), resultJson, resultJson, home.name, away.name, JSON.stringify(living), rat ? JSON.stringify(rat) : null]);
     played++;
   }
   return played;
@@ -576,7 +592,9 @@ export async function runFriendlies(pool, host, opts = {}) {
       if (o) ordersMap[clubName] = o.orders;
     }
     const seed = seedOf('friendly:' + f.id);
-    const resultJson = host.runMatch({ name: hc.name, players: hc.squad }, { name: ac.name, players: ac.squad }, 'balanced', seed, ordersMap);
+    // a friendly is played at the challenger's ground, in its weather
+    const fCond = host.condFor(f.c_country, f.c_slot, 0, Number(f.id) || seed % 997);
+    const resultJson = host.runMatch({ name: hc.name, players: hc.squad }, { name: ac.name, players: ac.squad }, fCond.pitch, seed, ordersMap, fCond.weather);
     if (!resultJson) throw new Error('engine failed friendly ' + f.id);
     const living = { [hc.name]: livingPatch(hc.squad), [ac.name]: livingPatch(ac.squad) };
     await pool.query(`UPDATE friendlies SET status='played', result=$2::jsonb, engine_version=$3, living=$4::jsonb WHERE id=$1`,
@@ -718,7 +736,10 @@ async function playStage(pool, host, comp, seasonNo, stage, pairs) {
     if (ex.rowCount) { const w = ex.rows[0].result.winner; winners.push(w === A.name ? A : B); continue; }
     const seed = seedOf(comp + '|s' + seasonNo + '|' + stage + '|' + gi);
     const sqA = await squadFor(pool, comp, seasonNo, A), sqB = await squadFor(pool, comp, seasonNo, B);
-    const resultJson = host.runMatch({ name: A.name, players: sqA }, { name: B.name, players: sqB }, 'balanced', seed);
+    // a cup tie is staged in the first-drawn side's conditions - its country's
+    // climate without any groundsman tilt (slot 0 hosts, the neutral big ground)
+    const cCond = host.condFor(A.country || 'eng', 0, seasonNo, seed % 997);
+    const resultJson = host.runMatch({ name: A.name, players: sqA }, { name: B.name, players: sqB }, cCond.pitch, seed, undefined, cCond.weather);
     if (!resultJson) throw new Error('engine failed cup match ' + comp + ':' + stage + ':' + gi);
     const living = { [A.name]: livingPatch(sqA), [B.name]: livingPatch(sqB) };
     await pool.query(
