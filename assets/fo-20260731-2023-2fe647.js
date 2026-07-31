@@ -10033,7 +10033,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260731-1616-eb6963";
+  var FO_BUILD = "20260731-2023-2fe647";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -12062,6 +12062,49 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     });
     if (A.expAdj) players.forEach(function (p) { if (p === starter) return; p.exp = Math.max(2, Math.min(99, Math.round(p.exp + A.expAdj))); p.expWord = foExpWordOf(p.exp); });
     if (A.captAdj) players.forEach(function (p) { if (p === starter) return; p.capt = Math.max(5, Math.min(96, Math.round(p.capt * A.captAdj))); });
+    // ---- SAME ARCHETYPE, NATIONAL ACCENT ----------------------------------
+    // A Spin Circus is not one thing the world over: in India it is finger
+    // spin and strangling control, in Afghanistan wrist spin and chaos. Each
+    // entry reshapes HOW a nation plays an archetype - paired boosts and cuts,
+    // never a net strength change (the calibration ladder owns strength) - and
+    // may restyle the spinners' craft. Composition counts are never touched,
+    // and the captain's card stays the promise the manager tapped.
+    var FO_NAT_FLAVOR = {
+      "India|wizard":        { spinKind: "fingerSpin", bias: [["bowlers", { economy: 1.06, discipline: 1.06, variation: 0.96 }]] },
+      "Sri Lanka|wizard":    { spinKind: "fingerSpin", bias: [["bowlers", { variation: 1.06, moveTurn: 1.05, wicket: 0.96 }]] },
+      "Bangladesh|wizard":   { spinKind: "fingerSpin", bias: [["bowlers", { economy: 1.07, discipline: 1.04, wicket: 0.95 }]] },
+      "Afghanistan|wizard":  { spinKind: "wristSpin", bias: [["bowlers", { wicket: 1.07, variation: 1.10, economy: 0.94, discipline: 0.95 }]] },
+      "Nepal|wizard":        { spinKind: "wristSpin", bias: [["bowlers", { wicket: 1.05, variation: 1.06, discipline: 0.94 }]] },
+      "Pakistan|express":    { bias: [["bowlers", { moveTurn: 1.08, wicket: 1.05, discipline: 0.93 }]] },
+      "Australia|express":   { bias: [["bowlers", { discipline: 1.07, economy: 1.05, moveTurn: 0.95 }]] },
+      "England|express":     { bias: [["bowlers", { moveTurn: 1.08, economy: 0.97 }]] },
+      "South Africa|express": { bias: [["bowlers", { wicket: 1.06, stamina: 1.05, variation: 0.94 }]] },
+      "West Indies|express": { bias: [["bowlers", { wicket: 1.06, discipline: 0.95 }]] },
+      "West Indies|blade":   { bias: [["batters", { power: 1.08, rotation: 0.95 }]] },
+      "West Indies|finisher": { bias: [["batters", { power: 1.07, temperament: 0.96 }]] },
+      "India|blade":         { bias: [["batters", { rotation: 1.08, vsSpin: 1.05, power: 0.95 }]] },
+      "Australia|blade":     { bias: [["batters", { power: 1.06, vsPace: 1.04, vsSpin: 0.94 }]] },
+      "England|rock":        { bias: [["batters", { vsPace: 1.06, temperament: 1.04, vsSpin: 0.95 }]] },
+      "India|rock":          { bias: [["batters", { vsSpin: 1.08, vsPace: 0.94 }]] },
+      "New Zealand|engine":  { bias: [["all", { fielding: 1.06, catching: 1.06 }], ["bowlers", { wicket: 0.97 }]] }
+    };
+    var NF = FO_NAT_FLAVOR[country + "|" + archId];
+    if (NF) {
+      (NF.bias || []).forEach(function (rule) {
+        players.forEach(function (p) {
+          if (p === starter || !inGroup(p, rule[0])) return;
+          for (var k in rule[1]) {
+            if (p.skills[k] == null) continue;
+            if (BATSK[k] && foPureBowler(p)) continue;
+            p.skills[k] = Math.max(4, Math.min(96, Math.round(p.skills[k] * rule[1][k])));
+          }
+        });
+      });
+      if (NF.spinKind) players.forEach(function (p) {
+        if (p === starter) return;
+        if (p.bowlTypeFull === "wristSpin" || p.bowlTypeFull === "fingerSpin") p.bowlTypeFull = NF.spinKind;
+      });
+    }
     // The Engine: two batters pick up honest part-time overs - everyone chips in
     if (A.partTimers) {
       players.filter(function (p) { return p !== starter && !isBowlP(p) && !p.keeper && p.role !== "allRounder"; })
@@ -34307,13 +34350,20 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         }
       } catch (eS) {}
 
-      var rows = [];
-      if (snap && snap.table && snap.table.length) {
-        rows = snap.table.map(function (x) {
-          return { nm: (nmBySlot && nmBySlot[x.slot]) || x.name, recNm: x.name, p: x.p, w: x.w, l: x.l, t: x.t,
-            pts: x.pts, nrr: x.nrr, slot: x.slot, boss: !!x.boss, mine: x.slot === mySlot };
-        });
-      }
+      // THE PYRAMID: the snapshot carries both flights. The manager's own
+      // division is the headline table; the other renders beneath it, so one
+      // page holds the whole nation - the race you are in and the one you are
+      // climbing toward (or defending against).
+      var mapT = function (x) {
+        return { nm: (nmBySlot && nmBySlot[x.slot]) || x.name, recNm: x.name, p: x.p, w: x.w, l: x.l, t: x.t,
+          pts: x.pts, nrr: x.nrr, slot: x.slot, boss: !!x.boss, mine: x.slot === mySlot };
+      };
+      var rowsD1 = (snap && snap.table && snap.table.length) ? snap.table.map(mapT) : [];
+      var rowsD2 = (snap && snap.table2 && snap.table2.length) ? snap.table2.map(mapT) : [];
+      var mineInD2 = rowsD2.some(function (r) { return r.mine; });
+      var rows = mineInD2 ? rowsD2 : rowsD1;
+      var rowsOther = mineInD2 ? rowsD1 : rowsD2;
+      var myDivNo = mineInD2 ? 2 : 1, otherDivNo = mineInD2 ? 1 : 2;
       var myClub = "";
       rows.forEach(function (r) { if (r.mine) myClub = r.nm; });
       if (!myClub && own) myClub = me.name;
@@ -34603,32 +34653,50 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           "<div class='fo-lgx-card'><h3>The book</h3><p class='fo-lgx-dim'>Every run and every wicket here was scored in a match the umpire played and banked. Nothing is estimated.</p></div>";
 
       } else {
-        // ---- the pennant race ---------------------------------------------
-        var body = rows.map(function (r, ix) {
-          var s5 = (seq[r.recNm] || []).slice(-5);
-          var beads = s5.length ? s5.map(function (k) { return "<i class='" + k + "'>" + k.toUpperCase() + "</i>"; }).join("")
-            : "<span class='none'>&mdash;</span>";
-          var chip = r.mine ? "<em class='you'>You</em>"
-            : r.boss ? "<em class='fl'>Flagship</em>"
-            : mgrOf(r.slot) ? "<em class='hu'>" + E(mgrOf(r.slot)) + "</em>" : "";
-          return "<a class='fo-lgx-row" + (r.mine ? " mine" : "") + (ix < 4 ? " q" : "") + "' href='#/team?c=" +
-            encodeURIComponent(natId) + "&s=" + r.slot + "'>" +
-            "<span class='rk'>" + (ix + 1) + "</span>" +
-            "<span class='cb'>" + shield(r.nm, r.boss, natId) + "</span>" +
-            "<span class='nm'><b>" + E(r.nm) + "</b>" + chip + "</span>" +
-            "<span class='fm'>" + beads + "</span>" +
-            "<span class='n'>" + (r.p | 0) + "</span><span class='n'>" + (r.w | 0) + "</span><span class='n'>" + (r.l | 0) + "</span>" +
-            "<span class='n nrr'>" + ((r.nrr >= 0 ? "+" : "") + (+r.nrr || 0).toFixed(2)) + "</span>" +
-            "<span class='pt'>" + (r.pts | 0) + "</span></a>";
-        }).join("");
-        main = "<div class='fo-lgx-panel'>" +
-          "<div class='fo-lgx-ph'><h2>The pennant race</h2>" +
-          "<span class='fo-lgx-sub'>" + (playedRounds ? "Standings after round " + playedRounds : "Before a ball is bowled") + "</span></div>" +
-          (scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
-          (rows.length ? "<div class='fo-lgx-cols'><span>#</span><span></span><span>Club</span><span>Form</span>" +
-            "<span>P</span><span>W</span><span>L</span><span>NRR</span><span>Pts</span></div>" + body
-            : "<p class='fo-lgx-dim'>The " + E(natNm) + " table is on its way from the World Service&hellip;</p>") +
-          "</div>";
+        // ---- the pennant race, one panel per flight ------------------------
+        // Top four make FINALS NIGHT (the playoffs); Division One's bottom two
+        // go down at the turning of the year and Division Two's risers come
+        // up, so the row tint tells you what a place is WORTH.
+        var divRows = function (list, divNo) {
+          return list.map(function (r, ix) {
+            var s5 = (seq[r.recNm] || []).slice(-5);
+            var beads = s5.length ? s5.map(function (k) { return "<i class='" + k + "'>" + k.toUpperCase() + "</i>"; }).join("")
+              : "<span class='none'>&mdash;</span>";
+            var chip = r.mine ? "<em class='you'>You</em>"
+              : r.boss ? "<em class='fl'>Flagship</em>"
+              : mgrOf(r.slot) ? "<em class='hu'>" + E(mgrOf(r.slot)) + "</em>" : "";
+            var drop = divNo === 1 && list.length >= 8 && ix >= list.length - 2;
+            return "<a class='fo-lgx-row" + (r.mine ? " mine" : "") + (ix < 4 ? " q" : "") + (drop ? " rel" : "") + "' href='#/team?c=" +
+              encodeURIComponent(natId) + "&s=" + r.slot + "'>" +
+              "<span class='rk'>" + (ix + 1) + "</span>" +
+              "<span class='cb'>" + shield(r.nm, r.boss, natId) + "</span>" +
+              "<span class='nm'><b>" + E(r.nm) + "</b>" + chip + "</span>" +
+              "<span class='fm'>" + beads + "</span>" +
+              "<span class='n'>" + (r.p | 0) + "</span><span class='n'>" + (r.w | 0) + "</span><span class='n'>" + (r.l | 0) + "</span>" +
+              "<span class='n nrr'>" + ((r.nrr >= 0 ? "+" : "") + (+r.nrr || 0).toFixed(2)) + "</span>" +
+              "<span class='pt'>" + (r.pts | 0) + "</span></a>";
+          }).join("");
+        };
+        var divName = function (d) { return d === 1 ? "Division One" : "Division Two"; };
+        var divSub = function (d) {
+          return d === 1 ? "Top four make finals night &middot; bottom two go down"
+            : "Top four make finals night &middot; champions and shield winners go up";
+        };
+        var colHead = "<div class='fo-lgx-cols'><span>#</span><span></span><span>Club</span><span>Form</span>" +
+          "<span>P</span><span>W</span><span>L</span><span>NRR</span><span>Pts</span></div>";
+        var panelOf = function (list, d, lead) {
+          return "<div class='fo-lgx-panel'>" +
+            "<div class='fo-lgx-ph'><h2>" + (rowsOther.length ? divName(d) : "The pennant race") + "</h2>" +
+            "<span class='fo-lgx-sub'>" + (lead
+              ? (playedRounds ? "Standings after round " + playedRounds : "Before a ball is bowled")
+              : divSub(d)) + "</span></div>" +
+            (lead && scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
+            (list.length ? colHead + divRows(list, d)
+              : "<p class='fo-lgx-dim'>The " + E(natNm) + " table is on its way from the World Service&hellip;</p>") +
+            "</div>";
+        };
+        main = panelOf(rows, myDivNo, true) +
+          (rowsOther.length ? panelOf(rowsOther, otherDivNo, false) : "");
 
         // NEXT ROUND MEANS NEXT. Once the day's play is finished this card was
         // still offering the round that had just ended as the one to come, at
@@ -34784,6 +34852,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body #page .fo-lgx-row{padding:8px;border-radius:10px;text-decoration:none;color:#141C28;border-bottom:1px solid rgba(20,28,40,.07)}",
     "html body #page .fo-lgx-row:hover{background:rgba(20,28,40,.03);text-decoration:none}",
     "html body #page .fo-lgx-row.q .rk{color:#177A57}",
+    "html body #page .fo-lgx-row.rel .rk{color:#B3372B}",
+    "html body #page .fo-lgx-row.rel{box-shadow:inset 3px 0 0 rgba(179,55,43,.55)}",
     "html body #page .fo-lgx-row.mine{background:rgba(201,85,50,.06);border-bottom-color:transparent;box-shadow:inset 3px 0 0 var(--nac)}",
     "html body #page .fo-lgx-row .rk{font:700 12px/1 Oswald,sans-serif;color:rgba(20,28,40,.45);font-variant-numeric:tabular-nums}",
     "html body #page .fo-lgx-row .cb{display:flex;align-items:center;justify-content:center}",
@@ -35132,22 +35202,39 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   // ---- the calendar -----------------------------------------------------------
-  var EPOCH = Date.UTC(2026, 6, 28);           // 28 July 2026, day 0 - OPENING DAY: round 1 everywhere
-  var DAY = 86400000, CYCLE = 30, ROUNDS = 18;  // ten clubs, eighteen rounds - every nation plays YOUR format
-  var BLOCK = 4, LEAGUE_DAYS = 24;              // three rounds then a rest day, six times over
+  // THE 35-DAY SEASON — FIVE EXACT WEEKS. Day 0 is always a Monday (3 August
+  // 2026), so di % 7 IS the weekday, forever: Sunday is cup day, Wednesday and
+  // Saturday are international days, the last week is the Champions Cup.
+  // docs/PYRAMID.md is the authority; server/clock.mjs must agree ball for ball.
+  var EPOCH = Date.UTC(2026, 7, 3);            // MONDAY 3 August 2026, day 0 - season 1 day 1
+  var DAY = 86400000, CYCLE = 35, ROUNDS = 14;  // eight clubs a division, double round robin
+  var LEAGUE_DAYS = 23;                         // last league round settles di 22
+  var PLAYOFF_DAYS = { semi: 24, final: 25 };
+  var FA_DAYS = { r16: 6, qf: 13, sf: 20, final: 27 };
+  var TRANSITION_DAY = 31;
+  // the league week: Mon Tue . Thu Fri . . — rounds at di%7 in {0,1,3,4}
+  var WEEK_POS = { 0: 1, 1: 2, 3: 3, 4: 4 };
   // day-in-season <-> round. NOTHING may assume round === day + 1 any more.
+  // Playoffs are rounds 15 (semis) and 16 (the final) - fixtures, not table rounds.
   function roundOfDay(di) {
-    if (!(di >= 0) || di >= LEAGUE_DAYS) return null;
-    if (di % BLOCK === BLOCK - 1) return null;
-    return di - Math.floor(di / BLOCK) + 1;
+    if (!(di >= 0)) return null;
+    if (di === PLAYOFF_DAYS.semi) return 15;
+    if (di === PLAYOFF_DAYS.final) return 16;
+    if (di >= LEAGUE_DAYS) return null;
+    var w = Math.floor(di / 7), pos = WEEK_POS[di % 7];
+    if (!pos) return null;
+    var r = w * 4 + pos;
+    return r >= 1 && r <= ROUNDS ? r : null;
   }
   function dayOfRound(round) {
+    if (round === 15) return PLAYOFF_DAYS.semi;
+    if (round === 16) return PLAYOFF_DAYS.final;
     if (!(round >= 1 && round <= ROUNDS)) return null;
-    return Math.floor((round - 1) / (BLOCK - 1)) * BLOCK + ((round - 1) % (BLOCK - 1));
+    return Math.floor((round - 1) / 4) * 7 + [0, 1, 3, 4][(round - 1) % 4];
   }
-  var WINDOW_DAYS = [3, 7, 11], WINDOWS = [4, 7, 10];
+  var WINDOW_DAYS = [2, 5, 9, 12, 16, 19], WINDOWS = [3, 5, 7, 9, 11, 13];
   function windowRoundOfDay(di) { var i = WINDOW_DAYS.indexOf(di); return i < 0 ? null : WINDOWS[i]; }
-  var HONOURS_DAY = 24, CUP_DAYS = { pi: 24, r16: 25, qf: 26, sf: 27, final: 28 };
+  var HONOURS_DAY = 25, CUP_DAYS = { g1: 28, g2: 29, g3: 30, qf: 32, sf: 33, final: 34 };
   var LIVE_LEN = 3;                             // a day's play runs three hours
   // the staggered globe: each nation bowls its first ball at its own UTC hour.
   // England is the 14:00 UTC league; the rest spread around the clock so
@@ -35184,13 +35271,20 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var d = dayIx(now), rel = d - ANCHOR.start;
     if (rel < 0) return { day: d, season: ANCHOR.season, di: -1, kind: "rest", preseason: true };
     var s = ANCHOR.season + Math.floor(rel / CYCLE), di = rel % CYCLE;
-    var p = { day: d, season: s, di: di };
+    var p = { day: d, season: s, di: di, weekday: di % 7 };
     var r = roundOfDay(di);
-    if (r) { p.kind = "league"; p.round = r; }
-    else if (di < LEAGUE_DAYS) { p.kind = "rest"; p.window = windowRoundOfDay(di); }
-    else if (di === HONOURS_DAY) p.kind = "honours";
-    else if (di <= CUP_DAYS.final) { p.kind = "cup"; p.stage = ["r16", "qf", "sf", "final"][di - CUP_DAYS.r16]; }
-    else p.kind = "rest";
+    var faStage = null;
+    for (var fk in FA_DAYS) if (FA_DAYS[fk] === di) faStage = fk;
+    if (r && r <= ROUNDS) { p.kind = "league"; p.round = r; }
+    else if (r === 15 || r === 16) { p.kind = "playoff"; p.round = r; p.stage = r === 15 ? "semi" : "final"; }
+    else if (faStage) { p.kind = "facup"; p.stage = faStage; }
+    else if (di === TRANSITION_DAY) p.kind = "transition";
+    else if (di >= CUP_DAYS.g1) {
+      var ccStage = null;
+      for (var ck in CUP_DAYS) if (CUP_DAYS[ck] === di) ccStage = ck;
+      if (ccStage) { p.kind = "cup"; p.stage = ccStage; } else p.kind = "rest";
+    }
+    else { p.kind = "rest"; p.window = windowRoundOfDay(di); }
     return p;
   }
   // how many rounds of season s are FINAL at `now` - per nation, since each
@@ -35211,15 +35305,47 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   // ---- the sides of a nation --------------------------------------------------
-  function regionList() { var c = cx(); if (!c) return []; return (c.regions() || []).filter(function (r) { return !r.final; }); }
+  // SIXTEEN NATIONS: the twelve ICC Full Members and the four strongest
+  // Associates. Wales, Kenya and Canada leave the top table (their art stays
+  // on disk for a future tier); Glamorgan plays in England's Division Two,
+  // which is where Welsh county cricket has always really lived.
+  var FO_CUT = { wal: 1, ken: 1, can: 1 };
+  function regionList() { var c = cx(); if (!c) return []; return (c.regions() || []).filter(function (r) { return !r.final && !FO_CUT[r.id]; }); }
   function regionById(rid) { var L = regionList(); for (var i = 0; i < L.length; i++) if (L[i].id === rid) return L[i]; return null; }
-  // two more real cricket cities per nation, so every league seats ten clubs
-  var EXTRA_CITY = { eng: ["Taunton", "Hove"], ire: ["Sligo", "Wexford"], ned: ["Nijmegen", "Leiden"], win: ["Kingstown", "Providence"], rsa: ["East London", "Potchefstroom"], zim: ["Chinhoyi", "Marondera"], aus: ["Darwin", "Newcastle"], nzl: ["Queenstown", "Whangarei"], slk: ["Negombo", "Jaffna"], sub: ["Pune", "Lucknow"], pak: ["Quetta", "Gujranwala"], afg: ["Bamyan", "Farah"], bgd: ["Mymensingh", "Bogra"], nep: ["Butwal", "Nepalgunj"], sco: ["Paisley", "Falkirk"], wal: ["Llanelli", "Pontypridd"], ken: ["Kakamega", "Kitale"], usa: ["Seattle", "Atlanta"], can: ["Victoria", "Markham"] };
-  // England is hand-named on the server (Sir Giles and the counties) - the
-  // mirror MUST carry the same names, or orders keyed by club name would
-  // miss and the claim highlight would never find you
+  // two more real cricket cities per nation, so Division One seats eight clubs
+  var EXTRA_CITY = { eng: ["Taunton", "Hove"], ire: ["Sligo", "Wexford"], ned: ["Nijmegen", "Leiden"], win: ["Kingstown", "Providence"], rsa: ["East London", "Potchefstroom"], zim: ["Chinhoyi", "Marondera"], aus: ["Darwin", "Newcastle"], nzl: ["Queenstown", "Whangarei"], slk: ["Negombo", "Jaffna"], sub: ["Pune", "Lucknow"], pak: ["Quetta", "Gujranwala"], afg: ["Bamyan", "Farah"], bgd: ["Mymensingh", "Bogra"], nep: ["Butwal", "Nepalgunj"], sco: ["Paisley", "Falkirk"], usa: ["Seattle", "Atlanta"] };
+  // DIVISION TWO: eight real smaller cricket towns per nation - works teams,
+  // district sides, ambitious village clubs. This is where a club is FOUNDED.
+  var DIV2_CITY = {
+    ire: ["Galway", "Limerick", "Drogheda", "Bangor", "Armagh", "Carlow", "Tralee", "Athlone"],
+    ned: ["Amstelveen", "Deventer", "Groningen", "Haarlem", "Delft", "Zwolle", "Breda", "Arnhem"],
+    win: ["Basseterre", "Roseau", "St George's", "Scarborough", "Chaguanas", "Montego Bay", "Gros Islet", "Couva"],
+    rsa: ["Bloemfontein", "Kimberley", "Paarl", "Benoni", "Pietermaritzburg", "Soweto", "George", "Polokwane"],
+    zim: ["Kwekwe", "Gweru", "Kadoma", "Masvingo", "Bindura", "Hwange", "Rusape", "Kariba"],
+    aus: ["Hobart", "Canberra", "Geelong", "Ballarat", "Townsville", "Cairns", "Wollongong", "Launceston"],
+    nzl: ["Dunedin", "Hamilton", "Napier", "Tauranga", "Nelson", "Palmerston North", "Invercargill", "Rotorua"],
+    slk: ["Matara", "Kurunegala", "Ratnapura", "Batticaloa", "Anuradhapura", "Badulla", "Trincomalee", "Hambantota"],
+    sub: ["Indore", "Rajkot", "Ranchi", "Guwahati", "Kanpur", "Vadodara", "Mysore", "Cuttack"],
+    pak: ["Multan", "Faisalabad", "Rawalpindi", "Hyderabad", "Sialkot", "Sukkur", "Abbottabad", "Bahawalpur"],
+    afg: ["Khost", "Kunduz", "Herat", "Ghazni", "Laghman", "Charikar", "Pul-e-Khumri", "Maidan Shar"],
+    bgd: ["Khulna", "Rajshahi", "Barisal", "Rangpur", "Comilla", "Narayanganj", "Jessore", "Tangail"],
+    nep: ["Pokhara", "Bhairahawa", "Biratnagar", "Birgunj", "Dhangadhi", "Hetauda", "Itahari", "Janakpur"],
+    sco: ["Aberdeen", "Dundee", "Ayr", "Stirling", "Perth", "Inverness", "Greenock", "Dunfermline"],
+    usa: ["Houston", "Chicago", "Morrisville", "Oakland", "Tampa", "Phoenix", "Denver", "Boston"]
+  };
+  // a small club sounds like a small club - the pattern is a pure function of
+  // the seat, so every device names the same club the same way
+  var DIV2_STYLE = ["%s CC", "%s Athletic", "%s District XI", "%s Colts", "%s Wanderers", "%s Gymkhana", "%s Rovers", "%s Union CC"];
+  function div2Name(rid, slot, city) {
+    var pat = DIV2_STYLE[h32(rid + "|d2nm|" + slot) % DIV2_STYLE.length];
+    return pat.replace("%s", city);
+  }
+  // England is hand-named on the server (the counties) - the mirror MUST carry
+  // the same names, or orders keyed by club name would miss and the claim
+  // highlight would never find you. Division Two is the second flight of real
+  // counties - Glamorgan included, wearing the daffodil in an English league.
   var ENG_SIDES = [
-    { slot: 0, boss: true, name: "Sir Giles Pemberley's XI", city: "London" },
+    { slot: 0, boss: true, name: "Essex", city: "Chelmsford" },
     { slot: 1, name: "Yorkshire", city: "Leeds" },
     { slot: 2, name: "Lancashire", city: "Manchester" },
     { slot: 3, name: "Surrey", city: "London" },
@@ -35228,7 +35354,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     { slot: 6, name: "Nottinghamshire", city: "Nottingham" },
     { slot: 7, name: "Kent", city: "Canterbury" },
     { slot: 8, name: "Durham", city: "Durham" },
-    { slot: 9, name: "Somerset", city: "Taunton" }
+    { slot: 9, name: "Somerset", city: "Taunton" },
+    { slot: 10, name: "Glamorgan", city: "Cardiff" },
+    { slot: 11, name: "Sussex", city: "Hove" },
+    { slot: 12, name: "Gloucestershire", city: "Bristol" },
+    { slot: 13, name: "Hampshire", city: "Southampton" },
+    { slot: 14, name: "Derbyshire", city: "Derby" },
+    { slot: 15, name: "Leicestershire", city: "Leicester" }
   ];
   // ==== WHO EACH SIDE IS, AND HOW GOOD ===================================
   //
@@ -35260,11 +35392,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // rungs three to four points apart, for the same reason: an ordered league
   // instead of ten sides in a coin-toss.
   var FO_BOSS_STR = 1.20;
-  var FO_STR_LADDER = [1.04, 1.00, 0.97, 0.94, 0.91, 0.88, 0.85, 0.82, 0.80];
+  // DIVISION ONE: the boss and seven established clubs on a tight ladder.
+  // DIVISION TWO: the founding seats - small clubs on a lower ladder that
+  // overlaps the first division's floor at the seam, the way real second
+  // flights do. Both shuffled per nation, pure functions of the nation.
+  var FO_STR_LADDER = [1.04, 1.00, 0.97, 0.94, 0.91, 0.88, 0.85];
+  var FO_D2_LADDER = [0.86, 0.83, 0.80, 0.78, 0.76, 0.74, 0.72, 0.70];
 
   // England is named for its counties, not its cities (and three of them play
-  // in London), so its identities are seated by slot.
-  var ENG_ARCH = ["rock", "rock", "express", "blade", "greybeard", "engine", "express", "miser", "express", "blade"];
+  // in London), so its identities are seated by slot - all sixteen of them.
+  var ENG_ARCH = ["rock", "rock", "express", "blade", "greybeard", "engine", "express", "miser",
+    "express", "blade", "engine", "miser", "rock", "gloveman", "greybeard", "finisher"];
 
   // The clubs the game gave a character to. Keyed by city, so a named side
   // carries its identity to whichever slot its city lands in.
@@ -35333,44 +35471,170 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // so the second-best side is a different slot in every league.
   function strOf(rid, slot) {
     if (slot === 0) return FO_BOSS_STR;
+    if (slot >= 8) {
+      // a founding seat: the second division's own ladder, shuffled per nation
+      var o2 = [8, 9, 10, 11, 12, 13, 14, 15].sort(function (a2, b2) {
+        return rnd01(rid + "|rank2|" + a2) - rnd01(rid + "|rank2|" + b2);
+      });
+      var r2 = o2.indexOf(slot);
+      return FO_D2_LADDER[r2 < 0 ? 3 : r2];
+    }
     var named = CITY_ARCH[rid] || {};
     var known = {};
     if (rid !== "eng") {
       var cities = (cx().cities(rid) || []).concat(EXTRA_CITY[rid] || []);
-      for (var s2 = 1; s2 <= 9; s2++) if (named[cities[s2]]) known[s2] = 1;
+      for (var s2 = 1; s2 <= 7; s2++) if (named[cities[s2]]) known[s2] = 1;
     }
-    var order = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(function (a, b) {
+    var order = [1, 2, 3, 4, 5, 6, 7].sort(function (a, b) {
       var ka = known[a] ? 0 : 1, kb = known[b] ? 0 : 1;
       if (ka !== kb) return ka - kb;
       return rnd01(rid + "|rank|" + a) - rnd01(rid + "|rank|" + b);
     });
     var rank = order.indexOf(slot);
-    return FO_STR_LADDER[rank < 0 ? 4 : rank];
+    return FO_STR_LADDER[rank < 0 ? 3 : rank];
+  }
+
+  // ---- THE CONDITIONS: WHAT KIND OF CRICKET A PLACE PLAYS -------------------
+  // Until now the served world bowled every ball on a 'balanced' pitch under a
+  // default sky - six pitches and ten skies sat in the engine, dormant. Each
+  // nation now has a climate (what its grounds and weather tend to produce),
+  // and each HOME CLUB tilts its own square toward the cricket it plays, the
+  // way real groundsmen do: a pace battery's home leans green, a spin circus's
+  // leans dry. Deterministic per fixture - country, home slot, season, round -
+  // and nothing else, so the forecast is knowable before a sheet is set, the
+  // same for a manager asleep in another timezone as for one watching live,
+  // and a healed day reproduces the very match it heals.
+  var COND_DEFAULT = { p: { balanced: 45, green: 15, dry: 12, slow: 13, cracked: 5, twoPaced: 10 },
+    w: { Sunny: 55, Overcast: 15, Hot: 15, Windy: 15 } };
+  var NAT_COND = {
+    // the wet green north: seam, cloud, and the ever-present forecast
+    eng: { p: { green: 32, balanced: 38, dry: 4, slow: 6, cracked: 6, twoPaced: 14 },
+      w: { Sunny: 24, Overcast: 38, Drizzle: 12, Chilly: 12, Windy: 8, Misty: 6 } },
+    wal: { p: { green: 34, balanced: 36, dry: 4, slow: 6, cracked: 6, twoPaced: 14 },
+      w: { Sunny: 22, Overcast: 38, Drizzle: 13, Chilly: 13, Windy: 8, Misty: 6 } },
+    ire: { p: { green: 40, balanced: 32, dry: 2, slow: 8, cracked: 4, twoPaced: 14 },
+      w: { Sunny: 18, Overcast: 40, Drizzle: 15, Chilly: 12, Windy: 10, Misty: 5 } },
+    sco: { p: { green: 42, balanced: 30, dry: 2, slow: 8, cracked: 4, twoPaced: 14 },
+      w: { Sunny: 16, Overcast: 38, Drizzle: 15, Chilly: 18, Windy: 10, Misty: 3 } },
+    ned: { p: { green: 34, balanced: 38, dry: 3, slow: 8, cracked: 3, twoPaced: 14 },
+      w: { Sunny: 26, Overcast: 34, Drizzle: 10, Chilly: 10, Windy: 20 } },
+    nzl: { p: { green: 38, balanced: 34, dry: 3, slow: 7, cracked: 4, twoPaced: 14 },
+      w: { Sunny: 26, Overcast: 32, Drizzle: 10, Chilly: 12, Windy: 20 } },
+    // the true, hard grounds of the south: carry, cracks late, sun
+    aus: { p: { green: 22, balanced: 44, dry: 6, slow: 4, cracked: 14, twoPaced: 10 },
+      w: { Sunny: 44, Hot: 22, Scorching: 10, Overcast: 12, Windy: 12 } },
+    rsa: { p: { green: 28, balanced: 40, dry: 6, slow: 6, cracked: 10, twoPaced: 10 },
+      w: { Sunny: 44, Hot: 20, Overcast: 18, Windy: 12, 'Dew later': 6 } },
+    // the subcontinent: turn, heat, dew under lights
+    sub: { p: { green: 3, balanced: 20, dry: 44, slow: 20, cracked: 5, twoPaced: 8 },
+      w: { Sunny: 30, Hot: 26, Scorching: 12, Humid: 18, 'Dew later': 14 } },
+    slk: { p: { green: 3, balanced: 20, dry: 34, slow: 32, cracked: 3, twoPaced: 8 },
+      w: { Sunny: 28, Hot: 22, Humid: 34, 'Dew later': 16 } },
+    pak: { p: { green: 5, balanced: 40, dry: 34, slow: 10, cracked: 5, twoPaced: 6 },
+      w: { Sunny: 40, Hot: 28, Scorching: 14, Humid: 10, 'Dew later': 8 } },
+    afg: { p: { green: 3, balanced: 22, dry: 42, slow: 14, cracked: 13, twoPaced: 6 },
+      w: { Sunny: 44, Hot: 26, Scorching: 12, Windy: 12, Chilly: 6 } },
+    bgd: { p: { green: 2, balanced: 18, dry: 36, slow: 32, cracked: 4, twoPaced: 8 },
+      w: { Sunny: 22, Hot: 24, Humid: 36, 'Dew later': 18 } },
+    nep: { p: { green: 4, balanced: 24, dry: 38, slow: 22, cracked: 6, twoPaced: 6 },
+      w: { Sunny: 40, Hot: 16, Chilly: 16, Windy: 14, Misty: 14 } },
+    // the Caribbean and the drop-in world: slow, grippy, two-paced
+    win: { p: { green: 4, balanced: 22, dry: 12, slow: 34, cracked: 6, twoPaced: 22 },
+      w: { Sunny: 40, Hot: 26, Humid: 22, Windy: 12 } },
+    usa: { p: { green: 6, balanced: 24, dry: 8, slow: 32, cracked: 6, twoPaced: 24 },
+      w: { Sunny: 46, Hot: 22, Overcast: 16, Windy: 16 } },
+    can: { p: { green: 8, balanced: 26, dry: 6, slow: 30, cracked: 6, twoPaced: 24 },
+      w: { Sunny: 40, Overcast: 22, Chilly: 20, Windy: 18 } },
+    // African highveld-adjacent: honest surfaces slowing with wear
+    zim: { p: { green: 8, balanced: 36, dry: 16, slow: 24, cracked: 8, twoPaced: 8 },
+      w: { Sunny: 50, Hot: 22, Overcast: 14, Windy: 14 } },
+    ken: { p: { green: 8, balanced: 38, dry: 16, slow: 22, cracked: 8, twoPaced: 8 },
+      w: { Sunny: 48, Hot: 24, Overcast: 14, Windy: 14 } }
+  };
+  // the groundsman leans the home square toward the home side's cricket
+  var ARCH_TILT = {
+    express: { green: 22 }, wizard: { dry: 22 }, miser: { slow: 14 },
+    rock: { balanced: 12 }, blade: { balanced: 12 }, finisher: { balanced: 12 },
+    greybeard: { slow: 8 }, engine: { green: 8 }, gloveman: {}, prodigy: {}
+  };
+  function pickWeighted(tbl, r) {
+    var total = 0, k;
+    for (k in tbl) total += Math.max(0, tbl[k] || 0);
+    if (!(total > 0)) return null;
+    var at = r * total;
+    for (k in tbl) { at -= Math.max(0, tbl[k] || 0); if (at < 0) return k; }
+    for (k in tbl) return k;
+    return null;
+  }
+  // A BOT PLAYS ITS ARCHETYPE - and the umpire and the broadcast read the
+  // SAME doctrine, so the match the theatre replays is the match the world
+  // recorded. A claimed club's own sheet always wins; this only speaks for
+  // clubs whose manager is the archetype itself.
+  var ARCH_DOCTRINE = {
+    blade:     { phaseIntent: { pp: 1,  mid: 0, death: 1 } },
+    finisher:  { phaseIntent: { pp: 0,  mid: 0, death: 2 } },
+    rock:      { phaseIntent: { pp: -1, mid: 0, death: 1 } },
+    greybeard: { phaseIntent: { pp: -1, mid: 0, death: 0 } }
+  };
+  function doctrineOf(rid, slot) {
+    try {
+      var side = sidesOf(rid)[slot | 0];
+      var d = side && ARCH_DOCTRINE[side.arch];
+      return d ? JSON.parse(JSON.stringify(d)) : null;
+    } catch (e) { return null; }
+  }
+
+  function condOf(rid, homeSlot, seasonNo, round) {
+    var prof = NAT_COND[rid] || COND_DEFAULT;
+    var p = {}, k;
+    for (k in prof.p) p[k] = prof.p[k];
+    try {
+      var side = sidesOf(rid)[homeSlot | 0];
+      var tilt = (side && ARCH_TILT[side.arch]) || {};
+      for (k in tilt) p[k] = (p[k] || 0) + tilt[k];
+    } catch (e) {}
+    var key = "cond|" + rid + "|" + (homeSlot | 0) + "|" + (seasonNo | 0) + "|" + (round | 0);
+    return {
+      pitch: pickWeighted(p, rnd01(key + "|p")) || "balanced",
+      weather: pickWeighted(prof.w, rnd01(key + "|w")) || "Sunny"
+    };
   }
 
   function sidesOf(rid) {
     if (rid === "eng") return ENG_SIDES.map(function (s0) {
-      return { slot: s0.slot, boss: !!s0.boss, name: s0.name, city: s0.city,
+      return { slot: s0.slot, boss: !!s0.boss, name: s0.name, city: s0.city, div: s0.slot < 8 ? 1 : 2,
         arch: archOf("eng", s0.slot, s0.city), str: strOf("eng", s0.slot) };
     });
     var r = regionById(rid); if (!r) return [];
     var cities = (cx().cities(rid) || []).concat(EXTRA_CITY[rid] || []);
     var bc = null; (r.clubs || []).forEach(function (c) { if (c.boss) bc = c; });
     var bossCity = (bc && bc.city) || cities[0] || r.nm;
-    var out = [{ slot: 0, boss: true, name: bc ? bc.nm : (r.nm + " XI"), city: bossCity,
+    var out = [{ slot: 0, boss: true, name: bc ? bc.nm : (r.nm + " XI"), city: bossCity, div: 1,
       arch: archOf(rid, 0, bossCity), str: strOf(rid, 0) }];
-    for (var s = 1; s <= 9; s++) {
+    for (var s = 1; s <= 7; s++) {
       var ct = cities[s] || (r.nm + " " + s);
-      out.push({ slot: s, boss: false, name: ct + " CC", city: ct,
+      out.push({ slot: s, boss: false, name: ct + " CC", city: ct, div: 1,
         arch: archOf(rid, s, ct), str: strOf(rid, s) });
+    }
+    // the founding seats: the eight small clubs of Division Two
+    var d2 = DIV2_CITY[rid] || [];
+    for (var s9 = 8; s9 <= 15; s9++) {
+      var ct2 = d2[s9 - 8] || (r.nm + " " + s9);
+      out.push({ slot: s9, boss: false, name: div2Name(rid, s9, ct2), city: ct2, div: 2,
+        arch: archOf(rid, s9, ct2), str: strOf(rid, s9) });
     }
     return out;
   }
-  // double round robin by the circle method, team order reshuffled every season
-  function schedOf(rid, season) {
-    var N = 10, idx = [];
+  // double round robin for ONE DIVISION of 8 by the circle method, team order
+  // reshuffled every season. `slots` is the division's eight member slots -
+  // membership is seasonal (promotion and relegation redraw it), the founding
+  // assumption being div 1 = slots 0-7, div 2 = slots 8-15. MUST agree with
+  // server/clock.mjs scheduleOf, fixture for fixture.
+  function schedOf(rid, season, slots, div) {
+    var members = slots || (div === 2 ? [8, 9, 10, 11, 12, 13, 14, 15] : [0, 1, 2, 3, 4, 5, 6, 7]);
+    var N = members.length, idx = [];
     for (var z = 0; z < N; z++) idx.push(z);
-    var seed = h32(rid + "|order|" + season);
+    var seed = h32(rid + "|order|d" + (div || 1) + "|" + season);
     for (var i = N - 1; i > 0; i--) { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; var j = seed % (i + 1); var t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
     var list = idx.slice(), rounds = [];
     for (var r = 0; r < N - 1; r++) {
@@ -35380,7 +35644,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       list = [list[0], list[N - 1]].concat(list.slice(1, N - 1)); // rotate all but the pivot
     }
     for (var r2 = 0; r2 < N - 1; r2++) rounds.push(rounds[r2].map(function (f) { return [f[1], f[0]]; }));
-    return rounds;
+    return rounds.map(function (rd2) { return rd2.map(function (f) { return [members[f[0]], members[f[1]]]; }); });
   }
   // one seeded, plausible fifty-over scoreline
   function playMatch(rid, season, round, A, B) {
@@ -35408,15 +35672,23 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       as: second + (sw >= 10 ? " all out" : "/" + sw)
     };
   }
-  function fixturesOf(rid, season, round) {
-    var S = sidesOf(rid); if (S.length < 8) return [];
-    return schedOf(rid, season)[round - 1].map(function (f) { return playMatch(rid, season, round, S[f[0]], S[f[1]]); });
+  function fixturesOf(rid, season, round, div) {
+    var S = sidesOf(rid); if (S.length < 16) return [];
+    var by = {}; S.forEach(function (s) { by[s.slot] = s; });
+    var divs = div ? [div] : [1, 2], out = [];
+    divs.forEach(function (d) {
+      ((schedOf(rid, season, null, d) || [])[round - 1] || []).forEach(function (f) {
+        out.push(playMatch(rid, season, round, by[f[0]], by[f[1]]));
+      });
+    });
+    return out;
   }
-  function tableOf(rid, season, uptoRounds) {
-    var S = sidesOf(rid), T = {};
+  function tableOf(rid, season, uptoRounds, div) {
+    var d = div || 1;
+    var S = sidesOf(rid).filter(function (s) { return (s.div || 1) === d; }), T = {};
     S.forEach(function (s) { T[s.slot] = { side: s, P: 0, W: 0, L: 0, T: 0, pts: 0, diff: 0 }; });
     for (var r = 1; r <= Math.min(ROUNDS, uptoRounds); r++) {
-      fixturesOf(rid, season, r).forEach(function (m) {
+      fixturesOf(rid, season, r, d).forEach(function (m) {
         var a = T[m.home.slot], b = T[m.away.slot];
         a.P++; b.P++; a.diff += m.first - m.second; b.diff += m.second - m.first;
         if (m.tie) { a.T++; b.T++; a.pts++; b.pts++; }
@@ -35912,7 +36184,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   window.__foPlanet = { roundOfDay: roundOfDay, dayOfRound: dayOfRound, dayOfSeasonRound: dayOfSeasonRound,
     anchorWorld: anchorWorld, anchorOf: anchorOf, seasonStart: seasonStart,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
-    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
+    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();
 // ---- 28-world-almanack.js — the people of the planet, and its book of record --
 // The living planet (module 27) gave every nation a running league. This layer
@@ -38820,9 +39092,24 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var matchId = rid + ":s" + cal.seasonNo + ":r" + srvRound + ":h" + m.home.slot + "a" + m.away.slot;
       var seed = h32(matchId) || 1;
       window.onMatchEnd = function () {};
-      M = newMatch(home, away, "balanced", seed);
-      M.meta = { home: home.name, away: away.name, pitch: "balanced", weather: "Sunny", comp: "world", ground: home.ground, __spectate: 1, isUser: false };
-      M.isUserMatch = false; M.ordersMap = ordersMap || {};
+      // THE BROADCAST IS THE MATCH THE WORLD RECORDED. The umpire played this
+      // fixture on the forecast pitch, under the forecast sky, with every
+      // unmanaged club batting on its archetype's doctrine - all three read
+      // from the planet's own tables, which this build carries too. Replaying
+      // with anything else would show a different game than the banked card.
+      var cond = { pitch: "balanced", weather: "Sunny" };
+      try { cond = window.__foPlanet.condOf(rid, m.home.slot, cal.seasonNo, srvRound) || cond; } catch (eC) {}
+      var om2 = ordersMap || {};
+      try {
+        [m.home, m.away].forEach(function (side) {
+          if (om2[side.name]) return;                      // a manager's sheet stands
+          var doc = window.__foPlanet.doctrineOf(rid, side.slot);
+          if (doc) om2[side.name] = doc;
+        });
+      } catch (eD) {}
+      M = newMatch(home, away, cond.pitch, seed);
+      M.meta = { home: home.name, away: away.name, pitch: cond.pitch, weather: cond.weather, comp: "world", ground: home.ground, __spectate: 1, isUser: false };
+      M.isUserMatch = false; M.ordersMap = om2;
       App.tossState = { stage: "x" };
       applyToss(aiTossDecision());
       // THE BROADCAST RUNS ON THE WORLD CLOCK. The full card is paced across
@@ -38898,8 +39185,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             { country: d.away.country, slot: d.away.slot, name: d.away.name }] };
           var seed = h32("friendly:" + d.id) || 1;
           window.onMatchEnd = function () {};
-          M = newMatch(home, away, "balanced", seed);
-          M.meta = { home: home.name, away: away.name, pitch: "balanced", weather: "Sunny", comp: "friendly", ground: home.ground, __spectate: 1, isUser: false };
+          // same law as the league broadcast: the challenger's ground, its
+          // nation's weather - the identical call the umpire made
+          var fCond = { pitch: "balanced", weather: "Sunny" };
+          try { fCond = window.__foPlanet.condOf(d.home.country, d.home.slot, 0, Number(d.id) || seed % 997) || fCond; } catch (eC2) {}
+          M = newMatch(home, away, fCond.pitch, seed);
+          M.meta = { home: home.name, away: away.name, pitch: fCond.pitch, weather: fCond.weather, comp: "friendly", ground: home.ground, __spectate: 1, isUser: false };
           M.isUserMatch = false; M.ordersMap = d.orders || {};
           App.tossState = { stage: "x" };
           applyToss(aiTossDecision());
@@ -43283,7 +43574,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function myRow() {
     var b = snap(); if (!b) return null;
     var sl = mySlot();
-    var rows = b.table || [];
+    // either division: a founded club lives in table2 until it earns promotion
+    var rows = (b.table || []).concat(b.table2 || []);
     for (var i = 0; i < rows.length; i++) if ((rows[i].slot | 0) === sl) return rows[i];
     return null;
   }
@@ -43291,13 +43583,23 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   // THE TABLE, in the shape every caller in this codebase already expects from
   // leagueRows(): nm, p, w, l, t, pts, nrr - sorted as the world sorted it.
-  function rows() {
-    var b = snap(); if (!b) return [];
-    return (b.table || []).map(function (r) {
-      return { nm: r.name, p: r.p | 0, w: r.w | 0, l: r.l | 0, t: r.t | 0,
-        pts: r.pts | 0, nrr: +r.nrr || 0, slot: r.slot | 0, boss: !!r.boss };
-    });
+  // THE PYRAMID: the snapshot carries BOTH divisions (table, table2). rows()
+  // answers with MY division's table - the league a manager actually plays
+  // in - and rowsOf(d) serves any surface that wants a specific flight.
+  function mapRow(r) {
+    return { nm: r.name, p: r.p | 0, w: r.w | 0, l: r.l | 0, t: r.t | 0,
+      pts: r.pts | 0, nrr: +r.nrr || 0, slot: r.slot | 0, boss: !!r.boss, div: r.div || 1 };
   }
+  function rowsOf(d) {
+    var b = snap(); if (!b) return [];
+    return ((d === 2 ? b.table2 : b.table) || []).map(mapRow);
+  }
+  function myDiv() {
+    var b = snap(), sl = mySlot();
+    if (!b || sl == null) return 1;
+    return (b.table2 || []).some(function (r) { return (r.slot | 0) === (sl | 0); }) ? 2 : 1;
+  }
+  function rows() { return rowsOf(myDiv()); }
 
   // FORM, oldest first, from the banked results and nothing else. A club that
   // has played nothing has an empty strip - which is the correct answer for a
@@ -43359,7 +43661,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function natRound(rid) { var n = natOf(rid); return n ? n.round : null; }
 
   function roundsPlayed() { var b = snap(); return b ? (b.roundsPlayed | 0) : 0; }
-  function totalRounds() { var b = snap(); return (b && b.rounds) ? (b.rounds | 0) : 18; }
+  function totalRounds() { var b = snap(); return (b && b.rounds) ? (b.rounds | 0) : 14; }
   function seasonNo() { var b = snap(); return b ? (b.seasonNo | 0) || 1 : 1; }
   // the round about to be played, 1-based, capped at the last one
   function round() { return Math.min(roundsPlayed() + 1, totalRounds()); }
@@ -43414,7 +43716,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   window.__foServed = {
     on: on, claim: claim, nation: nation, slot: mySlot, snapshot: snap,
-    rows: rows, me: myRow, name: myName, form: form, formOf: formOf,
+    rows: rows, rowsOf: rowsOf, myDiv: myDiv, me: myRow, name: myName, form: form, formOf: formOf,
     round: round, roundsPlayed: roundsPlayed, totalRounds: totalRounds,
     seasonNo: seasonNo, startDay: startDay, opensIn: opensIn,
     ballAt: ballAt, fixtures: fixtures,
