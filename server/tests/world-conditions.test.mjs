@@ -146,9 +146,9 @@ test('a strong cricket nation out-rates a weak one; every league stays as compet
     return { mean: rs.reduce((a, x) => a + x, 0) / rs.length,
              spread: Math.max(...rs) / Math.min(...rs) };
   };
-  const aus = meanOf('aus'), ned = meanOf('ned'), engL = meanOf('eng'), can = meanOf('can');
+  const aus = meanOf('aus'), ned = meanOf('ned'), engL = meanOf('eng'), nep = meanOf('nep');
   assert.ok(aus.mean > ned.mean * 1.15, 'an Australian league day is harder than a Dutch one');
-  assert.ok(engL.mean > can.mean * 1.2, 'and an English one than a Canadian one');
+  assert.ok(engL.mean > nep.mean * 1.2, 'and an English one than a Nepali one');
   // the tier is the DESIGNED ratio, not an accident
   assert.ok(Math.abs(aus.mean / ned.mean - NAT_STR.aus / NAT_STR.ned) < 0.06,
     'the gap between leagues is the calibrated tier');
@@ -179,31 +179,35 @@ test('a fresh claim is levelled to the newcomer rung once - and only once', asyn
   const { HUMAN_STR, BASE_XI, NAT_STR } = await import('../init-world.mjs');
   const xi = sq => { const b = sq.slice().sort((a, c) => (c.rating || 0) - (a.rating || 0)).slice(0, 11);
     return b.reduce((s, p) => s + (p.rating || 0), 0) / 11; };
-  // a newcomer lands in the worst seat scotland has to offer: slot 1, the
-  // 0.80 wooden-spoon squad - exactly the lottery the parity rule ends
+  // a newcomer founds in whatever Division Two seat the lottery left open -
+  // this claims the one whose dealt squad sits FURTHEST from the newcomer
+  // rung, exactly the unfairness the levelling exists to end
   const U = '22222222-2222-4222-8222-222222222222';
+  const target = BASE_XI * NAT_STR.sco * HUMAN_STR;
+  const seats = (await pool.query(
+    `SELECT slot, squad FROM clubs WHERE country_id='sco' AND slot >= 8 ORDER BY slot`)).rows;
+  const seat = seats.slice().sort((a, b) =>
+    Math.abs(xi(b.squad) - target) - Math.abs(xi(a.squad) - target))[0];
+  const before = xi(seat.squad);
+  assert.ok(Math.abs(before / target - 1) > 0.03, 'the seat really was a lottery: ' + Math.round(before));
   await pool.query(
     `INSERT INTO claims(user_id, display_name, country_id, slot, levelled)
-     VALUES ($1,'Newcomer','sco',1,false)`, [U]);
-  const before = xi((await pool.query(
-    `SELECT squad FROM clubs WHERE country_id='sco' AND slot=1`)).rows[0].squad);
-  const target = BASE_XI * NAT_STR.sco * HUMAN_STR;
-  assert.ok(before < target * 0.9, 'the seat really was the short straw: ' + Math.round(before));
+     VALUES ($1,'Newcomer','sco',$2,false)`, [U, seat.slot]);
 
   await runDue(pool, host, 'sco', { now: atDay(dayOf(1), 23) });
   const club = (await pool.query(
-    `SELECT squad FROM clubs WHERE country_id='sco' AND slot=1`)).rows[0].squad;
+    `SELECT squad FROM clubs WHERE country_id='sco' AND slot=$1`, [seat.slot])).rows[0].squad;
   assert.ok(Math.abs(xi(club) / target - 1) < 0.02,
     'the same men, raised to the newcomer rung: ' + Math.round(xi(club)) + ' vs ' + Math.round(target));
   assert.equal((await pool.query(
-    `SELECT levelled FROM claims WHERE country_id='sco' AND slot=1`)).rows[0].levelled, true);
+    `SELECT levelled FROM claims WHERE country_id='sco' AND slot=$1`, [seat.slot])).rows[0].levelled, true);
 
   // ONCE. The manager trains a man; the next tick must not undo his work.
   await pool.query(
-    `UPDATE clubs SET squad = jsonb_set(squad, '{0,skills,vsPace}', '95') WHERE country_id='sco' AND slot=1`);
+    `UPDATE clubs SET squad = jsonb_set(squad, '{0,skills,vsPace}', '95') WHERE country_id='sco' AND slot=$1`, [seat.slot]);
   await runDue(pool, host, 'sco', { now: atDay(dayOf(1), 23) });
   const after = (await pool.query(
-    `SELECT squad FROM clubs WHERE country_id='sco' AND slot=1`)).rows[0].squad;
+    `SELECT squad FROM clubs WHERE country_id='sco' AND slot=$1`, [seat.slot])).rows[0].squad;
   assert.equal(after[0].skills.vsPace, 95, 'training survives - the levelling never runs twice');
 });
 
@@ -223,7 +227,7 @@ test('both claim doors mark the newcomer for levelling', async () => {
     }
   };
   const picked = await rpc('33333333-3333-4333-8333-333333333333',
-    `SELECT public.world_claim_club('ned', 2, 'Chooser') AS r`);
+    `SELECT public.world_claim_club('ned', 9, 'Chooser') AS r`);
   assert.equal(picked.rows[0].r.ok, true);
   const auto = await rpc('44444444-4444-4444-8444-444444444444',
     `SELECT public.world_auto_claim('ned', 'Walker') AS r`);
@@ -231,5 +235,11 @@ test('both claim doors mark the newcomer for levelling', async () => {
   const rows = (await pool.query(
     `SELECT slot, levelled FROM claims WHERE country_id='ned' ORDER BY slot`)).rows;
   assert.equal(rows.length, 2, 'both doors seated a manager');
-  rows.forEach(r => assert.equal(r.levelled, false, 'slot ' + r.slot + ' waits for its levelling'));
+  rows.forEach(r => {
+    assert.ok(r.slot >= 8 && r.slot <= 15, 'a manager founds in Division Two, seat ' + r.slot);
+    assert.equal(r.levelled, false, 'slot ' + r.slot + ' waits for its levelling');
+  });
+  // and the established counties are simply not for sale
+  await assert.rejects(rpc('55555555-5555-4555-8555-555555555555',
+    `SELECT public.world_claim_club('ned', 1, 'Buyer')`), /not for sale/);
 });

@@ -70,7 +70,7 @@ test('a nation has a side before a ball is bowled', async () => {
 
 test('every nation on earth, not just the ones with a tour', async () => {
   const cs = (await pool.query('SELECT id FROM countries ORDER BY id')).rows;
-  assert.equal(cs.length, 19);
+  assert.equal(cs.length, 16);
   for (const c of cs) {
     await runDue(pool, host, c.id, { now: atDay(dayOf(1), 23) });
     const now = await natSquadNow(pool, c.id, 1);
@@ -134,8 +134,9 @@ test('the league snapshot carries the side, which is what earns the red star', a
   assert.equal(lg.nat.squad.length, SQUAD_SIZE);
   assert.ok(lg.nat.round >= 1);
   assert.ok(Array.isArray(lg.nat.in) && Array.isArray(lg.nat.out));
-  // a starred man is a real man in a real club in this very table
-  const clubs = new Set(lg.table.map(t => t.slot));
+  // a starred man is a real man in a real club in this very nation - either
+  // division: a second-flight man CAN play for his country, that is the dream
+  const clubs = new Set(lg.table.map(t => t.slot).concat(lg.table2.map(t => t.slot)));
   assert.ok(lg.nat.squad.every(m => clubs.has(m.slot)),
     'every international plays for a club in this league');
   const held = (await pool.query(
@@ -160,9 +161,11 @@ test('the nations page shows the standing side, with the tour squad beside it', 
   // actually flew at the last window, whose clubs were paid and who won caps.
   // Weeks of cricket later the standing side may have moved on from it, which
   // is exactly what a living national side does.
-  assert.equal(e.window, WINDOWS[0], 'the last window England toured in');
+  // whichever window that was (earlier tests may have toured further into the
+  // season), it is one of the calendar's own and the squad is the one that flew
+  assert.ok(WINDOWS.includes(e.window), 'the last window England toured in is a real window');
   assert.deepEqual(namesOf(e.tourSquad),
-    namesOf(await ensureNatSquad(pool, 'eng', 1, WINDOWS[0])),
+    namesOf(await ensureNatSquad(pool, 'eng', 1, e.window)),
     'and it is the side that stood before THAT round');
 
   // a nation that had the window off still has a side - the whole point

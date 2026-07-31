@@ -27,7 +27,7 @@ after(async () => { await pool.end(); });
 
 test('the flagship is the strongest side in every league it is founded into', async () => {
   const rows = (await pool.query('SELECT country_id, slot, is_boss, squad FROM clubs ORDER BY country_id, slot')).rows;
-  assert.equal(rows.length, 190);
+  assert.equal(rows.length, 256);
   const byCountry = {};
   rows.forEach(r => { (byCountry[r.country_id] = byCountry[r.country_id] || []).push(r); });
   const xiOf = sq => {
@@ -36,7 +36,7 @@ test('the flagship is the strongest side in every league it is founded into', as
   };
   for (const cid of Object.keys(byCountry)) {
     const cs = byCountry[cid];
-    assert.equal(cs.length, 10, cid + ' seats ten sides');
+    assert.equal(cs.length, 16, cid + ' seats sixteen sides in two divisions');
     const boss = cs.find(c => c.is_boss);
     assert.ok(boss, cid + ' has a flagship');
     const bx = xiOf(boss.squad);
@@ -112,16 +112,20 @@ test('the reseed redeals the bots, spares a claimed club, and restarts the seaso
   assert.equal((await pool.query('SELECT count(*)::int n FROM matches')).rows[0].n, 0, 'no cricket in the book');
   assert.equal((await pool.query('SELECT count(*)::int n FROM ticks')).rows[0].n, 0, 'no settled days');
   const seasons = (await pool.query('SELECT country_id, season_no, start_day FROM seasons ORDER BY country_id')).rows;
-  assert.equal(seasons.length, 19, 'one season per country');
-  const today = dayIx(Date.now());
+  assert.equal(seasons.length, 16, 'one season per country');
+  // a season opens on a MONDAY - the next week boundary from today, so the
+  // five-week calendar's weekday promise (Sunday is cup day) holds
+  const t = Math.max(0, dayIx(Date.now()));
+  const monday = t + ((7 - (t % 7)) % 7);
   seasons.forEach(s => {
     assert.equal(s.season_no, 1, s.country_id + ' is back at season one');
-    assert.equal(s.start_day, today, s.country_id + ' opens today');
+    assert.equal(s.start_day, monday, s.country_id + ' opens on the Monday');
+    assert.ok(s.start_day % 7 === 0, 'and that day IS a Monday of the world week');
   });
   // the world itself survived
   assert.equal((await pool.query('SELECT count(*)::int n FROM claims')).rows[0].n, 1, 'the claim survived');
-  assert.equal((await pool.query('SELECT count(*)::int n FROM clubs')).rows[0].n, 190, 'every club survived');
-  assert.equal((await pool.query('SELECT count(*)::int n FROM countries')).rows[0].n, 19, 'every country survived');
+  assert.equal((await pool.query('SELECT count(*)::int n FROM clubs')).rows[0].n, 256, 'every club survived');
+  assert.equal((await pool.query('SELECT count(*)::int n FROM countries')).rows[0].n, 16, 'every country survived');
 });
 
 test('a generation is stable inside itself, and never repeats across a redeal', async () => {

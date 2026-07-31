@@ -144,7 +144,7 @@
   function natRound(rid) { var n = natOf(rid); return n ? n.round : null; }
 
   function roundsPlayed() { var b = snap(); return b ? (b.roundsPlayed | 0) : 0; }
-  function totalRounds() { var b = snap(); return (b && b.rounds) ? (b.rounds | 0) : 18; }
+  function totalRounds() { var b = snap(); return (b && b.rounds) ? (b.rounds | 0) : 14; }
   function seasonNo() { var b = snap(); return b ? (b.seasonNo | 0) || 1 : 1; }
   // the round about to be played, 1-based, capped at the last one
   function round() { return Math.min(roundsPlayed() + 1, totalRounds()); }

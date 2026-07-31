@@ -34,7 +34,7 @@ function snapshot({ nat = 'eng', startDay, seasonNo = 1, roundsPlayed = 0, resul
   const names = ['Essex', 'Orange Club', 'Mashed Potatoes', 'Thunder Emperor', 'Kent',
     'Durham', 'Middlesex', 'Nottinghamshire', 'Somerset', 'Surrey'];
   return {
-    country: nat, seasonNo, startDay, rounds: 18, roundsPlayed,
+    country: nat, seasonNo, startDay, rounds: 14, roundsPlayed,
     table: names.map((name, i) => ({
       slot: i, name, boss: i === 0, p: 0, w: 0, l: 0, t: 0, pts: 0, nrr: 0
     })),
@@ -85,17 +85,18 @@ test('the calendar is anchored by the world, not assumed from the date', () => {
   assert.equal(cal.dayInSeason, 0, 'day 2 is day ZERO of a season that opened on day 2');
   assert.equal(cal.round, 1, 'the opening day plays round 1, whatever the date says');
 
-  // and the rest of the season walks from the same anchor: three rounds, a
-  // rest day, three rounds - so world day 5 is the season's rest day
-  assert.equal(ctx.__foWT.serverCal(P().EPOCH + 4 * DAY).round, 3);
-  assert.equal(ctx.__foWT.serverCal(P().EPOCH + 5 * DAY).round, null, 'day 3 of a season rests');
-  assert.equal(ctx.__foWT.serverCal(P().EPOCH + 6 * DAY).round, 4);
+  // and the rest of the season walks from the same anchor - the pyramid week
+  // is Mon Tue . Thu Fri, so the season's third day (a Wednesday) rests and
+  // its fourth plays round 3
+  assert.equal(ctx.__foWT.serverCal(P().EPOCH + 3 * DAY).round, 2);
+  assert.equal(ctx.__foWT.serverCal(P().EPOCH + 4 * DAY).round, null, 'day 2 of a season rests - internationals');
+  assert.equal(ctx.__foWT.serverCal(P().EPOCH + 5 * DAY).round, 3);
 
   // the world founded on day 0 is unchanged - the anchor is the general case,
   // not a special one
   P().anchorWorld(0, 1);
   assert.equal(ctx.__foWT.serverCal(P().EPOCH).round, 1);
-  assert.equal(ctx.__foWT.serverCal(P().EPOCH + 2 * DAY).round, 3);
+  assert.equal(ctx.__foWT.serverCal(P().EPOCH + 3 * DAY).round, 3);
 });
 
 test('a season that has bowled no balls is round 1, with a poisoned save saying 3', () => {
@@ -103,7 +104,7 @@ test('a season that has bowled no balls is round 1, with a poisoned save saying 
   assert.equal(ctx.__foServed.on(), true, 'a claim plus a snapshot means the world speaks here');
   assert.equal(ctx.__foServed.roundsPlayed(), 0);
   assert.equal(ctx.__foServed.round(), 1, 'nothing played, so round 1 is next');
-  assert.equal(ctx.__foServed.totalRounds(), 18);
+  assert.equal(ctx.__foServed.totalRounds(), 14);
   assert.equal(ctx.__foServed.startDay(), 2);
   // the local save still says three, and is still not consulted
   assert.equal(run('App.season.round'), 3);

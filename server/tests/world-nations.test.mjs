@@ -120,11 +120,11 @@ test('the fee is the board rate, and a boy is cheaper', () => {
 });
 
 test('the tours pair every nation but at most one, and pair them the same way twice', () => {
-  const ids = ['afg', 'aus', 'bgd', 'can', 'eng', 'ire', 'ken', 'ned', 'nep',
-    'nzl', 'pak', 'rsa', 'sco', 'slk', 'sub', 'usa', 'wal', 'win', 'zim'];
+  const ids = ['afg', 'aus', 'bgd', 'eng', 'ire', 'ned', 'nep',
+    'nzl', 'pak', 'rsa', 'sco', 'slk', 'sub', 'usa', 'win', 'zim'];
   const p1 = tourPairs(105, ids), p2 = tourPairs(105, ids.slice().reverse());
   assert.deepEqual(p1, p2, 'the draw is a function of the day, not of the row order');
-  assert.equal(p1.length, 9, 'nineteen nations make nine ties and one week off');
+  assert.equal(p1.length, 8, 'sixteen nations pair into eight ties - nobody has the week off');
   const seen = new Set();
   p1.flat().forEach(id => { assert.ok(!seen.has(id), 'nobody plays twice'); seen.add(id); });
   assert.notDeepEqual(tourPairs(109, ids), p1, 'a different window is a different draw');
@@ -203,14 +203,14 @@ before(async () => {
 after(async () => { await pool.end(); });
 
 test('a window falls on a rest day, and robs the round that follows', async () => {
-  assert.deepEqual(WINDOWS, [4, 7, 10], 'the rounds the three windows rob');
-  assert.deepEqual(WINDOW_DAYS, [3, 7, 11], 'the rest days the tours are played on');
+  assert.deepEqual(WINDOWS, [3, 5, 7, 9, 11, 13], 'the rounds the six windows rob');
+  assert.deepEqual(WINDOW_DAYS, [2, 5, 9, 12, 16, 19], 'the Wednesdays and Saturdays the tours are played on');
   assert.ok(isWindowRound(WIN_ROUND) && !isWindowRound(WIN_ROUND + 1));
   // no club plays on a window day: that is the point of putting it on the rest
   assert.equal(dayOfRound(WIN_ROUND), WINDOW_DAYS[0] + 1, 'the round is the day after the tour');
   assert.equal(windowDayOfRound(WIN_ROUND), WINDOW_DAYS[0]);
   const w = await windowsOn(pool, WIN_DAY);
-  assert.equal(w.length, 19, 'the whole planet is in the window on the same day');
+  assert.equal(w.length, 16, 'the whole planet is in the window on the same day');
   assert.ok(w.every(x => x.round === WIN_ROUND));
   assert.equal((await windowsOn(pool, WIN_DAY + 1)).length, 0);
 });
@@ -231,8 +231,11 @@ test('the window: the selectors name a squad, it is banked, and the club loses t
 
   // THE SHEET. A manager files an eleven that names one of the called-up men;
   // the umpire has to cover him rather than throw the sheet away.
-  const claim = await as(U1, `SELECT public.world_claim_club('eng', 1, 'Santosh') AS r`);
-  assert.equal(claim.rows[0].r.ok, true);
+  // seated directly: the claim DOORS only open onto Division Two now (proved
+  // in world-conditions), but the cover-sheet law must hold for any managed
+  // club - here a first-division one whose men the selectors actually want.
+  await pool.query(
+    `INSERT INTO claims(user_id, display_name, country_id, slot) VALUES ($1,'Santosh','eng',1)`, [U1]);
   const squad = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
   const takenHere = first.filter(r => r.slot === 1).map(r => r.player);
   assert.ok(takenHere.length >= 1, 'the selectors took at least one Yorkshireman');
@@ -253,7 +256,7 @@ test('the window: the selectors name a squad, it is banked, and the club loses t
   const ms = (await pool.query(
     `SELECT id, home_slot, away_slot, home_name, away_name, result, living
        FROM matches WHERE country_id='eng' AND season_no=1 AND round=$1`, [WIN_ROUND])).rows;
-  assert.equal(ms.length, 5);
+  assert.equal(ms.length, 8);
   const awayAt = new Map();
   first.forEach(r => {
     if (!awayAt.has(r.slot)) awayAt.set(r.slot, new Set());
@@ -343,12 +346,12 @@ test('the nations play each other, on the real engine, once', async () => {
     await runDue(pool, host, c.id, { now });
   }
   const played = await runWindows(pool, host, ENGINE_VERSION, { now });
-  assert.equal(played.length, 9, 'nineteen nations, nine ties');
+  assert.equal(played.length, 8, 'sixteen nations, eight ties');
   assert.equal(played[0], natMatchId(WIN_DAY, 0));
   // idempotent: the same call again plays nothing and breaks nothing
   assert.deepEqual(await runWindows(pool, host, ENGINE_VERSION, { now }), []);
   const ms = (await pool.query('SELECT * FROM nat_matches ORDER BY id')).rows;
-  assert.equal(ms.length, 9);
+  assert.equal(ms.length, 8);
   for (const m of ms) {
     assert.equal(m.engine_version, ENGINE_VERSION);
     assert.ok(m.result.innings[0].runs > 0, 'a real innings was played');
@@ -390,15 +393,15 @@ test('a cap is a real cap: its own book, and it is felt at the club', async () =
 test('the ladder and the room read the international game', async () => {
   const rk = await computeRankings(pool, Date.now());
   const played = rk.countries.filter(c => c.natP > 0);
-  assert.equal(played.length, 18, 'eighteen nations toured, one had the window off');
+  assert.equal(played.length, 16, 'all sixteen nations toured - an even world has no bye');
   // the ladder is the game's own match ratings now, not Elo: every figure is on
   // the club rating scale, an untoured nation sits on the presumption of 3,500,
   // and a nation with cricket behind it does not
   assert.ok(rk.countries.every(c => c.natRating >= 350 && c.natRating <= 6790),
     'every mark is on the club rating scale');
   assert.ok(played.some(c => c.natRating !== 3500), 'and the ladder moved for the nations that played');
-  assert.ok(rk.countries.some(c => c.natP === 0 && c.natRating === 3500),
-    'the nation that sat the window out is still presumed ordinary');
+  // an even world has no bye: every nation carries a real international record
+  assert.ok(rk.countries.every(c => c.natP > 0), 'nobody sat the window out');
 
   const na = await computeNations(pool, atDay(WIN_DAY, 23));
   assert.deepEqual(na.windows, WINDOWS);
@@ -460,13 +463,14 @@ test('and a window with no fixture takes nobody either', async () => {
   const inWindow = await windowsOn(pool, WIN_DAY);
   const playing = new Set(tourPairs(WIN_DAY, inWindow.map(w => w.country)).flat());
   const idle = inWindow.map(w => w.country).filter(id => !playing.has(id));
-  assert.equal(idle.length, 1, 'nineteen nations leave exactly one with the week off');
-  assert.equal(await touringOn(pool, idle[0], 1, WIN_ROUND), false);
+  assert.equal(idle.length, 0, 'sixteen nations pair perfectly - nobody has the week off');
   assert.equal(await touringOn(pool, 'eng', 1, WIN_ROUND), true);
+  // the law still holds where it can be observed: a round that is NOT a
+  // window round takes nobody from anybody
   const named = (await pool.query(
-    'SELECT count(*)::int AS n FROM callups WHERE country_id=$1 AND round=$2', [idle[0], WIN_ROUND])).rows[0].n;
-  assert.equal(named, 0, idle[0] + ' had no tour, so its men stayed at their clubs');
+    'SELECT count(*)::int AS n FROM callups WHERE round=$1', [WIN_ROUND + 1])).rows[0].n;
+  assert.equal(named, 0, 'a non-window round has no call-ups anywhere');
   const paid = (await pool.query(
-    'SELECT coalesce(sum(fee),0)::int AS f FROM callups WHERE country_id=$1', [idle[0]])).rows[0].f;
+    'SELECT coalesce(sum(fee),0)::int AS f FROM callups WHERE round=$1', [WIN_ROUND + 1])).rows[0].f;
   assert.equal(paid, 0, 'and nobody was paid for a week that never happened');
 });

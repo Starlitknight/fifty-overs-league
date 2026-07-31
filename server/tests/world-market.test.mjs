@@ -170,8 +170,11 @@ test('the umpire puts bot clubs spare men up, and does it the same way twice', a
 });
 
 test('the sealed bid: the floor, the bank, and one offer a club', async () => {
-  const claim = await as(U1, `SELECT public.world_claim_club('eng', 1, 'Santosh') AS r`);
-  assert.equal(claim.rows[0].r.ok, true);
+  // seated directly at a first-division county: the claim DOORS only open
+  // onto Division Two now (proved in world-conditions), and the market's laws
+  // must hold for any managed club.
+  await pool.query(
+    `INSERT INTO claims(user_id, display_name, country_id, slot) VALUES ($1,'Santosh','eng',1)`, [U1]);
   const L = (await pool.query(`SELECT * FROM listings WHERE status='open' ORDER BY id LIMIT 1`)).rows[0];
   const low = Math.round(L.asking * MIN_BID_PCT) - 1000;
   await assert.rejects(
