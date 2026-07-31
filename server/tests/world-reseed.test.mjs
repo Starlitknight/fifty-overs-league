@@ -177,3 +177,28 @@ test('a squad dealt from a new generation is still a squad that can play', async
     }
   }
 });
+
+test('a claimed club is dealt the newcomer rung, whatever seat it sits in', async () => {
+  // the parity rule: with RESEED_CLAIMED the humans' clubs are redealt too -
+  // and they land on HUMAN_STR x the nation tier, NOT the seat's ladder rung,
+  // so two managers who joined the same day hold the same class of squad
+  const { HUMAN_STR, BASE_XI, NAT_STR } = await import('../init-world.mjs');
+  process.env.CONFIRM = 'YES-RESEED';
+  process.env.RESEED_CLAIMED = 'YES-INCLUDING-MINE';
+  delete process.env.DRY_RUN;
+  await import('../reseed-squads.mjs?parity=' + Date.now());
+  delete process.env.RESEED_CLAIMED;
+
+  const xi = sq => { const b = sq.slice().sort((a, c) => (c.rating || 0) - (a.rating || 0)).slice(0, 11);
+    return b.reduce((s, p) => s + (p.rating || 0), 0) / 11; };
+  // the claim from the earlier test sits at eng slot 4 - whose SEAT rung is
+  // 1.0; the newcomer rung is 0.97, and that is what the deal must land on
+  const mine = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=4`)).rows[0].squad;
+  const target = BASE_XI * NAT_STR.eng * HUMAN_STR;
+  assert.ok(Math.abs(xi(mine) / target - 1) < 0.02,
+    'the claimed club sits on the newcomer rung: ' + Math.round(xi(mine)) + ' vs ' + Math.round(target));
+  // and an unclaimed neighbour still carries its seat's own rung, not the human one
+  const bot = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=5`)).rows[0].squad;
+  assert.ok(Math.abs(xi(bot) / target - 1) > 0.04,
+    'a bot keeps the ladder: ' + Math.round(xi(bot)));
+});

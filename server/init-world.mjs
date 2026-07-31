@@ -108,6 +108,12 @@ export function countryConfigs(host) {
 // planet forgot to grade, so a missing row degrades to "ordinary" rather
 // than to luck.
 export const STR_FALLBACK = 1;
+// THE NEWCOMER'S RUNG. Every human-claimed club is dealt (and, on a fresh
+// claim, levelled) to this strength x the nation tier: competitive from day
+// one, identical to every other newcomer in the league, still an underdog to
+// the boss and the 1.00-1.04 pack. The seating chart decides a bot's class;
+// it never again decides a person's.
+export const HUMAN_STR = 0.97;
 export const BASE_XI = 36000;                 // the old world's median XI rating
 
 // A LEAGUE IS AS STRONG AS ITS CRICKET CULTURE. Every nation's ten clubs used
@@ -133,8 +139,10 @@ const xiOf = sq => {
 };
 
 // scale every man's skills until the XI lands on target; ratings and wages are
-// re-derived by the engine's own mapping, so nothing is hand-set
-function calibrate(host, squad, target) {
+// re-derived by the engine's own mapping, so nothing is hand-set. Exported:
+// the reseed deals with it, and the umpire levels a fresh claim with it -
+// same men, same names, same careers, raised (or trimmed) to the rung.
+export function calibrate(host, squad, target) {
   let men = squad;
   for (let i = 0; i < 4; i++) {
     const have = xiOf(men);
@@ -149,10 +157,12 @@ function calibrate(host, squad, target) {
   return men;
 }
 
-export function squadFor(host, cfg, club, gen = 1) {
+// strOverride: the reseed passes HUMAN_STR for a claimed club, so every
+// human's fresh deal lands on the newcomer rung instead of the seat's
+export function squadFor(host, cfg, club, gen = 1, strOverride = null) {
   const raw = host.genSquad('world' + ((gen | 0) || 1) + '|' + cfg.id + '|' + club.slot, cfg.nat,
     club.arch || cfg.arch, club.boss ? cfg.capt : 'general');
-  const str = club.str || STR_FALLBACK;
+  const str = strOverride || club.str || STR_FALLBACK;
   return calibrate(host, raw, BASE_XI * (NAT_STR[cfg.id] || 1) * str);
 }
 

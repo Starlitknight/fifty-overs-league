@@ -18,6 +18,7 @@ import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
 import { EPOCH, dayIx, daySettled, seedOf, natHour, scheduleOf, ROUNDS, isWindowRound,
          CYCLE, LEAGUE_DAYS, roundOfDay, CUP_DAYS } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
+import { calibrate, countryConfigs, BASE_XI, NAT_STR, HUMAN_STR } from './init-world.mjs';
 import { ensureYouth, ageYouth, playColtsRound, computeColts, coltRecords } from './youth.mjs';
 import { settleMoney } from './economy.mjs';
 import { runComps } from './comps.mjs';
@@ -529,9 +530,39 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
 }
 
 // heal any gap: settle every due day since the season began
+// EVERY NEW MANAGER FOUNDS ON THE SAME FOOTING. A fresh claim inherits a bot
+// squad at whatever rung the seating chart dealt that seat - a lottery no
+// person chose. Before the next cricket is played, the club's OWN men (same
+// names, same careers - the board's new investment raises the squad, it does
+// not replace it) are scaled once onto the standard newcomer rung, and the
+// claim is marked levelled so training and trading are never overwritten
+// after that. Pre-parity claims default to levelled and are the reseed's
+// business, not a surprise rewrite here.
+async function levelNewClaims(pool, host, country) {
+  let rows = [];
+  try {
+    rows = (await pool.query(
+      `SELECT c.slot, cl.squad FROM claims c JOIN clubs cl
+         ON cl.country_id=c.country_id AND cl.slot=c.slot
+        WHERE c.country_id=$1 AND c.levelled=false`, [country])).rows;
+  } catch (e) { return 0; }                    // pre-030 database: nothing to level
+  if (!rows.length) return 0;
+  const cfg = countryConfigs(host).find(c => c.id === country);
+  for (const r of rows) {
+    const target = BASE_XI * ((cfg && NAT_STR[cfg.id]) || 1) * HUMAN_STR;
+    const men = calibrate(host, r.squad, target);
+    await pool.query('UPDATE clubs SET squad=$3 WHERE country_id=$1 AND slot=$2',
+      [country, r.slot, JSON.stringify(men)]);
+    await pool.query('UPDATE claims SET levelled=true WHERE country_id=$1 AND slot=$2',
+      [country, r.slot]);
+  }
+  return rows.length;
+}
+
 export async function runDue(pool, host, country, { now = Date.now(), failAfter = null, world = true } = {}) {
   const season = (await pool.query('SELECT * FROM seasons WHERE country_id=$1 ORDER BY season_no DESC LIMIT 1', [country])).rows[0];
   if (!season) return [];
+  await levelNewClaims(pool, host, country);
   const out = [];
   for (let day = season.start_day; day <= dayIx(now); day++) {
     if (!daySettled(now, day, country)) break;

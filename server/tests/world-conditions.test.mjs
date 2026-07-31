@@ -174,3 +174,62 @@ test('the same archetype wears a different accent in a different country', () =>
   assert.ok(afghan.filter(k => k === 'wristSpin').length > afghan.length / 2,
     'Afghanistan\'s on wrist spin: ' + afghan.join(','));
 });
+
+test('a fresh claim is levelled to the newcomer rung once - and only once', async () => {
+  const { HUMAN_STR, BASE_XI, NAT_STR } = await import('../init-world.mjs');
+  const xi = sq => { const b = sq.slice().sort((a, c) => (c.rating || 0) - (a.rating || 0)).slice(0, 11);
+    return b.reduce((s, p) => s + (p.rating || 0), 0) / 11; };
+  // a newcomer lands in the worst seat scotland has to offer: slot 1, the
+  // 0.80 wooden-spoon squad - exactly the lottery the parity rule ends
+  const U = '22222222-2222-4222-8222-222222222222';
+  await pool.query(
+    `INSERT INTO claims(user_id, display_name, country_id, slot, levelled)
+     VALUES ($1,'Newcomer','sco',1,false)`, [U]);
+  const before = xi((await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='sco' AND slot=1`)).rows[0].squad);
+  const target = BASE_XI * NAT_STR.sco * HUMAN_STR;
+  assert.ok(before < target * 0.9, 'the seat really was the short straw: ' + Math.round(before));
+
+  await runDue(pool, host, 'sco', { now: atDay(dayOf(1), 23) });
+  const club = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='sco' AND slot=1`)).rows[0].squad;
+  assert.ok(Math.abs(xi(club) / target - 1) < 0.02,
+    'the same men, raised to the newcomer rung: ' + Math.round(xi(club)) + ' vs ' + Math.round(target));
+  assert.equal((await pool.query(
+    `SELECT levelled FROM claims WHERE country_id='sco' AND slot=1`)).rows[0].levelled, true);
+
+  // ONCE. The manager trains a man; the next tick must not undo his work.
+  await pool.query(
+    `UPDATE clubs SET squad = jsonb_set(squad, '{0,skills,vsPace}', '95') WHERE country_id='sco' AND slot=1`);
+  await runDue(pool, host, 'sco', { now: atDay(dayOf(1), 23) });
+  const after = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='sco' AND slot=1`)).rows[0].squad;
+  assert.equal(after[0].skills.vsPace, 95, 'training survives - the levelling never runs twice');
+});
+
+test('both claim doors mark the newcomer for levelling', async () => {
+  // nearly every manager arrives through world_auto_claim (signing up IS
+  // claiming); the picky ones use world_claim_club. Either door must leave
+  // the claim waiting for the umpire's levelling - a door that forgot would
+  // quietly reopen the seat lottery for everyone who walked through it.
+  const rpc = async (user, sql) => {
+    const c = await pool.connect();
+    try {
+      await c.query(`SELECT set_config('request.jwt.claims', $1, false)`, [JSON.stringify({ sub: user })]);
+      return await c.query(sql);
+    } finally {
+      await c.query(`SELECT set_config('request.jwt.claims', '', false)`).catch(() => {});
+      c.release();
+    }
+  };
+  const picked = await rpc('33333333-3333-4333-8333-333333333333',
+    `SELECT public.world_claim_club('ned', 2, 'Chooser') AS r`);
+  assert.equal(picked.rows[0].r.ok, true);
+  const auto = await rpc('44444444-4444-4444-8444-444444444444',
+    `SELECT public.world_auto_claim('ned', 'Walker') AS r`);
+  assert.equal(auto.rows[0].r.ok, true);
+  const rows = (await pool.query(
+    `SELECT slot, levelled FROM claims WHERE country_id='ned' ORDER BY slot`)).rows;
+  assert.equal(rows.length, 2, 'both doors seated a manager');
+  rows.forEach(r => assert.equal(r.levelled, false, 'slot ' + r.slot + ' waits for its levelling'));
+});

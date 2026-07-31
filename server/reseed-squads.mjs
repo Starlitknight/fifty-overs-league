@@ -34,7 +34,7 @@
 // forward from its founding bank again on the next tick.
 import { makePool } from './db.mjs';
 import { makeHost } from './enginehost.mjs';
-import { countryConfigs, squadFor } from './init-world.mjs';
+import { countryConfigs, squadFor, HUMAN_STR } from './init-world.mjs';
 import { EPOCH, dayIx, scheduleOf } from './clock.mjs';
 
 const confirm = (process.env.CONFIRM || '').trim();
@@ -107,7 +107,11 @@ for (const cfg of cfgs) {
       kept++; line.push(club.slot + ':' + row.name + ' (claimed, kept)');
       continue;
     }
-    const players = squadFor(host, cfg, club, gen);
+    // A CLAIMED CLUB IS A PERSON'S CLUB: dealt to the standard newcomer rung,
+    // so two managers who joined on the same day hold the same class of squad
+    // whatever seats the auto-claim gave them. Bots keep the seat's rung.
+    const isClaimed = claimed.has(cfg.id + ':' + club.slot);
+    const players = squadFor(host, cfg, club, gen, isClaimed ? HUMAN_STR : null);
     if (!dry) {
       await pool.query('UPDATE clubs SET squad=$3 WHERE country_id=$1 AND slot=$2',
         [cfg.id, club.slot, JSON.stringify(players)]);

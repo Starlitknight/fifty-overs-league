@@ -600,18 +600,34 @@ test('014: the living player - careers, form, tired legs, all from the record', 
 });
 
 test('015: watched IS recorded - the banked living patch replays the same match', async () => {
-  // give England a few more rounds so the season has genuinely worn the men
-  // (already-settled days are no-ops - the umpire never replays a round)
-  for (const day of [102, 103, 104]) {
+  // THE CURRENT ROUND, freshly banked - which is the round a broadcast ever
+  // replays. An OLD round is history: newcomer levelling and academy
+  // promotions move the clubs table on, and the spectator contract has never
+  // been "any match ever" - the theatre fetches the living state per current
+  // round and replays tonight's cricket. Season 1 was settled WHOLE by the
+  // cup test above (and a claim landed after it banked, so its squads have
+  // legitimately moved on) - the fresh cricket lives in the CURRENT season.
+  // The test banks three rounds of it itself, guaranteeing the pick was
+  // played by the squads the world serves NOW and that the men carried real
+  // form and real legs into it, whatever earlier tests did to the calendar.
+  const seas = (await pool.query(
+    `SELECT season_no, start_day FROM seasons WHERE country_id='eng' ORDER BY season_no DESC LIMIT 1`)).rows[0];
+  const maxRound = async () => Number((await pool.query(
+    `SELECT coalesce(max(round),0) AS r FROM matches WHERE country_id='eng' AND season_no=$1`,
+    [seas.season_no])).rows[0].r);
+  const pre = await maxRound();
+  let last = pre;
+  for (let r = pre + 1; r <= 18 && last < pre + 3; r++) {
+    const day = seas.start_day + dayOfRound(r);
     await runTick(pool, host, 'eng', day, { now: EPOCH + day * DAY + 18 * 3600000 });
+    last = await maxRound();
   }
-  // a LATE match, played by men a whole season of cricket had already worn
+  assert.ok(last > pre, 'the current season had cricket left to bank');
   const m = (await pool.query(
     `SELECT id, seed, round, home_name, away_name, home_slot, away_slot, orders, living, result_canonical
-       FROM matches WHERE country_id='eng' AND season_no=1 AND living IS NOT NULL
-       ORDER BY round DESC, home_slot LIMIT 1`)).rows[0];
+       FROM matches WHERE country_id='eng' AND season_no=$1 AND round=$2 AND living IS NOT NULL
+       ORDER BY home_slot LIMIT 1`, [seas.season_no, last])).rows[0];
   assert.ok(m, 'a banked match with its living patch');
-  assert.ok(m.round >= 3, 'late enough that the season has left a mark: round ' + m.round);
   assert.ok(m.living[m.home_name] && m.living[m.away_name], 'both squads are in it');
   const anyMan = Object.values(m.living[m.home_name])[0];
   assert.ok(anyMan && anyMan.e != null && anyMan.f != null && anyMan.n != null, 'exp, form and legs');
@@ -636,22 +652,29 @@ test('015: watched IS recorded - the banked living patch replays the same match'
   // re-deriving it here. A copy of that call in a test is a copy that goes stale
   // the day the world changes how it seats a club - which is precisely what it
   // did when clubs stopped sharing one archetype and one budget.
-  const cfg = countryConfigs(host).filter(c => c.id === 'eng')[0];
-  const squadOf = slot => squadFor(host, cfg, cfg.clubs.filter(c => c.slot === slot)[0]);
+  // the squads the phone actually holds are the SERVED squads - the clubs
+  // table as the world publishes it. (This used to regenerate them from the
+  // world seed, which was the same thing until newcomer levelling: a claimed
+  // club's squad is deliberately no longer its seat's deal, and the snapshot
+  // a spectator reads reflects that.)
+  const squadOf = async slot => (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=$1`, [slot])).rows[0].squad;
   // ...and it replays THE MATCH AS PLAYED: the forecast pitch and sky from
   // the planet's one conditions table, and the banked sheets (bot doctrines
   // included) - exactly the inputs a phone's broadcast derives for itself
-  const cond = host.condFor('eng', m.home_slot, 1, m.round);
+  const cond = host.condFor('eng', m.home_slot, seas.season_no, m.round);
   const replay = host.runMatch(
-    { name: m.home_name, players: applyLiving(squadOf(m.home_slot), m.living[m.home_name], host) },
-    { name: m.away_name, players: applyLiving(squadOf(m.away_slot), m.living[m.away_name], host) },
+    { name: m.home_name, players: applyLiving(await squadOf(m.home_slot), m.living[m.home_name], host) },
+    { name: m.away_name, players: applyLiving(await squadOf(m.away_slot), m.living[m.away_name], host) },
     cond.pitch, Number(m.seed), m.orders, cond.weather);
   assert.equal(facts(replay), facts(m.result_canonical), 'the broadcast is the match the world recorded');
 
-  // and the patch is what makes it so: the pristine generated squads, same
+  // and the patch is what makes it so: the pristine GENERATED squads, same
   // seed, same orders, play a DIFFERENT match
-  const naive = host.runMatch({ name: m.home_name, players: squadOf(m.home_slot) },
-    { name: m.away_name, players: squadOf(m.away_slot) }, 'balanced', Number(m.seed), m.orders);
+  const cfg2 = countryConfigs(host).filter(c => c.id === 'eng')[0];
+  const pristine = slot => squadFor(host, cfg2, cfg2.clubs.filter(c => c.slot === slot)[0]);
+  const naive = host.runMatch({ name: m.home_name, players: pristine(m.home_slot) },
+    { name: m.away_name, players: pristine(m.away_slot) }, 'balanced', Number(m.seed), m.orders);
   assert.notEqual(facts(naive), facts(m.result_canonical), 'without the living state it is not the same game');
 
   // nor would today's squads do: the men have travelled on, the record has not
