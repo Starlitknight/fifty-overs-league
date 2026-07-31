@@ -228,17 +228,29 @@
         return "<option value='" + E(r.id) + "'" + (r.id === natId ? " selected" : "") + ">" + E(r.nm) + "</option>";
       }).join("");
 
+      // WHICH FLIGHT IS THIS PAGE - decided here so the plate can dress for
+      // it: the flagship's trophy belongs to Division One; Division Two's
+      // page is about the road up, and never wears the cup it cannot win.
+      var dQ0 = parseInt(qparam("d"), 10);
+      var plateDiv = (dQ0 === 1 || dQ0 === 2) ? dQ0 : myDivNo;
+      var hasDivs = rowsD2.length > 0;
       var plate =
         "<div class='fo-lgx-plate'>" +
         "<span class='fo-lgx-glow'></span>" +
-        "<img class='fo-lgx-cup' src='" + ART() + "circuit/trophy-" + E(natId) + ".webp' alt='' onerror=\"this.style.display='none'\">" +
+        (!hasDivs || plateDiv === 1
+          ? "<img class='fo-lgx-cup' src='" + ART() + "circuit/trophy-" + E(natId) + ".webp' alt='' onerror=\"this.style.display='none'\">"
+          : "") +
         "<div class='fo-lgx-plin'>" +
         "<div class='fo-lgx-mark'>" +
         "<span class='fo-lgx-pennant'><img src='" + flagOf(natId) + "' alt='' onerror=\"this.style.display='none'\"></span>" +
         "<div class='fo-lgx-titles'>" +
         "<div class='fo-lgx-k'>" + E(natNm) + " &middot; Season " + ((snap && snap.seasonNo) || (cal && cal.seasonNo > 0 ? cal.seasonNo : 1)) + "</div>" +
-        "<h1>The " + E(natNm) + " League</h1>" +
-        "<p>Ten clubs. Eighteen rounds. One pennant.</p>" +
+        "<h1>The " + E(natNm) + " League" + (hasDivs ? " &middot; Division " + (plateDiv === 1 ? "One" : "Two") : "") + "</h1>" +
+        "<p>" + (hasDivs
+          ? (plateDiv === 1
+            ? "Eight clubs. Fourteen rounds. Finals night crowns the champion."
+            : "Eight clubs. Fourteen rounds. The top of this table is the road up.")
+          : "Ten clubs. Eighteen rounds. One pennant.") + "</p>" +
         "</div></div>" +
         "<div class='fo-lgx-clock'>" +
         "<div class='fo-lgx-rk'>Round " + curRound + " of " + rounds + "</div>" +
