@@ -213,7 +213,11 @@ export function coltsSquad(club) {
 export async function playColtsRound(pool, host, country, season, leagueRound, seedOf, engineVersion) {
   const round = coltsRoundOf(leagueRound);
   if (!round) return 0;
-  const fixtures = season.schedule[round - 1] || [];
+  // the boys' fixtures mirror the seniors': both divisions of the pyramid
+  // (a pre-pyramid season row still carries the flat array)
+  const sched = season.schedule;
+  const fixtures = Array.isArray(sched) ? (sched[round - 1] || [])
+    : (((sched['1'] || [])[round - 1]) || []).concat(((sched['2'] || [])[round - 1]) || []);
   const clubs = (await pool.query(
     'SELECT slot, name, squad, youth FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
   const bySlot = Object.fromEntries(clubs.map(c => [c.slot, c]));

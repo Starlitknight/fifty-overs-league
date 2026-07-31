@@ -237,12 +237,12 @@ test('005: orders lock at the first ball and reveal to spectators', async () => 
 });
 
 test('007: humans christen their clubs, bots keep the counties, records survive renames', async () => {
-  // U2 claims Kent (eng slot 7) and names it after their own club
-  const ok = await as(U2, `SELECT public.world_claim_club('eng', 7, 'Rival', 'Orange Club') AS r`);
+  // U2 founds at Durham (eng slot 8, a Division Two seat) and names it
+  const ok = await as(U2, `SELECT public.world_claim_club('eng', 8, 'Rival', 'Orange Club') AS r`);
   assert.equal(ok.rows[0].r.club, 'Orange Club');
   const names = (await pool.query(`SELECT slot, name, default_name FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows;
-  assert.equal(names.find(n => n.slot === 7).name, 'Orange Club');
-  assert.equal(names.find(n => n.slot === 7).default_name, 'Kent');
+  assert.equal(names.find(n => n.slot === 8).name, 'Orange Club');
+  assert.equal(names.find(n => n.slot === 8).default_name, 'Durham');
   assert.equal(names.find(n => n.slot === 3).name, 'Surrey', 'bots keep the counties');
   // taken names bounce, case-insensitively, defaults included
   await assert.rejects(as(U2, `SELECT public.world_rename_club('surrey')`), /already taken/);
@@ -251,16 +251,16 @@ test('007: humans christen their clubs, bots keep the counties, records survive 
   const before = await computeLeague(pool, 'eng', 1, EPOCH + 130 * DAY);
   await as(U2, `SELECT public.world_rename_club('Tangerine CC')`);
   const after = await computeLeague(pool, 'eng', 1, EPOCH + 130 * DAY);
-  const bySlotB = Object.fromEntries(before.table.map(t => [t.slot, t]));
-  after.table.forEach(t => {
+  const bySlotB = Object.fromEntries(before.table.concat(before.table2).map(t => [t.slot, t]));
+  after.table.concat(after.table2).forEach(t => {
     assert.equal(t.p, bySlotB[t.slot].p, 'played, slot ' + t.slot);
     assert.equal(t.pts, bySlotB[t.slot].pts, 'points, slot ' + t.slot);
     assert.equal(t.w, bySlotB[t.slot].w, 'wins, slot ' + t.slot);
   });
-  assert.equal(after.table.find(t => t.slot === 7).name, 'Tangerine CC', 'the snapshot speaks the current name');
-  // releasing the club hands Kent its name back
+  assert.equal(after.table2.find(t => t.slot === 8).name, 'Tangerine CC', 'the snapshot speaks the current name');
+  // releasing the club hands Durham its name back
   await as(U2, `SELECT public.world_release_club()`);
-  assert.equal((await pool.query(`SELECT name FROM clubs WHERE country_id='eng' AND slot=7`)).rows[0].name, 'Kent');
+  assert.equal((await pool.query(`SELECT name FROM clubs WHERE country_id='eng' AND slot=8`)).rows[0].name, 'Durham');
 });
 
 test('008: signing up auto-claims the first free club; a full country says so', async () => {
@@ -300,10 +300,13 @@ test('009: season leaders come straight from the banked scorecards', async () =>
   assert.ok(lg.stats.bowl[0].wkts >= lg.stats.bowl[1].wkts, 'sorted by wickets');
   const clubNames = new Set((await pool.query(`SELECT name FROM clubs WHERE country_id='eng'`)).rows.map(r => r.name));
   lg.stats.bat.concat(lg.stats.bowl).forEach(x => assert.ok(clubNames.has(x.club), x.club + ' is a real club'));
-  // the law, not the day: a champion exists exactly when the 18 rounds are
-  // done - stated so it holds whether this run has played one round or all
-  assert.equal(lg.champion, lg.roundsPlayed >= 18 ? lg.table[0].name : null,
-    'a champion at 18 rounds, never a ball before');
+  // THE CROWN IS WON ON FINALS NIGHT: this run has played the whole season,
+  // so both divisions carry champions, each from its own top four (only a
+  // finals-night qualifier can win), and the shields are the table-toppers.
+  assert.ok(lg.champion, 'Division One is crowned');
+  assert.ok(lg.table.slice(0, 4).some(t => t.name === lg.champion), 'by one of the top four');
+  assert.ok(lg.champion2 && lg.table2.slice(0, 4).some(t => t.name === lg.champion2), 'Division Two likewise');
+  assert.equal(lg.shield, lg.table[0].name, 'the shield belongs to the table');
   const H = await rebuildHonours(pool);
   const anyComplete = (await pool.query(
     `SELECT 1 FROM matches GROUP BY country_id, season_no HAVING count(*) >= 90 LIMIT 1`)).rowCount;
@@ -314,14 +317,14 @@ test('009: season leaders come straight from the banked scorecards', async () =>
 
 test('010: the world rankings ladder stands on the last three match ratings', async () => {
   const rk = await computeRankings(pool, EPOCH + 102 * DAY);
-  assert.equal(rk.clubs.length, 190, 'every club in the world is ranked');
+  assert.equal(rk.clubs.length, 256, 'every club in the world is ranked');
   assert.equal(rk.countries.length, 19, 'every country is ranked');
   assert.equal(rk.window, 3, 'the window is three matches');
   // every club that has played is on the ladder; when only England's round 1
   // is banked that is exactly its ten, and this run says so
   const played = rk.clubs.filter(c => c.p > 0);
   assert.ok(played.length >= 10, 'the clubs that have played are ranked: ' + played.length);
-  if (played.length === 10) played.forEach(c => assert.equal(c.country, 'eng', 'only England has played'));
+  if (played.length === 16) played.forEach(c => assert.equal(c.country, 'eng', 'only England has played'));
   // a club that has not played is presumed ordinary, and says so with an empty form
   const idle = rk.clubs.filter(c => c.p === 0);
   idle.forEach(c => {
@@ -463,8 +466,8 @@ test('011: friendlies - challenge, accept, and the umpire plays the real match',
   assert.equal(bot.rows[0].r.status, 'accepted');
   assert.equal(bot.rows[0].r.playAtMs, PLAY, 'plays at the chosen time');
   assert.equal(bot.rows[0].r.humanOpponent, false);
-  // a human must answer for themselves: U2 (Orange Club, eng slot 2)
-  const hum = await as(U1, `SELECT public.world_friendly_challenge('eng', 2, $1) AS r`, [PLAY]);
+  // a human must answer for themselves: U2's founded club, eng slot 8
+  const hum = await as(U1, `SELECT public.world_friendly_challenge('eng', 8, $1) AS r`, [PLAY]);
   assert.equal(hum.rows[0].r.status, 'offered');
   assert.equal(hum.rows[0].r.humanOpponent, true);
   await assert.rejects(as(U1, `SELECT public.world_friendly_respond($1, true)`, [hum.rows[0].r.id]), /not yours to answer/);
@@ -489,7 +492,7 @@ test('011: friendlies - challenge, accept, and the umpire plays the real match',
     assert.ok(openers.includes(latest.xi[0]), 'the manager\'s chosen opener opened the friendly');
   }
   // declines are final; the ledger shows everything
-  const again = await as(U1, `SELECT public.world_friendly_challenge('eng', 2, $1) AS r`, [Date.now() + 4 * 3600000]);
+  const again = await as(U1, `SELECT public.world_friendly_challenge('eng', 8, $1) AS r`, [Date.now() + 4 * 3600000]);
   const dec = await as(U2, `SELECT public.world_friendly_respond($1, false) AS r`, [again.rows[0].r.id]);
   assert.equal(dec.rows[0].r.status, 'declined');
   const mine = await as(U1, `SELECT public.world_my_friendlies() AS f`);
@@ -592,7 +595,7 @@ test('013: the friendly fixture card - sealed to the hour, then public for the t
   const d2 = open2.rows[0].d;
   assert.deepEqual(d2.orders[d2.home.name], latest, 'league orders are the fallback, exactly as played');
   // an unanswered offer has no card, and neither does a ghost
-  const off = await as(U1, `SELECT public.world_friendly_challenge('eng', 2, $1) AS r`, [Date.now() + 6 * 3600000]);
+  const off = await as(U1, `SELECT public.world_friendly_challenge('eng', 8, $1) AS r`, [Date.now() + 6 * 3600000]);
   await assert.rejects(pool.query(`SELECT public.world_friendly_detail($1)`, [off.rows[0].r.id]), /this friendly is offered/);
   await assert.rejects(pool.query(`SELECT public.world_friendly_detail(999999)`), /no such friendly/);
 });
@@ -785,7 +788,7 @@ test('016: the nets, the face and the money all belong to the world', async () =
   // THE MONEY. A treasury the umpire settles and no device can write.
   const money = (await pool.query(
     `SELECT slot, bank FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows;
-  assert.equal(money.length, 10);
+  assert.equal(money.length, 16);
   money.forEach(m => assert.ok(Number.isFinite(Number(m.bank)), 'club ' + m.slot + ' has a treasury'));
   assert.ok(money.every(m => Number(m.bank) > 0), 'nobody has been bankrupted by a fortnight of cricket');
   const beforeBank = Number(money.find(m => m.slot === 1).bank);
@@ -859,7 +862,7 @@ test('018: the academy brings boys through, paid for and recomputable', async ()
   // THE INTAKE. Every club in the country, bot or human, has boys on its books.
   const clubs = (await pool.query(
     `SELECT slot, academy, youth FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows;
-  assert.equal(clubs.length, 10);
+  assert.equal(clubs.length, 16);
   for (const c of clubs) {
     assert.equal(c.academy, 2, 'every club opens with a level-two academy');
     assert.ok(c.youth.length > 0, 'club ' + c.slot + ' has brought boys in');
@@ -1010,8 +1013,8 @@ test('019: the Colts Cup plays itself, and the academy sets the rate in the nets
       GROUP BY season_no, round ORDER BY season_no, round`)).rows;
   assert.ok(played.filter(r => r.season_no === 1).length >= 5,
     'the boys have had a season of fixtures: ' + played.length + ' rounds');
-  played.forEach(r => assert.equal(r.n, 5,
-    'Colts s' + r.season_no + ' round ' + r.round + ' is a full five fixtures'));
+  played.forEach(r => assert.equal(r.n, 8,
+    'Colts s' + r.season_no + ' round ' + r.round + ' is a full eight fixtures - both divisions'));
   const lr = (await pool.query(
     `SELECT DISTINCT league_round, round FROM youth_matches WHERE country_id='eng'`)).rows;
   lr.forEach(r => assert.equal(r.league_round, r.round * 2, 'every youth round rode on its league round'));
@@ -1035,7 +1038,7 @@ test('019: the Colts Cup plays itself, and the academy sets the rate in the nets
 
   // THE TABLE, from the banked cards alone
   const cup = (await pool.query(`SELECT body FROM snapshots WHERE key='colts/eng'`)).rows[0].body;
-  assert.equal(cup.table.length, 10);
+  assert.equal(cup.table.length, 16);
   const games = cup.table.reduce((s, r) => s + r.p, 0);
   assert.equal(games, cup.results.length * 2, 'every club-entry in the table is a match somebody played');
   cup.table.forEach(r => assert.equal(r.pts, r.w * 2 + r.t, 'two for a win, one for a tie'));
@@ -1112,7 +1115,7 @@ test('020: the books are a ledger, and they recompute from the record', async ()
   await settleMoney(pool, 'eng');
   const rows = (await pool.query(
     `SELECT slot, bank, seats, finance FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows;
-  assert.equal(rows.length, 10);
+  assert.equal(rows.length, 16);
   for (const r of rows) {
     const f = r.finance;
     assert.ok(f && f.rounds > 0, 'club ' + r.slot + ' has played and been paid');
