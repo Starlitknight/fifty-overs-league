@@ -2930,6 +2930,8 @@
       var lgH = (location.hash || "").split("?")[0];
       if (lgH === "#/nation" || lgH === "#/atlas") lg.classList.add("on");
       var pl = mkPill("fo-planet-nav", "World", "#/planet");
+      // the national knockout sits beside the league it cuts across
+      var fa = mkPill("fo-fa-nav", "FA Cup", "#/facup");
       var cp = mkPill("fo-cup-nav", "Cup", "#/cup");
       var jn = mkPill("fo-lore-nav", "Journal", "#/lore");
       var anchor = wrap.querySelector("a[data-nav='club'], a[data-nav='home']");
@@ -2937,7 +2939,8 @@
       if (hm.parentNode !== wrap) wrap.insertBefore(hm, want);
       if (lg.parentNode !== wrap) wrap.insertBefore(lg, hm.nextSibling);
       if (pl.parentNode !== wrap) wrap.insertBefore(pl, lg.nextSibling);
-      if (cp.parentNode !== wrap) wrap.insertBefore(cp, pl.nextSibling);
+      if (fa.parentNode !== wrap) wrap.insertBefore(fa, pl.nextSibling);
+      if (cp.parentNode !== wrap) wrap.insertBefore(cp, fa.nextSibling);
       if (jn.parentNode !== wrap) wrap.insertBefore(jn, cp.nextSibling);
     } catch (e) {}
   }
