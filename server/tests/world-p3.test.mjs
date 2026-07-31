@@ -17,7 +17,7 @@ import { makePool } from '../db.mjs';
 import { migrate } from '../migrate.mjs';
 import { initWorld, countryConfigs, squadFor } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
-import { runAllDue, runCupWindow, rollSeasons, runTick, computeLeague, rebuildHonours, computeRankings, runFriendlies, settleMoney } from '../tick.mjs';
+import { runAllDue, runCupWindow, runFaCup, rollSeasons, runTick, computeLeague, rebuildHonours, computeRankings, runFriendlies, settleMoney } from '../tick.mjs';
 import { evolveCountry, applyLiving, livingPatch } from '../living.mjs';
 import { CAP, SQUAD_CAP, RETIRE_AT, makeColt, ensureYouth, ageYouth,
   coltsRoundOf, coltsSquad, playColtsRound, coltRecords } from '../youth.mjs';
@@ -57,14 +57,23 @@ before(async () => {
 });
 after(async () => { await pool.end(); });
 
-test('P3: the boss is unclaimable, one club per manager, no double claims', async () => {
-  await assert.rejects(as(U1, `SELECT public.world_claim_club('eng', 0, 'Usurper')`), /never claimable/);
-  const ok = await as(U1, `SELECT public.world_claim_club('eng', 1, 'Santosh') AS r`);
+test('P3: the founding seats are the only doors, one club per manager', async () => {
+  // the boss and the established counties are simply not for sale
+  await assert.rejects(as(U1, `SELECT public.world_claim_club('eng', 0, 'Usurper')`), /not for sale/);
+  await assert.rejects(as(U1, `SELECT public.world_claim_club('eng', 1, 'Usurper')`), /not for sale/);
+  const ok = await as(U1, `SELECT public.world_claim_club('eng', 9, 'Santosh') AS r`);
   assert.equal(ok.rows[0].r.ok, true);
-  assert.equal(ok.rows[0].r.club, 'Yorkshire');
-  await assert.rejects(as(U1, `SELECT public.world_claim_club('ire', 2, 'Santosh')`), /already manage/);
-  await assert.rejects(as(U2, `SELECT public.world_claim_club('eng', 1, 'Rival')`), /already has a manager/);
-  await assert.rejects(pool.query(`SELECT public.world_claim_club('eng', 2, 'Nobody')`), /sign in/);
+  assert.equal(ok.rows[0].r.club, 'Somerset');
+  await assert.rejects(as(U1, `SELECT public.world_claim_club('ire', 10, 'Santosh')`), /already manage/);
+  await assert.rejects(as(U2, `SELECT public.world_claim_club('eng', 9, 'Rival')`), /already has a manager/);
+  await assert.rejects(pool.query(`SELECT public.world_claim_club('eng', 10, 'Nobody')`), /sign in/);
+  // ...and then the harness re-seats Santosh at Yorkshire DIRECTLY: the rest
+  // of this file exercises a managed FIRST-DIVISION club (orders, cover
+  // sheets, training, the market) and those laws hold wherever a manager
+  // sits - the doors themselves are proved above and in world-conditions.
+  await pool.query(`DELETE FROM claims WHERE user_id=$1`, [U1]);
+  await pool.query(
+    `INSERT INTO claims(user_id, display_name, country_id, slot) VALUES ($1,'Santosh','eng',1)`, [U1]);
   const st = await as(U1, `SELECT public.world_my_status() AS s`);
   assert.equal(st.rows[0].s.claim.club, 'Yorkshire');
   assert.equal(Array.isArray(st.rows[0].s.squad), true);
@@ -83,7 +92,7 @@ test("P3: a claimant's orders genuinely steer the engine", async () => {
   const day1 = 101;
   const afterEng = EPOCH + day1 * DAY + 18 * 3600000;
   const res = await runTick(pool, host, 'eng', day1, { now: afterEng });
-  assert.equal(res.played, 5);
+  assert.equal(res.played, 8);
   const m = (await pool.query(
     `SELECT orders, result FROM matches WHERE country_id='eng' AND season_no=1 AND round=1 AND (home_slot=1 OR away_slot=1)`)).rows[0];
   assert.ok(m.orders.Yorkshire, 'the submitted orders were attached to the match');
@@ -94,67 +103,90 @@ test("P3: a claimant's orders genuinely steer the engine", async () => {
 });
 
 test('P4+P5: a full planet season, then the cup window crowns two champions', async () => {
-  // settle all 18 rounds everywhere (round 1 for eng already played above).
-  // Eighteen rounds now take TWENTY-FOUR days: three rounds, then a rest day,
-  // six times over. The last round is day-in-season 22, so day +24 is past it.
-  const allDone = EPOCH + (101 + 24) * DAY + 2 * 3600000;   // day 125, 02:00 - every window closed
+  // settle the fourteen rounds AND FINALS NIGHT everywhere (round 1 for eng
+  // already played above): the playoff final settles on day-in-season 25, so
+  // 02:00 on day +27 is past every nation's window.
+  const allDone = EPOCH + (101 + 27) * DAY + 2 * 3600000;
   await runAllDue(pool, host, { now: allDone });
   const n = await pool.query('SELECT count(*)::int AS n FROM matches');
-  assert.equal(n.rows[0].n, 19 * 90, 'the whole season: 19 nations x 90 matches');
+  assert.equal(n.rows[0].n, 16 * 118,
+    'the whole season: 16 nations x (112 league + 6 playoff) matches');
 
-  // before any stage window has closed: nothing plays
+  // every division crowned a champion ON FINALS NIGHT, and the honours read
+  // the playoffs, not just the table
+  const engBoard = await computeLeague(pool, 'eng', 1, allDone);
+  assert.ok(engBoard.champion, 'Division One crowned: ' + engBoard.champion);
+  assert.ok(engBoard.champion2, 'Division Two crowned: ' + engBoard.champion2);
+  assert.ok(engBoard.shield && engBoard.shield2, 'and both shields are on the board');
+
+  // THE FA CUP has played its four Sundays by now - sixteen nations, fifteen
+  // ties each, the final at the boss's ground
+  await runFaCup(pool, host, { now: allDone });
+  const fa = await pool.query(`SELECT count(*)::int AS n FROM cup_matches WHERE comp LIKE 'fa:%'`);
+  assert.equal(fa.rows[0].n, 16 * 15, 'every nation ran its knockout');
+  const faEng = (await pool.query(`SELECT body FROM snapshots WHERE key='facup/eng/s1'`)).rows[0].body;
+  assert.ok(faEng.champion, 'England has an FA Cup winner: ' + faEng.champion);
+
+  // before any Champions Cup stage window has closed: nothing plays
   const early = await runCupWindow(pool, host, { now: allDone });
-  assert.equal((early.s1.wcl || []).length, 0, 'no cup stage before its window closes');
-  const cm0 = await pool.query('SELECT count(*)::int AS n FROM cup_matches');
-  assert.equal(cm0.rows[0].n, 0);
+  assert.equal((early.s1.wcl || []).filter(x => !x.skipped).length, 0, 'no cup stage before its window closes');
 
-  // after the final's window (start_day+28 at 24:00): everything settles in one call
-  const cupDone = EPOCH + (101 + 29) * DAY + 1 * 3600000;
+  // after the final's window (start_day+34 at 21:00): everything settles in one call
+  const cupDone = EPOCH + (101 + 35) * DAY + 1 * 3600000;
   const cups = await runCupWindow(pool, host, { now: cupDone });
-  const wcl = cups.s1.wcl.filter(x => !x.skipped), wc = cups.s1.wc.filter(x => !x.skipped);
-  assert.deepEqual(wcl.map(x => x.stage), ['pi', 'r16', 'qf', 'sf', 'final']);
-  assert.deepEqual(wc.map(x => x.stage), ['r16', 'qf', 'sf', 'final']);
-  const cm = await pool.query(`SELECT comp, count(*)::int AS n FROM cup_matches GROUP BY comp ORDER BY comp`);
-  assert.deepEqual(cm.rows, [{ comp: 'wc', n: 15 }, { comp: 'wcl', n: 18 }]);
+  const wcl = cups.s1.wcl.filter(x => !x.skipped);
+  assert.deepEqual(wcl.map(x => x.stage), ['g1', 'g2', 'g3', 'qf', 'sf', 'final']);
+  // NO WORLD CUP in season 1: it comes round every fourth year
+  assert.equal((cups.s1.wc || []).length, 0, 'the World Cup waits for season 4');
+  const cm = await pool.query(`SELECT count(*)::int AS n FROM cup_matches WHERE comp='wcl'`);
+  assert.equal(cm.rows[0].n, 31, 'four groups of four then the knockout: 24+4+2+1');
 
   const cup = (await pool.query(`SELECT body FROM snapshots WHERE key='cup/s1'`)).rows[0].body;
   assert.ok(cup.champion, 'the Champions Cup has a champion: ' + cup.champion);
   assert.equal(cup.stages.final.length, 1);
-  const wcs = (await pool.query(`SELECT body FROM snapshots WHERE key='worldcup/s1'`)).rows[0].body;
-  assert.ok(wcs.champion && /XI$/.test(wcs.champion), 'the World Cup champion is a national XI: ' + wcs.champion);
 
   // P5: national squads are real club players
   const nats = (await pool.query(`SELECT body FROM snapshots WHERE key='nats/s1'`)).rows[0].body;
-  assert.equal(Object.keys(nats).length, 19);
+  assert.equal(Object.keys(nats).length, 16);
   assert.equal(nats.eng.squad.length, 15);
   const engPlayers = new Set((await pool.query(`SELECT jsonb_array_elements(squad)->>'name' AS n FROM clubs WHERE country_id='eng'`)).rows.map(r => r.n));
   nats.eng.squad.forEach(nm => assert.ok(engPlayers.has(nm), nm + ' plays in the England league'));
 
   // idempotency at cup scale
   const again = await runCupWindow(pool, host, { now: cupDone });
-  assert.ok(again.s1.wcl.every(x => x.skipped) && again.s1.wc.every(x => x.skipped), 'cup re-run is a no-op');
-  const cm2 = await pool.query('SELECT count(*)::int AS n FROM cup_matches');
-  assert.equal(cm2.rows[0].n, 33);
+  assert.ok(again.s1.wcl.every(x => x.skipped), 'cup re-run is a no-op');
+  const cm2 = await pool.query(`SELECT count(*)::int AS n FROM cup_matches WHERE comp='wcl'`);
+  assert.equal(cm2.rows[0].n, 31);
 
   // the honours book remembers season 1 forever
   const H = await rebuildHonours(pool);
-  assert.equal(Object.keys(H.seasons.s1.league).length, 19, 'nineteen league champions in the book');
+  assert.equal(Object.keys(H.seasons.s1.league).length, 16, 'sixteen league champions in the book');
   assert.ok(H.seasons.s1.championsCup, 'the Champions Cup winner is in the book');
-  assert.ok(H.seasons.s1.worldCup, 'the World Cup winner is in the book');
 });
 
-test('seasons roll: season 2 begins at start_day + 30 everywhere', async () => {
-  const beforeRoll = await rollSeasons(pool, { now: EPOCH + (101 + 29) * DAY });
-  assert.equal(beforeRoll.length, 0, 'no rollover before day +30');
-  const rolled = await rollSeasons(pool, { now: EPOCH + (101 + 30) * DAY + 3600000 });
-  assert.equal(rolled.length, 19);
+test('seasons roll at the turning of the year, and the pyramid breathes', async () => {
+  const beforeRoll = await rollSeasons(pool, { now: EPOCH + (101 + 30) * DAY });
+  assert.equal(beforeRoll.length, 0, 'no rollover before the transition day');
+  const rolled = await rollSeasons(pool, { now: EPOCH + (101 + 32) * DAY + 2 * 3600000 });
+  assert.equal(rolled.length, 16);
   const s2 = await pool.query('SELECT count(*)::int AS n, min(start_day) AS d FROM seasons WHERE season_no=2');
-  assert.equal(s2.rows[0].n, 19);
-  assert.equal(s2.rows[0].d, 131);
-  const again = await rollSeasons(pool, { now: EPOCH + (101 + 30) * DAY + 3600000 });
+  assert.equal(s2.rows[0].n, 16);
+  assert.equal(s2.rows[0].d, 101 + 35, 'season 2 opens five weeks after season 1');
+  // PROMOTION AND RELEGATION happened: season 2's divisions differ from the
+  // founding map by exactly two clubs each way, in every nation
+  const rows = (await pool.query(`SELECT country_id, divisions FROM seasons WHERE season_no=2 ORDER BY country_id`)).rows;
+  for (const r of rows) {
+    const d1 = r.divisions['1'], d2 = r.divisions['2'];
+    assert.equal(d1.length, 8); assert.equal(d2.length, 8);
+    assert.ok(d1.includes(0), 'the boss did not go down in ' + r.country_id);
+    const promoted = d1.filter(x => x >= 8), relegated = d2.filter(x => x < 8);
+    assert.equal(promoted.length, 2, r.country_id + ' promoted two: ' + promoted.join(','));
+    assert.equal(relegated.length, 2, r.country_id + ' relegated two: ' + relegated.join(','));
+  }
+  const again = await rollSeasons(pool, { now: EPOCH + (101 + 32) * DAY + 2 * 3600000 });
   assert.equal(again.length, 0, 'season 2 already current: nothing further rolls');
   const s2b = await pool.query('SELECT count(*)::int AS n FROM seasons WHERE season_no=2');
-  assert.equal(s2b.rows[0].n, 19);
+  assert.equal(s2b.rows[0].n, 16);
 });
 
 test('005: orders lock at the first ball and reveal to spectators', async () => {
@@ -229,24 +261,25 @@ test('008: signing up auto-claims the first free club; a full country says so', 
   // U2 (released earlier) lands automatically in the first free slot, christened
   const r1 = await as(U2, `SELECT public.world_auto_claim('eng', 'R2', 'Orange Club') AS r`);
   assert.equal(r1.rows[0].r.ok, true);
-  assert.equal(r1.rows[0].r.slot, 2);
+  assert.equal(r1.rows[0].r.slot, 8, 'the first free FOUNDING seat - Division Two');
   assert.equal(r1.rows[0].r.club, 'Orange Club');
   // calling again (any country) hands back the same seat - idempotent
   const r2 = await as(U2, `SELECT public.world_auto_claim('ire', 'R2', 'Second Club') AS r`);
   assert.equal(r2.rows[0].r.existing, true);
-  assert.equal(r2.rows[0].r.slot, 2);
-  // seven more sign-ups fill England; a clashing name never blocks the seat
-  for (let i = 3; i <= 9; i++) {
+  assert.equal(r2.rows[0].r.slot, 8);
+  // seven more sign-ups fill England's founding seats; a clashing name never
+  // blocks the seat
+  for (let i = 9; i <= 15; i++) {
     const uu = '33333333-3333-4333-8333-3333333333' + String(i).padStart(2, '0');
     const rr = await as(uu, `SELECT public.world_auto_claim('eng', 'M${i}', 'Orange Club') AS r`);
     assert.equal(rr.rows[0].r.ok, true);
     assert.equal(rr.rows[0].r.slot, i);
     assert.notEqual(rr.rows[0].r.club, 'Orange Club', 'a taken name falls back to the county');
   }
-  // the tenth manager is told the country is full...
+  // the ninth manager is told the country is full...
   await assert.rejects(
     as('44444444-4444-4444-8444-444444444444', `SELECT public.world_auto_claim('eng', 'Late', 'Latecomer CC')`),
-    /full - every club there already has a manager/);
+    /full - every founding seat already has a manager/);
   // ...and can settle anywhere else
   const el = await as('44444444-4444-4444-8444-444444444444', `SELECT public.world_auto_claim('ire', 'Late', 'Latecomer CC') AS r`);
   assert.equal(el.rows[0].r.ok, true);

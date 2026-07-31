@@ -68,7 +68,8 @@
   function myRow() {
     var b = snap(); if (!b) return null;
     var sl = mySlot();
-    var rows = b.table || [];
+    // either division: a founded club lives in table2 until it earns promotion
+    var rows = (b.table || []).concat(b.table2 || []);
     for (var i = 0; i < rows.length; i++) if ((rows[i].slot | 0) === sl) return rows[i];
     return null;
   }
@@ -76,13 +77,23 @@
 
   // THE TABLE, in the shape every caller in this codebase already expects from
   // leagueRows(): nm, p, w, l, t, pts, nrr - sorted as the world sorted it.
-  function rows() {
-    var b = snap(); if (!b) return [];
-    return (b.table || []).map(function (r) {
-      return { nm: r.name, p: r.p | 0, w: r.w | 0, l: r.l | 0, t: r.t | 0,
-        pts: r.pts | 0, nrr: +r.nrr || 0, slot: r.slot | 0, boss: !!r.boss };
-    });
+  // THE PYRAMID: the snapshot carries BOTH divisions (table, table2). rows()
+  // answers with MY division's table - the league a manager actually plays
+  // in - and rowsOf(d) serves any surface that wants a specific flight.
+  function mapRow(r) {
+    return { nm: r.name, p: r.p | 0, w: r.w | 0, l: r.l | 0, t: r.t | 0,
+      pts: r.pts | 0, nrr: +r.nrr || 0, slot: r.slot | 0, boss: !!r.boss, div: r.div || 1 };
   }
+  function rowsOf(d) {
+    var b = snap(); if (!b) return [];
+    return ((d === 2 ? b.table2 : b.table) || []).map(mapRow);
+  }
+  function myDiv() {
+    var b = snap(), sl = mySlot();
+    if (!b || sl == null) return 1;
+    return (b.table2 || []).some(function (r) { return (r.slot | 0) === (sl | 0); }) ? 2 : 1;
+  }
+  function rows() { return rowsOf(myDiv()); }
 
   // FORM, oldest first, from the banked results and nothing else. A club that
   // has played nothing has an empty strip - which is the correct answer for a
@@ -199,7 +210,7 @@
 
   window.__foServed = {
     on: on, claim: claim, nation: nation, slot: mySlot, snapshot: snap,
-    rows: rows, me: myRow, name: myName, form: form, formOf: formOf,
+    rows: rows, rowsOf: rowsOf, myDiv: myDiv, me: myRow, name: myName, form: form, formOf: formOf,
     round: round, roundsPlayed: roundsPlayed, totalRounds: totalRounds,
     seasonNo: seasonNo, startDay: startDay, opensIn: opensIn,
     ballAt: ballAt, fixtures: fixtures,
