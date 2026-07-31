@@ -119,13 +119,11 @@ test('P4+P5: a full planet season, then the cup window crowns two champions', as
   assert.ok(engBoard.champion2, 'Division Two crowned: ' + engBoard.champion2);
   assert.ok(engBoard.shield && engBoard.shield2, 'and both shields are on the board');
 
-  // THE FA CUP has played its four Sundays by now - sixteen nations, fifteen
-  // ties each, the final at the boss's ground
+  // THE FA CUP has played three of its four Sundays by now (the final's own
+  // Sunday evening has not struck at 02:00) - fourteen ties a nation banked
   await runFaCup(pool, host, { now: allDone });
-  const fa = await pool.query(`SELECT count(*)::int AS n FROM cup_matches WHERE comp LIKE 'fa:%'`);
-  assert.equal(fa.rows[0].n, 16 * 15, 'every nation ran its knockout');
-  const faEng = (await pool.query(`SELECT body FROM snapshots WHERE key='facup/eng/s1'`)).rows[0].body;
-  assert.ok(faEng.champion, 'England has an FA Cup winner: ' + faEng.champion);
+  const fa0 = await pool.query(`SELECT count(*)::int AS n FROM cup_matches WHERE comp LIKE 'fa:%'`);
+  assert.equal(fa0.rows[0].n, 16 * 14, 'R16, quarters and semis are banked everywhere');
 
   // before any Champions Cup stage window has closed: nothing plays
   const early = await runCupWindow(pool, host, { now: allDone });
@@ -144,6 +142,14 @@ test('P4+P5: a full planet season, then the cup window crowns two champions', as
   const cup = (await pool.query(`SELECT body FROM snapshots WHERE key='cup/s1'`)).rows[0].body;
   assert.ok(cup.champion, 'the Champions Cup has a champion: ' + cup.champion);
   assert.equal(cup.stages.final.length, 1);
+
+  // ...and by the closing week the FA CUP FINAL has been played at the
+  // boss's ground in every nation: fifteen ties each, a winner in the book
+  await runFaCup(pool, host, { now: cupDone });
+  const fa = await pool.query(`SELECT count(*)::int AS n FROM cup_matches WHERE comp LIKE 'fa:%'`);
+  assert.equal(fa.rows[0].n, 16 * 15, 'every nation ran its whole knockout');
+  const faEng = (await pool.query(`SELECT body FROM snapshots WHERE key='facup/eng/s1'`)).rows[0].body;
+  assert.ok(faEng.champion, 'England has an FA Cup winner: ' + faEng.champion);
 
   // P5: national squads are real club players
   const nats = (await pool.query(`SELECT body FROM snapshots WHERE key='nats/s1'`)).rows[0].body;

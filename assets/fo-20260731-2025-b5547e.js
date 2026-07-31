@@ -10033,7 +10033,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260731-1946-01796c";
+  var FO_BUILD = "20260731-2025-b5547e";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -34350,13 +34350,20 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         }
       } catch (eS) {}
 
-      var rows = [];
-      if (snap && snap.table && snap.table.length) {
-        rows = snap.table.map(function (x) {
-          return { nm: (nmBySlot && nmBySlot[x.slot]) || x.name, recNm: x.name, p: x.p, w: x.w, l: x.l, t: x.t,
-            pts: x.pts, nrr: x.nrr, slot: x.slot, boss: !!x.boss, mine: x.slot === mySlot };
-        });
-      }
+      // THE PYRAMID: the snapshot carries both flights. The manager's own
+      // division is the headline table; the other renders beneath it, so one
+      // page holds the whole nation - the race you are in and the one you are
+      // climbing toward (or defending against).
+      var mapT = function (x) {
+        return { nm: (nmBySlot && nmBySlot[x.slot]) || x.name, recNm: x.name, p: x.p, w: x.w, l: x.l, t: x.t,
+          pts: x.pts, nrr: x.nrr, slot: x.slot, boss: !!x.boss, mine: x.slot === mySlot };
+      };
+      var rowsD1 = (snap && snap.table && snap.table.length) ? snap.table.map(mapT) : [];
+      var rowsD2 = (snap && snap.table2 && snap.table2.length) ? snap.table2.map(mapT) : [];
+      var mineInD2 = rowsD2.some(function (r) { return r.mine; });
+      var rows = mineInD2 ? rowsD2 : rowsD1;
+      var rowsOther = mineInD2 ? rowsD1 : rowsD2;
+      var myDivNo = mineInD2 ? 2 : 1, otherDivNo = mineInD2 ? 1 : 2;
       var myClub = "";
       rows.forEach(function (r) { if (r.mine) myClub = r.nm; });
       if (!myClub && own) myClub = me.name;
@@ -34646,32 +34653,50 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           "<div class='fo-lgx-card'><h3>The book</h3><p class='fo-lgx-dim'>Every run and every wicket here was scored in a match the umpire played and banked. Nothing is estimated.</p></div>";
 
       } else {
-        // ---- the pennant race ---------------------------------------------
-        var body = rows.map(function (r, ix) {
-          var s5 = (seq[r.recNm] || []).slice(-5);
-          var beads = s5.length ? s5.map(function (k) { return "<i class='" + k + "'>" + k.toUpperCase() + "</i>"; }).join("")
-            : "<span class='none'>&mdash;</span>";
-          var chip = r.mine ? "<em class='you'>You</em>"
-            : r.boss ? "<em class='fl'>Flagship</em>"
-            : mgrOf(r.slot) ? "<em class='hu'>" + E(mgrOf(r.slot)) + "</em>" : "";
-          return "<a class='fo-lgx-row" + (r.mine ? " mine" : "") + (ix < 4 ? " q" : "") + "' href='#/team?c=" +
-            encodeURIComponent(natId) + "&s=" + r.slot + "'>" +
-            "<span class='rk'>" + (ix + 1) + "</span>" +
-            "<span class='cb'>" + shield(r.nm, r.boss, natId) + "</span>" +
-            "<span class='nm'><b>" + E(r.nm) + "</b>" + chip + "</span>" +
-            "<span class='fm'>" + beads + "</span>" +
-            "<span class='n'>" + (r.p | 0) + "</span><span class='n'>" + (r.w | 0) + "</span><span class='n'>" + (r.l | 0) + "</span>" +
-            "<span class='n nrr'>" + ((r.nrr >= 0 ? "+" : "") + (+r.nrr || 0).toFixed(2)) + "</span>" +
-            "<span class='pt'>" + (r.pts | 0) + "</span></a>";
-        }).join("");
-        main = "<div class='fo-lgx-panel'>" +
-          "<div class='fo-lgx-ph'><h2>The pennant race</h2>" +
-          "<span class='fo-lgx-sub'>" + (playedRounds ? "Standings after round " + playedRounds : "Before a ball is bowled") + "</span></div>" +
-          (scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
-          (rows.length ? "<div class='fo-lgx-cols'><span>#</span><span></span><span>Club</span><span>Form</span>" +
-            "<span>P</span><span>W</span><span>L</span><span>NRR</span><span>Pts</span></div>" + body
-            : "<p class='fo-lgx-dim'>The " + E(natNm) + " table is on its way from the World Service&hellip;</p>") +
-          "</div>";
+        // ---- the pennant race, one panel per flight ------------------------
+        // Top four make FINALS NIGHT (the playoffs); Division One's bottom two
+        // go down at the turning of the year and Division Two's risers come
+        // up, so the row tint tells you what a place is WORTH.
+        var divRows = function (list, divNo) {
+          return list.map(function (r, ix) {
+            var s5 = (seq[r.recNm] || []).slice(-5);
+            var beads = s5.length ? s5.map(function (k) { return "<i class='" + k + "'>" + k.toUpperCase() + "</i>"; }).join("")
+              : "<span class='none'>&mdash;</span>";
+            var chip = r.mine ? "<em class='you'>You</em>"
+              : r.boss ? "<em class='fl'>Flagship</em>"
+              : mgrOf(r.slot) ? "<em class='hu'>" + E(mgrOf(r.slot)) + "</em>" : "";
+            var drop = divNo === 1 && list.length >= 8 && ix >= list.length - 2;
+            return "<a class='fo-lgx-row" + (r.mine ? " mine" : "") + (ix < 4 ? " q" : "") + (drop ? " rel" : "") + "' href='#/team?c=" +
+              encodeURIComponent(natId) + "&s=" + r.slot + "'>" +
+              "<span class='rk'>" + (ix + 1) + "</span>" +
+              "<span class='cb'>" + shield(r.nm, r.boss, natId) + "</span>" +
+              "<span class='nm'><b>" + E(r.nm) + "</b>" + chip + "</span>" +
+              "<span class='fm'>" + beads + "</span>" +
+              "<span class='n'>" + (r.p | 0) + "</span><span class='n'>" + (r.w | 0) + "</span><span class='n'>" + (r.l | 0) + "</span>" +
+              "<span class='n nrr'>" + ((r.nrr >= 0 ? "+" : "") + (+r.nrr || 0).toFixed(2)) + "</span>" +
+              "<span class='pt'>" + (r.pts | 0) + "</span></a>";
+          }).join("");
+        };
+        var divName = function (d) { return d === 1 ? "Division One" : "Division Two"; };
+        var divSub = function (d) {
+          return d === 1 ? "Top four make finals night &middot; bottom two go down"
+            : "Top four make finals night &middot; champions and shield winners go up";
+        };
+        var colHead = "<div class='fo-lgx-cols'><span>#</span><span></span><span>Club</span><span>Form</span>" +
+          "<span>P</span><span>W</span><span>L</span><span>NRR</span><span>Pts</span></div>";
+        var panelOf = function (list, d, lead) {
+          return "<div class='fo-lgx-panel'>" +
+            "<div class='fo-lgx-ph'><h2>" + (rowsOther.length ? divName(d) : "The pennant race") + "</h2>" +
+            "<span class='fo-lgx-sub'>" + (lead
+              ? (playedRounds ? "Standings after round " + playedRounds : "Before a ball is bowled")
+              : divSub(d)) + "</span></div>" +
+            (lead && scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
+            (list.length ? colHead + divRows(list, d)
+              : "<p class='fo-lgx-dim'>The " + E(natNm) + " table is on its way from the World Service&hellip;</p>") +
+            "</div>";
+        };
+        main = panelOf(rows, myDivNo, true) +
+          (rowsOther.length ? panelOf(rowsOther, otherDivNo, false) : "");
 
         // NEXT ROUND MEANS NEXT. Once the day's play is finished this card was
         // still offering the round that had just ended as the one to come, at
@@ -34827,6 +34852,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body #page .fo-lgx-row{padding:8px;border-radius:10px;text-decoration:none;color:#141C28;border-bottom:1px solid rgba(20,28,40,.07)}",
     "html body #page .fo-lgx-row:hover{background:rgba(20,28,40,.03);text-decoration:none}",
     "html body #page .fo-lgx-row.q .rk{color:#177A57}",
+    "html body #page .fo-lgx-row.rel .rk{color:#B3372B}",
+    "html body #page .fo-lgx-row.rel{box-shadow:inset 3px 0 0 rgba(179,55,43,.55)}",
     "html body #page .fo-lgx-row.mine{background:rgba(201,85,50,.06);border-bottom-color:transparent;box-shadow:inset 3px 0 0 var(--nac)}",
     "html body #page .fo-lgx-row .rk{font:700 12px/1 Oswald,sans-serif;color:rgba(20,28,40,.45);font-variant-numeric:tabular-nums}",
     "html body #page .fo-lgx-row .cb{display:flex;align-items:center;justify-content:center}",
@@ -43547,7 +43574,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function myRow() {
     var b = snap(); if (!b) return null;
     var sl = mySlot();
-    var rows = b.table || [];
+    // either division: a founded club lives in table2 until it earns promotion
+    var rows = (b.table || []).concat(b.table2 || []);
     for (var i = 0; i < rows.length; i++) if ((rows[i].slot | 0) === sl) return rows[i];
     return null;
   }
@@ -43555,13 +43583,23 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   // THE TABLE, in the shape every caller in this codebase already expects from
   // leagueRows(): nm, p, w, l, t, pts, nrr - sorted as the world sorted it.
-  function rows() {
-    var b = snap(); if (!b) return [];
-    return (b.table || []).map(function (r) {
-      return { nm: r.name, p: r.p | 0, w: r.w | 0, l: r.l | 0, t: r.t | 0,
-        pts: r.pts | 0, nrr: +r.nrr || 0, slot: r.slot | 0, boss: !!r.boss };
-    });
+  // THE PYRAMID: the snapshot carries BOTH divisions (table, table2). rows()
+  // answers with MY division's table - the league a manager actually plays
+  // in - and rowsOf(d) serves any surface that wants a specific flight.
+  function mapRow(r) {
+    return { nm: r.name, p: r.p | 0, w: r.w | 0, l: r.l | 0, t: r.t | 0,
+      pts: r.pts | 0, nrr: +r.nrr || 0, slot: r.slot | 0, boss: !!r.boss, div: r.div || 1 };
   }
+  function rowsOf(d) {
+    var b = snap(); if (!b) return [];
+    return ((d === 2 ? b.table2 : b.table) || []).map(mapRow);
+  }
+  function myDiv() {
+    var b = snap(), sl = mySlot();
+    if (!b || sl == null) return 1;
+    return (b.table2 || []).some(function (r) { return (r.slot | 0) === (sl | 0); }) ? 2 : 1;
+  }
+  function rows() { return rowsOf(myDiv()); }
 
   // FORM, oldest first, from the banked results and nothing else. A club that
   // has played nothing has an empty strip - which is the correct answer for a
@@ -43623,7 +43661,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function natRound(rid) { var n = natOf(rid); return n ? n.round : null; }
 
   function roundsPlayed() { var b = snap(); return b ? (b.roundsPlayed | 0) : 0; }
-  function totalRounds() { var b = snap(); return (b && b.rounds) ? (b.rounds | 0) : 18; }
+  function totalRounds() { var b = snap(); return (b && b.rounds) ? (b.rounds | 0) : 14; }
   function seasonNo() { var b = snap(); return b ? (b.seasonNo | 0) || 1 : 1; }
   // the round about to be played, 1-based, capped at the last one
   function round() { return Math.min(roundsPlayed() + 1, totalRounds()); }
@@ -43678,7 +43716,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   window.__foServed = {
     on: on, claim: claim, nation: nation, slot: mySlot, snapshot: snap,
-    rows: rows, me: myRow, name: myName, form: form, formOf: formOf,
+    rows: rows, rowsOf: rowsOf, myDiv: myDiv, me: myRow, name: myName, form: form, formOf: formOf,
     round: round, roundsPlayed: roundsPlayed, totalRounds: totalRounds,
     seasonNo: seasonNo, startDay: startDay, opensIn: opensIn,
     ballAt: ballAt, fixtures: fixtures,
