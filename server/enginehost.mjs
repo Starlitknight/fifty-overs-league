@@ -163,18 +163,22 @@ globalThis.__svcWorldCfg = function () {
   // the world's shape read from the SHIPPED build itself — regions, club
   // names and national hours come from the same code the phones run, so the
   // served world and the client planet can never drift apart
-  var regions = (window.__foCxAPI.regions() || []).filter(function (r) { return !r.final; });
+  // sixteen nations: the same cut the planet makes (wal/ken/can left the top
+  // table) - sidesOf below already refuses to know them, but the region list
+  // itself must agree or the server would found ghost leagues
+  var CUT = { wal: 1, ken: 1, can: 1 };
+  var regions = (window.__foCxAPI.regions() || []).filter(function (r) { return !r.final && !CUT[r.id]; });
   return JSON.stringify(regions.map(function (r) {
     var boss = null; (r.clubs || []).forEach(function (c) { if (c.boss) boss = c; });
     return {
       id: r.id, name: r.nm, nat: (r.nats && r.nats[0]) || r.nm,
       arch: r.arch || 'rock', capt: (boss && boss.capt) || 'talisman',
       hour: window.__foPlanet.natHour(r.id),
-      // arch and str come from the planet's own table (27-living-planet.js), so
-      // the identity and the standing a phone shows and the squad the umpire
-      // generates are read off ONE source
+      // arch, str and division come from the planet's own table
+      // (27-living-planet.js), so the identity and the standing a phone shows
+      // and the squad the umpire generates are read off ONE source
       sides: window.__foPlanet.sidesOf(r.id).map(function (s) {
-        return { slot: s.slot, name: s.name, city: s.city, boss: !!s.boss, arch: s.arch, str: s.str };
+        return { slot: s.slot, name: s.name, city: s.city, boss: !!s.boss, arch: s.arch, str: s.str, div: s.div };
       })
     };
   }));

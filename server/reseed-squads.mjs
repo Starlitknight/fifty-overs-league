@@ -34,8 +34,8 @@
 // forward from its founding bank again on the next tick.
 import { makePool } from './db.mjs';
 import { makeHost } from './enginehost.mjs';
-import { countryConfigs, squadFor, HUMAN_STR } from './init-world.mjs';
-import { EPOCH, dayIx, scheduleOf } from './clock.mjs';
+import { countryConfigs, squadFor, HUMAN_STR, foundingDivisions } from './init-world.mjs';
+import { EPOCH, dayIx, scheduleOf, seasonSchedules } from './clock.mjs';
 
 const confirm = (process.env.CONFIRM || '').trim();
 if (confirm !== 'YES-RESEED') {
@@ -137,10 +137,13 @@ if (kept) {
 }
 
 // ---- 2. the season ----------------------------------------------------------
-// Round one is re-dated to TODAY, so the very next hourly tick plays it. runDue
-// walks from the season's start day, so a start day in the past would replay a
-// fortnight of cricket in one run against squads nobody has seen yet.
-const startDay = dayIx(Date.now());
+// A SEASON OPENS ON A MONDAY. The five-week calendar's whole promise is that
+// di % 7 is the weekday - Sunday is cup day, Wednesday is international day -
+// and that only holds when start_day sits on a week boundary. So the restart
+// is dated to the NEXT Monday (day 0 was Monday 3 August 2026); a reseed run
+// mid-week costs at most six quiet days, and the world opens on its rhythm.
+const today = Math.max(0, dayIx(Date.now()));
+const startDay = today + ((7 - (today % 7)) % 7);
 if (dry) {
   console.log('\nDRY RUN: would clear ' + present.join(', ') +
     ' and restart every season at world day ' + startDay);
@@ -151,10 +154,13 @@ if (dry) {
     for (const t of present) await c.query('DELETE FROM ' + t);
     const cs = (await c.query('SELECT id FROM countries ORDER BY id')).rows;
     for (const row of cs) {
-      // one season per country again, numbered 1, starting today
+      // one season per country again, numbered 1, opening on the Monday, with
+      // the founding division map: div 1 = slots 0-7, div 2 = slots 8-15
+      const cfgR = cfgs.find(x => x.id === row.id);
+      const divs = cfgR ? foundingDivisions(cfgR) : { 1: [0, 1, 2, 3, 4, 5, 6, 7], 2: [8, 9, 10, 11, 12, 13, 14, 15] };
       await c.query('DELETE FROM seasons WHERE country_id=$1', [row.id]);
-      await c.query('INSERT INTO seasons(country_id, season_no, start_day, schedule) VALUES ($1,1,$2,$3)',
-        [row.id, startDay, JSON.stringify(scheduleOf(row.id, 1))]);
+      await c.query('INSERT INTO seasons(country_id, season_no, start_day, schedule, divisions) VALUES ($1,1,$2,$3,$4)',
+        [row.id, startDay, JSON.stringify(seasonSchedules(row.id, 1, divs)), JSON.stringify(divs)]);
     }
     await c.query('COMMIT');
   } catch (e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); }

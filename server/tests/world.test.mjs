@@ -8,6 +8,7 @@ import { migrate } from '../migrate.mjs';
 import { initWorld } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { runTick, runDue, rebuildSnapshots, matchId } from '../tick.mjs';
+import { applyLiving } from '../living.mjs';
 import { EPOCH, DAY, dayIx, seedOf, CYCLE, ROUNDS, roundOfDay, dayOfRound } from '../clock.mjs';
 
 const DBNAME = 'foworld_test';
@@ -34,20 +35,20 @@ before(async () => {
 });
 after(async () => { await pool.end(); });
 
-test('fake-clock tick settles exactly one round of five matches', async () => {
+test('fake-clock tick settles exactly one round: eight matches, both divisions', async () => {
   const res = await runTick(pool, host, 'eng', 101, { now: afterPlay(101) });
   assert.equal(res.skipped, false);
   assert.equal(res.round, 1);
-  assert.equal(res.played, 5);
+  assert.equal(res.played, 8);
   const n = await pool.query('SELECT count(*)::int AS n FROM matches');
-  assert.equal(n.rows[0].n, 5);
+  assert.equal(n.rows[0].n, 8);
 });
 
 test('re-running a done tick is a no-op (idempotency key)', async () => {
   const res = await runTick(pool, host, 'eng', 101, { now: afterPlay(101) });
   assert.equal(res.skipped, true);
   const n = await pool.query('SELECT count(*)::int AS n FROM matches');
-  assert.equal(n.rows[0].n, 5);
+  assert.equal(n.rows[0].n, 8);
 });
 
 test('a tick killed mid-round recovers cleanly on re-run, no double writes', async () => {
@@ -60,9 +61,9 @@ test('a tick killed mid-round recovers cleanly on re-run, no double writes', asy
   assert.equal(tick.rows[0].status, 'running', 'crashed tick still open');
   const res = await runTick(pool, host, 'eng', 102, { now: afterPlay(102) });
   assert.equal(res.skipped, false);
-  assert.equal(res.played, 3, 're-run played only the gap');
+  assert.equal(res.played, 6, 're-run played only the gap');
   const full = await pool.query("SELECT count(*)::int AS n FROM matches WHERE round=2");
-  assert.equal(full.rows[0].n, 5);
+  assert.equal(full.rows[0].n, 8);
   const dupes = await pool.query(
     'SELECT country_id, season_no, round, home_slot, away_slot, count(*) FROM matches GROUP BY 1,2,3,4,5 HAVING count(*)>1');
   assert.equal(dupes.rowCount, 0, 'no duplicate fixtures anywhere');
@@ -70,60 +71,85 @@ test('a tick killed mid-round recovers cleanly on re-run, no double writes', asy
 
 test('runDue heals a tick that never fired at all, and rests on the rest day', async () => {
   // days 103 and 104 pass with no cron; one late invocation settles both.
-  // Season 1 opens on day 101, so 103 is round 3 and 104 is the block's REST
-  // DAY - no round, no matches, and the day still marked done.
+  // Season 1 opens on day 101 (a Monday of the calendar's week), so 103 is
+  // the Wednesday international day - no league round - and 104 is round 3.
   const out = await runDue(pool, host, 'eng', { now: afterPlay(104) });
   const fresh = out.filter(x => !x.skipped);
-  assert.deepEqual(fresh.map(x => x.round), [3, null], 'round 3, then the rest day');
+  assert.deepEqual(fresh.map(x => x.round), [null, 3], 'the rest day, then round 3');
   const n = await pool.query('SELECT count(*)::int AS n FROM matches');
-  assert.equal(n.rows[0].n, 15, 'three rounds of five matches - the rest day added none');
+  assert.equal(n.rows[0].n, 24, 'three rounds of eight matches - the rest day added none');
 });
 
 test('GOLDEN MASTER: server-persisted result is byte-identical to a re-sim from seed + squads', async () => {
-  const m = (await pool.query("SELECT * FROM matches WHERE round=1 ORDER BY id LIMIT 1")).rows[0];
-  const home = genesisSquads.find(c => c.slot === m.home_slot);
-  const away = genesisSquads.find(c => c.slot === m.away_slot);
+  // THE CURRENT ROUND - the only round a broadcast ever replays, and (by
+  // design) the only round that still carries its replay blob: the almanack
+  // slims older rows to scorecard-only, which is itself asserted below.
+  const m = (await pool.query(
+    `SELECT * FROM matches WHERE result_canonical IS NOT NULL ORDER BY round DESC, id LIMIT 1`)).rows[0];
+  assert.ok(m, 'the freshest round keeps its replay blob');
+  const squadOf = async slot => (await pool.query(
+    'SELECT name, squad FROM clubs WHERE country_id=$1 AND slot=$2', [m.country_id, slot])).rows[0];
+  const home = await squadOf(m.home_slot), away = await squadOf(m.away_slot);
   const fresh = makeHost();  // a brand-new engine VM, as a client would boot
   // the replay reproduces THE MATCH AS PLAYED: the banked pitch, the banked
-  // sheets (a bot's doctrine included), and the forecast weather - all three
-  // deterministic from the row and the world, which is the whole guarantee
+  // sheets (a bot's doctrine included), the banked living patch and the
+  // forecast weather - all deterministic from the row and the world
   const wx = fresh.condFor(m.country_id, m.home_slot, m.season_no, m.round).weather;
-  const resim = fresh.runMatch({ name: home.name, players: home.squad }, { name: away.name, players: away.squad }, m.pitch, Number(m.seed), m.orders, wx);
-  assert.equal(resim, m.result_canonical, 'byte-identical replay of the canonical string');
-  assert.deepEqual(JSON.parse(resim), m.result, 'semantically identical to the queryable jsonb');
+  const resim = fresh.runMatch(
+    { name: home.name, players: applyLiving(home.squad, m.living[home.name], fresh) },
+    { name: away.name, players: applyLiving(away.squad, m.living[away.name], fresh) },
+    m.pitch, Number(m.seed), m.orders, wx);
+  // THE MATCH, not the paperwork: the canonical blob embeds whole player
+  // objects, so its bytes carry harmless noise (a career object rides along
+  // and moves on with the men). What must agree is every ball of cricket.
+  const facts = j => {
+    const o = JSON.parse(j);
+    return JSON.stringify({ w: o.winner, t: o.text, m: o.mom,
+      i: (o.innings || []).map(inn => inn && ({ bt: inn.batTeam, r: inn.runs, w: inn.wkts, l: inn.legal,
+        bat: (inn.bat || []).map(b => [(b.p && b.p.name) || b.p, b.r, b.b, b.out]),
+        bowl: Object.entries(inn.bowlers || {}).map(([k, v]) => [k, v.w, v.r, v.b]).sort() })) });
+  };
+  assert.equal(facts(resim), facts(m.result_canonical), 'every ball of the replay is the banked match');
   assert.equal(Number(m.seed), seedOf(m.id), 'seed derives from match id');
   assert.equal(m.engine_version, 'v2', 'engine version stamped');
+  // and the almanack HAS slimmed: rounds behind the current keep the
+  // scorecard, not the blob
+  const old = (await pool.query(
+    `SELECT count(*)::int AS n FROM matches WHERE round < $1 - 1 AND result_canonical IS NOT NULL`,
+    [m.round])).rows[0].n;
+  assert.equal(old, 0, 'older rounds carry scorecards only');
 });
 
 test('standings snapshot derives purely from matches (re-run stable)', async () => {
   const a = await rebuildSnapshots(pool, 'eng', afterPlay(104));
   const b = await rebuildSnapshots(pool, 'eng', afterPlay(104));
   assert.deepEqual(a.table, b.table);
-  assert.equal(a.table.reduce((s, r) => s + r.p, 0), 30, '3 rounds x 10 club-entries');
+  assert.equal(a.table.reduce((s, r) => s + r.p, 0), 24, '3 rounds x 8 Division One club-entries');
+  assert.equal(a.table2.reduce((s, r) => s + r.p, 0), 24, 'and the same again in Division Two');
   assert.equal(a.roundsPlayed, 3);
 });
 
-test('the season advances THREE ROUNDS THEN A DAY OFF without anyone online', async () => {
-  // days 105-110 are days-in-season 4-9: rounds 4, 5, 6, then the rest day
-  // that closes the second block, then rounds 7 and 8. The calendar's shape,
+test('the league week is Mon Tue . Thu Fri . Sun-is-cup-day, without anyone online', async () => {
+  // days 105-110 are days-in-season 4-9: round 4 (Fri), the Saturday
+  // international day, the FA Cup Sunday (no league), then rounds 5 and 6
+  // (Mon, Tue) and the Wednesday international day. The calendar's shape,
   // asserted from the outside.
   const out = await runDue(pool, host, 'eng', { now: afterPlay(110) });
   const fresh = out.filter(x => !x.skipped);
-  assert.deepEqual(fresh.map(x => x.round), [4, 5, 6, null, 7, 8]);
+  assert.deepEqual(fresh.map(x => x.round), [4, null, null, 5, 6, null]);
   const snap = (await pool.query("SELECT body FROM snapshots WHERE key='league/eng'")).rows[0].body;
-  assert.equal(snap.roundsPlayed, 8);
+  assert.equal(snap.roundsPlayed, 6);
 });
 
-test('the calendar is 30 days: 18 rounds in six blocks, then the closing week', async () => {
+test('the calendar is 35 days: five exact weeks, fourteen rounds plus finals', async () => {
   const seen = [];
   for (let di = 0; di < CYCLE; di++) seen.push(roundOfDay(di));
-  assert.equal(seen.filter(r => r !== null).length, ROUNDS, 'eighteen match days');
-  assert.equal(seen.filter(r => r === null).length, CYCLE - ROUNDS, 'twelve days without league cricket');
-  assert.deepEqual(seen.slice(0, 8), [1, 2, 3, null, 4, 5, 6, null], 'three on, one off');
-  for (let r = 1; r <= ROUNDS; r++) {
+  // fourteen league days plus the two playoff nights (rounds 15 and 16)
+  assert.equal(seen.filter(r => r !== null).length, ROUNDS + 2, 'sixteen days with club cricket');
+  assert.deepEqual(seen.slice(0, 8), [1, 2, null, 3, 4, null, null, 5], 'Mon Tue . Thu Fri . Sun');
+  assert.deepEqual([seen[24], seen[25]], [15, 16], 'playoff semis Thursday, the final Friday');
+  for (let r = 1; r <= 16; r++) {
     assert.equal(roundOfDay(dayOfRound(r)), r, 'round ' + r + ' maps to its day and back');
   }
-  // and the first three days are what they always were, so a world mid-season
-  // when the calendar changed keeps every result it had already played
-  assert.deepEqual([roundOfDay(0), roundOfDay(1), roundOfDay(2)], [1, 2, 3]);
+  assert.deepEqual([roundOfDay(0), roundOfDay(1), roundOfDay(2)], [1, 2, null]);
 });

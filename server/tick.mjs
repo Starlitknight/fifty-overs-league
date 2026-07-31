@@ -15,8 +15,9 @@
 //     next invocation, however late.
 import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
-import { EPOCH, dayIx, daySettled, seedOf, natHour, scheduleOf, ROUNDS, isWindowRound,
-         CYCLE, LEAGUE_DAYS, roundOfDay, CUP_DAYS } from './clock.mjs';
+import { EPOCH, dayIx, daySettled, seedOf, natHour, scheduleOf, seasonSchedules, ROUNDS, isWindowRound,
+         CYCLE, LEAGUE_DAYS, roundOfDay, CUP_DAYS, PLAYOFF_DAYS, FA_DAYS, TRANSITION_DAY,
+         WINDOW_DAYS, isWorldCupSeason } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
 import { calibrate, countryConfigs, BASE_XI, NAT_STR, HUMAN_STR } from './init-world.mjs';
 import { ensureYouth, ageYouth, playColtsRound, computeColts, coltRecords } from './youth.mjs';
@@ -31,8 +32,45 @@ export function matchId(country, seasonNo, round, h, a) {
   return country + ':s' + seasonNo + ':r' + round + ':h' + h + 'a' + a;
 }
 
+// what a round's fixtures ARE: rounds 1-14 come off both divisions' stored
+// schedules; rounds 15 and 16 are THE PLAYOFFS, derived from the table the
+// fourteen produced - 1v4 and 2v3 (higher seed hosts), then the two winners.
+// Deterministic from the banked record, so a healed day derives the same ties.
+async function fixturesFor(pool, country, season, round, now) {
+  const sched = season.schedule;
+  if (round <= ROUNDS) {
+    if (Array.isArray(sched)) return sched[round - 1] || [];          // pre-pyramid season
+    return (sched['1'][round - 1] || []).concat(sched['2'][round - 1] || []);
+  }
+  const board = await computeLeague(pool, country, season.season_no, now);
+  if (board.roundsPlayed < ROUNDS) return [];                          // the fourteen are not done
+  const out = [];
+  for (const t of [board.table, board.table2]) {
+    if (!t || t.length < 4) continue;
+    if (round === 15) { out.push([t[0].slot, t[3].slot], [t[1].slot, t[2].slot]); continue; }
+    // the final: the two semi winners of this division, higher table seed hosts
+    const rank = Object.fromEntries(t.map((x, i) => [x.slot, i]));
+    const semis = (await pool.query(
+      `SELECT home_slot, away_slot, result FROM matches WHERE country_id=$1 AND season_no=$2 AND round=15`,
+      [country, season.season_no])).rows.filter(m => rank[m.home_slot] != null);
+    const clubNames = (await pool.query('SELECT slot, name FROM clubs WHERE country_id=$1', [country])).rows;
+    const nameOf = Object.fromEntries(clubNames.map(c => [c.slot, c.name]));
+    const wSlots = semis.map(m => {
+      const w = m.result && m.result.winner;
+      if (w === nameOf[m.away_slot]) return m.away_slot;
+      return m.home_slot;                    // a tied semi sends the higher seed through
+    });
+    if (wSlots.length === 2) {
+      const [a, b] = wSlots.sort((x, y) => rank[x] - rank[y]);
+      out.push([a, b]);
+    }
+  }
+  return out;
+}
+
 async function playRound(pool, host, country, season, round, opts) {
-  const fixtures = season.schedule[round - 1];
+  const now = opts && opts.now;
+  const fixtures = await fixturesFor(pool, country, season, round, now || Date.now());
   const clubs = (await pool.query('SELECT slot, name, ground, squad FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
   const bySlot = Object.fromEntries(clubs.map(c => [c.slot, c]));
   // the joinable world: claimed clubs' submitted orders for THIS round ride
@@ -129,24 +167,36 @@ export async function computeLeague(pool, country, seasonNo, now) {
        FROM matches WHERE country_id=$1 AND season_no=$2 ORDER BY round, id`,
     [country, season.season_no])).rows;
   const bySlot = Object.fromEntries(clubs.map(c => [c.slot, c]));
-  const T = Object.fromEntries(clubs.map(c => [c.slot, { slot: c.slot, name: c.name, boss: c.is_boss, p: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0, of: 0, oa: 0 }]));
+  // THE PYRAMID: the season row says who plays in which division this year
+  // (membership is seasonal - promotion and relegation redraw it). A world
+  // founded before divisions existed reads as one big first division.
+  const divs = (season.divisions && season.divisions['1'])
+    ? { 1: season.divisions['1'], 2: season.divisions['2'] || [] }
+    : { 1: clubs.map(c => c.slot), 2: [] };
+  const divOf = Object.fromEntries([...divs[1].map(s => [s, 1]), ...divs[2].map(s => [s, 2])]);
+  const T = Object.fromEntries(clubs.map(c => [c.slot, { slot: c.slot, name: c.name, boss: c.is_boss, div: divOf[c.slot] || 1, p: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0, of: 0, oa: 0 }]));
   const results = [];
   for (const m of ms) {
     const r = m.result, i1 = r.innings[0], i2 = r.innings[1];
+    // playoff rounds (15: semis, 16: the final) are real fixtures but never
+    // table rounds - the table is the fourteen, the playoffs decide the crown
+    const isPlayoff = m.round > ROUNDS;
     // names AS PLAYED map every innings to its slot, so a club renamed after
     // the fact keeps its whole record; snapshots then speak the CURRENT name
     const hN = m.home_name || bySlot[m.home_slot].name, aN = m.away_name || bySlot[m.away_slot].name;
     const slotOf = nm => nm === hN ? m.home_slot : nm === aN ? m.away_slot : clubs.find(c => c.name === nm)?.slot;
-    for (const inn of [i1, i2]) {
-      if (!inn) continue;
-      const bs = slotOf(inn.batTeam), os = slotOf(inn.bowlTeam);
-      if (bs == null || os == null) continue;
-      T[bs].rf += inn.runs; T[bs].of += inn.wkts >= 10 ? 50 : inn.legal / 6;
-      T[os].ra += inn.runs; T[os].oa += inn.wkts >= 10 ? 50 : inn.legal / 6;
+    if (!isPlayoff) {
+      for (const inn of [i1, i2]) {
+        if (!inn) continue;
+        const bs = slotOf(inn.batTeam), os = slotOf(inn.bowlTeam);
+        if (bs == null || os == null) continue;
+        T[bs].rf += inn.runs; T[bs].of += inn.wkts >= 10 ? 50 : inn.legal / 6;
+        T[os].ra += inn.runs; T[os].oa += inn.wkts >= 10 ? 50 : inn.legal / 6;
+      }
+      for (const s of [m.home_slot, m.away_slot]) T[s].p++;
+      if (r.winner === null) { T[m.home_slot].t++; T[m.away_slot].t++; T[m.home_slot].pts++; T[m.away_slot].pts++; }
+      else { const ws = slotOf(r.winner); if (ws != null) { T[ws].w++; T[ws].pts += 2; T[ws === m.home_slot ? m.away_slot : m.home_slot].l++; } }
     }
-    for (const s of [m.home_slot, m.away_slot]) T[s].p++;
-    if (r.winner === null) { T[m.home_slot].t++; T[m.away_slot].t++; T[m.home_slot].pts++; T[m.away_slot].pts++; }
-    else { const ws = slotOf(r.winner); if (ws != null) { T[ws].w++; T[ws].pts += 2; T[ws === m.home_slot ? m.away_slot : m.home_slot].l++; } }
     const wSlot = r.winner === null ? null : slotOf(r.winner);
     // the card as a scoreboard reads it: each side's runs, wickets and overs,
     // so a results page can print 267/8 (49.5) rather than only a sentence
@@ -160,8 +210,10 @@ export async function computeLeague(pool, country, seasonNo, now) {
       hs: sideOf(m.home_slot), as: sideOf(m.away_slot),
       winner: wSlot == null ? r.winner : bySlot[wSlot].name, text: r.text, seed: String(m.seed), engineVersion: m.engine_version });
   }
-  const table = Object.values(T).map(x => ({ ...x, nrr: x.of && x.oa ? +(x.rf / x.of - x.ra / x.oa).toFixed(3) : 0 }))
+  const rankRows = rows => rows.map(x => ({ ...x, nrr: x.of && x.oa ? +(x.rf / x.of - x.ra / x.oa).toFixed(3) : 0 }))
     .sort((a, b) => b.pts - a.pts || b.nrr - a.nrr || a.slot - b.slot);
+  const table = rankRows(Object.values(T).filter(x => x.div === 1));
+  const table2 = rankRows(Object.values(T).filter(x => x.div === 2));
   // SEASON HONOURS: leaders straight from the banked scorecards - every run
   // and every wicket in the snapshot is one that genuinely happened
   const PS = {};
@@ -198,8 +250,20 @@ export async function computeLeague(pool, country, seasonNo, now) {
     econ: ppl.filter(x => x.bballs >= 60).sort((a, b) => (a.conc / a.bballs) - (b.conc / b.bballs)).slice(0, 3)
       .map(x => ({ name: x.name, club: x.club, econ: +(6 * x.conc / x.bballs).toFixed(2), wkts: x.wkts }))
   };
-  const roundsPlayed = ms.length ? Math.max(...ms.map(m => m.round)) : 0;
-  const champion = roundsPlayed >= ROUNDS && table[0] ? table[0].name : null;
+  const roundsPlayed = ms.length ? Math.max(0, ...ms.map(m => m.round).filter(r => r <= ROUNDS)) : 0;
+  // THE CROWN IS WON ON FINALS NIGHT. The champion of a division is the winner
+  // of its playoff final (round 16); the table's leader after the fourteen is
+  // the SHIELD winner - both are honours, only one is the title. A season that
+  // has not reached finals night yet has no champion, whatever the table says.
+  const finalWinner = d => {
+    const f = ms.filter(m => m.round === 16 && (divOf[m.home_slot] || 1) === d)
+      .map(m => m.result && m.result.winner).filter(Boolean)[0];
+    return f || null;
+  };
+  const champion = finalWinner(1);
+  const champion2 = finalWinner(2);
+  const shield = roundsPlayed >= ROUNDS && table[0] ? table[0].name : null;
+  const shield2 = roundsPlayed >= ROUNDS && table2[0] ? table2[0].name : null;
   // THE NATION'S SIDE RIDES WITH ITS LEAGUE. Every surface that draws a
   // cricketer - the roster, his page, his card, a scorecard, the market - wants
   // to know whether he plays for his country, and every one of them already
@@ -207,7 +271,8 @@ export async function computeLeague(pool, country, seasonNo, now) {
   // carry and saves each of them a second request.
   const nat = await natSquadNow(pool, country, season.season_no);
   return { country, seasonNo: season.season_no, startDay: season.start_day, rounds: ROUNDS, roundsPlayed,
-    table, results, stats, champion,
+    divisions: divs, table, table2, results, stats,
+    champion, champion2, shield, shield2,
     nat: { round: nat.round, squad: nat.squad, in: nat.in, out: nat.out },
     generatedAtDay: dayIx(now) };
 }
@@ -477,14 +542,16 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
     // previous day's tick evolved every man who played it before it closed.
     // Banked per round, so a healed day reads the decision back rather than
     // taking it again on form the selectors could not have known.
-    try { await ensureNatSquad(pool, country, season.season_no, round); }
-    catch (eN) { console.error('selectors failed for ' + country + ' round ' + round + ':', eN.message); }
-    // On a window round that same fifteen also takes its flights.
-    if (isWindowRound(round)) {
-      try { await ensureCallups(pool, country, season.season_no, round); }
-      catch (eC) { console.error('selectors failed for ' + country + ' round ' + round + ':', eC.message); }
+    if (round <= ROUNDS) {
+      try { await ensureNatSquad(pool, country, season.season_no, round); }
+      catch (eN) { console.error('selectors failed for ' + country + ' round ' + round + ':', eN.message); }
+      // On a window round that same fifteen also takes its flights.
+      if (isWindowRound(round)) {
+        try { await ensureCallups(pool, country, season.season_no, round); }
+        catch (eC) { console.error('selectors failed for ' + country + ' round ' + round + ':', eC.message); }
+      }
     }
-    played = await playRound(pool, host, country, season, round, { failAfter });
+    played = await playRound(pool, host, country, season, round, { failAfter, now });
     // the nets: whatever plan stands when a round settles is the work that
     // round did, banked so the squad's skills stay recomputable from genesis
     // the plan in force AND the academy in force: a building that changes the
@@ -495,13 +562,28 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
        ON CONFLICT (country_id, slot, season_no, round) DO NOTHING`,
       [country, season.season_no, round]);
     // and the boys have their own fixture on every second league round
-    await playColtsRound(pool, host, country, season, round, seedOf, ENGINE_VERSION);
-    // THE BOARD. A bot club sheds a man it does not need now and then, so
-    // the market is never empty in a world where most clubs have nobody
-    // behind them. Seeded on the club and the round: the same world puts up
-    // the same cricketer however often the day is settled.
-    try { await runMarket(pool, country, season.season_no, round, { now }); }
-    catch (eM) { console.error('market listings failed for ' + country + ':', eM.message); }
+    // (the playoffs are the seniors' nights - no colts, no market on them)
+    if (round <= ROUNDS) {
+      await playColtsRound(pool, host, country, season, round, seedOf, ENGINE_VERSION);
+      // THE BOARD. A bot club sheds a man it does not need now and then, so
+      // the market is never empty in a world where most clubs have nobody
+      // behind them. Seeded on the club and the round: the same world puts up
+      // the same cricketer however often the day is settled.
+      try { await runMarket(pool, country, season.season_no, round, { now }); }
+      catch (eM) { console.error('market listings failed for ' + country + ':', eM.message); }
+    }
+    // THE ALMANACK SLIMS. Only the current round is ever replayed by a
+    // broadcast (the spectator contract test 015 proves), so match rows more
+    // than two rounds behind lose their replay blob and living patch - the
+    // scorecard (result) is forever. This is what keeps a two-division world
+    // smaller on disk than the one-division world it replaces.
+    try {
+      await pool.query(
+        `UPDATE matches SET result_canonical=NULL, living=NULL
+          WHERE country_id=$1 AND result_canonical IS NOT NULL
+            AND (season_no < $2 OR (season_no = $2 AND round < $3 - 1))`,
+        [country, season.season_no, round]);
+    } catch (eSl) { console.error('almanack slimming failed for ' + country + ':', eSl.message); }
   }
   // the day's cricket changes the men who played it: careers, form, tired
   // legs, and the work they did in the nets. A pure function of the record,
@@ -566,7 +648,10 @@ export async function runDue(pool, host, country, { now = Date.now(), failAfter 
   const out = [];
   for (let day = season.start_day; day <= dayIx(now); day++) {
     if (!daySettled(now, day, country)) break;
-    if (day - season.start_day >= LEAGUE_DAYS) break;   // the closing week is the cups' own business
+    // the league runs through the playoff final (di 25); the FA Cup Sundays
+    // inside that span are the cup runner's business, and the closing week
+    // (Champions Cup) is the cup window's
+    if (day - season.start_day > PLAYOFF_DAYS.final) break;
     out.push({ day, ...(await runTick(pool, host, country, day, { now, failAfter, world })) });
   }
   // A WORLD THAT WAS ALREADY PLAYING WHEN THE SELECTORS ARRIVED. runTick names
@@ -695,22 +780,26 @@ export async function runAllDue(pool, host, opts = {}) {
 }
 
 // ============================================================================
-// P4/P5 — THE CUP WINDOW, on the real engine. The league block occupies days
-// start_day..start_day+23 (three rounds, a rest day, six times over); then the
-// closing week:
-//   +24  Champions Cup play-ins 18:00        World Cup —
-//   +25  Champions Cup last-16 15:00         World Cup last-16 12:00
-//   +26  Champions Cup quarters 15:00        World Cup quarters 12:00
-//   +27  Champions Cup semis 20:00           World Cup semis 18:00
-//   +28  THE FINALS: World Cup 18:00, Champions Cup 21:00
-//   +29  rest
+// THE CUP WINDOW, on the real engine (docs/PYRAMID.md §6-7).
+//
+// CHAMPIONS CUP — the sixteen national champions (each league's PLAYOFF
+// winner), in the closing week: four groups of four seeded by nation tier
+// (snake), group rounds Mon-Wed (di 28-30), quarters Fri (32), semis Sat
+// (33), THE FINAL Sunday (34).
+//
+// WORLD CUP — every fourth season, played ON the international tour days:
+// groups di 2/5/9, quarters 12, semis 16, the final 19. Other seasons those
+// days carry bilateral tours as ever.
+//
 // A stage settles once its three-hour window closes (global UTC hours).
 // Same laws as the leagues: idempotency keys per stage, results immutable,
-// snapshots derived. Season s+1 begins at start_day + 30, forever.
+// snapshots derived. Season s+1 begins at start_day + 35, forever.
 // ============================================================================
 const CUP_STAGES = {
-  wcl: [['pi', CUP_DAYS.pi, 18], ['r16', CUP_DAYS.r16, 15], ['qf', CUP_DAYS.qf, 15], ['sf', CUP_DAYS.sf, 20], ['final', CUP_DAYS.final, 21]],
-  wc: [['r16', CUP_DAYS.r16, 12], ['qf', CUP_DAYS.qf, 12], ['sf', CUP_DAYS.sf, 18], ['final', CUP_DAYS.final, 18]]
+  wcl: [['g1', CUP_DAYS.g1, 15], ['g2', CUP_DAYS.g2, 15], ['g3', CUP_DAYS.g3, 15],
+        ['qf', CUP_DAYS.qf, 15], ['sf', CUP_DAYS.sf, 18], ['final', CUP_DAYS.final, 18]],
+  wc: [['g1', WINDOW_DAYS[0], 12], ['g2', WINDOW_DAYS[1], 12], ['g3', WINDOW_DAYS[2], 12],
+       ['qf', WINDOW_DAYS[3], 12], ['sf', WINDOW_DAYS[4], 12], ['final', WINDOW_DAYS[5], 12]]
 };
 const DAY_MS = 86400000;
 function stageClosed(now, startDay, offset, hour) {
@@ -718,15 +807,52 @@ function stageClosed(now, startDay, offset, hour) {
 }
 const scoreOf = inn => inn ? inn.runs + (inn.wkts >= 10 ? ' all out' : '/' + inn.wkts) : '';
 
+// each nation's champion: the winner of its Division One playoff final
 async function leagueChampions(pool, seasonNo, now) {
   const cs = await pool.query('SELECT id FROM countries ORDER BY id');
   const out = [];
   for (const row of cs.rows) {
     const b = await computeLeague(pool, row.id, seasonNo, now);
-    if (!b || b.roundsPlayed < ROUNDS) return null;   // a league unfinished: no cup yet
-    out.push({ country: b.country, slot: b.table[0].slot, name: b.table[0].name });
+    if (!b || !b.champion) return null;               // finals night not banked: no cup yet
+    const seat = b.table.find(t => t.name === b.champion) || b.table[0];
+    out.push({ country: b.country, slot: seat.slot, name: b.champion });
   }
   return out.length ? out : null;
+}
+
+// SNAKE SEEDING into four groups of four by nation tier - deterministic and
+// knowable offline the moment the entrants are: pot 1 heads the groups, pot 2
+// comes back the other way, and so on.
+function snakeGroups(entrants, tierOf) {
+  const seeded = entrants.slice().sort((a, b) => (tierOf(b) - tierOf(a)) || (a.country < b.country ? -1 : 1));
+  const groups = [[], [], [], []];
+  seeded.forEach((e, i) => {
+    const pot = Math.floor(i / 4), ix = i % 4;
+    groups[pot % 2 ? 3 - ix : ix].push(e);
+  });
+  return groups;
+}
+// a 4-team single round robin over three days: day 1: 1v4 2v3, day 2: 1v3 4v2, day 3: 1v2 3v4
+const GROUP_ROUNDS = { g1: [[0, 3], [1, 2]], g2: [[0, 2], [3, 1]], g3: [[0, 1], [2, 3]] };
+// the group tables, from the banked group-stage cards
+async function groupTables(pool, comp, seasonNo, groups) {
+  const rows = (await pool.query(
+    `SELECT stage, gi, a, b, result FROM cup_matches WHERE comp=$1 AND season_no=$2 AND stage IN ('g1','g2','g3')`,
+    [comp, seasonNo])).rows;
+  const T = {};
+  groups.forEach((g, gix) => g.forEach(e => { T[e.name] = { e, g: gix, pts: 0, diff: 0 }; }));
+  for (const m of rows) {
+    const r = m.result, i0 = r.innings && r.innings[0], i1 = r.innings && r.innings[1];
+    const ra = i0 && i0.batTeam === m.a.name ? i0.runs : (i1 ? i1.runs : 0);
+    const rb = i0 && i0.batTeam === m.b.name ? i0.runs : (i1 ? i1.runs : 0);
+    if (!T[m.a.name] || !T[m.b.name]) continue;
+    T[m.a.name].diff += ra - rb; T[m.b.name].diff += rb - ra;
+    if (r.winner === null) { T[m.a.name].pts++; T[m.b.name].pts++; }
+    else T[r.winner === m.a.name ? m.a.name : m.b.name].pts += 2;
+  }
+  return groups.map((g, gix) => Object.values(T).filter(x => x.g === gix)
+    .sort((x, y) => y.pts - x.pts || y.diff - x.diff || (x.e.name < y.e.name ? -1 : 1))
+    .map(x => x.e));
 }
 
 // THE WORLD CUP SIDE IS THE SEASON'S SIDE. It used to be fifteen names picked
@@ -812,11 +938,14 @@ export async function runCupWindow(pool, host, { now = Date.now() } = {}) {
   return all;
 }
 async function runCupSeason(pool, host, seasonNo, startDay, now) {
-  if (dayIx(now) < startDay + LEAGUE_DAYS) return { skipped: 'league days' };
   const out = { wcl: [], wc: [] };
   let champs = null;
 
-  for (const comp of ['wcl', 'wc']) {
+  // the World Cup only exists every fourth season; the Champions Cup always
+  const comps = isWorldCupSeason(seasonNo) ? ['wc', 'wcl'] : ['wcl'];
+  for (const comp of comps) {
+    // entrants: the sixteen nations (wc) or the sixteen playoff champions (wcl)
+    let groups = null;
     for (const [stage, offset, hour] of CUP_STAGES[comp]) {
       if (!stageClosed(now, startDay, offset, hour)) break;
       const key = comp + ':s' + seasonNo + ':' + stage;
@@ -824,44 +953,36 @@ async function runCupSeason(pool, host, seasonNo, startDay, now) {
         `INSERT INTO ticks(key, status) VALUES ($1,'running')
          ON CONFLICT (key) DO UPDATE SET key=EXCLUDED.key RETURNING status`, [key]);
       if (claim.rows[0].status === 'done') { out[comp].push({ stage, skipped: true }); continue; }
-      if (!champs) { champs = await leagueChampions(pool, seasonNo, now); if (!champs) return { blocked: 'leagues unfinished' }; }
-      await buildNatSquads(pool, seasonNo);
-
-      // the seeded field, the same construction every time
-      let pairs;
-      if (comp === 'wcl') {
-        const seeded = champs.map(e => ({ ...e, sv: seedOf('wcl|s' + seasonNo + '|' + e.country) / 4294967296 }))
-          .sort((a, b) => b.sv - a.sv);
-        if (stage === 'pi') {
-          const pi = seeded.slice(seeded.length - 6);
-          pairs = [0, 1, 2].map(i => [pi[i], pi[5 - i]]);
+      if (!groups) {
+        let entrants;
+        if (comp === 'wcl') {
+          if (!champs) { champs = await leagueChampions(pool, seasonNo, now); if (!champs) return { blocked: 'finals unplayed' }; }
+          entrants = champs;
         } else {
-          const prev = { r16: 'pi', qf: 'r16', sf: 'qf', final: 'sf' }[stage];
-          if (stage === 'r16') {
-            const piRows = await pool.query(`SELECT a,b,result FROM cup_matches WHERE comp='wcl' AND season_no=$1 AND stage='pi' ORDER BY gi`, [seasonNo]);
-            const piWinners = piRows.rows.map(r => r.result.winner === r.a.name ? r.a : r.b);
-            const field = seeded.slice(0, seeded.length - 6).concat(piWinners);
-            field.sort((a, b) => (seedOf('wcl|s' + seasonNo + '|' + b.country) - seedOf('wcl|s' + seasonNo + '|' + a.country)));
-            pairs = []; for (let i = 0; i < field.length / 2; i++) pairs.push([field[i], field[field.length - 1 - i]]);
-          } else {
-            const rows = await pool.query('SELECT a,b,result FROM cup_matches WHERE comp=$1 AND season_no=$2 AND stage=$3 ORDER BY gi', [comp, seasonNo, prev]);
-            const w = rows.rows.map(r => r.result.winner === r.a.name ? r.a : r.b);
-            pairs = []; for (let i = 0; i < w.length; i += 2) pairs.push([w[i], w[i + 1]]);
-          }
+          entrants = (await pool.query('SELECT id, name FROM countries ORDER BY id')).rows
+            .map(c => ({ country: c.id, name: c.name + ' XI' }));
+          await buildNatSquads(pool, seasonNo);
         }
-      } else {
-        const nats = (await pool.query('SELECT id, name FROM countries ORDER BY id')).rows
-          .map(c => ({ country: c.id, name: c.name + ' XI', sv: seedOf('wc|s' + seasonNo + '|' + c.id) / 4294967296 }))
-          .sort((a, b) => b.sv - a.sv).slice(0, 16);
-        if (stage === 'r16') {
-          pairs = []; for (let i = 0; i < 8; i++) pairs.push([nats[i], nats[15 - i]]);
-        } else {
-          const prev = { qf: 'r16', sf: 'qf', final: 'sf' }[stage];
-          const rows = await pool.query('SELECT a,b,result FROM cup_matches WHERE comp=$1 AND season_no=$2 AND stage=$3 ORDER BY gi', [comp, seasonNo, prev]);
-          const w = rows.rows.map(r => r.result.winner === r.a.name ? r.a : r.b);
-          pairs = []; for (let i = 0; i < w.length; i += 2) pairs.push([w[i], w[i + 1]]);
-        }
+        groups = snakeGroups(entrants, e => NAT_STR[e.country] || 1);
       }
+      if (comp === 'wcl') await buildNatSquads(pool, seasonNo).catch(() => {});
+
+      let pairs;
+      if (GROUP_ROUNDS[stage]) {
+        // a group day: two ties per group, every group at once
+        pairs = [];
+        for (const g of groups) for (const [x, y] of GROUP_ROUNDS[stage]) pairs.push([g[x], g[y]]);
+      } else if (stage === 'qf') {
+        // top two per group cross: A1vB2, B1vA2, C1vD2, D1vC2
+        const t = await groupTables(pool, comp, seasonNo, groups);
+        pairs = [[t[0][0], t[1][1]], [t[1][0], t[0][1]], [t[2][0], t[3][1]], [t[3][0], t[2][1]]];
+      } else {
+        const prev = { sf: 'qf', final: 'sf' }[stage];
+        const rows = await pool.query('SELECT a,b,result FROM cup_matches WHERE comp=$1 AND season_no=$2 AND stage=$3 ORDER BY gi', [comp, seasonNo, prev]);
+        const w = rows.rows.map(r => r.result.winner === r.a.name ? r.a : r.b);
+        pairs = stage === 'sf' ? [[w[0], w[2]], [w[1], w[3]]] : [[w[0], w[1]]];
+      }
+      pairs = pairs.filter(p => p && p[0] && p[1]);
       await playStage(pool, host, comp, seasonNo, stage, pairs);
       await rebuildCupSnapshot(pool, comp, seasonNo, now);
       await pool.query(`UPDATE ticks SET status='done', finished_at=now() WHERE key=$1`, [key]);
@@ -871,17 +992,164 @@ async function runCupSeason(pool, host, seasonNo, startDay, now) {
   return out;
 }
 
-// season s+1 begins at start_day + 30 in every nation, forever
+// ============================================================================
+// THE FA CUP — every nation's own knockout, all sixteen clubs, on the four
+// Sundays (docs/PYRAMID.md §5). The draw is a seeded shuffle per stage, the
+// LOWER-DIVISION club hosts (the giant comes to the village green, groundsman
+// tilt live), the final is played at the boss's ground. Managers' latest
+// banked sheets stand in; bots play their doctrines.
+// ============================================================================
+const FA_STAGES = [['r16', FA_DAYS.r16], ['qf', FA_DAYS.qf], ['sf', FA_DAYS.sf], ['final', FA_DAYS.final]];
+export async function runFaCup(pool, host, { now = Date.now() } = {}) {
+  const seasons = (await pool.query(
+    `SELECT DISTINCT ON (country_id) country_id, season_no, start_day, divisions
+       FROM seasons ORDER BY country_id, season_no DESC`)).rows;
+  const played = [];
+  for (const s of seasons) {
+    const comp = 'fa:' + s.country_id;
+    const hour = natHour(s.country_id);
+    const divs = (s.divisions && s.divisions['1'])
+      ? s.divisions : { 1: [0, 1, 2, 3, 4, 5, 6, 7], 2: [8, 9, 10, 11, 12, 13, 14, 15] };
+    const divOf = {}; divs['1'].forEach(x => divOf[x] = 1); (divs['2'] || []).forEach(x => divOf[x] = 2);
+    for (const [stage, offset] of FA_STAGES) {
+      if (!stageClosed(now, s.start_day, offset, hour)) continue;
+      const key = comp + ':s' + s.season_no + ':' + stage;
+      const claim = await pool.query(
+        `INSERT INTO ticks(key, status) VALUES ($1,'running')
+         ON CONFLICT (key) DO UPDATE SET key=EXCLUDED.key RETURNING status`, [key]);
+      if (claim.rows[0].status === 'done') continue;
+      const clubs = (await pool.query('SELECT slot, name, squad FROM clubs WHERE country_id=$1 ORDER BY slot', [s.country_id])).rows;
+      const bySlot = Object.fromEntries(clubs.map(c => [c.slot, c]));
+      // the field for this stage
+      let field;
+      if (stage === 'r16') {
+        field = clubs.map(c => c.slot);
+      } else {
+        const prevStage = { qf: 'r16', sf: 'qf', final: 'sf' }[stage];
+        const prevRows = (await pool.query(
+          'SELECT a, b, result FROM cup_matches WHERE comp=$1 AND season_no=$2 AND stage=$3 ORDER BY gi',
+          [comp, s.season_no, prevStage])).rows;
+        if (prevRows.length === 0) { await pool.query(`UPDATE ticks SET status='done', finished_at=now() WHERE key=$1`, [key]); continue; }
+        field = prevRows.map(r => (r.result.winner === r.b.name ? r.b : r.a).slot);
+      }
+      // the seeded draw: a pure function of nation, season and stage
+      const drawn = field.slice().sort((a, b) =>
+        seedOf('fa|' + s.country_id + '|s' + s.season_no + '|' + stage + '|' + a)
+        - seedOf('fa|' + s.country_id + '|s' + s.season_no + '|' + stage + '|' + b));
+      const ties = [];
+      for (let i = 0; i < drawn.length; i += 2) ties.push([drawn[i], drawn[i + 1]]);
+      // managers' latest banked sheets ride in, exactly like a friendly
+      const ordersOf = {};
+      try {
+        const or = await pool.query(
+          `SELECT cl.name AS club, (SELECT o.orders FROM orders o WHERE o.user_id=c.user_id
+             ORDER BY o.submitted_at DESC LIMIT 1) AS orders
+             FROM claims c JOIN clubs cl ON cl.country_id=c.country_id AND cl.slot=c.slot
+            WHERE c.country_id=$1`, [s.country_id]);
+        or.rows.forEach(r => { if (r.orders) ordersOf[r.club] = r.orders; });
+      } catch (e) {}
+      for (let gi = 0; gi < ties.length; gi++) {
+        let [x, y] = ties[gi];
+        if (x == null || y == null) continue;
+        // the lower-division club hosts; the final belongs to the boss's ground
+        let hostSlot = (divOf[y] || 1) > (divOf[x] || 1) ? y : x;
+        if (stage === 'final') hostSlot = 0;
+        const home = hostSlot === y ? y : x, awaySlot = home === x ? y : x;
+        const A = { country: s.country_id, slot: home, name: bySlot[home].name };
+        const B = { country: s.country_id, slot: awaySlot, name: bySlot[awaySlot].name };
+        const ex = await pool.query('SELECT 1 FROM cup_matches WHERE comp=$1 AND season_no=$2 AND stage=$3 AND gi=$4',
+          [comp, s.season_no, stage, gi]);
+        if (ex.rowCount) continue;
+        const seed = seedOf(comp + '|s' + s.season_no + '|' + stage + '|' + gi);
+        const cond = host.condFor(s.country_id, hostSlot === 0 && stage === 'final' ? 0 : home, s.season_no, 900 + offset);
+        const tieOrders = {};
+        for (const club of [bySlot[home], bySlot[awaySlot]]) {
+          if (ordersOf[club.name]) { tieOrders[club.name] = ordersOf[club.name]; continue; }
+          const doc = host.doctrineFor(s.country_id, club.slot);
+          if (doc) tieOrders[club.name] = doc;
+        }
+        const resultJson = host.runMatch(
+          { name: A.name, players: bySlot[home].squad }, { name: B.name, players: bySlot[awaySlot].squad },
+          cond.pitch, seed, tieOrders, cond.weather);
+        if (!resultJson) throw new Error('engine failed FA tie ' + key + ':' + gi);
+        const living = { [A.name]: livingPatch(bySlot[home].squad), [B.name]: livingPatch(bySlot[awaySlot].squad) };
+        await pool.query(
+          `INSERT INTO cup_matches(comp, season_no, stage, gi, a, b, seed, engine_version, result, result_canonical, living)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::text,$11::jsonb) ON CONFLICT (comp, season_no, stage, gi) DO NOTHING`,
+          [comp, s.season_no, stage, gi, JSON.stringify(A), JSON.stringify(B), seed, ENGINE_VERSION, resultJson, resultJson, JSON.stringify(living)]);
+        played.push(key + ':' + gi);
+      }
+      await rebuildFaSnapshot(pool, s.country_id, s.season_no, now);
+      await pool.query(`UPDATE ticks SET status='done', finished_at=now() WHERE key=$1`, [key]);
+    }
+  }
+  return played;
+}
+
+async function rebuildFaSnapshot(pool, country, seasonNo, now) {
+  const rows = await pool.query(
+    `SELECT stage, gi, a, b, result FROM cup_matches WHERE comp=$1 AND season_no=$2 ORDER BY stage, gi`,
+    ['fa:' + country, seasonNo]);
+  const stages = {};
+  let champion = null;
+  rows.rows.forEach(r => {
+    (stages[r.stage] = stages[r.stage] || []).push({
+      gi: r.gi, a: r.a, b: r.b, winner: r.result.winner, text: r.result.text,
+      as_: scoreOf(r.result.innings[0]), bs_: scoreOf(r.result.innings[1])
+    });
+    if (r.stage === 'final') champion = r.result.winner;
+  });
+  const body = { comp: 'fa', country, seasonNo, stages, champion, engineVersion: ENGINE_VERSION, generatedAtDay: dayIx(now) };
+  await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ($1,$2,now())
+    ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`,
+    ['facup/' + country + '/s' + seasonNo, JSON.stringify(body)]);
+}
+
+// THE TURNING OF THE YEAR (di 31, the quiet Thursday of the closing week):
+// promotion and relegation are applied, every colt ages, and season s+1 is
+// founded at start_day + 35 carrying the division map the cricket earned.
+//
+// PROMOTION & RELEGATION: Division One's bottom two (the fourteen-round
+// table) swap with Division Two's shield winner and playoff champion (if
+// they are the same club, the beaten finalist takes the second place).
 export async function rollSeasons(pool, { now = Date.now() } = {}) {
   const rows = await pool.query(
-    `SELECT DISTINCT ON (country_id) country_id, season_no, start_day FROM seasons ORDER BY country_id, season_no DESC`);
+    `SELECT DISTINCT ON (country_id) country_id, season_no, start_day, divisions FROM seasons ORDER BY country_id, season_no DESC`);
   const rolled = [];
   for (const r of rows.rows) {
-    if (dayIx(now) < r.start_day + CYCLE) continue;
+    if (dayIx(now) < r.start_day + TRANSITION_DAY) continue;
+    if (!daySettled(now, r.start_day + TRANSITION_DAY, r.country_id)) continue;
+    const board = await computeLeague(pool, r.country_id, r.season_no, now);
+    let divs = (r.divisions && r.divisions['1'])
+      ? { 1: r.divisions['1'].slice(), 2: (r.divisions['2'] || []).slice() }
+      : { 1: [0, 1, 2, 3, 4, 5, 6, 7], 2: [8, 9, 10, 11, 12, 13, 14, 15] };
+    // the swap - only when the season genuinely finished its business
+    if (board && board.roundsPlayed >= ROUNDS && board.table.length >= 2 && board.table2.length >= 2) {
+      const down = board.table.slice(-2).map(t => t.slot);
+      const upShield = board.table2[0].slot;
+      let upChamp = null;
+      if (board.champion2) {
+        const seat = board.table2.find(t => t.name === board.champion2);
+        upChamp = seat ? seat.slot : null;
+      }
+      if (upChamp == null || upChamp === upShield) {
+        // the beaten finalist takes the second place; failing that, the runner-up
+        const final2 = board.results.filter(x => x.round === 16)
+          .map(x => board.table2.find(t => t.name === (x.winner === x.home ? x.away : x.home)))
+          .filter(Boolean)[0];
+        upChamp = (final2 && final2.slot !== upShield) ? final2.slot : board.table2[1].slot;
+      }
+      const up = [upShield, upChamp];
+      divs = {
+        1: divs[1].filter(s => !down.includes(s)).concat(up).sort((a, b) => a - b),
+        2: divs[2].filter(s => !up.includes(s)).concat(down).sort((a, b) => a - b)
+      };
+    }
     await pool.query(
-      `INSERT INTO seasons(country_id, season_no, start_day, schedule) VALUES ($1,$2,$3,$4)
+      `INSERT INTO seasons(country_id, season_no, start_day, schedule, divisions) VALUES ($1,$2,$3,$4,$5)
        ON CONFLICT DO NOTHING`,
-      [r.country_id, r.season_no + 1, r.start_day + CYCLE, JSON.stringify(scheduleOf(r.country_id, r.season_no + 1))]);
+      [r.country_id, r.season_no + 1, r.start_day + CYCLE,
+       JSON.stringify(seasonSchedules(r.country_id, r.season_no + 1, divs)), JSON.stringify(divs)]);
     // a year on every colt, and a senior shirt for anyone who has reached 21
     try { await ageYouth(pool, r.country_id, r.season_no); }
     catch (eA) { console.error('academy rollover failed for ' + r.country_id + ':', eA.message); }
@@ -937,6 +1205,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         await rebuildNations(pool);
       }
     } catch (eW) { lines.push('internationals: ' + eW.message); }
+    // THE FA CUP SUNDAYS: every nation's knockout, giant-killing included
+    try {
+      const fa = await runFaCup(pool, host);
+      if (fa.length) lines.push('FA Cup ties played: ' + fa.length);
+    } catch (eFA) { lines.push('fa cup: ' + eFA.message); }
     const cups = await runCupWindow(pool, host);
     for (const [sk, c] of Object.entries(cups)) {
       if (c && (c.wcl || c.wc)) ['wcl', 'wc'].forEach(comp => {

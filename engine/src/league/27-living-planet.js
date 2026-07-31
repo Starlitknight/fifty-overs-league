@@ -43,22 +43,39 @@
   }
 
   // ---- the calendar -----------------------------------------------------------
-  var EPOCH = Date.UTC(2026, 6, 28);           // 28 July 2026, day 0 - OPENING DAY: round 1 everywhere
-  var DAY = 86400000, CYCLE = 30, ROUNDS = 18;  // ten clubs, eighteen rounds - every nation plays YOUR format
-  var BLOCK = 4, LEAGUE_DAYS = 24;              // three rounds then a rest day, six times over
+  // THE 35-DAY SEASON — FIVE EXACT WEEKS. Day 0 is always a Monday (3 August
+  // 2026), so di % 7 IS the weekday, forever: Sunday is cup day, Wednesday and
+  // Saturday are international days, the last week is the Champions Cup.
+  // docs/PYRAMID.md is the authority; server/clock.mjs must agree ball for ball.
+  var EPOCH = Date.UTC(2026, 7, 3);            // MONDAY 3 August 2026, day 0 - season 1 day 1
+  var DAY = 86400000, CYCLE = 35, ROUNDS = 14;  // eight clubs a division, double round robin
+  var LEAGUE_DAYS = 23;                         // last league round settles di 22
+  var PLAYOFF_DAYS = { semi: 24, final: 25 };
+  var FA_DAYS = { r16: 6, qf: 13, sf: 20, final: 27 };
+  var TRANSITION_DAY = 31;
+  // the league week: Mon Tue . Thu Fri . . — rounds at di%7 in {0,1,3,4}
+  var WEEK_POS = { 0: 1, 1: 2, 3: 3, 4: 4 };
   // day-in-season <-> round. NOTHING may assume round === day + 1 any more.
+  // Playoffs are rounds 15 (semis) and 16 (the final) - fixtures, not table rounds.
   function roundOfDay(di) {
-    if (!(di >= 0) || di >= LEAGUE_DAYS) return null;
-    if (di % BLOCK === BLOCK - 1) return null;
-    return di - Math.floor(di / BLOCK) + 1;
+    if (!(di >= 0)) return null;
+    if (di === PLAYOFF_DAYS.semi) return 15;
+    if (di === PLAYOFF_DAYS.final) return 16;
+    if (di >= LEAGUE_DAYS) return null;
+    var w = Math.floor(di / 7), pos = WEEK_POS[di % 7];
+    if (!pos) return null;
+    var r = w * 4 + pos;
+    return r >= 1 && r <= ROUNDS ? r : null;
   }
   function dayOfRound(round) {
+    if (round === 15) return PLAYOFF_DAYS.semi;
+    if (round === 16) return PLAYOFF_DAYS.final;
     if (!(round >= 1 && round <= ROUNDS)) return null;
-    return Math.floor((round - 1) / (BLOCK - 1)) * BLOCK + ((round - 1) % (BLOCK - 1));
+    return Math.floor((round - 1) / 4) * 7 + [0, 1, 3, 4][(round - 1) % 4];
   }
-  var WINDOW_DAYS = [3, 7, 11], WINDOWS = [4, 7, 10];
+  var WINDOW_DAYS = [2, 5, 9, 12, 16, 19], WINDOWS = [3, 5, 7, 9, 11, 13];
   function windowRoundOfDay(di) { var i = WINDOW_DAYS.indexOf(di); return i < 0 ? null : WINDOWS[i]; }
-  var HONOURS_DAY = 24, CUP_DAYS = { pi: 24, r16: 25, qf: 26, sf: 27, final: 28 };
+  var HONOURS_DAY = 25, CUP_DAYS = { g1: 28, g2: 29, g3: 30, qf: 32, sf: 33, final: 34 };
   var LIVE_LEN = 3;                             // a day's play runs three hours
   // the staggered globe: each nation bowls its first ball at its own UTC hour.
   // England is the 14:00 UTC league; the rest spread around the clock so
@@ -95,13 +112,20 @@
     var d = dayIx(now), rel = d - ANCHOR.start;
     if (rel < 0) return { day: d, season: ANCHOR.season, di: -1, kind: "rest", preseason: true };
     var s = ANCHOR.season + Math.floor(rel / CYCLE), di = rel % CYCLE;
-    var p = { day: d, season: s, di: di };
+    var p = { day: d, season: s, di: di, weekday: di % 7 };
     var r = roundOfDay(di);
-    if (r) { p.kind = "league"; p.round = r; }
-    else if (di < LEAGUE_DAYS) { p.kind = "rest"; p.window = windowRoundOfDay(di); }
-    else if (di === HONOURS_DAY) p.kind = "honours";
-    else if (di <= CUP_DAYS.final) { p.kind = "cup"; p.stage = ["r16", "qf", "sf", "final"][di - CUP_DAYS.r16]; }
-    else p.kind = "rest";
+    var faStage = null;
+    for (var fk in FA_DAYS) if (FA_DAYS[fk] === di) faStage = fk;
+    if (r && r <= ROUNDS) { p.kind = "league"; p.round = r; }
+    else if (r === 15 || r === 16) { p.kind = "playoff"; p.round = r; p.stage = r === 15 ? "semi" : "final"; }
+    else if (faStage) { p.kind = "facup"; p.stage = faStage; }
+    else if (di === TRANSITION_DAY) p.kind = "transition";
+    else if (di >= CUP_DAYS.g1) {
+      var ccStage = null;
+      for (var ck in CUP_DAYS) if (CUP_DAYS[ck] === di) ccStage = ck;
+      if (ccStage) { p.kind = "cup"; p.stage = ccStage; } else p.kind = "rest";
+    }
+    else { p.kind = "rest"; p.window = windowRoundOfDay(di); }
     return p;
   }
   // how many rounds of season s are FINAL at `now` - per nation, since each
@@ -122,15 +146,47 @@
   }
 
   // ---- the sides of a nation --------------------------------------------------
-  function regionList() { var c = cx(); if (!c) return []; return (c.regions() || []).filter(function (r) { return !r.final; }); }
+  // SIXTEEN NATIONS: the twelve ICC Full Members and the four strongest
+  // Associates. Wales, Kenya and Canada leave the top table (their art stays
+  // on disk for a future tier); Glamorgan plays in England's Division Two,
+  // which is where Welsh county cricket has always really lived.
+  var FO_CUT = { wal: 1, ken: 1, can: 1 };
+  function regionList() { var c = cx(); if (!c) return []; return (c.regions() || []).filter(function (r) { return !r.final && !FO_CUT[r.id]; }); }
   function regionById(rid) { var L = regionList(); for (var i = 0; i < L.length; i++) if (L[i].id === rid) return L[i]; return null; }
-  // two more real cricket cities per nation, so every league seats ten clubs
-  var EXTRA_CITY = { eng: ["Taunton", "Hove"], ire: ["Sligo", "Wexford"], ned: ["Nijmegen", "Leiden"], win: ["Kingstown", "Providence"], rsa: ["East London", "Potchefstroom"], zim: ["Chinhoyi", "Marondera"], aus: ["Darwin", "Newcastle"], nzl: ["Queenstown", "Whangarei"], slk: ["Negombo", "Jaffna"], sub: ["Pune", "Lucknow"], pak: ["Quetta", "Gujranwala"], afg: ["Bamyan", "Farah"], bgd: ["Mymensingh", "Bogra"], nep: ["Butwal", "Nepalgunj"], sco: ["Paisley", "Falkirk"], wal: ["Llanelli", "Pontypridd"], ken: ["Kakamega", "Kitale"], usa: ["Seattle", "Atlanta"], can: ["Victoria", "Markham"] };
-  // England is hand-named on the server (Sir Giles and the counties) - the
-  // mirror MUST carry the same names, or orders keyed by club name would
-  // miss and the claim highlight would never find you
+  // two more real cricket cities per nation, so Division One seats eight clubs
+  var EXTRA_CITY = { eng: ["Taunton", "Hove"], ire: ["Sligo", "Wexford"], ned: ["Nijmegen", "Leiden"], win: ["Kingstown", "Providence"], rsa: ["East London", "Potchefstroom"], zim: ["Chinhoyi", "Marondera"], aus: ["Darwin", "Newcastle"], nzl: ["Queenstown", "Whangarei"], slk: ["Negombo", "Jaffna"], sub: ["Pune", "Lucknow"], pak: ["Quetta", "Gujranwala"], afg: ["Bamyan", "Farah"], bgd: ["Mymensingh", "Bogra"], nep: ["Butwal", "Nepalgunj"], sco: ["Paisley", "Falkirk"], usa: ["Seattle", "Atlanta"] };
+  // DIVISION TWO: eight real smaller cricket towns per nation - works teams,
+  // district sides, ambitious village clubs. This is where a club is FOUNDED.
+  var DIV2_CITY = {
+    ire: ["Galway", "Limerick", "Drogheda", "Bangor", "Armagh", "Carlow", "Tralee", "Athlone"],
+    ned: ["Amstelveen", "Deventer", "Groningen", "Haarlem", "Delft", "Zwolle", "Breda", "Arnhem"],
+    win: ["Basseterre", "Roseau", "St George's", "Scarborough", "Chaguanas", "Montego Bay", "Gros Islet", "Couva"],
+    rsa: ["Bloemfontein", "Kimberley", "Paarl", "Benoni", "Pietermaritzburg", "Soweto", "George", "Polokwane"],
+    zim: ["Kwekwe", "Gweru", "Kadoma", "Masvingo", "Bindura", "Hwange", "Rusape", "Kariba"],
+    aus: ["Hobart", "Canberra", "Geelong", "Ballarat", "Townsville", "Cairns", "Wollongong", "Launceston"],
+    nzl: ["Dunedin", "Hamilton", "Napier", "Tauranga", "Nelson", "Palmerston North", "Invercargill", "Rotorua"],
+    slk: ["Matara", "Kurunegala", "Ratnapura", "Batticaloa", "Anuradhapura", "Badulla", "Trincomalee", "Hambantota"],
+    sub: ["Indore", "Rajkot", "Ranchi", "Guwahati", "Kanpur", "Vadodara", "Mysore", "Cuttack"],
+    pak: ["Multan", "Faisalabad", "Rawalpindi", "Hyderabad", "Sialkot", "Sukkur", "Abbottabad", "Bahawalpur"],
+    afg: ["Khost", "Kunduz", "Herat", "Ghazni", "Laghman", "Charikar", "Pul-e-Khumri", "Maidan Shar"],
+    bgd: ["Khulna", "Rajshahi", "Barisal", "Rangpur", "Comilla", "Narayanganj", "Jessore", "Tangail"],
+    nep: ["Pokhara", "Bhairahawa", "Biratnagar", "Birgunj", "Dhangadhi", "Hetauda", "Itahari", "Janakpur"],
+    sco: ["Aberdeen", "Dundee", "Ayr", "Stirling", "Perth", "Inverness", "Greenock", "Dunfermline"],
+    usa: ["Houston", "Chicago", "Morrisville", "Oakland", "Tampa", "Phoenix", "Denver", "Boston"]
+  };
+  // a small club sounds like a small club - the pattern is a pure function of
+  // the seat, so every device names the same club the same way
+  var DIV2_STYLE = ["%s CC", "%s Athletic", "%s District XI", "%s Colts", "%s Wanderers", "%s Gymkhana", "%s Rovers", "%s Union CC"];
+  function div2Name(rid, slot, city) {
+    var pat = DIV2_STYLE[h32(rid + "|d2nm|" + slot) % DIV2_STYLE.length];
+    return pat.replace("%s", city);
+  }
+  // England is hand-named on the server (the counties) - the mirror MUST carry
+  // the same names, or orders keyed by club name would miss and the claim
+  // highlight would never find you. Division Two is the second flight of real
+  // counties - Glamorgan included, wearing the daffodil in an English league.
   var ENG_SIDES = [
-    { slot: 0, boss: true, name: "Sir Giles Pemberley's XI", city: "London" },
+    { slot: 0, boss: true, name: "Essex", city: "Chelmsford" },
     { slot: 1, name: "Yorkshire", city: "Leeds" },
     { slot: 2, name: "Lancashire", city: "Manchester" },
     { slot: 3, name: "Surrey", city: "London" },
@@ -139,7 +195,13 @@
     { slot: 6, name: "Nottinghamshire", city: "Nottingham" },
     { slot: 7, name: "Kent", city: "Canterbury" },
     { slot: 8, name: "Durham", city: "Durham" },
-    { slot: 9, name: "Somerset", city: "Taunton" }
+    { slot: 9, name: "Somerset", city: "Taunton" },
+    { slot: 10, name: "Glamorgan", city: "Cardiff" },
+    { slot: 11, name: "Sussex", city: "Hove" },
+    { slot: 12, name: "Gloucestershire", city: "Bristol" },
+    { slot: 13, name: "Hampshire", city: "Southampton" },
+    { slot: 14, name: "Derbyshire", city: "Derby" },
+    { slot: 15, name: "Leicestershire", city: "Leicester" }
   ];
   // ==== WHO EACH SIDE IS, AND HOW GOOD ===================================
   //
@@ -171,11 +233,17 @@
   // rungs three to four points apart, for the same reason: an ordered league
   // instead of ten sides in a coin-toss.
   var FO_BOSS_STR = 1.20;
-  var FO_STR_LADDER = [1.04, 1.00, 0.97, 0.94, 0.91, 0.88, 0.85, 0.82, 0.80];
+  // DIVISION ONE: the boss and seven established clubs on a tight ladder.
+  // DIVISION TWO: the founding seats - small clubs on a lower ladder that
+  // overlaps the first division's floor at the seam, the way real second
+  // flights do. Both shuffled per nation, pure functions of the nation.
+  var FO_STR_LADDER = [1.04, 1.00, 0.97, 0.94, 0.91, 0.88, 0.85];
+  var FO_D2_LADDER = [0.86, 0.83, 0.80, 0.78, 0.76, 0.74, 0.72, 0.70];
 
   // England is named for its counties, not its cities (and three of them play
-  // in London), so its identities are seated by slot.
-  var ENG_ARCH = ["rock", "rock", "express", "blade", "greybeard", "engine", "express", "miser", "express", "blade"];
+  // in London), so its identities are seated by slot - all sixteen of them.
+  var ENG_ARCH = ["rock", "rock", "express", "blade", "greybeard", "engine", "express", "miser",
+    "express", "blade", "engine", "miser", "rock", "gloveman", "greybeard", "finisher"];
 
   // The clubs the game gave a character to. Keyed by city, so a named side
   // carries its identity to whichever slot its city lands in.
@@ -244,19 +312,27 @@
   // so the second-best side is a different slot in every league.
   function strOf(rid, slot) {
     if (slot === 0) return FO_BOSS_STR;
+    if (slot >= 8) {
+      // a founding seat: the second division's own ladder, shuffled per nation
+      var o2 = [8, 9, 10, 11, 12, 13, 14, 15].sort(function (a2, b2) {
+        return rnd01(rid + "|rank2|" + a2) - rnd01(rid + "|rank2|" + b2);
+      });
+      var r2 = o2.indexOf(slot);
+      return FO_D2_LADDER[r2 < 0 ? 3 : r2];
+    }
     var named = CITY_ARCH[rid] || {};
     var known = {};
     if (rid !== "eng") {
       var cities = (cx().cities(rid) || []).concat(EXTRA_CITY[rid] || []);
-      for (var s2 = 1; s2 <= 9; s2++) if (named[cities[s2]]) known[s2] = 1;
+      for (var s2 = 1; s2 <= 7; s2++) if (named[cities[s2]]) known[s2] = 1;
     }
-    var order = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(function (a, b) {
+    var order = [1, 2, 3, 4, 5, 6, 7].sort(function (a, b) {
       var ka = known[a] ? 0 : 1, kb = known[b] ? 0 : 1;
       if (ka !== kb) return ka - kb;
       return rnd01(rid + "|rank|" + a) - rnd01(rid + "|rank|" + b);
     });
     var rank = order.indexOf(slot);
-    return FO_STR_LADDER[rank < 0 ? 4 : rank];
+    return FO_STR_LADDER[rank < 0 ? 3 : rank];
   }
 
   // ---- THE CONDITIONS: WHAT KIND OF CRICKET A PLACE PLAYS -------------------
@@ -367,27 +443,39 @@
 
   function sidesOf(rid) {
     if (rid === "eng") return ENG_SIDES.map(function (s0) {
-      return { slot: s0.slot, boss: !!s0.boss, name: s0.name, city: s0.city,
+      return { slot: s0.slot, boss: !!s0.boss, name: s0.name, city: s0.city, div: s0.slot < 8 ? 1 : 2,
         arch: archOf("eng", s0.slot, s0.city), str: strOf("eng", s0.slot) };
     });
     var r = regionById(rid); if (!r) return [];
     var cities = (cx().cities(rid) || []).concat(EXTRA_CITY[rid] || []);
     var bc = null; (r.clubs || []).forEach(function (c) { if (c.boss) bc = c; });
     var bossCity = (bc && bc.city) || cities[0] || r.nm;
-    var out = [{ slot: 0, boss: true, name: bc ? bc.nm : (r.nm + " XI"), city: bossCity,
+    var out = [{ slot: 0, boss: true, name: bc ? bc.nm : (r.nm + " XI"), city: bossCity, div: 1,
       arch: archOf(rid, 0, bossCity), str: strOf(rid, 0) }];
-    for (var s = 1; s <= 9; s++) {
+    for (var s = 1; s <= 7; s++) {
       var ct = cities[s] || (r.nm + " " + s);
-      out.push({ slot: s, boss: false, name: ct + " CC", city: ct,
+      out.push({ slot: s, boss: false, name: ct + " CC", city: ct, div: 1,
         arch: archOf(rid, s, ct), str: strOf(rid, s) });
+    }
+    // the founding seats: the eight small clubs of Division Two
+    var d2 = DIV2_CITY[rid] || [];
+    for (var s9 = 8; s9 <= 15; s9++) {
+      var ct2 = d2[s9 - 8] || (r.nm + " " + s9);
+      out.push({ slot: s9, boss: false, name: div2Name(rid, s9, ct2), city: ct2, div: 2,
+        arch: archOf(rid, s9, ct2), str: strOf(rid, s9) });
     }
     return out;
   }
-  // double round robin by the circle method, team order reshuffled every season
-  function schedOf(rid, season) {
-    var N = 10, idx = [];
+  // double round robin for ONE DIVISION of 8 by the circle method, team order
+  // reshuffled every season. `slots` is the division's eight member slots -
+  // membership is seasonal (promotion and relegation redraw it), the founding
+  // assumption being div 1 = slots 0-7, div 2 = slots 8-15. MUST agree with
+  // server/clock.mjs scheduleOf, fixture for fixture.
+  function schedOf(rid, season, slots, div) {
+    var members = slots || (div === 2 ? [8, 9, 10, 11, 12, 13, 14, 15] : [0, 1, 2, 3, 4, 5, 6, 7]);
+    var N = members.length, idx = [];
     for (var z = 0; z < N; z++) idx.push(z);
-    var seed = h32(rid + "|order|" + season);
+    var seed = h32(rid + "|order|d" + (div || 1) + "|" + season);
     for (var i = N - 1; i > 0; i--) { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; var j = seed % (i + 1); var t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
     var list = idx.slice(), rounds = [];
     for (var r = 0; r < N - 1; r++) {
@@ -397,7 +485,7 @@
       list = [list[0], list[N - 1]].concat(list.slice(1, N - 1)); // rotate all but the pivot
     }
     for (var r2 = 0; r2 < N - 1; r2++) rounds.push(rounds[r2].map(function (f) { return [f[1], f[0]]; }));
-    return rounds;
+    return rounds.map(function (rd2) { return rd2.map(function (f) { return [members[f[0]], members[f[1]]]; }); });
   }
   // one seeded, plausible fifty-over scoreline
   function playMatch(rid, season, round, A, B) {
@@ -425,15 +513,23 @@
       as: second + (sw >= 10 ? " all out" : "/" + sw)
     };
   }
-  function fixturesOf(rid, season, round) {
-    var S = sidesOf(rid); if (S.length < 8) return [];
-    return schedOf(rid, season)[round - 1].map(function (f) { return playMatch(rid, season, round, S[f[0]], S[f[1]]); });
+  function fixturesOf(rid, season, round, div) {
+    var S = sidesOf(rid); if (S.length < 16) return [];
+    var by = {}; S.forEach(function (s) { by[s.slot] = s; });
+    var divs = div ? [div] : [1, 2], out = [];
+    divs.forEach(function (d) {
+      ((schedOf(rid, season, null, d) || [])[round - 1] || []).forEach(function (f) {
+        out.push(playMatch(rid, season, round, by[f[0]], by[f[1]]));
+      });
+    });
+    return out;
   }
-  function tableOf(rid, season, uptoRounds) {
-    var S = sidesOf(rid), T = {};
+  function tableOf(rid, season, uptoRounds, div) {
+    var d = div || 1;
+    var S = sidesOf(rid).filter(function (s) { return (s.div || 1) === d; }), T = {};
     S.forEach(function (s) { T[s.slot] = { side: s, P: 0, W: 0, L: 0, T: 0, pts: 0, diff: 0 }; });
     for (var r = 1; r <= Math.min(ROUNDS, uptoRounds); r++) {
-      fixturesOf(rid, season, r).forEach(function (m) {
+      fixturesOf(rid, season, r, d).forEach(function (m) {
         var a = T[m.home.slot], b = T[m.away.slot];
         a.P++; b.P++; a.diff += m.first - m.second; b.diff += m.second - m.first;
         if (m.tie) { a.T++; b.T++; a.pts++; b.pts++; }

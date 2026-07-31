@@ -31,7 +31,7 @@
 // exactly his form that morning; heal a window days late and the selectors
 // have seen a little cricket the players had not. Once named, it is fixed.
 import { dayIx, seedOf, isWindowRound, WINDOWS, WINDOW_DAYS, windowRoundOfDay, windowDayOfRound,
-         INTL_HOUR, hourSettled, ROUNDS } from './clock.mjs';
+         INTL_HOUR, hourSettled, ROUNDS, isWorldCupSeason } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
 
 export const SQUAD_SIZE = 15;
@@ -359,6 +359,9 @@ export async function runWindows(pool, host, engineVersion, { now = Date.now(), 
     if (!hourSettled(now, day, INTL_HOUR)) continue;
     const inWindow = await windowsOn(pool, day);
     if (inWindow.length < 2) continue;
+    // EVERY FOURTH SEASON THE TOUR DAYS ARE THE WORLD CUP'S (docs/PYRAMID.md
+    // §7) - the bilateral calendar stands aside for it
+    if (isWorldCupSeason(inWindow[0].seasonNo)) continue;
     const key = 'nat:day:' + day;
     const claim = await pool.query(
       `INSERT INTO ticks(key, status) VALUES ($1,'running')

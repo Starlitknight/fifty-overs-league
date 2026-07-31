@@ -7,7 +7,7 @@
 // an existing country's clubs, seasons or matches.
 import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
-import { EPOCH, CYCLE, ROUNDS, dayIx, scheduleOf, natHour } from './clock.mjs';
+import { EPOCH, CYCLE, ROUNDS, dayIx, scheduleOf, seasonSchedules, natHour } from './clock.mjs';
 
 // EVERY LEAGUE IS ANCHORED BY A REAL CLUB. Slot 0 is the country's most
 // storied side - the name a supporter there would give you first - with its
@@ -35,6 +35,11 @@ export const FLAGSHIPS = {
   can: { name: 'Ontario', ground: 'Maple Leaf Ground' }
 };
 
+// England hand-named: Division One is the boss and seven first-flight
+// counties; Division Two is the second flight - Glamorgan included, wearing
+// the daffodil in an English league, which is where Welsh county cricket has
+// always really lived. MUST agree name-for-name with the client's ENG_SIDES
+// (27-living-planet.js) or orders keyed by club name would miss.
 export const ENG_CLUBS = [
   { slot: 0, name: FLAGSHIPS.eng.name, ground: FLAGSHIPS.eng.ground, boss: true, arch: 'rock' },
   { slot: 1, name: 'Yorkshire', ground: 'Headingley', arch: 'rock' },
@@ -45,7 +50,13 @@ export const ENG_CLUBS = [
   { slot: 6, name: 'Nottinghamshire', ground: 'Trent Bridge', arch: 'rock' },
   { slot: 7, name: 'Kent', ground: 'Canterbury', arch: 'rock' },
   { slot: 8, name: 'Durham', ground: 'The Riverside', arch: 'rock' },
-  { slot: 9, name: 'Somerset', ground: 'Taunton', arch: 'rock' }
+  { slot: 9, name: 'Somerset', ground: 'Taunton', arch: 'rock' },
+  { slot: 10, name: 'Glamorgan', ground: 'Sophia Gardens', arch: 'rock' },
+  { slot: 11, name: 'Sussex', ground: 'Hove', arch: 'rock' },
+  { slot: 12, name: 'Gloucestershire', ground: 'Bristol', arch: 'rock' },
+  { slot: 13, name: 'Hampshire', ground: 'The Rose Bowl', arch: 'rock' },
+  { slot: 14, name: 'Derbyshire', ground: 'Queen\'s Park', arch: 'rock' },
+  { slot: 15, name: 'Leicestershire', ground: 'Grace Road', arch: 'rock' }
 ];
 
 // one uniform founding shape per country: England hand-named, the rest
@@ -63,16 +74,18 @@ export function countryConfigs(host) {
       id: 'eng', name: 'England', nat: 'England', arch: 'rock', capt: 'talisman', hour: 14,
       clubs: ENG_CLUBS.map(c => ({
         slot: c.slot, name: c.name, ground: c.ground, boss: !!c.boss,
+        div: (byIx[c.slot] || {}).div || (c.slot < 8 ? 1 : 2),
         arch: (byIx[c.slot] || {}).arch, str: (byIx[c.slot] || {}).str
       }))
     };
     return {
       id: r.id, name: r.name, nat: r.nat, arch: r.arch, capt: r.capt, hour: r.hour,
       clubs: r.sides.map(s => Object.assign(
-        { slot: s.slot, boss: !!s.boss, arch: s.arch, str: s.str },
+        { slot: s.slot, boss: !!s.boss, arch: s.arch, str: s.str, div: s.div || (s.slot < 8 ? 1 : 2) },
         (s.boss && FLAGSHIPS[r.id])
           ? { name: FLAGSHIPS[r.id].name, ground: FLAGSHIPS[r.id].ground }
-          : { name: s.name, ground: s.city + ' Ground' }))
+          // a founded small club plays on a green, not at a Ground
+          : { name: s.name, ground: s.city + (s.slot >= 8 ? ' Green' : ' Ground') }))
     };
   });
 }
@@ -109,11 +122,11 @@ export function countryConfigs(host) {
 // than to luck.
 export const STR_FALLBACK = 1;
 // THE NEWCOMER'S RUNG. Every human-claimed club is dealt (and, on a fresh
-// claim, levelled) to this strength x the nation tier: competitive from day
-// one, identical to every other newcomer in the league, still an underdog to
-// the boss and the 1.00-1.04 pack. The seating chart decides a bot's class;
-// it never again decides a person's.
-export const HUMAN_STR = 0.97;
+// claim, levelled) to this strength x the nation tier: a solid Division Two
+// side - competitive at once among its own kind, with the whole pyramid still
+// to climb. The seating chart decides a bot's class; it never again decides
+// a person's.
+export const HUMAN_STR = 0.78;
 export const BASE_XI = 36000;                 // the old world's median XI rating
 
 // A LEAGUE IS AS STRONG AS ITS CRICKET CULTURE. Every nation's ten clubs used
@@ -157,13 +170,32 @@ export function calibrate(host, squad, target) {
   return men;
 }
 
+// THE FOUNDING CAST. A Division Two club is not a weaker copy of a county -
+// it is what a new club actually is: one Old Pro on his way down (the oldest
+// man becomes the 35-plus captain-mentor), a spine of local lads in their
+// prime, and a bench of raw kids with everything still ahead of them. The
+// weakness has causes you can see, and every cause has a cure: the kids grow,
+// the old pro teaches, the lads get replaced one honest signing at a time.
+// Deterministic - same seed, same cast - and calibration still owns the
+// club's net strength, so the AGES are the story, not a hidden buff.
+function foundingCast(squad) {
+  const men = squad.slice().sort((a, b) => (b.age || 27) - (a.age || 27));
+  men.forEach((p, i) => {
+    if (i === 0) p.age = 36;                                  // the Old Pro
+    else if (i <= 4) p.age = 27 + (i % 4);                    // the local lads
+    else p.age = 19 + (i % 5);                                // the raw kids
+  });
+  return squad;
+}
+
 // strOverride: the reseed passes HUMAN_STR for a claimed club, so every
 // human's fresh deal lands on the newcomer rung instead of the seat's
 export function squadFor(host, cfg, club, gen = 1, strOverride = null) {
   const raw = host.genSquad('world' + ((gen | 0) || 1) + '|' + cfg.id + '|' + club.slot, cfg.nat,
     club.arch || cfg.arch, club.boss ? cfg.capt : 'general');
   const str = strOverride || club.str || STR_FALLBACK;
-  return calibrate(host, raw, BASE_XI * (NAT_STR[cfg.id] || 1) * str);
+  const men = calibrate(host, raw, BASE_XI * (NAT_STR[cfg.id] || 1) * str);
+  return (club.div === 2 || club.slot >= 8) ? foundingCast(men) : men;
 }
 
 // what generation this world is dealing from; 1 for a world founded before the
@@ -173,6 +205,15 @@ export async function worldGeneration(pool) {
     const r = await pool.query('SELECT generation FROM worlds WHERE id=1');
     return (r.rows[0] && r.rows[0].generation) | 0 || 1;
   } catch (e) { return 1; }
+}
+
+// the founding division map: div 1 = slots 0-7, div 2 = slots 8-15. Only the
+// FIRST season is founded with it - every season after carries the map that
+// promotion and relegation actually produced.
+export function foundingDivisions(cfg) {
+  const d = { 1: [], 2: [] };
+  for (const club of cfg.clubs) d[club.div === 2 ? 2 : 1].push(club.slot);
+  return d;
 }
 
 async function foundCountry(c, cfg, host, startDay, gen = 1) {
@@ -187,8 +228,12 @@ async function foundCountry(c, cfg, host, startDay, gen = 1) {
       'INSERT INTO clubs(country_id, slot, name, default_name, ground, is_boss, squad) VALUES ($1,$2,$3,$3,$4,$5,$6)',
       [cfg.id, club.slot, club.name, club.ground, !!club.boss, JSON.stringify(players)]);
   }
-  await c.query('INSERT INTO seasons(country_id, season_no, start_day, schedule) VALUES ($1,$2,$3,$4)',
-    [cfg.id, 1, startDay, JSON.stringify(scheduleOf(cfg.id, 1))]);
+  // the seasons row carries the season's OWN division map and both divisions'
+  // schedules - membership is seasonal, so the record of who played where
+  // lives with the season that seated them
+  const divs = foundingDivisions(cfg);
+  await c.query('INSERT INTO seasons(country_id, season_no, start_day, schedule, divisions) VALUES ($1,$2,$3,$4,$5)',
+    [cfg.id, 1, startDay, JSON.stringify(seasonSchedules(cfg.id, 1, divs)), JSON.stringify(divs)]);
 }
 
 export async function initWorld(pool, { now = Date.now(), host = null } = {}) {
@@ -200,7 +245,10 @@ export async function initWorld(pool, { now = Date.now(), host = null } = {}) {
     if (w.rowCount) { await c.query('ROLLBACK'); return { created: false }; }
     await c.query('INSERT INTO worlds(id, epoch_ms, cycle_days, league_rounds, engine_version, generation) VALUES (1,$1,$2,$3,$4,1)',
       [EPOCH, CYCLE, ROUNDS, ENGINE_VERSION]);
-    const startDay = dayIx(now) + 1;
+    // a world founded BEFORE its epoch opens on day 0 - Monday 3 August 2026,
+    // the first Monday of the first five-week season. Founded later, the
+    // season starts tomorrow as ever.
+    const startDay = Math.max(0, dayIx(now) + 1);
     const cfgs = countryConfigs(h);
     for (const cfg of cfgs) await foundCountry(c, cfg, h, startDay, 1);
     await c.query('COMMIT');
