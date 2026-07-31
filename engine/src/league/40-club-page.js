@@ -399,18 +399,19 @@
         try {
           var localNm = ""; try { localNm = (userTeam() || {}).name || ""; } catch (eU) {}
           var host = document.getElementById("fo-cp-mine");
-          // THE FOUNDING RIGHT: a manager can always rename their club, not
-          // only when two names disagree. An inline input, because a browser
-          // prompt() is silently refused on some phones.
-          if (host && (!localNm || !name || localNm === name)) {
-            host.className = "fo-cp-ren";
-            host.innerHTML = "<label for='fo-cp-nm'>Rename your club</label>" +
-              "<span class='row'><input id='fo-cp-nm' type='text' maxlength='28' " +
-              "placeholder='" + E(name || "Your club's name") + "' autocomplete='off'>" +
-              "<button type='button' id='fo-cp-go'>Save</button></span>" +
-              "<i id='fo-cp-why2'></i>";
+          // THE FOUNDING RIGHT: rename is always here, an inline input (a
+          // browser prompt() is silently refused on some phones). Wired for
+          // whichever panel below rendered it - the two-names warning carries
+          // its own box too, so the right is never conditional again.
+          var renBox = "<div class='fo-cp-ren'><label for='fo-cp-nm'>Rename your club</label>" +
+            "<span class='row'><input id='fo-cp-nm' type='text' maxlength='28' " +
+            "placeholder='" + E(name || "Your club's name") + "' autocomplete='off'>" +
+            "<button type='button' id='fo-cp-go'>Save</button></span>" +
+            "<i id='fo-cp-why2'></i></div>";
+          var wireRen = function () {
             var go2 = document.getElementById("fo-cp-go");
-            if (go2) go2.addEventListener("click", function () {
+            if (!go2) return;
+            go2.addEventListener("click", function () {
               var inp = document.getElementById("fo-cp-nm");
               var nn = inp ? String(inp.value || "").trim() : "";
               var why2 = document.getElementById("fo-cp-why2");
@@ -432,13 +433,14 @@
                 window.foRenderClubPage();
               });
             });
-          }
+          };
           if (host && localNm && name && localNm !== name) {
             host.className = "fo-cp-warn";
             host.innerHTML = "<b>Two names, one club.</b> The world calls you <u>" + E(name) +
               "</u>; this device calls you <u>" + E(localNm) + "</u>." +
               "<div class='fo-cp-warnb'><button type='button' id='fo-cp-push'>Christen it " + E(localNm) + "</button>" +
-              "<button type='button' class='ghost' id='fo-cp-pull'>Keep " + E(name) + "</button></div>";
+              "<button type='button' class='ghost' id='fo-cp-pull'>Keep " + E(name) + "</button></div>" + renBox;
+            wireRen();
             var push = document.getElementById("fo-cp-push");
             if (push) push.addEventListener("click", function () {
               push.disabled = true; push.textContent = "Telling the world…";
@@ -465,7 +467,8 @@
             });
           } else if (host) {
             host.className = "fo-cp-mineact";
-            host.innerHTML = "<a href='#/training'>The nets &rsaquo;</a><a href='#/academy'>The academy &rsaquo;</a><a href='#/orders'>The orders &rsaquo;</a><a href='#/squad'>Your squad &rsaquo;</a>";
+            host.innerHTML = "<a href='#/training'>The nets &rsaquo;</a><a href='#/academy'>The academy &rsaquo;</a><a href='#/orders'>The orders &rsaquo;</a><a href='#/squad'>Your squad &rsaquo;</a>" + renBox;
+            wireRen();
           }
         } catch (eMine) {}
       }
