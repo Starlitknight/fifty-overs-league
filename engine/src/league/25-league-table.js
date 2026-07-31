@@ -89,6 +89,9 @@
   window.__foSideArt = sideArt;
   window.addEventListener("hashchange", function () {
     setTimeout(function () { if (ART_FOR !== (location.hash || "")) sideArt(null); }, 80);
+    // a query-only change (division cross-link, nation hop) never re-routes
+    // the shell, so the page repaints itself
+    setTimeout(function () { if (onPage()) foRenderLeagueTablePage(); }, 40);
   });
 
   var TABS = [["table", "Standings"], ["fixtures", "Fixtures"], ["results", "Results"], ["stats", "Stats"]];
@@ -468,19 +471,30 @@
         };
         var colHead = "<div class='fo-lgx-cols'><span>#</span><span></span><span>Club</span><span>Form</span>" +
           "<span>P</span><span>W</span><span>L</span><span>NRR</span><span>Pts</span></div>";
-        var panelOf = function (list, d, lead) {
+        // EACH FLIGHT IS ITS OWN PAGE. #/league?d=1 and #/league?d=2 are two
+        // addresses per nation (&n= carries the country), each with a signpost
+        // to the other: a manager lands on his own division and walks up or
+        // down the pyramid with one tap.
+        var dQ = parseInt(qparam("d"), 10);
+        var showDiv = (dQ === 1 || dQ === 2) ? dQ : myDivNo;
+        var showRows = showDiv === myDivNo ? rows : rowsOther;
+        var otherNo = showDiv === 1 ? 2 : 1;
+        var cross = (rowsOther.length || showDiv !== myDivNo)
+          ? "<a class='fo-lgx-cross' href='#/league?n=" + encodeURIComponent(natId) + "&d=" + otherNo + "'>" +
+            (otherNo === 1 ? "&#8593;" : "&#8595;") + " " + divName(otherNo) + "</a>"
+          : "";
+        var panelOf = function (list, d) {
           return "<div class='fo-lgx-panel'>" +
-            "<div class='fo-lgx-ph'><h2>" + (rowsOther.length ? divName(d) : "The pennant race") + "</h2>" +
-            "<span class='fo-lgx-sub'>" + (lead
-              ? (playedRounds ? "Standings after round " + playedRounds : "Before a ball is bowled")
-              : divSub(d)) + "</span></div>" +
-            (lead && scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
+            "<div class='fo-lgx-ph'><h2>" + (rowsOther.length || dQ ? divName(d) : "The pennant race") + "</h2>" +
+            "<span class='fo-lgx-sub'>" +
+              (playedRounds ? "Standings after round " + playedRounds : "Before a ball is bowled") +
+              " &middot; " + divSub(d) + "</span>" + cross + "</div>" +
+            (scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
             (list.length ? colHead + divRows(list, d)
               : "<p class='fo-lgx-dim'>The " + E(natNm) + " table is on its way from the World Service&hellip;</p>") +
             "</div>";
         };
-        main = panelOf(rows, myDivNo, true) +
-          (rowsOther.length ? panelOf(rowsOther, otherDivNo, false) : "");
+        main = panelOf(showRows, showDiv);
 
         // NEXT ROUND MEANS NEXT. Once the day's play is finished this card was
         // still offering the round that had just ended as the one to come, at
@@ -638,6 +652,8 @@
     "html body #page .fo-lgx-row.q .rk{color:#177A57}",
     "html body #page .fo-lgx-row.rel .rk{color:#B3372B}",
     "html body #page .fo-lgx-row.rel{box-shadow:inset 3px 0 0 rgba(179,55,43,.55)}",
+    "html body #page .fo-lgx-cross{display:inline-block;margin-top:6px;padding:5px 12px;border:1px solid #d8d2c4;border-radius:999px;font-size:12px;font-weight:600;color:#1d1c19;text-decoration:none;background:#faf7ef}",
+    "html body #page .fo-lgx-cross:active{background:#f0ead9}",
     "html body #page .fo-lgx-row.mine{background:rgba(201,85,50,.06);border-bottom-color:transparent;box-shadow:inset 3px 0 0 var(--nac)}",
     "html body #page .fo-lgx-row .rk{font:700 12px/1 Oswald,sans-serif;color:rgba(20,28,40,.45);font-variant-numeric:tabular-nums}",
     "html body #page .fo-lgx-row .cb{display:flex;align-items:center;justify-content:center}",

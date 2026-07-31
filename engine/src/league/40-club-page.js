@@ -399,6 +399,40 @@
         try {
           var localNm = ""; try { localNm = (userTeam() || {}).name || ""; } catch (eU) {}
           var host = document.getElementById("fo-cp-mine");
+          // THE FOUNDING RIGHT: a manager can always rename their club, not
+          // only when two names disagree. An inline input, because a browser
+          // prompt() is silently refused on some phones.
+          if (host && (!localNm || !name || localNm === name)) {
+            host.className = "fo-cp-ren";
+            host.innerHTML = "<label for='fo-cp-nm'>Rename your club</label>" +
+              "<span class='row'><input id='fo-cp-nm' type='text' maxlength='28' " +
+              "placeholder='" + E(name || "Your club's name") + "' autocomplete='off'>" +
+              "<button type='button' id='fo-cp-go'>Save</button></span>" +
+              "<i id='fo-cp-why2'></i>";
+            var go2 = document.getElementById("fo-cp-go");
+            if (go2) go2.addEventListener("click", function () {
+              var inp = document.getElementById("fo-cp-nm");
+              var nn = inp ? String(inp.value || "").trim() : "";
+              var why2 = document.getElementById("fo-cp-why2");
+              if (!nn) { if (why2) why2.textContent = "Type the new name first."; return; }
+              go2.disabled = true; go2.textContent = "Telling the world…";
+              if (!window.__foWorldRename) {
+                go2.disabled = false; go2.textContent = "Save";
+                if (why2) why2.textContent = "Sign in first - the world is the naming authority.";
+                return;
+              }
+              window.__foWorldRename(nn, function (ok, err) {
+                if (!ok) {
+                  go2.disabled = false; go2.textContent = "Save";
+                  if (why2) why2.textContent = String(err || "the world would not take that name");
+                  return;
+                }
+                try { var t2 = userTeam(); if (t2) { t2.name = nn; if (typeof saveGame === "function") saveGame(false); } } catch (eT2) {}
+                delete CLUB_CACHE[cid + ":" + slot];
+                window.foRenderClubPage();
+              });
+            });
+          }
           if (host && localNm && name && localNm !== name) {
             host.className = "fo-cp-warn";
             host.innerHTML = "<b>Two names, one club.</b> The world calls you <u>" + E(name) +
@@ -536,6 +570,12 @@
       ".fo-cp-dim{font:italic 420 13px/1.6 'Fraunces',Georgia,serif;color:rgba(12,27,51,.55);margin:6px 0 0}",
       ".fo-cp-dim.foot{margin-top:14px;padding-top:12px;border-top:1px solid rgba(12,27,51,.08)}",
       ".fo-cp-warn{background:#FFF6E8;border:1px solid rgba(200,84,47,.35);border-radius:12px;padding:12px 14px;margin-bottom:12px;font:500 12.5px/1.6 Inter,sans-serif;color:var(--navy)}",
+      ".fo-cp-ren{background:#FBF9F2;border:1px solid #E4DFD2;border-radius:12px;padding:12px 14px;margin-bottom:12px;font:500 12.5px/1.6 Inter,sans-serif;color:var(--navy)}",
+      ".fo-cp-ren label{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8a6d3b;margin-bottom:6px}",
+      ".fo-cp-ren .row{display:flex;gap:8px}",
+      ".fo-cp-ren input{flex:1;min-width:0;padding:9px 12px;border:1px solid #d5cfc0;border-radius:9px;font:500 14px/1.2 Inter,sans-serif;background:#fff}",
+      ".fo-cp-ren button{padding:9px 16px;border:0;border-radius:9px;background:var(--nac,#C85532);color:#fff;font:600 13px/1.2 Inter,sans-serif}",
+      ".fo-cp-ren i{display:block;margin-top:6px;font-style:normal;font-size:12px;color:#B3372B}",
       ".fo-cp-warn u{text-decoration:none;font-weight:700}",
       ".fo-cp-warnb{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}",
       "html body #page .fo-cp-warnb button{font:700 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#FFFDF7 !important;background:linear-gradient(180deg,#E8894A,#C8542F) !important;border:0;border-radius:10px;padding:11px 14px;cursor:pointer}",
