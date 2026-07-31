@@ -88,9 +88,55 @@ export function countryConfigs(host) {
 // moves, so position-stability holds inside a generation (an expansion founds
 // a country as it would have been on day one) and a redeal genuinely redeals.
 // Generation 1 spells 'world1', the seed every club alive today was dealt from.
+//
+// THE LEAGUE TABLE IS DESIGNED, NOT DEALT. The generator's raw output varies
+// hugely with the seed - the old world's strongest club sat 90% above its
+// weakest, PURE LUCK, and at that spread the "match" between them was a 99.8%
+// procession. Real one-day cricket never produces a favourite past ~88%, and
+// a league drawn from one talent pool spans nothing like 90%. So every squad
+// is CALIBRATED after it is dealt: scaled onto a deliberate ladder of club
+// strengths, anchored at the old world's median so wages and prices stay
+// where they were. WHO the men are - names, roles, archetypes, who bowls,
+// who keeps - is still entirely the deal; the ladder only says how good each
+// CLUB is, which is a design decision someone was always making (previously:
+// the dice).
+//
+// The ladder itself is the PLANET'S OWN (27-living-planet.js): every club's
+// standing is already designed there, boss 1.2 down to 0.8, and the client
+// shows those standings on every dossier - so the umpire calibrates to the
+// same table the phones display. The fallback below only catches a club the
+// planet forgot to grade, so a missing row degrades to "ordinary" rather
+// than to luck.
+export const STR_FALLBACK = 1;
+export const BASE_XI = 36000;                 // the old world's median XI rating
+
+const xiOf = sq => {
+  const best = sq.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 11);
+  return best.reduce((s, p) => s + (p.rating || 0), 0) / Math.max(1, best.length);
+};
+
+// scale every man's skills until the XI lands on target; ratings and wages are
+// re-derived by the engine's own mapping, so nothing is hand-set
+function calibrate(host, squad, target) {
+  let men = squad;
+  for (let i = 0; i < 4; i++) {
+    const have = xiOf(men);
+    const f = target / Math.max(1, have);
+    if (Math.abs(f - 1) < 0.004) break;
+    men.forEach(p => {
+      for (const k in (p.skills || {}))
+        p.skills[k] = Math.max(2, Math.min(99, Math.round(p.skills[k] * f)));
+    });
+    men = host.derive(men);
+  }
+  return men;
+}
+
 export function squadFor(host, cfg, club, gen = 1) {
-  return host.genSquad('world' + ((gen | 0) || 1) + '|' + cfg.id + '|' + club.slot, cfg.nat,
-    club.arch || cfg.arch, club.boss ? cfg.capt : 'general', club.str || 1);
+  const raw = host.genSquad('world' + ((gen | 0) || 1) + '|' + cfg.id + '|' + club.slot, cfg.nat,
+    club.arch || cfg.arch, club.boss ? cfg.capt : 'general');
+  const str = club.str || STR_FALLBACK;
+  return calibrate(host, raw, BASE_XI * str);
 }
 
 // what generation this world is dealing from; 1 for a world founded before the

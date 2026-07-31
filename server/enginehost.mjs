@@ -5,7 +5,10 @@
 import vm from 'node:vm';
 import { makeEngine } from '../test/engine-vm.mjs';
 
-export const ENGINE_VERSION = 'v1';   // bumps ONLY with a new calibration golden
+// bumps ONLY with a new calibration golden. v2: diminishing returns on skill
+// far from average (skill_soft) + rpo recalibration + designed league ladder -
+// the change that capped favourites near reality's ~88% instead of 99.8%.
+export const ENGINE_VERSION = 'v2';
 
 export function makeHost() {
   const eng = makeEngine();

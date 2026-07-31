@@ -53,17 +53,28 @@ test("the away club's sheet is read too - the resolver has no home team", () => 
 });
 
 test("a batter's own instruction reaches his deliveries", () => {
-  const opener = A.players[0].name;
+  // The man told to launch must be a man who actually BATS. This used to
+  // instruct A.players[0] and assume he opened - but the batting order is
+  // form-adjusted per seed, and in some innings he walks in at seven and
+  // faces a dozen balls, or the top order bats through and he never comes
+  // in at all. An instruction to a man in the pavilion is a no-op, and the
+  // test was reading that no-op as a broken order path. So each seed asks
+  // the base innings who faced the most deliveries, and instructs HIM.
   const plan = { tossDecision: 'bat', phaseIntent: { pp: 0, mid: 0, death: 1 } };
   let diffs = 0;
   for (const seed of SEEDS) {
     const base = eng.sim(A, B, 'balanced', 'Sunny', seed, { Ashfield: plan });
+    assert.ok(base);
+    const faced = (base.innings[0].bat || [])
+      .map(x => ({ name: (x.p || x).name, b: x.b || 0 }))
+      .sort((p, q) => q.b - p.b)[0];
+    assert.ok(faced && faced.b >= 20, 'somebody faced a real innings');
     const told = eng.sim(A, B, 'balanced', 'Sunny', seed,
-      { Ashfield: { tossDecision: 'bat', phaseIntent: plan.phaseIntent, manBat: { [opener]: 2 } } });
-    assert.ok(base && told);
+      { Ashfield: { tossDecision: 'bat', phaseIntent: plan.phaseIntent, manBat: { [faced.name]: 2 } } });
+    assert.ok(told);
     if (base.innings[0].runs !== told.innings[0].runs) diffs++;
   }
-  assert.ok(diffs >= SEEDS.length - 1, 'telling ' + opener + ' to launch changed almost nothing');
+  assert.ok(diffs >= SEEDS.length - 1, 'telling the man at the crease to launch changed almost nothing');
 });
 
 test("a bowler's own field reaches his overs", () => {
