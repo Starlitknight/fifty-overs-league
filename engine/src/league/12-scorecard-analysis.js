@@ -2640,6 +2640,11 @@
       ".fo-hg2 .hg-id b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(34px,5.4vw,62px);line-height:.98;letter-spacing:1px;text-transform:uppercase;margin:6px 0 8px}" +
       ".fo-hg2 .hg-id .hg-sub{display:block;font-size:13px;color:rgba(255,255,255,.85)}" +
       ".fo-hg2 .hg-id .hg-form{display:flex;gap:5px;align-items:center;margin-top:9px}" +
+      ".fo-hg2 .hg-id .hg-ren{margin-top:10px;padding:6px 12px;border:1px solid rgba(255,255,255,.45);border-radius:999px;background:rgba(10,18,32,.45);color:#fff;font:600 11px/1 Inter,sans-serif;letter-spacing:.06em}" +
+      ".fo-hg2 .hg-id .hg-renrow{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px;max-width:340px}" +
+      ".fo-hg2 .hg-id .hg-renrow input{flex:1;min-width:150px;padding:9px 12px;border:0;border-radius:9px;font:500 14px/1.2 Inter,sans-serif}" +
+      ".fo-hg2 .hg-id .hg-renrow button{padding:9px 16px;border:0;border-radius:9px;background:#C85532;color:#fff;font:600 13px/1.2 Inter,sans-serif}" +
+      ".fo-hg2 .hg-id .hg-renrow i{flex-basis:100%;font-style:normal;font-size:12px;color:#FFB199}" +
       ".fo-hg2 .hg-id .hg-form u{text-decoration:none;font-family:Oswald,sans-serif;font-size:9px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,.6);margin-right:3px}" +
       ".fo-hg2 .hg-id .hg-form em{font-style:normal;width:21px;height:21px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800}" +
       ".fo-hg2 .hg-id .hg-form em.hg-w{background:#2E7A3C;color:#fff}" +
@@ -5335,6 +5340,15 @@
             "<button type='button' id='fo-hm-ren'>Christen the club " + E(localNm) + "</button>" +
             "<button type='button' class='ghost' id='fo-hm-keep'>Keep " + E(wName) + "</button></span>"
           : "") +
+        // THE FOUNDING RIGHT, on the front door: rename lives beside the name
+        // itself, an inline input (a browser prompt() is silently refused on
+        // some phones, and the old control only appeared when two names
+        // disagreed - after a reset they agree, so it appeared nowhere).
+        "<button type='button' class='hg-ren' id='fo-hm-rn2'>&#9998; Rename club</button>" +
+        "<span class='hg-renrow' id='fo-hm-rnrow' hidden>" +
+        "<input id='fo-hm-rni' type='text' maxlength='28' placeholder='" + E(heroName) + "' autocomplete='off'>" +
+        "<button type='button' id='fo-hm-rngo'>Save</button>" +
+        "<i id='fo-hm-rnwhy'></i></span>" +
         "</div>" +
         "<div class='hg-bar'>" +
         btn("fo-hm-nx", "NEXT MATCH \u25B8", "PLAY \u25B8") +
@@ -5365,6 +5379,33 @@
               } catch (eW9) {}
               return;
             }
+            page.__foHomeSig = null; foRenderHome();
+          });
+        });
+        // the always-there rename: reveal the input, save through the world
+        var rn2 = page.querySelector("#fo-hm-rn2"), rnRow = page.querySelector("#fo-hm-rnrow");
+        if (rn2 && rnRow) rn2.addEventListener("click", function () {
+          rnRow.hidden = !rnRow.hidden;
+          if (!rnRow.hidden) { try { page.querySelector("#fo-hm-rni").focus(); } catch (eF2) {} }
+        });
+        var rnGo = page.querySelector("#fo-hm-rngo");
+        if (rnGo) rnGo.addEventListener("click", function () {
+          var inp = page.querySelector("#fo-hm-rni"), why = page.querySelector("#fo-hm-rnwhy");
+          var nn = inp ? String(inp.value || "").trim() : "";
+          if (!nn) { if (why) why.textContent = "Type the new name first."; return; }
+          rnGo.disabled = true; rnGo.textContent = "Saving…";
+          if (!window.__foWorldRename) {
+            rnGo.disabled = false; rnGo.textContent = "Save";
+            if (why) why.textContent = "Sign in first - the world is the naming authority.";
+            return;
+          }
+          window.__foWorldRename(nn, function (ok, err) {
+            if (!ok) {
+              rnGo.disabled = false; rnGo.textContent = "Save";
+              if (why) why.textContent = String(err || "the world would not take that name");
+              return;
+            }
+            try { var tR = userTeam(); if (tR) { tR.name = nn; if (typeof saveGame === "function") saveGame(false); } } catch (eTR) {}
             page.__foHomeSig = null; foRenderHome();
           });
         });
