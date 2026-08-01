@@ -10033,7 +10033,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260801-1226-871fb8";
+  var FO_BUILD = "20260801-1236-a75b8f";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -33647,23 +33647,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return { k: h.k, tier: h.tier, nm: h.nm, sub: h.sub, done: !("goal" in r), at: r.at || null, note: r.note || "", prog: r.prog || 0, goal: r.goal || 0 };
     });
   }
-  // the race: who reached each honour first, league-wide
-  function firsts() {
-    var T = sweep(); var out = {};
-    HONOURS.forEach(function (h) {
-      var best = null;
-      Object.keys(T).forEach(function (nm) {
-        var r = h.ev(T[nm]) || {};
-        if ("goal" in r) return;
-        var at = r.at || { s: 999, r: 999, ix: 1e9 };
-        var key = (at.s || 999) * 100000 + (at.r || 999) * 100 + ((at.ix || 0) % 100);
-        if (!best || key < best.key) best = { nm: nm, at: r.at, key: key };
-      });
-      if (best) out[h.k] = best;
-    });
-    return out;
-  }
-
   // ---- the chairman pays for plaques ----------------------------------------
   function settleBonuses() {
     try {
@@ -33715,7 +33698,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   // ---- the page --------------------------------------------------------------
-  var viewClub = null;
+  // A PAVILION WALL BELONGS TO ONE CLUB. This page carried a row of buttons -
+  // every club in the league - and a league-wide race panel naming whoever
+  // reached each honour first, so your own wall was one tab among ten. It is
+  // your board now, and only yours.
   function foRenderHonoursPage() {
     try {
       if (!ready()) return;
@@ -33727,39 +33713,26 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       settleBonuses();
       var artBase = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
       var hbBg = "<img class='fo-hb-bg' src='" + artBase + "home/" + (window.innerWidth < 760 ? "hgm-clubroom" : "hgd-heart-of-club") + ".webp' alt=''><div class='fo-hb-veil'></div>";
-      var club = q("c") || viewClub || me.name;
-      if (!GD.teams.some(function (t) { return t.name === club; })) club = me.name;
-      viewClub = club;
-      var mine = club === me.name;
+      var club = me.name, mine = true;
       var board = boardFor(club);
       var done = board.filter(function (p) { return p.done; });
-      var F = firsts();
       var latestS = App.seasonNo || 1, latestR = 0;
       try { latestR = App.season ? App.season.round : 0; } catch (e2) {}
 
       var when = function (at) { return at ? "S" + at.s + " &middot; R" + at.r : "all-time"; };
       var plaques = board.map(function (p) {
-        var first = F[p.k];
-        var firstTag = first ? (first.nm === club ? "<u class='fo-hb-first mine'>League first</u>" :
-          "<u class='fo-hb-first'>First: " + E(first.nm) + "</u>") : "";
         if (p.done) {
           var fresh = p.at && p.at.s === latestS && p.at.r >= latestR && mine;
           return "<div class='fo-hb-plq on" + (fresh ? " new" : "") + " t-" + p.tier + "'>" +
             "<i>" + TIER[p.tier].nm + "</i><b>" + E(p.nm) + "</b>" +
-            "<span>" + (p.note || E(p.sub)) + "</span><em>" + when(p.at) + "</em>" + firstTag + "</div>";
+            "<span>" + (p.note || E(p.sub)) + "</span><em>" + when(p.at) + "</em></div>";
         }
         var pct = p.goal > 1 ? Math.max(3, Math.min(97, Math.round(100 * p.prog / p.goal))) : 0;
         return "<div class='fo-hb-plq t-" + p.tier + "'>" +
           "<i>" + TIER[p.tier].nm + "</i><b>" + E(p.nm) + "</b>" +
           "<span>" + E(p.sub) + "</span>" +
           (p.goal > 1 ? "<div class='fo-hb-m'><u style='width:" + pct + "%'></u></div>" : "") +
-          "<em class='pend'>" + p.note + "</em>" + firstTag + "</div>";
-      }).join("");
-
-      var chips = GD.teams.map(function (t) {
-        var n = boardFor(t.name).filter(function (p) { return p.done; }).length;
-        return "<button class='fo-hb-chip" + (t.name === club ? " on" : "") + "' data-club='" + E(t.name) + "'>" +
-          E(t.name) + "<u>" + n + "</u></button>";
+          "<em class='pend'>" + p.note + "</em></div>";
       }).join("");
 
       var charter = charterFor(club);
@@ -33777,41 +33750,21 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           "<em class='pend'>" + p.note + "</em></div>";
       }).join("");
 
-      var race = HONOURS.map(function (h) {
-        var f = F[h.k];
-        return "<div class='fo-hb-race'><b>" + E(h.nm) + "</b>" +
-          (f ? "<span class='" + (f.nm === me.name ? "mine" : "") + "'>" + E(f.nm) + "</span><i>" + when(f.at) + "</i>"
-             : "<span class='open'>unclaimed</span><i>the race is on</i>") + "</div>";
-      }).join("");
-
       page.innerHTML = hbBg +
         "<div class='fo-hb'>" +
         "<div class='fo-hb-mast'>" +
         "<div class='fo-hb-kick'>" + E(club) + " &middot; the pavilion wall</div>" +
         "<h1>The Honours Board</h1>" +
-        "<p>" + (mine
-          ? "Thirteen honours, gold leaf on oak. The chairman pays for every new plaque" + (bankedTotal() ? " - " + money(bankedTotal()) + " banked so far" : "") + ", and the league remembers who got there first."
-          : "Reading " + E(club) + "&rsquo;s board. Every club chases the same thirteen honours; the league remembers who got there first.") + "</p>" +
-        "<div class='fo-hb-tally'><b>" + done.length + "</b> of " + board.length + " plaques</div>" +
+        "<div class='fo-hb-tally'><b>" + done.length + "</b> of " + board.length + " plaques" +
+          (bankedTotal() ? " &middot; " + money(bankedTotal()) + " banked" : "") + "</div>" +
         "</div>" +
-        "<div class='fo-hb-chips'>" + chips + "</div>" +
-        "<div class='fo-hb-shead'><b>The " + E(club) + " charter</b><span>six pursuits of their own - no other club has this page</span></div>" +
+        "<div class='fo-hb-shead'><b>The " + E(club) + " charter</b><span>" + chDone + " of 6 sealed</span></div>" +
         "<div class='fo-hb-chgrid'>" + chRows + "</div>" +
-        "<div class='fo-hb-shead'><b>The league board</b><span>the same thirteen honours for every club - " + chDone + " of 6 charter seals, " + done.length + " of " + board.length + " plaques</span></div>" +
+        "<div class='fo-hb-shead'><b>The board</b><span>" + done.length + " of " + board.length + " plaques</span></div>" +
         "<div class='fo-hb-oak'><div class='fo-hb-grid'>" + plaques + "</div></div>" +
-        "<section class='fo-hb-sec'><div class='fo-hb-k'>First on the board</div>" +
-        "<div class='fo-hb-races'>" + race + "</div></section>" +
         "<div class='fo-hb-foot'><a href='#/league'>&#8592; My league</a><a href='#/squad'>The squad &rsaquo;</a></div>" +
         "</div>";
 
-      page.querySelectorAll(".fo-hb-chip").forEach(function (b) {
-        b.addEventListener("click", function () {
-          var nm2 = b.getAttribute("data-club");
-          viewClub = nm2;
-          try { location.hash = "#/milestones?c=" + encodeURIComponent(nm2); } catch (eH) {}
-          foRenderHonoursPage();
-        });
-      });
     } catch (e) { try { console.warn("foRenderHonoursPage", e); } catch (e2) {} }
   }
 
@@ -33846,9 +33799,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     // the oak itself: deep wood, a gold pinstripe, plaques screwed to it
     "html body #page .fo-hb-oak{background:linear-gradient(168deg,#5A4326,#43301A 55%,#33240F);border:1px solid rgba(230,190,110,.35);outline:1px solid rgba(230,190,110,.28);outline-offset:-8px;border-radius:16px;padding:16px;box-shadow:0 26px 60px rgba(10,7,3,.55),inset 0 1px 0 rgba(255,235,190,.18);margin-top:12px}",
     "body.fo-hbx-on #page .fo-hb-plq{background:rgba(250,245,232,.94)}",
-    "body.fo-hbx-on #page .fo-hb-chips{padding-top:10px}",
-    "body.fo-hbx-on #page button.fo-hb-chip{box-shadow:0 6px 16px rgba(0,0,0,.3)}",
-    "body.fo-hbx-on #page .fo-hb-sec{background:rgba(253,252,249,.94);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 14px 34px rgba(10,7,3,.4)}",
     "body.fo-hbx-on #page .fo-hb-foot a{background:rgba(253,252,249,.92);box-shadow:0 8px 20px rgba(10,7,3,.35)}",
     "html body #page .fo-hb{max-width:960px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
     "html body #page .fo-hb-mast{background:linear-gradient(150deg,#FFFEFB,#F6F1E4 70%,#F0E9D6) !important;border:1px solid rgba(20,28,40,.1);border-radius:22px;padding:28px 30px 24px;box-shadow:0 22px 50px rgba(30,38,52,.12);position:relative;overflow:hidden}",
@@ -33859,11 +33809,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body #page .fo-hb-tally{margin-top:12px;font:600 12px/1 Inter,sans-serif;color:#141C28;background:#FFFEFC;border:1px solid rgba(176,132,9,.4);border-radius:999px;display:inline-block;padding:8px 15px}",
     "html body #page .fo-hb-tally b{color:#B08409}",
     // club switcher
-    "html body #page .fo-hb-chips{display:flex;gap:7px;overflow-x:auto;padding:14px 2px 4px;scrollbar-width:thin}",
-    "html body #page button.fo-hb-chip{flex:none;display:inline-flex;align-items:center;gap:7px;background:#FFFEFC !important;border:1px solid rgba(20,28,40,.14) !important;border-radius:999px !important;padding:8px 13px !important;font:600 11.5px/1 Inter,sans-serif !important;color:rgba(20,28,40,.72) !important;cursor:pointer}",
-    "html body #page button.fo-hb-chip u{text-decoration:none;font-weight:800;font-size:10px;background:rgba(176,132,9,.14);color:#8A6A1F;border-radius:999px;padding:3px 7px}",
-    "html body #page button.fo-hb-chip.on{background:#C95532 !important;border-color:#C95532 !important;color:#FFFEFC !important}",
-    "html body #page button.fo-hb-chip.on u{background:rgba(255,255,255,.22);color:#FFFEFC}",
     // plaques
     "html body #page .fo-hb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:11px;margin-top:12px}",
     "html body #page .fo-hb-plq{position:relative;border-radius:14px;padding:14px 15px 13px;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);box-shadow:0 5px 16px rgba(30,38,52,.06)}",
@@ -33882,18 +33827,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "@media (prefers-reduced-motion:no-preference){html body #page .fo-hb-plq.new:after{content:'';position:absolute;inset:0;border-radius:14px;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.75) 47%,transparent 62%);background-size:260% 100%;animation:foHbShine 2.4s ease .4s 2}@keyframes foHbShine{from{background-position:130% 0}to{background-position:-130% 0}}}",
     "html body #page .fo-hb-m{height:6px;border-radius:5px;background:rgba(20,28,40,.09);overflow:hidden;margin-top:9px}",
     "html body #page .fo-hb-m u{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#26436B,#3E6DB2)}",
-    "html body #page .fo-hb-first{display:inline-block;text-decoration:none;font:600 9px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;margin-top:8px;color:rgba(20,28,40,.45)}",
-    "html body #page .fo-hb-first.mine{color:#B44A22}",
     // the race
-    "html body #page .fo-hb-sec{background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:18px;padding:18px 20px;margin-top:14px;box-shadow:0 6px 18px rgba(30,38,52,.07)}",
     "html body #page .fo-hb-say{font:italic 400 12.5px/1.5 Georgia,serif;color:rgba(20,28,40,.6);margin:8px 0 12px}",
-    "html body #page .fo-hb-races{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:5px 22px}",
-    "html body #page .fo-hb-race{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:baseline;border-bottom:1px solid rgba(20,28,40,.07);padding:7px 0}",
-    "html body #page .fo-hb-race b{font:600 12px/1.3 Inter,sans-serif;color:#141C28}",
-    "html body #page .fo-hb-race span{font:600 11.5px/1.3 Inter,sans-serif;color:rgba(20,28,40,.7)}",
-    "html body #page .fo-hb-race span.mine{color:#B44A22}",
-    "html body #page .fo-hb-race span.open{color:rgba(20,28,40,.4);font-style:italic;font-weight:400}",
-    "html body #page .fo-hb-race i{font:400 10px/1.3 Inter,sans-serif;color:rgba(20,28,40,.42);font-style:normal;font-variant-numeric:tabular-nums}",
     "html body #page .fo-hb-foot{display:flex;gap:10px;justify-content:space-between;margin-top:16px;flex-wrap:wrap}",
     "html body #page .fo-hb-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
     "html body #page .fo-hb-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5);text-decoration:none}",
@@ -34763,10 +34698,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           }).join("");
         };
         var divName = function (d) { return d === 1 ? "Division One" : "Division Two"; };
-        var divSub = function (d) {
-          return d === 1 ? "Top four make finals night &middot; bottom two go down"
-            : "Top four make finals night &middot; champions and shield winners go up";
-        };
+        var divSub = function () { return ""; };
         var colHead = "<div class='fo-lgx-cols'><span>#</span><span></span><span>Club</span><span>Form</span>" +
           "<span>P</span><span>W</span><span>L</span><span>NRR</span><span>Pts</span></div>";
         // EACH FLIGHT IS ITS OWN PAGE. #/league?d=1 and #/league?d=2 are two
@@ -34785,7 +34717,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           return "<div class='fo-lgx-panel'>" +
             "<div class='fo-lgx-ph'><h2>" + (rowsOther.length || dQ ? divName(d) : "The pennant race") + "</h2>" +
             "<span class='fo-lgx-sub'>" +
-              (playedRounds ? "Standings after round " + playedRounds : "Before a ball is bowled") +
+              (playedRounds ? "Standings after round " + playedRounds : "") +
               " &middot; " + divSub(d) + "</span>" + cross + "</div>" +
             (scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
             (list.length ? colHead + divRows(list, d)
@@ -34972,7 +34904,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body #page .fo-lgx-row .pt{text-align:right;font:700 15px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums;color:#141C28}",
 
     // ---- fixtures and results ---------------------------------------------
-    "html body #page .fo-lgx-fx,html body #page .fo-lgx-res{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:7px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:12px;padding:11px 12px;margin-bottom:6px;box-shadow:0 4px 14px rgba(30,38,52,.05)}",
+    "html body #page .fo-lgx-fx,html body #page .fo-lgx-res{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:7px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:12px;padding:11px 12px;margin-bottom:6px;box-shadow:0 4px 14px rgba(30,38,52,.05)}",
     "html body #page .fo-lgx-fx.mine,html body #page .fo-lgx-res.mine{border-color:rgba(201,85,50,.42);box-shadow:0 6px 18px rgba(201,85,50,.09)}",
     // a fixture that opens its preview says so the way the results rows do
     "html body #page .fo-lgx-fx.open{text-decoration:none;color:inherit;cursor:pointer;transition:border-color .16s ease,transform .16s ease,box-shadow .16s ease}",
@@ -34986,7 +34918,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body #page a.fo-lgx-res.open:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(30,38,52,.11)}",
     "html body #page a.fo-lgx-res.open:focus-visible{outline:2px solid var(--nac);outline-offset:2px}",
     "html body #page .fo-lgx-go{text-decoration:none;margin-left:6px;opacity:.5;font-weight:700}",
-    "html body #page .fo-lgx-yours{grid-column:1/-1;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--nac)}",
+    "html body #page .fo-lgx-fx.mine{margin-top:9px}",
+    "html body #page .fo-lgx-yours{position:absolute;left:11px;top:0;transform:translateY(-50%);z-index:2;background:#FFF6F1;border:1px solid rgba(201,85,50,.42);border-radius:999px;padding:3px 8px;font:700 8px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--nac)}",
     "html body #page .fo-lgx-side{display:flex;align-items:center;gap:7px;min-width:0}",
     "html body #page .fo-lgx-side.a{justify-content:flex-end}",
     "html body #page .fo-lgx-side b{font:600 12.5px/1.25 Inter,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
@@ -41788,10 +41721,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   // ---- one ledger line: figure, name, and what moves it ----------------------
-  function line(nm, v, why) {
+  function line(nm, v) {
     var zero = !Math.round(Number(v) || 0);
     return "<div class='fo-fin-l" + (zero ? " zero" : "") + "'><b>" + E(nm) + "</b>" +
-      "<u>" + M(v) + "</u><em>" + E(why) + "</em></div>";
+      "<u>" + M(v) + "</u></div>";
   }
   function stat(nm, val) {
     return "<div class='fo-fin-stat'><span>" + E(nm) + "</span><b>" + val + "</b></div>";
@@ -41852,21 +41785,20 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     // ---- the two ledgers -------------------------------------------------
     html += "<div class='fo-fin-cols'>" +
       "<section class='fo-fin-card fo-fin-in'><h2>Money in</h2>" +
-      line("The gate", inGate, "Your two thirds of every home crowd, at " + M(f.ticket || 26) + " a seat") +
-      line("Away cut", inAway, "Your third of the gate at every ground you visit") +
-      line("Sponsor", inSpon, "Paid by the round, and worth more the higher you finish") +
-      line("International fees", inComp, "What the board pays when your country takes a man" +
-        (f.capsAway ? " - " + f.capsAway + " call-up" + (f.capsAway === 1 ? "" : "s") + " so far" : "")) +
-      line("Transfers in", inFees, "Fees banked for men sold" + (f.sold ? " - " + f.sold + " gone" : "")) +
+      line("The gate", inGate) +
+      line("Away cut", inAway) +
+      line("Sponsor", inSpon) +
+      line("International fees", inComp) +
+      line("Transfers in", inFees) +
       "<div class='fo-fin-tot'><span>Taken</span><b>" + M(totIn) + "</b></div></section>" +
 
       "<section class='fo-fin-card fo-fin-out'><h2>Money out</h2>" +
-      line("Wages", outWage, "The bill as it stood each round - " + M(f.wageBill || 0) + " a round now") +
-      line("Upkeep", outUp, "The ground and the academy, by the round") +
-      line("Transfers out", outFees, "Fees paid for men signed" + (f.bought ? " - " + f.bought + " in" : "")) +
-      line("Scouting", outScout, "What you spent looking at other clubs' players") +
-      line("Building", outAcad + outSeats, "Stands and academy levels - capital, paid once") +
-      line("Interest", outInt, "3% a round on an overdraft, and only on an overdraft") +
+      line("Wages", outWage) +
+      line("Upkeep", outUp) +
+      line("Transfers out", outFees) +
+      line("Scouting", outScout) +
+      line("Building", outAcad + outSeats) +
+      line("Interest", outInt) +
       "<div class='fo-fin-tot'><span>Paid</span><b>" + M(totOut) + "</b></div></section>" +
       "</div>";
 
@@ -43610,7 +43542,70 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-pm-billside,.fo-pm-billside.a{align-items:center;text-align:center}",
       ".fo-pm-billside b{font-size:clamp(24px,7.4vw,36px);word-break:normal;overflow-wrap:anywhere}",
       ".fo-pm-v{width:38px;height:38px}.fo-pm-v span{font-size:17px}}",
-      "@media(prefers-reduced-motion:reduce){.fo-pm-h2h,.fo-pm-cta,.fo-pm-back{transition:none}}"
+      "@media(prefers-reduced-motion:reduce){.fo-pm-h2h,.fo-pm-cta,.fo-pm-back{transition:none}}",
+
+      // ---- ONE SCREEN ON A PHONE -------------------------------------------
+      // A preview you have to scroll is a preview you read in pieces. On a
+      // phone the whole card sits inside the viewport: the billing side by
+      // side rather than stacked three-deep, one line of clock and ground, the
+      // odds, both sides' numbers, and the way in. The ground photograph is
+      // not shrunk or cropped to make room - on a screen this size it is set
+      // aside whole, and it is waiting at full width the moment there is room
+      // for it.
+      "@media(max-width:760px) and (orientation:portrait){",
+      ".fo-pm{min-height:0}",
+      ".fo-pm-plate{display:none}",
+      ".fo-pm-hero{padding-bottom:0}",
+      ".fo-pm-in{padding:0 13px}",
+      ".fo-pm-mast{font-size:8px;letter-spacing:.24em;padding-top:10px}",
+      ".fo-pm-folio{font-size:8.5px;letter-spacing:.16em;margin-top:3px;padding-bottom:7px}",
+      // the billing, back on one line and sized to the width it is given
+      ".fo-pm-bill{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);justify-items:stretch;gap:7px;margin:9px 0 0;text-align:left}",
+      ".fo-pm-billside{align-items:flex-end;text-align:right;gap:4px}",
+      ".fo-pm-billside.a{align-items:flex-start;text-align:left}",
+      ".fo-pm-billside b{font-size:clamp(13px,4.2vw,19px);line-height:1;word-break:normal;overflow-wrap:anywhere}",
+      ".fo-pm-billside i{font-size:7.5px;letter-spacing:.18em}",
+      ".fo-pm-sh.big{width:30px;height:30px;border-radius:7px;font-size:11px}",
+      ".fo-pm-v{width:28px;height:28px}.fo-pm-v span{font-size:13px}",
+      // the clock and the ground, one band
+      ".fo-pm-when{grid-template-columns:auto minmax(0,1fr);gap:10px;margin-top:9px;padding-top:9px}",
+      ".fo-pm-count{padding:7px 10px;gap:1px;min-width:0}",
+      ".fo-pm-count .big{font-size:15px}.fo-pm-count .sub{font-size:7.5px;letter-spacing:.14em}",
+      ".fo-pm-where{gap:6px}",
+      ".fo-pm-where i{font-size:7.5px;letter-spacing:.14em}",
+      ".fo-pm-where b{font-size:11px;line-height:1.25}",
+      // the body, tightened
+      ".fo-pm-body{padding-top:9px;padding-bottom:14px}",
+      ".fo-pm-sec{margin-bottom:9px}",
+      ".fo-pm-rule{margin-bottom:6px}",
+      ".fo-pm-rule span{font-size:7.5px;letter-spacing:.18em}",
+      ".fo-pm-wp{padding:9px 10px;border-radius:10px}",
+      ".fo-pm-wptop{margin-bottom:6px;gap:8px}",
+      ".fo-pm-wph b,.fo-pm-wpa b{font-size:17px}",
+      ".fo-pm-wph u,.fo-pm-wpa u{font-size:8px}",
+      ".fo-pm-sh{width:22px;height:22px;border-radius:5px;font-size:9px}",
+      ".fo-pm-wpnote{margin-top:5px;font-size:10px;line-height:1.35}",
+      ".fo-pm-clubs,.fo-pm-mengrid{grid-template-columns:1fr 1fr;gap:7px}",
+      ".fo-pm-club,.fo-pm-men{padding:9px 10px;border-radius:10px}",
+      ".fo-pm-clubtop{gap:7px;margin-bottom:7px}",
+      ".fo-pm-clubnm{font-size:12px}",
+      ".fo-pm-clubsub{font-size:7.5px;letter-spacing:.1em}",
+      ".fo-pm-stats{gap:4px;padding:6px 0}",
+      ".fo-pm-stats b{font-size:12px}.fo-pm-stats i{font-size:7px;letter-spacing:.1em}",
+      ".fo-pm-form{gap:6px;margin-top:6px}",
+      ".fo-pm-form span{font-size:7.5px;letter-spacing:.1em}",
+      ".fo-pm-beads{gap:3px}",
+      ".fo-pm-beads i{width:14px;height:14px;border-radius:3px;font-size:7.5px}",
+      ".fo-pm-men h4{margin:0 0 5px;font-size:9px;letter-spacing:.1em}",
+      // four men a side is a watch-list; ten is a squad list
+      ".fo-pm-man{gap:6px;padding:4px 0}",
+      ".fo-pm-men .fo-pm-man:nth-child(n+6){display:none}",
+      ".fo-pm-manrole{width:16px}.fo-pm-manrole img{width:16px;height:16px}",
+      ".fo-pm-mannm b{font-size:11px}.fo-pm-mannm i{font-size:7px;letter-spacing:.08em}",
+      ".fo-pm-star{font-size:9px}",
+      ".fo-pm-h2h{gap:7px;padding:6px 9px;margin-bottom:5px;border-radius:9px}",
+      ".fo-pm-foot{padding-top:8px;gap:7px}",
+      "}"
     ].join("\n");
     var st = document.createElement("style");
     st.id = "fo-pm-css"; st.textContent = css;

@@ -487,10 +487,7 @@
           }).join("");
         };
         var divName = function (d) { return d === 1 ? "Division One" : "Division Two"; };
-        var divSub = function (d) {
-          return d === 1 ? "Top four make finals night &middot; bottom two go down"
-            : "Top four make finals night &middot; champions and shield winners go up";
-        };
+        var divSub = function () { return ""; };
         var colHead = "<div class='fo-lgx-cols'><span>#</span><span></span><span>Club</span><span>Form</span>" +
           "<span>P</span><span>W</span><span>L</span><span>NRR</span><span>Pts</span></div>";
         // EACH FLIGHT IS ITS OWN PAGE. #/league?d=1 and #/league?d=2 are two
@@ -509,7 +506,7 @@
           return "<div class='fo-lgx-panel'>" +
             "<div class='fo-lgx-ph'><h2>" + (rowsOther.length || dQ ? divName(d) : "The pennant race") + "</h2>" +
             "<span class='fo-lgx-sub'>" +
-              (playedRounds ? "Standings after round " + playedRounds : "Before a ball is bowled") +
+              (playedRounds ? "Standings after round " + playedRounds : "") +
               " &middot; " + divSub(d) + "</span>" + cross + "</div>" +
             (scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
             (list.length ? colHead + divRows(list, d)
@@ -696,7 +693,7 @@
     "html body #page .fo-lgx-row .pt{text-align:right;font:700 15px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums;color:#141C28}",
 
     // ---- fixtures and results ---------------------------------------------
-    "html body #page .fo-lgx-fx,html body #page .fo-lgx-res{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:7px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:12px;padding:11px 12px;margin-bottom:6px;box-shadow:0 4px 14px rgba(30,38,52,.05)}",
+    "html body #page .fo-lgx-fx,html body #page .fo-lgx-res{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:7px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:12px;padding:11px 12px;margin-bottom:6px;box-shadow:0 4px 14px rgba(30,38,52,.05)}",
     "html body #page .fo-lgx-fx.mine,html body #page .fo-lgx-res.mine{border-color:rgba(201,85,50,.42);box-shadow:0 6px 18px rgba(201,85,50,.09)}",
     // a fixture that opens its preview says so the way the results rows do
     "html body #page .fo-lgx-fx.open{text-decoration:none;color:inherit;cursor:pointer;transition:border-color .16s ease,transform .16s ease,box-shadow .16s ease}",
@@ -710,7 +707,8 @@
     "html body #page a.fo-lgx-res.open:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(30,38,52,.11)}",
     "html body #page a.fo-lgx-res.open:focus-visible{outline:2px solid var(--nac);outline-offset:2px}",
     "html body #page .fo-lgx-go{text-decoration:none;margin-left:6px;opacity:.5;font-weight:700}",
-    "html body #page .fo-lgx-yours{grid-column:1/-1;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--nac)}",
+    "html body #page .fo-lgx-fx.mine{margin-top:9px}",
+    "html body #page .fo-lgx-yours{position:absolute;left:11px;top:0;transform:translateY(-50%);z-index:2;background:#FFF6F1;border:1px solid rgba(201,85,50,.42);border-radius:999px;padding:3px 8px;font:700 8px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--nac)}",
     "html body #page .fo-lgx-side{display:flex;align-items:center;gap:7px;min-width:0}",
     "html body #page .fo-lgx-side.a{justify-content:flex-end}",
     "html body #page .fo-lgx-side b{font:600 12.5px/1.25 Inter,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",

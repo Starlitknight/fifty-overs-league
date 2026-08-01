@@ -10033,7 +10033,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260801-1229-97d1ba";
+  var FO_BUILD = "20260801-1237-669c36";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -34698,10 +34698,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           }).join("");
         };
         var divName = function (d) { return d === 1 ? "Division One" : "Division Two"; };
-        var divSub = function (d) {
-          return d === 1 ? "Top four make finals night &middot; bottom two go down"
-            : "Top four make finals night &middot; champions and shield winners go up";
-        };
+        var divSub = function () { return ""; };
         var colHead = "<div class='fo-lgx-cols'><span>#</span><span></span><span>Club</span><span>Form</span>" +
           "<span>P</span><span>W</span><span>L</span><span>NRR</span><span>Pts</span></div>";
         // EACH FLIGHT IS ITS OWN PAGE. #/league?d=1 and #/league?d=2 are two
@@ -34720,7 +34717,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           return "<div class='fo-lgx-panel'>" +
             "<div class='fo-lgx-ph'><h2>" + (rowsOther.length || dQ ? divName(d) : "The pennant race") + "</h2>" +
             "<span class='fo-lgx-sub'>" +
-              (playedRounds ? "Standings after round " + playedRounds : "Before a ball is bowled") +
+              (playedRounds ? "Standings after round " + playedRounds : "") +
               " &middot; " + divSub(d) + "</span>" + cross + "</div>" +
             (scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
             (list.length ? colHead + divRows(list, d)
@@ -34907,7 +34904,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body #page .fo-lgx-row .pt{text-align:right;font:700 15px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums;color:#141C28}",
 
     // ---- fixtures and results ---------------------------------------------
-    "html body #page .fo-lgx-fx,html body #page .fo-lgx-res{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:7px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:12px;padding:11px 12px;margin-bottom:6px;box-shadow:0 4px 14px rgba(30,38,52,.05)}",
+    "html body #page .fo-lgx-fx,html body #page .fo-lgx-res{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:7px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:12px;padding:11px 12px;margin-bottom:6px;box-shadow:0 4px 14px rgba(30,38,52,.05)}",
     "html body #page .fo-lgx-fx.mine,html body #page .fo-lgx-res.mine{border-color:rgba(201,85,50,.42);box-shadow:0 6px 18px rgba(201,85,50,.09)}",
     // a fixture that opens its preview says so the way the results rows do
     "html body #page .fo-lgx-fx.open{text-decoration:none;color:inherit;cursor:pointer;transition:border-color .16s ease,transform .16s ease,box-shadow .16s ease}",
@@ -34921,7 +34918,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body #page a.fo-lgx-res.open:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(30,38,52,.11)}",
     "html body #page a.fo-lgx-res.open:focus-visible{outline:2px solid var(--nac);outline-offset:2px}",
     "html body #page .fo-lgx-go{text-decoration:none;margin-left:6px;opacity:.5;font-weight:700}",
-    "html body #page .fo-lgx-yours{grid-column:1/-1;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--nac)}",
+    "html body #page .fo-lgx-fx.mine{margin-top:9px}",
+    "html body #page .fo-lgx-yours{position:absolute;left:11px;top:0;transform:translateY(-50%);z-index:2;background:#FFF6F1;border:1px solid rgba(201,85,50,.42);border-radius:999px;padding:3px 8px;font:700 8px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--nac)}",
     "html body #page .fo-lgx-side{display:flex;align-items:center;gap:7px;min-width:0}",
     "html body #page .fo-lgx-side.a{justify-content:flex-end}",
     "html body #page .fo-lgx-side b{font:600 12.5px/1.25 Inter,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
@@ -41723,10 +41721,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   // ---- one ledger line: figure, name, and what moves it ----------------------
-  function line(nm, v, why) {
+  function line(nm, v) {
     var zero = !Math.round(Number(v) || 0);
     return "<div class='fo-fin-l" + (zero ? " zero" : "") + "'><b>" + E(nm) + "</b>" +
-      "<u>" + M(v) + "</u><em>" + E(why) + "</em></div>";
+      "<u>" + M(v) + "</u></div>";
   }
   function stat(nm, val) {
     return "<div class='fo-fin-stat'><span>" + E(nm) + "</span><b>" + val + "</b></div>";
@@ -41787,21 +41785,20 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     // ---- the two ledgers -------------------------------------------------
     html += "<div class='fo-fin-cols'>" +
       "<section class='fo-fin-card fo-fin-in'><h2>Money in</h2>" +
-      line("The gate", inGate, "Your two thirds of every home crowd, at " + M(f.ticket || 26) + " a seat") +
-      line("Away cut", inAway, "Your third of the gate at every ground you visit") +
-      line("Sponsor", inSpon, "Paid by the round, and worth more the higher you finish") +
-      line("International fees", inComp, "What the board pays when your country takes a man" +
-        (f.capsAway ? " - " + f.capsAway + " call-up" + (f.capsAway === 1 ? "" : "s") + " so far" : "")) +
-      line("Transfers in", inFees, "Fees banked for men sold" + (f.sold ? " - " + f.sold + " gone" : "")) +
+      line("The gate", inGate) +
+      line("Away cut", inAway) +
+      line("Sponsor", inSpon) +
+      line("International fees", inComp) +
+      line("Transfers in", inFees) +
       "<div class='fo-fin-tot'><span>Taken</span><b>" + M(totIn) + "</b></div></section>" +
 
       "<section class='fo-fin-card fo-fin-out'><h2>Money out</h2>" +
-      line("Wages", outWage, "The bill as it stood each round - " + M(f.wageBill || 0) + " a round now") +
-      line("Upkeep", outUp, "The ground and the academy, by the round") +
-      line("Transfers out", outFees, "Fees paid for men signed" + (f.bought ? " - " + f.bought + " in" : "")) +
-      line("Scouting", outScout, "What you spent looking at other clubs' players") +
-      line("Building", outAcad + outSeats, "Stands and academy levels - capital, paid once") +
-      line("Interest", outInt, "3% a round on an overdraft, and only on an overdraft") +
+      line("Wages", outWage) +
+      line("Upkeep", outUp) +
+      line("Transfers out", outFees) +
+      line("Scouting", outScout) +
+      line("Building", outAcad + outSeats) +
+      line("Interest", outInt) +
       "<div class='fo-fin-tot'><span>Paid</span><b>" + M(totOut) + "</b></div></section>" +
       "</div>";
 
@@ -43372,7 +43369,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-pm-mengrid'>" + menCard(hSlot, hN) + menCard(aSlot, aN) + "</div>" +
         "</section>" +
 
-        "<section class='fo-pm-sec'><div class='fo-pm-rule'><span>When they last met</span></div>" +
+        "<section class='fo-pm-sec fo-pm-lastmet'><div class='fo-pm-rule'><span>When they last met</span></div>" +
         h2hHTML + "</section>" +
 
         "<div class='fo-pm-foot'>" + actions.join("") + "</div>" +
@@ -43545,7 +43542,73 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-pm-billside,.fo-pm-billside.a{align-items:center;text-align:center}",
       ".fo-pm-billside b{font-size:clamp(24px,7.4vw,36px);word-break:normal;overflow-wrap:anywhere}",
       ".fo-pm-v{width:38px;height:38px}.fo-pm-v span{font-size:17px}}",
-      "@media(prefers-reduced-motion:reduce){.fo-pm-h2h,.fo-pm-cta,.fo-pm-back{transition:none}}"
+      "@media(prefers-reduced-motion:reduce){.fo-pm-h2h,.fo-pm-cta,.fo-pm-back{transition:none}}",
+
+      // ---- ONE SCREEN ON A PHONE -------------------------------------------
+      // A preview you have to scroll is a preview you read in pieces. On a
+      // phone the whole card sits inside the viewport: the billing side by
+      // side rather than stacked three-deep, one line of clock and ground, the
+      // odds, both sides' numbers, and the way in. The ground photograph is
+      // not shrunk or cropped to make room - on a screen this size it is set
+      // aside whole, and it is waiting at full width the moment there is room
+      // for it.
+      "@media(max-width:760px) and (orientation:portrait){",
+      ".fo-pm{min-height:0}",
+      ".fo-pm-plate{display:none}",
+      ".fo-pm-hero{padding-bottom:0}",
+      ".fo-pm-in{padding:0 13px}",
+      ".fo-pm-mast{font-size:8px;letter-spacing:.24em;padding-top:10px}",
+      ".fo-pm-folio{font-size:8.5px;letter-spacing:.16em;margin-top:3px;padding-bottom:7px}",
+      // the billing, back on one line and sized to the width it is given
+      ".fo-pm-bill{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);justify-items:stretch;gap:7px;margin:9px 0 0;text-align:left}",
+      ".fo-pm-billside{align-items:flex-end;text-align:right;gap:4px}",
+      ".fo-pm-billside.a{align-items:flex-start;text-align:left}",
+      ".fo-pm-billside b{font-size:clamp(13px,4.2vw,19px);line-height:1;word-break:normal;overflow-wrap:anywhere}",
+      ".fo-pm-billside i{font-size:7.5px;letter-spacing:.18em}",
+      ".fo-pm-sh.big{width:30px;height:30px;border-radius:7px;font-size:11px}",
+      ".fo-pm-v{width:28px;height:28px}.fo-pm-v span{font-size:13px}",
+      // the clock and the ground, one band
+      ".fo-pm-when{grid-template-columns:auto minmax(0,1fr);gap:10px;margin-top:9px;padding-top:9px}",
+      ".fo-pm-count{padding:7px 10px;gap:1px;min-width:0}",
+      ".fo-pm-count .big{font-size:15px}.fo-pm-count .sub{font-size:7.5px;letter-spacing:.14em}",
+      ".fo-pm-where{gap:6px}",
+      ".fo-pm-where i{font-size:7.5px;letter-spacing:.14em}",
+      ".fo-pm-where b{font-size:11px;line-height:1.25}",
+      // the body, tightened
+      ".fo-pm-body{padding-top:9px;padding-bottom:14px}",
+      ".fo-pm-sec{margin-bottom:9px}",
+      ".fo-pm-rule{margin-bottom:6px}",
+      ".fo-pm-rule span{font-size:7.5px;letter-spacing:.18em}",
+      ".fo-pm-wp{padding:9px 10px;border-radius:10px}",
+      ".fo-pm-wptop{margin-bottom:6px;gap:8px}",
+      ".fo-pm-wph b,.fo-pm-wpa b{font-size:17px}",
+      ".fo-pm-wph u,.fo-pm-wpa u{font-size:8px}",
+      ".fo-pm-sh{width:22px;height:22px;border-radius:5px;font-size:9px}",
+      ".fo-pm-wpnote{margin-top:5px;font-size:10px;line-height:1.35}",
+      ".fo-pm-clubs,.fo-pm-mengrid{grid-template-columns:1fr 1fr;gap:7px}",
+      ".fo-pm-club,.fo-pm-men{padding:9px 10px;border-radius:10px}",
+      ".fo-pm-clubtop{gap:7px;margin-bottom:7px}",
+      ".fo-pm-clubnm{font-size:12px}",
+      ".fo-pm-clubsub{font-size:7.5px;letter-spacing:.1em}",
+      ".fo-pm-stats{gap:4px;padding:6px 0}",
+      ".fo-pm-stats b{font-size:12px}.fo-pm-stats i{font-size:7px;letter-spacing:.1em}",
+      ".fo-pm-form{gap:6px;margin-top:6px}",
+      ".fo-pm-form span{font-size:7.5px;letter-spacing:.1em}",
+      ".fo-pm-beads{gap:3px}",
+      ".fo-pm-beads i{width:14px;height:14px;border-radius:3px;font-size:7.5px}",
+      ".fo-pm-men h4{margin:0 0 5px;font-size:9px;letter-spacing:.1em}",
+      // four men a side is a watch-list; ten is a squad list
+      ".fo-pm-man{gap:6px;padding:4px 0}",
+      ".fo-pm-men .fo-pm-man:nth-child(n+4){display:none}",
+      // the last meeting is a page of its own on both club dossiers; on a
+      // phone the screen is worth more to the match about to be played
+      ".fo-pm-lastmet{display:none}",
+      ".fo-pm-manrole{width:16px}.fo-pm-manrole img{width:16px;height:16px}",
+      ".fo-pm-mannm b{font-size:11px}.fo-pm-mannm i{font-size:7px;letter-spacing:.08em}",
+      ".fo-pm-star{font-size:9px}",
+      ".fo-pm-h2h{gap:7px;padding:6px 9px;margin-bottom:5px;border-radius:9px}",
+      ".fo-pm-foot{padding-top:8px;gap:7px}",
+      "}"
     ].join("\n");
     var st = document.createElement("style");
     st.id = "fo-pm-css"; st.textContent = css;

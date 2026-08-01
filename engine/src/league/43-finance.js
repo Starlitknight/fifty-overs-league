@@ -148,10 +148,10 @@
   }
 
   // ---- one ledger line: figure, name, and what moves it ----------------------
-  function line(nm, v, why) {
+  function line(nm, v) {
     var zero = !Math.round(Number(v) || 0);
     return "<div class='fo-fin-l" + (zero ? " zero" : "") + "'><b>" + E(nm) + "</b>" +
-      "<u>" + M(v) + "</u><em>" + E(why) + "</em></div>";
+      "<u>" + M(v) + "</u></div>";
   }
   function stat(nm, val) {
     return "<div class='fo-fin-stat'><span>" + E(nm) + "</span><b>" + val + "</b></div>";
@@ -212,21 +212,20 @@
     // ---- the two ledgers -------------------------------------------------
     html += "<div class='fo-fin-cols'>" +
       "<section class='fo-fin-card fo-fin-in'><h2>Money in</h2>" +
-      line("The gate", inGate, "Your two thirds of every home crowd, at " + M(f.ticket || 26) + " a seat") +
-      line("Away cut", inAway, "Your third of the gate at every ground you visit") +
-      line("Sponsor", inSpon, "Paid by the round, and worth more the higher you finish") +
-      line("International fees", inComp, "What the board pays when your country takes a man" +
-        (f.capsAway ? " - " + f.capsAway + " call-up" + (f.capsAway === 1 ? "" : "s") + " so far" : "")) +
-      line("Transfers in", inFees, "Fees banked for men sold" + (f.sold ? " - " + f.sold + " gone" : "")) +
+      line("The gate", inGate) +
+      line("Away cut", inAway) +
+      line("Sponsor", inSpon) +
+      line("International fees", inComp) +
+      line("Transfers in", inFees) +
       "<div class='fo-fin-tot'><span>Taken</span><b>" + M(totIn) + "</b></div></section>" +
 
       "<section class='fo-fin-card fo-fin-out'><h2>Money out</h2>" +
-      line("Wages", outWage, "The bill as it stood each round - " + M(f.wageBill || 0) + " a round now") +
-      line("Upkeep", outUp, "The ground and the academy, by the round") +
-      line("Transfers out", outFees, "Fees paid for men signed" + (f.bought ? " - " + f.bought + " in" : "")) +
-      line("Scouting", outScout, "What you spent looking at other clubs' players") +
-      line("Building", outAcad + outSeats, "Stands and academy levels - capital, paid once") +
-      line("Interest", outInt, "3% a round on an overdraft, and only on an overdraft") +
+      line("Wages", outWage) +
+      line("Upkeep", outUp) +
+      line("Transfers out", outFees) +
+      line("Scouting", outScout) +
+      line("Building", outAcad + outSeats) +
+      line("Interest", outInt) +
       "<div class='fo-fin-tot'><span>Paid</span><b>" + M(totOut) + "</b></div></section>" +
       "</div>";
 

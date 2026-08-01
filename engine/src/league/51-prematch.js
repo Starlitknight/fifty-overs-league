@@ -458,7 +458,7 @@
         "<div class='fo-pm-mengrid'>" + menCard(hSlot, hN) + menCard(aSlot, aN) + "</div>" +
         "</section>" +
 
-        "<section class='fo-pm-sec'><div class='fo-pm-rule'><span>When they last met</span></div>" +
+        "<section class='fo-pm-sec fo-pm-lastmet'><div class='fo-pm-rule'><span>When they last met</span></div>" +
         h2hHTML + "</section>" +
 
         "<div class='fo-pm-foot'>" + actions.join("") + "</div>" +
@@ -631,7 +631,74 @@
       ".fo-pm-billside,.fo-pm-billside.a{align-items:center;text-align:center}",
       ".fo-pm-billside b{font-size:clamp(24px,7.4vw,36px);word-break:normal;overflow-wrap:anywhere}",
       ".fo-pm-v{width:38px;height:38px}.fo-pm-v span{font-size:17px}}",
-      "@media(prefers-reduced-motion:reduce){.fo-pm-h2h,.fo-pm-cta,.fo-pm-back{transition:none}}"
+      "@media(prefers-reduced-motion:reduce){.fo-pm-h2h,.fo-pm-cta,.fo-pm-back{transition:none}}",
+
+      // ---- ONE SCREEN ON A PHONE -------------------------------------------
+      // A preview you have to scroll is a preview you read in pieces. On a
+      // phone the whole card sits inside the viewport: the billing side by
+      // side rather than stacked three-deep, one line of clock and ground, the
+      // odds, both sides' numbers, and the way in. The ground photograph is
+      // not shrunk or cropped to make room - on a screen this size it is set
+      // aside whole, and it is waiting at full width the moment there is room
+      // for it.
+      "@media(max-width:760px) and (orientation:portrait){",
+      "#page .fo-pm{min-height:0}",
+      ".fo-pm-plate{display:none}",
+      ".fo-pm-hero{padding-bottom:0}",
+      ".fo-pm-in{padding:0 13px}",
+      ".fo-pm-mast{font-size:8px;letter-spacing:.24em;padding-top:6px}",
+      ".fo-pm-folio{font-size:8.5px;letter-spacing:.16em;margin-top:2px;padding-bottom:5px}",
+      // the billing, back on one line and sized to the width it is given
+      ".fo-pm-bill{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);justify-items:stretch;gap:7px;margin:6px 0 0;text-align:left}",
+      ".fo-pm-billside{align-items:flex-end;text-align:right;gap:4px}",
+      ".fo-pm-billside.a{align-items:flex-start;text-align:left}",
+      ".fo-pm-billside b{font-size:clamp(13px,4.2vw,19px);line-height:1;word-break:normal;overflow-wrap:anywhere}",
+      ".fo-pm-billside i{font-size:7.5px;letter-spacing:.18em}",
+      ".fo-pm-sh.big{width:30px;height:30px;border-radius:7px;font-size:11px}",
+      ".fo-pm-v{width:28px;height:28px}.fo-pm-v span{font-size:13px}",
+      // the clock and the ground, one band
+      ".fo-pm-when{grid-template-columns:auto minmax(0,1fr);gap:9px;margin-top:6px;padding-top:6px}",
+      ".fo-pm-count{padding:5px 9px;gap:0;min-width:0}",
+      ".fo-pm-count .big{font-size:14px}.fo-pm-count .sub{font-size:7.5px;letter-spacing:.14em}",
+      ".fo-pm-where{gap:6px}",
+      ".fo-pm-where i{font-size:7.5px;letter-spacing:.14em}",
+      ".fo-pm-where b{font-size:11px;line-height:1.25}",
+      // the body, tightened
+      ".fo-pm-body{padding-top:6px;padding-bottom:8px}",
+      ".fo-pm-sec{margin-bottom:6px}",
+      ".fo-pm-rule{margin-bottom:4px}",
+      ".fo-pm-rule span{font-size:7.5px;letter-spacing:.18em}",
+      ".fo-pm-wp{padding:7px 9px;border-radius:10px}",
+      ".fo-pm-wptop{margin-bottom:4px;gap:8px}",
+      ".fo-pm-wph b,.fo-pm-wpa b{font-size:15px}",
+      ".fo-pm-wph u,.fo-pm-wpa u{font-size:8px}",
+      ".fo-pm-sh{width:22px;height:22px;border-radius:5px;font-size:9px}",
+      ".fo-pm-wpnote{margin-top:4px;font-size:9.5px;line-height:1.3}",
+      ".fo-pm-wpnote:empty{display:none}",
+      ".fo-pm-clubs,.fo-pm-mengrid{grid-template-columns:1fr 1fr;gap:7px}",
+      ".fo-pm-club,.fo-pm-men{padding:7px 9px;border-radius:10px}",
+      ".fo-pm-clubtop{gap:6px;margin-bottom:5px}",
+      ".fo-pm-clubnm{font-size:12px}",
+      ".fo-pm-clubsub{font-size:7.5px;letter-spacing:.1em}",
+      ".fo-pm-stats{gap:4px;padding:4px 0}",
+      ".fo-pm-stats b{font-size:12px}.fo-pm-stats i{font-size:7px;letter-spacing:.1em}",
+      ".fo-pm-form{gap:6px;margin-top:4px}",
+      ".fo-pm-form span{font-size:7.5px;letter-spacing:.1em}",
+      ".fo-pm-beads{gap:3px}",
+      ".fo-pm-beads i{width:14px;height:14px;border-radius:3px;font-size:7.5px}",
+      ".fo-pm-men h4{margin:0 0 3px;font-size:9px;letter-spacing:.1em}",
+      // four men a side is a watch-list; ten is a squad list
+      ".fo-pm-man{gap:6px;padding:3px 0}",
+      ".fo-pm-men .fo-pm-man:nth-child(n+4){display:none}",
+      // the last meeting is a page of its own on both club dossiers; on a
+      // phone the screen is worth more to the match about to be played
+      ".fo-pm-lastmet{display:none}",
+      ".fo-pm-manrole{width:16px}.fo-pm-manrole img{width:16px;height:16px}",
+      ".fo-pm-mannm b{font-size:11px}.fo-pm-mannm i{font-size:7px;letter-spacing:.08em}",
+      ".fo-pm-star{font-size:9px}",
+      ".fo-pm-h2h{gap:7px;padding:6px 9px;margin-bottom:5px;border-radius:9px}",
+      ".fo-pm-foot{padding-top:6px;gap:6px}",
+      "}"
     ].join("\n");
     var st = document.createElement("style");
     st.id = "fo-pm-css"; st.textContent = css;
