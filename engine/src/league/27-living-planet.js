@@ -1033,11 +1033,21 @@
     var d = FA_DAYS[stage];
     return d == null ? null : seasonStart(season) + d;
   }
+  // Fisher-Yates over the whole field from one seed - server/clock.mjs
+  // cupDraw, ball for ball. Sorting the field on each club's own hash looked
+  // like a draw and was not: it left the field nearly in slot order and drew
+  // Division One against Division One all summer.
+  function cupDraw(key, field) {
+    var idx = field.slice(), seed = h32(key);
+    for (var i = idx.length - 1; i > 0; i--) {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      var j = seed % (i + 1), t = idx[i]; idx[i] = idx[j]; idx[j] = t;
+    }
+    return idx;
+  }
   function faDrawR16(rid, season, slots, divOf) {
-    var field = (slots && slots.length ? slots.slice() : [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]);
-    field.sort(function (a2, b2) {
-      return h32("fa|" + rid + "|s" + season + "|r16|" + a2) - h32("fa|" + rid + "|s" + season + "|r16|" + b2);
-    });
+    var field = cupDraw("fa|" + rid + "|s" + season + "|r16",
+      (slots && slots.length ? slots.slice() : [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]));
     var ties = [];
     for (var i = 0; i + 1 < field.length; i += 2) {
       var x = field[i], y = field[i + 1];

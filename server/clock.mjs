@@ -142,6 +142,29 @@ export function seedOf(matchId) {
 // division's eight member slots for that season (membership is seasonal:
 // promotion and relegation redraw it, so the schedule is built over the
 // slots the season actually seats, not over an assumption).
+// THE CUP DRAW — A DRAW, NOT A SORT.
+// The FA Cup used to be drawn by SORTING the field on seedOf of each club's
+// own key, which looks random and is not: FNV-1a barely moves when only the
+// last character of a short string changes, so consecutive slots hashed in
+// near-order, the sort left the field nearly as it found it, and the ties came
+// out 1v0, 3v2, 5v4 - Division One drawn against Division One and Division Two
+// against Division Two, every nation, every season. A cup in which no giant
+// can be killed is not a cup.
+//
+// This is the real thing: one seed per draw, and Fisher-Yates over the whole
+// field - the same shuffle the league's season order uses. The field goes into
+// the hat once and comes out in an order nothing about a club can predict.
+// engine/src/league/27-living-planet.js mirrors it exactly.
+export function cupDraw(key, field) {
+  const idx = field.slice();
+  let seed = seedOf(key);
+  for (let i = idx.length - 1; i > 0; i--) {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    const j = seed % (i + 1); const t = idx[i]; idx[i] = idx[j]; idx[j] = t;
+  }
+  return idx;
+}
+
 export function scheduleOf(countryId, seasonNo, slots, div = 1) {
   const members = slots || [0, 1, 2, 3, 4, 5, 6, 7];
   const N = members.length, idx = Array.from({ length: N }, (_, i) => i);

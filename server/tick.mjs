@@ -15,7 +15,7 @@
 //     next invocation, however late.
 import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
-import { EPOCH, dayIx, daySettled, seedOf, natHour, scheduleOf, seasonSchedules, ROUNDS, isWindowRound,
+import { EPOCH, dayIx, daySettled, seedOf, cupDraw, natHour, scheduleOf, seasonSchedules, ROUNDS, isWindowRound,
          CYCLE, LEAGUE_DAYS, roundOfDay, CUP_DAYS, PLAYOFF_DAYS, FA_DAYS, TRANSITION_DAY,
          WINDOW_DAYS, isWorldCupSeason } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
@@ -1032,10 +1032,8 @@ export async function runFaCup(pool, host, { now = Date.now() } = {}) {
         if (prevRows.length === 0) { await pool.query(`UPDATE ticks SET status='done', finished_at=now() WHERE key=$1`, [key]); continue; }
         field = prevRows.map(r => (r.result.winner === r.b.name ? r.b : r.a).slot);
       }
-      // the seeded draw: a pure function of nation, season and stage
-      const drawn = field.slice().sort((a, b) =>
-        seedOf('fa|' + s.country_id + '|s' + s.season_no + '|' + stage + '|' + a)
-        - seedOf('fa|' + s.country_id + '|s' + s.season_no + '|' + stage + '|' + b));
+      // the draw: every surviving club into the hat, one pull per stage
+      const drawn = cupDraw('fa|' + s.country_id + '|s' + s.season_no + '|' + stage, field);
       const ties = [];
       for (let i = 0; i < drawn.length; i += 2) ties.push([drawn[i], drawn[i + 1]]);
       // managers' latest banked sheets ride in, exactly like a friendly

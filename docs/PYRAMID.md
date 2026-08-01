@@ -100,9 +100,15 @@ place).
 ## 5. The FA Cup (per nation, all 16 clubs)
 
 Straight knockout on the four Sundays: R16 (di 6), QF (13), SF (20),
-Final (27). Deterministic seeded draw per stage from
-`seedOf('fa|<nation>|s<season>|<stage>')`. Hosting: the LOWER-division club
-hosts (giant-killing at the small ground, groundsman tilt live); same
+Final (27). THE DRAW IS A DRAW: `cupDraw` puts the surviving field into the
+hat and shuffles it Fisher-Yates from one seed per stage,
+`seedOf('fa|<nation>|s<season>|<stage>')`, then pairs it off. (It used to
+SORT the field on each club's own hash, which is not the same thing at all -
+FNV-1a barely moves when only the last character changes, so the field came
+out near slot order and every tie was Division One v Division One or Two v
+Two. Measured over 192 draws the shuffle now yields 4.21 cross-division ties
+a round against a random expectation of 4.27.) Hosting: the LOWER-division
+club hosts (giant-killing at the small ground, groundsman tilt live); same
 division → first-drawn hosts. Managers' latest banked orders stand in;
 bots play their doctrines. Banked in `cup_matches` with
 `comp = 'fa:<nation>'`. The final is at the boss's ground (neutral showpiece,
