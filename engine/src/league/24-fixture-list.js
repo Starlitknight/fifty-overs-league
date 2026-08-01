@@ -82,7 +82,7 @@
     }).join("");
 
     // what is still to come, off the umpire's own schedule
-    var upRows = "", rounds = snap.rounds || 18;
+    var upRows = "", rounds = snap.rounds || 14;
     try {
       var wt = window.__foWT, pl = window.__foPlanet;
       if (wt && wt.schedMirror && pl) {

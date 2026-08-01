@@ -177,7 +177,7 @@
       });
 
       // the world clock: which round is in play, and at what hour
-      var pl = null, wt = null, cal = null, fx = [], hour = 13, state = "none", preDays = 0, rounds = (snap && snap.rounds) || 18;
+      var pl = null, wt = null, cal = null, fx = [], hour = 13, state = "none", preDays = 0, rounds = (snap && snap.rounds) || 14;
       try { pl = window.__foPlanet || null; wt = (window.__foWT && window.__foWT.serverFixtures) ? window.__foWT : null; } catch (eP) {}
       if (pl && wt) {
         try {
@@ -270,7 +270,11 @@
         var rd = parseInt(qparam("r") || "", 10);
         if (!rd || rd < 1 || rd > rounds) rd = curRound;
         var sched = null;
-        try { if (wt && wt.schedMirror) sched = wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1)); } catch (eSc) {}
+        // THE CARD OF THE DIVISION YOU ARE READING. Both flights play on the
+        // same day, so a single list of eight put a manager on the Division
+        // Two page in front of Division One's matches with his own tacked on
+        // the end. Each page deals its own four.
+        try { if (wt && wt.schedMirror) sched = wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1), plateDiv); } catch (eSc) {}
         var nameAt = function (s2) {
           if (nmBySlot && nmBySlot[s2]) return nmBySlot[s2];
           var row = rows.filter(function (r) { return r.slot === s2; })[0];
@@ -317,11 +321,14 @@
           }).join("") : "<p class='fo-lgx-dim'>No fixtures for this round yet.</p>") +
           "</div>";
 
-        // the run-in: your next five, home or away
-        var runIn = [];
-        if (sched && mySlot >= 0) {
-          for (var ri = curRound - 1; ri < sched.length && runIn.length < 5; ri++) {
-            (sched[ri] || []).forEach(function (pr2) {
+        // the run-in: your next five, home or away. YOUR run-in follows YOUR
+        // division, not the page you happen to be reading - a Division Two
+        // manager browsing the counties still wants his own next five.
+        var runIn = [], mySched = sched;
+        try { if (wt && wt.schedMirror && myDivNo !== plateDiv) mySched = wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1), myDivNo); } catch (eMs) {}
+        if (mySched && mySlot >= 0) {
+          for (var ri = curRound - 1; ri < mySched.length && runIn.length < 5; ri++) {
+            (mySched[ri] || []).forEach(function (pr2) {
               if (runIn.length >= 5) return;
               if (pr2[0] !== mySlot && pr2[1] !== mySlot) return;
               var h2 = pr2[0] === mySlot;
@@ -336,8 +343,8 @@
               "<u class='" + (x.home ? "h" : "a") + "'>" + (x.home ? "H" : "A") + "</u></a>";
           }).join("") + "</div>" : "") +
           "<div class='fo-lgx-card'><h3>Round at a glance</h3><div class='fo-lgx-glance'>" +
-          "<div><b>" + (pairs.length || 5) + "</b><i>Matches</i></div>" +
-          "<div><b>" + (rows.length || 10) + "</b><i>Clubs</i></div>" +
+          "<div><b>" + (pairs.length || 4) + "</b><i>Matches</i></div>" +
+          "<div><b>" + (rows.length || 8) + "</b><i>Clubs</i></div>" +
           "<div><b>" + hh(hour) + "</b><i>First ball" + rdDate(rd) + "</i></div></div></div>";
 
       } else if (tab === "results") {
@@ -536,7 +543,7 @@
         var nextWhen = hh(hour) + " UTC";
         var nextPairs = [];
         try {
-          var sc2 = wt && wt.schedMirror ? wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1)) : null;
+          var sc2 = wt && wt.schedMirror ? wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1), plateDiv) : null;
           nextPairs = (nextRd > curRound && state === "fin" && curRound >= rounds) ? [] : ((sc2 && sc2[nextRd - 1]) || []);
         } catch (eNp) {}
         var nmA = function (s2) {

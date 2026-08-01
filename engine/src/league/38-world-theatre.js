@@ -131,20 +131,34 @@
     return { seasonNo: seasonNo, round: round, dayInSeason: di, rest: !round,
              leagueOver: di >= (pl.LEAGUE_DAYS || 24) };
   }
-  // the server's schedule, mirrored: same circle method, same season shuffle
-  function schedMirror(rid, seasonNo) {
-    var N = 10, idx = []; for (var z = 0; z < N; z++) idx.push(z);
-    var seed = h32(rid + "|order|" + seasonNo);
-    for (var i = N - 1; i > 0; i--) { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; var j = seed % (i + 1); var t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
-    var list = idx.slice(), rounds = [];
-    for (var r = 0; r < N - 1; r++) {
-      var rd = [];
-      for (var k = 0; k < N / 2; k++) { var a = list[k], b = list[N - 1 - k]; rd.push(r % 2 ? [b, a] : [a, b]); }
-      rounds.push(rd);
-      list = [list[0], list[N - 1]].concat(list.slice(1, N - 1));
-    }
-    for (var r2 = 0; r2 < N - 1; r2++) rounds.push(rounds[r2].map(function (f) { return [f[1], f[0]]; }));
-    return rounds;
+  // THE PYRAMID, MIRRORED. This used to deal one league of ten - the world the
+  // game had before the divisions - and went on dealing it after the world had
+  // two flights of eight. The pairs it handed back were nobody's fixtures: a
+  // county drawn against a club it will not meet all summer, on a card that
+  // read as truth. The planet owns the circle method now (schedOf, which MUST
+  // agree with server/clock.mjs scheduleOf ball for ball) and this only asks
+  // it, once per division.
+  //
+  // MEMBERSHIP IS SEASONAL - promotion and relegation redraw it, and only the
+  // snapshot knows how - so the served divisions are read where the world has
+  // answered, and the founding split (0-7, 8-15) is the assumption until then.
+  function divMembers(rid, div) {
+    try {
+      var b = window.__foWorldLg && window.__foWorldLg.get(rid);
+      var d = b && b.divisions && b.divisions[String(div)];
+      if (d && d.length) return d.slice();
+    } catch (e) {}
+    return div === 2 ? [8, 9, 10, 11, 12, 13, 14, 15] : [0, 1, 2, 3, 4, 5, 6, 7];
+  }
+  // div 1 or div 2 for one flight's card; no div for the nation's whole day,
+  // both flights in the round together - which is what a matchday is
+  function schedMirror(rid, seasonNo, div) {
+    var pl = P();
+    if (!pl || !pl.schedOf) return [];
+    if (div === 1 || div === 2) return pl.schedOf(rid, seasonNo, divMembers(rid, div), div);
+    var d1 = pl.schedOf(rid, seasonNo, divMembers(rid, 1), 1);
+    var d2 = pl.schedOf(rid, seasonNo, divMembers(rid, 2), 2);
+    return d1.map(function (rd, i) { return rd.concat(d2[i] || []); });
   }
   function serverFixtures(rid, now) {
     var pl = P(), cal = serverCal(now);
@@ -555,7 +569,7 @@
 
   // the server mirror, exported: nation pages list the same fixtures, the
   // same calendar and the same live states the theatre plays from
-  window.__foWT = { serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror,
+  window.__foWT = { serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror, divMembers: divMembers,
     serverSquad: serverSquad, applyLiving: applyLiving,
     // THE MATCH ON RECORD IS NOT THE MATCH FROM A CLEAN SEED. The umpire plays
     // each round with the men as they were that day - the experience, the

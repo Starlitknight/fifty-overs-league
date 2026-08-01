@@ -5765,7 +5765,7 @@
           : "Matchday";
         // -- still to come
         var upHTML = "";
-        if (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason >= 0 && srv.cal.round && srv.cal.round < 18) {
+        if (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason >= 0 && srv.cal.round) {
           var sidesBy = {};
           try {
             var nmOv9 = window.__foWorldNames ? window.__foWorldNames.get(nation) : null;
@@ -5776,13 +5776,16 @@
           var schedA = srv.wt.schedMirror(nation, srv.cal.seasonNo);
           var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
           var ups = [];
-          for (var ur = srv.cal.round + 1; ur <= 18; ur++) {
+          // as many rounds as the card actually has - eighteen was the old
+          // single-division season, and reading past the end of a fourteen
+          // round card threw where the list should simply have stopped
+          for (var ur = srv.cal.round + 1; ur <= schedA.length; ur++) {
             var dayU = srv.pl.dayOfSeasonRound(srv.cal.seasonNo, ur);
             var dt9 = new Date(srv.pl.EPOCH + dayU * 86400000);
             ups.push("<div class='fo-nt-uround'><i>Round " + ur + " &middot; " + DOW[dt9.getUTCDay()] + " " + dt9.getUTCDate() + " " + MON[dt9.getUTCMonth()] + " &middot; " + hhFmt(srv.hour) + "</i>" +
               schedA[ur - 1].map(function (p9) { return "<span>" + E((sidesBy[p9[0]] || {}).name || "") + " v " + E((sidesBy[p9[1]] || {}).name || "") + "</span>"; }).join("") + "</div>");
           }
-          if (ups.length) upHTML = "<details class='fo-nt-up'><summary>Still to play &middot; rounds " + (srv.cal.round + 1) + "&ndash;18</summary>" + ups.join("") + "</details>";
+          if (ups.length) upHTML = "<details class='fo-nt-up'><summary>Still to play &middot; rounds " + (srv.cal.round + 1) + "&ndash;" + schedA.length + "</summary>" + ups.join("") + "</details>";
         }
         sec2Title = "Matchday";
         fixturesPanel = "<div class='fo-nt-md" + (srv.state === "live" ? " live" : "") + "'>" +
