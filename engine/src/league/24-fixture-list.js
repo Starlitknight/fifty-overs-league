@@ -65,6 +65,66 @@
       try { return (pl0 && pl0.dateTxt) ? pl0.dateTxt(pl0.dayOfSeasonRound(seasonNo, round)) : ""; } catch (eD) { return ""; }
     };
 
+    // ---- THE CUP IS PART OF THE SUMMER --------------------------------------
+    // This card listed the league and nothing else, so four Sundays of national
+    // knockout - the ones a small club's season is really made of - appeared
+    // nowhere a manager looks. The Round of 16 is drawn the day the season
+    // opens, off nothing but the nation and the season, so the tie is knowable
+    // before a ball is bowled; the later rounds turn on results and are named
+    // as the world plays them.
+    var FA_NM = { r16: "Round of 16", qf: "Quarter-final", sf: "Semi-final", final: "The final" };
+    var faBody = null;
+    try {
+      if (window.__foFaCup && window.__foFaCup.want) {
+        var faSync = true;
+        window.__foFaCup.want(claim.country, seasonNo, function (b2) {
+          faBody = b2 || null;
+          if (!faSync) repaint();
+        });
+        faSync = false;
+      }
+    } catch (eFa) {}
+    // my club's tie at each stage: played ones off the served bracket, the
+    // opening round off the draw itself
+    var faUps = [], faDone = [];
+    try {
+      var divs = (snap.divisions) || {};
+      var divOf = {};
+      (divs["1"] || []).forEach(function (x) { divOf[x] = 1; });
+      (divs["2"] || []).forEach(function (x) { divOf[x] = 2; });
+      var today0 = pl0 ? pl0.dayIx(Date.now()) : 0;
+      ["r16", "qf", "sf", "final"].forEach(function (st) {
+        var day = pl0 && pl0.faDayOf ? pl0.faDayOf(seasonNo, st) : null;
+        if (day == null) return;
+        var servedTies = faBody && faBody.stages && faBody.stages[st];
+        if (servedTies && servedTies.length) {
+          for (var i = 0; i < servedTies.length; i++) {
+            var t = servedTies[i];
+            if (!t.a || !t.b) continue;
+            if (t.a.slot !== claim.slot && t.b.slot !== claim.slot) continue;
+            var atHome = t.a.slot === claim.slot;
+            var meNm = atHome ? t.a.name : t.b.name;
+            faDone.push({ day: day, st: st, isHome: atHome,
+              opp: (atHome ? t.b.name : t.a.name),
+              won: !!t.winner && t.winner === meNm, tie: !t.winner,
+              text: t.text || "",
+              line: (t.as_ && t.bs_) ? (atHome ? t.as_ + " v " + t.bs_ : t.bs_ + " v " + t.as_) : "" });
+            break;
+          }
+          return;                       // this Sunday is history either way
+        }
+        if (st !== "r16") return;        // the later draws wait on results
+        if (day < today0) return;        // its Sunday has gone by unplayed
+        var ties = (pl0 && pl0.faDrawR16) ? pl0.faDrawR16(claim.country, seasonNo, null, divOf) : [];
+        ties.forEach(function (t2) {
+          if (t2[0] !== claim.slot && t2[1] !== claim.slot) return;
+          var atHome2 = t2[0] === claim.slot;
+          faUps.push({ day: day, st: st, isHome: atHome2,
+            opp: bySlot[atHome2 ? t2[1] : t2[0]] || "a club", ground: groundOf(t2[0]) });
+        });
+      });
+    } catch (eFa2) {}
+
     var played = (snap.results || []).filter(function (r) { return r.home === my || r.away === my; })
       .sort(function (a, b) { return (a.round || 0) - (b.round || 0); });
     var w = 0, l = 0, t = 0;
@@ -85,6 +145,17 @@
         "<span>" + E(line) + "</span></span>" +
         "<em class='fo-fl-res'>" + E((r.text || "").replace(/\s*\(.*\)$/, "")) + "</em><s>&#8250;</s></a>";
     }).join("");
+    // the cup ties already played, in the same list as the league's
+    resRows += faDone.sort(function (a2, b2) { return a2.day - b2.day; }).map(function (f) {
+      var on = (pl0 && pl0.dateTxt) ? pl0.dateTxt(f.day) : "";
+      return "<a class='fo-fl-row cup' href='#/facup'>" +
+        "<i>CUP</i>" +
+        "<u class='" + (f.won ? "w" : f.tie ? "t" : "l") + "'>" + (f.won ? "W" : f.tie ? "T" : "L") + "</u>" +
+        "<span class='fo-fl-who'><b>" + (f.isHome ? "v " : "at ") + E(f.opp) +
+        (on ? " <em class='fo-fl-when done'>" + E(on) + "</em>" : "") + "</b>" +
+        "<span>" + E(FA_NM[f.st] || "The Cup") + (f.line ? " &middot; " + E(f.line) : "") + "</span></span>" +
+        "<em class='fo-fl-res'>" + E((f.text || "").replace(/\s*\(.*\)$/, "")) + "</em><s>&#8250;</s></a>";
+    }).join("");
 
     // what is still to come, off the umpire's own schedule
     var upRows = "", rounds = snap.rounds || 14;
@@ -99,20 +170,34 @@
           (sched[r3] || []).forEach(function (f) {
             if (f[0] !== claim.slot && f[1] !== claim.slot) return;
             var isHome = f[0] === claim.slot;
-            ups.push({ r: r3 + 1, isHome: isHome, opp: bySlot[isHome ? f[1] : f[0]] || "a club",
+            ups.push({ day: pl.dayOfSeasonRound(seasonNo, r3 + 1), r: r3 + 1, isHome: isHome,
+              opp: bySlot[isHome ? f[1] : f[0]] || "a club",
               ground: groundOf(f[0]), hs: f[0], as: f[1] });
           });
         }
+        // ONE SUMMER, ONE LIST. League Thursday, cup Sunday, league Monday -
+        // the card reads in the order the matches are actually played.
+        faUps.forEach(function (f) { ups.push({ day: f.day, cup: f.st, isHome: f.isHome, opp: f.opp, ground: f.ground }); });
+        ups.sort(function (x, y) { return (x.day || 0) - (y.day || 0); });
         // A COMING MATCH NOW HAS SOMEWHERE TO GO. These rows used to land on
         // the round's fixture card - the same list, one level up, which told
         // the reader nothing he had not just tapped. Each one opens its own
         // match now: the ground, the hour, both sides' form, the men.
         upRows = ups.map(function (u, i) {
-          var pv = "#/league?t=fixtures";
-          try { pv = window.foPreviewHref(claim.country, u.r, u.hs, u.as) || pv; } catch (ePv) {}
           // the day above, in the chip beside the opponent; the hour below,
           // where the ground is - so a long date never squeezes out a name
-          var on = dayTxt(u.r);
+          var on = (pl0 && pl0.dateTxt) ? pl0.dateTxt(u.day) : "";
+          if (u.cup) {
+            return "<a class='fo-fl-row up cup" + (i === 0 ? " next" : "") + "' href='#/facup'>" +
+              "<i>CUP</i>" +
+              "<u class='c'>" + (u.isHome ? "H" : "A") + "</u>" +
+              "<span class='fo-fl-who'><b>" + (u.isHome ? "v " : "at ") + E(u.opp) +
+              (on ? " <em class='fo-fl-when'>" + E(on) + "</em>" : "") + "</b>" +
+              "<span>" + E(hh(hour)) + " &middot; " + E(u.ground) + " &middot; " + E(FA_NM[u.cup] || "The Cup") + "</span></span>" +
+              "<em class='fo-fl-act'>The Cup &rsaquo;</em></a>";
+          }
+          var pv = "#/league?t=fixtures";
+          try { pv = window.foPreviewHref(claim.country, u.r, u.hs, u.as) || pv; } catch (ePv) {}
           return "<a class='fo-fl-row up" + (i === 0 ? " next" : "") + "' href='" + pv + "'>" +
             "<i>R" + u.r + "</i>" +
             "<u class='n'>" + (u.isHome ? "H" : "A") + "</u>" +
@@ -271,6 +356,9 @@
     "html body #page .fo-fl-row em{font:italic 400 12px/1.35 Georgia,serif;color:rgba(20,28,40,.6);text-align:right;white-space:nowrap}",
     "html body #page .fo-fl-when{display:inline-block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#B44A22;background:rgba(201,85,50,.09);border-radius:6px;padding:3px 6px;margin-left:7px;font-style:normal;vertical-align:1px}",
     "html body #page .fo-fl-when.done{color:rgba(20,28,40,.5);background:rgba(20,28,40,.06)}",
+    "html body #page .fo-fl-row.cup{border-color:rgba(176,132,9,.34)}",
+    "html body #page .fo-fl-row.cup i{color:#8A6A1F}",
+    "html body #page .fo-fl-row u.c{background:rgba(176,132,9,.14);color:#8A6A1F;border:1px solid rgba(176,132,9,.4)}",
     "html body #page .fo-fl-row s{text-decoration:none;color:rgba(20,28,40,.35)}",
     "html body #page .fo-fl-act{font:700 11px/1 Inter,sans-serif;color:#FFFEFC;background:#C95532;border-radius:999px;padding:8px 13px;text-decoration:none;white-space:nowrap}",
     "html body #page .fo-fl-act:hover{background:#A64426;color:#FFFEFC;text-decoration:none}",

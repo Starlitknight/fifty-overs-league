@@ -1022,6 +1022,32 @@
     if (d == null) return null;
     return seasonStart(season) + d;
   }
+  // ---- THE NATIONAL CUP'S FIRST DRAW, MIRRORED -------------------------------
+  // The umpire draws the Round of 16 by sorting all sixteen clubs on
+  // seedOf('fa|<nation>|s<season>|r16|<slot>') and pairing them off - a pure
+  // function of the nation and the season, settled the day the season opens.
+  // So the tie is knowable before a ball is bowled, which is what a cup draw
+  // is for. server/tick.mjs runFaCup is the authority; this must agree with it
+  // slot for slot. Later rounds turn on results and cannot be drawn early.
+  function faDayOf(season, stage) {
+    var d = FA_DAYS[stage];
+    return d == null ? null : seasonStart(season) + d;
+  }
+  function faDrawR16(rid, season, slots, divOf) {
+    var field = (slots && slots.length ? slots.slice() : [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]);
+    field.sort(function (a2, b2) {
+      return h32("fa|" + rid + "|s" + season + "|r16|" + a2) - h32("fa|" + rid + "|s" + season + "|r16|" + b2);
+    });
+    var ties = [];
+    for (var i = 0; i + 1 < field.length; i += 2) {
+      var x = field[i], y = field[i + 1];
+      // the smaller club hosts the giant
+      var host = ((divOf && divOf[y]) || 1) > ((divOf && divOf[x]) || 1) ? y : x;
+      ties.push([host, host === x ? y : x]);
+    }
+    return ties;
+  }
+
   // ---- SAYING WHEN, IN ONE VOICE ---------------------------------------------
   // An hour with no date is an hour in no particular week: "14:00 UTC" on a
   // fixture card never told a manager whether to be there tonight or on Friday
@@ -1049,6 +1075,7 @@
   window.__foPlanet = { roundOfDay: roundOfDay, dayOfRound: dayOfRound, dayOfSeasonRound: dayOfSeasonRound,
     anchorWorld: anchorWorld, anchorOf: anchorOf, seasonStart: seasonStart,
     dateTxt: dateTxt, hhTxt: hhTxt, whenTxt: whenTxt,
+    FA_DAYS: FA_DAYS, faDayOf: faDayOf, faDrawR16: faDrawR16,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
     phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();

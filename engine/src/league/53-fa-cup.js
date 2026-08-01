@@ -42,6 +42,10 @@
       .catch(function () { CUP[key] = { body: null, at: Date.now() }; cb(null); });
   }
 
+  // one cache and one request for the whole client: the fixture list wants
+  // the same bracket this page does
+  window.__foFaCup = { want: want };
+
   var STAGE_NM = { r16: "Round of 16", qf: "Quarter-finals", sf: "Semi-finals", final: "THE FINAL" };
   var STAGE_ORDER = ["r16", "qf", "sf", "final"];
   function stageDay(st) {
