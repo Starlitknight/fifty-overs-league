@@ -884,6 +884,14 @@
     }
     window.foEmbargo = function () {
       try {
+        // THE BROADCAST WINDOW BELONGS TO THE LOCAL SEASON. A club held in the
+        // served world has its rounds played by the umpire, so this window was
+        // being computed off a round this club never played - and it lit the
+        // topbar's LIVE pill blood red on a day with no cricket in it at all,
+        // two days before the season had even opened.
+        var cl0 = window.__foWorldClaim;
+        if (!cl0) { try { cl0 = JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eC0) {} }
+        if (cl0 && cl0.country) return { active: false };
         var rd = foLastRoundIx(); if (rd < 0) return { active: false };
         var t0 = foBcastT0(rd); if (!t0) return { active: false };
         var p = (Date.now() - t0) / (FO_BCAST_MIN * 60000);
