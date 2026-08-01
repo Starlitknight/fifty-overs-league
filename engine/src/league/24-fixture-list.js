@@ -48,8 +48,13 @@
       if (window.__foWorldNames) { window.__foWorldNames.want(claim.country, repaint); names = window.__foWorldNames.get(claim.country); mgr = window.__foWorldNames.mgr(claim.country); }
     } catch (e) {}
     if (!snap || !snap.table || !snap.table.length) return false;
-    var bySlot = {}; snap.table.forEach(function (r) { bySlot[r.slot] = (names && names[r.slot]) || r.name; });
-    var myRow = snap.table.filter(function (r) { return r.slot === claim.slot; })[0];
+    // BOTH FLIGHTS, OR NOBODY HAS A NAME. The register was read off table
+    // alone - Division One - so a Division Two club's whole card said "at a
+    // club" and "v a club": its opponents were all in table2, and every one of
+    // them came back undefined.
+    var allRows = (snap.table || []).concat(snap.table2 || []);
+    var bySlot = {}; allRows.forEach(function (r) { bySlot[r.slot] = (names && names[r.slot]) || r.name; });
+    var myRow = allRows.filter(function (r) { return r.slot === claim.slot; })[0];
     var my = (myRow && ((names && names[claim.slot]) || myRow.name)) || claim.club;
     var groundOf = function (slot) { return (mgr && mgr["g" + slot]) || ((bySlot[slot] || "the ground") + "'s ground"); };
     // WHEN, NOT JUST AT WHAT HOUR. Every row on this card - played or still to

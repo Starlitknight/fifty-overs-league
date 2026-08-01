@@ -10033,7 +10033,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260801-1235-c41174";
+  var FO_BUILD = "20260801-1242-5ace4b";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -33967,8 +33967,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (window.__foWorldNames) { window.__foWorldNames.want(claim.country, repaint); names = window.__foWorldNames.get(claim.country); mgr = window.__foWorldNames.mgr(claim.country); }
     } catch (e) {}
     if (!snap || !snap.table || !snap.table.length) return false;
-    var bySlot = {}; snap.table.forEach(function (r) { bySlot[r.slot] = (names && names[r.slot]) || r.name; });
-    var myRow = snap.table.filter(function (r) { return r.slot === claim.slot; })[0];
+    // BOTH FLIGHTS, OR NOBODY HAS A NAME. The register was read off table
+    // alone - Division One - so a Division Two club's whole card said "at a
+    // club" and "v a club": its opponents were all in table2, and every one of
+    // them came back undefined.
+    var allRows = (snap.table || []).concat(snap.table2 || []);
+    var bySlot = {}; allRows.forEach(function (r) { bySlot[r.slot] = (names && names[r.slot]) || r.name; });
+    var myRow = allRows.filter(function (r) { return r.slot === claim.slot; })[0];
     var my = (myRow && ((names && names[claim.slot]) || myRow.name)) || claim.club;
     var groundOf = function (slot) { return (mgr && mgr["g" + slot]) || ((bySlot[slot] || "the ground") + "'s ground"); };
     // WHEN, NOT JUST AT WHAT HOUR. Every row on this card - played or still to
@@ -39864,7 +39869,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var rk = null; try { rk = JSON.parse(localStorage.getItem("fo_world_rk") || "null"); } catch (e) {}
 
     var paint = function (info, sq, hon) {
-      var name = (info && info.name) || (lg && (lg.table || []).filter(function (t) { return t.slot === slot; })[0] || {}).name;
+      // A CLUB LIVES IN ONE OF TWO TABLES. Reading table alone left every
+      // Division Two club nameless, positionless and with the wrong opponents
+      // on its card - the whole lower flight is in table2.
+      var lgRows = lg ? (lg.table || []).concat(lg.table2 || []) : [];
+      var name = (info && info.name) || (lgRows.filter(function (t) { return t.slot === slot; })[0] || {}).name;
       if (!name) { try { name = ((window.__foWorldNames && window.__foWorldNames.get(cid)) || {})[slot]; } catch (eN) {} }
       if (!name) {
         try {
@@ -39891,8 +39900,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       }
 
       var rkRow = rk && rk.clubs ? rk.clubs.filter(function (x) { return x.country === cid && x.slot === slot; })[0] : null;
-      var tRow = lg && lg.table ? (lg.table.filter(function (t) { return t.slot === slot; })[0] || null) : null;
-      var pos = tRow && lg.table ? lg.table.indexOf(tRow) + 1 : 0;
+      // and a club's position is its place in ITS OWN division, not in a
+      // sixteen-club list nobody plays in
+      var ownTbl = ((lg && lg.table) || []).filter(function (t) { return t.slot === slot; }).length
+        ? (lg.table || []) : ((lg && lg.table2) || []);
+      var tRow = ownTbl.filter(function (t) { return t.slot === slot; })[0] || null;
+      var pos = tRow ? ownTbl.indexOf(tRow) + 1 : 0;
 
       var played = [];
       if (lg && lg.results && name) played = lg.results.filter(function (r) { return r.home === name || r.away === name; });
@@ -39910,7 +39923,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           var nmOv = (window.__foWorldNames && window.__foWorldNames.get(cid)) || {};
           var nameAt = function (s2) {
             if (nmOv[s2]) return nmOv[s2];
-            var row = lg && lg.table ? lg.table.filter(function (t) { return t.slot === s2; })[0] : null;
+            var row = lgRows.filter(function (t) { return t.slot === s2; })[0];
             if (row) return row.name;
             try { return (pl.sidesOf(cid) || []).filter(function (x) { return x.slot === s2; })[0].name; } catch (e3) { return "?"; }
           };
@@ -42316,6 +42329,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-nat-fl.on img{border-color:#0B1D3A;box-shadow:0 0 0 3px rgba(11,29,58,.18)}",
       "html body #page .fo-nat-fl span{font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.05em;color:rgba(20,28,40,.55);text-transform:uppercase}",
       "html body #page .fo-nat-man{display:flex;align-items:baseline;gap:9px;padding:9px 2px;border-top:1px solid rgba(20,28,40,.07);font:500 13px/1.3 Inter,sans-serif}",
+      "html body #page .fo-nat-flag{width:19px;height:13px;flex:0 0 auto;object-fit:cover;border-radius:2px;align-self:center;box-shadow:0 0 0 1px rgba(20,28,40,.12)}",
+      "html body #page .fo-ac-card h3 .fo-nat-flag{width:22px;height:15px;margin-right:8px;vertical-align:-2px}",
+      "html body #page .fo-ac-card h3 span .fo-nat-flag{width:17px;height:12px;margin-right:6px}",
       "html body #page .fo-nat-man:first-of-type{border-top:0}",
       "html body #page .fo-nat-man i{font-style:normal;font:700 10px/1 Oswald,sans-serif;color:rgba(20,28,40,.35);width:16px}",
       "html body #page .fo-nat-man b{font-weight:600;color:#141C28}",
@@ -42413,10 +42429,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return "<a class='" + cls + " go' href='" + href + "'>" + inner +
         "<em class='fo-nat-go'>&#8250;</em></a>";
     };
+    // THE FLAG A MAN PLAYS UNDER. A squad list of fifteen names and their
+    // counties never said which country had picked them; the card's heading
+    // knew and the men did not. Every international wears his flag now, here
+    // and in the caps book.
+    var natFlag = "<img class='fo-nat-flag' src='" + flagOf(ST.nation) + "' alt='" + E(n.name || ST.nation) +
+      "' onerror=\"this.style.display='none'\">";
     var squad = (n.squad || []).map(function (m, i) {
       var isMine = myClub && m.club === myClub;
       return manRow("fo-nat-man" + (isMine ? " mine" : ""),
-        "<i>" + (i + 1) + "</i>" +
+        "<i>" + (i + 1) + "</i>" + natFlag +
         "<b>" + E(m.name) + "</b><span>" + E(m.club || "") +
         (m.age ? " &middot; " + m.age : "") + "</span>" +
         "<u>" + (m.caps ? m.caps + " cap" + (m.caps === 1 ? "" : "s") : "uncapped") + "</u>",
@@ -42431,7 +42453,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var tours = (n.tours || []).map(tieRow).join("");
     var caps = (n.caps || []).map(function (c, i) {
       return manRow("fo-nat-man",
-        "<i>" + (i + 1) + "</i><b>" + E(c.name) + "</b>" +
+        "<i>" + (i + 1) + "</i>" + natFlag + "<b>" + E(c.name) + "</b>" +
         "<span>" + c.caps + " cap" + (c.caps === 1 ? "" : "s") +
         (c.runs ? " &middot; " + c.runs + " runs" + (c.hs ? " (" + c.hs + " best)" : "") : "") +
         (c.wkts ? " &middot; " + c.wkts + " wickets" + (c.bb ? " (" + c.bb.w + "-" + c.bb.r + ")" : "") : "") +
@@ -42454,7 +42476,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "</b>. Squads are named that morning; the tours are played at <b>" +
         (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC</b> the same evening.</div>" +
       "</div>" +
-      "<div class='fo-ac-card'><h3>" + E(n.name || ST.nation) +
+      "<div class='fo-ac-card'><h3>" + natFlag + E(n.name || ST.nation) +
         "<span>" + (n.window ? "named for round " + n.window : "no squad yet") + "</span></h3>" +
         (squad || "<div class='fo-ac-note'>No squad has been named for this nation yet.</div>") +
       "</div>" +
@@ -42462,7 +42484,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-nat-pay'>" + pay + "</div>" +
         "<div class='fo-ac-note'>$50,000 a senior, $20,000 a man under twenty-one &mdash; paid to the club he was taken from, every window.</div></div>" : "") +
       (tours ? "<div class='fo-ac-card'><h3>The tours</h3>" + tours + "</div>" : "") +
-      (caps ? "<div class='fo-ac-card'><h3>The caps book<span>" + E(n.name || "") + "</span></h3>" + caps + "</div>" : "") +
+      (caps ? "<div class='fo-ac-card'><h3>The caps book<span>" + natFlag + E(n.name || "") + "</span></h3>" + caps + "</div>" : "") +
       howItWorks());
 
     page.querySelectorAll("[data-nat]").forEach(function (b) {
@@ -43035,12 +43057,20 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function foPmStanding(g, slot) {
     var out = { pos: 0, p: 0, w: 0, l: 0, t: 0, pts: 0, nrr: 0, form: [] };
     try {
-      var tbl = (g.snap && g.snap.table) || [];
-      for (var i = 0; i < tbl.length; i++) {
-        if (tbl[i].slot !== slot) continue;
-        out.pos = i + 1; out.p = tbl[i].p | 0; out.w = tbl[i].w | 0; out.l = tbl[i].l | 0;
-        out.t = tbl[i].t | 0; out.pts = tbl[i].pts | 0; out.nrr = +tbl[i].nrr || 0;
-        break;
+      // BOTH FLIGHTS. A Division Two club is in table2, and a preview that
+      // read only table showed it unplaced and pointless in its own match.
+      // The place is its place in its own division, so each table is walked
+      // whole rather than the two run together.
+      var tbls = [(g.snap && g.snap.table) || [], (g.snap && g.snap.table2) || []];
+      for (var d = 0; d < tbls.length; d++) {
+        var tbl = tbls[d], hit = false;
+        for (var i = 0; i < tbl.length; i++) {
+          if (tbl[i].slot !== slot) continue;
+          out.pos = i + 1; out.p = tbl[i].p | 0; out.w = tbl[i].w | 0; out.l = tbl[i].l | 0;
+          out.t = tbl[i].t | 0; out.pts = tbl[i].pts | 0; out.nrr = +tbl[i].nrr || 0;
+          hit = true; break;
+        }
+        if (hit) break;
       }
       var nm = foPmName(g, slot), rec = (g.snap && g.snap.results) || [];
       rec.forEach(function (r) {
@@ -43369,7 +43399,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-pm-mengrid'>" + menCard(hSlot, hN) + menCard(aSlot, aN) + "</div>" +
         "</section>" +
 
-        "<section class='fo-pm-sec'><div class='fo-pm-rule'><span>When they last met</span></div>" +
+        "<section class='fo-pm-sec fo-pm-lastmet'><div class='fo-pm-rule'><span>When they last met</span></div>" +
         h2hHTML + "</section>" +
 
         "<div class='fo-pm-foot'>" + actions.join("") + "</div>" +
@@ -43553,14 +43583,14 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // aside whole, and it is waiting at full width the moment there is room
       // for it.
       "@media(max-width:760px) and (orientation:portrait){",
-      ".fo-pm{min-height:0}",
+      "#page .fo-pm{min-height:0}",
       ".fo-pm-plate{display:none}",
       ".fo-pm-hero{padding-bottom:0}",
       ".fo-pm-in{padding:0 13px}",
-      ".fo-pm-mast{font-size:8px;letter-spacing:.24em;padding-top:10px}",
-      ".fo-pm-folio{font-size:8.5px;letter-spacing:.16em;margin-top:3px;padding-bottom:7px}",
+      ".fo-pm-mast{font-size:8px;letter-spacing:.24em;padding-top:6px}",
+      ".fo-pm-folio{font-size:8.5px;letter-spacing:.16em;margin-top:2px;padding-bottom:5px}",
       // the billing, back on one line and sized to the width it is given
-      ".fo-pm-bill{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);justify-items:stretch;gap:7px;margin:9px 0 0;text-align:left}",
+      ".fo-pm-bill{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);justify-items:stretch;gap:7px;margin:6px 0 0;text-align:left}",
       ".fo-pm-billside{align-items:flex-end;text-align:right;gap:4px}",
       ".fo-pm-billside.a{align-items:flex-start;text-align:left}",
       ".fo-pm-billside b{font-size:clamp(13px,4.2vw,19px);line-height:1;word-break:normal;overflow-wrap:anywhere}",
@@ -43568,25 +43598,47 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-pm-sh.big{width:30px;height:30px;border-radius:7px;font-size:11px}",
       ".fo-pm-v{width:28px;height:28px}.fo-pm-v span{font-size:13px}",
       // the clock and the ground, one band
-      ".fo-pm-when{grid-template-columns:auto minmax(0,1fr);gap:10px;margin-top:9px;padding-top:9px}",
-      ".fo-pm-count{padding:7px 10px;gap:1px;min-width:0}",
-      ".fo-pm-count .big{font-size:15px}.fo-pm-count .sub{font-size:7.5px;letter-spacing:.14em}",
+      ".fo-pm-when{grid-template-columns:auto minmax(0,1fr);gap:9px;margin-top:6px;padding-top:6px}",
+      ".fo-pm-count{padding:5px 9px;gap:0;min-width:0}",
+      ".fo-pm-count .big{font-size:14px}.fo-pm-count .sub{font-size:7.5px;letter-spacing:.14em}",
       ".fo-pm-where{gap:6px}",
       ".fo-pm-where i{font-size:7.5px;letter-spacing:.14em}",
       ".fo-pm-where b{font-size:11px;line-height:1.25}",
       // the body, tightened
-      ".fo-pm-body{padding-top:9px;padding-bottom:14px}",
-      ".fo-pm-sec{margin-bottom:9px}",
-      ".fo-pm-rule{margin-bottom:6px}",
+      ".fo-pm-body{padding-top:6px;padding-bottom:8px}",
+      ".fo-pm-sec{margin-bottom:6px}",
+      ".fo-pm-rule{margin-bottom:4px}",
       ".fo-pm-rule span{font-size:7.5px;letter-spacing:.18em}",
-      ".fo-pm-wp{padding:9px 10px;border-radius:10px}",
-      ".fo-pm-wptop{margin-bottom:6px;gap:8px}",
-      ".fo-pm-wph b,.fo-pm-wpa b{font-size:17px}",
+      ".fo-pm-wp{padding:7px 9px;border-radius:10px}",
+      ".fo-pm-wptop{margin-bottom:4px;gap:8px}",
+      ".fo-pm-wph b,.fo-pm-wpa b{font-size:15px}",
       ".fo-pm-wph u,.fo-pm-wpa u{font-size:8px}",
       ".fo-pm-sh{width:22px;height:22px;border-radius:5px;font-size:9px}",
-      ".fo-pm-wpnote{margin-top:5px;font-size:10px;line-height:1.35}",
+      ".fo-pm-wpnote{margin-top:4px;font-size:9.5px;line-height:1.3}",
+      ".fo-pm-wpnote:empty{display:none}",
       ".fo-pm-clubs,.fo-pm-mengrid{grid-template-columns:1fr 1fr;gap:7px}",
-      ".fo-pm-foot{padding-top:8px;gap:7px}",
+      ".fo-pm-club,.fo-pm-men{padding:7px 9px;border-radius:10px}",
+      ".fo-pm-clubtop{gap:6px;margin-bottom:5px}",
+      ".fo-pm-clubnm{font-size:12px}",
+      ".fo-pm-clubsub{font-size:7.5px;letter-spacing:.1em}",
+      ".fo-pm-stats{gap:4px;padding:4px 0}",
+      ".fo-pm-stats b{font-size:12px}.fo-pm-stats i{font-size:7px;letter-spacing:.1em}",
+      ".fo-pm-form{gap:6px;margin-top:4px}",
+      ".fo-pm-form span{font-size:7.5px;letter-spacing:.1em}",
+      ".fo-pm-beads{gap:3px}",
+      ".fo-pm-beads i{width:14px;height:14px;border-radius:3px;font-size:7.5px}",
+      ".fo-pm-men h4{margin:0 0 3px;font-size:9px;letter-spacing:.1em}",
+      // four men a side is a watch-list; ten is a squad list
+      ".fo-pm-man{gap:6px;padding:3px 0}",
+      ".fo-pm-men .fo-pm-man:nth-child(n+4){display:none}",
+      // the last meeting is a page of its own on both club dossiers; on a
+      // phone the screen is worth more to the match about to be played
+      ".fo-pm-lastmet{display:none}",
+      ".fo-pm-manrole{width:16px}.fo-pm-manrole img{width:16px;height:16px}",
+      ".fo-pm-mannm b{font-size:11px}.fo-pm-mannm i{font-size:7px;letter-spacing:.08em}",
+      ".fo-pm-star{font-size:9px}",
+      ".fo-pm-h2h{gap:7px;padding:6px 9px;margin-bottom:5px;border-radius:9px}",
+      ".fo-pm-foot{padding-top:6px;gap:6px}",
       "}"
     ].join("\n");
     var st = document.createElement("style");

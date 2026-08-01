@@ -63,6 +63,9 @@
       "html body #page .fo-nat-fl.on img{border-color:#0B1D3A;box-shadow:0 0 0 3px rgba(11,29,58,.18)}",
       "html body #page .fo-nat-fl span{font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.05em;color:rgba(20,28,40,.55);text-transform:uppercase}",
       "html body #page .fo-nat-man{display:flex;align-items:baseline;gap:9px;padding:9px 2px;border-top:1px solid rgba(20,28,40,.07);font:500 13px/1.3 Inter,sans-serif}",
+      "html body #page .fo-nat-flag{width:19px;height:13px;flex:0 0 auto;object-fit:cover;border-radius:2px;align-self:center;box-shadow:0 0 0 1px rgba(20,28,40,.12)}",
+      "html body #page .fo-ac-card h3 .fo-nat-flag{width:22px;height:15px;margin-right:8px;vertical-align:-2px}",
+      "html body #page .fo-ac-card h3 span .fo-nat-flag{width:17px;height:12px;margin-right:6px}",
       "html body #page .fo-nat-man:first-of-type{border-top:0}",
       "html body #page .fo-nat-man i{font-style:normal;font:700 10px/1 Oswald,sans-serif;color:rgba(20,28,40,.35);width:16px}",
       "html body #page .fo-nat-man b{font-weight:600;color:#141C28}",
@@ -160,10 +163,16 @@
       return "<a class='" + cls + " go' href='" + href + "'>" + inner +
         "<em class='fo-nat-go'>&#8250;</em></a>";
     };
+    // THE FLAG A MAN PLAYS UNDER. A squad list of fifteen names and their
+    // counties never said which country had picked them; the card's heading
+    // knew and the men did not. Every international wears his flag now, here
+    // and in the caps book.
+    var natFlag = "<img class='fo-nat-flag' src='" + flagOf(ST.nation) + "' alt='" + E(n.name || ST.nation) +
+      "' onerror=\"this.style.display='none'\">";
     var squad = (n.squad || []).map(function (m, i) {
       var isMine = myClub && m.club === myClub;
       return manRow("fo-nat-man" + (isMine ? " mine" : ""),
-        "<i>" + (i + 1) + "</i>" +
+        "<i>" + (i + 1) + "</i>" + natFlag +
         "<b>" + E(m.name) + "</b><span>" + E(m.club || "") +
         (m.age ? " &middot; " + m.age : "") + "</span>" +
         "<u>" + (m.caps ? m.caps + " cap" + (m.caps === 1 ? "" : "s") : "uncapped") + "</u>",
@@ -178,7 +187,7 @@
     var tours = (n.tours || []).map(tieRow).join("");
     var caps = (n.caps || []).map(function (c, i) {
       return manRow("fo-nat-man",
-        "<i>" + (i + 1) + "</i><b>" + E(c.name) + "</b>" +
+        "<i>" + (i + 1) + "</i>" + natFlag + "<b>" + E(c.name) + "</b>" +
         "<span>" + c.caps + " cap" + (c.caps === 1 ? "" : "s") +
         (c.runs ? " &middot; " + c.runs + " runs" + (c.hs ? " (" + c.hs + " best)" : "") : "") +
         (c.wkts ? " &middot; " + c.wkts + " wickets" + (c.bb ? " (" + c.bb.w + "-" + c.bb.r + ")" : "") : "") +
@@ -201,7 +210,7 @@
         "</b>. Squads are named that morning; the tours are played at <b>" +
         (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC</b> the same evening.</div>" +
       "</div>" +
-      "<div class='fo-ac-card'><h3>" + E(n.name || ST.nation) +
+      "<div class='fo-ac-card'><h3>" + natFlag + E(n.name || ST.nation) +
         "<span>" + (n.window ? "named for round " + n.window : "no squad yet") + "</span></h3>" +
         (squad || "<div class='fo-ac-note'>No squad has been named for this nation yet.</div>") +
       "</div>" +
@@ -209,7 +218,7 @@
         "<div class='fo-nat-pay'>" + pay + "</div>" +
         "<div class='fo-ac-note'>$50,000 a senior, $20,000 a man under twenty-one &mdash; paid to the club he was taken from, every window.</div></div>" : "") +
       (tours ? "<div class='fo-ac-card'><h3>The tours</h3>" + tours + "</div>" : "") +
-      (caps ? "<div class='fo-ac-card'><h3>The caps book<span>" + E(n.name || "") + "</span></h3>" + caps + "</div>" : "") +
+      (caps ? "<div class='fo-ac-card'><h3>The caps book<span>" + natFlag + E(n.name || "") + "</span></h3>" + caps + "</div>" : "") +
       howItWorks());
 
     page.querySelectorAll("[data-nat]").forEach(function (b) {

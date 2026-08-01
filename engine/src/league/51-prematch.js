@@ -124,12 +124,20 @@
   function foPmStanding(g, slot) {
     var out = { pos: 0, p: 0, w: 0, l: 0, t: 0, pts: 0, nrr: 0, form: [] };
     try {
-      var tbl = (g.snap && g.snap.table) || [];
-      for (var i = 0; i < tbl.length; i++) {
-        if (tbl[i].slot !== slot) continue;
-        out.pos = i + 1; out.p = tbl[i].p | 0; out.w = tbl[i].w | 0; out.l = tbl[i].l | 0;
-        out.t = tbl[i].t | 0; out.pts = tbl[i].pts | 0; out.nrr = +tbl[i].nrr || 0;
-        break;
+      // BOTH FLIGHTS. A Division Two club is in table2, and a preview that
+      // read only table showed it unplaced and pointless in its own match.
+      // The place is its place in its own division, so each table is walked
+      // whole rather than the two run together.
+      var tbls = [(g.snap && g.snap.table) || [], (g.snap && g.snap.table2) || []];
+      for (var d = 0; d < tbls.length; d++) {
+        var tbl = tbls[d], hit = false;
+        for (var i = 0; i < tbl.length; i++) {
+          if (tbl[i].slot !== slot) continue;
+          out.pos = i + 1; out.p = tbl[i].p | 0; out.w = tbl[i].w | 0; out.l = tbl[i].l | 0;
+          out.t = tbl[i].t | 0; out.pts = tbl[i].pts | 0; out.nrr = +tbl[i].nrr || 0;
+          hit = true; break;
+        }
+        if (hit) break;
       }
       var nm = foPmName(g, slot), rec = (g.snap && g.snap.results) || [];
       rec.forEach(function (r) {

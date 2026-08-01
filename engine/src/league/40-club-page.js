@@ -171,7 +171,11 @@
     var rk = null; try { rk = JSON.parse(localStorage.getItem("fo_world_rk") || "null"); } catch (e) {}
 
     var paint = function (info, sq, hon) {
-      var name = (info && info.name) || (lg && (lg.table || []).filter(function (t) { return t.slot === slot; })[0] || {}).name;
+      // A CLUB LIVES IN ONE OF TWO TABLES. Reading table alone left every
+      // Division Two club nameless, positionless and with the wrong opponents
+      // on its card - the whole lower flight is in table2.
+      var lgRows = lg ? (lg.table || []).concat(lg.table2 || []) : [];
+      var name = (info && info.name) || (lgRows.filter(function (t) { return t.slot === slot; })[0] || {}).name;
       if (!name) { try { name = ((window.__foWorldNames && window.__foWorldNames.get(cid)) || {})[slot]; } catch (eN) {} }
       if (!name) {
         try {
@@ -198,8 +202,12 @@
       }
 
       var rkRow = rk && rk.clubs ? rk.clubs.filter(function (x) { return x.country === cid && x.slot === slot; })[0] : null;
-      var tRow = lg && lg.table ? (lg.table.filter(function (t) { return t.slot === slot; })[0] || null) : null;
-      var pos = tRow && lg.table ? lg.table.indexOf(tRow) + 1 : 0;
+      // and a club's position is its place in ITS OWN division, not in a
+      // sixteen-club list nobody plays in
+      var ownTbl = ((lg && lg.table) || []).filter(function (t) { return t.slot === slot; }).length
+        ? (lg.table || []) : ((lg && lg.table2) || []);
+      var tRow = ownTbl.filter(function (t) { return t.slot === slot; })[0] || null;
+      var pos = tRow ? ownTbl.indexOf(tRow) + 1 : 0;
 
       var played = [];
       if (lg && lg.results && name) played = lg.results.filter(function (r) { return r.home === name || r.away === name; });
@@ -217,7 +225,7 @@
           var nmOv = (window.__foWorldNames && window.__foWorldNames.get(cid)) || {};
           var nameAt = function (s2) {
             if (nmOv[s2]) return nmOv[s2];
-            var row = lg && lg.table ? lg.table.filter(function (t) { return t.slot === s2; })[0] : null;
+            var row = lgRows.filter(function (t) { return t.slot === s2; })[0];
             if (row) return row.name;
             try { return (pl.sidesOf(cid) || []).filter(function (x) { return x.slot === s2; })[0].name; } catch (e3) { return "?"; }
           };
