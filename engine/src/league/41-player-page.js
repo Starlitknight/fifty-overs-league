@@ -20,6 +20,15 @@
   function hashPath() { return (location.hash || "").split("?")[0]; }
   function onPage() { return hashPath() === "#/player"; }
   function qName() { var m = /[?&]n=([^&]+)/.exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : ""; }
+  // THE RED STAR. A man named in his country's current fifteen wears it
+  // wherever his name is written - the same mark the squad room and the
+  // teamsheets use, so an international is recognisable in every room.
+  function natStar(name, rid, slot, big) {
+    try {
+      if (!window.foNatStar) return "";
+      return window.foNatStar(name, slot == null ? null : slot, { rid: rid || undefined, big: !!big });
+    } catch (e) { return ""; }
+  }
   // which seat in the world this device holds - the address of your own club
   function worldClaim() {
     try { return window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); }
@@ -257,7 +266,10 @@
   }
 
   // ---- the shell -------------------------------------------------------------
-  var TABS = [["overview", "Overview"], ["career", "Career"], ["matches", "Matches"], ["dev", "Development"]];
+  // A CAP KEEPS ITS OWN BOOK. International runs never swell a club record, so
+  // they were a four-figure footnote at the bottom of somebody else's page.
+  // They get a page.
+  var TABS = [["overview", "Overview"], ["career", "Career"], ["country", "Country"], ["matches", "Matches"], ["dev", "Development"]];
   var TAB = "overview";
   function qp(k) { var m = new RegExp("[?&]" + k + "=([^&]*)").exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : ""; }
 
@@ -389,7 +401,8 @@
       "<span class='fo-pp-no'>No. " + no + "/199</span></div>" +
       "<div class='fo-pp-id'>" +
       "<div class='fo-pp-k'>" + E(kindLbl(p).toUpperCase()) + " &middot; " + (p.hand === "L" ? "LHB" : "RHB") + " &middot; " + E(String(p.nat || "").toUpperCase()) + "</div>" +
-      "<h1>" + E(p.name) + (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
+      "<h1>" + E(p.name) + natStar(p.name, (hit.world && hit.world.rid) || null, (hit.world && hit.world.slot), true) +
+      (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
       "<p class='fo-pp-prov'>" + E(pv.how) + pv.born + "</p>" +
       "<div class='fo-pp-strip'>" +
       "<div title='" + ageTitle(p) + "'><b>" + ageHTML(p) + "</b><i>Age</i></div>" +
@@ -439,6 +452,13 @@
         idChips.map(function (c) { return "<span><i>" + c[1] + "</i>" + E(c[0]) + "</span>"; }).join("") +
         "<span><i>&#9734;</i>No. " + no + "/199</span></div></div>" +
         "</div>";
+    } else if (TAB === "country") {
+      var myCid = "";
+      try {
+        var cl9 = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+        myCid = (hit.world && hit.world.rid) || (cl9 && cl9.country) || "";
+      } catch (eCi) {}
+      room = countryRoom(myCid, p, function () { if (onPage()) build(); });
     } else if (TAB === "matches") {
       var fx = nextFixtureFor(team.name || "");
       var spot = xiSpot(p, team);
@@ -618,6 +638,44 @@
     var n = NAT_SNAP.nations[cid];
     return (n && n.record && n.record[name]) || null;
   }
+  // ---- THE COUNTRY ROOM ------------------------------------------------------
+  // What a cap is worth, on its own page: the caps, the runs, the wickets, and
+  // whether the selectors have him in the fifteen as it stands.
+  function countryRoom(cid, pl, again) {
+    var kv = function (k, v) { return "<div><b>" + v + "</b><i>" + k + "</i></div>"; };
+    var nm = (pl && pl.name) || "";
+    var rec = cid ? servedIntl(cid, nm, again) : null;
+    var inSquad = "";
+    try { inSquad = window.foNatStar ? window.foNatStar(nm, null, { rid: cid || undefined }) : ""; } catch (e) {}
+    var natNm = "";
+    try {
+      var r0 = (window.__foCxAPI.regions() || []).filter(function (x) { return x.id === cid; })[0];
+      natNm = (r0 && r0.nm) || "";
+    } catch (e2) {}
+    var flag = ""; try { flag = window.foFlag ? window.foFlag(pl && pl.nat) : ""; } catch (e3) {}
+    var head = "<h3>" + (natNm ? E(natNm) : "For his country") +
+      "<span>" + (inSquad ? "in the current fifteen" : "not in the current fifteen") + "</span></h3>";
+    if (!rec || !rec.caps) {
+      return "<div class='fo-pp-col'><div class='fo-pp-card'>" + head +
+        "<p class='fo-pp-dim'>" + (cid ? "Uncapped." : "The world has not answered for this club yet.") + "</p>" +
+        "</div></div>" +
+        "<div class='fo-pp-rail'><div class='fo-pp-card'><h3>The windows</h3>" +
+        "<p class='fo-pp-dim'>Selectors name a fifteen at rounds 5, 9 and 13.</p>" +
+        "<a class='fo-pp-more' href='#/nations'>The international game &rsaquo;</a></div></div>";
+    }
+    var sr = rec.balls ? Math.round(1000 * (rec.runs || 0) / rec.balls) / 10 : null;
+    return "<div class='fo-pp-col'><div class='fo-pp-card'>" + head +
+      "<div class='fo-pp-mini wide'>" +
+      kv("Caps", rec.caps) + kv("Runs", rec.runs || 0) + kv("Best", rec.hs || 0) +
+      (sr == null ? "" : kv("Strike rate", sr)) +
+      kv("Wickets", rec.wkts || 0) +
+      kv("Best bowling", rec.bb ? rec.bb.w + "/" + rec.bb.r : "&mdash;") +
+      "</div></div></div>" +
+      "<div class='fo-pp-rail'><div class='fo-pp-card'><h3>" + (flag || "") + " The cap</h3>" +
+      "<p class='fo-pp-dim'>A cap keeps its own book.</p>" +
+      "<a class='fo-pp-more' href='#/nations'>The international game &rsaquo;</a></div></div>";
+  }
+
   function servedFace(sp) {
     try {
       if (window.foPkArt) return ART() + window.foPkArt({
@@ -662,7 +720,8 @@
         "<span class='fo-pp-no'>No. " + no + "/199</span></div>" +
         "<div class='fo-pp-id'>" +
         "<div class='fo-pp-k'>" + E(kind.toUpperCase()) + " &middot; " + (sp.hand === "L" ? "LHB" : "RHB") + " &middot; " + E(String(sp.nat || "").toUpperCase()) + "</div>" +
-        "<h1>" + E(sp.name) + (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
+        "<h1>" + E(sp.name) + natStar(sp.name, cid, slot, true) +
+        (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
         "<p class='fo-pp-prov'>Scouted from the boundary &middot; " + E(clubNm || "a world club") + "</p>" +
         "<div class='fo-pp-strip'>" +
         "<div title='" + ageTitle(sp) + "'><b>" + ageHTML(sp) + "</b><i>Age</i></div>" +
@@ -695,7 +754,9 @@
         kv("Best", intl.hs || 0) + kv("Wickets", intl.wkts || 0) + "</div>" +
         "</div>";
       var room;
-      if (CARD_TAB === "career") {
+      if (CARD_TAB === "country") {
+        room = countryRoom(cid, sp, function () { if (onPage()) buildCard(cid, slot, name); });
+      } else if (CARD_TAB === "career") {
         room = "<div class='fo-pp-col'><div class='fo-pp-card'><h3>Career record<span>All league cricket</span></h3>" +
           (caps ? "<div class='fo-pp-mini wide'>" + kv("Matches", caps) + kv("Runs", c.runs || 0) +
             kv("Best", c.hs || 0) + kv("Strike rate", sr) +
@@ -728,7 +789,7 @@
       wrap.innerHTML = "<a class='fo-pp-back' href='#/team?c=" + E(cid) + "&s=" + slot + "'>&lsaquo; " + E(clubNm || "The club") + "</a>" +
         plate +
         "<div class='fo-pp-tabs'>" +
-        [["overview", "Overview"], ["career", "Career"]].map(function (t) {
+        [["overview", "Overview"], ["career", "Career"], ["country", "Country"]].map(function (t) {
           return "<a class='" + (CARD_TAB === t[0] ? "on" : "") + "' data-t='" + t[0] + "' href='javascript:void 0'>" + t[1] + "</a>";
         }).join("") + "</div>" +
         "<div class='fo-pp-body'>" + room + "</div>";

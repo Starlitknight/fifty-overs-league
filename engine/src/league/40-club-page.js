@@ -283,12 +283,17 @@
       else if (sortKey === "wage") sorted.sort(function (a, b) { return (b.wage || 0) - (a.wage || 0); });
       else if (sortKey === "name") sorted.sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
 
+      // the red star, on a rival's men as on your own: a club dossier that does
+      // not say who is an international is hiding the thing you scout for
+      var natStar = function (nm2) {
+        try { return window.foNatStar ? window.foNatStar(nm2, slot, { rid: cid }) : ""; } catch (eNs) { return ""; }
+      };
       var star = sorted[0];
       var starCard = star ? "<a class='fo-cp-star' href='" + playerHref(cid, slot, isMine, star.name) + "'>" +
         "<img class='fo-cp-face' src='" + faceOf(star) + "' alt='' onerror=\"this.style.display='none'\">" +
         "<div class='fo-cp-starin'>" +
         "<div class='fo-cp-starn'>" + (natFlag(star.nat) ? "<img src='" + natFlag(star.nat) + "' alt='' onerror=\"this.style.display='none'\">" : "") +
-        "<b>" + E(star.name) + "</b></div>" +
+        "<b>" + E(star.name) + natStar(star.name) + "</b></div>" +
         "<div class='fo-cp-starr'>" + E(roleWord(star.role)) + "</div>" +
         "<div class='fo-cp-starf'><i>Form</i><span class='fo-cp-dots'>" + formDots(star.form) + "</span></div>" +
         "<div class='fo-cp-startags'>" + (star.talents || []).slice(0, 2).map(function (t) {
@@ -303,7 +308,7 @@
         return "<a class='fo-cp-row' href='" + playerHref(cid, slot, isMine, p.name) + "'>" +
           "<span class='rk'>" + (i + 2) + "</span>" +
           "<span class='rl' title='" + E(roleWord(p.role)) + "'>" + roleGlyph(p) + "</span>" +
-          "<span class='nm'><b>" + E(p.name) + "</b><i>" + E(p.bowl && p.bowl !== "Does not bowl" ? p.bowl : roleWord(p.role)) + "</i></span>" +
+          "<span class='nm'><b>" + E(p.name) + natStar(p.name) + "</b><i>" + E(p.bowl && p.bowl !== "Does not bowl" ? p.bowl : roleWord(p.role)) + "</i></span>" +
           "<span class='ov'>" + (p.ovr || "&mdash;") + "</span>" +
           "<span class='fm'>" + formDots(p.form) + "</span>" +
           "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
