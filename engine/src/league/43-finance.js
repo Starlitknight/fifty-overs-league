@@ -138,6 +138,33 @@
       ".fo-fin-wg .rl{font-family:Oswald,sans-serif;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(20,28,40,.45);text-align:right}",
       ".fo-fin-wg .wg{font-family:Oswald,sans-serif;font-weight:600;font-size:14px;font-variant-numeric:tabular-nums;text-align:right}",
       ".fo-fin-note{margin-top:22px;font:italic 420 12.5px/1.65 'Fraunces',Georgia,serif;color:rgba(20,28,40,.55);max-width:74ch}",
+      // THE STATEMENT: a bank's own furniture - a day rule, a row per entry,
+      // the amount and the balance in tabular figures so columns of money
+      // line up on the decimal the way a treasurer expects
+      "html body #page .fo-fin-stlink{display:block;margin-top:18px;padding:14px 16px;background:var(--paper) !important;border:1px solid rgba(20,28,40,.14);border-left:3px solid var(--brand);border-radius:12px;font:600 13px/1.4 Inter,sans-serif;color:#0E2246 !important;text-decoration:none !important}",
+      ".fo-st-tabs{display:flex;gap:7px;margin:18px 0 12px;flex-wrap:wrap}",
+      "html body #page .fo-st-tab{font:700 10.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.6) !important;background:var(--paper) !important;border:1px solid rgba(20,28,40,.16) !important;border-radius:999px !important;padding:0 16px !important;min-height:40px;cursor:pointer}",
+      "html body #page .fo-st-tab.on{color:#FFFEFC !important;background:#0E2246 !important;border-color:#0E2246 !important}",
+      ".fo-st-head{display:grid;grid-template-columns:46px minmax(0,1fr) 96px 96px;gap:10px;padding:0 12px 7px;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(20,28,40,.42)}",
+      ".fo-st-head span:nth-child(3),.fo-st-head span:nth-child(4){text-align:right}",
+      ".fo-st-list{background:var(--paper);border:1px solid rgba(20,28,40,.12);border-radius:14px;overflow:hidden}",
+      ".fo-st-day{padding:9px 13px;background:rgba(14,34,70,.055);font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#0E2246;border-top:1px solid rgba(20,28,40,.09)}",
+      ".fo-st-list .fo-st-day:first-child{border-top:0}",
+      ".fo-st-row{display:grid;grid-template-columns:46px minmax(0,1fr) 96px 96px;gap:10px;align-items:center;padding:10px 13px;border-top:1px solid rgba(20,28,40,.07)}",
+      ".fo-st-row .t{font:600 11px/1 Oswald,sans-serif;color:rgba(20,28,40,.45);font-variant-numeric:tabular-nums}",
+      ".fo-st-row .w{min-width:0}",
+      ".fo-st-row .w b{display:block;font:600 13px/1.3 Inter,sans-serif;color:#141C28}",
+      ".fo-st-row .w i{display:block;font-style:normal;font:400 11.5px/1.4 Inter,sans-serif;color:rgba(20,28,40,.55)}",
+      ".fo-st-row .a,.fo-st-row .b{text-align:right;font:700 13px/1.2 Oswald,sans-serif;font-variant-numeric:tabular-nums}",
+      ".fo-st-row.in .a{color:#1E7A55}.fo-st-row.out .a{color:#B23B2C}",
+      ".fo-st-row .b{color:rgba(20,28,40,.5);font-weight:400}",
+      ".fo-st-none{padding:22px 14px;text-align:center;font:400 13px/1.6 Inter,sans-serif;color:rgba(20,28,40,.55)}",
+      "html body #page .fo-st-more{display:block;width:100%;margin-top:12px;font:700 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#0E2246 !important;background:var(--paper) !important;border:1px solid rgba(20,28,40,.18) !important;border-radius:12px !important;padding:0 !important;min-height:46px;cursor:pointer}",
+      "html body #page .fo-st-more:disabled{opacity:.55;cursor:default}",
+      "@media(max-width:560px){.fo-st-head{grid-template-columns:40px minmax(0,1fr) 84px;gap:8px}",
+      ".fo-st-head span:nth-child(4){display:none}",
+      ".fo-st-row{grid-template-columns:40px minmax(0,1fr) 84px;gap:8px;padding:10px}",
+      ".fo-st-row .b{grid-column:2/4;text-align:right;margin-top:-4px;font-size:11px}}",
       ".fo-fin-foot{display:flex;gap:10px;justify-content:space-between;margin-top:20px;flex-wrap:wrap}",
       ".fo-fin-foot a{display:inline-flex;align-items:center;min-height:44px;font:600 12px Inter,sans-serif;color:rgba(20,28,40,.65);background:var(--paper);border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:0 17px;text-decoration:none}",
       ".fo-fin-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5)}",
@@ -283,6 +310,8 @@
         "</section>";
     }
 
+    // every total above is a sum of dated entries, and this is where they are
+    html += "<a class='fo-fin-stlink' href='#/statement'>&#128220; The statement &mdash; every entry, dated, with the balance after it &rsaquo;</a>";
     html += "<div class='fo-fin-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/league'>My league &rsaquo;</a></div>";
 
     page.innerHTML = shell(html);
@@ -341,6 +370,141 @@
     setTimeout(function () { try { window.foRenderFinancePage(); } catch (e) {} }, 700);
   }
 
+  // ==========================================================================
+  // THE STATEMENT (#/statement) — the same ledger, entry by entry.
+  //
+  // The books above tell a manager what his club has taken and spent. They
+  // cannot tell him WHEN, or which match, or why a fortnight went wrong -
+  // and a total nobody can trace back to a day is a number, not an account.
+  // The umpire walks every movement from the founding to settle those totals,
+  // so every entry already exists in order; it is now written down as it is
+  // counted, and this reads it back the way a bank reads a statement: newest
+  // first, dated to the hour, with the balance the club was left holding.
+  //
+  // It is your own club only. A rival can read your wage bill off your
+  // dossier; he does not get your bank.
+  // ==========================================================================
+  // the type a treasurer would head the column with. The umpire's own label
+  // for an entry always OPENS with this type and then says what was
+  // particular about it, so the row prints the type in full and only the
+  // remainder underneath - never the same words twice.
+  var STK = {
+    founding: "Founding capital", academy: "Academy building",
+    stadium: "Stadium building", gate: "Gate takings",
+    "gate-away": "Away share", sponsor: "Sponsor",
+    compensation: "International compensation", wages: "Player wages",
+    upkeep: "Academy upkeep", interest: "Overdraft interest",
+    "player-sale": "Player sales", "player-buy": "Player purchases",
+    scouting: "Scouting reports", "written-off": "Written off"
+  };
+  function stDetail(type, label) {
+    label = String(label || "");
+    if (label === type) return "";
+    if (label.indexOf(type) === 0) return label.slice(type.length).replace(/^[\s,\u00b7\-]+/, "");
+    return label;
+  }
+  var DW3 = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  var MO3 = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function stDate(ms) {
+    var d = new Date(Number(ms) || 0), p2 = function (n) { return (n < 10 ? "0" : "") + n; };
+    return { day: DW3[d.getDay()] + " " + d.getDate() + " " + MO3[d.getMonth()] + " " + d.getFullYear(),
+      time: p2(d.getHours()) + ":" + p2(d.getMinutes()),
+      key: d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()) };
+  }
+
+  var SM = { lines: [], more: false, entries: 0, club: "", bank: 0, filter: "all", busy: false, loaded: false };
+
+  function stRows() {
+    var rows = SM.lines.filter(function (l) {
+      return SM.filter === "all" || (SM.filter === "in" ? l.amount > 0 : l.amount < 0);
+    });
+    if (!rows.length) {
+      return "<div class='fo-st-none'>" + (SM.entries
+        ? "Nothing under that heading yet."
+        : "The statement opens when the umpire settles your first round.") + "</div>";
+    }
+    var out = "", lastKey = "";
+    rows.forEach(function (l) {
+      var d = stDate(l.at), type = STK[l.kind] || l.kind, det = stDetail(type, l.label);
+      if (d.key !== lastKey) {
+        lastKey = d.key;
+        out += "<div class='fo-st-day'>" + E(d.day) + "</div>";
+      }
+      var income = l.amount > 0;
+      out += "<div class='fo-st-row" + (income ? " in" : " out") + "'>" +
+        "<span class='t'>" + d.time + "</span>" +
+        "<span class='w'><b>" + E(type) + "</b>" + (det ? "<i>" + E(det) + "</i>" : "") + "</span>" +
+        "<span class='a'>" + (income ? "+" : "&minus;") + M(Math.abs(l.amount)) + "</span>" +
+        "<span class='b'>" + M(l.balance) + "</span>" +
+        "</div>";
+    });
+    return out;
+  }
+
+  function stPaint() {
+    var page = document.getElementById("page"); if (!page) return;
+    var tabs = [["all", "Everything"], ["in", "Money in"], ["out", "Money out"]].map(function (t) {
+      return "<button type='button' class='fo-st-tab" + (SM.filter === t[0] ? " on" : "") + "' data-f='" + t[0] + "'>" + t[1] + "</button>";
+    }).join("");
+    var shown = SM.lines.filter(function (l) {
+      return SM.filter === "all" || (SM.filter === "in" ? l.amount > 0 : l.amount < 0);
+    }).length;
+    page.innerHTML = shell(
+      "<div class='fo-fin-k'>The statement</div><h1>" + E(SM.club || "Your club") + "</h1>" +
+      "<div class='fo-fin-bank'><div class='lb'>In the treasury</div><b>" + M(SM.bank) + "</b>" +
+      "<div class='fo-fin-walk'><div><span>Entries on file</span><i>" + SM.entries + "</i></div>" +
+      "<div><span>Showing</span><i>" + shown + "</i></div></div></div>" +
+      "<div class='fo-st-tabs'>" + tabs + "</div>" +
+      "<div class='fo-st-head'><span>Time</span><span>What</span><span>Amount</span><span>Balance</span></div>" +
+      "<div class='fo-st-list'>" + stRows() + "</div>" +
+      (SM.more ? "<button type='button' id='fo-st-more' class='fo-st-more'" + (SM.busy ? " disabled" : "") + ">" +
+        (SM.busy ? "Turning the page&hellip;" : "Earlier entries") + "</button>" : "") +
+      "<div class='fo-fin-foot'><a href='#/finance'>&lsaquo; The books</a><a href='#/squad'>The squad &rsaquo;</a></div>");
+    page.querySelectorAll(".fo-st-tab").forEach(function (b) {
+      b.addEventListener("click", function () { SM.filter = b.getAttribute("data-f"); stPaint(); });
+    });
+    var more = document.getElementById("fo-st-more");
+    if (more) more.addEventListener("click", function () {
+      if (SM.busy) return;
+      SM.busy = true; stPaint();
+      var before = SM.lines.length ? SM.lines[SM.lines.length - 1].seq : null;
+      rpc("world_my_statement", { p_limit: 60, p_before: before })
+        .then(function (r) {
+          SM.busy = false;
+          SM.lines = SM.lines.concat((r && r.lines) || []);
+          SM.more = !!(r && r.more);
+          stPaint();
+        })
+        .catch(function () { SM.busy = false; SM.more = false; stPaint(); });
+    });
+  }
+
+  window.foRenderStatementPage = function () {
+    var page = document.getElementById("page"); if (!page) return;
+    foFinCss();
+    document.body.classList.add("fo-fin-on");
+    if (!jwt()) {
+      page.innerHTML = shell(head("The statement",
+        "Sign in to your Fifty Overs account and the treasurer will open the book."));
+      return;
+    }
+    if (SM.loaded) { stPaint(); return; }
+    page.innerHTML = shell(head("The statement", "Fetching the ledger&hellip;"));
+    rpc("world_my_statement", { p_limit: 60 })
+      .then(function (r) {
+        SM.loaded = true;
+        SM.club = (r && r.club) || ""; SM.bank = Number(r && r.bank) || 0;
+        SM.entries = Number(r && r.entries) || 0;
+        SM.lines = (r && r.lines) || []; SM.more = !!(r && r.more);
+        stPaint();
+      })
+      .catch(function (e) {
+        page.innerHTML = shell(head("The statement",
+          E(String(e.message || "The world could not be reached.").slice(0, 140))) +
+          "<div class='fo-fin-foot'><a href='#/finance'>&lsaquo; The books</a></div>");
+      });
+  };
+
   window.foRenderFinancePage = function () {
     var page = document.getElementById("page"); if (!page) return;
     foFinCss();
@@ -388,14 +552,16 @@
         if (anchor && anchor.nextSibling) wrap.insertBefore(a, anchor.nextSibling);
         else wrap.appendChild(a);
       }
-      a.classList.toggle("on", (location.hash || "").split("?")[0] === "#/finance");
+      var h9 = (location.hash || "").split("?")[0];
+      a.classList.toggle("on", h9 === "#/finance" || h9 === "#/statement");
       // Log out is furniture and belongs last, however late a pill arrives
       var out = wrap.querySelector("a.fo-logout");
       if (out && wrap.lastElementChild !== out) wrap.appendChild(out);
     } catch (e) {}
   }
   window.addEventListener("hashchange", function () {
-    if ((location.hash || "").split("?")[0] !== "#/finance") document.body.classList.remove("fo-fin-on");
+    var h8 = (location.hash || "").split("?")[0];
+    if (h8 !== "#/finance" && h8 !== "#/statement") document.body.classList.remove("fo-fin-on");
     setTimeout(ensureNavLink, 90);
   });
   [200, 600, 1400].forEach(function (ms) { setTimeout(ensureNavLink, ms); });

@@ -814,6 +814,54 @@ test('016: the nets, the face and the money all belong to the world', async () =
     `SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank);
   assert.equal(afterBank, beforeBank, 'settling twice settles the same figure');
 
+  // THE STATEMENT. Every movement the walk made, written down: what, when,
+  // how much, and the balance left. It is a derived record, so the proof is
+  // that it agrees with the totals beside it and survives a re-settle.
+  const led = (await pool.query(
+    `SELECT seq, at_ms, kind, label, amount, balance FROM ledger
+      WHERE country_id='eng' AND slot=1 ORDER BY seq`)).rows;
+  assert.ok(led.length > 10, 'the club has a statement: ' + led.length + ' entries');
+  assert.equal(led[0].kind, 'founding', 'it opens with the board\'s money');
+  assert.equal(Number(led[0].balance), 2500000);
+  // the running balance is exactly the entries walked in order
+  let run = 0;
+  led.forEach(l => { run += Number(l.amount); assert.equal(Number(l.balance), run, 'entry ' + l.seq + ' leaves the right balance'); });
+  assert.equal(run, beforeBank, 'the last balance IS the bank the manager reads');
+  // the statement's own arithmetic against the books beside it
+  const fin1 = (await pool.query(
+    `SELECT finance FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].finance;
+  const sum = k => led.filter(l => l.kind === k).reduce((a, l) => a + Number(l.amount), 0);
+  assert.equal(sum('gate'), fin1.gate, 'the gate lines add up to the gate');
+  assert.equal(sum('gate-away'), fin1.awayCut, 'the away shares add up to the away cut');
+  assert.equal(sum('sponsor'), fin1.sponsor, 'the sponsor lines add up to the sponsor');
+  assert.equal(-sum('wages'), fin1.wages, 'the wage lines add up to the wage bill paid');
+  assert.equal(-sum('upkeep'), fin1.upkeep, 'the upkeep lines add up to the upkeep');
+  // every entry is stamped with a real world moment, in order
+  assert.ok(led.every(l => Number(l.at_ms) >= Date.UTC(2026, 7, 3)), 'no entry predates the founding');
+  for (let i = 1; i < led.length; i++) {
+    assert.ok(Number(led[i].at_ms) >= Number(led[i - 1].at_ms), 'entry ' + i + ' does not go back in time');
+  }
+  // rebuilt whole, never appended: settle again and it is the same statement
+  await settleMoney(pool, 'eng');
+  const led2 = (await pool.query(
+    `SELECT seq, at_ms, kind, amount, balance FROM ledger
+      WHERE country_id='eng' AND slot=1 ORDER BY seq`)).rows;
+  assert.deepEqual(led2.map(l => [l.seq, String(l.at_ms), l.kind, String(l.amount), String(l.balance)]),
+    led.map(l => [l.seq, String(l.at_ms), l.kind, String(l.amount), String(l.balance)]),
+    'settling twice writes the identical statement');
+  // and a bot club, whom nobody would read, is not written down at all
+  const botLed = (await pool.query(
+    `SELECT count(*)::int AS n FROM ledger WHERE country_id='eng' AND slot=0`)).rows[0].n;
+  assert.equal(botLed, 0, 'the flagship keeps no statement - nobody reads it');
+  // the reading function serves your own club and states its own bank
+  const stmt = (await as(U1, `SELECT public.world_my_statement(5) AS s`)).rows[0].s;
+  assert.equal(stmt.lines.length, 5, 'a page of five');
+  assert.equal(stmt.entries, led.length);
+  assert.ok(stmt.more, 'and there is more behind it');
+  assert.ok(stmt.lines[0].seq > stmt.lines[4].seq, 'newest first, like a statement');
+  const older = (await as(U1, `SELECT public.world_my_statement(5, ${stmt.lines[4].seq}) AS s`)).rows[0].s;
+  assert.ok(older.lines[0].seq < stmt.lines[4].seq, 'the next page picks up where it left off');
+
   // your own status carries all three home
   const st = await as(U1, `SELECT public.world_my_status() AS s`);
   const s = st.rows[0].s;

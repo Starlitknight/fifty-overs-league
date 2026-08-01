@@ -17,7 +17,7 @@
 // THE LAW HOLDS: nothing here is incremented imperatively and nothing is
 // stored that a re-run could not rebuild. Settle it twice and it settles the
 // same figure, which is what lets an offline manager trust it.
-import { seedOf, dayOfRound } from './clock.mjs';
+import { seedOf, dayOfRound, natHour, EPOCH, DAY } from './clock.mjs';
 
 export const FOUNDING_BANK = 2500000;
 export const FOUNDING_SUPPORT = 12000;
@@ -96,7 +96,26 @@ export function sponsorOf(pos, mood, clubs) {
 // club at once - because a club's gate depends on who visited and where the
 // visitor stood that morning.
 // ---------------------------------------------------------------------------
-export async function computeFinance(pool, country) {
+// THE STATEMENT. The walk below already visits every movement of money this
+// country has ever made, in order, and until now it threw the lines away and
+// kept only the totals. Ask for a slot's ledger and it hands back the lines
+// too: what, when, how much, and the balance the club was left holding.
+// Nothing new is stored to make this possible - it is the same walk, and a
+// re-run rebuilds the identical statement, which is the whole law of these
+// books. Timestamps are the world's own: a round settles at its nation's
+// hour on the day it is played, a transfer on the day the envelopes opened.
+export async function computeFinance(pool, country, opts = {}) {
+  const want = opts.ledgerSlots instanceof Set ? opts.ledgerSlots
+    : Array.isArray(opts.ledgerSlots) ? new Set(opts.ledgerSlots) : null;
+  const ledger = {};
+  const HOUR = natHour(country) * 3600000;
+  const line = (slot, at, kind, label, amount, balance) => {
+    if (!want || !want.has(slot) || !amount) return;
+    (ledger[slot] = ledger[slot] || []).push({
+      at: at, kind: kind, label: label,
+      amount: Math.round(amount), balance: Math.round(balance)
+    });
+  };
   const clubs = (await pool.query(
     `SELECT slot, name, is_boss, squad, academy, academy_paid, seats, seats_paid
        FROM clubs WHERE country_id=$1 ORDER BY slot`, [country])).rows;
@@ -176,6 +195,14 @@ export async function computeFinance(pool, country) {
       writtenOff: 0, admin: false, adminRounds: 0,
       atts: [], rounds: 0
     };
+    // THE OPENING BALANCE, in the order the bank itself was built. The ground
+    // and the academy are running totals in the register with no dates behind
+    // them, so they can only be stated as what has been spent to date - the
+    // one place this statement cannot say WHEN.
+    let b0 = FOUNDING_BANK;
+    line(c.slot, EPOCH + HOUR, 'founding', 'Founding capital from the board', FOUNDING_BANK, b0);
+    if (+c.academy_paid) { b0 -= +c.academy_paid; line(c.slot, EPOCH + HOUR, 'academy', 'Academy building, to date', -(+c.academy_paid), b0); }
+    if (+c.seats_paid) { b0 -= +c.seats_paid; line(c.slot, EPOCH + HOUR, 'stadium', 'Stadium building, to date', -(+c.seats_paid), b0); }
   }
   // the table as it stood that morning: 1 is top
   const posMap = () => {
@@ -199,8 +226,14 @@ export async function computeFinance(pool, country) {
       const c = S[m.slot]; if (!c) continue;
       c.feesIn += m.in; c.feesOut += m.out; c.scouting += m.scout;
       c.soldN += m.sold; c.boughtN += m.bought;
-      c.bank += m.in - m.out - m.scout;
-      if (c.bank < -DEBT_LIMIT) { c.writtenOff += (-DEBT_LIMIT) - c.bank; c.bank = -DEBT_LIMIT; }
+      const at = EPOCH + m.day * DAY + HOUR;
+      if (m.in) { c.bank += m.in; line(m.slot, at, 'player-sale', 'Player sales \u00b7 ' + (m.sold === 1 ? 'one man out' : m.sold + ' men out'), m.in, c.bank); }
+      if (m.out) { c.bank -= m.out; line(m.slot, at, 'player-buy', 'Player purchases \u00b7 ' + (m.bought === 1 ? 'one man in' : m.bought + ' men in'), -m.out, c.bank); }
+      if (m.scout) { c.bank -= m.scout; line(m.slot, at, 'scouting', 'Scouting reports', -m.scout, c.bank); }
+      if (c.bank < -DEBT_LIMIT) {
+        const off = (-DEBT_LIMIT) - c.bank; c.writtenOff += off; c.bank = -DEBT_LIMIT;
+        line(m.slot, at, 'written-off', 'Written off at the floor', off, c.bank);
+      }
       c.admin = c.bank <= -DEBT_LIMIT;
     }
   };
@@ -211,7 +244,8 @@ export async function computeFinance(pool, country) {
     // the money by the time the gate is counted
     if (R.ms.length) drainMarket((startOf[R.ms[0].season_no] ?? 0) + (dayOfRound(R.ms[0].round) ?? (R.ms[0].round - 1)));
     const takings = {};                                   // slot -> money this round
-    for (const c of clubs) takings[c.slot] = 0;
+    const gates = {};                                     // slot -> the lines behind it
+    for (const c of clubs) { takings[c.slot] = 0; gates[c.slot] = []; }
     for (const m of R.ms) {
       const H = S[m.home_slot], A = S[m.away_slot];
       if (!H || !A) continue;
@@ -222,7 +256,12 @@ export async function computeFinance(pool, country) {
       H.gate += home; H.atts.push(att); H.lastAtt = att; H.lastWeather = w.word;
       A.awayCut += away;
       takings[H.slot] += home; takings[A.slot] += away;
+      gates[H.slot].push({ kind: 'gate', label: 'Gate v ' + m.away_name + ' \u00b7 ' + att.toLocaleString('en-US') + ' through the turnstiles', amount: home });
+      gates[A.slot].push({ kind: 'gate-away', label: 'Away share at ' + m.home_name, amount: away });
     }
+    // the world moment this round's books are settled: its nation's own hour
+    const roundAt = EPOCH + ((startOf[R.ms[0].season_no] ?? 0) +
+      (dayOfRound(R.ms[0].round) ?? (R.ms[0].round - 1))) * DAY + HOUR;
     // every club that played takes its sponsor money, pays its men and its
     // academy, and then answers to the bank
     const playing = new Set();
@@ -237,12 +276,26 @@ export async function computeFinance(pool, country) {
       const comp = f ? f.paid : 0;
       c.sponsor += sp; c.wagesPaid += c.wages; c.upkeep += up; c.rounds++;
       c.compensation += comp; c.capsAway += f ? f.men : 0;
+      const wasAdmin = c.admin;
       if (c.admin) c.adminRounds++;
-      c.bank += takings[slot] + sp + comp - c.wages - up;
-      if (c.bank < 0) { const i = Math.round(-c.bank * DEBT_ROUND); c.interest += i; c.bank -= i; }
+      // the same sum as ever, taken one entry at a time so the running balance
+      // the statement prints is the balance the club actually held
+      for (const g of gates[slot]) { c.bank += g.amount; line(slot, roundAt, g.kind, g.label, g.amount, c.bank); }
+      c.bank += sp;
+      line(slot, roundAt, 'sponsor', wasAdmin ? 'Sponsor, on administration terms' : 'Sponsor', sp, c.bank);
+      if (comp) { c.bank += comp; line(slot, roundAt, 'compensation', 'International compensation \u00b7 ' + f.men + (f.men === 1 ? ' man' : ' men') + ' away', comp, c.bank); }
+      c.bank -= c.wages; line(slot, roundAt, 'wages', 'Player wages', -c.wages, c.bank);
+      c.bank -= up; line(slot, roundAt, 'upkeep', 'Academy upkeep \u00b7 level ' + c.academy, -up, c.bank);
+      if (c.bank < 0) {
+        const i = Math.round(-c.bank * DEBT_ROUND); c.interest += i; c.bank -= i;
+        line(slot, roundAt, 'interest', 'Overdraft interest', -i, c.bank);
+      }
       // THE FLOOR. Nothing sinks past what the club was founded with; what
       // would have gone deeper is written off, and the club is under.
-      if (c.bank < -DEBT_LIMIT) { c.writtenOff += (-DEBT_LIMIT) - c.bank; c.bank = -DEBT_LIMIT; }
+      if (c.bank < -DEBT_LIMIT) {
+        const off = (-DEBT_LIMIT) - c.bank; c.writtenOff += off; c.bank = -DEBT_LIMIT;
+        line(slot, roundAt, 'written-off', 'Written off at the floor', off, c.bank);
+      }
       c.admin = c.bank <= -DEBT_LIMIT;
     }
     // the result, and what it does to the mood and the crowd
@@ -268,7 +321,7 @@ export async function computeFinance(pool, country) {
 
   drainMarket(Infinity);        // deals closed since the last round still count
 
-  return clubs.map(c => {
+  const out = clubs.map(c => {
     const s = S[c.slot];
     const avg = s.atts.length ? Math.round(s.atts.reduce((a, b) => a + b, 0) / s.atts.length) : 0;
     return {
@@ -291,15 +344,47 @@ export async function computeFinance(pool, country) {
       }
     };
   });
+  if (want) out.forEach(r => { r.ledger = ledger[r.slot] || []; });
+  return out;
 }
 
 // settle it into the clubs table: the bank a manager reads and the books
-// behind it, both rebuilt from the record and never incremented
+// behind it, both rebuilt from the record and never incremented - and, for
+// the clubs that have somebody to read it, the statement behind THAT.
 export async function settleMoney(pool, country) {
-  const rows = await computeFinance(pool, country);
+  // a bot club's statement would be read by nobody, so it is not written
+  let managed = [];
+  try {
+    managed = (await pool.query('SELECT slot FROM claims WHERE country_id=$1', [country])).rows.map(r => r.slot | 0);
+  } catch (eC) { managed = []; }
+  const rows = await computeFinance(pool, country, managed.length ? { ledgerSlots: managed } : {});
   for (const r of rows) {
     await pool.query('UPDATE clubs SET bank=$3, finance=$4::jsonb WHERE country_id=$1 AND slot=$2',
       [country, r.slot, r.bank, JSON.stringify(r.finance)]);
   }
+  try { await writeLedgers(pool, country, rows); }
+  catch (eL) {}                                  // pre-036 database: no statement yet
   return rows.length;
+}
+
+// THE STATEMENT IS REBUILT WHOLE, never appended to - the same law the books
+// themselves keep. A re-run can then neither double a line nor lose one, which
+// is what makes it safe for the umpire to settle the same day twice.
+const LEDGER_CHUNK = 400;
+async function writeLedgers(pool, country, rows) {
+  for (const r of rows) {
+    if (!r.ledger) continue;
+    await pool.query('DELETE FROM ledger WHERE country_id=$1 AND slot=$2', [country, r.slot]);
+    for (let from = 0; from < r.ledger.length; from += LEDGER_CHUNK) {
+      const chunk = r.ledger.slice(from, from + LEDGER_CHUNK);
+      const vals = [], args = [country, r.slot];
+      chunk.forEach((l, i) => {
+        const b = args.length;
+        args.push(l.at, l.kind, l.label, l.amount, l.balance);
+        vals.push('($1,$2,' + (from + i) + ',$' + (b + 1) + ',$' + (b + 2) + ',$' + (b + 3) + ',$' + (b + 4) + ',$' + (b + 5) + ')');
+      });
+      await pool.query(
+        'INSERT INTO ledger(country_id,slot,seq,at_ms,kind,label,amount,balance) VALUES ' + vals.join(','), args);
+    }
+  }
 }
