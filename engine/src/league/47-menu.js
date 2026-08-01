@@ -52,31 +52,34 @@
   }
 
   // THE BUILDING, room by room. Order is the order a manager meets them.
+  // A door is named, not described: "The nets" is the whole of what the
+  // reader needs, and a line under it explaining that the nets are where men
+  // train was a caption on a signpost.
   var MAP = [
     { k: "Your club", rooms: [
-      ["home", "house", "Home ground", "The day, the weather and your next match"],
-      ["squad", "people", "The squad", "Every man on the books, and the eleven you pick"],
-      ["training", "net", "The nets", "What each man works on, week by week"],
-      ["academy", "star", "The academy", "The colts coming through, and what a level buys"],
-      ["finance", "coin", "The books", "The bank, the gate, the wage bill and the ground"],
-      ["fixtures", "cal", "The fixture list", "Every match of the summer, dated"],
-      ["matchday", "pitch", "Matchday", "The pitch, the head-to-head and the probable XIs"],
-      ["milestones", "medal", "The honours board", "The plaques won, and the ones still open"]
+      ["home", "house", "Home ground"],
+      ["squad", "people", "The squad"],
+      ["training", "net", "The nets"],
+      ["academy", "star", "The academy"],
+      ["finance", "coin", "The books"],
+      ["fixtures", "cal", "The fixture list"],
+      ["matchday", "pitch", "Matchday"],
+      ["milestones", "medal", "The honours board"]
     ] },
     { k: "The world", rooms: [
-      ["planet", "globe", "World cricket", "Every nation's round, live on the world clock"],
-      ["league", "table", "My league", "The table, the results and who is chasing whom"],
-      ["nations", "plane", "The international game", "The windows, the squads, the tours and the caps"],
-      ["champions", "crown", "The Champions Cup", "The champion club of every nation, one knockout"],
-      ["rankings", "chart", "The world rankings", "One ladder for every club on earth"],
-      ["world", "map", "The world map", "The globe, nation by nation"],
-      ["atlas", "book", "The atlas", "Every league, every club, every ground"],
-      ["team", "shield", "Club dossiers", "A rival read properly, squad and all"]
+      ["planet", "globe", "World cricket"],
+      ["league", "table", "My league"],
+      ["nations", "plane", "The international game"],
+      ["champions", "crown", "The Champions Cup"],
+      ["rankings", "chart", "The world rankings"],
+      ["world", "map", "The world map"],
+      ["atlas", "book", "The atlas"],
+      ["team", "shield", "Club dossiers"]
     ] },
     { k: "The record", rooms: [
-      ["almanack", "globe", "The world almanack", "The book of record for the whole planet"],
-      ["paper", "news", "The gazette", "One front page a day, the same on every phone"],
-      ["lore", "book", "The journal", "The book of the league, and the people in it"]
+      ["almanack", "globe", "The world almanack"],
+      ["paper", "news", "The gazette"],
+      ["lore", "book", "The journal"]
     ] }
   ];
 
@@ -109,7 +112,7 @@
       "html body #fo-menu .fo-mu-x:hover{background:rgba(255,255,255,.16) !important}",
       "#fo-menu .fo-mu-sec{margin:16px 0 8px;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#E8B96A}",
       "#fo-menu .fo-mu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}",
-      "html body #fo-menu a.fo-mu-r{display:flex;align-items:center;gap:12px;min-height:58px;padding:9px 13px;border-radius:14px;background:rgba(255,255,255,.045) !important;border:1px solid rgba(255,255,255,.075);color:#FFFEFC !important;text-decoration:none !important;transition:background .14s,border-color .14s,transform .14s}",
+      "html body #fo-menu a.fo-mu-r{display:flex;align-items:center;gap:12px;min-height:50px;padding:8px 13px;border-radius:14px;background:rgba(255,255,255,.045) !important;border:1px solid rgba(255,255,255,.075);color:#FFFEFC !important;text-decoration:none !important;transition:background .14s,border-color .14s,transform .14s}",
       "html body #fo-menu a.fo-mu-r:hover{background:rgba(255,255,255,.1) !important;border-color:rgba(232,185,106,.42);transform:translateY(-1px)}",
       "html body #fo-menu a.fo-mu-r.on{background:rgba(201,85,50,.2) !important;border-color:rgba(232,185,106,.6)}",
       "#fo-menu a.fo-mu-r em{flex:none;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:11px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:#E8B96A;font-style:normal}",
@@ -118,7 +121,6 @@
       "#fo-menu a.fo-mu-r.on em{background:rgba(232,185,106,.24);border-color:rgba(232,185,106,.55);color:#FFE7BE}",
       "#fo-menu a.fo-mu-r div{min-width:0}",
       "#fo-menu a.fo-mu-r b{display:block;font:600 14px/1.2 Inter,sans-serif;color:#FFFEFC}",
-      "#fo-menu a.fo-mu-r i{display:block;margin-top:2px;font:400 11px/1.35 Inter,sans-serif;font-style:normal;color:rgba(255,254,252,.56);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}",
       "#fo-menu .fo-mu-foot{margin-top:20px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);display:flex;flex-wrap:wrap;gap:8px}",
       "html body #fo-menu .fo-mu-foot a{font:600 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,254,252,.72) !important;background:rgba(255,255,255,.06) !important;border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:11px 16px;text-decoration:none !important;cursor:pointer}",
       "html body #fo-menu .fo-mu-foot a:hover{background:rgba(255,255,255,.13) !important;color:#FFFEFC !important}",
@@ -175,7 +177,7 @@
         return "<div class='fo-mu-sec'>" + E(g.k) + "</div><div class='fo-mu-grid'>" +
           g.rooms.map(function (r) {
             return "<a class='fo-mu-r" + (r[0] === here ? " on" : "") + "' href='#/" + r[0] + "'>" +
-              "<em>" + glyph(r[1]) + "</em><div><b>" + E(r[2]) + "</b><i>" + E(r[3]) + "</i></div></a>";
+              "<em>" + glyph(r[1]) + "</em><div><b>" + E(r[2]) + "</b></div></a>";
           }).join("") + "</div>";
       }).join("") +
       "<div class='fo-mu-foot'></div></div></div>";
