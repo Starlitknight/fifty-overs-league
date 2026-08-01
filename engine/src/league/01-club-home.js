@@ -205,77 +205,168 @@
     inp.addEventListener("blur", function () { setTimeout(function () { drop.style.display = "none"; }, 250); });
     inp.addEventListener("focus", render);
   }
+  // ---- FRIENDLIES, FROM THE WORLD THAT ACTUALLY PLAYS THEM -----------------
+  // This whole surface read league_challenges - the retired private-league
+  // stack - so a friendly arranged in the served world never reached the front
+  // door: the next-match card stayed on the league round and the fixture list
+  // never mentioned it. A manager could arrange a match and find no trace of it
+  // anywhere he actually looks. The World Service is the only place a friendly
+  // lives now, so that is what these read.
+  //
+  // One fetch feeds both the next-match card and the fixture list, because a
+  // match that is next but not upcoming is a contradiction the front door
+  // should never show.
+  var FR_SB = "https://egaipdksvztqqgouriyc.supabase.co";
+  var FR_KEY = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+  var FR = { at: 0, list: null, waits: [] };
+  var FR_WINDOW = 3 * 3600000;          // the broadcast window the theatre paces
+  function frJwt() { try { return (window.__foJWT && window.__foJWT()) || ""; } catch (e) { return ""; } }
+  function frLoad(cb) {
+    if (!frJwt()) { cb([]); return; }
+    if (FR.list && Date.now() - FR.at < 60000) { cb(FR.list); return; }
+    FR.waits.push(cb);
+    if (FR.waits.length > 1) return;                       // a call is already out
+    var done = function (rows) {
+      FR.at = Date.now(); FR.list = Array.isArray(rows) ? rows : [];
+      var w = FR.waits; FR.waits = [];
+      w.forEach(function (f) { try { f(FR.list); } catch (e) {} });
+    };
+    fetch(FR_SB + "/rest/v1/rpc/world_my_friendlies", {
+      method: "POST",
+      headers: { apikey: FR_KEY, Authorization: "Bearer " + frJwt(), "content-type": "application/json" },
+      body: "{}"
+    }).then(function (r) { return r.ok ? r.json() : []; }).then(done).catch(function () { done([]); });
+  }
+  // accepted, and not yet out of its broadcast window: the ones still to come
+  function frUpcoming(list) {
+    var now = Date.now();
+    return (list || []).filter(function (f) {
+      return f && f.status === "accepted" && f.playAtMs && now < f.playAtMs + FR_WINDOW;
+    }).sort(function (a, b) { return a.playAtMs - b.playAtMs; });
+  }
+  // the other club, and the address of its dossier - where the tie itself lives
+  function frFoe(f) {
+    return f.mine
+      ? { name: f.away, c: f.oCountry, s: f.oSlot, home: true }
+      : { name: f.home, c: f.cCountry, s: f.cSlot, home: false };
+  }
+  function frHref(foe) {
+    return (foe.c != null && foe.s != null) ? "#/team?c=" + encodeURIComponent(foe.c) + "&s=" + foe.s : "#/worldclub";
+  }
+  function frWhen(ms) {
+    var d = new Date(ms), p2 = function (n) { return (n < 10 ? "0" : "") + n; };
+    return { date: d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }),
+      time: p2(d.getHours()) + ":" + p2(d.getMinutes()),
+      full: d.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) };
+  }
+  // The moment of the next league first ball, on the world's own clock. null
+  // means "the world has not spoken yet" and Infinity means "the season is
+  // played out" - a distinction that matters, because guessing against a
+  // league whose schedule has not arrived is how a game ends up showing two
+  // different next fixtures at once.
+  function frLeagueMs() {
+    try {
+      var sv = window.__foServed;
+      if (!sv || !sv.on()) return null;
+      var fx = sv.fixtures(1)[0];
+      if (!fx) return Infinity;
+      return sv.ballAt(fx.round) || Infinity;
+    } catch (e) { return null; }
+  }
   // when an accepted friendly plays before the next league round, the home
   // "next match" card becomes the friendly, countdown and all
   function foNextFriendly() {
     try {
-      if (!(SYNC && SYNC.started && !SYNC.practice && LG)) return;
       var host = document.querySelector("#page .fo-c2-next"); if (!host || host.__foFr) return;
-      var me = userTeam().name;
-      // only rows that can still matter: kickoff within the last broadcast hour
-      // or in the future. Without this horizon, ascending order + the limit
-      // filled the page with long-finished friendlies and the real next one
-      // never made the cut - the card silently stayed on the league round.
-      var horizon = encodeURIComponent(new Date(Date.now() - 65 * 60000).toISOString());
-      sel("league_challenges", "league_id=eq." + LG.id + "&or=(status.eq.accepted,status.eq.played)&play_at=gte." + horizon + "&select=*&order=play_at.asc&limit=8").then(function (rows) {
-        rows = (rows || []).filter(function (c) {
-          if (!(c.challenger_club === me || c.opponent_club === me) || !c.play_at) return false;
-          var ph = foFrBcastState(c).phase;
-          return ph === "pre" || ph === "live";
-        });
-        var ch = rows[0]; if (!ch) return;
+      frLoad(function (list) {
+        var f = frUpcoming(list)[0]; if (!f) return;
         var host2 = document.querySelector("#page .fo-c2-next"); if (!host2 || host2.__foFr) return;
-        var fst = foFrBcastState(ch);
-        var untilFr = new Date(ch.play_at).getTime() - Date.now();
-        var untilLg = Infinity; try { untilLg = foNextMatchdayMs(); } catch (e2) {}
-        if (fst.phase === "pre" && !(untilFr > 0 && untilFr < untilLg)) return;
-        var vs = ch.challenger_club === me ? ch.opponent_club : ch.challenger_club;
-        var when = new Date(ch.play_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) + (foTzAbbr() ? " " + foTzAbbr() : "");
-        var lgChip = "";
-        try {
-          var SVc = window.__foServed && window.__foServed.on() ? window.__foServed : null;
-          if (SVc) lgChip = "<span class='fo-c2-nchip'>League Round " + SVc.round() + " follows &middot; " + foDailyTime(SVc.roundsPlayed()) + "</span>";
-          else if (App.season && typeof App.season.round === "number") lgChip = "<span class='fo-c2-nchip'>League Round " + (App.season.round + 1) + " follows &middot; 9:00 AM ET</span>";
-        } catch (eLc) {}
+        var live = Date.now() >= f.playAtMs;
+        if (!live) {
+          var lgMs = frLeagueMs();
+          if (lgMs == null) return;                         // never guess against the league
+          if (!(f.playAtMs < lgMs)) return;                 // the league gets there first
+        }
+        var foe = frFoe(f), w = frWhen(f.playAtMs);
         host2.__foFr = 1;
-        if (fst.phase === "live") {
+        if (live) {
           host2.innerHTML = "<div class='fo-c2-nl'>" +
             "<div class='fo-c2-nk'><span class='live-dot'></span> Friendly &middot; LIVE now</div>" +
-            "<div class='fo-c2-nopp'>vs " + E(vs) + "</div>" +
-            "<div class='fo-c2-nsub'>" + foFrLiveLine(ch, fst.p) + "</div>" +
-            "<div class='fo-c2-nchips'>" + lgChip + "</div></div>" +
-            "<div class='fo-c2-nr'><button class='fo-next-cta' id='fo-fr-watch'><span class='fo-play'><svg viewBox='0 0 24 24' width='13' height='13' fill='currentColor'><path d='M8 5v14l11-7z'/></svg></span> Watch live</button></div>";
+            "<div class='fo-c2-nopp'>" + (foe.home ? "vs " : "at ") + E(foe.name) + "</div>" +
+            "<div class='fo-c2-nsub'>First ball " + w.time + "</div></div>" +
+            "<div class='fo-c2-nr'><button class='fo-next-cta' id='fo-fr-watch'>" +
+            "<span class='fo-play'><svg viewBox='0 0 24 24' width='13' height='13' fill='currentColor'><path d='M8 5v14l11-7z'/></svg></span> Watch live</button></div>";
           var bw = document.getElementById("fo-fr-watch");
-          if (bw) bw.addEventListener("click", function () { location.hash = "#/friendly?id=" + ch.id; if (typeof window.route === "function") window.route(); });
+          if (bw) bw.addEventListener("click", function () { try { window.foWtFriendly(+f.id); } catch (e9) {} });
           return;
         }
-        var attached = false;
-        try { attached = !!(ch.orders && ch.orders[me]); } catch (eAo) {}
-        var lockedN = untilFr <= 60 * 60000;   // past the lock: preview time, not lineup time
+        var locked = f.playAtMs - Date.now() <= 3600000;
         host2.innerHTML = "<div class='fo-c2-nl'>" +
           "<div class='fo-c2-nk'>Next match &middot; Friendly</div>" +
-          "<div class='fo-c2-nopp'>" + (ch.challenger_club === me ? "vs " : "at ") + E(vs) + "</div>" +
-          "<div class='fo-c2-nsub'>" + foPitchName(ch.pitch) + " pitch" + (ch.weather ? " &middot; " + E(ch.weather) : "") + "</div>" +
-          "<div class='fo-c2-nchips'>" + lgChip + "</div></div>" +
+          "<div class='fo-c2-nopp'>" + (foe.home ? "vs " : "at ") + E(foe.name) + "</div>" +
+          "<div class='fo-c2-nsub'>" + (foe.home ? "Your ground" : E(foe.name) + "'s ground") + "</div></div>" +
           "<div class='fo-c2-nr'><div class='fo-c2-nk'>Match starts in</div><div class='fo-c2-cd' id='fo-cd-fr'></div>" +
-          "<div class='fo-c2-nsub'><b>" + when + "</b></div>" +
-          "<div class='fo-c2-ndl'>" + (lockedN ? "Lineups are locked" + (attached ? " &middot; &#10003; yours is in" : " &middot; auto XI plays") : "Lineups lock an hour before kickoff") + "</div>" +
-          (lockedN
-            ? "<button class='fo-next-cta' id='fo-fr-prev'>Match preview &rsaquo;</button>"
-            : "<button class='fo-next-cta" + (attached ? " fo-done" : "") + "' id='fo-fr-prep'>" + (attached ? "Lineup attached &middot; review &rsaquo;" : "Set lineup &rsaquo;") + "</button>") + "</div>";
-        var tick = function () {
+          "<div class='fo-c2-nsub'><b>" + E(w.full) + "</b></div>" +
+          "<div class='fo-c2-ndl'>" + (locked ? "Teamsheets are in" : (f.myOrders ? "Lineup set \u2713" : "Your latest orders play")) + "</div>" +
+          "<button class='fo-next-cta' id='fo-fr-foe'>Their squad &rsaquo;</button></div>";
+        var bf = document.getElementById("fo-fr-foe");
+        if (bf) bf.addEventListener("click", function () {
+          location.hash = frHref(foe);
+          if (typeof window.route === "function") window.route();
+        });
+        var iv = setInterval(function () {
           var el = document.getElementById("fo-cd-fr");
           if (!el) { clearInterval(iv); return; }
-          var left = new Date(ch.play_at).getTime() - Date.now();
-          if (left <= 0) { clearInterval(iv); host2.__foFr = 0; foNextFriendly(); return; }
-          el.textContent = (typeof foCdText === "function") ? foCdText(left) : when;
-        };
-        var iv = setInterval(tick, 1000); tick();
-        var b = document.getElementById("fo-fr-prep"); if (b) b.addEventListener("click", function () { foChalPrep(ch); });
-        var bPv = document.getElementById("fo-fr-prev"); if (bPv) bPv.addEventListener("click", function () { location.hash = "#/friendly?id=" + ch.id; if (typeof window.route === "function") window.route(); });
-      }).catch(function () {});
+          var left = f.playAtMs - Date.now();
+          if (left <= 0) { clearInterval(iv); host2.__foFr = 0; FR.at = 0; foNextFriendly(); return; }
+          el.textContent = (typeof foCdText === "function") ? foCdText(left) : w.full;
+        }, 1000);
+        var el0 = document.getElementById("fo-cd-fr");
+        if (el0 && typeof foCdText === "function") el0.textContent = foCdText(f.playAtMs - Date.now());
+      });
     } catch (e) {}
   }
+  // the same friendlies, dropped into the upcoming-fixtures card in their true
+  // slot on the clock - each league row carries the moment it is played, so a
+  // friendly slides in between two rounds rather than being appended after them
+  function foFixturesFriendly() {
+    try {
+      var card = document.querySelector("#page .fo-o-fx .fo-card-b"); if (!card || card.__foFr) return;
+      frLoad(function (list) {
+        var up = frUpcoming(list); if (!up.length) return;
+        var card2 = document.querySelector("#page .fo-o-fx .fo-card-b"); if (!card2 || card2.__foFr) return;
+        card2.__foFr = 1;
+        up.forEach(function (f) {
+          var foe = frFoe(f), w = frWhen(f.playAtMs);
+          var row = document.createElement("div");
+          row.className = "fo-c2-fx";
+          row.setAttribute("data-at", f.playAtMs);
+          row.innerHTML = "<div class='fo-c2-fxd'><b>" + E(w.date) + "</b><span>" + w.time + "</span></div>" +
+            "<div class='fo-c2-fxm'><b>" + (foe.home ? "vs " : "@ ") + E(foe.name) + "</b>" +
+            "<span>Friendly &middot; " + (foe.home ? "Home" : "Away") + "</span></div>" +
+            "<span class='fo-c2-fxn fr'>FR</span>";
+          var rows = card2.querySelectorAll(".fo-c2-fx[data-at]");
+          var before = null;
+          for (var i = 0; i < rows.length; i++) {
+            if (+rows[i].getAttribute("data-at") > f.playAtMs) { before = rows[i]; break; }
+          }
+          if (before) before.parentNode.insertBefore(row, before);
+          else {
+            var host = card2.querySelector(".fo-fx-more") || card2;
+            var more = card2.querySelector(".fo-c2-wmore");
+            if (host === card2 && more) card2.insertBefore(row, more); else host.appendChild(row);
+          }
+        });
+      });
+    } catch (e) {}
+  }
+  // the two painters, reachable by name: the front door repaints them after a
+  // render, and a probe can drive them without a whole club behind it
+  window.__foFriendlyHome = {
+    next: foNextFriendly, fixtures: foFixturesFriendly,
+    reload: function () { FR.at = 0; FR.list = null; }
+  };
+
   function foPremiumClub() {
     try {
       if (typeof userTeam !== "function" || typeof GD === "undefined" || !GD.teams) { return foOrigClub && foOrigClub(); }
@@ -718,23 +809,13 @@
       };
       foUserFixtures().slice(0, 5).forEach(function (x) {
         var isN = nxt && x.round === nxt.round;
-        fxItems.push({ at: fxAt(x.round), html: "<div class='fo-c2-fx" + (isN ? " next" : "") + "'>" +
+        var at9 = fxAt(x.round);
+        fxItems.push({ at: at9, html: "<div class='fo-c2-fx" + (isN ? " next" : "") + "' data-at='" + at9 + "'>" +
           "<div class='fo-c2-fxd'><b>" + E(x.date) + "</b><span>" + foDailyTime(x.round) + "</span></div>" +
           "<div class='fo-c2-fxm'><b>" + (x.isHome ? "vs " : "@ ") + E(x.opp.name) + "</b><span>Round " + (x.round + 1) + " &middot; " + (x.isHome ? "Home" : "Away") + (isN ? " &middot; " + E(foPitchName(x.pitch)) + " pitch" : "") + (x.weather ? " &middot; " + E(x.weather) : "") + "</span></div>" +
           (isN ? "<span class='fo-c2-fxn'>NEXT</span>" : "") + "</div>" });
       });
-      try {
-        (window.__foFrAll || []).forEach(function (c2f) {
-          if (!c2f || (c2f.challenger_club !== t.name && c2f.opponent_club !== t.name)) return;
-          if (c2f.status !== "accepted" || foFrBcastState(c2f).phase !== "pre") return;
-          var dF = new Date(c2f.play_at);
-          var pd2 = function (n) { return (n < 10 ? "0" : "") + n; };
-          fxItems.push({ at: +dF || 0, html: "<div class='fo-c2-fx'><div class='fo-c2-fxd'><b>" + dF.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + "</b><span>" + pd2(dF.getHours()) + ":" + pd2(dF.getMinutes()) + "</span></div>" +
-            "<div class='fo-c2-fxm'><b>" + (c2f.challenger_club === t.name ? "vs " + E(c2f.opponent_club) : "@ " + E(c2f.challenger_club)) + "</b><span>Friendly &middot; " + foPitchName(c2f.pitch || "balanced") + "</span></div>" +
-            "<span class='fo-c2-fxn fr'>FR</span></div>" });
-        });
-      } catch (eFx) {}
-      fxItems.sort(function (a9, b9) { return (a9.at || 0) - (b9.at || 0); });   // soonest first, friendlies in their true slot
+      fxItems.sort(function (a9, b9) { return (a9.at || 0) - (b9.at || 0); });   // soonest first; each row remembers its hour
       var fxH = fxItems.slice(0, 6).map(function (x) { return x.html; });
       var fxCard = "<div class='fo-card fo-o-fx'><div class='fo-card-h2row'><div class='fo-card-h2'>Upcoming fixtures</div><a href='#/matches' class='fo-morelink'>View all &rsaquo;</a></div><div class='fo-card-b'>" +
         (fxH.length ? fxH.slice(0, 3).join("") + (fxH.length > 3 ? "<div class='fo-fx-more'>" + fxH.slice(3).join("") + "</div>" : "") : "<div class='small'>Season complete.</div>") +
@@ -760,6 +841,7 @@
         "<div class='fo-c2-grid'>" + mpCard + newsCard + standings + fxCard + watchCard + "</div>" +
         "<div class='fo-c2-bottom'>" + leadBat + leadBowl + leadCombo + msCard + fin + "</div></div>";
       setTimeout(foNextFriendly, 80);
+      setTimeout(foFixturesFriendly, 80);
 
       var page = document.getElementById("page"); if (!page) return;
       page.innerHTML = html;
