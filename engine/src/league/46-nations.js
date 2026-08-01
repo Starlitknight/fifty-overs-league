@@ -167,13 +167,28 @@
     // counties never said which country had picked them; the card's heading
     // knew and the men did not. Every international wears his flag now, here
     // and in the caps book.
+    // THE RED STAR, ON THE PAGE THE SQUAD IS ON. A man wears it in every other
+    // room in the game the moment his country names him, and the one list that
+    // IS that naming had nothing. The mark reads the nation's own snapshot, so
+    // the page has to have asked for it - and repaint when it lands.
+    var natStar = function (nm2, slot2) {
+      try { return window.foNatStar ? window.foNatStar(nm2, slot2 == null ? null : (slot2 | 0), { rid: ST.nation }) : ""; }
+      catch (eS) { return ""; }
+    };
+    try {
+      if (window.__foWorldLg && window.__foWorldLg.want) {
+        window.__foWorldLg.want(ST.nation, function () {
+          try { if ((location.hash || "").split("?")[0] === "#/nations") window.foRenderNationsPage(); } catch (eR) {}
+        });
+      }
+    } catch (eW) {}
     var natFlag = "<img class='fo-nat-flag' src='" + flagOf(ST.nation) + "' alt='" + E(n.name || ST.nation) +
       "' onerror=\"this.style.display='none'\">";
     var squad = (n.squad || []).map(function (m, i) {
       var isMine = myClub && m.club === myClub;
       return manRow("fo-nat-man" + (isMine ? " mine" : ""),
         "<i>" + (i + 1) + "</i>" + natFlag +
-        "<b>" + E(m.name) + "</b><span>" + E(m.club || "") +
+        "<b>" + E(m.name) + natStar(m.name, m.slot) + "</b><span>" + E(m.club || "") +
         (m.age ? " &middot; " + m.age : "") + "</span>" +
         "<u>" + (m.caps ? m.caps + " cap" + (m.caps === 1 ? "" : "s") : "uncapped") + "</u>",
         m.name, m.slot);
@@ -187,7 +202,7 @@
     var tours = (n.tours || []).map(tieRow).join("");
     var caps = (n.caps || []).map(function (c, i) {
       return manRow("fo-nat-man",
-        "<i>" + (i + 1) + "</i>" + natFlag + "<b>" + E(c.name) + "</b>" +
+        "<i>" + (i + 1) + "</i>" + natFlag + "<b>" + E(c.name) + natStar(c.name) + "</b>" +
         "<span>" + c.caps + " cap" + (c.caps === 1 ? "" : "s") +
         (c.runs ? " &middot; " + c.runs + " runs" + (c.hs ? " (" + c.hs + " best)" : "") : "") +
         (c.wkts ? " &middot; " + c.wkts + " wickets" + (c.bb ? " (" + c.bb.w + "-" + c.bb.r + ")" : "") : "") +

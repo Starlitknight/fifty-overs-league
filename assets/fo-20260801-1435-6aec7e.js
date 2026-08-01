@@ -10033,7 +10033,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260801-1313-9b9331";
+  var FO_BUILD = "20260801-1435-6aec7e";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -34046,7 +34046,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         ties.forEach(function (t2) {
           if (t2[0] !== claim.slot && t2[1] !== claim.slot) return;
           var atHome2 = t2[0] === claim.slot;
-          faUps.push({ day: day, st: st, isHome: atHome2,
+          faUps.push({ day: day, st: st, isHome: atHome2, hs: t2[0], as: t2[1],
             opp: bySlot[atHome2 ? t2[1] : t2[0]] || "a club", ground: groundOf(t2[0]) });
         });
       });
@@ -34104,7 +34104,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         }
         // ONE SUMMER, ONE LIST. League Thursday, cup Sunday, league Monday -
         // the card reads in the order the matches are actually played.
-        faUps.forEach(function (f) { ups.push({ day: f.day, cup: f.st, isHome: f.isHome, opp: f.opp, ground: f.ground }); });
+        faUps.forEach(function (f) { ups.push({ day: f.day, cup: f.st, isHome: f.isHome, opp: f.opp, ground: f.ground, hs: f.hs, as: f.as }); });
         ups.sort(function (x, y) { return (x.day || 0) - (y.day || 0); });
         // A COMING MATCH NOW HAS SOMEWHERE TO GO. These rows used to land on
         // the round's fixture card - the same list, one level up, which told
@@ -34115,13 +34115,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           // where the ground is - so a long date never squeezes out a name
           var on = (pl0 && pl0.dateTxt) ? pl0.dateTxt(u.day) : "";
           if (u.cup) {
-            return "<a class='fo-fl-row up cup" + (i === 0 ? " next" : "") + "' href='#/facup'>" +
+            // a cup tie opens its own build-up, exactly as a league match does
+            var cv = "#/facup";
+            try { cv = window.foCupPreviewHref(claim.country, u.cup, u.hs, u.as) || cv; } catch (eCv) {}
+            return "<a class='fo-fl-row up cup" + (i === 0 ? " next" : "") + "' href='" + cv + "'>" +
               "<i>CUP</i>" +
               "<u class='c'>" + (u.isHome ? "H" : "A") + "</u>" +
               "<span class='fo-fl-who'><b>" + (u.isHome ? "v " : "at ") + E(u.opp) +
               (on ? " <em class='fo-fl-when'>" + E(on) + "</em>" : "") + "</b>" +
               "<span>" + E(hh(hour)) + " &middot; " + E(u.ground) + " &middot; " + E(FA_NM[u.cup] || "The Cup") + "</span></span>" +
-              "<em class='fo-fl-act'>The Cup &rsaquo;</em></a>";
+              "<em class='fo-fl-act'>Preview &rsaquo;</em></a>";
           }
           var pv = "#/league?t=fixtures";
           try { pv = window.foPreviewHref(claim.country, u.r, u.hs, u.as) || pv; } catch (ePv) {}
@@ -40114,12 +40117,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       else if (sortKey === "wage") sorted.sort(function (a, b) { return (b.wage || 0) - (a.wage || 0); });
       else if (sortKey === "name") sorted.sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
 
+      // the red star, on a rival's men as on your own: a club dossier that does
+      // not say who is an international is hiding the thing you scout for
+      var natStar = function (nm2) {
+        try { return window.foNatStar ? window.foNatStar(nm2, slot, { rid: cid }) : ""; } catch (eNs) { return ""; }
+      };
       var star = sorted[0];
       var starCard = star ? "<a class='fo-cp-star' href='" + playerHref(cid, slot, isMine, star.name) + "'>" +
         "<img class='fo-cp-face' src='" + faceOf(star) + "' alt='' onerror=\"this.style.display='none'\">" +
         "<div class='fo-cp-starin'>" +
         "<div class='fo-cp-starn'>" + (natFlag(star.nat) ? "<img src='" + natFlag(star.nat) + "' alt='' onerror=\"this.style.display='none'\">" : "") +
-        "<b>" + E(star.name) + "</b></div>" +
+        "<b>" + E(star.name) + natStar(star.name) + "</b></div>" +
         "<div class='fo-cp-starr'>" + E(roleWord(star.role)) + "</div>" +
         "<div class='fo-cp-starf'><i>Form</i><span class='fo-cp-dots'>" + formDots(star.form) + "</span></div>" +
         "<div class='fo-cp-startags'>" + (star.talents || []).slice(0, 2).map(function (t) {
@@ -40134,7 +40142,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         return "<a class='fo-cp-row' href='" + playerHref(cid, slot, isMine, p.name) + "'>" +
           "<span class='rk'>" + (i + 2) + "</span>" +
           "<span class='rl' title='" + E(roleWord(p.role)) + "'>" + roleGlyph(p) + "</span>" +
-          "<span class='nm'><b>" + E(p.name) + "</b><i>" + E(p.bowl && p.bowl !== "Does not bowl" ? p.bowl : roleWord(p.role)) + "</i></span>" +
+          "<span class='nm'><b>" + E(p.name) + natStar(p.name) + "</b><i>" + E(p.bowl && p.bowl !== "Does not bowl" ? p.bowl : roleWord(p.role)) + "</i></span>" +
           "<span class='ov'>" + (p.ovr || "&mdash;") + "</span>" +
           "<span class='fm'>" + formDots(p.form) + "</span>" +
           "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
@@ -40410,6 +40418,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function hashPath() { return (location.hash || "").split("?")[0]; }
   function onPage() { return hashPath() === "#/player"; }
   function qName() { var m = /[?&]n=([^&]+)/.exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : ""; }
+  // THE RED STAR. A man named in his country's current fifteen wears it
+  // wherever his name is written - the same mark the squad room and the
+  // teamsheets use, so an international is recognisable in every room.
+  function natStar(name, rid, slot, big) {
+    try {
+      if (!window.foNatStar) return "";
+      return window.foNatStar(name, slot == null ? null : slot, { rid: rid || undefined, big: !!big });
+    } catch (e) { return ""; }
+  }
   // which seat in the world this device holds - the address of your own club
   function worldClaim() {
     try { return window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); }
@@ -40647,7 +40664,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   // ---- the shell -------------------------------------------------------------
-  var TABS = [["overview", "Overview"], ["career", "Career"], ["matches", "Matches"], ["dev", "Development"]];
+  // A CAP KEEPS ITS OWN BOOK. International runs never swell a club record, so
+  // they were a four-figure footnote at the bottom of somebody else's page.
+  // They get a page.
+  var TABS = [["overview", "Overview"], ["career", "Career"], ["country", "Country"], ["matches", "Matches"], ["dev", "Development"]];
   var TAB = "overview";
   function qp(k) { var m = new RegExp("[?&]" + k + "=([^&]*)").exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : ""; }
 
@@ -40779,7 +40799,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "<span class='fo-pp-no'>No. " + no + "/199</span></div>" +
       "<div class='fo-pp-id'>" +
       "<div class='fo-pp-k'>" + E(kindLbl(p).toUpperCase()) + " &middot; " + (p.hand === "L" ? "LHB" : "RHB") + " &middot; " + E(String(p.nat || "").toUpperCase()) + "</div>" +
-      "<h1>" + E(p.name) + (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
+      "<h1>" + E(p.name) + natStar(p.name, (hit.world && hit.world.rid) || null, (hit.world && hit.world.slot), true) +
+      (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
       "<p class='fo-pp-prov'>" + E(pv.how) + pv.born + "</p>" +
       "<div class='fo-pp-strip'>" +
       "<div title='" + ageTitle(p) + "'><b>" + ageHTML(p) + "</b><i>Age</i></div>" +
@@ -40829,6 +40850,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         idChips.map(function (c) { return "<span><i>" + c[1] + "</i>" + E(c[0]) + "</span>"; }).join("") +
         "<span><i>&#9734;</i>No. " + no + "/199</span></div></div>" +
         "</div>";
+    } else if (TAB === "country") {
+      var myCid = "";
+      try {
+        var cl9 = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+        myCid = (hit.world && hit.world.rid) || (cl9 && cl9.country) || "";
+      } catch (eCi) {}
+      room = countryRoom(myCid, p, function () { if (onPage()) build(); });
     } else if (TAB === "matches") {
       var fx = nextFixtureFor(team.name || "");
       var spot = xiSpot(p, team);
@@ -41008,6 +41036,44 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var n = NAT_SNAP.nations[cid];
     return (n && n.record && n.record[name]) || null;
   }
+  // ---- THE COUNTRY ROOM ------------------------------------------------------
+  // What a cap is worth, on its own page: the caps, the runs, the wickets, and
+  // whether the selectors have him in the fifteen as it stands.
+  function countryRoom(cid, pl, again) {
+    var kv = function (k, v) { return "<div><b>" + v + "</b><i>" + k + "</i></div>"; };
+    var nm = (pl && pl.name) || "";
+    var rec = cid ? servedIntl(cid, nm, again) : null;
+    var inSquad = "";
+    try { inSquad = window.foNatStar ? window.foNatStar(nm, null, { rid: cid || undefined }) : ""; } catch (e) {}
+    var natNm = "";
+    try {
+      var r0 = (window.__foCxAPI.regions() || []).filter(function (x) { return x.id === cid; })[0];
+      natNm = (r0 && r0.nm) || "";
+    } catch (e2) {}
+    var flag = ""; try { flag = window.foFlag ? window.foFlag(pl && pl.nat) : ""; } catch (e3) {}
+    var head = "<h3>" + (natNm ? E(natNm) : "For his country") +
+      "<span>" + (inSquad ? "in the current fifteen" : "not in the current fifteen") + "</span></h3>";
+    if (!rec || !rec.caps) {
+      return "<div class='fo-pp-col'><div class='fo-pp-card'>" + head +
+        "<p class='fo-pp-dim'>" + (cid ? "Uncapped." : "The world has not answered for this club yet.") + "</p>" +
+        "</div></div>" +
+        "<div class='fo-pp-rail'><div class='fo-pp-card'><h3>The windows</h3>" +
+        "<p class='fo-pp-dim'>Selectors name a fifteen at rounds 5, 9 and 13.</p>" +
+        "<a class='fo-pp-more' href='#/nations'>The international game &rsaquo;</a></div></div>";
+    }
+    var sr = rec.balls ? Math.round(1000 * (rec.runs || 0) / rec.balls) / 10 : null;
+    return "<div class='fo-pp-col'><div class='fo-pp-card'>" + head +
+      "<div class='fo-pp-mini wide'>" +
+      kv("Caps", rec.caps) + kv("Runs", rec.runs || 0) + kv("Best", rec.hs || 0) +
+      (sr == null ? "" : kv("Strike rate", sr)) +
+      kv("Wickets", rec.wkts || 0) +
+      kv("Best bowling", rec.bb ? rec.bb.w + "/" + rec.bb.r : "&mdash;") +
+      "</div></div></div>" +
+      "<div class='fo-pp-rail'><div class='fo-pp-card'><h3>" + (flag || "") + " The cap</h3>" +
+      "<p class='fo-pp-dim'>A cap keeps its own book.</p>" +
+      "<a class='fo-pp-more' href='#/nations'>The international game &rsaquo;</a></div></div>";
+  }
+
   function servedFace(sp) {
     try {
       if (window.foPkArt) return ART() + window.foPkArt({
@@ -41052,7 +41118,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<span class='fo-pp-no'>No. " + no + "/199</span></div>" +
         "<div class='fo-pp-id'>" +
         "<div class='fo-pp-k'>" + E(kind.toUpperCase()) + " &middot; " + (sp.hand === "L" ? "LHB" : "RHB") + " &middot; " + E(String(sp.nat || "").toUpperCase()) + "</div>" +
-        "<h1>" + E(sp.name) + (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
+        "<h1>" + E(sp.name) + natStar(sp.name, cid, slot, true) +
+        (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
         "<p class='fo-pp-prov'>Scouted from the boundary &middot; " + E(clubNm || "a world club") + "</p>" +
         "<div class='fo-pp-strip'>" +
         "<div title='" + ageTitle(sp) + "'><b>" + ageHTML(sp) + "</b><i>Age</i></div>" +
@@ -41085,7 +41152,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         kv("Best", intl.hs || 0) + kv("Wickets", intl.wkts || 0) + "</div>" +
         "</div>";
       var room;
-      if (CARD_TAB === "career") {
+      if (CARD_TAB === "country") {
+        room = countryRoom(cid, sp, function () { if (onPage()) buildCard(cid, slot, name); });
+      } else if (CARD_TAB === "career") {
         room = "<div class='fo-pp-col'><div class='fo-pp-card'><h3>Career record<span>All league cricket</span></h3>" +
           (caps ? "<div class='fo-pp-mini wide'>" + kv("Matches", caps) + kv("Runs", c.runs || 0) +
             kv("Best", c.hs || 0) + kv("Strike rate", sr) +
@@ -41118,7 +41187,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       wrap.innerHTML = "<a class='fo-pp-back' href='#/team?c=" + E(cid) + "&s=" + slot + "'>&lsaquo; " + E(clubNm || "The club") + "</a>" +
         plate +
         "<div class='fo-pp-tabs'>" +
-        [["overview", "Overview"], ["career", "Career"]].map(function (t) {
+        [["overview", "Overview"], ["career", "Career"], ["country", "Country"]].map(function (t) {
           return "<a class='" + (CARD_TAB === t[0] ? "on" : "") + "' data-t='" + t[0] + "' href='javascript:void 0'>" + t[1] + "</a>";
         }).join("") + "</div>" +
         "<div class='fo-pp-body'>" + room + "</div>";
@@ -42566,13 +42635,28 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     // counties never said which country had picked them; the card's heading
     // knew and the men did not. Every international wears his flag now, here
     // and in the caps book.
+    // THE RED STAR, ON THE PAGE THE SQUAD IS ON. A man wears it in every other
+    // room in the game the moment his country names him, and the one list that
+    // IS that naming had nothing. The mark reads the nation's own snapshot, so
+    // the page has to have asked for it - and repaint when it lands.
+    var natStar = function (nm2, slot2) {
+      try { return window.foNatStar ? window.foNatStar(nm2, slot2 == null ? null : (slot2 | 0), { rid: ST.nation }) : ""; }
+      catch (eS) { return ""; }
+    };
+    try {
+      if (window.__foWorldLg && window.__foWorldLg.want) {
+        window.__foWorldLg.want(ST.nation, function () {
+          try { if ((location.hash || "").split("?")[0] === "#/nations") window.foRenderNationsPage(); } catch (eR) {}
+        });
+      }
+    } catch (eW) {}
     var natFlag = "<img class='fo-nat-flag' src='" + flagOf(ST.nation) + "' alt='" + E(n.name || ST.nation) +
       "' onerror=\"this.style.display='none'\">";
     var squad = (n.squad || []).map(function (m, i) {
       var isMine = myClub && m.club === myClub;
       return manRow("fo-nat-man" + (isMine ? " mine" : ""),
         "<i>" + (i + 1) + "</i>" + natFlag +
-        "<b>" + E(m.name) + "</b><span>" + E(m.club || "") +
+        "<b>" + E(m.name) + natStar(m.name, m.slot) + "</b><span>" + E(m.club || "") +
         (m.age ? " &middot; " + m.age : "") + "</span>" +
         "<u>" + (m.caps ? m.caps + " cap" + (m.caps === 1 ? "" : "s") : "uncapped") + "</u>",
         m.name, m.slot);
@@ -42586,7 +42670,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var tours = (n.tours || []).map(tieRow).join("");
     var caps = (n.caps || []).map(function (c, i) {
       return manRow("fo-nat-man",
-        "<i>" + (i + 1) + "</i>" + natFlag + "<b>" + E(c.name) + "</b>" +
+        "<i>" + (i + 1) + "</i>" + natFlag + "<b>" + E(c.name) + natStar(c.name) + "</b>" +
         "<span>" + c.caps + " cap" + (c.caps === 1 ? "" : "s") +
         (c.runs ? " &middot; " + c.runs + " runs" + (c.hs ? " (" + c.hs + " best)" : "") : "") +
         (c.wkts ? " &middot; " + c.wkts + " wickets" + (c.bb ? " (" + c.bb.w + "-" + c.bb.r + ")" : "") : "") +
@@ -43114,16 +43198,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return String(s || "").replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ")
       .toLowerCase().replace(/^./, function (c) { return c.toUpperCase(); }).trim();
   }
-  function foPmBatLine(p) {
-    var hand = (p.hand === "L" ? "left" : "right") + "-hand";
-    var r = foPmWords(p.role || "batter");
-    return (p.keeper ? "Wicket-keeper" : r) + " \u00b7 " + hand;
-  }
-  function foPmBowlLine(p) {
-    var b = String(p.btLabel || "");
-    if (b && !/does not bowl/i.test(b)) return b;
-    return foPmWords(p.bowlTypeFull || p.bowlType || "bowler");
-  }
 
   // EVERY CLUB WEARS A SHIELD - the flagship its painted crest, the rest a
   // monogram in the colours their own name draws. Same rule as the table, so a
@@ -43142,7 +43216,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   // ---- what the world knows about this fixture ------------------------------
-  function foPmGather(natId, round) {
+  function foPmGather(natId, round, stage) {
     var PL = window.__foPlanet, WT = window.__foWT;
     if (!PL || !WT) return null;
     var snap = null;
@@ -43158,12 +43232,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var hour = PL.natHour(natId);
     // THE HOUR THIS MATCH IS PLAYED, to the minute. Round R of season S falls
     // on one world day, and that day opens at the nation's own hour.
-    var day = PL.dayOfSeasonRound ? PL.dayOfSeasonRound(seasonNo, round)
+    // A CUP TIE IS PLAYED ON A SUNDAY, NOT IN A ROUND. Where a stage is named
+    // the day comes off the cup calendar; otherwise off the league round.
+    var day = stage && PL.faDayOf ? PL.faDayOf(seasonNo, stage)
+           : PL.dayOfSeasonRound ? PL.dayOfSeasonRound(seasonNo, round)
            : ((PL.anchorOf ? PL.anchorOf().start : 0) + (seasonNo - 1) * (PL.CYCLE | 0) + (round - 1));
     var start = PL.EPOCH + day * PL.DAY + hour * 3600000;
     var stop = start + (PL.LIVE_LEN || 3) * 3600000;
     return { snap: snap, names: names, mgrs: mgrs, sides: sides, bySlot: bySlot,
-      seasonNo: seasonNo, hour: hour, start: start, stop: stop, natId: natId, round: round };
+      seasonNo: seasonNo, hour: hour, start: start, stop: stop, natId: natId, round: round, stage: stage || null };
   }
   function foPmName(g, slot) {
     if (g.names && g.names[slot]) return g.names[slot];
@@ -43226,23 +43303,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     } catch (e) {}
     return out;
   }
-  // THE MEN MOST LIKELY TO DECIDE IT. The squads are generated from the world
-  // seed, so a preview can name them without asking the server a thing; the
-  // stars are the same ladder the team sheet rates everyone on.
-  function foPmKeyMen(natId, slot) {
-    var out = { bat: [], bowl: [] };
-    try {
-      var S = window.__foStarLadder; if (!S) return out;
-      var sq = window.__foWT && window.__foWT.serverSquad ? window.__foWT.serverSquad(natId, slot) : null;
-      if (!sq || !sq.length) return out;
-      var bat = sq.slice().sort(function (a, b) { return S.bat(b) - S.bat(a); });
-      var bwl = sq.filter(function (p) { return p.bowlType && p.bowlType !== "none"; })
-        .sort(function (a, b) { return S.bowl(b) - S.bowl(a); });
-      out.bat = bat.slice(0, 2).map(function (p) { return { p: p, st: S.stars(S.bat(p)) }; });
-      out.bowl = bwl.slice(0, 2).map(function (p) { return { p: p, st: S.stars(S.bowl(p)) }; });
-    } catch (e) {}
-    return out;
-  }
 
   // ---- HOW IT SHOULD GO ------------------------------------------------------
   // A win probability is the easiest number in a football game to invent, and
@@ -43278,6 +43338,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // For the many fixtures where nobody manages either club it is not even an
   // approximation: the umpire files a sheet only where one exists and lets the
   // engine pick the rest, which is exactly what happens here.
+  var FO_PM_FA = { r16: "Cup round of 16", qf: "Cup quarter-final", sf: "Cup semi-final", final: "The Cup final" };
   var FO_PM_WP_N = 40;              // how many times the fixture is played out
   var FO_PM_WP_CHUNK = 4;           // per tick, so a phone never locks up
   var FO_PM_WP = {};                // this session, by fixture id
@@ -43377,14 +43438,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
       var natId = foPmQ("n") || "eng";
       var round = parseInt(foPmQ("r") || "0", 10) | 0;
+      var stage = foPmQ("fa") || "";
+      if (stage && !FO_PM_FA[stage]) stage = "";
       var hSlot = parseInt(foPmQ("h") || "-1", 10);
       var aSlot = parseInt(foPmQ("a") || "-1", 10);
-      var sig = "pm|" + natId + "|" + round + "|" + hSlot + "|" + aSlot;
+      var sig = "pm|" + natId + "|" + (stage || round) + "|" + hSlot + "|" + aSlot;
       if (page.__foPmSig === sig && page.querySelector(".fo-pm")) return;
 
-      if (!round || hSlot < 0 || aSlot < 0) { foPmLost(page, "That fixture is not on the card."); return; }
+      if ((!round && !stage) || hSlot < 0 || aSlot < 0) { foPmLost(page, "That fixture is not on the card."); return; }
 
-      var g = foPmGather(natId, round);
+      var g = foPmGather(natId, round, stage);
       if (!g) { foPmLost(page, "The world clock is still waking up. Try again in a moment."); return; }
 
       // THE BOOK MAY NOT BE ON THE DEVICE YET. get() reads a cache and never
@@ -43460,8 +43523,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (c0.k === "live") actions.push("<a class='fo-pm-cta live' href='#/watch?n=" + encodeURIComponent(natId) + "'>Watch it live</a>");
       if (mine && c0.k === "soon") actions.push("<a class='fo-pm-cta' href='#/orders'>Set your team sheet</a>");
       if (c0.k === "done") actions.push("<a class='fo-pm-cta' href='#/league?t=results'>Read the report</a>");
-      actions.push("<a class='fo-pm-back' href='" + (natId === myNat ? "#/league?t=fixtures&r=" + round
-        : "#/nation?n=" + encodeURIComponent(natId) + "&t=fixtures&r=" + round) + "'>All of round " + round + "</a>");
+      actions.push(stage
+        ? "<a class='fo-pm-back' href='#/facup'>The whole draw</a>"
+        : "<a class='fo-pm-back' href='" + (natId === myNat ? "#/league?t=fixtures&r=" + round
+          : "#/nation?n=" + encodeURIComponent(natId) + "&t=fixtures&r=" + round) + "'>All of round " + round + "</a>");
       actions.push("<a class='fo-pm-back' href='#/fixtures'>The fixture list</a>");
 
       page.innerHTML =
@@ -43470,7 +43535,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<figure class='fo-pm-plate'><img src='" + art.src + "' alt='' data-alt='" + art.alt + "' " +
         "onerror=\"if(this.src.indexOf(this.dataset.alt)<0){this.src=this.dataset.alt}else{this.parentNode.style.display='none'}\"></figure>" +
         "<div class='fo-pm-in'>" +
-        "<div class='fo-pm-folio'>Round " + round +
+        "<div class='fo-pm-folio'>" + (stage ? FO_PM_FA[stage] : "Round " + round) +
         (natNm ? " &middot; " + foPmE(natNm) : "") + "</div>" +
 
         // THE BILLING. Two clubs facing each other across a gold V - the way a
@@ -43517,7 +43582,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         if (wpHost) {
           // the key is the fixture and nothing else: what was known can no
           // longer change what the bar says, so a cached number is never stale
-          var wpKey = natId + ":s" + g.seasonNo + ":r" + round + ":h" + hSlot + "a" + aSlot;
+          var wpKey = natId + ":s" + g.seasonNo + ":" + (stage ? "fa" + stage : "r" + round) + ":h" + hSlot + "a" + aSlot;
           var cached = foPmWpLoad(wpKey);
           if (cached) foPmWpPaint(wpHost, cached, true);
           else foPmWpRun(wpHost, location.hash, wpKey, natId, hSlot, aSlot, hN, aN, ground);
@@ -43558,6 +43623,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // links here; this writes the address so no caller has to know the shape.
   window.foPreviewHref = function (natId, round, hSlot, aSlot) {
     return "#/preview?n=" + encodeURIComponent(natId) + "&r=" + (round | 0) +
+      "&h=" + (hSlot | 0) + "&a=" + (aSlot | 0);
+  };
+  // A CUP TIE IS A MATCH LIKE ANY OTHER and deserves the same room. It has no
+  // league round, so it is addressed by its stage.
+  window.foCupPreviewHref = function (natId, stage, hSlot, aSlot) {
+    return "#/preview?n=" + encodeURIComponent(natId) + "&fa=" + encodeURIComponent(stage || "r16") +
       "&h=" + (hSlot | 0) + "&a=" + (aSlot | 0);
   };
 
@@ -43601,10 +43672,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-pm-where b{font-family:Georgia,'Times New Roman',serif;font-size:14px;color:var(--paper);overflow-wrap:anywhere}",
       // body
       ".fo-pm-body{padding-top:clamp(18px,2.6vw,30px);padding-bottom:clamp(34px,5vw,64px)}",
-      ".fo-pm-sec{margin-bottom:clamp(22px,3vw,36px)}",
-      ".fo-pm-rule{display:flex;align-items:center;gap:12px;margin-bottom:14px}",
-      ".fo-pm-rule:after{content:'';flex:1;height:1px;background:rgba(150,180,225,.16)}",
-      ".fo-pm-rule span{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.26em;font-size:9.5px;font-weight:600;color:var(--gold)}",
       // the probability bar
       ".fo-pm-wp{padding:16px 17px;border-radius:13px;background:linear-gradient(180deg,rgba(16,27,50,.82),rgba(8,14,26,.82));border:1px solid rgba(150,180,225,.16)}",
       ".fo-pm-wptop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px}",
@@ -43621,41 +43688,21 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-pm-wpnote{margin:10px 0 0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:12px;line-height:1.5;color:var(--steel)}",
       ".fo-pm-wp.settled .fo-pm-wpnote{color:#c3d0e6}",
       "@media(prefers-reduced-motion:reduce){.fo-pm-wpbar span{transition:none}}",
-      ".fo-pm-clubs,.fo-pm-mengrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(10px,1.6vw,18px)}",
       "@media(max-width:700px){.fo-pm-clubs,.fo-pm-mengrid{grid-template-columns:1fr}}",
-      ".fo-pm-club,.fo-pm-men{padding:16px 17px;border-radius:13px;background:linear-gradient(180deg,rgba(16,27,50,.82),rgba(8,14,26,.82));border:1px solid rgba(150,180,225,.16)}",
-      ".fo-pm-club.mine{border-color:rgba(230,177,94,.42)}",
       ".fo-pm-clubtop{display:flex;align-items:center;gap:11px;margin-bottom:13px}",
       ".fo-pm-clubtop>div{display:flex;flex-direction:column;gap:3px;min-width:0}",
       ".fo-pm-clubnm{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.02em;font-size:16px;color:var(--paper);text-decoration:none}",
       ".fo-pm-clubnm:hover{color:var(--gold)}",
       ".fo-pm-clubsub{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:8.5px;color:var(--steel)}",
-      ".fo-pm-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:11px 0;border-top:1px solid rgba(150,180,225,.12);border-bottom:1px solid rgba(150,180,225,.12)}",
-      ".fo-pm-stats div{display:flex;flex-direction:column;gap:3px;min-width:0}",
-      ".fo-pm-stats b{font-family:Oswald,sans-serif;font-weight:700;font-size:17px;color:var(--paper);font-variant-numeric:tabular-nums;line-height:1}",
-      ".fo-pm-stats b u{text-decoration:none;font-size:10px;color:var(--steel)}",
-      ".fo-pm-stats i{font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.18em;font-size:8px;color:var(--steel)}",
-      ".fo-pm-form{display:flex;align-items:center;gap:10px;margin-top:11px}",
       ".fo-pm-form>span{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:8.5px;color:var(--steel)}",
       ".fo-pm-beads{display:flex;gap:4px}",
       ".fo-pm-beads i{display:grid;place-items:center;width:19px;height:19px;border-radius:4px;font:700 9.5px/1 Oswald,sans-serif;font-style:normal;color:#08101f}",
       ".fo-pm-beads i.w{background:#5FBF7E}.fo-pm-beads i.l{background:#C2566A}.fo-pm-beads i.t{background:#8ea3c4}",
       ".fo-pm-none{font-family:Georgia,serif;font-style:italic;font-size:12px;color:var(--steel)}",
-      ".fo-pm-men h4{margin:0 0 10px;font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.16em;font-size:11px;color:var(--gold)}",
-      ".fo-pm-man{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:8px 0;border-top:1px solid rgba(150,180,225,.1)}",
-      ".fo-pm-man:first-of-type{border-top:0}",
       ".fo-pm-manrole svg{width:15px;height:15px;display:block}",
       ".fo-pm-mannm{display:flex;flex-direction:column;gap:2px;min-width:0}",
       ".fo-pm-mannm b{font-family:Georgia,'Times New Roman',serif;font-size:14px;color:var(--paper);overflow-wrap:anywhere}",
       ".fo-pm-mannm i{font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.14em;font-size:8px;color:var(--steel)}",
-      ".fo-pm-star{font-family:Oswald,sans-serif;font-weight:700;font-size:12.5px;color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap}",
-      ".fo-pm-star.w{color:#9fc0ee}",
-      ".fo-pm-h2h{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:12px;padding:12px 14px;margin-bottom:8px;border-radius:11px;text-decoration:none;background:rgba(16,27,50,.6);border:1px solid rgba(150,180,225,.14);transition:border-color .16s ease,transform .16s ease}",
-      ".fo-pm-h2h:hover{border-color:rgba(230,177,94,.4);transform:translateY(-1px)}",
-      ".fo-pm-h2h i{font-family:Oswald,sans-serif;font-style:normal;font-size:10px;letter-spacing:.14em;color:var(--steel)}",
-      ".fo-pm-h2h b{font-family:Georgia,serif;font-size:14px;color:var(--paper);min-width:0;overflow-wrap:anywhere}",
-      ".fo-pm-h2h span{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.12em;font-size:9.5px;color:var(--gold);text-align:right}",
-      ".fo-pm-h2h s{text-decoration:none;color:var(--steel)}",
       ".fo-pm-dim{margin:0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:13.5px;line-height:1.5;color:#c3d0e6}",
       ".fo-pm-lost{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(24px,3.4vw,40px);color:var(--paper);margin:14px 0 8px}",
       ".fo-pm-foot{display:flex;flex-wrap:wrap;gap:10px;padding-top:clamp(16px,2.4vw,24px);border-top:1px solid rgba(150,180,225,.16)}",
@@ -43708,9 +43755,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-pm-where b{font-size:11px;line-height:1.25}",
       // the body, tightened
       ".fo-pm-body{padding-top:6px;padding-bottom:8px}",
-      ".fo-pm-sec{margin-bottom:6px}",
-      ".fo-pm-rule{margin-bottom:4px}",
-      ".fo-pm-rule span{font-size:7.5px;letter-spacing:.18em}",
       ".fo-pm-wp{padding:7px 9px;border-radius:10px}",
       ".fo-pm-wptop{margin-bottom:4px;gap:8px}",
       ".fo-pm-wph b,.fo-pm-wpa b{font-size:15px}",
@@ -43718,28 +43762,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-pm-sh{width:22px;height:22px;border-radius:5px;font-size:9px}",
       ".fo-pm-wpnote{margin-top:4px;font-size:9.5px;line-height:1.3}",
       ".fo-pm-wpnote:empty{display:none}",
-      ".fo-pm-clubs,.fo-pm-mengrid{grid-template-columns:1fr 1fr;gap:7px}",
-      ".fo-pm-club,.fo-pm-men{padding:7px 9px;border-radius:10px}",
-      ".fo-pm-clubtop{gap:6px;margin-bottom:5px}",
-      ".fo-pm-clubnm{font-size:12px}",
-      ".fo-pm-clubsub{font-size:7.5px;letter-spacing:.1em}",
-      ".fo-pm-stats{gap:4px;padding:4px 0}",
-      ".fo-pm-stats b{font-size:12px}.fo-pm-stats i{font-size:7px;letter-spacing:.1em}",
-      ".fo-pm-form{gap:6px;margin-top:4px}",
-      ".fo-pm-form span{font-size:7.5px;letter-spacing:.1em}",
+      ".fo-pm-two{gap:7px;margin-top:8px}",
+      "#page a.fo-pm-sl{padding:8px 10px;gap:7px;border-radius:10px}",
+      "#page a.fo-pm-sl b{font-size:11.5px}",
+      "#page a.fo-pm-sl i{font-size:8.5px;letter-spacing:.08em}",
       ".fo-pm-beads{gap:3px}",
       ".fo-pm-beads i{width:14px;height:14px;border-radius:3px;font-size:7.5px}",
-      ".fo-pm-men h4{margin:0 0 3px;font-size:9px;letter-spacing:.1em}",
-      // four men a side is a watch-list; ten is a squad list
-      ".fo-pm-man{gap:6px;padding:3px 0}",
-      ".fo-pm-men .fo-pm-man:nth-child(n+4){display:none}",
-      // the last meeting is a page of its own on both club dossiers; on a
-      // phone the screen is worth more to the match about to be played
-      ".fo-pm-lastmet{display:none}",
-      ".fo-pm-manrole{width:16px}.fo-pm-manrole img{width:16px;height:16px}",
-      ".fo-pm-mannm b{font-size:11px}.fo-pm-mannm i{font-size:7px;letter-spacing:.08em}",
-      ".fo-pm-star{font-size:9px}",
-      ".fo-pm-h2h{gap:7px;padding:6px 9px;margin-bottom:5px;border-radius:9px}",
       ".fo-pm-foot{padding-top:6px;gap:6px}",
       "}"
     ].join("\n");
