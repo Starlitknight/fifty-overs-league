@@ -206,6 +206,46 @@
     }
   }
 
+  // ---- THE GROUND ----------------------------------------------------------
+  // Home advantage in this game is not a number on a card: it is a strip a
+  // groundsman prepares and a sky the season deals, and both are PURE
+  // FUNCTIONS of the nation, the ground and the round. So a manager can read
+  // exactly what he will be walking onto weeks out, from his own device, with
+  // nobody online - which is the only kind of information this world is
+  // allowed to give him.
+  var PITCH_NM = { balanced: "Balanced", flat: "Flat", green: "Green", dry: "Crumbling",
+    slow: "Slow", cracked: "Sticky", twoPaced: "Two-paced" };
+  // the game's own field guide, in the words the conditions primer uses
+  var PITCH_NOTE = {
+    balanced: ["A fair contest. Nobody gets favours.", "Pick your best XI on merit."],
+    green: ["Seam and swing; the new-ball spell is brutal.", "Stack pace, open the batting with technique."],
+    dry: ["Turns square as it wears on.", "Spinners own the middle overs; chasing is hardest."],
+    flat: ["A batter's road: boundaries flow, totals balloon.", "Wickets must be bought with attacking bowling."],
+    slow: ["Low and grippy; the ball dies in the surface.", "Sixes are dear. Rotate strike and be patient."],
+    cracked: ["Unpredictable bounce, wickets for everyone.", "Batting depth is your insurance."],
+    twoPaced: ["Some balls hurry, some hold.", "Timing is never safe; big intent costs more here."]
+  };
+  var PITCH_ORDER = ["balanced", "green", "flat", "dry", "slow", "cracked", "twoPaced"];
+  function pitchNm(k) { return PITCH_NM[k] || String(k || ""); }
+  // every home round this ground will stage this season, with what it deals
+  function groundSeason(cid, slot) {
+    var out = [], pl = window.__foPlanet, wt = window.__foWT;
+    if (!pl || !pl.condOf || !wt || !wt.schedMirror) return out;
+    var cal = null; try { cal = wt.serverCal(Date.now()); } catch (e) { return out; }
+    var season = Math.max(1, cal.seasonNo || 1);
+    var rounds = wt.schedMirror(cid, season) || [];
+    for (var r = 0; r < rounds.length; r++) {
+      for (var i = 0; i < rounds[r].length; i++) {
+        var f = rounds[r][i];
+        if (f[0] !== slot) continue;                       // home matches only
+        var c = null; try { c = pl.condOf(cid, slot, season, r + 1); } catch (e2) {}
+        out.push({ round: r + 1, foeSlot: f[1], pitch: (c && c.pitch) || "balanced",
+          weather: (c && c.weather) || "Sunny", past: (r + 1) < (cal.round || 1) });
+      }
+    }
+    return out;
+  }
+
   var CLUB_CACHE = {}, SQ_CACHE = {}, HON_CACHE = null;
   function grab(url, cb) {
     fetch(SB_URL + url, { headers: { apikey: SB_ANON } })
@@ -216,7 +256,7 @@
   function fetchClub(cid, slot, cb) {
     var k = cid + ":" + slot;
     if (CLUB_CACHE[k]) { cb(CLUB_CACHE[k]); return; }
-    grab("/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(cid) + "&slot=eq." + slot + "&select=name,ground,is_boss,manager,identity,academy",
+    grab("/rest/v1/world_clubs?country_id=eq." + encodeURIComponent(cid) + "&slot=eq." + slot + "&select=name,ground,is_boss,manager,identity,academy,seats",
       function (row) { if (row) CLUB_CACHE[k] = row; cb(row); });
   }
   function fetchSquad(cid, slot, cb) {
@@ -529,6 +569,62 @@
           "<div class='fo-cp-note'>World rank <b>" + (rkRow ? "#" + rkRow.rank : "unrated") + "</b>" +
           (rkRow ? " &middot; " + num(rkRow.rating) + " rating &middot; " + rkRow.w + "-" + rkRow.l + (rkRow.t ? "-" + rkRow.t : "") + " all competitions" : "") + "</div>" +
           "</div>";
+      } else if (tab === "ground") {
+        var gname = (info && info.ground) || (name + " Ground");
+        var seats = Number(info && info.seats) || 0;
+        var season9 = groundSeason(cid, slot);
+        var toCome = season9.filter(function (x) { return !x.past; });
+        // WHAT THIS GROUNDSMAN PREPARES. One strip is an anecdote; a season of
+        // them is a character, so the tally is what tells a visitor what to
+        // expect from the place.
+        var tally = {}, most = null;
+        season9.forEach(function (x) { tally[x.pitch] = (tally[x.pitch] || 0) + 1; });
+        Object.keys(tally).forEach(function (k) { if (!most || tally[k] > tally[most]) most = k; });
+        var nmOv9 = {};
+        try { nmOv9 = (window.__foWorldNames && window.__foWorldNames.get(cid)) || {}; } catch (eN9) {}
+        var nameAt9 = function (s2) {
+          if (nmOv9[s2]) return nmOv9[s2];
+          var row9 = lgRows.filter(function (t) { return t.slot === s2; })[0];
+          if (row9) return row9.name;
+          try { return (window.__foPlanet.sidesOf(cid) || []).filter(function (x) { return x.slot === s2; })[0].name; }
+          catch (e9) { return "a club"; }
+        };
+        var kv9 = function (k, v) {
+          return "<div class='fo-cp-gkv'><span>" + k + "</span><b>" + v + "</b></div>";
+        };
+        bodyHTML = "<div class='fo-cp-panel'>" +
+          "<div class='fo-cp-ph'><h2>&#10022; " + E(gname) + " &#10022;</h2></div>" +
+          "<div class='fo-cp-gkvs'>" +
+          kv9("Country", E(natName(cid))) +
+          kv9("Capacity", seats ? seats.toLocaleString() + " seats" : "&mdash;") +
+          kv9("Northern end", "The " + E(natName(cid)) + " End") +
+          kv9("Southern end", "The Pavilion End") +
+          kv9("Usual strip", most ? E(pitchNm(most)) + " &middot; " + tally[most] + " of " + season9.length : "&mdash;") +
+          "</div>" +
+          (isMine ? "<a class='fo-cp-glink' href='#/finance'>&#127959; Build another stand &mdash; the books hold the plans &rsaquo;</a>" : "") +
+
+          "<div class='fo-cp-sub'>The forecast</div>" +
+          (toCome.length
+            ? "<div class='fo-cp-gfc'>" + toCome.slice(0, 8).map(function (x) {
+                var when = "";
+                try { if (typeof window.foRoundTimeTxt === "function") when = window.foRoundTimeTxt(x.round) || ""; } catch (eW) {}
+                return "<div class='fo-cp-gfr'>" +
+                  "<span class='r'>R" + x.round + "</span>" +
+                  "<span class='o'>v " + E(nameAt9(x.foeSlot)) + (when ? "<i>" + E(when) + "</i>" : "") + "</span>" +
+                  "<span class='p'>" + E(pitchNm(x.pitch)) + "</span>" +
+                  "<span class='w'>" + E(x.weather) + "</span></div>";
+              }).join("") + "</div>"
+            : "<p class='fo-cp-dim'>No more cricket is due here this season.</p>") +
+
+          "<div class='fo-cp-sub'>What the strips do</div>" +
+          "<div class='fo-cp-gp'>" + PITCH_ORDER.map(function (k) {
+            var n9 = PITCH_NOTE[k] || ["", ""];
+            var hits = tally[k] || 0;
+            return "<div class='fo-cp-gpr" + (hits ? " on" : "") + "'>" +
+              "<b>" + E(pitchNm(k)) + (hits ? "<u>" + hits + "</u>" : "") + "</b>" +
+              "<span>" + E(n9[0]) + "</span><em>" + E(n9[1]) + "</em></div>";
+          }).join("") + "</div>" +
+          "</div>";
       } else if (tab === "events") {
         var ek = cid + ":" + slot;
         var feed = eventsOf(ek, cid, slot, function () {
@@ -596,7 +692,7 @@
           "<div id='fo-cp-chlist'></div></div>";
       }
 
-      var TABS = [["squad", "Squad"], ["record", "Record"], ["honours", "Honours"], ["events", "Events"]];
+      var TABS = [["squad", "Squad"], ["record", "Record"], ["ground", "Ground"], ["honours", "Honours"], ["events", "Events"]];
       var tabBar = "<div class='fo-cp-tabs'>" + TABS.map(function (t) {
         return "<a class='" + (tab === t[0] ? "on" : "") + "' href='#/team?c=" + encodeURIComponent(cid) + "&s=" + slot + "&t=" + t[0] + "'>" + t[1] + "</a>";
       }).join("") + "</div>";
@@ -791,6 +887,27 @@
       ".fo-cp-fr span{margin-left:auto;display:inline-flex;gap:6px}",
       "html body #page .fo-cp-fr button{font:700 10px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--navy) !important;background:#FFFDF7 !important;border:1px solid rgba(12,27,51,.22) !important;border-radius:999px !important;padding:9px 13px !important;min-height:44px;cursor:pointer}",
       "html body #page .fo-cp-fr .fo-cp-fyes,html body #page .fo-cp-fr .fo-cp-fwatch{color:#FFFDF7 !important;background:var(--grn) !important;border-color:var(--grn) !important}",
+      // the ground: a plate of facts, a forecast, and the field guide to what
+      // each strip does to a match
+      ".fo-cp-gkvs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}",
+      ".fo-cp-gkv{background:#FFFDF7;border:1px solid rgba(12,27,51,.1);border-radius:10px;padding:10px 12px}",
+      ".fo-cp-gkv span{display:block;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(12,27,51,.45)}",
+      ".fo-cp-gkv b{display:block;margin-top:5px;font:600 14px/1.3 Inter,sans-serif;color:var(--navy)}",
+      "html body #page .fo-cp-glink{display:block;margin-top:12px;padding:12px 14px;background:#FFFDF7 !important;border:1px solid rgba(12,27,51,.14);border-left:3px solid var(--gold);border-radius:11px;font:600 12.5px/1.4 Inter,sans-serif;color:var(--navy) !important;text-decoration:none !important}",
+      ".fo-cp-gfr{display:grid;grid-template-columns:34px minmax(0,1fr) 96px 84px;gap:10px;align-items:center;padding:9px 2px;border-bottom:1px solid rgba(12,27,51,.07)}",
+      ".fo-cp-gfr .r{font:700 10.5px/1 Oswald,sans-serif;color:rgba(12,27,51,.4)}",
+      ".fo-cp-gfr .o{font:600 13px/1.3 Inter,sans-serif;color:var(--navy);min-width:0}",
+      ".fo-cp-gfr .o i{display:block;font-style:normal;font:400 11px/1.3 Inter,sans-serif;color:rgba(12,27,51,.5)}",
+      ".fo-cp-gfr .p{font:700 11px/1 Oswald,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--grn);text-align:right}",
+      ".fo-cp-gfr .w{font:500 12px/1.3 Inter,sans-serif;color:rgba(12,27,51,.62);text-align:right}",
+      ".fo-cp-gpr{padding:10px 12px;border:1px solid rgba(12,27,51,.09);border-radius:10px;margin-bottom:7px;background:#FFFDF7}",
+      ".fo-cp-gpr.on{border-color:rgba(201,162,75,.6);background:#FFFBEF}",
+      ".fo-cp-gpr b{display:flex;align-items:center;gap:8px;font:700 12.5px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--navy)}",
+      ".fo-cp-gpr b u{text-decoration:none;font:700 9px/1 Oswald,sans-serif;letter-spacing:.1em;color:#7A5B12;background:rgba(201,162,75,.22);border-radius:999px;padding:4px 8px}",
+      ".fo-cp-gpr span{display:block;margin-top:5px;font:400 12.5px/1.5 Inter,sans-serif;color:var(--navy)}",
+      ".fo-cp-gpr em{display:block;margin-top:3px;font-style:normal;font:400 11.5px/1.45 Inter,sans-serif;color:rgba(12,27,51,.55)}",
+      "@media(max-width:760px){.fo-cp-gfr{grid-template-columns:30px minmax(0,1fr) 76px;gap:8px}",
+      ".fo-cp-gfr .w{grid-column:2/4;text-align:right;margin-top:-4px;font-size:11px}}",
       // the diary: a day rule, then a line an hour at a time
       ".fo-cp-evday{margin:14px -22px 0;padding:8px 22px;background:rgba(12,27,51,.05);font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--navy)}",
       ".fo-cp-panel .fo-cp-evday:first-child{margin-top:0}",

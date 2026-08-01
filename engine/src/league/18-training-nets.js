@@ -272,14 +272,20 @@
         var pc = Math.min(99, Math.round(100 * (prog[k] || 0) / th));
         if (pc > bestPct) { bestPct = pc; best = k; }
       }
-      return "<label class='fo-ns-man'>" +
-        "<span class='fo-ns-mn'><b>" + E(p.name) + "</b><i>" + (p.age | 0) + " &middot; " +
+      // A NAME IN THE NETS IS A MAN. The nets is where a manager looks hardest
+      // at his own players - and it was the one room where their names were
+      // dead text, so checking a career meant leaving and coming back through
+      // the squad. The row is a label wrapping a select, so the link sits
+      // outside the label's own hit area rather than fighting it for the tap.
+      return "<div class='fo-ns-man'>" +
+        "<span class='fo-ns-mn'><b><a class='fo-ns-lk' href='#/player?n=" + encodeURIComponent(p.name) + "'>" +
+        E(p.name) + "</a></b><i>" + (p.age | 0) + " &middot; " +
         (bestPct ? E(foSkillLbl(best)) + " " + bestPct + "%" : "no work banked yet") + "</i></span>" +
         "<select class='fo-ns-prog' data-p='" + E(p.name) + "'>" +
         "<option value=''>the coach decides</option>" +
         PROGS.map(function (pr) {
           return "<option value=\"" + E(pr) + "\"" + (pr === cur ? " selected" : "") + ">" + E(pr) + "</option>";
-        }).join("") + "</select></label>";
+        }).join("") + "</select></div>";
     }).join("");
     var planPanel = "<div class='fo-ns-panel'><h3>The plan <span>" +
       (world ? "standing orders &middot; the umpire works them every round" : "sign in to send these to the world") + "</span></h3>" +
@@ -407,6 +413,8 @@
       // ink as .fo-ns-sess below - white-on-cream left a squad list you could
       // not read at all
       ".fo-ns-man{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.85);border:1px solid rgba(60,80,45,.22);border-radius:11px;padding:8px 10px;min-width:0}",
+      "html body #page .fo-ns-lk{color:inherit !important;text-decoration:none !important;border-bottom:1px dotted rgba(60,80,45,.45)}",
+      "html body #page .fo-ns-lk:hover{color:#B44A22 !important;border-bottom-color:rgba(180,74,34,.7)}",
       ".fo-ns-mn{flex:1 1 auto;min-width:0;display:block}",
       ".fo-ns-mn b{display:block;font:600 12.5px/1.25 Inter,sans-serif;color:#26301F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       ".fo-ns-mn i{display:block;font:400 10px/1.3 Inter,sans-serif;font-style:normal;color:#6E7E5A}",
