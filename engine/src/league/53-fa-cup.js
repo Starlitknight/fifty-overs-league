@@ -76,8 +76,7 @@
       var html = "<div class='fo-fa-page'>" +
         "<div class='fo-fa-hero'><span class='fo-fa-eyebrow'>The national knockout &middot; season " + seasonNo + "</span>" +
         "<h1>The " + E(natNm) + " Cup</h1>" +
-        "<p>All sixteen clubs of the pyramid in one draw. The small club hosts the giant; the final is played at the flagship's ground. " +
-        "Four Sundays decide it.</p></div>";
+        "</div>";
 
       if (!body || !body.stages || !Object.keys(body.stages).length) {
         html += "<div class='fo-fa-card'><h3>The draw awaits</h3><p class='dim'>" +
@@ -172,9 +171,7 @@
       var html = "<div class='fo-fa-page'>" +
         "<div class='fo-fa-hero'><span class='fo-fa-eyebrow'>The sixteen champions &middot; season " + seasonNo + "</span>" +
         "<h1>The Champions Cup</h1>" +
-        "<p>Every nation's playoff champion, in four groups of four. Group cricket Monday to Wednesday of the " +
-        "closing week; the top two go through to Friday's quarter-finals, and the final is played on the last " +
-        "Sunday of the year.</p></div>";
+        "</div>";
       if (body.champion) {
         html += "<div class='fo-fa-champ'><span>&#127942;</span><div><i>Champions of the world, season " + seasonNo +
           "</i><b>" + E(body.champion) + "</b></div></div>";

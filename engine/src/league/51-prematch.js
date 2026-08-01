@@ -233,11 +233,7 @@
     if (ap) ap.textContent = pa + "%";
     var note = host.querySelector(".fo-pm-wpnote");
     if (note) {
-      note.textContent = done
-        ? ("A rough guide, not a forecast: " + n + " runs of this fixture on the match engine, " +
-           "both sides picked the way the engine picks them. Team sheets are not in it, so the " +
-           "number never moves - it is the same " + n + " matches on every device, from the day the " +
-           "fixture is drawn." + (v.t ? " " + v.t + " ended level." : ""))
+      note.textContent = done ? (v.t ? v.t + " ended level." : "")
         : ("Playing it out\u2026 " + n + " of " + FO_PM_WP_N + " done.");
     }
     host.classList.toggle("settled", !!done);

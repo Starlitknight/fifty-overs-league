@@ -362,7 +362,6 @@
         "<div class='fo-hb-shead'><b>The league board</b><span>the same thirteen honours for every club - " + chDone + " of 6 charter seals, " + done.length + " of " + board.length + " plaques</span></div>" +
         "<div class='fo-hb-oak'><div class='fo-hb-grid'>" + plaques + "</div></div>" +
         "<section class='fo-hb-sec'><div class='fo-hb-k'>First on the board</div>" +
-        "<p class='fo-hb-say'>An honour can be won by every club - but only one name goes down as the league&rsquo;s first.</p>" +
         "<div class='fo-hb-races'>" + race + "</div></section>" +
         "<div class='fo-hb-foot'><a href='#/league'>&#8592; My league</a><a href='#/squad'>The squad &rsaquo;</a></div>" +
         "</div>";

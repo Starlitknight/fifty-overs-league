@@ -97,7 +97,7 @@
     return "<div class='fo-ac' data-fo-owntable><div class='fo-ac-in'>" +
       "<div class='fo-ac-hero'><div class='fo-ac-k'>The international game</div>" +
       "<h1>Playing For Your Country</h1>" +
-      "<p>Three rounds a season the selectors take the best men in the land, wherever they play. Your club loses them for the day and is paid for the week &mdash; and that evening the nations play each other.</p></div>" +
+      "</div>" +
       body +
       "<div class='fo-ac-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/rankings'>The world rankings &rsaquo;</a></div>" +
       "</div></div>";
@@ -123,7 +123,7 @@
     if (!snap || !snap.nations) {
       page.innerHTML = shell(
         "<div class='fo-ac-card'><h3>The selectors have not met yet</h3>" +
-        "<p class='fo-ac-p'>Squads are named on the morning of the first international window &mdash; <b>round 5</b> of the season &mdash; and again at rounds 9 and 13. Come back when the world has played that far and every nation on earth will have a fifteen here.</p></div>" +
+        "<p class='fo-ac-p'>Squads are named at rounds 5, 9 and 13.</p></div>" +
         howItWorks());
       return;
     }
@@ -228,12 +228,5 @@
       (t.text ? "<i>" + E(t.text) + "</i>" : "") + "</div>";
   }
 
-  function howItWorks() {
-    return "<div class='fo-ac-card'><h3>How the window works</h3>" +
-      "<p class='fo-ac-p'>The selectors name <b>fifteen</b>: the gloves first, then six bowlers, then the best of the rest &mdash; and never more than <b>three men from any one club</b>, so a squad always leaves a side twelve to pick from. What they read is a cricketer's card and the nick he is in, which is the whole reason league form matters.</p>" +
-      "<p class='fo-ac-p'>A man who goes is <b>not available to his club</b> that round, and he does not work in its nets that week either. He comes back with a cap, tired legs, and whatever the tour did to his form. If a teamsheet you filed a fortnight ago still names him, nothing is torn up: the umpire sends out the best man left in his place, batting where he batted and bowling his overs.</p>" +
-      "<p class='fo-ac-p'>Nineteen nations make <b>nine ties and one week off</b>. The draw is settled by the world day itself, so the selectors know it before they sit down: a country with no fixture calls nobody up at all, and its clubs keep their men.</p>" +
-      "<p class='fo-ac-p'>Nothing here needs anybody awake. The squad is named by the umpire, the tour is played by the umpire, and the cheque is in the books the next time you look at them.</p>" +
-      "</div>";
-  }
+  function howItWorks() { return ""; }
 })();

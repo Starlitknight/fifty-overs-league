@@ -482,7 +482,6 @@
         meter("Form", cap(cond.formWord), cond.formPct) +
         "<p class='fo-pp-dim'>" + (cond.fatPct > 40 ? "He needs a quiet week more than a hard one." : "Fresh enough for a full week's work.") + "</p></div>" +
         "<div class='fo-pp-card dark'><h3>The training ground</h3>" +
-        "<p>Sessions are set for the whole squad at <a href='#/training'>The Nets</a>. What lands on this man lands there, once a round, for every manager at the same hour.</p>" +
         "<a class='fo-pp-more' href='#/training'>Set this week's work &rsaquo;</a></div>" +
         "</div>";
     } else {
@@ -504,8 +503,7 @@
         "<div class='fo-pp-col'>" +
         "<div class='fo-pp-card'><h3>The player</h3>" +
         (mine ? "<div class='fo-pp-shape'>" + radar(facets(p)) + bars(facets(p)) + "</div>" + adv
-          : "<p class='fo-pp-dim'>His raw skills stay in his own club's coaching book. What a scout sees from the boundary is above: batting, bowling and fielding, and the shape of his career below.</p>" +
-            bars(scoutRow(p))) +
+          : bars(scoutRow(p))) +
         "</div>" +
         "<div class='fo-pp-card'><h3>Career record</h3><div class='fo-pp-mini' data-mini='1'>" + miniCareer(p) + "</div></div>" +
         "</div>" +
@@ -521,7 +519,7 @@
         "<div><b>" + E(roleLbl(p)) + "</b><i>" + (p.hand === "L" ? "Left-hand bat" : "Right-hand bat") + "</i>" +
         "<i>" + E(p.btLabel && !/does not bowl/i.test(p.btLabel) ? p.btLabel : "Does not bowl") + "</i></div></div>" +
         (mine ? "<a class='fo-pp-more' href='#/orders'>Set the teamsheet &rsaquo;</a>"
-          : "<p class='fo-pp-dim'>Where he bats is his manager's business until the teamsheet goes public, an hour before the match.</p>") +
+          : "") +
         "</div>" +
         "<div class='fo-pp-card'><h3>The story so far</h3>" +
         (ms.length ? "<div class='fo-pp-story'>" + ms.map(function (m) {
@@ -695,7 +693,7 @@
         "<div class='fo-pp-card'><h3>For his country<span>" + intl.caps + " cap" + (intl.caps === 1 ? "" : "s") + "</span></h3>" +
         "<div class='fo-pp-mini'>" + kv("Caps", intl.caps) + kv("Runs", intl.runs || 0) +
         kv("Best", intl.hs || 0) + kv("Wickets", intl.wkts || 0) + "</div>" +
-        "<p class='fo-pp-dim'>Played in the international windows. A cap keeps its own book &mdash; it never swells a club record.</p></div>";
+        "</div>";
       var room;
       if (CARD_TAB === "career") {
         room = "<div class='fo-pp-col'><div class='fo-pp-card'><h3>Career record<span>All league cricket</span></h3>" +
@@ -706,12 +704,11 @@
             : "<p class='fo-pp-dim'>He has not played a league match yet. The record starts the day he is picked.</p>") +
           "</div>" + intlCard + "</div>" +
           "<div class='fo-pp-rail'><div class='fo-pp-card dark'><h3>The book is public</h3>" +
-          "<p>Every run and wicket here was scored in a match the umpire played and banked. It is the same record his own manager reads.</p>" +
           "</div></div>";
       } else {
         room = "<div class='fo-pp-col'>" +
           "<div class='fo-pp-card'><h3>The scout's read</h3>" + bars(sc) +
-          "<p class='fo-pp-dim'>His raw skills stay in his own club's coaching book, and where he bats stays his manager's business until the teamsheet goes public, an hour before the match.</p></div>" +
+          "</div>" +
           "<div class='fo-pp-card'><h3>Career record</h3><div class='fo-pp-mini'>" +
           kv("Matches", caps) + kv("Runs", c.runs || 0) + kv("Best", c.hs || 0) + kv("Wickets", c.wkts || 0) +
           (caps ? "" : "<p class='fo-pp-dim'>The record starts the day he is picked.</p>") + "</div></div>" +

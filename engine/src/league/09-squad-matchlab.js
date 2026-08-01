@@ -577,15 +577,11 @@
         return "<option value='" + o[0] + "'" + (o[0] === who ? " selected" : "") + ">" + E(o[1]) + "</option>";
       }).join("") + "</select></label></div>";
 
-    var cap = rows.length
-      ? (rows.length + " " + (rows.length === 1 ? "player" : "players") +
-         " &middot; sorted by <b>" + E(col.l) + "</b> " + (dir === 1 ? "lowest first" : "highest first") +
-         ". Click any heading to sort by it, click it again to turn it over. A row opens the man, where every skill is broken out.")
-      : (who === "yth" ? "No youth players at the club yet. The academy brings them through on its own."
-                       : "Nobody to show.");
+    var cap = rows.length ? ""
+      : (who === "yth" ? "No youth players at the club yet." : "Nobody to show.");
 
     return "<div class='fo-sqg-outer'>" + controls +
-      "<p class='fo-sqg-cap'>" + cap + "</p>" +
+      (cap ? "<p class='fo-sqg-cap'>" + cap + "</p>" : "") +
       "<div class='fo-sqg-wrap'><table class='fo-sqg'>" +
       "<thead><tr>" + head + "</tr></thead>" +
       "<tbody>" + (body || "<tr><td class='fo-sqg-none' colspan='" + cols.length + "'>Nobody to show. Try another Show setting.</td></tr>") + "</tbody>" +

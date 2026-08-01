@@ -334,12 +334,10 @@
             : "<p class='fo-cp-dim'>Bare, for now. Every season writes the next line.</p>") +
           "<div class='fo-cp-sub'>The ground</div>" +
           "<div class='fo-cp-note'><b>" + E((info && info.ground) || "A ground of their own") + "</b></div>" +
-          "<p class='fo-cp-dim'>Home advantage is real: their groundsman prepares the strip.</p>" +
           // an academy is a building, and buildings are visible - the level a
           // club pays for is public; who is inside it never is
           "<div class='fo-cp-sub'>The academy</div>" +
           "<div class='fo-cp-note'><b>Level " + Math.max(1, Math.min(5, +(info && info.academy) || 2)) + "</b> of five</div>" +
-          "<p class='fo-cp-dim'>What they spend on bringing boys through. Who is in there is their business.</p>" +
           (ident && ident.motto ? "<div class='fo-cp-sub'>The motto</div><div class='fo-cp-note'>&ldquo;" + E(ident.motto) + "&rdquo;</div>" : "") +
           "<div class='fo-cp-sub'>Standing</div>" +
           "<div class='fo-cp-note'>World rank <b>" + (rkRow ? "#" + rkRow.rank : "unrated") + "</b>" +
@@ -356,8 +354,6 @@
               "<span>Form</span><span>Hand</span><span>Wage</span></div>" +
               rosterRows
             : "<p class='fo-cp-dim'>The squad list is on its way from the World Service&hellip;</p>") +
-          (players.length ? "<p class='fo-cp-dim foot'>Their raw skills stay in their own coaching book. " +
-            "Teamsheets go public an hour before every match &mdash; that is your scouting window.</p>" : "") +
           "</div>";
       }
 

@@ -10033,7 +10033,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260801-0427-10b3c4";
+  var FO_BUILD = "20260801-1226-871fb8";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -20999,15 +20999,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         return "<option value='" + o[0] + "'" + (o[0] === who ? " selected" : "") + ">" + E(o[1]) + "</option>";
       }).join("") + "</select></label></div>";
 
-    var cap = rows.length
-      ? (rows.length + " " + (rows.length === 1 ? "player" : "players") +
-         " &middot; sorted by <b>" + E(col.l) + "</b> " + (dir === 1 ? "lowest first" : "highest first") +
-         ". Click any heading to sort by it, click it again to turn it over. A row opens the man, where every skill is broken out.")
-      : (who === "yth" ? "No youth players at the club yet. The academy brings them through on its own."
-                       : "Nobody to show.");
+    var cap = rows.length ? ""
+      : (who === "yth" ? "No youth players at the club yet." : "Nobody to show.");
 
     return "<div class='fo-sqg-outer'>" + controls +
-      "<p class='fo-sqg-cap'>" + cap + "</p>" +
+      (cap ? "<p class='fo-sqg-cap'>" + cap + "</p>" : "") +
       "<div class='fo-sqg-wrap'><table class='fo-sqg'>" +
       "<thead><tr>" + head + "</tr></thead>" +
       "<tbody>" + (body || "<tr><td class='fo-sqg-none' colspan='" + cols.length + "'>Nobody to show. Try another Show setting.</td></tr>") + "</tbody>" +
@@ -28133,7 +28129,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       }).join("");
       return "<section class='fo-lx-sec'>" +
         "<div class='fo-lx-rule reveal'><span>From the season</span></div>" +
-        "<p class='fo-lx-secsub reveal'>Match reports, written off the ball-by-ball record as each game finishes.</p>" +
         "<div class='fo-lx-reps reveal'>" + rows + "</div></section>";
     } catch (e) { return ""; }
   }
@@ -28250,7 +28245,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         // ---- contents ----
         (feat.length ? "<section class='fo-lx-sec fo-lx-contents'>" +
           "<div class='fo-lx-rule reveal'><span>In this issue</span></div>" +
-          "<p class='fo-lx-secsub reveal'>Season one, cover to cover. Pick a name and the page opens.</p>" +
           "<div class='fo-lx-toclist reveal'>" + tocHTML + "</div></section>" : "") +
         // ---- the features, in the order you meet them ----
         (feat.length ? "<section class='fo-lx-sec'>" +
@@ -29253,11 +29247,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             if (planned && !mp) { if (lf) lf.textContent = "PLAY THE ROUND \u25B8"; if (ls) ls.textContent = "PLAY \u25B8"; }
             else { if (lf) lf.textContent = (planned ? "MATCH PLANNED" : "NEXT MATCH") + " \u00B7 v " + ((fx2.opp && fx2.opp.name) || "").toUpperCase(); }
             nxB.classList.add("hg-cta");
-            // the ritual first: NEXT MATCH opens the Matchday build-up,
-            // where orders, the dossier and (in the window) live play wait
+            // the ritual first: NEXT MATCH opens the build-up. A club held in
+            // the world goes to the served preview - the real fixture, the
+            // real ground - and only an unclaimed device keeps the local
+            // matchday room.
             nxB.addEventListener("click", function () {
               try {
-                location.hash = "#/matchday?r=" + fx2.r;
+                location.hash = fx2.href || ("#/matchday?r=" + fx2.r);
                 if (typeof window.route === "function") window.route();
               } catch (eGo) {}
             });
@@ -29665,7 +29661,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           : "Matchday";
         // -- still to come
         var upHTML = "";
-        if (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason >= 0 && srv.cal.round && srv.cal.round < 18) {
+        if (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason >= 0 && srv.cal.round) {
           var sidesBy = {};
           try {
             var nmOv9 = window.__foWorldNames ? window.__foWorldNames.get(nation) : null;
@@ -29676,13 +29672,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           var schedA = srv.wt.schedMirror(nation, srv.cal.seasonNo);
           var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
           var ups = [];
-          for (var ur = srv.cal.round + 1; ur <= 18; ur++) {
+          // as many rounds as the card actually has - eighteen was the old
+          // single-division season, and reading past the end of a fourteen
+          // round card threw where the list should simply have stopped
+          for (var ur = srv.cal.round + 1; ur <= schedA.length; ur++) {
             var dayU = srv.pl.dayOfSeasonRound(srv.cal.seasonNo, ur);
             var dt9 = new Date(srv.pl.EPOCH + dayU * 86400000);
             ups.push("<div class='fo-nt-uround'><i>Round " + ur + " &middot; " + DOW[dt9.getUTCDay()] + " " + dt9.getUTCDate() + " " + MON[dt9.getUTCMonth()] + " &middot; " + hhFmt(srv.hour) + "</i>" +
               schedA[ur - 1].map(function (p9) { return "<span>" + E((sidesBy[p9[0]] || {}).name || "") + " v " + E((sidesBy[p9[1]] || {}).name || "") + "</span>"; }).join("") + "</div>");
           }
-          if (ups.length) upHTML = "<details class='fo-nt-up'><summary>Still to play &middot; rounds " + (srv.cal.round + 1) + "&ndash;18</summary>" + ups.join("") + "</details>";
+          if (ups.length) upHTML = "<details class='fo-nt-up'><summary>Still to play &middot; rounds " + (srv.cal.round + 1) + "&ndash;" + schedA.length + "</summary>" + ups.join("") + "</details>";
         }
         sec2Title = "Matchday";
         fixturesPanel = "<div class='fo-nt-md" + (srv.state === "live" ? " live" : "") + "'>" +
@@ -30086,7 +30085,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "</div></section>" +
         "<div class='fo-lg-body'>" +
         champBanner +
-        "<div class='fo-cup-note'>Win your national league to earn a place in next season's Champions Cup.</div>" +
         "<div class='fo-cup-bracket'>" +
         stageCol("Quarter-finals", brk.qf) + stageCol("Semi-finals", brk.sf) +
         "<div class='fo-cup-col'><h4>Final</h4>" + tieRow(brk.final) + (brk.third ? "<h4 style='margin-top:14px'>Third place</h4>" + tieRow(brk.third) : "") + "</div>" +
@@ -31991,7 +31989,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (!rec) {
         page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
           "<h1 class='fo-mr-head'>Nothing to report</h1>" +
-          "<p class='fo-mr-dek'>No match has been played yet. Every finished match is written up here the moment it ends.</p>" +
+          "<p class='fo-mr-dek'>No match has been played yet.</p>" +
           "<div class='fo-mr-foot'><a class='fo-mr-back' href='#/club'>&#8592; Club</a></div></div></div>";
         return;
       }
@@ -32633,6 +32631,38 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return t;
   }
 
+  // ---- THE LOG THIS CLUB ACTUALLY WROTE --------------------------------------
+  // App.ls.tr.log is the LOCAL resolver's record, and it outlives the men it
+  // was written about. A world reset re-deals the squad, a transfer moves a
+  // man on - and the noticeboard went on celebrating cricketers who are not
+  // at this club, beside a plan listing the eleven who are.
+  //
+  // Worse for a club held in the served world: the local resolver is switched
+  // off there (the umpire does the training from the plan the world holds), so
+  // EVERY line in that log is from a life this club did not live. The honest
+  // report is an empty one until the world has something to report.
+  //
+  // One reader, so the development report, the noticeboard pops and the club
+  // home card cannot disagree about who trained.
+  function foNsLog() {
+    // the claim is read from the store as well as the live global: on a cold
+    // boot the world has not answered yet, and that is exactly the moment the
+    // stale board used to flash up
+    try {
+      var cl = window.__foWorldClaim;
+      if (!cl) { try { cl = JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eS) {} }
+      if (cl && cl.country) return [];
+    } catch (eW) {}
+    try {
+      if (!App || !App.ls || !Array.isArray(App.ls.tr && App.ls.tr.log)) return [];
+      var here = {}, me = userTeam();
+      if (!me) return [];
+      (me.players || []).concat(me.youth || []).forEach(function (p) { if (p && p.name) here[p.name] = 1; });
+      return App.ls.tr.log.filter(function (l) { return l && here[l.n]; });
+    } catch (e) { return []; }
+  }
+  window.__foTrainLog = foNsLog;
+
   var FO_NS_SESS = {
     bat:   { nm: "Batting nets",   ic: "&#127951;", sk: ["vsPace", "vsSpin", "rotation", "temperament"], who: "all",   coach: "bat",  sub: "throw-downs, the bowling machine, an hour against the turning ball" },
     bowl:  { nm: "Bowling nets",   ic: "&#9678;",   sk: ["wicket", "economy", "discipline", "variation"], who: "bowl", coach: "bowl", sub: "one stump, a cone on a length, and the keeper calling the seam" },
@@ -32837,7 +32867,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     }).join("");
     var planPanel = "<div class='fo-ns-panel'><h3>The plan <span>" +
       (world ? "standing orders &middot; the umpire works them every round" : "sign in to send these to the world") + "</span></h3>" +
-      "<p class='fo-ns-note'>Name the work and it is done for you, round after round, awake or asleep. Leave a man to the coach and he trains to his trade.</p>" +
       "<div class='fo-ns-men'>" + planHTML + "</div></div>";
     var sessHTML = Object.keys(FO_NS_SESS).map(function (id) {
       var S = FO_NS_SESS[id], on = t.sessions.indexOf(id) >= 0;
@@ -32862,7 +32891,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return "<button type='button' class='fo-ns-coach" + (on ? " on" : "") + "' data-ns-coach='" + c + "'>" +
         "<b>" + C.nm + "</b><span>" + (on ? "on staff &middot; $" + C.fee.toLocaleString() + " a round" : "hire &middot; $" + C.fee.toLocaleString() + " a round") + "</span></button>";
     }).join("");
-    var gains = {}, rows = (t.log || []).slice(0, 14).map(function (l) {
+    var gains = {}, rows = foNsLog().slice(0, 14).map(function (l) {
       gains[l.n] = (gains[l.n] || 0) + 1;
       return "<div class='fo-ns-line'><b>" + E(l.n) + "</b> " + (l.r >= 0 ? "+1 " + E(foSkillLbl(l.k)) : E(l.why)) +
         " <span>" + (l.r >= 0 ? E(l.why) + " &middot; R" + (l.r + 1) : "season " + l.s) + "</span></div>";
@@ -32872,10 +32901,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "<div class='fo-ns-in'>" +
       "<div class='fo-cer-eyebrow'>" + E(me.name) + " &middot; the training ground</div>" +
       "<h1 class='fo-ns-h1'>The Nets</h1>" +
-      "<p class='fo-ns-tag'>Name what each man works on. The World Service holds the plan and the umpire runs it with every round, whether you watch it or not.</p>" +
       "<div class='fo-ns-grid'>" +
       planPanel +
-      "<div class='fo-ns-panel'><h3>Development report</h3>" + (rows || "<p class='fo-ns-note'>No gains recorded yet. The first week's work shows after the round.</p>") + "</div>" +
+      "<div class='fo-ns-panel'><h3>Development report</h3>" + (rows || "<p class='fo-ns-note'>No gains recorded yet.</p>") + "</div>" +
       "</div>" +
       "<div class='fo-cer-actions'><a class='fo-ls-btn ghost' href='#/academy'>&lsaquo; The academy</a><a class='fo-ls-btn ghost' href='#/squad'>The squad &rsaquo;</a></div>" +
       "</div></div>";
@@ -32930,7 +32958,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (!ready()) return "";
     var t = TR();
     var names = t.sessions.map(function (id) { return FO_NS_SESS[id] ? FO_NS_SESS[id].nm : id; }).join(" &middot; ");
-    var recent = (t.log || []).slice(0, 2).map(function (l) {
+    var recent = foNsLog().slice(0, 2).map(function (l) {
       return "<div class='fo-ls-line'><b>" + E(l.n) + "</b> " + (l.r >= 0 ? "+1 " + E(foSkillLbl(l.k)) : E(l.why)) + "</div>";
     }).join("");
     var projN = (t.projects || []).filter(function (p) { return p && p.n && p.k; }).length;
@@ -33102,7 +33130,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-mc'>" +
         "<div class='fo-mc-hero'><div class='fo-mc-kick'>Fifty Overs</div>" +
         "<h1>Match Centre</h1>" +
-        "<p>Every finished match, written up and scored. Pick one to open the report.</p></div>" +
+        "</div>" +
         (rows ? "<div class='fo-mc-list'>" + rows + "</div>" :
           "<div class='fo-mc-empty'>No cricket yet. The first round writes the first page.</div>") +
         "<div class='fo-mc-foot'><a href='#/club'>&#8592; Club home</a><a href='#/journal'>The journal &#8250;</a></div>" +
@@ -33322,8 +33350,64 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   // ---- next fixture ----------------------------------------------------------
-  function nextFixture() {
+  // ONE WORLD, ONE ANSWER. This read App.season - the retired local sim - and
+  // nothing else, so a manager held in the served world was told about a match
+  // that does not exist: another round, another opponent, at a ground called
+  // Neutral Park. Worse, it was the answer BOTH the club home's NEXT MATCH
+  // button and the matchday build-up were built on, so the game showed two
+  // different next fixtures and two different pre-match pages at once.
+  //
+  // Where the world holds a club, the umpire's schedule IS the fixture list -
+  // the same schedule the league page and the fixture card deal from - and the
+  // answer carries the world address, so a caller can open the served preview
+  // instead of inventing a build-up of its own.
+  function servedNext() {
     try {
+      var cl = window.__foWorldClaim;
+      if (!cl) { try { cl = JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eC) {} }
+      if (!cl || !cl.country || cl.slot == null) return null;
+      var lg = window.__foWorldLg, wt = window.__foWT;
+      if (!lg || !wt || !wt.schedMirror) return null;
+      try { lg.want(cl.country); } catch (eW) {}
+      var snap = lg.get(cl.country); if (!snap) return null;
+      var season = snap.seasonNo || 1;
+      var sched = wt.schedMirror(cl.country, season) || [];
+      var names = null, mgr = null;
+      try {
+        if (window.__foWorldNames) { names = window.__foWorldNames.get(cl.country); mgr = window.__foWorldNames.mgr(cl.country); }
+      } catch (eN) {}
+      var bySlot = {};
+      (snap.table || []).concat(snap.table2 || []).forEach(function (row) {
+        bySlot[row.slot] = (names && names[row.slot]) || row.name;
+      });
+      for (var r0 = (snap.roundsPlayed || 0); r0 < sched.length; r0++) {
+        var rd = sched[r0] || [];
+        for (var i = 0; i < rd.length; i++) {
+          var f = rd[i];
+          if (f[0] !== cl.slot && f[1] !== cl.slot) continue;
+          var isHome = f[0] === cl.slot, oppSlot = isHome ? f[1] : f[0];
+          var href = null;
+          try { href = window.foPreviewHref ? window.foPreviewHref(cl.country, r0 + 1, f[0], f[1]) : null; } catch (eH) {}
+          return {
+            served: true, r: r0 + 1, round: r0 + 1, isHome: isHome, href: href,
+            world: { nat: cl.country, season: season, round: r0 + 1, h: f[0], a: f[1] },
+            opp: { name: bySlot[oppSlot] || "a club", slot: oppSlot },
+            ground: (mgr && mgr["g" + f[0]]) || ((bySlot[f[0]] || "the ground") + "'s ground")
+          };
+        }
+      }
+      // held in the world, and the season is played out: there is no next
+      // match, which is a truer answer than one off the retired sim
+      return null;
+    } catch (e) { return null; }
+  }
+  function nextFixture() {
+    var sv = servedNext(); if (sv) return sv;
+    try {
+      // a device that has never claimed anything still plays its own season
+      var cl0 = window.__foWorldClaim;
+      if (!cl0) { try { cl0 = JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eC0) {} }
+      if (cl0 && cl0.country && cl0.slot != null) return null;
       if (typeof seasonInit === "function") seasonInit();
       var S = App.season; if (!S) return null;
       for (var r = S.round; r < S.schedule.length; r++) {
@@ -33716,7 +33800,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-hb-shead'><b>The league board</b><span>the same thirteen honours for every club - " + chDone + " of 6 charter seals, " + done.length + " of " + board.length + " plaques</span></div>" +
         "<div class='fo-hb-oak'><div class='fo-hb-grid'>" + plaques + "</div></div>" +
         "<section class='fo-hb-sec'><div class='fo-hb-k'>First on the board</div>" +
-        "<p class='fo-hb-say'>An honour can be won by every club - but only one name goes down as the league&rsquo;s first.</p>" +
         "<div class='fo-hb-races'>" + race + "</div></section>" +
         "<div class='fo-hb-foot'><a href='#/league'>&#8592; My league</a><a href='#/squad'>The squad &rsaquo;</a></div>" +
         "</div>";
@@ -33983,7 +34066,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     }).join("");
 
     // what is still to come, off the umpire's own schedule
-    var upRows = "", rounds = snap.rounds || 18;
+    var upRows = "", rounds = snap.rounds || 14;
     try {
       var wt = window.__foWT, pl = window.__foPlanet;
       if (wt && wt.schedMirror && pl) {
@@ -34027,7 +34110,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "<div class='fo-fl-mast'>" +
       "<div class='fo-fl-kick'>" + E(my) + " &middot; season " + (snap.seasonNo || 1) + "</div>" +
       "<h1>The Fixture List</h1>" +
-      "<p>Every match of the summer on one card - the played ones open the round they were in, the coming ones give the day, the hour and the ground.</p>" +
       "<div class='fo-fl-rec'><b>" + w + "</b> won" + (t ? " &middot; <b>" + t + "</b> tied" : "") +
         " &middot; <b>" + l + "</b> lost &middot; <b>" + played.length + "</b> of " + rounds + " played</div>" +
       "</div>" +
@@ -34114,8 +34196,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-fl-mast'>" +
         "<div class='fo-fl-kick'>" + E(my) + " &middot; season " + (App.seasonNo || 1) + "</div>" +
         "<h1>The Fixture List</h1>" +
-        "<p>Every match of the summer on one card - the played ones open their reports, the coming ones show the ground, the square and the sky.</p>" +
-        "<div class='fo-fl-rec'><b>" + w + "</b> won" + (t ? " &middot; <b>" + t + "</b> tied" : "") + " &middot; <b>" + l + "</b> lost &middot; <b>" + (played.length) + "</b> of " + (S && S.schedule ? S.schedule.length : 18) + " played</div>" +
+          "<div class='fo-fl-rec'><b>" + w + "</b> won" + (t ? " &middot; <b>" + t + "</b> tied" : "") + " &middot; <b>" + l + "</b> lost &middot; <b>" + (played.length) + "</b> of " + (S && S.schedule ? S.schedule.length : 18) + " played</div>" +
         "</div>" +
         (resRows ? "<div class='fo-fl-k'>Results</div><div class='fo-fl-list'>" + resRows + "</div>" : "") +
         "<div class='fo-fl-k'>Still to play</div><div class='fo-fl-list'>" + upRows + "</div>" +
@@ -34372,7 +34453,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       });
 
       // the world clock: which round is in play, and at what hour
-      var pl = null, wt = null, cal = null, fx = [], hour = 13, state = "none", preDays = 0, rounds = (snap && snap.rounds) || 18;
+      var pl = null, wt = null, cal = null, fx = [], hour = 13, state = "none", preDays = 0, rounds = (snap && snap.rounds) || 14;
       try { pl = window.__foPlanet || null; wt = (window.__foWT && window.__foWT.serverFixtures) ? window.__foWT : null; } catch (eP) {}
       if (pl && wt) {
         try {
@@ -34441,11 +34522,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-lgx-titles'>" +
         "<div class='fo-lgx-k'>" + E(natNm) + " &middot; Season " + ((snap && snap.seasonNo) || (cal && cal.seasonNo > 0 ? cal.seasonNo : 1)) + "</div>" +
         "<h1>The " + E(natNm) + " League" + (hasDivs ? " &middot; Division " + (plateDiv === 1 ? "One" : "Two") : "") + "</h1>" +
-        "<p>" + (hasDivs
-          ? (plateDiv === 1
-            ? "Eight clubs. Fourteen rounds. Finals night crowns the champion."
-            : "Eight clubs. Fourteen rounds. The top of this table is the road up.")
-          : "Ten clubs. Eighteen rounds. One pennant.") + "</p>" +
         "</div></div>" +
         "<div class='fo-lgx-clock'>" +
         "<div class='fo-lgx-rk'>Round " + curRound + " of " + rounds + "</div>" +
@@ -34465,7 +34541,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         var rd = parseInt(qparam("r") || "", 10);
         if (!rd || rd < 1 || rd > rounds) rd = curRound;
         var sched = null;
-        try { if (wt && wt.schedMirror) sched = wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1)); } catch (eSc) {}
+        // THE CARD OF THE DIVISION YOU ARE READING. Both flights play on the
+        // same day, so a single list of eight put a manager on the Division
+        // Two page in front of Division One's matches with his own tacked on
+        // the end. Each page deals its own four.
+        try { if (wt && wt.schedMirror) sched = wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1), plateDiv); } catch (eSc) {}
         var nameAt = function (s2) {
           if (nmBySlot && nmBySlot[s2]) return nmBySlot[s2];
           var row = rows.filter(function (r) { return r.slot === s2; })[0];
@@ -34512,11 +34592,14 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           }).join("") : "<p class='fo-lgx-dim'>No fixtures for this round yet.</p>") +
           "</div>";
 
-        // the run-in: your next five, home or away
-        var runIn = [];
-        if (sched && mySlot >= 0) {
-          for (var ri = curRound - 1; ri < sched.length && runIn.length < 5; ri++) {
-            (sched[ri] || []).forEach(function (pr2) {
+        // the run-in: your next five, home or away. YOUR run-in follows YOUR
+        // division, not the page you happen to be reading - a Division Two
+        // manager browsing the counties still wants his own next five.
+        var runIn = [], mySched = sched;
+        try { if (wt && wt.schedMirror && myDivNo !== plateDiv) mySched = wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1), myDivNo); } catch (eMs) {}
+        if (mySched && mySlot >= 0) {
+          for (var ri = curRound - 1; ri < mySched.length && runIn.length < 5; ri++) {
+            (mySched[ri] || []).forEach(function (pr2) {
               if (runIn.length >= 5) return;
               if (pr2[0] !== mySlot && pr2[1] !== mySlot) return;
               var h2 = pr2[0] === mySlot;
@@ -34531,8 +34614,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
               "<u class='" + (x.home ? "h" : "a") + "'>" + (x.home ? "H" : "A") + "</u></a>";
           }).join("") + "</div>" : "") +
           "<div class='fo-lgx-card'><h3>Round at a glance</h3><div class='fo-lgx-glance'>" +
-          "<div><b>" + (pairs.length || 5) + "</b><i>Matches</i></div>" +
-          "<div><b>" + (rows.length || 10) + "</b><i>Clubs</i></div>" +
+          "<div><b>" + (pairs.length || 4) + "</b><i>Matches</i></div>" +
+          "<div><b>" + (rows.length || 8) + "</b><i>Clubs</i></div>" +
           "<div><b>" + hh(hour) + "</b><i>First ball" + rdDate(rd) + "</i></div></div></div>";
 
       } else if (tab === "results") {
@@ -34731,7 +34814,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         var nextWhen = hh(hour) + " UTC";
         var nextPairs = [];
         try {
-          var sc2 = wt && wt.schedMirror ? wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1)) : null;
+          var sc2 = wt && wt.schedMirror ? wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1), plateDiv) : null;
           nextPairs = (nextRd > curRound && state === "fin" && curRound >= rounds) ? [] : ((sc2 && sc2[nextRd - 1]) || []);
         } catch (eNp) {}
         var nmA = function (s2) {
@@ -36557,13 +36640,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-al-mast'>" +
         "<div class='fo-al-kick'>The book of record &middot; Season " + p.season + "</div>" +
         "<h1>The World Almanack</h1>" +
-        "<p>Everything the planet's cricket has done, written down. Records that stand until someone breaks them, champions season by season, and the names behind this season's runs and wickets.</p>" +
-        "</div>" +
+          "</div>" +
         "<div class='fo-al-sec'><h2>All-time records</h2>" + recHTML + "</div>" +
         "<div class='fo-al-sec cols'><div><h2>Most runs this season</h2>" + ldr(v.runs, "", p.season) + "</div>" +
         "<div><h2>Most wickets</h2>" + ldr(v.wkts, "", p.season) + "</div></div>" +
         (v.xi ? "<div class='fo-al-sec'><h2>World XI of Season " + v.xi.season + "</h2>" +
-          "<p class='fo-al-sub'>The eleven the season itself picked - six with the bat, five with the ball.</p>" +
           ldr(v.xi.bats, " runs", v.xi.season) + ldr(v.xi.bowls, " wkts", v.xi.season) + "</div>" : "") +
         mktHTML +
         "<div class='fo-al-sec'><h2>The roll of champions</h2>" + rollHTML + "</div>" +
@@ -37522,9 +37603,41 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
   function xiStrength(xi) { return xi.length ? xi.reduce(function (s, p) { return s + ovrOf(p); }, 0) / xi.length : 50; }
 
+  // ONE PRE-MATCH PAGE. This room derives everything from the retired local
+  // sim, which for a club held in the served world means a fixture nobody will
+  // play - the wrong round, the wrong opponent, at Neutral Park. The world has
+  // its own build-up (#/preview, module 51) off the umpire's schedule, so a
+  // claimed club is sent there and this room is left to the devices that have
+  // never claimed anything and really are playing their own season.
+  function servedElsewhere() {
+    try {
+      var cl = window.__foWorldClaim;
+      if (!cl) { try { cl = JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eC) {} }
+      if (!cl || !cl.country || cl.slot == null) return false;
+      var fx = (typeof window.foNextFixture === "function") ? window.foNextFixture() : null;
+      if (fx && fx.href) {
+        // replace, not push: the back button should leave the build-up, not
+        // bounce off this door a second time
+        try { location.replace(fx.href); } catch (eR) { location.hash = fx.href; }
+        try { if (typeof window.route === "function") window.route(); } catch (eR2) {}
+        return true;
+      }
+      // held in the world but its schedule has not landed yet: say so rather
+      // than draw a match off the old sim
+      var page = document.getElementById("page");
+      if (page) {
+        page.innerHTML = "<div class='fo-md'><div class='fo-md-mast'><h1>The build-up</h1>" +
+          "<p>Reaching the world for your next fixture&hellip; if nothing appears, the season is played out.</p>" +
+          "<p><a href='#/fixtures'>The fixture list &rsaquo;</a></p></div></div>";
+      }
+      return true;
+    } catch (e) { return false; }
+  }
+
   function foRenderMatchdayPage() {
     try {
       if ((location.hash || "").split("?")[0] !== "#/matchday") return;
+      if (servedElsewhere()) return;
       if (!ready()) return;
       var page = document.getElementById("page"); if (!page) return;
       document.body.classList.remove("fo-ov-on", "fo-boss-on", "fo-scb-on", "fo-drs-on");
@@ -37572,7 +37685,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         var rows = leagueRows();
         var posOf = function (nm) { return rows.findIndex(function (x) { return x.nm === nm; }) + 1; };
         var ordn = function (n) { return n + (n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"); };
-        stakes = ordn(posOf(home.name)) + " hosts " + ordn(posOf(away.name));
+        // a club the table does not carry has no position, and "0th hosts 1st"
+        // is worse than saying nothing at all
+        var pH = posOf(home.name), pA = posOf(away.name);
+        if (pH > 0 && pA > 0) stakes = ordn(pH) + " hosts " + ordn(pA);
       } catch (eT) {}
 
       // the pundit speaks (deterministically)
@@ -37730,16 +37846,22 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   // fresh = gains from the last two settled rounds of the current season, so
   // a manager who slept through a matchday still walks in on the celebration
+  // The Nets owns the one true reading of this club's log - only the men who
+  // are actually here, and nothing at all where the umpire does the training.
+  // Reading App.ls.tr.log raw is what put another club's cricketers on the
+  // noticeboard beside a plan listing this club's.
+  function foPopsLog() {
+    try { return (typeof window.__foTrainLog === "function") ? (window.__foTrainLog() || []) : []; }
+    catch (e) { return []; }
+  }
   function foPopsRecent() {
     if (!ready()) return [];
-    var t = App.ls.tr; if (!t || !Array.isArray(t.log)) return [];
     var s = App.seasonNo || 1, cut = (App.season.round || 0) - 2;
-    return t.log.filter(function (l) { return l && l.r >= 0 && l.s === s && l.r >= cut; });
+    return foPopsLog().filter(function (l) { return l && l.r >= 0 && l.s === s && l.r >= cut; });
   }
   function foPopsFor(name) {
     if (!ready()) return [];
-    var t = App.ls.tr; if (!t || !Array.isArray(t.log)) return [];
-    return t.log.filter(function (l) { return l && l.n === name; });
+    return foPopsLog().filter(function (l) { return l && l.n === name; });
   }
   function foPopsCounts() {
     var m = {};
@@ -38927,20 +39049,34 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return { seasonNo: seasonNo, round: round, dayInSeason: di, rest: !round,
              leagueOver: di >= (pl.LEAGUE_DAYS || 24) };
   }
-  // the server's schedule, mirrored: same circle method, same season shuffle
-  function schedMirror(rid, seasonNo) {
-    var N = 10, idx = []; for (var z = 0; z < N; z++) idx.push(z);
-    var seed = h32(rid + "|order|" + seasonNo);
-    for (var i = N - 1; i > 0; i--) { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; var j = seed % (i + 1); var t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
-    var list = idx.slice(), rounds = [];
-    for (var r = 0; r < N - 1; r++) {
-      var rd = [];
-      for (var k = 0; k < N / 2; k++) { var a = list[k], b = list[N - 1 - k]; rd.push(r % 2 ? [b, a] : [a, b]); }
-      rounds.push(rd);
-      list = [list[0], list[N - 1]].concat(list.slice(1, N - 1));
-    }
-    for (var r2 = 0; r2 < N - 1; r2++) rounds.push(rounds[r2].map(function (f) { return [f[1], f[0]]; }));
-    return rounds;
+  // THE PYRAMID, MIRRORED. This used to deal one league of ten - the world the
+  // game had before the divisions - and went on dealing it after the world had
+  // two flights of eight. The pairs it handed back were nobody's fixtures: a
+  // county drawn against a club it will not meet all summer, on a card that
+  // read as truth. The planet owns the circle method now (schedOf, which MUST
+  // agree with server/clock.mjs scheduleOf ball for ball) and this only asks
+  // it, once per division.
+  //
+  // MEMBERSHIP IS SEASONAL - promotion and relegation redraw it, and only the
+  // snapshot knows how - so the served divisions are read where the world has
+  // answered, and the founding split (0-7, 8-15) is the assumption until then.
+  function divMembers(rid, div) {
+    try {
+      var b = window.__foWorldLg && window.__foWorldLg.get(rid);
+      var d = b && b.divisions && b.divisions[String(div)];
+      if (d && d.length) return d.slice();
+    } catch (e) {}
+    return div === 2 ? [8, 9, 10, 11, 12, 13, 14, 15] : [0, 1, 2, 3, 4, 5, 6, 7];
+  }
+  // div 1 or div 2 for one flight's card; no div for the nation's whole day,
+  // both flights in the round together - which is what a matchday is
+  function schedMirror(rid, seasonNo, div) {
+    var pl = P();
+    if (!pl || !pl.schedOf) return [];
+    if (div === 1 || div === 2) return pl.schedOf(rid, seasonNo, divMembers(rid, div), div);
+    var d1 = pl.schedOf(rid, seasonNo, divMembers(rid, 1), 1);
+    var d2 = pl.schedOf(rid, seasonNo, divMembers(rid, 2), 2);
+    return d1.map(function (rd, i) { return rd.concat(d2[i] || []); });
   }
   function serverFixtures(rid, now) {
     var pl = P(), cal = serverCal(now);
@@ -39351,7 +39487,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   // the server mirror, exported: nation pages list the same fixtures, the
   // same calendar and the same live states the theatre plays from
-  window.__foWT = { serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror,
+  window.__foWT = { serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror, divMembers: divMembers,
     serverSquad: serverSquad, applyLiving: applyLiving,
     // THE MATCH ON RECORD IS NOT THE MATCH FROM A CLEAN SEED. The umpire plays
     // each round with the men as they were that day - the experience, the
@@ -39510,7 +39646,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var cl = claim();
     var body;
     if (!RK || !RK.clubs || !RK.clubs.length) {
-      body = "<div class='fo-rk-card'><p class='fo-rk-note'>Reaching the World Service for the ladder&hellip; Every club on earth is presumed ordinary &mdash; <b>3,500</b> &mdash; until it has three matches behind it.</p></div>";
+      body = "<div class='fo-rk-card'><p class='fo-rk-note'>Reaching the World Service for the ladder&hellip;</p></div>";
     } else {
       var moved = RK.clubs.some(function (c) { return c.p > 0; });
       var mine = cl ? RK.clubs.filter(function (c) { return c.country === cl.country && c.slot === cl.slot; })[0] : null;
@@ -39559,13 +39695,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         (moved ? "" : "<div class='fo-rk-card'><p class='fo-rk-note'>Every club on earth stands level on <b>3,500</b>. The ladder first moves the night the world plays its opening round.</p></div>") +
         "<div class='fo-rk-card'><h3>The club ladder <span>top 30 of " + RK.clubs.length + " &middot; last three match ratings</span></h3>" + top + mineExtra + "</div>" +
         "<div class='fo-rk-card'><h3>The nations <span>league strength &middot; national XI</span></h3>" +
-        "<p class='fo-rk-note'>Form is the wrong lens on a whole league &mdash; ten clubs&rsquo; last three average straight back to the middle of the scale. So a nation is marked on <b>every</b> match rating its clubs have earned, and its XI on every one of its own.</p>" +
         natRows + "</div>";
     }
     page.innerHTML = "<div class='fo-rk'><div class='fo-rk-in'>" +
       "<div class='fo-rk-hero'><div class='fo-rk-k'>World cricket &middot; the ladder</div>" +
       "<h1>The World Rankings</h1>" +
-      "<p>Every match is marked at stumps &mdash; six units a side against real-ODI par, the same figures on any scorecard&rsquo;s ratings tab. Where a club stands in the world is the mean of its last three, so form is the ladder.</p></div>" +
+      "</div>" +
       body +
       "<div class='fo-rk-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/almanack'>The world almanack &rsaquo;</a></div>" +
       "</div></div>";
@@ -39959,12 +40094,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             : "<p class='fo-cp-dim'>Bare, for now. Every season writes the next line.</p>") +
           "<div class='fo-cp-sub'>The ground</div>" +
           "<div class='fo-cp-note'><b>" + E((info && info.ground) || "A ground of their own") + "</b></div>" +
-          "<p class='fo-cp-dim'>Home advantage is real: their groundsman prepares the strip.</p>" +
           // an academy is a building, and buildings are visible - the level a
           // club pays for is public; who is inside it never is
           "<div class='fo-cp-sub'>The academy</div>" +
           "<div class='fo-cp-note'><b>Level " + Math.max(1, Math.min(5, +(info && info.academy) || 2)) + "</b> of five</div>" +
-          "<p class='fo-cp-dim'>What they spend on bringing boys through. Who is in there is their business.</p>" +
           (ident && ident.motto ? "<div class='fo-cp-sub'>The motto</div><div class='fo-cp-note'>&ldquo;" + E(ident.motto) + "&rdquo;</div>" : "") +
           "<div class='fo-cp-sub'>Standing</div>" +
           "<div class='fo-cp-note'>World rank <b>" + (rkRow ? "#" + rkRow.rank : "unrated") + "</b>" +
@@ -39981,8 +40114,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
               "<span>Form</span><span>Hand</span><span>Wage</span></div>" +
               rosterRows
             : "<p class='fo-cp-dim'>The squad list is on its way from the World Service&hellip;</p>") +
-          (players.length ? "<p class='fo-cp-dim foot'>Their raw skills stay in their own coaching book. " +
-            "Teamsheets go public an hour before every match &mdash; that is your scouting window.</p>" : "") +
           "</div>";
       }
 
@@ -40662,7 +40793,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         meter("Form", cap(cond.formWord), cond.formPct) +
         "<p class='fo-pp-dim'>" + (cond.fatPct > 40 ? "He needs a quiet week more than a hard one." : "Fresh enough for a full week's work.") + "</p></div>" +
         "<div class='fo-pp-card dark'><h3>The training ground</h3>" +
-        "<p>Sessions are set for the whole squad at <a href='#/training'>The Nets</a>. What lands on this man lands there, once a round, for every manager at the same hour.</p>" +
         "<a class='fo-pp-more' href='#/training'>Set this week's work &rsaquo;</a></div>" +
         "</div>";
     } else {
@@ -40684,8 +40814,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-pp-col'>" +
         "<div class='fo-pp-card'><h3>The player</h3>" +
         (mine ? "<div class='fo-pp-shape'>" + radar(facets(p)) + bars(facets(p)) + "</div>" + adv
-          : "<p class='fo-pp-dim'>His raw skills stay in his own club's coaching book. What a scout sees from the boundary is above: batting, bowling and fielding, and the shape of his career below.</p>" +
-            bars(scoutRow(p))) +
+          : bars(scoutRow(p))) +
         "</div>" +
         "<div class='fo-pp-card'><h3>Career record</h3><div class='fo-pp-mini' data-mini='1'>" + miniCareer(p) + "</div></div>" +
         "</div>" +
@@ -40701,7 +40830,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div><b>" + E(roleLbl(p)) + "</b><i>" + (p.hand === "L" ? "Left-hand bat" : "Right-hand bat") + "</i>" +
         "<i>" + E(p.btLabel && !/does not bowl/i.test(p.btLabel) ? p.btLabel : "Does not bowl") + "</i></div></div>" +
         (mine ? "<a class='fo-pp-more' href='#/orders'>Set the teamsheet &rsaquo;</a>"
-          : "<p class='fo-pp-dim'>Where he bats is his manager's business until the teamsheet goes public, an hour before the match.</p>") +
+          : "") +
         "</div>" +
         "<div class='fo-pp-card'><h3>The story so far</h3>" +
         (ms.length ? "<div class='fo-pp-story'>" + ms.map(function (m) {
@@ -40875,7 +41004,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-pp-card'><h3>For his country<span>" + intl.caps + " cap" + (intl.caps === 1 ? "" : "s") + "</span></h3>" +
         "<div class='fo-pp-mini'>" + kv("Caps", intl.caps) + kv("Runs", intl.runs || 0) +
         kv("Best", intl.hs || 0) + kv("Wickets", intl.wkts || 0) + "</div>" +
-        "<p class='fo-pp-dim'>Played in the international windows. A cap keeps its own book &mdash; it never swells a club record.</p></div>";
+        "</div>";
       var room;
       if (CARD_TAB === "career") {
         room = "<div class='fo-pp-col'><div class='fo-pp-card'><h3>Career record<span>All league cricket</span></h3>" +
@@ -40886,12 +41015,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             : "<p class='fo-pp-dim'>He has not played a league match yet. The record starts the day he is picked.</p>") +
           "</div>" + intlCard + "</div>" +
           "<div class='fo-pp-rail'><div class='fo-pp-card dark'><h3>The book is public</h3>" +
-          "<p>Every run and wicket here was scored in a match the umpire played and banked. It is the same record his own manager reads.</p>" +
           "</div></div>";
       } else {
         room = "<div class='fo-pp-col'>" +
           "<div class='fo-pp-card'><h3>The scout's read</h3>" + bars(sc) +
-          "<p class='fo-pp-dim'>His raw skills stay in his own club's coaching book, and where he bats stays his manager's business until the teamsheet goes public, an hour before the match.</p></div>" +
+          "</div>" +
           "<div class='fo-pp-card'><h3>Career record</h3><div class='fo-pp-mini'>" +
           kv("Matches", caps) + kv("Runs", c.runs || 0) + kv("Best", c.hs || 0) + kv("Wickets", c.wkts || 0) +
           (caps ? "" : "<p class='fo-pp-dim'>The record starts the day he is picked.</p>") + "</div></div>" +
@@ -41312,8 +41440,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     // the served world, not whatever the device calls home
     return "<div class='fo-ac' data-fo-owntable><div class='fo-ac-in'>" +
       "<div class='fo-ac-hero'><div class='fo-ac-k'>The academy</div>" +
-      "<h1>The Colts</h1>" +
-      "<p>Boys arrive on their own, age on their own, and walk into your first team at twenty-one whether you were watching or not. What you decide is how good a place they learn in.</p></div>" +
+      "<h1>The Colts</h1></div>" +
       body +
       "<div class='fo-ac-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/training'>The nets &rsaquo;</a></div>" +
       "</div></div>";
@@ -41340,7 +41467,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
     var list = colts.length
       ? "<div class='fo-ac-grid'>" + colts.map(coltCard).join("") + "</div>"
-      : "<div class='fo-ac-note'>Nobody on the books this minute. The academy takes a boy in as soon as there is a bed for him - come back after the next round.</div>";
+      : "<div class='fo-ac-note'>Nobody on the books this minute.</div>";
 
     page.innerHTML = shell(
       "<div class='fo-ac-card'><h3>" + E(st.claim.club || "Your club") + "<span>" + E(st.claim.country || "") + "</span></h3>" +
@@ -41352,16 +41479,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           "<div><i>Treasury</i><b>" + money(bank) + "</b><u>at the bank</u></div>" +
         "</div>" + up +
       "</div>" +
-      "<div class='fo-ac-card'><h3>On the books<span>" + colts.length + "</span></h3>" + list +
-        "<div class='fo-ac-note'>A colt costs you nothing in wages - the academy's upkeep covers him. He starts earning the day he takes a senior shirt.</div>" +
-      "</div>" +
+      "<div class='fo-ac-card'><h3>On the books<span>" + colts.length + "</span></h3>" + list + "</div>" +
       "<div class='fo-ac-card' id='fo-ac-cup'><h3>The Colts Cup</h3>" +
         "<div class='fo-ac-note'>Reading the boys&rsquo; table&hellip;</div></div>" +
-      "<div class='fo-ac-card'><h3>How it works</h3>" +
-        "<p class='fo-ac-p'>The umpire runs the academy on the same clock as the cricket. A boy joins when there is a bed free. At the turn of the season every colt gets a year older, and any who reach <b>twenty-one</b> are handed a senior shirt automatically - no button, no deadline, nothing to miss while you're asleep.</p>" +
-        "<p class='fo-ac-p'>Bring one up early if you want him, or let him go to make room. Whatever he learned in the academy he keeps; what he never keeps is the nets he was never at, so a boy who comes up in your third season doesn't inherit two seasons of somebody else's work.</p>" +
-        "<p class='fo-ac-p'>Rivals can see what level your academy is - a building is a building - but never who is inside it.</p>" +
-      "</div>");
+      "");
 
     var upBtn = page.querySelector("[data-fo-acup]");
     if (upBtn) upBtn.addEventListener("click", function () {
@@ -41682,7 +41803,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function head(clubNm, sub) {
     return "<div class='fo-fin-k'>The books</div>" +
       "<h1>" + E(clubNm || "Your club") + "</h1>" +
-      "<p class='fo-fin-sub'>" + sub + "</p>";
+      (sub ? "<p class='fo-fin-sub'>" + sub + "</p>" : "");
   }
 
   function render(page, st) {
@@ -41707,10 +41828,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
     var perRound = rounds ? (totIn - outWage - outUp - outInt) / rounds : 0;
 
-    var html = head(clubNm,
-      "Every figure here is the umpire's, walked from the founding cheque round by round and " +
-      "derived from the record - the matches played, the crowd that came, the men bought and sold. " +
-      "Nothing on this page is an estimate.");
+    var html = head(clubNm, "");
 
     // ---- the bank --------------------------------------------------------
     html += "<div class='fo-fin-bank'><div class='lb'>In the treasury</div>" +
@@ -41734,7 +41852,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     // ---- the two ledgers -------------------------------------------------
     html += "<div class='fo-fin-cols'>" +
       "<section class='fo-fin-card fo-fin-in'><h2>Money in</h2>" +
-      "<p class='cap'>Everything the club has taken since it was founded.</p>" +
       line("The gate", inGate, "Your two thirds of every home crowd, at " + M(f.ticket || 26) + " a seat") +
       line("Away cut", inAway, "Your third of the gate at every ground you visit") +
       line("Sponsor", inSpon, "Paid by the round, and worth more the higher you finish") +
@@ -41744,7 +41861,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "<div class='fo-fin-tot'><span>Taken</span><b>" + M(totIn) + "</b></div></section>" +
 
       "<section class='fo-fin-card fo-fin-out'><h2>Money out</h2>" +
-      "<p class='cap'>And everything it has paid.</p>" +
       line("Wages", outWage, "The bill as it stood each round - " + M(f.wageBill || 0) + " a round now") +
       line("Upkeep", outUp, "The ground and the academy, by the round") +
       line("Transfers out", outFees, "Fees paid for men signed" + (f.bought ? " - " + f.bought + " in" : "")) +
@@ -41770,7 +41886,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
     html += "<div class='fo-fin-grid'>" +
       "<section class='fo-fin-card'><h2>The crowd</h2>" +
-      "<p class='cap'>The gate is the biggest line in the book, and this is what sets it.</p>" +
       stat("Supporters on the books", sup.toLocaleString()) +
       stat("Last home crowd", lastAtt ? lastAtt.toLocaleString() + " of " + seats.toLocaleString() : "&mdash;") +
       stat("Average this season", avgAtt ? avgAtt.toLocaleString() : "&mdash;") +
@@ -41780,12 +41895,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-fin-barlbl'><span>" + full + "% full</span><span>" + seats.toLocaleString() + " seats</span></div>" : "") +
       "<div class='fo-fin-mood'><i style='background:" + MOOD_COL[mood] + "'></i>" +
       "The support is " + E(String(f.moodWord || "patient")) + "</div>" +
-      "<p class='cap' style='margin:12px 0 0'>Supporters arrive on winning and drift away on losing, and their mood " +
-      "moves with recent form and where the club sits. A full ground is the ceiling on all of it.</p>" +
       "</section>" +
 
       "<section class='fo-fin-card'><h2>The ground</h2>" +
-      "<p class='cap'>A stand is capital: paid once, and it raises the ceiling for good.</p>" +
       stat("Seats", seats.toLocaleString()) +
       stat("Spent on stands", M(outSeats)) +
       stat("Academy level", (Number(st.academy) || 1) + " of 5") +
@@ -41809,14 +41921,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             "<span class='rl'>" + (p.age ? (p.age | 0) + " &middot; " : "") + role + "</span>" +
             "<span class='wg'>" + M(p.wage) + "</span>";
         }).join("") + "</div>" +
-        "<p class='cap' style='margin:13px 0 0'>A wage is a standing order: it is paid every round whether the man " +
-        "plays or not, so a squad kept deep is a squad paid for deeply.</p></section>";
+        "</section>";
     }
 
-    html += "<p class='fo-fin-note'>The umpire settles these books after every round he plays, and rebuilds them " +
-      "from the whole record rather than adding to a running total - so they cannot drift, and they read the same " +
-      "on every device whether you were watching or asleep.</p>" +
-      "<div class='fo-fin-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/league'>My league &rsaquo;</a></div>";
+    html += "<div class='fo-fin-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/league'>My league &rsaquo;</a></div>";
 
     page.innerHTML = shell(html);
     wire(page, f, bank, st);
@@ -42111,7 +42219,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return "<div class='panel fo-rat'><h4>Match ratings</h4><div class='pad'>" +
       "<div class='fo-rat-grid'>" + names.map(side).join("") + "</div>" +
       (best ? "<div class='fo-rat-sub'>The day&rsquo;s points</div>" + best : "") +
-      "<div class='fo-rat-note'>Every mark is worked out from this scorecard alone. The points are the same ones the world scores form on &mdash; a bad day here is why a man is out of nick tomorrow." +
+      "<div class='fo-rat-note'>" +
       (Object.keys(team).length
         ? " The match rating above each side is the game&rsquo;s own, averaged across the units both sides used, and it is what the <a href='#/rankings'>world rankings</a> stand on: a club&rsquo;s place on earth is the mean of its last three."
         : "") + "</div>" +
@@ -42310,7 +42418,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return "<div class='fo-ac' data-fo-owntable><div class='fo-ac-in'>" +
       "<div class='fo-ac-hero'><div class='fo-ac-k'>The international game</div>" +
       "<h1>Playing For Your Country</h1>" +
-      "<p>Three rounds a season the selectors take the best men in the land, wherever they play. Your club loses them for the day and is paid for the week &mdash; and that evening the nations play each other.</p></div>" +
+      "</div>" +
       body +
       "<div class='fo-ac-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/rankings'>The world rankings &rsaquo;</a></div>" +
       "</div></div>";
@@ -42336,7 +42444,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (!snap || !snap.nations) {
       page.innerHTML = shell(
         "<div class='fo-ac-card'><h3>The selectors have not met yet</h3>" +
-        "<p class='fo-ac-p'>Squads are named on the morning of the first international window &mdash; <b>round 5</b> of the season &mdash; and again at rounds 9 and 13. Come back when the world has played that far and every nation on earth will have a fifteen here.</p></div>" +
+        "<p class='fo-ac-p'>Squads are named at rounds 5, 9 and 13.</p></div>" +
         howItWorks());
       return;
     }
@@ -42441,14 +42549,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       (t.text ? "<i>" + E(t.text) + "</i>" : "") + "</div>";
   }
 
-  function howItWorks() {
-    return "<div class='fo-ac-card'><h3>How the window works</h3>" +
-      "<p class='fo-ac-p'>The selectors name <b>fifteen</b>: the gloves first, then six bowlers, then the best of the rest &mdash; and never more than <b>three men from any one club</b>, so a squad always leaves a side twelve to pick from. What they read is a cricketer's card and the nick he is in, which is the whole reason league form matters.</p>" +
-      "<p class='fo-ac-p'>A man who goes is <b>not available to his club</b> that round, and he does not work in its nets that week either. He comes back with a cap, tired legs, and whatever the tour did to his form. If a teamsheet you filed a fortnight ago still names him, nothing is torn up: the umpire sends out the best man left in his place, batting where he batted and bowling his overs.</p>" +
-      "<p class='fo-ac-p'>Nineteen nations make <b>nine ties and one week off</b>. The draw is settled by the world day itself, so the selectors know it before they sit down: a country with no fixture calls nobody up at all, and its clubs keep their men.</p>" +
-      "<p class='fo-ac-p'>Nothing here needs anybody awake. The squad is named by the umpire, the tour is played by the umpire, and the cheque is in the books the next time you look at them.</p>" +
-      "</div>";
-  }
+  function howItWorks() { return ""; }
 })();
 /* ============================================================================
    THE MENU (every room, one door) — the navigation pass.
@@ -43111,11 +43212,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (ap) ap.textContent = pa + "%";
     var note = host.querySelector(".fo-pm-wpnote");
     if (note) {
-      note.textContent = done
-        ? ("A rough guide, not a forecast: " + n + " runs of this fixture on the match engine, " +
-           "both sides picked the way the engine picks them. Team sheets are not in it, so the " +
-           "number never moves - it is the same " + n + " matches on every device, from the day the " +
-           "fixture is drawn." + (v.t ? " " + v.t + " ended level." : ""))
+      note.textContent = done ? (v.t ? v.t + " ended level." : "")
         : ("Playing it out\u2026 " + n + " of " + FO_PM_WP_N + " done.");
     }
     host.classList.toggle("settled", !!done);
@@ -44041,8 +44138,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var html = "<div class='fo-fa-page'>" +
         "<div class='fo-fa-hero'><span class='fo-fa-eyebrow'>The national knockout &middot; season " + seasonNo + "</span>" +
         "<h1>The " + E(natNm) + " Cup</h1>" +
-        "<p>All sixteen clubs of the pyramid in one draw. The small club hosts the giant; the final is played at the flagship's ground. " +
-        "Four Sundays decide it.</p></div>";
+        "</div>";
 
       if (!body || !body.stages || !Object.keys(body.stages).length) {
         html += "<div class='fo-fa-card'><h3>The draw awaits</h3><p class='dim'>" +
@@ -44137,9 +44233,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var html = "<div class='fo-fa-page'>" +
         "<div class='fo-fa-hero'><span class='fo-fa-eyebrow'>The sixteen champions &middot; season " + seasonNo + "</span>" +
         "<h1>The Champions Cup</h1>" +
-        "<p>Every nation's playoff champion, in four groups of four. Group cricket Monday to Wednesday of the " +
-        "closing week; the top two go through to Friday's quarter-finals, and the final is played on the last " +
-        "Sunday of the year.</p></div>";
+        "</div>";
       if (body.champion) {
         html += "<div class='fo-fa-champ'><span>&#127942;</span><div><i>Champions of the world, season " + seasonNo +
           "</i><b>" + E(body.champion) + "</b></div></div>";

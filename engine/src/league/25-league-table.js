@@ -246,11 +246,6 @@
         "<div class='fo-lgx-titles'>" +
         "<div class='fo-lgx-k'>" + E(natNm) + " &middot; Season " + ((snap && snap.seasonNo) || (cal && cal.seasonNo > 0 ? cal.seasonNo : 1)) + "</div>" +
         "<h1>The " + E(natNm) + " League" + (hasDivs ? " &middot; Division " + (plateDiv === 1 ? "One" : "Two") : "") + "</h1>" +
-        "<p>" + (hasDivs
-          ? (plateDiv === 1
-            ? "Eight clubs. Fourteen rounds. Finals night crowns the champion."
-            : "Eight clubs. Fourteen rounds. The top of this table is the road up.")
-          : "Ten clubs. Eighteen rounds. One pennant.") + "</p>" +
         "</div></div>" +
         "<div class='fo-lgx-clock'>" +
         "<div class='fo-lgx-rk'>Round " + curRound + " of " + rounds + "</div>" +

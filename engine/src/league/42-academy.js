@@ -110,8 +110,7 @@
     // the served world, not whatever the device calls home
     return "<div class='fo-ac' data-fo-owntable><div class='fo-ac-in'>" +
       "<div class='fo-ac-hero'><div class='fo-ac-k'>The academy</div>" +
-      "<h1>The Colts</h1>" +
-      "<p>Boys arrive on their own, age on their own, and walk into your first team at twenty-one whether you were watching or not. What you decide is how good a place they learn in.</p></div>" +
+      "<h1>The Colts</h1></div>" +
       body +
       "<div class='fo-ac-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/training'>The nets &rsaquo;</a></div>" +
       "</div></div>";
@@ -138,7 +137,7 @@
 
     var list = colts.length
       ? "<div class='fo-ac-grid'>" + colts.map(coltCard).join("") + "</div>"
-      : "<div class='fo-ac-note'>Nobody on the books this minute. The academy takes a boy in as soon as there is a bed for him - come back after the next round.</div>";
+      : "<div class='fo-ac-note'>Nobody on the books this minute.</div>";
 
     page.innerHTML = shell(
       "<div class='fo-ac-card'><h3>" + E(st.claim.club || "Your club") + "<span>" + E(st.claim.country || "") + "</span></h3>" +
@@ -150,16 +149,10 @@
           "<div><i>Treasury</i><b>" + money(bank) + "</b><u>at the bank</u></div>" +
         "</div>" + up +
       "</div>" +
-      "<div class='fo-ac-card'><h3>On the books<span>" + colts.length + "</span></h3>" + list +
-        "<div class='fo-ac-note'>A colt costs you nothing in wages - the academy's upkeep covers him. He starts earning the day he takes a senior shirt.</div>" +
-      "</div>" +
+      "<div class='fo-ac-card'><h3>On the books<span>" + colts.length + "</span></h3>" + list + "</div>" +
       "<div class='fo-ac-card' id='fo-ac-cup'><h3>The Colts Cup</h3>" +
         "<div class='fo-ac-note'>Reading the boys&rsquo; table&hellip;</div></div>" +
-      "<div class='fo-ac-card'><h3>How it works</h3>" +
-        "<p class='fo-ac-p'>The umpire runs the academy on the same clock as the cricket. A boy joins when there is a bed free. At the turn of the season every colt gets a year older, and any who reach <b>twenty-one</b> are handed a senior shirt automatically - no button, no deadline, nothing to miss while you're asleep.</p>" +
-        "<p class='fo-ac-p'>Bring one up early if you want him, or let him go to make room. Whatever he learned in the academy he keeps; what he never keeps is the nets he was never at, so a boy who comes up in your third season doesn't inherit two seasons of somebody else's work.</p>" +
-        "<p class='fo-ac-p'>Rivals can see what level your academy is - a building is a building - but never who is inside it.</p>" +
-      "</div>");
+      "");
 
     var upBtn = page.querySelector("[data-fo-acup]");
     if (upBtn) upBtn.addEventListener("click", function () {

@@ -176,7 +176,7 @@
     return "<div class='panel fo-rat'><h4>Match ratings</h4><div class='pad'>" +
       "<div class='fo-rat-grid'>" + names.map(side).join("") + "</div>" +
       (best ? "<div class='fo-rat-sub'>The day&rsquo;s points</div>" + best : "") +
-      "<div class='fo-rat-note'>Every mark is worked out from this scorecard alone. The points are the same ones the world scores form on &mdash; a bad day here is why a man is out of nick tomorrow." +
+      "<div class='fo-rat-note'>" +
       (Object.keys(team).length
         ? " The match rating above each side is the game&rsquo;s own, averaged across the units both sides used, and it is what the <a href='#/rankings'>world rankings</a> stand on: a club&rsquo;s place on earth is the mean of its last three."
         : "") + "</div>" +

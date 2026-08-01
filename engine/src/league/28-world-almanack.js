@@ -329,13 +329,11 @@
         "<div class='fo-al-mast'>" +
         "<div class='fo-al-kick'>The book of record &middot; Season " + p.season + "</div>" +
         "<h1>The World Almanack</h1>" +
-        "<p>Everything the planet's cricket has done, written down. Records that stand until someone breaks them, champions season by season, and the names behind this season's runs and wickets.</p>" +
-        "</div>" +
+          "</div>" +
         "<div class='fo-al-sec'><h2>All-time records</h2>" + recHTML + "</div>" +
         "<div class='fo-al-sec cols'><div><h2>Most runs this season</h2>" + ldr(v.runs, "", p.season) + "</div>" +
         "<div><h2>Most wickets</h2>" + ldr(v.wkts, "", p.season) + "</div></div>" +
         (v.xi ? "<div class='fo-al-sec'><h2>World XI of Season " + v.xi.season + "</h2>" +
-          "<p class='fo-al-sub'>The eleven the season itself picked - six with the bat, five with the ball.</p>" +
           ldr(v.xi.bats, " runs", v.xi.season) + ldr(v.xi.bowls, " wkts", v.xi.season) + "</div>" : "") +
         mktHTML +
         "<div class='fo-al-sec'><h2>The roll of champions</h2>" + rollHTML + "</div>" +

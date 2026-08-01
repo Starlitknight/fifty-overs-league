@@ -110,7 +110,7 @@
         "<div class='fo-mc'>" +
         "<div class='fo-mc-hero'><div class='fo-mc-kick'>Fifty Overs</div>" +
         "<h1>Match Centre</h1>" +
-        "<p>Every finished match, written up and scored. Pick one to open the report.</p></div>" +
+        "</div>" +
         (rows ? "<div class='fo-mc-list'>" + rows + "</div>" :
           "<div class='fo-mc-empty'>No cricket yet. The first round writes the first page.</div>") +
         "<div class='fo-mc-foot'><a href='#/club'>&#8592; Club home</a><a href='#/journal'>The journal &#8250;</a></div>" +

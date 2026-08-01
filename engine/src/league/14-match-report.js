@@ -837,7 +837,7 @@
       if (!rec) {
         page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
           "<h1 class='fo-mr-head'>Nothing to report</h1>" +
-          "<p class='fo-mr-dek'>No match has been played yet. Every finished match is written up here the moment it ends.</p>" +
+          "<p class='fo-mr-dek'>No match has been played yet.</p>" +
           "<div class='fo-mr-foot'><a class='fo-mr-back' href='#/club'>&#8592; Club</a></div></div></div>";
         return;
       }

@@ -83,7 +83,7 @@
     var cl = claim();
     var body;
     if (!RK || !RK.clubs || !RK.clubs.length) {
-      body = "<div class='fo-rk-card'><p class='fo-rk-note'>Reaching the World Service for the ladder&hellip; Every club on earth is presumed ordinary &mdash; <b>3,500</b> &mdash; until it has three matches behind it.</p></div>";
+      body = "<div class='fo-rk-card'><p class='fo-rk-note'>Reaching the World Service for the ladder&hellip;</p></div>";
     } else {
       var moved = RK.clubs.some(function (c) { return c.p > 0; });
       var mine = cl ? RK.clubs.filter(function (c) { return c.country === cl.country && c.slot === cl.slot; })[0] : null;
@@ -132,13 +132,12 @@
         (moved ? "" : "<div class='fo-rk-card'><p class='fo-rk-note'>Every club on earth stands level on <b>3,500</b>. The ladder first moves the night the world plays its opening round.</p></div>") +
         "<div class='fo-rk-card'><h3>The club ladder <span>top 30 of " + RK.clubs.length + " &middot; last three match ratings</span></h3>" + top + mineExtra + "</div>" +
         "<div class='fo-rk-card'><h3>The nations <span>league strength &middot; national XI</span></h3>" +
-        "<p class='fo-rk-note'>Form is the wrong lens on a whole league &mdash; ten clubs&rsquo; last three average straight back to the middle of the scale. So a nation is marked on <b>every</b> match rating its clubs have earned, and its XI on every one of its own.</p>" +
         natRows + "</div>";
     }
     page.innerHTML = "<div class='fo-rk'><div class='fo-rk-in'>" +
       "<div class='fo-rk-hero'><div class='fo-rk-k'>World cricket &middot; the ladder</div>" +
       "<h1>The World Rankings</h1>" +
-      "<p>Every match is marked at stumps &mdash; six units a side against real-ODI par, the same figures on any scorecard&rsquo;s ratings tab. Where a club stands in the world is the mean of its last three, so form is the ladder.</p></div>" +
+      "</div>" +
       body +
       "<div class='fo-rk-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/almanack'>The world almanack &rsaquo;</a></div>" +
       "</div></div>";

@@ -163,7 +163,7 @@
   function head(clubNm, sub) {
     return "<div class='fo-fin-k'>The books</div>" +
       "<h1>" + E(clubNm || "Your club") + "</h1>" +
-      "<p class='fo-fin-sub'>" + sub + "</p>";
+      (sub ? "<p class='fo-fin-sub'>" + sub + "</p>" : "");
   }
 
   function render(page, st) {
@@ -188,10 +188,7 @@
 
     var perRound = rounds ? (totIn - outWage - outUp - outInt) / rounds : 0;
 
-    var html = head(clubNm,
-      "Every figure here is the umpire's, walked from the founding cheque round by round and " +
-      "derived from the record - the matches played, the crowd that came, the men bought and sold. " +
-      "Nothing on this page is an estimate.");
+    var html = head(clubNm, "");
 
     // ---- the bank --------------------------------------------------------
     html += "<div class='fo-fin-bank'><div class='lb'>In the treasury</div>" +
@@ -215,7 +212,6 @@
     // ---- the two ledgers -------------------------------------------------
     html += "<div class='fo-fin-cols'>" +
       "<section class='fo-fin-card fo-fin-in'><h2>Money in</h2>" +
-      "<p class='cap'>Everything the club has taken since it was founded.</p>" +
       line("The gate", inGate, "Your two thirds of every home crowd, at " + M(f.ticket || 26) + " a seat") +
       line("Away cut", inAway, "Your third of the gate at every ground you visit") +
       line("Sponsor", inSpon, "Paid by the round, and worth more the higher you finish") +
@@ -225,7 +221,6 @@
       "<div class='fo-fin-tot'><span>Taken</span><b>" + M(totIn) + "</b></div></section>" +
 
       "<section class='fo-fin-card fo-fin-out'><h2>Money out</h2>" +
-      "<p class='cap'>And everything it has paid.</p>" +
       line("Wages", outWage, "The bill as it stood each round - " + M(f.wageBill || 0) + " a round now") +
       line("Upkeep", outUp, "The ground and the academy, by the round") +
       line("Transfers out", outFees, "Fees paid for men signed" + (f.bought ? " - " + f.bought + " in" : "")) +
@@ -251,7 +246,6 @@
 
     html += "<div class='fo-fin-grid'>" +
       "<section class='fo-fin-card'><h2>The crowd</h2>" +
-      "<p class='cap'>The gate is the biggest line in the book, and this is what sets it.</p>" +
       stat("Supporters on the books", sup.toLocaleString()) +
       stat("Last home crowd", lastAtt ? lastAtt.toLocaleString() + " of " + seats.toLocaleString() : "&mdash;") +
       stat("Average this season", avgAtt ? avgAtt.toLocaleString() : "&mdash;") +
@@ -261,12 +255,9 @@
         "<div class='fo-fin-barlbl'><span>" + full + "% full</span><span>" + seats.toLocaleString() + " seats</span></div>" : "") +
       "<div class='fo-fin-mood'><i style='background:" + MOOD_COL[mood] + "'></i>" +
       "The support is " + E(String(f.moodWord || "patient")) + "</div>" +
-      "<p class='cap' style='margin:12px 0 0'>Supporters arrive on winning and drift away on losing, and their mood " +
-      "moves with recent form and where the club sits. A full ground is the ceiling on all of it.</p>" +
       "</section>" +
 
       "<section class='fo-fin-card'><h2>The ground</h2>" +
-      "<p class='cap'>A stand is capital: paid once, and it raises the ceiling for good.</p>" +
       stat("Seats", seats.toLocaleString()) +
       stat("Spent on stands", M(outSeats)) +
       stat("Academy level", (Number(st.academy) || 1) + " of 5") +
@@ -290,14 +281,10 @@
             "<span class='rl'>" + (p.age ? (p.age | 0) + " &middot; " : "") + role + "</span>" +
             "<span class='wg'>" + M(p.wage) + "</span>";
         }).join("") + "</div>" +
-        "<p class='cap' style='margin:13px 0 0'>A wage is a standing order: it is paid every round whether the man " +
-        "plays or not, so a squad kept deep is a squad paid for deeply.</p></section>";
+        "</section>";
     }
 
-    html += "<p class='fo-fin-note'>The umpire settles these books after every round he plays, and rebuilds them " +
-      "from the whole record rather than adding to a running total - so they cannot drift, and they read the same " +
-      "on every device whether you were watching or asleep.</p>" +
-      "<div class='fo-fin-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/league'>My league &rsaquo;</a></div>";
+    html += "<div class='fo-fin-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/league'>My league &rsaquo;</a></div>";
 
     page.innerHTML = shell(html);
     wire(page, f, bank, st);

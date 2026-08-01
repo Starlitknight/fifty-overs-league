@@ -4233,7 +4233,6 @@
       }).join("");
       return "<section class='fo-lx-sec'>" +
         "<div class='fo-lx-rule reveal'><span>From the season</span></div>" +
-        "<p class='fo-lx-secsub reveal'>Match reports, written off the ball-by-ball record as each game finishes.</p>" +
         "<div class='fo-lx-reps reveal'>" + rows + "</div></section>";
     } catch (e) { return ""; }
   }
@@ -4350,7 +4349,6 @@
         // ---- contents ----
         (feat.length ? "<section class='fo-lx-sec fo-lx-contents'>" +
           "<div class='fo-lx-rule reveal'><span>In this issue</span></div>" +
-          "<p class='fo-lx-secsub reveal'>Season one, cover to cover. Pick a name and the page opens.</p>" +
           "<div class='fo-lx-toclist reveal'>" + tocHTML + "</div></section>" : "") +
         // ---- the features, in the order you meet them ----
         (feat.length ? "<section class='fo-lx-sec'>" +
@@ -6191,7 +6189,6 @@
         "</div></section>" +
         "<div class='fo-lg-body'>" +
         champBanner +
-        "<div class='fo-cup-note'>Win your national league to earn a place in next season's Champions Cup.</div>" +
         "<div class='fo-cup-bracket'>" +
         stageCol("Quarter-finals", brk.qf) + stageCol("Semi-finals", brk.sf) +
         "<div class='fo-cup-col'><h4>Final</h4>" + tieRow(brk.final) + (brk.third ? "<h4 style='margin-top:14px'>Third place</h4>" + tieRow(brk.third) : "") + "</div>" +

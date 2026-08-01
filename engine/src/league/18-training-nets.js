@@ -283,7 +283,6 @@
     }).join("");
     var planPanel = "<div class='fo-ns-panel'><h3>The plan <span>" +
       (world ? "standing orders &middot; the umpire works them every round" : "sign in to send these to the world") + "</span></h3>" +
-      "<p class='fo-ns-note'>Name the work and it is done for you, round after round, awake or asleep. Leave a man to the coach and he trains to his trade.</p>" +
       "<div class='fo-ns-men'>" + planHTML + "</div></div>";
     var sessHTML = Object.keys(FO_NS_SESS).map(function (id) {
       var S = FO_NS_SESS[id], on = t.sessions.indexOf(id) >= 0;
@@ -318,10 +317,9 @@
       "<div class='fo-ns-in'>" +
       "<div class='fo-cer-eyebrow'>" + E(me.name) + " &middot; the training ground</div>" +
       "<h1 class='fo-ns-h1'>The Nets</h1>" +
-      "<p class='fo-ns-tag'>Name what each man works on. The World Service holds the plan and the umpire runs it with every round, whether you watch it or not.</p>" +
       "<div class='fo-ns-grid'>" +
       planPanel +
-      "<div class='fo-ns-panel'><h3>Development report</h3>" + (rows || "<p class='fo-ns-note'>No gains recorded yet. The first week's work shows after the round.</p>") + "</div>" +
+      "<div class='fo-ns-panel'><h3>Development report</h3>" + (rows || "<p class='fo-ns-note'>No gains recorded yet.</p>") + "</div>" +
       "</div>" +
       "<div class='fo-cer-actions'><a class='fo-ls-btn ghost' href='#/academy'>&lsaquo; The academy</a><a class='fo-ls-btn ghost' href='#/squad'>The squad &rsaquo;</a></div>" +
       "</div></div>";

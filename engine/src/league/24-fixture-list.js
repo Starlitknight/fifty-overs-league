@@ -126,7 +126,6 @@
       "<div class='fo-fl-mast'>" +
       "<div class='fo-fl-kick'>" + E(my) + " &middot; season " + (snap.seasonNo || 1) + "</div>" +
       "<h1>The Fixture List</h1>" +
-      "<p>Every match of the summer on one card - the played ones open the round they were in, the coming ones give the day, the hour and the ground.</p>" +
       "<div class='fo-fl-rec'><b>" + w + "</b> won" + (t ? " &middot; <b>" + t + "</b> tied" : "") +
         " &middot; <b>" + l + "</b> lost &middot; <b>" + played.length + "</b> of " + rounds + " played</div>" +
       "</div>" +
@@ -213,8 +212,7 @@
         "<div class='fo-fl-mast'>" +
         "<div class='fo-fl-kick'>" + E(my) + " &middot; season " + (App.seasonNo || 1) + "</div>" +
         "<h1>The Fixture List</h1>" +
-        "<p>Every match of the summer on one card - the played ones open their reports, the coming ones show the ground, the square and the sky.</p>" +
-        "<div class='fo-fl-rec'><b>" + w + "</b> won" + (t ? " &middot; <b>" + t + "</b> tied" : "") + " &middot; <b>" + l + "</b> lost &middot; <b>" + (played.length) + "</b> of " + (S && S.schedule ? S.schedule.length : 18) + " played</div>" +
+          "<div class='fo-fl-rec'><b>" + w + "</b> won" + (t ? " &middot; <b>" + t + "</b> tied" : "") + " &middot; <b>" + l + "</b> lost &middot; <b>" + (played.length) + "</b> of " + (S && S.schedule ? S.schedule.length : 18) + " played</div>" +
         "</div>" +
         (resRows ? "<div class='fo-fl-k'>Results</div><div class='fo-fl-list'>" + resRows + "</div>" : "") +
         "<div class='fo-fl-k'>Still to play</div><div class='fo-fl-list'>" + upRows + "</div>" +
