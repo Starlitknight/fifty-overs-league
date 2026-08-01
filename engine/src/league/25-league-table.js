@@ -279,6 +279,14 @@
         };
         var bossAt = function (s2) { var r = rows.filter(function (x) { return x.slot === s2; })[0]; return r ? r.boss : (s2 === 0); };
         var pairs = (sched && sched[rd - 1]) || [];
+        // THE ROUND HAS A DAY, not only an hour. Stepping through the card
+        // without one, a manager could not tell which week he was reading.
+        var rdDate = function (r2) {
+          try {
+            var d2 = pl.dateTxt(pl.dayOfSeasonRound(Math.max(1, (cal && cal.seasonNo) || 1), r2));
+            return d2 ? " \u00B7 " + d2 : "";
+          } catch (eRd) { return ""; }
+        };
         var stepper = function (r2, lbl) {
           var href = (own ? "#/league?" : "#/nation?n=" + encodeURIComponent(natId) + "&") + "t=fixtures&r=" + r2;
           return "<a class='fo-lgx-step' href='" + href + "'>" + lbl + "</a>";
@@ -287,7 +295,7 @@
           "<div class='fo-lgx-ph'><h2>Season fixtures</h2>" +
           "<span class='fo-lgx-rdnav'>" +
           (rd > 1 ? stepper(rd - 1, "&lsaquo;") : "<span class='fo-lgx-step off'>&lsaquo;</span>") +
-          "<b>Round " + rd + "</b>" +
+          "<b>Round " + rd + rdDate(rd) + "</b>" +
           (rd < rounds ? stepper(rd + 1, "&rsaquo;") : "<span class='fo-lgx-step off'>&rsaquo;</span>") +
           "</span></div>" +
           // EVERY FIXTURE IS A DOOR. A result has opened its report for a
@@ -330,7 +338,7 @@
           "<div class='fo-lgx-card'><h3>Round at a glance</h3><div class='fo-lgx-glance'>" +
           "<div><b>" + (pairs.length || 5) + "</b><i>Matches</i></div>" +
           "<div><b>" + (rows.length || 10) + "</b><i>Clubs</i></div>" +
-          "<div><b>" + hh(hour) + "</b><i>First ball</i></div></div></div>";
+          "<div><b>" + hh(hour) + "</b><i>First ball" + rdDate(rd) + "</i></div></div></div>";
 
       } else if (tab === "results") {
         var all = (snap && snap.results) || [];

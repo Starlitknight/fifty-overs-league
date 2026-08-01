@@ -20,6 +20,11 @@
   function hashPath() { return (location.hash || "").split("?")[0]; }
   function onPage() { return hashPath() === "#/player"; }
   function qName() { var m = /[?&]n=([^&]+)/.exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : ""; }
+  // which seat in the world this device holds - the address of your own club
+  function worldClaim() {
+    try { return window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); }
+    catch (e) { return null; }
+  }
   // AGE IN YEARS AND DAYS, because in this world a year IS a season - thirty
   // days - and a whole number hides most of what a manager wants to see. Two
   // men both "29" can be most of a season apart; a colt watching his birthday
@@ -353,6 +358,23 @@
     var fat0 = fatOf(p.fatWord || p.fatigue);
     var sc = scoutRow(p);
 
+    // EVERY MAN CAME FROM SOMEWHERE, AND YOU CAN GO THERE. A cricketer's club
+    // was a word on his card and nothing more - a dead end on the one page a
+    // reader arrives at knowing only his name. It is a door now: the world's
+    // men carry the club the world found them at, and your own carry yours.
+    var clubHref = "";
+    try {
+      if (hit.world && hit.world.rid) clubHref = "#/team?c=" + encodeURIComponent(hit.world.rid) + "&s=" + (hit.world.slot | 0);
+      else if (mine) {
+        var cl0 = worldClaim();
+        if (cl0 && cl0.country && cl0.slot != null) clubHref = "#/team?c=" + encodeURIComponent(cl0.country) + "&s=" + (cl0.slot | 0);
+      }
+    } catch (eCh) {}
+    var clubCell = function (nm) {
+      var body = "<b>" + E(nm || "") + "</b><i>Club" + (clubHref ? " &rsaquo;" : "") + "</i>";
+      return "<div>" + (clubHref ? "<a class='fo-pp-clubl' href='" + clubHref + "'>" + body + "</a>" : body) + "</div>";
+    };
+
     var talents = (p.talents || []).slice(0, 3).map(function (t) {
       var nm = t, tip = "";
       try { nm = (typeof TALN !== "undefined" && TALN[t]) || t; } catch (e1) {}
@@ -373,7 +395,7 @@
       "<div title='" + ageTitle(p) + "'><b>" + ageHTML(p) + "</b><i>Age</i></div>" +
       "<div><b>" + E(cap(cond.formWord)) + "</b><i>Form</i></div>" +
       "<div><b>" + E(cap(p.expWord || "")) + "</b><i>Experience</i></div>" +
-      "<div><b>" + E(team.name || "") + "</b><i>Club</i></div>" +
+      clubCell(team.name) +
       "</div>" +
       "<div class='fo-pp-strip three'>" +
       "<div><b>" + money(wageOf(p)) + "</b><i>Wage</i></div>" +
@@ -648,7 +670,7 @@
         "<div title='" + ageTitle(sp) + "'><b>" + ageHTML(sp) + "</b><i>Age</i></div>" +
         "<div><b>" + E(cap(sp.form || "steady")) + "</b><i>Form</i></div>" +
         "<div><b>" + E(cap(sp.exp || "")) + "</b><i>Experience</i></div>" +
-        "<div><b>" + E(clubNm) + "</b><i>Club</i></div>" +
+        "<div><a class='fo-pp-clubl' href='#/team?c=" + E(cid) + "&s=" + slot + "'><b>" + E(clubNm) + "</b><i>Club &rsaquo;</i></a></div>" +
         "</div>" +
         "<div class='fo-pp-strip three'>" +
         "<div><b>" + money(sp.wage) + "</b><i>Wage</i></div>" +
@@ -834,6 +856,12 @@
     "html body #page .fo-pp-strip b{display:block;font:600 13px/1.25 Inter,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
     "html body #page .fo-pp-strip b .fo-pp-ud{font-size:.68em;font-weight:600;opacity:.5;margin:0 .12em 0 .04em}",
     "html body #page .fo-pp-strip i{display:block;margin-top:4px;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.42);font-style:normal}",
+    // a man's club is a door: it reads like the cells beside it until you
+    // touch it, and the whole cell is the tap target
+    "html body #page a.fo-pp-clubl{display:block;margin:-9px -10px;padding:9px 10px;text-decoration:none;color:inherit;border-radius:9px}",
+    "html body #page a.fo-pp-clubl:hover,html body #page a.fo-pp-clubl:focus-visible{background:rgba(201,85,50,.07);text-decoration:none}",
+    "html body #page a.fo-pp-clubl:hover b,html body #page a.fo-pp-clubl:focus-visible b{color:#B44A22}",
+    "html body #page a.fo-pp-clubl i{color:#B44A22}",
     "html body #page .fo-pp-sc{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:13px 0 0}",
     "html body #page .fo-pp-scv i{font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.45);font-style:normal}",
     "html body #page .fo-pp-scv em{float:right;font:700 12px/1 Oswald,sans-serif;font-style:normal;color:#141C28;font-variant-numeric:tabular-nums}",

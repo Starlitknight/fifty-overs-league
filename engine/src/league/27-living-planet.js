@@ -1022,8 +1022,33 @@
     if (d == null) return null;
     return seasonStart(season) + d;
   }
+  // ---- SAYING WHEN, IN ONE VOICE ---------------------------------------------
+  // An hour with no date is an hour in no particular week: "14:00 UTC" on a
+  // fixture card never told a manager whether to be there tonight or on Friday
+  // week. The calendar lives here, so the words for it live here too, and
+  // every card that dates a match prints the same ones.
+  var DOW_NM = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  var MON_NM = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function hhTxt(h) { return (h < 10 ? "0" : "") + (h | 0) + ":00 UTC"; }
+  function dateTxt(day, now) {
+    if (day == null) return "";
+    var today = dayIx(now == null ? Date.now() : now);
+    if (day === today) return "Today";
+    if (day === today + 1) return "Tomorrow";
+    if (day === today - 1) return "Yesterday";
+    var d = new Date(EPOCH + day * DAY);
+    return DOW_NM[d.getUTCDay()] + " " + d.getUTCDate() + " " + MON_NM[d.getUTCMonth()];
+  }
+  // the full stamp a fixture wears: the day it is played and the hour that
+  // nation bowls its first ball
+  function whenTxt(season, round, rid, now) {
+    var d = dayOfSeasonRound(season, round);
+    if (d == null) return "";
+    return dateTxt(d, now) + " · " + hhTxt(rid == null ? 14 : natHour(rid));
+  }
   window.__foPlanet = { roundOfDay: roundOfDay, dayOfRound: dayOfRound, dayOfSeasonRound: dayOfSeasonRound,
     anchorWorld: anchorWorld, anchorOf: anchorOf, seasonStart: seasonStart,
+    dateTxt: dateTxt, hhTxt: hhTxt, whenTxt: whenTxt,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
     phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();

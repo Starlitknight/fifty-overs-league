@@ -52,6 +52,13 @@
     var myRow = snap.table.filter(function (r) { return r.slot === claim.slot; })[0];
     var my = (myRow && ((names && names[claim.slot]) || myRow.name)) || claim.club;
     var groundOf = function (slot) { return (mgr && mgr["g" + slot]) || ((bySlot[slot] || "the ground") + "'s ground"); };
+    // WHEN, NOT JUST AT WHAT HOUR. Every row on this card - played or still to
+    // come - carries the day it belongs to, off the world's own calendar.
+    var pl0 = null; try { pl0 = window.__foPlanet; } catch (ePl) {}
+    var seasonNo = snap.seasonNo || 1;
+    var dayTxt = function (round) {
+      try { return (pl0 && pl0.dateTxt) ? pl0.dateTxt(pl0.dayOfSeasonRound(seasonNo, round)) : ""; } catch (eD) { return ""; }
+    };
 
     var played = (snap.results || []).filter(function (r) { return r.home === my || r.away === my; })
       .sort(function (a, b) { return (a.round || 0) - (b.round || 0); });
@@ -64,12 +71,14 @@
       var won = r.winner === my, tie = r.winner === null;
       var sc = homeGame ? r.hs : r.as, oc = homeGame ? r.as : r.hs;
       var line = sc && oc ? (sc.r + "/" + sc.w + " v " + oc.r + "/" + oc.w) : (r.text || "");
+      var on = dayTxt(r.round);
       return "<a class='fo-fl-row' href='#/league?t=results&r=" + r.round + "'>" +
         "<i>R" + r.round + "</i>" +
         "<u class='" + (won ? "w" : tie ? "t" : "l") + "'>" + (won ? "W" : tie ? "T" : "L") + "</u>" +
-        "<span class='fo-fl-who'><b>" + (homeGame ? "v " : "at ") + E(opp) + "</b>" +
+        "<span class='fo-fl-who'><b>" + (homeGame ? "v " : "at ") + E(opp) +
+        (on ? " <em class='fo-fl-when done'>" + E(on) + "</em>" : "") + "</b>" +
         "<span>" + E(line) + "</span></span>" +
-        "<em>" + E((r.text || "").replace(/\s*\(.*\)$/, "")) + "</em><s>&#8250;</s></a>";
+        "<em class='fo-fl-res'>" + E((r.text || "").replace(/\s*\(.*\)$/, "")) + "</em><s>&#8250;</s></a>";
     }).join("");
 
     // what is still to come, off the umpire's own schedule
@@ -96,12 +105,15 @@
         upRows = ups.map(function (u, i) {
           var pv = "#/league?t=fixtures";
           try { pv = window.foPreviewHref(claim.country, u.r, u.hs, u.as) || pv; } catch (ePv) {}
+          // the day above, in the chip beside the opponent; the hour below,
+          // where the ground is - so a long date never squeezes out a name
+          var on = dayTxt(u.r);
           return "<a class='fo-fl-row up" + (i === 0 ? " next" : "") + "' href='" + pv + "'>" +
             "<i>R" + u.r + "</i>" +
             "<u class='n'>" + (u.isHome ? "H" : "A") + "</u>" +
             "<span class='fo-fl-who'><b>" + (u.isHome ? "v " : "at ") + E(u.opp) +
-            " <em class='fo-fl-when'>" + hh(hour) + "</em></b>" +
-            "<span>" + E(u.ground) + "</span></span>" +
+            (on ? " <em class='fo-fl-when'>" + E(on) + "</em>" : "") + "</b>" +
+            "<span>" + E(hh(hour)) + " &middot; " + E(u.ground) + "</span></span>" +
             "<em class='fo-fl-act'>Preview &rsaquo;</em></a>";
         }).join("");
         if (!ups.length) upRows = "<div class='fo-fl-none'>The season is played out. Awards night awaits.</div>";
@@ -114,7 +126,7 @@
       "<div class='fo-fl-mast'>" +
       "<div class='fo-fl-kick'>" + E(my) + " &middot; season " + (snap.seasonNo || 1) + "</div>" +
       "<h1>The Fixture List</h1>" +
-      "<p>Every match of the summer on one card - the played ones open the round they were in, the coming ones show the ground and the hour.</p>" +
+      "<p>Every match of the summer on one card - the played ones open the round they were in, the coming ones give the day, the hour and the ground.</p>" +
       "<div class='fo-fl-rec'><b>" + w + "</b> won" + (t ? " &middot; <b>" + t + "</b> tied" : "") +
         " &middot; <b>" + l + "</b> lost &middot; <b>" + played.length + "</b> of " + rounds + " played</div>" +
       "</div>" +
@@ -158,7 +170,7 @@
           "<u class='" + (live ? "lv" : won ? "w" : tie ? "t" : "l") + "'>" + (live ? "&#9679;" : won ? "W" : tie ? "T" : "L") + "</u>" +
           "<span class='fo-fl-who'><b>" + (homeGame ? "v " : "at ") + E(opp) + "</b>" +
           "<span>" + E(r.ground || "") + "</span></span>" +
-          "<em>" + E((r.result.text || "").replace(/\s*\(.*\)$/, "")) + "</em><s>&#8250;</s></a>";
+          "<em class='fo-fl-res'>" + E((r.result.text || "").replace(/\s*\(.*\)$/, "")) + "</em><s>&#8250;</s></a>";
       }).join("");
 
       // ---- what is still to come ----
@@ -255,6 +267,7 @@
     "html body #page .fo-fl-who>span{display:block;font:400 11px/1.35 Inter,sans-serif;color:rgba(20,28,40,.5);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     "html body #page .fo-fl-row em{font:italic 400 12px/1.35 Georgia,serif;color:rgba(20,28,40,.6);text-align:right;white-space:nowrap}",
     "html body #page .fo-fl-when{display:inline-block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#B44A22;background:rgba(201,85,50,.09);border-radius:6px;padding:3px 6px;margin-left:7px;font-style:normal;vertical-align:1px}",
+    "html body #page .fo-fl-when.done{color:rgba(20,28,40,.5);background:rgba(20,28,40,.06)}",
     "html body #page .fo-fl-row s{text-decoration:none;color:rgba(20,28,40,.35)}",
     "html body #page .fo-fl-act{font:700 11px/1 Inter,sans-serif;color:#FFFEFC;background:#C95532;border-radius:999px;padding:8px 13px;text-decoration:none;white-space:nowrap}",
     "html body #page .fo-fl-act:hover{background:#A64426;color:#FFFEFC;text-decoration:none}",
@@ -262,7 +275,7 @@
     "html body #page .fo-fl-foot{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}",
     "html body #page .fo-fl-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
     "html body #page .fo-fl-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5);text-decoration:none}",
-    "@media(max-width:520px){html body #page .fo-fl-mast h1{font-size:30px}html body #page .fo-fl-row em{display:none}html body #page .fo-fl-row{grid-template-columns:30px 24px minmax(0,1fr) 12px}html body #page .fo-fl-row.up{grid-template-columns:30px 24px minmax(0,1fr) auto}}"
+    "@media(max-width:520px){html body #page .fo-fl-mast h1{font-size:30px}html body #page .fo-fl-res,html body #page .fo-fl-act{display:none}html body #page .fo-fl-row{grid-template-columns:30px 24px minmax(0,1fr) 12px}html body #page .fo-fl-row.up{grid-template-columns:30px 24px minmax(0,1fr) auto}}"
   ].join("\n");
 
   function mount() {
