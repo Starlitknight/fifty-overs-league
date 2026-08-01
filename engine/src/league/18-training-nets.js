@@ -47,6 +47,38 @@
     return t;
   }
 
+  // ---- THE LOG THIS CLUB ACTUALLY WROTE --------------------------------------
+  // App.ls.tr.log is the LOCAL resolver's record, and it outlives the men it
+  // was written about. A world reset re-deals the squad, a transfer moves a
+  // man on - and the noticeboard went on celebrating cricketers who are not
+  // at this club, beside a plan listing the eleven who are.
+  //
+  // Worse for a club held in the served world: the local resolver is switched
+  // off there (the umpire does the training from the plan the world holds), so
+  // EVERY line in that log is from a life this club did not live. The honest
+  // report is an empty one until the world has something to report.
+  //
+  // One reader, so the development report, the noticeboard pops and the club
+  // home card cannot disagree about who trained.
+  function foNsLog() {
+    // the claim is read from the store as well as the live global: on a cold
+    // boot the world has not answered yet, and that is exactly the moment the
+    // stale board used to flash up
+    try {
+      var cl = window.__foWorldClaim;
+      if (!cl) { try { cl = JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eS) {} }
+      if (cl && cl.country) return [];
+    } catch (eW) {}
+    try {
+      if (!App || !App.ls || !Array.isArray(App.ls.tr && App.ls.tr.log)) return [];
+      var here = {}, me = userTeam();
+      if (!me) return [];
+      (me.players || []).concat(me.youth || []).forEach(function (p) { if (p && p.name) here[p.name] = 1; });
+      return App.ls.tr.log.filter(function (l) { return l && here[l.n]; });
+    } catch (e) { return []; }
+  }
+  window.__foTrainLog = foNsLog;
+
   var FO_NS_SESS = {
     bat:   { nm: "Batting nets",   ic: "&#127951;", sk: ["vsPace", "vsSpin", "rotation", "temperament"], who: "all",   coach: "bat",  sub: "throw-downs, the bowling machine, an hour against the turning ball" },
     bowl:  { nm: "Bowling nets",   ic: "&#9678;",   sk: ["wicket", "economy", "discipline", "variation"], who: "bowl", coach: "bowl", sub: "one stump, a cone on a length, and the keeper calling the seam" },
@@ -276,7 +308,7 @@
       return "<button type='button' class='fo-ns-coach" + (on ? " on" : "") + "' data-ns-coach='" + c + "'>" +
         "<b>" + C.nm + "</b><span>" + (on ? "on staff &middot; $" + C.fee.toLocaleString() + " a round" : "hire &middot; $" + C.fee.toLocaleString() + " a round") + "</span></button>";
     }).join("");
-    var gains = {}, rows = (t.log || []).slice(0, 14).map(function (l) {
+    var gains = {}, rows = foNsLog().slice(0, 14).map(function (l) {
       gains[l.n] = (gains[l.n] || 0) + 1;
       return "<div class='fo-ns-line'><b>" + E(l.n) + "</b> " + (l.r >= 0 ? "+1 " + E(foSkillLbl(l.k)) : E(l.why)) +
         " <span>" + (l.r >= 0 ? E(l.why) + " &middot; R" + (l.r + 1) : "season " + l.s) + "</span></div>";
@@ -344,7 +376,7 @@
     if (!ready()) return "";
     var t = TR();
     var names = t.sessions.map(function (id) { return FO_NS_SESS[id] ? FO_NS_SESS[id].nm : id; }).join(" &middot; ");
-    var recent = (t.log || []).slice(0, 2).map(function (l) {
+    var recent = foNsLog().slice(0, 2).map(function (l) {
       return "<div class='fo-ls-line'><b>" + E(l.n) + "</b> " + (l.r >= 0 ? "+1 " + E(foSkillLbl(l.k)) : E(l.why)) + "</div>";
     }).join("");
     var projN = (t.projects || []).filter(function (p) { return p && p.n && p.k; }).length;

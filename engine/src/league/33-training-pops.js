@@ -31,16 +31,22 @@
 
   // fresh = gains from the last two settled rounds of the current season, so
   // a manager who slept through a matchday still walks in on the celebration
+  // The Nets owns the one true reading of this club's log - only the men who
+  // are actually here, and nothing at all where the umpire does the training.
+  // Reading App.ls.tr.log raw is what put another club's cricketers on the
+  // noticeboard beside a plan listing this club's.
+  function foPopsLog() {
+    try { return (typeof window.__foTrainLog === "function") ? (window.__foTrainLog() || []) : []; }
+    catch (e) { return []; }
+  }
   function foPopsRecent() {
     if (!ready()) return [];
-    var t = App.ls.tr; if (!t || !Array.isArray(t.log)) return [];
     var s = App.seasonNo || 1, cut = (App.season.round || 0) - 2;
-    return t.log.filter(function (l) { return l && l.r >= 0 && l.s === s && l.r >= cut; });
+    return foPopsLog().filter(function (l) { return l && l.r >= 0 && l.s === s && l.r >= cut; });
   }
   function foPopsFor(name) {
     if (!ready()) return [];
-    var t = App.ls.tr; if (!t || !Array.isArray(t.log)) return [];
-    return t.log.filter(function (l) { return l && l.n === name; });
+    return foPopsLog().filter(function (l) { return l && l.n === name; });
   }
   function foPopsCounts() {
     var m = {};

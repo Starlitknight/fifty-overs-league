@@ -10033,7 +10033,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260801-0425-969f73";
+  var FO_BUILD = "20260801-1219-64d351";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -29253,11 +29253,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             if (planned && !mp) { if (lf) lf.textContent = "PLAY THE ROUND \u25B8"; if (ls) ls.textContent = "PLAY \u25B8"; }
             else { if (lf) lf.textContent = (planned ? "MATCH PLANNED" : "NEXT MATCH") + " \u00B7 v " + ((fx2.opp && fx2.opp.name) || "").toUpperCase(); }
             nxB.classList.add("hg-cta");
-            // the ritual first: NEXT MATCH opens the Matchday build-up,
-            // where orders, the dossier and (in the window) live play wait
+            // the ritual first: NEXT MATCH opens the build-up. A club held in
+            // the world goes to the served preview - the real fixture, the
+            // real ground - and only an unclaimed device keeps the local
+            // matchday room.
             nxB.addEventListener("click", function () {
               try {
-                location.hash = "#/matchday?r=" + fx2.r;
+                location.hash = fx2.href || ("#/matchday?r=" + fx2.r);
                 if (typeof window.route === "function") window.route();
               } catch (eGo) {}
             });
@@ -29665,7 +29667,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           : "Matchday";
         // -- still to come
         var upHTML = "";
-        if (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason >= 0 && srv.cal.round && srv.cal.round < 18) {
+        if (srv.cal.seasonNo >= 1 && srv.cal.dayInSeason >= 0 && srv.cal.round) {
           var sidesBy = {};
           try {
             var nmOv9 = window.__foWorldNames ? window.__foWorldNames.get(nation) : null;
@@ -29676,13 +29678,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           var schedA = srv.wt.schedMirror(nation, srv.cal.seasonNo);
           var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
           var ups = [];
-          for (var ur = srv.cal.round + 1; ur <= 18; ur++) {
+          // as many rounds as the card actually has - eighteen was the old
+          // single-division season, and reading past the end of a fourteen
+          // round card threw where the list should simply have stopped
+          for (var ur = srv.cal.round + 1; ur <= schedA.length; ur++) {
             var dayU = srv.pl.dayOfSeasonRound(srv.cal.seasonNo, ur);
             var dt9 = new Date(srv.pl.EPOCH + dayU * 86400000);
             ups.push("<div class='fo-nt-uround'><i>Round " + ur + " &middot; " + DOW[dt9.getUTCDay()] + " " + dt9.getUTCDate() + " " + MON[dt9.getUTCMonth()] + " &middot; " + hhFmt(srv.hour) + "</i>" +
               schedA[ur - 1].map(function (p9) { return "<span>" + E((sidesBy[p9[0]] || {}).name || "") + " v " + E((sidesBy[p9[1]] || {}).name || "") + "</span>"; }).join("") + "</div>");
           }
-          if (ups.length) upHTML = "<details class='fo-nt-up'><summary>Still to play &middot; rounds " + (srv.cal.round + 1) + "&ndash;18</summary>" + ups.join("") + "</details>";
+          if (ups.length) upHTML = "<details class='fo-nt-up'><summary>Still to play &middot; rounds " + (srv.cal.round + 1) + "&ndash;" + schedA.length + "</summary>" + ups.join("") + "</details>";
         }
         sec2Title = "Matchday";
         fixturesPanel = "<div class='fo-nt-md" + (srv.state === "live" ? " live" : "") + "'>" +
@@ -32633,6 +32638,38 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return t;
   }
 
+  // ---- THE LOG THIS CLUB ACTUALLY WROTE --------------------------------------
+  // App.ls.tr.log is the LOCAL resolver's record, and it outlives the men it
+  // was written about. A world reset re-deals the squad, a transfer moves a
+  // man on - and the noticeboard went on celebrating cricketers who are not
+  // at this club, beside a plan listing the eleven who are.
+  //
+  // Worse for a club held in the served world: the local resolver is switched
+  // off there (the umpire does the training from the plan the world holds), so
+  // EVERY line in that log is from a life this club did not live. The honest
+  // report is an empty one until the world has something to report.
+  //
+  // One reader, so the development report, the noticeboard pops and the club
+  // home card cannot disagree about who trained.
+  function foNsLog() {
+    // the claim is read from the store as well as the live global: on a cold
+    // boot the world has not answered yet, and that is exactly the moment the
+    // stale board used to flash up
+    try {
+      var cl = window.__foWorldClaim;
+      if (!cl) { try { cl = JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eS) {} }
+      if (cl && cl.country) return [];
+    } catch (eW) {}
+    try {
+      if (!App || !App.ls || !Array.isArray(App.ls.tr && App.ls.tr.log)) return [];
+      var here = {}, me = userTeam();
+      if (!me) return [];
+      (me.players || []).concat(me.youth || []).forEach(function (p) { if (p && p.name) here[p.name] = 1; });
+      return App.ls.tr.log.filter(function (l) { return l && here[l.n]; });
+    } catch (e) { return []; }
+  }
+  window.__foTrainLog = foNsLog;
+
   var FO_NS_SESS = {
     bat:   { nm: "Batting nets",   ic: "&#127951;", sk: ["vsPace", "vsSpin", "rotation", "temperament"], who: "all",   coach: "bat",  sub: "throw-downs, the bowling machine, an hour against the turning ball" },
     bowl:  { nm: "Bowling nets",   ic: "&#9678;",   sk: ["wicket", "economy", "discipline", "variation"], who: "bowl", coach: "bowl", sub: "one stump, a cone on a length, and the keeper calling the seam" },
@@ -32862,7 +32899,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return "<button type='button' class='fo-ns-coach" + (on ? " on" : "") + "' data-ns-coach='" + c + "'>" +
         "<b>" + C.nm + "</b><span>" + (on ? "on staff &middot; $" + C.fee.toLocaleString() + " a round" : "hire &middot; $" + C.fee.toLocaleString() + " a round") + "</span></button>";
     }).join("");
-    var gains = {}, rows = (t.log || []).slice(0, 14).map(function (l) {
+    var gains = {}, rows = foNsLog().slice(0, 14).map(function (l) {
       gains[l.n] = (gains[l.n] || 0) + 1;
       return "<div class='fo-ns-line'><b>" + E(l.n) + "</b> " + (l.r >= 0 ? "+1 " + E(foSkillLbl(l.k)) : E(l.why)) +
         " <span>" + (l.r >= 0 ? E(l.why) + " &middot; R" + (l.r + 1) : "season " + l.s) + "</span></div>";
@@ -32930,7 +32967,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (!ready()) return "";
     var t = TR();
     var names = t.sessions.map(function (id) { return FO_NS_SESS[id] ? FO_NS_SESS[id].nm : id; }).join(" &middot; ");
-    var recent = (t.log || []).slice(0, 2).map(function (l) {
+    var recent = foNsLog().slice(0, 2).map(function (l) {
       return "<div class='fo-ls-line'><b>" + E(l.n) + "</b> " + (l.r >= 0 ? "+1 " + E(foSkillLbl(l.k)) : E(l.why)) + "</div>";
     }).join("");
     var projN = (t.projects || []).filter(function (p) { return p && p.n && p.k; }).length;
@@ -33322,8 +33359,64 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   // ---- next fixture ----------------------------------------------------------
-  function nextFixture() {
+  // ONE WORLD, ONE ANSWER. This read App.season - the retired local sim - and
+  // nothing else, so a manager held in the served world was told about a match
+  // that does not exist: another round, another opponent, at a ground called
+  // Neutral Park. Worse, it was the answer BOTH the club home's NEXT MATCH
+  // button and the matchday build-up were built on, so the game showed two
+  // different next fixtures and two different pre-match pages at once.
+  //
+  // Where the world holds a club, the umpire's schedule IS the fixture list -
+  // the same schedule the league page and the fixture card deal from - and the
+  // answer carries the world address, so a caller can open the served preview
+  // instead of inventing a build-up of its own.
+  function servedNext() {
     try {
+      var cl = window.__foWorldClaim;
+      if (!cl) { try { cl = JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eC) {} }
+      if (!cl || !cl.country || cl.slot == null) return null;
+      var lg = window.__foWorldLg, wt = window.__foWT;
+      if (!lg || !wt || !wt.schedMirror) return null;
+      try { lg.want(cl.country); } catch (eW) {}
+      var snap = lg.get(cl.country); if (!snap) return null;
+      var season = snap.seasonNo || 1;
+      var sched = wt.schedMirror(cl.country, season) || [];
+      var names = null, mgr = null;
+      try {
+        if (window.__foWorldNames) { names = window.__foWorldNames.get(cl.country); mgr = window.__foWorldNames.mgr(cl.country); }
+      } catch (eN) {}
+      var bySlot = {};
+      (snap.table || []).concat(snap.table2 || []).forEach(function (row) {
+        bySlot[row.slot] = (names && names[row.slot]) || row.name;
+      });
+      for (var r0 = (snap.roundsPlayed || 0); r0 < sched.length; r0++) {
+        var rd = sched[r0] || [];
+        for (var i = 0; i < rd.length; i++) {
+          var f = rd[i];
+          if (f[0] !== cl.slot && f[1] !== cl.slot) continue;
+          var isHome = f[0] === cl.slot, oppSlot = isHome ? f[1] : f[0];
+          var href = null;
+          try { href = window.foPreviewHref ? window.foPreviewHref(cl.country, r0 + 1, f[0], f[1]) : null; } catch (eH) {}
+          return {
+            served: true, r: r0 + 1, round: r0 + 1, isHome: isHome, href: href,
+            world: { nat: cl.country, season: season, round: r0 + 1, h: f[0], a: f[1] },
+            opp: { name: bySlot[oppSlot] || "a club", slot: oppSlot },
+            ground: (mgr && mgr["g" + f[0]]) || ((bySlot[f[0]] || "the ground") + "'s ground")
+          };
+        }
+      }
+      // held in the world, and the season is played out: there is no next
+      // match, which is a truer answer than one off the retired sim
+      return null;
+    } catch (e) { return null; }
+  }
+  function nextFixture() {
+    var sv = servedNext(); if (sv) return sv;
+    try {
+      // a device that has never claimed anything still plays its own season
+      var cl0 = window.__foWorldClaim;
+      if (!cl0) { try { cl0 = JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eC0) {} }
+      if (cl0 && cl0.country && cl0.slot != null) return null;
       if (typeof seasonInit === "function") seasonInit();
       var S = App.season; if (!S) return null;
       for (var r = S.round; r < S.schedule.length; r++) {
@@ -33983,7 +34076,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     }).join("");
 
     // what is still to come, off the umpire's own schedule
-    var upRows = "", rounds = snap.rounds || 18;
+    var upRows = "", rounds = snap.rounds || 14;
     try {
       var wt = window.__foWT, pl = window.__foPlanet;
       if (wt && wt.schedMirror && pl) {
@@ -34176,7 +34269,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body #page .fo-fl-foot{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}",
     "html body #page .fo-fl-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
     "html body #page .fo-fl-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5);text-decoration:none}",
-    "@media(max-width:520px){html body #page .fo-fl-mast h1{font-size:30px}html body #page .fo-fl-res{display:none}html body #page .fo-fl-row{grid-template-columns:30px 24px minmax(0,1fr) 12px}html body #page .fo-fl-row.up{grid-template-columns:30px 24px minmax(0,1fr) auto}}"
+    "@media(max-width:520px){html body #page .fo-fl-mast h1{font-size:30px}html body #page .fo-fl-res,html body #page .fo-fl-act{display:none}html body #page .fo-fl-row{grid-template-columns:30px 24px minmax(0,1fr) 12px}html body #page .fo-fl-row.up{grid-template-columns:30px 24px minmax(0,1fr) auto}}"
   ].join("\n");
 
   function mount() {
@@ -34372,7 +34465,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       });
 
       // the world clock: which round is in play, and at what hour
-      var pl = null, wt = null, cal = null, fx = [], hour = 13, state = "none", preDays = 0, rounds = (snap && snap.rounds) || 18;
+      var pl = null, wt = null, cal = null, fx = [], hour = 13, state = "none", preDays = 0, rounds = (snap && snap.rounds) || 14;
       try { pl = window.__foPlanet || null; wt = (window.__foWT && window.__foWT.serverFixtures) ? window.__foWT : null; } catch (eP) {}
       if (pl && wt) {
         try {
@@ -34465,7 +34558,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         var rd = parseInt(qparam("r") || "", 10);
         if (!rd || rd < 1 || rd > rounds) rd = curRound;
         var sched = null;
-        try { if (wt && wt.schedMirror) sched = wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1)); } catch (eSc) {}
+        // THE CARD OF THE DIVISION YOU ARE READING. Both flights play on the
+        // same day, so a single list of eight put a manager on the Division
+        // Two page in front of Division One's matches with his own tacked on
+        // the end. Each page deals its own four.
+        try { if (wt && wt.schedMirror) sched = wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1), plateDiv); } catch (eSc) {}
         var nameAt = function (s2) {
           if (nmBySlot && nmBySlot[s2]) return nmBySlot[s2];
           var row = rows.filter(function (r) { return r.slot === s2; })[0];
@@ -34512,11 +34609,14 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           }).join("") : "<p class='fo-lgx-dim'>No fixtures for this round yet.</p>") +
           "</div>";
 
-        // the run-in: your next five, home or away
-        var runIn = [];
-        if (sched && mySlot >= 0) {
-          for (var ri = curRound - 1; ri < sched.length && runIn.length < 5; ri++) {
-            (sched[ri] || []).forEach(function (pr2) {
+        // the run-in: your next five, home or away. YOUR run-in follows YOUR
+        // division, not the page you happen to be reading - a Division Two
+        // manager browsing the counties still wants his own next five.
+        var runIn = [], mySched = sched;
+        try { if (wt && wt.schedMirror && myDivNo !== plateDiv) mySched = wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1), myDivNo); } catch (eMs) {}
+        if (mySched && mySlot >= 0) {
+          for (var ri = curRound - 1; ri < mySched.length && runIn.length < 5; ri++) {
+            (mySched[ri] || []).forEach(function (pr2) {
               if (runIn.length >= 5) return;
               if (pr2[0] !== mySlot && pr2[1] !== mySlot) return;
               var h2 = pr2[0] === mySlot;
@@ -34531,8 +34631,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
               "<u class='" + (x.home ? "h" : "a") + "'>" + (x.home ? "H" : "A") + "</u></a>";
           }).join("") + "</div>" : "") +
           "<div class='fo-lgx-card'><h3>Round at a glance</h3><div class='fo-lgx-glance'>" +
-          "<div><b>" + (pairs.length || 5) + "</b><i>Matches</i></div>" +
-          "<div><b>" + (rows.length || 10) + "</b><i>Clubs</i></div>" +
+          "<div><b>" + (pairs.length || 4) + "</b><i>Matches</i></div>" +
+          "<div><b>" + (rows.length || 8) + "</b><i>Clubs</i></div>" +
           "<div><b>" + hh(hour) + "</b><i>First ball" + rdDate(rd) + "</i></div></div></div>";
 
       } else if (tab === "results") {
@@ -34731,7 +34831,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         var nextWhen = hh(hour) + " UTC";
         var nextPairs = [];
         try {
-          var sc2 = wt && wt.schedMirror ? wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1)) : null;
+          var sc2 = wt && wt.schedMirror ? wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1), plateDiv) : null;
           nextPairs = (nextRd > curRound && state === "fin" && curRound >= rounds) ? [] : ((sc2 && sc2[nextRd - 1]) || []);
         } catch (eNp) {}
         var nmA = function (s2) {
@@ -37522,9 +37622,41 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
   function xiStrength(xi) { return xi.length ? xi.reduce(function (s, p) { return s + ovrOf(p); }, 0) / xi.length : 50; }
 
+  // ONE PRE-MATCH PAGE. This room derives everything from the retired local
+  // sim, which for a club held in the served world means a fixture nobody will
+  // play - the wrong round, the wrong opponent, at Neutral Park. The world has
+  // its own build-up (#/preview, module 51) off the umpire's schedule, so a
+  // claimed club is sent there and this room is left to the devices that have
+  // never claimed anything and really are playing their own season.
+  function servedElsewhere() {
+    try {
+      var cl = window.__foWorldClaim;
+      if (!cl) { try { cl = JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eC) {} }
+      if (!cl || !cl.country || cl.slot == null) return false;
+      var fx = (typeof window.foNextFixture === "function") ? window.foNextFixture() : null;
+      if (fx && fx.href) {
+        // replace, not push: the back button should leave the build-up, not
+        // bounce off this door a second time
+        try { location.replace(fx.href); } catch (eR) { location.hash = fx.href; }
+        try { if (typeof window.route === "function") window.route(); } catch (eR2) {}
+        return true;
+      }
+      // held in the world but its schedule has not landed yet: say so rather
+      // than draw a match off the old sim
+      var page = document.getElementById("page");
+      if (page) {
+        page.innerHTML = "<div class='fo-md'><div class='fo-md-mast'><h1>The build-up</h1>" +
+          "<p>Reaching the world for your next fixture&hellip; if nothing appears, the season is played out.</p>" +
+          "<p><a href='#/fixtures'>The fixture list &rsaquo;</a></p></div></div>";
+      }
+      return true;
+    } catch (e) { return false; }
+  }
+
   function foRenderMatchdayPage() {
     try {
       if ((location.hash || "").split("?")[0] !== "#/matchday") return;
+      if (servedElsewhere()) return;
       if (!ready()) return;
       var page = document.getElementById("page"); if (!page) return;
       document.body.classList.remove("fo-ov-on", "fo-boss-on", "fo-scb-on", "fo-drs-on");
@@ -37572,7 +37704,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         var rows = leagueRows();
         var posOf = function (nm) { return rows.findIndex(function (x) { return x.nm === nm; }) + 1; };
         var ordn = function (n) { return n + (n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"); };
-        stakes = ordn(posOf(home.name)) + " hosts " + ordn(posOf(away.name));
+        // a club the table does not carry has no position, and "0th hosts 1st"
+        // is worse than saying nothing at all
+        var pH = posOf(home.name), pA = posOf(away.name);
+        if (pH > 0 && pA > 0) stakes = ordn(pH) + " hosts " + ordn(pA);
       } catch (eT) {}
 
       // the pundit speaks (deterministically)
@@ -37730,16 +37865,22 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   // fresh = gains from the last two settled rounds of the current season, so
   // a manager who slept through a matchday still walks in on the celebration
+  // The Nets owns the one true reading of this club's log - only the men who
+  // are actually here, and nothing at all where the umpire does the training.
+  // Reading App.ls.tr.log raw is what put another club's cricketers on the
+  // noticeboard beside a plan listing this club's.
+  function foPopsLog() {
+    try { return (typeof window.__foTrainLog === "function") ? (window.__foTrainLog() || []) : []; }
+    catch (e) { return []; }
+  }
   function foPopsRecent() {
     if (!ready()) return [];
-    var t = App.ls.tr; if (!t || !Array.isArray(t.log)) return [];
     var s = App.seasonNo || 1, cut = (App.season.round || 0) - 2;
-    return t.log.filter(function (l) { return l && l.r >= 0 && l.s === s && l.r >= cut; });
+    return foPopsLog().filter(function (l) { return l && l.r >= 0 && l.s === s && l.r >= cut; });
   }
   function foPopsFor(name) {
     if (!ready()) return [];
-    var t = App.ls.tr; if (!t || !Array.isArray(t.log)) return [];
-    return t.log.filter(function (l) { return l && l.n === name; });
+    return foPopsLog().filter(function (l) { return l && l.n === name; });
   }
   function foPopsCounts() {
     var m = {};
@@ -38927,20 +39068,34 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return { seasonNo: seasonNo, round: round, dayInSeason: di, rest: !round,
              leagueOver: di >= (pl.LEAGUE_DAYS || 24) };
   }
-  // the server's schedule, mirrored: same circle method, same season shuffle
-  function schedMirror(rid, seasonNo) {
-    var N = 10, idx = []; for (var z = 0; z < N; z++) idx.push(z);
-    var seed = h32(rid + "|order|" + seasonNo);
-    for (var i = N - 1; i > 0; i--) { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; var j = seed % (i + 1); var t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
-    var list = idx.slice(), rounds = [];
-    for (var r = 0; r < N - 1; r++) {
-      var rd = [];
-      for (var k = 0; k < N / 2; k++) { var a = list[k], b = list[N - 1 - k]; rd.push(r % 2 ? [b, a] : [a, b]); }
-      rounds.push(rd);
-      list = [list[0], list[N - 1]].concat(list.slice(1, N - 1));
-    }
-    for (var r2 = 0; r2 < N - 1; r2++) rounds.push(rounds[r2].map(function (f) { return [f[1], f[0]]; }));
-    return rounds;
+  // THE PYRAMID, MIRRORED. This used to deal one league of ten - the world the
+  // game had before the divisions - and went on dealing it after the world had
+  // two flights of eight. The pairs it handed back were nobody's fixtures: a
+  // county drawn against a club it will not meet all summer, on a card that
+  // read as truth. The planet owns the circle method now (schedOf, which MUST
+  // agree with server/clock.mjs scheduleOf ball for ball) and this only asks
+  // it, once per division.
+  //
+  // MEMBERSHIP IS SEASONAL - promotion and relegation redraw it, and only the
+  // snapshot knows how - so the served divisions are read where the world has
+  // answered, and the founding split (0-7, 8-15) is the assumption until then.
+  function divMembers(rid, div) {
+    try {
+      var b = window.__foWorldLg && window.__foWorldLg.get(rid);
+      var d = b && b.divisions && b.divisions[String(div)];
+      if (d && d.length) return d.slice();
+    } catch (e) {}
+    return div === 2 ? [8, 9, 10, 11, 12, 13, 14, 15] : [0, 1, 2, 3, 4, 5, 6, 7];
+  }
+  // div 1 or div 2 for one flight's card; no div for the nation's whole day,
+  // both flights in the round together - which is what a matchday is
+  function schedMirror(rid, seasonNo, div) {
+    var pl = P();
+    if (!pl || !pl.schedOf) return [];
+    if (div === 1 || div === 2) return pl.schedOf(rid, seasonNo, divMembers(rid, div), div);
+    var d1 = pl.schedOf(rid, seasonNo, divMembers(rid, 1), 1);
+    var d2 = pl.schedOf(rid, seasonNo, divMembers(rid, 2), 2);
+    return d1.map(function (rd, i) { return rd.concat(d2[i] || []); });
   }
   function serverFixtures(rid, now) {
     var pl = P(), cal = serverCal(now);
@@ -39351,7 +39506,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   // the server mirror, exported: nation pages list the same fixtures, the
   // same calendar and the same live states the theatre plays from
-  window.__foWT = { serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror,
+  window.__foWT = { serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror, divMembers: divMembers,
     serverSquad: serverSquad, applyLiving: applyLiving,
     // THE MATCH ON RECORD IS NOT THE MATCH FROM A CLEAN SEED. The umpire plays
     // each round with the men as they were that day - the experience, the
