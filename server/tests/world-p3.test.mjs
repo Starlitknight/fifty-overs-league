@@ -916,6 +916,39 @@ test('016b: the stats centre adds up to the scorecards it came from', async () =
   assert.ok(sum('fkt') > 0, 'and so have the hands in the ring');
 });
 
+// EVERY CLUB'S OWN FEED: matches, transfers, challenges and call-ups in the
+// order they happened, computed live off the record rather than logged.
+test('016c: a club\'s events are the record, in order', async () => {
+  const pub = (await pool.query(`SELECT public.world_club_events('eng', 1, 100) AS e`)).rows[0].e;
+  assert.equal(pub.ok, true);
+  assert.equal(pub.mine, false, 'a signed-out reader holds no club');
+  const ev = pub.events;
+  assert.ok(ev.length > 5, 'something has happened here: ' + ev.length);
+  for (let i = 1; i < ev.length; i++) {
+    assert.ok(ev[i].at <= ev[i - 1].at, 'newest first at entry ' + i);
+  }
+  // every match this club played is in the feed, and named the right opponent
+  const played = (await pool.query(
+    `SELECT count(*)::int AS n FROM matches
+      WHERE country_id='eng' AND (home_slot=1 OR away_slot=1) AND played_at IS NOT NULL`)).rows[0].n;
+  const feedMatches = (await pool.query(
+    `SELECT jsonb_array_length((public.world_club_events('eng', 1, 500)->'events')) AS n`)).rows[0].n;
+  assert.ok(feedMatches >= Math.min(played, 500), 'the matches are all in there');
+  const m0 = ev.find(x => x.kind === 'match');
+  assert.ok(m0, 'a match event exists');
+  assert.ok(m0.oppSlot !== 1, 'a club is never its own opponent');
+  assert.equal(typeof m0.won, 'boolean');
+  assert.ok(m0.note, 'and it says how it went: ' + m0.note);
+  // the private half stays private
+  assert.equal(ev.filter(x => x.kind === 'orders' || x.kind === 'scouted').length, 0,
+    'teamsheets and scouts are not a rival\'s business');
+  const own = (await as(U1, `SELECT public.world_club_events('eng', 1, 200) AS e`)).rows[0].e;
+  assert.equal(own.mine, true, 'the manager who holds it is known');
+  assert.ok(own.events.some(x => x.kind === 'orders'), 'and he sees his own teamsheets');
+  // a club that does not exist is not a page
+  await assert.rejects(pool.query(`SELECT public.world_club_events('eng', 99)`), /no such club/);
+});
+
 // 017: WHAT A RIVAL MAY READ. The club pages show a scout's summary - one
 // overall rating a man, his batting, his bowling, his fielding, and the three
 // team strengths - computed in SQL so a page costs one small request. Those

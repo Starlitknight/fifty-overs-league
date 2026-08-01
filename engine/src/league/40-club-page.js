@@ -137,6 +137,75 @@
     var el = document.getElementById("fo-cp-chmsg"); if (el) el.innerHTML = E(t);
   }
 
+  // ---- THE EVENTS FEED -----------------------------------------------------
+  // A dossier shows three states of the world - a squad, a record, a trophy
+  // shelf - and not one moment of how the club got there. This is the club's
+  // own diary: matches, men bought and sold, challenges, call-ups, and (for
+  // the manager who holds it) the teamsheets he filed and the scouts he paid.
+  // Nothing is logged to make it: every source already carries the moment it
+  // happened, so the feed is computed off the record and can never drift.
+  var EV = {};                                   // "cid:slot" -> {loading, rows, mine}
+  function eventsOf(key, cid, slot, onLand) {
+    if (EV[key]) return EV[key];
+    EV[key] = { loading: true, rows: null, mine: false };
+    rpc("world_club_events", { p_country: cid, p_slot: slot, p_limit: 80 })
+      .then(function (r) {
+        EV[key] = { loading: false, rows: (r && r.events) || [], mine: !!(r && r.mine) };
+        try { if (onLand) onLand(); } catch (e) {}
+      })
+      .catch(function () { EV[key] = { loading: false, rows: [], mine: false }; try { if (onLand) onLand(); } catch (e2) {} });
+    return EV[key];
+  }
+  function evWhen(ms) {
+    var d = new Date(Number(ms) || 0), p2 = function (n) { return (n < 10 ? "0" : "") + n; };
+    return { day: DW[d.getDay()] + " " + d.getDate() + " " + MO[d.getMonth()] + " " + d.getFullYear(),
+      time: p2(d.getHours()) + ":" + p2(d.getMinutes()),
+      key: d.getFullYear() + "-" + p2(d.getMonth() + 1) + "-" + p2(d.getDate()) };
+  }
+  // a club named in an event is a club you can walk to, and so is a player
+  function evClub(cid, e) {
+    var c2 = e.oppCountry || cid, s2 = e.oppSlot;
+    var nm = e.oppName || "a club";
+    if (s2 == null) return E(nm);
+    return "<a href='#/team?c=" + encodeURIComponent(c2) + "&s=" + s2 + "'>" + E(nm) + "</a>";
+  }
+  function evPlayer(cid, slot, nm) {
+    if (!nm) return "";
+    return "<a href='#/player?c=" + encodeURIComponent(cid) + "&s=" + slot + "&n=" + encodeURIComponent(nm) + "'>" + E(nm) + "</a>";
+  }
+  function evLine(cid, slot, e) {
+    // a diary states the figure it was, not a rounding of it
+    var mny = function (v) {
+      var n = Math.round(+v || 0), neg = n < 0; n = Math.abs(n);
+      return (neg ? "-$" : "$") + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    };
+    switch (e.kind) {
+      case "match":
+        return (e.won ? "Beat " : "Played ") + evClub(cid, e) +
+          (e.home ? " at home" : " away") + (e.note ? " &mdash; " + E(e.note) : "");
+      case "buy":
+        return "Bought " + evPlayer(cid, slot, e.player) + " from " + evClub(cid, e) +
+          (e.amount ? " for " + mny(e.amount) : "");
+      case "sell":
+        return "Sold " + E(e.player || "a player") + " to " + evClub(cid, e) +
+          (e.amount ? " for " + mny(e.amount) : "");
+      case "friendly":
+        return (e.home ? "Challenged " : "Were challenged by ") + evClub(cid, e) +
+          " to a friendly" + (e.note === "declined" ? " &mdash; declined" : e.note === "offered" ? " &mdash; awaiting a reply" : "");
+      case "friendly-played":
+        return "Friendly with " + evClub(cid, e) + (e.note ? " &mdash; " + E(e.note) : "");
+      case "callup":
+        return evPlayer(cid, slot, e.player) + " was named in the national squad" +
+          (e.round ? " for round " + e.round : "") + (e.amount ? ", worth " + mny(e.amount) : "");
+      case "orders":
+        return "Filed a teamsheet for round " + (e.round || "?");
+      case "scouted":
+        return "Paid " + mny(e.amount) + " for a scouting report";
+      default:
+        return E(e.kind);
+    }
+  }
+
   var CLUB_CACHE = {}, SQ_CACHE = {}, HON_CACHE = null;
   function grab(url, cb) {
     fetch(SB_URL + url, { headers: { apikey: SB_ANON } })
@@ -460,9 +529,33 @@
           "<div class='fo-cp-note'>World rank <b>" + (rkRow ? "#" + rkRow.rank : "unrated") + "</b>" +
           (rkRow ? " &middot; " + num(rkRow.rating) + " rating &middot; " + rkRow.w + "-" + rkRow.l + (rkRow.t ? "-" + rkRow.t : "") + " all competitions" : "") + "</div>" +
           "</div>";
+      } else if (tab === "events") {
+        var ek = cid + ":" + slot;
+        var feed = eventsOf(ek, cid, slot, function () {
+          if ((location.hash || "").indexOf("#/team") === 0) window.foRenderClubPage();
+        });
+        var evBody;
+        if (feed.loading || feed.rows === null) {
+          evBody = "<p class='fo-cp-dim'>Turning back through the club's diary&hellip;</p>";
+        } else if (!feed.rows.length) {
+          evBody = "<p class='fo-cp-dim'>Nothing has happened here yet. The diary opens with the first ball of the season.</p>";
+        } else {
+          var lastK = "";
+          evBody = feed.rows.map(function (e) {
+            var w = evWhen(e.at), head = "";
+            if (w.key !== lastK) { lastK = w.key; head = "<div class='fo-cp-evday'>" + E(w.day) + "</div>"; }
+            return head + "<div class='fo-cp-ev " + E(e.kind) + "'>" +
+              "<span class='t'>" + w.time + "</span>" +
+              "<span class='w'>" + evLine(cid, slot, e) + "</span></div>";
+          }).join("");
+        }
+        bodyHTML = "<div class='fo-cp-panel'>" +
+          "<div class='fo-cp-ph'><h2>&#10022; Recent events &#10022;</h2>" +
+          (feed.mine ? "<span class='fo-cp-full'>Your club &middot; <b>teamsheets shown</b></span>" : "") + "</div>" +
+          evBody + "</div>";
       } else {
         bodyHTML = "<div class='fo-cp-panel'>" +
-          "<div class='fo-cp-ph'><h2>&#10022; First XI &#10022;</h2>" +
+          "<div class='fo-cp-ph'><h2>&#10022; First XI &#10022;</h2>" + +
           "<span class='fo-cp-full'>Full squad <b>" + players.length + "</b></span>" +
           "<span class='fo-cp-tools'>" + sortSel + "</span></div>" +
           (players.length
@@ -503,7 +596,7 @@
           "<div id='fo-cp-chlist'></div></div>";
       }
 
-      var TABS = [["squad", "Squad"], ["record", "Record"], ["honours", "Honours"]];
+      var TABS = [["squad", "Squad"], ["record", "Record"], ["honours", "Honours"], ["events", "Events"]];
       var tabBar = "<div class='fo-cp-tabs'>" + TABS.map(function (t) {
         return "<a class='" + (tab === t[0] ? "on" : "") + "' href='#/team?c=" + encodeURIComponent(cid) + "&s=" + slot + "&t=" + t[0] + "'>" + t[1] + "</a>";
       }).join("") + "</div>";
@@ -698,6 +791,18 @@
       ".fo-cp-fr span{margin-left:auto;display:inline-flex;gap:6px}",
       "html body #page .fo-cp-fr button{font:700 10px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--navy) !important;background:#FFFDF7 !important;border:1px solid rgba(12,27,51,.22) !important;border-radius:999px !important;padding:9px 13px !important;min-height:44px;cursor:pointer}",
       "html body #page .fo-cp-fr .fo-cp-fyes,html body #page .fo-cp-fr .fo-cp-fwatch{color:#FFFDF7 !important;background:var(--grn) !important;border-color:var(--grn) !important}",
+      // the diary: a day rule, then a line an hour at a time
+      ".fo-cp-evday{margin:14px -22px 0;padding:8px 22px;background:rgba(12,27,51,.05);font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--navy)}",
+      ".fo-cp-panel .fo-cp-evday:first-child{margin-top:0}",
+      ".fo-cp-ev{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:baseline;padding:9px 0;border-bottom:1px solid rgba(12,27,51,.07)}",
+      ".fo-cp-ev .t{font:600 11px/1.4 Oswald,sans-serif;color:rgba(12,27,51,.42);font-variant-numeric:tabular-nums}",
+      ".fo-cp-ev .w{font:400 13px/1.55 Inter,sans-serif;color:var(--navy)}",
+      "html body #page .fo-cp-ev .w a{color:#B44A22 !important;text-decoration:none !important;font-weight:600}",
+      "html body #page .fo-cp-ev .w a:hover{text-decoration:underline !important}",
+      ".fo-cp-ev.match .w{font-weight:500}",
+      ".fo-cp-ev.orders .w,.fo-cp-ev.scouted .w{color:rgba(12,27,51,.6)}",
+      "@media(max-width:760px){.fo-cp-evday{margin:12px -12px 0;padding:7px 12px}",
+      ".fo-cp-ev{grid-template-columns:38px minmax(0,1fr);gap:8px}}",
       ".fo-cp-mineact{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}",
       "html body #page .fo-cp-mineact a{font:600 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#B44A22 !important;background:#FFFDF7;border:1px solid rgba(12,27,51,.14);border-radius:999px;padding:9px 14px;text-decoration:none !important}",
       "html body #page .fo-cp-cta{display:block;text-align:center;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFDF7 !important;background:linear-gradient(180deg,#E8894A,#C8542F);border-radius:12px;padding:14px;text-decoration:none !important;box-shadow:0 10px 26px rgba(200,84,47,.3);margin:14px 0 10px}",
