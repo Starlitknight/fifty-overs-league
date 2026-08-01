@@ -394,81 +394,19 @@
         });
       } catch (eSo) {}
 
-      // YOUR OWN CLUB WEARS THE NAME YOU GAVE IT.
+      // YOUR OWN CLUB WEARS THE NAME IT WAS CHRISTENED WITH AT ITS FOUNDING.
+      // The world's register is the only register; a device carrying an older
+      // name quietly adopts it rather than offering a choice.
       if (isMine) {
         try {
-          var localNm = ""; try { localNm = (userTeam() || {}).name || ""; } catch (eU) {}
           var host = document.getElementById("fo-cp-mine");
-          // THE FOUNDING RIGHT: rename is always here, an inline input (a
-          // browser prompt() is silently refused on some phones). Wired for
-          // whichever panel below rendered it - the two-names warning carries
-          // its own box too, so the right is never conditional again.
-          var renBox = "<div class='fo-cp-ren'><label for='fo-cp-nm'>Rename your club</label>" +
-            "<span class='row'><input id='fo-cp-nm' type='text' maxlength='28' " +
-            "placeholder='" + E(name || "Your club's name") + "' autocomplete='off'>" +
-            "<button type='button' id='fo-cp-go'>Save</button></span>" +
-            "<i id='fo-cp-why2'></i></div>";
-          var wireRen = function () {
-            var go2 = document.getElementById("fo-cp-go");
-            if (!go2) return;
-            go2.addEventListener("click", function () {
-              var inp = document.getElementById("fo-cp-nm");
-              var nn = inp ? String(inp.value || "").trim() : "";
-              var why2 = document.getElementById("fo-cp-why2");
-              if (!nn) { if (why2) why2.textContent = "Type the new name first."; return; }
-              go2.disabled = true; go2.textContent = "Telling the world…";
-              if (!window.__foWorldRename) {
-                go2.disabled = false; go2.textContent = "Save";
-                if (why2) why2.textContent = "Sign in first - the world is the naming authority.";
-                return;
-              }
-              window.__foWorldRename(nn, function (ok, err) {
-                if (!ok) {
-                  go2.disabled = false; go2.textContent = "Save";
-                  if (why2) why2.textContent = String(err || "the world would not take that name");
-                  return;
-                }
-                try { var t2 = userTeam(); if (t2) { t2.name = nn; if (typeof saveGame === "function") saveGame(false); } } catch (eT2) {}
-                delete CLUB_CACHE[cid + ":" + slot];
-                window.foRenderClubPage();
-              });
-            });
-          };
-          if (host && localNm && name && localNm !== name) {
-            host.className = "fo-cp-warn";
-            host.innerHTML = "<b>Two names, one club.</b> The world calls you <u>" + E(name) +
-              "</u>; this device calls you <u>" + E(localNm) + "</u>." +
-              "<div class='fo-cp-warnb'><button type='button' id='fo-cp-push'>Christen it " + E(localNm) + "</button>" +
-              "<button type='button' class='ghost' id='fo-cp-pull'>Keep " + E(name) + "</button></div>" + renBox;
-            wireRen();
-            var push = document.getElementById("fo-cp-push");
-            if (push) push.addEventListener("click", function () {
-              push.disabled = true; push.textContent = "Telling the world…";
-              if (window.__foWorldRename) window.__foWorldRename(localNm, function (ok, err) {
-                if (!ok) {
-                  push.disabled = false; push.textContent = "Christen it " + localNm;
-                  try {
-                    var why = host.querySelector(".fo-cp-why");
-                    if (!why) { why = document.createElement("div"); why.className = "fo-cp-why"; host.appendChild(why); }
-                    why.textContent = String(err || "the world would not take that name");
-                  } catch (eW) {}
-                  return;
-                }
-                delete CLUB_CACHE[cid + ":" + slot];
-                window.foRenderClubPage();
-              });
-            });
-            var pull = document.getElementById("fo-cp-pull");
-            if (pull) pull.addEventListener("click", function () {
-              try {
-                var t = userTeam(); if (t) { t.name = name; if (typeof saveGame === "function") saveGame(false); }
-              } catch (eT) {}
-              window.foRenderClubPage();
-            });
-          } else if (host) {
+          try {
+            var t = userTeam();
+            if (t && name && t.name !== name) { t.name = name; if (typeof saveGame === "function") saveGame(false); }
+          } catch (eT) {}
+          if (host) {
             host.className = "fo-cp-mineact";
-            host.innerHTML = "<a href='#/training'>The nets &rsaquo;</a><a href='#/academy'>The academy &rsaquo;</a><a href='#/orders'>The orders &rsaquo;</a><a href='#/squad'>Your squad &rsaquo;</a>" + renBox;
-            wireRen();
+            host.innerHTML = "<a href='#/training'>The nets &rsaquo;</a><a href='#/academy'>The academy &rsaquo;</a><a href='#/orders'>The orders &rsaquo;</a><a href='#/squad'>Your squad &rsaquo;</a>";
           }
         } catch (eMine) {}
       }
@@ -572,18 +510,6 @@
       ".fo-cp-note u{text-decoration:none;font:italic 420 12px/1.5 'Fraunces',Georgia,serif;color:rgba(12,27,51,.55)}",
       ".fo-cp-dim{font:italic 420 13px/1.6 'Fraunces',Georgia,serif;color:rgba(12,27,51,.55);margin:6px 0 0}",
       ".fo-cp-dim.foot{margin-top:14px;padding-top:12px;border-top:1px solid rgba(12,27,51,.08)}",
-      ".fo-cp-warn{background:#FFF6E8;border:1px solid rgba(200,84,47,.35);border-radius:12px;padding:12px 14px;margin-bottom:12px;font:500 12.5px/1.6 Inter,sans-serif;color:var(--navy)}",
-      ".fo-cp-ren{background:#FBF9F2;border:1px solid #E4DFD2;border-radius:12px;padding:12px 14px;margin-bottom:12px;font:500 12.5px/1.6 Inter,sans-serif;color:var(--navy)}",
-      ".fo-cp-ren label{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8a6d3b;margin-bottom:6px}",
-      ".fo-cp-ren .row{display:flex;gap:8px}",
-      ".fo-cp-ren input{flex:1;min-width:0;padding:9px 12px;border:1px solid #d5cfc0;border-radius:9px;font:500 14px/1.2 Inter,sans-serif;background:#fff}",
-      ".fo-cp-ren button{padding:9px 16px;border:0;border-radius:9px;background:var(--nac,#C85532);color:#fff;font:600 13px/1.2 Inter,sans-serif}",
-      ".fo-cp-ren i{display:block;margin-top:6px;font-style:normal;font-size:12px;color:#B3372B}",
-      ".fo-cp-warn u{text-decoration:none;font-weight:700}",
-      ".fo-cp-warnb{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}",
-      "html body #page .fo-cp-warnb button{font:700 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#FFFDF7 !important;background:linear-gradient(180deg,#E8894A,#C8542F) !important;border:0;border-radius:10px;padding:11px 14px;cursor:pointer}",
-      "html body #page .fo-cp-warnb button.ghost{background:#FFFDF7 !important;color:var(--navy) !important;border:1px solid rgba(12,27,51,.2)}",
-      ".fo-cp-why{margin-top:8px;font:italic 420 12.5px/1.5 'Fraunces',Georgia,serif;color:#B23230}",
       ".fo-cp-mineact{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}",
       "html body #page .fo-cp-mineact a{font:600 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#B44A22 !important;background:#FFFDF7;border:1px solid rgba(12,27,51,.14);border-radius:999px;padding:9px 14px;text-decoration:none !important}",
       "html body #page .fo-cp-cta{display:block;text-align:center;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFDF7 !important;background:linear-gradient(180deg,#E8894A,#C8542F);border-radius:12px;padding:14px;text-decoration:none !important;box-shadow:0 10px 26px rgba(200,84,47,.3);margin:14px 0 10px}",

@@ -2640,11 +2640,6 @@
       ".fo-hg2 .hg-id b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(34px,5.4vw,62px);line-height:.98;letter-spacing:1px;text-transform:uppercase;margin:6px 0 8px}" +
       ".fo-hg2 .hg-id .hg-sub{display:block;font-size:13px;color:rgba(255,255,255,.85)}" +
       ".fo-hg2 .hg-id .hg-form{display:flex;gap:5px;align-items:center;margin-top:9px}" +
-      ".fo-hg2 .hg-id .hg-ren{margin-top:10px;padding:6px 12px;border:1px solid rgba(255,255,255,.45);border-radius:999px;background:rgba(10,18,32,.45);color:#fff;font:600 11px/1 Inter,sans-serif;letter-spacing:.06em}" +
-      ".fo-hg2 .hg-id .hg-renrow{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px;max-width:340px}" +
-      ".fo-hg2 .hg-id .hg-renrow input{flex:1;min-width:150px;padding:9px 12px;border:0;border-radius:9px;font:500 14px/1.2 Inter,sans-serif}" +
-      ".fo-hg2 .hg-id .hg-renrow button{padding:9px 16px;border:0;border-radius:9px;background:#C85532;color:#fff;font:600 13px/1.2 Inter,sans-serif}" +
-      ".fo-hg2 .hg-id .hg-renrow i{flex-basis:100%;font-style:normal;font-size:12px;color:#FFB199}" +
       ".fo-hg2 .hg-id .hg-form u{text-decoration:none;font-family:Oswald,sans-serif;font-size:9px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,.6);margin-right:3px}" +
       ".fo-hg2 .hg-id .hg-form em{font-style:normal;width:21px;height:21px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800}" +
       ".fo-hg2 .hg-id .hg-form em.hg-w{background:#2E7A3C;color:#fff}" +
@@ -2659,14 +2654,6 @@
       ".fo-hg2 .hg-id .hg-form a.hg-fm:hover em,.fo-hg2 .hg-id .hg-form a.hg-fm:focus-visible em{transform:scale(1.14)}" +
       ".fo-hg2 .hg-id .hg-form a.hg-fm em{transition:transform .12s ease}" +
       ".fo-hg2 .hg-id .hg-form .hg-nf{font-size:11.5px;color:rgba(255,255,255,.6);font-style:italic}" +
-      // one club, two names: the hero says which one the world uses and lets
-      // a manager settle it here rather than hunting for a rename screen
-      ".fo-hg2 .hg-id .hg-two{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;max-width:520px;font-size:12.5px;color:rgba(255,255,255,.82)}" +
-      ".fo-hg2 .hg-id .hg-two u{text-decoration:none;font-weight:700;color:#F3D37A}" +
-      "html body #page .fo-hg2 .hg-id .hg-two button{font-family:Oswald,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:#0E1A2F !important;background:#F3D37A !important;border:0;border-radius:9px;padding:9px 12px;cursor:pointer}" +
-      "html body #page .fo-hg2 .hg-id .hg-two button.ghost{background:rgba(255,255,255,.12) !important;color:#fff !important;border:1px solid rgba(255,255,255,.34)}" +
-      ".fo-hg2 .hg-id .hg-two button:disabled{opacity:.7;cursor:default}" +
-      ".fo-hg2 .hg-id .hg-two .hg-why{flex-basis:100%;font-style:italic;font-size:12px;color:#F3D37A}" +
       ".fo-hg2 .hg-next{position:absolute;z-index:3;right:22px;bottom:74px;width:min(315px,88vw);background:rgba(7,18,36,.84);border:1px solid rgba(243,211,122,.42);border-top:2px solid #F3D37A;border-radius:14px;padding:13px 16px 15px;color:#fff;backdrop-filter:blur(10px)}" +
       ".fo-hg2 .hg-next i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:8.5px;font-weight:600;letter-spacing:2.4px;color:rgba(255,255,255,.6)}" +
       ".fo-hg2 .hg-next em{position:absolute;top:13px;right:14px;font-style:normal;font-family:Oswald,sans-serif;font-size:8.5px;font-weight:600;letter-spacing:1.8px;color:#F3D37A}" +
@@ -5319,10 +5306,16 @@
       // a claim whose world has not answered yet says so, rather than borrowing
       // the local save's round to fill the line
       if (wClaim && !served) posLine = region.nm + " League &middot; asking the world&hellip;";
+      // A CLUB IS CHRISTENED ONCE, AT ITS FOUNDING. The world keeps the
+      // register, so if this device still carries an older name it quietly
+      // adopts the world's - there is nothing here to argue about.
+      if (wName && localNm && wName !== localNm) {
+        try { var t0 = userTeam(); if (t0) { t0.name = wName; if (typeof saveGame === "function") saveGame(false); } } catch (eN0) {}
+        localNm = wName;
+      }
       var heroName = wName || localNm || "Your Club";
-      var twoNames = !!(wName && localNm && wName !== localNm);
 
-      var sig = "home|" + v + "|" + heroName + "|" + localNm + "|" + pos + "|" + round + "|" + posLine + "|" + (twoNames ? 1 : 0);
+      var sig = "home|" + v + "|" + heroName + "|" + localNm + "|" + pos + "|" + round + "|" + posLine;
       if (page.__foHomeSig === sig && page.querySelector(".fo-home2")) return;
       page.__foHomeSig = sig;
       var btn = function (id, lf, ls) { return "<button type='button' id='" + id + "'><span class='hg-lf'>" + lf + "</span><span class='hg-ls'>" + ls + "</span></button>"; };
@@ -5335,20 +5328,6 @@
         "<b>" + E(heroName) + "</b>" +
         "<span class='hg-sub'>" + posLine + "</span>" +
         "<span class='hg-form'><u>FORM</u>" + beads + "</span>" +
-        (twoNames
-          ? "<span class='hg-two'>This device still calls you <u>" + E(localNm) + "</u>." +
-            "<button type='button' id='fo-hm-ren'>Christen the club " + E(localNm) + "</button>" +
-            "<button type='button' class='ghost' id='fo-hm-keep'>Keep " + E(wName) + "</button></span>"
-          : "") +
-        // THE FOUNDING RIGHT, on the front door: rename lives beside the name
-        // itself, an inline input (a browser prompt() is silently refused on
-        // some phones, and the old control only appeared when two names
-        // disagreed - after a reset they agree, so it appeared nowhere).
-        "<button type='button' class='hg-ren' id='fo-hm-rn2'>&#9998; Rename club</button>" +
-        "<span class='hg-renrow' id='fo-hm-rnrow' hidden>" +
-        "<input id='fo-hm-rni' type='text' maxlength='28' placeholder='" + E(heroName) + "' autocomplete='off'>" +
-        "<button type='button' id='fo-hm-rngo'>Save</button>" +
-        "<i id='fo-hm-rnwhy'></i></span>" +
         "</div>" +
         "<div class='hg-bar'>" +
         btn("fo-hm-nx", "NEXT MATCH \u25B8", "PLAY \u25B8") +
@@ -5361,63 +5340,6 @@
       try { foHgFit(page.querySelector(".fo-hg2")); } catch (eF) {}
       var go = function (id, hash) { var b = page.querySelector("#" + id); if (b) b.addEventListener("click", function () { location.hash = hash; if (typeof window.route === "function") window.route(); }); };
       go("fo-hm-lg", "#/league"); go("fo-hm-sq", "#/squad"); go("fo-hm-wd", "#/world"); go("fo-hm-cp", "#/cup");
-      // settle the two names, either way, without leaving the front door
-      try {
-        var renB = page.querySelector("#fo-hm-ren");
-        if (renB) renB.addEventListener("click", function () {
-          renB.disabled = true; renB.textContent = "Telling the world…";
-          if (!window.__foWorldRename) { renB.textContent = "Sign in to rename"; return; }
-          window.__foWorldRename(localNm, function (ok, err) {
-            if (!ok) {
-              // the world refuses a name for a reason - say the reason, in
-              // full, instead of a truncated one on a button nobody can read
-              renB.disabled = false; renB.textContent = "Christen the club " + localNm;
-              try {
-                var host9 = renB.parentElement, note9 = host9.querySelector(".hg-why");
-                if (!note9) { note9 = document.createElement("i"); note9.className = "hg-why"; host9.appendChild(note9); }
-                note9.textContent = String(err || "the world would not take that name");
-              } catch (eW9) {}
-              return;
-            }
-            page.__foHomeSig = null; foRenderHome();
-          });
-        });
-        // the always-there rename: reveal the input, save through the world
-        var rn2 = page.querySelector("#fo-hm-rn2"), rnRow = page.querySelector("#fo-hm-rnrow");
-        if (rn2 && rnRow) rn2.addEventListener("click", function () {
-          rnRow.hidden = !rnRow.hidden;
-          if (!rnRow.hidden) { try { page.querySelector("#fo-hm-rni").focus(); } catch (eF2) {} }
-        });
-        var rnGo = page.querySelector("#fo-hm-rngo");
-        if (rnGo) rnGo.addEventListener("click", function () {
-          var inp = page.querySelector("#fo-hm-rni"), why = page.querySelector("#fo-hm-rnwhy");
-          var nn = inp ? String(inp.value || "").trim() : "";
-          if (!nn) { if (why) why.textContent = "Type the new name first."; return; }
-          rnGo.disabled = true; rnGo.textContent = "Saving…";
-          if (!window.__foWorldRename) {
-            rnGo.disabled = false; rnGo.textContent = "Save";
-            if (why) why.textContent = "Sign in first - the world is the naming authority.";
-            return;
-          }
-          window.__foWorldRename(nn, function (ok, err) {
-            if (!ok) {
-              rnGo.disabled = false; rnGo.textContent = "Save";
-              if (why) why.textContent = String(err || "the world would not take that name");
-              return;
-            }
-            try { var tR = userTeam(); if (tR) { tR.name = nn; if (typeof saveGame === "function") saveGame(false); } } catch (eTR) {}
-            page.__foHomeSig = null; foRenderHome();
-          });
-        });
-        var keepB = page.querySelector("#fo-hm-keep");
-        if (keepB) keepB.addEventListener("click", function () {
-          try {
-            var t9 = userTeam();
-            if (t9) { t9.name = wName; if (typeof saveGame === "function") saveGame(false); }
-          } catch (eK) {}
-          page.__foHomeSig = null; foRenderHome();
-        });
-      } catch (eRen) {}
       // the golden path: one button that always knows the next step
       try {
         var nxB = page.querySelector("#fo-hm-nx");

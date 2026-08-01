@@ -1,10 +1,12 @@
-// admin.mjs — THE OWNER'S HAND, for the things a manager normally does
-// themselves. A club is renamed by its own manager through world_rename_club,
-// which needs their signed-in session; when the owner has to do it on their
-// behalf, this is the door - and it obeys exactly the same rules the RPC
-// does: the shared validator, no flagship, no name another club in that
-// league already wears. It republishes the nation's table afterwards, so the
-// world speaks the new name immediately instead of at the next round.
+// admin.mjs — THE OWNER'S HAND. A club is christened once, when it is
+// founded, and no manager can rename it afterwards: the name goes into the
+// register, the fixtures, the Cup draws and the honours board, and a league
+// whose names move under it is a league with no memory. So this is now the
+// ONLY door a name can change through - for the rare case a name should
+// never have been taken. It obeys the same rules the founding does: the
+// shared validator, no flagship, no name another club in that league already
+// wears. It republishes the nation's table afterwards, so the world speaks
+// the new name immediately instead of at the next round.
 //
 // Run from the world-admin workflow, which requires a typed confirmation.
 import { makePool } from './db.mjs';

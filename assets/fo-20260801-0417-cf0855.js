@@ -10033,7 +10033,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260731-2028-a979b4";
+  var FO_BUILD = "20260801-0417-cf0855";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -26554,14 +26554,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-hg2 .hg-id .hg-form a.hg-fm:hover em,.fo-hg2 .hg-id .hg-form a.hg-fm:focus-visible em{transform:scale(1.14)}" +
       ".fo-hg2 .hg-id .hg-form a.hg-fm em{transition:transform .12s ease}" +
       ".fo-hg2 .hg-id .hg-form .hg-nf{font-size:11.5px;color:rgba(255,255,255,.6);font-style:italic}" +
-      // one club, two names: the hero says which one the world uses and lets
-      // a manager settle it here rather than hunting for a rename screen
-      ".fo-hg2 .hg-id .hg-two{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;max-width:520px;font-size:12.5px;color:rgba(255,255,255,.82)}" +
-      ".fo-hg2 .hg-id .hg-two u{text-decoration:none;font-weight:700;color:#F3D37A}" +
-      "html body #page .fo-hg2 .hg-id .hg-two button{font-family:Oswald,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:#0E1A2F !important;background:#F3D37A !important;border:0;border-radius:9px;padding:9px 12px;cursor:pointer}" +
-      "html body #page .fo-hg2 .hg-id .hg-two button.ghost{background:rgba(255,255,255,.12) !important;color:#fff !important;border:1px solid rgba(255,255,255,.34)}" +
-      ".fo-hg2 .hg-id .hg-two button:disabled{opacity:.7;cursor:default}" +
-      ".fo-hg2 .hg-id .hg-two .hg-why{flex-basis:100%;font-style:italic;font-size:12px;color:#F3D37A}" +
       ".fo-hg2 .hg-next{position:absolute;z-index:3;right:22px;bottom:74px;width:min(315px,88vw);background:rgba(7,18,36,.84);border:1px solid rgba(243,211,122,.42);border-top:2px solid #F3D37A;border-radius:14px;padding:13px 16px 15px;color:#fff;backdrop-filter:blur(10px)}" +
       ".fo-hg2 .hg-next i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:8.5px;font-weight:600;letter-spacing:2.4px;color:rgba(255,255,255,.6)}" +
       ".fo-hg2 .hg-next em{position:absolute;top:13px;right:14px;font-style:normal;font-family:Oswald,sans-serif;font-size:8.5px;font-weight:600;letter-spacing:1.8px;color:#F3D37A}" +
@@ -29214,10 +29206,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // a claim whose world has not answered yet says so, rather than borrowing
       // the local save's round to fill the line
       if (wClaim && !served) posLine = region.nm + " League &middot; asking the world&hellip;";
+      // A CLUB IS CHRISTENED ONCE, AT ITS FOUNDING. The world keeps the
+      // register, so if this device still carries an older name it quietly
+      // adopts the world's - there is nothing here to argue about.
+      if (wName && localNm && wName !== localNm) {
+        try { var t0 = userTeam(); if (t0) { t0.name = wName; if (typeof saveGame === "function") saveGame(false); } } catch (eN0) {}
+        localNm = wName;
+      }
       var heroName = wName || localNm || "Your Club";
-      var twoNames = !!(wName && localNm && wName !== localNm);
 
-      var sig = "home|" + v + "|" + heroName + "|" + localNm + "|" + pos + "|" + round + "|" + posLine + "|" + (twoNames ? 1 : 0);
+      var sig = "home|" + v + "|" + heroName + "|" + localNm + "|" + pos + "|" + round + "|" + posLine;
       if (page.__foHomeSig === sig && page.querySelector(".fo-home2")) return;
       page.__foHomeSig = sig;
       var btn = function (id, lf, ls) { return "<button type='button' id='" + id + "'><span class='hg-lf'>" + lf + "</span><span class='hg-ls'>" + ls + "</span></button>"; };
@@ -29230,11 +29228,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<b>" + E(heroName) + "</b>" +
         "<span class='hg-sub'>" + posLine + "</span>" +
         "<span class='hg-form'><u>FORM</u>" + beads + "</span>" +
-        (twoNames
-          ? "<span class='hg-two'>This device still calls you <u>" + E(localNm) + "</u>." +
-            "<button type='button' id='fo-hm-ren'>Christen the club " + E(localNm) + "</button>" +
-            "<button type='button' class='ghost' id='fo-hm-keep'>Keep " + E(wName) + "</button></span>"
-          : "") +
         "</div>" +
         "<div class='hg-bar'>" +
         btn("fo-hm-nx", "NEXT MATCH \u25B8", "PLAY \u25B8") +
@@ -29247,36 +29240,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       try { foHgFit(page.querySelector(".fo-hg2")); } catch (eF) {}
       var go = function (id, hash) { var b = page.querySelector("#" + id); if (b) b.addEventListener("click", function () { location.hash = hash; if (typeof window.route === "function") window.route(); }); };
       go("fo-hm-lg", "#/league"); go("fo-hm-sq", "#/squad"); go("fo-hm-wd", "#/world"); go("fo-hm-cp", "#/cup");
-      // settle the two names, either way, without leaving the front door
-      try {
-        var renB = page.querySelector("#fo-hm-ren");
-        if (renB) renB.addEventListener("click", function () {
-          renB.disabled = true; renB.textContent = "Telling the world…";
-          if (!window.__foWorldRename) { renB.textContent = "Sign in to rename"; return; }
-          window.__foWorldRename(localNm, function (ok, err) {
-            if (!ok) {
-              // the world refuses a name for a reason - say the reason, in
-              // full, instead of a truncated one on a button nobody can read
-              renB.disabled = false; renB.textContent = "Christen the club " + localNm;
-              try {
-                var host9 = renB.parentElement, note9 = host9.querySelector(".hg-why");
-                if (!note9) { note9 = document.createElement("i"); note9.className = "hg-why"; host9.appendChild(note9); }
-                note9.textContent = String(err || "the world would not take that name");
-              } catch (eW9) {}
-              return;
-            }
-            page.__foHomeSig = null; foRenderHome();
-          });
-        });
-        var keepB = page.querySelector("#fo-hm-keep");
-        if (keepB) keepB.addEventListener("click", function () {
-          try {
-            var t9 = userTeam();
-            if (t9) { t9.name = wName; if (typeof saveGame === "function") saveGame(false); }
-          } catch (eK) {}
-          page.__foHomeSig = null; foRenderHome();
-        });
-      } catch (eRen) {}
       // the golden path: one button that always knows the next step
       try {
         var nxB = page.querySelector("#fo-hm-nx");
@@ -34308,6 +34271,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   window.__foSideArt = sideArt;
   window.addEventListener("hashchange", function () {
     setTimeout(function () { if (ART_FOR !== (location.hash || "")) sideArt(null); }, 80);
+    // a query-only change (division cross-link, nation hop) never re-routes
+    // the shell, so the page repaints itself
+    setTimeout(function () { if (onPage()) foRenderLeagueTablePage(); }, 40);
   });
 
   var TABS = [["table", "Standings"], ["fixtures", "Fixtures"], ["results", "Results"], ["stats", "Stats"]];
@@ -34444,17 +34410,29 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         return "<option value='" + E(r.id) + "'" + (r.id === natId ? " selected" : "") + ">" + E(r.nm) + "</option>";
       }).join("");
 
+      // WHICH FLIGHT IS THIS PAGE - decided here so the plate can dress for
+      // it: the flagship's trophy belongs to Division One; Division Two's
+      // page is about the road up, and never wears the cup it cannot win.
+      var dQ0 = parseInt(qparam("d"), 10);
+      var plateDiv = (dQ0 === 1 || dQ0 === 2) ? dQ0 : myDivNo;
+      var hasDivs = rowsD2.length > 0;
       var plate =
         "<div class='fo-lgx-plate'>" +
         "<span class='fo-lgx-glow'></span>" +
-        "<img class='fo-lgx-cup' src='" + ART() + "circuit/trophy-" + E(natId) + ".webp' alt='' onerror=\"this.style.display='none'\">" +
+        (!hasDivs || plateDiv === 1
+          ? "<img class='fo-lgx-cup' src='" + ART() + "circuit/trophy-" + E(natId) + ".webp' alt='' onerror=\"this.style.display='none'\">"
+          : "") +
         "<div class='fo-lgx-plin'>" +
         "<div class='fo-lgx-mark'>" +
         "<span class='fo-lgx-pennant'><img src='" + flagOf(natId) + "' alt='' onerror=\"this.style.display='none'\"></span>" +
         "<div class='fo-lgx-titles'>" +
         "<div class='fo-lgx-k'>" + E(natNm) + " &middot; Season " + ((snap && snap.seasonNo) || (cal && cal.seasonNo > 0 ? cal.seasonNo : 1)) + "</div>" +
-        "<h1>The " + E(natNm) + " League</h1>" +
-        "<p>Ten clubs. Eighteen rounds. One pennant.</p>" +
+        "<h1>The " + E(natNm) + " League" + (hasDivs ? " &middot; Division " + (plateDiv === 1 ? "One" : "Two") : "") + "</h1>" +
+        "<p>" + (hasDivs
+          ? (plateDiv === 1
+            ? "Eight clubs. Fourteen rounds. Finals night crowns the champion."
+            : "Eight clubs. Fourteen rounds. The top of this table is the road up.")
+          : "Ten clubs. Eighteen rounds. One pennant.") + "</p>" +
         "</div></div>" +
         "<div class='fo-lgx-clock'>" +
         "<div class='fo-lgx-rk'>Round " + curRound + " of " + rounds + "</div>" +
@@ -34687,19 +34665,30 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         };
         var colHead = "<div class='fo-lgx-cols'><span>#</span><span></span><span>Club</span><span>Form</span>" +
           "<span>P</span><span>W</span><span>L</span><span>NRR</span><span>Pts</span></div>";
-        var panelOf = function (list, d, lead) {
+        // EACH FLIGHT IS ITS OWN PAGE. #/league?d=1 and #/league?d=2 are two
+        // addresses per nation (&n= carries the country), each with a signpost
+        // to the other: a manager lands on his own division and walks up or
+        // down the pyramid with one tap.
+        var dQ = parseInt(qparam("d"), 10);
+        var showDiv = (dQ === 1 || dQ === 2) ? dQ : myDivNo;
+        var showRows = showDiv === myDivNo ? rows : rowsOther;
+        var otherNo = showDiv === 1 ? 2 : 1;
+        var cross = (rowsOther.length || showDiv !== myDivNo)
+          ? "<a class='fo-lgx-cross' href='#/league?n=" + encodeURIComponent(natId) + "&d=" + otherNo + "'>" +
+            (otherNo === 1 ? "&#8593;" : "&#8595;") + " " + divName(otherNo) + "</a>"
+          : "";
+        var panelOf = function (list, d) {
           return "<div class='fo-lgx-panel'>" +
-            "<div class='fo-lgx-ph'><h2>" + (rowsOther.length ? divName(d) : "The pennant race") + "</h2>" +
-            "<span class='fo-lgx-sub'>" + (lead
-              ? (playedRounds ? "Standings after round " + playedRounds : "Before a ball is bowled")
-              : divSub(d)) + "</span></div>" +
-            (lead && scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
+            "<div class='fo-lgx-ph'><h2>" + (rowsOther.length || dQ ? divName(d) : "The pennant race") + "</h2>" +
+            "<span class='fo-lgx-sub'>" +
+              (playedRounds ? "Standings after round " + playedRounds : "Before a ball is bowled") +
+              " &middot; " + divSub(d) + "</span>" + cross + "</div>" +
+            (scorerLine ? "<p class='fo-lgx-wait'><i></i><span>" + scorerLine + "</span></p>" : "") +
             (list.length ? colHead + divRows(list, d)
               : "<p class='fo-lgx-dim'>The " + E(natNm) + " table is on its way from the World Service&hellip;</p>") +
             "</div>";
         };
-        main = panelOf(rows, myDivNo, true) +
-          (rowsOther.length ? panelOf(rowsOther, otherDivNo, false) : "");
+        main = panelOf(showRows, showDiv);
 
         // NEXT ROUND MEANS NEXT. Once the day's play is finished this card was
         // still offering the round that had just ended as the one to come, at
@@ -34857,6 +34846,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body #page .fo-lgx-row.q .rk{color:#177A57}",
     "html body #page .fo-lgx-row.rel .rk{color:#B3372B}",
     "html body #page .fo-lgx-row.rel{box-shadow:inset 3px 0 0 rgba(179,55,43,.55)}",
+    "html body #page .fo-lgx-cross{display:inline-block;margin-top:6px;padding:5px 12px;border:1px solid #d8d2c4;border-radius:999px;font-size:12px;font-weight:600;color:#1d1c19;text-decoration:none;background:#faf7ef}",
+    "html body #page .fo-lgx-cross:active{background:#f0ead9}",
     "html body #page .fo-lgx-row.mine{background:rgba(201,85,50,.06);border-bottom-color:transparent;box-shadow:inset 3px 0 0 var(--nac)}",
     "html body #page .fo-lgx-row .rk{font:700 12px/1 Oswald,sans-serif;color:rgba(20,28,40,.45);font-variant-numeric:tabular-nums}",
     "html body #page .fo-lgx-row .cb{display:flex;align-items:center;justify-content:center}",
@@ -38446,7 +38437,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
                           reconciled on every load after it
      adoptWorldSquad      the world's men become the club's men, everywhere
      __foWorldPushOrders  the sheet you set is the sheet the umpire plays
-     __foWorldPushTraining / __foWorldRename / __foWorldRefreshPlan
+     __foWorldPushTraining / __foWorldRefreshPlan
      __foWorldFinance     the bank, one number, quoted from the umpire
    ========================================================================== */
 (function () {
@@ -38675,27 +38666,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           .catch(function () { TR_LAST = ""; });
       }, 900);
     } catch (e) {}
-  };
-
-  // ONE CLUB, ONE NAME. The world is the naming authority, so christening
-  // has to be reachable from wherever a manager notices the mismatch - the
-  // club dossier, not just this page's rename button.
-  window.__foWorldRename = function (nm, cb) {
-    try {
-      nm = String(nm || "").trim();
-      if (!nm) { if (cb) cb(false, "no name given"); return; }
-      if (!jwt()) { if (cb) cb(false, "sign in first"); return; }
-      rpc("world_rename_club", { p_club_name: nm })
-        .then(function () {
-          try {
-            var c9 = window.__foWorldClaim;
-            if (c9) { c9.club = nm; localStorage.setItem("fo_world_claim", JSON.stringify(c9)); }
-            if (c9 && c9.country) localStorage.removeItem("fo_world_nm_" + c9.country);
-          } catch (e2) {}
-          if (cb) cb(true);
-        })
-        .catch(function (e) { if (cb) cb(false, e && e.message); });
-    } catch (e) { if (cb) cb(false, e && e.message); }
   };
 
   // the Nets asks for the standing plan when it does not have it yet
@@ -40003,42 +39973,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         });
       } catch (eSo) {}
 
-      // YOUR OWN CLUB WEARS THE NAME YOU GAVE IT.
+      // YOUR OWN CLUB WEARS THE NAME IT WAS CHRISTENED WITH AT ITS FOUNDING.
+      // The world's register is the only register; a device carrying an older
+      // name quietly adopts it rather than offering a choice.
       if (isMine) {
         try {
-          var localNm = ""; try { localNm = (userTeam() || {}).name || ""; } catch (eU) {}
           var host = document.getElementById("fo-cp-mine");
-          if (host && localNm && name && localNm !== name) {
-            host.className = "fo-cp-warn";
-            host.innerHTML = "<b>Two names, one club.</b> The world calls you <u>" + E(name) +
-              "</u>; this device calls you <u>" + E(localNm) + "</u>." +
-              "<div class='fo-cp-warnb'><button type='button' id='fo-cp-push'>Christen it " + E(localNm) + "</button>" +
-              "<button type='button' class='ghost' id='fo-cp-pull'>Keep " + E(name) + "</button></div>";
-            var push = document.getElementById("fo-cp-push");
-            if (push) push.addEventListener("click", function () {
-              push.disabled = true; push.textContent = "Telling the world…";
-              if (window.__foWorldRename) window.__foWorldRename(localNm, function (ok, err) {
-                if (!ok) {
-                  push.disabled = false; push.textContent = "Christen it " + localNm;
-                  try {
-                    var why = host.querySelector(".fo-cp-why");
-                    if (!why) { why = document.createElement("div"); why.className = "fo-cp-why"; host.appendChild(why); }
-                    why.textContent = String(err || "the world would not take that name");
-                  } catch (eW) {}
-                  return;
-                }
-                delete CLUB_CACHE[cid + ":" + slot];
-                window.foRenderClubPage();
-              });
-            });
-            var pull = document.getElementById("fo-cp-pull");
-            if (pull) pull.addEventListener("click", function () {
-              try {
-                var t = userTeam(); if (t) { t.name = name; if (typeof saveGame === "function") saveGame(false); }
-              } catch (eT) {}
-              window.foRenderClubPage();
-            });
-          } else if (host) {
+          try {
+            var t = userTeam();
+            if (t && name && t.name !== name) { t.name = name; if (typeof saveGame === "function") saveGame(false); }
+          } catch (eT) {}
+          if (host) {
             host.className = "fo-cp-mineact";
             host.innerHTML = "<a href='#/training'>The nets &rsaquo;</a><a href='#/academy'>The academy &rsaquo;</a><a href='#/orders'>The orders &rsaquo;</a><a href='#/squad'>Your squad &rsaquo;</a>";
           }
@@ -40144,12 +40089,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-cp-note u{text-decoration:none;font:italic 420 12px/1.5 'Fraunces',Georgia,serif;color:rgba(12,27,51,.55)}",
       ".fo-cp-dim{font:italic 420 13px/1.6 'Fraunces',Georgia,serif;color:rgba(12,27,51,.55);margin:6px 0 0}",
       ".fo-cp-dim.foot{margin-top:14px;padding-top:12px;border-top:1px solid rgba(12,27,51,.08)}",
-      ".fo-cp-warn{background:#FFF6E8;border:1px solid rgba(200,84,47,.35);border-radius:12px;padding:12px 14px;margin-bottom:12px;font:500 12.5px/1.6 Inter,sans-serif;color:var(--navy)}",
-      ".fo-cp-warn u{text-decoration:none;font-weight:700}",
-      ".fo-cp-warnb{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}",
-      "html body #page .fo-cp-warnb button{font:700 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#FFFDF7 !important;background:linear-gradient(180deg,#E8894A,#C8542F) !important;border:0;border-radius:10px;padding:11px 14px;cursor:pointer}",
-      "html body #page .fo-cp-warnb button.ghost{background:#FFFDF7 !important;color:var(--navy) !important;border:1px solid rgba(12,27,51,.2)}",
-      ".fo-cp-why{margin-top:8px;font:italic 420 12.5px/1.5 'Fraunces',Georgia,serif;color:#B23230}",
       ".fo-cp-mineact{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}",
       "html body #page .fo-cp-mineact a{font:600 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#B44A22 !important;background:#FFFDF7;border:1px solid rgba(12,27,51,.14);border-radius:999px;padding:9px 14px;text-decoration:none !important}",
       "html body #page .fo-cp-cta{display:block;text-align:center;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFDF7 !important;background:linear-gradient(180deg,#E8894A,#C8542F);border-radius:12px;padding:14px;text-decoration:none !important;box-shadow:0 10px 26px rgba(200,84,47,.3);margin:14px 0 10px}",
