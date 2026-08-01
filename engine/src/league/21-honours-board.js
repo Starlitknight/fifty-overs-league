@@ -209,23 +209,6 @@
       return { k: h.k, tier: h.tier, nm: h.nm, sub: h.sub, done: !("goal" in r), at: r.at || null, note: r.note || "", prog: r.prog || 0, goal: r.goal || 0 };
     });
   }
-  // the race: who reached each honour first, league-wide
-  function firsts() {
-    var T = sweep(); var out = {};
-    HONOURS.forEach(function (h) {
-      var best = null;
-      Object.keys(T).forEach(function (nm) {
-        var r = h.ev(T[nm]) || {};
-        if ("goal" in r) return;
-        var at = r.at || { s: 999, r: 999, ix: 1e9 };
-        var key = (at.s || 999) * 100000 + (at.r || 999) * 100 + ((at.ix || 0) % 100);
-        if (!best || key < best.key) best = { nm: nm, at: r.at, key: key };
-      });
-      if (best) out[h.k] = best;
-    });
-    return out;
-  }
-
   // ---- the chairman pays for plaques ----------------------------------------
   function settleBonuses() {
     try {
@@ -277,7 +260,10 @@
   }
 
   // ---- the page --------------------------------------------------------------
-  var viewClub = null;
+  // A PAVILION WALL BELONGS TO ONE CLUB. This page carried a row of buttons -
+  // every club in the league - and a league-wide race panel naming whoever
+  // reached each honour first, so your own wall was one tab among ten. It is
+  // your board now, and only yours.
   function foRenderHonoursPage() {
     try {
       if (!ready()) return;
@@ -289,39 +275,26 @@
       settleBonuses();
       var artBase = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
       var hbBg = "<img class='fo-hb-bg' src='" + artBase + "home/" + (window.innerWidth < 760 ? "hgm-clubroom" : "hgd-heart-of-club") + ".webp' alt=''><div class='fo-hb-veil'></div>";
-      var club = q("c") || viewClub || me.name;
-      if (!GD.teams.some(function (t) { return t.name === club; })) club = me.name;
-      viewClub = club;
-      var mine = club === me.name;
+      var club = me.name, mine = true;
       var board = boardFor(club);
       var done = board.filter(function (p) { return p.done; });
-      var F = firsts();
       var latestS = App.seasonNo || 1, latestR = 0;
       try { latestR = App.season ? App.season.round : 0; } catch (e2) {}
 
       var when = function (at) { return at ? "S" + at.s + " &middot; R" + at.r : "all-time"; };
       var plaques = board.map(function (p) {
-        var first = F[p.k];
-        var firstTag = first ? (first.nm === club ? "<u class='fo-hb-first mine'>League first</u>" :
-          "<u class='fo-hb-first'>First: " + E(first.nm) + "</u>") : "";
         if (p.done) {
           var fresh = p.at && p.at.s === latestS && p.at.r >= latestR && mine;
           return "<div class='fo-hb-plq on" + (fresh ? " new" : "") + " t-" + p.tier + "'>" +
             "<i>" + TIER[p.tier].nm + "</i><b>" + E(p.nm) + "</b>" +
-            "<span>" + (p.note || E(p.sub)) + "</span><em>" + when(p.at) + "</em>" + firstTag + "</div>";
+            "<span>" + (p.note || E(p.sub)) + "</span><em>" + when(p.at) + "</em></div>";
         }
         var pct = p.goal > 1 ? Math.max(3, Math.min(97, Math.round(100 * p.prog / p.goal))) : 0;
         return "<div class='fo-hb-plq t-" + p.tier + "'>" +
           "<i>" + TIER[p.tier].nm + "</i><b>" + E(p.nm) + "</b>" +
           "<span>" + E(p.sub) + "</span>" +
           (p.goal > 1 ? "<div class='fo-hb-m'><u style='width:" + pct + "%'></u></div>" : "") +
-          "<em class='pend'>" + p.note + "</em>" + firstTag + "</div>";
-      }).join("");
-
-      var chips = GD.teams.map(function (t) {
-        var n = boardFor(t.name).filter(function (p) { return p.done; }).length;
-        return "<button class='fo-hb-chip" + (t.name === club ? " on" : "") + "' data-club='" + E(t.name) + "'>" +
-          E(t.name) + "<u>" + n + "</u></button>";
+          "<em class='pend'>" + p.note + "</em></div>";
       }).join("");
 
       var charter = charterFor(club);
@@ -339,41 +312,21 @@
           "<em class='pend'>" + p.note + "</em></div>";
       }).join("");
 
-      var race = HONOURS.map(function (h) {
-        var f = F[h.k];
-        return "<div class='fo-hb-race'><b>" + E(h.nm) + "</b>" +
-          (f ? "<span class='" + (f.nm === me.name ? "mine" : "") + "'>" + E(f.nm) + "</span><i>" + when(f.at) + "</i>"
-             : "<span class='open'>unclaimed</span><i>the race is on</i>") + "</div>";
-      }).join("");
-
       page.innerHTML = hbBg +
         "<div class='fo-hb'>" +
         "<div class='fo-hb-mast'>" +
         "<div class='fo-hb-kick'>" + E(club) + " &middot; the pavilion wall</div>" +
         "<h1>The Honours Board</h1>" +
-        "<p>" + (mine
-          ? "Thirteen honours, gold leaf on oak. The chairman pays for every new plaque" + (bankedTotal() ? " - " + money(bankedTotal()) + " banked so far" : "") + ", and the league remembers who got there first."
-          : "Reading " + E(club) + "&rsquo;s board. Every club chases the same thirteen honours; the league remembers who got there first.") + "</p>" +
-        "<div class='fo-hb-tally'><b>" + done.length + "</b> of " + board.length + " plaques</div>" +
+        "<div class='fo-hb-tally'><b>" + done.length + "</b> of " + board.length + " plaques" +
+          (bankedTotal() ? " &middot; " + money(bankedTotal()) + " banked" : "") + "</div>" +
         "</div>" +
-        "<div class='fo-hb-chips'>" + chips + "</div>" +
-        "<div class='fo-hb-shead'><b>The " + E(club) + " charter</b><span>six pursuits of their own - no other club has this page</span></div>" +
+        "<div class='fo-hb-shead'><b>The " + E(club) + " charter</b><span>" + chDone + " of 6 sealed</span></div>" +
         "<div class='fo-hb-chgrid'>" + chRows + "</div>" +
-        "<div class='fo-hb-shead'><b>The league board</b><span>the same thirteen honours for every club - " + chDone + " of 6 charter seals, " + done.length + " of " + board.length + " plaques</span></div>" +
+        "<div class='fo-hb-shead'><b>The board</b><span>" + done.length + " of " + board.length + " plaques</span></div>" +
         "<div class='fo-hb-oak'><div class='fo-hb-grid'>" + plaques + "</div></div>" +
-        "<section class='fo-hb-sec'><div class='fo-hb-k'>First on the board</div>" +
-        "<div class='fo-hb-races'>" + race + "</div></section>" +
         "<div class='fo-hb-foot'><a href='#/league'>&#8592; My league</a><a href='#/squad'>The squad &rsaquo;</a></div>" +
         "</div>";
 
-      page.querySelectorAll(".fo-hb-chip").forEach(function (b) {
-        b.addEventListener("click", function () {
-          var nm2 = b.getAttribute("data-club");
-          viewClub = nm2;
-          try { location.hash = "#/milestones?c=" + encodeURIComponent(nm2); } catch (eH) {}
-          foRenderHonoursPage();
-        });
-      });
     } catch (e) { try { console.warn("foRenderHonoursPage", e); } catch (e2) {} }
   }
 
@@ -408,9 +361,6 @@
     // the oak itself: deep wood, a gold pinstripe, plaques screwed to it
     "html body #page .fo-hb-oak{background:linear-gradient(168deg,#5A4326,#43301A 55%,#33240F);border:1px solid rgba(230,190,110,.35);outline:1px solid rgba(230,190,110,.28);outline-offset:-8px;border-radius:16px;padding:16px;box-shadow:0 26px 60px rgba(10,7,3,.55),inset 0 1px 0 rgba(255,235,190,.18);margin-top:12px}",
     "body.fo-hbx-on #page .fo-hb-plq{background:rgba(250,245,232,.94)}",
-    "body.fo-hbx-on #page .fo-hb-chips{padding-top:10px}",
-    "body.fo-hbx-on #page button.fo-hb-chip{box-shadow:0 6px 16px rgba(0,0,0,.3)}",
-    "body.fo-hbx-on #page .fo-hb-sec{background:rgba(253,252,249,.94);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 14px 34px rgba(10,7,3,.4)}",
     "body.fo-hbx-on #page .fo-hb-foot a{background:rgba(253,252,249,.92);box-shadow:0 8px 20px rgba(10,7,3,.35)}",
     "html body #page .fo-hb{max-width:960px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
     "html body #page .fo-hb-mast{background:linear-gradient(150deg,#FFFEFB,#F6F1E4 70%,#F0E9D6) !important;border:1px solid rgba(20,28,40,.1);border-radius:22px;padding:28px 30px 24px;box-shadow:0 22px 50px rgba(30,38,52,.12);position:relative;overflow:hidden}",
@@ -421,11 +371,6 @@
     "html body #page .fo-hb-tally{margin-top:12px;font:600 12px/1 Inter,sans-serif;color:#141C28;background:#FFFEFC;border:1px solid rgba(176,132,9,.4);border-radius:999px;display:inline-block;padding:8px 15px}",
     "html body #page .fo-hb-tally b{color:#B08409}",
     // club switcher
-    "html body #page .fo-hb-chips{display:flex;gap:7px;overflow-x:auto;padding:14px 2px 4px;scrollbar-width:thin}",
-    "html body #page button.fo-hb-chip{flex:none;display:inline-flex;align-items:center;gap:7px;background:#FFFEFC !important;border:1px solid rgba(20,28,40,.14) !important;border-radius:999px !important;padding:8px 13px !important;font:600 11.5px/1 Inter,sans-serif !important;color:rgba(20,28,40,.72) !important;cursor:pointer}",
-    "html body #page button.fo-hb-chip u{text-decoration:none;font-weight:800;font-size:10px;background:rgba(176,132,9,.14);color:#8A6A1F;border-radius:999px;padding:3px 7px}",
-    "html body #page button.fo-hb-chip.on{background:#C95532 !important;border-color:#C95532 !important;color:#FFFEFC !important}",
-    "html body #page button.fo-hb-chip.on u{background:rgba(255,255,255,.22);color:#FFFEFC}",
     // plaques
     "html body #page .fo-hb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:11px;margin-top:12px}",
     "html body #page .fo-hb-plq{position:relative;border-radius:14px;padding:14px 15px 13px;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);box-shadow:0 5px 16px rgba(30,38,52,.06)}",
@@ -444,18 +389,8 @@
     "@media (prefers-reduced-motion:no-preference){html body #page .fo-hb-plq.new:after{content:'';position:absolute;inset:0;border-radius:14px;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.75) 47%,transparent 62%);background-size:260% 100%;animation:foHbShine 2.4s ease .4s 2}@keyframes foHbShine{from{background-position:130% 0}to{background-position:-130% 0}}}",
     "html body #page .fo-hb-m{height:6px;border-radius:5px;background:rgba(20,28,40,.09);overflow:hidden;margin-top:9px}",
     "html body #page .fo-hb-m u{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#26436B,#3E6DB2)}",
-    "html body #page .fo-hb-first{display:inline-block;text-decoration:none;font:600 9px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;margin-top:8px;color:rgba(20,28,40,.45)}",
-    "html body #page .fo-hb-first.mine{color:#B44A22}",
     // the race
-    "html body #page .fo-hb-sec{background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:18px;padding:18px 20px;margin-top:14px;box-shadow:0 6px 18px rgba(30,38,52,.07)}",
     "html body #page .fo-hb-say{font:italic 400 12.5px/1.5 Georgia,serif;color:rgba(20,28,40,.6);margin:8px 0 12px}",
-    "html body #page .fo-hb-races{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:5px 22px}",
-    "html body #page .fo-hb-race{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:baseline;border-bottom:1px solid rgba(20,28,40,.07);padding:7px 0}",
-    "html body #page .fo-hb-race b{font:600 12px/1.3 Inter,sans-serif;color:#141C28}",
-    "html body #page .fo-hb-race span{font:600 11.5px/1.3 Inter,sans-serif;color:rgba(20,28,40,.7)}",
-    "html body #page .fo-hb-race span.mine{color:#B44A22}",
-    "html body #page .fo-hb-race span.open{color:rgba(20,28,40,.4);font-style:italic;font-weight:400}",
-    "html body #page .fo-hb-race i{font:400 10px/1.3 Inter,sans-serif;color:rgba(20,28,40,.42);font-style:normal;font-variant-numeric:tabular-nums}",
     "html body #page .fo-hb-foot{display:flex;gap:10px;justify-content:space-between;margin-top:16px;flex-wrap:wrap}",
     "html body #page .fo-hb-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
     "html body #page .fo-hb-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5);text-decoration:none}",
