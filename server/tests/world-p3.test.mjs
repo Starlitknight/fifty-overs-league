@@ -500,6 +500,15 @@ test('011: friendlies - challenge, accept, and the umpire plays the real match',
   assert.ok(list.length >= 3);
   assert.ok(list.some(x => x.status === 'played' && x.text), 'played friendlies carry their result');
   assert.ok(list.some(x => x.status === 'declined'), 'the declined one is on record');
+  // the post carries both clubs' coordinates and can be asked for one pair -
+  // a club's own dossier reads only the friendlies it is itself involved in
+  assert.ok(list.every(x => x.cCountry && x.oCountry && x.cSlot != null && x.oSlot != null),
+    'every friendly says which two clubs it is between');
+  const vsU2 = (await as(U1, `SELECT public.world_my_friendlies('eng', 8) AS f`)).rows[0].f;
+  assert.equal(vsU2.length, 2, 'both eng:8 ties, and nothing else');
+  assert.ok(vsU2.every(x => (x.oCountry === 'eng' && x.oSlot === 8) || (x.cCountry === 'eng' && x.cSlot === 8)));
+  const vsBot = (await as(U1, `SELECT public.world_my_friendlies('ire', 3) AS f`)).rows[0].f;
+  assert.equal(vsBot.length, 1, 'the one tie against the Irish club');
   // friendlies never touch the league record - whatever it was, it still is
   const lgAfter = await computeLeague(pool, 'eng', 1, EPOCH + 102 * DAY);
   assert.equal(lgAfter.roundsPlayed, lgBefore.roundsPlayed, 'league untouched by friendlies');

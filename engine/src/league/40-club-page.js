@@ -44,6 +44,99 @@
   function num(n) { return String(Math.round(+n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
   function ordn(n) { return n + (["th", "st", "nd", "rd"][(n % 100 > 10 && n % 100 < 14) ? 0 : Math.min(n % 10, 4)] || "th"); }
 
+  function jwt() { try { return (window.__foJWT && window.__foJWT()) || ""; } catch (e) { return ""; } }
+  function rpc(fn, args) {
+    return fetch(SB_URL + "/rest/v1/rpc/" + fn, {
+      method: "POST",
+      headers: { apikey: SB_ANON, Authorization: "Bearer " + (jwt() || SB_ANON), "content-type": "application/json" },
+      body: JSON.stringify(args || {})
+    }).then(function (r) { return r.text().then(function (t) {
+      var d = null; try { d = t ? JSON.parse(t) : null; } catch (e) {}
+      if (!r.ok) throw new Error((d && (d.message || d.hint)) || t || ("HTTP " + r.status));
+      return d;
+    }); });
+  }
+
+  // ---- THE CHALLENGE ---------------------------------------------------------
+  // A friendly is arranged where you meet the club, not in a form on a
+  // settings page: you read their side, you fancy it, you name an hour. The
+  // state lives here rather than in the markup because the dossier repaints
+  // four times as the club, the squad and the honours land - a half-typed
+  // kick-off must survive all four.
+  var CH = { key: "", when: "", msg: "", list: null, busy: false };
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function dtLocal(ms) {
+    var d = new Date(ms);
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) +
+      "T" + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+  }
+  var DW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  var MO = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function whenTxt(ms) {
+    try {
+      var d = new Date(ms);
+      return DW[d.getDay()] + " " + d.getDate() + " " + MO[d.getMonth()] + " &middot; " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    } catch (e) { return ""; }
+  }
+
+  // every friendly this manager has against THIS club - the post is filtered
+  // by the pair's coordinates rather than by name, so two clubs sharing a name
+  // in different nations can never show each other's fixtures
+  function loadTies(key, cid, slot) {
+    rpc("world_my_friendlies", { p_country: cid, p_slot: slot })
+      .then(function (rows) {
+        if (CH.key !== key) return;
+        CH.list = Array.isArray(rows) ? rows : [];
+        paintTies();
+      })
+      .catch(function () { if (CH.key === key) { CH.list = []; paintTies(); } });
+  }
+  function tieRows() {
+    if (!CH.list || !CH.list.length) return "";
+    return CH.list.map(function (f) {
+      var when = f.playAtMs ? whenTxt(f.playAtMs) : "";
+      var live = f.playAtMs && Date.now() >= f.playAtMs;
+      var cls = "fo-cp-fr", state, act = "";
+      if (f.incoming) {
+        cls += " in"; state = "they have challenged you";
+        act = "<button type='button' class='fo-cp-fyes' data-id='" + f.id + "'>Accept</button>" +
+              "<button type='button' class='fo-cp-fno' data-id='" + f.id + "'>Decline</button>";
+      } else if (f.status === "offered") {
+        state = "awaiting their reply";
+      } else if (f.status === "accepted") {
+        cls += " on"; state = live ? "in play" : "arranged";
+        if (live) act = "<button type='button' class='fo-cp-fwatch' data-id='" + f.id + "'>Watch</button>";
+      } else if (f.status === "played") {
+        cls += " done"; state = f.text || "played";
+        act = "<button type='button' class='fo-cp-fwatch' data-id='" + f.id + "'>Watch it back</button>";
+      } else {
+        cls += " dim"; state = f.status;
+      }
+      return "<div class='" + cls + "'><b>" + (f.mine ? "You challenged them" : "They challenged you") + "</b>" +
+        "<i>" + when + (state ? " &middot; " + E(state) : "") + "</i>" +
+        (act ? "<span>" + act + "</span>" : "") + "</div>";
+    }).join("");
+  }
+  function paintTies() {
+    var host = document.getElementById("fo-cp-chlist"); if (!host) return;
+    host.innerHTML = tieRows();
+    host.querySelectorAll(".fo-cp-fwatch").forEach(function (b) {
+      b.addEventListener("click", function () { try { window.foWtFriendly(+b.getAttribute("data-id")); } catch (e) {} });
+    });
+    var answer = function (b, accept) {
+      b.disabled = true;
+      rpc("world_friendly_respond", { p_id: +b.getAttribute("data-id"), p_accept: accept })
+        .then(function () { loadTies(CH.key, CH.key.split(":")[0], +CH.key.split(":")[1]); })
+        .catch(function (e) { b.disabled = false; chSay(String(e.message).slice(0, 120)); });
+    };
+    host.querySelectorAll(".fo-cp-fyes").forEach(function (b) { b.addEventListener("click", function () { answer(b, true); }); });
+    host.querySelectorAll(".fo-cp-fno").forEach(function (b) { b.addEventListener("click", function () { answer(b, false); }); });
+  }
+  function chSay(t) {
+    CH.msg = t;
+    var el = document.getElementById("fo-cp-chmsg"); if (el) el.innerHTML = E(t);
+  }
+
   var CLUB_CACHE = {}, SQ_CACHE = {}, HON_CACHE = null;
   function grab(url, cb) {
     fetch(SB_URL + url, { headers: { apikey: SB_ANON } })
@@ -169,6 +262,17 @@
     var lg = null; try { lg = window.__foWorldLg ? window.__foWorldLg.get(cid) : null; } catch (e) {}
     try { if (window.__foWorldLg) window.__foWorldLg.want(cid, function () { if ((location.hash || "").indexOf("#/team") === 0) window.foRenderClubPage(); }); } catch (e) {}
     var rk = null; try { rk = JSON.parse(localStorage.getItem("fo_world_rk") || "null"); } catch (e) {}
+
+    // a different club is a different challenge: forget the last one's hour
+    var chKey = cid + ":" + slot;
+    var canChallenge = !!(cl && !isMine && jwt());
+    if (CH.key !== chKey) {
+      var d0 = new Date(Date.now() + 3 * 3600000); d0.setMinutes(0, 0, 0);
+      CH = { key: chKey, when: dtLocal(d0.getTime()), msg: "", list: null, busy: false, at: 0 };
+    }
+    // the dossier paints four times per visit as the club, the squad and the
+    // honours land - ask the post once, but ask again on a real return
+    if (canChallenge && Date.now() - (CH.at || 0) > 30000) { CH.at = Date.now(); loadTies(chKey, cid, slot); }
 
     var paint = function (info, sq, hon) {
       // A CLUB LIVES IN ONE OF TWO TABLES. Reading table alone left every
@@ -370,6 +474,35 @@
           "</div>";
       }
 
+      // ---- the challenge ---------------------------------------------------
+      // Any club on earth can be played, and this is where you ask. The hour
+      // is yours to name; a club with nobody at the wheel takes it on the
+      // spot, a managed one has until the teamsheets lock to answer. Nothing
+      // here needs the other manager awake: whatever orders he last filed are
+      // the side that walks out, which is the only way a friendly can be
+      // offered to somebody asleep in another timezone.
+      var chHTML = "";
+      if (canChallenge) {
+        // the earliest legal kick-off, rounded UP to a whole local hour so the
+        // picker's step and the default both sit on the same grid (a half-hour
+        // timezone would otherwise make every offered slot invalid)
+        var mn = new Date(Date.now() + 90 * 60000); mn.setMinutes(0, 0, 0);
+        if (mn.getTime() < Date.now() + 90 * 60000) mn.setTime(mn.getTime() + 3600000);
+        var minMs = mn.getTime();
+        chHTML = "<div class='fo-cp-ch'>" +
+          "<div class='fo-cp-chh'>&#9876; Challenge " + E(name) + " to a friendly</div>" +
+          "<div class='fo-cp-chrow'>" +
+          "<input type='datetime-local' id='fo-cp-chwhen' step='3600'" +
+          " min='" + dtLocal(minMs) + "' max='" + dtLocal(Date.now() + 7 * 86400000) + "'" +
+          " value='" + E(CH.when) + "' aria-label='Date and hour of the match'>" +
+          "<button type='button' id='fo-cp-chgo'" + (CH.busy ? " disabled" : "") + ">" + (CH.busy ? "Sending&hellip;" : "Challenge") + "</button>" +
+          "</div>" +
+          "<div class='fo-cp-chmsg' id='fo-cp-chmsg'>" + (CH.msg ? E(CH.msg)
+            : (mgr ? "Their manager has until an hour before play to accept." : "Nobody manages them - they accept on the spot.") +
+              " Your latest orders are the side that plays.") + "</div>" +
+          "<div id='fo-cp-chlist'></div></div>";
+      }
+
       var TABS = [["squad", "Squad"], ["record", "Record"], ["honours", "Honours"]];
       var tabBar = "<div class='fo-cp-tabs'>" + TABS.map(function (t) {
         return "<a class='" + (tab === t[0] ? "on" : "") + "' href='#/team?c=" + encodeURIComponent(cid) + "&s=" + slot + "&t=" + t[0] + "'>" + t[1] + "</a>";
@@ -392,6 +525,7 @@
         "<div class='fo-cp-in'>" +
         "<a class='fo-cp-back' href='#/nation?n=" + encodeURIComponent(cid) + "'>&lsaquo; " + E(natName(cid)) + " league</a>" +
         (isMine ? "<div id='fo-cp-mine'></div>" : "") +
+        chHTML +
         tabBar + bodyHTML +
         "<div class='fo-cp-foot'><a href='#/rankings'>The world rankings &rsaquo;</a><a href='#/nation?n=" + encodeURIComponent(cid) + "'>The league table &rsaquo;</a></div>" +
         "</div></div>";
@@ -402,6 +536,34 @@
           location.hash = "#/team?c=" + encodeURIComponent(cid) + "&s=" + slot + "&t=" + tab + "&o=" + sel.value;
         });
       } catch (eSo) {}
+
+      if (canChallenge) {
+        try {
+          var whenEl = document.getElementById("fo-cp-chwhen");
+          var goEl = document.getElementById("fo-cp-chgo");
+          if (whenEl) whenEl.addEventListener("input", function () { CH.when = whenEl.value; });
+          if (goEl) goEl.addEventListener("click", function () {
+            var ms = NaN; try { ms = new Date(whenEl.value).getTime(); } catch (eW) {}
+            if (!(ms > 0)) { chSay("Name a date and hour for the match."); return; }
+            if (ms < Date.now() + 90 * 60000) { chSay("Pick a time at least 90 minutes from now - lineups need their window."); return; }
+            if (ms > Date.now() + 7 * 86400000) { chSay("Pick a time within the next seven days."); return; }
+            CH.busy = true; goEl.disabled = true; goEl.textContent = "Sending…";
+            rpc("world_friendly_challenge", { p_country: cid, p_slot: slot, p_play_at_ms: ms })
+              .then(function (r) {
+                CH.busy = false; goEl.disabled = false; goEl.textContent = "Challenge";
+                chSay(r && r.humanOpponent
+                  ? "Challenge sent. Their manager has until an hour before the match to accept."
+                  : "The match is on. Your latest orders play unless you file a lineup for it.");
+                loadTies(CH.key, cid, slot);
+              })
+              .catch(function (e) {
+                CH.busy = false; goEl.disabled = false; goEl.textContent = "Challenge";
+                chSay(String(e.message || "The world could not be reached.").slice(0, 140));
+              });
+          });
+          paintTies();
+        } catch (eCh) {}
+      }
 
       // YOUR OWN CLUB WEARS THE NAME IT WAS CHRISTENED WITH AT ITS FOUNDING.
       // The world's register is the only register; a device carrying an older
@@ -519,6 +681,23 @@
       ".fo-cp-note u{text-decoration:none;font:italic 420 12px/1.5 'Fraunces',Georgia,serif;color:rgba(12,27,51,.55)}",
       ".fo-cp-dim{font:italic 420 13px/1.6 'Fraunces',Georgia,serif;color:rgba(12,27,51,.55);margin:6px 0 0}",
       ".fo-cp-dim.foot{margin-top:14px;padding-top:12px;border-top:1px solid rgba(12,27,51,.08)}",
+      // the challenge: one line of paper above the tabs, the same stock the
+      // panel beneath it is printed on
+      ".fo-cp-ch{background:var(--paper);border:1px solid rgba(12,27,51,.14);border-left:3px solid #C8542F;border-radius:12px;padding:13px 15px;margin-bottom:12px}",
+      ".fo-cp-chh{font:700 11px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--navy)}",
+      ".fo-cp-chrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}",
+      "html body #page .fo-cp-chrow input{flex:1 1 190px;min-width:0;background:#FFFDF7 !important;color:var(--navy) !important;border:1px solid rgba(12,27,51,.2);border-radius:9px;padding:10px 11px;min-height:44px;font:600 12.5px/1 Inter,sans-serif}",
+      "html body #page .fo-cp-chrow button{font:700 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFDF7 !important;background:linear-gradient(180deg,#E8894A,#C8542F) !important;border:0 !important;border-radius:9px !important;padding:12px 20px !important;min-height:44px;cursor:pointer}",
+      "html body #page .fo-cp-chrow button:disabled{opacity:.55;cursor:default}",
+      ".fo-cp-chmsg{margin-top:8px;font:500 11.5px/1.5 Inter,sans-serif;color:rgba(12,27,51,.6)}",
+      ".fo-cp-fr{display:flex;align-items:center;gap:9px;flex-wrap:wrap;border-top:1px solid rgba(12,27,51,.09);margin-top:9px;padding-top:9px}",
+      ".fo-cp-fr b{font:600 12.5px/1.3 Inter,sans-serif;color:var(--navy)}",
+      ".fo-cp-fr i{font-style:normal;font:500 11.5px/1.3 Inter,sans-serif;color:rgba(12,27,51,.55)}",
+      ".fo-cp-fr.on i{color:var(--grn)}",
+      ".fo-cp-fr.dim{opacity:.5}",
+      ".fo-cp-fr span{margin-left:auto;display:inline-flex;gap:6px}",
+      "html body #page .fo-cp-fr button{font:700 10px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--navy) !important;background:#FFFDF7 !important;border:1px solid rgba(12,27,51,.22) !important;border-radius:999px !important;padding:9px 13px !important;min-height:44px;cursor:pointer}",
+      "html body #page .fo-cp-fr .fo-cp-fyes,html body #page .fo-cp-fr .fo-cp-fwatch{color:#FFFDF7 !important;background:var(--grn) !important;border-color:var(--grn) !important}",
       ".fo-cp-mineact{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}",
       "html body #page .fo-cp-mineact a{font:600 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#B44A22 !important;background:#FFFDF7;border:1px solid rgba(12,27,51,.14);border-radius:999px;padding:9px 14px;text-decoration:none !important}",
       "html body #page .fo-cp-cta{display:block;text-align:center;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFDF7 !important;background:linear-gradient(180deg,#E8894A,#C8542F);border-radius:12px;padding:14px;text-decoration:none !important;box-shadow:0 10px 26px rgba(200,84,47,.3);margin:14px 0 10px}",

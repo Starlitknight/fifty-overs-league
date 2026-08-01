@@ -10033,7 +10033,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260801-1318-8846da";
+  var FO_BUILD = "20260801-1538-50754f";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -39878,6 +39878,99 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function num(n) { return String(Math.round(+n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
   function ordn(n) { return n + (["th", "st", "nd", "rd"][(n % 100 > 10 && n % 100 < 14) ? 0 : Math.min(n % 10, 4)] || "th"); }
 
+  function jwt() { try { return (window.__foJWT && window.__foJWT()) || ""; } catch (e) { return ""; } }
+  function rpc(fn, args) {
+    return fetch(SB_URL + "/rest/v1/rpc/" + fn, {
+      method: "POST",
+      headers: { apikey: SB_ANON, Authorization: "Bearer " + (jwt() || SB_ANON), "content-type": "application/json" },
+      body: JSON.stringify(args || {})
+    }).then(function (r) { return r.text().then(function (t) {
+      var d = null; try { d = t ? JSON.parse(t) : null; } catch (e) {}
+      if (!r.ok) throw new Error((d && (d.message || d.hint)) || t || ("HTTP " + r.status));
+      return d;
+    }); });
+  }
+
+  // ---- THE CHALLENGE ---------------------------------------------------------
+  // A friendly is arranged where you meet the club, not in a form on a
+  // settings page: you read their side, you fancy it, you name an hour. The
+  // state lives here rather than in the markup because the dossier repaints
+  // four times as the club, the squad and the honours land - a half-typed
+  // kick-off must survive all four.
+  var CH = { key: "", when: "", msg: "", list: null, busy: false };
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function dtLocal(ms) {
+    var d = new Date(ms);
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) +
+      "T" + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+  }
+  var DW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  var MO = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function whenTxt(ms) {
+    try {
+      var d = new Date(ms);
+      return DW[d.getDay()] + " " + d.getDate() + " " + MO[d.getMonth()] + " &middot; " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    } catch (e) { return ""; }
+  }
+
+  // every friendly this manager has against THIS club - the post is filtered
+  // by the pair's coordinates rather than by name, so two clubs sharing a name
+  // in different nations can never show each other's fixtures
+  function loadTies(key, cid, slot) {
+    rpc("world_my_friendlies", { p_country: cid, p_slot: slot })
+      .then(function (rows) {
+        if (CH.key !== key) return;
+        CH.list = Array.isArray(rows) ? rows : [];
+        paintTies();
+      })
+      .catch(function () { if (CH.key === key) { CH.list = []; paintTies(); } });
+  }
+  function tieRows() {
+    if (!CH.list || !CH.list.length) return "";
+    return CH.list.map(function (f) {
+      var when = f.playAtMs ? whenTxt(f.playAtMs) : "";
+      var live = f.playAtMs && Date.now() >= f.playAtMs;
+      var cls = "fo-cp-fr", state, act = "";
+      if (f.incoming) {
+        cls += " in"; state = "they have challenged you";
+        act = "<button type='button' class='fo-cp-fyes' data-id='" + f.id + "'>Accept</button>" +
+              "<button type='button' class='fo-cp-fno' data-id='" + f.id + "'>Decline</button>";
+      } else if (f.status === "offered") {
+        state = "awaiting their reply";
+      } else if (f.status === "accepted") {
+        cls += " on"; state = live ? "in play" : "arranged";
+        if (live) act = "<button type='button' class='fo-cp-fwatch' data-id='" + f.id + "'>Watch</button>";
+      } else if (f.status === "played") {
+        cls += " done"; state = f.text || "played";
+        act = "<button type='button' class='fo-cp-fwatch' data-id='" + f.id + "'>Watch it back</button>";
+      } else {
+        cls += " dim"; state = f.status;
+      }
+      return "<div class='" + cls + "'><b>" + (f.mine ? "You challenged them" : "They challenged you") + "</b>" +
+        "<i>" + when + (state ? " &middot; " + E(state) : "") + "</i>" +
+        (act ? "<span>" + act + "</span>" : "") + "</div>";
+    }).join("");
+  }
+  function paintTies() {
+    var host = document.getElementById("fo-cp-chlist"); if (!host) return;
+    host.innerHTML = tieRows();
+    host.querySelectorAll(".fo-cp-fwatch").forEach(function (b) {
+      b.addEventListener("click", function () { try { window.foWtFriendly(+b.getAttribute("data-id")); } catch (e) {} });
+    });
+    var answer = function (b, accept) {
+      b.disabled = true;
+      rpc("world_friendly_respond", { p_id: +b.getAttribute("data-id"), p_accept: accept })
+        .then(function () { loadTies(CH.key, CH.key.split(":")[0], +CH.key.split(":")[1]); })
+        .catch(function (e) { b.disabled = false; chSay(String(e.message).slice(0, 120)); });
+    };
+    host.querySelectorAll(".fo-cp-fyes").forEach(function (b) { b.addEventListener("click", function () { answer(b, true); }); });
+    host.querySelectorAll(".fo-cp-fno").forEach(function (b) { b.addEventListener("click", function () { answer(b, false); }); });
+  }
+  function chSay(t) {
+    CH.msg = t;
+    var el = document.getElementById("fo-cp-chmsg"); if (el) el.innerHTML = E(t);
+  }
+
   var CLUB_CACHE = {}, SQ_CACHE = {}, HON_CACHE = null;
   function grab(url, cb) {
     fetch(SB_URL + url, { headers: { apikey: SB_ANON } })
@@ -40004,6 +40097,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     try { if (window.__foWorldLg) window.__foWorldLg.want(cid, function () { if ((location.hash || "").indexOf("#/team") === 0) window.foRenderClubPage(); }); } catch (e) {}
     var rk = null; try { rk = JSON.parse(localStorage.getItem("fo_world_rk") || "null"); } catch (e) {}
 
+    // a different club is a different challenge: forget the last one's hour
+    var chKey = cid + ":" + slot;
+    var canChallenge = !!(cl && !isMine && jwt());
+    if (CH.key !== chKey) {
+      var d0 = new Date(Date.now() + 3 * 3600000); d0.setMinutes(0, 0, 0);
+      CH = { key: chKey, when: dtLocal(d0.getTime()), msg: "", list: null, busy: false, at: 0 };
+    }
+    // the dossier paints four times per visit as the club, the squad and the
+    // honours land - ask the post once, but ask again on a real return
+    if (canChallenge && Date.now() - (CH.at || 0) > 30000) { CH.at = Date.now(); loadTies(chKey, cid, slot); }
+
     var paint = function (info, sq, hon) {
       // A CLUB LIVES IN ONE OF TWO TABLES. Reading table alone left every
       // Division Two club nameless, positionless and with the wrong opponents
@@ -40117,12 +40221,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       else if (sortKey === "wage") sorted.sort(function (a, b) { return (b.wage || 0) - (a.wage || 0); });
       else if (sortKey === "name") sorted.sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
 
+      // the red star, on a rival's men as on your own: a club dossier that does
+      // not say who is an international is hiding the thing you scout for
+      var natStar = function (nm2) {
+        try { return window.foNatStar ? window.foNatStar(nm2, slot, { rid: cid }) : ""; } catch (eNs) { return ""; }
+      };
       var star = sorted[0];
       var starCard = star ? "<a class='fo-cp-star' href='" + playerHref(cid, slot, isMine, star.name) + "'>" +
         "<img class='fo-cp-face' src='" + faceOf(star) + "' alt='' onerror=\"this.style.display='none'\">" +
         "<div class='fo-cp-starin'>" +
         "<div class='fo-cp-starn'>" + (natFlag(star.nat) ? "<img src='" + natFlag(star.nat) + "' alt='' onerror=\"this.style.display='none'\">" : "") +
-        "<b>" + E(star.name) + "</b></div>" +
+        "<b>" + E(star.name) + natStar(star.name) + "</b></div>" +
         "<div class='fo-cp-starr'>" + E(roleWord(star.role)) + "</div>" +
         "<div class='fo-cp-starf'><i>Form</i><span class='fo-cp-dots'>" + formDots(star.form) + "</span></div>" +
         "<div class='fo-cp-startags'>" + (star.talents || []).slice(0, 2).map(function (t) {
@@ -40137,7 +40246,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         return "<a class='fo-cp-row' href='" + playerHref(cid, slot, isMine, p.name) + "'>" +
           "<span class='rk'>" + (i + 2) + "</span>" +
           "<span class='rl' title='" + E(roleWord(p.role)) + "'>" + roleGlyph(p) + "</span>" +
-          "<span class='nm'><b>" + E(p.name) + "</b><i>" + E(p.bowl && p.bowl !== "Does not bowl" ? p.bowl : roleWord(p.role)) + "</i></span>" +
+          "<span class='nm'><b>" + E(p.name) + natStar(p.name) + "</b><i>" + E(p.bowl && p.bowl !== "Does not bowl" ? p.bowl : roleWord(p.role)) + "</i></span>" +
           "<span class='ov'>" + (p.ovr || "&mdash;") + "</span>" +
           "<span class='fm'>" + formDots(p.form) + "</span>" +
           "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
@@ -40199,6 +40308,35 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           "</div>";
       }
 
+      // ---- the challenge ---------------------------------------------------
+      // Any club on earth can be played, and this is where you ask. The hour
+      // is yours to name; a club with nobody at the wheel takes it on the
+      // spot, a managed one has until the teamsheets lock to answer. Nothing
+      // here needs the other manager awake: whatever orders he last filed are
+      // the side that walks out, which is the only way a friendly can be
+      // offered to somebody asleep in another timezone.
+      var chHTML = "";
+      if (canChallenge) {
+        // the earliest legal kick-off, rounded UP to a whole local hour so the
+        // picker's step and the default both sit on the same grid (a half-hour
+        // timezone would otherwise make every offered slot invalid)
+        var mn = new Date(Date.now() + 90 * 60000); mn.setMinutes(0, 0, 0);
+        if (mn.getTime() < Date.now() + 90 * 60000) mn.setTime(mn.getTime() + 3600000);
+        var minMs = mn.getTime();
+        chHTML = "<div class='fo-cp-ch'>" +
+          "<div class='fo-cp-chh'>&#9876; Challenge " + E(name) + " to a friendly</div>" +
+          "<div class='fo-cp-chrow'>" +
+          "<input type='datetime-local' id='fo-cp-chwhen' step='3600'" +
+          " min='" + dtLocal(minMs) + "' max='" + dtLocal(Date.now() + 7 * 86400000) + "'" +
+          " value='" + E(CH.when) + "' aria-label='Date and hour of the match'>" +
+          "<button type='button' id='fo-cp-chgo'" + (CH.busy ? " disabled" : "") + ">" + (CH.busy ? "Sending&hellip;" : "Challenge") + "</button>" +
+          "</div>" +
+          "<div class='fo-cp-chmsg' id='fo-cp-chmsg'>" + (CH.msg ? E(CH.msg)
+            : (mgr ? "Their manager has until an hour before play to accept." : "Nobody manages them - they accept on the spot.") +
+              " Your latest orders are the side that plays.") + "</div>" +
+          "<div id='fo-cp-chlist'></div></div>";
+      }
+
       var TABS = [["squad", "Squad"], ["record", "Record"], ["honours", "Honours"]];
       var tabBar = "<div class='fo-cp-tabs'>" + TABS.map(function (t) {
         return "<a class='" + (tab === t[0] ? "on" : "") + "' href='#/team?c=" + encodeURIComponent(cid) + "&s=" + slot + "&t=" + t[0] + "'>" + t[1] + "</a>";
@@ -40221,6 +40359,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-cp-in'>" +
         "<a class='fo-cp-back' href='#/nation?n=" + encodeURIComponent(cid) + "'>&lsaquo; " + E(natName(cid)) + " league</a>" +
         (isMine ? "<div id='fo-cp-mine'></div>" : "") +
+        chHTML +
         tabBar + bodyHTML +
         "<div class='fo-cp-foot'><a href='#/rankings'>The world rankings &rsaquo;</a><a href='#/nation?n=" + encodeURIComponent(cid) + "'>The league table &rsaquo;</a></div>" +
         "</div></div>";
@@ -40231,6 +40370,34 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           location.hash = "#/team?c=" + encodeURIComponent(cid) + "&s=" + slot + "&t=" + tab + "&o=" + sel.value;
         });
       } catch (eSo) {}
+
+      if (canChallenge) {
+        try {
+          var whenEl = document.getElementById("fo-cp-chwhen");
+          var goEl = document.getElementById("fo-cp-chgo");
+          if (whenEl) whenEl.addEventListener("input", function () { CH.when = whenEl.value; });
+          if (goEl) goEl.addEventListener("click", function () {
+            var ms = NaN; try { ms = new Date(whenEl.value).getTime(); } catch (eW) {}
+            if (!(ms > 0)) { chSay("Name a date and hour for the match."); return; }
+            if (ms < Date.now() + 90 * 60000) { chSay("Pick a time at least 90 minutes from now - lineups need their window."); return; }
+            if (ms > Date.now() + 7 * 86400000) { chSay("Pick a time within the next seven days."); return; }
+            CH.busy = true; goEl.disabled = true; goEl.textContent = "Sending…";
+            rpc("world_friendly_challenge", { p_country: cid, p_slot: slot, p_play_at_ms: ms })
+              .then(function (r) {
+                CH.busy = false; goEl.disabled = false; goEl.textContent = "Challenge";
+                chSay(r && r.humanOpponent
+                  ? "Challenge sent. Their manager has until an hour before the match to accept."
+                  : "The match is on. Your latest orders play unless you file a lineup for it.");
+                loadTies(CH.key, cid, slot);
+              })
+              .catch(function (e) {
+                CH.busy = false; goEl.disabled = false; goEl.textContent = "Challenge";
+                chSay(String(e.message || "The world could not be reached.").slice(0, 140));
+              });
+          });
+          paintTies();
+        } catch (eCh) {}
+      }
 
       // YOUR OWN CLUB WEARS THE NAME IT WAS CHRISTENED WITH AT ITS FOUNDING.
       // The world's register is the only register; a device carrying an older
@@ -40348,6 +40515,23 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-cp-note u{text-decoration:none;font:italic 420 12px/1.5 'Fraunces',Georgia,serif;color:rgba(12,27,51,.55)}",
       ".fo-cp-dim{font:italic 420 13px/1.6 'Fraunces',Georgia,serif;color:rgba(12,27,51,.55);margin:6px 0 0}",
       ".fo-cp-dim.foot{margin-top:14px;padding-top:12px;border-top:1px solid rgba(12,27,51,.08)}",
+      // the challenge: one line of paper above the tabs, the same stock the
+      // panel beneath it is printed on
+      ".fo-cp-ch{background:var(--paper);border:1px solid rgba(12,27,51,.14);border-left:3px solid #C8542F;border-radius:12px;padding:13px 15px;margin-bottom:12px}",
+      ".fo-cp-chh{font:700 11px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--navy)}",
+      ".fo-cp-chrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}",
+      "html body #page .fo-cp-chrow input{flex:1 1 190px;min-width:0;background:#FFFDF7 !important;color:var(--navy) !important;border:1px solid rgba(12,27,51,.2);border-radius:9px;padding:10px 11px;min-height:44px;font:600 12.5px/1 Inter,sans-serif}",
+      "html body #page .fo-cp-chrow button{font:700 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFDF7 !important;background:linear-gradient(180deg,#E8894A,#C8542F) !important;border:0 !important;border-radius:9px !important;padding:12px 20px !important;min-height:44px;cursor:pointer}",
+      "html body #page .fo-cp-chrow button:disabled{opacity:.55;cursor:default}",
+      ".fo-cp-chmsg{margin-top:8px;font:500 11.5px/1.5 Inter,sans-serif;color:rgba(12,27,51,.6)}",
+      ".fo-cp-fr{display:flex;align-items:center;gap:9px;flex-wrap:wrap;border-top:1px solid rgba(12,27,51,.09);margin-top:9px;padding-top:9px}",
+      ".fo-cp-fr b{font:600 12.5px/1.3 Inter,sans-serif;color:var(--navy)}",
+      ".fo-cp-fr i{font-style:normal;font:500 11.5px/1.3 Inter,sans-serif;color:rgba(12,27,51,.55)}",
+      ".fo-cp-fr.on i{color:var(--grn)}",
+      ".fo-cp-fr.dim{opacity:.5}",
+      ".fo-cp-fr span{margin-left:auto;display:inline-flex;gap:6px}",
+      "html body #page .fo-cp-fr button{font:700 10px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--navy) !important;background:#FFFDF7 !important;border:1px solid rgba(12,27,51,.22) !important;border-radius:999px !important;padding:9px 13px !important;min-height:44px;cursor:pointer}",
+      "html body #page .fo-cp-fr .fo-cp-fyes,html body #page .fo-cp-fr .fo-cp-fwatch{color:#FFFDF7 !important;background:var(--grn) !important;border-color:var(--grn) !important}",
       ".fo-cp-mineact{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}",
       "html body #page .fo-cp-mineact a{font:600 11px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#B44A22 !important;background:#FFFDF7;border:1px solid rgba(12,27,51,.14);border-radius:999px;padding:9px 14px;text-decoration:none !important}",
       "html body #page .fo-cp-cta{display:block;text-align:center;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFDF7 !important;background:linear-gradient(180deg,#E8894A,#C8542F);border-radius:12px;padding:14px;text-decoration:none !important;box-shadow:0 10px 26px rgba(200,84,47,.3);margin:14px 0 10px}",
@@ -40413,6 +40597,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function hashPath() { return (location.hash || "").split("?")[0]; }
   function onPage() { return hashPath() === "#/player"; }
   function qName() { var m = /[?&]n=([^&]+)/.exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : ""; }
+  // THE RED STAR. A man named in his country's current fifteen wears it
+  // wherever his name is written - the same mark the squad room and the
+  // teamsheets use, so an international is recognisable in every room.
+  function natStar(name, rid, slot, big) {
+    try {
+      if (!window.foNatStar) return "";
+      return window.foNatStar(name, slot == null ? null : slot, { rid: rid || undefined, big: !!big });
+    } catch (e) { return ""; }
+  }
   // which seat in the world this device holds - the address of your own club
   function worldClaim() {
     try { return window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); }
@@ -40650,7 +40843,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   // ---- the shell -------------------------------------------------------------
-  var TABS = [["overview", "Overview"], ["career", "Career"], ["matches", "Matches"], ["dev", "Development"]];
+  // A CAP KEEPS ITS OWN BOOK. International runs never swell a club record, so
+  // they were a four-figure footnote at the bottom of somebody else's page.
+  // They get a page.
+  var TABS = [["overview", "Overview"], ["career", "Career"], ["country", "Country"], ["matches", "Matches"], ["dev", "Development"]];
   var TAB = "overview";
   function qp(k) { var m = new RegExp("[?&]" + k + "=([^&]*)").exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : ""; }
 
@@ -40782,7 +40978,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "<span class='fo-pp-no'>No. " + no + "/199</span></div>" +
       "<div class='fo-pp-id'>" +
       "<div class='fo-pp-k'>" + E(kindLbl(p).toUpperCase()) + " &middot; " + (p.hand === "L" ? "LHB" : "RHB") + " &middot; " + E(String(p.nat || "").toUpperCase()) + "</div>" +
-      "<h1>" + E(p.name) + (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
+      "<h1>" + E(p.name) + natStar(p.name, (hit.world && hit.world.rid) || null, (hit.world && hit.world.slot), true) +
+      (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
       "<p class='fo-pp-prov'>" + E(pv.how) + pv.born + "</p>" +
       "<div class='fo-pp-strip'>" +
       "<div title='" + ageTitle(p) + "'><b>" + ageHTML(p) + "</b><i>Age</i></div>" +
@@ -40832,6 +41029,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         idChips.map(function (c) { return "<span><i>" + c[1] + "</i>" + E(c[0]) + "</span>"; }).join("") +
         "<span><i>&#9734;</i>No. " + no + "/199</span></div></div>" +
         "</div>";
+    } else if (TAB === "country") {
+      var myCid = "";
+      try {
+        var cl9 = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+        myCid = (hit.world && hit.world.rid) || (cl9 && cl9.country) || "";
+      } catch (eCi) {}
+      room = countryRoom(myCid, p, function () { if (onPage()) build(); });
     } else if (TAB === "matches") {
       var fx = nextFixtureFor(team.name || "");
       var spot = xiSpot(p, team);
@@ -41011,6 +41215,44 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var n = NAT_SNAP.nations[cid];
     return (n && n.record && n.record[name]) || null;
   }
+  // ---- THE COUNTRY ROOM ------------------------------------------------------
+  // What a cap is worth, on its own page: the caps, the runs, the wickets, and
+  // whether the selectors have him in the fifteen as it stands.
+  function countryRoom(cid, pl, again) {
+    var kv = function (k, v) { return "<div><b>" + v + "</b><i>" + k + "</i></div>"; };
+    var nm = (pl && pl.name) || "";
+    var rec = cid ? servedIntl(cid, nm, again) : null;
+    var inSquad = "";
+    try { inSquad = window.foNatStar ? window.foNatStar(nm, null, { rid: cid || undefined }) : ""; } catch (e) {}
+    var natNm = "";
+    try {
+      var r0 = (window.__foCxAPI.regions() || []).filter(function (x) { return x.id === cid; })[0];
+      natNm = (r0 && r0.nm) || "";
+    } catch (e2) {}
+    var flag = ""; try { flag = window.foFlag ? window.foFlag(pl && pl.nat) : ""; } catch (e3) {}
+    var head = "<h3>" + (natNm ? E(natNm) : "For his country") +
+      "<span>" + (inSquad ? "in the current fifteen" : "not in the current fifteen") + "</span></h3>";
+    if (!rec || !rec.caps) {
+      return "<div class='fo-pp-col'><div class='fo-pp-card'>" + head +
+        "<p class='fo-pp-dim'>" + (cid ? "Uncapped." : "The world has not answered for this club yet.") + "</p>" +
+        "</div></div>" +
+        "<div class='fo-pp-rail'><div class='fo-pp-card'><h3>The windows</h3>" +
+        "<p class='fo-pp-dim'>Selectors name a fifteen at rounds 5, 9 and 13.</p>" +
+        "<a class='fo-pp-more' href='#/nations'>The international game &rsaquo;</a></div></div>";
+    }
+    var sr = rec.balls ? Math.round(1000 * (rec.runs || 0) / rec.balls) / 10 : null;
+    return "<div class='fo-pp-col'><div class='fo-pp-card'>" + head +
+      "<div class='fo-pp-mini wide'>" +
+      kv("Caps", rec.caps) + kv("Runs", rec.runs || 0) + kv("Best", rec.hs || 0) +
+      (sr == null ? "" : kv("Strike rate", sr)) +
+      kv("Wickets", rec.wkts || 0) +
+      kv("Best bowling", rec.bb ? rec.bb.w + "/" + rec.bb.r : "&mdash;") +
+      "</div></div></div>" +
+      "<div class='fo-pp-rail'><div class='fo-pp-card'><h3>" + (flag || "") + " The cap</h3>" +
+      "<p class='fo-pp-dim'>A cap keeps its own book.</p>" +
+      "<a class='fo-pp-more' href='#/nations'>The international game &rsaquo;</a></div></div>";
+  }
+
   function servedFace(sp) {
     try {
       if (window.foPkArt) return ART() + window.foPkArt({
@@ -41055,7 +41297,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<span class='fo-pp-no'>No. " + no + "/199</span></div>" +
         "<div class='fo-pp-id'>" +
         "<div class='fo-pp-k'>" + E(kind.toUpperCase()) + " &middot; " + (sp.hand === "L" ? "LHB" : "RHB") + " &middot; " + E(String(sp.nat || "").toUpperCase()) + "</div>" +
-        "<h1>" + E(sp.name) + (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
+        "<h1>" + E(sp.name) + natStar(sp.name, cid, slot, true) +
+        (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
         "<p class='fo-pp-prov'>Scouted from the boundary &middot; " + E(clubNm || "a world club") + "</p>" +
         "<div class='fo-pp-strip'>" +
         "<div title='" + ageTitle(sp) + "'><b>" + ageHTML(sp) + "</b><i>Age</i></div>" +
@@ -41088,7 +41331,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         kv("Best", intl.hs || 0) + kv("Wickets", intl.wkts || 0) + "</div>" +
         "</div>";
       var room;
-      if (CARD_TAB === "career") {
+      if (CARD_TAB === "country") {
+        room = countryRoom(cid, sp, function () { if (onPage()) buildCard(cid, slot, name); });
+      } else if (CARD_TAB === "career") {
         room = "<div class='fo-pp-col'><div class='fo-pp-card'><h3>Career record<span>All league cricket</span></h3>" +
           (caps ? "<div class='fo-pp-mini wide'>" + kv("Matches", caps) + kv("Runs", c.runs || 0) +
             kv("Best", c.hs || 0) + kv("Strike rate", sr) +
@@ -41121,7 +41366,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       wrap.innerHTML = "<a class='fo-pp-back' href='#/team?c=" + E(cid) + "&s=" + slot + "'>&lsaquo; " + E(clubNm || "The club") + "</a>" +
         plate +
         "<div class='fo-pp-tabs'>" +
-        [["overview", "Overview"], ["career", "Career"]].map(function (t) {
+        [["overview", "Overview"], ["career", "Career"], ["country", "Country"]].map(function (t) {
           return "<a class='" + (CARD_TAB === t[0] ? "on" : "") + "' data-t='" + t[0] + "' href='javascript:void 0'>" + t[1] + "</a>";
         }).join("") + "</div>" +
         "<div class='fo-pp-body'>" + room + "</div>";
@@ -42569,13 +42814,28 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     // counties never said which country had picked them; the card's heading
     // knew and the men did not. Every international wears his flag now, here
     // and in the caps book.
+    // THE RED STAR, ON THE PAGE THE SQUAD IS ON. A man wears it in every other
+    // room in the game the moment his country names him, and the one list that
+    // IS that naming had nothing. The mark reads the nation's own snapshot, so
+    // the page has to have asked for it - and repaint when it lands.
+    var natStar = function (nm2, slot2) {
+      try { return window.foNatStar ? window.foNatStar(nm2, slot2 == null ? null : (slot2 | 0), { rid: ST.nation }) : ""; }
+      catch (eS) { return ""; }
+    };
+    try {
+      if (window.__foWorldLg && window.__foWorldLg.want) {
+        window.__foWorldLg.want(ST.nation, function () {
+          try { if ((location.hash || "").split("?")[0] === "#/nations") window.foRenderNationsPage(); } catch (eR) {}
+        });
+      }
+    } catch (eW) {}
     var natFlag = "<img class='fo-nat-flag' src='" + flagOf(ST.nation) + "' alt='" + E(n.name || ST.nation) +
       "' onerror=\"this.style.display='none'\">";
     var squad = (n.squad || []).map(function (m, i) {
       var isMine = myClub && m.club === myClub;
       return manRow("fo-nat-man" + (isMine ? " mine" : ""),
         "<i>" + (i + 1) + "</i>" + natFlag +
-        "<b>" + E(m.name) + "</b><span>" + E(m.club || "") +
+        "<b>" + E(m.name) + natStar(m.name, m.slot) + "</b><span>" + E(m.club || "") +
         (m.age ? " &middot; " + m.age : "") + "</span>" +
         "<u>" + (m.caps ? m.caps + " cap" + (m.caps === 1 ? "" : "s") : "uncapped") + "</u>",
         m.name, m.slot);
@@ -42589,7 +42849,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var tours = (n.tours || []).map(tieRow).join("");
     var caps = (n.caps || []).map(function (c, i) {
       return manRow("fo-nat-man",
-        "<i>" + (i + 1) + "</i>" + natFlag + "<b>" + E(c.name) + "</b>" +
+        "<i>" + (i + 1) + "</i>" + natFlag + "<b>" + E(c.name) + natStar(c.name) + "</b>" +
         "<span>" + c.caps + " cap" + (c.caps === 1 ? "" : "s") +
         (c.runs ? " &middot; " + c.runs + " runs" + (c.hs ? " (" + c.hs + " best)" : "") : "") +
         (c.wkts ? " &middot; " + c.wkts + " wickets" + (c.bb ? " (" + c.bb.w + "-" + c.bb.r + ")" : "") : "") +
