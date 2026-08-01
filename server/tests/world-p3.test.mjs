@@ -870,6 +870,52 @@ test('016: the nets, the face and the money all belong to the world', async () =
   assert.ok(Number(s.bank) > 0);
 });
 
+// THE STATS CENTRE: every man in the league with the columns a scorer keeps,
+// each one recomputed off the banked cards rather than counted as it happens.
+test('016b: the stats centre adds up to the scorecards it came from', async () => {
+  const body = (await pool.query(
+    `SELECT body FROM snapshots WHERE key='stats/eng'`)).rows[0].body;
+  assert.ok(body && Array.isArray(body.players), 'the stats document exists');
+  const P = body.players;
+  assert.ok(P.length > 60, 'the whole league, not a top five: ' + P.length);
+  const lg = (await pool.query(`SELECT body FROM snapshots WHERE key='league/eng'`)).rows[0].body;
+  assert.equal(lg.statsFull, undefined, 'and it does not ride in the league snapshot');
+  // the headline five ARE the top of this table, by the same measure
+  const byRuns = P.slice().sort((a, b) => b.runs - a.runs || b.hs - a.hs);
+  assert.equal(byRuns[0].name, lg.stats.bat[0].name, 'the leading run-scorer agrees');
+  assert.equal(byRuns[0].runs, lg.stats.bat[0].runs);
+  const byWkts = P.filter(x => x.wkts > 0).sort((a, b) => b.wkts - a.wkts || a.conc - b.conc);
+  assert.equal(byWkts[0].name, lg.stats.bowl[0].name, 'the leading wicket-taker agrees');
+  // and every column is arithmetic on the two the cards actually carry
+  P.forEach(x => {
+    if (x.bf) assert.equal(x.sr, Math.round(10000 * x.runs / x.bf) / 100, x.name + ' strike rate');
+    if (x.wkts) assert.equal(x.bave, Math.round(100 * x.conc / x.wkts) / 100, x.name + ' bowling average');
+    if (x.balls) assert.equal(x.er, Math.round(600 * x.conc / x.balls) / 100, x.name + ' economy');
+    assert.ok(x.inns >= x.no, x.name + ': not-outs cannot exceed innings');
+    assert.ok(x.hs <= x.runs, x.name + ': a best score cannot beat the aggregate');
+    assert.ok(x.m >= 1, x.name + ' played at least one match');
+  });
+  // the whole league's runs are the whole league's runs
+  const cards = (await pool.query(
+    `SELECT result FROM matches WHERE country_id='eng' AND season_no=$1`, [body.seasonNo])).rows;
+  let runs = 0, wkts = 0, f4 = 0, f6 = 0, mdns = 0;
+  for (const c of cards) for (const inn of c.result.innings) {
+    if (!inn) continue;
+    for (const b of (inn.bat || [])) { runs += b.r || 0; f4 += b.f4 || 0; f6 += b.f6 || 0; }
+    for (const k of Object.keys(inn.bowlers || {})) { wkts += inn.bowlers[k].w || 0; mdns += inn.bowlers[k].mdn || 0; }
+  }
+  const sum = k => P.reduce((a, x) => a + (x[k] || 0), 0);
+  assert.equal(sum('runs'), runs, 'every run in the league is in the table');
+  assert.equal(sum('wkts'), wkts, 'every wicket too');
+  assert.equal(sum('f4'), f4, 'and every four');
+  assert.equal(sum('f6'), f6, 'and every six');
+  assert.equal(sum('mdns'), mdns, 'and every maiden over');
+  // a keeper's catches are told from a fielder's by the dagger, and somebody
+  // in this league keeps wicket
+  assert.ok(sum('ckt') > 0, 'the gloves have held something: ' + sum('ckt'));
+  assert.ok(sum('fkt') > 0, 'and so have the hands in the ring');
+});
+
 // 017: WHAT A RIVAL MAY READ. The club pages show a scout's summary - one
 // overall rating a man, his batting, his bowling, his fielding, and the three
 // team strengths - computed in SQL so a page costs one small request. Those

@@ -217,7 +217,14 @@ export async function computeLeague(pool, country, seasonNo, now) {
   // SEASON HONOURS: leaders straight from the banked scorecards - every run
   // and every wicket in the snapshot is one that genuinely happened
   const PS = {};
-  const pAt = (nm, slot) => PS[nm] = PS[nm] || { name: nm, club: bySlot[slot].name, runs: 0, balls: 0, outs: 0, hs: 0, wkts: 0, conc: 0, bballs: 0, bb: null };
+  // EVERY COLUMN A STATS CENTRE PRINTS, off the same banked cards the top
+  // fives come from. The scorecard already carries fours, sixes, maidens and
+  // a fielding block, so nothing here is a new measurement - it is the same
+  // walk, counting what it was already reading past.
+  const pAt = (nm, slot) => PS[nm] = PS[nm] || { name: nm, club: bySlot[slot].name, slot: slot,
+    runs: 0, balls: 0, outs: 0, hs: 0, hsNo: false, wkts: 0, conc: 0, bballs: 0, bb: null,
+    mB: {}, inns: 0, no: 0, f4: 0, f6: 0, ducks: 0, h50: 0, h100: 0,
+    mdns: 0, w3: 0, w5: 0, mBw: {}, ckt: 0, fkt: 0, st: 0, ro: 0, mF: {} };
   for (const m of ms) {
     const r = m.result;
     const hN = m.home_name || bySlot[m.home_slot].name, aN = m.away_name || bySlot[m.away_slot].name;
@@ -229,12 +236,38 @@ export async function computeLeague(pool, country, seasonNo, now) {
         const nm = (b.p && b.p.name) || b.p; if (!nm) continue;
         const e = pAt(nm, bs);
         e.runs += b.r || 0; e.balls += b.b || 0;
-        if (b.out && b.out !== 'not out') e.outs++;
-        if ((b.r || 0) > e.hs) e.hs = b.r || 0;
+        e.f4 += b.f4 || 0; e.f6 += b.f6 || 0;
+        e.inns++; e.mB[m.id] = 1;
+        const dismissed = !!(b.out && b.out !== 'not out');
+        if (dismissed) e.outs++; else e.no++;
+        if ((b.r || 0) === 0 && dismissed) e.ducks++;
+        if ((b.r || 0) >= 100) e.h100++; else if ((b.r || 0) >= 50) e.h50++;
+        if ((b.r || 0) > e.hs) { e.hs = b.r || 0; e.hsNo = !dismissed; }
+      }
+      // WHO HELD THE CATCH, AND WHOSE GLOVES. The fielding block counts the
+      // chances; only the dismissal line says whether the man behind them was
+      // the keeper, and it says so with the dagger the scorebook has always
+      // used. Stumpings and run-outs are the block's own count.
+      if (os != null) {
+        const glove = {};
+        for (const b of (inn.bat || [])) {
+          const o = b && b.out; if (!o) continue;
+          const mC = /^c (\u2020?)(.+?) b /.exec(o);
+          if (mC) glove[mC[2]] = (glove[mC[2]] || 0) + (mC[1] ? 1000 : 1);
+        }
+        const F = inn.fielding || {};
+        for (const nm2 of Object.keys(F)) {
+          const e2 = pAt(nm2, os), g = glove[nm2] || 0;
+          e2.ckt += Math.floor(g / 1000); e2.fkt += g % 1000;
+          e2.st += (F[nm2] && F[nm2].st) || 0; e2.ro += (F[nm2] && F[nm2].ro) || 0;
+          e2.mF[m.id] = 1;
+        }
       }
       if (os != null) for (const nm of Object.keys(inn.bowlers || {})) {
         const bw = inn.bowlers[nm], e = pAt(nm, os);
         e.wkts += bw.w || 0; e.conc += bw.r || 0; e.bballs += bw.b || 0;
+        e.mdns += bw.mdn || 0; e.mBw[m.id] = 1;
+        if ((bw.w || 0) >= 5) e.w5++; else if ((bw.w || 0) >= 3) e.w3++;
         if (!e.bb || (bw.w || 0) > e.bb.w || ((bw.w || 0) === e.bb.w && (bw.r || 0) < e.bb.r)) e.bb = { w: bw.w || 0, r: bw.r || 0 };
       }
     }
@@ -250,6 +283,27 @@ export async function computeLeague(pool, country, seasonNo, now) {
     econ: ppl.filter(x => x.bballs >= 60).sort((a, b) => (a.conc / a.bballs) - (b.conc / b.bballs)).slice(0, 3)
       .map(x => ({ name: x.name, club: x.club, econ: +(6 * x.conc / x.bballs).toFixed(2), wkts: x.wkts }))
   };
+  // THE STATS CENTRE. The five-name honour boards above are a headline; this
+  // is the whole league, every man who has done anything, with the columns a
+  // scorer keeps. It rides in its own document rather than the league
+  // snapshot, because every device fetches the league on every visit and
+  // almost none of them are reading the averages column.
+  const r1 = v => Math.round(v * 100) / 100;
+  const statsFull = ppl.map(x => {
+    const mats = new Set(Object.keys(x.mB).concat(Object.keys(x.mBw), Object.keys(x.mF)));
+    return {
+      name: x.name, club: x.club, slot: x.slot, div: divOf[x.slot] || 1, m: mats.size,
+      inns: x.inns, no: x.no, runs: x.runs, hs: x.hs, hsNo: x.hsNo,
+      ave: x.outs ? r1(x.runs / x.outs) : null, bf: x.balls,
+      sr: x.balls ? r1(100 * x.runs / x.balls) : null,
+      ducks: x.ducks, h50: x.h50, h100: x.h100, f4: x.f4, f6: x.f6,
+      balls: x.bballs, mdns: x.mdns, conc: x.conc, wkts: x.wkts, bb: x.bb,
+      bave: x.wkts ? r1(x.conc / x.wkts) : null,
+      er: x.bballs ? r1(6 * x.conc / x.bballs) : null,
+      bsr: x.wkts ? r1(x.bballs / x.wkts) : null,
+      w3: x.w3, w5: x.w5, ckt: x.ckt, fkt: x.fkt, st: x.st, ro: x.ro
+    };
+  });
   const roundsPlayed = ms.length ? Math.max(0, ...ms.map(m => m.round).filter(r => r <= ROUNDS)) : 0;
   // THE CROWN IS WON ON FINALS NIGHT. The champion of a division is the winner
   // of its playoff final (round 16); the table's leader after the fourteen is
@@ -271,7 +325,7 @@ export async function computeLeague(pool, country, seasonNo, now) {
   // carry and saves each of them a second request.
   const nat = await natSquadNow(pool, country, season.season_no);
   return { country, seasonNo: season.season_no, startDay: season.start_day, rounds: ROUNDS, roundsPlayed,
-    divisions: divs, table, table2, results, stats,
+    divisions: divs, table, table2, results, stats, statsFull,
     champion, champion2, shield, shield2,
     nat: { round: nat.round, squad: nat.squad, in: nat.in, out: nat.out },
     generatedAtDay: dayIx(now) };
@@ -440,8 +494,15 @@ export async function rebuildHonours(pool) {
 export async function rebuildSnapshots(pool, country, now, opts) {
   const season = (await pool.query('SELECT * FROM seasons WHERE country_id=$1 ORDER BY season_no DESC LIMIT 1', [country])).rows[0];
   const league = await computeLeague(pool, country, season.season_no, now);
+  // the stats centre travels separately: a league snapshot is fetched by every
+  // device on every visit, and the averages column is not
+  const statsFull = league.statsFull || [];
+  delete league.statsFull;
   await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ($1,$2,now())
     ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`, ['league/' + country, JSON.stringify(league)]);
+  await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ($1,$2,now())
+    ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`,
+    ['stats/' + country, JSON.stringify({ country, seasonNo: season.season_no, roundsPlayed: league.roundsPlayed, players: statsFull })]);
   // the Colts Cup keeps its own table, and every boy's own record goes back
   // onto the boy - both derived from the banked youth cards, never incremented
   const colts = await computeColts(pool, country, season.season_no);

@@ -10115,7 +10115,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260801-1603-31399b";
+  var FO_BUILD = "20260801-1637-2ac191";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -34411,6 +34411,54 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function ready() { return typeof App !== "undefined" && App && typeof GD !== "undefined" && GD && GD.teams && typeof userTeam === "function"; }
   function hashPath() { return (location.hash || "").split("?")[0]; }
   function onPage() { var h = hashPath(); return h === "#/league" || h === "#/nation"; }
+  // ---- THE STATS CENTRE ------------------------------------------------------
+  // The five-name honour boards are a headline. A manager reading his league
+  // wants the whole book: every man who has batted, bowled or held a catch,
+  // with the columns a scorer keeps. That table is too big to ride in the
+  // league snapshot every device fetches on every visit, so it travels as its
+  // own document and is asked for only when this room is open.
+  var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
+  var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+  var SC = {};                                   // country -> {loading, players}
+  function statsOf(cid, onLand) {
+    var e = SC[cid];
+    if (e) return e.players || null;
+    SC[cid] = { loading: true, players: null };
+    fetch(SB_URL + "/rest/v1/world_snapshots?key=eq." + encodeURIComponent("stats/" + cid) + "&select=body",
+      { headers: { apikey: SB_ANON } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (rows) {
+        var b = rows && rows[0] && rows[0].body;
+        SC[cid] = { loading: false, players: (b && b.players) || [] };
+        try { if (onLand) onLand(); } catch (e2) {}
+      })
+      .catch(function () { SC[cid] = { loading: false, players: [] }; try { if (onLand) onLand(); } catch (e3) {} });
+    return null;
+  }
+  // THE THREE BOOKS, and the columns each one is kept in. `k` is the field on
+  // the served row, `h` the head a scorer would write, and `n` marks the
+  // numbers that get tabular figures and right alignment.
+  var BOOKS = {
+    bat: { label: "Batting", sort: function (a, b) { return b.runs - a.runs || b.hs - a.hs; },
+      keep: function (x) { return x.inns > 0; },
+      cols: [["m", "Mat"], ["inns", "Inns"], ["no", "NO"], ["runs", "Runs"], ["hs", "HS"], ["ave", "Ave"],
+             ["bf", "BF"], ["sr", "SR"], ["ducks", "0s"], ["h100", "100"], ["h50", "50"], ["f4", "4s"], ["f6", "6s"]] },
+    bowl: { label: "Bowling", sort: function (a, b) { return b.wkts - a.wkts || a.conc - b.conc; },
+      keep: function (x) { return x.balls > 0; },
+      cols: [["m", "Mat"], ["balls", "Balls"], ["mdns", "Mdns"], ["conc", "Runs"], ["wkts", "Wkts"], ["bb", "Best"],
+             ["bave", "Ave"], ["er", "ER"], ["bsr", "SR"], ["w3", "3WI"], ["w5", "5WI"]] },
+    field: { label: "Keeping &amp; fielding", sort: function (a, b) { return (b.ckt + b.fkt + b.st + b.ro) - (a.ckt + a.fkt + a.st + a.ro) || b.st - a.st; },
+      keep: function (x) { return (x.ckt + x.fkt + x.st + x.ro) > 0; },
+      cols: [["m", "Mat"], ["st", "Stumpings"], ["ckt", "Keeper catches"], ["fkt", "Fielder catches"], ["ro", "Runouts"]] }
+  };
+  function cellOf(x, k) {
+    if (k === "bb") return x.bb ? (x.bb.w + "-" + x.bb.r) : "&mdash;";
+    if (k === "hs") return x.hs + (x.hsNo ? "*" : "");
+    var v = x[k];
+    if (v == null) return "&mdash;";
+    return typeof v === "number" && v >= 10000 ? v.toLocaleString("en-US") : String(v);
+  }
+
   function qparam(k) {
     var m = new RegExp("[?&]" + k + "=([^&]*)").exec(location.hash || "");
     return m ? decodeURIComponent(m[1]) : "";
@@ -34815,44 +34863,62 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
       } else if (tab === "stats") {
         var st = (snap && snap.stats) || { bat: [], bowl: [], sr: [], econ: [] };
-        var lead = function (title, row, big, unit, sub) {
-          if (!row) return "";
-          return "<div class='fo-lgx-lead'><i>" + title + "</i>" +
-            "<b>" + E(say(row.name)) + "</b><u>" + E(say(row.club)) + "</u>" +
-            "<span class='fo-lgx-big'>" + big + "<em>" + unit + "</em></span>" +
-            "<span class='fo-lgx-leadsub'>" + sub + "</span></div>";
-        };
         var bat0 = (st.bat || [])[0], bowl0 = (st.bowl || [])[0], sr0 = (st.sr || [])[0];
+        var bookKey = qparam("k"); if (!BOOKS[bookKey]) bookKey = "bat";
+        var BK = BOOKS[bookKey];
+        var full = statsOf(natId, function () { if (onPage()) foRenderLeagueTablePage(); });
+        // YOUR OWN MEN, LIT. A table of two hundred names is a wall until the
+        // eleven that are yours stand out of it.
+        var myClub = "";
+        try {
+          var cl9 = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+          if (cl9 && cl9.country === natId) myClub = cl9.club || "";
+        } catch (eC9) {}
+        if (!myClub && own) { try { myClub = userTeam().name || ""; } catch (eU9) {} }
+
+        var bookTabs = "<div class='fo-lgx-books'>" + Object.keys(BOOKS).map(function (k) {
+          return "<a class='" + (k === bookKey ? "on" : "") + "' href='#/" +
+            (own ? "league" : "nation") + "?" + (own ? "" : "n=" + encodeURIComponent(natId) + "&") +
+            "t=stats&k=" + k + "'>" + BOOKS[k].label + "</a>";
+        }).join("") + "</div>";
+
+        var body9;
+        if (full === null) {
+          body9 = "<p class='fo-lgx-dim'>Sending for the scorebooks&hellip;</p>";
+        } else {
+          var rows9 = full.filter(BK.keep).sort(BK.sort);
+          if (!rows9.length) {
+            body9 = "<p class='fo-lgx-dim'>Nobody has " +
+              (bookKey === "bat" ? "faced a ball" : bookKey === "bowl" ? "bowled one" : "taken a catch") +
+              " yet. The numbers begin at " + hh(hour) + " UTC.</p>";
+          } else {
+            var head9 = "<tr><th class='rk'>#</th><th class='nm'>Name</th><th class='cl'>Team</th>" +
+              BK.cols.map(function (c) { return "<th>" + c[1] + "</th>"; }).join("") + "</tr>";
+            var body0 = rows9.slice(0, 120).map(function (x, ix) {
+              var mine9 = myClub && x.club === myClub;
+              return "<tr" + (mine9 ? " class='mine'" : "") + ">" +
+                "<td class='rk'>" + (ix + 1) + "</td>" +
+                "<td class='nm'><a href='#/player?c=" + encodeURIComponent(natId) + "&s=" + x.slot +
+                  "&n=" + encodeURIComponent(x.name) + "'>" + E(say(x.name)) + "</a></td>" +
+                "<td class='cl'><a href='#/team?c=" + encodeURIComponent(natId) + "&s=" + x.slot + "'>" +
+                  E(say(x.club)) + "</a></td>" +
+                BK.cols.map(function (c) { return "<td>" + cellOf(x, c[0]) + "</td>"; }).join("") +
+                "</tr>";
+            }).join("");
+            body9 = "<div class='fo-lgx-scroll'><table class='fo-lgx-stat'>" +
+              "<thead>" + head9 + "</thead><tbody>" + body0 + "</tbody></table></div>" +
+              (rows9.length > 120 ? "<p class='fo-lgx-dim'>The first 120 of " + rows9.length + ".</p>" : "");
+          }
+        }
+
         main = "<div class='fo-lgx-panel'>" +
-          "<div class='fo-lgx-ph'><h2>League leaders</h2><span class='fo-lgx-sub'>Season " +
+          "<div class='fo-lgx-ph'><h2>The stats centre</h2><span class='fo-lgx-sub'>Season " +
           ((snap && snap.seasonNo) || 1) + " &middot; after round " + playedRounds + "</span></div>" +
-          ((bat0 || bowl0) ? "<div class='fo-lgx-leads'>" +
-            lead("Most runs", bat0, bat0 ? bat0.runs : "", "runs", bat0 ? ("best " + bat0.hs + " &middot; SR " + bat0.sr) : "") +
-            lead("Most wickets", bowl0, bowl0 ? bowl0.wkts : "", "wkts", bowl0 ? ("econ " + bowl0.econ + (bowl0.bb ? " &middot; best " + bowl0.bb.w + "-" + bowl0.bb.r : "")) : "") +
-            lead("Fastest scoring", sr0, sr0 ? sr0.sr : "", "SR", sr0 ? (sr0.runs + " runs") : "") +
-            "</div>" : "<p class='fo-lgx-dim'>Nobody has faced a ball yet. The numbers begin at " + hh(hour) + " UTC.</p>") +
-          ((st.bat || []).length ? "<div class='fo-lgx-sub2'>Batting leaders</div>" +
-            "<div class='fo-lgx-cols5'><span>#</span><span>Player</span><span>Club</span><span>Runs</span><span>SR</span></div>" +
-            st.bat.map(function (x, ix) {
-              var top = st.bat[0].runs || 1;
-              return "<div class='fo-lgx-statrow'><span class='rk'>" + (ix + 1) + "</span>" +
-                "<span class='nm'>" + E(say(x.name)) + "</span>" +
-                "<span class='cl'>" + E(say(x.club)) + "</span>" +
-                "<span class='vv'>" + x.runs + "<u style='width:" + Math.round(100 * x.runs / top) + "%'></u></span>" +
-                "<span class='sr'>" + x.sr + "</span></div>";
-            }).join("") : "") +
-          ((st.bowl || []).length ? "<div class='fo-lgx-sub2'>Bowling leaders</div>" +
-            "<div class='fo-lgx-cols5'><span>#</span><span>Player</span><span>Club</span><span>Wkts</span><span>Econ</span></div>" +
-            st.bowl.map(function (x, ix) {
-              var topW = st.bowl[0].wkts || 1;
-              return "<div class='fo-lgx-statrow'><span class='rk'>" + (ix + 1) + "</span>" +
-                "<span class='nm'>" + E(say(x.name)) + "</span>" +
-                "<span class='cl'>" + E(say(x.club)) + "</span>" +
-                "<span class='vv'>" + x.wkts + "<u style='width:" + Math.round(100 * x.wkts / topW) + "%'></u></span>" +
-                "<span class='sr'>" + x.econ + "</span></div>";
-            }).join("") : "") +
-          "</div>";
-        rail = "<div class='fo-lgx-card dark'><h3>Milestones</h3>" +
+          bookTabs + body9 + "</div>";
+
+        rail = "<div class='fo-lgx-card dark'><h3>The season so far</h3>" +
+          "<div class='fo-lgx-mile'><i>Most runs</i><b>" + (bat0 ? E(say(bat0.name)) + " &middot; " + bat0.runs : "&mdash;") + "</b></div>" +
+          "<div class='fo-lgx-mile'><i>Most wickets</i><b>" + (bowl0 ? E(say(bowl0.name)) + " &middot; " + bowl0.wkts : "&mdash;") + "</b></div>" +
           "<div class='fo-lgx-mile'><i>Highest score</i><b>" + (bat0 ? bat0.hs : "&mdash;") + "</b></div>" +
           "<div class='fo-lgx-mile'><i>Best bowling</i><b>" + (bowl0 && bowl0.bb ? bowl0.bb.w + "/" + bowl0.bb.r : "&mdash;") + "</b></div>" +
           "<div class='fo-lgx-mile'><i>Rounds played</i><b>" + playedRounds + " of " + rounds + "</b></div></div>" +
@@ -35126,6 +35192,27 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body #page .fo-lgx-big{display:block;margin-top:8px;font:700 26px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums}",
     "html body #page .fo-lgx-big em{margin-left:5px;font:600 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,254,252,.5);font-style:normal}",
     "html body #page .fo-lgx-leadsub{display:block;margin-top:4px;font:italic 420 10.5px/1.4 'Fraunces',Georgia,serif;color:rgba(255,254,252,.6)}",
+    // THE STATS CENTRE: a scorer's table. Thirteen columns will not fit a phone
+    // and should not be made to - the table keeps its columns and scrolls
+    // inside its own box, so the page body never moves sideways.
+    "html body #page .fo-lgx-books{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 12px}",
+    "html body #page .fo-lgx-books a{font:700 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.6) !important;background:rgba(20,28,40,.045);border:1px solid rgba(20,28,40,.14);border-radius:999px;padding:0 15px;min-height:38px;display:inline-flex;align-items:center;text-decoration:none !important}",
+    "html body #page .fo-lgx-books a.on{color:#FFFDF7 !important;background:#0E2246;border-color:#0E2246}",
+    ".fo-lgx-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}",
+    "html body #page table.fo-lgx-stat{border-collapse:collapse;width:100%;min-width:640px;font-variant-numeric:tabular-nums}",
+    "html body #page table.fo-lgx-stat th{position:sticky;top:0;background:#0E2246;color:#FFFDF7;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;text-align:right;padding:9px 7px;white-space:nowrap}",
+    "html body #page table.fo-lgx-stat th.rk,html body #page table.fo-lgx-stat th.nm,html body #page table.fo-lgx-stat th.cl{text-align:left}",
+    "html body #page table.fo-lgx-stat td{padding:8px 7px;text-align:right;white-space:nowrap;font:600 12px/1.2 Oswald,sans-serif;color:#141C28;border-bottom:1px solid rgba(20,28,40,.07)}",
+    "html body #page table.fo-lgx-stat td.rk{text-align:left;font-weight:400;color:rgba(20,28,40,.4)}",
+    "html body #page table.fo-lgx-stat td.nm,html body #page table.fo-lgx-stat td.cl{text-align:left;font-family:Inter,sans-serif;font-weight:500}",
+    "html body #page table.fo-lgx-stat td.cl{font-size:11.5px}",
+    "html body #page table.fo-lgx-stat td.nm a{color:#141C28 !important;text-decoration:none !important}",
+    "html body #page table.fo-lgx-stat td.cl a{color:rgba(20,28,40,.55) !important;text-decoration:none !important}",
+    "html body #page table.fo-lgx-stat tbody tr:nth-child(even){background:rgba(20,28,40,.022)}",
+    // your own men, lit the way a scorebook underlines the home side
+    "html body #page table.fo-lgx-stat tbody tr.mine{background:#FFF6DA}",
+    "html body #page table.fo-lgx-stat tbody tr.mine td{border-bottom-color:rgba(190,150,40,.3)}",
+    "html body #page table.fo-lgx-stat tbody tr.mine td.nm a,html body #page table.fo-lgx-stat tbody tr.mine td.cl a{color:#7A5B12 !important;font-weight:700}",
     "html body #page .fo-lgx-cols5,html body #page .fo-lgx-statrow{display:grid;grid-template-columns:20px minmax(0,1.15fr) minmax(0,1fr) 70px 42px;gap:8px;align-items:center}",
     "html body #page .fo-lgx-cols5{padding:4px 8px;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.4)}",
     "html body #page .fo-lgx-cols5 span:nth-child(4),html body #page .fo-lgx-cols5 span:nth-child(5){text-align:right}",
