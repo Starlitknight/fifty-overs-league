@@ -119,7 +119,7 @@
         ties.forEach(function (t2) {
           if (t2[0] !== claim.slot && t2[1] !== claim.slot) return;
           var atHome2 = t2[0] === claim.slot;
-          faUps.push({ day: day, st: st, isHome: atHome2,
+          faUps.push({ day: day, st: st, isHome: atHome2, hs: t2[0], as: t2[1],
             opp: bySlot[atHome2 ? t2[1] : t2[0]] || "a club", ground: groundOf(t2[0]) });
         });
       });
@@ -177,7 +177,7 @@
         }
         // ONE SUMMER, ONE LIST. League Thursday, cup Sunday, league Monday -
         // the card reads in the order the matches are actually played.
-        faUps.forEach(function (f) { ups.push({ day: f.day, cup: f.st, isHome: f.isHome, opp: f.opp, ground: f.ground }); });
+        faUps.forEach(function (f) { ups.push({ day: f.day, cup: f.st, isHome: f.isHome, opp: f.opp, ground: f.ground, hs: f.hs, as: f.as }); });
         ups.sort(function (x, y) { return (x.day || 0) - (y.day || 0); });
         // A COMING MATCH NOW HAS SOMEWHERE TO GO. These rows used to land on
         // the round's fixture card - the same list, one level up, which told
@@ -188,13 +188,16 @@
           // where the ground is - so a long date never squeezes out a name
           var on = (pl0 && pl0.dateTxt) ? pl0.dateTxt(u.day) : "";
           if (u.cup) {
-            return "<a class='fo-fl-row up cup" + (i === 0 ? " next" : "") + "' href='#/facup'>" +
+            // a cup tie opens its own build-up, exactly as a league match does
+            var cv = "#/facup";
+            try { cv = window.foCupPreviewHref(claim.country, u.cup, u.hs, u.as) || cv; } catch (eCv) {}
+            return "<a class='fo-fl-row up cup" + (i === 0 ? " next" : "") + "' href='" + cv + "'>" +
               "<i>CUP</i>" +
               "<u class='c'>" + (u.isHome ? "H" : "A") + "</u>" +
               "<span class='fo-fl-who'><b>" + (u.isHome ? "v " : "at ") + E(u.opp) +
               (on ? " <em class='fo-fl-when'>" + E(on) + "</em>" : "") + "</b>" +
               "<span>" + E(hh(hour)) + " &middot; " + E(u.ground) + " &middot; " + E(FA_NM[u.cup] || "The Cup") + "</span></span>" +
-              "<em class='fo-fl-act'>The Cup &rsaquo;</em></a>";
+              "<em class='fo-fl-act'>Preview &rsaquo;</em></a>";
           }
           var pv = "#/league?t=fixtures";
           try { pv = window.foPreviewHref(claim.country, u.r, u.hs, u.as) || pv; } catch (ePv) {}

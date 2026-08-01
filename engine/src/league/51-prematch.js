@@ -64,7 +64,7 @@
   }
 
   // ---- what the world knows about this fixture ------------------------------
-  function foPmGather(natId, round) {
+  function foPmGather(natId, round, stage) {
     var PL = window.__foPlanet, WT = window.__foWT;
     if (!PL || !WT) return null;
     var snap = null;
@@ -80,12 +80,15 @@
     var hour = PL.natHour(natId);
     // THE HOUR THIS MATCH IS PLAYED, to the minute. Round R of season S falls
     // on one world day, and that day opens at the nation's own hour.
-    var day = PL.dayOfSeasonRound ? PL.dayOfSeasonRound(seasonNo, round)
+    // A CUP TIE IS PLAYED ON A SUNDAY, NOT IN A ROUND. Where a stage is named
+    // the day comes off the cup calendar; otherwise off the league round.
+    var day = stage && PL.faDayOf ? PL.faDayOf(seasonNo, stage)
+           : PL.dayOfSeasonRound ? PL.dayOfSeasonRound(seasonNo, round)
            : ((PL.anchorOf ? PL.anchorOf().start : 0) + (seasonNo - 1) * (PL.CYCLE | 0) + (round - 1));
     var start = PL.EPOCH + day * PL.DAY + hour * 3600000;
     var stop = start + (PL.LIVE_LEN || 3) * 3600000;
     return { snap: snap, names: names, mgrs: mgrs, sides: sides, bySlot: bySlot,
-      seasonNo: seasonNo, hour: hour, start: start, stop: stop, natId: natId, round: round };
+      seasonNo: seasonNo, hour: hour, start: start, stop: stop, natId: natId, round: round, stage: stage || null };
   }
   function foPmName(g, slot) {
     if (g.names && g.names[slot]) return g.names[slot];
@@ -183,6 +186,7 @@
   // For the many fixtures where nobody manages either club it is not even an
   // approximation: the umpire files a sheet only where one exists and lets the
   // engine pick the rest, which is exactly what happens here.
+  var FO_PM_FA = { r16: "Cup round of 16", qf: "Cup quarter-final", sf: "Cup semi-final", final: "The Cup final" };
   var FO_PM_WP_N = 40;              // how many times the fixture is played out
   var FO_PM_WP_CHUNK = 4;           // per tick, so a phone never locks up
   var FO_PM_WP = {};                // this session, by fixture id
@@ -282,14 +286,16 @@
 
       var natId = foPmQ("n") || "eng";
       var round = parseInt(foPmQ("r") || "0", 10) | 0;
+      var stage = foPmQ("fa") || "";
+      if (stage && !FO_PM_FA[stage]) stage = "";
       var hSlot = parseInt(foPmQ("h") || "-1", 10);
       var aSlot = parseInt(foPmQ("a") || "-1", 10);
-      var sig = "pm|" + natId + "|" + round + "|" + hSlot + "|" + aSlot;
+      var sig = "pm|" + natId + "|" + (stage || round) + "|" + hSlot + "|" + aSlot;
       if (page.__foPmSig === sig && page.querySelector(".fo-pm")) return;
 
-      if (!round || hSlot < 0 || aSlot < 0) { foPmLost(page, "That fixture is not on the card."); return; }
+      if ((!round && !stage) || hSlot < 0 || aSlot < 0) { foPmLost(page, "That fixture is not on the card."); return; }
 
-      var g = foPmGather(natId, round);
+      var g = foPmGather(natId, round, stage);
       if (!g) { foPmLost(page, "The world clock is still waking up. Try again in a moment."); return; }
 
       // THE BOOK MAY NOT BE ON THE DEVICE YET. get() reads a cache and never
@@ -365,8 +371,10 @@
       if (c0.k === "live") actions.push("<a class='fo-pm-cta live' href='#/watch?n=" + encodeURIComponent(natId) + "'>Watch it live</a>");
       if (mine && c0.k === "soon") actions.push("<a class='fo-pm-cta' href='#/orders'>Set your team sheet</a>");
       if (c0.k === "done") actions.push("<a class='fo-pm-cta' href='#/league?t=results'>Read the report</a>");
-      actions.push("<a class='fo-pm-back' href='" + (natId === myNat ? "#/league?t=fixtures&r=" + round
-        : "#/nation?n=" + encodeURIComponent(natId) + "&t=fixtures&r=" + round) + "'>All of round " + round + "</a>");
+      actions.push(stage
+        ? "<a class='fo-pm-back' href='#/facup'>The whole draw</a>"
+        : "<a class='fo-pm-back' href='" + (natId === myNat ? "#/league?t=fixtures&r=" + round
+          : "#/nation?n=" + encodeURIComponent(natId) + "&t=fixtures&r=" + round) + "'>All of round " + round + "</a>");
       actions.push("<a class='fo-pm-back' href='#/fixtures'>The fixture list</a>");
 
       page.innerHTML =
@@ -375,7 +383,7 @@
         "<figure class='fo-pm-plate'><img src='" + art.src + "' alt='' data-alt='" + art.alt + "' " +
         "onerror=\"if(this.src.indexOf(this.dataset.alt)<0){this.src=this.dataset.alt}else{this.parentNode.style.display='none'}\"></figure>" +
         "<div class='fo-pm-in'>" +
-        "<div class='fo-pm-folio'>Round " + round +
+        "<div class='fo-pm-folio'>" + (stage ? FO_PM_FA[stage] : "Round " + round) +
         (natNm ? " &middot; " + foPmE(natNm) : "") + "</div>" +
 
         // THE BILLING. Two clubs facing each other across a gold V - the way a
@@ -422,7 +430,7 @@
         if (wpHost) {
           // the key is the fixture and nothing else: what was known can no
           // longer change what the bar says, so a cached number is never stale
-          var wpKey = natId + ":s" + g.seasonNo + ":r" + round + ":h" + hSlot + "a" + aSlot;
+          var wpKey = natId + ":s" + g.seasonNo + ":" + (stage ? "fa" + stage : "r" + round) + ":h" + hSlot + "a" + aSlot;
           var cached = foPmWpLoad(wpKey);
           if (cached) foPmWpPaint(wpHost, cached, true);
           else foPmWpRun(wpHost, location.hash, wpKey, natId, hSlot, aSlot, hN, aN, ground);
@@ -463,6 +471,12 @@
   // links here; this writes the address so no caller has to know the shape.
   window.foPreviewHref = function (natId, round, hSlot, aSlot) {
     return "#/preview?n=" + encodeURIComponent(natId) + "&r=" + (round | 0) +
+      "&h=" + (hSlot | 0) + "&a=" + (aSlot | 0);
+  };
+  // A CUP TIE IS A MATCH LIKE ANY OTHER and deserves the same room. It has no
+  // league round, so it is addressed by its stage.
+  window.foCupPreviewHref = function (natId, stage, hSlot, aSlot) {
+    return "#/preview?n=" + encodeURIComponent(natId) + "&fa=" + encodeURIComponent(stage || "r16") +
       "&h=" + (hSlot | 0) + "&a=" + (aSlot | 0);
   };
 
