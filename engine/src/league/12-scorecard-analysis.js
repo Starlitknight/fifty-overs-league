@@ -5353,11 +5353,13 @@
             if (planned && !mp) { if (lf) lf.textContent = "PLAY THE ROUND \u25B8"; if (ls) ls.textContent = "PLAY \u25B8"; }
             else { if (lf) lf.textContent = (planned ? "MATCH PLANNED" : "NEXT MATCH") + " \u00B7 v " + ((fx2.opp && fx2.opp.name) || "").toUpperCase(); }
             nxB.classList.add("hg-cta");
-            // the ritual first: NEXT MATCH opens the Matchday build-up,
-            // where orders, the dossier and (in the window) live play wait
+            // the ritual first: NEXT MATCH opens the build-up. A club held in
+            // the world goes to the served preview - the real fixture, the
+            // real ground - and only an unclaimed device keeps the local
+            // matchday room.
             nxB.addEventListener("click", function () {
               try {
-                location.hash = "#/matchday?r=" + fx2.r;
+                location.hash = fx2.href || ("#/matchday?r=" + fx2.r);
                 if (typeof window.route === "function") window.route();
               } catch (eGo) {}
             });

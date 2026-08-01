@@ -71,9 +71,41 @@
   }
   function xiStrength(xi) { return xi.length ? xi.reduce(function (s, p) { return s + ovrOf(p); }, 0) / xi.length : 50; }
 
+  // ONE PRE-MATCH PAGE. This room derives everything from the retired local
+  // sim, which for a club held in the served world means a fixture nobody will
+  // play - the wrong round, the wrong opponent, at Neutral Park. The world has
+  // its own build-up (#/preview, module 51) off the umpire's schedule, so a
+  // claimed club is sent there and this room is left to the devices that have
+  // never claimed anything and really are playing their own season.
+  function servedElsewhere() {
+    try {
+      var cl = window.__foWorldClaim;
+      if (!cl) { try { cl = JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eC) {} }
+      if (!cl || !cl.country || cl.slot == null) return false;
+      var fx = (typeof window.foNextFixture === "function") ? window.foNextFixture() : null;
+      if (fx && fx.href) {
+        // replace, not push: the back button should leave the build-up, not
+        // bounce off this door a second time
+        try { location.replace(fx.href); } catch (eR) { location.hash = fx.href; }
+        try { if (typeof window.route === "function") window.route(); } catch (eR2) {}
+        return true;
+      }
+      // held in the world but its schedule has not landed yet: say so rather
+      // than draw a match off the old sim
+      var page = document.getElementById("page");
+      if (page) {
+        page.innerHTML = "<div class='fo-md'><div class='fo-md-mast'><h1>The build-up</h1>" +
+          "<p>Reaching the world for your next fixture&hellip; if nothing appears, the season is played out.</p>" +
+          "<p><a href='#/fixtures'>The fixture list &rsaquo;</a></p></div></div>";
+      }
+      return true;
+    } catch (e) { return false; }
+  }
+
   function foRenderMatchdayPage() {
     try {
       if ((location.hash || "").split("?")[0] !== "#/matchday") return;
+      if (servedElsewhere()) return;
       if (!ready()) return;
       var page = document.getElementById("page"); if (!page) return;
       document.body.classList.remove("fo-ov-on", "fo-boss-on", "fo-scb-on", "fo-drs-on");
@@ -121,7 +153,10 @@
         var rows = leagueRows();
         var posOf = function (nm) { return rows.findIndex(function (x) { return x.nm === nm; }) + 1; };
         var ordn = function (n) { return n + (n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"); };
-        stakes = ordn(posOf(home.name)) + " hosts " + ordn(posOf(away.name));
+        // a club the table does not carry has no position, and "0th hosts 1st"
+        // is worse than saying nothing at all
+        var pH = posOf(home.name), pA = posOf(away.name);
+        if (pH > 0 && pA > 0) stakes = ordn(pH) + " hosts " + ordn(pA);
       } catch (eT) {}
 
       // the pundit speaks (deterministically)
