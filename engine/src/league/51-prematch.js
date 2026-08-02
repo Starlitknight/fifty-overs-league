@@ -218,7 +218,11 @@
     if (ap) ap.textContent = pa + "%";
     var note = host.querySelector(".fo-pm-wpnote");
     if (note) {
-      note.textContent = done ? (v.t ? v.t + " ended level." : "")
+      // A CAPTION SAYS WHAT A NUMBER IS. "2 ended level" is a footnote about
+      // the sample, not an answer to "where does 63% come from" - which is the
+      // only question a bar like this raises.
+      note.textContent = done
+        ? ("Played out " + n + " times" + (v.t ? " \u00b7 " + v.t + " ended level." : "."))
         : ("Playing it out\u2026 " + n + " of " + FO_PM_WP_N + " done.");
     }
     host.classList.toggle("settled", !!done);
@@ -352,9 +356,10 @@
         return "<a class='fo-pm-sl" + (slot === mySlot ? " mine" : "") +
           "' href='#/team?c=" + encodeURIComponent(natId) + "&s=" + slot + "'>" +
           foPmShield(nm, boss, natId) +
-          "<b>" + foPmE(nm) + "</b>" +
-          "<i>" + posOrd(st.pos) + (st.p ? " &middot; " + st.pts + " pts" : "") + "</i>" +
-          "<span class='fo-pm-beads'>" + beads(st) + "</span></a>";
+          "<b>" + foPmE(nm) + " <i>" + posOrd(st.pos) +
+          (st.p ? " &middot; " + st.pts + " pts" : "") + "</i></b>" +
+          "<span class='fo-pm-beads'>" + beads(st) + "</span>" +
+          "<s class='fo-pm-chev'>&#8250;</s></a>";
       };
 
       var h2hHTML = h2h.length
@@ -367,58 +372,90 @@
           }).join("")
         : "<p class='fo-pm-dim'>They have not met yet this season. This is the first time of asking.</p>";
 
+      var ACT = {
+        sheet: "<svg viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='9' cy='8' r='3'/><path d='M3 20a6 6 0 0 1 12 0'/><path d='M17 11h4M19 9v4'/></svg>",
+        bars: "<svg viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M5 20V11M12 20V4M19 20v-6'/></svg>",
+        cal: "<svg viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='3.5' y='5' width='17' height='16' rx='2.5'/><path d='M3.5 10h17M8 3v4M16 3v4'/></svg>",
+        play: "<svg viewBox='0 0 24 24' width='16' height='16' fill='currentColor'><path d='M8 5v14l11-7z'/></svg>"
+      };
       var actions = [];
-      if (c0.k === "live") actions.push("<a class='fo-pm-cta live' href='#/watch?n=" + encodeURIComponent(natId) + "'>Watch it live</a>");
-      if (mine && c0.k === "soon") actions.push("<a class='fo-pm-cta' href='#/orders'>Set your team sheet</a>");
-      if (c0.k === "done") actions.push("<a class='fo-pm-cta' href='#/league?t=results'>Read the report</a>");
+      if (c0.k === "live") actions.push("<a class='fo-pm-cta live' href='#/watch?n=" + encodeURIComponent(natId) + "'>" + ACT.play + "Watch it live</a>");
+      if (mine && c0.k === "soon") actions.push("<a class='fo-pm-cta' href='#/orders'>" + ACT.sheet + "Set your team sheet</a>");
+      if (c0.k === "done") actions.push("<a class='fo-pm-cta' href='#/league?t=results'>" + ACT.bars + "Read the report</a>");
       actions.push(stage
-        ? "<a class='fo-pm-back' href='#/facup'>The whole draw</a>"
+        ? "<a class='fo-pm-back' href='#/facup'>" + ACT.bars + "The whole draw</a>"
         : "<a class='fo-pm-back' href='" + (natId === myNat ? "#/league?t=fixtures&r=" + round
-          : "#/nation?n=" + encodeURIComponent(natId) + "&t=fixtures&r=" + round) + "'>All of round " + round + "</a>");
-      actions.push("<a class='fo-pm-back' href='#/fixtures'>The fixture list</a>");
+          : "#/nation?n=" + encodeURIComponent(natId) + "&t=fixtures&r=" + round) + "'>" + ACT.bars + "All of round " + round + "</a>");
+      actions.push("<a class='fo-pm-back' href='#/fixtures'>" + ACT.cal + "The fixture list</a>");
+
+      var ic = function (d) {
+        return "<svg class='fo-pm-ic' viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='currentColor' " +
+          "stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'>" + d + "</svg>";
+      };
+      var flagSrc = "";
+      try {
+        var artB = (typeof FO_ART !== "undefined" && FO_ART) ? FO_ART : "client/art/";
+        var ff = window.__foCxAPI && window.__foCxAPI.flagFile ? window.__foCxAPI.flagFile(natId) : natId;
+        if (ff) flagSrc = artB + "flags/" + ff + ".svg";
+      } catch (eFl) { flagSrc = ""; }
+
+      // THE BILLING, READ ACROSS. Crest, club, and which end of the fixture it
+      // is - then the same on the other side of the V. Stacked and centred, a
+      // long name and its crest were on different lines and the two sides ran
+      // into each other; side by side they are one legible row.
+      var billSide = function (nm, boss, tag, away) {
+        return "<div class='fo-pm-billside" + (away ? " a" : "") + "'>" +
+          foPmShield(nm, boss, natId, true) +
+          "<div><b>" + foPmE(nm) + "</b><i>" + tag + "</i></div></div>";
+      };
 
       page.innerHTML =
-        "<div class='fo-pm'>" +
-        "<header class='fo-pm-hero'>" +
-        "<figure class='fo-pm-plate'><img src='" + art.src + "' alt='' data-alt='" + art.alt + "' " +
-        "onerror=\"if(this.src.indexOf(this.dataset.alt)<0){this.src=this.dataset.alt}else{this.parentNode.style.display='none'}\"></figure>" +
-        "<div class='fo-pm-in'>" +
-        "<div class='fo-pm-folio'>" + (stage ? FO_PM_FA[stage] : "Round " + round) +
-        (natNm ? " &middot; " + foPmE(natNm) : "") + "</div>" +
+        "<div class='fo-pm'><div class='fo-pm-in'><div class='fo-pm-card'>" +
 
-        // THE BILLING. Two clubs facing each other across a gold V - the way a
-        // fixture is written on a poster outside a ground, not a table row.
+        "<div class='fo-pm-folio'>" +
+        (flagSrc ? "<img src='" + flagSrc + "' alt='' onerror=\"this.style.display='none'\">" : "") +
+        "<span>" + (stage ? FO_PM_FA[stage] : "Round " + round) +
+        (natNm ? " &middot; " + foPmE(natNm) : "") + "</span></div>" +
+
         "<div class='fo-pm-bill'>" +
-        "<div class='fo-pm-billside'>" + foPmShield(hN, hBoss, natId, true) +
-        "<b>" + foPmE(hN) + "</b><i>Home</i></div>" +
-        "<div class='fo-pm-v'><span>v</span></div>" +
-        "<div class='fo-pm-billside a'>" + foPmShield(aN, aBoss, natId, true) +
-        "<b>" + foPmE(aN) + "</b><i>Away</i></div>" +
+        billSide(hN, hBoss, "Home", false) +
+        "<div class='fo-pm-v'><span>vs</span></div>" +
+        billSide(aN, aBoss, "Away", true) +
         "</div>" +
 
-        "<div class='fo-pm-when'>" +
-        "<div id='fo-pm-count' class='fo-pm-count " + c0.k + "'>" +
-        "<b class='big'>" + foPmE(c0.big) + "</b><span class='sub'>" + foPmE(c0.sub) + "</span></div>" +
-        "<div class='fo-pm-where'>" +
-        "<div><i>Ground</i><b>" + foPmE(ground) + "</b></div>" +
-        "<div><i>First ball</i><b>" + foPmHH(g.hour) + " UTC</b></div>" +
-        "</div></div>" +
-        "</div></header>" +
+        "<figure class='fo-pm-plate'><img src='" + art.src + "' alt='' data-alt='" + art.alt + "' " +
+        "onerror=\"if(this.src.indexOf(this.dataset.alt)<0){this.src=this.dataset.alt}else{this.parentNode.style.display=&#39;none&#39;}\"></figure>" +
 
-        "<div class='fo-pm-in fo-pm-body'>" +
+        // THE THREE FACTS a manager checks on the way in: how long, where, and
+        // when the first ball is. One rank, one rule between them - not a
+        // boxed countdown beside a cramped pair of labelled fields.
+        "<div class='fo-pm-facts'>" +
+        "<div class='fo-pm-fact' id='fo-pm-count' data-k='" + c0.k + "'>" +
+        ic("<circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 2'/>") +
+        "<div><b>" + foPmE(c0.big) + "</b><i>" + foPmE(c0.sub) + "</i></div></div>" +
+        "<div class='fo-pm-fact'>" +
+        ic("<path d='M12 21s7-5.3 7-11a7 7 0 1 0-14 0c0 5.7 7 11 7 11z'/><circle cx='12' cy='10' r='2.6'/>") +
+        "<div><b>" + foPmE(ground) + "</b><i>" + foPmE(natNm || "") + "</i></div></div>" +
+        "<div class='fo-pm-fact'>" +
+        ic("<circle cx='12' cy='12' r='9'/><path d='M5.4 8.2c4 1.6 9.2 1.6 13.2 0M5.4 15.8c4-1.6 9.2-1.6 13.2 0'/>") +
+        "<div><b>" + foPmHH(g.hour) + " UTC</b><i>First ball</i></div></div>" +
+        "</div>" +
+
         "<div id='fo-pm-wp' class='fo-pm-wp'>" +
+        "<div class='fo-pm-cap'>Win probability &middot; projected</div>" +
         "<div class='fo-pm-wptop'>" +
         "<span class='fo-pm-wph'>" + foPmShield(hN, hBoss, natId) + "<u>" + foPmE(hN) + "</u><b>&mdash;</b></span>" +
         "<span class='fo-pm-wpa'><b>&mdash;</b><u>" + foPmE(aN) + "</u>" + foPmShield(aN, aBoss, natId) + "</span>" +
         "</div>" +
         "<div class='fo-pm-wpbar'><span class='h'></span><span class='t'></span><span class='a'></span></div>" +
-        "<p class='fo-pm-wpnote'></p>" +
+        "<p class='fo-pm-wpnote'>Played out from both squads, their form and the conditions.</p>" +
         "</div>" +
 
+        "<div class='fo-pm-cap'>Team status</div>" +
         "<div class='fo-pm-two'>" + sideLine(hSlot, hN, hBoss, hSt) + sideLine(aSlot, aN, aBoss, aSt) + "</div>" +
 
         "<div class='fo-pm-foot'>" + actions.join("") + "</div>" +
-        "</div></div>";
+        "</div></div></div>";
 
       var host = document.getElementById("fo-pm-count");
       if (host) host.__g = g;
@@ -483,60 +520,75 @@
   function foPmCss() {
     if (document.getElementById("fo-pm-css")) return;
     var css = [
-      "#page .fo-pm{--gold:#E6B15E;--paper:#F4EFE4;--steel:#8ea3c4;position:relative;min-height:100vh;background:#070c16;color:#e9eefa;overflow-x:clip}",
+      "#page .fo-pm{--gold:#E6B15E;--paper:#F4EFE4;--steel:#8ea3c4;--edge:rgba(150,180,225,.16);position:relative;min-height:100vh;background:#070c16;color:#e9eefa;overflow-x:clip;padding:clamp(10px,2vw,20px) 0 clamp(30px,5vw,56px)}",
       "#page .fo-pm *{box-sizing:border-box}",
       "body.fo-pm-on #page{padding:0;max-width:none}",
-      ".fo-pm-in{width:min(1120px,100%);margin:0 auto;padding:0 clamp(16px,4vw,40px)}",
-      // the ground, bounded and untouched
-      ".fo-pm-hero{position:relative;background:#070c16;padding-bottom:clamp(20px,3vw,34px)}",
-      ".fo-pm-plate{margin:0 0 clamp(18px,2.6vw,30px);line-height:0;background:#0b1424}",
-      ".fo-pm-plate img{display:block;width:100%;height:auto;aspect-ratio:32/9;max-height:340px;object-fit:cover;object-position:center 45%}",
-      "@media(max-width:760px){.fo-pm-plate img{aspect-ratio:2/1;max-height:230px}}",
-      ".fo-pm-mast{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.4em;font-size:clamp(9px,1vw,11.5px);font-weight:600;color:var(--gold)}",
-      ".fo-pm-mast em{font-style:normal;color:var(--steel);letter-spacing:.28em}",
-      ".fo-pm-folio{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.22em;font-size:10.5px;color:var(--steel);margin-top:7px;padding-bottom:13px;border-bottom:1px solid rgba(150,180,225,.16)}",
-      // the billing
-      ".fo-pm-bill{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:clamp(10px,2.4vw,26px);margin:clamp(18px,2.6vw,30px) 0 0}",
-      ".fo-pm-billside{display:flex;flex-direction:column;align-items:flex-end;text-align:right;gap:9px;min-width:0}",
-      ".fo-pm-billside.a{align-items:flex-start;text-align:left}",
-      ".fo-pm-billside b{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;line-height:.9;letter-spacing:-.004em;font-size:clamp(22px,3.9vw,52px);color:var(--paper);word-break:break-word}",
-      ".fo-pm-billside i{font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.28em;font-size:9px;color:var(--steel)}",
-      ".fo-pm-v{display:grid;place-items:center;width:clamp(44px,6vw,74px);height:clamp(44px,6vw,74px);border-radius:50%;border:1px solid rgba(230,177,94,.42);flex:0 0 auto}",
-      ".fo-pm-v span{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:clamp(18px,2.4vw,30px);color:var(--gold);line-height:1}",
-      ".fo-pm-sh{display:grid;place-items:center;width:34px;height:34px;border-radius:7px;background:var(--sc,#1D3F6E);color:#fff;font:700 12px/1 Oswald,sans-serif;letter-spacing:.04em;flex:0 0 auto}",
-      ".fo-pm-sh.big{width:clamp(40px,4.6vw,60px);height:clamp(40px,4.6vw,60px);border-radius:10px;font-size:clamp(14px,1.6vw,19px)}",
+      ".fo-pm-in{width:min(720px,100%);margin:0 auto;padding:0 clamp(10px,2.6vw,16px)}",
+      // ONE CARD. This was a full-bleed plate with a body hanging off the
+      // bottom of it, so nothing shared an edge with anything and the eye had
+      // no column to run down. Everything sits on one rounded sheet now, at
+      // one indent, with the sections spaced by a single gap.
+      ".fo-pm-card{background:#0C1524;border:1px solid var(--edge);border-radius:18px;padding:clamp(12px,2.4vw,17px);display:flex;flex-direction:column;gap:clamp(11px,1.8vw,14px)}",
+      // the folio: a chip with its flag, not small caps adrift on a rule
+      ".fo-pm-folio{display:inline-flex;align-items:center;gap:9px;align-self:flex-start;background:rgba(150,180,225,.1);border:1px solid var(--edge);border-radius:999px;padding:6px 14px 6px 7px}",
+      ".fo-pm-folio img{width:20px;height:14px;object-fit:cover;border-radius:3px;flex:0 0 auto}",
+      ".fo-pm-folio span{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.18em;font-size:9.5px;color:#cddcf2}",
+      ".fo-pm-bill{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:clamp(7px,2vw,14px)}",
+      ".fo-pm-billside{display:flex;align-items:center;gap:10px;min-width:0}",
+      ".fo-pm-billside.a{flex-direction:row-reverse;text-align:right}",
+      ".fo-pm-billside>div{min-width:0}",
+      ".fo-pm-billside b{display:block;font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;line-height:1.04;letter-spacing:.005em;font-size:clamp(14px,3.9vw,21px);color:var(--paper);overflow-wrap:anywhere}",
+      ".fo-pm-billside i{display:block;margin-top:3px;font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.22em;font-size:8px;color:var(--steel)}",
+      ".fo-pm-v{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid rgba(230,177,94,.42);flex:0 0 auto}",
+      ".fo-pm-v span{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);line-height:1}",
+      ".fo-pm-sh{display:grid;place-items:center;width:29px;height:29px;border-radius:7px;background:var(--sc,#1D3F6E);color:#fff;font:700 11px/1 Oswald,sans-serif;letter-spacing:.04em;flex:0 0 auto}",
+      ".fo-pm-sh.big{width:clamp(36px,9.5vw,44px);height:clamp(36px,9.5vw,44px);border-radius:9px;font-size:clamp(12px,3.2vw,15px)}",
       ".fo-pm-sh.crest{background:none;object-fit:contain}",
-      // the clock
-      ".fo-pm-when{display:grid;grid-template-columns:auto 1fr;gap:clamp(14px,2.4vw,28px);align-items:center;margin-top:clamp(18px,2.6vw,28px);padding-top:clamp(16px,2.2vw,22px);border-top:1px solid rgba(150,180,225,.16)}",
-      ".fo-pm-count{display:flex;flex-direction:column;gap:4px;padding:12px 18px;border-radius:12px;border:1px solid rgba(230,177,94,.3);background:linear-gradient(180deg,rgba(16,27,50,.85),rgba(8,14,26,.85));min-width:min(240px,44vw)}",
-      ".fo-pm-count .big{font-family:Oswald,sans-serif;font-weight:700;font-size:clamp(20px,2.6vw,32px);color:var(--paper);font-variant-numeric:tabular-nums;letter-spacing:.01em;line-height:1}",
-      ".fo-pm-count .sub{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.24em;font-size:9px;color:var(--steel)}",
-      ".fo-pm-count.live{border-color:#FF0033;background:linear-gradient(180deg,rgba(70,10,22,.9),rgba(30,6,12,.9))}",
-      ".fo-pm-count.live .big{color:#fff}",
-      ".fo-pm-count.done{border-color:rgba(150,180,225,.2)}",
-      ".fo-pm-where{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}",
-      ".fo-pm-where div{display:flex;flex-direction:column;gap:4px;min-width:0}",
-      ".fo-pm-where i{font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.22em;font-size:8.5px;color:var(--steel)}",
-      ".fo-pm-where b{font-family:Georgia,'Times New Roman',serif;font-size:14px;color:var(--paper);overflow-wrap:anywhere}",
-      // body
-      ".fo-pm-body{padding-top:clamp(18px,2.6vw,30px);padding-bottom:clamp(34px,5vw,64px)}",
-      // the probability bar
-      ".fo-pm-wp{padding:16px 17px;border-radius:13px;background:linear-gradient(180deg,rgba(16,27,50,.82),rgba(8,14,26,.82));border:1px solid rgba(150,180,225,.16)}",
-      ".fo-pm-wptop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px}",
-      ".fo-pm-wph,.fo-pm-wpa{display:flex;align-items:center;gap:9px;min-width:0}",
-      ".fo-pm-wph u,.fo-pm-wpa u{text-decoration:none;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:10px;color:var(--steel);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
-      ".fo-pm-wph b,.fo-pm-wpa b{font-family:Oswald,sans-serif;font-weight:700;font-size:clamp(20px,2.4vw,28px);line-height:1;font-variant-numeric:tabular-nums;color:var(--paper)}",
+      // the ground, bounded and untouched, between the billing and the facts
+      ".fo-pm-plate{margin:0;line-height:0;background:#0b1424;border-radius:12px;overflow:hidden}",
+      ".fo-pm-plate img{display:block;width:100%;height:auto;aspect-ratio:32/11;object-fit:cover;object-position:center 45%}",
+      "@media(max-width:760px){.fo-pm-plate img{aspect-ratio:16/7}}",
+      ".fo-pm-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:rgba(150,180,225,.055);border:1px solid var(--edge);border-radius:12px}",
+      ".fo-pm-fact{display:flex;align-items:center;gap:9px;padding:11px 11px;min-width:0;border-left:1px solid var(--edge)}",
+      ".fo-pm-fact:first-child{border-left:0}",
+      ".fo-pm-fact>div{min-width:0}",
+      ".fo-pm-ic{flex:0 0 auto;color:var(--steel);opacity:.9}",
+      ".fo-pm-fact b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(11.5px,3vw,15px);line-height:1.2;color:var(--paper);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}",
+      ".fo-pm-fact i{display:block;margin-top:3px;font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.14em;font-size:7.5px;color:var(--steel);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      "#page .fo-pm-fact[data-k=live] b{color:#fff}",
+      "#page .fo-pm-fact[data-k=live] .fo-pm-ic{color:#FF3355;opacity:1}",
+      "@media(max-width:430px){.fo-pm-fact{flex-direction:column;align-items:flex-start;gap:6px;padding:10px 8px}}",
+      // a section says what it is before it shows you anything
+      ".fo-pm-cap{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:9px;color:var(--steel)}",
+      ".fo-pm-wp{padding:13px 14px;border-radius:12px;background:rgba(150,180,225,.055);border:1px solid var(--edge);display:flex;flex-direction:column;gap:9px}",
+      ".fo-pm-wptop{display:flex;align-items:center;justify-content:space-between;gap:10px}",
+      ".fo-pm-wph,.fo-pm-wpa{display:flex;align-items:center;gap:8px;min-width:0}",
+      ".fo-pm-wph u,.fo-pm-wpa u{text-decoration:none;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.08em;font-size:9.5px;color:var(--steel);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".fo-pm-wph b,.fo-pm-wpa b{font-family:Oswald,sans-serif;font-weight:700;font-size:clamp(19px,5vw,26px);line-height:1;font-variant-numeric:tabular-nums;color:var(--paper)}",
       ".fo-pm-wph b{color:var(--gold)}",
       ".fo-pm-wpa b{color:#9fc0ee}",
-      ".fo-pm-wpbar{display:flex;height:12px;border-radius:999px;overflow:hidden;background:rgba(150,180,225,.12)}",
+      ".fo-pm-wpbar{display:flex;height:10px;border-radius:999px;overflow:hidden;background:rgba(150,180,225,.12)}",
       ".fo-pm-wpbar span{display:block;height:100%;width:0;transition:width .5s cubic-bezier(.2,.7,.2,1)}",
       ".fo-pm-wpbar .h{background:linear-gradient(90deg,#C98A2A,var(--gold))}",
       ".fo-pm-wpbar .t{background:rgba(150,180,225,.4)}",
       ".fo-pm-wpbar .a{background:linear-gradient(90deg,#5C86C4,#9fc0ee)}",
-      ".fo-pm-wpnote{margin:10px 0 0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:12px;line-height:1.5;color:var(--steel)}",
+      ".fo-pm-wpnote{margin:0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:11.5px;line-height:1.5;color:var(--steel)}",
       ".fo-pm-wp.settled .fo-pm-wpnote{color:#c3d0e6}",
       "@media(prefers-reduced-motion:reduce){.fo-pm-wpbar span{transition:none}}",
-      "@media(max-width:700px){.fo-pm-clubs,.fo-pm-mengrid{grid-template-columns:1fr}}",
+      // TEAM STATUS: two rows that look like rows you can open, because they
+      // are. Crest, club and where it stands, how it is going underneath, and
+      // the chevron that says there is a page behind this.
+      ".fo-pm-two{display:flex;flex-direction:column;gap:7px}",
+      "#page a.fo-pm-sl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:11px;row-gap:2px;align-items:center;padding:10px 12px;border-radius:11px;background:rgba(150,180,225,.055);border:1px solid var(--edge);text-decoration:none}",
+      "#page a.fo-pm-sl:hover{border-color:rgba(230,177,94,.5)}",
+      "#page a.fo-pm-sl.mine{border-color:rgba(230,177,94,.42);background:rgba(230,177,94,.07)}",
+      "#page a.fo-pm-sl .fo-pm-sh{grid-row:span 2}",
+      "#page a.fo-pm-sl b{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.02em;font-size:14px;color:var(--paper);overflow-wrap:anywhere}",
+      "#page a.fo-pm-sl b{grid-column:2;grid-row:1}",
+      "#page a.fo-pm-sl b i{font-family:Oswald,sans-serif;font-style:normal;font-weight:400;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-left:5px}",
+      "#page a.fo-pm-sl b i u{text-decoration:none;font-size:8px}",
+      "#page a.fo-pm-sl .fo-pm-beads{grid-column:2;grid-row:2}",
+      "#page a.fo-pm-sl .fo-pm-chev{grid-column:3;grid-row:span 2;text-decoration:none;font:400 20px/1 Georgia,serif;color:rgba(150,180,225,.55)}",
       ".fo-pm-clubtop{display:flex;align-items:center;gap:11px;margin-bottom:13px}",
       ".fo-pm-clubtop>div{display:flex;flex-direction:column;gap:3px;min-width:0}",
       ".fo-pm-clubnm{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.02em;font-size:16px;color:var(--paper);text-decoration:none}",
@@ -553,13 +605,18 @@
       ".fo-pm-mannm i{font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.14em;font-size:8px;color:var(--steel)}",
       ".fo-pm-dim{margin:0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:13.5px;line-height:1.5;color:#c3d0e6}",
       ".fo-pm-lost{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(24px,3.4vw,40px);color:var(--paper);margin:14px 0 8px}",
-      ".fo-pm-foot{display:flex;flex-wrap:wrap;gap:10px;padding-top:clamp(16px,2.4vw,24px);border-top:1px solid rgba(150,180,225,.16)}",
-      ".fo-pm-cta,.fo-pm-back{display:inline-flex;align-items:center;padding:10px 18px;border-radius:999px;text-decoration:none;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:600;transition:transform .16s ease,background .16s ease,border-color .16s ease}",
-      ".fo-pm-cta{background:var(--gold);color:#08101f}",
+      // THE ACTIONS. Pills of whatever width their words happened to need, in
+      // a ragged row. They are a grid now: two to a line, the one that matters
+      // filled, each carrying the glyph of what it opens.
+      ".fo-pm-foot{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding-top:clamp(12px,2vw,16px);border-top:1px solid var(--edge)}",
+      "#page .fo-pm-cta,#page .fo-pm-back{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;padding:10px 14px;border-radius:12px;text-decoration:none;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.14em;font-size:10.5px;font-weight:600;text-align:center;transition:transform .16s ease,background .16s ease,border-color .16s ease}",
+      "#page .fo-pm-cta svg,#page .fo-pm-back svg{flex:0 0 auto}",
+      "@media(max-width:430px){.fo-pm-foot{grid-template-columns:1fr}}",
+      "#page .fo-pm-cta{background:var(--gold);color:#08101f}",
       ".fo-pm-cta:hover{transform:translateY(-1px);background:#F0C075}",
-      ".fo-pm-cta.live{background:#FF0033;color:#fff}",
+      "#page .fo-pm-cta.live{background:#FF0033;color:#fff}",
       ".fo-pm-cta.live:hover{background:#E4002B}",
-      ".fo-pm-back{border:1px solid rgba(150,180,225,.28);color:#cddaf0}",
+      "#page .fo-pm-back{border:1px solid rgba(150,180,225,.28);color:#cddaf0}",
       ".fo-pm-back:hover{border-color:var(--gold);color:var(--gold)}",
       "@media(max-width:700px){.fo-pm-when{grid-template-columns:1fr}.fo-pm-where{grid-template-columns:repeat(3,minmax(0,1fr))}}",
       // A POSTER STACKS ON A PHONE. Side by side, a long club name had a
@@ -571,52 +628,35 @@
       ".fo-pm-v{width:38px;height:38px}.fo-pm-v span{font-size:17px}}",
       "@media(prefers-reduced-motion:reduce){.fo-pm-h2h,.fo-pm-cta,.fo-pm-back{transition:none}}",
 
-      // ---- ONE SCREEN ON A PHONE -------------------------------------------
-      // A preview you have to scroll is a preview you read in pieces. On a
-      // phone the whole card sits inside the viewport: the billing side by
-      // side rather than stacked three-deep, one line of clock and ground, the
-      // odds, both sides' numbers, and the way in. The ground photograph is
-      // not shrunk or cropped to make room - on a screen this size it is set
-      // aside whole, and it is waiting at full width the moment there is room
-      // for it.
-      "@media(max-width:760px) and (orientation:portrait){",
+      // ---- THE PHONE ---------------------------------------------------------
+      // This card used to be squeezed until the whole preview fitted one
+      // screen without scrolling, and the ground photograph was the thing cut
+      // to buy the room. That was the right answer to a page carrying four
+      // panels of noughts; it is the wrong answer to this one. The card is
+      // short enough now to be read in a single flick, and the photograph is
+      // the reason a fixture feels like a place - so it stays, and the sizes
+      // come down instead.
+      "@media(max-width:760px){",
       "#page .fo-pm{min-height:0}",
-      ".fo-pm-plate{display:none}",
-      ".fo-pm-hero{padding-bottom:0}",
-      ".fo-pm-in{padding:0 13px}",
-      ".fo-pm-mast{font-size:8px;letter-spacing:.24em;padding-top:6px}",
-      ".fo-pm-folio{font-size:8.5px;letter-spacing:.16em;margin-top:2px;padding-bottom:5px}",
-      // the billing, back on one line and sized to the width it is given
-      ".fo-pm-bill{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);justify-items:stretch;gap:7px;margin:6px 0 0;text-align:left}",
-      ".fo-pm-billside{align-items:flex-end;text-align:right;gap:4px}",
-      ".fo-pm-billside.a{align-items:flex-start;text-align:left}",
-      ".fo-pm-billside b{font-size:clamp(13px,4.2vw,19px);line-height:1;word-break:normal;overflow-wrap:anywhere}",
+      ".fo-pm-card{padding:11px;gap:10px;border-radius:15px}",
+      ".fo-pm-folio{padding:5px 12px 5px 6px}",
+      ".fo-pm-folio span{font-size:9px;letter-spacing:.15em}",
+      ".fo-pm-bill{gap:6px}",
+      ".fo-pm-billside{gap:8px}",
+      ".fo-pm-billside b{font-size:clamp(13px,4.2vw,18px)}",
       ".fo-pm-billside i{font-size:7.5px;letter-spacing:.18em}",
-      ".fo-pm-sh.big{width:30px;height:30px;border-radius:7px;font-size:11px}",
-      ".fo-pm-v{width:28px;height:28px}.fo-pm-v span{font-size:13px}",
-      // the clock and the ground, one band
-      ".fo-pm-when{grid-template-columns:auto minmax(0,1fr);gap:9px;margin-top:6px;padding-top:6px}",
-      ".fo-pm-count{padding:5px 9px;gap:0;min-width:0}",
-      ".fo-pm-count .big{font-size:14px}.fo-pm-count .sub{font-size:7.5px;letter-spacing:.14em}",
-      ".fo-pm-where{gap:6px}",
-      ".fo-pm-where i{font-size:7.5px;letter-spacing:.14em}",
-      ".fo-pm-where b{font-size:11px;line-height:1.25}",
-      // the body, tightened
-      ".fo-pm-body{padding-top:6px;padding-bottom:8px}",
-      ".fo-pm-wp{padding:7px 9px;border-radius:10px}",
-      ".fo-pm-wptop{margin-bottom:4px;gap:8px}",
-      ".fo-pm-wph b,.fo-pm-wpa b{font-size:15px}",
-      ".fo-pm-wph u,.fo-pm-wpa u{font-size:8px}",
-      ".fo-pm-sh{width:22px;height:22px;border-radius:5px;font-size:9px}",
-      ".fo-pm-wpnote{margin-top:4px;font-size:9.5px;line-height:1.3}",
+      ".fo-pm-sh.big{width:34px;height:34px;border-radius:8px;font-size:12px}",
+      ".fo-pm-v{width:34px;height:34px}.fo-pm-v span{font-size:9.5px}",
+      ".fo-pm-wp{padding:11px 11px;gap:8px}",
+      ".fo-pm-wph b,.fo-pm-wpa b{font-size:20px}",
+      ".fo-pm-wph u,.fo-pm-wpa u{font-size:8.5px}",
+      ".fo-pm-sh{width:24px;height:24px;border-radius:6px;font-size:9.5px}",
+      ".fo-pm-wpnote{font-size:10.5px;line-height:1.4}",
       ".fo-pm-wpnote:empty{display:none}",
-      ".fo-pm-two{gap:7px;margin-top:8px}",
-      "#page a.fo-pm-sl{padding:8px 10px;gap:7px;border-radius:10px}",
-      "#page a.fo-pm-sl b{font-size:11.5px}",
-      "#page a.fo-pm-sl i{font-size:8.5px;letter-spacing:.08em}",
-      ".fo-pm-beads{gap:3px}",
-      ".fo-pm-beads i{width:14px;height:14px;border-radius:3px;font-size:7.5px}",
-      ".fo-pm-foot{padding-top:6px;gap:6px}",
+      "#page a.fo-pm-sl{padding:9px 10px;column-gap:9px}",
+      "#page a.fo-pm-sl b{font-size:12.5px}",
+      ".fo-pm-beads i{width:16px;height:16px;border-radius:3px;font-size:8px}",
+      "#page .fo-pm-cta,#page .fo-pm-back{min-height:44px;font-size:9.5px;letter-spacing:.1em;gap:7px}",
       "}"
     ].join("\n");
     var st = document.createElement("style");
