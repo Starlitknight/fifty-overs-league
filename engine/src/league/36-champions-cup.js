@@ -118,7 +118,14 @@
   function bracket(season) {
     var e = entrants(season);
     if (e.length < 4) return null;
-    var byes = e.slice(0, e.length - 6), piField = e.slice(e.length - 6);
+    // A FIELD IS WHATEVER HAS QUALIFIED SO FAR. Nineteen leagues do not crown
+    // their champions at the same moment, so on any day before the last of
+    // them finishes this list is short - and slice(0, e.length - 6) on a field
+    // of four both invents play-ins that cannot be played and silently drops
+    // two of the four sides.
+    var byes, piField;
+    if (e.length >= 6) { byes = e.slice(0, e.length - 6); piField = e.slice(e.length - 6); }
+    else { byes = e.slice(); piField = []; }
     var stages = {};
     stages.pi = piField.length >= 6 ? [0, 1, 2].map(function (i) {
       return playTie(season, "pi", i, piField[i], piField[5 - i]);
@@ -127,16 +134,26 @@
     field.sort(function (a, b) { return a.seed - b.seed; });
     var cur = [];
     for (var i = 0; i < field.length / 2; i++) cur.push([field[i], field[field.length - 1 - i]]);
+    // ...AND A ROUND PAIRS WHAT IT HAS. This walked the four stages pairing
+    // next[j] with next[j+1] whether or not next[j+1] existed, so the moment
+    // the field was not sixteen a side was played against `undefined` and the
+    // page died reading its strength. An odd side gets a bye instead, and a
+    // lone survivor is simply the champion.
+    var lastStanding = null;
     ["r16", "qf", "sf", "final"].forEach(function (st) {
       var out = [], next = [];
       cur.forEach(function (pair, gi) {
-        var m = playTie(season, st, gi, pair[0], pair[1]);
+        var A = pair[0], B = pair[1];
+        if (!A && !B) return;
+        if (!A || !B) { next.push(A || B); return; }        // a bye into the next round
+        var m = playTie(season, st, gi, A, B);
         out.push(m); next.push(m.winner);
       });
       stages[st] = out;
-      cur = []; for (var j = 0; j < next.length; j += 2) cur.push([next[j], next[j + 1]]);
+      if (next.length === 1) lastStanding = next[0];
+      cur = []; for (var j = 0; j < next.length; j += 2) cur.push([next[j], next[j + 1] || null]);
     });
-    stages.champion = stages.final[0] && stages.final[0].winner;
+    stages.champion = (stages.final[0] && stages.final[0].winner) || lastStanding;
     return stages;
   }
 
