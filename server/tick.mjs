@@ -17,10 +17,11 @@ import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
 import { EPOCH, dayIx, daySettled, seedOf, cupDraw, natHour, scheduleOf, seasonSchedules, ROUNDS, isWindowRound,
          CYCLE, LEAGUE_DAYS, roundOfDay, CUP_DAYS, PLAYOFF_DAYS, FA_DAYS, TRANSITION_DAY,
-         WINDOW_DAYS, isWorldCupSeason, REST_DAYS } from './clock.mjs';
+         WINDOW_DAYS, isWorldCupSeason, REST_DAYS, COLTS_DAYS } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
 import { calibrate, countryConfigs, BASE_XI, NAT_STR, HUMAN_STR } from './init-world.mjs';
-import { stockAcademies, layCandidates, ageYouth, playColtsRound, computeColts, coltRecords } from './youth.mjs';
+import { stockAcademies, layCandidates, ageYouth, playColtsStage, computeColts, coltRecords,
+         COLTS_STAGES } from './youth.mjs';
 import { settleMoney } from './economy.mjs';
 import { runComps } from './comps.mjs';
 import { ensureCallups, absentBySlot, coverSheet, runWindows, rebuildNations, seasonSquad,
@@ -503,12 +504,10 @@ export async function rebuildSnapshots(pool, country, now, opts) {
   await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ($1,$2,now())
     ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`,
     ['stats/' + country, JSON.stringify({ country, seasonNo: season.season_no, roundsPlayed: league.roundsPlayed, players: statsFull })]);
-  // the Colts Cup keeps its own table, and every boy's own record goes back
-  // onto the boy - both derived from the banked youth cards, never incremented
-  const colts = await computeColts(pool, country, season.season_no);
-  await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ($1,$2,now())
-    ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`, ['colts/' + country, JSON.stringify(colts)]);
-  await coltRecords(pool, country, season.season_no);
+  // the Colts Cup board is NOT rebuilt here. The boys play in week four and
+  // nowhere else, so recomputing their bracket on every league round of every
+  // nation was fourteen reads of a competition that had not moved. runColtsCup
+  // owns it, and rebuilds it on the days it can have changed.
   // THE WORLD'S BOOKS ARE THE WORLD'S, NOT EACH NATION'S. Today's summary, the
   // honours and the rankings describe the whole planet, and this runs once per
   // country - so settling a tick rebuilt all three NINETEEN TIMES, and the
@@ -622,10 +621,9 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
        SELECT country_id, slot, $2, $3, coalesce(training, '{}'::jsonb), academy FROM clubs WHERE country_id=$1
        ON CONFLICT (country_id, slot, season_no, round) DO NOTHING`,
       [country, season.season_no, round]);
-    // and the boys have their own fixture on every second league round
-    // (the playoffs are the seniors' nights - no colts, no market on them)
+    // THE MARKET runs on league rounds only - the playoffs are the seniors'
+    // nights, and the boys' cup has a week of its own (runColtsCup)
     if (round <= ROUNDS) {
-      await playColtsRound(pool, host, country, season, round, seedOf, ENGINE_VERSION);
       // THE BOARD. A bot club sheds a man it does not need now and then, so
       // the market is never empty in a world where most clubs have nobody
       // behind them. Seeded on the club and the round: the same world puts up
@@ -1067,6 +1065,56 @@ async function runCupSeason(pool, host, seasonNo, startDay, now) {
 // tilt live), the final is played at the boss's ground. Managers' latest
 // banked sheets stand in; bots play their doctrines.
 // ============================================================================
+// ===========================================================================
+// THE COLTS CUP - week four, played by the boys of every club in the nation.
+//
+// The same laws as every other knockout the umpire runs: a stage plays only
+// once its day's window has closed, the tick key makes the stage idempotent,
+// and the bracket is derived from the banked ties rather than remembered.
+// What is different is that a tie can be decided without a ball - a club that
+// cannot name fifteen men under twenty-one forfeits - and that the purse is
+// paid out of the final rather than out of a ledger somebody has to maintain.
+// ===========================================================================
+const COLTS_CUP_STAGES = COLTS_STAGES.map(st => [st, COLTS_DAYS[st]]);
+export async function runColtsCup(pool, host, { now = Date.now() } = {}) {
+  const seasons = (await pool.query(
+    `SELECT DISTINCT ON (country_id) country_id, season_no, start_day
+       FROM seasons ORDER BY country_id, season_no DESC`)).rows;
+  const out = [];
+  for (const s of seasons) {
+    const hour = natHour(s.country_id);
+    for (const [stage, offset] of COLTS_CUP_STAGES) {
+      if (!stageClosed(now, s.start_day, offset, hour)) break;   // days run in order
+      const key = 'colts:' + s.country_id + ':s' + s.season_no + ':' + stage;
+      const claim = await pool.query(
+        `INSERT INTO ticks(key, status) VALUES ($1,'running')
+         ON CONFLICT (key) DO UPDATE SET key=EXCLUDED.key RETURNING status`, [key]);
+      if (claim.rows[0].status === 'done') continue;
+      let played = 0;
+      try {
+        played = await playColtsStage(pool, host, s.country_id, s, stage, seedOf, ENGINE_VERSION,
+          { cupDraw });
+      } catch (e) {
+        console.error('colts ' + s.country_id + ' ' + stage + ': ' + e.message);
+        continue;                                  // leave the tick open; the next run retries
+      }
+      await pool.query(`UPDATE ticks SET status='done', finished_at=now() WHERE key=$1`, [key]);
+      if (played) out.push({ country: s.country_id, stage, played });
+    }
+    // the bracket, the purse and every boy's own record - derived, so this is
+    // safe to re-run on any day of the week
+    try {
+      const colts = await computeColts(pool, s.country_id, s.season_no);
+      await pool.query(
+        `INSERT INTO snapshots(key, body) VALUES ($1, $2::jsonb)
+         ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`,
+        ['colts/' + s.country_id, JSON.stringify(colts)]);
+      await coltRecords(pool, s.country_id, s.season_no);
+    } catch (eC) { console.error('colts board ' + s.country_id + ': ' + eC.message); }
+  }
+  return out;
+}
+
 const FA_STAGES = [['r16', FA_DAYS.r16], ['qf', FA_DAYS.qf], ['sf', FA_DAYS.sf], ['final', FA_DAYS.final]];
 export async function runFaCup(pool, host, { now = Date.now() } = {}) {
   const seasons = (await pool.query(
@@ -1276,6 +1324,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       const fa = await runFaCup(pool, host);
       if (fa.length) lines.push('FA Cup ties played: ' + fa.length);
     } catch (eFA) { lines.push('fa cup: ' + eFA.message); }
+    // THE COLTS WEEK: the boys' knockout, four days in week four
+    try {
+      const cc = await runColtsCup(pool, host);
+      if (cc.length) lines.push('Colts Cup: ' + cc.map(x => x.country + ' ' + x.stage + ' (' + x.played + ')').join(', '));
+    } catch (eCC) { lines.push('colts cup: ' + eCC.message); }
     const cups = await runCupWindow(pool, host);
     for (const [sk, c] of Object.entries(cups)) {
       if (c && (c.wcl || c.wc)) ['wcl', 'wc'].forEach(comp => {

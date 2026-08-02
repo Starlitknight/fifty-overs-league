@@ -310,146 +310,258 @@ export async function layCandidates(pool, host, country, { worldDay, restDays, s
 // ===========================================================================
 // THE COLTS CUP
 //
-// Nine fixtures, one on every second league round, played by the umpire on
-// the real engine. Nobody picks the side and nobody submits anything: it is
-// the colts plus the youngest men on the senior staff, which is what a
-// Seconds side has always been. That is deliberate - a competition an
-// offline manager cannot lose by being offline.
+// Week four of the season belongs to the academies. All sixteen clubs of a
+// nation go into one hat - both divisions together, so a Division Two academy
+// can knock out the champions - and a straight knockout runs over four days:
+// the last sixteen on the Monday, quarter-finals Tuesday, semi-finals
+// Thursday, THE FINAL on the Friday. The draw is made once, at the last
+// sixteen, and the bracket holds from there: a manager can see his side's
+// path to the final on the Monday morning.
 //
-// The draw is the league's own first single round robin: the Colts round k
-// is league round k's fixture list, played on league round 2k. So the boys
-// meet every other club in the country exactly once, and there is no second
-// schedule to keep honest.
+// A CLUB MUST BE ABLE TO FIELD A SIDE. Fifteen men under twenty-one, from the
+// academy list or the senior staff, and no more than eighteen may be named.
+// A club that cannot raise fifteen forfeits its tie, publicly. That bar is
+// checked on the morning of the tie against the club as it actually stands,
+// so it is a fact about the club and never about who logged in.
 //
-// Nothing here touches a senior first-class record. Youth cricket is youth
-// cricket; what it leaves behind is the table, the champion, and each boy's
-// own Colts record, all recomputed from the banked scorecards.
+// THE MANAGER NAMES THE SQUAD, or the umpire names it for him: the youngest
+// men who qualify, in a fixed order, so an offline club still walks out. A
+// named squad is a better squad - that is the edge for turning up - but
+// nobody ever loses a fixture for being away, which is the world's founding
+// constraint.
+//
+// Nothing here touches a senior first-class record. What youth cricket leaves
+// behind is the bracket, the champion, the purse, and each boy's own Colts
+// record - all recomputed from the banked scorecards, so none of it can drift
+// from the cricket that produced it.
 // ===========================================================================
-export const COLTS_ROUNDS = 9;
-const COLTS_SQUAD = 13;                    // the boys, then the youngest men
+export const COLTS_STAGES = ['r16', 'qf', 'sf', 'final'];
+export const COLTS_FLOOR = 15;             // a side, or a forfeit
+export const COLTS_CEILING = 18;           // and no more than this may be named
+export const COLTS_AGE = 21;               // under this, on the day
 
-export function coltsRoundOf(leagueRound) {
-  return (leagueRound % 2 === 0 && leagueRound / 2 <= COLTS_ROUNDS) ? leagueRound / 2 : 0;
-}
-export function youthMatchId(country, seasonNo, round, h, a) {
-  return country + ':s' + seasonNo + ':y' + round + ':h' + h + 'a' + a;
+// what the winner, the beaten finalist and the losing semi-finalists take.
+// A season's upkeep at level three is 26,000 x 14 = 364,000, so a club that
+// wins its cup has run its academy for nothing that year - which is the point:
+// a poor club that develops well has a way of funding itself that isn't
+// selling its best player.
+export const COLTS_PURSE = { winner: 750000, finalist: 300000, semi: 120000 };
+
+// EVERY BOY ON THE BOOKS, from either list. One definition, mirrored by
+// world_colts_eligible in SQL so the page and the umpire cannot disagree.
+export function coltsEligible(club) {
+  const out = [];
+  for (const p of (Array.isArray(club.youth) ? club.youth : [])) {
+    if (p && (p.age || 99) < COLTS_AGE) out.push(p);
+  }
+  for (const p of (club.squad || [])) {
+    if (p && (p.age || 99) < COLTS_AGE) out.push(p);
+  }
+  // youngest first, then by name: a fixed order, so the umpire's autopick is
+  // the same eighteen on every replay of the same morning
+  return out.sort((a, b) => (a.age || 99) - (b.age || 99) || (a.name < b.name ? -1 : 1));
 }
 
-// THE SIDE, picked by nobody. Colts first - it is their competition - then
-// the youngest senior professionals until there are enough men to field an
-// eleven with something in reserve. Sorted so the engine's own autopick has
-// the same thirteen in the same order on every replay.
-export function coltsSquad(club) {
-  const byAge = (a, b) => (a.age || 30) - (b.age || 30) || (a.name < b.name ? -1 : 1);
-  const colts = (Array.isArray(club.youth) ? club.youth : []).slice().sort(byAge);
-  const seniors = (club.squad || []).slice().sort(byAge);
-  // an academy holds at most seven, so there is always room for the youngest
-  // professionals to make the number up
-  return colts.concat(seniors.slice(0, Math.max(0, COLTS_SQUAD - colts.length)));
+// THE SIDE THAT WALKS OUT. The manager's named men if he named any and they
+// are still on the books this morning; the youngest who qualify otherwise.
+// Returns null when the club cannot raise fifteen - the caller turns that
+// into a forfeit rather than a match.
+export function coltsSide(club, named) {
+  const elig = coltsEligible(club);
+  if (elig.length < COLTS_FLOOR) return null;
+  if (Array.isArray(named) && named.length) {
+    const want = new Set(named);
+    const picked = elig.filter(p => want.has(p.name));
+    // a squad that has shrunk below the bar since it was named is topped up
+    // from the youngest available rather than refused: he named a side, and
+    // the world is not entitled to punish him for a boy turning twenty-one
+    if (picked.length >= COLTS_FLOOR) return picked.slice(0, COLTS_CEILING);
+    const rest = elig.filter(p => !want.has(p.name));
+    return picked.concat(rest.slice(0, COLTS_FLOOR - picked.length));
+  }
+  return elig.slice(0, COLTS_CEILING);
 }
 
-// one Colts round, if this league round has one. Idempotent per fixture.
-export async function playColtsRound(pool, host, country, season, leagueRound, seedOf, engineVersion) {
-  const round = coltsRoundOf(leagueRound);
-  if (!round) return 0;
-  // the boys' fixtures mirror the seniors': both divisions of the pyramid
-  // (a pre-pyramid season row still carries the flat array)
-  const sched = season.schedule;
-  const fixtures = Array.isArray(sched) ? (sched[round - 1] || [])
-    : (((sched['1'] || [])[round - 1]) || []).concat(((sched['2'] || [])[round - 1]) || []);
+// THE BRACKET. Drawn once from one seed, then fixed: the winners of ties
+// 2k and 2k+1 meet in the next round. Pure - the same nation and season
+// always produce the same last sixteen, so a client can draw the bracket
+// without asking the server which ties exist.
+export function coltsDraw(cupDraw, country, seasonNo, field) {
+  const drawn = cupDraw('colts|' + country + '|s' + seasonNo, field);
+  const ties = [];
+  for (let i = 0; i < drawn.length; i += 2) ties.push([drawn[i], drawn[i + 1]]);
+  return ties;
+}
+export function coltsMatchId(country, seasonNo, stage, gi) {
+  return 'colts|' + country + '|s' + seasonNo + '|' + stage + '|' + gi;
+}
+
+// ONE STAGE OF THE CUP, if its day has closed. Idempotent per tie: the row is
+// the claim, exactly as the FA Cup and the Champions Cup do it.
+export async function playColtsStage(pool, host, country, season, stage, seedOf, engineVersion, opts = {}) {
+  const comp = 'colts:' + country;
+  const seasonNo = season.season_no;
   const clubs = (await pool.query(
     'SELECT slot, name, squad, youth FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
+  if (clubs.length < 2) return 0;
   const bySlot = Object.fromEntries(clubs.map(c => [c.slot, c]));
+
+  // the field for this stage: the whole nation at the last sixteen, the
+  // survivors after that
+  let ties;
+  if (stage === 'r16') {
+    ties = coltsDraw(opts.cupDraw, country, seasonNo, clubs.map(c => c.slot));
+  } else {
+    const prev = COLTS_STAGES[COLTS_STAGES.indexOf(stage) - 1];
+    const rows = (await pool.query(
+      'SELECT gi, a, b, result FROM cup_matches WHERE comp=$1 AND season_no=$2 AND stage=$3 ORDER BY gi',
+      [comp, seasonNo, prev])).rows;
+    if (!rows.length) return 0;                       // the previous day has not been played
+    const through = rows.map(r => (r.result.winner === r.b.name ? r.b : r.a).slot);
+    ties = [];
+    for (let i = 0; i < through.length; i += 2) ties.push([through[i], through[i + 1]]);
+  }
+
+  // the squads a manager named for this season, if he named any
+  const namedBy = {};
+  try {
+    const nr = await pool.query(
+      'SELECT slot, names FROM colts_squads WHERE country_id=$1 AND season_no=$2', [country, seasonNo]);
+    nr.rows.forEach(r => { namedBy[r.slot] = r.names; });
+  } catch (e) { /* before 041 there is no such table; the umpire names them all */ }
+
   let played = 0;
-  for (const [hs, as] of fixtures) {
-    const id = youthMatchId(country, season.season_no, round, hs, as);
-    if ((await pool.query('SELECT 1 FROM youth_matches WHERE id=$1', [id])).rowCount) continue;
-    const home = bySlot[hs], away = bySlot[as];
+  for (let gi = 0; gi < ties.length; gi++) {
+    const [x, y] = ties[gi];
+    if (x == null || y == null) continue;
+    if ((await pool.query(
+      'SELECT 1 FROM cup_matches WHERE comp=$1 AND season_no=$2 AND stage=$3 AND gi=$4',
+      [comp, seasonNo, stage, gi])).rowCount) continue;
+
+    // the first-drawn hosts; the final is the showpiece at the boss's ground
+    const homeSlot = stage === 'final' ? (bySlot[0] ? 0 : x) : x;
+    const awaySlot = homeSlot === x ? y : x;
+    const home = bySlot[homeSlot], away = bySlot[awaySlot];
     if (!home || !away) continue;
-    const hSide = coltsSquad(home), aSide = coltsSquad(away);
-    if (hSide.length < 11 || aSide.length < 11) continue;   // no side, no fixture
-    const seed = seedOf(id);
+    const A = { country, slot: homeSlot, name: home.name + ' Colts' };
+    const B = { country, slot: awaySlot, name: away.name + ' Colts' };
+
+    const hSide = coltsSide(home, namedBy[homeSlot]);
+    const aSide = coltsSide(away, namedBy[awaySlot]);
+    const seed = seedOf(coltsMatchId(country, seasonNo, stage, gi));
+
+    let result, forfeit = null;
+    if (!hSide || !aSide) {
+      // A FORFEIT. Nobody bowls a ball. If neither club can raise a side the
+      // one closer to a side goes through, and an exact tie falls to the club
+      // drawn first - a rule, not a coin, so every device agrees.
+      const hN = coltsEligible(home).length, aN = coltsEligible(away).length;
+      const winner = !hSide && !aSide ? (aN > hN ? B : A) : (hSide ? A : B);
+      const loser = winner === A ? B : A;
+      forfeit = { short: [!hSide ? homeSlot : null, !aSide ? awaySlot : null].filter(v => v != null),
+                  home: hN, away: aN };
+      result = { winner: winner.name, loser: loser.name, forfeit: true, innings: [],
+                 text: loser.name + ' could not name fifteen men under twenty-one: ' +
+                       winner.name + ' go through without a ball bowled' };
+      await pool.query(
+        `INSERT INTO cup_matches(comp, season_no, stage, gi, a, b, seed, engine_version,
+                                 result, result_canonical, forfeit)
+         VALUES ($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7,$8,$9::jsonb,$10::text,$11::jsonb)
+         ON CONFLICT (comp, season_no, stage, gi) DO NOTHING`,
+        [comp, seasonNo, stage, gi, JSON.stringify(A), JSON.stringify(B), seed, engineVersion,
+         JSON.stringify(result), JSON.stringify(result), JSON.stringify(forfeit)]);
+      played++;
+      continue;
+    }
+
+    const cond = host.condFor(country, homeSlot, seasonNo, 800 + COLTS_STAGES.indexOf(stage));
     const resultJson = host.runMatch(
-      { name: home.name + ' Colts', players: hSide }, { name: away.name + ' Colts', players: aSide },
-      'balanced', seed, null);
-    if (!resultJson) throw new Error('engine failed to complete ' + id);
+      { name: A.name, players: hSide }, { name: B.name, players: aSide },
+      cond.pitch, seed, null, cond.weather);
+    if (!resultJson) throw new Error('engine failed to complete ' + coltsMatchId(country, seasonNo, stage, gi));
     await pool.query(
-      `INSERT INTO youth_matches(id, country_id, season_no, round, league_round, home_slot, away_slot,
-                                 home_name, away_name, seed, engine_version, result, result_canonical)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13::text) ON CONFLICT (id) DO NOTHING`,
-      [id, country, season.season_no, round, leagueRound, hs, as,
-       home.name + ' Colts', away.name + ' Colts', seed, engineVersion, resultJson, resultJson]);
+      `INSERT INTO cup_matches(comp, season_no, stage, gi, a, b, seed, engine_version,
+                               result, result_canonical)
+       VALUES ($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7,$8,$9::jsonb,$10::text)
+       ON CONFLICT (comp, season_no, stage, gi) DO NOTHING`,
+      [comp, seasonNo, stage, gi, JSON.stringify(A), JSON.stringify(B), seed, engineVersion,
+       resultJson, resultJson]);
     played++;
   }
   return played;
 }
 
-// THE TABLE AND THE CARD, derived purely from the banked youth scorecards -
-// re-runnable, never drifting, and speaking the clubs' CURRENT names.
+// THE BRACKET AND THE PURSE, derived purely from the banked ties - re-runnable,
+// never drifting, and speaking the clubs' CURRENT names.
 export async function computeColts(pool, country, seasonNo) {
   const clubs = (await pool.query(
-    'SELECT slot, name, is_boss FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
-  const ms = (await pool.query(
-    'SELECT * FROM youth_matches WHERE country_id=$1 AND season_no=$2 ORDER BY round, id',
-    [country, seasonNo])).rows;
+    'SELECT slot, name FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
   const bySlot = Object.fromEntries(clubs.map(c => [c.slot, c]));
-  const T = Object.fromEntries(clubs.map(c => [c.slot,
-    { slot: c.slot, name: c.name, p: 0, w: 0, l: 0, t: 0, pts: 0, rf: 0, ra: 0, of: 0, oa: 0 }]));
-  const results = [], PS = {};
+  const ms = (await pool.query(
+    `SELECT stage, gi, a, b, result, forfeit FROM cup_matches
+      WHERE comp=$1 AND season_no=$2 ORDER BY stage, gi`, ['colts:' + country, seasonNo])).rows;
+  const nameOf = side => (bySlot[side.slot] ? bySlot[side.slot].name : side.name) + ' Colts';
+
+  const stages = {}, PS = {};
+  let champion = null, finalist = null;
+  const semiLosers = [];
   for (const m of ms) {
-    const r = m.result;
-    const slotOf = nm => nm === m.home_name ? m.home_slot : nm === m.away_name ? m.away_slot : null;
-    for (const inn of (r.innings || [])) {
+    const won = m.result.winner === m.b.name ? m.b : m.a;
+    const lost = won === m.a ? m.b : m.a;
+    (stages[m.stage] = stages[m.stage] || []).push({
+      gi: m.gi, home: nameOf(m.a), away: nameOf(m.b),
+      homeSlot: m.a.slot, awaySlot: m.b.slot,
+      winner: nameOf(won), winnerSlot: won.slot,
+      forfeit: m.forfeit || null, text: m.result.text || null
+    });
+    if (m.stage === 'final') { champion = won; finalist = lost; }
+    if (m.stage === 'sf') semiLosers.push(lost);
+
+    // every boy's runs and wickets, from the cards themselves
+    const slotOf = nm => nm === m.a.name ? m.a.slot : nm === m.b.name ? m.b.slot : null;
+    for (const inn of (m.result.innings || [])) {
       if (!inn) continue;
       const bs = slotOf(inn.batTeam), os = slotOf(inn.bowlTeam);
-      if (bs == null || os == null) continue;
-      T[bs].rf += inn.runs; T[bs].of += inn.wkts >= 10 ? 50 : inn.legal / 6;
-      T[os].ra += inn.runs; T[os].oa += inn.wkts >= 10 ? 50 : inn.legal / 6;
       for (const b of (inn.bat || [])) {
-        const nm = b.p && b.p.name; if (!nm) continue;
+        const nm = b.p && b.p.name; if (!nm || bs == null) continue;
         const e = PS[nm] = PS[nm] || { name: nm, club: bySlot[bs].name, runs: 0, hs: 0, wkts: 0, conc: 0 };
         e.runs += (b.r || 0); if ((b.r || 0) > e.hs) e.hs = b.r || 0;
       }
       for (const nm in (inn.bowlers || {})) {
+        if (os == null) continue;
         const bw = inn.bowlers[nm];
         const e = PS[nm] = PS[nm] || { name: nm, club: bySlot[os].name, runs: 0, hs: 0, wkts: 0, conc: 0 };
         e.wkts += (bw.w || 0); e.conc += (bw.r || 0);
       }
     }
-    for (const s of [m.home_slot, m.away_slot]) T[s].p++;
-    const wSlot = r.winner == null ? null : slotOf(r.winner);
-    if (wSlot == null) { T[m.home_slot].t++; T[m.away_slot].t++; T[m.home_slot].pts++; T[m.away_slot].pts++; }
-    else { T[wSlot].w++; T[wSlot].pts += 2; T[wSlot === m.home_slot ? m.away_slot : m.home_slot].l++; }
-    const sideOf = s2 => {
-      const inn = (r.innings || []).find(x => x && slotOf(x.batTeam) === s2);
-      if (!inn) return null;
-      return { r: inn.runs, w: inn.wkts, ov: Math.floor(inn.legal / 6) + '.' + (inn.legal % 6) };
-    };
-    results.push({ id: m.id, round: m.round, leagueRound: m.league_round,
-      home: bySlot[m.home_slot].name, away: bySlot[m.away_slot].name,
-      hs: sideOf(m.home_slot), as: sideOf(m.away_slot),
-      winner: wSlot == null ? null : bySlot[wSlot].name, text: r.text });
   }
-  const table = Object.values(T).map(x => ({ ...x, nrr: x.of && x.oa ? +(x.rf / x.of - x.ra / x.oa).toFixed(3) : 0 }))
-    .sort((a, b) => b.pts - a.pts || b.nrr - a.nrr || a.slot - b.slot);
   const players = Object.values(PS);
+  // THE PURSE, as a function of the bracket rather than a thing paid and
+  // remembered: recompute it and you get the same answer.
+  const purse = [];
+  if (champion) purse.push({ slot: champion.slot, kind: 'winner', amount: COLTS_PURSE.winner });
+  if (finalist) purse.push({ slot: finalist.slot, kind: 'finalist', amount: COLTS_PURSE.finalist });
+  for (const s of semiLosers) purse.push({ slot: s.slot, kind: 'semi', amount: COLTS_PURSE.semi });
+
   return {
-    country, seasonNo, rounds: COLTS_ROUNDS,
-    roundsPlayed: ms.length ? Math.max(...ms.map(m => m.round)) : 0,
-    table, results,
+    country, seasonNo, stages,
+    stagesDone: COLTS_STAGES.filter(k => (stages[k] || []).length).length,
+    champion: champion ? nameOf(champion) : null,
+    championSlot: champion ? champion.slot : null,
+    finalist: finalist ? nameOf(finalist) : null,
+    purse,
     runs: players.filter(p => p.runs > 0).sort((a, b) => b.runs - a.runs).slice(0, 5),
-    wickets: players.filter(p => p.wkts > 0).sort((a, b) => b.wkts - a.wkts || a.conc - b.conc).slice(0, 5),
-    champion: table[0] && table[0].p ? table[0].name : null
+    wickets: players.filter(p => p.wkts > 0).sort((a, b) => b.wkts - a.wkts || a.conc - b.conc).slice(0, 5)
   };
 }
 
 // EVERY BOY'S OWN RECORD, recomputed from the same banked cards and written
 // back onto the colt so his card can show what he has actually done. Pure
-// function of the youth matches; running it twice writes the same numbers.
+// function of the banked ties; running it twice writes the same numbers.
 export async function coltRecords(pool, country, seasonNo) {
   const ms = (await pool.query(
-    'SELECT home_slot, away_slot, home_name, away_name, result FROM youth_matches WHERE country_id=$1 AND season_no=$2',
-    [country, seasonNo])).rows;
+    'SELECT a, b, result FROM cup_matches WHERE comp=$1 AND season_no=$2',
+    ['colts:' + country, seasonNo])).rows;
   const book = new Map();                                     // slot -> name -> record
   const rec = (slot, name) => {
     if (!book.has(slot)) book.set(slot, new Map());
@@ -458,7 +570,7 @@ export async function coltRecords(pool, country, seasonNo) {
     return m.get(name);
   };
   for (const mt of ms) {
-    const slotOf = nm => nm === mt.home_name ? mt.home_slot : nm === mt.away_name ? mt.away_slot : null;
+    const slotOf = nm => nm === mt.a.name ? mt.a.slot : nm === mt.b.name ? mt.b.slot : null;
     const capped = new Set();                       // one cap a man a match, however many innings
     for (const inn of ((mt.result || {}).innings || [])) {
       if (!inn) continue;

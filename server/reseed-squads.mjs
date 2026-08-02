@@ -58,6 +58,10 @@ const PLAY_TABLES = [
   // each time the money settles, so it is play, not world: wipe it with the
   // season and the next settle writes it back from the matches that remain.
   'ledger',
+  // and the squads named for the Colts Cup: they name BOYS, and a redeal
+  // deals new ones, so a squad that survived the redeal would name men who no
+  // longer exist
+  'colts_squads',
   // the academy. The candidates are laid out fresh every tick and the trips
   // and the spending belong to the season that was played, so all three go
   // with it - a redealt world has never scouted anybody.

@@ -20,7 +20,7 @@ import { makeHost } from '../enginehost.mjs';
 import { runAllDue, runCupWindow, runFaCup, rollSeasons, runTick, computeLeague, rebuildHonours, computeRankings, runFriendlies, settleMoney } from '../tick.mjs';
 import { evolveCountry, applyLiving, livingPatch } from '../living.mjs';
 import { SQUAD_CAP, RETIRE_AT, ACADEMY_FLOOR, makeRecruit, ageYouth,
-  coltsRoundOf, coltsSquad, playColtsRound, coltRecords } from '../youth.mjs';
+  coltRecords } from '../youth.mjs';
 import { academyRate } from '../living.mjs';
 import { fantasyPoints, unitRatings, matchRatings, teamRatings, matchRating,
          ladderRating, strengthRating, RATING_UNITS, RANK_BASE } from '../ratings.mjs';
@@ -1176,81 +1176,38 @@ test('018: the academy is paid for, and it recomputes', async () => {
 // the boys plus the youngest professionals - so an offline manager cannot
 // lose it. Its own table, its own champion, and not one line of it touching a
 // senior first-class record.
-test('019: the Colts Cup plays itself, and the academy sets the rate in the nets', async () => {
+test('019: youth cricket stays out of the seniors\' book, and the academy sets the rate in the nets', async () => {
+  // THE COLTS CUP ITSELF is week four's business and is proved end to end in
+  // tests/world-colts.test.mjs - the draw, the bracket, the forfeit rule, the
+  // named squad and the purse. What belongs HERE is the boundary: a season of
+  // senior cricket must not have written anything into the boys' book, and a
+  // boy's record must never be mistaken for a first-class career.
   const seas = (await pool.query(
     `SELECT season_no FROM seasons WHERE country_id='eng' ORDER BY season_no DESC LIMIT 1`)).rows[0].season_no;
+  const onLeagueDays = (await pool.query(
+    `SELECT count(*)::int AS n FROM cup_matches WHERE comp='colts:eng'`)).rows[0].n;
+  assert.equal(onLeagueDays, 0,
+    'the boys played no cricket: a full season of league rounds has gone by and Colts Week has not');
 
-  // the draw: Colts round k is played on league round 2k, up to nine
-  assert.equal(coltsRoundOf(2), 1);
-  assert.equal(coltsRoundOf(18), 9);
-  assert.equal(coltsRoundOf(3), 0, 'odd league rounds have no youth fixture');
-  assert.equal(coltsRoundOf(20), 0, 'the cup is nine rounds and stops');
-
-  // a season of league cricket has left a season of youth cricket behind it
-  const played = (await pool.query(
-    `SELECT season_no, round, count(*)::int AS n FROM youth_matches WHERE country_id='eng'
-      GROUP BY season_no, round ORDER BY season_no, round`)).rows;
-  assert.ok(played.filter(r => r.season_no === 1).length >= 5,
-    'the boys have had a season of fixtures: ' + played.length + ' rounds');
-  played.forEach(r => assert.equal(r.n, 8,
-    'Colts s' + r.season_no + ' round ' + r.round + ' is a full eight fixtures - both divisions'));
-  const lr = (await pool.query(
-    `SELECT DISTINCT league_round, round FROM youth_matches WHERE country_id='eng'`)).rows;
-  lr.forEach(r => assert.equal(r.league_round, r.round * 2, 'every youth round rode on its league round'));
-
-  // THE SIDE NOBODY PICKS: the boys first, then the youngest men on the staff
-  const club = (await pool.query(
-    `SELECT slot, name, squad, youth FROM clubs WHERE country_id='eng' AND slot=4`)).rows[0];
-  const side = coltsSquad(club);
-  assert.ok(side.length >= 11, 'there is always an eleven');
-  (club.youth || []).forEach(y => assert.ok(side.some(p => p.name === y.name), 'every colt is in it'));
-  const avgSide = side.reduce((s, p) => s + (p.age || 30), 0) / side.length;
-  const avgSquad = club.squad.reduce((s, p) => s + (p.age || 30), 0) / club.squad.length;
-  assert.ok(avgSide < avgSquad, 'it is a young side (' + avgSide.toFixed(1) + ' v ' + avgSquad.toFixed(1) + ')');
-  assert.deepEqual(coltsSquad(club).map(p => p.name), side.map(p => p.name), 'and the same side on every replay');
-
-  // playing the same youth round again plays nothing
-  const season = (await pool.query(
-    `SELECT * FROM seasons WHERE country_id='eng' AND season_no=$1`, [seas])).rows[0];
-  assert.equal(await playColtsRound(pool, host, 'eng', season, 2, seedOf, 'v1'), 0,
-    'a youth round already played is never replayed');
-
-  // THE TABLE, from the banked cards alone
-  const cup = (await pool.query(`SELECT body FROM snapshots WHERE key='colts/eng'`)).rows[0].body;
-  assert.equal(cup.table.length, 16);
-  const games = cup.table.reduce((s, r) => s + r.p, 0);
-  assert.equal(games, cup.results.length * 2, 'every club-entry in the table is a match somebody played');
-  cup.table.forEach(r => assert.equal(r.pts, r.w * 2 + r.t, 'two for a win, one for a tie'));
-  assert.ok(cup.runs.length && cup.runs[0].runs > 0, 'somebody is leading the run-scoring');
-  assert.deepEqual(cup.table.map(r => r.pts), cup.table.map(r => r.pts).slice().sort((a, b) => b - a),
-    'the table is in order');
-
-  // A BOY'S OWN RECORD goes back onto the boy, and stays out of the seniors'
-  const withRec = (await pool.query(
-    `SELECT youth FROM clubs WHERE country_id='eng'`)).rows
-    .flatMap(r => r.youth || []).filter(y => y.colts && y.colts.m > 0);
-  assert.ok(withRec.length, 'colts carry what they did in the cup');
-  withRec.forEach(y => { assert.ok(y.colts.runs >= 0 && y.colts.hs <= y.colts.runs); });
-  // a man who came up out of the academy keeps what he did for the Colts -
-  // but it is never mistaken for a first-class career, which the senior
-  // record builds from senior matches and nothing else
+  // A COLT HAS NO FIRST-CLASS RECORD. He may have a Colts record - that is his
+  // own - but the senior career is built from senior matches and nothing else.
+  const academy = (await pool.query(`SELECT youth FROM clubs WHERE country_id='eng'`)).rows
+    .flatMap(r => Array.isArray(r.youth) ? r.youth : []);
+  assert.ok(academy.length, 'there are boys on the books');
+  academy.forEach(y => assert.ok(!y.career,
+    y.name + ' is a colt and cannot carry a first-class record'));
   const seniors = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng'`)).rows.flatMap(r => r.squad);
   seniors.forEach(p => assert.ok(!p.colts || p.joined,
     p.name + ' carries a Colts record without ever having been a colt'));
-  // ...and the claim in full, which does not depend on WHEN a colt came up: a
-  // boy still in the academy has no first-class record at all. Asserting
-  // instead that a graduate has not yet played a senior match only held while
-  // promotions happened to land after the rounds did.
-  const academy = (await pool.query(`SELECT youth FROM clubs WHERE country_id='eng'`)).rows
-    .flatMap(r => Array.isArray(r.youth) ? r.youth : []);
-  assert.ok(academy.length, 'there are colts on the books');
-  academy.forEach(y => assert.ok(!y.career,
-    y.name + ' is a colt and cannot carry a first-class record'));
+  // and recomputing the boys' records over an empty cup writes nothing rather
+  // than throwing - the umpire runs this on every nation, cup or no cup
   await coltRecords(pool, 'eng', seas);
-  const again = (await pool.query(
+  const after = (await pool.query(
     `SELECT youth FROM clubs WHERE country_id='eng'`)).rows.flatMap(r => r.youth || []).filter(y => y.colts);
-  assert.equal(again.length, withRec.length, 'recomputing the records writes the same records');
+  assert.equal(after.length, 0, 'no ties played, so no boy carries a Colts record');
 
+  const club = (await pool.query(
+    `SELECT slot, name, squad, youth FROM clubs WHERE country_id='eng' AND slot=4`)).rows[0];
   // WHAT THE ACADEMY BUYS IN THE NETS: level two is the unit, eight per cent a level
   assert.equal(academyRate(2), 1);
   assert.ok(academyRate(5) > academyRate(2) && academyRate(1) < academyRate(2));

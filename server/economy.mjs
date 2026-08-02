@@ -17,7 +17,7 @@
 // THE LAW HOLDS: nothing here is incremented imperatively and nothing is
 // stored that a re-run could not rebuild. Settle it twice and it settles the
 // same figure, which is what lets an offline manager trust it.
-import { seedOf, dayOfRound, natHour, EPOCH, DAY } from './clock.mjs';
+import { seedOf, dayOfRound, natHour, EPOCH, DAY, COLTS_DAYS } from './clock.mjs';
 
 export const FOUNDING_BANK = 2500000;
 export const FOUNDING_SUPPORT = 12000;
@@ -186,7 +186,7 @@ export async function computeFinance(pool, country, opts = {}) {
   const dayMoney = {};                            // 'day:slot' -> { in, out, scout, sold, bought }
   const atDay = (d, slot) => {
     const k = d + ':' + slot;
-    return dayMoney[k] = dayMoney[k] || { in: 0, out: 0, scout: 0, sold: 0, bought: 0, acad: [] };
+    return dayMoney[k] = dayMoney[k] || { in: 0, out: 0, scout: 0, sold: 0, bought: 0, acad: [], purse: [] };
   };
   for (const d of deals) {
     if (d.settled_day == null) continue;
@@ -209,6 +209,22 @@ export async function computeFinance(pool, country, opts = {}) {
     atDay(a.day, a.slot).acad.push({ kind: a.kind, amount: +a.amount || 0 });
   }
 
+  // THE COLTS CUP PURSE. Winners, beaten finalist and the two losing
+  // semi-finalists are paid out of the bracket the boys actually played -
+  // read off cup_matches, not written down anywhere - so re-running the books
+  // pays the same money and paying it twice is impossible. It lands on the
+  // day of the final, which is the day it was won.
+  let purse = [];
+  try {
+    purse = (await pool.query(
+      `SELECT stage, a, b, result FROM cup_matches
+        WHERE comp = $1 AND stage IN ('sf','final')`, ['colts:' + country])).rows;
+  } catch (eP) { purse = []; }                    // pre-041 database: no colts cup yet
+  const COLTS_PURSE = { winner: 750000, finalist: 300000, semi: 120000 };
+  const PURSE_LABEL = {
+    winner: 'Colts Cup \u00b7 winners', finalist: 'Colts Cup \u00b7 beaten finalists',
+    semi: 'Colts Cup \u00b7 losing semi-finalists' };
+
   // a transfer settles on a WORLD DAY; the books walk in ROUNDS. The season
   // table is what turns one into the other.
   let starts = [];
@@ -217,6 +233,17 @@ export async function computeFinance(pool, country, opts = {}) {
       'SELECT season_no, start_day FROM seasons WHERE country_id=$1', [country])).rows;
   } catch (eS0) { starts = []; }
   const startOf = Object.fromEntries(starts.map(x => [x.season_no, x.start_day]));
+  for (const t of purse) {
+    const won = t.result && t.result.winner === t.b.name ? t.b : t.a;
+    const lost = won === t.a ? t.b : t.a;
+    const day = (startOf[t.season_no] ?? 0) + COLTS_DAYS.final;
+    if (t.stage === 'final') {
+      atDay(day, won.slot).purse.push({ kind: 'winner', amount: COLTS_PURSE.winner });
+      atDay(day, lost.slot).purse.push({ kind: 'finalist', amount: COLTS_PURSE.finalist });
+    } else {
+      atDay(day, lost.slot).purse.push({ kind: 'semi', amount: COLTS_PURSE.semi });
+    }
+  }
   const marketDays = Object.keys(dayMoney)
     .map(k => ({ day: +k.split(':')[0], slot: +k.split(':')[1], ...dayMoney[k] }))
     .sort((a, b) => a.day - b.day || a.slot - b.slot);
@@ -239,7 +266,7 @@ export async function computeFinance(pool, country, opts = {}) {
       sup: FOUNDING_SUPPORT, mood: 3, pts: 0, played: 0, form: [],
       gate: 0, awayCut: 0, sponsor: 0, wagesPaid: 0, upkeep: 0, interest: 0,
       compensation: 0, capsAway: 0,
-      feesIn: 0, feesOut: 0, scouting: 0, soldN: 0, boughtN: 0, academySpend: 0,
+      feesIn: 0, feesOut: 0, scouting: 0, soldN: 0, boughtN: 0, academySpend: 0, coltsPurse: 0,
       writtenOff: 0, admin: false, adminRounds: 0,
       atts: [], rounds: 0
     };
@@ -283,6 +310,12 @@ export async function computeFinance(pool, country, opts = {}) {
         c.academySpend += -a.amount;              // held positive: it is a cost
         c.bank += a.amount;                       // the rows are already signed
         line(m.slot, at, a.kind, ACAD_LABEL[a.kind] || 'The academy', a.amount, c.bank);
+      }
+      for (const pz of (m.purse || [])) {
+        if (!pz.amount) continue;
+        c.coltsPurse += pz.amount;
+        c.bank += pz.amount;
+        line(m.slot, at, 'colts-purse', PURSE_LABEL[pz.kind] || 'Colts Cup', pz.amount, c.bank);
       }
       if (c.bank < -DEBT_LIMIT) {
         const off = (-DEBT_LIMIT) - c.bank; c.writtenOff += off; c.bank = -DEBT_LIMIT;
@@ -387,6 +420,7 @@ export async function computeFinance(pool, country, opts = {}) {
         gate: s.gate, awayCut: s.awayCut, sponsor: s.sponsor,
         compensation: s.compensation, capsAway: s.capsAway,
         feesIn: s.feesIn, feesOut: s.feesOut, scouting: s.scouting, academySpend: s.academySpend,
+        coltsPurse: s.coltsPurse,
         sold: s.soldN, bought: s.boughtN,
         wages: s.wagesPaid, wageBill: s.wages, upkeep: s.upkeep, interest: s.interest,
         academyPaid: +c.academy_paid || 0, seatsPaid: +c.seats_paid || 0,

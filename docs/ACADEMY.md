@@ -186,25 +186,53 @@ fifteen** — they are the world's furniture and must keep turning up. **A club
 with a human manager is never topped up.** You scout, you sign, you pay, and if
 you let the list fall to fourteen you forfeit and everyone sees it.
 
+A named squad is an option, not a duty. If a manager names one it is used; if
+he does not, the umpire names the youngest men who qualify, in a fixed order,
+so an offline club still walks out. A squad named earlier that has since fallen
+below fifteen — a boy sold, promoted, or turned twenty-one — is **topped up**
+from the youngest available rather than refused: he named a side, and the world
+does not punish him for the calendar.
+
+If neither club in a tie can raise fifteen, the one closer to a side goes
+through, and an exact tie falls to the club drawn first. A rule, not a coin, so
+every device agrees without asking the server.
+
 ### The draw
 
-All sixteen clubs of a nation — both divisions in one hat. A fixed bracket, no
-byes, no seeding beyond last season's finishing order. Four days:
+All sixteen clubs of a nation — both divisions in one hat. **The draw is made
+once**, at the last sixteen, and the bracket holds from there: the winners of
+ties 2k and 2k+1 meet in the next round, so a manager can see his side's path
+to the final on the Monday morning. No byes — sixteen clubs always divide.
+Four days:
 
 | day | round |
 |-----|-------|
 | Colts Week Monday | round of 16 |
 | Colts Week Tuesday | quarter-finals |
 | Colts Week Thursday | semi-finals |
-| Colts Week Friday | **the final** |
+| Colts Week Friday | **the final**, at the boss's ground |
+
+The ties bank in `cup_matches` under `comp = 'colts:<nation>'`, the same table
+and the same laws as the FA Cup and the Champions Cup: results immutable,
+stages idempotent, the bracket derived rather than remembered.
 
 ### The purse
 
-Substantial. Winners take a sum on the order of a season's academy upkeep, the
-beaten finalist rather less, and the losing semi-finalists a token. A well-run
-academy roughly pays for itself in a good year, and a club that wins twice can
-afford the next level — which gives a poor club a way of funding itself that
-isn't selling its best players.
+| finishing | purse |
+|-----------|-------|
+| winners | £750,000 |
+| beaten finalist | £300,000 |
+| losing semi-finalists | £120,000 each |
+
+A level-three academy costs £26,000 a round, £364,000 over a season, so a club
+that wins its cup has run its academy for nothing that year. That is the point:
+it gives a poor club a way of funding itself that isn't selling its best
+player.
+
+**The purse is derived, not paid.** The books read the bracket out of
+`cup_matches` and credit the money on the day of the final; nothing records
+that it has been paid, so recomputing the books pays it once and paying it
+twice is impossible.
 
 ---
 
